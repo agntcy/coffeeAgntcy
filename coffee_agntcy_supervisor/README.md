@@ -18,7 +18,7 @@ Before installation, ensure you have:
 
 ```bash
 git clone https://github.com/cisco-outshift-ai-agents/acorda.git
-cd acorda
+cd acorda/coffee_agntcy_supervisor
 ```
 ---
 ### **2️⃣ Setup the environment variables**
