@@ -1,0 +1,181 @@
+{
+  "metadata": {
+    "ref": {
+      "name": "org.agntcy.acorda",
+      "version": "0.0.1"
+    },
+    "description": "Agent that automates operations in response to natural language queries using LLM and domain specific sub-agents."
+  },
+  "specs": {
+    "capabilities": {
+      "threads": false,
+      "interrupts": false,
+      "callbacks": false
+    },
+    "input": {
+      "$defs": {
+        "Message": {
+          "properties": {
+            "type": {
+              "$ref": "#/$defs/Type",
+              "description": "indicates the originator of the message, a human or an assistant"
+            },
+            "content": {
+              "description": "the content of the message",
+              "title": "Content",
+              "type": "string"
+            }
+          },
+          "required": [
+            "type",
+            "content"
+          ],
+          "title": "Message",
+          "type": "object"
+        },
+        "Type": {
+          "enum": [
+            "human",
+            "assistant",
+            "ai"
+          ],
+          "title": "Type",
+          "type": "string"
+        }
+      },
+      "properties": {
+        "messages": {
+          "anyOf": [
+            {
+              "items": {
+                "$ref": "#/$defs/Message"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Messages"
+        }
+      },
+      "title": "InputState",
+      "type": "object"
+    },
+    "output": {
+      "$defs": {
+        "Message": {
+          "properties": {
+            "type": {
+              "$ref": "#/$defs/Type",
+              "description": "indicates the originator of the message, a human or an assistant"
+            },
+            "content": {
+              "description": "the content of the message",
+              "title": "Content",
+              "type": "string"
+            }
+          },
+          "required": [
+            "type",
+            "content"
+          ],
+          "title": "Message",
+          "type": "object"
+        },
+        "Type": {
+          "enum": [
+            "human",
+            "assistant",
+            "ai",
+            "tool"
+          ],
+          "title": "Type",
+          "type": "string"
+        }
+      },
+      "properties": {
+        "messages": {
+          "anyOf": [
+            {
+              "items": {
+                "$ref": "#/$defs/Message"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Messages"
+        }
+      },
+      "title": "OutputState",
+      "type": "object"
+    },
+    "config": {
+      "properties": {
+      },
+      "title": "ConfigSchema",
+      "type": "object"
+    }
+  },
+  "deployment": {
+    "deployment_options": [
+      {
+        "type": "source_code",
+        "name": "source_code_local",
+        "url": ".",
+        "framework_config": {
+          "framework_type": "langgraph",
+          "graph": "supervisor.build_graph:graph"
+        }
+      }
+    ],
+    "env_vars": [
+      {
+        "desc": "Open AI API Key",
+        "name": "OPENAI_API_KEY"
+      },
+      {
+        "desc": "Open AI Version",
+        "name": "OPENAI_API_VERSION"
+      },
+      {
+        "desc": "Open AI Endpoint",
+        "name": "OPENAI_ENDPOINT"
+      },
+      {
+        "desc": "Open AI Temperature",
+        "name": "OPENAI_TEMPERATURE"
+      },
+      {
+        "desc": "AZURE Open AI API Key",
+        "name": "AZURE_OPENAI_API_KEY"
+      },
+      {
+        "desc": "AZURE Open AI Endpoint",
+        "name": "AZURE_OPENAI_ENDPOINT"
+      },
+      {
+        "desc": "AZURE Open AI Deployment Name",
+        "name": "AZURE_OPENAI_DEPLOYMENT"
+      },
+      {
+        "desc": "AZURE Open AI API Version",
+        "name": "AZURE_OPENAI_API_VERSION"
+      },
+      {
+        "desc": "AZURE Open AI Temperature",
+        "name": "AZURE_OPENAI_TEMPERATURE"
+      },
+      {
+        "desc": "LLM Provider",
+        "name": "LLM_PROVIDER"
+      }
+    ],
+    "dependencies": []
+  }
+}
