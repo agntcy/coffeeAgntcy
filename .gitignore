@@ -2,6 +2,7 @@
 __pycache__/
 *.py[cod]
 *$py.class
+.env
 
 # C extensions
 *.so
@@ -94,12 +95,6 @@ ipython_config.py
 #   install all needed dependencies.
 #Pipfile.lock
 
-# UV
-#   Similar to Pipfile.lock, it is generally recommended to include uv.lock in version control.
-#   This is especially recommended for binary packages to ensure reproducibility, and is more
-#   commonly ignored for libraries.
-#uv.lock
-
 # poetry
 #   Similar to Pipfile.lock, it is generally recommended to include poetry.lock in version control.
 #   This is especially recommended for binary packages to ensure reproducibility, and is more
@@ -129,12 +124,14 @@ celerybeat.pid
 
 # Environments
 .env
+lambda-env.json
 .venv
 env/
 venv/
 ENV/
 env.bak/
 venv.bak/
+gcp_service_account.json
 
 # Spyder project settings
 .spyderproject
@@ -165,10 +162,29 @@ cython_debug/
 #  be found at https://github.com/github/gitignore/blob/main/Global/JetBrains.gitignore
 #  and can be added to the global gitignore or merged into this file.  For a more nuclear
 #  option (not recommended) you can uncomment the following to ignore the entire idea folder.
-#.idea/
+.idea/
+.vscode/
 
-# Ruff stuff:
-.ruff_cache/
+*.pem
+.python-version
+requirements.txt
 
-# PyPI configuration file
-.pypirc
+*.png
+gcp_service_account.json
+
+**/.terraform.lock.hcl
+**/.terraform
+**/.aws-sam-iacs
+
+*.dot
+
+*.tfvars
+*.tfstate
+
+# Local run stuff
+repo_copy/
+
+# temp files
+temp/
+
+.DS_Store
