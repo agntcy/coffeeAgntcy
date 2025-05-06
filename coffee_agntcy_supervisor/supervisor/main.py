@@ -23,7 +23,18 @@ from supervisor.graph.graph import SupervisorGraph
 from fastapi import FastAPI
 from starlette.middleware.cors import CORSMiddleware
 from supervisor.api.routes import stateless_runs
+from opentelemetry.trace.propagation.tracecontext import TraceContextTextMapPropagator
+from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
+from opentelemetry.propagate import set_global_textmap
+from opentelemetry import trace
+from traceloop.sdk import Traceloop
 
+# Initialize Traceloop for observability
+os.environ["TRACELOOP_BASE_URL"] = "http://localhost:4318"
+Traceloop.init(app_name="acorda_supervisor", disable_batch=True)
+
+# Set up propagators to extract context from incoming requests
+set_global_textmap(TraceContextTextMapPropagator())
 
 def create_app() -> FastAPI:
   app = FastAPI(
@@ -41,6 +52,15 @@ def create_app() -> FastAPI:
     allow_headers=["*"],
     expose_headers=["*"],
   )
+
+  print("setting up open telemetry")
+
+  # Enable OpenTelemetry instrumentation for FastAPI
+  FastAPIInstrumentor.instrument_app(
+    app,
+    tracer_provider=trace.get_tracer_provider(),
+  )
+
   return app
 
 

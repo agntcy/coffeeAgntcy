@@ -32,6 +32,14 @@ from langgraph.graph.message import add_messages
 from logging_config import configure_logging
 from requests.exceptions import (ConnectionError, HTTPError, RequestException,
                                  Timeout)
+from traceloop.sdk import Traceloop
+from opentelemetry.trace.propagation.tracecontext import TraceContextTextMapPropagator
+from opentelemetry import trace
+import os
+
+# Initialize Traceloop for observability
+os.environ["TRACELOOP_BASE_URL"] = "http://localhost:4318"
+Traceloop.init(app_name="acorda_client", disable_batch=True)
 
 logger = configure_logging()
 
@@ -102,57 +110,62 @@ def node_remote_request_stateless(state: GraphState) -> Dict[str, Any]:
     }
     logger.info(f"Sending request to remote server with payload: {payload}")
 
-    # Use a session for efficiency
-    with requests.Session() as session:
-        try:
-            response = session.post(REMOTE_SERVER_URL, headers=headers, json=payload)
-            response.raise_for_status()  # Raises HTTPError for 4xx and 5xx
+    tracer = trace.get_tracer(__name__)
 
-            # Parse response as JSON
-            response_data = response.json()
-            logger.info(f"decoding response: {response_data}")
-            # Decode JSON response
-            decoded_response = decode_response(response_data)
-            logger.info(f"decoded response:{decoded_response}")
-            return {"messages": decoded_response.get("messages", [])}
+    with tracer.start_as_current_span("client-span") as span:
 
-        except (Timeout, ConnectionError) as conn_err:
-            error_msg = {
-                "error": "Connection timeout or failure",
-                "exception": str(conn_err),
-            }
-            logger.error(json.dumps(error_msg))
-            return {"messages": [HumanMessage(content=json.dumps(error_msg))]}
+        # Use a session for efficiency
+        with requests.Session() as session:
+            try:
+                TraceContextTextMapPropagator().inject(headers)
+                response = session.post(REMOTE_SERVER_URL, headers=headers, json=payload)
+                response.raise_for_status()  # Raises HTTPError for 4xx and 5xx
 
-        except HTTPError as http_err:
-            error_msg = {
-                "error": "HTTP request failed",
-                "status_code": response.status_code,
-                "exception": str(http_err),
-            }
-            logger.error(json.dumps(error_msg))
-            return {"messages": [HumanMessage(content=json.dumps(error_msg))]}
+                # Parse response as JSON
+                response_data = response.json()
+                logger.info(f"decoding response: {response_data}")
+                # Decode JSON response
+                decoded_response = decode_response(response_data)
+                logger.info(f"decoded response:{decoded_response}")
+                return {"messages": decoded_response.get("messages", [])}
 
-        except RequestException as req_err:
-            error_msg = {"error": "Request failed", "exception": str(req_err)}
-            logger.error(json.dumps(error_msg))
-            return {"messages": [HumanMessage(content=json.dumps(error_msg))]}
+            except (Timeout, ConnectionError) as conn_err:
+                error_msg = {
+                    "error": "Connection timeout or failure",
+                    "exception": str(conn_err),
+                }
+                logger.error(json.dumps(error_msg))
+                return {"messages": [HumanMessage(content=json.dumps(error_msg))]}
 
-        except json.JSONDecodeError as json_err:
-            error_msg = {"error": "Invalid JSON response", "exception": str(json_err)}
-            logger.error(json.dumps(error_msg))
-            return {"messages": [HumanMessage(content=json.dumps(error_msg))]}
+            except HTTPError as http_err:
+                error_msg = {
+                    "error": "HTTP request failed",
+                    "status_code": response.status_code,
+                    "exception": str(http_err),
+                }
+                logger.error(json.dumps(error_msg))
+                return {"messages": [HumanMessage(content=json.dumps(error_msg))]}
 
-        except Exception as e:
-            error_msg = {
-                "error": "Unexpected failure",
-                "exception": str(e),
-                "stack_trace": traceback.format_exc(),
-            }
-            logger.error(json.dumps(error_msg))
+            except RequestException as req_err:
+                error_msg = {"error": "Request failed", "exception": str(req_err)}
+                logger.error(json.dumps(error_msg))
+                return {"messages": [HumanMessage(content=json.dumps(error_msg))]}
 
-        finally:
-            session.close()
+            except json.JSONDecodeError as json_err:
+                error_msg = {"error": "Invalid JSON response", "exception": str(json_err)}
+                logger.error(json.dumps(error_msg))
+                return {"messages": [HumanMessage(content=json.dumps(error_msg))]}
+
+            except Exception as e:
+                error_msg = {
+                    "error": "Unexpected failure",
+                    "exception": str(e),
+                    "stack_trace": traceback.format_exc(),
+                }
+                logger.error(json.dumps(error_msg))
+
+            finally:
+                session.close()
 
     return {"messages": [AIMessage(content=json.dumps(error_msg))]}
 
