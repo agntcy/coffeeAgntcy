@@ -14,7 +14,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-import asyncio
 import json
 import os
 import uuid
@@ -22,12 +21,11 @@ from typing import Annotated, Any, Dict, List, TypedDict
 
 from agp_api.agent.agent_container import AgentContainer
 from agp_api.gateway.gateway_container import GatewayContainer
-from dotenv import load_dotenv
 from langchain_core.messages import BaseMessage, HumanMessage
 from langchain_core.messages.utils import convert_to_openai_messages
-from langgraph.graph import END, START, StateGraph
 from langgraph.graph.message import add_messages
-from logging_config import configure_logging
+
+from supervisor.clients.agp_client.logging_config import configure_logging
 
 logger = configure_logging()
 
@@ -41,7 +39,7 @@ class Config:
         agent_container (AgentContainer): Container instance for agent management
         remote_agent (str): Specification of remote agent, defaults to "server"
     """
-    remote_agent = "database_security_agent"
+    remote_agent = "coffee_farm"  # todo use correct agent name
     gateway_container = GatewayContainer()
     agent_container = AgentContainer(local_agent=remote_agent)
 
@@ -79,7 +77,6 @@ async def send_and_recv(payload: Dict[str, Any], remote_agent: str) -> Dict[str,
 
     response_data = json.loads(recv.decode("utf8"))
 
-    print(json.dumps(response_data, indent=2))
 
     # check for errors
     error_code = response_data.get("error")
@@ -99,6 +96,7 @@ async def send_and_recv(payload: Dict[str, Any], remote_agent: str) -> Dict[str,
 
     # We only store in shared memory the last message from remote to avoid duplication
     return {"messages": [messages[-1]]}
+
 
 async def node_remote_agp(state: GraphState) -> Dict[str, Any]:
     """
@@ -120,7 +118,6 @@ async def node_remote_agp(state: GraphState) -> Dict[str, Any]:
 
     messages = convert_to_openai_messages(state["messages"])
 
-    print("messages", messages)
     # payload to send to remote server at /runs endpoint
     payload: Dict[str, Any] = {
         "agent_id": "remote_agent",
@@ -130,7 +127,6 @@ async def node_remote_agp(state: GraphState) -> Dict[str, Any]:
         # Add the route field to emulate the REST API
         "route": "/api/v1/runs",
     }
-    print("payload", payload)
 
     logger.info(json.dumps({"event": "sending_payload", "payload": payload}))
 
@@ -158,6 +154,7 @@ async def init_client_gateway_conn(remote_agent: str = "server") -> None:
         endpoint=os.getenv("AGP_GATEWAY_URL", "http://127.0.0.1:46357"), insecure=True
     )
 
+    # todo- use correct port
     # Call connect_with_retry
     _ = await Config.gateway_container.connect_with_retry(
         agent_container=Config.agent_container,
@@ -165,42 +162,3 @@ async def init_client_gateway_conn(remote_agent: str = "server") -> None:
         initial_delay=1,
         remote_agent=remote_agent,
     )
-
-
-# Build the state graph
-async def build_graph() -> Any:
-    """
-    Constructs the state graph for handling requests.
-
-    Returns:
-        StateGraph: A compiled LangGraph state graph.
-    """
-    await init_client_gateway_conn(remote_agent=Config.remote_agent)
-    builder = StateGraph(GraphState)
-    #builder.add_node("node_remote_agp", node_remote_agp) # TODO: Implement this
-    builder.add_node("node_remote_agp", node_remote_agp_fake)
-    builder.add_edge(START, "node_remote_agp")
-    builder.add_edge("node_remote_agp", END)
-    return builder.compile()
-
-
-async def main():
-    """
-    Main function to load environment variables, initialize the gateway connection,
-    build the state graph, and invoke it with sample inputs.
-    """
-    load_dotenv(override=True)
-    graph = await build_graph()
-
-    test_input = {"sql_query": "SELECT * from customers limit 2;"
-        , "ip_address": "192.168.90.11"}
-
-    inputs = {"messages": [HumanMessage(content=json.dumps(test_input))]}
-    logger.info({"event": "invoking_graph", "inputs": inputs})
-    result = await graph.ainvoke(inputs)
-    logger.info({"event": "final_result", "result": result})
-
-
-# Main execution
-if __name__ == "__main__":
-    asyncio.run(main())

@@ -17,12 +17,14 @@
 import logging
 import uuid
 
-from langgraph.graph import StateGraph, Graph
-from langgraph.constants import START, END
 from langgraph.checkpoint.memory import InMemorySaver
-from supervisor.graph.router import supervisor_node
-from supervisor.clients.agp_client.mock import node_remote_agp_fake
+from langgraph.constants import START, END
+from langgraph.graph import StateGraph
 from langgraph.prebuilt.chat_agent_executor import AgentState
+
+from supervisor.clients.agp_client.agp_client import node_remote_agp
+from supervisor.graph.router import supervisor_node
+
 
 class SupervisorGraph:
   def __init__(self):
@@ -42,8 +44,8 @@ class SupervisorGraph:
     graph = StateGraph(AgentState)
     graph.add_edge(START, "supervisor")
     graph.add_node("supervisor", supervisor_node)
-    graph.add_node("node_agp_boardcast", node_remote_agp_fake) # TODO: Use node_remote_agp
-    graph.add_edge("node_agp_boardcast", END)
+    graph.add_node("node_agp_broadcast", node_remote_agp)
+    graph.add_edge("node_agp_broadcast", END)
 
     checkpointer = InMemorySaver()
     return graph.compile(checkpointer=checkpointer)

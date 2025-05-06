@@ -23,12 +23,12 @@ import logging
 SAMPLE_RESPONSE = "Need 100 tons of Arabica roast from Vietnam region by December 15"
 
 class Router(TypedDict):
-  next: Annotated[Literal["node_agp_boardcast", "FINISH"], ...]
+  next: Annotated[Literal["node_agp_broadcast", "FINISH"], ...]
   reasoning: Annotated[str, ...]
 
 def supervisor_node(state: AgentState) -> Command:
   response = Router(
-    next="node_agp_boardcast",
+    next="node_agp_broadcast",
     reasoning=SAMPLE_RESPONSE,
   )
 

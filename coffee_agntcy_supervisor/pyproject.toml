@@ -9,14 +9,15 @@ packages = [
 ]
 
 [tool.poetry.dependencies]
+agp_api = "0.0.5"
 python = ">=3.12.4,<4.0.0"
 requests = ">=2.32.3,<3.0.0"
-python-dotenv = ">=1.1.0,<2.0.0"
+python-dotenv = "1.0.1"
 langchain-core = "*"
 langgraph = "*"
 pydantic = "*"
 langchain = "^0.3.25"
-fastapi = "^0.115.12"
+fastapi = "^0.115.11"
 uvicorn = "^0.34.2"
 pydantic-settings = "^2.9.1"
 cisco-outshift-agent-utils = "^0.0.2"
