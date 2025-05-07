@@ -100,3 +100,30 @@ The REST client connects to the AP endpoint for the Server running at the defaul
 ```bash
 python test_clients/ap_client/client.py
 ```
+
+### Running with Docker Compose
+
+#### Prerequisites
+- Docker installed: [Install Docker](https://docs.docker.com/get-docker/)
+- Docker Compose installed: [Install Docker Compose](https://docs.docker.com/compose/install/)
+
+#### Steps to Start
+1. Navigate to the `coffee_agntcy_supervisor` directory.
+2. Run the following command:
+
+   ```bash
+   docker-compose up --build
+   ```
+
+   This will build the `supervisor-agent` image and start the **AGP Gateway** and **Supervisor Agent** services.
+
+#### Access the Services
+- AGP Gateway: `http://localhost:46357`
+- Supervisor Agent: `http://localhost:8125`
+
+#### Stopping the Services
+To stop and remove the containers, run:
+
+```bash
+docker-compose down
+```
