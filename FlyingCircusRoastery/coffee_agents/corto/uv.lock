@@ -181,6 +181,56 @@ wheels = [
 ]
 
 [[package]]
+name = "corto"
+version = "0.1.0"
+source = { editable = "." }
+dependencies = [
+    { name = "a2a" },
+    { name = "click" },
+    { name = "dotenv" },
+    { name = "httpx" },
+    { name = "langchain-google-genai" },
+    { name = "langgraph" },
+    { name = "pydantic" },
+    { name = "python-dotenv" },
+]
+
+[package.optional-dependencies]
+dev = [
+    { name = "autogen-core" },
+    { name = "coloredlogs" },
+    { name = "langchain-openai" },
+    { name = "openai" },
+    { name = "pytest" },
+    { name = "pytest-asyncio" },
+    { name = "pytest-cov" },
+    { name = "tiktoken" },
+    { name = "typing-extensions" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "a2a", git = "https://github.com/google/A2A?subdirectory=a2a-python-sdk" },
+    { name = "autogen-core", marker = "extra == 'dev'", specifier = ">=0.4.3,<0.5" },
+    { name = "click", specifier = ">=8.1.8" },
+    { name = "coloredlogs", marker = "extra == 'dev'", specifier = ">=15.0.1,<16" },
+    { name = "dotenv", specifier = ">=0.9.9" },
+    { name = "httpx", specifier = ">=0.28.1" },
+    { name = "langchain-google-genai", specifier = ">=2.1.4" },
+    { name = "langchain-openai", marker = "extra == 'dev'", specifier = ">=0.3.14,<0.4" },
+    { name = "langgraph", specifier = ">=0.4.1" },
+    { name = "openai", marker = "extra == 'dev'", specifier = ">=1.60.2,<2" },
+    { name = "pydantic", specifier = ">=2.11.4" },
+    { name = "pytest", marker = "extra == 'dev'", specifier = "~=7.0" },
+    { name = "pytest-asyncio", marker = "extra == 'dev'", specifier = ">=0.17.0,<0.18" },
+    { name = "pytest-cov", marker = "extra == 'dev'", specifier = ">=4.0.0,<5" },
+    { name = "python-dotenv", specifier = ">=1.1.0" },
+    { name = "tiktoken", marker = "extra == 'dev'", specifier = ">=0.8.0,<0.9" },
+    { name = "typing-extensions", marker = "extra == 'dev'", specifier = ">=4.12.2,<5" },
+]
+provides-extras = ["dev"]
+
+[[package]]
 name = "coverage"
 version = "7.8.0"
 source = { registry = "https://pypi.org/simple" }
@@ -250,56 +300,6 @@ dependencies = [
 wheels = [
     { url = "https://files.pythonhosted.org/packages/b2/b7/545d2c10c1fc15e48653c91efde329a790f2eecfbbf2bd16003b5db2bab0/dotenv-0.9.9-py2.py3-none-any.whl", hash = "sha256:29cf74a087b31dafdb5a446b6d7e11cbce8ed2741540e2339c69fbef92c94ce9", size = 1892, upload-time = "2025-02-19T22:15:01.647Z" },
 ]
-
-[[package]]
-name = "farm"
-version = "0.1.0"
-source = { editable = "." }
-dependencies = [
-    { name = "a2a" },
-    { name = "click" },
-    { name = "dotenv" },
-    { name = "httpx" },
-    { name = "langchain-google-genai" },
-    { name = "langgraph" },
-    { name = "pydantic" },
-    { name = "python-dotenv" },
-]
-
-[package.optional-dependencies]
-dev = [
-    { name = "autogen-core" },
-    { name = "coloredlogs" },
-    { name = "langchain-openai" },
-    { name = "openai" },
-    { name = "pytest" },
-    { name = "pytest-asyncio" },
-    { name = "pytest-cov" },
-    { name = "tiktoken" },
-    { name = "typing-extensions" },
-]
-
-[package.metadata]
-requires-dist = [
-    { name = "a2a", git = "https://github.com/google/A2A?subdirectory=a2a-python-sdk" },
-    { name = "autogen-core", marker = "extra == 'dev'", specifier = ">=0.4.3,<0.5" },
-    { name = "click", specifier = ">=8.1.8" },
-    { name = "coloredlogs", marker = "extra == 'dev'", specifier = ">=15.0.1,<16" },
-    { name = "dotenv", specifier = ">=0.9.9" },
-    { name = "httpx", specifier = ">=0.28.1" },
-    { name = "langchain-google-genai", specifier = ">=2.1.4" },
-    { name = "langchain-openai", marker = "extra == 'dev'", specifier = ">=0.3.14,<0.4" },
-    { name = "langgraph", specifier = ">=0.4.1" },
-    { name = "openai", marker = "extra == 'dev'", specifier = ">=1.60.2,<2" },
-    { name = "pydantic", specifier = ">=2.11.4" },
-    { name = "pytest", marker = "extra == 'dev'", specifier = "~=7.0" },
-    { name = "pytest-asyncio", marker = "extra == 'dev'", specifier = ">=0.17.0,<0.18" },
-    { name = "pytest-cov", marker = "extra == 'dev'", specifier = ">=4.0.0,<5" },
-    { name = "python-dotenv", specifier = ">=1.1.0" },
-    { name = "tiktoken", marker = "extra == 'dev'", specifier = ">=0.8.0,<0.9" },
-    { name = "typing-extensions", marker = "extra == 'dev'", specifier = ">=4.12.2,<5" },
-]
-provides-extras = ["dev"]
 
 [[package]]
 name = "filetype"

@@ -2,6 +2,8 @@ from typing import Annotated, TypedDict
 from langgraph.graph import StateGraph, START, END
 from langgraph.graph.message import add_messages
 
+
+
 # Define the state structure
 class State(TypedDict):
     messages: Annotated[list, add_messages]
@@ -16,7 +18,8 @@ class FarmAgent:
 
     async def message_node(self, state: State):
         user_input = state['messages'][-1].content
-        response = user_input
+        print(f"Received user input: {user_input}")
+        response = "This is a response from the farm agent." # TODO Put farm response here
         return {"messages": [response]}
 
     async def ainvoke(self, inputs):
