@@ -22,10 +22,8 @@ from langgraph.constants import START, END
 from langgraph.graph import StateGraph
 from langgraph.prebuilt.chat_agent_executor import AgentState
 
-#from clients.a2a.client import a2a_client
 from graph.node import send_message_node
 from graph.router import exchange_node
-
 
 class ExchangeGraph:
   def __init__(self):
