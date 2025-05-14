@@ -1,0 +1,42 @@
+[project]
+name = "corto"
+version = "0.1.0"
+description = ""
+authors = [{ name = "Shridhar Shah", email = "shridhsh@cisco.com" }]
+requires-python = ">=3.12,<4.0"
+dependencies = [
+    "a2a",
+    "click>=8.1.8",
+    "dotenv>=0.9.9",
+    "httpx>=0.28.1",
+    "langchain-google-genai>=2.1.4",
+    "langgraph>=0.4.1",
+    "pydantic>=2.11.4",
+    "python-dotenv>=1.1.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest~=7.0",
+    "pytest-asyncio>=0.17.0,<0.18",
+    "pytest-cov>=4.0.0,<5",
+    "typing-extensions>=4.12.2,<5",
+    "tiktoken>=0.8.0,<0.9",
+    "openai>=1.60.2,<2",
+    "autogen-core>=0.4.3,<0.5",
+    "coloredlogs>=15.0.1,<16",
+    "langchain-openai>=0.3.14,<0.4",
+]
+
+[tool.poetry]
+package-mode = false
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["farm", "exchange"]
+
+[tool.uv.sources]
+a2a = { git = "https://github.com/google/A2A", subdirectory = "a2a-python-sdk" }
