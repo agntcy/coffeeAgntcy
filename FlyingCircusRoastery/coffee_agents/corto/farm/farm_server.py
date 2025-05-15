@@ -1,16 +1,11 @@
 import click
 
-from agent_executor import FarmAgentExecutor
-
 from a2a.server import A2AServer
 from a2a.server.request_handlers import DefaultA2ARequestHandler
-from a2a.types import (
-    AgentAuthentication,
-    AgentCapabilities,
-    AgentCard,
-    AgentSkill,
-)
+from a2a.types import (AgentAuthentication, AgentCapabilities, AgentCard,
+                       AgentSkill)
 
+from agent_executor import FarmAgentExecutor
 
 @click.command()
 @click.option('--host', 'host', default='localhost')
@@ -42,7 +37,6 @@ def main(host: str, port: int):
 
     server = A2AServer(agent_card=agent_card, request_handler=request_handler)
     server.start(host=host, port=port)
-
 
 if __name__ == '__main__':
     main()

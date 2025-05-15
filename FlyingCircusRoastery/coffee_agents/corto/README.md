@@ -17,5 +17,5 @@ uv run farm/farm_server.py
 **Step 2: Run the Exchange Server**
 To start the exchange server, set the PYTHONPATH environment variable and run the server:
 ```
-export PYTHONPATH=$(pwd)/exchange && uv run exchange/exchange/server/main.py
+export PYTHONPATH=$(pwd)/exchange && uv run exchange/main.py
 ```
