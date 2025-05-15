@@ -7,6 +7,7 @@ from a2a.types import (AgentAuthentication, AgentCapabilities, AgentCard,
 
 from agent_executor import FarmAgentExecutor
 
+
 @click.command()
 @click.option('--host', 'host', default='localhost')
 @click.option('--port', 'port', default=9999)

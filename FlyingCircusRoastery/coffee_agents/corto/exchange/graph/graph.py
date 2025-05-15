@@ -10,19 +10,12 @@ from langgraph.prebuilt.chat_agent_executor import AgentState
 
 class ExchangeGraph:
   def __init__(self):
-    """
-    Initialize the ExchangeGraph as a LangGraph.
-    """
+    """Initialize the ExchangeGraph as a LangGraph."""
     self.graph = self.build_graph()
 
   def build_graph(self):
-    """
-    Build a LangGraph instance of the Exchange graph.
+    """Build a LangGraph instance of the Exchange graph."""
 
-    Returns:
-      CompiledGraph: A compiled LangGraph instance.
-    """
-    # Create the exchange node
     graph = StateGraph(AgentState)
     graph.add_edge(START, "SendMessageNode")
     graph.add_node("SendMessageNode", send_message_node)
@@ -35,15 +28,7 @@ class ExchangeGraph:
     return self.graph
 
   async def serve(self, user_prompt: str):
-    """
-    Runs the LangGraph for exchange operations.
-
-    Args:
-      user_prompt str: user_prompt to serve.
-
-    Returns:
-      dict: Output data containing `agent_output`.
-    """
+    """Runs the LangGraph for exchange operations."""
     try:
       result = await self.graph.ainvoke({
         "messages": [

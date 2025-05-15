@@ -5,9 +5,12 @@ import httpx
 from a2a.client import A2AClient
 from a2a.types import SendMessageResponse
 
+
 AGENT_URL = 'http://localhost:9999'
 
+
 async def send_message(message: str) -> SendMessageResponse:
+  """ Sends a message to the agent server and returns the response. """
   payload: dict[str, Any] = {
     'message': {
       'role': 'user',

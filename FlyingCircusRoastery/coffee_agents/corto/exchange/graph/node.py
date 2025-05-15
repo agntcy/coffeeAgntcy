@@ -14,8 +14,7 @@ def print_json_response(response: Any, description: str) -> None:
     print(f'{response.model_dump(mode="json", exclude_none=True)}\n')
 
 async def send_message_node(state: AgentState) -> Dict[str, Any]:
-
-
+  """Graph node that sends a message to the A2A client and returns the response."""
   resp = await send_message(state["messages"][0].content)
   print_json_response(resp, 'Received A2A Response')
 
