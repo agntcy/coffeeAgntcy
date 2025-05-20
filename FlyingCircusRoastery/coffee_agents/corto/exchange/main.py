@@ -5,9 +5,11 @@ from graph.graph import ExchangeGraph
 
 async def main():
   exchange_graph = ExchangeGraph()
+  location = input("Enter a location: ")
+  season = input("Enter a season: ")
   input_payload = {
-    "location": "Antigua, Guatemala",
-    "season": "harvest"
+    "location": location,
+    "season": season
   }
   result = await exchange_graph.serve(input_payload)
   print(result)
