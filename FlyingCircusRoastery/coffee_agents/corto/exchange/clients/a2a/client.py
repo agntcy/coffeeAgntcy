@@ -2,26 +2,48 @@ from typing import Any
 from uuid import uuid4
 
 import httpx
+
 from a2a.client import A2AClient
-from a2a.types import SendMessageResponse
+from a2a.types import SendMessageRequest, MessageSendParams, Message, Part, TextPart, Role
+from config.config import FARM_AGENT_HOST, FARM_AGENT_PORT
 
 
-AGENT_URL = 'http://localhost:9999'
+AGENT_URL = f"http://{FARM_AGENT_HOST}:{FARM_AGENT_PORT}"
 
-
-async def send_message(message: str) -> SendMessageResponse:
+async def send_message(input_payload: dict):
   """ Sends a message to the agent server and returns the response. """
-  payload: dict[str, Any] = {
-    'message': {
-      'role': 'user',
-      'parts': [{'type': 'text', 'text': message}],
-      'messageId': uuid4().hex,
-    },
-  }
+  print(f"Sending message to {AGENT_URL} with payload: {input_payload}")
 
   client = await A2AClient.get_client_from_agent_card_url(
     httpx.AsyncClient(), AGENT_URL
   )
 
-  return await client.send_message(payload=payload)
+  request = SendMessageRequest(
+      params=MessageSendParams(
+          skill_id="estimate_flavor",
+          sender_id="coffee-exchange-agent",
+          receiver_id="flavor-profile-farm-agent",
+          message=Message(
+            messageId=str(uuid4()),
+            role=Role.user,
+            parts=[Part(TextPart(text="Estimate coffee flavor"))],
+            metadata = input_payload
+        )
+      )
+  )
 
+    
+  response = await client.send_message(request.params)
+  if response.root.result:
+    if not response.root.result.parts:
+      raise ValueError("No response parts found in the message.")
+    part = response.root.result.parts[0].root
+    if hasattr(part, "text"):
+      return part.text
+  elif response.root.error:
+    raise Exception(f"A2A error: {response.error.message}")
+
+
+  raise Exception("Unknown response type")
+  
+  

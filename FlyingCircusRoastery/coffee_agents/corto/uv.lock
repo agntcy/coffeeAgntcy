@@ -191,6 +191,7 @@ dependencies = [
     { name = "httpx" },
     { name = "langchain-google-genai" },
     { name = "langgraph" },
+    { name = "openai" },
     { name = "pydantic" },
     { name = "python-dotenv" },
 ]
@@ -219,6 +220,7 @@ requires-dist = [
     { name = "langchain-google-genai", specifier = ">=2.1.4" },
     { name = "langchain-openai", marker = "extra == 'dev'", specifier = ">=0.3.14,<0.4" },
     { name = "langgraph", specifier = ">=0.4.1" },
+    { name = "openai", specifier = ">=1.78.1" },
     { name = "openai", marker = "extra == 'dev'", specifier = ">=1.60.2,<2" },
     { name = "pydantic", specifier = ">=2.11.4" },
     { name = "pytest", marker = "extra == 'dev'", specifier = "~=7.0" },
