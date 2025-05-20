@@ -1,15 +1,16 @@
 import os
-from typing import Annotated, TypedDict
+from typing import TypedDict
 
-from dotenv import load_dotenv
 from langgraph.graph import END, START, StateGraph
-from langgraph.graph.message import add_messages
 from openai import OpenAI, AzureOpenAI
 
+
 class State(TypedDict):
-    season: str
-    location: str
+    prompt: str
+    error_type: str
+    error_message: str
     flavor_notes: str
+
 
 class FarmAgent:
     def __init__(self):
@@ -20,62 +21,67 @@ class FarmAgent:
         self._agent = graph_builder.compile()
 
     async def flavor_node(self, state: State):
-        season = state.get("season")
-        location = state.get("location")
+        user_prompt = state.get("prompt")
 
-        if not season or not location:
-            return {"error": "Missing 'season' or 'location' in input."}
-
-        user_prompt = (
-            f"The coffee farm is located in {location}, and the current season is {season.capitalize()}. "
-            "Based on this information, what flavor profile can we expect from the coffee beans harvested here?\n\n"
-            "Please describe expected flavor notes using coffee-tasting terminology (e.g. acidity, body, aroma, finish), "
-            "and be concise but expressive (1–3 sentences max)."
+        system_prompt = (
+            "You are a coffee farming expert and flavor profile connoisseur.\n"
+            "The user will describe a question or scenario related to a coffee farm. "
+            "Your job is to:\n"
+            "1. Extract the `location` and `season` from the input if possible.\n"
+            "2. Based on those, describe the expected **flavor profile** of the coffee grown there.\n"
+            "3. Respond with only a brief, expressive flavor profile (1–3 sentences). "
+            "Use tasting terminology like acidity, body, aroma, and finish.\n"
+            "If no meaningful location or season is found, respond with an empty string."
         )
 
-        system_prompt = "You are a coffee farm expert and flavor profile connoisseur."
+        response = execute_openai_prompt(system_prompt, user_prompt)
 
-        try:
-            client = get_openai_client()
-            if isinstance(client, AzureOpenAI):
-                deployment_name = os.getenv("AZURE_OPENAI_DEPLOYMENT_NAME")
-                response = client.chat.completions.create(
-                    model=deployment_name,
-                    messages=[
-                        {"role": "system", "content": system_prompt},
-                        {"role": "user", "content": user_prompt}
-                    ]
-                )
-            else:
-                model = os.getenv("OPENAI_MODEL", "gpt-4o")
-                response = client.chat.completions.create(
-                    model=model,
-                    messages=[
-                        {"role": "system", "content": system_prompt},
-                        {"role": "user", "content": user_prompt}
-                    ]
-                )
-            result = response.choices[0].message.content.strip()
-        except Exception as e:
-            result = f"LLM error: {e}"
+        flavor_notes = response.choices[0].message.content.strip()
+        if flavor_notes == "":
+            return {
+                "error_type": "invalid_input",
+                "error_message": "Could not confidently extract coffee farm context from user prompt."
+            }
 
-        return {"flavor_notes": result}
+        return {"flavor_notes": flavor_notes}
 
-    async def ainvoke(self, inputs: dict) -> dict:
-        return await self._agent.ainvoke(inputs)
-    
-def get_openai_client():
+    async def ainvoke(self, input: str) -> dict:
+        return await self._agent.ainvoke({"prompt": input})
+
+
+def execute_openai_prompt(system_prompt: str, user_prompt: str):
     if os.getenv("AZURE_OPENAI_API_KEY") and os.getenv("AZURE_OPENAI_ENDPOINT"):
-        print("[INFO] Using Azure OpenAI")
-        return AzureOpenAI(
+        client = AzureOpenAI(
             api_key=os.getenv("AZURE_OPENAI_API_KEY"),
             api_version=os.getenv("AZURE_OPENAI_API_VERSION"),
             azure_endpoint=os.getenv("AZURE_OPENAI_ENDPOINT")
         )
+        deployment_name = os.getenv("AZURE_OPENAI_DEPLOYMENT_NAME")
+        try:
+            return client.chat.completions.create(
+                model=deployment_name,
+                messages=[
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": user_prompt}
+                ]
+            )
+        except Exception as e:
+            print(f"Error encountered while calling Azure OpenAI: {e}")
+            return ""
+
     elif os.getenv("OPENAI_API_KEY"):
-        print("[INFO] Using OpenAI")
-        return OpenAI(
-            api_key=os.getenv("OPENAI_API_KEY")
-        )
+        client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+        model = os.getenv("OPENAI_MODEL", "gpt-4o")
+        try:
+            return client.chat.completions.create(
+                model=model,
+                messages=[
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": user_prompt}
+                ]
+            )
+        except Exception as e:
+            print(f"Error encountered while calling OpenAI: {e}")
+            return ""
     else:
         raise EnvironmentError("No valid OpenAI or Azure OpenAI credentials found in environment.")

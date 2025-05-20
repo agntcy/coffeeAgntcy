@@ -11,31 +11,16 @@ from config.config import FARM_AGENT_HOST, FARM_AGENT_PORT
 def main(host: str, port: int):
     """Run the A2A server with the Farm Agent."""
     skill = AgentSkill(
-        id='estimate_flavor',
-        name='Estimate Flavor Profile',
-        description='Estimates the flavor profile of coffee beans based on growing season and farm location.',
-        tags=['coffee', 'flavor', 'profile', 'season', 'location'],
+        id="estimate_flavor",
+        name="Estimate Flavor Profile",
+        description="Analyzes a natural language prompt and returns the expected flavor profile for a coffee-growing region and season.",
+        tags=["coffee", "flavor", "farm", "profile", "nlp"],
         examples=[
-            '{"season": "harvest", "location": "Antigua, Guatemala"}',
-            '{"season": "wet", "location": "Tarrazú, Costa Rica"}',
-            '{"season": "summer", "location": "Yirgacheffe, Ethiopia"}',
-        ],
-        inputSchema={
-            "type": "object",
-            "properties": {
-                "season": {
-                    "type": "string",
-                    "description": "Current growing season (e.g. 'harvest', 'dry', 'wet', 'summer', etc.)"
-                },
-                "location": {
-                    "type": "string",
-                    "description": "Name of the coffee-growing region (e.g. 'Yirgacheffe', 'Huila', 'Tarrazú')"
-                }
-            },
-            "required": ["season", "location"]
-        },
-    )
-
+            "What flavors can I expect from coffee in Huila during harvest?",
+            "Describe the taste of beans grown in Sidamo in the dry season",
+            "How does Yirgacheffe coffee taste in wet season?"
+        ]
+    )   
 
     agent_card = AgentCard(
         name='Coffee Farm Flavor Agent',
@@ -43,7 +28,7 @@ def main(host: str, port: int):
         description='An AI agent that estimates the flavor profile of coffee beans using growing conditions like season and altitude.',
         url=f'http://{host}:{port}/',
         version='1.0.0',
-        defaultInputModes=["application/json"],
+        defaultInputModes=["text/plain"],
         defaultOutputModes=["text/plain"],
         capabilities=AgentCapabilities(),
         skills=[skill],

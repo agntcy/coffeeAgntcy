@@ -1,7 +1,7 @@
 from typing import Any
 from uuid import uuid4
 
-import httpx
+from httpx import AsyncClient, Timeout
 
 from a2a.client import A2AClient
 from a2a.types import SendMessageRequest, MessageSendParams, Message, Part, TextPart, Role
@@ -15,7 +15,7 @@ async def send_message(input_payload: dict):
   print(f"Sending message to {AGENT_URL} with payload: {input_payload}")
 
   client = await A2AClient.get_client_from_agent_card_url(
-    httpx.AsyncClient(), AGENT_URL
+    AsyncClient(timeout=Timeout(15.0)), AGENT_URL
   )
 
   request = SendMessageRequest(
@@ -26,8 +26,7 @@ async def send_message(input_payload: dict):
           message=Message(
             messageId=str(uuid4()),
             role=Role.user,
-            parts=[Part(TextPart(text="Estimate coffee flavor"))],
-            metadata = input_payload
+            parts=[Part(TextPart(text=input_payload["prompt"]))],
         )
       )
   )
