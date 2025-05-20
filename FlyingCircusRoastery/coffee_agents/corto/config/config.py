@@ -4,6 +4,8 @@ from dotenv import load_dotenv
 load_dotenv()  # Automatically loads from `.env` or `.env.local`
 
 # --- Corto ---
+DEFAULT_MESSAGE_TRANSPORT = os.getenv("DEFAULT_MESSAGE_TRANSPORT", "AGP")
+AGP_GATEWAY_URL = os.getenv("AGP_GATEWAY_URL", "http://localhost:46357")
 FARM_AGENT_HOST = os.getenv("FARM_AGENT_HOST", "localhost")
 FARM_AGENT_PORT = int(os.getenv("FARM_AGENT_PORT", "9999"))
 

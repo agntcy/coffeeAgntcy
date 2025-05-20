@@ -1,0 +1,19 @@
+x-default-logging: &logging
+  driver: "json-file"
+  options:
+    max-size: "5m"
+    max-file: "2"
+
+services:
+
+  agp:
+    image: ghcr.io/agntcy/agp/gw:0.3.14
+    container_name: agp-gateway
+    ports:
+      - "46357:46357"
+    environment:
+      - PASSWORD=${AGP_GATEWAY_PASSWORD:-dummy_password}
+      - CONFIG_PATH=/config.yaml
+    volumes:
+      - ./config/docker/agp/server-config.yaml:/config.yaml
+    command: ["/gateway", "--config", "/config.yaml"]

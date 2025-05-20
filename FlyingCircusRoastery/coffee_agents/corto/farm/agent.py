@@ -1,5 +1,5 @@
 import os
-from typing import Annotated, TypedDict
+from typing import TypedDict
 
 from dotenv import load_dotenv
 from langgraph.graph import END, START, StateGraph
