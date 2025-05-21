@@ -1,0 +1,6 @@
+[theme]
+backgroundColor = "#FFFFFF"
+primaryColor = "#005073"  # Cisco blue
+secondaryBackgroundColor = "#E5F3F9"  # Light blue for sidebar
+textColor = "#111111"  # Dark gray for text
+#font = "sans serif"

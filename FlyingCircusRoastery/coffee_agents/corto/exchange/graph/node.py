@@ -20,6 +20,6 @@ async def send_message_node(state: AgentState) -> Dict[str, Any]:
 
   return {
     "messages": [
-      AIMessage(content="Successfully processed the coffee farm request.")
+      AIMessage(content="Sure, here are the coffee farms and the required information.")
     ]
   }

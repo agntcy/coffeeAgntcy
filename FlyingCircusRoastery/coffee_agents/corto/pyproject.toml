@@ -13,6 +13,8 @@ dependencies = [
     "langgraph>=0.4.1",
     "pydantic>=2.11.4",
     "python-dotenv>=1.1.0",
+    "streamlit>=1.45.1",
+    "streamlit-flow-component==1.6.1",
 ]
 
 [project.optional-dependencies]

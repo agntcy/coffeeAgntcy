@@ -29,5 +29,5 @@ Then, run the following command to start the Streamlit app:
 ```
 To start the Streamlit interface for the exchange server, navigate to the `exchange` directory and run the following command:
 ```sh
-streamlit run exchange/ui/exchange_streamlit.py
+uv run streamlit run exchange/ui/exchange_streamlit.py
 ```
