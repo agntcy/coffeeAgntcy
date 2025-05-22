@@ -1,8 +1,11 @@
 import os
 from typing import TypedDict
 
+from cisco_outshift_agent_utils.llm_factory import LLMFactory
 from langgraph.graph import END, START, StateGraph
-from openai import OpenAI, AzureOpenAI
+from langchain_core.messages import HumanMessage, SystemMessage
+
+from config.config import LLM_PROVIDER
 
 
 class State(TypedDict):
@@ -34,9 +37,13 @@ class FarmAgent:
             "If no meaningful location or season is found, respond with an empty string."
         )
 
-        response = execute_openai_prompt(system_prompt, user_prompt)
-
-        flavor_notes = response.choices[0].message.content.strip()
+        llm = LLMFactory(provider=LLM_PROVIDER).get_llm()
+        messages = [
+            SystemMessage(content=system_prompt),
+            HumanMessage(content=user_prompt)
+        ]
+        response = llm.invoke(messages)
+        flavor_notes = response.content
         if flavor_notes == "":
             return {
                 "error_type": "invalid_input",
@@ -47,41 +54,3 @@ class FarmAgent:
 
     async def ainvoke(self, input: str) -> dict:
         return await self._agent.ainvoke({"prompt": input})
-
-
-def execute_openai_prompt(system_prompt: str, user_prompt: str):
-    if os.getenv("AZURE_OPENAI_API_KEY") and os.getenv("AZURE_OPENAI_ENDPOINT"):
-        client = AzureOpenAI(
-            api_key=os.getenv("AZURE_OPENAI_API_KEY"),
-            api_version=os.getenv("AZURE_OPENAI_API_VERSION"),
-            azure_endpoint=os.getenv("AZURE_OPENAI_ENDPOINT")
-        )
-        deployment_name = os.getenv("AZURE_OPENAI_DEPLOYMENT_NAME")
-        try:
-            return client.chat.completions.create(
-                model=deployment_name,
-                messages=[
-                    {"role": "system", "content": system_prompt},
-                    {"role": "user", "content": user_prompt}
-                ]
-            )
-        except Exception as e:
-            print(f"Error encountered while calling Azure OpenAI: {e}")
-            return ""
-
-    elif os.getenv("OPENAI_API_KEY"):
-        client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
-        model = os.getenv("OPENAI_MODEL", "gpt-4o")
-        try:
-            return client.chat.completions.create(
-                model=model,
-                messages=[
-                    {"role": "system", "content": system_prompt},
-                    {"role": "user", "content": user_prompt}
-                ]
-            )
-        except Exception as e:
-            print(f"Error encountered while calling OpenAI: {e}")
-            return ""
-    else:
-        raise EnvironmentError("No valid OpenAI or Azure OpenAI credentials found in environment.")

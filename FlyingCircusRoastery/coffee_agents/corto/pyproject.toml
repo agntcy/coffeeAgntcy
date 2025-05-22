@@ -6,12 +6,15 @@ authors = [{ name = "Shridhar Shah", email = "shridhsh@cisco.com" }]
 requires-python = ">=3.12,<4.0"
 dependencies = [
     "a2a",
+    "cisco-outshift-agent-utils>=0.0.2",
     "click>=8.1.8",
+    "coloredlogs>=15.0.1",
     "dotenv>=0.9.9",
     "httpx>=0.28.1",
+    "langchain-anthropic>=0.3.13",
     "langchain-google-genai>=2.1.4",
+    "langchain-openai>=0.3.16",
     "langgraph>=0.4.1",
-    "openai>=1.78.1",
     "pydantic>=2.11.4",
     "python-dotenv>=1.1.0",
 ]

@@ -48,7 +48,7 @@ brew install uv
 
     ```env
     AZURE_OPENAI_ENDPOINT=https://your-azure-resource.openai.azure.com/
-    AZURE_OPENAI_DEPLOYMENT_NAME=gpt-4-prod
+    AZURE_OPENAI_DEPLOYMENT=gpt-4-prod
     AZURE_OPENAI_API_KEY=your_azure_api_key
     AZURE_OPENAI_API_VERSION=2023-12-01-preview
     ```
