@@ -4,6 +4,7 @@ import Chat from './components/Chat/Chat';
 import './App.css';
 import { v4 as uuid } from 'uuid';
 import { LOCAL_STORAGE_KEY } from './components/Chat/Messages';
+import headerImage from './assets/header.png'; // Import the image
 
 const App = () => {
     const [messages, setMessages] = useState(() => {
@@ -29,7 +30,9 @@ const App = () => {
                 />
             </div>
             <div className="main-area">
-                <header>Buyers Exchange</header>
+                <header>
+                    <img src={headerImage} alt="Header" />
+                </header>
                 <div className="main-panel">
                     <Graph buttonClicked={buttonClicked} setButtonClicked={setButtonClicked} />
                 </div>

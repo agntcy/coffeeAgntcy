@@ -34,7 +34,7 @@ body {
 }
 
 :root {
-  --header-height: 3.75em;         /* 60px */
+  --header-height: 11vh;         /* 60px */
   --footer-height: 3.75em;         /* 60px */
   --sidebar-width: 21.875em;       /* 350px */
   --border-color: #ccc;
@@ -81,6 +81,10 @@ header {
   overflow: hidden;                 /* prevent overflow if needed */
 }
 
+header img {
+  width: 30%;
+  height: auto;
+}
 
 /* Main content area */
 .main-panel {

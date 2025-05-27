@@ -10,7 +10,7 @@ import {
 import '@xyflow/react/dist/style.css';
 
 const DELAY_DURATION = 1000; // Duration for each animation step in milliseconds
-
+const proOptions = { hideAttribution: true };
 // Constants for node and edge IDs
 const NODE_IDS = {
     BUYER: '1',
@@ -62,6 +62,10 @@ const initialEdges = [
         target: NODE_IDS.SOMMELIER,
         label: 'A2A : SLIM',
         style: { stroke: '#0A60FF', fontFamily: "'CiscoSansTT'", strokeWidth: 2 },
+        markerStart: {
+            type: MarkerType.ArrowClosed,
+            color: '#0A60FF',
+        },
         markerEnd: {
             type: MarkerType.ArrowClosed,
             color: '#0A60FF',
@@ -107,6 +111,7 @@ const Graph = ({ buttonClicked, setButtonClicked }) => {
                         ? {
                             ...edge,
                             style: { ...edge.style, stroke: '#00FF00' },
+                            markerStart: { type: MarkerType.ArrowClosed, color: '#00FF00' },
                             markerEnd: { type: MarkerType.ArrowClosed, color: '#00FF00' },
                         }
                         : edge
@@ -152,6 +157,7 @@ const Graph = ({ buttonClicked, setButtonClicked }) => {
                     nodes={nodes}
                     edges={edges}
                     fitView
+                    proOptions={proOptions}
                 >
                     <Controls />
                 </ReactFlow>

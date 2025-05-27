@@ -28,9 +28,21 @@ services:
       - ./config/docker/agp/server-config.yaml:/config.yaml
     command: ["/gateway", "--config", "/config.yaml"]
 
-  # Client for Farm server
-  farm-client:
-    image: <client_image_name>
-    container_name: farm-client
+  # Exchange server App (farm client)
+  exchange-server:
+    image: ghcr.io/cisco-outshift-ai-agents/exchange-server:latest
+    container_name: exchange-server
     depends_on:
       - farm-server
+    ports:
+      - "8000:8000"
+
+  # UI App
+  ui:
+    image: ghcr.io/cisco-outshift-ai-agents/ui:latest
+    container_name: ui
+    # TODO: can run independently for testing purposes
+#    depends_on:
+#      - exchange-server
+    ports:
+      - "3000:3000"

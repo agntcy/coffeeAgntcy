@@ -1,0 +1,67 @@
+name: Build and Push UI Image
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+
+    permissions:
+      packages: write
+      contents: read
+
+    steps:
+      - name: Pre-cleanup Docker images
+        run: docker system prune -af
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      # Log for PR event
+      - name: Log Pull Request Event
+        if: github.event_name == 'pull_request'
+        run: echo "Pull request detected. Building Docker image without pushing."
+
+      # Log for push event
+      - name: Log Push Event
+        if: github.event_name == 'push'
+        run: echo "Push to main detected. Building and pushing Docker image."
+
+      # Login only on push
+      - name: Log in to GitHub Container Registry
+        if: github.event_name == 'push'
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # Build (no push) for PRs
+      - name: Build UI image (PR)
+        if: github.event_name == 'pull_request'
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: coffeeAGNTCY/coffee_agents/corto/docker/Dockerfile.ui
+          push: false
+          tags: ghcr.io/${{ github.repository_owner }}/ui:pr-${{ github.event.pull_request.number }}
+
+      # Build and push for main commits
+      - name: Build and push UI image (main)
+        if: github.event_name == 'push'
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: coffeeAGNTCY/coffee_agents/corto/docker/Dockerfile.ui
+          push: true
+          tags: ghcr.io/${{ github.repository_owner }}/ui:latest
