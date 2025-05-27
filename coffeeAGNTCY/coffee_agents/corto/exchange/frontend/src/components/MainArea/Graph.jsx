@@ -9,6 +9,8 @@ import {
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 
+const DELAY_DURATION = 1000; // Duration for each animation step in milliseconds
+
 // Constants for node and edge IDs
 const NODE_IDS = {
     BUYER: '1',
@@ -92,11 +94,11 @@ const Graph = ({ buttonClicked, setButtonClicked }) => {
                         : node
                 )
             );
-            await delay(300);
+            await delay(DELAY_DURATION);
 
             // Reset to initial nodes
             setNodes(initialNodes);
-            await delay(300);
+            await delay(DELAY_DURATION);
 
             // Change edge to green
             setEdges((eds) =>
@@ -110,11 +112,11 @@ const Graph = ({ buttonClicked, setButtonClicked }) => {
                         : edge
                 )
             );
-            await delay(300);
+            await delay(DELAY_DURATION);
 
             // Reset to initial edges
             setEdges(initialEdges);
-            await delay(300);
+            await delay(DELAY_DURATION);
 
             // Change second node to green
             setNodes((nds) =>
@@ -131,7 +133,7 @@ const Graph = ({ buttonClicked, setButtonClicked }) => {
                         : node
                 )
             );
-            await delay(300);
+            await delay(DELAY_DURATION);
 
             // Reset to initial nodes
             setNodes(initialNodes);

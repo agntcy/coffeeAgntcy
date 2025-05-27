@@ -98,7 +98,7 @@
 }
 
 .chat_logo_container {
-  flex: 0 0 5%; /* don't grow or shrink, take 10% of sidebar height */
+  flex: 0 0 10%; /* don't grow or shrink, take 10% of sidebar height */
   align-items: center;
   justify-content: center;
   border-bottom: 1px solid #ddd;

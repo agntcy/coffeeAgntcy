@@ -1,0 +1,15 @@
+# `coffeeAGNTCY/coffee_agents/corto/docker/Dockerfile.frontend`
+FROM node:20-alpine
+
+WORKDIR /app
+
+# Install dependencies
+COPY coffeeAGNTCY/coffee_agents/corto/exchange/frontend/package.json coffeeAGNTCY/coffee_agents/corto/exchange/frontend/package-lock.json ./
+RUN npm install
+
+# Copy application files
+COPY coffeeAGNTCY/coffee_agents/corto/exchange/frontend/ .
+
+# Build and serve the frontend
+RUN npm run build
+CMD ["npx", "serve", "-s", "build", "-l", "3000"]

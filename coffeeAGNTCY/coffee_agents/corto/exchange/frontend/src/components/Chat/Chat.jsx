@@ -2,9 +2,8 @@ import React, { useState, useEffect } from 'react';
 import './Chat.css';
 import MessageInput from './MessageInput';
 import Messages, { LOCAL_STORAGE_KEY } from './Messages';
-import { v4 as uuid } from 'uuid';
 
-import logoSrc from '../../assets/agntcy_coffee.png'; 
+import logoSrc from '../../assets/coffee_agntcy.png';
 
 const ChatLogo = () => {
   return (

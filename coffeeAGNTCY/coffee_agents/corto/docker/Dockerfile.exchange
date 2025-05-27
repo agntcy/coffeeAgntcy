@@ -1,0 +1,20 @@
+# `coffeeAGNTCY/coffee_agents/corto/docker/Dockerfile.exchange`
+FROM python:3.12-slim
+
+# Install system dependencies
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends git && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+
+# Install uv and create virtual environment
+RUN pip install --no-cache-dir uv && \
+    uv venv -q /venv
+ENV PATH="/venv/bin:$PATH"
+
+WORKDIR /app
+COPY coffeeAGNTCY/coffee_agents/corto/pyproject.toml coffeeAGNTCY/coffee_agents/corto/uv.lock ./
+RUN uv sync --locked --no-editable
+
+COPY coffeeAGNTCY/coffee_agents/corto/ .
+CMD ["uv", "run", "python", "exchange/main.py"]
