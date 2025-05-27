@@ -1,0 +1,36 @@
+version: '1.0'
+
+# (todo-all) fix the agents env and and add UI
+x-default-logging: &logging
+  driver: "json-file"
+  options:
+    max-size: "5m"
+    max-file: "2"
+
+services:
+  # Farm server App
+  farm-server:
+    image: ghcr.io/cisco-outshift-ai-agents/farm-server:latest
+    container_name: farm-server
+    ports:
+      - "9999:9999"
+
+  # AGP Gateway App(todo fix config path)
+  agp-gateway:
+    image: ghcr.io/agntcy/agp/gw:0.3.14
+    container_name: agp-gateway
+    ports:
+      - "46357:46357"
+    environment:
+      - PASSWORD=${AGP_GATEWAY_PASSWORD:-dummy_password}
+      - CONFIG_PATH=/config.yaml
+    volumes:
+      - ./config/docker/agp/server-config.yaml:/config.yaml
+    command: ["/gateway", "--config", "/config.yaml"]
+
+  # Client for Farm server
+  farm-client:
+    image: <client_image_name>
+    container_name: farm-client
+    depends_on:
+      - farm-server

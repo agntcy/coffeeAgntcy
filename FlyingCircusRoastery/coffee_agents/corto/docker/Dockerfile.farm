@@ -1,0 +1,19 @@
+FROM python:3.12-slim
+
+# Install system dependencies
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends git && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+
+# Install uv and create virtual environment
+RUN pip install --no-cache-dir uv && \
+    uv venv -q /venv
+ENV PATH="/venv/bin:$PATH"
+
+WORKDIR /app
+COPY pyproject.toml uv.lock ./
+RUN uv sync --locked --no-editable
+
+COPY . .
+CMD ["uv", "run", "python", "farm/farm_server.py"]
