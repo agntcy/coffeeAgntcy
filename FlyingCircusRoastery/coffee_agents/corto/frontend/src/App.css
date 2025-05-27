@@ -1,0 +1,96 @@
+/* Cisco Sans TT Thin (100) */
+@font-face {
+  font-family: 'CiscoSansTT';
+  src: url('https://brand-assets.security.cisco.com/fonts/CiscoSansTTThin.woff2') format('woff2');
+  font-weight: 100;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* Cisco Sans TT Regular (400) */
+@font-face {
+  font-family: 'CiscoSansTT';
+  src: url('https://brand-assets.security.cisco.com/fonts/CiscoSansTTRegular.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* Cisco Sans TT Bold (700) */
+@font-face {
+  font-family: 'CiscoSansTT';
+  src: url('https://brand-assets.security.cisco.com/fonts/CiscoSansTTBold.woff2') format('woff2');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* Apply CiscoSansTT font globally */
+body {
+  font-family: 'CiscoSansTT';
+  margin: 0;
+  padding: 0;
+  font-weight: 100;
+}
+
+:root {
+  --header-height: 3.75em;         /* 60px */
+  --footer-height: 3.75em;         /* 60px */
+  --sidebar-width: 21.875em;       /* 350px */
+  --border-color: #ccc;
+  --background-light: #f7f7f7;
+}
+
+/* Root layout */
+.app-container {
+  display: flex;
+  height: 100vh;
+}
+
+/* Sidebar styling */
+.sidebar {
+  width: var(--sidebar-width);
+  border-right: 1px solid var(--border-color);
+  padding: 0.75em;                /* 12px */
+  overflow-y: auto;
+  background-color: #fff;
+}
+
+/* Main area container */
+.main-area {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* Header */
+.header {
+  height: var(--header-height);     /* fixed container height */
+  line-height: var(--header-height); /* vertically centers text */
+  background: #fff;
+  border-bottom: 1px solid var(--border-color);
+  display: flex;
+  justify-content: center;           /* center horizontally */
+  align-items: center;               /* center vertically */
+  padding: 0 1em;                   /* horizontal padding only */
+  font-size: 1.5em;                 /* larger font size */
+  font-weight: 100;
+  font-family: 'CiscoSansTT', Arial, sans-serif;
+  color: #4d4c4c;
+  overflow: hidden;                 /* prevent overflow if needed */
+}
+
+
+/* Main content area */
+.main-panel {
+  flex: 1;
+  margin: 1.5em;                  /* 24px */
+  background-color: var(--background-light);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  overflow: auto;
+  border-radius: 0.5em;           /* 8px */
+  box-shadow: 0 0.125em 0.5em rgba(0, 0, 0, 0.05); /* 2px 8px */
+}

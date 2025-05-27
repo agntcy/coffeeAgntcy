@@ -188,3 +188,5 @@ repo_copy/
 temp/
 
 .DS_Store
+
+node_modules/

@@ -1,0 +1,113 @@
+.chat_container {
+    flex-grow: 1;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+.chat_logo_container {
+    flex-grow: 1;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.chat_messages_container {
+    width:100%;
+    flex-grow: 1;
+    max-height: 90%;
+    overflow-y: auto;
+}
+
+.message_input_container {
+    width: 100%;
+    height: 100px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+}
+
+.chat_selected_container {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+.message_input {
+    width: 650px;
+    border: 1px solid rgb(217,217,227);
+    border-radius: 8px;
+    height: 40px;
+    outline: none;
+    box-shadow: 0px 2px 5px 0px rgba(0, 0, 0, 0.3);
+    font-size: 14px;
+    padding: 0 10px;
+    position: relative;
+    transition: 0.4s;
+    font-family: inherit;
+}
+    
+
+.message_input:focus {
+    border: 1px solid rgb(217,217,227);
+    box-shadow: 0px 10px 15px 0px rgba(0, 0, 0, 0.3);
+}
+
+.message_icon_container {
+    position: absolute;
+    right: 17.5px;         /* Adjust as needed based on padding inside input */
+    top: 52.5%;            /* Move to the vertical center */
+    transform: translateY(-50%); /* Center it vertically */
+    transition: 0.4s;
+    cursor: pointer;     /* Optional: show pointer on hover */
+}
+
+.message_icon_container:hover {
+    opacity: 0.5;
+}
+
+.message_container {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    padding: 30px 0
+}
+
+.message {
+    width: 640px;
+    display: flex;
+}
+
+.message_avatar_container {
+    width: 35px;
+    height: 35px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.message_text {
+    width: 80%;
+    padding: 0;
+    margin: 8px 0;
+    margin-left: 20px;
+    overflow-wrap: break-word;
+}
+
+.chat_logo_container {
+  flex: 0 0 5%; /* don't grow or shrink, take 10% of sidebar height */
+  align-items: center;
+  justify-content: center;
+  border-bottom: 1px solid #ddd;
+  padding: 0px;
+    background-color: #ffffff;
+}
+
+.chat_logo_img {
+  max-height: 60%;
+  max-width: 80%;
+  object-fit: contain;
+}
