@@ -4,7 +4,7 @@ import { v4 as uuid } from 'uuid';
 import axios from 'axios';
 import './Chat.css';
 
-function MessageInput({ messages, setMessages }) {
+function MessageInput({ messages, setMessages, setButtonClicked }) {
   const [content, setContent] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -22,19 +22,29 @@ function MessageInput({ messages, setMessages }) {
     setMessages(updatedMessages);
     setContent('');
     setLoading(true);
+    setButtonClicked(true); // Update buttonClicked state
 
     try {
-      const res = await axios.post('http://localhost:8000/chat', {
-        messages: updatedMessages,
+      const resp = await axios.post('http://localhost:8000/agent/prompt', {
+        prompt: content,
       });
+
+      const res = {
+        data: {
+          messages: [
+            ...updatedMessages,
+            { role: 'assistant', content: resp.data.response },
+          ],
+        },
+      };
 
       const aiReply = {
         role: 'assistant',
         content: res.data?.messages?.at(-1)?.content || "No content received.",
         id: uuid(),
         animate: true,
-     };
-    
+      };
+
       setMessages([...updatedMessages, aiReply]);
     } catch (error) {
       const errorReply = {
@@ -62,19 +72,19 @@ function MessageInput({ messages, setMessages }) {
   };
 
   return (
-    <div className='message_input_container'>
-      <input
-        className='message_input'
-        placeholder='Enter your prompt...'
-        value={content}
-        onChange={(e) => setContent(e.target.value)}
-        onKeyDown={handleKeyPressed}
-        disabled={loading}
-      />
-      <div className='message_icon_container' onClick={handleSendMessage}>
-        <IoSendSharp color='#00BCEB' />
+      <div className='message_input_container'>
+        <input
+            className='message_input'
+            placeholder='Enter your prompt...'
+            value={content}
+            onChange={(e) => setContent(e.target.value)}
+            onKeyDown={handleKeyPressed}
+            disabled={loading}
+        />
+        <div className='message_icon_container' onClick={handleSendMessage}>
+          <IoSendSharp color='#00BCEB' />
+        </div>
       </div>
-    </div>
   );
 }
 

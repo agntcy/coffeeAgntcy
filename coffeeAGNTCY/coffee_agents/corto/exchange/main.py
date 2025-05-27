@@ -1,16 +1,36 @@
-import asyncio
-
+from fastapi import FastAPI, HTTPException
+from pydantic import BaseModel
 from graph.graph import ExchangeGraph
+from fastapi.middleware.cors import CORSMiddleware
 
 
-async def main():
-  exchange_graph = ExchangeGraph()
-  prompt = input("Enter a prompt: ")
-  input_payload = {
-    "prompt": prompt,
-  }
-  result = await exchange_graph.serve(input_payload)
-  print(result)
+app = FastAPI()
+# Add CORS middleware
+app.add_middleware(
+  CORSMiddleware,
+  allow_origins=["*"],  # Replace "*" with specific origins if needed
+  allow_credentials=True,
+  allow_methods=["*"],  # Allow all HTTP methods
+  allow_headers=["*"],  # Allow all headers
+)
 
-if __name__ == '__main__':
-    asyncio.run(main())
+
+exchange_graph = ExchangeGraph()
+
+class PromptRequest(BaseModel):
+  prompt: str
+
+@app.post("/agent/prompt")
+async def handle_prompt(request: PromptRequest):
+  print(f"Received prompt: {request.prompt}")
+  input_payload = {"prompt": request.prompt}
+  try:
+    result = await exchange_graph.serve(input_payload)
+    return {"response": result}
+  except Exception as e:
+    raise HTTPException(status_code=500, detail=f"Operation failed: {str(e)}")
+
+# Run the FastAPI server using uvicorn
+if __name__ == "__main__":
+  import uvicorn
+  uvicorn.run("main:app", host="127.0.0.1", port=8000, reload=True)

@@ -65,7 +65,7 @@ body {
 }
 
 /* Header */
-.header {
+header {
   height: var(--header-height);     /* fixed container height */
   line-height: var(--header-height); /* vertically centers text */
   background: #fff;

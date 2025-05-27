@@ -28,7 +28,6 @@ class FarmAgentExecutor(BaseAgentExecutor):
             message = self._error_message("invalid_input", "Missing agent message")
             event_queue.enqueue_event(message)
             return
-
         prompt = params.message.parts[0].root.text
         try:
             output = await self.agent.ainvoke(prompt)
@@ -38,7 +37,7 @@ class FarmAgentExecutor(BaseAgentExecutor):
                     output.get("error_message", "Failed to generate flavor profile"),
                 )
                 event_queue.enqueue_event(message)
-                return       
+                return
             flavor = output.get("flavor_notes", "No flavor profile returned")
             message = self._build_message(flavor)
         except Exception as e:

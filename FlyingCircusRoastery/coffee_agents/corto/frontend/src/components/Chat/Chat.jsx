@@ -14,38 +14,33 @@ const ChatLogo = () => {
   );
 };
 
-const Chat = () => {
-  const [messages, setMessages] = useState(() => {
-    const saved = localStorage.getItem(LOCAL_STORAGE_KEY);
-    return saved
-      ? JSON.parse(saved)
-      : [{ role: 'assistant', content: 'Hi! How can I help you?', id: uuid(), animate: false }];
-  });
-
+const Chat = ({ messages, setMessages, setButtonClicked }) => {
   useEffect(() => {
     localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(messages));
   }, [messages]);
 
   useEffect(() => {
-    // After first render, remove animation flags from AI messages
     const updated = messages.map((msg) =>
-      msg.role === 'assistant' && msg.animate ? { ...msg, animate: false } : msg
+        msg.role === 'assistant' && msg.animate ? { ...msg, animate: false } : msg
     );
 
-    // Save only if there was a change
     const needsUpdate = JSON.stringify(messages) !== JSON.stringify(updated);
     if (needsUpdate) {
       setMessages(updated);
       localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(updated));
     }
-  }, []); // run once on mount
+  }, []);
 
   return (
-    <div className="chat_container">
-      <ChatLogo />
-      <Messages messages={messages} />
-      <MessageInput messages={messages} setMessages={setMessages} />
-    </div>
+      <div className="chat_container">
+        <ChatLogo />
+        <Messages messages={messages} />
+        <MessageInput
+            messages={messages}
+            setMessages={setMessages}
+            setButtonClicked={setButtonClicked}
+        />
+      </div>
   );
 };
 

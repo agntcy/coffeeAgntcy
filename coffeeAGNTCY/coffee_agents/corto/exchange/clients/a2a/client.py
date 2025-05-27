@@ -31,7 +31,6 @@ async def send_message(input_payload: dict):
       )
   )
 
-    
   response = await client.send_message(request.params)
   if response.root.result:
     if not response.root.result.parts:

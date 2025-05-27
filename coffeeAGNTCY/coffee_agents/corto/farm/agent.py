@@ -34,7 +34,7 @@ class FarmAgent:
             "2. Based on those, describe the expected **flavor profile** of the coffee grown there.\n"
             "3. Respond with only a brief, expressive flavor profile (1–3 sentences). "
             "Use tasting terminology like acidity, body, aroma, and finish.\n"
-            "If no meaningful location or season is found, respond with an empty string."
+            # "If no meaningful location or season is found, respond with an empty string." # Commented out to allow for error handling
         )
 
         llm = LLMFactory(provider=LLM_PROVIDER).get_llm()
