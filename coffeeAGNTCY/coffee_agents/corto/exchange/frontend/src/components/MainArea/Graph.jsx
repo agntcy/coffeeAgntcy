@@ -41,7 +41,16 @@ const initialNodes = [
     {
         id: NODE_IDS.SOMMELIER,
         type: 'output',
-        data: { label: 'Sommelier' },
+        data: {
+            label: (
+                <div>
+                    Sommelier
+                    <div style={{ fontSize: '.65em' }}>
+                        (Q Grader)
+                    </div>
+                </div>
+            )
+        },
         position: { x: 250, y: 250 },
         style: {
             fontFamily: "'CiscoSansTT'",
