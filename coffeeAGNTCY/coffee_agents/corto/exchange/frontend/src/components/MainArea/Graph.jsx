@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useCallback } from 'react';
 import {
     ReactFlow,
     ReactFlowProvider,
@@ -83,8 +83,13 @@ const initialEdges = [
 ];
 
 const Graph = ({ buttonClicked, setButtonClicked }) => {
-    const [nodes, setNodes] = useNodesState(initialNodes);
-    const [edges, setEdges] = useEdgesState(initialEdges);
+    const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
+    const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
+
+    const onConnect = useCallback(
+        (params) => setEdges((eds) => addEdge(params, eds)),
+        [setEdges]
+    );
 
     useEffect(() => {
         if (!buttonClicked) return;
@@ -165,8 +170,11 @@ const Graph = ({ buttonClicked, setButtonClicked }) => {
                 <ReactFlow
                     nodes={nodes}
                     edges={edges}
-                    fitView
+                    onNodesChange={onNodesChange}
+                    onEdgesChange={onEdgesChange}
+                    onConnect={onConnect}
                     proOptions={proOptions}
+                    fitView
                 >
                     <Controls />
                 </ReactFlow>
