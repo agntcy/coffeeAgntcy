@@ -86,11 +86,6 @@ const Graph = ({ buttonClicked, setButtonClicked }) => {
     const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
     const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
 
-    const onConnect = useCallback(
-        (params) => setEdges((eds) => addEdge(params, eds)),
-        [setEdges]
-    );
-
     useEffect(() => {
         if (!buttonClicked) return;
 
@@ -186,7 +181,6 @@ const Graph = ({ buttonClicked, setButtonClicked }) => {
                     edges={edges}
                     onNodesChange={onNodesChange}
                     onEdgesChange={onEdgesChange}
-                    onConnect={onConnect}
                     proOptions={proOptions}
                     fitView
                 >
