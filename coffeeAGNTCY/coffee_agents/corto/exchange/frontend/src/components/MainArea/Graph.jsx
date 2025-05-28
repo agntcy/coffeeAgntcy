@@ -108,6 +108,7 @@ const Graph = ({ buttonClicked, setButtonClicked }) => {
                                 backgroundColor: 'rgba(0, 255, 0, 0.3)',
                                 border: '1px solid #00FF00',
                             },
+                            position: node.position, // Ensure position remains unchanged
                         }
                         : node
                 )
@@ -115,7 +116,13 @@ const Graph = ({ buttonClicked, setButtonClicked }) => {
             await delay(DELAY_DURATION);
 
             // Reset to initial nodes
-            setNodes(initialNodes);
+            setNodes((nds) =>
+                nds.map((node) => ({
+                    ...node,
+                    style: initialNodes.find((n) => n.id === node.id).style,
+                    position: node.position, // Ensure position remains unchanged
+                }))
+            );
             await delay(DELAY_DURATION);
 
             // Change edge to green
@@ -148,6 +155,7 @@ const Graph = ({ buttonClicked, setButtonClicked }) => {
                                 backgroundColor: 'rgba(0, 255, 0, 0.3)',
                                 border: '1px solid #00FF00',
                             },
+                            position: node.position, // Ensure position remains unchanged
                         }
                         : node
                 )
@@ -155,7 +163,13 @@ const Graph = ({ buttonClicked, setButtonClicked }) => {
             await delay(DELAY_DURATION);
 
             // Reset to initial nodes
-            setNodes(initialNodes);
+            setNodes((nds) =>
+                nds.map((node) => ({
+                    ...node,
+                    style: initialNodes.find((n) => n.id === node.id).style,
+                    position: node.position, // Ensure position remains unchanged
+                }))
+            );
 
             // Reset buttonClicked state
             setButtonClicked(false);
