@@ -45,13 +45,12 @@ services:
     ports:
       - "8000:8000"
 
-  # UI App
   ui:
     image: ghcr.io/cisco-outshift-ai-agents/ui:latest
     container_name: ui
     platform: linux/amd64
     environment:
-      - REACT_APP_EXCHANGE_APP_API_URL=http://exchange-server:8000
+      - VITE_EXCHANGE_APP_API_URL=http://exchange-server:8000
     depends_on:
       - exchange-server
     ports:
