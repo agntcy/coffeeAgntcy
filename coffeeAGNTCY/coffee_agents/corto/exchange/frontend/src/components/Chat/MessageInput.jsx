@@ -25,7 +25,7 @@ function MessageInput({ messages, setMessages, setButtonClicked }) {
     setButtonClicked(true); // Update buttonClicked state
 
     try {
-      const resp = await axios.post('http://localhost:8000/agent/prompt', {
+      const resp = await axios.post(`${process.env.EXCHANGE_APP_API_URL}/agent/prompt`, {
         prompt: content,
       });
 

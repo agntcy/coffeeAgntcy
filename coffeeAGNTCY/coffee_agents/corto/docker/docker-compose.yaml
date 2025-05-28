@@ -48,8 +48,9 @@ services:
     image: ghcr.io/cisco-outshift-ai-agents/ui:latest
     container_name: ui
     platform: linux/amd64
-    # TODO: can run independently for testing purposes
-#    depends_on:
-#      - exchange-server
+    environment:
+      - EXCHANGE_APP_API_URL=http://exchange-server:8000
+    depends_on:
+     - exchange-server
     ports:
       - "3000:3000"
