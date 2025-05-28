@@ -8,7 +8,7 @@ services:
       - FARM_AGENT_HOST=farm-server
       - FARM_AGENT_PORT=9999
       - AZURE_OPENAI_ENDPOINT=${AZURE_OPENAI_ENDPOINT}
-      - AZURE_OPENAI_DEPLOYMENT_NAME=${AZURE_OPENAI_DEPLOYMENT_NAME}
+      - AZURE_OPENAI_DEPLOYMENT=${AZURE_OPENAI_DEPLOYMENT}
       - AZURE_OPENAI_API_KEY=${AZURE_OPENAI_API_KEY}
       - AZURE_OPENAI_API_VERSION=${AZURE_OPENAI_API_VERSION}
       - OPENAI_API_KEY=${OPENAI_API_KEY}
@@ -51,7 +51,7 @@ services:
     container_name: ui
     platform: linux/amd64
     environment:
-      - EXCHANGE_APP_API_URL=http://exchange-server:8000
+      - REACT_APP_EXCHANGE_APP_API_URL=http://exchange-server:8000
     depends_on:
       - exchange-server
     ports:

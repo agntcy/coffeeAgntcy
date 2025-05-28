@@ -3,6 +3,7 @@ import { IoSendSharp } from 'react-icons/io5';
 import { v4 as uuid } from 'uuid';
 import axios from 'axios';
 import './Chat.css';
+import process from 'process';
 
 function MessageInput({ messages, setMessages, setButtonClicked }) {
   const [content, setContent] = useState("");
@@ -25,34 +26,29 @@ function MessageInput({ messages, setMessages, setButtonClicked }) {
     setButtonClicked(true); // Update buttonClicked state
 
     try {
-      const resp = await axios.post(`${process.env.EXCHANGE_APP_API_URL}/agent/prompt`, {
+      const apiUrl = process.env.REACT_APP_EXCHANGE_APP_API_URL || "http://localhost:8000";
+      const resp = await axios.post(`${apiUrl}/agent/prompt`, {
         prompt: content,
       });
 
-      const res = {
-        data: {
-          messages: [
-            ...updatedMessages,
-            { role: 'assistant', content: resp.data.response },
-          ],
-        },
-      };
-
       const aiReply = {
         role: 'assistant',
-        content: res.data?.messages?.at(-1)?.content || "No content received.",
+        content: resp.data?.response || "No content received.",
         id: uuid(),
         animate: true,
       };
 
       setMessages([...updatedMessages, aiReply]);
     } catch (error) {
+      console.error("Error while sending prompt to the server:", error);
+
       const errorReply = {
         role: 'assistant',
-        content: 'Error from server.',
+        content: error.response?.data?.detail || "Error from server.",
         id: uuid(),
         animate: true,
       };
+
       setMessages([...updatedMessages, errorReply]);
     } finally {
       setLoading(false);
