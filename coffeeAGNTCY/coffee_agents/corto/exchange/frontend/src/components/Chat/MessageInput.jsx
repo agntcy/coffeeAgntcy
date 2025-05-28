@@ -3,7 +3,6 @@ import { IoSendSharp } from 'react-icons/io5';
 import { v4 as uuid } from 'uuid';
 import axios from 'axios';
 import './Chat.css';
-import process from 'process';
 
 function MessageInput({ messages, setMessages, setButtonClicked }) {
   const [content, setContent] = useState("");
@@ -23,10 +22,11 @@ function MessageInput({ messages, setMessages, setButtonClicked }) {
     setMessages(updatedMessages);
     setContent('');
     setLoading(true);
-    setButtonClicked(true); // Update buttonClicked state
+    setButtonClicked(true);
 
     try {
-      const apiUrl = process.env.REACT_APP_EXCHANGE_APP_API_URL || "http://localhost:8000";
+      const apiUrl = import.meta.env.VITE_EXCHANGE_APP_API_URL || "http://0.0.0.0:8000";
+      console.log("API URL:", apiUrl);
       const resp = await axios.post(`${apiUrl}/agent/prompt`, {
         prompt: content,
       });
