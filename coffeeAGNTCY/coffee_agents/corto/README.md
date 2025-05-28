@@ -67,25 +67,16 @@ uv run python farm/farm_server.py
 
 The `farm_server` listens for requests from the `exchange` and processes them using LangGraph. It generates flavor profiles based on user inputs such as location and season.
 
-### Step 2: Run the Exchange
+### Step 2: Run the Exchange Server
 Start the `exchange`, which acts as an A2A client, by running:
 
 ```sh
 uv run python exchange/main.py
 ```
 
-The `exchange` command will prompt you with:
-
+Send curl requests to the `exchange` to interact with the `farm_server`. For example, you can send a request to generate a coffee flavor profile:
 ```sh
-Enter a prompt:
+curl -X POST http://127.0.0.1:8000/agent/prompt \
+-H "Content-Type: application/json" \
+-d '{"prompt": "Flavor notes of Ethiopian coffees in the spring"}'
 ```
-
-Provide any human-readable description to request information about a location's coffee flavor profiles for a specific season.
-
-For example:
-
-```sh
-Enter a prompt: Flavor notes of Ethiopian coffees in the spring
-```
-
-The `exchange` sends user inputs to the `farm_server` and displays the generated flavor profiles. It interacts with the `farm_server` through A2A communication protocols.
