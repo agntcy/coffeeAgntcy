@@ -2,7 +2,7 @@ from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from graph.graph import ExchangeGraph
 from fastapi.middleware.cors import CORSMiddleware
-
+import uvicorn
 
 app = FastAPI()
 # Add CORS middleware
@@ -30,7 +30,10 @@ async def handle_prompt(request: PromptRequest):
   except Exception as e:
     raise HTTPException(status_code=500, detail=f"Operation failed: {str(e)}")
 
+@app.get("/health")
+async def health_check():
+    return {"status": "ok"}
+
 # Run the FastAPI server using uvicorn
 if __name__ == "__main__":
-  import uvicorn
-  uvicorn.run("main:app", host="127.0.0.1", port=8000, reload=True)
+  uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
