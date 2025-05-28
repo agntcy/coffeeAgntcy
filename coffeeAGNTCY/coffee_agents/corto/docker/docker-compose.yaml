@@ -18,19 +18,19 @@ services:
     ports:
       - "9999:9999"
 
-  # AGP Gateway App
-  agp-gateway:
-    image: ghcr.io/agntcy/agp/gw:0.3.14
-    container_name: agp-gateway
-    platform: linux/amd64
-    ports:
-      - "46357:46357"
-    environment:
-      - PASSWORD=${AGP_GATEWAY_PASSWORD:-dummy_password}
-      - CONFIG_PATH=/config.yaml
-    volumes:
-      - ./config/docker/agp/server-config.yaml:/config.yaml
-    command: ["/gateway", "--config", "/config.yaml"]
+#  # AGP Gateway App
+#  agp-gateway:
+#    image: ghcr.io/agntcy/agp/gw:0.3.14
+#    container_name: agp-gateway
+#    platform: linux/amd64
+#    ports:
+#      - "46357:46357"
+#    environment:
+#      - PASSWORD=${AGP_GATEWAY_PASSWORD:-dummy_password}
+#      - CONFIG_PATH=/config.yaml
+#    volumes:
+#      - ./config/docker/agp/server-config.yaml:/config.yaml
+#    command: ["/gateway", "--config", "/config.yaml"]
 
   # Exchange server App (farm client)
   exchange-server:
