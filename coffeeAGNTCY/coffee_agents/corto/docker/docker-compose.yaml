@@ -1,37 +1,42 @@
 version: '1.0'
 
-# (todo-all) fix the agents env and and add UI
-x-default-logging: &logging
-  driver: "json-file"
-  options:
-    max-size: "5m"
-    max-file: "2"
 
 services:
   # Farm server App
   farm-server:
     image: ghcr.io/cisco-outshift-ai-agents/farm-server:latest
     container_name: farm-server
-    ports:
-      - "9999:9999"
+    platform: linux/amd64
+    environment:
+      - FARM_AGENT_HOST=localhost
+      - FARM_AGENT_PORT=9999
+      - AZURE_OPENAI_ENDPOINT=${AZURE_OPENAI_ENDPOINT}
+      - AZURE_OPENAI_DEPLOYMENT_NAME=${AZURE_OPENAI_DEPLOYMENT_NAME}
+      - AZURE_OPENAI_API_KEY=${AZURE_OPENAI_API_KEY}
+      - AZURE_OPENAI_API_VERSION=${AZURE_OPENAI_API_VERSION}
+
 
   # AGP Gateway App(todo fix config path)
-  agp-gateway:
-    image: ghcr.io/agntcy/agp/gw:0.3.14
-    container_name: agp-gateway
-    ports:
-      - "46357:46357"
-    environment:
-      - PASSWORD=${AGP_GATEWAY_PASSWORD:-dummy_password}
-      - CONFIG_PATH=/config.yaml
-    volumes:
-      - ./config/docker/agp/server-config.yaml:/config.yaml
-    command: ["/gateway", "--config", "/config.yaml"]
+  # agp-gateway:
+  #   image: ghcr.io/agntcy/agp/gw:0.3.14
+  #   container_name: agp-gateway
+  #   ports:
+  #     - "46357:46357"
+  #   environment:
+  #     - PASSWORD=${AGP_GATEWAY_PASSWORD:-dummy_password}
+  #     - CONFIG_PATH=/config.yaml
+  #   volumes:
+  #     - ./config/docker/agp/server-config.yaml:/config.yaml
+  #   command: ["/gateway", "--config", "/config.yaml"]
 
   # Exchange server App (farm client)
   exchange-server:
     image: ghcr.io/cisco-outshift-ai-agents/exchange-server:latest
     container_name: exchange-server
+    platform: linux/amd64
+    environment:
+      - FARM_AGENT_HOST=localhost
+      - FARM_AGENT_PORT=9999
     depends_on:
       - farm-server
     ports:
@@ -41,6 +46,7 @@ services:
   ui:
     image: ghcr.io/cisco-outshift-ai-agents/ui:latest
     container_name: ui
+    platform: linux/amd64
     # TODO: can run independently for testing purposes
 #    depends_on:
 #      - exchange-server
