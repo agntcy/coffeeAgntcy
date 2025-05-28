@@ -5,7 +5,7 @@ services:
     container_name: farm-server
     platform: linux/amd64
     environment:
-      - FARM_AGENT_HOST=localhost
+      - FARM_AGENT_HOST=farm-server
       - FARM_AGENT_PORT=9999
       - AZURE_OPENAI_ENDPOINT=${AZURE_OPENAI_ENDPOINT}
       - AZURE_OPENAI_DEPLOYMENT_NAME=${AZURE_OPENAI_DEPLOYMENT_NAME}
@@ -15,20 +15,22 @@ services:
       - OPENAI_API_VERSION=${OPENAI_API_VERSION}
       - OPENAI_ENDPOINT=${OPENAI_ENDPOINT}
       - LLM_PROVIDER=${LLM_PROVIDER}
+    ports:
+      - "9999:9999"
 
-
-  # AGP Gateway App(todo fix config path)
-  # agp-gateway:
-  #   image: ghcr.io/agntcy/agp/gw:0.3.14
-  #   container_name: agp-gateway
-  #   ports:
-  #     - "46357:46357"
-  #   environment:
-  #     - PASSWORD=${AGP_GATEWAY_PASSWORD:-dummy_password}
-  #     - CONFIG_PATH=/config.yaml
-  #   volumes:
-  #     - ./config/docker/agp/server-config.yaml:/config.yaml
-  #   command: ["/gateway", "--config", "/config.yaml"]
+  # AGP Gateway App
+  agp-gateway:
+    image: ghcr.io/agntcy/agp/gw:0.3.14
+    container_name: agp-gateway
+    platform: linux/amd64
+    ports:
+      - "46357:46357"
+    environment:
+      - PASSWORD=${AGP_GATEWAY_PASSWORD:-dummy_password}
+      - CONFIG_PATH=/config.yaml
+    volumes:
+      - ./config/docker/agp/server-config.yaml:/config.yaml
+    command: ["/gateway", "--config", "/config.yaml"]
 
   # Exchange server App (farm client)
   exchange-server:
@@ -36,7 +38,7 @@ services:
     container_name: exchange-server
     platform: linux/amd64
     environment:
-      - FARM_AGENT_HOST=localhost
+      - FARM_AGENT_HOST=farm-server
       - FARM_AGENT_PORT=9999
     depends_on:
       - farm-server
@@ -51,6 +53,6 @@ services:
     environment:
       - EXCHANGE_APP_API_URL=http://exchange-server:8000
     depends_on:
-     - exchange-server
+      - exchange-server
     ports:
       - "3000:3000"
