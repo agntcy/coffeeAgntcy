@@ -4,7 +4,7 @@
 
 The Corto demo demonstrates a robust interaction between an A2A (Agent-to-Agent) architecture and LangGraph workflows. The `farm_server` operates as an A2A agent, providing backend services to process user inputs and generate coffee flavor profiles. The `exchange` acts as an A2A client, connecting to the `farm_server` and facilitating user interactions. Both components are integrated within LangGraph, which manages stateful workflows and ensures seamless communication.
 
-## UI Component
+## UI Component 
 
 The project includes a **React-based UI** for interacting with the exchange and farm server.  
 
