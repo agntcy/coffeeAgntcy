@@ -88,3 +88,50 @@ curl -X POST http://127.0.0.1:8000/agent/prompt \
 ```
 
 The `exchange` sends user inputs to the `farm_server` and displays the generated flavor profiles. It interacts with the `farm_server` through A2A communication protocols.
+
+
+## Docker Compose Setup
+
+**Prerequisite:**
+Before running Docker Compose, copy the example environment file and fill in your credentials:
+
+```sh
+cp .env.example .env
+```
+
+Edit the `.env` file to include your LLM provider and API keys (OpenAI or Azure OpenAI), for example:
+
+```env
+LLM_PROVIDER=openai
+OPENAI_API_KEY=your_openai_api_key
+OPENAI_MODEL=gpt-4o
+```
+or for Azure:
+```env
+LLM_PROVIDER=azure
+AZURE_OPENAI_ENDPOINT=https://your-azure-resource.openai.azure.com/
+AZURE_OPENAI_DEPLOYMENT=gpt-4-prod
+AZURE_OPENAI_API_KEY=your_azure_api_key
+AZURE_OPENAI_API_VERSION=2023-12-01-preview
+```
+
+**Authenticate to GHCR to pull private images:**
+
+```sh
+echo "<git_token>" | docker login ghcr.io -u "<git_user>" --password-stdin
+```
+Replace `<git_token>` and `<git_user>` with your GitHub token and username.
+
+**Start the stack:**
+
+```sh
+docker compose up
+```
+
+Once running, access the UI at: [http://localhost:3000/](http://localhost:3000/)
+
+---
+
+
+![Screenshot](images/corto-ui.png)
+
