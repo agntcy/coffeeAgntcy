@@ -24,7 +24,7 @@ This Dockerfile sets up the FastAPI Exchange Server.
 This Dockerfile sets up the React Frontend.
 
 ### Farm Server: `Dockerfile.farm`
-This Dockerfile sets up the Farm Agent backend, which provides flavor profile estimation and other agent-based services.
+This Dockerfile sets up the Farm Agent backend.
 
 ---
 
