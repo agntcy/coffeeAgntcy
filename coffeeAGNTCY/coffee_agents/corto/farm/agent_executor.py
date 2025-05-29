@@ -5,8 +5,9 @@ from a2a.server.events import EventQueue
 from a2a.utils.errors import ServerError
 from a2a.types import (
     UnsupportedOperationError,
+    JSONRPCResponse,
+    ContentTypeNotSupportedError,
     InternalError,
-    InvalidParamsError,
     Task)
 
 from a2a.utils import (
@@ -23,17 +24,40 @@ class FarmAgentExecutor(AgentExecutor):
     def __init__(self):
         self.agent = FarmAgent()
 
-    def _validate_request(self, context: RequestContext) -> bool:
-        return False
+    def _validate_request(self, context: RequestContext) -> JSONRPCResponse | None:
+        """Validates the incoming request."""
+        if not context or not context.message or not context.message.parts:
+            logger.error("Invalid request parameters: %s", context)
+            return JSONRPCResponse(error=ContentTypeNotSupportedError())
+        return None
     
     async def execute(
         self,
         context: RequestContext,
         event_queue: EventQueue,
     ) -> None:
-        error = self._validate_request(context)
-        if error:
-            raise ServerError(error=InvalidParamsError())
+        """
+        Execute the agent's logic for a given request context.
+
+        This method handles incoming message requests to generate a flavor profile for coffee beans.
+        The agent should extract the necessary information from the `context`, invoke the FarmAgent
+        to generate the flavor profile, and enqueue the response message to the `event_queue`.
+
+        During execution, the agent may also publish `Task`, `Message`, `TaskStatusUpdateEvent`,
+        or `TaskArtifactUpdateEvent` events. This method should return once the agent's execution
+        for the current request is complete or yields control (e.g., enters an input-required state).
+
+        Args:
+            context: The request context containing the message, task ID, and other relevant data.
+            event_queue: The queue to publish events to.
+        """
+
+        logger.info("Received message request: %s", context.message)
+
+        validation_error = self._validate_request(context)
+        if validation_error:
+            event_queue.enqueue_event(validation_error)
+            return
         
         prompt = context.get_user_input()
         task = context.current_task
@@ -61,4 +85,5 @@ class FarmAgentExecutor(AgentExecutor):
     async def cancel(
         self, request: RequestContext, event_queue: EventQueue
     ) -> Task | None:
+        """Cancel this agent's execution for the given request context."""
         raise ServerError(error=UnsupportedOperationError())
