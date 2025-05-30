@@ -1,8 +1,8 @@
 FROM python:3.13.0-slim
 
-# Install system dependencies
+# Install system dependencies, including ping, curl, and wget
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends git && \
+    apt-get install -y --no-install-recommends git curl wget iputils-ping && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
