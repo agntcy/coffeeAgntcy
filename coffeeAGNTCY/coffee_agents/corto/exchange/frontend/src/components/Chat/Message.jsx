@@ -3,24 +3,25 @@ import React, { useEffect, useRef, useState } from 'react';
 import { css } from '@emotion/react';
 import { HiUser } from 'react-icons/hi';
 import { RiRobot2Fill } from "react-icons/ri";
+import { AiOutlineLoading3Quarters } from "react-icons/ai"; // Loading spinner icon
 
 const SlowText = ({ text, speed = 25 }) => {
-  const [displayedText, setDisplayedText] = useState('');
-  const idx = useRef(-1);
+    const [displayedText, setDisplayedText] = useState('');
+    const idx = useRef(-1);
 
-  useEffect(() => {
-    function tick() {
-      idx.current++;
-      setDisplayedText((prev) => prev + text[idx.current]);
-    }
+    useEffect(() => {
+        function tick() {
+            idx.current++;
+            setDisplayedText((prev) => prev + text[idx.current]);
+        }
 
-    if (idx.current < text.length - 1) {
-      const addChar = setInterval(tick, speed);
-      return () => clearInterval(addChar);
-    }
-  }, [displayedText, speed, text]);
+        if (idx.current < text.length - 1) {
+            const addChar = setInterval(tick, speed);
+            return () => clearInterval(addChar);
+        }
+    }, [displayedText, speed, text]);
 
-  return <span>{displayedText}</span>;
+    return <span>{displayedText}</span>;
 };
 
 const messageContainerStyle = (aiMessage) => css`
@@ -45,17 +46,37 @@ const messageTextStyle = css`
   overflow-wrap: break-word;
 `;
 
-function Message({ content, aiMessage, animate }) {
-  return (
-      <div css={messageContainerStyle(aiMessage)}>
-        <div css={avatarContainerStyle}>
-          {aiMessage ? <RiRobot2Fill color="#049FD9" /> : <HiUser />}
+const loadingIconStyle = css`
+  font-size: 24px;
+  animation: spin 1s linear infinite;
+
+  @keyframes spin {
+    0% {
+      transform: rotate(0deg);
+    }
+    100% {
+      transform: rotate(360deg);
+    }
+  }
+`;
+
+function Message({ content, aiMessage, animate, loading }) {
+    return (
+        <div css={messageContainerStyle(aiMessage)}>
+            <div css={avatarContainerStyle}>
+                {aiMessage ? <RiRobot2Fill color="#049FD9" /> : <HiUser />}
+            </div>
+            <p css={messageTextStyle}>
+                {loading ? (
+                    <AiOutlineLoading3Quarters css={loadingIconStyle} />
+                ) : animate ? (
+                    <SlowText speed={20} text={content} />
+                ) : (
+                    content
+                )}
+            </p>
         </div>
-        <p css={messageTextStyle}>
-          {animate ? <SlowText speed={20} text={content} /> : content}
-        </p>
-      </div>
-  );
+    );
 }
 
 export default Message;

@@ -3,7 +3,7 @@ import Message from './Message';
 
 export const LOCAL_STORAGE_KEY = "chat_messages";
 
-function Messages({ messages, setMessages }) {
+function Messages({ messages }) {
     const messagesEndRef = useRef(null);
 
     useEffect(() => {
@@ -13,16 +13,17 @@ function Messages({ messages, setMessages }) {
 
     return (
         <div>
-                {messages.map((msg) => (
-                    <Message
-                        key={msg.id}
-                        content={msg.content}
-                        aiMessage={msg.role === 'assistant'}
-                        animate={msg.animate}
-                    />
-                ))}
-                {/* Invisible div to ensure scrolling to the bottom */}
-                <div ref={messagesEndRef} />
+            {messages.map((msg) => (
+                <Message
+                    key={msg.id}
+                    content={msg.content}
+                    aiMessage={msg.role === 'assistant'}
+                    animate={msg.animate}
+                    loading={msg.loading} // Remove loading from individual messages
+                />
+            ))}
+            {/* Invisible div to ensure scrolling to the bottom */}
+            <div ref={messagesEndRef} />
         </div>
     );
 }

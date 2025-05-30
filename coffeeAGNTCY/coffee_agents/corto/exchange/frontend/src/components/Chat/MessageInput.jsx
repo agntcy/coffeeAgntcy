@@ -6,7 +6,7 @@ import axios from 'axios';
 import { css } from '@emotion/react';
 import { Role } from '../../utils/const.js';
 
-const DEFAULT_EXCHANGE_APP_API_URL = 'http://0.0.0.0:8000'
+const DEFAULT_EXCHANGE_APP_API_URL = 'http://0.0.0.0:8000';
 
 const containerStyle = css`
   display: flex;
@@ -50,10 +50,19 @@ function MessageInput({ messages, setMessages, setButtonClicked }) {
             animate: false,
         };
 
-        const updatedMessages = [...messages, userMessage];
+        const loadingMessage = {
+            role: 'assistant',
+            content: "Loading...",
+            id: uuid(),
+            animate: false,
+            loading: true,
+        };
+
+        const updatedMessages = [...messages, userMessage, loadingMessage];
+        setLoading(true);
+
         setMessages(updatedMessages);
         setContent('');
-        setLoading(true);
         setButtonClicked(true);
 
         try {
@@ -69,7 +78,8 @@ function MessageInput({ messages, setMessages, setButtonClicked }) {
                 animate: true,
             };
 
-            setMessages([...updatedMessages, aiReply]);
+            // Replace the loading message with the actual response
+            setMessages([...messages, userMessage, aiReply]);
         } catch (error) {
             console.error("Error while sending prompt to the server:", error);
 
@@ -80,7 +90,8 @@ function MessageInput({ messages, setMessages, setButtonClicked }) {
                 animate: true,
             };
 
-            setMessages([...updatedMessages, errorReply]);
+            // Replace the loading message with the error message
+            setMessages([...messages, userMessage, errorReply]);
         } finally {
             setLoading(false);
         }
