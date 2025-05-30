@@ -3,7 +3,8 @@ import React, { useEffect, useRef, useState } from 'react';
 import { css } from '@emotion/react';
 import { HiUser } from 'react-icons/hi';
 import { RiRobot2Fill } from "react-icons/ri";
-import { AiOutlineLoading3Quarters } from "react-icons/ai"; // Loading spinner icon
+import { Waveform } from 'ldrs/react';
+import 'ldrs/react/Waveform.css';
 
 const SlowText = ({ text, speed = 25 }) => {
     const [displayedText, setDisplayedText] = useState('');
@@ -46,20 +47,6 @@ const messageTextStyle = css`
   overflow-wrap: break-word;
 `;
 
-const loadingIconStyle = css`
-  font-size: 24px;
-  animation: spin 1s linear infinite;
-
-  @keyframes spin {
-    0% {
-      transform: rotate(0deg);
-    }
-    100% {
-      transform: rotate(360deg);
-    }
-  }
-`;
-
 function Message({ content, aiMessage, animate, loading }) {
     return (
         <div css={messageContainerStyle(aiMessage)}>
@@ -68,7 +55,9 @@ function Message({ content, aiMessage, animate, loading }) {
             </div>
             <p css={messageTextStyle}>
                 {loading ? (
-                    <AiOutlineLoading3Quarters css={loadingIconStyle} />
+                    <div style={{ opacity: 0.5 }}>
+                        <Waveform size="20" stroke="3.5" speed="1" color="#049FD9" />
+                    </div>
                 ) : animate ? (
                     <SlowText speed={20} text={content} />
                 ) : (
