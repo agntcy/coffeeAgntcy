@@ -6,53 +6,12 @@
 ## About The Project
 Welcome to Coffee Agntcy ...
 
-* What is CoffeeAgntcy and AGNTCY
+Coffee Agntcy showcases how Cisco AGNTCY components interoperate with a variety of agentic frameworks and transport mechanisms. It’s designed to demonstrate modular integration and real-world interoperability in agent-based systems.
 
-### Highlights
+We currently provide two demos:
 
-- 🚀 **AGP Fire and Forget.** Pub/sub message bus and API gateway
-
-- 🤖 **ACP Agent Communication.** Agent to agent protocol
-
-- 🌐 **LangGraph Local and Remote Graphs.** Agentic workflows framework
-
-- 📚 **LlamaIndex.** Agent framework 
-
-- 🛠️ **MCP Tools.** Standard agent tooling 
-
-- 📦 **Fully Contained Deployment.** docker-compose and kubernetes packaging
-
-- 🛰️ **E2E Observability.** Inter-agent distributing tracing
-
-### Architecture
-Tech diagram of agents and where IOA fits in.
-
-## Getting Started
-Provide a comprehensive guide, from install, run-demo, contribute, deploy
-
-### Prerequisites
-
-This is an example of how to list things you need to use the software and how to
-install them.
-
-- docker-compose
-
-### Installation
-
-1. Clone the repository
-
-   ```sh
-   git clone https://github.com/cisco-outshift-ai-agents/coffeeAgntcy
-   ```
-
-### Run the demo 🚀
-With the app running, walk through user journey.
-
---------
-
-## Agent by Agent, an application deep dive
-Walk through the app architecture, agentic patterns and code structure.
-Run the agents individually and show how they work?  
+- **Corto**: A lightweight, ready-to-run demo that highlights core agent interactions using agent-to-agent (A2A) messaging over AGNTCY’s own SLIM transport. The agents are orchestrated within a LangGraph, enabling structured, stateful workflows. Setup and usage instructions are available in the [corto README](coffeeAGNTCY/coffee_agents/corto).
+- **Longo**: A more comprehensive demo that will explore advanced scenarios and integrations — *coming soon*.
 
 --------
 
