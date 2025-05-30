@@ -1,12 +1,12 @@
-# Acorda Coffee Agntcy
+# Coffee Agntcy
 
 [![Release](https://img.shields.io/github/v/release/agntcy/repo-template?display_name=tag)](CHANGELOG.md)
 [![Contributor-Covenant](https://img.shields.io/badge/Contributor%20Covenant-2.1-fbab2c.svg)](CODE_OF_CONDUCT.md)
 
 ## About The Project
-Welcome to Acorda ...
+Welcome to Coffee Agntcy ...
 
-* What is Acorda and IOA
+* What is CoffeeAgntcy and IOA
 
 ### Highlights
 
@@ -42,7 +42,7 @@ install them.
 1. Clone the repository
 
    ```sh
-   git clone https://github.com/cisco-outshift-ai-agents/acorda
+   git clone https://github.com/cisco-outshift-ai-agents/coffeeAgntcy
    ```
 
 ### Run the demo 🚀
@@ -65,35 +65,18 @@ appreciated**. For detailed contributing guidelines, please see
 
 --------
 
-## Documentation
-We provide a documentation site for Acorda, which is hosted on GitHub Pages.
-
-To run the documentation locally, you can use the following command:
-```
-make docs
-```
-
-Then open your browser to [http://localhost:8000](http://localhost:8000)
-
---------
-
 ## License
 
-Distributed under the `<License name>` License. See [LICENSE](LICENSE) for more
+Distributed under the Apache-2.0 License. See [LICENSE](LICENSE) for more
 information.
-
---------
 
 ## Contact
 
-Your Name - [@github_handle](https://github.com/github_handle) - email
+[cisco-outshift-ai-agents@cisco.com](mailto:cisco-outshift-ai-agents@cisco.com)
 
 Project Link:
-[https://github.com/org_name/repo_name](https://github.com/org_name/repo_name)
+[https://github.com/cisco-outshift-ai-agents/coffeeAgntcy](https://github.com/cisco-outshift-ai-agents/coffeeAgntcy)
 
---------
 
 ## Acknowledgements
-
-This template was adapted from
-[https://github.com/othneildrew/Best-README-Template](https://github.com/othneildrew/Best-README-Template).
+- The [AGNTCY](https://github.com/agntcy) project.
