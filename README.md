@@ -6,7 +6,7 @@
 ## About The Project
 Welcome to Coffee Agntcy ...
 
-* What is CoffeeAgntcy and IOA
+* What is CoffeeAgntcy and AGNTCY
 
 ### Highlights
 
