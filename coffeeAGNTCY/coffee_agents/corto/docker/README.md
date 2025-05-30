@@ -33,7 +33,7 @@ This Dockerfile sets up the Farm Agent backend.
 ### 1. Backend (FastAPI Exchange Server)
 #### Build the Docker Image
 ```bash
-docker build -f coffeeAgntcy/coffee_agents/corto/docker/Dockerfile.exchange -t exchange-server .
+docker build -f coffeeAGNTCY/coffee_agents/corto/docker/Dockerfile.exchange -t exchange-server .
 ```
 
 #### Run the Container
@@ -48,7 +48,7 @@ The backend will be accessible at `http://localhost:8000`.
 ### 2. Frontend (React UI)
 #### Build the Docker Image
 ```bash
-docker build -f coffeeAgntcy/coffee_agents/corto/docker/Dockerfile.ui -t ui-server .
+docker build -f coffeeAGNTCY/coffee_agents/corto/docker/Dockerfile.ui -t ui-server .
 ```
 
 #### Run the Container
@@ -63,7 +63,7 @@ The frontend will be accessible at `http://localhost:3000`.
 ### 3. Farm Server (Agent Backend)
 #### Build the Docker Image
 ```bash
-docker build -f coffeeAgntcy/coffee_agents/corto/docker/Dockerfile.farm -t farm-server .
+docker build -f coffeeAGNTCY/coffee_agents/corto/docker/Dockerfile.farm -t farm-server .
 ```
 
 #### Run the Container
