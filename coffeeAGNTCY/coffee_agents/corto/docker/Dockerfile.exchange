@@ -1,4 +1,4 @@
-# `coffeeAGNTCY/coffee_agents/corto/docker/Dockerfile.exchange`
+# `coffeeAgntcy/coffee_agents/corto/docker/Dockerfile.exchange`
 FROM python:3.13.0-slim
 
 # Install system dependencies, including curl, ping, and wget
@@ -13,8 +13,8 @@ RUN pip install --no-cache-dir uv && \
 ENV PATH="/venv/bin:$PATH"
 
 WORKDIR /app
-COPY coffeeAGNTCY/coffee_agents/corto/pyproject.toml coffeeAGNTCY/coffee_agents/corto/uv.lock ./
+COPY coffeeAgntcy/coffee_agents/corto/pyproject.toml coffeeAgntcy/coffee_agents/corto/uv.lock ./
 RUN uv sync --locked --no-editable
 
-COPY coffeeAGNTCY/coffee_agents/corto/ .
+COPY coffeeAgntcy/coffee_agents/corto/ .
 CMD ["uv", "run", "python", "exchange/main.py"]

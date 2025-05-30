@@ -6,14 +6,14 @@ WORKDIR /app
 RUN apk add --no-cache wget curl iputils
 
 # Copy package.json and package-lock.json, then install dependencies
-COPY coffeeAGNTCY/coffee_agents/corto/exchange/frontend/package.json coffeeAGNTCY/coffee_agents/corto/exchange/frontend/package-lock.json ./
+COPY coffeeAgntcy/coffee_agents/corto/exchange/frontend/package.json coffeeAgntcy/coffee_agents/corto/exchange/frontend/package-lock.json ./
 RUN npm install
 
 # Install serve globally
 RUN npm install -g serve
 
 # Copy application files, including assets
-COPY coffeeAGNTCY/coffee_agents/corto/exchange/frontend/ .
+COPY coffeeAgntcy/coffee_agents/corto/exchange/frontend/ .
 
 # Build the application
 RUN npm run build
