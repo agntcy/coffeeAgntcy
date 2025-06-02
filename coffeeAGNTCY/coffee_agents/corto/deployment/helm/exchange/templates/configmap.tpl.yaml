@@ -10,3 +10,5 @@ data:
   AZURE_OPENAI_DEPLOYMENT: "{{ .Values.config.azureOpenAiDeployment }}"
   AZURE_OPENAI_API_VERSION: "{{ .Values.config.azureOpenAiApiVersion }}"
   LLM_PROVIDER: "{{ .Values.config.llmProvider }}"
+  TRANSPORT_SERVER_ENDPOINT: "{{ .Values.config.transportServerEndpoint }}"
+  DEFAULT_MESSAGE_TRANSPORT: "{{ .Values.config.defaultMessageTransport }}"

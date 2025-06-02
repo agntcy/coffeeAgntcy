@@ -21,6 +21,8 @@ config:
   azureOpenAiDeployment: ""
   azureOpenAiApiVersion: ""
   llmProvider: ""
+  transportServerEndpoint: ""
+  defaultMessageTransport: ""
 
 # serviceaccount:
 #   annotations:
