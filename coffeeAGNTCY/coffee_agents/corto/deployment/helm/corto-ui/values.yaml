@@ -1,0 +1,50 @@
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+appName: corto-ui
+appVersion: v1
+replicaCount: 1
+
+image:
+  repository: ghcr.io/cisco-outshift-ai-agents/ui
+  tag: latest
+  pullPolicy: Always
+  pullSecret:
+
+service:
+  port: 3000
+
+config:
+  exchangeAppApiUrl: ""
+
+# serviceaccount:
+#   annotations:
+#     eks.amazonaws.com/role-arn: REPLACE_WITH_ROLE_ARN
+
+
+ingress:
+  enabled: true
+  name: corto-ui-ingress
+  className: nginx
+  host: corto-ui-demo.outshift.io
+  serviceName: corto-ui-ingress
+  servicePort: 3000
+  tlsSecret: corto-ui-ingress-tls
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt
+    nginx.ingress.kubernetes.io/rewrite-target: /
+
+probes:
+  livenessProbeEnabled: false
+  readinessProbeEnabled: false
+  port: 3000
+  endpoint: /v1/health
+
+resources:
+  enabled: false
+  limits:
+    cpu: 2000m
+    memory: 2500Mi
+  requests:
+    cpu: 200m
+    memory: 500Mi
