@@ -1,3 +1,3 @@
 #!/bin/sh
 npm run build
-serve -s dist -l 3000
+npx serve -s dist -l 3000
