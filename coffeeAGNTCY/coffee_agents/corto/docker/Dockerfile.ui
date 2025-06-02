@@ -15,6 +15,10 @@ RUN npm install -g serve
 # Copy application files, including assets
 COPY coffeeAGNTCY/coffee_agents/corto/exchange/frontend/ .
 
+# Set the environment variable explicitly during the build
+ARG VITE_EXCHANGE_APP_API_URL
+ENV VITE_EXCHANGE_APP_API_URL=$VITE_EXCHANGE_APP_API_URL
+
 # Build the application
 RUN npm run build
 
