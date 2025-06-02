@@ -16,7 +16,6 @@ COPY coffeeAGNTCY/coffee_agents/corto/exchange/frontend/ .
 RUN ["npm", "install", "--verbose"]
 RUN ["npm", "run", "lint", "--verbose"]
 RUN ["npm", "run", "build", "--verbose"]
-RUN ["npm", "run", "build:server"]
 RUN ["npm", "cache", "clean", "--force"]
 
 # Expose port 3000
