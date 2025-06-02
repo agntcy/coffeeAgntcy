@@ -7,7 +7,6 @@ RUN apk add --no-cache wget curl iputils
 
 # Copy package.json and package-lock.json, then install dependencies
 COPY coffeeAGNTCY/coffee_agents/corto/exchange/frontend/package.json coffeeAGNTCY/coffee_agents/corto/exchange/frontend/package-lock.json ./
-RUN npm install && npm cache clean --force
 
 # Copy application files, including assets
 COPY coffeeAGNTCY/coffee_agents/corto/exchange/frontend/ .
