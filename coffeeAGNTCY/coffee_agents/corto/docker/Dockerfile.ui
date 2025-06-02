@@ -7,10 +7,7 @@ RUN apk add --no-cache wget curl iputils
 
 # Copy package.json and package-lock.json, then install dependencies
 COPY coffeeAGNTCY/coffee_agents/corto/exchange/frontend/package.json coffeeAGNTCY/coffee_agents/corto/exchange/frontend/package-lock.json ./
-RUN npm install
-
-# Install serve globally
-RUN npm install -g serve
+RUN npm install && npm cache clean --force
 
 # Copy application files, including assets
 COPY coffeeAGNTCY/coffee_agents/corto/exchange/frontend/ .
@@ -19,11 +16,8 @@ COPY coffeeAGNTCY/coffee_agents/corto/exchange/frontend/ .
 ARG VITE_EXCHANGE_APP_API_URL
 ENV VITE_EXCHANGE_APP_API_URL=$VITE_EXCHANGE_APP_API_URL
 
-# Build the application
-RUN npm run build
-
 # Expose port 3000
 EXPOSE 3000
 
-# Serve the built application
-CMD ["serve", "-s", "dist", "-l", "3000"]
+# Start the application
+CMD ["sh", "./ui-build-and-serve.sh"]
