@@ -1,0 +1,64 @@
+name: Helm Push for UI Chart
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  helm-push:
+    runs-on: ubuntu-latest
+
+    permissions:
+      packages: write
+      contents: read
+
+    steps:
+    - name: Pre-cleanup Docker images
+      run: docker system prune -af
+
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Log Pull Request Event
+      if: github.event_name == 'pull_request'
+      run: echo "PR detected- Packaging Helm chart (no push)"
+
+    - name: Log Push Event
+      if: github.event_name == 'push'
+      run: echo "Push to main- Packaging and pushing Helm chart"
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Log in to GitHub Container Registry
+      if: github.event_name == 'push'
+      uses: docker/login-action@v3
+      with:
+        registry: ghcr.io
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Setup Helm
+      uses: azure/setup-helm@v4
+      with:
+        version: "3.12.1"
+
+    - name: Helm lint
+      run: helm lint coffeeAGNTCY/coffee_agents/corto/deployment/helm/corto-ui --with-subcharts
+
+    - name: Package Helm Chart
+      id: package
+      run: |
+        CHART_VERSION=$(grep '^version:' coffeeAGNTCY/coffee_agents/corto/deployment/helm/corto-ui/Chart.yaml | awk '{print $2}')
+        helm package coffeeAGNTCY/coffee_agents/corto/deployment/helm/corto-ui --dependency-update --version $CHART_VERSION
+        echo "chart_version=$CHART_VERSION" >> $GITHUB_OUTPUT
+
+    - name: Push Helm Chart
+      if: github.event_name == 'push'
+      run: |
+        helm push corto-ui-${{ steps.package.outputs.chart_version }}.tgz oci://ghcr.io/${{ github.repository_owner }}/helm
