@@ -1,4 +1,4 @@
-name: Helm Push
+name: Helm Push farm Chart
 
 on:
   push:

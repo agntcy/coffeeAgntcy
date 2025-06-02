@@ -1,4 +1,4 @@
-name: Helm Push
+name: Helm Push exchange Chart
 
 on:
   push:
