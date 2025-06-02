@@ -15,6 +15,7 @@ services:
       - OPENAI_API_VERSION=${OPENAI_API_VERSION}
       - OPENAI_ENDPOINT=${OPENAI_ENDPOINT}
       - LLM_PROVIDER=${LLM_PROVIDER}
+      - TRANSPORT_SERVER_ENDPOINT=http://agp-gateway:46357
     ports:
       - "9999:9999"
 
@@ -48,6 +49,7 @@ services:
       - OPENAI_API_VERSION=${OPENAI_API_VERSION}
       - OPENAI_ENDPOINT=${OPENAI_ENDPOINT}
       - LLM_PROVIDER=${LLM_PROVIDER}
+      - TRANSPORT_SERVER_ENDPOINT=http://agp-gateway:46357
     depends_on:
       - farm-server
     ports:
