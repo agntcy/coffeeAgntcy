@@ -28,7 +28,7 @@ const SlimNode = ({ data, backgroundColor = 'rgba(24, 122, 220, 0.4)' }) => {
                 color: '#000000',
                 borderRadius: 5,
                 width: 625,
-                height: 20,
+                height: 22,
                 textAlign: 'center',
                 fontFamily: "'CiscoSansTT', sans-serif",
                 fontSize: '15px',
@@ -45,7 +45,7 @@ const SlimNode = ({ data, backgroundColor = 'rgba(24, 122, 220, 0.4)' }) => {
                 type="source"
                 position={Position.Bottom}
                 id="a"
-                style={{  left: '25%' }} // Offset to the left
+                style={{  left: '18%' }} // Offset to the left
             />
             <Handle
                 type="source"
@@ -57,7 +57,7 @@ const SlimNode = ({ data, backgroundColor = 'rgba(24, 122, 220, 0.4)' }) => {
                 type="source"
                 position={Position.Bottom}
                 id="c"
-                style={{ left: '75%' }} // Offset to the right
+                style={{ left: '82%' }} // Offset to the right
             />
         </div>
     );
