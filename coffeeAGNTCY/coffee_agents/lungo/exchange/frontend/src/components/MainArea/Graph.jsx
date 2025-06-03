@@ -81,7 +81,7 @@ const commonNodeStyle = {
 // Initial nodes
 const initialNodes = [
     { id: NODE_IDS.BUYER, type: 'input', data: { label: 'Buyer' }, position: { x: 300, y: 100 }, style: commonNodeStyle },
-    { id: NODE_IDS.SLIM, data: { label: 'SLIM (pub/sub)' }, position: { x: -25, y: 250 }, type: 'slimNode' },
+    { id: NODE_IDS.SLIM, data: { label: 'Pub/Sub(SLIM)' }, position: { x: 60, y: 250 }, type: 'slimNode' },
     { id: NODE_IDS.BRAZIL, type: 'output', data: { label: 'Brazil' }, position: { x: 100, y: 450 }, style: commonNodeStyle },
     { id: NODE_IDS.COLOMBIA, type: 'default', data: { label: 'Colombia' }, position: { x: 300, y: 450 }, style: commonNodeStyle },
     { id: NODE_IDS.TATOUINE, type: 'output', data: { label: 'Tatouine' }, position: { x: 500, y: 450 }, style: commonNodeStyle },

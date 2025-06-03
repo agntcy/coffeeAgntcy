@@ -27,7 +27,7 @@ const SlimNode = ({ data, backgroundColor = 'rgba(24, 122, 220, 0.4)' }) => {
                 backgroundColor: backgroundColor, // Dynamic background color
                 color: '#000000',
                 borderRadius: 5,
-                width: 800,
+                width: 625,
                 height: 20,
                 textAlign: 'center',
                 fontFamily: "'CiscoSansTT', sans-serif",
