@@ -85,7 +85,7 @@ const initialNodes = [
     { id: NODE_IDS.BRAZIL, type: 'output', data: { label: 'Brazil' }, position: { x: 100, y: 450 }, style: commonNodeStyle },
     { id: NODE_IDS.COLOMBIA, type: 'default', data: { label: 'Colombia' }, position: { x: 300, y: 450 }, style: commonNodeStyle },
     { id: NODE_IDS.TATOUINE, type: 'output', data: { label: 'Tatouine' }, position: { x: 500, y: 450 }, style: commonNodeStyle },
-    { id: NODE_IDS.COFFEE_FARM_SITE, type: 'output', data: { label: 'Coffee Farm Site' }, position: { x: 300, y: 600 }, style: commonNodeStyle },
+    { id: NODE_IDS.COFFEE_FARM_SITE, type: 'output', data: { label: 'Weather' }, position: { x: 300, y: 600 }, style: commonNodeStyle },
 ];
 
 // Helper to apply markers to edges
