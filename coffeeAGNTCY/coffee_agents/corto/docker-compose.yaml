@@ -60,7 +60,7 @@ services:
     container_name: ui
     platform: linux/amd64
     environment:
-      - VITE_EXCHANGE_APP_API_URL=http://exchange-server:8000
+      - VITE_EXCHANGE_APP_API_URL=http://127.0.0.1:8000
     depends_on:
       - exchange-server
     ports:
