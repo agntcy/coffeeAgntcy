@@ -41,3 +41,12 @@
     margin-top: 1em; /* Scales with font size */
     margin-bottom: 0.5em; /* Scales with font size */
 }
+
+.chat_header {
+    font-size: 14px;
+    font-weight: 400; /* Semi-bold for Cisco branding */
+    text-align: left;
+    color: #187ADC; /* Cisco primary blue */
+    z-index: 1; /* Ensures proper stacking */
+    position: absolute;
+}
