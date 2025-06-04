@@ -1,0 +1,65 @@
+services:
+  # Farm server App
+  farm-server:
+    image: ghcr.io/cisco-outshift-ai-agents/farm-server:latest
+    container_name: farm-server
+    platform: linux/amd64
+    environment:
+      - FARM_AGENT_HOST=farm-server
+      - FARM_AGENT_PORT=9999
+      - AZURE_OPENAI_ENDPOINT=${AZURE_OPENAI_ENDPOINT}
+      - AZURE_OPENAI_DEPLOYMENT=${AZURE_OPENAI_DEPLOYMENT}
+      - AZURE_OPENAI_API_KEY=${AZURE_OPENAI_API_KEY}
+      - AZURE_OPENAI_API_VERSION=${AZURE_OPENAI_API_VERSION}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - OPENAI_API_VERSION=${OPENAI_API_VERSION}
+      - OPENAI_ENDPOINT=${OPENAI_ENDPOINT}
+      - LLM_PROVIDER=${LLM_PROVIDER}
+      - TRANSPORT_SERVER_ENDPOINT=http://agp-gateway:46357
+    ports:
+      - "9999:9999"
+
+  slim:
+    image: ghcr.io/agntcy/slim:0.3.15
+    container_name: slim-dataplane
+    ports:
+      - "46357:46357"
+    environment:
+      - PASSWORD=${SLIM_GATEWAY_PASSWORD:-dummy_password}
+      - CONFIG_PATH=/config.yaml
+    volumes:
+      - ./config/docker/slim/server-config.yaml:/config.yaml
+    command: ["/slim", "--config", "/config.yaml"]
+
+  # Exchange server App (farm client)
+  exchange-server:
+    image: ghcr.io/cisco-outshift-ai-agents/exchange-server:latest
+    container_name: exchange-server
+    platform: linux/amd64
+    environment:
+      - FARM_AGENT_HOST=farm-server
+      - FARM_AGENT_PORT=9999
+      - AZURE_OPENAI_ENDPOINT=${AZURE_OPENAI_ENDPOINT}
+      - AZURE_OPENAI_DEPLOYMENT=${AZURE_OPENAI_DEPLOYMENT}
+      - AZURE_OPENAI_API_KEY=${AZURE_OPENAI_API_KEY}
+      - AZURE_OPENAI_API_VERSION=${AZURE_OPENAI_API_VERSION}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - OPENAI_API_VERSION=${OPENAI_API_VERSION}
+      - OPENAI_ENDPOINT=${OPENAI_ENDPOINT}
+      - LLM_PROVIDER=${LLM_PROVIDER}
+      - TRANSPORT_SERVER_ENDPOINT=http://agp-gateway:46357
+    depends_on:
+      - farm-server
+    ports:
+      - "8000:8000"
+
+  ui:
+    image: ghcr.io/cisco-outshift-ai-agents/ui:latest
+    container_name: ui
+    platform: linux/amd64
+    environment:
+      - VITE_EXCHANGE_APP_API_URL=http://exchange-server:8000
+    depends_on:
+      - exchange-server
+    ports:
+      - "3000:3000"
