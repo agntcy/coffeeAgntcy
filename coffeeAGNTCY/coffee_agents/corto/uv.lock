@@ -380,7 +380,7 @@ requires-dist = [
     { name = "dotenv", specifier = ">=0.9.9" },
     { name = "fastapi" },
     { name = "fastapi", specifier = ">=0.115.12" },
-    { name = "gateway-sdk", specifier = ">=0.1.0" },
+    { name = "gateway-sdk", specifier = "==0.1.0" },
     { name = "httpx" },
     { name = "httpx", specifier = ">=0.28.1" },
     { name = "langchain-anthropic", specifier = ">=0.3.13" },
