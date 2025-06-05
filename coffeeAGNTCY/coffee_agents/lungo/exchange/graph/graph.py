@@ -24,8 +24,10 @@ from langgraph.prebuilt import create_react_agent
 from langgraph_supervisor import create_supervisor
 
 from common.llm import get_llm
-from farms.brazil.card import AGENT_CARD as farm_agent_card
-from graph.tools import FetchHarvestTool, GetFarmYieldTool
+from farms.brazil.card import AGENT_CARD as brazil_agent_card
+from farms.colombia.card import AGENT_CARD as colombia_agent_card
+from farms.vietnam.card import AGENT_CARD as vietnam_agent_card
+from graph.tools import FetchBrazilHarvestTool, FetchcolombiaHarvestTool, FetchVietnamHarvestTool, GetFarmYieldTool
 
 logger = logging.getLogger("corto.supervisor.graph")
 
@@ -55,36 +57,60 @@ class ExchangeGraph:
             name="get_farm_yields",
         )
     
-        fetch_harvest_tool = FetchHarvestTool(
-            remote_agent_card=farm_agent_card,
+        fetch_brazil_harvest_tool = FetchBrazilHarvestTool(
+            remote_agent_card=brazil_agent_card,
         )
 
-        fetch_harvest = create_react_agent(
+        fetch_brazil_harvest = create_react_agent(
             model=model,
-            tools=[fetch_harvest_tool],
-            name="fetch_harvest",
+            tools=[fetch_brazil_harvest_tool],
+            name="fetch_brazil_harvest",
+        )
+        fetch_colombia_harvest_tool = FetchcolombiaHarvestTool(
+            remote_agent_card=colombia_agent_card,
+        )
+
+        fetch_colombia_harvest = create_react_agent(
+            model=model,
+            tools=[fetch_colombia_harvest_tool],
+            name="fetch_colombia_harvest",
+        )
+
+        fetch_vietnam_harvest_tool = FetchVietnamHarvestTool(
+            remote_agent_card=vietnam_agent_card,
+        )
+        fetch_vietnam_harvest = create_react_agent(
+            model=model,
+            tools=[fetch_vietnam_harvest_tool],
+            name="fetch_vietnam_harvest",
         )
         graph = create_supervisor(
             model=model,
-            agents=[get_farm_yields_tool, fetch_harvest],  # worker agents list
-        prompt=(
-                "You are a supervisor agent responsible for handling coffee requests in pounds (lb).\n\n"
+            agents=[get_farm_yields_tool, fetch_brazil_harvest, fetch_colombia_harvest, fetch_vietnam_harvest],  # worker agents list
+            prompt = (
+            "You are a supervisor agent responsible for handling coffee requests in pounds (lb).\n\n"
 
-                "## TASK FLOW:\n"
-                "1. First, use the tool `get_farm_yields` to retrieve a dictionary mapping farm names to their available coffee yields in pounds.\n"
-                "2. From the returned dictionary, identify the farm with the **largest yield**.\n"
-                "3. Then, assign the task to the tool `fetch_harvest` to send the user's request (in pounds) to that top-yield farm.\n"
-                "   - Input: the selected farm name and the quantity requested by the user.\n\n"
+            "## TASK FLOW:\n"
+            "1. Use the tool `get_farm_yields` to retrieve a dictionary mapping farm names to their available coffee yields in pounds.\n"
+            "2. Use only the exact keys returned by `get_farm_yields`. Do **not** make up or assume any farm names.\n"
+            "3. Select the farm with the highest available yield that meets or exceeds the request. Do not ask the user to choose. Always proceed automatically with the top-yielding valid farm.\n"
+            "   - If no single farm has enough yield, respond accordingly (see rules below).\n"
+            "4. Based on the selected farm, call the corresponding harvest tool. Each farm will have a tool named `fetch_<lowercased_farmname>_harvest`.\n"
+            "   - Input: a dictionary with keys `farm` (string) and `amount` (int)\n\n"
 
-                "## RULES:\n"
-                "- Only proceed if the user's prompt clearly asks for coffee in pounds. Forgive them if they make small typos.\n"
-                "- If the request is invalid or unrelated to coffee/lb, respond with:\n"
-                "  \"I'm sorry, I can only help with coffee requests in pounds.\"\n"
-                " Provide a detailed explanation of why the request is invalid.\n" # delete later
-                "- If either tool returns an error or fails, return a user-friendly error message explaining the failure.\n"
-                "- If both tool calls succeed, respond with a message in this format:\n"
-                "  \"<FarmName> will fulfill your order of <X> lb of coffee. It will be sent to you shortly.\"\n"
-            ),
+            "## RULES:\n"
+            "- Only continue if the user clearly requests coffee in a type of weight or number. If no weight type is given, assume pounds. Accept common typos like 'lbs', 'pouds', 'punds'.\n"
+            "- If the weight is given in another unit (e.g., kg), convert it to pounds.\n"
+            "- If the request does **not** mention coffee or a quantity, respond with:\n"
+            "  \"I'm sorry, I can only help with requests to obtain coffee beans. Please specify the amount you need.\"\n"
+            "- **Do not combine yields from multiple farms**. Only use one farm that can fully satisfy the request.\n"
+            "- If **no single farm** can fulfill the request, respond with:\n"
+            "  \"I'm sorry, but none of the farms can fulfill your request for coffee beans.\"\n"
+            "- If `get_farm_yields` fails or returns no farms, provide a user-friendly error.\n"
+            "- If the selected farm tool fails, return a clear error message.\n"
+            "- If all steps succeed, reply in this format:\n"
+            "  \"{FarmName} will fulfill your order of {X} lb of coffee. It will be sent to you shortly.\"\n"
+        ),
             # add_handoff_back_messages=False,
             output_mode="last_message",
         ).compile()

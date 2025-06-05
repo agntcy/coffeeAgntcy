@@ -34,7 +34,7 @@ from a2a.utils import (
 from agent import FarmAgent
 from agent_executor import FarmAgent
 
-logger = logging.getLogger("longo.brazil_farm_agent.agent_executor")
+logger = logging.getLogger("longo.colombia_farm_agent.agent_executor")
 
 class FarmAgentExecutor(AgentExecutor):
     def __init__(self):

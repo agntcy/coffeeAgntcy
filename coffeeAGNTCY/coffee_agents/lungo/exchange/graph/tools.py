@@ -17,36 +17,27 @@
 import logging
 from typing import Any
 from uuid import uuid4
-from pydantic import PrivateAttr
+from pydantic import BaseModel, PrivateAttr
 
 from a2a.types import (
-    AgentCard, 
-    SendMessageRequest, 
-    MessageSendParams, 
-    Message, 
-    Part, 
-    TextPart, 
+    AgentCard,
+    SendMessageRequest,
+    MessageSendParams,
+    Message,
+    Part,
+    TextPart,
     Role,
 )
-
-from langchain_core.tools import StructuredTool
-from pydantic import BaseModel
-
 from langchain_core.tools import BaseTool
-from langchain_core.callbacks import (
-    CallbackManagerForToolRun,
-)
+from langchain_core.callbacks import CallbackManagerForToolRun
 from graph.models import FetchHarvestInput, FetchHarvestOutput
-
 from gateway_sdk.protocols.a2a.gateway import A2AProtocol
 from gateway_sdk.factory import GatewayFactory
-
 from config.config import DEFAULT_MESSAGE_TRANSPORT, TRANSPORT_SERVER_ENDPOINT
 
 logger = logging.getLogger("corto.supervisor.tools")
 
-# Initialize a multi-protocol, multi-transport gateway factory.
-# All tools will share this factory instance and the transport.
+# Shared factory & transport
 factory = GatewayFactory()
 transport = factory.create_transport(
     DEFAULT_MESSAGE_TRANSPORT,
@@ -57,14 +48,6 @@ class NoInput(BaseModel):
     pass
 
 class GetFarmYieldTool(BaseTool):
-    """
-    Tool to fetch coffee yield from a specific farm.
-
-    No input
-    
-    Output:
-        dict: Dictionary with country as key and yield as float value (e.g., {"brazil": 100})
-    """
     name: str = "get_farm_yield"
     description: str = "Fetches the coffee yield from a specific farm."
 
@@ -72,73 +55,35 @@ class GetFarmYieldTool(BaseTool):
         raise NotImplementedError("Use _arun for async execution.")
 
     async def _arun(self, input: NoInput, **kwargs: Any) -> dict[str, float]:
-        stubbed_response = {"brazil": 100}
+        stubbed_response = {"brazil": 100, "colombia": 150, "vietnam": 200}
         logger.info(f"yield status: {stubbed_response}")
         return stubbed_response
 
-class FetchHarvestTool(BaseTool):
-    """
-    Tool to fetch coffee harvest by sending a message to a remote A2A agent.
-
-    Input:
-        FetchHarvestInput: Contains a 'prompt' field (non-empty string)
-    
-    Output:
-        FetchHarvestOutput: A model with `status = 'success'` if successful
-    """
-    name: str = "fetch_harvest"
-    description: str = "Fetches the coffee harvest from a specific farm."
-
+# Base A2A tool for harvest fetching
+class BaseHarvestTool(BaseTool):
     _client = PrivateAttr()
 
-    def __init__(self, remote_agent_card: AgentCard, **kwargs: Any):
+    def __init__(self, remote_agent_card: AgentCard, receiver_id: str, **kwargs: Any):
         super().__init__(**kwargs)
         self._remote_agent_card = remote_agent_card
+        self._receiver_id = receiver_id
         self._client = None
-
-    async def _connect(self):
-        logger.info(f"Connecting to remote agent: {self._remote_agent_card.name}")
-       
-        a2a_topic = A2AProtocol.create_agent_topic(self._remote_agent_card)
-        self._client = await factory.create_client(
-            "A2A", 
-            agent_topic=a2a_topic,  
-            agent_url=self._remote_agent_card.url, 
-            transport=transport)
-        
-        logger.info("Connected to remote agent")
 
     def _run(self, input: FetchHarvestInput) -> float:
         raise NotImplementedError("Use _arun for async execution.")
 
-    async def _arun(self, input: FetchHarvestInput, **kwargs: Any) -> FetchHarvestOutput:
-        try:
-            if not input.get("prompt"):
-                logger.error("Invalid input: Prompt must be a non-empty string.")
-                raise ValueError("Invalid input: Prompt must be a non-empty string.")
-            
-            resp = await self.send_message(input.get("prompt"))
-            logger.info(f"Response from agent: {resp}")
-            if not resp:
-                logger.error("No response received from the agent.")
-                raise ValueError("No response received from the agent.")
+    async def _connect(self):
+        logger.info(f"Connecting to remote agent: {self._remote_agent_card.name}")
+        a2a_topic = A2AProtocol.create_agent_topic(self._remote_agent_card)
+        self._client = await factory.create_client(
+            "A2A",
+            agent_topic=a2a_topic,
+            agent_url=self._remote_agent_card.url,
+            transport=transport,
+        )
+        logger.info("Connected to remote agent")
 
-            return FetchHarvestOutput(status="success")
-
-        except Exception as e:
-            logger.error(f"Failed to fetch harvest: {str(e)}")
-            raise RuntimeError(f"Failed to fetch harvest: {str(e)}")
-        
     async def send_message(self, prompt: str) -> str:
-        """
-        Sends a message to the Brazil farm agent via A2A, specifically invoking its `get_yield` skill.
-        Args:
-            prompt (str): The user input prompt to send to the agent.
-        Returns:
-            str: The flavor profile estimation returned by the agent.
-        """
-
-        # Ensure the client is connected, use async event loop to connect if not
         if not self._client:
             await self._connect()
 
@@ -146,21 +91,19 @@ class FetchHarvestTool(BaseTool):
             params=MessageSendParams(
                 skill_id="get_yield",
                 sender_id="coffee-exchange-agent",
-                receiver_id="brazil-farm-agent",
+                receiver_id=self._receiver_id,
                 message=Message(
                     messageId=str(uuid4()),
                     role=Role.user,
                     parts=[Part(TextPart(text=prompt))],
-                )
+                ),
             )
         )
 
         response = await self._client.send_message(request)
         logger.info(f"Response received from A2A agent: {response}")
 
-        if response.root.result:
-            if not response.root.result.parts:
-                raise ValueError("No response parts found in the message.")
+        if response.root.result and response.root.result.parts:
             part = response.root.result.parts[0].root
             if hasattr(part, "text"):
                 return part.text
@@ -168,3 +111,53 @@ class FetchHarvestTool(BaseTool):
             raise Exception(f"A2A error: {response.error.message}")
 
         raise Exception("Unknown response type")
+
+    async def _arun(self, input: FetchHarvestInput, **kwargs: Any) -> FetchHarvestOutput:
+        try:
+            prompt = input.get("prompt")
+            if not prompt:
+                raise ValueError("Invalid input: Prompt must be a non-empty string.")
+
+            raw_text = await self.send_message(prompt)
+            logger.info(f"Response received from A2A agent: {raw_text}")
+
+            if not raw_text.strip():
+                raise RuntimeError("Empty message received from agent.")
+
+            return FetchHarvestOutput(status="success", yield_lb=raw_text.strip())
+
+        except Exception as e:
+            logger.error(f"Failed to fetch harvest: {str(e)}")
+            raise RuntimeError(f"Failed to fetch harvest: {str(e)}")
+
+
+# Specific farm implementations
+class FetchBrazilHarvestTool(BaseHarvestTool):
+    """
+    Fetches the coffee harvest from the Brazil farm agent.
+    """
+    name: str = "fetch_brazil_harvest"
+    description: str = "Fetches the coffee harvest from the Brazil farm."
+
+    def __init__(self, remote_agent_card: AgentCard, **kwargs: Any):
+        super().__init__(remote_agent_card, receiver_id="brazil-farm-agent", **kwargs)
+
+class FetchcolombiaHarvestTool(BaseHarvestTool):
+    """
+    Fetches the coffee harvest from the colombia farm agent.
+    """
+    name: str = "fetch_colombia_harvest"
+    description: str = "Fetches the coffee harvest from the colombia farm."
+
+    def __init__(self, remote_agent_card: AgentCard, **kwargs: Any):
+        super().__init__(remote_agent_card, receiver_id="colombia-farm-agent", **kwargs)
+
+class FetchVietnamHarvestTool(BaseHarvestTool):
+    """
+    Fetches the coffee harvest from the Vietnam farm agent.
+    """
+    name: str = "fetch_vietnam_harvest"
+    description: str = "Fetches the coffee harvest from the Vietnam farm."
+
+    def __init__(self, remote_agent_card: AgentCard, **kwargs: Any):
+        super().__init__(remote_agent_card, receiver_id="vietnam-farm-agent", **kwargs)
