@@ -1,30 +1,17 @@
-/**
- * Copyright 2025 Cisco Systems, Inc. and its affiliates
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- */
-
 import React from 'react';
-import googleIcon from '../../assets/google_icon.png';
+import a2aIcon from '../../assets/a2a_icon.png';
 import mcpIcon from '../../assets/mcp_icon.png';
 import { EdgeLabelIcon } from '../../utils/const.js';
 
 const LabelIcon = ({ type, altText = 'icon', size = 16 }) => {
-    const iconPath = type === EdgeLabelIcon.GOOGLE ? googleIcon : type === EdgeLabelIcon.MCP ? mcpIcon : null;
+    const iconPath = type === EdgeLabelIcon.A2A ? a2aIcon : type === EdgeLabelIcon.MCP ? mcpIcon : null;
 
     if (!iconPath) return null;
+
+    const isA2A = type === EdgeLabelIcon.A2A;
+    const parentWidth = isA2A ? size + 11 : size;
+    const parentHeight = isA2A ? size - 2 : size;
+    const borderRadius = isA2A ? '25%' : '50%';
 
     return (
         <div
@@ -32,16 +19,21 @@ const LabelIcon = ({ type, altText = 'icon', size = 16 }) => {
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                borderRadius: '50%',
+                borderRadius: borderRadius,
                 backgroundColor: 'white',
-                width: `${size}px`,
-                height: `${size}px`,
+                width: `${parentWidth}px`,
+                height: `${parentHeight}px`,
+                overflow: 'hidden', // Ensures the image stays within the circle
             }}
         >
             <img
                 src={iconPath}
                 alt={altText}
-                style={{ width: `${size - 4}px`, height: `${size - 4}px` }}
+                style={{
+                    width: '100%',
+                    height: '100%',
+                    opacity: type === EdgeLabelIcon.A2A ? 0.8 : 1, // Make lighter if A2A
+                }}
             />
         </div>
     );

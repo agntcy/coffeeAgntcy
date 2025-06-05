@@ -23,6 +23,6 @@ export const Role = {
 
 // Icon types for Edge Labels
 export const EdgeLabelIcon = {
-    GOOGLE: 'google',
+    A2A: 'a2a',
     MCP: 'mcp',
 };

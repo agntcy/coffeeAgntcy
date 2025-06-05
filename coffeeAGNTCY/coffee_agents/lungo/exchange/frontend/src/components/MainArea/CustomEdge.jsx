@@ -84,7 +84,7 @@ const CustomEdge = ({
                 y={labelY}
                 label={data.label}
                 labelColor="#FFFFFF"
-                icon={<LabelIcon type={data.labelIconType} altText="MCP Icon" size={20} />} // Pass a React component as the icon
+                icon={<LabelIcon type={data.labelIconType} altText={`${data.labelIconType} Icon`} size={25} />} // Pass a React component as the icon// Pass a React component as the icon
             />
         </>
     );
