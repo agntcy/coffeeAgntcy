@@ -19,20 +19,25 @@
 import React from 'react';
 import { Handle, Position } from '@xyflow/react';
 
-const SlimNode = ({ data, backgroundColor = 'rgba(24, 122, 220, 0.4)' }) => {
+const SlimNode = ({ data, backgroundColor = '#F5F5F5', borderColor = '#A9A9A9' }) => {
     return (
         <div
             style={{
-                border: '1px solid #187ADC',
-                backgroundColor: backgroundColor, // Dynamic background color
+                display: 'flex', // Enables flexbox
+                alignItems: 'center', // Vertically centers content
+                justifyContent: 'center', // Horizontally centers content
+                border: `0.1px solid ${borderColor}`,
+                backgroundColor: backgroundColor,
+                borderLeft: '5px solid #187ADC',
                 color: '#000000',
-                borderRadius: 5,
-                width: 625,
-                height: 22,
+                borderRadius: '0.5em',
+                fontWeight: '300',
+                width: 650,
+                height: 25,
                 textAlign: 'center',
                 fontFamily: "'CiscoSansTT', sans-serif",
                 fontSize: '15px',
-
+                boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
             }}
         >
             <div>{data.label}</div>
@@ -40,24 +45,25 @@ const SlimNode = ({ data, backgroundColor = 'rgba(24, 122, 220, 0.4)' }) => {
                 type="target"
                 id="top"
                 position={Position.Top}
+                style={{ width: '0.1px', height: '0.1px', background: '#187ADC' }}
             />
             <Handle
                 type="source"
                 position={Position.Bottom}
-                id="a"
-                style={{  left: '18%' }} // Offset to the left
+                id="bottom_left"
+                style={{ left: '18%', width: '0.1px', height: '0.1px', background: '#187ADC' }} // Offset to the left
             />
             <Handle
                 type="source"
                 position={Position.Bottom}
-                id="b"
-                style={{ left: '50%' }} // Centered
+                id="bottom_center"
+                style={{ left: '50%', width: '0.1px', height: '0.1px', background: '#187ADC' }} // Centered
             />
             <Handle
                 type="source"
                 position={Position.Bottom}
-                id="c"
-                style={{ left: '82%' }} // Offset to the right
+                id="bottom_right"
+                style={{ left: '82%', width: '0.1px', height: '0.1px', background: '#187ADC' }} // Offset to the right
             />
         </div>
     );

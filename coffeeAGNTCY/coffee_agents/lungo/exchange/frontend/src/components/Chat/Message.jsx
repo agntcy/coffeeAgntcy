@@ -71,7 +71,7 @@ function Message({ content, aiMessage, animate, loading }) {
             <div css={avatarContainerStyle}>
                 {aiMessage ? <RiRobot2Fill color="#049FD9" /> : <HiUser />}
             </div>
-            <p css={messageTextStyle}>
+            <div css={messageTextStyle}>
                 {loading ? (
                     <div style={{ opacity: 0.5 }}>
                         <Waveform size="20" stroke="3.5" speed="1" color="#049FD9" />
@@ -81,7 +81,7 @@ function Message({ content, aiMessage, animate, loading }) {
                 ) : (
                     content
                 )}
-            </p>
+            </div>
         </div>
     );
 }

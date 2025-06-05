@@ -28,11 +28,19 @@
 .clear_chat_button_container {
     position: absolute;
     z-index: 1;
-    top: 5px;
+    top: 2px;
     right: -10px;
     border: 0.1px solid #ccc;
     border-radius: 5px;
     background-color: white;
+    transition: opacity 0.5s ease-in-out, visibility 0.5s ease-in-out;
+    opacity: 1;
+    visibility: visible;
+}
+
+.clear_chat_button_container.hidden {
+    opacity: 0;
+    visibility: hidden;
 }
 
 .message_input_container {
@@ -44,9 +52,23 @@
 
 .chat_header {
     font-size: 14px;
-    font-weight: 400; /* Semi-bold for Cisco branding */
+    font-weight: 400;
     text-align: left;
-    color: #187ADC; /* Cisco primary blue */
-    z-index: 1; /* Ensures proper stacking */
+    color: #187ADC;
+    border-bottom: 1px solid var(--border-color);
+    border-radius: 0.5em;
+    box-shadow: 0 0 5px rgba(0, 0, 0, 0.1);
+    z-index: 1;
     position: absolute;
+    top: 0;
+    background-color: white;
+    transition: opacity 0.5s ease-in-out, visibility 0.5s ease-in-out;
+    opacity: 1;
+    visibility: visible;
+    width: 210px;
+}
+
+.chat_header.hidden {
+    opacity: 0;
+    visibility: hidden;
 }
