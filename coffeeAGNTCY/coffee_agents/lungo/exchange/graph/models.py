@@ -42,6 +42,4 @@ class FetchHarvestOutput(BaseModel):
     Represents the output of the fetch harvest agent call.
     This class is used to structure the response from the A2A agent.
     """
-    status: str
-
-
+    yield_lb: str
