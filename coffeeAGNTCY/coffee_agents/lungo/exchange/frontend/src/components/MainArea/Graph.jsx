@@ -11,6 +11,7 @@ import { FaUserTie, FaWarehouse, FaCloudSun } from 'react-icons/fa';
 import SlimNode from './SlimNode';
 import CustomEdge from './CustomEdge';
 import CustomNode from './CustomNode';
+import { EdgeLabelIcon } from '../../utils/const.js';
 
 const proOptions = { hideAttribution: true };
 
@@ -52,7 +53,7 @@ const initialNodes = [
             handles: 'source',
             backgroundColor: COLORS.NODE.ORIGINAL.BACKGROUND,
         },
-        position: { x: 300, y: 100 },
+        position: { x: 300, y: 50 },
     },
     {
         id: NODE_IDS.SLIM,
@@ -124,7 +125,7 @@ const initialEdges = [
         target: NODE_IDS.SLIM,
         targetHandle: 'top',
         style: { stroke: '#187ADC', strokeWidth: 2 },
-        data: { label: 'A2A', labelIconType: 'google' },
+        data: { label: 'A2A', labelIconType: EdgeLabelIcon.A2A },
         type: 'custom',
     },
     {
@@ -133,7 +134,7 @@ const initialEdges = [
         target: NODE_IDS.BRAZIL,
         sourceHandle: 'bottom_left',
         style: { stroke: '#187ADC', strokeWidth: 2 },
-        data: { label: 'A2A', labelIconType: 'google' },
+        data: { label: 'A2A', labelIconType: EdgeLabelIcon.A2A },
         type: 'custom',
     },
     {
@@ -142,7 +143,7 @@ const initialEdges = [
         target: NODE_IDS.COLOMBIA,
         sourceHandle: 'bottom_center',
         style: { stroke: '#187ADC', strokeWidth: 2 },
-        data: { label: 'A2A', labelIconType: 'google' },
+        data: { label: 'A2A', labelIconType: EdgeLabelIcon.A2A },
         type: 'custom',
     },
     {
@@ -150,7 +151,7 @@ const initialEdges = [
         source: NODE_IDS.COLOMBIA,
         target: NODE_IDS.COFFEE_FARM_SITE,
         style: { stroke: '#187ADC', strokeWidth: 2 },
-        data: { label: 'MCP', labelIconType: 'mcp' },
+        data: { label: 'MCP', labelIconType: EdgeLabelIcon.MCP },
         type: 'custom',
     },
     {
@@ -159,7 +160,7 @@ const initialEdges = [
         target: NODE_IDS.TATOUINE,
         sourceHandle: 'bottom_right',
         style: { stroke: '#187ADC', strokeWidth: 2 },
-        data: { label: 'A2A', labelIconType: 'google' },
+        data: { label: 'A2A', labelIconType: EdgeLabelIcon.A2A },
         type: 'custom',
     },
 ];
