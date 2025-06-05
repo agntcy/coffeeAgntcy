@@ -27,7 +27,7 @@ from common.llm import get_llm
 from farms.brazil.card import AGENT_CARD as brazil_agent_card
 from farms.colombia.card import AGENT_CARD as colombia_agent_card
 from farms.vietnam.card import AGENT_CARD as vietnam_agent_card
-from graph.tools import FetchBrazilHarvestTool, FetchcolombiaHarvestTool, FetchVietnamHarvestTool, GetFarmYieldTool
+from graph.tools import FetchBrazilHarvestTool, FetchColombiaHarvestTool, FetchVietnamHarvestTool, GetFarmYieldTool
 
 logger = logging.getLogger("corto.supervisor.graph")
 
@@ -66,7 +66,7 @@ class ExchangeGraph:
             tools=[fetch_brazil_harvest_tool],
             name="fetch_brazil_harvest",
         )
-        fetch_colombia_harvest_tool = FetchcolombiaHarvestTool(
+        fetch_colombia_harvest_tool = FetchColombiaHarvestTool(
             remote_agent_card=colombia_agent_card,
         )
 
@@ -88,30 +88,42 @@ class ExchangeGraph:
             model=model,
             agents=[get_farm_yields_tool, fetch_brazil_harvest, fetch_colombia_harvest, fetch_vietnam_harvest],  # worker agents list
             prompt = (
-            "You are a supervisor agent responsible for handling coffee requests in pounds (lb).\n\n"
+                "You are a supervisor agent responsible for handling coffee requests in pounds (lb).\n\n"
 
-            "## TASK FLOW:\n"
-            "1. Use the tool `get_farm_yields` to retrieve a dictionary mapping farm names to their available coffee yields in pounds.\n"
-            "2. Use only the exact keys returned by `get_farm_yields`. Do **not** make up or assume any farm names.\n"
-            "3. Select the farm with the highest available yield that meets or exceeds the request. Do not ask the user to choose. Always proceed automatically with the top-yielding valid farm.\n"
-            "   - If no single farm has enough yield, respond accordingly (see rules below).\n"
-            "4. Based on the selected farm, call the corresponding harvest tool. Each farm will have a tool named `fetch_<lowercased_farmname>_harvest`.\n"
-            "   - Input: a dictionary with keys `farm` (string) and `amount` (int)\n\n"
+                "## TASK FLOW:\n"
+                "1. If the user mentions a specific farm (e.g., \"Brazil\", \"Colombia\", \"Vietnam\"):\n"
+                "   a.Always call the corresponding harvest tool: `fetch_<lowercased_farmname>_harvest` and ask for the farm yield\n"
+                "   b. If the amount is 0, respond:\n"
+                "      \"{FarmName} currently has {X} lb of coffee available.\"\n"
+                "   c. If a valid amount is requested:\n"
+                "      - Call the harvest tool.\n"
+                "      - If the tool returns enough coffee:\n"
+                "        \"{FarmName} will fulfill your order of {X} lb of coffee. It will be sent to you shortly.\"\n"
+                "      - If the tool returns insufficient yield:\n"
+                "        \"I'm sorry, but {FarmName} does not have enough yield to fulfill your request.\"\n"
+                "   d. If the farm does **not** exist (e.g., tool failure or unknown name):\n"
+                "      \"I'm sorry, but I don't recognize the farm '{FarmName}'.\"\n\n"
 
-            "## RULES:\n"
-            "- Only continue if the user clearly requests coffee in a type of weight or number. If no weight type is given, assume pounds. Accept common typos like 'lbs', 'pouds', 'punds'.\n"
-            "- If the weight is given in another unit (e.g., kg), convert it to pounds.\n"
-            "- If the request does **not** mention coffee or a quantity, respond with:\n"
-            "  \"I'm sorry, I can only help with requests to obtain coffee beans. Please specify the amount you need.\"\n"
-            "- **Do not combine yields from multiple farms**. Only use one farm that can fully satisfy the request.\n"
-            "- If **no single farm** can fulfill the request, respond with:\n"
-            "  \"I'm sorry, but none of the farms can fulfill your request for coffee beans.\"\n"
-            "- If `get_farm_yields` fails or returns no farms, provide a user-friendly error.\n"
-            "- If the selected farm tool fails, return a clear error message.\n"
-            "- If all steps succeed, reply in this format:\n"
-            "  \"{FarmName} will fulfill your order of {X} lb of coffee. It will be sent to you shortly.\"\n"
-        ),
-            # add_handoff_back_messages=False,
+                "2. If the user does **not** mention a specific farm:\n"
+                "   a. Use `get_farm_yields` to retrieve all yields.\n"
+                "   b. Select the farm with the highest available yield that meets or exceeds the request.\n"
+                "   c. Do **not** ask the user to choose. Always proceed automatically with the top-yielding valid farm.\n"
+                "   d. Call the corresponding harvest tool: `fetch_<lowercased_farmname>_harvest`\n"
+                "      - Input: `farm` (string), `amount` (int)\n\n"
+
+                "## RULES:\n"
+                "- Only continue if the user clearly requests coffee in a type of weight or number. If no weight type is given, assume pounds. Accept common typos like 'lbs', 'pouds', 'punds'.\n"
+                "- If the weight is given in another unit (e.g., kg), convert it to pounds.\n"
+                "- If the request does **not** mention coffee or a quantity, respond:\n"
+                "  \"I'm sorry, I can only help with requests to obtain coffee beans. Please specify the amount you need.\"\n"
+                "- **Do not combine yields from multiple farms**. Only use one farm that can fully satisfy the request.\n"
+                "- If **no single farm** can fulfill the request, respond:\n"
+                "  \"I'm sorry, but none of the farms can fulfill your request for coffee beans.\"\n"
+                "- If `get_farm_yields` fails or returns no farms, provide a user-friendly error.\n"
+                "- If any harvest tool fails, return a clear error message.\n"
+                "- Only return the final response sentence(s) to the user. Do not include explanations, reasoning, or intermediate steps.\n"
+            ),
+            add_handoff_back_messages=False,
             output_mode="last_message",
         ).compile()
         logger.debug("LangGraph supervisor created and compiled successfully.")
@@ -138,9 +150,7 @@ class ExchangeGraph:
                 ],
             }, {"configurable": {"thread_id": uuid.uuid4()}})
 
-            logger.debug(f"Graph response: {result}")
             messages = result.get("messages", [])
-            logger.debug(f"Graph response messages: {messages}")
             if not messages:
                 raise RuntimeError("No messages found in the graph response.")
 

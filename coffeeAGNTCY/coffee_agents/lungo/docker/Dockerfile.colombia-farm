@@ -12,8 +12,8 @@ RUN pip install --no-cache-dir uv && \
 ENV PATH="/venv/bin:$PATH"
 
 WORKDIR /app
-COPY coffeeAGNTCY/coffee_agents/corto/pyproject.toml coffeeAGNTCY/coffee_agents/corto/uv.lock ./
+COPY coffeeAGNTCY/coffee_agents/lungo/pyproject.toml coffeeAGNTCY/coffee_agents/lungo/uv.lock ./
 RUN uv sync --locked --no-editable
 
-COPY coffeeAGNTCY/coffee_agents/corto/ .
-CMD ["uv", "run", "python", "farm/farm_server.py"]
+COPY coffeeAGNTCY/coffee_agents/lungo/ .
+CMD ["uv", "run", "python", "farms/colombia/farm_server.py"]

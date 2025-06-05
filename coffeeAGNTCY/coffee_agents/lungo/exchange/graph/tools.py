@@ -29,7 +29,6 @@ from a2a.types import (
     Role,
 )
 from langchain_core.tools import BaseTool
-from langchain_core.callbacks import CallbackManagerForToolRun
 from graph.models import FetchHarvestInput, FetchHarvestOutput
 from gateway_sdk.protocols.a2a.gateway import A2AProtocol
 from gateway_sdk.factory import GatewayFactory
@@ -142,9 +141,9 @@ class FetchBrazilHarvestTool(BaseHarvestTool):
     def __init__(self, remote_agent_card: AgentCard, **kwargs: Any):
         super().__init__(remote_agent_card, receiver_id="brazil-farm-agent", **kwargs)
 
-class FetchcolombiaHarvestTool(BaseHarvestTool):
+class FetchColombiaHarvestTool(BaseHarvestTool):
     """
-    Fetches the coffee harvest from the colombia farm agent.
+    Fetches the coffee harvest from the Colombia farm agent.
     """
     name: str = "fetch_colombia_harvest"
     description: str = "Fetches the coffee harvest from the colombia farm."

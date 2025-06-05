@@ -1,11 +1,15 @@
 services:
   # Farm server App
-  farm-server:
-    image: ghcr.io/cisco-outshift-ai-agents/farm-server:latest
-    container_name: farm-server
+  brazil-farm-server:
+    build:
+      context: . 
+      dockerfile: docker/Dockerfile.brazil-farm
+
+    image: ghcr.io/cisco-outshift-ai-agents/brazil-farm:latest
+    container_name: brazil-farm-server
     platform: linux/amd64
     environment:
-      - FARM_AGENT_HOST=farm-server
+      - FARM_AGENT_HOST=brazil-farm-server
       - FARM_AGENT_PORT=9999
       - AZURE_OPENAI_ENDPOINT=${AZURE_OPENAI_ENDPOINT}
       - AZURE_OPENAI_DEPLOYMENT=${AZURE_OPENAI_DEPLOYMENT}
@@ -18,6 +22,48 @@ services:
       - TRANSPORT_SERVER_ENDPOINT=http://agp-gateway:46357
     ports:
       - "9999:9999"
+  colombia-farm-server:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.colombia-farm
+    image: ghcr.io/cisco-outshift-ai-agents/colombia-farm:latest
+    container_name: colombia-farm-server
+    platform: linux/amd64
+    environment:
+      - FARM_AGENT_HOST=colombia-farm-server
+      - FARM_AGENT_PORT=9998
+      - AZURE_OPENAI_ENDPOINT=${AZURE_OPENAI_ENDPOINT}
+      - AZURE_OPENAI_DEPLOYMENT=${AZURE_OPENAI_DEPLOYMENT}
+      - AZURE_OPENAI_API_KEY=${AZURE_OPENAI_API_KEY}
+      - AZURE_OPENAI_API_VERSION=${AZURE_OPENAI_API_VERSION}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - OPENAI_API_VERSION=${OPENAI_API_VERSION}
+      - OPENAI_ENDPOINT=${OPENAI_ENDPOINT}
+      - LLM_PROVIDER=${LLM_PROVIDER}
+      - TRANSPORT_SERVER_ENDPOINT=http://agp-gateway:46357
+    ports:
+      - "9998:9998"
+  vietnam-farm-server:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.vietnam-farm
+    image: ghcr.io/cisco-outshift-ai-agents/vietnam-farm:latest
+    container_name: vietnam-farm-server
+    platform: linux/amd64
+    environment:
+      - FARM_AGENT_HOST=vietnam-farm-server
+      - FARM_AGENT_PORT=9997
+      - AZURE_OPENAI_ENDPOINT=${AZURE_OPENAI_ENDPOINT}
+      - AZURE_OPENAI_DEPLOYMENT=${AZURE_OPENAI_DEPLOYMENT}
+      - AZURE_OPENAI_API_KEY=${AZURE_OPENAI_API_KEY}
+      - AZURE_OPENAI_API_VERSION=${AZURE_OPENAI_API_VERSION}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - OPENAI_API_VERSION=${OPENAI_API_VERSION}
+      - OPENAI_ENDPOINT=${OPENAI_ENDPOINT}
+      - LLM_PROVIDER=${LLM_PROVIDER}
+      - TRANSPORT_SERVER_ENDPOINT=http://agp-gateway:46357
+    ports:
+      - "9997:9997"
   nats:
     image: nats:latest
     container_name: nats
@@ -56,8 +102,6 @@ services:
       - OPENAI_ENDPOINT=${OPENAI_ENDPOINT}
       - LLM_PROVIDER=${LLM_PROVIDER}
       - TRANSPORT_SERVER_ENDPOINT=http://agp-gateway:46357
-    depends_on:
-      - farm-server
     ports:
       - "8000:8000"
 

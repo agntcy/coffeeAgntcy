@@ -39,13 +39,13 @@ class FarmAgent:
         user_prompt = state.get("prompt")
 
         system_prompt = (
-            "You are a coffee farm in colombia\n"
+            "You are a coffee farm in Colombia\n"
             "The user will describe a question or scenario related to fetching the yield from your coffee farm. "
             "Your job is to:\n"
-            "1. Return a random yield estimate for the coffee farm in colombia. Make sure the estimate is a reasonable value and in pounds.\n"
+            "1. Return a random yield estimate for the coffee farm in Colombia. Make sure the estimate is a reasonable value and in pounds.\n"
             "2. Respond with only the yield estimate in pounds, without any additional text or explanation.\n"
             "Use tasting terminology like acidity, body, aroma, and finish.\n"
-            "Respond with an empty response if the user prompt does not relate to fetching the yield from the colombian coffee farm. Do not include quotes or any placeholder."
+            "Respond with an empty response if the user prompt does not relate to fetching the yield from the Colombian coffee farm. Do not include quotes or any placeholder."
         )
 
         messages = [
