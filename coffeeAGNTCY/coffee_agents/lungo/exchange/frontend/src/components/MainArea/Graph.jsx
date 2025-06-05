@@ -21,7 +21,7 @@ const nodeTypes = {
 };
 
 // Constants
-const DELAY_DURATION = 500; // Animation delay in milliseconds
+const DELAY_DURATION = 1750; // Animation delay in milliseconds
 
 // Colors
 const COLORS = {
