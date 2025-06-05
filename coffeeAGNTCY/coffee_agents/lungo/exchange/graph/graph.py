@@ -92,7 +92,7 @@ class ExchangeGraph:
 
                 "## TASK FLOW:\n"
                 "1. If the user mentions a specific farm (e.g., \"Brazil\", \"Colombia\", \"Vietnam\"):\n"
-                "   a.Always call the corresponding harvest tool: `fetch_<lowercased_farmname>_harvest` and ask for the farm yield\n"
+                "   a.Always call the corresponding harvest tool: `fetch_<lowercased_farmname>_harvest` and convert the user ask to ask for the farm yield\n"
                 "   b. If the amount is 0, respond:\n"
                 "      \"{FarmName} currently has {X} lb of coffee available.\"\n"
                 "   c. If a valid amount is requested:\n"
