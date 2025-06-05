@@ -20,21 +20,22 @@ from a2a.types import (
     AgentSkill)
 
 AGENT_SKILL = AgentSkill(
-    id="estimate_flavor",
-    name="Estimate Flavor Profile",
-    description="Analyzes a natural language prompt and returns the expected flavor profile for a coffee-growing region and/or season.",
-    tags=["coffee", "flavor", "farm"],
+    id="get_yield",
+    name="Get Coffee Yield",
+    description="Returns the coffee farm's yield in lb.",
+    tags=["coffee", "farm"],
     examples=[
-        "What flavors can I expect from coffee in Huila during harvest?",
-        "Describe the taste of beans grown in Sidamo in the dry season",
-        "How does Yirgacheffe coffee taste?"
+        "What is the yield of the Brazil coffee farm?",
+        "How much coffee does the Brazil farm produce?",
+        "What is the yield of the Brazil coffee farm in pounds?",
+        "How many pounds of coffee does the Brazil farm produce?",
     ]
 )   
 
 AGENT_CARD = AgentCard(
     name='Brazil Coffee Farm',
-    id='flavor-profile-farm-agent',
-    description='An AI agent that estimates the flavor profile of coffee beans using growing conditions like season and altitude.',
+    id='brazil-farm-agent',
+    description='An AI agent that returns the yield of coffee beans in pounds for a specific farm.',
     url='',
     version='1.0.0',
     defaultInputModes=["text"],

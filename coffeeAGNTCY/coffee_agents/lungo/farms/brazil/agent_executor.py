@@ -34,7 +34,7 @@ from a2a.utils import (
 from agent import FarmAgent
 from agent_executor import FarmAgent
 
-logger = logging.getLogger("corto.farm_agent.a2a_executor")
+logger = logging.getLogger("longo.farm_agent.agent_executor")
 
 class FarmAgentExecutor(AgentExecutor):
     def __init__(self):
@@ -55,9 +55,9 @@ class FarmAgentExecutor(AgentExecutor):
         """
         Execute the agent's logic for a given request context.
 
-        This method handles incoming message requests to generate a flavor profile for coffee beans.
+        This method handles incoming message requests to generate a yield estimate for coffee beans.
         The agent should extract the necessary information from the `context`, invoke the FarmAgent
-        to generate the flavor profile, and enqueue the response message to the `event_queue`.
+        to generate the yield estimate in lb, and enqueue the response message to the `event_queue`.
 
         During execution, the agent may also publish `Task`, `Message`, `TaskStatusUpdateEvent`,
         or `TaskArtifactUpdateEvent` events. This method should return once the agent's execution
@@ -86,16 +86,16 @@ class FarmAgentExecutor(AgentExecutor):
             if output.get("error_message") is not None and output.get("error_message") != "":
                 logger.error("Error in agent response: %s", output.get("error_message"))
                 message = new_agent_text_message(
-                    output.get("error_message", "Failed to generate flavor profile"),
+                    output.get("error_message", "Failed to generate yield estimate"),
                 )
                 event_queue.enqueue_event(message)
                 return
 
-            flavor = output.get("flavor_notes", "No flavor profile returned")
-            logger.info("Flavor profile generated: %s", flavor)
-            event_queue.enqueue_event(new_agent_text_message(flavor))
+            yield_estimate = output.get("yield_estimate", "No yield_estimate returned")
+            logger.info("Yield estimate generated: %s", yield_estimate)
+            event_queue.enqueue_event(new_agent_text_message(yield_estimate))
         except Exception as e:
-            logger.error(f'An error occurred while streaming the flavor profile response: {e}')
+            logger.error(f'An error occurred while streaming the yield estimate response: {e}')
             raise ServerError(error=InternalError()) from e
         
     async def cancel(
