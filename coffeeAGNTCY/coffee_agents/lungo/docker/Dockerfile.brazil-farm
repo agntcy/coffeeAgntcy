@@ -1,0 +1,19 @@
+FROM python:3.13.0-slim
+
+# Install system dependencies, including ping, curl, and wget
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends git curl wget iputils-ping && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+
+# Install uv and create virtual environment
+RUN pip install --no-cache-dir uv && \
+    uv venv -q /venv
+ENV PATH="/venv/bin:$PATH"
+
+WORKDIR /app
+COPY coffeeAGNTCY/coffee_agents/lungo/pyproject.toml coffeeAGNTCY/coffee_agents/lungo/uv.lock ./
+RUN uv sync --locked --no-editable
+
+COPY coffeeAGNTCY/coffee_agents/lungo/ .
+CMD ["uv", "run", "python", "farms/brazil/farm_server.py"]
