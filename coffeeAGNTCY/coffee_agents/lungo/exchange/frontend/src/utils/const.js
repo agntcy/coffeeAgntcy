@@ -20,3 +20,9 @@ export const Role = {
     ASSISTANT: 'assistant',
     USER: 'user',
 };
+
+// Icon types for Edge Labels
+export const EdgeLabelIcon = {
+    GOOGLE: 'google',
+    MCP: 'mcp',
+};

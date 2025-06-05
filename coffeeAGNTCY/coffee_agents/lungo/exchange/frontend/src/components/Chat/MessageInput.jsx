@@ -54,7 +54,7 @@ const iconContainerStyle = (disabled) => css`
   opacity: ${disabled ? 0.5 : 1};
 `;
 
-function MessageInput({ messages, setMessages, setButtonClicked }) {
+function MessageInput({ messages, setMessages, setButtonClicked, setAiReplied }) {
     const [content, setContent] = useState("");
     const [loading, setLoading] = useState(false);
 
@@ -112,6 +112,7 @@ function MessageInput({ messages, setMessages, setButtonClicked }) {
             setMessages([...messages, userMessage, errorReply]);
         } finally {
             setLoading(false);
+            setAiReplied(true);
         }
     };
 
