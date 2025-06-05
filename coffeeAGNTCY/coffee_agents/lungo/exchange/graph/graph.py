@@ -18,13 +18,14 @@ import logging
 import uuid
 
 from langchain_core.messages import AIMessage
+
 from langgraph.graph.state import CompiledStateGraph
 from langgraph.prebuilt import create_react_agent
 from langgraph_supervisor import create_supervisor
 
 from common.llm import get_llm
-
-#from farm.card import AGENT_CARD as farm_agent_card
+from farms.brazil.card import AGENT_CARD as farm_agent_card
+from graph.tools import FetchHarvestTool, GetFarmYieldTool
 
 logger = logging.getLogger("corto.supervisor.graph")
 
@@ -45,24 +46,46 @@ class ExchangeGraph:
         CompiledGraph: A fully compiled LangGraph instance ready for execution.
         """
         model = get_llm()
-        
-        get_flavor_profile_a2a_agent = create_react_agent(
+
+        get_farm_yields_tool = GetFarmYieldTool()
+
+        get_farm_yields_tool = create_react_agent(
             model=model,
-            tools=[],  # list of tools for the agent
-            name="get_flavor_profile_via_a2a",
+            tools=[get_farm_yields_tool],
+            name="get_farm_yields",
+        )
+    
+        fetch_harvest_tool = FetchHarvestTool(
+            remote_agent_card=farm_agent_card,
+        )
+
+        fetch_harvest = create_react_agent(
+            model=model,
+            tools=[fetch_harvest_tool],
+            name="fetch_harvest",
         )
         graph = create_supervisor(
             model=model,
-            agents=[get_flavor_profile_a2a_agent],  # worker agents list
-            prompt=(
-                "You are a supervisor agent.\n"
-                "If the user's prompt is related to the flavor, taste, or sensory profile of coffee, assign the task to get_flavor_profile_via_a2a.\n"
-                "If the prompt does not match any worker agent, respond kindly: "
-                "\"I'm sorry, I cannot assist with that request. Please ask about coffee flavor or taste.\"\n"
-                "If the worker agent returns control to you and it is a success and does not contain errors, do not generate any further messages or responses. End the conversation immediately by returning an empty response."
-                "If the worker agent returns control to you and it is an error, give the same kind error message.\n"
+            agents=[get_farm_yields_tool, fetch_harvest],  # worker agents list
+        prompt=(
+                "You are a supervisor agent responsible for handling coffee requests in pounds (lb).\n\n"
+
+                "## TASK FLOW:\n"
+                "1. First, use the tool `get_farm_yields` to retrieve a dictionary mapping farm names to their available coffee yields in pounds.\n"
+                "2. From the returned dictionary, identify the farm with the **largest yield**.\n"
+                "3. Then, assign the task to the tool `fetch_harvest` to send the user's request (in pounds) to that top-yield farm.\n"
+                "   - Input: the selected farm name and the quantity requested by the user.\n\n"
+
+                "## RULES:\n"
+                "- Only proceed if the user's prompt clearly asks for coffee in pounds. Forgive them if they make small typos.\n"
+                "- If the request is invalid or unrelated to coffee/lb, respond with:\n"
+                "  \"I'm sorry, I can only help with coffee requests in pounds.\"\n"
+                " Provide a detailed explanation of why the request is invalid.\n" # delete later
+                "- If either tool returns an error or fails, return a user-friendly error message explaining the failure.\n"
+                "- If both tool calls succeed, respond with a message in this format:\n"
+                "  \"<FarmName> will fulfill your order of <X> lb of coffee. It will be sent to you shortly.\"\n"
             ),
-            add_handoff_back_messages=False,
+            # add_handoff_back_messages=False,
             output_mode="last_message",
         ).compile()
         logger.debug("LangGraph supervisor created and compiled successfully.")
@@ -89,7 +112,9 @@ class ExchangeGraph:
                 ],
             }, {"configurable": {"thread_id": uuid.uuid4()}})
 
+            logger.debug(f"Graph response: {result}")
             messages = result.get("messages", [])
+            logger.debug(f"Graph response messages: {messages}")
             if not messages:
                 raise RuntimeError("No messages found in the graph response.")
 

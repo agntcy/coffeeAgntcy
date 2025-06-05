@@ -26,37 +26,36 @@ class State(TypedDict):
     prompt: str
     error_type: str
     error_message: str
-    flavor_notes: str
+    yield_estimate: str
 
 
 class FarmAgent:
     def __init__(self):
         graph_builder = StateGraph(State)
-        graph_builder.add_node("FlavorNode", self.flavor_node)
-        graph_builder.add_edge(START, "FlavorNode")
-        graph_builder.add_edge("FlavorNode", END)
+        graph_builder.add_node("YieldNode", self.yield_node)
+        graph_builder.add_edge(START, "YieldNode")
+        graph_builder.add_edge("YieldNode", END)
         self._agent = graph_builder.compile()
 
-    async def flavor_node(self, state: State):
+    async def yield_node(self, state: State):
         """
-        Generate a flavor profile for coffee beans based on user input by connecting to an LLM.
-        
+        Generate a yield estimate for coffee beans based on user input by connecting to an LLM.
+
         Args:
             state (State): The current state containing the user prompt.
         Returns:
-            dict: A dictionary containing the flavor notes or an error message if the input is invalid.        
+            dict: A dictionary containing the yield estimate or an error message if the input is invalid.
         """
         user_prompt = state.get("prompt")
 
         system_prompt = (
-            "You are a coffee farming expert and flavor profile connoisseur.\n"
-            "The user will describe a question or scenario related to a coffee farm. "
+            "You are a coffee farm in Brazil\n"
+            "The user will describe a question or scenario related to fetching the yield from your coffee farm. "
             "Your job is to:\n"
-            "1. Extract the `location` and `season` from the input if possible.\n"
-            "2. Based on those, describe the expected **flavor profile** of the coffee grown there.\n"
-            "3. Respond with only a brief, expressive flavor profile (1–3 sentences). "
+            "1. Return a random yield estimate for the coffee farm in Brazil. Make sure the estimate is a reasonable value and in pounds.\n"
+            "2. Respond with only the yield estimate in pounds, without any additional text or explanation.\n"
             "Use tasting terminology like acidity, body, aroma, and finish.\n"
-            "Respond with an empty response if no valid location or season is found. Do not include quotes or any placeholder."
+            "Respond with an empty response if the user prompt does not relate to fetching the yield from the Brazilian coffee farm. Do not include quotes or any placeholder."
         )
 
         messages = [
@@ -64,14 +63,14 @@ class FarmAgent:
             HumanMessage(content=user_prompt)
         ]
         response = get_llm().invoke(messages)
-        flavor_notes = response.content
-        if not flavor_notes.strip():
+        yield_estimate = response.content
+        if not yield_estimate.strip():
             return {
                 "error_type": "invalid_input",
-                "error_message": "Could not confidently extract coffee farm context from user prompt."
+                "error_message": "Invalid prompt. Please provide a valid question or scenario related to fetching the yield from the Brazilian coffee farm."
             }
 
-        return {"flavor_notes": flavor_notes}
+        return {"yield_estimate": yield_estimate}
 
     async def ainvoke(self, input: str) -> dict:
         """
@@ -79,6 +78,6 @@ class FarmAgent:
         Args:
             input (str): The user input to process.
         Returns:
-            dict: The result of the agent's processing, containing flavor notes or an error message.
+            dict: The result of the agent's processing, containing yield estimates or an error message.
         """
         return await self._agent.ainvoke({"prompt": input})

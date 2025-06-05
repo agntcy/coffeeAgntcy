@@ -29,11 +29,14 @@ from a2a.types import (
     Role,
 )
 
+from langchain_core.tools import StructuredTool
+from pydantic import BaseModel
+
 from langchain_core.tools import BaseTool
 from langchain_core.callbacks import (
     CallbackManagerForToolRun,
 )
-from graph.models import FlavorProfileInput, FlavorProfileOutput
+from graph.models import FetchHarvestInput, FetchHarvestOutput
 
 from gateway_sdk.protocols.a2a.gateway import A2AProtocol
 from gateway_sdk.factory import GatewayFactory
@@ -50,16 +53,44 @@ transport = factory.create_transport(
     endpoint=TRANSPORT_SERVER_ENDPOINT,
 )
 
-class FlavorProfileTool(BaseTool):
-    """
-    This tool sends a prompt to the A2A agent and returns the flavor profile estimation.
-    """
-    name: str = "get_flavor_profile"
-    description: str = "Estimates the flavor profile of coffee beans based on a given prompt."
+class NoInput(BaseModel):
+    pass
 
-    # private attribute to store client connection
-    _client = PrivateAttr()
+class GetFarmYieldTool(BaseTool):
+    """
+    Tool to fetch coffee yield from a specific farm.
+
+    No input
     
+    Output:
+        dict: Dictionary with country as key and yield as float value (e.g., {"brazil": 100})
+    """
+    name: str = "get_farm_yield"
+    description: str = "Fetches the coffee yield from a specific farm."
+
+    def _run(self, input: NoInput, **kwargs: Any) -> float:
+        raise NotImplementedError("Use _arun for async execution.")
+
+    async def _arun(self, input: NoInput, **kwargs: Any) -> dict[str, float]:
+        stubbed_response = {"brazil": 100}
+        logger.info(f"yield status: {stubbed_response}")
+        return stubbed_response
+
+class FetchHarvestTool(BaseTool):
+    """
+    Tool to fetch coffee harvest by sending a message to a remote A2A agent.
+
+    Input:
+        FetchHarvestInput: Contains a 'prompt' field (non-empty string)
+    
+    Output:
+        FetchHarvestOutput: A model with `status = 'success'` if successful
+    """
+    name: str = "fetch_harvest"
+    description: str = "Fetches the coffee harvest from a specific farm."
+
+    _client = PrivateAttr()
+
     def __init__(self, remote_agent_card: AgentCard, **kwargs: Any):
         super().__init__(**kwargs)
         self._remote_agent_card = remote_agent_card
@@ -77,23 +108,30 @@ class FlavorProfileTool(BaseTool):
         
         logger.info("Connected to remote agent")
 
-    def _run(self, input: FlavorProfileInput) -> float:
+    def _run(self, input: FetchHarvestInput) -> float:
         raise NotImplementedError("Use _arun for async execution.")
 
-    async def _arun(self, input: FlavorProfileInput, **kwargs: Any) -> float:
+    async def _arun(self, input: FetchHarvestInput, **kwargs: Any) -> FetchHarvestOutput:
         try:
-            if not input.get('prompt'):
+            if not input.get("prompt"):
                 logger.error("Invalid input: Prompt must be a non-empty string.")
                 raise ValueError("Invalid input: Prompt must be a non-empty string.")
-            resp = await self.send_message(input.get('prompt'))
-            return FlavorProfileOutput(flavor_profile=resp)
+            
+            resp = await self.send_message(input.get("prompt"))
+            logger.info(f"Response from agent: {resp}")
+            if not resp:
+                logger.error("No response received from the agent.")
+                raise ValueError("No response received from the agent.")
+
+            return FetchHarvestOutput(status="success")
+
         except Exception as e:
-            logger.error(f"Failed to get flavor profile: {str(e)}")
-            raise RuntimeError(f"Failed to get flavor profile: {str(e)}")
-    
+            logger.error(f"Failed to fetch harvest: {str(e)}")
+            raise RuntimeError(f"Failed to fetch harvest: {str(e)}")
+        
     async def send_message(self, prompt: str) -> str:
         """
-        Sends a message to the flavor profile farm agent via A2A, specifically invoking its `estimate_flavor` skill.
+        Sends a message to the Brazil farm agent via A2A, specifically invoking its `get_yield` skill.
         Args:
             prompt (str): The user input prompt to send to the agent.
         Returns:
@@ -106,9 +144,9 @@ class FlavorProfileTool(BaseTool):
 
         request = SendMessageRequest(
             params=MessageSendParams(
-                skill_id="estimate_flavor",
+                skill_id="get_yield",
                 sender_id="coffee-exchange-agent",
-                receiver_id="flavor-profile-farm-agent",
+                receiver_id="brazil-farm-agent",
                 message=Message(
                     messageId=str(uuid4()),
                     role=Role.user,

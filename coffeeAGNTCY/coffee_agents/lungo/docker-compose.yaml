@@ -18,6 +18,14 @@ services:
       - TRANSPORT_SERVER_ENDPOINT=http://agp-gateway:46357
     ports:
       - "9999:9999"
+  nats:
+    image: nats:latest
+    container_name: nats
+    ports:
+      - "4222:4222"
+      - "4223:4223"
+      - "6222:6222"
+      - "8222:8222"
 
   slim:
     image: ghcr.io/agntcy/slim:0.3.15

@@ -16,16 +16,32 @@
 
 from pydantic import BaseModel
 
-class FlavorProfileInput(BaseModel):
+class GetFarmYieldInput(BaseModel):
     """
-    Represents the input for the flavor profile estimation.
+    Represents the input for the get farm yield agent call.
+    This class is used to structure the input payload for the A2A agent.
+    """
+    farm_name: str
+
+class GetFarmYieldOutput(BaseModel):
+    """
+    Represents the output for the get farm yield agent call.
+    This class is used to structure the response from the A2A agent.
+    """
+    yields: dict[str, float] # Mapping of farm names to their yields in pounds
+
+class FetchHarvestInput(BaseModel):
+    """
+    Represents the input for the fetch harvest agent call.
     This class is used to structure the input payload for the A2A agent.
     """
     prompt: str
 
-class FlavorProfileOutput(BaseModel):
+class FetchHarvestOutput(BaseModel):
     """
-    Represents the output of the flavor profile estimation.
+    Represents the output of the fetch harvest agent call.
     This class is used to structure the response from the A2A agent.
     """
-    flavor_profile: str
+    status: str
+
+
