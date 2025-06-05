@@ -42,6 +42,9 @@ const Chat = ({ messages, setMessages, setButtonClicked }) => {
 
   return (
       <div className="chat_container">
+          <div className="chat_header">
+              Conversation with Buyer Agent:
+          </div>
         <div className="clear_chat_button_container">
             <ClearChatButton setMessages={setMessages} />
         </div>
