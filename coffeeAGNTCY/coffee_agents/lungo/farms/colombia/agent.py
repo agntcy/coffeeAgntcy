@@ -16,6 +16,7 @@
 
 import logging
 from typing import TypedDict
+from langgraph.graph import END, START, StateGraph
 
 from langchain_core.messages import HumanMessage, SystemMessage
 
@@ -30,7 +31,12 @@ class State(TypedDict):
 
 class FarmAgent:
     def __init__(self):
-        pass  # No graph setup needed
+        def __init__(self):
+            graph_builder = StateGraph(State)
+            graph_builder.add_node("YieldNode", self.yield_node)
+            graph_builder.add_edge(START, "YieldNode")
+            graph_builder.add_edge("YieldNode", END)
+            self._agent = graph_builder.compile()
 
     async def yield_node(self, state: State):
         """
@@ -66,4 +72,8 @@ class FarmAgent:
         """
         Asynchronously invoke the agent with the given input.
         """
-        return await self.yield_node({"prompt": input})
+        resp = await self._agent.ainvoke({"prompt": input})
+
+        print(f"Response from Columbia farm agent: {resp}")
+    
+        return resp

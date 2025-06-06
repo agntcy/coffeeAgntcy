@@ -15,6 +15,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import logging
+from uuid import uuid4
 
 from a2a.server.agent_execution import AgentExecutor, RequestContext
 from a2a.server.events import EventQueue
@@ -24,6 +25,10 @@ from a2a.types import (
     JSONRPCResponse,
     ContentTypeNotSupportedError,
     InternalError,
+    Message,
+    Role,
+    Part,
+    TextPart,
     Task)
 
 from a2a.utils import (
@@ -32,7 +37,6 @@ from a2a.utils import (
 )
 
 from agent import FarmAgent
-from agent_executor import FarmAgent
 
 logger = logging.getLogger("longo.brazil_farm_agent.agent_executor")
 
@@ -90,10 +94,22 @@ class FarmAgentExecutor(AgentExecutor):
                 )
                 event_queue.enqueue_event(message)
                 return
+            
+            # Translate the output of the graph into an A2A Message
+            messages = output.get("messages", [])
+            last_message = messages[-1] if messages else "No messages returned"
+            message = Message(
+                messageId=str(uuid4()),
+                role=Role.agent,
+                #metadtata=agent_info,
+                parts=[Part(TextPart(text=last_message))],
+            )
 
-            yield_estimate = output.get("yield_estimate", "No yield_estimate returned")
-            logger.info("Yield estimate generated: %s", yield_estimate)
-            event_queue.enqueue_event(new_agent_text_message(yield_estimate))
+            event_queue.enqueue_event(message)
+
+            #yield_estimate = output.get("yield_estimate", "No yield_estimate returned")
+            #logger.info("Yield estimate generated: %s", yield_estimate)
+            #event_queue.enqueue_event(new_agent_text_message(yield_estimate))
         except Exception as e:
             logger.error(f'An error occurred while streaming the yield estimate response: {e}')
             raise ServerError(error=InternalError()) from e

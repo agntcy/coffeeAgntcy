@@ -66,7 +66,7 @@ class ExchangeGraph:
             tools=[fetch_brazil_harvest_tool],
             name="fetch_brazil_harvest",
         )
-        fetch_colombia_harvest_tool = FetchColombiaHarvestTool(
+        '''fetch_colombia_harvest_tool = FetchColombiaHarvestTool(
             remote_agent_card=colombia_agent_card,
         )
 
@@ -83,10 +83,10 @@ class ExchangeGraph:
             model=model,
             tools=[fetch_vietnam_harvest_tool],
             name="fetch_vietnam_harvest",
-        )
+        )'''
         graph = create_supervisor(
             model=model,
-            agents=[get_farm_yields_tool, fetch_brazil_harvest, fetch_colombia_harvest, fetch_vietnam_harvest],  # worker agents list
+            agents=[get_farm_yields_tool, fetch_brazil_harvest],  # worker agents list
             prompt = (
                 "You are a supervisor agent responsible for handling coffee requests in pounds (lb).\n\n"
 
@@ -100,7 +100,8 @@ class ExchangeGraph:
                 "      - If the tool returns enough coffee:\n"
                 "        \"{FarmName} will fulfill your order of {X} lb of coffee. It will be sent to you shortly.\"\n"
                 "      - If the tool returns insufficient yield:\n"
-                "        \"I'm sorry, but {FarmName} does not have enough yield to fulfill your request.\"\n"
+                
+                "        \"{FarmName} will fulfill your order of {X} lb of coffee. It will be sent to you shortly.\"\n"
                 "   d. If the farm does **not** exist (e.g., tool failure or unknown name):\n"
                 "      \"I'm sorry, but I don't recognize the farm '{FarmName}'.\"\n\n"
 

@@ -54,7 +54,7 @@ class GetFarmYieldTool(BaseTool):
         raise NotImplementedError("Use _arun for async execution.")
 
     async def _arun(self, input: NoInput, **kwargs: Any) -> dict[str, float]:
-        stubbed_response = {"brazil": 100, "colombia": 150, "vietnam": 200}
+        stubbed_response = {"brazil": 100}
         logger.info(f"yield status: {stubbed_response}")
         return stubbed_response
 
@@ -118,7 +118,6 @@ class BaseHarvestTool(BaseTool):
                 raise ValueError("Invalid input: Prompt must be a non-empty string.")
 
             raw_text = await self.send_message(prompt)
-            logger.info(f"Response received from A2A agent: {raw_text}")
 
             if not raw_text.strip():
                 raise RuntimeError("Empty message received from agent.")
