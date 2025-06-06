@@ -31,15 +31,17 @@ const A2AEdgeLabel = ({ x, y}) => {
 
     return (
         <EdgeLabelRenderer>
-            <div className={`custom-edge-label`} css={dynamicStyle}>
+            <div className={`custom-edge-label a2a-edge-label`} css={dynamicStyle} >
                 <img
                     src={a2aIcon}
                     alt="A2A Icon"
                     style={{
-                        width: '100%',
-                        height: '100%',
+                        position: 'absolute',
+                        width: '75%',
+                        height: '75%',
                         opacity: 0.9, // Slightly lighter for A2A
-                        borderRadius: '0.75em', // Rounded corners for A2A
+                        borderRadius: '0.4em', // Rounded corners for A2A
+                        right: '6px',
                     }}
                 />
             </div>

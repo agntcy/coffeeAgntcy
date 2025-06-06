@@ -30,7 +30,7 @@
     z-index: 10;
     cursor: pointer;
     background-color: white;
-    border-radius: 50%;
+    border-radius: 50%; /* Makes the button round */
     padding: 2px;
     width: 35px;
     height: 35px;
@@ -38,6 +38,22 @@
     align-items: center;
     justify-content: center;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+
+.code-popup-code-style {
+    max-width: 90%;
+    max-height: 90%;
+    overflow: auto;
+    background-color: black;
+    color: #333;
+    padding: 15px;
+    border-radius: 8px;
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 14px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    white-space: pre-wrap;
+    word-wrap: break-word;
 }
 
 .code-popup-overlay-style {
@@ -66,4 +82,40 @@
     border-radius: 8px;
     background-color: white;
     animation: code-popup-scaleIn 0.25s ease-in-out;
+}
+
+.code-popup-header {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: 10px;
+}
+
+.copy-icon {
+    cursor: pointer;
+    margin-right: 10px;
+}
+
+.copy-badge {
+    background-color: rgba(144, 238, 144, 0.7);
+    color: white;
+    padding: 5px 10px;
+    border-radius: 12px;
+    font-size: 11px;
+    margin-left: 10px;
+    /*animation: fadeInOut 2s ease-in-out;*/
+}
+
+@keyframes fadeInOut {
+    0% {
+        opacity: 0;
+    }
+    10% {
+        opacity: 1;
+    }
+    90% {
+        opacity: 1;
+    }
+    100% {
+        opacity: 0;
+    }
 }

@@ -46,3 +46,9 @@
     transform: translateX(50%);
     text-align: right;
 }
+
+.a2a-edge-label {
+    width: 35px;
+    height: 15px;
+    position: relative;
+}

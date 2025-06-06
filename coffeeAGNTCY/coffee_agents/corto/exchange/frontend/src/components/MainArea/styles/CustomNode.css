@@ -74,7 +74,7 @@
 }
 
 .node-active{
-    background-color: rgba(221, 229, 255, 0.4);
+    background-color: rgba(144, 238, 144, 0.7);
     outline: 4px solid rgb(24, 122, 220);
     box-shadow: rgba(0, 0, 0, 0.4) 0px 6px 8px;
 }
