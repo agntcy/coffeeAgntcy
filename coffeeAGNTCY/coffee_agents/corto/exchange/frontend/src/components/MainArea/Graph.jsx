@@ -16,7 +16,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import {
     ReactFlow,
     ReactFlowProvider,
@@ -25,201 +25,206 @@ import {
     Controls,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
-import CustomEdge from './Edge';
+import { FaUserTie, FaWarehouse, FaCloudSun } from 'react-icons/fa';
+import SlimNode from './SlimNode';
+import CustomEdge from './CustomEdge';
+import CustomNode from './CustomNode';
+import { EdgeLabelIcon } from '../../utils/const.js';
 
-const DELAY_DURATION = 1000; // Duration for each animation step in milliseconds
 const proOptions = { hideAttribution: true };
 
-// Color constants
+// Node types
+const nodeTypes = {
+    slimNode: SlimNode,
+    customNode: CustomNode,
+};
+
+// Constants
+const DELAY_DURATION = 1000; // Animation delay in milliseconds
+
+// Colors
 const COLORS = {
     NODE: {
-        ORIGINAL: {
-            BORDER: '#187ADC',
-            BACKGROUND: 'rgba(24, 122, 220, 0.4)',
-            TEXT: '#000000',
-        },
-        TRANSFER: {
-            BORDER: '#00FF00',
-            BACKGROUND: 'rgba(0, 255, 0, 0.4)',
-        },
-    },
-    EDGE: {
-        ORIGINAL: {
-            STROKE: '#187ADC',
-            LABEL_TEXT: '#FFFFFF',
-            LABEL_BACKGROUND: '#187ADC',
-        },
-        TRANSFER: {
-            STROKE: 'rgba(0, 255, 0, 0.4)',
-            LABEL_TEXT: '#000000',
-            LABEL_BACKGROUND: 'rgba(0, 255, 0, 0.7)',
-        },
+        ORIGINAL: { BACKGROUND: '#F5F5F5' },
     },
 };
 
-// Constants for node and edge IDs
+const HIGHLIGHT = {
+    ON: true,
+    OFF: false,
+};
+
+// Node and Edge IDs
 const NODE_IDS = {
     BUYER: '1',
-    SOMMELIER: '2',
+    SLIM: '2',
+    SOMMELIER: '3',
 };
 
 const EDGE_IDS = {
-    BUYER_TO_SOMMELIER: '1-2',
+    BUYER_TO_SLIM: '1-2',
+    SLIM_TO_SOMMELIER: '2-3',
 };
 
-// Initial nodes and edges
+// Initial nodes
+const commonNodeData = {
+    backgroundColor: COLORS.NODE.ORIGINAL.BACKGROUND,
+};
+
+
+/*
+Node ID: 1, Position: X=529.1332569384248, Y=159.4805787605829
+Graph.jsx:151 Node ID: 2, Position: X=512.0237044953464, Y=368.688426426175
+Graph.jsx:151 Node ID: 3, Position: X=534.0903941835277, Y=582.9317472571444
+ */
 const initialNodes = [
     {
         id: NODE_IDS.BUYER,
-        type: 'input',
-        data: { label: 'Buyer' },
-        position: { x: 250, y: 50 },
-        style: {
-            fontFamily: "'CiscoSansTT'",
-            border: `1px solid ${COLORS.NODE.ORIGINAL.BORDER}`,
-            backgroundColor: COLORS.NODE.ORIGINAL.BACKGROUND,
-            color: COLORS.NODE.ORIGINAL.TEXT,
-            fontWeight: '100',
-            padding: 10,
-            borderRadius: 5,
+        type: 'customNode',
+        data: {
+            ...commonNodeData,
+            icon: <FaUserTie />,
+            label1: 'Supervisor Agent',
+            label2: 'Buyer',
+            handles: 'source',
         },
+        position: { x: 529.1332569384248, y: 159.4805787605829 },
+    },
+    {
+        id: NODE_IDS.SLIM,
+        type: 'slimNode',
+        data: {
+            ...commonNodeData,
+            label: 'SLIM',
+        },
+        position: { x: 512.0237044953464, y: 368.688426426175 },
     },
     {
         id: NODE_IDS.SOMMELIER,
-        type: 'output',
+        type: 'customNode',
         data: {
-            label: (
-                <div>
-                    Sommelier
-                    <div style={{ fontSize: '.65em' }}>
-                        (Q Grader)
-                    </div>
-                </div>
-            ),
+            ...commonNodeData,
+            icon: <FaWarehouse />,
+            label1: 'Q Grader Agent',
+            label2: 'Sommelier',
+            handles: 'target',
         },
-        position: { x: 250, y: 250 },
-        style: {
-            fontFamily: "'CiscoSansTT'",
-            border: `1px solid ${COLORS.NODE.ORIGINAL.BORDER}`,
-            backgroundColor: COLORS.NODE.ORIGINAL.BACKGROUND,
-            color: COLORS.NODE.ORIGINAL.TEXT,
-            fontWeight: '100',
-            padding: 10,
-            borderRadius: 5,
-        },
+        position: { x: 534.0903941835277, y: 582.9317472571444 },
     },
 ];
 
-const initialEdges = [
-    {
-        id: EDGE_IDS.BUYER_TO_SOMMELIER,
-        source: NODE_IDS.BUYER,
-        target: NODE_IDS.SOMMELIER,
-        style: { stroke: COLORS.EDGE.ORIGINAL.STROKE, strokeWidth: 2 },
-        data: {
-            label: 'A2A : SLIM',
-            edgeColor: COLORS.EDGE.ORIGINAL.STROKE,
-            labelColor: COLORS.EDGE.ORIGINAL.LABEL_TEXT,
-            labelBackgroundColor: COLORS.EDGE.ORIGINAL.LABEL_BACKGROUND,
-        },
-        type: 'custom',
-    },
-];
-
+// Edge types
 const edgeTypes = {
     custom: CustomEdge,
 };
 
-const Graph = ({ buttonClicked, setButtonClicked }) => {
+// Initial edges
+const initialEdges = [
+    {
+        id: EDGE_IDS.BUYER_TO_SLIM,
+        source: NODE_IDS.BUYER,
+        target: NODE_IDS.SLIM,
+        targetHandle: 'top',
+        data: { label: 'A2A', labelIconType: EdgeLabelIcon.A2A },
+        type: 'custom',
+    },
+    {
+        id: EDGE_IDS.SLIM_TO_SOMMELIER,
+        source: NODE_IDS.SLIM,
+        target: NODE_IDS.SOMMELIER,
+        sourceHandle: 'bottom_center',
+        data: { label: 'A2A', labelIconType: EdgeLabelIcon.A2A },
+        type: 'custom',
+    },
+    {
+        id: EDGE_IDS.SLIM_TO_COLOMBIA,
+        source: NODE_IDS.SLIM,
+        target: NODE_IDS.COLOMBIA,
+        sourceHandle: 'bottom_center',
+        data: { label: 'A2A', labelIconType: EdgeLabelIcon.A2A },
+        type: 'custom',
+    },
+];
+
+const Graph = ({ buttonClicked, setButtonClicked, aiReplied, setAiReplied }) => {
     const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
     const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
+    const animationLock = useRef(false); // Lock to prevent overlapping animations
 
     useEffect(() => {
-        if (!buttonClicked) return;
+        if (nodes) {
+            nodes.forEach((node) => {
+                console.log(`Node ID: ${node.id}, Position: X=${node.position.x}, Y=${node.position.y}`);
+            });
+        }
+    }, [nodes]);
+
+    const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+    const updateStyle = (id, active) => {
+        setNodes((objs) =>
+            objs.map((obj) =>
+                obj.id === id
+                    ? { ...obj, data: { ...obj.data, active } }
+                    : obj
+            )
+        );
+        setEdges((objs) =>
+            objs.map((obj) =>
+                obj.id === id
+                    ? { ...obj, data: { ...obj.data, active } }
+                    : obj
+            )
+        );
+    };
+
+    useEffect(() => {
+        if (!buttonClicked && !aiReplied) return;
+        if (animationLock.current) return; // Prevent overlapping animations
+        animationLock.current = true;
+
+        const animate = async (ids, active) => {
+            ids.forEach((id) => updateStyle(id, active));
+            await delay(DELAY_DURATION);
+        };
 
         const animateGraph = async () => {
-            const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+            if (!aiReplied) {
+                // Forward animation
+                await animate([NODE_IDS.BUYER], HIGHLIGHT.ON);
+                await animate([NODE_IDS.BUYER], HIGHLIGHT.OFF);
+                await animate([EDGE_IDS.BUYER_TO_SLIM], HIGHLIGHT.ON);
+                await animate([EDGE_IDS.BUYER_TO_SLIM], HIGHLIGHT.OFF);
 
-            // Change first node to TRANSFER color
-            setNodes((nds) =>
-                nds.map((node) =>
-                    node.id === NODE_IDS.BUYER
-                        ? {
-                            ...node,
-                            style: {
-                                ...node.style,
-                                backgroundColor: COLORS.NODE.TRANSFER.BACKGROUND,
-                                border: `1px solid ${COLORS.NODE.TRANSFER.BORDER}`,
-                            },
-                        }
-                        : node
-                )
-            );
-            await delay(DELAY_DURATION);
+                await animate([NODE_IDS.SLIM], HIGHLIGHT.ON);
+                await animate([NODE_IDS.SLIM], HIGHLIGHT.OFF);
+                await animate([EDGE_IDS.SLIM_TO_SOMMELIER], HIGHLIGHT.ON);
+                await animate([EDGE_IDS.SLIM_TO_SOMMELIER], HIGHLIGHT.OFF);
 
-            // Change edge to TRANSFER color
-            setEdges((eds) =>
-                eds.map((edge) =>
-                    edge.id === EDGE_IDS.BUYER_TO_SOMMELIER
-                        ? {
-                            ...edge,
-                            style: { ...edge.style, stroke: COLORS.EDGE.TRANSFER.STROKE },
-                            data: {
-                                ...edge.data,
-                                edgeColor: COLORS.EDGE.TRANSFER.STROKE,
-                                labelColor: COLORS.EDGE.TRANSFER.LABEL_TEXT,
-                                labelBackgroundColor: COLORS.EDGE.TRANSFER.LABEL_BACKGROUND,
-                            },
-                        }
-                        : edge
-                )
-            );
-            await delay(DELAY_DURATION);
+                await animate([NODE_IDS.SOMMELIER], HIGHLIGHT.ON);
+                await animate([NODE_IDS.SOMMELIER], HIGHLIGHT.OFF);
+            } else {
+                // Backward animation
+                setAiReplied(false);
+            }
 
-            // Change second node to TRANSFER color
-            setNodes((nds) =>
-                nds.map((node) =>
-                    node.id === NODE_IDS.SOMMELIER
-                        ? {
-                            ...node,
-                            style: {
-                                ...node.style,
-                                backgroundColor: COLORS.NODE.TRANSFER.BACKGROUND,
-                                border: `1px solid ${COLORS.NODE.TRANSFER.BORDER}`,
-                            },
-                        }
-                        : node
-                )
-            );
-            await delay(DELAY_DURATION);
-
-            // Reset nodes and edges to initial state
-            setNodes((nds) =>
-                nds.map((node) => ({
-                    ...node,
-                    style: initialNodes.find((n) => n.id === node.id).style,
-                    position: node.position, // Ensure position remains unchanged
-                }))
-            );
-            setEdges(initialEdges);
-
-            // Reset buttonClicked state
             setButtonClicked(false);
+            animationLock.current = false; // Release the lock
         };
 
         animateGraph();
-    }, [buttonClicked, setButtonClicked]);
+    }, [buttonClicked, setButtonClicked, aiReplied]);
 
     return (
         <div style={{ width: '100%', height: '100%' }}>
             <ReactFlow
                 nodes={nodes}
                 edges={edges}
+                nodeTypes={nodeTypes}
+                edgeTypes={edgeTypes}
                 onNodesChange={onNodesChange}
                 onEdgesChange={onEdgesChange}
                 proOptions={proOptions}
-                edgeTypes={edgeTypes}
-                fitView
             >
                 <Controls />
             </ReactFlow>
@@ -227,13 +232,10 @@ const Graph = ({ buttonClicked, setButtonClicked }) => {
     );
 };
 
-// Wrapping with ReactFlowProvider
-function FlowWithProvider(props) {
-    return (
-        <ReactFlowProvider>
-            <Graph {...props} />
-        </ReactFlowProvider>
-    );
-}
+const FlowWithProvider = (props) => (
+    <ReactFlowProvider>
+        <Graph {...props} />
+    </ReactFlowProvider>
+);
 
 export default FlowWithProvider;

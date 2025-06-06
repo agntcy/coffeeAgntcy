@@ -40,24 +40,8 @@ const SlimNode = ({ data }) => {
             <Handle
                 type="source"
                 position={Position.Bottom}
-                id="bottom_left"
-                style={{ left: '18%', width: '0.1px', height: '0.1px',
-                    border: `1px solid darkgrey`,
-                    background: data.handleColor || DefaultHandleColor }}
-            />
-            <Handle
-                type="source"
-                position={Position.Bottom}
                 id="bottom_center"
                 style={{ left: '50%', width: '0.1px', height: '0.1px',
-                    border: `1px solid darkgrey`,
-                    background: data.handleColor || DefaultHandleColor }}
-            />
-            <Handle
-                type="source"
-                position={Position.Bottom}
-                id="bottom_right"
-                style={{ left: '82%', width: '0.1px', height: '0.1px',
                     border: `1px solid darkgrey`,
                     background: data.handleColor || DefaultHandleColor }}
             />

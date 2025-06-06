@@ -1,0 +1,75 @@
+/**
+ * Copyright 2025 Cisco Systems, Inc. and its affiliates
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+.message-container {
+    display: flex;
+    justify-content: center;
+    padding: 30px 0;
+}
+
+.message-container.ai-message {
+    background: rgb(247, 247, 248);
+}
+
+.avatar-container {
+    width: 35px;
+    height: 35px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.message-text {
+    width: 80%;
+    padding: 0;
+    margin: 8px;
+    overflow-wrap: break-word;
+}
+
+.message-input-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    width: 100%;
+}
+
+.message-input {
+    width: 650px;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    height: 40px;
+    outline: none;
+    font-size: 14px;
+    padding: 0 10px;
+    font-family: inherit;
+}
+
+.icon-container {
+    position: absolute;
+    right: 17.5px;
+    top: 50%;
+    transform: translateY(-50%);
+    cursor: pointer;
+    opacity: 1;
+}
+
+.icon-container.disabled {
+    cursor: text;
+    opacity: 0.5;
+}

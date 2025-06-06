@@ -1,3 +1,21 @@
+/**
+ * Copyright 2025 Cisco Systems, Inc. and its affiliates
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 import React, { useEffect, useRef } from 'react';
 import {
     ReactFlow,
@@ -22,14 +40,18 @@ const nodeTypes = {
 };
 
 // Constants
-const DELAY_DURATION = 1750; // Animation delay in milliseconds
+const DELAY_DURATION = 1000; // Animation delay in milliseconds
 
 // Colors
 const COLORS = {
     NODE: {
         ORIGINAL: { BACKGROUND: '#F5F5F5' },
-        TRANSFER: { BACKGROUND: 'rgba(255, 223, 0, 0.4)' },
     },
+};
+
+const HIGHLIGHT = {
+    ON: true,
+    OFF: false,
 };
 
 // Node and Edge IDs
@@ -39,7 +61,20 @@ const NODE_IDS = {
     BRAZIL: '3',
     COLOMBIA: '4',
     COFFEE_FARM_SITE: '5',
-    TATOUINE: '6',
+    VIETNAM: '6',
+};
+
+const EDGE_IDS = {
+    BUYER_TO_SLIM: '1-2',
+    SLIM_TO_BRAZIL: '2-3',
+    SLIM_TO_COLOMBIA: '2-4',
+    COLOMBIA_TO_COFFEE_FARM_SITE: '4-5',
+    SLIM_TO_VIETNAM: '2-6',
+};
+
+// Initial nodes
+const commonNodeData = {
+    backgroundColor: COLORS.NODE.ORIGINAL.BACKGROUND,
 };
 
 const initialNodes = [
@@ -47,119 +82,116 @@ const initialNodes = [
         id: NODE_IDS.BUYER,
         type: 'customNode',
         data: {
+            ...commonNodeData,
             icon: <FaUserTie />,
             label1: 'Supervisor Agent',
             label2: 'Buyer',
             handles: 'source',
-            backgroundColor: COLORS.NODE.ORIGINAL.BACKGROUND,
         },
-        position: { x: 300, y: 50 },
+        position: { x: 527.1332569384248, y: 76.4805787605829 },
     },
     {
         id: NODE_IDS.SLIM,
         type: 'slimNode',
         data: {
+            ...commonNodeData,
             label: 'Pub/Sub (SLIM)',
-            backgroundColor: COLORS.NODE.ORIGINAL.BACKGROUND,
         },
-        position: { x: 60, y: 250 },
+        position: { x: 229.02370449534635, y: 284.688426426175 },
     },
     {
         id: NODE_IDS.BRAZIL,
         type: 'customNode',
         data: {
+            ...commonNodeData,
             icon: <FaWarehouse />,
             label1: 'Coffee Farm Agent',
             label2: 'Brazil',
             handles: 'target',
-            backgroundColor: COLORS.NODE.ORIGINAL.BACKGROUND,
         },
-        position: { x: 93, y: 450 },
+        position: { x: 232.0903941835277, y: 503.93174725714437 },
     },
     {
         id: NODE_IDS.COLOMBIA,
         type: 'customNode',
         data: {
+            ...commonNodeData,
             icon: <FaWarehouse />,
             label1: 'Coffee Farm Agent',
             label2: 'Colombia',
             handles: 'all',
-            backgroundColor: COLORS.NODE.ORIGINAL.BACKGROUND,
         },
-        position: { x: 303, y: 450 },
+        position: { x: 521.266082170288, y: 505.38817113883306 },
     },
     {
-        id: NODE_IDS.TATOUINE,
+        id: NODE_IDS.VIETNAM,
         type: 'customNode',
         data: {
+            ...commonNodeData,
             icon: <FaWarehouse />,
             label1: 'Coffee Farm Agent',
-            label2: 'Tatouine',
+            label2: 'Vietnam',
             handles: 'target',
-            backgroundColor: COLORS.NODE.ORIGINAL.BACKGROUND,
         },
-        position: { x: 512, y: 450 },
+        position: { x: 832.9824511707582, y: 505.08339631990395 },
     },
     {
         id: NODE_IDS.COFFEE_FARM_SITE,
         type: 'customNode',
         data: {
+            ...commonNodeData,
             icon: <FaCloudSun />,
             label1: 'MCP Server',
             label2: 'Weather',
             handles: 'target',
-            backgroundColor: COLORS.NODE.ORIGINAL.BACKGROUND,
         },
-        position: { x: 303, y: 650 },
+        position: { x: 569.3959708104304, y: 731.9104402412228 },
     },
 ];
 
+// Edge types
 const edgeTypes = {
     custom: CustomEdge,
 };
 
+// Initial edges
 const initialEdges = [
     {
-        id: '1-2',
+        id: EDGE_IDS.BUYER_TO_SLIM,
         source: NODE_IDS.BUYER,
         target: NODE_IDS.SLIM,
         targetHandle: 'top',
-        style: { stroke: '#187ADC', strokeWidth: 2 },
         data: { label: 'A2A', labelIconType: EdgeLabelIcon.A2A },
         type: 'custom',
     },
     {
-        id: '2-3',
+        id: EDGE_IDS.SLIM_TO_BRAZIL,
         source: NODE_IDS.SLIM,
         target: NODE_IDS.BRAZIL,
         sourceHandle: 'bottom_left',
-        style: { stroke: '#187ADC', strokeWidth: 2 },
         data: { label: 'A2A', labelIconType: EdgeLabelIcon.A2A },
         type: 'custom',
     },
     {
-        id: '2-4',
+        id: EDGE_IDS.SLIM_TO_COLOMBIA,
         source: NODE_IDS.SLIM,
         target: NODE_IDS.COLOMBIA,
         sourceHandle: 'bottom_center',
-        style: { stroke: '#187ADC', strokeWidth: 2 },
         data: { label: 'A2A', labelIconType: EdgeLabelIcon.A2A },
         type: 'custom',
     },
     {
-        id: '4-5',
+        id: EDGE_IDS.COLOMBIA_TO_COFFEE_FARM_SITE,
         source: NODE_IDS.COLOMBIA,
         target: NODE_IDS.COFFEE_FARM_SITE,
-        style: { stroke: '#187ADC', strokeWidth: 2 },
         data: { label: 'MCP', labelIconType: EdgeLabelIcon.MCP },
         type: 'custom',
     },
     {
-        id: '2-6',
+        id: EDGE_IDS.SLIM_TO_VIETNAM,
         source: NODE_IDS.SLIM,
-        target: NODE_IDS.TATOUINE,
+        target: NODE_IDS.VIETNAM,
         sourceHandle: 'bottom_right',
-        style: { stroke: '#187ADC', strokeWidth: 2 },
         data: { label: 'A2A', labelIconType: EdgeLabelIcon.A2A },
         type: 'custom',
     },
@@ -172,12 +204,19 @@ const Graph = ({ buttonClicked, setButtonClicked, aiReplied, setAiReplied }) => 
 
     const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
-    const updateNodeStyle = (nodeId, backgroundColor) => {
-        setNodes((nds) =>
-            nds.map((node) =>
-                node.id === nodeId && node.type === 'customNode'
-                    ? { ...node, data: { ...node.data, backgroundColor } }
-                    : node
+    const updateStyle = (id, active) => {
+        setNodes((objs) =>
+            objs.map((obj) =>
+                obj.id === id
+                    ? { ...obj, data: { ...obj.data, active } }
+                    : obj
+            )
+        );
+        setEdges((objs) =>
+            objs.map((obj) =>
+                obj.id === id
+                    ? { ...obj, data: { ...obj.data, active } }
+                    : obj
             )
         );
     };
@@ -187,46 +226,34 @@ const Graph = ({ buttonClicked, setButtonClicked, aiReplied, setAiReplied }) => 
         if (animationLock.current) return; // Prevent overlapping animations
         animationLock.current = true;
 
-        const animateNode = async (nodeIds, color) => {
-            nodeIds.forEach((nodeId) => updateNodeStyle(nodeId, color));
+        const animate = async (ids, active) => {
+            ids.forEach((id) => updateStyle(id, active));
             await delay(DELAY_DURATION);
         };
-
-        const getRandomInt = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
 
         const animateGraph = async () => {
             if (!aiReplied) {
                 // Forward animation
-                await animateNode([NODE_IDS.BUYER], COLORS.NODE.TRANSFER.BACKGROUND);
-                await animateNode([NODE_IDS.BUYER], COLORS.NODE.ORIGINAL.BACKGROUND);
+                await animate([NODE_IDS.BUYER], HIGHLIGHT.ON);
+                await animate([NODE_IDS.BUYER], HIGHLIGHT.OFF);
+                await animate([EDGE_IDS.BUYER_TO_SLIM], HIGHLIGHT.ON);
+                await animate([EDGE_IDS.BUYER_TO_SLIM], HIGHLIGHT.OFF);
 
-                await animateNode([NODE_IDS.BRAZIL, NODE_IDS.COLOMBIA, NODE_IDS.TATOUINE], COLORS.NODE.TRANSFER.BACKGROUND);
-                await animateNode([NODE_IDS.BRAZIL, NODE_IDS.COLOMBIA, NODE_IDS.TATOUINE], COLORS.NODE.ORIGINAL.BACKGROUND);
+                await animate([NODE_IDS.SLIM], HIGHLIGHT.ON);
+                await animate([NODE_IDS.SLIM], HIGHLIGHT.OFF);
+                await animate([EDGE_IDS.SLIM_TO_BRAZIL, EDGE_IDS.SLIM_TO_COLOMBIA, EDGE_IDS.SLIM_TO_VIETNAM], HIGHLIGHT.ON);
+                await animate([EDGE_IDS.SLIM_TO_BRAZIL, EDGE_IDS.SLIM_TO_COLOMBIA, EDGE_IDS.SLIM_TO_VIETNAM], HIGHLIGHT.OFF);
 
-                await animateNode([NODE_IDS.COFFEE_FARM_SITE], COLORS.NODE.TRANSFER.BACKGROUND);
-                await animateNode([NODE_IDS.COFFEE_FARM_SITE], COLORS.NODE.ORIGINAL.BACKGROUND);
+                await animate([NODE_IDS.BRAZIL, NODE_IDS.COLOMBIA, NODE_IDS.VIETNAM], HIGHLIGHT.ON);
+                await animate([NODE_IDS.BRAZIL, NODE_IDS.COLOMBIA, NODE_IDS.VIETNAM], HIGHLIGHT.OFF);
+
+                await animate([EDGE_IDS.COLOMBIA_TO_COFFEE_FARM_SITE], HIGHLIGHT.ON);
+                await animate([EDGE_IDS.COLOMBIA_TO_COFFEE_FARM_SITE], HIGHLIGHT.OFF);
+
+                await animate([NODE_IDS.COFFEE_FARM_SITE], HIGHLIGHT.ON);
+                await animate([NODE_IDS.COFFEE_FARM_SITE], HIGHLIGHT.OFF);
             } else {
                 // Backward animation
-                const randomPropagation = getRandomInt(0, 2);
-                switch (randomPropagation) {
-                    case 0: // Backward propagation starting from MCP
-                        await animateNode([NODE_IDS.COFFEE_FARM_SITE], COLORS.NODE.TRANSFER.BACKGROUND);
-                        await animateNode([NODE_IDS.COFFEE_FARM_SITE], COLORS.NODE.ORIGINAL.BACKGROUND);
-                        await animateNode([NODE_IDS.COLOMBIA], COLORS.NODE.TRANSFER.BACKGROUND);
-                        await animateNode([NODE_IDS.COLOMBIA], COLORS.NODE.ORIGINAL.BACKGROUND);
-                        break;
-                    case 1: // Backward propagation starting from Brazil
-                        await animateNode([NODE_IDS.BRAZIL], COLORS.NODE.TRANSFER.BACKGROUND);
-                        await animateNode([NODE_IDS.BRAZIL], COLORS.NODE.ORIGINAL.BACKGROUND);
-                        break;
-                    case 2: // Backward propagation starting from Tatouine
-                        await animateNode([NODE_IDS.TATOUINE], COLORS.NODE.TRANSFER.BACKGROUND);
-                        await animateNode([NODE_IDS.TATOUINE], COLORS.NODE.ORIGINAL.BACKGROUND);
-                        break;
-                }
-
-                await animateNode([NODE_IDS.BUYER], COLORS.NODE.TRANSFER.BACKGROUND);
-                await animateNode([NODE_IDS.BUYER], COLORS.NODE.ORIGINAL.BACKGROUND);
                 setAiReplied(false);
             }
 
@@ -247,7 +274,6 @@ const Graph = ({ buttonClicked, setButtonClicked, aiReplied, setAiReplied }) => 
                 onNodesChange={onNodesChange}
                 onEdgesChange={onEdgesChange}
                 proOptions={proOptions}
-                fitView
             >
                 <Controls />
             </ReactFlow>

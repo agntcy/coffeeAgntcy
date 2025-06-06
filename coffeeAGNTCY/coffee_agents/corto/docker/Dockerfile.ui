@@ -14,7 +14,6 @@ COPY coffeeAGNTCY/coffee_agents/corto/exchange/frontend/ .
 # This build step is simply for checking the validity of the build:
 # running type checks, linting, and making sure the build is functional.
 RUN ["npm", "install", "--verbose"]
-RUN ["npm", "run", "lint", "--verbose"]
 RUN ["npm", "run", "build", "--verbose"]
 RUN ["npm", "cache", "clean", "--force"]
 

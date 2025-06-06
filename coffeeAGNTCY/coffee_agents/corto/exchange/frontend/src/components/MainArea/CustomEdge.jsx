@@ -17,7 +17,9 @@
  */
 
 import React from 'react';
-import { getBezierPath, EdgeLabelRenderer, BaseEdge } from '@xyflow/react';
+import { getBezierPath, BaseEdge } from '@xyflow/react';
+import CustomEdgeLabel from './CustomEdgeLabel';
+import LabelIcon from './LabelIcon';
 
 const CustomEdge = ({
                         id,
@@ -38,9 +40,8 @@ const CustomEdge = ({
         targetPosition,
     });
 
-    const edgeColor = data?.edgeColor || '#187ADC'; // Default edge color
-    const labelColor = data?.labelColor || '#FFFFFF'; // Default label text color
-    const labelBackgroundColor = data?.labelBackgroundColor || '#187ADC'; // Default label background color
+    // Default and active edge colors
+    const defaultEdgeColor = data?.active ? '#187ADC' : '#B0C4DE'; // Dark blue when active, light blue/gray otherwise
 
     return (
         <>
@@ -48,23 +49,23 @@ const CustomEdge = ({
                 <defs>
                     <marker
                         id={`${id}-arrow-start`}
-                        markerWidth="10"
-                        markerHeight="10"
-                        refX="1"
-                        refY="5"
+                        markerWidth="5"
+                        markerHeight="5"
+                        refX="0.5"
+                        refY="2.5"
                         orient="auto"
                     >
-                        <path d="M10,0 L0,5 L10,10 Z" fill={edgeColor} />
+                        <path d="M5,0 L0,2.5 L5,5 Z" fill={defaultEdgeColor} />
                     </marker>
                     <marker
                         id={`${id}-arrow-end`}
-                        markerWidth="10"
-                        markerHeight="10"
-                        refX="9"
-                        refY="5"
+                        markerWidth="5"
+                        markerHeight="5"
+                        refX="4.5"
+                        refY="2.5"
                         orient="auto"
                     >
-                        <path d="M0,0 L10,5 L0,10 Z" fill={edgeColor} />
+                        <path d="M0,0 L5,2.5 L0,5 Z" fill={defaultEdgeColor} />
                     </marker>
                 </defs>
             </svg>
@@ -74,31 +75,17 @@ const CustomEdge = ({
                 markerStart={`url(#${id}-arrow-start)`}
                 markerEnd={`url(#${id}-arrow-end)`}
                 style={{
-                    stroke: edgeColor,
-                    strokeWidth: 1,
+                    stroke: defaultEdgeColor,
+                    strokeWidth: 2,
                     cursor: 'pointer',
                 }}
             />
-            <EdgeLabelRenderer>
-                <div
-                    style={{
-                        transform: `translate(-50%, -50%) translate(${labelX}px,${labelY}px)`,
-                        backgroundColor: labelBackgroundColor,
-                        width: 'fit-content',
-                        color: labelColor,
-                        padding: '2px 5px',
-                        border: `1px solid ${labelColor}`,
-                        borderRadius: '2px',
-                        fontSize: '10px',
-                        fontWeight: 'thin',
-                        fontFamily: "'CiscoSansTT', sans-serif",
-                        boxShadow: '0 1px 2px rgba(0, 0, 0, 0.2)',
-                        whiteSpace: 'nowrap',
-                    }}
-                >
-                    {data.label}
-                </div>
-            </EdgeLabelRenderer>
+            <CustomEdgeLabel
+                x={labelX}
+                y={labelY}
+                label={data.label}
+                icon={<LabelIcon type={data.labelIconType} altText={`${data.labelIconType} Icon`} size={25} />}
+            />
         </>
     );
 };
