@@ -17,7 +17,7 @@
  */
 
 import React, { useEffect, useRef, useState } from 'react';
-import './Chat.css';
+import './styles/Chat.css';
 import MessageInput from './MessageInput';
 import Messages, { LOCAL_STORAGE_KEY } from './Messages';
 import ClearChatButton from "./ClearChatButton.jsx";

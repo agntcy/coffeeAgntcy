@@ -23,9 +23,11 @@ import './App.css';
 import { v4 as uuid } from 'uuid';
 import { LOCAL_STORAGE_KEY } from './components/Chat/Messages';
 import headerImage from './assets/header.png'; // Import the image
-import ChatLogo from './components/Chat/ChatLogo'; // Import the ChatLogo component
+import ChatLogo from './components/Chat/ChatLogo';
+import CodePopUp from "./components/MainArea/CodePopUp.jsx"; // Import the ChatLogo component
 
 const App = () => {
+    const [aiReplied, setAiReplied] = useState(false);
     const [messages, setMessages] = useState(() => {
         const saved = localStorage.getItem(LOCAL_STORAGE_KEY);
         return saved
@@ -47,14 +49,22 @@ const App = () => {
                     messages={messages}
                     setMessages={setMessages}
                     setButtonClicked={setButtonClicked}
+                    setAiReplied={setAiReplied}
                 />
             </div>
             <div className="main-area">
                 <header>
                     <img src={headerImage} alt="Header" />
                 </header>
+                <div className="code_popup_container">
+                    <CodePopUp/>
+                </div>
                 <div className="graph_container">
-                    <Graph buttonClicked={buttonClicked} setButtonClicked={setButtonClicked} />
+                    <Graph buttonClicked={buttonClicked}
+                           setButtonClicked={setButtonClicked}
+                           aiReplied={aiReplied}
+                           setAiReplied={setAiReplied}
+                    />
                 </div>
             </div>
         </div>

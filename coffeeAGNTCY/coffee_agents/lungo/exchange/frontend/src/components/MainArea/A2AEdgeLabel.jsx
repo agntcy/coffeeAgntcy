@@ -18,16 +18,11 @@
 
 /** @jsxImportSource @emotion/react */
 import React from 'react';
-import { EdgeLabelRenderer } from '@xyflow/react';
 import { css } from '@emotion/react';
-import './styles/CustomEdgeLabel.css';
-import A2AEdgeLabel from './A2AEdgeLabel';
+import a2aIcon from '../../assets/a2a_icon.png';
+import { EdgeLabelRenderer } from '@xyflow/react';
 
-const CustomEdgeLabel = ({ x, y, label, icon }) => {
-    if (label?.toLowerCase() === 'a2a') {
-        return <A2AEdgeLabel x={x} y={y} icon={icon} />;
-    }
-
+const A2AEdgeLabel = ({ x, y}) => {
     const dynamicStyle = css`
         position: absolute;
         left: ${x}px;
@@ -37,11 +32,19 @@ const CustomEdgeLabel = ({ x, y, label, icon }) => {
     return (
         <EdgeLabelRenderer>
             <div className={`custom-edge-label`} css={dynamicStyle}>
-                <div className="custom-edge-label-icon">{icon}</div>
-                <div className="custom-edge-label-text">{label}</div>
+                <img
+                    src={a2aIcon}
+                    alt="A2A Icon"
+                    style={{
+                        width: '100%',
+                        height: '100%',
+                        opacity: 0.9, // Slightly lighter for A2A
+                        borderRadius: '0.75em', // Rounded corners for A2A
+                    }}
+                />
             </div>
         </EdgeLabelRenderer>
     );
 };
 
-export default CustomEdgeLabel;
+export default A2AEdgeLabel;

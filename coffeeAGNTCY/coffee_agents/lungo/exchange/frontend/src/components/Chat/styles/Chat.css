@@ -1,0 +1,110 @@
+/**
+ * Copyright 2025 Cisco Systems, Inc. and its affiliates
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+/* Layout styles for the chat component */
+.messages_container {
+    position: relative;
+    height: 100%;
+    flex-grow: 1;
+    overflow-y: auto;
+    padding-top: 1em;
+}
+
+.clear_chat_button_container {
+    position: absolute;
+    z-index: 1;
+    top: 2px;
+    right: -10px;
+    border: 0.1px solid #ccc;
+    border-radius: 5px;
+    background-color: white;
+    transition: opacity 0.5s ease-in-out, visibility 0.5s ease-in-out;
+    opacity: 1;
+    visibility: visible;
+}
+
+.clear_chat_button_container.hidden {
+    opacity: 0;
+    visibility: hidden;
+}
+
+.message_input_container {
+    flex: 0 0 auto;
+    height: 50px;
+    margin-top: 1em; /* Scales with font size */
+    margin-bottom: 0.5em; /* Scales with font size */
+}
+
+.chat_header {
+    font-size: 14px;
+    font-weight: 400;
+    text-align: left;
+    color: #187ADC;
+    border-bottom: 1px solid var(--border-color);
+    border-radius: 0.5em;
+    box-shadow: 0 0 5px rgba(0, 0, 0, 0.1);
+    z-index: 1;
+    position: absolute;
+    top: 0;
+    background-color: white;
+    transition: opacity 0.5s ease-in-out, visibility 0.5s ease-in-out;
+    opacity: 1;
+    visibility: visible;
+    width: 210px;
+}
+
+.chat_header.hidden {
+    opacity: 0;
+    visibility: hidden;
+}
+
+.chat-logo-container {
+    height: 10%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-bottom: 1px solid #ddd;
+    background-color: #ffffff;
+    padding: 0;
+}
+
+.chat-logo-image {
+    max-height: 60%;
+    max-width: 80%;
+    object-fit: contain;
+}
+
+.clear-chat-button {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #4d4c4c; /* Neutral color matching the UI */
+    padding: 0.2em;
+    opacity: 0.85;
+    border-radius: 5px;
+    transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+.clear-chat-button:hover {
+    background-color: rgba(10, 96, 255, 0.1); /* Subtle hover effect */
+    color: #0A60FF; /* Primary color on hover */
+}
