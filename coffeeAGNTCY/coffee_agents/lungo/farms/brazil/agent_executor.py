@@ -37,12 +37,14 @@ from a2a.utils import (
 )
 
 from agent import FarmAgent
+from card import AGENT_CARD
 
 logger = logging.getLogger("longo.brazil_farm_agent.agent_executor")
 
 class FarmAgentExecutor(AgentExecutor):
     def __init__(self):
         self.agent = FarmAgent()
+        self.agent_card = AGENT_CARD.model_dump(mode="json", exclude_none=True)
 
     def _validate_request(self, context: RequestContext) -> JSONRPCResponse | None:
         """Validates the incoming request."""
@@ -87,29 +89,15 @@ class FarmAgentExecutor(AgentExecutor):
 
         try:
             output = await self.agent.ainvoke(prompt)
-            if output.get("error_message") is not None and output.get("error_message") != "":
-                logger.error("Error in agent response: %s", output.get("error_message"))
-                message = new_agent_text_message(
-                    output.get("error_message", "Failed to generate yield estimate"),
-                )
-                event_queue.enqueue_event(message)
-                return
-            
-            # Translate the output of the graph into an A2A Message
-            messages = output.get("messages", [])
-            last_message = messages[-1] if messages else "No messages returned"
+        
             message = Message(
                 messageId=str(uuid4()),
                 role=Role.agent,
-                #metadtata=agent_info,
-                parts=[Part(TextPart(text=last_message))],
+                metadata={"name": self.agent_card["name"]},
+                parts=[Part(TextPart(text=output))],
             )
 
-            event_queue.enqueue_event(message)
-
-            #yield_estimate = output.get("yield_estimate", "No yield_estimate returned")
-            #logger.info("Yield estimate generated: %s", yield_estimate)
-            #event_queue.enqueue_event(new_agent_text_message(yield_estimate))
+            event_queue.enqueue_event(message)            
         except Exception as e:
             logger.error(f'An error occurred while streaming the yield estimate response: {e}')
             raise ServerError(error=InternalError()) from e

@@ -15,7 +15,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import logging
-from typing import Any
+from typing import Any, Dict
 from uuid import uuid4
 from pydantic import BaseModel, PrivateAttr
 
@@ -28,11 +28,12 @@ from a2a.types import (
     TextPart,
     Role,
 )
-from langchain_core.tools import BaseTool
+from langchain_core.tools import BaseTool, tool
 from graph.models import FetchHarvestInput, FetchHarvestOutput
 from gateway_sdk.protocols.a2a.gateway import A2AProtocol
 from gateway_sdk.factory import GatewayFactory
 from config.config import DEFAULT_MESSAGE_TRANSPORT, TRANSPORT_SERVER_ENDPOINT
+from config.config import FARM_YIELD_TOPIC
 
 logger = logging.getLogger("corto.supervisor.tools")
 
@@ -46,17 +47,52 @@ transport = factory.create_transport(
 class NoInput(BaseModel):
     pass
 
-class GetFarmYieldTool(BaseTool):
-    name: str = "get_farm_yield"
-    description: str = "Fetches the coffee yield from a specific farm."
+@tool
+async def get_farm_yields(prompt: str) -> Dict[str, str]:
+    """
+    Fetch all farm yields.
 
-    def _run(self, input: NoInput, **kwargs: Any) -> float:
-        raise NotImplementedError("Use _arun for async execution.")
+    Args:
+    prompt (str): The prompt to send to all farms to retrieve their yields.
 
-    async def _arun(self, input: NoInput, **kwargs: Any) -> dict[str, float]:
-        stubbed_response = {"brazil": 100}
-        logger.info(f"yield status: {stubbed_response}")
-        return stubbed_response
+    Returns:
+    dict: A dictionary containing the yields from all farms.
+    """
+    logger.info("entering get_farm_yields tool with prompt: %s", prompt)
+
+    client = await factory.create_client(
+        "A2A",
+        agent_topic=FARM_YIELD_TOPIC,
+        transport=transport,
+    )
+
+    request = SendMessageRequest(
+        params=MessageSendParams(
+            message=Message(
+                messageId=str(uuid4()),
+                role=Role.user,
+                parts=[Part(TextPart(text=prompt))],
+            ),
+        )
+    )
+
+    responses = await client.broadcast_message(request, limit=3)
+
+    logger.info(f"got {len(responses)} responses back from farms")
+
+    farm_yield_responds = {}
+    for response in responses:
+        # we want a dict for farm name -> yield, the yarm_name will be in the response metadata
+        if response.root.result and response.root.result.parts:
+            part = response.root.result.parts[0].root
+            if hasattr(part, "text"):
+                farm_name = response.root.metadata.get("name", "unknown_farm")
+                farm_yield_responds[farm_name] = part.text.strip()
+        elif response.root.error:
+            logger.error(f"A2A error from farm: {response.root.error.message}") 
+        else:
+            logger.error("Unknown response type from farm")
+    return farm_yield_responds
 
 # Base A2A tool for harvest fetching
 class BaseHarvestTool(BaseTool):

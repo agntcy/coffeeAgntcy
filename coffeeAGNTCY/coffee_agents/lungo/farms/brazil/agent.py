@@ -15,152 +15,93 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import logging
-from typing import TypedDict, Literal
-from pydantic import BaseModel, Field
-from enum import Enum
-from sys import intern
-
-from langgraph.graph import END, START, StateGraph
-from langgraph.graph import MessagesState
-from langchain_core.messages import HumanMessage, SystemMessage
-
+import uuid
+from langgraph_supervisor import create_supervisor
+from langgraph.prebuilt import create_react_agent
+from langchain_core.messages import AIMessage
 from common.llm import get_llm
 
-logger = logging.getLogger("longo.colombia_farm_agent.agent")
-
-### Graph States
-class GraphState(Enum):
-  YIELD_ESTIMATE = intern("yield_estimate")
-  FULLFILL_ORDER = intern("fullfill_order")
-
-### Router Next Actions
-RouterNextActions = Literal[
-  GraphState.YIELD_ESTIMATE.value,
-  GraphState.FULLFILL_ORDER.value
-]
-
-class SupervisorAction(BaseModel):
-  action: RouterNextActions = Field(description="The action you will take to service the user") # type: ignore
-
-# Agent Node Names
-SUPERVISOR_AGENT = intern("supervisor_agent")
-YIELD_AGENT = intern("yield_agent")
-ORDERS_AGENT = intern("orders_agent")
-
-class State(MessagesState):
-    next: Literal[
-        GraphState.YIELD_ESTIMATE,
-        GraphState.FULLFILL_ORDER
-    ]
-
-    prompt: str
-    error_type: str
-    error_message: str
-    yield_estimate: str
-    order_details: str
-
+logger = logging.getLogger("longo.brazil_farm_agent.agent")
 class FarmAgent:
     def __init__(self):
-        graph_builder = StateGraph(State)
-
-        # add node states
-        graph_builder.add_node(SUPERVISOR_AGENT, self.supervisor_node)
-        graph_builder.add_node(YIELD_AGENT, self.yield_node)
-        graph_builder.add_node(ORDERS_AGENT, self.orders_node)
-
-        # add edge transitions
-        graph_builder.add_edge(START, SUPERVISOR_AGENT)
-        graph_builder.add_edge(YIELD_AGENT, END)
-        graph_builder.add_edge(ORDERS_AGENT, END)
-        self._agent = graph_builder.compile()
-
-    # Supervisor Node
-    async def supervisor_node(self, state: State):
-        llm_supervisor = get_llm().with_structured_output(SupervisorAction, strict=True)
-        sys_msg_supervisor = SystemMessage(
-            content="""You are a coffee farm in Brazil.
-
-            You can assist with the following operations:
-            1. **Yield Estimate**: Provide a yield estimate for coffee beans based on user input.
-            2. **Order Fulfillment**: Process orders related to coffee beans, including price and quantity.
-            """,
-            pretty_repr=True,
-            )
-        
-        try:
-            logger.info(f"Entering supervisor agent with state: {state}")
-    
-            response = await llm_supervisor.ainvoke(
-                [sys_msg_supervisor, HumanMessage(content=state["prompt"])]
-            )
-            logging.info(f"got response from supervisor agent: {response}")
-
-            return {"next": response.action, "prompt": state["prompt"]}
-        except Exception as e:
-            logging.error(f"Error during supervisor agent invoke: {e}")
-            return {"next": "what can you do"} # TODO: add a fallback node state
-
-    async def orders_node(self, state: State):
-        """
-        Facilitate the processing of orders related to coffee beans. 
-        
-        Args:
-            state (State): The current state containing the user prompt with a price and quantity.  
-        Returns:
-            dict: A dictionary containing the order details or an error message if the input is invalid."""
-        
-        logger.info(f"Entering orders node with prompt: {state.get('prompt')}")
-        
-        # check for price and quantity in the prompt
-
-        return {
-            "messages": ["Order processed successfully. A shipment will be sent to you soon."]
-        }
-
-    async def yield_node(self, state: State):
-        """
-        Generate a yield estimate for coffee beans based on user input by connecting to an LLM.
-
-        Args:
-            state (State): The current state containing the user prompt.
-        Returns:
-            dict: A dictionary containing the yield estimate or an error message if the input is invalid.
-        """
-        logger.info(f"Entering yield node with prompt: {state.get('prompt')}")
-        user_prompt = state.get("prompt")
-
-        system_prompt = (
-            "You are a coffee farm in Brazil\n"
-            "The user will describe a question or scenario related to fetching the yield from your coffee farm. "
-            "Your job is to:\n"
-            "1. Return a random yield estimate for the coffee farm in Brazil. Make sure the estimate is a reasonable value and in pounds.\n"
-            "2. Respond with only the yield estimate in pounds, without any additional text or explanation.\n"
+        yield_agent = create_react_agent(
+            model=get_llm(),
+            tools = [],
+            prompt=(
+                "You are a helpful coffee farm cultivation manager in Brazil.\n"
+                "The user will describe a question or scenario related to fetching the yield from your coffee farm. "
+                "Your job is to:\n"
+                "1. Return a random yield estimate for the coffee farm in Brazil. Make sure the estimate is a reasonable value and in pounds.\n"
+                "2. Respond with only the yield estimate in pounds, without any additional text or explanation.\n"
+                "If the user asked in lbs or pounds, respond with the estimate in pounds. If the user asked in kg or kilograms, convert the estimate to kg and respond with that value.\n"
+                ),
+            name="yield_agent",
         )
 
-        messages = [
-            SystemMessage(content=system_prompt),
-            HumanMessage(content=user_prompt)
-        ]
-        response = get_llm().invoke(messages)
-        yield_estimate = response.content
-        if not yield_estimate.strip():
-            return {
-                "error_type": "invalid_input",
-                "error_message": "Invalid prompt. Please provide a valid question or scenario related to fetching the yield from the Brazilian coffee farm."
-            }
+        orders_agent = create_react_agent(
+            model=get_llm(),
+            tools = [],
+            prompt=(
+                "You are a helpful coffee farm orders manager in Brazil.\n"
+                "The user will describe a question or scenario related to processing an order for coffee beans from your coffee farm. "
+                "Your job is to:\n"
+                "1. Check if the user has provided a price and quantity for the order.\n"
+                "2. If both price and quantity are provided, respond with a confirmation message: \"Order processed successfully. A shipment will be sent to you soon.\"\n"
+                "3. If either price or quantity is missing, respond with an error message indicating what is missing.\n"
+                ),
+            name="orders_agent",
+        )
 
-        return {"yield_estimate": yield_estimate}
+        graph = create_supervisor(
+            model=get_llm(),
+            agents=[yield_agent, orders_agent],  # worker agents list
+            prompt = (
+                "You are a coffee farm manager in Brazil.\n"
+                "You can assist with the following operations:\n"
+                "1. Yield Estimate: Provide a yield estimate or amount for coffee beans based on user input. Use your cultivation manager for help.\n"
+                "2. Order Fulfillment: Initiate and process orders related to coffee beans, including price and quantity. Use your orders manager for help.\n"
+                "Only initiate an order if both price and quantity are provided by the user, otherwise send the user an estimate of our cultivation yield.\n"
+            ),
+            add_handoff_back_messages=False,
+            output_mode="last_message",
+        )
 
-    async def ainvoke(self, input: str) -> dict:
-        """
-        Asynchronously invoke the agent with the given input.
-        Args:
-            input (str): The user input to process.
-        Returns:
-            dict: The result of the agent's processing, containing yield estimates or an error message.
-        """
-        resp = await self._agent.ainvoke({"prompt": input})
-
-        print(f"Response from Brazil farm agent: {resp}")
+        self._agent = graph.compile()
     
-        return resp
+    async def ainvoke(self, prompt: str):
+        """
+        Processes the input prompt and returns a response from the graph.
+        Args:
+            prompt (str): The input prompt to be processed by the graph.
+        Returns:
+            str: The response generated by the graph based on the input prompt.
+        """
+        try:
+            logger.debug(f"Received prompt: {prompt}")
+            if not isinstance(prompt, str) or not prompt.strip():
+                raise ValueError("Prompt must be a non-empty string.")
+            result = await self._agent.ainvoke({
+                "messages": [
+                {
+                    "role": "user",
+                    "content": prompt
+                }
+                ],
+            }, {"configurable": {"thread_id": uuid.uuid4()}})
+
+            messages = result.get("messages", [])
+            if not messages:
+                raise RuntimeError("No messages found in the graph response.")
+
+            # Find the last AIMessage with non-empty content
+            for message in reversed(messages):
+                if isinstance(message, AIMessage) and message.content.strip():
+                    logger.info(f"Valid AIMessage found: {message.content.strip()}")
+                    return message.content.strip()
+            raise RuntimeError("No valid AIMessage found in the graph response.")
+        except ValueError as ve:
+            logger.error(f"ValueError in serve method: {ve}")
+            raise ValueError(str(ve))
+        except Exception as e:
+            logger.error(f"Error in serve method: {e}")
+            raise Exception(str(e))

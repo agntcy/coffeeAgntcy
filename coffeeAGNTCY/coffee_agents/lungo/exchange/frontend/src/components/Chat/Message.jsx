@@ -16,13 +16,12 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-/** @jsxImportSource @emotion/react */
 import React, { useEffect, useRef, useState } from 'react';
-import { css } from '@emotion/react';
 import { HiUser } from 'react-icons/hi';
 import { RiRobot2Fill } from "react-icons/ri";
 import { Waveform } from 'ldrs/react';
 import 'ldrs/react/Waveform.css';
+import './styles/Messages.css';
 
 const SlowText = ({ text, speed = 25 }) => {
     const [displayedText, setDisplayedText] = useState('');
@@ -43,35 +42,13 @@ const SlowText = ({ text, speed = 25 }) => {
     return <span>{displayedText}</span>;
 };
 
-const messageContainerStyle = (aiMessage) => css`
-  display: flex;
-  justify-content: center;
-  padding: 30px 0;
-  background: ${aiMessage ? 'rgb(247, 247, 248)' : 'white'};
-`;
-
-const avatarContainerStyle = css`
-  width: 35px;
-  height: 35px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-`;
-
-const messageTextStyle = css`
-  width: 80%;
-  padding: 0;
-  margin: 8px;
-  overflow-wrap: break-word;
-`;
-
 function Message({ content, aiMessage, animate, loading }) {
     return (
-        <div css={messageContainerStyle(aiMessage)}>
-            <div css={avatarContainerStyle}>
+        <div className={`message-container ${aiMessage ? 'ai-message' : ''}`}>
+            <div className="avatar-container">
                 {aiMessage ? <RiRobot2Fill color="#049FD9" /> : <HiUser />}
             </div>
-            <p css={messageTextStyle}>
+            <div className="message-text">
                 {loading ? (
                     <div style={{ opacity: 0.5 }}>
                         <Waveform size="20" stroke="3.5" speed="1" color="#049FD9" />
@@ -81,7 +58,7 @@ function Message({ content, aiMessage, animate, loading }) {
                 ) : (
                     content
                 )}
-            </p>
+            </div>
         </div>
     );
 }

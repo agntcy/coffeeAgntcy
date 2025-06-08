@@ -16,37 +16,42 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import {
     ReactFlow,
     ReactFlowProvider,
     useNodesState,
     useEdgesState,
-    MarkerType,
     Controls,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
+import { FaUserTie, FaWarehouse, FaCloudSun } from 'react-icons/fa';
 import SlimNode from './SlimNode';
+import CustomEdge from './CustomEdge';
+import CustomNode from './CustomNode';
+import { EdgeLabelIcon } from '../../utils/const.js';
+
+const proOptions = { hideAttribution: true };
 
 // Node types
 const nodeTypes = {
     slimNode: SlimNode,
+    customNode: CustomNode,
 };
 
 // Constants
-const DELAY_DURATION = 1000; // Animation delay in milliseconds
-const proOptions = { hideAttribution: true };
+const DELAY_DURATION = 500; // Animation delay in milliseconds
 
 // Colors
 const COLORS = {
     NODE: {
-        ORIGINAL: { BORDER: '#187ADC', BACKGROUND: 'rgba(24, 122, 220, 0.4)', TEXT: '#000000' },
-        TRANSFER: { BORDER: '#00FF00', BACKGROUND: 'rgba(0, 255, 0, 0.4)' },
+        ORIGINAL: { BACKGROUND: '#F5F5F5' },
     },
-    EDGE: {
-        ORIGINAL: { STROKE: '#187ADC' },
-        TRANSFER: { STROKE: 'rgba(0, 255, 0, 0.4)' },
-    },
+};
+
+const HIGHLIGHT = {
+    ON: true,
+    OFF: false,
 };
 
 // Node and Edge IDs
@@ -56,7 +61,7 @@ const NODE_IDS = {
     BRAZIL: '3',
     COLOMBIA: '4',
     COFFEE_FARM_SITE: '5',
-    TATOUINE: '6',
+    VIETNAM: '6',
 };
 
 const EDGE_IDS = {
@@ -64,165 +69,200 @@ const EDGE_IDS = {
     SLIM_TO_BRAZIL: '2-3',
     SLIM_TO_COLOMBIA: '2-4',
     COLOMBIA_TO_COFFEE_FARM_SITE: '4-5',
-    SLIM_TO_TATOUINE: '2-6',
-};
-
-// Common node style
-const commonNodeStyle = {
-    fontFamily: "'CiscoSansTT'",
-    border: `1px solid ${COLORS.NODE.ORIGINAL.BORDER}`,
-    backgroundColor: COLORS.NODE.ORIGINAL.BACKGROUND,
-    color: COLORS.NODE.ORIGINAL.TEXT,
-    fontWeight: '100',
-    padding: 10,
-    borderRadius: 5,
+    SLIM_TO_VIETNAM: '2-6',
 };
 
 // Initial nodes
+const commonNodeData = {
+    backgroundColor: COLORS.NODE.ORIGINAL.BACKGROUND,
+};
+
 const initialNodes = [
-    { id: NODE_IDS.BUYER, type: 'input', data: { label: 'Buyer' }, position: { x: 300, y: 100 }, style: commonNodeStyle },
-    { id: NODE_IDS.SLIM, data: { label: 'Pub/Sub(SLIM)' }, position: { x: 60, y: 250 }, type: 'slimNode' },
-    { id: NODE_IDS.BRAZIL, type: 'output', data: { label: 'Brazil' }, position: { x: 100, y: 450 }, style: commonNodeStyle },
-    { id: NODE_IDS.COLOMBIA, type: 'default', data: { label: 'Colombia' }, position: { x: 300, y: 450 }, style: commonNodeStyle },
-    { id: NODE_IDS.TATOUINE, type: 'output', data: { label: 'Tatouine' }, position: { x: 500, y: 450 }, style: commonNodeStyle },
-    { id: NODE_IDS.COFFEE_FARM_SITE, type: 'output', data: { label: 'Weather' }, position: { x: 300, y: 600 }, style: commonNodeStyle },
+    {
+        id: NODE_IDS.BUYER,
+        type: 'customNode',
+        data: {
+            ...commonNodeData,
+            icon: <FaUserTie />,
+            label1: 'Supervisor Agent',
+            label2: 'Buyer',
+            handles: 'source',
+        },
+        position: { x: 527.1332569384248, y: 76.4805787605829 },
+    },
+    {
+        id: NODE_IDS.SLIM,
+        type: 'slimNode',
+        data: {
+            ...commonNodeData,
+            label: 'Pub/Sub (SLIM)',
+        },
+        position: { x: 229.02370449534635, y: 284.688426426175 },
+    },
+    {
+        id: NODE_IDS.BRAZIL,
+        type: 'customNode',
+        data: {
+            ...commonNodeData,
+            icon: <FaWarehouse />,
+            label1: 'Coffee Farm Agent',
+            label2: 'Brazil',
+            handles: 'target',
+        },
+        position: { x: 232.0903941835277, y: 503.93174725714437 },
+    },
+    {
+        id: NODE_IDS.COLOMBIA,
+        type: 'customNode',
+        data: {
+            ...commonNodeData,
+            icon: <FaWarehouse />,
+            label1: 'Coffee Farm Agent',
+            label2: 'Colombia',
+            handles: 'all',
+        },
+        position: { x: 521.266082170288, y: 505.38817113883306 },
+    },
+    {
+        id: NODE_IDS.VIETNAM,
+        type: 'customNode',
+        data: {
+            ...commonNodeData,
+            icon: <FaWarehouse />,
+            label1: 'Coffee Farm Agent',
+            label2: 'Vietnam',
+            handles: 'target',
+        },
+        position: { x: 832.9824511707582, y: 505.08339631990395 },
+    },
+    {
+        id: NODE_IDS.COFFEE_FARM_SITE,
+        type: 'customNode',
+        data: {
+            ...commonNodeData,
+            icon: <FaCloudSun />,
+            label1: 'MCP Server',
+            label2: 'Weather',
+            handles: 'target',
+        },
+        position: { x: 569.3959708104304, y: 731.9104402412228 },
+    },
 ];
 
-// Helper to apply markers to edges
-const applyMarkers = (edge, color) => ({
-    ...edge,
-    markerStart: { type: MarkerType.ArrowClosed, color },
-    markerEnd: { type: MarkerType.ArrowClosed, color },
-});
+// Edge types
+const edgeTypes = {
+    custom: CustomEdge,
+};
 
 // Initial edges
 const initialEdges = [
-    applyMarkers(
-        {
-            id: EDGE_IDS.BUYER_TO_SLIM,
-            source: NODE_IDS.BUYER,
-            target: NODE_IDS.SLIM,
-            sourceHandle: null,
-            targetHandle: 'top',
-            style: { stroke: COLORS.EDGE.ORIGINAL.STROKE, strokeWidth: 2 },
-            label: 'A2A',
-        },
-        COLORS.EDGE.ORIGINAL.STROKE
-    ),
-    applyMarkers(
-        {
-            id: EDGE_IDS.SLIM_TO_BRAZIL,
-            source: NODE_IDS.SLIM,
-            target: NODE_IDS.BRAZIL,
-            sourceHandle: 'a',
-            style: { stroke: COLORS.EDGE.ORIGINAL.STROKE, strokeWidth: 2 },
-            label: 'A2A',
-        },
-        COLORS.EDGE.ORIGINAL.STROKE
-    ),
-    applyMarkers(
-        {
-            id: EDGE_IDS.SLIM_TO_COLOMBIA,
-            source: NODE_IDS.SLIM,
-            target: NODE_IDS.COLOMBIA,
-            sourceHandle: 'b',
-            style: { stroke: COLORS.EDGE.ORIGINAL.STROKE, strokeWidth: 2 },
-            label: 'A2A',
-        },
-        COLORS.EDGE.ORIGINAL.STROKE
-    ),
-    applyMarkers(
-        {
-            id: EDGE_IDS.COLOMBIA_TO_COFFEE_FARM_SITE,
-            source: NODE_IDS.COLOMBIA,
-            target: NODE_IDS.COFFEE_FARM_SITE,
-            sourceHandle: null,
-            targetHandle: null,
-            style: { stroke: COLORS.EDGE.ORIGINAL.STROKE, strokeWidth: 2 },
-            label: 'MCP',
-        },
-        COLORS.EDGE.ORIGINAL.STROKE
-    ),
-    applyMarkers(
-        {
-            id: EDGE_IDS.SLIM_TO_TATOUINE,
-            source: NODE_IDS.SLIM,
-            target: NODE_IDS.TATOUINE,
-            sourceHandle: 'c',
-            targetHandle: null,
-            style: { stroke: COLORS.EDGE.ORIGINAL.STROKE, strokeWidth: 2 },
-            label: 'A2A',
-        },
-        COLORS.EDGE.ORIGINAL.STROKE
-    ),
+    {
+        id: EDGE_IDS.BUYER_TO_SLIM,
+        source: NODE_IDS.BUYER,
+        target: NODE_IDS.SLIM,
+        targetHandle: 'top',
+        data: { label: 'A2A', labelIconType: EdgeLabelIcon.A2A },
+        type: 'custom',
+    },
+    {
+        id: EDGE_IDS.SLIM_TO_BRAZIL,
+        source: NODE_IDS.SLIM,
+        target: NODE_IDS.BRAZIL,
+        sourceHandle: 'bottom_left',
+        data: { label: 'A2A', labelIconType: EdgeLabelIcon.A2A },
+        type: 'custom',
+    },
+    {
+        id: EDGE_IDS.SLIM_TO_COLOMBIA,
+        source: NODE_IDS.SLIM,
+        target: NODE_IDS.COLOMBIA,
+        sourceHandle: 'bottom_center',
+        data: { label: 'A2A', labelIconType: EdgeLabelIcon.A2A },
+        type: 'custom',
+    },
+    {
+        id: EDGE_IDS.COLOMBIA_TO_COFFEE_FARM_SITE,
+        source: NODE_IDS.COLOMBIA,
+        target: NODE_IDS.COFFEE_FARM_SITE,
+        data: { label: 'MCP', labelIconType: EdgeLabelIcon.MCP },
+        type: 'custom',
+    },
+    {
+        id: EDGE_IDS.SLIM_TO_VIETNAM,
+        source: NODE_IDS.SLIM,
+        target: NODE_IDS.VIETNAM,
+        sourceHandle: 'bottom_right',
+        data: { label: 'A2A', labelIconType: EdgeLabelIcon.A2A },
+        type: 'custom',
+    },
 ];
 
-// Graph component
-const Graph = ({ buttonClicked, setButtonClicked }) => {
+const Graph = ({ buttonClicked, setButtonClicked, aiReplied, setAiReplied }) => {
     const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
     const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
+    const animationLock = useRef(false); // Lock to prevent overlapping animations
 
-    // Helper: Delay function
     const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
-    // Helper: Update node style
-    const updateNodeStyle = (nodeId, backgroundColor, borderColor) => {
-        setNodes((nds) =>
-            nds.map((node) =>
-                node.id === nodeId
-                    ? { ...node, style: { ...node.style, backgroundColor, border: `1px solid ${borderColor}` } }
-                    : node
+    const updateStyle = (id, active) => {
+        setNodes((objs) =>
+            objs.map((obj) =>
+                obj.id === id
+                    ? { ...obj, data: { ...obj.data, active } }
+                    : obj
+            )
+        );
+        setEdges((objs) =>
+            objs.map((obj) =>
+                obj.id === id
+                    ? { ...obj, data: { ...obj.data, active } }
+                    : obj
             )
         );
     };
 
-    // Helper: Update edge style
-    const updateEdgeStyle = (edgeId, strokeColor) => {
-        setEdges((eds) =>
-            eds.map((edge) =>
-                edge.id === edgeId
-                    ? { ...edge, style: { ...edge.style, stroke: strokeColor }, markerStart: { type: MarkerType.ArrowClosed, color: strokeColor }, markerEnd: { type: MarkerType.ArrowClosed, color: strokeColor } }
-                    : edge
-            )
-        );
-    };
-
-    // Animation logic
     useEffect(() => {
-        if (!buttonClicked) return;
+        if (!buttonClicked && !aiReplied) return;
+        if (animationLock.current) return; // Prevent overlapping animations
+        animationLock.current = true;
+
+        const animate = async (ids, active) => {
+            ids.forEach((id) => updateStyle(id, active));
+            await delay(DELAY_DURATION);
+        };
 
         const animateGraph = async () => {
-            // Step 1: Highlight Buyer node
-            updateNodeStyle(NODE_IDS.BUYER, COLORS.NODE.TRANSFER.BACKGROUND, COLORS.NODE.TRANSFER.BORDER);
-            await delay(DELAY_DURATION);
+            if (!aiReplied) {
+                // Forward animation
+                await animate([NODE_IDS.BUYER], HIGHLIGHT.ON);
+                await animate([NODE_IDS.BUYER], HIGHLIGHT.OFF);
+                await animate([EDGE_IDS.BUYER_TO_SLIM], HIGHLIGHT.ON);
+                await animate([EDGE_IDS.BUYER_TO_SLIM], HIGHLIGHT.OFF);
 
-            // Step 2: Highlight Buyer to SLIM edge
-            updateEdgeStyle(EDGE_IDS.BUYER_TO_SLIM, COLORS.EDGE.TRANSFER.STROKE);
-            await delay(DELAY_DURATION);
+                await animate([NODE_IDS.SLIM], HIGHLIGHT.ON);
+                await animate([NODE_IDS.SLIM], HIGHLIGHT.OFF);
+                await animate([EDGE_IDS.SLIM_TO_BRAZIL, EDGE_IDS.SLIM_TO_COLOMBIA, EDGE_IDS.SLIM_TO_VIETNAM], HIGHLIGHT.ON);
+                await animate([EDGE_IDS.SLIM_TO_BRAZIL, EDGE_IDS.SLIM_TO_COLOMBIA, EDGE_IDS.SLIM_TO_VIETNAM], HIGHLIGHT.OFF);
 
-            // Step 3: Highlight SLIM to country edges and nodes
-            [EDGE_IDS.SLIM_TO_BRAZIL, EDGE_IDS.SLIM_TO_COLOMBIA, EDGE_IDS.SLIM_TO_TATOUINE].forEach((edgeId) =>
-                updateEdgeStyle(edgeId, COLORS.EDGE.TRANSFER.STROKE)
-            );
-            [NODE_IDS.BRAZIL, NODE_IDS.COLOMBIA, NODE_IDS.TATOUINE].forEach((nodeId) =>
-                updateNodeStyle(nodeId, COLORS.NODE.TRANSFER.BACKGROUND, COLORS.NODE.TRANSFER.BORDER)
-            );
-            await delay(DELAY_DURATION);
+                await animate([NODE_IDS.BRAZIL, NODE_IDS.COLOMBIA, NODE_IDS.VIETNAM], HIGHLIGHT.ON);
+                await animate([NODE_IDS.BRAZIL, NODE_IDS.COLOMBIA, NODE_IDS.VIETNAM], HIGHLIGHT.OFF);
 
-            // Step 4: Highlight Colombia to Coffee Farm Site edge and node
-            updateEdgeStyle(EDGE_IDS.COLOMBIA_TO_COFFEE_FARM_SITE, COLORS.EDGE.TRANSFER.STROKE);
-            await delay(DELAY_DURATION);
-            updateNodeStyle(NODE_IDS.COFFEE_FARM_SITE, COLORS.NODE.TRANSFER.BACKGROUND, COLORS.NODE.TRANSFER.BORDER);
-            await delay(DELAY_DURATION);
+                await animate([EDGE_IDS.COLOMBIA_TO_COFFEE_FARM_SITE], HIGHLIGHT.ON);
+                await animate([EDGE_IDS.COLOMBIA_TO_COFFEE_FARM_SITE], HIGHLIGHT.OFF);
 
-            // Reset to initial state
-            setNodes(initialNodes);
-            setEdges(initialEdges);
+                await animate([NODE_IDS.COFFEE_FARM_SITE], HIGHLIGHT.ON);
+                await animate([NODE_IDS.COFFEE_FARM_SITE], HIGHLIGHT.OFF);
+            } else {
+                // Backward animation
+                setAiReplied(false);
+            }
+
             setButtonClicked(false);
+            animationLock.current = false; // Release the lock
         };
 
         animateGraph();
-    }, [buttonClicked, setButtonClicked]);
+    }, [buttonClicked, setButtonClicked, aiReplied]);
 
     return (
         <div style={{ width: '100%', height: '100%' }}>
@@ -230,10 +270,10 @@ const Graph = ({ buttonClicked, setButtonClicked }) => {
                 nodes={nodes}
                 edges={edges}
                 nodeTypes={nodeTypes}
+                edgeTypes={edgeTypes}
                 onNodesChange={onNodesChange}
                 onEdgesChange={onEdgesChange}
                 proOptions={proOptions}
-                fitView
             >
                 <Controls />
             </ReactFlow>
@@ -241,7 +281,6 @@ const Graph = ({ buttonClicked, setButtonClicked }) => {
     );
 };
 
-// Wrapper with ReactFlowProvider
 const FlowWithProvider = (props) => (
     <ReactFlowProvider>
         <Graph {...props} />

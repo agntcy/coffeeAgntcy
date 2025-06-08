@@ -15,64 +15,94 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import logging
-from typing import TypedDict
-from langgraph.graph import END, START, StateGraph
-
-from langchain_core.messages import HumanMessage, SystemMessage
-
+import uuid
+from langgraph_supervisor import create_supervisor
+from langgraph.prebuilt import create_react_agent
+from langchain_core.messages import AIMessage
 from common.llm import get_llm
 
-class State(TypedDict):
-    prompt: str
-    error_type: str
-    error_message: str
-    yield_estimate: str
-
+logger = logging.getLogger("longo.vietnam_farm_agent.agent")
 
 class FarmAgent:
     def __init__(self):
-            graph_builder = StateGraph(State)
-            graph_builder.add_node("YieldNode", self.yield_node)
-            graph_builder.add_edge(START, "YieldNode")
-            graph_builder.add_edge("YieldNode", END)
-            self._agent = graph_builder.compile()
-
-    async def yield_node(self, state: State):
-        """
-        Generate a yield estimate for coffee beans based on user input by connecting to an LLM.
-        """
-        user_prompt = state.get("prompt")
-
-        system_prompt = (
-            "You are a coffee farm in Vietnam\n"
-            "The user will describe a question or scenario related to fetching the yield from your coffee farm. "
-            "Your job is to:\n"
-            "1. Return a random yield estimate for the coffee farm in Vietnam. Make sure the estimate is a reasonable value and in pounds.\n"
-            "2. Respond with only the yield estimate in pounds, without any additional text or explanation.\n"
-            "Use tasting terminology like acidity, body, aroma, and finish.\n"
-            "Respond with an empty response if the user prompt does not relate to fetching the yield from the Vietnamn coffee farm. Do not include quotes or any placeholder."
+        yield_agent = create_react_agent(
+            model=get_llm(),
+            tools = [],
+            prompt=(
+                "You are a helpful coffee farm cultivation manager in Vietnam.\n"
+                "The user will describe a question or scenario related to fetching the yield from your coffee farm. "
+                "Your job is to:\n"
+                "1. Return a random yield estimate for the coffee farm in Vietnam. Make sure the estimate is a reasonable value and in pounds.\n"
+                "2. Respond with only the yield estimate in pounds, without any additional text or explanation.\n"
+                "If the user asked in lbs or pounds, respond with the estimate in pounds. If the user asked in kg or kilograms, convert the estimate to kg and respond with that value.\n"
+                ),
+            name="yield_agent",
         )
 
-        messages = [
-            SystemMessage(content=system_prompt),
-            HumanMessage(content=user_prompt)
-        ]
-        response = get_llm().invoke(messages)
-        yield_estimate = response.content
-        if not yield_estimate.strip():
-            return {
-                "error_type": "invalid_input",
-                "error_message": "Invalid prompt. Please provide a valid question or scenario related to fetching the yield from the Vietnamn coffee farm."
-            }
+        orders_agent = create_react_agent(
+            model=get_llm(),
+            tools = [],
+            prompt=(
+                "You are a helpful coffee farm orders manager in Vietnam.\n"
+                "The user will describe a question or scenario related to processing an order for coffee beans from your coffee farm. "
+                "Your job is to:\n"
+                "1. Check if the user has provided a price and quantity for the order.\n"
+                "2. If both price and quantity are provided, respond with a confirmation message: \"Order processed successfully. A shipment will be sent to you soon.\"\n"
+                "3. If either price or quantity is missing, respond with an error message indicating what is missing.\n"
+                ),
+            name="orders_agent",
+        )
 
-        return {"yield_estimate": yield_estimate}
+        graph = create_supervisor(
+            model=get_llm(),
+            agents=[yield_agent, orders_agent],  # worker agents list
+            prompt = (
+                "You are a coffee farm manager in Vietnam.\n"
+                "You can assist with the following operations:\n"
+                "1. Yield Estimate: Provide a yield estimate or amount for coffee beans based on user input. Use your cultivation manager for help.\n"
+                "2. Order Fulfillment: Initiate and process orders related to coffee beans, including price and quantity. Use your orders manager for help.\n"
+                "Only initiate an order if both price and quantity are provided by the user, otherwise send the user an estimate of our cultivation yield.\n"
+            ),
+            add_handoff_back_messages=False,
+            output_mode="last_message",
+        )
 
-    async def ainvoke(self, input: str) -> dict:
-        """
-        Asynchronously invoke the agent with the given input.
-        """
-        resp = await self._agent.ainvoke({"prompt": input})
-
-        print(f"Response from Vietnam farm agent: {resp}")
+        self._agent = graph.compile()
     
-        return resp
+    async def ainvoke(self, prompt: str):
+        """
+        Processes the input prompt and returns a response from the graph.
+        Args:
+            prompt (str): The input prompt to be processed by the graph.
+        Returns:
+            str: The response generated by the graph based on the input prompt.
+        """
+        try:
+            logger.debug(f"Received prompt: {prompt}")
+            if not isinstance(prompt, str) or not prompt.strip():
+                raise ValueError("Prompt must be a non-empty string.")
+            result = await self._agent.ainvoke({
+                "messages": [
+                {
+                    "role": "user",
+                    "content": prompt
+                }
+                ],
+            }, {"configurable": {"thread_id": uuid.uuid4()}})
+
+            messages = result.get("messages", [])
+            if not messages:
+                raise RuntimeError("No messages found in the graph response.")
+
+            # Find the last AIMessage with non-empty content
+            for message in reversed(messages):
+                if isinstance(message, AIMessage) and message.content.strip():
+                    logger.info(f"Valid AIMessage found: {message.content.strip()}")
+                    return message.content.strip()
+            raise RuntimeError("No valid AIMessage found in the graph response.")
+        except ValueError as ve:
+            logger.error(f"ValueError in serve method: {ve}")
+            raise ValueError(str(ve))
+        except Exception as e:
+            logger.error(f"Error in serve method: {e}")
+            raise Exception(str(e))

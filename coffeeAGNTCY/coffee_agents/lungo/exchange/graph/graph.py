@@ -27,7 +27,7 @@ from common.llm import get_llm
 from farms.brazil.card import AGENT_CARD as brazil_agent_card
 from farms.colombia.card import AGENT_CARD as colombia_agent_card
 from farms.vietnam.card import AGENT_CARD as vietnam_agent_card
-from graph.tools import FetchBrazilHarvestTool, FetchColombiaHarvestTool, FetchVietnamHarvestTool, GetFarmYieldTool
+from graph.tools import FetchBrazilHarvestTool, FetchColombiaHarvestTool, FetchVietnamHarvestTool, get_farm_yields
 
 logger = logging.getLogger("corto.supervisor.graph")
 
@@ -49,11 +49,9 @@ class ExchangeGraph:
         """
         model = get_llm()
 
-        get_farm_yields_tool = GetFarmYieldTool()
-
         get_farm_yields_tool = create_react_agent(
             model=model,
-            tools=[get_farm_yields_tool],
+            tools=[get_farm_yields],
             name="get_farm_yields",
         )
     
@@ -66,7 +64,7 @@ class ExchangeGraph:
             tools=[fetch_brazil_harvest_tool],
             name="fetch_brazil_harvest",
         )
-        '''fetch_colombia_harvest_tool = FetchColombiaHarvestTool(
+        fetch_colombia_harvest_tool = FetchColombiaHarvestTool(
             remote_agent_card=colombia_agent_card,
         )
 
@@ -83,10 +81,10 @@ class ExchangeGraph:
             model=model,
             tools=[fetch_vietnam_harvest_tool],
             name="fetch_vietnam_harvest",
-        )'''
+        )
         graph = create_supervisor(
             model=model,
-            agents=[get_farm_yields_tool, fetch_brazil_harvest],  # worker agents list
+            agents=[get_farm_yields_tool, fetch_brazil_harvest, fetch_colombia_harvest, fetch_vietnam_harvest],
             prompt = (
                 "You are a supervisor agent responsible for handling coffee requests in pounds (lb).\n\n"
 

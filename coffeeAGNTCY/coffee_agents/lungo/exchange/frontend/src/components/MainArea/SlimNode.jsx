@@ -16,48 +16,50 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+/** @jsxImportSource @emotion/react */
 import React from 'react';
 import { Handle, Position } from '@xyflow/react';
+import { css } from '@emotion/react';
+import './styles/CustomNode.css';
+import {DefaultHandleColor} from "./CustomNode.jsx";
 
-const SlimNode = ({ data, backgroundColor = 'rgba(24, 122, 220, 0.4)' }) => {
+const SlimNode = ({ data }) => {
+    const nodeClass = `node slim-node ${data.active ? 'node-active' : ''}`;
+
     return (
-        <div
-            style={{
-                border: '1px solid #187ADC',
-                backgroundColor: backgroundColor, // Dynamic background color
-                color: '#000000',
-                borderRadius: 5,
-                width: 625,
-                height: 22,
-                textAlign: 'center',
-                fontFamily: "'CiscoSansTT', sans-serif",
-                fontSize: '15px',
-
-            }}
-        >
+        <div className={nodeClass}>
             <div>{data.label}</div>
             <Handle
                 type="target"
                 id="top"
                 position={Position.Top}
+                style={{ width: '0.1px', height: '0.1px',
+                    border: `1px solid darkgrey`,
+                    background: data.handleColor || DefaultHandleColor }}
             />
             <Handle
                 type="source"
                 position={Position.Bottom}
-                id="a"
-                style={{  left: '18%' }} // Offset to the left
+                id="bottom_left"
+                style={{ left: '18%', width: '0.1px', height: '0.1px',
+                    border: `1px solid darkgrey`,
+                    background: data.handleColor || DefaultHandleColor }}
             />
             <Handle
                 type="source"
                 position={Position.Bottom}
-                id="b"
-                style={{ left: '50%' }} // Centered
+                id="bottom_center"
+                style={{ left: '50%', width: '0.1px', height: '0.1px',
+                    border: `1px solid darkgrey`,
+                    background: data.handleColor || DefaultHandleColor }}
             />
             <Handle
                 type="source"
                 position={Position.Bottom}
-                id="c"
-                style={{ left: '82%' }} // Offset to the right
+                id="bottom_right"
+                style={{ left: '82%', width: '0.1px', height: '0.1px',
+                    border: `1px solid darkgrey`,
+                    background: data.handleColor || DefaultHandleColor }}
             />
         </div>
     );

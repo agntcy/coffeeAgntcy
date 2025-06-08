@@ -16,15 +16,15 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React from "react";
-import logoSrc from "../../assets/coffee_agntcy.png";
-
-const ChatLogo = () => {
-    return (
-        <div className="chat-logo-container">
-            <img src={logoSrc} alt="Agency Coffee Logo" className="chat-logo-image" />
-        </div>
-    );
-};
-
-export default ChatLogo;
+/* LabelIcon.css */
+.label-icon-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: white;
+    overflow: hidden; /* Ensures the image stays within the circle */
+}
+.label-icon-image {
+    width: 100%;
+    height: 100%;
+}
