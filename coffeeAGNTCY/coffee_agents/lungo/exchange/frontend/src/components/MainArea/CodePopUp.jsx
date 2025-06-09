@@ -18,9 +18,11 @@ const CodePopUp = () => {
     // Toggle the visibility of the code popup
     const toggleCode = () => setShowCode(!showCode);
 
-    // Code block to display
+// Code block to display
     const codeBlock = `
+# ==========================
 # Server setup
+# ==========================
 from a2a.server import A2AServer
 from gateway_sdk.factory import GatewayFactory
 from gateway_sdk.factory import ProtocolTypes
@@ -36,7 +38,9 @@ bridge = factory.create_bridge(server, transport=transport)
 # Start the bridge
 await bridge.start()
 
+# ==========================
 # Client setup
+# ==========================
 from gateway_sdk.factory import GatewayFactory
 from gateway_sdk.protocols.a2a.gateway import A2AProtocol
 
@@ -84,7 +88,7 @@ client = await factory.create_client("A2A", agent_topic=topic, transport=agp_tra
                                 }}
                             />
                             {showBadge && (
-                                <span className="copy-badge">Copied!</span>
+                                <span className={`copy-badge ${showBadge ? 'show' : ''}`}>Copied!</span>
                             )}
                         </div>
                         <SyntaxHighlighter language="python" style={vscDarkPlus}>
