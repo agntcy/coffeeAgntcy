@@ -81,6 +81,7 @@ class FlavorProfileTool(BaseTool):
         raise NotImplementedError("Use _arun for async execution.")
 
     async def _arun(self, input: FlavorProfileInput, **kwargs: Any) -> float:
+        logger.info("FlavorProfileTool has been called.")
         try:
             if not input.get('prompt'):
                 logger.error("Invalid input: Prompt must be a non-empty string.")
