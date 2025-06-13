@@ -29,6 +29,7 @@ from farm.card import AGENT_CARD as farm_agent_card
 
 logger = logging.getLogger("corto.supervisor.graph")
 
+
 class ExchangeGraph:
     def __init__(self):
         self.graph = self.build_graph()
@@ -51,7 +52,7 @@ class ExchangeGraph:
         flavor_profile_tool = FlavorProfileTool(
             remote_agent_card=farm_agent_card,
         )
-        
+
         #  worker agent- always responsible for flavor, taste, or sensory profile of coffee queries
         get_flavor_profile_a2a_agent = create_react_agent(
             model=model,
@@ -89,10 +90,10 @@ class ExchangeGraph:
                 raise ValueError("Prompt must be a non-empty string.")
             result = await self.graph.ainvoke({
                 "messages": [
-                {
-                    "role": "user",
-                    "content": prompt
-                }
+                    {
+                        "role": "user",
+                        "content": prompt
+                    }
                 ],
             }, {"configurable": {"thread_id": uuid.uuid4()}})
 

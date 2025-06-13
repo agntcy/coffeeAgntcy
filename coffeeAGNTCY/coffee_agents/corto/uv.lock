@@ -26,24 +26,6 @@ wheels = [
 ]
 
 [[package]]
-name = "agp-bindings"
-version = "0.2.4"
-source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/ad/3e/a3efaca0d0f7513f0d4d08e9d2258ecbcc1a77c42e6ddfb1e0cd0b376d9d/agp_bindings-0.2.4.tar.gz", hash = "sha256:2438ab270963d91e760445f093cd1c483332b7cb7f21338aa416b0c5415b527e", size = 167751, upload-time = "2025-04-11T19:13:13.681Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/da/88/5450da1b43cecc867deaa2d5c03537419518145633c151dc1928d52c0f77/agp_bindings-0.2.4-cp312-cp312-macosx_10_12_x86_64.whl", hash = "sha256:ae02f9cb95c716113822947cd032bc40e81717602f20af20dc08f22d20dc95ce", size = 5439291, upload-time = "2025-04-11T19:12:45.934Z" },
-    { url = "https://files.pythonhosted.org/packages/ed/67/cda0381434ad68ad8078abfe97c78a408767a4cb779632bbea0c832cbc5e/agp_bindings-0.2.4-cp312-cp312-macosx_11_0_arm64.whl", hash = "sha256:046ed7053507e2364ab29707ade715053c0a6765b9793822de461f8ad8c636d9", size = 5210577, upload-time = "2025-04-11T19:12:48.494Z" },
-    { url = "https://files.pythonhosted.org/packages/ef/45/a75e716ca4867e1e658a01211a9e0dfed6b2a19a1f8a559c095201f4f7e0/agp_bindings-0.2.4-cp312-cp312-manylinux_2_34_aarch64.whl", hash = "sha256:4dae13109ab49adf8f4bdbe629bec11377c7c385b84ba9df2191b822dd565c5a", size = 5698282, upload-time = "2025-04-11T19:12:50.538Z" },
-    { url = "https://files.pythonhosted.org/packages/c3/d4/b2cc31f44870d17b5a82aa146c5dd1dac4a521b0312119fcec5ae3489d67/agp_bindings-0.2.4-cp312-cp312-manylinux_2_34_x86_64.whl", hash = "sha256:5d9c01cff8d9060653c6a821a22bf6f44947c2aabe5701f1863b0ed9e032acce", size = 5888278, upload-time = "2025-04-11T19:12:52.183Z" },
-    { url = "https://files.pythonhosted.org/packages/64/d7/ff42dfad83f6fe7c69e24048151553d1f125ec7113e90143a8de7f881bed/agp_bindings-0.2.4-cp312-cp312-win_amd64.whl", hash = "sha256:d08a9caac1dc47da810529efac023854c83833a90d34f312ffd348eda3981931", size = 4548599, upload-time = "2025-04-11T19:12:54.388Z" },
-    { url = "https://files.pythonhosted.org/packages/52/96/f2e1193c8ee497e89148b83406f2001adbeebb67ed5d46b924d2434e1df8/agp_bindings-0.2.4-cp313-cp313-macosx_10_12_x86_64.whl", hash = "sha256:30921c8fbd7e0f19ea2abc3773bb6f6b99417defa3496395243b80e725bf5160", size = 5438517, upload-time = "2025-04-11T19:12:55.935Z" },
-    { url = "https://files.pythonhosted.org/packages/11/7c/1b81558d345abe97b5e9d00f5aa4ce97e6200afe8bc893b999cc5a3c8cf0/agp_bindings-0.2.4-cp313-cp313-macosx_11_0_arm64.whl", hash = "sha256:c02250f0648f3ecee1abce436efc49d5a3c1b7819596d4b8a82701f9a69e055e", size = 5209870, upload-time = "2025-04-11T19:12:57.605Z" },
-    { url = "https://files.pythonhosted.org/packages/c4/31/47033732b244d552dd44e269dca096ad1cff47545ffab663688511d97c2e/agp_bindings-0.2.4-cp313-cp313-manylinux_2_34_aarch64.whl", hash = "sha256:27f681821fa4962852a0943e5fd26bb3f44ea16aae469ceb080a362244b7ac15", size = 5698495, upload-time = "2025-04-11T19:12:59.25Z" },
-    { url = "https://files.pythonhosted.org/packages/05/73/5be36e633a221d0f1dda8bc40c9121a9538c43ba528b6c704849d55b3542/agp_bindings-0.2.4-cp313-cp313-manylinux_2_34_x86_64.whl", hash = "sha256:c670c9d62155326c13ef08f43ed6ee7b947e692d34fb6309bfe129f8428000c8", size = 5886653, upload-time = "2025-04-11T19:13:01.847Z" },
-    { url = "https://files.pythonhosted.org/packages/79/fc/11867c35f1aad4592fe26feb283411e05152bc0a94673ee9d3056b0e90fd/agp_bindings-0.2.4-cp313-cp313-win_amd64.whl", hash = "sha256:6a10a60a0d7d2c2888af9124a0a130ae6c88fca0aea7dcc8808dcfe12fa21804", size = 4547261, upload-time = "2025-04-11T19:13:03.976Z" },
-]
-
-[[package]]
 name = "aiohappyeyeballs"
 version = "2.6.1"
 source = { registry = "https://pypi.org/simple" }
@@ -380,7 +362,7 @@ requires-dist = [
     { name = "dotenv", specifier = ">=0.9.9" },
     { name = "fastapi" },
     { name = "fastapi", specifier = ">=0.115.12" },
-    { name = "gateway-sdk", specifier = "==0.1.0" },
+    { name = "gateway-sdk", specifier = "==0.1.1" },
     { name = "httpx" },
     { name = "httpx", specifier = ">=0.28.1" },
     { name = "langchain-anthropic", specifier = ">=0.3.13" },
@@ -590,22 +572,23 @@ wheels = [
 
 [[package]]
 name = "gateway-sdk"
-version = "0.1.0"
+version = "0.1.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "a2a-sdk" },
-    { name = "agp-bindings" },
     { name = "cisco-outshift-agent-utils" },
     { name = "click" },
     { name = "coloredlogs" },
     { name = "langchain-community" },
     { name = "nats-py" },
     { name = "opentelemetry-instrumentation-starlette" },
+    { name = "slim-bindings" },
     { name = "traceloop-sdk" },
+    { name = "uvicorn" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/54/ae/9e42db65504a5fd0f15142ff7c82d30628c3258f05cd0d689617d9b1c1bc/gateway_sdk-0.1.0.tar.gz", hash = "sha256:d7d8be2d35f0cf19bb2a267cb3033baad35b8b28f49a6871f64a37f7c4288bdc", size = 893741, upload-time = "2025-05-30T17:04:32.229Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/0b/a9/57f7ea99c6334aa69d0b77407c5ae9cd64642b9534fa418ac5af3b3e4db1/gateway_sdk-0.1.1.tar.gz", hash = "sha256:1f0d7fa55fe33390af2b91c7cb43c34ad56217d454453a6173b0e065de647da4", size = 837749, upload-time = "2025-06-04T15:44:37.772Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/90/3f/7254779f3ff264e02245459dd62eb36b0ab2d4a2e260146608963bf854ad/gateway_sdk-0.1.0-py3-none-any.whl", hash = "sha256:8dd68efad013da166b1e0f3432f2da7e4b13add6478112d8de4ee3a3de10c044", size = 30371, upload-time = "2025-05-30T17:04:29.383Z" },
+    { url = "https://files.pythonhosted.org/packages/1b/47/0e7e937f269fb67e481e3439accebc64b27f283189855d9ef0c53595e12e/gateway_sdk-0.1.1-py3-none-any.whl", hash = "sha256:ffa4130d63e8871fcab75abeaac58d40bb96c6265abc0708e34b33eabfd37266", size = 30835, upload-time = "2025-06-04T15:44:35.81Z" },
 ]
 
 [[package]]
@@ -2501,6 +2484,24 @@ wheels = [
 ]
 
 [[package]]
+name = "slim-bindings"
+version = "0.3.6"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/76/c1/bd0e74f5bae0d5f691f567888f74673996dc4686201ddb2230f23bb032d3/slim_bindings-0.3.6.tar.gz", hash = "sha256:f0e0f5167f675eeb0c866c6dd11258a082afeb3944543b34fa75a546cc9e4682", size = 202363, upload-time = "2025-06-03T14:47:15.355Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/57/48/104f15a66996af2675fc383c112558cd92e40c109429443e772333d5e6e5/slim_bindings-0.3.6-cp312-cp312-macosx_10_12_x86_64.whl", hash = "sha256:16f6861b531067bf542891d072aabdc9ddba9cf6537f2ef260466c324818dbbb", size = 5888975, upload-time = "2025-06-03T14:46:50.824Z" },
+    { url = "https://files.pythonhosted.org/packages/12/ab/c810884aa03728006320e3948c8ff01dd005649afd8951af5d2dd587f43d/slim_bindings-0.3.6-cp312-cp312-macosx_11_0_arm64.whl", hash = "sha256:94fed05db7fb7ed78445267e894a6336d301323c13ee17b3f0e0568ff562ec45", size = 5651458, upload-time = "2025-06-03T14:46:52.129Z" },
+    { url = "https://files.pythonhosted.org/packages/a4/96/d074b11b0612cdd559122274c6b7e0f0be82336b50c4f46a5a7db6985187/slim_bindings-0.3.6-cp312-cp312-manylinux_2_34_aarch64.whl", hash = "sha256:1221acc781052ea24c9459abeea85a4a2701e92a7a3f69dffb320bd4cc983307", size = 6186621, upload-time = "2025-06-03T14:46:53.735Z" },
+    { url = "https://files.pythonhosted.org/packages/96/11/14ddc5d7ee20294a2d195ce39963ceaef2066fc48e29635bee310f470b4e/slim_bindings-0.3.6-cp312-cp312-manylinux_2_34_x86_64.whl", hash = "sha256:74ff3aeb22715bd637ca0d3457c632dd9482a1974126fb4c5554bc1b6d4b48c9", size = 6382219, upload-time = "2025-06-03T14:46:55.457Z" },
+    { url = "https://files.pythonhosted.org/packages/62/59/94fa67dd2b5830828a36f3a61def40f0215e981c15ff799463aa6ed5e484/slim_bindings-0.3.6-cp312-cp312-win_amd64.whl", hash = "sha256:1d8974ab32321b387f693744f46c33802e238f9743b01ceb861e6e132c68eef7", size = 4967901, upload-time = "2025-06-03T14:46:57.158Z" },
+    { url = "https://files.pythonhosted.org/packages/3c/22/7bff0ba82e3f54fee363d76a606a51cb436cb5281175ec9765e620e1d418/slim_bindings-0.3.6-cp313-cp313-macosx_10_12_x86_64.whl", hash = "sha256:d113b6e969a054941784b10772deec027ffa336bec9e5e3a143a4929197a01ad", size = 5888239, upload-time = "2025-06-03T14:46:58.915Z" },
+    { url = "https://files.pythonhosted.org/packages/47/e3/0c35da99f249995de87a6a27e139f2698cb9e0c54b966b41ca7152d4bb3b/slim_bindings-0.3.6-cp313-cp313-macosx_11_0_arm64.whl", hash = "sha256:096f1b6ac8943c472439d6518a4e2559c003b94212f86d9f10238c587f9e2981", size = 5650963, upload-time = "2025-06-03T14:47:00.717Z" },
+    { url = "https://files.pythonhosted.org/packages/35/5a/d32dbe9ffc24b450a8659548b14878bb662494617e35ee16b7c088eedbd2/slim_bindings-0.3.6-cp313-cp313-manylinux_2_34_aarch64.whl", hash = "sha256:23df7bc4fb386248a7529d279ca3d3ab0078e5512c89d3f526a739af209ae44d", size = 6185359, upload-time = "2025-06-03T14:47:02.381Z" },
+    { url = "https://files.pythonhosted.org/packages/23/d8/47690138392230b3c3a4fcfccce217194ed88474889a7ac0d9943c7fb39a/slim_bindings-0.3.6-cp313-cp313-manylinux_2_34_x86_64.whl", hash = "sha256:63ec98167c5c7a773f88bea749443ffde57782627ea605c021b8ccf74b84de8c", size = 6380723, upload-time = "2025-06-03T14:47:04.132Z" },
+    { url = "https://files.pythonhosted.org/packages/e4/37/125096cb6a973e5ea011025308fd1225fe676a1fd6f3eb3e07e35d248239/slim_bindings-0.3.6-cp313-cp313-win_amd64.whl", hash = "sha256:d81aa49eba4de9c0e6073585f08a26e92ef1a7c968ab56e7990c29f50584f537", size = 4967056, upload-time = "2025-06-03T14:47:05.461Z" },
+]
+
+[[package]]
 name = "sniffio"
 version = "1.3.1"
 source = { registry = "https://pypi.org/simple" }
@@ -2733,15 +2734,15 @@ wheels = [
 
 [[package]]
 name = "uvicorn"
-version = "0.34.2"
+version = "0.34.3"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "click" },
     { name = "h11" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/a6/ae/9bbb19b9e1c450cf9ecaef06463e40234d98d95bf572fab11b4f19ae5ded/uvicorn-0.34.2.tar.gz", hash = "sha256:0e929828f6186353a80b58ea719861d2629d766293b6d19baf086ba31d4f3328", size = 76815, upload-time = "2025-04-19T06:02:50.101Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/de/ad/713be230bcda622eaa35c28f0d328c3675c371238470abdea52417f17a8e/uvicorn-0.34.3.tar.gz", hash = "sha256:35919a9a979d7a59334b6b10e05d77c1d0d574c50e0fc98b8b1a0f165708b55a", size = 76631, upload-time = "2025-06-01T07:48:17.531Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/b1/4b/4cef6ce21a2aaca9d852a6e84ef4f135d99fcd74fa75105e2fc0c8308acd/uvicorn-0.34.2-py3-none-any.whl", hash = "sha256:deb49af569084536d269fe0a6d67e3754f104cf03aba7c11c40f01aadf33c403", size = 62483, upload-time = "2025-04-19T06:02:48.42Z" },
+    { url = "https://files.pythonhosted.org/packages/6d/0d/8adfeaa62945f90d19ddc461c55f4a50c258af7662d34b6a3d5d1f8646f6/uvicorn-0.34.3-py3-none-any.whl", hash = "sha256:16246631db62bdfbf069b0645177d6e8a77ba950cfedbfd093acef9444e4d885", size = 62431, upload-time = "2025-06-01T07:48:15.664Z" },
 ]
 
 [[package]]

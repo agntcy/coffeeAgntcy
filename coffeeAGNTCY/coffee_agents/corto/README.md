@@ -89,7 +89,7 @@ To enable A2A communication over SLIM, you need to run the SLIM message bus gate
 You can do this by executing the following command:
 
 ```sh
-docker-compose up agp-gateway
+docker compose up slim
 ```
 
 #### Step 1: Run the Farm Server
