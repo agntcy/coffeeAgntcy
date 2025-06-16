@@ -40,7 +40,7 @@ const nodeTypes = {
 };
 
 // Constants
-const DELAY_DURATION = 1000; // Animation delay in milliseconds
+const DELAY_DURATION = 500; // Animation delay in milliseconds
 
 // Colors
 const COLORS = {
@@ -57,13 +57,11 @@ const HIGHLIGHT = {
 // Node and Edge IDs
 const NODE_IDS = {
     BUYER: '1',
-    SLIM: '2',
-    SOMMELIER: '3',
+    SOMMELIER: '2',
 };
 
 const EDGE_IDS = {
-    BUYER_TO_SLIM: '1-2',
-    SLIM_TO_SOMMELIER: '2-3',
+    BUYER_TO_SOMMELIER: '1-2',
 };
 
 // Initial nodes
@@ -71,12 +69,6 @@ const commonNodeData = {
     backgroundColor: COLORS.NODE.ORIGINAL.BACKGROUND,
 };
 
-
-/*
-Node ID: 1, Position: X=529.1332569384248, Y=159.4805787605829
-Graph.jsx:151 Node ID: 2, Position: X=512.0237044953464, Y=368.688426426175
-Graph.jsx:151 Node ID: 3, Position: X=534.0903941835277, Y=582.9317472571444
- */
 const initialNodes = [
     {
         id: NODE_IDS.BUYER,
@@ -89,15 +81,6 @@ const initialNodes = [
             handles: 'source',
         },
         position: { x: 529.1332569384248, y: 159.4805787605829 },
-    },
-    {
-        id: NODE_IDS.SLIM,
-        type: 'slimNode',
-        data: {
-            ...commonNodeData,
-            label: 'SLIM',
-        },
-        position: { x: 512.0237044953464, y: 368.688426426175 },
     },
     {
         id: NODE_IDS.SOMMELIER,
@@ -121,26 +104,9 @@ const edgeTypes = {
 // Initial edges
 const initialEdges = [
     {
-        id: EDGE_IDS.BUYER_TO_SLIM,
+        id: EDGE_IDS.BUYER_TO_SOMMELIER,
         source: NODE_IDS.BUYER,
-        target: NODE_IDS.SLIM,
-        targetHandle: 'top',
-        data: { label: 'A2A', labelIconType: EdgeLabelIcon.A2A },
-        type: 'custom',
-    },
-    {
-        id: EDGE_IDS.SLIM_TO_SOMMELIER,
-        source: NODE_IDS.SLIM,
         target: NODE_IDS.SOMMELIER,
-        sourceHandle: 'bottom_center',
-        data: { label: 'A2A', labelIconType: EdgeLabelIcon.A2A },
-        type: 'custom',
-    },
-    {
-        id: EDGE_IDS.SLIM_TO_COLOMBIA,
-        source: NODE_IDS.SLIM,
-        target: NODE_IDS.COLOMBIA,
-        sourceHandle: 'bottom_center',
         data: { label: 'A2A', labelIconType: EdgeLabelIcon.A2A },
         type: 'custom',
     },
@@ -193,13 +159,9 @@ const Graph = ({ buttonClicked, setButtonClicked, aiReplied, setAiReplied }) => 
                 // Forward animation
                 await animate([NODE_IDS.BUYER], HIGHLIGHT.ON);
                 await animate([NODE_IDS.BUYER], HIGHLIGHT.OFF);
-                await animate([EDGE_IDS.BUYER_TO_SLIM], HIGHLIGHT.ON);
-                await animate([EDGE_IDS.BUYER_TO_SLIM], HIGHLIGHT.OFF);
 
-                await animate([NODE_IDS.SLIM], HIGHLIGHT.ON);
-                await animate([NODE_IDS.SLIM], HIGHLIGHT.OFF);
-                await animate([EDGE_IDS.SLIM_TO_SOMMELIER], HIGHLIGHT.ON);
-                await animate([EDGE_IDS.SLIM_TO_SOMMELIER], HIGHLIGHT.OFF);
+                await animate([EDGE_IDS.BUYER_TO_SOMMELIER], HIGHLIGHT.ON);
+                await animate([EDGE_IDS.BUYER_TO_SOMMELIER], HIGHLIGHT.OFF);
 
                 await animate([NODE_IDS.SOMMELIER], HIGHLIGHT.ON);
                 await animate([NODE_IDS.SOMMELIER], HIGHLIGHT.OFF);
