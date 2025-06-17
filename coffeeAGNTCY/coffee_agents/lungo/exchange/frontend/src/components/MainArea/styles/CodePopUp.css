@@ -100,10 +100,17 @@
     color: white;
     padding: 5px 10px;
     border-radius: 12px;
-    font-size: 11px;
-    margin-left: 10px;
-    /*animation: fadeInOut 2s ease-in-out;*/
+    font-size: 9px;
+    opacity: 0;
+    transform: scale(0.9);
+    transition: opacity 0.5s ease-in-out, transform 0.5s ease-in-out;
 }
+
+.copy-badge.show {
+    opacity: 1;
+    transform: scale(1);
+}
+
 
 @keyframes fadeInOut {
     0% {
