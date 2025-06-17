@@ -74,7 +74,7 @@ class FarmAgentExecutor(AgentExecutor):
             event_queue: The queue to publish events to.
         """
 
-        logger.info("Received message request: %s", context.message)
+        logger.debug("Received message request: %s", context.message)
 
         validation_error = self._validate_request(context)
         if validation_error:
@@ -96,6 +96,8 @@ class FarmAgentExecutor(AgentExecutor):
                 metadata={"name": self.agent_card["name"]},
                 parts=[Part(TextPart(text=output))],
             )
+
+            logger.info("agent output message: %s", message)
 
             event_queue.enqueue_event(message)            
         except Exception as e:

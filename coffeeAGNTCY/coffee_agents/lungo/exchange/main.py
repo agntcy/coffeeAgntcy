@@ -25,7 +25,7 @@ from config.logging_config import setup_logging
 from graph.graph import ExchangeGraph
 
 setup_logging()
-logger = logging.getLogger("corto.supervisor.main")
+logger = logging.getLogger("lungo.supervisor.main")
 
 app = FastAPI()
 # Add CORS middleware

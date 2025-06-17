@@ -25,8 +25,8 @@ from a2a.server.request_handlers import DefaultRequestHandler
 from agent_executor import FarmAgentExecutor
 from config.config import (
     DEFAULT_MESSAGE_TRANSPORT, 
-    TRANSPORT_SERVER_ENDPOINT, 
-    FARM_YIELD_TOPIC,
+    TRANSPORT_SERVER_ENDPOINT,
+    FARM_BROADCAST_TOPIC,
 )
 from card import AGENT_CARD
 
@@ -52,7 +52,7 @@ async def main():
 
     # explicitly create a broadcast bridge to the farm yield topic
     broadcast_bridge = factory.create_bridge(
-        server, transport=transport, topic=FARM_YIELD_TOPIC
+        server, transport=transport, topic=FARM_BROADCAST_TOPIC
     )
 
     # create the default bridge to the server with a topic generated from the agent card
