@@ -233,7 +233,7 @@ class ExchangeGraph:
         print(f"LLM response: {llm_response.content}")  # For debugging
 
         if llm_response.tool_calls:
-            print(f"Tool calls detected: {llm_response.tool_calls}")  # For debugging
+            print(f"Tool calls detected from inventory node: {llm_response.tool_calls}")  # For debugging
         return {
             "messages": [llm_response]
         }
@@ -247,6 +247,7 @@ class ExchangeGraph:
             Your task is to handle user requests related to placing and checking orders with coffee farms.
             If the user asks about placing an order, use the provided tools to create an order.
             If the user asks about checking the status of an order, use the provided tools to retrieve order details.
+            If an order has been created, do not create a new order for the same request.
 
             User question: {user_message}
             """,
@@ -259,7 +260,8 @@ class ExchangeGraph:
             "user_message": state["messages"],
         })
         if llm_response.tool_calls:
-            print(f"Tool calls detected: {llm_response.tool_calls}")
+            print(f"Tool calls detected from orders_node: {llm_response.tool_calls}")
+            print("messages:", state["messages"])  # For debugging
         return {
             "messages": [llm_response]
         }

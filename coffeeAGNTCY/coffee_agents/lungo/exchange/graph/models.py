@@ -15,7 +15,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 from pydantic import BaseModel, Field
-from typing import Literal, Type
+from typing import Literal
 
 class InventoryArgs(BaseModel):
     """Arguments for the create_order tool."""

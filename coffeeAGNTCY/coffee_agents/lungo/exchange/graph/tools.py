@@ -29,7 +29,7 @@ from a2a.types import (
     Role,
 )
 from langchain_core.tools import tool
-from langchain_core.messages import AnyMessage
+from langchain_core.messages import AnyMessage, ToolMessage
 from gateway_sdk.protocols.a2a.gateway import A2AProtocol
 from gateway_sdk.factory import GatewayFactory
 from config.config import (
@@ -69,8 +69,16 @@ def tools_or_next(tools_node: str, end_node: str = "__end__"):
       ai_message = messages[-1]
     else:
       raise ValueError(f"No messages found in input state to tool_edge: {state}")
+
+    if isinstance(ai_message, ToolMessage):
+        logger.debug("Last message is a ToolMessage, returning end_node: %s", end_node)
+        return end_node
+
     if hasattr(ai_message, "tool_calls") and len(ai_message.tool_calls) > 0:
+      logger.debug("Last message has tool calls, returning tools_node: %s", tools_node)
       return tools_node
+    
+    logger.debug("Last message has no tool calls, returning end_node: %s", end_node)
     return end_node
 
   return custom_tools_condition_fn
