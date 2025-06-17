@@ -112,15 +112,13 @@ async def get_farm_yield_inventory(prompt: str, farm: str) -> str:
     Returns:
     str: current yield amount
     """
-    print(f"get_farm_yield_inventory called with prompt: {prompt}, farm: {farm}")
+    logger.info("entering get_farm_yield_inventory tool with prompt: %s, farm: %s", prompt, farm)
     if farm == "":
         return "No farm was provided, please provide a farm to get the yield from."
     
     card = get_farm_card(farm)
     if card is None:
         return f"Farm '{farm}' not recognized. Available farms are: {brazil_agent_card.name}, {colombia_agent_card.name}, {vietnam_agent_card.name}."
-    
-    logger.info("entering get_farm_yield tool with prompt: %s", prompt)
     
     client = await factory.create_client(
         "A2A",
@@ -162,7 +160,7 @@ async def get_all_farms_yield_inventory(prompt: str) -> str:
     Returns:
     dict: A dictionary containing the yields from all farms.
     """
-    logger.info("entering get_farm_yields tool with prompt: %s", prompt)
+    logger.info("entering get_all_farms_yield_inventory tool with prompt: %s", prompt)
 
     client = await factory.create_client(
         "A2A",
@@ -180,7 +178,7 @@ async def get_all_farms_yield_inventory(prompt: str) -> str:
         )
     )
 
-    responses = await client.broadcast_message(request, limit=3)
+    responses = await client.broadcast_message(request, expected_responses=3)
 
     logger.info(f"got {len(responses)} responses back from farms")
 
