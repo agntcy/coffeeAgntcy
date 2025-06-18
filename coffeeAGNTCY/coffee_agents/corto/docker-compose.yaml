@@ -1,6 +1,9 @@
 services:
   # Farm server App
   farm-server:
+    build:
+      context: ../../..
+      dockerfile: coffeeAGNTCY/coffee_agents/corto/docker/Dockerfile.farm
     image: ghcr.io/cisco-outshift-ai-agents/farm-server:latest
     container_name: farm-server
     platform: linux/amd64
@@ -35,6 +38,9 @@ services:
 
   # Exchange server App (farm client)
   exchange-server:
+    build:
+      context: ../../..
+      dockerfile: coffeeAGNTCY/coffee_agents/corto/docker/Dockerfile.exchange
     image: ghcr.io/cisco-outshift-ai-agents/exchange-server:latest
     container_name: exchange-server
     platform: linux/amd64
@@ -56,6 +62,9 @@ services:
       - "8000:8000"
 
   ui:
+    # build:
+    #   context: ../../..
+    #   dockerfile: coffeeAGNTCY/coffee_agents/corto/docker/Dockerfile.ui
     image: ghcr.io/cisco-outshift-ai-agents/ui:latest
     container_name: ui
     platform: linux/amd64

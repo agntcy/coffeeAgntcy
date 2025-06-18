@@ -1,9 +1,11 @@
 # Project Setup and Docker Instructions
 
-This project consists of three main components:
+This project consists of five main components:
 1. **FastAPI Exchange Server** (Backend)
 2. **React Frontend** (UI)
-3. **Farm Server** (Agent Backend)
+3. **Brazil Farm Server** (Brazil Farm Agent Backend)
+4. **Colombia Farm Server** (Colombia Farm Agent Backend)
+5. **Vietnam Farm Server** (Vietnam Farm Agent Backend)
 
 Both components are containerized using Docker for easy deployment.
 
@@ -23,8 +25,14 @@ This Dockerfile sets up the FastAPI Exchange Server.
 ### Frontend: `Dockerfile.ui`
 This Dockerfile sets up the React Frontend.
 
-### Farm Server: `Dockerfile.farm`
-This Dockerfile sets up the Farm Agent backend.
+### Brazil Farm Server: `Dockerfile.brazil-farm`
+This Dockerfile sets up the Brazil Farm Agent backend.
+
+### Colombia Farm Server: `Dockerfile.colombia-farm`
+This Dockerfile sets up the Brazil Farm Agent backend.
+
+### Vietnam Farm Server: `Dockerfile.vietnam-farm`
+This Dockerfile sets up the Vietnam Farm Agent backend.
 
 ---
 
@@ -59,14 +67,3 @@ docker run -d -p 3000:3000 ui-server
 The frontend will be accessible at `http://localhost:3000`.
 
 ---
-
-### 3. Farm Server (Agent Backend)
-#### Build the Docker Image
-```bash
-docker build -f coffeeAGNTCY/coffee_agents/corto/docker/Dockerfile.farm -t farm-server .
-```
-
-#### Run the Container
-```bash
-docker run -d -p 9999:9999 farm-server
-```
