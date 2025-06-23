@@ -32,7 +32,6 @@ from a2a.types import (
     Task)
 
 from a2a.utils import (
-    new_agent_text_message,
     new_task,
 )
 

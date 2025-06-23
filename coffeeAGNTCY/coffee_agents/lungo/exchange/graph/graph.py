@@ -214,7 +214,7 @@ class ExchangeGraph:
             template="""You are an inventory broker for a global coffee exchange company. 
             Your task is to provide accurate and concise information about coffee yields and inventory based on user queries.
             
-            If the user asks about how much coffee we have, what the yield is or general coffee inventory, use the provided tools.
+            Sample user questions scenarios include: how much coffee do we have, what the yield is, or general coffee inventory.
             If no farm was specified, use the get_all_farms_yield_inventory tool to get the total yield across all farms.
             If the user asks about a specific farm, use the get_farm_yield_inventory tool to get the yield for that farm.
 
@@ -230,10 +230,6 @@ class ExchangeGraph:
             "user_message": state["messages"],
         })
 
-        print(f"LLM response: {llm_response.content}")  # For debugging
-
-        if llm_response.tool_calls:
-            print(f"Tool calls detected from inventory node: {llm_response.tool_calls}")  # For debugging
         return {
             "messages": [llm_response]
         }
@@ -248,6 +244,7 @@ class ExchangeGraph:
             If the user asks about placing an order, use the provided tools to create an order.
             If the user asks about checking the status of an order, use the provided tools to retrieve order details.
             If an order has been created, do not create a new order for the same request.
+            If further information is needed, ask the user for clarification.
 
             User question: {user_message}
             """,

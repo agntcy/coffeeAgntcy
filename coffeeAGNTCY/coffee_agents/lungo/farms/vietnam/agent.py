@@ -15,9 +15,8 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import logging
-from typing import List
 from langgraph.graph import MessagesState
-from langchain_core.messages import HumanMessage, AIMessage
+from langchain_core.messages import AIMessage
 from langchain_core.prompts import PromptTemplate
 from langgraph.graph import StateGraph, END
 from common.llm import get_llm
@@ -26,7 +25,6 @@ logger = logging.getLogger("lungo.vietnam_farm_agent.agent")
 
 # --- 1. Define Node Names as Constants ---
 class NodeStates:
-    """Constants for node names to avoid hardcoding strings."""
     SUPERVISOR = "supervisor"
     INVENTORY = "inventory_node"
     ORDERS = "orders_node"
@@ -38,7 +36,6 @@ class GraphState(MessagesState):
     Represents the state of our graph, passed between nodes.
     """
     next_node: str
-    chat_history: List[str]
 
 # --- 3. Implement the LangGraph Application Class ---
 class FarmAgent:
@@ -55,16 +52,6 @@ class FarmAgent:
 
         self.app = self._build_graph()
 
-    def _format_chat_history(self, chat_history: List[str]) -> List[AIMessage | HumanMessage]:
-        """Helper to format chat history for LLM prompts."""
-        formatted_history = []
-        for msg in chat_history:
-            if msg.startswith("Human:"):
-                formatted_history.append(HumanMessage(content=msg[len("Human:"):].strip()))
-            elif msg.startswith("AI:"):
-                formatted_history.append(AIMessage(content=msg[len("AI:"):].strip()))
-        return formatted_history
-
     # --- Node Definitions ---
 
     def _supervisor_node(self, state: GraphState) -> dict:
@@ -74,8 +61,6 @@ class FarmAgent:
         if not self.supervisor_llm:
             self.supervisor_llm = get_llm()
 
-        chat_history = state.get("chat_history", [])
-
         prompt = PromptTemplate(
             template="""You are a coffee farm manager in Vietnam who delegates farm cultivation and global sales. Based on the 
             user's message, determine if it's related to 'inventory' or 'orders'.
@@ -83,26 +68,23 @@ class FarmAgent:
             Respond with 'orders' if the message is about checking order status, placing an order, or modifying an existing order.
             If unsure, respond with 'general'.
 
-            Chat history: {chat_history}
             User message: {user_message}
             """,
-            input_variables=["user_message", "chat_history"]
+            input_variables=["user_message"]
         )
 
         chain = prompt | self.supervisor_llm
-        formatted_history = self._format_chat_history(chat_history)
-        response = chain.invoke({"user_message": state["messages"], "chat_history": formatted_history})
+        response = chain.invoke({"user_message": state["messages"]})
         intent = response.content.strip().lower()
 
-        print(f"Supervisor decided: {intent}") # For debugging
+        logger.info(f"Supervisor intent determined: {intent}")  # Log the intent for debugging
 
-        new_chat_history = chat_history + [f"Human: {state["messages"]}"]
         if "inventory" in intent:
-            return {"next_node": NodeStates.INVENTORY, "messages": state["messages"], "chat_history": new_chat_history + ["AI: Delegating to inventory."]}
+            return {"next_node": NodeStates.INVENTORY, "messages": state["messages"]}
         elif "orders" in intent:
-            return {"next_node": NodeStates.ORDERS, "messages": state["messages"], "chat_history": new_chat_history + ["AI: Delegating to orders."]}
+            return {"next_node": NodeStates.ORDERS, "messages": state["messages"]}
         else:
-            return {"next_node": NodeStates.GENERAL_RESPONSE, "messages": state["messages"], "chat_history": new_chat_history + ["AI: I'm not sure how to handle that. Could you please clarify?"]}
+            return {"next_node": NodeStates.GENERAL_RESPONSE, "messages": state["messages"]}
 
     def _inventory_node(self, state: GraphState) -> dict:
         """
@@ -112,7 +94,6 @@ class FarmAgent:
             self.inventory_llm = get_llm()
 
         user_message = state["messages"]
-        chat_history = state["chat_history"]
 
         print(f"Processing inventory query: {user_message}") # For debugging
 
@@ -134,9 +115,9 @@ class FarmAgent:
             "user_message": user_message,
         }).content
 
-        logger.info(f"Inventory response generated: {llm_response}")  # Log the response for debugging
+        logger.info(f"Inventory response generated: {llm_response}")
 
-        return {"messages": [AIMessage(llm_response)], "chat_history": chat_history + [f"AI: {llm_response}"]}
+        return {"messages": [AIMessage(llm_response)]}
 
     def _orders_node(self, state: GraphState) -> dict:
         """
@@ -146,9 +127,8 @@ class FarmAgent:
             self.orders_llm = get_llm()
 
         user_message = state["messages"]
-        chat_history = state["chat_history"]
 
-        print(f"Processing orders query: {user_message}") # For debugging
+        logger.info(f"Received order query: {user_message}")
 
         # Simulate data retrieval - in a real app, this would be a database/API call
         mock_order_data = {
@@ -173,15 +153,14 @@ class FarmAgent:
             "order_data": str(mock_order_data) # Pass data as string for LLM context
         }).content
 
-        return {"messages": [AIMessage(llm_response)], "chat_history": chat_history + [f"AI: {llm_response}"]}
+        return {"messages": [AIMessage(llm_response)]}
 
     def _general_response_node(self, state: GraphState) -> dict:
         """
         Provides a fallback response for unclear or out-of-scope messages.
         """
-        chat_history = state["chat_history"]
         response = "I'm designed to help with inventory and order-related questions. Could you please rephrase your request?"
-        return {"messages": [AIMessage(response)], "chat_history": chat_history + [f"AI: {response}"]}
+        return {"messages": [AIMessage(response)]}
 
     # --- Graph Building Method ---
 
@@ -220,20 +199,17 @@ class FarmAgent:
 
     # --- Public Methods for Interaction ---
 
-    async def ainvoke(self, user_message: str, chat_history: List[str] = None) -> dict:
+    async def ainvoke(self, user_message: str) -> dict:
         """
         Invokes the graph with a user message.
 
         Args:
             user_message (str): The current message from the user.
-            chat_history (List[str], optional): Previous chat history. Defaults to an empty list.
 
         Returns:
             str: The final state of the graph after processing the message.
         """
-        if chat_history is None:
-            chat_history = []
-        inputs = {"messages": [user_message], "chat_history": chat_history}
+        inputs = {"messages": [user_message]}
         result = await self.app.ainvoke(inputs)
 
         messages = result.get("messages", [])
