@@ -12,30 +12,13 @@ const MCPOverSlimEdgeLabel = ({ x, y }) => {
         flex-direction: row;
         justify-content: center;
         align-items: center;
-        padding: 4px 10px;
-        gap: 6px;
     `;
 
     return (
         <EdgeLabelRenderer>
             <div className="custom-edge-label mcp-over-slim-edge-label" css={dynamicStyle}>
-                <div
-                    style={{
-                        fontWeight: 'bold',
-                        fontSize: '12px',
-                        color: '#333',
-                    }}
-                >
-                    MCP
-                </div>
-                <div
-                    style={{
-                        fontSize: '14px',
-                        color: '#666',
-                    }}
-                >
-                    SLIM
-                </div>
+                <div className="mcp-text">MCP</div>
+                <div className="slim-text">SLIM</div>
             </div>
         </EdgeLabelRenderer>
     );

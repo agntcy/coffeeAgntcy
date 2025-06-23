@@ -52,3 +52,20 @@
     height: 15px;
     position: relative;
 }
+
+.mcp-over-slim-edge-label {
+    padding: 4px 10px;
+    gap: 6px;
+}
+
+.mcp-text {
+    font-weight: bold;
+    font-size: 12px;
+    color: #333;
+    margin-top: 2px; /* Moves MCP lower */
+}
+
+.slim-text {
+    font-size: 14px;
+    color: #666;
+}
