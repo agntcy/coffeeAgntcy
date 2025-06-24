@@ -14,16 +14,16 @@ jobs:
     strategy:
       matrix:
         image:
-          - name: exchange-server
-            dockerfile: coffeeAGNTCY/coffee_agents/corto/docker/Dockerfile.exchange
-          - name: farm-server
-            dockerfile: coffeeAGNTCY/coffee_agents/corto/docker/Dockerfile.farm
-          - name: ui
+          - name: corto-ui
             dockerfile: coffeeAGNTCY/coffee_agents/corto/docker/Dockerfile.ui
+          - name: corto-exchange
+            dockerfile: coffeeAGNTCY/coffee_agents/corto/docker/Dockerfile.exchange
+          - name: corto-farm
+            dockerfile: coffeeAGNTCY/coffee_agents/corto/docker/Dockerfile.farm
           - name: lungo-ui
             dockerfile: coffeeAGNTCY/coffee_agents/lungo/docker/Dockerfile.ui
           - name: lungo-exchange
-            dockerfile: coffeeAGNTCY/coffee_agents/lungo/docker/Dockerfile.exchange
+            dockerfile: coffeeAGN TCY/coffee_agents/lungo/docker/Dockerfile.exchange
           - name: brazil-farm
             dockerfile: coffeeAGNTCY/coffee_agents/lungo/docker/Dockerfile.brazil-farm
           - name: colombia-farm
