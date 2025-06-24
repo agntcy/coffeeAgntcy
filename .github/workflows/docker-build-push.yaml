@@ -23,7 +23,7 @@ jobs:
           - name: lungo-ui
             dockerfile: coffeeAGNTCY/coffee_agents/lungo/docker/Dockerfile.ui
           - name: lungo-exchange
-            dockerfile: coffeeAGN TCY/coffee_agents/lungo/docker/Dockerfile.exchange
+            dockerfile: coffeeAGNTCY/coffee_agents/lungo/docker/Dockerfile.exchange
           - name: brazil-farm
             dockerfile: coffeeAGNTCY/coffee_agents/lungo/docker/Dockerfile.brazil-farm
           - name: colombia-farm
@@ -69,7 +69,7 @@ jobs:
           file: ${{ matrix.image.dockerfile }}
           push: false
           platforms: linux/amd64,linux/arm64
-          tags: ghcr.io/${{ github.repository_owner }}/coffeeAgntcy/${{ matrix.image.name }}:pr-${{ github.event.pull_request.number }}
+          tags: ghcr.io/${{ github.repository_owner }}/coffee-agntcy/${{ matrix.image.name }}:pr-${{ github.event.pull_request.number }}
 
       - name: Build and push Docker image (main)
         if: github.event_name == 'push'

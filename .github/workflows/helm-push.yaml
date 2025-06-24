@@ -20,10 +20,10 @@ jobs:
     strategy:
       matrix:
         chart:
-          - name: ui
+          - name: corto-ui
             path: coffeeAGNTCY/coffee_agents/corto/deployment/helm/corto-ui
-            package_name: corto-ui
-          - name: farm
+            package_name: ui
+          - name: corto-farm
             path: coffeeAGNTCY/coffee_agents/corto/deployment/helm/farm
             package_name: farm
           - name: exchange
