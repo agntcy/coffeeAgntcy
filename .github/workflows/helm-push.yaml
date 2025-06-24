@@ -89,4 +89,4 @@ jobs:
     - name: Push Helm Chart
       if: github.event_name == 'push'
       run: |
-        helm push ${{ matrix.chart.package_name }}-${{ steps.package.outputs.chart_version }}.tgz oci://ghcr.io/${{ github.repository_owner }}/helm
+        helm push ${{ matrix.chart.package_name }}-${{ steps.package.outputs.chart_version }}.tgz oci://ghcr.io/${{ github.repository_owner }}/coffee_agntcy/helm
