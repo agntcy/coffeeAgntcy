@@ -3,7 +3,7 @@ services:
     build:
       context: ../../..
       dockerfile: coffeeAGNTCY/coffee_agents/lungo/docker/Dockerfile.brazil-farm
-    image: ghcr.io/cisco-outshift-ai-agents/brazil-farm:latest
+    image: ghcr.io/cisco-outshift-ai-agents/coffeeAgntcy/brazil-farm:latest
     container_name: brazil-farm-server
     platform: linux/amd64
     environment:
@@ -24,7 +24,7 @@ services:
     build:
       context: ../../..
       dockerfile: coffeeAGNTCY/coffee_agents/lungo/docker/Dockerfile.colombia-farm
-    image: ghcr.io/cisco-outshift-ai-agents/colombia-farm:latest
+    image: ghcr.io/cisco-outshift-ai-agents/coffeeAgntcy/colombia-farm:latest
     container_name: colombia-farm-server
     platform: linux/amd64
     environment:
@@ -45,7 +45,7 @@ services:
     build:
       context: ../../..
       dockerfile: coffeeAGNTCY/coffee_agents/lungo/docker/Dockerfile.vietnam-farm
-    image: ghcr.io/cisco-outshift-ai-agents/vietnam-farm:latest
+    image: ghcr.io/cisco-outshift-ai-agents/coffeeAgntcy/vietnam-farm:latest
     container_name: vietnam-farm-server
     platform: linux/amd64
     environment:
@@ -88,7 +88,7 @@ services:
     build:
       context: ../../..
       dockerfile: coffeeAGNTCY/coffee_agents/lungo/docker/Dockerfile.exchange
-    image: ghcr.io/cisco-outshift-ai-agents/exchange-server:latest
+    image: ghcr.io/cisco-outshift-ai-agents/coffeeAgntcy/lungo-exchange:latest
     container_name: exchange-server
     platform: linux/amd64
     environment:
@@ -110,7 +110,7 @@ services:
     build:
       context: ../../..
       dockerfile: coffeeAGNTCY/coffee_agents/lungo/docker/Dockerfile.ui
-    image: ghcr.io/cisco-outshift-ai-agents/ui:latest
+    image: ghcr.io/cisco-outshift-ai-agents/coffeeAgntcy/lungo-ui:latest
     container_name: ui
     platform: linux/amd64
     environment:

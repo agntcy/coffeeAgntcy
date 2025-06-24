@@ -4,7 +4,7 @@ services:
     build:
       context: ../../..
       dockerfile: coffeeAGNTCY/coffee_agents/corto/docker/Dockerfile.farm
-    image: ghcr.io/cisco-outshift-ai-agents/farm-server:latest
+    image: ghcr.io/cisco-outshift-ai-agents/coffeeAgntcy/farm-server:latest
     container_name: farm-server
     platform: linux/amd64
     environment:
@@ -41,7 +41,7 @@ services:
     build:
       context: ../../..
       dockerfile: coffeeAGNTCY/coffee_agents/corto/docker/Dockerfile.exchange
-    image: ghcr.io/cisco-outshift-ai-agents/exchange-server:latest
+    image: ghcr.io/cisco-outshift-ai-agents/coffeeAgntcy/exchange-server:latest
     container_name: exchange-server
     platform: linux/amd64
     environment:
@@ -65,7 +65,7 @@ services:
     # build:
     #   context: ../../..
     #   dockerfile: coffeeAGNTCY/coffee_agents/corto/docker/Dockerfile.ui
-    image: ghcr.io/cisco-outshift-ai-agents/ui:latest
+    image: ghcr.io/cisco-outshift-ai-agents/coffeeAgntcy/ui:latest
     container_name: ui
     platform: linux/amd64
     environment:
