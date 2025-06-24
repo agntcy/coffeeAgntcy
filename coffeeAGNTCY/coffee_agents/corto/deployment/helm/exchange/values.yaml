@@ -1,7 +1,7 @@
 # This is a YAML-formatted file.
 # Declare variables to be passed into your templates.
 
-appName: exchange
+appName: corto-exchange
 appVersion: v1
 replicaCount: 1
 
@@ -31,12 +31,12 @@ config:
 
 ingress:
   enabled: true
-  name: exchange-ingress
+  name: corto-exchange-ingress
   className: nginx
-  host: exchange-ingress.outshift.io
-  serviceName: exchange-ingress
+  host: corto-exchange-ingress.outshift.io
+  serviceName: corto-exchange-ingress
   servicePort: 8000
-  tlsSecret: exchange-ingress-tls
+  tlsSecret: corto-exchange-ingress-tls
   annotations:
     cert-manager.io/cluster-issuer: letsencrypt
     nginx.ingress.kubernetes.io/rewrite-target: /

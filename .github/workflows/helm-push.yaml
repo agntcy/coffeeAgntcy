@@ -22,13 +22,13 @@ jobs:
         chart:
           - name: corto-ui
             path: coffeeAGNTCY/coffee_agents/corto/deployment/helm/corto-ui
-            package_name: ui
+            package_name: corto-ui
+          - name: corto-exchange
+            path: coffeeAGNTCY/coffee_agents/corto/deployment/helm/exchange
+            package_name: corto-exchange
           - name: corto-farm
             path: coffeeAGNTCY/coffee_agents/corto/deployment/helm/farm
-            package_name: farm
-          - name: exchange
-            path: coffeeAGNTCY/coffee_agents/corto/deployment/helm/exchange
-            package_name: exchange
+            package_name: corto-farm
           - name: lungo-ui
             path: coffeeAGNTCY/coffee_agents/lungo/deployment/helm/ui
             package_name: lungo-ui
