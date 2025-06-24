@@ -1,0 +1,54 @@
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+appName: lungo-exchange
+appVersion: v1
+replicaCount: 1
+
+image:
+  repository: ghcr.io/cisco-outshift-ai-agents/lungo-exchange
+  tag: latest
+  pullPolicy: Always
+  pullSecret:
+
+service:
+  port: 8000
+
+config:
+  azureOpenAiEndpoint: ""
+  azureOpenAiDeployment: ""
+  azureOpenAiApiVersion: ""
+  llmProvider: ""
+  transportServerEndpoint: ""
+  defaultMessageTransport: ""
+
+# serviceaccount:
+#   annotations:
+#     eks.amazonaws.com/role-arn: REPLACE_WITH_ROLE_ARN
+
+ingress:
+  enabled: true
+  name: exchange-ingress
+  className: nginx
+  host: lungo-exchange-ingress.outshift.io
+  serviceName: lungo-exchange-ingress
+  servicePort: 8000
+  tlsSecret: lungo-exchange-ingress-tls
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt
+    nginx.ingress.kubernetes.io/rewrite-target: /
+
+probes:
+  livenessProbeEnabled: false
+  readinessProbeEnabled: false
+  port: 8000
+  endpoint: /v1/health
+
+resources:
+  enabled: false
+  limits:
+    cpu: 2000m
+    memory: 2500Mi
+  requests:
+    cpu: 200m
+    memory: 500Mi
