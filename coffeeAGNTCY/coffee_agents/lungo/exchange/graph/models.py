@@ -14,32 +14,31 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
+from typing import Literal
 
-class GetFarmYieldInput(BaseModel):
-    """
-    Represents the input for the get farm yield agent call.
-    This class is used to structure the input payload for the A2A agent.
-    """
-    farm_name: str
+class InventoryArgs(BaseModel):
+    """Arguments for the create_order tool."""
+    prompt: str = Field(
+        ...,
+        description="The prompt to use for the broadcast. Must be a non-empty string."
+    )
+    farm : Literal["brazil", "colombia", "vietnam"] = Field(
+        ...,
+        description="The name of the farm. Must be one of 'brazil', 'colombia', or 'vietnam'."
+    )
 
-class GetFarmYieldOutput(BaseModel):
-    """
-    Represents the output for the get farm yield agent call.
-    This class is used to structure the response from the A2A agent.
-    """
-    yields: dict[str, float] # Mapping of farm names to their yields in pounds
-
-class FetchHarvestInput(BaseModel):
-    """
-    Represents the input for the fetch harvest agent call.
-    This class is used to structure the input payload for the A2A agent.
-    """
-    prompt: str
-
-class FetchHarvestOutput(BaseModel):
-    """
-    Represents the output of the fetch harvest agent call.
-    This class is used to structure the response from the A2A agent.
-    """
-    yield_lb: str
+class CreateOrderArgs(BaseModel):
+    """Arguments for the create_order tool."""
+    farm: Literal["brazil", "colombia", "vietnam"] = Field(
+        ...,
+        description="The name of the farm. Must be one of 'brazil', 'colombia', or 'vietnam'."
+    )
+    quantity: int = Field(
+        ...,
+        description="The quantity of the order. Must be a positive integer."
+    )
+    price: float = Field(
+        ...,
+        description="The price of the order. Must be a positive float."
+    )

@@ -16,20 +16,44 @@
 
 import logging
 import uuid
+from pydantic import BaseModel, Field
 
-from langchain_core.messages import AIMessage
+from langchain_core.prompts import PromptTemplate
+from langchain_core.messages import AIMessage, SystemMessage
 
 from langgraph.graph.state import CompiledStateGraph
-from langgraph.prebuilt import create_react_agent
-from langgraph_supervisor import create_supervisor
+from langgraph.graph import MessagesState
+from langgraph.graph import StateGraph, END
+from langgraph.prebuilt import ToolNode
 
 from common.llm import get_llm
-from farms.brazil.card import AGENT_CARD as brazil_agent_card
-from farms.colombia.card import AGENT_CARD as colombia_agent_card
-from farms.vietnam.card import AGENT_CARD as vietnam_agent_card
-from graph.tools import FetchBrazilHarvestTool, FetchColombiaHarvestTool, FetchVietnamHarvestTool, GetFarmYieldTool
+from graph.tools import (
+    get_farm_yield_inventory, 
+    get_all_farms_yield_inventory,
+    create_order, 
+    get_order_details, 
+    tools_or_next
+)
 
-logger = logging.getLogger("corto.supervisor.graph")
+logger = logging.getLogger("lungo.supervisor.graph")
+
+class NodeStates:
+    SUPERVISOR = "exchange_supervisor"
+
+    INVENTORY = "inventory_broker"
+    INVENTORY_TOOLS = "inventory_tools"
+
+    ORDERS = "orders_broker"
+    ORDERS_TOOLS = "orders_tools"
+
+    REFLECTION = "reflection"
+    GENERAL_INFO = "general"
+
+class GraphState(MessagesState):
+    """
+    Represents the state of our graph, passed between nodes.
+    """
+    next_node: str
 
 class ExchangeGraph:
     def __init__(self):
@@ -39,95 +63,206 @@ class ExchangeGraph:
         """
         Constructs and compiles a LangGraph instance.
 
-        This function initializes a `SupervisorAgent` to create the base graph structure
-        and uses an `InMemorySaver` as the checkpointer for the compilation process.
+        Agent Flow:
 
-        The resulting compiled graph can be used to execute Supervisor workflow in LangGraph Studio.
+        suervisor_agent
+            - converse with user and coordinate app flow
+
+        inventory_agent
+            - get inventory for a specific farm or broadcast to all farms
+
+        orders_agent
+            - initiate orders with a specific farm and retrieve order status
+
+        reflection_agent
+            - determine if the user's request has been satisfied or if further action is needed
 
         Returns:
         CompiledGraph: A fully compiled LangGraph instance ready for execution.
         """
-        model = get_llm()
 
-        get_farm_yields_tool = GetFarmYieldTool()
+        self.supervisor_llm = None
+        self.reflection_llm = None
+        self.inventory_llm = None
+        self.orders_llm = None
 
-        get_farm_yields_tool = create_react_agent(
-            model=model,
-            tools=[get_farm_yields_tool],
-            name="get_farm_yields",
+        workflow = StateGraph(GraphState)
+
+        # --- 1. Define Node States ---
+
+        workflow.add_node(NodeStates.SUPERVISOR, self._supervisor_node)
+        workflow.add_node(NodeStates.INVENTORY, self._inventory_node)
+        workflow.add_node(NodeStates.INVENTORY_TOOLS, ToolNode([get_farm_yield_inventory, get_all_farms_yield_inventory]))
+        workflow.add_node(NodeStates.ORDERS, self._orders_node)
+        workflow.add_node(NodeStates.ORDERS_TOOLS, ToolNode([create_order, get_order_details]))
+        workflow.add_node(NodeStates.REFLECTION, self._reflection_node)
+        workflow.add_node(NodeStates.GENERAL_INFO, self._general_response_node)
+
+        # --- 2. Define the Agentic Workflow ---
+
+        workflow.set_entry_point(NodeStates.SUPERVISOR)
+
+        # Add conditional edges from the supervisor
+        workflow.add_conditional_edges(
+            NodeStates.SUPERVISOR,
+            lambda state: state["next_node"],
+            {
+                NodeStates.INVENTORY: NodeStates.INVENTORY,
+                NodeStates.ORDERS: NodeStates.ORDERS,
+                NodeStates.GENERAL_INFO: NodeStates.GENERAL_INFO,
+            },
         )
+
+        workflow.add_conditional_edges(NodeStates.INVENTORY, tools_or_next(NodeStates.INVENTORY_TOOLS, NodeStates.REFLECTION))
+        workflow.add_edge(NodeStates.INVENTORY_TOOLS, NodeStates.INVENTORY)
+
+        workflow.add_conditional_edges(NodeStates.ORDERS, tools_or_next(NodeStates.ORDERS_TOOLS, NodeStates.REFLECTION))
+        workflow.add_edge(NodeStates.ORDERS_TOOLS, NodeStates.ORDERS)
+
+        workflow.add_edge(NodeStates.GENERAL_INFO, END)
+
+        return workflow.compile()
     
-        fetch_brazil_harvest_tool = FetchBrazilHarvestTool(
-            remote_agent_card=brazil_agent_card,
+    async def _supervisor_node(self, state: GraphState) -> dict:
+        """
+        Determines the intent of the user's message and routes to the appropriate node.
+        """
+        if not self.supervisor_llm:
+            self.supervisor_llm = get_llm()
+
+        user_message = state["messages"]
+
+        prompt = PromptTemplate(
+            template="""You are a global coffee exchange agent connecting users to coffee farms in Brazil, Colombia, and Vietnam. 
+            Based on the user's message, determine if it's related to 'inventory' or 'orders'.
+            Respond with 'inventory' if the message is about checking yield, stock, product availability, regions of origin, or specific coffee item details.
+            Respond with 'orders' if the message is about checking order status, placing an order, or modifying an existing order.
+
+            User message: {user_message}
+            """,
+            input_variables=["user_message"]
         )
 
-        fetch_brazil_harvest = create_react_agent(
-            model=model,
-            tools=[fetch_brazil_harvest_tool],
-            name="fetch_brazil_harvest",
+        chain = prompt | self.supervisor_llm
+        response = chain.invoke({"user_message": user_message})
+        intent = response.content.strip().lower()
+
+        logger.info(f"Supervisor decided: {intent}")
+
+        if "inventory" in intent:
+            return {"next_node": NodeStates.INVENTORY, "messages": user_message}
+        elif "orders" in intent:
+            return {"next_node": NodeStates.ORDERS, "messages": user_message}
+        else:
+            return {"next_node": NodeStates.GENERAL_INFO, "messages": user_message}
+        
+    async def _reflection_node(self, state: GraphState) -> dict:
+        """
+        Reflect on the conversation to determine if the user's query has been satisfied 
+        or if further action is needed.
+        """
+        if not self.reflection_llm:
+            class ShouldContinue(BaseModel):
+                should_continue: bool = Field(description="Whether to continue processing the request.")
+                reason: str = Field(description="Reason for decision whether to continue the request.")
+            
+            # create a structured output LLM for reflection
+            self.reflection_llm = get_llm().with_structured_output(ShouldContinue, strict=True)
+
+        sys_msg_reflection = SystemMessage(
+            content="""Decide whether the user query has been satisifed or if we need to continue.
+                Do not continue if the last message is a question or requires user input.
+                """,
+                pretty_repr=True,
+            )
+        
+        response = await self.reflection_llm.ainvoke(
+          [sys_msg_reflection] + state["messages"]
         )
-        fetch_colombia_harvest_tool = FetchColombiaHarvestTool(
-            remote_agent_card=colombia_agent_card,
+        logging.info(f"Reflection agent response: {response}")
+
+        is_duplicate_message = (
+          len(state["messages"]) > 2 and state["messages"][-1].content == state["messages"][-3].content
+        )
+        
+        should_continue = response.should_continue and not is_duplicate_message
+        next_node = NodeStates.SUPERVISOR if should_continue else END
+        logging.info(f"Next node: {next_node}")
+
+        return {
+          "next": next_node,
+          "messages": [SystemMessage(content=response.reason)],
+        }
+        
+    async def _inventory_node(self, state: GraphState) -> dict:
+        """
+        Handles inventory-related queries using an LLM to formulate responses.
+        """
+        if not self.inventory_llm:
+            self.inventory_llm = get_llm().bind_tools(
+                [get_farm_yield_inventory, get_all_farms_yield_inventory],
+                strict=True
+            )
+
+        prompt = PromptTemplate(
+            template="""You are an inventory broker for a global coffee exchange company. 
+            Your task is to provide accurate and concise information about coffee yields and inventory based on user queries.
+            
+            If the user asks about how much coffee we have, what the yield is or general coffee inventory, use the provided tools.
+            If no farm was specified, use the get_all_farms_yield_inventory tool to get the total yield across all farms.
+            If the user asks about a specific farm, use the get_farm_yield_inventory tool to get the yield for that farm.
+
+            If the user asks where we have coffee available, get the yield from all farms and respond with the total yield across all farms.
+
+            User question: {user_message}
+            """,
+            input_variables=["user_message"]
         )
 
-        fetch_colombia_harvest = create_react_agent(
-            model=model,
-            tools=[fetch_colombia_harvest_tool],
-            name="fetch_colombia_harvest",
+        chain = prompt | self.inventory_llm
+
+        llm_response = chain.invoke({
+            "user_message": state["messages"],
+        })
+
+        return {
+            "messages": [llm_response]
+        }
+    
+    async def _orders_node(self, state: GraphState) -> dict:
+        if not self.orders_llm:
+            self.orders_llm = get_llm().bind_tools([create_order, get_order_details])
+
+        prompt = PromptTemplate(
+            template="""You are an orders broker for a global coffee exchange company. 
+            Your task is to handle user requests related to placing and checking orders with coffee farms.
+            If the user asks about placing an order, use the provided tools to create an order.
+            If the user asks about checking the status of an order, use the provided tools to retrieve order details.
+            If an order has been created, do not create a new order for the same request.
+            If further information is needed, ask the user for clarification.
+
+            User question: {user_message}
+            """,
+            input_variables=["user_message"]
         )
 
-        fetch_vietnam_harvest_tool = FetchVietnamHarvestTool(
-            remote_agent_card=vietnam_agent_card,
-        )
-        fetch_vietnam_harvest = create_react_agent(
-            model=model,
-            tools=[fetch_vietnam_harvest_tool],
-            name="fetch_vietnam_harvest",
-        )
-        graph = create_supervisor(
-            model=model,
-            agents=[get_farm_yields_tool, fetch_brazil_harvest, fetch_colombia_harvest, fetch_vietnam_harvest],  # worker agents list
-            prompt = (
-                "You are a supervisor agent responsible for handling coffee requests in pounds (lb).\n\n"
+        chain = prompt | self.orders_llm
 
-                "## TASK FLOW:\n"
-                "1. If the user mentions a specific farm (e.g., \"Brazil\", \"Colombia\", \"Vietnam\"):\n"
-                "   a.Always call the corresponding harvest tool: `fetch_<lowercased_farmname>_harvest` and convert the user ask to ask for the farm yield\n"
-                "   b. If the amount is 0, respond:\n"
-                "      \"{FarmName} currently has {X} lb of coffee available.\"\n"
-                "   c. If a valid amount is requested:\n"
-                "      - Call the harvest tool.\n"
-                "      - If the tool returns enough coffee:\n"
-                "        \"{FarmName} will fulfill your order of {X} lb of coffee. It will be sent to you shortly.\"\n"
-                "      - If the tool returns insufficient yield:\n"
-                "        \"I'm sorry, but {FarmName} does not have enough yield to fulfill your request.\"\n"
-                "   d. If the farm does **not** exist (e.g., tool failure or unknown name):\n"
-                "      \"I'm sorry, but I don't recognize the farm '{FarmName}'.\"\n\n"
-
-                "2. If the user does **not** mention a specific farm:\n"
-                "   a. Use `get_farm_yields` to retrieve all yields.\n"
-                "   b. Select the farm with the highest available yield that meets or exceeds the request.\n"
-                "   c. Do **not** ask the user to choose. Always proceed automatically with the top-yielding valid farm.\n"
-                "   d. Call the corresponding harvest tool: `fetch_<lowercased_farmname>_harvest`\n"
-                "      - Input: `farm` (string), `amount` (int)\n\n"
-
-                "## RULES:\n"
-                "- Only continue if the user clearly requests coffee in a type of weight or number. If no weight type is given, assume pounds. Accept common typos like 'lbs', 'pouds', 'punds'.\n"
-                "- If the weight is given in another unit (e.g., kg), convert it to pounds.\n"
-                "- If the request does **not** mention coffee or a quantity, respond:\n"
-                "  \"I'm sorry, I can only help with requests to obtain coffee beans. Please specify the amount you need.\"\n"
-                "- **Do not combine yields from multiple farms**. Only use one farm that can fully satisfy the request.\n"
-                "- If **no single farm** can fulfill the request, respond:\n"
-                "  \"I'm sorry, but none of the farms can fulfill your request for coffee beans.\"\n"
-                "- If `get_farm_yields` fails or returns no farms, provide a user-friendly error.\n"
-                "- If any harvest tool fails, return a clear error message.\n"
-                "- Only return the final response sentence(s) to the user. Do not include explanations, reasoning, or intermediate steps.\n"
-            ),
-            add_handoff_back_messages=False,
-            output_mode="last_message",
-        ).compile()
-        logger.debug("LangGraph supervisor created and compiled successfully.")
-        return graph
+        llm_response = chain.invoke({
+            "user_message": state["messages"],
+        })
+        if llm_response.tool_calls:
+            print(f"Tool calls detected from orders_node: {llm_response.tool_calls}")
+            print("messages:", state["messages"])  # For debugging
+        return {
+            "messages": [llm_response]
+        }
+    
+    def _general_response_node(self, state: GraphState) -> dict:
+        return {
+            "next_node": END,
+            "messages": [AIMessage(content="I'm not sure how to handle that. Could you please clarify?")],
+        }
 
     async def serve(self, prompt: str):
         """

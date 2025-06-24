@@ -15,55 +15,210 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import logging
-from typing import TypedDict
-
-from langchain_core.messages import HumanMessage, SystemMessage
-
+from langgraph.graph import MessagesState
+from langchain_core.messages import AIMessage
+from langchain_core.prompts import PromptTemplate
+from langgraph.graph import StateGraph, END
 from common.llm import get_llm
 
-class State(TypedDict):
-    prompt: str
-    error_type: str
-    error_message: str
-    yield_estimate: str
+logger = logging.getLogger("lungo.vietnam_farm_agent.agent")
 
+# --- 1. Define Node Names as Constants ---
+class NodeStates:
+    SUPERVISOR = "supervisor"
+    INVENTORY = "inventory_node"
+    ORDERS = "orders_node"
+    GENERAL_RESPONSE = "general_response_node"
 
+# --- 2. Define the Graph State ---
+class GraphState(MessagesState):
+    """
+    Represents the state of our graph, passed between nodes.
+    """
+    next_node: str
+
+# --- 3. Implement the LangGraph Application Class ---
 class FarmAgent:
     def __init__(self):
-        pass  # No graph setup needed
-
-    async def yield_node(self, state: State):
         """
-        Generate a yield estimate for coffee beans based on user input by connecting to an LLM.
-        """
-        user_prompt = state.get("prompt")
+        Initializes the CustomerServiceAgent with an LLM and builds the LangGraph workflow.
 
-        system_prompt = (
-            "You are a coffee farm in Vietnam\n"
-            "The user will describe a question or scenario related to fetching the yield from your coffee farm. "
-            "Your job is to:\n"
-            "1. Return a random yield estimate for the coffee farm in Vietnam. Make sure the estimate is a reasonable value and in pounds.\n"
-            "2. Respond with only the yield estimate in pounds, without any additional text or explanation.\n"
-            "Use tasting terminology like acidity, body, aroma, and finish.\n"
-            "Respond with an empty response if the user prompt does not relate to fetching the yield from the Vietnamn coffee farm. Do not include quotes or any placeholder."
+        Args:
+            llm_model (str): The name of the OpenAI LLM model to use (e.g., "gpt-4o", "gpt-3.5-turbo").
+        """
+        self.supervisor_llm = None
+        self.inventory_llm = None
+        self.orders_llm = None
+
+        self.app = self._build_graph()
+
+    # --- Node Definitions ---
+
+    def _supervisor_node(self, state: GraphState) -> dict:
+        """
+        Determines the intent of the user's message and routes to the appropriate node.
+        """
+        if not self.supervisor_llm:
+            self.supervisor_llm = get_llm()
+
+        prompt = PromptTemplate(
+            template="""You are a coffee farm manager in Vietnam who delegates farm cultivation and global sales. Based on the 
+            user's message, determine if it's related to 'inventory' or 'orders'.
+            Respond with 'inventory' if the message is about checking yield, stock, product availability, or specific coffee item details.
+            Respond with 'orders' if the message is about checking order status, placing an order, or modifying an existing order.
+            If unsure, respond with 'general'.
+
+            User message: {user_message}
+            """,
+            input_variables=["user_message"]
         )
 
-        messages = [
-            SystemMessage(content=system_prompt),
-            HumanMessage(content=user_prompt)
-        ]
-        response = get_llm().invoke(messages)
-        yield_estimate = response.content
-        if not yield_estimate.strip():
-            return {
-                "error_type": "invalid_input",
-                "error_message": "Invalid prompt. Please provide a valid question or scenario related to fetching the yield from the Vietnamn coffee farm."
-            }
+        chain = prompt | self.supervisor_llm
+        response = chain.invoke({"user_message": state["messages"]})
+        intent = response.content.strip().lower()
 
-        return {"yield_estimate": yield_estimate}
+        logger.info(f"Supervisor intent determined: {intent}")  # Log the intent for debugging
 
-    async def ainvoke(self, input: str) -> dict:
+        if "inventory" in intent:
+            return {"next_node": NodeStates.INVENTORY, "messages": state["messages"]}
+        elif "orders" in intent:
+            return {"next_node": NodeStates.ORDERS, "messages": state["messages"]}
+        else:
+            return {"next_node": NodeStates.GENERAL_RESPONSE, "messages": state["messages"]}
+
+    def _inventory_node(self, state: GraphState) -> dict:
         """
-        Asynchronously invoke the agent with the given input.
+        Handles inventory-related queries using an LLM to formulate responses.
         """
-        return await self.yield_node({"prompt": input})
+        if not self.inventory_llm:
+            self.inventory_llm = get_llm()
+
+        user_message = state["messages"]
+
+        prompt = PromptTemplate(
+            template="""You are a helpful coffee farm cultivation manager in Vietnam who handles yield or inventory requets. 
+            Your job is to:
+            1. Return a random yield estimate for the coffee farm in Vietnam. Make sure the estimate is a reasonable value and in pounds.
+            2. Respond with only the yield estimate.\n
+
+            If the user asked in lbs or pounds, respond with the estimate in pounds. If the user asked in kg or kilograms, convert the estimate to kg and respond with that value.\n
+
+            User question: {user_message}
+            """,
+            input_variables=["user_message"]
+        )
+        chain = prompt | self.inventory_llm
+
+        llm_response = chain.invoke({
+            "user_message": user_message,
+        }).content
+
+        logger.info(f"Inventory response generated: {llm_response}")
+
+        return {"messages": [AIMessage(llm_response)]}
+
+    def _orders_node(self, state: GraphState) -> dict:
+        """
+        Handles order-related queries using an LLM to formulate responses.
+        """
+        if not self.orders_llm:
+            self.orders_llm = get_llm()
+
+        user_message = state["messages"]
+
+        logger.info(f"Received order query: {user_message}")
+
+        # Simulate data retrieval - in a real app, this would be a database/API call
+        mock_order_data = {
+            "12345": {"status": "processing", "estimated_delivery": "2 business days"},
+            "67890": {"status": "shipped", "tracking_number": "ABCDEF123"}
+        }
+
+        prompt = PromptTemplate(
+            template="""You are an order assistant. Based on the user's question and the following order data, provide a concise and helpful response.
+            If they ask about a specific order number, provide its status. 
+            If they ask about placing order an order, generate a random order id and tracking number.
+
+            Order Data: {order_data}
+            User question: {user_message}
+            """,
+            input_variables=["user_message", "order_data"]
+        )
+        chain = prompt | self.orders_llm
+
+        llm_response = chain.invoke({
+            "user_message": user_message,
+            "order_data": str(mock_order_data) # Pass data as string for LLM context
+        }).content
+
+        return {"messages": [AIMessage(llm_response)]}
+
+    def _general_response_node(self, state: GraphState) -> dict:
+        """
+        Provides a fallback response for unclear or out-of-scope messages.
+        """
+        response = "I'm designed to help with inventory and order-related questions. Could you please rephrase your request?"
+        return {"messages": [AIMessage(response)]}
+
+    # --- Graph Building Method ---
+
+    def _build_graph(self):
+        """
+        Builds and compiles the LangGraph workflow.
+        """
+        workflow = StateGraph(GraphState)
+
+        # Add nodes
+        workflow.add_node(NodeStates.SUPERVISOR, self._supervisor_node)
+        workflow.add_node(NodeStates.INVENTORY, self._inventory_node)
+        workflow.add_node(NodeStates.ORDERS, self._orders_node)
+        workflow.add_node(NodeStates.GENERAL_RESPONSE, self._general_response_node)
+
+        # Set the entry point
+        workflow.set_entry_point(NodeStates.SUPERVISOR)
+
+        # Add conditional edges from the supervisor
+        workflow.add_conditional_edges(
+            NodeStates.SUPERVISOR,
+            lambda state: state["next_node"],
+            {
+                NodeStates.INVENTORY: NodeStates.INVENTORY,
+                NodeStates.ORDERS: NodeStates.ORDERS,
+                NodeStates.GENERAL_RESPONSE: NodeStates.GENERAL_RESPONSE,
+            },
+        )
+
+        # Add edges from the specific nodes to END
+        workflow.add_edge(NodeStates.INVENTORY, END)
+        workflow.add_edge(NodeStates.ORDERS, END)
+        workflow.add_edge(NodeStates.GENERAL_RESPONSE, END)
+
+        return workflow.compile()
+
+    # --- Public Methods for Interaction ---
+
+    async def ainvoke(self, user_message: str) -> dict:
+        """
+        Invokes the graph with a user message.
+
+        Args:
+            user_message (str): The current message from the user.
+
+        Returns:
+            str: The final state of the graph after processing the message.
+        """
+        inputs = {"messages": [user_message]}
+        result = await self.app.ainvoke(inputs)
+
+        messages = result.get("messages", [])
+        if not messages:
+            raise RuntimeError("No messages found in the graph response.")
+
+        # Find the last AIMessage with non-empty content
+        for message in reversed(messages):
+            if isinstance(message, AIMessage) and message.content.strip():
+                logger.debug(f"Valid AIMessage found: {message.content.strip()}")
+                return message.content.strip()
+
+        # If no valid AIMessage found, return the last message as a fallback
+        return messages[-1].content.strip() if messages else "No valid response generated."

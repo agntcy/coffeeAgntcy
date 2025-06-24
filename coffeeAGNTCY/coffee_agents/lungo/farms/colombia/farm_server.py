@@ -23,7 +23,11 @@ from a2a.server.tasks import InMemoryTaskStore
 from a2a.server.request_handlers import DefaultRequestHandler
 
 from agent_executor import FarmAgentExecutor
-from config.config import DEFAULT_MESSAGE_TRANSPORT, TRANSPORT_SERVER_ENDPOINT
+from config.config import (
+    DEFAULT_MESSAGE_TRANSPORT, 
+    TRANSPORT_SERVER_ENDPOINT,
+    FARM_BROADCAST_TOPIC,
+)
 from card import AGENT_CARD
 
 # Initialize a multi-protocol, multi-transport gateway factory.
@@ -45,7 +49,16 @@ async def main():
         DEFAULT_MESSAGE_TRANSPORT,
         endpoint=TRANSPORT_SERVER_ENDPOINT,
     )
-    bridge = factory.create_bridge(server, transport=transport)
+
+    # explicitly create a broadcast bridge to the farm yield topic
+    broadcast_bridge = factory.create_bridge(
+        server, transport=transport, topic=FARM_BROADCAST_TOPIC
+    )
+
+    # create the default bridge to the server with a topic generated from the agent card
+    bridge = factory.create_bridge(server, transport=transport) 
+
+    await broadcast_bridge.start(blocking=False)
     await bridge.start(blocking=True)
 
 if __name__ == '__main__':

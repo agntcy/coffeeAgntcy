@@ -503,7 +503,7 @@ wheels = [
 
 [[package]]
 name = "gateway-sdk"
-version = "0.1.1"
+version = "0.1.2"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "a2a-sdk" },
@@ -517,9 +517,9 @@ dependencies = [
     { name = "traceloop-sdk" },
     { name = "uvicorn" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/0b/a9/57f7ea99c6334aa69d0b77407c5ae9cd64642b9534fa418ac5af3b3e4db1/gateway_sdk-0.1.1.tar.gz", hash = "sha256:1f0d7fa55fe33390af2b91c7cb43c34ad56217d454453a6173b0e065de647da4", size = 837749, upload-time = "2025-06-04T15:44:37.772Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/1b/26/0118c46f440490f7d2421438a4c6f756bd27b2355988e66594165e3d386c/gateway_sdk-0.1.2.tar.gz", hash = "sha256:69ec0015fe9087db07c5d571472947eabe036344c4950c3278255fc37c4646b2", size = 839293, upload-time = "2025-06-23T16:31:54.883Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/1b/47/0e7e937f269fb67e481e3439accebc64b27f283189855d9ef0c53595e12e/gateway_sdk-0.1.1-py3-none-any.whl", hash = "sha256:ffa4130d63e8871fcab75abeaac58d40bb96c6265abc0708e34b33eabfd37266", size = 30835, upload-time = "2025-06-04T15:44:35.81Z" },
+    { url = "https://files.pythonhosted.org/packages/d1/45/c3b119eac5f643587337f513cdd5bd0c5093327deee46e6e2996756004d0/gateway_sdk-0.1.2-py3-none-any.whl", hash = "sha256:55813b5e79b3c811d59d1a26ded56bca77f9a057cc85354f065ebd3d713593ad", size = 32230, upload-time = "2025-06-23T16:31:53.734Z" },
 ]
 
 [[package]]
@@ -1133,7 +1133,7 @@ requires-dist = [
     { name = "dotenv", specifier = ">=0.9.9" },
     { name = "fastapi" },
     { name = "fastapi", specifier = ">=0.115.12" },
-    { name = "gateway-sdk", specifier = "==0.1.1" },
+    { name = "gateway-sdk", specifier = "==0.1.2" },
     { name = "httpx" },
     { name = "httpx", specifier = ">=0.28.1" },
     { name = "langchain-anthropic", specifier = ">=0.3.13" },
