@@ -184,7 +184,7 @@ const initialEdges = [
         id: EDGE_IDS.COLOMBIA_TO_COFFEE_FARM_SITE,
         source: NODE_IDS.COLOMBIA,
         target: NODE_IDS.COFFEE_FARM_SITE,
-        data: { label: 'mcp/slim', labelIconType: EdgeLabelIcon.MCP },
+        data: { label: 'MCP', labelIconType: EdgeLabelIcon.MCP },
         type: 'custom',
     },
     {

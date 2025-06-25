@@ -21,16 +21,11 @@ import React from 'react';
 import { EdgeLabelRenderer } from '@xyflow/react';
 import { css } from '@emotion/react';
 import './styles/CustomEdgeLabel.css';
-import MCPOverSlimEdgeLabel from './MCPOverSlimEdgeLabel';
 import A2AEdgeLabel from './A2AEdgeLabel';
 
 const CustomEdgeLabel = ({ x, y, label, icon }) => {
     if (label?.toLowerCase() === 'a2a') {
         return <A2AEdgeLabel x={x} y={y} icon={icon} />;
-    }
-
-    if (label?.toLowerCase() === 'mcp/slim') {
-        return <MCPOverSlimEdgeLabel x={x} y={y} icon={icon} />;
     }
 
     const dynamicStyle = css`
