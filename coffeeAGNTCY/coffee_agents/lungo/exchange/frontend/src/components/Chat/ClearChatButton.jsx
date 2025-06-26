@@ -27,7 +27,7 @@ const ClearChatButton = ({ setMessages }) => {
     const clearChat = () => {
         const initialMessage = {
             role: Role.ASSISTANT,
-            content: 'Hi! How can I assist you?',
+            content: 'Hi, you are having a conversation with the supervisor. How can I help you?',
             id: uuid(),
             animate: true,
         };

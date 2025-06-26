@@ -17,7 +17,7 @@
  */
 
 .custom-edge-label {
-    width: 100px;
+    width: 60px;
     height: 25px;
     color: black;
     padding: 2px 5px;
@@ -35,18 +35,28 @@
 
 .custom-edge-label-icon {
     position: absolute;
-    left: 15%;
+    left: 25%;
     transform: translateX(-50%);
 }
 
 .custom-edge-label-text {
     position: absolute;
-    right: 40%;
+    right: 30%;
     transform: translateX(50%);
 }
 
-.a2a-edge-label {
-    width: 35px;
-    height: 15px;
-    position: relative;
+.custom-edge-label-with-slim {
+    width: 100px
+}
+
+.custom-edge-label-icon-with-slim {
+    position: absolute;
+    left: 15%;
+    transform: translateX(-50%);
+}
+
+.custom-edge-label-text-with-slim {
+    position: absolute;
+    right: 40%;
+    transform: translateX(50%);
 }

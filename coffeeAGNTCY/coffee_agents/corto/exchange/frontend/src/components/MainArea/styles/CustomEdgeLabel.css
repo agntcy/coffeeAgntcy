@@ -17,14 +17,13 @@
  */
 
 .custom-edge-label {
-    width: 70px;
+    width: 60px;
     height: 25px;
     color: black;
     padding: 2px 5px;
     border: 0.1px solid #ffffff;
     border-radius: 0.8em;
     font-size: 12px;
-    font-weight: thin;
     font-family: 'CiscoSansTT', sans-serif;
     box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
     display: flex;
@@ -44,5 +43,20 @@
     position: absolute;
     right: 30%;
     transform: translateX(50%);
-    text-align: right;
+}
+
+.custom-edge-label-with-slim {
+    width: 100px
+}
+
+.custom-edge-label-icon-with-slim {
+    position: absolute;
+    left: 15%;
+    transform: translateX(-50%);
+}
+
+.custom-edge-label-text-with-slim {
+    position: absolute;
+    right: 40%;
+    transform: translateX(50%);
 }

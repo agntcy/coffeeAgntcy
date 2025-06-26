@@ -84,7 +84,7 @@ const CustomEdge = ({
                 x={labelX}
                 y={labelY}
                 label={data.label}
-                icon={<LabelIcon type={data.labelIconType} altText={`${data.labelIconType} Icon`} size={25} />}
+                icon={<LabelIcon type={data.labelIconType} altText={`${data.labelIconType} Icon`} size={22} />}
             />
         </>
     );

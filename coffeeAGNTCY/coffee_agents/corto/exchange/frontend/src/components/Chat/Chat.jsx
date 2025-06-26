@@ -50,11 +50,11 @@ const Chat = ({ messages, setMessages, setButtonClicked, setAiReplied }) => {
 
     return (
         <div className="chat_container">
-            <div
-                className={`chat_header ${headerVisible ? '' : 'hidden'}`}
-            >
-                Conversation with Buyer Agent:
-            </div>
+            {/*<div*/}
+            {/*    className={`chat_header ${headerVisible ? '' : 'hidden'}`}*/}
+            {/*>*/}
+            {/*    Conversation with Buyer Agent:*/}
+            {/*</div>*/}
             <div className={`clear_chat_button_container ${headerVisible ? '' : 'hidden'}`}>
                 <ClearChatButton setMessages={setMessages} />
             </div>

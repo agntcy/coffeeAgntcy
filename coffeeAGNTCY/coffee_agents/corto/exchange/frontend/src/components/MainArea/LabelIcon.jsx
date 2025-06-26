@@ -19,7 +19,7 @@
 /** @jsxImportSource @emotion/react */
 import React from 'react';
 import { css } from '@emotion/react';
-import a2aIcon from '../../assets/a2a_icon.png';
+import a2aIcon from '../../assets/a2a_icon.svg';
 import mcpIcon from '../../assets/mcp_icon.png';
 import { EdgeLabelIcon } from '../../utils/const.js';
 import './styles/LabelIcon.css';
@@ -31,9 +31,8 @@ const LabelIcon = ({ type, altText = 'icon', size = 16 }) => {
 
     const isA2A = type === EdgeLabelIcon.A2A;
     const dynamicStyle = css`
-        width: ${isA2A ? size + 11 : size}px;
-        height: ${isA2A ? size - 2 : size}px;
-        border-radius: ${isA2A ? '25%' : '50%'};
+        width: ${size}px;
+        height: ${size}px;
     `;
 
     return (

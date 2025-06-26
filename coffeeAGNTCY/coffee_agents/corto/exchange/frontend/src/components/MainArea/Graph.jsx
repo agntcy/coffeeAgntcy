@@ -30,6 +30,10 @@ import SlimNode from './SlimNode';
 import CustomEdge from './CustomEdge';
 import CustomNode from './CustomNode';
 import { EdgeLabelIcon } from '../../utils/const.js';
+import supervisorIcon from '../../assets/supervisor.png'; // Adjust the path to your PNG file
+import { PiCoffeeBeanThin } from "react-icons/pi";
+
+const CoffeeBeanIcon = <PiCoffeeBeanThin style={{ transform: 'rotate(-30deg)', fontSize: '1.65em' }} />;
 
 const proOptions = { hideAttribution: true };
 
@@ -75,7 +79,7 @@ const initialNodes = [
         type: 'customNode',
         data: {
             ...commonNodeData,
-            icon: <FaUserTie />,
+            icon: <img src={supervisorIcon} alt="Supervisor Icon" style={{ marginLeft: '2.5px', width: '120%', height: '100%' }} />,
             label1: 'Supervisor Agent',
             label2: 'Buyer',
             handles: 'source',
@@ -87,7 +91,7 @@ const initialNodes = [
         type: 'customNode',
         data: {
             ...commonNodeData,
-            icon: <FaWarehouse />,
+            icon: CoffeeBeanIcon,
             label1: 'Q Grader Agent',
             label2: 'Sommelier',
             handles: 'target',
@@ -107,7 +111,7 @@ const initialEdges = [
         id: EDGE_IDS.BUYER_TO_SOMMELIER,
         source: NODE_IDS.BUYER,
         target: NODE_IDS.SOMMELIER,
-        data: { label: 'A2A', labelIconType: EdgeLabelIcon.A2A },
+        data: { label: 'A2A : SLIM', labelIconType: EdgeLabelIcon.A2A },
         type: 'custom',
     },
 ];

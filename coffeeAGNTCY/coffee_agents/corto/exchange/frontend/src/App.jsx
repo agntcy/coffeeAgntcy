@@ -53,8 +53,8 @@ const App = () => {
                 />
             </div>
             <div className="main-area">
-                <header>
-                    <img src={headerImage} alt="Header" />
+                <header className="header">
+                    Grader Conversation
                 </header>
                 <div className="code_popup_container">
                     <CodePopUp/>

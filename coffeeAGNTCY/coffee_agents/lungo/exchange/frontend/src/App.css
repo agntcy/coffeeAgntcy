@@ -91,18 +91,16 @@ body {
   overflow: hidden;
 }
 
-header {
-  height: var(--header-height);     /* fixed container height */
-  background: #fff;
-  border-bottom: 1px solid var(--border-color);
+.header {
+  height: var(--header-height); /* Use the defined height variable */
+  color: rgba(24, 122, 220, 1);
+  font-size: 2em; /* Adjust font size for appropriate visibility */
+  font-weight: 300; /* Use bold font for emphasis */
+  font-family: 'CiscoSansTT', sans-serif; /* Apply Cisco font */
   display: flex;
-  justify-content: center;           /* center horizontally */
-  align-items: center;               /* center vertically */
-}
-
-header img {
-  width: 30%;
-  height: auto;
+  justify-content: center; /* Center text horizontally */
+  align-items: center; /* Center text vertically */
+  border-bottom: 1px solid var(--border-color); /* Optional border */
 }
 
 .graph_container {
@@ -119,15 +117,7 @@ header img {
 
 .code_popup_container {
   position: absolute;
-  top: 12%;
-  right: 1%;
+  top: 3%;
+  right: 1.5%;
   z-index: 1000; /* Ensure it appears above other content */
-  /*top: 50%;*/
-  /*left: 50%;*/
-  /*transform: translate(-50%, -50%);*/
-  /*background-color: white;*/
-  /*padding: 1em;*/
-  /*border-radius: 0.5em;*/
-  /*box-shadow: 0 0.125em 0.5em rgba(0, 0, 0, 0.05); !* 2px 8px *!*/
-  /*z-index: 1000; !* Ensure it appears above other content *!*/
 }

@@ -21,24 +21,37 @@ import React from 'react';
 import { EdgeLabelRenderer } from '@xyflow/react';
 import { css } from '@emotion/react';
 import './styles/CustomEdgeLabel.css';
-import A2AEdgeLabel from './A2AEdgeLabel';
 
 const CustomEdgeLabel = ({ x, y, label, icon }) => {
-    if (label?.toLowerCase() === 'a2a') {
-        return <A2AEdgeLabel x={x} y={y} icon={icon} />;
-    }
-
     const dynamicStyle = css`
         position: absolute;
         left: ${x}px;
         top: ${y}px;
     `;
 
+    const getLabelClasses = (label) => {
+        const baseClass = 'custom-edge-label';
+        const iconClass = 'custom-edge-label-icon';
+        const textClass = 'custom-edge-label-text';
+
+        if (label?.toLowerCase().endsWith('slim')) {
+            return {
+                labelClass: `${baseClass} ${baseClass}-with-slim`,
+                iconClass: `${iconClass} ${iconClass}-with-slim`,
+                textClass: `${textClass} ${textClass}-with-slim`,
+            };
+        }
+
+        return { labelClass: baseClass, iconClass, textClass };
+    };
+
+    const { labelClass, iconClass, textClass } = getLabelClasses(label);
+
     return (
         <EdgeLabelRenderer>
-            <div className={`custom-edge-label`} css={dynamicStyle}>
-                <div className="custom-edge-label-icon">{icon}</div>
-                <div className="custom-edge-label-text">{label}</div>
+            <div className={labelClass} css={dynamicStyle}>
+                <div className={iconClass}>{icon}</div>
+                <div className={textClass}>{label}</div>
             </div>
         </EdgeLabelRenderer>
     );

@@ -23,8 +23,9 @@
     justify-content: center;
     background-color: white;
     overflow: hidden; /* Ensures the image stays within the circle */
+    border-radius: 50%; /* Makes the icon round */
 }
 .label-icon-image {
-    width: 100%;
-    height: 100%;
+    width: 80%;
+    height: 80%;
 }

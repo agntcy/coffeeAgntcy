@@ -30,6 +30,11 @@ import SlimNode from './SlimNode';
 import CustomEdge from './CustomEdge';
 import CustomNode from './CustomNode';
 import { EdgeLabelIcon } from '../../utils/const.js';
+import supervisorIcon from '../../assets/supervisor.png'; // Adjust the path to your PNG file
+import { PiCoffeeBeanThin } from "react-icons/pi";
+import { TiWeatherCloudy } from "react-icons/ti";
+
+const CoffeeBeanIcon = <PiCoffeeBeanThin style={{ transform: 'rotate(-30deg)', fontSize: '1.65em' }} />;
 
 const proOptions = { hideAttribution: true };
 
@@ -83,7 +88,7 @@ const initialNodes = [
         type: 'customNode',
         data: {
             ...commonNodeData,
-            icon: <FaUserTie />,
+            icon: <img src={supervisorIcon} alt="Supervisor Icon" style={{ marginLeft: '2.5px', width: '120%', height: '100%' }} />,
             label1: 'Supervisor Agent',
             label2: 'Buyer',
             handles: 'source',
@@ -95,7 +100,7 @@ const initialNodes = [
         type: 'slimNode',
         data: {
             ...commonNodeData,
-            label: 'Pub/Sub (SLIM)',
+            label: 'SLIM : PubSub',
         },
         position: { x: 229.02370449534635, y: 284.688426426175 },
     },
@@ -104,7 +109,7 @@ const initialNodes = [
         type: 'customNode',
         data: {
             ...commonNodeData,
-            icon: <FaWarehouse />,
+            icon: CoffeeBeanIcon,
             label1: 'Coffee Farm Agent',
             label2: 'Brazil',
             handles: 'target',
@@ -116,7 +121,7 @@ const initialNodes = [
         type: 'customNode',
         data: {
             ...commonNodeData,
-            icon: <FaWarehouse />,
+            icon: CoffeeBeanIcon,
             label1: 'Coffee Farm Agent',
             label2: 'Colombia',
             handles: 'all',
@@ -128,7 +133,7 @@ const initialNodes = [
         type: 'customNode',
         data: {
             ...commonNodeData,
-            icon: <FaWarehouse />,
+            icon: CoffeeBeanIcon,
             label1: 'Coffee Farm Agent',
             label2: 'Vietnam',
             handles: 'target',
@@ -140,7 +145,7 @@ const initialNodes = [
         type: 'customNode',
         data: {
             ...commonNodeData,
-            icon: <FaCloudSun />,
+            icon: <TiWeatherCloudy style={{ fontSize: '1.75em' }}/>,
             label1: 'MCP Server',
             label2: 'Weather',
             handles: 'target',
@@ -184,7 +189,7 @@ const initialEdges = [
         id: EDGE_IDS.COLOMBIA_TO_COFFEE_FARM_SITE,
         source: NODE_IDS.COLOMBIA,
         target: NODE_IDS.COFFEE_FARM_SITE,
-        data: { label: 'MCP (SLIM)', labelIconType: EdgeLabelIcon.MCP },
+        data: { label: 'MCP : SLIM', labelIconType: EdgeLabelIcon.MCP },
         type: 'custom',
     },
     {
