@@ -8,7 +8,7 @@ from mcp.server.fastmcp import FastMCP
 
 # Base URLs
 NOMINATIM_BASE = "https://nominatim.openstreetmap.org/search"
-NWS_BASE = "https://api.weather.gov"
+OPEN_METEO_BASE = "https://api.open-meteo.com/v1/forecast"
 
 # Create the MCP server
 mcp = FastMCP()
@@ -50,34 +50,30 @@ async def geocode_location(location: str) -> tuple[float, float] | None:
 
 @mcp.tool()
 async def get_forecast(location: str) -> str:
-    """Get weather forecast for a given location name using NWS."""
     coords = await geocode_location(location)
     if not coords:
         return f"Could not determine coordinates for location: {location}"
-
     lat, lon = coords
-    points_url = f"{NWS_BASE}/points/{lat},{lon}"
-    points_data = await make_request(points_url, headers=HEADERS_NWS)
 
-    if not points_data or "properties" not in points_data or "forecast" not in points_data["properties"]:
-        return f"Could not get forecast URL for coordinates {lat}, {lon}"
+    params = {
+        "latitude": lat,
+        "longitude": lon,
+        "current_weather": "true"
+    }
 
-    forecast_url = points_data["properties"]["forecast"]
-    forecast_data = await make_request(forecast_url, headers=HEADERS_NWS)
+    data = await make_request(OPEN_METEO_BASE, {}, params=params)
+    if not data or "current_weather" not in data:
+        return f"No weather data available for {location}."
 
-    if not forecast_data or "properties" not in forecast_data or "periods" not in forecast_data["properties"]:
-        return f"Could not get forecast data for {location}"
-
-    current = forecast_data["properties"]["periods"][0]
-
-    result = (
-        f"{current['name']}:\n"
-        f"Temperature: {current['temperature']}°{current['temperatureUnit']}\n"
-        f"Wind: {current['windSpeed']} {current['windDirection']}\n"
-        f"Forecast: {current['detailedForecast']}"
+    cw = data["current_weather"]
+    return (
+        f"Temperature: {cw['temperature']}°C\n"
+        f"Wind speed: {cw['windspeed']} m/s\n"
+        f"Wind direction: {cw['winddirection']}°"
     )
 
-    return result
-
 if __name__ == "__main__":
+    app = mcp.streamable_http_app()
+    for route in app.routes:
+        print(f"{route.path} ")
     uvicorn.run(mcp.streamable_http_app, host="localhost", port=8123)

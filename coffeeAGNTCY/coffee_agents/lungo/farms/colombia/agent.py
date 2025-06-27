@@ -21,6 +21,8 @@ from langchain_core.prompts import PromptTemplate
 from langgraph.graph import StateGraph, END
 from common.llm import get_llm
 
+from farms.colombia.tools import MCPClient
+
 logger = logging.getLogger("lungo.colombia_farm_agent.agent")
 
 # --- 1. Define Node Names as Constants ---
@@ -29,6 +31,7 @@ class NodeStates:
     INVENTORY = "inventory_node"
     ORDERS = "orders_node"
     GENERAL_RESPONSE = "general_response_node"
+    WEATHER_FORECAST = "weather_forecast_node"
 
 # --- 2. Define the Graph State ---
 class GraphState(MessagesState):
@@ -49,6 +52,7 @@ class FarmAgent:
         self.supervisor_llm = None
         self.inventory_llm = None
         self.orders_llm = None
+        self.weather_forecast_llm = None
 
         self.app = self._build_graph()
 
@@ -80,13 +84,82 @@ class FarmAgent:
         logger.info(f"Supervisor intent determined: {intent}")  # Log the intent for debugging
 
         if "inventory" in intent:
-            return {"next_node": NodeStates.INVENTORY, "messages": state["messages"]}
+            # return {"next_node": NodeStates.INVENTORY, "messages": state["messages"]}
+            return {"next_node": NodeStates.WEATHER_FORECAST, "messages": state["messages"]}
         elif "orders" in intent:
             return {"next_node": NodeStates.ORDERS, "messages": state["messages"]}
         else:
             return {"next_node": NodeStates.GENERAL_RESPONSE, "messages": state["messages"]}
+        
+    async def _get_weather_forecast(self, state: GraphState) -> str:
+        print("Getting weather forecast...")
 
-    def _inventory_node(self, state: GraphState) -> dict:
+        # extract location from latest user message
+        if not self.weather_forecast_llm:
+            self.weather_forecast_llm = get_llm()
+
+        prompt = PromptTemplate(
+            template="""You are a helpful assistant that parses user messages to extract location information.
+            Based on the user's message, extract the location. Return a string with the location name.
+            User message: {user_message}
+            """,
+            input_variables=["user_message"]
+        )
+
+        chain = prompt | self.weather_forecast_llm
+        response = chain.invoke({"user_message": state["messages"]})
+        location = response.content.strip().lower()
+
+        logger.info(f"Weather location extracted: {location}")
+
+        # initialize MCP client and connect to the server
+
+        client = MCPClient()
+        try:
+            await client.connect(server_url="http://localhost:8123/mcp")
+        except:
+            await client.cleanup()
+        # view available tools
+        try:
+            response = await client.session.list_tools()
+            available_tools = [
+                {
+                    "name": tool.name,
+                    "description": tool.description,
+                    "input_schema": tool.inputSchema,
+                }
+                for tool in response.tools
+            ]
+            logger.info(f"Available tools: {available_tools}")
+
+            result = await client.session.call_tool(
+                name="get_forecast",
+                arguments={"location": location},
+            )
+            logger.info(f"Tool call result: {result}")
+
+            mcp_call_result = ""
+            if hasattr(result, "__aiter__"):
+                # gather streamed chunks
+                async for chunk in result:
+                    delta = chunk.choices[0].delta
+                    mcp_call_result += delta.content or ""
+            else:
+                content_list = result.content
+                if isinstance(content_list, list) and len(content_list) > 0:
+                    mcp_call_result = content_list[0].text
+                else:
+                    mcp_call_result = "No content returned from tool."
+
+            logger.info(f"Weather forecast result: {mcp_call_result}")
+            return {"messages": [AIMessage(mcp_call_result)]}
+        except Exception as e:
+            logger.error(f"Error during MCP tool call: {e}")
+            return {"messages": [AIMessage(f"Error retrieving weather data: {str(e)}")]}
+        finally:
+            await client.cleanup()
+
+    async def _inventory_node(self, state: GraphState) -> dict:
         """
         Handles inventory-related queries using an LLM to formulate responses.
         """
@@ -96,15 +169,13 @@ class FarmAgent:
         user_message = state["messages"]
 
         prompt = PromptTemplate(
-            template="""You are a helpful coffee farm cultivation manager in Colombia who handles yield or inventory requets. 
-            Your job is to:
-            1. Return a random yield estimate for the coffee farm in Colombia. Make sure the estimate is a reasonable value and in pounds.
-            2. Respond with only the yield estimate.\n
+            template="""You are a helpful Colombian coffee farm manager.
+                You should estimate the seasonal coffee yield after checking the weather.
+                Always return a numeric yield estimate with units (e.g. "5000 lbs").
+                No explanation needed.
 
-            If the user asked in lbs or pounds, respond with the estimate in pounds. If the user asked in kg or kilograms, convert the estimate to kg and respond with that value.\n
-
-            User question: {user_message}
-            """,
+                User question: {user_message}
+                """,
             input_variables=["user_message"]
         )
         chain = prompt | self.inventory_llm
@@ -173,6 +244,7 @@ class FarmAgent:
         workflow.add_node(NodeStates.INVENTORY, self._inventory_node)
         workflow.add_node(NodeStates.ORDERS, self._orders_node)
         workflow.add_node(NodeStates.GENERAL_RESPONSE, self._general_response_node)
+        workflow.add_node(NodeStates.WEATHER_FORECAST, self._get_weather_forecast)
 
         # Set the entry point
         workflow.set_entry_point(NodeStates.SUPERVISOR)
@@ -182,13 +254,15 @@ class FarmAgent:
             NodeStates.SUPERVISOR,
             lambda state: state["next_node"],
             {
-                NodeStates.INVENTORY: NodeStates.INVENTORY,
+                # NodeStates.INVENTORY: NodeStates.INVENTORY,
                 NodeStates.ORDERS: NodeStates.ORDERS,
                 NodeStates.GENERAL_RESPONSE: NodeStates.GENERAL_RESPONSE,
+                NodeStates.WEATHER_FORECAST: NodeStates.WEATHER_FORECAST,
             },
         )
 
         # Add edges from the specific nodes to END
+        workflow.add_edge(NodeStates.WEATHER_FORECAST, NodeStates.INVENTORY)
         workflow.add_edge(NodeStates.INVENTORY, END)
         workflow.add_edge(NodeStates.ORDERS, END)
         workflow.add_edge(NodeStates.GENERAL_RESPONSE, END)
