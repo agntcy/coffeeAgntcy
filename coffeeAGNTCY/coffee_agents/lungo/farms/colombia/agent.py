@@ -8,7 +8,7 @@
 #
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express oqr implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
@@ -21,6 +21,9 @@ from langchain_core.prompts import PromptTemplate
 from langgraph.graph import StateGraph, END
 from common.llm import get_llm
 
+from gateway_sdk.factory import GatewayFactory
+
+from config.config import WEATHER_MCP_SERVER_URL
 from farms.colombia.tools import MCPClient
 
 logger = logging.getLogger("lungo.colombia_farm_agent.agent")
@@ -112,13 +115,15 @@ class FarmAgent:
 
         logger.info(f"Weather location extracted: {location}")
 
-        # initialize MCP client and connect to the server
+        factory = GatewayFactory()
+        endpoint=f"{WEATHER_MCP_SERVER_URL}/mcp"
+        transport_instance = factory.create_transport(transport="SLIM", endpoint=endpoint)
+        client = await factory.create_client(
+            "MCP",
+            agent_url=endpoint,
+            transport=transport_instance,
+        )
 
-        client = MCPClient()
-        try:
-            await client.connect(server_url="http://localhost:8123/mcp")
-        except:
-            await client.cleanup()
         # view available tools
         try:
             response = await client.session.list_tools()
@@ -152,6 +157,7 @@ class FarmAgent:
                     mcp_call_result = "No content returned from tool."
 
             logger.info(f"Weather forecast result: {mcp_call_result}")
+            logger.info(f"Weather forecast result as AIMeessage: {[AIMessage(mcp_call_result)]}")
             return {"messages": [AIMessage(mcp_call_result)]}
         except Exception as e:
             logger.error(f"Error during MCP tool call: {e}")

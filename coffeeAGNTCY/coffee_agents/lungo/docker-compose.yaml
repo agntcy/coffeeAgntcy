@@ -39,6 +39,7 @@ services:
       - OPENAI_ENDPOINT=${OPENAI_ENDPOINT}
       - LLM_PROVIDER=${LLM_PROVIDER}
       - TRANSPORT_SERVER_ENDPOINT=nats:4222
+      - WEATHER_MCP_SERVER_URL=http://weather-mcp-server:8123
     ports:
       - "9998:9998"
   vietnam-farm-server:
@@ -119,3 +120,12 @@ services:
       - exchange-server
     ports:
       - "3000:3000"
+
+  weather-mcp-server:
+    build:
+      context: ../../..
+      dockerfile: coffeeAGNTCY/coffee_agents/lungo/docker/Dockerfile.weather-mcp  
+    container_name: weather-mcp-server
+    platform: linux/amd64
+    ports:
+      - "8123:8123"
