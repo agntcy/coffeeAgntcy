@@ -23,8 +23,7 @@ from common.llm import get_llm
 
 from gateway_sdk.factory import GatewayFactory
 
-from config.config import WEATHER_MCP_SERVER_URL
-from farms.colombia.tools import MCPClient
+from config.config import WEATHER_MCP_SERVER_URL, DEFAULT_MESSAGE_TRANSPORT
 
 logger = logging.getLogger("lungo.colombia_farm_agent.agent")
 
@@ -117,7 +116,7 @@ class FarmAgent:
 
         factory = GatewayFactory()
         endpoint=f"{WEATHER_MCP_SERVER_URL}/mcp"
-        transport_instance = factory.create_transport(transport="SLIM", endpoint=endpoint)
+        transport_instance = factory.create_transport(transport=DEFAULT_MESSAGE_TRANSPORT, endpoint=endpoint)
         client = await factory.create_client(
             "MCP",
             agent_url=endpoint,
