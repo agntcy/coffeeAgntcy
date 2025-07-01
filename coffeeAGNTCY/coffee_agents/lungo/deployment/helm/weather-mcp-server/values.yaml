@@ -1,0 +1,33 @@
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+appName: weather-mcp-server
+appVersion: v1
+replicaCount: 1
+
+image:
+  repository: ghcr.io/cisco-outshift-ai-agents/coffee-agntcy/weather-mcp-server
+  tag: latest
+  pullPolicy: Always
+  pullSecret:
+
+service:
+  port: 8123
+
+resources:
+  enabled: false
+  limits:
+    cpu: 2000m
+    memory: 2500Mi
+  requests:
+    cpu: 200m
+    memory: 500Mi
+
+probes:
+  endpoint: /
+  port: 8123
+  readinessProbeEnabled: true
+  livenessProbeEnabled: true
+
+serviceaccount:
+  annotations: {}

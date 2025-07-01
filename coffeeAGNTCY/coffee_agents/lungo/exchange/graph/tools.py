@@ -61,6 +61,7 @@ def tools_or_next(tools_node: str, end_node: str = "__end__"):
     state: Union[list[AnyMessage], dict[str, Any], BaseModel],
     messages_key: str = "messages",
   ) -> Literal[tools_node, end_node]: # type: ignore
+
     if isinstance(state, list):
       ai_message = state[-1]
     elif isinstance(state, dict) and (messages := state.get(messages_key, [])):
@@ -69,7 +70,7 @@ def tools_or_next(tools_node: str, end_node: str = "__end__"):
       ai_message = messages[-1]
     else:
       raise ValueError(f"No messages found in input state to tool_edge: {state}")
-
+    
     if isinstance(ai_message, ToolMessage):
         logger.debug("Last message is a ToolMessage, returning end_node: %s", end_node)
         return end_node

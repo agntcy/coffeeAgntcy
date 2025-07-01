@@ -120,7 +120,7 @@ class ExchangeGraph:
         workflow.add_edge(NodeStates.ORDERS_TOOLS, NodeStates.ORDERS)
 
         workflow.add_edge(NodeStates.GENERAL_INFO, END)
-
+ 
         return workflow.compile()
     
     async def _supervisor_node(self, state: GraphState) -> dict:
@@ -193,7 +193,6 @@ class ExchangeGraph:
           "next": next_node,
           "messages": [SystemMessage(content=response.reason)],
         }
-        
     async def _inventory_node(self, state: GraphState) -> dict:
         """
         Handles inventory-related queries using an LLM to formulate responses.
@@ -203,6 +202,20 @@ class ExchangeGraph:
                 [get_farm_yield_inventory, get_all_farms_yield_inventory],
                 strict=True
             )
+        
+        # get latest HumanMessage
+        user_msg = next(
+            (m for m in reversed(state["messages"]) if m.type == "human"), None
+        )
+        # get latest ToolMessage
+        tool_msg = next(
+            (m for m in reversed(state["messages"]) if m.type == "tool"), None
+        )
+
+        if tool_msg:
+            context = f"Tool responded: {tool_msg.content}"
+        else:
+            context = "Tool has not yet responded"
 
         prompt = PromptTemplate(
             template="""You are an inventory broker for a global coffee exchange company. 
@@ -215,14 +228,18 @@ class ExchangeGraph:
             If the user asks where we have coffee available, get the yield from all farms and respond with the total yield across all farms.
 
             User question: {user_message}
+
+            {tool_context}
+            If the tool has answered, summarize it to the user. Otherwise ask again.
             """,
-            input_variables=["user_message"]
+            input_variables=["user_message", "tool_context"]
         )
 
         chain = prompt | self.inventory_llm
 
         llm_response = chain.invoke({
-            "user_message": state["messages"],
+            "user_message": user_msg,
+            "tool_context": context,
         })
 
         return {

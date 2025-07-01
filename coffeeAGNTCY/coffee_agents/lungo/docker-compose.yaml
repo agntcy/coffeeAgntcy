@@ -17,7 +17,7 @@ services:
       - OPENAI_API_VERSION=${OPENAI_API_VERSION}
       - OPENAI_ENDPOINT=${OPENAI_ENDPOINT}
       - LLM_PROVIDER=${LLM_PROVIDER}
-      - TRANSPORT_SERVER_ENDPOINT=nats:4222
+      - TRANSPORT_SERVER_ENDPOINT=http://slim:46357
     ports:
       - "9999:9999"
   colombia-farm-server:
@@ -38,7 +38,9 @@ services:
       - OPENAI_API_VERSION=${OPENAI_API_VERSION}
       - OPENAI_ENDPOINT=${OPENAI_ENDPOINT}
       - LLM_PROVIDER=${LLM_PROVIDER}
-      - TRANSPORT_SERVER_ENDPOINT=nats:4222
+      - DEFAULT_MESSAGE_TRANSPORT=SLIM
+      - TRANSPORT_SERVER_ENDPOINT=http://slim:46357
+      - WEATHER_MCP_SERVER_URL=http://weather-mcp-server:8123
     ports:
       - "9998:9998"
   vietnam-farm-server:
@@ -59,7 +61,7 @@ services:
       - OPENAI_API_VERSION=${OPENAI_API_VERSION}
       - OPENAI_ENDPOINT=${OPENAI_ENDPOINT}
       - LLM_PROVIDER=${LLM_PROVIDER}
-      - TRANSPORT_SERVER_ENDPOINT=nats:4222
+      - TRANSPORT_SERVER_ENDPOINT=http://slim:46357
     ports:
       - "9997:9997"
   nats:
@@ -73,7 +75,7 @@ services:
 
   slim:
     image: ghcr.io/agntcy/slim:0.3.15
-    container_name: slim-dataplane
+    container_name: slim
     ports:
       - "46357:46357"
     environment:
@@ -102,7 +104,7 @@ services:
       - OPENAI_API_VERSION=${OPENAI_API_VERSION}
       - OPENAI_ENDPOINT=${OPENAI_ENDPOINT}
       - LLM_PROVIDER=${LLM_PROVIDER}
-      - TRANSPORT_SERVER_ENDPOINT=nats:4222
+      - TRANSPORT_SERVER_ENDPOINT=http://slim:46357
     ports:
       - "8000:8000"
 
@@ -119,3 +121,12 @@ services:
       - exchange-server
     ports:
       - "3000:3000"
+
+  weather-mcp-server:
+    build:
+      context: ../../..
+      dockerfile: coffeeAGNTCY/coffee_agents/lungo/docker/Dockerfile.weather-mcp  
+    container_name: weather-mcp-server
+    platform: linux/amd64
+    ports:
+      - "8123:8123"
