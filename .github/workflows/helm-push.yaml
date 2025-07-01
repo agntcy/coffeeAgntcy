@@ -44,6 +44,9 @@ jobs:
           - name: vietnam-farm
             path: coffeeAGNTCY/coffee_agents/lungo/deployment/helm/vietnam-farm
             package_name: vietnam-farm
+          - name: weather-mcp-server
+            path: coffeeAGNTCY/coffee_agents/lungo/deployment/helm/weather-mcp-server
+            package_name: weather-mcp-server
 
     steps:
     - name: Pre-cleanup Docker images

@@ -30,7 +30,8 @@ jobs:
             dockerfile: coffeeAGNTCY/coffee_agents/lungo/docker/Dockerfile.colombia-farm
           - name: vietnam-farm
             dockerfile: coffeeAGNTCY/coffee_agents/lungo/docker/Dockerfile.vietnam-farm
-
+          - name: weather-mcp-server
+            dockerfile: coffeeAGNTCY/coffee_agents/lungo/docker/Dockerfile.weather-mcp
     permissions:
       packages: write
       contents: read
