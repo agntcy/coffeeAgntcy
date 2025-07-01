@@ -24,7 +24,7 @@ dependencies = [
     "requests",
     "starlette",
     "uvicorn",
-    "gateway-sdk==0.1.0",
+    "gateway-sdk==0.1.4",
 ]
 
 [project.optional-dependencies]

@@ -18,23 +18,21 @@ services:
       - OPENAI_API_VERSION=${OPENAI_API_VERSION}
       - OPENAI_ENDPOINT=${OPENAI_ENDPOINT}
       - LLM_PROVIDER=${LLM_PROVIDER}
-      - TRANSPORT_SERVER_ENDPOINT=http://agp-gateway:46357
+      - TRANSPORT_SERVER_ENDPOINT=http://slim:46357
     ports:
       - "9999:9999"
 
-  # AGP Gateway App (todo- add gwy sdk )
-  agp-gateway:
-    image: ghcr.io/agntcy/agp/gw:0.3.14
-    container_name: agp-gateway
-    platform: linux/amd64
+  slim:
+    image: ghcr.io/agntcy/slim:0.3.15
+    container_name: slim-dataplane
     ports:
       - "46357:46357"
     environment:
-      - PASSWORD=${AGP_GATEWAY_PASSWORD:-dummy_password}
+      - PASSWORD=${SLIM_GATEWAY_PASSWORD:-dummy_password}
       - CONFIG_PATH=/config.yaml
     volumes:
-      - ./config/docker/agp/server-config.yaml:/config.yaml
-    command: ["/gateway", "--config", "/config.yaml"]
+      - ./config/docker/slim/server-config.yaml:/config.yaml
+    command: ["/slim", "--config", "/config.yaml"]
 
   # Exchange server App (farm client)
   exchange-server:
@@ -55,7 +53,7 @@ services:
       - OPENAI_API_VERSION=${OPENAI_API_VERSION}
       - OPENAI_ENDPOINT=${OPENAI_ENDPOINT}
       - LLM_PROVIDER=${LLM_PROVIDER}
-      - TRANSPORT_SERVER_ENDPOINT=http://agp-gateway:46357
+      - TRANSPORT_SERVER_ENDPOINT=http://slim:46357
     depends_on:
       - farm-server
     ports:
