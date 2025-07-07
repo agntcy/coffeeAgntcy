@@ -4,7 +4,7 @@
 [![Contributor-Covenant](https://img.shields.io/badge/Contributor%20Covenant-2.1-fbab2c.svg)](CODE_OF_CONDUCT.md)
 
 ## About The Project
-Welcome to Coffee Agntcy ...
+Welcome to Coffee Agntcy ....
 
 Coffee Agntcy showcases how Cisco AGNTCY components interoperate with a variety of agentic frameworks and transport mechanisms. It’s designed to demonstrate modular integration and real-world interoperability in agent-based systems.
 
