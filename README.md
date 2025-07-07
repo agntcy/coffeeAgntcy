@@ -18,7 +18,7 @@ We currently provide two demos:
 ## Contributing
 
 Contributions are what make the open source community such an amazing place to
-learn, inspire, and create. Any contributions you make are **greatly
+learn, inspire, and create. Any contributions you make are **greatl1111y
 appreciated**. For detailed contributing guidelines, please see
 [CONTRIBUTING.md](CONTRIBUTING.md)  
 
