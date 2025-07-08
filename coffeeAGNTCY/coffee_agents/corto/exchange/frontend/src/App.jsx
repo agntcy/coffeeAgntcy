@@ -1,21 +1,3 @@
-/**
- * Copyright 2025 Cisco Systems, Inc. and its affiliates
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- */
-
 import React, { useState, useEffect } from 'react';
 import Graph from './components/MainArea/Graph';
 import Chat from './components/Chat/Chat';
@@ -23,7 +5,7 @@ import './App.css';
 import { v4 as uuid } from 'uuid';
 import { LOCAL_STORAGE_KEY } from './components/Chat/Messages';
 import ChatLogo from './components/Chat/ChatLogo';
-import CodePopUp from "./components/MainArea/CodePopUp.jsx"; // Import the ChatLogo component
+import CodePopUp from "./components/MainArea/CodePopUp.jsx";
 
 const App = () => {
     const [aiReplied, setAiReplied] = useState(false);
@@ -56,13 +38,15 @@ const App = () => {
                     Grader Conversation
                 </header>
                 <div className="code_popup_container">
-                    <CodePopUp/>
+                    <CodePopUp />
                 </div>
                 <div className="graph_container">
-                    <Graph buttonClicked={buttonClicked}
-                           setButtonClicked={setButtonClicked}
-                           aiReplied={aiReplied}
-                           setAiReplied={setAiReplied}
+                    <div className="graph-title">Graph View</div> {/* Moved inside graph_container */}
+                    <Graph
+                        buttonClicked={buttonClicked}
+                        setButtonClicked={setButtonClicked}
+                        aiReplied={aiReplied}
+                        setAiReplied={setAiReplied}
                     />
                 </div>
             </div>
