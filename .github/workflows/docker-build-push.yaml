@@ -47,10 +47,6 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Log Pull Request Event
-        if: github.event_name == 'pull_request'
-        run: echo "Pull request detected. Building Docker image without pushing."
-
       - name: Get Git tag (if any)
         id: get_tag
         run: |
