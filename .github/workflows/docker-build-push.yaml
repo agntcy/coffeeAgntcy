@@ -3,6 +3,7 @@ name: Build and Push All Docker Images
 on:
   push:
     branches: [ main ]
+    tags: [ '*' ]
   pull_request:
     branches: [ main ]
   workflow_dispatch:
@@ -46,13 +47,16 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Log Pull Request Event
-        if: github.event_name == 'pull_request'
-        run: echo "Pull request detected. Building Docker image without pushing."
+      - name: Get Git tag (if any)
+        id: get_tag
+        run: |
+          echo "tag_name=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
 
-      - name: Log Push Event
-        if: github.event_name == 'push'
-        run: echo "Push to main detected. Building and pushing Docker image."
+      - name: Log Event Type
+        run: |
+          echo "Event: ${{ github.event_name }}"
+          echo "Ref: ${{ github.ref }}"
+          echo "Tag: ${{ steps.get_tag.outputs.tag_name }}"
 
       - name: Log in to GitHub Container Registry
         if: github.event_name == 'push'
@@ -73,7 +77,7 @@ jobs:
           tags: ghcr.io/${{ github.repository_owner }}/coffee-agntcy/${{ matrix.image.name }}:pr-${{ github.event.pull_request.number }}
 
       - name: Build and push Docker image (main)
-        if: github.event_name == 'push'
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         uses: docker/build-push-action@v6
         with:
           context: .
@@ -81,3 +85,13 @@ jobs:
           push: true
           platforms: linux/amd64,linux/arm64
           tags: ghcr.io/${{ github.repository_owner }}/coffee-agntcy/${{ matrix.image.name }}:latest
+
+      - name: Build and push Docker image (tag)
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ${{ matrix.image.dockerfile }}
+          push: true
+          platforms: linux/amd64,linux/arm64
+          tags: ghcr.io/${{ github.repository_owner }}/coffee-agntcy/${{ matrix.image.name }}:${{ steps.get_tag.outputs.tag_name }}
