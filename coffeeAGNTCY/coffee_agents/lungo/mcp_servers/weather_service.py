@@ -13,14 +13,8 @@ OPEN_METEO_BASE = "https://api.open-meteo.com/v1/forecast"
 # Create the MCP server
 mcp = FastMCP()
 
-# Standard request headers
-HEADERS_NWS = {
-    "Accept": "application/geo+json",
-    "User-Agent": "ColombiaCoffeeFarmAgent/1.0"
-}
-
 HEADERS_NOMINATIM = {
-    "User-Agent": "ColombiaCoffeeFarmAgent/1.0"
+    "User-Agent": "CoffeeAgntcy/1.0"
 }
 
 async def make_request(url: str, headers: dict[str, str], params: dict[str, str] = None) -> dict[str, Any] | None:

@@ -30,9 +30,6 @@ from a2a.types import (
 )
 
 from langchain_core.tools import BaseTool
-from langchain_core.callbacks import (
-    CallbackManagerForToolRun,
-)
 from graph.models import FlavorProfileInput, FlavorProfileOutput
 
 from gateway_sdk.protocols.a2a.gateway import A2AProtocol

@@ -19,7 +19,6 @@ from dotenv import load_dotenv
 
 load_dotenv()  # Automatically loads from `.env` or `.env.local`
 
-# --- Corto ---
 DEFAULT_MESSAGE_TRANSPORT = os.getenv("DEFAULT_MESSAGE_TRANSPORT", "SLIM")
 TRANSPORT_SERVER_ENDPOINT = os.getenv("TRANSPORT_SERVER_ENDPOINT", "http://localhost:46357")
 FARM_AGENT_HOST = os.getenv("FARM_AGENT_HOST", "localhost")

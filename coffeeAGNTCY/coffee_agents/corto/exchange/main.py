@@ -45,11 +45,16 @@ class PromptRequest(BaseModel):
 @app.post("/agent/prompt")
 async def handle_prompt(request: PromptRequest):
   """
-  This endpoint processes the prompt using the exchange graph and returns the result.
+  Processes a user prompt by routing it through the ExchangeGraph.
+
   Args:
-    request (PromptRequest): The input prompt from the user.
+      request (PromptRequest): Contains the input prompt as a string.
+
   Returns:
-    dict: A dictionary containing the response from the ExchangeGraph.
+      dict: A dictionary containing the agent's response.
+
+  Raises:
+      HTTPException: 400 for invalid input, 500 for server-side errors.
   """
   try:
     # Process the prompt using the exchange graph
@@ -57,8 +62,10 @@ async def handle_prompt(request: PromptRequest):
     logger.info(f"Final result from LangGraph: {result}")
     return {"response": result}
   except ValueError as ve:
+    logger.exception(f"ValueError occurred: {str(ve)}")
     raise HTTPException(status_code=400, detail=str(ve))
   except Exception as e:
+    logger.exception(f"An error occurred: {str(e)}")
     raise HTTPException(status_code=500, detail=f"Operation failed: {str(e)}")
 
 @app.get("/health")

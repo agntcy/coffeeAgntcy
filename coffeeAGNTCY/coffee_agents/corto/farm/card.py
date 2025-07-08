@@ -15,7 +15,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 from a2a.types import (
-    AgentCapabilities, 
+    AgentCapabilities,
     AgentCard,
     AgentSkill)
 from config.config import FARM_AGENT_HOST, FARM_AGENT_PORT
@@ -30,7 +30,7 @@ AGENT_SKILL = AgentSkill(
         "Describe the taste of beans grown in Sidamo in the dry season",
         "How does Yirgacheffe coffee taste?"
     ]
-)   
+)
 
 AGENT_CARD = AgentCard(
     name='Coffee Farm Flavor Agent',

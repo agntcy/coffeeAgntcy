@@ -1,5 +1,4 @@
 services:
-  # Farm server App
   farm-server:
     build:
       context: ../../..

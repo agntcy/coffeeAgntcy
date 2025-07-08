@@ -21,7 +21,7 @@ from config.config import LLM_PROVIDER
 
 def get_llm():
   """
-    Get the LLM provider based on the configuration using LLMFactory.
+    Get the LLM provider based on the configuration using Cisco Outshift's LLMFactory.
     """
   factory = LLMFactory(
     provider=LLM_PROVIDER,

@@ -55,7 +55,20 @@ transport = factory.create_transport(
 )
 
 def tools_or_next(tools_node: str, end_node: str = "__end__"):
-  """Return a function that returns the tools_node if the last message has tool calls. Otherwise return the end_node."""
+  """
+  Returns a conditional function for LangGraph to determine the next node 
+  based on whether the last message contains tool calls.
+
+  If the message includes tool calls, the workflow proceeds to the `tools_node`.
+  If the message is a ToolMessage or has no tool calls, the workflow proceeds to `end_node`.
+
+  Args:
+    tools_node (str): The name of the node to route to if tool calls are detected.
+    end_node (str, optional): The fallback node if no tool calls are found. Defaults to '__end__'.
+
+  Returns:
+    Callable: A function compatible with LangGraph conditional edge handling.
+  """
 
   def custom_tools_condition_fn(
     state: Union[list[AnyMessage], dict[str, Any], BaseModel],
@@ -85,6 +98,15 @@ def tools_or_next(tools_node: str, end_node: str = "__end__"):
   return custom_tools_condition_fn
 
 def get_farm_card(farm: str) -> AgentCard | None:
+    """
+    Maps a farm name string to its corresponding AgentCard.
+
+    Args:
+        farm (str): The name of the farm (e.g., "Brazil", "Colombia", "Vietnam").
+
+    Returns:
+        AgentCard | None: The matching AgentCard if found, otherwise None.
+    """
     farm = farm.strip().lower()
     if 'brazil' in farm.lower():
         return brazil_agent_card
@@ -102,11 +124,11 @@ async def get_farm_yield_inventory(prompt: str, farm: str) -> str:
     Fetch yield inventory from a specific farm.
 
     Args:
-    prompt (str): The prompt to send to the farm to retrieve their yields
-    farm (srr): The farm to send the request to
+        prompt (str): The prompt to send to the farm to retrieve their yields
+        farm (str): The farm to send the request to
 
     Returns:
-    str: current yield amount
+        str: current yield amount
     """
     logger.info("entering get_farm_yield_inventory tool with prompt: %s, farm: %s", prompt, farm)
     if farm == "":
@@ -148,13 +170,13 @@ async def get_farm_yield_inventory(prompt: str, farm: str) -> str:
 @tool
 async def get_all_farms_yield_inventory(prompt: str) -> str:
     """
-    Fetch all farm yield inventories.
+    Broadcasts a prompt to all farms and aggregates their inventory responses.
 
     Args:
-    prompt (str): The prompt to send to all farms to retrieve their yields.
+        prompt (str): The prompt to broadcast to all farm agents.
 
     Returns:
-    dict: A dictionary containing the yields from all farms.
+        str: A summary string containing yield information from all farms.
     """
     logger.info("entering get_all_farms_yield_inventory tool with prompt: %s", prompt)
 
@@ -180,7 +202,7 @@ async def get_all_farms_yield_inventory(prompt: str) -> str:
 
     farm_yields = ""
     for response in responses:
-        # we want a dict for farm name -> yield, the yarm_name will be in the response metadata
+        # we want a dict for farm name -> yield, the farm_name will be in the response metadata
         if response.root.result and response.root.result.parts:
             part = response.root.result.parts[0].root
             if hasattr(response.root.result, "metadata"):
@@ -194,20 +216,21 @@ async def get_all_farms_yield_inventory(prompt: str) -> str:
         else:
             logger.error("Unknown response type from farm")
 
-    print(f"Farm yields: {farm_yields}")
+    logger.info(f"Farm yields: {farm_yields}")
     return farm_yields.strip()
 
 @tool(args_schema=CreateOrderArgs)
 async def create_order(farm: str, quantity: int, price: float) -> str:
     """
-    Create an order for coffee beans.
+    Sends a request to create a coffee order with a specific farm.
 
     Args:
-    price (float): The price of the coffee beans.
-    quantity (int): The quantity of the coffee beans.
+        farm (str): The target farm for the order.
+        quantity (int): Quantity of coffee to order.
+        price (float): Proposed price per unit.
 
     Returns:
-    str: Confirmation message of the order creation.
+        str: Confirmation message or error string from the farm agent.
     """
 
     farm = farm.strip().lower()
