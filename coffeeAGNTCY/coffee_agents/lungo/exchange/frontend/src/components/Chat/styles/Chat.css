@@ -28,7 +28,7 @@
 .clear_chat_button_container {
     position: absolute;
     z-index: 1;
-    top: 2px;
+    top: -1px;
     right: -10px;
     border: 0.1px solid #ccc;
     border-radius: 5px;

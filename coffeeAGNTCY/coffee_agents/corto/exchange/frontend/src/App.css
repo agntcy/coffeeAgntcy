@@ -67,10 +67,20 @@ body {
 /* Sidebar styling */
 .sidebar {
   width: var(--sidebar-width);
-  border-right: 1px solid var(--border-color);
-  padding: 0.75em;                /* 12px */
+  padding: 0.75em; /* 12px */
   overflow-y: hidden;
   background-color: #fff;
+  position: relative; /* Required for pseudo-element positioning */
+}
+
+.sidebar::after {
+  content: '';
+  position: absolute;
+  top: 11.25%;
+  right: 0;
+  width: 1px; /* Border thickness */
+  height: calc(100% - 11.25%); /* Adjust height to fill from top to bottom */
+  background-color: var(--border-color); /* Match border color */
 }
 
 /* Chat Container */
