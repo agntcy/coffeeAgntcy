@@ -59,10 +59,12 @@ const App = () => {
                     <CodePopUp/>
                 </div>
                 <div className="graph_container">
-                    <Graph buttonClicked={buttonClicked}
-                           setButtonClicked={setButtonClicked}
-                           aiReplied={aiReplied}
-                           setAiReplied={setAiReplied}
+                    <div className="graph-title">Graph View</div> {/* Moved inside graph_container */}
+                    <Graph
+                        buttonClicked={buttonClicked}
+                        setButtonClicked={setButtonClicked}
+                        aiReplied={aiReplied}
+                        setAiReplied={setAiReplied}
                     />
                 </div>
             </div>

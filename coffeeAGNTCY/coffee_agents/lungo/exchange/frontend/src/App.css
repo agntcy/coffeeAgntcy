@@ -103,16 +103,28 @@ body {
   border-bottom: 1px solid var(--border-color); /* Optional border */
 }
 
+.graph-title {
+  position: absolute;
+  top: 15px; /* Adjust distance from the top */
+  left: 20px; /* Adjust distance from the left */
+  font-size: 1em; /* Adjust font size */
+  color: #4d4c4c; /* Dark grey matching Cisco theme */
+  letter-spacing: -0.5px; /* Reduce space between characters */
+  white-space: nowrap;
+  z-index: 1000;
+}
+
 .graph_container {
+  position: relative; /* Ensure the title is positioned relative to the container */
   flex: 1;
-  margin: 1.5em;                  /* 24px */
+  margin: 1.5em;
   background-color: var(--background-light);
   display: flex;
   justify-content: center;
   align-items: center;
   overflow: auto;
-  border-radius: 2em;           /* 8px */
-  box-shadow: 0 0.125em 0.5em rgba(0, 0, 0, 0.05); /* 2px 8px */
+  border-radius: 2em;
+  box-shadow: 0 0.125em 0.5em rgba(0, 0, 0, 0.05);
 }
 
 .code_popup_container {
