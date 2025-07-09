@@ -235,3 +235,4 @@ docker-compose up ui --build
 
 By default, the UI will be available at [http://localhost:3000/](http://localhost:3000/).
 
+![Screenshot](images/lungo_ui.png)

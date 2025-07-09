@@ -1,4 +1,4 @@
-# Coffee Agntcy
+![Screenshot](assets/coffee_agntcy.png)
 
 [![Release](https://img.shields.io/github/v/release/agntcy/repo-template?display_name=tag)](CHANGELOG.md)
 [![Contributor-Covenant](https://img.shields.io/badge/Contributor%20Covenant-2.1-fbab2c.svg)](CODE_OF_CONDUCT.md)
@@ -34,11 +34,11 @@ We currently provide two demos, each targeting a different level of complexity a
 
 ### Built With
 
-- [AGNTCY SDK](https://github.com/agntcy/app-sdk)
-- [SLIM](https://github.com/agntcy/slim)
-- [A2A](https://github.com/a2aproject/a2a-python)
-- [MCP](https://github.com/modelcontextprotocol/python-sdk)
-- [LangGraph](https://github.com/langchain-ai/langgraph)
+- [AGNTCY App SDK](https://github.com/agntcy/app-sdk) = v0.1.4
+- [SLIM](https://github.com/agntcy/slim) = v0.3.15
+- [A2A](https://github.com/a2aproject/a2a-python) = v0.2.5
+- [MCP](https://github.com/modelcontextprotocol/python-sdk) >= v1.10.0
+- [LangGraph](https://github.com/langchain-ai/langgraph) >= v0.4.1
 
 ---
 
