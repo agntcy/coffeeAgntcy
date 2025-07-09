@@ -42,19 +42,10 @@ We currently provide two demos, each targeting a different level of complexity a
 
 ---
 
-### 🤝 Contribute or Learn More
-
-This is a developer-facing reference repo. If you're building agentic systems—or interested in shaping the future of distributed agents—we'd love your feedback, contributions, or collaboration.
-
-> Check out [CONTRIBUTING.md](CONTRIBUTING.md) to get involved, or open an issue with ideas or questions.
-
---------
-
 ## Contributing
 
-Contributions are what make the open source community such an amazing place to
-learn, inspire, and create. Any contributions you make are **greatly
-appreciated**. For detailed contributing guidelines, please see
+This is a developer-facing reference repo. If you're building agentic systems—or interested in shaping the future of distributed agents—we'd love your feedback, contributions, or collaboration. Contributions are what make the open source community such an amazing place to
+learn, inspire, and create. For detailed contributing guidelines, please see
 [CONTRIBUTING.md](CONTRIBUTING.md)  
 
 --------
