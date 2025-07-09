@@ -65,7 +65,7 @@ class ExchangeGraph:
 
         Agent Flow:
 
-        suervisor_agent
+        supervisor_agent
             - converse with user and coordinate app flow
 
         inventory_agent
@@ -190,7 +190,7 @@ class ExchangeGraph:
         logging.info(f"Next node: {next_node}")
 
         return {
-          "next": next_node,
+          "next_node": next_node,
           "messages": [SystemMessage(content=response.reason)],
         }
     async def _inventory_node(self, state: GraphState) -> dict:
@@ -269,8 +269,8 @@ class ExchangeGraph:
             "user_message": state["messages"],
         })
         if llm_response.tool_calls:
-            print(f"Tool calls detected from orders_node: {llm_response.tool_calls}")
-            print("messages:", state["messages"])  # For debugging
+            logger.info(f"Tool calls detected from orders_node: {llm_response.tool_calls}")
+            logger.debug(f"Messages: {state['messages']}")
         return {
             "messages": [llm_response]
         }
