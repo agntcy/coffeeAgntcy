@@ -76,7 +76,7 @@ class FarmAgent:
             SystemMessage(content=system_prompt),
             HumanMessage(content=user_prompt)
         ]
-        response = await get_llm().invoke(messages)
+        response = get_llm().invoke(messages)
         flavor_notes = response.content
         logger.debug(f"LLM response: {flavor_notes}")
         if not flavor_notes.strip():
