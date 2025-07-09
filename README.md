@@ -55,13 +55,5 @@ learn, inspire, and create. For detailed contributing guidelines, please see
 Distributed under the Apache-2.0 License. See [LICENSE](LICENSE) for more
 information.
 
-## Contact
-
-[cisco-outshift-ai-agents@cisco.com](mailto:cisco-outshift-ai-agents@cisco.com)
-
-Project Link:
-[https://github.com/cisco-outshift-ai-agents/coffeeAgntcy](https://github.com/cisco-outshift-ai-agents/coffeeAgntcy)
-
-
 ## Acknowledgements
 - The [AGNTCY](https://github.com/agntcy) project.
