@@ -3,11 +3,17 @@
 
 import logging
 import uuid
-
+import os
 from langchain_core.messages import AIMessage
 from langgraph.graph.state import CompiledStateGraph
 from langgraph.prebuilt import create_react_agent
 from langgraph_supervisor import create_supervisor
+
+from ioa_observe.sdk import Observe
+from ioa_observe.sdk.decorators import agent, tool, graph
+from ioa_observe.sdk.tracing import session_start
+
+Observe.init("corto_exchange", api_endpoint=os.getenv("OTLP_HTTP_ENDPOINT"))
 
 from common.llm import get_llm
 from graph.tools import FlavorProfileTool
@@ -16,6 +22,8 @@ from farm.card import AGENT_CARD as farm_agent_card
 
 logger = logging.getLogger("corto.supervisor.graph")
 
+@graph(name="exchange_graph")
+@agent(name="exchange_agent")
 class ExchangeGraph:
     def __init__(self):
         self.graph = self.build_graph()
@@ -84,6 +92,7 @@ class ExchangeGraph:
             logger.debug(f"Received prompt: {prompt}")
             if not isinstance(prompt, str) or not prompt.strip():
                 raise ValueError("Prompt must be a non-empty string.")
+            session_start()
             result = await self.graph.ainvoke({
                 "messages": [
                 {

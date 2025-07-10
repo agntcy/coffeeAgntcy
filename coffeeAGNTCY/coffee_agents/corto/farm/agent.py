@@ -3,11 +3,17 @@
 
 import logging
 from typing import TypedDict
-
+import os
 from langgraph.graph import END, START, StateGraph
 from langchain_core.messages import HumanMessage, SystemMessage
 
 from common.llm import get_llm
+
+from ioa_observe.sdk import Observe
+from ioa_observe.sdk.decorators import agent, tool, graph
+from ioa_observe.sdk.tracing import session_start
+
+Observe.init("corto_farm", api_endpoint=os.getenv("OTLP_HTTP_ENDPOINT"))
 
 logger = logging.getLogger("corto.farm_agent.graph")
 
@@ -17,6 +23,8 @@ class State(TypedDict):
     error_message: str
     flavor_notes: str
 
+@graph(name="farm_graph")
+@agent(name="farm_agent")
 class FarmAgent:
     def __init__(self):
         FLAVOR_NODE = "FlavorNode"
@@ -87,4 +95,5 @@ class FarmAgent:
                 - "flavor_notes" with the LLM's generated profile, or
                 - An error message if parsing or context extraction failed.
         """
+        session_start()
         return await self._agent.ainvoke({"prompt": input})

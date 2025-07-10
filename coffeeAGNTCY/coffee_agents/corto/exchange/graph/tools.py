@@ -34,6 +34,7 @@ transport = factory.create_transport(
     endpoint=TRANSPORT_SERVER_ENDPOINT,
 )
 
+# todo- how to add observe sdk for this tool and use same Observe obj?
 class FlavorProfileTool(BaseTool):
     """
     This tool sends a prompt to the A2A agent and returns the flavor profile estimation.
