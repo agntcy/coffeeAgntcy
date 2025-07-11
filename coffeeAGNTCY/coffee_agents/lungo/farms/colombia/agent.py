@@ -21,7 +21,7 @@ from langchain_core.prompts import PromptTemplate
 from langgraph.graph import StateGraph, END
 from common.llm import get_llm
 
-from gateway_sdk.factory import GatewayFactory
+from agntcy_app_sdk.factory import GatewayFactory
 
 from config.config import WEATHER_MCP_SERVER_URL, DEFAULT_MESSAGE_TRANSPORT
 
