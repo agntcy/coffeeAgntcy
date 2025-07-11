@@ -24,8 +24,8 @@ const CodePopUp = () => {
 # Server setup
 # ==========================
 from a2a.server import A2AServer
-from gateway_sdk.factory import GatewayFactory
-from gateway_sdk.factory import ProtocolTypes
+from agntcy_app_sdk.factory import GatewayFactory
+from agntcy_app_sdk.factory import ProtocolTypes
 
 # Initialize the server with agent card and request handler
 server = A2AServer(agent_card=agent_card, request_handler=request_handler)
@@ -41,8 +41,8 @@ await bridge.start()
 # ==========================
 # Client setup
 # ==========================
-from gateway_sdk.factory import GatewayFactory
-from gateway_sdk.protocols.a2a.gateway import A2AProtocol
+from agntcy_app_sdk.factory import GatewayFactory
+from agntcy_app_sdk.protocols.a2a.gateway import A2AProtocol
 
 # Enable tracing and create a transport
 factory = GatewayFactory(enable_tracing=True)
