@@ -2,9 +2,12 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import logging
+import os
 from typing import Any, Union, Literal
 from uuid import uuid4
 from pydantic import BaseModel
+from exchange.utils.identity_utils import client_cache
+from exchange.utils.config import brazil_farm_url, vietnam_farm_url, columbia_farm_url
 
 from a2a.types import (
     AgentCard,
@@ -19,6 +22,7 @@ from langchain_core.tools import tool
 from langchain_core.messages import AnyMessage, ToolMessage
 from agntcy_app_sdk.protocols.a2a.gateway import A2AProtocol
 from agntcy_app_sdk.factory import GatewayFactory
+from agntcyidentity.sdk import IdentitySdk
 from config.config import (
     DEFAULT_MESSAGE_TRANSPORT, 
     TRANSPORT_SERVER_ENDPOINT, 
@@ -104,6 +108,77 @@ def get_farm_card(farm: str) -> AgentCard | None:
     else:
         logger.error(f"Unknown farm name: {farm}. Expected one of 'brazil', 'colombia', or 'vietnam'.")
         return None
+
+def verify_identity(badge_id: str) -> None:
+    """
+    Verifies a badge using the Agntcy Identity SDK.
+
+    Args:
+        badge_id (str): The ID of the badge to retrieve and verify.
+
+    Raises:
+        ValueError: If the badge is not verified or an error occurs during verification.
+
+    Returns:
+        None: If the badge is verified or the GRPC server URL is not set.
+    """
+    grpc_server_url = os.getenv("IDENTITY_NODE_GRPC_SERVER_URL")
+    if not grpc_server_url:
+        logger.warning("IDENTITY_NODE_GRPC_SERVER_URL is not set. Skipping identity operations.")
+        return None
+
+    try:
+        # Initialize the Identity SDK
+        identity_sdk = IdentitySdk()
+
+        # Get badge by ID
+        badge = identity_sdk.get_badge(badge_id)
+        # Verify badge
+        verified = identity_sdk.verify_badge(badge)
+        logger.debug(f"Badge verified: {verified}")
+
+        if not verified:
+            raise ValueError("Badge verification failed.")
+        return None
+    except Exception as e:
+        logger.error(f"Error during identity verification: {e}")
+        raise ValueError(f"Error during identity verification: {e}")
+
+def get_badge_id_by_card(card_name: str) -> str:
+    """
+    Retrieves the badge ID for a given farm card from environment variables.
+
+    Args:
+        card_name (str): The name of the farm card.
+
+    Returns:
+        str: The badge ID for the specified farm.
+
+    Raises:
+        ValueError: If the badge ID environment variable is not set.
+    """
+    grpc_server_url = os.getenv("IDENTITY_NODE_GRPC_SERVER_URL")
+    if not grpc_server_url:
+        logger.warning("IDENTITY_NODE_GRPC_SERVER_URL is not set. Skipping identity operations.")
+        return ""
+
+    # this should match the hosts we set in the farm_agent_urls variable in main.py
+    badge_env_map = {
+        "Brazil Coffee Farm": brazil_farm_url,
+        "Colombia Coffee Farm": columbia_farm_url,
+        "Vietnam Coffee Farm": vietnam_farm_url,
+    }
+
+    host = badge_env_map.get(card_name)
+    if not host:
+        raise ValueError(f"Unknown card name: {card_name}. No badge ID mapping found.")
+
+    badge_id = "IDP-" + client_cache[host]
+    if not badge_id:
+        raise ValueError(f"client cache is not set for card name: {card_name}.")
+
+    return badge_id
+
 
 @tool(args_schema=InventoryArgs)
 async def get_farm_yield_inventory(prompt: str, farm: str) -> str:
@@ -232,6 +307,15 @@ async def create_order(farm: str, quantity: int, price: float) -> str:
     card = get_farm_card(farm)
     if card is None:
         return f"Farm '{farm}' not recognized. Available farms are: {brazil_agent_card.name}, {colombia_agent_card.name}, {vietnam_agent_card.name}."
+
+    logger.info(f"Using farm card: {card.name} for order creation")
+    try:
+        badge_id = get_badge_id_by_card(card.name)
+        verify_identity(badge_id)
+    except ValueError as e:
+        logger.error(f"Identity verification failed: {e}")
+        return f"Identity verification failed: {e}"
+
     
     client = await factory.create_client(
         "A2A",

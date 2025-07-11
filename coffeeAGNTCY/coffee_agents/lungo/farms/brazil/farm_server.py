@@ -2,16 +2,17 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import asyncio
+import os
+from uvicorn import Config, Server
 
 from agntcy_app_sdk.factory import GatewayFactory
-
 from a2a.server.apps import A2AStarletteApplication
 from a2a.server.tasks import InMemoryTaskStore
 from a2a.server.request_handlers import DefaultRequestHandler
 
 from agent_executor import FarmAgentExecutor
 from config.config import (
-    DEFAULT_MESSAGE_TRANSPORT, 
+    DEFAULT_MESSAGE_TRANSPORT,
     TRANSPORT_SERVER_ENDPOINT,
     FARM_BROADCAST_TOPIC,
 )
@@ -20,9 +21,35 @@ from card import AGENT_CARD
 # Initialize a multi-protocol, multi-transport gateway factory.
 factory = GatewayFactory()
 
-async def main():
-    """Run the A2A server with the Farm Agent."""
+async def run_http_server(server):
+    """Run the HTTP/REST server."""
+    try:
+        config = Config(app=server.build(), host="0.0.0.0", port=9999, loop="asyncio")
+        userver = Server(config)
+        await userver.serve()
+    except Exception as e:
+        print(f"HTTP server encountered an error: {e}")
 
+async def run_transport(server, transport_type, endpoint, block):
+    """Run the transport and broadcast bridge."""
+    try:
+        transport = factory.create_transport(transport_type, endpoint=endpoint)
+
+        # Create a broadcast bridge to the farm yield topic
+        broadcast_bridge = factory.create_bridge(
+            server, transport=transport, topic=FARM_BROADCAST_TOPIC
+        )
+
+        # Create the default bridge to the server
+        bridge = factory.create_bridge(server, transport=transport)
+
+        await broadcast_bridge.start(blocking=False)
+        await bridge.start(blocking=block)
+    except Exception as e:
+        print(f"Transport encountered an error: {e}")
+
+async def main(enable_http: bool):
+    """Run the A2A server with both HTTP and transport logic."""
     request_handler = DefaultRequestHandler(
         agent_executor=FarmAgentExecutor(),
         task_store=InMemoryTaskStore(),
@@ -32,25 +59,21 @@ async def main():
         agent_card=AGENT_CARD, http_handler=request_handler
     )
 
-    transport = factory.create_transport(
-        DEFAULT_MESSAGE_TRANSPORT,
-        endpoint=TRANSPORT_SERVER_ENDPOINT,
-    )
+    # Run HTTP server and transport logic concurrently
+    tasks = []
+    if enable_http:
+        tasks.append(asyncio.create_task(run_http_server(server)))
+    tasks.append(asyncio.create_task(run_transport(server, DEFAULT_MESSAGE_TRANSPORT, TRANSPORT_SERVER_ENDPOINT, block=True)))
 
-    # explicitly create a broadcast bridge to the farm yield topic
-    broadcast_bridge = factory.create_bridge(
-        server, transport=transport, topic=FARM_BROADCAST_TOPIC
-    )
+    await asyncio.gather(*tasks)
 
-    # create the default bridge to the server with a topic generated from the agent card
-    bridge = factory.create_bridge(server, transport=transport) 
-
-    await broadcast_bridge.start(blocking=False)
-    await bridge.start(blocking=True)
 
 if __name__ == '__main__':
+    # Read ENABLE_HTTP from environment variables
+    enable_http = os.getenv("ENABLE_HTTP", "false").lower() == "true"
+
     try:
-        asyncio.run(main())
+        asyncio.run(main(enable_http))
     except KeyboardInterrupt:
         print("\nShutting down gracefully on keyboard interrupt.")
     except Exception as e:

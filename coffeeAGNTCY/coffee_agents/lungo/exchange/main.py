@@ -2,19 +2,62 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import logging
-
+import os
+from contextlib import asynccontextmanager
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import uvicorn
 
-from config.logging_config import setup_logging
+# from config.logging_config import setup_logging
 from graph.graph import ExchangeGraph
+from exchange.utils.identity_utils import initialize_clients_and_issue_badges
+from exchange.utils.config import vietnam_farm_url, columbia_farm_url, brazil_farm_url
 
-setup_logging()
+# setup_logging()
 logger = logging.getLogger("corto.supervisor.main")
 
-app = FastAPI()
+# Global variables
+exchange_graph = ExchangeGraph()
+badge_verification = True
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+  global badge_verification
+  try:
+    # Retrieve URLs from environment variables
+    hydra_admin_url = os.getenv("HYDRA_CLIENT_API_URL", "http://127.0.0.1:4445/clients")
+    idp_url = os.getenv("IDP_ISSUER_URL")
+    register_issuer = os.getenv("REGISTER_ISSUER", "false").lower() == "true" # Set this to true if idp url is new
+    identity_node_api_url = os.getenv("IDENTITY_NODE_API_URL", "https://api.identity-node.dev.outshift.ai")
+
+    logger.info(f"All environment variables: HYDRA_CLIENT_API_URL={hydra_admin_url}, IDP_ISSUER_URL={idp_url}, IDENTITY_NODE_API_URL={identity_node_api_url}, REGISTER_ISSUER={register_issuer}")
+
+    if idp_url:
+      farm_agent_urls = [vietnam_farm_url, columbia_farm_url, brazil_farm_url]
+      # Initialize clients and issue badges
+      client_cache = initialize_clients_and_issue_badges(hydra_admin_url, idp_url, farm_agent_urls, register_issuer, identity_node_api_url)
+
+      for farm_url, client_id in client_cache.items():
+        farm_name = farm_url.split("//")[-1].split(":")[0]  # Extract farm name from the URL
+        badge_url = f"{identity_node_api_url}/v1alpha1/vc/IDP-{client_id}/.well-known/vcs.json"
+        logger.info(f"Farm name: {farm_name}, Badge URL: {badge_url}")
+
+      if client_cache == {}:
+        badge_verification = False
+        logger.warning("Badge issuance failed. Badge verification will be disabled.")
+    else:
+      logger.warning("Required environment variables are not set. Skipping client initialization.")
+    yield
+  except Exception as e:
+    logger.error(f"Failed to initialize clients: {e}")
+
+  finally:
+    logger.info("Application shutdown. Cleaning up resources if needed.")
+
+# Create FastAPI app with lifespan
+app = FastAPI(lifespan=lifespan)
+
 # Add CORS middleware
 app.add_middleware(
   CORSMiddleware,
@@ -23,8 +66,6 @@ app.add_middleware(
   allow_methods=["*"],  # Allow all HTTP methods
   allow_headers=["*"],  # Allow all headers
 )
-
-exchange_graph = ExchangeGraph()
 
 class PromptRequest(BaseModel):
   prompt: str
@@ -55,7 +96,7 @@ async def handle_prompt(request: PromptRequest):
 
 @app.get("/health")
 async def health_check():
-    return {"status": "ok"}
+  return {"status": "ok"}
 
 # Run the FastAPI server using uvicorn
 if __name__ == "__main__":

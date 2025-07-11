@@ -3,7 +3,7 @@ services:
     build:
       context: ../../..
       dockerfile: coffeeAGNTCY/coffee_agents/lungo/docker/Dockerfile.brazil-farm
-    image: ghcr.io/agntcy/coffee-agntcy/brazil-farm:latest
+    #image: ghcr.io/agntcy/coffee-agntcy/brazil-farm:latest
     container_name: brazil-farm-server
     platform: linux/amd64
     environment:
@@ -18,13 +18,17 @@ services:
       - OPENAI_ENDPOINT=${OPENAI_ENDPOINT}
       - LLM_PROVIDER=${LLM_PROVIDER}
       - TRANSPORT_SERVER_ENDPOINT=http://slim:46357
+      - ENABLE_HTTP=true
     ports:
       - "9999:9999"
+    networks:
+      - intranet
+
   colombia-farm-server:
     build:
       context: ../../..
       dockerfile: coffeeAGNTCY/coffee_agents/lungo/docker/Dockerfile.colombia-farm
-    image: ghcr.io/agntcy/coffee-agntcy/colombia-farm:latest
+    #image: ghcr.io/agntcy/coffee-agntcy/colombia-farm:latest
     container_name: colombia-farm-server
     platform: linux/amd64
     environment:
@@ -40,13 +44,17 @@ services:
       - LLM_PROVIDER=${LLM_PROVIDER}
       - TRANSPORT_SERVER_ENDPOINT=http://slim:46357
       - WEATHER_MCP_SERVER_URL=http://weather-mcp-server:8123
+      - ENABLE_HTTP=true
     ports:
       - "9998:9998"
+    networks:
+      - intranet
+
   vietnam-farm-server:
     build:
       context: ../../..
       dockerfile: coffeeAGNTCY/coffee_agents/lungo/docker/Dockerfile.vietnam-farm
-    image: ghcr.io/agntcy/coffee-agntcy/vietnam-farm:latest
+#    image: ghcr.io/agntcy/coffee-agntcy/vietnam-farm:latest
     container_name: vietnam-farm-server
     platform: linux/amd64
     environment:
@@ -61,8 +69,12 @@ services:
       - OPENAI_ENDPOINT=${OPENAI_ENDPOINT}
       - LLM_PROVIDER=${LLM_PROVIDER}
       - TRANSPORT_SERVER_ENDPOINT=http://slim:46357
+      - ENABLE_HTTP=true
     ports:
       - "9997:9997"
+    networks:
+      - intranet
+
   nats:
     image: nats:latest
     container_name: nats
@@ -71,6 +83,8 @@ services:
       - "4223:4223"
       - "6222:6222"
       - "8222:8222"
+    networks:
+      - intranet
 
   slim:
     image: ghcr.io/agntcy/slim:0.3.15
@@ -83,14 +97,15 @@ services:
     volumes:
       - ./config/docker/slim/server-config.yaml:/config.yaml
     command: ["/slim", "--config", "/config.yaml"]
+    networks:
+      - intranet
 
-  # Exchange server App (farm client)
   exchange-server:
     build:
       context: ../../..
       dockerfile: coffeeAGNTCY/coffee_agents/lungo/docker/Dockerfile.exchange
-    image: ghcr.io/agntcy/coffee-agntcy/lungo-exchange:latest
     container_name: exchange-server
+#    image: ghcr.io/agntcy/coffee-agntcy/exchange-server:latest
     platform: linux/amd64
     environment:
       - FARM_AGENT_HOST=farm-server
@@ -104,8 +119,17 @@ services:
       - OPENAI_ENDPOINT=${OPENAI_ENDPOINT}
       - LLM_PROVIDER=${LLM_PROVIDER}
       - TRANSPORT_SERVER_ENDPOINT=http://slim:46357
+      # Agntcy Identity Integration
+      - REGISTER_ISSUER=true # this should set to true only if idp issuer url changes
+      - IDP_ISSUER_URL=https://902592bc7a96.ngrok-free.app
+      - HYDRA_CLIENT_API_URL=http://hydra:4445/admin/clients
+      - BRAZIL_FARM_AGENT_URL=http://brazil-farm-server:9999
+      - COLOMBIA_FARM_AGENT_URL=http://colombia-farm-server:9998
+      - VIETNAM_FARM_AGENT_URL=http://vietnam-farm-server:9997
     ports:
       - "8000:8000"
+    networks:
+      - intranet
 
   ui:
     build:
@@ -120,12 +144,97 @@ services:
       - exchange-server
     ports:
       - "3000:3000"
+    networks:
+      - intranet
 
   weather-mcp-server:
     build:
       context: ../../..
-      dockerfile: coffeeAGNTCY/coffee_agents/lungo/docker/Dockerfile.weather-mcp  
+      dockerfile: coffeeAGNTCY/coffee_agents/lungo/docker/Dockerfile.weather-mcp
     container_name: weather-mcp-server
     platform: linux/amd64
     ports:
       - "8123:8123"
+    networks:
+      - intranet
+
+  sqlite:
+    image: busybox
+    volumes:
+      - hydra-sqlite:/mnt/sqlite
+    command: "chmod -R 777 /mnt/sqlite"
+    networks:
+      - intranet
+
+  hydra:
+    image: oryd/hydra:v2.3.0
+    build:
+      context: .
+      dockerfile: .docker/Dockerfile-local-build
+    ports:
+      - "4444:4444"
+      - "4445:4445"
+      - "5555:5555"
+    command: serve -c /etc/config/hydra/hydra.yml all --dev
+    volumes:
+      - hydra-sqlite:/mnt/sqlite:rw
+      - type: bind
+        source: ./contrib/quickstart/5-min
+        target: /etc/config/hydra
+    pull_policy: missing
+    environment:
+      - DSN=postgres://hydra:secret@postgresd:5432/hydra?sslmode=disable&max_conns=20&max_idle_conns=4
+      - STRATEGIES_ACCESS_TOKEN=jwt
+    restart: unless-stopped
+    depends_on:
+      - hydra-migrate
+      - sqlite
+    networks:
+      - intranet
+
+  hydra-migrate:
+    image: oryd/hydra:v2.3.0
+    build:
+      context: .
+      dockerfile: .docker/Dockerfile-local-build
+    environment:
+      - DSN=postgres://hydra:secret@postgresd:5432/hydra?sslmode=disable&max_conns=20&max_idle_conns=4
+      - STRATEGIES_ACCESS_TOKEN=jwt
+    command: migrate -c /etc/config/hydra/hydra.yml sql up -e --yes
+    pull_policy: missing
+    volumes:
+      - hydra-sqlite:/mnt/sqlite:rw
+      - type: bind
+        source: ./contrib/quickstart/5-min
+        target: /etc/config/hydra
+    restart: on-failure
+    depends_on:
+      - sqlite
+    networks:
+      - intranet
+
+  consent:
+    environment:
+      - HYDRA_ADMIN_URL=http://hydra:4445
+    image: oryd/hydra-login-consent-node:v2.3.0
+    ports:
+      - "3333:3333"
+    restart: unless-stopped
+    networks:
+      - intranet
+
+  postgresd:
+    image: postgres:16
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=hydra
+      - POSTGRES_PASSWORD=secret
+      - POSTGRES_DB=hydra
+    networks:
+      - intranet
+
+networks:
+  intranet:
+volumes:
+  hydra-sqlite:
