@@ -19,8 +19,8 @@ from a2a.types import (
 from langchain_core.tools import BaseTool
 from graph.models import FlavorProfileInput, FlavorProfileOutput
 
-from gateway_sdk.protocols.a2a.gateway import A2AProtocol
-from gateway_sdk.factory import GatewayFactory
+from agntcy_app_sdk.protocols.a2a.gateway import A2AProtocol
+from agntcy_app_sdk.factory import GatewayFactory
 
 from config.config import DEFAULT_MESSAGE_TRANSPORT, TRANSPORT_SERVER_ENDPOINT
 

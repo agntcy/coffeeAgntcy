@@ -6,7 +6,7 @@ appVersion: v1
 replicaCount: 1
 
 image:
-  repository: ghcr.io/cisco-outshift-ai-agents/coffee-agntcy/corto-farm
+  repository: ghcr.io/agntcy/coffee-agntcy/corto-farm
   tag: latest
   pullPolicy: Always
   pullSecret:

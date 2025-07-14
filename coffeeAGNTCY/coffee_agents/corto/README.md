@@ -2,13 +2,13 @@
 
 ## Overview
 
-The Corto demo showcases a streamlined interaction between a single-agent LangGraph workflow and an Agent-to-Agent (A2A) architecture. It models a simplified agent system focused on generating coffee flavor profiles based on user input.
+The Corto demo demonstrates the integration of an A2A client within a LangGraph workflow with an A2A server agent. It models a simplified agent system that acts as a coffee sommelier.
 
-The Exchange Agent acts as a client interface, receiving prompts from the user interface.
+The Exchange Agent acts as a client interface, receiving prompts from the user interface about coffee flavor profiles and forwarding them to the farm agent.
 
 The Farm Agent serves as a backend flavor profile generator, processing incoming requests and returning descriptive output.
 
-The user interface connects to the exchange’s API to submit prompts, which are routed via an A2A client to the farm’s A2A server. The underlying A2A transport layer is fully configurable. By default, the system uses SLIM, enabling flexible message delivery through broadcast or unicast modes depending on the request context.
+The user interface forwards all prompts to the exchange’s API, which are then given to a LangGraph which contains an A2A client node. This A2A client node connects to the farm’s A2A server. The underlying A2A transport layer is fully configurable. By default, the system uses AGNTCY's SLIM. 
 
 
 ## Running Corto Locally
@@ -91,7 +91,7 @@ Before you begin, ensure the following tools are installed:
 
    ```env
    DEFAULT_MESSAGE_TRANSPORT=slim
-   TRANSPORT_SERVER_ENDPOINT=http://localhost:3001
+   TRANSPORT_SERVER_ENDPOINT=http://localhost:46357
    ```
 
    - `DEFAULT_MESSAGE_TRANSPORT`: Defines the message transport protocol used for agent communication.
@@ -113,17 +113,9 @@ Before you begin, ensure the following tools are installed:
 
 >  **Note:** Each service should be started in its **own terminal window** and left running while the app is in use.
 >
-> **Shortcut:** If you prefer to spin up all services at once without reading through the steps below, you can:
+> **Shortcut:** If you prefer to spin up all services at once without reading through the steps below, you can spin
+> up the entire stack via Docker Compose:
 > 
->
-> Authenticate to GHCR to pull private images:
-> 
->```sh
->echo "<git_token>" | docker login ghcr.io -u "<git_user>" --password-stdin
->```
->Replace `<git_token>` and `<git_user>` with your GitHub token and username.
->
-> Start the stack:
 >
 >```sh
 >docker compose up

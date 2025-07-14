@@ -6,7 +6,7 @@ appVersion: v1
 replicaCount: 1
 
 image:
-  repository: ghcr.io/cisco-outshift-ai-agents/coffee-agntcy/weather-mcp-server
+  repository: ghcr.io/agntcy/coffee-agntcy/weather-mcp-server
   tag: latest
   pullPolicy: Always
   pullSecret:

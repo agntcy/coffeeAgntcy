@@ -52,7 +52,7 @@ body:
       label: Checklist
       description: By submitting this issue, you agree to the following
       options:
-        - label: I have read the [contributing guidelines](/cisco-outshift-ai-agents/coffeeAgntcy/blob/main/CONTRIBUTING.md)
+        - label: I have read the [contributing guidelines](/agntcy/coffeeAgntcy/blob/main/CONTRIBUTING.md)
           required: true
         - label: I have verified this does not duplicate an existing issue
           required: true

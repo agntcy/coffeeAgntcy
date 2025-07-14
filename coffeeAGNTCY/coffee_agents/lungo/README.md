@@ -1,6 +1,6 @@
 ## Lungo Demo Overview
 
-The **Lungo Demo** is a continuously evolving showcase of interoperable open-source agentic components. Its primary goal is to demonstrate how different components—from Cisco's **Agntcy** project and other open-source ecosystems—can work together seamlessly.
+The **Lungo Demo** is a continuously evolving showcase of interoperable open-source agentic components. Its primary goal is to demonstrate how different components—from the **Agntcy** project and other open-source ecosystems—can work together seamlessly.
 
 ### Overview
 
@@ -93,7 +93,7 @@ Before you begin, ensure the following tools are installed:
 
    ```env
    DEFAULT_MESSAGE_TRANSPORT=slim
-   TRANSPORT_SERVER_ENDPOINT=http://localhost:3001
+   TRANSPORT_SERVER_ENDPOINT=http://localhost:46357
    ```
 
    - `DEFAULT_MESSAGE_TRANSPORT`: Defines the message transport protocol used for agent communication.
@@ -107,17 +107,8 @@ Before you begin, ensure the following tools are installed:
 
 >  **Note:** Each service should be started in its **own terminal window** and left running while the app is in use.
 >
-> **Shortcut:** If you prefer to spin up all services at once without reading through the steps below, you can:
-> 
->
-> Authenticate to GHCR to pull private images:
-> 
->```sh
->echo "<git_token>" | docker login ghcr.io -u "<git_user>" --password-stdin
->```
->Replace `<git_token>` and `<git_user>` with your GitHub token and username.
->
-> Start the stack:
+> **Shortcut:** If you prefer to spin up all services at once without reading through the steps below, you canspin
+> up the entire stack via Docker Compose:
 >
 >```sh
 >docker compose up
@@ -162,6 +153,9 @@ This MCP server is required for the Colombia Farm to function correctly.
 Start all the farm servers, that act as A2A servers, by executing:
 
 *Local Python Run:*
+>
+>  **Note:** Each farm should be started in its **own terminal window**
+>
 
 ```sh
 uv run python farms/brazil/farm_server.py
@@ -231,7 +225,6 @@ npm run dev
 ```sh
 docker-compose up ui --build
 ```
-
 
 By default, the UI will be available at [http://localhost:3000/](http://localhost:3000/).
 
