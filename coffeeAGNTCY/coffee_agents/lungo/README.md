@@ -154,7 +154,7 @@ Start all the farm servers, that act as A2A servers, by executing:
 
 *Local Python Run:*
 >
->  **Note:** Each farm should be started in its **own terminal window** and left running while the app is in use.
+>  **Note:** Each farm should be started in its **own terminal window**
 >
 
 ```sh
@@ -225,7 +225,6 @@ npm run dev
 ```sh
 docker-compose up ui --build
 ```
-
 
 By default, the UI will be available at [http://localhost:3000/](http://localhost:3000/).
 
