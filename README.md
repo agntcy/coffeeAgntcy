@@ -5,7 +5,7 @@
 
 ## About the Project
 
-**CoffeeAgntcy** is a reference implementation based on a fictitious coffee company to help developers understand how components in the **AGNTCY Internet of Agents** ecosystem can work together. It gives examples of the components of AGNTCY working together as a **Multi-agent System (MAS)**. The first setup of coffeeAgntcy shows how transport protocols and stateful LangGraph workflows are used to coordinate multi-agent behavior.
+**CoffeeAgntcy** is a reference implementation based on a fictitious coffee company to help developers understand how components in the **AGNTCY Internet of Agents** ecosystem can work together. It gives examples of the components of AGNTCY working together as a **Multi-agent System (MAS)**. 
 
 This project is ideal for developers building agent-based systems and looking to explore:
 
@@ -13,6 +13,7 @@ This project is ideal for developers building agent-based systems and looking to
 - How tools and transports can be reused across agent implementations (e.g., **SLIM**, **NATS**, **MCP**)
 - How protocol-agnostic bridges and clients interconnect modular agents
 - How to orchestrate agents using **LangGraph** for structured and stateful workflows
+- How to write **A2A** client and server agents
 - How to integrate data sources (e.g., weather services via **MCP**)
 - How to extend or swap agents modularly using AGNTCY tooling
 
@@ -23,11 +24,13 @@ This project is ideal for developers building agent-based systems and looking to
 We currently provide two setups you can run to see how components from AGNTCY work together — one simple two-agent use case and the other a more complex MAS:
 
 - **Corto**:  
-  A two-agent, ready-to-run setup that highlights core agent interactions using agent-to-agent (A2A) messaging over AGNTCY’s SLIM transport. Agents are orchestrated within a LangGraph.
+  A two-agent, ready-to-run setup that highlights core agent interactions using agent-to-agent (A2A) messaging via configurable transports(default: AGNTCY's SLIM). Agents are orchestrated within a LangGraph.
+
   👉 [View the Corto README](coffeeAGNTCY/coffee_agents/corto)
 
 - **Lungo**:  
   A more advanced setup that will evolve over time as we mature components. The first release shows agents that use A2A communication via configurable transports (default: SLIM), are structured as directed LangGraphs, and include an MCP weather-aware farm that fetches live data.  
+
   👉 [View the Lungo README](coffeeAGNTCY/coffee_agents/lungo)
 
 ---

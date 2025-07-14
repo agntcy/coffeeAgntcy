@@ -4,8 +4,6 @@
 
 The Corto demo demonstrates the integration of an A2A client within a LangGraph workflow with an A2A server agent. It models a simplified agent system that acts as a coffee sommelier.
 
- It models a simplified agent system focused on generating coffee flavor profiles based on user input.
-
 The Exchange Agent acts as a client interface, receiving prompts from the user interface about coffee flavor profiles and forwarding them to the farm agent.
 
 The Farm Agent serves as a backend flavor profile generator, processing incoming requests and returning descriptive output.
@@ -93,7 +91,7 @@ Before you begin, ensure the following tools are installed:
 
    ```env
    DEFAULT_MESSAGE_TRANSPORT=slim
-   TRANSPORT_SERVER_ENDPOINT=http://localhost:3001
+   TRANSPORT_SERVER_ENDPOINT=http://localhost:46357
    ```
 
    - `DEFAULT_MESSAGE_TRANSPORT`: Defines the message transport protocol used for agent communication.

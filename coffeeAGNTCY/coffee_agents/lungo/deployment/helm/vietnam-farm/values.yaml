@@ -6,7 +6,7 @@ appVersion: v1
 replicaCount: 1
 
 image:
-  repository: ghcr.io/cisco-outshift-ai-agents/coffee-agntcy/vietnam-farm
+  repository: ghcr.io/agntcy/coffee-agntcy/vietnam-farm
   tag: latest
   pullPolicy: Always
   pullSecret:
