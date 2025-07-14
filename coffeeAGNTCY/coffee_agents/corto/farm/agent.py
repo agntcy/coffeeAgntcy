@@ -23,16 +23,19 @@ class State(TypedDict):
     error_message: str
     flavor_notes: str
 
-@graph(name="farm_graph")
 @agent(name="farm_agent")
 class FarmAgent:
     def __init__(self):
-        FLAVOR_NODE = "FlavorNode"
+        self.FLAVOR_NODE = "FlavorNode"
+        self._agent = self.build_graph()
+
+    @graph(name="farm_graph")
+    def build_graph(self) -> StateGraph:
         graph_builder = StateGraph(State)
-        graph_builder.add_node(FLAVOR_NODE, self.flavor_node)
-        graph_builder.add_edge(START, FLAVOR_NODE)
-        graph_builder.add_edge(FLAVOR_NODE, END)
-        self._agent = graph_builder.compile()
+        graph_builder.add_node(self.FLAVOR_NODE, self.flavor_node)
+        graph_builder.add_edge(START, self.FLAVOR_NODE)
+        graph_builder.add_edge(self.FLAVOR_NODE, END)
+        return graph_builder.compile()
 
     async def flavor_node(self, state: State):
         """
@@ -53,6 +56,7 @@ class FarmAgent:
                 - "flavor_notes" (str): A brief tasting profile if valid context was extracted.
                 - or an "error_type" and "error_message" if the input was insufficient.
         """
+        session_start()
         user_prompt = state.get("prompt")
         logger.debug(f"Received user prompt: {user_prompt}")
 
@@ -96,4 +100,7 @@ class FarmAgent:
                 - An error message if parsing or context extraction failed.
         """
         session_start()
+        # build graph if not already built
+        if not hasattr(self, '_agent'):
+            self._agent = self.build_graph()
         return await self._agent.ainvoke({"prompt": input})

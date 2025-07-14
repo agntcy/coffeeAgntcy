@@ -436,7 +436,7 @@ requires-dist = [
     { name = "dotenv", specifier = ">=0.9.9" },
     { name = "fastapi", specifier = ">=0.115.12" },
     { name = "httpx", specifier = ">=0.28.1" },
-    { name = "ioa-observe-sdk", specifier = "==1.0.7" },
+    { name = "ioa-observe-sdk", specifier = "==1.0.10" },
     { name = "langchain-anthropic", specifier = ">=0.3.13" },
     { name = "langchain-google-genai", specifier = ">=2.1.4" },
     { name = "langchain-openai", specifier = ">=0.3.16" },
@@ -931,7 +931,7 @@ wheels = [
 
 [[package]]
 name = "ioa-observe-sdk"
-version = "1.0.7"
+version = "1.0.10"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "aiohappyeyeballs" },
@@ -1011,9 +1011,9 @@ dependencies = [
     { name = "yarl" },
     { name = "zipp" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/a6/04/7c04783697c0b24a987ef7acb58efbe0d02bca22666a380be4e3c443caeb/ioa_observe_sdk-1.0.7.tar.gz", hash = "sha256:07ee24ae198eea387342a245752923366e7cd9b2f7ebb6fd7336f55ebfaf02d1", size = 49335, upload-time = "2025-06-30T08:15:21.509Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/01/5e/f7e23318c0f21bdd2507c3f78926685f2c2506140837550e0681ac82905d/ioa_observe_sdk-1.0.10.tar.gz", hash = "sha256:2cb14d5f6a6a967e8d41430465a674bfe2f834675068fda388a37e0ce1754e33", size = 50486, upload-time = "2025-07-14T13:08:47.135Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/f1/bd/c2c411250777987719201067b7ecf38b8be425f99324a0266c9964e78a84/ioa_observe_sdk-1.0.7-py3-none-any.whl", hash = "sha256:e86f97d38a83ec465108aef83875a7a2facd2e3b66e655ce4beaa0a4df17d5ab", size = 57900, upload-time = "2025-06-30T08:15:20.457Z" },
+    { url = "https://files.pythonhosted.org/packages/57/25/ea88ee40b4f6dae3c9d5bdb6f7cfd63346265065afca9fc18b6dc3238375/ioa_observe_sdk-1.0.10-py3-none-any.whl", hash = "sha256:34c85266457bf1111fcc4d8dbdae373bb45fac4a3730b88d446db27cc928af5e", size = 59105, upload-time = "2025-07-14T13:08:46.021Z" },
 ]
 
 [[package]]
