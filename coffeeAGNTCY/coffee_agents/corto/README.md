@@ -4,10 +4,9 @@
 
 The Corto demo demonstrates a robust interaction between an A2A (Agent-to-Agent) architecture and LangGraph workflows. The `farm_server` operates as an A2A agent, providing backend services to process user inputs and generate coffee flavor profiles. The `exchange` acts as an A2A client, connecting to the `farm_server` and facilitating user interactions. Both components are integrated within LangGraph, which manages stateful workflows and ensures seamless communication.
 
-## UI Component 
+## UI Component
 
-The project includes a **React-based UI** for interacting with the exchange and farm server.  
-
+The project includes a **React-based UI** for interacting with the exchange and farm server.
 
 ## Trying the Corto App
 
@@ -23,7 +22,6 @@ See the sections below for step-by-step instructions for each approach.
 
 ## Local testing Setup:
 
-
 ### Prerequisites
 
 Ensure you have `uv` installed. You can install it using Homebrew:
@@ -33,18 +31,20 @@ brew install uv
 ```
 
 Ensure your **Node.js** version is **16.14.0** or higher. Check your version with:
-  ```sh
-  node -v
-  ```
+
+```sh
+node -v
+```
+
 If Node.js is not installed, download and install it from the [official website](https://nodejs.org/).
 
 1. **(Optional) Create a Virtual Environment:**
-    Initialize your virtual environment using uv:
+   Initialize your virtual environment using uv:
 
-    ```sh
-    uv venv
-    source .venv/bin/activate
-    ```
+   ```sh
+   uv venv
+   source .venv/bin/activate
+   ```
 
 2. **Install Dependencies:**
    Run the following command to install all required Python dependencies:
@@ -54,37 +54,38 @@ If Node.js is not installed, download and install it from the [official website]
    ```
 
 3. **Configure Environment Variables:**
-    Copy the `.env.example` file to `.env`:
+   Copy the `.env.example` file to `.env`:
 
-    ```sh
-    cp .env.example .env
-    ```
+   ```sh
+   cp .env.example .env
+   ```
 
-    Add your LLM provider (OpenAI or Azure OpenAI) and associated credentials to the .env file. For example:
- 
+   Add your LLM provider (OpenAI or Azure OpenAI) and associated credentials to the .env file. For example:
+
    ```env
     LLM_PROVIDER=openai
     OPENAI_API_KEY=your_openai_api_key
     OPENAI_MODEL=gpt-4o
-    ```
+   ```
 
    Or for Azure OpenAI:
 
-    ```env
-    LLM_PROVIDER=azure
-    AZURE_OPENAI_ENDPOINT=https://your-azure-resource.openai.azure.com/
-    AZURE_OPENAI_DEPLOYMENT=gpt-4-prod
-    AZURE_OPENAI_API_KEY=your_azure_api_key
-    AZURE_OPENAI_API_VERSION=2023-12-01-preview
-    ```
+   ```env
+   LLM_PROVIDER=azure
+   AZURE_OPENAI_ENDPOINT=https://your-azure-resource.openai.azure.com/
+   AZURE_OPENAI_DEPLOYMENT=gpt-4-prod
+   AZURE_OPENAI_API_KEY=your_azure_api_key
+   AZURE_OPENAI_API_VERSION=2023-12-01-preview
+   ```
 
-3. **Verify Setup:**
+4. **Verify Setup:**
    Ensure everything is set up correctly by running the farm server, exchange and UI as described below.
 
 ### Execution
 
 #### Step 0: Run the SLIM message bus gateway
-To enable A2A communication over SLIM, you need to run the SLIM message bus gateway. 
+
+To enable A2A communication over SLIM, you need to run the SLIM message bus gateway.
 
 You can do this by executing the following command:
 
@@ -93,6 +94,7 @@ docker-compose up agp-gateway
 ```
 
 #### Step 1: Run the Farm Server
+
 Start the `farm_server`, which acts as an A2A agent, by executing:
 
 ```sh
@@ -102,6 +104,7 @@ uv run python farm/farm_server.py
 The `farm_server` listens for requests from the `exchange` and processes them using LangGraph. It generates flavor profiles based on user inputs such as location and season.
 
 #### Step 2: Run the Exchange
+
 Start the `exchange`, which acts as an A2A client, by running:
 
 ```sh
@@ -111,6 +114,7 @@ uv run python exchange/main.py
 This starts a FastAPI server that processes user prompts that are sent to a LangGraph supervisor that facilitates worker agent delegation. The A2A client is registered as a worker agent. If a prompt does not match any worker, the supervisor responds politely with a refusal message.
 
 To invoke the exchange, use the /agent/prompt endpoint to send a human-readable prompt to request information about a location's coffee flavor profiles for a specific season. For example:
+
 ```bash
 curl -X POST http://127.0.0.1:8000/agent/prompt \
   -H "Content-Type: application/json" \
@@ -120,7 +124,6 @@ curl -X POST http://127.0.0.1:8000/agent/prompt \
 ```
 
 The `exchange` sends user inputs to the `farm_server` and displays the generated flavor profiles. It interacts with the `farm_server` through A2A communication protocols.
-
 
 #### Step 3: Access the UI
 
@@ -133,8 +136,6 @@ npm run dev
 
 By default, the UI will be available at [http://localhost:3000/](http://localhost:3000/).
 
-
-
 ## Docker Compose Setup:
 
 **Prerequisite:**
@@ -144,14 +145,26 @@ Before running Docker Compose, copy the example environment file and fill in you
 cp .env.example .env
 ```
 
-Edit the `.env` file to include your LLM provider and API keys (OpenAI or Azure OpenAI), for example:
+Edit the `.env` file to include:
+
+1. Your LLM provider and API keys (OpenAI or Azure OpenAI)
+2. Optional: Custom port configurations
+
+Example configuration:
 
 ```env
+# LLM Settings
 LLM_PROVIDER=openai
 OPENAI_API_KEY=your_openai_api_key
 OPENAI_MODEL=gpt-4o
+
+# Port Configuration (optional)
+UI_PORT=3000          # Default UI port
+FARM_SERVER_PORT=9999 # Default farm server port
 ```
+
 or for Azure:
+
 ```env
 LLM_PROVIDER=azure
 AZURE_OPENAI_ENDPOINT=https://your-azure-resource.openai.azure.com/
@@ -165,17 +178,20 @@ AZURE_OPENAI_API_VERSION=2023-12-01-preview
 ```sh
 echo "<git_token>" | docker login ghcr.io -u "<git_user>" --password-stdin
 ```
+
 Replace `<git_token>` and `<git_user>` with your GitHub token and username.
 
 **Start the stack:**
 
 ```sh
-docker compose up
+docker-compose --env-file .env up
 ```
 
-Once running, access the UI at: [http://localhost:3000/](http://localhost:3000/)
+Once running, access the UI at:
+
+- Default port: [http://localhost:3000/](http://localhost:3000/)
+- Custom port: If you set UI_PORT in .env, use that port instead (e.g., http://localhost:4545/)
 
 ---
-
 
 ![Screenshot](images/corto-ui.png)

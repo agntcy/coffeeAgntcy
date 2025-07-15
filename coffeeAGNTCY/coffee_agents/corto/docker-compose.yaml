@@ -6,7 +6,7 @@ services:
     platform: linux/amd64
     environment:
       - FARM_AGENT_HOST=farm-server
-      - FARM_AGENT_PORT=9999
+      - FARM_AGENT_PORT=${FARM_SERVER_PORT:-9999}
       - AZURE_OPENAI_ENDPOINT=${AZURE_OPENAI_ENDPOINT}
       - AZURE_OPENAI_DEPLOYMENT=${AZURE_OPENAI_DEPLOYMENT}
       - AZURE_OPENAI_API_KEY=${AZURE_OPENAI_API_KEY}
@@ -17,7 +17,10 @@ services:
       - LLM_PROVIDER=${LLM_PROVIDER}
       - TRANSPORT_SERVER_ENDPOINT=http://agp-gateway:46357
     ports:
-      - "9999:9999"
+      - "${FARM_SERVER_PORT:-9999}:${FARM_SERVER_PORT:-9999}"
+    volumes:
+      - ./farm:/app/farm
+      - ./common:/app/common
 
   # AGP Gateway App (todo- add gwy sdk )
   agp-gateway:
@@ -40,7 +43,7 @@ services:
     platform: linux/amd64
     environment:
       - FARM_AGENT_HOST=farm-server
-      - FARM_AGENT_PORT=9999
+      - FARM_AGENT_PORT=${FARM_SERVER_PORT:-9999}
       - AZURE_OPENAI_ENDPOINT=${AZURE_OPENAI_ENDPOINT}
       - AZURE_OPENAI_DEPLOYMENT=${AZURE_OPENAI_DEPLOYMENT}
       - AZURE_OPENAI_API_KEY=${AZURE_OPENAI_API_KEY}
@@ -53,15 +56,20 @@ services:
     depends_on:
       - farm-server
     ports:
-      - "8000:8000"
+      - "${EXCHANGE_SERVER_PORT:-8000}:8000"
+    volumes:    
+      - ./exchange:/app/exchange
+      - ./common:/app/common
 
-  ui:
+  corto-ui:
     image: ghcr.io/cisco-outshift-ai-agents/ui:latest
-    container_name: ui
+    container_name: corto-ui
     platform: linux/amd64
     environment:
-      - VITE_EXCHANGE_APP_API_URL=http://127.0.0.1:8000
+      - VITE_EXCHANGE_APP_API_URL=http://127.0.0.1:${EXCHANGE_SERVER_PORT:-8000}
     depends_on:
       - exchange-server
     ports:
-      - "3000:3000"
+      - "${UI_PORT:-3000}:3000"
+    volumes:
+      - ./exchange/frontend:/app/frontend
