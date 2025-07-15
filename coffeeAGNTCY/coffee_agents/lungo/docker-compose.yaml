@@ -1,0 +1,131 @@
+services:
+  brazil-farm-server:
+    build:
+      context: ../../..
+      dockerfile: coffeeAGNTCY/coffee_agents/lungo/docker/Dockerfile.brazil-farm
+    image: ghcr.io/agntcy/coffee-agntcy/brazil-farm:latest
+    container_name: brazil-farm-server
+    platform: linux/amd64
+    environment:
+      - FARM_AGENT_HOST=brazil-farm-server
+      - FARM_AGENT_PORT=9999
+      - AZURE_OPENAI_ENDPOINT=${AZURE_OPENAI_ENDPOINT}
+      - AZURE_OPENAI_DEPLOYMENT=${AZURE_OPENAI_DEPLOYMENT}
+      - AZURE_OPENAI_API_KEY=${AZURE_OPENAI_API_KEY}
+      - AZURE_OPENAI_API_VERSION=${AZURE_OPENAI_API_VERSION}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - OPENAI_API_VERSION=${OPENAI_API_VERSION}
+      - OPENAI_ENDPOINT=${OPENAI_ENDPOINT}
+      - LLM_PROVIDER=${LLM_PROVIDER}
+      - TRANSPORT_SERVER_ENDPOINT=http://slim:46357
+    ports:
+      - "9999:9999"
+  colombia-farm-server:
+    build:
+      context: ../../..
+      dockerfile: coffeeAGNTCY/coffee_agents/lungo/docker/Dockerfile.colombia-farm
+    image: ghcr.io/agntcy/coffee-agntcy/colombia-farm:latest
+    container_name: colombia-farm-server
+    platform: linux/amd64
+    environment:
+      - FARM_AGENT_HOST=colombia-farm-server
+      - FARM_AGENT_PORT=9998
+      - AZURE_OPENAI_ENDPOINT=${AZURE_OPENAI_ENDPOINT}
+      - AZURE_OPENAI_DEPLOYMENT=${AZURE_OPENAI_DEPLOYMENT}
+      - AZURE_OPENAI_API_KEY=${AZURE_OPENAI_API_KEY}
+      - AZURE_OPENAI_API_VERSION=${AZURE_OPENAI_API_VERSION}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - OPENAI_API_VERSION=${OPENAI_API_VERSION}
+      - OPENAI_ENDPOINT=${OPENAI_ENDPOINT}
+      - LLM_PROVIDER=${LLM_PROVIDER}
+      - TRANSPORT_SERVER_ENDPOINT=http://slim:46357
+      - WEATHER_MCP_SERVER_URL=http://weather-mcp-server:8123
+    ports:
+      - "9998:9998"
+  vietnam-farm-server:
+    build:
+      context: ../../..
+      dockerfile: coffeeAGNTCY/coffee_agents/lungo/docker/Dockerfile.vietnam-farm
+    image: ghcr.io/agntcy/coffee-agntcy/vietnam-farm:latest
+    container_name: vietnam-farm-server
+    platform: linux/amd64
+    environment:
+      - FARM_AGENT_HOST=vietnam-farm-server
+      - FARM_AGENT_PORT=9997
+      - AZURE_OPENAI_ENDPOINT=${AZURE_OPENAI_ENDPOINT}
+      - AZURE_OPENAI_DEPLOYMENT=${AZURE_OPENAI_DEPLOYMENT}
+      - AZURE_OPENAI_API_KEY=${AZURE_OPENAI_API_KEY}
+      - AZURE_OPENAI_API_VERSION=${AZURE_OPENAI_API_VERSION}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - OPENAI_API_VERSION=${OPENAI_API_VERSION}
+      - OPENAI_ENDPOINT=${OPENAI_ENDPOINT}
+      - LLM_PROVIDER=${LLM_PROVIDER}
+      - TRANSPORT_SERVER_ENDPOINT=http://slim:46357
+    ports:
+      - "9997:9997"
+  nats:
+    image: nats:latest
+    container_name: nats
+    ports:
+      - "4222:4222"
+      - "4223:4223"
+      - "6222:6222"
+      - "8222:8222"
+
+  slim:
+    image: ghcr.io/agntcy/slim:0.3.15
+    container_name: slim
+    ports:
+      - "46357:46357"
+    environment:
+      - PASSWORD=${SLIM_GATEWAY_PASSWORD:-dummy_password}
+      - CONFIG_PATH=/config.yaml
+    volumes:
+      - ./config/docker/slim/server-config.yaml:/config.yaml
+    command: ["/slim", "--config", "/config.yaml"]
+
+  # Exchange server App (farm client)
+  exchange-server:
+    build:
+      context: ../../..
+      dockerfile: coffeeAGNTCY/coffee_agents/lungo/docker/Dockerfile.exchange
+    image: ghcr.io/agntcy/coffee-agntcy/lungo-exchange:latest
+    container_name: exchange-server
+    platform: linux/amd64
+    environment:
+      - FARM_AGENT_HOST=farm-server
+      - FARM_AGENT_PORT=9999
+      - AZURE_OPENAI_ENDPOINT=${AZURE_OPENAI_ENDPOINT}
+      - AZURE_OPENAI_DEPLOYMENT=${AZURE_OPENAI_DEPLOYMENT}
+      - AZURE_OPENAI_API_KEY=${AZURE_OPENAI_API_KEY}
+      - AZURE_OPENAI_API_VERSION=${AZURE_OPENAI_API_VERSION}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - OPENAI_API_VERSION=${OPENAI_API_VERSION}
+      - OPENAI_ENDPOINT=${OPENAI_ENDPOINT}
+      - LLM_PROVIDER=${LLM_PROVIDER}
+      - TRANSPORT_SERVER_ENDPOINT=http://slim:46357
+    ports:
+      - "8000:8000"
+
+  ui:
+    build:
+      context: ../../..
+      dockerfile: coffeeAGNTCY/coffee_agents/lungo/docker/Dockerfile.ui
+    image: ghcr.io/agntcy/coffee-agntcy/lungo-ui:latest
+    container_name: ui
+    platform: linux/amd64
+    environment:
+      - VITE_EXCHANGE_APP_API_URL=http://exchange-server:8000
+    depends_on:
+      - exchange-server
+    ports:
+      - "3000:3000"
+
+  weather-mcp-server:
+    build:
+      context: ../../..
+      dockerfile: coffeeAGNTCY/coffee_agents/lungo/docker/Dockerfile.weather-mcp  
+    container_name: weather-mcp-server
+    platform: linux/amd64
+    ports:
+      - "8123:8123"

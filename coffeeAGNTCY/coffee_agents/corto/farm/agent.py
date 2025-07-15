@@ -1,17 +1,4 @@
-# Copyright 2025 Cisco Systems, Inc. and its affiliates
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-#
+# Copyright AGNTCY Contributors (https://github.com/agntcy)
 # SPDX-License-Identifier: Apache-2.0
 
 import logging
@@ -22,31 +9,44 @@ from langchain_core.messages import HumanMessage, SystemMessage
 
 from common.llm import get_llm
 
+logger = logging.getLogger("corto.farm_agent.graph")
+
 class State(TypedDict):
     prompt: str
     error_type: str
     error_message: str
     flavor_notes: str
 
-
 class FarmAgent:
     def __init__(self):
+        FLAVOR_NODE = "FlavorNode"
         graph_builder = StateGraph(State)
-        graph_builder.add_node("FlavorNode", self.flavor_node)
-        graph_builder.add_edge(START, "FlavorNode")
-        graph_builder.add_edge("FlavorNode", END)
+        graph_builder.add_node(FLAVOR_NODE, self.flavor_node)
+        graph_builder.add_edge(START, FLAVOR_NODE)
+        graph_builder.add_edge(FLAVOR_NODE, END)
         self._agent = graph_builder.compile()
 
     async def flavor_node(self, state: State):
         """
-        Generate a flavor profile for coffee beans based on user input by connecting to an LLM.
-        
+        Generates a coffee flavor profile based on the user's prompt using an LLM.
+
+        This method takes the current state (which includes a user prompt),
+        sends it to a language model with a specialized system prompt, and returns
+        a brief flavor description based on location and season.
+
+        If the prompt doesn't contain enough context (e.g., missing location or season),
+        it returns an error response instead of a profile.
+
         Args:
-            state (State): The current state containing the user prompt.
+            state (State): The LangGraph state object containing a 'prompt' key with user input.
+
         Returns:
-            dict: A dictionary containing the flavor notes or an error message if the input is invalid.        
+            dict: A dictionary with either:
+                - "flavor_notes" (str): A brief tasting profile if valid context was extracted.
+                - or an "error_type" and "error_message" if the input was insufficient.
         """
         user_prompt = state.get("prompt")
+        logger.debug(f"Received user prompt: {user_prompt}")
 
         system_prompt = (
             "You are a coffee farming expert and flavor profile connoisseur.\n"
@@ -65,7 +65,9 @@ class FarmAgent:
         ]
         response = get_llm().invoke(messages)
         flavor_notes = response.content
+        logger.debug(f"LLM response: {flavor_notes}")
         if not flavor_notes.strip():
+            logger.warning("Could not extract valid flavor notes from the user prompt.")
             return {
                 "error_type": "invalid_input",
                 "error_message": "Could not confidently extract coffee farm context from user prompt."
@@ -75,10 +77,14 @@ class FarmAgent:
 
     async def ainvoke(self, input: str) -> dict:
         """
-        Asynchronously invoke the agent with the given input.
+        Sends a user input string to the agent asynchronously and returns the result.
+
         Args:
-            input (str): The user input to process.
+            input (str): A user prompt describing a coffee farm, region, or condition.
+
         Returns:
-            dict: The result of the agent's processing, containing flavor notes or an error message.
+            dict: A response dictionary, typically containing either:
+                - "flavor_notes" with the LLM's generated profile, or
+                - An error message if parsing or context extraction failed.
         """
         return await self._agent.ainvoke({"prompt": input})

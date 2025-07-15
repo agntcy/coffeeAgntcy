@@ -1,20 +1,7 @@
 /**
- * Copyright 2025 Cisco Systems, Inc. and its affiliates
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- */
+* Copyright AGNTCY Contributors (https://github.com/agntcy)
+* SPDX-License-Identifier: Apache-2.0
+**/
 
 import React, { useEffect, useRef } from 'react';
 import {
@@ -30,6 +17,11 @@ import SlimNode from './SlimNode';
 import CustomEdge from './CustomEdge';
 import CustomNode from './CustomNode';
 import { EdgeLabelIcon } from '../../utils/const.js';
+import supervisorIcon from '../../assets/supervisor.png'; // Adjust the path to your PNG file
+import { PiCoffeeBeanThin } from "react-icons/pi";
+import { TiWeatherCloudy } from "react-icons/ti";
+
+const CoffeeBeanIcon = <PiCoffeeBeanThin style={{ transform: 'rotate(-30deg)', fontSize: '1.65em' }} />;
 
 const proOptions = { hideAttribution: true };
 
@@ -83,7 +75,7 @@ const initialNodes = [
         type: 'customNode',
         data: {
             ...commonNodeData,
-            icon: <FaUserTie />,
+            icon: <img src={supervisorIcon} alt="Supervisor Icon" style={{ marginLeft: '2.5px', width: '120%', height: '100%' }} />,
             label1: 'Supervisor Agent',
             label2: 'Buyer',
             handles: 'source',
@@ -95,7 +87,7 @@ const initialNodes = [
         type: 'slimNode',
         data: {
             ...commonNodeData,
-            label: 'Pub/Sub (SLIM)',
+            label: 'SLIM : PubSub',
         },
         position: { x: 229.02370449534635, y: 284.688426426175 },
     },
@@ -104,7 +96,7 @@ const initialNodes = [
         type: 'customNode',
         data: {
             ...commonNodeData,
-            icon: <FaWarehouse />,
+            icon: CoffeeBeanIcon,
             label1: 'Coffee Farm Agent',
             label2: 'Brazil',
             handles: 'target',
@@ -116,7 +108,7 @@ const initialNodes = [
         type: 'customNode',
         data: {
             ...commonNodeData,
-            icon: <FaWarehouse />,
+            icon: CoffeeBeanIcon,
             label1: 'Coffee Farm Agent',
             label2: 'Colombia',
             handles: 'all',
@@ -128,7 +120,7 @@ const initialNodes = [
         type: 'customNode',
         data: {
             ...commonNodeData,
-            icon: <FaWarehouse />,
+            icon: CoffeeBeanIcon,
             label1: 'Coffee Farm Agent',
             label2: 'Vietnam',
             handles: 'target',
@@ -140,7 +132,7 @@ const initialNodes = [
         type: 'customNode',
         data: {
             ...commonNodeData,
-            icon: <FaCloudSun />,
+            icon: <TiWeatherCloudy style={{ fontSize: '1.75em' }}/>,
             label1: 'MCP Server',
             label2: 'Weather',
             handles: 'target',
@@ -184,7 +176,7 @@ const initialEdges = [
         id: EDGE_IDS.COLOMBIA_TO_COFFEE_FARM_SITE,
         source: NODE_IDS.COLOMBIA,
         target: NODE_IDS.COFFEE_FARM_SITE,
-        data: { label: 'MCP', labelIconType: EdgeLabelIcon.MCP },
+        data: { label: 'MCP : SLIM', labelIconType: EdgeLabelIcon.MCP },
         type: 'custom',
     },
     {

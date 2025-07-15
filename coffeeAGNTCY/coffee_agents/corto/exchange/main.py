@@ -1,17 +1,4 @@
-# Copyright 2025 Cisco Systems, Inc. and its affiliates
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-#
+# Copyright AGNTCY Contributors (https://github.com/agntcy)
 # SPDX-License-Identifier: Apache-2.0
 
 import logging
@@ -73,26 +60,29 @@ class ChatRequest(BaseModel):
 )
 async def handle_prompt(request: PromptRequest):
     """
-    This endpoint processes the prompt using the exchange graph and returns the result.
+    Processes a user prompt by routing it through the ExchangeGraph.
+
     Args:
-      request (PromptRequest): The input prompt from the user.
+        request (PromptRequest): Contains the input prompt as a string.
+
     Returns:
-      dict: A dictionary containing the response from the ExchangeGraph.
+        dict: A dictionary containing the agent's response.
+
+    Raises:
+        HTTPException: 400 for invalid input, 500 for server-side errors.
     """
     try:
-        # For backward compatibility, use simple prompt-only workflow
-        hax_ready_messages = await exchange_graph.serve(request.prompt)
-        # Find the first assistant text message and return its content
-        for message in hax_ready_messages:
-            if message["type"] == "TextMessage" and message["role"] == "assistant":
-                return {"response": message["content"].strip()}
-        raise RuntimeError("No valid assistant message found")
+        # Process the prompt using the exchange graph
+        result = await exchange_graph.serve(request.prompt)
+        logger.info(f"Final result from LangGraph: {result}")
+        return {"response": result}
     except ValueError as ve:
+        logger.exception(f"ValueError occurred: {str(ve)}")
         raise HTTPException(status_code=400, detail=str(ve))
     except Exception as e:
+        logger.exception(f"An error occurred: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Operation failed: {str(e)}")
-
-
+    
 @app.post(
     "/agent/chat",
     description="Enhanced endpoint supporting actions and full message history",

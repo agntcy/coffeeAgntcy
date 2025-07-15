@@ -1,17 +1,4 @@
-# Copyright 2025 Cisco Systems, Inc. and its affiliates
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-#
+# Copyright AGNTCY Contributors (https://github.com/agntcy)
 # SPDX-License-Identifier: Apache-2.0
 
 import logging
@@ -99,12 +86,13 @@ class ExchangeGraph:
         """
         model = get_llm()
 
-        # Initialize base tools
+        # initialize the flavor profile tool(used for coffee flavor, taste, or sensory profile estimation) with the farm agent card
         self.base_tools = [FlavorProfileTool(remote_agent_card=farm_agent_card)]
 
         # Combine base tools with additional tools if provided
         tools = self.base_tools + (additional_tools or [])
         logger.info(f"Total tools available to agent: {[t.name for t in tools]}")
+        #  worker agent- always responsible for flavor, taste, or sensory profile of coffee queries
 
         get_flavor_profile_a2a_agent = create_react_agent(
             model=model,
@@ -115,12 +103,22 @@ class ExchangeGraph:
             model=model,
             agents=[get_flavor_profile_a2a_agent],  # worker agents list
             prompt=(
-                "You are a supervisor agent.\n"
-                "If the user's prompt is related to the flavor, taste, or sensory profile of coffee, assign the task to get_flavor_profile_via_a2a.\n"
-                "If the prompt does not match any worker agent, respond kindly: "
-                '"I\'m sorry, I cannot assist with that request. Please ask about coffee flavor or taste."\n'
-                "If the worker agent returns control to you and it is a success and does not contain errors, do not generate any further messages or responses. End the conversation immediately by returning an empty response."
-                "If the worker agent returns control to you and it is an error, give the same kind error message.\n"
+            "You are a routing-only supervisor agent. You are never allowed to answer user questions yourself.\n"
+            "Your behavior is strictly rule-based and must follow this logic:\n"
+            "1. If the user prompt includes anything about coffee flavor, taste, or sensory profile:\n"
+            "    - Route the task to worker agent 'get_flavor_profile_via_a2a'\n"
+            "    - Use the associated tool `flavor_profile_tool`\n"
+            "    - Do not answer or describe anything about coffee flavor\n"
+            "2. If the user prompt is not about flavor, taste, or sensory profile:\n"
+            "    - Respond with this exact message:\n"
+            "      \"I'm sorry, I cannot assist with that request. Please ask about coffee flavor or taste.\"\n"
+            "3. If the worker agent returns control and the result is successful with no errors:\n"
+            "    - Return an empty response and end the conversation\n"
+            "4. If the worker agent returns an error:\n"
+            "    - Return the same error message verbatim\n"
+            "\n"
+            "You must never generate any original content, answers, or descriptions.\n"
+            "If you fail to match the user's input to rule 1, default to rule 2.\n"
             ),
             add_handoff_back_messages=False,
             output_mode="full_history",
