@@ -99,7 +99,7 @@ class FarmAgent:
                 - "flavor_notes" with the LLM's generated profile, or
                 - An error message if parsing or context extraction failed.
         """
-        session_start()
+        print("Session starting for ainvoke method......")
         # build graph if not already built
         if not hasattr(self, '_agent'):
             self._agent = self.build_graph()
