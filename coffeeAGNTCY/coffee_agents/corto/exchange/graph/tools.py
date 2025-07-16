@@ -21,6 +21,7 @@ from graph.models import FlavorProfileInput, FlavorProfileOutput
 
 from agntcy_app_sdk.protocols.a2a.gateway import A2AProtocol
 from agntcy_app_sdk.factory import GatewayFactory
+from ioa_observe.sdk.decorators import tool
 
 from config.config import DEFAULT_MESSAGE_TRANSPORT, TRANSPORT_SERVER_ENDPOINT
 
@@ -76,6 +77,7 @@ class FlavorProfileTool(BaseTool):
             logger.error(f"Failed to get flavor profile: {str(e)}")
             raise RuntimeError(f"Failed to get flavor profile: {str(e)}")
     
+    @tool(name="exchange_tool")
     async def send_message(self, prompt: str) -> str:
         """
         Sends a message to the flavor profile farm agent via A2A, specifically invoking its `estimate_flavor` skill.
