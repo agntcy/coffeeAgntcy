@@ -130,7 +130,7 @@ Before you begin, ensure the following tools are installed:
 
 To enable A2A communication over SLIM, you need to run the SLIM message bus gateway. 
 
-Additionally run the observability stack that has otel-collectore, grafana and ClickHouse server.
+Additionally run the observability stack that has OTEL Collector, Grafana and ClickHouse DB.
 
 You can do this by executing the following command:
 

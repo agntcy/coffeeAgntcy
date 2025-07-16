@@ -21,9 +21,6 @@ services:
       - OTLP_HTTP_ENDPOINT=http://otel-collector:4318
     ports:
       - "9999:9999"
-    networks:
-      - default
-      - clickhouse
 
   slim:
     image: ghcr.io/agntcy/slim:0.3.15
@@ -62,9 +59,6 @@ services:
       - farm-server
     ports:
       - "8000:8000"
-    networks:
-      - default
-      - clickhouse
 
   ui:
     build:
@@ -93,8 +87,6 @@ services:
       nofile:
         soft: 262144
         hard: 262144
-    networks:
-      - clickhouse
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8123/ping"]
       interval: 5s
@@ -112,8 +104,6 @@ services:
     volumes:
       - ./config/docker/otel/otel-collector-config.yaml:/etc/otel-collector-config.yaml
     command: ["--config", "/etc/otel-collector-config.yaml"]
-    networks:
-      - clickhouse
     depends_on:
       clickhouse-server:
         condition: service_healthy
@@ -130,9 +120,3 @@ services:
     depends_on:
       clickhouse-server:
         condition: service_healthy
-    networks:
-      - clickhouse
-
-networks:
-  clickhouse:
-    driver: bridge
