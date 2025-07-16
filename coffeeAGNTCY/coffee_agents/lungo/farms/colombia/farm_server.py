@@ -3,7 +3,7 @@
 
 import asyncio
 
-from agntcy_app_sdk.factory import GatewayFactory
+from agntcy_app_sdk.factory import AgntcyFactory
 
 from a2a.server.apps import A2AStarletteApplication
 from a2a.server.tasks import InMemoryTaskStore
@@ -18,7 +18,7 @@ from config.config import (
 from card import AGENT_CARD
 
 # Initialize a multi-protocol, multi-transport gateway factory.
-factory = GatewayFactory()
+factory = AgntcyFactory()
 
 async def main():
     """Run the A2A server with the Farm Agent."""

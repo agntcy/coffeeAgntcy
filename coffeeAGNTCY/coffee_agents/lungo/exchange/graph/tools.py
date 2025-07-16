@@ -17,8 +17,8 @@ from a2a.types import (
 )
 from langchain_core.tools import tool
 from langchain_core.messages import AnyMessage, ToolMessage
-from agntcy_app_sdk.protocols.a2a.gateway import A2AProtocol
-from agntcy_app_sdk.factory import GatewayFactory
+from agntcy_app_sdk.protocols.a2a.protocol import A2AProtocol
+from agntcy_app_sdk.factory import AgntcyFactory
 from config.config import (
     DEFAULT_MESSAGE_TRANSPORT, 
     TRANSPORT_SERVER_ENDPOINT, 
@@ -35,7 +35,7 @@ from exchange.graph.models import (
 logger = logging.getLogger("lungo.supervisor.tools")
 
 # Shared factory & transport
-factory = GatewayFactory()
+factory = AgntcyFactory()
 transport = factory.create_transport(
     DEFAULT_MESSAGE_TRANSPORT,
     endpoint=TRANSPORT_SERVER_ENDPOINT,

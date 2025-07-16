@@ -21,7 +21,7 @@ from langchain_core.prompts import PromptTemplate
 from langgraph.graph import StateGraph, END
 from common.llm import get_llm
 
-from agntcy_app_sdk.factory import GatewayFactory
+from agntcy_app_sdk.factory import AgntcyFactory
 
 from config.config import WEATHER_MCP_SERVER_URL, DEFAULT_MESSAGE_TRANSPORT
 
@@ -114,7 +114,7 @@ class FarmAgent:
 
         logger.info(f"Weather location extracted: {location}")
 
-        factory = GatewayFactory()
+        factory = AgntcyFactory()
         endpoint=f"{WEATHER_MCP_SERVER_URL}/mcp"
         transport_instance = factory.create_transport(transport=DEFAULT_MESSAGE_TRANSPORT, endpoint=endpoint)
         client = await factory.create_client(

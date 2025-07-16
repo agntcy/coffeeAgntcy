@@ -27,7 +27,7 @@ wheels = [
 
 [[package]]
 name = "agntcy-app-sdk"
-version = "0.1.0"
+version = "0.1.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "a2a-sdk" },
@@ -40,9 +40,9 @@ dependencies = [
     { name = "slim-bindings" },
     { name = "uvicorn" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/7c/db/632feac66498a548ef39109ab8aeba70be56f76039ff6eac6fbb8e221306/agntcy_app_sdk-0.1.0.tar.gz", hash = "sha256:77dc831e6896b66885ecf35f2836a670d0c1ad4da2cc2ad65cc739b999a78bed", size = 871528, upload-time = "2025-07-08T15:35:38.65Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/b0/81/b85b41abe496cf597cb8380240cffe15a74066e878c4a12ccdbd3c8a71fb/agntcy_app_sdk-0.1.1.tar.gz", hash = "sha256:8a0a7cfd34dfa89bf4fe2253ad48ed1c7d55568d50817878d4cca83d356dc2c1", size = 300085, upload-time = "2025-07-16T16:28:26.414Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/6b/5d/bf7e4f05d138c3431d472fc41830c23e9cd6305aa54c87879393bae0304f/agntcy_app_sdk-0.1.0-py3-none-any.whl", hash = "sha256:61f3d2fcc5da79817f57fe2ac8cd4d2e64af382317ce6b8e371da1bbc7322a77", size = 35139, upload-time = "2025-07-08T15:35:37.293Z" },
+    { url = "https://files.pythonhosted.org/packages/bf/d4/08e2e9ba3a5c598edc0dc3700593bb73eb2bd3ff4e6b166df89fb5715149/agntcy_app_sdk-0.1.1-py3-none-any.whl", hash = "sha256:27bbd7e1370ec70fd04d4c2f5ad5095d5ae89aa0c40f851edea55bc791e09071", size = 29630, upload-time = "2025-07-16T16:28:25.5Z" },
 ]
 
 [[package]]
@@ -1050,7 +1050,7 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "a2a-sdk", specifier = "==0.2.5" },
-    { name = "agntcy-app-sdk", specifier = ">=0.1.0" },
+    { name = "agntcy-app-sdk", specifier = ">=0.1.1" },
     { name = "autogen-core", marker = "extra == 'dev'", specifier = ">=0.4.3,<0.5" },
     { name = "cisco-outshift-agent-utils", specifier = ">=0.0.2" },
     { name = "click", specifier = ">=8.1.8" },
