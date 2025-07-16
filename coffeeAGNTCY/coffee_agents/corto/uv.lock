@@ -420,7 +420,6 @@ dev = [
     { name = "pytest" },
     { name = "pytest-asyncio" },
     { name = "pytest-cov" },
-    { name = "tiktoken" },
     { name = "typing-extensions" },
 ]
 
@@ -451,7 +450,6 @@ requires-dist = [
     { name = "python-dotenv", specifier = ">=1.1.0" },
     { name = "requests" },
     { name = "starlette" },
-    { name = "tiktoken", marker = "extra == 'dev'", specifier = ">=0.9.0" },
     { name = "typing-extensions", marker = "extra == 'dev'", specifier = ">=4.12.2,<5" },
     { name = "uvicorn" },
 ]
