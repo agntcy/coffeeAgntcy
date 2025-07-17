@@ -12,7 +12,8 @@ from agntcy_app_sdk.factory import GatewayFactory
 from ioa_observe.sdk import Observe
 from ioa_observe.sdk.instrumentations.a2a import A2AInstrumentor
 from ioa_observe.sdk.instrumentations.slim import SLIMInstrumentor
-
+from dotenv import load_dotenv
+load_dotenv()
 Observe.init("corto_farm", api_endpoint=os.getenv("OTLP_HTTP_ENDPOINT"))
 
 SLIMInstrumentor().instrument()
