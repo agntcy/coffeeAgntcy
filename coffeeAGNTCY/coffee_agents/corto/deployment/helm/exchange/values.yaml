@@ -23,6 +23,7 @@ config:
   llmProvider: ""
   transportServerEndpoint: ""
   defaultMessageTransport: ""
+  otlpHttpEndpoint: ""
 
 # serviceaccount:
 #   annotations:
