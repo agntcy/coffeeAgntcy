@@ -121,19 +121,21 @@ Before you begin, ensure the following tools are installed:
 >docker compose up
 >```
 >
->Once running, access the UI at: [http://localhost:3000/](http://localhost:3000/)
+>Once running, access the UI at: [http://localhost:3000/](http://localhost:3000/), access grafana dashboard at: [http://localhost:3001/](http://localhost:3001/)
 >
 >
 > However, it is recommended to go through the steps below to better understand each component's role.
 
-**Step 1: Run the SLIM Message Bus Gateway**
+**Step 1: Run the SLIM Message Bus Gateway and Observability stack**
 
 To enable A2A communication over SLIM, you need to run the SLIM message bus gateway. 
+
+Additionally run the observability stack that has OTEL Collector, Grafana and ClickHouse DB.
 
 You can do this by executing the following command:
 
 ```sh
-docker-compose up slim
+docker compose up slim clickhouse-server otel-collector grafana
 ```
 
 **Step 2: Run the Farm Server**
