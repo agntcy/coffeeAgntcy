@@ -96,7 +96,7 @@ class ExchangeGraph:
             logger.debug(f"Received prompt: {prompt}")
             if not isinstance(prompt, str) or not prompt.strip():
                 raise ValueError("Prompt must be a non-empty string.")
-            session_start()
+            # session_start()
             result = await self.graph.ainvoke({
                 "messages": [
                 {
