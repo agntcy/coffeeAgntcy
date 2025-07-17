@@ -22,7 +22,6 @@ logger = logging.getLogger("corto.supervisor.main")
 
 # Global variables
 exchange_graph = ExchangeGraph()
-badge_verification = True
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -51,7 +50,6 @@ async def lifespan(app: FastAPI):
         logger.info(f"Farm name: {farm_agent_name}, Badge URL: {badge_url}")
 
       if farm_client_id_map == {}:
-        badge_verification = False
         logger.warning("Badge issuance failed. Badge verification will be disabled.")
     else:
       logger.warning("Required environment variables are not set. Skipping client initialization.")

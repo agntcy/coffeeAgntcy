@@ -127,6 +127,10 @@ def verify_identity(badge_id: str) -> None:
         logger.warning("IDENTITY_NODE_GRPC_SERVER_URL is not set. Skipping identity operations.")
         return None
 
+    if farm_client_id_map == {}:
+        logger.warning("farm_client_id_map is empty. Skipping identity verification.")
+        return None
+
     try:
         # Initialize the Identity SDK
         identity_sdk = IdentitySdk()
