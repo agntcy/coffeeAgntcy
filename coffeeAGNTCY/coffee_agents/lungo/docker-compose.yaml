@@ -121,11 +121,12 @@ services:
       - TRANSPORT_SERVER_ENDPOINT=http://slim:46357
       # Agntcy Identity Integration
       - REGISTER_ISSUER=true # this should set to true only if idp issuer url changes
-      - IDP_ISSUER_URL=https://38e30591d2aa.ngrok-free.app
+      - IDP_ISSUER_URL=https://bb5c3b989476.ngrok-free.app
       - HYDRA_CLIENT_API_URL=http://hydra:4445/admin/clients
       - BRAZIL_FARM_AGENT_URL=http://brazil-farm-server:9999
       - COLOMBIA_FARM_AGENT_URL=http://colombia-farm-server:9998
       - VIETNAM_FARM_AGENT_URL=http://vietnam-farm-server:9997
+      - IDENTITY_NODE_GRPC_SERVER_URL=api.grpc.identity-node.dev.outshift.ai
     ports:
       - "8000:8000"
     networks:

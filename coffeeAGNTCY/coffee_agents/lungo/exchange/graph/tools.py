@@ -166,6 +166,8 @@ def get_badge_id_by_card(card_name: str) -> str:
     if not badge_id:
         raise ValueError(f"client cache is not set for card name: {card_name}.")
 
+    logger.info(f"Using badge ID {badge_id} for card {card_name}")
+
     return badge_id
 
 

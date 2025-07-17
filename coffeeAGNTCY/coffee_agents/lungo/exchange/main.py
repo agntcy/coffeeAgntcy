@@ -16,6 +16,7 @@ from exchange.utils.config import vietnam_farm_url, columbia_farm_url, brazil_fa
 from farms.brazil.card import AGENT_CARD as brazil_agent_card
 from farms.colombia.card import AGENT_CARD as colombia_agent_card
 from farms.vietnam.card import AGENT_CARD as vietnam_agent_card
+from api.farms import router as farms_router
 
 # setup_logging()
 logger = logging.getLogger("corto.supervisor.main")
@@ -73,6 +74,9 @@ app.add_middleware(
   allow_methods=["*"],  # Allow all HTTP methods
   allow_headers=["*"],  # Allow all headers
 )
+
+# Include the badge validation router
+app.include_router(farms_router)
 
 class PromptRequest(BaseModel):
   prompt: str
