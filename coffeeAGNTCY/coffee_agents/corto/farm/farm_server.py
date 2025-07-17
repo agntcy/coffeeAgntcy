@@ -8,7 +8,7 @@ from uvicorn import Config, Server
 from a2a.server.apps import A2AStarletteApplication
 from a2a.server.tasks import InMemoryTaskStore
 from a2a.server.request_handlers import DefaultRequestHandler
-from agntcy_app_sdk.factory import AgntcyFactory as GatewayFactory
+from agntcy_app_sdk.factory import GatewayFactory
 from ioa_observe.sdk import Observe
 from ioa_observe.sdk.instrumentations.a2a import A2AInstrumentor
 from ioa_observe.sdk.instrumentations.slim import SLIMInstrumentor
