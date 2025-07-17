@@ -12,7 +12,6 @@ from langgraph_supervisor import create_supervisor
 from ioa_observe.sdk import Observe
 from ioa_observe.sdk.decorators import agent, tool, graph
 from ioa_observe.sdk.tracing import session_start
-from ioa_observe.sdk.instrumentations.slim import SLIMInstrumentor
 
 
 
@@ -22,9 +21,7 @@ from graph.tools import FlavorProfileTool
 from farm.card import AGENT_CARD as farm_agent_card
 
 logger = logging.getLogger("corto.supervisor.graph")
-# Observe.init("corto_exchange", api_endpoint=os.getenv("OTLP_HTTP_ENDPOINT"))
 
-# SLIMInstrumentor().instrument()
 
 @agent(name="exchange_agent")
 class ExchangeGraph:
@@ -94,11 +91,12 @@ class ExchangeGraph:
         """
         try:
             # build graph if not already built
-            # if not hasattr(self, 'graph'):
-            #     self.graph = self.build_graph()
+            if not hasattr(self, 'graph'):
+                self.graph = self.build_graph()
             logger.debug(f"Received prompt: {prompt}")
             if not isinstance(prompt, str) or not prompt.strip():
                 raise ValueError("Prompt must be a non-empty string.")
+            session_start()
             result = await self.graph.ainvoke({
                 "messages": [
                 {
