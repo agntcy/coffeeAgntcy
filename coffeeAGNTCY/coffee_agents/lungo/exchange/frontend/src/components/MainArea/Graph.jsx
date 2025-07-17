@@ -100,6 +100,7 @@ const initialNodes = [
             label1: 'Coffee Farm Agent',
             label2: 'Brazil',
             handles: 'target',
+            farmName: 'Brazil Coffee Farm', // For badge display
         },
         position: { x: 232.0903941835277, y: 503.93174725714437 },
     },
@@ -112,6 +113,7 @@ const initialNodes = [
             label1: 'Coffee Farm Agent',
             label2: 'Colombia',
             handles: 'all',
+            farmName: 'Colombia Coffee Farm', // For badge display
         },
         position: { x: 521.266082170288, y: 505.38817113883306 },
     },
@@ -124,6 +126,7 @@ const initialNodes = [
             label1: 'Coffee Farm Agent',
             label2: 'Vietnam',
             handles: 'target',
+            farmName: 'Vietnam Coffee Farm', // For badge display
         },
         position: { x: 832.9824511707582, y: 505.08339631990395 },
     },
