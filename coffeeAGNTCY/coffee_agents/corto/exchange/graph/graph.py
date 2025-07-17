@@ -21,7 +21,7 @@ from graph.tools import FlavorProfileTool
 from farm.card import AGENT_CARD as farm_agent_card
 
 logger = logging.getLogger("corto.supervisor.graph")
-Observe.init("corto_exchange", api_endpoint=os.getenv("OTLP_HTTP_ENDPOINT"))
+
 
 @agent(name="exchange_agent")
 class ExchangeGraph:
@@ -96,7 +96,7 @@ class ExchangeGraph:
             logger.debug(f"Received prompt: {prompt}")
             if not isinstance(prompt, str) or not prompt.strip():
                 raise ValueError("Prompt must be a non-empty string.")
-            session_start()
+            # session_start()
             result = await self.graph.ainvoke({
                 "messages": [
                 {

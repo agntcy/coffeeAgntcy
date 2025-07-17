@@ -2,12 +2,21 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import asyncio
+import os
 from uvicorn import Config, Server
 
 from a2a.server.apps import A2AStarletteApplication
 from a2a.server.tasks import InMemoryTaskStore
 from a2a.server.request_handlers import DefaultRequestHandler
 from agntcy_app_sdk.factory import GatewayFactory
+from ioa_observe.sdk import Observe
+from ioa_observe.sdk.instrumentations.a2a import A2AInstrumentor
+from ioa_observe.sdk.instrumentations.slim import SLIMInstrumentor
+from dotenv import load_dotenv
+load_dotenv()
+Observe.init("corto_farm", api_endpoint=os.getenv("OTLP_HTTP_ENDPOINT"))
+
+SLIMInstrumentor().instrument()
 
 from agent_executor import FarmAgentExecutor
 from card import AGENT_CARD
@@ -44,6 +53,8 @@ async def main():
     - TRANSPORT_SERVER_ENDPOINT: Endpoint for the external transport (if used)
     - FARM_AGENT_HOST / FARM_AGENT_PORT: Host and port for local HTTP server (if "A2A" is selected)
     """
+
+
     request_handler = DefaultRequestHandler(
         agent_executor=FarmAgentExecutor(),
         task_store=InMemoryTaskStore(),

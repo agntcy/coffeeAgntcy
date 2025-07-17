@@ -9,11 +9,7 @@ from langgraph.graph import END, START, StateGraph
 from langchain_core.messages import HumanMessage, SystemMessage
 
 from common.llm import get_llm
-from ioa_observe.sdk import Observe
-from ioa_observe.sdk.decorators import agent, tool, graph
-from ioa_observe.sdk.tracing import session_start
-
-Observe.init("corto_farm", api_endpoint=os.getenv("OTLP_HTTP_ENDPOINT"))
+from ioa_observe.sdk.decorators import agent, graph
 
 logger = logging.getLogger("corto.farm_agent.graph")
 
@@ -56,7 +52,7 @@ class FarmAgent:
                 - "flavor_notes" (str): A brief tasting profile if valid context was extracted.
                 - or an "error_type" and "error_message" if the input was insufficient.
         """
-        session_start()
+        # session_start()
         user_prompt = state.get("prompt")
         logger.debug(f"Received user prompt: {user_prompt}")
 
