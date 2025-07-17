@@ -6,7 +6,7 @@ import os
 from typing import Any, Union, Literal
 from uuid import uuid4
 from pydantic import BaseModel
-from exchange.utils.identity_utils import client_cache
+from exchange.utils.identity_utils import farm_client_id_map
 from exchange.utils.config import brazil_farm_url, vietnam_farm_url, columbia_farm_url
 
 from a2a.types import (
@@ -162,18 +162,7 @@ def get_badge_id_by_card(card_name: str) -> str:
         logger.warning("IDENTITY_NODE_GRPC_SERVER_URL is not set. Skipping identity operations.")
         return ""
 
-    # this should match the hosts we set in the farm_agent_urls variable in main.py
-    badge_env_map = {
-        "Brazil Coffee Farm": brazil_farm_url,
-        "Colombia Coffee Farm": columbia_farm_url,
-        "Vietnam Coffee Farm": vietnam_farm_url,
-    }
-
-    host = badge_env_map.get(card_name)
-    if not host:
-        raise ValueError(f"Unknown card name: {card_name}. No badge ID mapping found.")
-
-    badge_id = "IDP-" + client_cache[host]
+    badge_id = "IDP-" + farm_client_id_map[card_name]
     if not badge_id:
         raise ValueError(f"client cache is not set for card name: {card_name}.")
 

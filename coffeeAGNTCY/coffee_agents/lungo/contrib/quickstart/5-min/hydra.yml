@@ -4,7 +4,7 @@ serve:
 
 urls:
   self:
-    issuer: https://64a19d66d546.ngrok-free.app
+    issuer: https://38e30591d2aa.ngrok-free.app
   consent: http://127.0.0.1:3000/consent
   login: http://127.0.0.1:3000/login
   logout: http://127.0.0.1:3000/logout

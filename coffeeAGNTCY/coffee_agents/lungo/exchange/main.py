@@ -13,6 +13,9 @@ import uvicorn
 from graph.graph import ExchangeGraph
 from exchange.utils.identity_utils import initialize_clients_and_issue_badges
 from exchange.utils.config import vietnam_farm_url, columbia_farm_url, brazil_farm_url
+from farms.brazil.card import AGENT_CARD as brazil_agent_card
+from farms.colombia.card import AGENT_CARD as colombia_agent_card
+from farms.vietnam.card import AGENT_CARD as vietnam_agent_card
 
 # setup_logging()
 logger = logging.getLogger("corto.supervisor.main")
@@ -34,16 +37,20 @@ async def lifespan(app: FastAPI):
     logger.info(f"All environment variables: HYDRA_CLIENT_API_URL={hydra_admin_url}, IDP_ISSUER_URL={idp_url}, IDENTITY_NODE_API_URL={identity_node_api_url}, REGISTER_ISSUER={register_issuer}")
 
     if idp_url:
-      farm_agent_urls = [vietnam_farm_url, columbia_farm_url, brazil_farm_url]
+      farm_agent_urls = {
+        vietnam_agent_card.name: vietnam_farm_url,
+        colombia_agent_card.name: columbia_farm_url,
+        brazil_agent_card.name: brazil_farm_url,
+      }
+      # farm_agent_urls = [vietnam_farm_url, columbia_farm_url, brazil_farm_url]
       # Initialize clients and issue badges
-      client_cache = initialize_clients_and_issue_badges(hydra_admin_url, idp_url, farm_agent_urls, register_issuer, identity_node_api_url)
+      farm_client_id_map = initialize_clients_and_issue_badges(hydra_admin_url, idp_url, farm_agent_urls, register_issuer, identity_node_api_url)
 
-      for farm_url, client_id in client_cache.items():
-        farm_name = farm_url.split("//")[-1].split(":")[0]  # Extract farm name from the URL
+      for farm_agent_name, client_id in farm_client_id_map.items():
         badge_url = f"{identity_node_api_url}/v1alpha1/vc/IDP-{client_id}/.well-known/vcs.json"
-        logger.info(f"Farm name: {farm_name}, Badge URL: {badge_url}")
+        logger.info(f"Farm name: {farm_agent_name}, Badge URL: {badge_url}")
 
-      if client_cache == {}:
+      if farm_client_id_map == {}:
         badge_verification = False
         logger.warning("Badge issuance failed. Badge verification will be disabled.")
     else:
