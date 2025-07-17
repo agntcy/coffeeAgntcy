@@ -121,7 +121,7 @@ services:
       - TRANSPORT_SERVER_ENDPOINT=http://slim:46357
       # Agntcy Identity Integration
       - REGISTER_ISSUER=true # this should set to true only if idp issuer url changes
-      - IDP_ISSUER_URL=https://902592bc7a96.ngrok-free.app
+      - IDP_ISSUER_URL=https://64a19d66d546.ngrok-free.app
       - HYDRA_CLIENT_API_URL=http://hydra:4445/admin/clients
       - BRAZIL_FARM_AGENT_URL=http://brazil-farm-server:9999
       - COLOMBIA_FARM_AGENT_URL=http://colombia-farm-server:9998
@@ -139,7 +139,8 @@ services:
     container_name: ui
     platform: linux/amd64
     environment:
-      - VITE_EXCHANGE_APP_API_URL=http://exchange-server:8000
+#      - VITE_EXCHANGE_APP_API_URL=http://exchange-server:8000
+      - VITE_EXCHANGE_APP_API_URL=http://localhost:8000
     depends_on:
       - exchange-server
     ports:
