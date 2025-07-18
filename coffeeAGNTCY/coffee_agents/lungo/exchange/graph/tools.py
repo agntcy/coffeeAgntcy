@@ -32,6 +32,8 @@ from exchange.graph.models import (
     CreateOrderArgs,
 )
 
+from ioa_observe.sdk.decorators import tool
+
 logger = logging.getLogger("lungo.supervisor.tools")
 
 # Shared factory & transport
@@ -105,6 +107,7 @@ def get_farm_card(farm: str) -> AgentCard | None:
         logger.error(f"Unknown farm name: {farm}. Expected one of 'brazil', 'colombia', or 'vietnam'.")
         return None
 
+# todo- how to ioa observer sdk tools annoations for tools with existing annotations?
 @tool(args_schema=InventoryArgs)
 async def get_farm_yield_inventory(prompt: str, farm: str) -> str:
     """
