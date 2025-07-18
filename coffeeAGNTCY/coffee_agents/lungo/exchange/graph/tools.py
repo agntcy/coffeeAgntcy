@@ -108,8 +108,8 @@ def get_farm_card(farm: str) -> AgentCard | None:
         logger.error(f"Unknown farm name: {farm}. Expected one of 'brazil', 'colombia', or 'vietnam'.")
         return None
 
-@ioa_tool_decorator(name="get_farm_yield_inventory")
 @tool(args_schema=InventoryArgs)
+@ioa_tool_decorator(name="get_farm_yield_inventory")
 async def get_farm_yield_inventory(prompt: str, farm: str) -> str:
     """
     Fetch yield inventory from a specific farm.
@@ -158,8 +158,9 @@ async def get_farm_yield_inventory(prompt: str, farm: str) -> str:
         logger.error("Unknown response type")
         return "Unknown response type from farm"
 
-@ioa_tool_decorator(name="get_all_farms_yield_inventory")
+
 @tool
+@ioa_tool_decorator(name="get_all_farms_yield_inventory")
 async def get_all_farms_yield_inventory(prompt: str) -> str:
     """
     Broadcasts a prompt to all farms and aggregates their inventory responses.
@@ -211,8 +212,9 @@ async def get_all_farms_yield_inventory(prompt: str) -> str:
     logger.info(f"Farm yields: {farm_yields}")
     return farm_yields.strip()
 
-@ioa_tool_decorator(name="create_order")
+
 @tool(args_schema=CreateOrderArgs)
+@ioa_tool_decorator(name="create_order")
 async def create_order(farm: str, quantity: int, price: float) -> str:
     """
     Sends a request to create a coffee order with a specific farm.
@@ -269,8 +271,8 @@ async def create_order(farm: str, quantity: int, price: float) -> str:
         return "Unknown response type from order agent"
     
 
-@ioa_tool_decorator(name="get_order_details")
 @tool
+@ioa_tool_decorator(name="get_order_details")
 async def get_order_details(order_id: str) -> str:
     """
     Get details of an order.
