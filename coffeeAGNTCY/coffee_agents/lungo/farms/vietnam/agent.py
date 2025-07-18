@@ -7,6 +7,7 @@ from langchain_core.messages import AIMessage
 from langchain_core.prompts import PromptTemplate
 from langgraph.graph import StateGraph, END
 from common.llm import get_llm
+from ioa_observe.sdk.decorators import agent, graph
 
 logger = logging.getLogger("lungo.vietnam_farm_agent.agent")
 
@@ -25,6 +26,7 @@ class GraphState(MessagesState):
     next_node: str
 
 # --- 3. Implement the LangGraph Application Class ---
+@agent(name="vietnam_farm_agent")
 class FarmAgent:
     def __init__(self):
         """
@@ -148,7 +150,7 @@ class FarmAgent:
         return {"messages": [AIMessage(response)]}
 
     # --- Graph Building Method ---
-
+    @graph(name="vietnam_farm_graph")
     def _build_graph(self):
         """
         Builds and compiles the LangGraph workflow.

@@ -8,7 +8,7 @@ from agntcy_app_sdk.factory import GatewayFactory
 from a2a.server.apps import A2AStarletteApplication
 from a2a.server.tasks import InMemoryTaskStore
 from a2a.server.request_handlers import DefaultRequestHandler
-
+import os
 from agent_executor import FarmAgentExecutor
 from config.config import (
     DEFAULT_MESSAGE_TRANSPORT, 
@@ -16,7 +16,14 @@ from config.config import (
     FARM_BROADCAST_TOPIC,
 )
 from card import AGENT_CARD
+from ioa_observe.sdk import Observe
+from ioa_observe.sdk.instrumentations.a2a import A2AInstrumentor
+from ioa_observe.sdk.instrumentations.slim import SLIMInstrumentor
+from dotenv import load_dotenv
+load_dotenv()
+Observe.init("lungo_vietnam_farm", api_endpoint=os.getenv("OTLP_HTTP_ENDPOINT"))
 
+SLIMInstrumentor().instrument()
 # Initialize a multi-protocol, multi-transport gateway factory.
 factory = GatewayFactory()
 
