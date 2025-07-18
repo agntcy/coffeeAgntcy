@@ -32,7 +32,7 @@ from exchange.graph.models import (
     CreateOrderArgs,
 )
 
-from ioa_observe.sdk.decorators import tool
+from ioa_observe.sdk.decorators import tool as ioa_tool_decorator
 
 logger = logging.getLogger("lungo.supervisor.tools")
 
@@ -107,7 +107,7 @@ def get_farm_card(farm: str) -> AgentCard | None:
         logger.error(f"Unknown farm name: {farm}. Expected one of 'brazil', 'colombia', or 'vietnam'.")
         return None
 
-# todo- how to ioa observer sdk tools annoations for tools with existing annotations?
+@ioa_tool_decorator(name="get_farm_yield_inventory")
 @tool(args_schema=InventoryArgs)
 async def get_farm_yield_inventory(prompt: str, farm: str) -> str:
     """
@@ -157,6 +157,7 @@ async def get_farm_yield_inventory(prompt: str, farm: str) -> str:
         logger.error("Unknown response type")
         return "Unknown response type from farm"
 
+@ioa_tool_decorator(name="get_all_farms_yield_inventory")
 @tool
 async def get_all_farms_yield_inventory(prompt: str) -> str:
     """
@@ -209,6 +210,7 @@ async def get_all_farms_yield_inventory(prompt: str) -> str:
     logger.info(f"Farm yields: {farm_yields}")
     return farm_yields.strip()
 
+@ioa_tool_decorator(name="create_order")
 @tool(args_schema=CreateOrderArgs)
 async def create_order(farm: str, quantity: int, price: float) -> str:
     """
@@ -265,6 +267,8 @@ async def create_order(farm: str, quantity: int, price: float) -> str:
         logger.error("Unknown response type")
         return "Unknown response type from order agent"
     
+
+@ioa_tool_decorator(name="get_order_details")
 @tool
 async def get_order_details(order_id: str) -> str:
     """
