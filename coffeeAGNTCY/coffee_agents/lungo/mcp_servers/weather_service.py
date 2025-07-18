@@ -70,4 +70,4 @@ if __name__ == "__main__":
     app = mcp.streamable_http_app()
     for route in app.routes:
         print(f"{route.path} ")
-    uvicorn.run(mcp.streamable_http_app, host="0.0.0.0", port=8123)
+    uvicorn.run(mcp.streamable_http_app, host="0.0.0.0", port=8125)

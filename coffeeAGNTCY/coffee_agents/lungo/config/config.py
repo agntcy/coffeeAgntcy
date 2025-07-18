@@ -11,7 +11,7 @@ TRANSPORT_SERVER_ENDPOINT = os.getenv("TRANSPORT_SERVER_ENDPOINT", "http://local
 
 FARM_BROADCAST_TOPIC = os.getenv("FARM_BROADCAST_TOPIC", "farm_broadcast")
 
-WEATHER_MCP_SERVER_URL = os.getenv("WEATHER_MCP_SERVER_URL", "http://localhost:8123")
+WEATHER_MCP_SERVER_URL = os.getenv("WEATHER_MCP_SERVER_URL", "http://localhost:8125")
 
 LLM_PROVIDER = os.getenv("LLM_PROVIDER")
 LOGGING_LEVEL = os.getenv("LOGGING_LEVEL", "INFO").upper()

@@ -40,7 +40,7 @@ services:
       - OPENAI_ENDPOINT=${OPENAI_ENDPOINT}
       - LLM_PROVIDER=${LLM_PROVIDER}
       - TRANSPORT_SERVER_ENDPOINT=http://slim:46357
-      - WEATHER_MCP_SERVER_URL=http://weather-mcp-server:8123
+      - WEATHER_MCP_SERVER_URL=http://weather-mcp-server:8125
       - OTLP_HTTP_ENDPOINT=http://otel-collector:4318
     ports:
       - "9998:9998"
@@ -132,7 +132,7 @@ services:
     container_name: weather-mcp-server
     platform: linux/amd64
     ports:
-      - "8123:8123"
+      - "8125:8125"
 
   clickhouse-server:
     image: clickhouse/clickhouse-server

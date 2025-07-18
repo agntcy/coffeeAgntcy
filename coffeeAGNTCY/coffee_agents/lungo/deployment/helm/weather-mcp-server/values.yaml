@@ -12,7 +12,7 @@ image:
   pullSecret:
 
 service:
-  port: 8123
+  port: 8125
 
 resources:
   enabled: false
@@ -25,7 +25,7 @@ resources:
 
 probes:
   endpoint: /
-  port: 8123
+  port: 8125
   readinessProbeEnabled: true
   livenessProbeEnabled: true
 
