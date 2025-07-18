@@ -19,12 +19,11 @@ dependencies = [
     "langgraph-supervisor>=0.0.26",
     "pydantic>=2.11.4",
     "python-dotenv>=1.1.0",
-    "fastapi",
-    "httpx",
     "requests",
     "starlette",
     "uvicorn",
     "mcp[cli]>=1.10.0",
+    "ioa-observe-sdk==1.0.12",
     "agntcy-app-sdk>=0.1.0",
 ]
 
@@ -34,7 +33,6 @@ dev = [
     "pytest-asyncio>=0.17.0,<0.18",
     "pytest-cov>=4.0.0,<5",
     "typing-extensions>=4.12.2,<5",
-    "tiktoken>=0.8.0,<0.9",
     "openai>=1.60.2,<2",
     "autogen-core>=0.4.3,<0.5",
     "coloredlogs>=15.0.1,<16",

@@ -1,0 +1,29 @@
+# Copyright AGNTCY Contributors (https://github.com/agntcy)
+# SPDX-License-Identifier: Apache-2.0
+
+---
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: "0.0.0.0:4317"
+      http:
+        endpoint: "0.0.0.0:4318"
+        max_request_body_size: 10485760 # 10 MB
+
+exporters:
+  clickhouse:
+    endpoint: "tcp://clickhouse-server:9000"
+    database: "default"
+    username: "admin"
+    password: "admin"
+
+service:
+  pipelines:
+    metrics:
+      receivers: [otlp]
+      exporters: [clickhouse]
+
+    traces:
+      receivers: [otlp]
+      exporters: [clickhouse]

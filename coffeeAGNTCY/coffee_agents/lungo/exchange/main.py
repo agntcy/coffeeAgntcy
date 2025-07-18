@@ -7,12 +7,21 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import uvicorn
-
+import os
 from config.logging_config import setup_logging
 from graph.graph import ExchangeGraph
-
+from dotenv import load_dotenv
+from ioa_observe.sdk import Observe
+from ioa_observe.sdk.tracing import session_start
+from ioa_observe.sdk.instrumentations.slim import SLIMInstrumentor
 setup_logging()
 logger = logging.getLogger("corto.supervisor.main")
+
+
+load_dotenv()
+Observe.init("lungo_exchange", api_endpoint=os.getenv("OTLP_HTTP_ENDPOINT"))
+
+SLIMInstrumentor().instrument()
 
 app = FastAPI()
 # Add CORS middleware
@@ -44,6 +53,7 @@ async def handle_prompt(request: PromptRequest):
       HTTPException: 400 for invalid input, 500 for server-side errors.
   """
   try:
+    session_start() # Start a new tracing session
     # Process the prompt using the exchange graph
     result = await exchange_graph.serve(request.prompt)
     logger.info(f"Final result from LangGraph: {result}")
