@@ -15,3 +15,5 @@ WEATHER_MCP_SERVER_URL = os.getenv("WEATHER_MCP_SERVER_URL", "http://localhost:8
 
 LLM_PROVIDER = os.getenv("LLM_PROVIDER")
 LOGGING_LEVEL = os.getenv("LOGGING_LEVEL", "INFO").upper()
+
+ENABLE_HTTP = os.getenv("ENABLE_HTTP", "true").lower() in ("true", "1", "yes")
