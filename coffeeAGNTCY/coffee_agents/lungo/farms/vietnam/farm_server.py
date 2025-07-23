@@ -2,11 +2,9 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import asyncio
-import os
 from uvicorn import Config, Server
-
 from agntcy_app_sdk.factory import AgntcyFactory
-
+from starlette.routing import Route
 from a2a.server.apps import A2AStarletteApplication
 from a2a.server.tasks import InMemoryTaskStore
 from a2a.server.request_handlers import DefaultRequestHandler
@@ -21,10 +19,22 @@ from config.config import (
 from card import AGENT_CARD
 from dotenv import load_dotenv
 
+from utils import create_badge_for_vietnam_farm
+
 load_dotenv()
 
 # Initialize a multi-protocol, multi-transport agntcy factory.
 factory = AgntcyFactory("lungo_vietnam_farm", enable_tracing=True)
+
+class CustomA2AStarletteApplication(A2AStarletteApplication):
+    def routes(
+            self,
+            agent_card_url: str = '/.well-known/agent.json',
+            extended_agent_card_url: str = '/agent/authenticatedExtendedCard',
+            rpc_url: str = '/',
+    ) -> list[Route]:
+        """Extend the routes to include custom endpoints."""
+        return super().routes(agent_card_url, extended_agent_card_url, rpc_url)
 
 async def run_http_server(server):
     """Run the HTTP/REST server."""
@@ -60,7 +70,7 @@ async def main(enable_http: bool):
         task_store=InMemoryTaskStore(),
     )
 
-    server = A2AStarletteApplication(
+    server = CustomA2AStarletteApplication(
         agent_card=AGENT_CARD, http_handler=request_handler
     )
 
@@ -68,6 +78,7 @@ async def main(enable_http: bool):
     tasks = []
     if enable_http:
         tasks.append(asyncio.create_task(run_http_server(server)))
+        tasks.append(asyncio.create_task(create_badge_for_vietnam_farm()))
     tasks.append(asyncio.create_task(run_transport(server, DEFAULT_MESSAGE_TRANSPORT, TRANSPORT_SERVER_ENDPOINT, block=True)))
 
     await asyncio.gather(*tasks)
