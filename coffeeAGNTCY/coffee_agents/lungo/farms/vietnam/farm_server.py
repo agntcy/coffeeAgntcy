@@ -18,6 +18,13 @@ from config.config import (
 )
 from card import AGENT_CARD
 
+from ioa_observe.sdk import Observe
+from ioa_observe.sdk.instrumentations.slim import SLIMInstrumentor
+from dotenv import load_dotenv
+load_dotenv()
+Observe.init("lungo_vietnam_farm", api_endpoint=os.getenv("OTLP_HTTP_ENDPOINT"))
+
+SLIMInstrumentor().instrument()
 # Initialize a multi-protocol, multi-transport gateway factory.
 factory = GatewayFactory()
 
