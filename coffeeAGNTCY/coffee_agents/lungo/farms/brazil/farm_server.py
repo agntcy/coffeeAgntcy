@@ -15,6 +15,7 @@ from config.config import (
     DEFAULT_MESSAGE_TRANSPORT,
     TRANSPORT_SERVER_ENDPOINT,
     FARM_BROADCAST_TOPIC,
+    ENABLE_HTTP
 )
 from card import AGENT_CARD
 
@@ -77,11 +78,8 @@ async def main(enable_http: bool):
 
 
 if __name__ == '__main__':
-    # Read ENABLE_HTTP from environment variables
-    enable_http = os.getenv("ENABLE_HTTP", "false").lower() == "true"
-
     try:
-        asyncio.run(main(enable_http))
+        asyncio.run(main(ENABLE_HTTP))
     except KeyboardInterrupt:
         print("\nShutting down gracefully on keyboard interrupt.")
     except Exception as e:
