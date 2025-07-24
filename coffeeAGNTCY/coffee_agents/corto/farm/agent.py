@@ -2,7 +2,6 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import logging
-import os
 from typing import TypedDict
 
 from langgraph.graph import END, START, StateGraph

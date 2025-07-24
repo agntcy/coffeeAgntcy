@@ -18,22 +18,13 @@ from a2a.types import (
 
 from langchain_core.tools import BaseTool
 from graph.models import FlavorProfileInput, FlavorProfileOutput
-
-from agntcy_app_sdk.protocols.a2a.gateway import A2AProtocol
-from agntcy_app_sdk.factory import GatewayFactory
+from graph.shared import get_factory
+from agntcy_app_sdk.protocols.a2a.protocol import A2AProtocol
 from ioa_observe.sdk.decorators import tool
 
 from config.config import DEFAULT_MESSAGE_TRANSPORT, TRANSPORT_SERVER_ENDPOINT
 
 logger = logging.getLogger("corto.supervisor.tools")
-
-# Initialize a multi-protocol, multi-transport gateway factory.
-# All tools will share this factory instance and the transport.
-factory = GatewayFactory()
-transport = factory.create_transport(
-    DEFAULT_MESSAGE_TRANSPORT,
-    endpoint=TRANSPORT_SERVER_ENDPOINT,
-)
 
 class FlavorProfileTool(BaseTool):
     """
@@ -52,6 +43,11 @@ class FlavorProfileTool(BaseTool):
 
     async def _connect(self):
         logger.info(f"Connecting to remote agent: {self._remote_agent_card.name}")
+        factory = get_factory()
+        transport = factory.create_transport(
+            DEFAULT_MESSAGE_TRANSPORT,
+            endpoint=TRANSPORT_SERVER_ENDPOINT,
+        )
        
         a2a_topic = A2AProtocol.create_agent_topic(self._remote_agent_card)
         self._client = await factory.create_client(
