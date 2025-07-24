@@ -114,7 +114,7 @@ Before you begin, ensure the following tools are installed:
   	LOGGING_LEVEL=debug
   ```
 
-**Enable Observability with Observe SDK(TODO-app-sdk will provide a way to enable observability)**
+**Enable Observability with Observe SDK**
 
 Make sure the following Python dependency is installed:
 ```
@@ -128,12 +128,20 @@ For advanced observability of your multi-agent system, integrate the [Observe SD
   - `@agent(name="agent_name", description="Some description")`: Tracks individual agent nodes and activities.
   - `@tool(name="tool_name", description="Some description")`: Monitors tool usage and performance.
 
-- To enable tracing, set the tracing flag to `true` in your configuration or environment(TODO: app-sdk will provide a way to enable tracing):
-  ```env
-  ENABLE_TRACING=true
-  ```
+- **To enable tracing for the Corto multi-agent system:**
+  - In code, set the factory with tracing enabled:
+    ```python
+    AgntcyFactory("corto.exchange", enable_tracing=True)
+    ```
 
----
+- **To start a new trace session for each prompt execution:**  
+  Call `session_start()` at the beginning of each prompt execution to ensure each prompt trace is tracked as a new session:
+  ```python
+  from ioa_observe_sdk import session_start
+
+  # At the start of each prompt execution
+  session_start()
+  ```
 
 ### Execution
 
@@ -250,11 +258,8 @@ By default, the UI will be available at [http://localhost:3000/](http://localhos
 
 3. **Import the OTEL Traces Dashboard**  
    - In the left sidebar, click on **"Dashboards" > "New" > "Import"**.
-   - Upload or paste the JSON definition for the OTEL traces dashboard.
-   - (Placeholder: Add your OTEL dashboard JSON file here.)
-     ```
-     [otel_dashboard.json]
-     ```
+   - Upload or paste the JSON definition for the OTEL traces dashboard, located here:  
+     [`corto_dashboard.json`](corto_dashboard.json)
    - Click **"Import"** to add the dashboard.
 
    ![Screenshot: Import Dashboard](images/grafana_import_dashboard.png)
