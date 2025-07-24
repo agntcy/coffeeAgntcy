@@ -16,7 +16,7 @@ This project is ideal for developers building agent-based systems and looking to
 - How to write **A2A** client and server agents
 - How to integrate data sources (e.g., weather services via **MCP**)
 - How to extend or swap agents modularly using AGNTCY tooling
-- How to enable observability using **Observe SDK**
+- How to enable observability using ** AGNTCY Observe SDK**
 
 ---
 
@@ -43,7 +43,7 @@ We currently provide two setups you can run to see how components from AGNTCY wo
 - [A2A](https://github.com/a2aproject/a2a-python) = v0.2.5
 - [MCP](https://github.com/modelcontextprotocol/python-sdk) >= v1.10.0
 - [LangGraph](https://github.com/langchain-ai/langgraph) >= v0.4.1 
-- [Observe SDK](https://github.com/agntcy/observe) >= 1.0.12
+- [Observe SDK](https://github.com/agntcy/observe) = 1.0.12
 
 ---
 
