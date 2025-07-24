@@ -12,6 +12,7 @@ from config.logging_config import setup_logging
 from graph import shared
 from agntcy_app_sdk.factory import AgntcyFactory
 from graph.graph import ExchangeGraph
+from ioa_observe.sdk.tracing import session_start
 
 setup_logging()
 logger = logging.getLogger("corto.supervisor.main")
@@ -50,6 +51,7 @@ async def handle_prompt(request: PromptRequest):
       HTTPException: 400 for invalid input, 500 for server-side errors.
   """
   try:
+    session_start() # Start a new tracing session
     # Process the prompt using the exchange graph
     result = await exchange_graph.serve(request.prompt)
     logger.info(f"Final result from LangGraph: {result}")
