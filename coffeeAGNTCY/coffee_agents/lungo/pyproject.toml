@@ -24,7 +24,6 @@ dependencies = [
     "uvicorn",
     "mcp[cli]>=1.10.0",
     "ioa-observe-sdk==1.0.12",
-    "agntcy-app-sdk>=0.1.0",
 ]
 
 [project.optional-dependencies]

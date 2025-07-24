@@ -5,11 +5,9 @@ import asyncio
 import os
 from uvicorn import Config, Server
 
-from agntcy_app_sdk.factory import GatewayFactory
 from a2a.server.apps import A2AStarletteApplication
 from a2a.server.tasks import InMemoryTaskStore
 from a2a.server.request_handlers import DefaultRequestHandler
-
 from agent_executor import FarmAgentExecutor
 from config.config import (
     DEFAULT_MESSAGE_TRANSPORT,
@@ -18,17 +16,10 @@ from config.config import (
     ENABLE_HTTP,
 )
 from card import AGENT_CARD
-
-from ioa_observe.sdk import Observe
-from ioa_observe.sdk.instrumentations.slim import SLIMInstrumentor
+from agent import factory
 from dotenv import load_dotenv
+
 load_dotenv()
-Observe.init("lungo_colombia_farm", api_endpoint=os.getenv("OTLP_HTTP_ENDPOINT"))
-
-SLIMInstrumentor().instrument()
-
-# Initialize a multi-protocol, multi-transport gateway factory.
-factory = GatewayFactory()
 
 async def run_http_server(server):
     """Run the HTTP/REST server."""

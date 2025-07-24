@@ -21,12 +21,15 @@ from langchain_core.prompts import PromptTemplate
 from langgraph.graph import StateGraph, END
 from common.llm import get_llm
 
-from agntcy_app_sdk.factory import GatewayFactory
+from agntcy_app_sdk.factory import AgntcyFactory
 from ioa_observe.sdk.decorators import agent, graph
 
 from config.config import WEATHER_MCP_SERVER_URL, DEFAULT_MESSAGE_TRANSPORT
 
 logger = logging.getLogger("lungo.colombia_farm_agent.agent")
+
+# Initialize a multi-protocol, multi-transport agntcy factory.
+factory = AgntcyFactory("lungo_colombia_farm", enable_tracing=True)
 
 # --- 1. Define Node Names as Constants ---
 class NodeStates:
@@ -116,7 +119,6 @@ class FarmAgent:
 
         logger.info(f"Weather location extracted: {location}")
 
-        factory = GatewayFactory()
         endpoint=f"{WEATHER_MCP_SERVER_URL}/mcp"
         transport_instance = factory.create_transport(transport=DEFAULT_MESSAGE_TRANSPORT, endpoint=endpoint)
         client = await factory.create_client(

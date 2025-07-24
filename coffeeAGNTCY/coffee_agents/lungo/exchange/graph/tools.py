@@ -18,8 +18,8 @@ from a2a.types import (
 )
 from langchain_core.tools import tool
 from langchain_core.messages import AnyMessage, ToolMessage
-from agntcy_app_sdk.protocols.a2a.gateway import A2AProtocol
-from agntcy_app_sdk.factory import GatewayFactory
+from agntcy_app_sdk.protocols.a2a.protocol import A2AProtocol
+from graph.shared import get_factory
 from config.config import (
     DEFAULT_MESSAGE_TRANSPORT, 
     TRANSPORT_SERVER_ENDPOINT, 
@@ -36,13 +36,6 @@ from exchange.graph.models import (
 from ioa_observe.sdk.decorators import tool as ioa_tool_decorator
 
 logger = logging.getLogger("lungo.supervisor.tools")
-
-# Shared factory & transport
-factory = GatewayFactory()
-transport = factory.create_transport(
-    DEFAULT_MESSAGE_TRANSPORT,
-    endpoint=TRANSPORT_SERVER_ENDPOINT,
-)
 
 def tools_or_next(tools_node: str, end_node: str = "__end__"):
   """
@@ -129,6 +122,13 @@ async def get_farm_yield_inventory(prompt: str, farm: str) -> str:
     if card is None:
         return f"Farm '{farm}' not recognized. Available farms are: {brazil_agent_card.name}, {colombia_agent_card.name}, {vietnam_agent_card.name}."
     
+    # Shared factory & transport
+    factory = get_factory()
+    transport = factory.create_transport(
+        DEFAULT_MESSAGE_TRANSPORT,
+        endpoint=TRANSPORT_SERVER_ENDPOINT,
+    )
+    
     client = await factory.create_client(
         "A2A",
         agent_topic=A2AProtocol.create_agent_topic(card),
@@ -172,6 +172,13 @@ async def get_all_farms_yield_inventory(prompt: str) -> str:
         str: A summary string containing yield information from all farms.
     """
     logger.info("entering get_all_farms_yield_inventory tool with prompt: %s", prompt)
+
+    # Shared factory & transport
+    factory = get_factory()
+    transport = factory.create_transport(
+        DEFAULT_MESSAGE_TRANSPORT,
+        endpoint=TRANSPORT_SERVER_ENDPOINT,
+    )
 
     client = await factory.create_client(
         "A2A",
@@ -241,6 +248,13 @@ async def create_order(farm: str, quantity: int, price: float) -> str:
     if card is None:
         return f"Farm '{farm}' not recognized. Available farms are: {brazil_agent_card.name}, {colombia_agent_card.name}, {vietnam_agent_card.name}."
     
+    # Shared factory & transport
+    factory = get_factory()
+    transport = factory.create_transport(
+        DEFAULT_MESSAGE_TRANSPORT,
+        endpoint=TRANSPORT_SERVER_ENDPOINT,
+    )
+    
     client = await factory.create_client(
         "A2A",
         agent_topic=A2AProtocol.create_agent_topic(card),
@@ -286,6 +300,13 @@ async def get_order_details(order_id: str) -> str:
     logger.info(f"Getting details for order ID: {order_id}")
     if not order_id:
         return "Order ID must be provided."
+    
+    # Shared factory & transport
+    factory = get_factory()
+    transport = factory.create_transport(
+        DEFAULT_MESSAGE_TRANSPORT,
+        endpoint=TRANSPORT_SERVER_ENDPOINT,
+    )
     
     client = await factory.create_client(
         "A2A",
