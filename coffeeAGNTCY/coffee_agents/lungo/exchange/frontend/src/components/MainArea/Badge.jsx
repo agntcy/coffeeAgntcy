@@ -1,3 +1,8 @@
+/**
+ * Copyright AGNTCY Contributors (https://github.com/agntcy)
+ * SPDX-License-Identifier: Apache-2.0
+ **/
+
 import React from 'react';
 import { FaIdBadge } from 'react-icons/fa';
 import { FarmName } from '../../utils/const.js'; // Adjust the import path as necessary
