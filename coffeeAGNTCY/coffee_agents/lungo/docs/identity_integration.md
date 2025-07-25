@@ -2,7 +2,7 @@
 
 ## Retrieving API Keys from Identity SaaS
 
-This document is a work in progress.
+Please refer to https://identity-docs.staging.outshift.ai/docs/intro for more information on Identity SaaS and its features.
 
 To integrate with Identity SaaS, follow these steps to retrieve API keys and configure environment variables:
 

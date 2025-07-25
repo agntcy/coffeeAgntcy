@@ -26,16 +26,6 @@ load_dotenv()
 # Initialize a multi-protocol, multi-transport agntcy factory.
 factory = AgntcyFactory("lungo_vietnam_farm", enable_tracing=True)
 
-class CustomA2AStarletteApplication(A2AStarletteApplication):
-    def routes(
-            self,
-            agent_card_url: str = '/.well-known/agent.json',
-            extended_agent_card_url: str = '/agent/authenticatedExtendedCard',
-            rpc_url: str = '/',
-    ) -> list[Route]:
-        """Extend the routes to include custom endpoints."""
-        return super().routes(agent_card_url, extended_agent_card_url, rpc_url)
-
 async def run_http_server(server):
     """Run the HTTP/REST server."""
     try:
@@ -70,7 +60,7 @@ async def main(enable_http: bool):
         task_store=InMemoryTaskStore(),
     )
 
-    server = CustomA2AStarletteApplication(
+    server = A2AStarletteApplication(
         agent_card=AGENT_CARD, http_handler=request_handler
     )
 
