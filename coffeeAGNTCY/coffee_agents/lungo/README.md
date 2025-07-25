@@ -46,7 +46,7 @@ Before you begin, ensure the following tools are installed:
   ```sh
   uv pip install git+https://github.com/cisco-outshift-ai-agents/identity-service-sdk@main#subdirectory=python
   ```
-  
+
 ---
 
 ### Setup Instructions
