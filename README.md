@@ -16,6 +16,7 @@ This project is ideal for developers building agent-based systems and looking to
 - How to write **A2A** client and server agents
 - How to integrate data sources (e.g., weather services via **MCP**)
 - How to extend or swap agents modularly using AGNTCY tooling
+- How to enable observability using ** AGNTCY Observe SDK**
 
 ---
 
@@ -24,12 +25,12 @@ This project is ideal for developers building agent-based systems and looking to
 We currently provide two setups you can run to see how components from AGNTCY work together — one simple two-agent use case and the other a more complex MAS:
 
 - **Corto**:  
-  A two-agent, ready-to-run setup that highlights core agent interactions using agent-to-agent (A2A) messaging via configurable transports(default: AGNTCY's SLIM). Agents are orchestrated within a LangGraph.
+  A two-agent, ready-to-run setup that highlights core agent interactions using agent-to-agent (A2A) messaging via configurable transports(default: AGNTCY's SLIM). Agents are orchestrated within a LangGraph. It also shows how to enable observability using Observe SDK.
 
   👉 [View the Corto README](coffeeAGNTCY/coffee_agents/corto)
 
 - **Lungo**:  
-  A more advanced setup that will evolve over time as we mature components. The first release shows agents that use A2A communication via configurable transports (default: SLIM), are structured as directed LangGraphs, and include an MCP weather-aware farm that fetches live data.  
+  A more advanced setup that will evolve over time as we mature components. The first release shows agents that use A2A communication via configurable transports (default: SLIM), are structured as directed LangGraphs, and include an MCP weather-aware farm that fetches live data. It also shows how to enable observability using Observe SDK.  
 
   👉 [View the Lungo README](coffeeAGNTCY/coffee_agents/lungo)
 
@@ -42,6 +43,7 @@ We currently provide two setups you can run to see how components from AGNTCY wo
 - [A2A](https://github.com/a2aproject/a2a-python) = v0.2.5
 - [MCP](https://github.com/modelcontextprotocol/python-sdk) >= v1.10.0
 - [LangGraph](https://github.com/langchain-ai/langgraph) >= v0.4.1 
+- [Observe SDK](https://github.com/agntcy/observe) = 1.0.12
 
 ---
 
