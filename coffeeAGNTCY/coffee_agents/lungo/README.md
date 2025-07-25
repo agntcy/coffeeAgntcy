@@ -74,7 +74,7 @@ Before you begin, ensure the following tools are installed:
    ```env
    LLM_PROVIDER=openai
    OPENAI_API_KEY=your_openai_api_key
-   OPENAI_MODEL=gpt-4o
+   OPENAI_MODEL_NAME=gpt-4o-mini
    ```
 
    *Azure OpenAI:*
