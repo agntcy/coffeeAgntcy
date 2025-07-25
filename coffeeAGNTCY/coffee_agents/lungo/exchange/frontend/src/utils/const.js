@@ -13,3 +13,9 @@ export const EdgeLabelIcon = {
     A2A: 'a2a',
     MCP: 'mcp',
 };
+
+export const FarmName = {
+    BrazilCoffeeFarm: 'Brazil Coffee Farm',
+    ColombiaCoffeeFarm: 'Colombia Coffee Farm',
+    VietnamCoffeeFarm: 'Vietnam Coffee Farm',
+}
