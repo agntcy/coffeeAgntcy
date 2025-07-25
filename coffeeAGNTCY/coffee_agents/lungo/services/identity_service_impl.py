@@ -3,8 +3,10 @@
 
 import requests
 import asyncio
-
+from pydantic import ValidationError
 from services.identity_service import IdentityService
+from typing import Dict, Any
+from services.models import IdentityServiceApps, Badge
 
 CLI_MAX_RETRIES = 3
 CLI_RETRY_DELAY = 2
@@ -14,60 +16,56 @@ class IdentityServiceImpl(IdentityService):
     self.api_key = api_key
     self.base_url = base_url
 
-  def get_all_apps(self):
-    """Fetch all apps."""
+  def get_all_apps(self) -> IdentityServiceApps:
+    """Fetch all apps and return them as a structured response."""
     url = f"{self.base_url}/v1alpha1/apps"
-    headers = {
-      "x-id-api-key": self.api_key,
-    }
+    headers = {"x-id-api-key": self.api_key}
 
     response = requests.get(url, headers=headers)
     if response.status_code == 200:
-      return response.json()
+      try:
+        return IdentityServiceApps(**response.json())
+      except ValidationError as e:
+        raise ValueError(f"Invalid response format: {e}")
     else:
-      raise RuntimeError(f"Failed to fetch apps: {response.status_code}, {response.text}")
+      raise ValueError(f"Failed to fetch apps: {response.status_code}, {response.text}")
 
-  def get_badge_for_app(self, app_id: str):
-    """Fetch the current badge issued for the specified app and return the proofValue."""
+  def get_badge_for_app(self, app_id: str) -> Badge:
+    """Fetch the current badge issued for the specified app and return it as a Badge model."""
     url = f"{self.base_url}/v1alpha1/apps/{app_id}/badge"
-    headers = {
-      "x-id-api-key": self.api_key,
-    }
+    headers = {"x-id-api-key": self.api_key}
 
     response = requests.get(url, headers=headers)
     if response.status_code == 200:
-      badge = response.json()
-      proof_value = badge.get("verifiableCredential", {}).get("proof", {}).get("proofValue")
-      if proof_value:
-        return proof_value
-      else:
-        raise RuntimeError(f"No proofValue found in the badge for app {app_id}.")
+      try:
+        badge = Badge(**response.json())
+        return badge
+      except ValidationError as e:
+        raise ValueError(f"Invalid badge format: {e}")
     else:
-      raise RuntimeError(f"Failed to fetch badge for app {app_id}: {response.status_code}, {response.text}")
+      raise ValueError(f"Failed to fetch badge for app {app_id}: {response.status_code}, {response.text}")
 
-  def verify_badges(self, badge: str):
+  def verify_badges(self, badge: Badge) -> Dict[str, Any]:
     """Verify the provided badge data."""
     url = f"{self.base_url}/v1alpha1/badges/verify"
     headers = {
       "Content-Type": "application/json",
       "x-id-api-key": self.api_key,
     }
-    data = {"badge": badge}
+    data = {"badge": badge.verifiableCredential.proof.proofValue}
 
     response = requests.post(url, headers=headers, json=data)
     if response.status_code == 200:
       return response.json()
     else:
-      raise RuntimeError(f"Failed to verify badge: {response.status_code}, {response.text}")
+      raise ValueError(f"Failed to verify badge: {response.status_code}, {response.text}")
 
-  ## TODO: This is a temporary implementation that uses the identity-cli binary. When the API or SDK is available, this should be replaced.
-  async def create_badge(self, agent_url: str, svc_api_key: str):
+  async def create_badge(self, agent_url: str, svc_api_key: str) -> str:
     """Create a badge using the identity-cli binary with the --key flag asynchronously."""
     command = ["identity-cli", "badge", "create", "--key", svc_api_key, agent_url]
 
     for attempt in range(1, CLI_MAX_RETRIES + 1):
       try:
-        # Use asyncio to run the command asynchronously
         process = await asyncio.create_subprocess_exec(
           *command,
           stdout=asyncio.subprocess.PIPE,

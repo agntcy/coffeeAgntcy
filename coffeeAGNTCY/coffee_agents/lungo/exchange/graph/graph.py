@@ -130,7 +130,7 @@ class ExchangeGraph:
             Based on the user's message, determine if it's related to 'inventory' or 'orders'.
             Respond with 'inventory' if the message is about checking yield, stock, product availability, regions of origin, or specific coffee item details.
             Respond with 'orders' if the message is about checking order status, placing an order, or modifying an existing order.
-
+            
             User message: {user_message}
             """,
             input_variables=["user_message"]
@@ -246,11 +246,16 @@ class ExchangeGraph:
         prompt = PromptTemplate(
             template="""You are an orders broker for a global coffee exchange company. 
             Your task is to handle user requests related to placing and checking orders with coffee farms.
+            
+            If the issue is related to identity verification, respond with a short reply: 
+            'The badge of this <current_farm> farm agent has not been found or could not be verified, and hence the order request failed.' 
+            Do not ask further questions in this case.
+            
             If the user asks about placing an order, use the provided tools to create an order.
             If the user asks about checking the status of an order, use the provided tools to retrieve order details.
             If an order has been created, do not create a new order for the same request.
             If further information is needed, ask the user for clarification.
-
+        
             User question: {user_message}
             """,
             input_variables=["user_message"]
