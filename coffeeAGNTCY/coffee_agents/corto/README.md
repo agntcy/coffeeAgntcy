@@ -255,6 +255,8 @@ By default, the UI will be available at [http://localhost:3000/](http://localhos
    - Select the **ClickHouse** datasource (pre-configured in the Docker Compose setup).
 
    ![Screenshot: ClickHouse Datasource](images/grafana_clickhouse_datasource.png)
+   
+   ![Screenshot: ClickHouse Connection](images/grafana_clickhouse_connection.png) 
 
 3. **Import the OTEL Traces Dashboard**  
    - In the left sidebar, click on **"Dashboards" > "New" > "Import"**.
