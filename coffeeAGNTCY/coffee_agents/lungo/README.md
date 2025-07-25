@@ -267,7 +267,7 @@ By default, the UI will be available at [http://localhost:3000/](http://localhos
 
 ![Screenshot](images/lungo_ui.png)
 
-**Step 6: Visualize OTEL Traces in Grafana(Todo- add screenshots when app-sdk provides a way to enable observability)**
+**Step 6: Visualize OTEL Traces in Grafana**
 
 1. **Access Grafana**  
    Open your browser and go to [http://localhost:3001/](http://localhost:3001/).  
@@ -275,9 +275,14 @@ By default, the UI will be available at [http://localhost:3000/](http://localhos
 
    ![Screenshot: Grafana Login](images/grafana_login.png)
 
-2. **Select the ClickHouse Datasource**  
+2. **Connect/Add the ClickHouse Datasource**  
    - In the left sidebar, click on **"Connections" > "Data sources"**.
-   - Select the **ClickHouse** datasource (pre-configured in the Docker Compose setup).
+   - If not already present, add a new **ClickHouse** datasource with the following settings:
+     - **Server address:** `clickhouse-server`
+     - **Port:** `9000`
+     - **Protocol:** `native`
+     - **User/Password:** `admin` / `admin`
+   - If already present, select the **ClickHouse** datasource (pre-configured in the Docker Compose setup).
 
    ![Screenshot: ClickHouse Datasource](images/grafana_clickhouse_datasource.png)
    ![Screenshot: ClickHouse Connection](images/grafana_clickhouse_connection.png) 
@@ -287,6 +292,7 @@ By default, the UI will be available at [http://localhost:3000/](http://localhos
    - In the left sidebar, click on **"Dashboards" > "New" > "Import"**.
    - Upload or paste the JSON definition for the OTEL traces dashboard, located here:  
      [`lungo_dashboard.json`](lungo_dashboard.json)
+   - **When prompted, select `grafana-clickhouse-datasource` as the datasource.**
    - Click **"Import"** to add the dashboard.
 
    ![Screenshot: Import Dashboard](images/grafana_import_dashboard.png)
