@@ -34,10 +34,6 @@ Refer to the [Identity SaaS Documentation](https://identity-docs.staging.outshif
    - **Vietnam Farm Agent URL**: `http://127.0.0.1:9997/.well-known/agent.json`
    - **Colombia Farm Agent URL**: `http://127.0.0.1:9998/.well-known/agent.json`
 
-
-
-
-
 ### Step 7: Configure Environment Variables
 - Update the `config.yaml` file in the `coffeeAGNTCY/coffee_agents/lungo` directory with the following environment variables:
    - `IDENTITY_VIETNAM_AGENT_SERVICE_API_KEY`: API key for the Vietnam farm agent.
@@ -45,5 +41,4 @@ Refer to the [Identity SaaS Documentation](https://identity-docs.staging.outshif
    - `IDENTITY_API_KEY`: General Identity SaaS API key.
    - `IDENTITY_API_SERVER_URL`: Identity API endpoint.
    - `VIETNAM_FARM_AGENT_URL` and `COLOMBIA_FARM_AGENT_URL`: URLs for the farm agents' well-known agent cards.
-
 - Alternatively, set these variables in your shell environment when running the agents.
