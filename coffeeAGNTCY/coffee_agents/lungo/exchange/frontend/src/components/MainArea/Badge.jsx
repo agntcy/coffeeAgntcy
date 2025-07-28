@@ -9,7 +9,7 @@ const Badge = ({ farmName }) => {
             <button
                 style={{
                     padding: '4px 4px',
-                    backgroundColor: isValid ? '#229d3c' : '#c72525', // Green for valid, red for not valid
+                    backgroundColor: isValid ? '#00935D' : '#C0244C', // Green for valid, red for not valid
                     color: '#fff',
                     border: 'none',
                     borderRadius: '3px', // Rounded rectangle
