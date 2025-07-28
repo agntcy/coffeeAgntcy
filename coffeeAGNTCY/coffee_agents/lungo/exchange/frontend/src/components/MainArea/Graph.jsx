@@ -12,7 +12,6 @@ import {
     Controls,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
-import { FaUserTie, FaWarehouse, FaCloudSun } from 'react-icons/fa';
 import SlimNode from './SlimNode';
 import CustomEdge from './CustomEdge';
 import CustomNode from './CustomNode';
@@ -20,6 +19,7 @@ import { EdgeLabelIcon } from '../../utils/const.js';
 import supervisorIcon from '../../assets/supervisor.png'; // Adjust the path to your PNG file
 import { PiCoffeeBeanThin } from "react-icons/pi";
 import { TiWeatherCloudy } from "react-icons/ti";
+import { FarmName } from '../../utils/const.js';
 
 const CoffeeBeanIcon = <PiCoffeeBeanThin style={{ transform: 'rotate(-30deg)', fontSize: '1.65em' }} />;
 
@@ -100,6 +100,7 @@ const initialNodes = [
             label1: 'Coffee Farm Agent',
             label2: 'Brazil',
             handles: 'target',
+            farmName: FarmName.BrazilCoffeeFarm,
         },
         position: { x: 232.0903941835277, y: 503.93174725714437 },
     },
@@ -112,6 +113,7 @@ const initialNodes = [
             label1: 'Coffee Farm Agent',
             label2: 'Colombia',
             handles: 'all',
+            farmName: FarmName.ColombiaCoffeeFarm,
         },
         position: { x: 521.266082170288, y: 505.38817113883306 },
     },
@@ -124,6 +126,7 @@ const initialNodes = [
             label1: 'Coffee Farm Agent',
             label2: 'Vietnam',
             handles: 'target',
+            farmName: FarmName.VietnamCoffeeFarm,
         },
         position: { x: 832.9824511707582, y: 505.08339631990395 },
     },
