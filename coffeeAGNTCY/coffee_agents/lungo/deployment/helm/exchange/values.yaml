@@ -22,6 +22,9 @@ config:
   transportServerEndpoint: ""
   defaultMessageTransport: ""
   otlpHttpEndpoint: ""
+  # Identity configuration
+  identityApiKey: "" # General Identity SaaS API key
+  identityApiServerUrl: "" # Identity API endpoint
 # serviceaccount:
 #   annotations:
 #     eks.amazonaws.com/role-arn: REPLACE_WITH_ROLE_ARN

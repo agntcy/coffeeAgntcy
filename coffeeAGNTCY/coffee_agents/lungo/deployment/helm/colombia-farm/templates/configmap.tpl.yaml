@@ -12,3 +12,7 @@ data:
   DEFAULT_MESSAGE_TRANSPORT: "{{ .Values.config.defaultMessageTransport }}"
   WEATHER_MCP_SERVER_URL: "{{ .Values.config.weatherMcpServerUrl }}"
   OTLP_HTTP_ENDPOINT: "{{ .Values.config.otlpHttpEndpoint }}"
+  IDENTITY_API_KEY: "{{ .Values.config.identityApiKey }}"
+  IDENTITY_API_SERVER_URL: "{{ .Values.config.identityApiServerUrl }}"
+  COLOMBIA_FARM_AGENT_URL: "{{ .Values.config.colombiaFarmAgentUrl }}"
+  IDENTITY_COLOMBIA_AGENT_SERVICE_API_KEY: "{{ .Values.config.identityColombiaAgentServiceApiKey }}"
