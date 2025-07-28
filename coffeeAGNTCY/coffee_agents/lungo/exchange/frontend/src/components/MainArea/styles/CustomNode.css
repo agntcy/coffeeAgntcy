@@ -47,18 +47,14 @@
 .node-label1 {
     text-align: left;
     font-weight: normal;
-    font-size: 12px;
+    font-size: 14px;
     color: #808080;
 }
 
 .node-label2 {
     text-align: left;
-    font-size: 12.5px;
+    font-size: 11px;
     color: black;
-    border: 1px #7A9EBF;
-    background-color: #EAF2FA;
-    border-radius: 8px;
-    padding: 2.5px 5px;
 }
 
 .node-active{

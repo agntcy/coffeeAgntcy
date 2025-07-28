@@ -31,8 +31,9 @@ const CustomNode = ({ data }) => {
             )}
             <div className="node-icon">{data.icon}</div>
             <div className="node-content">
-                <div className="node-label1">{data.label1}</div>
-                <div className="node-label2">{data.label2}</div>
+                <div className="node-label1">{data.label2}</div>
+                <div className="node-label2">{data.label1}</div>
+
             </div>
             {(data.handles === 'all' || data.handles === 'target') && (
                 <Handle
