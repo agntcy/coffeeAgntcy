@@ -2,11 +2,9 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import asyncio
-import os
 from uvicorn import Config, Server
-
 from agntcy_app_sdk.factory import AgntcyFactory
-
+from starlette.routing import Route
 from a2a.server.apps import A2AStarletteApplication
 from a2a.server.tasks import InMemoryTaskStore
 from a2a.server.request_handlers import DefaultRequestHandler
@@ -20,6 +18,8 @@ from config.config import (
 )
 from card import AGENT_CARD
 from dotenv import load_dotenv
+
+from utils import create_badge_for_vietnam_farm
 
 load_dotenv()
 
@@ -68,6 +68,7 @@ async def main(enable_http: bool):
     tasks = []
     if enable_http:
         tasks.append(asyncio.create_task(run_http_server(server)))
+        tasks.append(asyncio.create_task(create_badge_for_vietnam_farm()))
     tasks.append(asyncio.create_task(run_transport(server, DEFAULT_MESSAGE_TRANSPORT, TRANSPORT_SERVER_ENDPOINT, block=True)))
 
     await asyncio.gather(*tasks)

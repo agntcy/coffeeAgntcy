@@ -24,6 +24,8 @@ from config.config import (
     DEFAULT_MESSAGE_TRANSPORT, 
     TRANSPORT_SERVER_ENDPOINT, 
     FARM_BROADCAST_TOPIC,
+    IDENTITY_API_KEY,
+    IDENTITY_API_SERVER_URL,
 )
 from farms.brazil.card import AGENT_CARD as brazil_agent_card
 from farms.colombia.card import AGENT_CARD as colombia_agent_card
@@ -32,6 +34,8 @@ from exchange.graph.models import (
     InventoryArgs,
     CreateOrderArgs,
 )
+from services.identity_service import IdentityService
+from services.identity_service_impl import IdentityServiceImpl
 
 from ioa_observe.sdk.decorators import tool as ioa_tool_decorator
 
@@ -100,6 +104,34 @@ def get_farm_card(farm: str) -> AgentCard | None:
     else:
         logger.error(f"Unknown farm name: {farm}. Expected one of 'brazil', 'colombia', or 'vietnam'.")
         return None
+
+def verify_farm_identity(identity_service: IdentityService, farm_name: str):
+    """
+    Verifies the identity of a farm by matching the farm name with the app name,
+    retrieving the badge, and verifying it.
+
+    Args:
+        identity_service (IdentityServiceImpl): The identity service implementation.
+        farm_name (str): The name of the farm to verify.
+
+    Raises:
+        ValueError: If the app is not found or verification fails.
+    """
+    try:
+        all_apps = identity_service.get_all_apps()
+        matched_app = None
+        for app in all_apps.apps:
+            if app.name.lower() == farm_name.lower():
+                matched_app = app
+                break
+        if not matched_app:
+            raise ValueError(f"Identity verification failed.")
+
+        badge = identity_service.get_badge_for_app(matched_app.id)
+        _ = identity_service.verify_badges(badge)
+    except Exception as e:
+        logger.error(f"Identity verification failed for farm '{farm_name}': {e}")
+        raise ValueError(f"Identity verification failed.")
 
 @tool(args_schema=InventoryArgs)
 @ioa_tool_decorator(name="get_farm_yield_inventory")
@@ -247,14 +279,21 @@ async def create_order(farm: str, quantity: int, price: float) -> str:
     card = get_farm_card(farm)
     if card is None:
         return f"Farm '{farm}' not recognized. Available farms are: {brazil_agent_card.name}, {colombia_agent_card.name}, {vietnam_agent_card.name}."
-    
+
+    logger.info(f"Using farm card: {card.name} for order creation")
+    identity_service = IdentityServiceImpl(api_key=IDENTITY_API_KEY, base_url=IDENTITY_API_SERVER_URL)
+    try:
+        verify_farm_identity(identity_service, card.name)
+    except ValueError as e:
+        return str(e)
+
     # Shared factory & transport
     factory = get_factory()
     transport = factory.create_transport(
         DEFAULT_MESSAGE_TRANSPORT,
         endpoint=TRANSPORT_SERVER_ENDPOINT,
     )
-    
+
     client = await factory.create_client(
         "A2A",
         agent_topic=A2AProtocol.create_agent_topic(card),

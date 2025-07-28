@@ -1,0 +1,90 @@
+# Copyright AGNTCY Contributors (https://github.com/agntcy)
+# SPDX-License-Identifier: Apache-2.0
+
+import requests
+import asyncio
+from pydantic import ValidationError
+from services.identity_service import IdentityService
+from typing import Dict, Any
+from services.models import IdentityServiceApps, Badge
+
+CLI_MAX_RETRIES = 3
+CLI_RETRY_DELAY = 2
+
+class IdentityServiceImpl(IdentityService):
+  def __init__(self, api_key: str, base_url: str):
+    self.api_key = api_key
+    self.base_url = base_url
+
+  def get_all_apps(self) -> IdentityServiceApps:
+    """Fetch all apps and return them as a structured response."""
+    url = f"{self.base_url}/v1alpha1/apps"
+    headers = {"x-id-api-key": self.api_key}
+
+    response = requests.get(url, headers=headers)
+    if response.status_code == 200:
+      try:
+        return IdentityServiceApps(**response.json())
+      except ValidationError as e:
+        raise ValueError(f"Invalid response format: {e}")
+    else:
+      raise ValueError(f"Failed to fetch apps: {response.status_code}, {response.text}")
+
+  def get_badge_for_app(self, app_id: str) -> Badge:
+    """Fetch the current badge issued for the specified app and return it as a Badge model."""
+    url = f"{self.base_url}/v1alpha1/apps/{app_id}/badge"
+    headers = {"x-id-api-key": self.api_key}
+
+    response = requests.get(url, headers=headers)
+    if response.status_code == 200:
+      try:
+        badge = Badge(**response.json())
+        return badge
+      except ValidationError as e:
+        raise ValueError(f"Invalid badge format: {e}")
+    else:
+      raise ValueError(f"Failed to fetch badge for app {app_id}: {response.status_code}, {response.text}")
+
+  def verify_badges(self, badge: Badge) -> Dict[str, Any]:
+    """Verify the provided badge data."""
+    url = f"{self.base_url}/v1alpha1/badges/verify"
+    headers = {
+      "Content-Type": "application/json",
+      "x-id-api-key": self.api_key,
+    }
+    data = {"badge": badge.verifiableCredential.proof.proofValue}
+
+    response = requests.post(url, headers=headers, json=data)
+    if response.status_code == 200:
+      return response.json()
+    else:
+      raise ValueError(f"Failed to verify badge: {response.status_code}, {response.text}")
+
+  async def create_badge(self, agent_url: str, svc_api_key: str) -> str:
+    """Create a badge using the identity-cli binary with the --key flag asynchronously."""
+    command = ["identity-cli", "badge", "create", "--key", svc_api_key, agent_url]
+
+    for attempt in range(1, CLI_MAX_RETRIES + 1):
+      try:
+        process = await asyncio.create_subprocess_exec(
+          *command,
+          stdout=asyncio.subprocess.PIPE,
+          stderr=asyncio.subprocess.PIPE
+        )
+        stdout, stderr = await process.communicate()
+
+        if process.returncode == 0:
+          return stdout.decode().strip()
+        else:
+          print(f"Attempt {attempt} failed with return code: {process.returncode}")
+          print("Standard Output:", stdout.decode().strip())
+          print("Standard Error:", stderr.decode().strip())
+          if attempt == CLI_MAX_RETRIES:
+            raise RuntimeError(f"Failed to create badge after {CLI_MAX_RETRIES} attempts. See logs for details.")
+      except Exception as e:
+        print(f"Attempt {attempt} encountered an unexpected error: {e}")
+        if attempt == CLI_MAX_RETRIES:
+          raise RuntimeError("An unexpected error occurred. See logs for details.")
+
+      print(f"Retrying in {CLI_RETRY_DELAY} seconds...")
+      await asyncio.sleep(CLI_RETRY_DELAY)
