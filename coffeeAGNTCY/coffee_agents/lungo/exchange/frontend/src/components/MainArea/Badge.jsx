@@ -1,30 +1,26 @@
-/**
- * Copyright AGNTCY Contributors (https://github.com/agntcy)
- * SPDX-License-Identifier: Apache-2.0
- **/
-
 import React from 'react';
-import { FaIdBadge } from 'react-icons/fa';
 import { FarmName } from '../../utils/const.js'; // Adjust the import path as necessary
 
 const Badge = ({ farmName }) => {
+    const isValid = farmName !== FarmName.BrazilCoffeeFarm; // Example condition for validity
+
     return (
         <div>
             <button
                 style={{
-                    padding: '10px',
-                    // Brazil Coffee Farm doesn't have valid badge, so we use a different color
-                    backgroundColor: farmName ===  FarmName.BrazilCoffeeFarm ? '#E63939' : '#187ADC',
+                    padding: '4px 4px',
+                    backgroundColor: isValid ? '#229d3c' : '#c72525', // Green for valid, red for not valid
                     color: '#fff',
                     border: 'none',
-                    borderRadius: '50%',
-                    cursor: 'pointer',
+                    borderRadius: '3px', // Rounded rectangle
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
+                    fontSize: '11px',
+                    letterSpacing: '0.5px', // Adjust font spacing here
                 }}
             >
-                <FaIdBadge size={20} />
+                {isValid ? 'Validated' : 'Not Validated'}
             </button>
         </div>
     );

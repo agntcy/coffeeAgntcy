@@ -21,8 +21,8 @@ const CustomNode = ({ data }) => {
                 <div
                     style={{
                         position: 'absolute',
-                        top: '-20px',
-                        left: '-25px',
+                        top: '11px',
+                        right: '11px',
                         zIndex: 10,
                     }}
                 >
