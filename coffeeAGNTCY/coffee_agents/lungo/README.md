@@ -42,11 +42,6 @@ Before you begin, ensure the following tools are installed:
   ```
   If not installed, download it from the [official Node.js website](https://nodejs.org/).
 
-- Install **Identity CLI**
-  ```sh
-  uv pip install git+https://github.com/cisco-outshift-ai-agents/identity-service-sdk@main#subdirectory=python
-  ```
-
 ---
 
 ### Setup Instructions

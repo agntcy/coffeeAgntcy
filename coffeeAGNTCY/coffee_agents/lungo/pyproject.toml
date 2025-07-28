@@ -25,6 +25,7 @@ dependencies = [
     "mcp[cli]>=1.10.0",
     "ioa-observe-sdk==1.0.12",
     "agntcy-app-sdk>=0.1.2",
+    "identity-service-sdk@git+https://github.com/cisco-outshift-ai-agents/identity-service-sdk@main#subdirectory=python",
 ]
 
 [project.optional-dependencies]
@@ -38,6 +39,9 @@ dev = [
     "coloredlogs>=15.0.1,<16",
     "langchain-openai>=0.3.14,<0.4",
 ]
+
+[tool.hatch.metadata]
+allow-direct-references = true
 
 [tool.poetry]
 package-mode = false
