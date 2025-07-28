@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 
-from cisco_outshift_agent_utils.llm_factory import LLMFactory
+from cnoe_agent_utils import LLMFactory
 from config.config import LLM_PROVIDER
 
 def get_llm():
@@ -12,4 +12,5 @@ def get_llm():
   factory = LLMFactory(
     provider=LLM_PROVIDER,
   )
+
   return factory.get_llm()
