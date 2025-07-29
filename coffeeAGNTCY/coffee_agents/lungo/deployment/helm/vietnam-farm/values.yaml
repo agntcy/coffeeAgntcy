@@ -23,10 +23,8 @@ config:
   defaultMessageTransport: ""
   otlpHttpEndpoint: ""
   # Identity configuration
-  identityApiKey: "" # General Identity SaaS API key
   identityApiServerUrl: "" # Identity API endpoint
   vietnamFarmAgentUrl: "" # Vietnam farm agent URL
-  identityVietnamAgentServiceApiKey: "" # Vietnam agent service API key
 # serviceaccount:
 #   annotations:
 #     eks.amazonaws.com/role-arn: REPLACE_WITH_ROLE_ARN

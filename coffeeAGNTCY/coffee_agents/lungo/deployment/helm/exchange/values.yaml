@@ -23,7 +23,6 @@ config:
   defaultMessageTransport: ""
   otlpHttpEndpoint: ""
   # Identity configuration
-  identityApiKey: "" # General Identity SaaS API key
   identityApiServerUrl: "" # Identity API endpoint
 # serviceaccount:
 #   annotations:
