@@ -23,6 +23,10 @@ config:
   defaultMessageTransport: ""
   weatherMcpServerUrl: ""
   otlpHttpEndpoint: ""
+  # Identity configuration
+  identityApiServerUrl: "" # Identity API endpoint
+  colombiaFarmAgentUrl: "" # Colombia farm agent URL
+
 # serviceaccount:
 #   annotations:
 #     eks.amazonaws.com/role-arn: REPLACE_WITH_ROLE_ARN
