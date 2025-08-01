@@ -59,14 +59,21 @@ async def main(enable_http: bool):
         agent_card=AGENT_CARD, http_handler=request_handler
     )
 
-    # Run HTTP server and transport logic concurrently
-    tasks = []
-    if enable_http:
-        tasks.append(asyncio.create_task(run_http_server(server)))
-        tasks.append(asyncio.create_task(create_badge_for_colombia_farm()))
-    tasks.append(asyncio.create_task(run_transport(server, DEFAULT_MESSAGE_TRANSPORT, TRANSPORT_SERVER_ENDPOINT, block=True)))
+    # Run HTTP server and transport logic concurrently using TaskGroup
+    async with asyncio.TaskGroup() as tg:
+        if enable_http:
+            tg.create_task(safe_run(run_http_server, server))
+            tg.create_task(safe_run(create_badge_for_colombia_farm))
+        tg.create_task(safe_run(run_transport, server, DEFAULT_MESSAGE_TRANSPORT, TRANSPORT_SERVER_ENDPOINT, block=True))
 
-    await asyncio.gather(*tasks)
+async def safe_run(coro, *args, **kwargs):
+    """Run a coroutine safely, catching and logging exceptions."""
+    try:
+        await coro(*args, **kwargs)
+    except asyncio.CancelledError:
+        print(f"Task {coro.__name__} was cancelled.")
+    except Exception as e:
+        print(f"Task {coro.__name__} encountered an error: {e}")
 
 if __name__ == '__main__':
     try:
