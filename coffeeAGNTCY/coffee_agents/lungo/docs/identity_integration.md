@@ -2,7 +2,7 @@
 
 ## Setting Up the Local Development Environment
 
-Refer to the [Identity SaaS Documentation](https://identity-docs.staging.outshift.ai/docs/intro) for comprehensive details about Identity SaaS and its features.
+Refer to the [Identity SaaS Documentation](https://identity-docs.outshift.com/docs/intro) for comprehensive details about Identity SaaS and its features.
 
 ---
 
@@ -13,10 +13,10 @@ Refer to the [Identity SaaS Documentation](https://identity-docs.staging.outshif
   - Use the Identity SaaS UI to generate API keys for your agents (e.g., Vietnam and Colombia).
 
 2. **Register an Identity Provider**
-  - Follow the steps in the [Identity Provider Registration Guide](https://identity-docs.staging.outshift.ai/docs/idp) to complete the registration process.
+  - Follow the steps in the [Identity Provider Registration Guide](https://identity-docs.outshift.com/docs/idp) to complete the registration process.
 
 3. **Create Service Applications**
-  - Refer to the [Service Application Creation Guide](https://identity-docs.staging.outshift.ai/docs/agentic-service) to set up the service applications.
+  - Refer to the [Service Application Creation Guide](https://identity-docs.outshift.com/docs/agentic-service) to set up the service applications.
   - Create two service applications with names matching the farm agent cards:
     - **Vietnam Farm Agent Service App**: Name it "Vietnam Coffee Farm".
     - **Colombia Farm Agent Service App**: Name it "Colombia Coffee Farm".
@@ -46,7 +46,7 @@ Refer to the [Identity SaaS Documentation](https://identity-docs.staging.outshif
     - **Colombia Agent Service API Key**: Linked to the Colombia farm agent service app. This corresponds to the `IDENTITY_COLOMBIA_AGENT_SERVICE_API_KEY` environment variable.
 
 4. **Obtain the Identity API Endpoint**
-  - Refer to the [Identity API Documentation](https://identity-docs.staging.outshift.ai/docs/api) to locate the Identity API endpoint URL.
+  - Refer to the [Identity API Documentation](https://identity-docs.outshift.com/docs/api) to locate the Identity API endpoint URL.
   - This corresponds to the `IDENTITY_API_SERVER_URL` environment variable and is used for all API requests to Identity SaaS.
 
 5. **Farm Agent URLs**
