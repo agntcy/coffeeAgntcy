@@ -29,5 +29,6 @@ probes:
   readinessProbeEnabled: true
   livenessProbeEnabled: true
 
+# You can use your own config here for service account
 serviceaccount:
   annotations: {}
