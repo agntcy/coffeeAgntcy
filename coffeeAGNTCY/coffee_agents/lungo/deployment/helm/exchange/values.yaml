@@ -28,18 +28,16 @@ serviceaccount:
   annotations:
     eks.amazonaws.com/role-arn: REPLACE_WITH_ROLE_ARN
 
-
+# You can use your own ingress stack of operators and letsencrypt mechanism
 ingress:
-  enabled: true
-  name: exchange-ingress
-  className: nginx
-  host: lungo-exchange-ingress.outshift.io
-  serviceName: lungo-exchange-ingress
-  servicePort: 8000
-  tlsSecret: lungo-exchange-ingress-tls
-  annotations:
-    cert-manager.io/cluster-issuer: letsencrypt
-    nginx.ingress.kubernetes.io/rewrite-target: /
+  enabled: false  # If set to true, configure the values below for your ingress setup
+  name: ""
+  className: ""
+  host: ""
+  serviceName: ""
+  servicePort: ""
+  tlsSecret: ""
+  annotations: {}
 
 probes:
   livenessProbeEnabled: false
