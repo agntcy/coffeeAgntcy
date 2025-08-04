@@ -7,7 +7,7 @@ import React, { useState, useEffect } from 'react';
 import { v4 as uuid } from 'uuid';
 import { LOCAL_STORAGE_KEY } from '@/components/Chat/Messages';
 
-import BottomChat from '@/components/Chat/BottomChat';
+import BottomChat from '@/components/Chat/ChatArea';
 import CodePopUp from "@/components/MainArea/CodePopUp";
 
 import Navigation from '@/components/Navigation/Navigation';
