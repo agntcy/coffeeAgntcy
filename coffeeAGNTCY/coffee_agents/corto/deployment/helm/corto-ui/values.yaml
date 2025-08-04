@@ -24,7 +24,7 @@ serviceaccount:
 
 
 ingress:
-  enabled: false
+  enabled: true
   name: corto-ui-ingress
   className: nginx
   host: corto-ui-demo.outshift.io
