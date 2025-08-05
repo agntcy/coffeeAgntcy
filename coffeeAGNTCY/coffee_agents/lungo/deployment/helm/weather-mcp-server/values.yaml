@@ -29,5 +29,7 @@ probes:
   readinessProbeEnabled: true
   livenessProbeEnabled: true
 
+# You can use your own config here for service account
 serviceaccount:
-  annotations: {}
+  annotations:
+    eks.amazonaws.com/role-arn: REPLACE_WITH_ROLE_ARN

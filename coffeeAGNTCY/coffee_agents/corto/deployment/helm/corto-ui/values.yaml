@@ -17,22 +17,21 @@ service:
 config:
   exchangeAppApiUrl: ""
 
-# serviceaccount:
-#   annotations:
-#     eks.amazonaws.com/role-arn: REPLACE_WITH_ROLE_ARN
-
-
-ingress:
-  enabled: true
-  name: corto-ui-ingress
-  className: nginx
-  host: corto-ui-demo.outshift.io
-  serviceName: corto-ui-ingress
-  servicePort: 3000
-  tlsSecret: corto-ui-ingress-tls
+# You can use your own config here for service account
+serviceaccount:
   annotations:
-    cert-manager.io/cluster-issuer: letsencrypt
-    nginx.ingress.kubernetes.io/rewrite-target: /
+    eks.amazonaws.com/role-arn: REPLACE_WITH_ROLE_ARN
+
+# You can use your own ingress stack of operators and letsencrypt mechanism
+ingress:
+  enabled: false  # If set to true, configure the values below for your ingress setup
+  name: ""
+  className: ""
+  host: ""
+  serviceName: ""
+  servicePort: ""
+  tlsSecret: ""
+  annotations: {}
 
 probes:
   livenessProbeEnabled: false
