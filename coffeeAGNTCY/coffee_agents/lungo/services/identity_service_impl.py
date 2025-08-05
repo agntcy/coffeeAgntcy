@@ -8,8 +8,6 @@ from services.identity_service import IdentityService
 from typing import Dict, Any
 from services.models import IdentityServiceApps, Badge
 from identityservice.sdk import IdentityServiceSdk
-import httpx
-import logging
 
 CLI_MAX_RETRIES = 3
 CLI_RETRY_DELAY = 2
@@ -71,11 +69,9 @@ class IdentityServiceImpl(IdentityService):
 
     for attempt in range(1, CLI_MAX_RETRIES + 1):
       try:
-        # Attempt to issue the badge
-        result = await sdk.aissue_badge(agent_url)
-        return result  # Return the result if successful
+        await sdk.aissue_badge(agent_url)
+        return 'Badge created successfully'
       except Exception as e:
-        print(f"Attempt {attempt} failed: {e}")
         if attempt == CLI_MAX_RETRIES:
           raise ValueError(f"Failed to create badge after {CLI_MAX_RETRIES} attempts: {e}")
         await asyncio.sleep(CLI_RETRY_DELAY)
