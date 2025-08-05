@@ -75,6 +75,3 @@ class IdentityServiceImpl(IdentityService):
         if attempt == CLI_MAX_RETRIES:
           raise ValueError(f"Failed to create badge after {CLI_MAX_RETRIES} attempts: {e}")
         await asyncio.sleep(CLI_RETRY_DELAY)
-
-
-
