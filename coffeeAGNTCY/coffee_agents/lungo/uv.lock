@@ -814,7 +814,7 @@ wheels = [
 [[package]]
 name = "identity-service-sdk"
 version = "0.0.1"
-source = { git = "https://github.com/cisco-outshift-ai-agents/identity-service-sdk?subdirectory=python&rev=main#51d846d5b3d4adde0bc57ba85d4501bc69f8eb64" }
+source = { git = "https://github.com/cisco-outshift-ai-agents/identity-service-sdk?subdirectory=python&rev=main#4bc29ca762b4af56dca355f0f139f1c58638b01b" }
 dependencies = [
     { name = "a2a-sdk" },
     { name = "grpcio" },

@@ -7,6 +7,7 @@ from pydantic import ValidationError
 from services.identity_service import IdentityService
 from typing import Dict, Any
 from services.models import IdentityServiceApps, Badge
+from identityservice.sdk import IdentityServiceSdk
 
 CLI_MAX_RETRIES = 3
 CLI_RETRY_DELAY = 2
@@ -61,30 +62,16 @@ class IdentityServiceImpl(IdentityService):
       raise ValueError(f"Failed to verify badge: {response.status_code}, {response.text}")
 
   async def create_badge(self, agent_url: str, svc_api_key: str) -> str:
-    """Create a badge using the identity-cli binary with the --key flag asynchronously."""
-    command = ["identity-cli", "badge", "create", "--key", svc_api_key, agent_url]
+    sdk = IdentityServiceSdk(
+      api_key=svc_api_key,
+      async_mode=True,
+    )
 
     for attempt in range(1, CLI_MAX_RETRIES + 1):
       try:
-        process = await asyncio.create_subprocess_exec(
-          *command,
-          stdout=asyncio.subprocess.PIPE,
-          stderr=asyncio.subprocess.PIPE
-        )
-        stdout, stderr = await process.communicate()
-
-        if process.returncode == 0:
-          return stdout.decode().strip()
-        else:
-          print(f"Attempt {attempt} failed with return code: {process.returncode}")
-          print("Standard Output:", stdout.decode().strip())
-          print("Standard Error:", stderr.decode().strip())
-          if attempt == CLI_MAX_RETRIES:
-            raise RuntimeError(f"Failed to create badge after {CLI_MAX_RETRIES} attempts. See logs for details.")
+        await sdk.aissue_badge(agent_url)
+        return 'Badge created successfully'
       except Exception as e:
-        print(f"Attempt {attempt} encountered an unexpected error: {e}")
         if attempt == CLI_MAX_RETRIES:
-          raise RuntimeError("An unexpected error occurred. See logs for details.")
-
-      print(f"Retrying in {CLI_RETRY_DELAY} seconds...")
-      await asyncio.sleep(CLI_RETRY_DELAY)
+          raise ValueError(f"Failed to create badge after {CLI_MAX_RETRIES} attempts: {e}")
+        await asyncio.sleep(CLI_RETRY_DELAY)
