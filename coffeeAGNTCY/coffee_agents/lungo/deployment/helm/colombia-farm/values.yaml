@@ -27,10 +27,10 @@ config:
   identityApiServerUrl: "" # Identity API endpoint
   colombiaFarmAgentUrl: "" # Colombia farm agent URL
 
-# serviceaccount:
-#   annotations:
-#     eks.amazonaws.com/role-arn: REPLACE_WITH_ROLE_ARN
-
+# You can use your own config here for service account
+serviceaccount:
+  annotations:
+    eks.amazonaws.com/role-arn: REPLACE_WITH_ROLE_ARN
 
 probes:
   livenessProbeEnabled: false

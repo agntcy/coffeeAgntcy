@@ -1,6 +1,8 @@
 # Copyright AGNTCY Contributors (https://github.com/agntcy)
 # SPDX-License-Identifier: Apache-2.0
 
+import logging
+
 from services.identity_service_impl import IdentityServiceImpl
 
 from config.config import (
@@ -10,6 +12,8 @@ from config.config import (
   IDENTITY_API_SERVER_URL,
 )
 
+logger = logging.getLogger("colombia.utils")
+
 async def create_badge_for_colombia_farm():
   """Create a badge after the HTTP server starts and is ready."""
   try:
@@ -18,6 +22,6 @@ async def create_badge_for_colombia_farm():
                                            base_url=IDENTITY_API_SERVER_URL)
     badge_output = await identity_service.create_badge(agent_url=COLOMBIA_FARM_AGENT_URL,
                                                  svc_api_key=IDENTITY_COLOMBIA_AGENT_SERVICE_API_KEY)
-    print("Badge created successfully:", badge_output)
+    logger.info("Badge created successfully: %s", badge_output)
   except Exception as e:
-    print("Failed to create badge:", e)
+    logger.error("Failed to create badge: %s", e)
