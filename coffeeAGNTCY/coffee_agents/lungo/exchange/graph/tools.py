@@ -168,6 +168,7 @@ async def get_farm_yield_inventory(prompt: str, farm: str) -> str:
     )
 
     request = SendMessageRequest(
+        id=str(uuid4()),
         params=MessageSendParams(
             message=Message(
                 messageId=str(uuid4()),
@@ -219,6 +220,7 @@ async def get_all_farms_yield_inventory(prompt: str) -> str:
     )
 
     request = SendMessageRequest(
+        id=str(uuid4()),
         params=MessageSendParams(
             message=Message(
                 messageId=str(uuid4()),
@@ -301,6 +303,7 @@ async def create_order(farm: str, quantity: int, price: float) -> str:
     )
 
     request = SendMessageRequest(
+        id=str(uuid4()),
         params=MessageSendParams(
             message=Message(
                 messageId=str(uuid4()),
@@ -354,6 +357,7 @@ async def get_order_details(order_id: str) -> str:
     )
 
     request = SendMessageRequest(
+        id=str(uuid4()),
         params=MessageSendParams(
             message=Message(
                 messageId=str(uuid4()),

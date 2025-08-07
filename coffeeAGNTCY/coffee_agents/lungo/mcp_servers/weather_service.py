@@ -1,10 +1,22 @@
-import argparse
+# Copyright AGNTCY Contributors (https://github.com/agntcy)
+# SPDX-License-Identifier: Apache-2.0
+
 from typing import Any
 
 import httpx
-import uvicorn
+import asyncio
 
 from mcp.server.fastmcp import FastMCP
+
+from agntcy_app_sdk.factory import AgntcyFactory
+from config.config import (
+    DEFAULT_MESSAGE_TRANSPORT,
+    TRANSPORT_SERVER_ENDPOINT,
+)
+
+# Initialize a multi-protocol, multi-transport agntcy factory.
+factory = AgntcyFactory("lungo_mcp_server", enable_tracing=True)
+transport = factory.create_transport(DEFAULT_MESSAGE_TRANSPORT, endpoint=TRANSPORT_SERVER_ENDPOINT)
 
 # Base URLs
 NOMINATIM_BASE = "https://nominatim.openstreetmap.org/search"
@@ -66,8 +78,10 @@ async def get_forecast(location: str) -> str:
         f"Wind direction: {cw['winddirection']}°"
     )
 
+async def main():
+    # serve the MCP server via a message bridge
+    bridge = factory.create_bridge(mcp, transport=transport, topic="lungo_weather_service")
+    await bridge.start(blocking=True)
+
 if __name__ == "__main__":
-    app = mcp.streamable_http_app()
-    for route in app.routes:
-        print(f"{route.path} ")
-    uvicorn.run(mcp.streamable_http_app, host="0.0.0.0", port=8125)
+    asyncio.run(main())

@@ -24,7 +24,10 @@ from common.llm import get_llm
 from agntcy_app_sdk.factory import AgntcyFactory
 from ioa_observe.sdk.decorators import agent, graph
 
-from config.config import WEATHER_MCP_SERVER_URL, DEFAULT_MESSAGE_TRANSPORT
+from config.config import (
+    DEFAULT_MESSAGE_TRANSPORT,
+    TRANSPORT_SERVER_ENDPOINT,
+)
 
 logger = logging.getLogger("lungo.colombia_farm_agent.agent")
 
@@ -119,54 +122,55 @@ class FarmAgent:
 
         logger.info(f"Weather location extracted: {location}")
 
-        endpoint=f"{WEATHER_MCP_SERVER_URL}/mcp"
-        transport_instance = factory.create_transport(transport=DEFAULT_MESSAGE_TRANSPORT, endpoint=endpoint)
-        client = await factory.create_client(
+        transport_instance = factory.create_transport(DEFAULT_MESSAGE_TRANSPORT, endpoint=TRANSPORT_SERVER_ENDPOINT)
+        mcp_client = factory.create_client(
             "MCP",
-            agent_url=endpoint,
+            agent_topic="lungo_weather_service",
             transport=transport_instance,
         )
 
         # view available tools
         try:
-            response = await client.session.list_tools()
-            available_tools = [
-                {
-                    "name": tool.name,
-                    "description": tool.description,
-                    "input_schema": tool.inputSchema,
-                }
-                for tool in response.tools
-            ]
-            logger.info(f"Available tools: {available_tools}")
+            async with mcp_client as client:
+                response = await client.list_tools()
+                print('hit MCP list tools', response)
+                available_tools = [
+                    {
+                        "name": tool.name,
+                        "description": tool.description,
+                        "input_schema": tool.inputSchema,
+                    }
+                    for tool in response.tools
+                ]
+                logger.info(f"Available tools: {available_tools}")
 
-            result = await client.session.call_tool(
-                name="get_forecast",
-                arguments={"location": location},
-            )
-            logger.info(f"Tool call result: {result}")
+                result = await client.call_tool(
+                    name="get_forecast",
+                    arguments={"location": location},
+                )
+                logger.info(f"Tool call result: {result}")
 
-            mcp_call_result = ""
-            if hasattr(result, "__aiter__"):
-                # gather streamed chunks
-                async for chunk in result:
-                    delta = chunk.choices[0].delta
-                    mcp_call_result += delta.content or ""
-            else:
-                content_list = result.content
-                if isinstance(content_list, list) and len(content_list) > 0:
-                    mcp_call_result = content_list[0].text
+                mcp_call_result = ""
+                if hasattr(result, "__aiter__"):
+                    # gather streamed chunks
+                    async for chunk in result:
+                        delta = chunk.choices[0].delta
+                        mcp_call_result += delta.content or ""
                 else:
-                    mcp_call_result = "No content returned from tool."
+                    content_list = result.content
+                    if isinstance(content_list, list) and len(content_list) > 0:
+                        mcp_call_result = content_list[0].text
+                    else:
+                        mcp_call_result = "No content returned from tool."
 
-            logger.info(f"Weather forecast result: {mcp_call_result}")
-            logger.info(f"Weather forecast result as AIMeessage: {[AIMessage(mcp_call_result)]}")
-            return {"messages": [AIMessage(mcp_call_result)]}
+                logger.info(f"Weather forecast result: {mcp_call_result}")
+                logger.info(f"Weather forecast result as AIMeessage: {[AIMessage(mcp_call_result)]}")
+                return {"messages": [AIMessage(mcp_call_result)]}
         except Exception as e:
             logger.error(f"Error during MCP tool call: {e}")
             return {"messages": [AIMessage(f"Error retrieving weather data: {str(e)}")]}
         finally:
-            await client.cleanup()
+            pass
 
     async def _inventory_node(self, state: GraphState) -> dict:
         """

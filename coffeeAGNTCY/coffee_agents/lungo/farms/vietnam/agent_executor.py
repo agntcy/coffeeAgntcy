@@ -77,7 +77,7 @@ class FarmAgentExecutor(AgentExecutor):
             output = await self.agent.ainvoke(prompt)
         
             message = Message(
-                messageId=str(uuid4()),
+                message_id=str(uuid4()),
                 role=Role.agent,
                 metadata={"name": self.agent_card["name"]},
                 parts=[Part(TextPart(text=output))],
@@ -85,7 +85,7 @@ class FarmAgentExecutor(AgentExecutor):
 
             logger.info("agent output message: %s", message)
 
-            event_queue.enqueue_event(message)            
+            await event_queue.enqueue_event(message)              
         except Exception as e:
             logger.error(f'An error occurred while streaming the yield estimate response: {e}')
             raise ServerError(error=InternalError()) from e

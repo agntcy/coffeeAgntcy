@@ -12,9 +12,10 @@ resolution-markers = [
 
 [[package]]
 name = "a2a-sdk"
-version = "0.2.5"
+version = "0.2.16"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
+    { name = "fastapi" },
     { name = "httpx" },
     { name = "httpx-sse" },
     { name = "opentelemetry-api" },
@@ -23,18 +24,18 @@ dependencies = [
     { name = "sse-starlette" },
     { name = "starlette" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/61/c4/4fbb805dbabbef1035abdd7fac6d8514ed92e6916304a74c1ea429c9ef79/a2a_sdk-0.2.5.tar.gz", hash = "sha256:d2bc0842ef9dda8bb127b1d07e0b4e3678127cb517cf1e9d46cbc40de944c2ac", size = 181587, upload-time = "2025-05-27T21:58:08.243Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/1e/3b/8fd1e3fe28606712c203b968a6fe2c8e7944b6df9e65c28976c66c19286c/a2a_sdk-0.2.16.tar.gz", hash = "sha256:d9638c71674183f32fe12f8865015e91a563a90a3aa9ed43020f1b23164862b3", size = 179006, upload-time = "2025-07-21T19:51:14.107Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/25/d7/c8623ac2d6a78ad95030357051a06a4d400ca650bf256a1151b52149b238/a2a_sdk-0.2.5-py3-none-any.whl", hash = "sha256:00962245941937964074ae9dfa3aad05f2e156a20501d6bfaadb9cce096279c5", size = 62089, upload-time = "2025-05-27T21:58:06.856Z" },
+    { url = "https://files.pythonhosted.org/packages/a5/92/16bfbc2ef0ef037c5860ef3b13e482aeb1860b9643bf833ed522c995f639/a2a_sdk-0.2.16-py3-none-any.whl", hash = "sha256:54782eab3d0ad0d5842bfa07ff78d338ea836f1259ece51a825c53193c67c7d0", size = 103090, upload-time = "2025-07-21T19:51:12.613Z" },
 ]
 
 [[package]]
 name = "agntcy-app-sdk"
-version = "0.1.2"
+version = "0.1.5"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "a2a-sdk" },
-    { name = "cisco-outshift-agent-utils" },
+    { name = "asgi-lifespan" },
     { name = "coloredlogs" },
     { name = "httpx" },
     { name = "ioa-observe-sdk" },
@@ -46,9 +47,9 @@ dependencies = [
     { name = "slim-bindings" },
     { name = "uvicorn" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/3c/70/59ee0239ce24c72b95b5a164dd282ff88aeef1dbfec85f5ac404402ef7b1/agntcy_app_sdk-0.1.2.tar.gz", hash = "sha256:7b3e94763026787878c36717137b1dbd6f307e47335acffca7c9277efceb86cc", size = 327187, upload-time = "2025-07-25T03:29:21.351Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/13/5a/91d5a063a7a68ac75d433933e3f5505b8b980a50d9504fa75b5ee416697d/agntcy_app_sdk-0.1.5.tar.gz", hash = "sha256:0b0df0cf6e0ac087a9461de56a268a57fc4fe471a05c8f5c88bb077b7b7b0495", size = 508107, upload-time = "2025-08-06T18:53:51.188Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/e4/35/ca7a9f8532ad009550a453c016640b44de886ab356658975d3feb9fbfe64/agntcy_app_sdk-0.1.2-py3-none-any.whl", hash = "sha256:3ffec4deee64b6589d9d249aca6fdfe76080359f47d255edb6f7862258a7a04f", size = 30559, upload-time = "2025-07-25T03:29:20.216Z" },
+    { url = "https://files.pythonhosted.org/packages/74/be/9b352e1ca5b022c9ca8a85396cbaf3327c5cec31a6c65c083e79b258d496/agntcy_app_sdk-0.1.5-py3-none-any.whl", hash = "sha256:e94ec275dcd1ef1955a8bb468c85c67a87520dd9325f49282046b3765e0442c4", size = 34378, upload-time = "2025-08-06T18:53:49.716Z" },
 ]
 
 [[package]]
@@ -175,6 +176,18 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/95/7d/4c1bd541d4dffa1b52bd83fb8527089e097a106fc90b467a7313b105f840/anyio-4.9.0.tar.gz", hash = "sha256:673c0c244e15788651a4ff38710fea9675823028a6f08a5eda409e0c9840a028", size = 190949, upload-time = "2025-03-17T00:02:54.77Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/a1/ee/48ca1a7c89ffec8b6a0c5d02b89c305671d5ffd8d3c94acf8b8c408575bb/anyio-4.9.0-py3-none-any.whl", hash = "sha256:9f76d541cad6e36af7beb62e978876f3b41e3e04f2c1fbf0884604c0a9c4d93c", size = 100916, upload-time = "2025-03-17T00:02:52.713Z" },
+]
+
+[[package]]
+name = "asgi-lifespan"
+version = "2.1.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "sniffio" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/6a/da/e7908b54e0f8043725a990bf625f2041ecf6bfe8eb7b19407f1c00b630f7/asgi-lifespan-2.1.0.tar.gz", hash = "sha256:5e2effaf0bfe39829cf2d64e7ecc47c7d86d676a6599f7afba378c31f5e3a308", size = 15627, upload-time = "2023-03-28T17:35:49.126Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/2f/f5/c36551e93acba41a59939ae6a0fb77ddb3f2e8e8caa716410c65f7341f72/asgi_lifespan-2.1.0-py3-none-any.whl", hash = "sha256:ed840706680e28428c01e14afb3875d7d76d3206f3d5b2f2294e059b5c23804f", size = 10895, upload-time = "2023-03-28T17:35:47.772Z" },
 ]
 
 [[package]]
@@ -1544,7 +1557,7 @@ dev = [
 
 [package.metadata]
 requires-dist = [
-    { name = "a2a-sdk", specifier = "==0.2.5" },
+    { name = "a2a-sdk", specifier = "==0.2.16" },
     { name = "agntcy-app-sdk", specifier = ">=0.1.2" },
     { name = "autogen-core", marker = "extra == 'dev'", specifier = ">=0.4.3,<0.5" },
     { name = "cisco-outshift-agent-utils", specifier = ">=0.0.2" },
