@@ -25,7 +25,7 @@ dependencies = [
     "mcp[cli]>=1.10.0",
     "ioa-observe-sdk==1.0.12",
     "identity-service-sdk@git+https://github.com/cisco-outshift-ai-agents/identity-service-sdk@main#subdirectory=python",
-    "agntcy-app-sdk>=0.1.2",
+    "agntcy-app-sdk==0.1.5",
 ]
 
 [project.optional-dependencies]
