@@ -6,6 +6,8 @@
 import React, { useState, useEffect } from 'react';
 import { v4 as uuid } from 'uuid';
 import { LOCAL_STORAGE_KEY } from '@/components/Chat/Messages';
+import UserMessage from '@/components/Chat/UserMessage';
+import AgentIcon from '@/assets/Agent_Icon.svg';
 
 import BottomChat from '@/components/Chat/ChatArea';
 import CodePopUp from "@/components/MainArea/CodePopUp";
@@ -42,6 +44,9 @@ const App: React.FC = () => {
     const [aiReplied, setAiReplied] = useState<boolean>(false);
     const [buttonClicked, setButtonClicked] = useState<boolean>(false);
     const [showCode, setShowCode] = useState<boolean>(false);
+    const [currentUserMessage, setCurrentUserMessage] = useState<string>('');
+    const [agentResponse, setAgentResponse] = useState<string>('');
+    const [isAgentLoading, setIsAgentLoading] = useState<boolean>(false);
     const [messages, setMessages] = useState<Message[]>(() => {
         const saved = localStorage.getItem(LOCAL_STORAGE_KEY);
         return saved
@@ -68,18 +73,79 @@ const App: React.FC = () => {
                 id: uuid(), 
                 animate: false 
             }]);
+            
+            setCurrentUserMessage('');
+            setAgentResponse('');
+            setIsAgentLoading(false);
         }
     }, [selectedPattern]);
 
     const handleCoffeeGraderSelect = (query: string) => {
-        const newMessage: Message = {
+        handleDropdownSelect(query);
+    };
+
+  
+    const handleApiResponse = (response: string, isError: boolean = false) => {
+        
+        setAgentResponse(response);
+        
+        
+        setIsAgentLoading(false);
+        
+        setMessages(prev => {
+            const updated = [...prev];
+            if (updated.length > 0 && updated[updated.length - 1].role === 'assistant') {
+                updated[updated.length - 1] = {
+                    ...updated[updated.length - 1],
+                    content: response,
+                    animate: !isError
+                };
+            }
+            return updated;
+        });
+    };
+
+    const handleDropdownSelect = async (query: string) => {
+        setCurrentUserMessage(query);
+        setIsAgentLoading(true);
+        
+        const userMessage: Message = {
             role: 'user',
             content: query,
             id: uuid(),
             animate: true
         };
-        setMessages(prev => [...prev, newMessage]);
+        
+        const loadingMessage: Message = {
+            role: 'assistant',
+            content: '...',
+            id: uuid(),
+            animate: true
+        };
+        
+        setMessages(prev => [...prev, userMessage, loadingMessage]);
         setButtonClicked(true);
+
+        // Make the actual API call
+        try {
+            const response = await fetch('http://127.0.0.1:8000/agent/prompt', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ prompt: query }),
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                handleApiResponse(data.response, false);
+            } else {
+                handleApiResponse('Sorry, I encountered an error.', true);
+            }
+        } catch (error) {
+            console.error('API Error:', error);
+            handleApiResponse('Sorry, I encountered an error.', true);
+        }
     };
 
     return (
@@ -135,7 +201,31 @@ const App: React.FC = () => {
                 )}
             </div>
 
-            <div className="flex flex-col justify-center items-center p-0 gap-0 w-full min-h-[76px] max-h-[200px] bg-[#2E3E57] flex-none self-stretch flex-grow-0 min-w-[1440px] box-border overflow-visible">
+            <div className="flex flex-col justify-center items-center p-0 gap-0 w-full min-h-[76px] bg-[#2E3E57] flex-none self-stretch flex-grow-0 min-w-[1440px] box-border overflow-visible">
+                {currentUserMessage && (
+                    <div className="w-full p-4">
+                        <div className="w-[830px] max-w-full mx-auto flex flex-col gap-3">
+                            <UserMessage content={currentUserMessage} />
+                            {(isAgentLoading || agentResponse) && (
+                                <div className="flex flex-row items-start gap-1 w-full">
+                                    <div className="flex justify-center items-center w-10 h-10 bg-[#2E3E57] rounded-full">
+                                        <img src={AgentIcon} alt="Agent" className="w-10 h-10 rounded-full" style={{opacity: 1}} />
+                                    </div>
+                                    <div className="flex flex-col justify-center items-start p-1 px-2 w-[764px] rounded">
+                                        <div className="font-['Inter'] font-normal text-sm leading-5 text-white whitespace-pre-wrap">
+                                            {isAgentLoading ? (
+                                                <div className="text-[#649EF5] animate-pulse">...</div>
+                                            ) : (
+                                                agentResponse
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                )}
+                
                 <BottomChat
                     messages={messages}
                     setMessages={setMessages}
@@ -145,6 +235,8 @@ const App: React.FC = () => {
                     showCoffeeDropdown={selectedPattern === PATTERNS.SLIM_A2A}
                     showBuyerDropdowns={selectedPattern === PATTERNS.SLIM_MULTI_A2A}
                     onCoffeeGraderSelect={handleCoffeeGraderSelect}
+                    onDropdownSelect={handleDropdownSelect}
+                    onApiResponse={handleApiResponse}
                 />
             </div>
         </div>

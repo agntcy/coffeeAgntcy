@@ -17,8 +17,8 @@ interface CustomEdgeLabelProps {
 
 const CustomEdgeLabel: React.FC<CustomEdgeLabelProps> = ({ x, y, label, active }) => {
     const isSlimLabel = label?.includes('SLIM');
-    const isIdentityLabel = label?.toLowerCase().includes('identity');
-    const isLongLabel = isSlimLabel || isIdentityLabel;
+    const isValidateLabel = label?.toLowerCase().includes('validate');
+    const isLongLabel = isSlimLabel ||  isValidateLabel;
     
     const backgroundColor = active ? '#00142B' : '#183056';
     const textColor = active ? '#187ADC' : '#E8E9EA';

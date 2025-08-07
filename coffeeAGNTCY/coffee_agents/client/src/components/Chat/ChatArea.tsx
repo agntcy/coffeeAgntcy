@@ -13,6 +13,7 @@ import airplaneSvg from '@/assets/airplane.svg';
 import BuyerPurchaserDropdowns from './Prompts/BuyerPurchaserDropdown';
 const DEFAULT_EXCHANGE_APP_API_URL = 'http://0.0.0.0:8000';
 
+
 interface BottomChatProps {
     messages: Message[];
     setMessages: React.Dispatch<React.SetStateAction<Message[]>>;
@@ -22,6 +23,8 @@ interface BottomChatProps {
     showCoffeeDropdown?: boolean;
     showBuyerDropdowns?: boolean;
     onCoffeeGraderSelect?: (query: string) => void;
+    onDropdownSelect?: (query: string) => void;
+    onApiResponse?: (response: string, isError?: boolean) => void;
 }
 
 interface ApiResponse {
@@ -29,19 +32,23 @@ interface ApiResponse {
 }
 
 const BottomChat: React.FC<BottomChatProps> = ({ 
-    messages, 
+
     setMessages, 
     setButtonClicked, 
     setAiReplied, 
     isBottomLayout,
     showCoffeeDropdown = false,
     showBuyerDropdowns = false,
-    onCoffeeGraderSelect
+    onDropdownSelect,
+    onApiResponse
 }) => {
     const [content, setContent] = useState<string>("");
     const [loading, setLoading] = useState<boolean>(false);
 
     const handleDropdownQuery = (query: string) => {
+        if (onDropdownSelect) {
+            onDropdownSelect(query);
+        }
         processMessageWithQuery(query);
     };
 
@@ -83,6 +90,11 @@ const BottomChat: React.FC<BottomChatProps> = ({
                 return updatedMessages;
             });
             setAiReplied(true);
+            
+           
+            if (onApiResponse) {
+                onApiResponse(response.data.response, false);
+            }
         } catch (error) {
             console.error('Error:', error);
             setMessages((prevMessages: Message[]) => {
@@ -95,6 +107,10 @@ const BottomChat: React.FC<BottomChatProps> = ({
                 };
                 return updatedMessages;
             });
+            
+            if (onApiResponse) {
+                onApiResponse('Sorry, I encountered an error.', true);
+            }
         } finally {
             setLoading(false);
         }
@@ -118,11 +134,11 @@ const BottomChat: React.FC<BottomChatProps> = ({
     return (
         <div className="flex flex-col items-center justify-center p-4 gap-1 w-full min-h-[76px] box-border relative">
           
-            {showCoffeeDropdown && onCoffeeGraderSelect && (
+            {showCoffeeDropdown && (
                 <div className="flex justify-start items-center w-[830px] max-w-full py-1 relative z-10 mx-auto">
                     <CoffeeGraderDropdown 
                         visible={true}
-                        onSelect={onCoffeeGraderSelect}
+                        onSelect={handleDropdownQuery}
                     />
                 </div>
             )}
@@ -150,7 +166,10 @@ const BottomChat: React.FC<BottomChatProps> = ({
                     </div>
                 </div>
                 <div className="flex flex-row items-start p-0 w-[50px] h-11">
-                    <button className="flex flex-row justify-center items-center py-[15px] px-4 gap-[10px] w-[50px] h-11 bg-gradient-to-r from-[#834DD7] via-[#7670D5] to-[#58C0D0] rounded-md border-none cursor-pointer">
+                    <button 
+                        onClick={!content.trim() || loading ? undefined : processMessage}
+                        disabled={!content.trim() || loading}
+                        className="flex flex-row justify-center items-center py-[15px] px-4 gap-[10px] w-[50px] h-11 bg-gradient-to-r from-[#834DD7] via-[#7670D5] to-[#58C0D0] rounded-md border-none cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">
                         <img src={airplaneSvg} alt="Send" className="w-[18px] h-[18px]" />
                     </button>
                 </div>

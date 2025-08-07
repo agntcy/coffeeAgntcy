@@ -16,6 +16,8 @@ interface CustomNodeData {
     active?: boolean;
     handleColor?: string;
     handles?: 'all' | 'target' | 'source';
+    verificationStatus?: 'verified' | 'failed' | 'pending';
+    verificationBadge?: React.ReactNode;
 }
 
 interface CustomNodeProps {
@@ -36,6 +38,7 @@ const CustomNode: React.FC<CustomNodeProps> = ({ data }) => {
                 text-center
                 flex items-center justify-center
                 hover:bg-[#4A4F55] hover:outline hover:outline-2 hover:outline-[#187ADC] hover:shadow-[rgba(0,0,0,0.6)_0px_6px_8px]
+                relative
             `}
             style={{ 
                 width: '196px', 
@@ -44,6 +47,14 @@ const CustomNode: React.FC<CustomNodeProps> = ({ data }) => {
                 borderRadius: '8px' 
             }}
         >
+            {data.verificationBadge && (
+                <div 
+                    className="absolute top-1 right-1"
+                    style={{ zIndex: 10 }}
+                >
+                    {data.verificationBadge}
+                </div>
+            )}
             <div className="flex flex-row items-center p-0 gap-1 w-[148px] h-9">
                 <div className="flex flex-row justify-center items-center py-1 px-0 gap-[10px] w-9 h-9 bg-[#59616B] rounded border-none mr-0 overflow-hidden opacity-100 self-stretch">
                     {data.icon}
