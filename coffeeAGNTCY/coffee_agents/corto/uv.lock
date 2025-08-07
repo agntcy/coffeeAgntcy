@@ -424,7 +424,7 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "a2a-sdk", specifier = "==0.2.16" },
-    { name = "agntcy-app-sdk", specifier = ">=0.1.2" },
+    { name = "agntcy-app-sdk", specifier = ">=0.1.5" },
     { name = "autogen-core", marker = "extra == 'dev'", specifier = ">=0.4.3,<0.5" },
     { name = "cisco-outshift-agent-utils", specifier = ">=0.0.2" },
     { name = "click", specifier = ">=8.1.8" },
