@@ -78,20 +78,20 @@ class FarmAgentExecutor(AgentExecutor):
 
         validation_error = self._validate_request(context)
         if validation_error:
-            event_queue.enqueue_event(validation_error)
+            await event_queue.enqueue_event(validation_error)
             return
         
         prompt = context.get_user_input()
         if not prompt:
             logger.warning("Empty or missing prompt in user input.")
-            event_queue.enqueue_event(
+            await event_queue.enqueue_event(
                 new_agent_text_message("No valid input prompt provided.")
             )
             return
         task = context.current_task
         if not task:
             task = new_task(context.message)
-            event_queue.enqueue_event(task)
+            await event_queue.enqueue_event(task)
 
         try:
             output = await self.agent.ainvoke(prompt)
@@ -100,12 +100,12 @@ class FarmAgentExecutor(AgentExecutor):
                 message = new_agent_text_message(
                     output.get("error_message", "Failed to generate flavor profile"),
                 )
-                event_queue.enqueue_event(message)
+                await event_queue.enqueue_event(message)
                 return
 
             flavor = output.get("flavor_notes", "No flavor profile returned")
             logger.info("Flavor profile generated: %s", flavor)
-            event_queue.enqueue_event(new_agent_text_message(flavor))
+            await event_queue.enqueue_event(new_agent_text_message(flavor))
         except Exception as e:
             logger.error(f'An error occurred while streaming the flavor profile response: {e}')
             raise ServerError(error=InternalError()) from e

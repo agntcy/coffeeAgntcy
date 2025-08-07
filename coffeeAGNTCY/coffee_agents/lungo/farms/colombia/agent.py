@@ -102,7 +102,6 @@ class FarmAgent:
             return {"next_node": NodeStates.GENERAL_RESPONSE, "messages": state["messages"]}
         
     async def _get_weather_forecast(self, state: GraphState) -> str:
-        print("Getting weather forecast...")
 
         # extract location from latest user message
         if not self.weather_forecast_llm:
@@ -133,7 +132,6 @@ class FarmAgent:
         try:
             async with mcp_client as client:
                 response = await client.list_tools()
-                print('hit MCP list tools', response)
                 available_tools = [
                     {
                         "name": tool.name,

@@ -88,12 +88,13 @@ class FlavorProfileTool(BaseTool):
             await self._connect()
 
         request = SendMessageRequest(
+            id=str(uuid4()),
             params=MessageSendParams(
                 skill_id="estimate_flavor",
                 sender_id="coffee-exchange-agent",
                 receiver_id="flavor-profile-farm-agent",
                 message=Message(
-                    messageId=str(uuid4()),
+                    message_id=str(uuid4()),
                     role=Role.user,
                     parts=[Part(TextPart(text=prompt))],
                 )
