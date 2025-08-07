@@ -156,7 +156,7 @@ const App: React.FC = () => {
             />
 
             <div className="flex-grow flex flex-col bg-primary-bg">
-                <div className="box-border flex flex-row justify-between items-center p-4 gap-2.5 w-full h-[52px] bg-[#23282E] border-b border-[#1A1F27] flex-none self-stretch flex-grow-0">
+                {/* <div className="box-border flex flex-row justify-between items-center p-4 gap-2.5 w-full h-[52px] bg-[#23282E] border-b border-[#1A1F27] flex-none self-stretch flex-grow-0">
                     <button className="flex flex-row justify-center items-center p-0 gap-1 w-36 h-5 rounded-md border-none bg-transparent cursor-pointer flex-none order-0 flex-grow-0">
                         <span className="w-36 h-5 font-['Inter'] font-bold text-sm leading-5 text-[#FBFCFE] flex-none order-1 flex-grow-0">AGNTCY Graph View</span>
                     </button>
@@ -175,7 +175,7 @@ const App: React.FC = () => {
                             showCode ? 'text-primary-blue' : 'text-[#649EF5]'
                         }`}>Code</span>
                     </button>
-                </div>
+                </div> */}
 
                 {selectedPattern === PATTERNS.NONE ? (
                     <PatternEmptyState />

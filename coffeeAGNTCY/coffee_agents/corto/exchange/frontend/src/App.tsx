@@ -98,20 +98,7 @@ const App: React.FC = () => {
             <Navigation />
 
             <div className="flex-grow flex flex-col bg-primary-bg">
-                <div className="box-border flex flex-row justify-between items-center p-4 gap-2.5 w-full h-[52px] bg-[#23282E] border-b border-[#1A1F27] flex-none self-stretch flex-grow-0">
-                    <button className="flex flex-row justify-center items-center p-0 gap-1 w-36 h-5 rounded-md border-none bg-transparent cursor-pointer flex-none order-0 flex-grow-0">
-                        <span className="w-36 h-5 font-['Inter'] font-medium text-base leading-5 text-[#FBFCFE] truncate flex-none order-1 flex-grow-0">
-                            Grader Conversation
-                        </span>
-                    </button>
-                    <button 
-                        className="flex justify-center items-center p-2 bg-transparent border-none cursor-pointer text-[#649EF5] hover:text-white transition-colors duration-200"
-                        onClick={() => setShowCode(!showCode)}
-                        title="Toggle Code"
-                    >
-                        <IoCodeSlash size={24} />
-                    </button>
-                </div>
+            
 
                 <div className="flex-grow flex flex-col bg-primary-bg">
                     <div className="relative">

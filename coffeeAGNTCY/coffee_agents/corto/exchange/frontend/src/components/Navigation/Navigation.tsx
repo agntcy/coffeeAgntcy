@@ -9,14 +9,14 @@ import coffeeAgntcyLogo from '@/assets/coffee_agntcy.png';
 const Navigation: React.FC = () => {
     return (
         <div className="
-            box-border flex flex-col items-start p-0 w-full h-[52px] 
+            box-border flex flex-col items-start p-0 w-full h-[64px] 
             bg-[#F5F8FD] border-r border-[#DBE0E5] 
             flex-none order-0 self-stretch flex-grow-0
         ">
-            {/* Top navigation bar with logo */}
+         
             <div className="
                 box-border flex flex-row justify-between items-center 
-                py-[10px] px-4 gap-2 w-full h-[52px] 
+                py-[10px] px-4 gap-2 w-full h-[64px] 
                 bg-[#EFF3FC] border-b border-[#D5DFF7] 
                 flex-none order-0 self-stretch flex-grow-0
             ">

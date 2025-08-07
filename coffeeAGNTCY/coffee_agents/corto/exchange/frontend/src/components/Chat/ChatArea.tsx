@@ -117,7 +117,7 @@ const BottomChat: React.FC<BottomChatProps> = ({
         await processMessageWithQuery(content);
     };
 
-    const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>): void => {
+    const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>): void => {
         if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault();
             processMessage();
@@ -129,12 +129,12 @@ const BottomChat: React.FC<BottomChatProps> = ({
     }
 
     return (
-        <div className="flex flex-col items-center justify-center p-4 gap-1 w-full min-h-[76px] box-border relative">
+        <div className="flex flex-col items-center justify-center p-2 gap-1 w-full min-h-[76px] box-border relative">
           
       
        
 
-            <div className="flex justify-start items-center w-[830px] max-w-full py-1 relative z-10 mx-auto">
+            <div className="flex justify-start items-center w-[830px] max-w-full py-0 relative z-10 mx-auto">
                 <CoffeeGraderDropdown
                     visible={true}
                     onSelect={handleDropdownQuery}
@@ -149,7 +149,7 @@ const BottomChat: React.FC<BottomChatProps> = ({
                             placeholder="Describe what you are looking for"
                             value={content}
                             onChange={(e: React.ChangeEvent<HTMLInputElement>) => setContent(e.target.value)}
-                            onKeyPress={handleKeyPress}
+                            onKeyDown={handleKeyDown}
                             disabled={loading}
                         />
                     </div>
