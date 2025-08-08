@@ -136,6 +136,7 @@ services:
     platform: linux/amd64
     environment:
       - TRANSPORT_SERVER_ENDPOINT=http://slim:46357
+      - OTLP_HTTP_ENDPOINT=http://otel-collector:4318
 
   clickhouse-server:
     image: clickhouse/clickhouse-server
