@@ -3,7 +3,7 @@ name = "lungo"
 version = "0.1.0"
 description = ""
 authors = [{ name = "Shridhar Shah", email = "shridhsh@cisco.com" }]
-requires-python = ">=3.12,<4.0"
+requires-python = ">=3.13,<4.0"
 dependencies = [
     "a2a-sdk==0.2.16",
     "cnoe-agent-utils==0.2.0",
