@@ -29,6 +29,8 @@ spec:
         env:
         - name: TRANSPORT_SERVER_ENDPOINT
           value: "{{ .Values.transportServerEndpoint }}"
+        - name: OTLP_HTTP_ENDPOINT
+          value: "{{ .Values.otlpHttpEndpoint }}"
         {{ if .Values.resources.enabled }}
         resources:
           requests:
