@@ -5,6 +5,8 @@ appName: weather-mcp-server
 appVersion: v1
 replicaCount: 1
 
+transportServerEndpoint: ""
+
 image:
   repository: ghcr.io/agntcy/coffee-agntcy/weather-mcp-server
   tag: latest

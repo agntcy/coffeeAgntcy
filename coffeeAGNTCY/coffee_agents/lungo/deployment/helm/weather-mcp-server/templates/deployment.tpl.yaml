@@ -26,6 +26,9 @@ spec:
       - name: {{ .Values.appName }}
         image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
         imagePullPolicy: {{ .Values.image.pullPolicy }}
+        env:
+        - name: TRANSPORT_SERVER_ENDPOINT
+          value: "{{ .Values.transportServerEndpoint }}"
         {{ if .Values.resources.enabled }}
         resources:
           requests:
