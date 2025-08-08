@@ -21,7 +21,6 @@ config:
   llmProvider: ""
   transportServerEndpoint: ""
   defaultMessageTransport: ""
-  weatherMcpServerUrl: ""
   otlpHttpEndpoint: ""
   # Identity configuration
   identityApiServerUrl: "" # Identity API endpoint
