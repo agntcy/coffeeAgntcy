@@ -29,11 +29,9 @@ interface CustomNodeProps {
 const CustomNode: React.FC<CustomNodeProps> = ({ data }) => {
     const activeClasses = data.active ? "bg-[#00142B] outline outline-2 outline-[#187ADC] shadow-[rgba(0,0,0,0.6)_0px_6px_8px]" : "bg-[#373C42]";
     
-    let nodeHeight = '72px'; 
-    if (data.verificationStatus && data.githubLink) {
-        nodeHeight = '120px'; 
-    } else if (data.verificationStatus || data.githubLink) {
-        nodeHeight = '100px'; 
+    let nodeHeight = '88px'; 
+    if (data.githubLink) {
+        nodeHeight = '116px'; 
     }
     
     return (
@@ -50,59 +48,86 @@ const CustomNode: React.FC<CustomNodeProps> = ({ data }) => {
                 relative
             `}
             style={{ 
-                width: '196px', 
+                width: '229px', 
                 height: nodeHeight, 
-                padding: '16px', 
-                borderRadius: '8px' 
+                padding: '12px', 
+                borderRadius: '8px',
+                gap: '6px',
+                opacity: 1
             }}
         >
-            <div className="flex flex-row items-center p-0 gap-1 w-[148px] h-9">
-                <div className="flex flex-row justify-center items-center py-1 px-0 gap-[10px] w-9 h-9 bg-[#59616B] rounded border-none mr-0 overflow-hidden opacity-100 self-stretch">
+            <div className="flex flex-row items-center p-0 gap-1 w-[197px] h-9">
+                <div 
+                    className="flex flex-row justify-center items-center border-none mr-0 overflow-hidden"
+                    style={{
+                        width: '40px',
+                        height: '40px',
+                        gap: '10px',
+                        opacity: 1,
+                        paddingTop: '4px',
+                        paddingBottom: '4px',
+                        borderRadius: '4px',
+                        background: '#59616B'
+                    }}
+                >
                     {data.icon}
                 </div>
-                <div className="flex flex-col items-start p-0 gap-[2px] w-[108px] h-9">
-                    <div className="w-[108px] h-[17px] font-[Inter] font-light text-[13px] leading-[17px] text-[#E8E9EA] text-left self-stretch">
-                        {data.label1}
+                <div className="flex flex-col items-start p-0 gap-[2px] w-[173px] h-9">
+                    <div className="w-[173px] h-[17px] flex items-center justify-between">
+                        <span className="text-[#E8E9EA] text-left" style={{
+                            fontFamily: 'Inter',
+                            fontWeight: 400,
+                            fontSize: '14px',
+                            lineHeight: '20px',
+                            letterSpacing: '0%',
+                            opacity: 1
+                        }}>
+                            {data.label1}
+                        </span>
+                        {data.verificationStatus && (
+                            <div 
+                                style={{
+                                    width: '80px',
+                                    height: '20px',
+                                    gap: '10px',
+                                    opacity: 1,
+                                    borderRadius: '20px',
+                                    padding: '4px',
+                                    background: data.verificationStatus === 'verified' ? '#00B98D66' : '#C6295366',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center'
+                                }}
+                            >
+                                <span 
+                                    style={{
+                                        fontFamily: 'Inter',
+                                        fontWeight: 500,
+                                        fontSize: '11px',
+                                        lineHeight: '16px',
+                                        letterSpacing: '0%',
+                                        color: '#FBFCFE'
+                                    }}
+                                >
+                                    {data.verificationStatus === 'verified' ? 'Validated' : 'Not Validated'}
+                                </span>
+                            </div>
+                        )}
                     </div>
-                    <div className="w-[108px] h-[19px] font-[Inter] font-normal text-[15px] leading-[19px] text-[#E8E9EA] text-left self-stretch border-none bg-transparent rounded-none p-0">
+                    <div className="w-[173px] h-[19px] text-[#E8E9EA] text-left self-stretch border-none bg-transparent rounded-none p-0" style={{
+                        fontFamily: 'Inter',
+                        fontWeight: 300,
+                        fontSize: '12px',
+                        lineHeight: '16px',
+                        letterSpacing: '0%'
+                    }}>
                         {data.label2}
                     </div>
                 </div>
             </div>
             
-            {data.verificationStatus && (
-                <div 
-                    className="mt-2"
-                    style={{
-                        width: '164px',
-                        height: '28px',
-                        gap: '10px',
-                        opacity: 1,
-                        borderRadius: '8px',
-                        padding: '4px',
-                        background: data.verificationStatus === 'verified' ? '#0051AF' : '#C0244C',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center'
-                    }}
-                >
-                    <span 
-                        style={{
-                            fontFamily: 'Inter',
-                            fontWeight: 300,
-                            fontSize: '12px',
-                            lineHeight: '16px',
-                            letterSpacing: '0%',
-                            color: '#E8E9EA'
-                        }}
-                    >
-                        {data.verificationStatus === 'verified' ? 'Validated' : 'Not Validated'}
-                    </span>
-                </div>
-            )}
-            
             {data.githubLink && (
-                <div className={`${data.verificationStatus ? 'mt-1' : 'mt-2'} flex justify-center`}>
+                <div className="mt-2 flex justify-center">
                     <a 
                         href={data.githubLink} 
                         target="_blank" 

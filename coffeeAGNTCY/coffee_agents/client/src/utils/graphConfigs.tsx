@@ -18,7 +18,7 @@ interface GraphConfig {
     animationSequence: { ids: string[] }[];
 }
 
-const CoffeeBeanIcon = <PiCoffeeBeanThin style={{ transform: 'rotate(-30deg)', fontSize: '1.65em' }} />;
+const CoffeeBeanIcon = <PiCoffeeBeanThin style={{ transform: 'rotate(-30deg)', width: '24px', height: '24px' }} />;
 
 const commonNodeData = {
     backgroundColor: '#F5F5F5',
@@ -120,8 +120,8 @@ const SLIM_MULTI_A2A_CONFIG: GraphConfig = {
             data: {
                 ...commonNodeData,
                 icon: CoffeeBeanIcon,
-                label1: 'Coffee Farm Agent',
-                label2: 'Brazil',
+                label1: 'Brazil',
+                label2: 'Coffee Farm Agent',
                 handles: 'target',
                 farmName: FarmName?.BrazilCoffeeFarm || 'Brazil Coffee Farm',
                 verificationStatus: 'failed',
@@ -135,8 +135,8 @@ const SLIM_MULTI_A2A_CONFIG: GraphConfig = {
             data: {
                 ...commonNodeData,
                 icon: CoffeeBeanIcon,
-                label1: 'Coffee Farm Agent',
-                label2: 'Colombia',
+                label1: 'Colombia',
+                label2: 'Coffee Farm Agent',
                 handles: 'all',
                 farmName: FarmName?.ColombiaCoffeeFarm || 'Colombia Coffee Farm',
                 verificationStatus: 'verified',
@@ -150,8 +150,8 @@ const SLIM_MULTI_A2A_CONFIG: GraphConfig = {
             data: {
                 ...commonNodeData,
                 icon: CoffeeBeanIcon,
-                label1: 'Coffee Farm Agent',
-                label2: 'Vietnam',
+                label1: 'Vietnam',
+                label2: 'Coffee Farm Agent',
                 handles: 'target',
                 farmName: FarmName?.VietnamCoffeeFarm || 'Vietnam Coffee Farm',
                 verificationStatus: 'verified',
@@ -164,7 +164,7 @@ const SLIM_MULTI_A2A_CONFIG: GraphConfig = {
             type: 'customNode',
             data: {
                 ...commonNodeData,
-                icon: <TiWeatherCloudy style={{ fontSize: '1.75em' }}/>,
+                icon: <TiWeatherCloudy style={{ width: '24px', height: '24px' }}/>,
                 label1: 'MCP Server',
                 label2: 'Weather',
                 handles: 'target',
