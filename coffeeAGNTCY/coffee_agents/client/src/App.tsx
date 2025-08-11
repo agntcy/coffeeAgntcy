@@ -10,7 +10,6 @@ import UserMessage from '@/components/Chat/UserMessage';
 import AgentIcon from '@/assets/Agent_Icon.svg';
 
 import BottomChat from '@/components/Chat/ChatArea';
-import CodePopUp from "@/components/MainArea/CodePopUp";
 
 import Navigation from '@/components/Navigation/Navigation';
 import PatternEmptyState from '@/components/MainArea/PatternEmptyState';
@@ -43,7 +42,6 @@ const App: React.FC = () => {
     const [selectedPattern, setSelectedPattern] = useState<PatternType>(PATTERNS.NONE);
     const [aiReplied, setAiReplied] = useState<boolean>(false);
     const [buttonClicked, setButtonClicked] = useState<boolean>(false);
-    const [showCode, setShowCode] = useState<boolean>(false);
     const [currentUserMessage, setCurrentUserMessage] = useState<string>('');
     const [agentResponse, setAgentResponse] = useState<string>('');
     const [isAgentLoading, setIsAgentLoading] = useState<boolean>(false);
@@ -156,47 +154,17 @@ const App: React.FC = () => {
             />
 
             <div className="flex-grow flex flex-col bg-primary-bg">
-                {/* <div className="box-border flex flex-row justify-between items-center p-4 gap-2.5 w-full h-[52px] bg-[#23282E] border-b border-[#1A1F27] flex-none self-stretch flex-grow-0">
-                    <button className="flex flex-row justify-center items-center p-0 gap-1 w-36 h-5 rounded-md border-none bg-transparent cursor-pointer flex-none order-0 flex-grow-0">
-                        <span className="w-36 h-5 font-['Inter'] font-bold text-sm leading-5 text-[#FBFCFE] flex-none order-1 flex-grow-0">AGNTCY Graph View</span>
-                    </button>
-                    <button 
-                        className="flex flex-row justify-center items-center p-0 gap-1 w-[81px] h-5 rounded-md border-none bg-transparent cursor-pointer flex-none order-1 flex-grow-0 ml-auto transition-all duration-200 ease-in-out"
-                        onClick={() => setShowCode(!showCode)}
-                    >
-                        <div className={`flex flex-row items-center p-[3px] gap-2 w-10 h-5 rounded-[14px] flex-none order-0 flex-grow-0 opacity-100 transition-colors duration-200 ease-in-out relative ${
-                            showCode ? 'bg-primary-blue' : 'bg-[#D0D4D9]'
-                        }`}>
-                            <div className={`w-[14px] h-[14px] bg-white rounded flex-none order-0 flex-grow-0 transition-transform duration-200 ease-in-out absolute left-[3px] ${
-                                showCode ? 'transform translate-x-5' : ''
-                            }`}></div>
-                        </div>
-                        <span className={`w-[37px] h-5 font-['Inter'] font-bold text-sm leading-5 flex-none order-1 flex-grow-0 transition-colors duration-200 ease-in-out ${
-                            showCode ? 'text-primary-blue' : 'text-[#649EF5]'
-                        }`}>Code</span>
-                    </button>
-                </div> */}
-
                 {selectedPattern === PATTERNS.NONE ? (
                     <PatternEmptyState />
                 ) : (
-                    <div className="flex-grow flex flex-col bg-primary-bg">
-                        <div className="relative">
-                            <CodePopUp 
-                                showCode={showCode}
-                                selectedPattern={selectedPattern}
-                                onClose={() => setShowCode(false)}
-                            />
-                        </div>
-                        <div className="flex-grow relative">
-                            <MainArea 
-                                pattern={selectedPattern}
-                                buttonClicked={buttonClicked}
-                                setButtonClicked={setButtonClicked}
-                                aiReplied={aiReplied}
-                                setAiReplied={setAiReplied}
-                            />
-                        </div>
+                    <div className="flex-grow relative">
+                        <MainArea 
+                            pattern={selectedPattern}
+                            buttonClicked={buttonClicked}
+                            setButtonClicked={setButtonClicked}
+                            aiReplied={aiReplied}
+                            setAiReplied={setAiReplied}
+                        />
                     </div>
                 )}
             </div>
