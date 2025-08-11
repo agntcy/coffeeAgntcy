@@ -14,6 +14,7 @@ import BottomChat from '@/components/Chat/ChatArea';
 import Navigation from '@/components/Navigation/Navigation';
 import PatternEmptyState from '@/components/MainArea/PatternEmptyState';
 import MainArea from '@/components/MainArea/MainArea';
+import { useAgentAPI } from '@/hooks/useAgentAPI';
 
 export const PATTERNS = {
   NONE: 'none',
@@ -38,6 +39,7 @@ type PatternMessages = {
 };
 
 const App: React.FC = () => {
+    const { sendMessage } = useAgentAPI();
 
     const [selectedPattern, setSelectedPattern] = useState<PatternType>(PATTERNS.NONE);
     const [aiReplied, setAiReplied] = useState<boolean>(false);
@@ -124,22 +126,9 @@ const App: React.FC = () => {
         setMessages(prev => [...prev, userMessage, loadingMessage]);
         setButtonClicked(true);
 
-        // Make the actual API call
         try {
-            const response = await fetch('http://127.0.0.1:8000/agent/prompt', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ prompt: query }),
-            });
-
-            if (response.ok) {
-                const data = await response.json();
-                handleApiResponse(data.response, false);
-            } else {
-                handleApiResponse('Sorry, I encountered an error.', true);
-            }
+            const response = await sendMessage(query);
+            handleApiResponse(response, false);
         } catch (error) {
             console.error('API Error:', error);
             handleApiResponse('Sorry, I encountered an error.', true);

@@ -4,14 +4,11 @@
 **/
 
 import React, { useState } from 'react';
-import { v4 as uuid } from 'uuid';
-import axios from 'axios';
 import { Message } from '@/App';
-import { Role } from '@/utils/const';
 import CoffeeGraderDropdown from './Prompts/CoffeeGraderDropdown';
 import airplaneSvg from '@/assets/airplane.svg';
 import BuyerPurchaserDropdowns from './Prompts/BuyerPurchaserDropdown';
-const DEFAULT_EXCHANGE_APP_API_URL = 'http://0.0.0.0:8000';
+import { useAgentAPI } from '@/hooks/useAgentAPI';
 
 
 interface BottomChatProps {
@@ -27,10 +24,6 @@ interface BottomChatProps {
     onApiResponse?: (response: string, isError?: boolean) => void;
 }
 
-interface ApiResponse {
-    response: string;
-}
-
 const BottomChat: React.FC<BottomChatProps> = ({ 
 
     setMessages, 
@@ -44,6 +37,7 @@ const BottomChat: React.FC<BottomChatProps> = ({
 }) => {
     const [content, setContent] = useState<string>("");
     const [loading, setLoading] = useState<boolean>(false);
+    const { sendMessageWithCallback } = useAgentAPI();
 
     const handleDropdownQuery = (query: string) => {
         if (onDropdownSelect) {
@@ -55,65 +49,30 @@ const BottomChat: React.FC<BottomChatProps> = ({
     const processMessageWithQuery = async (messageContent: string): Promise<void> => {
         if (!messageContent.trim()) return;
 
-        const userMessage: Message = {
-            role: Role.USER,
-            content: messageContent,
-            id: uuid(),
-            animate: false,
-        };
-
-        const loadingMessage: Message = {
-            role: 'assistant',
-            content: '...',
-            id: uuid(),
-            animate: true,
-        };
-
-        setMessages((prevMessages: Message[]) => [...prevMessages, userMessage, loadingMessage]);
         setContent(""); 
         setLoading(true);
         setButtonClicked(true);
 
-        try {
-            const response = await axios.post<ApiResponse>(`${DEFAULT_EXCHANGE_APP_API_URL}/agent/prompt`, {
-                prompt: messageContent, 
-            });
+        await sendMessageWithCallback(
+            messageContent,
+            setMessages,
+            {
+                onSuccess: (response) => {
+                    setAiReplied(true);
+                    if (onApiResponse) {
+                        onApiResponse(response, false);
+                    }
+                },
+                onError: (error) => {
+                    console.error('Error:', error);
+                    if (onApiResponse) {
+                        onApiResponse('Sorry, I encountered an error.', true);
+                    }
+                }
+            }
+        );
 
-            setMessages((prevMessages: Message[]) => {
-                const updatedMessages = [...prevMessages];
-                updatedMessages[updatedMessages.length - 1] = {
-                    role: 'assistant',
-                    content: response.data.response,
-                    id: uuid(),
-                    animate: true,
-                };
-                return updatedMessages;
-            });
-            setAiReplied(true);
-            
-           
-            if (onApiResponse) {
-                onApiResponse(response.data.response, false);
-            }
-        } catch (error) {
-            console.error('Error:', error);
-            setMessages((prevMessages: Message[]) => {
-                const updatedMessages = [...prevMessages];
-                updatedMessages[updatedMessages.length - 1] = {
-                    role: 'assistant',
-                    content: 'Sorry, I encountered an error.',
-                    id: uuid(),
-                    animate: false,
-                };
-                return updatedMessages;
-            });
-            
-            if (onApiResponse) {
-                onApiResponse('Sorry, I encountered an error.', true);
-            }
-        } finally {
-            setLoading(false);
-        }
+        setLoading(false);
     };
 
     const processMessage = async (): Promise<void> => {
