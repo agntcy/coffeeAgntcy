@@ -11,7 +11,7 @@ import BuyerPurchaserDropdowns from './Prompts/BuyerPurchaserDropdown';
 import { useAgentAPI } from '@/hooks/useAgentAPI';
 
 
-interface BottomChatProps {
+interface ChatAreaProps {
     messages: Message[];
     setMessages: React.Dispatch<React.SetStateAction<Message[]>>;
     setButtonClicked: (clicked: boolean) => void;
@@ -24,7 +24,7 @@ interface BottomChatProps {
     onApiResponse?: (response: string, isError?: boolean) => void;
 }
 
-const BottomChat: React.FC<BottomChatProps> = ({ 
+const ChatArea: React.FC<ChatAreaProps> = ({ 
 
     setMessages, 
     setButtonClicked, 
@@ -137,4 +137,4 @@ const BottomChat: React.FC<BottomChatProps> = ({
     );
 };
 
-export default BottomChat;
+export default ChatArea;

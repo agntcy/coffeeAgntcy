@@ -127,7 +127,7 @@ const CustomNode: React.FC<CustomNodeProps> = ({ data }) => {
             </div>
             
             {data.githubLink && (
-                <div className="mt-2 flex justify-center">
+                <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 translate-y-1/2">
                     <a 
                         href={data.githubLink} 
                         target="_blank" 

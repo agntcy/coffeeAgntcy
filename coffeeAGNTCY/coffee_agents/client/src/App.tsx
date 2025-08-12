@@ -9,12 +9,12 @@ import { LOCAL_STORAGE_KEY } from '@/components/Chat/Messages';
 import UserMessage from '@/components/Chat/UserMessage';
 import AgentIcon from '@/assets/Agent_Icon.svg';
 
-import BottomChat from '@/components/Chat/ChatArea';
 
 import Navigation from '@/components/Navigation/Navigation';
 import PatternEmptyState from '@/components/MainArea/PatternEmptyState';
 import MainArea from '@/components/MainArea/MainArea';
 import { useAgentAPI } from '@/hooks/useAgentAPI';
+import ChatArea from '@/components/Chat/ChatArea';
 
 export const PATTERNS = {
   NONE: 'none',
@@ -183,7 +183,7 @@ const App: React.FC = () => {
                     </div>
                 )}
                 
-                <BottomChat
+                <ChatArea
                     messages={messages}
                     setMessages={setMessages}
                     setButtonClicked={setButtonClicked}
