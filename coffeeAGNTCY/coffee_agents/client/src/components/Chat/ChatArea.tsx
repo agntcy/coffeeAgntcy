@@ -21,6 +21,7 @@ interface ChatAreaProps {
     showBuyerDropdowns?: boolean;
     onCoffeeGraderSelect?: (query: string) => void;
     onDropdownSelect?: (query: string) => void;
+    onUserInput?: (query: string) => void;
     onApiResponse?: (response: string, isError?: boolean) => void;
 }
 
@@ -33,6 +34,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
     showCoffeeDropdown = false,
     showBuyerDropdowns = false,
     onDropdownSelect,
+    onUserInput,
     onApiResponse
 }) => {
     const [content, setContent] = useState<string>("");
@@ -76,6 +78,9 @@ const ChatArea: React.FC<ChatAreaProps> = ({
     };
 
     const processMessage = async (): Promise<void> => {
+        if (onUserInput) {
+            onUserInput(content);
+        }
         await processMessageWithQuery(content);
     };
 

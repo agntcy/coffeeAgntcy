@@ -84,6 +84,12 @@ const App: React.FC = () => {
         handleDropdownSelect(query);
     };
 
+    const handleUserInput = (query: string) => {
+        setCurrentUserMessage(query);
+        setIsAgentLoading(true);
+        setButtonClicked(true);
+    };
+
   
     const handleApiResponse = (response: string, isError: boolean = false) => {
         
@@ -193,6 +199,7 @@ const App: React.FC = () => {
                     showBuyerDropdowns={selectedPattern === PATTERNS.SLIM_MULTI_A2A}
                     onCoffeeGraderSelect={handleCoffeeGraderSelect}
                     onDropdownSelect={handleDropdownSelect}
+                    onUserInput={handleUserInput}
                     onApiResponse={handleApiResponse}
                 />
             </div>
