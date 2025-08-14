@@ -23,7 +23,7 @@ services:
       - "9999:9999"
 
   slim:
-    image: ghcr.io/agntcy/slim:0.3.15
+    image: ghcr.io/agntcy/slim:latest
     container_name: slim-dataplane
     ports:
       - "46357:46357"

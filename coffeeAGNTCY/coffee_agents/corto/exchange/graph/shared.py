@@ -12,5 +12,6 @@ def set_factory(factory: AgntcyFactory):
 
 def get_factory() -> AgntcyFactory:
     if _factory is None:
-        return AgntcyFactory("corto.exchange", enable_tracing=True)
+        # CRITICAL FIX: Disable tracing to avoid SLIM API signature conflicts
+        return AgntcyFactory("corto.exchange", enable_tracing=False)
     return _factory

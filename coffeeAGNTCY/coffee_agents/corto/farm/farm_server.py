@@ -18,7 +18,8 @@ from config.config import DEFAULT_MESSAGE_TRANSPORT, TRANSPORT_SERVER_ENDPOINT
 load_dotenv()
 
 # Initialize a multi-protocol, multi-transport gateway factory.
-factory = AgntcyFactory("corto.farm_agent", enable_tracing=True)
+# CRITICAL FIX: Disable tracing to avoid SLIM API signature conflicts
+factory = AgntcyFactory("corto.farm_agent", enable_tracing=False)
 
 async def main():
     """
