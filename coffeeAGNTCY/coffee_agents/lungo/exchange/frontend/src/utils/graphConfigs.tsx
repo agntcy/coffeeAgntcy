@@ -46,6 +46,8 @@ const SLIM_A2A_CONFIG: GraphConfig = {
                 label1: 'Supervisor Agent',
                 label2: 'Buyer',
                 handles: 'source',
+                githubLink: 'https://github.com/agntcy/coffeeAgntcy/tree/main/coffeeAGNTCY/coffee_agents/corto/exchange',
+
             },
             position: { x: 529.1332569384248, y: 159.4805787605829 },
         },
@@ -58,6 +60,8 @@ const SLIM_A2A_CONFIG: GraphConfig = {
                 label1: 'Q Grader Agent',
                 label2: 'Sommelier',
                 handles: 'target',
+                githubLink: 'https://github.com/agntcy/coffeeAgntcy/tree/main/coffeeAGNTCY/coffee_agents/corto/farm',
+
             },
             position: { x: 534.0903941835277, y: 582.9317472571444 },
         },

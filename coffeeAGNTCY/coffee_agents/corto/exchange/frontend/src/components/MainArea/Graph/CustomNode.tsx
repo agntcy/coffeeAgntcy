@@ -7,6 +7,8 @@
 import React from 'react';
 import { Handle, Position } from '@xyflow/react';
 import githubIcon from '@/assets/github.svg';
+import agntcyDirectoryIcon from '@/assets/agent_directory.svg';
+
 
 export const DefaultHandleColor = '#f5f5f5';
 
@@ -70,32 +72,32 @@ const CustomNode: React.FC<CustomNodeProps> = ({ data }) => {
                     </div>
                 </div>
             </div>
-            
-            {data.githubLink && (
-                <div 
-                    className="flex flex-row items-center justify-center gap-[10px] mt-2"
-                    style={{
-                        width: '28px',
-                        height: '28px',
-                        borderRadius: '8px',
-                        padding: '4px',
-                        background: 'var(--Outshift-Blue, #0051AF)',
-                        cursor: 'pointer'
-                    }}
-                    onClick={() => window.open(data.githubLink, '_blank')}
-                >
+    <div className="absolute -right-4 top-1/2 transform -translate-y-1/2 flex flex-col gap-1">
+                <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center shadow-sm">
                     <img 
-                        src={githubIcon} 
-                        alt="GitHub Icon" 
-                        style={{ 
-                            width: '16.67px',
-                            height: '16.33px',
-                            filter: 'brightness(0) invert(1)', // Make it white
-                            objectFit: 'contain'
-                        }} 
+                        src={agntcyDirectoryIcon} 
+                        alt="AGNTCY Directory" 
+                        className="w-5 h-5 text-white" 
                     />
                 </div>
-            )}
+                
+                {data.githubLink && (
+                    <a 
+                        href={data.githubLink} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="hover:opacity-80 transition-opacity"
+                    >
+                        <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center shadow-sm">
+                            <img 
+                                src={githubIcon} 
+                                alt="GitHub" 
+                                className="w-5 h-5 text-white"
+                            />
+                        </div>
+                    </a>
+                )}
+            </div>
             {(data.handles === 'all' || data.handles === 'target') && (
                 <Handle
                     type="target"
