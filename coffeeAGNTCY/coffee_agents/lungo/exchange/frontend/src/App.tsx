@@ -138,9 +138,11 @@ const App: React.FC = () => {
 
     return (
         <div className="flex flex-col w-screen h-screen overflow-hidden bg-primary-bg">
+         
             <Navigation />
 
             <div className="flex flex-1 overflow-hidden">
+         
                 <Sidebar 
                     selectedPattern={selectedPattern}
                     onPatternChange={setSelectedPattern}
