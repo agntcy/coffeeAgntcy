@@ -40,7 +40,22 @@ const SlimNode: React.FC<SlimNodeProps> = ({ data }) => {
                 borderRadius: '8px' 
             }}
         >
-            <div>{data.label}</div>
+            <div style={{
+                width: '94px',
+                height: '20px',
+                fontFamily: 'Inter, system-ui, Avenir, Helvetica, Arial, sans-serif',
+                fontWeight: 400,
+                fontSize: '14px',
+                lineHeight: '20px',
+                letterSpacing: '0%',
+                color: '#E8E9EA',
+                opacity: 1,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+            }}>
+                {data.label}
+            </div>
             <Handle
                 type="target"
                 id="top"

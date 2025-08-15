@@ -21,7 +21,7 @@ const UserMessage: React.FC<UserMessageProps> = ({ content }) => {
         
             <div className="flex flex-col justify-center items-start p-1 px-2 w-[764px] h-10 rounded">
                 <div className="w-[764px] h-10 p-1 px-2 rounded flex items-center">
-                    <div className="font-['Inter'] font-normal text-sm leading-5 text-white">
+                    <div className="font-inter font-normal text-sm leading-5 text-white">
                         {content}
                     </div>
                 </div>

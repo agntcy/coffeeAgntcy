@@ -143,7 +143,7 @@ const MainArea: React.FC<MainAreaProps> = ({
     }, [buttonClicked, setButtonClicked, aiReplied, setAiReplied, config.animationSequence]);
 
     return (
-        <div className="flex flex-col items-start p-0 w-full h-full bg-[#0E1116] flex-none order-1 self-stretch flex-grow">
+        <div className="flex flex-col items-start p-0 w-full h-full bg-primary-bg flex-none order-1 self-stretch flex-grow">
             <ReactFlow
                 nodes={nodes}
                 edges={edges}

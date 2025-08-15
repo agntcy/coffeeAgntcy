@@ -31,11 +31,6 @@ interface CustomNodeProps {
 const CustomNode: React.FC<CustomNodeProps> = ({ data }) => {
     const activeClasses = data.active ? "bg-[#00142B] outline outline-2 outline-[#187ADC] shadow-[rgba(0,0,0,0.6)_0px_6px_8px]" : "bg-[#373C42]";
     
-    let nodeHeight = '88px'; 
-    if (data.githubLink) {
-        nodeHeight = '116px'; 
-    }
-    
     return (
         <div 
             className={`
@@ -50,40 +45,79 @@ const CustomNode: React.FC<CustomNodeProps> = ({ data }) => {
                 relative
             `}
             style={{ 
-                width: '229px', 
-                height: nodeHeight, 
-                padding: '12px', 
+                width: '192px', 
+                height: '84px', 
+                paddingTop: '16px',
+                paddingRight: '16px',
+                paddingBottom: '16px',
+                paddingLeft: '8px',
                 borderRadius: '8px',
-                gap: '6px',
+                gap: '8px',
                 opacity: 1
             }}
         >
-            <div className="flex flex-row items-center p-0 gap-1 w-[197px] h-9">
+            <div 
+                className="flex flex-row items-start"
+                style={{
+                    padding: '0px',
+                    gap: '4px',
+                    width: '164px',
+                    height: '40px',
+                    flex: 'none',
+                    order: 0,
+                    flexGrow: 0
+                }}
+            >
                 <div 
                     className="flex flex-row justify-center items-center border-none mr-0 overflow-hidden"
                     style={{
                         width: '40px',
                         height: '40px',
+                        padding: '4px 0px',
                         gap: '10px',
-                        opacity: 1,
-                        paddingTop: '4px',
-                        paddingBottom: '4px',
+                        background: '#59616B',
                         borderRadius: '4px',
-                        background: '#59616B'
+                        flex: 'none',
+                        order: 0,
+                        flexGrow: 0
                     }}
                 >
-                    {data.icon}
+                    <div style={{
+                        width: '24px',
+                        height: '24px',
+                        flex: 'none',
+                        order: 0,
+                        flexGrow: 0
+                    }}>
+                        {data.icon}
+                    </div>
                 </div>
-                <div className="flex flex-col items-start p-0 gap-[2px] w-[173px] h-9">
-                    <div className="w-[173px] h-[17px] flex items-center">
-                        <div className="relative flex items-center gap-2">
+                <div 
+                    className="flex flex-col items-start"
+                    style={{
+                        padding: '0px',
+                        gap: '4px',
+                        width: '120px',
+                        height: '40px',
+                        flex: 'none',
+                        order: 1,
+                        flexGrow: 0
+                    }}
+                >
+                    <div className="w-[120px] h-[20px] flex items-center" style={{
+                        flex: 'none',
+                        order: 0,
+                        alignSelf: 'stretch',
+                        flexGrow: 0
+                    }}>
+                        <div className="relative flex items-center gap-1">
                             <span className="text-[#E8E9EA] text-left" style={{
                                 fontFamily: 'Inter',
+                                fontStyle: 'normal',
                                 fontWeight: 400,
                                 fontSize: '14px',
                                 lineHeight: '20px',
-                                letterSpacing: '0%',
-                                opacity: 1
+                                color: '#E8E9EA'
                             }}>
                                 {data.label1}
                             </span>
@@ -91,18 +125,32 @@ const CustomNode: React.FC<CustomNodeProps> = ({ data }) => {
                                 <img 
                                     src={identityBadgeIcon} 
                                     alt="Verified" 
-                                    className="w-[15.643754959106445px] h-[15px] opacity-100"
+                                    style={{
+                                        width: '15.643754959106445px',
+                                        height: '15px',
+                                        opacity: 1
+                                    }}
                                 />
                             )}
                         </div>
                     </div>
-                    <div className="w-[173px] h-[19px] text-[#E8E9EA] text-left self-stretch border-none bg-transparent rounded-none p-0" style={{
-                        fontFamily: 'Inter',
-                        fontWeight: 300,
-                        fontSize: '12px',
-                        lineHeight: '16px',
-                        letterSpacing: '0%'
-                    }}>
+                    <div 
+                        className="w-[120px] h-[16px] text-[#E8E9EA] text-left border-none bg-transparent rounded-none p-0" 
+                        style={{
+                            width: '120px',
+                            height: '16px',
+                            fontFamily: 'Inter',
+                            fontStyle: 'normal',
+                            fontWeight: 300,
+                            fontSize: '12px',
+                            lineHeight: '16px',
+                            color: '#E8E9EA',
+                            flex: 'none',
+                            order: 1,
+                            alignSelf: 'stretch',
+                            flexGrow: 0
+                        }}
+                    >
                         {data.label2}
                     </div>
                 </div>

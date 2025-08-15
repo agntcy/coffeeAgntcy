@@ -6,7 +6,6 @@
 import React, { useState } from 'react';
 import { ChevronUp } from 'lucide-react';
 import { PatternType, PATTERNS } from '@/App';
-import SidebarSection from './SidebarSection';
 import SidebarItem from './sidebarItem';
 import SidebarDropdown from './SidebarDropdown';
 
@@ -17,7 +16,7 @@ interface SidebarProps {
 
 const Sidebar: React.FC<SidebarProps> = ({ selectedPattern, onPatternChange }) => {
   const [isGraderExpanded, setIsGraderExpanded] = useState(true); // Auto-expanded
-  const [isBuyerExpanded, setIsBuyerExpanded] = useState(false);
+  const [isBuyerExpanded, setIsBuyerExpanded] = useState(true); // Auto-expanded
   const [isTransportExpanded, setIsTransportExpanded] = useState(false);
 
   const handleGraderToggle = () => {
@@ -38,72 +37,293 @@ const Sidebar: React.FC<SidebarProps> = ({ selectedPattern, onPatternChange }) =
 
   return (
     <div 
-      className="w-[320px] h-full bg-primary-bg border-r border-black"
+      className="w-[320px] h-full bg-primary-bg font-inter"
       style={{
+        boxSizing: 'border-box',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'flex-start',
+        padding: '16px 0px',
         width: '320px',
-        opacity: 1,
-        borderRightWidth: '1px',
-        borderRightColor: '#000000'
+        height: '100%',
+        borderRight: '1px solid #0D274D',
+        flex: 'none',
+        order: 0,
+        alignSelf: 'stretch',
+        flexGrow: 0
       }}
     >
-      <div className="p-4">
-        {/* Coffee Grader Conversation - Direct Structure like old version */}
+      <div 
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'flex-start',
+          padding: '0px 16px',
+          gap: '20px',
+          width: '320px',
+          height: '100%',
+          background: '#23282E',
+          flex: 1
+        }}
+      >
         <div 
-          className="flex items-center justify-between cursor-pointer w-72 h-9 gap-2 py-2 text-white text-sm font-normal leading-5"
-          onClick={handleGraderToggle}
+          className="flex flex-col items-start font-inter"
           style={{
-            letterSpacing: '0.25px'
+            padding: '0px',
+            width: '288px',
+            height: '72px',
+            flex: 'none',
+            order: 0,
+            alignSelf: 'stretch',
+            flexGrow: 0
           }}
         >
-          <span className="pl-2">
-            Coffee Grader Conversation
-          </span>
-          <ChevronUp 
-            className={`w-4 h-4 text-white transition-transform mr-2 ${
-              isGraderExpanded ? 'rotate-0' : 'rotate-180'
-            }`}
-          />
-        </div>
-        {isGraderExpanded && (
-          <div className="flex flex-col">
-            <SidebarItem
-              title="Agent to Agent"
-              isSelected={selectedPattern === PATTERNS.SLIM_A2A}
-              onClick={handleAgentToAgentClick}
+          <div 
+            className="flex flex-row items-start cursor-pointer"
+            onClick={handleGraderToggle}
+            style={{
+              width: '288px',
+              height: '36px',
+              padding: '8px',
+              gap: '8px',
+              flex: 'none',
+              order: 0,
+              alignSelf: 'stretch',
+              flexGrow: 0
+            }}
+          >
+            <span style={{
+              width: '272px',
+              height: '20px',
+              fontFamily: 'Inter',
+              fontStyle: 'normal',
+              fontWeight: 400,
+              fontSize: '14px',
+              lineHeight: '20px',
+              letterSpacing: '0.25px',
+              color: '#FFFFFF',
+              flex: 'none',
+              order: 1,
+              flexGrow: 1
+            }}>
+              Conversation: Coffee Grading
+            </span>
+            <ChevronUp 
+              className={`transition-transform ${
+                isGraderExpanded ? 'rotate-0' : 'rotate-180'
+              }`}
+              style={{
+                display: 'none',
+                width: '14.375px',
+                height: '8.125px',
+                opacity: 1,
+                position: 'relative',
+                top: '6.56px',
+                left: '2.81px',
+                color: '#E8E9EA',
+                flex: 'none',
+                order: 2,
+                flexGrow: 0
+              }}
             />
           </div>
-        )}
-
-        {/* Coffee Buyer Conversation Section */}
-        <SidebarSection
-          title="Coffee Buyer Conversation"
-          isExpanded={isBuyerExpanded}
-          onToggle={handleBuyerToggle}
-        >
-          <div className="flex flex-col items-start p-0 w-72 h-18 flex-none order-0 self-stretch grow-0">
-            <div className="w-72 h-9 flex items-center pl-2 text-white text-sm font-normal leading-5"
-                 style={{ letterSpacing: '0.25px' }}>
-              Agentic Patterns
-            </div>
-            
-            <SidebarDropdown
-              title="Transport"
-              isExpanded={isTransportExpanded}
-              onToggle={handleTransportToggle}
+          
+          {isGraderExpanded && (
+            <div 
+              className="flex flex-col items-start"
+              style={{
+                width: '288px',
+                height: '36px',
+                padding: '0px',
+                background: '#0D274D',
+                flex: 'none',
+                order: 1,
+                alignSelf: 'stretch',
+                flexGrow: 0
+              }}
             >
-              <SidebarItem
-                title="SLIM A2A"
-                isSelected={selectedPattern === PATTERNS.SLIM_A2A}
-                onClick={() => onPatternChange(PATTERNS.SLIM_A2A)}
-              />
-              <SidebarItem
-                title="Multi SLIM A2A"
-                isSelected={selectedPattern === PATTERNS.SLIM_MULTI_A2A}
-                onClick={() => onPatternChange(PATTERNS.SLIM_MULTI_A2A)}
-              />
-            </SidebarDropdown>
+              <div 
+                className="flex flex-row items-start cursor-pointer"
+                onClick={handleAgentToAgentClick}
+                style={{
+                  width: '288px',
+                  height: '36px',
+                  padding: '8px 20px',
+                  gap: '8px',
+                  background: selectedPattern === PATTERNS.SLIM_A2A ? '#0D274D' : '#0D274D',
+                  flex: 'none',
+                  order: 0,
+                  alignSelf: 'stretch',
+                  flexGrow: 0
+                }}
+              >
+                <span style={{
+                  width: '248px',
+                  height: '20px',
+                  fontFamily: 'Inter',
+                  fontStyle: 'normal',
+                  fontWeight: 400,
+                  fontSize: '14px',
+                  lineHeight: '20px',
+                  color: '#FFFFFF',
+                  flex: 'none',
+                  order: 1,
+                  flexGrow: 1
+                }}>
+                  Agent to Agent
+                </span>
+              </div>
+            </div>
+          )}
+        </div>
+
+        <div 
+          className="flex flex-col items-start font-inter"
+          style={{
+            padding: '0px',
+            width: '288px',
+            height: '524px',
+            flex: 'none',
+            order: 1,
+            alignSelf: 'stretch',
+            flexGrow: 0
+          }}
+        >
+          <div 
+            className="flex flex-col items-start font-inter"
+            style={{
+              padding: '0px',
+              width: '288px',
+              height: '72px',
+              flex: 'none',
+              order: 0,
+              alignSelf: 'stretch',
+              flexGrow: 0
+            }}
+          >
+          <div 
+            className="flex flex-row items-start cursor-pointer"
+            onClick={handleBuyerToggle}
+            style={{
+              width: '288px',
+              height: '36px',
+              padding: '8px 0px',
+              gap: '8px',
+              background: '#23282E',
+              flex: 'none',
+              order: 0,
+              alignSelf: 'stretch',
+              flexGrow: 0
+            }}
+          >
+            <span style={{
+              width: '288px',
+              height: '20px',
+              fontFamily: 'Inter',
+              fontStyle: 'normal',
+              fontWeight: 400,
+              fontSize: '14px',
+              lineHeight: '20px',
+              letterSpacing: '0.25px',
+              color: '#FFFFFF',
+              flex: 'none',
+              order: 1,
+              flexGrow: 1
+            }}>
+              Conversation: Coffee Buying
+            </span>
+            <ChevronUp 
+              className={`transition-transform ${
+                isBuyerExpanded ? 'rotate-0' : 'rotate-180'
+              }`}
+              style={{
+                display: 'none',
+                width: '20px',
+                height: '20px',
+                flex: 'none',
+                order: 2,
+                flexGrow: 0
+              }}
+            />
           </div>
-        </SidebarSection>
+          
+          {isBuyerExpanded && (
+            <div 
+              className="flex flex-col items-start"
+              style={{
+                width: '288px',
+                height: '452px',
+                padding: '0px',
+                gap: '8px',
+                flex: 'none',
+                order: 1,
+                alignSelf: 'stretch',
+                flexGrow: 0
+              }}
+            >
+              <div 
+                className="flex flex-col items-start"
+                style={{
+                  padding: '0px',
+                  width: '288px',
+                  height: '144px',
+                  flex: 'none',
+                  order: 0,
+                  alignSelf: 'stretch',
+                  flexGrow: 0
+                }}
+              >
+                <div 
+                  className="flex items-center"
+                  style={{
+                    width: '288px',
+                    height: '36px',
+                    gap: '8px',
+                    paddingTop: '8px',
+                    paddingRight: '20px',
+                    paddingBottom: '8px',
+                    paddingLeft: '20px'
+                  }}
+                >
+                  <span style={{
+                    width: '208px',
+                    height: '20px',
+                    opacity: 1,
+                    fontFamily: 'Inter',
+                    fontWeight: 400,
+                    fontSize: '14px',
+                    lineHeight: '20px',
+                    letterSpacing: '0.25px',
+                    color: '#FFFFFF'
+                  }}>
+                    Agentic Patterns
+                  </span>
+                </div>
+                
+                <div>
+                  <SidebarDropdown
+                    title="Transport"
+                    isExpanded={isTransportExpanded}
+                    onToggle={handleTransportToggle}
+                    isNested={true}
+                  >
+                    <SidebarItem
+                      title="SLIM A2A"
+                      isSelected={selectedPattern === PATTERNS.SLIM_A2A}
+                      onClick={() => onPatternChange(PATTERNS.SLIM_A2A)}
+                    />
+                    <SidebarItem
+                      title="Multi SLIM A2A"
+                      isSelected={selectedPattern === PATTERNS.SLIM_MULTI_A2A}
+                      onClick={() => onPatternChange(PATTERNS.SLIM_MULTI_A2A)}
+                    />
+                  </SidebarDropdown>
+                </div>
+              </div>
+            </div>
+          )}
+          </div>
+        </div>
       </div>
     </div>
   );

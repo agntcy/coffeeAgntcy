@@ -7,7 +7,7 @@ import React, { useState, useEffect } from 'react';
 import { v4 as uuid } from 'uuid';
 import { LOCAL_STORAGE_KEY } from '@/components/Chat/Messages';
 import UserMessage from '@/components/Chat/UserMessage';
-import AgentIcon from '@/assets/Agent_directory.svg';
+import AgentIcon from '@/assets/agent_directory.svg';
 
 
 import Navigation from '@/components/Navigation/Navigation';
@@ -149,7 +149,12 @@ const App: React.FC = () => {
                 />
 
              
-                <div className="flex-1 flex flex-col bg-primary-bg">
+                <div 
+                    className="flex-1 flex flex-col bg-primary-bg"
+                    style={{
+                        borderLeft: '1px solid #00142B'
+                    }}
+                >
                     <div className="flex-grow relative">
                         <MainArea 
                             pattern={selectedPattern}
@@ -172,7 +177,7 @@ const App: React.FC = () => {
                                                 <img src={AgentIcon} alt="Agent" className="w-10 h-10 rounded-full" style={{opacity: 1}} />
                                             </div>
                                             <div className="flex flex-col justify-center items-start p-1 px-2 w-[764px] rounded">
-                                                <div className="font-['Inter'] font-normal text-sm leading-5 text-white whitespace-pre-wrap">
+                                                <div className="font-inter font-normal text-sm leading-5 text-white whitespace-pre-wrap">
                                                     {isAgentLoading ? (
                                                         <div className="text-[#649EF5] animate-pulse">...</div>
                                                     ) : (

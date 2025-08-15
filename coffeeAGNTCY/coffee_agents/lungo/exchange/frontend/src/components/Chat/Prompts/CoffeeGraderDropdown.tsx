@@ -63,7 +63,7 @@ const CoffeeGraderDropdown: React.FC<CoffeeGraderDropdownProps> = ({ visible, on
             >
                 <div className="flex flex-col items-start p-0 gap-1 flex-1 h-5 flex-none order-0 flex-grow-0">
                     <div className="
-                        w-full h-5 font-cisco font-normal text-sm leading-5 tracking-[0%] 
+                        w-full h-5 font-inter font-normal text-sm leading-5 tracking-[0%] 
                         text-white flex-none order-0 self-stretch flex-grow-0 
                         whitespace-nowrap 
                     ">
@@ -96,7 +96,7 @@ const CoffeeGraderDropdown: React.FC<CoffeeGraderDropdownProps> = ({ visible, on
                         onClick={() => handleItemClick(item)}
                     >
                         <div className="
-                            w-full font-cisco font-normal text-sm leading-5 tracking-[0%] 
+                            w-full font-inter font-normal text-sm leading-5 tracking-[0%] 
                             text-white break-words
                         ">
                             {item}
