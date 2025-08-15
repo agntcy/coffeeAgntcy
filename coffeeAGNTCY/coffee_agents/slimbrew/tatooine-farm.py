@@ -29,7 +29,7 @@ async def run_participant(secret: str):
                         reply = f"Hello from tatooine".encode()
                         print(f"sending {reply} to {recv_session.destination_name}")
                         await slim_app.publish(
-                            recv_session, reply, PyName()) 
+                            recv_session, reply, PyName("agntcy", "namespace", "group_channel") 
                         )
 
                     # reply to the group

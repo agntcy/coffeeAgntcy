@@ -20,10 +20,10 @@ async def run_moderator(secret: str, channel: PyName, invitees: list[PyName]) ->
         PySessionConfiguration.Streaming(
             PySessionDirection.BIDIRECTIONAL,
             topic=channel,
-            moderator=False,
+            moderator=True,
             max_retries=20,
             timeout=datetime.timedelta(seconds=60),
-            mls_enabled=False,
+            mls_enabled=True,
         ))
         print(f"Session created: {session_info.id}")
 
@@ -40,10 +40,6 @@ async def run_moderator(secret: str, channel: PyName, invitees: list[PyName]) ->
         await moderator_slim_app.publish(session_info, "Hello everyone!".encode(), channel)
 
         while True:
-            try:
-                await asyncio.wait_for(moderator_slim_app.receive(session=session_info.id), timeout=15)
-            except TimeoutError:
-                print(f"Timed out waiting for messages in session {session_info.id}")
             _, msg = await moderator_slim_app.receive(session=session_info.id)
             print(f"Received message in session {session_info.id}: {msg.decode()}")
 
