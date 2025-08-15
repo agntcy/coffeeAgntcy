@@ -8,7 +8,7 @@ import React from 'react';
 const PatternEmptyState: React.FC = () => {
     return (
         <div className="flex w-full h-full bg-primary-bg justify-center items-center relative">
-            <div className="flex w-[328px] flex-col items-center gap-2">
+            <div className="flex flex-col items-center gap-2">
                 <div className="flex flex-col items-center gap-6">
                     <div className="flex justify-center items-center w-[120px] h-[212px]">
                         <img 
@@ -23,7 +23,7 @@ const PatternEmptyState: React.FC = () => {
                     <div className="flex flex-col items-center gap-2">
                         <div className="flex flex-col items-center gap-[10px]">
                             <span className="
-                                w-[244px] h-6 text-[#FBFCFE] text-center font-[Inter] 
+                                text-[#FBFCFE] text-center font-[Inter] 
                                 text-base font-normal leading-6 tracking-[0.5px]
                             ">
                                 Select a pattern to get started

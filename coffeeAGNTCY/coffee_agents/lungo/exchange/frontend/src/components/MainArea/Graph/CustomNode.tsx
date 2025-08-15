@@ -7,6 +7,8 @@
 import React from 'react';
 import { Handle, Position } from '@xyflow/react';
 import githubIcon from '@/assets/github.svg';
+import agntcyDirectoryIcon from '@/assets/agent_directory.svg';
+import identityBadgeIcon from '@/assets/identity-badge.svg';
 
 export const DefaultHandleColor = '#f5f5f5';
 
@@ -73,46 +75,26 @@ const CustomNode: React.FC<CustomNodeProps> = ({ data }) => {
                     {data.icon}
                 </div>
                 <div className="flex flex-col items-start p-0 gap-[2px] w-[173px] h-9">
-                    <div className="w-[173px] h-[17px] flex items-center justify-between">
-                        <span className="text-[#E8E9EA] text-left" style={{
-                            fontFamily: 'Inter',
-                            fontWeight: 400,
-                            fontSize: '14px',
-                            lineHeight: '20px',
-                            letterSpacing: '0%',
-                            opacity: 1
-                        }}>
-                            {data.label1}
-                        </span>
-                        {data.verificationStatus && (
-                            <div 
-                                style={{
-                                    width: '80px',
-                                    height: '20px',
-                                    gap: '10px',
-                                    opacity: 1,
-                                    borderRadius: '20px',
-                                    padding: '4px',
-                                    background: data.verificationStatus === 'verified' ? '#00B98D66' : '#C6295366',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center'
-                                }}
-                            >
-                                <span 
-                                    style={{
-                                        fontFamily: 'Inter',
-                                        fontWeight: 500,
-                                        fontSize: '11px',
-                                        lineHeight: '16px',
-                                        letterSpacing: '0%',
-                                        color: '#FBFCFE'
-                                    }}
-                                >
-                                    {data.verificationStatus === 'verified' ? 'Validated' : 'Not Validated'}
-                                </span>
-                            </div>
-                        )}
+                    <div className="w-[173px] h-[17px] flex items-center">
+                        <div className="relative flex items-center gap-2">
+                            <span className="text-[#E8E9EA] text-left" style={{
+                                fontFamily: 'Inter',
+                                fontWeight: 400,
+                                fontSize: '14px',
+                                lineHeight: '20px',
+                                letterSpacing: '0%',
+                                opacity: 1
+                            }}>
+                                {data.label1}
+                            </span>
+                            {data.verificationStatus === 'verified' && (
+                                <img 
+                                    src={identityBadgeIcon} 
+                                    alt="Verified" 
+                                    className="w-[15.643754959106445px] h-[15px] opacity-100"
+                                />
+                            )}
+                        </div>
                     </div>
                     <div className="w-[173px] h-[19px] text-[#E8E9EA] text-left self-stretch border-none bg-transparent rounded-none p-0" style={{
                         fontFamily: 'Inter',
@@ -126,39 +108,32 @@ const CustomNode: React.FC<CustomNodeProps> = ({ data }) => {
                 </div>
             </div>
             
-            {data.githubLink && (
-                <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 translate-y-1/2">
+            <div className="absolute -right-4 top-1/2 transform -translate-y-1/2 flex flex-col gap-1">
+                <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center shadow-sm">
+                    <img 
+                        src={agntcyDirectoryIcon} 
+                        alt="AGNTCY Directory" 
+                        className="w-5 h-5 text-white" 
+                    />
+                </div>
+                
+                {data.githubLink && (
                     <a 
                         href={data.githubLink} 
                         target="_blank" 
                         rel="noopener noreferrer"
                         className="hover:opacity-80 transition-opacity"
-                        style={{
-                            width: '32px', 
-                            height: '28px',
-                            gap: '10px',
-                            opacity: 1,
-                            borderRadius: '8px',
-                            padding: '4px',
-                            background: '#0051AF',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center'
-                        }}
                     >
-                        <img 
-                            src={githubIcon} 
-                            alt="GitHub" 
-                            style={{
-                                width: '24px',
-                                height: '24px',
-                                borderRadius: '4px',
-                                boxSizing: 'border-box'
-                            }}
-                        />
+                        <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center shadow-sm">
+                            <img 
+                                src={githubIcon} 
+                                alt="GitHub" 
+                                className="w-5 h-5 text-white"
+                            />
+                        </div>
                     </a>
-                </div>
-            )}
+                )}
+            </div>
             
             {(data.handles === 'all' || data.handles === 'target') && (
                 <Handle

@@ -7,20 +7,18 @@ import React, { useState, useEffect } from 'react';
 import { v4 as uuid } from 'uuid';
 import { LOCAL_STORAGE_KEY } from '@/components/Chat/Messages';
 import UserMessage from '@/components/Chat/UserMessage';
-import AgentIcon from '@/assets/Agent_Icon.svg';
+import AgentIcon from '@/assets/Agent_directory.svg';
 
 
 import Navigation from '@/components/Navigation/Navigation';
-import PatternEmptyState from '@/components/MainArea/PatternEmptyState';
 import MainArea from '@/components/MainArea/MainArea';
 import { useAgentAPI } from '@/hooks/useAgentAPI';
 import ChatArea from '@/components/Chat/ChatArea';
+import Sidebar from '@/components/Sidebar/Sidebar';
 
 export const PATTERNS = {
-  NONE: 'none',
   SLIM_A2A: 'slim_a2a',
-  SLIM_MULTI_A2A: 'slim_multi_a2a',
-  IDENTITY: 'identity'
+  SLIM_MULTI_A2A: 'slim_multi_a2a'
 } as const;
 
 export type PatternType = typeof PATTERNS[keyof typeof PATTERNS];
@@ -35,13 +33,13 @@ export interface Message {
 
 
 type PatternMessages = {
-    [K in Exclude<PatternType, 'none'>]: string;
+    [K in PatternType]: string;
 };
 
 const App: React.FC = () => {
     const { sendMessage } = useAgentAPI();
 
-    const [selectedPattern, setSelectedPattern] = useState<PatternType>(PATTERNS.NONE);
+    const [selectedPattern, setSelectedPattern] = useState<PatternType>(PATTERNS.SLIM_A2A);
     const [aiReplied, setAiReplied] = useState<boolean>(false);
     const [buttonClicked, setButtonClicked] = useState<boolean>(false);
     const [currentUserMessage, setCurrentUserMessage] = useState<string>('');
@@ -60,24 +58,21 @@ const App: React.FC = () => {
     }, [messages]);
 
     useEffect(() => {
-        if (selectedPattern !== PATTERNS.NONE) {
-            const patternMessages: PatternMessages = {
-                [PATTERNS.SLIM_A2A]: 'Hi! How can I assist you?',
-                [PATTERNS.SLIM_MULTI_A2A]: 'Hi, you are having a conversation with the supervisor. How can I help you?',
-                [PATTERNS.IDENTITY]: 'Hi! How can I assist you?'
-            };
-            
-            setMessages([{ 
-                role: 'assistant', 
-                content: patternMessages[selectedPattern], 
-                id: uuid(), 
-                animate: false 
-            }]);
-            
-            setCurrentUserMessage('');
-            setAgentResponse('');
-            setIsAgentLoading(false);
-        }
+        const patternMessages: PatternMessages = {
+            [PATTERNS.SLIM_A2A]: 'Hi! How can I assist you?',
+            [PATTERNS.SLIM_MULTI_A2A]: 'Hi, you are having a conversation with the supervisor. How can I help you?'
+        };
+        
+        setMessages([{ 
+            role: 'assistant', 
+            content: patternMessages[selectedPattern], 
+            id: uuid(), 
+            animate: false 
+        }]);
+        
+        setCurrentUserMessage('');
+        setAgentResponse('');
+        setIsAgentLoading(false);
     }, [selectedPattern]);
 
     const handleCoffeeGraderSelect = (query: string) => {
@@ -143,15 +138,16 @@ const App: React.FC = () => {
 
     return (
         <div className="flex flex-col w-screen h-screen overflow-hidden bg-primary-bg">
-            <Navigation 
-                selectedPattern={selectedPattern}
-                onPatternChange={setSelectedPattern}
-            />
+            <Navigation />
 
-            <div className="flex-grow flex flex-col bg-primary-bg">
-                {selectedPattern === PATTERNS.NONE ? (
-                    <PatternEmptyState />
-                ) : (
+            <div className="flex flex-1 overflow-hidden">
+                <Sidebar 
+                    selectedPattern={selectedPattern}
+                    onPatternChange={setSelectedPattern}
+                />
+
+             
+                <div className="flex-1 flex flex-col bg-primary-bg">
                     <div className="flex-grow relative">
                         <MainArea 
                             pattern={selectedPattern}
@@ -161,47 +157,48 @@ const App: React.FC = () => {
                             setAiReplied={setAiReplied}
                         />
                     </div>
-                )}
-            </div>
 
-            <div className="flex flex-col justify-center items-center p-0 gap-0 w-full min-h-[76px] bg-[#2E3E57] flex-none self-stretch flex-grow-0 min-w-[1440px] box-border overflow-visible">
-                {currentUserMessage && (
-                    <div className="w-full p-4">
-                        <div className="w-[830px] max-w-full mx-auto flex flex-col gap-3">
-                            <UserMessage content={currentUserMessage} />
-                            {(isAgentLoading || agentResponse) && (
-                                <div className="flex flex-row items-start gap-1 w-full">
-                                    <div className="flex justify-center items-center w-10 h-10 bg-[#2E3E57] rounded-full">
-                                        <img src={AgentIcon} alt="Agent" className="w-10 h-10 rounded-full" style={{opacity: 1}} />
-                                    </div>
-                                    <div className="flex flex-col justify-center items-start p-1 px-2 w-[764px] rounded">
-                                        <div className="font-['Inter'] font-normal text-sm leading-5 text-white whitespace-pre-wrap">
-                                            {isAgentLoading ? (
-                                                <div className="text-[#649EF5] animate-pulse">...</div>
-                                            ) : (
-                                                agentResponse
-                                            )}
+                 
+                    <div className="flex flex-col justify-center items-center p-0 gap-0 w-full min-h-[76px] bg-[#2E3E57] flex-none">
+                        {currentUserMessage && (
+                            <div className="w-full p-4">
+                                <div className="w-[830px] max-w-full mx-auto flex flex-col gap-3">
+                                    <UserMessage content={currentUserMessage} />
+                                    {(isAgentLoading || agentResponse) && (
+                                        <div className="flex flex-row items-start gap-1 w-full">
+                                            <div className="flex justify-center items-center w-10 h-10 bg-[#2E3E57] rounded-full">
+                                                <img src={AgentIcon} alt="Agent" className="w-10 h-10 rounded-full" style={{opacity: 1}} />
+                                            </div>
+                                            <div className="flex flex-col justify-center items-start p-1 px-2 w-[764px] rounded">
+                                                <div className="font-['Inter'] font-normal text-sm leading-5 text-white whitespace-pre-wrap">
+                                                    {isAgentLoading ? (
+                                                        <div className="text-[#649EF5] animate-pulse">...</div>
+                                                    ) : (
+                                                        agentResponse
+                                                    )}
+                                                </div>
+                                            </div>
                                         </div>
-                                    </div>
+                                    )}
                                 </div>
-                            )}
-                        </div>
+                            </div>
+                        )}
+                        
+                        <ChatArea
+                            messages={messages}
+                            setMessages={setMessages}
+                            setButtonClicked={setButtonClicked}
+                            setAiReplied={setAiReplied}
+                            isBottomLayout={true}
+                            showCoffeeDropdown={selectedPattern === PATTERNS.SLIM_A2A}
+                            showCoffeePrompts={selectedPattern === PATTERNS.SLIM_MULTI_A2A}
+                            onCoffeeGraderSelect={handleCoffeeGraderSelect}
+                            onDropdownSelect={handleDropdownSelect}
+                            onUserInput={handleUserInput}
+                            onApiResponse={handleApiResponse}
+                        />
                     </div>
-                )}
-                
-                <ChatArea
-                    messages={messages}
-                    setMessages={setMessages}
-                    setButtonClicked={setButtonClicked}
-                    setAiReplied={setAiReplied}
-                    isBottomLayout={true}
-                    showCoffeeDropdown={selectedPattern === PATTERNS.SLIM_A2A}
-                    showBuyerDropdowns={selectedPattern === PATTERNS.SLIM_MULTI_A2A}
-                    onCoffeeGraderSelect={handleCoffeeGraderSelect}
-                    onDropdownSelect={handleDropdownSelect}
-                    onUserInput={handleUserInput}
-                    onApiResponse={handleApiResponse}
-                />
+                </div>
             </div>
         </div>
     );

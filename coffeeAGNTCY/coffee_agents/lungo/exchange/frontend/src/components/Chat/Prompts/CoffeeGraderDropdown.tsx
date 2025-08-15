@@ -4,6 +4,7 @@
 **/
 
 import React, { useState, useRef, useEffect } from 'react';
+import { ChevronUp } from 'lucide-react';
 
 interface CoffeeGraderDropdownProps {
     visible: boolean;
@@ -52,9 +53,9 @@ const CoffeeGraderDropdown: React.FC<CoffeeGraderDropdownProps> = ({ visible, on
         <div className="relative inline-block" ref={dropdownRef}>
             <div 
                 className={`
-                    box-border flex flex-row items-center p-2 gap-1 w-auto min-w-32 h-9 
-                    bg-[#1A2432] border border-[#DDDDDD] rounded cursor-pointer 
-                    transition-colors duration-200 ease-in-out
+                    box-border flex flex-row items-center gap-1 w-[139px] h-[36px] 
+                    bg-[#1A2432] border border-[#E8E9EA] rounded-[8px] cursor-pointer 
+                    transition-colors duration-200 ease-in-out p-2
                     hover:bg-[#1F2A3A]
                     ${isOpen ? 'bg-[#1F2A3A]' : ''}
                 `}
@@ -69,15 +70,11 @@ const CoffeeGraderDropdown: React.FC<CoffeeGraderDropdownProps> = ({ visible, on
                         Coffee Grader
                     </div>
                 </div>
-                <div className="w-6 h-6 flex-none order-1 flex-grow-0 relative flex items-center justify-center">
-                    <div 
-                        className={`
-                            w-[11.15px] h-[6.55px] bg-[#E8E9EA] transition-transform duration-300 ease-in-out
-                            ${isOpen ? 'rotate-180' : ''}
-                        `}
-                        style={{clipPath: 'polygon(50% 100%, 0% 0%, 100% 0%)'}}
-                    ></div>
-                </div>
+                <ChevronUp 
+                    className={`w-4 h-4 text-white transition-transform ${
+                        isOpen ? 'rotate-0' : 'rotate-180'
+                    }`}
+                />
             </div>
             
             <div className={`
