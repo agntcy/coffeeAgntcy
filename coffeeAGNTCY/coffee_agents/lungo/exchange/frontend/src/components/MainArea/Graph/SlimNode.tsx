@@ -43,7 +43,7 @@ const SlimNode: React.FC<SlimNodeProps> = ({ data }) => {
             <div style={{
                 width: '94px',
                 height: '20px',
-                fontFamily: 'Inter, system-ui, Avenir, Helvetica, Arial, sans-serif',
+                fontFamily: 'Inter',
                 fontWeight: 400,
                 fontSize: '14px',
                 lineHeight: '20px',

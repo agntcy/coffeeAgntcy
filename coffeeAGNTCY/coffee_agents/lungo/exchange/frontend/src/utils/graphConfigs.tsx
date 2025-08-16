@@ -7,7 +7,7 @@
 
 import { PiCoffeeBeanThin } from "react-icons/pi";
 import { TiWeatherCloudy } from "react-icons/ti";
-import supervisorIcon from '@/assets/supervisor.svg';
+import supervisorIcon from '@/assets/supervisor.png';
 import { FarmName } from './const';
 
 interface GraphConfig {
@@ -17,7 +17,7 @@ interface GraphConfig {
     animationSequence: { ids: string[] }[];
 }
 
-const CoffeeBeanIcon = <PiCoffeeBeanThin style={{ transform: 'rotate(-30deg)', width: '24px', height: '24px' }} />;
+const CoffeeBeanIcon = <PiCoffeeBeanThin style={{ transform: 'rotate(-30deg)', width: '16px', height: '16px', color: 'white' }} />;
 
 const commonNodeData = {
     backgroundColor: '#F5F5F5',
@@ -36,10 +36,9 @@ const SLIM_A2A_CONFIG: GraphConfig = {
                     src={supervisorIcon} 
                     alt="Supervisor Icon" 
                     style={{ 
-                        marginLeft: '2.5px', 
-                        width: '24px', 
-                        height: '24px',
-                        filter: 'brightness(0) invert(1)', 
+                        width: '16px', 
+                        height: '16px',
+                        filter: 'brightness(0) invert(1)',
                         objectFit: 'contain'
                     }} 
                 />,
@@ -94,10 +93,9 @@ const SLIM_MULTI_A2A_CONFIG: GraphConfig = {
                     src={supervisorIcon} 
                     alt="Supervisor Icon" 
                     style={{ 
-                        marginLeft: '2.5px', 
-                        width: '24px', 
-                        height: '24px',
-                        filter: 'brightness(0) invert(1)', 
+                        width: '16px', 
+                        height: '16px',
+                        filter: 'brightness(0) invert(1)',
                         objectFit: 'contain'
                     }} 
                 />,
@@ -167,7 +165,7 @@ const SLIM_MULTI_A2A_CONFIG: GraphConfig = {
             type: 'customNode',
             data: {
                 ...commonNodeData,
-                icon: <TiWeatherCloudy style={{ width: '24px', height: '24px' }}/>,
+                icon: <TiWeatherCloudy style={{ width: '16px', height: '16px', color: 'white' }}/>,
                 label1: 'MCP Server',
                 label2: 'Weather',
                 handles: 'target',

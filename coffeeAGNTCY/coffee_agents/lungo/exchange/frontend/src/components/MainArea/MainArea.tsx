@@ -80,9 +80,10 @@ const MainArea: React.FC<MainAreaProps> = ({
         
         setTimeout(() => {
             fitView({ 
-                padding: 0.3, 
+                padding: 0.45, 
                 duration: 300, 
-                maxZoom: 0.8 
+                minZoom: 0.5,  
+                maxZoom: 1.1   
             });
         }, 100); 
     }, [pattern, setNodes, setEdges, fitView]);
@@ -152,6 +153,9 @@ const MainArea: React.FC<MainAreaProps> = ({
                 onNodesChange={onNodesChange}
                 onEdgesChange={onEdgesChange}
                 proOptions={proOptions}
+                defaultViewport={{ x: 0, y: 0, zoom: 0.6 }}
+                minZoom={0.15}
+                maxZoom={1.8}
             >
                 <Controls />
             </ReactFlow>

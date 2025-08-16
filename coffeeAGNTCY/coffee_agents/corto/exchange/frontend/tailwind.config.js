@@ -13,7 +13,7 @@ export default {
   theme: {
   	extend: {
   		colors: {
-  			'primary-bg': '#0E1116',
+  			'primary-bg': '#23282E',
   			'primary-blue': '#187ADC',
   			background: 'hsl(var(--background))',
   			foreground: 'hsl(var(--foreground))',
@@ -59,12 +59,10 @@ export default {
   		fontFamily: {
   			cisco: [
   				'CiscoSansTT',
-  				'Inter',
-  				'sans-serif'
+  				'Inter'
   			],
   			inter: [
-  				'Inter',
-  				'sans-serif'
+  				'Inter'
   			]
   		},
   		animation: {

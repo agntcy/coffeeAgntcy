@@ -99,7 +99,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
                 <div className="box-border flex flex-row items-center py-[5px] px-0 w-[764px] h-11 bg-[#1A2432] border border-[#1E2939] rounded flex-grow">
                     <div className="flex flex-row items-center py-[7px] px-4 gap-[10px] w-[764px] h-[34px] flex-grow">
                         <input
-                            className="w-[732px] h-5 font-['CiscoSansTT','Inter',sans-serif] font-medium text-[15px] leading-5 tracking-[0.005em] text-[#59616B] bg-transparent border-none outline-none flex-grow focus:text-[#FBFCFE]"
+                            className="w-[732px] h-5 font-['Inter'] font-medium text-[15px] leading-5 tracking-[0.005em] text-[#59616B] bg-transparent border-none outline-none flex-grow focus:text-[#FBFCFE]"
                             placeholder="Describe what you are looking for"
                             value={content}
                             onChange={(e: React.ChangeEvent<HTMLInputElement>) => setContent(e.target.value)}

@@ -59,16 +59,10 @@ export default {
   		fontFamily: {
   			cisco: [
   				'CiscoSansTT',
-  				'Inter',
-  				'sans-serif'
+  				'Inter'
   			],
   			inter: [
-  				'Inter',
-  				'system-ui',
-  				'Avenir',
-  				'Helvetica',
-  				'Arial',
-  				'sans-serif'
+  				'Inter'
   			]
   		},
   		animation: {

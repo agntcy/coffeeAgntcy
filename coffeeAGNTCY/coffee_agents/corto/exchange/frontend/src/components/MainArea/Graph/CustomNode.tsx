@@ -6,9 +6,9 @@
 /** @jsxImportSource @emotion/react */
 import React from 'react';
 import { Handle, Position } from '@xyflow/react';
-import githubIcon from '@/assets/github.svg';
-import agntcyDirectoryIcon from '@/assets/agent_directory.svg';
-
+import githubIcon from '@/assets/Github.png';
+import agentDirectoryIcon from '@/assets/Agent_directory.png';
+import identityBadgeIcon from '@/assets/identity_badge.svg';
 
 export const DefaultHandleColor = '#f5f5f5';
 
@@ -29,55 +29,182 @@ interface CustomNodeProps {
 }
 
 const CustomNode: React.FC<CustomNodeProps> = ({ data }) => {
-    const activeClasses = data.active ? "bg-[#00142B] outline outline-2 outline-[#187ADC] shadow-[rgba(0,0,0,0.6)_0px_6px_8px]" : "bg-[#373C42]";
-    
     return (
         <div 
-            className={`
-                ${activeClasses}
-                text-gray-50 
-                rounded-lg 
-                border 
-                border-gray-100
-                text-center
-                flex flex-col items-center justify-start
-                hover:bg-[#4A4F55] hover:outline hover:outline-2 hover:outline-[#187ADC] hover:shadow-[rgba(0,0,0,0.6)_0px_6px_8px]
-                relative
-            `}
             style={{ 
-                width: '196px', 
-                height: data.githubLink ? '108px' : '72px', 
-                padding: '16px', 
-                borderRadius: '8px' 
+                width: '194px', 
+                height: '96px', 
+                padding: '16px',
+                borderRadius: '8px',
+                background: '#373C42',
+                position: 'relative',
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'flex-start',
+                alignItems: 'flex-start',
+                gap: '8px',
+                outline: data.active ? '2px solid #187ADC' : 'none',
+                boxShadow: data.active ? 'rgba(0,0,0,0.6) 0px 6px 8px' : 'none'
+            }}
+            onMouseEnter={(e) => {
+                e.currentTarget.style.background = '#4A4F55';
+                e.currentTarget.style.outline = '2px solid #187ADC';
+                e.currentTarget.style.boxShadow = 'rgba(0,0,0,0.6) 0px 6px 8px';
+            }}
+            onMouseLeave={(e) => {
+                if (!data.active) {
+                    e.currentTarget.style.background = '#373C42';
+                    e.currentTarget.style.outline = 'none';
+                    e.currentTarget.style.boxShadow = 'none';
+                }
             }}
         >
-            {data.verificationBadge && (
-                <div 
-                    className="absolute top-1 right-1"
-                    style={{ zIndex: 10 }}
-                >
-                    {data.verificationBadge}
-                </div>
-            )}
-            <div className="flex flex-row items-center p-0 gap-1 w-[148px] h-9">
-                <div className="flex flex-row justify-center items-center py-1 px-0 gap-[10px] w-9 h-9 bg-[#59616B] rounded border-none mr-0 overflow-hidden opacity-100 self-stretch">
+            {/* Icon Container - Figma Frame 1 */}
+            <div 
+                style={{
+                    width: '20px',
+                    height: '20px',
+                    background: '#59616B',
+                    borderRadius: '4px',
+                    display: 'flex',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    flexShrink: 0,
+                    gap: '10px',
+                    paddingTop: '4px',
+                    paddingBottom: '4px',
+                    opacity: 1
+                }}
+            >
+                <div style={{
+                    width: '16px',
+                    height: '16px',
+                    display: 'flex',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    opacity: 1
+                }}>
                     {data.icon}
                 </div>
-                <div className="flex flex-col items-start p-0 gap-[2px] w-[108px] h-9">
-                    <div className="w-[108px] h-[17px] font-inter font-light text-[13px] leading-[17px] text-[#E8E9EA] text-left self-stretch">
-                        {data.label1}
-                    </div>
-                    <div className="w-[108px] h-[19px] font-inter font-normal text-[15px] leading-[19px] text-[#E8E9EA] text-left self-stretch border-none bg-transparent rounded-none p-0">
-                        {data.label2}
-                    </div>
-                </div>
             </div>
-    <div className="absolute -right-4 top-1/2 transform -translate-y-1/2 flex flex-col gap-1">
-                <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center shadow-sm">
+
+            <div 
+                style={{
+                    display: 'flex',
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    padding: '0px',
+                    gap: '4px',
+                    
+                    width: '162px',
+                    height: '20px',
+                    
+                    flex: 'none',
+                    order: 0,
+                    alignSelf: 'stretch',
+                    flexGrow: 0
+                }}
+            >
+                <span style={{
+                    width: '115px',
+                    height: '20px',
+                    
+                    fontFamily: 'Inter',
+                    fontStyle: 'normal',
+                    fontWeight: 400,
+                    fontSize: '14px',
+                    lineHeight: '20px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    
+                    color: '#E8E9EA',
+                    
+                    flex: 'none',
+                    order: 0,
+                    flexGrow: 0,
+                    
+                    whiteSpace: 'nowrap',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis'
+                }}>
+                    {data.label1}
+                </span>
+                {data.verificationStatus === 'verified' && (
                     <img 
-                        src={agntcyDirectoryIcon} 
+                        src={identityBadgeIcon} 
+                        alt="Verified" 
+                        style={{
+                            /* verify 1 */
+                            width: '16px',
+                            height: '16px',
+                            
+                            /* Inside auto layout */
+                            flex: 'none',
+                            order: 1,
+                            flexGrow: 0
+                        }}
+                    />
+                )}
+            </div>
+
+            <div 
+                style={{
+                    width: '162px',
+                    height: '16px',
+                    
+                    fontFamily: 'Inter',
+                    fontStyle: 'normal',
+                    fontWeight: 300,
+                    fontSize: '12px',
+                    lineHeight: '16px',
+                    
+                    color: '#E8E9EA',
+                    
+                    flex: 'none',
+                    order: 1,
+                    alignSelf: 'stretch',
+                    flexGrow: 0,
+                    
+                    whiteSpace: 'nowrap',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis'
+                }}
+            >
+                {data.label2}
+            </div>
+            
+            <div 
+                style={{
+                    position: 'absolute',
+                    right: '-16px',
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '4px',
+                    zIndex: 10
+                }}
+            >
+                <div 
+                    style={{
+                        width: '32px',
+                        height: '32px',
+                        background: '#1976D2',
+                        borderRadius: '50%',
+                        display: 'flex',
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                        boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.2)',
+                        cursor: 'pointer'
+                    }}
+                >
+                    <img 
+                        src={agentDirectoryIcon} 
                         alt="AGNTCY Directory" 
-                        className="w-5 h-5 text-white" 
+                        style={{
+                            width: '20px',
+                            height: '20px'
+                        }}
                     />
                 </div>
                 
@@ -86,18 +213,43 @@ const CustomNode: React.FC<CustomNodeProps> = ({ data }) => {
                         href={data.githubLink} 
                         target="_blank" 
                         rel="noopener noreferrer"
-                        className="hover:opacity-80 transition-opacity"
+                        style={{
+                            textDecoration: 'none'
+                        }}
                     >
-                        <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center shadow-sm">
+                        <div 
+                            style={{
+                                width: '32px',
+                                height: '32px',
+                                background: '#1976D2',
+                                borderRadius: '50%',
+                                display: 'flex',
+                                justifyContent: 'center',
+                                alignItems: 'center',
+                                boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.2)',
+                                cursor: 'pointer',
+                                transition: 'opacity 0.2s ease'
+                            }}
+                            onMouseEnter={(e) => {
+                                e.currentTarget.style.opacity = '0.8';
+                            }}
+                            onMouseLeave={(e) => {
+                                e.currentTarget.style.opacity = '1';
+                            }}
+                        >
                             <img 
                                 src={githubIcon} 
                                 alt="GitHub" 
-                                className="w-5 h-5 text-white"
+                                style={{
+                                    width: '20px',
+                                    height: '20px'
+                                }}
                             />
                         </div>
                     </a>
                 )}
             </div>
+            
             {(data.handles === 'all' || data.handles === 'target') && (
                 <Handle
                     type="target"

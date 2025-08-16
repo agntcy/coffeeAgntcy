@@ -5,11 +5,15 @@
 
 @layer base {
   body {
-    @apply m-0 p-0 bg-background;
-    font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+    @apply m-0 p-0 font-inter;
+    background-color: #23282E;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
   }
   :root {
-    --background: 0 0% 100%;
+    --primary-bg: #23282E;
+    --background: 210 10% 14%;
     --foreground: 0 0% 3.9%;
     --card: 0 0% 100%;
     --card-foreground: 0 0% 3.9%;

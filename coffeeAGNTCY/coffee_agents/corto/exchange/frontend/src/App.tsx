@@ -14,6 +14,7 @@ import CodePopUp from "@/components/MainArea/CodePopUp";
 
 import Navigation from '@/components/Navigation/Navigation';
 import MainArea from '@/components/MainArea/MainArea';
+import Sidebar from '@/components/Sidebar/Sidebar';
 
 import { Message } from '@/types/Message';
 import { useAgentAPI } from '@/hooks/useAgentAPI';
@@ -25,6 +26,7 @@ const App: React.FC = () => {
     const [currentUserMessage, setCurrentUserMessage] = useState<string>('');
     const [agentResponse, setAgentResponse] = useState<string>('');
     const [isAgentLoading, setIsAgentLoading] = useState<boolean>(false);
+    const [selectedView, setSelectedView] = useState<'coffee-grading' | 'agent-to-agent'>('agent-to-agent');
     const [messages, setMessages] = useState<Message[]>([
         { role: 'assistant', content: 'Hi! How can I assist you?', id: uuid(), animate: false }
     ]);
@@ -68,66 +70,87 @@ const App: React.FC = () => {
         }
     };
 
+    const handleViewChange = (view: 'coffee-grading' | 'agent-to-agent') => {
+        setSelectedView(view);
+    };
+
     return (
         <div className="flex flex-col w-screen h-screen overflow-hidden bg-primary-bg">
             <Navigation />
 
-            <div className="flex-grow flex flex-col bg-primary-bg">
-            
-
-                <div className="flex-grow flex flex-col bg-primary-bg">
+            <div className="flex flex-1 overflow-hidden">
+           
+                <Sidebar 
+                    selectedView={selectedView}
+                    onViewChange={handleViewChange}
+                />
+                
+                <div 
+                    className="flex-1 flex flex-col bg-primary-bg"
+                    style={{
+                        borderLeft: '1px solid #00142B'
+                    }}
+                >
                     <div className="relative">
                         <CodePopUp 
                             showCode={showCode}
                             onClose={() => setShowCode(false)}
                         />
                     </div>
-                    <div className="flex-grow relative">
-                        <MainArea 
-                            buttonClicked={buttonClicked}
+                    {selectedView === 'agent-to-agent' && (
+                        <div className="flex-grow relative">
+                            <MainArea 
+                                buttonClicked={buttonClicked}
+                                setButtonClicked={setButtonClicked}
+                                aiReplied={aiReplied}
+                                setAiReplied={setAiReplied}
+                            />
+                        </div>
+                    )}
+                    {selectedView === 'coffee-grading' && (
+                        <div className="flex-grow flex items-center justify-center">
+                            <div className="text-white text-xl">Coffee Grading Conversation View</div>
+                        </div>
+                    )}
+
+                    {/* Chat Area - moved inside main content area */}
+                    <div className="flex flex-col justify-center items-center p-0 gap-0 w-full min-h-[76px] bg-[#2E3E57] flex-none">
+                        {currentUserMessage && (
+                            <div className="w-full p-4">
+                                <div className="w-[830px] max-w-full mx-auto flex flex-col gap-3">
+                                    <UserMessage content={currentUserMessage} />
+                                    {(isAgentLoading || agentResponse) && (
+                                        <div className="flex flex-row items-start gap-1 w-full">
+                                            <div className="flex justify-center items-center w-10 h-10 bg-[#2E3E57] rounded-full">
+                                                <img src={AgentIcon} alt="Agent" className="w-10 h-10 rounded-full" style={{opacity: 1}} />
+                                            </div>
+                                            <div className="flex flex-col justify-center items-start p-1 px-2 w-[764px] rounded">
+                                                <div className="font-inter font-normal text-sm leading-5 text-white whitespace-pre-wrap">
+                                                    {isAgentLoading ? (
+                                                        <div className="text-[#649EF5] animate-pulse">...</div>
+                                                    ) : (
+                                                        agentResponse
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        )}
+                        
+                        <ChatArea
+                            messages={messages}
+                            setMessages={setMessages}
                             setButtonClicked={setButtonClicked}
-                            aiReplied={aiReplied}
                             setAiReplied={setAiReplied}
+                            isBottomLayout={true}
+                            showCoffeeDropdown={true}
+                            onDropdownSelect={handleDropdownSelect}
+                            onApiResponse={handleApiResponse}
                         />
                     </div>
                 </div>
-            </div>
-
-            <div className="flex flex-col justify-center items-center p-0 gap-0 w-full min-h-[76px] bg-[#2E3E57] flex-none self-stretch flex-grow-0 min-w-[1440px] box-border overflow-visible">
-                {currentUserMessage && (
-                    <div className="w-full p-4">
-                        <div className="w-[830px] max-w-full mx-auto flex flex-col gap-3">
-                            <UserMessage content={currentUserMessage} />
-                            {(isAgentLoading || agentResponse) && (
-                                <div className="flex flex-row items-start gap-1 w-full">
-                                    <div className="flex justify-center items-center w-10 h-10 bg-[#2E3E57] rounded-full">
-                                        <img src={AgentIcon} alt="Agent" className="w-10 h-10 rounded-full" style={{opacity: 1}} />
-                                    </div>
-                                    <div className="flex flex-col justify-center items-start p-1 px-2 w-[764px] rounded">
-                                        <div className="font-inter font-normal text-sm leading-5 text-white whitespace-pre-wrap">
-                                            {isAgentLoading ? (
-                                                <div className="text-[#649EF5] animate-pulse">...</div>
-                                            ) : (
-                                                agentResponse
-                                            )}
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-                    </div>
-                )}
-                
-                <ChatArea
-                    messages={messages}
-                    setMessages={setMessages}
-                    setButtonClicked={setButtonClicked}
-                    setAiReplied={setAiReplied}
-                    isBottomLayout={true}
-                    showCoffeeDropdown={true}
-                    onDropdownSelect={handleDropdownSelect}
-                    onApiResponse={handleApiResponse}
-                />
             </div>
         </div>
     );

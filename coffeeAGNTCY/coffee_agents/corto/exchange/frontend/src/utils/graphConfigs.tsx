@@ -5,8 +5,8 @@
 
 /** @jsxImportSource @emotion/react */
 
-import { PiCoffeeBeanThin } from "react-icons/pi";
-import supervisorIcon from '@/assets/supervisor.svg';
+import supervisorIcon from '@/assets/supervisor.png';
+import graderIcon from '@/assets/Grader-Agent.png';
 
 interface GraphConfig {
     title: string;
@@ -15,7 +15,17 @@ interface GraphConfig {
     animationSequence: { ids: string[] }[];
 }
 
-const CoffeeBeanIcon = <PiCoffeeBeanThin style={{ transform: 'rotate(-30deg)', fontSize: '1.65em' }} />;
+const GraderAgentIcon = <img 
+    src={graderIcon} 
+    alt="Grader Agent Icon" 
+    style={{ 
+        width: '16px', 
+        height: '16px',
+        filter: 'brightness(0) invert(1)', 
+        objectFit: 'contain',
+        opacity: 1
+    }} 
+/>;
 
 const commonNodeData = {
     backgroundColor: '#F5F5F5',
@@ -34,16 +44,17 @@ const SLIM_A2A_CONFIG: GraphConfig = {
                     src={supervisorIcon} 
                     alt="Supervisor Icon" 
                     style={{ 
-                        marginLeft: '2.5px', 
-                        width: '24px', 
-                        height: '24px',
+                        width: '16px', 
+                        height: '16px',
                         filter: 'brightness(0) invert(1)', 
-                        objectFit: 'contain'
+                        objectFit: 'contain',
+                        opacity: 1
                     }} 
                 />,
                 label1: 'Supervisor Agent',
                 label2: 'Buyer',
                 handles: 'source',
+                verificationStatus: 'verified',
                 githubLink: 'https://github.com/agntcy/coffeeAgntcy/tree/main/coffeeAGNTCY/coffee_agents/corto/exchange',
             },
             position: { x: 529.1332569384248, y: 159.4805787605829 },
@@ -53,8 +64,8 @@ const SLIM_A2A_CONFIG: GraphConfig = {
             type: 'customNode',
             data: {
                 ...commonNodeData,
-                icon: CoffeeBeanIcon,
-                label1: 'Q Grader Agent',
+                icon: GraderAgentIcon,
+                label1: 'Grader Agent',
                 label2: 'Sommelier',
                 handles: 'target',
                 githubLink: 'https://github.com/agntcy/coffeeAgntcy/tree/main/coffeeAGNTCY/coffee_agents/corto/farm',
