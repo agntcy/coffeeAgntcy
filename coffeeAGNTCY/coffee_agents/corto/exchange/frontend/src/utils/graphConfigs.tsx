@@ -47,8 +47,7 @@ const SLIM_A2A_CONFIG: GraphConfig = {
                         width: '16px', 
                         height: '16px',
                         filter: 'brightness(0) invert(1)', 
-                        objectFit: 'contain',
-                        opacity: 1
+                        objectFit: 'contain'
                     }} 
                 />,
                 label1: 'Supervisor Agent',

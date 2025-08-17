@@ -153,7 +153,7 @@ const MainArea: React.FC<MainAreaProps> = ({
                 onNodesChange={onNodesChange}
                 onEdgesChange={onEdgesChange}
                 proOptions={proOptions}
-                defaultViewport={{ x: 0, y: 0, zoom: 0.6 }}
+                defaultViewport={{ x: 0, y: 0, zoom: 0.75 }}
                 minZoom={0.15}
                 maxZoom={1.8}
             >

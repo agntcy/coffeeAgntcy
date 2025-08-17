@@ -9,6 +9,9 @@ import CoffeeGraderDropdown from './Prompts/CoffeeGraderDropdown';
 import airplaneSvg from '@/assets/airplane.svg';
 import CoffeePromptsDropdown from './Prompts/CoffeePromptsDropdown';
 import { useAgentAPI } from '@/hooks/useAgentAPI';
+import UserMessage from './UserMessage';
+import AgentIcon from '@/assets/agent_directory.svg';
+import { cn } from '@/lib/utils';
 
 
 interface ChatAreaProps {
@@ -23,6 +26,9 @@ interface ChatAreaProps {
     onDropdownSelect?: (query: string) => void;
     onUserInput?: (query: string) => void;
     onApiResponse?: (response: string, isError?: boolean) => void;
+    currentUserMessage?: string;
+    agentResponse?: string;
+    isAgentLoading?: boolean;
 }
 
 const ChatArea: React.FC<ChatAreaProps> = ({ 
@@ -35,7 +41,10 @@ const ChatArea: React.FC<ChatAreaProps> = ({
     showCoffeePrompts = false,
     onDropdownSelect,
     onUserInput,
-    onApiResponse
+    onApiResponse,
+    currentUserMessage,
+    agentResponse,
+    isAgentLoading
 }) => {
     const [content, setContent] = useState<string>("");
     const [loading, setLoading] = useState<boolean>(false);
@@ -96,52 +105,71 @@ const ChatArea: React.FC<ChatAreaProps> = ({
     }
 
     return (
-        <div className="flex flex-col items-center justify-center p-4 gap-1 w-full min-h-[76px] box-border relative">
+        <div className={cn(
+            "flex flex-col justify-center items-start px-[120px] py-4 gap-2 w-[1120px] bg-[#2E3E57]",
+            currentUserMessage ? "min-h-auto" : "min-h-[120px]"
+        )}>
+            
+            {currentUserMessage && (
+                <div className="flex flex-col gap-3 w-[880px] mb-4">
+                    <UserMessage content={currentUserMessage} />
+                    {(isAgentLoading || agentResponse) && (
+                        <div className="flex flex-row items-start gap-1 w-[880px]">
+                            <div className="flex justify-center items-center w-10 h-10 bg-[#2E3E57] rounded-full">
+                                <img src={AgentIcon} alt="Agent" className="w-10 h-10 rounded-full" style={{opacity: 1}} />
+                            </div>
+                            <div className="flex flex-col justify-center items-start p-1 px-2 w-[814px] rounded">
+                                <div className="font-inter font-normal text-sm leading-5 text-white whitespace-pre-wrap">
+                                    {isAgentLoading ? (
+                                        <div className="text-[#649EF5] animate-pulse">...</div>
+                                    ) : (
+                                        agentResponse
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            )}
           
             {showCoffeeDropdown && (
-                <div className="flex justify-center items-center w-full py-1 relative z-10">
-                    <div className="w-[830px] max-w-full">
-                        <CoffeeGraderDropdown 
-                            visible={true}
-                            onSelect={handleDropdownQuery}
-                        />
-                    </div>
+                <div className="flex flex-row items-start p-0 gap-2 w-[166px] h-9 relative z-10">
+                    <CoffeeGraderDropdown 
+                        visible={true}
+                        onSelect={handleDropdownQuery}
+                    />
                 </div>
             )}
 
             {showCoffeePrompts && (
-                <div className="flex justify-center items-center w-full py-1 relative z-10">
-                    <div className="w-[830px] max-w-full">
-                        <CoffeePromptsDropdown 
-                             visible={true}
-                onSelect={handleDropdownQuery} 
-                        />
-                    </div>
+                <div className="flex flex-row items-start p-0 gap-2 w-[166px] h-9 relative z-10">
+                    <CoffeePromptsDropdown 
+                         visible={true}
+            onSelect={handleDropdownQuery} 
+                    />
                 </div>
             )}
             
-            <div className="flex justify-center items-center w-full">
-                <div className="flex flex-row items-center justify-center p-0 gap-4 w-[830px] max-w-full h-11">
-                    <div className="box-border flex flex-row items-center py-[5px] px-0 w-[764px] h-11 bg-[#1A2432] border border-[#1E2939] rounded flex-grow">
-                        <div className="flex flex-row items-center py-[7px] px-4 gap-[10px] w-[764px] h-[34px] flex-grow">
-                            <input
-                                className="w-[732px] h-5 font-['Inter'] font-medium text-[15px] leading-5 tracking-[0.005em] text-[#59616B] bg-transparent border-none outline-none flex-grow focus:text-[#FBFCFE]"
-                                placeholder="Describe what you are looking for"
-                                value={content}
-                                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setContent(e.target.value)}
-                                onKeyPress={handleKeyPress}
-                                disabled={loading}
-                            />
-                        </div>
+            <div className="flex flex-row items-center p-0 gap-4 w-[880px] h-11">
+                <div className="box-border flex flex-row items-center py-[5px] px-0 w-[814px] h-11 bg-[#1A2432] border border-[#1E2939] rounded">
+                    <div className="flex flex-row items-center py-[7px] px-4 gap-[10px] w-[814px] h-[34px]">
+                        <input
+                            className="w-[782px] h-5 font-cisco font-medium text-[15px] leading-5 tracking-[0.005em] text-[#59616B] bg-transparent border-none outline-none focus:text-[#FBFCFE]"
+                            placeholder="Type a prompt to interact with the agents"
+                            value={content}
+                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setContent(e.target.value)}
+                            onKeyPress={handleKeyPress}
+                            disabled={loading}
+                        />
                     </div>
-                    <div className="flex flex-row items-start p-0 w-[50px] h-11">
-                        <button 
-                            onClick={!content.trim() || loading ? undefined : processMessage}
-                            disabled={!content.trim() || loading}
-                            className="flex flex-row justify-center items-center py-[15px] px-4 gap-[10px] w-[50px] h-11 bg-gradient-to-r from-[#834DD7] via-[#7670D5] to-[#58C0D0] rounded-md border-none cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">
-                            <img src={airplaneSvg} alt="Send" className="w-[18px] h-[18px]" />
-                        </button>
-                    </div>
+                </div>
+                <div className="flex flex-row items-start p-0 w-[50px] h-11">
+                    <button 
+                        onClick={!content.trim() || loading ? undefined : processMessage}
+                        disabled={!content.trim() || loading}
+                        className="flex flex-row justify-center items-center py-[15px] px-4 gap-[10px] w-[50px] h-11 bg-gradient-to-r from-[#834DD7] via-[#7670D5] to-[#58C0D0] rounded-md border-none cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">
+                        <img src={airplaneSvg} alt="Send" className="w-[18px] h-[18px]" />
+                    </button>
                 </div>
             </div>
         </div>

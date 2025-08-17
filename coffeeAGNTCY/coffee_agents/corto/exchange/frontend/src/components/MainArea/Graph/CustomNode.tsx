@@ -8,7 +8,6 @@ import React from 'react';
 import { Handle, Position } from '@xyflow/react';
 import githubIcon from '@/assets/Github.png';
 import agentDirectoryIcon from '@/assets/Agent_directory.png';
-import identityBadgeIcon from '@/assets/identity_badge.svg';
 
 export const DefaultHandleColor = '#f5f5f5';
 
@@ -129,22 +128,6 @@ const CustomNode: React.FC<CustomNodeProps> = ({ data }) => {
                 }}>
                     {data.label1}
                 </span>
-                {data.verificationStatus === 'verified' && (
-                    <img 
-                        src={identityBadgeIcon} 
-                        alt="Verified" 
-                        style={{
-                            /* verify 1 */
-                            width: '16px',
-                            height: '16px',
-                            
-                            /* Inside auto layout */
-                            flex: 'none',
-                            order: 1,
-                            flexGrow: 0
-                        }}
-                    />
-                )}
             </div>
 
             <div 
@@ -185,29 +168,6 @@ const CustomNode: React.FC<CustomNodeProps> = ({ data }) => {
                     zIndex: 10
                 }}
             >
-                <div 
-                    style={{
-                        width: '32px',
-                        height: '32px',
-                        background: '#1976D2',
-                        borderRadius: '50%',
-                        display: 'flex',
-                        justifyContent: 'center',
-                        alignItems: 'center',
-                        boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.2)',
-                        cursor: 'pointer'
-                    }}
-                >
-                    <img 
-                        src={agentDirectoryIcon} 
-                        alt="AGNTCY Directory" 
-                        style={{
-                            width: '20px',
-                            height: '20px'
-                        }}
-                    />
-                </div>
-                
                 {data.githubLink && (
                     <a 
                         href={data.githubLink} 
@@ -219,15 +179,18 @@ const CustomNode: React.FC<CustomNodeProps> = ({ data }) => {
                     >
                         <div 
                             style={{
-                                width: '32px',
-                                height: '32px',
-                                background: '#1976D2',
-                                borderRadius: '50%',
+                                width: '28px',
+                                height: '28px',
+                                background: '#00142B',
+                                border: '1px solid #187ADC',
+                                borderRadius: '8px',
+                                padding: '4px',
                                 display: 'flex',
                                 justifyContent: 'center',
                                 alignItems: 'center',
                                 boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.2)',
                                 cursor: 'pointer',
+                                opacity: 1,
                                 transition: 'opacity 0.2s ease'
                             }}
                             onMouseEnter={(e) => {
@@ -248,6 +211,32 @@ const CustomNode: React.FC<CustomNodeProps> = ({ data }) => {
                         </div>
                     </a>
                 )}
+                
+                <div 
+                    style={{
+                        width: '28px',
+                        height: '28px',
+                        background: '#00142B',
+                        border: '1px solid #187ADC',
+                        borderRadius: '8px',
+                        padding: '4px',
+                        display: 'flex',
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                        boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.2)',
+                        cursor: 'pointer',
+                        opacity: 1
+                    }}
+                >
+                    <img 
+                        src={agentDirectoryIcon} 
+                        alt="AGNTCY Directory" 
+                        style={{
+                            width: '20px',
+                            height: '20px'
+                        }}
+                    />
+                </div>
             </div>
             
             {(data.handles === 'all' || data.handles === 'target') && (

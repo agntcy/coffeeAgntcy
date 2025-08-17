@@ -3,10 +3,9 @@
 * SPDX-License-Identifier: Apache-2.0
 **/
 
-/** @jsxImportSource @emotion/react */
 import React from 'react';
 import { EdgeLabelRenderer } from '@xyflow/react';
-import { css } from '@emotion/react';
+import { cn } from '@/lib/utils';
 
 interface CustomEdgeLabelProps {
     x: number;
@@ -23,24 +22,30 @@ const CustomEdgeLabel: React.FC<CustomEdgeLabelProps> = ({ x, y, label, active }
     const backgroundColor = active ? '#00142B' : '#183056';
     const textColor = active ? '#187ADC' : '#E8E9EA';
     
-    const labelContainerStyle = css`
-        position: absolute;
-        transform: translate(-50%, -50%);
-        left: ${x}px;
-        top: ${y}px;
-        pointer-events: none;
-    `;
-
     return (
         <EdgeLabelRenderer>
             <div 
-                className={`${isLongLabel ? 'w-[100px] gap-[6px]' : 'w-[34px] gap-1'} h-5 py-[2px] px-[5px] rounded-lg font-[Inter] font-normal text-xs leading-4 flex items-center justify-center opacity-100 border-none shadow-none`}
-                css={labelContainerStyle}
-                style={{ backgroundColor, color: textColor }}
+                className={cn(
+                    "absolute -translate-x-1/2 -translate-y-1/2 pointer-events-none",
+                    "h-5 py-[2px] px-[5px] rounded-lg font-inter font-normal text-xs leading-4",
+                    "flex items-center justify-center opacity-100 border-none shadow-none",
+                    isLongLabel ? "w-[100px] gap-[6px]" : "w-[34px] gap-1"
+                )}
+                style={{ 
+                    left: `${x}px`,
+                    top: `${y}px`,
+                    backgroundColor, 
+                    color: textColor 
+                }}
             >
                 {label && (
-                    <div className="flex items-center justify-center flex-shrink-0 whitespace-nowrap font-[Inter] font-normal text-xs leading-4"
-                         style={{ color: textColor }}>
+                    <div 
+                        className={cn(
+                            "flex items-center justify-center flex-shrink-0 whitespace-nowrap",
+                            "font-inter font-normal text-xs leading-4"
+                        )}
+                        style={{ color: textColor }}
+                    >
                         {label}
                     </div>
                 )}

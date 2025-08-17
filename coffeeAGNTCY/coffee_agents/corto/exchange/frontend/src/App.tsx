@@ -6,8 +6,6 @@
 import React, { useState, useEffect } from 'react';
 import { v4 as uuid } from 'uuid';
 import { LOCAL_STORAGE_KEY } from '@/components/Chat/Messages';
-import UserMessage from '@/components/Chat/UserMessage';
-import AgentIcon from '@/assets/Agent_Icon.svg';
 
 import ChatArea from '@/components/Chat/ChatArea';
 import CodePopUp from "@/components/MainArea/CodePopUp";
@@ -43,15 +41,18 @@ const App: React.FC = () => {
         
         setMessages(prev => {
             const updated = [...prev];
-            if (updated.length > 0 && updated[updated.length - 1].role === 'assistant') {
-                updated[updated.length - 1] = {
-                    ...updated[updated.length - 1],
-                    content: response,
-                    animate: !isError
-                };
-            }
+            updated[updated.length - 1] = {
+                ...updated[updated.length - 1],
+                content: response,
+                animate: !isError
+            };
             return updated;
         });
+    };
+
+    const handleUserInput = (query: string) => {
+        setCurrentUserMessage(query);
+        setIsAgentLoading(true);
     };
 
     const handleDropdownSelect = async (query: string) => {
@@ -86,10 +87,7 @@ const App: React.FC = () => {
                 />
                 
                 <div 
-                    className="flex-1 flex flex-col bg-primary-bg"
-                    style={{
-                        borderLeft: '1px solid #00142B'
-                    }}
+                    className="flex-1 flex flex-col border-l border-[#00142B] bg-primary-bg"
                 >
                     <div className="relative">
                         <CodePopUp 
@@ -113,32 +111,7 @@ const App: React.FC = () => {
                         </div>
                     )}
 
-                    {/* Chat Area - moved inside main content area */}
                     <div className="flex flex-col justify-center items-center p-0 gap-0 w-full min-h-[76px] bg-[#2E3E57] flex-none">
-                        {currentUserMessage && (
-                            <div className="w-full p-4">
-                                <div className="w-[830px] max-w-full mx-auto flex flex-col gap-3">
-                                    <UserMessage content={currentUserMessage} />
-                                    {(isAgentLoading || agentResponse) && (
-                                        <div className="flex flex-row items-start gap-1 w-full">
-                                            <div className="flex justify-center items-center w-10 h-10 bg-[#2E3E57] rounded-full">
-                                                <img src={AgentIcon} alt="Agent" className="w-10 h-10 rounded-full" style={{opacity: 1}} />
-                                            </div>
-                                            <div className="flex flex-col justify-center items-start p-1 px-2 w-[764px] rounded">
-                                                <div className="font-inter font-normal text-sm leading-5 text-white whitespace-pre-wrap">
-                                                    {isAgentLoading ? (
-                                                        <div className="text-[#649EF5] animate-pulse">...</div>
-                                                    ) : (
-                                                        agentResponse
-                                                    )}
-                                                </div>
-                                            </div>
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-                        )}
-                        
                         <ChatArea
                             messages={messages}
                             setMessages={setMessages}
@@ -147,7 +120,11 @@ const App: React.FC = () => {
                             isBottomLayout={true}
                             showCoffeeDropdown={true}
                             onDropdownSelect={handleDropdownSelect}
+                            onUserInput={handleUserInput}
                             onApiResponse={handleApiResponse}
+                            currentUserMessage={currentUserMessage}
+                            agentResponse={agentResponse}
+                            isAgentLoading={isAgentLoading}
                         />
                     </div>
                 </div>

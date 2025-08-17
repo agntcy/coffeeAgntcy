@@ -5,9 +5,9 @@
 
 /** @jsxImportSource @emotion/react */
 
-import { PiCoffeeBeanThin } from "react-icons/pi";
 import { TiWeatherCloudy } from "react-icons/ti";
 import supervisorIcon from '@/assets/supervisor.png';
+import farmAgentIcon from '@/assets/Grader-Agent.png';
 import { FarmName } from './const';
 
 interface GraphConfig {
@@ -17,7 +17,17 @@ interface GraphConfig {
     animationSequence: { ids: string[] }[];
 }
 
-const CoffeeBeanIcon = <PiCoffeeBeanThin style={{ transform: 'rotate(-30deg)', width: '16px', height: '16px', color: 'white' }} />;
+const CoffeeBeanIcon = <img 
+    src={farmAgentIcon} 
+    alt="Coffee Farm Agent Icon" 
+    className="w-4 h-4 brightness-0 invert object-contain opacity-100"
+/>;
+
+const GraderAgentIcon = <img 
+    src={farmAgentIcon} 
+    alt="Grader Agent Icon" 
+    className="w-4 h-4 brightness-0 invert object-contain opacity-100"
+/>;
 
 const commonNodeData = {
     backgroundColor: '#F5F5F5',
@@ -35,18 +45,13 @@ const SLIM_A2A_CONFIG: GraphConfig = {
                 icon: <img 
                     src={supervisorIcon} 
                     alt="Supervisor Icon" 
-                    style={{ 
-                        width: '16px', 
-                        height: '16px',
-                        filter: 'brightness(0) invert(1)',
-                        objectFit: 'contain'
-                    }} 
+                    className="w-4 h-4 brightness-0 invert object-contain"
                 />,
                 label1: 'Supervisor Agent',
                 label2: 'Buyer',
                 handles: 'source',
+                verificationStatus: 'verified',
                 githubLink: 'https://github.com/agntcy/coffeeAgntcy/tree/main/coffeeAGNTCY/coffee_agents/corto/exchange',
-
             },
             position: { x: 529.1332569384248, y: 159.4805787605829 },
         },
@@ -55,12 +60,11 @@ const SLIM_A2A_CONFIG: GraphConfig = {
             type: 'customNode',
             data: {
                 ...commonNodeData,
-                icon: CoffeeBeanIcon,
-                label1: 'Q Grader Agent',
+                icon: GraderAgentIcon,
+                label1: 'Grader Agent',
                 label2: 'Sommelier',
                 handles: 'target',
                 githubLink: 'https://github.com/agntcy/coffeeAgntcy/tree/main/coffeeAGNTCY/coffee_agents/corto/farm',
-
             },
             position: { x: 534.0903941835277, y: 582.9317472571444 },
         },
@@ -92,12 +96,7 @@ const SLIM_MULTI_A2A_CONFIG: GraphConfig = {
                 icon: <img 
                     src={supervisorIcon} 
                     alt="Supervisor Icon" 
-                    style={{ 
-                        width: '16px', 
-                        height: '16px',
-                        filter: 'brightness(0) invert(1)',
-                        objectFit: 'contain'
-                    }} 
+                    className="w-4 h-4 brightness-0 invert object-contain"
                 />,
                 label1: 'Supervisor Agent',
                 label2: 'Buyer',
@@ -165,7 +164,7 @@ const SLIM_MULTI_A2A_CONFIG: GraphConfig = {
             type: 'customNode',
             data: {
                 ...commonNodeData,
-                icon: <TiWeatherCloudy style={{ width: '16px', height: '16px', color: 'white' }}/>,
+                icon: <TiWeatherCloudy className="w-4 h-4 text-white"/>,
                 label1: 'MCP Server',
                 label2: 'Weather',
                 handles: 'target',
@@ -233,6 +232,6 @@ export const getGraphConfig = (pattern: string): GraphConfig => {
         case 'slim_multi_a2a':
             return SLIM_MULTI_A2A_CONFIG;
         default:
-            return SLIM_A2A_CONFIG;
+            return SLIM_MULTI_A2A_CONFIG;
     }
 };

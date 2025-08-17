@@ -56,6 +56,33 @@ export default {
   				'5': 'hsl(var(--chart-5))'
   			}
   		},
+  		spacing: {
+  			'122': '122px',
+  			'160': '160px',
+  			'162': '162px',
+  			'166': '166px',
+  			'194': '194px',
+  			'269': '269px'
+  		},
+  		width: {
+  			'122': '122px',
+  			'160': '160px',
+  			'162': '162px',
+  			'166': '166px',
+  			'194': '194px',
+  			'269': '269px'
+  		},
+  		height: {
+  			'96': '96px'
+  		},
+  		colors: {
+  			'node-bg': '#373C42',
+  			'node-hover': '#4A4F55',
+  			'icon-bg': '#59616B',
+  			'node-text': '#E8E9EA',
+  			'action-bg': '#00142B',
+  			'action-border': '#187ADC'
+  		},
   		fontFamily: {
   			cisco: [
   				'CiscoSansTT',

@@ -38,7 +38,9 @@ const Sidebar: React.FC<SidebarProps> = ({
         flexGrow: 0
       }}
     >
-      <div style={{
+      <div 
+        className="bg-primary-bg"
+        style={{
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'flex-start',
@@ -46,7 +48,6 @@ const Sidebar: React.FC<SidebarProps> = ({
         gap: '20px',
         width: '320px',
         height: '100%',
-        background: '#23282E',
         flex: 1
       }}>
      
@@ -80,7 +81,6 @@ const Sidebar: React.FC<SidebarProps> = ({
             flexGrow: 0
           }}
         >
-          {/* (Placeholder) */}
           <div style={{
             display: 'none',
             width: '20px',
@@ -90,7 +90,6 @@ const Sidebar: React.FC<SidebarProps> = ({
             flexGrow: 0
           }} />
           
-          {/* List item */}
           <span style={{
             width: '272px',
             height: '20px',

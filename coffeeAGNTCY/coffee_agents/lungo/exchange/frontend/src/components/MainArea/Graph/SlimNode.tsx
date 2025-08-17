@@ -27,43 +27,21 @@ const SlimNode: React.FC<SlimNodeProps> = ({ data }) => {
             className={`
                 ${activeClasses}
                 text-gray-50 
-                border 
-                border-gray-100
                 text-center
                 flex items-center justify-center
+                w-[1200px] h-[52px] p-4 rounded-lg
                 hover:bg-[#4A4F55] hover:outline hover:outline-2 hover:outline-[#187ADC] hover:shadow-[rgba(0,0,0,0.6)_0px_6px_8px]
             `}
-            style={{ 
-                width: '1200px', 
-                height: '52px', 
-                padding: '16px', 
-                borderRadius: '8px' 
-            }}
         >
-            <div style={{
-                width: '94px',
-                height: '20px',
-                fontFamily: 'Inter',
-                fontWeight: 400,
-                fontSize: '14px',
-                lineHeight: '20px',
-                letterSpacing: '0%',
-                color: '#E8E9EA',
-                opacity: 1,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center'
-            }}>
+            <div className="w-[94px] h-5 font-inter font-normal text-sm leading-5 tracking-normal text-[#E8E9EA] opacity-100 flex items-center justify-center">
                 {data.label}
             </div>
             <Handle
                 type="target"
                 id="top"
                 position={Position.Top}
+                className="w-[0.1px] h-[0.1px] border border-gray-600"
                 style={{ 
-                    width: '0.1px', 
-                    height: '0.1px',
-                    border: `1px solid darkgrey`,
                     background: data.handleColor || DefaultHandleColor 
                 }}
             />
@@ -71,11 +49,9 @@ const SlimNode: React.FC<SlimNodeProps> = ({ data }) => {
                 type="source"
                 position={Position.Bottom}
                 id="bottom_left"
+                className="w-[0.1px] h-[0.1px] border border-gray-600"
                 style={{ 
                     left: '25%', 
-                    width: '0.1px', 
-                    height: '0.1px',
-                    border: `1px solid darkgrey`,
                     background: data.handleColor || DefaultHandleColor 
                 }}
             />
@@ -83,11 +59,9 @@ const SlimNode: React.FC<SlimNodeProps> = ({ data }) => {
                 type="source"
                 position={Position.Bottom}
                 id="bottom_center"
+                className="w-[0.1px] h-[0.1px] border border-gray-600"
                 style={{ 
                     left: '50%', 
-                    width: '0.1px', 
-                    height: '0.1px',
-                    border: `1px solid darkgrey`,
                     background: data.handleColor || DefaultHandleColor 
                 }}
             />
@@ -95,11 +69,9 @@ const SlimNode: React.FC<SlimNodeProps> = ({ data }) => {
                 type="source"
                 position={Position.Bottom}
                 id="bottom_right"
+                className="w-[0.1px] h-[0.1px] border border-gray-600"
                 style={{ 
                     left: '75%', 
-                    width: '0.1px', 
-                    height: '0.1px',
-                    border: `1px solid darkgrey`,
                     background: data.handleColor || DefaultHandleColor 
                 }}
             />

@@ -42,11 +42,13 @@ interface MessageProps {
 
 const Message: React.FC<MessageProps> = ({ content, aiMessage, animate, loading }) => {
     return (
-        <div className={`flex justify-center py-[30px] ${aiMessage ? 'bg-[rgb(247,247,248)]' : ''}`}>
-            <div className="w-[35px] h-[35px] flex items-center justify-center">
+        <div 
+            className={`py-[30px] px-[120px] flex items-start gap-2 w-full border-4 border-red-500 ${aiMessage ? 'bg-[rgb(247,247,248)]' : ''}`}
+        >
+            <div className="w-[35px] h-[35px] flex items-center justify-center flex-shrink-0 bg-green-500">
                 {aiMessage ? <RiRobot2Fill color="#049FD9" /> : <HiUser />}
             </div>
-            <div className="w-[80%] p-0 m-2 break-words">
+            <div className="flex-1 ml-2 break-words bg-blue-500">
                 {loading ? (
                     <div style={{ opacity: 0.5 }}>
                         <Waveform size="20" stroke="3.5" speed="1" color="#049FD9" />

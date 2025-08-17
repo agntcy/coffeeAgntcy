@@ -4,7 +4,6 @@
 **/
 
 import React, { useState, useRef, useEffect } from 'react';
-import { ChevronUp } from 'lucide-react';
 
 interface CoffeeGraderDropdownProps {
     visible: boolean;
@@ -53,32 +52,37 @@ const CoffeeGraderDropdown: React.FC<CoffeeGraderDropdownProps> = ({ visible, on
         <div className="relative inline-block" ref={dropdownRef}>
             <div 
                 className={`
-                    box-border flex flex-row items-center gap-1 w-[139px] h-[36px] 
-                    bg-[#1A2432] border border-[#E8E9EA] rounded-[8px] cursor-pointer 
-                    transition-colors duration-200 ease-in-out p-2
+                    flex flex-row items-center p-2 gap-1 w-166 h-9
+                    bg-[#1A2432] rounded-lg cursor-pointer 
+                    transition-colors duration-200 ease-in-out
                     hover:bg-[#1F2A3A]
                     ${isOpen ? 'bg-[#1F2A3A]' : ''}
                 `}
                 onClick={handleToggle}
             >
-                <div className="flex flex-col items-start p-0 gap-1 flex-1 h-5 flex-none order-0 flex-grow-0">
+                <div className="flex flex-col items-start p-0 gap-1 w-122 h-5 flex-none order-0 flex-grow-0">
                     <div className="
-                        w-full h-5 font-inter font-normal text-sm leading-5 tracking-[0%] 
-                        text-white flex-none order-0 self-stretch flex-grow-0 
-                        whitespace-nowrap 
+                        w-122 h-5 font-cisco font-normal text-sm leading-5
+                        text-[#FBFCFE] flex-none order-0 self-stretch flex-grow-0 
+                        whitespace-nowrap
                     ">
-                        Coffee Grader
+                        Suggested prompt
                     </div>
                 </div>
-                <ChevronUp 
-                    className={`w-4 h-4 text-white transition-transform ${
-                        isOpen ? 'rotate-0' : 'rotate-180'
-                    }`}
-                />
+                <div className="w-6 h-6 flex-none order-1 flex-grow-0 relative">
+                    <div 
+                        className={`
+                            absolute left-[26.77%] right-[26.77%] top-[36.35%] bottom-[36.35%]
+                            bg-[#59616B] transition-transform duration-300 ease-in-out
+                            ${isOpen ? 'rotate-180' : ''}
+                        `}
+                        style={{clipPath: 'polygon(50% 100%, 0% 0%, 100% 0%)'}}
+                    ></div>
+                </div>
             </div>
             
             <div className={`
-                absolute bottom-full left-0 mb-1 w-[269px] max-h-28 
+                absolute bottom-full left-0 mb-1 w-269 max-h-28 
                 bg-[#23282E] border border-[#D5DFF7] rounded-md 
                 shadow-[0px_2px_5px_0px_rgba(0,0,0,0.05)] p-0.5 z-[1000] 
                 overflow-y-auto

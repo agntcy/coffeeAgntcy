@@ -48,7 +48,7 @@ const CustomEdge: React.FC<CustomEdgeProps> = ({
 
     return (
         <>
-            <svg style={{ position: 'absolute', top: 0, left: 0 }}>
+            <svg className="absolute top-0 left-0">
                 <defs>
                     <marker
                         id={`${id}-arrow-start`}
@@ -77,10 +77,10 @@ const CustomEdge: React.FC<CustomEdgeProps> = ({
                 path={edgePath}
                 markerStart={`url(#${id}-arrow-start)`}
                 markerEnd={`url(#${id}-arrow-end)`}
+                className="cursor-pointer"
                 style={{
                     stroke: defaultEdgeColor,
                     strokeWidth: 1, 
-                    cursor: 'pointer',
                 }}
             />
             <CustomEdgeLabel

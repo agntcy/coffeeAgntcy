@@ -30,8 +30,7 @@ const LabelIcon: React.FC<LabelIconProps> = ({ type, altText = 'icon', size = 16
                 <img
                     src={iconPath}
                     alt={altText}
-                    className="w-[85%] h-[85%] object-contain"
-                    style={{ opacity: isA2A ? 0.8 : 1 }}
+                    className={`w-[85%] h-[85%] object-contain ${isA2A ? 'opacity-80' : 'opacity-100'}`}
                 />
             </div>
         );
@@ -46,7 +45,7 @@ const LabelIcon: React.FC<LabelIconProps> = ({ type, altText = 'icon', size = 16
                 <RiShieldCheckFill 
                     size={size * 0.7} 
                     color="#187ADC"
-                    style={{ opacity: 0.9 }}
+                    className="opacity-90"
                 />
             </div>
         );

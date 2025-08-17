@@ -22,14 +22,13 @@ const SidebarSection: React.FC<SidebarSectionProps> = ({
   return (
     <div className="flex flex-col items-start p-0 w-72 h-18 flex-none order-0 self-stretch grow-0">
       <div 
-        className="flex flex-row items-start cursor-pointer font-inter"
+        className="flex flex-row items-start cursor-pointer font-inter bg-primary-bg"
         onClick={onToggle}
         style={{
           width: '288px',
           height: '36px',
           padding: '8px 0px',
           gap: '8px',
-          background: '#23282E',
           flex: 'none',
           order: 0,
           alignSelf: 'stretch',
