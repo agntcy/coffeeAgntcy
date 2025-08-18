@@ -93,8 +93,7 @@ async def send_messages(reply_messages: Iterable[str], slim_app: PyService,
     for text in reply_messages:
         await slim_app.publish(recv_session, text.encode(), reply_to)
 
-
-async def run_moderator(slim_endpoint, shared_secret: str, topic_name: str, moderator_name: str, invitees: List[PyName]) -> List[str]:
+async def run_moderator(slim_endpoint, shared_secret: str, topic_name: str, moderator_name: str, invitees: List[PyName], mls_enabled: bool) -> List[str]:
     # init slim client
     moderator_slim_app = await create_slim_app(slim_endpoint, shared_secret, moderator_name)
 
@@ -107,7 +106,7 @@ async def run_moderator(slim_endpoint, shared_secret: str, topic_name: str, mode
             moderator=True,
             max_retries=20,
             timeout=datetime.timedelta(seconds=60),
-            mls_enabled=True,
+            mls_enabled=mls_enabled,
         ))
         print(f"Session created: {session_info.id}")
 
@@ -140,6 +139,8 @@ async def run_participant(slim_endpoint, shared_secret: str, participant_name: P
     async with slim_app:
         # listen for incoming sessions
         print(f"[participant] listening - locator: {participant_name}")
+        #TODO: put a timeout here for never invited participants, does SLIM have a native way
+        # modify the code to handle that case so that the send and collect task then don't fire off
         recv_session, _ = await slim_app.receive()
         print(f"received session: {recv_session.id}")
         print(f"from: {recv_session.source_name}")

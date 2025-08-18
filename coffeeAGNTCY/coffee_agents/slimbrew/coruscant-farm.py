@@ -28,7 +28,7 @@ async def run_participant(secret: str):
                     reply = f"Hello from coruscant".encode()
                     print(f"sending {reply} to {recv_session.destination_name}")
                     await slim_app.publish(
-                        recv_session, reply,  PyName("agntcy", "slimbrew", "moderator") 
+                        recv_session, reply,  PyName("agntcy", "namespace", "group_channel")  
                     )
             except Exception:
                 print(f"receive listener error: {e!r}")
