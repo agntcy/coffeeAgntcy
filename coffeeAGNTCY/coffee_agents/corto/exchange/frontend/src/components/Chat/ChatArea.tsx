@@ -9,7 +9,7 @@ import airplaneSvg from '@/assets/airplane.svg';
 import CoffeeGraderDropdown from './CoffeeGraderDropdown';
 import { useAgentAPI } from '@/hooks/useAgentAPI';
 import UserMessage from './UserMessage';
-import AgentIcon from '@/assets/Agent_Icon.svg';
+import AgentIcon from '@/assets/Coffee_Icon.svg';
 
 interface ChatAreaProps {
     messages: Message[];
@@ -104,8 +104,8 @@ const ChatArea: React.FC<ChatAreaProps> = ({
                     <UserMessage content={currentUserMessage} />
                     {(isAgentLoading || agentResponse) && (
                         <div className="flex flex-row items-start gap-1 w-[880px]">
-                            <div className="flex justify-center items-center w-10 h-10 bg-[#2E3E57] rounded-full">
-                                <img src={AgentIcon} alt="Agent" className="w-10 h-10 rounded-full" style={{opacity: 1}} />
+                            <div className="flex justify-center items-center w-10 h-10 bg-[#00142B] rounded-full flex-none">
+                                <img src={AgentIcon} alt="Agent" className="w-[22px] h-[22px]" />
                             </div>
                             <div className="flex flex-col justify-center items-start p-1 px-2 w-[814px] rounded">
                                 <div className="font-inter font-normal text-sm leading-5 text-white whitespace-pre-wrap">

@@ -66,7 +66,7 @@ const CoffeeGraderDropdown: React.FC<CoffeeGraderDropdownProps> = ({ visible, on
                         text-[#FBFCFE] flex-none order-0 self-stretch flex-grow-0 
                         whitespace-nowrap
                     ">
-                        Suggested prompt
+                        Suggested Prompts
                     </div>
                 </div>
                 <div className="w-6 h-6 flex-none order-1 flex-grow-0 relative">
