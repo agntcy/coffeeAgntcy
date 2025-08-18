@@ -14,8 +14,8 @@ const UserMessage: React.FC<UserMessageProps> = ({ content }) => {
     return (
         <div className="flex flex-row items-start gap-1 w-[880px] h-10">
            
-            <div className="flex justify-center items-center w-10 h-10 bg-[#D9D9D9] rounded-full">
-                <User size={20} className="text-gray-600" />
+            <div className="flex justify-center items-center w-10 h-10 bg-[#00142B] rounded-full">
+                <User size={20} className="text-white" />
             </div>
             
         

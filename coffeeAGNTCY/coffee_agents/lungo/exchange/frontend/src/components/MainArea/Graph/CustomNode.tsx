@@ -6,7 +6,6 @@
 /** @jsxImportSource @emotion/react */
 import React from 'react';
 import { Handle, Position } from '@xyflow/react';
-import { cn } from '@/lib/utils';
 import githubIcon from '@/assets/Github.png';
 import agntcyDirectoryIcon from '@/assets/Agent_directory.png';
 import identityBadgeIcon from '@/assets/identity_badge.svg';
@@ -30,24 +29,11 @@ interface CustomNodeProps {
 }
 
 const CustomNode: React.FC<CustomNodeProps> = ({ data }) => {
+    const activeClasses = data.active ? "bg-[#00142B] outline outline-2 outline-[#187ADC] shadow-[rgba(0,0,0,0.6)_0px_6px_8px]" : "bg-[#373C42]";
+    
     return (
         <div 
-            className={cn(
-                "p-4 rounded-lg bg-[#373C42] relative flex flex-col justify-start items-start gap-2 w-[193px] h-[91px] flex-none order-0 grow-0",
-                data.active && "outline outline-2 outline-[#187ADC] shadow-[rgba(0,0,0,0.6)_0px_6px_8px]"
-            )}
-            onMouseEnter={(e) => {
-                e.currentTarget.style.background = '#4A4F55';
-                e.currentTarget.style.outline = '2px solid #187ADC';
-                e.currentTarget.style.boxShadow = 'rgba(0,0,0,0.6) 0px 6px 8px';
-            }}
-            onMouseLeave={(e) => {
-                if (!data.active) {
-                    e.currentTarget.style.background = '#373C42';
-                    e.currentTarget.style.outline = 'none';
-                    e.currentTarget.style.boxShadow = 'none';
-                }
-            }}
+            className={`p-4 rounded-lg relative flex flex-col justify-start items-start gap-2 w-[193px] h-[91px] flex-none order-0 grow-0 ${activeClasses} hover:bg-[#4A4F55] hover:outline hover:outline-2 hover:outline-[#187ADC] hover:shadow-[rgba(0,0,0,0.6)_0px_6px_8px]`}
         >
             <div 
                 className="w-5 h-5 bg-[#59616B] rounded flex justify-center items-center flex-shrink-0 gap-2.5 py-1 opacity-100"
