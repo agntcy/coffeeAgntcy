@@ -145,8 +145,8 @@ async def run_participant(slim_endpoint, shared_secret: str, participant_name: P
         print(f"received session: {recv_session.id}")
         print(f"from: {recv_session.source_name}")
         print(f"to:   {recv_session.destination_name}")
-
-        send_task = asyncio.create_task(send_messages(reply_messages, slim_app, recv_session, reply_to))
+        target_reply_to: PyName = reply_to if reply_to else recv_session.destination_name
+        send_task = asyncio.create_task(send_messages(reply_messages, slim_app, recv_session, target_reply_to))
         collect_task = asyncio.create_task(collect_messages(slim_app, recv_session.id, duration=10.0))
 
         # try:
