@@ -8,17 +8,17 @@ import React from 'react';
 import { Handle, Position } from '@xyflow/react';
 import { DefaultHandleColor } from "./CustomNode";
 
-interface SlimNodeData {
+interface TransportNodeData {
     label: string;
     active?: boolean;
     handleColor?: string;
 }
 
-interface SlimNodeProps {
-    data: SlimNodeData;
+interface TransportNodeProps {
+    data: TransportNodeData;
 }
 
-const SlimNode: React.FC<SlimNodeProps> = ({ data }) => {
+const TransportNode: React.FC<TransportNodeProps> = ({ data }) => {
  
     const activeClasses = data.active ? "bg-[#00142B] outline outline-2 outline-[#187ADC] shadow-[rgba(0,0,0,0.6)_0px_6px_8px]" : "bg-[#373C42]";
     
@@ -79,4 +79,4 @@ const SlimNode: React.FC<SlimNodeProps> = ({ data }) => {
     );
 };
 
-export default SlimNode;
+export default TransportNode;

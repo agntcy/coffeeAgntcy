@@ -107,7 +107,7 @@ const SLIM_MULTI_A2A_CONFIG: GraphConfig = {
         },
         {
             id: '2',
-            type: 'slimNode',
+            type: 'transportNode',
             data: {
                 ...commonNodeData,
                 data: {
@@ -247,7 +247,6 @@ export const updateTransportLabels = async (
         const response = await fetch('http://127.0.0.1:8000/api/config');
         const data = await response.json();
         const transport = data.transport; 
-        console.log('Transport value:', transport);
         
         setNodes((nodes: any[]) =>
             nodes.map((node: any) =>

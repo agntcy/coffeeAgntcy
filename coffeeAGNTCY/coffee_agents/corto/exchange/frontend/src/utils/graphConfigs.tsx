@@ -97,7 +97,6 @@ export const updateA2ALabels = async (
         const response = await fetch('http://127.0.0.1:8000/api/config');
         const data = await response.json();
         const transport = data.transport;
-        console.log('Transport value:', transport);
         
         setEdges((edges: any[]) =>
             edges.map((edge: any) =>

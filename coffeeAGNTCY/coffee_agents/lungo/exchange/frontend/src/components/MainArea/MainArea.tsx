@@ -15,7 +15,7 @@ import {
 import '@xyflow/react/dist/style.css';
 import './ReactFlow.css';
 import { PatternType } from '@/App';
-import SlimNode from './Graph/SlimNode';
+import TransportNode from './Graph/SlimNode';
 import CustomEdge from './Graph/CustomEdge';
 import CustomNode from './Graph/CustomNode';
 import { getGraphConfig, updateTransportLabels, GraphConfig } from '@/utils/graphConfigs';
@@ -23,7 +23,7 @@ import { getGraphConfig, updateTransportLabels, GraphConfig } from '@/utils/grap
 const proOptions = { hideAttribution: true };
 
 const nodeTypes = {
-    slimNode: SlimNode,
+    transportNode: TransportNode,
     customNode: CustomNode,
 };
 
