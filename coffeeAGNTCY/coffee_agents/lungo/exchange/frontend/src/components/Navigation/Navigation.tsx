@@ -40,6 +40,19 @@ const Navigation: React.FC = () => {
                         </div>
                     </div>
                 </div>
+
+          
+                <div className="
+                    flex flex-row justify-end items-center p-0 gap-2 
+                    flex-none order-3 flex-grow-0
+                ">
+                    <span className="
+                        font-inter font-normal text-sm leading-5 text-right
+                        text-[#1D69CC] flex-none order-0 flex-grow-1
+                    " style={{ letterSpacing: '0.25px' }}>
+                        Version 0.4
+                    </span>
+                </div>
             </div>
         </div>
     );

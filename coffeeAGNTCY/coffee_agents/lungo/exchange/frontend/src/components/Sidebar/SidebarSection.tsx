@@ -27,7 +27,7 @@ const SidebarSection: React.FC<SidebarSectionProps> = ({
       >
         <div className="hidden w-5 h-5 flex-none order-0 flex-grow-0" />
         
-        <span className="w-[288px] h-5 font-inter font-normal text-sm leading-5 tracking-[0.25px] text-white flex-none order-1 flex-grow">
+        <span className="w-[288px] h-5 font-inter font-normal text-sm leading-5 tracking-normal text-white flex-none order-1 flex-grow">
           {title}
         </span>
         <ChevronUp 

@@ -9,14 +9,14 @@ import coffeeAgntcyLogo from '@/assets/coffeeAGNTCY_logo.svg';
 const Navigation: React.FC = () => {
     return (
         <div className="
-            box-border flex flex-col items-start p-0 w-full h-[64px] 
+            box-border flex flex-col items-start p-0 w-full h-[52px] 
             bg-[#F5F8FD] border-r border-[#DBE0E5] 
             flex-none order-0 self-stretch flex-grow-0
         ">
          
             <div className="
                 box-border flex flex-row justify-between items-center 
-                py-[10px] px-4 gap-2 w-full h-[64px] 
+                py-[10px] px-4 gap-2 w-full h-[52px] 
                 bg-[#EFF3FC] border-b border-[#D5DFF7] 
                 flex-none order-0 self-stretch flex-grow-0
             ">
@@ -39,6 +39,18 @@ const Navigation: React.FC = () => {
                             />
                         </div>
                     </div>
+                </div>
+
+                <div className="
+                    flex flex-row justify-end items-center p-0 gap-2 
+                    flex-none order-3 flex-grow-0
+                ">
+                    <span className="
+                        font-inter font-normal text-sm leading-5 text-right
+                        text-[#1D69CC] flex-none order-0 flex-grow-1
+                    " style={{ letterSpacing: '0.25px' }}>
+                        Version 0.4
+                    </span>
                 </div>
             </div>
         </div>

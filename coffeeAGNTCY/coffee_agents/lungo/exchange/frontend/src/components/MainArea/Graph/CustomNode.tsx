@@ -6,6 +6,7 @@
 /** @jsxImportSource @emotion/react */
 import React from 'react';
 import { Handle, Position } from '@xyflow/react';
+import { cn } from '@/lib/utils';
 import githubIcon from '@/assets/Github.png';
 import agntcyDirectoryIcon from '@/assets/Agent_directory.png';
 import identityBadgeIcon from '@/assets/identity_badge.svg';
@@ -31,13 +32,10 @@ interface CustomNodeProps {
 const CustomNode: React.FC<CustomNodeProps> = ({ data }) => {
     return (
         <div 
-            className="p-4 rounded-lg bg-[#373C42] relative flex flex-col justify-start items-start gap-2"
-            style={{ 
-                width: '194px', 
-                height: '96px',
-                outline: data.active ? '2px solid #187ADC' : 'none',
-                boxShadow: data.active ? 'rgba(0,0,0,0.6) 0px 6px 8px' : 'none'
-            }}
+            className={cn(
+                "p-4 rounded-lg bg-[#373C42] relative flex flex-col justify-start items-start gap-2 w-[193px] h-[91px] flex-none order-0 grow-0",
+                data.active && "outline outline-2 outline-[#187ADC] shadow-[rgba(0,0,0,0.6)_0px_6px_8px]"
+            )}
             onMouseEnter={(e) => {
                 e.currentTarget.style.background = '#4A4F55';
                 e.currentTarget.style.outline = '2px solid #187ADC';
@@ -97,7 +95,7 @@ const CustomNode: React.FC<CustomNodeProps> = ({ data }) => {
                         className="no-underline"
                     >
                         <div 
-                            className="w-7 h-7 bg-[#00142B] border border-[#187ADC] rounded-lg p-1 flex justify-center items-center shadow-sm cursor-pointer opacity-100 transition-opacity duration-200 ease-in-out"
+                            className="w-7 h-7 bg-[#00142B] rounded-lg p-1 flex justify-center items-center shadow-sm cursor-pointer opacity-100 transition-opacity duration-200 ease-in-out"
                             onMouseEnter={(e) => {
                                 e.currentTarget.style.opacity = '0.8';
                             }}
@@ -115,7 +113,7 @@ const CustomNode: React.FC<CustomNodeProps> = ({ data }) => {
                 )}
                 
                 <div 
-                    className="w-7 h-7 bg-[#00142B] border border-[#187ADC] rounded-lg p-1 flex justify-center items-center shadow-sm cursor-pointer opacity-100"
+                    className="w-7 h-7 bg-[#00142B] rounded-lg p-1 flex justify-center items-center shadow-sm cursor-pointer opacity-100"
                 >
                     <img 
                         src={agntcyDirectoryIcon} 

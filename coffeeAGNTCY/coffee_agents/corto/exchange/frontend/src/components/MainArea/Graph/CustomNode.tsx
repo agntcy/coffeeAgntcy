@@ -30,18 +30,13 @@ interface CustomNodeProps {
 const CustomNode: React.FC<CustomNodeProps> = ({ data }) => {
     return (
         <div 
+            className="p-4 rounded-lg bg-[#373C42] relative flex flex-col justify-start items-start gap-2"
             style={{ 
-                width: '194px', 
-                height: '96px', 
-                padding: '16px',
-                borderRadius: '8px',
-                background: '#373C42',
-                position: 'relative',
-                display: 'flex',
-                flexDirection: 'column',
-                justifyContent: 'flex-start',
-                alignItems: 'flex-start',
-                gap: '8px',
+                width: '193px', 
+                height: '91px',
+                flex: 'none',
+                order: 0,
+                flexGrow: 0,
                 outline: data.active ? '2px solid #187ADC' : 'none',
                 boxShadow: data.active ? 'rgba(0,0,0,0.6) 0px 6px 8px' : 'none'
             }}
@@ -58,115 +53,36 @@ const CustomNode: React.FC<CustomNodeProps> = ({ data }) => {
                 }
             }}
         >
-            {/* Icon Container - Figma Frame 1 */}
             <div 
-                style={{
-                    width: '20px',
-                    height: '20px',
-                    background: '#59616B',
-                    borderRadius: '4px',
-                    display: 'flex',
-                    justifyContent: 'center',
-                    alignItems: 'center',
-                    flexShrink: 0,
-                    gap: '10px',
-                    paddingTop: '4px',
-                    paddingBottom: '4px',
-                    opacity: 1
-                }}
+                className="w-5 h-5 bg-[#59616B] rounded flex justify-center items-center flex-shrink-0 gap-2.5 py-1 opacity-100"
             >
-                <div style={{
-                    width: '16px',
-                    height: '16px',
-                    display: 'flex',
-                    justifyContent: 'center',
-                    alignItems: 'center',
-                    opacity: 1
-                }}>
+                <div className="w-4 h-4 flex justify-center items-center opacity-100">
                     {data.icon}
                 </div>
             </div>
 
             <div 
+                className="flex flex-row items-center p-0 gap-1 h-5 flex-none order-0 self-stretch grow-0"
                 style={{
-                    display: 'flex',
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    padding: '0px',
-                    gap: '4px',
-                    
-                    width: '162px',
-                    height: '20px',
-                    
-                    flex: 'none',
-                    order: 0,
-                    alignSelf: 'stretch',
-                    flexGrow: 0
+                    width: data.verificationStatus === 'verified' ? '160px' : '162px'
                 }}
             >
-                <span style={{
-                    width: '115px',
-                    height: '20px',
-                    
-                    fontFamily: 'Inter',
-                    fontStyle: 'normal',
-                    fontWeight: 400,
-                    fontSize: '14px',
-                    lineHeight: '20px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    
-                    color: '#E8E9EA',
-                    
-                    flex: 'none',
-                    order: 0,
-                    flexGrow: 0,
-                    
-                    whiteSpace: 'nowrap',
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis'
-                }}>
+                <span className="h-5 font-inter font-normal text-sm leading-5 tracking-normal flex items-center text-[#E8E9EA] opacity-100 flex-none order-0 grow-0 whitespace-nowrap overflow-hidden text-ellipsis">
                     {data.label1}
                 </span>
             </div>
 
             <div 
+                className="h-4 font-inter font-light text-xs leading-4 text-[#E8E9EA] flex-none order-1 self-stretch flex-grow-0 whitespace-nowrap overflow-hidden text-ellipsis"
                 style={{
-                    width: '162px',
-                    height: '16px',
-                    
-                    fontFamily: 'Inter',
-                    fontStyle: 'normal',
-                    fontWeight: 300,
-                    fontSize: '12px',
-                    lineHeight: '16px',
-                    
-                    color: '#E8E9EA',
-                    
-                    flex: 'none',
-                    order: 1,
-                    alignSelf: 'stretch',
-                    flexGrow: 0,
-                    
-                    whiteSpace: 'nowrap',
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis'
+                    width: '162px'
                 }}
             >
                 {data.label2}
             </div>
             
             <div 
-                style={{
-                    position: 'absolute',
-                    right: '-16px',
-                    top: '50%',
-                    transform: 'translateY(-50%)',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: '4px',
-                    zIndex: 10
-                }}
+                className="absolute -right-4 top-1/2 -translate-y-1/2 flex flex-col gap-1 z-10"
             >
                 {data.githubLink && (
                     <a 
@@ -178,21 +94,7 @@ const CustomNode: React.FC<CustomNodeProps> = ({ data }) => {
                         }}
                     >
                         <div 
-                            style={{
-                                width: '28px',
-                                height: '28px',
-                                background: '#00142B',
-                                border: '1px solid #187ADC',
-                                borderRadius: '8px',
-                                padding: '4px',
-                                display: 'flex',
-                                justifyContent: 'center',
-                                alignItems: 'center',
-                                boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.2)',
-                                cursor: 'pointer',
-                                opacity: 1,
-                                transition: 'opacity 0.2s ease'
-                            }}
+                            className="w-7 h-7 bg-[#00142B] rounded-lg p-1 flex justify-center items-center shadow-sm cursor-pointer opacity-100 transition-opacity duration-200 ease-in-out"
                             onMouseEnter={(e) => {
                                 e.currentTarget.style.opacity = '0.8';
                             }}
@@ -203,38 +105,19 @@ const CustomNode: React.FC<CustomNodeProps> = ({ data }) => {
                             <img 
                                 src={githubIcon} 
                                 alt="GitHub" 
-                                style={{
-                                    width: '20px',
-                                    height: '20px'
-                                }}
+                                className="w-5 h-5"
                             />
                         </div>
                     </a>
                 )}
                 
                 <div 
-                    style={{
-                        width: '28px',
-                        height: '28px',
-                        background: '#00142B',
-                        border: '1px solid #187ADC',
-                        borderRadius: '8px',
-                        padding: '4px',
-                        display: 'flex',
-                        justifyContent: 'center',
-                        alignItems: 'center',
-                        boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.2)',
-                        cursor: 'pointer',
-                        opacity: 1
-                    }}
+                    className="w-7 h-7 bg-[#00142B] rounded-lg p-1 flex justify-center items-center shadow-sm cursor-pointer opacity-100"
                 >
                     <img 
                         src={agentDirectoryIcon} 
                         alt="AGNTCY Directory" 
-                        style={{
-                            width: '20px',
-                            height: '20px'
-                        }}
+                        className="w-5 h-5"
                     />
                 </div>
             </div>
@@ -244,11 +127,9 @@ const CustomNode: React.FC<CustomNodeProps> = ({ data }) => {
                     type="target"
                     position={Position.Top}
                     id="target"
+                    className="w-[0.1px] h-[0.1px] border border-gray-600"
                     style={{
-                        width: '0.1px',
-                        height: '0.1px',
                         background: data.handleColor || DefaultHandleColor,
-                        border: `1px solid darkgrey`,
                     }}
                 />
             )}
@@ -257,11 +138,9 @@ const CustomNode: React.FC<CustomNodeProps> = ({ data }) => {
                     type="source"
                     position={Position.Bottom}
                     id="source"
+                    className="w-[0.1px] h-[0.1px] border border-gray-600"
                     style={{
-                        width: '0.1px',
-                        height: '0.1px',
                         background: data.handleColor || DefaultHandleColor,
-                        border: `1px solid darkgrey`,
                     }}
                 />
             )}

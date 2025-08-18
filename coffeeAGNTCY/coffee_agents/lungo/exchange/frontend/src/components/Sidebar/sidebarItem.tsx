@@ -20,7 +20,7 @@ const SidebarItem: React.FC<SidebarItemProps> = ({
 }) => {
   return (
     <div 
-      className={`cursor-pointer flex items-center gap-2 opacity-100 py-2 pr-5 pb-2 pl-12 font-inter font-normal text-sm leading-5 tracking-wide text-white ${isSelected ? 'bg-[#0D274D]' : 'bg-transparent'} ${className}`}
+      className={`cursor-pointer flex items-center gap-2 opacity-100 py-2 pr-5 pb-2 pl-12 font-inter font-normal text-sm leading-5 tracking-normal text-white ${isSelected ? 'bg-[#0D274D]' : 'bg-transparent'} ${className}`}
       onClick={onClick}
       style={{ 
         width: '288px',
