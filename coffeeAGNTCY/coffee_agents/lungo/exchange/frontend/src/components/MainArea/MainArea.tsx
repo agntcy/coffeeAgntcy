@@ -11,8 +11,6 @@ import {
     useEdgesState,
     useReactFlow,
     Controls,
-    Node,
-    Edge,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import './ReactFlow.css';
@@ -20,7 +18,7 @@ import { PatternType } from '@/App';
 import SlimNode from './Graph/SlimNode';
 import CustomEdge from './Graph/CustomEdge';
 import CustomNode from './Graph/CustomNode';
-import { getGraphConfig } from '@/utils/graphConfigs';
+import { getGraphConfig, updateTransportLabels, GraphConfig } from '@/utils/graphConfigs';
 
 const proOptions = { hideAttribution: true };
 
@@ -33,15 +31,8 @@ const edgeTypes = {
     custom: CustomEdge,
 };
 
-
 interface AnimationStep {
     ids: string[];
-}
-
-interface GraphConfig {
-    nodes: Node[];
-    edges: Edge[];
-    animationSequence: AnimationStep[];
 }
 
 interface MainAreaProps {
@@ -65,16 +56,17 @@ const MainArea: React.FC<MainAreaProps> = ({
     aiReplied, 
     setAiReplied 
 }) => {
-   
-    const config: GraphConfig = getGraphConfig(pattern);
     const { fitView } = useReactFlow();
     
+    const config: GraphConfig = getGraphConfig(pattern);
     const [nodes, setNodes, onNodesChange] = useNodesState(config.nodes);
     const [edges, setEdges, onEdgesChange] = useEdgesState(config.edges);
     const animationLock = useRef<boolean>(false); 
 
     useEffect(() => {
-        const newConfig: GraphConfig = getGraphConfig(pattern);
+        updateTransportLabels(setNodes, setEdges);
+        
+        const newConfig = getGraphConfig(pattern);
         setNodes(newConfig.nodes);
         setEdges(newConfig.edges);
         
@@ -91,15 +83,15 @@ const MainArea: React.FC<MainAreaProps> = ({
     const delay = (ms: number): Promise<void> => new Promise((resolve) => setTimeout(resolve, ms));
 
     const updateStyle = (id: string, active: boolean): void => {
-        setNodes((objs: Node[]) =>
-            objs.map((obj: Node) =>
+        setNodes((objs) =>
+            objs.map((obj) =>
                 obj.id === id
                     ? { ...obj, data: { ...obj.data, active } }
                     : obj
             )
         );
-        setEdges((objs: Edge[]) =>
-            objs.map((obj: Edge) =>
+        setEdges((objs) =>
+            objs.map((obj) =>
                 obj.id === id
                     ? { ...obj, data: { ...obj.data, active } }
                     : obj

@@ -19,7 +19,7 @@ import './ReactFlow.css';
 import SlimNode from './Graph/SlimNode';
 import CustomEdge from './Graph/CustomEdge';
 import CustomNode from './Graph/CustomNode';
-import { graphConfig } from '@/utils/graphConfigs';
+import { graphConfig, updateA2ALabels } from '@/utils/graphConfigs';
 
 const proOptions = { hideAttribution: true };
 
@@ -71,6 +71,8 @@ const MainArea: React.FC<MainAreaProps> = ({
     const animationLock = useRef<boolean>(false); 
 
     useEffect(() => {
+        updateA2ALabels(setEdges);
+        
         const newConfig: GraphConfig = graphConfig;
         setNodes(newConfig.nodes);
         setEdges(newConfig.edges);

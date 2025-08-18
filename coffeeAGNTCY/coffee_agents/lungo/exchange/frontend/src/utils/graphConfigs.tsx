@@ -10,7 +10,7 @@ import supervisorIcon from '@/assets/supervisor.png';
 import farmAgentIcon from '@/assets/Grader-Agent.png';
 import { FarmName } from './const';
 
-interface GraphConfig {
+export interface GraphConfig {
     title: string;
     nodes: any[];
     edges: any[];
@@ -110,7 +110,10 @@ const SLIM_MULTI_A2A_CONFIG: GraphConfig = {
             type: 'slimNode',
             data: {
                 ...commonNodeData,
-                label: 'Pub/Sub SLIM',
+                data: {
+                ...commonNodeData,
+                label: 'Transport: ',
+            },
             },
             position: { x: 229.02370449534635, y: 284.688426426175 },
         },
@@ -210,7 +213,7 @@ const SLIM_MULTI_A2A_CONFIG: GraphConfig = {
             id: '4-6',
             source: '4',
             target: '6',
-            data: { label: 'MCP' },
+            data: { label: 'MCP: ' },
             type: 'custom',
         },
     ],
@@ -233,5 +236,35 @@ export const getGraphConfig = (pattern: string): GraphConfig => {
             return SLIM_MULTI_A2A_CONFIG;
         default:
             return SLIM_MULTI_A2A_CONFIG;
+    }
+};
+
+export const updateTransportLabels = async (
+    setNodes: (updater: (nodes: any[]) => any[]) => void,
+    setEdges: (updater: (edges: any[]) => any[]) => void
+): Promise<void> => {
+    try {
+        const response = await fetch('http://127.0.0.1:8000/api/config');
+        const data = await response.json();
+        const transport = data.transport; 
+        console.log('Transport value:', transport);
+        
+        setNodes((nodes: any[]) =>
+            nodes.map((node: any) =>
+                node.id === '2'
+                    ? { ...node, data: { ...node.data, label: `Transport: ${transport}` } }
+                    : node
+            )
+        );
+        
+        setEdges((edges: any[]) =>
+            edges.map((edge: any) =>
+                edge.id === '4-6'
+                    ? { ...edge, data: { ...edge.data, label: `MCP: ${transport}` } }
+                    : edge
+            )
+        );
+    } catch (error) {
+        console.error('Failed to fetch transport config:', error);
     }
 };

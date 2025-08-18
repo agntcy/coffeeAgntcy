@@ -77,7 +77,7 @@ const SLIM_A2A_CONFIG: GraphConfig = {
             id: '1-2',
             source: '1',
             target: '2',
-            data: { label: 'A2A' },
+            data: { label: 'A2A: ' },
             type: 'custom',
         },
     ],
@@ -89,3 +89,24 @@ const SLIM_A2A_CONFIG: GraphConfig = {
 };
 
 export const graphConfig = SLIM_A2A_CONFIG;
+
+export const updateA2ALabels = async (
+    setEdges: (updater: (edges: any[]) => any[]) => void
+): Promise<void> => {
+    try {
+        const response = await fetch('http://127.0.0.1:8000/api/config');
+        const data = await response.json();
+        const transport = data.transport;
+        console.log('Transport value:', transport);
+        
+        setEdges((edges: any[]) =>
+            edges.map((edge: any) =>
+                edge.id === '1-2'
+                    ? { ...edge, data: { ...edge.data, label: `A2A: ${transport}` } }
+                    : edge
+            )
+        );
+    } catch (error) {
+        console.error('Failed to fetch transport config:', error);
+    }
+};

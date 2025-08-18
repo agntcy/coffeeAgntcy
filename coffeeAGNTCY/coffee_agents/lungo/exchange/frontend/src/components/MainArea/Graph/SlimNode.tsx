@@ -33,7 +33,7 @@ const SlimNode: React.FC<SlimNodeProps> = ({ data }) => {
                 hover:bg-[#4A4F55] hover:outline hover:outline-2 hover:outline-[#187ADC] hover:shadow-[rgba(0,0,0,0.6)_0px_6px_8px]
             `}
         >
-            <div className="w-[94px] h-5 font-inter font-normal text-sm leading-5 tracking-normal text-[#E8E9EA] opacity-100 flex items-center justify-center">
+            <div className="w-[94px] h-5 font-inter font-normal text-sm leading-5 tracking-normal text-[#E8E9EA] opacity-100 flex items-center justify-center whitespace-nowrap">
                 {data.label}
             </div>
             <Handle
