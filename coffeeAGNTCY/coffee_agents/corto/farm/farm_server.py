@@ -2,79 +2,71 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import asyncio
-from uvicorn import Config, Server
-
-from a2a.server.apps import A2AStarletteApplication
-from a2a.server.tasks import InMemoryTaskStore
-from a2a.server.request_handlers import DefaultRequestHandler
-from agntcy_app_sdk.factory import AgntcyFactory
+import logging
+import slim_bindings
 from dotenv import load_dotenv
 
-from agent_executor import FarmAgentExecutor
-from card import AGENT_CARD
-from config.config import FARM_AGENT_HOST, FARM_AGENT_PORT
-from config.config import DEFAULT_MESSAGE_TRANSPORT, TRANSPORT_SERVER_ENDPOINT
+from agent import FarmAgent
 
 load_dotenv()
 
-# Initialize a multi-protocol, multi-transport gateway factory.
-# CRITICAL FIX: Disable tracing to avoid SLIM API signature conflicts
-factory = AgntcyFactory("corto.farm_agent", enable_tracing=False)
+# Setup logging
+logger = logging.getLogger("corto.farm.server")
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s [%(levelname)s] %(name)s: %(message)s'
+)
 
 async def main():
     """
-    Starts the farm agent server using the specified transport mechanism.
-
-    This function initializes a FarmAgentExecutor wrapped with a DefaultRequestHandler,
-    and serves it using an A2AStarletteApplication. The agent is exposed via either:
-
-    1. An HTTP server using native A2A (Agent-to-Agent) protocol via Starlette, or
-    2. A bridge-based transport using the app-sdk factory (e.g., SLIM or other supported transports).
-
-    The transport method is determined by the `DEFAULT_MESSAGE_TRANSPORT` environment variable.
-
-    - If set to `"A2A"`, the agent is served via a local FastAPI/Starlette HTTP server.
-    - Otherwise, it uses a pluggable transport layer (like SLIM) via the app-sdk factory, connecting to
-    the server or gateway defined by `TRANSPORT_SERVER_ENDPOINT`.
-
-    This design enables interchangeable transport layers for agent communication while keeping the
-    agent logic transport-agnostic.
-
-    Dependencies:
-    - AGNTCY App SDK: https://github.com/agntcy/app-sdk
-
-    Environment Variables:
-    - DEFAULT_MESSAGE_TRANSPORT: Transport protocol name ("A2A", "slim", etc.)
-    - TRANSPORT_SERVER_ENDPOINT: Endpoint for the external transport (if used)
-    - FARM_AGENT_HOST / FARM_AGENT_PORT: Host and port for local HTTP server (if "A2A" is selected)
+    Starts the farm agent server using direct SLIM communication.
+    Receives messages via SLIM and processes them using FarmAgent.
     """
-
-
-    request_handler = DefaultRequestHandler(
-        agent_executor=FarmAgentExecutor(),
-        task_store=InMemoryTaskStore(),
-    )
-
-    server = A2AStarletteApplication(
-        agent_card=AGENT_CARD, http_handler=request_handler
-    )
-
-    if DEFAULT_MESSAGE_TRANSPORT == "A2A":
-        config = Config(app=server.build(), host=FARM_AGENT_HOST, port=FARM_AGENT_PORT, loop="asyncio")
-        userver = Server(config)
-        await userver.serve()
-    else:
-        transport = factory.create_transport(
-            DEFAULT_MESSAGE_TRANSPORT,
-            endpoint=TRANSPORT_SERVER_ENDPOINT,
-        )
-        bridge = factory.create_bridge(server, transport=transport)
-        await bridge.start(blocking=True)
+    
+    # Initialize the farm agent
+    farm_agent = FarmAgent()
+    
+    # Note: a2a stuff removed for slim v0.4.0 testing, app-sdk dependency removed- transport/bridge removed for a2a to slim
+    
+    # Create SLIM receiver- hardcoded receiver name(a2a topic placeholder)
+    receiver = slim_bindings.PyName("test", "demo", "receiver")
+    #hardcodeed shared secret
+    provider = slim_bindings.PyIdentityProvider.SharedSecret("test", "secret")
+    verifier = slim_bindings.PyIdentityVerifier.SharedSecret("test", "secret")
+    
+    slim = await slim_bindings.Slim.new(receiver, provider, verifier)
+    
+    async with slim:
+        await slim.connect({"endpoint": "http://localhost:46357", "tls": {"insecure": True}})
+        await slim.subscribe(receiver)
+        logger.info("Farm agent SLIM receiver started...")
+        
+        while True:
+            session_info, _ = await slim.receive()
+            
+            async def handle_session(session_id):
+                while True:
+                    try:
+                        session, msg = await slim.receive(session=session_id)
+                        text = msg.decode()
+                        logger.info(f"Received message: {text}")
+                        
+                        # Use farm agent to process the message
+                        result = await farm_agent.ainvoke(text)
+                        response = result.get("flavor_notes", "Error processing request")
+                        
+                        await slim.publish_to(session, response.encode())
+                        logger.info(f"Processed '{text}' -> Generated response: {response}")
+                    except Exception as e:
+                        logger.error(f"Session {session_id} error: {e}")
+                        break
+            
+            asyncio.create_task(handle_session(session_info.id))
 
 if __name__ == '__main__':
     try:
         asyncio.run(main())
     except KeyboardInterrupt:
-        print("\nShutting down gracefully on keyboard interrupt.")
+        logger.info("Shutting down gracefully on keyboard interrupt.")
     except Exception as e:
-        print(f"Error occurred: {e}")
+        logger.error(f"Error occurred: {e}")

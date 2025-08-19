@@ -9,8 +9,8 @@ from pydantic import BaseModel
 import uvicorn
 from dotenv import load_dotenv
 from config.logging_config import setup_logging
-from graph import shared
-from agntcy_app_sdk.factory import AgntcyFactory
+# from graph import shared
+# from agntcy_app_sdk.factory import AgntcyFactory
 from graph.graph import ExchangeGraph
 # CRITICAL FIX: Disable observe SDK import to silence warnings and avoid conflicts
 # from ioa_observe.sdk.tracing import session_start
@@ -21,7 +21,7 @@ load_dotenv()
 
 # Initialize the shared agntcy factory with tracing enabled
 # CRITICAL FIX: Disable tracing to avoid SLIM API signature conflicts
-shared.set_factory(AgntcyFactory("corto.exchange", enable_tracing=False))
+# shared.set_factory(AgntcyFactory("corto.exchange", enable_tracing=False))
 
 app = FastAPI()
 # Add CORS middleware
