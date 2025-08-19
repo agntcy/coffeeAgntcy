@@ -22,5 +22,5 @@ class IdentityService(ABC):
 
   @abstractmethod
   async def create_badge(self, agent_url: str, api_key: str):
-    """Create a badge using the identity-cli binary."""
+    """Create a badge."""
     pass

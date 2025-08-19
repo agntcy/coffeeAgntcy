@@ -13,7 +13,7 @@ from config.config import (
   IDENTITY_API_SERVER_URL,
 )
 
-logger = logging.getLogger("vietnam.utils")
+logger = logging.getLogger("vietnam.utils")\
 
 async def create_badge_for_vietnam_farm():
   """Create a badge after the HTTP server starts and is ready."""
