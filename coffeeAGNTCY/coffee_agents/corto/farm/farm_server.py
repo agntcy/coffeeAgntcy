@@ -3,10 +3,10 @@
 
 import asyncio
 import logging
-import slim_bindings
 from dotenv import load_dotenv
 
 from agent import FarmAgent
+from slim_receiver_utils import start_slim_receiver
 
 load_dotenv()
 
@@ -26,42 +26,8 @@ async def main():
     # Initialize the farm agent
     farm_agent = FarmAgent()
     
-    # Note: a2a stuff removed for slim v0.4.0 testing, app-sdk dependency removed- transport/bridge removed for a2a to slim
-    
-    # Create SLIM receiver- hardcoded receiver name(a2a topic placeholder)
-    receiver = slim_bindings.PyName("test", "demo", "receiver")
-    #hardcodeed shared secret
-    provider = slim_bindings.PyIdentityProvider.SharedSecret("test", "secret")
-    verifier = slim_bindings.PyIdentityVerifier.SharedSecret("test", "secret")
-    
-    slim = await slim_bindings.Slim.new(receiver, provider, verifier)
-    
-    async with slim:
-        await slim.connect({"endpoint": "http://localhost:46357", "tls": {"insecure": True}})
-        await slim.subscribe(receiver)
-        logger.info("Farm agent SLIM receiver started...")
-        
-        while True:
-            session_info, _ = await slim.receive()
-            
-            async def handle_session(session_id):
-                while True:
-                    try:
-                        session, msg = await slim.receive(session=session_id)
-                        text = msg.decode()
-                        logger.info(f"Received message: {text}")
-                        
-                        # Use farm agent to process the message
-                        result = await farm_agent.ainvoke(text)
-                        response = result.get("flavor_notes", "Error processing request")
-                        
-                        await slim.publish_to(session, response.encode())
-                        logger.info(f"Processed '{text}' -> Generated response: {response}")
-                    except Exception as e:
-                        logger.error(f"Session {session_id} error: {e}")
-                        break
-            
-            asyncio.create_task(handle_session(session_info.id))
+    # Start SLIM receiver with farm agent as message processor
+    await start_slim_receiver(farm_agent.ainvoke)
 
 if __name__ == '__main__':
     try:
