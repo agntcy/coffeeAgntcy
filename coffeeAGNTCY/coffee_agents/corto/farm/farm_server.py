@@ -24,6 +24,7 @@ async def main():
     """
     
     # Initialize the farm agent
+    # todo(design decision on app-sdk side ??) - override a2a message passing via slim from a2a server
     farm_agent = FarmAgent()
     
     # Start SLIM receiver with farm agent as message processor

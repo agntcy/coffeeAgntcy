@@ -39,6 +39,7 @@ class FlavorProfileTool(BaseTool):
             
             prompt = input.get('prompt')
             # send the prompt to the farm agent via SLIM
+            # todo(design decision on app-sdk side ??) - override a2a send message logic to send from a2a client to slim to receiver route and receive response
             response_text = await send_receiver(prompt)
             
             return FlavorProfileOutput(flavor_profile=response_text)
