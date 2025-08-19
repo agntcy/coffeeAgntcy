@@ -22,6 +22,6 @@ async def create_badge_for_colombia_farm():
                                            base_url=IDENTITY_API_SERVER_URL)
     badge_output = await identity_service.create_badge(agent_url=COLOMBIA_FARM_AGENT_URL,
                                                  svc_api_key=IDENTITY_COLOMBIA_AGENT_SERVICE_API_KEY)
-    logger.info("Badge created successfully: %s", badge_output)
+    logger.info("Creating badge for Colombia farm: %s", badge_output)
   except Exception as e:
     logger.error("Failed to create badge: %s", e)
