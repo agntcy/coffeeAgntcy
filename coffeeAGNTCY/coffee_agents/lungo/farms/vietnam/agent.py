@@ -26,7 +26,7 @@ class GraphState(MessagesState):
     next_node: str
 
 # --- 3. Implement the LangGraph Application Class ---
-@agent(name="vietnam_farm_agent")
+# @agent(name="vietnam_farm_agent")
 class FarmAgent:
     def __init__(self):
         """
@@ -150,7 +150,7 @@ class FarmAgent:
         return {"messages": [AIMessage(response)]}
 
     # --- Graph Building Method ---
-    @graph(name="vietnam_farm_graph")
+    # @graph(name="vietnam_farm_graph")
     def _build_graph(self):
         """
         Builds and compiles the LangGraph workflow.

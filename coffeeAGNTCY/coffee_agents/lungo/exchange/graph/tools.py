@@ -37,7 +37,7 @@ from exchange.graph.models import (
 from services.identity_service import IdentityService
 from services.identity_service_impl import IdentityServiceImpl
 
-from ioa_observe.sdk.decorators import tool as ioa_tool_decorator
+# from ioa_observe.sdk.decorators import tool as ioa_tool_decorator
 
 logger = logging.getLogger("lungo.supervisor.tools")
 
@@ -134,7 +134,7 @@ def verify_farm_identity(identity_service: IdentityService, farm_name: str):
         raise ValueError(f"Identity verification failed.")
 
 @tool(args_schema=InventoryArgs)
-@ioa_tool_decorator(name="get_farm_yield_inventory")
+# @ioa_tool_decorator(name="get_farm_yield_inventory")
 async def get_farm_yield_inventory(prompt: str, farm: str) -> str:
     """
     Fetch yield inventory from a specific farm.
@@ -193,7 +193,7 @@ async def get_farm_yield_inventory(prompt: str, farm: str) -> str:
 
 
 @tool
-@ioa_tool_decorator(name="get_all_farms_yield_inventory")
+# @ioa_tool_decorator(name="get_all_farms_yield_inventory")
 async def get_all_farms_yield_inventory(prompt: str) -> str:
     """
     Broadcasts a prompt to all farms and aggregates their inventory responses.
@@ -255,7 +255,7 @@ async def get_all_farms_yield_inventory(prompt: str) -> str:
 
 
 @tool(args_schema=CreateOrderArgs)
-@ioa_tool_decorator(name="create_order")
+# @ioa_tool_decorator(name="create_order")
 async def create_order(farm: str, quantity: int, price: float) -> str:
     """
     Sends a request to create a coffee order with a specific farm.
@@ -328,7 +328,7 @@ async def create_order(farm: str, quantity: int, price: float) -> str:
     
 
 @tool
-@ioa_tool_decorator(name="get_order_details")
+# @ioa_tool_decorator(name="get_order_details")   
 async def get_order_details(order_id: str) -> str:
     """
     Get details of an order.

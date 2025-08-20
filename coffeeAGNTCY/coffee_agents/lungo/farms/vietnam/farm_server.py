@@ -24,7 +24,7 @@ from utils import create_badge_for_vietnam_farm
 load_dotenv()
 
 # Initialize a multi-protocol, multi-transport agntcy factory.
-factory = AgntcyFactory("lungo_vietnam_farm", enable_tracing=True)
+factory = AgntcyFactory("lungo_vietnam_farm", enable_tracing=False)
 
 async def run_http_server(server):
     """Run the HTTP/REST server."""
