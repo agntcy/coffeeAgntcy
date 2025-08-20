@@ -11,13 +11,6 @@ RUN pip install --no-cache-dir uv && \
     uv venv -q /venv
 ENV PATH="/venv/bin:$PATH"
 
-# Install the identity-platform Python SDK
-RUN uv pip install git+https://github.com/cisco-outshift-ai-agents/identity-service-sdk@main#subdirectory=python
-
-# Verify identity-cli binary is installed and make it available in /usr/local/bin
-RUN which identity-cli && \
-    ln -s $(which identity-cli) /usr/local/bin/identity-cli
-
 WORKDIR /app
 COPY coffeeAGNTCY/coffee_agents/lungo/pyproject.toml coffeeAGNTCY/coffee_agents/lungo/uv.lock ./
 RUN uv sync --locked --no-editable

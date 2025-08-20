@@ -1026,8 +1026,8 @@ wheels = [
 
 [[package]]
 name = "identity-service-sdk"
-version = "0.0.1"
-source = { git = "https://github.com/cisco-outshift-ai-agents/identity-service-sdk?subdirectory=python&rev=main#fe268fc93d394d3d3318413f2c2cf0c5b6847048" }
+version = "0.0.2"
+source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "a2a-sdk" },
     { name = "grpcio" },
@@ -1039,6 +1039,10 @@ dependencies = [
     { name = "python-dotenv" },
     { name = "starlette" },
     { name = "typer" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/d3/3f/c916077b9388f5e530a5cc478d0d125f86cd76c7f2d86f76e86cb76c34b4/identity_service_sdk-0.0.2.tar.gz", hash = "sha256:35d809491fc4e414d01247baaea4c1c3f66cd568fe7e6a9662c51ecb4013ade5", size = 42811, upload-time = "2025-08-14T08:28:16.111Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/f0/34/659c0b29efe76bababef88429dcd7eea6cddf4b3c776b60f284eeeec1a39/identity_service_sdk-0.0.2-py3-none-any.whl", hash = "sha256:39139f50c05897e83b690a60f0aabe767730fbc6d02ffd883af505d2024ae901", size = 77469, upload-time = "2025-08-14T08:28:14.897Z" },
 ]
 
 [[package]]
@@ -1832,7 +1836,7 @@ requires-dist = [
     { name = "dotenv", specifier = ">=0.9.9" },
     { name = "fastapi", specifier = ">=0.115.12" },
     { name = "httpx", specifier = ">=0.28.1" },
-    { name = "identity-service-sdk", git = "https://github.com/cisco-outshift-ai-agents/identity-service-sdk?subdirectory=python&rev=main" },
+    { name = "identity-service-sdk", specifier = "==0.0.2" },
     { name = "ioa-observe-sdk", specifier = "==1.0.15" },
     { name = "langchain-anthropic", specifier = ">=0.3.13" },
     { name = "langchain-google-genai", specifier = ">=2.1.4" },
