@@ -46,7 +46,7 @@ class FlavorProfileTool(BaseTool):
         factory = get_factory()
         # Create SLIM2Transport via factory with extra parameters
         transport = factory.create_transport(
-            "SLIM2",
+            DEFAULT_MESSAGE_TRANSPORT,
             endpoint=TRANSPORT_SERVER_ENDPOINT,
             org="corto",
             namespace="coffee",
