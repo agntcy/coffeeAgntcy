@@ -19,38 +19,24 @@ const SidebarDropdown: React.FC<SidebarDropdownProps> = ({
   isExpanded,
   onToggle,
   children,
-  isNested = false,
 }) => {
   return (
-    <div
-      className="flex flex-col items-start p-0"
-      style={{ width: "288px", height: "144px" }}
-    >
+    <div className="flex w-[288px] flex-col items-start p-0">
       <div
-        className={`flex cursor-pointer items-center justify-between gap-2 py-2 pr-5 transition-colors hover:bg-[#373C42] ${isNested ? "pl-8" : "pl-5"}`}
+        className="bg-primary-bg flex h-9 w-[288px] cursor-pointer items-start gap-2 px-5 py-2 pl-8 transition-colors hover:bg-[#373C42]"
         onClick={onToggle}
-        style={{
-          width: "288px",
-          height: "36px",
-        }}
       >
-        <span
-          className="font-inter text-sm font-normal leading-5 tracking-wide text-white opacity-100"
-          style={{
-            width: "208px",
-            height: "20px",
-          }}
-        >
+        <span className="flex-1 font-inter text-sm font-normal leading-5 tracking-[0.25px] text-white">
           {title}
         </span>
         <ChevronUp
-          className={`order-2 h-5 w-5 flex-none grow-0 text-[#E8E9EA] opacity-100 transition-transform ${
+          className={`h-5 w-5 flex-none text-[#E8E9EA] transition-transform ${
             isExpanded ? "rotate-0" : "rotate-180"
           }`}
         />
       </div>
 
-      {isExpanded && <div className="flex flex-col">{children}</div>}
+      {isExpanded && <div className="flex w-[288px] flex-col">{children}</div>}
     </div>
   )
 }

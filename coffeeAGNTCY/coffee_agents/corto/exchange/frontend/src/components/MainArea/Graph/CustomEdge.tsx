@@ -43,7 +43,7 @@ const CustomEdge: React.FC<CustomEdgeProps> = ({
     targetPosition,
   })
 
-  const defaultEdgeColor = data?.active ? "#187ADC" : "#B0C4DE"
+  const defaultEdgeColor = data?.active ? "#00409F" : "#00409F"
 
   return (
     <>

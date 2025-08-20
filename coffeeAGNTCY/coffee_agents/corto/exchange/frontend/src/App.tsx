@@ -22,9 +22,6 @@ const App: React.FC = () => {
   const [currentUserMessage, setCurrentUserMessage] = useState<string>("")
   const [agentResponse, setAgentResponse] = useState<string>("")
   const [isAgentLoading, setIsAgentLoading] = useState<boolean>(false)
-  const [selectedView, setSelectedView] = useState<
-    "coffee-grading" | "agent-to-agent"
-  >("agent-to-agent")
   const [messages, setMessages] = useState<Message[]>([
     {
       role: "assistant",
@@ -75,35 +72,22 @@ const App: React.FC = () => {
     }
   }
 
-  const handleViewChange = (view: "coffee-grading" | "agent-to-agent") => {
-    setSelectedView(view)
-  }
-
   return (
-    <div className="flex h-screen w-screen flex-col overflow-hidden bg-primary-bg">
+    <div className="bg-primary-bg flex h-screen w-screen flex-col overflow-hidden">
       <Navigation />
 
       <div className="flex flex-1 overflow-hidden">
-        <Sidebar selectedView={selectedView} onViewChange={handleViewChange} />
+        <Sidebar />
 
-        <div className="flex min-w-0 flex-1 flex-col border-l border-[#00142B] bg-primary-bg">
-          {selectedView === "agent-to-agent" && (
-            <div className="relative flex-grow">
-              <MainArea
-                buttonClicked={buttonClicked}
-                setButtonClicked={setButtonClicked}
-                aiReplied={aiReplied}
-                setAiReplied={setAiReplied}
-              />
-            </div>
-          )}
-          {selectedView === "coffee-grading" && (
-            <div className="flex flex-grow items-center justify-center">
-              <div className="text-xl text-white">
-                Coffee Grading Conversation View
-              </div>
-            </div>
-          )}
+        <div className="bg-primary-bg flex min-w-0 flex-1 flex-col border-l border-[#00142B]">
+          <div className="relative flex-grow">
+            <MainArea
+              buttonClicked={buttonClicked}
+              setButtonClicked={setButtonClicked}
+              aiReplied={aiReplied}
+              setAiReplied={setAiReplied}
+            />
+          </div>
 
           <div className="flex min-h-[76px] w-full flex-none flex-col items-center justify-center gap-0 bg-[#2E3E57] p-0 md:min-h-[96px]">
             <ChatArea
