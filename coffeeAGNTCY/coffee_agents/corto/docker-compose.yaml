@@ -17,14 +17,24 @@ services:
       - OPENAI_ENDPOINT=${OPENAI_ENDPOINT:-}
       - OPENAI_MODEL_NAME=${OPENAI_MODEL_NAME:-}
       - LLM_PROVIDER=${LLM_PROVIDER}
-      - TRANSPORT_SERVER_ENDPOINT=http://slim:46357
-      - OTLP_HTTP_ENDPOINT=http://otel-collector:4318
+      - DEFAULT_MESSAGE_TRANSPORT=${DEFAULT_MESSAGE_TRANSPORT:-SLIM}
+      - TRANSPORT_SERVER_ENDPOINT=${TRANSPORT_SERVER_ENDPOINT:-http://slim:46357}
+      - OTLP_HTTP_ENDPOINT=${OTLP_HTTP_ENDPOINT:-http://otel-collector:4318}
     ports:
       - "9999:9999"
 
+  nats:
+    image: nats:latest
+    container_name: nats-corto
+    ports:
+      - "4222:4222"
+      - "4223:4223"
+      - "6222:6222"
+      - "8222:8222"
+
   slim:
     image: ghcr.io/agntcy/slim:0.3.15
-    container_name: slim-dataplane
+    container_name: slim-corto
     ports:
       - "46357:46357"
     environment:
@@ -40,7 +50,7 @@ services:
       context: ../../..
       dockerfile: coffeeAGNTCY/coffee_agents/corto/docker/Dockerfile.exchange
     image: ghcr.io/agntcy/coffee-agntcy/corto-exchange:latest
-    container_name: exchange-server
+    container_name: exchange-server-corto
     platform: linux/amd64
     environment:
       - FARM_AGENT_HOST=farm-server
@@ -53,8 +63,9 @@ services:
       - OPENAI_ENDPOINT=${OPENAI_ENDPOINT:-}
       - OPENAI_MODEL_NAME=${OPENAI_MODEL_NAME:-}
       - LLM_PROVIDER=${LLM_PROVIDER}
-      - TRANSPORT_SERVER_ENDPOINT=http://slim:46357
-      - OTLP_HTTP_ENDPOINT=http://otel-collector:4318
+      - DEFAULT_MESSAGE_TRANSPORT=${DEFAULT_MESSAGE_TRANSPORT:-SLIM}
+      - TRANSPORT_SERVER_ENDPOINT=${TRANSPORT_SERVER_ENDPOINT:-http://slim:46357}
+      - OTLP_HTTP_ENDPOINT=${OTLP_HTTP_ENDPOINT:-http://otel-collector:4318}
     depends_on:
       - farm-server
     ports:
@@ -65,7 +76,7 @@ services:
       context: ../../..
       dockerfile: coffeeAGNTCY/coffee_agents/corto/docker/Dockerfile.ui
     image: ghcr.io/agntcy/coffee-agntcy/corto-ui:latest
-    container_name: ui
+    container_name: ui-corto
     platform: linux/amd64
     environment:
       - VITE_EXCHANGE_APP_API_URL=http://127.0.0.1:8000
@@ -76,7 +87,7 @@ services:
 
   clickhouse-server:
     image: clickhouse/clickhouse-server
-    container_name: clickhouse-server
+    container_name: clickhouse-server-corto
     ports:
       - "9000:9000"
       - "8123:8123"
@@ -96,7 +107,7 @@ services:
 
   otel-collector:
     image: otel/opentelemetry-collector-contrib:latest
-    container_name: otel-collector
+    container_name: otel-collector-corto
     restart: unless-stopped
     ports:
       - "4317:4317"
@@ -110,7 +121,7 @@ services:
 
   grafana:
     image: grafana/grafana
-    container_name: grafana
+    container_name: grafana-corto
     ports:
       - "3001:3000"
     environment:
