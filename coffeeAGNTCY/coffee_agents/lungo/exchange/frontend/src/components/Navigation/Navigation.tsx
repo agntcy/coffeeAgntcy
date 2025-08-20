@@ -27,7 +27,7 @@ const Navigation: React.FC = () => {
             className="order-0 flex-grow-1 flex-none text-right font-inter text-sm font-normal leading-5 text-[#1D69CC]"
             style={{ letterSpacing: "0.25px" }}
           >
-            Version 0.4
+            Version 0.0.025
           </span>
         </div>
       </div>
