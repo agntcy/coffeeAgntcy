@@ -5,7 +5,7 @@
 
 import React from "react"
 import { EdgeLabelRenderer } from "@xyflow/react"
-import { cn } from "@/lib/utils"
+import { cn } from "@/lib/utils.ts"
 
 interface CustomEdgeLabelProps {
   x: number
