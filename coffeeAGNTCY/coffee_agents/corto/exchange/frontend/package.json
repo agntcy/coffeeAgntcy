@@ -10,7 +10,6 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@emotion/react": "^11.14.0",
     "@radix-ui/react-select": "^2.2.5",
     "@reactflow/node-resizer": "^2.2.14",
     "@xyflow/react": "^12.6.4",

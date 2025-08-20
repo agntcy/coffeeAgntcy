@@ -12,7 +12,7 @@ import MainArea from '@/components/MainArea/MainArea';
 import { useAgentAPI } from '@/hooks/useAgentAPI';
 import ChatArea from '@/components/Chat/ChatArea';
 import Sidebar from '@/components/Sidebar/Sidebar';
-
+import { Message } from './types/message';
 export const PATTERNS = {
   SLIM_A2A: 'slim_a2a',
   SLIM_MULTI_A2A: 'slim_multi_a2a'
@@ -21,12 +21,6 @@ export const PATTERNS = {
 export type PatternType = typeof PATTERNS[keyof typeof PATTERNS];
 
 
-export interface Message {
-    role: 'assistant' | 'user';
-    content: string;
-    id: string;
-    animate: boolean;
-}
 
 
 type PatternMessages = {

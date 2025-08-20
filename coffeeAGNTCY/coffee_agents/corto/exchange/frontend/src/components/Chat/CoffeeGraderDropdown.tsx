@@ -19,21 +19,31 @@ const CoffeeGraderDropdown: React.FC<CoffeeGraderDropdownProps> = ({ visible, on
         "What does coffee harvested in Colombia in the summer taste like",
     ];
 
-    useEffect(() => {
-        const handleClickOutside = (event: MouseEvent) => {
-            if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-                setIsOpen(false);
-            }
-        };
-
-        if (isOpen) {
-            document.addEventListener('mousedown', handleClickOutside);
+useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+        const target = event.target as Node;
+        
+        if (isOpen && dropdownRef.current && !dropdownRef.current.contains(target)) {
+            setIsOpen(false);
         }
+    };
 
-        return () => {
-            document.removeEventListener('mousedown', handleClickOutside);
-        };
-    }, [isOpen]);
+    const handleEscapeKey = (event: KeyboardEvent) => {
+        if (event.key === 'Escape') {
+            setIsOpen(false);
+        }
+    };
+
+    if (visible && isOpen) {
+        document.addEventListener('mousedown', handleClickOutside, true);
+        document.addEventListener('keydown', handleEscapeKey);
+    }
+
+    return () => {
+        document.removeEventListener('mousedown', handleClickOutside, true);
+        document.removeEventListener('keydown', handleEscapeKey);
+    };
+}, [isOpen, visible]);
 
     const handleToggle = () => {
         setIsOpen(!isOpen);

@@ -12,16 +12,16 @@ interface UserMessageProps {
 
 const UserMessage: React.FC<UserMessageProps> = ({ content }) => {
     return (
-        <div className="flex flex-row items-start gap-1 w-[880px] h-10">
+        <div className="flex flex-row items-start gap-1 w-full min-h-[2.5rem]">
            
-            <div className="flex justify-center items-center w-10 h-10 bg-[#00142B] rounded-full">
+            <div className="flex justify-center items-center w-10 h-10 bg-[#00142B] rounded-full flex-none">
                 <User size={22} className="text-white" />
             </div>
             
         
-            <div className="flex flex-col justify-center items-start p-1 px-2 w-[814px] h-10 rounded">
-                <div className="w-[814px] h-10 p-1 px-2 rounded flex items-center">
-                    <div className="font-inter font-normal text-sm leading-5 text-white">
+            <div className="flex flex-col justify-center items-start p-1 px-2 flex-1 min-h-[2.5rem] rounded" style={{ maxWidth: 'calc(100% - 3rem)' }}>
+                <div className="w-full p-1 px-2 rounded flex items-center">
+                    <div className="font-inter font-normal text-sm leading-5 text-white break-words">
                         {content}
                     </div>
                 </div>

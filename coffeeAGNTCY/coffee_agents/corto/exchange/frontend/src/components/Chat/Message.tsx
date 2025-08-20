@@ -43,12 +43,12 @@ interface MessageProps {
 const Message: React.FC<MessageProps> = ({ content, aiMessage, animate, loading }) => {
     return (
         <div 
-            className={`py-[30px] px-[120px] flex items-start gap-2 w-full ${aiMessage ? 'bg-[rgb(247,247,248)]' : ''}`}
+            className={`py-6 md:py-[30px] px-4 sm:px-8 md:px-16 lg:px-[120px] flex items-start gap-2 w-full ${aiMessage ? 'bg-[rgb(247,247,248)]' : ''}`}
         >
             <div className="w-[35px] h-[35px] flex items-center justify-center flex-shrink-0">
                 {aiMessage ? <RiRobot2Fill color="#049FD9" /> : <HiUser />}
             </div>
-            <div className="flex-1 ml-2 break-words">
+            <div className="flex-1 ml-2 break-words min-w-0">
                 {loading ? (
                     <div style={{ opacity: 0.5 }}>
                         <Waveform size="20" stroke="3.5" speed="1" color="#049FD9" />

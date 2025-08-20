@@ -4,7 +4,7 @@
 **/
 
 import React, { useState } from 'react';
-import { Message } from '@/App';
+import { Message } from '@/types/message';
 import CoffeeGraderDropdown from './Prompts/CoffeeGraderDropdown';
 import airplaneSvg from '@/assets/airplane.svg';
 import CoffeePromptsDropdown from './Prompts/CoffeePromptsDropdown';

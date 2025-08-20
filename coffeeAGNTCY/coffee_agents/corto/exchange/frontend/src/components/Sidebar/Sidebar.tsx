@@ -21,171 +21,45 @@ const Sidebar: React.FC<SidebarProps> = ({
   };
 
   return (
-    <div 
-      className="w-[320px] h-full bg-primary-bg font-inter"
-      style={{
-        boxSizing: 'border-box',
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'flex-start',
-        padding: '16px 0px',
-        width: '320px',
-        height: '100%',
-        borderRight: '1px solid #0D274D',
-        flex: 'none',
-        order: 0,
-        alignSelf: 'stretch',
-        flexGrow: 0
-      }}
-    >
-      <div 
-        className="bg-primary-bg"
-        style={{
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'flex-start',
-        padding: '0px 16px',
-        gap: '20px',
-        width: '320px',
-        height: '100%',
-        flex: 1
-      }}>
-     
-        <div 
-          className="flex flex-col items-start font-inter"
-          style={{
-            padding: '0px',
-            width: '288px',
-            height: '72px',
-            flex: 'none',
-            order: 0,
-            alignSelf: 'stretch',
-            flexGrow: 0
-          }}
-        >
-     
-        <div 
-          className="cursor-pointer"
-          onClick={handleGradingToggle}
-          style={{
-            display: 'flex',
-            flexDirection: 'row',
-            alignItems: 'flex-start',
-            padding: '8px',
-            gap: '8px',
-            width: '288px',
-            height: '36px',
-            flex: 'none',
-            order: 0,
-            alignSelf: 'stretch',
-            flexGrow: 0
-          }}
-        >
-          <div style={{
-            display: 'none',
-            width: '20px',
-            height: '20px',
-            flex: 'none',
-            order: 0,
-            flexGrow: 0
-          }} />
-          
-          <span style={{
-            width: '272px',
-            height: '20px',
-            fontFamily: 'Inter',
-            fontStyle: 'normal',
-            fontWeight: 400,
-            fontSize: '14px',
-            lineHeight: '20px',
-            letterSpacing: '0.25px',
-            color: '#FFFFFF',
-            flex: 'none',
-            order: 1,
-            flexGrow: 1
-          }}>
-            Conversation: Coffee Grading
-          </span>
-          
-          <div style={{
-            display: 'none',
-            width: '20px',
-            height: '20px',
-            flex: 'none',
-            order: 2,
-            flexGrow: 0
-          }} />
-        </div>
-
-        {isGradingExpanded && (
-          <div style={{
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'flex-start',
-            padding: '0px',
-            width: '288px',
-            height: '36px',
-            background: '#0D274D',
-            flex: 'none',
-            order: 1,
-            alignSelf: 'stretch',
-            flexGrow: 0
-          }}>
-            <div 
-              className="cursor-pointer"
-              onClick={() => onViewChange('agent-to-agent')}
-              style={{
-                display: 'flex',
-                flexDirection: 'row',
-                alignItems: 'flex-start',
-                padding: '8px 20px',
-                gap: '8px',
-                width: '288px',
-                height: '36px',
-                background: selectedView === 'agent-to-agent' ? '#0D274D' : 'transparent',
-                flex: 'none',
-                order: 0,
-                alignSelf: 'stretch',
-                flexGrow: 0
-              }}
+    <div className="
+      w-64 lg:w-[320px] h-full bg-primary-bg font-inter
+      flex flex-col border-r border-[#0D274D] flex-none
+    ">
+      <div className="flex flex-col p-4 gap-5 h-full flex-1">
+        <div className="flex flex-col">
+          <div 
+            className="cursor-pointer flex items-center p-2 gap-2 w-full min-h-[36px] hover:bg-[#0D274D] rounded transition-colors"
+            onClick={handleGradingToggle}
+          >
+            <span className="text-white text-sm font-normal leading-5 tracking-wide flex-1">
+              Conversation: Coffee Grading
+            </span>
+            <svg 
+              className={`w-4 h-4 text-white transform transition-transform ${isGradingExpanded ? 'rotate-90' : ''}`}
+              fill="none" 
+              stroke="currentColor" 
+              viewBox="0 0 24 24"
             >
-              <div style={{
-                display: 'none',
-                width: '20px',
-                height: '20px',
-                flex: 'none',
-                order: 0,
-                flexGrow: 0
-              }} />
-              
-              <span style={{
-                width: '248px',
-                height: '20px',
-                fontFamily: 'Inter',
-                fontStyle: 'normal',
-                fontWeight: 400,
-                fontSize: '14px',
-                lineHeight: '20px',
-                letterSpacing: '0.25px',
-                color: '#FFFFFF',
-                flex: 'none',
-                order: 1,
-                flexGrow: 1
-              }}>
-                Agent to Agent
-              </span>
-              
-              <div style={{
-                display: 'none',
-                width: '20px',
-                height: '20px',
-                flex: 'none',
-                order: 2,
-                flexGrow: 0
-              }} />
-            </div>
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+            </svg>
           </div>
-        )}
+
+          {isGradingExpanded && (
+            <div className="bg-[#0D274D] rounded mt-1">
+              <div 
+                className={`
+                  cursor-pointer flex items-center p-2 pl-6 gap-2 w-full min-h-[36px] 
+                  hover:bg-[#1a3a5c] rounded transition-colors
+                  ${selectedView === 'agent-to-agent' ? 'bg-[#0D274D]' : ''}
+                `}
+                onClick={() => onViewChange('agent-to-agent')}
+              >
+                <span className="text-white text-sm font-normal leading-5 tracking-wide flex-1">
+                  Agent to Agent
+                </span>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>

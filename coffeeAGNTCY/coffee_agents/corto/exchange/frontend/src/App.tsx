@@ -8,7 +8,6 @@ import { v4 as uuid } from 'uuid';
 import { LOCAL_STORAGE_KEY } from '@/components/Chat/Messages';
 
 import ChatArea from '@/components/Chat/ChatArea';
-import CodePopUp from "@/components/MainArea/CodePopUp";
 
 import Navigation from '@/components/Navigation/Navigation';
 import MainArea from '@/components/MainArea/MainArea';
@@ -20,7 +19,6 @@ import { useAgentAPI } from '@/hooks/useAgentAPI';
 const App: React.FC = () => {
     const [aiReplied, setAiReplied] = useState<boolean>(false);
     const [buttonClicked, setButtonClicked] = useState<boolean>(false);
-    const [showCode, setShowCode] = useState<boolean>(false);
     const [currentUserMessage, setCurrentUserMessage] = useState<string>('');
     const [agentResponse, setAgentResponse] = useState<string>('');
     const [isAgentLoading, setIsAgentLoading] = useState<boolean>(false);
@@ -87,14 +85,9 @@ const App: React.FC = () => {
                 />
                 
                 <div 
-                    className="flex-1 flex flex-col border-l border-[#00142B] bg-primary-bg"
+                    className="flex-1 flex flex-col border-l border-[#00142B] bg-primary-bg min-w-0"
                 >
-                    <div className="relative">
-                        <CodePopUp 
-                            showCode={showCode}
-                            onClose={() => setShowCode(false)}
-                        />
-                    </div>
+              
                     {selectedView === 'agent-to-agent' && (
                         <div className="flex-grow relative">
                             <MainArea 
@@ -111,7 +104,7 @@ const App: React.FC = () => {
                         </div>
                     )}
 
-                    <div className="flex flex-col justify-center items-center p-0 gap-0 w-full min-h-[76px] bg-[#2E3E57] flex-none">
+                    <div className="flex flex-col justify-center items-center p-0 gap-0 w-full min-h-[76px] md:min-h-[96px] bg-[#2E3E57] flex-none">
                         <ChatArea
                             messages={messages}
                             setMessages={setMessages}

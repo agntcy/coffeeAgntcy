@@ -3,7 +3,6 @@
 * SPDX-License-Identifier: Apache-2.0
 **/
 
-/** @jsxImportSource @emotion/react */
 import React from 'react';
 import { Handle, Position } from '@xyflow/react';
 import githubIcon from '@/assets/Github.png';

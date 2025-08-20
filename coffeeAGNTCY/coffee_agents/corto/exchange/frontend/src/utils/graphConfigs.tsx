@@ -3,8 +3,6 @@
 * SPDX-License-Identifier: Apache-2.0
 **/
 
-/** @jsxImportSource @emotion/react */
-
 import supervisorIcon from '@/assets/supervisor.png';
 import graderIcon from '@/assets/Grader-Agent.png';
 

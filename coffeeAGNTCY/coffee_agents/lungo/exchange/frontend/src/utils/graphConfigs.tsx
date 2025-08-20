@@ -3,8 +3,6 @@
 * SPDX-License-Identifier: Apache-2.0
 **/
 
-/** @jsxImportSource @emotion/react */
-
 import { TiWeatherCloudy } from "react-icons/ti";
 import supervisorIcon from '@/assets/supervisor.png';
 import farmAgentIcon from '@/assets/Grader-Agent.png';
@@ -110,10 +108,8 @@ const SLIM_MULTI_A2A_CONFIG: GraphConfig = {
             type: 'transportNode',
             data: {
                 ...commonNodeData,
-                data: {
-                ...commonNodeData,
                 label: 'Transport: ',
-            },
+            
             },
             position: { x: 229.02370449534635, y: 284.688426426175 },
         },
