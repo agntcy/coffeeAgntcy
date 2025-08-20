@@ -53,7 +53,7 @@ class FarmAgent:
         """
         # session_start()
         user_prompt = state.get("prompt")
-        logger.debug(f"Received user prompt: {user_prompt}")
+        logger.info(f"Received user prompt: {user_prompt}")
 
         system_prompt = (
             "You are a coffee farming expert and flavor profile connoisseur.\n"

@@ -88,7 +88,7 @@ class ExchangeGraph:
             # build graph if not already built
             if not hasattr(self, 'graph'):
                 self.graph = self.build_graph()
-            logger.debug(f"Received prompt: {prompt}")
+            logger.info(f"Received prompt: {prompt}")
             if not isinstance(prompt, str) or not prompt.strip():
                 raise ValueError("Prompt must be a non-empty string.")
             # session_start()
@@ -108,7 +108,7 @@ class ExchangeGraph:
             # Find the last AIMessage with non-empty content
             for message in reversed(messages):
                 if isinstance(message, AIMessage) and message.content.strip():
-                    logger.debug(f"Valid AIMessage found: {message.content.strip()}")
+                    logger.info(f"Valid AIMessage found: {message.content.strip()}")
                     return message.content.strip()
 
             raise RuntimeError("No valid AIMessage found in the graph response.")
