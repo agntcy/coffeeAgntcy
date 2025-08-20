@@ -1,171 +1,176 @@
 /**
-* Copyright AGNTCY Contributors (https://github.com/agntcy)
-* SPDX-License-Identifier: Apache-2.0
-**/
+ * Copyright AGNTCY Contributors (https://github.com/agntcy)
+ * SPDX-License-Identifier: Apache-2.0
+ **/
 
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useCallback } from "react"
 import {
-    ReactFlow,
-    ReactFlowProvider,
-    useNodesState,
-    useEdgesState,
-    useReactFlow,
-    Controls,
-    Node,
-    Edge,
-} from '@xyflow/react';
-import '@xyflow/react/dist/style.css';
-import './ReactFlow.css';
-import SlimNode from './Graph/SlimNode';
-import CustomEdge from './Graph/CustomEdge';
-import CustomNode from './Graph/CustomNode';
-import { graphConfig, updateA2ALabels } from '@/utils/graphConfigs';
+  ReactFlow,
+  ReactFlowProvider,
+  useNodesState,
+  useEdgesState,
+  useReactFlow,
+  Controls,
+  Node,
+  Edge,
+} from "@xyflow/react"
+import "@xyflow/react/dist/style.css"
+import "./ReactFlow.css"
+import SlimNode from "./Graph/SlimNode"
+import CustomEdge from "./Graph/CustomEdge"
+import CustomNode from "./Graph/CustomNode"
+import { graphConfig, updateA2ALabels } from "@/utils/graphConfigs"
 
-const proOptions = { hideAttribution: true };
+const proOptions = { hideAttribution: true }
 
 const nodeTypes = {
-    slimNode: SlimNode,
-    customNode: CustomNode,
-};
+  slimNode: SlimNode,
+  customNode: CustomNode,
+}
 
 const edgeTypes = {
-    custom: CustomEdge,
-};
-
+  custom: CustomEdge,
+}
 
 interface AnimationStep {
-    ids: string[];
+  ids: string[]
 }
 
 interface GraphConfig {
-    nodes: Node[];
-    edges: Edge[];
-    animationSequence: AnimationStep[];
+  nodes: Node[]
+  edges: Edge[]
+  animationSequence: AnimationStep[]
 }
 
 interface MainAreaProps {
-    buttonClicked: boolean;
-    setButtonClicked: (clicked: boolean) => void;
-    aiReplied: boolean;
-    setAiReplied: (replied: boolean) => void;
+  buttonClicked: boolean
+  setButtonClicked: (clicked: boolean) => void
+  aiReplied: boolean
+  setAiReplied: (replied: boolean) => void
 }
 
-const DELAY_DURATION = 500; 
+const DELAY_DURATION = 500
 const HIGHLIGHT = {
-    ON: true,
-    OFF: false,
-} as const;
+  ON: true,
+  OFF: false,
+} as const
 
-const MainArea: React.FC<MainAreaProps> = ({ 
-    buttonClicked, 
-    setButtonClicked, 
-    aiReplied, 
-    setAiReplied 
+const MainArea: React.FC<MainAreaProps> = ({
+  buttonClicked,
+  setButtonClicked,
+  aiReplied,
+  setAiReplied,
 }) => {
-   
-    const config: GraphConfig = graphConfig;
-    const { fitView } = useReactFlow();
-    
-    const [nodes, setNodes, onNodesChange] = useNodesState(config.nodes);
-    const [edges, setEdges, onEdgesChange] = useEdgesState(config.edges);
-    const animationLock = useRef<boolean>(false); 
+  const config: GraphConfig = graphConfig
+  const { fitView } = useReactFlow()
 
-    useEffect(() => {
-        updateA2ALabels(setEdges);
-        
-        const newConfig: GraphConfig = graphConfig;
-        setNodes(newConfig.nodes);
-        setEdges(newConfig.edges);
-        
-        setTimeout(() => {
-            fitView({ 
-                padding: 0.45, 
-                duration: 300, 
-                minZoom: 0.5,  
-                maxZoom: 1.1  
-            });
-        }, 100); 
-    }, [setNodes, setEdges, fitView]);
+  const [nodes, setNodes, onNodesChange] = useNodesState(config.nodes)
+  const [edges, setEdges, onEdgesChange] = useEdgesState(config.edges)
+  const animationLock = useRef<boolean>(false)
 
-    const delay = (ms: number): Promise<void> => new Promise((resolve) => setTimeout(resolve, ms));
+  useEffect(() => {
+    updateA2ALabels(setEdges)
 
-    const updateStyle = (id: string, active: boolean): void => {
-        setNodes((objs: Node[]) =>
-            objs.map((obj: Node) =>
-                obj.id === id
-                    ? { ...obj, data: { ...obj.data, active } }
-                    : obj
-            )
-        );
-        setEdges((objs: Edge[]) =>
-            objs.map((obj: Edge) =>
-                obj.id === id
-                    ? { ...obj, data: { ...obj.data, active } }
-                    : obj
-            )
-        );
-    };
+    const newConfig: GraphConfig = graphConfig
+    setNodes(newConfig.nodes)
+    setEdges(newConfig.edges)
 
-    useEffect(() => {
-        if (!buttonClicked && !aiReplied) return;
-        
-        const waitForAnimationAndRun = async () => {
-            while (animationLock.current) {
-                await delay(100);
-            }
-            
-            animationLock.current = true;
+    setTimeout(() => {
+      fitView({
+        padding: 0.45,
+        duration: 300,
+        minZoom: 0.5,
+        maxZoom: 1.1,
+      })
+    }, 100)
+  }, [setNodes, setEdges, fitView])
 
-            const animate = async (ids: string[], active: boolean): Promise<void> => {
-                ids.forEach((id: string) => updateStyle(id, active));
-                await delay(DELAY_DURATION);
-            };
+  const delay = (ms: number): Promise<void> =>
+    new Promise((resolve) => setTimeout(resolve, ms))
 
-            const animateGraph = async (): Promise<void> => {
-                if (!aiReplied) {
-                    const animationSequence: AnimationStep[] = config.animationSequence;
-                    for (const step of animationSequence) {
-                        await animate(step.ids, HIGHLIGHT.ON);
-                        await animate(step.ids, HIGHLIGHT.OFF);
-                    }
-                } else {
-                    setAiReplied(false);
-                }
+  const updateStyle = useCallback(
+    (id: string, active: boolean): void => {
+      setNodes((objs: Node[]) =>
+        objs.map((obj: Node) =>
+          obj.id === id ? { ...obj, data: { ...obj.data, active } } : obj,
+        ),
+      )
+      setEdges((objs: Edge[]) =>
+        objs.map((obj: Edge) =>
+          obj.id === id ? { ...obj, data: { ...obj.data, active } } : obj,
+        ),
+      )
+    },
+    [setNodes, setEdges],
+  )
 
-                setButtonClicked(false);
-                animationLock.current = false; 
-            };
+  useEffect(() => {
+    if (!buttonClicked && !aiReplied) return
 
-            await animateGraph();
-        };
+    const waitForAnimationAndRun = async () => {
+      while (animationLock.current) {
+        await delay(100)
+      }
 
-        waitForAnimationAndRun();
-    }, [buttonClicked, setButtonClicked, aiReplied, setAiReplied, config.animationSequence]);
+      animationLock.current = true
 
-    return (
-        <div className="flex flex-col items-start p-0 w-full h-full bg-primary-bg flex-none order-1 self-stretch flex-grow">
-            <ReactFlow
-                nodes={nodes}
-                edges={edges}
-                nodeTypes={nodeTypes}
-                edgeTypes={edgeTypes}
-                onNodesChange={onNodesChange}
-                onEdgesChange={onEdgesChange}
-                proOptions={proOptions}
-                defaultViewport={{ x: 0, y: 0, zoom: 0.6 }}
-                minZoom={0.15}
-                maxZoom={1.8}
-            >
-                <Controls />
-            </ReactFlow>
-        </div>
-    );
-};
+      const animate = async (ids: string[], active: boolean): Promise<void> => {
+        ids.forEach((id: string) => updateStyle(id, active))
+        await delay(DELAY_DURATION)
+      }
+
+      const animateGraph = async (): Promise<void> => {
+        if (!aiReplied) {
+          const animationSequence: AnimationStep[] = config.animationSequence
+          for (const step of animationSequence) {
+            await animate(step.ids, HIGHLIGHT.ON)
+            await animate(step.ids, HIGHLIGHT.OFF)
+          }
+        } else {
+          setAiReplied(false)
+        }
+
+        setButtonClicked(false)
+        animationLock.current = false
+      }
+
+      await animateGraph()
+    }
+
+    waitForAnimationAndRun()
+  }, [
+    buttonClicked,
+    setButtonClicked,
+    aiReplied,
+    setAiReplied,
+    config.animationSequence,
+    updateStyle,
+  ])
+
+  return (
+    <div className="order-1 flex h-full w-full flex-none flex-grow flex-col items-start self-stretch bg-primary-bg p-0">
+      <ReactFlow
+        nodes={nodes}
+        edges={edges}
+        nodeTypes={nodeTypes}
+        edgeTypes={edgeTypes}
+        onNodesChange={onNodesChange}
+        onEdgesChange={onEdgesChange}
+        proOptions={proOptions}
+        defaultViewport={{ x: 0, y: 0, zoom: 0.6 }}
+        minZoom={0.15}
+        maxZoom={1.8}
+      >
+        <Controls />
+      </ReactFlow>
+    </div>
+  )
+}
 
 const MainAreaWithProvider: React.FC<MainAreaProps> = (props) => (
-    <ReactFlowProvider>
-        <MainArea {...props} />
-    </ReactFlowProvider>
-);
+  <ReactFlowProvider>
+    <MainArea {...props} />
+  </ReactFlowProvider>
+)
 
-export default MainAreaWithProvider;
+export default MainAreaWithProvider

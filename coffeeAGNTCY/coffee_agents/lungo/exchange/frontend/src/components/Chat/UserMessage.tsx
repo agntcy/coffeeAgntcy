@@ -1,33 +1,31 @@
 /**
-* Copyright AGNTCY Contributors (https://github.com/agntcy)
-* SPDX-License-Identifier: Apache-2.0
-**/
+ * Copyright AGNTCY Contributors (https://github.com/agntcy)
+ * SPDX-License-Identifier: Apache-2.0
+ **/
 
-import React from 'react';
-import { User } from 'lucide-react';
+import React from "react"
+import { User } from "lucide-react"
 
 interface UserMessageProps {
-    content: string;
+  content: string
 }
 
 const UserMessage: React.FC<UserMessageProps> = ({ content }) => {
-    return (
-        <div className="flex flex-row items-start gap-1 w-[880px] h-10">
-           
-            <div className="flex justify-center items-center w-10 h-10 bg-[#00142B] rounded-full">
-                <User size={22} className="text-white" />
-            </div>
-            
-        
-            <div className="flex flex-col justify-center items-start p-1 px-2 w-[814px] h-10 rounded">
-                <div className="w-[814px] h-10 p-1 px-2 rounded flex items-center">
-                    <div className="font-inter font-normal text-sm leading-5 text-white">
-                        {content}
-                    </div>
-                </div>
-            </div>
-        </div>
-    );
-};
+  return (
+    <div className="flex h-10 w-[880px] flex-row items-start gap-1">
+      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#00142B]">
+        <User size={22} className="text-white" />
+      </div>
 
-export default UserMessage;
+      <div className="flex h-10 w-[814px] flex-col items-start justify-center rounded p-1 px-2">
+        <div className="flex h-10 w-[814px] items-center rounded p-1 px-2">
+          <div className="font-inter text-sm font-normal leading-5 text-white">
+            {content}
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+export default UserMessage

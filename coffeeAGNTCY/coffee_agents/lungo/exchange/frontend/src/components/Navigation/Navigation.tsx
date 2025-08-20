@@ -1,61 +1,38 @@
 /**
-* Copyright AGNTCY Contributors (https://github.com/agntcy)
-* SPDX-License-Identifier: Apache-2.0
-**/
+ * Copyright AGNTCY Contributors (https://github.com/agntcy)
+ * SPDX-License-Identifier: Apache-2.0
+ **/
 
-import React from 'react';
-import coffeeAgntcyLogo from '@/assets/coffeeAGNTCY_logo.svg';
+import React from "react"
+import coffeeAgntcyLogo from "@/assets/coffeeAGNTCY_logo.svg"
 
 const Navigation: React.FC = () => {
-    return (
-        <div className="
-            box-border flex flex-col items-start p-0 w-full h-[52px] 
-            bg-[#F5F8FD] border-r border-[#DBE0E5] 
-            flex-none order-0 self-stretch flex-grow-0
-        ">
-      
-            <div className="
-                box-border flex flex-row justify-between items-center 
-                py-[10px] px-4 gap-2 w-full h-[52px] 
-                bg-[#EFF3FC] border-b border-[#D5DFF7] 
-                flex-none order-0 self-stretch flex-grow-0
-            ">
-                <div className="
-                    flex flex-row items-center p-0 gap-2 ml-4 
-                    w-40 h-[45px] flex-none order-0 flex-grow-0 opacity-100
-                ">
-                    <div className="
-                        flex flex-row items-center p-0 gap-1 
-                        w-40 h-[45px] flex-none order-0 flex-grow-0 opacity-100
-                    ">
-                        <div className="
-                            flex justify-center items-center gap-0.5 
-                            w-auto h-[42px] flex-none order-0 flex-grow-0 opacity-100
-                        ">
-                            <img 
-                                src={coffeeAgntcyLogo} 
-                                alt="Coffee AGNTCY Logo" 
-                                className="w-40 h-full object-contain" 
-                            />
-                        </div>
-                    </div>
-                </div>
-
-          
-                <div className="
-                    flex flex-row justify-end items-center p-0 gap-2 
-                    flex-none order-3 flex-grow-0
-                ">
-                    <span className="
-                        font-inter font-normal text-sm leading-5 text-right
-                        text-[#1D69CC] flex-none order-0 flex-grow-1
-                    " style={{ letterSpacing: '0.25px' }}>
-                        Version 0.4
-                    </span>
-                </div>
+  return (
+    <div className="order-0 box-border flex h-[52px] w-full flex-none flex-grow-0 flex-col items-start self-stretch border-r border-[#DBE0E5] bg-[#F5F8FD] p-0">
+      <div className="order-0 box-border flex h-[52px] w-full flex-none flex-grow-0 flex-row items-center justify-between gap-2 self-stretch border-b border-[#D5DFF7] bg-[#EFF3FC] px-4 py-[10px]">
+        <div className="order-0 ml-4 flex h-[45px] w-40 flex-none flex-grow-0 flex-row items-center gap-2 p-0 opacity-100">
+          <div className="order-0 flex h-[45px] w-40 flex-none flex-grow-0 flex-row items-center gap-1 p-0 opacity-100">
+            <div className="order-0 flex h-[42px] w-auto flex-none flex-grow-0 items-center justify-center gap-0.5 opacity-100">
+              <img
+                src={coffeeAgntcyLogo}
+                alt="Coffee AGNTCY Logo"
+                className="h-full w-40 object-contain"
+              />
             </div>
+          </div>
         </div>
-    );
-};
 
-export default Navigation;
+        <div className="order-3 flex flex-none flex-grow-0 flex-row items-center justify-end gap-2 p-0">
+          <span
+            className="order-0 flex-grow-1 flex-none text-right font-inter text-sm font-normal leading-5 text-[#1D69CC]"
+            style={{ letterSpacing: "0.25px" }}
+          >
+            Version 0.4
+          </span>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+export default Navigation
