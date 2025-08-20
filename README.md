@@ -16,7 +16,7 @@ This project is ideal for developers building agent-based systems and looking to
 - How to write **A2A** client and server agents
 - How to integrate data sources (e.g., weather services via **MCP**)
 - How to extend or swap agents modularly using AGNTCY tooling
-- How to enable observability using ** AGNTCY Observe SDK**
+- How to enable observability using **AGNTCY Observe SDK**
 
 ---
 
