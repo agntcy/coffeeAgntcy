@@ -44,9 +44,14 @@ class FlavorProfileTool(BaseTool):
     async def _connect(self):
         logger.info(f"Connecting to remote agent: {self._remote_agent_card.name}")
         factory = get_factory()
-        transport = factory.create_transport(
-            DEFAULT_MESSAGE_TRANSPORT,
+        # Create SLIM2Transport directly since factory doesn't support custom parameters yet
+        from agntcy_app_sdk.transports.slim2.transport import SLIM2Transport
+        transport = SLIM2Transport(
             endpoint=TRANSPORT_SERVER_ENDPOINT,
+            org="corto",
+            namespace="coffee",
+            identity="exchange-agent",
+            shared_secret="test-shared-secret-123"
         )
        
         a2a_topic = A2AProtocol.create_agent_topic(self._remote_agent_card)

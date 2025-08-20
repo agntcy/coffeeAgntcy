@@ -64,9 +64,14 @@ async def main():
         userver = Server(config)
         await userver.serve()
     else:
-        transport = factory.create_transport(
-            DEFAULT_MESSAGE_TRANSPORT,
+        # Create SLIM2Transport directly since factory doesn't support custom parameters yet
+        from agntcy_app_sdk.transports.slim2.transport import SLIM2Transport
+        transport = SLIM2Transport(
             endpoint=TRANSPORT_SERVER_ENDPOINT,
+            org="corto",
+            namespace="coffee",
+            identity="farm-agent",
+            shared_secret="test-shared-secret-123"
         )
         bridge = factory.create_bridge(server, transport=transport)
         await bridge.start(blocking=True)
