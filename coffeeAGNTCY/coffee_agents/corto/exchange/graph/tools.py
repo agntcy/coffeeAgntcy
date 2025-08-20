@@ -105,7 +105,7 @@ class FlavorProfileTool(BaseTool):
                 )
             )
         )
-
+        logger.info(f"Request sent to A2A agent: {request}")
         response = await self._client.send_message(request)
         logger.info(f"Response received from A2A agent: {response}")
 
