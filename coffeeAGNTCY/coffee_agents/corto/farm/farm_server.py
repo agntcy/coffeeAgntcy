@@ -64,9 +64,9 @@ async def main():
         userver = Server(config)
         await userver.serve()
     else:
-        # Create SLIM2Transport directly since factory doesn't support custom parameters yet
-        from agntcy_app_sdk.transports.slim2.transport import SLIM2Transport
-        transport = SLIM2Transport(
+        # Create SLIM2Transport via factory with extra parameters
+        transport = factory.create_transport(
+            "SLIM2",
             endpoint=TRANSPORT_SERVER_ENDPOINT,
             org="corto",
             namespace="coffee",

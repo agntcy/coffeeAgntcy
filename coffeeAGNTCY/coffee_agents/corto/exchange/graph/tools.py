@@ -44,9 +44,9 @@ class FlavorProfileTool(BaseTool):
     async def _connect(self):
         logger.info(f"Connecting to remote agent: {self._remote_agent_card.name}")
         factory = get_factory()
-        # Create SLIM2Transport directly since factory doesn't support custom parameters yet
-        from agntcy_app_sdk.transports.slim2.transport import SLIM2Transport
-        transport = SLIM2Transport(
+        # Create SLIM2Transport via factory with extra parameters
+        transport = factory.create_transport(
+            "SLIM2",
             endpoint=TRANSPORT_SERVER_ENDPOINT,
             org="corto",
             namespace="coffee",
