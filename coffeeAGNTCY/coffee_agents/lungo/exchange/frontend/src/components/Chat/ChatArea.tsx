@@ -11,7 +11,7 @@ import CoffeePromptsDropdown from "./Prompts/CoffeePromptsDropdown"
 import { useAgentAPI } from "@/hooks/useAgentAPI"
 import UserMessage from "./UserMessage"
 import AgentIcon from "@/assets/Coffee_Icon.svg"
-import { cn } from "@/lib/utils.ts"
+import { cn } from "@/utils/cn.ts"
 import { logger } from "@/utils/logger"
 
 interface ChatAreaProps {
