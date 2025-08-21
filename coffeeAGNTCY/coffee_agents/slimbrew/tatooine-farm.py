@@ -1,62 +1,67 @@
 import asyncio
-import os
-from dotenv import load_dotenv
+import json
+import random
 
 from slim_bindings import PyName
 from common import create_slim_app
 
-async def run_participant(secret: str):
-    local_name = PyName("agntcy", "slimbrew", "tatooine-farm")
+secret = "secret"
+
+async def subscribe(org, namespace, topic):
+    """
+    Key challenges: 
+    Multiple participants cant subscribe to the name PyName, one of the tuple entries must be unique.
+    """
+    local_name = PyName(org, namespace, topic)
     slim_app = await create_slim_app(secret, local_name)
     async with slim_app:
-        try:
-            print(f"[participant] listening - locator: {local_name}")
-            recv_session, data = await slim_app.receive()
-            print(f"received session: {recv_session.id}")
-            print(f"from: {recv_session.source_name}")
-            print(f"to:   {recv_session.destination_name}")
-            print(f"[group] {data.decode()}")
-            while True:
-                try:
-                    while True:
-                        recv_session, msg_rcv = await slim_app.receive(
-                            session=recv_session.id
-                        )
-                        print(f"Received message in session {recv_session.id}: {msg_rcv.decode()}")
+        recv_session, data = await slim_app.receive()
+
+        while True:
+            recv_session, msg_rcv = await slim_app.receive(
+                session=recv_session.id
+            )
+            # ISSUE: we need to get session type after receive
+
+            msg = json.loads(msg_rcv.decode())
+            print(f"Received message in session {recv_session.id}: {msg}")
+
+            if msg.get("respond_to_source", True):
+                # reply to the sender
+                print(f"sending reply back to sender")
+
+                # TODO: show this in pubsub slim example, when to use and not to use
+                await slim_app.publish_to(
+                    recv_session, f"Hello from {namespace}/{topic}".encode()
+                )
+            elif msg.get("respond_to_group", True):
+                # reply to the group
+                backoff = msg.get("random_group_message_backoff", 0)
+                if backoff > 0:
+                    await asyncio.sleep(random.uniform(0, backoff))
+
+                print(f"sending reply back to group")
+                message = {
+                    "text": f"Hello from {namespace}/{topic}",
+                    "respond_to_source": False,
+                    "respond_to_group": True,
+                    "random_group_message_backoff": backoff
+                }
                 
+                await slim_app.publish(
+                    recv_session,
+                    json.dumps(message).encode(),
+                    recv_session.destination_name,
+                )
+            else:
+                print(f"No response sent for message: {msg}")
 
-                        # reply to the group
-                        reply = f"Hello from tatooine".encode()
-                        print(f"sending {reply} to {recv_session.destination_name}")
-                        await slim_app.publish(
-                            recv_session, reply, PyName("agntcy", "namespace", "group_channel") 
-                        )
+async def unique_topic_test(topic="tatooine-farm"):
+    await subscribe("agntcy", "namespace1", topic)
 
-                    # reply to the group
-                    # reply = f"Hello from tatooine".encode()
-                    # print(f"sending {reply} to {recv_session.destination_name}")
-                    # await slim_app.publish(
-                    #     recv_session, reply, PyName("agntcy", "namespace", "group_channel")
-                    # )
-                    # reply2 = f"Hello from tatooine 2".encode()
-                    # print(f"sending {reply2} to {recv_session.destination_name}")
-                    # await slim_app.publish(
-                    #     recv_session, reply2, PyName("agntcy", "namespace", "group_channel")
-                    # )
-                except Exception:
-                    print(f"receive listener error: {e!r}")
-        except asyncio.CancelledError:
-            print(f"receive listener cancelled")
-            raise
-        except Exception as e:
-            print(f"receive listener error: {e!r}")
+async def shared_topic_test(topic="farms"):
+    await subscribe("agntcy", "namespace2", topic)
         
 if __name__ == "__main__":
-    load_dotenv()
-    secret = os.environ.get("SLIM_SHARED_SECRET")
-    if not secret:
-        raise ValueError("SLIM_SHARED_SECRET environment variable is not set.")
-    try:
-        asyncio.run(run_participant(secret))
-    except KeyboardInterrupt:
-        print("Client interrupted by user.")
+    asyncio.run(unique_topic_test())
+    #asyncio.run(shared_topic_test())

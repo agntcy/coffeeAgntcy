@@ -39,6 +39,8 @@ async def create_slim_app(secret: str, local_name: PyName) -> PyService:
     :return: A SLIM app instance.
     """
 
+    # TODO: common should be added to bindings, maybe in constructor
+
     # Create the provider and verifier using the shared secret.
     provider, verifier = shared_secret_identity(
         identity=f"{local_name}",
