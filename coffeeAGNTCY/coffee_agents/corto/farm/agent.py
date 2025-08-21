@@ -18,13 +18,13 @@ class State(TypedDict):
     error_message: str
     flavor_notes: str
 
-@agent(name="farm_agent")
+# @agent(name="farm_agent")
 class FarmAgent:
     def __init__(self):
         self.FLAVOR_NODE = "FlavorNode"
         self._agent = self.build_graph()
 
-    @graph(name="farm_graph")
+    # @graph(name="farm_graph")
     def build_graph(self) -> StateGraph:
         graph_builder = StateGraph(State)
         graph_builder.add_node(self.FLAVOR_NODE, self.flavor_node)

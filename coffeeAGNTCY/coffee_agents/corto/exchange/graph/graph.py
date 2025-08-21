@@ -18,12 +18,12 @@ from farm.card import AGENT_CARD as farm_agent_card
 logger = logging.getLogger("corto.supervisor.graph")
 
 
-@agent(name="exchange_agent")
+# @agent(name="exchange_agent")
 class ExchangeGraph:
     def __init__(self):
         self.graph = self.build_graph()
 
-    @graph(name="exchange_graph")
+    # @graph(name="exchange_graph")
     def build_graph(self) -> CompiledStateGraph:
         """
         Constructs and compiles a LangGraph instance.

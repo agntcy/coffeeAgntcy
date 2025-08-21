@@ -18,7 +18,7 @@ from config.config import DEFAULT_MESSAGE_TRANSPORT, TRANSPORT_SERVER_ENDPOINT
 load_dotenv()
 
 # Initialize a multi-protocol, multi-transport gateway factory.
-factory = AgntcyFactory("corto.farm_agent", enable_tracing=True)
+factory = AgntcyFactory("corto.farm_agent", enable_tracing=False)
 
 async def main():
     """
