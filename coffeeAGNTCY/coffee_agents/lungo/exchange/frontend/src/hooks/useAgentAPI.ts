@@ -10,6 +10,8 @@ import { Message } from "@/types/message"
 import { Role } from "@/utils/const"
 
 const DEFAULT_EXCHANGE_APP_API_URL = "http://127.0.0.1:8000"
+const EXCHANGE_APP_API_URL =
+  import.meta.env.VITE_EXCHANGE_APP_API_URL || DEFAULT_EXCHANGE_APP_API_URL
 
 interface ApiResponse {
   response: string
@@ -40,7 +42,7 @@ export const useAgentAPI = (): UseAgentAPIReturn => {
     setLoading(true)
     try {
       const response = await axios.post<ApiResponse>(
-        `${DEFAULT_EXCHANGE_APP_API_URL}/agent/prompt`,
+        `${EXCHANGE_APP_API_URL}/agent/prompt`,
         {
           prompt,
         },
@@ -89,7 +91,7 @@ export const useAgentAPI = (): UseAgentAPIReturn => {
 
     try {
       const response = await axios.post<ApiResponse>(
-        `${DEFAULT_EXCHANGE_APP_API_URL}/agent/prompt`,
+        `${EXCHANGE_APP_API_URL}/agent/prompt`,
         {
           prompt,
         },

@@ -24,17 +24,17 @@ const Sidebar: React.FC<SidebarProps> = ({
   }
 
   return (
-    <div className="bg-primary-bg flex h-full w-[320px] flex-col items-start gap-5 border-r border-[#0D274D] px-4 py-0 font-inter">
+    <div className="flex h-full w-[320px] flex-col items-start gap-5 border-r border-[#0D274D] bg-primary-bg px-4 py-0 font-inter">
       <div className="mt-5 flex w-[288px] flex-col items-start gap-0 p-0">
         <div className="flex w-[288px] flex-col items-start p-0">
-          <div className="bg-primary-bg flex h-9 w-[288px] items-start gap-2 p-2 transition-colors hover:bg-[#373C42]">
+          <div className="flex h-9 w-[288px] items-start gap-2 bg-primary-bg p-2 transition-colors hover:bg-[#373C42]">
             <span className="flex-1 font-inter text-sm font-normal leading-5 tracking-[0.25px] text-white">
               Conversation: Coffee Buying
             </span>
           </div>
 
           <div className="flex w-[288px] flex-col items-start gap-0 p-0">
-            <div className="bg-primary-bg flex h-9 w-[288px] items-start gap-2 px-5 py-2 transition-colors hover:bg-[#373C42]">
+            <div className="flex h-9 w-[288px] items-start gap-2 bg-primary-bg px-5 py-2 transition-colors hover:bg-[#373C42]">
               <span className="flex-1 font-inter text-sm font-normal leading-5 tracking-[0.25px] text-white">
                 Agentic Patterns
               </span>
@@ -42,12 +42,12 @@ const Sidebar: React.FC<SidebarProps> = ({
 
             <div>
               <SidebarDropdown
-                title="Transport"
+                title="Publish Subscribe "
                 isExpanded={isTransportExpanded}
                 onToggle={handleTransportToggle}
               >
                 <SidebarItem
-                  title="Multi SLIM A2A"
+                  title="A2A SLIM"
                   isSelected={selectedPattern === PATTERNS.SLIM_MULTI_A2A}
                   onClick={() => onPatternChange(PATTERNS.SLIM_MULTI_A2A)}
                 />
