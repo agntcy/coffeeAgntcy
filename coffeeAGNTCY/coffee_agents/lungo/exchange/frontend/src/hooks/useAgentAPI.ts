@@ -11,7 +11,8 @@ import { Role } from "@/utils/const"
 
 const DEFAULT_EXCHANGE_APP_API_URL = "http://127.0.0.1:8000"
 const EXCHANGE_APP_API_URL =
-  import.meta.env.VITE_EXCHANGE_APP_API_URL || DEFAULT_EXCHANGE_APP_API_URL
+  (import.meta.env as any).VITE_EXCHANGE_APP_API_URL ||
+  DEFAULT_EXCHANGE_APP_API_URL
 
 interface ApiResponse {
   response: string

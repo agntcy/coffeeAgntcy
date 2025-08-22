@@ -14,6 +14,11 @@ interface GraphConfig {
   animationSequence: { ids: string[] }[]
 }
 
+const DEFAULT_EXCHANGE_APP_API_URL = "http://127.0.0.1:8000"
+const EXCHANGE_APP_API_URL =
+  (import.meta.env as any).VITE_EXCHANGE_APP_API_URL ||
+  DEFAULT_EXCHANGE_APP_API_URL
+
 const GraderAgentIcon = (
   <img
     src={graderIcon}
@@ -94,7 +99,8 @@ export const updateA2ALabels = async (
   setEdges: (updater: (edges: any[]) => any[]) => void,
 ): Promise<void> => {
   try {
-    const response = await fetch("http://127.0.0.1:8000/api/config")
+    const response = await fetch(`${EXCHANGE_APP_API_URL}/transport/config`)
+
     const data = await response.json()
     const transport = data.transport
 
