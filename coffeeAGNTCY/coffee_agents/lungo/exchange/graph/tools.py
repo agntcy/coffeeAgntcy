@@ -129,7 +129,7 @@ def verify_farm_identity(identity_service: IdentityService, farm_name: str):
 
         badge = identity_service.get_badge_for_app(matched_app.id)
         success = identity_service.verify_badges(badge)
-        logger.info(f"Verification result for farm '{farm_name}': {success.status}")
+        logger.info(f"Verification result for farm '{farm_name}': {success['status']}")
     except Exception as e:
         logger.error(f"Identity verification failed for farm '{farm_name}': {e}")
         raise ValueError(f"Identity verification failed.")
@@ -302,6 +302,8 @@ async def create_order(farm: str, quantity: int, price: float) -> str:
         agent_topic=A2AProtocol.create_agent_topic(card),
         transport=transport,
     )
+
+    logger.info(f"Sending order creation request to farm agent: {card.name}")
 
     request = SendMessageRequest(
         id=str(uuid4()),
