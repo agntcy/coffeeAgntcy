@@ -1,0 +1,8 @@
+site_name: CoffeeAgntcy Documentation
+
+nav:
+  - Home: README.md
+  - Contributing: CONTRIBUTING.md
+  - Changelog: CHANGELOG.md
+  - Code of Conduct: CODE_OF_CONDUCT.md
+  - Security: SECURITY.md

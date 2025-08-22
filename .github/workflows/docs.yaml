@@ -14,10 +14,17 @@ jobs:
         with:
           python-version: '3.13'
 
-      - name: Copy top-level docs like README and CONTRIBUTING
+      - name: Copy top-level docs and assets
         run: |
-          sed 's/docs\///g' README.md > ./docs/README.md
-          cp CONTRIBUTING.md ./docs/
+          mkdir -p docs/assets
+          sed 's/docs\///g' README.md > docs/README.md
+          cp CONTRIBUTING.md docs/
+          [ -f CHANGELOG.md ] && cp CHANGELOG.md docs/ || true
+          [ -f CODE_OF_CONDUCT.md ] && cp CODE_OF_CONDUCT.md docs/ || true
+          [ -f LICENSE ] && cp LICENSE docs/ || true
+          [ -f SECURITY.md ] && cp SECURITY.md docs/ || true
+          # Copy images/assets if they exist
+          [ -f assets/coffee_agntcy.png ] && cp assets/coffee_agntcy.png docs/assets/ || true
 
       - name: Deploy
         run: |
