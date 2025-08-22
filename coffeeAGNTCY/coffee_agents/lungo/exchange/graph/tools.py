@@ -119,19 +119,21 @@ def verify_farm_identity(identity_service: IdentityService, farm_name: str):
     """
     try:
         all_apps = identity_service.get_all_apps()
-        matched_app = None
-        for app in all_apps.apps:
-            if app.name.lower() == farm_name.lower():
-                matched_app = app
-                break
+        matched_app = next((app for app in all_apps.apps if app.name.lower() == farm_name.lower()), None)
+
         if not matched_app:
-            raise ValueError(f"Identity verification failed.")
+            raise ValueError("Identity verification failed: No matching app found.")
 
         badge = identity_service.get_badge_for_app(matched_app.id)
-        _ = identity_service.verify_badges(badge)
+        success = identity_service.verify_badges(badge)
+
+        if success.get("status") is not True:
+            raise ValueError(f"Identity verification failed: Status is not True for farm '{farm_name}'.")
+
+        logger.info(f"Verification successful for farm '{farm_name}'.")
     except Exception as e:
         logger.error(f"Identity verification failed for farm '{farm_name}': {e}")
-        raise ValueError(f"Identity verification failed.")
+        raise ValueError("Identity verification failed.")
 
 @tool(args_schema=InventoryArgs)
 @ioa_tool_decorator(name="get_farm_yield_inventory")
