@@ -17,8 +17,9 @@ services:
       - OPENAI_ENDPOINT=${OPENAI_ENDPOINT:-}
       - OPENAI_MODEL_NAME=${OPENAI_MODEL_NAME:-}
       - LLM_PROVIDER=${LLM_PROVIDER}
-      - TRANSPORT_SERVER_ENDPOINT=http://slim:46357
-      - OTLP_HTTP_ENDPOINT=http://otel-collector:4318
+      - DEFAULT_MESSAGE_TRANSPORT=${DEFAULT_MESSAGE_TRANSPORT:-SLIM}
+      - TRANSPORT_SERVER_ENDPOINT=${TRANSPORT_SERVER_ENDPOINT:-http://slim:46357}
+      - OTLP_HTTP_ENDPOINT=${OTLP_HTTP_ENDPOINT:-http://otel-collector:4318}
       - ENABLE_HTTP=true
     ports:
       - "9999:9999"
@@ -40,8 +41,9 @@ services:
       - OPENAI_ENDPOINT=${OPENAI_ENDPOINT:-}
       - OPENAI_MODEL_NAME=${OPENAI_MODEL_NAME:-}
       - LLM_PROVIDER=${LLM_PROVIDER}
-      - TRANSPORT_SERVER_ENDPOINT=http://slim:46357
-      - OTLP_HTTP_ENDPOINT=http://otel-collector:4318
+      - DEFAULT_MESSAGE_TRANSPORT=${DEFAULT_MESSAGE_TRANSPORT:-SLIM}
+      - TRANSPORT_SERVER_ENDPOINT=${TRANSPORT_SERVER_ENDPOINT:-http://slim:46357}
+      - OTLP_HTTP_ENDPOINT=${OTLP_HTTP_ENDPOINT:-http://otel-collector:4318}
       - ENABLE_HTTP=true
     ports:
       - "9998:9998"
@@ -63,14 +65,15 @@ services:
       - OPENAI_ENDPOINT=${OPENAI_ENDPOINT:-}
       - OPENAI_MODEL_NAME=${OPENAI_MODEL_NAME:-}
       - LLM_PROVIDER=${LLM_PROVIDER}
-      - TRANSPORT_SERVER_ENDPOINT=http://slim:46357
-      - OTLP_HTTP_ENDPOINT=http://otel-collector:4318
+      - DEFAULT_MESSAGE_TRANSPORT=${DEFAULT_MESSAGE_TRANSPORT:-SLIM}
+      - TRANSPORT_SERVER_ENDPOINT=${TRANSPORT_SERVER_ENDPOINT:-http://slim:46357}
+      - OTLP_HTTP_ENDPOINT=${OTLP_HTTP_ENDPOINT:-http://otel-collector:4318}
       - ENABLE_HTTP=true
     ports:
       - "9997:9997"
   nats:
     image: nats:latest
-    container_name: nats
+    container_name: nats-lungo
     ports:
       - "4222:4222"
       - "4223:4223"
@@ -79,7 +82,7 @@ services:
 
   slim:
     image: ghcr.io/agntcy/slim:0.3.15
-    container_name: slim
+    container_name: slim-lungo
     ports:
       - "46357:46357"
     environment:
@@ -95,7 +98,7 @@ services:
       context: ../../..
       dockerfile: coffeeAGNTCY/coffee_agents/lungo/docker/Dockerfile.exchange
     image: ghcr.io/agntcy/coffee-agntcy/lungo-exchange:latest
-    container_name: exchange-server
+    container_name: exchange-server-lungo
     platform: linux/amd64
     environment:
       - FARM_AGENT_HOST=farm-server
@@ -108,8 +111,9 @@ services:
       - OPENAI_ENDPOINT=${OPENAI_ENDPOINT:-}
       - OPENAI_MODEL_NAME=${OPENAI_MODEL_NAME:-}
       - LLM_PROVIDER=${LLM_PROVIDER}
-      - TRANSPORT_SERVER_ENDPOINT=http://slim:46357
-      - OTLP_HTTP_ENDPOINT=http://otel-collector:4318
+      - DEFAULT_MESSAGE_TRANSPORT=${DEFAULT_MESSAGE_TRANSPORT:-SLIM}
+      - TRANSPORT_SERVER_ENDPOINT=${TRANSPORT_SERVER_ENDPOINT:-http://slim:46357}
+      - OTLP_HTTP_ENDPOINT=${OTLP_HTTP_ENDPOINT:-http://otel-collector:4318}
     ports:
       - "8000:8000"
 
@@ -118,7 +122,7 @@ services:
       context: ../../..
       dockerfile: coffeeAGNTCY/coffee_agents/lungo/docker/Dockerfile.ui
     image: ghcr.io/agntcy/coffee-agntcy/lungo-ui:latest
-    container_name: ui
+    container_name: ui-lungo
     platform: linux/amd64
     environment:
       - VITE_EXCHANGE_APP_API_URL=http://127.0.0.1:8000
@@ -135,12 +139,13 @@ services:
     container_name: weather-mcp-server
     platform: linux/amd64
     environment:
-      - TRANSPORT_SERVER_ENDPOINT=http://slim:46357
-      - OTLP_HTTP_ENDPOINT=http://otel-collector:4318
+      - DEFAULT_MESSAGE_TRANSPORT=${DEFAULT_MESSAGE_TRANSPORT:-SLIM}
+      - TRANSPORT_SERVER_ENDPOINT=${TRANSPORT_SERVER_ENDPOINT:-http://slim:46357}
+      - OTLP_HTTP_ENDPOINT=${OTLP_HTTP_ENDPOINT:-http://otel-collector:4318}
 
   clickhouse-server:
     image: clickhouse/clickhouse-server
-    container_name: clickhouse-server
+    container_name: clickhouse-server-lungo
     ports:
       - "9000:9000"
       - "8123:8123"
@@ -160,7 +165,7 @@ services:
 
   otel-collector:
     image: otel/opentelemetry-collector-contrib:latest
-    container_name: otel-collector
+    container_name: otel-collector-lungo
     restart: unless-stopped
     ports:
       - "4317:4317"
@@ -174,7 +179,7 @@ services:
 
   grafana:
     image: grafana/grafana
-    container_name: grafana
+    container_name: grafana-lungo
     ports:
       - "3001:3000"
     environment:
