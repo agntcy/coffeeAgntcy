@@ -70,19 +70,20 @@ Before you begin, ensure the following tools are installed:
    *OpenAI:*
    
    ```env
-   LLM_PROVIDER=openai
-   OPENAI_API_KEY=your_openai_api_key
-   OPENAI_MODEL=gpt-4o
+    LLM_PROVIDER=openai
+    OPENAI_API_KEY="your_openai_api_key_here"
+    OPENAI_ENDPOINT=https://api.openai.com/v1 # Default OpenAI endpoint without proxy
+    OPENAI_MODEL_NAME=gpt-4o
    ```
 
    *Azure OpenAI:*
    
    ```env
-   LLM_PROVIDER=azure
-   AZURE_OPENAI_ENDPOINT=https://your-azure-resource.openai.azure.com/
-   AZURE_OPENAI_DEPLOYMENT=gpt-4-prod
-   AZURE_OPENAI_API_KEY=your_azure_api_key
-   AZURE_OPENAI_API_VERSION=2023-12-01-preview
+    LLM_PROVIDER=azure-openai
+    AZURE_OPENAI_ENDPOINT=https://your-azure-resource.openai.azure.com/
+    AZURE_OPENAI_DEPLOYMENT=gpt-4-prod
+    AZURE_OPENAI_API_KEY=your_azure_api_key
+    AZURE_OPENAI_API_VERSION=2023-12-01-preview
    
    ```
 
