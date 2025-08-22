@@ -128,7 +128,8 @@ def verify_farm_identity(identity_service: IdentityService, farm_name: str):
             raise ValueError(f"Identity verification failed.")
 
         badge = identity_service.get_badge_for_app(matched_app.id)
-        _ = identity_service.verify_badges(badge)
+        success = identity_service.verify_badges(badge)
+        logger.info(f"Verification result for farm '{farm_name}': {success.status}")
     except Exception as e:
         logger.error(f"Identity verification failed for farm '{farm_name}': {e}")
         raise ValueError(f"Identity verification failed.")

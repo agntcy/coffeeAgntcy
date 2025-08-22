@@ -5,15 +5,15 @@ from pydantic import BaseModel
 from typing import List, Optional, Any, Dict
 
 class IdentityServiceApp(BaseModel):
-  id: str
+  id: Optional[str] = None
   name: str
   description: Optional[str] = None
   type: str
-  resolverMetadataId: str
+  resolverMetadataId: Optional[str] = None
   apiKey: Optional[str] = None
-  status: str
-  createdAt: str
-  updatedAt: str
+  status: Optional[str] = None
+  createdAt: Optional[str] = None
+  updatedAt: Optional[str] = None
 
 class IdentityServiceApps(BaseModel):
   apps: List[IdentityServiceApp]
