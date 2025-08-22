@@ -26,6 +26,7 @@ dependencies = [
     "agntcy-app-sdk==0.1.6",
     "ioa-observe-sdk==1.0.15",
     "identity-service-sdk==0.0.2",
+    "agntcy-identity-sdk==0.0.18"
 ]
 
 [project.optional-dependencies]

@@ -1,6 +1,8 @@
 # Identity Integration Documentation
 
-## Setting Up the Local Development Environment
+## Agntcy Identity SaaS Integration
+
+### Setting Up the Local Development Environment
 
 Refer to the [Identity SaaS Documentation](https://identity-docs.outshift.com/docs/intro) for comprehensive details about Identity SaaS and its features.
 
@@ -53,3 +55,104 @@ Refer to the [Identity SaaS Documentation](https://identity-docs.outshift.com/do
   - Use the following well-known agent card URLs for local development:
     - **Vietnam Farm Agent URL**: `http://127.0.0.1:9997/.well-known/agent.json` (corresponds to `VIETNAM_FARM_AGENT_URL`).
     - **Colombia Farm Agent URL**: `http://127.0.0.1:9998/.well-known/agent.json` (corresponds to `COLOMBIA_FARM_AGENT_URL`).
+
+
+## AGNTCY Open Source Identity Integration
+
+### Prerequisites
+
+1. **Install ngrok CLI**  
+   Download and install the ngrok CLI from [ngrok's official website](https://ngrok.com/download).
+
+2. **Run the `start_ngrok.sh` Script**  
+   This script creates a public tunnel to your local machine on port `4444`.  
+   Run the script from the root of the `lungo` directory:
+   ```bash
+   ./scripts/start_ngrok.sh
+   ```
+   Copy the generated public URL, as it will be required in later steps.
+
+   **Tip**: To stop ngrok, terminate the process by pressing `Ctrl+C` in the terminal or using the following commands:
+   ```bash
+   ps aux | grep ngrok # Find the ngrok process ID
+   kill -9 <process_id> # Replace <process_id> with the actual ID
+   ```
+
+3. **Install OSS Identity CLI**  
+   Follow the installation steps in the [OSS Identity CLI Documentation](https://github.com/agntcy/identity?tab=readme-ov-file#step-1-install-the-issuer-cli).
+
+4. **Ensure Python is Installed**  
+   Make sure Python (version 3.8 or higher) is installed on your system.
+
+---
+
+### Running Lungo Agents with OSS Identity Local Setup
+
+Follow these steps to set up your local development environment:
+
+1. **Start Hydra and Identity Services**  
+   After running the `start_ngrok.sh` script (which updates the issuer URL), start all services using Docker Compose:
+   ```bash
+   docker-compose -f docker-compose.hydra.yaml up
+   ```
+
+2. **Register an Identity Provider**  
+   Ensure the OSS Identity CLI is installed. Then, navigate to the `lungo` directory and run:
+   ```bash
+   python ./scripts/register_issuer.py
+   ```
+   **Note**: If the issuer URL changes, you must re-register the Identity Provider.
+
+   When registration is successful, you should see the following output:
+   ```
+   Issuer registration completed.
+   ```
+
+3. **Run Lungo Agents**  
+   You can run the Lungo agents with OSS Identity environment variables using one of the following methods:
+
+    - **Option 1: Run with Docker Compose**  
+      From the root of the `lungo` directory, use the following command to start the agents:
+      ```bash
+      docker-compose -f docker-compose.yaml -f docker-compose.identity-oss.yaml up
+      ```
+
+    - **Option 2: Run Locally**  
+      Set the following environment variables in your shell or a `.env` file:
+      ```bash
+      IDENTITY_NODE_USE_SSL=0 # Disable SSL verification for local development
+      IDENTITY_NODE_GRPC_SERVER_URL=127.0.0.1:4001 # Identity Node gRPC server URL (no http/https prefix)
+      ENABLE_OSS_IDENTITY=true # Enable OSS Identity for lungo agents
+      IDP_ISSUER_URL=<ngrok-url> # Public URL from step 1
+      HYDRA_ADMIN_URL=<your-hydra-admin-url> # Default: http://localhost:4445/clients (if using docker-compose)
+      ```
+      Start the farm servers:
+      ```bash
+      ENABLE_OSS_IDENTITY=true IDP_ISSUER_URL=https://c510286bae99.ngrok-free.app ENABLE_HTTP=true uv run python farms/vietnam/farm_server.py # Replace with colombia for Colombia farm
+      ```
+      Start the exchange server:
+      ```bash
+      ENABLE_OSS_IDENTITY=true IDENTITY_NODE_USE_SSL=0 IDENTITY_NODE_GRPC_SERVER_URL=127.0.0.1:4001 uv run python exchange/main.py
+      ```
+
+4. **Testing the Changes**
+
+   You can test the changes by sending requests to the exchange server. Use the following `curl` commands:
+
+    - **Create an order from the Colombia farm (verified identity):**
+      ```bash
+      curl -X POST http://127.0.0.1:8000/agent/prompt \
+        -H "Content-Type: application/json" \
+        -d '{
+          "prompt": "I want to order coffee from the Columbia farm. I am willing to offer $3.50 per pound for 500 lbs of coffee from the Columbia farm."
+        }'
+      ```
+
+    - **Create an order from the Brazil farm (unverified identity):**
+      ```bash
+      curl -X POST http://127.0.0.1:8000/agent/prompt \
+        -H "Content-Type: application/json" \
+        -d '{
+          "prompt": "I want to order coffee from the Brazil farm. I am willing to offer $3.50 per pound for 500 lbs of coffee from the Brazil farm."
+        }'
+      ```
