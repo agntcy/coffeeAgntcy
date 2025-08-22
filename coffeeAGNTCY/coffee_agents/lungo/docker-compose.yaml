@@ -27,7 +27,7 @@ services:
     build:
       context: ../../..
       dockerfile: coffeeAGNTCY/coffee_agents/lungo/docker/Dockerfile.colombia-farm
-    image: ghcr.io/agntcy/coffee-agntcy/colombia-farm:latest
+#    image: ghcr.io/agntcy/coffee-agntcy/colombia-farm:latest
     container_name: colombia-farm-server
     platform: linux/amd64
     environment:
@@ -51,7 +51,7 @@ services:
     build:
       context: ../../..
       dockerfile: coffeeAGNTCY/coffee_agents/lungo/docker/Dockerfile.vietnam-farm
-    image: ghcr.io/agntcy/coffee-agntcy/vietnam-farm:latest
+#    image: ghcr.io/agntcy/coffee-agntcy/vietnam-farm:latest
     container_name: vietnam-farm-server
     platform: linux/amd64
     environment:
@@ -97,7 +97,7 @@ services:
     build:
       context: ../../..
       dockerfile: coffeeAGNTCY/coffee_agents/lungo/docker/Dockerfile.exchange
-    image: ghcr.io/agntcy/coffee-agntcy/lungo-exchange:latest
+#    image: ghcr.io/agntcy/coffee-agntcy/lungo-exchange:latest
     container_name: exchange-server-lungo
     platform: linux/amd64
     environment:

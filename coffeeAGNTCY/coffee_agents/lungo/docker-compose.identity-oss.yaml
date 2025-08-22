@@ -1,0 +1,32 @@
+version: "3.8"
+services:
+  ## Override the below services to enable identity integration
+  colombia-farm-server:
+    environment:
+      - ENABLE_OSS_IDENTITY=true # Set to true to enable OSS identity integration
+      - IDP_ISSUER_URL=https://ca6e487f8d55.ngrok-free.app
+      - HYDRA_ADMIN_URL=http://hydra:4445/admin/clients
+      - IDENTITY_API_SERVER_URL=http://identity-node:4000
+    volumes:
+      - ./vault.json:/app/vault.json:rw
+      - $HOME/.identity:/root/.identity:rw
+
+  vietnam-farm-server:
+    environment:
+      - ENABLE_OSS_IDENTITY=true # Set to true to enable OSS identity integration
+      - IDP_ISSUER_URL=https://ca6e487f8d55.ngrok-free.app
+      - HYDRA_ADMIN_URL=http://hydra:4445/admin/clients
+      - IDENTITY_API_SERVER_URL=http://identity-node:4000
+    volumes:
+      - ./vault.json:/app/vault.json:rw
+      - $HOME/.identity:/root/.identity:rw
+
+  exchange-server:
+    environment:
+      - IDENTITY_NODE_USE_SSL=0
+      - IDENTITY_NODE_GRPC_SERVER_URL=identity-node:4001
+      - ENABLE_OSS_IDENTITY=true # Set to true to enable OSS identity integration
+      - IDP_ISSUER_URL=https://ca6e487f8d55.ngrok-free.app
+    volumes:
+      - ./vault.json:/app/vault.json:rw
+      - $HOME/.identity:/root/.identity:rw
