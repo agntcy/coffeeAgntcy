@@ -28,7 +28,7 @@ async def subscribe(org, namespace, topic):
 
             if msg.get("respond_to_source", True):
                 # reply to the sender
-                print(f"sending reply back to sender")
+                print(f"sending reply back to sender {recv_session.destination_name}")
 
                 # TODO: show this in pubsub slim example, when to use and not to use
                 await slim_app.publish_to(

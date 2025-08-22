@@ -116,8 +116,11 @@ async def groupchat(shared_channel):
 
 if __name__ == "__main__":
     shared_channel = PyName("agntcy", "namespace", "group_channel")
-    
-    
-    #asyncio.run(unique_topic_pubsub(shared_channel))
+    print(dir(shared_channel))
+    print(shared_channel.components())
+    print(shared_channel.components_strings())
+
+
+    asyncio.run(unique_topic_pubsub(shared_channel))
     #asyncio.run(shared_topic_pubsub(shared_channel))
-    asyncio.run(groupchat(shared_channel))
+    #asyncio.run(groupchat(shared_channel))

@@ -27,7 +27,15 @@ async def subscribe(org, namespace, topic):
 
             if msg.get("respond_to_source", True):
                 # reply to the sender
-                print(f"sending reply back to sender")
+                print(f"sending reply back to sender {recv_session.destination_name}")
+                print(recv_session.destination_name.id)
+
+                print(recv_session.destination_name.components())
+                '''parts = recv_session.destination_name.split("/")
+                org, namespace, topic = parts[0], parts[1], parts[2]
+
+                print(f"Parsed destination name into org: {org}, namespace: {namespace}, topic: {topic}")'''
+
                 await slim_app.publish_to(
                     recv_session, f"Hello from {namespace}/{topic}".encode()
                 )
