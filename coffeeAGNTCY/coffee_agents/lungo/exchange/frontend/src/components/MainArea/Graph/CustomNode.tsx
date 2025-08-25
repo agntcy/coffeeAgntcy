@@ -21,6 +21,7 @@ interface CustomNodeData {
   verificationStatus?: "verified" | "failed" | "pending"
   verificationBadge?: React.ReactNode
   githubLink?: string
+  agentDirectoryLink?: string
 }
 
 interface CustomNodeProps {
@@ -90,14 +91,30 @@ const CustomNode: React.FC<CustomNodeProps> = ({ data }) => {
             </div>
           </a>
         )}
-
-        <div className="flex h-7 w-7 cursor-pointer items-center justify-center rounded-lg bg-[#00142B] p-1 opacity-100 shadow-sm">
-          <img
-            src={agntcyDirectoryIcon}
-            alt="AGNTCY Directory"
-            className="h-5 w-5"
-          />
-        </div>
+        {data.agentDirectoryLink && (
+          <a
+            href={data.agentDirectoryLink}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="no-underline"
+          >
+            <div
+              className="flex h-7 w-7 cursor-pointer items-center justify-center rounded-lg bg-[#00142B] p-1 opacity-100 shadow-sm"
+              onMouseEnter={(e) => {
+                e.currentTarget.style.opacity = "0.8"
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.opacity = "1"
+              }}
+            >
+              <img
+                src={agntcyDirectoryIcon}
+                alt="AGNTCY Directory"
+                className="h-5 w-5"
+              />
+            </div>
+          </a>
+        )}
       </div>
 
       {(data.handles === "all" || data.handles === "target") && (

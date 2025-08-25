@@ -62,6 +62,7 @@ const SLIM_A2A_CONFIG: GraphConfig = {
         verificationStatus: "verified",
         githubLink:
           "https://github.com/agntcy/coffeeAgntcy/tree/main/coffeeAGNTCY/coffee_agents/corto/exchange",
+        agentDirectoryLink: "https://agent-directory.outshift.com/explore",
       },
       position: { x: 529.1332569384248, y: 159.4805787605829 },
     },
@@ -76,6 +77,7 @@ const SLIM_A2A_CONFIG: GraphConfig = {
         handles: "target",
         githubLink:
           "https://github.com/agntcy/coffeeAgntcy/tree/main/coffeeAGNTCY/coffee_agents/corto/farm",
+        agentDirectoryLink: "https://agent-directory.outshift.com/explore",
       },
       position: { x: 534.0903941835277, y: 582.9317472571444 },
     },
@@ -111,7 +113,8 @@ const SLIM_MULTI_A2A_CONFIG: GraphConfig = {
         label2: "Buyer",
         handles: "source",
         githubLink:
-          "https://github.com/agntcy/coffeeAgntcy/tree/main/coffeeAGNTCY/coffee_agents/lungo/exchange",
+          "https://github.com/agntcy/coffeeAgntcy/blob/main/coffeeAGNTCY/coffee_agents/lungo/exchange/graph/graph.py#L50",
+        agentDirectoryLink: "https://agent-directory.outshift.com/explore",
       },
       position: { x: 527.1332569384248, y: 76.4805787605829 },
     },
@@ -121,6 +124,8 @@ const SLIM_MULTI_A2A_CONFIG: GraphConfig = {
       data: {
         ...commonNodeData,
         label: "Transport: ",
+        githubLink:
+          "https://github.com/agntcy/app-sdk/tree/main/src/agntcy_app_sdk/transports",
       },
       position: { x: 229.02370449534635, y: 284.688426426175 },
     },
@@ -136,8 +141,10 @@ const SLIM_MULTI_A2A_CONFIG: GraphConfig = {
         farmName: FarmName?.BrazilCoffeeFarm || "Brazil Coffee Farm",
         verificationStatus: "failed",
         githubLink:
-          "https://github.com/agntcy/coffeeAgntcy/tree/main/coffeeAGNTCY/coffee_agents/lungo/farms/brazil",
+          "https://github.com/agntcy/coffeeAgntcy/blob/main/coffeeAGNTCY/coffee_agents/lungo/farms/brazil/agent.py#L30",
+        agentDirectoryLink: "https://agent-directory.outshift.com/explore",
       },
+
       position: { x: 232.0903941835277, y: 503.93174725714437 },
     },
     {
@@ -152,7 +159,8 @@ const SLIM_MULTI_A2A_CONFIG: GraphConfig = {
         farmName: FarmName?.ColombiaCoffeeFarm || "Colombia Coffee Farm",
         verificationStatus: "verified",
         githubLink:
-          "https://github.com/agntcy/coffeeAgntcy/tree/main/coffeeAGNTCY/coffee_agents/lungo/farms/colombia",
+          "https://github.com/agntcy/coffeeAgntcy/blob/main/coffeeAGNTCY/coffee_agents/lungo/farms/colombia/agent.py#L54",
+        agentDirectoryLink: "https://agent-directory.outshift.com/explore",
       },
       position: { x: 521.266082170288, y: 505.38817113883306 },
     },
@@ -168,7 +176,8 @@ const SLIM_MULTI_A2A_CONFIG: GraphConfig = {
         farmName: FarmName?.VietnamCoffeeFarm || "Vietnam Coffee Farm",
         verificationStatus: "verified",
         githubLink:
-          "https://github.com/agntcy/coffeeAgntcy/tree/main/coffeeAGNTCY/coffee_agents/lungo/farms/vietnam",
+          "https://github.com/agntcy/coffeeAgntcy/blob/main/coffeeAGNTCY/coffee_agents/lungo/farms/vietnam/agent.py#L30",
+        agentDirectoryLink: "https://agent-directory.outshift.com/explore",
       },
       position: { x: 832.9824511707582, y: 505.08339631990395 },
     },
@@ -182,7 +191,8 @@ const SLIM_MULTI_A2A_CONFIG: GraphConfig = {
         label2: "Weather",
         handles: "target",
         githubLink:
-          "https://github.com/agntcy/coffeeAgntcy/tree/main/coffeeAGNTCY/coffee_agents/lungo/mcp_servers",
+          "https://github.com/agntcy/coffeeAgntcy/blob/main/coffeeAGNTCY/coffee_agents/lungo/mcp_servers/weather_service.py#L25",
+        agentDirectoryLink: "https://agent-directory.outshift.com/explore",
       },
       position: { x: 569.3959708104304, y: 731.9104402412228 },
     },

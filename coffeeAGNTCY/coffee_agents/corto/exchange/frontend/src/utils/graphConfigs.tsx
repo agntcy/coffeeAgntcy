@@ -63,6 +63,7 @@ const SLIM_A2A_CONFIG: GraphConfig = {
         verificationStatus: "verified",
         githubLink:
           "https://github.com/agntcy/coffeeAgntcy/tree/main/coffeeAGNTCY/coffee_agents/corto/exchange",
+        agentDirectoryLink: "https://agent-directory.outshift.com/explore",
       },
       position: { x: 529.1332569384248, y: 159.4805787605829 },
     },
@@ -77,6 +78,7 @@ const SLIM_A2A_CONFIG: GraphConfig = {
         handles: "target",
         githubLink:
           "https://github.com/agntcy/coffeeAgntcy/tree/main/coffeeAGNTCY/coffee_agents/corto/farm",
+        agentDirectoryLink: "https://agent-directory.outshift.com/explore",
       },
       position: { x: 534.0903941835277, y: 582.9317472571444 },
     },
@@ -86,7 +88,9 @@ const SLIM_A2A_CONFIG: GraphConfig = {
       id: "1-2",
       source: "1",
       target: "2",
-      data: { label: "A2A: " },
+      data: {
+        label: "A2A: ",
+      },
       type: "custom",
     },
   ],

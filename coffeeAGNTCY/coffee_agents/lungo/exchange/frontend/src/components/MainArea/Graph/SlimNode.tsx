@@ -6,11 +6,13 @@
 import React from "react"
 import { Handle, Position } from "@xyflow/react"
 import { DefaultHandleColor } from "./CustomNode"
+import githubIcon from "@/assets/Github.png"
 
 interface TransportNodeData {
   label: string
   active?: boolean
   handleColor?: string
+  githubLink?: string
 }
 
 interface TransportNodeProps {
@@ -24,11 +26,34 @@ const TransportNode: React.FC<TransportNodeProps> = ({ data }) => {
 
   return (
     <div
-      className={` ${activeClasses} flex h-[52px] w-[1200px] items-center justify-center rounded-lg p-4 text-center text-gray-50 hover:bg-[#4A4F55] hover:shadow-[rgba(0,0,0,0.6)_0px_6px_8px] hover:outline hover:outline-2 hover:outline-[#187ADC]`}
+      className={` ${activeClasses} relative flex h-[52px] w-[1200px] items-center justify-center rounded-lg p-4 text-center text-gray-50 hover:bg-[#4A4F55] hover:shadow-[rgba(0,0,0,0.6)_0px_6px_8px] hover:outline hover:outline-2 hover:outline-[#187ADC]`}
     >
       <div className="flex h-5 w-[94px] items-center justify-center whitespace-nowrap font-inter text-sm font-normal leading-5 tracking-normal text-[#E8E9EA] opacity-100">
         {data.label}
       </div>
+
+      {/* GitHub Icon */}
+      {data.githubLink && (
+        <a
+          href={data.githubLink}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="no-underline"
+        >
+          <div
+            className="absolute -right-4 top-1/2 z-10 flex h-7 w-7 -translate-y-1/2 cursor-pointer items-center justify-center rounded-lg bg-[#00142B] p-1 opacity-100 shadow-sm transition-opacity duration-200 ease-in-out"
+            onMouseEnter={(e) => {
+              e.currentTarget.style.opacity = "0.8"
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.opacity = "1"
+            }}
+          >
+            <img src={githubIcon} alt="GitHub" className="h-5 w-5" />
+          </div>
+        </a>
+      )}
+
       <Handle
         type="target"
         id="top"
