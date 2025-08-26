@@ -43,6 +43,16 @@ export default {
         "shadow-default": "var(--shadow-default)",
         "overlay-background": "var(--overlay-background)",
 
+        "modal-background": "var(--modal-background)",
+        "modal-border": "var(--modal-border)",
+        "modal-text": "var(--modal-text)",
+        "modal-text-secondary": "var(--modal-text-secondary)",
+        "modal-accent": "var(--modal-accent)",
+        "modal-hover": "var(--modal-hover)",
+        "modal-button": "var(--modal-button)",
+        "modal-button-text": "var(--modal-button-text)",
+        "modal-button-hover": "var(--modal-button-hover)",
+
         background: "hsl(var(--background))",
         foreground: "hsl(var(--foreground))",
         card: {

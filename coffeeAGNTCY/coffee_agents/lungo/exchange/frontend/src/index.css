@@ -44,6 +44,16 @@
     --shadow-default: rgba(0, 0, 0, 0.6);
     --overlay-background: #2e3e57;
 
+    --modal-background: #1a2432;
+    --modal-border: #2e3e57;
+    --modal-text: #fbfcfe;
+    --modal-text-secondary: #9ca3af;
+    --modal-accent: #60a5fa;
+    --modal-hover: #1f2a3a;
+    --modal-button: #00142b;
+    --modal-button-text: #fbfcfe;
+    --modal-button-hover: #0d274d;
+
     --background: 210 10% 14%;
     --foreground: 0 0% 3.9%;
     --card: 0 0% 100%;
@@ -104,6 +114,16 @@
 
     --shadow-default: rgba(0, 0, 0, 0.15);
     --overlay-background: #6c757d;
+
+    --modal-background: #ffffff;
+    --modal-border: #dee2e6;
+    --modal-text: #212529;
+    --modal-text-secondary: #6c757d;
+    --modal-accent: #0d6efd;
+    --modal-hover: #f8f9fa;
+    --modal-button: #0d6efd;
+    --modal-button-text: #ffffff;
+    --modal-button-hover: #0b5ed7;
   }
 
   .dark {

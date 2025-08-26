@@ -3,10 +3,21 @@
  * SPDX-License-Identifier: Apache-2.0
  **/
 
-import React from "react"
+import React, { useState } from "react"
+import { HelpCircle } from "lucide-react"
 import coffeeAgntcyLogo from "@/assets/coffeeAGNTCY_logo.svg"
+import InfoModal from "./InfoModal"
 
 const Navigation: React.FC = () => {
+  const [isModalOpen, setIsModalOpen] = useState(false)
+
+  const handleHelpClick = () => {
+    setIsModalOpen(true)
+  }
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false)
+  }
   return (
     <div className="order-0 border-nav-border bg-nav-background box-border flex h-[52px] w-full flex-none flex-grow-0 flex-col items-start self-stretch border-r p-0">
       <div className="order-0 border-nav-border bg-nav-background-secondary box-border flex h-[52px] w-full flex-none flex-grow-0 flex-row items-center justify-between gap-2 self-stretch border-b px-4 py-[10px]">
@@ -23,14 +34,17 @@ const Navigation: React.FC = () => {
         </div>
 
         <div className="order-3 flex flex-none flex-grow-0 flex-row items-center justify-end gap-2 p-0">
-          <span
-            className="order-0 flex-grow-1 text-nav-text flex-none text-right font-inter text-sm font-normal leading-5"
-            style={{ letterSpacing: "0.25px" }}
+          <button
+            className="order-0 flex h-8 w-8 flex-none flex-grow-0 items-center justify-center rounded p-1.5 transition-opacity hover:opacity-80"
+            title="Help"
+            onClick={handleHelpClick}
           >
-            Version 0.0.025
-          </span>
+            <HelpCircle className="text-nav-text h-5 w-5" />
+          </button>
         </div>
       </div>
+
+      <InfoModal isOpen={isModalOpen} onClose={handleCloseModal} />
     </div>
   )
 }
