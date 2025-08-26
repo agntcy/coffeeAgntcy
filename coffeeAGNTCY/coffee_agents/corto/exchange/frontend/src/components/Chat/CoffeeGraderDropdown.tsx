@@ -93,7 +93,7 @@ const CoffeeGraderDropdown: React.FC<CoffeeGraderDropdownProps> = ({
             className="bg-chat-dropdown-background hover:bg-chat-background-hover mx-0.5 my-0.5 flex min-h-10 w-[calc(100%-4px)] cursor-pointer items-center rounded px-2 py-[6px] transition-colors duration-200 ease-in-out"
             onClick={() => handleItemClick(item)}
           >
-            <div className="w-full break-words font-inter text-sm font-normal leading-5 tracking-[0%] text-white">
+            <div className="text-chat-text w-full break-words font-inter text-sm font-normal leading-5 tracking-[0%]">
               {item}
             </div>
           </div>

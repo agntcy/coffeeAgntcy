@@ -112,7 +112,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
                 />
               </div>
               <div className="flex max-w-[calc(100%-3rem)] flex-1 flex-col items-start justify-center rounded p-1 px-2">
-                <div className="whitespace-pre-wrap break-words font-inter text-sm font-normal leading-5 text-white">
+                <div className="!text-chat-text whitespace-pre-wrap break-words font-inter text-sm font-normal leading-5">
                   {isAgentLoading ? (
                     <div className="text-accent-primary animate-pulse">...</div>
                   ) : (
@@ -133,7 +133,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
         <div className="border-node-background bg-chat-background box-border flex h-11 max-w-[814px] flex-1 flex-row items-center rounded border px-0 py-[5px]">
           <div className="flex h-[34px] w-full flex-row items-center gap-[10px] px-4 py-[7px]">
             <input
-              className="text-node-icon-background focus:text-chat-text h-5 min-w-0 flex-1 border-none bg-transparent font-cisco text-[15px] font-medium leading-5 tracking-[0.005em] outline-none"
+              className="!text-chat-text placeholder:text-chat-text h-5 min-w-0 flex-1 border-none bg-transparent font-cisco text-[15px] font-medium leading-5 tracking-[0.005em] outline-none placeholder:opacity-60"
               placeholder="Type a prompt to interact with the agents"
               value={content}
               onChange={(e: React.ChangeEvent<HTMLInputElement>) =>

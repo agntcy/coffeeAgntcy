@@ -13,6 +13,7 @@
   :root {
     --app-background: #23282e;
     --content-background: #23282e;
+    --primary-bg: #23282e;
 
     --node-background: #373c42;
     --node-background-hover: #4a4f55;
@@ -40,6 +41,8 @@
 
     --sidebar-background: #23282e;
     --sidebar-item-selected: #0d274d;
+    --sidebar-border: #00142b;
+    --sidebar-text: #fbfcfe;
 
     --shadow-default: rgba(0, 0, 0, 0.6);
     --overlay-background: #2e3e57;
@@ -81,49 +84,74 @@
     --radius: 0.5rem;
   }
 
-  .light {
-    --app-background: #ffffff;
-    --content-background: #f8f9fa;
+  body[data-theme="light"] {
+    --app-background: #eff3fc !important;
+    --content-background: #eff3fc !important;
+    --primary-bg: #eff3fc !important;
 
-    --node-background: #e9ecef;
-    --node-background-hover: #dee2e6;
-    --node-background-active: #0056b3;
-    --node-text-primary: #212529;
-    --node-text-secondary: #6c757d;
-    --node-icon-background: #adb5bd;
+    --node-background: #eff3fc !important;
+    --node-background-hover: #eff3fc !important;
+    --node-background-active: #00142b !important;
+    --node-text-primary: #00142b !important;
+    --node-text-secondary: #00142b !important;
+    --node-icon-background: #f8fafc !important;
 
-    --accent-primary: #0d6efd;
-    --accent-border: #0d6efd;
+    --accent-primary: #187adc !important;
+    --accent-border: #00409f !important;
 
-    --nav-background: #f8f9fa;
-    --nav-background-secondary: #e9ecef;
-    --nav-border: #dee2e6;
-    --nav-text: #0d6efd;
+    --nav-background: #f5f8fd !important;
+    --nav-background-secondary: #eff3fc !important;
+    --nav-border: #dbe0e5 !important;
+    --nav-text: #1d69cc !important;
 
-    --chat-background: #f8f9fa;
-    --chat-background-hover: #e9ecef;
-    --chat-text: #212529;
-    --chat-input-background: #ffffff;
-    --chat-dropdown-background: #ffffff;
+    --chat-background: #eff3fc !important;
+    --chat-background-hover: #f5f8fd !important;
+    --chat-text: #00142b !important;
+    --chat-input-background: #ffffff !important;
+    --chat-dropdown-background: #ffffff !important;
 
-    --action-background: #0d6efd;
-    --action-background-hover: #0b5ed7;
+    --action-background: #00142b !important;
+    --action-background-hover: #0d274d !important;
 
-    --sidebar-background: #f8f9fa;
-    --sidebar-item-selected: #e7f1ff;
+    --sidebar-background: #e8eefb !important;
+    --sidebar-item-selected: #eff3fc !important;
+    --sidebar-border: #e8eefb !important;
+    --sidebar-text: #00142b !important;
 
-    --shadow-default: rgba(0, 0, 0, 0.15);
-    --overlay-background: #6c757d;
+    --shadow-default: 0 4px 8px rgba(0, 0, 0, 0.1) !important;
+    --overlay-background: #f5f8fd !important;
 
-    --modal-background: #ffffff;
-    --modal-border: #dee2e6;
-    --modal-text: #212529;
-    --modal-text-secondary: #6c757d;
-    --modal-accent: #0d6efd;
-    --modal-hover: #f8f9fa;
-    --modal-button: #0d6efd;
-    --modal-button-text: #ffffff;
-    --modal-button-hover: #0b5ed7;
+    --modal-background: #ffffff !important;
+    --modal-border: #dbe0e5 !important;
+    --modal-text: #00142b !important;
+    --modal-text-secondary: #00142b !important;
+    --modal-accent: #60a5fa !important;
+    --modal-hover: #f5f8fd !important;
+    --modal-button: #00142b !important;
+    --modal-button-text: #ffffff !important;
+    --modal-button-hover: #0d274d !important;
+  }
+
+  /* Light mode specific styles */
+  body[data-theme="light"] .bg-node-background:not(.bg-node-background-active) {
+    border: 1px solid var(--accent-border) !important;
+  }
+
+  /* Fix text visibility in active nodes for light mode */
+  body[data-theme="light"] .bg-node-background-active .text-node-text-primary {
+    color: #ffffff !important;
+  }
+
+  body[data-theme="light"] .bg-node-background-active .text-node-text-secondary {
+    color: #e8e9ea !important;
+  }
+
+  .dark-icon {
+    filter: brightness(0) invert(1);
+  }
+
+  body[data-theme="light"] .dark-icon {
+    filter: brightness(0) invert(0);
   }
 
   .dark {

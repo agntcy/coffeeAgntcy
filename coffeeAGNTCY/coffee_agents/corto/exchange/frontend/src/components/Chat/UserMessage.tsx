@@ -22,7 +22,7 @@ const UserMessage: React.FC<UserMessageProps> = ({ content }) => {
         style={{ maxWidth: "calc(100% - 3rem)" }}
       >
         <div className="flex w-full items-center rounded p-1 px-2">
-          <div className="break-words font-inter text-sm font-normal leading-5 text-white">
+          <div className="text-chat-text break-words font-inter text-sm font-normal leading-5">
             {content}
           </div>
         </div>

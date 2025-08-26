@@ -4,15 +4,15 @@
 **/
 
 .react-flow {
-  background: #23282e !important;
+  background: var(--primary-bg) !important;
 }
 
 .react-flow__background {
-  fill: #23282e !important;
+  fill: var(--primary-bg) !important;
 }
 
 .react-flow__controls {
-  background: rgba(35, 40, 46, 0.9);
+  background: var(--node-background);
   border: 1px solid #30363d;
   border-radius: 8px;
   bottom: 40px !important;
@@ -25,7 +25,7 @@
 .react-flow__controls-button {
   background: transparent;
   border: none;
-  color: #f0f6fc;
+  color: var(--node-text-primary);
   width: 32px !important;
   height: 32px !important;
   min-width: 32px !important;
@@ -33,42 +33,42 @@
 }
 
 .react-flow__controls-button:hover {
-  background: rgba(47, 54, 61, 0.8);
+  background: var(--node-background-hover);
 }
 
 .react-flow__edge-path {
-  stroke: #00409f;
+  stroke: var(--accent-border);
   stroke-width: 2;
 }
 
 .react-flow__arrowhead {
-  fill: #00409f !important;
-  stroke: #00409f !important;
+  fill: var(--accent-border) !important;
+  stroke: var(--accent-border) !important;
 }
 
 .react-flow__edge .react-flow__edge-path {
-  stroke: #00409f;
+  stroke: var(--accent-border);
 }
 
 marker path {
-  fill: #00409f !important;
-  stroke: #00409f !important;
+  fill: var(--accent-border) !important;
+  stroke: var(--accent-border) !important;
 }
 
 marker {
-  fill: #00409f !important;
-  stroke: #00409f !important;
+  fill: var(--accent-border) !important;
+  stroke: var(--accent-border) !important;
 }
 
 .react-flow__edge path {
-  stroke: #00409f !important;
+  stroke: var(--accent-border) !important;
   fill: none !important;
 }
 
 marker polygon,
 marker circle {
-  fill: #00409f !important;
-  stroke: #00409f !important;
+  fill: var(--accent-border) !important;
+  stroke: var(--accent-border) !important;
 }
 
 .react-flow__handle {

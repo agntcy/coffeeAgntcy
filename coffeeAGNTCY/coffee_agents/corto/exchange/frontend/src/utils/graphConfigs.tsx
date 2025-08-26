@@ -26,10 +26,10 @@ const GraderAgentIcon = (
     style={{
       width: "16px",
       height: "16px",
-      filter: "brightness(0) invert(1)",
       objectFit: "contain",
       opacity: 1,
     }}
+    className="dark-icon"
   />
 )
 
@@ -52,9 +52,9 @@ const SLIM_A2A_CONFIG: GraphConfig = {
             style={{
               width: "16px",
               height: "16px",
-              filter: "brightness(0) invert(1)",
               objectFit: "contain",
             }}
+            className="dark-icon"
           />
         ),
         label1: "Supervisor Agent",

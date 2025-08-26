@@ -24,7 +24,7 @@ const Sidebar: React.FC<SidebarProps> = ({
   }
 
   return (
-    <div className="flex h-full w-[320px] flex-col items-start gap-5 border-r border-[#0D274D] bg-primary-bg px-4 py-0 font-inter">
+    <div className="flex h-full w-[320px] flex-col items-start gap-5 border-r border-[#00142B] bg-primary-bg px-4 py-0 font-inter">
       <div className="mt-5 flex w-[288px] flex-col items-start gap-0 p-0">
         <div className="flex w-[288px] flex-col items-start p-0">
           <div className="flex h-9 w-[288px] items-start gap-2 bg-primary-bg p-2 transition-colors hover:bg-[#373C42]">

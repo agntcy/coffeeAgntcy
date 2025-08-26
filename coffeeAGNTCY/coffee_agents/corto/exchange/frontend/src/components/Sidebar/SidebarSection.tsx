@@ -27,11 +27,11 @@ const SidebarSection: React.FC<SidebarSectionProps> = ({
       >
         <div className="order-0 hidden h-5 w-5 flex-none grow-0" />
 
-        <span className="order-1 h-5 w-72 flex-none grow font-inter text-sm font-normal leading-5 tracking-normal text-white">
+        <span className="!text-sidebar-text order-1 h-5 w-72 flex-none grow font-inter text-sm font-normal leading-5 tracking-normal">
           {title}
         </span>
         <ChevronUp
-          className={`h-4 w-4 text-white transition-transform ${
+          className={`!text-sidebar-text h-4 w-4 transition-transform ${
             isExpanded ? "rotate-0" : "rotate-180"
           }`}
           style={{
