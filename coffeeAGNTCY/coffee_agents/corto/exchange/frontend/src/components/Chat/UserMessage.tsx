@@ -13,7 +13,7 @@ interface UserMessageProps {
 const UserMessage: React.FC<UserMessageProps> = ({ content }) => {
   return (
     <div className="flex min-h-[2.5rem] w-full flex-row items-start gap-1">
-      <div className="flex h-10 w-10 flex-none items-center justify-center rounded-full bg-[#00142B]">
+      <div className="bg-action-background flex h-10 w-10 flex-none items-center justify-center rounded-full">
         <User size={22} className="text-white" />
       </div>
 

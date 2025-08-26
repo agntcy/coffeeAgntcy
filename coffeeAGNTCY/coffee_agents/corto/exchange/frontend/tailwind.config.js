@@ -10,14 +10,39 @@ export default {
   theme: {
     extend: {
       colors: {
-        "primary-bg": "#23282E",
-        "primary-blue": "#187ADC",
-        "node-bg": "#373C42",
-        "node-hover": "#4A4F55",
-        "icon-bg": "#59616B",
-        "node-text": "#E8E9EA",
-        "action-bg": "#00142B",
-        "action-border": "#187ADC",
+        "app-background": "var(--app-background)",
+        "content-background": "var(--content-background)",
+
+        "node-background": "var(--node-background)",
+        "node-background-hover": "var(--node-background-hover)",
+        "node-background-active": "var(--node-background-active)",
+        "node-text-primary": "var(--node-text-primary)",
+        "node-text-secondary": "var(--node-text-secondary)",
+        "node-icon-background": "var(--node-icon-background)",
+
+        "accent-primary": "var(--accent-primary)",
+        "accent-border": "var(--accent-border)",
+
+        "nav-background": "var(--nav-background)",
+        "nav-background-secondary": "var(--nav-background-secondary)",
+        "nav-border": "var(--nav-border)",
+        "nav-text": "var(--nav-text)",
+
+        "chat-background": "var(--chat-background)",
+        "chat-background-hover": "var(--chat-background-hover)",
+        "chat-text": "var(--chat-text)",
+        "chat-input-background": "var(--chat-input-background)",
+        "chat-dropdown-background": "var(--chat-dropdown-background)",
+
+        "action-background": "var(--action-background)",
+        "action-background-hover": "var(--action-background-hover)",
+
+        "sidebar-background": "var(--sidebar-background)",
+        "sidebar-item-selected": "var(--sidebar-item-selected)",
+
+        "shadow-default": "var(--shadow-default)",
+        "overlay-background": "var(--overlay-background)",
+
         background: "hsl(var(--background))",
         foreground: "hsl(var(--foreground))",
         card: {

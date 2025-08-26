@@ -100,7 +100,7 @@ const App: React.FC = () => {
           onPatternChange={setSelectedPattern}
         />
 
-        <div className="flex flex-1 flex-col border-l border-[#00142B] bg-primary-bg">
+        <div className="border-action-background bg-app-background flex flex-1 flex-col border-l">
           <div className="relative flex-grow">
             <MainArea
               pattern={selectedPattern}
@@ -111,7 +111,7 @@ const App: React.FC = () => {
             />
           </div>
 
-          <div className="flex min-h-[76px] w-full flex-none flex-col items-center justify-center gap-0 bg-[#2E3E57] p-0">
+          <div className="bg-overlay-background flex min-h-[76px] w-full flex-none flex-col items-center justify-center gap-0 p-0">
             <ChatArea
               setMessages={setMessages}
               setButtonClicked={setButtonClicked}

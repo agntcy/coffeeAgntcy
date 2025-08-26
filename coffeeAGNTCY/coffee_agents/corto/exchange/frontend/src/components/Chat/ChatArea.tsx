@@ -65,7 +65,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
         }
       },
       onError: (error) => {
-        if (process.env.NODE_ENV === "development") {
+        if (import.meta.env.DEV) {
           logger.apiError("/api/ask", error)
         }
         if (onApiResponse) {
@@ -96,7 +96,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
 
   return (
     <div
-      className="flex w-full flex-col items-center justify-center gap-2 bg-[#2E3E57] px-4 py-4 sm:px-8 md:px-16 lg:px-[120px]"
+      className="bg-overlay-background flex w-full flex-col items-center justify-center gap-2 px-4 py-4 sm:px-8 md:px-16 lg:px-[120px]"
       style={{ minHeight: currentUserMessage ? "auto" : "120px" }}
     >
       {currentUserMessage && (
@@ -104,7 +104,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
           <UserMessage content={currentUserMessage} />
           {(isAgentLoading || agentResponse) && (
             <div className="flex w-full flex-row items-start gap-1">
-              <div className="flex h-10 w-10 flex-none items-center justify-center rounded-full bg-[#00142B]">
+              <div className="bg-action-background flex h-10 w-10 flex-none items-center justify-center rounded-full">
                 <img
                   src={AgentIcon}
                   alt="Agent"
@@ -114,7 +114,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
               <div className="flex max-w-[calc(100%-3rem)] flex-1 flex-col items-start justify-center rounded p-1 px-2">
                 <div className="whitespace-pre-wrap break-words font-inter text-sm font-normal leading-5 text-white">
                   {isAgentLoading ? (
-                    <div className="animate-pulse text-[#649EF5]">...</div>
+                    <div className="text-accent-primary animate-pulse">...</div>
                   ) : (
                     agentResponse
                   )}
@@ -130,10 +130,10 @@ const ChatArea: React.FC<ChatAreaProps> = ({
       </div>
 
       <div className="flex w-full max-w-[880px] flex-col items-stretch gap-4 p-0 sm:flex-row sm:items-center">
-        <div className="box-border flex h-11 max-w-[814px] flex-1 flex-row items-center rounded border border-[#1E2939] bg-[#1A2432] px-0 py-[5px]">
+        <div className="border-node-background bg-chat-background box-border flex h-11 max-w-[814px] flex-1 flex-row items-center rounded border px-0 py-[5px]">
           <div className="flex h-[34px] w-full flex-row items-center gap-[10px] px-4 py-[7px]">
             <input
-              className="h-5 min-w-0 flex-1 border-none bg-transparent font-cisco text-[15px] font-medium leading-5 tracking-[0.005em] text-[#59616B] outline-none focus:text-[#FBFCFE]"
+              className="text-node-icon-background focus:text-chat-text h-5 min-w-0 flex-1 border-none bg-transparent font-cisco text-[15px] font-medium leading-5 tracking-[0.005em] outline-none"
               placeholder="Type a prompt to interact with the agents"
               value={content}
               onChange={(e: React.ChangeEvent<HTMLInputElement>) =>

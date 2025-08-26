@@ -29,14 +29,14 @@ interface CustomNodeProps {
 
 const CustomNode: React.FC<CustomNodeProps> = ({ data }) => {
   const activeClasses = data.active
-    ? "bg-[#00142B] outline outline-2 outline-[#187ADC] shadow-[rgba(0,0,0,0.6)_0px_6px_8px]"
-    : "bg-[#373C42]"
+    ? "bg-node-background-active outline outline-2 outline-accent-border shadow-[var(--shadow-default)_0px_6px_8px]"
+    : "bg-node-background"
 
   return (
     <div
-      className={`order-0 relative flex h-[91px] w-[193px] flex-none grow-0 flex-col items-start justify-start gap-2 rounded-lg p-4 ${activeClasses} hover:bg-[#4A4F55] hover:shadow-[rgba(0,0,0,0.6)_0px_6px_8px] hover:outline hover:outline-2 hover:outline-[#187ADC]`}
+      className={`order-0 relative flex h-[91px] w-[193px] flex-none grow-0 flex-col items-start justify-start gap-2 rounded-lg p-4 ${activeClasses} hover:bg-node-background-hover hover:outline-accent-border hover:shadow-[var(--shadow-default)_0px_6px_8px] hover:outline hover:outline-2`}
     >
-      <div className="flex h-5 w-5 flex-shrink-0 items-center justify-center gap-2.5 rounded bg-[#59616B] py-1 opacity-100">
+      <div className="bg-node-icon-background flex h-5 w-5 flex-shrink-0 items-center justify-center gap-2.5 rounded py-1 opacity-100">
         <div className="flex h-4 w-4 items-center justify-center opacity-100">
           {data.icon}
         </div>
@@ -48,13 +48,13 @@ const CustomNode: React.FC<CustomNodeProps> = ({ data }) => {
           width: data.verificationStatus === "verified" ? "160px" : "162px",
         }}
       >
-        <span className="order-0 flex h-5 flex-none grow-0 items-center overflow-hidden text-ellipsis whitespace-nowrap font-inter text-sm font-normal leading-5 tracking-normal text-[#E8E9EA] opacity-100">
+        <span className="order-0 text-node-text-primary flex h-5 flex-none grow-0 items-center overflow-hidden text-ellipsis whitespace-nowrap font-inter text-sm font-normal leading-5 tracking-normal opacity-100">
           {data.label1}
         </span>
       </div>
 
       <div
-        className="order-1 h-4 flex-none flex-grow-0 self-stretch overflow-hidden text-ellipsis whitespace-nowrap font-inter text-xs font-light leading-4 text-[#E8E9EA]"
+        className="text-node-text-secondary order-1 h-4 flex-none flex-grow-0 self-stretch overflow-hidden text-ellipsis whitespace-nowrap font-inter text-xs font-light leading-4"
         style={{
           width: "162px",
         }}
@@ -73,7 +73,7 @@ const CustomNode: React.FC<CustomNodeProps> = ({ data }) => {
             }}
           >
             <div
-              className="flex h-7 w-7 cursor-pointer items-center justify-center rounded-lg bg-[#00142B] p-1 opacity-100 shadow-sm transition-opacity duration-200 ease-in-out"
+              className="bg-action-background flex h-7 w-7 cursor-pointer items-center justify-center rounded-lg p-1 opacity-100 shadow-sm transition-opacity duration-200 ease-in-out"
               onMouseEnter={(e) => {
                 e.currentTarget.style.opacity = "0.8"
               }}
@@ -96,7 +96,7 @@ const CustomNode: React.FC<CustomNodeProps> = ({ data }) => {
             }}
           >
             <div
-              className="flex h-7 w-7 cursor-pointer items-center justify-center rounded-lg bg-[#00142B] p-1 opacity-100 shadow-sm"
+              className="bg-action-background flex h-7 w-7 cursor-pointer items-center justify-center rounded-lg p-1 opacity-100 shadow-sm"
               onMouseEnter={(e) => {
                 e.currentTarget.style.opacity = "0.8"
               }}

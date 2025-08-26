@@ -2,17 +2,48 @@
 @tailwind components;
 @tailwind utilities;
 
-
 @layer base {
   body {
     @apply m-0 p-0 font-inter;
-    background-color: #23282E;
+    background-color: var(--app-background);
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     text-rendering: optimizeLegibility;
   }
   :root {
-    --primary-bg: #23282E;
+    --app-background: #23282e;
+    --content-background: #23282e;
+
+    --node-background: #373c42;
+    --node-background-hover: #4a4f55;
+    --node-background-active: #00142b;
+    --node-text-primary: #e8e9ea;
+    --node-text-secondary: #e8e9ea;
+    --node-icon-background: #59616b;
+
+    --accent-primary: #187adc;
+    --accent-border: #187adc;
+
+    --nav-background: #f5f8fd;
+    --nav-background-secondary: #eff3fc;
+    --nav-border: #dbe0e5;
+    --nav-text: #1d69cc;
+
+    --chat-background: #1a2432;
+    --chat-background-hover: #1f2a3a;
+    --chat-text: #fbfcfe;
+    --chat-input-background: #23282e;
+    --chat-dropdown-background: #23282e;
+
+    --action-background: #00142b;
+    --action-background-hover: #0d274d;
+
+    --sidebar-background: #23282e;
+    --sidebar-item-selected: #0d274d;
+
+    --shadow-default: rgba(0, 0, 0, 0.6);
+    --overlay-background: #2e3e57;
+
     --background: 210 10% 14%;
     --foreground: 0 0% 3.9%;
     --card: 0 0% 100%;
@@ -39,6 +70,42 @@
     --chart-5: 27 87% 67%;
     --radius: 0.5rem;
   }
+
+  .light {
+    --app-background: #ffffff;
+    --content-background: #f8f9fa;
+
+    --node-background: #e9ecef;
+    --node-background-hover: #dee2e6;
+    --node-background-active: #0056b3;
+    --node-text-primary: #212529;
+    --node-text-secondary: #6c757d;
+    --node-icon-background: #adb5bd;
+
+    --accent-primary: #0d6efd;
+    --accent-border: #0d6efd;
+
+    --nav-background: #f8f9fa;
+    --nav-background-secondary: #e9ecef;
+    --nav-border: #dee2e6;
+    --nav-text: #0d6efd;
+
+    --chat-background: #f8f9fa;
+    --chat-background-hover: #e9ecef;
+    --chat-text: #212529;
+    --chat-input-background: #ffffff;
+    --chat-dropdown-background: #ffffff;
+
+    --action-background: #0d6efd;
+    --action-background-hover: #0b5ed7;
+
+    --sidebar-background: #f8f9fa;
+    --sidebar-item-selected: #e7f1ff;
+
+    --shadow-default: rgba(0, 0, 0, 0.15);
+    --overlay-background: #6c757d;
+  }
+
   .dark {
     --background: 0 0% 3.9%;
     --foreground: 0 0% 98%;
@@ -67,17 +134,17 @@
   }
 }
 
-
 @layer components {
   .app-container {
-    @apply flex flex-col w-screen h-screen overflow-hidden bg-primary-bg;
+    @apply flex h-screen w-screen flex-col overflow-hidden;
+    background-color: var(--app-background);
   }
-  
+
   .main-content {
     flex-grow: 1;
     display: flex;
     flex-direction: column;
-    background-color: var(--primary-bg);
+    background-color: var(--content-background);
   }
 }
 

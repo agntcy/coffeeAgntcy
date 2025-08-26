@@ -16,7 +16,7 @@ import {
 } from "@xyflow/react"
 import "@xyflow/react/dist/style.css"
 import "./ReactFlow.css"
-import SlimNode from "./Graph/SlimNode"
+import SlimNode from "./Graph/TransportNode"
 import CustomEdge from "./Graph/CustomEdge"
 import CustomNode from "./Graph/CustomNode"
 import { graphConfig, updateA2ALabels } from "@/utils/graphConfigs"

@@ -65,7 +65,7 @@ const App: React.FC = () => {
       const response = await sendMessage(query)
       handleApiResponse(response, false)
     } catch (error) {
-      if (process.env.NODE_ENV === "development") {
+      if (import.meta.env.DEV) {
         logger.apiError("/api/ask", error)
       }
       handleApiResponse("Sorry, I encountered an error.", true)
@@ -73,13 +73,13 @@ const App: React.FC = () => {
   }
 
   return (
-    <div className="bg-primary-bg flex h-screen w-screen flex-col overflow-hidden">
+    <div className="bg-app-background flex h-screen w-screen flex-col overflow-hidden">
       <Navigation />
 
       <div className="flex flex-1 overflow-hidden">
         <Sidebar />
 
-        <div className="bg-primary-bg flex min-w-0 flex-1 flex-col border-l border-[#00142B]">
+        <div className="bg-app-background border-action-background flex min-w-0 flex-1 flex-col border-l">
           <div className="relative flex-grow">
             <MainArea
               buttonClicked={buttonClicked}
@@ -89,7 +89,7 @@ const App: React.FC = () => {
             />
           </div>
 
-          <div className="flex min-h-[76px] w-full flex-none flex-col items-center justify-center gap-0 bg-[#2E3E57] p-0 md:min-h-[96px]">
+          <div className="bg-overlay-background flex min-h-[76px] w-full flex-none flex-col items-center justify-center gap-0 p-0 md:min-h-[96px]">
             <ChatArea
               messages={messages}
               setMessages={setMessages}

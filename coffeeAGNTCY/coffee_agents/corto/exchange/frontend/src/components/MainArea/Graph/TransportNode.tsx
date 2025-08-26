@@ -19,12 +19,12 @@ interface SlimNodeProps {
 
 const SlimNode: React.FC<SlimNodeProps> = ({ data }) => {
   const activeClasses = data.active
-    ? "bg-[#00142B] outline outline-2 outline-[#187ADC] shadow-[rgba(0,0,0,0.6)_0px_6px_8px]"
-    : "bg-[#373C42]"
+    ? "bg-node-background-active outline outline-2 outline-accent-border shadow-[var(--shadow-default)_0px_6px_8px]"
+    : "bg-node-background"
 
   return (
     <div
-      className={` ${activeClasses} flex items-center justify-center border border-gray-100 text-center text-gray-50 hover:bg-[#4A4F55] hover:shadow-[rgba(0,0,0,0.6)_0px_6px_8px] hover:outline hover:outline-2 hover:outline-[#187ADC]`}
+      className={` ${activeClasses} hover:bg-node-background-hover hover:outline-accent-border flex items-center justify-center border border-gray-100 text-center text-gray-50 hover:shadow-[var(--shadow-default)_0px_6px_8px] hover:outline hover:outline-2`}
       style={{
         width: "1200px",
         height: "52px",

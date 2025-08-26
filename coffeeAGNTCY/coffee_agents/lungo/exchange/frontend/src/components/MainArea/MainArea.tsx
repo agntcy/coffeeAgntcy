@@ -15,7 +15,7 @@ import {
 import "@xyflow/react/dist/style.css"
 import "./ReactFlow.css"
 import { PatternType } from "@/App"
-import TransportNode from "./Graph/SlimNode"
+import TransportNode from "./Graph/transportNode"
 import CustomEdge from "./Graph/CustomEdge"
 import CustomNode from "./Graph/CustomNode"
 import {
@@ -147,7 +147,7 @@ const MainArea: React.FC<MainAreaProps> = ({
   ])
 
   return (
-    <div className="bg-primary-bg order-1 flex h-full w-full flex-none flex-grow flex-col items-start self-stretch p-0">
+    <div className="order-1 flex h-full w-full flex-none flex-grow flex-col items-start self-stretch bg-primary-bg p-0">
       <ReactFlow
         nodes={nodes}
         edges={edges}

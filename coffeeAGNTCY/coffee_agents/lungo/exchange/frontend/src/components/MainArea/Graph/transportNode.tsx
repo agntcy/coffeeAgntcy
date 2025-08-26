@@ -21,18 +21,17 @@ interface TransportNodeProps {
 
 const TransportNode: React.FC<TransportNodeProps> = ({ data }) => {
   const activeClasses = data.active
-    ? "bg-[#00142B] outline outline-2 outline-[#187ADC] shadow-[rgba(0,0,0,0.6)_0px_6px_8px]"
-    : "bg-[#373C42]"
+    ? "bg-node-background-active outline outline-2 outline-accent-border shadow-[var(--shadow-default)_0px_6px_8px]"
+    : "bg-node-background"
 
   return (
     <div
-      className={` ${activeClasses} relative flex h-[52px] w-[1200px] items-center justify-center rounded-lg p-4 text-center text-gray-50 hover:bg-[#4A4F55] hover:shadow-[rgba(0,0,0,0.6)_0px_6px_8px] hover:outline hover:outline-2 hover:outline-[#187ADC]`}
+      className={` ${activeClasses} hover:bg-node-background-hover hover:outline-accent-border relative flex h-[52px] w-[1200px] items-center justify-center rounded-lg p-4 text-center text-gray-50 hover:shadow-[var(--shadow-default)_0px_6px_8px] hover:outline hover:outline-2`}
     >
-      <div className="flex h-5 w-[94px] items-center justify-center whitespace-nowrap font-inter text-sm font-normal leading-5 tracking-normal text-[#E8E9EA] opacity-100">
+      <div className="text-node-text-primary flex h-5 w-[94px] items-center justify-center whitespace-nowrap font-inter text-sm font-normal leading-5 tracking-normal opacity-100">
         {data.label}
       </div>
 
-      {/* GitHub Icon */}
       {data.githubLink && (
         <a
           href={data.githubLink}
@@ -41,7 +40,7 @@ const TransportNode: React.FC<TransportNodeProps> = ({ data }) => {
           className="no-underline"
         >
           <div
-            className="absolute -right-4 top-1/2 z-10 flex h-7 w-7 -translate-y-1/2 cursor-pointer items-center justify-center rounded-lg bg-[#00142B] p-1 opacity-100 shadow-sm transition-opacity duration-200 ease-in-out"
+            className="bg-action-background absolute -right-4 top-1/2 z-10 flex h-7 w-7 -translate-y-1/2 cursor-pointer items-center justify-center rounded-lg p-1 opacity-100 shadow-sm transition-opacity duration-200 ease-in-out"
             onMouseEnter={(e) => {
               e.currentTarget.style.opacity = "0.8"
             }}
