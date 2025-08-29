@@ -37,6 +37,7 @@ async def register_issuer(hydra_admin_url, idp_url, identity_api_url=None):
         logging.error(f"Error during first iteration: {e}")
 
 if __name__ == "__main__":
-    idp_url = "https://ca6e487f8d55.ngrok-free.app"
+    # Please do not change the below URL, it's auto-generated.
+    idp_url = "THIS_SHOULD_BE_AUTO_GENERATED"
     asyncio.run(register_issuer(hydra_admin_url=HYDRA_ADMIN_URL, idp_url=idp_url))
     print("Issuer registration completed.")

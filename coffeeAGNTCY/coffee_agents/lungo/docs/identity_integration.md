@@ -65,63 +65,60 @@ Refer to the [Identity SaaS Documentation](https://identity-docs.outshift.com/do
    Download and install the ngrok CLI from [ngrok's official website](https://ngrok.com/download).
 
 2. **Run the `start_ngrok.sh` Script**  
-   This script sets up a public tunnel to your local machine on port `4444`.  
-   Execute the script from the `lungo` directory root:
+   This script creates a public tunnel to your local machine on port `4444`.  
+   Run the script from the root of the `lungo` directory:
    ```bash
    ./scripts/start_ngrok.sh
    ```
-   Note the generated public URL, as it will be needed in later steps.
+   Copy the generated public URL, as it will be required in later steps.
 
-   **Extra**: To stop ngrok, simply terminate the process (e.g., `Ctrl+C` in the terminal).
+   **Tip**: To stop ngrok, terminate the process by pressing `Ctrl+C` in the terminal or using the following commands:
    ```bash
    ps aux | grep ngrok # Find the ngrok process ID
    kill -9 <process_id> # Replace <process_id> with the actual ID
    ```
+
+3. **Install OSS Identity CLI**  
+   Follow the installation steps in the [OSS Identity CLI Documentation](https://github.com/agntcy/identity?tab=readme-ov-file#step-1-install-the-issuer-cli).
+
+4. **Ensure Python is Installed**  
+   Make sure Python (version 3.8 or higher) is installed on your system.
+
 ---
 
-### Local Development Setup
+### Running Lungo Agents with OSS Identity Local Setup
 
-Follow these steps to configure your local development environment:
+Follow these steps to set up your local development environment:
 
-1. **Start Hydra Services**  
+1. **Start Hydra and Identity Services**  
    After running the `start_ngrok.sh` script (which updates the issuer URL), start all services using Docker Compose:
    ```bash
-   # override the default docker-compose file to include identity oss envs
    docker-compose -f docker-compose.hydra.yaml up
    ```
 
-2. **Run the Identity Node Services**  
-   Open a new terminal, clone the Identity repository, and navigate to its root directory:
-   ```bash
-   git clone https://github.com/agntcy/identity
-   cd identity
-   ```
-   Start the Identity service:
-   ```bash
-   ./deployments/scripts/identity/launch_node.sh
-   ```
-
-3. **Register an Identity Provider**  
-   To set up initially, ensure the OSS Identity CLI is installed. Then, navigate to the lungo directory and execute:
-   ```bash
-4. Open a new terminal, navigate to the `lungo` directory, and run:
+2. **Register an Identity Provider**  
+   Ensure the OSS Identity CLI is installed. Then, navigate to the `lungo` directory and run:
    ```bash
    python ./scripts/register_issuer.py
    ```
-   **Note:** If the issuer URL changes, you must re-register the Identity Provider.
+   **Note**: If the issuer URL changes, you must re-register the Identity Provider.
 
-4. **Run Lungo Agents**  
-   You have two options to run the Lungo agents with OSS Identity environment variables:
+   When registration is successful, you should see the following output:
+   ```
+   Issuer registration completed.
+   ```
 
-    - **Option 1: Run via Docker Compose**  
-      Use the following command to start the agents:
+3. **Run Lungo Agents**  
+   You can run the Lungo agents with OSS Identity environment variables using one of the following methods:
+
+    - **Option 1: Run with Docker Compose**  
+      From the root of the `lungo` directory, use the following command to start the agents:
       ```bash
-      # override the default docker-compose file to include identity oss envs
       docker-compose -f docker-compose.yaml -f docker-compose.identity-oss.yaml up
       ```
 
     - **Option 2: Run Locally**  
-      Configure the following environment variables in your shell or a `.env` file:
+      Set the following environment variables in your shell or a `.env` file:
       ```bash
       IDENTITY_NODE_USE_SSL=0 # Disable SSL verification for local development
       IDENTITY_NODE_GRPC_SERVER_URL=127.0.0.1:4001 # Identity Node gRPC server URL (no http/https prefix)
@@ -129,11 +126,33 @@ Follow these steps to configure your local development environment:
       IDP_ISSUER_URL=<ngrok-url> # Public URL from step 1
       HYDRA_ADMIN_URL=<your-hydra-admin-url> # Default: http://localhost:4445/clients (if using docker-compose)
       ```
-      Then, start the farm servers:
+      Start the farm servers:
       ```bash
-      IDENTITY_NODE_USE_SSL=0 IDENTITY_NODE_GRPC_SERVER_URL=127.0.0.1:4001 ENABLE_OSS_IDENTITY=true IDP_ISSUER_URL=https://c510286bae99.ngrok-free.app ENABLE_HTTP=true uv run python farms/vietnam/farm_server.py # Replace with colombia for Colombia farm
+      ENABLE_OSS_IDENTITY=true IDP_ISSUER_URL=https://c510286bae99.ngrok-free.app ENABLE_HTTP=true uv run python farms/vietnam/farm_server.py # Replace with colombia for Colombia farm
       ```
-      For the exchange server:
+      Start the exchange server:
       ```bash
-      IDENTITY_NODE_USE_SSL=0 IDENTITY_NODE_GRPC_SERVER_URL=127.0.0.1:4001 ENABLE_OSS_IDENTITY=true IDP_ISSUER_URL=https://cc5ec0986c38.ngrok-free.app uv run python exchange/main.py
+      ENABLE_OSS_IDENTITY=true IDENTITY_NODE_USE_SSL=0 IDENTITY_NODE_GRPC_SERVER_URL=127.0.0.1:4001 uv run python exchange/main.py
+      ```
+
+4. **Testing the Changes**
+
+   You can test the changes by sending requests to the exchange server. Use the following `curl` commands:
+
+    - **Create an order from the Colombia farm (verified identity):**
+      ```bash
+      curl -X POST http://127.0.0.1:8000/agent/prompt \
+        -H "Content-Type: application/json" \
+        -d '{
+          "prompt": "I want to order coffee from the Columbia farm. I am willing to offer $3.50 per pound for 500 lbs of coffee from the Columbia farm."
+        }'
+      ```
+
+    - **Create an order from the Brazil farm (unverified identity):**
+      ```bash
+      curl -X POST http://127.0.0.1:8000/agent/prompt \
+        -H "Content-Type: application/json" \
+        -d '{
+          "prompt": "I want to order coffee from the Brazil farm. I am willing to offer $3.50 per pound for 500 lbs of coffee from the Brazil farm."
+        }'
       ```

@@ -4,7 +4,8 @@ serve:
 
 urls:
   self:
-    issuer: https://ca6e487f8d55.ngrok-free.app
+    # Please don't change this below env variable, it should be auto-generated
+    issuer: THIS_SHOULD_BE_AUTO_GENERATED
   consent: http://127.0.0.1:3000/consent
   login: http://127.0.0.1:3000/login
   logout: http://127.0.0.1:3000/logout
