@@ -191,3 +191,9 @@ temp/
 node_modules/
 
 .ruff_cache/
+
+# Identity OSS
+coffeeAGNTCY/coffee_agents/lungo/scripts/register_issuer.py
+coffeeAGNTCY/coffee_agents/lungo/docker-compose.identity-oss.yaml
+coffeeAGNTCY/coffee_agents/lungo/config/hydra/hydra.yml
+coffeeAGNTCY/coffee_agents/lungo/vault.json

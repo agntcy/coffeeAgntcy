@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import logging
+import os
 from typing import Any, Union, Literal
 from uuid import uuid4
 from pydantic import BaseModel
@@ -26,6 +27,7 @@ from config.config import (
     FARM_BROADCAST_TOPIC,
     IDENTITY_API_KEY,
     IDENTITY_API_SERVER_URL,
+    HYDRA_ADMIN_URL
 )
 from farms.brazil.card import AGENT_CARD as brazil_agent_card
 from farms.colombia.card import AGENT_CARD as colombia_agent_card
@@ -36,6 +38,7 @@ from exchange.graph.models import (
 )
 from services.identity_service import IdentityService
 from services.identity_service_impl import IdentityServiceImpl
+from services.identity_service_oss_impl import IdentityServiceOSSImpl, get_farm_url_by_card_name
 
 from ioa_observe.sdk.decorators import tool as ioa_tool_decorator
 
@@ -285,7 +288,17 @@ async def create_order(farm: str, quantity: int, price: float) -> str:
         return f"Farm '{farm}' not recognized. Available farms are: {brazil_agent_card.name}, {colombia_agent_card.name}, {vietnam_agent_card.name}."
 
     logger.info(f"Using farm card: {card.name} for order creation")
-    identity_service = IdentityServiceImpl(api_key=IDENTITY_API_KEY, base_url=IDENTITY_API_SERVER_URL)
+
+    if os.getenv("ENABLE_OSS_IDENTITY", False):
+        logger.info("OSS Identity is enabled.")
+        identity_service = IdentityServiceOSSImpl(
+            idp_url=os.getenv("IDP_ISSUER_URL"),
+            hydra_admin_url= HYDRA_ADMIN_URL,
+            agent_url= get_farm_url_by_card_name(card.name)
+        )
+    else:
+        identity_service = IdentityServiceImpl(api_key=IDENTITY_API_KEY, base_url=IDENTITY_API_SERVER_URL)
+
     try:
         verify_farm_identity(identity_service, card.name)
     except ValueError as e:

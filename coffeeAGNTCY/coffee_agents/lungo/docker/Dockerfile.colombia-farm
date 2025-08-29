@@ -2,7 +2,7 @@ FROM python:3.13.0-slim
 
 # Install system dependencies, including ping, curl, and wget
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends git curl wget iputils-ping && \
+    apt-get install -y --no-install-recommends git curl wget sudo iputils-ping && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
@@ -10,6 +10,16 @@ RUN apt-get update && \
 RUN pip install --no-cache-dir uv && \
     uv venv -q /venv
 ENV PATH="/venv/bin:$PATH"
+
+# Install the identity CLI
+RUN BINARY_ARCH=$(uname -m) && \
+    if [ "$BINARY_ARCH" = "x86_64" ]; then BINARY_ARCH="amd64"; elif [ "$BINARY_ARCH" = "aarch64" ]; then BINARY_ARCH="arm64"; fi && \
+    BINARY_OS=$(uname -s | tr '[:upper:]' '[:lower:]') && \
+    BINARY_NAME="identity" && \
+    LATEST_BINARY_URI="https://github.com/agntcy/identity/releases/latest/download/${BINARY_NAME}_${BINARY_OS}_${BINARY_ARCH}" && \
+    INSTALL_LOCATION="/usr/local/bin" && \
+    curl -sL ${LATEST_BINARY_URI} -o ${INSTALL_LOCATION}/${BINARY_NAME} && \
+    chmod 755 ${INSTALL_LOCATION}/${BINARY_NAME}
 
 WORKDIR /app
 COPY coffeeAGNTCY/coffee_agents/lungo/pyproject.toml coffeeAGNTCY/coffee_agents/lungo/uv.lock ./

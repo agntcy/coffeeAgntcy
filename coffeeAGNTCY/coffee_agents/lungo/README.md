@@ -305,3 +305,4 @@ By default, the UI will be available at [http://localhost:3000/](http://localhos
 
    ![Screenshot: OTEL Dashboard](images/dashboard_grafana.png)
    ![Screenshot: OTEL Traces](images/dashboard_traces.png)
+
