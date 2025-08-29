@@ -18,7 +18,7 @@ logger = logging.getLogger("lungo.services.identity_service_oss")
 
 # Mapping farm agent URLs to their respective card names, and client IDs (slugs)
 CARD_URL_MAP = {
-  VIETNAM_FARM_AGENT_URL: (vietnam_agent_card.name, "vietnam-farm-agent-1"),
+  VIETNAM_FARM_AGENT_URL: (vietnam_agent_card.name, "vietnam-farm-agent"),
   COLOMBIA_FARM_AGENT_URL: (colombia_agent_card.name, "colombia-farm-agent"),
 }
 # helper function to get farm URL by card name
@@ -275,8 +275,6 @@ class IdentityServiceOSSImpl(IdentityService):
     )
     if self.identity_api_url:
       command += f' -i "{self.identity_api_url}"'
-
-    logger.info(f"Generating metadata with command: {command}")
     expected_output = "Generated metadata with ID:"
     await self._run_command(command, expected_output, self._validate_metadata_generate_output)
 
@@ -296,7 +294,6 @@ class IdentityServiceOSSImpl(IdentityService):
     command = 'printf "\\n" | identity badge publish'
     if self.identity_api_url:
       command += f' -i "{self.identity_api_url}"'
-    logger.info(f"Publishing badge with command: {command}")
     expected_output = "Published the badge"
     await self._run_command(command, expected_output, self._validate_publish_badge_output)
 
