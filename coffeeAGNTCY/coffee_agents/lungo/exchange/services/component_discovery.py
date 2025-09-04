@@ -27,12 +27,13 @@ class TopologyNode(BaseModel):
     data: dict = {}  # All UI-specific data properties 
 
 class TopologyEdge(BaseModel):
-    source_id: str  # Semantic source node ID (e.g., "supervisor") 
-    target_id: str  # Semantic target node ID (e.g., "transport")
-    from_node: str = Field(alias="from")  # Alias for source_id
-    to_node: str = Field(alias="to")  # Alias for target_id
-    label: str = None
-    edge_type: str = "custom"  # UI edge type 
+    id: str  # Edge ID in format "source-target"
+    source: str  # Source node ID
+    target: str  # Target node ID
+    source_handle: str = None  # Source handle for positioning
+    target_handle: str = None  # Target handle for positioning
+    data: dict = {}  # Edge data including label
+    type: str = "custom"  # UI edge type 
     
 class TopologyComponents(BaseModel):
     nodes: List[TopologyNode]
@@ -117,10 +118,12 @@ class ComponentDiscoveryService:
         ))
         
         edges.append(TopologyEdge(
-            source_id="1",
-            target_id="2", 
-            label="A2A",
-            **{"from": "1", "to": "2"}
+            id="1-2",
+            source="1",
+            target="2",
+            target_handle="top",
+            data={"label": "A2A"},
+            type="custom"
         ))
         
         farm_cards = [brazil_agent_card, colombia_agent_card, vietnam_agent_card]
@@ -159,12 +162,22 @@ class ComponentDiscoveryService:
                 }
             ))
             
-            # Transport connects to farm
+            # Transport connects to farm with appropriate source handle
+            source_handle = None
+            if farm_id == "3":  # Brazil
+                source_handle = "bottom_left"
+            elif farm_id == "4":  # Colombia  
+                source_handle = "bottom_center"
+            elif farm_id == "5":  # Vietnam
+                source_handle = "bottom_right"
+                
             edges.append(TopologyEdge(
-                source_id="2",
-                target_id=farm_id,
-                label="A2A",
-                **{"from": "2", "to": farm_id}
+                id=f"2-{farm_id}",
+                source="2",
+                target=farm_id,
+                source_handle=source_handle,
+                data={"label": "A2A"},
+                type="custom"
             ))
         
         nodes.append(TopologyNode(
@@ -181,10 +194,11 @@ class ComponentDiscoveryService:
         
         # Colombia farm (ID: 4) connects to weather MCP
         edges.append(TopologyEdge(
-            source_id="4",
-            target_id="6",
-            label=f"MCP: {DEFAULT_MESSAGE_TRANSPORT.upper()}",
-            **{"from": "4", "to": "6"}
+            id="4-6",
+            source="4",
+            target="6",
+            data={"label": f"MCP: {DEFAULT_MESSAGE_TRANSPORT.upper()}"},
+            type="custom"
         ))
         
         logger.info(f"Built topology with {len(nodes)} nodes and {len(edges)} edges")

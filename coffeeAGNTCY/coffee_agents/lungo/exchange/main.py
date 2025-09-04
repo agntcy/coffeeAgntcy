@@ -109,12 +109,13 @@ async def get_topology_components(pattern: str = "publish_subscribe"):
             ],
             "edges": [
                 {
-                    "from": edge.from_node,
-                    "to": edge.to_node,
-                    "source": edge.source_id,
-                    "target": edge.target_id,
-                    "label": edge.label,
-                    "edge_type": edge.edge_type
+                    "id": edge.id,
+                    "source": edge.source,
+                    "target": edge.target,
+                    "sourceHandle": edge.source_handle,
+                    "targetHandle": edge.target_handle,
+                    "data": edge.data,
+                    "type": edge.type
                 }
                 for edge in components.edges
             ],
