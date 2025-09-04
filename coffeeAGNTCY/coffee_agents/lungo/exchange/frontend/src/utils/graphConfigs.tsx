@@ -6,7 +6,6 @@
 import { TiWeatherCloudy } from "react-icons/ti"
 import supervisorIcon from "@/assets/supervisor.png"
 import farmAgentIcon from "@/assets/Grader-Agent.png"
-import { FarmName } from "./const"
 import { logger } from "./logger"
 
 export interface GraphConfig {
@@ -103,11 +102,10 @@ const PUBLISH_SUBSCRIBE_CONFIG: GraphConfig = {
           />
         ),
         label1: "Loading",
-        label2: "Buyer",
+        label2: "",
         handles: "source",
-        githubLink:
-          "https://github.com/agntcy/coffeeAgntcy/blob/main/coffeeAGNTCY/coffee_agents/lungo/exchange/graph/graph.py#L50",
-        agentDirectoryLink: "https://agent-directory.outshift.com/explore",
+        githubLink: "",
+        agentDirectoryLink: "",
       },
       position: { x: 527.1332569384248, y: 76.4805787605829 },
     },
@@ -116,8 +114,7 @@ const PUBLISH_SUBSCRIBE_CONFIG: GraphConfig = {
       type: "transportNode",
       data: {
         label: "Loading",
-        githubLink:
-          "https://github.com/agntcy/app-sdk/tree/main/src/agntcy_app_sdk/transports",
+        githubLink: "",
       },
       position: { x: 229.02370449534635, y: 284.688426426175 },
     },
@@ -127,12 +124,10 @@ const PUBLISH_SUBSCRIBE_CONFIG: GraphConfig = {
       data: {
         icon: CoffeeBeanIcon,
         label1: "Loading",
-        label2: "Coffee Farm Agent",
+        label2: "",
         handles: "target",
-        farmName: FarmName?.BrazilCoffeeFarm || "Brazil Coffee Farm",
-        githubLink:
-          "https://github.com/agntcy/coffeeAgntcy/blob/main/coffeeAGNTCY/coffee_agents/lungo/farms/brazil/agent.py#L30",
-        agentDirectoryLink: "https://agent-directory.outshift.com/explore",
+        githubLink: "",
+        agentDirectoryLink: "",
       },
 
       position: { x: 232.0903941835277, y: 503.93174725714437 },
@@ -143,12 +138,10 @@ const PUBLISH_SUBSCRIBE_CONFIG: GraphConfig = {
       data: {
         icon: CoffeeBeanIcon,
         label1: "Loading",
-        label2: "Coffee Farm Agent",
+        label2: "",
         handles: "all",
-        farmName: FarmName?.ColombiaCoffeeFarm || "Colombia Coffee Farm",
-        githubLink:
-          "https://github.com/agntcy/coffeeAgntcy/blob/main/coffeeAGNTCY/coffee_agents/lungo/farms/colombia/agent.py#L54",
-        agentDirectoryLink: "https://agent-directory.outshift.com/explore",
+        githubLink: "",
+        agentDirectoryLink: "",
       },
       position: { x: 521.266082170288, y: 505.38817113883306 },
     },
@@ -158,12 +151,10 @@ const PUBLISH_SUBSCRIBE_CONFIG: GraphConfig = {
       data: {
         icon: CoffeeBeanIcon,
         label1: "Loading",
-        label2: "Coffee Farm Agent",
+        label2: "",
         handles: "target",
-        farmName: FarmName?.VietnamCoffeeFarm || "Vietnam Coffee Farm",
-        githubLink:
-          "https://github.com/agntcy/coffeeAgntcy/blob/main/coffeeAGNTCY/coffee_agents/lungo/farms/vietnam/agent.py#L30",
-        agentDirectoryLink: "https://agent-directory.outshift.com/explore",
+        githubLink: "",
+        agentDirectoryLink: "",
       },
       position: { x: 832.9824511707582, y: 505.08339631990395 },
     },
@@ -173,11 +164,10 @@ const PUBLISH_SUBSCRIBE_CONFIG: GraphConfig = {
       data: {
         icon: <TiWeatherCloudy className="h-4 w-4 text-white" />,
         label1: "Loading",
-        label2: "Weather",
+        label2: "",
         handles: "target",
-        githubLink:
-          "https://github.com/agntcy/coffeeAgntcy/blob/main/coffeeAGNTCY/coffee_agents/lungo/mcp_servers/weather_service.py#L25",
-        agentDirectoryLink: "https://agent-directory.outshift.com/explore",
+        githubLink: "",
+        agentDirectoryLink: "",
       },
       position: { x: 569.3959708104304, y: 731.9104402412228 },
     },
@@ -188,39 +178,29 @@ const PUBLISH_SUBSCRIBE_CONFIG: GraphConfig = {
       source: "1",
       target: "2",
       targetHandle: "top",
-      data: { label: "A2A" },
-      type: "custom",
     },
     {
       id: "2-3",
       source: "2",
       target: "3",
       sourceHandle: "bottom_left",
-      data: { label: "A2A" },
-      type: "custom",
     },
     {
       id: "2-4",
       source: "2",
       target: "4",
       sourceHandle: "bottom_center",
-      data: { label: "A2A" },
-      type: "custom",
     },
     {
       id: "2-5",
       source: "2",
       target: "5",
       sourceHandle: "bottom_right",
-      data: { label: "A2A" },
-      type: "custom",
     },
     {
       id: "4-6",
       source: "4",
       target: "6",
-      data: { label: "MCP: " },
-      type: "custom",
     },
   ],
   animationSequence: [
@@ -262,12 +242,6 @@ export const updateTransportLabels = async (
               data: {
                 ...node.data,
                 label: `Transport: ${transport}`,
-                githubLink:
-                  transport === "SLIM"
-                    ? "https://github.com/agntcy/app-sdk/blob/main/src/agntcy_app_sdk/transports/slim/transport.py#L23"
-                    : transport === "NATS"
-                      ? "https://github.com/agntcy/app-sdk/blob/main/src/agntcy_app_sdk/transports/nats/transport.py#L21"
-                      : "https://github.com/agntcy/app-sdk/tree/main/src/agntcy_app_sdk/transports",
               },
             }
           : node,
@@ -297,33 +271,44 @@ export const updateTopologyFromServer = async (
     )
     const data = await response.json()
 
-    // Update nodes with server data
     setNodes((nodes: any[]) =>
       nodes.map((node: any) => {
         const serverNode = data.nodes.find((n: any) => n.id === node.id)
         if (serverNode) {
           const updatedData = { ...node.data }
 
-          // Update label1 for custom nodes
           if (serverNode.type === "customNode" && serverNode.data?.label1) {
             updatedData.label1 = serverNode.data.label1
           } else if (serverNode.type === "customNode") {
             updatedData.label1 = "Loading"
           }
 
-          // Update label for transport nodes
+          if (serverNode.type === "customNode") {
+            updatedData.label2 = serverNode.data?.label2 || ""
+          }
+
           if (serverNode.type === "transportNode" && serverNode.data?.label) {
             updatedData.label = serverNode.data.label
           } else if (serverNode.type === "transportNode") {
             updatedData.label = "Loading"
           }
 
-          // Update verification status - only show badge if verified
           if (serverNode.verification === "verified") {
             updatedData.verificationStatus = "verified"
           } else {
-            // Remove verification status for unverified or null verification
             delete updatedData.verificationStatus
+          }
+
+          if (serverNode.data?.farmName) {
+            updatedData.farmName = serverNode.data.farmName
+          }
+
+          if (serverNode.github_url) {
+            updatedData.githubLink = serverNode.github_url
+          }
+
+          if (serverNode.data?.agentDirectoryLink) {
+            updatedData.agentDirectoryLink = serverNode.data.agentDirectoryLink
           }
 
           return {
@@ -334,6 +319,10 @@ export const updateTopologyFromServer = async (
         return node
       }),
     )
+
+    if (data.edges && data.edges.length > 0) {
+      setEdges(() => data.edges)
+    }
   } catch (error) {
     logger.apiError("/topology/components", error)
   }

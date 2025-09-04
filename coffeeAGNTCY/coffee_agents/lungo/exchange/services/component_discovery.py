@@ -126,33 +126,25 @@ class ComponentDiscoveryService:
             type="custom"
         ))
         
-        farm_cards = [brazil_agent_card, colombia_agent_card, vietnam_agent_card]
-        farm_github_urls = {
-            "brazil-farm-agent": "https://github.com/agntcy/coffeeAgntcy/blob/main/coffeeAGNTCY/coffee_agents/lungo/farms/brazil/agent.py#L30",
-            "colombia-farm-agent": "https://github.com/agntcy/coffeeAgntcy/blob/main/coffeeAGNTCY/coffee_agents/lungo/farms/colombia/agent.py#L54", 
-            "vietnam-farm-agent": "https://github.com/agntcy/coffeeAgntcy/blob/main/coffeeAGNTCY/coffee_agents/lungo/farms/vietnam/agent.py#L30"
-        }
+        farm_data = [
+            (brazil_agent_card, "https://github.com/agntcy/coffeeAgntcy/blob/main/coffeeAGNTCY/coffee_agents/lungo/farms/brazil/agent.py#L30"),
+            (colombia_agent_card, "https://github.com/agntcy/coffeeAgntcy/blob/main/coffeeAGNTCY/coffee_agents/lungo/farms/colombia/agent.py#L54"),
+            (vietnam_agent_card, "https://github.com/agntcy/coffeeAgntcy/blob/main/coffeeAGNTCY/coffee_agents/lungo/farms/vietnam/agent.py#L30")
+        ]
         
-        for i, farm_card in enumerate(farm_cards):
+        for i, (farm_card, github_url) in enumerate(farm_data):
             farm_id = str(i + 3)  # Start from 3 to match graphConfig IDs (3=Brazil, 4=Colombia, 5=Vietnam)
             
             farm_name = farm_card.name.replace(" Coffee Farm", "").strip()
             
             verification_status = await self._get_farm_verification_status(farm_card.name)
             
-            # Get the card ID - handle both attribute and property access
-            try:
-                card_id = farm_card.id
-            except AttributeError:
-                # Fallback to accessing by dict key if it's a dict-like object
-                card_id = getattr(farm_card, 'id', None) or farm_card.get('id', '') if hasattr(farm_card, 'get') else ''
-            
             nodes.append(TopologyNode(
                 id=farm_id,
                 type="customNode",
                 name=farm_name, 
                 verification=verification_status,
-                github_url=farm_github_urls.get(card_id, ""),
+                github_url=github_url,
                 data={
                     "label1": farm_name,
                     "label2": "Coffee Farm Agent",
