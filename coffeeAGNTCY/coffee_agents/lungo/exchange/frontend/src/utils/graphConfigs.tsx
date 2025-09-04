@@ -102,7 +102,7 @@ const PUBLISH_SUBSCRIBE_CONFIG: GraphConfig = {
             className="h-4 w-4 object-contain brightness-0 invert"
           />
         ),
-        label1: "Supervisor Agent",
+        label1: "Loading",
         label2: "Buyer",
         handles: "source",
         githubLink:
@@ -115,7 +115,7 @@ const PUBLISH_SUBSCRIBE_CONFIG: GraphConfig = {
       id: "2",
       type: "transportNode",
       data: {
-        label: "Transport: ",
+        label: "Loading",
         githubLink:
           "https://github.com/agntcy/app-sdk/tree/main/src/agntcy_app_sdk/transports",
       },
@@ -126,11 +126,10 @@ const PUBLISH_SUBSCRIBE_CONFIG: GraphConfig = {
       type: "customNode",
       data: {
         icon: CoffeeBeanIcon,
-        label1: "Brazil",
+        label1: "Loading",
         label2: "Coffee Farm Agent",
         handles: "target",
         farmName: FarmName?.BrazilCoffeeFarm || "Brazil Coffee Farm",
-        verificationStatus: "failed",
         githubLink:
           "https://github.com/agntcy/coffeeAgntcy/blob/main/coffeeAGNTCY/coffee_agents/lungo/farms/brazil/agent.py#L30",
         agentDirectoryLink: "https://agent-directory.outshift.com/explore",
@@ -143,11 +142,10 @@ const PUBLISH_SUBSCRIBE_CONFIG: GraphConfig = {
       type: "customNode",
       data: {
         icon: CoffeeBeanIcon,
-        label1: "Colombia",
+        label1: "Loading",
         label2: "Coffee Farm Agent",
         handles: "all",
         farmName: FarmName?.ColombiaCoffeeFarm || "Colombia Coffee Farm",
-        verificationStatus: "verified",
         githubLink:
           "https://github.com/agntcy/coffeeAgntcy/blob/main/coffeeAGNTCY/coffee_agents/lungo/farms/colombia/agent.py#L54",
         agentDirectoryLink: "https://agent-directory.outshift.com/explore",
@@ -159,11 +157,10 @@ const PUBLISH_SUBSCRIBE_CONFIG: GraphConfig = {
       type: "customNode",
       data: {
         icon: CoffeeBeanIcon,
-        label1: "Vietnam",
+        label1: "Loading",
         label2: "Coffee Farm Agent",
         handles: "target",
         farmName: FarmName?.VietnamCoffeeFarm || "Vietnam Coffee Farm",
-        verificationStatus: "verified",
         githubLink:
           "https://github.com/agntcy/coffeeAgntcy/blob/main/coffeeAGNTCY/coffee_agents/lungo/farms/vietnam/agent.py#L30",
         agentDirectoryLink: "https://agent-directory.outshift.com/explore",
@@ -175,7 +172,7 @@ const PUBLISH_SUBSCRIBE_CONFIG: GraphConfig = {
       type: "customNode",
       data: {
         icon: <TiWeatherCloudy className="h-4 w-4 text-white" />,
-        label1: "MCP Server",
+        label1: "Loading",
         label2: "Weather",
         handles: "target",
         githubLink:
@@ -286,5 +283,58 @@ export const updateTransportLabels = async (
     )
   } catch (error) {
     logger.apiError("/transport/config", error)
+  }
+}
+
+export const updateTopologyFromServer = async (
+  pattern: string,
+  setNodes: (updater: (nodes: any[]) => any[]) => void,
+  setEdges: (updater: (edges: any[]) => any[]) => void,
+): Promise<void> => {
+  try {
+    const response = await fetch(
+      `${EXCHANGE_APP_API_URL}/topology/components?agent_pattern=${pattern}`,
+    )
+    const data = await response.json()
+
+    // Update nodes with server data
+    setNodes((nodes: any[]) =>
+      nodes.map((node: any) => {
+        const serverNode = data.nodes.find((n: any) => n.id === node.id)
+        if (serverNode) {
+          const updatedData = { ...node.data }
+
+          // Update label1 for custom nodes
+          if (serverNode.type === "customNode" && serverNode.data?.label1) {
+            updatedData.label1 = serverNode.data.label1
+          } else if (serverNode.type === "customNode") {
+            updatedData.label1 = "Loading"
+          }
+
+          // Update label for transport nodes
+          if (serverNode.type === "transportNode" && serverNode.data?.label) {
+            updatedData.label = serverNode.data.label
+          } else if (serverNode.type === "transportNode") {
+            updatedData.label = "Loading"
+          }
+
+          // Update verification status - only show badge if verified
+          if (serverNode.verification === "verified") {
+            updatedData.verificationStatus = "verified"
+          } else {
+            // Remove verification status for unverified or null verification
+            delete updatedData.verificationStatus
+          }
+
+          return {
+            ...node,
+            data: updatedData,
+          }
+        }
+        return node
+      }),
+    )
+  } catch (error) {
+    logger.apiError("/topology/components", error)
   }
 }

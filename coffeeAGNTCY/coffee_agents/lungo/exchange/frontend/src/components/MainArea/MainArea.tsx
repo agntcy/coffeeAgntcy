@@ -21,6 +21,7 @@ import CustomNode from "./Graph/CustomNode"
 import {
   getGraphConfig,
   updateTransportLabels,
+  updateTopologyFromServer,
   GraphConfig,
 } from "@/utils/graphConfigs"
 
@@ -68,7 +69,11 @@ const MainArea: React.FC<MainAreaProps> = ({
   const animationLock = useRef<boolean>(false)
 
   useEffect(() => {
-    updateTransportLabels(setNodes, setEdges)
+    if (pattern === "publish_subscribe") {
+      updateTopologyFromServer(pattern, setNodes, setEdges)
+    } else {
+      updateTransportLabels(setNodes, setEdges)
+    }
 
     const newConfig = getGraphConfig(pattern)
     setNodes(newConfig.nodes)
