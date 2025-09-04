@@ -14,6 +14,7 @@ from graph import shared
 from agntcy_app_sdk.factory import AgntcyFactory
 from ioa_observe.sdk.tracing import session_start
 from config.config import DEFAULT_MESSAGE_TRANSPORT
+from services.component_discovery import ComponentDiscoveryService
 
 setup_logging()
 logger = logging.getLogger("lungo.supervisor.main")
@@ -34,6 +35,7 @@ app.add_middleware(
 )
 
 exchange_graph = ExchangeGraph()
+component_discovery = ComponentDiscoveryService()
 
 class PromptRequest(BaseModel):
   prompt: str
@@ -78,6 +80,51 @@ async def get_config():
     return {
         "transport": DEFAULT_MESSAGE_TRANSPORT.upper()
     }
+
+@app.get("/topology/components")
+async def get_topology_components(pattern: str = "publish_subscribe"):
+    """
+    Discovers and returns available topology components for the specified pattern.
+    
+    Args:
+        pattern: The topology pattern name (e.g., 'publish_subscribe')
+    
+    Returns:
+        dict: Complete topology structure with nodes, edges, and transport information
+    """
+    try:
+        components = await component_discovery.discover_components(pattern)
+        
+        return {
+            "nodes": [
+                {
+                    "id": node.id,
+                    "type": node.type,
+                    "name": node.name,
+                    "verification": node.verification,
+                    "github_url": node.github_url,
+                    "data": node.data
+                }
+                for node in components.nodes
+            ],
+            "edges": [
+                {
+                    "from": edge.from_node,
+                    "to": edge.to_node,
+                    "source": edge.source_id,
+                    "target": edge.target_id,
+                    "label": edge.label,
+                    "edge_type": edge.edge_type
+                }
+                for edge in components.edges
+            ],
+            "transport": components.transport
+        }
+    except ValueError as ve:
+        raise HTTPException(status_code=400, detail=str(ve))
+    except Exception as e:
+        logger.error(f"Failed to discover components: {e}")
+        raise HTTPException(status_code=500, detail=f"Component discovery failed: {str(e)}")
 
 # Run the FastAPI server using uvicorn
 if __name__ == "__main__":
