@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  **/
 
-import React, { useEffect, useRef, useCallback } from "react"
+import React, { useEffect, useRef, useCallback, useState } from "react"
 import {
   ReactFlow,
   ReactFlowProvider,
@@ -24,6 +24,8 @@ import {
   updateTopologyFromServer,
   GraphConfig,
 } from "@/utils/graphConfigs"
+import { Waveform } from "ldrs/react"
+import "ldrs/react/Waveform.css"
 
 const proOptions = { hideAttribution: true }
 
@@ -66,27 +68,42 @@ const MainArea: React.FC<MainAreaProps> = ({
   const config: GraphConfig = getGraphConfig(pattern)
   const [nodes, setNodes, onNodesChange] = useNodesState(config.nodes)
   const [edges, setEdges, onEdgesChange] = useEdgesState(config.edges)
+  const [isLoading, setIsLoading] = useState<boolean>(false)
   const animationLock = useRef<boolean>(false)
 
   useEffect(() => {
     if (pattern === "publish_subscribe") {
-      updateTopologyFromServer(pattern, setNodes, setEdges)
+      const handleServerDataLoaded = () => {
+        fitView({
+          padding: 0.45,
+          duration: 300,
+          minZoom: 0.5,
+          maxZoom: 1.1,
+        })
+      }
+
+      updateTopologyFromServer(
+        pattern,
+        setNodes,
+        setEdges,
+        setIsLoading,
+        handleServerDataLoaded,
+      )
     } else {
       updateTransportLabels(setNodes, setEdges)
+      const newConfig = getGraphConfig(pattern)
+      setNodes(newConfig.nodes)
+      setEdges(newConfig.edges)
+
+      setTimeout(() => {
+        fitView({
+          padding: 0.45,
+          duration: 300,
+          minZoom: 0.5,
+          maxZoom: 1.1,
+        })
+      }, 100)
     }
-
-    const newConfig = getGraphConfig(pattern)
-    setNodes(newConfig.nodes)
-    setEdges(newConfig.edges)
-
-    setTimeout(() => {
-      fitView({
-        padding: 0.45,
-        duration: 300,
-        minZoom: 0.5,
-        maxZoom: 1.1,
-      })
-    }, 100)
   }, [pattern, setNodes, setEdges, fitView])
 
   const delay = (ms: number): Promise<void> =>
@@ -153,20 +170,29 @@ const MainArea: React.FC<MainAreaProps> = ({
 
   return (
     <div className="bg-primary-bg order-1 flex h-full w-full flex-none flex-grow flex-col items-start self-stretch p-0">
-      <ReactFlow
-        nodes={nodes}
-        edges={edges}
-        nodeTypes={nodeTypes}
-        edgeTypes={edgeTypes}
-        onNodesChange={onNodesChange}
-        onEdgesChange={onEdgesChange}
-        proOptions={proOptions}
-        defaultViewport={{ x: 0, y: 0, zoom: 0.75 }}
-        minZoom={0.15}
-        maxZoom={1.8}
-      >
-        <Controls />
-      </ReactFlow>
+      {isLoading && pattern === "publish_subscribe" ? (
+        <div className="flex h-full w-full items-center justify-center">
+          <div className="flex flex-col items-center gap-4">
+            <Waveform size="40" stroke="3.5" speed="1" color="#187adc" />
+            <p className="text-lg text-gray-600">Loading pattern.</p>
+          </div>
+        </div>
+      ) : (
+        <ReactFlow
+          nodes={nodes}
+          edges={edges}
+          nodeTypes={nodeTypes}
+          edgeTypes={edgeTypes}
+          onNodesChange={onNodesChange}
+          onEdgesChange={onEdgesChange}
+          proOptions={proOptions}
+          defaultViewport={{ x: 0, y: 0, zoom: 0.75 }}
+          minZoom={0.15}
+          maxZoom={1.8}
+        >
+          <Controls />
+        </ReactFlow>
+      )}
     </div>
   )
 }

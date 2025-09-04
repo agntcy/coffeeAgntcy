@@ -2,8 +2,6 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import logging
-from typing import List
-from pydantic import BaseModel, Field
 
 from farms.brazil.card import AGENT_CARD as brazil_agent_card
 from farms.colombia.card import AGENT_CARD as colombia_agent_card  
@@ -14,31 +12,9 @@ from config.config import (
     IDENTITY_API_SERVER_URL,
 )
 from services.identity_service_impl import IdentityServiceImpl
+from topology.models import TopologyNode, TopologyEdge, TopologyComponents
 
 logger = logging.getLogger(__name__)
-
-
-class TopologyNode(BaseModel):
-    id: str  # Semantic ID (e.g., "1", "2", "3")
-    type: str  # UI component type (e.g., "customNode", "transportNode")
-    name: str
-    verification: str = None  
-    github_url: str = None
-    data: dict = {}  # All UI-specific data properties 
-
-class TopologyEdge(BaseModel):
-    id: str  # Edge ID in format "source-target"
-    source: str  # Source node ID
-    target: str  # Target node ID
-    source_handle: str = None  # Source handle for positioning
-    target_handle: str = None  # Target handle for positioning
-    data: dict = {}  # Edge data including label
-    type: str = "custom"  # UI edge type 
-    
-class TopologyComponents(BaseModel):
-    nodes: List[TopologyNode]
-    edges: List[TopologyEdge]
-    transport: str
 
 
 class ComponentDiscoveryService:
@@ -97,7 +73,8 @@ class ComponentDiscoveryService:
             github_url="https://github.com/agntcy/coffeeAgntcy/blob/main/coffeeAGNTCY/coffee_agents/lungo/exchange/graph/graph.py#L50",
             data={
                 "label1": "Supervisor Agent",
-                "label2": "Buyer", 
+                "label2": "Buyer",
+                "handles": "source",
                 "agentDirectoryLink": "https://agent-directory.outshift.com/explore"
             }
         ))
@@ -133,11 +110,13 @@ class ComponentDiscoveryService:
         ]
         
         for i, (farm_card, github_url) in enumerate(farm_data):
-            farm_id = str(i + 3)  # Start from 3 to match graphConfig IDs (3=Brazil, 4=Colombia, 5=Vietnam)
+            farm_id = str(i + 3) 
             
             farm_name = farm_card.name.replace(" Coffee Farm", "").strip()
             
             verification_status = await self._get_farm_verification_status(farm_card.name)
+            
+            handles = "all" if farm_id == "4" else "target"  
             
             nodes.append(TopologyNode(
                 id=farm_id,
@@ -149,18 +128,18 @@ class ComponentDiscoveryService:
                     "label1": farm_name,
                     "label2": "Coffee Farm Agent",
                     "farmName": farm_name,
+                    "handles": handles,
                     "verificationStatus": verification_status,
                     "agentDirectoryLink": "https://agent-directory.outshift.com/explore"
                 }
             ))
             
-            # Transport connects to farm with appropriate source handle
             source_handle = None
-            if farm_id == "3":  # Brazil
+            if farm_id == "3":  
                 source_handle = "bottom_left"
-            elif farm_id == "4":  # Colombia  
+            elif farm_id == "4": 
                 source_handle = "bottom_center"
-            elif farm_id == "5":  # Vietnam
+            elif farm_id == "5": 
                 source_handle = "bottom_right"
                 
             edges.append(TopologyEdge(
@@ -180,11 +159,11 @@ class ComponentDiscoveryService:
             data={
                 "label1": "MCP Server",
                 "label2": "Weather",
+                "handles": "target",
                 "agentDirectoryLink": "https://agent-directory.outshift.com/explore"
             }
         ))
         
-        # Colombia farm (ID: 4) connects to weather MCP
         edges.append(TopologyEdge(
             id="4-6",
             source="4",
