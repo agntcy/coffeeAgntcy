@@ -81,7 +81,7 @@ async def get_config():
         "transport": DEFAULT_MESSAGE_TRANSPORT.upper()
     }
 
-@app.get("/topology/components")
+@app.get("/topology")
 async def get_topology_components(pattern: str = "publish_subscribe"):
     """
     Discovers and returns available topology components for the specified pattern.

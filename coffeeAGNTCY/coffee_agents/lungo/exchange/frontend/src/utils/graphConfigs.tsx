@@ -208,7 +208,7 @@ export const updateTopologyFromServer = async (
     if (setLoading) setLoading(true)
 
     const response = await fetch(
-      `${EXCHANGE_APP_API_URL}/topology?agent_pattern=${pattern}`,
+      `${EXCHANGE_APP_API_URL}/topology?pattern=${pattern}`,
     )
     const data = await response.json()
 
