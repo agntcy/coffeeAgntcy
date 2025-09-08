@@ -24,6 +24,6 @@ IDENTITY_API_KEY = os.getenv("IDENTITY_API_KEY", "3]U;sp6>p@7:Vl7XN8<-2i2+w@;7HM
 ## Endpoint to access Identity API. Refer to https://identity-docs.staging.outshift.ai/docs/api
 IDENTITY_API_SERVER_URL = os.getenv("IDENTITY_API_SERVER_URL", "https://api.agent-identity.outshift.com")
 ## URLs for the farm agents' well-known agent cards
-VIETNAM_FARM_AGENT_URL = os.getenv("VIETNAM_FARM_AGENT_URL", "http://127.0.0.1:9997/.well-known/agent.json")
-COLOMBIA_FARM_AGENT_URL = os.getenv("COLOMBIA_FARM_AGENT_URL", "http://127.0.0.1:9998/.well-known/agent.json")
+VIETNAM_FARM_AGENT_URL = os.getenv("VIETNAM_FARM_AGENT_URL", "http://127.0.0.1:9997/.well-known/agent-card.json")
+COLOMBIA_FARM_AGENT_URL = os.getenv("COLOMBIA_FARM_AGENT_URL", "http://127.0.0.1:9998/.well-known/agent-card.json")
 
