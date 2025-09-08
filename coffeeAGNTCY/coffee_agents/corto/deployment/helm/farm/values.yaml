@@ -24,6 +24,7 @@ config:
   transportServerEndpoint: ""
   defaultMessageTransport: ""
   otlpHttpEndpoint: ""
+#  llmStreaming: false
 
 # You can use your own config here for service account
 serviceaccount:
