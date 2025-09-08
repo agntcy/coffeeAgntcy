@@ -27,10 +27,10 @@ from config.config import (
     IDENTITY_API_KEY,
     IDENTITY_API_SERVER_URL,
 )
-from farms.brazil.card import AGENT_CARD as brazil_agent_card
-from farms.colombia.card import AGENT_CARD as colombia_agent_card
-from farms.vietnam.card import AGENT_CARD as vietnam_agent_card
-from exchange.graph.models import (
+from agents.farms.brazil.card import AGENT_CARD as brazil_agent_card
+from agents.farms.colombia.card import AGENT_CARD as colombia_agent_card
+from agents.farms.vietnam.card import AGENT_CARD as vietnam_agent_card
+from agents.supervisors.auction.graph.models import (
     InventoryArgs,
     CreateOrderArgs,
 )

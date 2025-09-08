@@ -58,6 +58,11 @@ Before you begin, ensure the following tools are installed:
    ```sh
    uv sync
    ```
+   Navigate to the Lungo project directory, set the PYTHONPATH environment variable to the root directory of the lungo project. This is necessary for running the application locally.
+   ```sh
+   # In the lungo root directory
+   export PYTHONPATH=$(pwd)
+   ```
 
 3. **Configure Environment Variables**  
    Copy the example environment file:
@@ -175,7 +180,7 @@ Start the MCP server, which uses the Nominatim API to convert location names int
 *Local Python Run:*
 
 ```sh
-uv run python mcp_servers/weather_service.py
+uv run python agents/mcp_servers/weather_service.py
 ```
 
 *Docker Compose:*
@@ -196,9 +201,9 @@ Start all the farm servers, that act as A2A servers, by executing:
 >
 
 ```sh
-uv run python farms/brazil/farm_server.py
-uv run python farms/colombia/farm_server.py
-uv run python farms/vietnam/farm_server.py
+uv run python agents/farms/brazil/farm_server.py
+uv run python agents/farms/colombia/farm_server.py
+uv run python agents/farms/vietnam/farm_server.py
 ```
 
 *Docker Compose:*
@@ -216,7 +221,7 @@ Start the exchange, which acts as an A2A client, by running:
 *Local Python Run:*
 
 ```sh
-uv run python exchange/main.py
+uv run python agents/supervisors/auction/main.py
 ```
 
 *Docker Compose:*
