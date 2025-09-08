@@ -58,6 +58,11 @@ Before you begin, ensure the following tools are installed:
    ```sh
    uv sync
    ```
+   Navigate to the Lungo project directory, set the PYTHONPATH environment variable to the root directory of the lungo project. This is necessary for running the application locally.
+   ```sh
+   # In the lungo root directory
+   export PYTHONPATH=$(pwd)
+   ```
 
 3. **Configure Environment Variables**  
    Copy the example environment file:
