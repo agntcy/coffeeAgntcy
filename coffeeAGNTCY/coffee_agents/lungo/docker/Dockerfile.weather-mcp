@@ -16,4 +16,4 @@ RUN uv sync --locked --no-editable
 
 COPY coffeeAGNTCY/coffee_agents/lungo/ .
 EXPOSE 8125
-CMD ["uv", "run", "python", "mcp_servers/weather_service.py"]
+CMD ["uv", "run", "python", "agents/mcp_servers/weather_service.py"]

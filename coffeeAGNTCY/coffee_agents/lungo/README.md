@@ -175,7 +175,7 @@ Start the MCP server, which uses the Nominatim API to convert location names int
 *Local Python Run:*
 
 ```sh
-uv run python mcp_servers/weather_service.py
+uv run python agents/mcp_servers/weather_service.py
 ```
 
 *Docker Compose:*
@@ -196,9 +196,9 @@ Start all the farm servers, that act as A2A servers, by executing:
 >
 
 ```sh
-uv run python farms/brazil/farm_server.py
-uv run python farms/colombia/farm_server.py
-uv run python farms/vietnam/farm_server.py
+uv run python agents/farms/brazil/farm_server.py
+uv run python agents/farms/colombia/farm_server.py
+uv run python agents/farms/vietnam/farm_server.py
 ```
 
 *Docker Compose:*
@@ -216,7 +216,7 @@ Start the exchange, which acts as an A2A client, by running:
 *Local Python Run:*
 
 ```sh
-uv run python exchange/main.py
+uv run python agents/supervisors/auction/main.py
 ```
 
 *Docker Compose:*

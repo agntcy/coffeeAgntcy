@@ -17,4 +17,4 @@ COPY coffeeAGNTCY/coffee_agents/lungo/pyproject.toml coffeeAGNTCY/coffee_agents/
 RUN uv sync --locked --no-editable
 
 COPY coffeeAGNTCY/coffee_agents/lungo/ .
-CMD ["uv", "run", "python", "exchange/main.py"]
+CMD ["uv", "run", "python", "agents/supervisors/auction/main.py"]
