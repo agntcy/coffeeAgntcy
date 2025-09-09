@@ -23,8 +23,9 @@ dependencies = [
     "starlette",
     "uvicorn",
     "mcp[cli]>=1.10.0",
-    "ioa-observe-sdk==1.0.17",
-    "identity-service-sdk==0.0.3"
+    "ioa-observe-sdk==1.0.18",
+    "identity-service-sdk==0.0.3",
+    "agntcy-app-sdk==0.2.2",
 ]
 
 [project.optional-dependencies]
@@ -38,9 +39,6 @@ dev = [
     "coloredlogs>=15.0.1,<16",
     "langchain-openai>=0.3.14,<0.4",
 ]
-
-[tool.uv.sources]
-agntcy-app-sdk = { path = "../../../../app-sdk" }
 
 [tool.hatch.metadata]
 allow-direct-references = true
