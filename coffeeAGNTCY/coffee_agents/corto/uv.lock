@@ -1,5 +1,5 @@
 version = 1
-revision = 2
+revision = 3
 requires-python = ">=3.13, <4.0"
 resolution-markers = [
     "platform_python_implementation != 'PyPy'",
@@ -8,26 +8,26 @@ resolution-markers = [
 
 [[package]]
 name = "a2a-sdk"
-version = "0.2.16"
+version = "0.3.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "fastapi" },
+    { name = "google-api-core" },
     { name = "httpx" },
     { name = "httpx-sse" },
-    { name = "opentelemetry-api" },
-    { name = "opentelemetry-sdk" },
+    { name = "protobuf" },
     { name = "pydantic" },
     { name = "sse-starlette" },
     { name = "starlette" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/1e/3b/8fd1e3fe28606712c203b968a6fe2c8e7944b6df9e65c28976c66c19286c/a2a_sdk-0.2.16.tar.gz", hash = "sha256:d9638c71674183f32fe12f8865015e91a563a90a3aa9ed43020f1b23164862b3", size = 179006, upload-time = "2025-07-21T19:51:14.107Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/f2/50/705f7972114dd0fe918840eb966533e511358f9881ddcdc0adebe64768c9/a2a_sdk-0.3.0.tar.gz", hash = "sha256:a07835e980222b1274af2c71f641c18b022d119b95aacdc7104385c09f35dc8f", size = 211714, upload-time = "2025-07-31T18:22:47.484Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/a5/92/16bfbc2ef0ef037c5860ef3b13e482aeb1860b9643bf833ed522c995f639/a2a_sdk-0.2.16-py3-none-any.whl", hash = "sha256:54782eab3d0ad0d5842bfa07ff78d338ea836f1259ece51a825c53193c67c7d0", size = 103090, upload-time = "2025-07-21T19:51:12.613Z" },
+    { url = "https://files.pythonhosted.org/packages/ee/b7/93c48f9857980a6af2a242050d559d74df394d1b45d4f33226fb027e39e6/a2a_sdk-0.3.0-py3-none-any.whl", hash = "sha256:8a0a0fc58013b055174b18e6849b68b129a50f31d41184d222da59f94ef29da7", size = 130282, upload-time = "2025-07-31T18:22:45.551Z" },
 ]
 
 [[package]]
 name = "agntcy-app-sdk"
-version = "0.2.0"
+version = "0.2.2"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "a2a-sdk" },
@@ -43,9 +43,9 @@ dependencies = [
     { name = "slim-bindings" },
     { name = "uvicorn" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/6a/1c/0af5c969cd986d9918e60d3eb98e89fc2b39cce60cf48dc9199101d49a6a/agntcy_app_sdk-0.2.0.tar.gz", hash = "sha256:f9586bfc8707b0a31d3b602e508e755aabfd8b0a40b1b13c4b839ee72691d9e5", size = 841861, upload-time = "2025-08-28T18:23:37.406Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/a7/ba/9145428e1834f8e5366f448415fe474354bd5d157b5208979f746c498fd5/agntcy_app_sdk-0.2.2.tar.gz", hash = "sha256:b396ad8bd3a0f2f2118028b69fa20c023d903166e6bc376f0c1195f62e564670", size = 845247, upload-time = "2025-09-09T19:28:27.828Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/b2/96/e90a82664b693f5f845fcc0c259ce67f1196ec8b9bb9ac45804e97b4a638/agntcy_app_sdk-0.2.0-py3-none-any.whl", hash = "sha256:c5c6a630234b869939a28d6a10527f7619da711e6d5a715d46575a9aa84e9911", size = 43327, upload-time = "2025-08-28T18:23:36.1Z" },
+    { url = "https://files.pythonhosted.org/packages/a2/5c/7bbb6cbf8b735d4479a1dd93e265c79ae7d17d0344c394db561638aa8943/agntcy_app_sdk-0.2.2-py3-none-any.whl", hash = "sha256:d564f880afece3c5eebf712d93725ca2dbfc803f779b7ac874e343d88bdb414f", size = 45272, upload-time = "2025-09-09T19:28:26.656Z" },
 ]
 
 [[package]]
@@ -456,8 +456,8 @@ dev = [
 
 [package.metadata]
 requires-dist = [
-    { name = "a2a-sdk", specifier = "==0.2.16" },
-    { name = "agntcy-app-sdk", specifier = "==0.2.0" },
+    { name = "a2a-sdk", specifier = "==0.3.0" },
+    { name = "agntcy-app-sdk", specifier = "==0.2.2" },
     { name = "autogen-core", marker = "extra == 'dev'", specifier = ">=0.4.3,<0.5" },
     { name = "click", specifier = ">=8.1.8" },
     { name = "cnoe-agent-utils", specifier = "==0.2.2" },
@@ -466,7 +466,7 @@ requires-dist = [
     { name = "dotenv", specifier = ">=0.9.9" },
     { name = "fastapi", specifier = ">=0.115.12" },
     { name = "httpx", specifier = ">=0.28.1" },
-    { name = "ioa-observe-sdk", specifier = "==1.0.15" },
+    { name = "ioa-observe-sdk", specifier = "==1.0.18" },
     { name = "langchain-anthropic", specifier = ">=0.3.13" },
     { name = "langchain-google-genai", specifier = ">=2.1.4" },
     { name = "langchain-openai", specifier = ">=0.3.16" },
@@ -1112,7 +1112,7 @@ wheels = [
 
 [[package]]
 name = "ioa-observe-sdk"
-version = "1.0.15"
+version = "1.0.18"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "colorama" },
@@ -1155,9 +1155,9 @@ dependencies = [
     { name = "pytest-vcr" },
     { name = "requests" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/f9/e9/bb353e1d37578021d4deafc57d323d56267536a3707d61545d1674d758aa/ioa_observe_sdk-1.0.15.tar.gz", hash = "sha256:25bfc06184c91c11afb8203a9809feddb84527ad0799598256775516001eccf1", size = 51893, upload-time = "2025-08-08T16:10:36.183Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/f4/2c/0ab1b495bd2c5c3f7da5c8e43fb094fe2e7caa9753af8eb105a9c69dace3/ioa_observe_sdk-1.0.18.tar.gz", hash = "sha256:17a3e1774c6b7ab4f281aee638db83d1d1f05d236bf9591923535ff08bc317d7", size = 64206, upload-time = "2025-09-09T14:34:05.785Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/e6/8a/cf3057fedb840bb48ff57d5f2e8778225548e8f871335132b98342718466/ioa_observe_sdk-1.0.15-py3-none-any.whl", hash = "sha256:1976f4ce09607dea9ac9f2eaf5801692c6bbf9a4f7a5aba8d92c2b46db4cd0ff", size = 61585, upload-time = "2025-08-08T16:10:35.241Z" },
+    { url = "https://files.pythonhosted.org/packages/cb/9c/c8b4c81f550d2ce59b10ddb2a018c02b247db3de446a78c41f18ef00ad75/ioa_observe_sdk-1.0.18-py3-none-any.whl", hash = "sha256:5b7e9c22ecc5ef36fc0094695395fce54309bf50242fd21a12849ee75ab0e13a", size = 71503, upload-time = "2025-09-09T14:34:04.496Z" },
 ]
 
 [[package]]
