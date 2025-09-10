@@ -1,4 +1,196 @@
 services:
+  spire-data-init:
+    image: alpine:3.19
+    command: ["/bin/sh","-c","mkdir -p /data && chown -R 1000:1000 /data && chmod 700 /data"]
+    volumes:
+      - spire-server-data:/data
+    restart: "no"
+  # SPIRE Server: The central authority for issuing identities.
+  spire-server:
+    image: ghcr.io/spiffe/spire-server:1.12.4
+    container_name: spire-server
+    depends_on:
+      spire-data-init:
+        condition: service_completed_successfully
+    volumes:
+      - ./config/spire/server:/opt/spire/conf/server
+      - spire-server-data:/opt/spire/data
+      - spire-server-sock:/tmp/spire-server/private
+    ports:
+      - "8081:8081"
+
+
+  # SPIRE Agent: Runs on each node and exposes the Workload API.
+  spire-agent:
+    image: alpine:3.19
+    container_name: spire-agent
+    depends_on:
+      spire-server:
+        condition: service_started
+      spire-server-init:
+        condition: service_completed_successfully
+    pid: "host"
+    volumes:
+      - ./config/spire/agent:/opt/spire/conf/agent:ro   # your agent.conf lives here
+      - spire-agent-data:/data/agent                    # agent data dir (matches agent.conf)
+      - /tmp/spire-agent:/tmp/spire-agent               # exposes Workload API socket to workloads
+      - spire-join-token:/tmp/join-token:ro             # token + bundle from init job
+    command: >
+      sh -c '
+        set -e
+
+        echo "[agent-init] Installing prerequisites..."
+        apk add --no-cache ca-certificates curl tar > /dev/null
+
+        echo "[agent-init] Downloading SPIRE 1.12.4..."
+        VER=1.12.4
+        FILE=spire-$${VER}-linux-amd64-musl.tar.gz
+        URL=https://github.com/spiffe/spire/releases/download/v$${VER}/$${FILE}
+        curl -fsSL -o /tmp/$${FILE} "$${URL}"
+        mkdir -p /opt/spire/bin
+        tar -xzf /tmp/$${FILE} -C /tmp
+        mv /tmp/spire-$${VER}/bin/spire-agent /opt/spire/bin/spire-agent
+        chmod +x /opt/spire/bin/spire-agent
+
+        echo "[agent-init] Waiting for join token AND server bundle..."
+        while [ ! -s /tmp/join-token/agent_join_token.txt ] || [ ! -s /tmp/join-token/server_bundle.pem ]; do
+          sleep 1
+        done
+
+        JOIN_TOKEN="$(tr -d '\r\n' < /tmp/join-token/agent_join_token.txt)"
+        if [ -z $${JOIN_TOKEN} ]; then
+          echo "[agent-init] ERROR: join token file exists but is empty"; exit 1
+        fi
+        echo "[agent-init] Found join token and server bundle, starting agent with token: $${JOIN_TOKEN}"
+
+        echo "[agent-init] Starting SPIRE Agent..."
+        exec /opt/spire/bin/spire-agent run \
+          -config /opt/spire/conf/agent/agent.conf \
+          -joinToken $${JOIN_TOKEN} \
+          -trustBundle /tmp/join-token/server_bundle.pem
+        '
+    # Optional healthcheck — remove if you prefer
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/spire/bin/spire-agent healthcheck -socketPath /tmp/spire-agent/private/api.sock -shallow >/dev/null 2>&1"]
+      interval: 5s
+      timeout: 3s
+      retries: 24
+      start_period: 45s   # give time for join token & server bundle
+
+  # SPIRE Server Init: A one-time service to create SPIFFE registration entries.
+  spire-server-init:
+    image: alpine:latest
+    container_name: spire-server-init
+    entrypoint: /bin/sh
+    volumes:
+      # Mount the server's config (read-only) if needed for CLI commands
+      - ./config/spire/server:/opt/spire/conf/server:ro
+      # Mount the server's data volume to access bundle.pem
+      # - spire-server-data:/spire-server-data-mount:ro
+      # Mount the shared volume for token and bundle
+      - spire-join-token:/tmp/join-token
+      - spire-server-sock:/tmp/spire-server/private
+    depends_on:
+      spire-server:
+        condition: service_started
+    command:
+    - -c
+    - |
+      set -ex # set -e for exit on error, set -x for shell debugging
+
+      # Install necessary utilities for download, extraction, and file type checking
+      apk add --no-cache curl tar iputils-ping bind-tools file && \
+
+      # --- Download and install SPIRE CLI ---
+      SPIRE_CLI_VERSION=1.12.4
+      SPIRE_CLI_FILENAME=spire-$${SPIRE_CLI_VERSION}-linux-amd64-musl.tar.gz
+      SPIRE_CLI_URL=https://github.com/spiffe/spire/releases/download/v$${SPIRE_CLI_VERSION}/$${SPIRE_CLI_FILENAME}
+
+      echo "Constructed SPIRE_CLI_URL: $${SPIRE_CLI_URL}"
+
+      echo "Attempting to download SPIRE CLI from $${SPIRE_CLI_URL}" && \
+      # Print curl output directly to stderr, which docker logs captures
+      curl -v -L -o /tmp/$${SPIRE_CLI_FILENAME} $${SPIRE_CLI_URL} || { echo 'Curl download failed for SPIRE CLI. Exiting.'; exit 1; } && \
+      echo 'Curl command finished. Checking downloaded file.' && \
+      ls -l /tmp/$${SPIRE_CLI_FILENAME} && \
+    
+      FILE_TYPE=$$(file /tmp/$${SPIRE_CLI_FILENAME}) && \
+      echo "Downloaded file type: $${FILE_TYPE}" && \
+      echo "Expected: gzip compressed data" && \
+      if echo "$$FILE_TYPE" | grep -q 'gzip compressed data'; then \
+          echo 'File type is correct. Proceeding with extraction.'; \
+      else \
+          echo 'Error: Downloaded file is NOT a gzip compressed archive. It might be an HTML error page or corrupted. Exiting.'; \
+          exit 1; \
+      fi && \
+
+      tar -xzf /tmp/$${SPIRE_CLI_FILENAME} -C /tmp && \
+      mv /tmp/spire-$${SPIRE_CLI_VERSION}/bin/spire-server /usr/local/bin/spire-server && \
+      rm -rf /tmp/spire-$${SPIRE_CLI_VERSION} /tmp/$${SPIRE_CLI_FILENAME} && \
+      chmod +x /usr/local/bin/spire-server && \
+      echo 'SPIRE CLI installed successfully.' && \
+      # --- End SPIRE CLI installation ---
+
+      # Wait for TCP, then poll health over plaintext gRPC until SERVING
+      until (nc -z spire-server 8081 2>/dev/null || curl -m2 -s spire-server:8081 >/dev/null 2>&1); do
+        echo 'Waiting for TCP 8081 to open...'
+        sleep 2
+      done && \
+      echo 'spire-server:8081 is reachable. Proceeding.' && \
+
+      echo 'Creating SPIFFE registration entries and join token...' && \
+
+      # SERVER_FLAGS="-address spire-server -port 8081"
+
+      # Fetch server bundle via CLI
+      /usr/local/bin/spire-server $${SERVER_FLAGS} bundle show > /tmp/join-token/server_bundle.pem && \
+      echo 'Fetched server bundle via CLI to shared volume.' && \
+  
+      # Use the downloaded spire-server CLI for token generation
+      # JOIN_TOKEN=$$(/usr/local/bin/spire-server token generate \
+      #   -spiffeID spiffe://example.org/spire/agent/host | grep 'Token:' | awk '{print $$2}') && \
+      # echo "$$JOIN_TOKEN" > /tmp/join-token/agent_join_token.txt && \
+      # echo 'Generated agent join token for spiffe://example.org/spire/agent/host' && \
+      OUT=$$(/usr/local/bin/spire-server token generate \
+        -spiffeID spiffe://example.org/host \
+        -ttl 600) 
+      # Extract the token whether output is "Token: <uuid>" or just "<uuid>"
+      TOKEN=$$(printf '%s\n' "$$OUT" | awk '/^Token:/{print $$2} !/^Token:/{print $$1; exit}')
+      # Sanity check
+      [ -n "$$TOKEN" ] || { echo "No token found. Output was:"; echo "$$OUT"; exit 1; }
+
+      echo "$$TOKEN" > /tmp/join-token/agent_join_token.txt &&  \
+      echo 'Generated agent join token for spiffe://example.org/host' && \
+
+      # Use the downloaded spire-server CLI for entry creation
+      /usr/local/bin/spire-server $${SERVER_FLAGS} entry create \
+        -spiffeID spiffe://example.org/workload/brazil-farm \
+        -parentID spiffe://example.org/host \
+        -selector unix:user:root && \
+
+      /usr/local/bin/spire-server $${SERVER_FLAGS} entry create \
+        -spiffeID spiffe://example.org/workload/colombia-farm \
+        -parentID spiffe://example.org/host \
+        -selector unix:user:root && \
+
+      /usr/local/bin/spire-server $${SERVER_FLAGS} entry create \
+        -spiffeID spiffe://example.org/workload/vietnam-farm \
+        -parentID spiffe://example.org/host \
+        -selector unix:user:root && \
+
+      /usr/local/bin/spire-server $${SERVER_FLAGS} entry create \
+        -spiffeID spiffe://example.org/workload/exchange-server \
+        -parentID spiffe://example.org/host \
+        -selector unix:user:root && \
+
+      /usr/local/bin/spire-server $${SERVER_FLAGS} entry create \
+        -spiffeID spiffe://example.org/workload/weather-mcp-server \
+        -parentID spiffe://example.org/host \
+        -selector unix:user:root && \
+
+      echo 'SPIFFE entries created successfully!'
+    restart: "no"
+
   brazil-farm-server:
     build:
       context: ../../..
@@ -21,8 +213,57 @@ services:
       - TRANSPORT_SERVER_ENDPOINT=${TRANSPORT_SERVER_ENDPOINT:-nats://nats:4222}
       - OTLP_HTTP_ENDPOINT=${OTLP_HTTP_ENDPOINT:-http://otel-collector:4318}
       - ENABLE_HTTP=true
+      - SPIFFE_SOCKET=/tmp/spire-agent/private/api.sock  # Updated env var for SPIFFE socket
+      - AUDIENCE=spiffe://example.org/workload/brazil-farm # Audience for the JWT SVID
+      - SVID_DIR=/var/run/spiffe/workload # New env var for JWT path
+      - JWT_FILE=spiffe-jwt.token # New env var for JWT filename
     ports:
       - "9999:9999"
+    volumes:
+      - /tmp/spire-agent:/tmp/spire-agent:ro
+      - brazil-farm-svids:/var/run/spiffe/workload
+    depends_on:
+      spire-agent:
+        condition: service_healthy
+      spire-server-init:
+        condition: service_completed_successfully
+    command:
+    - /bin/sh
+    - -c
+    - |
+      set -eu
+
+      : "$${SPIFFE_SOCKET:=/tmp/spire-agent/private/api.sock}"
+      : "$${SVID_DIR:=/var/run/spiffe/workload}"
+      : "$${AUDIENCE:=spiffe://example.org/workload/brazil-farm}"
+      : "$${JWT_FILE:=spiffe-jwt.token}"
+
+      mkdir -p "$$SVID_DIR"
+      install -d -m 0755 /etc/spiffe
+
+
+      cat > /etc/spiffe/helper.conf <<EOF
+      agent_address = "$$SPIFFE_SOCKET"
+      cert_dir = "$$SVID_DIR"
+      daemon_mode = true
+      jwt_svids = [{
+        jwt_audience       = "$$AUDIENCE"
+        jwt_svid_file_name = "$$JWT_FILE"
+      }]
+      EOF
+
+      /usr/bin/spiffe-helper -config /etc/spiffe/helper.conf -daemon-mode=true &
+
+      i=0
+      while [ $$i -lt 120 ]; do
+        if [ -s "$$SVID_DIR/$$JWT_FILE" ]; then break; fi
+        echo "waiting for JWT…"; sleep 1; i=$$((i+1))
+      done
+      [ -s "$$SVID_DIR/$$JWT_FILE" ] || { echo "no JWT"; exit 1; }
+
+      echo "JWT SVID ready → starting app"
+      uv run python farms/brazil/farm_server.py
+
   colombia-farm-server:
     build:
       context: ../../..
@@ -45,8 +286,56 @@ services:
       - TRANSPORT_SERVER_ENDPOINT=${TRANSPORT_SERVER_ENDPOINT:-nats://nats:4222}
       - OTLP_HTTP_ENDPOINT=${OTLP_HTTP_ENDPOINT:-http://otel-collector:4318}
       - ENABLE_HTTP=true
+      - SPIFFE_SOCKET_PATH=/tmp/spire-agent/private/api.sock
+      - SPIFFE_CERTS_DIR=/var/run/spiffe/workload
+      - SPIFFE_JWT_FILE_PATH=/var/run/spiffe/workload/spiffe-jwt.token
     ports:
       - "9998:9998"
+    volumes:
+      - /tmp/spire-agent:/tmp/spire-agent:ro
+      - colombia-farm-svids:/var/run/spiffe/workload
+    depends_on:
+      spire-agent:
+        condition: service_healthy
+      spire-server-init:
+        condition: service_completed_successfully
+    command:
+    - /bin/sh
+    - -c
+    - |
+      set -eu
+
+      : "$${SPIFFE_SOCKET:=/tmp/spire-agent/private/api.sock}"
+      : "$${SVID_DIR:=/var/run/spiffe/workload}"
+      : "$${AUDIENCE:=spiffe://example.org/workload/colombia-farm}"
+      : "$${JWT_FILE:=spiffe-jwt.token}"
+
+      mkdir -p "$$SVID_DIR"
+      install -d -m 0755 /etc/spiffe
+
+
+      cat > /etc/spiffe/helper.conf <<EOF
+      agent_address = "$$SPIFFE_SOCKET"
+      cert_dir = "$$SVID_DIR"
+      daemon_mode = true
+      jwt_svids = [{
+        jwt_audience       = "$$AUDIENCE"
+        jwt_svid_file_name = "$$JWT_FILE"
+      }]
+      EOF
+
+      /usr/bin/spiffe-helper -config /etc/spiffe/helper.conf -daemon-mode=true &
+
+      i=0
+      while [ $$i -lt 120 ]; do
+        if [ -s "$$SVID_DIR/$$JWT_FILE" ]; then break; fi
+        echo "waiting for JWT…"; sleep 1; i=$$((i+1))
+      done
+      [ -s "$$SVID_DIR/$$JWT_FILE" ] || { echo "no JWT"; exit 1; }
+
+      echo "JWT SVID ready → starting app"
+      uv run python farms/colombia/farm_server.py
+
   vietnam-farm-server:
     build:
       context: ../../..
@@ -69,8 +358,56 @@ services:
       - TRANSPORT_SERVER_ENDPOINT=${TRANSPORT_SERVER_ENDPOINT:-nats://nats:4222}
       - OTLP_HTTP_ENDPOINT=${OTLP_HTTP_ENDPOINT:-http://otel-collector:4318}
       - ENABLE_HTTP=true
+      - SPIFFE_SOCKET_PATH=/tmp/spire-agent/private/api.sock
+      - SPIFFE_CERTS_DIR=/var/run/spiffe/workload
+      - SPIFFE_JWT_FILE_PATH=/var/run/spiffe/workload/spiffe-jwt.token
     ports:
       - "9997:9997"
+    volumes:
+      - /tmp/spire-agent:/tmp/spire-agent:ro
+      - vietnam-farm-svids:/var/run/spiffe/workload
+    depends_on:
+      spire-agent:
+        condition: service_healthy
+      spire-server-init:
+        condition: service_completed_successfully
+    command:
+    - /bin/sh
+    - -c
+    - |
+      set -eu
+
+      : "$${SPIFFE_SOCKET:=/tmp/spire-agent/private/api.sock}"
+      : "$${SVID_DIR:=/var/run/spiffe/workload}"
+      : "$${AUDIENCE:=spiffe://example.org/workload/vietnam-farm}"
+      : "$${JWT_FILE:=spiffe-jwt.token}"
+
+      mkdir -p "$$SVID_DIR"
+      install -d -m 0755 /etc/spiffe
+
+
+      cat > /etc/spiffe/helper.conf <<EOF
+      agent_address = "$$SPIFFE_SOCKET"
+      cert_dir = "$$SVID_DIR"
+      daemon_mode = true
+      jwt_svids = [{
+        jwt_audience       = "$$AUDIENCE"
+        jwt_svid_file_name = "$$JWT_FILE"
+      }]
+      EOF
+
+      /usr/bin/spiffe-helper -config /etc/spiffe/helper.conf -daemon-mode=true &
+
+      i=0
+      while [ $$i -lt 120 ]; do
+        if [ -s "$$SVID_DIR/$$JWT_FILE" ]; then break; fi
+        echo "waiting for JWT…"; sleep 1; i=$$((i+1))
+      done
+      [ -s "$$SVID_DIR/$$JWT_FILE" ] || { echo "no JWT"; exit 1; }
+
+      echo "JWT SVID ready → starting app"
+      uv run python farms/vietnam/farm_server.py
+
   nats:
     image: nats:latest
     container_name: nats-lungo
@@ -114,8 +451,55 @@ services:
       - DEFAULT_MESSAGE_TRANSPORT=${DEFAULT_MESSAGE_TRANSPORT:-NATS}
       - TRANSPORT_SERVER_ENDPOINT=${TRANSPORT_SERVER_ENDPOINT:-nats://nats:4222}
       - OTLP_HTTP_ENDPOINT=${OTLP_HTTP_ENDPOINT:-http://otel-collector:4318}
+      - SPIFFE_SOCKET_PATH=/tmp/spire-agent/private/api.sock
+      - SPIFFE_CERTS_DIR=/var/run/spiffe/workload
+      - SPIFFE_JWT_FILE_PATH=/var/run/spiffe/workload/spiffe-jwt.token
     ports:
       - "8000:8000"
+    volumes:
+      - /tmp/spire-agent:/tmp/spire-agent:ro
+      - exchange-server-svids:/var/run/spiffe/workload
+    depends_on:
+      spire-agent:
+        condition: service_healthy
+      spire-server-init:
+        condition: service_completed_successfully
+    command:
+    - /bin/sh
+    - -c
+    - |
+      set -eu
+
+      : "$${SPIFFE_SOCKET:=/tmp/spire-agent/private/api.sock}"
+      : "$${SVID_DIR:=/var/run/spiffe/workload}"
+      : "$${AUDIENCE:=spiffe://example.org/workload/exchange-server}"
+      : "$${JWT_FILE:=spiffe-jwt.token}"
+
+      mkdir -p "$$SVID_DIR"
+      install -d -m 0755 /etc/spiffe
+
+
+      cat > /etc/spiffe/helper.conf <<EOF
+      agent_address = "$$SPIFFE_SOCKET"
+      cert_dir = "$$SVID_DIR"
+      daemon_mode = true
+      jwt_svids = [{
+        jwt_audience       = "$$AUDIENCE"
+        jwt_svid_file_name = "$$JWT_FILE"
+      }]
+      EOF
+
+      /usr/bin/spiffe-helper -config /etc/spiffe/helper.conf -daemon-mode=true &
+
+      i=0
+      while [ $$i -lt 120 ]; do
+        if [ -s "$$SVID_DIR/$$JWT_FILE" ]; then break; fi
+        echo "waiting for JWT…"; sleep 1; i=$$((i+1))
+      done
+      [ -s "$$SVID_DIR/$$JWT_FILE" ] || { echo "no JWT"; exit 1; }
+
+      echo "JWT SVID ready → starting app"
+      uv run python exchange/main.py
 
   ui:
     build:
@@ -134,7 +518,7 @@ services:
   weather-mcp-server:
     build:
       context: ../../..
-      dockerfile: coffeeAGNTCY/coffee_agents/lungo/docker/Dockerfile.weather-mcp  
+      dockerfile: coffeeAGNTCY/coffee_agents/lungo/docker/Dockerfile.weather-mcp
     image: ghcr.io/agntcy/coffee-agntcy/weather-mcp-server:latest
     container_name: weather-mcp-server
     platform: linux/amd64
@@ -142,6 +526,54 @@ services:
       - DEFAULT_MESSAGE_TRANSPORT=${DEFAULT_MESSAGE_TRANSPORT:-NATS}
       - TRANSPORT_SERVER_ENDPOINT=${TRANSPORT_SERVER_ENDPOINT:-nats://nats:4222}
       - OTLP_HTTP_ENDPOINT=${OTLP_HTTP_ENDPOINT:-http://otel-collector:4318}
+      - SPIFFE_SOCKET_PATH=/tmp/spire-agent/private/api.sock
+      - SPIFFE_CERTS_DIR=/var/run/spiffe/workload
+      - SPIFFE_JWT_FILE_PATH=/var/run/spiffe/workload/spiffe-jwt.token
+    volumes:
+      - /tmp/spire-agent:/tmp/spire-agent:ro
+      - weather-mcp-svids:/var/run/spiffe/workload
+    depends_on:
+      spire-agent:
+        condition: service_healthy
+      spire-server-init:
+        condition: service_completed_successfully
+    command:
+    - /bin/sh
+    - -c
+    - |
+      set -eu
+
+      : "$${SPIFFE_SOCKET:=/tmp/spire-agent/private/api.sock}"
+      : "$${SVID_DIR:=/var/run/spiffe/workload}"
+      : "$${AUDIENCE:=spiffe://example.org/workload/exchange-server}"
+      : "$${JWT_FILE:=spiffe-jwt.token}"
+
+      mkdir -p "$$SVID_DIR"
+      install -d -m 0755 /etc/spiffe
+
+
+      cat > /etc/spiffe/helper.conf <<EOF
+      agent_address = "$$SPIFFE_SOCKET"
+      cert_dir = "$$SVID_DIR"
+      daemon_mode = true
+      jwt_svids = [{
+        jwt_audience       = "$$AUDIENCE"
+        jwt_svid_file_name = "$$JWT_FILE"
+      }]
+      EOF
+
+      /usr/bin/spiffe-helper -config /etc/spiffe/helper.conf -daemon-mode=true &
+
+      i=0
+      while [ $$i -lt 120 ]; do
+        if [ -s "$$SVID_DIR/$$JWT_FILE" ]; then break; fi
+        echo "waiting for JWT…"; sleep 1; i=$$((i+1))
+      done
+      [ -s "$$SVID_DIR/$$JWT_FILE" ] || { echo "no JWT"; exit 1; }
+
+      echo "JWT SVID ready → starting app"
+      uv run python exchange/main.py
+      
 
   clickhouse-server:
     image: clickhouse/clickhouse-server
@@ -189,3 +621,15 @@ services:
     depends_on:
       clickhouse-server:
         condition: service_healthy
+
+volumes:
+  spire-server-data:
+  spire-agent-data:
+  spiffe-helper-example-svids:
+  brazil-farm-svids:
+  colombia-farm-svids:
+  vietnam-farm-svids:
+  exchange-server-svids:
+  weather-mcp-svids:
+  spire-join-token:
+  spire-server-sock:
