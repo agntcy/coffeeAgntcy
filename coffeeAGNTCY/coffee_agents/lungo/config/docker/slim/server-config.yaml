@@ -1,6 +1,3 @@
-# Copyright AGNTCY Contributors (https://github.com/agntcy)
-# SPDX-License-Identifier: Apache-2.0
-
 tracing:
   log_level: info
   display_thread_names: true
@@ -18,10 +15,10 @@ services:
         - endpoint: "0.0.0.0:46357"
           tls:
             insecure: true
-
       clients: []
     controller:
-      servers:
-        - endpoint: "0.0.0.0:46358"
+      servers: []
+      clients:
+        - endpoint: "http://slim-controller:50052"
           tls:
             insecure: true

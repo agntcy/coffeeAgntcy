@@ -1,0 +1,12 @@
+# docker/Dockerfile.spire-agent-runner
+# Minimal wrapper that gives us /bin/sh but still uses the official agent bits
+FROM alpine:3.19
+
+# Copy the spire-agent binaries and directories out of the official image
+COPY --from=ghcr.io/spiffe/spire-agent:1.12.4 /opt/spire /opt/spire
+
+# Needed tools for our tiny startup script
+RUN apk add --no-cache ca-certificates
+
+# Default entrypoint is a shell; the actual command comes from docker-compose
+ENTRYPOINT ["/bin/sh", "-c"]

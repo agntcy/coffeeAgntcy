@@ -1,0 +1,29 @@
+services:
+  slim-controller:
+    image: ghcr.io/agntcy/slim/control-plane:0.0.1
+    container_name: slim-controller
+    command: ["-config", "/controller-config.yaml"]
+    volumes:
+      - ./controller-config.yaml:/controller-config.yaml:ro
+    ports:
+      - "50051:50051" # northbound (slimctl)
+      - "50052:50052" # southbound (node registration)
+    networks:
+      slimnet:
+
+  slim:
+    image: ghcr.io/agntcy/slim:0.4.0
+    container_name: slim
+    depends_on:
+      - slim-controller
+    command: ["/slim", "--config", "/config.yaml"]
+    volumes:
+      - ./server-config.yaml:/config.yaml:ro
+    ports:
+      - "46357:46357"
+    networks:
+      - slimnet
+
+networks:
+  slimnet:
+    name: slimnet

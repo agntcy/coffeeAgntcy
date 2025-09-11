@@ -1,0 +1,11 @@
+northbound:
+  httpHost: 0.0.0.0
+  httpPort: 50051
+  logging:
+    level: DEBUG
+
+southbound:
+  httpHost: 0.0.0.0
+  httpPort: 50052
+  logging:
+    level: DEBUG
