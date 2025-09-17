@@ -1,5 +1,5 @@
 version = 1
-revision = 3
+revision = 2
 requires-python = ">=3.13, <4.0"
 resolution-markers = [
     "platform_python_implementation != 'PyPy'",
@@ -27,7 +27,7 @@ wheels = [
 
 [[package]]
 name = "agntcy-app-sdk"
-version = "0.2.2"
+version = "0.2.3"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "a2a-sdk" },
@@ -43,9 +43,9 @@ dependencies = [
     { name = "slim-bindings" },
     { name = "uvicorn" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/a7/ba/9145428e1834f8e5366f448415fe474354bd5d157b5208979f746c498fd5/agntcy_app_sdk-0.2.2.tar.gz", hash = "sha256:b396ad8bd3a0f2f2118028b69fa20c023d903166e6bc376f0c1195f62e564670", size = 845247, upload-time = "2025-09-09T19:28:27.828Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/5f/44/47a913b11c5776b9c0bce8667a99b35a7da885c7c5c6fd2584bff88e52a8/agntcy_app_sdk-0.2.3.tar.gz", hash = "sha256:ed0362037b6bd9aa39280c6e3a86615376932830367bf56bdab27d9851af8b5b", size = 846647, upload-time = "2025-09-16T21:04:19.628Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/a2/5c/7bbb6cbf8b735d4479a1dd93e265c79ae7d17d0344c394db561638aa8943/agntcy_app_sdk-0.2.2-py3-none-any.whl", hash = "sha256:d564f880afece3c5eebf712d93725ca2dbfc803f779b7ac874e343d88bdb414f", size = 45272, upload-time = "2025-09-09T19:28:26.656Z" },
+    { url = "https://files.pythonhosted.org/packages/e1/9c/a3e380ab993ec8ec0e2c933d27ac15e6e0447d29aaffce5d4079ce39288a/agntcy_app_sdk-0.2.3-py3-none-any.whl", hash = "sha256:14cff22a7ab5d37b8309019f0b43e2a1d2d315020a7fec59eacad3cf450f9574", size = 46710, upload-time = "2025-09-16T21:04:18.046Z" },
 ]
 
 [[package]]
@@ -1827,7 +1827,7 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "a2a-sdk", specifier = "==0.3.0" },
-    { name = "agntcy-app-sdk", specifier = "==0.2.2" },
+    { name = "agntcy-app-sdk", specifier = "==0.2.3" },
     { name = "autogen-core", marker = "extra == 'dev'", specifier = ">=0.4.3,<0.5" },
     { name = "click", specifier = ">=8.1.8" },
     { name = "cnoe-agent-utils", specifier = "==0.2.2" },
