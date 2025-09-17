@@ -56,7 +56,7 @@ class AccountantAgent:
 
         logger.info(f"Accountant agent received input: {message_content}")
 
-        if message_content == "CUSTOMS_CLEARANCE":
+        if "CUSTOMS_CLEARANCE" in message_content:
             logger.info("Processing CUSTOMS_CLEARANCE -> PAYMENT_COMPLETE")
             return {"messages": [AIMessage("PAYMENT_COMPLETE")]}
         else:

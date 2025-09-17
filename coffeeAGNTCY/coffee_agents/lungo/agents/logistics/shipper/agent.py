@@ -56,10 +56,10 @@ class ShipperAgent:
 
         logger.info(f"Shipper agent received input: {message_content}")
 
-        if message_content == "HANDOVER_TO_SHIPPER":
+        if "HANDOVER_TO_SHIPPER" in message_content:
             logger.info("Processing HANDOVER_TO_SHIPPER -> CUSTOMS_CLEARANCE")
             return {"messages": [AIMessage("CUSTOMS_CLEARANCE")]}
-        elif message_content == "PAYMENT_COMPLETE":
+        elif "PAYMENT_COMPLETE" in message_content:
             logger.info("Processing PAYMENT_COMPLETE -> DELIVERED")
             return {"messages": [AIMessage("DELIVERED")]}
         else:
