@@ -38,7 +38,7 @@ from agents.supervisors.auction.graph.models import (
 
 from ioa_observe.sdk.decorators import tool as ioa_tool_decorator
 
-logger = logging.getLogger("lungo.supervisor.tools")
+logger = logging.getLogger("lungo.logistic.supervisor.tools")
 
 def tools_or_next(tools_node: str, end_node: str = "__end__"):
   """
@@ -140,8 +140,7 @@ async def create_order(farm: str, quantity: int, price: float) -> str:
     if card is None:
         return f"Farm '{farm}' not recognized. Available farms are: {brazil_agent_card.name}, {colombia_agent_card.name}, {vietnam_agent_card.name}."
 
-    logger.info(f"Using farm card: {card.name} for order creation with transport: {DEFAULT_MESSAGE_TRANSPORT}")
-
+    logger.info(f"Using farm card: {farm} for order creation with transport: {DEFAULT_MESSAGE_TRANSPORT}")
     # Shared factory & transport
     factory = get_factory()
     transport = factory.create_transport(
@@ -164,14 +163,14 @@ async def create_order(farm: str, quantity: int, price: float) -> str:
             message=Message(
                 messageId=str(uuid4()),
                 role=Role.user,
-                parts=[Part(TextPart(text=f"Create an order with price {price} and quantity {quantity}"))],
+                parts=[Part(TextPart(text=f"Create an order with price {price} and quantity {quantity}. Status: RECEIVED_ORDER"))],
             ),
         )
     )
 
-    # create a list of recipients to include in the broadcast
-    # recipients = [A2AProtocol.create_agent_topic(get_farm_card(farm)) for farm in ['brazil', 'shipper', 'accountant']]
-    recipients = [A2AProtocol.create_agent_topic(get_farm_card(farm)) for farm in ['shipper']]
+    recipients = [A2AProtocol.create_agent_topic(get_farm_card(farm)) for farm in ['shipper', 'accountant', farm ]]
+    logger.info(f"Broadcasting order creation to recipients: {recipients}")
+
     responses = await client.broadcast_message(request, broadcast_topic=GROUP_CHAT_TOPIC, recipients=recipients,
                                                end_message="DELIVERED", group_chat=True, timeout=60)
 
