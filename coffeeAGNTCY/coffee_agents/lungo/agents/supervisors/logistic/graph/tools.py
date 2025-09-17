@@ -146,8 +146,7 @@ async def create_order(farm: str, quantity: int, price: float) -> str:
     factory = get_factory()
     transport = factory.create_transport(
         DEFAULT_MESSAGE_TRANSPORT,
-        #endpoint=TRANSPORT_SERVER_ENDPOINT, TODO: fix this for docker compose
-        endpoint="http://localhost:46357",
+        endpoint=TRANSPORT_SERVER_ENDPOINT,
         name="default/default/logistic_graph"
     )
 
@@ -155,11 +154,9 @@ async def create_order(farm: str, quantity: int, price: float) -> str:
         "A2A",
         # Due to the limitation in SLIM. To create an A2A client, we use a topic with at least one listener,
         # which is the routable name of the Brazil agent.
-        agent_topic=A2AProtocol.create_agent_topic(get_farm_card("brazil")),
+        agent_topic=A2AProtocol.create_agent_topic(get_farm_card("vietnam")),
         transport=transport,
     )
-
-    logger.info(f"Created A2A client with topic: {A2AProtocol.create_agent_topic(get_farm_card('brazil'))}")
 
     request = SendMessageRequest(
         id=str(uuid4()),

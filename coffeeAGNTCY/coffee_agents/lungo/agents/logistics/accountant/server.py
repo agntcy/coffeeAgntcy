@@ -40,7 +40,6 @@ async def run_transport(server, transport_type, endpoint, block):
     try:
         personal_topic = A2AProtocol.create_agent_topic(AGENT_CARD)
         transport = factory.create_transport(transport_type, endpoint=endpoint, name=f"default/default/{personal_topic}")
-        # todo change broadcast topic to shipper topic
         broadcast_bridge = factory.create_bridge(
             server, transport=transport, topic=GROUP_CHAT_TOPIC
         )
