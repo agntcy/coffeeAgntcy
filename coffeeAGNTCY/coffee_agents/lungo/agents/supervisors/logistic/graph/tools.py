@@ -29,6 +29,8 @@ from config.config import (
 from agents.farms.brazil.card import AGENT_CARD as brazil_agent_card
 from agents.farms.colombia.card import AGENT_CARD as colombia_agent_card
 from agents.farms.vietnam.card import AGENT_CARD as vietnam_agent_card
+from agents.logistics.accountant.card import AGENT_CARD as accountant_agent_card
+from agents.logistics.shipper.card import AGENT_CARD as shipper_agent_card
 from agents.supervisors.auction.graph.models import (
     InventoryArgs,
     CreateOrderArgs,
@@ -98,6 +100,10 @@ def get_farm_card(farm: str) -> AgentCard | None:
         return colombia_agent_card
     elif 'vietnam' in farm.lower():
         return vietnam_agent_card
+    elif 'accountant' in farm.lower():
+        return accountant_agent_card
+    elif 'shipper' in farm.lower():
+        return shipper_agent_card
     else:
         logger.error(f"Unknown farm name: {farm}. Expected one of 'brazil', 'colombia', or 'vietnam'.")
         return None
@@ -165,8 +171,9 @@ async def create_order(farm: str, quantity: int, price: float) -> str:
     )
 
     # create a list of recipients to include in the broadcast
-    recipients = [A2AProtocol.create_agent_topic(get_farm_card(farm)) for farm in ['brazil', 'colombia', 'vietnam']]
-    responses = await client.broadcast_message(request, broadcast_topic=GROUP_CHAT_TOPIC, recipients=recipients)
+    recipients = [A2AProtocol.create_agent_topic(get_farm_card(farm)) for farm in ['brazil', 'shipper', 'accountant']]
+    responses = await client.broadcast_message(request, broadcast_topic=GROUP_CHAT_TOPIC, recipients=recipients,
+                                               end_message="DELIVERED", group_chat=True, timeout=60)
 
     logger.info(f"Responses received from A2A agent: {responses}")
 
