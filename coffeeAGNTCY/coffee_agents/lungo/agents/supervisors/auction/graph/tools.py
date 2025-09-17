@@ -1,6 +1,7 @@
 # Copyright AGNTCY Contributors (https://github.com/agntcy)
 # SPDX-License-Identifier: Apache-2.0
 
+import asyncio
 import logging
 from typing import Any, Union, Literal
 from uuid import uuid4
@@ -161,15 +162,22 @@ async def get_farm_yield_inventory(prompt: str, farm: str) -> str:
     transport = factory.create_transport(
         DEFAULT_MESSAGE_TRANSPORT,
         endpoint=TRANSPORT_SERVER_ENDPOINT,
-        name="default/default/exchange_graph"
+        name="default/default/exchange_graph",
+        jwt="/run/spiffe/workload/spiffe-jwt.token",
+        bundle="/run/spiffe/workload/key.jwt",
+        audience=["spiffe://example.org/workload/exchange-server"],
     )
-    
-    client = await factory.create_client(
-        "A2A",
-        agent_topic=A2AProtocol.create_agent_topic(card),
-        transport=transport,
-    )
+    logger.info(f"Created transport with endpoint: {TRANSPORT_SERVER_ENDPOINT} and transport type: {DEFAULT_MESSAGE_TRANSPORT}")
+    try:
+        client = await asyncio.wait_for(
+            factory.create_client("A2A", agent_topic=A2AProtocol.create_agent_topic(card), transport=transport),
+            timeout=10
+        )
+    except Exception as e:
+        logger.error(f"create_client failed: {e}")
+        return "Failed to create A2A client for farm."
 
+    logger.info(f"Using farm card: {card.name} for yield inventory retrieval")
     request = SendMessageRequest(
         id=str(uuid4()),
         params=MessageSendParams(
@@ -180,12 +188,14 @@ async def get_farm_yield_inventory(prompt: str, farm: str) -> str:
             ),
         )
     )
-
+    logger.info(f"Sending request to farm: {request}")
     response = await client.send_message(request)
     logger.info(f"Response received from A2A agent: {response}")
     if response.root.result and response.root.result.parts:
+        logger.info("Processing response parts")
         part = response.root.result.parts[0].root
         if hasattr(part, "text"):
+            logger.info(f"Yield inventory retrieved: {part.text.strip()}")
             return part.text.strip()
     elif response.root.error:
         logger.error(f"A2A error: {response.root.error.message}")
@@ -193,6 +203,7 @@ async def get_farm_yield_inventory(prompt: str, farm: str) -> str:
     else:
         logger.error("Unknown response type")
         return "Unknown response type from farm"
+    return "No response from farm"
 
 
 @tool
@@ -214,7 +225,10 @@ async def get_all_farms_yield_inventory(prompt: str) -> str:
     transport = factory.create_transport(
         DEFAULT_MESSAGE_TRANSPORT,
         endpoint=TRANSPORT_SERVER_ENDPOINT,
-        name="default/default/exchange_graph"
+        name="default/default/exchange_graph",
+        jwt="/run/spiffe/workload/spiffe-jwt.token",
+        bundle="/run/spiffe/workload/key.jwt",
+        audience=["spiffe://example.org/workload/exchange-server"],
     )
 
     request = SendMessageRequest(
@@ -308,7 +322,10 @@ async def create_order(farm: str, quantity: int, price: float) -> str:
     transport = factory.create_transport(
         DEFAULT_MESSAGE_TRANSPORT,
         endpoint=TRANSPORT_SERVER_ENDPOINT,
-        name="default/default/exchange_graph"
+        name="default/default/exchange_graph",
+        jwt="/run/spiffe/workload/spiffe-jwt.token",
+        bundle="/run/spiffe/workload/key.jwt",
+        audience=["spiffe://example.org/workload/exchange-server"],
     )
 
     client = await factory.create_client(
@@ -363,7 +380,10 @@ async def get_order_details(order_id: str) -> str:
     transport = factory.create_transport(
         DEFAULT_MESSAGE_TRANSPORT,
         endpoint=TRANSPORT_SERVER_ENDPOINT,
-        name="default/default/exchange_graph"
+        name="default/default/exchange_graph",
+        jwt="/run/spiffe/workload/spiffe-jwt.token",
+        bundle="/run/spiffe/workload/key.jwt",
+        audience=["spiffe://example.org/workload/exchange-server"],
     )
     
     client = await factory.create_client(

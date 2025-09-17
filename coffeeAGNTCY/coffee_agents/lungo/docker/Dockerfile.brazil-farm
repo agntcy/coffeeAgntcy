@@ -39,6 +39,7 @@ ENV PYTHONPATH="/app"
 WORKDIR /app
 COPY coffeeAGNTCY/coffee_agents/lungo/pyproject.toml coffeeAGNTCY/coffee_agents/lungo/uv.lock ./
 RUN uv sync --locked --no-editable
+# UV Pip install via path
 
 COPY coffeeAGNTCY/coffee_agents/lungo/ .
 CMD ["uv", "run", "python", "agents/farms/brazil/farm_server.py"]

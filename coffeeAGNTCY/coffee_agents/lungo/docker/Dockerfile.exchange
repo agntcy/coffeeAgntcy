@@ -7,13 +7,27 @@ RUN apt-get update && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
+# --- START SPIFFE HELPER INSTALLATION ---
 # Define the SPIFFE Helper version and architecture
 ARG SPIFFE_HELPER_VERSION=0.10.0
-ARG ARCH=x86_64 # IMPORTANT: Change to 'arm64' if your Docker host/target platform is ARM-based (e.g., Apple M1/M2)
+ARG ARCH=x86_64 # Use x86_64 for AMD64 systems as per GitHub release naming
 
-# Download and install spiffe-helper
-RUN wget -qO /usr/bin/spiffe-helper https://github.com/spiffe/spiffe-helper/releases/download/v${SPIFFE_HELPER_VERSION}/spiffe-helper_v${SPIFFE_HELPER_VERSION}_Linux-${ARCH}.tar.gz && \
+# Define the full filename of the tar.gz archive
+ENV HELPER_FILENAME=spiffe-helper_v${SPIFFE_HELPER_VERSION}_Linux-${ARCH}.tar.gz
+
+# --- DIAGNOSTIC STEP: Add curl -v to see detailed network output ---
+RUN echo "Attempting to download ${HELPER_FILENAME} from https://github.com/spiffe/spiffe-helper/releases/download/v${SPIFFE_HELPER_VERSION}/${HELPER_FILENAME}" && \
+    curl -v -o /dev/null https://github.com/spiffe/spiffe-helper/releases/download/v${SPIFFE_HELPER_VERSION}/${HELPER_FILENAME} && \
+    echo "Curl command succeeded. Proceeding with wget download and extraction."
+# --- END DIAGNOSTIC STEP ---
+
+# Download, extract, and install spiffe-helper
+RUN wget -q https://github.com/spiffe/spiffe-helper/releases/download/v${SPIFFE_HELPER_VERSION}/${HELPER_FILENAME} && \
+    tar -xzf ${HELPER_FILENAME} && \
+    mv spiffe-helper /usr/bin/spiffe-helper && \
+    rm ${HELPER_FILENAME} && \
     chmod +x /usr/bin/spiffe-helper
+# --- END SPIFFE HELPER INSTALLATION ---
 
 # Install uv and create virtual environment
 RUN pip install --no-cache-dir uv && \

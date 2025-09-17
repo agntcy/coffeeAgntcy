@@ -18,7 +18,18 @@ services:
       - spire-server-sock:/tmp/spire-server/private
     ports:
       - "8081:8081"
-
+  spire-oidc:
+    image: ghcr.io/spiffe/oidc-discovery-provider:1.12.4
+    container_name: spire-oidc
+    depends_on:
+      spire-server: 
+        condition: service_started
+    ports:
+      - "8080:8080"
+    volumes:
+      - spire-server-sock:/tmp/spire-server/private:ro
+      - ./config/spire/oidc:/opt/spire/conf:ro
+    command: ["-config", "/opt/spire/conf/oidc-discovery-provider.conf"]
 
   # SPIRE Agent: Runs on each node and exposes the Workload API.
   spire-agent:
@@ -260,162 +271,212 @@ services:
         echo "waiting for JWT…"; sleep 1; i=$$((i+1))
       done
       [ -s "$$SVID_DIR/$$JWT_FILE" ] || { echo "no JWT"; exit 1; }
+      echo "JWT SVID ready"
 
-      echo "JWT SVID ready → starting app"
-      uv run python farms/brazil/farm_server.py
-
-  colombia-farm-server:
-    build:
-      context: ../../..
-      dockerfile: coffeeAGNTCY/coffee_agents/lungo/docker/Dockerfile.colombia-farm
-    image: ghcr.io/agntcy/coffee-agntcy/colombia-farm:latest
-    container_name: colombia-farm-server
-    platform: linux/amd64
-    environment:
-      - FARM_AGENT_HOST=colombia-farm-server
-      - FARM_AGENT_PORT=9998
-      - AZURE_OPENAI_ENDPOINT=${AZURE_OPENAI_ENDPOINT:-}
-      - AZURE_OPENAI_DEPLOYMENT=${AZURE_OPENAI_DEPLOYMENT:-}
-      - AZURE_OPENAI_API_KEY=${AZURE_OPENAI_API_KEY:-}
-      - AZURE_OPENAI_API_VERSION=${AZURE_OPENAI_API_VERSION:-}
-      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
-      - OPENAI_ENDPOINT=${OPENAI_ENDPOINT:-}
-      - OPENAI_MODEL_NAME=${OPENAI_MODEL_NAME:-}
-      - LLM_PROVIDER=${LLM_PROVIDER}
-      - DEFAULT_MESSAGE_TRANSPORT=${DEFAULT_MESSAGE_TRANSPORT:-NATS}
-      - TRANSPORT_SERVER_ENDPOINT=${TRANSPORT_SERVER_ENDPOINT:-nats://nats:4222}
-      - OTLP_HTTP_ENDPOINT=${OTLP_HTTP_ENDPOINT:-http://otel-collector:4318}
-      - ENABLE_HTTP=true
-      - SPIFFE_SOCKET_PATH=/tmp/spire-agent/private/api.sock
-      - SPIFFE_CERTS_DIR=/var/run/spiffe/workload
-      - SPIFFE_JWT_FILE_PATH=/var/run/spiffe/workload/spiffe-jwt.token
-    ports:
-      - "9998:9998"
-    volumes:
-      - /tmp/spire-agent:/tmp/spire-agent:ro
-      - colombia-farm-svids:/var/run/spiffe/workload
-    depends_on:
-      spire-agent:
-        condition: service_healthy
-      spire-server-init:
-        condition: service_completed_successfully
-    command:
-    - /bin/sh
-    - -c
-    - |
-      set -eu
-
-      : "$${SPIFFE_SOCKET:=/tmp/spire-agent/private/api.sock}"
-      : "$${SVID_DIR:=/var/run/spiffe/workload}"
-      : "$${AUDIENCE:=spiffe://example.org/workload/colombia-farm}"
-      : "$${JWT_FILE:=spiffe-jwt.token}"
-
-      mkdir -p "$$SVID_DIR"
-      install -d -m 0755 /etc/spiffe
-
-
-      cat > /etc/spiffe/helper.conf <<EOF
-      agent_address = "$$SPIFFE_SOCKET"
-      cert_dir = "$$SVID_DIR"
-      daemon_mode = true
-      jwt_svids = [{
-        jwt_audience       = "$$AUDIENCE"
-        jwt_svid_file_name = "$$JWT_FILE"
-      }]
-      EOF
-
-      /usr/bin/spiffe-helper -config /etc/spiffe/helper.conf -daemon-mode=true &
+      # --- fetch initial JWKS ---
+      OIDC_BASE="http://spire-oidc:8080"
+      JWKS_PATH="$$SVID_DIR/jwks.json"
+      WRAPPED_JWKS="$$SVID_DIR/key.jwt"   # your jwk_path
 
       i=0
-      while [ $$i -lt 120 ]; do
-        if [ -s "$$SVID_DIR/$$JWT_FILE" ]; then break; fi
-        echo "waiting for JWT…"; sleep 1; i=$$((i+1))
+      while [ "${i:-0}" -lt 120 ]; do
+        if curl -fsSL "$$OIDC_BASE/keys" -o "$$JWKS_PATH"; then
+          break
+        fi
+        echo "waiting for JWKS…"
+        sleep 1
+        i=$$((i+1))
       done
-      [ -s "$$SVID_DIR/$$JWT_FILE" ] || { echo "no JWT"; exit 1; }
+      if [ ! -s "$$JWKS_PATH" ]; then
+        echo "no JWKS"; exit 1
+      fi
 
-      echo "JWT SVID ready → starting app"
-      uv run python farms/colombia/farm_server.py
+      # Wrap for your verifier (base64 inside JSON). Make -w0 portable.
+      if base64 --help 2>/dev/null | grep -q -- ' -w'; then
+        B64_JWKS="$$(base64 -w0 "$$JWKS_PATH")"
+      else
+        B64_JWKS="$$(base64 "$$JWKS_PATH" | tr -d '\n')"
+      fi
+      printf '{"jwks":"%s"}' "$$B64_JWKS" > "$$WRAPPED_JWKS"
 
-  vietnam-farm-server:
-    build:
-      context: ../../..
-      dockerfile: coffeeAGNTCY/coffee_agents/lungo/docker/Dockerfile.vietnam-farm
-    image: ghcr.io/agntcy/coffee-agntcy/vietnam-farm:latest
-    container_name: vietnam-farm-server
-    platform: linux/amd64
-    environment:
-      - FARM_AGENT_HOST=vietnam-farm-server
-      - FARM_AGENT_PORT=9997
-      - AZURE_OPENAI_ENDPOINT=${AZURE_OPENAI_ENDPOINT:-}
-      - AZURE_OPENAI_DEPLOYMENT=${AZURE_OPENAI_DEPLOYMENT:-}
-      - AZURE_OPENAI_API_KEY=${AZURE_OPENAI_API_KEY:-}
-      - AZURE_OPENAI_API_VERSION=${AZURE_OPENAI_API_VERSION:-}
-      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
-      - OPENAI_ENDPOINT=${OPENAI_ENDPOINT:-}
-      - OPENAI_MODEL_NAME=${OPENAI_MODEL_NAME:-}
-      - LLM_PROVIDER=${LLM_PROVIDER}
-      - DEFAULT_MESSAGE_TRANSPORT=${DEFAULT_MESSAGE_TRANSPORT:-NATS}
-      - TRANSPORT_SERVER_ENDPOINT=${TRANSPORT_SERVER_ENDPOINT:-nats://nats:4222}
-      - OTLP_HTTP_ENDPOINT=${OTLP_HTTP_ENDPOINT:-http://otel-collector:4318}
-      - ENABLE_HTTP=true
-      - SPIFFE_SOCKET_PATH=/tmp/spire-agent/private/api.sock
-      - SPIFFE_CERTS_DIR=/var/run/spiffe/workload
-      - SPIFFE_JWT_FILE_PATH=/var/run/spiffe/workload/spiffe-jwt.token
-    ports:
-      - "9997:9997"
-    volumes:
-      - /tmp/spire-agent:/tmp/spire-agent:ro
-      - vietnam-farm-svids:/var/run/spiffe/workload
-    depends_on:
-      spire-agent:
-        condition: service_healthy
-      spire-server-init:
-        condition: service_completed_successfully
-    command:
-    - /bin/sh
-    - -c
-    - |
-      set -eu
+      # --- start background refresher (non-blocking) ---
+      jwks_refresher() {
+        while sleep 300; do
+          tmp="$$JWKS_PATH.new"
+          if curl -fsSL "$$OIDC_BASE/keys" -o "$tmp"; then
+            if ! cmp -s "$$JWKS_PATH" "$tmp"; then
+              mv "$tmp" "$$JWKS_PATH"
+              if base64 --help 2>/dev/null | grep -q -- ' -w'; then
+                B64_JWKS="$$(base64 -w0 "$$JWKS_PATH")"
+              else
+                B64_JWKS="$$(base64 "$$JWKS_PATH" | tr -d '\n')"
+              fi
+              printf '{"jwks":"%s"}' "$$B64_JWKS" > "$$WRAPPED_JWKS"
+              echo "JWKS refreshed"
+            else
+              rm -f "$$tmp"
+            fi
+          fi
+        done
+      }
+      jwks_refresher & JWKS_PID=$!
+      # Ensure we clean up the refresher on container stop
+      trap 'kill "$$JWKS_PID" 2>/dev/null || true' EXIT
 
-      : "$${SPIFFE_SOCKET:=/tmp/spire-agent/private/api.sock}"
-      : "$${SVID_DIR:=/var/run/spiffe/workload}"
-      : "$${AUDIENCE:=spiffe://example.org/workload/vietnam-farm}"
-      : "$${JWT_FILE:=spiffe-jwt.token}"
+      exec uv run python agents/farms/brazil/farm_server.py
 
-      mkdir -p "$$SVID_DIR"
-      install -d -m 0755 /etc/spiffe
+  # colombia-farm-server:
+  #   build:
+  #     context: ../../..
+  #     dockerfile: coffeeAGNTCY/coffee_agents/lungo/docker/Dockerfile.colombia-farm
+  #   image: ghcr.io/agntcy/coffee-agntcy/colombia-farm:latest
+  #   container_name: colombia-farm-server
+  #   platform: linux/amd64
+  #   environment:
+  #     - FARM_AGENT_HOST=colombia-farm-server
+  #     - FARM_AGENT_PORT=9998
+  #     - AZURE_OPENAI_ENDPOINT=${AZURE_OPENAI_ENDPOINT:-}
+  #     - AZURE_OPENAI_DEPLOYMENT=${AZURE_OPENAI_DEPLOYMENT:-}
+  #     - AZURE_OPENAI_API_KEY=${AZURE_OPENAI_API_KEY:-}
+  #     - AZURE_OPENAI_API_VERSION=${AZURE_OPENAI_API_VERSION:-}
+  #     - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+  #     - OPENAI_ENDPOINT=${OPENAI_ENDPOINT:-}
+  #     - OPENAI_MODEL_NAME=${OPENAI_MODEL_NAME:-}
+  #     - LLM_PROVIDER=${LLM_PROVIDER}
+  #     - DEFAULT_MESSAGE_TRANSPORT=${DEFAULT_MESSAGE_TRANSPORT:-NATS}
+  #     - TRANSPORT_SERVER_ENDPOINT=${TRANSPORT_SERVER_ENDPOINT:-nats://nats:4222}
+  #     - OTLP_HTTP_ENDPOINT=${OTLP_HTTP_ENDPOINT:-http://otel-collector:4318}
+  #     - ENABLE_HTTP=true
+  #     - SPIFFE_SOCKET_PATH=/tmp/spire-agent/private/api.sock
+  #     - SPIFFE_CERTS_DIR=/var/run/spiffe/workload
+  #     - SPIFFE_JWT_FILE_PATH=/var/run/spiffe/workload/spiffe-jwt.token
+  #   ports:
+  #     - "9998:9998"
+  #   volumes:
+  #     - /tmp/spire-agent:/tmp/spire-agent:ro
+  #     - colombia-farm-svids:/var/run/spiffe/workload
+  #   depends_on:
+  #     spire-agent:
+  #       condition: service_healthy
+  #     spire-server-init:
+  #       condition: service_completed_successfully
+  #   command:
+  #   - /bin/sh
+  #   - -c
+  #   - |
+  #     set -eu
+
+  #     : "$${SPIFFE_SOCKET:=/tmp/spire-agent/private/api.sock}"
+  #     : "$${SVID_DIR:=/var/run/spiffe/workload}"
+  #     : "$${AUDIENCE:=spiffe://example.org/workload/colombia-farm}"
+  #     : "$${JWT_FILE:=spiffe-jwt.token}"
+
+  #     mkdir -p "$$SVID_DIR"
+  #     install -d -m 0755 /etc/spiffe
 
 
-      cat > /etc/spiffe/helper.conf <<EOF
-      agent_address = "$$SPIFFE_SOCKET"
-      cert_dir = "$$SVID_DIR"
-      daemon_mode = true
-      jwt_svids = [{
-        jwt_audience       = "$$AUDIENCE"
-        jwt_svid_file_name = "$$JWT_FILE"
-      }]
-      EOF
+  #     cat > /etc/spiffe/helper.conf <<EOF
+  #     agent_address = "$$SPIFFE_SOCKET"
+  #     cert_dir = "$$SVID_DIR"
+  #     daemon_mode = true
+  #     jwt_svids = [{
+  #       jwt_audience       = "$$AUDIENCE"
+  #       jwt_svid_file_name = "$$JWT_FILE"
+  #     }]
+  #     EOF
 
-      /usr/bin/spiffe-helper -config /etc/spiffe/helper.conf -daemon-mode=true &
+  #     /usr/bin/spiffe-helper -config /etc/spiffe/helper.conf -daemon-mode=true &
 
-      i=0
-      while [ $$i -lt 120 ]; do
-        if [ -s "$$SVID_DIR/$$JWT_FILE" ]; then break; fi
-        echo "waiting for JWT…"; sleep 1; i=$$((i+1))
-      done
-      [ -s "$$SVID_DIR/$$JWT_FILE" ] || { echo "no JWT"; exit 1; }
+  #     i=0
+  #     while [ $$i -lt 120 ]; do
+  #       if [ -s "$$SVID_DIR/$$JWT_FILE" ]; then break; fi
+  #       echo "waiting for JWT…"; sleep 1; i=$$((i+1))
+  #     done
+  #     [ -s "$$SVID_DIR/$$JWT_FILE" ] || { echo "no JWT"; exit 1; }
 
-      echo "JWT SVID ready → starting app"
-      uv run python farms/vietnam/farm_server.py
+  #     echo "JWT SVID ready → starting app"
+  #     uv run python farms/colombia/farm_server.py
 
-  nats:
-    image: nats:latest
-    container_name: nats-lungo
-    ports:
-      - "4222:4222"
-      - "4223:4223"
-      - "6222:6222"
-      - "8222:8222"
+  # vietnam-farm-server:
+  #   build:
+  #     context: ../../..
+  #     dockerfile: coffeeAGNTCY/coffee_agents/lungo/docker/Dockerfile.vietnam-farm
+  #   image: ghcr.io/agntcy/coffee-agntcy/vietnam-farm:latest
+  #   container_name: vietnam-farm-server
+  #   platform: linux/amd64
+  #   environment:
+  #     - FARM_AGENT_HOST=vietnam-farm-server
+  #     - FARM_AGENT_PORT=9997
+  #     - AZURE_OPENAI_ENDPOINT=${AZURE_OPENAI_ENDPOINT:-}
+  #     - AZURE_OPENAI_DEPLOYMENT=${AZURE_OPENAI_DEPLOYMENT:-}
+  #     - AZURE_OPENAI_API_KEY=${AZURE_OPENAI_API_KEY:-}
+  #     - AZURE_OPENAI_API_VERSION=${AZURE_OPENAI_API_VERSION:-}
+  #     - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+  #     - OPENAI_ENDPOINT=${OPENAI_ENDPOINT:-}
+  #     - OPENAI_MODEL_NAME=${OPENAI_MODEL_NAME:-}
+  #     - LLM_PROVIDER=${LLM_PROVIDER}
+  #     - DEFAULT_MESSAGE_TRANSPORT=${DEFAULT_MESSAGE_TRANSPORT:-NATS}
+  #     - TRANSPORT_SERVER_ENDPOINT=${TRANSPORT_SERVER_ENDPOINT:-nats://nats:4222}
+  #     - OTLP_HTTP_ENDPOINT=${OTLP_HTTP_ENDPOINT:-http://otel-collector:4318}
+  #     - ENABLE_HTTP=true
+  #     - SPIFFE_SOCKET_PATH=/tmp/spire-agent/private/api.sock
+  #     - SPIFFE_CERTS_DIR=/var/run/spiffe/workload
+  #     - SPIFFE_JWT_FILE_PATH=/var/run/spiffe/workload/spiffe-jwt.token
+  #   ports:
+  #     - "9997:9997"
+  #   volumes:
+  #     - /tmp/spire-agent:/tmp/spire-agent:ro
+  #     - vietnam-farm-svids:/var/run/spiffe/workload
+  #   depends_on:
+  #     spire-agent:
+  #       condition: service_healthy
+  #     spire-server-init:
+  #       condition: service_completed_successfully
+  #   command:
+  #   - /bin/sh
+  #   - -c
+  #   - |
+  #     set -eu
+
+  #     : "$${SPIFFE_SOCKET:=/tmp/spire-agent/private/api.sock}"
+  #     : "$${SVID_DIR:=/var/run/spiffe/workload}"
+  #     : "$${AUDIENCE:=spiffe://example.org/workload/vietnam-farm}"
+  #     : "$${JWT_FILE:=spiffe-jwt.token}"
+
+  #     mkdir -p "$$SVID_DIR"
+  #     install -d -m 0755 /etc/spiffe
+
+
+  #     cat > /etc/spiffe/helper.conf <<EOF
+  #     agent_address = "$$SPIFFE_SOCKET"
+  #     cert_dir = "$$SVID_DIR"
+  #     daemon_mode = true
+  #     jwt_svids = [{
+  #       jwt_audience       = "$$AUDIENCE"
+  #       jwt_svid_file_name = "$$JWT_FILE"
+  #     }]
+  #     EOF
+
+  #     /usr/bin/spiffe-helper -config /etc/spiffe/helper.conf -daemon-mode=true &
+
+  #     i=0
+  #     while [ $$i -lt 120 ]; do
+  #       if [ -s "$$SVID_DIR/$$JWT_FILE" ]; then break; fi
+  #       echo "waiting for JWT…"; sleep 1; i=$$((i+1))
+  #     done
+  #     [ -s "$$SVID_DIR/$$JWT_FILE" ] || { echo "no JWT"; exit 1; }
+
+  #     echo "JWT SVID ready → starting app"
+  #     uv run python farms/vietnam/farm_server.py
+
+  # nats:
+  #   image: nats:latest
+  #   container_name: nats-lungo
+  #   ports:
+  #     - "4222:4222"
+  #     - "4223:4223"
+  #     - "6222:6222"
+  #     - "8222:8222"
 
   slim:
     image: ghcr.io/agntcy/slim:0.4.0
@@ -478,7 +539,6 @@ services:
       mkdir -p "$$SVID_DIR"
       install -d -m 0755 /etc/spiffe
 
-
       cat > /etc/spiffe/helper.conf <<EOF
       agent_address = "$$SPIFFE_SOCKET"
       cert_dir = "$$SVID_DIR"
@@ -497,9 +557,58 @@ services:
         echo "waiting for JWT…"; sleep 1; i=$$((i+1))
       done
       [ -s "$$SVID_DIR/$$JWT_FILE" ] || { echo "no JWT"; exit 1; }
+      echo "JWT SVID ready"
 
-      echo "JWT SVID ready → starting app"
-      uv run python exchange/main.py
+      # --- fetch initial JWKS ---
+      OIDC_BASE="http://spire-oidc:8080"
+      JWKS_PATH="$$SVID_DIR/jwks.json"
+      WRAPPED_JWKS="$$SVID_DIR/key.jwt"   # your jwk_path
+
+      i=0
+      while [ "${i:-0}" -lt 120 ]; do
+        if curl -fsSL "$$OIDC_BASE/keys" -o "$$JWKS_PATH"; then
+          break
+        fi
+        echo "waiting for JWKS…"
+        sleep 1
+        i=$$((i+1))
+      done
+      if [ ! -s "$$JWKS_PATH" ]; then
+        echo "no JWKS"; exit 1
+      fi
+
+      # Wrap for your verifier (base64 inside JSON). Make -w0 portable.
+      if base64 --help 2>/dev/null | grep -q -- ' -w'; then
+        B64_JWKS="$$(base64 -w0 "$$JWKS_PATH")"
+      else
+        B64_JWKS="$$(base64 "$$JWKS_PATH" | tr -d '\n')"
+      fi
+      printf '{"jwks":"%s"}' "$$B64_JWKS" > "$$WRAPPED_JWKS"
+
+      # --- start background refresher (non-blocking) ---
+      jwks_refresher() {
+        while sleep 300; do
+          tmp="$$JWKS_PATH.new"
+          if curl -fsSL "$$OIDC_BASE/keys" -o "$tmp"; then
+            if ! cmp -s "$$JWKS_PATH" "$tmp"; then
+              mv "$tmp" "$$JWKS_PATH"
+              if base64 --help 2>/dev/null | grep -q -- ' -w'; then
+                B64_JWKS="$$(base64 -w0 "$$JWKS_PATH")"
+              else
+                B64_JWKS="$$(base64 "$$JWKS_PATH" | tr -d '\n')"
+              fi
+              printf '{"jwks":"%s"}' "$$B64_JWKS" > "$$WRAPPED_JWKS"
+              echo "JWKS refreshed"
+            else
+              rm -f "$$tmp"
+            fi
+          fi
+        done
+      }
+      jwks_refresher & JWKS_PID=$!
+      # Ensure we clean up the refresher on container stop
+      trap 'kill "$$JWKS_PID" 2>/dev/null || true' EXIT
+      uv run python agents/supervisors/auction/main.py
 
   ui:
     build:
@@ -515,64 +624,64 @@ services:
     ports:
       - "3000:3000"
 
-  weather-mcp-server:
-    build:
-      context: ../../..
-      dockerfile: coffeeAGNTCY/coffee_agents/lungo/docker/Dockerfile.weather-mcp
-    image: ghcr.io/agntcy/coffee-agntcy/weather-mcp-server:latest
-    container_name: weather-mcp-server
-    platform: linux/amd64
-    environment:
-      - DEFAULT_MESSAGE_TRANSPORT=${DEFAULT_MESSAGE_TRANSPORT:-NATS}
-      - TRANSPORT_SERVER_ENDPOINT=${TRANSPORT_SERVER_ENDPOINT:-nats://nats:4222}
-      - OTLP_HTTP_ENDPOINT=${OTLP_HTTP_ENDPOINT:-http://otel-collector:4318}
-      - SPIFFE_SOCKET_PATH=/tmp/spire-agent/private/api.sock
-      - SPIFFE_CERTS_DIR=/var/run/spiffe/workload
-      - SPIFFE_JWT_FILE_PATH=/var/run/spiffe/workload/spiffe-jwt.token
-    volumes:
-      - /tmp/spire-agent:/tmp/spire-agent:ro
-      - weather-mcp-svids:/var/run/spiffe/workload
-    depends_on:
-      spire-agent:
-        condition: service_healthy
-      spire-server-init:
-        condition: service_completed_successfully
-    command:
-    - /bin/sh
-    - -c
-    - |
-      set -eu
+  # weather-mcp-server:
+  #   build:
+  #     context: ../../..
+  #     dockerfile: coffeeAGNTCY/coffee_agents/lungo/docker/Dockerfile.weather-mcp
+  #   image: ghcr.io/agntcy/coffee-agntcy/weather-mcp-server:latest
+  #   container_name: weather-mcp-server
+  #   platform: linux/amd64
+  #   environment:
+  #     - DEFAULT_MESSAGE_TRANSPORT=${DEFAULT_MESSAGE_TRANSPORT:-NATS}
+  #     - TRANSPORT_SERVER_ENDPOINT=${TRANSPORT_SERVER_ENDPOINT:-nats://nats:4222}
+  #     - OTLP_HTTP_ENDPOINT=${OTLP_HTTP_ENDPOINT:-http://otel-collector:4318}
+  #     - SPIFFE_SOCKET_PATH=/tmp/spire-agent/private/api.sock
+  #     - SPIFFE_CERTS_DIR=/var/run/spiffe/workload
+  #     - SPIFFE_JWT_FILE_PATH=/var/run/spiffe/workload/spiffe-jwt.token
+  #   volumes:
+  #     - /tmp/spire-agent:/tmp/spire-agent:ro
+  #     - weather-mcp-svids:/var/run/spiffe/workload
+  #   depends_on:
+  #     spire-agent:
+  #       condition: service_healthy
+  #     spire-server-init:
+  #       condition: service_completed_successfully
+  #   command:
+  #   - /bin/sh
+  #   - -c
+  #   - |
+  #     set -eu
 
-      : "$${SPIFFE_SOCKET:=/tmp/spire-agent/private/api.sock}"
-      : "$${SVID_DIR:=/var/run/spiffe/workload}"
-      : "$${AUDIENCE:=spiffe://example.org/workload/exchange-server}"
-      : "$${JWT_FILE:=spiffe-jwt.token}"
+  #     : "$${SPIFFE_SOCKET:=/tmp/spire-agent/private/api.sock}"
+  #     : "$${SVID_DIR:=/var/run/spiffe/workload}"
+  #     : "$${AUDIENCE:=spiffe://example.org/workload/exchange-server}"
+  #     : "$${JWT_FILE:=spiffe-jwt.token}"
 
-      mkdir -p "$$SVID_DIR"
-      install -d -m 0755 /etc/spiffe
+  #     mkdir -p "$$SVID_DIR"
+  #     install -d -m 0755 /etc/spiffe
 
 
-      cat > /etc/spiffe/helper.conf <<EOF
-      agent_address = "$$SPIFFE_SOCKET"
-      cert_dir = "$$SVID_DIR"
-      daemon_mode = true
-      jwt_svids = [{
-        jwt_audience       = "$$AUDIENCE"
-        jwt_svid_file_name = "$$JWT_FILE"
-      }]
-      EOF
+  #     cat > /etc/spiffe/helper.conf <<EOF
+  #     agent_address = "$$SPIFFE_SOCKET"
+  #     cert_dir = "$$SVID_DIR"
+  #     daemon_mode = true
+  #     jwt_svids = [{
+  #       jwt_audience       = "$$AUDIENCE"
+  #       jwt_svid_file_name = "$$JWT_FILE"
+  #     }]
+  #     EOF
 
-      /usr/bin/spiffe-helper -config /etc/spiffe/helper.conf -daemon-mode=true &
+  #     /usr/bin/spiffe-helper -config /etc/spiffe/helper.conf -daemon-mode=true &
 
-      i=0
-      while [ $$i -lt 120 ]; do
-        if [ -s "$$SVID_DIR/$$JWT_FILE" ]; then break; fi
-        echo "waiting for JWT…"; sleep 1; i=$$((i+1))
-      done
-      [ -s "$$SVID_DIR/$$JWT_FILE" ] || { echo "no JWT"; exit 1; }
+  #     i=0
+  #     while [ $$i -lt 120 ]; do
+  #       if [ -s "$$SVID_DIR/$$JWT_FILE" ]; then break; fi
+  #       echo "waiting for JWT…"; sleep 1; i=$$((i+1))
+  #     done
+  #     [ -s "$$SVID_DIR/$$JWT_FILE" ] || { echo "no JWT"; exit 1; }
 
-      echo "JWT SVID ready → starting app"
-      uv run python exchange/main.py
+  #     echo "JWT SVID ready → starting app"
+  #     uv run python exchange/main.py
       
 
   clickhouse-server:

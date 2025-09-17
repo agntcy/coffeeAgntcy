@@ -16,9 +16,9 @@ services:
           tls:
             insecure: true
       clients: []
-    controller:
-      servers: []
-      clients:
-        - endpoint: "http://slim-controller:50052"
-          tls:
-            insecure: true
+    # controller:
+    #   servers: []
+    #   clients:
+    #     - endpoint: "http://slim-controller:50052"
+    #       tls:
+    #         insecure: true

@@ -40,7 +40,21 @@ async def run_transport(server, transport_type, endpoint, block):
     """Run the transport and broadcast bridge."""
     try:
         personal_topic = A2AProtocol.create_agent_topic(AGENT_CARD)
-        transport = factory.create_transport(transport_type, endpoint=endpoint, name=f"default/default/{personal_topic}")
+        transport = factory.create_transport(
+            transport_type, 
+            endpoint=endpoint, 
+            name=f"default/default/{personal_topic}", 
+            jwt="/run/spiffe/workload/spiffe-jwt.token",
+            bundle="/run/spiffe/workload/key.jwt",
+            audience=["spiffe://example.org/workload/brazil-farm"],
+        )
+
+    #     provider, verifier = jwt_identity(
+    # jwt_path=f"{os.environ['SVID_DIR']}/{os.environ.get('JWT_FILE','spiffe-jwt.token')}",
+    # jwk_path=f"{os.environ['SVID_DIR']}/key.jwt",
+    # iss="spiffe://example.org",                      # set as appropriate
+    # aud=["spiffe://example.org/workload/brazil-farm"]# match what you requested
+
 
         broadcast_bridge = factory.create_bridge(
             server, transport=transport, topic=FARM_BROADCAST_TOPIC
