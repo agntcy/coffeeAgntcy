@@ -5,6 +5,10 @@ import logging
 from langgraph.graph import MessagesState
 from langchain_core.messages import AIMessage
 from langgraph.graph import StateGraph, END
+from common.logistic_states import (
+    LogisticStatus,
+    extract_status,
+)
 
 logger = logging.getLogger("lungo.shipper_agent.agent")
 
@@ -36,35 +40,27 @@ class ShipperAgent:
     # --- Node Definition ---
 
     def _shipper_node(self, state: GraphState) -> dict:
-        """
-        Single node that handles all shipper logic.
-        """
-        user_messages = state["messages"]
-
-        # Extract the last message's content robustly
-        if isinstance(user_messages, list) and user_messages:
-            last_msg = user_messages[-1]
-            # If it's a langchain message object, get .content; else, use as string
-            if hasattr(last_msg, "content"):
-                message_content = last_msg.content
-            else:
-                message_content = str(last_msg)
+        messages = state["messages"]
+        if isinstance(messages, list) and messages:
+            last = messages[-1]
+            text = getattr(last, "content", str(last))
         else:
-            message_content = str(user_messages)
+            text = str(messages)
+        raw = text.strip()
+        status = extract_status(raw)
 
-        message_content = message_content.strip().upper()
+        if status is LogisticStatus.HANDOVER_TO_SHIPPER:
+            next_status = LogisticStatus.CUSTOMS_CLEARANCE
+            return {"messages": [AIMessage(next_status.value)]}
+        if status is LogisticStatus.PAYMENT_COMPLETE:
+            next_status = LogisticStatus.DELIVERED
+            return {"messages": [AIMessage(next_status.value)]}
 
-        logger.info(f"Shipper agent received input: {message_content}")
-
-        if "HANDOVER_TO_SHIPPER" in message_content:
-            logger.info("Processing HANDOVER_TO_SHIPPER -> CUSTOMS_CLEARANCE")
-            return {"messages": [AIMessage("CUSTOMS_CLEARANCE")]}
-        elif "PAYMENT_COMPLETE" in message_content:
-            logger.info("Processing PAYMENT_COMPLETE -> DELIVERED")
-            return {"messages": [AIMessage("DELIVERED")]}
-        else:
-            logger.info("Ignoring unexpected input")
-            return {"messages": [AIMessage("SHIPPER_IDLE")]}
+        idle_msg = (
+            f"Action '{None}' received. No shipper handling required. "
+            "Shipper remains IDLE. No further action required."
+        )
+        return {"messages": [AIMessage(idle_msg)]}
 
     # --- Graph Building Method ---
 

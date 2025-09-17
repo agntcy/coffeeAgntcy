@@ -2,7 +2,8 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import logging
-from typing import Any, Union, Literal
+import re
+from typing import Any, Union, Literal, Sequence
 from uuid import uuid4
 from pydantic import BaseModel
 
@@ -26,9 +27,10 @@ from config.config import (
     FARM_BROADCAST_TOPIC,
     GROUP_CHAT_TOPIC,
 )
-from agents.farms.brazil.card import AGENT_CARD as brazil_agent_card
-from agents.farms.colombia.card import AGENT_CARD as colombia_agent_card
-from agents.farms.vietnam.card import AGENT_CARD as vietnam_agent_card
+
+from agents.logistics.accountant.card import AGENT_CARD as accountant_agent_card
+from agents.logistics.shipper.card import AGENT_CARD as shipper_agent_card
+from agents.logistics.farm.card import AGENT_CARD as tatooine_agent_card
 from agents.supervisors.auction.graph.models import (
     InventoryArgs,
     CreateOrderArgs,
@@ -36,7 +38,7 @@ from agents.supervisors.auction.graph.models import (
 
 from ioa_observe.sdk.decorators import tool as ioa_tool_decorator
 
-logger = logging.getLogger("lungo.supervisor.tools")
+logger = logging.getLogger("lungo.logistic.supervisor.tools")
 
 def tools_or_next(tools_node: str, end_node: str = "__end__"):
   """
@@ -92,14 +94,14 @@ def get_farm_card(farm: str) -> AgentCard | None:
         AgentCard | None: The matching AgentCard if found, otherwise None.
     """
     farm = farm.strip().lower()
-    if 'brazil' in farm.lower():
-        return brazil_agent_card
-    elif 'colombia' in farm.lower():
-        return colombia_agent_card
-    elif 'vietnam' in farm.lower():
-        return vietnam_agent_card
+    if 'accountant' in farm.lower():
+        return accountant_agent_card
+    elif 'shipper' in farm.lower():
+        return shipper_agent_card
+    elif 'tatooine' in farm.lower():
+        return tatooine_agent_card
     else:
-        logger.error(f"Unknown farm name: {farm}. Expected one of 'brazil', 'colombia', or 'vietnam'.")
+        logger.error(f"Unknown farm name: {farm}. Expected one of 'accountant', or 'shipper', 'tatooine'.")
         return None
 
 
@@ -129,77 +131,7 @@ async def create_order(farm: str, quantity: int, price: float) -> str:
     
     if farm == "":
         return "No farm was provided, please provide a farm to create an order."
-    
-    card = get_farm_card(farm)
-    if card is None:
-        return f"Farm '{farm}' not recognized. Available farms are: {brazil_agent_card.name}, {colombia_agent_card.name}, {vietnam_agent_card.name}."
 
-    logger.info(f"Using farm card: {card.name} for order creation with transport: {DEFAULT_MESSAGE_TRANSPORT}")
-
-    # Shared factory & transport
-    factory = get_factory()
-    transport = factory.create_transport(
-        DEFAULT_MESSAGE_TRANSPORT,
-        #endpoint=TRANSPORT_SERVER_ENDPOINT, TODO: fix this for docker compose
-        endpoint="http://localhost:46357",
-        name="default/default/logistic_graph"
-    )
-
-    client = await factory.create_client(
-        "A2A",
-        # Due to the limitation in SLIM. To create an A2A client, we use a topic with at least one listener,
-        # which is the routable name of the Brazil agent.
-        agent_topic=A2AProtocol.create_agent_topic(get_farm_card("brazil")),
-        transport=transport,
-    )
-
-    request = SendMessageRequest(
-        id=str(uuid4()),
-        params=MessageSendParams(
-            message=Message(
-                messageId=str(uuid4()),
-                role=Role.user,
-                parts=[Part(TextPart(text=f"Create an order with price {price} and quantity {quantity}"))],
-            ),
-        )
-    )
-
-    # create a list of recipients to include in the broadcast
-    recipients = [A2AProtocol.create_agent_topic(get_farm_card(farm)) for farm in ['brazil', 'colombia', 'vietnam']]
-    responses = await client.broadcast_message(request, broadcast_topic=GROUP_CHAT_TOPIC, recipients=recipients)
-
-    logger.info(f"Responses received from A2A agent: {responses}")
-
-    for response in responses:
-        # we want a dict for farm name -> yield, the farm_name will be in the response metadata
-        if response.root.result and response.root.result.parts:
-            part = response.root.result.parts[0].root
-            if hasattr(response.root.result, "metadata"):
-                farm_name = response.root.result.metadata.get("name", "Unknown Farm")
-            else:
-                farm_name = "Unknown Farm"
-        elif response.root.error:
-            logger.error(f"A2A error from farm: {response.root.error.message}")
-        else:
-            logger.error("Unknown response type from farm")
-    
-
-@tool
-@ioa_tool_decorator(name="get_order_details")
-async def get_order_details(order_id: str) -> str:
-    """
-    Get details of an order.
-
-    Args:
-    order_id (str): The ID of the order.
-
-    Returns:
-    str: Details of the order.
-    """
-    logger.info(f"Getting details for order ID: {order_id}")
-    if not order_id:
-        return "Order ID must be provided."
-    
     # Shared factory & transport
     factory = get_factory()
     transport = factory.create_transport(
@@ -207,10 +139,12 @@ async def get_order_details(order_id: str) -> str:
         endpoint=TRANSPORT_SERVER_ENDPOINT,
         name="default/default/logistic_graph"
     )
-    
+
     client = await factory.create_client(
         "A2A",
-        agent_topic=FARM_BROADCAST_TOPIC,
+        # Due to the limitation in SLIM. To create an A2A client, we use a topic with at least one listener,
+        # which is the routable name of the Brazil agent.
+        agent_topic=A2AProtocol.create_agent_topic(shipper_agent_card),
         transport=transport,
     )
 
@@ -220,20 +154,88 @@ async def get_order_details(order_id: str) -> str:
             message=Message(
                 messageId=str(uuid4()),
                 role=Role.user,
-                parts=[Part(TextPart(text=f"Get details for order ID {order_id}"))],
+                parts=[Part(TextPart(text=f"Create an order with price {price} and quantity {quantity}. Status: RECEIVED_ORDER"))],
             ),
         )
     )
 
-    response = await client.send_message(request)
-    logger.info(f"Response received from A2A agent: {response}")
-    if response.root.result and response.root.result.parts:
-        part = response.root.result.parts[0].root
-        if hasattr(part, "text"):
-            return part.text.strip()
-    elif response.root.error:
-        logger.error(f"A2A error: {response.root.error.message}")
-        return f"Error from order agent: {response.root.error.message}"
-    else:
-        logger.error("Unknown response type")
-        return "Unknown response type from order agent"
+    recipients = [A2AProtocol.create_agent_topic(farm_card) for farm_card in [shipper_agent_card, tatooine_agent_card, accountant_agent_card ]] #, farm ]]
+    logger.info(f"Broadcasting order creation to recipients: {recipients}")
+
+    responses = await client.broadcast_message(request, broadcast_topic=GROUP_CHAT_TOPIC, recipients=recipients,
+                                               end_message="DELIVERED", group_chat=True, timeout=60)
+
+    logger.debug("Raw A2A responses: %s", responses)
+    formatted_responses = _summarize_a2a_responses(responses)
+    logger.info("Formatted responses: %s", formatted_responses)
+
+    return formatted_responses
+
+def _summarize_a2a_responses(responses: Sequence) -> str:
+  """
+  Build a concise status line from A2A SendMessageResponse objects.
+
+  Rules:
+  - Skip any message whose text contains 'idle' (case-insensitive).
+  - Aggregate all non-'delivered' statuses per agent in order of appearance (comma separated).
+  - Each 'delivered' status (case-insensitive exact match within the text) is emitted
+    as its own segment even if the agent appeared earlier.
+  - Preserve original chronological order for:
+      * First appearance of each agent (for aggregated segment)
+      * Final delivered events
+  - Append '(final)' if any delivered status was seen.
+  """
+  agent_status_order: list[str] = []                 # Order of first non-final appearance per agent
+  agent_status_map: dict[str, list[str]] = {}        # agent -> list of non-final statuses
+  delivered_segments: list[str] = []                 # Collected "Agent: DELIVERED" segments in order
+  delivered_seen = False
+
+  for r in responses:
+    try:
+      msg = r.root.result  # Underlying Message
+      name = (msg.metadata or {}).get("name", "Unknown")
+      parts = msg.parts or []
+      text = ""
+      for p in parts:
+        part_obj = getattr(p, "root", p)
+        cand = getattr(part_obj, "text", "") or ""
+        if cand:
+          text = cand.strip()
+          break
+      if not text:
+        continue
+      if "idle" in text.lower():
+        continue
+      # Normalize status token (we keep full text, but detect delivered)
+      if re.search(r"\bdelivered\b", text, re.IGNORECASE):
+        delivered_seen = True
+        delivered_segments.append(f"{name}: {text}")
+        continue
+      # Aggregate non-final statuses
+      if name not in agent_status_map:
+        agent_status_map[name] = []
+        agent_status_order.append(name)
+      # Avoid immediate duplicate of last appended status for that agent
+      if not agent_status_map[name] or agent_status_map[name][-1] != text:
+        agent_status_map[name].append(text)
+    except Exception:
+      continue
+
+  if not agent_status_order and not delivered_segments:
+    return "No non-idle status updates received."
+
+  segments: list[str] = []
+
+  # Build aggregated segments for non-final statuses
+  for agent in agent_status_order:
+    statuses = agent_status_map[agent]
+    if statuses:
+      segments.append(f"{agent}: {', '.join(statuses)}")
+
+  # Append delivered segments in the chronological order they were captured
+  segments.extend(delivered_segments)
+
+  summary = "Order status updates: " + " | ".join(segments)
+  if delivered_seen:
+    summary += " (final)"
+  return summary

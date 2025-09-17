@@ -2,7 +2,6 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import asyncio
-import os
 from uvicorn import Config, Server
 
 from agntcy_app_sdk.factory import AgntcyFactory
@@ -12,13 +11,12 @@ from a2a.server.apps import A2AStarletteApplication
 from a2a.server.tasks import InMemoryTaskStore
 from a2a.server.request_handlers import DefaultRequestHandler
 
-from agent_executor import FarmAgentExecutor
+from agent_executor import ShipperAgentExecutor
 from config.config import (
     DEFAULT_MESSAGE_TRANSPORT,
     TRANSPORT_SERVER_ENDPOINT,
-    FARM_BROADCAST_TOPIC,
-    ENABLE_HTTP,
-    GROUP_CHAT_TOPIC
+    GROUP_CHAT_TOPIC,
+    ENABLE_HTTP
 )
 from card import AGENT_CARD
 from dotenv import load_dotenv
@@ -26,12 +24,12 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # Initialize a multi-protocol, multi-transport agntcy factory.
-factory = AgntcyFactory("lungo_brazil_farm", enable_tracing=True)
+factory = AgntcyFactory("lungo_shipper", enable_tracing=False)
 
 async def run_http_server(server):
     """Run the HTTP/REST server."""
     try:
-        config = Config(app=server.build(), host="0.0.0.0", port=9999, loop="asyncio")
+        config = Config(app=server.build(), host="0.0.0.0", port=9091, loop="asyncio")
         userver = Server(config)
         await userver.serve()
     except Exception as e:
@@ -42,20 +40,13 @@ async def run_transport(server, transport_type, endpoint, block):
     try:
         personal_topic = A2AProtocol.create_agent_topic(AGENT_CARD)
         transport = factory.create_transport(transport_type, endpoint=endpoint, name=f"default/default/{personal_topic}")
-
         broadcast_bridge = factory.create_bridge(
-            server, transport=transport, topic=FARM_BROADCAST_TOPIC
-        )
-        private_bridge = factory.create_bridge(server, transport=transport, topic=personal_topic)
-
-        # Bridge for group chat communications
-        group_chat_bridge = factory.create_bridge(
             server, transport=transport, topic=GROUP_CHAT_TOPIC
         )
-        await group_chat_bridge.start(blocking=False)
+        # private_bridge = factory.create_bridge(server, transport=transport, topic=personal_topic)
         
         await broadcast_bridge.start(blocking=False)
-        await private_bridge.start(blocking=block)
+        # await private_bridge.start(blocking=block)
 
     except Exception as e:
         print(f"Transport encountered an error: {e}")
@@ -63,7 +54,7 @@ async def run_transport(server, transport_type, endpoint, block):
 async def main(enable_http: bool):
     """Run the A2A server with both HTTP and transport logic."""
     request_handler = DefaultRequestHandler(
-        agent_executor=FarmAgentExecutor(),
+        agent_executor=ShipperAgentExecutor(),
         task_store=InMemoryTaskStore(),
     )
 

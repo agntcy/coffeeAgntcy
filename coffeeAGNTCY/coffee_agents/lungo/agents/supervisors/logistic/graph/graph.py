@@ -17,7 +17,6 @@ from ioa_observe.sdk.decorators import agent, tool, graph
 from common.llm import get_llm
 from agents.supervisors.logistic.graph.tools import (
     create_order,
-    get_order_details, 
     tools_or_next
 )
 
@@ -76,7 +75,7 @@ class LogisticGraph:
 
         workflow.add_node(NodeStates.SUPERVISOR, self._supervisor_node)
         workflow.add_node(NodeStates.ORDERS, self._orders_node)
-        workflow.add_node(NodeStates.ORDERS_TOOLS, ToolNode([create_order, get_order_details]))
+        workflow.add_node(NodeStates.ORDERS_TOOLS, ToolNode([create_order]))
         workflow.add_node(NodeStates.REFLECTION, self._reflection_node)
         workflow.add_node(NodeStates.GENERAL_INFO, self._general_response_node)
 
@@ -174,19 +173,31 @@ class LogisticGraph:
 
     async def _orders_node(self, state: GraphState) -> dict:
         if not self.orders_llm:
-            self.orders_llm = get_llm().bind_tools([create_order, get_order_details])
+            self.orders_llm = get_llm().bind_tools([create_order])
 
         prompt = PromptTemplate(
-            template="""You are an orders broker for a global coffee exchange company. 
-            Your task is to handle user requests related to placing and checking orders with coffee farms.
-            
-            If the user asks about placing an order, use the provided tools to create an order.
-            If the user asks about checking the status of an order, use the provided tools to retrieve order details.
-            If an order has been created, do not create a new order for the same request.
-            If further information is needed, ask the user for clarification.
-        
-            User question: {user_message}
-            """,
+            template=(
+                "You are an orders broker for a global coffee exchange company. "
+                "You handle user requests about placing and checking orders with coffee farms.\n\n"
+                "Rules:\n"
+                "1. Always call the create_order tool.\n"
+                "2. If the user wants order status, retrieve or summarize it.\n"
+                "3. Do not create a duplicate order for the same request.\n"
+                "4. Ask for clarification only when required.\n"
+                "5. FINAL DELIVERY HANDLING:\n"
+                "   If any earlier tool or agent message contains the exact token 'DELIVERED' "
+                "(indicates the order was fully delivered), DO NOT call tools again and DO NOT ask questions. "
+                "Respond ONLY with a multiline plain text summary in the following format without any newline character (and nothing else):\n"
+                "   Order ORD-XXXXXXXX from <farm or unknown> for <quantity or unknown> units at <price or unknown> has been successfully delivered."
+                "   - Generate Order ID as ORD- followed by 8 uppercase hex characters.\n"
+                "   - Infer farm / quantity / price from prior messages; if missing use 'unknown'.\n"
+                "   - Never call tools after 'DELIVERED' appears.\n\n"
+                "Output:\n"
+                "- Normal flow: helpful answer or tool call.\n"
+                "- Delivery flow: ONLY the specified formatted text block.\n\n"
+                "Conversation messages:\n"
+                "{user_message}"
+            ),
             input_variables=["user_message"]
         )
 
@@ -195,6 +206,7 @@ class LogisticGraph:
         llm_response = chain.invoke({
             "user_message": state["messages"],
         })
+
         if llm_response.tool_calls:
             logger.info(f"Tool calls detected from orders_node: {llm_response.tool_calls}")
             logger.debug(f"Messages: {state['messages']}")

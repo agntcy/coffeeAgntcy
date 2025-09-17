@@ -17,9 +17,9 @@ class InventoryArgs(BaseModel):
 
 class CreateOrderArgs(BaseModel):
     """Arguments for the create_order tool."""
-    farm: Literal["brazil", "colombia", "vietnam"] = Field(
+    farm: Literal["tatooine"] = Field(
         ...,
-        description="The name of the farm. Must be one of 'brazil', 'colombia', or 'vietnam'."
+        description="The name of the farm. Must be 'tatooine'."
     )
     quantity: int = Field(
         ...,

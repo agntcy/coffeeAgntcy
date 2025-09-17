@@ -5,17 +5,17 @@ import logging
 from langgraph.graph import MessagesState
 from langchain_core.messages import AIMessage
 from langgraph.graph import StateGraph, END
-
-logger = logging.getLogger("lungo.accountant_agent.agent")
 from common.logistic_states import (
     LogisticStatus,
     extract_status,
 )
 
+logger = logging.getLogger("lungo.shipper_agent.agent")
+
 
 # --- 1. Define Node Names as Constants ---
 class NodeStates:
-    ACCOUNTANT = "accountant"
+    FARM = "farm"
 
 
 # --- 2. Define the Graph State ---
@@ -26,51 +26,36 @@ class GraphState(MessagesState):
     pass
 
 
-# --- 3. Implement the Accountant Agent Class ---
-class AccountantAgent:
+# --- 3. Implement the Shipper Agent Class ---
+class FarmAgent:
     def __init__(self):
         """
-        Initializes the AccountantAgent with a single node LangGraph workflow.
-        Handles one specific input:
-        - CUSTOMS_CLEARANCE -> PAYMENT_COMPLETE
-        Ignores all other inputs.
+        Initializes the FarmAgent with a single node LangGraph workflow.
+        Handles two specific inputs:
+        - HANDOVER_TO_SHIPPER -> CUSTOMS_CLEARANCE
+        - PAYMENT_COMPLETE -> DELIVERED
         """
         self.app = self._build_graph()
 
     # --- Node Definition ---
 
-    def _accountant_node(self, state: GraphState) -> dict:
-        """
-        Single node that handles all accountant logic.
-        """
-        user_messages = state["messages"]
-
-        # Extract the last message's content robustly
-        if isinstance(user_messages, list) and user_messages:
-            last_msg = user_messages[-1]
-            # If it's a langchain message object, get .content; else, use as string
-            if hasattr(last_msg, "content"):
-                message_content = last_msg.content
-            else:
-                message_content = str(last_msg)
+    def _farm_node(self, state: GraphState) -> dict:
+        messages = state["messages"]
+        if isinstance(messages, list) and messages:
+            last = messages[-1]
+            text = getattr(last, "content", str(last))
         else:
-            message_content = str(user_messages)
+            text = str(messages)
+        raw = text.strip()
+        status = extract_status(raw)
 
-        logger.info(f"Accountant agent received input: {message_content}")
-        message_content = message_content.strip().upper()
-
-        status = extract_status(message_content)
-
-        logger.info(f"Extracted status: {status.value}")
-
-        if status is LogisticStatus.CUSTOMS_CLEARANCE:
-            # logger.info("Processing CUSTOMS_CLEARANCE -> PAYMENT_COMPLETE")
-            next_status = LogisticStatus.PAYMENT_COMPLETE
+        if status is LogisticStatus.RECEIVED_ORDER:
+            next_status = LogisticStatus.HANDOVER_TO_SHIPPER
             return {"messages": [AIMessage(next_status.value)]}
 
         idle_msg = (
-            f"Action '{None}' received. No accountant handling required. "
-            "Accountant remains IDLE. No further action required."
+            f"Action '{None}' received. No shipper handling required. "
+            "Shipper remains IDLE. No further action required."
         )
         return {"messages": [AIMessage(idle_msg)]}
 
@@ -83,13 +68,13 @@ class AccountantAgent:
         workflow = StateGraph(GraphState)
 
         # Add single node
-        workflow.add_node(NodeStates.ACCOUNTANT, self._accountant_node)
+        workflow.add_node(NodeStates.FARM, self._farm_node)
 
         # Set the entry point
-        workflow.set_entry_point(NodeStates.ACCOUNTANT)
+        workflow.set_entry_point(NodeStates.FARM)
 
         # Add edge to END
-        workflow.add_edge(NodeStates.ACCOUNTANT, END)
+        workflow.add_edge(NodeStates.FARM, END)
 
         return workflow.compile()
 
@@ -103,7 +88,7 @@ class AccountantAgent:
             user_message (str): The current message from the user.
 
         Returns:
-            str: The final response from the accountant agent.
+            str: The final response from the shipper agent.
         """
         inputs = {"messages": [user_message]}
         result = await self.app.ainvoke(inputs)
@@ -123,16 +108,16 @@ class AccountantAgent:
 
 
 async def main():
-    agent = AccountantAgent()
+    agent = FarmAgent()
 
-    print("--- Testing Accountant Agent ---")
+    print("--- Testing Shipper Agent ---")
     test_messages = [
-        "CUSTOMS_CLEARANCE",
-        "customs_clearance",  # Test case insensitivity
-        "PAYMENT_COMPLETE",
         "HANDOVER_TO_SHIPPER",
+        "PAYMENT_COMPLETE",
+        "INVALID_INPUT",
+        "handover_to_shipper",  # Test case sensitivity
+        "payment_complete",  # Test case sensitivity
         "random message",
-        "",
     ]
 
     for msg in test_messages:

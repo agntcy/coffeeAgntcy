@@ -69,6 +69,7 @@ class FarmAgent:
         intent = response.content.strip().lower()
 
         logger.info(f"Supervisor intent determined: {intent}")  # Log the intent for debugging
+        logger.info(f"Current messages: {state['messages']}")  # Log current messages
 
         if "inventory" in intent:
             return {"next_node": NodeStates.INVENTORY, "messages": state["messages"]}

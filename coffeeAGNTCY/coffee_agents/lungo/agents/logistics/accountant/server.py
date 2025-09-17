@@ -2,7 +2,6 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import asyncio
-import os
 from uvicorn import Config, Server
 
 from agntcy_app_sdk.factory import AgntcyFactory
@@ -16,7 +15,7 @@ from agent_executor import AccountantAgentExecutor
 from config.config import (
     DEFAULT_MESSAGE_TRANSPORT,
     TRANSPORT_SERVER_ENDPOINT,
-    FARM_BROADCAST_TOPIC,
+    GROUP_CHAT_TOPIC,
     ENABLE_HTTP
 )
 from card import AGENT_CARD
@@ -30,7 +29,7 @@ factory = AgntcyFactory("lungo_accountant", enable_tracing=False)
 async def run_http_server(server):
     """Run the HTTP/REST server."""
     try:
-        config = Config(app=server.build(), host="0.0.0.0", port=9999, loop="asyncio")
+        config = Config(app=server.build(), host="0.0.0.0", port=9092, loop="asyncio")
         userver = Server(config)
         await userver.serve()
     except Exception as e:
@@ -41,9 +40,8 @@ async def run_transport(server, transport_type, endpoint, block):
     try:
         personal_topic = A2AProtocol.create_agent_topic(AGENT_CARD)
         transport = factory.create_transport(transport_type, endpoint=endpoint, name=f"default/default/{personal_topic}")
-        # todo change broadcast topic to shipper topic
         broadcast_bridge = factory.create_bridge(
-            server, transport=transport, topic=FARM_BROADCAST_TOPIC
+            server, transport=transport, topic=GROUP_CHAT_TOPIC
         )
         # private_bridge = factory.create_bridge(server, transport=transport, topic=personal_topic)
         
