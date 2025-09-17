@@ -159,6 +159,8 @@ async def create_order(farm: str, quantity: int, price: float) -> str:
         transport=transport,
     )
 
+    logger.info(f"Created A2A client with topic: {A2AProtocol.create_agent_topic(get_farm_card('brazil'))}")
+
     request = SendMessageRequest(
         id=str(uuid4()),
         params=MessageSendParams(
@@ -171,7 +173,8 @@ async def create_order(farm: str, quantity: int, price: float) -> str:
     )
 
     # create a list of recipients to include in the broadcast
-    recipients = [A2AProtocol.create_agent_topic(get_farm_card(farm)) for farm in ['brazil', 'shipper', 'accountant']]
+    # recipients = [A2AProtocol.create_agent_topic(get_farm_card(farm)) for farm in ['brazil', 'shipper', 'accountant']]
+    recipients = [A2AProtocol.create_agent_topic(get_farm_card(farm)) for farm in ['shipper']]
     responses = await client.broadcast_message(request, broadcast_topic=GROUP_CHAT_TOPIC, recipients=recipients,
                                                end_message="DELIVERED", group_chat=True, timeout=60)
 
