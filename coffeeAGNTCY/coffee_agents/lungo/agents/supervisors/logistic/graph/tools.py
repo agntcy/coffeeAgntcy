@@ -106,7 +106,7 @@ def get_farm_card(farm: str) -> AgentCard | None:
 
 
 @tool(args_schema=CreateOrderArgs)
-@ioa_tool_decorator(name="create_order")
+# @ioa_tool_decorator(name="create_order")
 async def create_order(farm: str, quantity: int, price: float) -> str:
     """
     Sends a request to create a coffee order with a specific farm.

@@ -37,12 +37,12 @@ class GraphState(MessagesState):
     """
     next_node: str
 
-@agent(name="logistic_agent")
+# @agent(name="logistic_agent")
 class LogisticGraph:
     def __init__(self):
         self.graph = self.build_graph()
 
-    @graph(name="logistic_graph")
+    # @graph(name="logistic_graph")
     def build_graph(self) -> CompiledStateGraph:
         """
         Constructs and compiles a LangGraph instance.
