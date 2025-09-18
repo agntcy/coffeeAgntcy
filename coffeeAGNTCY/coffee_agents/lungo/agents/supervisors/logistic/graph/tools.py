@@ -2,7 +2,8 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import logging
-from typing import Any, Union, Literal
+import re
+from typing import Any, Union, Literal, Sequence
 from uuid import uuid4
 from pydantic import BaseModel
 
@@ -174,7 +175,77 @@ async def create_order(farm: str, quantity: int, price: float) -> str:
     responses = await client.broadcast_message(request, broadcast_topic=GROUP_CHAT_TOPIC, recipients=recipients,
                                                end_message="DELIVERED", group_chat=True, timeout=60)
 
-    logger.info(f"Responses received from A2A agent: {responses}")
+    logger.info("Raw A2A responses: %s", responses)
+    formatted_responses = _summarize_a2a_responses(responses)
+    logger.info("Formatted responses: %s", formatted_responses)
 
+    return formatted_responses
 
-    return "DELEIVED"
+def _summarize_a2a_responses(responses: Sequence) -> str:
+  """
+  Build a concise status line from A2A SendMessageResponse objects.
+
+  Rules:
+  - Skip any message whose text contains 'idle' (case-insensitive).
+  - Aggregate all non-'delivered' statuses per agent in order of appearance (comma separated).
+  - Each 'delivered' status (case-insensitive exact match within the text) is emitted
+    as its own segment even if the agent appeared earlier.
+  - Preserve original chronological order for:
+      * First appearance of each agent (for aggregated segment)
+      * Final delivered events
+  - Append '(final)' if any delivered status was seen.
+  """
+  agent_status_order: list[str] = []                 # Order of first non-final appearance per agent
+  agent_status_map: dict[str, list[str]] = {}        # agent -> list of non-final statuses
+  delivered_segments: list[str] = []                 # Collected "Agent: DELIVERED" segments in order
+  delivered_seen = False
+
+  for r in responses:
+    try:
+      msg = r.root.result  # Underlying Message
+      name = (msg.metadata or {}).get("name", "Unknown")
+      parts = msg.parts or []
+      text = ""
+      for p in parts:
+        part_obj = getattr(p, "root", p)
+        cand = getattr(part_obj, "text", "") or ""
+        if cand:
+          text = cand.strip()
+          break
+      if not text:
+        continue
+      if "idle" in text.lower():
+        continue
+      # Normalize status token (we keep full text, but detect delivered)
+      if re.search(r"\bdelivered\b", text, re.IGNORECASE):
+        delivered_seen = True
+        delivered_segments.append(f"{name}: {text}")
+        continue
+      # Aggregate non-final statuses
+      if name not in agent_status_map:
+        agent_status_map[name] = []
+        agent_status_order.append(name)
+      # Avoid immediate duplicate of last appended status for that agent
+      if not agent_status_map[name] or agent_status_map[name][-1] != text:
+        agent_status_map[name].append(text)
+    except Exception:
+      continue
+
+  if not agent_status_order and not delivered_segments:
+    return "No non-idle status updates received."
+
+  segments: list[str] = []
+
+  # Build aggregated segments for non-final statuses
+  for agent in agent_status_order:
+    statuses = agent_status_map[agent]
+    if statuses:
+      segments.append(f"{agent}: {', '.join(statuses)}")
+
+  # Append delivered segments in the chronological order they were captured
+  segments.extend(delivered_segments)
+
+  summary = "Order status updates: " + " | ".join(segments)
+  if delivered_seen:
+    summary += " (final)"
+  return summary
