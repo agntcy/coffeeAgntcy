@@ -176,16 +176,28 @@ class LogisticGraph:
             self.orders_llm = get_llm().bind_tools([create_order])
 
         prompt = PromptTemplate(
-            template="""You are an orders broker for a global coffee exchange company. 
-            Your task is to handle user requests related to placing and checking orders with coffee farms.
-            
-            If the user asks about placing an order, use the provided tools to create an order.
-            If the user asks about checking the status of an order, use the provided tools to retrieve order details.
-            If an order has been created, do not create a new order for the same request.
-            If further information is needed, ask the user for clarification.
-        
-            User question: {user_message}
-            """,
+            template=(
+                "You are an orders broker for a global coffee exchange company. "
+                "You handle user requests about placing and checking orders with coffee farms.\n\n"
+                "Rules:\n"
+                "1. If the user wants to place an order, decide if you need to call a tool.\n"
+                "2. If the user wants order status, retrieve or summarize it.\n"
+                "3. Do not create a duplicate order for the same request.\n"
+                "4. Ask for clarification only when required.\n"
+                "5. FINAL DELIVERY HANDLING:\n"
+                "   If any earlier tool or agent message contains the exact token 'DELIVERED' "
+                "(indicates the order was fully delivered), DO NOT call tools again and DO NOT ask questions. "
+                "Respond ONLY with a multiline plain text summary in the following format without any newline character (and nothing else):\n"
+                "   Order ORD-XXXXXXXX from <farm or unknown> for <quantity or unknown> units at <price or unknown> has been successfully delivered."
+                "   - Generate Order ID as ORD- followed by 8 uppercase hex characters.\n"
+                "   - Infer farm / quantity / price from prior messages; if missing use 'unknown'.\n"
+                "   - Never call tools after 'DELIVERED' appears.\n\n"
+                "Output:\n"
+                "- Normal flow: helpful answer or tool call.\n"
+                "- Delivery flow: ONLY the specified formatted text block.\n\n"
+                "Conversation messages:\n"
+                "{user_message}"
+            ),
             input_variables=["user_message"]
         )
 
