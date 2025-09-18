@@ -16,7 +16,6 @@ class NodeStates:
     SUPERVISOR = "supervisor"
     INVENTORY = "inventory_node"
     ORDERS = "orders_node"
-    ORDER_EVENT_TRACKER = "order_event_tracker"
     GENERAL_RESPONSE = "general_response_node"
 
 # --- 2. Define the Graph State ---
@@ -53,10 +52,9 @@ class FarmAgent:
 
         prompt = PromptTemplate(
             template="""You are a coffee farm manager in Brazil who delegates farm cultivation and global sales. Based on the 
-            user's message, determine if it's related to 'inventory', 'orders', or 'order_event_tracker'.
+            user's message, determine if it's related to 'inventory' or 'orders'.
             Respond with 'inventory' if the message is about checking yield, stock, product availability, or specific coffee item details.
             Respond with 'orders' if the message is about checking order status, placing an order, or modifying an existing order.
-            Respond with 'order_event_tracker' if the message content contains 'RECEIVED_ORDER'.
             If unsure, respond with 'general'.
 
             User message: {user_message}
@@ -69,14 +67,11 @@ class FarmAgent:
         intent = response.content.strip().lower()
 
         logger.info(f"Supervisor intent determined: {intent}")  # Log the intent for debugging
-        logger.info(f"Current messages: {state['messages']}")  # Log current messages
 
         if "inventory" in intent:
             return {"next_node": NodeStates.INVENTORY, "messages": state["messages"]}
         elif "orders" in intent:
             return {"next_node": NodeStates.ORDERS, "messages": state["messages"]}
-        elif "order_event_tracker" in intent:
-            return {"next_node": NodeStates.ORDER_EVENT_TRACKER, "messages": state["messages"]}
         else:
             return {"next_node": NodeStates.GENERAL_RESPONSE, "messages": state["messages"]}
 
@@ -147,30 +142,6 @@ class FarmAgent:
 
         return {"messages": [AIMessage(llm_response)]}
 
-    def _order_event_tracker_node(self, state: GraphState) -> dict:
-        """
-        Handles order event tracking. If message content is 'RECEIVED_ORDER', responds with 'HANDOVER_TO_SHIPPER'.
-        """
-        user_message = state["messages"]
-        
-        # Extract the actual message content
-        message_content = ""
-        if isinstance(user_message, list) and len(user_message) > 0:
-            message_content = user_message[0] if isinstance(user_message[0], str) else str(user_message[0])
-        else:
-            message_content = str(user_message)
-        
-        logger.info(f"Order event tracker checking message: {message_content}")
-        
-        if "RECEIVED_ORDER" in message_content:
-            response = "HANDOVER_TO_SHIPPER"
-            logger.info(f"Order event detected, responding with: {response}")
-            return {"messages": [AIMessage(response)]}
-        else:
-            response = "No order event detected in message"
-            logger.info(f"No order event detected: {response}")
-            return {"messages": [AIMessage(response)]}
-
     def _general_response_node(self, state: GraphState) -> dict:
         """
         Provides a fallback response for unclear or out-of-scope messages.
@@ -191,7 +162,6 @@ class FarmAgent:
         workflow.add_node(NodeStates.SUPERVISOR, self._supervisor_node)
         workflow.add_node(NodeStates.INVENTORY, self._inventory_node)
         workflow.add_node(NodeStates.ORDERS, self._orders_node)
-        workflow.add_node(NodeStates.ORDER_EVENT_TRACKER, self._order_event_tracker_node)
         workflow.add_node(NodeStates.GENERAL_RESPONSE, self._general_response_node)
 
         # Set the entry point
@@ -204,7 +174,6 @@ class FarmAgent:
             {
                 NodeStates.INVENTORY: NodeStates.INVENTORY,
                 NodeStates.ORDERS: NodeStates.ORDERS,
-                NodeStates.ORDER_EVENT_TRACKER: NodeStates.ORDER_EVENT_TRACKER,
                 NodeStates.GENERAL_RESPONSE: NodeStates.GENERAL_RESPONSE,
             },
         )
@@ -212,7 +181,6 @@ class FarmAgent:
         # Add edges from the specific nodes to END
         workflow.add_edge(NodeStates.INVENTORY, END)
         workflow.add_edge(NodeStates.ORDERS, END)
-        workflow.add_edge(NodeStates.ORDER_EVENT_TRACKER, END)
         workflow.add_edge(NodeStates.GENERAL_RESPONSE, END)
 
         return workflow.compile()
@@ -264,19 +232,6 @@ async def main():
     messages = [
         "Can you order me 100 lbs of coffee?",
         "I want to place a new order for 50 kg of coffee",
-    ]
-    for msg in messages:
-        print(f"\nUser: {msg}")
-        final_state = await agent.ainvoke(msg)
-        print(f"Agent: {final_state}")
-
-    print("\n" + "="*50 + "\n")
-
-    print("--- Testing Order Event Tracker ---")
-    messages = [
-        "RECEIVED_ORDER",
-        "We have RECEIVED_ORDER from customer 12345",
-        "Something else happened",
     ]
     for msg in messages:
         print(f"\nUser: {msg}")

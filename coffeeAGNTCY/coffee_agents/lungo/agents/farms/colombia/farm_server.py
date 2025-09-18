@@ -14,7 +14,6 @@ from config.config import (
     TRANSPORT_SERVER_ENDPOINT,
     FARM_BROADCAST_TOPIC,
     ENABLE_HTTP,
-    GROUP_CHAT_TOPIC,
 )
 from card import AGENT_CARD
 from agent import factory
@@ -42,12 +41,6 @@ async def run_transport(server, transport_type, endpoint, block):
             server, transport=transport, topic=FARM_BROADCAST_TOPIC
         )
         private_bridge = factory.create_bridge(server, transport=transport, topic=personal_topic)
-
-        # Bridge for group chat communications
-        group_chat_bridge = factory.create_bridge(
-            server, transport=transport, topic=GROUP_CHAT_TOPIC
-        )
-        await group_chat_bridge.start(blocking=False)
         
         await broadcast_bridge.start(blocking=False)
         await private_bridge.start(blocking=block)
