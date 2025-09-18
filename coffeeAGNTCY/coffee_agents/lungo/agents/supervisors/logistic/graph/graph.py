@@ -17,7 +17,6 @@ from ioa_observe.sdk.decorators import agent, tool, graph
 from common.llm import get_llm
 from agents.supervisors.logistic.graph.tools import (
     create_order,
-    get_order_details, 
     tools_or_next
 )
 
@@ -76,7 +75,7 @@ class LogisticGraph:
 
         workflow.add_node(NodeStates.SUPERVISOR, self._supervisor_node)
         workflow.add_node(NodeStates.ORDERS, self._orders_node)
-        workflow.add_node(NodeStates.ORDERS_TOOLS, ToolNode([create_order, get_order_details]))
+        workflow.add_node(NodeStates.ORDERS_TOOLS, ToolNode([create_order]))
         workflow.add_node(NodeStates.REFLECTION, self._reflection_node)
         workflow.add_node(NodeStates.GENERAL_INFO, self._general_response_node)
 
@@ -174,7 +173,7 @@ class LogisticGraph:
 
     async def _orders_node(self, state: GraphState) -> dict:
         if not self.orders_llm:
-            self.orders_llm = get_llm().bind_tools([create_order, get_order_details])
+            self.orders_llm = get_llm().bind_tools([create_order])
 
         prompt = PromptTemplate(
             template="""You are an orders broker for a global coffee exchange company. 

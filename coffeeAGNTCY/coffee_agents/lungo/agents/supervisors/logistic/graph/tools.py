@@ -153,7 +153,7 @@ async def create_order(farm: str, quantity: int, price: float) -> str:
         "A2A",
         # Due to the limitation in SLIM. To create an A2A client, we use a topic with at least one listener,
         # which is the routable name of the Brazil agent.
-        agent_topic=A2AProtocol.create_agent_topic(get_farm_card("vietnam")),
+        agent_topic=A2AProtocol.create_agent_topic(get_farm_card("shipper")),
         transport=transport,
     )
 
@@ -163,12 +163,12 @@ async def create_order(farm: str, quantity: int, price: float) -> str:
             message=Message(
                 messageId=str(uuid4()),
                 role=Role.user,
-                parts=[Part(TextPart(text=f"Create an order with price {price} and quantity {quantity}. Status: RECEIVED_ORDER"))],
+                parts=[Part(TextPart(text=f"Create an order with price {price} and quantity {quantity}. Status: HANDOVER_TO_SHIPPER"))],
             ),
         )
     )
 
-    recipients = [A2AProtocol.create_agent_topic(get_farm_card(farm)) for farm in ['shipper', 'accountant', farm ]]
+    recipients = [A2AProtocol.create_agent_topic(get_farm_card(farm)) for farm in ['shipper', 'accountant' ]] #, farm ]]
     logger.info(f"Broadcasting order creation to recipients: {recipients}")
 
     responses = await client.broadcast_message(request, broadcast_topic=GROUP_CHAT_TOPIC, recipients=recipients,
@@ -176,70 +176,5 @@ async def create_order(farm: str, quantity: int, price: float) -> str:
 
     logger.info(f"Responses received from A2A agent: {responses}")
 
-    for response in responses:
-        # we want a dict for farm name -> yield, the farm_name will be in the response metadata
-        if response.root.result and response.root.result.parts:
-            part = response.root.result.parts[0].root
-            if hasattr(response.root.result, "metadata"):
-                farm_name = response.root.result.metadata.get("name", "Unknown Farm")
-            else:
-                farm_name = "Unknown Farm"
-        elif response.root.error:
-            logger.error(f"A2A error from farm: {response.root.error.message}")
-        else:
-            logger.error("Unknown response type from farm")
-    
 
-@tool
-@ioa_tool_decorator(name="get_order_details")
-async def get_order_details(order_id: str) -> str:
-    """
-    Get details of an order.
-
-    Args:
-    order_id (str): The ID of the order.
-
-    Returns:
-    str: Details of the order.
-    """
-    logger.info(f"Getting details for order ID: {order_id}")
-    if not order_id:
-        return "Order ID must be provided."
-    
-    # Shared factory & transport
-    factory = get_factory()
-    transport = factory.create_transport(
-        DEFAULT_MESSAGE_TRANSPORT,
-        endpoint=TRANSPORT_SERVER_ENDPOINT,
-        name="default/default/logistic_graph"
-    )
-    
-    client = await factory.create_client(
-        "A2A",
-        agent_topic=FARM_BROADCAST_TOPIC,
-        transport=transport,
-    )
-
-    request = SendMessageRequest(
-        id=str(uuid4()),
-        params=MessageSendParams(
-            message=Message(
-                messageId=str(uuid4()),
-                role=Role.user,
-                parts=[Part(TextPart(text=f"Get details for order ID {order_id}"))],
-            ),
-        )
-    )
-
-    response = await client.send_message(request)
-    logger.info(f"Response received from A2A agent: {response}")
-    if response.root.result and response.root.result.parts:
-        part = response.root.result.parts[0].root
-        if hasattr(part, "text"):
-            return part.text.strip()
-    elif response.root.error:
-        logger.error(f"A2A error: {response.root.error.message}")
-        return f"Error from order agent: {response.root.error.message}"
-    else:
-        logger.error("Unknown response type")
-        return "Unknown response type from order agent"
+    return "DELEIVED"
