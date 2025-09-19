@@ -16,7 +16,7 @@ from ioa_observe.sdk.tracing import session_start
 from config.config import DEFAULT_MESSAGE_TRANSPORT
 
 setup_logging()
-logger = logging.getLogger("lungo.supervisor.main")
+logger = logging.getLogger("lungo.logistic.supervisor.main")
 
 load_dotenv()
 
