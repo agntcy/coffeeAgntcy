@@ -105,32 +105,3 @@ class FarmAgent:
 
         # If no valid AIMessage found, return the last message as a fallback
         return messages[-1].content.strip() if messages else "No valid response generated."
-
-# for testing
-async def main():
-    agent = FarmAgent()
-
-    print("--- Testing Shipper Agent ---")
-    test_messages = [
-        "HANDOVER_TO_SHIPPER",
-        "PAYMENT_COMPLETE",
-        "INVALID_INPUT",
-        "handover_to_shipper",  # Test case sensitivity
-        "payment_complete",  # Test case sensitivity
-        "random message",
-    ]
-
-    for msg in test_messages:
-        print(f"\nInput: {msg}")
-        try:
-            response = await agent.ainvoke(msg)
-            print(f"Output: {response}")
-        except Exception as e:
-            print(f"Error: {e}")
-
-
-# --- Example Usage ---
-if __name__ == "__main__":
-    import asyncio
-
-    asyncio.run(main())

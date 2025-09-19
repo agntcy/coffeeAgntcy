@@ -120,32 +120,3 @@ class AccountantAgent:
 
         # If no valid AIMessage found, return the last message as a fallback
         return messages[-1].content.strip() if messages else "No valid response generated."
-
-# for testing
-async def main():
-    agent = AccountantAgent()
-
-    print("--- Testing Accountant Agent ---")
-    test_messages = [
-        "CUSTOMS_CLEARANCE",
-        "customs_clearance",  # Test case insensitivity
-        "PAYMENT_COMPLETE",
-        "HANDOVER_TO_SHIPPER",
-        "random message",
-        "",
-    ]
-
-    for msg in test_messages:
-        print(f"\nInput: {msg}")
-        try:
-            response = await agent.ainvoke(msg)
-            print(f"Output: {response}")
-        except Exception as e:
-            print(f"Error: {e}")
-
-
-# --- Example Usage ---
-if __name__ == "__main__":
-    import asyncio
-
-    asyncio.run(main())
