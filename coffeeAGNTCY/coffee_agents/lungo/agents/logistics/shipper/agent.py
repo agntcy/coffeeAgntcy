@@ -109,7 +109,7 @@ class ShipperAgent:
         # If no valid AIMessage found, return the last message as a fallback
         return messages[-1].content.strip() if messages else "No valid response generated."
 
-
+# for testing
 async def main():
     agent = ShipperAgent()
 

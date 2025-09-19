@@ -10,7 +10,7 @@ from common.logistic_states import (
     extract_status,
 )
 
-logger = logging.getLogger("lungo.shipper_agent.agent")
+logger = logging.getLogger("lungo.farm_agent.agent")
 
 
 # --- 1. Define Node Names as Constants ---
@@ -106,7 +106,7 @@ class FarmAgent:
         # If no valid AIMessage found, return the last message as a fallback
         return messages[-1].content.strip() if messages else "No valid response generated."
 
-
+# for testing
 async def main():
     agent = FarmAgent()
 

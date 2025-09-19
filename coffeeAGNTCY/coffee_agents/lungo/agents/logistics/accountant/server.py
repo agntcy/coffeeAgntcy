@@ -43,10 +43,8 @@ async def run_transport(server, transport_type, endpoint, block):
         broadcast_bridge = factory.create_bridge(
             server, transport=transport, topic=GROUP_CHAT_TOPIC
         )
-        # private_bridge = factory.create_bridge(server, transport=transport, topic=personal_topic)
         
         await broadcast_bridge.start(blocking=False)
-        # await private_bridge.start(blocking=block)
 
     except Exception as e:
         print(f"Transport encountered an error: {e}")
