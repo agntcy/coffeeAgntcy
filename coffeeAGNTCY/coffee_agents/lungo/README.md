@@ -317,9 +317,3 @@ By default, the UI will be available at [http://localhost:3000/](http://localhos
 ### Group Conversation Implementation
 
 Detailed architecture, message flows (SLIM pubsub vs controller channels), service roles, and port configuration are documented in [Group Conversation Docs](./docs/group_conversation.md).
-
-Run the logistic stack (SLIM gateway and related services):
-
-```sh
-docker compose -f docker-compose.logistic.yaml up
-```
