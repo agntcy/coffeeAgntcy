@@ -107,4 +107,4 @@ class ShipperAgent:
                 return message.content.strip()
 
         # If no valid AIMessage found, return the last message as a fallback
-        return messages[-1].content.strip() if messages else "No valid response generated."
+        return messages[-1].content.strip()
