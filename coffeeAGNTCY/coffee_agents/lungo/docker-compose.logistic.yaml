@@ -19,7 +19,7 @@ services:
       - OTLP_HTTP_ENDPOINT=${OTLP_HTTP_ENDPOINT:-http://otel-collector:4318}
       - ENABLE_HTTP=true
     ports:
-      - "9999:9999"
+      - "9091:9091"
   logistic-accountant:
     build:
       context: ../../..
@@ -40,7 +40,7 @@ services:
       - OTLP_HTTP_ENDPOINT=${OTLP_HTTP_ENDPOINT:-http://otel-collector:4318}
       - ENABLE_HTTP=true
     ports:
-      - "9998:9998"
+      - "9092:9092"
   logistic-farm:
     build:
       context: ../../..
