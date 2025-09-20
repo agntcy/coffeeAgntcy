@@ -1,6 +1,6 @@
 # Group Conversation
 
-This document explains how to run the logistics multi\-agent conversation locally (via Docker Compose or individual `make` targets) and how an order progresses through the system.
+This document explains how to run the logistics multi-agent conversation locally (via Docker Compose or individual `make` targets) and how an order progresses through the system.
 
 ---
 

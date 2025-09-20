@@ -21,7 +21,7 @@ from langchain_core.tools import tool
 from agents.logistics.accountant.card import AGENT_CARD as ACCOUNTANT_CARD
 from agents.logistics.farm.card import AGENT_CARD as TATOOINE_CARD
 from agents.logistics.shipper.card import AGENT_CARD as SHIPPER_CARD
-from agents.supervisors.auction.graph.models import CreateOrderArgs
+from agents.supervisors.logistic.graph.models import CreateOrderArgs
 from agents.supervisors.logistic.graph.shared import get_factory
 from config.config import (
   DEFAULT_MESSAGE_TRANSPORT,
