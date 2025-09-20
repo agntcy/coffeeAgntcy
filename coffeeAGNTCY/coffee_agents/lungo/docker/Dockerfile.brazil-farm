@@ -6,28 +6,6 @@ RUN apt-get update && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
-# --- START SPIFFE HELPER INSTALLATION ---
-# Define the SPIFFE Helper version and architecture
-ARG SPIFFE_HELPER_VERSION=0.10.0
-ARG ARCH=x86_64 # Use x86_64 for AMD64 systems as per GitHub release naming
-
-# Define the full filename of the tar.gz archive
-ENV HELPER_FILENAME=spiffe-helper_v${SPIFFE_HELPER_VERSION}_Linux-${ARCH}.tar.gz
-
-# --- DIAGNOSTIC STEP: Add curl -v to see detailed network output ---
-RUN echo "Attempting to download ${HELPER_FILENAME} from https://github.com/spiffe/spiffe-helper/releases/download/v${SPIFFE_HELPER_VERSION}/${HELPER_FILENAME}" && \
-    curl -v -o /dev/null https://github.com/spiffe/spiffe-helper/releases/download/v${SPIFFE_HELPER_VERSION}/${HELPER_FILENAME} && \
-    echo "Curl command succeeded. Proceeding with wget download and extraction."
-# --- END DIAGNOSTIC STEP ---
-
-# Download, extract, and install spiffe-helper
-RUN wget -q https://github.com/spiffe/spiffe-helper/releases/download/v${SPIFFE_HELPER_VERSION}/${HELPER_FILENAME} && \
-    tar -xzf ${HELPER_FILENAME} && \
-    mv spiffe-helper /usr/bin/spiffe-helper && \
-    rm ${HELPER_FILENAME} && \
-    chmod +x /usr/bin/spiffe-helper
-# --- END SPIFFE HELPER INSTALLATION ---
-
 # Install uv and create virtual environment
 RUN pip install --no-cache-dir uv && \
     uv venv -q /venv
@@ -39,7 +17,6 @@ ENV PYTHONPATH="/app"
 WORKDIR /app
 COPY coffeeAGNTCY/coffee_agents/lungo/pyproject.toml coffeeAGNTCY/coffee_agents/lungo/uv.lock ./
 RUN uv sync --locked --no-editable
-# UV Pip install via path
 
 COPY coffeeAGNTCY/coffee_agents/lungo/ .
 CMD ["uv", "run", "python", "agents/farms/brazil/farm_server.py"]

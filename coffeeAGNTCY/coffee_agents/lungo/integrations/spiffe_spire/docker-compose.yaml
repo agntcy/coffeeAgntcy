@@ -1,0 +1,335 @@
+services:
+  # SPIRE Data Init: A one-time service to initialize the SPIRE server data directory with correct permissions.
+  spire-data-init:
+    image: alpine:3.19
+    command: ["/bin/sh","-c","mkdir -p /data && chown -R 1000:1000 /data && chmod 700 /data"]
+    volumes:
+      - spire-server-data:/data
+    restart: "no"
+  # SPIRE Server: The central authority for issuing identities.
+  spire-server:
+    image: ghcr.io/spiffe/spire-server:1.12.4
+    container_name: spire-server
+    depends_on:
+      spire-data-init:
+        condition: service_completed_successfully
+    volumes:
+      - ./config/server:/opt/spire/conf/server
+      - spire-server-data:/opt/spire/data
+      - spire-server-sock:/tmp/spire-server/private
+    ports:
+      - "8081:8081"
+  # SPIRE OIDC Discovery Provider: Provides OIDC discovery and JWKS endpoints for workloads.
+  spire-oidc:
+    image: ghcr.io/spiffe/oidc-discovery-provider:1.12.4
+    container_name: spire-oidc
+    depends_on:
+      spire-server: 
+        condition: service_started
+    ports:
+      - "8080:8080"
+    volumes:
+      - spire-server-sock:/tmp/spire-server/private:ro
+      - ./config/oidc:/opt/spire/conf:ro
+    command: ["-config", "/opt/spire/conf/oidc-discovery-provider.conf"]
+  # SPIRE Agent: Runs on each node and exposes the Workload API.
+  spire-agent:
+    image: alpine:3.19
+    container_name: spire-agent
+    depends_on:
+      spire-server:
+        condition: service_started
+      spire-system-init:
+        condition: service_completed_successfully
+    pid: "host"
+    environment:
+      - SPIRE_VERSION=1.12.4
+    volumes:
+      - ./config/agent:/opt/spire/conf/agent:ro         # agent.conf
+      - spire-agent-data:/data/agent                    
+      - /tmp/spire-agent:/tmp/spire-agent               # Workload API socket
+      - spire-join-token:/tmp/join-token:ro             
+      - ./scripts/spire-agent-init.sh:/usr/local/bin/spire-agent-init.sh:ro
+    command: ["/usr/local/bin/spire-agent-init.sh"]
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/spire/bin/spire-agent healthcheck -socketPath /tmp/spire-agent/private/api.sock -shallow >/dev/null 2>&1"]
+      interval: 5s
+      timeout: 3s
+      retries: 24
+      start_period: 45s   # give time for join token & server bundle
+  # SPIRE System Init: A one-time service to fetch the join token and SPIRE Server bundle for the SPIRE Agent and create SPIFFE registration entries.
+  spire-system-init:
+    image: alpine:3.19
+    container_name: spire-system-init
+    volumes:
+      - spire-join-token:/tmp/join-token
+      - spire-server-sock:/tmp/spire-server/private
+      - ./scripts/spire-system-init.sh:/usr/local/bin/spire-system-init.sh:ro
+    depends_on:
+      spire-server:
+        condition: service_started
+    command: ["/usr/local/bin/spire-system-init.sh"]
+    environment:
+      - SPIRE_CLI_VERSION=1.12.4
+    restart: "no"
+
+  brazil-farm-server:
+    build:
+      context: ../../../../..
+      dockerfile: coffeeAGNTCY/coffee_agents/lungo/integrations/spiffe_spire/docker/Dockerfile.brazil-farm
+    image: ghcr.io/agntcy/coffee-agntcy/brazil-farm:latest
+    container_name: brazil-farm-server
+    environment:
+      - FARM_AGENT_HOST=brazil-farm-server
+      - FARM_AGENT_PORT=9999
+      - AZURE_OPENAI_ENDPOINT=${AZURE_OPENAI_ENDPOINT:-}
+      - AZURE_OPENAI_DEPLOYMENT=${AZURE_OPENAI_DEPLOYMENT:-}
+      - AZURE_OPENAI_API_KEY=${AZURE_OPENAI_API_KEY:-}
+      - AZURE_OPENAI_API_VERSION=${AZURE_OPENAI_API_VERSION:-}
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - OPENAI_ENDPOINT=${OPENAI_ENDPOINT:-}
+      - OPENAI_MODEL_NAME=${OPENAI_MODEL_NAME:-}
+      - LLM_PROVIDER=${LLM_PROVIDER}
+      - DEFAULT_MESSAGE_TRANSPORT=${DEFAULT_MESSAGE_TRANSPORT:-SLIM}
+      - TRANSPORT_SERVER_ENDPOINT=${TRANSPORT_SERVER_ENDPOINT:-http://slim:46357}
+      - OTLP_HTTP_ENDPOINT=${OTLP_HTTP_ENDPOINT:-http://otel-collector:4318}
+      - ENABLE_HTTP=true
+      - AUDIENCE=spiffe://example.org/workload/brazil-farm
+    ports:
+      - "9999:9999"
+    volumes:
+      - /tmp/spire-agent:/tmp/spire-agent:ro
+      - brazil-farm-svids:/var/run/spiffe/workload
+      - ./scripts/spiffe-workload-setup.sh:/usr/local/bin/spiffe-workload-setup.sh:ro
+    depends_on:
+      spire-agent:
+        condition: service_healthy
+      spire-system-init:
+        condition: service_completed_successfully
+    entrypoint: ["/usr/local/bin/spiffe-workload-setup.sh"]
+    command: ["uv", "run", "python", "agents/farms/brazil/farm_server.py"]
+
+  colombia-farm-server:
+    build:
+      context: ../../../../..
+      dockerfile: coffeeAGNTCY/coffee_agents/lungo/integrations/spiffe_spire/docker/Dockerfile.colombia-farm
+    image: ghcr.io/agntcy/coffee-agntcy/colombia-farm:latest
+    container_name: colombia-farm-server
+    environment:
+      - FARM_AGENT_HOST=colombia-farm-server
+      - FARM_AGENT_PORT=9998
+      - AZURE_OPENAI_ENDPOINT=${AZURE_OPENAI_ENDPOINT:-}
+      - AZURE_OPENAI_DEPLOYMENT=${AZURE_OPENAI_DEPLOYMENT:-}
+      - AZURE_OPENAI_API_KEY=${AZURE_OPENAI_API_KEY:-}
+      - AZURE_OPENAI_API_VERSION=${AZURE_OPENAI_API_VERSION:-}
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - OPENAI_ENDPOINT=${OPENAI_ENDPOINT:-}
+      - OPENAI_MODEL_NAME=${OPENAI_MODEL_NAME:-}
+      - LLM_PROVIDER=${LLM_PROVIDER}
+      - DEFAULT_MESSAGE_TRANSPORT=${DEFAULT_MESSAGE_TRANSPORT:-SLIM}
+      - TRANSPORT_SERVER_ENDPOINT=${TRANSPORT_SERVER_ENDPOINT:-http://slim:46357}
+      - OTLP_HTTP_ENDPOINT=${OTLP_HTTP_ENDPOINT:-http://otel-collector:4318}
+      - ENABLE_HTTP=true
+      - AUDIENCE=spiffe://example.org/workload/colombia-farm
+    ports:
+      - "9998:9998"
+    volumes:
+      - /tmp/spire-agent:/tmp/spire-agent:ro
+      - colombia-farm-svids:/var/run/spiffe/workload
+      - ./scripts/spiffe-workload-setup.sh:/usr/local/bin/spiffe-workload-setup.sh:ro
+    depends_on:
+      spire-agent:
+        condition: service_healthy
+      spire-system-init:
+        condition: service_completed_successfully
+    entrypoint: ["/usr/local/bin/spiffe-workload-setup.sh"]
+    command: ["uv", "run", "python", "agents/farms/colombia/farm_server.py"]
+
+  vietnam-farm-server:
+    build:
+      context: ../../../../..
+      dockerfile: coffeeAGNTCY/coffee_agents/lungo/integrations/spiffe_spire/docker/Dockerfile.vietnam-farm
+    image: ghcr.io/agntcy/coffee-agntcy/vietnam-farm:latest
+    container_name: vietnam-farm-server
+    platform: linux/amd64
+    environment:
+      - FARM_AGENT_HOST=vietnam-farm-server
+      - FARM_AGENT_PORT=9997
+      - AZURE_OPENAI_ENDPOINT=${AZURE_OPENAI_ENDPOINT:-}
+      - AZURE_OPENAI_DEPLOYMENT=${AZURE_OPENAI_DEPLOYMENT:-}
+      - AZURE_OPENAI_API_KEY=${AZURE_OPENAI_API_KEY:-}
+      - AZURE_OPENAI_API_VERSION=${AZURE_OPENAI_API_VERSION:-}
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - OPENAI_ENDPOINT=${OPENAI_ENDPOINT:-}
+      - OPENAI_MODEL_NAME=${OPENAI_MODEL_NAME:-}
+      - LLM_PROVIDER=${LLM_PROVIDER}
+      - DEFAULT_MESSAGE_TRANSPORT=${DEFAULT_MESSAGE_TRANSPORT:-SLIM}
+      - TRANSPORT_SERVER_ENDPOINT=${TRANSPORT_SERVER_ENDPOINT:-http://slim:46357}
+      - OTLP_HTTP_ENDPOINT=${OTLP_HTTP_ENDPOINT:-http://otel-collector:4318}
+      - ENABLE_HTTP=true
+      - AUDIENCE=spiffe://example.org/workload/vietnam-farm
+    ports:
+      - "9997:9997"
+    volumes:
+      - /tmp/spire-agent:/tmp/spire-agent:ro
+      - vietnam-farm-svids:/var/run/spiffe/workload
+      - ./scripts/spiffe-workload-setup.sh:/usr/local/bin/spiffe-workload-setup.sh:ro
+    depends_on:
+      spire-agent:
+        condition: service_healthy
+      spire-system-init:
+        condition: service_completed_successfully
+    entrypoint: ["/usr/local/bin/spiffe-workload-setup.sh"]
+    command: ["uv", "run", "python", "agents/farms/vietnam/farm_server.py"]
+
+  nats:
+    image: nats:latest
+    container_name: nats-lungo
+    ports:
+      - "4222:4222"
+      - "4223:4223"
+      - "6222:6222"
+      - "8222:8222"
+
+  slim:
+    image: ghcr.io/agntcy/slim:0.4.0
+    container_name: slim-lungo
+    ports:
+      - "46357:46357"
+    environment:
+      - PASSWORD=${SLIM_GATEWAY_PASSWORD:-dummy_password}
+      - CONFIG_PATH=/config.yaml
+    volumes:
+      - ../../config/docker/slim/server-config.yaml:/config.yaml
+    command: ["/slim", "--config", "/config.yaml"]
+
+  exchange-server:
+    build:
+      context: ../../../../..
+      dockerfile: coffeeAGNTCY/coffee_agents/lungo/integrations/spiffe_spire/docker/Dockerfile.exchange
+    image: ghcr.io/agntcy/coffee-agntcy/lungo-exchange:latest
+    container_name: exchange-server-lungo
+    environment:
+      - FARM_AGENT_HOST=farm-server
+      - FARM_AGENT_PORT=9999
+      - AZURE_OPENAI_ENDPOINT=${AZURE_OPENAI_ENDPOINT:-}
+      - AZURE_OPENAI_DEPLOYMENT=${AZURE_OPENAI_DEPLOYMENT:-}
+      - AZURE_OPENAI_API_KEY=${AZURE_OPENAI_API_KEY:-}
+      - AZURE_OPENAI_API_VERSION=${AZURE_OPENAI_API_VERSION:-}
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - OPENAI_ENDPOINT=${OPENAI_ENDPOINT:-}
+      - OPENAI_MODEL_NAME=${OPENAI_MODEL_NAME:-}
+      - LLM_PROVIDER=${LLM_PROVIDER}
+      - DEFAULT_MESSAGE_TRANSPORT=${DEFAULT_MESSAGE_TRANSPORT:-SLIM}
+      - TRANSPORT_SERVER_ENDPOINT=${TRANSPORT_SERVER_ENDPOINT:-http://slim:46357}
+      - OTLP_HTTP_ENDPOINT=${OTLP_HTTP_ENDPOINT:-http://otel-collector:4318}
+      - AUDIENCE=spiffe://example.org/workload/exchange-server
+    ports:
+      - "8000:8000"
+    volumes:
+      - /tmp/spire-agent:/tmp/spire-agent:ro
+      - exchange-server-svids:/var/run/spiffe/workload
+      - ./scripts/spiffe-workload-setup.sh:/usr/local/bin/spiffe-workload-setup.sh:ro
+    depends_on:
+      spire-agent:
+        condition: service_healthy
+      spire-system-init:
+        condition: service_completed_successfully
+    entrypoint: ["/usr/local/bin/spiffe-workload-setup.sh"]
+    command: ["uv", "run", "python", "agents/supervisors/auction/main.py"]
+
+  ui:
+    build:
+      context: ../../../../..
+      dockerfile: coffeeAGNTCY/coffee_agents/lungo/docker/Dockerfile.ui
+    image: ghcr.io/agntcy/coffee-agntcy/lungo-ui:latest
+    container_name: ui-lungo
+    platform: linux/amd64
+    environment:
+      - VITE_EXCHANGE_APP_API_URL=http://127.0.0.1:8000
+    depends_on:
+      - exchange-server
+    ports:
+      - "3000:3000"
+
+  weather-mcp-server:
+    build:
+      context: ../../../../..
+      dockerfile: coffeeAGNTCY/coffee_agents/lungo/integrations/spiffe_spire/docker/Dockerfile.weather-mcp
+    image: ghcr.io/agntcy/coffee-agntcy/weather-mcp-server:latest
+    container_name: weather-mcp-server
+    platform: linux/amd64
+    environment:
+      - DEFAULT_MESSAGE_TRANSPORT=${DEFAULT_MESSAGE_TRANSPORT:-SLIM}
+      - TRANSPORT_SERVER_ENDPOINT=${TRANSPORT_SERVER_ENDPOINT:-http://slim:46357}
+      - OTLP_HTTP_ENDPOINT=${OTLP_HTTP_ENDPOINT:-http://otel-collector:4318}
+      - AUDIENCE=spiffe://example.org/workload/weather-mcp-server
+    volumes:
+      - /tmp/spire-agent:/tmp/spire-agent:ro
+      - weather-mcp-svids:/var/run/spiffe/workload
+      - ./scripts/spiffe-workload-setup.sh:/usr/local/bin/spiffe-workload-setup.sh:ro
+    depends_on:
+      spire-agent:
+        condition: service_healthy
+      spire-system-init:
+        condition: service_completed_successfully
+    entrypoint: ["/usr/local/bin/spiffe-workload-setup.sh"]
+    command: ["uv", "run", "python", "agents/mcp_servers/weather_service.py"]
+
+  clickhouse-server:
+    image: clickhouse/clickhouse-server
+    container_name: clickhouse-server-lungo
+    ports:
+      - "9000:9000"
+      - "8123:8123"
+    environment:
+      CLICKHOUSE_USER: admin
+      CLICKHOUSE_PASSWORD: admin
+    ulimits:
+      nofile:
+        soft: 262144
+        hard: 262144
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8123/ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
+
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:latest
+    container_name: otel-collector-lungo
+    restart: unless-stopped
+    ports:
+      - "4317:4317"
+      - "4318:4318"
+    volumes:
+      - ../../config/docker/otel/otel-collector-config.yaml:/etc/otel-collector-config.yaml
+    command: ["--config", "/etc/otel-collector-config.yaml"]
+    depends_on:
+      clickhouse-server:
+        condition: service_healthy
+
+  grafana:
+    image: grafana/grafana
+    container_name: grafana-lungo
+    ports:
+      - "3001:3000"
+    environment:
+      - GF_INSTALL_PLUGINS=grafana-clickhouse-datasource
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_USERS_ALLOW_SIGN_UP=false
+    depends_on:
+      clickhouse-server:
+        condition: service_healthy
+
+volumes:
+  spire-server-data: # SPIRE server data directory
+  spire-agent-data: # SPIRE agent data directory
+  brazil-farm-svids:
+  colombia-farm-svids:
+  vietnam-farm-svids:
+  exchange-server-svids:
+  weather-mcp-svids:
+  spire-join-token: # Shared volume for join token and server bundle
+  spire-server-sock: # Shared volume for server socket

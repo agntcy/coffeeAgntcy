@@ -1,11 +1,17 @@
-# `coffeeAGNTCY/coffee_agents/lungo/docker/Dockerfile.exchange`
 FROM python:3.13.0-slim
-
 # Install system dependencies, including curl, ping, and wget
 RUN apt-get update && \
     apt-get install -y --no-install-recommends git curl wget iputils-ping && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
+
+# Define the SPIFFE Helper version and architecture
+ARG SPIFFE_HELPER_VERSION=0.10.0
+ARG ARCH=x86_64 # IMPORTANT: Change to 'arm64' if your Docker host/target platform is ARM-based (e.g., Apple M1/M2)
+
+# Download and install spiffe-helper
+RUN wget -qO /usr/bin/spiffe-helper https://github.com/spiffe/spiffe-helper/releases/download/v${SPIFFE_HELPER_VERSION}/spiffe-helper_v${SPIFFE_HELPER_VERSION}_Linux-${ARCH}.tar.gz && \
+    chmod +x /usr/bin/spiffe-helper
 
 # Install uv and create virtual environment
 RUN pip install --no-cache-dir uv && \
@@ -20,4 +26,5 @@ COPY coffeeAGNTCY/coffee_agents/lungo/pyproject.toml coffeeAGNTCY/coffee_agents/
 RUN uv sync --locked --no-editable
 
 COPY coffeeAGNTCY/coffee_agents/lungo/ .
-CMD ["uv", "run", "python", "agents/supervisors/auction/main.py"]
+EXPOSE 8125
+CMD ["uv", "run", "python", "agents/mcp_servers/weather_service.py"]
