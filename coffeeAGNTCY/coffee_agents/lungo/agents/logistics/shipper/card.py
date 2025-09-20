@@ -12,10 +12,13 @@ AGENT_SKILL = AgentSkill(
     description="Returns the shipping status of coffee beans from the farms.",
     tags=["coffee", "shipping"],
     examples=[
-        "What is the current shipping status of my coffee order?",
-        "How much coffee does the Brazil farm produce?",
-        "What is the yield of the Brazil coffee farm in pounds?",
-        "How many pounds of coffee does the Brazil farm produce?",
+        "Advance the order from HANDOVER_TO_SHIPPER to CUSTOMS_CLEARANCE.",
+        "Has the shipment moved past HANDOVER_TO_SHIPPER yet?",
+        "Did the Brazil farm order reach CUSTOMS_CLEARANCE?",
+        "After payment, confirm the shipment is DELIVERED.",
+        "Mark the Colombia 50 lb order as DELIVERED if payment is complete.",
+        "What is the current shipping status of my last coffee order?",
+        "Has the order been delivered following PAYMENT_COMPLETE?",
     ]
 )   
 

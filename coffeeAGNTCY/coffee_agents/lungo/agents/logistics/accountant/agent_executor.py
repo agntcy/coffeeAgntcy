@@ -25,7 +25,7 @@ from a2a.utils import (
 from agent import AccountantAgent
 from card import AGENT_CARD
 
-logger = logging.getLogger("lungo.shipper_agent.agent_executor")
+logger = logging.getLogger("lungo.accountant_agent.agent_executor")
 
 
 class AccountantAgentExecutor(AgentExecutor):
@@ -50,7 +50,7 @@ class AccountantAgentExecutor(AgentExecutor):
 
         This method handles incoming message requests to generate a status of accountant.
         The agent should extract the necessary information from the `context`, invoke the AccountantAgent
-        to generate the yield estimate in lb, and enqueue the response message to the `event_queue`.
+        to confirms the payment, and enqueue the response message to the `event_queue`.
 
         During execution, the agent may also publish `Task`, `Message`, `TaskStatusUpdateEvent`,
         or `TaskArtifactUpdateEvent` events. This method should return once the agent's execution
@@ -88,7 +88,7 @@ class AccountantAgentExecutor(AgentExecutor):
 
             await event_queue.enqueue_event(message)
         except Exception as e:
-            logger.error(f'An error occurred while streaming the yield estimate response: {e}')
+            logger.error(f'An error occurred while streaming the payment confirmation response: {e}')
             raise ServerError(error=InternalError()) from e
 
     async def cancel(
