@@ -50,12 +50,12 @@ jobs:
           - name: logistic-supervisor
             path: coffeeAGNTCY/coffee_agents/lungo/deployment/helm/logistic-supervisor
             package_name: logistic-supervisor
-          - name: shipper
+          - name: logistic-shipper
             path: coffeeAGNTCY/coffee_agents/lungo/deployment/helm/shipper
-            package_name: shipper
-          - name: accountant
+            package_name: logistic-shipper
+          - name: logistic-accountant
             path: coffeeAGNTCY/coffee_agents/lungo/deployment/helm/accountant
-            package_name: accountant
+            package_name: logistic-accountant
           - name: tatooine-farm
             path: coffeeAGNTCY/coffee_agents/lungo/deployment/helm/tatooine-farm
             package_name: tatooine-farm
