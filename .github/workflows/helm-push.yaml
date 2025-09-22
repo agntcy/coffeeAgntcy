@@ -56,9 +56,9 @@ jobs:
           - name: logistic-accountant
             path: coffeeAGNTCY/coffee_agents/lungo/deployment/helm/accountant
             package_name: logistic-accountant
-          - name: tatooine-farm
-            path: coffeeAGNTCY/coffee_agents/lungo/deployment/helm/tatooine-farm
-            package_name: tatooine-farm
+          - name: logistic-farm
+            path: coffeeAGNTCY/coffee_agents/lungo/deployment/helm/logistic-farm
+            package_name: logistic-farm
 
 
 

@@ -1,7 +1,7 @@
 # This is a YAML-formatted file.
 # Declare variables to be passed into your templates.
 
-appName: tatooine-farm
+appName: logistic-farm
 appVersion: v1
 replicaCount: 1
 
