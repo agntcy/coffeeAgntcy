@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import logging
-from typing import Any, Union, Literal
+from typing import Any, Union, Literal, NoReturn
 from uuid import uuid4
 from pydantic import BaseModel
 
@@ -16,7 +16,7 @@ from a2a.types import (
     TextPart,
     Role,
 )
-from langchain_core.tools import tool
+from langchain_core.tools import tool, ToolException
 from langchain_core.messages import AnyMessage, ToolMessage
 from agntcy_app_sdk.protocols.a2a.protocol import A2AProtocol
 from graph.shared import get_factory
@@ -40,6 +40,12 @@ from services.identity_service_impl import IdentityServiceImpl
 from ioa_observe.sdk.decorators import tool as ioa_tool_decorator
 
 logger = logging.getLogger("lungo.supervisor.tools")
+
+
+class A2AAgentError(ToolException):
+    """Custom exception for errors related to A2A agent communication or status."""
+    pass
+
 
 def tools_or_next(tools_node: str, end_node: str = "__end__"):
   """
@@ -115,25 +121,27 @@ def verify_farm_identity(identity_service: IdentityService, farm_name: str):
         farm_name (str): The name of the farm to verify.
 
     Raises:
-        ValueError: If the app is not found or verification fails.
+        A2AAgentError: If the app is not found or verification fails.
     """
     try:
         all_apps = identity_service.get_all_apps()
         matched_app = next((app for app in all_apps.apps if app.name.lower() == farm_name.lower()), None)
 
         if not matched_app:
-            raise ValueError("Identity verification failed: No matching app found.")
+            logger.warning(f"Identity verification failed for farm {farm_name}: "
+                           f"No matching app found, this farm probably does not have identity service enabled. "
+                           f"Skipping identity verification.")
+            return
 
         badge = identity_service.get_badge_for_app(matched_app.id)
         success = identity_service.verify_badges(badge)
 
         if success.get("status") is not True:
-            raise ValueError(f"Identity verification failed: Status is not True for farm '{farm_name}'.")
+            raise A2AAgentError(f"Identity verification failed for farm {farm_name}: Failed to verify badge.")
 
         logger.info(f"Verification successful for farm '{farm_name}'.")
     except Exception as e:
-        logger.error(f"Identity verification failed for farm '{farm_name}': {e}")
-        raise ValueError("Identity verification failed.")
+        raise A2AAgentError(f"Identity verification failed for farm '{farm_name}'. Details: {e}") # Re-raise as our custom exception
 
 @tool(args_schema=InventoryArgs)
 @ioa_tool_decorator(name="get_farm_yield_inventory")
@@ -147,52 +155,63 @@ async def get_farm_yield_inventory(prompt: str, farm: str) -> str:
 
     Returns:
         str: current yield amount
+
+    Raises:
+        A2AAgentError: If there's an issue with farm identification, communication, or the farm agent returns an error.
+        ValueError: For invalid input arguments.
     """
     logger.info("entering get_farm_yield_inventory tool with prompt: %s, farm: %s", prompt, farm)
-    if farm == "":
-        return "No farm was provided, please provide a farm to get the yield from."
+    if not farm:
+        raise ValueError("No farm was provided. Please provide a farm to get the yield from.")
     
     card = get_farm_card(farm)
     if card is None:
-        return f"Farm '{farm}' not recognized. Available farms are: {brazil_agent_card.name}, {colombia_agent_card.name}, {vietnam_agent_card.name}."
+        raise A2AAgentError(f"Farm '{farm}' not recognized. Available farms "
+                             f"are: {brazil_agent_card.name}, {colombia_agent_card.name}, {vietnam_agent_card.name}.")
     
-    # Shared factory & transport
-    factory = get_factory()
-    transport = factory.create_transport(
-        DEFAULT_MESSAGE_TRANSPORT,
-        endpoint=TRANSPORT_SERVER_ENDPOINT,
-        name="default/default/exchange_graph"
-    )
-    
-    client = await factory.create_client(
-        "A2A",
-        agent_topic=A2AProtocol.create_agent_topic(card),
-        transport=transport,
-    )
-
-    request = SendMessageRequest(
-        id=str(uuid4()),
-        params=MessageSendParams(
-            message=Message(
-                messageId=str(uuid4()),
-                role=Role.user,
-                parts=[Part(TextPart(text=prompt))],
-            ),
+    try:
+        # Shared factory & transport
+        factory = get_factory()
+        transport = factory.create_transport(
+            DEFAULT_MESSAGE_TRANSPORT,
+            endpoint=TRANSPORT_SERVER_ENDPOINT,
+            name="default/default/exchange_graph"
         )
-    )
 
-    response = await client.send_message(request)
-    logger.info(f"Response received from A2A agent: {response}")
-    if response.root.result and response.root.result.parts:
-        part = response.root.result.parts[0].root
-        if hasattr(part, "text"):
-            return part.text.strip()
-    elif response.root.error:
-        logger.error(f"A2A error: {response.root.error.message}")
-        return f"Error from farm: {response.root.error.message}"
-    else:
-        logger.error("Unknown response type")
-        return "Unknown response type from farm"
+        client = await factory.create_client(
+            "A2A",
+            agent_topic=A2AProtocol.create_agent_topic(card),
+            transport=transport,
+        )
+
+        request = SendMessageRequest(
+            id=str(uuid4()),
+            params=MessageSendParams(
+                message=Message(
+                    messageId=str(uuid4()),
+                    role=Role.user,
+                    parts=[Part(TextPart(text=prompt))],
+                ),
+            )
+        )
+
+        response = await client.send_message(request)
+        logger.info(f"Response received from A2A agent: {response}")
+        if response.root.result and response.root.result.parts:
+            part = response.root.result.parts[0].root
+            if hasattr(part, "text"):
+                return part.text.strip()
+            else:
+                raise A2AAgentError(f"Farm '{farm}' returned a result without text content.")
+        elif response.root.error:
+                logger.error(f"A2A error from farm '{farm}': {response.root.error.message}")
+                raise A2AAgentError(f"Error from farm '{farm}': {response.root.error.message}")
+        else:
+            logger.error(f"Unknown response type from farm '{farm}'.")
+            raise A2AAgentError(f"Unknown response type from farm '{farm}'.")
+    except Exception as e: # Catch any underlying communication or client creation errors
+        logger.error(f"Failed to communicate with farm '{farm}': {e}")
+        raise A2AAgentError(f"Failed to communicate with farm '{farm}'. Details: {e}")
 
 
 @tool
@@ -234,38 +253,46 @@ async def get_all_farms_yield_inventory(prompt: str) -> str:
         # using NATS 
         client_handshake_topic = FARM_BROADCAST_TOPIC
 
-    # create an A2A client, retrieving an A2A card from agent_topic
-    client = await factory.create_client(
-        "A2A",
-        agent_topic=client_handshake_topic,
-        transport=transport,
-    )
+    try:
+        # create an A2A client, retrieving an A2A card from agent_topic
+        client = await factory.create_client(
+            "A2A",
+            agent_topic=client_handshake_topic,
+            transport=transport,
+        )
 
-    # create a list of recipients to include in the broadcast
-    recipients = [A2AProtocol.create_agent_topic(get_farm_card(farm)) for farm in ['brazil', 'colombia', 'vietnam']]
-    # create a broadcast message and collect responses
-    responses = await client.broadcast_message(request, broadcast_topic=FARM_BROADCAST_TOPIC, recipients=recipients)
+        # create a list of recipients to include in the broadcast
+        recipients = [A2AProtocol.create_agent_topic(get_farm_card(farm)) for farm in ['brazil', 'colombia', 'vietnam']]
+        # create a broadcast message and collect responses
+        responses = await client.broadcast_message(request, broadcast_topic=FARM_BROADCAST_TOPIC, recipients=recipients)
 
-    logger.info(f"got {len(responses)} responses back from farms")
+        logger.info(f"got {len(responses)} responses back from farms")
 
-    farm_yields = ""
-    for response in responses:
-        # we want a dict for farm name -> yield, the farm_name will be in the response metadata
-        if response.root.result and response.root.result.parts:
-            part = response.root.result.parts[0].root
-            if hasattr(response.root.result, "metadata"):
-                farm_name = response.root.result.metadata.get("name", "Unknown Farm")
+        farm_yields = ""
+        for response in responses:
+            # we want a dict for farm name -> yield, the farm_name will be in the response metadata
+            if response.root.result and response.root.result.parts:
+                part = response.root.result.parts[0].root
+                if hasattr(response.root.result, "metadata"):
+                    farm_name = response.root.result.metadata.get("name", "Unknown Farm")
+                else:
+                    farm_name = "Unknown Farm"
+
+                farm_yields += f"{farm_name} : {part.text.strip()}\n"
+            elif response.root.error:
+                err_msg = f"A2A error from farm: {response.root.error.message}"
+                logger.error(err_msg)
+                raise A2AAgentError(err_msg)
             else:
-                farm_name = "Unknown Farm"
+                err_msg = f"Unknown response type from farm"
+                logger.error(err_msg)
+                raise A2AAgentError(err_msg)
 
-            farm_yields += f"{farm_name} : {part.text.strip()}\n"
-        elif response.root.error:
-            logger.error(f"A2A error from farm: {response.root.error.message}") 
-        else:
-            logger.error("Unknown response type from farm")
-
-    logger.info(f"Farm yields: {farm_yields}")
-    return farm_yields.strip()
+        logger.info(f"Farm yields: {farm_yields}")
+        return farm_yields.strip()
+    except Exception as e: # Catch any underlying communication or client creation errors
+        logger.error(f"Failed to communicate with all farms during broadcast: {e}")
+        raise A2AAgentError(f"Failed to communicate with all farms. Details: {e}")
 
 
 @tool(args_schema=CreateOrderArgs)
@@ -281,65 +308,78 @@ async def create_order(farm: str, quantity: int, price: float) -> str:
 
     Returns:
         str: Confirmation message or error string from the farm agent.
+
+    Raises:
+        A2AAgentError: If there's an issue with farm identification, identity verification, communication, or the farm agent returns an error.
+        ValueError: For invalid input arguments.
     """
 
     farm = farm.strip().lower()
 
     logger.info(f"Creating order with price: {price}, quantity: {quantity}")
     if price <= 0 or quantity <= 0:
-        return "Price and quantity must be greater than zero."
+        raise ValueError("Price and quantity must be greater than zero.")
     
-    if farm == "":
-        return "No farm was provided, please provide a farm to create an order."
+    if not farm:
+        raise ValueError("No farm was provided, please provide a farm to create an order.")
     
     card = get_farm_card(farm)
     if card is None:
-        return f"Farm '{farm}' not recognized. Available farms are: {brazil_agent_card.name}, {colombia_agent_card.name}, {vietnam_agent_card.name}."
+        raise ValueError(f"Farm '{farm}' not recognized. Available farms are: {brazil_agent_card.name}, {colombia_agent_card.name}, {vietnam_agent_card.name}.")
 
     logger.info(f"Using farm card: {card.name} for order creation")
     identity_service = IdentityServiceImpl(api_key=IDENTITY_API_KEY, base_url=IDENTITY_API_SERVER_URL)
     try:
         verify_farm_identity(identity_service, card.name)
-    except ValueError as e:
-        return str(e)
+    except Exception as e:
+        # log the error and re-raise the exception
+        logger.error(e)
+        raise
 
-    # Shared factory & transport
-    factory = get_factory()
-    transport = factory.create_transport(
-        DEFAULT_MESSAGE_TRANSPORT,
-        endpoint=TRANSPORT_SERVER_ENDPOINT,
-        name="default/default/exchange_graph"
-    )
-
-    client = await factory.create_client(
-        "A2A",
-        agent_topic=A2AProtocol.create_agent_topic(card),
-        transport=transport,
-    )
-
-    request = SendMessageRequest(
-        id=str(uuid4()),
-        params=MessageSendParams(
-            message=Message(
-                messageId=str(uuid4()),
-                role=Role.user,
-                parts=[Part(TextPart(text=f"Create an order with price {price} and quantity {quantity}"))],
-            ),
+    try:
+        # Shared factory & transport
+        factory = get_factory()
+        transport = factory.create_transport(
+            DEFAULT_MESSAGE_TRANSPORT,
+            endpoint=TRANSPORT_SERVER_ENDPOINT,
+            name="default/default/exchange_graph"
         )
-    )
 
-    response = await client.send_message(request)
-    logger.info(f"Response received from A2A agent: {response}")
-    if response.root.result and response.root.result.parts:
-        part = response.root.result.parts[0].root
-        if hasattr(part, "text"):
-            return part.text.strip()
-    elif response.root.error:
-        logger.error(f"A2A error: {response.root.error.message}")
-        return f"Error from order agent: {response.root.error.message}"
-    else:
-        logger.error("Unknown response type")
-        return "Unknown response type from order agent"
+        client = await factory.create_client(
+            "A2A",
+            agent_topic=A2AProtocol.create_agent_topic(card),
+            transport=transport,
+        )
+
+        request = SendMessageRequest(
+            id=str(uuid4()),
+            params=MessageSendParams(
+                message=Message(
+                    messageId=str(uuid4()),
+                    role=Role.user,
+                    parts=[Part(TextPart(text=f"Create an order with price {price} and quantity {quantity}"))],
+                ),
+            )
+        )
+
+        response = await client.send_message(request)
+        logger.info(f"Response received from A2A agent: {response}")
+
+        if response.root.result and response.root.result.parts:
+            part = response.root.result.parts[0].root
+            if hasattr(part, "text"):
+                return part.text.strip()
+            else:
+                raise A2AAgentError(f"Farm '{farm}' returned a result without text content for order creation.")
+        elif response.root.error:
+            logger.error(f"A2A error: {response.root.error.message}")
+            raise A2AAgentError(f"Error from order agent for farm '{farm}': {response.root.error.message}")
+        else:
+            logger.error("Unknown response type")
+            raise A2AAgentError("Unknown response type from order agent")
+    except Exception as e: # Catch any underlying communication or client creation errors
+        logger.error(f"Failed to communicate with order agent for farm '{farm}': {e}")
+        raise A2AAgentError(f"Failed to communicate with order agent for farm '{farm}'. Details: {e}")
     
 
 @tool
@@ -353,45 +393,56 @@ async def get_order_details(order_id: str) -> str:
 
     Returns:
     str: Details of the order.
+
+    Raises:
+    A2AAgentError: If there's an issue with communication or the order agent returns an error.
+    ValueError: For invalid input arguments.
     """
     logger.info(f"Getting details for order ID: {order_id}")
     if not order_id:
-        return "Order ID must be provided."
-    
-    # Shared factory & transport
-    factory = get_factory()
-    transport = factory.create_transport(
-        DEFAULT_MESSAGE_TRANSPORT,
-        endpoint=TRANSPORT_SERVER_ENDPOINT,
-        name="default/default/exchange_graph"
-    )
-    
-    client = await factory.create_client(
-        "A2A",
-        agent_topic=FARM_BROADCAST_TOPIC,
-        transport=transport,
-    )
+        raise ValueError("Order ID must be provided.")
 
-    request = SendMessageRequest(
-        id=str(uuid4()),
-        params=MessageSendParams(
-            message=Message(
-                messageId=str(uuid4()),
-                role=Role.user,
-                parts=[Part(TextPart(text=f"Get details for order ID {order_id}"))],
-            ),
+    try:
+        # Shared factory & transport
+        factory = get_factory()
+        transport = factory.create_transport(
+            DEFAULT_MESSAGE_TRANSPORT,
+            endpoint=TRANSPORT_SERVER_ENDPOINT,
+            name="default/default/exchange_graph"
         )
-    )
 
-    response = await client.send_message(request)
-    logger.info(f"Response received from A2A agent: {response}")
-    if response.root.result and response.root.result.parts:
-        part = response.root.result.parts[0].root
-        if hasattr(part, "text"):
-            return part.text.strip()
-    elif response.root.error:
-        logger.error(f"A2A error: {response.root.error.message}")
-        return f"Error from order agent: {response.root.error.message}"
-    else:
-        logger.error("Unknown response type")
-        return "Unknown response type from order agent"
+        client = await factory.create_client(
+            "A2A",
+            agent_topic=FARM_BROADCAST_TOPIC,
+            transport=transport,
+        )
+
+        request = SendMessageRequest(
+            id=str(uuid4()),
+            params=MessageSendParams(
+                message=Message(
+                    messageId=str(uuid4()),
+                    role=Role.user,
+                    parts=[Part(TextPart(text=f"Get details for order ID {order_id}"))],
+                ),
+            )
+        )
+
+        response = await client.send_message(request)
+        logger.info(f"Response received from A2A agent: {response}")
+
+        if response.root.result and response.root.result.parts:
+            part = response.root.result.parts[0].root
+            if hasattr(part, "text"):
+                return part.text.strip()
+            else:
+                raise A2AAgentError(f"Order agent returned a result without text content for order ID '{order_id}'.")
+        elif response.root.error:
+            logger.error(f"A2A error from order agent for order ID '{order_id}': {response.root.error.message}")
+            raise A2AAgentError(f"Error from order agent for order ID '{order_id}': {response.root.error.message}")
+        else:
+            logger.error(f"Unknown response type from order agent for order ID '{order_id}'.")
+            raise A2AAgentError(f"Unknown response type from order agent for order ID '{order_id}'.")
+    except Exception as e: # Catch any underlying communication or client creation errors
+        logger.error(f"Failed to communicate with order agent for order ID '{order_id}': {e}")
+        raise A2AAgentError(f"Failed to communicate with order agent for order ID '{order_id}'. Details: {e}")
