@@ -2,9 +2,16 @@
 @tailwind components;
 @tailwind utilities;
 
+.theme-switching * {
+  transition: none !important;
+  animation-duration: 0s !important;
+}
+
 @layer base {
   body {
-    @apply m-0 p-0 font-inter;
+    margin: 0;
+    padding: 0;
+    font-family: "Inter", sans-serif;
     background-color: var(--app-background);
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
@@ -12,7 +19,6 @@
   }
   :root {
     --app-background: #23282e;
-    --content-background: #23282e;
 
     --node-background: #373c42;
     --node-data-background: #f5f5f5;
@@ -26,9 +32,11 @@
     --node-text-primary: #e8e9ea;
     --node-text-secondary: #e8e9ea;
     --node-icon-background: #59616b;
+    --node-icon-border: transparent;
 
     --accent-primary: #187adc;
-    --accent-border: #187adc;
+    --accent-border: #00409f;
+    --blue-700: #00409f;
 
     --nav-background: #f5f8fd;
     --nav-background-secondary: #eff3fc;
@@ -38,17 +46,27 @@
     --chat-background: #1a2432;
     --chat-background-hover: #1f2a3a;
     --chat-text: #fbfcfe;
-    --chat-input-background: #23282e;
+    --chat-input-background: #1a2432;
     --chat-dropdown-background: #23282e;
+    --chat-dropdown-icon: #59616b;
 
     --action-background: #00142b;
     --action-background-hover: #0d274d;
 
     --sidebar-background: #23282e;
     --sidebar-item-selected: #0d274d;
+    --sidebar-border: #00142b;
+    --sidebar-text: #fbfcfe;
+
+    --custom-node-background: #00142b;
+    --custom-node-border: transparent;
+
+    --github-icon: url("@/assets/Github.png");
+    --agent-directory-icon: url("@/assets/Agent_directory.png");
 
     --shadow-default: rgba(0, 0, 0, 0.6);
     --overlay-background: #2e3e57;
+    --control-border-weak: #23282e33;
 
     --modal-background: #1a2432;
     --modal-border: #2e3e57;
@@ -87,49 +105,125 @@
     --radius: 0.5rem;
   }
 
-  .light {
-    --app-background: #ffffff;
-    --content-background: #f8f9fa;
+  body[data-theme="light"] {
+    --app-background: #f5f8fd;
 
-    --node-background: #e9ecef;
-    --node-background-hover: #dee2e6;
-    --node-background-active: #0056b3;
-    --node-text-primary: #212529;
-    --node-text-secondary: #6c757d;
-    --node-icon-background: #adb5bd;
+    --node-background: #dee6f9;
+    --node-background-hover: #e3eafa;
+    --node-background-active: #187adc;
+    --edge-label-background: #d5dff7;
+    --edge-label-background-active: #187adc;
+    --edge-label-text: #3c4551;
+    --edge-label-text-active: #ffffff;
+    --node-text-primary: #3c4551;
+    --node-text-secondary: #3c4551;
+    --node-icon-background: #c8d5f5;
+    --node-icon-border: #187adc;
 
-    --accent-primary: #0d6efd;
-    --accent-border: #0d6efd;
+    --accent-primary: #187adc;
+    --accent-border: #187adc;
+    --blue-700: #00409f;
 
-    --nav-background: #f8f9fa;
-    --nav-background-secondary: #e9ecef;
-    --nav-border: #dee2e6;
-    --nav-text: #0d6efd;
+    --nav-background: #f5f8fd;
+    --nav-background-secondary: #eff3fc;
+    --nav-border: #d5dff7;
+    --nav-text: #1d69cc;
 
-    --chat-background: #f8f9fa;
-    --chat-background-hover: #e9ecef;
-    --chat-text: #212529;
-    --chat-input-background: #ffffff;
-    --chat-dropdown-background: #ffffff;
+    --chat-background: #dee6f9;
+    --chat-background-hover: #d5dff7;
+    --chat-text: #00142b;
+    --chat-input-background: #eff3fc;
+    --chat-dropdown-background: #dee6f9;
+    --chat-dropdown-icon: #3c4551;
 
-    --action-background: #0d6efd;
-    --action-background-hover: #0b5ed7;
+    --action-background: #187adc;
+    --action-background-hover: #0d274d;
 
-    --sidebar-background: #f8f9fa;
-    --sidebar-item-selected: #e7f1ff;
+    --sidebar-background: #fbfcfe;
+    --sidebar-item-selected: #dee6f9;
+    --sidebar-border: #fbfcfe;
+    --sidebar-text: #00142b;
 
-    --shadow-default: rgba(0, 0, 0, 0.15);
-    --overlay-background: #6c757d;
+    --custom-node-background: #fbfcfe;
+    --custom-node-border: #187adc;
+
+    --github-icon: url("@/assets/Github_lightmode.png");
+    --agent-directory-icon: url("@/assets/Agent_Icon_light.png");
+
+    --shadow-default: 0 4px 8px rgba(0, 0, 0, 0.1);
+    --overlay-background: #eff3fc;
+    --control-border-weak: #e8eefb;
 
     --modal-background: #ffffff;
-    --modal-border: #dee2e6;
-    --modal-text: #212529;
-    --modal-text-secondary: #6c757d;
-    --modal-accent: #0d6efd;
-    --modal-hover: #f8f9fa;
-    --modal-button: #0d6efd;
+    --modal-border: #dbe0e5;
+    --modal-text: #00142b;
+    --modal-text-secondary: #00142b;
+    --modal-accent: #60a5fa;
+    --modal-hover: #f5f8fd;
+    --modal-button: #00142b;
     --modal-button-text: #ffffff;
-    --modal-button-hover: #0b5ed7;
+    --modal-button-hover: #0d274d;
+  }
+
+  .theme-icon-github {
+    content: var(--github-icon);
+  }
+
+  .theme-icon-agent-directory {
+    content: var(--agent-directory-icon);
+  }
+
+  body[data-theme="light"] .chat-avatar-container {
+    background-color: #187adc;
+  }
+
+  body[data-theme="light"] .bg-node-background-active .text-node-text-primary {
+    color: #ffffff;
+  }
+
+  body[data-theme="light"]
+    .bg-node-background-active
+    .text-node-text-secondary {
+    color: #e8e9ea;
+  }
+
+  .dark-icon {
+    filter: brightness(0) invert(1);
+  }
+
+  body[data-theme="light"] .dark-icon {
+    filter: brightness(0) saturate(0) opacity(0.6);
+  }
+
+  .chat-header-icon {
+    filter: brightness(0) saturate(100%) invert(85%) sepia(7%) saturate(398%)
+      hue-rotate(186deg) brightness(97%) contrast(92%);
+  }
+
+  body[data-theme="light"] .chat-header-icon {
+    filter: brightness(0) saturate(100%) invert(22%) sepia(8%) saturate(1157%)
+      hue-rotate(192deg) brightness(95%) contrast(88%);
+  }
+
+  .chat-header-text {
+    font-family: "Inter", sans-serif;
+    font-weight: 700;
+    font-size: 14px;
+    line-height: 20px;
+    letter-spacing: 0.25px;
+    color: #fbfcfe;
+  }
+
+  body[data-theme="light"] .chat-header-text {
+    color: #3c4551;
+  }
+
+  .chat-header-trash-icon {
+    color: #e8e9ea;
+  }
+
+  body[data-theme="light"] .chat-header-trash-icon {
+    color: #3c4551;
   }
 
   .dark {
@@ -162,7 +256,11 @@
 
 @layer components {
   .app-container {
-    @apply flex h-screen w-screen flex-col overflow-hidden;
+    display: flex;
+    height: 100vh;
+    width: 100vw;
+    flex-direction: column;
+    overflow: hidden;
     background-color: var(--app-background);
   }
 
@@ -170,7 +268,7 @@
     flex-grow: 1;
     display: flex;
     flex-direction: column;
-    background-color: var(--content-background);
+    background-color: var(--app-background);
   }
 }
 

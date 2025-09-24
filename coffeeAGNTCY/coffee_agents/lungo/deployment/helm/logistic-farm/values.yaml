@@ -1,0 +1,41 @@
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+appName: logistic-farm
+appVersion: v1
+replicaCount: 1
+
+image:
+  repository: ghcr.io/agntcy/coffee-agntcy/logistic-farm
+  tag: latest
+  pullPolicy: Always
+  pullSecret:
+
+service:
+  port: 9093
+
+config:
+  transportServerEndpoint: ""
+  defaultMessageTransport: ""
+  otlpHttpEndpoint: ""
+
+# You can use your own config here for service account
+serviceaccount:
+  annotations:
+    eks.amazonaws.com/role-arn: REPLACE_WITH_ROLE_ARN
+
+
+probes:
+  livenessProbeEnabled: false
+  readinessProbeEnabled: false
+  port: 9093
+  endpoint: /v1/health
+
+resources:
+  enabled: false
+  limits:
+    cpu: 2000m
+    memory: 2500Mi
+  requests:
+    cpu: 200m
+    memory: 500Mi

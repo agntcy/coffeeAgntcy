@@ -3,13 +3,12 @@
  * SPDX-License-Identifier: Apache-2.0
  **/
 
-import React, { useEffect, useRef, useCallback } from "react"
+import React, { useEffect, useRef, useCallback, useState } from "react"
 import {
   ReactFlow,
   ReactFlowProvider,
   useNodesState,
   useEdgesState,
-  useReactFlow,
   Controls,
   Node,
   Edge,
@@ -20,6 +19,7 @@ import SlimNode from "./Graph/TransportNode"
 import CustomEdge from "./Graph/CustomEdge"
 import CustomNode from "./Graph/CustomNode"
 import { graphConfig, updateA2ALabels } from "@/utils/graphConfigs"
+import { useViewportAwareFitView } from "@/hooks/useViewportAwareFitView"
 
 const proOptions = { hideAttribution: true }
 
@@ -47,6 +47,8 @@ interface MainAreaProps {
   setButtonClicked: (clicked: boolean) => void
   aiReplied: boolean
   setAiReplied: (replied: boolean) => void
+  chatHeight?: number
+  isExpanded?: boolean
 }
 
 const DELAY_DURATION = 500
@@ -60,9 +62,14 @@ const MainArea: React.FC<MainAreaProps> = ({
   setButtonClicked,
   aiReplied,
   setAiReplied,
+  chatHeight = 0,
+  isExpanded = false,
 }) => {
   const config: GraphConfig = graphConfig
-  const { fitView } = useReactFlow()
+  const fitViewWithViewport = useViewportAwareFitView()
+
+  const [nodesDraggable, setNodesDraggable] = useState(true)
+  const [nodesConnectable, setNodesConnectable] = useState(true)
 
   const [nodes, setNodes, onNodesChange] = useNodesState(config.nodes)
   const [edges, setEdges, onEdgesChange] = useEdgesState(config.edges)
@@ -76,14 +83,45 @@ const MainArea: React.FC<MainAreaProps> = ({
     setEdges(newConfig.edges)
 
     setTimeout(() => {
-      fitView({
-        padding: 0.45,
-        duration: 300,
-        minZoom: 0.5,
-        maxZoom: 1.1,
+      fitViewWithViewport({
+        chatHeight,
+        isExpanded,
       })
     }, 100)
-  }, [setNodes, setEdges, fitView])
+  }, [setNodes, setEdges, fitViewWithViewport, chatHeight, isExpanded])
+
+  useEffect(() => {
+    // Trigger fitView whenever chat height or expansion state changes
+    fitViewWithViewport({
+      chatHeight,
+      isExpanded,
+    })
+  }, [chatHeight, isExpanded, fitViewWithViewport])
+
+  useEffect(() => {
+    const addTooltips = () => {
+      const controlButtons = document.querySelectorAll(
+        ".react-flow__controls-button",
+      )
+      const tooltips = ["Zoom In", "Zoom Out", "Fit View", "Lock"]
+
+      controlButtons.forEach((button, index) => {
+        if (index < tooltips.length) {
+          if (index === 3) {
+            const isLocked = !nodesDraggable || !nodesConnectable
+            button.setAttribute("data-tooltip", isLocked ? "Unlock" : "Lock")
+          } else {
+            button.setAttribute("data-tooltip", tooltips[index])
+          }
+          button.removeAttribute("title")
+        }
+      })
+    }
+
+    const timeoutId = setTimeout(addTooltips, 100)
+
+    return () => clearTimeout(timeoutId)
+  }, [nodesDraggable, nodesConnectable])
 
   const delay = (ms: number): Promise<void> =>
     new Promise((resolve) => setTimeout(resolve, ms))
@@ -160,8 +198,16 @@ const MainArea: React.FC<MainAreaProps> = ({
         defaultViewport={{ x: 0, y: 0, zoom: 0.6 }}
         minZoom={0.15}
         maxZoom={1.8}
+        nodesDraggable={nodesDraggable}
+        nodesConnectable={nodesConnectable}
+        elementsSelectable={nodesDraggable}
       >
-        <Controls />
+        <Controls
+          onInteractiveChange={(interactiveEnabled) => {
+            setNodesDraggable(interactiveEnabled)
+            setNodesConnectable(interactiveEnabled)
+          }}
+        />
       </ReactFlow>
     </div>
   )

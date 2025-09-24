@@ -13,7 +13,7 @@ interface UserMessageProps {
 const UserMessage: React.FC<UserMessageProps> = ({ content }) => {
   return (
     <div className="flex min-h-[2.5rem] w-full flex-row items-start gap-1">
-      <div className="flex h-10 w-10 flex-none items-center justify-center rounded-full bg-action-background">
+      <div className="chat-avatar-container flex h-10 w-10 flex-none items-center justify-center rounded-full bg-action-background">
         <User size={22} className="text-white" />
       </div>
 
@@ -22,7 +22,7 @@ const UserMessage: React.FC<UserMessageProps> = ({ content }) => {
         style={{ maxWidth: "calc(100% - 3rem)" }}
       >
         <div className="flex w-full items-center rounded p-1 px-2">
-          <div className="break-words font-inter text-sm font-normal leading-5 text-white">
+          <div className="break-words font-inter text-sm font-normal leading-5 text-chat-text">
             {content}
           </div>
         </div>

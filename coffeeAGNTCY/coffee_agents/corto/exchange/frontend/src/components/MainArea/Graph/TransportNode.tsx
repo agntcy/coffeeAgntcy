@@ -22,7 +22,7 @@ const SlimNode: React.FC<SlimNodeProps> = ({ data }) => {
 
   return (
     <div
-      className={` ${activeClasses} hover:bg-node-background-hover hover:outline-accent-border flex items-center justify-center border border-gray-100 text-center text-gray-50 hover:shadow-[var(--shadow-default)_0px_6px_8px] hover:outline hover:outline-2`}
+      className={` ${activeClasses} flex items-center justify-center border border-gray-100 text-center text-gray-50 hover:bg-node-background-hover hover:shadow-[var(--shadow-default)_0px_6px_8px] hover:outline hover:outline-2 hover:outline-accent-border`}
       style={{
         width: "1200px",
         height: "52px",

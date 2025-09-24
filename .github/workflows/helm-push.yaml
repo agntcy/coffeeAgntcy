@@ -47,6 +47,20 @@ jobs:
           - name: weather-mcp-server
             path: coffeeAGNTCY/coffee_agents/lungo/deployment/helm/weather-mcp-server
             package_name: weather-mcp-server
+          - name: logistic-supervisor
+            path: coffeeAGNTCY/coffee_agents/lungo/deployment/helm/logistic-supervisor
+            package_name: logistic-supervisor
+          - name: logistic-shipper
+            path: coffeeAGNTCY/coffee_agents/lungo/deployment/helm/shipper
+            package_name: logistic-shipper
+          - name: logistic-accountant
+            path: coffeeAGNTCY/coffee_agents/lungo/deployment/helm/accountant
+            package_name: logistic-accountant
+          - name: logistic-farm
+            path: coffeeAGNTCY/coffee_agents/lungo/deployment/helm/logistic-farm
+            package_name: logistic-farm
+
+
 
     steps:
     - name: Pre-cleanup Docker images

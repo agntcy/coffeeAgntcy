@@ -6,10 +6,10 @@ WORKDIR /app
 RUN apk add --no-cache wget curl iputils
 
 # Copy package.json and package-lock.json, then install dependencies
-COPY coffeeAGNTCY/coffee_agents/lungo/exchange/frontend/package.json coffeeAGNTCY/coffee_agents/lungo/exchange/frontend/package-lock.json ./
+COPY coffeeAGNTCY/coffee_agents/lungo/frontend/package.json coffeeAGNTCY/coffee_agents/lungo/frontend/package-lock.json ./
 
 # Copy application files, including assets
-COPY coffeeAGNTCY/coffee_agents/lungo/exchange/frontend/ .
+COPY coffeeAGNTCY/coffee_agents/lungo/frontend/ .
 
 # This build step is simply for checking the validity of the build:
 # running type checks, linting, and making sure the build is functional.

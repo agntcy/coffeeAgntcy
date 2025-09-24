@@ -58,6 +58,11 @@ Before you begin, ensure the following tools are installed:
    ```sh
    uv sync
    ```
+   Navigate to the Lungo project directory, set the PYTHONPATH environment variable to the root directory of the lungo project. This is necessary for running the application locally.
+   ```sh
+   # In the lungo root directory
+   export PYTHONPATH=$(pwd)
+   ```
 
 3. **Configure Environment Variables**  
    Copy the example environment file:
@@ -165,7 +170,7 @@ Additionally run the observability stack that has OTEL Collector, Grafana and Cl
 You can do this by executing the following command:
 
 ```sh
-docker compose up slim clickhouse-server otel-collector grafana
+docker-compose up slim nats clickhouse-server otel-collector grafana
 ```
 
 **Step 2: Run the Weather MCP Server**
@@ -175,7 +180,7 @@ Start the MCP server, which uses the Nominatim API to convert location names int
 *Local Python Run:*
 
 ```sh
-uv run python mcp_servers/weather_service.py
+uv run python agents/mcp_servers/weather_service.py
 ```
 
 *Docker Compose:*
@@ -186,7 +191,28 @@ docker-compose up weather-mcp-server --build
 
 This MCP server is required for the Colombia Farm to function correctly.
 
-**Step 3: Run the Farms**
+**Step 3A: Run the Farms (via Make targets)**
+
+You can start each server with a `make` target (after running `uv sync` and configuring your `.env`). Open one terminal per service.
+
+Start the Weather MCP (required for Colombia farm):
+```sh
+make weather-mcp
+```
+
+Start farms (each in its own terminal):
+```sh
+make brazil-farm
+make colombia-farm
+make vietnam-farm
+```
+
+Start the Exchange (Auction Supervisor API):
+```sh
+make auction-supervisor
+```
+
+**Step 3B: Run the Farms (local Python or Docker Compose)**
 
 Start all the farm servers, that act as A2A servers, by executing:
 
@@ -196,9 +222,9 @@ Start all the farm servers, that act as A2A servers, by executing:
 >
 
 ```sh
-uv run python farms/brazil/farm_server.py
-uv run python farms/colombia/farm_server.py
-uv run python farms/vietnam/farm_server.py
+uv run python agents/farms/brazil/farm_server.py
+uv run python agents/farms/colombia/farm_server.py
+uv run python agents/farms/vietnam/farm_server.py
 ```
 
 *Docker Compose:*
@@ -216,7 +242,7 @@ Start the exchange, which acts as an A2A client, by running:
 *Local Python Run:*
 
 ```sh
-uv run python exchange/main.py
+uv run python agents/supervisors/auction/main.py
 ```
 
 *Docker Compose:*
@@ -305,3 +331,10 @@ By default, the UI will be available at [http://localhost:3000/](http://localhos
 
    ![Screenshot: OTEL Dashboard](images/dashboard_grafana.png)
    ![Screenshot: OTEL Traces](images/dashboard_traces.png)
+
+
+---
+
+### Group Conversation Implementation
+
+Detailed architecture, message flows (SLIM pubsub vs controller channels), service roles, and port configuration are documented in [Group Conversation Docs](./docs/group_conversation.md).

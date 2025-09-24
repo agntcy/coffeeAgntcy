@@ -51,5 +51,5 @@ Refer to the [Identity SaaS Documentation](https://identity-docs.outshift.com/do
 
 5. **Farm Agent URLs**
   - Use the following well-known agent card URLs for local development:
-    - **Vietnam Farm Agent URL**: `http://127.0.0.1:9997/.well-known/agent.json` (corresponds to `VIETNAM_FARM_AGENT_URL`).
-    - **Colombia Farm Agent URL**: `http://127.0.0.1:9998/.well-known/agent.json` (corresponds to `COLOMBIA_FARM_AGENT_URL`).
+    - **Vietnam Farm Agent URL**: `http://127.0.0.1:9997/.well-known/agent-card.json` (corresponds to `VIETNAM_FARM_AGENT_URL`).
+    - **Colombia Farm Agent URL**: `http://127.0.0.1:9998/.well-known/agent-card.json` (corresponds to `COLOMBIA_FARM_AGENT_URL`).

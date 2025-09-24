@@ -4,7 +4,6 @@
  **/
 
 import React, { useState, useEffect } from "react"
-import { v4 as uuid } from "uuid"
 import { LOCAL_STORAGE_KEY } from "@/components/Chat/Messages"
 
 import ChatArea from "@/components/Chat/ChatArea"
@@ -12,8 +11,10 @@ import ChatArea from "@/components/Chat/ChatArea"
 import Navigation from "@/components/Navigation/Navigation"
 import MainArea from "@/components/MainArea/MainArea"
 import Sidebar from "@/components/Sidebar/Sidebar"
+import { ThemeProvider } from "@/contexts/ThemeContext"
 import { Message } from "./types/Message"
 import { useAgentAPI } from "@/hooks/useAgentAPI"
+import { useChatAreaMeasurement } from "@/hooks/useChatAreaMeasurement"
 import { logger } from "./utils/logger"
 
 const App: React.FC = () => {
@@ -22,20 +23,29 @@ const App: React.FC = () => {
   const [currentUserMessage, setCurrentUserMessage] = useState<string>("")
   const [agentResponse, setAgentResponse] = useState<string>("")
   const [isAgentLoading, setIsAgentLoading] = useState<boolean>(false)
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      role: "assistant",
-      content: "Hi! How can I assist you?",
-      id: uuid(),
-      animate: false,
-    },
-  ])
+  const [messages, setMessages] = useState<Message[]>([])
+  const { sendMessageWithCallback } = useAgentAPI()
 
-  const { sendMessage } = useAgentAPI()
+  const {
+    height: chatHeight,
+    isExpanded,
+    chatRef,
+  } = useChatAreaMeasurement({
+    debounceMs: 100,
+  })
+
+  useEffect(() => {
+    const storedMessages = localStorage.getItem(LOCAL_STORAGE_KEY)
+    if (storedMessages) {
+      setMessages(JSON.parse(storedMessages))
+    }
+  }, [])
 
   useEffect(() => {
     localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(messages))
   }, [messages])
+
+  const chatHeightValue = currentUserMessage || agentResponse ? chatHeight : 76
 
   const handleApiResponse = (response: string, isError: boolean = false) => {
     setAgentResponse(response)
@@ -62,52 +72,80 @@ const App: React.FC = () => {
     setIsAgentLoading(true)
 
     try {
-      const response = await sendMessage(query)
-      handleApiResponse(response, false)
+      await sendMessageWithCallback(query, setMessages, {
+        onStart: () => {
+          setButtonClicked(true)
+        },
+        onSuccess: (response) => {
+          setAiReplied(true)
+          handleApiResponse(response, false)
+        },
+        onError: (error) => {
+          if (import.meta.env.DEV) {
+            logger.apiError("/agent/prompt", error)
+          }
+          handleApiResponse("Sorry, I encountered an error.", true)
+        },
+      })
     } catch (error) {
       if (import.meta.env.DEV) {
-        logger.apiError("/api/ask", error)
+        logger.apiError("/agent/prompt", error)
       }
       handleApiResponse("Sorry, I encountered an error.", true)
     }
   }
 
+  const handleClearConversation = () => {
+    setMessages([])
+    setCurrentUserMessage("")
+    setAgentResponse("")
+    setIsAgentLoading(false)
+    setButtonClicked(false)
+    setAiReplied(false)
+  }
+
   return (
-    <div className="flex h-screen w-screen flex-col overflow-hidden bg-app-background">
-      <Navigation />
+    <ThemeProvider>
+      <div className="flex h-screen w-screen flex-col overflow-hidden bg-app-background">
+        <Navigation />
 
-      <div className="flex flex-1 overflow-hidden">
-        <Sidebar />
+        <div className="flex flex-1 overflow-hidden">
+          <Sidebar />
 
-        <div className="flex min-w-0 flex-1 flex-col border-l border-action-background bg-app-background">
-          <div className="relative flex-grow">
-            <MainArea
-              buttonClicked={buttonClicked}
-              setButtonClicked={setButtonClicked}
-              aiReplied={aiReplied}
-              setAiReplied={setAiReplied}
-            />
-          </div>
+          <div className="flex min-w-0 flex-1 flex-col border-l border-action-background bg-app-background">
+            <div className="relative flex-grow">
+              <MainArea
+                buttonClicked={buttonClicked}
+                setButtonClicked={setButtonClicked}
+                aiReplied={aiReplied}
+                setAiReplied={setAiReplied}
+                chatHeight={chatHeightValue}
+                isExpanded={isExpanded}
+              />
+            </div>
 
-          <div className="flex min-h-[76px] w-full flex-none flex-col items-center justify-center gap-0 bg-overlay-background p-0 md:min-h-[96px]">
-            <ChatArea
-              messages={messages}
-              setMessages={setMessages}
-              setButtonClicked={setButtonClicked}
-              setAiReplied={setAiReplied}
-              isBottomLayout={true}
-              showCoffeeDropdown={true}
-              onDropdownSelect={handleDropdownSelect}
-              onUserInput={handleUserInput}
-              onApiResponse={handleApiResponse}
-              currentUserMessage={currentUserMessage}
-              agentResponse={agentResponse}
-              isAgentLoading={isAgentLoading}
-            />
+            <div className="flex min-h-[76px] w-full flex-none flex-col items-center justify-center gap-0 bg-overlay-background p-0 md:min-h-[96px]">
+              <ChatArea
+                messages={messages}
+                setMessages={setMessages}
+                setButtonClicked={setButtonClicked}
+                setAiReplied={setAiReplied}
+                isBottomLayout={true}
+                showCoffeeDropdown={true}
+                onDropdownSelect={handleDropdownSelect}
+                onUserInput={handleUserInput}
+                onApiResponse={handleApiResponse}
+                onClearConversation={handleClearConversation}
+                currentUserMessage={currentUserMessage}
+                agentResponse={agentResponse}
+                isAgentLoading={isAgentLoading}
+                chatRef={chatRef}
+              />
+            </div>
           </div>
         </div>
       </div>
-    </div>
+    </ThemeProvider>
   )
 }
 

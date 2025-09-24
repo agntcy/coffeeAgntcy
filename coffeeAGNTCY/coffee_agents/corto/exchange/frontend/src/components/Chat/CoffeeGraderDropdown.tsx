@@ -78,7 +78,7 @@ const CoffeeGraderDropdown: React.FC<CoffeeGraderDropdownProps> = ({
         </div>
         <div className="relative order-1 h-6 w-6 flex-none flex-grow-0">
           <div
-            className={`absolute bottom-[36.35%] left-[26.77%] right-[26.77%] top-[36.35%] bg-node-icon-background transition-transform duration-300 ease-in-out ${isOpen ? "rotate-180" : ""} `}
+            className={`absolute bottom-[36.35%] left-[26.77%] right-[26.77%] top-[36.35%] bg-chat-dropdown-icon transition-transform duration-300 ease-in-out ${isOpen ? "rotate-180" : ""} `}
             style={{ clipPath: "polygon(50% 100%, 0% 0%, 100% 0%)" }}
           ></div>
         </div>
@@ -93,7 +93,7 @@ const CoffeeGraderDropdown: React.FC<CoffeeGraderDropdownProps> = ({
             className="mx-0.5 my-0.5 flex min-h-10 w-[calc(100%-4px)] cursor-pointer items-center rounded bg-chat-dropdown-background px-2 py-[6px] transition-colors duration-200 ease-in-out hover:bg-chat-background-hover"
             onClick={() => handleItemClick(item)}
           >
-            <div className="w-full break-words font-inter text-sm font-normal leading-5 tracking-[0%] text-white">
+            <div className="w-full break-words font-inter text-sm font-normal leading-5 tracking-[0%] text-chat-text">
               {item}
             </div>
           </div>
