@@ -15,7 +15,6 @@ from agent_executor import ShipperAgentExecutor
 from config.config import (
     DEFAULT_MESSAGE_TRANSPORT,
     TRANSPORT_SERVER_ENDPOINT,
-    GROUP_CHAT_TOPIC,
     ENABLE_HTTP
 )
 from card import AGENT_CARD
@@ -41,7 +40,7 @@ async def run_transport(server, transport_type, endpoint, block):
         personal_topic = A2AProtocol.create_agent_topic(AGENT_CARD)
         transport = factory.create_transport(transport_type, endpoint=endpoint, name=f"default/default/{personal_topic}")
         broadcast_bridge = factory.create_bridge(
-            server, transport=transport, topic=GROUP_CHAT_TOPIC
+            server, transport=transport
         )
         
         await broadcast_bridge.start(blocking=False)

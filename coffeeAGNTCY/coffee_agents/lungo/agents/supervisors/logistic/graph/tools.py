@@ -26,7 +26,6 @@ from agents.supervisors.logistic.graph.models import CreateOrderArgs
 from agents.supervisors.logistic.graph.shared import get_factory
 from config.config import (
   DEFAULT_MESSAGE_TRANSPORT,
-  GROUP_CHAT_TOPIC,
   TRANSPORT_SERVER_ENDPOINT,
 )
 from common.logistic_states import LogisticStatus
@@ -120,9 +119,9 @@ async def create_order(farm: str, quantity: int, price: float) -> str:
   try:
     responses = await client.broadcast_message(
       request,
-      broadcast_topic=f"{GROUP_CHAT_TOPIC}-{uuid4()}",
+      broadcast_topic=f"{uuid4()}",
       recipients=recipients,
-      end_message="DELIVERED",
+      end_messages=["DELIVERED"],
       group_chat=True,
       timeout=60,
     )
