@@ -5,7 +5,6 @@ import logging
 import re
 from typing import Any, Sequence
 from uuid import uuid4
-import datetime
 
 from a2a.types import (
   Message,
