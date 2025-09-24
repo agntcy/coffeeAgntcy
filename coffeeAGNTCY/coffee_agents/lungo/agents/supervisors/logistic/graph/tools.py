@@ -5,6 +5,7 @@ import logging
 import re
 from typing import Any, Sequence
 from uuid import uuid4
+import datetime
 
 from a2a.types import (
   Message,
@@ -15,6 +16,7 @@ from a2a.types import (
   TextPart,
 )
 from agntcy_app_sdk.protocols.a2a.protocol import A2AProtocol
+from fastapi import HTTPException
 from langchain_core.messages import ToolMessage
 from langchain_core.tools import tool
 
@@ -70,12 +72,16 @@ async def create_order(farm: str, quantity: int, price: float) -> str:
   if not farm:
     return "No farm provided. Please specify a farm."
 
-  factory = get_factory()
-  transport = factory.create_transport(
-    DEFAULT_MESSAGE_TRANSPORT,
-    endpoint=TRANSPORT_SERVER_ENDPOINT,
-    name="default/default/logistic_graph",
-  )
+  try:
+    factory = get_factory()
+    transport = factory.create_transport(
+      DEFAULT_MESSAGE_TRANSPORT,
+      endpoint=TRANSPORT_SERVER_ENDPOINT,
+      name="default/default/logistic_graph",
+    )
+  except Exception as e:
+    logger.error("Failed to create factory or transport: %s", e)
+    raise HTTPException(status_code=500, detail="Internal server error: failed to create transport")
 
   try:
     client = await factory.create_client(
@@ -104,6 +110,7 @@ async def create_order(farm: str, quantity: int, price: float) -> str:
     )
   except Exception as e:
     logger.error("Failed to create A2A client or message request: %s", e)
+    raise HTTPException(status_code=500, detail="Internal server error: failed to create A2A client or message request")
 
   recipients = [
     A2AProtocol.create_agent_topic(card)
@@ -111,14 +118,18 @@ async def create_order(farm: str, quantity: int, price: float) -> str:
   ]
   logger.info("Broadcasting order to recipients: %s", recipients)
 
-  responses = await client.broadcast_message(
-    request,
-    broadcast_topic=GROUP_CHAT_TOPIC,
-    recipients=recipients,
-    end_message="DELIVERED",
-    group_chat=True,
-    timeout=60,
-  )
+  try:
+    responses = await client.broadcast_message(
+      request,
+      broadcast_topic=f"{GROUP_CHAT_TOPIC}-{uuid4()}",
+      recipients=recipients,
+      end_message="DELIVERED",
+      group_chat=True,
+      timeout=60,
+    )
+  except Exception as e:
+    logger.error("Failed to broadcast message: %s", e)
+    raise HTTPException(status_code=500, detail="Internal server error: failed to process order")
 
   logger.debug("Raw group chat responses: %s", responses)
   formatted = _summarize_a2a_responses(responses)

@@ -1,6 +1,7 @@
 # Copyright AGNTCY Contributors (https://github.com/agntcy)
 # SPDX-License-Identifier: Apache-2.0
 
+import asyncio
 import logging
 
 from fastapi import FastAPI, HTTPException
@@ -55,9 +56,12 @@ async def handle_prompt(request: PromptRequest):
   try:
     # session_start() # Start a new tracing session
     # Process the prompt using the exchange graph
-    result = await logistic_graph.serve(request.prompt)
+    result = await asyncio.wait_for(logistic_graph.serve(request.prompt), timeout=7)
     logger.info(f"Final result from LangGraph: {result}")
     return {"response": result}
+  except asyncio.TimeoutError:
+    logger.error("Request timed out after 7 seconds")
+    raise HTTPException(status_code=504, detail="Request timed out after 7 seconds")
   except ValueError as ve:
     raise HTTPException(status_code=400, detail=str(ve))
   except Exception as e:
