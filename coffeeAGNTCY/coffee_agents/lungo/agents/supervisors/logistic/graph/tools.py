@@ -1,6 +1,7 @@
 # Copyright AGNTCY Contributors (https://github.com/agntcy)
 # SPDX-License-Identifier: Apache-2.0
 
+import asyncio
 import logging
 import re
 from typing import Any, Sequence
@@ -116,18 +117,32 @@ async def create_order(farm: str, quantity: int, price: float) -> str:
   ]
   logger.info("Broadcasting order to recipients: %s", recipients)
 
-  try:
-    responses = await client.broadcast_message(
-      request,
-      broadcast_topic=f"{uuid4()}",
-      recipients=recipients,
-      end_messages=["DELIVERED"],
-      group_chat=True,
-      timeout=60,
-    )
-  except Exception as e:
-    logger.error("Failed to broadcast message: %s", e)
-    raise HTTPException(status_code=500, detail="Internal server error: failed to process order")
+  # Retry configuration
+  max_retries = 3
+  base_delay = 2.0  # seconds
+
+  for attempt in range(max_retries):
+    try:
+      responses = await client.broadcast_message(
+        request,
+        broadcast_topic=f"{uuid4()}",
+        recipients=recipients,
+        end_message="DELIVERED",
+        group_chat=True,
+        timeout=60,
+      )
+      # If we get here, the call succeeded
+      break
+
+    except Exception as e:
+      if attempt < max_retries - 1:  # Not the last attempt
+        delay = base_delay * (2 ** attempt)  # Exponential backoff: 2, 4, 8 seconds
+        logger.warning("Broadcast attempt %d failed: %s. Retrying in %.1f seconds...",
+                      attempt + 1, str(e), delay)
+        await asyncio.sleep(delay)
+      else:  # Last attempt failed
+        logger.error("Failed to broadcast message after %d attempts: %s", max_retries, e)
+        raise HTTPException(status_code=500, detail="Internal server error: failed to process order after retries")
 
   logger.debug("Raw group chat responses: %s", responses)
   formatted = _summarize_a2a_responses(responses)
