@@ -70,6 +70,7 @@ services:
       - DEFAULT_MESSAGE_TRANSPORT=SLIM # Do not change. SLIM is required for group conversation.
       - TRANSPORT_SERVER_ENDPOINT=http://logistic-slim:56400
       - OTLP_HTTP_ENDPOINT=${OTLP_HTTP_ENDPOINT:-http://otel-collector:4318}
+      - LLM_STREAMING=${LLM_STREAMING:-}
     ports:
       - "9090:9090"
 
