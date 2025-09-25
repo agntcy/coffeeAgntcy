@@ -23,7 +23,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # Initialize a multi-protocol, multi-transport agntcy factory.
-factory = AgntcyFactory("lungo_accountant", enable_tracing=False)
+factory = AgntcyFactory("lungo_accountant", enable_tracing=True)
 
 async def run_http_server(server):
     """Run the HTTP/REST server."""

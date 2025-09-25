@@ -30,6 +30,7 @@ from config.config import (
   TRANSPORT_SERVER_ENDPOINT,
 )
 from common.logistic_states import LogisticStatus
+from ioa_observe.sdk.decorators import tool as ioa_tool_decorator
 
 logger = logging.getLogger("lungo.logistic.supervisor.tools")
 
@@ -48,6 +49,7 @@ def next_tools_or_end(state: dict[str, Any]) -> str:
 
 
 @tool(args_schema=CreateOrderArgs)
+@ioa_tool_decorator(name="create_order")
 async def create_order(farm: str, quantity: int, price: float) -> str:
   """
   Broadcast a coffee order request to shipper, farm, and accountant agents via SLIM.

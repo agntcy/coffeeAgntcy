@@ -5,6 +5,7 @@ import logging
 from langgraph.graph import MessagesState
 from langchain_core.messages import AIMessage
 from langgraph.graph import StateGraph, END
+from ioa_observe.sdk.decorators import agent, graph
 
 logger = logging.getLogger("lungo.accountant_agent.agent")
 from common.logistic_states import (
@@ -27,6 +28,7 @@ class GraphState(MessagesState):
 
 
 # --- 3. Implement the Accountant Agent Class ---
+@agent(name="accountant_agent")
 class AccountantAgent:
     def __init__(self):
         """
@@ -75,7 +77,7 @@ class AccountantAgent:
         return {"messages": [AIMessage(idle_msg)]}
 
     # --- Graph Building Method ---
-
+    @graph(name="accountant_graph")
     def _build_graph(self):
         """
         Builds and compiles the LangGraph workflow with single node.
