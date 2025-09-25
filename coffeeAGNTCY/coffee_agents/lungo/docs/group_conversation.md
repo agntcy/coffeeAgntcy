@@ -58,7 +58,7 @@ To enable A2A Group communication over SLIM, you need to run the SLIM message bu
 Additionally, run the observability stack that includes OTEL Collector, Grafana, and ClickHouse DB. You can do this by executing the following command:
 
 ```sh
-docker-compose up slim nats clickhouse-server otel-collector grafana
+docker-compose up slim clickhouse-server otel-collector grafana
 ```
 
 **Step 2: Run the Group Conversation Stack**
