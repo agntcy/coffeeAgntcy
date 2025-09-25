@@ -23,7 +23,7 @@ config:
   defaultMessageTransport: ""
   otlpHttpEndpoint: ""
   identityApiServerUrl: "" # Identity API endpoint
-#  llmStreaming: false
+#  llmStreaming: False
 
 # You can use your own config here for service account
 serviceaccount:
