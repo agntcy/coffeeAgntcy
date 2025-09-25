@@ -201,7 +201,7 @@ services:
     platform: linux/amd64
     environment:
       - DEFAULT_MESSAGE_TRANSPORT=SLIM # Do not change. SLIM is required for group conversation.
-      - TRANSPORT_SERVER_ENDPOINT=http://logistic-slim:56400
+      - TRANSPORT_SERVER_ENDPOINT=http://slim:46357
       - OTLP_HTTP_ENDPOINT=${OTLP_HTTP_ENDPOINT:-http://otel-collector:4318}
       - ENABLE_HTTP=true
     ports:
@@ -215,11 +215,12 @@ services:
     platform: linux/amd64
     environment:
       - DEFAULT_MESSAGE_TRANSPORT=SLIM # Do not change. SLIM is required for group conversation.
-      - TRANSPORT_SERVER_ENDPOINT=http://logistic-slim:56400
+      - TRANSPORT_SERVER_ENDPOINT=http://slim:46357
       - OTLP_HTTP_ENDPOINT=${OTLP_HTTP_ENDPOINT:-http://otel-collector:4318}
       - ENABLE_HTTP=true
     ports:
       - "9092:9092"
+
   logistic-farm:
     build:
       context: ../../..
@@ -228,23 +229,11 @@ services:
     platform: linux/amd64
     environment:
       - DEFAULT_MESSAGE_TRANSPORT=SLIM # Do not change. SLIM is required for group conversation.
-      - TRANSPORT_SERVER_ENDPOINT=http://logistic-slim:56400
+      - TRANSPORT_SERVER_ENDPOINT=http://slim:46357
       - OTLP_HTTP_ENDPOINT=${OTLP_HTTP_ENDPOINT:-http://otel-collector:4318}
       - ENABLE_HTTP=true
     ports:
       - "9093:9093"
-
-  logistic-slim:
-    image: ghcr.io/agntcy/slim:0.4.0
-    container_name: logistic-slim
-    ports:
-      - "56400:56400"
-    environment:
-      - PASSWORD=${SLIM_GATEWAY_PASSWORD:-dummy_password}
-      - CONFIG_PATH=/config.yaml
-    volumes:
-      - ./config/docker/slim/logistic-server-config.yaml:/config.yaml
-    command: ["/slim", "--config", "/config.yaml"]
 
   logistic-supervisor:
     build:
@@ -262,7 +251,7 @@ services:
       - OPENAI_MODEL_NAME=${OPENAI_MODEL_NAME:-}
       - LLM_PROVIDER=${LLM_PROVIDER}
       - DEFAULT_MESSAGE_TRANSPORT=SLIM # Do not change. SLIM is required for group conversation.
-      - TRANSPORT_SERVER_ENDPOINT=http://logistic-slim:56400
+      - TRANSPORT_SERVER_ENDPOINT=http://slim:46357
       - OTLP_HTTP_ENDPOINT=${OTLP_HTTP_ENDPOINT:-http://otel-collector:4318}
       - LLM_STREAMING=${LLM_STREAMING:-}
     ports:

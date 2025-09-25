@@ -51,11 +51,25 @@ User Prompt
 
 ## Run With Docker Compose (includes SLIM transport)
 
+**Step 1: Run the SLIM Message Bus Gateway and Observability stack**
+
+To enable A2A Group communication over SLIM, you need to run the SLIM message bus gateway.
+
+Additionally, run the observability stack that includes OTEL Collector, Grafana, and ClickHouse DB. You can do this by executing the following command:
+
 ```sh
-docker compose -f docker-compose.logistic.yaml up
+docker-compose up slim nats clickhouse-server otel-collector grafana
 ```
 
-Starts: supervisor, shipper, accountant, farm, SLIM transport.
+**Step 2: Run the Group Conversation Stack**
+
+If you want to run the group conversation stack separately, you can do so by running the following command:
+
+```sh
+docker-compose up logistic-farm logistic-supervisor logistic-shipper logistic-accountant
+```
+
+This will start the supervisor, shipper, accountant, farm, and SLIM transport services.
 
 ---
 
@@ -76,4 +90,23 @@ make accountant
 Terminal 4:
 ```sh
 make logistic-farm
+```
+
+## Testing the Group Conversation
+
+To test the group conversation, you can execute the following command:
+
+```sh
+curl -X POST http://127.0.0.1:9090/agent/prompt \
+  -H "Content-Type: application/json" \
+  -d '{
+    "prompt": "I want to order  5000 lbs of coffee for 3.52 $ from the Tatooine farm."
+  }'
+```
+
+Expected output:
+```json
+{
+  "response": "Order ORD-3A7F5B2C from Tatooine for 500 units at $3.50 has been successfully delivered."
+}
 ```
