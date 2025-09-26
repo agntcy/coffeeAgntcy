@@ -7,9 +7,14 @@ from uvicorn import Config, Server
 from agntcy_app_sdk.factory import AgntcyFactory
 from agntcy_app_sdk.protocols.a2a.protocol import A2AProtocol
 
+from starlette.responses import JSONResponse
+from starlette.routing import Route
+
 from a2a.server.apps import A2AStarletteApplication
 from a2a.server.tasks import InMemoryTaskStore
 from a2a.server.request_handlers import DefaultRequestHandler
+
+from agents.logistics.accountant.card import AGENT_CARD as ACCOUNTANT_CARD
 
 from agent_executor import AccountantAgentExecutor
 from config.config import (
@@ -24,6 +29,43 @@ load_dotenv()
 
 # Initialize a multi-protocol, multi-transport agntcy factory.
 factory = AgntcyFactory("lungo_accountant", enable_tracing=True)
+
+class CustomA2AStarletteApplication(A2AStarletteApplication):
+    def routes(
+            self,
+            agent_card_url: str = '/.well-known/agent.json',
+            extended_agent_card_url: str = '/agent/authenticatedExtendedCard',
+            rpc_url: str = '/',
+    ) -> list[Route]:
+        """Extend the routes to include custom endpoints."""
+
+        # Define the liveness probe endpoint
+        async def liveness_probe(request):
+            try:
+                transport = factory.create_transport(
+                    DEFAULT_MESSAGE_TRANSPORT,
+                    endpoint=TRANSPORT_SERVER_ENDPOINT,
+                    name="default/default/liveness_probe",
+                )
+                _ = await asyncio.wait_for(
+                    factory.create_client(
+                        "A2A",
+                        agent_topic=A2AProtocol.create_agent_topic(ACCOUNTANT_CARD),
+                        transport=transport,
+                    ),
+                    timeout=30,
+                )
+                return JSONResponse({"status": "alive"})
+            except asyncio.TimeoutError:
+                return JSONResponse({"error": "Timeout occurred while creating client."}, status_code=500)
+            except Exception as e:
+                return JSONResponse({"error": f"Error occurred: {str(e)}"}, status_code=500)
+
+        # Add the liveness route to the existing routes
+        custom_routes = [
+            Route("/v1/health", liveness_probe, methods=["GET"]),
+        ]
+        return super().routes(agent_card_url, extended_agent_card_url, rpc_url) + custom_routes
 
 async def run_http_server(server):
     """Run the HTTP/REST server."""
@@ -55,7 +97,7 @@ async def main(enable_http: bool):
         task_store=InMemoryTaskStore(),
     )
 
-    server = A2AStarletteApplication(
+    server = CustomA2AStarletteApplication(
         agent_card=AGENT_CARD, http_handler=request_handler
     )
 
