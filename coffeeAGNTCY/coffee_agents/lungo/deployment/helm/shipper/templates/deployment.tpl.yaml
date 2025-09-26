@@ -42,16 +42,16 @@ spec:
           httpGet:
             path: {{ .Values.probes.endpoint }}
             port: {{ .Values.probes.port }}
-          initialDelaySeconds: 20
-          periodSeconds: 10
+          initialDelaySeconds: {{ .Values.probes.initialDelaySeconds }}
+          periodSeconds: {{ .Values.probes.periodSeconds }}
         {{ end }}
         {{ if .Values.probes.livenessProbeEnabled }}
         livenessProbe:
           httpGet:
             path: {{ .Values.probes.endpoint }}
             port: {{ .Values.probes.port }}
-          initialDelaySeconds: 20
-          periodSeconds: 10
+          initialDelaySeconds: {{ .Values.probes.initialDelaySeconds }}
+          periodSeconds: {{ .Values.probes.periodSeconds }}
         {{ end }}
         envFrom:
           - configMapRef:
