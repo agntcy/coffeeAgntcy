@@ -44,6 +44,7 @@ spec:
             port: {{ .Values.probes.port }}
           initialDelaySeconds: {{ .Values.probes.initialDelaySeconds }}
           periodSeconds: {{ .Values.probes.periodSeconds }}
+          timeoutSeconds: {{ .Values.probes.timeoutSeconds }}
         {{ end }}
         {{ if .Values.probes.livenessProbeEnabled }}
         livenessProbe:
@@ -52,6 +53,7 @@ spec:
             port: {{ .Values.probes.port }}
           initialDelaySeconds: {{ .Values.probes.initialDelaySeconds }}
           periodSeconds: {{ .Values.probes.periodSeconds }}
+          timeoutSeconds: {{ .Values.probes.timeoutSeconds }}
         {{ end }}
         envFrom:
           - configMapRef:
