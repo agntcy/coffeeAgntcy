@@ -9,7 +9,9 @@ receivers:
         endpoint: "0.0.0.0:4317"
       http:
         endpoint: "0.0.0.0:4318"
-        max_request_body_size: 10485760 # 10 MB
+
+processors:
+  batch: {}
 
 exporters:
   clickhouse:
