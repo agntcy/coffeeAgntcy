@@ -39,7 +39,7 @@ We currently provide two setups you can run to see how components from AGNTCY wo
 
 ### Built With
 
-- [AGNTCY App SDK](https://github.com/agntcy/app-sdk) = v0.2.8
+- [AGNTCY App SDK](https://github.com/agntcy/app-sdk) = v0.2.9
 - [SLIM](https://github.com/agntcy/slim) = v0.4.0
 - [A2A](https://github.com/a2aproject/a2a-python) = v0.3.0
 - [MCP](https://github.com/modelcontextprotocol/python-sdk) >= v1.10.0
