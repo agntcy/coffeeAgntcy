@@ -5,3 +5,4 @@ metadata:
   namespace: {{ .Release.Namespace }}
 data:
   VITE_EXCHANGE_APP_API_URL: "{{ .Values.config.exchangeAppApiUrl }}"
+  VITE_LOGISTICS_APP_API_URL: "{{ .Values.config.logisticsAppApiUrl }}"

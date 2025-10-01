@@ -130,6 +130,7 @@ services:
     platform: linux/amd64
     environment:
       - VITE_EXCHANGE_APP_API_URL=http://127.0.0.1:8000
+      - VITE_LOGISTICS_APP_API_URL=http://127.0.0.1:9090
     depends_on:
       - exchange-server
     ports:
