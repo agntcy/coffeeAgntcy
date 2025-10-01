@@ -9,7 +9,7 @@
 
 This reference agentic application demonstrates how to:
 
-- How **SLIM** enables **request-reply** and **unicast (fire & forget)** patterns
+- How **SLIM** enables **request-reply** , **unicast (fire & forget)** and **group communication** patterns.
 - How tools and transports can be reused across agent implementations (e.g., **SLIM**, **NATS**, **MCP**)
 - How protocol-agnostic bridges and clients interconnect modular agents
 - How to orchestrate agents using **LangGraph** for structured and stateful workflows
@@ -31,7 +31,7 @@ We currently provide two setups you can run to see how components from AGNTCY wo
   👉 [View the Corto README](coffeeAGNTCY/coffee_agents/corto)
 
 - **Lungo**:  
-  A more advanced setup that will evolve over time as we mature components. The first release shows agents that use A2A communication via configurable transports (default: SLIM), are structured as directed LangGraphs, and include an MCP weather-aware farm that fetches live data. It also shows how to enable observability using Observe SDK.  
+  A more advanced setup that will evolve over time as we mature components. The first release shows agents that use A2A communication via configurable transports (default: SLIM), are structured as directed LangGraphs, and include an MCP weather-aware farm that fetches live data. It also shows how to enable observability using Observe SDK. It also shows group communication patterns with sub agents like farms, shipper, accountant fulfilling coffee order.
 
   👉 [View the Lungo README](coffeeAGNTCY/coffee_agents/lungo)
 
@@ -39,7 +39,7 @@ We currently provide two setups you can run to see how components from AGNTCY wo
 
 ### Built With
 
-- [AGNTCY App SDK](https://github.com/agntcy/app-sdk) = v0.2.2
+- [AGNTCY App SDK](https://github.com/agntcy/app-sdk) = v0.2.8
 - [SLIM](https://github.com/agntcy/slim) = v0.4.0
 - [A2A](https://github.com/a2aproject/a2a-python) = v0.3.0
 - [MCP](https://github.com/modelcontextprotocol/python-sdk) >= v1.10.0
