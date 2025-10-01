@@ -129,7 +129,8 @@ services:
     container_name: ui-lungo
     platform: linux/amd64
     environment:
-      - VITE_EXCHANGE_APP_API_URL=http://127.0.0.1:8000
+      - VITE_EXCHANGE_APP_API_URL=http://exchange-server:8000
+      - VITE_LOGISTICS_APP_API_URL=http://logistic-supervisor:9090
     depends_on:
       - exchange-server
     ports:
@@ -138,7 +139,7 @@ services:
   weather-mcp-server:
     build:
       context: ../../..
-      dockerfile: coffeeAGNTCY/coffee_agents/lungo/docker/Dockerfile.weather-mcp  
+      dockerfile: coffeeAGNTCY/coffee_agents/lungo/docker/Dockerfile.weather-mcp
     image: ghcr.io/agntcy/coffee-agntcy/weather-mcp-server:latest
     container_name: weather-mcp-server
     platform: linux/amd64
@@ -161,7 +162,15 @@ services:
         soft: 262144
         hard: 262144
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8123/ping"]
+      test:
+        [
+          "CMD",
+          "wget",
+          "--no-verbose",
+          "--tries=1",
+          "--spider",
+          "http://localhost:8123/ping",
+        ]
       interval: 5s
       timeout: 3s
       retries: 5
