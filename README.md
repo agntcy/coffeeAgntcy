@@ -31,7 +31,7 @@ We currently provide two setups you can run to see how components from AGNTCY wo
   👉 [View the Corto README](coffeeAGNTCY/coffee_agents/corto)
 
 - **Lungo**:  
-  A more advanced setup that will evolve over time as we mature components. The first release shows agents that use A2A communication via configurable transports (default: SLIM), are structured as directed LangGraphs, and include an MCP weather-aware farm that fetches live data. It also shows how to enable observability using Observe SDK. It also shows group communication patterns with sub agents like farms, shipper, accountant fulfilling coffee order.
+  A more advanced setup that will evolve over time as we mature components. There are two setups: 1) pub/sub A2A over NATS as default transport, and 2) group communication over SLIM as default. Agents are structured as directed LangGraphs with A2A communication using configurable transports. It includes an MCP weather-aware farm that fetches live data, observability via the Observe SDK, identity, and a group communication pattern with specialized agents (farms, shipper, accountant) that collaborate to fulfill coffee orders.
 
   👉 [View the Lungo README](coffeeAGNTCY/coffee_agents/lungo)
 
