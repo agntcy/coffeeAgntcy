@@ -22,8 +22,8 @@ from a2a.utils import (
     new_task,
 )
 
-from agent import FarmAgent
-from card import AGENT_CARD
+from agents.farms.brazil.agent import FarmAgent
+from agents.farms.brazil.card import AGENT_CARD
 
 logger = logging.getLogger("longo.brazil_farm_agent.agent_executor")
 

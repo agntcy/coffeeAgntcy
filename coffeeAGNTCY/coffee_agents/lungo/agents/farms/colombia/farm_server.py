@@ -8,17 +8,17 @@ from a2a.server.apps import A2AStarletteApplication
 from agntcy_app_sdk.protocols.a2a.protocol import A2AProtocol
 from a2a.server.tasks import InMemoryTaskStore
 from a2a.server.request_handlers import DefaultRequestHandler
-from agent_executor import FarmAgentExecutor
+from agents.farms.colombia.agent_executor import FarmAgentExecutor
 from config.config import (
     DEFAULT_MESSAGE_TRANSPORT,
     TRANSPORT_SERVER_ENDPOINT,
     FARM_BROADCAST_TOPIC,
     ENABLE_HTTP,
 )
-from card import AGENT_CARD
-from agent import factory
+from agents.farms.colombia.card import AGENT_CARD
+from agents.farms.colombia.agent import factory
 from dotenv import load_dotenv
-from utils import create_badge_for_colombia_farm
+from agents.farms.colombia.utils import create_badge_for_colombia_farm
 
 load_dotenv()
 

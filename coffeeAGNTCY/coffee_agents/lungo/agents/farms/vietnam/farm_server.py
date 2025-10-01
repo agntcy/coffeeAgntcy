@@ -10,17 +10,17 @@ from a2a.server.apps import A2AStarletteApplication
 from a2a.server.tasks import InMemoryTaskStore
 from a2a.server.request_handlers import DefaultRequestHandler
 
-from agent_executor import FarmAgentExecutor
+from agents.farms.vietnam.agent_executor import FarmAgentExecutor
 from config.config import (
     DEFAULT_MESSAGE_TRANSPORT,
     TRANSPORT_SERVER_ENDPOINT,
     FARM_BROADCAST_TOPIC,
     ENABLE_HTTP,
 )
-from card import AGENT_CARD
+from agents.farms.vietnam.card import AGENT_CARD
 from dotenv import load_dotenv
 
-from utils import create_badge_for_vietnam_farm
+from agents.farms.vietnam.utils import create_badge_for_vietnam_farm
 
 load_dotenv()
 

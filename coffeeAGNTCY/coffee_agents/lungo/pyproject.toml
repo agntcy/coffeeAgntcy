@@ -26,6 +26,8 @@ dependencies = [
     "ioa-observe-sdk==1.0.18",
     "identity-service-sdk==0.0.3",
     "agntcy-app-sdk==0.2.5",
+    "pytest>=7.4.4",
+    "pytest-xprocess>=1.0.2",
 ]
 
 [project.optional-dependencies]

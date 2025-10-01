@@ -19,7 +19,7 @@ from a2a.types import (
 from langchain_core.tools import tool
 from langchain_core.messages import AnyMessage, ToolMessage
 from agntcy_app_sdk.protocols.a2a.protocol import A2AProtocol
-from graph.shared import get_factory
+from agents.supervisors.auction.graph.shared import get_factory
 from config.config import (
     DEFAULT_MESSAGE_TRANSPORT, 
     TRANSPORT_SERVER_ENDPOINT, 
