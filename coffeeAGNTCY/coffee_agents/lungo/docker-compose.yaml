@@ -5,7 +5,6 @@ services:
       dockerfile: coffeeAGNTCY/coffee_agents/lungo/docker/Dockerfile.brazil-farm
     image: ghcr.io/agntcy/coffee-agntcy/brazil-farm:latest
     container_name: brazil-farm-server
-    platform: linux/amd64
     environment:
       - FARM_AGENT_HOST=brazil-farm-server
       - FARM_AGENT_PORT=9999
@@ -30,7 +29,6 @@ services:
       dockerfile: coffeeAGNTCY/coffee_agents/lungo/docker/Dockerfile.colombia-farm
     image: ghcr.io/agntcy/coffee-agntcy/colombia-farm:latest
     container_name: colombia-farm-server
-    platform: linux/amd64
     environment:
       - FARM_AGENT_HOST=colombia-farm-server
       - FARM_AGENT_PORT=9998
@@ -55,7 +53,6 @@ services:
       dockerfile: coffeeAGNTCY/coffee_agents/lungo/docker/Dockerfile.vietnam-farm
     image: ghcr.io/agntcy/coffee-agntcy/vietnam-farm:latest
     container_name: vietnam-farm-server
-    platform: linux/amd64
     environment:
       - FARM_AGENT_HOST=vietnam-farm-server
       - FARM_AGENT_PORT=9997
@@ -102,7 +99,6 @@ services:
       dockerfile: coffeeAGNTCY/coffee_agents/lungo/docker/Dockerfile.exchange
     image: ghcr.io/agntcy/coffee-agntcy/lungo-exchange:latest
     container_name: exchange-server-lungo
-    platform: linux/amd64
     environment:
       - FARM_AGENT_HOST=farm-server
       - FARM_AGENT_PORT=9999
@@ -127,7 +123,6 @@ services:
       dockerfile: coffeeAGNTCY/coffee_agents/lungo/docker/Dockerfile.ui
     image: ghcr.io/agntcy/coffee-agntcy/lungo-ui:latest
     container_name: ui-lungo
-    platform: linux/amd64
     environment:
       - VITE_EXCHANGE_APP_API_URL=http://127.0.0.1:8000
       - VITE_LOGISTICS_APP_API_URL=http://127.0.0.1:9090
@@ -142,7 +137,6 @@ services:
       dockerfile: coffeeAGNTCY/coffee_agents/lungo/docker/Dockerfile.weather-mcp  
     image: ghcr.io/agntcy/coffee-agntcy/weather-mcp-server:latest
     container_name: weather-mcp-server
-    platform: linux/amd64
     environment:
       - DEFAULT_MESSAGE_TRANSPORT=${DEFAULT_MESSAGE_TRANSPORT:-NATS}
       - TRANSPORT_SERVER_ENDPOINT=${TRANSPORT_SERVER_ENDPOINT:-nats://nats:4222}
@@ -200,7 +194,6 @@ services:
       context: ../../..
       dockerfile: coffeeAGNTCY/coffee_agents/lungo/docker/Dockerfile.logistic-shipper
     image: ghcr.io/agntcy/coffee-agntcy/logistic-shipper:latest
-    platform: linux/amd64
     environment:
       - DEFAULT_MESSAGE_TRANSPORT=SLIM # Do not change. SLIM is required for group conversation.
       - TRANSPORT_SERVER_ENDPOINT=http://slim:46357
@@ -214,7 +207,6 @@ services:
       context: ../../..
       dockerfile: coffeeAGNTCY/coffee_agents/lungo/docker/Dockerfile.logistic-accountant
     image: ghcr.io/agntcy/coffee-agntcy/logistic-accountant:latest
-    platform: linux/amd64
     environment:
       - DEFAULT_MESSAGE_TRANSPORT=SLIM # Do not change. SLIM is required for group conversation.
       - TRANSPORT_SERVER_ENDPOINT=http://slim:46357
@@ -228,7 +220,6 @@ services:
       context: ../../..
       dockerfile: coffeeAGNTCY/coffee_agents/lungo/docker/Dockerfile.logistic-farm
     image: ghcr.io/agntcy/coffee-agntcy/logistic-farm:latest
-    platform: linux/amd64
     environment:
       - DEFAULT_MESSAGE_TRANSPORT=SLIM # Do not change. SLIM is required for group conversation.
       - TRANSPORT_SERVER_ENDPOINT=http://slim:46357
@@ -242,7 +233,6 @@ services:
       context: ../../..
       dockerfile: coffeeAGNTCY/coffee_agents/lungo/docker/Dockerfile.logistic-supervisor
     image: ghcr.io/agntcy/coffee-agntcy/logistic-supervisor:latest
-    platform: linux/amd64
     environment:
       - AZURE_OPENAI_ENDPOINT=${AZURE_OPENAI_ENDPOINT:-}
       - AZURE_OPENAI_DEPLOYMENT=${AZURE_OPENAI_DEPLOYMENT:-}
