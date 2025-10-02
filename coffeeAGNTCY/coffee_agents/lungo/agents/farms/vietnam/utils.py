@@ -3,15 +3,13 @@
 
 import logging
 
-
-from services.identity_service_impl import IdentityServiceImpl
-
 from config.config import (
   IDENTITY_VIETNAM_AGENT_SERVICE_API_KEY,
   VIETNAM_FARM_AGENT_URL,
   IDENTITY_API_KEY,
   IDENTITY_API_SERVER_URL,
 )
+from services.identity_service_impl import IdentityServiceImpl
 
 logger = logging.getLogger("vietnam.utils")
 

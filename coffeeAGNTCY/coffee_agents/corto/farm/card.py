@@ -5,6 +5,7 @@ from a2a.types import (
     AgentCapabilities,
     AgentCard,
     AgentSkill)
+
 from config.config import FARM_AGENT_HOST, FARM_AGENT_PORT
 
 AGENT_SKILL = AgentSkill(

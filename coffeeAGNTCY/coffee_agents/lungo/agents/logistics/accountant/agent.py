@@ -2,17 +2,19 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import logging
-from langgraph.graph import MessagesState
+
 from langchain_core.messages import AIMessage
+from langgraph.graph import MessagesState
 from langgraph.graph import StateGraph, END
+
 from ioa_observe.sdk.decorators import agent, graph
 
-logger = logging.getLogger("lungo.accountant_agent.agent")
 from common.logistic_states import (
     LogisticStatus,
     extract_status,
 )
 
+logger = logging.getLogger("lungo.accountant_agent.agent")
 
 # --- 1. Define Node Names as Constants ---
 class NodeStates:

@@ -17,13 +17,12 @@ from a2a.types import (
     Part,
     TextPart,
     Task)
-
 from a2a.utils import (
     new_task,
 )
 
-from agent import FarmAgent
-from card import AGENT_CARD
+from agents.farms.colombia.agent import FarmAgent
+from agents.farms.colombia.card import AGENT_CARD
 
 logger = logging.getLogger("longo.colombia_farm_agent.agent_executor")
 

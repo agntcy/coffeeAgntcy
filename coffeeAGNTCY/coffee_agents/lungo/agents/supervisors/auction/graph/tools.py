@@ -6,7 +6,6 @@ from typing import Any, Union, Literal, NoReturn
 from uuid import uuid4
 from pydantic import BaseModel
 
-
 from a2a.types import (
     AgentCard,
     SendMessageRequest,
@@ -19,14 +18,9 @@ from a2a.types import (
 from langchain_core.tools import tool, ToolException
 from langchain_core.messages import AnyMessage, ToolMessage
 from agntcy_app_sdk.protocols.a2a.protocol import A2AProtocol
-from graph.shared import get_factory
-from config.config import (
-    DEFAULT_MESSAGE_TRANSPORT, 
-    TRANSPORT_SERVER_ENDPOINT, 
-    FARM_BROADCAST_TOPIC,
-    IDENTITY_API_KEY,
-    IDENTITY_API_SERVER_URL,
-)
+from ioa_observe.sdk.decorators import tool as ioa_tool_decorator
+
+
 from agents.farms.brazil.card import AGENT_CARD as brazil_agent_card
 from agents.farms.colombia.card import AGENT_CARD as colombia_agent_card
 from agents.farms.vietnam.card import AGENT_CARD as vietnam_agent_card
@@ -34,10 +28,17 @@ from agents.supervisors.auction.graph.models import (
     InventoryArgs,
     CreateOrderArgs,
 )
+from agents.supervisors.auction.graph.shared import get_factory
+from config.config import (
+    DEFAULT_MESSAGE_TRANSPORT, 
+    TRANSPORT_SERVER_ENDPOINT, 
+    FARM_BROADCAST_TOPIC,
+    IDENTITY_API_KEY,
+    IDENTITY_API_SERVER_URL,
+)
 from services.identity_service import IdentityService
 from services.identity_service_impl import IdentityServiceImpl
 
-from ioa_observe.sdk.decorators import tool as ioa_tool_decorator
 
 logger = logging.getLogger("lungo.supervisor.tools")
 

@@ -3,17 +3,19 @@
 
 import logging
 
+from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import uvicorn
-from config.logging_config import setup_logging
-from graph.graph import ExchangeGraph
-from dotenv import load_dotenv
-from graph import shared
+
 from agntcy_app_sdk.factory import AgntcyFactory
 from ioa_observe.sdk.tracing import session_start
+
+from agents.supervisors.auction.graph.graph import ExchangeGraph
+from agents.supervisors.auction.graph import shared
 from config.config import DEFAULT_MESSAGE_TRANSPORT
+from config.logging_config import setup_logging
 
 setup_logging()
 logger = logging.getLogger("lungo.supervisor.main")

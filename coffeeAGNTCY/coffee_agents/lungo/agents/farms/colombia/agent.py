@@ -15,11 +15,11 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import logging
+
 from langgraph.graph import MessagesState
 from langchain_core.messages import AIMessage
 from langchain_core.prompts import PromptTemplate
 from langgraph.graph import StateGraph, END
-from common.llm import get_llm
 
 from agntcy_app_sdk.factory import AgntcyFactory
 from ioa_observe.sdk.decorators import agent, graph
@@ -28,6 +28,7 @@ from config.config import (
     DEFAULT_MESSAGE_TRANSPORT,
     TRANSPORT_SERVER_ENDPOINT,
 )
+from common.llm import get_llm
 
 logger = logging.getLogger("lungo.colombia_farm_agent.agent")
 

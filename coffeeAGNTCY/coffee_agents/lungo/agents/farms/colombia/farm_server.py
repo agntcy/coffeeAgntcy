@@ -2,23 +2,26 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import asyncio
-from uvicorn import Config, Server
-from starlette.routing import Route
+
 from a2a.server.apps import A2AStarletteApplication
-from agntcy_app_sdk.protocols.a2a.protocol import A2AProtocol
-from a2a.server.tasks import InMemoryTaskStore
 from a2a.server.request_handlers import DefaultRequestHandler
-from agent_executor import FarmAgentExecutor
+from a2a.server.tasks import InMemoryTaskStore
+from dotenv import load_dotenv
+from starlette.routing import Route
+from uvicorn import Config, Server
+
+from agntcy_app_sdk.protocols.a2a.protocol import A2AProtocol
+
 from config.config import (
     DEFAULT_MESSAGE_TRANSPORT,
     TRANSPORT_SERVER_ENDPOINT,
     FARM_BROADCAST_TOPIC,
     ENABLE_HTTP,
 )
-from card import AGENT_CARD
-from agent import factory
-from dotenv import load_dotenv
-from utils import create_badge_for_colombia_farm
+from farms.colombia.agent import factory
+from farms.colombia.agent_executor import FarmAgentExecutor
+from farms.colombia.card import AGENT_CARD
+from farms.colombia.utils import create_badge_for_colombia_farm
 
 load_dotenv()
 

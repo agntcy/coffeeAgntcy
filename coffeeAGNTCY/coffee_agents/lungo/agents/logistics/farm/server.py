@@ -2,23 +2,23 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import asyncio
+
+from a2a.server.apps import A2AStarletteApplication
+from a2a.server.tasks import InMemoryTaskStore
+from a2a.server.request_handlers import DefaultRequestHandler
+from dotenv import load_dotenv
 from uvicorn import Config, Server
 
 from agntcy_app_sdk.factory import AgntcyFactory
 from agntcy_app_sdk.protocols.a2a.protocol import A2AProtocol
 
-from a2a.server.apps import A2AStarletteApplication
-from a2a.server.tasks import InMemoryTaskStore
-from a2a.server.request_handlers import DefaultRequestHandler
-
-from agent_executor import FarmAgentExecutor
+from agents.logistics.farm.agent_executor import FarmAgentExecutor
+from agents.logistics.farm.card import AGENT_CARD
 from config.config import (
     DEFAULT_MESSAGE_TRANSPORT,
     TRANSPORT_SERVER_ENDPOINT,
     ENABLE_HTTP
 )
-from card import AGENT_CARD
-from dotenv import load_dotenv
 
 load_dotenv()
 

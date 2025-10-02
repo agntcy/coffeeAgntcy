@@ -3,14 +3,13 @@
 
 import logging
 
-from services.identity_service_impl import IdentityServiceImpl
-
 from config.config import (
   IDENTITY_COLOMBIA_AGENT_SERVICE_API_KEY,
   COLOMBIA_FARM_AGENT_URL,
   IDENTITY_API_KEY,
   IDENTITY_API_SERVER_URL,
 )
+from services.identity_service_impl import IdentityServiceImpl
 
 logger = logging.getLogger("colombia.utils")
 
