@@ -18,10 +18,10 @@ from config.config import (
     FARM_BROADCAST_TOPIC,
     ENABLE_HTTP,
 )
-from farms.colombia.agent import factory
-from farms.colombia.agent_executor import FarmAgentExecutor
-from farms.colombia.card import AGENT_CARD
-from farms.colombia.utils import create_badge_for_colombia_farm
+from agents.farms.colombia.agent import factory
+from agents.farms.colombia.agent_executor import FarmAgentExecutor
+from agents.farms.colombia.card import AGENT_CARD
+from agents.farms.colombia.utils import create_badge_for_colombia_farm
 
 load_dotenv()
 
