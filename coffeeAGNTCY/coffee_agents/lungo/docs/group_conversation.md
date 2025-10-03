@@ -126,4 +126,4 @@ Expected output:
 
 ## Observability
 
-Follow substeps 1-3 from **Step 6: Visualize OTEL Traces in Grafana** in the main [README](../README.md) to set up Grafana and import the **Group Conversation Dashboard** [`group_conversation_dashboard.json`](../group_conversation_dashboard.json) for monitoring the logistics multi-agent workflow traces.
+See [Observability](../README.md#observability)
