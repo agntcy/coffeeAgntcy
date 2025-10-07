@@ -1,6 +1,7 @@
 """
 Sets up external integrations that are used in the CoffeeAGNTCY reference application.
 """
+import importlib
 import time
 import pytest
 import sys
@@ -9,14 +10,14 @@ from pathlib import Path
 from xprocess import ProcessStarter
 
 from fastapi.testclient import TestClient
-from unittest.mock import patch
+# from unittest.mock import patch
 
-from agents.supervisors.auction.main import app as auction_app
+# from agents.supervisors.auction.main import app as auction_app
 # from coffee_agents.lungo.agents.supervisors.auction.graph import shared
 # from coffee_agents.lungo.agents.supervisors.auction.graph.graph import ExchangeGraph
 # from agents.supervisors.logistic.main import app as logistics_app
 from test.integration.docker_helpers import up, down
-from test.integration.mocks.mock_llm import MockLangChainLLM
+# from test.integration.mocks.mock_llm import MockLangChainLLM
 
 LUNGO_DIR = Path(__file__).resolve().parents[2]  # coffee_agents/lungo
 
@@ -24,7 +25,7 @@ LUNGO_DIR = Path(__file__).resolve().parents[2]  # coffee_agents/lungo
 def orchestrate_session_services():
     print("\n--- Setting up session level service integrations ---")
     setup_transports()
-    # setup_observability()
+    setup_observability()
     setup_identity()
     print("--- Session level service setup complete. Tests can now run ---")
 
@@ -34,35 +35,106 @@ def orchestrate_session_services():
     # down(["docker-compose.yaml"])
     # print("--- Integrations torn down ---")
 
-@pytest.fixture(autouse=True, scope="function")
-def mock_llm_factory():
-    # Patch the symbol where it's LOOKED UP: yourpkg.llm.LLMFactory
-    with patch("common.llm.LLMFactory") as Factory:
-        instance = Factory.return_value
-        mock_llm = MockLangChainLLM("gpt-4o")
-        mock_llm.set_mock_responses({
-            "colombia": "Colombia farm inventory has 500 lb.",
-            "vietnam": "Vietnam farm inventory has 100 lb.",
-            "brazil": "Brazil farm inventory includes 20 lb.",
-        })
-        instance.get_llm.return_value = mock_llm
-        yield mock_llm
+# @pytest.fixture(autouse=True, scope="function")
+# def mock_llm_factory():
+#     # Patch the symbol where it's LOOKED UP: yourpkg.llm.LLMFactory
+#     with patch("common.llm.LLMFactory") as Factory:
+#         instance = Factory.return_value
+#         mock_llm = MockLangChainLLM("gpt-4o")
+#         mock_llm.set_mock_responses({
+#             "colombia": "Colombia farm inventory has 500 lb.",
+#             "vietnam": "Vietnam farm inventory has 100 lb.",
+#             "brazil": "Brazil farm inventory includes 20 lb.",
+#         })
+#         instance.get_llm.return_value = mock_llm
+#         yield mock_llm
         
-@pytest.fixture(autouse=True, scope="session")
-def disable_dotenv_load():
-    """Prevent farm/server modules from loading `.env` during tests."""
-    with patch("dotenv.load_dotenv", return_value=True):
-        yield
+# @pytest.fixture(autouse=True, scope="session")
+# def disable_dotenv_load():
+#     """Prevent farm/server modules from loading `.env` during tests."""
+#     with patch("dotenv.load_dotenv", return_value=True):
+#         yield
 
-@pytest.fixture(scope="session")
+def _purge_modules(prefixes):
+    to_delete = [m for m in list(sys.modules)
+                 if any(m == p or m.startswith(p + ".") for p in prefixes)]
+    for m in to_delete:
+        sys.modules.pop(m, None)
+
+@pytest.fixture(scope="function")
 def transport_config(request):
     # default if not parametrized
     return getattr(request, "param")
 
-@pytest.fixture(scope="session")
+def _make_farm_starter(farm: str, transport_config: dict):
+    farm_path = LUNGO_DIR / "agents" / "farms" / farm / "farm_server.py"
+
+    class Starter(ProcessStarter):
+        # Match a startup line that appears regardless of HTTP
+        pattern = r"Starting farm server with transport .*"
+        timeout = 30
+        args = ["python", "-u", str(farm_path)]
+        cwd = str(LUNGO_DIR)
+        env = {
+            **os.environ,
+            "PYTHONPATH": str(LUNGO_DIR)
+                + (os.pathsep + os.environ.get("PYTHONPATH", "")),
+            "ENABLE_HTTP": "false",              # <— avoid port conflicts
+            "FARM_BROADCAST_TOPIC": "test-broadcast",
+            **(transport_config or {}),
+        }
+    return Starter
+
+@pytest.fixture(scope="function")
+def all_farms_up(xprocess, transport_config):
+    """Start all farms concurrently; stop them after the test."""
+    proc_names = []
+    tr = (transport_config or {}).get("DEFAULT_MESSAGE_TRANSPORT", "unknown").lower()
+
+    for farm in FARMS:
+        name = f"{farm}-farm-{tr}"
+        proc_names.append(name)
+        Starter = _make_farm_starter(farm, transport_config)
+
+        # kill any stale process with same name/env combo
+        try:
+            xprocess.getinfo(name).terminate()
+        except Exception:
+            pass
+
+        xprocess.ensure(name, Starter)
+
+    try:
+        yield
+    finally:
+        for name in proc_names:
+            try:
+                xprocess.getinfo(name).terminate()
+            except Exception:
+                pass
+
+@pytest.fixture(scope="function")
+def farm_up(request, xprocess, transport_config):
+    farm = request.param  # e.g. "brazil", "colombia", "vietnam"
+    proc_name = f"{farm}-farm"
+
+    Starter = _make_farm_starter(farm, transport_config)
+
+    # kill any stale instance with the same name so new env applies
+    try:
+        xprocess.getinfo(proc_name).terminate()
+    except Exception:
+        pass
+
+    _, _ = xprocess.ensure(proc_name, Starter)
+    try:
+        yield
+    finally:
+        xprocess.getinfo(proc_name).terminate()
+
+@pytest.fixture(scope="function")
 def brazil_farm_up(xprocess, transport_config):
     class BrazilStarter(ProcessStarter):
-        pattern = r"Uvicorn running on http://0\.0\.0\.0:9999"
         timeout = 30
         args = [
             "python", "-u",
@@ -76,19 +148,33 @@ def brazil_farm_up(xprocess, transport_config):
             "FARM_BROADCAST_TOPIC": "test-broadcast",
             **transport_config,
         }
-    pid, log = xprocess.ensure("brazil-farm", BrazilStarter)
+        
+    # in case a stale process is around:
+    try:
+        xprocess.getinfo("brazil-farm").terminate()
+    except Exception:
+        pass
+
+    _, _ = xprocess.ensure("brazil-farm", BrazilStarter)
     yield
     xprocess.getinfo("brazil-farm").terminate()
 
-@pytest.fixture(scope="function")
-def auction_supervisor_client(transport_config):
-    """
-    Provide a TestClient bound to the auction supervisor, with env matching the transport.
-    Import the app after env is set so startup reads the right transport.
-    """
-    os.environ.update(transport_config)
-    from agents.supervisors.auction.main import app as auction_app  # import after env is set
-    with TestClient(auction_app) as client:
+@pytest.fixture
+def auction_supervisor_client(transport_config, monkeypatch):
+    for k, v in transport_config.items():
+        monkeypatch.setenv(k, v)
+
+    _purge_modules([
+    "agents.supervisors.auction",
+    "config.config",              
+    ])
+
+    import agents.supervisors.auction.main as auction_main
+    # force reload to pick up env changes
+    importlib.reload(auction_main)
+
+    app = auction_main.app
+    with TestClient(app) as client:
         yield client
 
 def setup_transports():
@@ -96,8 +182,8 @@ def setup_transports():
     _startup_nats()
 
 def setup_observability():
-    # _startup_otel_collector()
-    # _startup_clickhouse()
+    _startup_otel_collector()
+    _startup_clickhouse()
     _startup_grafana()
 
 def setup_identity():
@@ -117,6 +203,5 @@ def _startup_clickhouse():
 
 def _startup_otel_collector():
     up(["docker-compose.yaml"], ["otel-collector"])
-    # wait a bit more for it to be ready
     time.sleep(10)
 

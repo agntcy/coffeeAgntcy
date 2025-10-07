@@ -55,6 +55,10 @@ async def run_transport(server, transport_type, endpoint, block):
 
 async def main(enable_http: bool):
     """Run the A2A server with both HTTP and transport logic."""
+
+    ## TODO: delete
+    print(f"Starting farm server with transport {DEFAULT_MESSAGE_TRANSPORT} at {TRANSPORT_SERVER_ENDPOINT}, HTTP enabled: {enable_http}")
+
     request_handler = DefaultRequestHandler(
         agent_executor=FarmAgentExecutor(),
         task_store=InMemoryTaskStore(),
