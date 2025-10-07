@@ -10,16 +10,12 @@ from pathlib import Path
 from xprocess import ProcessStarter
 
 from fastapi.testclient import TestClient
-# from unittest.mock import patch
-
-# from agents.supervisors.auction.main import app as auction_app
-# from coffee_agents.lungo.agents.supervisors.auction.graph import shared
-# from coffee_agents.lungo.agents.supervisors.auction.graph.graph import ExchangeGraph
-# from agents.supervisors.logistic.main import app as logistics_app
 from test.integration.docker_helpers import up, down
-# from test.integration.mocks.mock_llm import MockLangChainLLM
 
 LUNGO_DIR = Path(__file__).resolve().parents[2]  # coffee_agents/lungo
+FARMS = ["brazil", "colombia", "vietnam"]
+# If HTTP is enabled, give each farm its own port (adjust to your servers)
+PORTS = {"brazil": 9999, "colombia": 9998, "vietnam": 9997}
 
 @pytest.fixture(scope="session", autouse=True)
 def orchestrate_session_services():
@@ -35,26 +31,6 @@ def orchestrate_session_services():
     # down(["docker-compose.yaml"])
     # print("--- Integrations torn down ---")
 
-# @pytest.fixture(autouse=True, scope="function")
-# def mock_llm_factory():
-#     # Patch the symbol where it's LOOKED UP: yourpkg.llm.LLMFactory
-#     with patch("common.llm.LLMFactory") as Factory:
-#         instance = Factory.return_value
-#         mock_llm = MockLangChainLLM("gpt-4o")
-#         mock_llm.set_mock_responses({
-#             "colombia": "Colombia farm inventory has 500 lb.",
-#             "vietnam": "Vietnam farm inventory has 100 lb.",
-#             "brazil": "Brazil farm inventory includes 20 lb.",
-#         })
-#         instance.get_llm.return_value = mock_llm
-#         yield mock_llm
-        
-# @pytest.fixture(autouse=True, scope="session")
-# def disable_dotenv_load():
-#     """Prevent farm/server modules from loading `.env` during tests."""
-#     with patch("dotenv.load_dotenv", return_value=True):
-#         yield
-
 def _purge_modules(prefixes):
     to_delete = [m for m in list(sys.modules)
                  if any(m == p or m.startswith(p + ".") for p in prefixes)]
@@ -66,43 +42,54 @@ def transport_config(request):
     # default if not parametrized
     return getattr(request, "param")
 
-def _make_farm_starter(farm: str, transport_config: dict):
-    farm_path = LUNGO_DIR / "agents" / "farms" / farm / "farm_server.py"
+def _make_farm_starter(farm: str, env: dict, port: int | None):
+    farm_path = "agents.farms." + farm + ".farm_server"
 
     class Starter(ProcessStarter):
-        # Match a startup line that appears regardless of HTTP
-        pattern = r"Starting farm server with transport .*"
+        pattern = rf"Uvicorn running on http://0\.0\.0\.0:{port}" if port else r"Starting farm server"
         timeout = 30
-        args = ["python", "-u", str(farm_path)]
+        args = ["python", "-m", str(farm_path)]
         cwd = str(LUNGO_DIR)
-        env = {
-            **os.environ,
-            "PYTHONPATH": str(LUNGO_DIR)
-                + (os.pathsep + os.environ.get("PYTHONPATH", "")),
-            "ENABLE_HTTP": "false",              # <— avoid port conflicts
-            "FARM_BROADCAST_TOPIC": "test-broadcast",
-            **(transport_config or {}),
-        }
+    
+    Starter.env = env
     return Starter
 
 @pytest.fixture(scope="function")
-def all_farms_up(xprocess, transport_config):
-    """Start all farms concurrently; stop them after the test."""
+def farm_selection(request):
+    """Per-test farm selection via @pytest.mark.farms([...])"""
+    m = request.node.get_closest_marker("farms")
+    if not m:
+        return []
+    names = m.args[0] if m.args else m.kwargs.get("names", [])
+    return [f for f in names if f in FARMS]
+
+@pytest.fixture(scope="function")
+def farms_up(farm_selection, xprocess, transport_config):
+    """Start the selected farms for this test, then tear them down."""
     proc_names = []
-    tr = (transport_config or {}).get("DEFAULT_MESSAGE_TRANSPORT", "unknown").lower()
 
-    for farm in FARMS:
-        name = f"{farm}-farm-{tr}"
-        proc_names.append(name)
-        Starter = _make_farm_starter(farm, transport_config)
+    for farm in farm_selection:
+        print(f"\n--- Starting farm {farm} ---")
+        port = PORTS.get(farm, 0)
+        env = {
+            **os.environ,
+            "PYTHONPATH": str(LUNGO_DIR) + (os.pathsep + os.environ.get("PYTHONPATH", "")),
+            "ENABLE_HTTP": "true",
+            "FARM_BROADCAST_TOPIC": "test-broadcast",
+            **(transport_config or {}),
+        }
+        if env.get("ENABLE_HTTP", "true").lower() == "true":
+            env["FARM_HTTP_PORT"] = str(port)
 
-        # kill any stale process with same name/env combo
+        Starter = _make_farm_starter(farm, env, port)
+        proc_name = f"{farm}-farm"
+
         try:
-            xprocess.getinfo(name).terminate()
+            xprocess.getinfo(proc_name).terminate()
         except Exception:
             pass
-
-        xprocess.ensure(name, Starter)
+        xprocess.ensure(proc_name, Starter)
+        proc_names.append(proc_name)
 
     try:
         yield
@@ -112,6 +99,7 @@ def all_farms_up(xprocess, transport_config):
                 xprocess.getinfo(name).terminate()
             except Exception:
                 pass
+
 
 @pytest.fixture(scope="function")
 def farm_up(request, xprocess, transport_config):
@@ -131,33 +119,6 @@ def farm_up(request, xprocess, transport_config):
         yield
     finally:
         xprocess.getinfo(proc_name).terminate()
-
-@pytest.fixture(scope="function")
-def brazil_farm_up(xprocess, transport_config):
-    class BrazilStarter(ProcessStarter):
-        timeout = 30
-        args = [
-            "python", "-u",
-            str(LUNGO_DIR / "agents" / "farms" / "brazil" / "farm_server.py"),
-        ]
-        cwd = str(LUNGO_DIR)
-        env = {
-            **os.environ,
-            "PYTHONPATH": str(LUNGO_DIR) + (os.pathsep + os.environ.get("PYTHONPATH","")),
-            "ENABLE_HTTP": "true",
-            "FARM_BROADCAST_TOPIC": "test-broadcast",
-            **transport_config,
-        }
-        
-    # in case a stale process is around:
-    try:
-        xprocess.getinfo("brazil-farm").terminate()
-    except Exception:
-        pass
-
-    _, _ = xprocess.ensure("brazil-farm", BrazilStarter)
-    yield
-    xprocess.getinfo("brazil-farm").terminate()
 
 @pytest.fixture
 def auction_supervisor_client(transport_config, monkeypatch):
