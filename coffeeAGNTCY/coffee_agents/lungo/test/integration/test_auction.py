@@ -1,3 +1,4 @@
+import re
 import pytest
     
 # Reuse the same tests across transports (add/remove configs as needed)
@@ -26,6 +27,8 @@ class TestAuctionFlows:
         data = resp.json()
         print(data)
         assert "response" in data
+        assert re.search(r"\b\d+\s*pounds\b", data["response"]), "Expected '<number> pounds' in string"
+
 
     @pytest.mark.usefixtures("start_weather_mcp")
     @pytest.mark.farms(["colombia"])
@@ -40,7 +43,7 @@ class TestAuctionFlows:
         data = resp.json()
         print(data)
         assert "response" in data
-    
+        assert re.search(r'\b[\d,]+\s*(pounds|lbs\.?)\b', data["response"]), "Expected '<number> pounds or <number> lbs.' in string"
 
     @pytest.mark.farms(["vietnam"])
     @pytest.mark.usefixtures("farms_up")
@@ -52,9 +55,12 @@ class TestAuctionFlows:
         )
         assert resp.status_code == 200
         data = resp.json()
-        print(data)
+        print(data) 
         assert "response" in data
+        assert re.search(r'\b[\d,]+\s*(pounds|lbs\.?)\b', data["response"]), "Expected '<number> pounds or <number> lbs.' in string"
+
     
+    @pytest.mark.usefixtures("start_weather_mcp")
     @pytest.mark.farms(["brazil", "colombia", "vietnam"])
     @pytest.mark.usefixtures("farms_up")
     def test_auction_all_farms_inventory(self, auction_supervisor_client, transport_config):
@@ -67,4 +73,64 @@ class TestAuctionFlows:
         data = resp.json()
         print(data)
         assert "response" in data
-       
+        assert "brazil" in data["response"].lower()
+        assert "colombia" in data["response"].lower()
+        assert "vietnam" in data["response"].lower()
+
+    @pytest.mark.farms(["brazil"])
+    @pytest.mark.usefixtures("farms_up")
+    def test_auction_create_order_brazil(self, auction_supervisor_client, transport_config):
+        print(f"\n---Test: test_auction_create_order with transport {transport_config}---")
+        resp = auction_supervisor_client.post(
+            "/agent/prompt",
+            json={"prompt": "I'd like to buy 200 lbs of coffee at USD 500 price from Brazil."}
+        )
+        assert resp.status_code == 200
+        data = resp.json()
+        print(data)
+        assert "response" in data
+        assert "could not be verified" in data["response"], "Expected verification failure in response"
+
+    @pytest.mark.farms(["colombia"])
+    @pytest.mark.usefixtures("farms_up")
+    def test_auction_create_order_colombia(self, auction_supervisor_client, transport_config):
+        print(f"\n---Test: test_auction_create_order with transport {transport_config}---")
+        resp = auction_supervisor_client.post(
+            "/agent/prompt",
+            json={"prompt": "I'd like to buy 200 lbs of coffee at USD 500 price from Colombia."}
+        )
+        assert resp.status_code == 200
+        data = resp.json()
+        print(data)
+        assert "response" in data
+        assert "successful" in data["response"].lower()
+        assert "Order ID" in data["response"], "Expected Order ID in response"
+        assert "Tracking Number" in data["response"], "Expected Tracking Number in response"
+
+    @pytest.mark.farms(["vietnam"])
+    @pytest.mark.usefixtures("farms_up")
+    def test_auction_create_order_vietnam(self, auction_supervisor_client, transport_config):
+        print(f"\n---Test: test_auction_create_order with transport {transport_config}---")
+        resp = auction_supervisor_client.post(
+            "/agent/prompt",
+            json={"prompt": "I'd like to buy 200 lbs of coffee at USD 500 price from Vietnam."}
+        )
+        assert resp.status_code == 200
+        data = resp.json()
+        print(data)
+        assert "successful" in data["response"].lower()
+        assert "Order ID" in data["response"], "Expected Order ID in response"
+        assert "Tracking Number" in data["response"], "Expected Tracking Number in response"
+
+    @pytest.mark.farms(["brazil"])
+    @pytest.mark.usefixtures("farms_up")
+    def test_auction_invalid_prompt(self, auction_supervisor_client, transport_config):
+        print(f"\n---Test: test_auction_invalid_prompt with transport {transport_config}---")
+        resp = auction_supervisor_client.post(
+            "/agent/prompt",
+            json={"prompt": "What is a group of crows called?"}
+        )
+        assert resp.status_code == 200
+        data = resp.json()
+        print(data)
+        assert "I'm not sure how to handle that" in data

@@ -5,7 +5,6 @@ services:
       dockerfile: coffeeAGNTCY/coffee_agents/lungo/docker/Dockerfile.brazil-farm
     image: ghcr.io/agntcy/coffee-agntcy/brazil-farm:latest
     container_name: brazil-farm-server
-    platform: linux/amd64
     environment:
       - FARM_AGENT_HOST=brazil-farm-server
       - FARM_AGENT_PORT=9999
@@ -21,6 +20,7 @@ services:
       - TRANSPORT_SERVER_ENDPOINT=${TRANSPORT_SERVER_ENDPOINT:-nats://nats:4222}
       - OTLP_HTTP_ENDPOINT=${OTLP_HTTP_ENDPOINT:-http://otel-collector:4318}
       - ENABLE_HTTP=true
+      - LLM_STREAMING=${LLM_STREAMING:-}
     ports:
       - "9999:9999"
   colombia-farm-server:
@@ -29,7 +29,6 @@ services:
       dockerfile: coffeeAGNTCY/coffee_agents/lungo/docker/Dockerfile.colombia-farm
     image: ghcr.io/agntcy/coffee-agntcy/colombia-farm:latest
     container_name: colombia-farm-server
-    platform: linux/amd64
     environment:
       - FARM_AGENT_HOST=colombia-farm-server
       - FARM_AGENT_PORT=9998
@@ -45,6 +44,7 @@ services:
       - TRANSPORT_SERVER_ENDPOINT=${TRANSPORT_SERVER_ENDPOINT:-nats://nats:4222}
       - OTLP_HTTP_ENDPOINT=${OTLP_HTTP_ENDPOINT:-http://otel-collector:4318}
       - ENABLE_HTTP=true
+      - LLM_STREAMING=${LLM_STREAMING:-}
     ports:
       - "9998:9998"
   vietnam-farm-server:
@@ -53,7 +53,6 @@ services:
       dockerfile: coffeeAGNTCY/coffee_agents/lungo/docker/Dockerfile.vietnam-farm
     image: ghcr.io/agntcy/coffee-agntcy/vietnam-farm:latest
     container_name: vietnam-farm-server
-    platform: linux/amd64
     environment:
       - FARM_AGENT_HOST=vietnam-farm-server
       - FARM_AGENT_PORT=9997
@@ -69,6 +68,7 @@ services:
       - TRANSPORT_SERVER_ENDPOINT=${TRANSPORT_SERVER_ENDPOINT:-nats://nats:4222}
       - OTLP_HTTP_ENDPOINT=${OTLP_HTTP_ENDPOINT:-http://otel-collector:4318}
       - ENABLE_HTTP=true
+      - LLM_STREAMING=${LLM_STREAMING:-}
     ports:
       - "9997:9997"
   nats:
@@ -99,7 +99,9 @@ services:
       dockerfile: coffeeAGNTCY/coffee_agents/lungo/docker/Dockerfile.exchange
     image: ghcr.io/agntcy/coffee-agntcy/lungo-exchange:latest
     container_name: exchange-server-lungo
-    platform: linux/amd64
+    volumes:
+      # Mount local git metadata so /build/info can derive latest tag/date in dev
+      - ../../../.git:/app/.git:ro
     environment:
       - FARM_AGENT_HOST=farm-server
       - FARM_AGENT_PORT=9999
@@ -114,6 +116,7 @@ services:
       - DEFAULT_MESSAGE_TRANSPORT=${DEFAULT_MESSAGE_TRANSPORT:-NATS}
       - TRANSPORT_SERVER_ENDPOINT=${TRANSPORT_SERVER_ENDPOINT:-nats://nats:4222}
       - OTLP_HTTP_ENDPOINT=${OTLP_HTTP_ENDPOINT:-http://otel-collector:4318}
+      - LLM_STREAMING=${LLM_STREAMING:-}
     ports:
       - "8000:8000"
 
@@ -123,9 +126,9 @@ services:
       dockerfile: coffeeAGNTCY/coffee_agents/lungo/docker/Dockerfile.ui
     image: ghcr.io/agntcy/coffee-agntcy/lungo-ui:latest
     container_name: ui-lungo
-    platform: linux/amd64
     environment:
       - VITE_EXCHANGE_APP_API_URL=http://127.0.0.1:8000
+      - VITE_LOGISTICS_APP_API_URL=http://127.0.0.1:9090
     depends_on:
       - exchange-server
     ports:
@@ -134,10 +137,9 @@ services:
   weather-mcp-server:
     build:
       context: ../../..
-      dockerfile: coffeeAGNTCY/coffee_agents/lungo/docker/Dockerfile.weather-mcp  
+      dockerfile: coffeeAGNTCY/coffee_agents/lungo/docker/Dockerfile.weather-mcp
     image: ghcr.io/agntcy/coffee-agntcy/weather-mcp-server:latest
     container_name: weather-mcp-server
-    platform: linux/amd64
     environment:
       - DEFAULT_MESSAGE_TRANSPORT=${DEFAULT_MESSAGE_TRANSPORT:-NATS}
       - TRANSPORT_SERVER_ENDPOINT=${TRANSPORT_SERVER_ENDPOINT:-nats://nats:4222}
@@ -157,7 +159,15 @@ services:
         soft: 262144
         hard: 262144
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8123/ping"]
+      test:
+        [
+          "CMD",
+          "wget",
+          "--no-verbose",
+          "--tries=1",
+          "--spider",
+          "http://localhost:8123/ping",
+        ]
       interval: 5s
       timeout: 3s
       retries: 5
@@ -188,4 +198,101 @@ services:
       - GF_USERS_ALLOW_SIGN_UP=false
     depends_on:
       clickhouse-server:
+        condition: service_healthy
+
+  logistic-shipper:
+    build:
+      context: ../../..
+      dockerfile: coffeeAGNTCY/coffee_agents/lungo/docker/Dockerfile.logistic-shipper
+    image: ghcr.io/agntcy/coffee-agntcy/logistic-shipper:latest
+    environment:
+      - DEFAULT_MESSAGE_TRANSPORT=SLIM # Do not change. SLIM is required for group conversation.
+      - TRANSPORT_SERVER_ENDPOINT=http://slim:46357
+      - OTLP_HTTP_ENDPOINT=${OTLP_HTTP_ENDPOINT:-http://otel-collector:4318}
+      - ENABLE_HTTP=true
+    ports:
+      - "9091:9091"
+
+  logistic-accountant:
+    build:
+      context: ../../..
+      dockerfile: coffeeAGNTCY/coffee_agents/lungo/docker/Dockerfile.logistic-accountant
+    image: ghcr.io/agntcy/coffee-agntcy/logistic-accountant:latest
+    environment:
+      - DEFAULT_MESSAGE_TRANSPORT=SLIM # Do not change. SLIM is required for group conversation.
+      - TRANSPORT_SERVER_ENDPOINT=http://slim:46357
+      - OTLP_HTTP_ENDPOINT=${OTLP_HTTP_ENDPOINT:-http://otel-collector:4318}
+      - ENABLE_HTTP=true
+    ports:
+      - "9092:9092"
+
+  logistic-farm:
+    build:
+      context: ../../..
+      dockerfile: coffeeAGNTCY/coffee_agents/lungo/docker/Dockerfile.logistic-farm
+    image: ghcr.io/agntcy/coffee-agntcy/logistic-farm:latest
+    environment:
+      - DEFAULT_MESSAGE_TRANSPORT=SLIM # Do not change. SLIM is required for group conversation.
+      - TRANSPORT_SERVER_ENDPOINT=http://slim:46357
+      - OTLP_HTTP_ENDPOINT=${OTLP_HTTP_ENDPOINT:-http://otel-collector:4318}
+      - ENABLE_HTTP=true
+    ports:
+      - "9093:9093"
+
+  logistic-supervisor:
+    build:
+      context: ../../..
+      dockerfile: coffeeAGNTCY/coffee_agents/lungo/docker/Dockerfile.logistic-supervisor
+    image: ghcr.io/agntcy/coffee-agntcy/logistic-supervisor:latest
+    environment:
+      - AZURE_OPENAI_ENDPOINT=${AZURE_OPENAI_ENDPOINT:-}
+      - AZURE_OPENAI_DEPLOYMENT=${AZURE_OPENAI_DEPLOYMENT:-}
+      - AZURE_OPENAI_API_KEY=${AZURE_OPENAI_API_KEY:-}
+      - AZURE_OPENAI_API_VERSION=${AZURE_OPENAI_API_VERSION:-}
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - OPENAI_ENDPOINT=${OPENAI_ENDPOINT:-}
+      - OPENAI_MODEL_NAME=${OPENAI_MODEL_NAME:-}
+      - LLM_PROVIDER=${LLM_PROVIDER}
+      - DEFAULT_MESSAGE_TRANSPORT=SLIM # Do not change. SLIM is required for group conversation.
+      - TRANSPORT_SERVER_ENDPOINT=http://slim:46357
+      - OTLP_HTTP_ENDPOINT=${OTLP_HTTP_ENDPOINT:-http://otel-collector:4318}
+      - LLM_STREAMING=${LLM_STREAMING:-}
+    ports:
+      - "9090:9090"
+
+  mce-api-layer:
+    image: ghcr.io/agntcy/obs-api:0.1.1
+    ports:
+      - "8080:8080"
+    environment:
+      - CLICKHOUSE_URL=clickhouse-server
+      - CLICKHOUSE_PORT=9000
+      - CLICKHOUSE_USER=admin
+      - CLICKHOUSE_PASS=admin
+      - CLICKHOUSE_DB=default
+      - SERVER_PORT=8080
+      - PORT=8080
+    depends_on:
+      clickhouse-server:
+        condition: service_healthy
+      otel-collector:
+        condition: service_started
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/keepAlive"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+
+  metrics-computation-engine:
+    image: ghcr.io/agntcy/mce:1.2.1
+    ports:
+      - "8001:8000"
+    environment:
+      - API_BASE_URL=http://mce-api-layer:8080
+      - LLM_BASE_MODEL_URL=${AZURE_OPENAI_ENDPOINT:-${OPENAI_ENDPOINT}}
+      - LLM_MODEL_NAME=${AZURE_OPENAI_DEPLOYMENT:-${OPENAI_MODEL_NAME}}
+      - LLM_API_KEY=${AZURE_OPENAI_API_KEY:-${OPENAI_API_KEY}}
+    depends_on:
+      mce-api-layer:
         condition: service_healthy
