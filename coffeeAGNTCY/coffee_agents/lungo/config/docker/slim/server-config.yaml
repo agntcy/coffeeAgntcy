@@ -2,9 +2,23 @@
 # SPDX-License-Identifier: Apache-2.0
 
 tracing:
-  log_level: info
+  # Logging level - controls verbosity of log output
+  # Available options: trace, debug, info, warn, error
+  # Default: info
+  log_level: debug
+
+  # Whether to display thread names in log output
+  # Default: true
   display_thread_names: true
+
+  # Whether to display thread IDs in log output
+  # Default: false
   display_thread_ids: true
+
+  # Additional log filtering (optional)
+  # Can be used to filter logs by module or target
+  # Default: "info"
+  filter: "slim=debug"
 
 runtime:
   n_cores: 0
@@ -13,7 +27,7 @@ runtime:
 
 services:
   slim/0:
-    pubsub:
+    dataplane:
       servers:
         - endpoint: "0.0.0.0:46357"
           tls:
