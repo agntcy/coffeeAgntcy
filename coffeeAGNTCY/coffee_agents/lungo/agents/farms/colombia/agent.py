@@ -122,8 +122,6 @@ class FarmAgent:
 
         logger.info(f"Weather location extracted: {location}")
 
-        #return {"messages": [AIMessage(f"The weather forecast for {location} is: sunny and 75°F.")]}
-
         transport_instance = factory.create_transport(
             DEFAULT_MESSAGE_TRANSPORT, 
             endpoint=TRANSPORT_SERVER_ENDPOINT, 

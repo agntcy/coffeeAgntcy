@@ -6,6 +6,7 @@ import logging
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from ioa_observe.sdk.tracing import session_start
 from pydantic import BaseModel
 import uvicorn
 
@@ -91,4 +92,4 @@ async def version_info():
 
 # Run the FastAPI server using uvicorn
 if __name__ == "__main__":
-  uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
+  uvicorn.run("agents.supervisors.auction.main:app", host="0.0.0.0", port=8000, reload=True)

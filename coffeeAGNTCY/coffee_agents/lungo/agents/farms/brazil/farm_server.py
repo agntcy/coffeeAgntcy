@@ -2,7 +2,6 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import asyncio
-import os
 from uvicorn import Config, Server
 
 from a2a.server.apps import A2AStarletteApplication
@@ -55,6 +54,7 @@ async def run_transport(server, transport_type, endpoint, block):
 
 async def main(enable_http: bool):
     """Run the A2A server with both HTTP and transport logic."""
+
     request_handler = DefaultRequestHandler(
         agent_executor=FarmAgentExecutor(),
         task_store=InMemoryTaskStore(),
