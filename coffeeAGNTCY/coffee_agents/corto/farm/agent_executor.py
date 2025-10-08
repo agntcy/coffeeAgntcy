@@ -17,7 +17,7 @@ from a2a.utils import (
 )
 from a2a.utils.errors import ServerError
 
-from agent import FarmAgent
+from farm.agent import FarmAgent
 
 logger = logging.getLogger("corto.farm_agent.a2a_executor")
 

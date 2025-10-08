@@ -4,6 +4,7 @@
  **/
 
 import { TiWeatherCloudy } from "react-icons/ti"
+import { Truck, Calculator } from "lucide-react"
 import { Node, Edge } from "@xyflow/react"
 import supervisorIcon from "@/assets/supervisor.png"
 import farmAgentIcon from "@/assets/Grader-Agent.png"
@@ -102,7 +103,7 @@ const PUBLISH_SUBSCRIBE_CONFIG: GraphConfig = {
             className="dark-icon h-4 w-4 object-contain"
           />
         ),
-        label1: "Supervisor Agent",
+        label1: "Auction Agent",
         label2: "Buyer",
         handles: "source",
         githubLink:
@@ -242,12 +243,180 @@ const PUBLISH_SUBSCRIBE_CONFIG: GraphConfig = {
   ],
 }
 
-export const getGraphConfig = (pattern: string): GraphConfig => {
+const GROUP_COMMUNICATION_CONFIG: GraphConfig = {
+  title: "Secure Group Communication Logistics Network",
+  nodes: [
+    {
+      id: "logistics-group",
+      type: "group",
+      data: {
+        label: "Logistics Group",
+      },
+      position: { x: 50, y: 50 },
+      style: {
+        width: 900,
+        height: 650,
+        backgroundColor: "var(--group-background)",
+        border: "none",
+        borderRadius: "8px",
+      },
+    },
+    {
+      id: "1",
+      type: "customNode",
+      data: {
+        icon: (
+          <img
+            src={supervisorIcon}
+            alt="Supervisor Icon"
+            className="dark-icon h-4 w-4 object-contain"
+          />
+        ),
+        label1: "Logistics Agent",
+        label2: "Buyer",
+        handles: "source",
+        githubLink:
+          "https://github.com/agntcy/coffeeAgntcy/blob/main/coffeeAGNTCY/coffee_agents/lungo/agents/supervisors/auction/graph/graph.py#L116",
+        agentDirectoryLink: "https://agent-directory.outshift.com/",
+      },
+      position: { x: 150, y: 100 },
+      parentId: "logistics-group",
+      extent: "parent",
+    },
+    {
+      id: "2",
+      type: "transportNode",
+      data: {
+        label: "Transport: SLIM",
+        compact: true,
+        githubLink:
+          "https://github.com/agntcy/app-sdk/blob/main/src/agntcy_app_sdk/transports/slim/transport.py#L29",
+      },
+      position: { x: 380, y: 270 },
+      parentId: "logistics-group",
+      extent: "parent",
+    },
+    {
+      id: "3",
+      type: "customNode",
+      data: {
+        icon: (
+          <img
+            src={farmAgentIcon}
+            alt="Farm Agent Icon"
+            className="dark-icon h-4 w-4 object-contain opacity-100"
+          />
+        ),
+        label1: "Tatooine",
+        label2: "Coffee Farm Agent",
+        handles: "source",
+        farmName: "Tatooine Farm",
+        githubLink:
+          "https://github.com/agntcy/coffeeAgntcy/blob/main/coffeeAGNTCY/coffee_agents/lungo/agents/logistics/farm/agent.py#L30",
+        agentDirectoryLink: "https://agent-directory.outshift.com/",
+      },
+      position: { x: 550, y: 100 },
+      parentId: "logistics-group",
+      extent: "parent",
+    },
+    {
+      id: "4",
+      type: "customNode",
+      data: {
+        icon: (
+          <Truck className="dark-icon h-4 w-4 object-contain opacity-100" />
+        ),
+        label1: "Shipper",
+        label2: "Shipper Agent",
+        handles: "target",
+        agentName: "Shipper Logistics",
+        githubLink:
+          "https://github.com/agntcy/coffeeAgntcy/blob/main/coffeeAGNTCY/coffee_agents/lungo/agents/logistics/shipper/agent.py#L30",
+        agentDirectoryLink:
+          "https://agent-directory.outshift.com/explore/shipper-logistics-agent",
+      },
+      position: { x: 150, y: 500 },
+      parentId: "logistics-group",
+      extent: "parent",
+    },
+    {
+      id: "5",
+      type: "customNode",
+      data: {
+        icon: (
+          <Calculator className="dark-icon h-4 w-4 object-contain opacity-100" />
+        ),
+        label1: "Accountant",
+        label2: "Accountant Agent",
+        handles: "target",
+        agentName: "Accountant Logistics",
+        githubLink:
+          "https://github.com/agntcy/coffeeAgntcy/blob/main/coffeeAGNTCY/coffee_agents/lungo/agents/logistics/accountant/agent.py#L30",
+        agentDirectoryLink:
+          "https://agent-directory.outshift.com/explore/accountant-logistics-agent",
+      },
+      position: { x: 500, y: 500 },
+      parentId: "logistics-group",
+      extent: "parent",
+    },
+  ],
+  edges: [
+    {
+      id: "1-2",
+      source: "1",
+      target: "2",
+      targetHandle: "top_left",
+      data: { label: "A2A" },
+      type: "custom",
+    },
+    {
+      id: "3-2",
+      source: "3",
+      target: "2",
+      targetHandle: "top_right",
+      data: { label: "A2A" },
+      type: "custom",
+    },
+    {
+      id: "2-4",
+      source: "2",
+      target: "4",
+      sourceHandle: "bottom_left",
+      data: { label: "A2A" },
+      type: "custom",
+    },
+    {
+      id: "2-5",
+      source: "2",
+      target: "5",
+      sourceHandle: "bottom_right",
+      data: { label: "A2A" },
+      type: "custom",
+    },
+  ],
+  animationSequence: [
+    { ids: ["1"] },
+    { ids: ["1-2"] },
+    { ids: ["2"] },
+    { ids: ["3-2", "2-4", "2-5", "3", "4", "5"] },
+    { ids: ["3"] },
+    { ids: ["4"] },
+    { ids: ["5"] },
+    { ids: ["4"] },
+  ],
+}
+
+export const getGraphConfig = (
+  pattern: string,
+  _isConnected?: boolean,
+): GraphConfig => {
   switch (pattern) {
     case "slim_a2a":
       return SLIM_A2A_CONFIG
     case "publish_subscribe":
       return PUBLISH_SUBSCRIBE_CONFIG
+    case "group_communication":
+      return GROUP_COMMUNICATION_CONFIG
     default:
       return PUBLISH_SUBSCRIBE_CONFIG
   }
@@ -256,9 +425,17 @@ export const getGraphConfig = (pattern: string): GraphConfig => {
 export const updateTransportLabels = async (
   setNodes: (updater: (nodes: any[]) => any[]) => void,
   setEdges: (updater: (edges: any[]) => any[]) => void,
+  pattern?: string,
 ): Promise<void> => {
+  if (pattern === "group_communication") {
+    return
+  }
+
   try {
     const response = await fetch(`${EXCHANGE_APP_API_URL}/transport/config`)
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`)
+    }
     const data = await response.json()
     const transport = data.transport
 
@@ -283,11 +460,12 @@ export const updateTransportLabels = async (
     )
 
     setEdges((edges: any[]) =>
-      edges.map((edge: any) =>
-        edge.id === "4-6"
-          ? { ...edge, data: { ...edge.data, label: `MCP: ${transport}` } }
-          : edge,
-      ),
+      edges.map((edge: any) => {
+        if (edge.id === "4-6") {
+          return { ...edge, data: { ...edge.data, label: `MCP: ${transport}` } }
+        }
+        return edge
+      }),
     )
   } catch (error) {
     logger.apiError("/transport/config", error)

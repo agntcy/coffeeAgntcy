@@ -9,9 +9,12 @@ import { v4 as uuid } from "uuid"
 import { Message } from "@/types/message"
 import { Role } from "@/utils/const"
 
-const DEFAULT_EXCHANGE_APP_API_URL = "http://127.0.0.1:8000"
-const EXCHANGE_APP_API_URL =
-  import.meta.env.VITE_EXCHANGE_APP_API_URL || DEFAULT_EXCHANGE_APP_API_URL
+const DEFAULT_PUB_SUB_API_URL = "http://127.0.0.1:8000"
+const DEFAULT_GROUP_COMM_APP_API_URL = "http://127.0.0.1:9090"
+const PUB_SUB_APP_API_URL =
+  import.meta.env.VITE_EXCHANGE_APP_API_URL || DEFAULT_PUB_SUB_API_URL
+const GROUP_COMM_APP_API_URL =
+  import.meta.env.VITE_LOGISTICS_APP_API_URL || DEFAULT_GROUP_COMM_APP_API_URL
 
 interface ApiResponse {
   response: string
@@ -19,7 +22,7 @@ interface ApiResponse {
 
 interface UseAgentAPIReturn {
   loading: boolean
-  sendMessage: (prompt: string) => Promise<string>
+  sendMessage: (prompt: string, pattern?: string) => Promise<string>
   sendMessageWithCallback: (
     prompt: string,
     setMessages: React.Dispatch<React.SetStateAction<Message[]>>,
@@ -28,25 +31,31 @@ interface UseAgentAPIReturn {
       onSuccess?: (response: string) => void
       onError?: (error: any) => void
     },
+    pattern?: string,
   ) => Promise<void>
 }
 
 export const useAgentAPI = (): UseAgentAPIReturn => {
   const [loading, setLoading] = useState<boolean>(false)
 
-  const sendMessage = async (prompt: string): Promise<string> => {
+  const sendMessage = async (
+    prompt: string,
+    pattern?: string,
+  ): Promise<string> => {
     if (!prompt.trim()) {
       throw new Error("Prompt cannot be empty")
     }
 
+    const apiUrl =
+      pattern === "group_communication"
+        ? GROUP_COMM_APP_API_URL
+        : PUB_SUB_APP_API_URL
+
     setLoading(true)
     try {
-      const response = await axios.post<ApiResponse>(
-        `${EXCHANGE_APP_API_URL}/agent/prompt`,
-        {
-          prompt,
-        },
-      )
+      const response = await axios.post<ApiResponse>(`${apiUrl}/agent/prompt`, {
+        prompt,
+      })
       return response.data.response
     } finally {
       setLoading(false)
@@ -61,8 +70,14 @@ export const useAgentAPI = (): UseAgentAPIReturn => {
       onSuccess?: (response: string) => void
       onError?: (error: any) => void
     },
+    pattern?: string,
   ): Promise<void> => {
     if (!prompt.trim()) return
+
+    const apiUrl =
+      pattern === "group_communication"
+        ? GROUP_COMM_APP_API_URL
+        : PUB_SUB_APP_API_URL
 
     const userMessage: Message = {
       role: Role.USER,
@@ -90,12 +105,9 @@ export const useAgentAPI = (): UseAgentAPIReturn => {
     }
 
     try {
-      const response = await axios.post<ApiResponse>(
-        `${EXCHANGE_APP_API_URL}/agent/prompt`,
-        {
-          prompt,
-        },
-      )
+      const response = await axios.post<ApiResponse>(`${apiUrl}/agent/prompt`, {
+        prompt,
+      })
 
       setMessages((prevMessages: Message[]) => {
         const updatedMessages = [...prevMessages]

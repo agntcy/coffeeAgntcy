@@ -57,6 +57,31 @@
         "type": "grafana-clickhouse-datasource",
         "uid": "${DS_GRAFANA-CLICKHOUSE-DATASOURCE}"
       },
+      "gridPos": {
+        "h": 2,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
+      "id": 2,
+      "options": {
+        "code": {
+          "language": "plaintext",
+          "showLineNumbers": false,
+          "showMiniMap": false
+        },
+        "content": "**${session_initial_prompt}**\n",
+        "mode": "markdown"
+      },
+      "pluginVersion": "12.1.0",
+      "title": "User Prompt",
+      "type": "text"
+    },
+    {
+      "datasource": {
+        "type": "grafana-clickhouse-datasource",
+        "uid": "${DS_GRAFANA-CLICKHOUSE-DATASOURCE}"
+      },
       "fieldConfig": {
         "defaults": {
           "custom": {
@@ -72,7 +97,7 @@
             "steps": [
               {
                 "color": "green",
-                "value": 0
+                "value": null
               },
               {
                 "color": "red",
@@ -84,10 +109,10 @@
         "overrides": []
       },
       "gridPos": {
-        "h": 8,
-        "w": 12,
+        "h": 15,
+        "w": 24,
         "x": 0,
-        "y": 0
+        "y": 2
       },
       "id": 1,
       "options": {
@@ -177,15 +202,6 @@
               {
                 "condition": "AND",
                 "filterType": "custom",
-                "hint": "trace_parent_span_id",
-                "key": "",
-                "operator": "IS EMPTY",
-                "type": "string",
-                "value": ""
-              },
-              {
-                "condition": "AND",
-                "filterType": "custom",
                 "hint": "trace_duration_time",
                 "key": "",
                 "operator": ">",
@@ -197,18 +213,30 @@
                 "filterType": "custom",
                 "hint": "trace_service_name",
                 "key": "",
-                "operator": "=",
+                "operator": "IS ANYTHING",
                 "type": "string",
-                "value": "corto.exchange"
+                "value": ""
               },
               {
                 "condition": "AND",
                 "filterType": "custom",
-                "key": "SpanName",
-                "label": "SpanName",
+                "key": "SpanAttributes",
+                "label": "SpanAttributes",
+                "mapKey": "session.id",
                 "operator": "=",
-                "type": "LowCardinality(String)",
-                "value": "exchange_agent.serve.agent"
+                "type": "Map(LowCardinality(String), String)",
+                "value": [
+                  "$session_id"
+                ]
+              },
+              {
+                "condition": "AND",
+                "filterType": "custom",
+                "key": "ParentSpanId",
+                "label": "ParentSpanId",
+                "operator": "=",
+                "type": "String",
+                "value": "''"
               }
             ],
             "limit": 1000,
@@ -244,24 +272,210 @@
             "type": "grafana-clickhouse-datasource",
             "uid": "${DS_GRAFANA-CLICKHOUSE-DATASOURCE}"
           },
-          "editorType": "builder",
-          "format": 1,
-          "pluginVersion": "4.10.1",
-          "rawSql": "SELECT \"TraceId\" as traceID, \"ServiceName\" as serviceName, \"SpanName\" as operationName, \"Timestamp\" as startTime, multiply(\"Duration\", 0.000001) as duration FROM \"default\".\"otel_traces\" WHERE ( Timestamp >= $__fromTime AND Timestamp <= $__toTime ) AND ( ParentSpanId = '' ) AND ( Duration > 0 ) AND ( ServiceName = 'corto.exchange' ) AND ( SpanName = 'exchange_agent.serve.agent' ) ORDER BY Timestamp DESC, Duration DESC LIMIT 1000",
+          "editorType": "sql",
+          "format": 3,
+          "hide": false,
+          "meta": {
+            "builderOptions": {
+              "columns": [
+                {
+                  "hint": "trace_id",
+                  "name": "TraceId"
+                },
+                {
+                  "hint": "trace_span_id",
+                  "name": "SpanId"
+                },
+                {
+                  "hint": "trace_parent_span_id",
+                  "name": "ParentSpanId"
+                },
+                {
+                  "hint": "trace_service_name",
+                  "name": "ServiceName"
+                },
+                {
+                  "hint": "trace_operation_name",
+                  "name": "SpanName"
+                },
+                {
+                  "hint": "time",
+                  "name": "Timestamp"
+                },
+                {
+                  "hint": "trace_duration_time",
+                  "name": "Duration"
+                },
+                {
+                  "hint": "trace_tags",
+                  "name": "SpanAttributes"
+                },
+                {
+                  "hint": "trace_service_tags",
+                  "name": "ResourceAttributes"
+                },
+                {
+                  "hint": "trace_service_tags",
+                  "name": "ResourceAttributes"
+                },
+                {
+                  "hint": "trace_kind",
+                  "name": "SpanKind"
+                },
+                {
+                  "hint": "trace_status_code",
+                  "name": "StatusCode"
+                },
+                {
+                  "hint": "trace_status_message",
+                  "name": "StatusMessage"
+                },
+                {
+                  "hint": "trace_state",
+                  "name": "TraceState"
+                }
+              ],
+              "database": "default",
+              "filters": [
+                {
+                  "condition": "AND",
+                  "filterType": "custom",
+                  "hint": "time",
+                  "key": "",
+                  "operator": "WITH IN DASHBOARD TIME RANGE",
+                  "type": "datetime"
+                },
+                {
+                  "condition": "AND",
+                  "filterType": "custom",
+                  "hint": "trace_duration_time",
+                  "key": "",
+                  "operator": ">",
+                  "type": "UInt64",
+                  "value": 0
+                },
+                {
+                  "condition": "AND",
+                  "filterType": "custom",
+                  "hint": "trace_service_name",
+                  "key": "",
+                  "operator": "IS ANYTHING",
+                  "type": "string",
+                  "value": ""
+                },
+                {
+                  "condition": "AND",
+                  "filterType": "custom",
+                  "key": "SpanAttributes",
+                  "label": "SpanAttributes",
+                  "mapKey": "session.id",
+                  "operator": "=",
+                  "type": "Map(LowCardinality(String), String)",
+                  "value": [
+                    "$session_id"
+                  ]
+                },
+                {
+                  "condition": "AND",
+                  "filterType": "custom",
+                  "key": "ParentSpanId",
+                  "label": "ParentSpanId",
+                  "operator": "=",
+                  "type": "String",
+                  "value": "''"
+                }
+              ],
+              "limit": 1000,
+              "meta": {
+                "flattenNested": false,
+                "isTraceIdMode": false,
+                "otelEnabled": true,
+                "otelVersion": "latest",
+                "traceDurationUnit": "nanoseconds",
+                "traceEventsColumnPrefix": "Events",
+                "traceId": "",
+                "traceLinksColumnPrefix": "Links"
+              },
+              "mode": "list",
+              "orderBy": [
+                {
+                  "default": true,
+                  "dir": "DESC",
+                  "hint": "time",
+                  "name": ""
+                },
+                {
+                  "default": true,
+                  "dir": "DESC",
+                  "hint": "trace_duration_time",
+                  "name": ""
+                }
+              ],
+              "queryType": "traces",
+              "table": "otel_traces"
+            }
+          },
+          "pluginVersion": "4.10.2",
+          "queryType": "traces",
+          "rawSql": "SELECT\n    TraceId AS traceID,\n    arrayStringConcat(groupArray(DISTINCT ServiceName), ', ') AS serviceNamesInTrace,\n    min(Timestamp) AS startTime,\n    (max(Timestamp) - min(Timestamp)) AS traceDuration\nFROM \"default\".\"otel_traces\"\nWHERE\n    Timestamp >= $__fromTime AND Timestamp <= $__toTime\n    AND (Duration > 0)\n    AND (SpanAttributes['session.id'] IS NOT NULL)\n    AND (SpanAttributes['session.id'] != '')\n    AND (SpanAttributes['session.id'] IN (${session_id:sqlstring}))\nGROUP BY\n    TraceId\nORDER BY\n    startTime ASC\nLIMIT 1000",
           "refId": "A"
         }
       ],
-      "title": "Corto traces",
+      "title": "Traces",
       "type": "table"
     }
   ],
   "schemaVersion": 41,
   "tags": [],
   "templating": {
-    "list": []
+    "list": [
+      {
+        "current": {
+        },
+        "datasource": {
+          "type": "grafana-clickhouse-datasource",
+          "uid": "${DS_GRAFANA-CLICKHOUSE-DATASOURCE}"
+        },
+        "definition": "SELECT DISTINCT SpanAttributes['session.id']\nFROM \"default\".\"otel_traces\"\nWHERE SpanAttributes['session.id'] IS NOT NULL\n  AND SpanAttributes['session.id'] != ''\n  AND ServiceName LIKE 'corto%'\n  AND Timestamp >= $__fromTime AND Timestamp <= \n$__toTime\nORDER BY Timestamp DESC",
+        "hide": 0,
+        "includeAll": false,
+        "multi": false,
+        "name": "session_id",
+        "options": [],
+        "query": "SELECT DISTINCT SpanAttributes['session.id']\nFROM \"default\".\"otel_traces\"\nWHERE SpanAttributes['session.id'] IS NOT NULL\n  AND SpanAttributes['session.id'] != ''\n  AND ServiceName LIKE 'corto%'\n  AND Timestamp >= $__fromTime AND Timestamp <= \n$__toTime\nORDER BY Timestamp DESC",
+        "refresh": 2,
+        "regex": "",
+        "skipUrlSync": false,
+        "sort": 0,
+        "type": "query"
+      },
+      {
+        "current": {
+          "selected": false,
+          "text": "What are the flavor profiles of Ethiopian coffee?",
+          "value": "What are the flavor profiles of Ethiopian coffee?"
+        },
+        "datasource": {
+          "type": "grafana-clickhouse-datasource",
+          "uid": "${DS_GRAFANA-CLICKHOUSE-DATASOURCE}"
+        },
+        "definition": "SELECT\n    JSONExtractString(\n        argMinIf(SpanAttributes['ioa_observe.entity.input'], Timestamp, SpanAttributes['ioa_observe.entity.input'] IS NOT NULL),\n        'args', 2\n    ) AS initialUserPrompt\nFROM \"default\".\"otel_traces\"\nWHERE\n    Timestamp >= $__fromTime AND Timestamp <= $__toTime\n    AND SpanAttributes['session.id'] IN (${session_id:sqlstring})\n    AND SpanAttributes['ioa_observe.entity.input'] LIKE '%\"args\":%'\nLIMIT 1",
+        "hide": 2,
+        "includeAll": false,
+        "multi": false,
+        "name": "session_initial_prompt",
+        "options": [],
+        "query": "SELECT\n    JSONExtractString(\n        argMinIf(SpanAttributes['ioa_observe.entity.input'], Timestamp, SpanAttributes['ioa_observe.entity.input'] IS NOT NULL),\n        'args', 2\n    ) AS initialUserPrompt\nFROM \"default\".\"otel_traces\"\nWHERE\n    Timestamp >= $__fromTime AND Timestamp <= $__toTime\n    AND SpanAttributes['session.id'] IN (${session_id:sqlstring})\n    AND SpanAttributes['ioa_observe.entity.input'] LIKE '%\"args\":%'\nLIMIT 1",
+        "refresh": 1,
+        "regex": "",
+        "skipUrlSync": false,
+        "sort": 0,
+        "type": "query"
+      }
+    ]
   },
   "time": {
-    "from": "now-1h",
+    "from": "now-24h",
     "to": "now"
   },
   "timepicker": {},

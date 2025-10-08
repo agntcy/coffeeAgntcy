@@ -17,7 +17,6 @@ from a2a.types import (
     Part,
     TextPart,
     Task)
-
 from a2a.utils import (
     new_task,
 )

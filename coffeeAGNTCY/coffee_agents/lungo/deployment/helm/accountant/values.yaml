@@ -30,6 +30,11 @@ probes:
   readinessProbeEnabled: false
   port: 9092
   endpoint: /v1/health
+  initialDelaySeconds: 300  # Wait 5 minutes before the first check
+  periodSeconds: 300       # Check every 5 minutes
+  timeoutSeconds: 30
+
+
 
 resources:
   enabled: false

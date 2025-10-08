@@ -6,7 +6,6 @@ from uuid import uuid4
 
 from a2a.server.agent_execution import AgentExecutor, RequestContext
 from a2a.server.events import EventQueue
-from a2a.utils.errors import ServerError
 from a2a.types import (
     UnsupportedOperationError,
     JSONRPCResponse,
@@ -17,13 +16,13 @@ from a2a.types import (
     Part,
     TextPart,
     Task)
-
 from a2a.utils import (
     new_task,
 )
+from a2a.utils.errors import ServerError
 
-from agent import AccountantAgent
-from card import AGENT_CARD
+from agents.logistics.accountant.agent import AccountantAgent
+from agents.logistics.accountant.card import AGENT_CARD
 
 logger = logging.getLogger("lungo.accountant_agent.agent_executor")
 

@@ -1,8 +1,8 @@
 # Copyright AGNTCY Contributors (https://github.com/agntcy)
 # SPDX-License-Identifier: Apache-2.0
 
-from pydantic import BaseModel, Field
 from typing import Literal
+from pydantic import BaseModel, Field
 
 class InventoryArgs(BaseModel):
     """Arguments for the create_order tool."""

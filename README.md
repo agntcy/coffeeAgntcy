@@ -9,7 +9,7 @@
 
 This reference agentic application demonstrates how to:
 
-- How **SLIM** enables **request-reply** and **unicast (fire & forget)** patterns
+- How **SLIM** enables **request-reply** , **unicast (fire & forget)** and **group communication** patterns.
 - How tools and transports can be reused across agent implementations (e.g., **SLIM**, **NATS**, **MCP**)
 - How protocol-agnostic bridges and clients interconnect modular agents
 - How to orchestrate agents using **LangGraph** for structured and stateful workflows
@@ -31,7 +31,7 @@ We currently provide two setups you can run to see how components from AGNTCY wo
   👉 [View the Corto README](coffeeAGNTCY/coffee_agents/corto)
 
 - **Lungo**:  
-  A more advanced setup that will evolve over time as we mature components. The first release shows agents that use A2A communication via configurable transports (default: SLIM), are structured as directed LangGraphs, and include an MCP weather-aware farm that fetches live data. It also shows how to enable observability using Observe SDK.  
+  A more advanced setup that will evolve over time as we mature components. There are two setups: 1) pub/sub A2A over NATS as default transport, and 2) group communication over SLIM as default. Agents are structured as directed LangGraphs with A2A communication using configurable transports. It includes an MCP weather-aware farm that fetches live data, observability via the Observe SDK, identity, and a group communication pattern with specialized agents (farms, shipper, accountant) that collaborate to fulfill coffee orders.
 
   👉 [View the Lungo README](coffeeAGNTCY/coffee_agents/lungo)
 
@@ -39,7 +39,7 @@ We currently provide two setups you can run to see how components from AGNTCY wo
 
 ### Built With
 
-- [AGNTCY App SDK](https://github.com/agntcy/app-sdk) = v0.2.2
+- [AGNTCY App SDK](https://github.com/agntcy/app-sdk) = v0.2.9
 - [SLIM](https://github.com/agntcy/slim) = v0.4.0
 - [A2A](https://github.com/a2aproject/a2a-python) = v0.3.0
 - [MCP](https://github.com/modelcontextprotocol/python-sdk) >= v1.10.0

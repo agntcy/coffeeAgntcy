@@ -3,7 +3,6 @@
 
 import logging
 
-from agntcy_app_sdk.factory import AgntcyFactory
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -11,10 +10,15 @@ from ioa_observe.sdk.tracing import session_start
 from pydantic import BaseModel
 import uvicorn
 
+from agntcy_app_sdk.factory import AgntcyFactory
+from ioa_observe.sdk.tracing import session_start
+
 from agents.supervisors.auction.graph.graph import ExchangeGraph
 from agents.supervisors.auction.graph import shared
 from config.config import DEFAULT_MESSAGE_TRANSPORT
 from config.logging_config import setup_logging
+from pathlib import Path
+from common.version import get_version_info
 
 setup_logging()
 logger = logging.getLogger("lungo.supervisor.main")
@@ -79,6 +83,12 @@ async def get_config():
     return {
         "transport": DEFAULT_MESSAGE_TRANSPORT.upper()
     }
+
+@app.get("/about")
+async def version_info():
+  """Return build info sourced from about.properties."""
+  props_path = Path(__file__).resolve().parents[3] / "about.properties"
+  return get_version_info(props_path)
 
 # Run the FastAPI server using uvicorn
 if __name__ == "__main__":

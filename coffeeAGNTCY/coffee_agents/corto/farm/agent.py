@@ -4,11 +4,12 @@
 import logging
 from typing import TypedDict
 
-from langgraph.graph import END, START, StateGraph
 from langchain_core.messages import HumanMessage, SystemMessage
+from langgraph.graph import END, START, StateGraph
+
+from ioa_observe.sdk.decorators import agent, graph
 
 from common.llm import get_llm
-from ioa_observe.sdk.decorators import agent, graph
 
 logger = logging.getLogger("corto.farm_agent.graph")
 

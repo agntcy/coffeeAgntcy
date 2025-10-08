@@ -1,19 +1,18 @@
 # Copyright AGNTCY Contributors (https://github.com/agntcy)
 # SPDX-License-Identifier: Apache-2.0
-
 import logging
 import uuid
+
 from pydantic import BaseModel, Field
 
 from langchain_core.prompts import PromptTemplate
-from langchain_core.messages import AIMessage, SystemMessage
+from langchain_core.messages import AIMessage, SystemMessage, ToolMessage, HumanMessage
 from langgraph.graph.state import CompiledStateGraph
 from langgraph.graph import MessagesState
 from langgraph.graph import StateGraph, END
 from langgraph.prebuilt import ToolNode
 from ioa_observe.sdk.decorators import agent, tool, graph
 
-from common.llm import get_llm
 from agents.supervisors.auction.graph.tools import (
     get_farm_yield_inventory, 
     get_all_farms_yield_inventory,
@@ -21,6 +20,7 @@ from agents.supervisors.auction.graph.tools import (
     get_order_details, 
     tools_or_next
 )
+from common.llm import get_llm
 
 logger = logging.getLogger("lungo.supervisor.graph")
 
@@ -109,7 +109,6 @@ class ExchangeGraph:
         workflow.add_edge(NodeStates.ORDERS_TOOLS, NodeStates.ORDERS)
 
         workflow.add_edge(NodeStates.GENERAL_INFO, END)
- 
         return workflow.compile()
     
     async def _supervisor_node(self, state: GraphState) -> dict:
@@ -159,12 +158,22 @@ class ExchangeGraph:
             self.reflection_llm = get_llm().with_structured_output(ShouldContinue, strict=True)
 
         sys_msg_reflection = SystemMessage(
-            content="""Decide whether the user query has been satisifed or if we need to continue.
-                Do not continue if the last message is a question or requires user input.
-                """,
-                pretty_repr=True,
-            )
-        
+            content="""You are an AI assistant reflecting on a conversation to determine if the user's request has been fully addressed.
+            Review the entire conversation history provided.
+
+            Decide whether the user's *original query* has been satisfied by the responses given so far.
+            If the last message from the AI provides a conclusive answer to the user's request, or if the conversation has reached a natural conclusion, then set 'should_continue' to false.
+            Do NOT continue if:
+            - The last message from the AI is a final answer to the user's initial request.
+            - The last message from the AI is a question that requires user input, and we are waiting for that input.
+            - The conversation seems to be complete and no further action is explicitly requested or implied.
+            - The conversation appears to be stuck in a loop or repeating itself (the 'is_duplicate_message' check will also help here).
+
+            If more information is needed from the AI to fulfill the original request, or if the user has asked a follow-up question that needs an AI response, then set 'should_continue' to true.
+            """,
+            pretty_repr=True,
+        )
+
         response = await self.reflection_llm.ainvoke(
           [sys_msg_reflection] + state["messages"]
         )
@@ -182,6 +191,7 @@ class ExchangeGraph:
           "next_node": next_node,
           "messages": [SystemMessage(content=response.reason)],
         }
+
     async def _inventory_node(self, state: GraphState) -> dict:
         """
         Handles inventory-related queries using an LLM to formulate responses.
@@ -191,84 +201,225 @@ class ExchangeGraph:
                 [get_farm_yield_inventory, get_all_farms_yield_inventory],
                 strict=True
             )
-        
-        # get latest HumanMessage
-        user_msg = next(
-            (m for m in reversed(state["messages"]) if m.type == "human"), None
-        )
-        # get latest ToolMessage
-        tool_msg = next(
-            (m for m in reversed(state["messages"]) if m.type == "tool"), None
-        )
 
-        if tool_msg:
-            context = f"Tool responded: {tool_msg.content}"
+        # get latest HumanMessage
+        user_msg = next((m for m in reversed(state["messages"]) if m.type == "human"), None)
+        # Find the last AIMessage that initiated tool calls
+        last_ai_message = None
+        for m in reversed(state["messages"]):
+            if isinstance(m, AIMessage) and m.tool_calls:
+                last_ai_message = m
+                break
+
+        collected_tool_messages = []
+        if last_ai_message:
+            # Get the IDs of the tool calls made by the last AI message
+            tool_call_ids = {tc.get("id") for tc in last_ai_message.tool_calls if tc.get("id")}
+
+            # Collect all ToolMessages that correspond to these tool_call_ids
+            for m in reversed(state["messages"]):
+                if isinstance(m, ToolMessage) and m.tool_call_id in tool_call_ids:
+                    collected_tool_messages.append(m)
+
+        tool_results_summary = []
+        any_tool_failed = False # Flag to track if ANY tool call failed
+
+        if collected_tool_messages:
+            for tool_msg in collected_tool_messages:
+                result_str = str(tool_msg.content) # Convert to string for keyword checking
+
+                # Check for failure keywords in each individual tool result
+                if "error" in result_str.lower() or \
+                   "failed" in result_str.lower() or \
+                   "timeout" in result_str.lower():
+                    any_tool_failed = True
+                    # Include tool name and ID for better context
+                    tool_results_summary.append(f"FAILURE for '{tool_msg.name}' (ID: {tool_msg.tool_call_id}): The request could not be completed.")
+                    logger.warning(f"Detected tool failure in result: {result_str}")
+                else:
+                    tool_results_summary.append(f"SUCCESS from tool '{tool_msg.name}' (ID: {tool_msg.tool_call_id}): {result_str}")
+
+            context = "\n".join(tool_results_summary)
         else:
-            context = "Tool has not yet responded"
+            context = "No previous tool execution context available."
 
         prompt = PromptTemplate(
-            template="""You are an inventory broker for a global coffee exchange company. 
+            template="""You are an inventory broker for a global coffee exchange company.
             Your task is to provide accurate and concise information about coffee yields and inventory based on user queries.
-            
-            If the user asks about how much coffee we have, what the yield is or general coffee inventory, use the provided tools.
-            If no farm was specified, use the get_all_farms_yield_inventory tool to get the total yield across all farms.
-            If the user asks about a specific farm, use the get_farm_yield_inventory tool to get the yield for that farm.
 
-            If the user asks where we have coffee available, get the yield from all farms and respond with the total yield across all farms.
+            User's current request: {user_message}
 
-            User question: {user_message}
-
+            --- Context from previous tool execution (if any) ---
             {tool_context}
-            If the tool has answered, summarize it to the user. Otherwise ask again.
+
+            --- Instructions for your response ---
+            1.  **Process ALL tool results provided in the context.** This includes both successful and failed attempts.
+            2.  **If ANY tool call result indicates a FAILURE:**
+                *   Acknowledge the failure to the user for the specific farm(s)/request(s) that failed.
+                *   Politely inform the user that the request could not be completed for those parts due to an issue (e.g., "The farm is currently unreachable", "An error occurred", or "The request failed for an unknown reason").
+                *   **IMPORTANT: Do NOT include technical error messages, stack traces, or raw tool output details directly in your response to the user.** Summarize failures concisely.
+                *   **Crucially, DO NOT attempt to call the same or any other tool again for any failed part of the request.**
+                *   If other tool calls were successful, present their results clearly and concisely.
+                *   Your response MUST synthesize all available information (successes and failures) into a single, comprehensive message.
+                *   Your response MUST NOT contain any tool calls.
+
+            3.  **If ALL tool call results indicate SUCCESS:**
+                *   Summarize the provided information clearly and concisely to the user, directly answering their request.
+                *   Your response MUST NOT contain any tool calls, as the information has already been obtained.
+
+            4.  **If there is no 'Previous tool call result' (i.e., this is the first attempt):**
+                *   Determine if a tool needs to be called to answer the user's question.
+                *   If the user asks about a specific farm, use the `get_farm_yield_inventory` tool for that farm.
+                *   If no farm was specified or the user asks about overall availability, use the `get_all_farms_yield_inventory` tool.
+                *   If the question can be answered without a tool or requires clarification, provide that directly.
+
+            Your final response should be a conclusive answer to the user's request, or a clear explanation if the request cannot be fulfilled.
             """,
             input_variables=["user_message", "tool_context"]
         )
 
         chain = prompt | self.inventory_llm
 
-        llm_response = chain.invoke({
-            "user_message": user_msg,
+        llm_response = await chain.ainvoke({
+            "user_message": user_msg.content if user_msg else "No specific user message.",
             "tool_context": context,
         })
 
-        return {
-            "messages": [llm_response]
-        }
-    
+        # --- Safety Net: Force non-tool-calling response if LLM ignores failure instruction ---
+        # The safety net triggers if ANY tool failed in the previous step, e.g. one of the farm agent is offline when user asks for yield about multiple farms
+        if any_tool_failed and llm_response.tool_calls:
+            logger.warning(
+                "LLM attempted tool call despite previous tool failure(s). "
+                "Forcing a user-facing error message to prevent loop."
+            )
+            forced_error_message = (
+                f"I encountered some issues retrieving information for your request. "
+                f"Some parts could not be completed at this time due to a technical issue. "
+                f"Please try again later."
+            )
+            llm_response = AIMessage(
+                content=forced_error_message,
+                tool_calls=[], # Crucially, no tool calls
+                name=llm_response.name,
+                id=llm_response.id,
+                response_metadata=llm_response.response_metadata
+            )
+        # --- End Safety Net ---
+
+        return {"messages": [llm_response]}
+
     async def _orders_node(self, state: GraphState) -> dict:
+        """
+        Handles orders-related queries using an LLM to formulate responses,
+        with retry logic for tool failures.
+        """
         if not self.orders_llm:
             self.orders_llm = get_llm().bind_tools([create_order, get_order_details])
 
+        # Extract the latest HumanMessage for the prompt
+        user_msg = next((m for m in reversed(state["messages"]) if m.type == "human"), None)
+        # Find the last AIMessage that initiated tool calls
+        last_ai_message = None
+        for m in reversed(state["messages"]):
+            if isinstance(m, AIMessage) and m.tool_calls:
+                last_ai_message = m
+                break
+
+        collected_tool_messages = []
+        if last_ai_message:
+            tool_call_ids = {tc.get("id") for tc in last_ai_message.tool_calls if tc.get("id")}
+            for m in reversed(state["messages"]):
+                if isinstance(m, ToolMessage) and m.tool_call_id in tool_call_ids:
+                    collected_tool_messages.append(m)
+
+        tool_results_summary = []
+        any_tool_failed = False # Flag to track if ANY tool call failed
+
+        if collected_tool_messages:
+            for tool_msg in collected_tool_messages:
+                result_str = str(tool_msg.content) # Convert to string for keyword checking
+
+                # Check for failure keywords in each individual tool result
+                if "error" in result_str.lower() or \
+                   "failed" in result_str.lower() or \
+                   "timeout" in result_str.lower():
+                    any_tool_failed = True
+                    # Include tool name and ID for better context
+                    tool_results_summary.append(f"FAILURE for '{tool_msg.name}' (ID: {tool_msg.tool_call_id}): The request could not be completed.")
+                    logger.warning(f"Detected tool failure in orders node result: {result_str}")
+                else:
+                    tool_results_summary.append(f"SUCCESS from tool '{tool_msg.name}' (ID: {tool_msg.tool_call_id}): {result_str}")
+
+            context = "\n".join(tool_results_summary)
+        else:
+            context = "No previous tool execution context available."
+
         prompt = PromptTemplate(
-            template="""You are an orders broker for a global coffee exchange company. 
+            template="""You are an orders broker for a global coffee exchange company.
             Your task is to handle user requests related to placing and checking orders with coffee farms.
-            
-            If the issue is related to identity verification, respond with a short reply: 
-            'The badge of this <current_farm> farm agent has not been found or could not be verified, and hence the order request failed.' 
-            Do not ask further questions in this case.
-            
-            If the user asks about placing an order, use the provided tools to create an order.
-            If the user asks about checking the status of an order, use the provided tools to retrieve order details.
-            If an order has been created, do not create a new order for the same request.
-            If further information is needed, ask the user for clarification.
-        
-            User question: {user_message}
+
+            User's current request: {user_message}
+
+            --- Context from previous tool execution (if any) ---
+            {tool_context}
+
+            --- Instructions for your response ---
+            1.  **Process ALL tool results provided in the context.** This includes both successful and failed attempts.
+            2.  **If ANY tool call result indicates a FAILURE:**
+                *   Acknowledge the failure to the user for the specific request(s) that failed.
+                *   Politely inform the user that the request could not be completed for those parts due to an issue (e.g., "The farm is currently unreachable" or "An error occurred").
+                *   **IMPORTANT: Do NOT include technical error messages, stack traces, or raw tool output details directly in your response to the user.** Summarize failures concisely.
+                *   **Crucially, DO NOT attempt to call the same or any other tool again for any failed part of the request.**
+                *   If other tool calls were successful, present their results clearly and concisely.
+                *   Your response MUST synthesize all available information (successes and failures) into a single, comprehensive message.
+                *   Your response MUST NOT contain any tool calls.
+
+            3.  **If ALL tool call results indicate SUCCESS:**
+                *   Summarize the provided information clearly and concisely to the user, directly answering their request.
+                *   Your response MUST NOT contain any tool calls, as the information has already been obtained.
+
+            4.  **If there is no 'Previous tool call result' (i.e., this is the first attempt):**
+                *   Determine if a tool needs to be called to answer the user's question.
+                *   If the user asks about placing an order, use the `create_order` tool.
+                *   If the user asks about checking the status of an order, use the `get_order_details` tool.
+                *   If further information is needed to call a tool (e.g., missing order ID, quantity, farm), ask the user for clarification.
+
+            Your final response should be a conclusive answer to the user's request, or a clear explanation if the request cannot be fulfilled.
             """,
-            input_variables=["user_message"]
+            input_variables=["user_message", "tool_context"]
         )
 
         chain = prompt | self.orders_llm
 
-        llm_response = chain.invoke({
-            "user_message": state["messages"],
+        llm_response = await chain.ainvoke({
+            "user_message": user_msg.content if user_msg else "No specific user message.",
+            "tool_context": context,
         })
-        if llm_response.tool_calls:
-            logger.info(f"Tool calls detected from orders_node: {llm_response.tool_calls}")
-            logger.debug(f"Messages: {state['messages']}")
-        return {
-            "messages": [llm_response]
-        }
-    
+
+        # --- Safety Net: Force non-tool-calling response if LLM ignores failure instruction ---
+        if any_tool_failed and llm_response.tool_calls:
+            logger.warning(
+                "LLM attempted tool call despite previous tool failure(s) in orders node. "
+                "Forcing a user-facing error message to prevent loop."
+            )
+
+            forced_error_message = (
+                f"I'm sorry, I was unable to complete your order request for all items. "
+                f"An issue occurred for some parts. Please try again later."
+            )
+
+            llm_response = AIMessage(
+                content=forced_error_message,
+                tool_calls=[],
+                name=llm_response.name,
+                id=llm_response.id,
+                response_metadata=llm_response.response_metadata
+            )
+        # --- End Safety Net ---
+
+        return {"messages": [llm_response]}
+
+
     def _general_response_node(self, state: GraphState) -> dict:
         return {
             "next_node": END,

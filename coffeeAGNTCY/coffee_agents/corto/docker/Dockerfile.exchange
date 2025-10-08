@@ -1,6 +1,20 @@
 # `coffeeAGNTCY/coffee_agents/corto/docker/Dockerfile.exchange`
 FROM python:3.13.0-slim
 
+# Build arguments for metadata
+ARG BUILD_VERSION=unknown
+ARG BUILD_DATE=unknown
+ARG BUILD_TIMESTAMP=unknown
+ARG GIT_COMMIT=unknown
+ARG GIT_COMMIT_SHORT=unknown
+ARG GIT_BRANCH=unknown
+ARG BUILD_NUMBER=unknown
+ARG BUILD_WORKFLOW=unknown
+ARG BUILD_ACTOR=unknown
+ARG BUILD_SOURCE=local
+ARG IMAGE_NAME=unknown
+ARG IMAGE_TAG=unknown
+
 # Install system dependencies, including curl, ping, and wget
 RUN apt-get update && \
     apt-get install -y --no-install-recommends git curl wget iputils-ping && \
@@ -17,4 +31,21 @@ COPY coffeeAGNTCY/coffee_agents/corto/pyproject.toml coffeeAGNTCY/coffee_agents/
 RUN uv sync --locked --no-editable
 
 COPY coffeeAGNTCY/coffee_agents/corto/ .
+
+## Generate about.properties file with build metadata
+RUN printf "app.name=corto-exchange\n"                > about.properties && \
+    printf "app.service=corto-exchange\n"            >> about.properties && \
+    printf "build.version=%s\n"         "$BUILD_VERSION"    >> about.properties && \
+    printf "build.date=%s\n"            "$BUILD_DATE"       >> about.properties && \
+    printf "build.timestamp=%s\n"       "$BUILD_TIMESTAMP"  >> about.properties && \
+    printf "build.number=%s\n"          "$BUILD_NUMBER"     >> about.properties && \
+    printf "build.workflow=%s\n"        "$BUILD_WORKFLOW"   >> about.properties && \
+    printf "build.actor=%s\n"           "$BUILD_ACTOR"      >> about.properties && \
+    printf "build.source=%s\n"          "$BUILD_SOURCE"     >> about.properties && \
+    printf "git.commit=%s\n"            "$GIT_COMMIT"       >> about.properties && \
+    printf "git.commit.short=%s\n"      "$GIT_COMMIT_SHORT" >> about.properties && \
+    printf "git.branch=%s\n"            "$GIT_BRANCH"       >> about.properties && \
+    printf "image.name=%s\n"            "$IMAGE_NAME"       >> about.properties && \
+    printf "image.tag=%s\n"             "$IMAGE_TAG"        >> about.properties
+
 CMD ["uv", "run", "python", "exchange/main.py"]

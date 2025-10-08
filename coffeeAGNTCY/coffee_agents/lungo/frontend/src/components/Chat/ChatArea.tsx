@@ -8,6 +8,7 @@ import { Message } from "@/types/message"
 import CoffeeGraderDropdown from "./Prompts/CoffeeGraderDropdown"
 import airplaneSvg from "@/assets/airplane.svg"
 import CoffeePromptsDropdown from "./Prompts/CoffeePromptsDropdown"
+import LogisticsPromptsDropdown from "./Prompts/LogisticsPromptsDropdown"
 import { useAgentAPI } from "@/hooks/useAgentAPI"
 import UserMessage from "./UserMessage"
 import ChatHeader from "./ChatHeader"
@@ -22,6 +23,8 @@ interface ChatAreaProps {
   isBottomLayout: boolean
   showCoffeeDropdown?: boolean
   showCoffeePrompts?: boolean
+  showLogisticsPrompts?: boolean
+  pattern?: string
   onCoffeeGraderSelect?: (query: string) => void
   onDropdownSelect?: (query: string) => void
   onUserInput?: (query: string) => void
@@ -40,6 +43,8 @@ const ChatArea: React.FC<ChatAreaProps> = ({
   isBottomLayout,
   showCoffeeDropdown = false,
   showCoffeePrompts = false,
+  showLogisticsPrompts = false,
+  pattern,
   onDropdownSelect,
   onUserInput,
   onApiResponse,
@@ -81,20 +86,25 @@ const ChatArea: React.FC<ChatAreaProps> = ({
     setLoading(true)
     setButtonClicked(true)
 
-    await sendMessageWithCallback(messageContent, setMessages, {
-      onSuccess: (response) => {
-        setAiReplied(true)
-        if (onApiResponse) {
-          onApiResponse(response, false)
-        }
+    await sendMessageWithCallback(
+      messageContent,
+      setMessages,
+      {
+        onSuccess: (response) => {
+          setAiReplied(true)
+          if (onApiResponse) {
+            onApiResponse(response, false)
+          }
+        },
+        onError: (error) => {
+          logger.apiError("/agent/prompt", error)
+          if (onApiResponse) {
+            onApiResponse("Sorry, I encountered an error.", true)
+          }
+        },
       },
-      onError: (error) => {
-        logger.apiError("/agent/prompt", error)
-        if (onApiResponse) {
-          onApiResponse("Sorry, I encountered an error.", true)
-        }
-      },
-    })
+      pattern,
+    )
 
     setLoading(false)
   }
@@ -183,6 +193,15 @@ const ChatArea: React.FC<ChatAreaProps> = ({
         {showCoffeePrompts && (
           <div className="relative z-10 flex h-9 w-auto w-full max-w-[880px] flex-row items-start gap-2 p-0">
             <CoffeePromptsDropdown
+              visible={true}
+              onSelect={handleDropdownQuery}
+            />
+          </div>
+        )}
+
+        {showLogisticsPrompts && (
+          <div className="relative z-10 flex h-9 w-auto w-full max-w-[880px] flex-row items-start gap-2 p-0">
+            <LogisticsPromptsDropdown
               visible={true}
               onSelect={handleDropdownQuery}
             />

@@ -30,6 +30,9 @@ probes:
   readinessProbeEnabled: false
   port: 9091
   endpoint: /v1/health
+  initialDelaySeconds: 300
+  periodSeconds: 300
+  timeoutSeconds: 30
 
 resources:
   enabled: false

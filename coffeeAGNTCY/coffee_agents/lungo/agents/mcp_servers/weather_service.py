@@ -4,20 +4,19 @@
 from typing import Any
 import logging
 
-import httpx
 import asyncio
-
 from mcp.server.fastmcp import FastMCP
-
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
-
+import httpx
 
 from agntcy_app_sdk.factory import AgntcyFactory
+
 from config.config import (
     DEFAULT_MESSAGE_TRANSPORT,
     TRANSPORT_SERVER_ENDPOINT,
 )
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 # Initialize a multi-protocol, multi-transport agntcy factory.
 factory = AgntcyFactory("lungo_mcp_server", enable_tracing=True)

@@ -6,7 +6,7 @@ authors = [{ name = "Shridhar Shah", email = "shridhsh@cisco.com" }]
 requires-python = ">=3.13,<4.0"
 dependencies = [
     "a2a-sdk==0.3.0",
-    "cnoe-agent-utils==0.2.2",
+    "cnoe-agent-utils==0.3.0",
     "click>=8.1.8",
     "coloredlogs>=15.0.1",
     "dotenv>=0.9.9",
@@ -25,11 +25,7 @@ dependencies = [
     "mcp[cli]>=1.10.0",
     "ioa-observe-sdk==1.0.18",
     "identity-service-sdk==0.0.3",
-    "agntcy-app-sdk==0.2.5",
-    "pytest>=7.4.4",
-    "pytest-xprocess>=1.0.2",
-    "testcontainers>=4.13.2",
-    "pytest-timeout>=2.4.0",
+    "agntcy-app-sdk==0.2.9"
 ]
 
 [project.optional-dependencies]

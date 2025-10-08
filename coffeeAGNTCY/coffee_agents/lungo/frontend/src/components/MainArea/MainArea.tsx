@@ -16,6 +16,7 @@ import "./ReactFlow.css"
 import { PatternType } from "@/App"
 import TransportNode from "./Graph/transportNode"
 import CustomEdge from "./Graph/CustomEdge"
+import BranchingEdge from "./Graph/BranchingEdge"
 import CustomNode from "./Graph/CustomNode"
 import {
   getGraphConfig,
@@ -33,6 +34,7 @@ const nodeTypes = {
 
 const edgeTypes = {
   custom: CustomEdge,
+  branching: BranchingEdge,
 }
 
 interface AnimationStep {
@@ -47,6 +49,7 @@ interface MainAreaProps {
   setAiReplied: (replied: boolean) => void
   chatHeight?: number
   isExpanded?: boolean
+  groupCommResponseReceived?: boolean
 }
 
 const DELAY_DURATION = 500
@@ -63,10 +66,14 @@ const MainArea: React.FC<MainAreaProps> = ({
   setAiReplied,
   chatHeight = 0,
   isExpanded = false,
+  groupCommResponseReceived = false,
 }) => {
   const fitViewWithViewport = useViewportAwareFitView()
 
-  const config: GraphConfig = getGraphConfig(pattern)
+  const isGroupCommConnected =
+    pattern !== "group_communication" || groupCommResponseReceived
+
+  const config: GraphConfig = getGraphConfig(pattern, isGroupCommConnected)
 
   const [nodesDraggable, setNodesDraggable] = useState(true)
   const [nodesConnectable, setNodesConnectable] = useState(true)
@@ -76,19 +83,27 @@ const MainArea: React.FC<MainAreaProps> = ({
   const animationLock = useRef<boolean>(false)
 
   useEffect(() => {
-    updateTransportLabels(setNodes, setEdges)
+    const updateGraph = async () => {
+      const newConfig = getGraphConfig(pattern, isGroupCommConnected)
 
-    const newConfig = getGraphConfig(pattern)
-    setNodes(newConfig.nodes)
-    setEdges(newConfig.edges)
+      setNodes(newConfig.nodes)
 
-    setTimeout(() => {
-      fitViewWithViewport({
-        chatHeight,
-        isExpanded,
-      })
-    }, 100)
-  }, [pattern, setNodes, setEdges, fitViewWithViewport, chatHeight, isExpanded])
+      await new Promise((resolve) => setTimeout(resolve, 50))
+
+      setEdges(newConfig.edges)
+
+      await updateTransportLabels(setNodes, setEdges, pattern)
+
+      setTimeout(() => {
+        fitViewWithViewport({
+          chatHeight: 0,
+          isExpanded: false,
+        })
+      }, 200)
+    }
+
+    updateGraph()
+  }, [fitViewWithViewport, pattern, isGroupCommConnected, setNodes, setEdges])
 
   useEffect(() => {
     fitViewWithViewport({
@@ -96,6 +111,30 @@ const MainArea: React.FC<MainAreaProps> = ({
       isExpanded,
     })
   }, [chatHeight, isExpanded, fitViewWithViewport])
+
+  useEffect(() => {
+    const checkEdges = () => {
+      const expectedEdges = config.edges.length
+      const renderedEdges =
+        document.querySelectorAll(".react-flow__edge").length
+
+      if (expectedEdges > 0 && renderedEdges === 0 && !animationLock.current) {
+        setEdges([])
+        setTimeout(() => {
+          setEdges(config.edges)
+        }, 100)
+      }
+    }
+
+    const intervalId = setInterval(checkEdges, 2000)
+
+    const timeoutId = setTimeout(checkEdges, 1000)
+
+    return () => {
+      clearInterval(intervalId)
+      clearTimeout(timeoutId)
+    }
+  }, [config.edges, setEdges])
 
   useEffect(() => {
     const addTooltips = () => {
@@ -127,22 +166,27 @@ const MainArea: React.FC<MainAreaProps> = ({
 
   const updateStyle = useCallback(
     (id: string, active: boolean): void => {
-      setNodes((objs) =>
-        objs.map((obj) =>
-          obj.id === id ? { ...obj, data: { ...obj.data, active } } : obj,
+      setNodes((nodes) =>
+        nodes.map((node) =>
+          node.id === id ? { ...node, data: { ...node.data, active } } : node,
         ),
       )
-      setEdges((objs) =>
-        objs.map((obj) =>
-          obj.id === id ? { ...obj, data: { ...obj.data, active } } : obj,
-        ),
-      )
+
+      setTimeout(() => {
+        setEdges((edges) =>
+          edges.map((edge) =>
+            edge.id === id ? { ...edge, data: { ...edge.data, active } } : edge,
+          ),
+        )
+      }, 10)
     },
     [setNodes, setEdges],
   )
 
   useEffect(() => {
-    if (!buttonClicked && !aiReplied) return
+    const shouldAnimate = buttonClicked && !aiReplied
+
+    if (!shouldAnimate) return
 
     const waitForAnimationAndRun = async () => {
       while (animationLock.current) {
@@ -157,14 +201,10 @@ const MainArea: React.FC<MainAreaProps> = ({
       }
 
       const animateGraph = async (): Promise<void> => {
-        if (!aiReplied) {
-          const animationSequence: AnimationStep[] = config.animationSequence
-          for (const step of animationSequence) {
-            await animate(step.ids, HIGHLIGHT.ON)
-            await animate(step.ids, HIGHLIGHT.OFF)
-          }
-        } else {
-          setAiReplied(false)
+        const animationSequence: AnimationStep[] = config.animationSequence
+        for (const step of animationSequence) {
+          await animate(step.ids, HIGHLIGHT.ON)
+          await animate(step.ids, HIGHLIGHT.OFF)
         }
 
         setButtonClicked(false)
@@ -180,9 +220,14 @@ const MainArea: React.FC<MainAreaProps> = ({
     setButtonClicked,
     aiReplied,
     setAiReplied,
+    pattern,
     config.animationSequence,
     updateStyle,
+    setNodes,
+    setEdges,
   ])
+
+  const onNodeDrag = useCallback(() => {}, [])
 
   return (
     <div className="bg-primary-bg order-1 flex h-full w-full flex-none flex-grow flex-col items-start self-stretch p-0">
@@ -193,6 +238,7 @@ const MainArea: React.FC<MainAreaProps> = ({
         edgeTypes={edgeTypes}
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
+        onNodeDrag={onNodeDrag}
         proOptions={proOptions}
         defaultViewport={{ x: 0, y: 0, zoom: 0.75 }}
         minZoom={0.15}

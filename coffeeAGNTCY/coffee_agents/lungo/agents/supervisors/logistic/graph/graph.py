@@ -6,18 +6,17 @@ import uuid
 
 from langchain_core.prompts import PromptTemplate
 from langchain_core.messages import AIMessage
-
 from langgraph.graph.state import CompiledStateGraph
 from langgraph.graph import MessagesState
 from langgraph.graph import StateGraph
 from langgraph.prebuilt import ToolNode
 from ioa_observe.sdk.decorators import agent, tool, graph
 
-from common.llm import get_llm
 from agents.supervisors.logistic.graph.tools import (
     create_order,
     next_tools_or_end
 )
+from common.llm import get_llm
 
 logger = logging.getLogger("lungo.logistic.supervisor.graph")
 
@@ -31,12 +30,12 @@ class GraphState(MessagesState):
     """
     next_node: str
 
-# @agent(name="logistic_agent")
+@agent(name="logistic_agent")
 class LogisticGraph:
     def __init__(self):
         self.graph = self.build_graph()
 
-    # @graph(name="logistic_graph")
+    @graph(name="logistic_graph")
     def build_graph(self) -> CompiledStateGraph:
         """
         Constructs and compiles a LangGraph instance.

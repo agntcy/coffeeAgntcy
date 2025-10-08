@@ -2,16 +2,19 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import logging
-from langgraph.graph import MessagesState
+
 from langchain_core.messages import AIMessage
+from langgraph.graph import MessagesState
 from langgraph.graph import StateGraph, END
+
+from ioa_observe.sdk.decorators import agent, graph
+
 from common.logistic_states import (
     LogisticStatus,
     extract_status,
 )
 
 logger = logging.getLogger("lungo.shipper_agent.agent")
-
 
 # --- 1. Define Node Names as Constants ---
 class NodeStates:
@@ -27,6 +30,7 @@ class GraphState(MessagesState):
 
 
 # --- 3. Implement the Shipper Agent Class ---
+@agent(name="shipper_agent")
 class ShipperAgent:
     def __init__(self):
         """
@@ -64,6 +68,7 @@ class ShipperAgent:
 
     # --- Graph Building Method ---
 
+    @graph(name="shipper_graph")
     def _build_graph(self):
         """
         Builds and compiles the LangGraph workflow with single node.

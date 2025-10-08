@@ -4,22 +4,22 @@
 import asyncio
 from uvicorn import Config, Server
 
-from agntcy_app_sdk.factory import AgntcyFactory
-from agntcy_app_sdk.protocols.a2a.protocol import A2AProtocol
-
 from a2a.server.apps import A2AStarletteApplication
 from a2a.server.tasks import InMemoryTaskStore
 from a2a.server.request_handlers import DefaultRequestHandler
 from dotenv import load_dotenv
 
+from agntcy_app_sdk.factory import AgntcyFactory
+from agntcy_app_sdk.protocols.a2a.protocol import A2AProtocol
+
 from agents.farms.brazil.agent_executor import FarmAgentExecutor
+from agents.farms.brazil.card import AGENT_CARD
 from config.config import (
     DEFAULT_MESSAGE_TRANSPORT,
     TRANSPORT_SERVER_ENDPOINT,
     FARM_BROADCAST_TOPIC,
     ENABLE_HTTP
 )
-from agents.farms.brazil.card import AGENT_CARD
 
 load_dotenv()
 

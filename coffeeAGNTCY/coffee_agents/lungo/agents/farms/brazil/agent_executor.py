@@ -6,7 +6,6 @@ from uuid import uuid4
 
 from a2a.server.agent_execution import AgentExecutor, RequestContext
 from a2a.server.events import EventQueue
-from a2a.utils.errors import ServerError
 from a2a.types import (
     UnsupportedOperationError,
     JSONRPCResponse,
@@ -17,10 +16,10 @@ from a2a.types import (
     Part,
     TextPart,
     Task)
-
 from a2a.utils import (
     new_task,
 )
+from a2a.utils.errors import ServerError
 
 from agents.farms.brazil.agent import FarmAgent
 from agents.farms.brazil.card import AGENT_CARD

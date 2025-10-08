@@ -12,3 +12,4 @@ data:
   DEFAULT_MESSAGE_TRANSPORT: "{{ .Values.config.defaultMessageTransport }}"
   OTLP_HTTP_ENDPOINT: "{{ .Values.config.otlpHttpEndpoint }}"
   IDENTITY_API_SERVER_URL: "{{ .Values.config.identityApiServerUrl }}"
+  LLM_STREAMING: "{{ .Values.config.llmStreaming }}"

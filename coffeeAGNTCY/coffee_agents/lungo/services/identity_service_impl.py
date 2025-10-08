@@ -1,13 +1,15 @@
 # Copyright AGNTCY Contributors (https://github.com/agntcy)
 # SPDX-License-Identifier: Apache-2.0
 
-import requests
 import asyncio
 from pydantic import ValidationError
-from services.identity_service import IdentityService
+import requests
 from typing import Dict, Any
-from services.models import IdentityServiceApps, Badge
+
 from identityservice.sdk import IdentityServiceSdk
+
+from services.identity_service import IdentityService
+from services.models import IdentityServiceApps, Badge
 
 CLI_MAX_RETRIES = 3
 CLI_RETRY_DELAY = 2
