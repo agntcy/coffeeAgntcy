@@ -70,7 +70,7 @@ async def main(enable_http: bool):
         tasks.append(asyncio.create_task(run_http_server(server)))
         tasks.append(asyncio.create_task(create_badge_for_vietnam_farm()))
     tasks.append(asyncio.create_task(run_transport(server, DEFAULT_MESSAGE_TRANSPORT, TRANSPORT_SERVER_ENDPOINT, block=True)))
-
+    
     await asyncio.gather(*tasks)
 
 if __name__ == '__main__':

@@ -16,7 +16,41 @@ from test.integration.docker_helpers import up, down
 from test.integration.process_helper import ProcessRunner 
 
 LUNGO_DIR = Path(__file__).resolve().parents[2]
-FARMS = ["brazil", "colombia", "vietnam", "logistics"]
+print("LUNGO_DIR:", LUNGO_DIR)
+
+AGENTS = {
+    # auction agents
+    "brazil-farm": {
+        "cmd": ["python", "-m", "agents.farms.brazil.farm_server", "--no-reload"],
+        "ready_pattern": r"",
+    },
+    "colombia-farm": {
+        "cmd": ["python", "-m", "agents.farms.colombia.farm_server", "--no-reload"],
+        "ready_pattern": r"",
+    },
+    "vietnam-farm": {
+        "cmd": ["python", "-m", "agents.farms.vietnam.farm_server", "--no-reload"],
+        "ready_pattern": r"",
+    },
+    "weather-mcp": {
+        "cmd": ["uv", "run", "-m", "agents.mcp_servers.weather_service"],
+        "ready_pattern": r"",
+    },
+    # logistics agents
+    "logistics-farm": {
+        "cmd": ["python", "-m", "agents.logistics.farm.server", "--no-reload"],
+        "ready_pattern": r"",
+    },
+    "accountant": {
+        "cmd": ["python", "-m", "agents.logistics.accountant.server", "--no-reload"],
+        "ready_pattern": r"",
+    },
+    "shipper": {
+        "cmd": ["python", "-m", "agents.logistics.shipper.server", "--no-reload"],
+        "ready_pattern": r"",
+    },
+}
+
 _ACTIVE_RUNNERS = []
 
 # ---------------- utils ----------------
@@ -36,10 +70,6 @@ def _purge_modules(prefixes):
                  if any(m == p or m.startswith(p + ".") for p in prefixes)]
     for m in to_delete:
         sys.modules.pop(m, None)
-
-def _farm_cmd(farm: str) -> list[str]:
-    # python -m agents.farms.<farm>.farm_server --no-reload
-    return ["python", "-m", f"agents.farms.{farm}.farm_server", "--no-reload"]
 
 # ---------------- session infra ----------------
 
@@ -89,39 +119,96 @@ def transport_config(request):
     return dict(getattr(request, "param", {}) or {})
 
 @pytest.fixture(scope="function")
-def farm_selection(request):
-    """Select farms via @pytest.mark.farms([...])"""
-    m = request.node.get_closest_marker("farms")
+def agent_specs(request):
+    """
+    Select agents via @pytest.mark.agents([...])
+
+    Each entry can be:
+      - dict: {"name": str, "cmd": list[str], "ready_pattern": str?}
+      - string module path: "agents.supervisors.auction.main" (runs with python -m)
+    """
+    m = request.node.get_closest_marker("agents")
     if not m:
         return []
-    names = m.args[0] if m.args else m.kwargs.get("names", [])
-    return [f for f in names if f in FARMS]
+    specs = m.args[0] if m.args else m.kwargs.get("specs", [])
+    return [_normalize_agent_spec(s) for s in specs]
 
-# ---------------- farm + mcp fixtures ----------------
+def _normalize_agent_spec(spec):
+    """
+    Return a dict: {"name": str, "cmd": list[str], "ready_pattern": str}
+    """
+    if isinstance(spec, dict):
+        name = spec.get("name")
+        cmd = spec.get("cmd")
+        if not name:
+            # try to derive a name from cmd or module
+            name = _derive_name_from_spec(spec)
+        ready = spec.get("ready_pattern", r"Started server process")
+        return {"name": name, "cmd": cmd, "ready_pattern": ready}
+
+    if isinstance(spec, str):
+        # If it's a python module path like "a.b.c", run it via python -m
+        if re.match(r"^[a-zA-Z_][\w\.]*$", spec):
+            return {
+                "name": spec.split(".")[-1],
+                "cmd": ["python", "-m", spec],
+                "ready_pattern": r"Started server process",
+            }
+        raise ValueError(f"Unrecognized agent spec string: {spec!r}")
+
+    raise TypeError(f"Agent spec must be dict or module string, got: {type(spec)}")
+
+def _derive_name_from_spec(spec: dict) -> str:
+    if "name" in spec and spec["name"]:
+        return spec["name"]
+    if "cmd" in spec and spec["cmd"]:
+        # e.g., ["python", "-m", "agents.foo.bar"] → "bar"
+        parts = list(spec["cmd"])
+        try:
+            if "-m" in parts:
+                mod = parts[parts.index("-m") + 1]
+                return mod.split(".")[-1]
+        except Exception:
+            pass
+        # fallback to first arg
+        return Path(parts[0]).name
+    return "agent"
+
+# ---------------- generic agent fixture ----------------
 
 @pytest.fixture(scope="function")
-def farms_up(farm_selection, transport_config):
+def agents_up(request, transport_config):
     """
-    Start selected farms for this test, stream logs with prefixes, then tear down.
+    Start one or more registered agents via @pytest.mark.agents([...]).
+    Example:
+        @pytest.mark.agents(["brazil-farm", "weather-mcp"])
+        def test_things(agents_up): ...
     """
+    m = request.node.get_closest_marker("agents")
+    agent_names = (m.args[0] if m and m.args else m.kwargs.get("names", [])) if m else []
+
     runners: list[ProcessRunner] = []
 
-    for farm in farm_selection:
-        name = f"{farm}-farm"
+    for name in agent_names:
+        spec = AGENTS.get(name)
+        if not spec:
+            raise ValueError(f"Unknown agent: {name!r}. Add it to AGENTS dict.")
+
         env = _base_env()
         env.update(transport_config or {})
 
         print(f"\n--- Starting {name} ---")
         runner = ProcessRunner(
             name=name,
-            cmd=_farm_cmd(farm),
+            cmd=spec["cmd"],
             cwd=str(LUNGO_DIR),
             env=env,
-            ready_pattern=r"Started server process",
+            ready_pattern=spec.get("ready_pattern", r"Started server process"),
             timeout_s=30.0,
             log_dir=Path(LUNGO_DIR) / ".pytest-logs",
         ).start()
         _ACTIVE_RUNNERS.append(runner)
+
         try:
             runner.wait_ready()
         except TimeoutError:
@@ -138,37 +225,6 @@ def farms_up(farm_selection, transport_config):
         for r in runners:
             print(f"--- Stopping {r.name} ---")
             r.stop()
-
-@pytest.fixture(scope="function")
-def start_weather_mcp(transport_config):
-    env = _base_env()
-    env.update(transport_config or {})
-
-    print("\n--- Starting weather-mcp-server ---")
-    runner = ProcessRunner(
-        name="weather-mcp-server",
-        cmd=["uv", "run", "-m", "agents.mcp_servers.weather_service"],
-        cwd=str(LUNGO_DIR),
-        env=env,
-        ready_pattern=r"Starting weather service",
-        timeout_s=30.0,
-        log_dir=Path(LUNGO_DIR) / ".pytest-logs",
-    ).start()
-    _ACTIVE_RUNNERS.append(runner)
-
-    try:
-        runner.wait_ready()
-    except TimeoutError:
-        print(f"--- weather-mcp-server logs: {runner.log_path}")
-        runner.stop()
-        raise
-
-    print(f"--- weather-mcp-server ready (logs: {runner.log_path}) ---")
-    try:
-        yield
-    finally:
-        print("--- Stopping weather-mcp-server ---")
-        runner.stop()
 
 # ---------------- http client ----------------
 
@@ -187,6 +243,24 @@ def auction_supervisor_client(transport_config, monkeypatch):
     importlib.reload(auction_main)
 
     app = auction_main.app
+    with TestClient(app) as client:
+        yield client
+
+@pytest.fixture
+def logistics_supervisor_client(transport_config, monkeypatch):
+    for k, v in transport_config.items():
+        monkeypatch.setenv(k, v)
+
+    _purge_modules([
+        "agents.supervisors.logistics",
+        "config.config",
+    ])
+
+    import agents.supervisors.logistic.main as logistics_main
+    import importlib
+    importlib.reload(logistics_main)
+
+    app = logistics_main.app
     with TestClient(app) as client:
         yield client
 
