@@ -82,4 +82,4 @@ async def get_config():
 
 # Run the FastAPI server using uvicorn
 if __name__ == "__main__":
-  uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
+  uvicorn.run("agents.supervisors.auction.main:app", host="0.0.0.0", port=8000, reload=True)

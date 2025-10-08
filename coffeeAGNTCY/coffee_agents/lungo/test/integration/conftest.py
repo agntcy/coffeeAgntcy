@@ -1,6 +1,7 @@
 """
 Sets up external integrations that are used in the CoffeeAGNTCY reference application.
 """
+
 import importlib
 import time
 import pytest
@@ -12,10 +13,19 @@ from xprocess import ProcessStarter
 from fastapi.testclient import TestClient
 from test.integration.docker_helpers import up, down
 
-LUNGO_DIR = Path(__file__).resolve().parents[2]  # coffee_agents/lungo
+
+LUNGO_DIR = Path(__file__).resolve().parents[2]
 FARMS = ["brazil", "colombia", "vietnam"]
-# If HTTP is enabled, give each farm its own port (adjust to your servers)
-PORTS = {"brazil": 9999, "colombia": 9998, "vietnam": 9997}
+
+def _base_env():
+    return {
+        **os.environ,
+        "PYTHONPATH": str(LUNGO_DIR),
+        "ENABLE_HTTP": "true",
+        "FARM_BROADCAST_TOPIC": "test-broadcast",
+        "PYTHONUNBUFFERED": "1",
+        "PYTHONFAULTHANDLER": "1",
+    }
 
 @pytest.fixture(scope="session", autouse=True)
 def orchestrate_session_services():
@@ -39,16 +49,16 @@ def _purge_modules(prefixes):
 
 @pytest.fixture(scope="function")
 def transport_config(request):
-    # default if not parametrized
-    return getattr(request, "param")
+    return dict(getattr(request, "param", {}) or {})
 
-def _make_farm_starter(farm: str, env: dict, port: int | None):
+def _make_farm_starter(farm: str, env: dict):
     farm_path = "agents.farms." + farm + ".farm_server"
 
     class Starter(ProcessStarter):
-        pattern = rf"Uvicorn running on http://0\.0\.0\.0:{port}" if port else r"Starting farm server"
+        pattern = "Started server process"
         timeout = 30
-        args = ["python", "-m", str(farm_path)]
+        terminate_on_interrupt = True
+        args = ["python", "-m", str(farm_path), "--no-reload"]
         cwd = str(LUNGO_DIR)
     
     Starter.env = env
@@ -70,18 +80,9 @@ def farms_up(farm_selection, xprocess, transport_config):
 
     for farm in farm_selection:
         print(f"\n--- Starting farm {farm} ---")
-        port = PORTS.get(farm, 0)
-        env = {
-            **os.environ,
-            "PYTHONPATH": str(LUNGO_DIR) + (os.pathsep + os.environ.get("PYTHONPATH", "")),
-            "ENABLE_HTTP": "true",
-            "FARM_BROADCAST_TOPIC": "test-broadcast",
-            **(transport_config or {}),
-        }
-        if env.get("ENABLE_HTTP", "true").lower() == "true":
-            env["FARM_HTTP_PORT"] = str(port)
-
-        Starter = _make_farm_starter(farm, env, port)
+        env = _base_env()
+        env.update(transport_config or {})
+        Starter = _make_farm_starter(farm, env)
         proc_name = f"{farm}-farm"
 
         try:
@@ -98,33 +99,44 @@ def farms_up(farm_selection, xprocess, transport_config):
             try:
                 xprocess.getinfo(name).terminate()
             except Exception:
-                pass
-
+                print(f"--- Could not terminate process {name} ---")
 
 @pytest.fixture(scope="function")
-def farm_up(request, xprocess, transport_config):
-    farm = request.param  # e.g. "brazil", "colombia", "vietnam"
-    proc_name = f"{farm}-farm"
+def start_weather_mcp(xprocess, transport_config):
+    env = _base_env()
+    env.update(transport_config or {})
 
-    Starter = _make_farm_starter(farm, transport_config)
+    class Starter(ProcessStarter):
+        pattern = "Starting weather service"
+        timeout = 30
+        terminate_on_interrupt = True
+        args = ["uv", "run", "-m", "agents.mcp_servers.weather_service"]
+        cwd = str(LUNGO_DIR)
 
-    # kill any stale instance with the same name so new env applies
+    Starter.env = env
+    proc_name = "weather-mcp-server"
+    # ensure clean slate
     try:
         xprocess.getinfo(proc_name).terminate()
     except Exception:
         pass
 
-    _, _ = xprocess.ensure(proc_name, Starter)
+    xprocess.ensure(proc_name, Starter)
+
     try:
         yield
     finally:
-        xprocess.getinfo(proc_name).terminate()
+        try:
+            xprocess.getinfo(proc_name).terminate()
+        except Exception:
+            pass
 
 @pytest.fixture
 def auction_supervisor_client(transport_config, monkeypatch):
     for k, v in transport_config.items():
         monkeypatch.setenv(k, v)
 
+    # clear any cached modules
     _purge_modules([
     "agents.supervisors.auction",
     "config.config",              
@@ -165,4 +177,5 @@ def _startup_clickhouse():
 def _startup_otel_collector():
     up(["docker-compose.yaml"], ["otel-collector"])
     time.sleep(10)
+
 
