@@ -12,6 +12,7 @@ import LogisticsPromptsDropdown from "./Prompts/LogisticsPromptsDropdown"
 import { useAgentAPI } from "@/hooks/useAgentAPI"
 import UserMessage from "./UserMessage"
 import ChatHeader from "./ChatHeader"
+import GroupCommunicationFeed from "@/components/ProgressTracker/ProgressTracker"
 import AgentIcon from "@/assets/Coffee_Icon.svg"
 import { cn } from "@/utils/cn.ts"
 import { logger } from "@/utils/logger"
@@ -24,6 +25,9 @@ interface ChatAreaProps {
   showCoffeeDropdown?: boolean
   showCoffeePrompts?: boolean
   showLogisticsPrompts?: boolean
+  showProgressTracker?: boolean
+  showFinalResponse?: boolean
+  onStreamComplete?: () => void
   pattern?: string
   onCoffeeGraderSelect?: (query: string) => void
   onDropdownSelect?: (query: string) => void
@@ -44,6 +48,9 @@ const ChatArea: React.FC<ChatAreaProps> = ({
   showCoffeeDropdown = false,
   showCoffeePrompts = false,
   showLogisticsPrompts = false,
+  showProgressTracker = false,
+  showFinalResponse = false,
+  onStreamComplete,
   pattern,
   onDropdownSelect,
   onUserInput,
@@ -156,7 +163,17 @@ const ChatArea: React.FC<ChatAreaProps> = ({
         {currentUserMessage && !isMinimized && (
           <div className="mb-4 flex w-full max-w-[880px] flex-col gap-3">
             <UserMessage content={currentUserMessage} />
-            {(isAgentLoading || agentResponse) && (
+
+            {showProgressTracker && (
+              <div className="w-full">
+                <GroupCommunicationFeed
+                  isVisible={showProgressTracker}
+                  onComplete={onStreamComplete}
+                />
+              </div>
+            )}
+
+            {showFinalResponse && (isAgentLoading || agentResponse) && (
               <div className="flex w-full flex-row items-start gap-1">
                 <div className="chat-avatar-container flex h-10 w-10 flex-none items-center justify-center rounded-full bg-action-background">
                   <img

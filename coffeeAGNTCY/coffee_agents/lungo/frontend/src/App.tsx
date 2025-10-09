@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  **/
 
-import React, { useState, useEffect } from "react"
+import React, { useState, useEffect, useRef } from "react"
 import { LOCAL_STORAGE_KEY } from "@/components/Chat/Messages"
 import { logger } from "@/utils/logger"
 import { useChatAreaMeasurement } from "@/hooks/useChatAreaMeasurement"
@@ -36,6 +36,11 @@ const App: React.FC = () => {
   const [isAgentLoading, setIsAgentLoading] = useState<boolean>(false)
   const [groupCommResponseReceived, setGroupCommResponseReceived] =
     useState<boolean>(false)
+  const [showProgressTracker, setShowProgressTracker] = useState<boolean>(false)
+  const [pendingResponse, setPendingResponse] = useState<string>("")
+  const [streamComplete, setStreamComplete] = useState<boolean>(false)
+  const [showFinalResponse, setShowFinalResponse] = useState<boolean>(false)
+  const streamCompleteRef = useRef<boolean>(false)
   const [messages, setMessages] = useState<Message[]>(() => {
     const saved = localStorage.getItem(LOCAL_STORAGE_KEY)
     return saved ? JSON.parse(saved) : []
@@ -90,11 +95,56 @@ const App: React.FC = () => {
     setButtonClicked(true)
 
     try {
-      const response = await sendMessage(query, selectedPattern)
-      handleApiResponse(response, false)
+      // For group communication, handle both /prompt and /stream
+      if (selectedPattern === PATTERNS.GROUP_COMMUNICATION) {
+        setShowProgressTracker(true)
+        setStreamComplete(false)
+        setShowFinalResponse(false)
+        streamCompleteRef.current = false
+
+        // Start both /prompt and /stream concurrently
+        const responsePromise = sendMessage(query, selectedPattern)
+
+        responsePromise
+          .then((response) => {
+            setPendingResponse(response)
+
+            if (streamCompleteRef.current) {
+              handleApiResponse(response, false)
+              setPendingResponse("")
+            }
+          })
+          .catch((error) => {
+            logger.apiError("/agent/prompt", error)
+            const errorMsg = "Sorry, I encountered an error."
+            setPendingResponse(errorMsg)
+
+            if (streamComplete) {
+              handleApiResponse(errorMsg, true)
+              setPendingResponse("")
+            }
+          })
+      } else {
+        const response = await sendMessage(query, selectedPattern)
+        handleApiResponse(response, false)
+      }
     } catch (error) {
       logger.apiError("/agent/prompt", error)
       handleApiResponse("Sorry, I encountered an error.", true)
+      setShowProgressTracker(false)
+    }
+  }
+
+  const handleStreamComplete = () => {
+    setStreamComplete(true)
+    streamCompleteRef.current = true
+
+    setShowFinalResponse(true)
+    setIsAgentLoading(true)
+
+    if (pendingResponse) {
+      handleApiResponse(pendingResponse, false)
+      setPendingResponse("")
     }
   }
 
@@ -106,6 +156,8 @@ const App: React.FC = () => {
     setButtonClicked(false)
     setAiReplied(false)
     setGroupCommResponseReceived(false)
+    setShowProgressTracker(false)
+    setPendingResponse("")
   }
 
   useEffect(() => {
@@ -114,6 +166,8 @@ const App: React.FC = () => {
     setIsAgentLoading(false)
     setButtonClicked(false)
     setAiReplied(false)
+    setShowProgressTracker(false)
+    setPendingResponse("")
 
     if (selectedPattern !== PATTERNS.GROUP_COMMUNICATION) {
       setGroupCommResponseReceived(false)
@@ -158,6 +212,9 @@ const App: React.FC = () => {
                 showLogisticsPrompts={
                   selectedPattern === PATTERNS.GROUP_COMMUNICATION
                 }
+                showProgressTracker={showProgressTracker}
+                showFinalResponse={showFinalResponse}
+                onStreamComplete={handleStreamComplete}
                 pattern={selectedPattern}
                 onCoffeeGraderSelect={handleCoffeeGraderSelect}
                 onDropdownSelect={handleDropdownSelect}
