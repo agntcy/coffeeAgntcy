@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  **/
 
-import React from "react"
+import React, { useEffect, useState } from "react"
 import { X } from "lucide-react"
 
 interface InfoModalProps {
@@ -11,7 +11,46 @@ interface InfoModalProps {
   onClose: () => void
 }
 
+interface BuildInfo {
+  app: string
+  service: string
+  version: string
+  build_date: string
+  build_timestamp: string
+  image: string
+  dependencies: Record<string, string>
+}
+
+const DEFAULT_EXCHANGE_APP_API_URL = "http://127.0.0.1:8000"
+const EXCHANGE_APP_API_URL =
+  import.meta.env.VITE_EXCHANGE_APP_API_URL || DEFAULT_EXCHANGE_APP_API_URL
+
 const InfoModal: React.FC<InfoModalProps> = ({ isOpen, onClose }) => {
+  const [info, setInfo] = useState<BuildInfo | null>(null)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (!isOpen) return
+    let cancelled = false
+    const fetchInfo = async () => {
+      try {
+        setError(null)
+        const res = await fetch(`${EXCHANGE_APP_API_URL}/about`)
+        if (!res.ok) {
+          throw new Error(`HTTP ${res.status}: ${res.statusText}`)
+        }
+        const data = await res.json()
+        if (!cancelled) setInfo(data)
+      } catch (e) {
+        if (!cancelled) setError("Failed to load build info")
+      }
+    }
+    fetchInfo()
+    return () => {
+      cancelled = true
+    }
+  }, [isOpen, EXCHANGE_APP_API_URL])
+
   if (!isOpen) return null
 
   return (
@@ -32,15 +71,16 @@ const InfoModal: React.FC<InfoModalProps> = ({ isOpen, onClose }) => {
               Build and Release Information
             </h3>
             <div className="space-y-2 text-sm text-modal-text-secondary">
+              {error && <div className="text-red-500">{error}</div>}
               <div className="flex justify-between">
                 <span>Release Version:</span>
-                <span className="font-mono text-modal-accent">0.0.45</span>
+                <span className="font-mono text-modal-accent">
+                  {info?.version ?? "…"}
+                </span>
               </div>
               <div className="flex justify-between">
-                <div className="flex justify-between">
-                  <span>Build Date:</span>
-                  <span className="font-mono">October 1, 2025</span>
-                </div>
+                <span>Build Date:</span>
+                <span className="font-mono">{info?.build_date ?? "…"}</span>
               </div>
             </div>
 
@@ -49,38 +89,16 @@ const InfoModal: React.FC<InfoModalProps> = ({ isOpen, onClose }) => {
                 Dependencies:
               </h3>
               <div className="space-y-2 text-sm text-modal-text-secondary">
-                <div className="flex justify-between">
-                  <span>AGNTCY App SDK:</span>
-                  <span className="font-mono text-modal-accent"> v0.2.9</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>SLIM:</span>
-                  <span className="font-mono text-modal-accent">v0.4.0</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Observe SDK:</span>
-                  <span className="font-mono text-modal-accent">v1.0.18</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>A2A:</span>
-                  <span className="font-mono text-modal-accent">v0.3.0</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Identity:</span>
-                  <span className="font-mono text-modal-accent">v0.0.3</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>MCP:</span>
-                  <span className="font-mono text-modal-accent">
-                    &gt;= v1.10.0
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span>LangGraph:</span>
-                  <span className="font-mono text-modal-accent">
-                    &gt;= v0.4.1
-                  </span>
-                </div>
+                {info ? (
+                  Object.entries(info.dependencies).map(([k, v]) => (
+                    <div className="flex justify-between" key={k}>
+                      <span>{k}:</span>
+                      <span className="font-mono text-modal-accent">{v}</span>
+                    </div>
+                  ))
+                ) : (
+                  <div className="text-modal-text-secondary">Loading…</div>
+                )}
               </div>
             </div>
           </div>

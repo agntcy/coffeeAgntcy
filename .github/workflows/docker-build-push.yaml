@@ -2,10 +2,10 @@ name: Build and Push All Docker Images
 
 on:
   push:
-    branches: [ main ]
-    tags: [ '*' ]
+    branches: [main]
+    tags: ["*"]
   pull_request:
-    branches: [ main ]
+    branches: [main]
   workflow_dispatch:
 
 jobs:
@@ -61,6 +61,13 @@ jobs:
         run: |
           echo "tag_name=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
 
+      - name: Generate metadata
+        id: metadata
+        run: |
+          echo "date=$(date -u +'%Y-%m-%dT%H:%M:%SZ')" >> $GITHUB_OUTPUT
+          echo "date_formatted=$(date -u +'%Y-%m-%d')" >> $GITHUB_OUTPUT
+          echo "short_sha=${GITHUB_SHA:0:7}" >> $GITHUB_OUTPUT
+
       - name: Log Event Type
         run: |
           echo "Event: ${{ github.event_name }}"
@@ -84,6 +91,29 @@ jobs:
           push: false
           platforms: linux/amd64,linux/arm64
           tags: ghcr.io/${{ github.repository_owner }}/coffee-agntcy/${{ matrix.image.name }}:pr-${{ github.event.pull_request.number }}
+          build-args: |
+            BUILD_VERSION=pr-${{ github.event.pull_request.number }}
+            BUILD_DATE=${{ steps.metadata.outputs.date_formatted }}
+            BUILD_TIMESTAMP=${{ steps.metadata.outputs.date }}
+            GIT_COMMIT=${{ github.sha }}
+            GIT_COMMIT_SHORT=${{ steps.metadata.outputs.short_sha }}
+            GIT_BRANCH=${{ github.head_ref }}
+            BUILD_NUMBER=${{ github.run_number }}
+            BUILD_WORKFLOW=${{ github.workflow }}
+            BUILD_ACTOR=${{ github.actor }}
+            BUILD_SOURCE=ci
+            IMAGE_NAME=ghcr.io/${{ github.repository_owner }}/coffee-agntcy/${{ matrix.image.name }}
+            IMAGE_TAG=pr-${{ github.event.pull_request.number }}
+          labels: |
+            org.opencontainers.image.version=pr-${{ github.event.pull_request.number }}
+            org.opencontainers.image.created=${{ steps.metadata.outputs.date }}
+            org.opencontainers.image.revision=${{ github.sha }}
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+            build.number=${{ github.run_number }}
+            build.workflow=${{ github.workflow }}
+            build.actor=${{ github.actor }}
+            git.branch=${{ github.head_ref }}
+            git.commit.short=${{ steps.metadata.outputs.short_sha }}
 
       - name: Build and push Docker image (main)
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
@@ -94,6 +124,29 @@ jobs:
           push: true
           platforms: linux/amd64,linux/arm64
           tags: ghcr.io/${{ github.repository_owner }}/coffee-agntcy/${{ matrix.image.name }}:latest
+          build-args: |
+            BUILD_VERSION=latest
+            BUILD_DATE=${{ steps.metadata.outputs.date_formatted }}
+            BUILD_TIMESTAMP=${{ steps.metadata.outputs.date }}
+            GIT_COMMIT=${{ github.sha }}
+            GIT_COMMIT_SHORT=${{ steps.metadata.outputs.short_sha }}
+            GIT_BRANCH=${{ github.ref_name }}
+            BUILD_NUMBER=${{ github.run_number }}
+            BUILD_WORKFLOW=${{ github.workflow }}
+            BUILD_ACTOR=${{ github.actor }}
+            BUILD_SOURCE=ci
+            IMAGE_NAME=ghcr.io/${{ github.repository_owner }}/coffee-agntcy/${{ matrix.image.name }}
+            IMAGE_TAG=latest
+          labels: |
+            org.opencontainers.image.version=latest
+            org.opencontainers.image.created=${{ steps.metadata.outputs.date }}
+            org.opencontainers.image.revision=${{ github.sha }}
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+            build.number=${{ github.run_number }}
+            build.workflow=${{ github.workflow }}
+            build.actor=${{ github.actor }}
+            git.branch=${{ github.ref_name }}
+            git.commit.short=${{ steps.metadata.outputs.short_sha }}
 
       - name: Build and push Docker image (tag)
         if: startsWith(github.ref, 'refs/tags/')
@@ -104,3 +157,26 @@ jobs:
           push: true
           platforms: linux/amd64,linux/arm64
           tags: ghcr.io/${{ github.repository_owner }}/coffee-agntcy/${{ matrix.image.name }}:${{ steps.get_tag.outputs.tag_name }}
+          build-args: |
+            BUILD_VERSION=${{ steps.get_tag.outputs.tag_name }}
+            BUILD_DATE=${{ steps.metadata.outputs.date_formatted }}
+            BUILD_TIMESTAMP=${{ steps.metadata.outputs.date }}
+            GIT_COMMIT=${{ github.sha }}
+            GIT_COMMIT_SHORT=${{ steps.metadata.outputs.short_sha }}
+            GIT_BRANCH=${{ github.ref_name }}
+            BUILD_NUMBER=${{ github.run_number }}
+            BUILD_WORKFLOW=${{ github.workflow }}
+            BUILD_ACTOR=${{ github.actor }}
+            BUILD_SOURCE=ci
+            IMAGE_NAME=ghcr.io/${{ github.repository_owner }}/coffee-agntcy/${{ matrix.image.name }}
+            IMAGE_TAG=${{ steps.get_tag.outputs.tag_name }}
+          labels: |
+            org.opencontainers.image.version=${{ steps.get_tag.outputs.tag_name }}
+            org.opencontainers.image.created=${{ steps.metadata.outputs.date }}
+            org.opencontainers.image.revision=${{ github.sha }}
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+            build.number=${{ github.run_number }}
+            build.workflow=${{ github.workflow }}
+            build.actor=${{ github.actor }}
+            git.branch=${{ github.ref_name }}
+            git.commit.short=${{ steps.metadata.outputs.short_sha }}

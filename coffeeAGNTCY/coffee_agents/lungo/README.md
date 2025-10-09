@@ -1,3 +1,16 @@
+<!-- TOC -->
+  * [Lungo Demo Overview](#lungo-demo-overview)
+    * [Overview](#overview)
+  * [Running Lungo Locally](#running-lungo-locally)
+    * [Prerequisites](#prerequisites)
+    * [Setup Instructions](#setup-instructions)
+    * [Execution](#execution)
+    * [Group Conversation Implementation](#group-conversation-implementation)
+    * [Observability](#observability)
+      * [Trace Visualization via Grafana](#trace-visualization-via-grafana)
+      * [Metrics Computation with AGNTCY's Metrics Computation Engine (MCE)](#metrics-computation-with-agntcys-metrics-computation-engine-mce)
+<!-- TOC -->
+
 ## Lungo Demo Overview
 
 The **Lungo Demo** is a continuously evolving showcase of interoperable open-source agentic components. Its primary goal is to demonstrate how different components—from the **Agntcy** project and other open-source ecosystems—can work together seamlessly.
@@ -124,7 +137,7 @@ Before you begin, ensure the following tools are installed:
 Make sure the following Python dependency is installed:
 
 ```
-ioa-observe-sdk==1.0.12
+ioa-observe-sdk==1.0.18
 ```
 
 For advanced observability of your multi-agent system, integrate the [Observe SDK](https://github.com/agntcy/observe/blob/main/GETTING-STARTED.md).
@@ -304,7 +317,14 @@ By default, the UI will be available at [http://localhost:3000/](http://localhos
 
 ![Screenshot](images/lungo_ui.png)
 
-**Step 6: Visualize OTEL Traces in Grafana**
+### Group Conversation Implementation
+
+Detailed architecture, message flows (SLIM pubsub vs controller channels), service roles, and port configuration are documented in [Group Conversation Docs](./docs/group_conversation.md).
+
+
+### Observability
+
+#### Trace Visualization via Grafana
 
 1. **Access Grafana**  
    Open your browser and go to [http://localhost:3001/](http://localhost:3001/).  
@@ -346,6 +366,525 @@ By default, the UI will be available at [http://localhost:3000/](http://localhos
 
 ---
 
-### Group Conversation Implementation
+#### Metrics Computation with AGNTCY's Metrics Computation Engine (MCE)
 
-Detailed architecture, message flows (SLIM pubsub vs controller channels), service roles, and port configuration are documented in [Group Conversation Docs](./docs/group_conversation.md).
+Details about AGNTCY's MCE can be found in the Telemetry Hub repository: [Metrics Computation Engine](https://github.com/agntcy/telemetry-hub/tree/main/metrics_computation_engine)
+
+1. Run the MCE Components
+
+```sh
+docker-compose up metrics-computation-engine mce-api-layer
+```
+
+2. Get session IDs within a given time range.
+
+```sh
+curl --request GET \
+  --url 'http://localhost:8080/traces/sessions?start_time=2025-01-01T00:00:00.000Z&end_time=2030-01-01T11:55:00.000Z'
+```
+
+> Note: Update the time range to the desired range.
+
+Example output:
+
+```json
+[
+	{
+		"id": "lungo.exchange_cf39e063-f2f8-4c11-bb52-e2250892ee95",
+		"start_timestamp": "2025-09-26T13:36:15.841652Z"
+	}
+]
+```
+
+3. [Optional] Get traces by session ID.
+
+Select one of the session IDs from the previous step, and get traces by session ID with this GET request:
+
+```sh
+curl --request GET \
+  --url http://localhost:8080/traces/session/lungo.exchange_cf39e063-f2f8-4c11-bb52-e2250892ee95
+```
+
+4. Perform metrics computation
+
+A detailed list of supported metrics can be found here: [Supported Metrics](https://github.com/agntcy/telemetry-hub/tree/main/metrics_computation_engine#supported-metrics)
+
+Example request:
+
+```json
+{
+	"metrics": [
+		"AgentToAgentInteractions",
+		"AgentToToolInteractions",
+		"Cycles",
+		"ToolErrorRate",
+		"ToolUtilizationAccuracy",
+		"GraphDeterminismScore",
+		"ComponentConflictRate",
+		"Consistency",
+		"ContextPreservation",
+		"GoalSuccessRate",
+		"Groundedness",
+		"InformationRetention",
+		"IntentRecognitionAccuracy",
+		"ResponseCompleteness",
+		"WorkflowCohesionIndex",
+		"WorkflowEfficiency"
+	],
+	"data_fetching_infos": {
+		"session_ids": [
+			"lungo.exchange_cf39e063-f2f8-4c11-bb52-e2250892ee95"
+		]
+	}
+}
+```
+
+> Note: this particular session was a result of the prompt: "I'd like to buy 200 lbs quantity of coffee at USD 500 price from Vietnam"
+> 
+> And agent response: 
+> 
+> "Your order for 200 lbs of coffee at USD 500 from Vietnam has been successfully created. Here are the details:
+>
+> - **Order ID:** 54321
+> - **Tracking Number:** XYZ789456"
+>
+
+Example response:
+
+```json
+{
+	"metrics": [
+		"ToolUtilizationAccuracy",
+		"AgentToAgentInteractions",
+		"AgentToToolInteractions",
+		"Cycles",
+		"ToolErrorRate",
+		"GraphDeterminismScore",
+		"ComponentConflictRate",
+		"Consistency",
+		"ContextPreservation",
+		"GoalSuccessRate",
+		"Groundedness",
+		"InformationRetention",
+		"IntentRecognitionAccuracy",
+		"ResponseCompleteness",
+		"WorkflowCohesionIndex",
+		"WorkflowEfficiency"
+	],
+	"results": {
+		"span_metrics": [
+			{
+				"metric_name": "ToolUtilizationAccuracy",
+				"value": 1.0,
+				"aggregation_level": "span",
+				"category": "agent",
+				"app_name": "lungo.exchange",
+				"description": "",
+				"reasoning": "The AI agent correctly utilized the 'create_order' tool, as the input requested to create a coffee order with a specific farm ('vietnam'), quantity (200), and price (500). The tool's output confirmed the successful creation of the order, detailing the order ID and tracking number, thus adequately addressing the input. All required arguments were provided and matched the tool definition, making the tool call reasonable and the output useful.",
+				"unit": "",
+				"span_id": [
+					"1f59a724c8e6f2e8"
+				],
+				"session_id": [
+					"lungo.exchange_cf39e063-f2f8-4c11-bb52-e2250892ee95"
+				],
+				"source": "native",
+				"entities_involved": [
+					"create_order"
+				],
+				"edges_involved": [],
+				"success": true,
+				"metadata": {
+					"metric_type": "llm-as-a-judge"
+				},
+				"error_message": null
+			}
+		],
+		"session_metrics": [
+			{
+				"metric_name": "AgentToAgentInteractions",
+				"value": {},
+				"aggregation_level": "session",
+				"category": "application",
+				"app_name": "lungo.exchange",
+				"description": "Agent to agent interaction transition counts",
+				"reasoning": "",
+				"unit": "transitions",
+				"span_id": [
+					"07c70d4ce5c52015",
+					"4b163c532f7e184f"
+				],
+				"session_id": [
+					"lungo.exchange_cf39e063-f2f8-4c11-bb52-e2250892ee95"
+				],
+				"source": "native",
+				"entities_involved": [
+					"vietnam_farm_agent.ainvoke",
+					"exchange_agent.serve"
+				],
+				"edges_involved": [],
+				"success": true,
+				"metadata": {
+					"total_transitions": 0,
+					"unique_transitions": 0,
+					"all_transitions": []
+				},
+				"error_message": null
+			},
+			{
+				"metric_name": "AgentToToolInteractions",
+				"value": {
+					"(Agent: exchange_agent.serve) -> (Tool: create_order)": 1,
+					"(Agent: exchange_agent.serve) -> (Tool: unknown)": 1
+				},
+				"aggregation_level": "session",
+				"category": "application",
+				"app_name": "lungo.exchange",
+				"description": "Agent to tool interaction counts",
+				"reasoning": "",
+				"unit": "interactions",
+				"span_id": [
+					"1f59a724c8e6f2e8",
+					"bbcb2837bca26146"
+				],
+				"session_id": [
+					"lungo.exchange_cf39e063-f2f8-4c11-bb52-e2250892ee95"
+				],
+				"source": "native",
+				"entities_involved": [
+					"unknown",
+					"create_order"
+				],
+				"edges_involved": [],
+				"success": true,
+				"metadata": {
+					"total_tool_calls": 2,
+					"unique_interactions": 2
+				},
+				"error_message": null
+			},
+			{
+				"metric_name": "Cycles",
+				"value": 0,
+				"aggregation_level": "session",
+				"category": "application",
+				"app_name": "lungo.exchange",
+				"description": "Count of contiguous cycles in agent and tool interactions",
+				"reasoning": "Count of contiguous cycles in agent and tool interactions",
+				"unit": "cycles",
+				"span_id": "",
+				"session_id": [
+					"lungo.exchange_cf39e063-f2f8-4c11-bb52-e2250892ee95"
+				],
+				"source": "native",
+				"entities_involved": [
+					"create_order",
+					"vietnam_farm_agent.ainvoke",
+					"unknown",
+					"exchange_agent.serve"
+				],
+				"edges_involved": [],
+				"success": true,
+				"metadata": {
+					"span_ids": [
+						"07c70d4ce5c52015",
+						"1f59a724c8e6f2e8",
+						"bbcb2837bca26146",
+						"4b163c532f7e184f"
+					],
+					"event_sequence": [
+						"exchange_agent.serve",
+						"create_order",
+						"unknown",
+						"vietnam_farm_agent.ainvoke"
+					],
+					"total_events": 4
+				},
+				"error_message": null
+			},
+			{
+				"metric_name": "ToolErrorRate",
+				"value": 0.0,
+				"aggregation_level": "session",
+				"category": "application",
+				"app_name": "lungo.exchange",
+				"description": "Percentage of tool spans that encountered errors",
+				"reasoning": "",
+				"unit": "%",
+				"span_id": [],
+				"session_id": [
+					"lungo.exchange_cf39e063-f2f8-4c11-bb52-e2250892ee95"
+				],
+				"source": "native",
+				"entities_involved": [],
+				"edges_involved": [],
+				"success": true,
+				"metadata": {
+					"total_tool_calls": 2,
+					"total_tool_errors": 0,
+					"all_tool_span_ids": [
+						"1f59a724c8e6f2e8",
+						"bbcb2837bca26146"
+					]
+				},
+				"error_message": null
+			},
+			{
+				"metric_name": "ComponentConflictRate",
+				"value": 1.0,
+				"aggregation_level": "session",
+				"category": "application",
+				"app_name": "lungo.exchange",
+				"description": "",
+				"reasoning": "Both responses indicate successful order creation without mentioning any conflicts or discrepancies between the components involved. The system's functionality appears smooth with no reference to any interruptions or inconsistencies in data, logic, or execution. Consequently, these elements suggest a harmonious operation where components do not interfere with each other, aligning with a score of 1 according to the rubric.",
+				"unit": "",
+				"span_id": [
+					"07c70d4ce5c52015",
+					"4b163c532f7e184f"
+				],
+				"session_id": [
+					"lungo.exchange_cf39e063-f2f8-4c11-bb52-e2250892ee95"
+				],
+				"source": "native",
+				"entities_involved": [
+					"exchange_agent.serve",
+					"vietnam_farm_agent.ainvoke"
+				],
+				"edges_involved": [],
+				"success": true,
+				"metadata": {
+					"metric_type": "llm-as-a-judge"
+				},
+				"error_message": null
+			},
+			{
+				"metric_name": "Consistency",
+				"value": 1.0,
+				"aggregation_level": "session",
+				"category": "application",
+				"app_name": "lungo.exchange",
+				"description": "",
+				"reasoning": "Both responses consistently convey that an order for coffee has been placed. Details of the order, including the Order ID and Tracking Number, are the same in both responses, indicating consistency in the information provided. There are no contradictions or conflicting statements across the responses. Additionally, the tone and style are cordial and efficient, maintaining consistency throughout. Therefore, the interactions are fully consistent based on the evaluation criteria.",
+				"unit": "",
+				"span_id": [
+					"07c70d4ce5c52015",
+					"4b163c532f7e184f"
+				],
+				"session_id": [
+					"lungo.exchange_cf39e063-f2f8-4c11-bb52-e2250892ee95"
+				],
+				"source": "native",
+				"entities_involved": [
+					"exchange_agent.serve",
+					"vietnam_farm_agent.ainvoke"
+				],
+				"edges_involved": [],
+				"success": true,
+				"metadata": {
+					"metric_type": "llm-as-a-judge"
+				},
+				"error_message": null
+			},
+			{
+				"metric_name": "ContextPreservation",
+				"value": 1.0,
+				"aggregation_level": "session",
+				"category": "application",
+				"app_name": "lungo.exchange",
+				"description": "",
+				"reasoning": "The responses accurately address the inputs by confirming the creation of the orders with specified details. They maintain relevance by providing order IDs and tracking numbers, continuing the context of order confirmations. The structure is logical, listing order details and offering further assistance. Although additional context from the initial inputs is missing, the essential information is conveyed effectively. The responses are useful as they confirm successful order processing, fulfilling the user's request.",
+				"unit": "",
+				"span_id": [
+					"07c70d4ce5c52015",
+					"4b163c532f7e184f"
+				],
+				"session_id": [
+					"lungo.exchange_cf39e063-f2f8-4c11-bb52-e2250892ee95"
+				],
+				"source": "native",
+				"entities_involved": [
+					"exchange_agent.serve",
+					"vietnam_farm_agent.ainvoke"
+				],
+				"edges_involved": [],
+				"success": true,
+				"metadata": {
+					"metric_type": "llm-as-a-judge"
+				},
+				"error_message": null
+			},
+			{
+				"metric_name": "GoalSuccessRate",
+				"value": 1.0,
+				"aggregation_level": "session",
+				"category": "application",
+				"app_name": "lungo.exchange",
+				"description": "",
+				"reasoning": "The response accurately corresponds to the user's goal by confirming the successful creation of an order for 200 lbs of coffee at USD 500 from Vietnam. It provides relevant details, including an Order ID and a Tracking Number, fulfilling the expectations of the query. Although the response could state the reasons if it cannot achieve the goal, in this case, it appears the goal is met without issue.",
+				"unit": "",
+				"span_id": [
+					"4cd8bc7ec2badea2",
+					"a3bba979a31de5c5",
+					"530ad7dd5dcf4795",
+					"666396ef1015e0b0",
+					"8f360cd51cde700f",
+					"c6325c8193105315"
+				],
+				"session_id": [
+					"lungo.exchange_cf39e063-f2f8-4c11-bb52-e2250892ee95"
+				],
+				"source": "native",
+				"entities_involved": [
+					"exchange_agent.serve",
+					"vietnam_farm_agent.ainvoke"
+				],
+				"edges_involved": [],
+				"success": true,
+				"metadata": {
+					"metric_type": "llm-as-a-judge"
+				},
+				"error_message": null
+			},
+			{
+				"metric_name": "Groundedness",
+				"value": 1.0,
+				"aggregation_level": "session",
+				"category": "application",
+				"app_name": "lungo.exchange",
+				"description": "",
+				"reasoning": "The responses consistently refer to contextual elements like order creation and tracking information, and avoid providing speculative or unsupported details. Without external verification tools or integration evidence visible, there's no way to confirm whether details like Order ID and Tracking Number are genuinely linked to real-time data, but they remain consistent with the input prompts and maintain factual accuracy. Thus, the responses are considered grounded in the given context.",
+				"unit": "",
+				"span_id": "",
+				"session_id": "lungo.exchange_cf39e063-f2f8-4c11-bb52-e2250892ee95",
+				"source": "native",
+				"entities_involved": [
+					"exchange_agent.serve",
+					"vietnam_farm_agent.ainvoke"
+				],
+				"edges_involved": [],
+				"success": true,
+				"metadata": {
+					"span_ids": [
+						"07c70d4ce5c52015",
+						"4b163c532f7e184f"
+					]
+				},
+				"error_message": null
+			},
+			{
+				"metric_name": "InformationRetention",
+				"value": 1.0,
+				"aggregation_level": "session",
+				"category": "application",
+				"app_name": "lungo.exchange",
+				"description": "",
+				"reasoning": "The Assistant successfully retains details from the earlier purchase request, consistently referencing order ID 54321 and tracking number XYZ789456 across interactions. This demonstrates accurate recall of key details without inconsistencies. The responses are coherent and the recalled information is relevant and appropriately applied. Therefore, based on the rubric criteria, the Assistant's information retention and recall performance is satisfactory.",
+				"unit": "",
+				"span_id": [
+					"07c70d4ce5c52015",
+					"4b163c532f7e184f"
+				],
+				"session_id": [
+					"lungo.exchange_cf39e063-f2f8-4c11-bb52-e2250892ee95"
+				],
+				"source": "native",
+				"entities_involved": [
+					"exchange_agent.serve",
+					"vietnam_farm_agent.ainvoke"
+				],
+				"edges_involved": [],
+				"success": true,
+				"metadata": {
+					"metric_type": "llm-as-a-judge"
+				},
+				"error_message": null
+			},
+			{
+				"metric_name": "IntentRecognitionAccuracy",
+				"value": 1.0,
+				"aggregation_level": "session",
+				"category": "application",
+				"app_name": "lungo.exchange",
+				"description": "",
+				"reasoning": "The response accurately identifies the user's intent to place an order for 200 lbs of coffee from Vietnam at a specific price. It addresses this intent by confirming the order creation and providing specific order details such as Order ID and Tracking Number. The response is appropriate as it confirms the action taken and offers further assistance, aligning well with the user's intent.",
+				"unit": "",
+				"span_id": [
+					"07c70d4ce5c52015",
+					"4b163c532f7e184f"
+				],
+				"session_id": [
+					"lungo.exchange_cf39e063-f2f8-4c11-bb52-e2250892ee95"
+				],
+				"source": "native",
+				"entities_involved": [
+					"exchange_agent.serve",
+					"vietnam_farm_agent.ainvoke"
+				],
+				"edges_involved": [],
+				"success": true,
+				"metadata": {
+					"metric_type": "llm-as-a-judge"
+				},
+				"error_message": null
+			},
+			{
+				"metric_name": "ResponseCompleteness",
+				"value": 1.0,
+				"aggregation_level": "session",
+				"category": "application",
+				"app_name": "lungo.exchange",
+				"description": "",
+				"reasoning": "Both responses effectively address the user's query, confirming the creation of coffee orders with specified details such as price, quantity, and providing order ID and tracking number. While there is no explicit mention of Vietnam in the second response, the order creation details are consistent. Sufficient detail is provided for order confirmation; therefore, no critical information is omitted.",
+				"unit": "",
+				"span_id": [
+					"07c70d4ce5c52015",
+					"4b163c532f7e184f"
+				],
+				"session_id": [
+					"lungo.exchange_cf39e063-f2f8-4c11-bb52-e2250892ee95"
+				],
+				"source": "native",
+				"entities_involved": [
+					"exchange_agent.serve",
+					"vietnam_farm_agent.ainvoke"
+				],
+				"edges_involved": [],
+				"success": true,
+				"metadata": {
+					"metric_type": "llm-as-a-judge"
+				},
+				"error_message": null
+			},
+			{
+				"metric_name": "WorkflowCohesionIndex",
+				"value": 1.0,
+				"aggregation_level": "session",
+				"category": "application",
+				"app_name": "lungo.exchange",
+				"description": "",
+				"reasoning": "Both workflow responses exhibit a high level of cohesion. The components interact smoothly without any noticeable friction, and there is a logical flow from order creation to order confirmation. The presence of detailed order information, such as order ID and tracking number, maintains consistency and efficiency across the workflow stages. This indicates seamless integration among components.",
+				"unit": "",
+				"span_id": [
+					"07c70d4ce5c52015",
+					"4b163c532f7e184f"
+				],
+				"session_id": [
+					"lungo.exchange_cf39e063-f2f8-4c11-bb52-e2250892ee95"
+				],
+				"source": "native",
+				"entities_involved": [
+					"vietnam_farm_agent.ainvoke",
+					"exchange_agent.serve"
+				],
+				"edges_involved": [],
+				"success": true,
+				"metadata": {
+					"metric_type": "llm-as-a-judge"
+				},
+				"error_message": null
+			}
+		],
+		"population_metrics": []
+	}
+}
+```

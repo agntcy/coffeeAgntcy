@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import logging
+from pathlib import Path
 
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException
@@ -11,6 +12,7 @@ import uvicorn
 
 from agntcy_app_sdk.factory import AgntcyFactory
 from ioa_observe.sdk.tracing import session_start
+from common.version import get_version_info
 
 from config.logging_config import setup_logging
 from exchange.graph import shared
@@ -68,6 +70,12 @@ async def handle_prompt(request: PromptRequest):
 @app.get("/health")
 async def health_check():
     return {"status": "ok"}
+
+@app.get("/about")
+async def version_info():
+  """Return minimal build info sourced from about.properties."""
+  props_path = Path(__file__).parent.parent / "about.properties"
+  return get_version_info(props_path)
 
 # Run the FastAPI server using uvicorn
 if __name__ == "__main__":
