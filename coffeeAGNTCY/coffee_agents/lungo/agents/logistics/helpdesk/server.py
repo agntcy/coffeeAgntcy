@@ -11,6 +11,7 @@ from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, ValidationError
 from sse_starlette.sse import EventSourceResponse
+from fastapi.middleware.cors import CORSMiddleware
 from starlette.routing import Route
 from uvicorn import Config, Server
 
@@ -160,6 +161,16 @@ async def stream_handler(request: Request) -> EventSourceResponse:
 def build_http_app(a2a_app: A2AStarletteApplication) -> FastAPI:
     """Attach REST endpoints to the underlying Starlette application."""
     app = a2a_app.build()
+    
+    # Add CORS middleware
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=["*"],  # Replace "*" with specific origins if needed
+        allow_credentials=True,
+        allow_methods=["*"],  # Allow all HTTP methods
+        allow_headers=["*"],  # Allow all headers
+    )
+    
     app.router.routes.append(Route("/v1/health", health_handler, methods=["GET"]))
     app.router.routes.append(Route("/agent/prompt", prompt_handler, methods=["POST"]))
     app.router.routes.append(Route("/agent/stream", stream_handler, methods=["GET"]))
