@@ -124,7 +124,8 @@ class ExchangeGraph:
             template="""You are a global coffee exchange agent connecting users to coffee farms in Brazil, Colombia, and Vietnam. 
             Based on the user's message, determine if it's related to 'inventory' or 'orders'.
             Respond with 'inventory' if the message is about checking yield, stock, product availability, regions of origin, or specific coffee item details.
-            Respond with 'orders' if the message is about checking order status, placing an order, or modifying an existing order.
+            Respond with 'orders' if the message is about checking coffee order status, placing a coffee order, or modifying an existing coffee order.
+            Respond with 'none of the above' if the message is unrelated to coffee 'inventory' or 'orders'.
             
             User message: {user_message}
             """,
