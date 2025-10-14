@@ -129,10 +129,10 @@ def verify_farm_identity(identity_service: IdentityService, farm_name: str):
         matched_app = next((app for app in all_apps.apps if app.name.lower() == farm_name.lower()), None)
 
         if not matched_app:
-            logger.warning(f"Identity verification failed for farm {farm_name}: "
-                           f"No matching app found, this farm probably does not have identity service enabled. "
-                           f"Skipping identity verification.")
-            return
+            err_msg = f"Identity verification failed for farm {farm_name}: No matching app found, this farm does not have identity service enabled."
+            logger.error(err_msg)
+            raise A2AAgentError(err_msg)
+
 
         badge = identity_service.get_badge_for_app(matched_app.id)
         success = identity_service.verify_badges(badge)
