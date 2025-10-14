@@ -49,6 +49,7 @@ class GraphState(MessagesState):
     Represents the state of our graph, passed between nodes.
     """
     next_node: str
+    weather_forecast_success: bool
 
 # --- 3. Implement the LangGraph Application Class ---
 @agent(name="colombia_farm_agent")
@@ -102,26 +103,19 @@ class FarmAgent:
         else:
             return {"next_node": NodeStates.GENERAL_RESPONSE, "messages": state["messages"]}
         
-    async def _get_weather_forecast(self, state: GraphState) -> str:
+    async def _get_weather_forecast(self,state: GraphState) -> str:
+        """
+        This method creates an agntcy-app-sdk transport instance and MCP client to communicate with the 
+        "lungo_weather_service" agent, lists available tools, and calls the "get_forecast" tool with a 
+        fixed location ("colombia"). It handles both streamed and non-streamed responses, aggregates the 
+        forecast content, and returns it wrapped in an AIMessage inside a dictionary under the "messages" key.
 
-        # extract location from latest user message
-        if not self.weather_forecast_llm:
-            self.weather_forecast_llm = get_llm()
+        If an error occurs during the MCP tool call, it logs the error and returns an error message similarly wrapped.
 
-        prompt = PromptTemplate(
-            template="""You are a helpful assistant that parses user messages to extract location information.
-            Based on the user's message, extract the location. Return a string with the location name.
-            User message: {user_message}
-            """,
-            input_variables=["user_message"]
-        )
-
-        chain = prompt | self.weather_forecast_llm
-        response = chain.invoke({"user_message": state["messages"]})
-        location = response.content.strip().lower()
-
-        logger.info(f"Weather location extracted: {location}")
-
+        Returns:
+            dict: A dictionary containing a list with a single AIMessage object holding the weather forecast string
+                or an error message if the call fails.
+        """
         transport_instance = factory.create_transport(
             DEFAULT_MESSAGE_TRANSPORT, 
             endpoint=TRANSPORT_SERVER_ENDPOINT, 
@@ -148,7 +142,7 @@ class FarmAgent:
 
                 result = await client.call_tool(
                     name="get_forecast",
-                    arguments={"location": location},
+                    arguments={"location": "colombia"},
                 )
                 logger.info(f"Tool call result: {result}")
 
@@ -166,11 +160,10 @@ class FarmAgent:
                         mcp_call_result = "No content returned from tool."
 
                 logger.info(f"Weather forecast result: {mcp_call_result}")
-                logger.info(f"Weather forecast result as AIMeessage: {[AIMessage(mcp_call_result)]}")
-                return {"messages": [AIMessage(mcp_call_result)]}
+                return {"weather_forecast_success": True, "messages": [AIMessage(mcp_call_result)]}
         except Exception as e:
             logger.error(f"Error during MCP tool call: {e}")
-            return {"messages": [AIMessage(f"Error retrieving weather data: {str(e)}")]}
+            return {"weather_forecast_success": False, "messages": [AIMessage(f"Weather Forecast MCP Server was Unavailable")]}
         finally:
             pass
 
@@ -178,6 +171,11 @@ class FarmAgent:
         """
         Handles inventory-related queries using an LLM to formulate responses.
         """
+        if not state["weather_forecast_success"]:
+            err_msg = "Cannot estimate yield because Weather Forecast MCP Server was Unavailable."
+            logger.warning(err_msg)
+            return {"messages": [AIMessage(err_msg)]}
+        
         if not self.inventory_llm:
             self.inventory_llm = get_llm()
 
@@ -185,7 +183,7 @@ class FarmAgent:
 
         prompt = PromptTemplate(
             template="""You are a helpful Colombian coffee farm manager.
-                You should estimate the seasonal coffee yield after checking the weather.
+                You should estimate the seasonal coffee yield after checking the weather given.
                 Always return a numeric yield estimate with units (e.g. "5000 lbs").
                 No explanation needed.
 
@@ -284,8 +282,6 @@ class FarmAgent:
         workflow.add_edge(NodeStates.GENERAL_RESPONSE, END)
 
         return workflow.compile()
-
-    # --- Public Methods for Interaction ---
 
     async def ainvoke(self, user_message: str) -> dict:
         """
