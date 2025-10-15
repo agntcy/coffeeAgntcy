@@ -1,4 +1,6 @@
-from __future__ import annotations
+# Copyright AGNTCY Contributors (https://github.com/agntcy)
+# SPDX-License-Identifier: Apache-2.0
+
 from enum import Enum
 import re
 import uuid
