@@ -2,6 +2,8 @@ import logging
 import re
 import pytest
 
+from sentence_transformers import SentenceTransformer, util
+
 logger = logging.getLogger(__name__)
 
 # Reuse the same tests across transports (add/remove configs as needed)
@@ -16,14 +18,13 @@ TRANSPORT_MATRIX = [
     ),
 ]
 
-FAILURE_KEYWORDS = [
-    "could not be completed",
-    "could not complete",
-    "could not be processed",
-    "could not be fulfilled",
-    "unreachable",
-    "error in processing",
-]
+model = SentenceTransformer('all-MiniLM-L6-v2')
+
+def get_semantic_similarity(text1, text2, model):
+    embeddings1 = model.encode(text1, convert_to_tensor=True)
+    embeddings2 = model.encode(text2, convert_to_tensor=True)
+    cosine_score = util.cos_sim(embeddings1, embeddings2)
+    return cosine_score.item()
 
 @pytest.mark.parametrize("transport_config", TRANSPORT_MATRIX, indirect=True)
 class TestAuctionFlows:
@@ -98,10 +99,23 @@ class TestAuctionFlows:
         data = resp.json()
         logger.info(data)
         assert "response" in data
-        normalized = data["response"].lower()
-        assert any(keyword in normalized for keyword in FAILURE_KEYWORDS), (
-        f"Expected a failure response, but got:\n{data["response"]}"
-    )
+        max_similarity = 0
+        reference_responses = [
+        "Unfortunately, I cannot process orders from Brazil at this time due to logistical constraints.",
+        "I'm sorry, I was unable to complete your order request for all items. An issue occurred for some parts. Please try again later.",
+        "Regrettably, I am unable to fulfill orders from Brazil currently due to supply chain issues."
+        "I encountered some issues retrieving information for your request. Some parts could not be completed at this time due to a technical issue. Please try again later.",
+        "The user's request to buy coffee could not be processed due to an identity verification error with the farm. The conversation cannot proceed without resolving this issue, and the user has not provided any further instructions or questions.",
+        "I'm sorry, I was unable to complete your order request for all items. An issue occurred for some parts. Please try again later."
+        ]
+        for ref_res in reference_responses:
+            similarity = get_semantic_similarity(data["response"], ref_res, model)
+            if similarity > max_similarity:
+                max_similarity = similarity
+        expected_min_similarity = 0.75
+        print(f"max similarity {max_similarity}")
+        assert max_similarity >= expected_min_similarity, \
+        f"Agent response '{data["response"]}' did not meet semantic similarity threshold ({expected_min_similarity}) with any reference. Max similarity: {max_similarity}"
 
     @pytest.mark.agents(["weather-mcp","colombia-farm"])
     @pytest.mark.usefixtures("agents_up")
