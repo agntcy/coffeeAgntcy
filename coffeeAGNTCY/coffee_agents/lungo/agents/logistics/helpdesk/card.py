@@ -6,6 +6,7 @@ from a2a.types import (
     AgentCard,
     AgentSkill)
 
+
 AGENT_SKILL = AgentSkill(
     id="helpdesk_support",
     name="Helpdesk Support",

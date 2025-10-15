@@ -10,7 +10,7 @@ from langgraph.graph.state import CompiledStateGraph
 from langgraph.graph import MessagesState
 from langgraph.graph import StateGraph
 from langgraph.prebuilt import ToolNode
-from ioa_observe.sdk.decorators import agent, tool, graph
+from ioa_observe.sdk.decorators import agent, graph
 
 from agents.supervisors.logistic.graph.tools import (
     create_order,
@@ -93,8 +93,7 @@ class LogisticGraph:
                 "   If any earlier tool or agent message contains the exact token 'DELIVERED' "
                 "(indicates the order was fully delivered), DO NOT call tools again and DO NOT ask questions. "
                 "Respond ONLY with a multiline plain text summary in the following format without any newline character (and nothing else):\n"
-                "   Order ORD-XXXXXXXX from <farm or unknown> for <quantity or unknown> units at <price or unknown> has been successfully delivered."
-                "   - Generate Order ID as ORD- followed by 8 uppercase hex characters.\n"
+                "   Order <extract order id from tool execution result> from <farm or unknown> for <quantity or unknown> units at <price or unknown> has been successfully delivered."
                 "   - Infer farm / quantity / price from prior messages; if missing use 'unknown'.\n"
                 "   - Never call tools after 'DELIVERED' appears.\n\n"
                 "Output:\n"

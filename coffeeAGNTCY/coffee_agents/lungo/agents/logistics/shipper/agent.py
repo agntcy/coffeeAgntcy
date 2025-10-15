@@ -12,6 +12,8 @@ from ioa_observe.sdk.decorators import agent, graph
 from common.logistic_states import (
     LogisticStatus,
     extract_status,
+    build_transition_message,
+    ensure_order_id,
 )
 
 logger = logging.getLogger("lungo.shipper_agent.agent")
@@ -53,18 +55,31 @@ class ShipperAgent:
         raw = text.strip()
         status = extract_status(raw)
 
+        order_id = ensure_order_id(raw)
+
         if status is LogisticStatus.HANDOVER_TO_SHIPPER:
             next_status = LogisticStatus.CUSTOMS_CLEARANCE
-            return {"messages": [AIMessage(next_status.value)]}
+            msg = build_transition_message(
+                order_id=order_id,
+                sender="Shipper",
+                receiver="Accountant",
+                to_state=next_status.value,
+                details="Customs docs validated and cleared",
+            )
+            return {"messages": [AIMessage(msg)]}
+
         if status is LogisticStatus.PAYMENT_COMPLETE:
             next_status = LogisticStatus.DELIVERED
-            return {"messages": [AIMessage(next_status.value)]}
+            msg = build_transition_message(
+                order_id=order_id,
+                sender="Shipper",
+                receiver="Supervisor",
+                to_state=next_status.value,
+                details="Final handoff completed",
+            )
+            return {"messages": [AIMessage(msg)]}
 
-        idle_msg = (
-            f"Action '{None}' received. No shipper handling required. "
-            "Shipper remains IDLE. No further action required."
-        )
-        return {"messages": [AIMessage(idle_msg)]}
+        return {"messages": [AIMessage("Shipper remains IDLE. No further action required.")]}
 
     # --- Graph Building Method ---
 

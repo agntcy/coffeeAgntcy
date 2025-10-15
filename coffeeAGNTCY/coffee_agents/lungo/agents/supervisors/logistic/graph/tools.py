@@ -149,7 +149,6 @@ async def create_order(farm: str, quantity: int, price: float) -> str:
 
   logger.debug("Raw group chat responses: %s", responses)
   formatted = _summarize_a2a_responses(responses)
-  logger.info("Summarized order status: %s", formatted)
   return formatted
 
 

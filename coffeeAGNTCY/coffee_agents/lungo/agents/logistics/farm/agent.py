@@ -2,15 +2,12 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import logging
-
+import uuid
 from langchain_core.messages import AIMessage
 from langgraph.graph import MessagesState
 from langgraph.graph import StateGraph, END
-from common.logistic_states import (
-    LogisticStatus,
-    extract_status,
-)
 from ioa_observe.sdk.decorators import agent, graph
+from common.logistic_states import LogisticStatus, extract_status, build_transition_message
 
 logger = logging.getLogger("lungo.farm_agent.agent")
 
@@ -46,21 +43,25 @@ class FarmAgent:
         messages = state["messages"]
         if isinstance(messages, list) and messages:
             last = messages[-1]
-            text = getattr(last, "content", str(last))
+            raw = getattr(last, "content", str(last)).strip()
         else:
-            text = str(messages)
-        raw = text.strip()
+            raw = str(messages).strip()
+
         status = extract_status(raw)
+        order_id = uuid.uuid4().hex
 
         if status is LogisticStatus.RECEIVED_ORDER:
             next_status = LogisticStatus.HANDOVER_TO_SHIPPER
-            return {"messages": [AIMessage(next_status.value)]}
+            msg = build_transition_message(
+                order_id=order_id,
+                sender="Tatooine Farm",
+                receiver="Shipper",
+                to_state=next_status.value,
+                details="Prepared shipment and documentation",
+            )
+            return {"messages": [AIMessage(msg)]}
 
-        idle_msg = (
-            f"Action '{None}' received. No shipper handling required. "
-            "Shipper remains IDLE. No further action required."
-        )
-        return {"messages": [AIMessage(idle_msg)]}
+        return {"messages": [AIMessage("Logistic Farm remains IDLE. No further action required.")]}
 
     # --- Graph Building Method ---
 
