@@ -1,4 +1,5 @@
-import os
+# Copyright AGNTCY Contributors (https://github.com/agntcy)
+# SPDX-License-Identifier: Apache-2.0
 import time
 from typing import Optional, Tuple
 import json

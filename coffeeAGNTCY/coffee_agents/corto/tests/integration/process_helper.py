@@ -1,3 +1,5 @@
+# Copyright AGNTCY Contributors (https://github.com/agntcy)
+# SPDX-License-Identifier: Apache-2.0
 # Lightweight threaded subprocess runner with prefixed logs + readiness gate.
 
 from __future__ import annotations

@@ -1,3 +1,6 @@
+# Copyright AGNTCY Contributors (https://github.com/agntcy)
+# SPDX-License-Identifier: Apache-2.0
+
 """
 Pytest fixtures using the simple ProcessRunner.
 Replace prior xprocess usage with these.
