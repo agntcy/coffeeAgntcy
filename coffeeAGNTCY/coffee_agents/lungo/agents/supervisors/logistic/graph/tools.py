@@ -5,6 +5,7 @@ import asyncio
 import logging
 import re
 import uuid
+import os
 from typing import Any, Sequence
 from uuid import uuid4
 
@@ -115,11 +116,22 @@ async def create_order(farm: str, quantity: int, price: float) -> str:
     logger.error("Failed to create A2A client or message request: %s", e)
     raise HTTPException(status_code=500, detail="Internal server error: failed to create A2A client or message request")
 
+  # Experimental: includes the HelpDesk in the broadcast (enabled by default for broader testing and demos).
+  # Known issue: concurrent delete_session executions may cause the agents to lose connectivity from SLIM.
+  # (see https://github.com/agntcy/slim/issues/780; tentative fix targeted for versions 0.6.0 or 0.7.0).
+  helpdesk_enabled = os.getenv("EXPERIMENTAL_FEATURE", "true").lower() == "true"
+  base_cards = (SHIPPER_CARD, TATOOINE_CARD, ACCOUNTANT_CARD)
+  cards = base_cards + (HELPDESK_CARD,) if helpdesk_enabled else base_cards
+
   recipients = [
     A2AProtocol.create_agent_topic(card)
-    for card in (SHIPPER_CARD, TATOOINE_CARD, ACCOUNTANT_CARD, HELPDESK_CARD)
+    for card in cards
   ]
-  logger.info("Broadcasting order to recipients: %s", recipients)
+  logger.info(
+    "Broadcasting order to recipients (helpdesk_enabled=%s): %s",
+    helpdesk_enabled,
+    recipients
+  )
 
   # Retry configuration
   max_retries = 3
