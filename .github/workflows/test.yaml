@@ -14,11 +14,15 @@ jobs:
       matrix:
         test-suite: [corto, lungo]
 
-    # Make vars available to all steps (repo variables via vars.*, secrets via secrets.*)
+    # All `run:` steps below will execute in this matrix directory
+    defaults:
+      run:
+        working-directory: coffeeAGNTCY/coffee_agents/${{ matrix.test-suite }}
+
     env:
       AZURE_OPENAI_API_KEY: ${{ secrets.AZURE_OPENAI_API_KEY }}
       AZURE_OPENAI_API_VERSION: ${{ secrets.AZURE_OPENAI_API_VERSION }}
-      AZURE_OPENAI_DEPLOYMENT: ${{ secrets.AZURE_OPENAI_DEPLOYMENT}}
+      AZURE_OPENAI_DEPLOYMENT: ${{ secrets.AZURE_OPENAI_DEPLOYMENT }}
       AZURE_OPENAI_ENDPOINT: ${{ secrets.AZURE_OPENAI_ENDPOINT }}
       LLM_PROVIDER: ${{ secrets.LLM_PROVIDER }}
       LLM_STREAMING: ${{ secrets.LLM_STREAMING }}
@@ -35,8 +39,8 @@ jobs:
       - name: Install uv
         uses: astral-sh/setup-uv@v6
 
-      - name: Install the project
+      - name: Install the project (matrix dir)
         run: uv sync
 
-      - name: Run tests
-        run: uv run pytest -s coffeeAGNTCY/coffee_agents/${{ matrix.test-suite }}
+      - name: Run tests (matrix dir)
+        run: uv run pytest -s
