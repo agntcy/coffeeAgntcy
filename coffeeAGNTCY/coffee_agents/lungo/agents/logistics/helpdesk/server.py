@@ -12,6 +12,7 @@ from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from starlette.routing import Route
 from uvicorn import Config, Server
+from starlette.middleware.cors import CORSMiddleware
 
 from agntcy_app_sdk.factory import AgntcyFactory
 from agntcy_app_sdk.protocols.a2a.protocol import A2AProtocol
@@ -71,6 +72,13 @@ async def health_handler(_request: Request) -> JSONResponse:
 def build_http_app(a2a_app: A2AStarletteApplication) -> FastAPI:
     """Attach REST endpoints to the underlying Starlette application."""
     app = a2a_app.build()
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=["*"],  # Replace "*" with specific origins if needed
+        allow_credentials=True,
+        allow_methods=["*"],  # Allow all HTTP methods
+        allow_headers=["*"],  # Allow all headers
+    )
     app.router.routes.append(Route("/v1/health", health_handler, methods=["GET"]))
     app.router.routes.append(Route("/agent/chat-logs", stream_handler, methods=["GET"]))
     return app
