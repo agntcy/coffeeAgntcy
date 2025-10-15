@@ -49,6 +49,27 @@ wheels = [
 ]
 
 [[package]]
+name = "agntcy-identity-service-sdk"
+version = "0.0.5"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "a2a-sdk" },
+    { name = "grpcio" },
+    { name = "grpcio-tools" },
+    { name = "httpx" },
+    { name = "mcp" },
+    { name = "protobuf" },
+    { name = "protoc-gen-openapiv2" },
+    { name = "python-dotenv" },
+    { name = "starlette" },
+    { name = "typer" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/70/ae/e35db6849b6976e349f934564ab85692262400bb8f17e10db69c3373a151/agntcy_identity_service_sdk-0.0.5.tar.gz", hash = "sha256:a14fcbb76de432f1f7f2efbb8f56ae3b95e15561a1531ec1ba3c69b9982cbf4d", size = 44799, upload-time = "2025-10-14T08:47:41.331Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/8e/67/f73f051c9aa7c22091b5eb2c8c1fd31ef641fb058328b92fdf7e727134de/agntcy_identity_service_sdk-0.0.5-py3-none-any.whl", hash = "sha256:9c52b725bf4a2b001a78d247691621cfd2e520303329dc2ee607309ba951be51", size = 70133, upload-time = "2025-10-14T08:47:40.434Z" },
+]
+
+[[package]]
 name = "aiohappyeyeballs"
 version = "2.6.1"
 source = { registry = "https://pypi.org/simple" }
@@ -1801,6 +1822,7 @@ source = { editable = "." }
 dependencies = [
     { name = "a2a-sdk" },
     { name = "agntcy-app-sdk" },
+    { name = "agntcy-identity-service-sdk" },
     { name = "click" },
     { name = "cnoe-agent-utils" },
     { name = "coloredlogs" },
@@ -1838,6 +1860,7 @@ dev = [
 requires-dist = [
     { name = "a2a-sdk", specifier = "==0.3.0" },
     { name = "agntcy-app-sdk", specifier = "==0.2.9" },
+    { name = "agntcy-identity-service-sdk", specifier = ">=0.0.5" },
     { name = "autogen-core", marker = "extra == 'dev'", specifier = ">=0.4.3,<0.5" },
     { name = "click", specifier = ">=8.1.8" },
     { name = "cnoe-agent-utils", specifier = "==0.3.0" },

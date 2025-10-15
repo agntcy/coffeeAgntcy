@@ -6,30 +6,45 @@ from typing import List
 import subprocess
 from pathlib import Path
 
-# If you always run from the lungo dir, set it once:
-PROJECT_DIR = Path(__file__).resolve().parents[2]  # .../coffee_agents/lungo
+PROJECT_DIR = Path(__file__).resolve().parents[2] 
 
 def _compose_cmd(files: List[str]) -> List[str]:
+    """
+    Build a docker compose command ensuring:
+      - All compose file paths are absolute (rooted at PROJECT_DIR) so invocation
+        location does not matter.
+    """
     cmd = ["docker", "compose"]
     for f in files:
         if f.strip():
-            cmd += ["-f", f.strip()]
+            compose_file = (PROJECT_DIR / f.strip()).resolve()
+            cmd += ["-f", str(compose_file)]
     return cmd
 
 def _run(cmd: List[str]):
+    """
+    Execute a docker compose command from PROJECT_DIR to make calls location-agnostic.
+    """
     print(">", " ".join(cmd))
     try:
-        subprocess.run(cmd, check=True)
-    except subprocess.CalledProcessError as e:
-        # Show config (catches missing env like LLM_PROVIDER)
-        subprocess.run(["docker", "compose", "-f", "docker-compose.yaml", "config"], check=False)
+        subprocess.run(cmd, check=True, cwd=PROJECT_DIR)
+    except subprocess.CalledProcessError:
+        # Show resolved config (catches missing env like LLM_PROVIDER)
+        subprocess.run(
+            ["docker", "compose", "-f", str((PROJECT_DIR / "docker-compose.yaml").resolve()), "config"],
+            check=False,
+            cwd=PROJECT_DIR,
+        )
         # Show recent logs for the target service(s) if any
         try:
-            # If last arg is a service name, print its logs
             services = [a for a in cmd if not a.startswith("-")]
             svc = services[-1] if services and services[-1] not in ("up", "down", "build") else None
             if svc:
-                subprocess.run(["docker", "compose", "-f", "docker-compose.yaml", "logs", "--no-color", "--tail=200", svc], check=False)
+                subprocess.run(
+                    ["docker", "compose", "-f", str((PROJECT_DIR / "docker-compose.yaml").resolve()), "logs", "--no-color", "--tail=200", svc],
+                    check=False,
+                    cwd=PROJECT_DIR,
+                )
         except Exception:
             pass
         raise
@@ -57,8 +72,10 @@ def _container_id(files: List[str], service: str) -> str:
     return cid
 
 def _inspect_state_health(container_id: str) -> Tuple[str, Optional[str]]:
-    # Return (state, health) where state in {"created","running","exited","restarting","removing","dead"}
-    # and health in {"healthy","unhealthy","starting", None}
+    """
+    Return (state, health) where state in {"created","running","exited","restarting","removing","dead"}
+    and health in {"healthy","unhealthy","starting", None}
+    """
     res = subprocess.run(
         ["docker", "inspect", container_id],
         capture_output=True, text=True

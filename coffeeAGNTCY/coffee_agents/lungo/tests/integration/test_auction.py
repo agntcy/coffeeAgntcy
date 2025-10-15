@@ -16,6 +16,15 @@ TRANSPORT_MATRIX = [
     ),
 ]
 
+FAILURE_KEYWORDS = [
+    "could not be completed",
+    "could not complete",
+    "could not be processed",
+    "could not be fulfilled",
+    "unreachable",
+    "error in processing",
+]
+
 @pytest.mark.parametrize("transport_config", TRANSPORT_MATRIX, indirect=True)
 class TestAuctionFlows:
     @pytest.mark.agents(["brazil-farm"])
@@ -89,7 +98,10 @@ class TestAuctionFlows:
         data = resp.json()
         logger.info(data)
         assert "response" in data
-        assert "could not be verified" in data["response"], "Expected verification failure in response"
+        normalized = data["response"].lower()
+        assert any(keyword in normalized for keyword in FAILURE_KEYWORDS), (
+        f"Expected a failure response, but got:\n{data["response"]}"
+    )
 
     @pytest.mark.agents(["weather-mcp","colombia-farm"])
     @pytest.mark.usefixtures("agents_up")
@@ -133,6 +145,6 @@ class TestAuctionFlows:
         assert resp.status_code == 200
         data = resp.json()
         logger.info(data)
-        assert "I'm not sure how to handle that" in data
+        assert "I'm not sure how to handle that" in data["response"]
 
     

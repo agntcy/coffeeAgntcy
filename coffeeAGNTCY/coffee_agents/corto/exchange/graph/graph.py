@@ -11,7 +11,7 @@ from langgraph_supervisor import create_supervisor
 from ioa_observe.sdk.decorators import agent, graph
 
 from common.llm import get_llm
-from graph.tools import FlavorProfileTool
+from exchange.graph.tools import FlavorProfileTool
 
 from farm.card import AGENT_CARD as farm_agent_card
 

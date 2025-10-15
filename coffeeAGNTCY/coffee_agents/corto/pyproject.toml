@@ -24,6 +24,7 @@ dependencies = [
     "uvicorn",
     "ioa-observe-sdk==1.0.18",
     "agntcy-app-sdk==0.2.9",
+    "sentence-transformers>=5.1.1",
 ]
 
 [project.optional-dependencies]

@@ -2,53 +2,25 @@
 Pytest fixtures using the simple ProcessRunner.
 Replace prior xprocess usage with these.
 """
-import atexit
-import importlib
 import os
-import time
-import sys
-import pytest
 from pathlib import Path
+import pytest
+import re
+import sys
+import time
 
 from fastapi.testclient import TestClient
-from test.integration.docker_helpers import up, down
 
-from test.integration.process_helper import ProcessRunner 
+from tests.integration.docker_helpers import up, down
+from tests.integration.process_helper import ProcessRunner 
 
-LUNGO_DIR = Path(__file__).resolve().parents[2]
-print("LUNGO_DIR:", LUNGO_DIR)
+
 
 AGENTS = {
-    # auction agents
-    "brazil-farm": {
-        "cmd": ["python", "-m", "agents.farms.brazil.farm_server", "--no-reload"],
-        "ready_pattern": r"",
-    },
-    "colombia-farm": {
-        "cmd": ["python", "-m", "agents.farms.colombia.farm_server", "--no-reload"],
-        "ready_pattern": r"",
-    },
-    "vietnam-farm": {
-        "cmd": ["python", "-m", "agents.farms.vietnam.farm_server", "--no-reload"],
-        "ready_pattern": r"",
-    },
-    "weather-mcp": {
-        "cmd": ["uv", "run", "-m", "agents.mcp_servers.weather_service"],
-        "ready_pattern": r"",
-    },
-    # logistics agents
-    "logistics-farm": {
-        "cmd": ["python", "-m", "agents.logistics.farm.server", "--no-reload"],
-        "ready_pattern": r"",
-    },
-    "accountant": {
-        "cmd": ["python", "-m", "agents.logistics.accountant.server", "--no-reload"],
-        "ready_pattern": r"",
-    },
-    "shipper": {
-        "cmd": ["python", "-m", "agents.logistics.shipper.server", "--no-reload"],
-        "ready_pattern": r"",
-    },
+    "farm": {
+        "cmd": ["python", "-m", "farm.farm_server", "--no-reload"],
+        "ready_pattern": r"Transport initialized with tracing enabled",
+    }
 }
 
 _ACTIVE_RUNNERS = []
@@ -58,11 +30,8 @@ _ACTIVE_RUNNERS = []
 def _base_env():
     return {
         **os.environ,
-        "PYTHONPATH": str(LUNGO_DIR),
+        "PYTHONPATH": Path(__file__).resolve().parents[2],
         "ENABLE_HTTP": "true",
-        "FARM_BROADCAST_TOPIC": "test-broadcast",
-        "PYTHONUNBUFFERED": "1",
-        "PYTHONFAULTHANDLER": "1",
     }
 
 def _purge_modules(prefixes):
@@ -143,7 +112,7 @@ def _normalize_agent_spec(spec):
         if not name:
             # try to derive a name from cmd or module
             name = _derive_name_from_spec(spec)
-        ready = spec.get("ready_pattern", r"Started server process")
+        ready = "Started server process"
         return {"name": name, "cmd": cmd, "ready_pattern": ready}
 
     if isinstance(spec, str):
@@ -152,7 +121,7 @@ def _normalize_agent_spec(spec):
             return {
                 "name": spec.split(".")[-1],
                 "cmd": ["python", "-m", spec],
-                "ready_pattern": r"Started server process",
+                "ready_pattern": "Transport initialized with tracing enabled",
             }
         raise ValueError(f"Unrecognized agent spec string: {spec!r}")
 
@@ -203,7 +172,7 @@ def agents_up(request, transport_config):
             cmd=spec["cmd"],
             cwd=str(LUNGO_DIR),
             env=env,
-            ready_pattern=spec.get("ready_pattern", r"Started server process"),
+            ready_pattern=spec.get("ready_pattern", r"Transport initialized with tracing enabled"),
             timeout_s=30.0,
             log_dir=Path(LUNGO_DIR) / ".pytest-logs",
         ).start()
@@ -226,48 +195,24 @@ def agents_up(request, transport_config):
             print(f"--- Stopping {r.name} ---")
             r.stop()
 
-# ---------------- http client ----------------
+# ---------------- client ----------------
 
 @pytest.fixture
-def auction_supervisor_client(transport_config, monkeypatch):
+def supervisor_client(transport_config, monkeypatch):
+    for k, v in _base_env().items():
+        monkeypatch.setenv(k, str(v))
     for k, v in transport_config.items():
         monkeypatch.setenv(k, v)
 
     _purge_modules([
-        "agents.supervisors.auction",
+        "exchange",
         "config.config",
     ])
 
-    import agents.supervisors.auction.main as auction_main
+    import exchange.main as exchange_main
     import importlib
-    importlib.reload(auction_main)
+    importlib.reload(exchange_main)
 
-    app = auction_main.app
+    app = exchange_main.app
     with TestClient(app) as client:
         yield client
-
-@pytest.fixture
-def logistics_supervisor_client(transport_config, monkeypatch):
-    for k, v in transport_config.items():
-        monkeypatch.setenv(k, v)
-
-    _purge_modules([
-        "agents.supervisors.logistics",
-        "config.config",
-    ])
-
-    import agents.supervisors.logistic.main as logistics_main
-    import importlib
-    importlib.reload(logistics_main)
-
-    app = logistics_main.app
-    with TestClient(app) as client:
-        yield client
-
-@atexit.register
-def _kill_any_leftover_runners():
-    for r in _ACTIVE_RUNNERS:
-        try:
-            r.stop()
-        except Exception:
-            pass

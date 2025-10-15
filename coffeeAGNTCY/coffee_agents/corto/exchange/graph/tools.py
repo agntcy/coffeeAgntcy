@@ -17,8 +17,8 @@ from a2a.types import (
 )
 
 from langchain_core.tools import BaseTool
-from graph.models import FlavorProfileInput, FlavorProfileOutput
-from graph.shared import get_factory
+from exchange.graph.models import FlavorProfileInput, FlavorProfileOutput
+from exchange.graph.shared import get_factory
 from agntcy_app_sdk.protocols.a2a.protocol import A2AProtocol
 from ioa_observe.sdk.decorators import tool
 
