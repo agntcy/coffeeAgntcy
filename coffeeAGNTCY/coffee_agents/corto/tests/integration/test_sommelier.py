@@ -36,16 +36,20 @@ class TestAuctionFlows:
         )
         assert resp.status_code == 200
         data = resp.json()
-        logger.debug(data)
+        logger.info(data)
         assert "response" in data
-        reference_response = [
+        max_similarity = 0
+        reference_responses = [
         "Brazilian coffee typically has nutty and chocolatey notes, a smooth body, and low acidity.",
         "Expect caramel, cocoa, and a creamy texture from Brazilian coffee, often with a hint of spice.",
         "The flavor profile of Brazilian coffee is characterized by its mildness, often featuring notes of nuts, chocolate, and a pleasant sweetness."
         ]
-        similarity = get_semantic_similarity(data["response"], reference_response, model)
+        for ref_res in reference_responses:
+            similarity = get_semantic_similarity(data["response"], ref_res, model)
+            if similarity > max_similarity:
+                max_similarity = similarity
         expected_min_similarity = 0.75
-        logger.debug(f"similarity {similarity}")
-        assert similarity >= expected_min_similarity, \
-        f"Agent response '{data["response"]}' did not meet semantic similarity threshold ({expected_min_similarity}) with similarity {similarity}"
+        print(f"max similarity {max_similarity}")
+        assert max_similarity >= expected_min_similarity, \
+        f"Agent response '{data["response"]}' did not meet semantic similarity threshold ({expected_min_similarity}) with any reference. Max similarity: {max_similarity}"
 

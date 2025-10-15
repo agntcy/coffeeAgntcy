@@ -25,12 +25,14 @@ AGENTS = {
 
 _ACTIVE_RUNNERS = []
 
+CORTO_DIR = Path(__file__).resolve().parents[2]
+
 # ---------------- utils ----------------
 
 def _base_env():
     return {
         **os.environ,
-        "PYTHONPATH": Path(__file__).resolve().parents[2],
+        "PYTHONPATH": CORTO_DIR,
         "ENABLE_HTTP": "true",
     }
 
@@ -170,11 +172,11 @@ def agents_up(request, transport_config):
         runner = ProcessRunner(
             name=name,
             cmd=spec["cmd"],
-            cwd=str(LUNGO_DIR),
+            cwd=str(CORTO_DIR),
             env=env,
             ready_pattern=spec.get("ready_pattern", r"Transport initialized with tracing enabled"),
             timeout_s=30.0,
-            log_dir=Path(LUNGO_DIR) / ".pytest-logs",
+            log_dir=Path(CORTO_DIR) / ".pytest-logs",
         ).start()
         _ACTIVE_RUNNERS.append(runner)
 
