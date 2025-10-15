@@ -1818,7 +1818,6 @@ dependencies = [
     { name = "pydantic" },
     { name = "python-dotenv" },
     { name = "requests" },
-    { name = "sentence-transformers" },
     { name = "starlette" },
     { name = "uvicorn" },
 ]
@@ -1832,6 +1831,7 @@ dev = [
     { name = "pytest" },
     { name = "pytest-asyncio" },
     { name = "pytest-cov" },
+    { name = "sentence-transformers" },
     { name = "typing-extensions" },
 ]
 
@@ -1863,7 +1863,7 @@ requires-dist = [
     { name = "pytest-cov", marker = "extra == 'dev'", specifier = ">=4.0.0,<5" },
     { name = "python-dotenv", specifier = ">=1.1.0" },
     { name = "requests" },
-    { name = "sentence-transformers", specifier = ">=5.1.1" },
+    { name = "sentence-transformers", marker = "extra == 'dev'", specifier = ">=5.1.1" },
     { name = "starlette" },
     { name = "typing-extensions", marker = "extra == 'dev'", specifier = ">=4.12.2,<5" },
     { name = "uvicorn" },
