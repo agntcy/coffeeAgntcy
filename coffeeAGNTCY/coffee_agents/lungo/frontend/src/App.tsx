@@ -3,10 +3,11 @@
  * SPDX-License-Identifier: Apache-2.0
  **/
 
-import React, { useState, useEffect, useRef } from "react"
+import React, { useState, useEffect, useRef, useCallback } from "react"
 import { LOCAL_STORAGE_KEY } from "@/components/Chat/Messages"
 import { logger } from "@/utils/logger"
 import { useChatAreaMeasurement } from "@/hooks/useChatAreaMeasurement"
+import { useGlobalSSE } from "@/hooks/useGlobalSSE"
 
 import Navigation from "@/components/Navigation/Navigation"
 import MainArea from "@/components/MainArea/MainArea"
@@ -26,6 +27,7 @@ export type PatternType = (typeof PATTERNS)[keyof typeof PATTERNS]
 
 const App: React.FC = () => {
   const { sendMessage } = useAgentAPI()
+  const sseState = useGlobalSSE()
 
   const [selectedPattern, setSelectedPattern] = useState<PatternType>(
     PATTERNS.PUBLISH_SUBSCRIBE,
@@ -78,7 +80,9 @@ const App: React.FC = () => {
   }
 
   const handleApiResponse = (response: string, isError: boolean = false) => {
-    setAgentResponse(response)
+    if (selectedPattern !== PATTERNS.GROUP_COMMUNICATION) {
+      setAgentResponse(response)
+    }
     setIsAgentLoading(false)
 
     if (selectedPattern === PATTERNS.GROUP_COMMUNICATION && !isError) {
@@ -103,7 +107,6 @@ const App: React.FC = () => {
 
     try {
       if (selectedPattern === PATTERNS.GROUP_COMMUNICATION) {
-        setShowProgressTracker(true)
         setShowFinalResponse(false)
         streamCompleteRef.current = false
 
@@ -144,19 +147,15 @@ const App: React.FC = () => {
   const handleStreamComplete = () => {
     streamCompleteRef.current = true
 
-    // Only apply coordination logic for group communication
     if (selectedPattern === PATTERNS.GROUP_COMMUNICATION) {
-      // Immediately show the agent loading state when streaming completes
       setShowFinalResponse(true)
 
       if (pendingResponse) {
-        // Response is ready, show it
         const isError =
           pendingResponse.includes("error") || pendingResponse.includes("Error")
         handleApiResponse(pendingResponse, isError)
         setPendingResponse("")
       }
-      // If no pending response, the loading state will continue until response arrives
     }
   }
 
@@ -168,22 +167,27 @@ const App: React.FC = () => {
     setButtonClicked(false)
     setAiReplied(false)
     setGroupCommResponseReceived(false)
-    setShowProgressTracker(false)
     setShowFinalResponse(false)
     setPendingResponse("")
+
+    sseState.clearEvents()
   }
 
-  const handleNodeHighlightSetup = (
-    highlightFunction: (nodeId: string) => void,
-  ) => {
-    setHighlightNodeFunction(() => highlightFunction)
-  }
+  const handleNodeHighlightSetup = useCallback(
+    (highlightFunction: (nodeId: string) => void) => {
+      setHighlightNodeFunction(() => highlightFunction)
+    },
+    [],
+  )
 
-  const handleSenderHighlight = (nodeId: string) => {
-    if (highlightNodeFunction) {
-      highlightNodeFunction(nodeId)
-    }
-  }
+  const handleSenderHighlight = useCallback(
+    (nodeId: string) => {
+      if (highlightNodeFunction) {
+        highlightNodeFunction(nodeId)
+      }
+    },
+    [highlightNodeFunction],
+  )
 
   useEffect(() => {
     setCurrentUserMessage("")
@@ -191,14 +195,17 @@ const App: React.FC = () => {
     setIsAgentLoading(false)
     setButtonClicked(false)
     setAiReplied(false)
-    setShowProgressTracker(false)
     setShowFinalResponse(false)
     setPendingResponse("")
 
-    if (selectedPattern !== PATTERNS.GROUP_COMMUNICATION) {
+    if (selectedPattern === PATTERNS.GROUP_COMMUNICATION) {
+      setShowProgressTracker(true)
+      sseState.clearEvents()
+    } else {
+      setShowProgressTracker(false)
       setGroupCommResponseReceived(false)
     }
-  }, [selectedPattern])
+  }, [selectedPattern, sseState.clearEvents])
 
   return (
     <ThemeProvider>
@@ -257,6 +264,7 @@ const App: React.FC = () => {
                 agentResponse={agentResponse}
                 isAgentLoading={isAgentLoading}
                 chatRef={chatRef}
+                sseState={sseState}
               />
             </div>
           </div>

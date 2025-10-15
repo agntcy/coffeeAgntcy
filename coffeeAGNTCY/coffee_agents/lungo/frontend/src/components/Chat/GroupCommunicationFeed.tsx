@@ -6,7 +6,7 @@
 
  **/
 
-import React, { useState, useEffect, useRef, useCallback, useMemo } from "react"
+import React, { useState, useEffect, useCallback, useMemo } from "react"
 
 import { ChevronDown, ChevronUp, Truck, Calculator } from "lucide-react"
 
@@ -16,13 +16,8 @@ import supervisorIcon from "@/assets/supervisor.png"
 
 import farmAgentIcon from "@/assets/Grader-Agent.png"
 
-const DEFAULT_HELPDESK_API_URL = "http://127.0.0.1:9094"
-
-const HELPDESK_API_URL =
-  import.meta.env.VITE_HELPDESK_API_URL || DEFAULT_HELPDESK_API_URL
-
 interface StreamStep {
-  connection_id: string
+  order_id: string
 
   sender: string
 
@@ -34,45 +29,24 @@ interface StreamStep {
 
   state: string
 
-  final: boolean
-}
-
-const isValidStreamStep = (data: any): data is StreamStep => {
-  if (!data || typeof data !== "object") {
-    return false
-  }
-
-  const requiredStringFields = [
-    "connection_id",
-    "sender",
-    "receiver",
-    "message",
-    "timestamp",
-    "state",
-  ]
-  for (const field of requiredStringFields) {
-    if (typeof data[field] !== "string" || data[field].trim() === "") {
-      console.warn(`Invalid or empty ${field} in stream data:`, data[field])
-      return false
-    }
-  }
-
-  if (typeof data.final !== "boolean") {
-    console.warn("Invalid final field in stream data:", data.final)
-    return false
-  }
-
-  return true
+  final?: boolean
 }
 
 interface GroupCommunicationFeedProps {
   isVisible: boolean
-  shouldConnect: boolean
   onComplete?: () => void
   prompt: string
   onStreamComplete?: () => void
   onSenderHighlight?: (nodeId: string) => void
   graphConfig?: any
+  sseState?: {
+    isConnected: boolean
+    isConnecting: boolean
+    events: StreamStep[]
+    currentOrderId: string | null
+    error: string | null
+    clearEvents: () => void
+  }
 }
 
 const buildSenderToNodeMap = (graphConfig: any): Record<string, string> => {
@@ -177,20 +151,16 @@ const getSenderIcon = (sender: string) => {
 
 const GroupCommunicationFeed: React.FC<GroupCommunicationFeedProps> = ({
   isVisible,
-  shouldConnect,
   onComplete,
   prompt,
   onSenderHighlight,
   graphConfig,
+  sseState,
 }) => {
   const [state, setState] = useState({
-    steps: [] as StreamStep[],
     isExpanded: true,
-    isConnecting: false,
     isComplete: false,
   })
-
-  const sseConnectionRef = useRef<EventSource | null>(null)
 
   const memoizedGetSenderIcon = useMemo(() => {
     const cache = new Map<string, React.ReactNode>()
@@ -206,15 +176,8 @@ const GroupCommunicationFeed: React.FC<GroupCommunicationFeedProps> = ({
     }
   }, [])
 
-  const handleConnectionOpen = useCallback(() => {
-    console.log("SSE connection opened")
-    setState((prev) => ({ ...prev, isConnecting: false }))
-  }, [])
-
-  const handleStreamMessage = useCallback(
+  const handleSenderHighlight = useCallback(
     (streamData: StreamStep) => {
-      console.log("Parsed stream data:", streamData)
-
       if (onSenderHighlight && streamData.sender && graphConfig) {
         const senderToNodeMap = buildSenderToNodeMap(graphConfig)
 
@@ -234,46 +197,9 @@ const GroupCommunicationFeed: React.FC<GroupCommunicationFeedProps> = ({
           }
         }
       }
-
-      if (streamData.final) {
-        setState((prev) => ({
-          ...prev,
-          steps: [...prev.steps, streamData],
-          isComplete: true,
-        }))
-
-        setTimeout(() => {
-          setState((prev) => ({
-            ...prev,
-            isExpanded: false,
-          }))
-        }, 2000)
-
-        if (sseConnectionRef.current) {
-          sseConnectionRef.current.close()
-        }
-
-        if (onComplete) {
-          onComplete()
-        }
-      } else {
-        setState((prev) => ({
-          ...prev,
-          steps: [...prev.steps, streamData],
-        }))
-      }
     },
-    [onComplete, onSenderHighlight, graphConfig],
+    [onSenderHighlight, graphConfig],
   )
-
-  const handleConnectionError = useCallback((error: Event) => {
-    console.error("SSE connection error:", error)
-    setState((prev) => ({ ...prev, isConnecting: false }))
-
-    if (sseConnectionRef.current) {
-      sseConnectionRef.current.close()
-    }
-  }, [])
 
   const handleExpand = useCallback(() => {
     setState((prev) => ({ ...prev, isExpanded: true }))
@@ -283,81 +209,56 @@ const GroupCommunicationFeed: React.FC<GroupCommunicationFeedProps> = ({
     setState((prev) => ({ ...prev, isExpanded: false }))
   }, [])
 
+  // Reset state when a new prompt comes in (new request started)
   useEffect(() => {
-    console.log(
-      "ProgressTracker useEffect triggered, shouldConnect:",
-      shouldConnect,
-    )
-
-    if (!shouldConnect) {
-      if (sseConnectionRef.current) {
-        console.log("Closing existing EventSource due to shouldConnect=false")
-
-        sseConnectionRef.current.close()
-
-        sseConnectionRef.current = null
-      }
-
-      setState({
-        steps: [],
-        isExpanded: true,
-        isConnecting: false,
+    if (prompt) {
+      setState((prev) => ({
+        ...prev,
         isComplete: false,
-      })
-
-      return
+        isExpanded: true,
+      }))
     }
+  }, [prompt])
 
-    if (sseConnectionRef.current) {
-      return
-    }
+  useEffect(() => {
+    if (!sseState?.events.length) return
 
-    setState((prev) => ({ ...prev, isConnecting: true }))
+    const lastEvent = sseState.events[sseState.events.length - 1]
 
-    const eventSource = new EventSource(`${HELPDESK_API_URL}/agent/stream`)
+    handleSenderHighlight(lastEvent)
 
-    sseConnectionRef.current = eventSource
+    const isFinalStep =
+      lastEvent.final === true || lastEvent.state === "DELIVERED"
 
-    eventSource.onopen = handleConnectionOpen
+    if (isFinalStep && !state.isComplete) {
+      setState((prev) => ({
+        ...prev,
+        isComplete: true,
+      }))
 
-    eventSource.onmessage = (event) => {
-      console.log("SSE message received:", event.data)
+      setTimeout(() => {
+        setState((prev) => ({
+          ...prev,
+          isExpanded: false,
+        }))
+      }, 2000)
 
-      try {
-        const parsedData = JSON.parse(event.data)
-
-        if (!isValidStreamStep(parsedData)) {
-          console.error("Invalid stream data structure received:", {
-            received: parsedData,
-            expected:
-              "StreamStep with connection_id, sender, receiver, message, timestamp, state (strings) and final (boolean)",
-          })
-          return
-        }
-
-        handleStreamMessage(parsedData)
-      } catch (error) {
-        console.error("Failed to parse SSE data as JSON:", {
-          error: error,
-          rawData: event.data,
-        })
+      if (onComplete) {
+        onComplete()
       }
     }
-
-    eventSource.onerror = handleConnectionError
-
-    return () => {
-      console.log("Cleaning up EventSource connection")
-
-      if (sseConnectionRef.current) {
-        sseConnectionRef.current.close()
-
-        sseConnectionRef.current = null
-      }
-    }
-  }, [shouldConnect])
+  }, [sseState?.events, handleSenderHighlight, state.isComplete, onComplete])
 
   if (!isVisible) {
+    return null
+  }
+
+  const events = sseState?.events || []
+  const isConnecting = sseState?.isConnecting || false
+  const hasError = sseState?.error || null
+
+  // Don't render anything if there's no prompt and no events
+  if (!prompt && events.length === 0) {
     return null
   }
 
@@ -368,13 +269,29 @@ const GroupCommunicationFeed: React.FC<GroupCommunicationFeedProps> = ({
       </div>
 
       <div className="flex max-w-[calc(100%-3rem)] flex-1 flex-col items-start rounded p-1 px-2">
-        <div className="whitespace-pre-wrap break-words font-cisco text-sm font-normal leading-5 text-chat-text">
-          {state.isConnecting
-            ? "Connecting to agent stream..."
-            : state.isComplete
-              ? prompt || "Request Processed"
-              : "Processing Request..."}
-        </div>{" "}
+        {/* Show status messages */}
+        {hasError ? (
+          <div className="whitespace-pre-wrap break-words font-cisco text-sm font-normal leading-5 text-chat-text">
+            Connection error: {hasError}
+          </div>
+        ) : isConnecting ? (
+          <div className="whitespace-pre-wrap break-words font-cisco text-sm font-normal leading-5 text-chat-text">
+            Connecting to agent stream...
+          </div>
+        ) : state.isComplete ? (
+          // Show completion message only when done and collapsed
+          state.isExpanded ? null : (
+            <div className="whitespace-pre-wrap break-words font-cisco text-sm font-normal leading-5 text-chat-text">
+              {prompt || "Request Processed"}
+            </div>
+          )
+        ) : prompt && events.length === 0 ? (
+          <div className="whitespace-pre-wrap break-words font-cisco text-sm font-normal leading-5 text-chat-text">
+            Processing Request...
+          </div>
+        ) : null}
+
+        {/* Show completion message only when done */}
         {state.isComplete && !state.isExpanded && (
           <div
             className="mt-1 flex w-full cursor-pointer flex-row items-center gap-1 hover:opacity-75"
@@ -391,12 +308,14 @@ const GroupCommunicationFeed: React.FC<GroupCommunicationFeedProps> = ({
             </div>
           </div>
         )}
-        {state.isExpanded && (
+
+        {/* Always show events when expanded or when events exist */}
+        {(state.isExpanded || events.length > 0) && (
           <>
             <div className="flex w-full flex-col items-start gap-2">
-              {state.steps.map((step, index) => (
+              {events.map((step, index) => (
                 <div
-                  key={`${step.connection_id}-${index}`}
+                  key={`${step.order_id}-${index}`}
                   className="flex w-full flex-row items-center gap-2"
                 >
                   <div className="h-4 w-4 flex-none">

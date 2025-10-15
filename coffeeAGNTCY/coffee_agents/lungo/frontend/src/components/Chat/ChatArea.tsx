@@ -18,6 +18,15 @@ import { cn } from "@/utils/cn.ts"
 import { logger } from "@/utils/logger"
 import GroupCommunicationFeed from "./GroupCommunicationFeed"
 
+interface SSEState {
+  isConnected: boolean
+  isConnecting: boolean
+  events: any[]
+  currentOrderId: string | null
+  error: string | null
+  clearEvents: () => void
+}
+
 interface ChatAreaProps {
   setMessages: React.Dispatch<React.SetStateAction<Message[]>>
   setButtonClicked: (clicked: boolean) => void
@@ -41,6 +50,7 @@ interface ChatAreaProps {
   agentResponse?: string
   isAgentLoading?: boolean
   chatRef?: React.RefObject<HTMLDivElement | null>
+  sseState?: SSEState
 }
 
 const ChatArea: React.FC<ChatAreaProps> = ({
@@ -65,6 +75,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
   agentResponse,
   isAgentLoading,
   chatRef,
+  sseState,
 }) => {
   const [content, setContent] = useState<string>("")
   const [loading, setLoading] = useState<boolean>(false)
@@ -173,11 +184,11 @@ const ChatArea: React.FC<ChatAreaProps> = ({
               <div className={`w-full ${isMinimized ? "hidden" : ""}`}>
                 <GroupCommunicationFeed
                   isVisible={!isMinimized && showProgressTracker}
-                  shouldConnect={showProgressTracker}
                   onComplete={onStreamComplete}
                   onSenderHighlight={onSenderHighlight}
                   graphConfig={graphConfig}
-                  prompt={currentUserMessage}
+                  prompt={currentUserMessage || ""}
+                  sseState={sseState}
                 />
               </div>
             )}
