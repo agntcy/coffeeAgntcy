@@ -4,6 +4,7 @@
 import asyncio
 import json
 import logging
+import random
 from typing import AsyncGenerator
 
 from fastapi import Request
@@ -105,6 +106,7 @@ async def sse_generator(request: Request, _ignored: str) -> AsyncGenerator[dict,
       if new_events:
         index = new_index
         for ev in new_events:
+          await asyncio.sleep(2.0)  # Random sleep between 0.1 and 1.0 seconds
           yield {"data": json.dumps(_serialize(ev))}
         emitted = True
 
