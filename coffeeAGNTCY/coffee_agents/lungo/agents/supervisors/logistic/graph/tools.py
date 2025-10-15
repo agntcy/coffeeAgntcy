@@ -4,6 +4,7 @@
 import asyncio
 import logging
 import re
+import uuid
 from typing import Any, Sequence
 from uuid import uuid4
 
@@ -103,7 +104,7 @@ async def create_order(farm: str, quantity: int, price: float) -> str:
             Part(
               TextPart(
                 # Note the status must be included to trigger the logistic flow
-                text = f"Create an order with price {price} and quantity {quantity}. Status: {LogisticStatus.RECEIVED_ORDER.value}"
+                text = f"{LogisticStatus.RECEIVED_ORDER.value} | Supervisor -> Tatooine Farm: Create an order {uuid.uuid4().hex} with price {price} and quantity {quantity}."
               )
             )
           ],
