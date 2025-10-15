@@ -21,7 +21,7 @@ The suite validates:
 1. Install dependencies (lungo package root):
 
 ```bash
-uv sync
+uv sync --extra dev
 ```
 
 2. Configure environment:
