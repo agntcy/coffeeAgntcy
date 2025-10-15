@@ -16,7 +16,7 @@ Current tests are end‑to‑end semantic behavior validations for the Exchange 
 1. Install dependencies (corto package root):
 
 ```bash
-uv sync
+uv sync --extra dev
 ```
 
 2. Configure environment:

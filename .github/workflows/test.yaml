@@ -40,7 +40,7 @@ jobs:
         uses: astral-sh/setup-uv@v6
 
       - name: Install the project (matrix dir)
-        run: uv sync
+        run: uv sync --extra dev
 
       - name: Run tests (matrix dir)
         run: uv run pytest -s
