@@ -32,3 +32,4 @@ AGENT_CARD = AgentCard(
     skills=[AGENT_SKILL],
     supportsAuthenticatedExtendedCard=False,
 )
+
