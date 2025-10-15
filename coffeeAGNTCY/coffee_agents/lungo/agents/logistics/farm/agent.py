@@ -7,7 +7,7 @@ from langchain_core.messages import AIMessage
 from langgraph.graph import MessagesState
 from langgraph.graph import StateGraph, END
 from ioa_observe.sdk.decorators import agent, graph
-from common.logistic_states import LogisticStatus, extract_status, build_transition_message
+from common.logistic_states import LogisticStatus, extract_status, build_transition_message, ensure_order_id
 
 logger = logging.getLogger("lungo.farm_agent.agent")
 
@@ -48,7 +48,7 @@ class FarmAgent:
             raw = str(messages).strip()
 
         status = extract_status(raw)
-        order_id = uuid.uuid4().hex
+        order_id = ensure_order_id(raw)
 
         if status is LogisticStatus.RECEIVED_ORDER:
             next_status = LogisticStatus.HANDOVER_TO_SHIPPER
