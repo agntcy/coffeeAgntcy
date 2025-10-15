@@ -72,7 +72,7 @@ def build_http_app(a2a_app: A2AStarletteApplication) -> FastAPI:
     """Attach REST endpoints to the underlying Starlette application."""
     app = a2a_app.build()
     app.router.routes.append(Route("/v1/health", health_handler, methods=["GET"]))
-    app.router.routes.append(Route("/agent/stream", stream_handler, methods=["GET"]))
+    app.router.routes.append(Route("/agent/chat-logs", stream_handler, methods=["GET"]))
     return app
 
 
