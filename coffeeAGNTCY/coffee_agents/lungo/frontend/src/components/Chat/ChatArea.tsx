@@ -29,7 +29,9 @@ interface ChatAreaProps {
   showProgressTracker?: boolean
   showFinalResponse?: boolean
   onStreamComplete?: () => void
+  onSenderHighlight?: (nodeId: string) => void
   pattern?: string
+  graphConfig?: any
   onCoffeeGraderSelect?: (query: string) => void
   onDropdownSelect?: (query: string) => void
   onUserInput?: (query: string) => void
@@ -52,7 +54,9 @@ const ChatArea: React.FC<ChatAreaProps> = ({
   showProgressTracker = false,
   showFinalResponse = false,
   onStreamComplete,
+  onSenderHighlight,
   pattern,
+  graphConfig,
   onDropdownSelect,
   onUserInput,
   onApiResponse,
@@ -171,6 +175,8 @@ const ChatArea: React.FC<ChatAreaProps> = ({
                   isVisible={!isMinimized && showProgressTracker}
                   shouldConnect={showProgressTracker}
                   onComplete={onStreamComplete}
+                  onSenderHighlight={onSenderHighlight}
+                  graphConfig={graphConfig}
                   prompt={currentUserMessage}
                 />
               </div>

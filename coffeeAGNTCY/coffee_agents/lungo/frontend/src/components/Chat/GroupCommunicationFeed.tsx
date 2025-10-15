@@ -69,7 +69,59 @@ interface GroupCommunicationFeedProps {
   isVisible: boolean
   shouldConnect: boolean
   onComplete?: () => void
-  prompt?: string
+  prompt: string
+  onStreamComplete?: () => void
+  onSenderHighlight?: (nodeId: string) => void
+  graphConfig?: any
+}
+
+const buildSenderToNodeMap = (graphConfig: any): Record<string, string> => {
+  if (!graphConfig?.nodes) return {}
+
+  const map: Record<string, string> = {}
+
+  graphConfig.nodes.forEach((node: any) => {
+    if (node.data) {
+      if (node.data.label1) {
+        map[node.data.label1] = node.id
+        map[node.data.label1.toLowerCase()] = node.id
+      }
+      if (node.data.label2) {
+        map[node.data.label2] = node.id
+        map[node.data.label2.toLowerCase()] = node.id
+      }
+      if (node.data.agentName) {
+        map[node.data.agentName] = node.id
+        map[node.data.agentName.toLowerCase()] = node.id
+      }
+      if (node.data.farmName) {
+        map[node.data.farmName] = node.id
+        map[node.data.farmName.toLowerCase()] = node.id
+      }
+
+      if (node.data.label1 === "Logistics Agent") {
+        map["Supervisor"] = node.id
+        map["supervisor"] = node.id
+      }
+      if (node.data.label1 === "Tatooine") {
+        map["Tatooine Farm"] = node.id
+        map["tatooine farm"] = node.id
+      }
+    }
+  })
+
+  return map
+}
+
+const getAllAgentNodeIds = (graphConfig: any): string[] => {
+  if (!graphConfig?.nodes) return []
+
+  return graphConfig.nodes
+    .filter(
+      (node: any) =>
+        node.type === "customNode" && node.data?.label1 !== "Logistics Agent",
+    )
+    .map((node: any) => node.id)
 }
 
 const SENDER_ICON_MAP = {
@@ -128,6 +180,8 @@ const GroupCommunicationFeed: React.FC<GroupCommunicationFeedProps> = ({
   shouldConnect,
   onComplete,
   prompt,
+  onSenderHighlight,
+  graphConfig,
 }) => {
   const [state, setState] = useState({
     steps: [] as StreamStep[],
@@ -161,13 +215,39 @@ const GroupCommunicationFeed: React.FC<GroupCommunicationFeedProps> = ({
     (streamData: StreamStep) => {
       console.log("Parsed stream data:", streamData)
 
+      if (onSenderHighlight && streamData.sender && graphConfig) {
+        const senderToNodeMap = buildSenderToNodeMap(graphConfig)
+
+        const senderNodeId =
+          senderToNodeMap[streamData.sender] ||
+          senderToNodeMap[streamData.sender.toLowerCase()]
+
+        if (senderNodeId) {
+          onSenderHighlight(senderNodeId)
+
+          if (streamData.receiver === "All Agents") {
+            const allAgentIds = getAllAgentNodeIds(graphConfig)
+
+            allAgentIds.forEach((nodeId, index) => {
+              setTimeout(() => onSenderHighlight(nodeId), (index + 1) * 100)
+            })
+          }
+        }
+      }
+
       if (streamData.final) {
         setState((prev) => ({
           ...prev,
           steps: [...prev.steps, streamData],
           isComplete: true,
-          isExpanded: false,
         }))
+
+        setTimeout(() => {
+          setState((prev) => ({
+            ...prev,
+            isExpanded: false,
+          }))
+        }, 2000)
 
         if (sseConnectionRef.current) {
           sseConnectionRef.current.close()
@@ -183,7 +263,7 @@ const GroupCommunicationFeed: React.FC<GroupCommunicationFeedProps> = ({
         }))
       }
     },
-    [onComplete],
+    [onComplete, onSenderHighlight, graphConfig],
   )
 
   const handleConnectionError = useCallback((error: Event) => {

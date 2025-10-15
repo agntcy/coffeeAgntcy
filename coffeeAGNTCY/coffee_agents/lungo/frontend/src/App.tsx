@@ -15,6 +15,7 @@ import ChatArea from "@/components/Chat/ChatArea"
 import Sidebar from "@/components/Sidebar/Sidebar"
 import { ThemeProvider } from "@/contexts/ThemeContext"
 import { Message } from "./types/message"
+import { getGraphConfig } from "@/utils/graphConfigs"
 export const PATTERNS = {
   SLIM_A2A: "slim_a2a",
   PUBLISH_SUBSCRIBE: "publish_subscribe",
@@ -35,11 +36,13 @@ const App: React.FC = () => {
   const [agentResponse, setAgentResponse] = useState<string>("")
   const [isAgentLoading, setIsAgentLoading] = useState<boolean>(false)
   const [groupCommResponseReceived, setGroupCommResponseReceived] =
-    useState<boolean>(false)
+    useState(false)
+  const [highlightNodeFunction, setHighlightNodeFunction] = useState<
+    ((nodeId: string) => void) | null
+  >(null)
   const [showProgressTracker, setShowProgressTracker] = useState<boolean>(false)
-  const [pendingResponse, setPendingResponse] = useState<string>("")
-  const [streamComplete, setStreamComplete] = useState<boolean>(false)
   const [showFinalResponse, setShowFinalResponse] = useState<boolean>(false)
+  const [pendingResponse, setPendingResponse] = useState<string>("")
   const streamCompleteRef = useRef<boolean>(false)
   const [messages, setMessages] = useState<Message[]>(() => {
     const saved = localStorage.getItem(LOCAL_STORAGE_KEY)
@@ -68,6 +71,10 @@ const App: React.FC = () => {
     setCurrentUserMessage(query)
     setIsAgentLoading(true)
     setButtonClicked(true)
+
+    if (selectedPattern !== PATTERNS.GROUP_COMMUNICATION) {
+      setShowFinalResponse(true)
+    }
   }
 
   const handleApiResponse = (response: string, isError: boolean = false) => {
@@ -95,10 +102,8 @@ const App: React.FC = () => {
     setButtonClicked(true)
 
     try {
-      // For group communication, handle both /prompt and /stream
       if (selectedPattern === PATTERNS.GROUP_COMMUNICATION) {
         setShowProgressTracker(true)
-        setStreamComplete(false)
         setShowFinalResponse(false)
         streamCompleteRef.current = false
 
@@ -107,24 +112,25 @@ const App: React.FC = () => {
 
         responsePromise
           .then((response) => {
+            // Store response but don't show until streaming is complete
             setPendingResponse(response)
-
             if (streamCompleteRef.current) {
+              setShowFinalResponse(true)
               handleApiResponse(response, false)
-              setPendingResponse("")
             }
           })
           .catch((error) => {
             logger.apiError("/agent/prompt", error)
             const errorMsg = "Sorry, I encountered an error."
-            setPendingResponse(errorMsg)
 
-            if (streamComplete) {
+            setPendingResponse(errorMsg)
+            if (streamCompleteRef.current) {
+              setShowFinalResponse(true)
               handleApiResponse(errorMsg, true)
-              setPendingResponse("")
             }
           })
       } else {
+        setShowFinalResponse(true)
         const response = await sendMessage(query, selectedPattern)
         handleApiResponse(response, false)
       }
@@ -136,15 +142,21 @@ const App: React.FC = () => {
   }
 
   const handleStreamComplete = () => {
-    setStreamComplete(true)
     streamCompleteRef.current = true
 
-    setShowFinalResponse(true)
-    setIsAgentLoading(true)
+    // Only apply coordination logic for group communication
+    if (selectedPattern === PATTERNS.GROUP_COMMUNICATION) {
+      // Immediately show the agent loading state when streaming completes
+      setShowFinalResponse(true)
 
-    if (pendingResponse) {
-      handleApiResponse(pendingResponse, false)
-      setPendingResponse("")
+      if (pendingResponse) {
+        // Response is ready, show it
+        const isError =
+          pendingResponse.includes("error") || pendingResponse.includes("Error")
+        handleApiResponse(pendingResponse, isError)
+        setPendingResponse("")
+      }
+      // If no pending response, the loading state will continue until response arrives
     }
   }
 
@@ -157,7 +169,20 @@ const App: React.FC = () => {
     setAiReplied(false)
     setGroupCommResponseReceived(false)
     setShowProgressTracker(false)
+    setShowFinalResponse(false)
     setPendingResponse("")
+  }
+
+  const handleNodeHighlightSetup = (
+    highlightFunction: (nodeId: string) => void,
+  ) => {
+    setHighlightNodeFunction(() => highlightFunction)
+  }
+
+  const handleSenderHighlight = (nodeId: string) => {
+    if (highlightNodeFunction) {
+      highlightNodeFunction(nodeId)
+    }
   }
 
   useEffect(() => {
@@ -167,6 +192,7 @@ const App: React.FC = () => {
     setButtonClicked(false)
     setAiReplied(false)
     setShowProgressTracker(false)
+    setShowFinalResponse(false)
     setPendingResponse("")
 
     if (selectedPattern !== PATTERNS.GROUP_COMMUNICATION) {
@@ -196,6 +222,7 @@ const App: React.FC = () => {
                 chatHeight={chatHeightValue}
                 isExpanded={isExpanded}
                 groupCommResponseReceived={groupCommResponseReceived}
+                onNodeHighlight={handleNodeHighlightSetup}
               />
             </div>
 
@@ -215,7 +242,12 @@ const App: React.FC = () => {
                 showProgressTracker={showProgressTracker}
                 showFinalResponse={showFinalResponse}
                 onStreamComplete={handleStreamComplete}
+                onSenderHighlight={handleSenderHighlight}
                 pattern={selectedPattern}
+                graphConfig={getGraphConfig(
+                  selectedPattern,
+                  groupCommResponseReceived,
+                )}
                 onCoffeeGraderSelect={handleCoffeeGraderSelect}
                 onDropdownSelect={handleDropdownSelect}
                 onUserInput={handleUserInput}
