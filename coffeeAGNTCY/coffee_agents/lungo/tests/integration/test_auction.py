@@ -106,10 +106,11 @@ class TestAuctionFlows:
         reference_responses = [
         "Unfortunately, I cannot process orders from Brazil at this time due to logistical constraints.",
         "I'm sorry, I was unable to complete your order request for all items. An issue occurred for some parts. Please try again later.",
-        "Regrettably, I am unable to fulfill orders from Brazil currently due to supply chain issues."
+        "Regrettably, I am unable to fulfill orders from Brazil currently due to supply chain issues.",
         "I encountered some issues retrieving information for your request. Some parts could not be completed at this time due to a technical issue. Please try again later.",
         "The user's request to buy coffee could not be processed due to an identity verification error with the farm. The conversation cannot proceed without resolving this issue, and the user has not provided any further instructions or questions.",
-        "I'm sorry, I was unable to complete your order request for all items. An issue occurred for some parts. Please try again later."
+        "I'm sorry, I was unable to complete your order request for all items. An issue occurred for some parts. Please try again later.",
+        "I'm sorry, but your request to buy X lbs of coffee at USD X from Brazil could not be completed due to an issue with the order process. Unfortunately, the farm is currently unreachable or there was an error in processing the request. If you have any other requests or need further assistance, please let me know!"
         ]
         for ref_res in reference_responses:
             similarity = get_semantic_similarity(data["response"], ref_res, model)
