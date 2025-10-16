@@ -30,7 +30,7 @@ wheels = [
 
 [[package]]
 name = "agntcy-app-sdk"
-version = "0.2.9"
+version = "0.3.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "a2a-sdk" },
@@ -46,9 +46,9 @@ dependencies = [
     { name = "slim-bindings" },
     { name = "uvicorn" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/d2/96/e0ba3ee50ac3e07e29715a9b7a37b7bef2be498f48389ba4faf77c94a695/agntcy_app_sdk-0.2.9.tar.gz", hash = "sha256:bc94a659465d656086fb3898a31eb3e4bd7f6b078ea207f08b0035099be55183", size = 882275, upload-time = "2025-10-01T15:55:27.816Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/72/ce/c323d6558c8d5c1b433a8888f3c59f6deb7dfa05b0d0671d1c0f74b629c6/agntcy_app_sdk-0.3.1.tar.gz", hash = "sha256:0c77ae19d9106c67af9148ead6e9a680c760f9ab1646781596b6fe08e8917a54", size = 895506, upload-time = "2025-10-16T20:11:52.579Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/d3/e5/37147831a11afdf7ce6c458fc5c4b48f449edfd3f688ba126db165f693a5/agntcy_app_sdk-0.2.9-py3-none-any.whl", hash = "sha256:2e35f82dc5c701acbb4acb5aee959add8afa9576df01edd0cdfc5f6ce94a2034", size = 47776, upload-time = "2025-10-01T15:55:26.837Z" },
+    { url = "https://files.pythonhosted.org/packages/50/74/89fa678ba9fed6b8c5690cdb36f6f9d31cf081e7683ee47471d02f965ced/agntcy_app_sdk-0.3.1-py3-none-any.whl", hash = "sha256:32545e7dcf651d2f6a48900dd805943df92974bae4a24dd3bf4bbeba0c32acd1", size = 47916, upload-time = "2025-10-16T20:11:50.957Z" },
 ]
 
 [[package]]
@@ -1961,7 +1961,7 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "a2a-sdk", specifier = "==0.3.0" },
-    { name = "agntcy-app-sdk", specifier = "==0.2.9" },
+    { name = "agntcy-app-sdk", specifier = "==0.3.1" },
     { name = "agntcy-identity-service-sdk", specifier = "==0.0.4" },
     { name = "autogen-core", marker = "extra == 'dev'", specifier = ">=0.4.3,<0.5" },
     { name = "click", specifier = ">=8.1.8" },
