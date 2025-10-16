@@ -39,7 +39,7 @@ async def make_request(client: httpx.AsyncClient, url: str, headers: dict[str, s
         resp.raise_for_status()
         return resp.json()
     except Exception as e:
-        print(f"Request error at {url}: {e}")
+        print(f"Request error at {url} with params {params} and headers {headers}: {e}")
         return None
 
 async def geocode_location(client: httpx.AsyncClient, location: str) -> tuple[float, float] | None:
