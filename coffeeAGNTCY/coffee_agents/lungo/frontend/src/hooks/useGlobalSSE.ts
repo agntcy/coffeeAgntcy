@@ -43,13 +43,11 @@ const isValidStreamStep = (data: any): data is StreamStep => {
 
   for (const field of requiredStringFields) {
     if (typeof data[field] !== "string" || data[field].trim() === "") {
-      console.warn(`Invalid or empty ${field} in stream data:`, data[field])
       return false
     }
   }
 
   if (data.final !== undefined && typeof data.final !== "boolean") {
-    console.warn("Invalid final field in stream data:", data.final)
     return false
   }
 
@@ -68,7 +66,6 @@ export const useGlobalSSE = () => {
   const sseConnectionRef = useRef<EventSource | null>(null)
 
   const handleConnectionOpen = useCallback(() => {
-    console.log("Global SSE connection opened")
     setState((prev) => ({
       ...prev,
       isConnecting: false,
@@ -77,8 +74,7 @@ export const useGlobalSSE = () => {
     }))
   }, [])
 
-  const handleConnectionError = useCallback((error: Event) => {
-    console.error("Global SSE connection error:", error)
+  const handleConnectionError = useCallback((_error: Event) => {
     setState((prev) => ({
       ...prev,
       isConnecting: false,
@@ -93,63 +89,41 @@ export const useGlobalSSE = () => {
   }, [])
 
   const handleMessage = useCallback((event: MessageEvent) => {
-    console.log("Global SSE message received:", event.data)
-
     try {
       const parsedData = JSON.parse(event.data)
 
       if (!isValidStreamStep(parsedData)) {
-        console.error("Invalid stream data structure received:", {
-          received: parsedData,
-          expected:
-            "StreamStep with order_id, sender, receiver, message, timestamp, state (strings) and optional final (boolean)",
-        })
         return
       }
 
-      setState((prev) => ({
-        ...prev,
-        events: [...prev.events, parsedData],
-        currentOrderId: parsedData.order_id,
-      }))
-    } catch (error) {
-      console.error("Failed to parse SSE data as JSON:", {
-        error: error,
-        rawData: event.data,
+      setState((prev) => {
+        const newEvents = [...prev.events, parsedData]
+        return {
+          ...prev,
+          events: newEvents,
+          currentOrderId: parsedData.order_id,
+        }
       })
-    }
-  }, [])
-
-  const handleHeartbeat = useCallback((_event: Event) => {
-    console.log("Global SSE heartbeat received")
+    } catch (_error) {}
   }, [])
 
   const handleSwitch = useCallback((event: MessageEvent) => {
-    console.log("Global SSE switch event received:", event.data)
     try {
       const switchData = JSON.parse(event.data)
-      console.log("Switching to order:", switchData.order_id)
 
       setState((prev) => ({
         ...prev,
         events: [],
         currentOrderId: switchData.order_id,
       }))
-    } catch (error) {
-      console.error("Failed to parse switch event data:", error)
-    }
+    } catch (_error) {}
   }, [])
 
   const connect = useCallback(() => {
     if (sseConnectionRef.current) {
-      console.log("SSE already connected")
       return
     }
 
-    console.log(
-      "Establishing global SSE connection to:",
-      `${HELPDESK_API_URL}/agent/chat-logs`,
-    )
     setState((prev) => ({ ...prev, isConnecting: true, error: null }))
 
     const eventSource = new EventSource(`${HELPDESK_API_URL}/agent/chat-logs`)
@@ -159,20 +133,11 @@ export const useGlobalSSE = () => {
     eventSource.onmessage = handleMessage
     eventSource.onerror = handleConnectionError
 
-    // Handle custom events
-    eventSource.addEventListener("heartbeat", handleHeartbeat)
     eventSource.addEventListener("switch", handleSwitch)
-  }, [
-    handleConnectionOpen,
-    handleMessage,
-    handleConnectionError,
-    handleHeartbeat,
-    handleSwitch,
-  ])
+  }, [handleConnectionOpen, handleMessage, handleConnectionError, handleSwitch])
 
   const disconnect = useCallback(() => {
     if (sseConnectionRef.current) {
-      console.log("Closing global SSE connection")
       sseConnectionRef.current.close()
       sseConnectionRef.current = null
       setState((prev) => ({
@@ -192,32 +157,10 @@ export const useGlobalSSE = () => {
   }, [])
 
   useEffect(() => {
-    if (sseConnectionRef.current) {
-      console.log("SSE already connected")
-      return
-    }
+    connect()
 
-    console.log(
-      "Establishing global SSE connection to:",
-      `${HELPDESK_API_URL}/agent/chat-logs`,
-    )
-    setState((prev) => ({ ...prev, isConnecting: true, error: null }))
-
-    const eventSource = new EventSource(`${HELPDESK_API_URL}/agent/chat-logs`)
-    sseConnectionRef.current = eventSource
-
-    eventSource.onopen = handleConnectionOpen
-    eventSource.onmessage = handleMessage
-    eventSource.onerror = handleConnectionError
-
-    // Handle custom events
-    eventSource.addEventListener("heartbeat", handleHeartbeat)
-    eventSource.addEventListener("switch", handleSwitch)
-
-    // Cleanup on unmount
     return () => {
       if (sseConnectionRef.current) {
-        console.log("Closing global SSE connection")
         sseConnectionRef.current.close()
         sseConnectionRef.current = null
         setState((prev) => ({
@@ -227,13 +170,7 @@ export const useGlobalSSE = () => {
         }))
       }
     }
-  }, [
-    handleConnectionOpen,
-    handleMessage,
-    handleConnectionError,
-    handleHeartbeat,
-    handleSwitch,
-  ])
+  }, [connect])
 
   return {
     ...state,

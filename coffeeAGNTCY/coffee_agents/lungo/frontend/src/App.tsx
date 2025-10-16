@@ -45,6 +45,7 @@ const App: React.FC = () => {
   const [showProgressTracker, setShowProgressTracker] = useState<boolean>(false)
   const [showFinalResponse, setShowFinalResponse] = useState<boolean>(false)
   const [pendingResponse, setPendingResponse] = useState<string>("")
+  const [executionKey, setExecutionKey] = useState<string>("")
   const streamCompleteRef = useRef<boolean>(false)
   const [messages, setMessages] = useState<Message[]>(() => {
     const saved = localStorage.getItem(LOCAL_STORAGE_KEY)
@@ -74,15 +75,17 @@ const App: React.FC = () => {
     setIsAgentLoading(true)
     setButtonClicked(true)
 
-    if (selectedPattern !== PATTERNS.GROUP_COMMUNICATION) {
+    if (
+      selectedPattern !== PATTERNS.GROUP_COMMUNICATION ||
+      !sseState.isConnected ||
+      sseState.error
+    ) {
       setShowFinalResponse(true)
     }
   }
 
   const handleApiResponse = (response: string, isError: boolean = false) => {
-    if (selectedPattern !== PATTERNS.GROUP_COMMUNICATION) {
-      setAgentResponse(response)
-    }
+    setAgentResponse(response)
     setIsAgentLoading(false)
 
     if (selectedPattern === PATTERNS.GROUP_COMMUNICATION && !isError) {
@@ -106,20 +109,37 @@ const App: React.FC = () => {
     setButtonClicked(true)
 
     try {
-      if (selectedPattern === PATTERNS.GROUP_COMMUNICATION) {
-        setShowFinalResponse(false)
-        streamCompleteRef.current = false
+      if (
+        selectedPattern === PATTERNS.GROUP_COMMUNICATION &&
+        sseState.isConnected &&
+        !sseState.error
+      ) {
+        const newExecutionKey = Date.now().toString()
+        setExecutionKey(newExecutionKey)
 
-        // Start both /prompt and /stream concurrently
+        setShowFinalResponse(false)
+        setAgentResponse("")
+        setPendingResponse("")
+        setGroupCommResponseReceived(false)
+        streamCompleteRef.current = false
+        sseState.clearEvents()
+
         const responsePromise = sendMessage(query, selectedPattern)
 
         responsePromise
           .then((response) => {
-            // Store response but don't show until streaming is complete
             setPendingResponse(response)
-            if (streamCompleteRef.current) {
+
+            if (streamCompleteRef.current || sseState.error) {
               setShowFinalResponse(true)
               handleApiResponse(response, false)
+            } else {
+              setTimeout(() => {
+                if (!streamCompleteRef.current) {
+                  setShowFinalResponse(true)
+                  handleApiResponse(response, false)
+                }
+              }, 10000)
             }
           })
           .catch((error) => {
@@ -127,10 +147,8 @@ const App: React.FC = () => {
             const errorMsg = "Sorry, I encountered an error."
 
             setPendingResponse(errorMsg)
-            if (streamCompleteRef.current) {
-              setShowFinalResponse(true)
-              handleApiResponse(errorMsg, true)
-            }
+            setShowFinalResponse(true)
+            handleApiResponse(errorMsg, true)
           })
       } else {
         setShowFinalResponse(true)
@@ -149,6 +167,7 @@ const App: React.FC = () => {
 
     if (selectedPattern === PATTERNS.GROUP_COMMUNICATION) {
       setShowFinalResponse(true)
+      setIsAgentLoading(true)
 
       if (pendingResponse) {
         const isError =
@@ -198,14 +217,23 @@ const App: React.FC = () => {
     setShowFinalResponse(false)
     setPendingResponse("")
 
-    if (selectedPattern === PATTERNS.GROUP_COMMUNICATION) {
+    if (
+      selectedPattern === PATTERNS.GROUP_COMMUNICATION &&
+      sseState.isConnected &&
+      !sseState.error
+    ) {
       setShowProgressTracker(true)
       sseState.clearEvents()
     } else {
       setShowProgressTracker(false)
       setGroupCommResponseReceived(false)
     }
-  }, [selectedPattern, sseState.clearEvents])
+  }, [
+    selectedPattern,
+    sseState.clearEvents,
+    sseState.isConnected,
+    sseState.error,
+  ])
 
   return (
     <ThemeProvider>
@@ -262,6 +290,7 @@ const App: React.FC = () => {
                 onClearConversation={handleClearConversation}
                 currentUserMessage={currentUserMessage}
                 agentResponse={agentResponse}
+                executionKey={executionKey}
                 isAgentLoading={isAgentLoading}
                 chatRef={chatRef}
                 sseState={sseState}

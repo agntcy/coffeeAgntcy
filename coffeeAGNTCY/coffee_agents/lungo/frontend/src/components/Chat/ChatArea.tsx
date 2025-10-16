@@ -48,6 +48,7 @@ interface ChatAreaProps {
   onClearConversation?: () => void
   currentUserMessage?: string
   agentResponse?: string
+  executionKey?: string
   isAgentLoading?: boolean
   chatRef?: React.RefObject<HTMLDivElement | null>
   sseState?: SSEState
@@ -73,6 +74,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
   onClearConversation,
   currentUserMessage,
   agentResponse,
+  executionKey,
   isAgentLoading,
   chatRef,
   sseState,
@@ -188,6 +190,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
                   onSenderHighlight={onSenderHighlight}
                   graphConfig={graphConfig}
                   prompt={currentUserMessage || ""}
+                  executionKey={executionKey}
                   sseState={sseState}
                 />
               </div>

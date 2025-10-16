@@ -6,7 +6,7 @@
 
  **/
 
-import React, { useState, useEffect, useCallback, useMemo } from "react"
+import React, { useState, useEffect, useCallback, useRef } from "react"
 
 import { ChevronDown, ChevronUp, Truck, Calculator } from "lucide-react"
 
@@ -39,6 +39,7 @@ interface GroupCommunicationFeedProps {
   onStreamComplete?: () => void
   onSenderHighlight?: (nodeId: string) => void
   graphConfig?: any
+  executionKey?: string
   sseState?: {
     isConnected: boolean
     isConnecting: boolean
@@ -156,50 +157,29 @@ const GroupCommunicationFeed: React.FC<GroupCommunicationFeedProps> = ({
   onSenderHighlight,
   graphConfig,
   sseState,
+  executionKey,
 }) => {
   const [state, setState] = useState({
     isExpanded: true,
     isComplete: false,
   })
 
-  const memoizedGetSenderIcon = useMemo(() => {
-    const cache = new Map<string, React.ReactNode>()
+  const lastProcessedEventRef = useRef<string | null>(null)
+  const senderIconCacheRef = useRef(new Map<string, React.ReactNode>())
+  const highlightTimeoutsRef = useRef<number[]>([])
 
-    return (sender: string) => {
-      if (cache.has(sender)) {
-        return cache.get(sender)!
-      }
+  const memoizedGetSenderIcon = useCallback((sender: string) => {
+    const cache = senderIconCacheRef.current
+    const cacheKey = sender.toLowerCase()
 
-      const icon = getSenderIcon(sender)
-      cache.set(sender, icon)
-      return icon
+    if (cache.has(cacheKey)) {
+      return cache.get(cacheKey)!
     }
+
+    const icon = getSenderIcon(sender)
+    cache.set(cacheKey, icon)
+    return icon
   }, [])
-
-  const handleSenderHighlight = useCallback(
-    (streamData: StreamStep) => {
-      if (onSenderHighlight && streamData.sender && graphConfig) {
-        const senderToNodeMap = buildSenderToNodeMap(graphConfig)
-
-        const senderNodeId =
-          senderToNodeMap[streamData.sender] ||
-          senderToNodeMap[streamData.sender.toLowerCase()]
-
-        if (senderNodeId) {
-          onSenderHighlight(senderNodeId)
-
-          if (streamData.receiver === "All Agents") {
-            const allAgentIds = getAllAgentNodeIds(graphConfig)
-
-            allAgentIds.forEach((nodeId, index) => {
-              setTimeout(() => onSenderHighlight(nodeId), (index + 1) * 100)
-            })
-          }
-        }
-      }
-    },
-    [onSenderHighlight, graphConfig],
-  )
 
   const handleExpand = useCallback(() => {
     setState((prev) => ({ ...prev, isExpanded: true }))
@@ -209,23 +189,81 @@ const GroupCommunicationFeed: React.FC<GroupCommunicationFeedProps> = ({
     setState((prev) => ({ ...prev, isExpanded: false }))
   }, [])
 
-  // Reset state when a new prompt comes in (new request started)
   useEffect(() => {
     if (prompt) {
+      highlightTimeoutsRef.current.forEach(clearTimeout)
+      highlightTimeoutsRef.current = []
+
       setState((prev) => ({
         ...prev,
         isComplete: false,
         isExpanded: true,
       }))
+      lastProcessedEventRef.current = null
     }
   }, [prompt])
+
+  useEffect(() => {
+    if (executionKey) {
+      highlightTimeoutsRef.current.forEach(clearTimeout)
+      highlightTimeoutsRef.current = []
+
+      setState({
+        isComplete: false,
+        isExpanded: true,
+      })
+      lastProcessedEventRef.current = null
+    }
+  }, [executionKey])
+
+  useEffect(() => {
+    return () => {
+      highlightTimeoutsRef.current.forEach(clearTimeout)
+    }
+  }, [])
 
   useEffect(() => {
     if (!sseState?.events.length) return
 
     const lastEvent = sseState.events[sseState.events.length - 1]
+    const eventKey = `${lastEvent.order_id}-${lastEvent.timestamp}-${lastEvent.sender}-${lastEvent.receiver}`
 
-    handleSenderHighlight(lastEvent)
+    if (lastProcessedEventRef.current === eventKey) {
+      return
+    }
+
+    lastProcessedEventRef.current = eventKey
+
+    if (onSenderHighlight && lastEvent.sender && graphConfig) {
+      const senderToNodeMap = buildSenderToNodeMap(graphConfig)
+      const senderNodeId =
+        senderToNodeMap[lastEvent.sender] ||
+        senderToNodeMap[lastEvent.sender.toLowerCase()]
+
+      if (senderNodeId) {
+        onSenderHighlight(senderNodeId)
+
+        if (lastEvent.receiver === "Tatooine Farm") {
+          highlightTimeoutsRef.current.forEach(clearTimeout)
+          highlightTimeoutsRef.current = []
+
+          const allAgentIds = getAllAgentNodeIds(graphConfig)
+
+          const highlightAgents = (nodeIds: string[], startIndex = 0) => {
+            if (startIndex >= nodeIds.length) return
+
+            const timeoutId = window.setTimeout(() => {
+              onSenderHighlight(nodeIds[startIndex])
+              highlightAgents(nodeIds, startIndex + 1)
+            }, 100)
+
+            highlightTimeoutsRef.current.push(timeoutId)
+          }
+
+          highlightAgents(allAgentIds)
+        }
+      }
+    }
 
     const isFinalStep =
       lastEvent.final === true || lastEvent.state === "DELIVERED"
@@ -241,13 +279,19 @@ const GroupCommunicationFeed: React.FC<GroupCommunicationFeedProps> = ({
           ...prev,
           isExpanded: false,
         }))
-      }, 2000)
+      }, 1000)
 
       if (onComplete) {
         onComplete()
       }
     }
-  }, [sseState?.events, handleSenderHighlight, state.isComplete, onComplete])
+  }, [
+    sseState?.events,
+    onSenderHighlight,
+    graphConfig,
+    state.isComplete,
+    onComplete,
+  ])
 
   if (!isVisible) {
     return null
@@ -255,9 +299,8 @@ const GroupCommunicationFeed: React.FC<GroupCommunicationFeedProps> = ({
 
   const events = sseState?.events || []
   const isConnecting = sseState?.isConnecting || false
-  const hasError = sseState?.error || null
+  const errorMessage = sseState?.error || null
 
-  // Don't render anything if there's no prompt and no events
   if (!prompt && events.length === 0) {
     return null
   }
@@ -269,29 +312,23 @@ const GroupCommunicationFeed: React.FC<GroupCommunicationFeedProps> = ({
       </div>
 
       <div className="flex max-w-[calc(100%-3rem)] flex-1 flex-col items-start rounded p-1 px-2">
-        {/* Show status messages */}
-        {hasError ? (
+        {errorMessage ? (
           <div className="whitespace-pre-wrap break-words font-cisco text-sm font-normal leading-5 text-chat-text">
-            Connection error: {hasError}
+            Connection error: {errorMessage}
           </div>
         ) : isConnecting ? (
           <div className="whitespace-pre-wrap break-words font-cisco text-sm font-normal leading-5 text-chat-text">
             Connecting to agent stream...
           </div>
         ) : state.isComplete ? (
-          // Show completion message only when done and collapsed
-          state.isExpanded ? null : (
-            <div className="whitespace-pre-wrap break-words font-cisco text-sm font-normal leading-5 text-chat-text">
-              {prompt || "Request Processed"}
-            </div>
-          )
-        ) : prompt && events.length === 0 ? (
+          <div className="whitespace-pre-wrap break-words font-cisco text-sm font-normal leading-5 text-chat-text">
+            {prompt || "Request Processed"}
+          </div>
+        ) : prompt ? (
           <div className="whitespace-pre-wrap break-words font-cisco text-sm font-normal leading-5 text-chat-text">
             Processing Request...
           </div>
         ) : null}
-
-        {/* Show completion message only when done */}
         {state.isComplete && !state.isExpanded && (
           <div
             className="mt-1 flex w-full cursor-pointer flex-row items-center gap-1 hover:opacity-75"
@@ -308,17 +345,15 @@ const GroupCommunicationFeed: React.FC<GroupCommunicationFeedProps> = ({
             </div>
           </div>
         )}
-
-        {/* Always show events when expanded or when events exist */}
-        {(state.isExpanded || events.length > 0) && (
+        {state.isExpanded && (
           <>
             <div className="flex w-full flex-col items-start gap-2">
               {events.map((step, index) => (
                 <div
                   key={`${step.order_id}-${index}`}
-                  className="flex w-full flex-row items-center gap-2"
+                  className="flex w-full flex-row items-start gap-2"
                 >
-                  <div className="h-4 w-4 flex-none">
+                  <div className="mt-1.5 h-4 w-4 flex-none">
                     {memoizedGetSenderIcon(step.sender)}
                   </div>
 
@@ -348,4 +383,4 @@ const GroupCommunicationFeed: React.FC<GroupCommunicationFeedProps> = ({
   )
 }
 
-export default React.memo(GroupCommunicationFeed)
+export default GroupCommunicationFeed
