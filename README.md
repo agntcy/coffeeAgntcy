@@ -17,7 +17,7 @@ This reference agentic application demonstrates how to:
 - How to integrate data sources (e.g., weather services via **MCP**)
 - How to extend or swap agents modularly using AGNTCY tooling
 - How to enable observability using **AGNTCY Observe SDK**
-- How to enable identity using **AGNTCY Identity SDK**
+- How to enable identity using **AGNTCY Identity Service SDK**
 
 ---
 
@@ -45,7 +45,7 @@ We currently provide two setups you can run to see how components from AGNTCY wo
 - [MCP](https://github.com/modelcontextprotocol/python-sdk) >= v1.10.0
 - [LangGraph](https://github.com/langchain-ai/langgraph) >= v0.4.1 
 - [Observe SDK](https://github.com/agntcy/observe) = 1.0.18
-- [Identity SDK](https://github.com/agntcy/identity) = 0.0.3
+- [AGNTCY Identity Service SDK](https://github.com/agntcy/identity-service) = 0.0.4
 
 ---
 
