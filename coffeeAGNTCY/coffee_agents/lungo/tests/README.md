@@ -45,23 +45,23 @@ uv run pytest -s
 Auction tests only:
 
 ```bash
-uv run pytest coffeeAGNTCY/coffee_agents/lungo/tests/integration/test_auction.py -s
+uv run pytest integration/test_auction.py -s
 ```
 
 Logistics test only:
 
 ```bash
-uv run pytest coffeeAGNTCY/coffee_agents/lungo/tests/integration/test_logistics.py -s
+uv run pytest integration/test_logistics.py -s
 ```
 
 Single auction test (Brazil inventory over both transports):
 
 ```bash
-uv run pytest coffeeAGNTCY/coffee_agents/lungo/tests/integration/test_auction.py::TestAuctionFlows::test_auction_brazil_inventory -s
+uv run pytest integration/test_auction.py::TestAuctionFlows::test_auction_brazil_inventory -s
 ```
 
 Run only NATS parametrized cases:
 
 ```bash
-uv run pytest -k NATS coffeeAGNTCY/coffee_agents/lungo/tests/integration/test_auction.py -s
+uv run pytest -k NATS integration/test_auction.py -s
 ```

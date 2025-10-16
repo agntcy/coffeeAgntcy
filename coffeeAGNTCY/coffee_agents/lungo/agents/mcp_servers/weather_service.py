@@ -35,7 +35,7 @@ HEADERS_NOMINATIM = {
 async def make_request(client: httpx.AsyncClient, url: str, headers: dict[str, str], params: dict[str, str] = None) -> dict[str, Any] | None:
     """Make a GET request with error handling using an existing client"""
     try:
-        resp = await client.get(url, headers=headers, params=params, timeout=10.0)
+        resp = await client.get(url, headers=headers, params=params, timeout=30.0)
         resp.raise_for_status()
         return resp.json()
     except Exception as e:
