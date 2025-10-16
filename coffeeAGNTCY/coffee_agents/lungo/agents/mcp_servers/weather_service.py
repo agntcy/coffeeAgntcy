@@ -50,7 +50,7 @@ async def geocode_location(client: httpx.AsyncClient, location: str) -> tuple[fl
         "limit": "1"
     }
     data = await make_request(client, NOMINATIM_BASE, headers=HEADERS_NOMINATIM, params=params)
-    if data and len(data) > 0:
+    if data and "lat" in data[0] and "lon" in data[0]:
         lat = float(data[0]["lat"])
         lon = float(data[0]["lon"])
         return lat, lon
@@ -73,6 +73,8 @@ async def get_forecast(location: str) -> str:
 
         data = await make_request(client, OPEN_METEO_BASE, {}, params=params)
         if not data or "current_weather" not in data:
+            logging.error(f"Failed to retrieve weather data for {location}")
+            logging.error(f"Response data: {data}")
             return f"No weather data available for {location}."
 
         cw = data["current_weather"]
