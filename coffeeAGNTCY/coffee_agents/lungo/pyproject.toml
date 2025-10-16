@@ -24,7 +24,7 @@ dependencies = [
     "uvicorn",
     "mcp[cli]>=1.10.0",
     "ioa-observe-sdk==1.0.18",
-    "identity-service-sdk==0.0.3",
+    "agntcy-identity-service-sdk==0.0.4",
     "agntcy-app-sdk==0.2.9",
 ]
 
