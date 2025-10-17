@@ -18,9 +18,9 @@ ENABLE_HTTP = os.getenv("ENABLE_HTTP", "true").lower() in ("true", "1", "yes")
 
 # AGNTCY Identity Integration
 ## These API Keys are created in OSS environment and hardcoded for demo purposes.
-IDENTITY_VIETNAM_AGENT_SERVICE_API_KEY = os.getenv("IDENTITY_VIETNAM_AGENT_SERVICE_API_KEY", ';46pkNq5([J2<[{40b;d0Jg74IRATpaUeW1Bi1}@@ILUFcqo3U4;(p31)+m)p!2Y')
-IDENTITY_COLOMBIA_AGENT_SERVICE_API_KEY = os.getenv("IDENTITY_COLOMBIA_AGENT_SERVICE_API_KEY", ")300n,J:bk<6H+[Awo0zMH]()!<8+Z5wTGTtR{d88bT@c<9cTzc:E65DRx512K2l")
-IDENTITY_API_KEY = os.getenv("IDENTITY_API_KEY", "3]U;sp6>p@7:Vl7XN8<-2i2+w@;7HMN,g0ZgVGb3d<n3)34]3;+k3hR4OAfiGLQk")
+IDENTITY_VIETNAM_AGENT_SERVICE_API_KEY = os.getenv("IDENTITY_VIETNAM_AGENT_SERVICE_API_KEY", 'T7lR8I446D3,+<gbev21cNAMIWmrB}<4C5@W@38;ur;}{+}8mpJ3pgV<]M-8sT3z')
+IDENTITY_COLOMBIA_AGENT_SERVICE_API_KEY = os.getenv("IDENTITY_COLOMBIA_AGENT_SERVICE_API_KEY", "2px6OFF;Z[x!1Z7cXU,)5@0vCivh)TSDoNd7t!]b7!p8}+18B9R60]L0v5c]{By{")
+IDENTITY_API_KEY = os.getenv("IDENTITY_API_KEY", "487>t:7:Ke5N[kZ[dOmDg2]0RQx))6k}bjARRN+afG3806h(4j6j[}]F5O)f[6PD")
 ## Endpoint to access Identity API. Refer to https://identity-docs.staging.outshift.ai/docs/api
 IDENTITY_API_SERVER_URL = os.getenv("IDENTITY_API_SERVER_URL", "https://api.agent-identity.outshift.com")
 ## URLs for the farm agents' well-known agent cards

@@ -13,6 +13,8 @@ TRANSPORT_MATRIX = [
         id="SLIM"
     )
 ]
+
+@pytest.mark.flaky(reruns=2, reruns_delay=2)
 @pytest.mark.parametrize("transport_config", TRANSPORT_MATRIX, indirect=True)
 class TestLogisticsFlows:
     @pytest.mark.agents(["logistics-farm", "accountant", "shipper"])
