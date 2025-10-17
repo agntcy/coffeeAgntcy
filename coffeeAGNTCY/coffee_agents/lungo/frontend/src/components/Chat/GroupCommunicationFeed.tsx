@@ -11,7 +11,7 @@ import React, { useState, useEffect, useCallback, useRef } from "react"
 import { ChevronDown, ChevronUp } from "lucide-react"
 
 import AgentIcon from "@/assets/Coffee_Icon.svg"
-import CheckCircle from "@/assets/checkcircle.png"
+import CheckCircle from "@/assets/CheckCircle.png"
 
 interface StreamStep {
   order_id: string
