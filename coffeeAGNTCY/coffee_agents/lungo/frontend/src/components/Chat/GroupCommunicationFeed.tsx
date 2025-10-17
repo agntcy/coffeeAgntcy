@@ -255,9 +255,9 @@ const GroupCommunicationFeed: React.FC<GroupCommunicationFeedProps> = ({
           <div className="whitespace-pre-wrap break-words font-cisco text-sm font-normal leading-5 text-chat-text">
             Connection error: {errorMessage}
           </div>
-        ) : state.isComplete ? (
+        ) : state.isComplete && sseState?.currentOrderId ? (
           <div className="whitespace-pre-wrap break-words font-cisco text-sm font-normal leading-5 text-chat-text">
-            {prompt || "Request Processed"}
+            Order {sseState.currentOrderId}
           </div>
         ) : prompt ? (
           <div className="whitespace-pre-wrap break-words font-cisco text-sm font-normal leading-5 text-chat-text">
