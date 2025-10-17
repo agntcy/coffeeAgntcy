@@ -8,13 +8,10 @@
 
 import React, { useState, useEffect, useCallback, useRef } from "react"
 
-import { ChevronDown, ChevronUp, Truck, Calculator } from "lucide-react"
+import { ChevronDown, ChevronUp } from "lucide-react"
 
 import AgentIcon from "@/assets/Coffee_Icon.svg"
-
-import supervisorIcon from "@/assets/supervisor.png"
-
-import farmAgentIcon from "@/assets/Grader-Agent.png"
+import CheckCircle from "@/assets/checkcircle.png"
 
 interface StreamStep {
   order_id: string
@@ -99,55 +96,12 @@ const getAllAgentNodeIds = (graphConfig: any): string[] => {
     .map((node: any) => node.id)
 }
 
-const SENDER_ICON_MAP = {
-  logistics: () => (
-    <img
-      src={supervisorIcon}
-      alt="Logistics Icon"
-      className="dark-icon h-4 w-4 object-contain opacity-100"
-    />
-  ),
-  supervisor: () => (
-    <img
-      src={supervisorIcon}
-      alt="Supervisor Icon"
-      className="dark-icon h-4 w-4 object-contain opacity-100"
-    />
-  ),
-  tatooine: () => (
-    <img
-      src={farmAgentIcon}
-      alt="Farm Icon"
-      className="dark-icon h-4 w-4 object-contain opacity-100"
-    />
-  ),
-  farm: () => (
-    <img
-      src={farmAgentIcon}
-      alt="Farm Icon"
-      className="dark-icon h-4 w-4 object-contain opacity-100"
-    />
-  ),
-  shipper: () => (
-    <Truck className="dark-icon h-4 w-4 object-contain opacity-100" />
-  ),
-  accountant: () => (
-    <Calculator className="dark-icon h-4 w-4 object-contain opacity-100" />
-  ),
-} as const
+const formatAgentName = (agentName: string): string => {
+  if (agentName === "Supervisor") {
+    return "Logistics"
+  }
 
-const getSenderIcon = (sender: string) => {
-  const senderLower = sender.toLowerCase()
-
-  const matchedKey = Object.keys(SENDER_ICON_MAP).find((key) =>
-    senderLower.includes(key),
-  ) as keyof typeof SENDER_ICON_MAP
-
-  return matchedKey ? (
-    SENDER_ICON_MAP[matchedKey]()
-  ) : (
-    <Calculator className="dark-icon h-4 w-4 object-contain opacity-100" />
-  )
+  return agentName
 }
 
 const GroupCommunicationFeed: React.FC<GroupCommunicationFeedProps> = ({
@@ -165,21 +119,7 @@ const GroupCommunicationFeed: React.FC<GroupCommunicationFeedProps> = ({
   })
 
   const lastProcessedEventRef = useRef<string | null>(null)
-  const senderIconCacheRef = useRef(new Map<string, React.ReactNode>())
   const highlightTimeoutsRef = useRef<number[]>([])
-
-  const memoizedGetSenderIcon = useCallback((sender: string) => {
-    const cache = senderIconCacheRef.current
-    const cacheKey = sender.toLowerCase()
-
-    if (cache.has(cacheKey)) {
-      return cache.get(cacheKey)!
-    }
-
-    const icon = getSenderIcon(sender)
-    cache.set(cacheKey, icon)
-    return icon
-  }, [])
 
   const handleExpand = useCallback(() => {
     setState((prev) => ({ ...prev, isExpanded: true }))
@@ -243,7 +183,7 @@ const GroupCommunicationFeed: React.FC<GroupCommunicationFeedProps> = ({
       if (senderNodeId) {
         onSenderHighlight(senderNodeId)
 
-        if (lastEvent.receiver === "Tatooine Farm") {
+        if (lastEvent.sender === "Supervisor") {
           highlightTimeoutsRef.current.forEach(clearTimeout)
           highlightTimeoutsRef.current = []
 
@@ -298,7 +238,6 @@ const GroupCommunicationFeed: React.FC<GroupCommunicationFeedProps> = ({
   }
 
   const events = sseState?.events || []
-  const isConnecting = sseState?.isConnecting || false
   const errorMessage = sseState?.error || null
 
   if (!prompt && events.length === 0) {
@@ -316,10 +255,6 @@ const GroupCommunicationFeed: React.FC<GroupCommunicationFeedProps> = ({
           <div className="whitespace-pre-wrap break-words font-cisco text-sm font-normal leading-5 text-chat-text">
             Connection error: {errorMessage}
           </div>
-        ) : isConnecting ? (
-          <div className="whitespace-pre-wrap break-words font-cisco text-sm font-normal leading-5 text-chat-text">
-            Connecting to agent stream...
-          </div>
         ) : state.isComplete ? (
           <div className="whitespace-pre-wrap break-words font-cisco text-sm font-normal leading-5 text-chat-text">
             {prompt || "Request Processed"}
@@ -329,6 +264,16 @@ const GroupCommunicationFeed: React.FC<GroupCommunicationFeedProps> = ({
             Processing Request...
           </div>
         ) : null}
+
+        {prompt && !state.isComplete && events.length === 0 && (
+          <div className="mt-3 flex w-full flex-row items-start gap-1">
+            <div className="mt-1 flex items-center">
+              <div className="h-4 w-4 animate-spin rounded-full border-2 border-b-transparent border-l-transparent border-r-accent-primary border-t-accent-primary" />
+            </div>
+            <div className="flex-1"></div>
+          </div>
+        )}
+
         {state.isComplete && !state.isExpanded && (
           <div
             className="mt-1 flex w-full cursor-pointer flex-row items-center gap-1 hover:opacity-75"
@@ -347,23 +292,45 @@ const GroupCommunicationFeed: React.FC<GroupCommunicationFeedProps> = ({
         )}
         {state.isExpanded && (
           <>
-            <div className="flex w-full flex-col items-start gap-2">
-              {events.map((step, index) => (
-                <div
-                  key={`${step.order_id}-${index}`}
-                  className="flex w-full flex-row items-start gap-2"
-                >
-                  <div className="mt-1.5 h-4 w-4 flex-none">
-                    {memoizedGetSenderIcon(step.sender)}
-                  </div>
+            <div className="mt-3 flex w-full flex-col items-start gap-3">
+              {events.map((step, index) => {
+                return (
+                  <div
+                    key={`${step.order_id}-${index}`}
+                    className="flex w-full flex-row items-start gap-1"
+                  >
+                    <div className="mt-1 flex items-center">
+                      <img
+                        src={CheckCircle}
+                        alt="Complete"
+                        className="h-4 w-4"
+                      />
+                    </div>
 
-                  <div className="flex-1">
-                    <span className="font-cisco text-sm font-normal leading-[18px] text-chat-text">
-                      {step.sender} → {step.message}
-                    </span>
+                    <div className="flex-1">
+                      <span className="font-['Inter'] text-sm leading-[18px] text-chat-text">
+                        <span className="font-semibold">
+                          {formatAgentName(step.sender)}
+                        </span>{" "}
+                        →{" "}
+                        <span className="font-semibold">
+                          {formatAgentName(step.receiver)}
+                        </span>
+                        : <span className="font-normal">"{step.message}"</span>
+                      </span>
+                    </div>
                   </div>
+                )
+              })}
+
+              {events.length > 0 && !state.isComplete && (
+                <div className="flex w-full flex-row items-start gap-1">
+                  <div className="mt-1 flex items-center">
+                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-b-transparent border-l-transparent border-r-accent-primary border-t-accent-primary" />
+                  </div>
+                  <div className="flex-1"></div>
                 </div>
-              ))}
+              )}
             </div>
 
             {state.isComplete && (
