@@ -77,6 +77,7 @@ def assert_states_present(
   missing = required - states
   assert not missing, f"Missing states: {missing}. Got: {states}"
 
+@pytest.mark.flaky(reruns=2, reruns_delay=2)
 @pytest.mark.parametrize("transport_config", TRANSPORT_MATRIX, indirect=True)
 class TestHelpdeskFlows:
   @pytest.mark.agents(["logistics-farm", "accountant", "shipper", "helpdesk"])

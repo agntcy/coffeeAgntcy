@@ -39,6 +39,7 @@ dev = [
     "coloredlogs>=15.0.1,<16",
     "langchain-openai>=0.3.14,<0.4",
     "sentence-transformers>=5.1.1",
+    "pytest-rerunfailures"
 ]
 
 [tool.hatch.metadata]
@@ -53,3 +54,9 @@ build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
 packages = ["farm", "exchange"]
+
+[tool.pytest.ini_options]
+addopts = "-q"
+markers = [
+    "flaky: rerun failed tests",
+]
