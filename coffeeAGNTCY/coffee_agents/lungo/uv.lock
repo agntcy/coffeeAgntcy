@@ -1,5 +1,5 @@
 version = 1
-revision = 3
+revision = 2
 requires-python = ">=3.13, <4.0"
 resolution-markers = [
     "python_full_version >= '3.14' and platform_python_implementation == 'PyPy'",
@@ -53,7 +53,7 @@ wheels = [
 
 [[package]]
 name = "agntcy-identity-service-sdk"
-version = "0.0.4"
+version = "0.0.6"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "a2a-sdk" },
@@ -67,9 +67,9 @@ dependencies = [
     { name = "starlette" },
     { name = "typer" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/85/89/55a7d5c214eb8226773be445247811bbe4aebea83b10924045f3bdbcc2ca/agntcy_identity_service_sdk-0.0.4.tar.gz", hash = "sha256:1cc10e6769b8b9454cc52a64ddd08c30ae0ce8bc5cf25cf6699509e955c1a4e1", size = 45024, upload-time = "2025-10-06T08:51:58.516Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/c9/41/66c5b9421d88112c5c47d4d72c1e63b4f70c4dbbda399275224924cc739b/agntcy_identity_service_sdk-0.0.6.tar.gz", hash = "sha256:30d16b4d76b74592ae43cf4df2de84370b6971b48782bef917e875a6c641e3e7", size = 44779, upload-time = "2025-10-17T08:50:24.578Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/8c/9f/ee7bc6be29bfa270a2303c9faf1f98bef2589a230dcdfa726721f7071297/agntcy_identity_service_sdk-0.0.4-py3-none-any.whl", hash = "sha256:51dbc04d3496de1f7488a10c4ea85cf83545a1bb83ea884b198ad4c682b31892", size = 70263, upload-time = "2025-10-06T08:51:56.955Z" },
+    { url = "https://files.pythonhosted.org/packages/c5/fc/ea40e31c3887c6322f3fbff2ad101f08538e4f3b2937fcf911597b187fca/agntcy_identity_service_sdk-0.0.6-py3-none-any.whl", hash = "sha256:20748ba69749539da41d482d3c80b04005450b11e2e4c8cedfaac04fa4d7c2c0", size = 70135, upload-time = "2025-10-17T08:50:23.637Z" },
 ]
 
 [[package]]
@@ -1954,6 +1954,7 @@ dev = [
     { name = "pytest" },
     { name = "pytest-asyncio" },
     { name = "pytest-cov" },
+    { name = "pytest-rerunfailures" },
     { name = "sentence-transformers" },
     { name = "typing-extensions" },
 ]
@@ -1962,7 +1963,7 @@ dev = [
 requires-dist = [
     { name = "a2a-sdk", specifier = "==0.3.0" },
     { name = "agntcy-app-sdk", specifier = "==0.3.1" },
-    { name = "agntcy-identity-service-sdk", specifier = "==0.0.4" },
+    { name = "agntcy-identity-service-sdk", specifier = "==0.0.6" },
     { name = "autogen-core", marker = "extra == 'dev'", specifier = ">=0.4.3,<0.5" },
     { name = "click", specifier = ">=8.1.8" },
     { name = "cnoe-agent-utils", specifier = "==0.3.0" },
@@ -1984,6 +1985,7 @@ requires-dist = [
     { name = "pytest", marker = "extra == 'dev'", specifier = "~=7.0" },
     { name = "pytest-asyncio", marker = "extra == 'dev'", specifier = ">=0.17.0,<0.18" },
     { name = "pytest-cov", marker = "extra == 'dev'", specifier = ">=4.0.0,<5" },
+    { name = "pytest-rerunfailures", marker = "extra == 'dev'" },
     { name = "python-dotenv", specifier = ">=1.1.0" },
     { name = "requests" },
     { name = "sentence-transformers", marker = "extra == 'dev'", specifier = ">=5.1.1" },
@@ -3440,6 +3442,19 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/7a/15/da3df99fd551507694a9b01f512a2f6cf1254f33601605843c3775f39460/pytest-cov-4.1.0.tar.gz", hash = "sha256:3904b13dfbfec47f003b8e77fd5b589cd11904a21ddf1ab38a64f204d6a10ef6", size = 63245, upload-time = "2023-05-24T18:44:56.845Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/a7/4b/8b78d126e275efa2379b1c2e09dc52cf70df16fc3b90613ef82531499d73/pytest_cov-4.1.0-py3-none-any.whl", hash = "sha256:6ba70b9e97e69fcc3fb45bfeab2d0a138fb65c4d0d6a41ef33983ad114be8c3a", size = 21949, upload-time = "2023-05-24T18:44:54.079Z" },
+]
+
+[[package]]
+name = "pytest-rerunfailures"
+version = "16.1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "packaging" },
+    { name = "pytest" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/de/04/71e9520551fc8fe2cf5c1a1842e4e600265b0815f2016b7c27ec85688682/pytest_rerunfailures-16.1.tar.gz", hash = "sha256:c38b266db8a808953ebd71ac25c381cb1981a78ff9340a14bcb9f1b9bff1899e", size = 30889, upload-time = "2025-10-10T07:06:01.238Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/77/54/60eabb34445e3db3d3d874dc1dfa72751bfec3265bd611cb13c8b290adea/pytest_rerunfailures-16.1-py3-none-any.whl", hash = "sha256:5d11b12c0ca9a1665b5054052fcc1084f8deadd9328962745ef6b04e26382e86", size = 14093, upload-time = "2025-10-10T07:06:00.019Z" },
 ]
 
 [[package]]
