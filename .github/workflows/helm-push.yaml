@@ -59,6 +59,9 @@ jobs:
           - name: logistic-farm
             path: coffeeAGNTCY/coffee_agents/lungo/deployment/helm/logistic-farm
             package_name: logistic-farm
+          - name: logistic-helpdesk
+            path: coffeeAGNTCY/coffee_agents/lungo/deployment/helm/logistic-helpdesk
+            package_name: logistic-helpdesk
 
 
 

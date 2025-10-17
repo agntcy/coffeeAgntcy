@@ -12,6 +12,8 @@ from ioa_observe.sdk.decorators import agent, graph
 from common.logistic_states import (
     LogisticStatus,
     extract_status,
+    build_transition_message,
+    ensure_order_id,
 )
 
 logger = logging.getLogger("lungo.accountant_agent.agent")
@@ -46,37 +48,31 @@ class AccountantAgent:
     def _accountant_node(self, state: GraphState) -> dict:
         """
         Single node that handles all accountant logic.
+        Transitions:
+          CUSTOMS_CLEARANCE -> PAYMENT_COMPLETE
         """
-        user_messages = state["messages"]
-
-        # Extract the last message's content robustly
-        if isinstance(user_messages, list) and user_messages:
-            last_msg = user_messages[-1]
-            # If it's a langchain message object, get .content; else, use as string
-            if hasattr(last_msg, "content"):
-                message_content = last_msg.content
-            else:
-                message_content = str(last_msg)
+        messages = state["messages"]
+        if isinstance(messages, list) and messages:
+            last = messages[-1]
+            raw = getattr(last, "content", str(last)).strip()
         else:
-            message_content = str(user_messages)
+            raw = str(messages).strip()
 
-        logger.info(f"Accountant agent received input: {message_content}")
-        message_content = message_content.strip().upper()
-
-        status = extract_status(message_content)
-
-        logger.info(f"Extracted status: {status.value}")
+        status = extract_status(raw)
+        order_id = ensure_order_id(raw)
 
         if status is LogisticStatus.CUSTOMS_CLEARANCE:
-            # logger.info("Processing CUSTOMS_CLEARANCE -> PAYMENT_COMPLETE")
             next_status = LogisticStatus.PAYMENT_COMPLETE
-            return {"messages": [AIMessage(next_status.value)]}
+            msg = build_transition_message(
+                order_id=order_id,
+                sender="Accountant",
+                receiver="Shipper",
+                to_state=next_status.value,
+                details="Payment verified and captured",
+            )
+            return {"messages": [AIMessage(msg)]}
 
-        idle_msg = (
-            f"Action '{None}' received. No accountant handling required. "
-            "Accountant remains IDLE. No further action required."
-        )
-        return {"messages": [AIMessage(idle_msg)]}
+        return {"messages": [AIMessage("Accountant remains IDLE. No further action required.")]}
 
     # --- Graph Building Method ---
     @graph(name="accountant_graph")

@@ -12,4 +12,3 @@ data:
   DEFAULT_MESSAGE_TRANSPORT: "{{ .Values.config.defaultMessageTransport }}"
   OTLP_HTTP_ENDPOINT: "{{ .Values.config.otlpHttpEndpoint }}"
   LLM_STREAMING: "{{ .Values.config.llmStreaming }}"
-  EXPERIMENTAL_FEATURE: "{{ .Values.config.experimentalFeature }}"
