@@ -52,6 +52,10 @@ AGENTS = {
         "cmd": ["python", "-m", "agents.logistics.shipper.server", "--no-reload"],
         "ready_pattern": r"Transport initialized with tracing enabled",
     },
+    "helpdesk": {
+        "cmd": ["python", "-m", "agents.logistics.helpdesk.server", "--no-reload"],
+        "ready_pattern": r"Transport initialized with tracing enabled",
+    }
 }
 
 _ACTIVE_RUNNERS = []
@@ -268,5 +272,26 @@ def logistics_supervisor_client(transport_config, monkeypatch):
     importlib.reload(logistics_main)
 
     app = logistics_main.app
+    with TestClient(app) as client:
+        yield client
+
+@pytest.fixture
+def helpdesk_client(transport_config, monkeypatch):
+    for k, v in _base_env().items():
+        monkeypatch.setenv(k, str(v))
+    for k, v in transport_config.items():
+        monkeypatch.setenv(k, v)
+
+    _purge_modules([
+        "agents.logistics.helpdesk",
+        "config.config",
+    ])
+
+    import importlib
+    import agents.logistics.helpdesk.server as helpdesk_server
+    importlib.reload(helpdesk_server)
+
+    from fastapi.testclient import TestClient
+    app = helpdesk_server.app
     with TestClient(app) as client:
         yield client

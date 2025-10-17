@@ -38,7 +38,6 @@ cp coffeeAGNTCY/coffee_agents/lungo/.env.example .env
 All Lungo tests (auction + logistics):
 
 ```bash
-bash
 uv run pytest -s
 ```
 
