@@ -2,4 +2,4 @@ apiVersion: v1
 appVersion: "0.0.2"
 description: A Helm chart for Lungo UI
 name: lungo-ui
-version: 0.0.2
+version: 0.0.3
