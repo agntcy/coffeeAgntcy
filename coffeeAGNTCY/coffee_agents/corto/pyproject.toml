@@ -36,6 +36,7 @@ dev = [
     "autogen-core>=0.4.3,<0.5",
     "coloredlogs>=15.0.1,<16",
     "langchain-openai>=0.3.14,<0.4",
+    "sentence-transformers>=5.1.1",
 ]
 
 [tool.poetry]

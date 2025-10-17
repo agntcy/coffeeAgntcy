@@ -124,6 +124,7 @@ class FarmAgent:
             "MCP",
             agent_topic="lungo_weather_service",
             transport=transport_instance,
+            message_timeout=45
         )
 
         # view available tools
