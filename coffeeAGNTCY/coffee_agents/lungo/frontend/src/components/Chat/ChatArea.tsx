@@ -13,8 +13,19 @@ import { useAgentAPI } from "@/hooks/useAgentAPI"
 import UserMessage from "./UserMessage"
 import ChatHeader from "./ChatHeader"
 import AgentIcon from "@/assets/Coffee_Icon.svg"
+
 import { cn } from "@/utils/cn.ts"
 import { logger } from "@/utils/logger"
+import GroupCommunicationFeed from "./GroupCommunicationFeed"
+
+interface SSEState {
+  isConnected: boolean
+  isConnecting: boolean
+  events: any[]
+  currentOrderId: string | null
+  error: string | null
+  clearEvents: () => void
+}
 
 interface ChatAreaProps {
   setMessages: React.Dispatch<React.SetStateAction<Message[]>>
@@ -24,7 +35,12 @@ interface ChatAreaProps {
   showCoffeeDropdown?: boolean
   showCoffeePrompts?: boolean
   showLogisticsPrompts?: boolean
+  showProgressTracker?: boolean
+  showFinalResponse?: boolean
+  onStreamComplete?: () => void
+  onSenderHighlight?: (nodeId: string) => void
   pattern?: string
+  graphConfig?: any
   onCoffeeGraderSelect?: (query: string) => void
   onDropdownSelect?: (query: string) => void
   onUserInput?: (query: string) => void
@@ -32,8 +48,10 @@ interface ChatAreaProps {
   onClearConversation?: () => void
   currentUserMessage?: string
   agentResponse?: string
+  executionKey?: string
   isAgentLoading?: boolean
   chatRef?: React.RefObject<HTMLDivElement | null>
+  sseState?: SSEState
 }
 
 const ChatArea: React.FC<ChatAreaProps> = ({
@@ -44,15 +62,22 @@ const ChatArea: React.FC<ChatAreaProps> = ({
   showCoffeeDropdown = false,
   showCoffeePrompts = false,
   showLogisticsPrompts = false,
+  showProgressTracker = false,
+  showFinalResponse = false,
+  onStreamComplete,
+  onSenderHighlight,
   pattern,
+  graphConfig,
   onDropdownSelect,
   onUserInput,
   onApiResponse,
   onClearConversation,
   currentUserMessage,
   agentResponse,
+  executionKey,
   isAgentLoading,
   chatRef,
+  sseState,
 }) => {
   const [content, setContent] = useState<string>("")
   const [loading, setLoading] = useState<boolean>(false)
@@ -153,31 +178,48 @@ const ChatArea: React.FC<ChatAreaProps> = ({
         )}
         style={{ minHeight: currentUserMessage ? "auto" : "120px" }}
       >
-        {currentUserMessage && !isMinimized && (
+        {currentUserMessage && (
           <div className="mb-4 flex w-full max-w-[880px] flex-col gap-3">
-            <UserMessage content={currentUserMessage} />
-            {(isAgentLoading || agentResponse) && (
-              <div className="flex w-full flex-row items-start gap-1">
-                <div className="chat-avatar-container flex h-10 w-10 flex-none items-center justify-center rounded-full bg-action-background">
-                  <img
-                    src={AgentIcon}
-                    alt="Agent"
-                    className="h-[22px] w-[22px]"
-                  />
-                </div>
-                <div className="flex max-w-[calc(100%-3rem)] flex-1 flex-col items-start justify-center rounded p-1 px-2">
-                  <div className="whitespace-pre-wrap break-words font-inter text-sm font-normal leading-5 !text-chat-text">
-                    {isAgentLoading ? (
-                      <div className="animate-pulse text-accent-primary">
-                        ...
-                      </div>
-                    ) : (
-                      agentResponse
-                    )}
-                  </div>
-                </div>
+            {!isMinimized && <UserMessage content={currentUserMessage} />}
+
+            {showProgressTracker && (
+              <div className={`w-full ${isMinimized ? "hidden" : ""}`}>
+                <GroupCommunicationFeed
+                  isVisible={!isMinimized && showProgressTracker}
+                  onComplete={onStreamComplete}
+                  onSenderHighlight={onSenderHighlight}
+                  graphConfig={graphConfig}
+                  prompt={currentUserMessage || ""}
+                  executionKey={executionKey}
+                  sseState={sseState}
+                />
               </div>
             )}
+
+            {showFinalResponse &&
+              (isAgentLoading || agentResponse) &&
+              !isMinimized && (
+                <div className="flex w-full flex-row items-start gap-1">
+                  <div className="chat-avatar-container flex h-10 w-10 flex-none items-center justify-center rounded-full bg-action-background">
+                    <img
+                      src={AgentIcon}
+                      alt="Agent"
+                      className="h-[22px] w-[22px]"
+                    />
+                  </div>
+                  <div className="flex max-w-[calc(100%-3rem)] flex-1 flex-col items-start justify-center rounded p-1 px-2">
+                    <div className="whitespace-pre-wrap break-words font-inter text-sm font-normal leading-5 !text-chat-text">
+                      {isAgentLoading ? (
+                        <div className="animate-pulse text-accent-primary">
+                          ...
+                        </div>
+                      ) : (
+                        agentResponse
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
           </div>
         )}
 

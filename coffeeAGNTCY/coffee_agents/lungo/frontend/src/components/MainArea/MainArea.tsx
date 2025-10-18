@@ -50,6 +50,7 @@ interface MainAreaProps {
   chatHeight?: number
   isExpanded?: boolean
   groupCommResponseReceived?: boolean
+  onNodeHighlight?: (highlightFunction: (nodeId: string) => void) => void
 }
 
 const DELAY_DURATION = 500
@@ -67,6 +68,7 @@ const MainArea: React.FC<MainAreaProps> = ({
   chatHeight = 0,
   isExpanded = false,
   groupCommResponseReceived = false,
+  onNodeHighlight,
 }) => {
   const fitViewWithViewport = useViewportAwareFitView()
 
@@ -104,6 +106,20 @@ const MainArea: React.FC<MainAreaProps> = ({
 
     updateGraph()
   }, [fitViewWithViewport, pattern, isGroupCommConnected, setNodes, setEdges])
+
+  useEffect(() => {
+    const handleVisibilityChange = async () => {
+      if (!document.hidden && pattern === "publish_subscribe") {
+        await updateTransportLabels(setNodes, setEdges, pattern)
+      }
+    }
+
+    document.addEventListener("visibilitychange", handleVisibilityChange)
+
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibilityChange)
+    }
+  }, [pattern, setNodes, setEdges])
 
   useEffect(() => {
     fitViewWithViewport({
@@ -188,6 +204,8 @@ const MainArea: React.FC<MainAreaProps> = ({
 
     if (!shouldAnimate) return
 
+    if (pattern === "group_communication") return
+
     const waitForAnimationAndRun = async () => {
       while (animationLock.current) {
         await delay(100)
@@ -226,6 +244,27 @@ const MainArea: React.FC<MainAreaProps> = ({
     setNodes,
     setEdges,
   ])
+
+  const highlightNode = useCallback(
+    (nodeId: string) => {
+      if (!nodeId) return
+
+      if (pattern === "group_communication") {
+        updateStyle(nodeId, HIGHLIGHT.ON)
+
+        setTimeout(() => {
+          updateStyle(nodeId, HIGHLIGHT.OFF)
+        }, 1800)
+      }
+    },
+    [updateStyle, pattern],
+  )
+
+  useEffect(() => {
+    if (onNodeHighlight) {
+      onNodeHighlight(highlightNode)
+    }
+  }, [onNodeHighlight, highlightNode])
 
   const onNodeDrag = useCallback(() => {}, [])
 

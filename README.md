@@ -5,7 +5,7 @@
 
 ## About the Project
 
-**CoffeeAgntcy** is a reference implementation based on a fictitious coffee company to help developers understand how components in the **AGNTCY Internet of Agents** ecosystem can work together. It gives examples of the components of AGNTCY working together as a **Multi-agent System (MAS)**. 
+**CoffeeAgntcy** is a reference implementation based on a fictitious coffee company to help developers understand how components in the **AGNTCY Internet of Agents** ecosystem can work together. It gives examples of the components of AGNTCY working together as a **Multi-agent System (MAS)**.
 
 This reference agentic application demonstrates how to:
 
@@ -43,9 +43,9 @@ We currently provide two setups you can run to see how components from AGNTCY wo
 - [SLIM](https://github.com/agntcy/slim) = v0.4.0
 - [A2A](https://github.com/a2aproject/a2a-python) = v0.3.0
 - [MCP](https://github.com/modelcontextprotocol/python-sdk) >= v1.10.0
-- [LangGraph](https://github.com/langchain-ai/langgraph) >= v0.4.1 
+- [LangGraph](https://github.com/langchain-ai/langgraph) >= v0.4.1
 - [Observe SDK](https://github.com/agntcy/observe) = 1.0.18
-- [AGNTCY Identity Service SDK](https://github.com/agntcy/identity-service) = 0.0.4
+- [AGNTCY Identity Service SDK](https://github.com/agntcy/identity-service) = 0.0.6
 
 ---
 
