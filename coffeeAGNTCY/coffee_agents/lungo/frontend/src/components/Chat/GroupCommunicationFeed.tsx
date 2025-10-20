@@ -25,8 +25,6 @@ interface StreamStep {
   timestamp: string
 
   state: string
-
-  final?: boolean
 }
 
 interface GroupCommunicationFeedProps {
@@ -71,7 +69,7 @@ const buildSenderToNodeMap = (graphConfig: any): Record<string, string> => {
         map[node.data.farmName.toLowerCase()] = node.id
       }
 
-      if (node.data.label1 === "Logistics Agent") {
+      if (node.data.label1 === "Buyer") {
         map["Supervisor"] = node.id
         map["supervisor"] = node.id
       }
@@ -98,7 +96,10 @@ const getAllAgentNodeIds = (graphConfig: any): string[] => {
 
 const formatAgentName = (agentName: string): string => {
   if (agentName === "Supervisor") {
-    return "Logistics"
+    return "Buyer"
+  }
+  if (agentName === "Tatooine Farm") {
+    return "Tatooine"
   }
 
   return agentName
@@ -205,8 +206,7 @@ const GroupCommunicationFeed: React.FC<GroupCommunicationFeedProps> = ({
       }
     }
 
-    const isFinalStep =
-      lastEvent.final === true || lastEvent.state === "DELIVERED"
+    const isFinalStep = lastEvent.state === "DELIVERED"
 
     if (isFinalStep && !state.isComplete) {
       setState((prev) => ({

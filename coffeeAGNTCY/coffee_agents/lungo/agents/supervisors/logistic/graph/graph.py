@@ -93,7 +93,7 @@ class LogisticGraph:
                 "   If any earlier tool or agent message contains the exact token 'DELIVERED' "
                 "(indicates the order was fully delivered), DO NOT call tools again and DO NOT ask questions. "
                 "Respond ONLY with a multiline plain text summary in the following format without any newline character (and nothing else):\n"
-                "   Order <extract order id from tool execution result> from <farm or unknown> for <quantity or unknown> units at <price or unknown> has been successfully delivered."
+                "   Order <extract order id from tool execution result> from <farm (Title Case) or unknown> for <quantity or unknown> units at <price or unknown> has been successfully delivered."
                 "   - Infer farm / quantity / price from prior messages; if missing use 'unknown'.\n"
                 "   - Never call tools after 'DELIVERED' appears.\n\n"
                 "Output:\n"
