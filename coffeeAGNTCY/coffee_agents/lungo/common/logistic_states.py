@@ -114,7 +114,9 @@ def build_transition_message(
   specialized = _specialized_narrative(order_id, to_state, sender, receiver)
   if specialized:
     if details:
-      return specialized.rstrip(".") + f" {details.rstrip('.') }."
+      base = specialized.rstrip(".!? ")
+      detail_text = details.strip().rstrip(".!? ")
+      return f"{base}. {detail_text}."
     return specialized
 
 

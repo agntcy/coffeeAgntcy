@@ -272,12 +272,12 @@ const GROUP_COMMUNICATION_CONFIG: GraphConfig = {
             className="dark-icon h-4 w-4 object-contain"
           />
         ),
-        label1: "Logistics Agent",
-        label2: "Buyer",
+        label1: "Buyer",
+        label2: "Logistics Agent",
         handles: "source",
         githubLink:
           "https://github.com/agntcy/coffeeAgntcy/blob/main/coffeeAGNTCY/coffee_agents/lungo/agents/supervisors/auction/graph/graph.py#L116",
-        agentDirectoryLink: "https://agent-directory.outshift.com/",
+        agentDirectoryLink: "https://agent-directory.outshift.com/explore",
       },
       position: { x: 150, y: 100 },
       parentId: "logistics-group",
@@ -313,7 +313,7 @@ const GROUP_COMMUNICATION_CONFIG: GraphConfig = {
         farmName: "Tatooine Farm",
         githubLink:
           "https://github.com/agntcy/coffeeAgntcy/blob/main/coffeeAGNTCY/coffee_agents/lungo/agents/logistics/farm/agent.py#L30",
-        agentDirectoryLink: "https://agent-directory.outshift.com/",
+        agentDirectoryLink: "https://agent-directory.outshift.com/explore/",
       },
       position: { x: 550, y: 100 },
       parentId: "logistics-group",
@@ -332,8 +332,7 @@ const GROUP_COMMUNICATION_CONFIG: GraphConfig = {
         agentName: "Shipper Logistics",
         githubLink:
           "https://github.com/agntcy/coffeeAgntcy/blob/main/coffeeAGNTCY/coffee_agents/lungo/agents/logistics/shipper/agent.py#L30",
-        agentDirectoryLink:
-          "https://agent-directory.outshift.com/explore/shipper-logistics-agent",
+        agentDirectoryLink: "https://agent-directory.outshift.com/explore/",
       },
       position: { x: 150, y: 500 },
       parentId: "logistics-group",
@@ -352,8 +351,7 @@ const GROUP_COMMUNICATION_CONFIG: GraphConfig = {
         agentName: "Accountant Logistics",
         githubLink:
           "https://github.com/agntcy/coffeeAgntcy/blob/main/coffeeAGNTCY/coffee_agents/lungo/agents/logistics/accountant/agent.py#L30",
-        agentDirectoryLink:
-          "https://agent-directory.outshift.com/explore/accountant-logistics-agent",
+        agentDirectoryLink: "https://agent-directory.outshift.com/explore/",
       },
       position: { x: 500, y: 500 },
       parentId: "logistics-group",
