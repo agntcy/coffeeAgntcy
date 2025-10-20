@@ -311,11 +311,12 @@ const GroupCommunicationFeed: React.FC<GroupCommunicationFeedProps> = ({
                       <span className="font-['Inter'] text-sm leading-[18px] text-chat-text">
                         <span className="font-semibold">
                           {formatAgentName(step.sender)}
-                        </span>{" "}
-                        →{" "}
-                        <span className="font-semibold">
-                          {formatAgentName(step.receiver)}
                         </span>
+                        {index === 0 && (
+                          <>
+                            → <span className="font-semibold">All Agents</span>
+                          </>
+                        )}
                         : <span className="font-normal">"{step.message}"</span>
                       </span>
                     </div>
