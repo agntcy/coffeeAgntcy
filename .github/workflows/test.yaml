@@ -1,21 +1,31 @@
 name: Integration Tests
-
 on:
   pull_request:
     branches: [main]
   push:
     branches: [main]
-
+  workflow_call:
+    inputs:
+      pip_overrides:
+        description: 'One-per-line PEP 508 specs to force (shared across demos; applied only if declared).'
+        required: false
+        type: string
+      pip_constraints:
+        description: 'One-per-line constraints (shared across demos; applied only if declared).'
+        required: false
+        type: string
+      docker_overrides:
+        description: 'One-per-line service=image[:tag] (shared across demos; applied only if declared).'
+        required: false
+        type: string
 jobs:
   integration-tests:
     runs-on: ubuntu-latest
-
     strategy:
       matrix:
         test-suite: [corto, lungo]
 
-    # All `run:` steps below will execute in this matrix directory
-    defaults:
+        defaults:
       run:
         working-directory: coffeeAGNTCY/coffee_agents/${{ matrix.test-suite }}
 
@@ -26,21 +36,43 @@ jobs:
       AZURE_OPENAI_ENDPOINT: ${{ secrets.AZURE_OPENAI_ENDPOINT }}
       LLM_PROVIDER: ${{ secrets.LLM_PROVIDER }}
       LLM_STREAMING: ${{ secrets.LLM_STREAMING }}
-
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
           python-version: '3.13'
 
-      - name: Install uv
+      - name: Set up uv
         uses: astral-sh/setup-uv@v6
 
-      - name: Install the project (matrix dir)
-        run: uv sync --extra dev
+      # Apply the uv overrides/constraints, filtered to only what's declared in this demo
+      - name: Apply uv overrides/constraints (if applicable) — ${{ matrix.demo.name }}
+        if: ${{ inputs.pip_overrides != '' || inputs.pip_constraints != '' }}
+        uses: ./.github/actions/apply-uv-overrides
+        with:
+          project_dir: ${{ matrix.demo.dir }}
+          pip_overrides: ${{ inputs.pip_overrides }}
+          pip_constraints: ${{ inputs.pip_constraints }}
 
-      - name: Run tests (matrix dir)
+      - name: Apply compose image overrides (if any) — ${{ matrix.demo.name }}
+        if: ${{ inputs.docker_overrides != '' }}
+        uses: ./.github/actions/apply-compose-image-overrides
+        with:
+          project_dir: ${{ matrix.demo.dir }}
+          compose_file: docker-compose.yaml
+          service_images: ${{ inputs.docker_overrides }}
+
+      # Resolve & install
+      - name: Resolve & install — ${{ matrix.demo.name }}
+        working-directory: ${{ matrix.demo.dir }}
+        run: |
+          uv lock --upgrade
+          uv sync --frozen
+
+      # Run tests
+      - name: Run integration tests — ${{ matrix.demo.name }}
+        working-directory: ${{ matrix.demo.dir }}
         run: uv run pytest -s
