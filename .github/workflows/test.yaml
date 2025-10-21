@@ -10,24 +10,27 @@ on:
         description: 'One-per-line PEP 508 specs to force (shared across demos; applied only if declared).'
         required: false
         type: string
+        default: ""
       pip_constraints:
         description: 'One-per-line constraints (shared across demos; applied only if declared).'
         required: false
         type: string
+        default: ""
       docker_overrides:
         description: 'One-per-line service=image[:tag] (shared across demos; applied only if declared).'
         required: false
         type: string
+        default: ""
 jobs:
   integration-tests:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        test-suite: [corto, lungo]
+        suite: [coffeeAGNTCY/coffee_agents/corto, coffeeAGNTCY/coffee_agents/lungo]
 
-        defaults:
+    defaults:
       run:
-        working-directory: coffeeAGNTCY/coffee_agents/${{ matrix.test-suite }}
+        working-directory: ${{ matrix.suite }}
 
     env:
       AZURE_OPENAI_API_KEY: ${{ secrets.AZURE_OPENAI_API_KEY }}
@@ -38,7 +41,7 @@ jobs:
       LLM_STREAMING: ${{ secrets.LLM_STREAMING }}
     steps:
       - name: Checkout code
-      - uses: actions/checkout@v4
+        uses: actions/checkout@v4
 
       - name: Set up Python
         uses: actions/setup-python@v4
@@ -49,30 +52,36 @@ jobs:
         uses: astral-sh/setup-uv@v6
 
       # Apply the uv overrides/constraints, filtered to only what's declared in this demo
-      - name: Apply uv overrides/constraints (if applicable) — ${{ matrix.demo.name }}
+      - name: Apply uv overrides/constraints (if applicable) — ${{ matrix.suite }}
         if: ${{ inputs.pip_overrides != '' || inputs.pip_constraints != '' }}
         uses: ./.github/actions/apply-uv-overrides
         with:
-          project_dir: ${{ matrix.demo.dir }}
+          project_dir: ${{ matrix.suite }}
           pip_overrides: ${{ inputs.pip_overrides }}
           pip_constraints: ${{ inputs.pip_constraints }}
+      
+      - name: Print override verification — ${{ matrix.test-suite }}
+        working-directory: ${{ matrix.test-suite }}
+        run: |
+          echo "== pyproject.toml snippet =="
+          grep -A5 "\[tool.uv\]" pyproject.toml || true
+          echo "== checking for overrides =="
+          grep -A5 "override-dependencies" pyproject.toml || true
 
-      - name: Apply compose image overrides (if any) — ${{ matrix.demo.name }}
+      - name: Apply compose image overrides (if any) — ${{ matrix.suite }}
         if: ${{ inputs.docker_overrides != '' }}
-        uses: ./.github/actions/apply-compose-image-overrides
+        uses: ./.github/actions/apply-container-overrides
         with:
-          project_dir: ${{ matrix.demo.dir }}
+          project_dir: ${{ matrix.suite }}/
           compose_file: docker-compose.yaml
-          service_images: ${{ inputs.docker_overrides }}
+          docker_overrides: ${{ inputs.docker_overrides }}
 
       # Resolve & install
-      - name: Resolve & install — ${{ matrix.demo.name }}
-        working-directory: ${{ matrix.demo.dir }}
+      - name: Resolve & install — ${{ matrix.suite }}
         run: |
           uv lock --upgrade
-          uv sync --frozen
+          uv sync --extra dev
 
       # Run tests
-      - name: Run integration tests — ${{ matrix.demo.name }}
-        working-directory: ${{ matrix.demo.dir }}
+      - name: Run integration tests — ${{ matrix.suite }}
         run: uv run pytest -s

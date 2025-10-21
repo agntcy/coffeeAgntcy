@@ -20,6 +20,8 @@ runs:
       shell: bash
       working-directory: ${{ inputs.project_dir }}
       run: |
+        echo "Working directory: $(pwd)"
+        ls -la
         set -euo pipefail
 
         if [[ -z "${{ inputs.docker_overrides }}" ]]; then
