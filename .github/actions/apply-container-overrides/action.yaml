@@ -72,8 +72,10 @@ runs:
 
         if overrides:
             out = Path("docker-compose.override.yaml")
-            yaml.dump(overrides, out.open("w", encoding="utf-8"))
-            print(f"Wrote {out}")
+            yaml.dump(overrides, out.open("w", encoding="utf-8"))         
+            print("Wrote docker-compose.override.yaml with the following content:")
+            yaml.dump(overrides, sys.stdout)  
+            print(f"Override file path: {out.resolve()}")
         else:
             print("No applicable service image overrides to write.")
 
