@@ -57,7 +57,7 @@ async def handle_prompt(request: PromptRequest):
   try:
     session_start() # Start a new tracing session
     # Process the prompt using the exchange graph
-    result = await exchange_agent.a2a_client_send_message(request.prompt)
+    result = await exchange_agent.execute_agent_with_llm(request.prompt)
     logger.info(f"Final result from exchange agent: {result}")
     return {"response": result}
   except ValueError as ve:

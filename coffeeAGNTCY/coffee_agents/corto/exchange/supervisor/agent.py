@@ -7,7 +7,8 @@ from ioa_observe.sdk.decorators import agent, graph
 from exchange.supervisor.shared import get_factory
 from agntcy_app_sdk.protocols.a2a.protocol import A2AProtocol
 from config.config import DEFAULT_MESSAGE_TRANSPORT, TRANSPORT_SERVER_ENDPOINT
-
+from langchain_core.messages import HumanMessage, SystemMessage
+from common.llm import get_llm
 from a2a.types import (
     AgentCard,
     SendMessageRequest,
@@ -18,14 +19,67 @@ from a2a.types import (
     Role,
 )
 
-
 from farm.card import AGENT_CARD as farm_agent_card
 
 logger = logging.getLogger("corto.supervisor.agent")
 
+tools = [
+    {
+        "type": "function",
+        "function": {
+            "name": "a2a_client_send_message",
+            "description": "Processes relevant user prompts and returns a response",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "prompt": {
+                        "type": "string",
+                        "description": "The user prompt to process"
+                    }
+                },
+                "required": ["prompt"]
+            }
+        }
+    }
+]
+
+system_prompt = (
+    "You are an assistant that checks if the user prompt is relevant to coffee flavor, taste or sensory profile. "
+    "If relevant, call the a2a_client_send_message with the prompt. Otherwise, respond with 'I'm sorry, I cannot assist with that request. Please ask about coffee flavor or taste.'"
+)
+
 
 @agent(name="exchange_agent")
 class ExchangeAgent:
+    @staticmethod
+    async def execute_agent_with_llm(user_prompt: str):
+
+        messages = [
+            SystemMessage(content=system_prompt),
+            HumanMessage(content=user_prompt)
+        ]
+
+        # Invoke LLM WITHOUT binding - pass tools directly in kwargs
+        response = get_llm().invoke(messages, tools=tools)
+
+        # Check if tool was called
+        if hasattr(response, 'tool_calls') and response.tool_calls:
+            logger.info("Tool was called!")
+            for tool_call in response.tool_calls:
+                tool_name = tool_call["name"]
+                tool_args = tool_call["args"]
+                logger.info(f"Tool: {tool_name}")
+                logger.info(f"Arguments: {tool_args}")
+
+                # Manual local routing to the tool
+                if tool_name == "a2a_client_send_message":
+                    result = await ExchangeAgent.a2a_client_send_message(tool_args["prompt"])
+                    logger.info(f"Tool Result: {result}")
+                    return result
+        else:
+            logger.info("No tool called - LLM responded directly")
+            return response.content
+
     @staticmethod
     async def a2a_client_send_message(prompt: str):
         """
