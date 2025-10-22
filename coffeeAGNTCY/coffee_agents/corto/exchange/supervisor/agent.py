@@ -54,6 +54,16 @@ class ExchangeAgent:
     @staticmethod
     async def execute_agent_with_llm(user_prompt: str):
 
+        """
+        Processes a user prompt using the LLM to determine if the prompt is relevant to coffee flavor, taste or sensory profile.
+        If relevant, calls the a2a_client_send_message with the prompt. Otherwise, responds with 'I'm sorry, I cannot assist with that request. Please ask about coffee flavor or taste.'
+
+        Args:
+            user_prompt (str): The user prompt to process.
+
+        Returns:
+            str: The response from the LLM or the tool if called.
+        """
         messages = [
             SystemMessage(content=system_prompt),
             HumanMessage(content=user_prompt)
