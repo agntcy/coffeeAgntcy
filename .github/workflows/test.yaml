@@ -60,13 +60,21 @@ jobs:
           pip_overrides: ${{ inputs.pip_overrides }}
           pip_constraints: ${{ inputs.pip_constraints }}
       
-      - name: Print override verification — ${{ matrix.test-suite }}
-        working-directory: ${{ matrix.test-suite }}
+      - name: Print override verification — ${{ matrix.suite }}
+        working-directory: ${{ matrix.suite }}
         run: |
           echo "== pyproject.toml snippet =="
           grep -A5 "\[tool.uv\]" pyproject.toml || true
           echo "== checking for overrides =="
           grep -A5 "override-dependencies" pyproject.toml || true
+
+      - name: Verify pyproject after overrides — ${{ matrix.suite }}
+        working-directory: ${{ matrix.suite }}
+        run: |
+          echo "== Real file check =="
+          ls -l pyproject.toml
+          echo "== Tool.uv section =="
+          awk '/\[tool\.uv\]/,EOF' pyproject.toml
 
       - name: Apply compose image overrides (if any) — ${{ matrix.suite }}
         if: ${{ inputs.docker_overrides != '' }}

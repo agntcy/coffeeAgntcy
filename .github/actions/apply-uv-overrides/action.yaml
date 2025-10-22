@@ -21,6 +21,7 @@ runs:
       run: |
         python - <<'PY'
         import pathlib, re, sys
+        from tomlkit import parse, dumps, table, array
         try:
             from tomlkit import parse, dumps
         except Exception:
@@ -66,32 +67,45 @@ runs:
             for _k, lst in opt.items():
                 add_declared(lst)
 
-        overrides_all   = as_list(r"""${{ inputs.pip_overrides }}""")
-        constraints_all = as_list(r"""${{ inputs.pip_constraints }}""")
+        overrides_all   = as_list("""${{ inputs.pip_overrides }}""")
+        constraints_all = as_list("""${{ inputs.pip_constraints }}""")
 
         applicable_over = [s for s in overrides_all   if pkg_name(s) in declared]
         skipped_over    = [s for s in overrides_all   if pkg_name(s) not in declared]
         applicable_con  = [s for s in constraints_all if pkg_name(s) in declared]
         skipped_con     = [s for s in constraints_all if pkg_name(s) not in declared]
 
-        tool = doc.setdefault("tool", {})
-        uv   = tool.setdefault("uv", {})
+        tool = doc.get("tool")
+        if not hasattr(tool, "trivia"):   # not a tomlkit Table
+          doc["tool"] = tool = table()
+        uv = tool.get("uv")
+        if not hasattr(uv, "trivia"):       # not a tomlkit Table
+          tool["uv"] = uv = table()
 
-        def dedupe(seq):
-            seen = set()
-            out = []
-            for x in seq:
-                if x not in seen:
-                    seen.add(x)
-                    out.append(x)
-            return out
+        def ensure_array(t, key):
+          arr = t.get(key)
+          if arr is None or not hasattr(arr, "append"):
+              arr = array().multiline(True)
+              t[key] = arr
+          return arr
 
         if applicable_over:
-            uv["override-dependencies"] = dedupe(list(uv.get("override-dependencies", [])) + applicable_over)
-        if applicable_con:
-            uv["constraint-dependencies"] = dedupe(list(uv.get("constraint-dependencies", [])) + applicable_con)
+            arr = ensure_array(uv, "override-dependencies")
+            for item in applicable_over:
+                if item not in arr:
+                    arr.append(item)
 
+        if applicable_con:
+            arr = ensure_array(uv, "constraint-dependencies")
+            for item in applicable_con:
+                if item not in arr:
+                    arr.append(item)
+
+        # uv["override-dependencies"] = list(uv.get("override-dependencies", [])) + applicable_over
+        # uv["constraint-dependencies"] = list(uv.get("constraint-dependencies", [])) + applicable_con
+        print(f"doc before writing overrides:\n{dumps(doc)}")
         py.write_text(dumps(doc), encoding="utf-8")
+        print(f"Wrote overrides to: {py.resolve()}")
 
         print("Declared deps:", sorted(declared))
         print("Applied pip overrides:", applicable_over or "[]")
