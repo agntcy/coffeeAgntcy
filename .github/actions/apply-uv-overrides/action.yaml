@@ -21,14 +21,13 @@ runs:
       run: |
         python - <<'PY'
         import pathlib, re, sys
-        from tomlkit import parse, dumps, table, array
         try:
-            from tomlkit import parse, dumps
+            from tomlkit import parse, dumps, table, array
         except Exception:
             print("tomlkit not found; installing...", file=sys.stderr)
             import subprocess, sys as _sys
             subprocess.check_call([_sys.executable, "-m", "pip", "install", "tomlkit"])
-            from tomlkit import parse, dumps
+            from tomlkit import parse, dumps, table, array
 
         def norm(name: str) -> str:
             return re.sub(r"[-_.]+", "-", name.strip().lower())
@@ -76,10 +75,12 @@ runs:
         skipped_con     = [s for s in constraints_all if pkg_name(s) not in declared]
 
         tool = doc.get("tool")
-        if not hasattr(tool, "trivia"):   # not a tomlkit Table
+        if tool is None:   # not a tomlkit Table
+          print("Creating [tool] table")
           doc["tool"] = tool = table()
         uv = tool.get("uv")
-        if not hasattr(uv, "trivia"):       # not a tomlkit Table
+        if uv is None:       # not a tomlkit Table
+          print("Creating [tool.uv] table")
           tool["uv"] = uv = table()
 
         def ensure_array(t, key):
