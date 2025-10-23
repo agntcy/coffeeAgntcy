@@ -51,7 +51,6 @@ jobs:
       - name: Set up uv
         uses: astral-sh/setup-uv@v6
 
-      # Apply the uv overrides/constraints, filtered to only what's declared in this demo
       - name: Apply uv overrides/constraints (if applicable) — ${{ matrix.suite }}
         if: ${{ inputs.pip_overrides != '' || inputs.pip_constraints != '' }}
         uses: ./.github/actions/apply-uv-overrides
@@ -68,12 +67,10 @@ jobs:
           compose_file: docker-compose.yaml
           docker_overrides: ${{ inputs.docker_overrides }}
 
-      # Resolve & install
       - name: Resolve & install — ${{ matrix.suite }}
         run: |
           uv lock --upgrade
           uv sync --extra dev
 
-      # Run tests
       - name: Run integration tests — ${{ matrix.suite }}
         run: uv run pytest -s

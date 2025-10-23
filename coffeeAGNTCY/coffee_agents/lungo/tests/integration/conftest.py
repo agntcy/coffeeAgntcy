@@ -5,9 +5,8 @@
 Pytest fixtures using the simple ProcessRunner.
 Replace prior xprocess usage with these.
 """
-import atexit
-import importlib
 import os
+import re
 import time
 import sys
 import pytest
@@ -88,7 +87,6 @@ def orchestrate_session_services():
     setup_identity()
     print("--- Session level service setup complete. Tests can now run ---")
     yield
-    #Uncomment if you want to bring down infra after tests:
     down(["docker-compose.yaml"])
 
 def setup_transports():

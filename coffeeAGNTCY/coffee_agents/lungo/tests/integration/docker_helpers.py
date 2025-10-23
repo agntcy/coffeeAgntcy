@@ -32,7 +32,6 @@ def _run(cmd: List[str]):
     """
     print(">", " ".join(cmd))
     try:
-        # Capture both stdout/stderr for inspection if needed
         result = subprocess.run(cmd, check=True, cwd=PROJECT_DIR, capture_output=True, text=True)
         return result  # return result so callers (like up()) can inspect .stdout
     except subprocess.CalledProcessError as e:
@@ -79,10 +78,6 @@ def down(files: List[str]):
     _run(cmd)
 
 def _container_id(files: List[str], service: str) -> str:
-    """
-    Try up to 3 times to get the container ID for a compose service.
-    Prints docker compose ps output on final failure so it's obvious what happened.
-    """
     cmd = _compose_cmd(files) + ["ps", "-a", "-q", service]
     res = subprocess.run(cmd, capture_output=True, text=True, cwd=PROJECT_DIR)
     cid = res.stdout.strip()
@@ -134,7 +129,7 @@ def _compose_logs(files: List[str], service: str, tail: int = 200):
 def wait_for_service(files: List[str], service: str, timeout: float = 30.0, poll: float = 0.5):
     """
     Wait until the service container is running, and if it has a healthcheck, until it is healthy.
-    If the container exits, print logs immediately and raise (no pointless retries).
+    If the container exits or on timeout, raises RuntimeError
     """
     deadline = time.time() + timeout
     cid = _container_id(files, service)  # ensures same compose context

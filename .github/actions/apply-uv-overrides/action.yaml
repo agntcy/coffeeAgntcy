@@ -1,4 +1,4 @@
-name: Apply uv overrides/constraints (only if applicable)
+name: Apply UV Overrides/Constraints (Only If Applicable)
 description: Filters caller-provided overrides/constraints to direct deps in this project and writes tool.uv config.
 inputs:
   project_dir:
@@ -100,11 +100,7 @@ runs:
             arr = ensure_array(uv, "constraint-dependencies")
             for item in applicable_con:
                 if item not in arr:
-                    arr.append(item)
-
-        # uv["override-dependencies"] = list(uv.get("override-dependencies", [])) + applicable_over
-        # uv["constraint-dependencies"] = list(uv.get("constraint-dependencies", [])) + applicable_con
-        print(f"doc before writing overrides:\n{dumps(doc)}")
+                    arr.append(item)     
         py.write_text(dumps(doc), encoding="utf-8")
         print(f"Wrote overrides to: {py.resolve()}")
 

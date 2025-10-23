@@ -1,4 +1,4 @@
-name: Apply docker compose service image overrides
+name: Apply Docker Compose Service Image Overrides
 description: Writes docker-compose.override.yaml with image tags for existing services only.
 inputs:
   project_dir:

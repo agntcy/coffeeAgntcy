@@ -4,6 +4,7 @@ services:
       context: ../../..
       dockerfile: coffeeAGNTCY/coffee_agents/lungo/docker/Dockerfile.brazil-farm
     image: ghcr.io/agntcy/coffee-agntcy/brazil-farm:latest
+    container_name: brazil-farm-server
     environment:
       - FARM_AGENT_HOST=brazil-farm-server
       - FARM_AGENT_PORT=9999
@@ -27,6 +28,7 @@ services:
       context: ../../..
       dockerfile: coffeeAGNTCY/coffee_agents/lungo/docker/Dockerfile.colombia-farm
     image: ghcr.io/agntcy/coffee-agntcy/colombia-farm:latest
+    container_name: colombia-farm-server
     environment:
       - FARM_AGENT_HOST=colombia-farm-server
       - FARM_AGENT_PORT=9998
@@ -50,6 +52,7 @@ services:
       context: ../../..
       dockerfile: coffeeAGNTCY/coffee_agents/lungo/docker/Dockerfile.vietnam-farm
     image: ghcr.io/agntcy/coffee-agntcy/vietnam-farm:latest
+    container_name: vietnam-farm-server
     environment:
       - FARM_AGENT_HOST=vietnam-farm-server
       - FARM_AGENT_PORT=9997
@@ -70,6 +73,7 @@ services:
       - "9997:9997"
   nats:
     image: nats:latest
+    container_name: nats-lungo
     ports:
       - "4222:4222"
       - "4223:4223"
@@ -78,13 +82,14 @@ services:
 
   slim:
     image: ghcr.io/agntcy/slim:0.4.0
+    container_name: slim-lungo
     ports:
       - "46357:46357"
     environment:
       - PASSWORD=${SLIM_GATEWAY_PASSWORD:-dummy_password}
       - CONFIG_PATH=/config.yaml
     volumes:
-      - ./config/base/server-config.yaml:/config.yaml
+      - ./config/docker/slim/server-config.yaml:/config.yaml
     command: ["/slim", "--config", "/config.yaml"]
 
   # Exchange server App (farm client)
@@ -93,6 +98,7 @@ services:
       context: ../../..
       dockerfile: coffeeAGNTCY/coffee_agents/lungo/docker/Dockerfile.exchange
     image: ghcr.io/agntcy/coffee-agntcy/lungo-exchange:latest
+    container_name: exchange-server-lungo
     volumes:
       # Mount local git metadata so /build/info can derive latest tag/date in dev
       - ../../../.git:/app/.git:ro
@@ -119,6 +125,7 @@ services:
       context: ../../..
       dockerfile: coffeeAGNTCY/coffee_agents/lungo/docker/Dockerfile.ui
     image: ghcr.io/agntcy/coffee-agntcy/lungo-ui:latest
+    container_name: ui-lungo
     environment:
       - VITE_EXCHANGE_APP_API_URL=http://127.0.0.1:8000
       - VITE_LOGISTICS_APP_API_URL=http://127.0.0.1:9090
@@ -133,6 +140,7 @@ services:
       context: ../../..
       dockerfile: coffeeAGNTCY/coffee_agents/lungo/docker/Dockerfile.weather-mcp
     image: ghcr.io/agntcy/coffee-agntcy/weather-mcp-server:latest
+    container_name: weather-mcp-server
     environment:
       - DEFAULT_MESSAGE_TRANSPORT=${DEFAULT_MESSAGE_TRANSPORT:-NATS}
       - TRANSPORT_SERVER_ENDPOINT=${TRANSPORT_SERVER_ENDPOINT:-nats://nats:4222}
@@ -140,6 +148,7 @@ services:
 
   clickhouse-server:
     image: clickhouse/clickhouse-server
+    container_name: clickhouse-server-lungo
     ports:
       - "9000:9000"
       - "8123:8123"
@@ -167,6 +176,7 @@ services:
 
   otel-collector:
     image: otel/opentelemetry-collector-contrib:latest
+    container_name: otel-collector-lungo
     restart: unless-stopped
     ports:
       - "4317:4317"
@@ -180,6 +190,7 @@ services:
 
   grafana:
     image: grafana/grafana
+    container_name: grafana-lungo
     ports:
       - "3001:3000"
     environment:
