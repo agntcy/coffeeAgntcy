@@ -132,7 +132,7 @@ Before you begin, ensure the following tools are installed:
 
 Make sure the following Python dependency is installed:
 ```
-ioa-observe-sdk==1.0.18
+ioa-observe-sdk==1.0.23
 ```
 
 For advanced observability of your multi-agent system, integrate the [Observe SDK](https://github.com/agntcy/observe/blob/main/GETTING-STARTED.md).

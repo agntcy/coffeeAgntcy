@@ -22,8 +22,8 @@ dependencies = [
     "requests",
     "starlette",
     "uvicorn",
-    "ioa-observe-sdk==1.0.18",
-    "agntcy-app-sdk==0.2.9",
+    "ioa-observe-sdk==1.0.23",
+    "agntcy-app-sdk==0.3.3",
 ]
 
 [project.optional-dependencies]
