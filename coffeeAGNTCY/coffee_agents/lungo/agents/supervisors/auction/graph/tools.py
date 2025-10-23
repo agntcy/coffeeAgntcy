@@ -144,11 +144,9 @@ def verify_farm_identity(identity_service: IdentityService, farm_name: str):
     except Exception as e:
         raise A2AAgentError(f"Identity verification failed for farm '{farm_name}'. Details: {e}") # Re-raise as our custom exception
 
-@tool(args_schema=InventoryArgs)
-@ioa_tool_decorator(name="get_farm_yield_inventory")
-async def get_farm_yield_inventory(prompt: str, farm: str) -> str:
+async def _get_farm_yield_inventory_impl(prompt: str, farm: str) -> str:
     """
-    Fetch yield inventory from a specific farm.
+    Implementation for fetching yield inventory from a specific farm.
 
     Args:
         prompt (str): The prompt to send to the farm to retrieve their yields
@@ -214,9 +212,53 @@ async def get_farm_yield_inventory(prompt: str, farm: str) -> str:
         logger.error(f"Failed to communicate with farm '{farm}': {e}")
         raise A2AAgentError(f"Failed to communicate with farm '{farm}'. Details: {e}")
 
-@tool
-@ioa_tool_decorator(name="get_all_farms_yield_inventory")
-async def get_all_farms_yield_inventory(prompt: str) -> str:
+
+async def _fake_stream_data_tool(prompt: str):
+    """
+    Fake streaming tool that yields simulated farm data progressively.
+    
+    Args:
+        prompt (str): The prompt/query from the user
+        
+    Yields:
+        str: Simulated farm yield data as it "arrives"
+    """
+    import asyncio
+    
+    farms = [
+        ("Brazil Farm", "500 kg of Arabica coffee available"),
+        ("Colombia Farm", "350 kg of premium coffee beans in stock"),
+        ("Vietnam Farm", "600 kg of Robusta coffee ready for order")
+    ]
+    
+    for farm_name, yield_info in farms:
+        # Simulate network delay
+        await asyncio.sleep(2)
+        yield f"{farm_name}: {yield_info}\n"
+
+
+
+
+@tool(args_schema=InventoryArgs)
+@ioa_tool_decorator(name="get_farm_yield_inventory")
+async def get_farm_yield_inventory(prompt: str, farm: str) -> str:
+    """
+    Fetch yield inventory from a specific farm.
+
+    Args:
+        prompt (str): The prompt to send to the farm to retrieve their yields
+        farm (str): The farm to send the request to
+
+    Returns:
+        str: current yield amount
+
+    Raises:
+        A2AAgentError: If there's an issue with farm identification, communication, or the farm agent returns an error.
+        ValueError: For invalid input arguments.
+    """
+    return await _get_farm_yield_inventory_impl(prompt, farm)
+
+async def _get_all_farms_yield_inventory_impl(prompt: str) -> str:
     """
     Broadcasts a prompt to all farms and aggregates their inventory responses.
 
@@ -293,6 +335,20 @@ async def get_all_farms_yield_inventory(prompt: str) -> str:
     except Exception as e: # Catch any underlying communication or client creation errors
         logger.error(f"Failed to communicate with all farms during broadcast: {e}")
         raise A2AAgentError(f"Failed to communicate with all farms. Details: {e}")
+
+@tool
+@ioa_tool_decorator(name="get_all_farms_yield_inventory")
+async def get_all_farms_yield_inventory(prompt: str) -> str:
+    """
+    Broadcasts a prompt to all farms and aggregates their inventory responses.
+
+    Args:
+        prompt (str): The prompt to broadcast to all farm agents.
+
+    Returns:
+        str: A summary string containing yield information from all farms.
+    """
+    return await _get_all_farms_yield_inventory_impl(prompt)
 
 
 async def get_all_farms_yield_inventory_streaming(prompt: str):
