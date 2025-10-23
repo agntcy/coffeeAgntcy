@@ -1,8 +1,6 @@
 name: Version Override Test
 on:
   workflow_dispatch: {}
-  pull_request:
-    branches: [main]
 
 jobs:
   integration:

@@ -78,6 +78,9 @@ def _purge_modules(prefixes):
         sys.modules.pop(m, None)
 
 # ---------------- session infra ----------------
+files = ["docker-compose.yaml"]
+if Path("docker-compose.override.yaml").exists():
+    files.append("docker-compose.override.yaml")
 
 @pytest.fixture(scope="session", autouse=True)
 def orchestrate_session_services():
@@ -87,7 +90,7 @@ def orchestrate_session_services():
     setup_identity()
     print("--- Session level service setup complete. Tests can now run ---")
     yield
-    down(["docker-compose.yaml"])
+    down(files)
 
 def setup_transports():
     _startup_slim()
@@ -100,10 +103,6 @@ def setup_observability():
 
 def setup_identity():
     pass
-
-files = ["docker-compose.yaml"]
-if Path("docker-compose.override.yaml").exists():
-    files.append("docker-compose.override.yaml")
 
 def _startup_slim():
     up(files, ["slim"])
