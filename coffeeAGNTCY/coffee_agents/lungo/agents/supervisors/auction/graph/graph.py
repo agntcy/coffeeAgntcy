@@ -465,3 +465,50 @@ class ExchangeGraph:
         except Exception as e:
             logger.error(f"Error in serve method: {e}")
             raise Exception(str(e))
+
+    async def streaming_serve(self, prompt: str):
+        """
+        Streams the graph execution, yielding chunks as nodes complete.
+        
+        Args:
+            prompt (str): The input prompt to be processed by the graph.
+            
+        Yields:
+            str: Chunks of output from each node as they complete.
+        """
+        try:
+            logger.debug(f"Received streaming prompt: {prompt}")
+            if not isinstance(prompt, str) or not prompt.strip():
+                raise ValueError("Prompt must be a non-empty string.")
+            
+            state = {
+                "messages": [
+                    {
+                        "role": "user",
+                        "content": prompt
+                    }
+                ],
+            }
+            
+            async for chunk in self.graph.astream(state, {"configurable": {"thread_id": uuid.uuid4()}}):
+                # Each chunk is a dict with node name as key
+                print("Chunk", chunk)
+                for node_name, node_output in chunk.items():
+                    if "messages" in node_output and node_output["messages"]:
+                        # Get the last message from this node
+                        last_message = node_output["messages"][-1]
+                        if isinstance(last_message, AIMessage) and last_message.content:
+                            print("Last messag111e", last_message.content)
+                            yield last_message.content
+                        
+        except ValueError as ve:
+            logger.error(f"ValueError in streaming_serve method: {ve}")
+            raise ValueError(str(ve))
+        except Exception as e:
+            logger.error(f"Error in streaming_serve method: {e}")
+            raise Exception(str(e))
+
+
+
+
+

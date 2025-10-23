@@ -1,12 +1,13 @@
 # Copyright AGNTCY Contributors (https://github.com/agntcy)
 # SPDX-License-Identifier: Apache-2.0
 
+import json
 import logging
 
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from ioa_observe.sdk.tracing import session_start
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 import uvicorn
 
@@ -67,6 +68,49 @@ async def handle_prompt(request: PromptRequest):
     raise HTTPException(status_code=400, detail=str(ve))
   except Exception as e:
     raise HTTPException(status_code=500, detail=f"Operation failed: {str(e)}")
+
+
+@app.post("/agent/prompt/stream")
+async def handle_stream_prompt(request: PromptRequest):
+    """
+    Processes a user prompt and streams the response from the ExchangeGraph.
+    
+    Args:
+        request (PromptRequest): Contains the input prompt as a string.
+        
+    Returns:
+        StreamingResponse: JSON stream with node outputs as they complete.
+        Each chunk is formatted as: {"response": "..."}
+        
+    Raises:
+        HTTPException: 400 for invalid input, 500 for server-side errors.
+    """
+    try:
+        session_start()  # Start a new tracing session
+        
+        async def stream_generator():
+            """Generate streaming output from the graph."""
+            try:
+                async for chunk in exchange_graph.streaming_serve(request.prompt):
+                    yield json.dumps({"response": chunk}) + "\n"
+            except Exception as e:
+                logger.error(f"Error in stream: {e}")
+                yield json.dumps({"response": f"Error: {str(e)}"}) + "\n"
+        
+        return StreamingResponse(
+            stream_generator(),
+            media_type="application/x-ndjson",
+            headers={
+                "Cache-Control": "no-cache",
+                "Connection": "keep-alive",
+            }
+        )
+    except ValueError as ve:
+        raise HTTPException(status_code=400, detail=str(ve))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Operation failed: {str(e)}")
+
+
 
 @app.get("/health")
 async def health_check():
