@@ -77,31 +77,3 @@ Demonstrates how to pin or constrain dependencies and override container images 
 ## docs
 
 Copies top-level docs (README, CONTRIBUTING, etc.) into docs/ then deploys with MkDocs Material to gh-pages. Ensure mkdocs.yml exists at repo root (or adapt the workflow) and GitHub Pages is configured to serve gh-pages.
-
-## Secrets / Permissions
-
-- GITHUB_TOKEN (automatic) for GHCR pushes (packages: write)
-- AZURE_OPENAI_* secrets consumed by tests
-- Least-privilege permissions explicitly declared per workflow
-
-## Common Maintenance
-
-- Add Docker image: edit [`docker-build-push.yaml`](.github/workflows/docker-build-push.yaml) matrix.image
-- Add Helm chart: edit [`helm-push.yaml`](.github/workflows/helm-push.yaml) matrix.chart
-- Add test suite: extend suite matrix in [`test.yaml`](.github/workflows/test.yaml)
-- Adjust dependency for test run: supply overrides in caller workflow
-- Bump chart version: update Chart.yaml version then push to main
-
-## Troubleshooting
-
-- Multi-arch build failure: verify Dockerfile builds locally with buildx (install QEMU)
-- Chart push denied: ensure package_name matches and version changed
-- Override not applied: confirm newline termination and no trailing spaces
-- Docs not updating: ensure mkdocs-material installs and gh-pages branch exists
-
-## Future Enhancements (suggested)
-
-- Add caching for uv and Docker layers
-- Add vulnerability scanning (e.g. Trivy) post image build
-- Add chart testing (helm unittest or kubeconform)
-- Add concurrency groups to cancel superseded builds
