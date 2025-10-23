@@ -42,6 +42,13 @@ from services.identity_service_impl import IdentityServiceImpl
 
 logger = logging.getLogger("lungo.supervisor.tools")
 
+agntcy_logger = logging.getLogger('agntcy_app_sdk')
+agntcy_logger.setLevel(logging.DEBUG) # Set to DEBUG for maximum verbosity
+
+
+factory = get_factory()
+transport = factory.create_transport(DEFAULT_MESSAGE_TRANSPORT,
+    endpoint=TRANSPORT_SERVER_ENDPOINT, name="default/default/exchange_graph")
 
 class A2AAgentError(ToolException):
     """Custom exception for errors related to A2A agent communication or status."""
@@ -172,12 +179,12 @@ async def get_farm_yield_inventory(prompt: str, farm: str) -> str:
     
     try:
         # Shared factory & transport
-        factory = get_factory()
-        transport = factory.create_transport(
-            DEFAULT_MESSAGE_TRANSPORT,
-            endpoint=TRANSPORT_SERVER_ENDPOINT,
-            name="default/default/exchange_graph"
-        )
+        # factory = get_factory()
+        # transport = factory.create_transport(
+        #     DEFAULT_MESSAGE_TRANSPORT,
+        #     endpoint=TRANSPORT_SERVER_ENDPOINT,
+        #     name="default/default/exchange_graph"
+        # )
 
         client = await factory.create_client(
             "A2A",
@@ -230,12 +237,12 @@ async def get_all_farms_yield_inventory(prompt: str) -> str:
     logger.info("entering get_all_farms_yield_inventory tool with prompt: %s", prompt)
 
     # Shared factory & transport
-    factory = get_factory()
-    transport = factory.create_transport(
-        DEFAULT_MESSAGE_TRANSPORT,
-        endpoint=TRANSPORT_SERVER_ENDPOINT,
-        name="default/default/exchange_graph"
-    )
+    # factory = get_factory()
+    # transport = factory.create_transport(
+    #     DEFAULT_MESSAGE_TRANSPORT,
+    #     endpoint=TRANSPORT_SERVER_ENDPOINT,
+    #     name="default/default/exchange_graph"
+    # )
 
     request = SendMessageRequest(
         id=str(uuid4()),
@@ -339,12 +346,12 @@ async def create_order(farm: str, quantity: int, price: float) -> str:
 
     try:
         # Shared factory & transport
-        factory = get_factory()
-        transport = factory.create_transport(
-            DEFAULT_MESSAGE_TRANSPORT,
-            endpoint=TRANSPORT_SERVER_ENDPOINT,
-            name="default/default/exchange_graph"
-        )
+        # factory = get_factory()
+        # transport = factory.create_transport(
+        #     DEFAULT_MESSAGE_TRANSPORT,
+        #     endpoint=TRANSPORT_SERVER_ENDPOINT,
+        #     name="default/default/exchange_graph"
+        # )
 
         client = await factory.create_client(
             "A2A",
@@ -405,12 +412,12 @@ async def get_order_details(order_id: str) -> str:
 
     try:
         # Shared factory & transport
-        factory = get_factory()
-        transport = factory.create_transport(
-            DEFAULT_MESSAGE_TRANSPORT,
-            endpoint=TRANSPORT_SERVER_ENDPOINT,
-            name="default/default/exchange_graph"
-        )
+        # factory = get_factory()
+        # transport = factory.create_transport(
+        #     DEFAULT_MESSAGE_TRANSPORT,
+        #     endpoint=TRANSPORT_SERVER_ENDPOINT,
+        #     name="default/default/exchange_graph"
+        # )
 
         client = await factory.create_client(
             "A2A",
