@@ -231,10 +231,9 @@ class ExchangeGraph:
             elif "stream" in user_query:
                 tool_name = "_fake_stream_data_tool"
                 logger.info(f"Calling {tool_name}")
-                # Collect all streamed data
-                tool_result = ""
-                async for chunk in _fake_stream_data_tool(user_msg.content):
-                    tool_result += chunk
+                # For streaming, just return message indicating streaming is active
+                # The actual streaming will be handled by streaming_serve
+                return {"messages": [AIMessage(content="__STREAMING_MODE__")]}
             else:
                 # Default to getting all farms inventory
                 tool_name = "get_all_farms_yield_inventory"
@@ -432,19 +431,32 @@ class ExchangeGraph:
 
     async def streaming_serve(self, prompt: str):
         """
-        Streams the graph execution, yielding chunks as nodes complete.
+        Streams the graph execution, yielding chunks as they arrive.
+        Handles special streaming mode for progressive data delivery.
         
         Args:
             prompt (str): The input prompt to be processed by the graph.
             
         Yields:
-            str: Chunks of output from each node as they complete.
+            str: Chunks of output as they arrive from nodes and tools.
         """
         try:
             logger.debug(f"Received streaming prompt: {prompt}")
             if not isinstance(prompt, str) or not prompt.strip():
                 raise ValueError("Prompt must be a non-empty string.")
             
+            # Check if this is a streaming request- hack remove todo
+            if "stream" in prompt.lower():
+                logger.info("Detected streaming request, using progressive streaming")
+                # Directly stream from the tool- hack test- todo change it
+                async for chunk in _fake_stream_data_tool(prompt):
+                    chunk_text = chunk.strip()
+                    if chunk_text:
+                        logger.info(f"Streaming chunk: {chunk_text}")
+                        yield chunk_text
+                return
+            
+            # Regular non-streaming flow
             state = {
                 "messages": [
                     {
@@ -456,14 +468,16 @@ class ExchangeGraph:
             
             async for chunk in self.graph.astream(state, {"configurable": {"thread_id": uuid.uuid4()}}):
                 # Each chunk is a dict with node name as key
-                print("Chunk", chunk)
+                logger.debug(f"Chunk: {chunk}")
                 for node_name, node_output in chunk.items():
                     if "messages" in node_output and node_output["messages"]:
                         # Get the last message from this node
                         last_message = node_output["messages"][-1]
                         if isinstance(last_message, AIMessage) and last_message.content:
-                            print("Last messag111e", last_message.content)
-                            yield last_message.content
+                            # Skip internal streaming markers
+                            if last_message.content != "__STREAMING_MODE__":
+                                logger.debug(f"Yielding message: {last_message.content}")
+                                yield last_message.content
                         
         except ValueError as ve:
             logger.error(f"ValueError in streaming_serve method: {ve}")
