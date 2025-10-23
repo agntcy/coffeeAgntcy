@@ -364,6 +364,14 @@ Detailed architecture, message flows (SLIM pubsub vs controller channels), servi
    ![Screenshot: OTEL Dashboard](images/dashboard_grafana.png)
    ![Screenshot: OTEL Traces](images/dashboard_traces.png)
 
+5. **Enable Data Linking from Clickhouse Data Source**
+
+If you encounter errors of querying the database, please ensure data linking from Clickhouse is enabled:
+
+![Screenshot: Data_Linking_1](images/grafana_data_linking_1.png)
+
+![Screenshot: Data_Linking_2](images/grafana_data_linking_2.png)
+
 ---
 
 #### Metrics Computation with AGNTCY's Metrics Computation Engine (MCE)

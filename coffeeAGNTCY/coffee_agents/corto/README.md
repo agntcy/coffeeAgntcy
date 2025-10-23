@@ -296,6 +296,15 @@ By default, the UI will be available at [http://localhost:3000/](http://localhos
    ![Screenshot: OTEL Dashboard](images/dashboard_grafana.png)
    ![Screenshot: OTEL Traces](images/dashboard_traces.png)
 
+5. **Enable Data Linking from Clickhouse Data Source**
+
+If you encounter errors of querying the database, please ensure data linking from Clickhouse is enabled:
+
+![Screenshot: Data_Linking_1](images/grafana_data_linking_1.png)
+
+![Screenshot: Data_Linking_2](images/grafana_data_linking_2.png)
+
+
 #### Metrics Computation with AGNTCY's Metrics Computation Engine (MCE)
 
 Details about AGNTCY's MCE can be found in the Telemetry Hub repository: [Metrics Computation Engine](https://github.com/agntcy/telemetry-hub/tree/main/metrics_computation_engine)
