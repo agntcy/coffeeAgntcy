@@ -214,7 +214,6 @@ async def get_farm_yield_inventory(prompt: str, farm: str) -> str:
         logger.error(f"Failed to communicate with farm '{farm}': {e}")
         raise A2AAgentError(f"Failed to communicate with farm '{farm}'. Details: {e}")
 
-
 @tool
 @ioa_tool_decorator(name="get_all_farms_yield_inventory")
 async def get_all_farms_yield_inventory(prompt: str) -> str:
@@ -294,6 +293,87 @@ async def get_all_farms_yield_inventory(prompt: str) -> str:
     except Exception as e: # Catch any underlying communication or client creation errors
         logger.error(f"Failed to communicate with all farms during broadcast: {e}")
         raise A2AAgentError(f"Failed to communicate with all farms. Details: {e}")
+
+
+async def get_all_farms_yield_inventory_streaming(prompt: str):
+    """
+    Broadcasts a prompt to all farms and aggregates their inventory responses.
+
+    Args:
+        prompt (str): The prompt to broadcast to all farm agents.
+
+    Returns:
+        str: A summary string containing yield information from all farms.
+    """
+    logger.info("entering get_all_farms_yield_inventory tool with prompt: %s", prompt)
+
+    # Shared factory & transport
+    factory = get_factory()
+    transport = factory.create_transport(
+        DEFAULT_MESSAGE_TRANSPORT,
+        endpoint=TRANSPORT_SERVER_ENDPOINT,
+        name="default/default/exchange_graph_streaming"
+    )
+
+    request = SendMessageRequest(
+        id=str(uuid4()),
+        params=MessageSendParams(
+            message=Message(
+                messageId=str(uuid4()),
+                role=Role.user,
+                parts=[Part(TextPart(text=prompt))],
+            ),
+        )
+    )
+
+    if DEFAULT_MESSAGE_TRANSPORT == "SLIM":
+        client_handshake_topic = A2AProtocol.create_agent_topic(get_farm_card("brazil"))
+    else:
+        # using NATS
+        client_handshake_topic = FARM_BROADCAST_TOPIC
+
+    try:
+        # create an A2A client, retrieving an A2A card from agent_topic
+        client = await factory.create_client(
+            "A2A",
+            agent_topic=client_handshake_topic,
+            transport=transport,
+        )
+
+        # create a list of recipients to include in the broadcast
+        recipients = [A2AProtocol.create_agent_topic(get_farm_card(farm)) for farm in ['brazil', 'colombia', 'vietnam']]
+        # create a broadcast message and collect responses
+        responses = await client.broadcast_message_streaming(request, broadcast_topic=FARM_BROADCAST_TOPIC, recipients=recipients)
+
+        logger.info(f"got {len(responses)} responses back from farms")
+
+        farm_yields = ""
+        for response in responses:
+            # we want a dict for farm name -> yield, the farm_name will be in the response metadata
+            if response.root.result and response.root.result.parts:
+                part = response.root.result.parts[0].root
+                if hasattr(response.root.result, "metadata"):
+                    farm_name = response.root.result.metadata.get("name", "Unknown Farm")
+                else:
+                    farm_name = "Unknown Farm"
+
+                farm_yields += f"{farm_name} : {part.text.strip()}\n"
+            elif response.root.error:
+                err_msg = f"A2A error from farm: {response.root.error.message}"
+                logger.error(err_msg)
+                raise A2AAgentError(err_msg)
+            else:
+                err_msg = f"Unknown response type from farm"
+                logger.error(err_msg)
+                raise A2AAgentError(err_msg)
+
+        logger.info(f"Farm yields: {farm_yields}")
+        return farm_yields.strip()
+    except Exception as e: # Catch any underlying communication or client creation errors
+        logger.error(f"Failed to communicate with all farms during broadcast: {e}")
+        raise A2AAgentError(f"Failed to communicate with all farms. Details: {e}")
+
+
 
 
 @tool(args_schema=CreateOrderArgs)
