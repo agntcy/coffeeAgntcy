@@ -29,7 +29,6 @@ def get_semantic_similarity(text1, text2, model):
     cosine_score = util.cos_sim(embeddings1, embeddings2)
     return cosine_score.item()
 
-@pytest.mark.flaky(reruns=2, reruns_delay=2)
 @pytest.mark.parametrize("transport_config", TRANSPORT_MATRIX, indirect=True)
 class TestAuctionFlows:
     @pytest.mark.agents(["brazil-farm"])

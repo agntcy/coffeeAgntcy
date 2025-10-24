@@ -1,0 +1,88 @@
+name: Apply Docker Compose Service Image Overrides
+description: Writes docker-compose.override.yaml with image tags for existing services only.
+inputs:
+  project_dir:
+    description: Path where docker-compose.yaml lives
+    required: true
+  compose_file:
+    description: Base compose file name
+    required: false
+    default: docker-compose.yaml
+  docker_overrides:
+    description: One-per-line service=image[:tag] (only applied if the service exists)
+    required: false
+    default: ""
+
+runs:
+  using: composite
+  steps:
+    - name: Generate docker-compose.override.yaml (images only)
+      shell: bash
+      working-directory: ${{ inputs.project_dir }}
+      run: |
+        echo "Working directory: $(pwd)"
+        ls -la
+        set -euo pipefail
+
+        if [[ -z "${{ inputs.docker_overrides }}" ]]; then
+          echo "No docker_overrides provided; skipping override generation."
+          exit 0
+        fi
+
+        python - <<'PY'
+        import sys
+        from pathlib import Path
+
+        # install ruamel.yaml if missing
+        try:
+            from ruamel.yaml import YAML
+        except Exception:
+            import subprocess, sys as _sys
+            subprocess.check_call([_sys.executable, "-m", "pip", "install", "ruamel.yaml"])
+            from ruamel.yaml import YAML
+
+        base_path = Path("${{ inputs.compose_file }}")
+        if not base_path.exists():
+          print(f"Base compose file not found: {base_path}", file=sys.stderr)
+          sys.exit(1)
+
+        yaml = YAML()
+        yaml.preserve_quotes = True
+        base = yaml.load(base_path.read_text(encoding="utf-8"))
+        base_services = set((base.get("services") or {}).keys())
+
+        overrides = {}
+        lines = [ln.strip() for ln in """${{ inputs.docker_overrides }}""".splitlines() if ln.strip() and not ln.strip().startswith("#")]
+        applied, skipped = [], []
+
+        for ln in lines:
+            if "=" not in ln:
+                skipped.append(f"{ln} (missing '=')")
+                continue
+            svc, img = ln.split("=", 1)
+            svc, img = svc.strip(), img.strip()
+            if not svc or not img:
+                skipped.append(f"{ln} (empty service or image)")
+                continue
+            if svc in base_services:
+                overrides.setdefault("services", {}).setdefault(svc, {})["image"] = img
+                applied.append(f"{svc}={img}")
+            else:
+                skipped.append(f"{svc}={img} (service not found)")
+
+        if overrides:
+            out = Path("docker-compose.override.yaml")
+            yaml.dump(overrides, out.open("w", encoding="utf-8"))         
+            print("Wrote docker-compose.override.yaml with the following content:")
+            yaml.dump(overrides, sys.stdout)  
+            print(f"Override file path: {out.resolve()}")
+        else:
+            print("No applicable service image overrides to write.")
+
+        if applied:
+            print("Applied image overrides:")
+            for a in applied: print(" -", a)
+        if skipped:
+            print("Skipped image overrides:")
+            for s in skipped: print(" -", s)
+        PY
