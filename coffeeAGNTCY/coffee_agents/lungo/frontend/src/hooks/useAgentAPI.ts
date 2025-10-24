@@ -3,18 +3,13 @@
  * SPDX-License-Identifier: Apache-2.0
  **/
 
-import React, { useState } from "react"
+import React, { useRef, useState, useEffect } from "react"
 import axios from "axios"
 import { v4 as uuid } from "uuid"
 import { Message } from "@/types/message"
 import { Role } from "@/utils/const"
-
-const DEFAULT_PUB_SUB_API_URL = "http://127.0.0.1:8000"
-const DEFAULT_GROUP_COMM_APP_API_URL = "http://127.0.0.1:9090"
-const PUB_SUB_APP_API_URL =
-  import.meta.env.VITE_EXCHANGE_APP_API_URL || DEFAULT_PUB_SUB_API_URL
-const GROUP_COMM_APP_API_URL =
-  import.meta.env.VITE_LOGISTICS_APP_API_URL || DEFAULT_GROUP_COMM_APP_API_URL
+import { withRetry, RETRY_CONFIG } from "@/utils/retryUtils"
+import { shouldEnableRetries, getApiUrlForPattern } from "@/utils/patternUtils"
 
 interface ApiResponse {
   response: string
@@ -30,13 +25,36 @@ interface UseAgentAPIReturn {
       onStart?: () => void
       onSuccess?: (response: string) => void
       onError?: (error: any) => void
+      onRetryAttempt?: (
+        attempt: number,
+        error: Error,
+        nextRetryAt: number,
+      ) => void
     },
     pattern?: string,
   ) => Promise<void>
+  cancel: () => void
 }
 
 export const useAgentAPI = (): UseAgentAPIReturn => {
   const [loading, setLoading] = useState<boolean>(false)
+  const abortRef = useRef<AbortController | null>(null)
+  const requestIdRef = useRef<number>(0)
+
+  const cancel = () => {
+    if (abortRef.current) {
+      abortRef.current.abort()
+    }
+    requestIdRef.current += 1
+  }
+
+  useEffect(() => {
+    return () => {
+      if (abortRef.current) {
+        abortRef.current.abort()
+      }
+    }
+  }, [])
 
   const sendMessage = async (
     prompt: string,
@@ -46,19 +64,36 @@ export const useAgentAPI = (): UseAgentAPIReturn => {
       throw new Error("Prompt cannot be empty")
     }
 
-    const apiUrl =
-      pattern === "group_communication"
-        ? GROUP_COMM_APP_API_URL
-        : PUB_SUB_APP_API_URL
+    const apiUrl = getApiUrlForPattern(pattern)
 
     setLoading(true)
-    try {
-      const response = await axios.post<ApiResponse>(`${apiUrl}/agent/prompt`, {
-        prompt,
-      })
+
+    const controller = new AbortController()
+    abortRef.current = controller
+    const myRequestId = requestIdRef.current + 1
+    requestIdRef.current = myRequestId
+
+    const makeApiCall = async (): Promise<string> => {
+      const response = await axios.post<ApiResponse>(
+        `${apiUrl}/agent/prompt`,
+        {
+          prompt,
+        },
+        { signal: controller.signal },
+      )
       return response.data.response
+    }
+
+    try {
+      if (shouldEnableRetries(pattern)) {
+        return await withRetry(makeApiCall)
+      } else {
+        return await makeApiCall()
+      }
     } finally {
-      setLoading(false)
+      if (requestIdRef.current === myRequestId) {
+        setLoading(false)
+      }
     }
   }
 
@@ -69,15 +104,22 @@ export const useAgentAPI = (): UseAgentAPIReturn => {
       onStart?: () => void
       onSuccess?: (response: string) => void
       onError?: (error: any) => void
+      onRetryAttempt?: (
+        attempt: number,
+        error: Error,
+        nextRetryAt: number,
+      ) => void
     },
     pattern?: string,
   ): Promise<void> => {
     if (!prompt.trim()) return
 
-    const apiUrl =
-      pattern === "group_communication"
-        ? GROUP_COMM_APP_API_URL
-        : PUB_SUB_APP_API_URL
+    const apiUrl = getApiUrlForPattern(pattern)
+
+    const controller = new AbortController()
+    abortRef.current = controller
+    const myRequestId = requestIdRef.current + 1
+    requestIdRef.current = myRequestId
 
     const userMessage: Message = {
       role: Role.USER,
@@ -104,42 +146,89 @@ export const useAgentAPI = (): UseAgentAPIReturn => {
       callbacks.onStart()
     }
 
-    try {
-      const response = await axios.post<ApiResponse>(`${apiUrl}/agent/prompt`, {
-        prompt,
-      })
+    const makeApiCall = async (): Promise<string> => {
+      const response = await axios.post<ApiResponse>(
+        `${apiUrl}/agent/prompt`,
+        {
+          prompt,
+        },
+        { signal: controller.signal },
+      )
+      return response.data.response
+    }
+
+    const onRetryAttempt = (attempt: number) => {
+      const delay =
+        RETRY_CONFIG.baseDelay *
+        Math.pow(RETRY_CONFIG.backoffMultiplier, attempt - 1)
+      const nextRetryAt = Date.now() + delay
 
       setMessages((prevMessages: Message[]) => {
         const updatedMessages = [...prevMessages]
         updatedMessages[updatedMessages.length - 1] = {
           role: "assistant",
-          content: response.data.response,
+          content: `Retrying... (${attempt}/${RETRY_CONFIG.maxRetries})`,
           id: uuid(),
           animate: true,
         }
         return updatedMessages
       })
 
+      if (callbacks?.onRetryAttempt) {
+        callbacks.onRetryAttempt(
+          attempt,
+          new Error("Retry attempt"),
+          nextRetryAt,
+        )
+      }
+    }
+
+    try {
+      let responseText: string
+
+      if (shouldEnableRetries(pattern)) {
+        responseText = await withRetry(makeApiCall, onRetryAttempt)
+      } else {
+        responseText = await makeApiCall()
+      }
+
+      if (requestIdRef.current === myRequestId) {
+        setMessages((prevMessages: Message[]) => {
+          const updatedMessages = [...prevMessages]
+          updatedMessages[updatedMessages.length - 1] = {
+            role: "assistant",
+            content: responseText,
+            id: uuid(),
+            animate: true,
+          }
+          return updatedMessages
+        })
+      }
+
       if (callbacks?.onSuccess) {
-        callbacks.onSuccess(response.data.response)
+        callbacks.onSuccess(responseText)
       }
     } catch (error) {
-      setMessages((prevMessages: Message[]) => {
-        const updatedMessages = [...prevMessages]
-        updatedMessages[updatedMessages.length - 1] = {
-          role: "assistant",
-          content: "Sorry, I encountered an error.",
-          id: uuid(),
-          animate: false,
-        }
-        return updatedMessages
-      })
+      if (requestIdRef.current === myRequestId) {
+        setMessages((prevMessages: Message[]) => {
+          const updatedMessages = [...prevMessages]
+          updatedMessages[updatedMessages.length - 1] = {
+            role: "assistant",
+            content: "Sorry, I encountered an error.",
+            id: uuid(),
+            animate: false,
+          }
+          return updatedMessages
+        })
+      }
 
       if (callbacks?.onError) {
         callbacks.onError(error)
       }
     } finally {
-      setLoading(false)
+      if (requestIdRef.current === myRequestId) {
+        setLoading(false)
+      }
     }
   }
 
@@ -147,5 +236,6 @@ export const useAgentAPI = (): UseAgentAPIReturn => {
     loading,
     sendMessage,
     sendMessageWithCallback,
+    cancel,
   }
 }

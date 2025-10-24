@@ -50,6 +50,7 @@ interface ChatAreaProps {
   agentResponse?: string
   executionKey?: string
   isAgentLoading?: boolean
+  apiError: boolean
   chatRef?: React.RefObject<HTMLDivElement | null>
   sseState?: SSEState
 }
@@ -76,6 +77,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
   agentResponse,
   executionKey,
   isAgentLoading,
+  apiError,
   chatRef,
   sseState,
 }) => {
@@ -191,6 +193,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
                   graphConfig={graphConfig}
                   prompt={currentUserMessage || ""}
                   executionKey={executionKey}
+                  apiError={apiError}
                   sseState={sseState}
                 />
               </div>

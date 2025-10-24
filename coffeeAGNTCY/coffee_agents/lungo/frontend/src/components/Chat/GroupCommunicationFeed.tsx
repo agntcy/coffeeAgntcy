@@ -35,6 +35,7 @@ interface GroupCommunicationFeedProps {
   onSenderHighlight?: (nodeId: string) => void
   graphConfig?: any
   executionKey?: string
+  apiError: boolean
   sseState?: {
     isConnected: boolean
     isConnecting: boolean
@@ -113,6 +114,7 @@ const GroupCommunicationFeed: React.FC<GroupCommunicationFeedProps> = ({
   graphConfig,
   sseState,
   executionKey,
+  apiError,
 }) => {
   const [state, setState] = useState({
     isExpanded: true,
@@ -240,7 +242,7 @@ const GroupCommunicationFeed: React.FC<GroupCommunicationFeedProps> = ({
   const events = sseState?.events || []
   const errorMessage = sseState?.error || null
 
-  if (!prompt && events.length === 0) {
+  if ((!prompt && events.length === 0) || apiError) {
     return null
   }
 
@@ -259,13 +261,13 @@ const GroupCommunicationFeed: React.FC<GroupCommunicationFeedProps> = ({
           <div className="whitespace-pre-wrap break-words font-cisco text-sm font-normal leading-5 text-chat-text">
             Order {sseState.currentOrderId}
           </div>
-        ) : prompt ? (
+        ) : prompt && !apiError ? (
           <div className="whitespace-pre-wrap break-words font-cisco text-sm font-normal leading-5 text-chat-text">
             Processing Request...
           </div>
         ) : null}
 
-        {prompt && !state.isComplete && events.length === 0 && (
+        {prompt && !state.isComplete && !apiError && events.length === 0 && (
           <div className="mt-3 flex w-full flex-row items-start gap-1">
             <div className="mt-1 flex items-center">
               <div className="h-4 w-4 animate-spin rounded-full border-2 border-b-transparent border-l-transparent border-r-accent-primary border-t-accent-primary" />
