@@ -15,13 +15,13 @@
 
 ## Overview
 
-The Corto demo demonstrates the integration of an A2A client within a LangGraph workflow with an A2A server agent. It models a simplified agent system that acts as a coffee sommelier.
+The Corto demo demonstrates the integration of an A2A client agent with an A2A server agent. It models a simplified agent system that acts as a coffee sommelier.
 
 The Exchange Agent acts as a client interface, receiving prompts from the user interface about coffee flavor profiles and forwarding them to the farm agent.
 
 The Farm Agent serves as a backend flavor profile generator, processing incoming requests and returning descriptive output.
 
-The user interface forwards all prompts to the exchange’s API, which are then given to a LangGraph which contains an A2A client node. This A2A client node connects to the farm’s A2A server. The underlying A2A transport layer is fully configurable. By default, the system uses AGNTCY's SLIM. 
+The user interface forwards all prompts to the exchange’s API, which are then given to an A2A client. This A2A client connects to the farm’s A2A server. The underlying A2A transport layer is fully configurable. By default, the system uses AGNTCY's SLIM. 
 
 
 ## Running Corto Locally
@@ -220,7 +220,7 @@ uv run python exchange/main.py
 docker-compose up exchange-server --build
 ```
 
-This starts a FastAPI server that processes user prompts that are sent to a LangGraph supervisor that facilitates worker agent delegation. The A2A client is registered as a worker agent. If a prompt does not match any worker, the supervisor responds politely with a refusal message.
+This starts a FastAPI server that processes prompts, collecting them and relaying messages to the A2A server when they are relevant to coffee flavors or profiles.
 
 To invoke the exchange, use the /agent/prompt endpoint to send a human-readable prompt to request information about a location's coffee flavor profiles for a specific season. For example:
 ```bash

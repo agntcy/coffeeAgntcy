@@ -62,7 +62,7 @@ class FarmAgent:
             "Your job is to:\n"
             "1. Extract the `location` and `season` from the input if possible.\n"
             "2. Based on those, describe the expected **flavor profile** of the coffee grown there.\n"
-            "3. Respond with only a brief, expressive flavor profile (1–3 sentences). "
+            "3. Respond with only a brief, expressive flavor profile (1–3 sentences) including the details of the location and season in the sentence not just the answer. "
             "Use tasting terminology like acidity, body, aroma, and finish.\n"
             "Respond with an empty response if no valid location or season is found. Do not include quotes or any placeholder."
         )

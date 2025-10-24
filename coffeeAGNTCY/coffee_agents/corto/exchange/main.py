@@ -15,15 +15,14 @@ from ioa_observe.sdk.tracing import session_start
 from common.version import get_version_info
 
 from config.logging_config import setup_logging
-from exchange.graph import shared
-from exchange.graph.graph import ExchangeGraph
+from exchange.agent import ExchangeAgent
 
 setup_logging()
 logger = logging.getLogger("corto.supervisor.main")
 load_dotenv()
 
-# Initialize the shared agntcy factory with tracing enabled
-shared.set_factory(AgntcyFactory("corto.exchange", enable_tracing=True))
+# Initialize the agntcy factory with tracing enabled
+factory = AgntcyFactory("corto.exchange", enable_tracing=True)
 
 app = FastAPI()
 # Add CORS middleware
@@ -35,7 +34,7 @@ app.add_middleware(
   allow_headers=["*"],  # Allow all headers
 )
 
-exchange_graph = ExchangeGraph()
+exchange_agent = ExchangeAgent(factory=factory)
 
 class PromptRequest(BaseModel):
   prompt: str
@@ -57,8 +56,8 @@ async def handle_prompt(request: PromptRequest):
   try:
     session_start() # Start a new tracing session
     # Process the prompt using the exchange graph
-    result = await exchange_graph.serve(request.prompt)
-    logger.info(f"Final result from LangGraph: {result}")
+    result = await exchange_agent.execute_agent_with_llm(request.prompt)
+    logger.info(f"Final result from exchange agent: {result}")
     return {"response": result}
   except ValueError as ve:
     logger.exception(f"ValueError occurred: {str(ve)}")
