@@ -19,15 +19,14 @@ const CoffeePromptsDropdown: React.FC<CoffeePromptsDropdownProps> = ({
 
   const buyerPrompts = [
     "What yield do the farms have?",
-    "What is the current inventory?",
     "I'd like to buy 200 lbs quantity of coffee and who can fulfill it?",
-    "List all the coffee farms",
-    "Where can I get the best coffee with flavors like Ethiopian?",
+    "What is the current inventory for Brazil farm?",
+    "What is the current inventory for Colombia farm?",
+    "What is the current inventory for Vietnam farm?",
   ]
 
   const purchaserPrompts = [
     "I'd like to buy 200 lbs quantity of coffee at USD 500 price from Colombia",
-    "What is the status of my purchase?",
   ]
 
   useEffect(() => {
