@@ -15,8 +15,8 @@ from ioa_observe.sdk.tracing import session_start
 from common.version import get_version_info
 
 from config.logging_config import setup_logging
-from exchange.supervisor import shared
-from exchange.supervisor.agent import ExchangeAgent
+from exchange import shared
+from exchange.agent import ExchangeAgent
 
 setup_logging()
 logger = logging.getLogger("corto.supervisor.main")

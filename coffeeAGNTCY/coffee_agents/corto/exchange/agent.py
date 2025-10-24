@@ -3,8 +3,9 @@
 
 import logging
 from uuid import uuid4
+from typing import Any, Dict, List, Optional, Union
+
 from ioa_observe.sdk.decorators import agent, graph
-from exchange.supervisor.shared import get_factory
 from agntcy_app_sdk.protocols.a2a.protocol import A2AProtocol
 from config.config import DEFAULT_MESSAGE_TRANSPORT, TRANSPORT_SERVER_ENDPOINT
 from langchain_core.messages import HumanMessage, SystemMessage
@@ -19,9 +20,10 @@ from a2a.types import (
     Role,
 )
 
+from exchange.shared import get_factory
 from farm.card import AGENT_CARD as farm_agent_card
 
-logger = logging.getLogger("corto.supervisor.agent")
+logger = logging.getLogger("corto.exchange.agent")
 
 tools = [
     {
@@ -53,7 +55,6 @@ system_prompt = (
 class ExchangeAgent:
     @staticmethod
     async def execute_agent_with_llm(user_prompt: str):
-
         """
         Processes a user prompt using the LLM to determine if the prompt is relevant to coffee flavor, taste or sensory profile.
         If relevant, calls the a2a_client_send_message with the prompt. Otherwise, responds with 'I'm sorry, I cannot assist with that request. Please ask about coffee flavor or taste.'
