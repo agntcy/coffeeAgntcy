@@ -144,11 +144,9 @@ def verify_farm_identity(identity_service: IdentityService, farm_name: str):
     except Exception as e:
         raise A2AAgentError(f"Identity verification failed for farm '{farm_name}'. Details: {e}") # Re-raise as our custom exception
 
-@tool(args_schema=InventoryArgs)
-@ioa_tool_decorator(name="get_farm_yield_inventory")
-async def get_farm_yield_inventory(prompt: str, farm: str) -> str:
+async def _get_farm_yield_inventory_impl(prompt: str, farm: str) -> str:
     """
-    Fetch yield inventory from a specific farm.
+    Implementation for fetching yield inventory from a specific farm.
 
     Args:
         prompt (str): The prompt to send to the farm to retrieve their yields
@@ -215,9 +213,52 @@ async def get_farm_yield_inventory(prompt: str, farm: str) -> str:
         raise A2AAgentError(f"Failed to communicate with farm '{farm}'. Details: {e}")
 
 
-@tool
-@ioa_tool_decorator(name="get_all_farms_yield_inventory")
-async def get_all_farms_yield_inventory(prompt: str) -> str:
+async def _fake_stream_data_tool(prompt: str):
+    """
+    Fake streaming tool that yields simulated farm data progressively.
+    
+    Args:
+        prompt (str): The prompt/query from the user
+        
+    Yields:
+        str: Simulated farm yield data as it "arrives"
+    """
+    import asyncio
+    
+    farms = [
+        ("Brazil Farm", "500 kg of Arabica coffee available"),
+        ("Colombia Farm", "350 kg of premium coffee beans in stock"),
+        ("Vietnam Farm", "600 kg of Robusta coffee ready for order")
+    ]
+    
+    for farm_name, yield_info in farms:
+        # Simulate network delay
+        await asyncio.sleep(2)
+        yield f"{farm_name}: {yield_info}\n"
+
+
+
+
+@tool(args_schema=InventoryArgs)
+@ioa_tool_decorator(name="get_farm_yield_inventory")
+async def get_farm_yield_inventory(prompt: str, farm: str) -> str:
+    """
+    Fetch yield inventory from a specific farm.
+
+    Args:
+        prompt (str): The prompt to send to the farm to retrieve their yields
+        farm (str): The farm to send the request to
+
+    Returns:
+        str: current yield amount
+
+    Raises:
+        A2AAgentError: If there's an issue with farm identification, communication, or the farm agent returns an error.
+        ValueError: For invalid input arguments.
+    """
+    return await _get_farm_yield_inventory_impl(prompt, farm)
+
+async def _get_all_farms_yield_inventory_impl(prompt: str) -> str:
     """
     Broadcasts a prompt to all farms and aggregates their inventory responses.
 
@@ -295,6 +336,102 @@ async def get_all_farms_yield_inventory(prompt: str) -> str:
         logger.error(f"Failed to communicate with all farms during broadcast: {e}")
         raise A2AAgentError(f"Failed to communicate with all farms. Details: {e}")
 
+@tool
+@ioa_tool_decorator(name="get_all_farms_yield_inventory")
+async def get_all_farms_yield_inventory(prompt: str) -> str:
+    """
+    Broadcasts a prompt to all farms and aggregates their inventory responses.
+
+    Args:
+        prompt (str): The prompt to broadcast to all farm agents.
+
+    Returns:
+        str: A summary string containing yield information from all farms.
+    """
+    return await _get_all_farms_yield_inventory_impl(prompt)
+
+
+async def get_all_farms_yield_inventory_streaming(prompt: str):
+    """
+    Broadcasts a prompt to all farms and streams their inventory responses as they arrive.
+
+    Args:
+        prompt (str): The prompt to broadcast to all farm agents.
+
+    Yields:
+        str: Yield information from each farm as it becomes available.
+    """
+    logger.info("entering get_all_farms_yield_inventory_streaming tool with prompt: %s", prompt)
+
+    # Shared factory & transport
+    factory = get_factory()
+    transport = factory.create_transport(
+        DEFAULT_MESSAGE_TRANSPORT,
+        endpoint=TRANSPORT_SERVER_ENDPOINT,
+        name="default/default/exchange_graph_streaming"
+    )
+
+    request = SendMessageRequest(
+        id=str(uuid4()),
+        params=MessageSendParams(
+            message=Message(
+                messageId=str(uuid4()),
+                role=Role.user,
+                parts=[Part(TextPart(text=prompt))],
+            ),
+        )
+    )
+
+    if DEFAULT_MESSAGE_TRANSPORT == "SLIM":
+        client_handshake_topic = A2AProtocol.create_agent_topic(get_farm_card("brazil"))
+    else:
+        # using NATS
+        client_handshake_topic = FARM_BROADCAST_TOPIC
+
+    try:
+        # create an A2A client, retrieving an A2A card from agent_topic
+        client = await factory.create_client(
+            "A2A",
+            agent_topic=client_handshake_topic,
+            transport=transport,
+        )
+
+        # create a list of recipients to include in the broadcast
+        recipients = [A2AProtocol.create_agent_topic(get_farm_card(farm)) for farm in ['brazil', 'colombia', 'vietnam']]
+
+        # Get the async generator for streaming responses
+        response_stream = client.broadcast_message_streaming(
+            request,
+            broadcast_topic=FARM_BROADCAST_TOPIC,
+            recipients=recipients
+        )
+
+        # Process responses as they arrive
+        async for response in response_stream:
+            try:
+                if response.root.result and response.root.result.parts:
+                    part = response.root.result.parts[0].root
+                    farm_name = "Unknown Farm"
+                    if hasattr(response.root.result, "metadata"):
+                        farm_name = response.root.result.metadata.get("name", "Unknown Farm")
+
+                    yield f"{farm_name} : {part.text.strip()}\n"
+                elif response.root.error:
+                    err_msg = f"A2A error from farm: {response.root.error.message}"
+                    logger.error(err_msg)
+                    yield f"Error from farm: {response.root.error.message}\n"
+                else:
+                    err_msg = "Unknown response type from farm"
+                    logger.error(err_msg)
+                    yield f"Error: Unknown response format from farm\n"
+            except Exception as e:
+                logger.error(f"Error processing farm response: {e}")
+                yield f"Error processing farm response: {str(e)}\n"
+
+    except Exception as e:
+        error_msg = f"Failed to communicate with farms during broadcast: {e}"
+        logger.error(error_msg)
+        yield f"Error: {error_msg}\n"
 
 @tool(args_schema=CreateOrderArgs)
 @ioa_tool_decorator(name="create_order")
