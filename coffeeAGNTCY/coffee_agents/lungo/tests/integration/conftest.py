@@ -5,9 +5,8 @@
 Pytest fixtures using the simple ProcessRunner.
 Replace prior xprocess usage with these.
 """
-import atexit
-import importlib
 import os
+import re
 import time
 import sys
 import pytest
@@ -79,6 +78,9 @@ def _purge_modules(prefixes):
         sys.modules.pop(m, None)
 
 # ---------------- session infra ----------------
+files = ["docker-compose.yaml"]
+if Path("docker-compose.override.yaml").exists():
+    files.append("docker-compose.override.yaml")
 
 @pytest.fixture(scope="session", autouse=True)
 def orchestrate_session_services():
@@ -88,8 +90,7 @@ def orchestrate_session_services():
     setup_identity()
     print("--- Session level service setup complete. Tests can now run ---")
     yield
-    #Uncomment if you want to bring down infra after tests:
-    down(["docker-compose.yaml"])
+    down(files)
 
 def setup_transports():
     _startup_slim()
@@ -104,19 +105,19 @@ def setup_identity():
     pass
 
 def _startup_slim():
-    up(["docker-compose.yaml"], ["slim"])
+    up(files, ["slim"])
 
 def _startup_nats():
-    up(["docker-compose.yaml"], ["nats"])
+    up(files, ["nats"])
 
 def _startup_grafana():
-    up(["docker-compose.yaml"], ["grafana"])
+    up(files, ["grafana"])
 
 def _startup_clickhouse():
-    up(["docker-compose.yaml"], ["clickhouse-server"])
+    up(files, ["clickhouse-server"])
 
 def _startup_otel_collector():
-    up(["docker-compose.yaml"], ["otel-collector"])
+    up(files, ["otel-collector"])
     time.sleep(10)
 
 # ---------------- per-test config ----------------

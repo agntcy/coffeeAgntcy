@@ -1,0 +1,112 @@
+name: Apply UV Overrides/Constraints (Only If Applicable)
+description: Filters caller-provided overrides/constraints to direct deps in this project and writes tool.uv config.
+inputs:
+  project_dir:
+    description: Path to the project root (where pyproject.toml lives)
+    required: true
+  pip_overrides:
+    description: One-per-line PEP 508 specs to force (applied only if the package is declared here)
+    required: false
+    default: ""
+  pip_constraints:
+    description: One-per-line constraints (applied only if the package is declared here)
+    required: false
+    default: ""
+runs:
+  using: composite
+  steps:
+    - name: Apply overrides/constraints to tool.uv
+      shell: bash
+      working-directory: ${{ inputs.project_dir }}
+      run: |
+        python - <<'PY'
+        import pathlib, re, sys
+        try:
+            from tomlkit import parse, dumps, table, array
+        except Exception:
+            print("tomlkit not found; installing...", file=sys.stderr)
+            import subprocess, sys as _sys
+            subprocess.check_call([_sys.executable, "-m", "pip", "install", "tomlkit"])
+            from tomlkit import parse, dumps, table, array
+
+        def norm(name: str) -> str:
+            return re.sub(r"[-_.]+", "-", name.strip().lower())
+
+        def pkg_name(spec: str) -> str:
+            s = spec.strip()
+            s = re.sub(r"\[.*?\]", "", s)  # strip extras
+            m = re.match(r"([A-Za-z0-9_.-]+)", s)
+            return norm(m.group(1)) if m else ""
+
+        def as_list(block: str) -> list[str]:
+            out = []
+            for line in (block or "").splitlines():
+                line = line.strip()
+                if line and not line.startswith("#"):
+                    out.append(line)
+            return out
+
+        py = pathlib.Path("pyproject.toml")
+        if not py.exists():
+            print("pyproject.toml not found in", py.resolve(), file=sys.stderr)
+            sys.exit(1)
+
+        doc = parse(py.read_text(encoding="utf-8"))
+        project = doc.get("project", {}) or {}
+        declared = set()
+
+        def add_declared(items):
+            for s in items or []:
+                if isinstance(s, str):
+                    declared.add(pkg_name(s))
+
+        add_declared(project.get("dependencies", []))
+        opt = project.get("optional-dependencies", {}) or {}
+        if isinstance(opt, dict):
+            for _k, lst in opt.items():
+                add_declared(lst)
+
+        overrides_all   = as_list("""${{ inputs.pip_overrides }}""")
+        constraints_all = as_list("""${{ inputs.pip_constraints }}""")
+
+        applicable_over = [s for s in overrides_all   if pkg_name(s) in declared]
+        skipped_over    = [s for s in overrides_all   if pkg_name(s) not in declared]
+        applicable_con  = [s for s in constraints_all if pkg_name(s) in declared]
+        skipped_con     = [s for s in constraints_all if pkg_name(s) not in declared]
+
+        tool = doc.get("tool")
+        if tool is None:   # not a tomlkit Table
+          print("Creating [tool] table")
+          doc["tool"] = tool = table()
+        uv = tool.get("uv")
+        if uv is None:       # not a tomlkit Table
+          print("Creating [tool.uv] table")
+          tool["uv"] = uv = table()
+
+        def ensure_array(t, key):
+          arr = t.get(key)
+          if arr is None or not hasattr(arr, "append"):
+              arr = array().multiline(True)
+              t[key] = arr
+          return arr
+
+        if applicable_over:
+            arr = ensure_array(uv, "override-dependencies")
+            for item in applicable_over:
+                if item not in arr:
+                    arr.append(item)
+
+        if applicable_con:
+            arr = ensure_array(uv, "constraint-dependencies")
+            for item in applicable_con:
+                if item not in arr:
+                    arr.append(item)     
+        py.write_text(dumps(doc), encoding="utf-8")
+        print(f"Wrote overrides to: {py.resolve()}")
+
+        print("Declared deps:", sorted(declared))
+        print("Applied pip overrides:", applicable_over or "[]")
+        print("Skipped pip overrides (not declared here):", skipped_over or "[]")
+        print("Applied pip constraints:", applicable_con or "[]")
+        print("Skipped pip constraints (not declared here):", skipped_con or "[]")
+        PY
