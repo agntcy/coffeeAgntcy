@@ -27,7 +27,6 @@ const CoffeePromptsDropdown: React.FC<CoffeePromptsDropdownProps> = ({
 
   const purchaserPrompts = [
     "I'd like to buy 200 lbs quantity of coffee at USD 500 price from Colombia",
-    "What is the status of my purchase?",
   ]
 
   useEffect(() => {
