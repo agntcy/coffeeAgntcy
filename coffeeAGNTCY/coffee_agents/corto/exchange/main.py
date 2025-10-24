@@ -15,15 +15,14 @@ from ioa_observe.sdk.tracing import session_start
 from common.version import get_version_info
 
 from config.logging_config import setup_logging
-from exchange import shared
 from exchange.agent import ExchangeAgent
 
 setup_logging()
 logger = logging.getLogger("corto.supervisor.main")
 load_dotenv()
 
-# Initialize the shared agntcy factory with tracing enabled
-shared.set_factory(AgntcyFactory("corto.exchange", enable_tracing=True))
+# Initialize the agntcy factory with tracing enabled
+factory = AgntcyFactory("corto.exchange", enable_tracing=True)
 
 app = FastAPI()
 # Add CORS middleware
@@ -35,7 +34,7 @@ app.add_middleware(
   allow_headers=["*"],  # Allow all headers
 )
 
-exchange_agent = ExchangeAgent()
+exchange_agent = ExchangeAgent(factory=factory)
 
 class PromptRequest(BaseModel):
   prompt: str

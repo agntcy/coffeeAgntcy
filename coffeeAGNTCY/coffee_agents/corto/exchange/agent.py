@@ -6,6 +6,7 @@ from uuid import uuid4
 from typing import Any, Dict, List, Optional, Union
 
 from ioa_observe.sdk.decorators import agent, graph
+from agntcy_app_sdk.factory import AgntcyFactory
 from agntcy_app_sdk.protocols.a2a.protocol import A2AProtocol
 from config.config import DEFAULT_MESSAGE_TRANSPORT, TRANSPORT_SERVER_ENDPOINT
 from langchain_core.messages import HumanMessage, SystemMessage
@@ -20,7 +21,6 @@ from a2a.types import (
     Role,
 )
 
-from exchange.shared import get_factory
 from farm.card import AGENT_CARD as farm_agent_card
 
 logger = logging.getLogger("corto.exchange.agent")
@@ -53,8 +53,10 @@ system_prompt = (
 
 @agent(name="exchange_agent")
 class ExchangeAgent:
-    @staticmethod
-    async def execute_agent_with_llm(user_prompt: str):
+    def __init__(self, factory: AgntcyFactory):
+        self.factory = factory
+
+    async def execute_agent_with_llm(self, user_prompt: str):
         """
         Processes a user prompt using the LLM to determine if the prompt is relevant to coffee flavor, taste or sensory profile.
         If relevant, calls the a2a_client_send_message with the prompt. Otherwise, responds with 'I'm sorry, I cannot assist with that request. Please ask about coffee flavor or taste.'
@@ -84,15 +86,14 @@ class ExchangeAgent:
 
                 # Manual local routing to the tool
                 if tool_name == "a2a_client_send_message":
-                    result = await ExchangeAgent.a2a_client_send_message(tool_args["prompt"])
+                    result = await self.a2a_client_send_message(tool_args["prompt"])
                     logger.info(f"Tool Result: {result}")
                     return result
         else:
             logger.info("No tool called - LLM responded directly")
             return response.content
 
-    @staticmethod
-    async def a2a_client_send_message(prompt: str):
+    async def a2a_client_send_message(self, prompt: str):
         """
         Send the user-provided prompt to the farm agent over A2A transport and
         return the resulting response payload.
@@ -107,7 +108,7 @@ class ExchangeAgent:
             Exception: Propagated when transport or message handling fails.
         """
         try:
-            factory = get_factory()
+            factory = self.factory
             a2a_topic = A2AProtocol.create_agent_topic(farm_agent_card)
             transport = factory.create_transport(
                 DEFAULT_MESSAGE_TRANSPORT,
