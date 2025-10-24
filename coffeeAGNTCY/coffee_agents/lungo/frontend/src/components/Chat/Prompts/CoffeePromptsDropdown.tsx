@@ -20,7 +20,7 @@ const CoffeePromptsDropdown: React.FC<CoffeePromptsDropdownProps> = ({
   const buyerPrompts = [
     "What yield do the farms have?",
     "What is the current inventory?",
-    "I'd like to buy 200 lbs quantity of coffee and who can fulfil it?",
+    "I'd like to buy 200 lbs quantity of coffee and who can fulfill it?",
   ]
 
   const purchaserPrompts = [
