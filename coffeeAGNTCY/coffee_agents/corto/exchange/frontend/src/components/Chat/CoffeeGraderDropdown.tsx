@@ -16,11 +16,7 @@ const CoffeeGraderDropdown: React.FC<CoffeeGraderDropdownProps> = ({
 }) => {
   const [isOpen, setIsOpen] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
-
-  const dropdownItems = [
-    "What are the flavor profiles of Ethiopian coffee?",
-    "What does coffee harvested in Colombia in the summer taste like",
-  ]
+  const [dropdownItems, setDropdownItems] = useState<string[]>([])
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -52,6 +48,34 @@ const CoffeeGraderDropdown: React.FC<CoffeeGraderDropdownProps> = ({
     }
   }, [isOpen, visible])
 
+  useEffect(() => {
+    const controller = new AbortController()
+    const { signal } = controller
+
+    ;(async () => {
+      try {
+        const res = await fetch("/prompts.json", { cache: "no-cache", signal })
+        if (!res.ok) throw new Error(`HTTP ${res.status}`)
+        const data = await res.json()
+        if (
+          Array.isArray(data) &&
+          data.every((p: unknown) => typeof p === "string")
+        ) {
+          setDropdownItems(data as string[])
+        }
+      } catch (err: unknown) {
+        if ((err as any)?.name !== "AbortError") {
+          // eslint-disable-next-line no-console
+          console.warn("Failed to load /prompts.json.", err)
+        }
+      }
+    })()
+
+    return () => {
+      controller.abort()
+    }
+  }, [])
+
   const handleToggle = () => {
     setIsOpen(!isOpen)
   }
@@ -61,7 +85,7 @@ const CoffeeGraderDropdown: React.FC<CoffeeGraderDropdownProps> = ({
     setIsOpen(false)
   }
 
-  if (!visible) {
+  if (!visible || dropdownItems.length === 0) {
     return null
   }
 
