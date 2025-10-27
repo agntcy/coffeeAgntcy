@@ -37,6 +37,7 @@ const App: React.FC = () => {
   const [currentUserMessage, setCurrentUserMessage] = useState<string>("")
   const [agentResponse, setAgentResponse] = useState<string>("")
   const [isAgentLoading, setIsAgentLoading] = useState<boolean>(false)
+  const [apiError, setApiError] = useState<boolean>(false)
   const [groupCommResponseReceived, setGroupCommResponseReceived] =
     useState(false)
   const [highlightNodeFunction, setHighlightNodeFunction] = useState<
@@ -74,6 +75,7 @@ const App: React.FC = () => {
     setCurrentUserMessage(query)
     setIsAgentLoading(true)
     setButtonClicked(true)
+    setApiError(false)
 
     if (
       selectedPattern !== PATTERNS.GROUP_COMMUNICATION ||
@@ -88,8 +90,11 @@ const App: React.FC = () => {
     setAgentResponse(response)
     setIsAgentLoading(false)
 
-    if (selectedPattern === PATTERNS.GROUP_COMMUNICATION && !isError) {
-      setGroupCommResponseReceived(true)
+    if (selectedPattern === PATTERNS.GROUP_COMMUNICATION) {
+      setApiError(isError)
+      if (!isError) {
+        setGroupCommResponseReceived(true)
+      }
     }
 
     setMessages((prev) => {
@@ -107,6 +112,7 @@ const App: React.FC = () => {
     setCurrentUserMessage(query)
     setIsAgentLoading(true)
     setButtonClicked(true)
+    setApiError(false)
 
     try {
       if (
@@ -292,6 +298,7 @@ const App: React.FC = () => {
                 agentResponse={agentResponse}
                 executionKey={executionKey}
                 isAgentLoading={isAgentLoading}
+                apiError={apiError}
                 chatRef={chatRef}
                 sseState={sseState}
               />
