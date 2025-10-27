@@ -1,0 +1,34 @@
+{
+  "cases": [
+    {
+      "id": "brazil_flavor",
+      "prompt": "What is the flavor of coffee from Brazil?",
+      "reference_responses": [
+        "Brazilian coffee typically has nutty and chocolatey notes with a smooth body and low acidity.",
+        "Expect cocoa, caramel sweetness, and mild nuttiness in Brazilian coffee, usually with restrained acidity.",
+        "Brazilian coffee often presents a gentle profile: nuts, chocolate, subtle sweetness, and a mellow finish."
+      ],
+      "expected_min_similarity": 0.75
+    },
+    {
+      "id": "ethiopia_profiles",
+      "prompt": "What are the flavor profiles of Ethiopian coffee?",
+      "reference_responses": [
+        "Ethiopian coffee is complex: bright fruity notes (blueberry, citrus), floral aromas like jasmine, and lively acidity.",
+        "Expect layered fruit (berry, stone fruit), tea-like body, floral fragrance, and sparkling acidity in Ethiopian origins.",
+        "Ethiopian coffees often combine florals, vibrant fruit, wine-like sweetness, and a delicate, lighter mouthfeel."
+      ],
+      "expected_min_similarity": 0.75
+    },
+    {
+      "id": "colombia_summer",
+      "prompt": "What does coffee harvested in Colombia in the summer taste like?",
+      "reference_responses": [
+        "Summer Colombian coffee shows bright acidity, medium body, caramel sweetness, and notes of citrus or berries.",
+        "Expect balanced cup: lively acidity, gentle nutty undertones, chocolate hints, and honey-like sweetness.",
+        "Colombian summer harvest often combines mild fruit (citrus, red berry), smooth chocolate, and a clean sweet finish."
+      ],
+      "expected_min_similarity": 0.75
+    }
+  ]
+}
