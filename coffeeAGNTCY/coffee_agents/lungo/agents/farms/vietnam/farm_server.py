@@ -43,14 +43,24 @@ async def run_transport(server, transport_type, endpoint, block):
         personal_topic = A2AProtocol.create_agent_topic(AGENT_CARD)
         transport = factory.create_transport(transport_type, endpoint=endpoint, name=f"default/default/{personal_topic}")
 
-        app_session = factory.create_app_session(max_sessions=1)
-        app_container = AppContainer(
+        broadcast_app_session = factory.create_app_session(max_sessions=1)
+        broadcast_app_container = AppContainer(
             server,
             transport=transport,
             topic=FARM_BROADCAST_TOPIC,
         )
-        app_session.add_app_container("default_session", app_container)
-        await app_session.start_all_sessions(blocking=block)
+        broadcast_app_session.add_app_container("default_session", broadcast_app_container)
+
+        private_app_session = factory.create_app_session(max_sessions=1)
+        private_app_container = AppContainer(
+            server,
+            transport=transport,
+            topic=personal_topic,
+        )
+        private_app_session.add_app_container("default_session", private_app_container)
+
+        await private_app_session.start_all_sessions(blocking=block)
+        await broadcast_app_session.start_all_sessions(blocking=block)
 
     except Exception as e:
         print(f"Transport encountered an error: {e}")
