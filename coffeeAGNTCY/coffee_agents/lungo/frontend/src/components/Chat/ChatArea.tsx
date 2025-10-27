@@ -5,7 +5,6 @@
 
 import React, { useState } from "react"
 import { Message } from "@/types/message"
-import CoffeeGraderDropdown from "./Prompts/CoffeeGraderDropdown"
 import airplaneSvg from "@/assets/airplane.svg"
 import CoffeePromptsDropdown from "./Prompts/CoffeePromptsDropdown"
 import LogisticsPromptsDropdown from "./Prompts/LogisticsPromptsDropdown"
@@ -32,7 +31,6 @@ interface ChatAreaProps {
   setButtonClicked: (clicked: boolean) => void
   setAiReplied: (replied: boolean) => void
   isBottomLayout: boolean
-  showCoffeeDropdown?: boolean
   showCoffeePrompts?: boolean
   showLogisticsPrompts?: boolean
   showProgressTracker?: boolean
@@ -41,7 +39,6 @@ interface ChatAreaProps {
   onSenderHighlight?: (nodeId: string) => void
   pattern?: string
   graphConfig?: any
-  onCoffeeGraderSelect?: (query: string) => void
   onDropdownSelect?: (query: string) => void
   onUserInput?: (query: string) => void
   onApiResponse?: (response: string, isError?: boolean) => void
@@ -60,7 +57,6 @@ const ChatArea: React.FC<ChatAreaProps> = ({
   setButtonClicked,
   setAiReplied,
   isBottomLayout,
-  showCoffeeDropdown = false,
   showCoffeePrompts = false,
   showLogisticsPrompts = false,
   showProgressTracker = false,
@@ -223,15 +219,6 @@ const ChatArea: React.FC<ChatAreaProps> = ({
                   </div>
                 </div>
               )}
-          </div>
-        )}
-
-        {showCoffeeDropdown && (
-          <div className="relative z-10 flex h-9 w-auto w-full max-w-[880px] flex-row items-start gap-2 p-0">
-            <CoffeeGraderDropdown
-              visible={true}
-              onSelect={handleDropdownQuery}
-            />
           </div>
         )}
 
