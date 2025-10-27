@@ -5,6 +5,10 @@
 
 import React, { useState, useRef, useEffect } from "react"
 
+const DEFAULT_EXCHANGE_APP_API_URL = "http://127.0.0.1:8000"
+const EXCHANGE_APP_API_URL =
+  import.meta.env.VITE_EXCHANGE_APP_API_URL || DEFAULT_EXCHANGE_APP_API_URL
+
 interface CoffeeGraderDropdownProps {
   visible: boolean
   onSelect: (query: string) => void
@@ -54,7 +58,10 @@ const CoffeeGraderDropdown: React.FC<CoffeeGraderDropdownProps> = ({
 
     ;(async () => {
       try {
-        const res = await fetch("/prompts.json", { cache: "no-cache", signal })
+        const res = await fetch(`${EXCHANGE_APP_API_URL}/suggested-prompts`, {
+          cache: "no-cache",
+          signal,
+        })
         if (!res.ok) throw new Error(`HTTP ${res.status}`)
         const data = await res.json()
         if (
@@ -64,10 +71,8 @@ const CoffeeGraderDropdown: React.FC<CoffeeGraderDropdownProps> = ({
           setDropdownItems(data as string[])
         }
       } catch (err: unknown) {
-        if ((err as any)?.name !== "AbortError") {
-          // eslint-disable-next-line no-console
-          console.warn("Failed to load /prompts.json.", err)
-        }
+        // eslint-disable-next-line no-console
+        console.warn("Failed to load prompts from API.", err)
       }
     })()
 
@@ -85,7 +90,7 @@ const CoffeeGraderDropdown: React.FC<CoffeeGraderDropdownProps> = ({
     setIsOpen(false)
   }
 
-  if (!visible || dropdownItems.length === 0) {
+  if (!visible) {
     return null
   }
 
@@ -109,7 +114,7 @@ const CoffeeGraderDropdown: React.FC<CoffeeGraderDropdownProps> = ({
       </div>
 
       <div
-        className={`absolute bottom-full left-0 z-[1000] mb-1 max-h-28 w-269 overflow-y-auto rounded-md border border-nav-border bg-chat-dropdown-background p-0.5 shadow-[0px_2px_5px_0px_rgba(0,0,0,0.05)] ${isOpen ? "block animate-fadeInDropdown" : "hidden"} `}
+        className={`absolute bottom-full left-0 z-[1000] mb-1 max-h-[365px] w-269 overflow-y-auto rounded-md border border-nav-border bg-chat-dropdown-background p-0.5 shadow-[0px_2px_5px_0px_rgba(0,0,0,0.05)] ${isOpen ? "block animate-fadeInDropdown" : "hidden"} `}
       >
         {dropdownItems.map((item, index) => (
           <div
