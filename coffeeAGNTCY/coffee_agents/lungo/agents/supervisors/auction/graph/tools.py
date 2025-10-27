@@ -17,7 +17,7 @@ from a2a.types import (
 )
 from langchain_core.tools import tool, ToolException
 from langchain_core.messages import AnyMessage, ToolMessage
-from agntcy_app_sdk.protocols.a2a.protocol import A2AProtocol
+from agntcy_app_sdk.semantic.a2a.protocol import A2AProtocol
 from ioa_observe.sdk.decorators import tool as ioa_tool_decorator
 
 
@@ -351,7 +351,7 @@ async def get_all_farms_yield_inventory(prompt: str) -> str:
     return await _get_all_farms_yield_inventory_impl(prompt)
 
 
-async def get_all_farms_yield_inventory_streaming(prompt: str):
+async def _get_all_farms_yield_inventory_streaming(prompt: str):
     """
     Broadcasts a prompt to all farms and streams their inventory responses as they arrive.
 

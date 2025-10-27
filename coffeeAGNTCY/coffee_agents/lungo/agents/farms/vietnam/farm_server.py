@@ -3,8 +3,10 @@
 
 import asyncio
 
+from agntcy_app_sdk.semantic.a2a.protocol import A2AProtocol
+from agntcy_app_sdk.factory import TransportTypes
+from agntcy_app_sdk.app_sessions import AppContainer
 from agntcy_app_sdk.factory import AgntcyFactory
-from agntcy_app_sdk.protocols.a2a.protocol import A2AProtocol
 from a2a.server.apps import A2AStarletteApplication
 from a2a.server.tasks import InMemoryTaskStore
 from a2a.server.request_handlers import DefaultRequestHandler
@@ -41,13 +43,14 @@ async def run_transport(server, transport_type, endpoint, block):
         personal_topic = A2AProtocol.create_agent_topic(AGENT_CARD)
         transport = factory.create_transport(transport_type, endpoint=endpoint, name=f"default/default/{personal_topic}")
 
-        broadcast_bridge = factory.create_bridge(
-            server, transport=transport, topic=FARM_BROADCAST_TOPIC
+        app_session = factory.create_app_session(max_sessions=1)
+        app_container = AppContainer(
+            server,
+            transport=transport,
+            topic=FARM_BROADCAST_TOPIC,
         )
-        private_bridge = factory.create_bridge(server, transport=transport, topic=personal_topic)
-        
-        await broadcast_bridge.start(blocking=False)
-        await private_bridge.start(blocking=block)
+        app_session.add_app_container("default_session", app_container)
+        await app_session.start_all_sessions(blocking=block)
 
     except Exception as e:
         print(f"Transport encountered an error: {e}")

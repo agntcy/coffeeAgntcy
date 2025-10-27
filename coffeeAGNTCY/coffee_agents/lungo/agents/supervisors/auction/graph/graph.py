@@ -16,7 +16,7 @@ from ioa_observe.sdk.decorators import agent, tool, graph
 from agents.supervisors.auction.graph.tools import (
     get_farm_yield_inventory, 
     get_all_farms_yield_inventory,
-    get_all_farms_yield_inventory_streaming,
+    _get_all_farms_yield_inventory_streaming,
     _fake_stream_data_tool,
     _get_farm_yield_inventory_impl,
     _get_all_farms_yield_inventory_impl,
@@ -229,7 +229,7 @@ class ExchangeGraph:
                 tool_result = await _get_farm_yield_inventory_impl(user_msg.content, "vietnam")
             # fake stream data tool to show data
             elif "stream" in user_query:
-                tool_name = "_fake_stream_data_tool"
+                tool_name = "_get_all_farms_yield_inventory_streaming"
                 logger.info(f"Calling {tool_name}")
                 # For streaming, just return message indicating streaming is active
                 # The actual streaming will be handled by streaming_serve
@@ -449,7 +449,7 @@ class ExchangeGraph:
             if "stream" in prompt.lower():
                 logger.info("Detected streaming request, using progressive streaming")
                 # Directly stream from the tool- hack test- todo change it
-                async for chunk in _fake_stream_data_tool(prompt):
+                async for chunk in _get_all_farms_yield_inventory_streaming(prompt):
                     chunk_text = chunk.strip()
                     if chunk_text:
                         logger.info(f"Streaming chunk: {chunk_text}")
