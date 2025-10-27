@@ -24,7 +24,7 @@ DISPLAY_NAMES = {
     "a2a-sdk": "A2A",
     "ioa-observe-sdk": "Observe SDK",
     "langgraph": "LangGraph",
-    "identity-service-sdk": "Identity",
+    "agntcy-identity-service-sdk": "Identity",
     "mcp": "MCP",
 }
 
