@@ -17,6 +17,7 @@ from ioa_observe.sdk.decorators import agent, tool, graph
 from agents.supervisors.auction.graph.tools import (
     get_farm_yield_inventory,
     get_all_farms_yield_inventory,
+    get_all_farms_yield_inventory_streaming,
     get_fake_stream_data_tool,
     create_order,
     get_order_details,
@@ -306,7 +307,7 @@ class ExchangeGraph:
         try:
             # Stream data from farms and yield each chunk progressively
             full_response = ""
-            async for chunk in get_fake_stream_data_tool(user_msg.content):
+            async for chunk in get_all_farms_yield_inventory_streaming(user_msg.content):
                 yield {"messages": [AIMessage(content=chunk.strip())]}
                 full_response += chunk
             
