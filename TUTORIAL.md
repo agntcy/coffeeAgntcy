@@ -9,7 +9,7 @@ You will:
 3. Use **preconfigured prompts** (and your own)
 4. Explore **traces and metrics** 
 
-## 🧰 Prerequisites
+## Prerequisites
 
 - **Docker** + **Docker Compose**
 - **Node.js ≥ 16.14.0** (if you run any UI locally outside of Docker)
@@ -21,7 +21,7 @@ git clone https://github.com/agntcy/coffeeAgntcy.git
 cd coffeeAgntcy
 ```
 
-## 🗂️ Repo Layout (Reference)
+## Repo Layout
 
 ```
 coffeeAGNTCY/
@@ -213,27 +213,40 @@ Predefined prompts are provided to help you start — but you can also type your
 
 #### 🏷️ Auction Demo (Supervisor–Worker Pattern)
 
-This app models a **Coffee Exchange** where a supervisor manages multiple coffee farm agents.
+This demo models a **Coffee Exchange** where a **Supervisor Agent** manages multiple **Coffee Farm Agents**. The supervisor can communicate with all farms through a single outbound message using a **pub/sub communication model**.
 
-Example prompts:
+**Example prompts:**
 - `Show me the total inventory across all farms`
 - `How much coffee does the Colombia farm have?`
 - `I need 50 lb of coffee beans from Colombia for 0.50 cents per lb`
 
-Observe in your docker compose logs how:
-- The supervisor delegates to individual farms  
-- Responses aggregate across agents  
-- Broadcast vs unicast messaging is handled automatically
+The transport layer in this demo is **interchangeable**, powered by **AGNTCY’s App SDK**, enabling agents to switch between different transports or agentic protocols with minimal code changes.
+
+All agents are registered with **AGNTCY’s Identity Service**, which integrates with various Identity Providers. This service acts as a **central hub for managing and verifying digital identities**, allowing agentic services to register, establish unique identities, and validate authenticity through identity badges.  
+In this demo, the **Colombia** and **Vietnam** farms are verified with the Identity Service. The **Supervisor Agent** validates each farm’s badge before sending any orders.  
+Try sending an order to the **Brazil farm** to see what happens when the target agent is **unverified**:  
+`I need 50 lb of coffee beans from Brazil for 0.50 cents per lb`
+
+Check out the supervisor agent’s [tools](coffeeAGNTCY/coffee_agents/lungo/agents/supervisors/auction/graph/tools.py) to see how it integrates with the **App SDK** and **Identity Service**.
+
+**Observe in your Docker Compose logs how:**
+- The supervisor delegates requests to individual farms  
+- Responses are aggregated across agents  
+- Broadcast vs. unicast messaging is handled automatically
 
 #### 🚚 Logistic Demo (Coordination/ Group Chat Pattern)
 
-This demo models a **supply coordination** scenario, where agents communicate laterally to optimize deliveries.
+This demo showcases a **supply coordination** scenario where agents communicate within a **group chat**. In this setup, the **Supervisor Agent** acts as the moderator, inviting various **logistics components** as members and enabling them to communicate directly with one another.
 
-Example prompts:
-- `I want to order coffee $3.50 per pound for 500 lbs of coffee from the Tatooine farm`
+**Example prompt:**
+- `I want to order coffee at $3.50 per pound for 500 lbs from the Tatooine farm`
 
-Notice how agents coordinate and negotiate amongst themselves in a group chat.
+This style of agentic communication is powered by **AGNTCY’s SLIM**.  
+Unlike the **Auction flow**, this transport is **not interchangeable**, as **SLIM** is the only protocol that supports **multi-agent group chat communication**.
 
+Explore the [`Logistic Supervisor tools`](coffeeAGNTCY/coffee_agents/lungo/agents/supervisors/logistic/graph/tools.py) to see how the supervisor initializes and manages the SLIM group chat.
+
+**Observe** how agents coordinate and negotiate within the chat, collaborating to complete their designated tasks and share updates dynamically.
 ### 4. Inspect Traces in Grafana
 
 Once you’ve executed a few prompts:
@@ -300,6 +313,8 @@ In this workshop, you:
 - Understood how different **A2A communication patterns** emerge from design
 - Explored code that shows how agents integrate with **AGNTCY SLIM, Observe, & Agent Identity** components directly or via the **App SDK**
 
-### 🔗 References
-- [Agntcy App SDK](https://github.com/agntcy/app-sdk)
-- [Observe SDK](https://github.com/agntcy/observe)
+### References
+- [AGNTCY App SDK](https://github.com/agntcy/app-sdk)
+- [AGNTCY SLIM](https://github.com/agntcy/slim)
+- [AGNTCY Observe](https://github.com/agntcy/observe)
+- [AGNTCY Identity Service](https://github.com/agntcy/identity-service)
