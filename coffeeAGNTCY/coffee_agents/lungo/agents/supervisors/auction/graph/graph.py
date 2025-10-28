@@ -196,6 +196,13 @@ class ExchangeGraph:
         
         should_continue = response.should_continue and not is_duplicate_message
         next_node = NodeStates.SUPERVISOR if should_continue else END
+
+        if next_node == END and "auth" in response.reason.lower():
+            return {
+                "next_node": END,
+                "messages": [AIMessage(content="Authentication or authorization failed. Please check your credentials and try again.")],
+            }
+
         logging.info(f"Next node: {next_node}, Reason: {response.reason}")
 
         # Don't add messages to state, just return the next_node decision
@@ -357,6 +364,7 @@ class ExchangeGraph:
         tool_results_summary = []
         any_tool_failed = False # Flag to track if ANY tool call failed
 
+        auth_failure = ""
         if collected_tool_messages:
             for tool_msg in collected_tool_messages:
                 result_str = str(tool_msg.content) # Convert to string for keyword checking
@@ -369,6 +377,9 @@ class ExchangeGraph:
                     # Include tool name and ID for better context
                     tool_results_summary.append(f"FAILURE for '{tool_msg.name}' (ID: {tool_msg.tool_call_id}): The request could not be completed.")
                     logger.warning(f"Detected tool failure in orders node result: {result_str}")
+
+                    if "auth" in result_str.lower():
+                        auth_failure = result_str
                 else:
                     tool_results_summary.append(f"SUCCESS from tool '{tool_msg.name}' (ID: {tool_msg.tool_call_id}): {result_str}")
 
@@ -426,9 +437,12 @@ class ExchangeGraph:
             )
 
             forced_error_message = (
-                f"I'm sorry, I was unable to complete your order request for all items. "
-                f"An issue occurred for some parts. Please try again later."
+                "I'm sorry, I was unable to complete your order request for all items. "
+                "An issue occurred for some parts. Please try again later."
             )
+
+            if auth_failure:
+                forced_error_message = f"{auth_failure} Please try again later."
 
             llm_response = AIMessage(
                 content=forced_error_message,

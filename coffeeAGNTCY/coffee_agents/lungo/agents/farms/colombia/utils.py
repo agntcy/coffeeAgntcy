@@ -24,3 +24,15 @@ async def create_badge_for_colombia_farm():
     logger.info("Creating badge for Colombia farm: %s", badge_output)
   except Exception as e:
     logger.error("Failed to create badge: %s", e)
+
+async def get_tbac_access_token() -> str | None:
+  """Get TBAC access token for Colombia farm agent."""
+  try:
+    identity_service = IdentityServiceImpl(api_key=IDENTITY_API_KEY,
+                                           base_url=IDENTITY_API_SERVER_URL)
+    access_token = identity_service.get_access_token(IDENTITY_COLOMBIA_AGENT_SERVICE_API_KEY)
+    logger.info("Obtained TBAC access token for Colombia farm agent.")
+    return access_token
+  except Exception as e:
+    logger.error("Failed to obtain TBAC access token: %s", e)
+    return None

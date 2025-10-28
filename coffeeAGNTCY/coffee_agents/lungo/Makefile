@@ -18,6 +18,7 @@ help:
 	@echo "  colombia-farm       - Run Colombia farm server"
 	@echo "  vietnam-farm        - Run Vietnam farm server"
 	@echo "  weather-mcp         - Run weather MCP server"
+	@echo "  payment-mcp         - Run payment MCP server"
 	@echo "  helpdesk            - Run logistic helpdesk"
 
 .PHONY: logistic-supervisor
@@ -55,6 +56,10 @@ vietnam-farm:
 .PHONY: weather-mcp
 weather-mcp:
 	$(UV) agents/mcp_servers/weather_service.py
+
+.PHONY: payment-mcp
+payment-mcp:
+	$(UV) agents/mcp_servers/payment_service.py
 
 .PHONY: helpdesk
 helpdesk:

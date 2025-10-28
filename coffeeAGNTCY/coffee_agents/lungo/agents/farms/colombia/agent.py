@@ -24,6 +24,9 @@ from langgraph.graph import StateGraph, END
 from agntcy_app_sdk.factory import AgntcyFactory
 from ioa_observe.sdk.decorators import agent, graph
 
+from agents.exceptions import AuthError
+from agents.farms.colombia.utils import get_tbac_access_token
+from agents.mcp_servers.utils import invoke_payment_mcp_tool
 from config.config import (
     DEFAULT_MESSAGE_TRANSPORT,
     TRANSPORT_SERVER_ENDPOINT,
@@ -202,7 +205,7 @@ class FarmAgent:
 
         return {"messages": [AIMessage(llm_response)]}
 
-    def _orders_node(self, state: GraphState) -> dict:
+    async def _orders_node(self, state: GraphState) -> dict:
         """
         Handles order-related queries using an LLM to formulate responses.
         """
@@ -213,11 +216,28 @@ class FarmAgent:
 
         logger.info(f"Received order query: {user_message}")
 
+        # Call MCP tools before processing the order
+        try:
+            payment_result = await invoke_payment_mcp_tool("create_payment")
+            logger.info(f"Payment result: {payment_result}")
+
+            transactions_details = await invoke_payment_mcp_tool("list_transactions")
+            logger.info(f"Transactions details: {transactions_details}")
+
+        except AuthError as auth_err:
+            return {"messages": [AIMessage(str(auth_err))]}
+
+        except Exception as e:
+            logger.error(f"Error during MCP tool calls: {e}")
+            return {"messages": [AIMessage("Failed to process order due to MCP tool errors.")]}
+
         # Simulate data retrieval - in a real app, this would be a database/API call
         mock_order_data = {
             "12345": {"status": "processing", "estimated_delivery": "2 business days"},
             "67890": {"status": "shipped", "tracking_number": "ABCDEF123"}
         }
+
+        logger.info(f"Mock order data: {mock_order_data}")
 
         prompt = PromptTemplate(
             template="""You are an order assistant. Based on the user's question and the following order data, provide a concise and helpful response.

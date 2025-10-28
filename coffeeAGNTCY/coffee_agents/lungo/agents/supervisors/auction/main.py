@@ -43,6 +43,41 @@ exchange_graph = ExchangeGraph()
 class PromptRequest(BaseModel):
   prompt: str
 
+@app.get("/.well-known/agent.json")
+async def get_capabilities():
+  """
+  Returns the capabilities of the auction supervisor.
+
+  Returns:
+      dict: A dictionary containing the capabilities and metadata of the auction supervisor.
+  """
+  return {
+    "capabilities": {"streaming": True},
+    "defaultInputModes": ["text"],
+    "defaultOutputModes": ["text"],
+    "description": "An AI agent that supervises auctions and manages coffee farm operations.",
+    "name": "Auction Supervisor",
+    "preferredTransport": "JSONRPC",
+    "protocolVersion": "0.3.0",
+    "skills": [
+      {
+        "description": "Supervises auctions and manages coffee farm operations.",
+        "examples": [
+          "What is the yield of the Vietnam coffee farm?",
+          "How much coffee does the Vietnam farm produce?",
+          "What is the yield of the Vietnam coffee farm in pounds?",
+          "How many pounds of coffee does the Vietnam farm produce?",
+        ],
+        "id": "get_yield",
+        "name": "Get Coffee Yield",
+        "tags": ["coffee", "farm", "auction"],
+      }
+    ],
+    "supportsAuthenticatedExtendedCard": False,
+    "url": "",
+    "version": "1.0.0",
+  }
+
 @app.post("/agent/prompt")
 async def handle_prompt(request: PromptRequest):
   """
