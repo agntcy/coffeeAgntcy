@@ -67,10 +67,6 @@ const App: React.FC = () => {
 
   const chatHeightValue = currentUserMessage || agentResponse ? chatHeight : 76
 
-  const handleCoffeeGraderSelect = (query: string) => {
-    handleDropdownSelect(query)
-  }
-
   const handleUserInput = (query: string) => {
     setCurrentUserMessage(query)
     setIsAgentLoading(true)
@@ -273,7 +269,6 @@ const App: React.FC = () => {
                 setButtonClicked={setButtonClicked}
                 setAiReplied={setAiReplied}
                 isBottomLayout={true}
-                showCoffeeDropdown={selectedPattern === PATTERNS.SLIM_A2A}
                 showCoffeePrompts={
                   selectedPattern === PATTERNS.PUBLISH_SUBSCRIBE
                 }
@@ -289,7 +284,6 @@ const App: React.FC = () => {
                   selectedPattern,
                   groupCommResponseReceived,
                 )}
-                onCoffeeGraderSelect={handleCoffeeGraderSelect}
                 onDropdownSelect={handleDropdownSelect}
                 onUserInput={handleUserInput}
                 onApiResponse={handleApiResponse}

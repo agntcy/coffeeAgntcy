@@ -3,6 +3,7 @@
 
 import logging
 from pathlib import Path
+import json
 
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException
@@ -75,6 +76,28 @@ async def version_info():
   """Return minimal build info sourced from about.properties."""
   props_path = Path(__file__).parent.parent / "about.properties"
   return get_version_info(props_path)
+
+@app.get("/suggested-prompts")
+async def get_prompts():
+  """
+  Returns a list of suggested prompts as a JSON array.
+
+  Returns:
+      list: A list of suggested prompt strings loaded from suggested_prompts.json.
+  """
+  prompts_path = Path(__file__).parent / "suggested_prompts.json"
+  try:
+    raw = prompts_path.read_text(encoding="utf-8")
+    return json.loads(raw)
+  except FileNotFoundError as fnf:
+    logger.exception(f"suggested_prompts.json not found at {prompts_path}")
+    raise HTTPException(status_code=404, detail="suggested_prompts.json not found") from fnf
+  except json.JSONDecodeError as jde:
+    logger.exception("Invalid JSON in suggested_prompts.json")
+    raise HTTPException(status_code=500, detail="Invalid JSON in suggested_prompts.json") from jde
+  except Exception as e:
+    logger.exception(f"Failed to load suggested prompts: {str(e)}")
+    raise HTTPException(status_code=500, detail=f"Failed to load prompts: {str(e)}") from e
 
 # Run the FastAPI server using uvicorn
 if __name__ == "__main__":

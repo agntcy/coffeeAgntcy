@@ -5,6 +5,10 @@
 
 import React, { useState, useRef, useEffect } from "react"
 
+const DEFAULT_EXCHANGE_APP_API_URL = "http://127.0.0.1:8000"
+const EXCHANGE_APP_API_URL =
+  import.meta.env.VITE_EXCHANGE_APP_API_URL || DEFAULT_EXCHANGE_APP_API_URL
+
 interface CoffeeGraderDropdownProps {
   visible: boolean
   onSelect: (query: string) => void
@@ -16,11 +20,7 @@ const CoffeeGraderDropdown: React.FC<CoffeeGraderDropdownProps> = ({
 }) => {
   const [isOpen, setIsOpen] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
-
-  const dropdownItems = [
-    "What are the flavor profiles of Ethiopian coffee?",
-    "What does coffee harvested in Colombia in the summer taste like",
-  ]
+  const [dropdownItems, setDropdownItems] = useState<string[]>([])
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -51,6 +51,35 @@ const CoffeeGraderDropdown: React.FC<CoffeeGraderDropdownProps> = ({
       document.removeEventListener("keydown", handleEscapeKey)
     }
   }, [isOpen, visible])
+
+  useEffect(() => {
+    const controller = new AbortController()
+    const { signal } = controller
+
+    ;(async () => {
+      try {
+        const res = await fetch(`${EXCHANGE_APP_API_URL}/suggested-prompts`, {
+          cache: "no-cache",
+          signal,
+        })
+        if (!res.ok) throw new Error(`HTTP ${res.status}`)
+        const data = await res.json()
+        if (
+          Array.isArray(data) &&
+          data.every((p: unknown) => typeof p === "string")
+        ) {
+          setDropdownItems(data as string[])
+        }
+      } catch (err: unknown) {
+        // eslint-disable-next-line no-console
+        console.warn("Failed to load prompts from API.", err)
+      }
+    })()
+
+    return () => {
+      controller.abort()
+    }
+  }, [])
 
   const handleToggle = () => {
     setIsOpen(!isOpen)
@@ -85,7 +114,7 @@ const CoffeeGraderDropdown: React.FC<CoffeeGraderDropdownProps> = ({
       </div>
 
       <div
-        className={`absolute bottom-full left-0 z-[1000] mb-1 max-h-28 w-269 overflow-y-auto rounded-md border border-nav-border bg-chat-dropdown-background p-0.5 shadow-[0px_2px_5px_0px_rgba(0,0,0,0.05)] ${isOpen ? "block animate-fadeInDropdown" : "hidden"} `}
+        className={`absolute bottom-full left-0 z-[1000] mb-1 max-h-[365px] w-269 overflow-y-auto rounded-md border border-nav-border bg-chat-dropdown-background p-0.5 shadow-[0px_2px_5px_0px_rgba(0,0,0,0.05)] ${isOpen ? "block animate-fadeInDropdown" : "hidden"} `}
       >
         {dropdownItems.map((item, index) => (
           <div

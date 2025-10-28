@@ -9,6 +9,12 @@ import path from "path"
 
 export default defineConfig({
   plugins: [react()],
+  server: {
+    fs: {
+      strict: true,
+      allow: [path.resolve(__dirname)],
+    },
+  },
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "src"),
