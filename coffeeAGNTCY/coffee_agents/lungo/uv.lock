@@ -1,5 +1,5 @@
 version = 1
-revision = 3
+revision = 2
 requires-python = ">=3.13, <4.0"
 resolution-markers = [
     "python_full_version >= '3.14' and platform_python_implementation == 'PyPy'",
@@ -51,7 +51,7 @@ wheels = [
 
 [[package]]
 name = "agntcy-identity-service-sdk"
-version = "0.0.6"
+version = "0.0.7"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "a2a-sdk" },
@@ -65,9 +65,9 @@ dependencies = [
     { name = "starlette" },
     { name = "typer" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/c9/41/66c5b9421d88112c5c47d4d72c1e63b4f70c4dbbda399275224924cc739b/agntcy_identity_service_sdk-0.0.6.tar.gz", hash = "sha256:30d16b4d76b74592ae43cf4df2de84370b6971b48782bef917e875a6c641e3e7", size = 44779, upload-time = "2025-10-17T08:50:24.578Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/af/77/e4fb772398742676ba61e3c17a0cf1730dfe11b6d3a54a71b239bc74bdcb/agntcy_identity_service_sdk-0.0.7.tar.gz", hash = "sha256:960f62a1641042a61ffa173eb525075bdb246e16e6ace6205ac99e509b60f71d", size = 44799, upload-time = "2025-10-23T10:17:27.519Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/c5/fc/ea40e31c3887c6322f3fbff2ad101f08538e4f3b2937fcf911597b187fca/agntcy_identity_service_sdk-0.0.6-py3-none-any.whl", hash = "sha256:20748ba69749539da41d482d3c80b04005450b11e2e4c8cedfaac04fa4d7c2c0", size = 70135, upload-time = "2025-10-17T08:50:23.637Z" },
+    { url = "https://files.pythonhosted.org/packages/b9/3f/7d0f0fbc21550b8f101c1354dd1251f0ba4c4f2108139b9e4ad6a9516284/agntcy_identity_service_sdk-0.0.7-py3-none-any.whl", hash = "sha256:d2ba9b30751d3f5962a583c245d83bd44b6e6e61ae8101b1524535c4dc99d4b2", size = 70156, upload-time = "2025-10-23T10:17:26.638Z" },
 ]
 
 [[package]]
@@ -1951,7 +1951,7 @@ dev = [
 requires-dist = [
     { name = "a2a-sdk", specifier = "==0.3.0" },
     { name = "agntcy-app-sdk", specifier = "==0.3.3" },
-    { name = "agntcy-identity-service-sdk", specifier = "==0.0.6" },
+    { name = "agntcy-identity-service-sdk", specifier = "==0.0.7" },
     { name = "autogen-core", marker = "extra == 'dev'", specifier = ">=0.4.3,<0.5" },
     { name = "click", specifier = ">=8.1.8" },
     { name = "cnoe-agent-utils", specifier = "==0.3.0" },
