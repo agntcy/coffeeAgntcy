@@ -11,7 +11,6 @@ from dotenv import load_dotenv
 
 
 from agntcy_app_sdk.semantic.a2a.protocol import A2AProtocol
-from agntcy_app_sdk.factory import TransportTypes
 from agntcy_app_sdk.app_sessions import AppContainer
 from agntcy_app_sdk.factory import AgntcyFactory
 
@@ -44,24 +43,23 @@ async def run_transport(server, transport_type, endpoint, block):
         personal_topic = A2AProtocol.create_agent_topic(AGENT_CARD)
         transport = factory.create_transport(transport_type, endpoint=endpoint, name=f"default/default/{personal_topic}")
 
-        broadcast_app_session = factory.create_app_session(max_sessions=1)
-        broadcast_app_container = AppContainer(
+        # Create an application session with multiple containers
+        app_session = factory.create_app_session(max_sessions=2)
+        
+        # Add containers for broadcast and personal topics
+        app_session.add_app_container("public_session", AppContainer(
             server,
             transport=transport,
             topic=FARM_BROADCAST_TOPIC,
-        )
-        broadcast_app_session.add_app_container("default_session", broadcast_app_container)
-
-        private_app_session = factory.create_app_session(max_sessions=1)
-        private_app_container = AppContainer(
+        ))
+        app_session.add_app_container("private_session", AppContainer(
             server,
             transport=transport,
             topic=personal_topic,
-        )
-        private_app_session.add_app_container("default_session", private_app_container)
+        ))
 
-        await private_app_session.start_all_sessions(blocking=block)
-        await broadcast_app_session.start_all_sessions(blocking=block)
+        await app_session.start_session("public_session", blocking=False)
+        await app_session.start_session("private_session", blocking=block)
 
     except Exception as e:
         print(f"Transport encountered an error: {e}")
