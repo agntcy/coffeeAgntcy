@@ -43,6 +43,7 @@ class GraphState(MessagesState):
     Represents the state of our graph, passed between nodes.
     """
     next_node: str
+    full_response: str = ""
 
 @agent(name="exchange_agent")
 class ExchangeGraph:
@@ -197,11 +198,11 @@ class ExchangeGraph:
         
         should_continue = response.should_continue and not is_duplicate_message
         next_node = NodeStates.SUPERVISOR if should_continue else END
-        logging.info(f"Next node: {next_node}")
+        logging.info(f"Next node: {next_node}, Reason: {response.reason}")
 
+        # Don't add messages to state, just return the next_node decision
         return {
           "next_node": next_node,
-          "messages": [SystemMessage(content=response.reason)],
         }
 
     async def _inventory_single_farm_node(self, state: GraphState) -> dict:
@@ -304,10 +305,13 @@ class ExchangeGraph:
 
         try:
             # Stream data from farms and yield each chunk progressively
-            writer = get_stream_writer()
+            full_response = ""
             async for chunk in get_fake_stream_data_tool(user_msg.content):
-                writer(AIMessage(content=chunk.strip()))
                 yield {"messages": [AIMessage(content=chunk.strip())]}
+                full_response += chunk
+            
+            # Yield final aggregated response with full_response key
+            yield {"messages": [AIMessage(content=full_response.strip())], "full_response": full_response.strip()}
 
         except Exception as e:
             logger.error(f"Error in all farms inventory node: {e}")
@@ -497,26 +501,34 @@ class ExchangeGraph:
                 ],
             }
 
-            seen_messages = set()
+            seen_contents = set()
             async for event in self.graph.astream_events(state, {"configurable": {"thread_id": uuid.uuid4()}}, version="v2"):
                 # Handle different event types
                 logger.debug(f"Event: {event}")
                 
                 # Check for on_chain_stream events which contain intermediate outputs
                 if event["event"] == "on_chain_stream":
+                    node_name = event.get("name", "")
                     data = event.get("data", {})
                     if "chunk" in data:
                         chunk = data["chunk"]
                         if "messages" in chunk and chunk["messages"]:
-                            print("Streaming chunk:", chunk)
-                            # Yield all messages from this chunk, avoiding duplicates
+                            print(f"Streaming chunk from node '{node_name}':", chunk)
+                            # Skip messages from the reflection node
+                            if node_name == NodeStates.REFLECTION:
+                                logger.info(f"Skipping messages from reflection node")
+                                continue
+                            # Yield all messages from this chunk
                             for message in chunk["messages"]:
                                 if isinstance(message, AIMessage) and message.content:
-                                    # Use content as deduplication key
-                                    if message.content not in seen_messages:
-                                        seen_messages.add(message.content)
-                                        logger.debug(f"Yielding message: {message.content}")
-                                        yield message.content
+                                    # Use content to deduplicate
+                                    content = message.content.strip()
+                                    if content in seen_contents:
+                                        logger.info(f"Skipping duplicate content from '{node_name}': {content}")
+                                        continue
+                                    seen_contents.add(content)
+                                    logger.info(f"Yielding message from '{node_name}': {content}")
+                                    yield message.content
 
         except ValueError as ve:
             logger.error(f"ValueError in streaming_serve method: {ve}")
