@@ -11,11 +11,13 @@ from langgraph.graph.state import CompiledStateGraph
 from langgraph.graph import MessagesState
 from langgraph.graph import StateGraph, END
 from langgraph.prebuilt import ToolNode
+from langgraph.config import get_stream_writer
 from ioa_observe.sdk.decorators import agent, tool, graph
 
 from agents.supervisors.auction.graph.tools import (
     get_farm_yield_inventory, 
     get_all_farms_yield_inventory,
+    get_fake_stream_data_tool,
     create_order, 
     get_order_details, 
     tools_or_next
@@ -27,8 +29,8 @@ logger = logging.getLogger("lungo.supervisor.graph")
 class NodeStates:
     SUPERVISOR = "exchange_supervisor"
 
-    INVENTORY = "inventory_broker"
-    INVENTORY_TOOLS = "inventory_tools"
+    INVENTORY_SINGLE_FARM = "inventory_single_farm"
+    INVENTORY_ALL_FARMS = "inventory_all_farms"
 
     ORDERS = "orders_broker"
     ORDERS_TOOLS = "orders_tools"
@@ -57,8 +59,11 @@ class ExchangeGraph:
         supervisor_agent
             - converse with user and coordinate app flow
 
-        inventory_agent
-            - get inventory for a specific farm or broadcast to all farms
+        inventory_single_farm_agent
+            - get inventory for a specific farm
+        
+        inventory_all_farms_agent
+            - broadcast to all farms and aggregate inventory
 
         orders_agent
             - initiate orders with a specific farm and retrieve order status
@@ -72,7 +77,8 @@ class ExchangeGraph:
 
         self.supervisor_llm = None
         self.reflection_llm = None
-        self.inventory_llm = None
+        self.inventory_single_farm_llm = None
+        self.inventory_all_farms_llm = None
         self.orders_llm = None
 
         workflow = StateGraph(GraphState)
@@ -80,8 +86,8 @@ class ExchangeGraph:
         # --- 1. Define Node States ---
 
         workflow.add_node(NodeStates.SUPERVISOR, self._supervisor_node)
-        workflow.add_node(NodeStates.INVENTORY, self._inventory_node)
-        workflow.add_node(NodeStates.INVENTORY_TOOLS, ToolNode([get_farm_yield_inventory, get_all_farms_yield_inventory]))
+        workflow.add_node(NodeStates.INVENTORY_SINGLE_FARM, self._inventory_single_farm_node)
+        workflow.add_node(NodeStates.INVENTORY_ALL_FARMS, self._inventory_all_farms_node)
         workflow.add_node(NodeStates.ORDERS, self._orders_node)
         workflow.add_node(NodeStates.ORDERS_TOOLS, ToolNode([create_order, get_order_details]))
         workflow.add_node(NodeStates.REFLECTION, self._reflection_node)
@@ -96,14 +102,15 @@ class ExchangeGraph:
             NodeStates.SUPERVISOR,
             lambda state: state["next_node"],
             {
-                NodeStates.INVENTORY: NodeStates.INVENTORY,
+                NodeStates.INVENTORY_SINGLE_FARM: NodeStates.INVENTORY_SINGLE_FARM,
+                NodeStates.INVENTORY_ALL_FARMS: NodeStates.INVENTORY_ALL_FARMS,
                 NodeStates.ORDERS: NodeStates.ORDERS,
                 NodeStates.GENERAL_INFO: NodeStates.GENERAL_INFO,
             },
         )
 
-        workflow.add_conditional_edges(NodeStates.INVENTORY, tools_or_next(NodeStates.INVENTORY_TOOLS, NodeStates.REFLECTION))
-        workflow.add_edge(NodeStates.INVENTORY_TOOLS, NodeStates.INVENTORY)
+        workflow.add_edge(NodeStates.INVENTORY_SINGLE_FARM, NodeStates.REFLECTION)
+        workflow.add_edge(NodeStates.INVENTORY_ALL_FARMS, NodeStates.REFLECTION)
 
         workflow.add_conditional_edges(NodeStates.ORDERS, tools_or_next(NodeStates.ORDERS_TOOLS, NodeStates.REFLECTION))
         workflow.add_edge(NodeStates.ORDERS_TOOLS, NodeStates.ORDERS)
@@ -122,10 +129,12 @@ class ExchangeGraph:
 
         prompt = PromptTemplate(
             template="""You are a global coffee exchange agent connecting users to coffee farms in Brazil, Colombia, and Vietnam. 
-            Based on the user's message, determine if it's related to 'inventory' or 'orders'.
-            Respond with 'inventory' if the message is about checking yield, stock, product availability, regions of origin, or specific coffee item details.
-            Respond with 'orders' if the message is about checking coffee order status, placing a coffee order, or modifying an existing coffee order.
-            Respond with 'none of the above' if the message is unrelated to coffee 'inventory' or 'orders'.
+            Based on the user's message, determine the appropriate action:
+            
+            - Respond with 'inventory_single_farm' if the user asks about a SPECIFIC farm (Brazil, Colombia, or Vietnam)
+            - Respond with 'inventory_all_farms' if the user asks about inventory/yield from ALL farms or doesn't specify a farm
+            - Respond with 'orders' if the message is about checking coffee order status, placing a coffee order, or modifying an existing coffee order
+            - Respond with 'none of the above' if the message is unrelated to coffee 'inventory' or 'orders'
             
             User message: {user_message}
             """,
@@ -138,8 +147,10 @@ class ExchangeGraph:
 
         logger.info(f"Supervisor decided: {intent}")
 
-        if "inventory" in intent:
-            return {"next_node": NodeStates.INVENTORY, "messages": user_message}
+        if "inventory_single_farm" in intent:
+            return {"next_node": NodeStates.INVENTORY_SINGLE_FARM, "messages": user_message}
+        elif "inventory_all_farms" in intent:
+            return {"next_node": NodeStates.INVENTORY_ALL_FARMS, "messages": user_message}
         elif "orders" in intent:
             return {"next_node": NodeStates.ORDERS, "messages": user_message}
         else:
@@ -193,121 +204,115 @@ class ExchangeGraph:
           "messages": [SystemMessage(content=response.reason)],
         }
 
-    async def _inventory_node(self, state: GraphState) -> dict:
+    async def _inventory_single_farm_node(self, state: GraphState) -> dict:
         """
-        Handles inventory-related queries using an LLM to formulate responses.
+        Handles inventory queries for a specific farm by directly calling the tool.
         """
-        if not self.inventory_llm:
-            self.inventory_llm = get_llm().bind_tools(
-                [get_farm_yield_inventory, get_all_farms_yield_inventory],
-                strict=True
-            )
+        if not self.inventory_single_farm_llm:
+            self.inventory_single_farm_llm = get_llm()
 
-        # get latest HumanMessage
+        # Get latest HumanMessage
         user_msg = next((m for m in reversed(state["messages"]) if m.type == "human"), None)
-        # Find the last AIMessage that initiated tool calls
-        last_ai_message = None
-        for m in reversed(state["messages"]):
-            if isinstance(m, AIMessage) and m.tool_calls:
-                last_ai_message = m
-                break
+        if not user_msg:
+            return {"messages": [AIMessage(content="No user message found.")]}
 
-        collected_tool_messages = []
-        if last_ai_message:
-            # Get the IDs of the tool calls made by the last AI message
-            tool_call_ids = {tc.get("id") for tc in last_ai_message.tool_calls if tc.get("id")}
+        user_query = user_msg.content.lower()
+        logger.info(f"Processing single farm inventory query: {user_query}")
 
-            # Collect all ToolMessages that correspond to these tool_call_ids
-            for m in reversed(state["messages"]):
-                if isinstance(m, ToolMessage) and m.tool_call_id in tool_call_ids:
-                    collected_tool_messages.append(m)
+        # Determine which farm
+        farm = None
+        if "brazil" in user_query:
+            farm = "brazil"
+        elif "colombia" in user_query:
+            farm = "colombia"
+        elif "vietnam" in user_query:
+            farm = "vietnam"
 
-        tool_results_summary = []
-        any_tool_failed = False # Flag to track if ANY tool call failed
+        if not farm:
+            return {"messages": [AIMessage(content="Please specify which farm you'd like to query (Brazil, Colombia, or Vietnam).")]}
 
-        if collected_tool_messages:
-            for tool_msg in collected_tool_messages:
-                result_str = str(tool_msg.content) # Convert to string for keyword checking
+        try:
+            # Call the function directly
+            tool_result = await get_farm_yield_inventory(user_msg.content, farm)
+            
+            # Check for errors in the result
+            if "error" in str(tool_result).lower() or "failed" in str(tool_result).lower():
+                error_message = f"I encountered an issue retrieving information from the {farm.title()} farm. Please try again later."
+                return {"messages": [AIMessage(content=error_message)]}
 
-                # Check for failure keywords in each individual tool result
-                if "error" in result_str.lower() or \
-                   "failed" in result_str.lower() or \
-                   "timeout" in result_str.lower():
-                    any_tool_failed = True
-                    # Include tool name and ID for better context
-                    tool_results_summary.append(f"FAILURE for '{tool_msg.name}' (ID: {tool_msg.tool_call_id}): The request could not be completed.")
-                    logger.warning(f"Detected tool failure in result: {result_str}")
-                else:
-                    tool_results_summary.append(f"SUCCESS from tool '{tool_msg.name}' (ID: {tool_msg.tool_call_id}): {result_str}")
-
-            context = "\n".join(tool_results_summary)
-        else:
-            context = "No previous tool execution context available."
-
-        prompt = PromptTemplate(
-            template="""You are an inventory broker for a global coffee exchange company.
-            Your task is to provide accurate and concise information about coffee yields and inventory based on user queries.
-
-            User's current request: {user_message}
-
-            --- Context from previous tool execution (if any) ---
-            {tool_context}
-
-            --- Instructions for your response ---
-            1.  **Process ALL tool results provided in the context.** This includes both successful and failed attempts.
-            2.  **If ANY tool call result indicates a FAILURE:**
-                *   Acknowledge the failure to the user for the specific farm(s)/request(s) that failed.
-                *   Politely inform the user that the request could not be completed for those parts due to an issue (e.g., "The farm is currently unreachable", "An error occurred", or "The request failed for an unknown reason").
-                *   **IMPORTANT: Do NOT include technical error messages, stack traces, or raw tool output details directly in your response to the user.** Summarize failures concisely.
-                *   **Crucially, DO NOT attempt to call the same or any other tool again for any failed part of the request.**
-                *   If other tool calls were successful, present their results clearly and concisely.
-                *   Your response MUST synthesize all available information (successes and failures) into a single, comprehensive message.
-                *   Your response MUST NOT contain any tool calls.
-
-            3.  **If ALL tool call results indicate SUCCESS:**
-                *   Summarize the provided information clearly and concisely to the user, directly answering their request.
-                *   Your response MUST NOT contain any tool calls, as the information has already been obtained.
-
-            4.  **If there is no 'Previous tool call result' (i.e., this is the first attempt):**
-                *   Determine if a tool needs to be called to answer the user's question.
-                *   If the user asks about a specific farm, use the `get_farm_yield_inventory` tool for that farm.
-                *   If no farm was specified or the user asks about overall availability, use the `get_all_farms_yield_inventory` tool.
-                *   If the question can be answered without a tool or requires clarification, provide that directly.
-
-            Your final response should be a conclusive answer to the user's request, or a clear explanation if the request cannot be fulfilled.
-            """,
-            input_variables=["user_message", "tool_context"]
-        )
-
-        chain = prompt | self.inventory_llm
-
-        llm_response = await chain.ainvoke({
-            "user_message": user_msg.content if user_msg else "No specific user message.",
-            "tool_context": context,
-        })
-
-        # --- Safety Net: Force non-tool-calling response if LLM ignores failure instruction ---
-        # The safety net triggers if ANY tool failed in the previous step, e.g. one of the farm agent is offline when user asks for yield about multiple farms
-        if any_tool_failed and llm_response.tool_calls:
-            logger.warning(
-                "LLM attempted tool call despite previous tool failure(s). "
-                "Forcing a user-facing error message to prevent loop."
+            # Use LLM to format the response
+            prompt = PromptTemplate(
+                template="""You are an inventory broker for a global coffee exchange company.
+                The user asked about inventory from the {farm} farm.
+                
+                User's request: {user_message}
+                
+                Farm response:
+                {tool_result}
+                
+                Please provide a clear and concise response to the user based on the farm's inventory information.
+                """,
+                input_variables=["farm", "user_message", "tool_result"]
             )
-            forced_error_message = (
-                f"I encountered some issues retrieving information for your request. "
-                f"Some parts could not be completed at this time due to a technical issue. "
-                f"Please try again later."
-            )
-            llm_response = AIMessage(
-                content=forced_error_message,
-                tool_calls=[], # Crucially, no tool calls
-                name=llm_response.name,
-                id=llm_response.id,
-                response_metadata=llm_response.response_metadata
-            )
-        # --- End Safety Net ---
 
-        return {"messages": [llm_response]}
+            chain = prompt | self.inventory_single_farm_llm
+            llm_response = await chain.ainvoke({
+                "farm": farm.title(),
+                "user_message": user_msg.content,
+                "tool_result": tool_result,
+            })
+
+            return {"messages": [AIMessage(content=llm_response.content)]}
+
+        except Exception as e:
+            logger.error(f"Error in single farm inventory node: {e}")
+            error_message = f"I encountered an issue retrieving information from the {farm.title()} farm. Please try again later."
+            return {"messages": [AIMessage(content=error_message)]}
+
+    # async def _inventory_all_farms_node(self, state: GraphState) -> dict:
+    #     """
+    #     Handles inventory queries for all farms by directly calling the function and returning the result.
+    #     """
+    #     # Get latest HumanMessage
+    #     user_msg = next((m for m in reversed(state["messages"]) if m.type == "human"), None)
+    #     if not user_msg:
+    #         return {"messages": [AIMessage(content="No user message found.")]}
+    #
+    #     logger.info(f"Processing all farms inventory query: {user_msg.content}")
+    #
+    #     try:
+    #         # Call the function directly and return the result
+    #         tool_result = await get_all_farms_yield_inventory(user_msg.content)
+    #         return {"messages": [AIMessage(content=tool_result)]}
+    #
+    #     except Exception as e:
+    #         logger.error(f"Error in all farms inventory node: {e}")
+    #         error_message = "I encountered an issue retrieving information from the farms. Please try again later."
+    #         return {"messages": [AIMessage(content=error_message)]}
+
+    async def _inventory_all_farms_node(self, state: GraphState) -> dict:
+        """
+        Handles inventory queries for all farms using the fake stream data tool.
+        Yields chunks progressively as they arrive using StreamWriter if available.
+        """
+        # Get latest HumanMessage
+        user_msg = next((m for m in reversed(state["messages"]) if m.type == "human"), None)
+        if not user_msg:
+            yield {"messages": [AIMessage(content="No user message found.")]}
+
+        logger.info(f"Processing all farms inventory query: {user_msg.content}")
+
+        try:
+            # Stream data from farms and yield each chunk progressively
+            writer = get_stream_writer()
+            async for chunk in get_fake_stream_data_tool(user_msg.content):
+                writer(AIMessage(content=chunk.strip()))
+                yield {"messages": [AIMessage(content=chunk.strip())]}
+
+        except Exception as e:
+            logger.error(f"Error in all farms inventory node: {e}")
+            error_message = "I encountered an issue retrieving information from the farms. Please try again later."
+            yield {"messages": [AIMessage(content=error_message)]}
 
     async def _orders_node(self, state: GraphState) -> dict:
         """
@@ -464,4 +469,58 @@ class ExchangeGraph:
             raise ValueError(str(ve))
         except Exception as e:
             logger.error(f"Error in serve method: {e}")
+            raise Exception(str(e))
+
+    async def streaming_serve(self, prompt: str):
+        """
+        Streams the graph execution, yielding chunks as they arrive.
+        Handles special streaming mode for progressive data delivery.
+
+        Args:
+            prompt (str): The input prompt to be processed by the graph.
+
+        Yields:
+            str: Chunks of output as they arrive from nodes and tools.
+        """
+        try:
+            logger.debug(f"Received streaming prompt: {prompt}")
+            if not isinstance(prompt, str) or not prompt.strip():
+                raise ValueError("Prompt must be a non-empty string.")
+
+            # Regular non-streaming flow
+            state = {
+                "messages": [
+                    {
+                        "role": "user",
+                        "content": prompt
+                    }
+                ],
+            }
+
+            seen_messages = set()
+            async for event in self.graph.astream_events(state, {"configurable": {"thread_id": uuid.uuid4()}}, version="v2"):
+                # Handle different event types
+                logger.debug(f"Event: {event}")
+                
+                # Check for on_chain_stream events which contain intermediate outputs
+                if event["event"] == "on_chain_stream":
+                    data = event.get("data", {})
+                    if "chunk" in data:
+                        chunk = data["chunk"]
+                        if "messages" in chunk and chunk["messages"]:
+                            print("Streaming chunk:", chunk)
+                            # Yield all messages from this chunk, avoiding duplicates
+                            for message in chunk["messages"]:
+                                if isinstance(message, AIMessage) and message.content:
+                                    # Use content as deduplication key
+                                    if message.content not in seen_messages:
+                                        seen_messages.add(message.content)
+                                        logger.debug(f"Yielding message: {message.content}")
+                                        yield message.content
+
+        except ValueError as ve:
+            logger.error(f"ValueError in streaming_serve method: {ve}")
+            raise ValueError(str(ve))
+        except Exception as e:
+            logger.error(f"Error in streaming_serve method: {e}")
             raise Exception(str(e))
