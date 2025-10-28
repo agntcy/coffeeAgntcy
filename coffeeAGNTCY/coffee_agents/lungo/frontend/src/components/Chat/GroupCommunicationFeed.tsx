@@ -216,13 +216,6 @@ const GroupCommunicationFeed: React.FC<GroupCommunicationFeedProps> = ({
         isComplete: true,
       }))
 
-      setTimeout(() => {
-        setState((prev) => ({
-          ...prev,
-          isExpanded: false,
-        }))
-      }, 1000)
-
       if (onComplete) {
         onComplete()
       }
