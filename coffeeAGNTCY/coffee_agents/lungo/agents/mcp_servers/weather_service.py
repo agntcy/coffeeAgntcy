@@ -98,7 +98,7 @@ async def main():
 
     app_session = factory.create_app_session(max_sessions=1)
     app_container = AppContainer(
-        mcp,
+        mcp._mcp_server,
         transport=transport,
         topic="lungo_weather_service",
     )
