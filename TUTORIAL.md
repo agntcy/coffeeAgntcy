@@ -92,10 +92,10 @@ Predefined prompts are provided to help you start — but you can also type your
 
 #### Sommelier Demo (Agent to Agent Pattern)
 
-This demo showcases an **Exchange Agent** that communicates with a **Farm Agent**, which acts as a virtual Coffee Sommelier. When queried, the Farm Agent provides detailed flavor profiles for specific coffees.
+This demo showcases an **Supervisor Agent** that communicates with a **Grader Agent**, which acts as a virtual Coffee Sommelier. When queried, the Grader Agent provides detailed flavor profiles for specific coffees.
 
-**Exchange Agent:** A2A client  
-**Farm Agent:** LangGraph-orchestrated A2A server  
+**Supervisor Agent:** A2A client  
+**Grader Agent:** LangGraph-orchestrated A2A server  
 
 The two agents communicate via the **SLIM message bus**. You can explore SLIM integrations in the following source files within the app-sdk repository:
 
@@ -107,8 +107,7 @@ The two agents communicate via the **SLIM message bus**. You can explore SLIM in
 - `What does coffee harvested in Colombia in the summer taste like?`
 
 As you run the demo, observe in your Docker Compose logs how:
-- The **supervisor** delegates to the **Farm Agent** over SLIM using the A2A protocol.
-
+- The **Supervisor** delegates to the **Grader Agent** over SLIM using the A2A protocol.
 
 ### 4. Inspect Traces in Grafana
 
