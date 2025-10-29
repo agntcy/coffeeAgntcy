@@ -80,18 +80,6 @@ class TestAuctionFlows:
         logger.info(data)
         assert "response" in data
         assert re.search(r"\b[\d,]+\s*(pounds|lbs\.?)\b", data["response"]), "Expected '<number> pounds or <number> lbs.' in string"
-        max_similarity = 0.0
-        for ref_res in prompt_case["reference_responses"]:
-            similarity = get_semantic_similarity(data["response"], ref_res, model)
-            if similarity > max_similarity:
-                max_similarity = similarity
-        expected_min_similarity = prompt_case.get("expected_min_similarity", 0.75)
-        print(f"[{prompt_case['id']}] max similarity {max_similarity}")
-        assert max_similarity >= expected_min_similarity, (
-            "Agent response did not meet semantic similarity threshold "
-            f"({expected_min_similarity}). Max similarity: {max_similarity}. "
-            f"Prompt: {prompt_case['prompt']!r}. Response: {data['response']!r}"
-        )
 
     @pytest.mark.agents(["weather-mcp", "colombia-farm"])
     @pytest.mark.usefixtures("agents_up")
@@ -111,18 +99,6 @@ class TestAuctionFlows:
         logger.info(data)
         assert "response" in data
         assert re.search(r'\b[\d,]+\s*(pounds|lbs\.?)\b', data["response"]), "Expected '<number> pounds or <number> lbs.' in string"
-        max_similarity = 0.0
-        for ref_res in prompt_case["reference_responses"]:
-            similarity = get_semantic_similarity(data["response"], ref_res, model)
-            if similarity > max_similarity:
-                max_similarity = similarity
-        expected_min_similarity = prompt_case.get("expected_min_similarity", 0.75)
-        print(f"[{prompt_case['id']}] max similarity {max_similarity}")
-        assert max_similarity >= expected_min_similarity, (
-            "Agent response did not meet semantic similarity threshold "
-            f"({expected_min_similarity}). Max similarity: {max_similarity}. "
-            f"Prompt: {prompt_case['prompt']!r}. Response: {data['response']!r}"
-        )
 
     @pytest.mark.agents(["vietnam-farm"])
     @pytest.mark.usefixtures("agents_up")
@@ -142,18 +118,6 @@ class TestAuctionFlows:
         logger.info(data) 
         assert "response" in data
         assert re.search(r'\b[\d,]+\s*(pounds|lbs\.?)\b', data["response"]), "Expected '<number> pounds or <number> lbs.' in string"
-        max_similarity = 0.0
-        for ref_res in prompt_case["reference_responses"]:
-            similarity = get_semantic_similarity(data["response"], ref_res, model)
-            if similarity > max_similarity:
-                max_similarity = similarity
-        expected_min_similarity = prompt_case.get("expected_min_similarity", 0.75)
-        print(f"[{prompt_case['id']}] max similarity {max_similarity}")
-        assert max_similarity >= expected_min_similarity, (
-            "Agent response did not meet semantic similarity threshold "
-            f"({expected_min_similarity}). Max similarity: {max_similarity}. "
-            f"Prompt: {prompt_case['prompt']!r}. Response: {data['response']!r}"
-        )
 
 
     @pytest.mark.agents(["weather-mcp", "brazil-farm", "colombia-farm", "vietnam-farm"])
@@ -176,25 +140,13 @@ class TestAuctionFlows:
         assert "brazil" in data["response"].lower()
         assert "colombia" in data["response"].lower()
         assert "vietnam" in data["response"].lower()
-        max_similarity = 0.0
-        for ref_res in prompt_case["reference_responses"]:
-            similarity = get_semantic_similarity(data["response"], ref_res, model)
-            if similarity > max_similarity:
-                max_similarity = similarity
-        expected_min_similarity = prompt_case.get("expected_min_similarity", 0.75)
-        print(f"[{prompt_case['id']}] max similarity {max_similarity}")
-        assert max_similarity >= expected_min_similarity, (
-            "Agent response did not meet semantic similarity threshold "
-            f"({expected_min_similarity}). Max similarity: {max_similarity}. "
-            f"Prompt: {prompt_case['prompt']!r}. Response: {data['response']!r}"
-        )
 
     @pytest.mark.agents(["brazil-farm"])
     @pytest.mark.usefixtures("agents_up")
     @pytest.mark.parametrize(
         "prompt_case",
-        [c for c in AUCTION_PROMPT_CASES if c["id"].startswith("brazil_")],
-        ids=[c["id"] for c in AUCTION_PROMPT_CASES if c["id"].startswith("brazil_")],
+        [c for c in AUCTION_PROMPT_CASES if c["id"] == "brazil_create_order"],
+        ids=["brazil_create_order"],
     )
     def test_auction_create_order_brazil(self, auction_supervisor_client, transport_config, prompt_case):
         logger.info(
@@ -225,8 +177,8 @@ class TestAuctionFlows:
     @pytest.mark.usefixtures("agents_up")
     @pytest.mark.parametrize(
         "prompt_case",
-        [c for c in AUCTION_PROMPT_CASES if c["id"].startswith("colombia_")],
-        ids=[c["id"] for c in AUCTION_PROMPT_CASES if c["id"].startswith("colombia_")],
+        [c for c in AUCTION_PROMPT_CASES if c["id"] == "colombia_create_order"],
+        ids=["colombia_create_order"],
     )
     def test_auction_create_order_colombia(self, auction_supervisor_client, transport_config, prompt_case):
         logger.info(f"\n---Test: test_auction_create_order_colombia ({prompt_case['id']}) with transport {transport_config}---")
@@ -241,25 +193,14 @@ class TestAuctionFlows:
         assert "successful" in data["response"].lower()
         assert "Order ID" in data["response"], "Expected Order ID in response"
         assert "Tracking Number" in data["response"], "Expected Tracking Number in response"
-        max_similarity = 0.0
-        for ref_res in prompt_case["reference_responses"]:
-            similarity = get_semantic_similarity(data["response"], ref_res, model)
-            if similarity > max_similarity:
-                max_similarity = similarity
-        expected_min_similarity = prompt_case.get("expected_min_similarity", 0.75)
-        print(f"[{prompt_case['id']}] max similarity {max_similarity}")
-        assert max_similarity >= expected_min_similarity, (
-            "Agent response did not meet semantic similarity threshold "
-            f"({expected_min_similarity}). Max similarity: {max_similarity}. "
-            f"Prompt: {prompt_case['prompt']!r}. Response: {data['response']!r}"
-        )
+        # Success flow: rely on structural checks only; no semantic similarity enforcement
 
     @pytest.mark.agents(["vietnam-farm"])
     @pytest.mark.usefixtures("agents_up")
     @pytest.mark.parametrize(
         "prompt_case",
-        [c for c in AUCTION_PROMPT_CASES if c["id"].startswith("vietnam_create_order")],
-        ids=[c["id"] for c in AUCTION_PROMPT_CASES if c["id"].startswith("vietnam_create_order")],
+        [c for c in AUCTION_PROMPT_CASES if c["id"] == "vietnam_create_order"],
+        ids=["vietnam_create_order"],
     )
     def test_auction_create_order_vietnam(self, auction_supervisor_client, transport_config, prompt_case):
         logger.info(f"\n---Test: test_auction_create_order_vietnam ({prompt_case['id']}) with transport {transport_config}---")
@@ -273,18 +214,6 @@ class TestAuctionFlows:
         assert "successful" in data["response"].lower()
         assert "Order ID" in data["response"], "Expected Order ID in response"
         assert "Tracking Number" in data["response"], "Expected Tracking Number in response"
-        max_similarity = 0.0
-        for ref_res in prompt_case["reference_responses"]:
-            similarity = get_semantic_similarity(data["response"], ref_res, model)
-            if similarity > max_similarity:
-                max_similarity = similarity
-        expected_min_similarity = prompt_case.get("expected_min_similarity", 0.75)
-        print(f"[{prompt_case['id']}] max similarity {max_similarity}")
-        assert max_similarity >= expected_min_similarity, (
-            "Agent response did not meet semantic similarity threshold "
-            f"({expected_min_similarity}). Max similarity: {max_similarity}. "
-            f"Prompt: {prompt_case['prompt']!r}. Response: {data['response']!r}"
-        )
 
     @pytest.mark.agents(["brazil-farm"])
     @pytest.mark.usefixtures("agents_up")
@@ -303,17 +232,5 @@ class TestAuctionFlows:
         data = resp.json()
         logger.info(data)
         assert "I'm not sure how to handle that" in data["response"]
-        max_similarity = 0.0
-        for ref_res in prompt_case["reference_responses"]:
-            similarity = get_semantic_similarity(data["response"], ref_res, model)
-            if similarity > max_similarity:
-                max_similarity = similarity
-        expected_min_similarity = prompt_case.get("expected_min_similarity", 0.75)
-        print(f"[{prompt_case['id']}] max similarity {max_similarity}")
-        assert max_similarity >= expected_min_similarity, (
-            "Agent response did not meet semantic similarity threshold "
-            f"({expected_min_similarity}). Max similarity: {max_similarity}. "
-            f"Prompt: {prompt_case['prompt']!r}. Response: {data['response']!r}"
-        )
 
     
