@@ -5,6 +5,10 @@
 
 import React, { useState, useRef, useEffect } from "react"
 
+const DEFAULT_EXCHANGE_APP_API_URL = "http://127.0.0.1:8000"
+const EXCHANGE_APP_API_URL =
+  import.meta.env.VITE_EXCHANGE_APP_API_URL || DEFAULT_EXCHANGE_APP_API_URL
+
 interface CoffeePromptsDropdownProps {
   visible: boolean
   onSelect: (query: string) => void
@@ -16,18 +20,48 @@ const CoffeePromptsDropdown: React.FC<CoffeePromptsDropdownProps> = ({
 }) => {
   const [isOpen, setIsOpen] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
+  const [buyerPrompts, setBuyerPrompts] = useState<string[]>([])
+  const [purchaserPrompts, setPurchaserPrompts] = useState<string[]>([])
 
-  const buyerPrompts = [
-    "What yield do the farms have?",
-    "I'd like to buy 200 lbs quantity of coffee and who can fulfill it?",
-    "What is the current inventory for Brazil farm?",
-    "What is the current inventory for Colombia farm?",
-    "What is the current inventory for Vietnam farm?",
-  ]
+  useEffect(() => {
+    const controller = new AbortController()
+    const { signal } = controller
 
-  const purchaserPrompts = [
-    "I'd like to buy 200 lbs quantity of coffee at USD 500 price from Colombia",
-  ]
+    ;(async () => {
+      try {
+        const res = await fetch(`${EXCHANGE_APP_API_URL}/suggested-prompts`, {
+          cache: "no-cache",
+          signal,
+        })
+        if (!res.ok) throw new Error(`HTTP ${res.status}`)
+        const data: unknown = await res.json()
+
+        if (
+          data &&
+          typeof data === "object" &&
+          !Array.isArray(data) &&
+          "buyer" in (data as Record<string, unknown>) &&
+          "purchaser" in (data as Record<string, unknown>)
+        ) {
+          const obj = data as { buyer?: unknown; purchaser?: unknown }
+          const buyer = Array.isArray(obj.buyer)
+            ? obj.buyer.filter((p): p is string => typeof p === "string")
+            : []
+          const purchaser = Array.isArray(obj.purchaser)
+            ? obj.purchaser.filter((p): p is string => typeof p === "string")
+            : []
+          setBuyerPrompts(buyer)
+          setPurchaserPrompts(purchaser)
+          return
+        }
+      } catch (err: unknown) {
+        // eslint-disable-next-line no-console
+        console.warn("Failed to load prompts from API.", err)
+      }
+    })()
+
+    return () => controller.abort()
+  }, [])
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
