@@ -62,6 +62,7 @@ async def run_transport(server, transport_type, endpoint, block):
 
     except Exception as e:
         print(f"Transport encountered an error: {e}")
+        await app_session.stop_all_sessions()
 
 async def main(enable_http: bool):
     """Run the A2A server with both HTTP and transport logic."""

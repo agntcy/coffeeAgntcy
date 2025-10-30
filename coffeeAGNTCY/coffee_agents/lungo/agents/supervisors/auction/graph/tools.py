@@ -339,7 +339,9 @@ async def get_all_farms_yield_inventory_streaming(prompt: str):
         )
 
         # create a list of recipients to include in the broadcast
-        recipients = [A2AProtocol.create_agent_topic(get_farm_card(farm)) for farm in ['brazil', 'colombia', 'vietnam']]
+        farm_names = ['brazil', 'colombia', 'vietnam']
+        recipients = [A2AProtocol.create_agent_topic(get_farm_card(farm)) for farm in farm_names]
+        logger.info(f"Broadcasting to {len(recipients)} farms: {', '.join(farm_names)}")
 
         # Get the async generator for streaming responses
         response_stream = client.broadcast_message_streaming(
@@ -348,6 +350,9 @@ async def get_all_farms_yield_inventory_streaming(prompt: str):
             recipients=recipients
         )
 
+        # Track which farms responded
+        responded_farms = set()
+        
         # Process responses as they arrive
         async for response in response_stream:
             try:
@@ -357,6 +362,8 @@ async def get_all_farms_yield_inventory_streaming(prompt: str):
                     if hasattr(response.root.result, "metadata"):
                         farm_name = response.root.result.metadata.get("name", "Unknown Farm")
 
+                    responded_farms.add(farm_name)
+                    logger.info(f"Received response from {farm_name} ({len(responded_farms)}/{len(recipients)})")
                     yield f"{farm_name} : {part.text.strip()}\n"
                 elif response.root.error:
                     err_msg = f"A2A error from farm: {response.root.error.message}"
@@ -369,11 +376,26 @@ async def get_all_farms_yield_inventory_streaming(prompt: str):
             except Exception as e:
                 logger.error(f"Error processing farm response: {e}")
                 yield f"Error processing farm response: {str(e)}\n"
+        
+        # Check for missing responses and report them
+        if len(responded_farms) < len(recipients):
+            # Determine which farms didn't respond by checking farm names
+            expected_farms = {"Brazil Coffee Farm", "Colombia Coffee Farm", "Vietnam Coffee Farm"}
+            missing_farms = expected_farms - responded_farms
+            
+            if missing_farms:
+                missing_list = ", ".join(sorted(missing_farms))
+                logger.warning(f"Broadcast completed with partial responses: {len(responded_farms)}/{len(recipients)} farms responded. Missing: {missing_list}")
+                yield f"Error: Timeout - No response from {missing_list}. These farms may be unavailable or slow to respond.\n"
 
     except Exception as e:
         error_msg = f"Failed to communicate with farms during broadcast: {e}"
         logger.error(error_msg)
-        yield f"Error: {error_msg}\n"
+        # Check if it's a timeout-related error
+        if "timeout" in str(e).lower():
+            yield f"Error: Broadcast timed out. Some farms may be slow to respond or unavailable. {str(e)}\n"
+        else:
+            yield f"Error: {error_msg}\n"
 
 @tool(args_schema=CreateOrderArgs)
 @ioa_tool_decorator(name="create_order")
