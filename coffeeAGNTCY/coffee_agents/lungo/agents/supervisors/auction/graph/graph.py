@@ -288,21 +288,46 @@ class ExchangeGraph:
         try:
             # Collect inventory data from all farms via streaming
             full_response = ""
+            success_count = 0
+            error_count = 0
+            has_timeout_warning = False
+            
             async for chunk in get_all_farms_yield_inventory_streaming(user_msg.content):
                 # Yield each chunk immediately for streaming mode
                 # In non-streaming mode, these intermediate yields are ignored
                 yield {"messages": [AIMessage(content=chunk.strip())]}
                 full_response += chunk
+                
+                # Track successful responses vs errors from the streaming tool
+                if chunk.strip().startswith("Error"):
+                    error_count += 1
+                elif "timeout" in chunk.lower() or "timed out" in chunk.lower():
+                    has_timeout_warning = True
+                else:
+                    success_count += 1
+            
+            # Check if we received any successful responses
+            if success_count == 0:
+                error_message = "No responses received from any farms. Please ensure farm agents are running and try again."
+                logger.warning(error_message)
+                yield {"messages": [AIMessage(content=error_message)]}
+                return
             
             # Yield final aggregated response with complete inventory
             # This is what gets returned in non-streaming mode (ainvoke)
             # In streaming mode, this provides the final summary with all data
             final_content = f"Here is the current coffee yield inventory from the farms:\n\n{full_response.strip()}"
+            
+            # Add note if there were errors or timeout warnings
+            if error_count > 0 or has_timeout_warning:
+                final_content += f"\n\nNote: Some farms encountered errors or did not respond in time. Showing available inventory data."
+                logger.warning(f"Partial farm responses: {success_count} successful, {error_count} errors")
+            
             yield {"messages": [AIMessage(content=final_content)], "full_response": final_content}
 
         except Exception as e:
             logger.error(f"Error in all farms inventory node: {e}")
-            error_message = "I encountered an issue retrieving information from the farms. Please try again later."
+            error_message = f"I encountered an issue retrieving information from the farms: {str(e)}. Please ensure all farm agents are running and try again."
             yield {"messages": [AIMessage(content=error_message)]}
 
     async def _orders_node(self, state: GraphState) -> dict:
