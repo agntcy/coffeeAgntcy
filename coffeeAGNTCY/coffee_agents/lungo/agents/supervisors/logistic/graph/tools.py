@@ -19,7 +19,7 @@ from a2a.types import (
   SendMessageRequest,
   TextPart,
 )
-from agntcy_app_sdk.protocols.a2a.protocol import A2AProtocol
+from agntcy_app_sdk.semantic.a2a.protocol import A2AProtocol
 from ioa_observe.sdk.decorators import tool as ioa_tool_decorator
 from langchain_core.messages import ToolMessage
 from langchain_core.tools import tool
