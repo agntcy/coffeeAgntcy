@@ -233,4 +233,37 @@ class TestAuctionFlows:
         logger.info(data)
         assert "I'm not sure how to handle that" in data["response"]
 
+    @pytest.mark.agents(["weather-mcp", "brazil-farm", "colombia-farm", "vietnam-farm"])
+    @pytest.mark.usefixtures("agents_up")
+    @pytest.mark.parametrize(
+        "prompt_case",
+        [c for c in AUCTION_PROMPT_CASES if c["id"] == "all_farms_yield"],
+        ids=["all_farms_yield_streaming"],
+    )
+    def test_auction_all_farms_inventory_streaming(self, auction_supervisor_client, transport_config, prompt_case):
+        """Test the streaming endpoint returns multiple chunks with all farm data."""
+        logger.info(f"\n---Test: test_auction_all_farms_inventory_streaming ({prompt_case['id']}) with transport {transport_config}---")
+        
+        resp = auction_supervisor_client.post(
+            "/agent/prompt/stream",
+            json={"prompt": prompt_case["prompt"]}
+        )
+        assert resp.status_code == 200
+        
+        # Collect all chunks from the stream
+        chunks = []
+        for line in resp.iter_lines():
+            if line:
+                chunk_data = json.loads(line)
+                if "response" in chunk_data:
+                    chunks.append(chunk_data["response"])
+                    logger.info(f"Chunk: {chunk_data['response']}")
+        
+        # Validate streaming behavior and farm coverage
+        assert len(chunks) > 1, f"Expected multiple chunks, got {len(chunks)}"
+        full_response = "\n".join(chunks).lower()
+        assert "brazil" in full_response
+        assert "colombia" in full_response
+        assert "vietnam" in full_response
+
     
