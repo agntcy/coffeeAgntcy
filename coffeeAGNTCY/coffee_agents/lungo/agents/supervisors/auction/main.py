@@ -1,6 +1,7 @@
 # Copyright AGNTCY Contributors (https://github.com/agntcy)
 # SPDX-License-Identifier: Apache-2.0
 
+import json
 import logging
 
 from dotenv import load_dotenv
@@ -89,6 +90,50 @@ async def version_info():
   """Return build info sourced from about.properties."""
   props_path = Path(__file__).resolve().parents[3] / "about.properties"
   return get_version_info(props_path)
+
+@app.get("/suggested-prompts")
+async def get_prompts():
+  """
+  Return suggested prompts for publish subscribe pattern.
+
+  Returns:
+  {"buyer": List[str], "purchaser": List[str]}
+
+  Raises:
+      HTTPException: 404 if file not found, 500 for JSON errors or unsupported format
+  """
+  prompts_path = Path(__file__).resolve().parent / "suggested_prompts.json"
+  try:
+    raw = prompts_path.read_text(encoding="utf-8")
+    data = json.loads(raw)
+
+    if isinstance(data, dict):
+      raw_buyer = data.get("buyer", [])
+      raw_purchaser = data.get("purchaser", [])
+
+      if not isinstance(raw_buyer, list):
+        raw_buyer = []
+      if not isinstance(raw_purchaser, list):
+        raw_purchaser = []
+
+      buyer_list = [p for p in raw_buyer if isinstance(p, str)]
+      purchaser_list = [p for p in raw_purchaser if isinstance(p, str)]
+      return {"buyer": buyer_list, "purchaser": purchaser_list}
+
+    logger.error("Unsupported suggested_prompts.json format: %s", type(data).__name__)
+    raise HTTPException(status_code=500, detail="Unsupported suggested_prompts.json format")
+
+  except FileNotFoundError as fnf:
+    logger.exception(f"suggested_prompts.json not found at {prompts_path}")
+    raise HTTPException(status_code=404, detail="suggested_prompts.json not found") from fnf
+  except json.JSONDecodeError as jde:
+    logger.exception("Invalid JSON in suggested_prompts.json")
+    raise HTTPException(status_code=500, detail="Invalid JSON in suggested_prompts.json") from jde
+  except Exception as e:
+    if isinstance(e, HTTPException):
+      raise
+    logger.exception(f"Failed to load suggested prompts: {str(e)}")
+    raise HTTPException(status_code=500, detail=f"Failed to load prompts: {str(e)}") from e
 
 # Run the FastAPI server using uvicorn
 if __name__ == "__main__":

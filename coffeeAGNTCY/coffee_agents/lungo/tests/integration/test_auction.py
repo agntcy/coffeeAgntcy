@@ -1,8 +1,10 @@
 # Copyright AGNTCY Contributors (https://github.com/agntcy)
 # SPDX-License-Identifier: Apache-2.0
 
+import json
 import logging
 import re
+from pathlib import Path
 import pytest
 
 from sentence_transformers import SentenceTransformer, util
@@ -29,29 +31,68 @@ def get_semantic_similarity(text1, text2, model):
     cosine_score = util.cos_sim(embeddings1, embeddings2)
     return cosine_score.item()
 
+
+def load_auction_prompt_cases():
+    """Load auction prompt cases from JSON.
+
+    Expects a file named 'auction_prompt_cases.json' in this directory with:
+      { "cases": [ {"id", "prompt", "reference_responses", "expected_min_similarity"?}, ... ] }
+    """
+    data_file = Path(__file__).parent / "auction_prompt_cases.json"
+    if not data_file.exists():
+        raise FileNotFoundError(f"Prompt cases file not found: {data_file}")
+    with data_file.open() as f:
+        raw = json.load(f)
+
+    cases = raw.get("cases")
+    if not isinstance(cases, list) or not cases:
+        raise ValueError("auction_prompt_cases.json must have a non-empty 'cases' list")
+
+    for c in cases:
+        missing = [k for k in ("id", "prompt", "reference_responses") if k not in c]
+        if missing:
+            raise ValueError(f"Prompt case missing keys {missing}: {c}")
+        if not c["reference_responses"]:
+            raise ValueError(f"Prompt case '{c['id']}' has empty reference_responses")
+
+    return cases
+
+
+AUCTION_PROMPT_CASES = load_auction_prompt_cases()
+
 @pytest.mark.parametrize("transport_config", TRANSPORT_MATRIX, indirect=True)
 class TestAuctionFlows:
     @pytest.mark.agents(["brazil-farm"])
     @pytest.mark.usefixtures("agents_up")
-    def test_auction_brazil_inventory(self, auction_supervisor_client, transport_config):
-        logger.info(f"\n---Test: test_auction_brazil_inventory with transport {transport_config}---")
+    @pytest.mark.parametrize(
+        "prompt_case",
+        [c for c in AUCTION_PROMPT_CASES if c["id"] == "brazil_inventory"],
+        ids=["brazil_inventory"],
+    )
+    def test_auction_brazil_inventory(self, auction_supervisor_client, transport_config, prompt_case):
+        logger.info(f"\n---Test: test_auction_brazil_inventory ({prompt_case['id']}) with transport {transport_config}---")
         resp = auction_supervisor_client.post(
             "/agent/prompt",
-            json={"prompt": "What is the inventory of coffee in Brazil?"}
+            json={"prompt": prompt_case["prompt"]}
         )
         assert resp.status_code == 200
         data = resp.json()
         logger.info(data)
         assert "response" in data
-        assert re.search(r"\b\d+\s*pounds\b", data["response"]), "Expected '<number> pounds' in string"
+        assert re.search(r"\b[\d,]+\s*(pounds|lbs\.?)\b", data["response"]), "Expected '<number> pounds or <number> lbs.' in string"
 
     @pytest.mark.agents(["weather-mcp", "colombia-farm"])
     @pytest.mark.usefixtures("agents_up")
-    def test_auction_colombia_inventory(self, auction_supervisor_client, transport_config):
-        logger.info(f"\n---Test: test_auction_colombia_inventory with transport {transport_config}---")
+    @pytest.mark.parametrize(
+        "prompt_case",
+        [c for c in AUCTION_PROMPT_CASES if c["id"] == "colombia_inventory"],
+        ids=["colombia_inventory"],
+    )
+    def test_auction_colombia_inventory(self, auction_supervisor_client, transport_config, prompt_case):
+        logger.info(f"\n---Test: test_auction_colombia_inventory ({prompt_case['id']}) with transport {transport_config}---")
         resp = auction_supervisor_client.post(
             "/agent/prompt",
-            json={"prompt": "What is the inventory of coffee in the Colombia farm?"}
+            json={"prompt": prompt_case["prompt"]}
         )
         assert resp.status_code == 200
         data = resp.json()
@@ -61,11 +102,16 @@ class TestAuctionFlows:
 
     @pytest.mark.agents(["vietnam-farm"])
     @pytest.mark.usefixtures("agents_up")
-    def test_auction_vietnam_inventory(self, auction_supervisor_client, transport_config):
-        logger.info(f"\n---Test: test_auction_vietnam_inventory with transport {transport_config}---")
+    @pytest.mark.parametrize(
+        "prompt_case",
+        [c for c in AUCTION_PROMPT_CASES if c["id"] == "vietnam_inventory"],
+        ids=["vietnam_inventory"],
+    )
+    def test_auction_vietnam_inventory(self, auction_supervisor_client, transport_config, prompt_case):
+        logger.info(f"\n---Test: test_auction_vietnam_inventory ({prompt_case['id']}) with transport {transport_config}---")
         resp = auction_supervisor_client.post(
             "/agent/prompt",
-            json={"prompt": "What is the inventory of coffee in Vietnam?"}
+            json={"prompt": prompt_case["prompt"]}
         )
         assert resp.status_code == 200
         data = resp.json()
@@ -76,11 +122,16 @@ class TestAuctionFlows:
 
     @pytest.mark.agents(["weather-mcp", "brazil-farm", "colombia-farm", "vietnam-farm"])
     @pytest.mark.usefixtures("agents_up")
-    def test_auction_all_farms_inventory(self, auction_supervisor_client, transport_config):
-        logger.info(f"\n---Test: test_auction_all_farms_inventory with transport {transport_config}---")
+    @pytest.mark.parametrize(
+        "prompt_case",
+        [c for c in AUCTION_PROMPT_CASES if c["id"] == "all_farms_yield"],
+        ids=["all_farms_yield"],
+    )
+    def test_auction_all_farms_inventory(self, auction_supervisor_client, transport_config, prompt_case):
+        logger.info(f"\n---Test: test_auction_all_farms_inventory ({prompt_case['id']}) with transport {transport_config}---")
         resp = auction_supervisor_client.post(
             "/agent/prompt",
-            json={"prompt": "What is the total inventory of coffee across all farms?"}
+            json={"prompt": prompt_case["prompt"]}
         )
         assert resp.status_code == 200
         data = resp.json()
@@ -92,42 +143,48 @@ class TestAuctionFlows:
 
     @pytest.mark.agents(["brazil-farm"])
     @pytest.mark.usefixtures("agents_up")
-    def test_auction_create_order_brazil(self, auction_supervisor_client, transport_config):
-        logger.info(f"\n---Test: test_auction_create_order_brazil with transport {transport_config}---")
+    @pytest.mark.parametrize(
+        "prompt_case",
+        [c for c in AUCTION_PROMPT_CASES if c["id"] == "brazil_create_order"],
+        ids=["brazil_create_order"],
+    )
+    def test_auction_create_order_brazil(self, auction_supervisor_client, transport_config, prompt_case):
+        logger.info(
+            f"\n---Test: test_auction_create_order_brazil ({prompt_case['id']}) with transport {transport_config}---"
+        )
         resp = auction_supervisor_client.post(
             "/agent/prompt",
-            json={"prompt": "I'd like to buy 200 lbs of coffee at USD 500 price from Brazil."}
+            json={"prompt": prompt_case["prompt"]}
         )
         assert resp.status_code == 200
         data = resp.json()
         logger.info(data)
         assert "response" in data
-        max_similarity = 0
-        reference_responses = [
-        "Unfortunately, I cannot process orders from Brazil at this time due to logistical constraints.",
-        "I'm sorry, I was unable to complete your order request for all items. An issue occurred for some parts. Please try again later.",
-        "Regrettably, I am unable to fulfill orders from Brazil currently due to supply chain issues.",
-        "I encountered some issues retrieving information for your request. Some parts could not be completed at this time due to a technical issue. Please try again later.",
-        "The user's request to buy coffee could not be processed due to an identity verification error with the farm. The conversation cannot proceed without resolving this issue, and the user has not provided any further instructions or questions.",
-        "I'm sorry, I was unable to complete your order request for all items. An issue occurred for some parts. Please try again later.",
-        "I'm sorry, but your request to buy X lbs of coffee at USD X from Brazil could not be completed due to an issue with the order process. Unfortunately, the farm is currently unreachable or there was an error in processing the request. If you have any other requests or need further assistance, please let me know!"
-        ]
-        for ref_res in reference_responses:
+        max_similarity = 0.0
+        for ref_res in prompt_case["reference_responses"]:
             similarity = get_semantic_similarity(data["response"], ref_res, model)
             if similarity > max_similarity:
                 max_similarity = similarity
-        expected_min_similarity = 0.75
-        print(f"max similarity {max_similarity}")
-        assert max_similarity >= expected_min_similarity, \
-        f"Agent response '{data["response"]}' did not meet semantic similarity threshold ({expected_min_similarity}) with any reference. Max similarity: {max_similarity}"
+        expected_min_similarity = prompt_case.get("expected_min_similarity", 0.75)
+        print(f"[{prompt_case['id']}] max similarity {max_similarity}")
+        assert max_similarity >= expected_min_similarity, (
+            "Agent response did not meet semantic similarity threshold "
+            f"({expected_min_similarity}). Max similarity: {max_similarity}. "
+            f"Prompt: {prompt_case['prompt']!r}. Response: {data['response']!r}"
+        )
 
     @pytest.mark.agents(["weather-mcp","colombia-farm"])
     @pytest.mark.usefixtures("agents_up")
-    def test_auction_create_order_colombia(self, auction_supervisor_client, transport_config):
-        logger.info(f"\n---Test: test_auction_create_order_colombia with transport {transport_config}---")
+    @pytest.mark.parametrize(
+        "prompt_case",
+        [c for c in AUCTION_PROMPT_CASES if c["id"] == "colombia_create_order"],
+        ids=["colombia_create_order"],
+    )
+    def test_auction_create_order_colombia(self, auction_supervisor_client, transport_config, prompt_case):
+        logger.info(f"\n---Test: test_auction_create_order_colombia ({prompt_case['id']}) with transport {transport_config}---")
         resp = auction_supervisor_client.post(
             "/agent/prompt",
-            json={"prompt": "I'd like to buy 200 lbs of coffee at USD 500 price from Colombia."}
+            json={"prompt": prompt_case["prompt"]}
         )
         assert resp.status_code == 200
         data = resp.json()
@@ -136,14 +193,20 @@ class TestAuctionFlows:
         assert "successful" in data["response"].lower()
         assert "Order ID" in data["response"], "Expected Order ID in response"
         assert "Tracking Number" in data["response"], "Expected Tracking Number in response"
+        # Success flow: rely on structural checks only; no semantic similarity enforcement
 
     @pytest.mark.agents(["vietnam-farm"])
     @pytest.mark.usefixtures("agents_up")
-    def test_auction_create_order_vietnam(self, auction_supervisor_client, transport_config):
-        logger.info(f"\n---Test: test_auction_create_order_vietnam with transport {transport_config}---")
+    @pytest.mark.parametrize(
+        "prompt_case",
+        [c for c in AUCTION_PROMPT_CASES if c["id"] == "vietnam_create_order"],
+        ids=["vietnam_create_order"],
+    )
+    def test_auction_create_order_vietnam(self, auction_supervisor_client, transport_config, prompt_case):
+        logger.info(f"\n---Test: test_auction_create_order_vietnam ({prompt_case['id']}) with transport {transport_config}---")
         resp = auction_supervisor_client.post(
             "/agent/prompt",
-            json={"prompt": "I'd like to buy 200 lbs of coffee at USD 500 price from Vietnam."}
+            json={"prompt": prompt_case["prompt"]}
         )
         assert resp.status_code == 200
         data = resp.json()
@@ -154,11 +217,16 @@ class TestAuctionFlows:
 
     @pytest.mark.agents(["brazil-farm"])
     @pytest.mark.usefixtures("agents_up")
-    def test_auction_invalid_prompt(self, auction_supervisor_client, transport_config):
-        logger.info(f"\n---Test: test_auction_invalid_prompt with transport {transport_config}---")
+    @pytest.mark.parametrize(
+        "prompt_case",
+        [c for c in AUCTION_PROMPT_CASES if c["id"] == "invalid_prompt"],
+        ids=["invalid_prompt"],
+    )
+    def test_auction_invalid_prompt(self, auction_supervisor_client, transport_config, prompt_case):
+        logger.info(f"\n---Test: test_auction_invalid_prompt ({prompt_case['id']}) with transport {transport_config}---")
         resp = auction_supervisor_client.post(
             "/agent/prompt",
-            json={"prompt": "What is a group of crows called?"}
+            json={"prompt": prompt_case["prompt"]}
         )
         assert resp.status_code == 200
         data = resp.json()

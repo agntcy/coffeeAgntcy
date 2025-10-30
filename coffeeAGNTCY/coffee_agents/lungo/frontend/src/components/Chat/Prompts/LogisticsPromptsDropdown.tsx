@@ -5,6 +5,10 @@
 
 import React, { useState, useRef, useEffect } from "react"
 
+const DEFAULT_LOGISTIC_APP_API_URL = "http://127.0.0.1:9090"
+const LOGISTIC_APP_API_URL =
+  import.meta.env.VITE_LOGISTIC_APP_API_URL || DEFAULT_LOGISTIC_APP_API_URL
+
 interface LogisticsPromptsDropdownProps {
   visible: boolean
   onSelect: (query: string) => void
@@ -17,9 +21,33 @@ const LogisticsPromptsDropdown: React.FC<LogisticsPromptsDropdownProps> = ({
   const [isOpen, setIsOpen] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
 
-  const logisticsPrompts = [
-    "I want to order coffee $3.50 per pound for 500 lbs of coffee from the Tatooine farm",
-  ]
+  const [logisticsPrompts, setLogisticsPrompts] = useState<string[]>([])
+
+  useEffect(() => {
+    const controller = new AbortController()
+    const { signal } = controller
+
+    ;(async () => {
+      try {
+        const res = await fetch(`${LOGISTIC_APP_API_URL}/suggested-prompts`, {
+          cache: "no-cache",
+          signal,
+        })
+        if (!res.ok) throw new Error(`HTTP ${res.status}`)
+        const data: unknown = await res.json()
+        if (Array.isArray(data)) {
+          const prompts = data.filter((p): p is string => typeof p === "string")
+          setLogisticsPrompts(prompts)
+          return
+        }
+      } catch (err: unknown) {
+        // eslint-disable-next-line no-console
+        console.warn("Failed to load logistics prompts from API.", err)
+      }
+    })()
+
+    return () => controller.abort()
+  }, [])
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -88,12 +116,9 @@ const LogisticsPromptsDropdown: React.FC<LogisticsPromptsDropdownProps> = ({
           className={`absolute bottom-full left-0 z-[1000] mb-1 w-269 overflow-y-auto rounded-[6px] border border-nav-border bg-chat-dropdown-background px-[2px] py-0 opacity-100 shadow-[0px_2px_5px_0px_rgba(0,0,0,0.05)] ${isOpen ? "block animate-fadeInDropdown" : "hidden"} `}
         >
           <div className="px-2 py-2">
-            <div className="mb-2 h-[36px] w-[265px] gap-2 bg-chat-dropdown-background pb-2 pl-[10px] pr-[10px] pt-2 font-inter text-sm font-normal leading-5 tracking-[0%] text-chat-text opacity-60">
-              BUYER
-            </div>
             {logisticsPrompts.map((item, index) => (
               <div
-                key={`buyer-${index}`}
+                key={`prompt-${index}`}
                 className="mx-0.5 my-0.5 flex min-h-10 w-[calc(100%-4px)] cursor-pointer items-center rounded bg-chat-dropdown-background px-2 py-[6px] transition-colors duration-200 ease-in-out hover:bg-chat-background-hover"
                 onClick={() => handleItemClick(item)}
               >

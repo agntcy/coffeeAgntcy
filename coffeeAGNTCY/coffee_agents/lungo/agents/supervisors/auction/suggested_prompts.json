@@ -1,0 +1,12 @@
+{
+  "buyer": [
+    "What yield do the farms have?",
+    "I'd like to buy 200 lbs quantity of coffee and who can fulfill it?",
+    "What is the current inventory for Brazil farm?",
+    "What is the current inventory for Colombia farm?",
+    "What is the current inventory for Vietnam farm?"
+  ],
+  "purchaser": [
+    "I'd like to buy 200 lbs quantity of coffee at USD 500 price from Colombia"
+  ]
+}
