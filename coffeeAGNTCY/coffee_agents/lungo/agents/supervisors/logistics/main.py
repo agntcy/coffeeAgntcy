@@ -16,20 +16,20 @@ from agntcy_app_sdk.factory import AgntcyFactory
 from agntcy_app_sdk.protocols.a2a.protocol import A2AProtocol
 from ioa_observe.sdk.tracing import session_start
 
-from agents.supervisors.logistic.graph.graph import LogisticGraph
-from agents.supervisors.logistic.graph import shared
+from agents.supervisors.logistics.graph.graph import LogisticGraph
+from agents.supervisors.logistics.graph import shared
 from agents.logistics.shipper.card import AGENT_CARD  # assuming similar structure
 from config.config import DEFAULT_MESSAGE_TRANSPORT, TRANSPORT_SERVER_ENDPOINT
 from config.logging_config import setup_logging
 from pathlib import Path
 
 setup_logging()
-logger = logging.getLogger("lungo.logistic.supervisor.main")
+logger = logging.getLogger("lungo.logistics.supervisor.main")
 
 load_dotenv()
 
 # Initialize the shared agntcy factory with tracing enabled
-shared.set_factory(AgntcyFactory("lungo.logistic", enable_tracing=True))
+shared.set_factory(AgntcyFactory("lungo.logistics_supervisor", enable_tracing=True))
 
 app = FastAPI()
 app.add_middleware(

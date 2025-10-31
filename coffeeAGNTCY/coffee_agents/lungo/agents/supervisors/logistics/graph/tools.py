@@ -28,15 +28,15 @@ from agents.logistics.accountant.card import AGENT_CARD as ACCOUNTANT_CARD
 from agents.logistics.farm.card import AGENT_CARD as TATOOINE_CARD
 from agents.logistics.shipper.card import AGENT_CARD as SHIPPER_CARD
 from agents.logistics.helpdesk.card import AGENT_CARD as HELPDESK_CARD
-from agents.supervisors.logistic.graph.models import CreateOrderArgs
-from agents.supervisors.logistic.graph.shared import get_factory
+from agents.supervisors.logistics.graph.models import CreateOrderArgs
+from agents.supervisors.logistics.graph.shared import get_factory
 from config.config import (
   DEFAULT_MESSAGE_TRANSPORT,
   TRANSPORT_SERVER_ENDPOINT,
 )
 from common.logistic_states import LogisticStatus
 
-logger = logging.getLogger("lungo.logistic.supervisor.tools")
+logger = logging.getLogger("lungo.logistics.supervisor.tools")
 
 def next_tools_or_end(state: dict[str, Any]) -> str:
   """

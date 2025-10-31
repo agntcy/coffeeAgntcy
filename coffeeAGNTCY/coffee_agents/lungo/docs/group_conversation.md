@@ -7,8 +7,8 @@ This document explains how to run the logistics multi-agent conversation locally
 ## 1. Services / Agents
 
 | Role                | Python entrypoint                       | Purpose                                                         |
-| ------------------- | --------------------------------------- | --------------------------------------------------------------- |
-| Logistic Supervisor | `agents/supervisors/logistic/main.py`   | Starts the workflow, handles user input, emits `RECEIVED_ORDER` |
+| ------------------- |-----------------------------------------| --------------------------------------------------------------- |
+| Logistic Supervisor | `agents/supervisors/logistics/main.py`  | Starts the workflow, handles user input, emits `RECEIVED_ORDER` |
 | Shipper Agent       | `agents/logistics/shipper/server.py`    | Progresses shipping states (`CUSTOMS_CLEARANCE`, `DELIVERED`)   |
 | Accountant Agent    | `agents/logistics/accountant/server.py` | Confirms payment (`PAYMENT_COMPLETE`)                           |
 | Tatooine Farm Agent | `agents/logistics/farm/server.py`       | Moves order to `HANDOVER_TO_SHIPPER` after `RECEIVED_ORDER`     |

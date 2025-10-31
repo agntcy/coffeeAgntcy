@@ -12,13 +12,13 @@ from langgraph.graph import StateGraph
 from langgraph.prebuilt import ToolNode
 from ioa_observe.sdk.decorators import agent, graph
 
-from agents.supervisors.logistic.graph.tools import (
+from agents.supervisors.logistics.graph.tools import (
     create_order,
     next_tools_or_end
 )
 from common.llm import get_llm
 
-logger = logging.getLogger("lungo.logistic.supervisor.graph")
+logger = logging.getLogger("lungo.logistics.supervisor.graph")
 
 class NodeStates:
     ORDERS = "orders_broker"

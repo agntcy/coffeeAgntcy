@@ -22,7 +22,7 @@ help:
 
 .PHONY: logistic-supervisor
 logistic-supervisor:
-	$(UV) agents/supervisors/logistic/main.py
+	$(UV) agents/supervisors/logistics/main.py
 
 .PHONY: auction-supervisor
 auction-supervisor:
