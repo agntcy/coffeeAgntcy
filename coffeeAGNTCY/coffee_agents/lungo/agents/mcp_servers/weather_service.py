@@ -103,7 +103,7 @@ async def main():
         topic="lungo_weather_service",
     )
     app_session.add_app_container("default_session", app_container)
-    await app_session.start_all_sessions(blocking=True)
+    await app_session.start_all_sessions(keep_alive=True)
 
 if __name__ == "__main__":
     logging.info("Starting weather service...")
