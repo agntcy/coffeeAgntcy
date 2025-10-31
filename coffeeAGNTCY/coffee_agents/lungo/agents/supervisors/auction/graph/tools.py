@@ -42,6 +42,14 @@ from services.identity_service_impl import IdentityServiceImpl
 
 logger = logging.getLogger("lungo.supervisor.tools")
 
+# Global factory and transport instances
+factory = get_factory()
+transport = factory.create_transport(
+    DEFAULT_MESSAGE_TRANSPORT,
+    endpoint=TRANSPORT_SERVER_ENDPOINT,
+    name="default/default/exchange_graph"
+)
+
 
 class A2AAgentError(ToolException):
     """Custom exception for errors related to A2A agent communication or status."""
@@ -170,14 +178,6 @@ async def get_farm_yield_inventory(prompt: str, farm: str) -> str:
                              f"are: {brazil_agent_card.name}, {colombia_agent_card.name}, {vietnam_agent_card.name}.")
     
     try:
-        # Shared factory & transport
-        factory = get_factory()
-        transport = factory.create_transport(
-            DEFAULT_MESSAGE_TRANSPORT,
-            endpoint=TRANSPORT_SERVER_ENDPOINT,
-            name="default/default/exchange_graph"
-        )
-
         client = await factory.create_client(
             "A2A",
             agent_topic=A2AProtocol.create_agent_topic(card),
@@ -225,14 +225,6 @@ async def get_all_farms_yield_inventory(prompt: str) -> str:
         str: A summary string containing yield information from all farms.
     """
     logger.info("entering get_all_farms_yield_inventory tool with prompt: %s", prompt)
-
-    # Shared factory & transport
-    factory = get_factory()
-    transport = factory.create_transport(
-        DEFAULT_MESSAGE_TRANSPORT,
-        endpoint=TRANSPORT_SERVER_ENDPOINT,
-        name="default/default/exchange_graph"
-    )
 
     request = SendMessageRequest(
         id=str(uuid4()),
@@ -304,14 +296,6 @@ async def get_all_farms_yield_inventory_streaming(prompt: str):
         str: Yield information from each farm as it becomes available.
     """
     logger.info("entering get_all_farms_yield_inventory_streaming tool with prompt: %s", prompt)
-
-    # Shared factory & transport
-    factory = get_factory()
-    transport = factory.create_transport(
-        DEFAULT_MESSAGE_TRANSPORT,
-        endpoint=TRANSPORT_SERVER_ENDPOINT,
-        name="default/default/exchange_graph"
-    )
 
     request = SendMessageRequest(
         id=str(uuid4()),
@@ -439,14 +423,6 @@ async def create_order(farm: str, quantity: int, price: float) -> str:
         raise
 
     try:
-        # Shared factory & transport
-        factory = get_factory()
-        transport = factory.create_transport(
-            DEFAULT_MESSAGE_TRANSPORT,
-            endpoint=TRANSPORT_SERVER_ENDPOINT,
-            name="default/default/exchange_graph"
-        )
-
         client = await factory.create_client(
             "A2A",
             agent_topic=A2AProtocol.create_agent_topic(card),
@@ -504,14 +480,6 @@ async def get_order_details(order_id: str) -> str:
         raise ValueError("Order ID must be provided.")
 
     try:
-        # Shared factory & transport
-        factory = get_factory()
-        transport = factory.create_transport(
-            DEFAULT_MESSAGE_TRANSPORT,
-            endpoint=TRANSPORT_SERVER_ENDPOINT,
-            name="default/default/exchange_graph"
-        )
-
         client = await factory.create_client(
             "A2A",
             agent_topic=FARM_BROADCAST_TOPIC,
