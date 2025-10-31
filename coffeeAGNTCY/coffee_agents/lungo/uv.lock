@@ -29,6 +29,27 @@ wheels = [
 ]
 
 [[package]]
+name = "agntcy-app-sdk"
+version = "0.4.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "a2a-sdk" },
+    { name = "asgi-lifespan" },
+    { name = "coloredlogs" },
+    { name = "httpx" },
+    { name = "ioa-observe-sdk" },
+    { name = "langchain-community" },
+    { name = "mcp", extra = ["cli"] },
+    { name = "nats-py" },
+    { name = "slim-bindings" },
+    { name = "uvicorn" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/f8/6f/972d7e24cb4e218e6409d7353da148a71977bc6ad0f3cd9f7e57882d38f0/agntcy_app_sdk-0.4.0.tar.gz", hash = "sha256:772a4af04a4448babd59f488e7994d50f646809edbeb2cc5d263d631c0b79955", size = 3205257, upload-time = "2025-10-31T21:19:51.762Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/c0/25/8481ebfe7c84d7a6ccab46cd8929de181f7310c177284c4850570d5a912d/agntcy_app_sdk-0.4.0-py3-none-any.whl", hash = "sha256:d5234c238da2508e1541ad9bc3cf09b71157e65bc7cd18abc3f3dd17125257bd", size = 53008, upload-time = "2025-10-31T21:19:50.458Z" },
+]
+
+[[package]]
 name = "agntcy-identity-service-sdk"
 version = "0.0.6"
 source = { registry = "https://pypi.org/simple" }
@@ -189,6 +210,18 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/c6/78/7d432127c41b50bccba979505f272c16cbcadcc33645d5fa3a738110ae75/anyio-4.11.0.tar.gz", hash = "sha256:82a8d0b81e318cc5ce71a5f1f8b5c4e63619620b63141ef8c995fa0db95a57c4", size = 219094, upload-time = "2025-09-23T09:19:12.58Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/15/b3/9b1a8074496371342ec1e796a96f99c82c945a339cd81a8e73de28b4cf9e/anyio-4.11.0-py3-none-any.whl", hash = "sha256:0287e96f4d26d4149305414d4e3bc32f0dcd0862365a4bddea19d7a1ec38c4fc", size = 109097, upload-time = "2025-09-23T09:19:10.601Z" },
+]
+
+[[package]]
+name = "asgi-lifespan"
+version = "2.1.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "sniffio" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/6a/da/e7908b54e0f8043725a990bf625f2041ecf6bfe8eb7b19407f1c00b630f7/asgi-lifespan-2.1.0.tar.gz", hash = "sha256:5e2effaf0bfe39829cf2d64e7ecc47c7d86d676a6599f7afba378c31f5e3a308", size = 15627, upload-time = "2023-03-28T17:35:49.126Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/2f/f5/c36551e93acba41a59939ae6a0fb77ddb3f2e8e8caa716410c65f7341f72/asgi_lifespan-2.1.0-py3-none-any.whl", hash = "sha256:ed840706680e28428c01e14afb3875d7d76d3206f3d5b2f2294e059b5c23804f", size = 10895, upload-time = "2023-03-28T17:35:47.772Z" },
 ]
 
 [[package]]
@@ -1394,6 +1427,29 @@ wheels = [
 ]
 
 [[package]]
+name = "langchain-community"
+version = "0.3.31"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "aiohttp" },
+    { name = "dataclasses-json" },
+    { name = "httpx-sse" },
+    { name = "langchain" },
+    { name = "langchain-core" },
+    { name = "langsmith" },
+    { name = "numpy" },
+    { name = "pydantic-settings" },
+    { name = "pyyaml" },
+    { name = "requests" },
+    { name = "sqlalchemy" },
+    { name = "tenacity" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/83/49/2ff5354273809e9811392bc24bcffda545a196070666aef27bc6aacf1c21/langchain_community-0.3.31.tar.gz", hash = "sha256:250e4c1041539130f6d6ac6f9386cb018354eafccd917b01a4cff1950b80fd81", size = 33241237, upload-time = "2025-10-07T20:17:57.857Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/e6/0a/b8848db67ad7c8d4652cb6f4cb78d49b5b5e6e8e51d695d62025aa3f7dbc/langchain_community-0.3.31-py3-none-any.whl", hash = "sha256:1c727e3ebbacd4d891b07bd440647668001cea3e39cbe732499ad655ec5cb569", size = 2532920, upload-time = "2025-10-07T20:17:54.91Z" },
+]
+
+[[package]]
 name = "langchain-core"
 version = "0.3.79"
 source = { registry = "https://pypi.org/simple" }
@@ -1856,6 +1912,7 @@ version = "0.1.0"
 source = { editable = "." }
 dependencies = [
     { name = "a2a-sdk" },
+    { name = "agntcy-app-sdk" },
     { name = "agntcy-identity-service-sdk" },
     { name = "click" },
     { name = "cnoe-agent-utils" },
@@ -1893,6 +1950,7 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "a2a-sdk", specifier = "==0.3.0" },
+    { name = "agntcy-app-sdk", specifier = "==0.4.0" },
     { name = "agntcy-identity-service-sdk", specifier = "==0.0.6" },
     { name = "autogen-core", marker = "extra == 'dev'", specifier = ">=0.4.3,<0.5" },
     { name = "click", specifier = ">=8.1.8" },
@@ -2135,6 +2193,12 @@ sdist = { url = "https://files.pythonhosted.org/packages/a2/6e/371856a3fb9d31ca8
 wheels = [
     { url = "https://files.pythonhosted.org/packages/79/7b/2c79738432f5c924bef5071f933bcc9efd0473bac3b4aa584a6f7c1c8df8/mypy_extensions-1.1.0-py3-none-any.whl", hash = "sha256:1be4cccdb0f2482337c4743e60421de3a356cd97508abadd57d47403e94f5505", size = 4963, upload-time = "2025-04-22T14:54:22.983Z" },
 ]
+
+[[package]]
+name = "nats-py"
+version = "2.12.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/71/c5/2564d917503fe8d68fe630c74bf6b678fbc15c01b58f2565894761010f57/nats_py-2.12.0.tar.gz", hash = "sha256:2981ca4b63b8266c855573fa7871b1be741f1889fd429ee657e5ffc0971a38a1", size = 119821, upload-time = "2025-10-31T05:27:31.247Z" }
 
 [[package]]
 name = "nest-asyncio"
@@ -3833,6 +3897,19 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/94/e7/b2c673351809dca68a0e064b6af791aa332cf192da575fd474ed7d6f16a2/six-1.17.0.tar.gz", hash = "sha256:ff70335d468e7eb6ec65b95b99d3a2836546063f63acc5171de367e834932a81", size = 34031, upload-time = "2024-12-04T17:35:28.174Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/b7/ce/149a00dd41f10bc29e5921b496af8b574d8413afcd5e30dfa0ed46c2cc5e/six-1.17.0-py2.py3-none-any.whl", hash = "sha256:4721f391ed90541fddacab5acf947aa0d3dc7d27b2e1e8eda2be8970586c3274", size = 11050, upload-time = "2024-12-04T17:35:26.475Z" },
+]
+
+[[package]]
+name = "slim-bindings"
+version = "0.4.1"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/4d/ad/6b5d8c3f39c4f5074a68f3a86a4dc4ca079c081463c2d09298f15af0090b/slim_bindings-0.4.1.tar.gz", hash = "sha256:e1069c47ce1152f065c881f6d10760d33d000ac8506dbcacf554e940b49b2130", size = 385645, upload-time = "2025-09-08T11:43:06.666Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/f5/8a/4967832d0c3d6bae1f0e29a710c2a0282985820e1cd3adf38132b973fd21/slim_bindings-0.4.1-cp313-cp313-macosx_10_12_x86_64.whl", hash = "sha256:1befe04e506ef642ddb1274d043cb9843946003b5b242140b90df4642c0a02eb", size = 8146067, upload-time = "2025-09-08T11:42:57.504Z" },
+    { url = "https://files.pythonhosted.org/packages/45/51/75a63c386ec6c4268d7674cd76726502ebf1377ca5d5d2bf554c6e9ca6a6/slim_bindings-0.4.1-cp313-cp313-macosx_11_0_arm64.whl", hash = "sha256:0bb978935d742b5d5391ea45e6beb94a28251cf4ccca960f13545cd7d8cc34d0", size = 7847054, upload-time = "2025-09-08T11:42:59.464Z" },
+    { url = "https://files.pythonhosted.org/packages/0d/c7/8db8df2a9831c681b74dcd840d20a0719afc1c61e687fa6d76b3203c0729/slim_bindings-0.4.1-cp313-cp313-manylinux_2_34_aarch64.whl", hash = "sha256:f9b2672ad71cf34046e095826b018713b4400b36a647584714e3922c9694a46c", size = 8632951, upload-time = "2025-09-08T11:43:01.071Z" },
+    { url = "https://files.pythonhosted.org/packages/66/ef/ceaa96a4f9807312f6749391c3eea751883e6a58371e83a6e1162deb505f/slim_bindings-0.4.1-cp313-cp313-manylinux_2_34_x86_64.whl", hash = "sha256:657768b653e9cb997ad84988a418165dbcc4a216390093eb1889ab1fea037426", size = 8878407, upload-time = "2025-09-08T11:43:03.029Z" },
+    { url = "https://files.pythonhosted.org/packages/6b/b0/b864768e2f92f8fafa0fa6a2c8ec5f89076f1ab2f206fafcb3cd8968f1d4/slim_bindings-0.4.1-cp313-cp313-win_amd64.whl", hash = "sha256:492ee42b34ea1ca6081244d432bbe8a02892c86f634702d7bee3c6f09318487f", size = 7119827, upload-time = "2025-09-08T11:43:05.109Z" },
 ]
 
 [[package]]
