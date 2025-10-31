@@ -113,7 +113,7 @@ async def run_transport(server: A2AStarletteApplication, transport_type: str, en
             transport=transport
         ))
 
-        await app_session.start_session("group_session", keep_alive=False)
+        await app_session.start_session("group_session")
     except Exception as e:
         logger.error("Transport error: %s", e)
         await app_session.stop_all_sessions()

@@ -57,8 +57,8 @@ async def run_transport(server, transport_type, endpoint):
             topic=personal_topic,
         ))
 
-        await app_session.start_session("public_session", keep_alive=False)
-        await app_session.start_session("private_session", keep_alive=False)
+        await app_session.start_session("public_session")
+        await app_session.start_session("private_session")
 
     except Exception as e:
         print(f"Transport encountered an error: {e}")

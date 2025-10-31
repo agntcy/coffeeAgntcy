@@ -80,7 +80,7 @@ async def run_transport(server, transport_type, endpoint):
             transport=transport
         ))
 
-        await app_session.start_session("group_session", keep_alive=False)
+        await app_session.start_session("group_session")
 
     except Exception as e:
         print(f"Transport encountered an error: {e}")
