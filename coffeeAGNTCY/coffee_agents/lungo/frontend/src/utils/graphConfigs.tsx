@@ -412,6 +412,7 @@ export const getGraphConfig = (
     case "slim_a2a":
       return SLIM_A2A_CONFIG
     case "publish_subscribe":
+    case "publish_subscribe_streaming":
       return PUBLISH_SUBSCRIBE_CONFIG
     case "group_communication":
       return GROUP_COMMUNICATION_CONFIG

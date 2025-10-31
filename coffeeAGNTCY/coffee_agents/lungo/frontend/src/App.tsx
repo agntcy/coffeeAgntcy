@@ -7,7 +7,7 @@ import React, { useState, useEffect, useRef, useCallback } from "react"
 import { LOCAL_STORAGE_KEY } from "@/components/Chat/Messages"
 import { logger } from "@/utils/logger"
 import { useChatAreaMeasurement } from "@/hooks/useChatAreaMeasurement"
-import { useGlobalSSE } from "@/hooks/useGlobalSSE"
+import { useGroupCommunicationSSE } from "@/hooks/useGroupCommunicationSSE"
 
 import Navigation from "@/components/Navigation/Navigation"
 import MainArea from "@/components/MainArea/MainArea"
@@ -21,13 +21,14 @@ export const PATTERNS = {
   SLIM_A2A: "slim_a2a",
   PUBLISH_SUBSCRIBE: "publish_subscribe",
   GROUP_COMMUNICATION: "group_communication",
+  PUBLISH_SUBSCRIBE_STREAMING: "publish_subscribe_streaming",
 } as const
 
 export type PatternType = (typeof PATTERNS)[keyof typeof PATTERNS]
 
 const App: React.FC = () => {
   const { sendMessage } = useAgentAPI()
-  const sseState = useGlobalSSE()
+  const sseState = useGroupCommunicationSSE()
 
   const [selectedPattern, setSelectedPattern] = useState<PatternType>(
     PATTERNS.PUBLISH_SUBSCRIBE,
@@ -270,7 +271,8 @@ const App: React.FC = () => {
                 setAiReplied={setAiReplied}
                 isBottomLayout={true}
                 showCoffeePrompts={
-                  selectedPattern === PATTERNS.PUBLISH_SUBSCRIBE
+                  selectedPattern === PATTERNS.PUBLISH_SUBSCRIBE ||
+                  selectedPattern === PATTERNS.PUBLISH_SUBSCRIBE_STREAMING
                 }
                 showLogisticsPrompts={
                   selectedPattern === PATTERNS.GROUP_COMMUNICATION

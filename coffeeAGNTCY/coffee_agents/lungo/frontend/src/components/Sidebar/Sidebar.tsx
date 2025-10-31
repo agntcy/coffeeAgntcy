@@ -19,6 +19,8 @@ const Sidebar: React.FC<SidebarProps> = ({
 }) => {
   const [isPublishSubscribeExpanded, setIsPublishSubscribeExpanded] =
     useState(true)
+  const [isAuctionStreamingExpanded, setIsAuctionStreamingExpanded] =
+    useState(true)
   const [isGroupCommunicationExpanded, setIsGroupCommunicationExpanded] =
     useState(true)
   const [transport, setTransport] = useState<string>("")
@@ -45,6 +47,10 @@ const Sidebar: React.FC<SidebarProps> = ({
 
   const handlePublishSubscribeToggle = () => {
     setIsPublishSubscribeExpanded(!isPublishSubscribeExpanded)
+  }
+
+  const handleAuctionStreamingToggle = () => {
+    setIsAuctionStreamingExpanded(!isAuctionStreamingExpanded)
   }
 
   const handleGroupCommunicationToggle = () => {
@@ -78,6 +84,40 @@ const Sidebar: React.FC<SidebarProps> = ({
                   title={`A2A ${transport}`}
                   isSelected={selectedPattern === PATTERNS.PUBLISH_SUBSCRIBE}
                   onClick={() => onPatternChange(PATTERNS.PUBLISH_SUBSCRIBE)}
+                />
+              </SidebarDropdown>
+            </div>
+          </div>
+        </div>
+
+        <div className="flex flex-col">
+          <div className="flex min-h-[36px] w-full items-center gap-2 rounded py-2 pl-2 pr-5">
+            <span className="flex-1 font-inter text-sm font-normal leading-5 tracking-[0.25px] text-sidebar-text">
+              Conversation: Coffee Buying
+            </span>
+          </div>
+
+          <div className="flex flex-col">
+            <div className="flex min-h-[36px] w-full items-center gap-2 rounded py-2 pl-5 pr-5">
+              <span className="flex-1 font-inter text-sm font-normal leading-5 tracking-[0.25px] text-sidebar-text">
+                Agentic Patterns
+              </span>
+            </div>
+
+            <div>
+              <SidebarDropdown
+                title="Publish Subscribe: Streaming"
+                isExpanded={isAuctionStreamingExpanded}
+                onToggle={handleAuctionStreamingToggle}
+              >
+                <SidebarItem
+                  title={`A2A ${transport}`}
+                  isSelected={
+                    selectedPattern === PATTERNS.PUBLISH_SUBSCRIBE_STREAMING
+                  }
+                  onClick={() =>
+                    onPatternChange(PATTERNS.PUBLISH_SUBSCRIBE_STREAMING)
+                  }
                 />
               </SidebarDropdown>
             </div>
