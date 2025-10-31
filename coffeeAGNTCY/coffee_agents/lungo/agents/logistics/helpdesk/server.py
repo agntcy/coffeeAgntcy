@@ -96,7 +96,7 @@ async def run_http_server(server: A2AStarletteApplication):
     except Exception as e:
         logger.error("HTTP server error: %s", e)
 
-async def run_transport(server: A2AStarletteApplication, transport_type: str, endpoint: str, block: bool):
+async def run_transport(server: A2AStarletteApplication, transport_type: str, endpoint: str):
     try:
         personal_topic = A2AProtocol.create_agent_topic(AGENT_CARD)
         transport = factory.create_transport(
@@ -131,7 +131,6 @@ async def main(enable_http: bool):
         server,
         DEFAULT_MESSAGE_TRANSPORT,
         TRANSPORT_SERVER_ENDPOINT,
-        block=True,
     )))
     await asyncio.gather(*tasks)
 

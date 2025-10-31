@@ -35,7 +35,7 @@ async def run_http_server(server):
     except Exception as e:
         print(f"HTTP server encountered an error: {e}")
 
-async def run_transport(server, transport_type, endpoint, block):
+async def run_transport(server, transport_type, endpoint):
     """Run the transport and broadcast bridge."""
     try:
         personal_topic = A2AProtocol.create_agent_topic(AGENT_CARD)
@@ -79,7 +79,7 @@ async def main(enable_http: bool):
         if enable_http:
             tg.create_task(safe_run(run_http_server, server))
             tg.create_task(safe_run(create_badge_for_colombia_farm))
-        tg.create_task(safe_run(run_transport, server, DEFAULT_MESSAGE_TRANSPORT, TRANSPORT_SERVER_ENDPOINT, block=True))
+        tg.create_task(safe_run(run_transport, server, DEFAULT_MESSAGE_TRANSPORT, TRANSPORT_SERVER_ENDPOINT))
 
 async def safe_run(coro, *args, **kwargs):
     """Run a coroutine safely, catching and logging exceptions."""

@@ -66,7 +66,7 @@ async def run_http_server(server):
         print(f"HTTP server encountered an error: {e}")
         await app_session.stop_all_sessions()
 
-async def run_transport(server, transport_type, endpoint, block):
+async def run_transport(server, transport_type, endpoint):
     """Run the transport and broadcast bridge."""
     try:
         personal_topic = A2AProtocol.create_agent_topic(AGENT_CARD)
@@ -100,7 +100,7 @@ async def main(enable_http: bool):
     tasks = []
     if enable_http:
         tasks.append(asyncio.create_task(run_http_server(server)))
-    tasks.append(asyncio.create_task(run_transport(server, DEFAULT_MESSAGE_TRANSPORT, TRANSPORT_SERVER_ENDPOINT, block=True)))
+    tasks.append(asyncio.create_task(run_transport(server, DEFAULT_MESSAGE_TRANSPORT, TRANSPORT_SERVER_ENDPOINT)))
 
     await asyncio.gather(*tasks)
 
