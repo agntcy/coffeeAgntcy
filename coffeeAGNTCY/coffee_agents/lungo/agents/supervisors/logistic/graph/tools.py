@@ -19,7 +19,7 @@ from a2a.types import (
   SendMessageRequest,
   TextPart,
 )
-from agntcy_app_sdk.protocols.a2a.protocol import A2AProtocol
+from agntcy_app_sdk.semantic.a2a.protocol import A2AProtocol
 from ioa_observe.sdk.decorators import tool as ioa_tool_decorator
 from langchain_core.messages import ToolMessage
 from langchain_core.tools import tool
@@ -139,12 +139,11 @@ async def create_order(farm: str, quantity: int, price: float) -> str:
 
   for attempt in range(max_retries):
     try:
-      responses = await client.broadcast_message(
-        request,
-        broadcast_topic=f"{uuid4()}",
-        recipients=recipients,
+      responses = await client.start_groupchat(
+        init_message=request,
+        group_channel=f"{uuid4()}",
+        participants=recipients,
         end_message="DELIVERED",
-        group_chat=True,
         timeout=60,
       )
       # If we get here, the call succeeded

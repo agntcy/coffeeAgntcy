@@ -14,7 +14,8 @@ from uvicorn import Config, Server
 from starlette.middleware.cors import CORSMiddleware
 
 from agntcy_app_sdk.factory import AgntcyFactory
-from agntcy_app_sdk.protocols.a2a.protocol import A2AProtocol
+from agntcy_app_sdk.semantic.a2a.protocol import A2AProtocol
+from agntcy_app_sdk.app_sessions import AppContainer
 from a2a.server.apps import A2AStarletteApplication
 from a2a.server.request_handlers import DefaultRequestHandler
 from a2a.server.tasks import InMemoryTaskStore
@@ -95,7 +96,7 @@ async def run_http_server(server: A2AStarletteApplication):
     except Exception as e:
         logger.error("HTTP server error: %s", e)
 
-async def run_transport(server: A2AStarletteApplication, transport_type: str, endpoint: str, block: bool):
+async def run_transport(server: A2AStarletteApplication, transport_type: str, endpoint: str):
     try:
         personal_topic = A2AProtocol.create_agent_topic(AGENT_CARD)
         transport = factory.create_transport(
@@ -103,12 +104,19 @@ async def run_transport(server: A2AStarletteApplication, transport_type: str, en
             endpoint=endpoint,
             name=f"default/default/{personal_topic}",
         )
-        broadcast_bridge = factory.create_bridge(server, transport=transport, topic=FARM_BROADCAST_TOPIC)
-        private_bridge = factory.create_bridge(server, transport=transport, topic=personal_topic)
-        await broadcast_bridge.start(blocking=False)
-        await private_bridge.start(blocking=block)
+        # Create an application session
+        app_session = factory.create_app_session(max_sessions=1)
+
+        # Add container for group communication
+        app_session.add_app_container("group_session", AppContainer(
+            server,
+            transport=transport
+        ))
+
+        await app_session.start_session("group_session")
     except Exception as e:
         logger.error("Transport error: %s", e)
+        await app_session.stop_all_sessions()
 
 async def main(enable_http: bool):
     request_handler = DefaultRequestHandler(
@@ -123,7 +131,6 @@ async def main(enable_http: bool):
         server,
         DEFAULT_MESSAGE_TRANSPORT,
         TRANSPORT_SERVER_ENDPOINT,
-        block=True,
     )))
     await asyncio.gather(*tasks)
 

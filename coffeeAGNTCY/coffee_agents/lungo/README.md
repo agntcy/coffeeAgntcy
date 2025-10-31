@@ -91,6 +91,8 @@ Before you begin, ensure the following tools are installed:
 
    **Configure LLM Provider, Credentials and OTEL endpoint**
 
+   > ⚠️ **Note:** The `/agent/prompt/stream` endpoint requires an LLM that supports streaming. If your LLM provider does not support streaming, the streaming endpoint may fail.
+
    Then update `.env` with your LLM provider, credentials and OTEL endpoint. For example:
 
    _OpenAI:_
@@ -278,7 +280,7 @@ This command starts a FastAPI server that processes user prompts by passing them
 
 Requests that are not related to inventory or order creation are automatically routed to the General Information node, which returns a default response. Inventory requests without a specified farm are broadcast across all farms to collect inventory data. If a specific farm is provided, the request is sent directly to that farm. Order requests are sent one-to-one to a specified farm and must include the farm location and acceptable price.
 
-To invoke the exchange, use the /agent/prompt endpoint to send a human-readable prompt to ask information about coffee inventory or to place an order. For example:
+To invoke the exchange, use the `/agent/prompt` endpoint to send a human-readable prompt to ask information about coffee inventory or to place an order. For example:
 
 ```bash
 curl -X POST http://127.0.0.1:8000/agent/prompt \
@@ -287,6 +289,15 @@ curl -X POST http://127.0.0.1:8000/agent/prompt \
     "prompt": "How much coffee does the Colombia farm have?"
   }'
 ```
+
+For **real-time streaming responses** from multiple farms, use the `/agent/prompt/stream` endpoint which returns chunks as farms respond:
+
+```bash
+curl -X POST http://127.0.0.1:8000/agent/prompt/stream \
+  -H "Content-Type: application/json" \
+  -d '{"prompt": "What yield do the farms have?"}'
+```
+
 
 _Example prompts:_
 

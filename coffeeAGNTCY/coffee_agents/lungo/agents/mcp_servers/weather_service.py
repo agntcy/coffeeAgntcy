@@ -8,7 +8,8 @@ import logging
 import asyncio
 from mcp.server.fastmcp import FastMCP
 import httpx
-
+from agntcy_app_sdk.factory import TransportTypes
+from agntcy_app_sdk.app_sessions import AppContainer
 from agntcy_app_sdk.factory import AgntcyFactory
 
 from config.config import (
@@ -94,8 +95,15 @@ async def get_forecast(location: str) -> str:
 async def main():
     # serve the MCP server via a message bridge
     transport = factory.create_transport(DEFAULT_MESSAGE_TRANSPORT, endpoint=TRANSPORT_SERVER_ENDPOINT, name="default/default/lungo_weather_service")
-    bridge = factory.create_bridge(mcp._mcp_server, transport=transport, topic="lungo_weather_service")
-    await bridge.start(blocking=True)
+
+    app_session = factory.create_app_session(max_sessions=1)
+    app_container = AppContainer(
+        mcp._mcp_server,
+        transport=transport,
+        topic="lungo_weather_service",
+    )
+    app_session.add_app_container("default_session", app_container)
+    await app_session.start_all_sessions(keep_alive=True)
 
 if __name__ == "__main__":
     logging.info("Starting weather service...")
