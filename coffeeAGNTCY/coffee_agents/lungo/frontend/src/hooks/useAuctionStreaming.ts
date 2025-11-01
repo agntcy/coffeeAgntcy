@@ -42,7 +42,7 @@ export const useAuctionStreaming = () => {
     },
   })
 
-  const sseConnectionRef = useRef<EventSource | null>(null)
+  const sseConnectionRef = useRef<any>(null)
   const retryTimeoutRef = useRef<number | null>(null)
 
   const clearRetryTimeout = useCallback(() => {
@@ -52,93 +52,6 @@ export const useAuctionStreaming = () => {
     }
   }, [])
 
-  const handleConnectionOpen = useCallback(() => {
-    clearRetryTimeout()
-    setState((prev) => ({
-      ...prev,
-      isConnecting: false,
-      isConnected: true,
-      error: null,
-      retryState: {
-        retryCount: 0,
-        isRetrying: false,
-        lastRetryAt: null,
-        nextRetryAt: null,
-      },
-    }))
-  }, [clearRetryTimeout])
-
-  const scheduleRetry = useCallback(() => {
-    setState((prev) => {
-      const newRetryCount = prev.retryState.retryCount + 1
-
-      if (newRetryCount > RETRY_CONFIG.maxRetries) {
-        return {
-          ...prev,
-          isConnecting: false,
-          isConnected: false,
-          error: "Connection failed after maximum retries",
-          retryState: {
-            ...prev.retryState,
-            isRetrying: false,
-          },
-        }
-      }
-
-      const delay =
-        RETRY_CONFIG.baseDelay *
-        Math.pow(RETRY_CONFIG.backoffMultiplier, newRetryCount - 1)
-      const nextRetryAt = Date.now() + delay
-
-      retryTimeoutRef.current = window.setTimeout(() => {
-        connect()
-      }, delay)
-
-      return {
-        ...prev,
-        isConnecting: false,
-        isConnected: false,
-        error: `Connection failed, retrying in ${Math.ceil(delay / 1000)}s (${newRetryCount}/${RETRY_CONFIG.maxRetries})`,
-        retryState: {
-          retryCount: newRetryCount,
-          isRetrying: true,
-          lastRetryAt: Date.now(),
-          nextRetryAt: nextRetryAt,
-        },
-      }
-    })
-  }, [])
-
-  const handleConnectionError = useCallback(
-    (_error: Event) => {
-      if (sseConnectionRef.current) {
-        sseConnectionRef.current.close()
-        sseConnectionRef.current = null
-      }
-
-      scheduleRetry()
-    },
-    [scheduleRetry],
-  )
-
-  const handleMessage = useCallback((event: MessageEvent) => {
-    try {
-      const parsedData = JSON.parse(event.data)
-
-      if (!isValidAuctionStreamingResponse(parsedData)) {
-        return
-      }
-
-      setState((prev) => {
-        const newEvents = [...prev.events, parsedData]
-        return {
-          ...prev,
-          events: newEvents,
-        }
-      })
-    } catch (_error) {}
-  }, [])
-
   const clearEvents = useCallback(() => {
     setState((prev) => ({
       ...prev,
@@ -146,43 +59,116 @@ export const useAuctionStreaming = () => {
     }))
   }, [])
 
-  const connect = useCallback(() => {
-    clearRetryTimeout()
+  const connect = useCallback(
+    async (prompt: string) => {
+      clearRetryTimeout()
 
-    if (sseConnectionRef.current) {
-      return
-    }
+      if (sseConnectionRef.current) {
+        return
+      }
 
-    setState((prev) => ({
-      ...prev,
-      isConnecting: true,
-      error: null,
-      retryState: {
-        ...prev.retryState,
-        isRetrying: false,
-      },
-    }))
+      setState((prev) => ({
+        ...prev,
+        isConnecting: true,
+        error: null,
+        retryState: {
+          ...prev.retryState,
+          isRetrying: false,
+        },
+      }))
 
-    const eventSource = new EventSource(
-      `${AUCTION_API_URL}/agent/prompt/stream`,
-    )
-    sseConnectionRef.current = eventSource
+      try {
+        const response = await fetch(`${AUCTION_API_URL}/agent/prompt/stream`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ prompt }),
+        })
 
-    eventSource.onopen = handleConnectionOpen
-    eventSource.onmessage = handleMessage
-    eventSource.onerror = handleConnectionError
-  }, [
-    clearRetryTimeout,
-    handleConnectionOpen,
-    handleMessage,
-    handleConnectionError,
-  ])
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`)
+        }
+
+        const reader = response.body?.getReader()
+        if (!reader) {
+          throw new Error("No response body reader available")
+        }
+
+        sseConnectionRef.current = { reader } as any // Store reader reference
+
+        setState((prev) => ({
+          ...prev,
+          isConnecting: false,
+          isConnected: true,
+          error: null,
+          retryState: {
+            retryCount: 0,
+            isRetrying: false,
+            lastRetryAt: null,
+            nextRetryAt: null,
+          },
+        }))
+
+        // Read the stream
+        const decoder = new TextDecoder()
+        let buffer = ""
+
+        try {
+          while (true) {
+            const { done, value } = await reader.read()
+            if (done) break
+
+            buffer += decoder.decode(value, { stream: true })
+            const lines = buffer.split("\n")
+            buffer = lines.pop() || "" // Keep incomplete line in buffer
+
+            for (const line of lines) {
+              if (line.trim()) {
+                try {
+                  const parsedData = JSON.parse(line)
+                  if (isValidAuctionStreamingResponse(parsedData)) {
+                    setState((prev) => ({
+                      ...prev,
+                      events: [...prev.events, parsedData],
+                    }))
+                  }
+                } catch (parseError) {
+                  console.warn("Failed to parse streaming line:", line)
+                }
+              }
+            }
+          }
+        } finally {
+          reader.releaseLock()
+          sseConnectionRef.current = null
+          setState((prev) => ({
+            ...prev,
+            isConnected: false,
+          }))
+        }
+      } catch (error) {
+        console.error("Streaming error:", error)
+        setState((prev) => ({
+          ...prev,
+          isConnecting: false,
+          isConnected: false,
+          error: error instanceof Error ? error.message : "Connection failed",
+        }))
+      }
+    },
+    [clearRetryTimeout],
+  )
 
   const disconnect = useCallback(() => {
     clearRetryTimeout()
 
-    if (sseConnectionRef.current) {
-      sseConnectionRef.current.close()
+    if (sseConnectionRef.current?.reader) {
+      try {
+        sseConnectionRef.current.reader.cancel()
+      } catch (error) {
+        console.warn("Error cancelling reader:", error)
+      }
       sseConnectionRef.current = null
     }
 
@@ -199,27 +185,33 @@ export const useAuctionStreaming = () => {
     }))
   }, [clearRetryTimeout])
 
-  const manualRetry = useCallback(() => {
-    setState((prev) => ({
-      ...prev,
-      retryState: {
-        retryCount: 0,
-        isRetrying: false,
-        lastRetryAt: null,
-        nextRetryAt: null,
-      },
-    }))
-    connect()
-  }, [connect])
+  const manualRetry = useCallback(
+    (prompt: string) => {
+      setState((prev) => ({
+        ...prev,
+        retryState: {
+          retryCount: 0,
+          isRetrying: false,
+          lastRetryAt: null,
+          nextRetryAt: null,
+        },
+      }))
+      connect(prompt)
+    },
+    [connect],
+  )
 
+  // Don't auto-connect for auction streaming - wait for prompt
   useEffect(() => {
-    connect()
-
     return () => {
       clearRetryTimeout()
 
-      if (sseConnectionRef.current) {
-        sseConnectionRef.current.close()
+      if (sseConnectionRef.current?.reader) {
+        try {
+          sseConnectionRef.current.reader.cancel()
+        } catch (error) {
+          console.warn("Error cancelling reader:", error)
+        }
         sseConnectionRef.current = null
       }
 
@@ -235,7 +227,7 @@ export const useAuctionStreaming = () => {
         },
       }))
     }
-  }, [connect, clearRetryTimeout])
+  }, [clearRetryTimeout])
 
   return {
     ...state,

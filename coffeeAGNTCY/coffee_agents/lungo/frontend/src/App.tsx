@@ -8,10 +8,12 @@ import { LOCAL_STORAGE_KEY } from "@/components/Chat/Messages"
 import { logger } from "@/utils/logger"
 import { useChatAreaMeasurement } from "@/hooks/useChatAreaMeasurement"
 import { useGroupCommunicationSSE } from "@/hooks/useGroupCommunicationSSE"
+import { useAuctionStreaming } from "@/hooks/useAuctionStreaming"
 
 import Navigation from "@/components/Navigation/Navigation"
 import MainArea from "@/components/MainArea/MainArea"
 import { useAgentAPI } from "@/hooks/useAgentAPI"
+import { v4 as uuid } from "uuid"
 import ChatArea from "@/components/Chat/ChatArea"
 import Sidebar from "@/components/Sidebar/Sidebar"
 import { ThemeProvider } from "@/contexts/ThemeContext"
@@ -28,11 +30,24 @@ export type PatternType = (typeof PATTERNS)[keyof typeof PATTERNS]
 
 const App: React.FC = () => {
   const { sendMessage } = useAgentAPI()
-  const sseState = useGroupCommunicationSSE()
 
   const [selectedPattern, setSelectedPattern] = useState<PatternType>(
     PATTERNS.PUBLISH_SUBSCRIBE,
   )
+
+  // Use different SSE hooks based on the selected pattern
+  const groupCommSSE = useGroupCommunicationSSE()
+  const auctionStreamingSSE = useAuctionStreaming()
+
+  // Create a unified SSE state interface for ChatArea
+  const sseState =
+    selectedPattern === PATTERNS.PUBLISH_SUBSCRIBE_STREAMING
+      ? {
+          ...auctionStreamingSSE,
+          currentOrderId: null, // Auction streaming doesn't use order IDs
+          events: auctionStreamingSSE.events,
+        }
+      : groupCommSSE
   const [aiReplied, setAiReplied] = useState<boolean>(false)
   const [buttonClicked, setButtonClicked] = useState<boolean>(false)
   const [currentUserMessage, setCurrentUserMessage] = useState<string>("")
@@ -75,7 +90,8 @@ const App: React.FC = () => {
     setApiError(false)
 
     if (
-      selectedPattern !== PATTERNS.GROUP_COMMUNICATION ||
+      (selectedPattern !== PATTERNS.GROUP_COMMUNICATION &&
+        selectedPattern !== PATTERNS.PUBLISH_SUBSCRIBE_STREAMING) ||
       !sseState.isConnected ||
       sseState.error
     ) {
@@ -153,6 +169,33 @@ const App: React.FC = () => {
             setShowFinalResponse(true)
             handleApiResponse(errorMsg, true)
           })
+      } else if (selectedPattern === PATTERNS.PUBLISH_SUBSCRIBE_STREAMING) {
+        // For auction streaming, insert the user message so it appears in the
+        // chat (matching behavior of sendMessageWithCallback), then trigger
+        // the streaming connection.
+        const userMessage = {
+          role: "user" as const,
+          content: query,
+          id: uuid(),
+          animate: false,
+        }
+
+        const loadingMessage = {
+          role: "assistant" as const,
+          content: "...",
+          id: uuid(),
+          animate: true,
+        }
+
+        setMessages((prev) => [...prev, userMessage, loadingMessage])
+
+        setShowFinalResponse(false)
+        setAgentResponse("")
+        sseState.clearEvents()
+
+        // Trigger auction streaming
+        await sseState.connect(query)
+        setIsAgentLoading(false)
       } else {
         setShowFinalResponse(true)
         const response = await sendMessage(query, selectedPattern)
