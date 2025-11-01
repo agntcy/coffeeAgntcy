@@ -7,7 +7,7 @@ import React, { useState, useRef, useEffect } from "react"
 
 const DEFAULT_LOGISTIC_APP_API_URL = "http://127.0.0.1:9090"
 const LOGISTIC_APP_API_URL =
-  import.meta.env.VITE_LOGISTIC_APP_API_URL || DEFAULT_LOGISTIC_APP_API_URL
+  import.meta.env.VITE_LOGISTICS_APP_API_URL || DEFAULT_LOGISTIC_APP_API_URL
 
 interface LogisticsPromptsDropdownProps {
   visible: boolean
