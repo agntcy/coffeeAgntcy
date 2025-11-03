@@ -12,11 +12,13 @@ const EXCHANGE_APP_API_URL =
 interface CoffeePromptsDropdownProps {
   visible: boolean
   onSelect: (query: string) => void
+  pattern?: string
 }
 
 const CoffeePromptsDropdown: React.FC<CoffeePromptsDropdownProps> = ({
   visible,
   onSelect,
+  pattern,
 }) => {
   const [isOpen, setIsOpen] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
@@ -29,7 +31,12 @@ const CoffeePromptsDropdown: React.FC<CoffeePromptsDropdownProps> = ({
 
     ;(async () => {
       try {
-        const res = await fetch(`${EXCHANGE_APP_API_URL}/suggested-prompts`, {
+        const isStreamingPattern = pattern === "publish_subscribe_streaming"
+        const url = isStreamingPattern
+          ? `${EXCHANGE_APP_API_URL}/suggested-prompts?pattern=streaming`
+          : `${EXCHANGE_APP_API_URL}/suggested-prompts`
+
+        const res = await fetch(url, {
           cache: "no-cache",
           signal,
         })
@@ -61,7 +68,7 @@ const CoffeePromptsDropdown: React.FC<CoffeePromptsDropdownProps> = ({
     })()
 
     return () => controller.abort()
-  }, [])
+  }, [pattern])
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -127,43 +134,61 @@ const CoffeePromptsDropdown: React.FC<CoffeePromptsDropdownProps> = ({
         </div>
 
         <div
-          className={`absolute bottom-full left-0 z-[1000] mb-1 h-[365px] w-269 overflow-y-auto rounded-[6px] border border-nav-border bg-chat-dropdown-background px-[2px] py-0 opacity-100 shadow-[0px_2px_5px_0px_rgba(0,0,0,0.05)] ${isOpen ? "block animate-fadeInDropdown" : "hidden"} `}
+          className={`absolute bottom-full left-0 z-[1000] mb-1 ${pattern === "publish_subscribe_streaming" ? "h-auto" : "h-[365px]"} w-269 overflow-y-auto rounded-[6px] border border-nav-border bg-chat-dropdown-background px-[2px] py-0 opacity-100 shadow-[0px_2px_5px_0px_rgba(0,0,0,0.05)] ${isOpen ? "block animate-fadeInDropdown" : "hidden"} `}
         >
-          <div className="px-2 py-2">
-            <div className="mb-2 h-[36px] w-[265px] gap-2 bg-chat-dropdown-background pb-2 pl-[10px] pr-[10px] pt-2 font-inter text-sm font-normal leading-5 tracking-[0%] text-chat-text opacity-60">
-              BUYER
-            </div>
-            {buyerPrompts.map((item, index) => (
-              <div
-                key={`buyer-${index}`}
-                className="mx-0.5 my-0.5 flex min-h-10 w-[calc(100%-4px)] cursor-pointer items-center rounded bg-chat-dropdown-background px-2 py-[6px] transition-colors duration-200 ease-in-out hover:bg-chat-background-hover"
-                onClick={() => handleItemClick(item)}
-              >
-                <div className="w-full break-words font-cisco text-sm font-normal leading-5 tracking-[0%] text-chat-text">
-                  {item}
+          {pattern === "publish_subscribe_streaming" ? (
+            <div className="px-2 py-2">
+              {buyerPrompts.map((item, index) => (
+                <div
+                  key={`prompt-${index}`}
+                  className="mx-0.5 my-0.5 flex min-h-10 w-[calc(100%-4px)] cursor-pointer items-center rounded bg-chat-dropdown-background px-2 py-[6px] transition-colors duration-200 ease-in-out hover:bg-chat-background-hover"
+                  onClick={() => handleItemClick(item)}
+                >
+                  <div className="w-full break-words font-cisco text-sm font-normal leading-5 tracking-[0%] text-chat-text">
+                    {item}
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
-
-          <div className="mx-2 my-2 border-t border-nav-border"></div>
-
-          <div className="px-2 py-2">
-            <div className="mb-2 h-[36px] w-[265px] gap-2 bg-chat-dropdown-background pb-2 pl-[10px] pr-[10px] pt-2 font-inter text-sm font-normal leading-5 tracking-[0%] text-chat-text opacity-60">
-              PURCHASER
+              ))}
             </div>
-            {purchaserPrompts.map((item, index) => (
-              <div
-                key={`purchaser-${index}`}
-                className="mx-0.5 my-0.5 flex min-h-10 w-[calc(100%-4px)] cursor-pointer items-center rounded bg-chat-dropdown-background px-2 py-[6px] transition-colors duration-200 ease-in-out hover:bg-chat-background-hover"
-                onClick={() => handleItemClick(item)}
-              >
-                <div className="w-full break-words font-cisco text-sm font-normal leading-5 tracking-[0%] text-chat-text">
-                  {item}
+          ) : (
+            <>
+              <div className="px-2 py-2">
+                <div className="mb-2 h-[36px] w-[265px] gap-2 bg-chat-dropdown-background pb-2 pl-[10px] pr-[10px] pt-2 font-inter text-sm font-normal leading-5 tracking-[0%] text-chat-text opacity-60">
+                  BUYER
                 </div>
+                {buyerPrompts.map((item, index) => (
+                  <div
+                    key={`buyer-${index}`}
+                    className="mx-0.5 my-0.5 flex min-h-10 w-[calc(100%-4px)] cursor-pointer items-center rounded bg-chat-dropdown-background px-2 py-[6px] transition-colors duration-200 ease-in-out hover:bg-chat-background-hover"
+                    onClick={() => handleItemClick(item)}
+                  >
+                    <div className="w-full break-words font-cisco text-sm font-normal leading-5 tracking-[0%] text-chat-text">
+                      {item}
+                    </div>
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
+
+              <div className="mx-2 my-2 border-t border-nav-border"></div>
+
+              <div className="px-2 py-2">
+                <div className="mb-2 h-[36px] w-[265px] gap-2 bg-chat-dropdown-background pb-2 pl-[10px] pr-[10px] pt-2 font-inter text-sm font-normal leading-5 tracking-[0%] text-chat-text opacity-60">
+                  PURCHASER
+                </div>
+                {purchaserPrompts.map((item, index) => (
+                  <div
+                    key={`purchaser-${index}`}
+                    className="mx-0.5 my-0.5 flex min-h-10 w-[calc(100%-4px)] cursor-pointer items-center rounded bg-chat-dropdown-background px-2 py-[6px] transition-colors duration-200 ease-in-out hover:bg-chat-background-hover"
+                    onClick={() => handleItemClick(item)}
+                  >
+                    <div className="w-full break-words font-cisco text-sm font-normal leading-5 tracking-[0%] text-chat-text">
+                      {item}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
         </div>
       </div>
     </div>

@@ -170,12 +170,20 @@ const ChatArea: React.FC<ChatAreaProps> = ({
       className="relative flex w-full flex-col"
       style={{ backgroundColor: "var(--overlay-background)" }}
     >
-      {currentUserMessage && (
+      {(currentUserMessage ||
+        (showAuctionStreaming &&
+          auctionState?.events &&
+          auctionState.events.length > 0)) && (
         <ChatHeader
           onMinimize={isMinimized ? handleRestore : handleMinimize}
           onClearConversation={onClearConversation}
           isMinimized={isMinimized}
-          showActions={!!agentResponse && !isAgentLoading}
+          showActions={
+            (!!agentResponse && !isAgentLoading) ||
+            (showAuctionStreaming &&
+              auctionState?.events &&
+              auctionState.events.length > 0)
+          }
         />
       )}
 
@@ -248,6 +256,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
             <CoffeePromptsDropdown
               visible={true}
               onSelect={handleDropdownQuery}
+              pattern={pattern}
             />
           </div>
         )}

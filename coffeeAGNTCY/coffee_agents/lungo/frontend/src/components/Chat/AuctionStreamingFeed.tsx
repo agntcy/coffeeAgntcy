@@ -107,12 +107,14 @@ const AuctionStreamingFeed: React.FC<AuctionStreamingFeedProps> = ({
             Connection error: {errorMessage}
           </div>
         ) : isComplete ? (
-          <div className="whitespace-pre-wrap break-words font-cisco text-sm font-normal leading-5 text-chat-text">
-            Processed
+          <div className="flex items-center gap-2 whitespace-pre-wrap break-words font-cisco text-sm font-medium leading-5">
+            <div className="h-2 w-2 rounded-full bg-green-700" />
+            <span className="text-green-700">Complete</span>
           </div>
         ) : prompt && !apiError ? (
-          <div className="whitespace-pre-wrap break-words font-cisco text-sm font-normal leading-5 text-chat-text">
-            Processing...
+          <div className="flex items-center gap-2 whitespace-pre-wrap break-words font-cisco text-sm font-medium leading-5">
+            <div className="h-2 w-2 animate-pulse rounded-full bg-gray-400" />
+            <span className="text-chat-text">Streaming...</span>
           </div>
         ) : null}
 
