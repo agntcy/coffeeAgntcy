@@ -10,7 +10,8 @@ from a2a.server.tasks import InMemoryTaskStore
 from dotenv import load_dotenv
 
 from agntcy_app_sdk.factory import AgntcyFactory
-from agntcy_app_sdk.protocols.a2a.protocol import A2AProtocol
+from agntcy_app_sdk.semantic.a2a.protocol import A2AProtocol
+from agntcy_app_sdk.app_sessions import AppContainer
 
 from config.config import FARM_AGENT_HOST, FARM_AGENT_PORT
 from config.config import DEFAULT_MESSAGE_TRANSPORT, TRANSPORT_SERVER_ENDPOINT
@@ -65,14 +66,25 @@ async def main():
         userver = Server(config)
         await userver.serve()
     else:
-        transport = factory.create_transport(
-            DEFAULT_MESSAGE_TRANSPORT,
-            endpoint=TRANSPORT_SERVER_ENDPOINT,
-            # SLIM transport requires a routable name (org/namespace/agent) to build the PyName used for request-reply routing to match the a2a client topic
-            name= "default/default/" + A2AProtocol.create_agent_topic(AGENT_CARD)
-        )
-        bridge = factory.create_bridge(server, transport=transport)
-        await bridge.start(blocking=True)
+        try:
+            transport = factory.create_transport(
+                DEFAULT_MESSAGE_TRANSPORT,
+                endpoint=TRANSPORT_SERVER_ENDPOINT,
+                # SLIM transport requires a routable name (org/namespace/agent) to build the PyName used for request-reply routing to match the a2a client topic
+                name= "default/default/" + A2AProtocol.create_agent_topic(AGENT_CARD)
+            )
+            app_session = factory.create_app_session(max_sessions=1)
+
+            # Add container for group communication
+            app_session.add_app_container("private_session", AppContainer(
+                server,
+                transport=transport
+            ))
+
+            await app_session.start_session("private_session")
+
+        except Exception as e:
+            print(f"Transport encountered an error: {e}")
 
 if __name__ == '__main__':
     try:
