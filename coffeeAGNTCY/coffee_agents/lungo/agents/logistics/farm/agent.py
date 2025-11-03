@@ -7,7 +7,7 @@ from langchain_core.messages import AIMessage
 from langgraph.graph import MessagesState
 from langgraph.graph import StateGraph, END
 from ioa_observe.sdk.decorators import agent, graph
-from common.logistic_states import LogisticStatus, extract_status, build_transition_message, ensure_order_id
+from common.logistics_states import LogisticStatus, extract_status, build_transition_message, ensure_order_id
 
 logger = logging.getLogger("lungo.farm_agent.agent")
 

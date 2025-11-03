@@ -9,7 +9,7 @@ from langgraph.graph import StateGraph, END
 
 from ioa_observe.sdk.decorators import agent, graph
 
-from common.logistic_states import (
+from common.logistics_states import (
     LogisticStatus,
     extract_status,
     build_transition_message,

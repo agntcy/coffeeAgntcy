@@ -34,7 +34,7 @@ from config.config import (
   DEFAULT_MESSAGE_TRANSPORT,
   TRANSPORT_SERVER_ENDPOINT,
 )
-from common.logistic_states import LogisticStatus
+from common.logistics_states import LogisticStatus
 
 logger = logging.getLogger("lungo.logistic.supervisor.tools")
 

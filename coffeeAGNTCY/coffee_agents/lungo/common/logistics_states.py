@@ -1,11 +1,13 @@
 # Copyright AGNTCY Contributors (https://github.com/agntcy)
 # SPDX-License-Identifier: Apache-2.0
-
+import logging
 from enum import Enum
 import re
 import uuid
 
 from typing import Optional
+
+logger = logging.getLogger("lungo.common.logistics_states")
 
 class LogisticStatus(Enum):
   RECEIVED_ORDER = "RECEIVED_ORDER"
@@ -23,7 +25,9 @@ def extract_status(message: str) -> LogisticStatus | None:
   Extracts the logistic status from a given message string.
   Returns the corresponding LogisticStatus enum member if found, else None.
   """
-  print(f"Extracting status from message: {message}")
+  if "IDLE" not in message:
+    logger.info(f"Extracting status from message: {message}")
+
   for key, status in STATUS_LOOKUP.items():
     if key in message:
       return status
