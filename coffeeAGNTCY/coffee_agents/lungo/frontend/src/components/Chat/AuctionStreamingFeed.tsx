@@ -6,7 +6,6 @@
 import React, { useState, useEffect, useCallback } from "react"
 import { ChevronDown, ChevronUp } from "lucide-react"
 import AgentIcon from "@/assets/Coffee_Icon.svg"
-import CheckCircle from "@/assets/CheckCircle.png"
 import { AuctionStreamingFeedProps } from "@/types/streaming"
 
 const AuctionStreamingFeed: React.FC<AuctionStreamingFeedProps> = ({
@@ -154,11 +153,11 @@ const AuctionStreamingFeed: React.FC<AuctionStreamingFeedProps> = ({
                     className="flex w-full flex-row items-start gap-1"
                   >
                     <div className="mt-1 flex items-center">
-                      <img
+                      {/* <img
                         src={CheckCircle}
                         alt="Complete"
                         className="h-4 w-4"
-                      />
+                      /> */}
                     </div>
 
                     <div className="flex-1">
