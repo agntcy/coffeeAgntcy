@@ -3,16 +3,14 @@
 
 import logging
 from uuid import uuid4
-from typing import Any, Dict, List, Optional, Union
 
-from ioa_observe.sdk.decorators import agent, graph
+from ioa_observe.sdk.decorators import agent
 from agntcy_app_sdk.factory import AgntcyFactory
-from agntcy_app_sdk.protocols.a2a.protocol import A2AProtocol
+from agntcy_app_sdk.semantic.a2a.protocol import A2AProtocol
 from config.config import DEFAULT_MESSAGE_TRANSPORT, TRANSPORT_SERVER_ENDPOINT
 from langchain_core.messages import HumanMessage, SystemMessage
 from common.llm import get_llm
 from a2a.types import (
-    AgentCard,
     SendMessageRequest,
     MessageSendParams,
     Message,
