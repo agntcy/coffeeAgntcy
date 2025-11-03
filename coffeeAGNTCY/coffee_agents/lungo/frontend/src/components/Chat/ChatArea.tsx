@@ -16,6 +16,7 @@ import AgentIcon from "@/assets/Coffee_Icon.svg"
 import { cn } from "@/utils/cn.ts"
 import { logger } from "@/utils/logger"
 import GroupCommunicationFeed from "./GroupCommunicationFeed"
+import AuctionStreamingFeed from "./AuctionStreamingFeed"
 
 interface SSEState {
   isConnected: boolean
@@ -34,6 +35,7 @@ interface ChatAreaProps {
   showCoffeePrompts?: boolean
   showLogisticsPrompts?: boolean
   showProgressTracker?: boolean
+  showAuctionStreaming?: boolean
   showFinalResponse?: boolean
   onStreamComplete?: () => void
   onSenderHighlight?: (nodeId: string) => void
@@ -50,6 +52,7 @@ interface ChatAreaProps {
   apiError: boolean
   chatRef?: React.RefObject<HTMLDivElement | null>
   sseState?: SSEState
+  auctionState?: any // TODO: type this properly
 }
 
 const ChatArea: React.FC<ChatAreaProps> = ({
@@ -60,6 +63,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
   showCoffeePrompts = false,
   showLogisticsPrompts = false,
   showProgressTracker = false,
+  showAuctionStreaming = false,
   showFinalResponse = false,
   onStreamComplete,
   onSenderHighlight,
@@ -76,6 +80,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
   apiError,
   chatRef,
   sseState,
+  auctionState,
 }) => {
   const [content, setContent] = useState<string>("")
   const [loading, setLoading] = useState<boolean>(false)
@@ -140,7 +145,12 @@ const ChatArea: React.FC<ChatAreaProps> = ({
     if (onUserInput) {
       onUserInput(content)
     }
-    await processMessageWithQuery(content)
+
+    if (showAuctionStreaming && onDropdownSelect) {
+      onDropdownSelect(content)
+    } else {
+      await processMessageWithQuery(content)
+    }
   }
 
   const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>): void => {
@@ -191,6 +201,17 @@ const ChatArea: React.FC<ChatAreaProps> = ({
                   executionKey={executionKey}
                   apiError={apiError}
                   sseState={sseState}
+                />
+              </div>
+            )}
+
+            {showAuctionStreaming && (
+              <div className={`w-full ${isMinimized ? "hidden" : ""}`}>
+                <AuctionStreamingFeed
+                  isVisible={!isMinimized && showAuctionStreaming}
+                  prompt={currentUserMessage || ""}
+                  apiError={apiError}
+                  auctionStreamingState={auctionState}
                 />
               </div>
             )}

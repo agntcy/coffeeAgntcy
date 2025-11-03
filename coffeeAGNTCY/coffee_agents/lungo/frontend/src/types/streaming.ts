@@ -42,13 +42,7 @@ interface AuctionStreamingFeedProps {
   onStreamComplete?: () => void
   executionKey?: string
   apiError: boolean
-  sseState?: {
-    isConnected: boolean
-    isConnecting: boolean
-    events: AuctionStreamingResponse[]
-    error: string | null
-    clearEvents: () => void
-  }
+  auctionStreamingState?: AuctionStreamingState
 }
 
 interface SSERetryState {
@@ -67,27 +61,17 @@ interface SSEState {
   retryState: SSERetryState
 }
 
-interface StreamingLogsSSEState {
+interface AuctionStreamingState {
   isConnected: boolean
   isConnecting: boolean
   events: AuctionStreamingResponse[]
   error: string | null
-  retryState: SSERetryState
-}
-
-interface AuctionStreamingSSEState {
-  isConnected: boolean
-  isConnecting: boolean
-  events: AuctionStreamingResponse[]
-  error: string | null
-  retryState: SSERetryState
 }
 
 export type {
   LogisticsStreamStep,
   AuctionStreamingResponse,
-  StreamingLogsSSEState,
-  AuctionStreamingSSEState,
+  AuctionStreamingState,
   GroupCommunicationFeedProps,
   AuctionStreamingFeedProps,
   SSEState,

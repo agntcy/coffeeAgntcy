@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  **/
 
-import React, { useState, useEffect, useCallback, useRef } from "react"
+import React, { useState, useEffect, useCallback } from "react"
 import { ChevronDown, ChevronUp } from "lucide-react"
 import AgentIcon from "@/assets/Coffee_Icon.svg"
 import CheckCircle from "@/assets/CheckCircle.png"
@@ -14,69 +14,58 @@ const AuctionStreamingFeed: React.FC<AuctionStreamingFeedProps> = ({
   onComplete,
   prompt,
   onStreamComplete,
-  sseState,
+  auctionStreamingState,
   executionKey,
   apiError,
 }) => {
-  const [state, setState] = useState({
-    isExpanded: true,
-    isComplete: false,
-  })
-
-  const lastProcessedEventRef = useRef<string | null>(null)
-  const highlightTimeoutsRef = useRef<number[]>([])
+  const [isExpanded, setIsExpanded] = useState<boolean>(true)
+  const [isComplete, setIsComplete] = useState<boolean>(false)
 
   const handleExpand = useCallback(() => {
-    setState((prev) => ({ ...prev, isExpanded: true }))
+    setIsExpanded(true)
   }, [])
 
   const handleCollapse = useCallback(() => {
-    setState((prev) => ({ ...prev, isExpanded: false }))
+    setIsExpanded(false)
   }, [])
 
   useEffect(() => {
     if (prompt) {
-      highlightTimeoutsRef.current.forEach(clearTimeout)
-      highlightTimeoutsRef.current = []
-
-      setState((prev) => ({
-        ...prev,
-        isComplete: false,
-        isExpanded: true,
-      }))
-      lastProcessedEventRef.current = null
+      setIsComplete(false)
+      setIsExpanded(true)
     }
   }, [prompt])
 
   useEffect(() => {
-    if (executionKey) {
-      highlightTimeoutsRef.current.forEach(clearTimeout)
-      highlightTimeoutsRef.current = []
+    if (
+      auctionStreamingState?.events.length === 0 &&
+      auctionStreamingState?.isConnecting
+    ) {
+      setIsComplete(false)
+      setIsExpanded(true)
+    }
+  }, [
+    auctionStreamingState?.events.length,
+    auctionStreamingState?.isConnecting,
+  ])
 
-      setState({
-        isComplete: false,
-        isExpanded: true,
-      })
-      lastProcessedEventRef.current = null
+  useEffect(() => {
+    if (executionKey) {
+      setIsComplete(false)
+      setIsExpanded(true)
     }
   }, [executionKey])
 
   useEffect(() => {
-    return () => {
-      highlightTimeoutsRef.current.forEach(clearTimeout)
-    }
-  }, [])
+    if (!auctionStreamingState?.events.length) return
 
-  useEffect(() => {
-    if (!sseState?.events.length) return
+    const isStreamingComplete =
+      auctionStreamingState.events.length > 0 &&
+      !auctionStreamingState.isConnecting &&
+      !auctionStreamingState.isConnected
 
-    const hasMultipleResponses = sseState.events.length >= 3
-
-    if (hasMultipleResponses && !state.isComplete) {
-      setState((prev) => ({
-        ...prev,
-        isComplete: true,
-      }))
+    if (isStreamingComplete && !isComplete) {
+      setIsComplete(true)
 
       if (onComplete) {
         onComplete()
@@ -86,14 +75,21 @@ const AuctionStreamingFeed: React.FC<AuctionStreamingFeedProps> = ({
         onStreamComplete()
       }
     }
-  }, [sseState?.events, state.isComplete, onComplete, onStreamComplete])
+  }, [
+    auctionStreamingState?.events,
+    auctionStreamingState?.isConnecting,
+    auctionStreamingState?.isConnected,
+    isComplete,
+    onComplete,
+    onStreamComplete,
+  ])
 
   if (!isVisible) {
     return null
   }
 
-  const events = sseState?.events || []
-  const errorMessage = sseState?.error || null
+  const events = auctionStreamingState?.events || []
+  const errorMessage = auctionStreamingState?.error || null
 
   if ((!prompt && events.length === 0) || apiError) {
     return null
@@ -110,17 +106,17 @@ const AuctionStreamingFeed: React.FC<AuctionStreamingFeedProps> = ({
           <div className="whitespace-pre-wrap break-words font-cisco text-sm font-normal leading-5 text-chat-text">
             Connection error: {errorMessage}
           </div>
-        ) : state.isComplete ? (
+        ) : isComplete ? (
           <div className="whitespace-pre-wrap break-words font-cisco text-sm font-normal leading-5 text-chat-text">
-            Auction streaming completed
+            Processed
           </div>
         ) : prompt && !apiError ? (
           <div className="whitespace-pre-wrap break-words font-cisco text-sm font-normal leading-5 text-chat-text">
-            Streaming auction data...
+            Processing...
           </div>
         ) : null}
 
-        {prompt && !state.isComplete && !apiError && events.length === 0 && (
+        {prompt && !isComplete && !apiError && events.length === 0 && (
           <div className="mt-3 flex w-full flex-row items-start gap-1">
             <div className="mt-1 flex items-center">
               <div className="h-4 w-4 animate-spin rounded-full border-2 border-b-transparent border-l-transparent border-r-accent-primary border-t-accent-primary" />
@@ -129,7 +125,7 @@ const AuctionStreamingFeed: React.FC<AuctionStreamingFeedProps> = ({
           </div>
         )}
 
-        {state.isComplete && !state.isExpanded && (
+        {isComplete && !isExpanded && (
           <div
             className="mt-1 flex w-full cursor-pointer flex-row items-center gap-1 hover:opacity-75"
             onClick={handleExpand}
@@ -140,13 +136,13 @@ const AuctionStreamingFeed: React.FC<AuctionStreamingFeedProps> = ({
 
             <div className="flex-1">
               <span className="font-cisco text-sm font-normal leading-[18px] text-chat-text">
-                View Auction Details
+                View Details
               </span>
             </div>
           </div>
         )}
 
-        {state.isExpanded && (
+        {isExpanded && (
           <>
             <div className="mt-3 flex w-full flex-col items-start gap-3">
               {events.map((event, index) => {
@@ -164,7 +160,7 @@ const AuctionStreamingFeed: React.FC<AuctionStreamingFeedProps> = ({
                     </div>
 
                     <div className="flex-1">
-                      <span className="font-['Inter'] text-sm leading-[18px] text-chat-text">
+                      <span className="font-inter text-sm leading-[18px] text-chat-text">
                         <span className="font-normal">{event.response}</span>
                       </span>
                     </div>
@@ -172,7 +168,7 @@ const AuctionStreamingFeed: React.FC<AuctionStreamingFeedProps> = ({
                 )
               })}
 
-              {events.length > 0 && !state.isComplete && (
+              {events.length > 0 && !isComplete && (
                 <div className="flex w-full flex-row items-start gap-1">
                   <div className="mt-1 flex items-center">
                     <div className="h-4 w-4 animate-spin rounded-full border-2 border-b-transparent border-l-transparent border-r-accent-primary border-t-accent-primary" />
@@ -182,7 +178,7 @@ const AuctionStreamingFeed: React.FC<AuctionStreamingFeedProps> = ({
               )}
             </div>
 
-            {state.isComplete && (
+            {isComplete && (
               <div
                 className="flex w-full cursor-pointer flex-row items-center gap-1 pt-2 hover:opacity-75"
                 onClick={handleCollapse}

@@ -13,7 +13,6 @@ import { useAuctionStreaming } from "@/hooks/useAuctionStreaming"
 import Navigation from "@/components/Navigation/Navigation"
 import MainArea from "@/components/MainArea/MainArea"
 import { useAgentAPI } from "@/hooks/useAgentAPI"
-import { v4 as uuid } from "uuid"
 import ChatArea from "@/components/Chat/ChatArea"
 import Sidebar from "@/components/Sidebar/Sidebar"
 import { ThemeProvider } from "@/contexts/ThemeContext"
@@ -35,19 +34,11 @@ const App: React.FC = () => {
     PATTERNS.PUBLISH_SUBSCRIBE,
   )
 
-  // Use different SSE hooks based on the selected pattern
   const groupCommSSE = useGroupCommunicationSSE()
-  const auctionStreamingSSE = useAuctionStreaming()
+  const auctionStreaming = useAuctionStreaming()
 
-  // Create a unified SSE state interface for ChatArea
-  const sseState =
-    selectedPattern === PATTERNS.PUBLISH_SUBSCRIBE_STREAMING
-      ? {
-          ...auctionStreamingSSE,
-          currentOrderId: null, // Auction streaming doesn't use order IDs
-          events: auctionStreamingSSE.events,
-        }
-      : groupCommSSE
+  const sseState = groupCommSSE
+  const auctionState = auctionStreaming
   const [aiReplied, setAiReplied] = useState<boolean>(false)
   const [buttonClicked, setButtonClicked] = useState<boolean>(false)
   const [currentUserMessage, setCurrentUserMessage] = useState<string>("")
@@ -60,6 +51,8 @@ const App: React.FC = () => {
     ((nodeId: string) => void) | null
   >(null)
   const [showProgressTracker, setShowProgressTracker] = useState<boolean>(false)
+  const [showAuctionStreaming, setShowAuctionStreaming] =
+    useState<boolean>(false)
   const [showFinalResponse, setShowFinalResponse] = useState<boolean>(false)
   const [pendingResponse, setPendingResponse] = useState<string>("")
   const [executionKey, setExecutionKey] = useState<string>("")
@@ -72,6 +65,25 @@ const App: React.FC = () => {
   useEffect(() => {
     localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(messages))
   }, [messages])
+
+  useEffect(() => {
+    if (selectedPattern === PATTERNS.PUBLISH_SUBSCRIBE_STREAMING) {
+      if (
+        auctionState.events.length > 0 &&
+        !auctionState.isConnecting &&
+        !auctionState.isConnected &&
+        isAgentLoading
+      ) {
+        setIsAgentLoading(false)
+      }
+    }
+  }, [
+    selectedPattern,
+    auctionState.events.length,
+    auctionState.isConnecting,
+    auctionState.isConnected,
+    isAgentLoading,
+  ])
 
   const {
     height: chatHeight,
@@ -170,32 +182,12 @@ const App: React.FC = () => {
             handleApiResponse(errorMsg, true)
           })
       } else if (selectedPattern === PATTERNS.PUBLISH_SUBSCRIBE_STREAMING) {
-        // For auction streaming, insert the user message so it appears in the
-        // chat (matching behavior of sendMessageWithCallback), then trigger
-        // the streaming connection.
-        const userMessage = {
-          role: "user" as const,
-          content: query,
-          id: uuid(),
-          animate: false,
-        }
-
-        const loadingMessage = {
-          role: "assistant" as const,
-          content: "...",
-          id: uuid(),
-          animate: true,
-        }
-
-        setMessages((prev) => [...prev, userMessage, loadingMessage])
-
         setShowFinalResponse(false)
+        setShowAuctionStreaming(true)
         setAgentResponse("")
-        sseState.clearEvents()
+        auctionState.clearEvents()
 
-        // Trigger auction streaming
-        await sseState.connect(query)
-        setIsAgentLoading(false)
+        await auctionState.connect(query)
       } else {
         setShowFinalResponse(true)
         const response = await sendMessage(query, selectedPattern)
@@ -272,14 +264,10 @@ const App: React.FC = () => {
       sseState.clearEvents()
     } else {
       setShowProgressTracker(false)
+      setShowAuctionStreaming(false)
       setGroupCommResponseReceived(false)
     }
-  }, [
-    selectedPattern,
-    sseState.clearEvents,
-    sseState.isConnected,
-    sseState.error,
-  ])
+  }, [selectedPattern])
 
   return (
     <ThemeProvider>
@@ -321,6 +309,7 @@ const App: React.FC = () => {
                   selectedPattern === PATTERNS.GROUP_COMMUNICATION
                 }
                 showProgressTracker={showProgressTracker}
+                showAuctionStreaming={showAuctionStreaming}
                 showFinalResponse={showFinalResponse}
                 onStreamComplete={handleStreamComplete}
                 onSenderHighlight={handleSenderHighlight}
@@ -340,6 +329,7 @@ const App: React.FC = () => {
                 apiError={apiError}
                 chatRef={chatRef}
                 sseState={sseState}
+                auctionState={auctionState}
               />
             </div>
           </div>
