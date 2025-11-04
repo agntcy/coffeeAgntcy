@@ -10,7 +10,7 @@ from langgraph.graph import StateGraph, END
 from ioa_observe.sdk.decorators import agent, graph
 
 from common.logistics_states import (
-    LogisticStatus,
+    LogisticsStatus,
     extract_status,
     build_transition_message,
     ensure_order_id,
@@ -61,8 +61,8 @@ class AccountantAgent:
         status = extract_status(raw)
         order_id = ensure_order_id(raw)
 
-        if status is LogisticStatus.CUSTOMS_CLEARANCE:
-            next_status = LogisticStatus.PAYMENT_COMPLETE
+        if status is LogisticsStatus.CUSTOMS_CLEARANCE:
+            next_status = LogisticsStatus.PAYMENT_COMPLETE
             msg = build_transition_message(
                 order_id=order_id,
                 sender="Accountant",
