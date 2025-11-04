@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  **/
 
-import React, { useState, useEffect } from "react"
+import React, { useEffect } from "react"
 import { Loader2 } from "lucide-react"
 import AgentIcon from "@/assets/Coffee_Icon.svg"
 import CheckCircle from "@/assets/check_circle.png"
@@ -17,32 +17,10 @@ const AuctionStreamingFeed: React.FC<AuctionStreamingFeedProps> = ({
   auctionStreamingState,
   apiError,
 }) => {
-  const [isComplete, setIsComplete] = useState<boolean>(false)
-  const [dots, setDots] = useState<string>("")
+  const isComplete = auctionStreamingState?.status === "completed"
 
   useEffect(() => {
-    if (prompt) {
-      setIsComplete(false)
-    }
-  }, [prompt])
-
-  useEffect(() => {
-    if (
-      auctionStreamingState?.events.length === 0 &&
-      auctionStreamingState?.status === "connecting"
-    ) {
-      setIsComplete(false)
-    }
-  }, [auctionStreamingState?.events.length, auctionStreamingState?.status])
-
-  useEffect(() => {
-    if (!auctionStreamingState?.events.length) return
-
-    const isStreamingComplete = auctionStreamingState.status === "completed"
-
-    if (isStreamingComplete && !isComplete) {
-      setIsComplete(true)
-
+    if (isComplete && auctionStreamingState?.events.length > 0) {
       if (onComplete) {
         onComplete()
       }
@@ -52,29 +30,11 @@ const AuctionStreamingFeed: React.FC<AuctionStreamingFeedProps> = ({
       }
     }
   }, [
-    auctionStreamingState?.events,
-    auctionStreamingState?.status,
     isComplete,
+    auctionStreamingState?.events.length,
     onComplete,
     onStreamComplete,
   ])
-
-  useEffect(() => {
-    if (!isComplete && auctionStreamingState?.status === "streaming") {
-      const interval = setInterval(() => {
-        setDots((prev) => {
-          if (prev === "") return "."
-          if (prev === ".") return ".."
-          if (prev === "..") return "..."
-          return ""
-        })
-      }, 500)
-
-      return () => clearInterval(interval)
-    } else {
-      setDots("")
-    }
-  }, [isComplete, auctionStreamingState?.status])
 
   if (!isVisible) {
     return null
@@ -104,7 +64,7 @@ const AuctionStreamingFeed: React.FC<AuctionStreamingFeedProps> = ({
           </div>
         ) : prompt && !apiError ? (
           <div className="whitespace-pre-wrap break-words font-cisco text-sm font-bold leading-5 text-chat-text">
-            Streaming{dots}
+            Streaming<span className="loading-dots ml-1"></span>
           </div>
         ) : null}
 
