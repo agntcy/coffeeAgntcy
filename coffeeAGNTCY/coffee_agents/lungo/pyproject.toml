@@ -23,9 +23,9 @@ dependencies = [
     "starlette",
     "uvicorn",
     "mcp[cli]>=1.10.0",
-    "ioa-observe-sdk==1.0.23",
+    "ioa-observe-sdk==1.0.24",
     "agntcy-identity-service-sdk==0.0.6",
-    "agntcy-app-sdk==0.4.0",
+    "agntcy-app-sdk==0.4.1-dev.0",
 ]
 
 [project.optional-dependencies]

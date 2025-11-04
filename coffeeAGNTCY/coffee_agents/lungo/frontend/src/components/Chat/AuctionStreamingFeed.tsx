@@ -60,7 +60,7 @@ const AuctionStreamingFeed: React.FC<AuctionStreamingFeedProps> = ({
           </div>
         ) : isComplete ? (
           <div className="whitespace-pre-wrap break-words font-cisco text-sm font-bold leading-5 text-chat-text">
-            Stream completed
+            Streaming output:
           </div>
         ) : prompt && !apiError ? (
           <div className="whitespace-pre-wrap break-words font-cisco text-sm font-bold leading-5 text-chat-text">

@@ -1,13 +1,15 @@
 # Copyright AGNTCY Contributors (https://github.com/agntcy)
 # SPDX-License-Identifier: Apache-2.0
-
+import logging
 from enum import Enum
 import re
 import uuid
 
 from typing import Optional
 
-class LogisticStatus(Enum):
+logger = logging.getLogger("lungo.common.logistics_states")
+
+class LogisticsStatus(Enum):
   RECEIVED_ORDER = "RECEIVED_ORDER"
   HANDOVER_TO_SHIPPER = "HANDOVER_TO_SHIPPER"
   CUSTOMS_CLEARANCE = "CUSTOMS_CLEARANCE"
@@ -16,18 +18,20 @@ class LogisticStatus(Enum):
   STATUS_UNKNOWN = "STATUS_UNKNOWN"
 
 # Lowercase lookup map -> canonical enum
-STATUS_LOOKUP = {s.value: s for s in LogisticStatus}
+STATUS_LOOKUP = {s.value: s for s in LogisticsStatus}
 
-def extract_status(message: str) -> LogisticStatus | None:
+def extract_status(message: str) -> LogisticsStatus | None:
   """
   Extracts the logistic status from a given message string.
   Returns the corresponding LogisticStatus enum member if found, else None.
   """
-  print(f"Extracting status from message: {message}")
+  if "IDLE" not in message:
+    logger.info(f"Extracting status from message: {message}")
+
   for key, status in STATUS_LOOKUP.items():
     if key in message:
       return status
-  return LogisticStatus.STATUS_UNKNOWN
+  return LogisticsStatus.STATUS_UNKNOWN
 
 
 # --- Message Formatting Helpers ---
@@ -68,31 +72,31 @@ def _specialized_narrative(
   Return a specialized narrative for well-known states, else None.
   """
   try:
-    enum_state = LogisticStatus(to_state)
+    enum_state = LogisticsStatus(to_state)
   except Exception:
     return None
 
-  if enum_state is LogisticStatus.CUSTOMS_CLEARANCE:
+  if enum_state is LogisticsStatus.CUSTOMS_CLEARANCE:
     return (
       f"{to_state} | {sender} -> {receiver}: "
       f"Customs cleared for order {order_id}; documents forwarded for payment processing."
     )
-  if enum_state is LogisticStatus.PAYMENT_COMPLETE:
+  if enum_state is LogisticsStatus.PAYMENT_COMPLETE:
     return (
       f"{to_state} | {sender} -> {receiver}: "
       f"Payment confirmed on order {order_id}; preparing final delivery."
     )
-  if enum_state is LogisticStatus.DELIVERED:
+  if enum_state is LogisticsStatus.DELIVERED:
     return (
       f"{to_state} | {sender} -> {receiver}: "
       f"Order {order_id} delivered successfully; closing shipment cycle."
     )
-  if enum_state is LogisticStatus.HANDOVER_TO_SHIPPER:
+  if enum_state is LogisticsStatus.HANDOVER_TO_SHIPPER:
     return (
       f"{to_state} | {sender} -> {receiver}: "
       f"Order {order_id} handed off for international transit."
     )
-  if enum_state is LogisticStatus.RECEIVED_ORDER:
+  if enum_state is LogisticsStatus.RECEIVED_ORDER:
     return (
       f"{to_state} | {sender} -> {receiver}: "
       f"Order {order_id} intake acknowledged; initiating processing workflow."
