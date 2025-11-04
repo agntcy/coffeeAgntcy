@@ -39,14 +39,8 @@ We currently provide two setups you can run to see how components from AGNTCY wo
 
 ### Built With
 
-<<<<<<< HEAD
-- [AGNTCY App SDK](https://github.com/agntcy/app-sdk) = v0.4.0
-- [SLIM](https://github.com/agntcy/slim) = v0.4.0
-=======
-
 - [AGNTCY App SDK](https://github.com/agntcy/app-sdk) = v0.4.1-dev.0
 - [SLIM](https://github.com/agntcy/slim) = v0.6.1
->>>>>>> main
 - [NATS](https://github.com/nats-io/nats-server) = v2.11.8
 - [A2A](https://github.com/a2aproject/a2a-python) = v0.3.0
 - [MCP](https://github.com/modelcontextprotocol/python-sdk) >= v1.10.0
