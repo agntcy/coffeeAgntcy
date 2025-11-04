@@ -52,7 +52,7 @@ interface ChatAreaProps {
   apiError: boolean
   chatRef?: React.RefObject<HTMLDivElement | null>
   sseState?: SSEState
-  auctionState?: any // TODO: type this properly
+  auctionState?: any
 }
 
 const ChatArea: React.FC<ChatAreaProps> = ({
@@ -170,20 +170,12 @@ const ChatArea: React.FC<ChatAreaProps> = ({
       className="relative flex w-full flex-col"
       style={{ backgroundColor: "var(--overlay-background)" }}
     >
-      {(currentUserMessage ||
-        (showAuctionStreaming &&
-          auctionState?.events &&
-          auctionState.events.length > 0)) && (
+      {currentUserMessage && (
         <ChatHeader
           onMinimize={isMinimized ? handleRestore : handleMinimize}
           onClearConversation={onClearConversation}
           isMinimized={isMinimized}
-          showActions={
-            (!!agentResponse && !isAgentLoading) ||
-            (showAuctionStreaming &&
-              auctionState?.events &&
-              auctionState.events.length > 0)
-          }
+          showActions={!!agentResponse && !isAgentLoading}
         />
       )}
 

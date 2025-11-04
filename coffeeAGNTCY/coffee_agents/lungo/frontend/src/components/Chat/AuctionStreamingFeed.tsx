@@ -3,9 +3,10 @@
  * SPDX-License-Identifier: Apache-2.0
  **/
 
-import React, { useState, useEffect, useCallback } from "react"
-import { ChevronDown, ChevronUp } from "lucide-react"
+import React, { useState, useEffect } from "react"
+import { Loader2 } from "lucide-react"
 import AgentIcon from "@/assets/Coffee_Icon.svg"
+import CheckCircle from "@/assets/check_circle.png"
 import { AuctionStreamingFeedProps } from "@/types/streaming"
 
 const AuctionStreamingFeed: React.FC<AuctionStreamingFeedProps> = ({
@@ -14,54 +15,30 @@ const AuctionStreamingFeed: React.FC<AuctionStreamingFeedProps> = ({
   prompt,
   onStreamComplete,
   auctionStreamingState,
-  executionKey,
   apiError,
 }) => {
-  const [isExpanded, setIsExpanded] = useState<boolean>(true)
   const [isComplete, setIsComplete] = useState<boolean>(false)
-
-  const handleExpand = useCallback(() => {
-    setIsExpanded(true)
-  }, [])
-
-  const handleCollapse = useCallback(() => {
-    setIsExpanded(false)
-  }, [])
+  const [dots, setDots] = useState<string>("")
 
   useEffect(() => {
     if (prompt) {
       setIsComplete(false)
-      setIsExpanded(true)
     }
   }, [prompt])
 
   useEffect(() => {
     if (
       auctionStreamingState?.events.length === 0 &&
-      auctionStreamingState?.isConnecting
+      auctionStreamingState?.status === "connecting"
     ) {
       setIsComplete(false)
-      setIsExpanded(true)
     }
-  }, [
-    auctionStreamingState?.events.length,
-    auctionStreamingState?.isConnecting,
-  ])
-
-  useEffect(() => {
-    if (executionKey) {
-      setIsComplete(false)
-      setIsExpanded(true)
-    }
-  }, [executionKey])
+  }, [auctionStreamingState?.events.length, auctionStreamingState?.status])
 
   useEffect(() => {
     if (!auctionStreamingState?.events.length) return
 
-    const isStreamingComplete =
-      auctionStreamingState.events.length > 0 &&
-      !auctionStreamingState.isConnecting &&
-      !auctionStreamingState.isConnected
+    const isStreamingComplete = auctionStreamingState.status === "completed"
 
     if (isStreamingComplete && !isComplete) {
       setIsComplete(true)
@@ -76,12 +53,28 @@ const AuctionStreamingFeed: React.FC<AuctionStreamingFeedProps> = ({
     }
   }, [
     auctionStreamingState?.events,
-    auctionStreamingState?.isConnecting,
-    auctionStreamingState?.isConnected,
+    auctionStreamingState?.status,
     isComplete,
     onComplete,
     onStreamComplete,
   ])
+
+  useEffect(() => {
+    if (!isComplete && auctionStreamingState?.status === "streaming") {
+      const interval = setInterval(() => {
+        setDots((prev) => {
+          if (prev === "") return "."
+          if (prev === ".") return ".."
+          if (prev === "..") return "..."
+          return ""
+        })
+      }, 500)
+
+      return () => clearInterval(interval)
+    } else {
+      setDots("")
+    }
+  }, [isComplete, auctionStreamingState?.status])
 
   if (!isVisible) {
     return null
@@ -106,91 +99,57 @@ const AuctionStreamingFeed: React.FC<AuctionStreamingFeedProps> = ({
             Connection error: {errorMessage}
           </div>
         ) : isComplete ? (
-          <div className="flex items-center gap-2 whitespace-pre-wrap break-words font-cisco text-sm font-medium leading-5">
-            <div className="h-2 w-2 rounded-full bg-green-700" />
-            <span className="text-green-700">Complete</span>
+          <div className="whitespace-pre-wrap break-words font-cisco text-sm font-bold leading-5 text-chat-text">
+            Stream completed
           </div>
         ) : prompt && !apiError ? (
-          <div className="flex items-center gap-2 whitespace-pre-wrap break-words font-cisco text-sm font-medium leading-5">
-            <div className="h-2 w-2 animate-pulse rounded-full bg-gray-400" />
-            <span className="text-chat-text">Streaming...</span>
+          <div className="whitespace-pre-wrap break-words font-cisco text-sm font-bold leading-5 text-chat-text">
+            Streaming{dots}
           </div>
         ) : null}
 
         {prompt && !isComplete && !apiError && events.length === 0 && (
           <div className="mt-3 flex w-full flex-row items-start gap-1">
             <div className="mt-1 flex items-center">
-              <div className="h-4 w-4 animate-spin rounded-full border-2 border-b-transparent border-l-transparent border-r-accent-primary border-t-accent-primary" />
+              <Loader2 className="h-4 w-4 animate-spin text-accent-primary" />
             </div>
             <div className="flex-1"></div>
           </div>
         )}
 
-        {isComplete && !isExpanded && (
-          <div
-            className="mt-1 flex w-full cursor-pointer flex-row items-center gap-1 hover:opacity-75"
-            onClick={handleExpand}
-          >
-            <div className="h-4 w-4 flex-none">
-              <ChevronDown className="h-4 w-4 text-chat-text" />
-            </div>
+        <div className="mt-3 flex w-full flex-col items-start gap-3">
+          {events.map((event, index) => {
+            const isLastEvent = isComplete && index === events.length - 1
+            const label = isLastEvent
+              ? "Final response:"
+              : `Response ${index + 1}:`
 
-            <div className="flex-1">
-              <span className="font-cisco text-sm font-normal leading-[18px] text-chat-text">
-                View Details
-              </span>
-            </div>
-          </div>
-        )}
-
-        {isExpanded && (
-          <>
-            <div className="mt-3 flex w-full flex-col items-start gap-3">
-              {events.map((event, index) => {
-                return (
-                  <div
-                    key={`auction-${index}`}
-                    className="flex w-full flex-row items-start gap-1"
-                  >
-                    <div className="mt-1 flex items-center">
-                      {/* <img
-                        src={CheckCircle}
-                        alt="Complete"
-                        className="h-4 w-4"
-                      /> */}
-                    </div>
-
-                    <div className="flex-1">
-                      <span className="font-inter text-sm leading-[18px] text-chat-text">
-                        <span className="font-normal">{event.response}</span>
-                      </span>
-                    </div>
-                  </div>
-                )
-              })}
-
-              {events.length > 0 && !isComplete && (
-                <div className="flex w-full flex-row items-start gap-1">
-                  <div className="mt-1 flex items-center">
-                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-b-transparent border-l-transparent border-r-accent-primary border-t-accent-primary" />
-                  </div>
-                  <div className="flex-1"></div>
-                </div>
-              )}
-            </div>
-
-            {isComplete && (
+            return (
               <div
-                className="flex w-full cursor-pointer flex-row items-center gap-1 pt-2 hover:opacity-75"
-                onClick={handleCollapse}
+                key={`auction-${index}`}
+                className="flex w-full flex-row items-start gap-1"
               >
-                <div className="h-4 w-4 flex-none">
-                  <ChevronUp className="h-4 w-4 text-chat-text" />
+                <div className="mt-1 flex items-center">
+                  <img src={CheckCircle} alt="Complete" className="h-4 w-4" />
+                </div>
+                <div className="flex-1">
+                  <div className="font-inter text-sm leading-[18px] text-chat-text">
+                    <span className="font-bold">{label}</span> {event.response}
+                  </div>
                 </div>
               </div>
-            )}
-          </>
-        )}
+            )
+          })}
+
+          {events.length > 0 && !isComplete && (
+            <div className="flex w-full flex-row items-start gap-1">
+              <div className="mt-1 flex items-center">
+                <Loader2 className="h-4 w-4 animate-spin text-accent-primary" />
+              </div>
+              <div className="flex-1"></div>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   )

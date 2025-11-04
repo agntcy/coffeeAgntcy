@@ -8,7 +8,12 @@ import { LOCAL_STORAGE_KEY } from "@/components/Chat/Messages"
 import { logger } from "@/utils/logger"
 import { useChatAreaMeasurement } from "@/hooks/useChatAreaMeasurement"
 import { useGroupCommunicationSSE } from "@/hooks/useGroupCommunicationSSE"
-import { useAuctionStreaming } from "@/hooks/useAuctionStreaming"
+import {
+  useStreamingStatus,
+  useStreamingEvents,
+  useStreamingError,
+  useStreamingActions,
+} from "@/stores/auctionStreamingStore"
 
 import Navigation from "@/components/Navigation/Navigation"
 import MainArea from "@/components/MainArea/MainArea"
@@ -35,10 +40,13 @@ const App: React.FC = () => {
   )
 
   const groupCommSSE = useGroupCommunicationSSE()
-  const auctionStreaming = useAuctionStreaming()
+
+  const { connect, reset } = useStreamingActions()
+  const status = useStreamingStatus()
+  const events = useStreamingEvents()
+  const error = useStreamingError()
 
   const sseState = groupCommSSE
-  const auctionState = auctionStreaming
   const [aiReplied, setAiReplied] = useState<boolean>(false)
   const [buttonClicked, setButtonClicked] = useState<boolean>(false)
   const [currentUserMessage, setCurrentUserMessage] = useState<string>("")
@@ -69,21 +77,15 @@ const App: React.FC = () => {
   useEffect(() => {
     if (selectedPattern === PATTERNS.PUBLISH_SUBSCRIBE_STREAMING) {
       if (
-        auctionState.events.length > 0 &&
-        !auctionState.isConnecting &&
-        !auctionState.isConnected &&
+        events.length > 0 &&
+        status !== "connecting" &&
+        status !== "streaming" &&
         isAgentLoading
       ) {
         setIsAgentLoading(false)
       }
     }
-  }, [
-    selectedPattern,
-    auctionState.events.length,
-    auctionState.isConnecting,
-    auctionState.isConnected,
-    isAgentLoading,
-  ])
+  }, [selectedPattern, events.length, status, isAgentLoading])
 
   const {
     height: chatHeight,
@@ -185,9 +187,9 @@ const App: React.FC = () => {
         setShowFinalResponse(false)
         setShowAuctionStreaming(true)
         setAgentResponse("")
-        auctionState.clearEvents()
+        reset()
 
-        await auctionState.connect(query)
+        await connect(query)
       } else {
         setShowFinalResponse(true)
         const response = await sendMessage(query, selectedPattern)
@@ -329,7 +331,11 @@ const App: React.FC = () => {
                 apiError={apiError}
                 chatRef={chatRef}
                 sseState={sseState}
-                auctionState={auctionState}
+                auctionState={{
+                  events,
+                  status,
+                  error,
+                }}
               />
             </div>
           </div>

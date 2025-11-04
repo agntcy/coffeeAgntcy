@@ -93,7 +93,7 @@ const Sidebar: React.FC<SidebarProps> = ({
         <div className="flex flex-col">
           <div className="flex min-h-[36px] w-full items-center gap-2 rounded py-2 pl-2 pr-5">
             <span className="flex-1 font-inter text-sm font-normal leading-5 tracking-[0.25px] text-sidebar-text">
-              Conversation: Coffee Buying
+              Conversation: Farm Status
             </span>
           </div>
 

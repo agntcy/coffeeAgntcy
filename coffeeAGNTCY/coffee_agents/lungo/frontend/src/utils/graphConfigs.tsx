@@ -276,7 +276,7 @@ const GROUP_COMMUNICATION_CONFIG: GraphConfig = {
         label2: "Logistics Agent",
         handles: "source",
         githubLink:
-          "https://github.com/agntcy/coffeeAgntcy/blob/main/coffeeAGNTCY/coffee_agents/lungo/agents/supervisors/auction/graph/graph.py#L116",
+          "https://github.com/agntcy/coffeeAgntcy/blob/main/coffeeAGNTCY/coffee_agents/lungo/agents/supervisors/auction/graph/graph.py#L120",
         agentDirectoryLink: "https://agent-directory.outshift.com/explore",
       },
       position: { x: 150, y: 100 },
@@ -412,8 +412,23 @@ export const getGraphConfig = (
     case "slim_a2a":
       return SLIM_A2A_CONFIG
     case "publish_subscribe":
-    case "publish_subscribe_streaming":
       return PUBLISH_SUBSCRIBE_CONFIG
+    case "publish_subscribe_streaming": {
+      const streamingConfig = { ...PUBLISH_SUBSCRIBE_CONFIG }
+      streamingConfig.nodes = streamingConfig.nodes.map((node) =>
+        node.id === "1"
+          ? {
+              ...node,
+              data: {
+                ...node.data,
+                githubLink:
+                  "https://github.com/agntcy/coffeeAgntcy/blob/main/coffeeAGNTCY/coffee_agents/lungo/agents/supervisors/auction/graph/graph.py#L511",
+              },
+            }
+          : node,
+      )
+      return streamingConfig
+    }
     case "group_communication":
       return GROUP_COMMUNICATION_CONFIG
     default:

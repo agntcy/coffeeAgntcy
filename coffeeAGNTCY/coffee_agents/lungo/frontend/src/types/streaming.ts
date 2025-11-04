@@ -62,8 +62,7 @@ interface SSEState {
 }
 
 interface AuctionStreamingState {
-  isConnected: boolean
-  isConnecting: boolean
+  status: "idle" | "connecting" | "streaming" | "completed" | "error"
   events: AuctionStreamingResponse[]
   error: string | null
 }
