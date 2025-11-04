@@ -5,10 +5,13 @@ git-based fallback for build version and date when running outside CI.
 """
 
 import configparser
+import json
 import logging
+import os
 import re
-from pathlib import Path
+import socket
 import subprocess
+from pathlib import Path
 from typing import Optional
 
 try:  
@@ -76,6 +79,40 @@ def get_dependencies():
                 match = re.search(r'ghcr\.io/agntcy/slim:(\d+\.\d+\.\d+)', content)
                 if match:
                     dependencies['SLIM'] = f"v{match.group(1)}"
+                
+                # Get NATS version at runtime if using 'latest' tag
+                nats_match = re.search(r'image:\s*nats:(\S+)', content)
+                if nats_match:
+                    nats_tag = nats_match.group(1)
+                    if nats_tag == 'latest':
+                        try:
+                            nats_host = 'nats' 
+                            if 'TRANSPORT_SERVER_ENDPOINT' in os.environ:
+                                endpoint = os.environ['TRANSPORT_SERVER_ENDPOINT']
+                                if 'nats://' in endpoint:
+                                    host_part = endpoint.split('://')[1].split(':')[0]
+                                    if host_part:
+                                        nats_host = host_part
+                            
+                            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+                                sock.settimeout(2)
+                                sock.connect((nats_host, 4222))
+                                data = sock.recv(1024).decode('utf-8')
+                                
+                            if 'INFO ' in data:
+                                info_line = data.split('INFO ')[1].split('\r\n')[0]
+                                info = json.loads(info_line)
+                                version = info.get('version', '')
+                                if version and re.match(r'^\d+\.\d+\.\d+', str(version)):
+                                    dependencies['NATS'] = f"v{version}"
+                                else:
+                                    dependencies['NATS'] = nats_tag
+                            else:
+                                dependencies['NATS'] = nats_tag
+                        except Exception:
+                            dependencies['NATS'] = nats_tag
+                    else:
+                        dependencies['NATS'] = f"v{nats_tag}" if not nats_tag.startswith('v') else nats_tag
         
     except Exception as e:
         logger.error(f"Error parsing dependencies: {e}")
