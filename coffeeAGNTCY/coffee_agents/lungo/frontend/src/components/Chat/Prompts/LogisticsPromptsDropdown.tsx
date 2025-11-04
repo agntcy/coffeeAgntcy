@@ -6,7 +6,7 @@
 import React, { useState, useRef, useEffect } from "react"
 
 const DEFAULT_LOGISTICS_APP_API_URL = "http://127.0.0.1:9090"
-const LOGISTIC_APP_API_URL =
+const LOGISTICS_APP_API_URL =
   import.meta.env.VITE_LOGISTICS_APP_API_URL || DEFAULT_LOGISTICS_APP_API_URL
 
 interface LogisticsPromptsDropdownProps {
@@ -29,7 +29,7 @@ const LogisticsPromptsDropdown: React.FC<LogisticsPromptsDropdownProps> = ({
 
     ;(async () => {
       try {
-        const res = await fetch(`${LOGISTIC_APP_API_URL}/suggested-prompts`, {
+        const res = await fetch(`${LOGISTICS_APP_API_URL}/suggested-prompts`, {
           cache: "no-cache",
           signal,
         })
