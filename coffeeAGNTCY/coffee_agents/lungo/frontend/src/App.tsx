@@ -36,7 +36,7 @@ const App: React.FC = () => {
   const { sendMessage } = useAgentAPI()
 
   const [selectedPattern, setSelectedPattern] = useState<PatternType>(
-    PATTERNS.PUBLISH_SUBSCRIBE,
+    PATTERNS.GROUP_COMMUNICATION,
   )
 
   const groupCommSSE = useGroupCommunicationSSE()
