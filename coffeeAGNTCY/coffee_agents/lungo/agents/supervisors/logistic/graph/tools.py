@@ -34,7 +34,7 @@ from config.config import (
   DEFAULT_MESSAGE_TRANSPORT,
   TRANSPORT_SERVER_ENDPOINT,
 )
-from common.logistic_states import LogisticStatus
+from common.logistics_states import LogisticsStatus
 
 logger = logging.getLogger("lungo.logistic.supervisor.tools")
 
@@ -105,7 +105,7 @@ async def create_order(farm: str, quantity: int, price: float) -> str:
             Part(
               TextPart(
                 # Note the status must be included to trigger the logistic flow
-                text = f"{LogisticStatus.RECEIVED_ORDER.value} | Supervisor -> Tatooine Farm: Create an order {uuid.uuid4().hex} with price {price} and quantity {quantity}."
+                text = f"{LogisticsStatus.RECEIVED_ORDER.value} | Supervisor -> Tatooine Farm: Create an order {uuid.uuid4().hex} with price {price} and quantity {quantity}."
               )
             )
           ],

@@ -39,13 +39,14 @@ We currently provide two setups you can run to see how components from AGNTCY wo
 
 ### Built With
 
-- [AGNTCY App SDK](https://github.com/agntcy/app-sdk) = v0.4.0
-- [SLIM](https://github.com/agntcy/slim) = v0.4.0
+
+- [AGNTCY App SDK](https://github.com/agntcy/app-sdk) = v0.4.1-dev.0
+- [SLIM](https://github.com/agntcy/slim) = v0.6.1
 - [NATS](https://github.com/nats-io/nats-server) = v2.11.8
 - [A2A](https://github.com/a2aproject/a2a-python) = v0.3.0
 - [MCP](https://github.com/modelcontextprotocol/python-sdk) >= v1.10.0
 - [LangGraph](https://github.com/langchain-ai/langgraph) >= v0.4.1
-- [Observe SDK](https://github.com/agntcy/observe) = 1.0.23
+- [Observe SDK](https://github.com/agntcy/observe) = 1.0.24
 - [AGNTCY Identity Service SDK](https://github.com/agntcy/identity-service) = 0.0.6
 
 ---
