@@ -1,12 +1,12 @@
 services:
-  farm-server:
+  lungo-logistics-farm-server:
     build:
       context: ../../..
       dockerfile: coffeeAGNTCY/coffee_agents/corto/docker/Dockerfile.farm
     image: ghcr.io/agntcy/coffee-agntcy/corto-farm:latest
-    container_name: farm-server
+    container_name: lungo-logistics-farm-server
     environment:
-      - FARM_AGENT_HOST=farm-server
+      - FARM_AGENT_HOST=lungo-logistics-farm-server
       - FARM_AGENT_PORT=9999
       - AZURE_OPENAI_ENDPOINT=${AZURE_OPENAI_ENDPOINT:-}
       - AZURE_OPENAI_DEPLOYMENT=${AZURE_OPENAI_DEPLOYMENT:-}
@@ -17,24 +17,28 @@ services:
       - OPENAI_MODEL_NAME=${OPENAI_MODEL_NAME:-}
       - LLM_PROVIDER=${LLM_PROVIDER}
       - DEFAULT_MESSAGE_TRANSPORT=${DEFAULT_MESSAGE_TRANSPORT:-SLIM}
-      - TRANSPORT_SERVER_ENDPOINT=${TRANSPORT_SERVER_ENDPOINT:-http://slim:46357}
-      - OTLP_HTTP_ENDPOINT=${OTLP_HTTP_ENDPOINT:-http://otel-collector:4318}
+      - TRANSPORT_SERVER_ENDPOINT=${TRANSPORT_SERVER_ENDPOINT:-http://lungo-slim:46357}
+      - OTLP_HTTP_ENDPOINT=${OTLP_HTTP_ENDPOINT:-http://lungo-otel-collector:4318}
       - LLM_STREAMING=${LLM_STREAMING:-}
     ports:
       - "9999:9999"
+    networks:
+      - lungo-default
 
-  nats:
+  lungo-nats:
     image: nats:latest
-    container_name: nats-corto
+    container_name: lungo-nats
     ports:
       - "4222:4222"
       - "4223:4223"
       - "6222:6222"
       - "8222:8222"
+    networks:
+      - lungo-default
 
-  slim:
+  lungo-slim:
     image: ghcr.io/agntcy/slim:0.4.0
-    container_name: slim-corto
+    container_name: lungo-slim
     ports:
       - "46357:46357"
     environment:
@@ -43,16 +47,18 @@ services:
     volumes:
       - ./config/docker/slim/server-config.yaml:/config.yaml
     command: ["/slim", "--config", "/config.yaml"]
+    networks:
+      - lungo-default
 
   # Exchange server App (farm client)
-  exchange-server:
+  lungo-logistics-auction-supervisor:
     build:
       context: ../../..
       dockerfile: coffeeAGNTCY/coffee_agents/corto/docker/Dockerfile.exchange
     image: ghcr.io/agntcy/coffee-agntcy/corto-exchange:latest
-    container_name: exchange-server-corto
+    container_name: lungo-logistics-auction-supervisor
     environment:
-      - FARM_AGENT_HOST=farm-server
+      - FARM_AGENT_HOST=lungo-logistics-farm-server
       - FARM_AGENT_PORT=9999
       - AZURE_OPENAI_ENDPOINT=${AZURE_OPENAI_ENDPOINT:-}
       - AZURE_OPENAI_DEPLOYMENT=${AZURE_OPENAI_DEPLOYMENT:-}
@@ -63,33 +69,37 @@ services:
       - OPENAI_MODEL_NAME=${OPENAI_MODEL_NAME:-}
       - LLM_PROVIDER=${LLM_PROVIDER}
       - DEFAULT_MESSAGE_TRANSPORT=${DEFAULT_MESSAGE_TRANSPORT:-SLIM}
-      - TRANSPORT_SERVER_ENDPOINT=${TRANSPORT_SERVER_ENDPOINT:-http://slim:46357}
-      - OTLP_HTTP_ENDPOINT=${OTLP_HTTP_ENDPOINT:-http://otel-collector:4318}
+      - TRANSPORT_SERVER_ENDPOINT=${TRANSPORT_SERVER_ENDPOINT:-http://lungo-slim:46357}
+      - OTLP_HTTP_ENDPOINT=${OTLP_HTTP_ENDPOINT:-http://lungo-otel-collector:4318}
       - LLM_STREAMING=${LLM_STREAMING:-}
     depends_on:
-      - farm-server
+      - lungo-logistics-farm-server
     ports:
       - "8000:8000"
     volumes:
       # Mount the repo's .git to allow git-based version fallback inside the container for local dev
       - ../../../.git:/app/.git:ro
+    networks:
+      - lungo-default
 
-  ui:
+  lungo-ui:
     build:
       context: ../../..
       dockerfile: coffeeAGNTCY/coffee_agents/corto/docker/Dockerfile.ui
     image: ghcr.io/agntcy/coffee-agntcy/corto-ui:latest
-    container_name: ui-corto
+    container_name: lungo-ui
     environment:
       - VITE_EXCHANGE_APP_API_URL=http://127.0.0.1:8000
     depends_on:
-      - exchange-server
+      - lungo-logistics-auction-supervisor
     ports:
       - "3000:3000"
+    networks:
+      - lungo-default
 
-  clickhouse-server:
+  lungo-clickhouse-server:
     image: clickhouse/clickhouse-server
-    container_name: clickhouse-server-corto
+    container_name: lungo-clickhouse-server
     ports:
       - "9000:9000"
       - "8123:8123"
@@ -114,10 +124,12 @@ services:
       timeout: 3s
       retries: 5
       start_period: 10s
+    networks:
+      - lungo-default
 
-  otel-collector:
+  lungo-otel-collector:
     image: otel/opentelemetry-collector-contrib:latest
-    container_name: otel-collector-corto
+    container_name: lungo-otel-collector
     restart: unless-stopped
     ports:
       - "4317:4317"
@@ -126,12 +138,14 @@ services:
       - ./config/docker/otel/otel-collector-config.yaml:/etc/otel-collector-config.yaml
     command: ["--config", "/etc/otel-collector-config.yaml"]
     depends_on:
-      clickhouse-server:
+      lungo-clickhouse-server:
         condition: service_healthy
+    networks:
+      - lungo-default
 
-  grafana:
+  lungo-grafana:
     image: grafana/grafana
-    container_name: grafana-corto
+    container_name: lungo-grafana
     ports:
       - "3001:3000"
     environment:
@@ -139,15 +153,18 @@ services:
       - GF_SECURITY_ADMIN_PASSWORD=admin
       - GF_USERS_ALLOW_SIGN_UP=false
     depends_on:
-      clickhouse-server:
+      lungo-clickhouse-server:
         condition: service_healthy
+    networks:
+      - lungo-default
 
-  mce-api-layer:
+  lungo-logistics-mce-api-layer:
     image: ghcr.io/agntcy/obs-api:0.1.1
+    container_name: lungo-logistics-mce-api-layer
     ports:
       - "8080:8080"
     environment:
-      - CLICKHOUSE_URL=clickhouse-server
+      - CLICKHOUSE_URL=lungo-clickhouse-server
       - CLICKHOUSE_PORT=9000
       - CLICKHOUSE_USER=admin
       - CLICKHOUSE_PASS=admin
@@ -155,9 +172,9 @@ services:
       - SERVER_PORT=8080
       - PORT=8080
     depends_on:
-      clickhouse-server:
+      lungo-clickhouse-server:
         condition: service_healthy
-      otel-collector:
+      lungo-otel-collector:
         condition: service_started
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/keepAlive"]
@@ -165,16 +182,24 @@ services:
       timeout: 5s
       retries: 3
       start_period: 30s
+    networks:
+      - lungo-default
 
-  metrics-computation-engine:
+  lungo-logistics-metrics-computation-engine:
     image: ghcr.io/agntcy/mce:1.2.1
+    container_name: lungo-logistics-metrics-computation-engine
     ports:
       - "8001:8000"
     environment:
-      - API_BASE_URL=http://mce-api-layer:8080
+      - API_BASE_URL=http://lungo-logistics-mce-api-layer:8080
       - LLM_BASE_MODEL_URL=${AZURE_OPENAI_ENDPOINT:-${OPENAI_ENDPOINT}}
       - LLM_MODEL_NAME=${AZURE_OPENAI_DEPLOYMENT:-${OPENAI_MODEL_NAME}}
       - LLM_API_KEY=${AZURE_OPENAI_API_KEY:-${OPENAI_API_KEY}}
     depends_on:
-      mce-api-layer:
+      lungo-logistics-mce-api-layer:
         condition: service_healthy
+    networks:
+      - lungo-default
+
+networks:
+  lungo-default: {}

@@ -1,7 +1,7 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name:  {{ .Values.appName }}
+  name: lungo-logistics-auction-supervisor
   namespace: {{ .Release.Namespace }}
   labels:
     version: {{ .Values.appVersion }}
@@ -9,21 +9,21 @@ spec:
   replicas: {{ .Values.replicaCount }}
   selector:
     matchLabels:
-      app:  {{ .Values.appName }}
+      app: lungo-logistics-auction-supervisor
       version: {{ .Values.appVersion }}
   template:
     metadata:
       labels:
-        app:  {{ .Values.appName }}
+        app: lungo-logistics-auction-supervisor
         version: {{ .Values.appVersion }}
     spec:
     {{ if .Values.image.pullSecret }}
       imagePullSecrets:
         - name: {{ .Values.image.pullSecret }}
     {{ end }}
-      serviceAccountName: {{ .Values.appName }}-sa
+      serviceAccountName: lungo-logistics-auction-supervisor-sa
       containers:
-      - name: {{ .Values.appName }}
+      - name: lungo-logistics-auction-supervisor
         image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
         imagePullPolicy: {{ .Values.image.pullPolicy }}
         {{ if .Values.resources.enabled }}
@@ -55,8 +55,8 @@ spec:
         {{ end }}
         envFrom:
           - configMapRef:
-              name: {{ .Values.appName }}-configmap
+              name: lungo-logistics-auction-supervisor-configmap
         {{ if .Values.externalSecrets }}
           - secretRef:
-              name: {{ .Values.appName }}-secrets
+              name: lungo-logistics-auction-supervisor-secrets
         {{ end }}
