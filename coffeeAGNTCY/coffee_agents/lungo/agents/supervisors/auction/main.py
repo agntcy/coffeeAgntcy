@@ -143,9 +143,12 @@ async def version_info():
   return get_version_info(props_path)
 
 @app.get("/suggested-prompts")
-async def get_prompts():
+async def get_prompts(pattern: str = "default"):
   """
   Return suggested prompts for publish subscribe pattern.
+
+  Args:
+      pattern: Pattern type ("default" for all prompts, "streaming" for streaming-specific prompts)
 
   Returns:
   {"buyer": List[str], "purchaser": List[str]}
@@ -153,7 +156,10 @@ async def get_prompts():
   Raises:
       HTTPException: 404 if file not found, 500 for JSON errors or unsupported format
   """
-  prompts_path = Path(__file__).resolve().parent / "suggested_prompts.json"
+  if pattern == "streaming":
+    prompts_path = Path(__file__).resolve().parent / "suggested_streaming_prompts.json"
+  else:
+    prompts_path = Path(__file__).resolve().parent / "suggested_prompts.json"
   try:
     raw = prompts_path.read_text(encoding="utf-8")
     data = json.loads(raw)
@@ -170,16 +176,24 @@ async def get_prompts():
       buyer_list = [p for p in raw_buyer if isinstance(p, str)]
       purchaser_list = [p for p in raw_purchaser if isinstance(p, str)]
       return {"buyer": buyer_list, "purchaser": purchaser_list}
+    
+    elif isinstance(data, list):
+      prompt_list = [p for p in data if isinstance(p, str)]
+      return {"buyer": prompt_list, "purchaser": []}
 
-    logger.error("Unsupported suggested_prompts.json format: %s", type(data).__name__)
-    raise HTTPException(status_code=500, detail="Unsupported suggested_prompts.json format")
+    logger.error("Unsupported JSON format in %s: %s", 
+                 "suggested_streaming_prompts.json" if pattern == "streaming" else "suggested_prompts.json", 
+                 type(data).__name__)
+    raise HTTPException(status_code=500, detail="Unsupported JSON format")
 
   except FileNotFoundError as fnf:
-    logger.exception(f"suggested_prompts.json not found at {prompts_path}")
-    raise HTTPException(status_code=404, detail="suggested_prompts.json not found") from fnf
+    filename = "suggested_streaming_prompts.json" if pattern == "streaming" else "suggested_prompts.json"
+    logger.exception(f"{filename} not found at {prompts_path}")
+    raise HTTPException(status_code=404, detail=f"{filename} not found") from fnf
   except json.JSONDecodeError as jde:
-    logger.exception("Invalid JSON in suggested_prompts.json")
-    raise HTTPException(status_code=500, detail="Invalid JSON in suggested_prompts.json") from jde
+    filename = "suggested_streaming_prompts.json" if pattern == "streaming" else "suggested_prompts.json"
+    logger.exception(f"Invalid JSON in {filename}")
+    raise HTTPException(status_code=500, detail=f"Invalid JSON in {filename}") from jde
   except Exception as e:
     if isinstance(e, HTTPException):
       raise

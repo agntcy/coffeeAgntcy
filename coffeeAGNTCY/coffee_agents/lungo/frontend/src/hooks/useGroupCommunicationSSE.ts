@@ -5,38 +5,13 @@
 
 import { useEffect, useRef, useState, useCallback } from "react"
 import { RETRY_CONFIG } from "@/utils/retryUtils"
+import { SSEState, LogisticsStreamStep } from "@/types/streaming"
 
 const DEFAULT_HELPDESK_API_URL = "http://127.0.0.1:9094"
 const HELPDESK_API_URL =
   import.meta.env.VITE_HELPDESK_API_URL || DEFAULT_HELPDESK_API_URL
 
-export interface StreamStep {
-  order_id: string
-  sender: string
-  receiver: string
-  message: string
-  timestamp: string
-  state: string
-  final?: boolean
-}
-
-interface SSERetryState {
-  retryCount: number
-  isRetrying: boolean
-  lastRetryAt: number | null
-  nextRetryAt: number | null
-}
-
-interface SSEState {
-  isConnected: boolean
-  isConnecting: boolean
-  events: StreamStep[]
-  currentOrderId: string | null
-  error: string | null
-  retryState: SSERetryState
-}
-
-const isValidStreamStep = (data: any): data is StreamStep => {
+const isValidLogisticsStreamStep = (data: any): data is LogisticsStreamStep => {
   if (!data || typeof data !== "object") {
     return false
   }
@@ -63,7 +38,7 @@ const isValidStreamStep = (data: any): data is StreamStep => {
   return true
 }
 
-export const useGlobalSSE = () => {
+export const useGroupCommunicationSSE = () => {
   const [state, setState] = useState<SSEState>({
     isConnected: false,
     isConnecting: false,
@@ -161,7 +136,7 @@ export const useGlobalSSE = () => {
     try {
       const parsedData = JSON.parse(event.data)
 
-      if (!isValidStreamStep(parsedData)) {
+      if (!isValidLogisticsStreamStep(parsedData)) {
         return
       }
 

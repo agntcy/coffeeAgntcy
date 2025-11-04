@@ -39,7 +39,6 @@ We currently provide two setups you can run to see how components from AGNTCY wo
 
 ### Built With
 
-
 - [AGNTCY App SDK](https://github.com/agntcy/app-sdk) = v0.4.1-dev.0
 - [SLIM](https://github.com/agntcy/slim) = v0.6.1
 - [NATS](https://github.com/nats-io/nats-server) = v2.11.8
