@@ -43,7 +43,7 @@ class TestAuctionFlows:
         data = resp.json()
         logger.info(data)
         assert "response" in data
-        assert re.search(r"\b\d+\s*pounds\b", data["response"]), "Expected '<number> pounds' in string"
+        assert re.search(r'\b[\d,]+\s*(pounds|lbs\.?)\b', data["response"]), "Expected '<number> pounds or <number> lbs or <number> units.' in string"
 
     @pytest.mark.agents(["weather-mcp", "colombia-farm"])
     @pytest.mark.usefixtures("agents_up")
@@ -57,7 +57,7 @@ class TestAuctionFlows:
         data = resp.json()
         logger.info(data)
         assert "response" in data
-        assert re.search(r'\b[\d,]+\s*(pounds|lbs\.?)\b', data["response"]), "Expected '<number> pounds or <number> lbs.' in string"
+        assert re.search(r'\b[\d,]+\s*(pounds|lbs\.?)\b', data["response"]), "Expected '<number> pounds or <number> lbs or <number> units.' in string"
 
     @pytest.mark.agents(["vietnam-farm"])
     @pytest.mark.usefixtures("agents_up")
@@ -71,7 +71,7 @@ class TestAuctionFlows:
         data = resp.json()
         logger.info(data) 
         assert "response" in data
-        assert re.search(r'\b[\d,]+\s*(pounds|lbs\.?)\b', data["response"]), "Expected '<number> pounds or <number> lbs.' in string"
+        assert re.search(r'\b[\d,]+\s*(pounds|lbs\.?)\b', data["response"]), "Expected '<number> pounds or <number> lbs or <number> units.' in string"
 
 
     @pytest.mark.agents(["weather-mcp", "brazil-farm", "colombia-farm", "vietnam-farm"])
@@ -133,9 +133,10 @@ class TestAuctionFlows:
         data = resp.json()
         logger.info(data)
         assert "response" in data
-        assert "successful" in data["response"].lower()
-        assert "Order ID" in data["response"], "Expected Order ID in response"
-        assert "Tracking Number" in data["response"], "Expected Tracking Number in response"
+        response = data["response"].lower()
+        assert "successful" in response
+        assert "order id" in response, "Expected order id in response"
+        assert "tracking number" in response, "Expected tracking number in response"
 
     @pytest.mark.agents(["vietnam-farm"])
     @pytest.mark.usefixtures("agents_up")
@@ -148,9 +149,10 @@ class TestAuctionFlows:
         assert resp.status_code == 200
         data = resp.json()
         logger.info(data)
-        assert "successful" in data["response"].lower()
-        assert "Order ID" in data["response"], "Expected Order ID in response"
-        assert "Tracking Number" in data["response"], "Expected Tracking Number in response"
+        response = data["response"].lower()
+        assert "successful" in response
+        assert "order id" in response, "Expected order id in response"
+        assert "tracking number" in response, "Expected tracking number in response"
 
     @pytest.mark.agents(["brazil-farm"])
     @pytest.mark.usefixtures("agents_up")

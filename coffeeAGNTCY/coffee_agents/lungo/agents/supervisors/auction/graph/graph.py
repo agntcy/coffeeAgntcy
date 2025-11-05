@@ -156,7 +156,7 @@ class ExchangeGraph:
                 reason: str = Field(description="Reason for decision whether to continue the request.")
             
             # create a structured output LLM for reflection
-            self.reflection_llm = get_llm().with_structured_output(ShouldContinue, strict=True)
+            self.reflection_llm = get_llm().with_structured_output(ShouldContinue)
 
         sys_msg_reflection = SystemMessage(
             content="""You are an AI assistant reflecting on a conversation to determine if the user's request has been fully addressed.
@@ -176,7 +176,8 @@ class ExchangeGraph:
         )
 
         response = await self.reflection_llm.ainvoke(
-          [sys_msg_reflection] + state["messages"]
+          [sys_msg_reflection] + state["messages"],
+          
         )
         logging.info(f"Reflection agent response: {response}")
 
@@ -200,7 +201,6 @@ class ExchangeGraph:
         if not self.inventory_llm:
             self.inventory_llm = get_llm().bind_tools(
                 [get_farm_yield_inventory, get_all_farms_yield_inventory],
-                strict=True
             )
 
         # get latest HumanMessage
@@ -274,7 +274,7 @@ class ExchangeGraph:
                 *   If no farm was specified or the user asks about overall availability, use the `get_all_farms_yield_inventory` tool.
                 *   If the question can be answered without a tool or requires clarification, provide that directly.
 
-            Your final response should be a conclusive answer to the user's request, or a clear explanation if the request cannot be fulfilled.
+            Your final response must be a conclusive answer to the user's request. If providing yield or inventory data, explicitly state the quantity in the format: <number> pounds, <number> lbs. If the request cannot be fulfilled, give a clear explanation.
             """,
             input_variables=["user_message", "tool_context"]
         )

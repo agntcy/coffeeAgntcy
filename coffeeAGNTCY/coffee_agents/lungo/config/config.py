@@ -11,7 +11,14 @@ TRANSPORT_SERVER_ENDPOINT = os.getenv("TRANSPORT_SERVER_ENDPOINT", "nats://local
 
 FARM_BROADCAST_TOPIC = os.getenv("FARM_BROADCAST_TOPIC", "farm_broadcast")
 
-LLM_PROVIDER = os.getenv("LLM_PROVIDER")
+LLM_MODEL = os.getenv("LLM_MODEL_VERSION", "")
+## Oauth2 OpenAI Provider
+OAUTH2_CLIENT_ID= os.getenv("OAUTH2_CLIENT_ID", "")
+OAUTH2_CLIENT_SECRET= os.getenv("OAUTH2_CLIENT_SECRET", "")
+OAUTH2_TOKEN_URL= os.getenv("OAUTH2_TOKEN_URL", "")
+OAUTH2_BASE_URL= os.getenv("OAUTH2_BASE_URL", "")
+OAUTH2_APPKEY= os.getenv("OAUTH2_APPKEY", "")
+
 LOGGING_LEVEL = os.getenv("LOGGING_LEVEL", "INFO").upper()
 
 ENABLE_HTTP = os.getenv("ENABLE_HTTP", "true").lower() in ("true", "1", "yes")
@@ -26,4 +33,3 @@ IDENTITY_API_SERVER_URL = os.getenv("IDENTITY_API_SERVER_URL", "https://api.agen
 ## URLs for the farm agents' well-known agent cards
 VIETNAM_FARM_AGENT_URL = os.getenv("VIETNAM_FARM_AGENT_URL", "http://127.0.0.1:9997/.well-known/agent-card.json")
 COLOMBIA_FARM_AGENT_URL = os.getenv("COLOMBIA_FARM_AGENT_URL", "http://127.0.0.1:9998/.well-known/agent-card.json")
-
