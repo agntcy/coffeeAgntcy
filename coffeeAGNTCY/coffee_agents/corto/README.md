@@ -172,7 +172,7 @@ LOGGING_LEVEL=debug
 
 Make sure the following Python dependency is installed:
 ```
-ioa-observe-sdk==1.0.23
+ioa-observe-sdk==1.0.24
 ```
 
 For advanced observability of your multi-agent system, integrate the [Observe SDK](https://github.com/agntcy/observe/blob/main/GETTING-STARTED.md).

@@ -82,7 +82,7 @@ class ShipperAgentExecutor(AgentExecutor):
                 parts=[Part(TextPart(text=output))],
             )
 
-            logger.info("agent output message: %s", message)
+            logger.debug("agent output message: %s", message)
 
             await event_queue.enqueue_event(message)            
         except Exception as e:

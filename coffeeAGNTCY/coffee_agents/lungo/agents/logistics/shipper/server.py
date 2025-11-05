@@ -10,7 +10,8 @@ from dotenv import load_dotenv
 from uvicorn import Config, Server
 
 from agntcy_app_sdk.factory import AgntcyFactory
-from agntcy_app_sdk.protocols.a2a.protocol import A2AProtocol
+from agntcy_app_sdk.semantic.a2a.protocol import A2AProtocol
+from agntcy_app_sdk.app_sessions import AppContainer
 
 from agents.logistics.shipper.agent_executor import ShipperAgentExecutor
 from agents.logistics.shipper.card import AGENT_CARD
@@ -64,19 +65,25 @@ async def run_http_server(server):
     except Exception as e:
         print(f"HTTP server encountered an error: {e}")
 
-async def run_transport(server, transport_type, endpoint, block):
+async def run_transport(server, transport_type, endpoint):
     """Run the transport and broadcast bridge."""
     try:
         personal_topic = A2AProtocol.create_agent_topic(AGENT_CARD)
         transport = factory.create_transport(transport_type, endpoint=endpoint, name=f"default/default/{personal_topic}")
-        broadcast_bridge = factory.create_bridge(
-            server, transport=transport
-        )
+        # Create an application session
+        app_session = factory.create_app_session(max_sessions=1)
 
-        await broadcast_bridge.start(blocking=False)
+        # Add container for group communication
+        app_session.add_app_container("group_session", AppContainer(
+            server,
+            transport=transport
+        ))
+
+        await app_session.start_session("group_session")
 
     except Exception as e:
         print(f"Transport encountered an error: {e}")
+        await app_session.stop_all_sessions()
 
 async def main(enable_http: bool):
     """Run the A2A server with both HTTP and transport logic."""
@@ -94,7 +101,7 @@ async def main(enable_http: bool):
     tasks = []
     if enable_http:
         tasks.append(asyncio.create_task(run_http_server(server)))
-    tasks.append(asyncio.create_task(run_transport(server, DEFAULT_MESSAGE_TRANSPORT, TRANSPORT_SERVER_ENDPOINT, block=True)))
+    tasks.append(asyncio.create_task(run_transport(server, DEFAULT_MESSAGE_TRANSPORT, TRANSPORT_SERVER_ENDPOINT)))
 
     await asyncio.gather(*tasks)
 

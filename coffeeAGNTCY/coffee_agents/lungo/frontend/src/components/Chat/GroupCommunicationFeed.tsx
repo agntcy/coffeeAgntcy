@@ -12,39 +12,7 @@ import { ChevronDown, ChevronUp } from "lucide-react"
 
 import AgentIcon from "@/assets/Coffee_Icon.svg"
 import CheckCircle from "@/assets/CheckCircle.png"
-
-interface StreamStep {
-  order_id: string
-
-  sender: string
-
-  receiver: string
-
-  message: string
-
-  timestamp: string
-
-  state: string
-}
-
-interface GroupCommunicationFeedProps {
-  isVisible: boolean
-  onComplete?: () => void
-  prompt: string
-  onStreamComplete?: () => void
-  onSenderHighlight?: (nodeId: string) => void
-  graphConfig?: any
-  executionKey?: string
-  apiError: boolean
-  sseState?: {
-    isConnected: boolean
-    isConnecting: boolean
-    events: StreamStep[]
-    currentOrderId: string | null
-    error: string | null
-    clearEvents: () => void
-  }
-}
+import { GroupCommunicationFeedProps } from "@/types/streaming"
 
 const buildSenderToNodeMap = (graphConfig: any): Record<string, string> => {
   if (!graphConfig?.nodes) return {}

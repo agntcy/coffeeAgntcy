@@ -8,6 +8,10 @@ Note that by _not_ including a description, you are asking reviewers to do extra
 work to understand the context of this change, which may lead to your PR taking
 much longer to review, or result in it not being reviewed at all.
 
+## Issue Link
+
+Link the primary issue in the PR description using `#` (e.g. `Fixes #123`). This enables two‑way linking.
+
 ## Type of Change
 
 - [ ] Bugfix

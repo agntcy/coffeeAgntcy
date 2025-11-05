@@ -7,7 +7,13 @@ import React, { useState, useEffect, useRef, useCallback } from "react"
 import { LOCAL_STORAGE_KEY } from "@/components/Chat/Messages"
 import { logger } from "@/utils/logger"
 import { useChatAreaMeasurement } from "@/hooks/useChatAreaMeasurement"
-import { useGlobalSSE } from "@/hooks/useGlobalSSE"
+import { useGroupCommunicationSSE } from "@/hooks/useGroupCommunicationSSE"
+import {
+  useStreamingStatus,
+  useStreamingEvents,
+  useStreamingError,
+  useStreamingActions,
+} from "@/stores/auctionStreamingStore"
 
 import Navigation from "@/components/Navigation/Navigation"
 import MainArea from "@/components/MainArea/MainArea"
@@ -21,17 +27,26 @@ export const PATTERNS = {
   SLIM_A2A: "slim_a2a",
   PUBLISH_SUBSCRIBE: "publish_subscribe",
   GROUP_COMMUNICATION: "group_communication",
+  PUBLISH_SUBSCRIBE_STREAMING: "publish_subscribe_streaming",
 } as const
 
 export type PatternType = (typeof PATTERNS)[keyof typeof PATTERNS]
 
 const App: React.FC = () => {
   const { sendMessage } = useAgentAPI()
-  const sseState = useGlobalSSE()
 
   const [selectedPattern, setSelectedPattern] = useState<PatternType>(
-    PATTERNS.PUBLISH_SUBSCRIBE,
+    PATTERNS.GROUP_COMMUNICATION,
   )
+
+  const groupCommSSE = useGroupCommunicationSSE()
+
+  const { connect, reset } = useStreamingActions()
+  const status = useStreamingStatus()
+  const events = useStreamingEvents()
+  const error = useStreamingError()
+
+  const sseState = groupCommSSE
   const [aiReplied, setAiReplied] = useState<boolean>(false)
   const [buttonClicked, setButtonClicked] = useState<boolean>(false)
   const [currentUserMessage, setCurrentUserMessage] = useState<string>("")
@@ -44,6 +59,8 @@ const App: React.FC = () => {
     ((nodeId: string) => void) | null
   >(null)
   const [showProgressTracker, setShowProgressTracker] = useState<boolean>(false)
+  const [showAuctionStreaming, setShowAuctionStreaming] =
+    useState<boolean>(false)
   const [showFinalResponse, setShowFinalResponse] = useState<boolean>(false)
   const [pendingResponse, setPendingResponse] = useState<string>("")
   const [executionKey, setExecutionKey] = useState<string>("")
@@ -56,6 +73,19 @@ const App: React.FC = () => {
   useEffect(() => {
     localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(messages))
   }, [messages])
+
+  useEffect(() => {
+    if (selectedPattern === PATTERNS.PUBLISH_SUBSCRIBE_STREAMING) {
+      if (
+        events.length > 0 &&
+        status !== "connecting" &&
+        status !== "streaming" &&
+        isAgentLoading
+      ) {
+        setIsAgentLoading(false)
+      }
+    }
+  }, [selectedPattern, events.length, status, isAgentLoading])
 
   const {
     height: chatHeight,
@@ -74,7 +104,8 @@ const App: React.FC = () => {
     setApiError(false)
 
     if (
-      selectedPattern !== PATTERNS.GROUP_COMMUNICATION ||
+      (selectedPattern !== PATTERNS.GROUP_COMMUNICATION &&
+        selectedPattern !== PATTERNS.PUBLISH_SUBSCRIBE_STREAMING) ||
       !sseState.isConnected ||
       sseState.error
     ) {
@@ -152,6 +183,13 @@ const App: React.FC = () => {
             setShowFinalResponse(true)
             handleApiResponse(errorMsg, true)
           })
+      } else if (selectedPattern === PATTERNS.PUBLISH_SUBSCRIBE_STREAMING) {
+        setShowFinalResponse(false)
+        setShowAuctionStreaming(true)
+        setAgentResponse("")
+        reset()
+
+        await connect(query)
       } else {
         setShowFinalResponse(true)
         const response = await sendMessage(query, selectedPattern)
@@ -228,14 +266,10 @@ const App: React.FC = () => {
       sseState.clearEvents()
     } else {
       setShowProgressTracker(false)
+      setShowAuctionStreaming(false)
       setGroupCommResponseReceived(false)
     }
-  }, [
-    selectedPattern,
-    sseState.clearEvents,
-    sseState.isConnected,
-    sseState.error,
-  ])
+  }, [selectedPattern])
 
   return (
     <ThemeProvider>
@@ -270,12 +304,14 @@ const App: React.FC = () => {
                 setAiReplied={setAiReplied}
                 isBottomLayout={true}
                 showCoffeePrompts={
-                  selectedPattern === PATTERNS.PUBLISH_SUBSCRIBE
+                  selectedPattern === PATTERNS.PUBLISH_SUBSCRIBE ||
+                  selectedPattern === PATTERNS.PUBLISH_SUBSCRIBE_STREAMING
                 }
                 showLogisticsPrompts={
                   selectedPattern === PATTERNS.GROUP_COMMUNICATION
                 }
                 showProgressTracker={showProgressTracker}
+                showAuctionStreaming={showAuctionStreaming}
                 showFinalResponse={showFinalResponse}
                 onStreamComplete={handleStreamComplete}
                 onSenderHighlight={handleSenderHighlight}
@@ -295,6 +331,11 @@ const App: React.FC = () => {
                 apiError={apiError}
                 chatRef={chatRef}
                 sseState={sseState}
+                auctionState={{
+                  events,
+                  status,
+                  error,
+                }}
               />
             </div>
           </div>

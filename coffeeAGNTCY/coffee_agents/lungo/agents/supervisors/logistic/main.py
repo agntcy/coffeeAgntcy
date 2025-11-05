@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import asyncio
+import json
 import logging
 import os
 
@@ -12,7 +13,7 @@ from pydantic import BaseModel
 import uvicorn
 
 from agntcy_app_sdk.factory import AgntcyFactory
-from agntcy_app_sdk.protocols.a2a.protocol import A2AProtocol
+from agntcy_app_sdk.semantic.a2a.protocol import A2AProtocol
 from ioa_observe.sdk.tracing import session_start
 
 from agents.supervisors.logistic.graph.graph import LogisticGraph
@@ -20,6 +21,7 @@ from agents.supervisors.logistic.graph import shared
 from agents.logistics.shipper.card import AGENT_CARD  # assuming similar structure
 from config.config import DEFAULT_MESSAGE_TRANSPORT, TRANSPORT_SERVER_ENDPOINT
 from config.logging_config import setup_logging
+from pathlib import Path
 
 setup_logging()
 logger = logging.getLogger("lungo.logistic.supervisor.main")
@@ -97,6 +99,36 @@ async def get_config():
   return {
     "transport": DEFAULT_MESSAGE_TRANSPORT.upper()
   }
+
+@app.get("/suggested-prompts")
+async def get_prompts():
+  """
+  Return suggested prompts for the group communication pattern. 
+
+  Raises:
+      HTTPException: 404 if file not found, 500 if JSON invalid or wrong shape.
+  """
+  prompts_path = Path(__file__).resolve().parent / "suggested_prompts.json"
+  try:
+    raw = prompts_path.read_text(encoding="utf-8")
+    data = json.loads(raw)
+
+    if not isinstance(data, list) or not all(isinstance(p, str) for p in data):
+      raise HTTPException(status_code=500, detail="suggested_prompts.json must be a JSON array of strings")
+
+    return data
+
+  except FileNotFoundError as fnf:
+    logger.exception(f"suggested_prompts.json not found at {prompts_path}")
+    raise HTTPException(status_code=404, detail="suggested_prompts.json not found") from fnf
+  except json.JSONDecodeError as jde:
+    logger.exception("Invalid JSON in suggested_prompts.json")
+    raise HTTPException(status_code=500, detail="Invalid JSON in suggested_prompts.json") from jde
+  except Exception as e:
+    if isinstance(e, HTTPException):
+      raise
+    logger.exception(f"Failed to load suggested prompts: {str(e)}")
+    raise HTTPException(status_code=500, detail=f"Failed to load prompts: {str(e)}") from e
 
 if __name__ == "__main__":
   uvicorn.run("main:app", host="0.0.0.0", port=9090, reload=True)

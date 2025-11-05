@@ -19,7 +19,7 @@ from a2a.types import (
   SendMessageRequest,
   TextPart,
 )
-from agntcy_app_sdk.protocols.a2a.protocol import A2AProtocol
+from agntcy_app_sdk.semantic.a2a.protocol import A2AProtocol
 from ioa_observe.sdk.decorators import tool as ioa_tool_decorator
 from langchain_core.messages import ToolMessage
 from langchain_core.tools import tool
@@ -34,7 +34,7 @@ from config.config import (
   DEFAULT_MESSAGE_TRANSPORT,
   TRANSPORT_SERVER_ENDPOINT,
 )
-from common.logistic_states import LogisticStatus
+from common.logistics_states import LogisticsStatus
 
 logger = logging.getLogger("lungo.logistic.supervisor.tools")
 
@@ -105,7 +105,7 @@ async def create_order(farm: str, quantity: int, price: float) -> str:
             Part(
               TextPart(
                 # Note the status must be included to trigger the logistic flow
-                text = f"{LogisticStatus.RECEIVED_ORDER.value} | Supervisor -> Tatooine Farm: Create an order {uuid.uuid4().hex} with price {price} and quantity {quantity}."
+                text = f"{LogisticsStatus.RECEIVED_ORDER.value} | Supervisor -> Tatooine Farm: Create an order {uuid.uuid4().hex} with price {price} and quantity {quantity}."
               )
             )
           ],
@@ -139,12 +139,11 @@ async def create_order(farm: str, quantity: int, price: float) -> str:
 
   for attempt in range(max_retries):
     try:
-      responses = await client.broadcast_message(
-        request,
-        broadcast_topic=f"{uuid4()}",
-        recipients=recipients,
+      responses = await client.start_groupchat(
+        init_message=request,
+        group_channel=f"{uuid4()}",
+        participants=recipients,
         end_message="DELIVERED",
-        group_chat=True,
         timeout=60,
       )
       # If we get here, the call succeeded
