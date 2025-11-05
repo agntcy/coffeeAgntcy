@@ -20,15 +20,11 @@ from a2a.types import (
   TextPart,
 )
 from agntcy_app_sdk.semantic.a2a.protocol import A2AProtocol
-from ioa_observe.sdk.decorators import tool as ioa_tool_decorator
-from langchain_core.messages import ToolMessage
-from langchain_core.tools import tool
 
 from agents.logistics.accountant.card import AGENT_CARD as ACCOUNTANT_CARD
 from agents.logistics.farm.card import AGENT_CARD as TATOOINE_CARD
 from agents.logistics.shipper.card import AGENT_CARD as SHIPPER_CARD
 from agents.logistics.helpdesk.card import AGENT_CARD as HELPDESK_CARD
-from agents.supervisors.logistic.graph.models import CreateOrderArgs
 from agents.supervisors.logistic.graph.shared import get_factory
 from config.config import (
   DEFAULT_MESSAGE_TRANSPORT,
@@ -38,21 +34,16 @@ from common.logistics_states import LogisticsStatus
 
 logger = logging.getLogger("lungo.logistic.supervisor.tools")
 
-def next_tools_or_end(state: dict[str, Any]) -> str:
-  """
-  Routing helper for LangGraph:
-  - If the last AI message has tool calls -> go to tools node.
-  - If the last message is a ToolMessage or has no tool calls -> end.
-  Expects state['messages'] to be a non-empty list.
-  """
-  msg = state["messages"][-1]
-  if isinstance(msg, ToolMessage):
-    return "__end__"
-  return "orders_tools" if getattr(msg, "tool_calls", None) else "__end__"
+# Global factory and transport instances
+factory = get_factory()
+transport = factory.create_transport(
+  DEFAULT_MESSAGE_TRANSPORT,
+  endpoint=TRANSPORT_SERVER_ENDPOINT,
+  name="default/default/logistic_graph"
+)
 
 
-@tool(args_schema=CreateOrderArgs)
-@ioa_tool_decorator(name="create_order")
+# @ioa_tool_decorator(name="create_order")
 async def create_order(farm: str, quantity: int, price: float) -> str:
   """
   Broadcast a coffee order request to shipper, farm, and accountant agents via SLIM.
@@ -75,17 +66,6 @@ async def create_order(farm: str, quantity: int, price: float) -> str:
     return "Price and quantity must both be greater than zero."
   if not farm:
     return "No farm provided. Please specify a farm."
-
-  try:
-    factory = get_factory()
-    transport = factory.create_transport(
-      DEFAULT_MESSAGE_TRANSPORT,
-      endpoint=TRANSPORT_SERVER_ENDPOINT,
-      name="default/default/logistic_graph",
-    )
-  except Exception as e:
-    logger.error("Failed to create factory or transport: %s", e)
-    raise HTTPException(status_code=500, detail="Internal server error: failed to create transport")
 
   try:
     client = await factory.create_client(
@@ -120,6 +100,7 @@ async def create_order(farm: str, quantity: int, price: float) -> str:
   # Known issue: concurrent delete_session executions may cause the agents to lose connectivity from SLIM.
   # (see https://github.com/agntcy/slim/issues/780; tentative fix targeted for versions 0.6.0 or 0.7.0).
   helpdesk_enabled = os.getenv("EXPERIMENTAL_FEATURE", "true").lower() == "true"
+  logger.info("Helpdesk enabled: %s", helpdesk_enabled)
   base_cards = (SHIPPER_CARD, TATOOINE_CARD, ACCOUNTANT_CARD)
   cards = base_cards + (HELPDESK_CARD,) if helpdesk_enabled else base_cards
 
