@@ -175,9 +175,31 @@ class LogisticGraph:
 
     async def _orders_streaming_node(self, state: GraphState):
         """
-        Handles orders-related queries by streaming responses from create_order_streaming.
+        Streaming orders node that yields real-time order status updates as they arrive from logistics agents.
+        
+        This node:
+        1. Extracts order parameters (farm, quantity, price) from user input using LLM structured output
+        2. Calls create_order_streaming() which yields events as agents process the order
+        3. Yields each order event immediately (RECEIVED_ORDER, HANDOVER_TO_SHIPPER, CUSTOMS_CLEARANCE, etc.)
+        4. Accumulates all responses to detect when order is DELIVERED
+        5. Uses LLM to generate a final formatted summary message when delivery is complete
+        
+        Flow:
+        - User message -> LLM extraction -> create_order_streaming() -> Yield events in real-time -> 
+          Final LLM summary (if delivered)
+        
+        Event Format:
+        Each yielded event is a dict with: order_id, sender, receiver, message, state, timestamp
+        
+        Args:
+            state: GraphState containing messages and routing information
+            
+        Yields:
+            dict: State updates with AIMessage containing either:
+                  - Individual order event dicts (during processing)
+                  - Final formatted delivery message string (at completion)
         """
-        # Get latest HumanMessage
+        # Extract the latest user message from the conversation history
         logger.info("Inside orders streaming node")
         user_msg = next((m for m in reversed(state["messages"]) if m.type == "human"), None)
         if not user_msg:
@@ -325,22 +347,33 @@ class LogisticGraph:
 
     async def streaming_serve(self, prompt: str):
         """
-        Streams the graph execution using LangGraph's astream_events API, yielding chunks as they arrive.
-
-        This method leverages LangGraph's event streaming to provide real-time updates as the graph
-        executes across multiple nodes. It captures intermediate outputs from each node and streams
-        them back to the caller, enabling progressive data delivery for long-running operations.
-
-        LangGraph Reference:
-            - Uses `astream_events()` for streaming
-            - Each event includes metadata (node name, event type) and data (chunks, messages)
+        Streams real-time order processing events using LangGraph's astream_events API.
+        
+        This method enables progressive delivery of order status updates by:
+        1. Setting use_streaming=True flag to route to _orders_streaming_node
+        2. Using LangGraph's astream_events() to capture node outputs as they're generated
+        3. Filtering for "on_chain_stream" events which contain intermediate results
+        4. Yielding AIMessage content as it arrives (order events and final summary)
+        
+        Flow:
+        - Prompt -> Graph with use_streaming=True -> _orders_streaming_node -> 
+          Stream events via astream_events() -> Filter -> Yield to caller
+        
+        Event Types Captured:
+        - on_chain_stream: Intermediate outputs from nodes (what we yield)
+        - on_chain_start/end: Node lifecycle events (logged but not yielded)
+        
+        Output Format:
+        Yields AIMessage content which can be:
+        - Order event dicts: {"order_id": "...", "sender": "...", "state": "...", ...}
+        - Final summary string: "Order X from Y for Z units at $W has been successfully delivered."
 
         Args:
-            prompt (str): The input prompt to be processed by the graph.
+            prompt (str): User's order request (e.g., "I want to order 5000 lbs of coffee for $3.52")
 
         Yields:
-            str: Message content chunks as they arrive from nodes during graph execution.
-                 Only yields AIMessage content, filtering out duplicates and reflection nodes.
+            str or dict: Message content chunks as they arrive from the streaming node.
+                        Can be order event dicts or formatted summary strings.
 
         Raises:
             ValueError: If the prompt is empty or not a string.
