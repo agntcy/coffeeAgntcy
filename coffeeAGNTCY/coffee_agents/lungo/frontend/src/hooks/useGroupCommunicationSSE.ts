@@ -134,21 +134,28 @@ export const useGroupCommunicationSSE = () => {
 
   const handleMessage = useCallback((event: MessageEvent) => {
     try {
+      console.log('SSE Raw event data:', event.data)
       const parsedData = JSON.parse(event.data)
+      console.log('SSE Parsed data:', parsedData)
 
       if (!isValidLogisticsStreamStep(parsedData)) {
+        console.log('SSE Validation failed for:', parsedData)
         return
       }
 
+      console.log('SSE Adding event to state:', parsedData)
       setState((prev) => {
         const newEvents = [...prev.events, parsedData]
+        console.log('SSE New events array:', newEvents)
         return {
           ...prev,
           events: newEvents,
           currentOrderId: parsedData.order_id,
         }
       })
-    } catch (_error) {}
+    } catch (error) {
+      console.error('SSE Error parsing message:', error)
+    }
   }, [])
 
   const handleSwitch = useCallback((event: MessageEvent) => {

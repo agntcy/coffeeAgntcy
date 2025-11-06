@@ -269,7 +269,7 @@ const App: React.FC = () => {
       setShowAuctionStreaming(false)
       setGroupCommResponseReceived(false)
     }
-  }, [selectedPattern])
+  }, [selectedPattern, sseState.isConnected, sseState.error])
 
   return (
     <ThemeProvider>
