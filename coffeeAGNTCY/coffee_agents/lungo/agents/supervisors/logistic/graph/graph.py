@@ -82,7 +82,6 @@ class LogisticGraph:
         """
         Handles orders-related queries by directly calling the create_order function.
         """
-        logger.info("Inside orders node")
         if not self.orders_llm:
             self.orders_llm = get_llm()
 
@@ -200,7 +199,6 @@ class LogisticGraph:
                   - Final formatted delivery message string (at completion)
         """
         # Extract the latest user message from the conversation history
-        logger.info("Inside orders streaming node")
         user_msg = next((m for m in reversed(state["messages"]) if m.type == "human"), None)
         if not user_msg:
             yield {"messages": [AIMessage(content="No user message found.")]}
