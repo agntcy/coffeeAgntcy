@@ -233,8 +233,6 @@ class TestAuctionFlows:
         logger.info(data)
         assert "I'm not sure how to handle that" in data["response"]
 
-    # ignore streaming test for now (todo- add when streaming llm is available)
-    @pytest.mark.skip(reason="Skipping streaming test")
     @pytest.mark.agents(["weather-mcp", "brazil-farm", "colombia-farm", "vietnam-farm"])
     @pytest.mark.usefixtures("agents_up")
     @pytest.mark.parametrize(
