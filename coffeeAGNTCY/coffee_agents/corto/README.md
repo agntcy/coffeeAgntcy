@@ -82,7 +82,11 @@ Update your .env file with the provider configuration, credentials, and OTEL end
 
 CoffeeAGNTCY uses litellm to manage LLM connections. With litellm, you can seamlessly switch between different model providers using a unified configuration interface. Below are examples of environment variables for setting up various providers. For a comprehensive list of supported providers, see the [official litellm documentation](https://docs.litellm.ai/docs/providers).
 
-Note: In CoffeeAGNTCY, the environment variable for specifying the model is always LLM_MODEL, regardless of the provider.
+In CoffeeAGNTCY, the environment variable for specifying the model is always LLM_MODEL, regardless of the provider.
+
+   > ⚠️ **Note:** The `/agent/prompt/stream` endpoint requires an LLM that supports streaming. If your LLM provider does not support streaming, the streaming endpoint may fail.
+
+   Then update `.env` with your LLM provider, credentials and OTEL endpoint. For example:
 
 ---
 
@@ -172,7 +176,7 @@ LOGGING_LEVEL=debug
 
 Make sure the following Python dependency is installed:
 ```
-ioa-observe-sdk==1.0.24
+ioa-observe-sdk==1.0.23
 ```
 
 For advanced observability of your multi-agent system, integrate the [Observe SDK](https://github.com/agntcy/observe/blob/main/GETTING-STARTED.md).
