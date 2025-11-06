@@ -104,31 +104,35 @@ async def get_config():
 @app.post("/agent/prompt/stream")
 async def handle_stream_prompt(request: PromptRequest):
     """
-    Processes a user prompt and streams the response from the ExchangeGraph.
+    Streams real-time order processing events as they occur in the logistics workflow.
 
-    This endpoint uses the streaming_serve() method to provide real-time updates
-    as the graph executes, yielding chunks progressively from each node.
+    Flow:
+    1. Extracts order parameters (farm, quantity, price) from user prompt using LLM
+    2. Initiates order with logistics agents (farm, shipper, accountant)
+    3. Streams each status update as agents process the order:
+       - RECEIVED_ORDER: Supervisor sends order to farm
+       - HANDOVER_TO_SHIPPER: Farm hands off to shipper
+       - CUSTOMS_CLEARANCE: Shipper clears customs
+       - PAYMENT_COMPLETE: Accountant confirms payment
+       - DELIVERED: Shipper completes delivery
+    4. Sends final formatted summary message
 
     Args:
-        request (PromptRequest): Contains the input prompt as a string.
+        request (PromptRequest): User's order request (e.g., "Order 5000 lbs at $3.52 from Tatooine")
 
     Returns:
-        StreamingResponse: JSON stream with node outputs as they complete.
-        Each chunk is formatted as: {"response": "..."}
+        StreamingResponse: NDJSON stream where each line is:
+        {"response": {"order_id": "...", "sender": "...", "state": "...", ...}} for events
+        {"response": "Order X from Y for Z units at $W has been successfully delivered."} for summary
 
     Raises:
         HTTPException: 400 for invalid input, 500 for server-side errors.
     """
     try:
-        session_start()  # Start a new tracing session for observability
+        session_start()
 
         async def stream_generator():
-            """
-            Generator that yields JSON chunks as they arrive from the graph.
-            Uses newline-delimited JSON (NDJSON) format for streaming.
-            """
             try:
-                # Stream chunks from the graph as nodes complete execution
                 async for chunk in logistic_graph.streaming_serve(request.prompt):
                     yield json.dumps({"response": chunk}) + "\n"
             except Exception as e:
@@ -137,10 +141,10 @@ async def handle_stream_prompt(request: PromptRequest):
 
         return StreamingResponse(
             stream_generator(),
-            media_type="application/x-ndjson",  # Newline-delimited JSON for streaming
+            media_type="application/x-ndjson",
             headers={
-                "Cache-Control": "no-cache",  # Prevent caching of streaming responses
-                "Connection": "keep-alive",  # Keep connection open for streaming
+                "Cache-Control": "no-cache",
+                "Connection": "keep-alive",
             }
         )
     except ValueError as ve:
