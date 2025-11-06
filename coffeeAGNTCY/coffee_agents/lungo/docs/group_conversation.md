@@ -120,7 +120,35 @@ Expected output:
 }
 ```
 
-## HelpDesk Agent (Updated 2025-10-15)
+## Logistic Supervisor Streaming Endpoint
+
+   > ⚠️ **Note:** The `/agent/prompt/stream` endpoint requires an LLM that supports streaming. If your LLM provider does not support streaming, the streaming endpoint may fail.
+
+```bash
+curl -X POST http://127.0.0.1:9090/agent/prompt/stream \
+  -H "Content-Type: application/json" \
+  -d '{
+    "prompt": "I want to order 5000 lbs of coffee for 3.52 $ from the Tatooine farm."
+  }'
+```
+
+Expected output:
+
+```json
+{"response": {"order_id": "40821a72-31e1-4da0-9bc0-ff519bc57c78", "sender": "Supervisor", "receiver": "Tatooine Farm", "message": "Create an order 40821a72-31e1-4da0-9bc0-ff519bc57c78 with price 3.52 and quantity 5000.", "state": "RECEIVED_ORDER", "timestamp": "2025-11-06T15:55:22.686634+00:00"}}
+
+{"response": {"order_id": "40821a72-31e1-4da0-9bc0-ff519bc57c78", "sender": "Tatooine Farm", "receiver": "Shipper", "message": "Order 40821a72-31e1-4da0-9bc0-ff519bc57c78 handed off for international transit. Prepared shipment and documentation.", "state": "HANDOVER_TO_SHIPPER", "timestamp": "2025-11-06T15:55:23.223314+00:00"}}
+
+{"response": {"order_id": "40821a72-31e1-4da0-9bc0-ff519bc57c78", "sender": "Shipper", "receiver": "Accountant", "message": "Customs cleared for order 40821a72-31e1-4da0-9bc0-ff519bc57c78; documents forwarded for payment processing. Customs docs validated and cleared.", "state": "CUSTOMS_CLEARANCE", "timestamp": "2025-11-06T15:55:24.228265+00:00"}}
+
+{"response": {"order_id": "40821a72-31e1-4da0-9bc0-ff519bc57c78", "sender": "Accountant", "receiver": "Shipper", "message": "Payment confirmed on order 40821a72-31e1-4da0-9bc0-ff519bc57c78; preparing final delivery. Payment verified and captured.", "state": "PAYMENT_COMPLETE", "timestamp": "2025-11-06T15:55:25.233904+00:00"}}
+
+{"response": {"order_id": "40821a72-31e1-4da0-9bc0-ff519bc57c78", "sender": "Shipper", "receiver": "Supervisor", "message": "Order 40821a72-31e1-4da0-9bc0-ff519bc57c78 delivered successfully; closing shipment cycle. Final handoff completed.", "state": "DELIVERED", "timestamp": "2025-11-06T15:55:26.241894+00:00"}}
+
+{"response": "Order 40821a72-31e1-4da0-9bc0-ff519bc57c78 from Tatooine for 5000 units at $3.52 has been successfully delivered."}
+```
+
+## HelpDesk Agent
 
 After all agents are running, you can stream the group chat events (server-sent events) to observe each state transition of an order.
 
