@@ -130,7 +130,7 @@ async def handle_stream_prompt(request: PromptRequest):
             try:
                 # Stream chunks from the graph as nodes complete execution
                 async for chunk in logistic_graph.streaming_serve(request.prompt):
-                    yield json.dumps({"response": chunk}) + "\n"
+                    yield json.dumps(chunk) + "\n"
             except Exception as e:
                 logger.error(f"Error in stream: {e}")
                 yield json.dumps({"response": f"Error: {str(e)}"}) + "\n"
