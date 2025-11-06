@@ -227,11 +227,57 @@ class LogisticGraph:
             quantity = params.quantity
             price = params.price
 
+            # Accumulate all responses and track if delivered
+            all_responses = []
+            delivered = False
+            order_id = None
+            
             # Stream responses from create_order_streaming and yield each one
             async for response in create_order_streaming(farm=farm, quantity=quantity, price=price):
                 logger.info(f"Received streaming response: {response}")
+                all_responses.append(response)
+                
+                # Check if this is a delivered status
+                if isinstance(response, dict):
+                    if response.get("state") == "DELIVERED":
+                        delivered = True
+                        order_id = response.get("order_id")
+                
                 # Yield each response as it arrives for streaming
                 yield {"messages": [AIMessage(content=str(response))]}
+            
+            # If delivered, generate final formatted message using LLM
+            if delivered and all_responses:
+                if not self.orders_llm:
+                    self.orders_llm = get_llm()
+                
+                format_prompt = PromptTemplate(
+                    template="""You are an orders broker for a global coffee exchange company.
+                    An order has been successfully delivered. Create a concise summary message.
+                    
+                    Order details:
+                    - Order ID: {order_id}
+                    - Farm: {farm}
+                    - Quantity: {quantity}
+                    - Price: {price}
+                    
+                    Respond with ONLY a single sentence in this exact format (no extra text):
+                    Order {order_id} from {farm} for {quantity} units at ${price} has been successfully delivered.
+                    
+                    """,
+                    input_variables=["order_id", "farm", "quantity", "price"]
+                )
+                
+                format_chain = format_prompt | self.orders_llm
+                final_response = await format_chain.ainvoke({
+                    "order_id": order_id or "unknown",
+                    "farm": farm.title(),
+                    "quantity": quantity,
+                    "price": f"{price:.2f}",
+                })
+                
+                # Yield the final formatted message
+                yield {"messages": [AIMessage(content=final_response.content.strip())]}
 
         except Exception as e:
             logger.error(f"Error in orders node: {e}")
