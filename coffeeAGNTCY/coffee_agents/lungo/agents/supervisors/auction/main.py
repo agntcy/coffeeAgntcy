@@ -6,7 +6,6 @@ import logging
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from ioa_observe.sdk.tracing import session_start
 from pydantic import BaseModel
 import uvicorn
 from fastapi.responses import StreamingResponse
