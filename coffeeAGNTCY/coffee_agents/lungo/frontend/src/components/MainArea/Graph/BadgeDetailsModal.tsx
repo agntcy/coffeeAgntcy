@@ -6,6 +6,10 @@
 import React, { useState, useEffect } from "react"
 import { createPortal } from "react-dom"
 
+const Spinner: React.FC = () => (
+  <div className="inline-block h-6 w-6 animate-spin rounded-full border-2 border-solid border-node-text-primary border-r-transparent"></div>
+)
+
 interface BadgeDetailsModalProps {
   isOpen: boolean
   onClose: () => void
@@ -14,20 +18,10 @@ interface BadgeDetailsModalProps {
 }
 
 interface BadgeData {
-  badgeId: string
+  id: string
   farmName: string
-  certificationLevel: string
-  issueDate: string
-  expiryDate: string
-  sustainabilityScore: number
-  fairTradeStatus: boolean
-  organicCertified: boolean
-  verificationDetails: {
-    verifiedBy: string
-    lastAuditDate: string
-    nextAuditDue: string
-    complianceScore: number
-  }
+  verified: boolean
+  policies: number
 }
 
 const BadgeDetailsModal: React.FC<BadgeDetailsModalProps> = ({
@@ -47,24 +41,13 @@ const BadgeDetailsModal: React.FC<BadgeDetailsModalProps> = ({
 
   const fetchBadgeDetails = async () => {
     setLoading(true)
-    // Mock API call - replace with actual API when ready
-    await new Promise((resolve) => setTimeout(resolve, 500)) // Simulate network delay
+    await new Promise((resolve) => setTimeout(resolve, 500))
 
     const mockData: BadgeData = {
-      badgeId: `BADGE-${farmName.toUpperCase()}-2024`,
+      id: `BADGE-${farmName.toUpperCase()}-2024`,
       farmName: farmName,
-      certificationLevel: "Premium",
-      issueDate: "2024-01-15",
-      expiryDate: "2025-01-15",
-      sustainabilityScore: 94,
-      fairTradeStatus: true,
-      organicCertified: farmName === "Colombia" ? true : false,
-      verificationDetails: {
-        verifiedBy: "Global Coffee Certification Board",
-        lastAuditDate: "2024-10-15",
-        nextAuditDue: "2025-04-15",
-        complianceScore: 96,
-      },
+      verified: true,
+      policies: 3,
     }
 
     setBadgeData(mockData)
@@ -77,18 +60,8 @@ const BadgeDetailsModal: React.FC<BadgeDetailsModalProps> = ({
     e.stopPropagation()
   }
 
-  const handleBackdropClick = (e: React.MouseEvent) => {
-    if (e.target === e.currentTarget) {
-      onClose()
-    }
-  }
-
   return createPortal(
     <div className="pointer-events-none fixed inset-0 z-50">
-      <div
-        className="pointer-events-auto absolute inset-0 top-[60px]"
-        onClick={handleBackdropClick}
-      />
       <div
         className="pointer-events-auto absolute -translate-x-1/2"
         style={{
@@ -97,14 +70,11 @@ const BadgeDetailsModal: React.FC<BadgeDetailsModalProps> = ({
         }}
       >
         <div
-          className="flex max-h-[500px] w-[400px] flex-col items-start gap-4 overflow-y-auto rounded-md bg-node-background p-4 shadow-lg"
+          className="flex max-h-[30vh] w-[400px] flex-col items-start gap-4 rounded-md bg-node-background p-4 shadow-lg"
           onClick={handleModalClick}
           data-modal-content
         >
-          <div className="flex w-full flex-row items-center justify-between">
-            <h2 className="text-lg font-semibold text-node-text-primary">
-              Badge Details
-            </h2>
+          <div className="flex w-full flex-shrink-0 flex-row items-center justify-end">
             <button
               onClick={onClose}
               className="text-xl leading-none text-node-text-primary hover:text-opacity-70"
@@ -115,11 +85,14 @@ const BadgeDetailsModal: React.FC<BadgeDetailsModalProps> = ({
 
           {loading ? (
             <div className="flex w-full items-center justify-center py-8">
-              <div className="text-node-text-primary">Loading...</div>
+              <Spinner />
             </div>
           ) : badgeData ? (
-            <div className="flex w-full flex-col gap-3">
-              <pre className="overflow-x-auto whitespace-pre-wrap rounded border bg-gray-500 bg-opacity-20 p-3 font-mono text-xs text-node-text-primary">
+            <div className="flex max-h-[20vh] min-h-0 w-full flex-col gap-3 overflow-y-auto">
+              <h3 className="text-sm font-semibold text-node-text-primary">
+                {farmName} Badge Details
+              </h3>
+              <pre className="overflow-auto whitespace-pre-wrap rounded border bg-gray-500 bg-opacity-20 p-3 font-mono text-xs text-node-text-primary">
                 {JSON.stringify(badgeData, null, 2)}
               </pre>
             </div>

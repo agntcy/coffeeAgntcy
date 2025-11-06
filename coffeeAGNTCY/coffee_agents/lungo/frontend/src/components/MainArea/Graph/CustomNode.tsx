@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  **/
 
-import React, { useState, useRef } from "react"
+import React, { useRef } from "react"
 import { Handle, Position } from "@xyflow/react"
 import { ClipboardCheck } from "lucide-react"
 import githubIcon from "@/assets/Github.png"
@@ -12,9 +12,6 @@ import agentDirectoryIconDark from "@/assets/Agent_directory.png"
 import agentDirectoryIconLight from "@/assets/Agent_Icon_light.png"
 import identityBadgeIcon from "@/assets/identity_badge.svg"
 import { useThemeIcon } from "@/hooks/useThemeIcon"
-import IdentityModal from "./IdentityModal"
-import BadgeDetailsModal from "./BadgeDetailsModal"
-import PolicyDetailsModal from "./PolicyDetailsModal"
 
 interface CustomNodeData {
   icon: React.ReactNode
@@ -27,6 +24,11 @@ interface CustomNodeData {
   githubLink?: string
   agentDirectoryLink?: string
   farmName?: string
+  isModalOpen?: boolean
+  onOpenIdentityModal?: (
+    nodeData: any,
+    position: { x: number; y: number },
+  ) => void
 }
 
 interface CustomNodeProps {
@@ -34,10 +36,6 @@ interface CustomNodeProps {
 }
 
 const CustomNode: React.FC<CustomNodeProps> = ({ data }) => {
-  const [isIdentityModalOpen, setIsIdentityModalOpen] = useState(false)
-  const [isBadgeModalOpen, setIsBadgeModalOpen] = useState(false)
-  const [isPolicyModalOpen, setIsPolicyModalOpen] = useState(false)
-  const [modalPosition, setModalPosition] = useState({ x: 0, y: 0 })
   const nodeRef = useRef<HTMLDivElement>(null)
 
   const githubIconSrc = useThemeIcon({
@@ -50,38 +48,24 @@ const CustomNode: React.FC<CustomNodeProps> = ({ data }) => {
   })
 
   const handleIdentityClick = (e: React.MouseEvent) => {
-    console.log("ClipboardCheck clicked!", data.label1)
     e.stopPropagation()
+    e.preventDefault()
 
-    if (nodeRef.current) {
+    if (nodeRef.current && data.onOpenIdentityModal) {
       const buttonRect = (
         e.currentTarget as HTMLElement
       ).getBoundingClientRect()
 
-      setModalPosition({
-        x: buttonRect.left + buttonRect.width / 2 + 90,
-        y: buttonRect.bottom + 8,
-      })
+      const buttonCenterX = buttonRect.left + buttonRect.width / 2
+      const position = {
+        x: buttonCenterX,
+        y: buttonRect.bottom + 12,
+      }
+
+      data.onOpenIdentityModal(data, position)
+    } else {
+      console.error("No modal handler found or nodeRef missing!")
     }
-
-    console.log("Setting identity modal open to true")
-    setIsIdentityModalOpen(true)
-  }
-
-  const handleCloseAllModals = () => {
-    setIsIdentityModalOpen(false)
-    setIsBadgeModalOpen(false)
-    setIsPolicyModalOpen(false)
-  }
-
-  const handleShowBadgeDetails = () => {
-    setIsIdentityModalOpen(false)
-    setIsBadgeModalOpen(true)
-  }
-
-  const handleShowPolicyDetails = () => {
-    setIsIdentityModalOpen(false)
-    setIsPolicyModalOpen(true)
   }
 
   const activeClasses = data.active
@@ -182,20 +166,34 @@ const CustomNode: React.FC<CustomNodeProps> = ({ data }) => {
           )}
           {data.verificationStatus === "verified" && (
             <div
-              className="flex h-7 w-7 cursor-pointer items-center justify-center rounded-lg border border-solid p-1 opacity-100 shadow-sm"
+              className={`flex h-7 w-7 cursor-pointer items-center justify-center rounded-lg border border-solid p-1 opacity-100 shadow-sm transition-opacity ${
+                data.isModalOpen
+                  ? "border-accent-border bg-accent-border bg-opacity-30"
+                  : ""
+              }`}
               style={{
-                backgroundColor: "var(--custom-node-background)",
-                borderColor: "var(--custom-node-border)",
+                backgroundColor: data.isModalOpen
+                  ? undefined
+                  : "var(--custom-node-background)",
+                borderColor: data.isModalOpen
+                  ? undefined
+                  : "var(--custom-node-border)",
               }}
               onClick={handleIdentityClick}
               onMouseEnter={(e) => {
-                e.currentTarget.style.opacity = "0.8"
+                if (!data.isModalOpen) {
+                  e.currentTarget.style.opacity = "0.8"
+                }
               }}
               onMouseLeave={(e) => {
-                e.currentTarget.style.opacity = "1"
+                if (!data.isModalOpen) {
+                  e.currentTarget.style.opacity = "1"
+                }
               }}
             >
-              <ClipboardCheck className="accent-icon h-5 w-5" />
+              <ClipboardCheck
+                className={`h-5 w-5 ${data.isModalOpen ? "text-accent-border" : "accent-icon"}`}
+              />
             </div>
           )}
         </div>
@@ -217,29 +215,6 @@ const CustomNode: React.FC<CustomNodeProps> = ({ data }) => {
           />
         )}
       </div>
-
-      <IdentityModal
-        isOpen={isIdentityModalOpen}
-        onClose={handleCloseAllModals}
-        onShowBadgeDetails={handleShowBadgeDetails}
-        onShowPolicyDetails={handleShowPolicyDetails}
-        farmName={data.farmName || data.label1}
-        position={modalPosition}
-      />
-
-      <BadgeDetailsModal
-        isOpen={isBadgeModalOpen}
-        onClose={handleCloseAllModals}
-        farmName={data.farmName || data.label1}
-        position={modalPosition}
-      />
-
-      <PolicyDetailsModal
-        isOpen={isPolicyModalOpen}
-        onClose={handleCloseAllModals}
-        farmName={data.farmName || data.label1}
-        position={modalPosition}
-      />
     </>
   )
 }
