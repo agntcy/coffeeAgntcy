@@ -215,6 +215,17 @@ async def create_order_streaming(farm: str, quantity: int, price: float):
   )
 
   try:
+    # Yield the initial RECEIVED_ORDER message from Supervisor
+    initial_message = {
+      "order_id": order_id,
+      "sender": "Supervisor",
+      "receiver": "Tatooine Farm",
+      "message": f"Create an order {order_id} with price {price} and quantity {quantity}.",
+      "state": "RECEIVED_ORDER",
+      "timestamp": datetime.now(timezone.utc).isoformat()
+    }
+    yield initial_message
+    
     responses = client.start_streaming_groupchat(
       init_message=request,
       group_channel=f"{uuid4()}",
