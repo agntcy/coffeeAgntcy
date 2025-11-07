@@ -6,28 +6,16 @@
 import React from "react"
 import { Eye, X } from "lucide-react"
 import { createPortal } from "react-dom"
-
-interface IdentityModalProps {
-  isOpen: boolean
-  onClose: () => void
-  onShowBadgeDetails: () => void
-  onShowPolicyDetails: () => void
-  farmName: string
-  position: { x: number; y: number }
-  activeModal?: string | null
-}
+import { IdentityModalProps } from "./types"
 
 const IdentityModal: React.FC<IdentityModalProps> = ({
   isOpen,
   onClose,
   onShowBadgeDetails,
   onShowPolicyDetails,
-  farmName,
   position,
   activeModal,
 }) => {
-  console.log("IdentityModal render:", { isOpen, farmName, position })
-
   if (!isOpen) return null
 
   const handleModalClick = (e: React.MouseEvent) => {

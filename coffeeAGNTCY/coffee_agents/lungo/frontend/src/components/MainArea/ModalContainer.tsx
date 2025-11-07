@@ -4,9 +4,9 @@
  **/
 
 import React from "react"
-import IdentityModal from "./Graph/IdentityModal"
-import BadgeDetailsModal from "./Graph/BadgeDetailsModal"
-import PolicyDetailsModal from "./Graph/PolicyDetailsModal"
+import IdentityModal from "./Graph/Identity/IdentityModal"
+import BadgeDetailsModal from "./Graph/Identity/BadgeDetailsModal"
+import PolicyDetailsModal from "./Graph/Identity/PolicyDetailsModal"
 import { ModalType } from "@/hooks/useModalManager"
 
 interface ModalContainerProps {
