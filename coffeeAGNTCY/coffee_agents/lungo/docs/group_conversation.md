@@ -66,10 +66,10 @@ docker-compose up slim clickhouse-server otel-collector grafana
 If you want to run the group conversation stack separately, you can do so by running the following command:
 
 ```sh
-docker-compose up logistic-farm logistic-supervisor logistic-shipper logistic-accountant
+docker-compose up logistic-farm logistic-supervisor logistic-shipper logistic-accountant logistic-helpdesk
 ```
 
-This will start the supervisor, shipper, accountant, farm, and SLIM transport services.
+This will start the supervisor, shipper, accountant, farm, helpdesk,  and SLIM transport services.
 
 ---
 
@@ -98,6 +98,11 @@ Terminal 4:
 
 ```sh
 make logistic-farm
+```
+Terminal 5:
+
+```sh
+make helpdesk
 ```
 
 ## Testing the Group Conversation
