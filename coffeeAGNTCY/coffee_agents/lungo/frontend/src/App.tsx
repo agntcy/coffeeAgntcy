@@ -7,7 +7,7 @@ import React, { useState, useEffect, useRef, useCallback } from "react"
 import { LOCAL_STORAGE_KEY } from "@/components/Chat/Messages"
 import { logger } from "@/utils/logger"
 import { useChatAreaMeasurement } from "@/hooks/useChatAreaMeasurement"
-import { useGroupCommunicationSSE } from "@/hooks/useGroupCommunicationSSE"
+import { useGroupCommunicationStreaming } from "@/hooks/useGroupCommunicationStreaming"
 import {
   useStreamingStatus,
   useStreamingEvents,
@@ -39,14 +39,14 @@ const App: React.FC = () => {
     PATTERNS.GROUP_COMMUNICATION,
   )
 
-  const groupCommSSE = useGroupCommunicationSSE()
+  const groupCommunicationStreaming = useGroupCommunicationStreaming()
+  const { clearState: clearGroupCommunicationState } =
+    groupCommunicationStreaming
 
   const { connect, reset } = useStreamingActions()
   const status = useStreamingStatus()
   const events = useStreamingEvents()
   const error = useStreamingError()
-
-  const sseState = groupCommSSE
   const [aiReplied, setAiReplied] = useState<boolean>(false)
   const [buttonClicked, setButtonClicked] = useState<boolean>(false)
   const [currentUserMessage, setCurrentUserMessage] = useState<string>("")
@@ -65,6 +65,26 @@ const App: React.FC = () => {
   const [pendingResponse, setPendingResponse] = useState<string>("")
   const [executionKey, setExecutionKey] = useState<string>("")
   const streamCompleteRef = useRef<boolean>(false)
+
+  const handlePatternChange = useCallback(
+    (pattern: PatternType) => {
+      reset()
+      setShowAuctionStreaming(false)
+
+      clearGroupCommunicationState()
+      setGroupCommResponseReceived(false)
+
+      setShowFinalResponse(false)
+      setAgentResponse("")
+      setPendingResponse("")
+      setIsAgentLoading(false)
+      setApiError(false)
+      setCurrentUserMessage("")
+
+      setSelectedPattern(pattern)
+    },
+    [reset, clearGroupCommunicationState],
+  )
   const [messages, setMessages] = useState<Message[]>(() => {
     const saved = localStorage.getItem(LOCAL_STORAGE_KEY)
     return saved ? JSON.parse(saved) : []
@@ -87,6 +107,29 @@ const App: React.FC = () => {
     }
   }, [selectedPattern, events.length, status, isAgentLoading])
 
+  useEffect(() => {
+    if (selectedPattern === PATTERNS.GROUP_COMMUNICATION) {
+      const streamingState = groupCommunicationStreaming.state
+
+      if (streamingState.isComplete && !streamingState.isStreaming) {
+        if (streamingState.finalResponse) {
+          setShowFinalResponse(true)
+          handleApiResponse(streamingState.finalResponse, false)
+        } else if (streamingState.error) {
+          const errorMsg = `Streaming error: ${streamingState.error}`
+          setShowFinalResponse(true)
+          handleApiResponse(errorMsg, true)
+        }
+      }
+    }
+  }, [
+    selectedPattern,
+    groupCommunicationStreaming.state.isComplete,
+    groupCommunicationStreaming.state.isStreaming,
+    groupCommunicationStreaming.state.finalResponse,
+    groupCommunicationStreaming.state.error,
+  ])
+
   const {
     height: chatHeight,
     isExpanded,
@@ -104,10 +147,8 @@ const App: React.FC = () => {
     setApiError(false)
 
     if (
-      (selectedPattern !== PATTERNS.GROUP_COMMUNICATION &&
-        selectedPattern !== PATTERNS.PUBLISH_SUBSCRIBE_STREAMING) ||
-      !sseState.isConnected ||
-      sseState.error
+      selectedPattern !== PATTERNS.GROUP_COMMUNICATION &&
+      selectedPattern !== PATTERNS.PUBLISH_SUBSCRIBE_STREAMING
     ) {
       setShowFinalResponse(true)
     }
@@ -142,11 +183,7 @@ const App: React.FC = () => {
     setApiError(false)
 
     try {
-      if (
-        selectedPattern === PATTERNS.GROUP_COMMUNICATION &&
-        sseState.isConnected &&
-        !sseState.error
-      ) {
+      if (selectedPattern === PATTERNS.GROUP_COMMUNICATION) {
         const newExecutionKey = Date.now().toString()
         setExecutionKey(newExecutionKey)
 
@@ -155,34 +192,16 @@ const App: React.FC = () => {
         setPendingResponse("")
         setGroupCommResponseReceived(false)
         streamCompleteRef.current = false
-        sseState.clearEvents()
+        clearGroupCommunicationState()
 
-        const responsePromise = sendMessage(query, selectedPattern)
-
-        responsePromise
-          .then((response) => {
-            setPendingResponse(response)
-
-            if (streamCompleteRef.current || sseState.error) {
-              setShowFinalResponse(true)
-              handleApiResponse(response, false)
-            } else {
-              setTimeout(() => {
-                if (!streamCompleteRef.current) {
-                  setShowFinalResponse(true)
-                  handleApiResponse(response, false)
-                }
-              }, 10000)
-            }
-          })
-          .catch((error) => {
-            logger.apiError("/agent/prompt", error)
-            const errorMsg = "Sorry, I encountered an error."
-
-            setPendingResponse(errorMsg)
-            setShowFinalResponse(true)
-            handleApiResponse(errorMsg, true)
-          })
+        try {
+          await groupCommunicationStreaming.startStreaming(query)
+        } catch (error) {
+          logger.apiError("/agent/prompt/stream", error)
+          const errorMsg = "Sorry, I encountered an error with streaming."
+          setShowFinalResponse(true)
+          handleApiResponse(errorMsg, true)
+        }
       } else if (selectedPattern === PATTERNS.PUBLISH_SUBSCRIBE_STREAMING) {
         setShowFinalResponse(false)
         setShowAuctionStreaming(true)
@@ -229,7 +248,7 @@ const App: React.FC = () => {
     setShowFinalResponse(false)
     setPendingResponse("")
 
-    sseState.clearEvents()
+    clearGroupCommunicationState()
   }
 
   const handleNodeHighlightSetup = useCallback(
@@ -257,19 +276,15 @@ const App: React.FC = () => {
     setShowFinalResponse(false)
     setPendingResponse("")
 
-    if (
-      selectedPattern === PATTERNS.GROUP_COMMUNICATION &&
-      sseState.isConnected &&
-      !sseState.error
-    ) {
+    if (selectedPattern === PATTERNS.GROUP_COMMUNICATION) {
       setShowProgressTracker(true)
-      sseState.clearEvents()
+      clearGroupCommunicationState()
     } else {
       setShowProgressTracker(false)
       setShowAuctionStreaming(false)
       setGroupCommResponseReceived(false)
     }
-  }, [selectedPattern, sseState.isConnected, sseState.error])
+  }, [selectedPattern, clearGroupCommunicationState])
 
   return (
     <ThemeProvider>
@@ -279,7 +294,7 @@ const App: React.FC = () => {
         <div className="flex flex-1 overflow-hidden">
           <Sidebar
             selectedPattern={selectedPattern}
-            onPatternChange={setSelectedPattern}
+            onPatternChange={handlePatternChange}
           />
 
           <div className="flex flex-1 flex-col border-l border-action-background bg-app-background">
@@ -330,7 +345,7 @@ const App: React.FC = () => {
                 isAgentLoading={isAgentLoading}
                 apiError={apiError}
                 chatRef={chatRef}
-                sseState={sseState}
+                groupStreamingState={groupCommunicationStreaming.state}
                 auctionState={{
                   events,
                   status,

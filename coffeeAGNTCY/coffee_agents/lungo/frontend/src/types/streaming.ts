@@ -16,6 +16,15 @@ interface AuctionStreamingResponse {
   response: string
 }
 
+interface GroupCommunicationStreamingState {
+  isStreaming: boolean
+  events: LogisticsStreamStep[]
+  finalResponse: string | null
+  currentOrderId: string | null
+  error: string | null
+  isComplete: boolean
+}
+
 interface GroupCommunicationFeedProps {
   isVisible: boolean
   onComplete?: () => void
@@ -25,14 +34,7 @@ interface GroupCommunicationFeedProps {
   graphConfig?: any
   executionKey?: string
   apiError: boolean
-  sseState?: {
-    isConnected: boolean
-    isConnecting: boolean
-    events: LogisticsStreamStep[]
-    currentOrderId: string | null
-    error: string | null
-    clearEvents: () => void
-  }
+  streamingState?: GroupCommunicationStreamingState
 }
 
 interface AuctionStreamingFeedProps {
@@ -71,6 +73,7 @@ export type {
   LogisticsStreamStep,
   AuctionStreamingResponse,
   AuctionStreamingState,
+  GroupCommunicationStreamingState,
   GroupCommunicationFeedProps,
   AuctionStreamingFeedProps,
   SSEState,

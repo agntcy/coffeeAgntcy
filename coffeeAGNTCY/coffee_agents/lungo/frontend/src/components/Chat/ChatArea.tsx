@@ -12,20 +12,12 @@ import { useAgentAPI } from "@/hooks/useAgentAPI"
 import UserMessage from "./UserMessage"
 import ChatHeader from "./ChatHeader"
 import AgentIcon from "@/assets/Coffee_Icon.svg"
+import { GroupCommunicationStreamingState } from "@/types/streaming"
 
 import { cn } from "@/utils/cn.ts"
 import { logger } from "@/utils/logger"
 import GroupCommunicationFeed from "./GroupCommunicationFeed"
 import AuctionStreamingFeed from "./AuctionStreamingFeed"
-
-interface SSEState {
-  isConnected: boolean
-  isConnecting: boolean
-  events: any[]
-  currentOrderId: string | null
-  error: string | null
-  clearEvents: () => void
-}
 
 interface ChatAreaProps {
   setMessages: React.Dispatch<React.SetStateAction<Message[]>>
@@ -51,7 +43,7 @@ interface ChatAreaProps {
   isAgentLoading?: boolean
   apiError: boolean
   chatRef?: React.RefObject<HTMLDivElement | null>
-  sseState?: SSEState
+  groupStreamingState?: GroupCommunicationStreamingState
   auctionState?: any
 }
 
@@ -79,7 +71,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
   isAgentLoading,
   apiError,
   chatRef,
-  sseState,
+  groupStreamingState,
   auctionState,
 }) => {
   const [content, setContent] = useState<string>("")
@@ -200,7 +192,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
                   prompt={currentUserMessage || ""}
                   executionKey={executionKey}
                   apiError={apiError}
-                  sseState={sseState}
+                  streamingState={groupStreamingState}
                 />
               </div>
             )}
