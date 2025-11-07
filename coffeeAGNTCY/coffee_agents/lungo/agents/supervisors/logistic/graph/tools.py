@@ -100,7 +100,7 @@ async def create_order(farm: str, quantity: int, price: float) -> str:
   # Experimental: includes the HelpDesk in the broadcast (enabled by default for broader testing and demos).
   # Known issue: concurrent delete_session executions may cause the agents to lose connectivity from SLIM.
   # (see https://github.com/agntcy/slim/issues/780; tentative fix targeted for versions 0.6.0 or 0.7.0).
-  # TODO: Decide whether to keep this experimental feature for adding helpdesk to do streaming or remove it and use native streaming.
+  # Note: Helpdesk agent is an additional agent that will listen to the group chat messages.
   helpdesk_enabled = os.getenv("EXPERIMENTAL_FEATURE", "true").lower() == "true"
   logger.info("Helpdesk enabled: %s", helpdesk_enabled)
   base_cards = (SHIPPER_CARD, TATOOINE_CARD, ACCOUNTANT_CARD)
