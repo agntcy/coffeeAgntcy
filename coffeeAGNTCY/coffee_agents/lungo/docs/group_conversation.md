@@ -148,34 +148,6 @@ Expected output:
 {"response": "Order 40821a72-31e1-4da0-9bc0-ff519bc57c78 from Tatooine for 5000 units at $3.52 has been successfully delivered."}
 ```
 
-## HelpDesk Agent
-
-After all agents are running, you can stream the group chat events (server-sent events) to observe each state transition of an order.
-
-Start the HelpDesk agent in a new terminal:
-```sh
-make helpdesk
-```
-
-Stream the chat log events (SSE):
-```sh
-curl -H "Accept: text/event-stream" "http://localhost:9094/agent/chat-logs"
-```
-
-You will see a sequence of `data:` lines, each a JSON object representing one state transition (fields: `order_id`, `sender`, `receiver`, `message`, `state`, `timestamp`):
-
-```
-data: {"order_id": "dbfd55776ce34f30bd75220ec70a5063", "sender": "Supervisor", "receiver": "Tatooine Farm", "message": "Create an order dbfd55776ce34f30bd75220ec70a5063 with price 3.5 and quantity 500.", "state": "RECEIVED_ORDER", "timestamp": "2025-10-15T21:31:30.230486+00:00"}
-
-data: {"order_id": "dbfd55776ce34f30bd75220ec70a5063", "sender": "Tatooine Farm", "receiver": "Shipper", "message": "Order dbfd55776ce34f30bd75220ec70a5063 handed off for international transit. Prepared shipment and documentation.", "state": "HANDOVER_TO_SHIPPER", "timestamp": "2025-10-15T21:31:30.280761+00:00"}
-
-data: {"order_id": "dbfd55776ce34f30bd75220ec70a5063", "sender": "Shipper", "receiver": "Accountant", "message": "Customs cleared for order dbfd55776ce34f30bd75220ec70a5063; documents forwarded for payment processing. Customs docs validated and cleared.", "state": "CUSTOMS_CLEARANCE", "timestamp": "2025-10-15T21:31:30.305481+00:00"}
-
-data: {"order_id": "dbfd55776ce34f30bd75220ec70a5063", "sender": "Accountant", "receiver": "Shipper", "message": "Payment confirmed for order dbfd55776ce34f30bd75220ec70a5063; preparing final delivery. Payment verified and captured.", "state": "PAYMENT_COMPLETE", "timestamp": "2025-10-15T21:31:30.479570+00:00"}
-
-data: {"order_id": "dbfd55776ce34f30bd75220ec70a5063", "sender": "Shipper", "receiver": "Supervisor", "message": "Order dbfd55776ce34f30bd75220ec70a5063 delivered successfully; closing shipment cycle. Final handoff completed.", "state": "DELIVERED", "timestamp": "2025-10-15T21:31:31.430532+00:00"}
-```
-
 ## Group Communication UI
 
 ![Group Communication UI](../images/group_communication_ui.png)

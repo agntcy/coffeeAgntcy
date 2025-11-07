@@ -22,7 +22,6 @@ from a2a.server.tasks import InMemoryTaskStore
 from agents.logistics.helpdesk.agent_executor import HelpdeskAgentExecutor
 from agents.logistics.helpdesk.card import AGENT_CARD
 from agents.logistics.shipper.card import AGENT_CARD as SHIPPER_AGENT_CARD
-from agents.logistics.helpdesk.stream import stream_handler
 from config.config import (
     DEFAULT_MESSAGE_TRANSPORT,
     ENABLE_HTTP,
@@ -78,7 +77,6 @@ def build_http_app(a2a_app: A2AStarletteApplication) -> FastAPI:
         allow_headers=["*"],
     )
     app.router.routes.append(Route("/v1/health", health_handler, methods=["GET"]))
-    app.router.routes.append(Route("/agent/chat-logs", stream_handler, methods=["GET"]))
     return app
 
 # New: factory + global FastAPI instance for tests/imports
