@@ -46,7 +46,7 @@ class TestLogisticsHealth:
     @pytest.mark.agents(["shipper"])
     @pytest.mark.usefixtures("agents_up")
 
-    def test_logistics_supervisor_health(self, logistics_supervisor_client, transport_config, prompt_case):
+    def test_logistics_supervisor_health(self, logistics_supervisor_client, transport_config):
         logger.info(f"\n---Test: test_logistics_supervisor_health with transport {transport_config}---")
         health_resp = logistics_supervisor_client.get("/v1/health")
         assert health_resp.status_code == 200
