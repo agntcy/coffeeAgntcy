@@ -276,7 +276,7 @@ const GROUP_COMMUNICATION_CONFIG: GraphConfig = {
         label2: "Logistics Agent",
         handles: "source",
         githubLink:
-          "https://github.com/agntcy/coffeeAgntcy/blob/main/coffeeAGNTCY/coffee_agents/lungo/agents/supervisors/auction/graph/graph.py#L120",
+          "https://github.com/agntcy/coffeeAgntcy/blob/main/coffeeAGNTCY/coffee_agents/lungo/agents/supervisors/logistic/graph/tools.py#L150",
         agentDirectoryLink: "https://agent-directory.outshift.com/explore",
       },
       position: { x: 150, y: 100 },
@@ -290,7 +290,7 @@ const GROUP_COMMUNICATION_CONFIG: GraphConfig = {
         label: "Transport: SLIM",
         compact: true,
         githubLink:
-          "https://github.com/agntcy/app-sdk/blob/main/src/agntcy_app_sdk/transports/slim/transport.py#L29",
+          "https://github.com/agntcy/app-sdk/blob/main/src/agntcy_app_sdk/transport/slim/transport.py#L294",
       },
       position: { x: 380, y: 270 },
       parentId: "logistics-group",
@@ -312,7 +312,7 @@ const GROUP_COMMUNICATION_CONFIG: GraphConfig = {
         handles: "source",
         farmName: "Tatooine Farm",
         githubLink:
-          "https://github.com/agntcy/coffeeAgntcy/blob/main/coffeeAGNTCY/coffee_agents/lungo/agents/logistics/farm/agent.py#L30",
+          "https://github.com/agntcy/coffeeAgntcy/blob/main/coffeeAGNTCY/coffee_agents/lungo/agents/logistics/farm/agent_executor.py#L42",
         agentDirectoryLink: "https://agent-directory.outshift.com/explore/",
       },
       position: { x: 550, y: 100 },
@@ -331,7 +331,7 @@ const GROUP_COMMUNICATION_CONFIG: GraphConfig = {
         handles: "target",
         agentName: "Shipper Logistics",
         githubLink:
-          "https://github.com/agntcy/coffeeAgntcy/blob/main/coffeeAGNTCY/coffee_agents/lungo/agents/logistics/shipper/agent.py#L30",
+          "https://github.com/agntcy/coffeeAgntcy/blob/main/coffeeAGNTCY/coffee_agents/lungo/agents/logistics/shipper/agent_executor.py#L41",
         agentDirectoryLink: "https://agent-directory.outshift.com/explore/",
       },
       position: { x: 150, y: 500 },
@@ -350,7 +350,7 @@ const GROUP_COMMUNICATION_CONFIG: GraphConfig = {
         handles: "target",
         agentName: "Accountant Logistics",
         githubLink:
-          "https://github.com/agntcy/coffeeAgntcy/blob/main/coffeeAGNTCY/coffee_agents/lungo/agents/logistics/accountant/agent.py#L30",
+          "https://github.com/agntcy/coffeeAgntcy/blob/main/coffeeAGNTCY/coffee_agents/lungo/agents/logistics/accountant/agent_executor.py#L42",
         agentDirectoryLink: "https://agent-directory.outshift.com/explore/",
       },
       position: { x: 500, y: 500 },
@@ -422,7 +422,7 @@ export const getGraphConfig = (
               data: {
                 ...node.data,
                 githubLink:
-                  "https://github.com/agntcy/coffeeAgntcy/blob/main/coffeeAGNTCY/coffee_agents/lungo/agents/supervisors/auction/graph/graph.py#L511",
+                  "https://github.com/agntcy/coffeeAgntcy/blob/main/coffeeAGNTCY/coffee_agents/lungo/agents/supervisors/auction/graph/tools.py#L289",
               },
             }
           : node,
@@ -463,9 +463,59 @@ export const updateTransportLabels = async (
                 label: `Transport: ${transport}`,
                 githubLink:
                   transport === "SLIM"
-                    ? "https://github.com/agntcy/app-sdk/blob/main/src/agntcy_app_sdk/transports/slim/transport.py#L29"
+                    ? "https://github.com/agntcy/app-sdk/blob/main/src/agntcy_app_sdk/transport/slim/transport.py#L176"
                     : transport === "NATS"
-                      ? "https://github.com/agntcy/app-sdk/blob/main/src/agntcy_app_sdk/transports/nats/transport.py#L27"
+                      ? "https://github.com/agntcy/app-sdk/blob/main/src/agntcy_app_sdk/transport/nats/transport.py#L119"
+                      : "https://github.com/agntcy/app-sdk/tree/main/src/agntcy_app_sdk/transports",
+              },
+            }
+          : node,
+      ),
+    )
+
+    setEdges((edges: any[]) =>
+      edges.map((edge: any) => {
+        if (edge.id === "4-6") {
+          return { ...edge, data: { ...edge.data, label: `MCP: ${transport}` } }
+        }
+        return edge
+      }),
+    )
+  } catch (error) {
+    logger.apiError("/transport/config", error)
+  }
+}
+
+export const updateStreamingTransportLabels = async (
+  setNodes: (updater: (nodes: any[]) => any[]) => void,
+  setEdges: (updater: (edges: any[]) => any[]) => void,
+  pattern?: string,
+): Promise<void> => {
+  if (pattern === "group_communication") {
+    return
+  }
+
+  try {
+    const response = await fetch(`${EXCHANGE_APP_API_URL}/transport/config`)
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`)
+    }
+    const data = await response.json()
+    const transport = data.transport
+
+    setNodes((nodes: any[]) =>
+      nodes.map((node: any) =>
+        node.id === "2"
+          ? {
+              ...node,
+              data: {
+                ...node.data,
+                label: `Transport: ${transport}`,
+                githubLink:
+                  transport === "SLIM"
+                    ? "https://github.com/agntcy/app-sdk/blob/main/src/agntcy_app_sdk/transport/slim/transport.py#L203"
+                    : transport === "NATS"
+                      ? "https://github.com/agntcy/app-sdk/blob/main/src/agntcy_app_sdk/transport/nats/transport.py#L147"
                       : "https://github.com/agntcy/app-sdk/tree/main/src/agntcy_app_sdk/transports",
               },
             }
