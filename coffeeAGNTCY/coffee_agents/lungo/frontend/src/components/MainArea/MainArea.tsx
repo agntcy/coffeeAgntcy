@@ -13,7 +13,7 @@ import {
 } from "@xyflow/react"
 import "@xyflow/react/dist/style.css"
 import "./ReactFlow.css"
-import { PatternType } from "@/App"
+import { PatternType } from "@/utils/patternUtils"
 import TransportNode from "./Graph/transportNode"
 import CustomEdge from "./Graph/CustomEdge"
 import BranchingEdge from "./Graph/BranchingEdge"
@@ -24,6 +24,10 @@ import {
   updateTransportLabels,
   GraphConfig,
 } from "@/utils/graphConfigs"
+import {
+  isStreamingPattern,
+  supportsTransportUpdates,
+} from "@/utils/patternUtils"
 import { useViewportAwareFitView } from "@/hooks/useViewportAwareFitView"
 import { useModalManager } from "@/hooks/useModalManager"
 
@@ -97,6 +101,26 @@ const MainArea: React.FC<MainAreaProps> = ({
   const [edges, setEdges, onEdgesChange] = useEdgesState(config.edges)
   const animationLock = useRef<boolean>(false)
 
+  // Reset animation lock when pattern changes
+  useEffect(() => {
+    animationLock.current = false
+  }, [pattern])
+
+  useEffect(() => {
+    setNodes((nodes) =>
+      nodes.map((node) => ({
+        ...node,
+        data: { ...node.data, active: false },
+      })),
+    )
+    setEdges((edges) =>
+      edges.map((edge) => ({
+        ...edge,
+        data: { ...edge.data, active: false },
+      })),
+    )
+  }, [pattern, setNodes, setEdges])
+
   useEffect(() => {
     const updateGraph = async () => {
       const newConfig = getGraphConfig(pattern, isGroupCommConnected)
@@ -116,7 +140,12 @@ const MainArea: React.FC<MainAreaProps> = ({
 
       setEdges(newConfig.edges)
 
-      await updateTransportLabels(setNodes, setEdges, pattern)
+      await updateTransportLabels(
+        setNodes,
+        setEdges,
+        pattern,
+        isStreamingPattern(pattern),
+      )
 
       setTimeout(() => {
         fitViewWithViewport({
@@ -140,8 +169,13 @@ const MainArea: React.FC<MainAreaProps> = ({
 
   useEffect(() => {
     const handleVisibilityChange = async () => {
-      if (!document.hidden && pattern === "publish_subscribe") {
-        await updateTransportLabels(setNodes, setEdges, pattern)
+      if (!document.hidden && supportsTransportUpdates(pattern)) {
+        await updateTransportLabels(
+          setNodes,
+          setEdges,
+          pattern,
+          isStreamingPattern(pattern),
+        )
       }
     }
 

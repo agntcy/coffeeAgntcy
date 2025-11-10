@@ -21,7 +21,7 @@ from a2a.server.request_handlers import DefaultRequestHandler
 from a2a.server.tasks import InMemoryTaskStore
 from agents.logistics.helpdesk.agent_executor import HelpdeskAgentExecutor
 from agents.logistics.helpdesk.card import AGENT_CARD
-from agents.logistics.helpdesk.stream import stream_handler
+from agents.logistics.shipper.card import AGENT_CARD as SHIPPER_AGENT_CARD
 from config.config import (
     DEFAULT_MESSAGE_TRANSPORT,
     ENABLE_HTTP,
@@ -30,7 +30,7 @@ from config.config import (
 )
 from agents.logistics.helpdesk.store.singleton import global_store
 
-logger = logging.getLogger("lungo.helpdesk.server")
+logger = logging.getLogger("lungo.logistics.helpdesk.server")
 load_dotenv()
 
 factory = AgntcyFactory("lungo_helpdesk", enable_tracing=True)
@@ -42,6 +42,11 @@ def utc_timestamp() -> str:
     return datetime.utcnow().replace(tzinfo=timezone.utc).isoformat(timespec="milliseconds")
 
 async def health_handler(_request: Request) -> JSONResponse:
+    """
+    Uses the Shipper Agent to create a PointToPoint SLIM session (via A2A protocol)
+    in order to verify connectivity with SLIM. If the session creation succeeds
+    within the timeout, SLIM is considered 'alive'.
+    """
     try:
         transport = factory.create_transport(
             DEFAULT_MESSAGE_TRANSPORT,
@@ -51,7 +56,7 @@ async def health_handler(_request: Request) -> JSONResponse:
         await asyncio.wait_for(
             factory.create_client(
                 "A2A",
-                agent_topic=A2AProtocol.create_agent_topic(AGENT_CARD),
+                agent_topic=A2AProtocol.create_agent_topic(SHIPPER_AGENT_CARD),
                 transport=transport,
             ),
             timeout=30,
@@ -72,7 +77,6 @@ def build_http_app(a2a_app: A2AStarletteApplication) -> FastAPI:
         allow_headers=["*"],
     )
     app.router.routes.append(Route("/v1/health", health_handler, methods=["GET"]))
-    app.router.routes.append(Route("/agent/chat-logs", stream_handler, methods=["GET"]))
     return app
 
 # New: factory + global FastAPI instance for tests/imports
@@ -138,6 +142,6 @@ if __name__ == "__main__":
     try:
         asyncio.run(main(ENABLE_HTTP))
     except KeyboardInterrupt:
-        print("Shutting down gracefully.")
+        logger.info("Shutting down gracefully.")
     except Exception as e:
-        print(f"Error occurred: {e}")
+        logger.error(f"Error occurred: {e}")

@@ -25,14 +25,6 @@ interface GroupCommunicationFeedProps {
   graphConfig?: any
   executionKey?: string
   apiError: boolean
-  sseState?: {
-    isConnected: boolean
-    isConnecting: boolean
-    events: LogisticsStreamStep[]
-    currentOrderId: string | null
-    error: string | null
-    clearEvents: () => void
-  }
 }
 
 interface AuctionStreamingFeedProps {
