@@ -8,5 +8,6 @@ metadata:
     "helm.sh/hook-weight": "-10"
     "helm.sh/hook-delete-policy": before-hook-creation
 spec:
-  selfSigned: {}
+  ca:
+    secretName: local-root-ca
 {{- end }}

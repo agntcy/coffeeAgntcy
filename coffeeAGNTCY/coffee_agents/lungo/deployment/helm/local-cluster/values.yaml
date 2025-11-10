@@ -42,41 +42,6 @@ weather-mcp-server:
   defaultMessageTransport: "NATS"
   otlpHttpEndpoint: "http://lungo-local-cluster-opentelemetry-collector:4318"
 
-lungo-exchange:
-  ingress:
-    enabled: true
-    name: lungo-exchange
-    className: nginx
-    host: lungo-exchange.demo.com
-    serviceName: lungo-exchange
-    servicePort: 8000
-    tlsSecret: exchange-tls
-    annotations:
-      cert-manager.io/cluster-issuer: selfsigned
-
-logistic-supervisor:
-  ingress:
-    enabled: true
-    name: logistic-supervisor
-    className: nginx
-    host: logistic-supervisor.demo.com
-    serviceName: logistic-supervisor
-    servicePort: 9090
-    annotations:
-      cert-manager.io/cluster-issuer: selfsigned
-
-logistic-helpdesk:
-  ingress:
-    enabled: true
-    name: logistic-helpdesk
-    className: nginx
-    host: logistic-helpdesk.demo.com
-    serviceName: logistic-helpdesk
-    servicePort: 9094
-    tlsSecret: helpdesk-tls
-    annotations:
-      cert-manager.io/cluster-issuer: selfsigned
-
 lungo-ui:
   config:
     exchangeAppApiUrl: "https://lungo-exchange.demo.com"

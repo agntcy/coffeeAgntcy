@@ -3,30 +3,30 @@
   Include all dependency names (or aliases) from your local-cluster Chart.yaml.
 */ -}}
 
-{{- $auctionTargets := list "brazil-farm" "colombia-farm" "vietnam-farm" "lungo-exchange" -}}
-{{- $logisticsTargets := list "logistic-farm" "logistic-helpdesk" "logistic-supervisor" "logistic-accountant" "logistic-shipper" -}}
+{{- $auctionTargets := list "brazil-farm" "colombia-farm" "vietnam-farm" -}}
+{{- $logisticsTargets := list "logistic-farm" "logistic-accountant" "logistic-shipper" -}}
 
 {{- $shared := dict "config" (dict
-    "azureOpenAiEndpoint" (env "AZURE_OPENAI_ENDPOINT")
-    "azureOpenAiDeployment" (env "AZURE_OPENAI_DEPLOYMENT")
-    "azureOpenAiApiVersion" (env "AZURE_OPENAI_API_VERSION")
-    "azureOpenAiApiKey" (env "AZURE_OPENAI_API_KEY")
-    "openAiApiKey" (env "OPENAI_API_KEY")
-    "openAiEndpoint" (env "OPENAI_ENDPOINT")
-    "openAiModelName" (env "OPENAI_MODEL_NAME")
-    "llmProvider" (requiredEnv "LLM_PROVIDER")
-    "otlpHttpEndpoint" "http://lungo-local-cluster-opentelemetry-collector:4318"
-    "identityApiServerUrl" "https://api.agent-identity.outshift.com"
+  "azureOpenAiEndpoint" (env "AZURE_OPENAI_ENDPOINT")
+  "azureOpenAiDeployment" (env "AZURE_OPENAI_DEPLOYMENT")
+  "azureOpenAiApiVersion" (env "AZURE_OPENAI_API_VERSION")
+  "azureOpenAiApiKey" (env "AZURE_OPENAI_API_KEY")
+  "openAiApiKey" (env "OPENAI_API_KEY")
+  "openAiEndpoint" (env "OPENAI_ENDPOINT")
+  "openAiModelName" (env "OPENAI_MODEL_NAME")
+  "llmProvider" (requiredEnv "LLM_PROVIDER")
+  "otlpHttpEndpoint" "http://lungo-local-cluster-opentelemetry-collector:4318"
+  "identityApiServerUrl" "https://api.agent-identity.outshift.com"
 ) -}}
 
 {{- $slim := dict "config" (dict
-    "transportServerEndpoint" "http://lungo-local-cluster-slim:46357"
-    "defaultMessageTransport" "SLIM"
+  "transportServerEndpoint" "http://lungo-local-cluster-slim:46357"
+  "defaultMessageTransport" "SLIM"
 ) -}}
 
 {{- $nats := dict "config" (dict
-    "transportServerEndpoint" "nats://lungo-local-cluster-nats:4222"
-    "defaultMessageTransport" "NATS"
+  "transportServerEndpoint" "nats://lungo-local-cluster-nats:4222"
+  "defaultMessageTransport" "NATS"
 ) -}}
 
 {{- /* Auction targets: merge shared + NATS into one config block */ -}}
@@ -34,7 +34,7 @@
 {{- $cfg := merge (deepCopy $shared.config) (deepCopy $nats.config) }}
 {{ $name }}:
   config:
-    {{- toYaml $cfg | nindent 4 }}
+{{- toYaml $cfg | nindent 4 }}
 {{- end }}
 
 {{- /* Logistics targets: merge shared + SLIM into one config block */ -}}
@@ -42,5 +42,48 @@
 {{- $cfg := merge (deepCopy $shared.config) (deepCopy $slim.config) }}
 {{ $name }}:
   config:
-    {{- toYaml $cfg | nindent 4 }}
+{{- toYaml $cfg | nindent 4 }}
 {{- end }}
+
+# Explicit per-chart overrides with ingress enabled
+lungo-exchange:
+  config:
+{{- toYaml (merge (deepCopy $shared.config) (deepCopy $nats.config)) | nindent 4 }}
+  ingress:
+    enabled: true
+    name: lungo-exchange
+    className: nginx
+    host: lungo-exchange.demo.com
+    serviceName: lungo-exchange
+    servicePort: 8000
+    tlsSecret: exchange-tls
+    annotations:
+      cert-manager.io/cluster-issuer: selfsigned
+
+logistic-supervisor:
+  config:
+{{- toYaml (merge (deepCopy $shared.config) (deepCopy $slim.config)) | nindent 4 }}
+  ingress:
+    enabled: true
+    name: logistic-supervisor
+    className: nginx
+    host: logistic-supervisor.demo.com
+    serviceName: logistic-supervisor
+    servicePort: 9090
+    tlsSecret: logistic-supervisor-tls
+    annotations:
+      cert-manager.io/cluster-issuer: selfsigned
+
+logistic-helpdesk:
+  config:
+{{- toYaml (merge (deepCopy $shared.config) (deepCopy $slim.config)) | nindent 4 }}
+  ingress:
+    enabled: true
+    name: logistic-helpdesk
+    className: nginx
+    host: logistic-helpdesk.demo.com
+    serviceName: logistic-helpdesk
+    servicePort: 9094
+    tlsSecret: helpdesk-tls
+    annotations:
+      cert-manager.io/cluster-issuer: selfsigned
