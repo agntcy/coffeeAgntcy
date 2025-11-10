@@ -1,0 +1,46 @@
+{{- /*
+  Applies the same config overrides to multiple subcharts.
+  Include all dependency names (or aliases) from your local-cluster Chart.yaml.
+*/ -}}
+
+{{- $auctionTargets := list "brazil-farm" "colombia-farm" "vietnam-farm" "lungo-exchange" -}}
+{{- $logisticsTargets := list "logistic-farm" "logistic-helpdesk" "logistic-supervisor" "logistic-accountant" "logistic-shipper" -}}
+
+{{- $shared := dict "config" (dict
+    "azureOpenAiEndpoint" (env "AZURE_OPENAI_ENDPOINT")
+    "azureOpenAiDeployment" (env "AZURE_OPENAI_DEPLOYMENT")
+    "azureOpenAiApiVersion" (env "AZURE_OPENAI_API_VERSION")
+    "azureOpenAiApiKey" (env "AZURE_OPENAI_API_KEY")
+    "openAiApiKey" (env "OPENAI_API_KEY")
+    "openAiEndpoint" (env "OPENAI_ENDPOINT")
+    "openAiModelName" (env "OPENAI_MODEL_NAME")
+    "llmProvider" (requiredEnv "LLM_PROVIDER")
+    "otlpHttpEndpoint" "http://lungo-local-cluster-opentelemetry-collector:4318"
+    "identityApiServerUrl" "https://api.agent-identity.outshift.com"
+) -}}
+
+{{- $slim := dict "config" (dict
+    "transportServerEndpoint" "http://lungo-local-cluster-slim:46357"
+    "defaultMessageTransport" "SLIM"
+) -}}
+
+{{- $nats := dict "config" (dict
+    "transportServerEndpoint" "nats://lungo-local-cluster-nats:4222"
+    "defaultMessageTransport" "NATS"
+) -}}
+
+{{- /* Auction targets: merge shared + NATS into one config block */ -}}
+{{- range $name := $auctionTargets }}
+{{- $cfg := merge (deepCopy $shared.config) (deepCopy $nats.config) }}
+{{ $name }}:
+  config:
+    {{- toYaml $cfg | nindent 4 }}
+{{- end }}
+
+{{- /* Logistics targets: merge shared + SLIM into one config block */ -}}
+{{- range $name := $logisticsTargets }}
+{{- $cfg := merge (deepCopy $shared.config) (deepCopy $slim.config) }}
+{{ $name }}:
+  config:
+    {{- toYaml $cfg | nindent 4 }}
+{{- end }}

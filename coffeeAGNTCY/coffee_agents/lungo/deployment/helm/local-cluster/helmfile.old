@@ -1,0 +1,116 @@
+helmDefaults:
+  wait: true
+  timeout: 600
+
+repositories:
+  # - name: ingress-nginx
+  #   url: https://kubernetes.github.io/ingress-nginx
+  # - name: cert-manager
+  #   url: https://charts.jetstack.io
+  - name: nats
+    url: https://nats-io.github.io/k8s/helm/charts
+  - name: opentelemetry
+    url: https://open-telemetry.github.io/opentelemetry-helm-charts
+  - name: grafana
+    url: oci://ghcr.io/grafana/helm-charts
+    oci: true
+  - name: bitnamicharts
+    url: oci://registry-1.docker.io/bitnamicharts
+    oci: true
+  - name: slim
+    url: oci://ghcr.io/agntcy/slim/helm
+    oci: true
+  # - name: metallb
+  #   url: https://metallb.github.io/metallb
+
+releases:
+  # MetalLB for a LAN LoadBalancer IP
+  # - name: metallb
+  #   namespace: metallb-system
+  #   createNamespace: true
+  #   chart: metallb/metallb
+  #   version: 0.14.5
+  #   hooks:
+  #     # After MetalLB CRDs & controllers are up, create the pool + L2 advert
+  #     - events: ["postsync"]
+  #       command: bash
+  #       args:
+  #         - -c
+  #         - |
+  #           set -euo pipefail
+  #           cat <<'EOF' | kubectl apply -f -
+  #           apiVersion: metallb.io/v1beta1
+  #           kind: IPAddressPool
+  #           metadata:
+  #             name: default-pool
+  #             namespace: metallb-system
+  #           spec:
+  #             addresses:
+  #               - 172.18.255.204-172.18.255.254   # <-- your LAN range
+  #           ---
+  #           apiVersion: metallb.io/v1beta1
+  #           kind: L2Advertisement
+  #           metadata:
+  #             name: default-l2
+  #             namespace: metallb-system
+  #           spec:
+  #             ipAddressPools:
+  #               - default-pool
+  #           EOF
+
+  # Ingress controller (gets a LoadBalancer IP from MetalLB)
+  - name: ingress-nginx
+    namespace: ingress-nginx
+    createNamespace: true
+    chart: ingress-nginx/ingress-nginx
+    version: 4.11.2
+    # needs:
+    #   - metallb-system/metallb
+    values:
+      - controller:
+          ingressClassResource:
+            name: nginx
+            controllerValue: "k8s.io/ingress-nginx"
+          ingressClassByName: true
+          watchNamespace: ""
+          service:
+            type: NodePort
+
+  # # cert-manager (install CRDs first, then wait for readiness)
+  # - name: cert-manager
+  #   namespace: cert-manager
+  #   createNamespace: true
+  #   chart: cert-manager/cert-manager
+  #   version: 1.19.1
+  #   values:
+  #     - crds:
+  #         enabled: false
+  #   hooks:
+  #     - events: ["presync"]
+  #       command: bash
+  #       args:
+  #         - -c
+  #         - |
+  #           set -euo pipefail
+  #           kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.19.1/cert-manager.crds.yaml
+  #     - events: ["postsync"]
+  #       command: bash
+  #       args:
+  #         - -c
+  #         - |
+  #           set -euo pipefail
+  #           kubectl wait -n cert-manager deploy/cert-manager --for=condition=Available --timeout=180s
+  #           kubectl wait apiservice v1.cert-manager.io --for=condition=Available --timeout=180s
+
+  # Your umbrella chart (contains the self-signed ClusterIssuer template)
+  - name: lungo-local-cluster
+    namespace: default
+    createNamespace: false
+    chart: .
+    # needs:
+    #   - ingress-nginx/ingress-nginx
+    #   - cert-manager/cert-manager
+    disableOpenAPIValidation: true
+    values:
+      - ./values.yaml
+      - ./config-overrides.yaml.gotmpl

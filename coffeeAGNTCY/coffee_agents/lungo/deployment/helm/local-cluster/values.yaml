@@ -1,0 +1,94 @@
+opentelemetry-collector:
+  image:
+    repository: otel/opentelemetry-collector-k8s
+  mode: deployment
+
+clickhouse:
+  auth:
+    username: "admin"
+    password: "admin"
+  keeper:
+    enabled: false
+  shards: 1
+  replicaCount: 1
+  image:
+    repository: bitnamilegacy/clickhouse
+    tag: 25.6.4-debian-12-r0
+    pullPolicy: IfNotPresent
+
+nats:
+  readinessProbe:
+    httpGet: { path: /healthz, port: 8222 }
+    initialDelaySeconds: 10
+    periodSeconds: 10
+    timeoutSeconds: 2
+    failureThreshold: 6
+  livenessProbe:
+    httpGet: { path: /healthz, port: 8222 }
+    initialDelaySeconds: 20
+    periodSeconds: 20
+    timeoutSeconds: 2
+    failureThreshold: 6
+
+# cert-manager settings consumed by your templates
+certManager:
+  enabled: true
+  email: aditi.a.gupta@gmail.com
+  ingressClass: nginx
+  name: selfsigned   # <— use the self-signed issuer for kind
+
+weather-mcp-server:
+  transportServerEndpoint: "nats://lungo-local-cluster-nats:4222"
+  defaultMessageTransport: "NATS"
+  otlpHttpEndpoint: "http://lungo-local-cluster-opentelemetry-collector:4318"
+
+lungo-exchange:
+  ingress:
+    enabled: true
+    name: lungo-exchange
+    className: nginx
+    host: lungo-exchange.demo.com
+    serviceName: lungo-exchange
+    servicePort: 8000
+    tlsSecret: exchange-tls
+    annotations:
+      cert-manager.io/cluster-issuer: selfsigned
+
+logistic-supervisor:
+  ingress:
+    enabled: true
+    name: logistic-supervisor
+    className: nginx
+    host: logistic-supervisor.demo.com
+    serviceName: logistic-supervisor
+    servicePort: 9090
+    annotations:
+      cert-manager.io/cluster-issuer: selfsigned
+
+logistic-helpdesk:
+  ingress:
+    enabled: true
+    name: logistic-helpdesk
+    className: nginx
+    host: logistic-helpdesk.demo.com
+    serviceName: logistic-helpdesk
+    servicePort: 9094
+    tlsSecret: helpdesk-tls
+    annotations:
+      cert-manager.io/cluster-issuer: selfsigned
+
+lungo-ui:
+  config:
+    exchangeAppApiUrl: "https://lungo-exchange.demo.com"
+    logisticsAppApiUrl: "https://logistic-supervisor.demo.com"
+    helpdeskApiUrl: "https://logistic-helpdesk.demo.com"
+  ingress:
+    enabled: true
+    name: lungo-ui
+    className: nginx
+    host: lungo-ui.demo.com
+    serviceName: lungo-ui         # must match the Service name
+    servicePort: 3000             # must match the Service port
+    tlsSecret: lungo-ui-tls
+    annotations:
+      cert-manager.io/cluster-issuer: selfsigned

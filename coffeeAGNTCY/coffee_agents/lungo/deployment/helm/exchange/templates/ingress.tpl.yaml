@@ -21,8 +21,8 @@ spec:
                 name: {{ .Values.ingress.serviceName }}
                 port:
                   number: {{ .Values.ingress.servicePort }}
-  tls:
-    - hosts:
-        - {{ .Values.ingress.host }}
-      secretName: {{ .Values.ingress.tlsSecret }}
+  # tls:
+  #   - hosts:
+  #       - {{ .Values.ingress.host }}
+  #     secretName: {{ .Values.ingress.tlsSecret }}
 {{- end }}

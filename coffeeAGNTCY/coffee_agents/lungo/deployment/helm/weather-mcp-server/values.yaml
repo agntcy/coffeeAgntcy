@@ -28,10 +28,8 @@ resources:
     memory: 500Mi
 
 probes:
-  endpoint: /
-  port: 8125
-  readinessProbeEnabled: true
-  livenessProbeEnabled: true
+  readinessProbeEnabled: false
+  livenessProbeEnabled: false
 
 # You can use your own config here for service account
 serviceaccount:

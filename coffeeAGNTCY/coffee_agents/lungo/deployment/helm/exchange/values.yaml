@@ -15,20 +15,28 @@ service:
   port: 8000
 
 config:
-  azureOpenAiEndpoint: ""
-  azureOpenAiDeployment: ""
-  azureOpenAiApiVersion: ""
-  llmProvider: ""
-  transportServerEndpoint: ""
-  defaultMessageTransport: ""
-  otlpHttpEndpoint: ""
-  identityApiServerUrl: "" # Identity API endpoint
+  azureOpenAiEndpoint:
+  azureOpenAiDeployment:
+  azureOpenAiApiVersion:
+  llmProvider:
+  transportServerEndpoint:
+  defaultMessageTransport:
+  otlpHttpEndpoint:
+  identityApiServerUrl:
+  # azureOpenAiEndpoint: "${AZURE_OPENAI_ENDPOINT}"
+  # azureOpenAiDeployment: "${AZURE_OPENAI_DEPLOYMENT}"
+  # azureOpenAiApiVersion: "${AZURE_OPENAI_API_VERSION}"
+  # llmProvider: "${LLM_PROVIDER}"
+  # transportServerEndpoint: "nats://nats:4222"
+  # defaultMessageTransport: "NATS"
+  # otlpHttpEndpoint: "http://opentelemetry-collector:4318"
+  # identityApiServerUrl: "https://api.agent-identity.outshift.com"
 #  llmStreaming: False
 
 # You can use your own config here for service account
-serviceaccount:
-  annotations:
-    eks.amazonaws.com/role-arn: REPLACE_WITH_ROLE_ARN
+# serviceaccount:
+#   annotations:
+#     eks.amazonaws.com/role-arn: REPLACE_WITH_ROLE_ARN
 
 # You can use your own ingress stack of operators and letsencrypt mechanism
 ingress:

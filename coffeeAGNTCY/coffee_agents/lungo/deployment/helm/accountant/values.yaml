@@ -15,7 +15,7 @@ service:
   port: 9092
 
 config:
-  transportServerEndpoint: ""
+  transportServerEndpoint: "${TRANSPORT_SERVER_ENDPOINT:-slim.coffeeagntcy.com:443}"
   defaultMessageTransport: ""
   otlpHttpEndpoint: ""
 
