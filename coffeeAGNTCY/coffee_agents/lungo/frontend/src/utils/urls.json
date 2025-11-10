@@ -1,0 +1,43 @@
+{
+  "github": {
+    "baseUrl": "https://github.com/agntcy/coffeeAgntcy/blob/main/coffeeAGNTCY/coffee_agents",
+    "appSdkBaseUrl": "https://github.com/agntcy/app-sdk/blob/main/src/agntcy_app_sdk",
+    "agents": {
+      "supervisorAuction": "/lungo/agents/supervisors/auction/graph/graph.py#L451",
+      "supervisorAuctionStreaming": "/lungo/agents/supervisors/auction/graph/graph.py#L511",
+      "brazilFarm": "/lungo/agents/farms/brazil/agent.py#L32",
+      "brazilFarmStreaming": "/lungo/agents/farms/brazil/agent.py#L193",
+      "colombiaFarm": "/lungo/agents/farms/colombia/agent.py#L55",
+      "colombiaFarmStreaming": "/lungo/agents/farms/colombia/agent.py#L287",
+      "vietnamFarm": "/lungo/agents/farms/vietnam/agent.py#L32",
+      "vietnamFarmStreaming": "/lungo/agents/farms/vietnam/agent.py#L192",
+      "weatherMcp": "/lungo/agents/mcp_servers/weather_service.py#L24",
+      "logisticSupervisor": "/lungo/agents/supervisors/logistic/graph/tools.py#L150",
+      "logisticFarm": "/lungo/agents/logistics/farm/agent_executor.py#L42",
+      "logisticShipper": "/lungo/agents/logistics/shipper/agent_executor.py#L41",
+      "logisticAccountant": "/lungo/agents/logistics/accountant/agent_executor.py#L42"
+    },
+    "transports": {
+      "general": "/tree/main/src/agntcy_app_sdk/transports",
+      "group": "/transport/slim/transport.py#L294",
+      "regular": {
+        "slim": "/transport/slim/transport.py#L176",
+        "nats": "/transport/nats/transport.py#L119"
+      },
+      "streaming": {
+        "slim": "/transport/slim/transport.py#L203",
+        "nats": "/transport/nats/transport.py#L147"
+      }
+    }
+  },
+  "agentDirectory": {
+    "baseUrl": "https://agent-directory.outshift.com/explore",
+    "agents": {
+      "supervisorAuction": "/34f05b1e-3bd3-4a21-b8c5-e9f191942ed0",
+      "brazilFarm": "/f52e742d-f9fc-41f5-a431-23ca69c4ef65",
+      "colombiaFarm": "/1991a0f9-a24d-4197-902a-3de0a0c5920a",
+      "vietnamFarm": "/6907d9f6-6fea-4e2c-93d6-ab7914204a6f",
+      "weatherMcp": "/8d720b8c-59a7-4ea4-9254-68c764e1f9b1"
+    }
+  }
+}
