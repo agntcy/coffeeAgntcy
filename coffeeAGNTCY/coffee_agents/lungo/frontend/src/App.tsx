@@ -31,14 +31,7 @@ import Sidebar from "@/components/Sidebar/Sidebar"
 import { ThemeProvider } from "@/contexts/ThemeContext"
 import { Message } from "./types/message"
 import { getGraphConfig } from "@/utils/graphConfigs"
-export const PATTERNS = {
-  SLIM_A2A: "slim_a2a",
-  PUBLISH_SUBSCRIBE: "publish_subscribe",
-  GROUP_COMMUNICATION: "group_communication",
-  PUBLISH_SUBSCRIBE_STREAMING: "publish_subscribe_streaming",
-} as const
-
-export type PatternType = (typeof PATTERNS)[keyof typeof PATTERNS]
+import { PATTERNS, PatternType } from "@/utils/patternUtils"
 
 const App: React.FC = () => {
   const { sendMessage } = useAgentAPI()
@@ -49,7 +42,6 @@ const App: React.FC = () => {
 
   const startStreaming = useStartGroupStreaming()
 
-  // Auction streaming store
   const { connect, reset } = useStreamingActions()
   const status = useStreamingStatus()
   const events = useStreamingEvents()
@@ -94,6 +86,9 @@ const App: React.FC = () => {
       setApiError(false)
       setCurrentUserMessage("")
 
+      setButtonClicked(false)
+      setAiReplied(false)
+
       setSelectedPattern(pattern)
     },
     [reset, resetGroup],
@@ -119,6 +114,12 @@ const App: React.FC = () => {
       }
     }
   }, [selectedPattern, events.length, status, isAgentLoading])
+
+  // Reset animation states when pattern changes to prevent stale animations
+  useEffect(() => {
+    setButtonClicked(false)
+    setAiReplied(false)
+  }, [selectedPattern])
 
   const {
     height: chatHeight,

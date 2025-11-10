@@ -4,7 +4,11 @@
  **/
 
 import React, { useState, useEffect } from "react"
-import { PatternType, PATTERNS } from "@/App"
+import {
+  PatternType,
+  PATTERNS,
+  getApiUrlForPattern,
+} from "@/utils/patternUtils"
 import SidebarItem from "./sidebarItem"
 import SidebarDropdown from "./SidebarDropdown"
 
@@ -27,14 +31,12 @@ const Sidebar: React.FC<SidebarProps> = ({
     useState(true)
   const [transport, setTransport] = useState<string>("")
 
-  const DEFAULT_EXCHANGE_APP_API_URL = "http://127.0.0.1:8000"
-  const EXCHANGE_APP_API_URL =
-    import.meta.env.VITE_EXCHANGE_APP_API_URL || DEFAULT_EXCHANGE_APP_API_URL
-
   useEffect(() => {
     const fetchTransportConfig = async () => {
       try {
-        const response = await fetch(`${EXCHANGE_APP_API_URL}/transport/config`)
+        const response = await fetch(
+          `${getApiUrlForPattern(PATTERNS.PUBLISH_SUBSCRIBE)}/transport/config`,
+        )
         const data = await response.json()
         if (data.transport) {
           setTransport(data.transport)
@@ -45,7 +47,7 @@ const Sidebar: React.FC<SidebarProps> = ({
     }
 
     fetchTransportConfig()
-  }, [EXCHANGE_APP_API_URL])
+  }, [])
 
   const handlePublishSubscribeToggle = () => {
     setIsPublishSubscribeExpanded(!isPublishSubscribeExpanded)

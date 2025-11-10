@@ -8,8 +8,19 @@ import { Truck, Calculator } from "lucide-react"
 import { Node, Edge } from "@xyflow/react"
 import supervisorIcon from "@/assets/supervisor.png"
 import farmAgentIcon from "@/assets/Grader-Agent.png"
-import { FarmName } from "./const"
+import {
+  FarmName,
+  NODE_IDS,
+  EDGE_IDS,
+  NODE_TYPES,
+  EDGE_TYPES,
+  EDGE_LABELS,
+  HANDLE_TYPES,
+  VERIFICATION_STATUS,
+} from "./const"
 import { logger } from "./logger"
+import urlsConfig from "./urls.json"
+import { isGroupCommunication, getApiUrlForPattern } from "./patternUtils"
 
 export interface GraphConfig {
   title: string
@@ -17,10 +28,6 @@ export interface GraphConfig {
   edges: Edge[]
   animationSequence: { ids: string[] }[]
 }
-
-const DEFAULT_EXCHANGE_APP_API_URL = "http://127.0.0.1:8000"
-const EXCHANGE_APP_API_URL =
-  import.meta.env.VITE_EXCHANGE_APP_API_URL || DEFAULT_EXCHANGE_APP_API_URL
 
 const CoffeeBeanIcon = (
   <img
@@ -30,71 +37,12 @@ const CoffeeBeanIcon = (
   />
 )
 
-const GraderAgentIcon = (
-  <img
-    src={farmAgentIcon}
-    alt="Grader Agent Icon"
-    className="dark-icon h-4 w-4 object-contain opacity-100"
-  />
-)
-
-const SLIM_A2A_CONFIG: GraphConfig = {
-  title: "SLIM A2A Coffee Agent Communication",
-  nodes: [
-    {
-      id: "1",
-      type: "customNode",
-      data: {
-        icon: (
-          <img
-            src={supervisorIcon}
-            alt="Supervisor Icon"
-            className="dark-icon h-4 w-4 object-contain"
-          />
-        ),
-        label1: "Supervisor Agent",
-        label2: "Buyer",
-        handles: "source",
-        verificationStatus: "verified",
-        githubLink:
-          "https://github.com/agntcy/coffeeAgntcy/tree/main/coffeeAGNTCY/coffee_agents/corto/exchange",
-        agentDirectoryLink: "https://agent-directory.outshift.com/explore",
-      },
-      position: { x: 529.1332569384248, y: 159.4805787605829 },
-    },
-    {
-      id: "2",
-      type: "customNode",
-      data: {
-        icon: GraderAgentIcon,
-        label1: "Grader Agent",
-        label2: "Sommelier",
-        handles: "target",
-        githubLink:
-          "https://github.com/agntcy/coffeeAgntcy/tree/main/coffeeAGNTCY/coffee_agents/corto/farm",
-        agentDirectoryLink: "https://agent-directory.outshift.com/explore",
-      },
-      position: { x: 534.0903941835277, y: 582.9317472571444 },
-    },
-  ],
-  edges: [
-    {
-      id: "1-2",
-      source: "1",
-      target: "2",
-      data: { label: "A2A" },
-      type: "custom",
-    },
-  ],
-  animationSequence: [{ ids: ["1"] }, { ids: ["1-2"] }, { ids: ["2"] }],
-}
-
 const PUBLISH_SUBSCRIBE_CONFIG: GraphConfig = {
   title: "Publish Subscribe Coffee Farm Network",
   nodes: [
     {
-      id: "1",
-      type: "customNode",
+      id: NODE_IDS.AUCTION_AGENT,
+      type: NODE_TYPES.CUSTOM,
       data: {
         icon: (
           <img
@@ -105,141 +53,142 @@ const PUBLISH_SUBSCRIBE_CONFIG: GraphConfig = {
         ),
         label1: "Auction Agent",
         label2: "Buyer",
-        handles: "source",
-        githubLink:
-          "https://github.com/agntcy/coffeeAgntcy/blob/main/coffeeAGNTCY/coffee_agents/lungo/agents/supervisors/auction/graph/graph.py#L116",
-        agentDirectoryLink:
-          "https://agent-directory.outshift.com/explore/34f05b1e-3bd3-4a21-b8c5-e9f191942ed0",
+        handles: HANDLE_TYPES.SOURCE,
+        githubLink: `${urlsConfig.github.baseUrl}${urlsConfig.github.agents.supervisorAuction}`,
+        agentDirectoryLink: `${urlsConfig.agentDirectory.baseUrl}${urlsConfig.agentDirectory.agents.supervisorAuction}`,
       },
       position: { x: 527.1332569384248, y: 76.4805787605829 },
     },
     {
-      id: "2",
-      type: "transportNode",
+      id: NODE_IDS.TRANSPORT,
+      type: NODE_TYPES.TRANSPORT,
       data: {
         label: "Transport: ",
-        githubLink:
-          "https://github.com/agntcy/app-sdk/tree/main/src/agntcy_app_sdk/transports",
+        githubLink: `${urlsConfig.github.appSdkBaseUrl}${urlsConfig.github.transports.general}`,
       },
       position: { x: 229.02370449534635, y: 284.688426426175 },
     },
     {
-      id: "3",
-      type: "customNode",
+      id: NODE_IDS.BRAZIL_FARM,
+      type: NODE_TYPES.CUSTOM,
       data: {
         icon: CoffeeBeanIcon,
         label1: "Brazil",
         label2: "Coffee Farm Agent",
-        handles: "target",
+        handles: HANDLE_TYPES.TARGET,
         farmName: FarmName?.BrazilCoffeeFarm || "Brazil Coffee Farm",
-        verificationStatus: "failed",
-        githubLink:
-          "https://github.com/agntcy/coffeeAgntcy/blob/main/coffeeAGNTCY/coffee_agents/lungo/agents/farms/brazil/agent.py#L30",
-        agentDirectoryLink:
-          "https://agent-directory.outshift.com/explore/f52e742d-f9fc-41f5-a431-23ca69c4ef65",
+        verificationStatus: VERIFICATION_STATUS.FAILED,
+        githubLink: `${urlsConfig.github.baseUrl}${urlsConfig.github.agents.brazilFarm}`,
+        agentDirectoryLink: `${urlsConfig.agentDirectory.baseUrl}${urlsConfig.agentDirectory.agents.brazilFarm}`,
       },
 
       position: { x: 232.0903941835277, y: 503.93174725714437 },
     },
     {
-      id: "4",
-      type: "customNode",
+      id: NODE_IDS.COLOMBIA_FARM,
+      type: NODE_TYPES.CUSTOM,
       data: {
         icon: CoffeeBeanIcon,
         label1: "Colombia",
         label2: "Coffee Farm Agent",
-        handles: "all",
+        handles: HANDLE_TYPES.ALL,
         farmName: FarmName?.ColombiaCoffeeFarm || "Colombia Coffee Farm",
-        verificationStatus: "verified",
-        githubLink:
-          "https://github.com/agntcy/coffeeAgntcy/blob/main/coffeeAGNTCY/coffee_agents/lungo/agents/farms/colombia/agent.py#L53",
-        agentDirectoryLink:
-          "https://agent-directory.outshift.com/explore/1991a0f9-a24d-4197-902a-3de0a0c5920a",
+        verificationStatus: VERIFICATION_STATUS.VERIFIED,
+        githubLink: `${urlsConfig.github.baseUrl}${urlsConfig.github.agents.colombiaFarm}`,
+        agentDirectoryLink: `${urlsConfig.agentDirectory.baseUrl}${urlsConfig.agentDirectory.agents.colombiaFarm}`,
       },
       position: { x: 521.266082170288, y: 505.38817113883306 },
     },
     {
-      id: "5",
-      type: "customNode",
+      id: NODE_IDS.VIETNAM_FARM,
+      type: NODE_TYPES.CUSTOM,
       data: {
         icon: CoffeeBeanIcon,
         label1: "Vietnam",
         label2: "Coffee Farm Agent",
-        handles: "target",
+        handles: HANDLE_TYPES.TARGET,
         farmName: FarmName?.VietnamCoffeeFarm || "Vietnam Coffee Farm",
-        verificationStatus: "verified",
-        githubLink:
-          "https://github.com/agntcy/coffeeAgntcy/blob/main/coffeeAGNTCY/coffee_agents/lungo/agents/farms/vietnam/agent.py#L29",
-        agentDirectoryLink:
-          "https://agent-directory.outshift.com/explore/6907d9f6-6fea-4e2c-93d6-ab7914204a6f",
+        verificationStatus: VERIFICATION_STATUS.VERIFIED,
+        githubLink: `${urlsConfig.github.baseUrl}${urlsConfig.github.agents.vietnamFarm}`,
+        agentDirectoryLink: `${urlsConfig.agentDirectory.baseUrl}${urlsConfig.agentDirectory.agents.vietnamFarm}`,
       },
       position: { x: 832.9824511707582, y: 505.08339631990395 },
     },
     {
-      id: "6",
-      type: "customNode",
+      id: NODE_IDS.WEATHER_MCP,
+      type: NODE_TYPES.CUSTOM,
       data: {
         icon: <TiWeatherCloudy className="dark-icon h-4 w-4" />,
         label1: "MCP Server",
         label2: "Weather",
-        handles: "target",
-        githubLink:
-          "https://github.com/agntcy/coffeeAgntcy/blob/main/coffeeAGNTCY/coffee_agents/lungo/agents/mcp_servers/weather_service.py",
-        agentDirectoryLink:
-          "https://agent-directory.outshift.com/explore/8d720b8c-59a7-4ea4-9254-68c764e1f9b1",
+        handles: HANDLE_TYPES.TARGET,
+        githubLink: `${urlsConfig.github.baseUrl}${urlsConfig.github.agents.weatherMcp}`,
+        agentDirectoryLink: `${urlsConfig.agentDirectory.baseUrl}${urlsConfig.agentDirectory.agents.weatherMcp}`,
       },
       position: { x: 569.3959708104304, y: 731.9104402412228 },
     },
   ],
   edges: [
     {
-      id: "1-2",
-      source: "1",
-      target: "2",
+      id: EDGE_IDS.AUCTION_TO_TRANSPORT,
+      source: NODE_IDS.AUCTION_AGENT,
+      target: NODE_IDS.TRANSPORT,
       targetHandle: "top",
-      data: { label: "A2A" },
-      type: "custom",
+      data: { label: EDGE_LABELS.A2A },
+      type: EDGE_TYPES.CUSTOM,
     },
     {
-      id: "2-3",
-      source: "2",
-      target: "3",
+      id: EDGE_IDS.TRANSPORT_TO_BRAZIL,
+      source: NODE_IDS.TRANSPORT,
+      target: NODE_IDS.BRAZIL_FARM,
       sourceHandle: "bottom_left",
-      data: { label: "A2A" },
-      type: "custom",
+      data: { label: EDGE_LABELS.A2A },
+      type: EDGE_TYPES.CUSTOM,
     },
     {
-      id: "2-4",
-      source: "2",
-      target: "4",
+      id: EDGE_IDS.TRANSPORT_TO_COLOMBIA,
+      source: NODE_IDS.TRANSPORT,
+      target: NODE_IDS.COLOMBIA_FARM,
       sourceHandle: "bottom_center",
-      data: { label: "A2A" },
-      type: "custom",
+      data: { label: EDGE_LABELS.A2A },
+      type: EDGE_TYPES.CUSTOM,
     },
     {
-      id: "2-5",
-      source: "2",
-      target: "5",
+      id: EDGE_IDS.TRANSPORT_TO_VIETNAM,
+      source: NODE_IDS.TRANSPORT,
+      target: NODE_IDS.VIETNAM_FARM,
       sourceHandle: "bottom_right",
-      data: { label: "A2A" },
-      type: "custom",
+      data: { label: EDGE_LABELS.A2A },
+      type: EDGE_TYPES.CUSTOM,
     },
     {
-      id: "4-6",
-      source: "4",
-      target: "6",
-      data: { label: "MCP: " },
-      type: "custom",
+      id: EDGE_IDS.COLOMBIA_TO_WEATHER,
+      source: NODE_IDS.COLOMBIA_FARM,
+      target: NODE_IDS.WEATHER_MCP,
+      data: { label: EDGE_LABELS.MCP },
+      type: EDGE_TYPES.CUSTOM,
     },
   ],
   animationSequence: [
-    { ids: ["1"] },
-    { ids: ["1-2"] },
-    { ids: ["2"] },
-    { ids: ["2-3", "2-4", "2-5"] },
-    { ids: ["3", "4", "5"] },
-    { ids: ["4-6"] },
-    { ids: ["6"] },
+    { ids: [NODE_IDS.AUCTION_AGENT] },
+    { ids: [EDGE_IDS.AUCTION_TO_TRANSPORT] },
+    { ids: [NODE_IDS.TRANSPORT] },
+    {
+      ids: [
+        EDGE_IDS.TRANSPORT_TO_BRAZIL,
+        EDGE_IDS.TRANSPORT_TO_COLOMBIA,
+        EDGE_IDS.TRANSPORT_TO_VIETNAM,
+      ],
+    },
+    {
+      ids: [
+        NODE_IDS.BRAZIL_FARM,
+        NODE_IDS.COLOMBIA_FARM,
+        NODE_IDS.VIETNAM_FARM,
+      ],
+    },
+    { ids: [EDGE_IDS.COLOMBIA_TO_WEATHER] },
+    { ids: [NODE_IDS.WEATHER_MCP] },
   ],
 }
 
@@ -247,8 +196,8 @@ const GROUP_COMMUNICATION_CONFIG: GraphConfig = {
   title: "Secure Group Communication Logistics Network",
   nodes: [
     {
-      id: "logistics-group",
-      type: "group",
+      id: NODE_IDS.LOGISTICS_GROUP,
+      type: NODE_TYPES.GROUP,
       data: {
         label: "Logistics Group",
       },
@@ -262,8 +211,8 @@ const GROUP_COMMUNICATION_CONFIG: GraphConfig = {
       },
     },
     {
-      id: "1",
-      type: "customNode",
+      id: NODE_IDS.AUCTION_AGENT,
+      type: NODE_TYPES.CUSTOM,
       data: {
         icon: (
           <img
@@ -274,31 +223,29 @@ const GROUP_COMMUNICATION_CONFIG: GraphConfig = {
         ),
         label1: "Buyer",
         label2: "Logistics Agent",
-        handles: "source",
-        githubLink:
-          "https://github.com/agntcy/coffeeAgntcy/blob/main/coffeeAGNTCY/coffee_agents/lungo/agents/supervisors/logistic/graph/tools.py#L150",
-        agentDirectoryLink: "https://agent-directory.outshift.com/explore",
+        handles: HANDLE_TYPES.SOURCE,
+        githubLink: `${urlsConfig.github.baseUrl}${urlsConfig.github.agents.logisticSupervisor}`,
+        agentDirectoryLink: urlsConfig.agentDirectory.baseUrl,
       },
       position: { x: 150, y: 100 },
-      parentId: "logistics-group",
+      parentId: NODE_IDS.LOGISTICS_GROUP,
       extent: "parent",
     },
     {
-      id: "2",
-      type: "transportNode",
+      id: NODE_IDS.TRANSPORT,
+      type: NODE_TYPES.TRANSPORT,
       data: {
         label: "Transport: SLIM",
         compact: true,
-        githubLink:
-          "https://github.com/agntcy/app-sdk/blob/main/src/agntcy_app_sdk/transport/slim/transport.py#L294",
+        githubLink: `${urlsConfig.github.appSdkBaseUrl}${urlsConfig.github.transports.group}`,
       },
       position: { x: 380, y: 270 },
-      parentId: "logistics-group",
+      parentId: NODE_IDS.LOGISTICS_GROUP,
       extent: "parent",
     },
     {
-      id: "3",
-      type: "customNode",
+      id: NODE_IDS.BRAZIL_FARM,
+      type: NODE_TYPES.CUSTOM,
       data: {
         icon: (
           <img
@@ -309,98 +256,104 @@ const GROUP_COMMUNICATION_CONFIG: GraphConfig = {
         ),
         label1: "Tatooine",
         label2: "Coffee Farm Agent",
-        handles: "source",
+        handles: HANDLE_TYPES.SOURCE,
         farmName: "Tatooine Farm",
-        githubLink:
-          "https://github.com/agntcy/coffeeAgntcy/blob/main/coffeeAGNTCY/coffee_agents/lungo/agents/logistics/farm/agent_executor.py#L42",
-        agentDirectoryLink: "https://agent-directory.outshift.com/explore/",
+        githubLink: `${urlsConfig.github.baseUrl}${urlsConfig.github.agents.logisticFarm}`,
+        agentDirectoryLink: `${urlsConfig.agentDirectory.baseUrl}/`,
       },
       position: { x: 550, y: 100 },
-      parentId: "logistics-group",
+      parentId: NODE_IDS.LOGISTICS_GROUP,
       extent: "parent",
     },
     {
-      id: "4",
-      type: "customNode",
+      id: NODE_IDS.COLOMBIA_FARM,
+      type: NODE_TYPES.CUSTOM,
       data: {
         icon: (
           <Truck className="dark-icon h-4 w-4 object-contain opacity-100" />
         ),
         label1: "Shipper",
         label2: "Shipper Agent",
-        handles: "target",
+        handles: HANDLE_TYPES.TARGET,
         agentName: "Shipper Logistics",
-        githubLink:
-          "https://github.com/agntcy/coffeeAgntcy/blob/main/coffeeAGNTCY/coffee_agents/lungo/agents/logistics/shipper/agent_executor.py#L41",
-        agentDirectoryLink: "https://agent-directory.outshift.com/explore/",
+        githubLink: `${urlsConfig.github.baseUrl}${urlsConfig.github.agents.logisticShipper}`,
+        agentDirectoryLink: `${urlsConfig.agentDirectory.baseUrl}/`,
       },
       position: { x: 150, y: 500 },
-      parentId: "logistics-group",
+      parentId: NODE_IDS.LOGISTICS_GROUP,
       extent: "parent",
     },
     {
-      id: "5",
-      type: "customNode",
+      id: NODE_IDS.VIETNAM_FARM,
+      type: NODE_TYPES.CUSTOM,
       data: {
         icon: (
           <Calculator className="dark-icon h-4 w-4 object-contain opacity-100" />
         ),
         label1: "Accountant",
         label2: "Accountant Agent",
-        handles: "target",
+        handles: HANDLE_TYPES.TARGET,
         agentName: "Accountant Logistics",
-        githubLink:
-          "https://github.com/agntcy/coffeeAgntcy/blob/main/coffeeAGNTCY/coffee_agents/lungo/agents/logistics/accountant/agent_executor.py#L42",
-        agentDirectoryLink: "https://agent-directory.outshift.com/explore/",
+        githubLink: `${urlsConfig.github.baseUrl}${urlsConfig.github.agents.logisticAccountant}`,
+        agentDirectoryLink: `${urlsConfig.agentDirectory.baseUrl}/`,
       },
       position: { x: 500, y: 500 },
-      parentId: "logistics-group",
+      parentId: NODE_IDS.LOGISTICS_GROUP,
       extent: "parent",
     },
   ],
   edges: [
     {
-      id: "1-2",
-      source: "1",
-      target: "2",
+      id: EDGE_IDS.SUPERVISOR_TO_TRANSPORT,
+      source: NODE_IDS.AUCTION_AGENT,
+      target: NODE_IDS.TRANSPORT,
       targetHandle: "top_left",
-      data: { label: "A2A" },
-      type: "custom",
+      data: { label: EDGE_LABELS.A2A },
+      type: EDGE_TYPES.CUSTOM,
     },
     {
-      id: "3-2",
-      source: "3",
-      target: "2",
+      id: EDGE_IDS.FARM_TO_TRANSPORT,
+      source: NODE_IDS.BRAZIL_FARM,
+      target: NODE_IDS.TRANSPORT,
       targetHandle: "top_right",
-      data: { label: "A2A" },
-      type: "custom",
+      data: { label: EDGE_LABELS.A2A },
+      type: EDGE_TYPES.CUSTOM,
     },
     {
-      id: "2-4",
-      source: "2",
-      target: "4",
+      id: EDGE_IDS.TRANSPORT_TO_SHIPPER,
+      source: NODE_IDS.TRANSPORT,
+      target: NODE_IDS.COLOMBIA_FARM,
       sourceHandle: "bottom_left",
-      data: { label: "A2A" },
-      type: "custom",
+      data: { label: EDGE_LABELS.A2A },
+      type: EDGE_TYPES.CUSTOM,
     },
     {
-      id: "2-5",
-      source: "2",
-      target: "5",
+      id: EDGE_IDS.TRANSPORT_TO_ACCOUNTANT,
+      source: NODE_IDS.TRANSPORT,
+      target: NODE_IDS.VIETNAM_FARM,
       sourceHandle: "bottom_right",
-      data: { label: "A2A" },
-      type: "custom",
+      data: { label: EDGE_LABELS.A2A },
+      type: EDGE_TYPES.CUSTOM,
     },
   ],
   animationSequence: [
-    { ids: ["1"] },
-    { ids: ["1-2"] },
-    { ids: ["2"] },
-    { ids: ["3-2", "2-4", "2-5", "3", "4", "5"] },
-    { ids: ["3"] },
-    { ids: ["4"] },
-    { ids: ["5"] },
-    { ids: ["4"] },
+    { ids: [NODE_IDS.AUCTION_AGENT] },
+    { ids: [EDGE_IDS.SUPERVISOR_TO_TRANSPORT] },
+    { ids: [NODE_IDS.TRANSPORT] },
+    {
+      ids: [
+        EDGE_IDS.FARM_TO_TRANSPORT,
+        EDGE_IDS.TRANSPORT_TO_SHIPPER,
+        EDGE_IDS.TRANSPORT_TO_ACCOUNTANT,
+        NODE_IDS.BRAZIL_FARM,
+        NODE_IDS.COLOMBIA_FARM,
+        NODE_IDS.VIETNAM_FARM,
+      ],
+    },
+    { ids: [NODE_IDS.BRAZIL_FARM] },
+    { ids: [NODE_IDS.COLOMBIA_FARM] },
+    { ids: [NODE_IDS.VIETNAM_FARM] },
+    { ids: [NODE_IDS.COLOMBIA_FARM] },
   ],
 }
 
@@ -409,24 +362,46 @@ export const getGraphConfig = (
   _isConnected?: boolean,
 ): GraphConfig => {
   switch (pattern) {
-    case "slim_a2a":
-      return SLIM_A2A_CONFIG
     case "publish_subscribe":
       return PUBLISH_SUBSCRIBE_CONFIG
     case "publish_subscribe_streaming": {
       const streamingConfig = { ...PUBLISH_SUBSCRIBE_CONFIG }
-      streamingConfig.nodes = streamingConfig.nodes.map((node) =>
-        node.id === "1"
-          ? {
-              ...node,
-              data: {
-                ...node.data,
-                githubLink:
-                  "https://github.com/agntcy/coffeeAgntcy/blob/main/coffeeAGNTCY/coffee_agents/lungo/agents/supervisors/auction/graph/tools.py#L289",
-              },
-            }
-          : node,
-      )
+      streamingConfig.nodes = streamingConfig.nodes.map((node) => {
+        if (node.id === NODE_IDS.AUCTION_AGENT) {
+          return {
+            ...node,
+            data: {
+              ...node.data,
+              githubLink: `${urlsConfig.github.baseUrl}${urlsConfig.github.agents.supervisorAuctionStreaming}`,
+            },
+          }
+        } else if (node.id === NODE_IDS.BRAZIL_FARM) {
+          return {
+            ...node,
+            data: {
+              ...node.data,
+              githubLink: `${urlsConfig.github.baseUrl}${urlsConfig.github.agents.brazilFarmStreaming}`,
+            },
+          }
+        } else if (node.id === NODE_IDS.COLOMBIA_FARM) {
+          return {
+            ...node,
+            data: {
+              ...node.data,
+              githubLink: `${urlsConfig.github.baseUrl}${urlsConfig.github.agents.colombiaFarmStreaming}`,
+            },
+          }
+        } else if (node.id === NODE_IDS.VIETNAM_FARM) {
+          return {
+            ...node,
+            data: {
+              ...node.data,
+              githubLink: `${urlsConfig.github.baseUrl}${urlsConfig.github.agents.vietnamFarmStreaming}`,
+            },
+          }
+        }
+        return node
+      })
       return streamingConfig
     }
     case "group_communication":
@@ -440,22 +415,29 @@ export const updateTransportLabels = async (
   setNodes: (updater: (nodes: any[]) => any[]) => void,
   setEdges: (updater: (edges: any[]) => any[]) => void,
   pattern?: string,
+  isStreaming?: boolean,
 ): Promise<void> => {
-  if (pattern === "group_communication") {
+  if (isGroupCommunication(pattern)) {
     return
   }
 
   try {
-    const response = await fetch(`${EXCHANGE_APP_API_URL}/transport/config`)
+    const response = await fetch(
+      `${getApiUrlForPattern(pattern)}/transport/config`,
+    )
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`)
     }
     const data = await response.json()
     const transport = data.transport
 
+    const transportUrls = isStreaming
+      ? urlsConfig.github.transports.streaming
+      : urlsConfig.github.transports.regular
+
     setNodes((nodes: any[]) =>
       nodes.map((node: any) =>
-        node.id === "2"
+        node.id === NODE_IDS.TRANSPORT
           ? {
               ...node,
               data: {
@@ -463,10 +445,10 @@ export const updateTransportLabels = async (
                 label: `Transport: ${transport}`,
                 githubLink:
                   transport === "SLIM"
-                    ? "https://github.com/agntcy/app-sdk/blob/main/src/agntcy_app_sdk/transport/slim/transport.py#L176"
+                    ? `${urlsConfig.github.appSdkBaseUrl}${transportUrls.slim}`
                     : transport === "NATS"
-                      ? "https://github.com/agntcy/app-sdk/blob/main/src/agntcy_app_sdk/transport/nats/transport.py#L119"
-                      : "https://github.com/agntcy/app-sdk/tree/main/src/agntcy_app_sdk/transports",
+                      ? `${urlsConfig.github.appSdkBaseUrl}${transportUrls.nats}`
+                      : `${urlsConfig.github.appSdkBaseUrl}${urlsConfig.github.transports.general}`,
               },
             }
           : node,
@@ -475,58 +457,11 @@ export const updateTransportLabels = async (
 
     setEdges((edges: any[]) =>
       edges.map((edge: any) => {
-        if (edge.id === "4-6") {
-          return { ...edge, data: { ...edge.data, label: `MCP: ${transport}` } }
-        }
-        return edge
-      }),
-    )
-  } catch (error) {
-    logger.apiError("/transport/config", error)
-  }
-}
-
-export const updateStreamingTransportLabels = async (
-  setNodes: (updater: (nodes: any[]) => any[]) => void,
-  setEdges: (updater: (edges: any[]) => any[]) => void,
-  pattern?: string,
-): Promise<void> => {
-  if (pattern === "group_communication") {
-    return
-  }
-
-  try {
-    const response = await fetch(`${EXCHANGE_APP_API_URL}/transport/config`)
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`)
-    }
-    const data = await response.json()
-    const transport = data.transport
-
-    setNodes((nodes: any[]) =>
-      nodes.map((node: any) =>
-        node.id === "2"
-          ? {
-              ...node,
-              data: {
-                ...node.data,
-                label: `Transport: ${transport}`,
-                githubLink:
-                  transport === "SLIM"
-                    ? "https://github.com/agntcy/app-sdk/blob/main/src/agntcy_app_sdk/transport/slim/transport.py#L203"
-                    : transport === "NATS"
-                      ? "https://github.com/agntcy/app-sdk/blob/main/src/agntcy_app_sdk/transport/nats/transport.py#L147"
-                      : "https://github.com/agntcy/app-sdk/tree/main/src/agntcy_app_sdk/transports",
-              },
-            }
-          : node,
-      ),
-    )
-
-    setEdges((edges: any[]) =>
-      edges.map((edge: any) => {
-        if (edge.id === "4-6") {
-          return { ...edge, data: { ...edge.data, label: `MCP: ${transport}` } }
+        if (edge.id === EDGE_IDS.COLOMBIA_TO_WEATHER) {
+          return {
+            ...edge,
+            data: { ...edge.data, label: `${EDGE_LABELS.MCP}${transport}` },
+          }
         }
         return edge
       }),
