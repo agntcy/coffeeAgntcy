@@ -24,6 +24,8 @@ config:
   otlpHttpEndpoint: ""
   # Identity configuration
   identityApiServerUrl: "" # Identity API endpoint
+  identityServiceApiKey: ""
+  identityAuthEnabled: "false"
 #  llmStreaming: False
 
 # You can use your own config here for service account

@@ -11,6 +11,8 @@ image:
   pullPolicy: Always
   pullSecret:
 
+
+
 service:
   port: 8000
 
@@ -23,6 +25,8 @@ config:
   defaultMessageTransport: ""
   otlpHttpEndpoint: ""
   identityApiServerUrl: "" # Identity API endpoint
+  identityServiceApiKey: ""
+  identityAuthEnabled: "false"
 #  llmStreaming: False
 
 # You can use your own config here for service account

@@ -53,3 +53,58 @@ Refer to the [Identity SaaS Documentation](https://identity-docs.outshift.com/do
   - Use the following well-known agent card URLs for local development:
     - **Vietnam Farm Agent URL**: `http://127.0.0.1:9997/.well-known/agent-card.json` (corresponds to `VIETNAM_FARM_AGENT_URL`).
     - **Colombia Farm Agent URL**: `http://127.0.0.1:9998/.well-known/agent-card.json` (corresponds to `COLOMBIA_FARM_AGENT_URL`).
+
+
+---
+
+
+### Identity Auth (TBAC) - Local Run
+
+Enable TBAC when running services directly (make targets or `uv run`). Each service gets its own API key via an inline env var or export in its terminal.
+
+Steps:
+1. Copy `'.env.example'` to `'.env'`.
+2. Ensure `IDENTITY_AUTH_ENABLED="true"` is set (either in `'.env'` or inline).
+3. Start each service with its own `IDENTITY_SERVICE_API_KEY`.
+
+Example (Payment MCP service):
+```sh
+IDENTITY_AUTH_ENABLED="true" IDENTITY_SERVICE_API_KEY=':1+6W2;y4p<)5yKASKPw9uM+!h6p(1d>c472,nJ46c@5:[Ju->carfIO7E+GVQC9' make payment-mcp
+```
+
+Example (other services):
+```sh
+IDENTITY_AUTH_ENABLED="true" IDENTITY_SERVICE_API_KEY='supervisor_key' make auction-supervisor
+IDENTITY_AUTH_ENABLED="true" IDENTITY_SERVICE_API_KEY='brazil_key' make brazil-farm
+IDENTITY_AUTH_ENABLED="true" IDENTITY_SERVICE_API_KEY='colombia_key' make colombia-farm
+IDENTITY_AUTH_ENABLED="true" IDENTITY_SERVICE_API_KEY='vietnam_key' make vietnam-farm
+```
+
+---
+
+### Identity Auth (TBAC) - Docker Compose
+
+Compose uses per-service API key variables. Set them in `'.env'` (loaded by `docker-compose.yml`).
+
+Example `'.env'` additions:
+```env
+IDENTITY_AUTH_ENABLED="true"
+IDENTITY_SERVICE_API_KEY_AUCTION_SUPERVISOR=supervisor_key
+IDENTITY_SERVICE_API_KEY_PAYMENT_MCP=payment_mcp_key
+IDENTITY_SERVICE_API_KEY_BRAZIL_FARM=brazil_key
+IDENTITY_SERVICE_API_KEY_COLOMBIA_FARM=colombia_key
+IDENTITY_SERVICE_API_KEY_VIETNAM_FARM=vietnam_key
+```
+
+Bring up stack:
+```sh
+docker compose up exchange-server payment-mcp-server brazil-farm-server colombia-farm-server vietnam-farm-server 
+```
+
+If not using `'.env'`, set inline:
+```sh
+IDENTITY_SERVICE_API_KEY_AUCTION_SUPERVISOR=new_supervisor_key docker compose up exchange-server
+```
+
+Production note:
+- Each service should read a unified `IDENTITY_SERVICE_API_KEY` inside its container environment rather than multiple per-service variables.
