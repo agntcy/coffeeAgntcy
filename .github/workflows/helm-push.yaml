@@ -47,6 +47,9 @@ jobs:
           - name: weather-mcp-server
             path: coffeeAGNTCY/coffee_agents/lungo/deployment/helm/weather-mcp-server
             package_name: weather-mcp-server
+          - name: payment-mcp-server
+            path: coffeeAGNTCY/coffee_agents/lungo/deployment/helm/weather-mcp-server
+            package_name: payment-mcp-server
           - name: logistic-supervisor
             path: coffeeAGNTCY/coffee_agents/lungo/deployment/helm/logistic-supervisor
             package_name: logistic-supervisor
