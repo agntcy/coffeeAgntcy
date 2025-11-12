@@ -78,6 +78,3 @@ class Policy(BaseModel):
 
 class Policies(BaseModel):
   policies: List[Policy]
-
-
-
