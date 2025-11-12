@@ -19,6 +19,8 @@ from config.config import DEFAULT_MESSAGE_TRANSPORT
 from config.logging_config import setup_logging
 from pathlib import Path
 from common.version import get_version_info
+from agents.supervisors.auction.api import create_apps_router
+from fastapi import HTTPException
 
 setup_logging()
 logger = logging.getLogger("lungo.supervisor.main")
@@ -37,6 +39,8 @@ app.add_middleware(
   allow_methods=["*"],  # Allow all HTTP methods
   allow_headers=["*"],  # Allow all headers
 )
+
+app.include_router(create_apps_router())
 
 exchange_graph = ExchangeGraph()
 

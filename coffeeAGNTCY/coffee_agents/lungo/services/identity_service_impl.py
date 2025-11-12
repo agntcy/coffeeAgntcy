@@ -8,7 +8,7 @@ from typing import Dict, Any
 from identityservice.sdk import IdentityServiceSdk
 
 from services.identity_service import IdentityService
-from services.models import IdentityServiceApps, Badge
+from services.models import IdentityServiceApps, Badge, Policies
 
 # Retry settings for badge creation.
 MAX_RETRIES = 3
@@ -116,3 +116,20 @@ class IdentityServiceImpl(IdentityService):
         if attempt == MAX_RETRIES:
           raise ValueError(f"Failed to create badge after {MAX_RETRIES} attempts: {e}")
         await asyncio.sleep(RETRY_DELAY)
+
+
+  async def list_policies(self) -> Policies:
+    """Fetch policies from identity service (pagination ignored)."""
+    url = f"{self.base_url}/v1alpha1/policies"
+    headers = {"x-id-api-key": self.api_key}
+
+    response = requests.get(url, headers=headers)
+    if response.status_code != 200:
+      raise ValueError(f"Failed to fetch policies: {response.status_code}, {response.text}")
+
+    data = response.json()
+    try:
+      # Ignore pagination; only pass the policies list.
+      return Policies(policies=data.get("policies", []))
+    except ValidationError as e:
+      raise ValueError(f"Invalid policies format: {e}")

@@ -26,3 +26,7 @@ class IdentityService(ABC):
     """Discover an agent/service and request badge issuance."""
     pass
 
+  @abstractmethod
+  async def list_policies(self) -> Any:
+    """List all policies from the identity service."""
+    pass
