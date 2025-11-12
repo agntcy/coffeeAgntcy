@@ -9,7 +9,7 @@ import os
 
 async def invoke_payment_mcp_tool(tool_name: Literal["create_payment", "list_transactions"]) -> dict:
   # don't invoke if identity auth is not enabled
-  if os.getenv("IDENTITY_AUTH_ENABLED").lower() not in ["true", "enabled"]:
+  if os.getenv("IDENTITY_AUTH_ENABLED", "").lower() not in ["true", "enabled"]:
     return {}
 
   factory = AgntcyFactory()
