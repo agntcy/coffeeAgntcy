@@ -98,7 +98,7 @@ IDENTITY_SERVICE_API_KEY_VIETNAM_FARM=vietnam_key
 
 Bring up stack:
 ```sh
-docker compose up exchange-server payment-mcp-server brazil-farm-server colombia-farm-server vietnam-farm-server 
+docker compose up exchange-server payment-mcp-server brazil-farm-server colombia-farm-server vietnam-farm-server weather-mcp-server
 ```
 
 If not using `'.env'`, set inline:
