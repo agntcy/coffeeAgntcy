@@ -25,7 +25,6 @@ from agntcy_app_sdk.factory import AgntcyFactory
 from ioa_observe.sdk.decorators import agent, graph
 
 from agents.exceptions import AuthError
-from agents.farms.colombia.utils import get_tbac_access_token
 from agents.mcp_servers.utils import invoke_payment_mcp_tool
 from config.config import (
     DEFAULT_MESSAGE_TRANSPORT,
