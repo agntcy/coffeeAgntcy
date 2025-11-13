@@ -33,7 +33,7 @@ from config.config import (
 )
 from common.logistics_states import LogisticsStatus
 
-logger = logging.getLogger("lungo.logistic.supervisor.tools")
+logger = logging.getLogger("lungo.logistics.supervisor.tools")
 
 # Global factory and transport instances
 factory = get_factory()

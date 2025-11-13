@@ -18,7 +18,7 @@ from agents.supervisors.logistic.graph.tools import (
 )
 from common.llm import get_llm
 
-logger = logging.getLogger("lungo.logistic.supervisor.graph")
+logger = logging.getLogger("lungo.logistics.supervisor.graph")
 
 class NodeStates:
     ORDERS = "orders_broker"

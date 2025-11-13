@@ -28,7 +28,7 @@ logger = logging.getLogger("lungo.supervisor.main")
 load_dotenv()
 
 # Initialize the shared agntcy factory with tracing enabled
-shared.set_factory(AgntcyFactory("lungo.exchange", enable_tracing=True))
+shared.set_factory(AgntcyFactory("lungo.auction_supervisor", enable_tracing=True))
 
 app = FastAPI()
 # Add CORS middleware

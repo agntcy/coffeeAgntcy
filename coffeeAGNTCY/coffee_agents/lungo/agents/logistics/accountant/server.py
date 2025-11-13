@@ -31,7 +31,7 @@ from config.config import (
 load_dotenv()
 
 # Initialize a multi-protocol, multi-transport agntcy factory.
-factory = AgntcyFactory("lungo_accountant", enable_tracing=True)
+factory = AgntcyFactory("lungo.logistics_accountant", enable_tracing=True)
 
 logger = logging.getLogger("lungo.logistics.accountant.server")
 

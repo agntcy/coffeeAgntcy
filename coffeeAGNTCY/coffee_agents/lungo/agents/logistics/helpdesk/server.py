@@ -33,7 +33,7 @@ from agents.logistics.helpdesk.store.singleton import global_store
 logger = logging.getLogger("lungo.logistics.helpdesk.server")
 load_dotenv()
 
-factory = AgntcyFactory("lungo_helpdesk", enable_tracing=True)
+factory = AgntcyFactory("lungo.logistics_helpdesk", enable_tracing=True)
 
 class PromptRequest(BaseModel):
     prompt: str

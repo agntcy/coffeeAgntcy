@@ -14,7 +14,7 @@ logger = logging.getLogger("payment_service")
 
 mcp = FastMCP()
 
-factory = AgntcyFactory("lungo_payment_mcp_server", enable_tracing=False)
+factory = AgntcyFactory("lungo.payment_mcp_server", enable_tracing=False)
 
 @mcp.tool()
 def create_payment() -> dict:
