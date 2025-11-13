@@ -8,6 +8,7 @@ import { createPortal } from "react-dom"
 import { PolicyData } from "./types"
 import { CustomNodeData } from "../Elements/types"
 import { fetchPolicyDetails, IdentityServiceError } from "./IdentityApi"
+import { useEscapeKey } from "@/hooks/useEscapeKey"
 
 const Spinner: React.FC = () => (
   <div className="inline-block h-6 w-6 animate-spin rounded-full border-2 border-solid border-node-text-primary border-r-transparent"></div>
@@ -39,6 +40,8 @@ const PolicyDetailsModal: React.FC<PolicyDetailsModalProps> = ({
       fetchPolicyDetailsData()
     }
   }, [isOpen, nodeName, nodeData])
+
+  useEscapeKey(isOpen, onClose)
 
   const fetchPolicyDetailsData = async () => {
     setLoading(true)

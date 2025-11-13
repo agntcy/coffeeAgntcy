@@ -7,6 +7,7 @@ import React, { useState, useEffect } from "react"
 import { BadgeData } from "./types"
 import { CustomNodeData } from "../Elements/types"
 import { fetchBadgeDetails, IdentityServiceError } from "./IdentityApi"
+import { useEscapeKey } from "@/hooks/useEscapeKey"
 import { createPortal } from "react-dom"
 
 const Spinner: React.FC = () => (
@@ -39,6 +40,8 @@ const BadgeDetailsModal: React.FC<BadgeDetailsModalProps> = ({
       fetchBadgeDetailsData()
     }
   }, [isOpen, nodeName, nodeData])
+
+  useEscapeKey(isOpen, onClose)
 
   const fetchBadgeDetailsData = async () => {
     setLoading(true)

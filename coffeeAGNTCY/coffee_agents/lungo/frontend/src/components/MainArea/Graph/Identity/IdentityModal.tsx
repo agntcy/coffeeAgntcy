@@ -8,6 +8,7 @@ import { Eye } from "lucide-react"
 import { createPortal } from "react-dom"
 import { IdentityModalProps } from "./types"
 import { useThemeIcon } from "@/hooks/useThemeIcon"
+import { useEscapeKey } from "@/hooks/useEscapeKey"
 import githubIcon from "@/assets/Github.png"
 import githubIconLight from "@/assets/Github_lightmode.png"
 import urlsConfig from "@/utils/urls.json"
@@ -51,6 +52,8 @@ const IdentityModal: React.FC<IdentityModalProps> = ({
   }
 
   const identityGithubUrl = getIdentityGithubUrl()
+
+  useEscapeKey(isOpen, onClose)
 
   if (!isOpen) return null
 
