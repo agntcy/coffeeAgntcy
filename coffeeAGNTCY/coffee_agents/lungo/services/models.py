@@ -2,7 +2,8 @@
 # SPDX-License-Identifier: Apache-2.0
 
 from pydantic import BaseModel
-from typing import List, Optional, Any, Dict
+from typing import List, Optional, Any
+from datetime import datetime
 
 class IdentityServiceApp(BaseModel):
   id: Optional[str] = None
@@ -49,3 +50,31 @@ class VerifiableCredential(BaseModel):
 class Badge(BaseModel):
   verifiableCredential: VerifiableCredential
   appId: str
+
+class Task(BaseModel):
+  id: str
+  name: str
+  description: Optional[str] = None
+  appId: Optional[str] = None
+  toolName: Optional[str] = None
+
+class Rule(BaseModel):
+  id: str
+  name: str
+  description: Optional[str] = None
+  policyId: Optional[str] = None
+  tasks: List[Task] = []
+  action: str
+  needsApproval: bool
+  createdAt: datetime
+
+class Policy(BaseModel):
+  id: str
+  name: str
+  description: Optional[str] = None
+  assignedTo: Optional[str] = None
+  rules: List[Rule] = []
+  createdAt: datetime
+
+class Policies(BaseModel):
+  policies: List[Policy]
