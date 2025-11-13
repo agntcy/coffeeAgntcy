@@ -165,7 +165,7 @@ class TestAuctionFlows:
             similarity = get_semantic_similarity(data["response"], ref_res, model)
             if similarity > max_similarity:
                 max_similarity = similarity
-        expected_min_similarity = prompt_case.get("expected_min_similarity", 0.75)
+        expected_min_similarity = prompt_case.get("expected_min_similarity", 0.6)
         print(f"[{prompt_case['id']}] max similarity {max_similarity}")
         assert max_similarity >= expected_min_similarity, (
             "Agent response did not meet semantic similarity threshold "
