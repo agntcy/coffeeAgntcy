@@ -28,6 +28,7 @@ export interface IdentityModalProps {
   position: { x: number; y: number }
   activeModal?: string | null
   nodeData?: CustomNodeData
+  isMcpServer?: boolean
 }
 export interface BadgeData {
   context: string[]

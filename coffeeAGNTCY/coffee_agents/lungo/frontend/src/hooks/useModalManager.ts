@@ -17,6 +17,9 @@ export interface ModalActions {
   handleOpenIdentityModal: (
     nodeData: any,
     position: { x: number; y: number },
+    nodeName?: string,
+    data?: any,
+    isMcpServer?: boolean,
   ) => void
   handleCloseModals: () => void
   handleShowBadgeDetails: () => void
@@ -32,8 +35,14 @@ export const useModalManager = (): UseModalManagerReturn => {
   const [modalPosition, setModalPosition] = useState({ x: 0, y: 0 })
 
   const handleOpenIdentityModal = useCallback(
-    (nodeData: any, position: { x: number; y: number }) => {
-      setActiveNodeData(nodeData)
+    (
+      nodeData: any,
+      position: { x: number; y: number },
+      _nodeName?: string,
+      _data?: any,
+      isMcpServer?: boolean,
+    ) => {
+      setActiveNodeData({ ...nodeData, isMcpServer })
       setModalPosition(position)
       setActiveModal("identity")
     },

@@ -20,6 +20,7 @@ const IdentityModal: React.FC<IdentityModalProps> = ({
   position,
   activeModal,
   nodeData,
+  isMcpServer,
 }) => {
   const githubIconSrc = useThemeIcon({
     light: githubIconLight,
@@ -60,7 +61,7 @@ const IdentityModal: React.FC<IdentityModalProps> = ({
   return createPortal(
     <div className="pointer-events-none fixed inset-0 z-50">
       <div
-        className="pointer-events-auto absolute -translate-x-1/2"
+        className={`pointer-events-auto absolute ${isMcpServer ? "" : "-translate-x-1/2"}`}
         style={{
           left: `${position.x}px`,
           top: `${position.y}px`,

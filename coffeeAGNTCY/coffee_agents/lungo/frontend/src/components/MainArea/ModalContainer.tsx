@@ -37,6 +37,7 @@ const ModalContainer: React.FC<ModalContainerProps> = ({
         position={modalPosition}
         activeModal={activeModal}
         nodeData={activeNodeData}
+        isMcpServer={activeNodeData?.isMcpServer}
       />
 
       <BadgeDetailsModal
@@ -45,6 +46,7 @@ const ModalContainer: React.FC<ModalContainerProps> = ({
         nodeName={activeNodeData?.label1 || ""}
         position={modalPosition}
         nodeData={activeNodeData}
+        isMcpServer={activeNodeData?.isMcpServer}
       />
 
       <PolicyDetailsModal
@@ -53,6 +55,7 @@ const ModalContainer: React.FC<ModalContainerProps> = ({
         nodeData={activeNodeData}
         nodeName={activeNodeData?.label1 || ""}
         position={modalPosition}
+        isMcpServer={activeNodeData?.isMcpServer}
       />
     </>
   )

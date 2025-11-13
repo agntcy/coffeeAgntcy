@@ -15,6 +15,9 @@ export interface CustomNodeData {
   onOpenIdentityModal?: (
     nodeData: any,
     position: { x: number; y: number },
+    nodeName?: string,
+    data?: any,
+    isMcpServer?: boolean,
   ) => void
 }
 

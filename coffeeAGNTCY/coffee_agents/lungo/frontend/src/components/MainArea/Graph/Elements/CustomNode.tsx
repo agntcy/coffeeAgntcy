@@ -39,13 +39,29 @@ const CustomNode: React.FC<CustomNodeProps> = ({ data }) => {
         e.currentTarget as HTMLElement
       ).getBoundingClientRect()
 
-      const buttonCenterX = buttonRect.left + buttonRect.width / 2
-      const position = {
-        x: buttonCenterX,
-        y: buttonRect.bottom + 12,
+      const isMcpServer = data.label1?.includes("MCP Server")
+
+      let position
+      if (isMcpServer) {
+        position = {
+          x: buttonRect.right + 12,
+          y: buttonRect.top + buttonRect.height / 2,
+        }
+      } else {
+        const buttonCenterX = buttonRect.left + buttonRect.width / 2
+        position = {
+          x: buttonCenterX,
+          y: buttonRect.bottom + 12,
+        }
       }
 
-      data.onOpenIdentityModal(data, position)
+      data.onOpenIdentityModal(
+        data,
+        position,
+        data.label1 || "",
+        data,
+        isMcpServer,
+      )
     } else {
       console.error("No modal handler found or nodeRef missing!")
     }
