@@ -6,6 +6,8 @@
 import React, { useState, useEffect } from "react"
 import { createPortal } from "react-dom"
 import { PolicyData } from "./types"
+import { CustomNodeData } from "../Elements/types"
+import { fetchPolicyDetails, IdentityServiceError } from "./IdentityApi"
 
 const Spinner: React.FC = () => (
   <div className="inline-block h-6 w-6 animate-spin rounded-full border-2 border-solid border-node-text-primary border-r-transparent"></div>
@@ -15,6 +17,7 @@ export interface PolicyDetailsModalProps {
   isOpen: boolean
   onClose: () => void
   farmName: string
+  nodeData: CustomNodeData
   position: { x: number; y: number }
 }
 
@@ -23,63 +26,35 @@ const PolicyDetailsModal: React.FC<PolicyDetailsModalProps> = ({
   onClose,
   farmName,
   position,
+  nodeData,
 }) => {
   const [policyData, setPolicyData] = useState<PolicyData | null>(null)
   const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    if (isOpen) {
-      fetchPolicyDetails()
+    if (isOpen && nodeData) {
+      fetchPolicyDetailsData()
     }
-  }, [isOpen, farmName])
+  }, [isOpen, farmName, nodeData])
 
-  const fetchPolicyDetails = async () => {
+  const fetchPolicyDetailsData = async () => {
     setLoading(true)
-    await new Promise((resolve) => setTimeout(resolve, 600))
+    setError(null)
 
-    const mockData: PolicyData = {
-      policies: [
-        {
-          id: "fd5fca1b-77d1-4668-b121-d299eef1c736",
-          name: "Invoke Vietnam",
-          description: "",
-          assignedTo: "6824b111-9968-4cdf-8ffc-1cfa5a108083",
-          rules: [
-            {
-              id: "0d8acb6c-faf3-4107-a843-2c5003e3b546",
-              name: "allow",
-              description: "",
-              tasks: [],
-              action: "RULE_ACTION_ALLOW",
-              needsApproval: false,
-              createdAt: "2025-11-05T22:09:01.212852Z",
-            },
-          ],
-          createdAt: "2025-11-05T22:09:00.949558Z",
-        },
-        {
-          id: "75cc939d-178e-4a74-8d93-10829723b15e",
-          name: "authenicate user",
-          description: "",
-          assignedTo: "6824b111-9968-4cdf-8ffc-1cfa5a108083",
-          rules: [
-            {
-              id: "4ca7e705-4a5e-45fb-b4c9-10f3bf2a8497",
-              name: "test",
-              description: "",
-              tasks: [],
-              action: "RULE_ACTION_DENY",
-              needsApproval: false,
-              createdAt: "2025-11-05T19:07:10.013314Z",
-            },
-          ],
-          createdAt: "2025-11-05T19:07:09.760338Z",
-        },
-      ],
+    try {
+      const data = await fetchPolicyDetails(nodeData)
+      setPolicyData(data)
+    } catch (error) {
+      const identityError = error as IdentityServiceError
+      console.error("Error fetching policy details:", identityError)
+      setError(
+        identityError.message ||
+          "An unexpected error occurred while fetching policy details.",
+      )
+    } finally {
+      setLoading(false)
     }
-
-    setPolicyData(mockData)
-    setLoading(false)
   }
 
   if (!isOpen) return null
@@ -102,26 +77,45 @@ const PolicyDetailsModal: React.FC<PolicyDetailsModalProps> = ({
           onClick={handleModalClick}
           data-modal-content
         >
-          {/* Close button - absolute positioned overlay */}
           <button
             onClick={onClose}
-            className="absolute right-2 top-2 z-10 rounded-full bg-gray-700 bg-opacity-50 p-1 text-lg leading-none text-node-text-primary hover:bg-opacity-70"
+            className="absolute right-3 top-3 z-10 text-xl leading-none text-node-text-secondary transition-colors hover:text-node-text-primary"
           >
             ×
           </button>
 
-          {loading ? (
+          {loading && !policyData ? (
             <div className="flex w-full items-center justify-center py-8">
               <Spinner />
             </div>
+          ) : error ? (
+            <div className="flex w-full flex-col items-center justify-center gap-4 py-8">
+              <div className="text-center text-node-text-primary">
+                <p className="font-medium">Failed to load policy details</p>
+                <p className="mt-2 text-sm text-node-text-secondary opacity-80">
+                  {error}
+                </p>
+              </div>
+              <button
+                onClick={fetchPolicyDetailsData}
+                className="rounded bg-node-icon-background px-4 py-2 text-sm text-node-text-primary hover:bg-opacity-80"
+              >
+                Retry
+              </button>
+            </div>
           ) : policyData ? (
-            <div className="flex max-h-[26vh] min-h-0 w-full flex-col gap-3 overflow-y-auto">
+            <div className="relative flex max-h-[26vh] min-h-0 w-full flex-col gap-3 overflow-y-auto">
               <h3 className="mb-3 text-lg font-semibold text-node-text-primary">
                 Policy Details
               </h3>
               <pre className="overflow-auto whitespace-pre-wrap rounded border bg-gray-500 bg-opacity-20 p-3 font-mono text-xs text-node-text-primary">
                 {JSON.stringify(policyData, null, 2)}
               </pre>
+              {loading && (
+                <div className="absolute inset-0 flex items-center justify-center bg-node-background bg-opacity-80 backdrop-blur-sm">
+                  <Spinner />
+                </div>
+              )}
             </div>
           ) : (
             <div className="flex w-full items-center justify-center py-8">

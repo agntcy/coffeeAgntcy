@@ -38,6 +38,7 @@ const ModalContainer: React.FC<ModalContainerProps> = ({
         farmName={farmName}
         position={modalPosition}
         activeModal={activeModal}
+        nodeData={activeNodeData}
       />
 
       <BadgeDetailsModal
@@ -45,11 +46,13 @@ const ModalContainer: React.FC<ModalContainerProps> = ({
         onClose={onClose}
         farmName={farmName}
         position={modalPosition}
+        nodeData={activeNodeData}
       />
 
       <PolicyDetailsModal
         isOpen={activeModal === "policy"}
         onClose={onClose}
+        nodeData={activeNodeData}
         farmName={farmName}
         position={modalPosition}
       />

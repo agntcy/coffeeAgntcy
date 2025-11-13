@@ -1,3 +1,5 @@
+import { CustomNodeData } from "../Elements/types"
+
 export interface PolicyData {
   policies: Array<{
     id: string
@@ -25,6 +27,7 @@ export interface IdentityModalProps {
   farmName: string
   position: { x: number; y: number }
   activeModal?: string | null
+  nodeData?: CustomNodeData
 }
 export interface BadgeData {
   context: string[]

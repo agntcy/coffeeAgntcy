@@ -7,6 +7,10 @@ import React from "react"
 import { Eye, X } from "lucide-react"
 import { createPortal } from "react-dom"
 import { IdentityModalProps } from "./types"
+import { useThemeIcon } from "@/hooks/useThemeIcon"
+import githubIcon from "@/assets/Github.png"
+import githubIconLight from "@/assets/Github_lightmode.png"
+import urlsConfig from "@/utils/urls.json"
 
 const IdentityModal: React.FC<IdentityModalProps> = ({
   isOpen,
@@ -15,7 +19,31 @@ const IdentityModal: React.FC<IdentityModalProps> = ({
   onShowPolicyDetails,
   position,
   activeModal,
+  nodeData,
 }) => {
+  const githubIconSrc = useThemeIcon({
+    light: githubIconLight,
+    dark: githubIcon,
+  })
+
+  const getIdentityGithubUrl = () => {
+    if (!nodeData) return null
+
+    const farmName = nodeData.farmName || nodeData.label1 || ""
+
+    if (farmName.toLowerCase().includes("colombia")) {
+      return urlsConfig.identity.colombia
+    }
+
+    if (farmName.toLowerCase().includes("auction")) {
+      return urlsConfig.identity.auction
+    }
+
+    return nodeData.githubLink
+  }
+
+  const identityGithubUrl = getIdentityGithubUrl()
+
   if (!isOpen) return null
 
   const handleModalClick = (e: React.MouseEvent) => {
@@ -32,7 +60,7 @@ const IdentityModal: React.FC<IdentityModalProps> = ({
         }}
       >
         <div
-          className="relative flex h-[120px] w-[240px] flex-col items-start gap-2 rounded-md bg-node-background p-2 shadow-lg"
+          className="relative flex h-[160px] w-[240px] flex-col items-start gap-2 rounded-md bg-node-background p-2 shadow-lg"
           onClick={handleModalClick}
           data-modal-content
         >
@@ -46,7 +74,7 @@ const IdentityModal: React.FC<IdentityModalProps> = ({
           >
             <X className="h-3 w-3 text-node-text-secondary" />
           </button>
-          <div className="mt-4 flex h-[88px] w-56 flex-col items-start">
+          <div className="mt-4 flex h-[128px] w-56 flex-col items-start">
             <button
               onClick={onShowBadgeDetails}
               className={`flex h-11 w-56 items-center justify-between gap-3 rounded-sm px-3 transition-colors hover:bg-gray-500 hover:bg-opacity-20 ${
@@ -74,6 +102,33 @@ const IdentityModal: React.FC<IdentityModalProps> = ({
               </span>
               <Eye className="h-4 w-4 text-node-text-secondary" />
             </button>
+
+            {identityGithubUrl && (
+              <div className="mt-2 flex w-56 justify-center">
+                <a
+                  href={identityGithubUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="no-underline"
+                >
+                  <div
+                    className="flex h-7 w-7 cursor-pointer items-center justify-center rounded-lg border border-solid p-1 opacity-100 shadow-sm transition-opacity duration-200 ease-in-out"
+                    style={{
+                      backgroundColor: "var(--custom-node-background)",
+                      borderColor: "var(--custom-node-border)",
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.opacity = "0.8"
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.opacity = "1"
+                    }}
+                  >
+                    <img src={githubIconSrc} alt="GitHub" className="h-5 w-5" />
+                  </div>
+                </a>
+              </div>
+            )}
           </div>
         </div>
       </div>

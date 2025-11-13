@@ -14,10 +14,10 @@ import {
 import "@xyflow/react/dist/style.css"
 import "./ReactFlow.css"
 import { PatternType } from "@/utils/patternUtils"
-import TransportNode from "./Graph/transportNode"
-import CustomEdge from "./Graph/CustomEdge"
-import BranchingEdge from "./Graph/BranchingEdge"
-import CustomNode from "./Graph/CustomNode"
+import TransportNode from "./Graph/Elements/transportNode"
+import CustomEdge from "./Graph/Elements/CustomEdge"
+import BranchingEdge from "./Graph/Elements/BranchingEdge"
+import CustomNode from "./Graph/Elements/CustomNode"
 import ModalContainer from "./ModalContainer"
 import {
   getGraphConfig,
@@ -113,12 +113,7 @@ const MainArea: React.FC<MainAreaProps> = ({
         data: { ...node.data, active: false },
       })),
     )
-    setEdges((edges) =>
-      edges.map((edge) => ({
-        ...edge,
-        data: { ...edge.data, active: false },
-      })),
-    )
+    setEdges([])
   }, [pattern, setNodes, setEdges])
 
   useEffect(() => {
@@ -130,13 +125,13 @@ const MainArea: React.FC<MainAreaProps> = ({
         data: {
           ...node.data,
           onOpenIdentityModal: handleOpenIdentityModal,
-          isModalOpen: activeModal && activeNodeData?.id === node.id,
+          isModalOpen: !!(activeModal && activeNodeData?.id === node.id),
         },
       }))
 
       setNodes(nodesWithHandlers)
 
-      await new Promise((resolve) => setTimeout(resolve, 50))
+      await new Promise((resolve) => setTimeout(resolve, 100))
 
       setEdges(newConfig.edges)
 
@@ -304,7 +299,6 @@ const MainArea: React.FC<MainAreaProps> = ({
     aiReplied,
     setAiReplied,
     pattern,
-    config.animationSequence,
     updateStyle,
     setNodes,
     setEdges,

@@ -139,8 +139,8 @@ const PUBLISH_SUBSCRIBE_CONFIG: GraphConfig = {
         label2: "Payment",
         handles: HANDLE_TYPES.TARGET,
         verificationStatus: VERIFICATION_STATUS.VERIFIED,
-        githubLink: `${urlsConfig.github.baseUrl}${urlsConfig.github.agents.weatherMcp}`,
-        agentDirectoryLink: `${urlsConfig.agentDirectory.baseUrl}${urlsConfig.agentDirectory.agents.weatherMcp}`,
+        githubLink: `${urlsConfig.github.baseUrl}${urlsConfig.github.agents.paymentMcp}`,
+        agentDirectoryLink: urlsConfig.agentDirectory.baseUrl,
       },
       position: { x: 671.266082170288, y: 731.9104402412228 },
     },
@@ -276,7 +276,7 @@ const GROUP_COMMUNICATION_CONFIG: GraphConfig = {
         ),
         label1: "Tatooine",
         label2: "Coffee Farm Agent",
-        handles: HANDLE_TYPES.SOURCE,
+        handles: HANDLE_TYPES.ALL,
         farmName: "Tatooine Farm",
         githubLink: `${urlsConfig.github.baseUrl}${urlsConfig.github.agents.logisticFarm}`,
         agentDirectoryLink: `${urlsConfig.agentDirectory.baseUrl}/`,
@@ -335,6 +335,7 @@ const GROUP_COMMUNICATION_CONFIG: GraphConfig = {
       id: EDGE_IDS.FARM_TO_TRANSPORT,
       source: NODE_IDS.BRAZIL_FARM,
       target: NODE_IDS.TRANSPORT,
+      sourceHandle: "source",
       targetHandle: "top_right",
       data: { label: EDGE_LABELS.A2A },
       type: EDGE_TYPES.CUSTOM,
@@ -383,45 +384,52 @@ export const getGraphConfig = (
 ): GraphConfig => {
   switch (pattern) {
     case "publish_subscribe":
-      return PUBLISH_SUBSCRIBE_CONFIG
+      return {
+        ...PUBLISH_SUBSCRIBE_CONFIG,
+        nodes: [...PUBLISH_SUBSCRIBE_CONFIG.nodes],
+        edges: [...PUBLISH_SUBSCRIBE_CONFIG.edges],
+      }
     case "publish_subscribe_streaming": {
-      const streamingConfig = { ...PUBLISH_SUBSCRIBE_CONFIG }
-      streamingConfig.nodes = streamingConfig.nodes.map((node) => {
-        if (node.id === NODE_IDS.AUCTION_AGENT) {
-          return {
-            ...node,
-            data: {
-              ...node.data,
-              githubLink: `${urlsConfig.github.baseUrl}${urlsConfig.github.agents.supervisorAuctionStreaming}`,
-            },
+      const streamingConfig = {
+        ...PUBLISH_SUBSCRIBE_CONFIG,
+        nodes: PUBLISH_SUBSCRIBE_CONFIG.nodes.map((node) => {
+          if (node.id === NODE_IDS.AUCTION_AGENT) {
+            return {
+              ...node,
+              data: {
+                ...node.data,
+                githubLink: `${urlsConfig.github.baseUrl}${urlsConfig.github.agents.supervisorAuctionStreaming}`,
+              },
+            }
+          } else if (node.id === NODE_IDS.BRAZIL_FARM) {
+            return {
+              ...node,
+              data: {
+                ...node.data,
+                githubLink: `${urlsConfig.github.baseUrl}${urlsConfig.github.agents.brazilFarmStreaming}`,
+              },
+            }
+          } else if (node.id === NODE_IDS.COLOMBIA_FARM) {
+            return {
+              ...node,
+              data: {
+                ...node.data,
+                githubLink: `${urlsConfig.github.baseUrl}${urlsConfig.github.agents.colombiaFarmStreaming}`,
+              },
+            }
+          } else if (node.id === NODE_IDS.VIETNAM_FARM) {
+            return {
+              ...node,
+              data: {
+                ...node.data,
+                githubLink: `${urlsConfig.github.baseUrl}${urlsConfig.github.agents.vietnamFarmStreaming}`,
+              },
+            }
           }
-        } else if (node.id === NODE_IDS.BRAZIL_FARM) {
-          return {
-            ...node,
-            data: {
-              ...node.data,
-              githubLink: `${urlsConfig.github.baseUrl}${urlsConfig.github.agents.brazilFarmStreaming}`,
-            },
-          }
-        } else if (node.id === NODE_IDS.COLOMBIA_FARM) {
-          return {
-            ...node,
-            data: {
-              ...node.data,
-              githubLink: `${urlsConfig.github.baseUrl}${urlsConfig.github.agents.colombiaFarmStreaming}`,
-            },
-          }
-        } else if (node.id === NODE_IDS.VIETNAM_FARM) {
-          return {
-            ...node,
-            data: {
-              ...node.data,
-              githubLink: `${urlsConfig.github.baseUrl}${urlsConfig.github.agents.vietnamFarmStreaming}`,
-            },
-          }
-        }
-        return node
-      })
+          return node
+        }),
+        edges: [...PUBLISH_SUBSCRIBE_CONFIG.edges],
+      }
       return streamingConfig
     }
     case "group_communication":
