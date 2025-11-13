@@ -107,7 +107,7 @@ const BadgeDetailsModal: React.FC<BadgeDetailsModalProps> = ({
               <h3 className="mb-3 text-lg font-semibold text-node-text-primary">
                 {nodeName} Badge Details
               </h3>
-              <pre className="overflow-auto whitespace-pre-wrap rounded border bg-gray-500 bg-opacity-20 p-3 font-mono text-xs text-node-text-primary">
+              <pre className="overflow-auto whitespace-pre-wrap rounded border border-gray-600 p-3 font-mono text-xs text-node-text-primary">
                 {JSON.stringify(badgeData, null, 2)}
               </pre>
               {loading && (

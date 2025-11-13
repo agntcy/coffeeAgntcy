@@ -147,7 +147,7 @@ const CustomNode: React.FC<CustomNodeProps> = ({ data }) => {
               </div>
             </a>
           )}
-          {data.showClipboardCheck && (
+          {data.verificationStatus === "verified" && (
             <div
               className={`flex h-7 w-7 cursor-pointer items-center justify-center rounded-lg border border-solid p-1 opacity-100 shadow-sm transition-opacity ${
                 data.isModalOpen === true

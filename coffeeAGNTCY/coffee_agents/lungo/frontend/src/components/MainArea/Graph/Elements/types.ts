@@ -5,12 +5,13 @@ export interface CustomNodeData {
   active?: boolean
   handles?: "all" | "target" | "source"
   verificationStatus?: "verified" | "failed" | "pending"
-  showClipboardCheck?: boolean
   verificationBadge?: React.ReactNode
   githubLink?: string
   agentDirectoryLink?: string
   farmName?: string
   isModalOpen?: boolean
+  hasBadgeDetails?: boolean
+  hasPolicyDetails?: boolean
   onOpenIdentityModal?: (
     nodeData: any,
     position: { x: number; y: number },
