@@ -28,7 +28,7 @@ const getSlugFromNodeData = (nodeData: any): string => {
   }
 
   if (label1 === "colombia" && label2?.includes("coffee farm")) {
-    return "columbia-coffee-farm"
+    return "colombia-coffee-farm"
   }
 
   if (label1 === "vietnam" && label2?.includes("coffee farm")) {
