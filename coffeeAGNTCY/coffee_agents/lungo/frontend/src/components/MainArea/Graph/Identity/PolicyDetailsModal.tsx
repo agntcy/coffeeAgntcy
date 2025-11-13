@@ -16,7 +16,7 @@ const Spinner: React.FC = () => (
 export interface PolicyDetailsModalProps {
   isOpen: boolean
   onClose: () => void
-  farmName: string
+  nodeName: string
   nodeData: CustomNodeData
   position: { x: number; y: number }
 }
@@ -24,7 +24,7 @@ export interface PolicyDetailsModalProps {
 const PolicyDetailsModal: React.FC<PolicyDetailsModalProps> = ({
   isOpen,
   onClose,
-  farmName,
+  nodeName,
   position,
   nodeData,
 }) => {
@@ -36,7 +36,7 @@ const PolicyDetailsModal: React.FC<PolicyDetailsModalProps> = ({
     if (isOpen && nodeData) {
       fetchPolicyDetailsData()
     }
-  }, [isOpen, farmName, nodeData])
+  }, [isOpen, nodeName, nodeData])
 
   const fetchPolicyDetailsData = async () => {
     setLoading(true)
@@ -106,7 +106,7 @@ const PolicyDetailsModal: React.FC<PolicyDetailsModalProps> = ({
           ) : policyData ? (
             <div className="relative flex max-h-[26vh] min-h-0 w-full flex-col gap-3 overflow-y-auto">
               <h3 className="mb-3 text-lg font-semibold text-node-text-primary">
-                Policy Details
+                {nodeName} Policy Details
               </h3>
               <pre className="overflow-auto whitespace-pre-wrap rounded border bg-gray-500 bg-opacity-20 p-3 font-mono text-xs text-node-text-primary">
                 {JSON.stringify(policyData, null, 2)}

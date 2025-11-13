@@ -29,13 +29,13 @@ const IdentityModal: React.FC<IdentityModalProps> = ({
   const getIdentityGithubUrl = () => {
     if (!nodeData) return null
 
-    const farmName = nodeData.farmName || nodeData.label1 || ""
+    const nodeName = nodeData.label1 || ""
 
-    if (farmName.toLowerCase().includes("colombia")) {
+    if (nodeName.toLowerCase().includes("colombia")) {
       return urlsConfig.identity.colombia
     }
 
-    if (farmName.toLowerCase().includes("auction")) {
+    if (nodeName.toLowerCase().includes("auction")) {
       return urlsConfig.identity.auction
     }
 

@@ -24,7 +24,7 @@ export interface IdentityModalProps {
   onClose: () => void
   onShowBadgeDetails: () => void
   onShowPolicyDetails: () => void
-  farmName: string
+  nodeName: string
   position: { x: number; y: number }
   activeModal?: string | null
   nodeData?: CustomNodeData

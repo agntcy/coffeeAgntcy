@@ -101,10 +101,13 @@ const MainArea: React.FC<MainAreaProps> = ({
   const [edges, setEdges, onEdgesChange] = useEdgesState(config.edges)
   const animationLock = useRef<boolean>(false)
 
-  // Reset animation lock when pattern changes
   useEffect(() => {
     animationLock.current = false
   }, [pattern])
+
+  useEffect(() => {
+    handleCloseModals()
+  }, [pattern, handleCloseModals])
 
   useEffect(() => {
     setNodes((nodes) =>
@@ -158,8 +161,6 @@ const MainArea: React.FC<MainAreaProps> = ({
     setNodes,
     setEdges,
     handleOpenIdentityModal,
-    activeModal,
-    activeNodeData,
   ])
 
   useEffect(() => {

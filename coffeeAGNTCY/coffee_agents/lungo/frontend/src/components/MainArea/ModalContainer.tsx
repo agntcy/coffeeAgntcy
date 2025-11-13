@@ -26,8 +26,6 @@ const ModalContainer: React.FC<ModalContainerProps> = ({
   onShowBadgeDetails,
   onShowPolicyDetails,
 }) => {
-  const farmName = activeNodeData?.farmName || activeNodeData?.label1 || ""
-
   return (
     <>
       <IdentityModal
@@ -35,7 +33,7 @@ const ModalContainer: React.FC<ModalContainerProps> = ({
         onClose={onClose}
         onShowBadgeDetails={onShowBadgeDetails}
         onShowPolicyDetails={onShowPolicyDetails}
-        farmName={farmName}
+        nodeName={activeNodeData?.label1 || ""}
         position={modalPosition}
         activeModal={activeModal}
         nodeData={activeNodeData}
@@ -44,7 +42,7 @@ const ModalContainer: React.FC<ModalContainerProps> = ({
       <BadgeDetailsModal
         isOpen={activeModal === "badge"}
         onClose={onClose}
-        farmName={farmName}
+        nodeName={activeNodeData?.label1 || ""}
         position={modalPosition}
         nodeData={activeNodeData}
       />
@@ -53,7 +51,7 @@ const ModalContainer: React.FC<ModalContainerProps> = ({
         isOpen={activeModal === "policy"}
         onClose={onClose}
         nodeData={activeNodeData}
-        farmName={farmName}
+        nodeName={activeNodeData?.label1 || ""}
         position={modalPosition}
       />
     </>
