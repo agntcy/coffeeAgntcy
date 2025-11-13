@@ -20,6 +20,7 @@ interface CustomNodeData {
   active?: boolean
   handles?: "all" | "target" | "source"
   verificationStatus?: "verified" | "failed" | "pending"
+  showClipboardCheck?: boolean
   verificationBadge?: React.ReactNode
   githubLink?: string
   agentDirectoryLink?: string
@@ -164,7 +165,7 @@ const CustomNode: React.FC<CustomNodeProps> = ({ data }) => {
               </div>
             </a>
           )}
-          {data.verificationStatus === "verified" && (
+          {data.showClipboardCheck && (
             <div
               className={`flex h-7 w-7 cursor-pointer items-center justify-center rounded-lg border border-solid p-1 opacity-100 shadow-sm transition-opacity ${
                 data.isModalOpen

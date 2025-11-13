@@ -54,6 +54,8 @@ const PUBLISH_SUBSCRIBE_CONFIG: GraphConfig = {
         label1: "Auction Agent",
         label2: "Buyer",
         handles: HANDLE_TYPES.SOURCE,
+        verificationStatus: VERIFICATION_STATUS.VERIFIED,
+        showClipboardCheck: true,
         githubLink: `${urlsConfig.github.baseUrl}${urlsConfig.github.agents.supervisorAuction}`,
         agentDirectoryLink: `${urlsConfig.agentDirectory.baseUrl}${urlsConfig.agentDirectory.agents.supervisorAuction}`,
       },
@@ -94,6 +96,7 @@ const PUBLISH_SUBSCRIBE_CONFIG: GraphConfig = {
         handles: HANDLE_TYPES.ALL,
         farmName: FarmName?.ColombiaCoffeeFarm || "Colombia Coffee Farm",
         verificationStatus: VERIFICATION_STATUS.VERIFIED,
+        showClipboardCheck: true,
         githubLink: `${urlsConfig.github.baseUrl}${urlsConfig.github.agents.colombiaFarm}`,
         agentDirectoryLink: `${urlsConfig.agentDirectory.baseUrl}${urlsConfig.agentDirectory.agents.colombiaFarm}`,
       },
@@ -125,7 +128,21 @@ const PUBLISH_SUBSCRIBE_CONFIG: GraphConfig = {
         githubLink: `${urlsConfig.github.baseUrl}${urlsConfig.github.agents.weatherMcp}`,
         agentDirectoryLink: `${urlsConfig.agentDirectory.baseUrl}${urlsConfig.agentDirectory.agents.weatherMcp}`,
       },
-      position: { x: 569.3959708104304, y: 731.9104402412228 },
+      position: { x: 371.266082170288, y: 731.9104402412228 },
+    },
+    {
+      id: NODE_IDS.PAYMENT_MCP,
+      type: NODE_TYPES.CUSTOM,
+      data: {
+        icon: <Calculator className="dark-icon h-4 w-4" />,
+        label1: "MCP Server",
+        label2: "Payment",
+        handles: HANDLE_TYPES.TARGET,
+        verificationStatus: VERIFICATION_STATUS.VERIFIED,
+        githubLink: `${urlsConfig.github.baseUrl}${urlsConfig.github.agents.weatherMcp}`,
+        agentDirectoryLink: `${urlsConfig.agentDirectory.baseUrl}${urlsConfig.agentDirectory.agents.weatherMcp}`,
+      },
+      position: { x: 671.266082170288, y: 731.9104402412228 },
     },
   ],
   edges: [
@@ -162,11 +179,14 @@ const PUBLISH_SUBSCRIBE_CONFIG: GraphConfig = {
       type: EDGE_TYPES.CUSTOM,
     },
     {
-      id: EDGE_IDS.COLOMBIA_TO_WEATHER,
+      id: EDGE_IDS.COLOMBIA_TO_MCP,
       source: NODE_IDS.COLOMBIA_FARM,
       target: NODE_IDS.WEATHER_MCP,
-      data: { label: EDGE_LABELS.MCP },
-      type: EDGE_TYPES.CUSTOM,
+      data: {
+        label: EDGE_LABELS.MCP,
+        branches: [NODE_IDS.WEATHER_MCP, NODE_IDS.PAYMENT_MCP],
+      },
+      type: EDGE_TYPES.BRANCHING,
     },
   ],
   animationSequence: [
@@ -187,8 +207,8 @@ const PUBLISH_SUBSCRIBE_CONFIG: GraphConfig = {
         NODE_IDS.VIETNAM_FARM,
       ],
     },
-    { ids: [EDGE_IDS.COLOMBIA_TO_WEATHER] },
-    { ids: [NODE_IDS.WEATHER_MCP] },
+    { ids: [EDGE_IDS.COLOMBIA_TO_MCP] },
+    { ids: [NODE_IDS.WEATHER_MCP, NODE_IDS.PAYMENT_MCP] },
   ],
 }
 
@@ -457,7 +477,7 @@ export const updateTransportLabels = async (
 
     setEdges((edges: any[]) =>
       edges.map((edge: any) => {
-        if (edge.id === EDGE_IDS.COLOMBIA_TO_WEATHER) {
+        if (edge.id === EDGE_IDS.COLOMBIA_TO_MCP) {
           return {
             ...edge,
             data: { ...edge.data, label: `${EDGE_LABELS.MCP}${transport}` },

@@ -31,6 +31,7 @@ export const NODE_IDS = {
   COLOMBIA_FARM: "4",
   VIETNAM_FARM: "5",
   WEATHER_MCP: "6",
+  PAYMENT_MCP: "7",
   LOGISTICS_GROUP: "logistics-group",
 } as const
 
@@ -39,7 +40,7 @@ export const EDGE_IDS = {
   TRANSPORT_TO_BRAZIL: "2-3",
   TRANSPORT_TO_COLOMBIA: "2-4",
   TRANSPORT_TO_VIETNAM: "2-5",
-  COLOMBIA_TO_WEATHER: "4-6",
+  COLOMBIA_TO_MCP: "4-mcp",
   SUPERVISOR_TO_TRANSPORT: "1-2",
   FARM_TO_TRANSPORT: "3-2",
   TRANSPORT_TO_SHIPPER: "2-4",
@@ -54,6 +55,7 @@ export const NODE_TYPES = {
 
 export const EDGE_TYPES = {
   CUSTOM: "custom",
+  BRANCHING: "branching",
 } as const
 
 export const HANDLE_TYPES = {
