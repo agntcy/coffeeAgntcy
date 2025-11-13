@@ -25,7 +25,7 @@ from config.config import (
 load_dotenv()
 
 # Initialize a multi-protocol, multi-transport agntcy factory.
-factory = AgntcyFactory("lungo_vietnam_farm", enable_tracing=True)
+factory = AgntcyFactory("lungo.vietnam_farm", enable_tracing=True)
 
 async def run_http_server(server):
     """Run the HTTP/REST server."""

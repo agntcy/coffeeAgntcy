@@ -35,7 +35,7 @@ from common.llm import get_llm
 logger = logging.getLogger("lungo.colombia_farm_agent.agent")
 
 # Initialize a multi-protocol, multi-transport agntcy factory.
-factory = AgntcyFactory("lungo_colombia_farm", enable_tracing=True)
+factory = AgntcyFactory("lungo.colombia_farm", enable_tracing=True)
 
 # --- 1. Define Node Names as Constants ---
 class NodeStates:
