@@ -66,50 +66,48 @@ jobs:
             path: coffeeAGNTCY/coffee_agents/lungo/deployment/helm/logistic-helpdesk
             package_name: logistic-helpdesk
 
-
-
     steps:
-    - name: Pre-cleanup Docker images
-      run: docker system prune -af
+      - name: Pre-cleanup Docker images
+        run: docker system prune -af
 
-    - name: Checkout code
-      uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-    - name: Log Pull Request Event
-      if: github.event_name == 'pull_request'
-      run: echo "PR detected - Packaging Helm chart (no push)"
+      - name: Log Pull Request Event
+        if: github.event_name == 'pull_request'
+        run: echo "PR detected - Packaging Helm chart (no push)"
 
-    - name: Log Push Event
-      if: github.event_name == 'push'
-      run: echo "Push to main - Packaging and pushing Helm chart"
+      - name: Log Push Event
+        if: github.event_name == 'push'
+        run: echo "Push to main - Packaging and pushing Helm chart"
 
-    - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v3
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
 
-    - name: Log in to GitHub Container Registry
-      if: github.event_name == 'push'
-      uses: docker/login-action@v3
-      with:
-        registry: ghcr.io
-        username: ${{ github.actor }}
-        password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Log in to GitHub Container Registry
+        if: github.event_name == 'push'
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
-    - name: Setup Helm
-      uses: azure/setup-helm@v4
-      with:
-        version: "3.12.1"
+      - name: Setup Helm
+        uses: azure/setup-helm@v4
+        with:
+          version: "3.12.1"
 
-    - name: Helm lint
-      run: helm lint ${{ matrix.chart.path }} --with-subcharts
+      - name: Helm lint
+        run: helm lint ${{ matrix.chart.path }} --with-subcharts
 
-    - name: Package Helm Chart
-      id: package
-      run: |
-        CHART_VERSION=$(grep '^version:' ${{ matrix.chart.path }}/Chart.yaml | awk '{print $2}')
-        helm package ${{ matrix.chart.path }} --dependency-update --version $CHART_VERSION
-        echo "chart_version=$CHART_VERSION" >> $GITHUB_OUTPUT
+      - name: Package Helm Chart
+        id: package
+        run: |
+          CHART_VERSION=$(grep '^version:' ${{ matrix.chart.path }}/Chart.yaml | awk '{print $2}')
+          helm package ${{ matrix.chart.path }} --dependency-update --version $CHART_VERSION
+          echo "chart_version=$CHART_VERSION" >> $GITHUB_OUTPUT
 
-    - name: Push Helm Chart
-      if: github.event_name == 'push'
-      run: |
-        helm push ${{ matrix.chart.package_name }}-${{ steps.package.outputs.chart_version }}.tgz oci://ghcr.io/${{ github.repository_owner }}/coffee_agntcy/helm
+      - name: Push Helm Chart
+        if: github.event_name == 'push'
+        run: |
+          helm push ${{ matrix.chart.package_name }}-${{ steps.package.outputs.chart_version }}.tgz oci://ghcr.io/${{ github.repository_owner }}/coffee_agntcy/helm
