@@ -159,6 +159,8 @@ services:
       dockerfile: coffeeAGNTCY/coffee_agents/lungo/docker/Dockerfile.payment-mcp
     image: ghcr.io/agntcy/coffee-agntcy/payment-mcp-server:latest
     container_name: payment-mcp-server
+    ports:
+      - "8081:8081"
     environment:
       - DEFAULT_MESSAGE_TRANSPORT=${DEFAULT_MESSAGE_TRANSPORT:-NATS}
       - TRANSPORT_SERVER_ENDPOINT=${TRANSPORT_SERVER_ENDPOINT:-nats://nats:4222}

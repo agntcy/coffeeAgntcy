@@ -197,7 +197,7 @@ class ExchangeGraph:
         should_continue = response.should_continue and not is_duplicate_message
         next_node = NodeStates.SUPERVISOR if should_continue else END
 
-        if next_node == END and "auth" in response.reason.lower():
+        if next_node == END and any(keyword in response.reason.lower() for keyword in ["auth", "access", "permission", "identity"]):
             return {
                 "next_node": END,
                 "messages": [AIMessage(content="Authentication or authorization failed. Please check your credentials and try again.")],
