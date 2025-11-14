@@ -62,8 +62,10 @@ const CoffeePromptsDropdown: React.FC<CoffeePromptsDropdownProps> = ({
           return
         }
       } catch (err: unknown) {
-        // eslint-disable-next-line no-console
-        console.warn("Failed to load prompts from API.", err)
+        if (err instanceof Error && err.name !== "AbortError") {
+          // eslint-disable-next-line no-console
+          console.warn("Failed to load prompts from API.", err)
+        }
       }
     })()
 

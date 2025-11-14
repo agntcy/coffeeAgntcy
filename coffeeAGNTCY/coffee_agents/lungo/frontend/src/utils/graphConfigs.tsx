@@ -54,6 +54,9 @@ const PUBLISH_SUBSCRIBE_CONFIG: GraphConfig = {
         label1: "Auction Agent",
         label2: "Buyer",
         handles: HANDLE_TYPES.SOURCE,
+        verificationStatus: VERIFICATION_STATUS.VERIFIED,
+        hasBadgeDetails: true,
+        hasPolicyDetails: true,
         githubLink: `${urlsConfig.github.baseUrl}${urlsConfig.github.agents.supervisorAuction}`,
         agentDirectoryLink: `${urlsConfig.agentDirectory.baseUrl}${urlsConfig.agentDirectory.agents.supervisorAuction}`,
       },
@@ -94,6 +97,8 @@ const PUBLISH_SUBSCRIBE_CONFIG: GraphConfig = {
         handles: HANDLE_TYPES.ALL,
         farmName: FarmName?.ColombiaCoffeeFarm || "Colombia Coffee Farm",
         verificationStatus: VERIFICATION_STATUS.VERIFIED,
+        hasBadgeDetails: true,
+        hasPolicyDetails: true,
         githubLink: `${urlsConfig.github.baseUrl}${urlsConfig.github.agents.colombiaFarm}`,
         agentDirectoryLink: `${urlsConfig.agentDirectory.baseUrl}${urlsConfig.agentDirectory.agents.colombiaFarm}`,
       },
@@ -109,6 +114,8 @@ const PUBLISH_SUBSCRIBE_CONFIG: GraphConfig = {
         handles: HANDLE_TYPES.TARGET,
         farmName: FarmName?.VietnamCoffeeFarm || "Vietnam Coffee Farm",
         verificationStatus: VERIFICATION_STATUS.VERIFIED,
+        hasBadgeDetails: true,
+        hasPolicyDetails: false,
         githubLink: `${urlsConfig.github.baseUrl}${urlsConfig.github.agents.vietnamFarm}`,
         agentDirectoryLink: `${urlsConfig.agentDirectory.baseUrl}${urlsConfig.agentDirectory.agents.vietnamFarm}`,
       },
@@ -125,7 +132,23 @@ const PUBLISH_SUBSCRIBE_CONFIG: GraphConfig = {
         githubLink: `${urlsConfig.github.baseUrl}${urlsConfig.github.agents.weatherMcp}`,
         agentDirectoryLink: `${urlsConfig.agentDirectory.baseUrl}${urlsConfig.agentDirectory.agents.weatherMcp}`,
       },
-      position: { x: 569.3959708104304, y: 731.9104402412228 },
+      position: { x: 371.266082170288, y: 731.9104402412228 },
+    },
+    {
+      id: NODE_IDS.PAYMENT_MCP,
+      type: NODE_TYPES.CUSTOM,
+      data: {
+        icon: <Calculator className="dark-icon h-4 w-4" />,
+        label1: "MCP Server",
+        label2: "Payment",
+        handles: HANDLE_TYPES.TARGET,
+        verificationStatus: VERIFICATION_STATUS.VERIFIED,
+        hasBadgeDetails: true,
+        hasPolicyDetails: false,
+        githubLink: `${urlsConfig.github.baseUrl}${urlsConfig.github.agents.paymentMcp}`,
+        agentDirectoryLink: urlsConfig.agentDirectory.baseUrl,
+      },
+      position: { x: 671.266082170288, y: 731.9104402412228 },
     },
   ],
   edges: [
@@ -162,11 +185,14 @@ const PUBLISH_SUBSCRIBE_CONFIG: GraphConfig = {
       type: EDGE_TYPES.CUSTOM,
     },
     {
-      id: EDGE_IDS.COLOMBIA_TO_WEATHER,
+      id: EDGE_IDS.COLOMBIA_TO_MCP,
       source: NODE_IDS.COLOMBIA_FARM,
       target: NODE_IDS.WEATHER_MCP,
-      data: { label: EDGE_LABELS.MCP },
-      type: EDGE_TYPES.CUSTOM,
+      data: {
+        label: EDGE_LABELS.MCP,
+        branches: [NODE_IDS.WEATHER_MCP, NODE_IDS.PAYMENT_MCP],
+      },
+      type: EDGE_TYPES.BRANCHING,
     },
   ],
   animationSequence: [
@@ -187,8 +213,8 @@ const PUBLISH_SUBSCRIBE_CONFIG: GraphConfig = {
         NODE_IDS.VIETNAM_FARM,
       ],
     },
-    { ids: [EDGE_IDS.COLOMBIA_TO_WEATHER] },
-    { ids: [NODE_IDS.WEATHER_MCP] },
+    { ids: [EDGE_IDS.COLOMBIA_TO_MCP] },
+    { ids: [NODE_IDS.WEATHER_MCP, NODE_IDS.PAYMENT_MCP] },
   ],
 }
 
@@ -256,7 +282,7 @@ const GROUP_COMMUNICATION_CONFIG: GraphConfig = {
         ),
         label1: "Tatooine",
         label2: "Coffee Farm Agent",
-        handles: HANDLE_TYPES.SOURCE,
+        handles: HANDLE_TYPES.ALL,
         farmName: "Tatooine Farm",
         githubLink: `${urlsConfig.github.baseUrl}${urlsConfig.github.agents.logisticFarm}`,
         agentDirectoryLink: `${urlsConfig.agentDirectory.baseUrl}/`,
@@ -315,6 +341,7 @@ const GROUP_COMMUNICATION_CONFIG: GraphConfig = {
       id: EDGE_IDS.FARM_TO_TRANSPORT,
       source: NODE_IDS.BRAZIL_FARM,
       target: NODE_IDS.TRANSPORT,
+      sourceHandle: "source",
       targetHandle: "top_right",
       data: { label: EDGE_LABELS.A2A },
       type: EDGE_TYPES.CUSTOM,
@@ -363,45 +390,52 @@ export const getGraphConfig = (
 ): GraphConfig => {
   switch (pattern) {
     case "publish_subscribe":
-      return PUBLISH_SUBSCRIBE_CONFIG
+      return {
+        ...PUBLISH_SUBSCRIBE_CONFIG,
+        nodes: [...PUBLISH_SUBSCRIBE_CONFIG.nodes],
+        edges: [...PUBLISH_SUBSCRIBE_CONFIG.edges],
+      }
     case "publish_subscribe_streaming": {
-      const streamingConfig = { ...PUBLISH_SUBSCRIBE_CONFIG }
-      streamingConfig.nodes = streamingConfig.nodes.map((node) => {
-        if (node.id === NODE_IDS.AUCTION_AGENT) {
-          return {
-            ...node,
-            data: {
-              ...node.data,
-              githubLink: `${urlsConfig.github.baseUrl}${urlsConfig.github.agents.supervisorAuctionStreaming}`,
-            },
+      const streamingConfig = {
+        ...PUBLISH_SUBSCRIBE_CONFIG,
+        nodes: PUBLISH_SUBSCRIBE_CONFIG.nodes.map((node) => {
+          if (node.id === NODE_IDS.AUCTION_AGENT) {
+            return {
+              ...node,
+              data: {
+                ...node.data,
+                githubLink: `${urlsConfig.github.baseUrl}${urlsConfig.github.agents.supervisorAuctionStreaming}`,
+              },
+            }
+          } else if (node.id === NODE_IDS.BRAZIL_FARM) {
+            return {
+              ...node,
+              data: {
+                ...node.data,
+                githubLink: `${urlsConfig.github.baseUrl}${urlsConfig.github.agents.brazilFarmStreaming}`,
+              },
+            }
+          } else if (node.id === NODE_IDS.COLOMBIA_FARM) {
+            return {
+              ...node,
+              data: {
+                ...node.data,
+                githubLink: `${urlsConfig.github.baseUrl}${urlsConfig.github.agents.colombiaFarmStreaming}`,
+              },
+            }
+          } else if (node.id === NODE_IDS.VIETNAM_FARM) {
+            return {
+              ...node,
+              data: {
+                ...node.data,
+                githubLink: `${urlsConfig.github.baseUrl}${urlsConfig.github.agents.vietnamFarmStreaming}`,
+              },
+            }
           }
-        } else if (node.id === NODE_IDS.BRAZIL_FARM) {
-          return {
-            ...node,
-            data: {
-              ...node.data,
-              githubLink: `${urlsConfig.github.baseUrl}${urlsConfig.github.agents.brazilFarmStreaming}`,
-            },
-          }
-        } else if (node.id === NODE_IDS.COLOMBIA_FARM) {
-          return {
-            ...node,
-            data: {
-              ...node.data,
-              githubLink: `${urlsConfig.github.baseUrl}${urlsConfig.github.agents.colombiaFarmStreaming}`,
-            },
-          }
-        } else if (node.id === NODE_IDS.VIETNAM_FARM) {
-          return {
-            ...node,
-            data: {
-              ...node.data,
-              githubLink: `${urlsConfig.github.baseUrl}${urlsConfig.github.agents.vietnamFarmStreaming}`,
-            },
-          }
-        }
-        return node
-      })
+          return node
+        }),
+        edges: [...PUBLISH_SUBSCRIBE_CONFIG.edges],
+      }
       return streamingConfig
     }
     case "group_communication":
@@ -457,7 +491,7 @@ export const updateTransportLabels = async (
 
     setEdges((edges: any[]) =>
       edges.map((edge: any) => {
-        if (edge.id === EDGE_IDS.COLOMBIA_TO_WEATHER) {
+        if (edge.id === EDGE_IDS.COLOMBIA_TO_MCP) {
           return {
             ...edge,
             data: { ...edge.data, label: `${EDGE_LABELS.MCP}${transport}` },

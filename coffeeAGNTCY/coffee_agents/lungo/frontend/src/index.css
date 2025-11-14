@@ -195,8 +195,16 @@
     filter: brightness(0) invert(1);
   }
 
+  .accent-icon {
+    color: #ffffff;
+  }
+
   body[data-theme="light"] .dark-icon {
     filter: brightness(0) saturate(0) opacity(0.6);
+  }
+
+  body[data-theme="light"] .accent-icon {
+    color: #187adc;
   }
 
   .chat-header-icon {
