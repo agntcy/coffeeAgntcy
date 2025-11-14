@@ -22,7 +22,6 @@ from config.config import (
 from agents.farms.colombia.agent import factory
 from agents.farms.colombia.agent_executor import FarmAgentExecutor
 from agents.farms.colombia.card import AGENT_CARD
-from agents.farms.colombia.utils import create_badge_for_colombia_farm
 
 load_dotenv()
 
@@ -78,7 +77,6 @@ async def main(enable_http: bool):
     async with asyncio.TaskGroup() as tg:
         if enable_http:
             tg.create_task(safe_run(run_http_server, server))
-            tg.create_task(safe_run(create_badge_for_colombia_farm))
         tg.create_task(safe_run(run_transport, server, DEFAULT_MESSAGE_TRANSPORT, TRANSPORT_SERVER_ENDPOINT))
 
 async def safe_run(coro, *args, **kwargs):

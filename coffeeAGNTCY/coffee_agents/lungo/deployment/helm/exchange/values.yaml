@@ -24,10 +24,15 @@ config:
   transportServerEndpoint: ""
   defaultMessageTransport: ""
   otlpHttpEndpoint: ""
-  identityApiServerUrl: "" # Identity API endpoint
+  #  llmStreaming: False
+
+  # Identity SaaS Org-Level API
+  identityApiServerUrl: ""
+  identityApiKey: ""
+  # Identity TBAC Configuration
   identityServiceApiKey: ""
   identityAuthEnabled: "false"
-#  llmStreaming: False
+
 
 # You can use your own config here for service account
 serviceaccount:

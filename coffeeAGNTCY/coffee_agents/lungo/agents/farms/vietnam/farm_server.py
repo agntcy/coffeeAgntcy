@@ -14,7 +14,6 @@ from uvicorn import Config, Server
 
 from agents.farms.vietnam.agent_executor import FarmAgentExecutor
 from agents.farms.vietnam.card import AGENT_CARD
-from agents.farms.vietnam.utils import create_badge_for_vietnam_farm
 from config.config import (
     DEFAULT_MESSAGE_TRANSPORT,
     TRANSPORT_SERVER_ENDPOINT,
@@ -79,7 +78,6 @@ async def main(enable_http: bool):
     tasks = []
     if enable_http:
         tasks.append(asyncio.create_task(run_http_server(server)))
-        tasks.append(asyncio.create_task(create_badge_for_vietnam_farm()))
     tasks.append(asyncio.create_task(run_transport(server, DEFAULT_MESSAGE_TRANSPORT, TRANSPORT_SERVER_ENDPOINT)))
     
     await asyncio.gather(*tasks)
