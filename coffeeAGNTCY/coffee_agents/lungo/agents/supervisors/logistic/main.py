@@ -29,7 +29,7 @@ logger = logging.getLogger("lungo.logistic.supervisor.main")
 load_dotenv()
 
 # Initialize the shared agntcy factory with tracing enabled
-shared.set_factory(AgntcyFactory("lungo.logistic", enable_tracing=True))
+shared.set_factory(AgntcyFactory("lungo.logistics_supervisor", enable_tracing=True))
 
 app = FastAPI()
 app.add_middleware(

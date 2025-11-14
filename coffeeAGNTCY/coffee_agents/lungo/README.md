@@ -154,7 +154,7 @@ For advanced observability of your multi-agent system, integrate the [Observe SD
 
   - In code, set the factory with tracing enabled:
     ```python
-    AgntcyFactory("lungo.exchange", enable_tracing=True)
+    AgntcyFactory("lungo.auction_supervisor", enable_tracing=True)
     ```
 
 - **To start a new trace session for each prompt execution:**  
