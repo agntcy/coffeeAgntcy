@@ -105,7 +105,7 @@ Before you begin, ensure the following tools are installed:
    ```env
     LLM_PROVIDER=groq
     GROQ_API_KEY=your_groq_api_key
-    GROQ_MODEL_NAME=openai/gpt-oss-20b
+    GROQ_MODEL_NAME=openai/gpt-oss-120b
    ```
 
    *OTEL:*
