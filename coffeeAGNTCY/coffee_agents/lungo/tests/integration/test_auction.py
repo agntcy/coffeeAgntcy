@@ -149,9 +149,7 @@ class TestAuctionFlows:
         ids=["brazil_create_order"],
     )
     def test_auction_create_order_brazil(self, auction_supervisor_client, transport_config, prompt_case):
-        logger.info(
-            f"\n---Test: test_auction_create_order_brazil ({prompt_case['id']}) with transport {transport_config}---"
-        )
+        logger.info(f"\n---Test: test_auction_create_order_brazil ({prompt_case['id']}) with transport {transport_config}---")
         resp = auction_supervisor_client.post(
             "/agent/prompt",
             json={"prompt": prompt_case["prompt"]}
@@ -159,19 +157,9 @@ class TestAuctionFlows:
         assert resp.status_code == 200
         data = resp.json()
         logger.info(data)
-        assert "response" in data
-        max_similarity = 0.0
-        for ref_res in prompt_case["reference_responses"]:
-            similarity = get_semantic_similarity(data["response"], ref_res, model)
-            if similarity > max_similarity:
-                max_similarity = similarity
-        expected_min_similarity = prompt_case.get("expected_min_similarity", 0.6)
-        print(f"[{prompt_case['id']}] max similarity {max_similarity}")
-        assert max_similarity >= expected_min_similarity, (
-            "Agent response did not meet semantic similarity threshold "
-            f"({expected_min_similarity}). Max similarity: {max_similarity}. "
-            f"Prompt: {prompt_case['prompt']!r}. Response: {data['response']!r}"
-        )
+        assert "successful" in data["response"].lower()
+        assert "Order ID" in data["response"], "Expected Order ID in response"
+        assert "Tracking Number" in data["response"], "Expected Tracking Number in response"
 
     @pytest.mark.agents(["weather-mcp","colombia-farm"])
     @pytest.mark.usefixtures("agents_up")
