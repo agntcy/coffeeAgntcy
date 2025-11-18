@@ -1,0 +1,59 @@
+apiVersion: 1
+
+datasources:
+  - name: ClickHouse
+    type: grafana-clickhouse-datasource
+    uid: clickhouse-ds
+    access: proxy
+    editable: true
+    isDefault: true
+
+    url: http://clickhouse-server:9000
+
+    jsonData:
+      # ----------- Authentication -------------
+      username: admin
+      tlsSkipVerify: false
+
+      # ----------- ClickHouse Defaults --------
+      defaultDatabase: otel
+      dialect: clickhouse
+
+      # ----------- Tracing / OpenTelemetry ----
+      tracing:
+        enabled: true
+
+        # Name of the table containing high-level traces/spans
+        tracesTable: spans
+
+        # Optional: table containing parent/child hierarchy
+        # If using standard otel schema, leave unchanged
+        serviceNameColumn: "service.name"
+        operationNameColumn: "name"
+
+        # Columns that identify a trace + span
+        traceIdColumn: "trace_id"
+        spanIdColumn: "span_id"
+        parentSpanIdColumn: "parent_span_id"
+        startTimeColumn: "start_time"
+        endTimeColumn: "end_time"
+
+        # If your OTEL exporter uses DateTime64(9)
+        timeFormat: "nano"
+
+        # Enable service graph features
+        serviceGraphEnabled: true
+
+      # ----------- Log Linking (if you store logs in CH) ------
+      logs:
+        enabled: true
+        logsTable: logs
+        timestampColumn: "timestamp"
+        messageColumn: "body"
+        levelColumn: "severity_text"
+
+      # Regex to extract trace ID from your logs if needed
+      traceIDQueryRegex: "trace_id\"?[:=]\\s*\"?([a-fA-F0-9]{32})"
+
+    secureJsonData:
+      password: "admin"
