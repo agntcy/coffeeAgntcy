@@ -1,6 +1,6 @@
 ENV_FILE ?= ../../../.env
 
-create-cluster: kind create cluster --name lungo-2 --config kind-config.yaml
+create-cluster: kind create cluster --name lungo --config kind-config.yaml
 
 apply:
 	@set -a; source $(ENV_FILE); set +a; helm dependency update .; helmfile apply --skip-diff-on-install; \
