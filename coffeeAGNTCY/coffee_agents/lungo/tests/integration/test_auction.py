@@ -155,6 +155,15 @@ class TestAuctionFlows:
             json={"prompt": prompt_case["prompt"]}
         )
         assert resp.status_code in [200, 500]
+        
+        # If 500, expect identity verification failure for Brazil Coffee Farm
+        if resp.status_code == 500:
+            data = resp.json()
+            logger.info(f"Error response: {data}")
+            assert "detail" in data
+            detail_lower = data["detail"].lower()
+            assert "identity verification failed" in detail_lower
+            assert "brazil coffee farm" in detail_lower
 
     @pytest.mark.agents(["weather-mcp","colombia-farm"])
     @pytest.mark.usefixtures("agents_up")
