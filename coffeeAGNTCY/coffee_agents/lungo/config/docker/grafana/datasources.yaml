@@ -20,5 +20,9 @@ datasources:
       traces:
         otelEnabled: true
 
+      logs:
+        otelEnabled: true
+        useOTel: true
+
     secureJsonData:
       password: "admin"
