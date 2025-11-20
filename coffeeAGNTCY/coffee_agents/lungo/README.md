@@ -114,6 +114,14 @@ Before you begin, ensure the following tools are installed:
     AZURE_OPENAI_API_VERSION=2023-12-01-preview
    ```
 
+   _Groq:_
+
+   ```env
+    LLM_PROVIDER=groq
+    GROQ_API_KEY="your_groq_api_key_here"
+    GROQ_MODEL_NAME="openai/gpt-oss-120b"
+   ```
+
    _OTEL:_
 
    ```env
