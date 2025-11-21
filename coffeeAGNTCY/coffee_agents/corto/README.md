@@ -78,7 +78,7 @@ Before you begin, ensure the following tools are installed:
    
 **Configure LLM Model, Credentials, and OTEL Endpoint**
 
-Update your .env file with the provider configuration, credentials, and OTEL endpoint.
+Update your .env file with the provider model, credentials, and OTEL endpoint.
 
 CoffeeAGNTCY uses litellm to manage LLM connections. With litellm, you can seamlessly switch between different model providers using a unified configuration interface. Below are examples of environment variables for setting up various providers. For a comprehensive list of supported providers, see the [official litellm documentation](https://docs.litellm.ai/docs/providers).
 

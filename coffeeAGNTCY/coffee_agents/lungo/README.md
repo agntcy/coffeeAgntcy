@@ -89,9 +89,9 @@ Before you begin, ensure the following tools are installed:
    cp .env.example .env
    ```
 
-**Configure LLM Provider, Credentials and OTEL endpoint**
+**Configure LLM Model, Credentials and OTEL endpoint**
 
-Update your .env file with the provider configuration, credentials, and OTEL endpoint.
+Update your .env file with the provider model, credentials, and OTEL endpoint.
 
 CoffeeAGNTCY uses litellm to manage LLM connections. With litellm, you can seamlessly switch between different model providers using a unified configuration interface. Below are examples of environment variables for setting up various providers. For a comprehensive list of supported providers, see the [official litellm documentation](https://docs.litellm.ai/docs/providers).
 
@@ -156,15 +156,6 @@ OAUTH2_APP_KEY=<your_app_key> #optional
 ```
 
 ---
-
-
-   _Groq:_
-
-   ```env
-    LLM_PROVIDER=groq
-    GROQ_API_KEY="your_groq_api_key_here"
-    GROQ_MODEL_NAME="openai/gpt-oss-120b"
-   ```
 
    _OTEL:_
 

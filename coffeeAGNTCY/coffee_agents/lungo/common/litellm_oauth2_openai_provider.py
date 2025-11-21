@@ -3,7 +3,7 @@ import time
 import json
 import logging
 import requests
-from typing import Any, Dict, List, Optional, Iterator, AsyncIterator, Union
+from typing import Any, Dict, List, Optional, AsyncIterator, Union
 
 
 from litellm import CustomLLM
@@ -50,6 +50,8 @@ class RefreshOAuth2OpenAIProvider(CustomLLM):
         """
         Called by litellm.completion() / ChatLiteLLM. Must return a ModelResponse.
         """
+        logger.info(f"completion called with model={model}, messages={messages}, kwargs={kwargs}")
+
         token = self._get_token()
         url = self.base_url_tmpl
 
@@ -166,7 +168,6 @@ class RefreshOAuth2OpenAIProvider(CustomLLM):
             r.raise_for_status()
 
             for line in r.iter_lines(decode_unicode=True):
-                print(f"DEBUG: line: {line}")
                 if not line or line.startswith(":"):
                     continue
                 
@@ -226,8 +227,6 @@ class RefreshOAuth2OpenAIProvider(CustomLLM):
         yielded_text = False
         timeout = aiohttp.ClientTimeout(total=60)
         
-        print(f"DEBUG: Starting async stream to {url} with payload: {payload}")
-
         async with aiohttp.ClientSession(timeout=timeout) as session:
             async with session.post(url, headers=headers, json=payload) as r:
                 r.raise_for_status()
@@ -242,7 +241,6 @@ class RefreshOAuth2OpenAIProvider(CustomLLM):
                         line, buffer = buffer.split("\n", 1)
                         line = line.strip()
 
-                        print(f"DEBUG: line: {line}")
                         if not line or line.startswith(":"):
                             continue
 
