@@ -74,6 +74,8 @@ export const useGroupStreamingStore = create<
     set((state) => ({
       events: [...state.events, event],
       currentOrderId: event.order_id,
+      isComplete: event.state === "DELIVERED" ? true : state.isComplete,
+      isStreaming: event.state === "DELIVERED" ? false : state.isStreaming,
     })),
 
   setFinalResponse: (response: string) =>
