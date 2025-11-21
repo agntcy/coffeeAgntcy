@@ -99,7 +99,7 @@ class LogisticGraph:
             quantity: int = Field(description="The number of units to order")
             price: float = Field(description="The price per unit")
             has_all_params: bool = Field(description="Whether all required parameters were found in the user's request")
-            missing_params: str = Field(default="", description="Comma-separated list of missing parameters, if any")
+            missing_params: str = Field(description="Comma-separated list of missing parameters, if any")
 
         # Create structured output LLM
         extraction_llm = get_llm().with_structured_output(OrderParams, strict=True)
@@ -212,7 +212,7 @@ class LogisticGraph:
             quantity: int = Field(description="The number of units to order")
             price: float = Field(description="The price per unit")
             has_all_params: bool = Field(description="Whether all required parameters were found in the user's request")
-            missing_params: str = Field(default="", description="Comma-separated list of missing parameters, if any")
+            missing_params: str = Field(description="Comma-separated list of missing parameters, if any")
 
         # Create structured output LLM
         extraction_llm = get_llm().with_structured_output(OrderParams, strict=True)

@@ -1,15 +1,17 @@
 # Copyright AGNTCY Contributors (https://github.com/agntcy)
 # SPDX-License-Identifier: Apache-2.0
 
-from cnoe_agent_utils import LLMFactory
+from config.config import LLM_MODEL
+import litellm
+from langchain_litellm import ChatLiteLLM
 
-from config.config import LLM_PROVIDER
+import common.chat_lite_llm_shim as chat_lite_llm_shim # our drop-in client
 
 def get_llm():
   """
-    Get the LLM provider based on the configuration using cnoe-agent-utils LLMFactory.
-    """
-  factory = LLMFactory(
-    provider=LLM_PROVIDER,
-  )
-  return factory.get_llm()
+    Get the LLM provider based on the configuration using ChatLiteLLM
+  """
+  llm = ChatLiteLLM(model=LLM_MODEL)
+  if LLM_MODEL.startswith("oauth2/"):
+      llm.client = chat_lite_llm_shim
+  return llm
