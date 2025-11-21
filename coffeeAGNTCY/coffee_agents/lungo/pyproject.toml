@@ -49,9 +49,6 @@ allow-direct-references = true
 [tool.poetry]
 package-mode = false
 
-[tool.uv.sources]
-agntcy-app-sdk = { path = "../../../../app-sdk" }
-
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
