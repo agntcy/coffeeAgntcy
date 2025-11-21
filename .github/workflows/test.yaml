@@ -74,7 +74,7 @@ jobs:
       
       - name: Create CI env file
         run: |
-          cat > ci.env <<'EOF'
+          cat > .env <<'EOF'
           LLM_MODEL=${{ secrets.LLM_MODEL }}
           AZURE_API_KEY=${{ secrets.AZURE_API_KEY }}
           AZURE_API_BASE=${{ secrets.AZURE_API_BASE }}
