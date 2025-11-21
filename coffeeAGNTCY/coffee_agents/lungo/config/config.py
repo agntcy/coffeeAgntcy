@@ -11,7 +11,7 @@ TRANSPORT_SERVER_ENDPOINT = os.getenv("TRANSPORT_SERVER_ENDPOINT", "nats://local
 
 FARM_BROADCAST_TOPIC = os.getenv("FARM_BROADCAST_TOPIC", "farm_broadcast")
 
-LLM_MODEL = os.getenv("LLM_MODEL_VERSION", "")
+LLM_MODEL = os.getenv("LLM_MODEL", "")
 ## Oauth2 OpenAI Provider
 OAUTH2_CLIENT_ID= os.getenv("OAUTH2_CLIENT_ID", "")
 OAUTH2_CLIENT_SECRET= os.getenv("OAUTH2_CLIENT_SECRET", "")
