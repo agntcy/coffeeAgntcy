@@ -39,4 +39,9 @@ async def acreate(*, model: str, messages, **kwargs) -> Dict[str, Any]:
     raise NotImplementedError("acreate not implemented in shim")
 
 def streaming_completion(*, model: str, messages, **kwargs):
-    raise NotImplementedError("streaming not implemented in shim")
+    """
+    Streaming version of completion.
+    """
+    print(f"litellm_shim.streaming_completion called with model={model}, messages={messages}, kwargs={kwargs}")
+    passthrough = {k: v for k, v in kwargs.items() if k not in ("model", "messages")}
+    return _PROVIDER.streaming_completion(model=model, messages=messages, **passthrough)

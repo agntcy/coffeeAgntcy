@@ -3,7 +3,7 @@ import time
 import json
 import logging
 import requests
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Iterator, AsyncIterator
 
 from litellm import CustomLLM
 from litellm.utils import ModelResponse
@@ -43,47 +43,59 @@ class RefreshOAuth2OpenAIProvider(CustomLLM):
         self,
         model: str,
         messages: List[Dict[str, Any]],
+        stream: bool = False,
         **kwargs,
     ) -> ModelResponse:
         """
         Called by litellm.completion() / ChatLiteLLM. Must return a ModelResponse.
         """
-        logger.info(f"completion called with model={model}, messages={messages}, kwargs={kwargs}")
         token = self._get_token()
-
         url = self.base_url_tmpl
+
         headers = {
             "Content-Type": "application/json",
             "Accept": "application/json",
             "api-key": token,
         }
 
-        # Build payload. You can pass through temperature, top_p, etc. via kwargs if desired.
         payload = {
             "messages": messages,
+            "stream": stream,
         }
         if self.appkey is not None:
             payload["user"] = json.dumps({"appkey": self.appkey})
 
-        for k in kwargs:
-            print(f"Passing through kwarg {k}={kwargs[k]}")
-            if 'tool_choice' in kwargs and kwargs['tool_choice'] == 'any':
-                kwargs['tool_choice'] = 'auto'
-            payload[k] = kwargs[k]
+        for k, v in kwargs.items():
+            if k == "tool_choice" and v == "any":
+                v = "auto"
+            payload[k] = v
+        
+        print(f"DEBUG: payload: {payload}")
 
-        resp = requests.post(url, headers=headers, json=payload, timeout=60)
-        resp.raise_for_status()
-        data = resp.json()
+        # ---------- NON-STREAM ----------
+        if not stream:
+            resp = requests.post(url, headers=headers, json=payload, timeout=60)
+            resp.raise_for_status()
+            data = resp.json()
 
-        # Convert OpenAI-style response to LiteLLM ModelResponse
-        mr = ModelResponse()
-        mr.model = model
-        mr.created = data.get("created")
-        mr.id = data.get("id")
-        mr.choices = data.get("choices", [])
-        mr.usage = data.get("usage", {})
-        mr._hidden_params = {}  # optional
-        return mr
+            # Convert OpenAI-style response to LiteLLM ModelResponse
+            mr = ModelResponse()
+            mr.model = model
+            mr.created = data.get("created")
+            mr.id = data.get("id")
+            mr.choices = data.get("choices", [])
+            mr.usage = data.get("usage", {})
+            mr._hidden_params = {}  # optional
+            return mr
+    
+        # ---------- STREAM ----------
+        return self._stream(
+                url=url,
+                model=model,
+                headers=headers,
+                payload=payload,
+            )
+       
 
     async def acompletion(
         self,
@@ -130,7 +142,65 @@ class RefreshOAuth2OpenAIProvider(CustomLLM):
         mr.usage = data.get("usage", {})
         mr._hidden_params = {}
         return mr
-            
+    
+    def _stream(
+            self,
+            url: str,
+            model: str,
+            headers: Dict[str, str],
+            payload: Dict[str, Any],
+    ):
+        yielded_text = False
+        with requests.post(url, headers=headers, json=payload, stream=True) as r:
+            r.raise_for_status()
+
+            for line in r.iter_lines(decode_unicode=True):
+                print(f"DEBUG: line: {line}")
+                if not line or line.startswith(":"):
+                    continue
+                
+                yielded_text = True
+
+                if line.startswith("data:"):
+                    data_str = line[len("data:"):].strip()
+                else:
+                    data_str = line.strip()
+
+                if data_str == "[DONE]":
+                    break
+
+                try:
+                    event = json.loads(data_str)
+                except json.JSONDecodeError:
+                    continue
+                choices = event.get("choices") or []
+                if not choices:
+                    # metadata / prompt_filter_results / keepalive
+                    continue
+
+                first = choices[0]
+
+                # streaming delta content (OpenAI-style)
+                delta = (first.get("delta") or {}).get("content")
+
+                # fallback for non-delta final chunk
+                msg_content = (first.get("message") or {}).get("content")
+
+                if delta:
+                    yielded_text = True
+                elif msg_content and not yielded_text:
+                    yielded_text = True
+
+                mr = ModelResponse()
+                mr.model = model
+                mr.created = event.get("created")
+                mr.id = event.get("id")
+                mr.choices = event.get("choices", [])
+                mr.usage = event.get("usage", {})
+                mr._hidden_params = {}  # optional
+                yield mr
+        if not yielded_text:
+            raise ValueError("No generations found in stream (only metadata/usage, no text).")   
 
     def _get_token(self) -> str:
         now = time.time()
@@ -154,4 +224,3 @@ class RefreshOAuth2OpenAIProvider(CustomLLM):
         # Refresh a bit before expiry but never less than 30s
         self._token_expiry_ts = now + max(30, expires_in - 30)
         return access_token
-

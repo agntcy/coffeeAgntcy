@@ -23,11 +23,11 @@ dependencies = [
     "uvicorn>=0.29.0",
     "mcp[cli]>=1.10.0",
     "ioa-observe-sdk==1.0.24",
-    "agntcy-identity-service-sdk==0.0.6",
+    "agntcy-identity-service-sdk==0.0.7",
     "langchain>=0.3.27",
     "langchain-litellm>=0.3.0",
-    "litellm==1.75.3",
-    "agntcy-app-sdk==0.4.1-dev.0",
+    "litellm[proxy]==1.75.3",
+    "agntcy-app-sdk",
 ]
 
 [project.optional-dependencies]
@@ -48,6 +48,9 @@ allow-direct-references = true
 
 [tool.poetry]
 package-mode = false
+
+[tool.uv.sources]
+agntcy-app-sdk = { path = "../../../../app-sdk" }
 
 [build-system]
 requires = ["hatchling"]

@@ -15,4 +15,3 @@ def get_llm():
   if LLM_MODEL.startswith("oauth2/"):
       llm.client = chat_lite_llm_shim
   return llm
-
