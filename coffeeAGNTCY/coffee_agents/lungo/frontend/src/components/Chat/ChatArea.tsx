@@ -135,7 +135,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
       onUserInput(content)
     }
 
-    if (showAuctionStreaming && onDropdownSelect) {
+    if ((showAuctionStreaming || showProgressTracker) && onDropdownSelect) {
       onDropdownSelect(content)
     } else {
       await processMessageWithQuery(content)
