@@ -8,13 +8,7 @@ import { Handle, Position } from "@xyflow/react"
 import { useThemeIcon } from "@/hooks/useThemeIcon"
 import githubIcon from "@/assets/Github.png"
 import githubIconLight from "@/assets/Github_lightmode.png"
-
-interface TransportNodeData {
-  label: string
-  active?: boolean
-  githubLink?: string
-  compact?: boolean
-}
+import { TransportNodeData } from "./types"
 
 interface TransportNodeProps {
   data: TransportNodeData

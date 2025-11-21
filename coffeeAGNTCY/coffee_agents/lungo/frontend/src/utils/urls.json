@@ -1,0 +1,49 @@
+{
+  "github": {
+    "baseUrl": "https://github.com/agntcy/coffeeAgntcy/blob/main/coffeeAGNTCY/coffee_agents",
+    "appSdkBaseUrl": "https://github.com/agntcy/app-sdk/blob/main/src/agntcy_app_sdk",
+    "agents": {
+      "supervisorAuction": "/lungo/agents/supervisors/auction/graph/graph.py#L451",
+      "supervisorAuctionStreaming": "/lungo/agents/supervisors/auction/graph/graph.py#L511",
+      "brazilFarm": "/lungo/agents/farms/brazil/agent.py#L32",
+      "brazilFarmStreaming": "/lungo/agents/farms/brazil/agent.py#L193",
+      "colombiaFarm": "/lungo/agents/farms/colombia/agent.py#L55",
+      "colombiaFarmStreaming": "/lungo/agents/farms/colombia/agent.py#L287",
+      "vietnamFarm": "/lungo/agents/farms/vietnam/agent.py#L32",
+      "vietnamFarmStreaming": "/lungo/agents/farms/vietnam/agent.py#L192",
+      "weatherMcp": "/lungo/agents/mcp_servers/weather_service.py#L24",
+      "paymentMcp": "/lungo/agents/mcp_servers/payment_service.py",
+      "logisticSupervisor": "/lungo/agents/supervisors/logistic/graph/tools.py#L150",
+      "logisticFarm": "/lungo/agents/logistics/farm/agent_executor.py#L42",
+      "logisticShipper": "/lungo/agents/logistics/shipper/agent_executor.py#L41",
+      "logisticAccountant": "/lungo/agents/logistics/accountant/agent_executor.py#L42"
+    },
+    "transports": {
+      "general": "/tree/main/src/agntcy_app_sdk/transports",
+      "group": "/transport/slim/transport.py#L294",
+      "regular": {
+        "slim": "/transport/slim/transport.py#L176",
+        "nats": "/transport/nats/transport.py#L119"
+      },
+      "streaming": {
+        "slim": "/transport/slim/transport.py#L203",
+        "nats": "/transport/nats/transport.py#L147"
+      }
+    }
+  },
+  "identity": {
+    "colombia": "https://github.com/agntcy/app-sdk/blob/v0.4.4-dev.1/src/agntcy_app_sdk/semantic/a2a/protocol.py#L256-L272",
+    "auction": "https://github.com/agntcy/app-sdk/blob/main/src/agntcy_app_sdk/semantic/a2a/protocol.py#L195-L201",
+    "payment": "https://github.com/agntcy/app-sdk/blob/main/src/agntcy_app_sdk/semantic/fast_mcp/protocol.py#L72-L74"
+  },
+  "agentDirectory": {
+    "baseUrl": "https://agent-directory.outshift.com/explore",
+    "agents": {
+      "supervisorAuction": "/baeareicltg46rvjhqxd6pn47z5du3rgxoynvct6poeknf5tyemsxygwdrq",
+      "brazilFarm": "/baeareigpu5jgm3xrkouspfacgvq65i25cz63nnseqatu5davp35jenwlla",
+      "colombiaFarm": "/baeareiaqub6mci5mnt3iqagxfodfmjym36nshdmjmnzofcdilp7374rwlm",
+      "vietnamFarm": "/baeareiheas5bdad2wuurvpvqonuq4ry2u6vdzw4hikrnzssebchjojjr5m",
+      "weatherMcp": "/baeareibpoftgep62se35oxuiu3d27cuqef2loupupxdd3xozotxk3mrhhe"
+    }
+  }
+}

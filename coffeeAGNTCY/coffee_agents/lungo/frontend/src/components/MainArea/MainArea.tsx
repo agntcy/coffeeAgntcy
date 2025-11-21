@@ -13,17 +13,23 @@ import {
 } from "@xyflow/react"
 import "@xyflow/react/dist/style.css"
 import "./ReactFlow.css"
-import { PatternType } from "@/App"
-import TransportNode from "./Graph/transportNode"
-import CustomEdge from "./Graph/CustomEdge"
-import BranchingEdge from "./Graph/BranchingEdge"
-import CustomNode from "./Graph/CustomNode"
+import { PatternType } from "@/utils/patternUtils"
+import TransportNode from "./Graph/Elements/transportNode"
+import CustomEdge from "./Graph/Elements/CustomEdge"
+import BranchingEdge from "./Graph/Elements/BranchingEdge"
+import CustomNode from "./Graph/Elements/CustomNode"
+import ModalContainer from "./ModalContainer"
 import {
   getGraphConfig,
   updateTransportLabels,
   GraphConfig,
 } from "@/utils/graphConfigs"
+import {
+  isStreamingPattern,
+  supportsTransportUpdates,
+} from "@/utils/patternUtils"
 import { useViewportAwareFitView } from "@/hooks/useViewportAwareFitView"
+import { useModalManager } from "@/hooks/useModalManager"
 
 const proOptions = { hideAttribution: true }
 
@@ -80,21 +86,64 @@ const MainArea: React.FC<MainAreaProps> = ({
   const [nodesDraggable, setNodesDraggable] = useState(true)
   const [nodesConnectable, setNodesConnectable] = useState(true)
 
+  const {
+    activeModal,
+    activeNodeData,
+    modalPosition,
+    handleOpenIdentityModal,
+    handleCloseModals,
+    handleShowBadgeDetails,
+    handleShowPolicyDetails,
+    handlePaneClick: modalPaneClick,
+  } = useModalManager()
+
   const [nodes, setNodes, onNodesChange] = useNodesState(config.nodes)
   const [edges, setEdges, onEdgesChange] = useEdgesState(config.edges)
   const animationLock = useRef<boolean>(false)
 
   useEffect(() => {
+    animationLock.current = false
+  }, [pattern])
+
+  useEffect(() => {
+    handleCloseModals()
+  }, [pattern, handleCloseModals])
+
+  useEffect(() => {
+    setNodes((nodes) =>
+      nodes.map((node) => ({
+        ...node,
+        data: { ...node.data, active: false },
+      })),
+    )
+    setEdges([])
+  }, [pattern, setNodes, setEdges])
+
+  useEffect(() => {
     const updateGraph = async () => {
       const newConfig = getGraphConfig(pattern, isGroupCommConnected)
 
-      setNodes(newConfig.nodes)
+      const nodesWithHandlers = newConfig.nodes.map((node) => ({
+        ...node,
+        data: {
+          ...node.data,
+          onOpenIdentityModal: handleOpenIdentityModal,
+          isModalOpen: !!(activeModal && activeNodeData?.id === node.id),
+        },
+      }))
 
-      await new Promise((resolve) => setTimeout(resolve, 50))
+      setNodes(nodesWithHandlers)
+
+      await new Promise((resolve) => setTimeout(resolve, 100))
 
       setEdges(newConfig.edges)
 
-      await updateTransportLabels(setNodes, setEdges, pattern)
+      await updateTransportLabels(
+        setNodes,
+        setEdges,
+        pattern,
+        isStreamingPattern(pattern),
+      )
 
       setTimeout(() => {
         fitViewWithViewport({
@@ -105,12 +154,24 @@ const MainArea: React.FC<MainAreaProps> = ({
     }
 
     updateGraph()
-  }, [fitViewWithViewport, pattern, isGroupCommConnected, setNodes, setEdges])
+  }, [
+    fitViewWithViewport,
+    pattern,
+    isGroupCommConnected,
+    setNodes,
+    setEdges,
+    handleOpenIdentityModal,
+  ])
 
   useEffect(() => {
     const handleVisibilityChange = async () => {
-      if (!document.hidden && pattern === "publish_subscribe") {
-        await updateTransportLabels(setNodes, setEdges, pattern)
+      if (!document.hidden && supportsTransportUpdates(pattern)) {
+        await updateTransportLabels(
+          setNodes,
+          setEdges,
+          pattern,
+          isStreamingPattern(pattern),
+        )
       }
     }
 
@@ -239,7 +300,6 @@ const MainArea: React.FC<MainAreaProps> = ({
     aiReplied,
     setAiReplied,
     pattern,
-    config.animationSequence,
     updateStyle,
     setNodes,
     setEdges,
@@ -268,6 +328,8 @@ const MainArea: React.FC<MainAreaProps> = ({
 
   const onNodeDrag = useCallback(() => {}, [])
 
+  const onPaneClick = modalPaneClick
+
   return (
     <div className="bg-primary-bg order-1 flex h-full w-full flex-none flex-grow flex-col items-start self-stretch p-0">
       <ReactFlow
@@ -278,6 +340,7 @@ const MainArea: React.FC<MainAreaProps> = ({
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
         onNodeDrag={onNodeDrag}
+        onPaneClick={onPaneClick}
         proOptions={proOptions}
         defaultViewport={{ x: 0, y: 0, zoom: 0.75 }}
         minZoom={0.15}
@@ -293,6 +356,15 @@ const MainArea: React.FC<MainAreaProps> = ({
           }}
         />
       </ReactFlow>
+
+      <ModalContainer
+        activeModal={activeModal}
+        activeNodeData={activeNodeData}
+        modalPosition={modalPosition}
+        onClose={handleCloseModals}
+        onShowBadgeDetails={handleShowBadgeDetails}
+        onShowPolicyDetails={handleShowPolicyDetails}
+      />
     </div>
   )
 }

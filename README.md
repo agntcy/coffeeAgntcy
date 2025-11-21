@@ -31,7 +31,7 @@ We currently provide two setups you can run to see how components from AGNTCY wo
   👉 [View the Corto README](coffeeAGNTCY/coffee_agents/corto)
 
 - **Lungo**:  
-  A more advanced setup that will evolve over time as we mature components. There are two setups: 1) pub/sub A2A over NATS as default transport along with streaming support, and 2) group communication over SLIM as default. Agents are structured as directed LangGraphs with A2A communication using configurable transports. It includes an MCP weather-aware farm that fetches live data, observability via the Observe SDK, identity, and a group communication pattern with specialized agents (farms, shipper, accountant) that collaborate to fulfill coffee orders.
+  A more advanced setup that will evolve over time as we mature components. There are two setups: 1) pub/sub A2A over NATS as default transport along with streaming support, and 2) group communication over SLIM as default along with streaming support. Agents are structured as directed LangGraphs with A2A communication using configurable transports. It includes an MCP weather-aware farm that fetches live data, observability via the Observe SDK, identity, and a group communication pattern with specialized agents (farms, shipper, accountant) that collaborate to fulfill coffee orders.
 
   👉 [View the Lungo README](coffeeAGNTCY/coffee_agents/lungo)
 
@@ -39,7 +39,7 @@ We currently provide two setups you can run to see how components from AGNTCY wo
 
 ### Built With
 
-- [AGNTCY App SDK](https://github.com/agntcy/app-sdk) = v0.4.1-dev.0
+- [AGNTCY App SDK](https://github.com/agntcy/app-sdk) = v0.4.1
 - [SLIM](https://github.com/agntcy/slim) = v0.6.1
 - [NATS](https://github.com/nats-io/nats-server) = v2.11.8
 - [A2A](https://github.com/a2aproject/a2a-python) = v0.3.0

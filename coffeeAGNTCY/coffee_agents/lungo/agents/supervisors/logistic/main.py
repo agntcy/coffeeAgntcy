@@ -11,7 +11,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import uvicorn
-
+from fastapi.responses import StreamingResponse
 from agntcy_app_sdk.factory import AgntcyFactory
 from agntcy_app_sdk.semantic.a2a.protocol import A2AProtocol
 from ioa_observe.sdk.tracing import session_start
@@ -29,7 +29,7 @@ logger = logging.getLogger("lungo.logistic.supervisor.main")
 load_dotenv()
 
 # Initialize the shared agntcy factory with tracing enabled
-shared.set_factory(AgntcyFactory("lungo.logistic", enable_tracing=True))
+shared.set_factory(AgntcyFactory("lungo.logistics_supervisor", enable_tracing=True))
 
 app = FastAPI()
 app.add_middleware(
@@ -99,6 +99,58 @@ async def get_config():
   return {
     "transport": DEFAULT_MESSAGE_TRANSPORT.upper()
   }
+
+
+@app.post("/agent/prompt/stream")
+async def handle_stream_prompt(request: PromptRequest):
+    """
+    Streams real-time order processing events as they occur in the logistics workflow.
+
+    Flow:
+    1. Extracts order parameters (farm, quantity, price) from user prompt using LLM
+    2. Initiates order with logistics agents (farm, shipper, accountant)
+    3. Streams each status update as agents process the order:
+       - RECEIVED_ORDER: Supervisor sends order to farm
+       - HANDOVER_TO_SHIPPER: Farm hands off to shipper
+       - CUSTOMS_CLEARANCE: Shipper clears customs
+       - PAYMENT_COMPLETE: Accountant confirms payment
+       - DELIVERED: Shipper completes delivery
+    4. Sends final formatted summary message
+
+    Args:
+        request (PromptRequest): User's order request (e.g., "Order 5000 lbs at $3.52 from Tatooine")
+
+    Returns:
+        StreamingResponse: NDJSON stream where each line is:
+        {"response": {"order_id": "...", "sender": "...", "state": "...", ...}} for events
+        {"response": "Order X from Y for Z units at $W has been successfully delivered."} for summary
+
+    Raises:
+        HTTPException: 400 for invalid input, 500 for server-side errors.
+    """
+    try:
+        session_start()
+
+        async def stream_generator():
+            try:
+                async for chunk in logistic_graph.streaming_serve(request.prompt):
+                    yield json.dumps({"response": chunk}) + "\n"
+            except Exception as e:
+                logger.error(f"Error in stream: {e}")
+                yield json.dumps({"response": f"Error: {str(e)}"}) + "\n"
+
+        return StreamingResponse(
+            stream_generator(),
+            media_type="application/x-ndjson",
+            headers={
+                "Cache-Control": "no-cache",
+                "Connection": "keep-alive",
+            }
+        )
+    except ValueError as ve:
+        raise HTTPException(status_code=400, detail=str(ve))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Operation failed: {str(e)}")
 
 @app.get("/suggested-prompts")
 async def get_prompts():

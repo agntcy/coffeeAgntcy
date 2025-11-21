@@ -296,3 +296,69 @@ def helpdesk_client(transport_config, monkeypatch):
     app = helpdesk_server.app
     with TestClient(app) as client:
         yield client
+
+@pytest.fixture
+def logistics_shipper_client(transport_config, monkeypatch):
+    for k, v in _base_env().items():
+        monkeypatch.setenv(k, str(v))
+    for k, v in transport_config.items():
+        monkeypatch.setenv(k, v)
+
+    _purge_modules([
+        "agents.logistics.shipper",
+        "config.config",
+    ])
+
+    import importlib
+    import agents.logistics.shipper.server as shipper_server
+    importlib.reload(shipper_server)
+
+    from fastapi.testclient import TestClient
+    app = shipper_server.app
+    with TestClient(app) as client:
+        yield client
+
+
+@pytest.fixture
+def logistics_farm_client(transport_config, monkeypatch):
+    for k, v in _base_env().items():
+        monkeypatch.setenv(k, str(v))
+    for k, v in transport_config.items():
+        monkeypatch.setenv(k, v)
+
+    _purge_modules([
+        "agents.logistics.farm",
+        "config.config",
+    ])
+
+    import importlib
+    import agents.logistics.farm.server as farm_server
+    importlib.reload(farm_server)
+
+    from fastapi.testclient import TestClient
+    app = farm_server.app
+    with TestClient(app) as client:
+        yield client
+
+
+
+@pytest.fixture
+def logistics_accountant_client(transport_config, monkeypatch):
+    for k, v in _base_env().items():
+        monkeypatch.setenv(k, str(v))
+    for k, v in transport_config.items():
+        monkeypatch.setenv(k, v)
+
+    _purge_modules([
+        "agents.logistics.farm",
+        "config.config",
+    ])
+
+    import importlib
+    import agents.logistics.accountant.server as accountant_server
+    importlib.reload(accountant_server)
+
+    from fastapi.testclient import TestClient
+    app = accountant_server.app
+    with TestClient(app) as client:
+        yield client

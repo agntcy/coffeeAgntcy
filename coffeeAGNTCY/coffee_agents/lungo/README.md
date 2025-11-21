@@ -158,6 +158,14 @@ OAUTH2_APP_KEY=<your_app_key> #optional
 ---
 
 
+   _Groq:_
+
+   ```env
+    LLM_PROVIDER=groq
+    GROQ_API_KEY="your_groq_api_key_here"
+    GROQ_MODEL_NAME="openai/gpt-oss-120b"
+   ```
+
    _OTEL:_
 
    ```env
@@ -198,7 +206,7 @@ For advanced observability of your multi-agent system, integrate the [Observe SD
 
   - In code, set the factory with tracing enabled:
     ```python
-    AgntcyFactory("lungo.exchange", enable_tracing=True)
+    AgntcyFactory("lungo.auction_supervisor", enable_tracing=True)
     ```
 
 - **To start a new trace session for each prompt execution:**  
@@ -237,7 +245,7 @@ Additionally run the observability stack that has OTEL Collector, Grafana and Cl
 You can do this by executing the following command:
 
 ```sh
-docker-compose up slim nats clickhouse-server otel-collector grafana
+docker compose up slim nats clickhouse-server otel-collector grafana
 ```
 
 **Step 2: Run the Weather MCP Server**
@@ -253,7 +261,7 @@ uv run python agents/mcp_servers/weather_service.py
 _Docker Compose:_
 
 ```sh
-docker-compose up weather-mcp-server --build
+docker compose up weather-mcp-server --build
 ```
 
 This MCP server is required for the Colombia Farm to function correctly.
@@ -299,7 +307,7 @@ uv run python agents/farms/vietnam/farm_server.py
 _Docker Compose:_
 
 ```sh
-docker-compose up brazil-farm-server colombia-farm-server vietnam-farm-server --build
+docker compose up brazil-farm-server colombia-farm-server vietnam-farm-server --build
 ```
 
 The farm servers handle incoming requests from the exchange and process them using a directed LangGraph containing two directed paths: one for fetching inventory and another for generating orders, depending on the prompt.
@@ -317,7 +325,7 @@ uv run python agents/supervisors/auction/main.py
 _Docker Compose:_
 
 ```sh
-docker-compose up exchange-server --build
+docker compose up exchange-server --build
 ```
 
 This command starts a FastAPI server that processes user prompts by passing them to a LangGraph-based supervisor, which manages delegation to worker agents. The supervisor is implemented as a directed LangGraph with nodes for Inventory, Orders, General Information, and Reflection.
@@ -365,7 +373,7 @@ npm run dev
 _Docker Compose:_
 
 ```sh
-docker-compose up ui --build
+docker compose up ui --build
 ```
 
 By default, the UI will be available at [http://localhost:3000/](http://localhost:3000/).
@@ -436,7 +444,7 @@ Details about AGNTCY's MCE can be found in the Telemetry Hub repository: [Metric
 1. Run the MCE Components
 
 ```sh
-docker-compose up metrics-computation-engine mce-api-layer
+docker compose up metrics-computation-engine mce-api-layer
 ```
 
 2. Get session IDs within a given time range.

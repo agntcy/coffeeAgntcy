@@ -243,7 +243,7 @@ uv run python farm/farm_server.py
 *Docker Compose*
 
 ```sh
-docker-compose up farm-server --build
+docker compose up farm-server --build
 ```
 
 The `farm_server` listens for requests from the `exchange` and processes them using LangGraph. It generates flavor profiles based on user inputs such as location and season.
@@ -261,7 +261,7 @@ uv run python exchange/main.py
 *Docker Compose*
 
 ```sh
-docker-compose up exchange-server --build
+docker compose up exchange-server --build
 ```
 
 This starts a FastAPI server that processes prompts, collecting them and relaying messages to the A2A server when they are relevant to coffee flavors or profiles.
@@ -292,7 +292,7 @@ npm run dev
 *Docker Compose:*
 
 ```sh
-docker-compose up ui --build
+docker compose up ui --build
 ```
 
 By default, the UI will be available at [http://localhost:3000/](http://localhost:3000/).
@@ -356,7 +356,7 @@ Details about AGNTCY's MCE can be found in the Telemetry Hub repository: [Metric
 1. Run the MCE Components
 
 ```sh
-docker-compose up metrics-computation-engine mce-api-layer
+docker compose up metrics-computation-engine mce-api-layer
 ```
 
 2. Get session IDs within a given time range.

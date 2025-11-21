@@ -49,6 +49,17 @@ export const getStreamingEndpointForPattern = (pattern?: string): string => {
   throw new Error(`Pattern ${pattern} does not support streaming`)
 }
 
+export const isStreamingPattern = (pattern?: string): boolean => {
+  return pattern === PATTERNS.PUBLISH_SUBSCRIBE_STREAMING
+}
+
+export const supportsTransportUpdates = (pattern?: string): boolean => {
+  return (
+    pattern === PATTERNS.PUBLISH_SUBSCRIBE ||
+    pattern === PATTERNS.PUBLISH_SUBSCRIBE_STREAMING
+  )
+}
+
 export const getPatternDisplayName = (pattern?: string): string => {
   switch (pattern) {
     case PATTERNS.SLIM_A2A:

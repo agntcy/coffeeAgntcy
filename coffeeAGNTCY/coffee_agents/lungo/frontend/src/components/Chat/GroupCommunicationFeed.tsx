@@ -12,7 +12,15 @@ import { ChevronDown, ChevronUp } from "lucide-react"
 
 import AgentIcon from "@/assets/Coffee_Icon.svg"
 import CheckCircle from "@/assets/CheckCircle.png"
-import { GroupCommunicationFeedProps } from "@/types/streaming"
+import {
+  GroupCommunicationFeedProps,
+  LogisticsStreamStep,
+} from "@/types/streaming"
+import {
+  useGroupEvents,
+  useGroupError,
+  useGroupCurrentOrderId,
+} from "@/stores/groupStreamingStore"
 
 const buildSenderToNodeMap = (graphConfig: any): Record<string, string> => {
   if (!graphConfig?.nodes) return {}
@@ -80,10 +88,13 @@ const GroupCommunicationFeed: React.FC<GroupCommunicationFeedProps> = ({
   prompt,
   onSenderHighlight,
   graphConfig,
-  sseState,
   executionKey,
   apiError,
 }) => {
+  const groupEvents = useGroupEvents()
+  const groupError = useGroupError()
+  const groupCurrentOrderId = useGroupCurrentOrderId()
+
   const [state, setState] = useState({
     isExpanded: true,
     isComplete: false,
@@ -134,9 +145,9 @@ const GroupCommunicationFeed: React.FC<GroupCommunicationFeedProps> = ({
   }, [])
 
   useEffect(() => {
-    if (!sseState?.events.length) return
+    if (!groupEvents.length) return
 
-    const lastEvent = sseState.events[sseState.events.length - 1]
+    const lastEvent = groupEvents[groupEvents.length - 1]
     const eventKey = `${lastEvent.order_id}-${lastEvent.timestamp}-${lastEvent.sender}-${lastEvent.receiver}`
 
     if (lastProcessedEventRef.current === eventKey) {
@@ -189,7 +200,7 @@ const GroupCommunicationFeed: React.FC<GroupCommunicationFeedProps> = ({
       }
     }
   }, [
-    sseState?.events,
+    groupEvents,
     onSenderHighlight,
     graphConfig,
     state.isComplete,
@@ -200,8 +211,8 @@ const GroupCommunicationFeed: React.FC<GroupCommunicationFeedProps> = ({
     return null
   }
 
-  const events = sseState?.events || []
-  const errorMessage = sseState?.error || null
+  const events = groupEvents || []
+  const errorMessage = groupError || null
 
   if ((!prompt && events.length === 0) || apiError) {
     return null
@@ -218,9 +229,9 @@ const GroupCommunicationFeed: React.FC<GroupCommunicationFeedProps> = ({
           <div className="whitespace-pre-wrap break-words font-cisco text-sm font-normal leading-5 text-chat-text">
             Connection error: {errorMessage}
           </div>
-        ) : state.isComplete && sseState?.currentOrderId ? (
+        ) : state.isComplete && groupCurrentOrderId ? (
           <div className="whitespace-pre-wrap break-words font-cisco text-sm font-normal leading-5 text-chat-text">
-            Order {sseState.currentOrderId}
+            Order {groupCurrentOrderId}
           </div>
         ) : prompt && !apiError ? (
           <div className="whitespace-pre-wrap break-words font-cisco text-sm font-normal leading-5 text-chat-text">
@@ -256,7 +267,7 @@ const GroupCommunicationFeed: React.FC<GroupCommunicationFeedProps> = ({
         {state.isExpanded && (
           <>
             <div className="mt-3 flex w-full flex-col items-start gap-3">
-              {events.map((step, index) => {
+              {events.map((step: LogisticsStreamStep, index: number) => {
                 return (
                   <div
                     key={`${step.order_id}-${index}`}

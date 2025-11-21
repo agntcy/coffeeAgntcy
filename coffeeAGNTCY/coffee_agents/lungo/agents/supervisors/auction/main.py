@@ -6,7 +6,6 @@ import logging
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from ioa_observe.sdk.tracing import session_start
 from pydantic import BaseModel
 import uvicorn
 from fastapi.responses import StreamingResponse
@@ -20,6 +19,8 @@ from config.config import DEFAULT_MESSAGE_TRANSPORT
 from config.logging_config import setup_logging
 from pathlib import Path
 from common.version import get_version_info
+from agents.supervisors.auction.api import create_apps_router
+from fastapi import HTTPException
 
 setup_logging()
 logger = logging.getLogger("lungo.supervisor.main")
@@ -27,7 +28,7 @@ logger = logging.getLogger("lungo.supervisor.main")
 load_dotenv()
 
 # Initialize the shared agntcy factory with tracing enabled
-shared.set_factory(AgntcyFactory("lungo.exchange", enable_tracing=True))
+shared.set_factory(AgntcyFactory("lungo.auction_supervisor", enable_tracing=True))
 
 app = FastAPI()
 # Add CORS middleware
@@ -39,10 +40,47 @@ app.add_middleware(
   allow_headers=["*"],  # Allow all headers
 )
 
+app.include_router(create_apps_router())
+
 exchange_graph = ExchangeGraph()
 
 class PromptRequest(BaseModel):
   prompt: str
+
+@app.get("/.well-known/agent.json")
+async def get_capabilities():
+  """
+  Returns the capabilities of the auction supervisor.
+
+  Returns:
+      dict: A dictionary containing the capabilities and metadata of the auction supervisor.
+  """
+  return {
+    "capabilities": {"streaming": True},
+    "defaultInputModes": ["text"],
+    "defaultOutputModes": ["text"],
+    "description": "An AI agent that supervises auctions and manages coffee farm operations.",
+    "name": "Auction Supervisor",
+    "preferredTransport": "JSONRPC",
+    "protocolVersion": "0.3.0",
+    "skills": [
+      {
+        "description": "Supervises auctions and manages coffee farm operations.",
+        "examples": [
+          "What is the yield of the Vietnam coffee farm?",
+          "How much coffee does the Vietnam farm produce?",
+          "What is the yield of the Vietnam coffee farm in pounds?",
+          "How many pounds of coffee does the Vietnam farm produce?",
+        ],
+        "id": "get_yield",
+        "name": "Get Coffee Yield",
+        "tags": ["coffee", "farm", "auction"],
+      }
+    ],
+    "supportsAuthenticatedExtendedCard": False,
+    "url": "",
+    "version": "1.0.0",
+  }
 
 @app.post("/agent/prompt")
 async def handle_prompt(request: PromptRequest):

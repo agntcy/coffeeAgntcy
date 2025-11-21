@@ -18,15 +18,6 @@ import { logger } from "@/utils/logger"
 import GroupCommunicationFeed from "./GroupCommunicationFeed"
 import AuctionStreamingFeed from "./AuctionStreamingFeed"
 
-interface SSEState {
-  isConnected: boolean
-  isConnecting: boolean
-  events: any[]
-  currentOrderId: string | null
-  error: string | null
-  clearEvents: () => void
-}
-
 interface ChatAreaProps {
   setMessages: React.Dispatch<React.SetStateAction<Message[]>>
   setButtonClicked: (clicked: boolean) => void
@@ -51,7 +42,6 @@ interface ChatAreaProps {
   isAgentLoading?: boolean
   apiError: boolean
   chatRef?: React.RefObject<HTMLDivElement | null>
-  sseState?: SSEState
   auctionState?: any
 }
 
@@ -79,7 +69,6 @@ const ChatArea: React.FC<ChatAreaProps> = ({
   isAgentLoading,
   apiError,
   chatRef,
-  sseState,
   auctionState,
 }) => {
   const [content, setContent] = useState<string>("")
@@ -200,7 +189,6 @@ const ChatArea: React.FC<ChatAreaProps> = ({
                   prompt={currentUserMessage || ""}
                   executionKey={executionKey}
                   apiError={apiError}
-                  sseState={sseState}
                 />
               </div>
             )}

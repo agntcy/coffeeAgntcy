@@ -36,7 +36,7 @@ dev = [
     "pytest-asyncio>=0.17.0,<0.18",
     "pytest-cov>=4.0.0,<5",
     "typing-extensions>=4.12.2,<5",
-    "openai",
+    "openai>=1.86.0,<2.0",
     "autogen-core>=0.4.3,<0.5",
     "coloredlogs>=15.0.1,<16",
     "langchain-openai>=0.3.14,<0.4",

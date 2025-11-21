@@ -21,7 +21,7 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # Initialize a multi-protocol, multi-transport agntcy factory.
-factory = AgntcyFactory("lungo_mcp_server", enable_tracing=True)
+factory = AgntcyFactory("lungo.mcp_server", enable_tracing=True)
 
 # Base URLs
 NOMINATIM_BASE = "https://nominatim.openstreetmap.org/search"
