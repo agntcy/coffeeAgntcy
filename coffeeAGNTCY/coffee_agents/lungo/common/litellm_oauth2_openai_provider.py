@@ -23,13 +23,13 @@ class RefreshOAuth2OpenAIProvider(CustomLLM):
         client_id: str,
         client_secret: str,
         token_url: str,
-        base_url_tmpl: str,
+        base_url: str,
         appkey: Optional[str],
     ):
         self.client_id = client_id
         self.client_secret = client_secret
         self.token_url = token_url
-        self.base_url_tmpl = base_url_tmpl
+        self.base_url = base_url
 
         self._cached_token: Optional[str] = None
         self._token_expiry_ts: float = 0.0
@@ -53,7 +53,7 @@ class RefreshOAuth2OpenAIProvider(CustomLLM):
         logger.info(f"completion called with model={model}, messages={messages}, kwargs={kwargs}")
 
         token = self._get_token()
-        url = self.base_url_tmpl
+        url = self.base_url
 
         headers = {
             "Content-Type": "application/json",
@@ -111,7 +111,7 @@ class RefreshOAuth2OpenAIProvider(CustomLLM):
         logger.info(f"acompletion called with model={model}, messages={messages}, kwargs={kwargs}")
         token = self._get_token()
 
-        url = self.base_url_tmpl
+        url = self.base_url
         headers = {
             "Content-Type": "application/json",
             "Accept": "application/json",

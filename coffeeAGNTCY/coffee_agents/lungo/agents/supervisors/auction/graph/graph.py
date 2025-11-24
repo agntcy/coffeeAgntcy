@@ -166,7 +166,7 @@ class ExchangeGraph:
                 reason: str = Field(description="Reason for decision whether to continue the request.")
             
             # create a structured output LLM for reflection
-            self.reflection_llm = get_llm().with_structured_output(ShouldContinue)
+            self.reflection_llm = get_llm().with_structured_output(ShouldContinue, strict=True)
 
         sys_msg_reflection = SystemMessage(
             content="""You are an AI assistant reflecting on a conversation to determine if the user's request has been fully addressed.

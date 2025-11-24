@@ -17,7 +17,7 @@ _PROVIDER = RefreshOAuth2OpenAIProvider(
     client_secret=OAUTH2_CLIENT_SECRET,
     appkey=OAUTH2_APPKEY,
     token_url=OAUTH2_TOKEN_URL,
-    base_url_tmpl=OAUTH2_BASE_URL,
+    base_url=OAUTH2_BASE_URL,
 )
 
 def completion(*, model: str, messages, **kwargs) -> Dict[str, Any]:
