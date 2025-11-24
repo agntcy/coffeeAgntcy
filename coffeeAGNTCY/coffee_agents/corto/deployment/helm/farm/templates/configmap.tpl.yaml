@@ -7,7 +7,6 @@ data:
   FARM_AGENT_HOST: "{{ .Values.config.farmAgentHost }}"
   FARM_AGENT_PORT: "{{ .Values.config.farmAgentPort }}"
   AZURE_API_BASE: "{{ .Values.config.azureApiBase }}"
-  AZURE_API_KEY: "{{ .Values.config.azureApiKey }}"
   AZURE_API_VERSION: "{{ .Values.config.azureApiVersion }}"
   LLM_MODEL: "{{ .Values.config.llmModel }}"
   TRANSPORT_SERVER_ENDPOINT: "{{ .Values.config.transportServerEndpoint }}"
