@@ -19,7 +19,6 @@ config:
   farmAgentPort: ""
   azureApiBase: ""
   azureApiVersion: ""
-  azureApiKey: ""
   llmModel: ""
   transportServerEndpoint: ""
   defaultMessageTransport: ""

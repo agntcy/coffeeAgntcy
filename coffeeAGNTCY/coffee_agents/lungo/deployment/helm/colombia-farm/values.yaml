@@ -17,7 +17,6 @@ service:
 config:
   azureApiBase: ""
   azureApiVersion: ""
-  azureApiKey: ""
   llmModel: ""
   transportServerEndpoint: ""
   defaultMessageTransport: ""
