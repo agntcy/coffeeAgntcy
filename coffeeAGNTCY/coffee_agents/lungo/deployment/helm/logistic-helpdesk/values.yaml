@@ -15,10 +15,10 @@ service:
   port: 9094
 
 config:
-  azureOpenAiEndpoint: ""
-  azureOpenAiDeployment: ""
-  azureOpenAiApiVersion: ""
-  llmProvider: ""
+  azureApiBase: ""
+  azureApiVersion: ""
+  azureApiKey: ""
+  llmModel: ""
   transportServerEndpoint: ""
   defaultMessageTransport: ""
   otlpHttpEndpoint: ""

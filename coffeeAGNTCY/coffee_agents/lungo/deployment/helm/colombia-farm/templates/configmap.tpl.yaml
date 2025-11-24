@@ -4,10 +4,10 @@ metadata:
   name: {{ .Values.appName }}-configmap
   namespace: {{ .Release.Namespace }}
 data:
-  AZURE_OPENAI_ENDPOINT: "{{ .Values.config.azureOpenAiEndpoint }}"
-  AZURE_OPENAI_DEPLOYMENT: "{{ .Values.config.azureOpenAiDeployment }}"
-  AZURE_OPENAI_API_VERSION: "{{ .Values.config.azureOpenAiApiVersion }}"
-  LLM_PROVIDER: "{{ .Values.config.llmProvider }}"
+  AZURE_API_BASE: "{{ .Values.config.azureApiBase }}"
+  AZURE_API_KEY: "{{ .Values.config.azureApiKey }}"
+  AZURE_API_VERSION: "{{ .Values.config.azureApiVersion }}"
+  LLM_MODEL: "{{ .Values.config.llmModel }}"
   TRANSPORT_SERVER_ENDPOINT: "{{ .Values.config.transportServerEndpoint }}"
   DEFAULT_MESSAGE_TRANSPORT: "{{ .Values.config.defaultMessageTransport }}"
   OTLP_HTTP_ENDPOINT: "{{ .Values.config.otlpHttpEndpoint }}"
