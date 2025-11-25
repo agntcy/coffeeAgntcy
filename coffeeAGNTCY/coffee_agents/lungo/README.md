@@ -123,11 +123,11 @@ AZURE_API_VERSION=<your_azure_api_version>
 
 ---
 
-#### **XAI**
+#### **GROQ**
 
 ```env
-LLM_MODEL="xai/<model_of_choice>"
-XAI_API_KEY=<your_x_api_key>
+LLM_MODEL="groq/<model_of_choice>"
+GROQ_API_KEY=<your_groq_api_key>
 ```
 
 ---
