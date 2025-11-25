@@ -49,24 +49,56 @@ Copy and configure your environment:
 cp .env.example .env
 ```
 
-Edit `.env` with your API keys and provider (OpenAI or Azure). 
+Update your .env file with the provider model, credentials, and OTEL endpoint.
 
-OpenAI:
+CoffeeAGNTCY uses litellm to manage LLM connections. With litellm, you can seamlessly switch between different model providers using a unified configuration interface. Below are examples of environment variables for setting up various providers. For a comprehensive list of supported providers, see the [official litellm documentation](https://docs.litellm.ai/docs/providers).
+
+In CoffeeAGNTCY, the environment variable for specifying the model is always LLM_MODEL, regardless of the provider.
+
+   > ⚠️ **Note:** The `/agent/prompt/stream` endpoint requires an LLM that supports streaming. If your LLM provider does not support streaming, the streaming endpoint may fail.
+
+   Then update `.env` with your LLM provider, credentials and OTEL endpoint. For example:
+
+---
+
+#### **OpenAI**
+
 ```env
-LLM_PROVIDER=openai
-OPENAI_API_KEY="your_openai_api_key_here"
-OPENAI_ENDPOINT=https://api.openai.com/v1
-OPENAI_MODEL_NAME=gpt-4o
-```
-Azure OpenAI:
-```env
-LLM_PROVIDER=azure-openai
-AZURE_OPENAI_ENDPOINT=https://your-azure-resource.openai.azure.com/
-AZURE_OPENAI_DEPLOYMENT=your_azure_deployment_name
-AZURE_OPENAI_API_KEY=your_azure_api_key
-AZURE_OPENAI_API_VERSION=your_azure_openai_version
+LLM_MODEL="openai/<model_of_choice>"
+OPENAI_API_KEY=<your_openai_api_key>
 ```
 
+---
+
+#### **Azure OpenAI**
+
+```env
+LLM_MODEL="azure/<your_deployment_name>"
+AZURE_API_BASE=https://your-azure-resource.openai.azure.com/
+AZURE_API_KEY=<your_azure_api_key>
+AZURE_API_VERSION=<your_azure_api_version>
+```
+
+---
+
+#### **GROQ**
+
+```env
+LLM_MODEL="groq/<model_of_choice>"
+GROQ_API_KEY=<your_groq_api_key>
+```
+
+---
+
+#### **NVIDIA NIM**
+
+```env
+LLM_MODEL="nvidia_nim/<model_of_choice>"
+NVIDIA_NIM_API_KEY=<your_nvidia_api_key>
+NVIDIA_NIM_API_BASE=<your_nvidia_nim_endpoint_url>
+```
+
+---
 ### 2. Launch the Demo Stack
 All workshop services are containerized — start everything with one command:
 
@@ -169,23 +201,55 @@ Or set up your .env from scratch:
 cp .env.example .env
 ```
 
-Edit `.env` with your API keys and provider (OpenAI or Azure). 
+Update your .env file with the provider model, credentials, and OTEL endpoint.
 
-OpenAI:
+CoffeeAGNTCY uses litellm to manage LLM connections. With litellm, you can seamlessly switch between different model providers using a unified configuration interface. Below are examples of environment variables for setting up various providers. For a comprehensive list of supported providers, see the [official litellm documentation](https://docs.litellm.ai/docs/providers).
+
+In CoffeeAGNTCY, the environment variable for specifying the model is always LLM_MODEL, regardless of the provider.
+
+   > ⚠️ **Note:** The `/agent/prompt/stream` endpoint requires an LLM that supports streaming. If your LLM provider does not support streaming, the streaming endpoint may fail.
+
+   Then update `.env` with your LLM provider, credentials and OTEL endpoint. For example:
+
+---
+
+#### **OpenAI**
+
 ```env
-LLM_PROVIDER=openai
-OPENAI_API_KEY="your_openai_api_key_here"
-OPENAI_ENDPOINT=https://api.openai.com/v1
-OPENAI_MODEL_NAME=gpt-4o
+LLM_MODEL="openai/<model_of_choice>"
+OPENAI_API_KEY=<your_openai_api_key>
 ```
-Azure OpenAI:
+
+---
+
+#### **Azure OpenAI**
+
 ```env
-LLM_PROVIDER=azure-openai
-AZURE_OPENAI_ENDPOINT=https://your-azure-resource.openai.azure.com/
-AZURE_OPENAI_DEPLOYMENT=your_azure_deployment_name
-AZURE_OPENAI_API_KEY=your_azure_api_key
-AZURE_OPENAI_API_VERSION=your_azure_openai_version
+LLM_MODEL="azure/<your_deployment_name>"
+AZURE_API_BASE=https://your-azure-resource.openai.azure.com/
+AZURE_API_KEY=<your_azure_api_key>
+AZURE_API_VERSION=<your_azure_api_version>
 ```
+
+---
+
+#### **GROQ**
+
+```env
+LLM_MODEL="groq/<model_of_choice>"
+GROQ_API_KEY=<your_groq_api_key>
+```
+
+---
+
+#### **NVIDIA NIM**
+
+```env
+LLM_MODEL="nvidia_nim/<model_of_choice>"
+NVIDIA_NIM_API_KEY=<your_nvidia_api_key>
+NVIDIA_NIM_API_BASE=<your_nvidia_nim_endpoint_url>
+```
+
 ### 2. Launch the Demo Stack
 
 All workshop services are containerized — start everything with one command:
