@@ -17,6 +17,7 @@ import { cn } from "@/utils/cn.ts"
 import { logger } from "@/utils/logger"
 import GroupCommunicationFeed from "./GroupCommunicationFeed"
 import AuctionStreamingFeed from "./AuctionStreamingFeed"
+import axios from "axios";
 
 interface ChatAreaProps {
   setMessages: React.Dispatch<React.SetStateAction<Message[]>>
@@ -115,8 +116,16 @@ const ChatArea: React.FC<ChatAreaProps> = ({
         },
         onError: (error) => {
           logger.apiError("/agent/prompt", error)
+
+          // Extract error message from AxiosError or use fallback
+          let errorMessage = "Sorry, I encountered an error"
+          if (axios.isAxiosError(error) && error.response?.data?.detail) {
+            console.log("API error response:", error.response.data)
+            errorMessage = error.response.data.detail
+          }
+
           if (onApiResponse) {
-            onApiResponse("Sorry, I encountered an error.", true)
+            onApiResponse(errorMessage, true)
           }
         },
       },

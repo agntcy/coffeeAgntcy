@@ -137,7 +137,7 @@ def verify_farm_identity(identity_service: IdentityService, farm_name: str):
         matched_app = next((app for app in all_apps.apps if app.name.lower() == farm_name.lower()), None)
 
         if not matched_app:
-            err_msg = f"Identity verification failed for farm {farm_name}: No matching app found, this farm does not have identity service enabled."
+            err_msg = f"No matching identity app service found, this farm does not have identity service enabled."
             logger.error(err_msg)
             raise A2AAgentError(err_msg)
 
@@ -146,11 +146,11 @@ def verify_farm_identity(identity_service: IdentityService, farm_name: str):
         success = identity_service.verify_badges(badge)
 
         if success.get("status") is not True:
-            raise A2AAgentError(f"Identity verification failed for farm {farm_name}: Failed to verify badge.")
+            raise A2AAgentError(f"Failed to verify badge.")
 
         logger.info(f"Verification successful for farm '{farm_name}'.")
     except Exception as e:
-        raise A2AAgentError(f"Identity verification failed for farm '{farm_name}'. Details: {e}") # Re-raise as our custom exception
+        raise A2AAgentError(e) # Re-raise as our custom exception
 
 # node utility for streaming
 async def get_farm_yield_inventory(prompt: str, farm: str) -> str:
@@ -431,8 +431,7 @@ async def create_order(farm: str, quantity: int, price: float) -> str:
         verify_farm_identity(identity_service, card.name)
     except Exception as e:
         # log the error and re-raise the exception
-        logger.error(e)
-        raise
+        raise A2AAgentError(f"Identity verification failed for farm '{farm}'. Details: {e}")
 
     try:
         client = await factory.create_client(
