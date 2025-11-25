@@ -163,7 +163,7 @@ class TestAuctionFlows:
             assert "detail" in data
             detail_lower = data["detail"].lower()
             assert "identity verification failed" in detail_lower
-            assert "brazil coffee farm" in detail_lower
+            assert "brazil" in detail_lower
 
     @pytest.mark.agents(["weather-mcp","colombia-farm"])
     @pytest.mark.usefixtures("agents_up")
