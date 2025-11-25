@@ -17,10 +17,9 @@ service:
   port: 8000
 
 config:
-  azureOpenAiEndpoint: ""
-  azureOpenAiDeployment: ""
-  azureOpenAiApiVersion: ""
-  llmProvider: ""
+  azureApiBase: ""
+  azureApiVersion: ""
+  llmModel: ""
   transportServerEndpoint: ""
   defaultMessageTransport: ""
   otlpHttpEndpoint: ""

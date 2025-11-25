@@ -71,6 +71,15 @@ jobs:
         run: |
           uv lock --upgrade
           uv sync --extra dev
+      
+      - name: Create CI env file
+        run: |
+          cat > .env <<'EOF'
+          LLM_MODEL=${{ secrets.LLM_MODEL }}
+          AZURE_API_KEY=${{ secrets.AZURE_API_KEY }}
+          AZURE_API_BASE=${{ secrets.AZURE_API_BASE }}
+          AZURE_API_VERSION=${{ secrets.AZURE_API_VERSION }}
+          EOF
 
       - name: Run integration tests — ${{ matrix.suite }}
         run: uv run pytest -s

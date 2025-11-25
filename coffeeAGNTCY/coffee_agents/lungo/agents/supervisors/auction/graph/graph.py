@@ -186,7 +186,8 @@ class ExchangeGraph:
         )
 
         response = await self.reflection_llm.ainvoke(
-          [sys_msg_reflection] + state["messages"]
+          [sys_msg_reflection] + state["messages"],
+          
         )
         logging.info(f"Reflection agent response: {response}")
 
