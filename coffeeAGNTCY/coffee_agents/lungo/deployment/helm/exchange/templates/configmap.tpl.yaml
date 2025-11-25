@@ -13,6 +13,5 @@ data:
   OTLP_HTTP_ENDPOINT: "{{ .Values.config.otlpHttpEndpoint }}"
   IDENTITY_API_SERVER_URL: "{{ .Values.config.identityApiServerUrl }}"
   IDENTITY_API_KEY: "{{ .Values.config.identityApiKey }}"
-  LLM_STREAMING: "{{ .Values.config.llmStreaming }}"
   IDENTITY_AUTH_ENABLED: "{{ .Values.config.identityAuthEnabled }}"
   IDENTITY_SERVICE_API_KEY: "{{ .Values.config.identityServiceApiKey }}"

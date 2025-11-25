@@ -14,7 +14,6 @@ services:
       - TRANSPORT_SERVER_ENDPOINT=${TRANSPORT_SERVER_ENDPOINT:-nats://nats:4222}
       - OTLP_HTTP_ENDPOINT=${OTLP_HTTP_ENDPOINT:-http://otel-collector:4318}
       - ENABLE_HTTP=true
-      - LLM_STREAMING=${LLM_STREAMING:-}
     ports:
       - "9999:9999"
   colombia-farm-server:
@@ -32,7 +31,6 @@ services:
       - TRANSPORT_SERVER_ENDPOINT=${TRANSPORT_SERVER_ENDPOINT:-nats://nats:4222}
       - OTLP_HTTP_ENDPOINT=${OTLP_HTTP_ENDPOINT:-http://otel-collector:4318}
       - ENABLE_HTTP=true
-      - LLM_STREAMING=${LLM_STREAMING:-}
       - IDENTITY_AUTH_ENABLED=${IDENTITY_AUTH_ENABLED:-} # Disabled by default
       - IDENTITY_SERVICE_API_KEY=${IDENTITY_SERVICE_API_KEY_COLOMBIA_FARM:-dummy_api_key}
       - MCP_PAYMENT_SERVICE_URL=${MCP_PAYMENT_SERVICE_URL:-http://payment-mcp-server:8081/mcp}
@@ -53,7 +51,6 @@ services:
       - TRANSPORT_SERVER_ENDPOINT=${TRANSPORT_SERVER_ENDPOINT:-nats://nats:4222}
       - OTLP_HTTP_ENDPOINT=${OTLP_HTTP_ENDPOINT:-http://otel-collector:4318}
       - ENABLE_HTTP=true
-      - LLM_STREAMING=${LLM_STREAMING:-}
       - IDENTITY_AUTH_ENABLED=${IDENTITY_AUTH_ENABLED:-} # Disabled by default
       - IDENTITY_SERVICE_API_KEY=${IDENTITY_SERVICE_API_KEY_VIETNAM_FARM:-dummy_api_key}
       - MCP_PAYMENT_SERVICE_URL=${MCP_PAYMENT_SERVICE_URL:-http://payment-mcp-server:8081/mcp}
@@ -98,7 +95,6 @@ services:
       - DEFAULT_MESSAGE_TRANSPORT=${DEFAULT_MESSAGE_TRANSPORT:-NATS}
       - TRANSPORT_SERVER_ENDPOINT=${TRANSPORT_SERVER_ENDPOINT:-nats://nats:4222}
       - OTLP_HTTP_ENDPOINT=${OTLP_HTTP_ENDPOINT:-http://otel-collector:4318}
-      - LLM_STREAMING=${LLM_STREAMING:-}
       - IDENTITY_AUTH_ENABLED=${IDENTITY_AUTH_ENABLED:-} # Disabled by default
       - IDENTITY_SERVICE_API_KEY=${IDENTITY_SERVICE_API_KEY_AUCTION_SUPERVISOR:-dummy_api_key}
     ports:
@@ -262,7 +258,6 @@ services:
       - DEFAULT_MESSAGE_TRANSPORT=SLIM # Do not change. SLIM is required for group conversation.
       - TRANSPORT_SERVER_ENDPOINT=http://slim:46357
       - OTLP_HTTP_ENDPOINT=${OTLP_HTTP_ENDPOINT:-http://otel-collector:4318}
-      - LLM_STREAMING=${LLM_STREAMING:-}
     ports:
       - "9090:9090"
 
@@ -296,9 +291,9 @@ services:
       - "8001:8000"
     environment:
       - API_BASE_URL=http://mce-api-layer:8080
-      - LLM_BASE_MODEL_URL=${AZURE_OPENAI_ENDPOINT:-${OPENAI_ENDPOINT}}
-      - LLM_MODEL_NAME=${AZURE_OPENAI_DEPLOYMENT:-${OPENAI_MODEL_NAME}}
-      - LLM_API_KEY=${AZURE_OPENAI_API_KEY:-${OPENAI_API_KEY}}
+      - LLM_BASE_MODEL_URL=${AZURE_API_BASE:-${OPENAI_ENDPOINT}}
+      - LLM_MODEL_NAME=${AZURE_API_VERSION:-${OPENAI_MODEL_NAME}}
+      - LLM_API_KEY=${AZURE_API_KEY:-${OPENAI_API_KEY}}
     depends_on:
       mce-api-layer:
         condition: service_healthy
