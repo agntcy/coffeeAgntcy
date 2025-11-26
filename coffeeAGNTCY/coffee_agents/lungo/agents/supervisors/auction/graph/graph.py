@@ -129,10 +129,12 @@ class ExchangeGraph:
         prompt = PromptTemplate(
             template="""You are a global coffee exchange agent connecting users to coffee farms in Brazil, Colombia, and Vietnam. 
             Based on the user's message, determine the appropriate action:
-            
+            - Respond with 'orders' if the message includes:
+                * Quantity specifications (e.g., "50 lb", "100 kg")
+                * Price or cost information (e.g., "for $X", "at Y cents per lb")
+                * Purchase intent keywords (e.g., "need", "want", "buy", "order", "purchase")
             - Respond with 'inventory_single_farm' if the user asks about a SPECIFIC farm (Brazil, Colombia, or Vietnam)
             - Respond with 'inventory_all_farms' if the user asks about inventory/yield from ALL farms or doesn't specify a farm
-            - Respond with 'orders' if the message is about checking coffee order status, placing a coffee order, or modifying an existing coffee order
             - Respond with 'none of the above' if the message is unrelated to coffee 'inventory' or 'orders'
             
             User message: {user_message}
