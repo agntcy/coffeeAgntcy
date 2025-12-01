@@ -174,7 +174,7 @@ class ExchangeGraph:
             content="""You are an AI assistant reflecting on a conversation to determine if the user's request has been fully addressed.
             Review the entire conversation history provided.
 
-            Decide whether the user's *original query* has been satisfied by the responses given so far.
+            Decide whether the user's *original query* has been satisfied by the responses given so far. If the prompt is related to order, please ensure the farm information is included in the final response.
             If the last message from the AI provides a conclusive answer to the user's request, or if the conversation has reached a natural conclusion, then set 'should_continue' to false.
             Do NOT continue if:
             - The last message from the AI is a final answer to the user's initial request.
@@ -201,9 +201,16 @@ class ExchangeGraph:
         next_node = NodeStates.SUPERVISOR if should_continue else END
 
         if next_node == END and any(keyword in response.reason.lower() for keyword in ["auth", "access", "permission", "identity"]):
+
+            err_msg = "Authentication or authorization failed. Please check your credentials and try again."
+            for farm in ['colombia', 'brazil', 'vietnam']:
+                if farm in state["messages"][-1].content.lower():
+                    err_msg = f"The supervisor agent doesn't have permission to access the {farm.title()} farm. Please verify your access credentials and try again."
+                    break
+
             return {
                 "next_node": END,
-                "messages": [AIMessage(content="Authentication or authorization failed. Please check your credentials and try again.")],
+                "messages": [AIMessage(content=err_msg)],
             }
 
         logging.info(f"Next node: {next_node}, Reason: {response.reason}")
