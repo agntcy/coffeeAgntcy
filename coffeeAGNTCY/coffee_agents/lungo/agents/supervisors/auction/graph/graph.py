@@ -175,6 +175,7 @@ class ExchangeGraph:
             Review the entire conversation history provided.
 
             Decide whether the user's *original query* has been satisfied by the responses given so far. If the prompt is related to order, please ensure the farm information is included in the final response.
+            For permission issues regarding creating a payment or list transaction, please include which operation failed in the final response.
             If the last message from the AI provides a conclusive answer to the user's request, or if the conversation has reached a natural conclusion, then set 'should_continue' to false.
             Do NOT continue if:
             - The last message from the AI is a final answer to the user's initial request.
@@ -206,6 +207,11 @@ class ExchangeGraph:
             for farm in ['colombia', 'brazil', 'vietnam']:
                 if farm in state["messages"][-1].content.lower():
                     err_msg = f"The supervisor agent doesn't have permission to access the {farm.title()} farm. Please verify your access credentials and try again."
+                    break
+
+            for keyword in ["transaction", "payment"]:
+                if keyword in state["messages"][-1].content.lower():
+                    err_msg = f"Not authorized to perform '{keyword}' operation through the Payment MCP service. Please verify your farm credentials and try again."
                     break
 
             return {
@@ -407,7 +413,7 @@ class ExchangeGraph:
             {tool_context}
 
             --- Instructions for your response ---
-            1.  **Process ALL tool results provided in the context.** This includes both successful and failed attempts.
+            1.  **Process ALL tool results provided in the context.** This includes both successful and failed attempts. If the context contains error messages related to authentication or authorization, please note them specifically.
             2.  **If ANY tool call result indicates a FAILURE:**
                 *   Acknowledge the failure to the user for the specific request(s) that failed.
                 *   Politely inform the user that the request could not be completed for those parts due to an issue (e.g., "The farm is currently unreachable" or "An error occurred").
