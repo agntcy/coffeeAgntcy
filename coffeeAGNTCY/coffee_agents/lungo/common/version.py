@@ -64,10 +64,8 @@ def get_dependencies():
                 name, op, ver = _extract_name_and_version(dep)
                 display = DISPLAY_NAMES.get(name)
                 if display:
-                    if op == '==':
+                    if op == '==' or op == '>=':
                         dependencies[display] = f"v{ver}"
-                    elif op == '>=':
-                        dependencies[display] = f">= v{ver}"
                     else:
                         dependencies[display] = "unknown"
         
