@@ -27,7 +27,7 @@ dependencies = [
     "langchain>=0.3.27",
     "langchain-litellm>=0.3.0",
     "litellm[proxy]==1.75.3",
-    "agntcy-app-sdk",
+    "agntcy-app-sdk==0.4.5",
 ]
 
 [project.optional-dependencies]
