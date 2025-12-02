@@ -5,6 +5,8 @@
 
 import React, { useState, useRef, useEffect } from "react"
 import LoadingSpinner from "./LoadingSpinner"
+import InfoButton from "@/components/Chat/Prompts/InfoButton.tsx"
+import { PromptCategory } from "./PromptTypes"
 
 const DEFAULT_EXCHANGE_APP_API_URL = "http://127.0.0.1:8000"
 const EXCHANGE_APP_API_URL =
@@ -16,14 +18,14 @@ interface CoffeePromptsDropdownProps {
   pattern?: string
 }
 
+
 const CoffeePromptsDropdown: React.FC<CoffeePromptsDropdownProps> = ({
                                                                        visible,
                                                                        onSelect,
                                                                        pattern,
                                                                      }) => {
   const [isOpen, setIsOpen] = useState(false)
-  const [buyerPrompts, setBuyerPrompts] = useState<string[]>([])
-  const [purchaserPrompts, setPurchaserPrompts] = useState<string[]>([])
+  const [categories, setCategories] = useState<PromptCategory[]>([])
   const dropdownRef = useRef<HTMLDivElement>(null)
   const [isLoading, setIsLoading] = useState(true)
 
@@ -50,29 +52,20 @@ const CoffeePromptsDropdown: React.FC<CoffeePromptsDropdownProps> = ({
 
         const data: unknown = await res.json()
 
-        if (
-            data &&
-            typeof data === "object" &&
-            !Array.isArray(data) &&
-            "buyer" in (data as Record<string, unknown>) &&
-            "purchaser" in (data as Record<string, unknown>)
-        ) {
-          const obj = data as { buyer?: unknown; purchaser?: unknown }
-          const buyer = Array.isArray(obj.buyer)
-              ? obj.buyer.filter((p): p is string => typeof p === "string")
-              : []
-          const purchaser = Array.isArray(obj.purchaser)
-              ? obj.purchaser.filter((p): p is string => typeof p === "string")
-              : []
-          setBuyerPrompts(buyer)
-          setPurchaserPrompts(purchaser)
+        console.log("Fetched prompts data:", data)
 
-          // Retry if both arrays are empty
-          if (buyer.length === 0 && purchaser.length === 0) {
-            const delay = Math.min(5000 * Math.pow(2, retryCount), MAX_RETRY_DELAY)
-            retryTimeoutId = setTimeout(() => fetchPrompts(retryCount + 1), delay)
-          }
+        const categories = Object.entries(data).map(([key, value]) => ({
+          name: key,
+          prompts: Array.isArray(value) ? value : [], // Directly use the array if it's valid
+        }));
+        setCategories(categories)
+
+        // Retry if all categories are empty
+        if (categories.every((category) => category.prompts.length === 0)) {
+          const delay = Math.min(5000 * Math.pow(2, retryCount), MAX_RETRY_DELAY)
+          retryTimeoutId = setTimeout(() => fetchPrompts(retryCount + 1), delay)
         }
+
       } catch (err: unknown) {
         if (err instanceof Error && err.name !== "AbortError") {
           console.warn("Failed to load prompts from API.", err)
@@ -127,17 +120,19 @@ const CoffeePromptsDropdown: React.FC<CoffeePromptsDropdownProps> = ({
 
   if (!visible) return null
 
-  const dropdownClasses = `flex h-9 w-166 cursor-pointer flex-row items-center gap-1 rounded-lg bg-chat-background p-2 transition-colors duration-200 ease-in-out hover:bg-chat-background-hover ${isOpen ? "bg-chat-background-hover" : ""}`
+  const dropdownClasses = `flex h-9 w-166 cursor-pointer flex-row items-center gap-1 rounded-lg bg-chat-background p-2 transition-colors duration-200 ease-in-out hover:bg-chat-background-hover ${
+      isOpen ? "bg-chat-background-hover" : ""
+  }`
 
-  const hasNoPrompts = buyerPrompts.length === 0 && purchaserPrompts.length === 0
+  const hasNoPrompts = categories.every((category) => category.prompts.length === 0)
 
-  const menuClasses = `absolute bottom-full left-0 z-[1000] mb-1 ${
-      pattern === "publish_subscribe_streaming" ? "h-auto" : isLoading || hasNoPrompts ? "h-auto" : "h-[365px]"
-  } w-269 overflow-y-auto rounded-[6px] border border-nav-border bg-chat-dropdown-background px-[2px] py-0 opacity-100 shadow-[0px_2px_5px_0px_rgba(0,0,0,0.05)] ${isOpen ? "block animate-fadeInDropdown" : "hidden"}`
+  const menuClasses = `absolute bottom-full left-0 z-[1000] mb-1 max-h-[365px] min-h-[50px] w-[269px] overflow-y-auto rounded-[6px] border border-nav-border bg-chat-dropdown-background px-[2px] py-0 opacity-100 shadow-[0px_2px_5px_0px_rgba(0,0,0,0.05)] ${
+      isOpen ? "block animate-fadeInDropdown" : "hidden"
+  }`;
 
-  const iconClasses = `absolute bottom-[36.35%] left-[26.77%] right-[26.77%] top-[36.35%] bg-chat-dropdown-icon transition-transform duration-300 ease-in-out ${isOpen ? "rotate-180" : ""}`
-
-
+  const iconClasses = `absolute bottom-[36.35%] left-[26.77%] right-[26.77%] top-[36.35%] bg-chat-dropdown-icon transition-transform duration-300 ease-in-out ${
+      isOpen ? "rotate-180" : ""
+  }`
 
   return (
       <div className="flex items-center gap-3">
@@ -158,61 +153,35 @@ const CoffeePromptsDropdown: React.FC<CoffeePromptsDropdownProps> = ({
 
           <div className={menuClasses}>
             {isLoading || hasNoPrompts ? (
-                <LoadingSpinner
-                    message={"Loading suggested prompts, waiting for auction server response"}
-                />
-            ): pattern === "publish_subscribe_streaming" ? (
-                <div className="px-2 py-2">
-                  {buyerPrompts.map((item, index) => (
-                      <div
-                          key={`prompt-${index}`}
-                          className="mx-0.5 my-0.5 flex min-h-10 w-[calc(100%-4px)] cursor-pointer items-center rounded bg-chat-dropdown-background px-2 py-[6px] transition-colors duration-200 ease-in-out hover:bg-chat-background-hover"
-                          onClick={() => handleItemClick(item)}
-                      >
-                        <div className="w-full break-words font-cisco text-sm font-normal leading-5 tracking-[0%] text-chat-text">
-                          {item}
-                        </div>
-                      </div>
-                  ))}
-                </div>
+                <LoadingSpinner message="Loading suggested prompts, waiting for server response" />
             ) : (
-                <>
-                  <div className="px-2 py-2">
-                    <div className="mb-2 h-[36px] w-[265px] gap-2 bg-chat-dropdown-background pb-2 pl-[10px] pr-[10px] pt-2 font-inter text-sm font-normal leading-5 tracking-[0%] text-chat-text opacity-60">
-                      BUYER
-                    </div>
-                    {buyerPrompts.map((item, index) => (
-                        <div
-                            key={`buyer-${index}`}
-                            className="mx-0.5 my-0.5 flex min-h-10 w-[calc(100%-4px)] cursor-pointer items-center rounded bg-chat-dropdown-background px-2 py-[6px] transition-colors duration-200 ease-in-out hover:bg-chat-background-hover"
-                            onClick={() => handleItemClick(item)}
-                        >
-                          <div className="w-full break-words font-cisco text-sm font-normal leading-5 tracking-[0%] text-chat-text">
-                            {item}
+                categories.map((category, index) => (
+                    <div key={`category-${index}`} className="px-2 py-2">
+                      {(category.name === "buyer" || category.name === "purchaser") && (
+                          <div className="mb-2 h-[36px] w-[265px] gap-2 bg-chat-dropdown-background pb-2 pl-[10px] pr-[10px] pt-2 font-cisco text-sm font-normal leading-5 tracking-[0%] text-chat-text opacity-60">
+                            {category.name.toUpperCase()}
                           </div>
-                        </div>
-                    ))}
-                  </div>
-
-                  <div className="mx-2 my-2 border-t border-nav-border" />
-
-                  <div className="px-2 py-2">
-                    <div className="mb-2 h-[36px] w-[265px] gap-2 bg-chat-dropdown-background pb-2 pl-[10px] pr-[10px] pt-2 font-inter text-sm font-normal leading-5 tracking-[0%] text-chat-text opacity-60">
-                      PURCHASER
-                    </div>
-                    {purchaserPrompts.map((item, index) => (
-                        <div
-                            key={`purchaser-${index}`}
-                            className="mx-0.5 my-0.5 flex min-h-10 w-[calc(100%-4px)] cursor-pointer items-center rounded bg-chat-dropdown-background px-2 py-[6px] transition-colors duration-200 ease-in-out hover:bg-chat-background-hover"
-                            onClick={() => handleItemClick(item)}
-                        >
-                          <div className="w-full break-words font-cisco text-sm font-normal leading-5 tracking-[0%] text-chat-text">
-                            {item}
+                      )}
+                      {category.prompts.map((item, idx) => (
+                          <div
+                              key={`prompt-${index}-${idx}`}
+                              className={`flex mx-0.5 my-0.5 flex-col min-h-10 w-[calc(100%-4px)] cursor-pointer items-center bg-chat-dropdown-background px-2 py-[6px] transition-colors duration-200 ease-in-out hover:bg-chat-background-hover gap-y-1.5 ${
+                                  (category.name === "buyer" || category.name === "purchaser") ? "border-t border-gray-400 border-opacity-40" : ""
+                              }`}
+                              onClick={() => handleItemClick(item.prompt)}
+                          >
+                            <div className="w-full break-words font-cisco text-sm font-normal leading-5 tracking-[0%] text-chat-text">
+                              {item.prompt}
+                            </div>
+                            {item.description && (
+                                <div className="w-full break-words font-cisco text-xs font-normal leading-4 tracking-[0%] text-chat-text opacity-70">
+                                  {item.description}
+                                </div>
+                            )}
                           </div>
-                        </div>
-                    ))}
-                  </div>
-                </>
+                      ))}
+                    </div>
+                ))
             )}
           </div>
         </div>

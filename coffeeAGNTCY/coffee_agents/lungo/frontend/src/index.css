@@ -25,9 +25,7 @@
     --node-background-hover: #4a4f55;
     --node-background-active: #00142b;
 
-    --group-background: #23282e;
-
-    /*--group-background: rgba(55, 60, 66, 0.2);*/
+    --group-background: rgba(55, 60, 66, 0.2);
 
     --edge-label-background: #183056;
     --edge-label-background-active: #00142b;
@@ -107,6 +105,15 @@
     --chart-4: 43 74% 66%;
     --chart-5: 27 87% 67%;
     --radius: 0.5rem;
+
+    --info-bg: #23282e;
+    --info-border: #59616b;
+    --info-text: #fbfcfe;
+    --info-close: #fca5a5;
+    --info-close-hover: #fecaca;
+    --info-icon-border: #00a0d1;
+    --info-icon-bg: #1a2432;
+    --info-icon-bg-hover: #1f2a3a;
   }
 
   body[data-theme="light"] {
@@ -116,8 +123,7 @@
     --node-background-hover: #e3eafa;
     --node-background-active: #187adc;
 
-    /*--group-background: rgba(100, 150, 200, 0.1);*/
-    --group-background: #f5f8fd;
+    --group-background: rgba(100, 150, 200, 0.1);
     --edge-label-background: #d5dff7;
     --edge-label-background-active: #187adc;
     --edge-label-text: #3c4551;
@@ -170,6 +176,15 @@
     --modal-button: #00142b;
     --modal-button-text: #ffffff;
     --modal-button-hover: #0d274d;
+
+    --info-bg: #ffffff;
+    --info-border: #dbe0e5;
+    --info-text: #00142b;
+    --info-close: #b91c1c;
+    --info-close-hover: #ef4444;
+    --info-icon-border: #187adc;
+    --info-icon-bg: #ffffff;
+    --info-icon-bg-hover: #f5f8fd;
   }
 
   .theme-icon-github {
