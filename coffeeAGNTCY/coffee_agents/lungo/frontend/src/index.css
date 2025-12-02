@@ -25,7 +25,9 @@
     --node-background-hover: #4a4f55;
     --node-background-active: #00142b;
 
-    --group-background: rgba(55, 60, 66, 0.2);
+    --group-background: #23282e;
+
+    /*--group-background: rgba(55, 60, 66, 0.2);*/
 
     --edge-label-background: #183056;
     --edge-label-background-active: #00142b;
@@ -114,7 +116,8 @@
     --node-background-hover: #e3eafa;
     --node-background-active: #187adc;
 
-    --group-background: rgba(100, 150, 200, 0.1);
+    /*--group-background: rgba(100, 150, 200, 0.1);*/
+    --group-background: #f5f8fd;
     --edge-label-background: #d5dff7;
     --edge-label-background-active: #187adc;
     --edge-label-text: #3c4551;

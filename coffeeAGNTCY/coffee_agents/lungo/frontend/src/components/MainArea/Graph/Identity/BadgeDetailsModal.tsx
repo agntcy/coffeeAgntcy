@@ -77,7 +77,7 @@ const BadgeDetailsModal: React.FC<BadgeDetailsModalProps> = ({
         }}
       >
         <div
-          className="relative flex max-h-[36vh] w-[500px] flex-col items-start gap-4 rounded-md bg-node-background p-4 shadow-lg"
+          className="relative flex max-h-[40vh] w-[575px] flex-col items-start gap-4 rounded-md bg-node-background p-4 shadow-lg"
           onClick={handleModalClick}
           data-modal-content
         >
