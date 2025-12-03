@@ -1747,7 +1747,7 @@ wheels = [
 
 [[package]]
 name = "llama-index-core"
-version = "0.14.8"
+version = "0.14.9"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "aiohttp" },
@@ -1778,9 +1778,9 @@ dependencies = [
     { name = "typing-inspect" },
     { name = "wrapt" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/b0/ee/3f68cfac0eba7085aaeede5d179d31097d8351cbeae333859aabd0e20ed7/llama_index_core-0.14.8.tar.gz", hash = "sha256:8865a8546746b8c5f0684085ccfcf900aeb04862ebfe2077ad522374cf71e58e", size = 11579082, upload-time = "2025-11-10T22:17:57.865Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/d7/f4/967983165af0989b2a0510cfba6bba72a7f6830e9fd182b9225def1d5830/llama_index_core-0.14.9.tar.gz", hash = "sha256:31216da63940139b2a407a5832f59a38fc5ee4c6c59b0b69f4cf9816fd094909", size = 11581565, upload-time = "2025-12-02T21:30:25.503Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/27/61/bdc7d7e818f07ae8208786581608043c95a510f3f0906d7f6f53a69a1712/llama_index_core-0.14.8-py3-none-any.whl", hash = "sha256:e54046f09507aeb2fad51d8e9686dc0fa41c77d3925892e55c3756ca31f1c0c3", size = 11920547, upload-time = "2025-11-10T22:17:54.395Z" },
+    { url = "https://files.pythonhosted.org/packages/b7/8b/3e847322ee5027ba750595baaed47ff0bd925277abe49ff7bfee615ba822/llama_index_core-0.14.9-py3-none-any.whl", hash = "sha256:a0c734734a2b499266540b2d61006a6c5e7f7730234b4fe703e1dcde2d84a546", size = 11924645, upload-time = "2025-12-02T21:30:28.016Z" },
 ]
 
 [[package]]
@@ -1821,6 +1821,19 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/af/b9/a7a74de6d8aacf4be329329495983d78d96b1a6e69b6d9fcf4a233febd4b/llama_index_instrumentation-0.4.2.tar.gz", hash = "sha256:dc4957b64da0922060690e85a6be9698ac08e34e0f69e90b01364ddec4f3de7f", size = 46146, upload-time = "2025-10-13T20:44:48.85Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/40/54/df8063b0441242e250e03d1e31ebde5dffbe24e1af32b025cb1a4544150c/llama_index_instrumentation-0.4.2-py3-none-any.whl", hash = "sha256:b4989500e6454059ab3f3c4a193575d47ab1fadb730c2e8f2b962649ae88b70b", size = 15411, upload-time = "2025-10-13T20:44:47.685Z" },
+]
+
+[[package]]
+name = "llama-index-llms-litellm"
+version = "0.6.3"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "litellm" },
+    { name = "llama-index-core" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/1b/c1/c12cd1fe83418849b712025fae8861e37a151915653c1bf133946524aeed/llama_index_llms_litellm-0.6.3.tar.gz", hash = "sha256:30a7f156d57998fe29f007490ed7ea9cbd919259eacaf1e5445b2925b560eb7a", size = 10909, upload-time = "2025-09-08T20:47:00.068Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/59/2e/00492f54e99600c2bea13e8ab25614beff2462191f222cc913d81169e183/llama_index_llms_litellm-0.6.3-py3-none-any.whl", hash = "sha256:407b066462c894fc0cd9e506801fa1411cc070acdafe2d0ed347aa4a649db41c", size = 11134, upload-time = "2025-09-08T20:46:59.026Z" },
 ]
 
 [[package]]
@@ -1914,6 +1927,8 @@ dependencies = [
     { name = "langgraph" },
     { name = "langgraph-supervisor" },
     { name = "litellm", extra = ["proxy"] },
+    { name = "llama-index-core" },
+    { name = "llama-index-llms-litellm" },
     { name = "mcp", extra = ["cli"] },
     { name = "pydantic" },
     { name = "python-dotenv" },
@@ -1957,6 +1972,8 @@ requires-dist = [
     { name = "langgraph", specifier = ">=0.4.1" },
     { name = "langgraph-supervisor", specifier = ">=0.0.26" },
     { name = "litellm", extras = ["proxy"], specifier = "==1.75.3" },
+    { name = "llama-index-core", specifier = "==0.14.9" },
+    { name = "llama-index-llms-litellm", specifier = "==0.6.3" },
     { name = "mcp", extras = ["cli"], specifier = ">=1.10.0" },
     { name = "openai", marker = "extra == 'dev'", specifier = ">=1.86.0,<2.0" },
     { name = "pydantic", specifier = ">=2.11.4" },
