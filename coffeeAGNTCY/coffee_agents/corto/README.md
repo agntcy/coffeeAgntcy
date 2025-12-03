@@ -76,37 +76,81 @@ Before you begin, ensure the following tools are installed:
    cp .env.example .env
    ```
    
-   **Configure LLM Provider, Credentials and OTEL endpoint**
+**Configure LLM Model, Credentials, and OTEL Endpoint**
+
+Update your .env file with the provider model, credentials, and OTEL endpoint.
+
+CoffeeAGNTCY uses litellm to manage LLM connections. With litellm, you can seamlessly switch between different model providers using a unified configuration interface. Below are examples of environment variables for setting up various providers. For a comprehensive list of supported providers, see the [official litellm documentation](https://docs.litellm.ai/docs/providers).
+
+In CoffeeAGNTCY, the environment variable for specifying the model is always LLM_MODEL, regardless of the provider.
+
+   > ⚠️ **Note:** The `/agent/prompt/stream` endpoint requires an LLM that supports streaming. If your LLM provider does not support streaming, the streaming endpoint may fail.
 
    Then update `.env` with your LLM provider, credentials and OTEL endpoint. For example:
 
-   *OpenAI:*
-   
-   ```env
-    LLM_PROVIDER=openai
-    OPENAI_API_KEY="your_openai_api_key_here"
-    OPENAI_ENDPOINT=https://api.openai.com/v1 # Default OpenAI endpoint without proxy
-    OPENAI_MODEL_NAME=gpt-4o
-   ```
+---
 
-   *Azure OpenAI:*
-   
-   ```env
-    LLM_PROVIDER=azure-openai
-    AZURE_OPENAI_ENDPOINT=https://your-azure-resource.openai.azure.com/
-    AZURE_OPENAI_DEPLOYMENT=gpt-4-prod
-    AZURE_OPENAI_API_KEY=your_azure_api_key
-    AZURE_OPENAI_API_VERSION=2023-12-01-preview
-   
-   ```
+#### **OpenAI**
 
-   *OTEL:*
-   
-   ```env
-   OTLP_HTTP_ENDPOINT="http://localhost:4318"
-   ```
-   
-  **Optional: Configure Transport Layer**
+```env
+LLM_MODEL="openai/<model_of_choice>"
+OPENAI_API_KEY=<your_openai_api_key>
+```
+
+---
+
+#### **Azure OpenAI**
+
+```env
+LLM_MODEL="azure/<your_deployment_name>"
+AZURE_API_BASE=https://your-azure-resource.openai.azure.com/
+AZURE_API_KEY=<your_azure_api_key>
+AZURE_API_VERSION=<your_azure_api_version>
+```
+
+---
+
+#### **GROQ**
+
+```env
+LLM_MODEL="groq/<model_of_choice>"
+GROQ_API_KEY=<your_groq_api_key>
+```
+
+---
+
+#### **NVIDIA NIM**
+
+```env
+LLM_MODEL="nvidia_nim/<model_of_choice>"
+NVIDIA_NIM_API_KEY=<your_nvidia_api_key>
+NVIDIA_NIM_API_BASE=<your_nvidia_nim_endpoint_url>
+```
+
+---
+
+#### **Custom OAuth2 Application Exposing OpenAI**
+
+If you’re using a application secured with OAuth2 + refresh token that exposes an OpenAI endpoint:
+
+```env
+LLM_MODEL=oauth2/<your_llm_model_here>
+OAUTH2_CLIENT_ID=<your_client_id>
+OAUTH2_CLIENT_SECRET=<your_client_secret>
+OAUTH_TOKEN_URL="https://your-auth-server.com/token"
+OAUTH2_BASE_URL="https://your-openai-endpoint"
+OAUTH2_APP_KEY=<your_app_key> #optional
+```
+
+---
+
+#### **OTEL Configuration**
+
+```env
+OTLP_HTTP_ENDPOINT="http://localhost:4318"
+```
+
+**Optional: Configure Transport Layer**
 
    You can also set the transport protocol and server endpoint by adding the following optional variables:
 
@@ -120,13 +164,13 @@ Before you begin, ensure the following tools are installed:
 
    For a list of supported protocols and implementation details, see the [Agntcy App SDK README](https://github.com/agntcy/app-sdk). This SDK provides the underlying interfaces for building communication bridges and agent clients.
 
-  **Optional: Configure Logging Level**
-  
-	You can configure the logging level using the LOGGING_LEVEL environment variable. During development, it's recommended to use DEBUG for more detailed output. By default, the logging level is set to INFO.
-  
-  ```env
-  	LOGGING_LEVEL=debug
-  ```
+**Optional: Configure Logging Level**
+
+You can configure the logging level using the LOGGING_LEVEL environment variable. During development, it's recommended to use DEBUG for more detailed output. By default, the logging level is set to INFO.
+
+```env
+LOGGING_LEVEL=debug
+```
 
 **Enable Observability with Observe SDK**
 
@@ -199,7 +243,7 @@ uv run python farm/farm_server.py
 *Docker Compose*
 
 ```sh
-docker-compose up farm-server --build
+docker compose up farm-server --build
 ```
 
 The `farm_server` listens for requests from the `exchange` and processes them using LangGraph. It generates flavor profiles based on user inputs such as location and season.
@@ -217,7 +261,7 @@ uv run python exchange/main.py
 *Docker Compose*
 
 ```sh
-docker-compose up exchange-server --build
+docker compose up exchange-server --build
 ```
 
 This starts a FastAPI server that processes prompts, collecting them and relaying messages to the A2A server when they are relevant to coffee flavors or profiles.
@@ -248,7 +292,7 @@ npm run dev
 *Docker Compose:*
 
 ```sh
-docker-compose up ui --build
+docker compose up ui --build
 ```
 
 By default, the UI will be available at [http://localhost:3000/](http://localhost:3000/).
@@ -312,7 +356,7 @@ Details about AGNTCY's MCE can be found in the Telemetry Hub repository: [Metric
 1. Run the MCE Components
 
 ```sh
-docker-compose up metrics-computation-engine mce-api-layer
+docker compose up metrics-computation-engine mce-api-layer
 ```
 
 2. Get session IDs within a given time range.

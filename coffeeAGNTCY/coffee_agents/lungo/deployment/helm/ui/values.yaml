@@ -17,7 +17,6 @@ service:
 config:
   exchangeAppApiUrl: ""
   logisticsAppApiUrl: ""
-  helpdeskApiUrl: ""
 
 # You can use your own config here for service account
 serviceaccount:

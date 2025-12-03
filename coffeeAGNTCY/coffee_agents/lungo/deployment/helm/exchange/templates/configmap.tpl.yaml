@@ -4,16 +4,13 @@ metadata:
   name: {{ .Values.appName }}-configmap
   namespace: {{ .Release.Namespace }}
 data:
-  LLM_PROVIDER: "{{ .Values.config.llmProvider }}"
-  AZURE_OPENAI_ENDPOINT: "{{ .Values.config.azureOpenAiEndpoint }}"
-  AZURE_OPENAI_DEPLOYMENT: "{{ .Values.config.azureOpenAiDeployment }}"
-  AZURE_OPENAI_API_VERSION: "{{ .Values.config.azureOpenAiApiVersion }}"
-  AZURE_OPENAI_API_KEY: "{{ .Values.config.azureOpenAiApiKey }}"
-  OPENAI_API_KEY: "{{ .Values.config.openAiApiKey }}"
-  OPENAI_ENDPOINT: "{{ .Values.config.openAiEndpoint }}"
-  OPENAI_MODEL_NAME: "{{ .Values.config.openAiModelName }}"
+  AZURE_API_BASE: "{{ .Values.config.azureApiBase }}"
+  AZURE_API_VERSION: "{{ .Values.config.azureApiVersion }}"
+  LLM_MODEL: "{{ .Values.config.llmModel }}"
   TRANSPORT_SERVER_ENDPOINT: "{{ .Values.config.transportServerEndpoint }}"
   DEFAULT_MESSAGE_TRANSPORT: "{{ .Values.config.defaultMessageTransport }}"
   OTLP_HTTP_ENDPOINT: "{{ .Values.config.otlpHttpEndpoint }}"
   IDENTITY_API_SERVER_URL: "{{ .Values.config.identityApiServerUrl }}"
-  LLM_STREAMING: "{{ .Values.config.llmStreaming }}"
+  IDENTITY_API_KEY: "{{ .Values.config.identityApiKey }}"
+  IDENTITY_AUTH_ENABLED: "{{ .Values.config.identityAuthEnabled }}"
+  IDENTITY_SERVICE_API_KEY: "{{ .Values.config.identityServiceApiKey }}"

@@ -58,7 +58,7 @@ To enable A2A Group communication over SLIM, you need to run the SLIM message bu
 Additionally, run the observability stack that includes OTEL Collector, Grafana, and ClickHouse DB. You can do this by executing the following command:
 
 ```sh
-docker-compose up slim clickhouse-server otel-collector grafana
+docker compose up slim clickhouse-server otel-collector grafana
 ```
 
 **Step 2: Run the Group Conversation Stack**
@@ -66,10 +66,10 @@ docker-compose up slim clickhouse-server otel-collector grafana
 If you want to run the group conversation stack separately, you can do so by running the following command:
 
 ```sh
-docker-compose up logistic-farm logistic-supervisor logistic-shipper logistic-accountant
+docker compose up logistic-farm logistic-supervisor logistic-shipper logistic-accountant logistic-helpdesk
 ```
 
-This will start the supervisor, shipper, accountant, farm, and SLIM transport services.
+This will start the supervisor, shipper, accountant, farm, helpdesk,  and SLIM transport services.
 
 ---
 
@@ -99,6 +99,11 @@ Terminal 4:
 ```sh
 make logistic-farm
 ```
+Terminal 5:
+
+```sh
+make helpdesk
+```
 
 ## Testing the Group Conversation
 
@@ -120,32 +125,32 @@ Expected output:
 }
 ```
 
-## HelpDesk Agent (Updated 2025-10-15)
+## Logistic Supervisor Streaming Endpoint
 
-After all agents are running, you can stream the group chat events (server-sent events) to observe each state transition of an order.
+   > ⚠️ **Note:** The `/agent/prompt/stream` endpoint requires an LLM that supports streaming. If your LLM provider does not support streaming, the streaming endpoint may fail.
 
-Start the HelpDesk agent in a new terminal:
-```sh
-make helpdesk
+```bash
+curl -X POST http://127.0.0.1:9090/agent/prompt/stream \
+  -H "Content-Type: application/json" \
+  -d '{
+    "prompt": "I want to order 5000 lbs of coffee for 3.52 $ from the Tatooine farm."
+  }'
 ```
 
-Stream the chat log events (SSE):
-```sh
-curl -H "Accept: text/event-stream" "http://localhost:9094/agent/chat-logs"
-```
+Expected output:
 
-You will see a sequence of `data:` lines, each a JSON object representing one state transition (fields: `order_id`, `sender`, `receiver`, `message`, `state`, `timestamp`):
+```json
+{"response": {"order_id": "40821a72-31e1-4da0-9bc0-ff519bc57c78", "sender": "Supervisor", "receiver": "Tatooine Farm", "message": "Create an order 40821a72-31e1-4da0-9bc0-ff519bc57c78 with price 3.52 and quantity 5000.", "state": "RECEIVED_ORDER", "timestamp": "2025-11-06T15:55:22.686634+00:00"}}
 
-```
-data: {"order_id": "dbfd55776ce34f30bd75220ec70a5063", "sender": "Supervisor", "receiver": "Tatooine Farm", "message": "Create an order dbfd55776ce34f30bd75220ec70a5063 with price 3.5 and quantity 500.", "state": "RECEIVED_ORDER", "timestamp": "2025-10-15T21:31:30.230486+00:00"}
+{"response": {"order_id": "40821a72-31e1-4da0-9bc0-ff519bc57c78", "sender": "Tatooine Farm", "receiver": "Shipper", "message": "Order 40821a72-31e1-4da0-9bc0-ff519bc57c78 handed off for international transit. Prepared shipment and documentation.", "state": "HANDOVER_TO_SHIPPER", "timestamp": "2025-11-06T15:55:23.223314+00:00"}}
 
-data: {"order_id": "dbfd55776ce34f30bd75220ec70a5063", "sender": "Tatooine Farm", "receiver": "Shipper", "message": "Order dbfd55776ce34f30bd75220ec70a5063 handed off for international transit. Prepared shipment and documentation.", "state": "HANDOVER_TO_SHIPPER", "timestamp": "2025-10-15T21:31:30.280761+00:00"}
+{"response": {"order_id": "40821a72-31e1-4da0-9bc0-ff519bc57c78", "sender": "Shipper", "receiver": "Accountant", "message": "Customs cleared for order 40821a72-31e1-4da0-9bc0-ff519bc57c78; documents forwarded for payment processing. Customs docs validated and cleared.", "state": "CUSTOMS_CLEARANCE", "timestamp": "2025-11-06T15:55:24.228265+00:00"}}
 
-data: {"order_id": "dbfd55776ce34f30bd75220ec70a5063", "sender": "Shipper", "receiver": "Accountant", "message": "Customs cleared for order dbfd55776ce34f30bd75220ec70a5063; documents forwarded for payment processing. Customs docs validated and cleared.", "state": "CUSTOMS_CLEARANCE", "timestamp": "2025-10-15T21:31:30.305481+00:00"}
+{"response": {"order_id": "40821a72-31e1-4da0-9bc0-ff519bc57c78", "sender": "Accountant", "receiver": "Shipper", "message": "Payment confirmed on order 40821a72-31e1-4da0-9bc0-ff519bc57c78; preparing final delivery. Payment verified and captured.", "state": "PAYMENT_COMPLETE", "timestamp": "2025-11-06T15:55:25.233904+00:00"}}
 
-data: {"order_id": "dbfd55776ce34f30bd75220ec70a5063", "sender": "Accountant", "receiver": "Shipper", "message": "Payment confirmed for order dbfd55776ce34f30bd75220ec70a5063; preparing final delivery. Payment verified and captured.", "state": "PAYMENT_COMPLETE", "timestamp": "2025-10-15T21:31:30.479570+00:00"}
+{"response": {"order_id": "40821a72-31e1-4da0-9bc0-ff519bc57c78", "sender": "Shipper", "receiver": "Supervisor", "message": "Order 40821a72-31e1-4da0-9bc0-ff519bc57c78 delivered successfully; closing shipment cycle. Final handoff completed.", "state": "DELIVERED", "timestamp": "2025-11-06T15:55:26.241894+00:00"}}
 
-data: {"order_id": "dbfd55776ce34f30bd75220ec70a5063", "sender": "Shipper", "receiver": "Supervisor", "message": "Order dbfd55776ce34f30bd75220ec70a5063 delivered successfully; closing shipment cycle. Final handoff completed.", "state": "DELIVERED", "timestamp": "2025-10-15T21:31:31.430532+00:00"}
+{"response": "Order 40821a72-31e1-4da0-9bc0-ff519bc57c78 from Tatooine for 5000 units at $3.52 has been successfully delivered."}
 ```
 
 ## Group Communication UI

@@ -17,15 +17,7 @@ import { cn } from "@/utils/cn.ts"
 import { logger } from "@/utils/logger"
 import GroupCommunicationFeed from "./GroupCommunicationFeed"
 import AuctionStreamingFeed from "./AuctionStreamingFeed"
-
-interface SSEState {
-  isConnected: boolean
-  isConnecting: boolean
-  events: any[]
-  currentOrderId: string | null
-  error: string | null
-  clearEvents: () => void
-}
+import axios from "axios";
 
 interface ChatAreaProps {
   setMessages: React.Dispatch<React.SetStateAction<Message[]>>
@@ -51,7 +43,6 @@ interface ChatAreaProps {
   isAgentLoading?: boolean
   apiError: boolean
   chatRef?: React.RefObject<HTMLDivElement | null>
-  sseState?: SSEState
   auctionState?: any
 }
 
@@ -79,7 +70,6 @@ const ChatArea: React.FC<ChatAreaProps> = ({
   isAgentLoading,
   apiError,
   chatRef,
-  sseState,
   auctionState,
 }) => {
   const [content, setContent] = useState<string>("")
@@ -126,8 +116,16 @@ const ChatArea: React.FC<ChatAreaProps> = ({
         },
         onError: (error) => {
           logger.apiError("/agent/prompt", error)
+
+          // Extract error message from AxiosError or use fallback
+          let errorMessage = "Sorry, I encountered an error"
+          if (axios.isAxiosError(error) && error.response?.data?.detail) {
+            console.log("API error response:", error.response.data)
+            errorMessage = error.response.data.detail
+          }
+
           if (onApiResponse) {
-            onApiResponse("Sorry, I encountered an error.", true)
+            onApiResponse(errorMessage, true)
           }
         },
       },
@@ -146,7 +144,8 @@ const ChatArea: React.FC<ChatAreaProps> = ({
       onUserInput(content)
     }
 
-    if (showAuctionStreaming && onDropdownSelect) {
+    if ((showAuctionStreaming || showProgressTracker) && onDropdownSelect) {
+      setContent("")
       onDropdownSelect(content)
     } else {
       await processMessageWithQuery(content)
@@ -200,7 +199,6 @@ const ChatArea: React.FC<ChatAreaProps> = ({
                   prompt={currentUserMessage || ""}
                   executionKey={executionKey}
                   apiError={apiError}
-                  sseState={sseState}
                 />
               </div>
             )}

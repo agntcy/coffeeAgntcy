@@ -26,6 +26,7 @@ const LogisticsPromptsDropdown: React.FC<LogisticsPromptsDropdownProps> = ({
   useEffect(() => {
     const controller = new AbortController()
     const { signal } = controller
+    let isRequestComplete = false
 
     ;(async () => {
       try {
@@ -38,15 +39,23 @@ const LogisticsPromptsDropdown: React.FC<LogisticsPromptsDropdownProps> = ({
         if (Array.isArray(data)) {
           const prompts = data.filter((p): p is string => typeof p === "string")
           setLogisticsPrompts(prompts)
+          isRequestComplete = true
           return
         }
       } catch (err: unknown) {
+        if (err instanceof Error && err.name === "AbortError") {
+          return
+        }
         // eslint-disable-next-line no-console
         console.warn("Failed to load logistics prompts from API.", err)
       }
     })()
 
-    return () => controller.abort()
+    return () => {
+      if (!isRequestComplete) {
+        controller.abort()
+      }
+    }
   }, [])
 
   useEffect(() => {

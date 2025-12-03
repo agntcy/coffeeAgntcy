@@ -129,10 +129,12 @@ class ExchangeGraph:
         prompt = PromptTemplate(
             template="""You are a global coffee exchange agent connecting users to coffee farms in Brazil, Colombia, and Vietnam. 
             Based on the user's message, determine the appropriate action:
-            
+            - Respond with 'orders' if the message includes:
+                * Quantity specifications (e.g., "50 lb", "100 kg")
+                * Price or cost information (e.g., "for $X", "at Y cents per lb")
+                * Purchase intent keywords (e.g., "need", "want", "buy", "order", "purchase")
             - Respond with 'inventory_single_farm' if the user asks about a SPECIFIC farm (Brazil, Colombia, or Vietnam)
             - Respond with 'inventory_all_farms' if the user asks about inventory/yield from ALL farms or doesn't specify a farm
-            - Respond with 'orders' if the message is about checking coffee order status, placing a coffee order, or modifying an existing coffee order
             - Respond with 'none of the above' if the message is unrelated to coffee 'inventory' or 'orders'
             
             User message: {user_message}
@@ -172,7 +174,8 @@ class ExchangeGraph:
             content="""You are an AI assistant reflecting on a conversation to determine if the user's request has been fully addressed.
             Review the entire conversation history provided.
 
-            Decide whether the user's *original query* has been satisfied by the responses given so far.
+            Decide whether the user's *original query* has been satisfied by the responses given so far. If the prompt is related to order, please ensure the farm information is included in the final response.
+            For permission issues regarding creating a payment or list transaction, please include which operation failed in the final response.
             If the last message from the AI provides a conclusive answer to the user's request, or if the conversation has reached a natural conclusion, then set 'should_continue' to false.
             Do NOT continue if:
             - The last message from the AI is a final answer to the user's initial request.
@@ -186,7 +189,8 @@ class ExchangeGraph:
         )
 
         response = await self.reflection_llm.ainvoke(
-          [sys_msg_reflection] + state["messages"]
+          [sys_msg_reflection] + state["messages"],
+          
         )
         logging.info(f"Reflection agent response: {response}")
 
@@ -196,6 +200,25 @@ class ExchangeGraph:
         
         should_continue = response.should_continue and not is_duplicate_message
         next_node = NodeStates.SUPERVISOR if should_continue else END
+
+        if next_node == END and any(keyword in response.reason.lower() for keyword in ["auth", "access", "permission", "identity"]):
+
+            err_msg = "Authentication or authorization failed. Please check your credentials and try again."
+            for farm in ['colombia', 'brazil', 'vietnam']:
+                if farm in state["messages"][-1].content.lower():
+                    err_msg = f"The supervisor agent doesn't have permission to access the {farm.title()} farm. Please verify your access credentials and try again."
+                    break
+
+            for keyword in ["transaction", "payment"]:
+                if keyword in state["messages"][-1].content.lower():
+                    err_msg = f"Not authorized to perform '{keyword}' operation through the Payment MCP service. Please verify your farm credentials and try again."
+                    break
+
+            return {
+                "next_node": END,
+                "messages": [AIMessage(content=err_msg)],
+            }
+
         logging.info(f"Next node: {next_node}, Reason: {response.reason}")
 
         # Don't add messages to state, just return the next_node decision
@@ -357,6 +380,7 @@ class ExchangeGraph:
         tool_results_summary = []
         any_tool_failed = False # Flag to track if ANY tool call failed
 
+        auth_failure = ""
         if collected_tool_messages:
             for tool_msg in collected_tool_messages:
                 result_str = str(tool_msg.content) # Convert to string for keyword checking
@@ -369,6 +393,9 @@ class ExchangeGraph:
                     # Include tool name and ID for better context
                     tool_results_summary.append(f"FAILURE for '{tool_msg.name}' (ID: {tool_msg.tool_call_id}): The request could not be completed.")
                     logger.warning(f"Detected tool failure in orders node result: {result_str}")
+
+                    if "auth" in result_str.lower():
+                        auth_failure = result_str
                 else:
                     tool_results_summary.append(f"SUCCESS from tool '{tool_msg.name}' (ID: {tool_msg.tool_call_id}): {result_str}")
 
@@ -386,7 +413,7 @@ class ExchangeGraph:
             {tool_context}
 
             --- Instructions for your response ---
-            1.  **Process ALL tool results provided in the context.** This includes both successful and failed attempts.
+            1.  **Process ALL tool results provided in the context.** This includes both successful and failed attempts. If the context contains error messages related to authentication or authorization, please note them specifically.
             2.  **If ANY tool call result indicates a FAILURE:**
                 *   Acknowledge the failure to the user for the specific request(s) that failed.
                 *   Politely inform the user that the request could not be completed for those parts due to an issue (e.g., "The farm is currently unreachable" or "An error occurred").
@@ -426,9 +453,12 @@ class ExchangeGraph:
             )
 
             forced_error_message = (
-                f"I'm sorry, I was unable to complete your order request for all items. "
-                f"An issue occurred for some parts. Please try again later."
+                "I'm sorry, I was unable to complete your order request for all items. "
+                "An issue occurred for some parts. Please try again later."
             )
+
+            if auth_failure:
+                forced_error_message = f"{auth_failure} Please try again later."
 
             llm_response = AIMessage(
                 content=forced_error_message,

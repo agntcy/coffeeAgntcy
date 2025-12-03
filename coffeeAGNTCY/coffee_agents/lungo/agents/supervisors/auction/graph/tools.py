@@ -137,7 +137,7 @@ def verify_farm_identity(identity_service: IdentityService, farm_name: str):
         matched_app = next((app for app in all_apps.apps if app.name.lower() == farm_name.lower()), None)
 
         if not matched_app:
-            err_msg = f"Identity verification failed for farm {farm_name}: No matching app found, this farm does not have identity service enabled."
+            err_msg = f"No matching identity app service found, this farm does not have identity service enabled."
             logger.error(err_msg)
             raise A2AAgentError(err_msg)
 
@@ -146,11 +146,11 @@ def verify_farm_identity(identity_service: IdentityService, farm_name: str):
         success = identity_service.verify_badges(badge)
 
         if success.get("status") is not True:
-            raise A2AAgentError(f"Identity verification failed for farm {farm_name}: Failed to verify badge.")
+            raise A2AAgentError(f"Failed to verify badge.")
 
         logger.info(f"Verification successful for farm '{farm_name}'.")
     except Exception as e:
-        raise A2AAgentError(f"Identity verification failed for farm '{farm_name}'. Details: {e}") # Re-raise as our custom exception
+        raise A2AAgentError(e) # Re-raise as our custom exception
 
 # node utility for streaming
 async def get_farm_yield_inventory(prompt: str, farm: str) -> str:
@@ -336,6 +336,7 @@ async def get_all_farms_yield_inventory_streaming(prompt: str):
 
         # Track which farms responded
         responded_farms = set()
+        errors = []
         
         # Process responses as they arrive
         async for response in response_stream:
@@ -346,9 +347,13 @@ async def get_all_farms_yield_inventory_streaming(prompt: str):
                     if hasattr(response.root.result, "metadata"):
                         farm_name = response.root.result.metadata.get("name", "Unknown Farm")
 
-                    responded_farms.add(farm_name)
-                    logger.info(f"Received response from {farm_name} ({len(responded_farms)}/{len(recipients)})")
-                    yield f"{farm_name} : {part.text.strip()}\n"
+                    if farm_name == "None":
+                        # received error from farm agent
+                        errors.append(part.text.strip())
+                    else:
+                        responded_farms.add(farm_name)
+                        logger.info(f"Received response from {farm_name} ({len(responded_farms)}/{len(recipients)})")
+                        yield f"{farm_name} : {part.text.strip()}\n"
                 elif response.root.error:
                     err_msg = f"A2A error from farm: {response.root.error.message}"
                     logger.error(err_msg)
@@ -370,7 +375,14 @@ async def get_all_farms_yield_inventory_streaming(prompt: str):
             if missing_farms:
                 missing_list = ", ".join(sorted(missing_farms))
                 logger.warning(f"Broadcast completed with partial responses: {len(responded_farms)}/{len(recipients)} farms responded. Missing: {missing_list}")
-                yield f"Error: Timeout - No response from {missing_list}. These farms may be unavailable or slow to respond.\n"
+
+                response = f"No response from {missing_list}. These farms may be unavailable or slow to respond."
+                if len(errors) != 0:
+                    readable_errors = "\n".join(errors)
+                    response += f" Errors encountered from farms:\n{readable_errors}\n"
+
+                yield response
+
 
     except Exception as e:
         error_msg = f"Failed to communicate with farms during broadcast: {e}"
@@ -419,8 +431,7 @@ async def create_order(farm: str, quantity: int, price: float) -> str:
         verify_farm_identity(identity_service, card.name)
     except Exception as e:
         # log the error and re-raise the exception
-        logger.error(e)
-        raise
+        raise A2AAgentError(f"Identity verification failed for farm '{farm}'. Details: {e}")
 
     try:
         client = await factory.create_client(

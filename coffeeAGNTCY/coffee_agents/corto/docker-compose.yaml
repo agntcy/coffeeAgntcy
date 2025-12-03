@@ -5,21 +5,14 @@ services:
       dockerfile: coffeeAGNTCY/coffee_agents/corto/docker/Dockerfile.farm
     image: ghcr.io/agntcy/coffee-agntcy/corto-farm:latest
     container_name: farm-server
+    env_file:
+      - .env
     environment:
       - FARM_AGENT_HOST=farm-server
       - FARM_AGENT_PORT=9999
-      - AZURE_OPENAI_ENDPOINT=${AZURE_OPENAI_ENDPOINT:-}
-      - AZURE_OPENAI_DEPLOYMENT=${AZURE_OPENAI_DEPLOYMENT:-}
-      - AZURE_OPENAI_API_KEY=${AZURE_OPENAI_API_KEY:-}
-      - AZURE_OPENAI_API_VERSION=${AZURE_OPENAI_API_VERSION:-}
-      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
-      - OPENAI_ENDPOINT=${OPENAI_ENDPOINT:-}
-      - OPENAI_MODEL_NAME=${OPENAI_MODEL_NAME:-}
-      - LLM_PROVIDER=${LLM_PROVIDER}
       - DEFAULT_MESSAGE_TRANSPORT=${DEFAULT_MESSAGE_TRANSPORT:-SLIM}
       - TRANSPORT_SERVER_ENDPOINT=${TRANSPORT_SERVER_ENDPOINT:-http://slim:46357}
       - OTLP_HTTP_ENDPOINT=${OTLP_HTTP_ENDPOINT:-http://otel-collector:4318}
-      - LLM_STREAMING=${LLM_STREAMING:-}
     ports:
       - "9999:9999"
 
@@ -51,21 +44,14 @@ services:
       dockerfile: coffeeAGNTCY/coffee_agents/corto/docker/Dockerfile.exchange
     image: ghcr.io/agntcy/coffee-agntcy/corto-exchange:latest
     container_name: exchange-server-corto
+    env_file:
+      - .env
     environment:
       - FARM_AGENT_HOST=farm-server
       - FARM_AGENT_PORT=9999
-      - AZURE_OPENAI_ENDPOINT=${AZURE_OPENAI_ENDPOINT:-}
-      - AZURE_OPENAI_DEPLOYMENT=${AZURE_OPENAI_DEPLOYMENT:-}
-      - AZURE_OPENAI_API_KEY=${AZURE_OPENAI_API_KEY:-}
-      - AZURE_OPENAI_API_VERSION=${AZURE_OPENAI_API_VERSION:-}
-      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
-      - OPENAI_ENDPOINT=${OPENAI_ENDPOINT:-}
-      - OPENAI_MODEL_NAME=${OPENAI_MODEL_NAME:-}
-      - LLM_PROVIDER=${LLM_PROVIDER}
       - DEFAULT_MESSAGE_TRANSPORT=${DEFAULT_MESSAGE_TRANSPORT:-SLIM}
       - TRANSPORT_SERVER_ENDPOINT=${TRANSPORT_SERVER_ENDPOINT:-http://slim:46357}
       - OTLP_HTTP_ENDPOINT=${OTLP_HTTP_ENDPOINT:-http://otel-collector:4318}
-      - LLM_STREAMING=${LLM_STREAMING:-}
     depends_on:
       - farm-server
     ports:

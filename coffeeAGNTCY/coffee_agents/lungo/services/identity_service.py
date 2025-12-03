@@ -2,12 +2,13 @@
 # SPDX-License-Identifier: Apache-2.0
 
 from abc import ABC, abstractmethod
+from typing import Any
 from services.models import IdentityServiceApps, Badge
 
 class IdentityService(ABC):
   @abstractmethod
   def get_all_apps(self) -> IdentityServiceApps:
-    """Fetch all apps."""
+    """Fetch all apps registered with the identity service."""
     pass
 
   @abstractmethod
@@ -17,10 +18,15 @@ class IdentityService(ABC):
 
   @abstractmethod
   def verify_badges(self, badge: Badge):
-    """Verify the provided badge data."""
+    """Verify the provided badge data with the identity service."""
     pass
 
   @abstractmethod
   async def create_badge(self, agent_url: str, api_key: str):
-    """Create a badge."""
+    """Discover an agent/service and request badge issuance."""
+    pass
+
+  @abstractmethod
+  async def list_policies(self) -> Any:
+    """List all policies from the identity service."""
     pass

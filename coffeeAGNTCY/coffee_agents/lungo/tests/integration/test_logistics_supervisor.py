@@ -42,7 +42,20 @@ TRANSPORT_MATRIX = [
 ]
 
 @pytest.mark.parametrize("transport_config", TRANSPORT_MATRIX, indirect=True)
-class TestLogisticsFlows:
+class TestLogisticsHealth:
+    @pytest.mark.agents(["shipper"])
+    @pytest.mark.usefixtures("agents_up")
+
+    def test_logistics_supervisor_health(self, logistics_supervisor_client, transport_config):
+        logger.info(f"\n---Test: test_logistics_supervisor_health with transport {transport_config}---")
+        health_resp = logistics_supervisor_client.get("/v1/health")
+        assert health_resp.status_code == 200
+        health_data = health_resp.json()
+        assert health_data.get("status") == "alive", "Logistics supervisor health check failed"
+
+
+@pytest.mark.parametrize("transport_config", TRANSPORT_MATRIX, indirect=True)
+class TestLogisticsSupervisorFlows:
     @pytest.mark.agents(["logistics-farm", "accountant", "shipper"])
     @pytest.mark.usefixtures("agents_up")
     @pytest.mark.parametrize(
@@ -60,3 +73,31 @@ class TestLogisticsFlows:
         data = resp.json()
         assert "response" in data
         assert "successfully delivered" in data["response"], "Expected successful delivery message in response"
+
+    @pytest.mark.agents(["logistics-farm", "accountant", "shipper"])
+    @pytest.mark.usefixtures("agents_up")
+    def test_logistics_order_streaming(self, logistics_supervisor_client, transport_config):
+        logger.info(f"\n---Test: test_logistics_order_streaming with transport {transport_config}---")
+        
+        prompt = "I want to order 5000 lbs of coffee for 3.52 $ from the Tatooine farm."
+        
+        with logistics_supervisor_client.stream(
+            "POST",
+            "/agent/prompt/stream",
+            json={"prompt": prompt}
+        ) as resp:
+            assert resp.status_code == 200
+            
+            events = []
+            for line in resp.iter_lines():
+                if line:
+                    data = json.loads(line)
+                    assert "response" in data
+                    events.append(data["response"])
+            
+            # Should have multiple events (at least 6)
+            assert len(events) >= 6, f"Expected at least 6 events, got {len(events)}"
+            
+            # Final message should contain delivery confirmation
+            final_message = str(events[-1])
+            assert "successfully delivered" in final_message.lower()

@@ -6,12 +6,7 @@
 import React from "react"
 import { Position, getBezierPath, useStore, Node } from "@xyflow/react"
 import CustomEdgeLabel from "./CustomEdgeLabel"
-
-interface BranchingEdgeData {
-  active?: boolean
-  label?: string
-  branches?: string[]
-}
+import { BranchingEdgeData } from "./types"
 
 interface BranchingEdgeProps {
   id: string

@@ -12,27 +12,27 @@ image:
   pullPolicy: Always
   pullSecret:
 
+
+
 service:
   port: 8000
 
 config:
-  azureOpenAiEndpoint:
-  azureOpenAiDeployment:
-  azureOpenAiApiVersion:
-  llmProvider:
-  transportServerEndpoint:
-  defaultMessageTransport:
-  otlpHttpEndpoint:
-  identityApiServerUrl:
-  # azureOpenAiEndpoint: "${AZURE_OPENAI_ENDPOINT}"
-  # azureOpenAiDeployment: "${AZURE_OPENAI_DEPLOYMENT}"
-  # azureOpenAiApiVersion: "${AZURE_OPENAI_API_VERSION}"
-  # llmProvider: "${LLM_PROVIDER}"
-  # transportServerEndpoint: "nats://nats:4222"
-  # defaultMessageTransport: "NATS"
-  # otlpHttpEndpoint: "http://opentelemetry-collector:4318"
-  # identityApiServerUrl: "https://api.agent-identity.outshift.com"
-#  llmStreaming: False
+  azureApiBase: ""
+  azureApiVersion: ""
+  llmModel: ""
+  transportServerEndpoint: ""
+  defaultMessageTransport: ""
+  otlpHttpEndpoint: ""
+  #  llmStreaming: False
+
+  # Identity SaaS Org-Level API
+  identityApiServerUrl: ""
+  identityApiKey: ""
+  # Identity TBAC Configuration
+  identityServiceApiKey: ""
+  identityAuthEnabled: "false"
+
 
 # You can use your own config here for service account
 # serviceaccount:

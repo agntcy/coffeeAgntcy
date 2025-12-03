@@ -12,7 +12,16 @@ import { ChevronDown, ChevronUp } from "lucide-react"
 
 import AgentIcon from "@/assets/Coffee_Icon.svg"
 import CheckCircle from "@/assets/CheckCircle.png"
-import { GroupCommunicationFeedProps } from "@/types/streaming"
+import {
+  GroupCommunicationFeedProps,
+  LogisticsStreamStep,
+} from "@/types/streaming"
+import {
+  useGroupEvents,
+  useGroupError,
+  useGroupCurrentOrderId,
+  useGroupIsComplete,
+} from "@/stores/groupStreamingStore"
 
 const buildSenderToNodeMap = (graphConfig: any): Record<string, string> => {
   if (!graphConfig?.nodes) return {}
@@ -80,24 +89,25 @@ const GroupCommunicationFeed: React.FC<GroupCommunicationFeedProps> = ({
   prompt,
   onSenderHighlight,
   graphConfig,
-  sseState,
   executionKey,
   apiError,
 }) => {
-  const [state, setState] = useState({
-    isExpanded: true,
-    isComplete: false,
-  })
+  const groupEvents = useGroupEvents()
+  const groupError = useGroupError()
+  const groupCurrentOrderId = useGroupCurrentOrderId()
+  const storeIsComplete = useGroupIsComplete()
+
+  const [isExpanded, setIsExpanded] = useState(true)
 
   const lastProcessedEventRef = useRef<string | null>(null)
   const highlightTimeoutsRef = useRef<number[]>([])
 
   const handleExpand = useCallback(() => {
-    setState((prev) => ({ ...prev, isExpanded: true }))
+    setIsExpanded(true)
   }, [])
 
   const handleCollapse = useCallback(() => {
-    setState((prev) => ({ ...prev, isExpanded: false }))
+    setIsExpanded(false)
   }, [])
 
   useEffect(() => {
@@ -105,11 +115,7 @@ const GroupCommunicationFeed: React.FC<GroupCommunicationFeedProps> = ({
       highlightTimeoutsRef.current.forEach(clearTimeout)
       highlightTimeoutsRef.current = []
 
-      setState((prev) => ({
-        ...prev,
-        isComplete: false,
-        isExpanded: true,
-      }))
+      setIsExpanded(true)
       lastProcessedEventRef.current = null
     }
   }, [prompt])
@@ -119,10 +125,7 @@ const GroupCommunicationFeed: React.FC<GroupCommunicationFeedProps> = ({
       highlightTimeoutsRef.current.forEach(clearTimeout)
       highlightTimeoutsRef.current = []
 
-      setState({
-        isComplete: false,
-        isExpanded: true,
-      })
+      setIsExpanded(true)
       lastProcessedEventRef.current = null
     }
   }, [executionKey])
@@ -134,9 +137,9 @@ const GroupCommunicationFeed: React.FC<GroupCommunicationFeedProps> = ({
   }, [])
 
   useEffect(() => {
-    if (!sseState?.events.length) return
+    if (!groupEvents.length) return
 
-    const lastEvent = sseState.events[sseState.events.length - 1]
+    const lastEvent = groupEvents[groupEvents.length - 1]
     const eventKey = `${lastEvent.order_id}-${lastEvent.timestamp}-${lastEvent.sender}-${lastEvent.receiver}`
 
     if (lastProcessedEventRef.current === eventKey) {
@@ -178,30 +181,17 @@ const GroupCommunicationFeed: React.FC<GroupCommunicationFeedProps> = ({
 
     const isFinalStep = lastEvent.state === "DELIVERED"
 
-    if (isFinalStep && !state.isComplete) {
-      setState((prev) => ({
-        ...prev,
-        isComplete: true,
-      }))
-
-      if (onComplete) {
-        onComplete()
-      }
+    if (isFinalStep && onComplete) {
+      onComplete()
     }
-  }, [
-    sseState?.events,
-    onSenderHighlight,
-    graphConfig,
-    state.isComplete,
-    onComplete,
-  ])
+  }, [groupEvents, onSenderHighlight, graphConfig, onComplete])
 
   if (!isVisible) {
     return null
   }
 
-  const events = sseState?.events || []
-  const errorMessage = sseState?.error || null
+  const events = groupEvents || []
+  const errorMessage = groupError || null
 
   if ((!prompt && events.length === 0) || apiError) {
     return null
@@ -218,9 +208,9 @@ const GroupCommunicationFeed: React.FC<GroupCommunicationFeedProps> = ({
           <div className="whitespace-pre-wrap break-words font-cisco text-sm font-normal leading-5 text-chat-text">
             Connection error: {errorMessage}
           </div>
-        ) : state.isComplete && sseState?.currentOrderId ? (
+        ) : storeIsComplete && groupCurrentOrderId ? (
           <div className="whitespace-pre-wrap break-words font-cisco text-sm font-normal leading-5 text-chat-text">
-            Order {sseState.currentOrderId}
+            Order {groupCurrentOrderId}
           </div>
         ) : prompt && !apiError ? (
           <div className="whitespace-pre-wrap break-words font-cisco text-sm font-normal leading-5 text-chat-text">
@@ -228,7 +218,7 @@ const GroupCommunicationFeed: React.FC<GroupCommunicationFeedProps> = ({
           </div>
         ) : null}
 
-        {prompt && !state.isComplete && !apiError && events.length === 0 && (
+        {prompt && !storeIsComplete && !apiError && events.length === 0 && (
           <div className="mt-3 flex w-full flex-row items-start gap-1">
             <div className="mt-1 flex items-center">
               <div className="h-4 w-4 animate-spin rounded-full border-2 border-b-transparent border-l-transparent border-r-accent-primary border-t-accent-primary" />
@@ -237,7 +227,7 @@ const GroupCommunicationFeed: React.FC<GroupCommunicationFeedProps> = ({
           </div>
         )}
 
-        {state.isComplete && !state.isExpanded && (
+        {storeIsComplete && !isExpanded && (
           <div
             className="mt-1 flex w-full cursor-pointer flex-row items-center gap-1 hover:opacity-75"
             onClick={handleExpand}
@@ -253,10 +243,10 @@ const GroupCommunicationFeed: React.FC<GroupCommunicationFeedProps> = ({
             </div>
           </div>
         )}
-        {state.isExpanded && (
+        {isExpanded && (
           <>
             <div className="mt-3 flex w-full flex-col items-start gap-3">
-              {events.map((step, index) => {
+              {events.map((step: LogisticsStreamStep, index: number) => {
                 return (
                   <div
                     key={`${step.order_id}-${index}`}
@@ -287,7 +277,7 @@ const GroupCommunicationFeed: React.FC<GroupCommunicationFeedProps> = ({
                 )
               })}
 
-              {events.length > 0 && !state.isComplete && (
+              {events.length > 0 && !storeIsComplete && (
                 <div className="flex w-full flex-row items-start gap-1">
                   <div className="mt-1 flex items-center">
                     <div className="h-4 w-4 animate-spin rounded-full border-2 border-b-transparent border-l-transparent border-r-accent-primary border-t-accent-primary" />
@@ -297,7 +287,7 @@ const GroupCommunicationFeed: React.FC<GroupCommunicationFeedProps> = ({
               )}
             </div>
 
-            {state.isComplete && (
+            {storeIsComplete && (
               <div
                 className="flex w-full cursor-pointer flex-row items-center gap-1 pt-2 hover:opacity-75"
                 onClick={handleCollapse}

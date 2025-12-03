@@ -5,22 +5,15 @@ services:
       dockerfile: coffeeAGNTCY/coffee_agents/lungo/docker/Dockerfile.brazil-farm
     image: ghcr.io/agntcy/coffee-agntcy/brazil-farm:latest
     container_name: brazil-farm-server
+    env_file:
+      - .env
     environment:
       - FARM_AGENT_HOST=brazil-farm-server
       - FARM_AGENT_PORT=9999
-      - AZURE_OPENAI_ENDPOINT=${AZURE_OPENAI_ENDPOINT:-}
-      - AZURE_OPENAI_DEPLOYMENT=${AZURE_OPENAI_DEPLOYMENT:-}
-      - AZURE_OPENAI_API_KEY=${AZURE_OPENAI_API_KEY:-}
-      - AZURE_OPENAI_API_VERSION=${AZURE_OPENAI_API_VERSION:-}
-      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
-      - OPENAI_ENDPOINT=${OPENAI_ENDPOINT:-}
-      - OPENAI_MODEL_NAME=${OPENAI_MODEL_NAME:-}
-      - LLM_PROVIDER=${LLM_PROVIDER}
       - DEFAULT_MESSAGE_TRANSPORT=${DEFAULT_MESSAGE_TRANSPORT:-NATS}
       - TRANSPORT_SERVER_ENDPOINT=${TRANSPORT_SERVER_ENDPOINT:-nats://nats:4222}
       - OTLP_HTTP_ENDPOINT=${OTLP_HTTP_ENDPOINT:-http://otel-collector:4318}
       - ENABLE_HTTP=true
-      - LLM_STREAMING=${LLM_STREAMING:-}
     ports:
       - "9999:9999"
   colombia-farm-server:
@@ -29,22 +22,18 @@ services:
       dockerfile: coffeeAGNTCY/coffee_agents/lungo/docker/Dockerfile.colombia-farm
     image: ghcr.io/agntcy/coffee-agntcy/colombia-farm:latest
     container_name: colombia-farm-server
+    env_file:
+      - .env
     environment:
       - FARM_AGENT_HOST=colombia-farm-server
       - FARM_AGENT_PORT=9998
-      - AZURE_OPENAI_ENDPOINT=${AZURE_OPENAI_ENDPOINT:-}
-      - AZURE_OPENAI_DEPLOYMENT=${AZURE_OPENAI_DEPLOYMENT:-}
-      - AZURE_OPENAI_API_KEY=${AZURE_OPENAI_API_KEY:-}
-      - AZURE_OPENAI_API_VERSION=${AZURE_OPENAI_API_VERSION:-}
-      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
-      - OPENAI_ENDPOINT=${OPENAI_ENDPOINT:-}
-      - OPENAI_MODEL_NAME=${OPENAI_MODEL_NAME:-}
-      - LLM_PROVIDER=${LLM_PROVIDER}
       - DEFAULT_MESSAGE_TRANSPORT=${DEFAULT_MESSAGE_TRANSPORT:-NATS}
       - TRANSPORT_SERVER_ENDPOINT=${TRANSPORT_SERVER_ENDPOINT:-nats://nats:4222}
       - OTLP_HTTP_ENDPOINT=${OTLP_HTTP_ENDPOINT:-http://otel-collector:4318}
       - ENABLE_HTTP=true
-      - LLM_STREAMING=${LLM_STREAMING:-}
+      - IDENTITY_AUTH_ENABLED=${IDENTITY_AUTH_ENABLED:-} # Disabled by default
+      - IDENTITY_SERVICE_API_KEY=${IDENTITY_SERVICE_API_KEY_COLOMBIA_FARM:-dummy_api_key}
+      - MCP_PAYMENT_SERVICE_URL=${MCP_PAYMENT_SERVICE_URL:-http://payment-mcp-server:8081/mcp}
     ports:
       - "9998:9998"
   vietnam-farm-server:
@@ -53,22 +42,18 @@ services:
       dockerfile: coffeeAGNTCY/coffee_agents/lungo/docker/Dockerfile.vietnam-farm
     image: ghcr.io/agntcy/coffee-agntcy/vietnam-farm:latest
     container_name: vietnam-farm-server
+    env_file:
+      - .env
     environment:
       - FARM_AGENT_HOST=vietnam-farm-server
       - FARM_AGENT_PORT=9997
-      - AZURE_OPENAI_ENDPOINT=${AZURE_OPENAI_ENDPOINT:-}
-      - AZURE_OPENAI_DEPLOYMENT=${AZURE_OPENAI_DEPLOYMENT:-}
-      - AZURE_OPENAI_API_KEY=${AZURE_OPENAI_API_KEY:-}
-      - AZURE_OPENAI_API_VERSION=${AZURE_OPENAI_API_VERSION:-}
-      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
-      - OPENAI_ENDPOINT=${OPENAI_ENDPOINT:-}
-      - OPENAI_MODEL_NAME=${OPENAI_MODEL_NAME:-}
-      - LLM_PROVIDER=${LLM_PROVIDER}
       - DEFAULT_MESSAGE_TRANSPORT=${DEFAULT_MESSAGE_TRANSPORT:-NATS}
       - TRANSPORT_SERVER_ENDPOINT=${TRANSPORT_SERVER_ENDPOINT:-nats://nats:4222}
       - OTLP_HTTP_ENDPOINT=${OTLP_HTTP_ENDPOINT:-http://otel-collector:4318}
       - ENABLE_HTTP=true
-      - LLM_STREAMING=${LLM_STREAMING:-}
+      - IDENTITY_AUTH_ENABLED=${IDENTITY_AUTH_ENABLED:-} # Disabled by default
+      - IDENTITY_SERVICE_API_KEY=${IDENTITY_SERVICE_API_KEY_VIETNAM_FARM:-dummy_api_key}
+      - MCP_PAYMENT_SERVICE_URL=${MCP_PAYMENT_SERVICE_URL:-http://payment-mcp-server:8081/mcp}
     ports:
       - "9997:9997"
   nats:
@@ -102,21 +87,16 @@ services:
     volumes:
       # Mount local git metadata so /build/info can derive latest tag/date in dev
       - ../../../.git:/app/.git:ro
+    env_file:
+      - .env
     environment:
       - FARM_AGENT_HOST=farm-server
       - FARM_AGENT_PORT=9999
-      - AZURE_OPENAI_ENDPOINT=${AZURE_OPENAI_ENDPOINT:-}
-      - AZURE_OPENAI_DEPLOYMENT=${AZURE_OPENAI_DEPLOYMENT:-}
-      - AZURE_OPENAI_API_KEY=${AZURE_OPENAI_API_KEY:-}
-      - AZURE_OPENAI_API_VERSION=${AZURE_OPENAI_API_VERSION:-}
-      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
-      - OPENAI_ENDPOINT=${OPENAI_ENDPOINT:-}
-      - OPENAI_MODEL_NAME=${OPENAI_MODEL_NAME:-}
-      - LLM_PROVIDER=${LLM_PROVIDER}
       - DEFAULT_MESSAGE_TRANSPORT=${DEFAULT_MESSAGE_TRANSPORT:-NATS}
       - TRANSPORT_SERVER_ENDPOINT=${TRANSPORT_SERVER_ENDPOINT:-nats://nats:4222}
       - OTLP_HTTP_ENDPOINT=${OTLP_HTTP_ENDPOINT:-http://otel-collector:4318}
-      - LLM_STREAMING=${LLM_STREAMING:-}
+      - IDENTITY_AUTH_ENABLED=${IDENTITY_AUTH_ENABLED:-} # Disabled by default
+      - IDENTITY_SERVICE_API_KEY=${IDENTITY_SERVICE_API_KEY_AUCTION_SUPERVISOR:-dummy_api_key}
     ports:
       - "8000:8000"
 
@@ -129,7 +109,6 @@ services:
     environment:
       - VITE_EXCHANGE_APP_API_URL=http://127.0.0.1:8000
       - VITE_LOGISTICS_APP_API_URL=http://127.0.0.1:9090
-      - VITE_HELPDESK_API_URL=http://127.0.0.1:9094
     depends_on:
       - exchange-server
     ports:
@@ -145,6 +124,21 @@ services:
       - DEFAULT_MESSAGE_TRANSPORT=${DEFAULT_MESSAGE_TRANSPORT:-NATS}
       - TRANSPORT_SERVER_ENDPOINT=${TRANSPORT_SERVER_ENDPOINT:-nats://nats:4222}
       - OTLP_HTTP_ENDPOINT=${OTLP_HTTP_ENDPOINT:-http://otel-collector:4318}
+
+  payment-mcp-server:
+    build:
+      context: ../../..
+      dockerfile: coffeeAGNTCY/coffee_agents/lungo/docker/Dockerfile.payment-mcp
+    image: ghcr.io/agntcy/coffee-agntcy/payment-mcp-server:latest
+    container_name: payment-mcp-server
+    ports:
+      - "8081:8081"
+    environment:
+      - DEFAULT_MESSAGE_TRANSPORT=${DEFAULT_MESSAGE_TRANSPORT:-NATS}
+      - TRANSPORT_SERVER_ENDPOINT=${TRANSPORT_SERVER_ENDPOINT:-nats://nats:4222}
+      - OTLP_HTTP_ENDPOINT=${OTLP_HTTP_ENDPOINT:-http://otel-collector:4318}
+      - IDENTITY_AUTH_ENABLED=${IDENTITY_AUTH_ENABLED:-} # Disabled by default
+      - IDENTITY_SERVICE_API_KEY=${IDENTITY_SERVICE_API_KEY_PAYMENT_MCP:-dummy_api_key}
 
   clickhouse-server:
     image: clickhouse/clickhouse-server
@@ -258,19 +252,12 @@ services:
       context: ../../..
       dockerfile: coffeeAGNTCY/coffee_agents/lungo/docker/Dockerfile.logistic-supervisor
     image: ghcr.io/agntcy/coffee-agntcy/logistic-supervisor:latest
+    env_file:
+      - .env
     environment:
-      - AZURE_OPENAI_ENDPOINT=${AZURE_OPENAI_ENDPOINT:-}
-      - AZURE_OPENAI_DEPLOYMENT=${AZURE_OPENAI_DEPLOYMENT:-}
-      - AZURE_OPENAI_API_KEY=${AZURE_OPENAI_API_KEY:-}
-      - AZURE_OPENAI_API_VERSION=${AZURE_OPENAI_API_VERSION:-}
-      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
-      - OPENAI_ENDPOINT=${OPENAI_ENDPOINT:-}
-      - OPENAI_MODEL_NAME=${OPENAI_MODEL_NAME:-}
-      - LLM_PROVIDER=${LLM_PROVIDER}
       - DEFAULT_MESSAGE_TRANSPORT=SLIM # Do not change. SLIM is required for group conversation.
       - TRANSPORT_SERVER_ENDPOINT=http://slim:46357
       - OTLP_HTTP_ENDPOINT=${OTLP_HTTP_ENDPOINT:-http://otel-collector:4318}
-      - LLM_STREAMING=${LLM_STREAMING:-}
     ports:
       - "9090:9090"
 
@@ -304,9 +291,9 @@ services:
       - "8001:8000"
     environment:
       - API_BASE_URL=http://mce-api-layer:8080
-      - LLM_BASE_MODEL_URL=${AZURE_OPENAI_ENDPOINT:-${OPENAI_ENDPOINT}}
-      - LLM_MODEL_NAME=${AZURE_OPENAI_DEPLOYMENT:-${OPENAI_MODEL_NAME}}
-      - LLM_API_KEY=${AZURE_OPENAI_API_KEY:-${OPENAI_API_KEY}}
+      - LLM_BASE_MODEL_URL=${AZURE_API_BASE:-${OPENAI_ENDPOINT}}
+      - LLM_MODEL_NAME=${AZURE_API_VERSION:-${OPENAI_MODEL_NAME}}
+      - LLM_API_KEY=${AZURE_API_KEY:-${OPENAI_API_KEY}}
     depends_on:
       mce-api-layer:
         condition: service_healthy

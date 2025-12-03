@@ -6,12 +6,7 @@
 import React from "react"
 import { getBezierPath, BaseEdge, Position } from "@xyflow/react"
 import CustomEdgeLabel from "./CustomEdgeLabel"
-
-interface CustomEdgeData {
-  active?: boolean
-  label?: string
-  labelIconType?: string
-}
+import { CustomEdgeData } from "./types"
 
 interface CustomEdgeProps {
   id: string

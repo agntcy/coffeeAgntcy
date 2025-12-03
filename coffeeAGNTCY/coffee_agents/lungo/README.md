@@ -89,30 +89,73 @@ Before you begin, ensure the following tools are installed:
    cp .env.example .env
    ```
 
-   **Configure LLM Provider, Credentials and OTEL endpoint**
+**Configure LLM Model, Credentials and OTEL endpoint**
+
+Update your .env file with the provider model, credentials, and OTEL endpoint.
+
+CoffeeAGNTCY uses litellm to manage LLM connections. With litellm, you can seamlessly switch between different model providers using a unified configuration interface. Below are examples of environment variables for setting up various providers. For a comprehensive list of supported providers, see the [official litellm documentation](https://docs.litellm.ai/docs/providers).
+
+In CoffeeAGNTCY, the environment variable for specifying the model is always LLM_MODEL, regardless of the provider.
 
    > ⚠️ **Note:** The `/agent/prompt/stream` endpoint requires an LLM that supports streaming. If your LLM provider does not support streaming, the streaming endpoint may fail.
 
    Then update `.env` with your LLM provider, credentials and OTEL endpoint. For example:
 
-   _OpenAI:_
+---
 
-   ```env
-    LLM_PROVIDER=openai
-    OPENAI_API_KEY="your_openai_api_key_here"
-    OPENAI_ENDPOINT=https://api.openai.com/v1 # Default OpenAI endpoint without proxy
-    OPENAI_MODEL_NAME=gpt-4o
-   ```
+#### **OpenAI**
 
-   _Azure OpenAI:_
+```env
+LLM_MODEL="openai/<model_of_choice>"
+OPENAI_API_KEY=<your_openai_api_key>
+```
 
-   ```env
-    LLM_PROVIDER=azure-openai
-    AZURE_OPENAI_ENDPOINT=https://your-azure-resource.openai.azure.com/
-    AZURE_OPENAI_DEPLOYMENT=gpt-4-prod
-    AZURE_OPENAI_API_KEY=your_azure_api_key
-    AZURE_OPENAI_API_VERSION=2023-12-01-preview
-   ```
+---
+
+#### **Azure OpenAI**
+
+```env
+LLM_MODEL="azure/<your_deployment_name>"
+AZURE_API_BASE=https://your-azure-resource.openai.azure.com/
+AZURE_API_KEY=<your_azure_api_key>
+AZURE_API_VERSION=<your_azure_api_version>
+```
+
+---
+
+#### **GROQ**
+
+```env
+LLM_MODEL="groq/<model_of_choice>"
+GROQ_API_KEY=<your_groq_api_key>
+```
+
+---
+
+#### **NVIDIA NIM**
+
+```env
+LLM_MODEL="nvidia_nim/<model_of_choice>"
+NVIDIA_NIM_API_KEY=<your_nvidia_api_key>
+NVIDIA_NIM_API_BASE=<your_nvidia_nim_endpoint_url>
+```
+
+---
+
+#### **Custom OAuth2 Application Exposing OpenAI**
+
+If you’re using a application secured with OAuth2 + refresh token that exposes an OpenAI endpoint:
+
+```env
+LLM_MODEL=oauth2/<your_llm_model_here>
+OAUTH2_CLIENT_ID=<your_client_id>
+OAUTH2_CLIENT_SECRET=<your_client_secret>
+OAUTH_TOKEN_URL="https://your-auth-server.com/token"
+OAUTH2_BASE_URL="https://your-openai-endpoint"
+OAUTH2_APP_KEY=<your_app_key> #optional
+```
+
+---
 
    _OTEL:_
 
@@ -154,7 +197,7 @@ For advanced observability of your multi-agent system, integrate the [Observe SD
 
   - In code, set the factory with tracing enabled:
     ```python
-    AgntcyFactory("lungo.exchange", enable_tracing=True)
+    AgntcyFactory("lungo.auction_supervisor", enable_tracing=True)
     ```
 
 - **To start a new trace session for each prompt execution:**  
@@ -193,7 +236,7 @@ Additionally run the observability stack that has OTEL Collector, Grafana and Cl
 You can do this by executing the following command:
 
 ```sh
-docker-compose up slim nats clickhouse-server otel-collector grafana
+docker compose up slim nats clickhouse-server otel-collector grafana
 ```
 
 **Step 2: Run the Weather MCP Server**
@@ -209,7 +252,7 @@ uv run python agents/mcp_servers/weather_service.py
 _Docker Compose:_
 
 ```sh
-docker-compose up weather-mcp-server --build
+docker compose up weather-mcp-server --build
 ```
 
 This MCP server is required for the Colombia Farm to function correctly.
@@ -255,7 +298,7 @@ uv run python agents/farms/vietnam/farm_server.py
 _Docker Compose:_
 
 ```sh
-docker-compose up brazil-farm-server colombia-farm-server vietnam-farm-server --build
+docker compose up brazil-farm-server colombia-farm-server vietnam-farm-server --build
 ```
 
 The farm servers handle incoming requests from the exchange and process them using a directed LangGraph containing two directed paths: one for fetching inventory and another for generating orders, depending on the prompt.
@@ -273,7 +316,7 @@ uv run python agents/supervisors/auction/main.py
 _Docker Compose:_
 
 ```sh
-docker-compose up exchange-server --build
+docker compose up exchange-server --build
 ```
 
 This command starts a FastAPI server that processes user prompts by passing them to a LangGraph-based supervisor, which manages delegation to worker agents. The supervisor is implemented as a directed LangGraph with nodes for Inventory, Orders, General Information, and Reflection.
@@ -321,7 +364,7 @@ npm run dev
 _Docker Compose:_
 
 ```sh
-docker-compose up ui --build
+docker compose up ui --build
 ```
 
 By default, the UI will be available at [http://localhost:3000/](http://localhost:3000/).
@@ -392,7 +435,7 @@ Details about AGNTCY's MCE can be found in the Telemetry Hub repository: [Metric
 1. Run the MCE Components
 
 ```sh
-docker-compose up metrics-computation-engine mce-api-layer
+docker compose up metrics-computation-engine mce-api-layer
 ```
 
 2. Get session IDs within a given time range.
