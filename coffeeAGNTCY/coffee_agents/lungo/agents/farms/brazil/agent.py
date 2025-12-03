@@ -10,12 +10,12 @@ from config.config import LLM_MODEL
 from ioa_observe.sdk.decorators import tool, agent, graph
 
 logger = logging.getLogger("lungo.brazil_farm_agent.agent")
-llm = LiteLLM(LLM_MODEL)
+
 
 # --- 1. Define Intent Type ---
 IntentType = Literal["inventory", "orders", "general"]
 
-# --- 2. Tool Functions for each domain ---
+# --- 2. Tool Functions ---
 
 @tool(name="inventory_tool")
 def handle_inventory_tool(user_message: str) -> str:
@@ -29,6 +29,7 @@ def handle_inventory_tool(user_message: str) -> str:
         "If the user asked in kg or kilograms, convert the estimate to kg and respond with that value.\n\n"
         "User question: {user_message}"
     ).format(user_message=user_message)
+    llm = LiteLLM(LLM_MODEL)
     resp = llm.complete(prompt, formatted=True)
     text = resp.text.strip()
     logger.info(f"Inventory response generated: {text}")
@@ -52,26 +53,13 @@ def handle_orders_tool(user_message: str) -> str:
         f"Order Data: {mock_order_data}\n"
         f"User question: {user_message}"
     )
+    llm = LiteLLM(LLM_MODEL)
     resp = llm.complete(prompt, formatted=True)
     text = resp.text.strip()
     logger.info(f"Orders response generated: {text}")
     return text
 
-# --- 3. Create separate FunctionAgent instances ---
-
-inventory_agent = FunctionAgent(
-    tools=[handle_inventory_tool],
-    llm=llm,
-    system_prompt="Return only the exact output from the tool. Do not add any additional text or explanation."
-)
-
-orders_agent = FunctionAgent(
-    tools=[handle_orders_tool],
-    llm=llm,
-    system_prompt="Return only the exact output from the tool. Do not add any additional text or explanation."
-)
-
-# --- 4. Intent Classification ---
+# --- 3. Intent Classification ---
 
 def classify_intent(user_message: str) -> IntentType:
     prompt = (
@@ -85,6 +73,7 @@ def classify_intent(user_message: str) -> IntentType:
         "- If unsure, respond 'general'.\n\n"
         f"User message: {user_message}"
     )
+    llm = LiteLLM(LLM_MODEL)
     resp = llm.complete(prompt, formatted=True)
     intent_raw = resp.text.strip().lower()
     logger.info(f"Supervisor intent raw: {intent_raw}")
@@ -96,16 +85,28 @@ def classify_intent(user_message: str) -> IntentType:
         return "orders"
     return "general"
 
-# --- 5. Routing Function with FunctionAgent calls ---
+# --- 4. Routing Function ---
+
+# Routes to appropriate FunctionAgent based on intent classification
 
 async def run_brazil_farm_routing(user_message: str) -> str:
-    """Route to appropriate FunctionAgent based on intent."""
+    """Route to appropriate FunctionAgent based on intent with lazy initialization."""
     intent = classify_intent(user_message)
-
+    llm = LiteLLM(LLM_MODEL)
     if intent == "inventory":
+        inventory_agent = FunctionAgent(
+            tools=[handle_inventory_tool],
+            llm=llm,
+            system_prompt="Return only the exact output from the tool. Do not add any additional text or explanation."
+        )
         response = await inventory_agent.run(user_message)
         return str(response)
     elif intent == "orders":
+        orders_agent = FunctionAgent(
+            tools=[handle_orders_tool],
+            llm=llm,
+            system_prompt="Return only the exact output from the tool. Do not add any additional text or explanation."
+        )
         response = await orders_agent.run(user_message)
         return str(response)
     else:
@@ -114,7 +115,9 @@ async def run_brazil_farm_routing(user_message: str) -> str:
             "Could you please rephrase your request?"
         )
 
-# --- 6. Public Agent Class ---
+# --- 5. Public Agent Class ---
+
+# Main agent interface that handles intent classification and routing
 
 @agent(name="brazil_farm_agent")
 class LlamaIndexFarmAgent:
@@ -127,7 +130,7 @@ class LlamaIndexFarmAgent:
             raise RuntimeError("No valid response generated.")
         return result.strip()
 
-# --- 7. Example Usage ---
+# --- 6. Example Usage ---
 
 async def main():
     agent = LlamaIndexFarmAgent()
