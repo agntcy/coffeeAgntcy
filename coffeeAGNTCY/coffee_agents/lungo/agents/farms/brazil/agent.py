@@ -7,7 +7,7 @@ from typing import Literal
 from llama_index.core.agent.workflow import FunctionAgent
 from llama_index.llms.litellm import LiteLLM
 from config.config import LLM_MODEL
-from ioa_observe.sdk.decorators import agent, graph
+from ioa_observe.sdk.decorators import tool, agent, graph
 
 logger = logging.getLogger("lungo.brazil_farm_agent.agent")
 llm = LiteLLM(LLM_MODEL)
@@ -17,6 +17,7 @@ IntentType = Literal["inventory", "orders", "general"]
 
 # --- 2. Tool Functions for each domain ---
 
+@tool(name="inventory_tool")
 def handle_inventory_tool(user_message: str) -> str:
     """Handle inventory-related queries and provide yield estimates."""
     prompt = (
@@ -34,6 +35,7 @@ def handle_inventory_tool(user_message: str) -> str:
     return text
 
 
+@tool(name="orders_tool")
 def handle_orders_tool(user_message: str) -> str:
     """Handle order-related queries including placing orders and checking status."""
     mock_order_data = {
