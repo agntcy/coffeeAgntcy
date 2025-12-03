@@ -6,6 +6,7 @@ from typing import Literal
 
 from llama_index.core.agent.workflow import FunctionAgent
 from llama_index.llms.litellm import LiteLLM
+from llama_index.core.llms import ChatMessage
 from config.config import LLM_MODEL
 from ioa_observe.sdk.decorators import tool, agent, graph
 
@@ -30,8 +31,9 @@ def handle_inventory_tool(user_message: str) -> str:
         "User question: {user_message}"
     ).format(user_message=user_message)
     llm = LiteLLM(LLM_MODEL)
-    resp = llm.complete(prompt, formatted=True)
-    text = resp.text.strip()
+    message = ChatMessage(role="user", content=prompt)
+    chat_response = llm.chat([message])
+    text = chat_response.message.content.strip()
     logger.info(f"Inventory response generated: {text}")
     return text
 
@@ -54,8 +56,9 @@ def handle_orders_tool(user_message: str) -> str:
         f"User question: {user_message}"
     )
     llm = LiteLLM(LLM_MODEL)
-    resp = llm.complete(prompt, formatted=True)
-    text = resp.text.strip()
+    message = ChatMessage(role="user", content=prompt)
+    chat_response = llm.chat([message])
+    text = chat_response.message.content.strip()
     logger.info(f"Orders response generated: {text}")
     return text
 
@@ -74,8 +77,9 @@ def classify_intent(user_message: str) -> IntentType:
         f"User message: {user_message}"
     )
     llm = LiteLLM(LLM_MODEL)
-    resp = llm.complete(prompt, formatted=True)
-    intent_raw = resp.text.strip().lower()
+    message = ChatMessage(role="user", content=prompt)
+    chat_response = llm.chat([message])
+    intent_raw = chat_response.message.content.strip().lower()
     logger.info(f"Supervisor intent raw: {intent_raw}")
 
     # Be tolerant of extra text: look for keyword presence.
