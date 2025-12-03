@@ -21,14 +21,14 @@ from a2a.utils import (
 )
 from a2a.utils.errors import ServerError
 
-from agents.farms.brazil.agent import FarmAgent
+from agents.farms.brazil.agent import LlamaIndexFarmAgent
 from agents.farms.brazil.card import AGENT_CARD
 
 logger = logging.getLogger("longo.brazil_farm_agent.agent_executor")
 
 class FarmAgentExecutor(AgentExecutor):
     def __init__(self):
-        self.agent = FarmAgent()
+        self.agent = LlamaIndexFarmAgent()
         self.agent_card = AGENT_CARD.model_dump(mode="json", exclude_none=True)
 
     def _validate_request(self, context: RequestContext) -> JSONRPCResponse | None:
