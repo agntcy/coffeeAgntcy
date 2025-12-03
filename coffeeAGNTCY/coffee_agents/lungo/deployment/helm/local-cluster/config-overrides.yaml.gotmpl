@@ -7,6 +7,11 @@
 {{- $logisticsTargets := list "logistic-farm" "logistic-accountant" "logistic-shipper" -}}
 
 {{- $shared := dict "config" (dict
+  "azureApiKey" (env "AZURE_API_KEY")
+  "azureApiBase" (env "AZURE_API_BASE")
+  "azureApiVersion" (env "AZURE_API_VERSION")
+  "llmModel" (env "LLM_MODEL")
+    
   "azureOpenAiEndpoint" (env "AZURE_OPENAI_ENDPOINT")
   "azureOpenAiDeployment" (env "AZURE_OPENAI_DEPLOYMENT")
   "azureOpenAiApiVersion" (env "AZURE_OPENAI_API_VERSION")
@@ -14,7 +19,7 @@
   "openAiApiKey" (env "OPENAI_API_KEY")
   "openAiEndpoint" (env "OPENAI_ENDPOINT")
   "openAiModelName" (env "OPENAI_MODEL_NAME")
-  "llmProvider" (requiredEnv "LLM_PROVIDER")
+  "llmProvider" (env "LLM_PROVIDER")
   "otlpHttpEndpoint" "http://lungo-local-cluster-opentelemetry-collector:4318"
   "identityApiServerUrl" "https://api.agent-identity.outshift.com"
 ) -}}
@@ -47,18 +52,19 @@
 
 # Explicit per-chart overrides with ingress enabled
 lungo-exchange:
+  environment: local
   config:
 {{- toYaml (merge (deepCopy $shared.config) (deepCopy $nats.config)) | nindent 4 }}
-  ingress:
-    enabled: true
-    name: lungo-exchange
-    className: nginx
-    host: lungo-exchange.demo.com
-    serviceName: lungo-exchange
-    servicePort: 8000
-    tlsSecret: exchange-tls
-    annotations:
-      cert-manager.io/cluster-issuer: selfsigned
+#  ingress:
+#    enabled: true
+#    name: lungo-exchange
+#    className: nginx
+#    host: lungo-exchange.demo.com
+#    serviceName: lungo-exchange
+#    servicePort: 8000
+#    tlsSecret: exchange-tls
+#    annotations:
+#      cert-manager.io/cluster-issuer: selfsigned
 
 logistic-supervisor:
   config:
