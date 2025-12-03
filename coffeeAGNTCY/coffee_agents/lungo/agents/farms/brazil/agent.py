@@ -20,23 +20,14 @@ IntentType = Literal["inventory", "orders", "general"]
 def handle_inventory_tool(user_message: str) -> str:
     """Handle inventory-related queries and provide yield estimates."""
     prompt = (
-        "You are a helpful coffee farm cultivation manager in Brazil who "
-        "handles yield or inventory requests.\n"
-        "IMPORTANT: Generate a NEW random estimate each time. Do NOT use numbers from user input.\n\n"
-        "Your job is to:\n"
-        "1. Return a random yield estimate for the coffee farm in Brazil. "
-        "   Make sure the estimate is a reasonable value and in pounds.\n"
-        "2. Respond with only the yield estimate.\n\n"
+        "You are a helpful coffee farm cultivation manager in Brazil who handles yield or inventory requests. "
+        "Your job is to return a random yield estimate for the coffee farm in Brazil. "
+        "Make sure the estimate is a reasonable value and in pounds. "
+        "Respond with only the yield estimate. "
         "If the user asked in lbs or pounds, respond with the estimate in pounds. "
-        "If the user asked in kg or kilograms, convert the estimate to kg and "
-        "respond with that value.\n\n"
-        f"User question: {user_message}\n\n"
-        "THINKING STEP: 1) Ignore all numbers in the user's question. 2) Generate a random value between 10,000-90,000. 3) Format response.\n\n"
-        "CRITICAL INSTRUCTIONS: Generate a completely NEW random estimate between 10,000 and 90,000 pounds. "
-        "IGNORE all numbers mentioned in the user's question above. Do NOT repeat or confirm any values from the user. "
-        "Always provide a fresh, random inventory estimate.\n\n"
-        "Generate something DIFFERENT each time."
-    )
+        "If the user asked in kg or kilograms, convert the estimate to kg and respond with that value.\n\n"
+        "User question: {user_message}"
+    ).format(user_message=user_message)
     resp = llm.complete(prompt, formatted=True)
     text = resp.text.strip()
     logger.info(f"Inventory response generated: {text}")
@@ -69,13 +60,13 @@ def handle_orders_tool(user_message: str) -> str:
 inventory_agent = FunctionAgent(
     tools=[handle_inventory_tool],
     llm=llm,
-    system_prompt="You are a coffee farm cultivation manager in Brazil who handles inventory and yield requests. Use the available tools to help users."
+    system_prompt="Return only the exact output from the tool. Do not add any additional text or explanation."
 )
 
 orders_agent = FunctionAgent(
     tools=[handle_orders_tool],
     llm=llm,
-    system_prompt="You are an order assistant who handles coffee orders and order status inquiries. Use the available tools to help users."
+    system_prompt="Return only the exact output from the tool. Do not add any additional text or explanation."
 )
 
 # --- 4. Intent Classification ---
@@ -85,7 +76,7 @@ def classify_intent(user_message: str) -> IntentType:
         "You are a coffee farm manager in Brazil who delegates farm cultivation "
         "and global sales. Based on the user's message, determine if it's "
         "related to 'inventory' or 'orders'.\n"
-        "- Respond 'inventory' if the message is about checking yield, stock, "
+        "- Respond 'inventory' if the message is about checking yield, stock,inventory, "
         "  product availability, or specific coffee item details.\n"
         "- Respond 'orders' if the message is about checking order status, "
         "  placing an order, or modifying an existing order.\n"
