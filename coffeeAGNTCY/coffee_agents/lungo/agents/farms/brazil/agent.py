@@ -11,17 +11,10 @@ from ioa_observe.sdk.decorators import agent, graph
 logger = logging.getLogger("lungo.brazil_farm_agent.agent")
 llm = LiteLLM(LLM_MODEL)
 
-# --- 1. Define Node Names as Constants ---
-class NodeStates:
-    SUPERVISOR = "supervisor"
-    INVENTORY = "inventory_node"
-    ORDERS = "orders_node"
-    GENERAL_RESPONSE = "general_response_node"
-
-# --- 2. Define Intent Type ---
+# --- 1. Define Intent Type ---
 IntentType = Literal["inventory", "orders", "general"]
 
-# --- 3. Node implementations (plain functions, same prompts/mock data) ---
+# --- 2. Function implementations (plain functions, same prompts/mock data) ---
 
 def classify_intent(user_message: str) -> IntentType:
     prompt = (
@@ -93,9 +86,9 @@ def general_response() -> str:
         "Could you please rephrase your request?"
     )
 
-# --- 4. Simple “Graph” Function (like your LangGraph app) ---
+# --- 3. Simple Routing Function (LlamaIndex-based) ---
 
-async def run_brazil_farm_graph(user_message: str) -> str:
+async def run_brazil_farm_routing(user_message: str) -> str:
     """Simple LlamaIndex routing function."""
     intent = classify_intent(user_message)
 
@@ -106,7 +99,7 @@ async def run_brazil_farm_graph(user_message: str) -> str:
     else:
         return general_response()
 
-# --- 5. Public Agent Class (same interface as your FarmAgent) ---
+# --- 4. Public Agent Class (same interface as your FarmAgent) ---
 
 @agent(name="brazil_farm_agent")
 class LlamaIndexFarmAgent:
@@ -114,12 +107,12 @@ class LlamaIndexFarmAgent:
         pass
 
     async def ainvoke(self, user_message: str) -> str:
-        result = await run_brazil_farm_graph(user_message)
+        result = await run_brazil_farm_routing(user_message)
         if not result.strip():
             raise RuntimeError("No valid response generated.")
         return result.strip()
 
-# --- 6. Example Usage (identical shape to your main) ---
+# --- 5. Example Usage (identical shape to your main) ---
 
 async def main():
     agent = LlamaIndexFarmAgent()
