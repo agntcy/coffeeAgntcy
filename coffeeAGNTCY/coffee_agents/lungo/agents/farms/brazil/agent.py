@@ -118,6 +118,7 @@ async def run_brazil_farm_routing(user_message: str) -> str:
 # --- 5. Public Agent Class ---
 
 # Main agent interface that handles intent classification and routing
+# LlamaIndex agent workflow examples: https://developers.llamaindex.ai/python/examples/agent/agent_workflow_basic/
 
 @agent(name="brazil_farm_agent")
 class LlamaIndexFarmAgent:
