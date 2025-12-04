@@ -73,7 +73,7 @@ class FarmAgentExecutor(AgentExecutor):
             await event_queue.enqueue_event(task)
 
         try:
-            output = await self.agent.ainvoke(prompt)
+            output = await self.agent.llama_index_invoke(prompt)
         
             message = Message(
                 message_id=str(uuid4()),
