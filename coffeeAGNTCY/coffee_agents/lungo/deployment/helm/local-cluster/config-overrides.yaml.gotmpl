@@ -11,15 +11,6 @@
   "azureApiBase" (env "AZURE_API_BASE")
   "azureApiVersion" (env "AZURE_API_VERSION")
   "llmModel" (env "LLM_MODEL")
-    
-  "azureOpenAiEndpoint" (env "AZURE_OPENAI_ENDPOINT")
-  "azureOpenAiDeployment" (env "AZURE_OPENAI_DEPLOYMENT")
-  "azureOpenAiApiVersion" (env "AZURE_OPENAI_API_VERSION")
-  "azureOpenAiApiKey" (env "AZURE_OPENAI_API_KEY")
-  "openAiApiKey" (env "OPENAI_API_KEY")
-  "openAiEndpoint" (env "OPENAI_ENDPOINT")
-  "openAiModelName" (env "OPENAI_MODEL_NAME")
-  "llmProvider" (env "LLM_PROVIDER")
   "otlpHttpEndpoint" "http://lungo-local-cluster-opentelemetry-collector:4318"
   "identityApiServerUrl" "https://api.agent-identity.outshift.com"
 ) -}}
@@ -67,29 +58,31 @@ lungo-exchange:
 #      cert-manager.io/cluster-issuer: selfsigned
 
 logistic-supervisor:
+  environment: local
   config:
 {{- toYaml (merge (deepCopy $shared.config) (deepCopy $slim.config)) | nindent 4 }}
-  ingress:
-    enabled: true
-    name: logistic-supervisor
-    className: nginx
-    host: logistic-supervisor.demo.com
-    serviceName: logistic-supervisor
-    servicePort: 9090
-    tlsSecret: logistic-supervisor-tls
-    annotations:
-      cert-manager.io/cluster-issuer: selfsigned
+#  ingress:
+#    enabled: true
+#    name: logistic-supervisor
+#    className: nginx
+#    host: logistic-supervisor.demo.com
+#    serviceName: logistic-supervisor
+#    servicePort: 9090
+#    tlsSecret: logistic-supervisor-tls
+#    annotations:
+#      cert-manager.io/cluster-issuer: selfsigned
 
 logistic-helpdesk:
+  environment: local
   config:
 {{- toYaml (merge (deepCopy $shared.config) (deepCopy $slim.config)) | nindent 4 }}
-  ingress:
-    enabled: true
-    name: logistic-helpdesk
-    className: nginx
-    host: logistic-helpdesk.demo.com
-    serviceName: logistic-helpdesk
-    servicePort: 9094
-    tlsSecret: helpdesk-tls
-    annotations:
-      cert-manager.io/cluster-issuer: selfsigned
+#  ingress:
+#    enabled: true
+#    name: logistic-helpdesk
+#    className: nginx
+#    host: logistic-helpdesk.demo.com
+#    serviceName: logistic-helpdesk
+#    servicePort: 9094
+#    tlsSecret: helpdesk-tls
+#    annotations:
+#      cert-manager.io/cluster-issuer: selfsigned

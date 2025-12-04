@@ -3,10 +3,10 @@ helmDefaults:
   timeout: 600
 
 repositories:
-  - name: ingress-nginx
-    url: https://kubernetes.github.io/ingress-nginx
-  - name: cert-manager
-    url: https://charts.jetstack.io
+  # - name: ingress-nginx
+  #   url: https://kubernetes.github.io/ingress-nginx
+  # - name: cert-manager
+  #   url: https://charts.jetstack.io
   - name: nats
     url: https://nats-io.github.io/k8s/helm/charts
   - name: opentelemetry
@@ -22,96 +22,96 @@ repositories:
     oci: true
 
 releases:
-  - name: ingress-nginx
-    namespace: ingress-nginx
-    createNamespace: true
-    chart: ingress-nginx/ingress-nginx
-    version: 4.11.2
-    values:
-      - controller:
-          ingressClassResource:
-            name: nginx
-            controllerValue: "k8s.io/ingress-nginx"
-          ingressClassByName: true
-          watchNamespace: ""
-          kind: DaemonSet                
-          hostPort:
-            enabled: true                
-          service:
-            type: ClusterIP              
-          nodeSelector:                  
-            ingress-ready: "true"
-    hooks:
-      - events: ["postsync"]
-        command: bash
-        args:
-          - -c
-          - |
-            set -euo pipefail
+  # - name: ingress-nginx
+  #   namespace: ingress-nginx
+  #   createNamespace: true
+  #   chart: ingress-nginx/ingress-nginx
+  #   version: 4.11.2
+  #   values:
+  #     - controller:
+  #         ingressClassResource:
+  #           name: nginx
+  #           controllerValue: "k8s.io/ingress-nginx"
+  #         ingressClassByName: true
+  #         watchNamespace: ""
+  #         kind: DaemonSet                
+  #         hostPort:
+  #           enabled: true                
+  #         service:
+  #           type: ClusterIP              
+  #         nodeSelector:                  
+  #           ingress-ready: "true"
+  #   hooks:
+  #     - events: ["postsync"]
+  #       command: bash
+  #       args:
+  #         - -c
+  #         - |
+  #           set -euo pipefail
 
-            NS=ingress-nginx
+  #           NS=ingress-nginx
 
-            # 1) Wait for controller to be ready (supports DS or Deployment)
-            if kubectl -n "$NS" get ds/ingress-nginx-controller >/dev/null 2>&1; then
-              kubectl -n "$NS" rollout status ds/ingress-nginx-controller --timeout=300s
-            else
-              kubectl -n "$NS" rollout status deploy/ingress-nginx-controller --timeout=300s
-            fi
+  #           # 1) Wait for controller to be ready (supports DS or Deployment)
+  #           if kubectl -n "$NS" get ds/ingress-nginx-controller >/dev/null 2>&1; then
+  #             kubectl -n "$NS" rollout status ds/ingress-nginx-controller --timeout=300s
+  #           else
+  #             kubectl -n "$NS" rollout status deploy/ingress-nginx-controller --timeout=300s
+  #           fi
 
-            # 2) Wait for the admission patch job (populates CABundle)
-            kubectl -n "$NS" wait --for=condition=Complete job/ingress-nginx-admission-patch --timeout=180s || true
+  #           # 2) Wait for the admission patch job (populates CABundle)
+  #           kubectl -n "$NS" wait --for=condition=Complete job/ingress-nginx-admission-patch --timeout=180s || true
 
-            # 3) Wait for controller service endpoints (port 80/443 ready)
-            for i in $(seq 1 60); do
-              EP="$(kubectl -n "$NS" get endpoints ingress-nginx-controller -o jsonpath='{.subsets[0].addresses[0].ip}' 2>/dev/null || true)"
-              if [ -n "$EP" ]; then echo "Controller endpoints ready: $EP"; break; fi
-              echo "Waiting for controller endpoints... ($i/60)"; sleep 3
-              [ $i -eq 60 ] && { echo "timeout waiting controller endpoints" >&2; exit 1; }
-            done
+  #           # 3) Wait for controller service endpoints (port 80/443 ready)
+  #           for i in $(seq 1 60); do
+  #             EP="$(kubectl -n "$NS" get endpoints ingress-nginx-controller -o jsonpath='{.subsets[0].addresses[0].ip}' 2>/dev/null || true)"
+  #             if [ -n "$EP" ]; then echo "Controller endpoints ready: $EP"; break; fi
+  #             echo "Waiting for controller endpoints... ($i/60)"; sleep 3
+  #             [ $i -eq 60 ] && { echo "timeout waiting controller endpoints" >&2; exit 1; }
+  #           done
 
-            # 4) Wait for admission service endpoints (webhook must be reachable)
-            for i in $(seq 1 60); do
-              EP="$(kubectl -n "$NS" get endpoints ingress-nginx-controller-admission -o jsonpath='{.subsets[0].addresses[0].ip}' 2>/dev/null || true)"
-              if [ -n "$EP" ]; then echo "Admission endpoints ready: $EP"; break; fi
-              echo "Waiting for admission endpoints... ($i/60)"; sleep 3
-              [ $i -eq 60 ] && { echo "timeout waiting admission endpoints" >&2; exit 1; }
-            done
+  #           # 4) Wait for admission service endpoints (webhook must be reachable)
+  #           for i in $(seq 1 60); do
+  #             EP="$(kubectl -n "$NS" get endpoints ingress-nginx-controller-admission -o jsonpath='{.subsets[0].addresses[0].ip}' 2>/dev/null || true)"
+  #             if [ -n "$EP" ]; then echo "Admission endpoints ready: $EP"; break; fi
+  #             echo "Waiting for admission endpoints... ($i/60)"; sleep 3
+  #             [ $i -eq 60 ] && { echo "timeout waiting admission endpoints" >&2; exit 1; }
+  #           done
         
 
-  # cert-manager (install CRDs first, then wait for readiness)
-  - name: cert-manager
-    namespace: cert-manager
-    createNamespace: true
-    chart: cert-manager/cert-manager
-    version: 1.19.1
-    values:
-      - crds:
-          enabled: false
-    hooks:
-      - events: ["presync"]
-        command: bash
-        args:
-          - -c
-          - |
-            set -euo pipefail
-            kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.19.1/cert-manager.crds.yaml
-      - events: ["postsync"]
-        command: bash
-        args:
-          - -c
-          - |
-            set -euo pipefail
-            kubectl wait -n cert-manager deploy/cert-manager --for=condition=Available --timeout=180s
-            kubectl wait apiservice v1.cert-manager.io --for=condition=Available --timeout=180s
+  # # cert-manager (install CRDs first, then wait for readiness)
+  # - name: cert-manager
+  #   namespace: cert-manager
+  #   createNamespace: true
+  #   chart: cert-manager/cert-manager
+  #   version: 1.19.1
+  #   values:
+  #     - crds:
+  #         enabled: false
+  #   hooks:
+  #     - events: ["presync"]
+  #       command: bash
+  #       args:
+  #         - -c
+  #         - |
+  #           set -euo pipefail
+  #           kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.19.1/cert-manager.crds.yaml
+  #     - events: ["postsync"]
+  #       command: bash
+  #       args:
+  #         - -c
+  #         - |
+  #           set -euo pipefail
+  #           kubectl wait -n cert-manager deploy/cert-manager --for=condition=Available --timeout=180s
+  #           kubectl wait apiservice v1.cert-manager.io --for=condition=Available --timeout=180s
 
   # Your umbrella chart (contains the self-signed ClusterIssuer template)
   - name: lungo-local-cluster
     namespace: default
     createNamespace: false
     chart: .
-    needs:
-      - ingress-nginx/ingress-nginx
-      - cert-manager/cert-manager
+    # needs:
+    #   - ingress-nginx/ingress-nginx
+    #   - cert-manager/cert-manager
     disableOpenAPIValidation: true
     values:
       - ./values.yaml

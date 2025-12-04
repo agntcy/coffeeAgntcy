@@ -21,16 +21,16 @@ dependencies:
     version: "10.1.2"
     repository: "oci://ghcr.io/grafana/helm-charts"
   - name: lungo-exchange
-    version: "0.0.5"
+    version: "0.0.7"
     repository: "file://../exchange"
   - name: brazil-farm
-    version: "0.0.4"
+    version: "0.0.5"
     repository: "file://../brazil-farm"
   - name: vietnam-farm
-    version: "0.0.7"
+    version: "0.0.8"
     repository: "file://../vietnam-farm"
   - name: colombia-farm
-    version: "0.0.8"
+    version: "0.0.10"
     repository: "file://../colombia-farm"
   - name: weather-mcp-server
     version: "0.0.4"
@@ -39,10 +39,10 @@ dependencies:
     version: "0.0.3"
     repository: "file://../logistic-farm"
   - name: logistic-helpdesk
-    version: "0.0.2"
+    version: "0.0.3"
     repository: "file://../logistic-helpdesk"
   - name: logistic-supervisor
-    version: "0.0.4"
+    version: "0.0.5"
     repository: "file://../logistic-supervisor"
   - name: logistic-shipper
     version: "0.0.3"
@@ -51,7 +51,7 @@ dependencies:
     version: "0.0.3"
     repository: "file://../accountant"
   - name: lungo-ui
-    version: "0.0.3"
+    version: "0.0.4"
     repository: "oci://ghcr.io/agntcy/coffee_agntcy/helm"
 
   

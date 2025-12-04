@@ -31,11 +31,11 @@ nats:
     failureThreshold: 6
 
 # cert-manager settings consumed by your templates
-certManager:
-  enabled: true
-  email: aditi.a.gupta@gmail.com
-  ingressClass: nginx
-  name: selfsigned   # <— use the self-signed issuer for kind
+# certManager:
+#   enabled: true
+#   email: aditi.a.gupta@gmail.com
+#   ingressClass: nginx
+#   name: selfsigned   # <— use the self-signed issuer for kind
 
 weather-mcp-server:
   transportServerEndpoint: "nats://lungo-local-cluster-nats:4222"
@@ -44,16 +44,16 @@ weather-mcp-server:
 
 lungo-ui:
   config:
-    exchangeAppApiUrl: "https://lungo-exchange.demo.com"
-    logisticsAppApiUrl: "https://logistic-supervisor.demo.com"
-    helpdeskApiUrl: "https://logistic-helpdesk.demo.com"
-  ingress:
-    enabled: true
-    name: lungo-ui
-    className: nginx
-    host: lungo-ui.demo.com
-    serviceName: lungo-ui         # must match the Service name
-    servicePort: 3000             # must match the Service port
-    tlsSecret: lungo-ui-tls
-    annotations:
-      cert-manager.io/cluster-issuer: selfsigned
+    exchangeAppApiUrl: "http://localhost:30080"
+    logisticsAppApiUrl: "http://localhost:30081"
+    helpdeskApiUrl: "https://localhost:30082"
+  # ingress:
+  #   enabled: true
+  #   name: lungo-ui
+  #   className: nginx
+  #   host: lungo-ui.demo.com
+  #   serviceName: lungo-ui         # must match the Service name
+  #   servicePort: 3000             # must match the Service port
+  #   tlsSecret: lungo-ui-tls
+  #   annotations:
+  #     cert-manager.io/cluster-issuer: selfsigned

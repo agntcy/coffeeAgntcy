@@ -6,11 +6,14 @@ metadata:
   labels:
     app:  {{ .Values.appName }}
 spec:
-  {{- if eq.Values.environment "local"}}
+  {{- if eq .Values.environment "local"}}
   type: NodePort
   {{- end}}
   ports:
   - port: {{ .Values.service.port }}
     name: http
+    {{- if eq .Values.environment "local"}}
+    nodePort: 30080
+    {{- end}}
   selector:
     app:  {{ .Values.appName }}
