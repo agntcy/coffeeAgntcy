@@ -119,7 +119,7 @@ async def run_brazil_farm_routing(user_message: str) -> str:
 # LlamaIndex agent workflow examples: https://developers.llamaindex.ai/python/examples/agent/agent_workflow_basic/
 
 @agent(name="brazil_farm_agent")
-class LlamaIndexFarmAgent:
+class FarmAgent:
     def __init__(self):
         pass
 
@@ -132,7 +132,7 @@ class LlamaIndexFarmAgent:
 # --- 6. Example Usage ---
 
 async def main():
-    agent = LlamaIndexFarmAgent()
+    agent = FarmAgent()
 
     print("--- Testing Inventory Queries ---")
     messages = [
