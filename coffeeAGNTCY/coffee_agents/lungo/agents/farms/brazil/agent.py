@@ -10,7 +10,9 @@ from config.config import LLM_MODEL
 from ioa_observe.sdk.decorators import tool, agent, graph
 
 logger = logging.getLogger("lungo.brazil_farm_agent.agent")
-
+# Brazil farm agent is a llama_index based agent
+# Initialize llm with llama_index_LiteLLM
+llm = LiteLLM(LLM_MODEL)
 
 # --- 1. Define Intent Type ---
 IntentType = Literal["inventory", "orders", "general"]
@@ -29,7 +31,6 @@ def handle_inventory_tool(user_message: str) -> str:
         "If the user asked in kg or kilograms, convert the estimate to kg and respond with that value.\n\n"
         "User question: {user_message}"
     ).format(user_message=user_message)
-    llm = LiteLLM(LLM_MODEL)
     resp = llm.complete(prompt, formatted=True)
     text = resp.text.strip()
     logger.info(f"Inventory response generated: {text}")
@@ -53,7 +54,6 @@ def handle_orders_tool(user_message: str) -> str:
         f"Order Data: {mock_order_data}\n"
         f"User question: {user_message}"
     )
-    llm = LiteLLM(LLM_MODEL)
     resp = llm.complete(prompt, formatted=True)
     text = resp.text.strip()
     logger.info(f"Orders response generated: {text}")
@@ -73,7 +73,6 @@ def classify_intent(user_message: str) -> IntentType:
         "- If unsure, respond 'general'.\n\n"
         f"User message: {user_message}"
     )
-    llm = LiteLLM(LLM_MODEL)
     resp = llm.complete(prompt, formatted=True)
     intent_raw = resp.text.strip().lower()
     logger.info(f"Supervisor intent raw: {intent_raw}")
@@ -92,7 +91,6 @@ def classify_intent(user_message: str) -> IntentType:
 async def run_brazil_farm_routing(user_message: str) -> str:
     """Route to appropriate FunctionAgent based on intent with lazy initialization."""
     intent = classify_intent(user_message)
-    llm = LiteLLM(LLM_MODEL)
     if intent == "inventory":
         inventory_agent = FunctionAgent(
             tools=[handle_inventory_tool],
