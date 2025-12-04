@@ -16,6 +16,8 @@ services:
       - ENABLE_HTTP=true
     ports:
       - "9999:9999"
+    networks:
+      - default
   colombia-farm-server:
     build:
       context: ../../..
@@ -56,6 +58,8 @@ services:
       - MCP_PAYMENT_SERVICE_URL=${MCP_PAYMENT_SERVICE_URL:-http://payment-mcp-server:8081/mcp}
     ports:
       - "9997:9997"
+    networks:
+      - default
   nats:
     image: nats:latest
     container_name: nats-lungo
@@ -64,6 +68,8 @@ services:
       - "4223:4223"
       - "6222:6222"
       - "8222:8222"
+    networks:
+      - default
 
   slim:
     image: ghcr.io/agntcy/slim:0.6.1
@@ -76,6 +82,8 @@ services:
     volumes:
       - ./config/docker/slim/server-config.yaml:/config.yaml
     command: ["/slim", "--config", "/config.yaml"]
+    networks:
+      - default
 
   # Exchange server App (farm client)
   exchange-server:
@@ -99,6 +107,8 @@ services:
       - IDENTITY_SERVICE_API_KEY=${IDENTITY_SERVICE_API_KEY_AUCTION_SUPERVISOR:-dummy_api_key}
     ports:
       - "8000:8000"
+    networks:
+      - default
 
   ui:
     build:
@@ -113,6 +123,8 @@ services:
       - exchange-server
     ports:
       - "3000:3000"
+    networks:
+      - default
 
   weather-mcp-server:
     build:
@@ -124,6 +136,8 @@ services:
       - DEFAULT_MESSAGE_TRANSPORT=${DEFAULT_MESSAGE_TRANSPORT:-NATS}
       - TRANSPORT_SERVER_ENDPOINT=${TRANSPORT_SERVER_ENDPOINT:-nats://nats:4222}
       - OTLP_HTTP_ENDPOINT=${OTLP_HTTP_ENDPOINT:-http://otel-collector:4318}
+    networks:
+      - default
 
   payment-mcp-server:
     build:
@@ -139,6 +153,84 @@ services:
       - OTLP_HTTP_ENDPOINT=${OTLP_HTTP_ENDPOINT:-http://otel-collector:4318}
       - IDENTITY_AUTH_ENABLED=${IDENTITY_AUTH_ENABLED:-} # Disabled by default
       - IDENTITY_SERVICE_API_KEY=${IDENTITY_SERVICE_API_KEY_PAYMENT_MCP:-dummy_api_key}
+    networks:
+      - default
+
+  logistic-shipper:
+    build:
+      context: ../../..
+      dockerfile: coffeeAGNTCY/coffee_agents/lungo/docker/Dockerfile.logistic-shipper
+    image: ghcr.io/agntcy/coffee-agntcy/logistic-shipper:latest
+    environment:
+      - DEFAULT_MESSAGE_TRANSPORT=SLIM # Do not change. SLIM is required for group conversation.
+      - TRANSPORT_SERVER_ENDPOINT=http://slim:46357
+      - OTLP_HTTP_ENDPOINT=${OTLP_HTTP_ENDPOINT:-http://otel-collector:4318}
+      - ENABLE_HTTP=true
+    ports:
+      - "9091:9091"
+    networks:
+      - default
+
+  logistic-accountant:
+    build:
+      context: ../../..
+      dockerfile: coffeeAGNTCY/coffee_agents/lungo/docker/Dockerfile.logistic-accountant
+    image: ghcr.io/agntcy/coffee-agntcy/logistic-accountant:latest
+    environment:
+      - DEFAULT_MESSAGE_TRANSPORT=SLIM # Do not change. SLIM is required for group conversation.
+      - TRANSPORT_SERVER_ENDPOINT=http://slim:46357
+      - OTLP_HTTP_ENDPOINT=${OTLP_HTTP_ENDPOINT:-http://otel-collector:4318}
+      - ENABLE_HTTP=true
+    ports:
+      - "9092:9092"
+    networks:
+      - default
+
+  logistic-farm:
+    build:
+      context: ../../..
+      dockerfile: coffeeAGNTCY/coffee_agents/lungo/docker/Dockerfile.logistic-farm
+    image: ghcr.io/agntcy/coffee-agntcy/logistic-farm:latest
+    environment:
+      - DEFAULT_MESSAGE_TRANSPORT=SLIM # Do not change. SLIM is required for group conversation.
+      - TRANSPORT_SERVER_ENDPOINT=http://slim:46357
+      - OTLP_HTTP_ENDPOINT=${OTLP_HTTP_ENDPOINT:-http://otel-collector:4318}
+      - ENABLE_HTTP=true
+    ports:
+      - "9093:9093"
+    networks:
+      - default
+
+  logistic-helpdesk:
+    build:
+      context: ../../..
+      dockerfile: coffeeAGNTCY/coffee_agents/lungo/docker/Dockerfile.logistic-helpdesk
+    image: ghcr.io/agntcy/coffee-agntcy/logistic-helpdesk:latest
+    environment:
+      - DEFAULT_MESSAGE_TRANSPORT=SLIM # Do not change. SLIM is required for group conversation.
+      - TRANSPORT_SERVER_ENDPOINT=http://slim:46357
+      - OTLP_HTTP_ENDPOINT=${OTLP_HTTP_ENDPOINT:-http://otel-collector:4318}
+      - ENABLE_HTTP=true
+    ports:
+      - "9094:9094"
+    networks:
+      - default
+
+  logistic-supervisor:
+    build:
+      context: ../../..
+      dockerfile: coffeeAGNTCY/coffee_agents/lungo/docker/Dockerfile.logistic-supervisor
+    image: ghcr.io/agntcy/coffee-agntcy/logistic-supervisor:latest
+    env_file:
+      - .env
+    environment:
+      - DEFAULT_MESSAGE_TRANSPORT=SLIM # Do not change. SLIM is required for group conversation.
+      - TRANSPORT_SERVER_ENDPOINT=http://slim:46357
+      - OTLP_HTTP_ENDPOINT=${OTLP_HTTP_ENDPOINT:-http://otel-collector:4318}
+    ports:
+      - "9090:9090"
+    networks:
+      - default
 
   clickhouse-server:
     image: clickhouse/clickhouse-server
@@ -167,6 +259,11 @@ services:
       timeout: 3s
       retries: 5
       start_period: 10s
+    profiles:
+      - observability
+      - full
+    networks:
+      - default
 
   otel-collector:
     image: otel/opentelemetry-collector-contrib:latest
@@ -181,6 +278,11 @@ services:
     depends_on:
       clickhouse-server:
         condition: service_healthy
+    profiles:
+      - observability
+      - full
+    networks:
+      - default
 
   grafana:
     image: grafana/grafana
@@ -194,72 +296,11 @@ services:
     depends_on:
       clickhouse-server:
         condition: service_healthy
-
-  logistic-shipper:
-    build:
-      context: ../../..
-      dockerfile: coffeeAGNTCY/coffee_agents/lungo/docker/Dockerfile.logistic-shipper
-    image: ghcr.io/agntcy/coffee-agntcy/logistic-shipper:latest
-    environment:
-      - DEFAULT_MESSAGE_TRANSPORT=SLIM # Do not change. SLIM is required for group conversation.
-      - TRANSPORT_SERVER_ENDPOINT=http://slim:46357
-      - OTLP_HTTP_ENDPOINT=${OTLP_HTTP_ENDPOINT:-http://otel-collector:4318}
-      - ENABLE_HTTP=true
-    ports:
-      - "9091:9091"
-
-  logistic-accountant:
-    build:
-      context: ../../..
-      dockerfile: coffeeAGNTCY/coffee_agents/lungo/docker/Dockerfile.logistic-accountant
-    image: ghcr.io/agntcy/coffee-agntcy/logistic-accountant:latest
-    environment:
-      - DEFAULT_MESSAGE_TRANSPORT=SLIM # Do not change. SLIM is required for group conversation.
-      - TRANSPORT_SERVER_ENDPOINT=http://slim:46357
-      - OTLP_HTTP_ENDPOINT=${OTLP_HTTP_ENDPOINT:-http://otel-collector:4318}
-      - ENABLE_HTTP=true
-    ports:
-      - "9092:9092"
-
-  logistic-farm:
-    build:
-      context: ../../..
-      dockerfile: coffeeAGNTCY/coffee_agents/lungo/docker/Dockerfile.logistic-farm
-    image: ghcr.io/agntcy/coffee-agntcy/logistic-farm:latest
-    environment:
-      - DEFAULT_MESSAGE_TRANSPORT=SLIM # Do not change. SLIM is required for group conversation.
-      - TRANSPORT_SERVER_ENDPOINT=http://slim:46357
-      - OTLP_HTTP_ENDPOINT=${OTLP_HTTP_ENDPOINT:-http://otel-collector:4318}
-      - ENABLE_HTTP=true
-    ports:
-      - "9093:9093"
-
-  logistic-helpdesk:
-    build:
-      context: ../../..
-      dockerfile: coffeeAGNTCY/coffee_agents/lungo/docker/Dockerfile.logistic-helpdesk
-    image: ghcr.io/agntcy/coffee-agntcy/logistic-helpdesk:latest
-    environment:
-      - DEFAULT_MESSAGE_TRANSPORT=SLIM # Do not change. SLIM is required for group conversation.
-      - TRANSPORT_SERVER_ENDPOINT=http://slim:46357
-      - OTLP_HTTP_ENDPOINT=${OTLP_HTTP_ENDPOINT:-http://otel-collector:4318}
-      - ENABLE_HTTP=true
-    ports:
-      - "9094:9094"
-
-  logistic-supervisor:
-    build:
-      context: ../../..
-      dockerfile: coffeeAGNTCY/coffee_agents/lungo/docker/Dockerfile.logistic-supervisor
-    image: ghcr.io/agntcy/coffee-agntcy/logistic-supervisor:latest
-    env_file:
-      - .env
-    environment:
-      - DEFAULT_MESSAGE_TRANSPORT=SLIM # Do not change. SLIM is required for group conversation.
-      - TRANSPORT_SERVER_ENDPOINT=http://slim:46357
-      - OTLP_HTTP_ENDPOINT=${OTLP_HTTP_ENDPOINT:-http://otel-collector:4318}
-    ports:
-      - "9090:9090"
+    profiles:
+      - observability
+      - full
+    networks:
+      - default
 
   mce-api-layer:
     image: ghcr.io/agntcy/obs-api:0.1.1
@@ -284,6 +325,11 @@ services:
       timeout: 5s
       retries: 3
       start_period: 30s
+    profiles:
+      - observability
+      - full
+    networks:
+      - default
 
   metrics-computation-engine:
     image: ghcr.io/agntcy/mce:1.2.1
@@ -297,3 +343,57 @@ services:
     depends_on:
       mce-api-layer:
         condition: service_healthy
+    profiles:
+      - observability
+      - full
+    networks:
+      - default
+
+  dirapiserver:
+    image: ghcr.io/agntcy/dir-apiserver:v0.4.0
+    env_file:
+      - ./config/docker/dir/apiserver.env
+    ports:
+      - 8888:8888
+      - 8889:8889
+    depends_on:
+      - zot
+    deploy:
+      mode: replicated
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+    healthcheck:
+      test: wget --no-verbose --tries=1 --spider http://127.0.0.1:8889/healthz/ready || exit 1
+      interval: 10s
+      retries: 60
+      start_period: 10s
+    profiles:
+      - dir
+      - full
+    networks:
+      - default
+
+  zot:
+    image: ghcr.io/project-zot/zot:v2.1.10
+    ports:
+      - 5555:5000
+    deploy:
+      mode: replicated
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+    healthcheck:
+      test: curl -f http://localhost:5000/v2/ || exit 1
+      interval: 5s
+      retries: 60
+      start_period: 15s
+    profiles:
+      - dir
+      - full
+    networks:
+      - default
+
+networks:
+  default:
+    driver: bridge
