@@ -3,10 +3,6 @@ helmDefaults:
   timeout: 600
 
 repositories:
-  # - name: ingress-nginx
-  #   url: https://kubernetes.github.io/ingress-nginx
-  # - name: cert-manager
-  #   url: https://charts.jetstack.io
   - name: nats
     url: https://nats-io.github.io/k8s/helm/charts
   - name: opentelemetry
