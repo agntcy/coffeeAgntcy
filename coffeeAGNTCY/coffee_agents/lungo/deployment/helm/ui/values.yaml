@@ -5,6 +5,8 @@ appName: lungo-ui
 appVersion: v1
 replicaCount: 1
 
+environment:
+
 image:
   repository: ghcr.io/agntcy/coffee-agntcy/lungo-ui
   tag: latest

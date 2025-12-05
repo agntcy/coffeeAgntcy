@@ -7,7 +7,6 @@
 {{- $logisticsTargets := list "logistic-farm" "logistic-accountant" "logistic-shipper" -}}
 
 {{- $shared := dict "config" (dict
-  "azureApiKey" (env "AZURE_API_KEY")
   "azureApiBase" (env "AZURE_API_BASE")
   "azureApiVersion" (env "AZURE_API_VERSION")
   "llmModel" (env "LLM_MODEL")
@@ -31,6 +30,14 @@
 {{ $name }}:
   config:
 {{- toYaml $cfg | nindent 4 }}
+  externalSecrets:
+    secretStoreName: local-secret-store
+    secretStoreKind: ClusterSecretStore
+    data:
+      - secretKey: AZURE_API_KEY
+        remoteRef:
+          key: my-local-secret
+          property: AZURE_API_KEY
 {{- end }}
 
 {{- /* Logistics targets: merge shared + SLIM into one config block */ -}}
@@ -39,6 +46,14 @@
 {{ $name }}:
   config:
 {{- toYaml $cfg | nindent 4 }}
+  externalSecrets:
+    secretStoreName: local-secret-store
+    secretStoreKind: ClusterSecretStore
+    data:
+      - secretKey: AZURE_API_KEY
+        remoteRef:
+          key: my-local-secret
+          property: AZURE_API_KEY
 {{- end }}
 
 # Explicit per-chart overrides with ingress enabled
@@ -46,43 +61,41 @@ lungo-exchange:
   environment: local
   config:
 {{- toYaml (merge (deepCopy $shared.config) (deepCopy $nats.config)) | nindent 4 }}
-#  ingress:
-#    enabled: true
-#    name: lungo-exchange
-#    className: nginx
-#    host: lungo-exchange.demo.com
-#    serviceName: lungo-exchange
-#    servicePort: 8000
-#    tlsSecret: exchange-tls
-#    annotations:
-#      cert-manager.io/cluster-issuer: selfsigned
+  externalSecrets:
+    secretStoreName: local-secret-store
+    secretStoreKind: ClusterSecretStore
+    data:
+      - secretKey: AZURE_API_KEY
+        remoteRef:
+          key: my-local-secret
+          property: AZURE_API_KEY
 
 logistic-supervisor:
   environment: local
   config:
 {{- toYaml (merge (deepCopy $shared.config) (deepCopy $slim.config)) | nindent 4 }}
-#  ingress:
-#    enabled: true
-#    name: logistic-supervisor
-#    className: nginx
-#    host: logistic-supervisor.demo.com
-#    serviceName: logistic-supervisor
-#    servicePort: 9090
-#    tlsSecret: logistic-supervisor-tls
-#    annotations:
-#      cert-manager.io/cluster-issuer: selfsigned
+  externalSecrets:
+    secretStoreName: local-secret-store
+    secretStoreKind: ClusterSecretStore
+    data:
+      - secretKey: AZURE_API_KEY
+        remoteRef:
+          key: my-local-secret
+          property: AZURE_API_KEY
 
 logistic-helpdesk:
   environment: local
   config:
 {{- toYaml (merge (deepCopy $shared.config) (deepCopy $slim.config)) | nindent 4 }}
-#  ingress:
-#    enabled: true
-#    name: logistic-helpdesk
-#    className: nginx
-#    host: logistic-helpdesk.demo.com
-#    serviceName: logistic-helpdesk
-#    servicePort: 9094
-#    tlsSecret: helpdesk-tls
-#    annotations:
-#      cert-manager.io/cluster-issuer: selfsigned
+  externalSecrets:
+    secretStoreName: local-secret-store
+    secretStoreKind: ClusterSecretStore
+    data:
+      - secretKey: AZURE_API_KEY
+        remoteRef:
+          key: my-local-secret
+          property: AZURE_API_KEY
+
+localExternalSecret:
+  azureApiKey: {{ env "AZURE_API_KEY" | quote }}
+

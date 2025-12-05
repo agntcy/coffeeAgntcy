@@ -30,30 +30,13 @@ nats:
     timeoutSeconds: 2
     failureThreshold: 6
 
-# cert-manager settings consumed by your templates
-# certManager:
-#   enabled: true
-#   email: aditi.a.gupta@gmail.com
-#   ingressClass: nginx
-#   name: selfsigned   # <— use the self-signed issuer for kind
-
 weather-mcp-server:
   transportServerEndpoint: "nats://lungo-local-cluster-nats:4222"
   defaultMessageTransport: "NATS"
   otlpHttpEndpoint: "http://lungo-local-cluster-opentelemetry-collector:4318"
 
 lungo-ui:
+  environment: local
   config:
     exchangeAppApiUrl: "http://localhost:30080"
     logisticsAppApiUrl: "http://localhost:30081"
-    helpdeskApiUrl: "https://localhost:30082"
-  # ingress:
-  #   enabled: true
-  #   name: lungo-ui
-  #   className: nginx
-  #   host: lungo-ui.demo.com
-  #   serviceName: lungo-ui         # must match the Service name
-  #   servicePort: 3000             # must match the Service port
-  #   tlsSecret: lungo-ui-tls
-  #   annotations:
-  #     cert-manager.io/cluster-issuer: selfsigned

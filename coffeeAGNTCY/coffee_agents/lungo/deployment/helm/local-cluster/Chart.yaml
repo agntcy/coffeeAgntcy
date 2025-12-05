@@ -51,7 +51,7 @@ dependencies:
     version: "0.0.3"
     repository: "file://../accountant"
   - name: lungo-ui
-    version: "0.0.4"
-    repository: "oci://ghcr.io/agntcy/coffee_agntcy/helm"
+    version: "0.0.5"
+    repository: "file://../ui"
 
   
