@@ -460,8 +460,6 @@ Once deployment completes, access services via localhost:
 - **UI**: http://localhost:3000
 - **Exchange API**: http://localhost:30080
 - **Logistic Supervisor**: http://localhost:30081
-- **Logistic Helpdesk**: http://localhost:30082
-
 
 ### Group Conversation Implementation
 
