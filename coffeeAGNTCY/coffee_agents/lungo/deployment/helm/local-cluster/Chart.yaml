@@ -39,7 +39,7 @@ dependencies:
     version: "0.0.3"
     repository: "file://../logistic-farm"
   - name: logistic-helpdesk
-    version: "0.0.4"
+    version: "0.0.3"
     repository: "file://../logistic-helpdesk"
   - name: logistic-supervisor
     version: "0.0.6"

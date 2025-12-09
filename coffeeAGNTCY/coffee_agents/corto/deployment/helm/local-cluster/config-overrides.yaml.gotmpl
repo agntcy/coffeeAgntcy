@@ -1,0 +1,32 @@
+{{- /*
+  Applies the same config overrides to multiple subcharts.
+  Include all dependency names (or aliases) from your local-cluster Chart.yaml.
+*/ -}}
+
+{{- $cortoTargets := list "corto-farm" "corto-exchange" -}}
+
+{{- range $name := $cortoTargets }}
+{{ $name }}:
+  environment: local
+  config:
+    farmAgentHost: "corto-farm"
+    farmAgentPort: "9999"
+    azureApiBase: {{ env "AZURE_API_BASE" | quote }}
+    azureApiVersion: {{ env "AZURE_API_VERSION" | quote }}
+    llmModel: {{ env "LLM_MODEL" | quote }}
+    otlpHttpEndpoint: "http://corto-local-cluster-opentelemetry-collector:4318"
+    identityApiServerUrl: "https://api.agent-identity.outshift.com"
+    transportServerEndpoint: "http://corto-local-cluster-slim:46357"
+    defaultMessageTransport: "SLIM"
+  externalSecrets:
+    secretStoreName: local-secret-store
+    secretStoreKind: ClusterSecretStore
+    data:
+      - secretKey: AZURE_API_KEY
+        remoteRef:
+          key: my-local-secret
+          property: AZURE_API_KEY
+{{- end }}
+
+localExternalSecret:
+  azureApiKey: {{ env "AZURE_API_KEY" | quote }}
