@@ -5,7 +5,7 @@ metadata:
   namespace: {{ .Release.Namespace }}
 data:
   AZURE_API_BASE: "{{ .Values.config.azureApiBase }}"
-
+  
   AZURE_API_VERSION: "{{ .Values.config.azureApiVersion }}"
   LLM_MODEL: "{{ .Values.config.llmModel }}"
   TRANSPORT_SERVER_ENDPOINT: "{{ .Values.config.transportServerEndpoint }}"

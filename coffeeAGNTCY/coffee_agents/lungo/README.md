@@ -38,6 +38,9 @@ You can use Lungo in two ways:
 2. **Docker Compose**  
    Quickly spin up all components as containers using Docker Compose.
 
+3. **Local Kind Cluster**
+	Deploy the full stack to a local Kubernetes cluster using KinD (Kubernetes in Docker)
+
 ### Prerequisites
 
 Before you begin, ensure the following tools are installed:
@@ -55,6 +58,33 @@ Before you begin, ensure the following tools are installed:
   node -v
   ```
   If not installed, download it from the [official Node.js website](https://nodejs.org/).
+
+**Additional prerequisites for Kind deployment:**
+
+- **Docker**: Required to run kind clusters
+- **kind**: Kubernetes in Docker  
+  Install via Homebrew:
+```sh
+  brew install kind
+```
+
+- **kubectl**: Kubernetes command-line tool  
+  Install via Homebrew:
+```sh
+  brew install kubectl
+```
+
+- **helm**: Kubernetes package manager  
+  Install via Homebrew:
+```sh
+  brew install helm
+```
+
+- **helmfile**: Declarative Helm chart deployment  
+  Install via Homebrew:
+```sh
+  brew install helmfile
+```
 
 ---
 
@@ -214,18 +244,28 @@ For advanced observability of your multi-agent system, integrate the [Observe SD
 
 ### Execution
 
-> **Note:** Each service should be started in its **own terminal window** and left running while the app is in use.
+> **Note:** You can run Lungo using one of three methods:
 >
-> **Shortcut:** If you prefer to spin up all services at once without reading through the steps below, you canspin
-> up the entire stack via Docker Compose:
+> 1. **Docker Compose** (Recommended for quick start) - see below
+> 2. **Local Python** - Running each component individually
+> 3. **Local Kind Cluster** - Full Kubernetes deployment
 >
-> ```sh
-> docker compose up
-> ```
->
-> Once running, access the UI at: [http://localhost:3000/](http://localhost:3000/), access grafana dashboard at: [http://localhost:3001/](http://localhost:3001/)
->
-> However, it is recommended to go through the steps below to better understand each component's role.
+> Choose the method that best fits your development workflow.
+
+#### Option 1: Docker Compose (Recommended)
+
+The fastest way to get started is using Docker Compose to spin up the entire stack:
+```sh
+docker compose up
+```
+
+Once running:
+- Access the UI at: [http://localhost:3000/](http://localhost:3000/)
+- Access Grafana dashboard at: [http://localhost:3001/](http://localhost:3001/)
+
+#### Option 2: Local Python Development
+
+For local development with individual components, follow these steps. Each service should be started in its **own terminal window** and left running while the app is in use.
 
 **Step 1: Run the SLIM Message Bus Gateway and Observability stack**
 
@@ -370,6 +410,56 @@ docker compose up ui --build
 By default, the UI will be available at [http://localhost:3000/](http://localhost:3000/).
 
 ![Screenshot](images/lungo_ui.png)
+
+#### Option 3: Local Kind Cluster Deployment
+
+Deploy the entire Lungo stack to a local Kubernetes cluster using kind. This method provides a production-like environment for development and testing.
+
+**Prerequisites:**
+- Ensure Docker, kind, kubectl, helm, and helmfile are installed (see Prerequisites section above)
+- Have your `.env` file configured with LLM credentials
+
+**Step 1: Navigate to the local-cluster directory**
+```sh
+cd coffeeAGNTCY/coffee_agents/lungo/deployment/helm/local-cluster
+```
+
+**Step 2: Create the kind cluster**
+```sh
+make create-cluster
+```
+
+This creates a kind cluster named `lungo` with port mappings configured for NodePort access.
+
+**Step 3: Deploy all services**
+```sh
+make apply
+```
+
+This command:
+- Reads environment variables from your `.env` file
+- Deploys External Secrets Operator for credential management
+- Deploys all Lungo services (farms, exchange, UI, observability stack)
+- Configures NodePort services for localhost access
+
+**Step 4: View deployment status**
+
+Check that all pods are running:
+```sh
+kubectl get pods --all-namespaces
+```
+
+View service endpoints:
+```sh
+kubectl get svc --all-namespaces
+```
+
+**Step 5: Access services**
+
+Once deployment completes, access services via localhost:
+- **UI**: http://localhost:3000
+- **Exchange API**: http://localhost:30080
+- **Logistic Supervisor**: http://localhost:30081
 
 ### Group Conversation Implementation
 

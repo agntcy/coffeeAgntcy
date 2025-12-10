@@ -25,6 +25,7 @@ dependencies = [
     "uvicorn",
     "ioa-observe-sdk==1.0.24",
     "agntcy-app-sdk==0.4.5",
+    "litellm[proxy]==1.75.3",
 ]
 
 [project.optional-dependencies]
