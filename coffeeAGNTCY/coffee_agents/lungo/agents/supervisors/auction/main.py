@@ -102,10 +102,17 @@ async def handle_prompt(request: PromptRequest):
   try:
     session_start() # Start a new tracing session for observability
     
+    # Generate prompt_id and create tracking record
+    import uuid
+    from agents.supervisors.auction.graph.tools import create_prompt_tracking
+    
+    prompt_id = str(uuid.uuid4())
+    create_prompt_tracking(prompt_id, request.prompt)
+    
     # Execute the graph synchronously - blocks until completion
-    result = await exchange_graph.serve(request.prompt)
+    result = await exchange_graph.serve(request.prompt, prompt_id)
     logger.info(f"Final result from LangGraph: {result}")
-    return {"response": result}
+    return {"response": result, "prompt_id": prompt_id}
   except ValueError as ve:
     raise HTTPException(status_code=400, detail=str(ve))
   except Exception as e:
@@ -133,6 +140,13 @@ async def handle_stream_prompt(request: PromptRequest):
     try:
         session_start()  # Start a new tracing session for observability
 
+        # Generate prompt_id and create tracking record
+        import uuid
+        from agents.supervisors.auction.graph.tools import create_prompt_tracking
+        
+        prompt_id = str(uuid.uuid4())
+        create_prompt_tracking(prompt_id, request.prompt)
+
         async def stream_generator():
             """
             Generator that yields JSON chunks as they arrive from the graph.
@@ -140,11 +154,11 @@ async def handle_stream_prompt(request: PromptRequest):
             """
             try:
                 # Stream chunks from the graph as nodes complete execution
-                async for chunk in exchange_graph.streaming_serve(request.prompt):
-                    yield json.dumps({"response": chunk}) + "\n"
+                async for chunk in exchange_graph.streaming_serve(request.prompt, prompt_id):
+                    yield json.dumps({"response": chunk, "prompt_id": prompt_id}) + "\n"
             except Exception as e:
                 logger.error(f"Error in stream: {e}")
-                yield json.dumps({"response": f"Error: {str(e)}"}) + "\n"
+                yield json.dumps({"response": f"Error: {str(e)}", "prompt_id": prompt_id}) + "\n"
 
         return StreamingResponse(
             stream_generator(),

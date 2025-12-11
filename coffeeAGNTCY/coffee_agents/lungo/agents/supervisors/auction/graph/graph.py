@@ -42,6 +42,7 @@ class GraphState(MessagesState):
     """
     next_node: str
     full_response: str = ""
+    prompt_id: str = ""
 
 @agent(name="exchange_agent")
 class ExchangeGraph:
@@ -255,7 +256,7 @@ class ExchangeGraph:
 
         try:
             # Call the function directly
-            tool_result = await get_farm_yield_inventory(user_msg.content, farm)
+            tool_result = await get_farm_yield_inventory(user_msg.content, farm, state.get("prompt_id"))
             
             # Check for errors in the result
             if "error" in str(tool_result).lower() or "failed" in str(tool_result).lower():
@@ -315,7 +316,7 @@ class ExchangeGraph:
             error_count = 0
             has_timeout_warning = False
             
-            async for chunk in get_all_farms_yield_inventory_streaming(user_msg.content):
+            async for chunk in get_all_farms_yield_inventory_streaming(user_msg.content, state.get("prompt_id")):
                 # Yield each chunk immediately for streaming mode
                 # In non-streaming mode, these intermediate yields are ignored
                 yield {"messages": [AIMessage(content=chunk.strip())]}
@@ -478,7 +479,7 @@ class ExchangeGraph:
             "messages": [AIMessage(content="I'm not sure how to handle that. Could you please clarify?")],
         }
 
-    async def serve(self, prompt: str):
+    async def serve(self, prompt: str, prompt_id: str = None):
         """
         Processes the input prompt and returns a complete response from the graph execution.
         
@@ -513,6 +514,7 @@ class ExchangeGraph:
                     "content": prompt
                 }
                 ],
+                "prompt_id": prompt_id or "",
             }, {"configurable": {"thread_id": uuid.uuid4()}})
 
             # Extract messages from the final state
@@ -538,7 +540,7 @@ class ExchangeGraph:
             logger.error(f"Error in serve method: {e}")
             raise Exception(str(e))
 
-    async def streaming_serve(self, prompt: str):
+    async def streaming_serve(self, prompt: str, prompt_id: str = None):
         """
         Streams the graph execution using LangGraph's astream_events API, yielding chunks as they arrive.
         
@@ -577,6 +579,7 @@ class ExchangeGraph:
                         "content": prompt
                     }
                 ],
+                "prompt_id": prompt_id or "",
             }
 
             # Track seen content to prevent duplicate yields when nodes produce the same output

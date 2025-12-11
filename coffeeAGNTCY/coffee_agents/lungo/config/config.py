@@ -26,3 +26,7 @@ ENABLE_HTTP = os.getenv("ENABLE_HTTP", "true").lower() in ("true", "1", "yes")
 # This is for demo purposes only. In production, use secure methods to manage API keys.
 IDENTITY_API_KEY = os.getenv("IDENTITY_API_KEY", "487>t:7:Ke5N[kZ[dOmDg2]0RQx))6k}bjARRN+afG3806h(4j6j[}]F5O)f[6PD")
 IDENTITY_API_SERVER_URL = os.getenv("IDENTITY_API_SERVER_URL", "https://api.agent-identity.outshift.com")
+
+# Simple Redis configuration for tracking
+REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379")
+REDIS_TTL = int(os.getenv("REDIS_TTL", "3600"))  # 1 hour default TTL

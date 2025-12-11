@@ -2,9 +2,15 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import logging
-from typing import Any, Union, Literal, NoReturn
+import json
+import uuid
+from datetime import datetime
+from typing import Any, Union, Literal, NoReturn, Annotated
 from uuid import uuid4
 from pydantic import BaseModel
+from langchain_core.messages import AIMessage
+from langgraph.prebuilt import InjectedState
+import redis
 
 from a2a.types import (
     AgentCard,
@@ -35,12 +41,107 @@ from config.config import (
     FARM_BROADCAST_TOPIC,
     IDENTITY_API_KEY,
     IDENTITY_API_SERVER_URL,
+    REDIS_URL,
+    REDIS_TTL,
 )
 from services.identity_service import IdentityService
 from services.identity_service_impl import IdentityServiceImpl
 
 
 logger = logging.getLogger("lungo.supervisor.tools")
+
+# Simple Redis client for tracking
+redis_client = redis.from_url(REDIS_URL, decode_responses=True)
+
+def start_step(prompt_id: str, agent_name: str) -> str:
+    """Start a new step and return step_id"""
+    logger.info(f"DEBUG: start_step called with prompt_id={prompt_id}, agent_name={agent_name}")
+    
+    if not prompt_id:
+        logger.warning("DEBUG: start_step returning None - no prompt_id")
+        return None
+        
+    if not redis_client:
+        logger.warning("DEBUG: start_step returning None - no redis_client")
+        return None
+        
+    try:
+        # Get existing prompt data
+        key = f"prompt:{prompt_id}"
+        logger.info(f"DEBUG: Getting existing data from Redis key: {key}")
+        existing_data = redis_client.get(key)
+        
+        if existing_data:
+            data = json.loads(existing_data)
+            logger.info(f"DEBUG: Found existing data with {len(data.get('route', []))} routes")
+        else:
+            data = {"prompt_id": prompt_id, "prompt": "", "route": []}
+            logger.warning("DEBUG: No existing data found, creating new tracking record")
+        
+        # Create new step
+        step_id = str(uuid.uuid4())
+        step = {
+            "step_id": step_id,
+            "agent_name": agent_name,
+            "start_time": datetime.utcnow().isoformat(),
+            "end_time": None,
+            "success": None
+        }
+        
+        # Add step to route
+        data["route"].append(step)
+        logger.info(f"DEBUG: Added step to route. New route count: {len(data['route'])}")
+        
+        # Save back to Redis
+        logger.info(f"DEBUG: Saving updated data to Redis with key: {key}")
+        redis_client.setex(key, REDIS_TTL, json.dumps(data))
+        logger.info(f"DEBUG: Successfully saved to Redis")
+        return step_id
+        
+    except Exception as e:
+        logger.error(f"DEBUG: Redis start_step failed with exception: {e}")
+        return None
+
+def end_step(prompt_id: str, step_id: str, success: bool):
+    """End a step with success status"""
+    if not prompt_id or not step_id:
+        return
+        
+    try:
+        # Get existing prompt data
+        key = f"prompt:{prompt_id}"
+        existing_data = redis_client.get(key)
+        
+        if not existing_data:
+            return
+            
+        data = json.loads(existing_data)
+        
+        # Find and update the step
+        for step in data["route"]:
+            if step["step_id"] == step_id:
+                step["end_time"] = datetime.utcnow().isoformat()
+                step["success"] = success
+                break
+        
+        # Save back to Redis
+        redis_client.setex(key, REDIS_TTL, json.dumps(data))
+        
+    except Exception as e:
+        logger.warning(f"Redis end_step failed: {e}")
+
+def create_prompt_tracking(prompt_id: str, prompt: str):
+    """Create initial prompt tracking record"""
+    try:
+        data = {
+            "prompt_id": prompt_id,
+            "prompt": prompt,
+            "route": []
+        }
+        key = f"prompt:{prompt_id}"
+        redis_client.setex(key, REDIS_TTL, json.dumps(data))
+    except Exception as e:
+        logger.warning(f"Redis create_prompt_tracking failed: {e}")
 
 # Global factory and transport instances
 factory = get_factory()
@@ -153,7 +254,7 @@ def verify_farm_identity(identity_service: IdentityService, farm_name: str):
         raise A2AAgentError(e) # Re-raise as our custom exception
 
 # node utility for streaming
-async def get_farm_yield_inventory(prompt: str, farm: str) -> str:
+async def get_farm_yield_inventory(prompt: str, farm: str, prompt_id: str = None) -> str:
     """
     Fetch yield inventory from a specific farm.
 
@@ -169,7 +270,16 @@ async def get_farm_yield_inventory(prompt: str, farm: str) -> str:
         ValueError: For invalid input arguments.
     """
     logger.info("entering get_farm_yield_inventory tool with prompt: %s, farm: %s", prompt, farm)
+    logger.info("TRACKING: Point-to-point inventory request initiated to farm: %s", farm)
+    
+    logger.info(f"DEBUG: Single farm tool called with prompt_id={prompt_id}")
+    
+    # Start exchange step (supervisor)
+    exchange_step_id = start_step(prompt_id, "exchange") if prompt_id else None
+    
     if not farm:
+        if prompt_id and exchange_step_id:
+            end_step(prompt_id, exchange_step_id, False)
         raise ValueError("No farm was provided. Please provide a farm to get the yield from.")
     
     card = get_farm_card(farm)
@@ -178,6 +288,11 @@ async def get_farm_yield_inventory(prompt: str, farm: str) -> str:
                              f"are: {brazil_agent_card.name}, {colombia_agent_card.name}, {vietnam_agent_card.name}.")
     
     try:
+        logger.info("TRACKING: Creating A2A client for farm: %s", farm)
+        
+        # Start farm step
+        farm_step_id = start_step(prompt_id, farm) if prompt_id else None
+        
         client = await factory.create_client(
             "A2A",
             agent_topic=A2AProtocol.create_agent_topic(card),
@@ -195,26 +310,51 @@ async def get_farm_yield_inventory(prompt: str, farm: str) -> str:
             )
         )
 
+        logger.info("TRACKING: Sending inventory request to farm: %s", farm)
         response = await client.send_message(request)
         logger.info(f"Response received from A2A agent: {response}")
+        
         if response.root.result and response.root.result.parts:
             part = response.root.result.parts[0].root
             if hasattr(part, "text"):
+                logger.info("TRACKING: Successfully received inventory response from farm: %s", farm)
+                if prompt_id and farm_step_id:
+                    end_step(prompt_id, farm_step_id, True)
+                if prompt_id and exchange_step_id:
+                    end_step(prompt_id, exchange_step_id, True)
                 return part.text.strip()
             else:
+                logger.error("TRACKING: Farm %s returned result without text content", farm)
+                if prompt_id and farm_step_id:
+                    end_step(prompt_id, farm_step_id, False)
+                if prompt_id and exchange_step_id:
+                    end_step(prompt_id, exchange_step_id, False)
                 raise A2AAgentError(f"Farm '{farm}' returned a result without text content.")
         elif response.root.error:
                 logger.error(f"A2A error from farm '{farm}': {response.root.error.message}")
+                logger.error("TRACKING: Inventory request failed for farm: %s", farm)
+                if prompt_id and farm_step_id:
+                    end_step(prompt_id, farm_step_id, False)
+                if prompt_id and exchange_step_id:
+                    end_step(prompt_id, exchange_step_id, False)
                 raise A2AAgentError(f"Error from farm '{farm}': {response.root.error.message}")
         else:
             logger.error(f"Unknown response type from farm '{farm}'.")
+            logger.error("TRACKING: Unknown response type from farm: %s", farm)
+            if prompt_id and farm_step_id:
+                end_step(prompt_id, farm_step_id, False)
+            if prompt_id and exchange_step_id:
+                end_step(prompt_id, exchange_step_id, False)
             raise A2AAgentError(f"Unknown response type from farm '{farm}'.")
     except Exception as e: # Catch any underlying communication or client creation errors
         logger.error(f"Failed to communicate with farm '{farm}': {e}")
+        logger.error("TRACKING: Communication failed with farm: %s", farm)
+        if prompt_id and exchange_step_id:
+            end_step(prompt_id, exchange_step_id, False)
         raise A2AAgentError(f"Failed to communicate with farm '{farm}'. Details: {e}")
 
 # node utility for streaming
-async def get_all_farms_yield_inventory(prompt: str) -> str:
+async def get_all_farms_yield_inventory(prompt: str, state: Annotated[dict, InjectedState]) -> str:
     """
     Broadcasts a prompt to all farms and aggregates their inventory responses.
 
@@ -225,6 +365,15 @@ async def get_all_farms_yield_inventory(prompt: str) -> str:
         str: A summary string containing yield information from all farms.
     """
     logger.info("entering get_all_farms_yield_inventory tool with prompt: %s", prompt)
+    logger.info("TRACKING: Broadcast inventory request initiated to ALL farms")
+    
+    # Extract prompt_id from state
+    prompt_id = state.get("prompt_id") if state else None
+    logger.info(f"DEBUG: Broadcast tool called with prompt_id={prompt_id}, state={state}")
+    
+    # Start exchange step (supervisor)
+    exchange_step_id = start_step(prompt_id, "exchange") if prompt_id else None
+    logger.info(f"DEBUG: Started exchange step with step_id={exchange_step_id}")
 
     request = SendMessageRequest(
         id=str(uuid4()),
@@ -244,6 +393,7 @@ async def get_all_farms_yield_inventory(prompt: str) -> str:
         client_handshake_topic = FARM_BROADCAST_TOPIC
 
     try:
+        logger.info("TRACKING: Creating broadcast client for all farms")
         # create an A2A client, retrieving an A2A card from agent_topic
         client = await factory.create_client(
             "A2A",
@@ -253,12 +403,16 @@ async def get_all_farms_yield_inventory(prompt: str) -> str:
 
         # create a list of recipients to include in the broadcast
         recipients = [A2AProtocol.create_agent_topic(get_farm_card(farm)) for farm in ['brazil', 'colombia', 'vietnam']]
+        
+        logger.info("TRACKING: Sending broadcast to farms: %s", ', '.join(['brazil', 'colombia', 'vietnam']))
         # create a broadcast message and collect responses
         responses = await client.broadcast_message(request, broadcast_topic=FARM_BROADCAST_TOPIC, recipients=recipients)
 
         logger.info(f"got {len(responses)} responses back from farms")
+        logger.info("TRACKING: Received %d responses from broadcast", len(responses))
 
         farm_yields = ""
+        farm_step_ids = {}
         for response in responses:
             # we want a dict for farm name -> yield, the farm_name will be in the response metadata
             if response.root.result and response.root.result.parts:
@@ -268,24 +422,64 @@ async def get_all_farms_yield_inventory(prompt: str) -> str:
                 else:
                     farm_name = "Unknown Farm"
 
+                # Extract canonical farm name from metadata
+                canonical_farm_name = "unknown"
+                
+                # Map display names to canonical names
+                if "brazil" in farm_name.lower():
+                    canonical_farm_name = "brazil"
+                elif "vietnam" in farm_name.lower():
+                    canonical_farm_name = "vietnam"
+                elif "colombia" in farm_name.lower():
+                    canonical_farm_name = "colombia"
+
+                # Start farm step
+                farm_step_id = start_step(prompt_id, canonical_farm_name) if prompt_id else None
+                farm_step_ids[farm_name] = farm_step_id
+
+                logger.info("TRACKING: Successfully received inventory response from farm: %s (canonical: %s)", farm_name, canonical_farm_name)
                 farm_yields += f"{farm_name} : {part.text.strip()}\n"
+                
+                # End farm step
+                if prompt_id and farm_step_id:
+                    end_step(prompt_id, farm_step_id, True)
             elif response.root.error:
                 err_msg = f"A2A error from farm: {response.root.error.message}"
                 logger.error(err_msg)
+                logger.error("TRACKING: Broadcast inventory request failed for a farm")
+                # End all farm steps and exchange step on error
+                for farm_name, step_id in farm_step_ids.items():
+                    if prompt_id and step_id:
+                        end_step(prompt_id, step_id, False)
+                if prompt_id and exchange_step_id:
+                    end_step(prompt_id, exchange_step_id, False)
                 raise A2AAgentError(err_msg)
             else:
                 err_msg = f"Unknown response type from farm"
                 logger.error(err_msg)
+                logger.error("TRACKING: Unknown response type from farm during broadcast")
+                # End all farm steps and exchange step on error
+                for farm_name, step_id in farm_step_ids.items():
+                    if prompt_id and step_id:
+                        end_step(prompt_id, step_id, False)
+                if prompt_id and exchange_step_id:
+                    end_step(prompt_id, exchange_step_id, False)
                 raise A2AAgentError(err_msg)
 
         logger.info(f"Farm yields: {farm_yields}")
+        logger.info("TRACKING: Successfully completed broadcast inventory request")
+        if prompt_id and exchange_step_id:
+            end_step(prompt_id, exchange_step_id, True)
         return farm_yields.strip()
     except Exception as e: # Catch any underlying communication or client creation errors
         logger.error(f"Failed to communicate with all farms during broadcast: {e}")
+        logger.error("TRACKING: Broadcast inventory request failed")
+        if prompt_id and exchange_step_id:
+            end_step(prompt_id, exchange_step_id, False)
         raise A2AAgentError(f"Failed to communicate with all farms. Details: {e}")
 
 # node utility for streaming
-async def get_all_farms_yield_inventory_streaming(prompt: str):
+async def get_all_farms_yield_inventory_streaming(prompt: str, prompt_id: str = None):
     """
     Broadcasts a prompt to all farms and streams their inventory responses as they arrive.
 
@@ -296,6 +490,13 @@ async def get_all_farms_yield_inventory_streaming(prompt: str):
         str: Yield information from each farm as it becomes available.
     """
     logger.info("entering get_all_farms_yield_inventory_streaming tool with prompt: %s", prompt)
+    logger.info("TRACKING STREAMING: Broadcast inventory request initiated to ALL farms")
+    
+    logger.info(f"DEBUG STREAMING: Broadcast tool called with prompt_id={prompt_id}")
+    
+    # Start exchange step (supervisor)
+    exchange_step_id = start_step(prompt_id, "exchange") if prompt_id else None
+    logger.info(f"DEBUG STREAMING: Started exchange step with step_id={exchange_step_id}")
 
     request = SendMessageRequest(
         id=str(uuid4()),
@@ -351,9 +552,31 @@ async def get_all_farms_yield_inventory_streaming(prompt: str):
                         # received error from farm agent
                         errors.append(part.text.strip())
                     else:
+                        # Extract canonical farm name from metadata
+                        canonical_farm_name = "unknown"
+                        
+                        # Map display names to canonical names
+                        if "brazil" in farm_name.lower():
+                            canonical_farm_name = "brazil"
+                        elif "vietnam" in farm_name.lower():
+                            canonical_farm_name = "vietnam"
+                        elif "colombia" in farm_name.lower():
+                            canonical_farm_name = "colombia"
+                        
+                        # Start farm step with canonical name
+                        farm_step_id = start_step(prompt_id, canonical_farm_name) if prompt_id else None
+                        logger.info(f"DEBUG STREAMING: Started farm step for {canonical_farm_name} (display: {farm_name}) with step_id={farm_step_id}")
+                        
                         responded_farms.add(farm_name)
                         logger.info(f"Received response from {farm_name} ({len(responded_farms)}/{len(recipients)})")
+                        
+                        # Yield the response
                         yield f"{farm_name} : {part.text.strip()}\n"
+                        
+                        # End farm step after yielding
+                        if prompt_id and farm_step_id:
+                            end_step(prompt_id, farm_step_id, True)
+                            logger.info(f"DEBUG STREAMING: Ended farm step for {canonical_farm_name}")
                 elif response.root.error:
                     err_msg = f"A2A error from farm: {response.root.error.message}"
                     logger.error(err_msg)
@@ -383,10 +606,21 @@ async def get_all_farms_yield_inventory_streaming(prompt: str):
 
                 yield response
 
+        # End exchange step after all processing complete
+        if prompt_id and exchange_step_id:
+            end_step(prompt_id, exchange_step_id, True)
+            logger.info(f"DEBUG STREAMING: Ended exchange step for broadcast")
+
 
     except Exception as e:
         error_msg = f"Failed to communicate with farms during broadcast: {e}"
         logger.error(error_msg)
+        
+        # End exchange step on error
+        if prompt_id and exchange_step_id:
+            end_step(prompt_id, exchange_step_id, False)
+            logger.error(f"DEBUG STREAMING: Ended exchange step due to error: {e}")
+        
         # Check if it's a timeout-related error
         if "timeout" in str(e).lower():
             yield f"Error: Broadcast timed out. Some farms may be slow to respond or unavailable. {str(e)}\n"
@@ -395,7 +629,7 @@ async def get_all_farms_yield_inventory_streaming(prompt: str):
 
 @tool(args_schema=CreateOrderArgs)
 @ioa_tool_decorator(name="create_order")
-async def create_order(farm: str, quantity: int, price: float) -> str:
+async def create_order(farm: str, quantity: int, price: float, state: Annotated[dict, InjectedState]) -> str:
     """
     Sends a request to create a coffee order with a specific farm.
 
@@ -415,10 +649,22 @@ async def create_order(farm: str, quantity: int, price: float) -> str:
     farm = farm.strip().lower()
 
     logger.info(f"Creating order with price: {price}, quantity: {quantity}")
+    logger.info("TRACKING: Create order request initiated for farm: %s, quantity: %d, price: %.2f", farm, quantity, price)
+    
+    # Extract prompt_id from state
+    prompt_id = state.get("prompt_id") if state else None
+    
+    # Start exchange step (supervisor)
+    exchange_step_id = start_step(prompt_id, "exchange") if prompt_id else None
+    
     if price <= 0 or quantity <= 0:
+        if prompt_id and exchange_step_id:
+            end_step(prompt_id, exchange_step_id, False)
         raise ValueError("Price and quantity must be greater than zero.")
     
     if not farm:
+        if prompt_id and exchange_step_id:
+            end_step(prompt_id, exchange_step_id, False)
         raise ValueError("No farm was provided, please provide a farm to create an order.")
     
     card = get_farm_card(farm)
@@ -426,11 +672,17 @@ async def create_order(farm: str, quantity: int, price: float) -> str:
         raise ValueError(f"Farm '{farm}' not recognized. Available farms are: {brazil_agent_card.name}, {colombia_agent_card.name}, {vietnam_agent_card.name}.")
 
     logger.info(f"Using farm card: {card.name} for order creation")
+    logger.info("TRACKING: Creating A2A client for order to farm: %s", farm)
+    
     identity_service = IdentityServiceImpl(api_key=IDENTITY_API_KEY, base_url=IDENTITY_API_SERVER_URL)
     try:
         verify_farm_identity(identity_service, card.name)
+        logger.info("TRACKING: Identity verification successful for farm: %s", farm)
     except Exception as e:
         # log the error and re-raise the exception
+        logger.error("TRACKING: Identity verification failed for farm: %s", farm)
+        if prompt_id and exchange_step_id:
+            end_step(prompt_id, exchange_step_id, False)
         raise A2AAgentError(f"Identity verification failed for farm '{farm}'. Details: {e}")
 
     try:
@@ -439,6 +691,9 @@ async def create_order(farm: str, quantity: int, price: float) -> str:
             agent_topic=A2AProtocol.create_agent_topic(card),
             transport=transport,
         )
+
+        # Start farm step
+        farm_step_id = start_step(prompt_id, farm) if prompt_id else None
 
         request = SendMessageRequest(
             id=str(uuid4()),
@@ -451,23 +706,47 @@ async def create_order(farm: str, quantity: int, price: float) -> str:
             )
         )
 
+        logger.info("TRACKING: Sending order request to farm: %s", farm)
         response = await client.send_message(request)
         logger.info(f"Response received from A2A agent: {response}")
 
         if response.root.result and response.root.result.parts:
             part = response.root.result.parts[0].root
             if hasattr(part, "text"):
+                logger.info("TRACKING: Successfully received order confirmation from farm: %s", farm)
+                if prompt_id and farm_step_id:
+                    end_step(prompt_id, farm_step_id, True)
+                if prompt_id and exchange_step_id:
+                    end_step(prompt_id, exchange_step_id, True)
                 return part.text.strip()
             else:
+                logger.error("TRACKING: Farm %s returned order result without text content", farm)
+                if prompt_id and farm_step_id:
+                    end_step(prompt_id, farm_step_id, False)
+                if prompt_id and exchange_step_id:
+                    end_step(prompt_id, exchange_step_id, False)
                 raise A2AAgentError(f"Farm '{farm}' returned a result without text content for order creation.")
         elif response.root.error:
             logger.error(f"A2A error: {response.root.error.message}")
+            logger.error("TRACKING: Order request failed for farm: %s", farm)
+            if prompt_id and farm_step_id:
+                end_step(prompt_id, farm_step_id, False)
+            if prompt_id and exchange_step_id:
+                end_step(prompt_id, exchange_step_id, False)
             raise A2AAgentError(f"Error from order agent for farm '{farm}': {response.root.error.message}")
         else:
             logger.error("Unknown response type")
+            logger.error("TRACKING: Unknown response type from farm: %s for order", farm)
+            if prompt_id and farm_step_id:
+                end_step(prompt_id, farm_step_id, False)
+            if prompt_id and exchange_step_id:
+                end_step(prompt_id, exchange_step_id, False)
             raise A2AAgentError("Unknown response type from order agent")
     except Exception as e: # Catch any underlying communication or client creation errors
         logger.error(f"Failed to communicate with order agent for farm '{farm}': {e}")
+        logger.error("TRACKING: Order communication failed with farm: %s", farm)
+        if prompt_id and exchange_step_id:
+            end_step(prompt_id, exchange_step_id, False)
         raise A2AAgentError(f"Failed to communicate with order agent for farm '{farm}'. Details: {e}")
 
 @tool
