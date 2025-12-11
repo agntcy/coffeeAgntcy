@@ -29,6 +29,9 @@ dependencies = [
     "langchain-litellm>=0.3.0",
     "litellm[proxy]==1.75.3",
     "agntcy-app-sdk==0.4.5",
+    "redis>=5.0.0",
+    "redisvl>=0.3.0",
+    "sentence-transformers>=2.2.0",
 ]
 
 [project.optional-dependencies]
