@@ -290,8 +290,8 @@ async def get_farm_yield_inventory(prompt: str, farm: str, prompt_id: str = None
     try:
         logger.info("TRACKING: Creating A2A client for farm: %s", farm)
         
-        # Start farm step
-        farm_step_id = start_step(prompt_id, farm) if prompt_id else None
+        # Start farm step with -farm suffix
+        farm_step_id = start_step(prompt_id, f"{farm}-farm") if prompt_id else None
         
         client = await factory.create_client(
             "A2A",
@@ -425,13 +425,13 @@ async def get_all_farms_yield_inventory(prompt: str, state: Annotated[dict, Inje
                 # Extract canonical farm name from metadata
                 canonical_farm_name = "unknown"
                 
-                # Map display names to canonical names
+                # Map display names to canonical names with -farm suffix
                 if "brazil" in farm_name.lower():
-                    canonical_farm_name = "brazil"
+                    canonical_farm_name = "brazil-farm"
                 elif "vietnam" in farm_name.lower():
-                    canonical_farm_name = "vietnam"
+                    canonical_farm_name = "vietnam-farm"
                 elif "colombia" in farm_name.lower():
-                    canonical_farm_name = "colombia"
+                    canonical_farm_name = "colombia-farm"
 
                 # Start farm step
                 farm_step_id = start_step(prompt_id, canonical_farm_name) if prompt_id else None
@@ -555,13 +555,13 @@ async def get_all_farms_yield_inventory_streaming(prompt: str, prompt_id: str = 
                         # Extract canonical farm name from metadata
                         canonical_farm_name = "unknown"
                         
-                        # Map display names to canonical names
+                        # Map display names to canonical names with -farm suffix
                         if "brazil" in farm_name.lower():
-                            canonical_farm_name = "brazil"
+                            canonical_farm_name = "brazil-farm"
                         elif "vietnam" in farm_name.lower():
-                            canonical_farm_name = "vietnam"
+                            canonical_farm_name = "vietnam-farm"
                         elif "colombia" in farm_name.lower():
-                            canonical_farm_name = "colombia"
+                            canonical_farm_name = "colombia-farm"
                         
                         # Start farm step with canonical name
                         farm_step_id = start_step(prompt_id, canonical_farm_name) if prompt_id else None
@@ -692,8 +692,8 @@ async def create_order(farm: str, quantity: int, price: float, state: Annotated[
             transport=transport,
         )
 
-        # Start farm step
-        farm_step_id = start_step(prompt_id, farm) if prompt_id else None
+        # Start farm step with -farm suffix
+        farm_step_id = start_step(prompt_id, f"{farm}-farm") if prompt_id else None
 
         request = SendMessageRequest(
             id=str(uuid4()),
