@@ -1,0 +1,96 @@
+[
+    {
+        "prompt": "What yield do the farms have?",
+        "route": [
+            {"agent_name": "exchange", "success": true}, 
+            {"agent_name": "brazil-farm", "success": true}, 
+            {"agent_name": "colombia-farm", "success": true},
+            {"agent_name": "vietnam-farm", "success": true},
+            {"agent_name": "weather-mcp-server", "success": true}
+        ]
+    },
+    {
+        "prompt": "What inventory do the farms have?",
+        "route": [
+            {"agent_name": "exchange", "success": true}, 
+            {"agent_name": "brazil-farm", "success": true}, 
+            {"agent_name": "colombia-farm", "success": true},
+            {"agent_name": "vietnam-farm", "success": true},
+            {"agent_name": "weather-mcp-server", "success": true}
+        ]
+    },
+        {
+        "prompt": "How many coffee beans do the farms have?",
+        "route": [
+            {"agent_name": "exchange", "success": true}, 
+            {"agent_name": "brazil-farm", "success": true}, 
+            {"agent_name": "colombia-farm", "success": true},
+            {"agent_name": "vietnam-farm", "success": true},
+            {"agent_name": "weather-mcp-server", "success": true}
+        ]
+    },
+    {
+        "prompt": "What is the current inventory for Brazil farm?",
+        "route": [
+            {"agent_name": "exchange", "success": true}, 
+            {"agent_name": "brazil-farm", "success": true}
+        ]
+    },
+    {
+        "prompt": "What is the amount of coffee at Brazil farm?",
+        "route": [
+            {"agent_name": "exchange", "success": true}, 
+            {"agent_name": "brazil-farm", "success": true}
+        ]
+    },
+    {
+        "prompt": "What is the current inventory for Colombia farm?",
+        "route": [
+            {"agent_name": "exchange", "success": true}, 
+            {"agent_name": "colombia-farm", "success": true},
+            {"agent_name": "weather-mcp-server", "success": true}
+        ]
+    },
+    {
+        "prompt": "What is the amount of coffee at Colombia farm?",
+        "route": [
+            {"agent_name": "exchange", "success": true}, 
+            {"agent_name": "brazil-farm", "success": true}
+        ]
+    },
+    {
+        "prompt": "WHat is the current inventory for Vietnam farm?",
+        "route": [
+            {"agent_name": "exchange", "success": true}, 
+            {"agent_name": "vietnam-farm", "success": true}
+        ]
+    },
+    {
+        "prompt": "What is the amount of coffee at Vietnam farm?",
+        "route": [
+            {"agent_name": "exchange", "success": true}, 
+            {"agent_name": "brazil-farm", "success": true}
+        ]
+    },
+    {
+        "prompt": "I'd like to buy 200 lbs quantity of coffee at USD 500 price from Colombia",
+        "route": [
+            {"agent_name": "exchange", "success": true}, 
+            {"agent_name": "colombia-farm", "success": true}
+        ]
+    },
+    {
+        "prompt": "I'd like to buy 200 lbs quantity of coffee at USD 500 price from Brazil",
+        "route": [
+            {"agent_name": "exchange", "success": false}
+        ]
+    },
+      {
+        "prompt": "I'd like to buy 200 lbs quantity of coffee at USD 500 price from Vietnam",
+        "route": [
+            {"agent_name": "exchange", "success": true}, 
+            {"agent_name": "vietnam-farm", "success": true}
+        ]
+    }
+]
+    
