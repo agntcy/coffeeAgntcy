@@ -12,6 +12,7 @@ from agntcy_app_sdk.factory import TransportTypes
 from agntcy_app_sdk.app_sessions import AppContainer
 from agntcy_app_sdk.factory import AgntcyFactory
 
+from agents.supervisors.auction.graph.tools import start_step, end_step
 from config.config import (
     DEFAULT_MESSAGE_TRANSPORT,
     TRANSPORT_SERVER_ENDPOINT,
@@ -59,13 +60,19 @@ async def geocode_location(client: httpx.AsyncClient, location: str) -> tuple[fl
     return None
 
 @mcp.tool()
-async def get_forecast(location: str) -> str:
+async def get_forecast(location: str, prompt_id: str) -> str:
     logging.info(f"Getting weather forecast for location: {location}")
     async with httpx.AsyncClient() as client:
         coords = await geocode_location(client, location)
         if not coords:
             return f"Could not determine coordinates for location: {location}"
         lat, lon = coords
+
+
+        logger.info(f"DEBUG: received prompt id {prompt_id}")
+
+        if prompt_id:
+            weather_mcp_step_id = start_step(prompt_id, "weather-mcp-server")
 
         params = {
             "latitude": lat,
@@ -86,6 +93,9 @@ async def get_forecast(location: str) -> str:
             }
         else:
             cw = data["current_weather"]
+
+        end_step(prompt_id,weather_mcp_step_id, True)
+
         return (
             f"Temperature: {cw['temperature']}°C\n"
             f"Wind speed: {cw['windspeed']} m/s\n"

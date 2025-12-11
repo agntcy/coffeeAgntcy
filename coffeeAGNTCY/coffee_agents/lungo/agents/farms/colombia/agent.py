@@ -26,6 +26,7 @@ from ioa_observe.sdk.decorators import agent, graph
 
 from agents.exceptions import AuthError
 from agents.mcp_servers.utils import invoke_payment_mcp_tool
+from common.helper import extract_prompt_id
 from config.config import (
     DEFAULT_MESSAGE_TRANSPORT,
     TRANSPORT_SERVER_ENDPOINT,
@@ -52,6 +53,7 @@ class GraphState(MessagesState):
     """
     next_node: str
     weather_forecast_success: bool
+    prompt_id: str = ""
 
 # --- 3. Implement the LangGraph Application Class ---
 @agent(name="colombia_farm_agent")
@@ -91,15 +93,21 @@ class FarmAgent:
             input_variables=["user_message"]
         )
 
+        logger.info(f"Supervisor received message: {state['messages']}")  # Log the incoming message
+
         chain = prompt | self.supervisor_llm
         response = chain.invoke({"user_message": state["messages"]})
         intent = response.content.strip().lower()
+
+        prompt_id = extract_prompt_id(state["messages"][0].content)[1]
+        logger.info(f"Extracted prompt_id: {prompt_id[1]}")  # Log the extracted prompt_id
+
 
         logger.info(f"Supervisor intent determined: {intent}")  # Log the intent for debugging
 
         if "inventory" in intent:
             # return {"next_node": NodeStates.INVENTORY, "messages": state["messages"]}
-            return {"next_node": NodeStates.WEATHER_FORECAST, "messages": state["messages"]}
+            return {"next_node": NodeStates.WEATHER_FORECAST, "messages": state["messages"], "prompt_id": prompt_id}
         elif "orders" in intent:
             return {"next_node": NodeStates.ORDERS, "messages": state["messages"]}
         else:
@@ -129,6 +137,8 @@ class FarmAgent:
             message_timeout=45
         )
 
+        logger.info(f'Starting MCP tool call for weather forecast with prompt_id: {state}')
+
         # view available tools
         try:
             async with mcp_client as client:
@@ -145,7 +155,7 @@ class FarmAgent:
 
                 result = await client.call_tool(
                     name="get_forecast",
-                    arguments={"location": "colombia"},
+                    arguments={"location": "colombia", "prompt_id": state["prompt_id"]},
                 )
                 logger.info(f"Tool call result: {result}")
 

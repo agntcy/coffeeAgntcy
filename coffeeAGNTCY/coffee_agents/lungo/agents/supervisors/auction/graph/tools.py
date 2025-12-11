@@ -35,6 +35,7 @@ from agents.supervisors.auction.graph.models import (
     CreateOrderArgs,
 )
 from agents.supervisors.auction.graph.shared import get_factory
+from common.helper import inject_prompt_id
 from config.config import (
     DEFAULT_MESSAGE_TRANSPORT, 
     TRANSPORT_SERVER_ENDPOINT, 
@@ -53,7 +54,7 @@ logger = logging.getLogger("lungo.supervisor.tools")
 # Simple Redis client for tracking
 redis_client = redis.from_url(REDIS_URL, decode_responses=True)
 
-def start_step(prompt_id: str, agent_name: str) -> str:
+def start_step(prompt_id: str, agent_name: str, start_time: datetime = None) -> str:
     """Start a new step and return step_id"""
     logger.info(f"DEBUG: start_step called with prompt_id={prompt_id}, agent_name={agent_name}")
     
@@ -83,7 +84,7 @@ def start_step(prompt_id: str, agent_name: str) -> str:
         step = {
             "step_id": step_id,
             "agent_name": agent_name,
-            "start_time": datetime.utcnow().isoformat(),
+            "start_time": datetime.utcnow().isoformat() if not start_time else start_time.isoformat(),
             "end_time": None,
             "success": None
         }
@@ -299,6 +300,10 @@ async def get_farm_yield_inventory(prompt: str, farm: str, prompt_id: str = None
             transport=transport,
         )
 
+        if prompt_id:
+            prompt = inject_prompt_id(prompt, prompt_id)
+
+
         request = SendMessageRequest(
             id=str(uuid4()),
             params=MessageSendParams(
@@ -375,6 +380,9 @@ async def get_all_farms_yield_inventory(prompt: str, state: Annotated[dict, Inje
     exchange_step_id = start_step(prompt_id, "exchange") if prompt_id else None
     logger.info(f"DEBUG: Started exchange step with step_id={exchange_step_id}")
 
+    if prompt_id:
+        prompt = inject_prompt_id(prompt, prompt_id)
+
     request = SendMessageRequest(
         id=str(uuid4()),
         params=MessageSendParams(
@@ -405,6 +413,10 @@ async def get_all_farms_yield_inventory(prompt: str, state: Annotated[dict, Inje
         recipients = [A2AProtocol.create_agent_topic(get_farm_card(farm)) for farm in ['brazil', 'colombia', 'vietnam']]
         
         logger.info("TRACKING: Sending broadcast to farms: %s", ', '.join(['brazil', 'colombia', 'vietnam']))
+
+        # track start time for farm steps
+        start_time = datetime.utcnow()
+
         # create a broadcast message and collect responses
         responses = await client.broadcast_message(request, broadcast_topic=FARM_BROADCAST_TOPIC, recipients=recipients)
 
@@ -413,6 +425,7 @@ async def get_all_farms_yield_inventory(prompt: str, state: Annotated[dict, Inje
 
         farm_yields = ""
         farm_step_ids = {}
+
         for response in responses:
             # we want a dict for farm name -> yield, the farm_name will be in the response metadata
             if response.root.result and response.root.result.parts:
@@ -434,7 +447,7 @@ async def get_all_farms_yield_inventory(prompt: str, state: Annotated[dict, Inje
                     canonical_farm_name = "colombia-farm"
 
                 # Start farm step
-                farm_step_id = start_step(prompt_id, canonical_farm_name) if prompt_id else None
+                farm_step_id = start_step(prompt_id, canonical_farm_name, start_time) if prompt_id else None
                 farm_step_ids[farm_name] = farm_step_id
 
                 logger.info("TRACKING: Successfully received inventory response from farm: %s (canonical: %s)", farm_name, canonical_farm_name)
@@ -498,6 +511,9 @@ async def get_all_farms_yield_inventory_streaming(prompt: str, prompt_id: str = 
     exchange_step_id = start_step(prompt_id, "exchange") if prompt_id else None
     logger.info(f"DEBUG STREAMING: Started exchange step with step_id={exchange_step_id}")
 
+    if prompt_id:
+        prompt = inject_prompt_id(prompt, prompt_id)
+
     request = SendMessageRequest(
         id=str(uuid4()),
         params=MessageSendParams(
@@ -527,6 +543,9 @@ async def get_all_farms_yield_inventory_streaming(prompt: str, prompt_id: str = 
         farm_names = ['brazil', 'colombia', 'vietnam']
         recipients = [A2AProtocol.create_agent_topic(get_farm_card(farm)) for farm in farm_names]
         logger.info(f"Broadcasting to {len(recipients)} farms: {', '.join(farm_names)}")
+
+        # track start time for farm steps
+        start_time = datetime.utcnow()
 
         # Get the async generator for streaming responses
         response_stream = client.broadcast_message_streaming(
@@ -564,7 +583,7 @@ async def get_all_farms_yield_inventory_streaming(prompt: str, prompt_id: str = 
                             canonical_farm_name = "colombia-farm"
                         
                         # Start farm step with canonical name
-                        farm_step_id = start_step(prompt_id, canonical_farm_name) if prompt_id else None
+                        farm_step_id = start_step(prompt_id, canonical_farm_name, start_time) if prompt_id else None
                         logger.info(f"DEBUG STREAMING: Started farm step for {canonical_farm_name} (display: {farm_name}) with step_id={farm_step_id}")
                         
                         responded_farms.add(farm_name)
