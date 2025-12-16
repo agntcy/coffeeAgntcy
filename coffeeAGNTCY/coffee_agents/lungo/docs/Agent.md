@@ -22,17 +22,17 @@ Messaging:
 - Unicast: send to `A2AProtocol.create_agent_topic(AgentCard)`.
 - Broadcast: send on `FARM_BROADCAST_TOPIC` with a recipients list.
 
-### 1) Transport & Routing Config (Required)
+### 1) Transport & Routing Config
 
 The supervisor uses these environment variables (see `config/config.py`):
 
 ```env
 DEFAULT_MESSAGE_TRANSPORT=NATS            # or SLIM
-TRANSPORT_SERVER_ENDPOINT=nats://localhost:4222
-FARM_BROADCAST_TOPIC=farm_broadcast
+TRANSPORT_SERVER_ENDPOINT=nats://localhost:4222 # or http://localhost:46357
+FARM_BROADCAST_TOPIC=farm_broadcast_topic_name
 ```
 
-### 2) An AgentCard for the Farm (Required)
+### 2) An AgentCard for the Farm
 
 Each farm is represented by an `AgentCard` (see current examples under `agents/farms/<farm>/card.py`).
 
@@ -53,7 +53,7 @@ The supervisor currently expects new farms to be wired into:
 - The broadcast recipients list in `agents/supervisors/auction/graph/tools.py` (see the `farm_names = [...]` list used by `get_all_farms_yield_inventory()` / `get_all_farms_yield_inventory_streaming()`).
 - The supervisor router in `agents/supervisors/auction/graph/graph.py` (the `_supervisor_node` prompt currently hard-codes the known farms: Brazil, Colombia, Vietnam).
 
-### 3) Farm A2A Server (Topics + Reply Contract) (Required)
+### 3) Farm A2A Server (Topics + Reply Contract)
 
 Your farm runs an A2A server (see existing `agents/farms/<farm>/farm_server.py`) that:
 
@@ -72,7 +72,8 @@ The supervisor currently expects responses to be in **plain text**.
 
 If you have identity verification enabled, the supervisor verifies identity by matching the farm's identity app name against `AgentCard.name` (see `verify_farm_identity()` in `agents/supervisors/auction/graph/tools.py`).
 
-## The Common Farm Agent Contract (External Behavior)
+
+## The Common Farm Agent Contract
 
 Regardless of the internal framework, each farm should implement the same **external contract**.
 
@@ -162,6 +163,26 @@ When adding a new farm, you can copy an existing farm directory as a starting po
 - `farm_server.py`
 - `card.py`
 
+### Adding Tracing Support
+
+Add tracing support to the farm server using `ioa-observe-sdk`. To do this, follow the pattern used by existing farms:
+
+```python
+from ioa_observe_sdk.decorators import agent, graph, tool
+
+@graph(name="farm_graph")
+def build_graph():
+    ...
+
+@agent(name="farm_agent")
+def run_agent(...):
+    ...
+
+@tool(name="some_tool")
+def some_tool_fn(...):
+    ...
+```
+
 ### LangGraph Farm
 
 Where to look:
@@ -172,6 +193,7 @@ Pattern:
   - `inventory` (yield/availability)
   - `orders` (create order)
 - Reuse a consistent prompt for inventory and another for order creation following the reusable prompt template above.
+- Add tracing support to the farm server using `ioa-observe-sdk`.
 
 ### LlamaIndex farm
 
@@ -184,14 +206,16 @@ Pattern:
   - order creation responses
 - Use the reusable prompt template above.
 - Add a simple router (inventory vs orders) and return a single **plain-text** response.
+- Add tracing support to the farm server using `ioa-observe-sdk`.
 
 ### Adding a new framework
 
 You can use any agent framework as long as the farm keeps the same outward contract:
 - Implement the farm logic in `agents/farms/<farm>/agent.py`.
 - Support two request types:
-  - Inventory/yield
+  - Inventory/yield (messages like `"How much coffee does the Kenya farm have?"` or `"What yield do the farms have?"`)
   - Order creation (messages like `"Create an order with price <price> and quantity <quantity>"`)
 - Use the reusable prompt template above.
 - Always return a single plain-text response (the supervisor reads the first text part).
 - Keep the farm discoverable by the supervisor via the farm `AgentCard` wiring.
+- Add tracing support to the farm server using `ioa-observe-sdk`.

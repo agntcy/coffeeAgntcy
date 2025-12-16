@@ -518,6 +518,12 @@ If you encounter errors of querying the database, please ensure data linking fro
 
 ---
 
+### Adding a New Farm Agent
+
+To add a new farm agent to the system, follow the instructions in the [Agent.md](./docs/Agent.md) file.
+
+---
+ 
 #### Metrics Computation with AGNTCY's Metrics Computation Engine (MCE)
 
 Details about AGNTCY's MCE can be found in the Telemetry Hub repository: [Metrics Computation Engine](https://github.com/agntcy/telemetry-hub/tree/main/metrics_computation_engine)
