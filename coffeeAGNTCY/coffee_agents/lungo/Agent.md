@@ -123,6 +123,8 @@ order_id: 54321
 
 Use this as the **system prompt** for any farm agent, regardless of internal implementation.
 
+> **Note:** Might need to tweak the prompt slightly for different frameworks/models.
+
 ```text
 You are a coffee farm manager in {FARM_COUNTRY} who delegates farm cultivation and global sales.
 
@@ -154,7 +156,7 @@ Output rules:
 
 You can implement a farm with different frameworks, as long as it produces the same **plain-text** outputs for inventory and order creation.
 
-Note: When adding a new farm, you can copy an existing farm directory as a starting point and adjust:
+When adding a new farm, you can copy an existing farm directory as a starting point and adjust:
 - `agent.py`
 - `agent_executor.py`
 - `farm_server.py`
@@ -169,7 +171,7 @@ Pattern:
 - Route to two paths:
   - `inventory` (yield/availability)
   - `orders` (create order)
-- Reuse a consistent prompt for inventory and another for order creation.
+- Reuse a consistent prompt for inventory and another for order creation following the reusable prompt template above.
 
 ### LlamaIndex farm
 
@@ -180,6 +182,7 @@ Pattern:
 - Use LlamaIndex internally (tools / retrieval / workflows) to implement:
   - inventory/yield responses
   - order creation responses
+- Use the reusable prompt template above.
 - Add a simple router (inventory vs orders) and return a single **plain-text** response.
 
 ### Adding a new framework
@@ -189,5 +192,6 @@ You can use any agent framework as long as the farm keeps the same outward contr
 - Support two request types:
   - Inventory/yield
   - Order creation (messages like `"Create an order with price <price> and quantity <quantity>"`)
+- Use the reusable prompt template above.
 - Always return a single plain-text response (the supervisor reads the first text part).
 - Keep the farm discoverable by the supervisor via the farm `AgentCard` wiring.
