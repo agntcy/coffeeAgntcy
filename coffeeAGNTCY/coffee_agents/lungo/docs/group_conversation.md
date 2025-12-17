@@ -125,7 +125,7 @@ Expected output:
 }
 ```
 
-## logistics Supervisor Streaming Endpoint
+## Logistics Supervisor Streaming Endpoint
 
    > ⚠️ **Note:** The `/agent/prompt/stream` endpoint requires an LLM that supports streaming. If your LLM provider does not support streaming, the streaming endpoint may fail.
 
