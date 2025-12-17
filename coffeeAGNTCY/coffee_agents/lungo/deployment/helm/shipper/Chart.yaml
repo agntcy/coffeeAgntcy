@@ -1,5 +1,0 @@
-apiVersion: v1
-appVersion: "0.0.3"
-description: A Helm chart for the Logistic Shipper agent
-name: logistic-shipper
-version: 0.0.3

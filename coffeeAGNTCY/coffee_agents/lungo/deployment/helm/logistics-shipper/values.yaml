@@ -1,55 +1,38 @@
 # This is a YAML-formatted file.
 # Declare variables to be passed into your templates.
 
-appName: logistic-supervisor
+appName: logistics-shipper
 appVersion: v1
 replicaCount: 1
 
 image:
-  repository: ghcr.io/agntcy/coffee-agntcy/logistic-supervisor
+  repository: ghcr.io/agntcy/coffee-agntcy/logistics-shipper
   tag: latest
   pullPolicy: Always
   pullSecret:
 
 service:
-  port: 9090
+  port: 9091
 
 config:
-  azureApiBase: ""
-  azureApiVersion: ""
-  llmModel: ""
   transportServerEndpoint: ""
   defaultMessageTransport: ""
   otlpHttpEndpoint: ""
-  experimentalFeature: "true"
-#  llmStreaming: False
-
 
 # You can use your own config here for service account
 serviceaccount:
   annotations:
     eks.amazonaws.com/role-arn: REPLACE_WITH_ROLE_ARN
 
-# You can use your own ingress stack of operators and letsencrypt mechanism
-ingress:
-  enabled: false  # If set to true, configure the values below for your ingress setup
-  name: ""
-  className: ""
-  host: ""
-  serviceName: ""
-  servicePort: ""
-  tlsSecret: ""
-  annotations: {}
 
 probes:
   livenessProbeEnabled: false
   readinessProbeEnabled: false
-  port: 9090
+  port: 9091
   endpoint: /v1/health
-  initialDelaySeconds: 300  # Wait 5 minutes before the first check
-  periodSeconds: 300       # Check every 5 minutes
+  initialDelaySeconds: 300
+  periodSeconds: 300
   timeoutSeconds: 30
-  failureThreshold: 3
 
 resources:
   enabled: false

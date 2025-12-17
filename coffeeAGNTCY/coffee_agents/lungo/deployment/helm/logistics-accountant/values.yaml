@@ -1,18 +1,18 @@
 # This is a YAML-formatted file.
 # Declare variables to be passed into your templates.
 
-appName: logistic-farm
+appName: logistics-accountant
 appVersion: v1
 replicaCount: 1
 
 image:
-  repository: ghcr.io/agntcy/coffee-agntcy/logistic-farm
+  repository: ghcr.io/agntcy/coffee-agntcy/logistics-accountant
   tag: latest
   pullPolicy: Always
   pullSecret:
 
 service:
-  port: 9093
+  port: 9092
 
 config:
   transportServerEndpoint: ""
@@ -28,11 +28,13 @@ serviceaccount:
 probes:
   livenessProbeEnabled: false
   readinessProbeEnabled: false
-  port: 9093
+  port: 9092
   endpoint: /v1/health
   initialDelaySeconds: 300  # Wait 5 minutes before the first check
   periodSeconds: 300       # Check every 5 minutes
   timeoutSeconds: 30
+
+
 
 resources:
   enabled: false

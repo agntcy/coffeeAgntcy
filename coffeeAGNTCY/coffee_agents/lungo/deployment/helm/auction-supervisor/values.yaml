@@ -1,13 +1,13 @@
 # This is a YAML-formatted file.
 # Declare variables to be passed into your templates.
 
-appName: lungo-exchange
+appName: auction-supervisor
 appVersion: v1
 replicaCount: 1
 environment:
 
 image:
-  repository: ghcr.io/agntcy/coffee-agntcy/lungo-exchange
+  repository: ghcr.io/agntcy/coffee-agntcy/auction-supervisor
   tag: latest
   pullPolicy: Always
   pullSecret:

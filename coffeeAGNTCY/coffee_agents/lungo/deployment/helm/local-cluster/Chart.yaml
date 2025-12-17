@@ -20,9 +20,9 @@ dependencies:
   - name: grafana
     version: "10.1.2"
     repository: "oci://ghcr.io/grafana/helm-charts"
-  - name: lungo-exchange
-    version: "0.0.8"
-    repository: "file://../exchange"
+  - name: auction-supervisor
+    version: "0.0.1"
+    repository: "file://../auction-supervisor"
   - name: brazil-farm
     version: "0.0.6"
     repository: "file://../brazil-farm"
@@ -35,21 +35,21 @@ dependencies:
   - name: weather-mcp-server
     version: "0.0.4"
     repository: "file://../weather-mcp-server"
-  - name: logistic-farm
-    version: "0.0.3"
-    repository: "file://../logistic-farm"
-  - name: logistic-helpdesk
-    version: "0.0.3"
-    repository: "file://../logistic-helpdesk"
-  - name: logistic-supervisor
-    version: "0.0.6"
-    repository: "file://../logistic-supervisor"
-  - name: logistic-shipper
-    version: "0.0.3"
-    repository: "file://../shipper"
-  - name: logistic-accountant
-    version: "0.0.3"
-    repository: "file://../accountant"
+  - name: logistics-farm
+    version: "0.0.1"
+    repository: "file://../logistics-farm"
+  - name: logistics-helpdesk
+    version: "0.0.1"
+    repository: "file://../logistics-helpdesk"
+  - name: logistics-supervisor
+    version: "0.0.1"
+    repository: "file://../logistics-supervisor"
+  - name: logistics-shipper
+    version: "0.0.1"
+    repository: "file://../logistics-shipper"
+  - name: logistics-accountant
+    version: "0.0.1"
+    repository: "file://../logistics-accountant"
   - name: lungo-ui
     version: "0.0.5"
     repository: "file://../ui"
