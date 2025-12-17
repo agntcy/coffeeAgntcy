@@ -1,6 +1,6 @@
 # Adding Farm Agents (or Sub-Agents) to Lungo (Auction Supervisor Flow Only)
 
-This document defines the **minimum configuration** and a **common contract** for adding new “farm” agents (workers) that can be supervised by the Lungo Auction Supervisor.
+This document defines the **minimum configuration** and a **common contract** for adding new “farm” agents that can be supervised by the Lungo Auction Supervisor.
 
 The current supervisor implementation uses the **A2A protocol** over **SLIM/NATS** transports (via the app-sdk transport layer).
 
