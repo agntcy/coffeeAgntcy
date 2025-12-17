@@ -4,7 +4,7 @@
 */ -}}
 
 {{- $auctionTargets := list "brazil-farm" "colombia-farm" "vietnam-farm" -}}
-{{- $logisticsTargets := list "logistic-farm" "logistic-accountant" "logistic-shipper" "logistic-helpdesk" -}}
+{{- $logisticsTargets := list "logistics-farm" "logistics-accountant" "logistics-shipper" "logistics-helpdesk" -}}
 
 {{- $shared := dict "config" (dict
   "azureApiBase" (env "AZURE_API_BASE")
@@ -57,7 +57,7 @@
 {{- end }}
 
 # Explicit per-chart overrides with ingress enabled
-lungo-exchange:
+auction-supervisor:
   environment: local
   config:
 {{- toYaml (merge (deepCopy $shared.config) (deepCopy $nats.config)) | nindent 4 }}
@@ -70,7 +70,7 @@ lungo-exchange:
           key: my-local-secret
           property: AZURE_API_KEY
 
-logistic-supervisor:
+logistics-supervisor:
   environment: local
   config:
 {{- toYaml (merge (deepCopy $shared.config) (deepCopy $slim.config)) | nindent 4 }}
