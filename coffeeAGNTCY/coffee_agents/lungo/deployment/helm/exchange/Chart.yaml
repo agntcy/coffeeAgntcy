@@ -1,5 +1,0 @@
-apiVersion: v1
-appVersion: "0.0.8"
-description: A Helm chart for the Lungo Exchange Server
-name: lungo-exchange
-version: 0.0.8

@@ -32,9 +32,9 @@ jobs:
           - name: lungo-ui
             path: coffeeAGNTCY/coffee_agents/lungo/deployment/helm/ui
             package_name: lungo-ui
-          - name: lungo-exchange
-            path: coffeeAGNTCY/coffee_agents/lungo/deployment/helm/exchange
-            package_name: lungo-exchange
+          - name: auction-supervisor
+            path: coffeeAGNTCY/coffee_agents/lungo/deployment/helm/auction-supervisor
+            package_name: auction-supervisor
           - name: brazil-farm
             path: coffeeAGNTCY/coffee_agents/lungo/deployment/helm/brazil-farm
             package_name: brazil-farm
@@ -50,21 +50,21 @@ jobs:
           - name: payment-mcp-server
             path: coffeeAGNTCY/coffee_agents/lungo/deployment/helm/payment-mcp-server
             package_name: payment-mcp-server
-          - name: logistic-supervisor
-            path: coffeeAGNTCY/coffee_agents/lungo/deployment/helm/logistic-supervisor
-            package_name: logistic-supervisor
-          - name: logistic-shipper
-            path: coffeeAGNTCY/coffee_agents/lungo/deployment/helm/shipper
-            package_name: logistic-shipper
-          - name: logistic-accountant
-            path: coffeeAGNTCY/coffee_agents/lungo/deployment/helm/accountant
-            package_name: logistic-accountant
-          - name: logistic-farm
-            path: coffeeAGNTCY/coffee_agents/lungo/deployment/helm/logistic-farm
-            package_name: logistic-farm
-          - name: logistic-helpdesk
-            path: coffeeAGNTCY/coffee_agents/lungo/deployment/helm/logistic-helpdesk
-            package_name: logistic-helpdesk
+          - name: logistics-supervisor
+            path: coffeeAGNTCY/coffee_agents/lungo/deployment/helm/logistics-supervisor
+            package_name: logistics-supervisor
+          - name: logistics-shipper
+            path: coffeeAGNTCY/coffee_agents/lungo/deployment/helm/logistics-shipper
+            package_name: logistics-shipper
+          - name: logistics-accountant
+            path: coffeeAGNTCY/coffee_agents/lungo/deployment/helm/logistics-accountant
+            package_name: logistics-accountant
+          - name: logistics-farm
+            path: coffeeAGNTCY/coffee_agents/lungo/deployment/helm/logistics-farm
+            package_name: logistics-farm
+          - name: logistics-helpdesk
+            path: coffeeAGNTCY/coffee_agents/lungo/deployment/helm/logistics-helpdesk
+            package_name: logistics-helpdesk
 
     steps:
       - name: Pre-cleanup Docker images

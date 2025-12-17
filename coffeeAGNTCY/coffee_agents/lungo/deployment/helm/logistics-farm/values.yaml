@@ -1,12 +1,12 @@
 # This is a YAML-formatted file.
 # Declare variables to be passed into your templates.
 
-appName: logistic-farm
+appName: logistics-farm
 appVersion: v1
 replicaCount: 1
 
 image:
-  repository: ghcr.io/agntcy/coffee-agntcy/logistic-farm
+  repository: ghcr.io/agntcy/coffee-agntcy/logistics-farm
   tag: latest
   pullPolicy: Always
   pullSecret:

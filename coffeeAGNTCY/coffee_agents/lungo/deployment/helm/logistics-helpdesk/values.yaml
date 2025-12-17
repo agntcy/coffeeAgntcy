@@ -1,18 +1,18 @@
 # This is a YAML-formatted file.
 # Declare variables to be passed into your templates.
 
-appName: logistic-supervisor
+appName: logistics-helpdesk
 appVersion: v1
 replicaCount: 1
 
 image:
-  repository: ghcr.io/agntcy/coffee-agntcy/logistic-supervisor
+  repository: ghcr.io/agntcy/coffee-agntcy/logistics-helpdesk
   tag: latest
   pullPolicy: Always
   pullSecret:
 
 service:
-  port: 9090
+  port: 9094
 
 config:
   azureApiBase: ""
@@ -21,9 +21,7 @@ config:
   transportServerEndpoint: ""
   defaultMessageTransport: ""
   otlpHttpEndpoint: ""
-  experimentalFeature: "true"
 #  llmStreaming: False
-
 
 # You can use your own config here for service account
 serviceaccount:
