@@ -7,8 +7,8 @@ This document explains how to run the logistics multi-agent conversation locally
 ## 1. Services / Agents
 
 | Role                | Python entrypoint                       | Purpose                                                         |
-| ------------------- | --------------------------------------- | --------------------------------------------------------------- |
-| Logistic Supervisor | `agents/supervisors/logistic/main.py`   | Starts the workflow, handles user input, emits `RECEIVED_ORDER` |
+| ------------------- |-----------------------------------------| --------------------------------------------------------------- |
+| logistics Supervisor | `agents/supervisors/logistics/main.py`  | Starts the workflow, handles user input, emits `RECEIVED_ORDER` |
 | Shipper Agent       | `agents/logistics/shipper/server.py`    | Progresses shipping states (`CUSTOMS_CLEARANCE`, `DELIVERED`)   |
 | Accountant Agent    | `agents/logistics/accountant/server.py` | Confirms payment (`PAYMENT_COMPLETE`)                           |
 | Tatooine Farm Agent | `agents/logistics/farm/server.py`       | Moves order to `HANDOVER_TO_SHIPPER` after `RECEIVED_ORDER`     |
@@ -66,7 +66,7 @@ docker compose up slim clickhouse-server otel-collector grafana
 If you want to run the group conversation stack separately, you can do so by running the following command:
 
 ```sh
-docker compose up logistic-farm logistic-supervisor logistic-shipper logistic-accountant logistic-helpdesk
+docker compose up logistics-farm logistics-supervisor logistics-shipper logistics-accountant logistics-helpdesk
 ```
 
 This will start the supervisor, shipper, accountant, farm, helpdesk,  and SLIM transport services.
@@ -78,8 +78,8 @@ This will start the supervisor, shipper, accountant, farm, helpdesk,  and SLIM t
 Terminal 1:
 
 ```sh
-# The LLM env vars (e.g. `OPENAI_API_KEY`) are required the logistic-supervisor.
-make logistic-supervisor
+# The LLM env vars (e.g. `OPENAI_API_KEY`) are required for the logistics-supervisor.
+make logistics-supervisor
 ```
 
 Terminal 2:
@@ -97,7 +97,7 @@ make accountant
 Terminal 4:
 
 ```sh
-make logistic-farm
+make logistics-farm
 ```
 Terminal 5:
 
@@ -125,7 +125,7 @@ Expected output:
 }
 ```
 
-## Logistic Supervisor Streaming Endpoint
+## Logistics Supervisor Streaming Endpoint
 
    > ⚠️ **Note:** The `/agent/prompt/stream` endpoint requires an LLM that supports streaming. If your LLM provider does not support streaming, the streaming endpoint may fail.
 
