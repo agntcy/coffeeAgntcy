@@ -520,7 +520,7 @@ If you encounter errors of querying the database, please ensure data linking fro
 
 ### Adding a New Farm Agent
 
-To add a new farm agent to the system, follow the instructions in the [Agent.md](./docs/Agent.md) file.
+To add a new farm agent to the system, follow the instructions in the [Agent.md](./docs/Farm_Agent.md) file.
 
 ---
  
