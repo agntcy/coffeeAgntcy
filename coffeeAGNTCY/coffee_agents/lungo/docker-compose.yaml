@@ -77,13 +77,13 @@ services:
       - ./config/docker/slim/server-config.yaml:/config.yaml
     command: ["/slim", "--config", "/config.yaml"]
 
-  # Exchange server App (farm client)
-  exchange-server:
+  # auction supervisor App (farm client)
+  auction-supervisor:
     build:
       context: ../../..
-      dockerfile: coffeeAGNTCY/coffee_agents/lungo/docker/Dockerfile.exchange
-    image: ghcr.io/agntcy/coffee-agntcy/lungo-exchange:latest
-    container_name: exchange-server-lungo
+      dockerfile: coffeeAGNTCY/coffee_agents/lungo/docker/Dockerfile.auction-supervisor
+    image: ghcr.io/agntcy/coffee-agntcy/auction-supervisor:latest
+    container_name: auction-supervisor-lungo
     volumes:
       # Mount local git metadata so /build/info can derive latest tag/date in dev
       - ../../../.git:/app/.git:ro
@@ -110,7 +110,7 @@ services:
       - VITE_EXCHANGE_APP_API_URL=http://127.0.0.1:8000
       - VITE_LOGISTICS_APP_API_URL=http://127.0.0.1:9090
     depends_on:
-      - exchange-server
+      - auction-supervisor
     ports:
       - "3000:3000"
 
@@ -195,11 +195,12 @@ services:
       clickhouse-server:
         condition: service_healthy
 
-  logistic-shipper:
+  logistics-shipper:
     build:
       context: ../../..
-      dockerfile: coffeeAGNTCY/coffee_agents/lungo/docker/Dockerfile.logistic-shipper
-    image: ghcr.io/agntcy/coffee-agntcy/logistic-shipper:latest
+      dockerfile: coffeeAGNTCY/coffee_agents/lungo/docker/Dockerfile.logistics-shipper
+    image: ghcr.io/agntcy/coffee-agntcy/logistics-shipper:latest
+    container_name: logistics-shipper
     environment:
       - DEFAULT_MESSAGE_TRANSPORT=SLIM # Do not change. SLIM is required for group conversation.
       - TRANSPORT_SERVER_ENDPOINT=http://slim:46357
@@ -208,11 +209,12 @@ services:
     ports:
       - "9091:9091"
 
-  logistic-accountant:
+  logistics-accountant:
     build:
       context: ../../..
-      dockerfile: coffeeAGNTCY/coffee_agents/lungo/docker/Dockerfile.logistic-accountant
-    image: ghcr.io/agntcy/coffee-agntcy/logistic-accountant:latest
+      dockerfile: coffeeAGNTCY/coffee_agents/lungo/docker/Dockerfile.logistics-accountant
+    image: ghcr.io/agntcy/coffee-agntcy/logistics-accountant:latest
+    container_name: logistics-accountant
     environment:
       - DEFAULT_MESSAGE_TRANSPORT=SLIM # Do not change. SLIM is required for group conversation.
       - TRANSPORT_SERVER_ENDPOINT=http://slim:46357
@@ -221,11 +223,12 @@ services:
     ports:
       - "9092:9092"
 
-  logistic-farm:
+  logistics-farm:
     build:
       context: ../../..
-      dockerfile: coffeeAGNTCY/coffee_agents/lungo/docker/Dockerfile.logistic-farm
-    image: ghcr.io/agntcy/coffee-agntcy/logistic-farm:latest
+      dockerfile: coffeeAGNTCY/coffee_agents/lungo/docker/Dockerfile.logistics-farm
+    image: ghcr.io/agntcy/coffee-agntcy/logistics-farm:latest
+    container_name: logistics-farm
     environment:
       - DEFAULT_MESSAGE_TRANSPORT=SLIM # Do not change. SLIM is required for group conversation.
       - TRANSPORT_SERVER_ENDPOINT=http://slim:46357
@@ -234,11 +237,12 @@ services:
     ports:
       - "9093:9093"
 
-  logistic-helpdesk:
+  logistics-helpdesk:
     build:
       context: ../../..
-      dockerfile: coffeeAGNTCY/coffee_agents/lungo/docker/Dockerfile.logistic-helpdesk
-    image: ghcr.io/agntcy/coffee-agntcy/logistic-helpdesk:latest
+      dockerfile: coffeeAGNTCY/coffee_agents/lungo/docker/Dockerfile.logistics-helpdesk
+    image: ghcr.io/agntcy/coffee-agntcy/logistics-helpdesk:latest
+    container_name: logistics-helpdesk
     environment:
       - DEFAULT_MESSAGE_TRANSPORT=SLIM # Do not change. SLIM is required for group conversation.
       - TRANSPORT_SERVER_ENDPOINT=http://slim:46357
@@ -247,11 +251,12 @@ services:
     ports:
       - "9094:9094"
 
-  logistic-supervisor:
+  logistics-supervisor:
     build:
       context: ../../..
-      dockerfile: coffeeAGNTCY/coffee_agents/lungo/docker/Dockerfile.logistic-supervisor
-    image: ghcr.io/agntcy/coffee-agntcy/logistic-supervisor:latest
+      dockerfile: coffeeAGNTCY/coffee_agents/lungo/docker/Dockerfile.logistics-supervisor
+    image: ghcr.io/agntcy/coffee-agntcy/logistics-supervisor:latest
+    container_name: logistics-supervisor
     env_file:
       - .env
     environment:
@@ -263,6 +268,7 @@ services:
 
   mce-api-layer:
     image: ghcr.io/agntcy/obs-api:0.1.1
+    container_name: mce-api-layer-lungo
     ports:
       - "8080:8080"
     environment:
@@ -287,6 +293,7 @@ services:
 
   metrics-computation-engine:
     image: ghcr.io/agntcy/mce:1.2.1
+    container_name: metrics-computation-engine-lungo
     ports:
       - "8001:8000"
     environment:

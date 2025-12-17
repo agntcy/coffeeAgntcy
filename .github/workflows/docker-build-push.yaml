@@ -23,8 +23,8 @@ jobs:
             dockerfile: coffeeAGNTCY/coffee_agents/corto/docker/Dockerfile.farm
           - name: lungo-ui
             dockerfile: coffeeAGNTCY/coffee_agents/lungo/docker/Dockerfile.ui
-          - name: lungo-exchange
-            dockerfile: coffeeAGNTCY/coffee_agents/lungo/docker/Dockerfile.exchange
+          - name: auction-supervisor
+            dockerfile: coffeeAGNTCY/coffee_agents/lungo/docker/Dockerfile.auction-supervisor
           - name: brazil-farm
             dockerfile: coffeeAGNTCY/coffee_agents/lungo/docker/Dockerfile.brazil-farm
           - name: colombia-farm
@@ -35,16 +35,16 @@ jobs:
             dockerfile: coffeeAGNTCY/coffee_agents/lungo/docker/Dockerfile.weather-mcp
           - name: payment-mcp-server
             dockerfile: coffeeAGNTCY/coffee_agents/lungo/docker/Dockerfile.payment-mcp
-          - name: logistic-shipper
-            dockerfile: coffeeAGNTCY/coffee_agents/lungo/docker/Dockerfile.logistic-shipper
-          - name: logistic-accountant
-            dockerfile: coffeeAGNTCY/coffee_agents/lungo/docker/Dockerfile.logistic-accountant
-          - name: logistic-farm
-            dockerfile: coffeeAGNTCY/coffee_agents/lungo/docker/Dockerfile.logistic-farm
-          - name: logistic-supervisor
-            dockerfile: coffeeAGNTCY/coffee_agents/lungo/docker/Dockerfile.logistic-supervisor
-          - name: logistic-helpdesk
-            dockerfile: coffeeAGNTCY/coffee_agents/lungo/docker/Dockerfile.logistic-helpdesk
+          - name: logistics-shipper
+            dockerfile: coffeeAGNTCY/coffee_agents/lungo/docker/Dockerfile.logistics-shipper
+          - name: logistics-accountant
+            dockerfile: coffeeAGNTCY/coffee_agents/lungo/docker/Dockerfile.logistics-accountant
+          - name: logistics-farm
+            dockerfile: coffeeAGNTCY/coffee_agents/lungo/docker/Dockerfile.logistics-farm
+          - name: logistics-supervisor
+            dockerfile: coffeeAGNTCY/coffee_agents/lungo/docker/Dockerfile.logistics-supervisor
+          - name: logistics-helpdesk
+            dockerfile: coffeeAGNTCY/coffee_agents/lungo/docker/Dockerfile.logistics-helpdesk
 
     permissions:
       packages: write

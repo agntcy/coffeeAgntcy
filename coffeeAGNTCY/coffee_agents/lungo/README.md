@@ -315,7 +315,7 @@ make colombia-farm
 make vietnam-farm
 ```
 
-Start the Exchange (Auction Supervisor API):
+Start the Auction Supervisor:
 
 ```sh
 make auction-supervisor
@@ -341,11 +341,11 @@ _Docker Compose:_
 docker compose up brazil-farm-server colombia-farm-server vietnam-farm-server --build
 ```
 
-The farm servers handle incoming requests from the exchange and process them using a directed LangGraph containing two directed paths: one for fetching inventory and another for generating orders, depending on the prompt.
+The farm servers handle incoming requests from the auction supervisor and process them using a directed LangGraph containing two directed paths: one for fetching inventory and another for generating orders, depending on the prompt.
 
-**Step 4: Run the Exchange**
+**Step 4: Run the Auction Supervisor**
 
-Start the exchange, which acts as an A2A client, by running:
+Start the auction supervisor, which acts as an A2A client, by running:
 
 _Local Python Run:_
 
@@ -356,14 +356,14 @@ uv run python agents/supervisors/auction/main.py
 _Docker Compose:_
 
 ```sh
-docker compose up exchange-server --build
+docker compose up auction-supervisor --build
 ```
 
 This command starts a FastAPI server that processes user prompts by passing them to a LangGraph-based supervisor, which manages delegation to worker agents. The supervisor is implemented as a directed LangGraph with nodes for Inventory, Orders, General Information, and Reflection.
 
 Requests that are not related to inventory or order creation are automatically routed to the General Information node, which returns a default response. Inventory requests without a specified farm are broadcast across all farms to collect inventory data. If a specific farm is provided, the request is sent directly to that farm. Order requests are sent one-to-one to a specified farm and must include the farm location and acceptable price.
 
-To invoke the exchange, use the `/agent/prompt` endpoint to send a human-readable prompt to ask information about coffee inventory or to place an order. For example:
+To invoke the auction supervisor, use the `/agent/prompt` endpoint to send a human-readable prompt to ask information about coffee inventory or to place an order. For example:
 
 ```bash
 curl -X POST http://127.0.0.1:8000/agent/prompt \
@@ -392,7 +392,7 @@ _Example prompts:_
 
 **Step 5: Access the UI**
 
-Once all services are running, you can access the React UI by starting the frontend development server (from the `exchange/frontend` directory):
+Once all services are running, you can access the React UI by starting the frontend development server (from the `frontend` directory):
 
 _Local Run:_
 
@@ -439,7 +439,7 @@ make apply
 This command:
 - Reads environment variables from your `.env` file
 - Deploys External Secrets Operator for credential management
-- Deploys all Lungo services (farms, exchange, UI, observability stack)
+- Deploys all Lungo services (farms, auction supervisor, UI, observability stack)
 - Configures NodePort services for localhost access
 
 **Step 4: View deployment status**
@@ -458,8 +458,8 @@ kubectl get svc --all-namespaces
 
 Once deployment completes, access services via localhost:
 - **UI**: http://localhost:3000
-- **Exchange API**: http://localhost:30080
-- **Logistic Supervisor**: http://localhost:30081
+- **Auction Supervisor **: http://localhost:30080
+- **Logistics Supervisor**: http://localhost:30081
 
 ### Group Conversation Implementation
 

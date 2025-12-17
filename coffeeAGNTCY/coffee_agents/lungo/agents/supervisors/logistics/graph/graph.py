@@ -12,7 +12,7 @@ from langgraph.graph import MessagesState
 from langgraph.graph import StateGraph, END
 from ioa_observe.sdk.decorators import agent, graph
 
-from agents.supervisors.logistic.graph.tools import (
+from agents.supervisors.logistics.graph.tools import (
     create_order,
     create_order_streaming
 )

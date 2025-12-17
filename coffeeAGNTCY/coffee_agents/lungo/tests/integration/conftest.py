@@ -268,7 +268,7 @@ def logistics_supervisor_client(transport_config, monkeypatch):
         "config.config",
     ])
 
-    import agents.supervisors.logistic.main as logistics_main
+    import agents.supervisors.logistics.main as logistics_main
     import importlib
     importlib.reload(logistics_main)
 
