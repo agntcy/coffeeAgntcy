@@ -58,7 +58,7 @@ services:
       - "9997:9997"
   nats:
     image: nats:latest
-    container_name: nats-lungo
+    container_name: lungo-nats
     ports:
       - "4222:4222"
       - "4223:4223"
@@ -67,7 +67,7 @@ services:
 
   slim:
     image: ghcr.io/agntcy/slim:0.6.1
-    container_name: slim-lungo
+    container_name: lungo-slim
     ports:
       - "46357:46357"
     environment:
@@ -105,7 +105,7 @@ services:
       context: ../../..
       dockerfile: coffeeAGNTCY/coffee_agents/lungo/docker/Dockerfile.ui
     image: ghcr.io/agntcy/coffee-agntcy/lungo-ui:latest
-    container_name: ui-lungo
+    container_name: lungo-ui
     environment:
       - VITE_EXCHANGE_APP_API_URL=http://127.0.0.1:8000
       - VITE_LOGISTICS_APP_API_URL=http://127.0.0.1:9090
@@ -142,7 +142,7 @@ services:
 
   clickhouse-server:
     image: clickhouse/clickhouse-server
-    container_name: clickhouse-server-lungo
+    container_name: lungo-clickhouse-server
     ports:
       - "9000:9000"
       - "8123:8123"
@@ -170,7 +170,7 @@ services:
 
   otel-collector:
     image: otel/opentelemetry-collector-contrib:latest
-    container_name: otel-collector-lungo
+    container_name: lungo-otel-collector
     restart: unless-stopped
     ports:
       - "4317:4317"
@@ -184,7 +184,7 @@ services:
 
   grafana:
     image: grafana/grafana
-    container_name: grafana-lungo
+    container_name: lungo-grafana
     ports:
       - "3001:3000"
     environment:
@@ -268,7 +268,7 @@ services:
 
   mce-api-layer:
     image: ghcr.io/agntcy/obs-api:0.1.1
-    container_name: mce-api-layer-lungo
+    container_name: lungo-mce-api-layer
     ports:
       - "8080:8080"
     environment:
@@ -293,7 +293,7 @@ services:
 
   metrics-computation-engine:
     image: ghcr.io/agntcy/mce:1.2.1
-    container_name: metrics-computation-engine-lungo
+    container_name: lungo-metrics-computation-engine
     ports:
       - "8001:8000"
     environment:
