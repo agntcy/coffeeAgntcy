@@ -5,6 +5,7 @@
 
 import React, { useState, useRef, useEffect } from "react"
 import LoadingSpinner from "./LoadingSpinner"
+import InfoButton from "@/components/Chat/Prompts/InfoButton.tsx";
 
 const DEFAULT_EXCHANGE_APP_API_URL = "http://127.0.0.1:8000"
 const EXCHANGE_APP_API_URL =
@@ -130,6 +131,7 @@ const CoffeePromptsDropdown: React.FC<CoffeePromptsDropdownProps> = ({
   const dropdownClasses = `flex h-9 w-166 cursor-pointer flex-row items-center gap-1 rounded-lg bg-chat-background p-2 transition-colors duration-200 ease-in-out hover:bg-chat-background-hover ${isOpen ? "bg-chat-background-hover" : ""}`
 
   const hasNoPrompts = buyerPrompts.length === 0 && purchaserPrompts.length === 0
+  const hasBothPrompts = buyerPrompts.length > 0 && purchaserPrompts.length > 0
 
   const menuClasses = `absolute bottom-full left-0 z-[1000] mb-1 ${
       pattern === "publish_subscribe_streaming" ? "h-auto" : isLoading || hasNoPrompts ? "h-auto" : "h-[365px]"
@@ -138,10 +140,20 @@ const CoffeePromptsDropdown: React.FC<CoffeePromptsDropdownProps> = ({
   const iconClasses = `absolute bottom-[36.35%] left-[26.77%] right-[26.77%] top-[36.35%] bg-chat-dropdown-icon transition-transform duration-300 ease-in-out ${isOpen ? "rotate-180" : ""}`
 
 
+  // Info text based on whether prompts exist
+  const infoText = hasBothPrompts
+      ? "Buyer prompts are for showcasing **agent-level** TBAC on Vietnam and Colombia farm agents, while purchaser prompts are for **tool-level** TBAC on the Payment MCP."
+      : "This prompt is for showcasing **agent-level** TBAC on Vietnam and Colombia farm agents."
 
   return (
       <div className="flex items-center gap-3">
         <div className="relative inline-block" ref={dropdownRef}>
+          {/* Info Button */}
+          <InfoButton
+              infoContent={infoText}
+              className="absolute top-[-20px] left-[0px]"
+          />
+
           <div className={dropdownClasses} onClick={handleToggle}>
             <div className="order-0 flex h-5 w-122 flex-none flex-grow-0 flex-col items-start gap-1 p-0">
               <div className="order-0 h-5 w-122 flex-none flex-grow-0 self-stretch whitespace-nowrap font-cisco text-sm font-normal leading-5 text-chat-text">

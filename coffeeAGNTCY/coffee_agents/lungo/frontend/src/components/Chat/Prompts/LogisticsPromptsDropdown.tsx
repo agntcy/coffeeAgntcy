@@ -5,10 +5,11 @@
 
 import React, { useState, useRef, useEffect } from "react"
 import LoadingSpinner from "./LoadingSpinner"
+import InfoButton from "./InfoButton"
 
 const DEFAULT_LOGISTICS_APP_API_URL = "http://127.0.0.1:9090"
 const LOGISTICS_APP_API_URL =
-  import.meta.env.VITE_LOGISTICS_APP_API_URL || DEFAULT_LOGISTICS_APP_API_URL
+    import.meta.env.VITE_LOGISTICS_APP_API_URL || DEFAULT_LOGISTICS_APP_API_URL
 
 interface LogisticsPromptsDropdownProps {
   visible: boolean
@@ -115,6 +116,13 @@ const LogisticsPromptsDropdown: React.FC<LogisticsPromptsDropdownProps> = ({
   return (
       <div className="flex items-center gap-3">
         <div className="relative inline-block" ref={dropdownRef}>
+          {/* Info Button */}
+          {/*<InfoButton*/}
+          {/*    infoContent="This dropdown contains logistics-related prompts."*/}
+          {/*    className="absolute top-[-20px] left-[0px]"*/}
+          {/*/>*/}
+
+          {/* Dropdown */}
           <div className={dropdownClasses} onClick={handleToggle}>
             <div className="order-0 flex h-5 w-122 flex-none flex-grow-0 flex-col items-start gap-1 p-0">
               <div className="order-0 h-5 w-122 flex-none flex-grow-0 self-stretch whitespace-nowrap font-cisco text-sm font-normal leading-5 text-chat-text">
