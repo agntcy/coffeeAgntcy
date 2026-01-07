@@ -50,6 +50,18 @@ ingress:
   tlsSecret: ""
   annotations: {}
 
+extraIngress:
+    enabled: false  # If set to true, configure the values below for your additional ingress setup
+    name: ""
+    className: ""
+    host: ""
+    serviceName: ""
+    servicePort: ""
+    tlsSecret: ""
+    path: ""
+    pathType: ""
+    annotations: {}
+
 probes:
   livenessProbeEnabled: false
   readinessProbeEnabled: false
