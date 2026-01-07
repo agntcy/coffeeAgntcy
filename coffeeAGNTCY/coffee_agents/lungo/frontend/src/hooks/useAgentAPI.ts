@@ -79,7 +79,7 @@ export const useAgentAPI = (): UseAgentAPIReturn => {
         {
           prompt,
         },
-        { signal: controller.signal },
+        { signal: controller.signal, withCredentials: true },
       )
       return response.data.response
     }
@@ -152,7 +152,7 @@ export const useAgentAPI = (): UseAgentAPIReturn => {
         {
           prompt,
         },
-        { signal: controller.signal },
+        { signal: controller.signal, withCredentials: true },
       )
       return response.data.response
     }
