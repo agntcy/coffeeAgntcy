@@ -60,6 +60,7 @@ export const useAuctionStreamingStore = create<StreamingState>((set) => ({
 
       const response = await fetch(streamingUrl, {
         method: "POST",
+        credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ prompt }),
         signal: abortController.signal,
