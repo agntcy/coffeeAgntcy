@@ -183,60 +183,35 @@ async def version_info():
 @app.get("/suggested-prompts")
 async def get_prompts(pattern: str = "default"):
   """
-  Return suggested prompts for publish subscribe pattern.
+  Fetch suggested prompts based on the specified pattern.
 
-  Args:
-      pattern: Pattern type ("default" for all prompts, "streaming" for streaming-specific prompts)
+  Parameters:
+      pattern (str): The type of prompts to fetch.
+                     Use "default" for all prompts or "streaming" for streaming-specific prompts.
 
   Returns:
-  {"buyer": List[str], "purchaser": List[str]}
+      dict: A dictionary containing lists of prompts for "buyer" and "purchaser".
 
   Raises:
-      HTTPException: 404 if file not found, 500 for JSON errors or unsupported format
+      HTTPException:
+          - 500 if the JSON file is invalid or an unexpected error occurs.
   """
-  if pattern == "streaming":
-    prompts_path = Path(__file__).resolve().parent / "suggested_streaming_prompts.json"
-  else:
-    prompts_path = Path(__file__).resolve().parent / "suggested_prompts.json"
   try:
+    prompts_path = Path(__file__).resolve().parent / "suggested_prompts.json"
     raw = prompts_path.read_text(encoding="utf-8")
     data = json.loads(raw)
 
-    if isinstance(data, dict):
-      raw_buyer = data.get("buyer", [])
-      raw_purchaser = data.get("purchaser", [])
+    if pattern == "streaming":
+      streaming_prompts = data.get("streaming_prompts", [])
+      return {"streaming": streaming_prompts}
 
-      if not isinstance(raw_buyer, list):
-        raw_buyer = []
-      if not isinstance(raw_purchaser, list):
-        raw_purchaser = []
+    buyer_prompts = data.get("buyer", [])
+    purchaser_prompts = data.get("purchaser", [])
+    return {"buyer": buyer_prompts, "purchaser": purchaser_prompts}
 
-      buyer_list = [p for p in raw_buyer if isinstance(p, str)]
-      purchaser_list = [p for p in raw_purchaser if isinstance(p, str)]
-      return {"buyer": buyer_list, "purchaser": purchaser_list}
-    
-    elif isinstance(data, list):
-      prompt_list = [p for p in data if isinstance(p, str)]
-      return {"buyer": prompt_list, "purchaser": []}
-
-    logger.error("Unsupported JSON format in %s: %s", 
-                 "suggested_streaming_prompts.json" if pattern == "streaming" else "suggested_prompts.json", 
-                 type(data).__name__)
-    raise HTTPException(status_code=500, detail="Unsupported JSON format")
-
-  except FileNotFoundError as fnf:
-    filename = "suggested_streaming_prompts.json" if pattern == "streaming" else "suggested_prompts.json"
-    logger.exception(f"{filename} not found at {prompts_path}")
-    raise HTTPException(status_code=404, detail=f"{filename} not found") from fnf
-  except json.JSONDecodeError as jde:
-    filename = "suggested_streaming_prompts.json" if pattern == "streaming" else "suggested_prompts.json"
-    logger.exception(f"Invalid JSON in {filename}")
-    raise HTTPException(status_code=500, detail=f"Invalid JSON in {filename}") from jde
   except Exception as e:
-    if isinstance(e, HTTPException):
-      raise
-    logger.exception(f"Failed to load suggested prompts: {str(e)}")
-    raise HTTPException(status_code=500, detail=f"Failed to load prompts: {str(e)}") from e
+    logger.error(f"Unexpected error while reading prompts: {str(e)}")
+    raise HTTPException(status_code=500, detail="An unexpected error occurred while reading prompts.")
 
 # Run the FastAPI server using uvicorn
 if __name__ == "__main__":

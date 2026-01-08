@@ -16,13 +16,23 @@ interface LogisticsPromptsDropdownProps {
   onSelect: (query: string) => void
 }
 
+interface Prompt {
+  prompt: string
+  description: string
+}
+
+interface PromptCategory {
+  name: string
+  prompts: Prompt[]
+}
+
 const LogisticsPromptsDropdown: React.FC<LogisticsPromptsDropdownProps> = ({
                                                                              visible,
                                                                              onSelect,
                                                                            }) => {
   const [isOpen, setIsOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
-  const [logisticsPrompts, setLogisticsPrompts] = useState<string[]>([])
+  const [categories, setCategories] = useState<PromptCategory[]>([])
   const dropdownRef = useRef<HTMLDivElement>(null)
 
   // Fetch prompts on mount
@@ -43,12 +53,15 @@ const LogisticsPromptsDropdown: React.FC<LogisticsPromptsDropdownProps> = ({
 
         const data: unknown = await res.json()
 
-        if (Array.isArray(data)) {
-          const prompts = data.filter((p): p is string => typeof p === "string")
-          setLogisticsPrompts(prompts)
+        if (data && typeof data === "object") {
+          const categories = Object.entries(data).map(([key, value]) => ({
+            name: key,
+            prompts: Array.isArray(value) ? value : [],
+          }))
+          setCategories(categories)
 
-          // Retry if no prompts returned
-          if (prompts.length === 0) {
+          // Retry if all categories are empty
+          if (categories.every((category) => category.prompts.length === 0)) {
             const delay = Math.min(5000 * Math.pow(2, retryCount), MAX_RETRY_DELAY)
             retryTimeoutId = setTimeout(() => fetchPrompts(retryCount + 1), delay)
           }
@@ -111,18 +124,9 @@ const LogisticsPromptsDropdown: React.FC<LogisticsPromptsDropdownProps> = ({
 
   const menuClasses = `absolute bottom-full left-0 z-[1000] mb-1 w-269 overflow-y-auto rounded-[6px] border border-nav-border bg-chat-dropdown-background px-[2px] py-0 opacity-100 shadow-[0px_2px_5px_0px_rgba(0,0,0,0.05)] ${isOpen ? "block animate-fadeInDropdown" : "hidden"}`
 
-  const iconClasses = `absolute bottom-[36.35%] left-[26.77%] right-[26.77%] top-[36.35%] bg-chat-dropdown-icon transition-transform duration-300 ease-in-out ${isOpen ? "rotate-180" : ""}`
-
   return (
       <div className="flex items-center gap-3">
         <div className="relative inline-block" ref={dropdownRef}>
-          {/* Info Button */}
-          {/*<InfoButton*/}
-          {/*    infoContent="This dropdown contains logistics-related prompts."*/}
-          {/*    className="absolute top-[-20px] left-[0px]"*/}
-          {/*/>*/}
-
-          {/* Dropdown */}
           <div className={dropdownClasses} onClick={handleToggle}>
             <div className="order-0 flex h-5 w-122 flex-none flex-grow-0 flex-col items-start gap-1 p-0">
               <div className="order-0 h-5 w-122 flex-none flex-grow-0 self-stretch whitespace-nowrap font-cisco text-sm font-normal leading-5 text-chat-text">
@@ -131,7 +135,9 @@ const LogisticsPromptsDropdown: React.FC<LogisticsPromptsDropdownProps> = ({
             </div>
             <div className="relative order-1 h-6 w-6 flex-none flex-grow-0">
               <div
-                  className={iconClasses}
+                  className={`absolute bottom-[36.35%] left-[26.77%] right-[26.77%] top-[36.35%] bg-chat-dropdown-icon transition-transform duration-300 ease-in-out ${
+                      isOpen ? "rotate-180" : ""
+                  }`}
                   style={{ clipPath: "polygon(50% 100%, 0% 0%, 100% 0%)" }}
               />
             </div>
@@ -143,20 +149,24 @@ const LogisticsPromptsDropdown: React.FC<LogisticsPromptsDropdownProps> = ({
                   <div className="flex items-center justify-center p-4">
                     <div className="h-6 w-6 animate-spin rounded-full border-2 border-chat-text border-t-transparent" />
                   </div>
-              ) : logisticsPrompts.length === 0 ? (
+              ) : categories.length === 0 ? (
                   <LoadingSpinner
                       message={"Loading suggested prompts, waiting for logistics server response"}
                   />
               ) : (
-                  logisticsPrompts.map((item, index) => (
-                      <div
-                          key={`prompt-${index}`}
-                          className="mx-0.5 my-0.5 flex min-h-10 w-[calc(100%-4px)] cursor-pointer items-center rounded bg-chat-dropdown-background px-2 py-[6px] transition-colors duration-200 ease-in-out hover:bg-chat-background-hover"
-                          onClick={() => handleItemClick(item)}
-                      >
-                        <div className="w-full break-words font-cisco text-sm font-normal leading-5 tracking-[0%] text-chat-text">
-                          {item}
-                        </div>
+                  categories.map((category, index) => (
+                      <div key={`category-${index}`} className="px-2 py-2">
+                        {category.prompts.map((item, idx) => (
+                            <div
+                                key={`prompt-${index}-${idx}`}
+                                className="mx-0.5 my-0.5 flex min-h-10 w-[calc(100%-4px)] cursor-pointer items-center rounded bg-chat-dropdown-background px-2 py-[6px] transition-colors duration-200 ease-in-out hover:bg-chat-background-hover"
+                                onClick={() => handleItemClick(item.prompt)}
+                            >
+                              <div className="w-full break-words font-cisco text-sm font-normal leading-5 tracking-[0%] text-chat-text">
+                                {item.prompt}
+                              </div>
+                            </div>
+                        ))}
                       </div>
                   ))
               )}

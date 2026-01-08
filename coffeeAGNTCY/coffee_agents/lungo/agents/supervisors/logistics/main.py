@@ -153,34 +153,31 @@ async def handle_stream_prompt(request: PromptRequest):
         raise HTTPException(status_code=500, detail=f"Operation failed: {str(e)}")
 
 @app.get("/suggested-prompts")
-async def get_prompts():
+async def get_prompts(pattern: str = "default"):
   """
-  Return suggested prompts for the group communication pattern. 
+  Fetch suggested prompts based on the specified pattern.
+
+  Parameters:
+      pattern (str): The type of prompts to fetch.
+                     Use "default" for all prompts or "streaming" for streaming-specific prompts.
+
+  Returns:
+      dict: A dictionary containing lists of prompts for "buyer" and "purchaser".
 
   Raises:
-      HTTPException: 404 if file not found, 500 if JSON invalid or wrong shape.
+      HTTPException:
+          - 500 if the JSON file is invalid or an unexpected error occurs.
   """
-  prompts_path = Path(__file__).resolve().parent / "suggested_prompts.json"
   try:
+    prompts_path = Path(__file__).resolve().parent / "suggested_prompts.json"
     raw = prompts_path.read_text(encoding="utf-8")
     data = json.loads(raw)
 
-    if not isinstance(data, list) or not all(isinstance(p, str) for p in data):
-      raise HTTPException(status_code=500, detail="suggested_prompts.json must be a JSON array of strings")
+    return {"logistics": data.get("logistics_prompts", [])}
 
-    return data
-
-  except FileNotFoundError as fnf:
-    logger.exception(f"suggested_prompts.json not found at {prompts_path}")
-    raise HTTPException(status_code=404, detail="suggested_prompts.json not found") from fnf
-  except json.JSONDecodeError as jde:
-    logger.exception("Invalid JSON in suggested_prompts.json")
-    raise HTTPException(status_code=500, detail="Invalid JSON in suggested_prompts.json") from jde
   except Exception as e:
-    if isinstance(e, HTTPException):
-      raise
-    logger.exception(f"Failed to load suggested prompts: {str(e)}")
-    raise HTTPException(status_code=500, detail=f"Failed to load prompts: {str(e)}") from e
+    logger.error(f"Unexpected error while reading prompts: {str(e)}")
+    raise HTTPException(status_code=500, detail="An unexpected error occurred while reading prompts.")
 
 if __name__ == "__main__":
   uvicorn.run("main:app", host="0.0.0.0", port=9090, reload=True)
