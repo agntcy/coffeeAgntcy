@@ -131,6 +131,7 @@ export const useGroupStreamingStore = create<
         `${LOGISTICS_APP_API_URL}/agent/prompt/stream`,
         {
           method: "POST",
+          credentials: "include",
           headers: {
             "Content-Type": "application/json",
           },
