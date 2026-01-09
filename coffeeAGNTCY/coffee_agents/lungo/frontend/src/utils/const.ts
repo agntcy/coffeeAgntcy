@@ -81,3 +81,9 @@ export type EdgeLabelType = (typeof EDGE_LABELS)[keyof typeof EDGE_LABELS]
 export type HandleTypeType = (typeof HANDLE_TYPES)[keyof typeof HANDLE_TYPES]
 export type VerificationStatusType =
   (typeof VERIFICATION_STATUS)[keyof typeof VERIFICATION_STATUS]
+
+
+export const isLocalDev =
+  import.meta.env?.DEV ||
+  window.location.hostname === "localhost" ||
+  window.location.hostname === "127.0.0.1"

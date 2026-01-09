@@ -7,7 +7,7 @@ import React, { useRef, useState, useEffect } from "react"
 import axios from "axios"
 import { v4 as uuid } from "uuid"
 import { Message } from "@/types/message"
-import { Role } from "@/utils/const"
+import {isLocalDev, Role} from "@/utils/const"
 import { withRetry, RETRY_CONFIG } from "@/utils/retryUtils"
 import { shouldEnableRetries, getApiUrlForPattern } from "@/utils/patternUtils"
 
@@ -79,7 +79,10 @@ export const useAgentAPI = (): UseAgentAPIReturn => {
         {
           prompt,
         },
-        { signal: controller.signal, withCredentials: true },
+        {
+          signal: controller.signal,
+          withCredentials: !isLocalDev  // do not send credentials if it's local dev env
+        },
       )
       return response.data.response
     }
@@ -152,7 +155,10 @@ export const useAgentAPI = (): UseAgentAPIReturn => {
         {
           prompt,
         },
-        { signal: controller.signal, withCredentials: true },
+        {
+          signal: controller.signal,
+          withCredentials: !isLocalDev  // do not send credentials if it's local dev env
+        },
       )
       return response.data.response
     }
