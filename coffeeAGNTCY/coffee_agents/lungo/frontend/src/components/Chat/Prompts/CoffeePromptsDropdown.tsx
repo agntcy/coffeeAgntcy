@@ -6,6 +6,7 @@
 import React, { useState, useRef, useEffect } from "react"
 import LoadingSpinner from "./LoadingSpinner"
 import InfoButton from "@/components/Chat/Prompts/InfoButton.tsx"
+import { PromptCategory } from "./PromptTypes"
 
 const DEFAULT_EXCHANGE_APP_API_URL = "http://127.0.0.1:8000"
 const EXCHANGE_APP_API_URL =
@@ -17,15 +18,6 @@ interface CoffeePromptsDropdownProps {
   pattern?: string
 }
 
-interface Prompt {
-  prompt: string
-  description: string
-}
-
-interface PromptCategory {
-  name: string
-  prompts: Prompt[]
-}
 
 const CoffeePromptsDropdown: React.FC<CoffeePromptsDropdownProps> = ({
                                                                        visible,

@@ -6,6 +6,7 @@
 import React, { useState, useRef, useEffect } from "react"
 import LoadingSpinner from "./LoadingSpinner"
 import InfoButton from "./InfoButton"
+import { PromptCategory } from "./PromptTypes"
 
 const DEFAULT_LOGISTICS_APP_API_URL = "http://127.0.0.1:9090"
 const LOGISTICS_APP_API_URL =
@@ -14,16 +15,6 @@ const LOGISTICS_APP_API_URL =
 interface LogisticsPromptsDropdownProps {
   visible: boolean
   onSelect: (query: string) => void
-}
-
-interface Prompt {
-  prompt: string
-  description: string
-}
-
-interface PromptCategory {
-  name: string
-  prompts: Prompt[]
 }
 
 const LogisticsPromptsDropdown: React.FC<LogisticsPromptsDropdownProps> = ({
