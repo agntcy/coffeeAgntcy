@@ -5,6 +5,7 @@
 
 import { create } from "zustand"
 import { LogisticsStreamStep } from "@/types/streaming"
+import { parseFetchError } from "@/utils/const"
 
 const DEFAULT_LOGISTICS_APP_API_URL = "http://127.0.0.1:9090"
 const LOGISTICS_APP_API_URL =
@@ -140,7 +141,16 @@ export const useGroupStreamingStore = create<
       )
 
       if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`)
+          // 4xx errors
+          if (response.status >= 400 && response.status < 500) {
+            const message = await parseFetchError(response)
+            setError(message)
+            return
+          }
+
+          // all other errors
+          setError("Sorry, something went wrong. Please try again.")
+          return
       }
 
       const reader = response.body?.getReader()
@@ -236,7 +246,7 @@ export const useGroupStreamingStore = create<
       setComplete(true)
     } catch (error) {
       console.error("Streaming error:", error)
-      setError(error instanceof Error ? error.message : "Streaming failed")
+      setError("Sorry, something went wrong. Please try again.")
     }
   },
 

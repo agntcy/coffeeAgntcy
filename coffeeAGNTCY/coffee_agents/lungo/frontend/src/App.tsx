@@ -32,6 +32,7 @@ import { ThemeProvider } from "@/contexts/ThemeContext"
 import { Message } from "./types/message"
 import { getGraphConfig } from "@/utils/graphConfigs"
 import { PATTERNS, PatternType } from "@/utils/patternUtils"
+import {parseApiError} from "@/utils/const.ts";
 
 const App: React.FC = () => {
   const { sendMessage } = useAgentAPI()
@@ -210,14 +211,7 @@ const App: React.FC = () => {
         streamCompleteRef.current = false
         resetGroup()
 
-        try {
-          await startStreaming(query)
-        } catch (error) {
-          logger.apiError("/agent/prompt/stream", error)
-          const errorMsg = "Sorry, I encountered an error with streaming."
-          setShowFinalResponse(true)
-          handleApiResponse(errorMsg, true)
-        }
+        await startStreaming(query)
       } else if (selectedPattern === PATTERNS.PUBLISH_SUBSCRIBE_STREAMING) {
         setShowFinalResponse(false)
         setShowAuctionStreaming(true)
@@ -227,12 +221,31 @@ const App: React.FC = () => {
         await connect(query)
       } else {
         setShowFinalResponse(true)
-        const response = await sendMessage(query, selectedPattern)
-        handleApiResponse(response, false)
+
+        try {
+          const response = await sendMessage(query, selectedPattern)
+          handleApiResponse(response, false)
+        } catch (error) {
+          const { status, message, raw } = parseApiError(error)
+
+          logger.apiError("/agent/prompt", raw)
+
+          if (status && status >= 400 && status < 500) {
+            handleApiResponse(message, true)
+          } else {
+            handleApiResponse(
+              "Sorry, I encountered an error. Please try again.",
+              true,
+            )
+          }
+        }
       }
     } catch (error) {
-      logger.apiError("/agent/prompt", error)
-      handleApiResponse("Sorry, I encountered an error.", true)
+      const { message, raw } = parseApiError(error)
+
+      logger.apiError("/agent/prompt", raw)
+
+      handleApiResponse(message, true)
       setShowProgressTracker(false)
     }
   }

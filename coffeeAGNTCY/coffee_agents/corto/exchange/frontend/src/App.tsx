@@ -16,6 +16,7 @@ import { Message } from "./types/Message"
 import { useAgentAPI } from "@/hooks/useAgentAPI"
 import { useChatAreaMeasurement } from "@/hooks/useChatAreaMeasurement"
 import { logger } from "./utils/logger"
+import {parseApiError} from "@/utils/const.ts";
 
 const App: React.FC = () => {
   const [aiReplied, setAiReplied] = useState<boolean>(false)
@@ -68,32 +69,50 @@ const App: React.FC = () => {
   }
 
   const handleDropdownSelect = async (query: string) => {
-    setCurrentUserMessage(query)
-    setIsAgentLoading(true)
+      setCurrentUserMessage(query)
+      setIsAgentLoading(true)
 
-    try {
-      await sendMessageWithCallback(query, setMessages, {
-        onStart: () => {
-          setButtonClicked(true)
-        },
-        onSuccess: (response) => {
-          setAiReplied(true)
-          handleApiResponse(response, false)
-        },
-        onError: (error) => {
-          if (import.meta.env.DEV) {
-            logger.apiError("/agent/prompt", error)
-          }
-          handleApiResponse("Sorry, I encountered an error.", true)
-        },
-      })
-    } catch (error) {
-      if (import.meta.env.DEV) {
-        logger.apiError("/agent/prompt", error)
+      try {
+        await sendMessageWithCallback(query, setMessages, {
+          onStart: () => {
+            setButtonClicked(true)
+          },
+
+          onSuccess: (response) => {
+            setAiReplied(true)
+            handleApiResponse(response, false)
+          },
+
+          onError: (error) => {
+            const { status, message, raw } = parseApiError(error)
+
+            if (import.meta.env.DEV) {
+              logger.apiError("/agent/prompt", raw)
+            }
+
+            // 4xx errors
+            if (status && status >= 400 && status < 500) {
+              handleApiResponse(message || "Request could not be completed", true)
+              return
+            }
+
+            // all other errors
+            handleApiResponse(
+              "Sorry, I encountered an error. Please try again.",
+              true
+            )
+          },
+        })
+      } catch (error) {
+        const { message, raw } = parseApiError(error)
+
+        if (import.meta.env.DEV) {
+          logger.apiError("/agent/prompt", raw)
+        }
+
+        handleApiResponse(message, true)
       }
-      handleApiResponse("Sorry, I encountered an error.", true)
     }
-  }
 
   const handleClearConversation = () => {
     setMessages([])

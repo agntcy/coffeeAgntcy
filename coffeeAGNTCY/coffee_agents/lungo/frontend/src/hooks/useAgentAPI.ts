@@ -7,7 +7,7 @@ import React, { useRef, useState, useEffect } from "react"
 import axios from "axios"
 import { v4 as uuid } from "uuid"
 import { Message } from "@/types/message"
-import { Role } from "@/utils/const"
+import {parseApiError, Role} from "@/utils/const"
 import { withRetry, RETRY_CONFIG } from "@/utils/retryUtils"
 import { shouldEnableRetries, getApiUrlForPattern } from "@/utils/patternUtils"
 
@@ -90,6 +90,16 @@ export const useAgentAPI = (): UseAgentAPIReturn => {
       } else {
         return await makeApiCall()
       }
+    } catch (error) {
+      const { status, message } = parseApiError(error)
+
+      // 4xx errors
+      if (status && status >= 400 && status < 500) {
+        throw new Error(message)
+      }
+
+      // all other errors
+      throw new Error("Sorry, something went wrong. Please try again.")
     } finally {
       if (requestIdRef.current === myRequestId) {
         setLoading(false)
@@ -209,12 +219,19 @@ export const useAgentAPI = (): UseAgentAPIReturn => {
         callbacks.onSuccess(responseText)
       }
     } catch (error) {
+      const { status, message, raw } = parseApiError(error)
+
+      const userMessage =
+        status && status >= 400 && status < 500
+          ? message
+          : "Sorry, something went wrong. Please try again."
+
       if (requestIdRef.current === myRequestId) {
         setMessages((prevMessages: Message[]) => {
           const updatedMessages = [...prevMessages]
           updatedMessages[updatedMessages.length - 1] = {
             role: "assistant",
-            content: "Sorry, I encountered an error.",
+            content: userMessage,
             id: uuid(),
             animate: false,
           }
@@ -223,7 +240,7 @@ export const useAgentAPI = (): UseAgentAPIReturn => {
       }
 
       if (callbacks?.onError) {
-        callbacks.onError(error)
+        callbacks.onError(raw)
       }
     } finally {
       if (requestIdRef.current === myRequestId) {
