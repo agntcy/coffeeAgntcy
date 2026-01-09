@@ -6,6 +6,7 @@
 import { create } from "zustand"
 import { AuctionStreamingResponse } from "@/types/streaming"
 import { getStreamingEndpointForPattern, PATTERNS } from "@/utils/patternUtils"
+import {isLocalDev} from "@/utils/const.ts";
 
 const isValidAuctionStreamingResponse = (
   data: any,
@@ -60,7 +61,7 @@ export const useAuctionStreamingStore = create<StreamingState>((set) => ({
 
       const response = await fetch(streamingUrl, {
         method: "POST",
-        credentials: "include",
+        credentials: isLocalDev ? "omit" : "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ prompt }),
         signal: abortController.signal,
