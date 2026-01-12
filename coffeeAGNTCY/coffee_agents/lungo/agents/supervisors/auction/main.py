@@ -20,6 +20,7 @@ from config.logging_config import setup_logging
 from pathlib import Path
 from common.version import get_version_info
 from agents.supervisors.auction.api import create_apps_router
+from agents.supervisors.auction.api_hitl import create_hitl_router
 from fastapi import HTTPException
 
 setup_logging()
@@ -41,6 +42,7 @@ app.add_middleware(
 )
 
 app.include_router(create_apps_router())
+app.include_router(create_hitl_router())  # Human-in-the-Loop endpoints
 
 exchange_graph = ExchangeGraph()
 
