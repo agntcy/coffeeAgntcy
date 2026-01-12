@@ -6,7 +6,7 @@
 import { create } from "zustand"
 import { AuctionStreamingResponse } from "@/types/streaming"
 import { getStreamingEndpointForPattern, PATTERNS } from "@/utils/patternUtils"
-import {isLocalDev} from "@/utils/const.ts";
+import {isLocalDev, parseFetchError} from "@/utils/const.ts";
 
 const isValidAuctionStreamingResponse = (
   data: any,
@@ -67,9 +67,24 @@ export const useAuctionStreamingStore = create<StreamingState>((set) => ({
         signal: abortController.signal,
       })
 
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`)
+    if (!response.ok) {
+      const { status, message } = await parseFetchError(response);
+      if (status >= 400 && status < 500) {
+        set({
+          status: "error",
+          error: `HTTP ${status} - ${message}`,
+          abortController: null,
+        })
+        return
       }
+
+      set({
+        status: "error",
+        error: "Sorry, something went wrong. Please try again later.",
+        abortController: null,
+      })
+      return
+    }
 
       const reader = response.body?.getReader()
       if (!reader) {
@@ -118,7 +133,7 @@ export const useAuctionStreamingStore = create<StreamingState>((set) => ({
         console.error("Unexpected streaming error:", error)
         set({
           status: "error",
-          error: "Unexpected connection error",
+          error: "Sorry, something went wrong. Please try again.",
           abortController: null,
         })
       }

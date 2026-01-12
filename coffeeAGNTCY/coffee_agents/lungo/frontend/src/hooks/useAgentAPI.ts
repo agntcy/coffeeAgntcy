@@ -7,9 +7,10 @@ import React, { useRef, useState, useEffect } from "react"
 import axios from "axios"
 import { v4 as uuid } from "uuid"
 import { Message } from "@/types/message"
-import {isLocalDev, Role} from "@/utils/const"
+import {isLocalDev, parseApiError, Role} from "@/utils/const"
 import { withRetry, RETRY_CONFIG } from "@/utils/retryUtils"
 import { shouldEnableRetries, getApiUrlForPattern } from "@/utils/patternUtils"
+import {logger} from "@/utils/logger.ts";
 
 interface ApiResponse {
   response: string
@@ -93,6 +94,15 @@ export const useAgentAPI = (): UseAgentAPIReturn => {
       } else {
         return await makeApiCall()
       }
+    } catch (error) {
+      const { status, message } = parseApiError(error)
+      // 4xx errors
+      if (status && status >= 400 && status < 500) {
+        throw new Error(`HTTP ${status} - ${message}`)
+      }
+
+      // all other errors
+      throw new Error(message)
     } finally {
       if (requestIdRef.current === myRequestId) {
         setLoading(false)
@@ -215,12 +225,19 @@ export const useAgentAPI = (): UseAgentAPIReturn => {
         callbacks.onSuccess(responseText)
       }
     } catch (error) {
+      const { status, message } = parseApiError(error)
+
+      const userMessage =
+        status && status >= 400 && status < 500
+          ? `HTTP ${status} - ${message}`
+          : message
+
       if (requestIdRef.current === myRequestId) {
         setMessages((prevMessages: Message[]) => {
           const updatedMessages = [...prevMessages]
           updatedMessages[updatedMessages.length - 1] = {
             role: "assistant",
-            content: "Sorry, I encountered an error.",
+            content: userMessage,
             id: uuid(),
             animate: false,
           }

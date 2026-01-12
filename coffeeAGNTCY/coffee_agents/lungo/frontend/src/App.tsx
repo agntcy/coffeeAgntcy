@@ -32,6 +32,7 @@ import { ThemeProvider } from "@/contexts/ThemeContext"
 import { Message } from "./types/message"
 import { getGraphConfig } from "@/utils/graphConfigs"
 import { PATTERNS, PatternType } from "@/utils/patternUtils"
+import {parseApiError} from "@/utils/const.ts";
 
 const App: React.FC = () => {
   const { sendMessage } = useAgentAPI()
@@ -227,12 +228,15 @@ const App: React.FC = () => {
         await connect(query)
       } else {
         setShowFinalResponse(true)
+
         const response = await sendMessage(query, selectedPattern)
         handleApiResponse(response, false)
       }
     } catch (error) {
       logger.apiError("/agent/prompt", error)
-      handleApiResponse("Sorry, I encountered an error.", true)
+      const errMessage = error instanceof Error ? error.message : String(error)
+
+      handleApiResponse(errMessage, true)
       setShowProgressTracker(false)
     }
   }
