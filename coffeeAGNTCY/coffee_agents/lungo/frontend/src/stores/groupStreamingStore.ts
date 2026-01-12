@@ -5,6 +5,7 @@
 
 import { create } from "zustand"
 import { LogisticsStreamStep } from "@/types/streaming"
+import {isLocalDev} from "@/utils/const.ts";
 
 const DEFAULT_LOGISTICS_APP_API_URL = "http://127.0.0.1:9090"
 const LOGISTICS_APP_API_URL =
@@ -131,7 +132,7 @@ export const useGroupStreamingStore = create<
         `${LOGISTICS_APP_API_URL}/agent/prompt/stream`,
         {
           method: "POST",
-          credentials: "include",
+          credentials: isLocalDev ? "omit" : "include",
           headers: {
             "Content-Type": "application/json",
           },
