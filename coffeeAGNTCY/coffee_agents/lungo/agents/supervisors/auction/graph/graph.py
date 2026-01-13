@@ -167,8 +167,8 @@ class ExchangeGraph:
                 should_continue: bool = Field(description="Whether to continue processing the request.")
                 reason: str = Field(description="Reason for decision whether to continue the request.")
             
-            # create a structured output LLM for reflection
-            self.reflection_llm = get_llm().with_structured_output(ShouldContinue, strict=True)
+            # create a structured output LLM for reflection (streaming=False required for structured output)
+            self.reflection_llm = get_llm(streaming=False).with_structured_output(ShouldContinue, strict=True)
 
         sys_msg_reflection = SystemMessage(
             content="""You are an AI assistant reflecting on a conversation to determine if the user's request has been fully addressed.
@@ -193,6 +193,11 @@ class ExchangeGraph:
           
         )
         logging.info(f"Reflection agent response: {response}")
+
+        # Handle case where structured output returns None (can happen with streaming enabled)
+        if response is None:
+            logging.warning("Reflection agent returned None, defaulting to not continue")
+            return {"next_node": END}
 
         is_duplicate_message = (
           len(state["messages"]) > 2 and state["messages"][-1].content == state["messages"][-3].content
