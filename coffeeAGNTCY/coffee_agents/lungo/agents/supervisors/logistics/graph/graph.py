@@ -101,8 +101,8 @@ class LogisticGraph:
             has_all_params: bool = Field(description="Whether all required parameters were found in the user's request")
             missing_params: str = Field(description="Comma-separated list of missing parameters, if any")
 
-        # Create structured output LLM
-        extraction_llm = get_llm().with_structured_output(OrderParams, strict=True)
+        # Create structured output LLM (streaming=False required for structured output)
+        extraction_llm = get_llm(streaming=False).with_structured_output(OrderParams, strict=True)
 
         sys_msg = SystemMessage(
             content="""You are an orders broker for a global coffee exchange company.
@@ -214,8 +214,8 @@ class LogisticGraph:
             has_all_params: bool = Field(description="Whether all required parameters were found in the user's request")
             missing_params: str = Field(description="Comma-separated list of missing parameters, if any")
 
-        # Create structured output LLM
-        extraction_llm = get_llm().with_structured_output(OrderParams, strict=True)
+        # Create structured output LLM (streaming=False required for structured output)
+        extraction_llm = get_llm(streaming=False).with_structured_output(OrderParams, strict=True)
 
         sys_msg = SystemMessage(
             content="""You are an orders broker for a global coffee exchange company.
