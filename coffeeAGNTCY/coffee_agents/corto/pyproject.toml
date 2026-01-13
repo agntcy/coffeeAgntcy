@@ -27,7 +27,6 @@ dependencies = [
     "agntcy-app-sdk==0.4.5",
     "litellm[proxy]==1.75.3",
     "azure-core==1.38.0"
-
 ]
 
 [project.optional-dependencies]
