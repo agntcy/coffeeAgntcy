@@ -172,6 +172,18 @@ NVIDIA_NIM_API_BASE=<your_nvidia_nim_endpoint_url>
 
 ---
 
+#### **LiteLLM Proxy**
+
+If you're using a LiteLLM proxy to route requests to various LLM providers:
+
+```env
+LLM_MODEL="azure/<your_deployment_name>"
+LITELLM_PROXY_BASE_URL=<your_litellm_proxy_base_url>
+LITELLM_PROXY_API_KEY=<your_litellm_proxy_api_key>
+```
+
+---
+
 #### **Custom OAuth2 Application Exposing OpenAI**
 
 If you’re using a application secured with OAuth2 + refresh token that exposes an OpenAI endpoint:
