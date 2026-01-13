@@ -82,8 +82,74 @@ export type HandleTypeType = (typeof HANDLE_TYPES)[keyof typeof HANDLE_TYPES]
 export type VerificationStatusType =
   (typeof VERIFICATION_STATUS)[keyof typeof VERIFICATION_STATUS]
 
-
 export const isLocalDev =
   import.meta.env?.DEV ||
   window.location.hostname === "localhost" ||
   window.location.hostname === "127.0.0.1"
+
+export type ApiErrorInfo = {
+  status?: number
+  message: string
+  raw?: unknown
+}
+
+export const parseApiError = (error: any): ApiErrorInfo => {
+  if (error?.response) {
+    const status = error.response.status
+    const data = error.response.data
+    const message =
+      typeof data === "string"
+        ? data
+        : data?.message || data?.detail || "Request failed"
+
+    return {
+      status,
+      message,
+    }
+  }
+
+  return {
+    message: "Sorry, something went wrong. Please try again later.",
+  }
+}
+
+export type FetchErrorInfo = { status: number; message: string };
+
+export const parseFetchError = async (response: Response): Promise<FetchErrorInfo> => {
+  const status = response.status;
+  let message = `HTTP ${response.status}: ${response.statusText}`;
+
+  try {
+    const contentType = response.headers.get("content-type") ?? "";
+    const raw = (await response.text()).trim(); // read once
+
+    if (!raw) return { status, message };
+
+    if (contentType.includes("application/json")) {
+      try {
+        const body = JSON.parse(raw);
+
+        if (body && typeof body === "object") {
+          message =
+            (body as any).detail ||
+            (body as any).message ||
+            (body as any).title ||
+            (Array.isArray((body as any).errors) ? (body as any).errors[0] : undefined) ||
+            JSON.stringify(body);
+        } else if (typeof body === "string") {
+          message = body;
+        }
+      } catch {
+        // Header says JSON but it's not valid JSON; fall back to raw text
+        message = raw;
+      }
+    } else {
+      message = raw;
+    }
+  } catch {
+    // keep default message
+  }
+
+  return { status, message };
+};
+
