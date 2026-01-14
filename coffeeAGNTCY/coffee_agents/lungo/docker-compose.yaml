@@ -184,13 +184,19 @@ services:
 
   grafana:
     image: grafana/grafana
-    container_name: lungo-grafana
+    container_name: grafana-lungo
     ports:
       - "3001:3000"
     environment:
       - GF_INSTALL_PLUGINS=grafana-clickhouse-datasource
       - GF_SECURITY_ADMIN_PASSWORD=admin
       - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_AUTH_ANONYMOUS_ENABLED=true
+      - GF_AUTH_ANONYMOUS_ORG_ROLE=Admin
+    volumes:
+      - ./config/docker/grafana/datasources.yaml:/etc/grafana/provisioning/datasources/datasources.yaml
+      - ./config/docker/grafana/dashboards.yaml:/etc/grafana/provisioning/dashboards/dashboards.yaml
+      - ./config/docker/grafana/dashboards:/var/lib/grafana/dashboards
     depends_on:
       clickhouse-server:
         condition: service_healthy

@@ -37,3 +37,5 @@ releases:
     values:
       - ./values.yaml
       - ./config-overrides.yaml.gotmpl
+      - ./grafana-values.yaml
+      - ./otel-values.yaml
