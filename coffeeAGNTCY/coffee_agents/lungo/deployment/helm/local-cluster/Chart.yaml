@@ -21,7 +21,7 @@ dependencies:
     version: "10.1.2"
     repository: "oci://ghcr.io/grafana/helm-charts"
   - name: auction-supervisor
-    version: "0.0.1"
+    version: "0.0.3"
     repository: "file://../auction-supervisor"
   - name: brazil-farm
     version: "0.0.6"
@@ -42,7 +42,7 @@ dependencies:
     version: "0.0.1"
     repository: "file://../logistics-helpdesk"
   - name: logistics-supervisor
-    version: "0.0.1"
+    version: "0.0.3"
     repository: "file://../logistics-supervisor"
   - name: logistics-shipper
     version: "0.0.1"
