@@ -191,3 +191,6 @@ temp/
 node_modules/
 
 .ruff_cache/
+
+# dir cids
+*published_cids.json
