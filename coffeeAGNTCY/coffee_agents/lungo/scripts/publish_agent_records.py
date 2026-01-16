@@ -437,7 +437,7 @@ def _import_agent_cards() -> List[AgentCard]:
         raise
 
 
-def _process_agent_card(agent_card: AgentCard, oasf_util: OASFUtil, directory: AdsUtil) -> bool:
+def _process_agent_card(agent_card: AgentCard, oasf_util: OASFUtil, directory: AdsUtil) -> Optional[str]:
     """Process a single agent card - translate, publish, and clean up.
     
     Args:
@@ -460,21 +460,21 @@ def _process_agent_card(agent_card: AgentCard, oasf_util: OASFUtil, directory: A
         
         if cid:
             logger.info(f"Successfully published {agent_card.name} with CID: {cid}")
-            return True
+            return cid
         else:
             logger.error(f"Failed to publish {agent_card.name}")
-            return False
+            return None
             
     except Exception as e:
         logger.error(f"Error processing agent card {agent_card.name}: {e}")
-        return False
+        return None
         
     finally:
         # Clean up temp file
         Path(tmp_card_file).unlink(missing_ok=True)
 
 
-def publish_lungo_agent_records() -> bool:
+def publish_lungo_agent_records(cid_output_file: Optional[str] = None) -> bool:
     """Publish all Lungo agent records to the directory.
     
     Returns:
@@ -494,25 +494,39 @@ def publish_lungo_agent_records() -> bool:
     
     success_count = 0
     total_count = len(agent_cards)
+    cids = {}
     
     logger.info(f"Publishing {total_count} agent records...")
     
     for agent_card in agent_cards:
-        if _process_agent_card(agent_card, oasf_util, directory):
+        cid = _process_agent_card(agent_card, oasf_util, directory)
+        if cid:
+            cids[agent_card.name] = cid
             success_count += 1
     
     logger.info(f"Published {success_count}/{total_count} agent records successfully")
+
+    if cid_output_file:
+        try:
+            with open(cid_output_file, "w") as f:
+                json.dump(cids, f, indent=2)
+            logger.info(f"Wrote published CIDs to {cid_output_file}")
+        except Exception as e:
+            logger.error(f"Failed to write CIDs to file: {e}")
     return success_count == total_count
 
-def main() -> None:
+def main(cid_output_file="published_cids.json") -> None:
     """Main entry point for the automation script."""
     logging.basicConfig(
         level=logging.INFO,
         format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
     )
+
+    # clear the previous output file if it exists or create a new one if not
+    Path(cid_output_file).write_text("")
     
     logger.info("Starting Lungo agent record publishing...")
-    success = publish_lungo_agent_records()
+    success = publish_lungo_agent_records(cid_output_file=cid_output_file)
     
     if success:
         logger.info("All agent records published successfully")
