@@ -5,7 +5,7 @@ set -e  # Exit on any error
 # Cleanup function to stop the translation service
 cleanup() {
     echo "🧹 Cleaning up: stopping oasf-translation-service..."
-    docker-compose stop oasf-translation-service || true
+    docker-compose down oasf-translation-service || true
     echo "✅ Cleanup completed"
 }
 
