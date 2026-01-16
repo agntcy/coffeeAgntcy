@@ -30,7 +30,7 @@ dependencies = [
     "llama-index-llms-litellm==0.6.3",
     "llama-index-core==0.14.9",
     "litellm[proxy]>=1.75.3",
-    #"agntcy-app-sdk==0.4.5",
+    "agntcy-app-sdk==0.4.6",
     "azure-core==1.38.0",
 
     # Vulnerability fix for requests
