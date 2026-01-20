@@ -9,8 +9,10 @@ import airplaneSvg from "@/assets/airplane.svg"
 import CoffeePromptsDropdown from "./Prompts/CoffeePromptsDropdown"
 import LogisticsPromptsDropdown from "./Prompts/LogisticsPromptsDropdown"
 import { useAgentAPI } from "@/hooks/useAgentAPI"
+import { useHITLAPI, HITLResponse } from "@/hooks/useHITLAPI"
 import UserMessage from "./UserMessage"
 import ChatHeader from "./ChatHeader"
+import HITLScenarios from "./HITLScenarios"
 import AgentIcon from "@/assets/Coffee_Icon.svg"
 
 import { cn } from "@/utils/cn.ts"
@@ -29,6 +31,7 @@ interface ChatAreaProps {
   showProgressTracker?: boolean
   showAuctionStreaming?: boolean
   showFinalResponse?: boolean
+  enableHITL?: boolean  // Enable Human-in-the-Loop for this chat
   onStreamComplete?: () => void
   onSenderHighlight?: (nodeId: string) => void
   pattern?: string
@@ -36,6 +39,7 @@ interface ChatAreaProps {
   onDropdownSelect?: (query: string) => void
   onUserInput?: (query: string) => void
   onApiResponse?: (response: string, isError?: boolean) => void
+  onHITLStateChange?: (isAwaitingHuman: boolean) => void  // Callback for HITL state changes
   onClearConversation?: () => void
   currentUserMessage?: string
   agentResponse?: string
@@ -56,6 +60,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
   showProgressTracker = false,
   showAuctionStreaming = false,
   showFinalResponse = false,
+  enableHITL = false,
   onStreamComplete,
   onSenderHighlight,
   pattern,
@@ -63,6 +68,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
   onDropdownSelect,
   onUserInput,
   onApiResponse,
+  onHITLStateChange,
   onClearConversation,
   currentUserMessage,
   agentResponse,
@@ -75,7 +81,9 @@ const ChatArea: React.FC<ChatAreaProps> = ({
   const [content, setContent] = useState<string>("")
   const [loading, setLoading] = useState<boolean>(false)
   const [isMinimized, setIsMinimized] = useState<boolean>(false)
+  const [hitlState, setHitlState] = useState<HITLResponse | null>(null)
   const { sendMessageWithCallback } = useAgentAPI()
+  const { sendHITLPrompt, resumeHITL, loading: hitlLoading, resetHITL } = useHITLAPI()
 
   const handleMinimize = () => {
     setIsMinimized(true)
@@ -95,10 +103,107 @@ const ChatArea: React.FC<ChatAreaProps> = ({
     }
   }
 
+  // Handle HITL scenario selection
+  const handleHITLSelection = async (scenarioName: string) => {
+    if (!hitlState?.thread_id) {
+      console.error("HITL Selection: No thread_id available")
+      return
+    }
+
+    console.log("HITL Selection: User selected scenario:", scenarioName)
+    console.log("HITL Selection: Using thread_id:", hitlState.thread_id)
+
+    try {
+      const response = await resumeHITL(hitlState.thread_id, scenarioName, pattern)
+      console.log("HITL Selection: Resume response:", response)
+
+      if (response.status === "completed" && response.response) {
+        setHitlState(null)
+        // Notify parent that HITL is complete (no longer awaiting human input)
+        if (onHITLStateChange) {
+          onHITLStateChange(false)
+        }
+        setAiReplied(true)
+        if (onApiResponse) {
+          onApiResponse(response.response, false)
+        }
+      }
+    } catch (error) {
+      console.error("HITL Selection: Error resuming:", error)
+      logger.apiError("/agent/prompt/hitl/resume", error)
+      let errorMessage = "Sorry, I encountered an error processing your selection"
+      if (axios.isAxiosError(error) && error.response?.data?.detail) {
+        errorMessage = error.response.data.detail
+      }
+      setHitlState(null)
+      if (onHITLStateChange) {
+        onHITLStateChange(false)
+      }
+      if (onApiResponse) {
+        onApiResponse(errorMessage, true)
+      }
+    }
+  }
+
+  // Process message with HITL support
+  const processMessageWithHITL = async (messageContent: string): Promise<void> => {
+    if (!messageContent.trim()) return
+
+    console.log("HITL: Processing message:", messageContent)
+    setContent("")
+    setLoading(true)
+    setButtonClicked(true)
+    setHitlState(null)
+    resetHITL()
+
+    try {
+      const response = await sendHITLPrompt(messageContent, pattern)
+      console.log("HITL: Initial response:", response)
+
+      if (response.status === "awaiting_human_input" && response.interrupt) {
+        // HITL triggered - show scenarios
+        console.log("HITL: Awaiting human input, showing scenarios")
+        setHitlState(response)
+        // Notify parent that we're awaiting human input
+        if (onHITLStateChange) {
+          onHITLStateChange(true)
+        }
+      } else if (response.status === "completed" && response.response) {
+        // No HITL needed - direct response
+        console.log("HITL: Direct response (no human intervention needed)")
+        if (onHITLStateChange) {
+          onHITLStateChange(false)
+        }
+        setAiReplied(true)
+        if (onApiResponse) {
+          onApiResponse(response.response, false)
+        }
+      }
+    } catch (error) {
+      console.error("HITL: Error sending prompt:", error)
+      logger.apiError("/agent/prompt/hitl", error)
+      let errorMessage = "Sorry, I encountered an error"
+      if (axios.isAxiosError(error) && error.response?.data?.detail) {
+        errorMessage = error.response.data.detail
+      }
+      if (onApiResponse) {
+        onApiResponse(errorMessage, true)
+      }
+    }
+
+    setLoading(false)
+  }
+
   const processMessageWithQuery = async (
     messageContent: string,
   ): Promise<void> => {
     if (!messageContent.trim()) return
+
+    // Use HITL flow if enabled
+    if (enableHITL) {
+      await processMessageWithHITL(messageContent)
+      return
+    }
 
     setContent("")
     setLoading(true)
@@ -210,6 +315,17 @@ const ChatArea: React.FC<ChatAreaProps> = ({
                   prompt={currentUserMessage || ""}
                   apiError={apiError}
                   auctionStreamingState={auctionState}
+                />
+              </div>
+            )}
+
+            {/* HITL Scenarios - shown when awaiting human input */}
+            {enableHITL && hitlState?.status === "awaiting_human_input" && hitlState.interrupt && !isMinimized && (
+              <div className="w-full">
+                <HITLScenarios
+                  interrupt={hitlState.interrupt}
+                  onSelect={handleHITLSelection}
+                  loading={hitlLoading}
                 />
               </div>
             )}

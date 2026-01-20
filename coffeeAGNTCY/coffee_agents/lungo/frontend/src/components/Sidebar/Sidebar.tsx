@@ -27,6 +27,8 @@ const Sidebar: React.FC<SidebarProps> = ({
     isPublishSubscribeStreamingExpanded,
     setIsPublishSubscribeStreamingExpanded,
   ] = useState(true)
+  const [isPublishSubscribeHITLExpanded, setIsPublishSubscribeHITLExpanded] =
+    useState(true)
   const [isGroupCommunicationExpanded, setIsGroupCommunicationExpanded] =
     useState(true)
   const [transport, setTransport] = useState<string>("")
@@ -55,6 +57,10 @@ const Sidebar: React.FC<SidebarProps> = ({
 
   const handlePublishSubscribeStreamingToggle = () => {
     setIsPublishSubscribeStreamingExpanded(!isPublishSubscribeStreamingExpanded)
+  }
+
+  const handlePublishSubscribeHITLToggle = () => {
+    setIsPublishSubscribeHITLExpanded(!isPublishSubscribeHITLExpanded)
   }
 
   const handleGroupCommunicationToggle = () => {
@@ -135,6 +141,24 @@ const Sidebar: React.FC<SidebarProps> = ({
                   }
                   onClick={() =>
                     onPatternChange(PATTERNS.PUBLISH_SUBSCRIBE_STREAMING)
+                  }
+                />
+              </SidebarDropdown>
+            </div>
+
+            <div>
+              <SidebarDropdown
+                title="Human-in-the-Loop"
+                isExpanded={isPublishSubscribeHITLExpanded}
+                onToggle={handlePublishSubscribeHITLToggle}
+              >
+                <SidebarItem
+                  title={`A2A ${transport} (HITL)`}
+                  isSelected={
+                    selectedPattern === PATTERNS.PUBLISH_SUBSCRIBE_HITL
+                  }
+                  onClick={() =>
+                    onPatternChange(PATTERNS.PUBLISH_SUBSCRIBE_HITL)
                   }
                 />
               </SidebarDropdown>

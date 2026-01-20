@@ -7,6 +7,7 @@ export const PATTERNS = {
   SLIM_A2A: "slim_a2a",
   PUBLISH_SUBSCRIBE: "publish_subscribe",
   PUBLISH_SUBSCRIBE_STREAMING: "publish_subscribe_streaming",
+  PUBLISH_SUBSCRIBE_HITL: "publish_subscribe_hitl",  // Human-in-the-Loop
   GROUP_COMMUNICATION: "group_communication",
 } as const
 
@@ -18,6 +19,10 @@ export const isGroupCommunication = (pattern?: string): boolean => {
 
 export const shouldEnableRetries = (pattern?: string): boolean => {
   return isGroupCommunication(pattern)
+}
+
+export const isHITLPattern = (pattern?: string): boolean => {
+  return pattern === PATTERNS.PUBLISH_SUBSCRIBE_HITL
 }
 
 export const getApiUrlForPattern = (pattern?: string): string => {
@@ -32,6 +37,8 @@ export const getApiUrlForPattern = (pattern?: string): string => {
   if (isGroupCommunication(pattern)) {
     return GROUP_COMM_APP_API_URL
   } else if (pattern === PATTERNS.PUBLISH_SUBSCRIBE_STREAMING) {
+    return PUB_SUB_APP_API_URL
+  } else if (pattern === PATTERNS.PUBLISH_SUBSCRIBE_HITL) {
     return PUB_SUB_APP_API_URL
   } else {
     return PUB_SUB_APP_API_URL
@@ -68,6 +75,8 @@ export const getPatternDisplayName = (pattern?: string): string => {
       return "Publish/Subscribe"
     case PATTERNS.PUBLISH_SUBSCRIBE_STREAMING:
       return "Publish/Subscribe: Streaming"
+    case PATTERNS.PUBLISH_SUBSCRIBE_HITL:
+      return "Publish/Subscribe: Human-in-the-Loop"
     case PATTERNS.GROUP_COMMUNICATION:
       return "Group Communication"
     default:

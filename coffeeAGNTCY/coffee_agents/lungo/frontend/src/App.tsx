@@ -69,6 +69,7 @@ const App: React.FC = () => {
   const [showFinalResponse, setShowFinalResponse] = useState<boolean>(false)
   const [pendingResponse, setPendingResponse] = useState<string>("")
   const [executionKey, setExecutionKey] = useState<string>("")
+  const [isAwaitingHITL, setIsAwaitingHITL] = useState<boolean>(false)
   const streamCompleteRef = useRef<boolean>(false)
 
   const handlePatternChange = useCallback(
@@ -139,7 +140,8 @@ const App: React.FC = () => {
 
     if (
       selectedPattern !== PATTERNS.GROUP_COMMUNICATION &&
-      selectedPattern !== PATTERNS.PUBLISH_SUBSCRIBE_STREAMING
+      selectedPattern !== PATTERNS.PUBLISH_SUBSCRIBE_STREAMING &&
+      selectedPattern !== PATTERNS.PUBLISH_SUBSCRIBE_HITL
     ) {
       setShowFinalResponse(true)
     }
@@ -225,6 +227,10 @@ const App: React.FC = () => {
         reset()
 
         await connect(query)
+      } else if (selectedPattern === PATTERNS.PUBLISH_SUBSCRIBE_HITL) {
+        // HITL pattern: ChatArea handles its own API calls
+        setShowFinalResponse(false)
+        setIsAgentLoading(false) // ChatArea will manage loading state
       } else {
         setShowFinalResponse(true)
         const response = await sendMessage(query, selectedPattern)
@@ -263,9 +269,20 @@ const App: React.FC = () => {
     setGroupCommResponseReceived(false)
     setShowFinalResponse(false)
     setPendingResponse("")
+    setIsAwaitingHITL(false)
 
     resetGroup()
   }
+
+  const handleHITLStateChange = useCallback((isAwaitingHuman: boolean) => {
+    console.log("App: HITL state change - awaiting human:", isAwaitingHuman)
+    setIsAwaitingHITL(isAwaitingHuman)
+    if (!isAwaitingHuman) {
+      // HITL complete - show final response
+      setShowFinalResponse(true)
+      setIsAgentLoading(false)
+    }
+  }, [])
 
   const handleNodeHighlightSetup = useCallback(
     (highlightFunction: (nodeId: string) => void) => {
@@ -291,6 +308,7 @@ const App: React.FC = () => {
     setAiReplied(false)
     setShowFinalResponse(false)
     setPendingResponse("")
+    setIsAwaitingHITL(false)
 
     if (selectedPattern === PATTERNS.GROUP_COMMUNICATION) {
       setShowProgressTracker(true)
@@ -336,8 +354,10 @@ const App: React.FC = () => {
                 isBottomLayout={true}
                 showCoffeePrompts={
                   selectedPattern === PATTERNS.PUBLISH_SUBSCRIBE ||
-                  selectedPattern === PATTERNS.PUBLISH_SUBSCRIBE_STREAMING
+                  selectedPattern === PATTERNS.PUBLISH_SUBSCRIBE_STREAMING ||
+                  selectedPattern === PATTERNS.PUBLISH_SUBSCRIBE_HITL
                 }
+                enableHITL={selectedPattern === PATTERNS.PUBLISH_SUBSCRIBE_HITL}
                 showLogisticsPrompts={
                   selectedPattern === PATTERNS.GROUP_COMMUNICATION
                 }
@@ -354,6 +374,7 @@ const App: React.FC = () => {
                 onDropdownSelect={handleDropdownSelect}
                 onUserInput={handleUserInput}
                 onApiResponse={handleApiResponse}
+                onHITLStateChange={handleHITLStateChange}
                 onClearConversation={handleClearConversation}
                 currentUserMessage={currentUserMessage}
                 agentResponse={agentResponse}
