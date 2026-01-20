@@ -448,7 +448,13 @@ def _process_agent_card(agent_card: AgentCard, oasf_util: OASFUtil, directory: A
     Returns:
         True if successful, False otherwise
     """
-    card_file = f"{OASF_RECORDS_DIR}/{agent_card.name}.json"
+
+
+    # create a file_name that removes any spaces or special characters
+    file_name = agent_card.name.replace(" ", "_").rstrip()
+    card_file = f"{OASF_RECORDS_DIR}/{file_name}.json"
+
+    print("file_name:", file_name)
     
     try:
         # Translate A2A card to OASF record
@@ -471,7 +477,7 @@ def _process_agent_card(agent_card: AgentCard, oasf_util: OASFUtil, directory: A
         
     finally:
         if cleanup:
-            card_file = f"{OASF_RECORDS_DIR}/{agent_card.name}.json"
+            card_file = f"{OASF_RECORDS_DIR}/{file_name}.json"
             Path(card_file).unlink(missing_ok=True)
 
 
