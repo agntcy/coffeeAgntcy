@@ -57,6 +57,8 @@ const LogisticsPromptsDropdown: React.FC<LogisticsPromptsDropdownProps> = ({
             retryTimeoutId = setTimeout(() => fetchPrompts(retryCount + 1), delay)
           }
         }
+
+        setIsLoading(false)
       } catch (err: unknown) {
         if (err instanceof Error && err.name !== "AbortError") {
           console.warn("Failed to load logistics prompts from API.", err)
@@ -64,8 +66,6 @@ const LogisticsPromptsDropdown: React.FC<LogisticsPromptsDropdownProps> = ({
           const delay = Math.min(5000 * Math.pow(2, retryCount), MAX_RETRY_DELAY)
           retryTimeoutId = setTimeout(() => fetchPrompts(retryCount + 1), delay)
         }
-      } finally {
-        setIsLoading(false)
       }
     }
 
@@ -137,10 +137,6 @@ const LogisticsPromptsDropdown: React.FC<LogisticsPromptsDropdownProps> = ({
           <div className={menuClasses}>
             <div className="px-2 py-2">
               {isLoading ? (
-                  <div className="flex items-center justify-center p-4">
-                    <div className="h-6 w-6 animate-spin rounded-full border-2 border-chat-text border-t-transparent" />
-                  </div>
-              ) : categories.length === 0 ? (
                   <LoadingSpinner
                       message={"Loading suggested prompts, waiting for logistics server response"}
                   />
