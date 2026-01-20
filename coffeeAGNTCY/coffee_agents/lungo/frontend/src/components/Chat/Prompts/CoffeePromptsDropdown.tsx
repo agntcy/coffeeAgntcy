@@ -66,6 +66,7 @@ const CoffeePromptsDropdown: React.FC<CoffeePromptsDropdownProps> = ({
           retryTimeoutId = setTimeout(() => fetchPrompts(retryCount + 1), delay)
         }
 
+        setIsLoading(false); // Only set to false after successful fetch and processing
       } catch (err: unknown) {
         if (err instanceof Error && err.name !== "AbortError") {
           console.warn("Failed to load prompts from API.", err)
@@ -73,8 +74,6 @@ const CoffeePromptsDropdown: React.FC<CoffeePromptsDropdownProps> = ({
           const delay = Math.min(5000 * Math.pow(2, retryCount), MAX_RETRY_DELAY)
           retryTimeoutId = setTimeout(() => fetchPrompts(retryCount + 1), delay)
         }
-      } finally {
-        setIsLoading(false)
       }
     }
 
