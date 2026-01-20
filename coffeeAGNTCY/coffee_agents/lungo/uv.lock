@@ -2066,7 +2066,7 @@ requires-dist = [
     { name = "langchain-openai", marker = "extra == 'dev'", specifier = ">=0.3.14,<0.4" },
     { name = "langgraph", specifier = ">=0.4.1" },
     { name = "langgraph-supervisor", specifier = ">=0.0.26" },
-    { name = "litellm", extras = ["proxy"], specifier = ">=1.75.3" },
+    { name = "litellm", extras = ["proxy"], specifier = "==1.80.0" },
     { name = "llama-index-core", specifier = "==0.14.9" },
     { name = "llama-index-llms-azure-openai", specifier = "==0.4.2" },
     { name = "llama-index-llms-litellm", specifier = "==0.6.3" },

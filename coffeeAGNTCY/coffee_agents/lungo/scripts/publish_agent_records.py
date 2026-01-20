@@ -50,7 +50,7 @@ DEFAULT_ADS_ADDRESS = "localhost:8888"
 DEFAULT_DIRCTL_PATH = "/usr/local/bin/dirctl"
 DEFAULT_SCHEMA_VERSION = "1.0.0"
 DEFAULT_LIST_LIMIT = 10
-TEMP_FILE_PREFIX = "temp_oasf_record_"
+OASF_RECORDS_DIR = "oasf_records"
 
 logger = logging.getLogger(__name__)
 
@@ -437,7 +437,7 @@ def _import_agent_cards() -> List[AgentCard]:
         raise
 
 
-def _process_agent_card(agent_card: AgentCard, oasf_util: OASFUtil, directory: AdsUtil) -> Optional[str]:
+def _process_agent_card(agent_card: AgentCard, oasf_util: OASFUtil, directory: AdsUtil, cleanup: bool = False) -> Optional[str]:
     """Process a single agent card - translate, publish, and clean up.
     
     Args:
@@ -448,15 +448,15 @@ def _process_agent_card(agent_card: AgentCard, oasf_util: OASFUtil, directory: A
     Returns:
         True if successful, False otherwise
     """
-    tmp_card_file = f"{TEMP_FILE_PREFIX}{agent_card.name}.json"
+    card_file = f"{OASF_RECORDS_DIR}/{agent_card.name}.json"
     
     try:
         # Translate A2A card to OASF record
         logger.info(f"Processing agent card: {agent_card.name}")
-        oasf_util.a2a_to_oasf(agent_card, output_file=tmp_card_file)
+        oasf_util.a2a_to_oasf(agent_card, output_file=card_file)
 
         # Publish the OASF record
-        cid = publish_card(Path(tmp_card_file), directory)
+        cid = publish_card(Path(card_file), directory)
         
         if cid:
             logger.info(f"Successfully published {agent_card.name} with CID: {cid}")
@@ -470,8 +470,9 @@ def _process_agent_card(agent_card: AgentCard, oasf_util: OASFUtil, directory: A
         return None
         
     finally:
-        # Clean up temp file
-        Path(tmp_card_file).unlink(missing_ok=True)
+        if cleanup:
+            card_file = f"{OASF_RECORDS_DIR}/{agent_card.name}.json"
+            Path(card_file).unlink(missing_ok=True)
 
 
 def publish_lungo_agent_records(cid_output_file: Optional[str] = None) -> bool:
