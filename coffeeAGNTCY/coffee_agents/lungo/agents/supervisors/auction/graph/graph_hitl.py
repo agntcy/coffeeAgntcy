@@ -301,6 +301,8 @@ class ExchangeGraphHITL:
         
         try:
             result = await get_farm_yield_inventory(user_msg.content, farm)
+            # Strip trailing whitespace to avoid Bedrock Claude error
+            result = result.strip() if isinstance(result, str) else str(result).strip()
             return {"messages": [AIMessage(content=f"**{farm.title()} Farm Inventory:**\n{result}")]}
         except Exception as e:
             logger.error(f"Error querying {farm} farm: {e}")
@@ -317,6 +319,8 @@ class ExchangeGraphHITL:
             async for chunk in get_all_farms_yield_inventory_streaming(user_msg.content):
                 full_response += chunk + "\n"
             
+            # Strip trailing whitespace to avoid Bedrock Claude error
+            full_response = full_response.strip()
             return {"messages": [AIMessage(content=f"**All Farms Inventory:**\n{full_response}")]}
         except Exception as e:
             logger.error(f"Error querying all farms: {e}")
@@ -455,21 +459,39 @@ class ExchangeGraphHITL:
         Reference: https://docs.langchain.com/oss/python/langgraph/interrupts
         """
         options = state.get("intervention_options", {})
+        trigger_result = state.get("trigger_result", {})
         
         logger.info("[HUMAN_INTERVENTION] Pausing for human input")
         
-        # Build the interrupt payload
+        # Build the interrupt payload with explicit model information
         interrupt_payload = {
             "type": "human_intervention_required",
+            
+            # Model 1: When-to-Trigger Model output
+            "trigger_model": {
+                "name": "When-to-Trigger Model",
+                "description": "Analyzes user request to determine if human review is needed",
+                "decision": trigger_result.get("decision", "TRIGGER"),
+                "confidence": trigger_result.get("confidence", 0),
+                "reasons": trigger_result.get("reasons", []),
+            },
+            
+            # Model 2: How-to-Respond Model output
+            "respond_model": {
+                "name": "How-to-Respond Model",
+                "description": "Generates options and scenarios for human selection",
+                "summary": options.get("summary", ""),
+                "scenarios": options.get("scenarios", []),
+                "recommendation": options.get("recommendation", ""),
+                "rationale": options.get("rationale", ""),
+            },
+            
+            # Legacy fields for backwards compatibility
             "summary": options.get("summary", ""),
             "scenarios": options.get("scenarios", []),
             "recommendation": options.get("recommendation", ""),
             "rationale": options.get("rationale", ""),
-            "instructions": (
-                "Please select one of the scenarios below by responding with the scenario name "
-                "(e.g., 'Budget-Optimized', 'Quality-First', 'Balanced Diversification', 'Budget-Strict'), "
-                "or provide custom instructions."
-            ),
+            "instructions": "Please select one of the options below.",
         }
         
         # === INTERRUPT EXECUTION ===
@@ -489,14 +511,24 @@ class ExchangeGraphHITL:
     
     async def _process_human_decision_node(self, state: HITLGraphState) -> dict:
         """
-        Process the human's decision and prepare for order execution.
+        Process the human's decision and execute the selected option.
         
-        Interprets the human's selection and adjusts the order parameters
-        accordingly before proceeding to the orders tools.
+        This is a GENERIC handler that works with any type of HITL scenario.
+        It dynamically formats the response based on whatever fields are
+        present in the selected scenario.
+        
+        The response is built entirely from:
+        - The scenario name and description
+        - Any key-value pairs in the scenario (displayed generically)
+        - The original user query for context
         """
         human_decision = state.get("human_decision", "")
         options = state.get("intervention_options", {})
         scenarios = options.get("scenarios", [])
+        
+        # Get original user message for context
+        user_msg = next((m for m in state["messages"] if m.type == "human"), None)
+        original_query = user_msg.content if user_msg else "your request"
         
         logger.info(f"[PROCESS_DECISION] Processing human decision: {human_decision}")
         
@@ -508,27 +540,74 @@ class ExchangeGraphHITL:
                 break
         
         if selected_scenario:
-            # Build order message based on selected scenario
-            allocations = selected_scenario.get("farm_allocations", {})
-            total_cost = selected_scenario.get("total_cost", 0)
+            scenario_name = selected_scenario.get("name", "Selected Option")
+            description = selected_scenario.get("description", "")
             
-            order_summary = f"**Executing order based on '{selected_scenario['name']}' scenario:**\n\n"
-            order_summary += f"📦 **Allocations:**\n"
-            for farm, qty in allocations.items():
-                if qty > 0:
-                    order_summary += f"- {farm.title()}: {qty} lbs\n"
-            order_summary += f"\n💰 **Estimated Total:** ${total_cost:,.2f}"
+            # Build clean, professional response
+            response = f"**Selection Confirmed**\n\n"
+            response += f"Option: {scenario_name}\n"
+            
+            if description:
+                response += f"Strategy: {description}\n"
+            
+            response += "\n"
+            
+            # Dynamically display all scenario fields (except name/description)
+            for key, value in selected_scenario.items():
+                if key in ("name", "description"):
+                    continue
+                
+                # Format the key nicely
+                display_key = key.replace("_", " ").title()
+                
+                # Format value based on type
+                if isinstance(value, dict):
+                    # Handle nested dicts (like allocations)
+                    if value:
+                        response += f"{display_key}:\n"
+                        for sub_key, sub_value in value.items():
+                            sub_display = sub_key.replace("_", " ").title()
+                            response += f"  - {sub_display}: {self._format_value(sub_value)}\n"
+                elif isinstance(value, list):
+                    # Handle lists
+                    if value:
+                        response += f"{display_key}: {', '.join(str(v) for v in value)}\n"
+                elif value is not None and value != "":
+                    response += f"{display_key}: {self._format_value(value)}\n"
+            
+            response += "\n---\n\n"
+            response += f"Status: Completed\n"
+            response += f"Your selection has been processed successfully."
             
             return {
-                "selected_scenario": selected_scenario.get("name"),
-                "messages": [AIMessage(content=order_summary)],
+                "selected_scenario": scenario_name,
+                "status": "completed",
+                "scenario_data": selected_scenario,
+                "messages": [AIMessage(content=response)],
             }
         else:
-            # Human provided custom instructions
+            # Human provided custom instructions (not matching any scenario)
             return {
                 "human_decision": human_decision,
-                "messages": [AIMessage(content=f"Processing custom request: {human_decision}")],
+                "status": "custom_processing",
+                "messages": [AIMessage(content=f"**Processing Custom Input**\n\nInput received: {human_decision}\n\nStatus: Processing your request...")],
             }
+    
+    def _format_value(self, value) -> str:
+        """Format a value for display in the response."""
+        if isinstance(value, float):
+            if value >= 100 and value == int(value):
+                return f"{int(value):,}"
+            elif value >= 1:
+                return f"{value:,.2f}"
+            else:
+                return f"{value:.0%}" if value < 1 else str(value)
+        elif isinstance(value, int):
+            return f"{value:,}"
+        elif isinstance(value, bool):
+            return "Yes" if value else "No"
+        else:
+            return str(value)
     
     # === SERVE METHODS ===
     
