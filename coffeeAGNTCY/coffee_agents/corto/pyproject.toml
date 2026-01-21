@@ -27,7 +27,16 @@ dependencies = [
     "agntcy-app-sdk==0.4.5",
     "litellm[proxy]==1.75.3",
     "azure-core==1.38.0",
+
+    # Vulnerability fix for requests
     "langchain-core>=1.2.5",
+    "urllib3>=2.6.3",
+    "aiohttp>=3.13.3",
+    "pyasn1>=0.6.2",
+    "pypdf>=6.6.0",
+    "filelock>=3.20.3",
+    "marshmallow>=3.26.2",
+    "PyNaCl>=1.6.2",
 ]
 
 [project.optional-dependencies]
