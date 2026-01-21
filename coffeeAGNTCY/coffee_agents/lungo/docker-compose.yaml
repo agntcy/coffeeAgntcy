@@ -311,9 +311,9 @@ services:
       mce-api-layer:
         condition: service_healthy
 
-  dirapiserver:
+  dir-api-server:
     image: ghcr.io/agntcy/dir-apiserver:v0.6.0
-    container_name: dir-apiserver
+    container_name: dir-api-server
     env_file:
       - ./config/docker/dir/apiserver.env
     ports:

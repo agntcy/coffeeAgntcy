@@ -21,6 +21,8 @@ import grpc
 from google.protobuf.json_format import ParseDict, MessageToJson
 from google.protobuf.struct_pb2 import Struct
 
+logger = logging.getLogger(__name__)
+
 # Check for required AGNTCY SDK imports
 try:
     # AGNTCY SDK imports
@@ -33,11 +35,11 @@ try:
     from a2a.types import AgentCard
 except ModuleNotFoundError as e:
     if "agntcy.dir_sdk" in str(e):
-        print("❌ Error: Missing required AGNTCY DIR SDK dependencies")
-        print("🔧 Please install dev dependencies by running:")
-        print("   uv sync --extra dev")
-        print("")
-        print(f"Original error: {e}")
+        logger.error("Missing required AGNTCY DIR SDK dependencies")
+        logger.error("Please install dev dependencies by running:")
+        logger.error("   uv sync --extra dev")
+        logger.error("")
+        logger.error(f"Original error: {e}")
         sys.exit(1)
     else:
         # Re-raise other ModuleNotFoundError exceptions
@@ -51,8 +53,6 @@ DEFAULT_DIRCTL_PATH = "/usr/local/bin/dirctl"
 DEFAULT_SCHEMA_VERSION = "1.0.0"
 DEFAULT_LIST_LIMIT = 10
 OASF_RECORDS_DIR = "oasf_records"
-
-logger = logging.getLogger(__name__)
 
 class OASFUtil:
     """Utility class for translating and validating agent records using OASF SDK.
@@ -454,7 +454,7 @@ def _process_agent_card(agent_card: AgentCard, oasf_util: OASFUtil, directory: A
     file_name = agent_card.name.replace(" ", "_").rstrip()
     card_file = f"{OASF_RECORDS_DIR}/{file_name}.json"
 
-    print("file_name:", file_name)
+    logger.debug(f"file_name: {file_name}")
     
     try:
         # Translate A2A card to OASF record
@@ -536,7 +536,7 @@ def main(cid_output_file="published_cids.json") -> None:
     success = publish_lungo_agent_records(cid_output_file=cid_output_file)
     
     if success:
-        logger.info("All agent records published successfully")
+        logger.info("✅ All agent records published successfully")
     else:
         logger.error("Some agent records failed to publish")
         exit(1)
