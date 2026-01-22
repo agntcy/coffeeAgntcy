@@ -1,216 +1,295 @@
 # Copyright AGNTCY Contributors (https://github.com/agntcy)
 # SPDX-License-Identifier: Apache-2.0
 
+"""
+Vietnam Farm Agent Module
+
+This module implements a multi-agent system for the Vietnam coffee farm.
+It uses intent-based routing to delegate queries to specialized sub-agents:
+- Inventory Agent: Handles yield and stock queries
+- Orders Agent: Handles order placement and status queries  
+- General Agent: Fallback for unrecognized queries
+
+The system uses Google ADK with LiteLLM for LLM interactions.
+"""
+
 import logging
 
-from langchain_core.messages import AIMessage
-from langchain_core.prompts import PromptTemplate
-from langgraph.graph import MessagesState
-from langgraph.graph import StateGraph, END
+import os
+import asyncio
+from google.adk.agents import Agent
+from google.adk.models.lite_llm import LiteLlm
+from google.adk.sessions import InMemorySessionService
+from google.adk.runners import Runner
+from google.genai import types
+import litellm
+from config.config import LLM_MODEL
+from ioa_observe.sdk.decorators import agent
 
-from ioa_observe.sdk.decorators import agent, graph
-
-from common.llm import get_llm
 
 logger = logging.getLogger("lungo.vietnam_farm_agent.agent")
 
-# --- 1. Define Node Names as Constants ---
-class NodeStates:
-    SUPERVISOR = "supervisor"
-    INVENTORY = "inventory_node"
-    ORDERS = "orders_node"
-    GENERAL_RESPONSE = "general_response_node"
+# ============================================================================
+# LLM Configuration
+# ============================================================================
+LITELLM_PROXY_BASE_URL = os.getenv("LITELLM_PROXY_BASE_URL")
+LITELLM_PROXY_API_KEY = os.getenv("LITELLM_PROXY_API_KEY")
 
-# --- 2. Define the Graph State ---
-class GraphState(MessagesState):
-    """
-    Represents the state of our graph, passed between nodes.
-    """
-    next_node: str
+# Configure LiteLLM proxy if environment variables are set
+if LITELLM_PROXY_API_KEY and LITELLM_PROXY_BASE_URL:
+    os.environ["LITELLM_PROXY_API_KEY"] = LITELLM_PROXY_API_KEY
+    os.environ["LITELLM_PROXY_API_BASE"] = LITELLM_PROXY_BASE_URL
+    logger.info(f"Using LiteLLM Proxy: {LITELLM_PROXY_BASE_URL}")
+    litellm.use_litellm_proxy = True
+else:
+    logger.info("Using direct LLM instance")
 
-# --- 3. Implement the LangGraph Application Class ---
+
+# ============================================================================
+# Sub-Agent Definitions
+# ============================================================================
+
+inventory_agent = Agent(
+    name="inventory_agent",
+    model=LiteLlm(model=LLM_MODEL),
+    description="Handles yield and inventory requests for the Vietnam coffee farm.",
+    instruction="""You are a helpful coffee farm cultivation manager in Vietnam who handles yield or inventory requests. 
+Your job is to:
+1. Return a random yield estimate for the coffee farm in Vietnam. Make sure the estimate is a reasonable value and in pounds.
+2. Respond with only the yield estimate.
+
+If the user asked in lbs or pounds, respond with the estimate in pounds. If the user asked in kg or kilograms, convert the estimate to kg and respond with that value.""",
+    tools=[],
+)
+
+orders_agent = Agent(
+    name="orders_agent",
+    model=LiteLlm(model=LLM_MODEL),
+    description="Handles order-related queries for the Vietnam coffee farm.",
+    instruction="""You are an order assistant. Based on the user's question and the following order data, provide a concise and helpful response.
+If they ask about a specific order number, provide its status. 
+If they ask about placing an order, generate a random order id and tracking number.
+
+Order Data: {'12345': {'status': 'processing', 'estimated_delivery': '2 business days'}, '67890': {'status': 'shipped', 'tracking_number': 'ABCDEF123'}}""",
+    tools=[],
+)
+
+general_agent = Agent(
+    name="general_agent",
+    model=LiteLlm(model=LLM_MODEL),
+    description="Fallback agent for unclear or general queries.",
+    instruction="""Respond with exactly this message: "I'm designed to help with inventory and order-related questions. Could you please rephrase your request?" """,
+    tools=[],
+)
+
+intent_classifier = Agent(
+    name="intent_classifier",
+    model=LiteLlm(model=LLM_MODEL),
+    description="Classifies user intent to route to appropriate agent.",
+    instruction="""You are a coffee farm manager in Vietnam who delegates farm cultivation and global sales. Based on the user's message, determine if it's related to 'inventory' or 'orders'.
+
+Respond with 'inventory' if the message is about checking yield, stock, product availability, or specific coffee item details.
+Respond with 'orders' if the message is about checking order status, placing an order, or modifying an existing order.
+If unsure, respond with 'general'.
+
+Return ONLY ONE WORD: inventory, orders, or general. Nothing else.""",
+    tools=[],
+)
+
+# ============================================================================
+# Session and Runner Configuration
+# ============================================================================
+
+session_service = InMemorySessionService()
+intent_runner = Runner(
+    agent=intent_classifier,
+    app_name="vietnam_farm",
+    session_service=session_service
+)
+
+inventory_runner = Runner(
+    agent=inventory_agent,
+    app_name="vietnam_farm",
+    session_service=session_service
+)
+
+orders_runner = Runner(
+    agent=orders_agent,
+    app_name="vietnam_farm",
+    session_service=session_service
+)
+
+general_runner = Runner(
+    agent=general_agent,
+    app_name="vietnam_farm",
+    session_service=session_service
+)
+
+# ============================================================================
+# Agent Execution Functions
+# ============================================================================
+
+
+async def call_agent_async(query: str, runner, user_id: str, session_id: str) -> str:
+    """Sends a query to an agent and returns the final response."""
+    content = types.Content(role='user', parts=[types.Part(text=query)])
+
+    final_response_text = "Agent did not produce a final response."
+
+    async for event in runner.run_async(
+            user_id=user_id,
+            session_id=session_id,
+            new_message=content
+    ):
+        if event.is_final_response():
+            if event.content and event.content.parts:
+                final_response_text = event.content.parts[0].text
+            break
+
+    return final_response_text
+
+
+async def detect_intent(message: str, user_id: str, session_id: str) -> str:
+    """Classify user intent using the intent classifier agent.
+    
+    Returns one of: 'inventory', 'orders', or 'general'.
+    """
+    result = await call_agent_async(message, intent_runner, user_id, session_id)
+    intent = result.strip().lower()
+
+    if "inventory" in intent:
+        return "inventory"
+    elif "order" in intent:
+        return "orders"
+    else:
+        return "general"
+
+
+def get_runner_for_intent(intent: str):
+    """Map intent to the corresponding agent runner.
+    
+    Returns a tuple of (runner, agent_name) for the matched intent.
+    """
+    if intent == "inventory":
+        return inventory_runner, "Inventory Agent"
+    elif intent == "orders":
+        return orders_runner, "Orders Agent"
+    else:
+        return general_runner, "General Agent"
+
+
+async def get_or_create_session(app_name: str, user_id: str, session_id: str):
+    """Retrieve an existing session or create a new one.
+    
+    This prevents AlreadyExistsError on repeated agent invocations.
+    """
+    session = await session_service.get_session(app_name=app_name, user_id=user_id, session_id=session_id)
+    if session is None:
+        session = await session_service.create_session(app_name=app_name, user_id=user_id, session_id=session_id)
+    return session
+
+
+async def run_vietnam_agent(query: str) -> str:
+    """Execute the Vietnam Farm Agent workflow.
+    
+    Workflow:
+        1. Classify user intent
+        2. Route to appropriate sub-agent
+        3. Execute query and return response
+    """
+    user_id = "user_1"
+
+    # Initialize sessions for all agents
+    await get_or_create_session(app_name="vietnam_farm", user_id=user_id, session_id="intent_session")
+    await get_or_create_session(app_name="vietnam_farm", user_id=user_id, session_id="inventory_session")
+    await get_or_create_session(app_name="vietnam_farm", user_id=user_id, session_id="orders_session")
+    await get_or_create_session(app_name="vietnam_farm", user_id=user_id, session_id="general_session")
+
+    logger.info(f"User Query: {query}")
+
+    # Classify intent and route to appropriate agent
+    intent = await detect_intent(query, user_id, "intent_session")
+    logger.info(f"[Supervisor] Intent determined: {intent}")
+
+    runner, agent_name = get_runner_for_intent(intent)
+    logger.info(f"[Router] Routing to: {agent_name}")
+
+    session_map = {
+        "inventory": "inventory_session",
+        "orders": "orders_session",
+        "general": "general_session"
+    }
+    session_id = session_map.get(intent, "general_session")
+
+    # Execute query with selected agent
+    response = await call_agent_async(query, runner, user_id, session_id)
+
+    logger.info(f"Agent Response: {response}")
+    return response
+
+
+
+# ============================================================================
+# Public Agent Interface
+# ============================================================================
+
+
 @agent(name="vietnam_farm_agent")
 class FarmAgent:
+    """Vietnam Farm Agent with IOA observability integration."""
+    
     def __init__(self):
-        """
-        Initializes the CustomerServiceAgent with an LLM and builds the LangGraph workflow.
+        pass
 
-        Args:
-            llm_model (str): The name of the OpenAI LLM model to use (e.g., "gpt-4o", "gpt-3.5-turbo").
-        """
-        self.supervisor_llm = None
-        self.inventory_llm = None
-        self.orders_llm = None
+    async def google_adk_agent_invoke(self, user_message: str) -> str:
+        """Process a user message and return the agent response."""
+        result = await run_vietnam_agent(user_message)
+        if not result.strip():
+            raise RuntimeError("No valid response generated.")
+        return result.strip()
 
-        self.app = self._build_graph()
+# ============================================================================
+# Development Testing
+# ============================================================================
 
-    # --- Node Definitions ---
 
-    def _supervisor_node(self, state: GraphState) -> dict:
-        """
-        Determines the intent of the user's message and routes to the appropriate node.
-        """
-        if not self.supervisor_llm:
-            self.supervisor_llm = get_llm()
+async def main():
+    """Run example queries against the Vietnam Farm Agent."""
+    agent = FarmAgent()
 
-        prompt = PromptTemplate(
-            template="""You are a coffee farm manager in Vietnam who delegates farm cultivation and global sales. Based on the 
-            user's message, determine if it's related to 'inventory' or 'orders'.
-            Respond with 'inventory' if the message is about checking yield, stock, product availability, or specific coffee item details.
-            Respond with 'orders' if the message is about checking order status, placing an order, or modifying an existing order.
-            If unsure, respond with 'general'.
+    print("--- Testing Inventory Queries ---")
+    messages = [
+        "How much coffee do we have in stock?",
+        "What is the current yield estimate?",
+    ]
+    for msg in messages:
+        print(f"\nUser: {msg}")
+        final_state = await agent.google_adk_agent_invoke(msg)
+        print(f"Agent: {final_state}")
 
-            User message: {user_message}
-            """,
-            input_variables=["user_message"]
-        )
+    print("\n" + "="*50 + "\n")
 
-        chain = prompt | self.supervisor_llm
-        response = chain.invoke({"user_message": state["messages"]})
-        intent = response.content.strip().lower()
+    messages = [
+        "Can you order me 100 lbs of coffee?",
+        "I want to place a new order for 50 kg of coffee",
+    ]
+    for msg in messages:
+        print(f"\nUser: {msg}")
+        final_state = await agent.google_adk_agent_invoke(msg)
+        print(f"Agent: {final_state}")
 
-        logger.info(f"Supervisor intent determined: {intent}")  # Log the intent for debugging
+    print("\n" + "="*50 + "\n")
 
-        if "inventory" in intent:
-            return {"next_node": NodeStates.INVENTORY, "messages": state["messages"]}
-        elif "orders" in intent:
-            return {"next_node": NodeStates.ORDERS, "messages": state["messages"]}
-        else:
-            return {"next_node": NodeStates.GENERAL_RESPONSE, "messages": state["messages"]}
+    messages = [
+        "Tell me a joke.",
+        "What's the weather like today?",
+    ]
+    for msg in messages:
+        print(f"\nUser: {msg}")
+        final_state = await agent.google_adk_agent_invoke(msg)
+        print(f"Agent: {final_state}")
 
-    def _inventory_node(self, state: GraphState) -> dict:
-        """
-        Handles inventory-related queries using an LLM to formulate responses.
-        """
-        if not self.inventory_llm:
-            self.inventory_llm = get_llm()
+if __name__ == "__main__":
+    import asyncio
+    asyncio.run(main())
 
-        user_message = state["messages"]
-
-        prompt = PromptTemplate(
-            template="""You are a helpful coffee farm cultivation manager in Vietnam who handles yield or inventory requets. 
-            Your job is to:
-            1. Return a random yield estimate for the coffee farm in Vietnam. Make sure the estimate is a reasonable value and in pounds.
-            2. Respond with only the yield estimate.\n
-
-            If the user asked in lbs or pounds, respond with the estimate in pounds. If the user asked in kg or kilograms, convert the estimate to kg and respond with that value.\n
-
-            User question: {user_message}
-            """,
-            input_variables=["user_message"]
-        )
-        chain = prompt | self.inventory_llm
-
-        llm_response = chain.invoke({
-            "user_message": user_message,
-        }).content
-
-        logger.info(f"Inventory response generated: {llm_response}")
-
-        return {"messages": [AIMessage(llm_response)]}
-
-    def _orders_node(self, state: GraphState) -> dict:
-        """
-        Handles order-related queries using an LLM to formulate responses.
-        """
-        if not self.orders_llm:
-            self.orders_llm = get_llm()
-
-        user_message = state["messages"]
-
-        logger.info(f"Received order query: {user_message}")
-
-        # Simulate data retrieval - in a real app, this would be a database/API call
-        mock_order_data = {
-            "12345": {"status": "processing", "estimated_delivery": "2 business days"},
-            "67890": {"status": "shipped", "tracking_number": "ABCDEF123"}
-        }
-
-        prompt = PromptTemplate(
-            template="""You are an order assistant. Based on the user's question and the following order data, provide a concise and helpful response.
-            If they ask about a specific order number, provide its status. 
-            If they ask about placing order an order, generate a random order id and tracking number.
-
-            Order Data: {order_data}
-            User question: {user_message}
-            """,
-            input_variables=["user_message", "order_data"]
-        )
-        chain = prompt | self.orders_llm
-
-        llm_response = chain.invoke({
-            "user_message": user_message,
-            "order_data": str(mock_order_data) # Pass data as string for LLM context
-        }).content
-
-        return {"messages": [AIMessage(llm_response)]}
-
-    def _general_response_node(self, state: GraphState) -> dict:
-        """
-        Provides a fallback response for unclear or out-of-scope messages.
-        """
-        response = "I'm designed to help with inventory and order-related questions. Could you please rephrase your request?"
-        return {"messages": [AIMessage(response)]}
-
-    # --- Graph Building Method ---
-    @graph(name="vietnam_farm_graph")
-    def _build_graph(self):
-        """
-        Builds and compiles the LangGraph workflow.
-        """
-        workflow = StateGraph(GraphState)
-
-        # Add nodes
-        workflow.add_node(NodeStates.SUPERVISOR, self._supervisor_node)
-        workflow.add_node(NodeStates.INVENTORY, self._inventory_node)
-        workflow.add_node(NodeStates.ORDERS, self._orders_node)
-        workflow.add_node(NodeStates.GENERAL_RESPONSE, self._general_response_node)
-
-        # Set the entry point
-        workflow.set_entry_point(NodeStates.SUPERVISOR)
-
-        # Add conditional edges from the supervisor
-        workflow.add_conditional_edges(
-            NodeStates.SUPERVISOR,
-            lambda state: state["next_node"],
-            {
-                NodeStates.INVENTORY: NodeStates.INVENTORY,
-                NodeStates.ORDERS: NodeStates.ORDERS,
-                NodeStates.GENERAL_RESPONSE: NodeStates.GENERAL_RESPONSE,
-            },
-        )
-
-        # Add edges from the specific nodes to END
-        workflow.add_edge(NodeStates.INVENTORY, END)
-        workflow.add_edge(NodeStates.ORDERS, END)
-        workflow.add_edge(NodeStates.GENERAL_RESPONSE, END)
-
-        return workflow.compile()
-
-    # --- Public Methods for Interaction ---
-
-    async def ainvoke(self, user_message: str) -> dict:
-        """
-        Invokes the graph with a user message.
-
-        Args:
-            user_message (str): The current message from the user.
-
-        Returns:
-            str: The final state of the graph after processing the message.
-        """
-        inputs = {"messages": [user_message]}
-        result = await self.app.ainvoke(inputs)
-
-        messages = result.get("messages", [])
-        if not messages:
-            raise RuntimeError("No messages found in the graph response.")
-
-        # Find the last AIMessage with non-empty content
-        for message in reversed(messages):
-            if isinstance(message, AIMessage) and message.content.strip():
-                logger.debug(f"Valid AIMessage found: {message.content.strip()}")
-                return message.content.strip()
-
-        # If no valid AIMessage found, return the last message as a fallback
-        return messages[-1].content.strip() if messages else "No valid response generated."

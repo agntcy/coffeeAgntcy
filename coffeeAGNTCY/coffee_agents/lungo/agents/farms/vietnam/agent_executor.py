@@ -73,7 +73,7 @@ class FarmAgentExecutor(AgentExecutor):
             await event_queue.enqueue_event(task)
 
         try:
-            output = await self.agent.ainvoke(prompt)
+            output = await self.agent.google_adk_agent_invoke(prompt)
         
             message = Message(
                 message_id=str(uuid4()),
