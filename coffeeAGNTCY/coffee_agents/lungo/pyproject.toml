@@ -29,7 +29,8 @@ dependencies = [
     "langchain-litellm>=0.3.0",
     "llama-index-llms-litellm==0.6.3",
     "llama-index-core==0.14.9",
-    "litellm[proxy]==1.80.5",
+    "litellm==1.81.1",
+    "google-adk==1.22.1",
     "agntcy-app-sdk==0.4.6",
     "azure-core==1.38.0",
 
@@ -43,6 +44,7 @@ dependencies = [
     "marshmallow>=3.26.2",
     "PyNaCl>=1.6.2",
     "mcp>=1.23.0",
+
     "cryptography>=44.0.1",
 ]
 
