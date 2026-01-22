@@ -5,6 +5,7 @@ import logging
 import asyncio
 import os
 from mcp.server.fastmcp import FastMCP
+from mcp.server.transport_security import TransportSecuritySettings
 from agntcy_app_sdk.app_sessions import AppContainer
 from agntcy_app_sdk.factory import AgntcyFactory
 from config.config import DEFAULT_MESSAGE_TRANSPORT, TRANSPORT_SERVER_ENDPOINT
@@ -12,7 +13,11 @@ from config.config import DEFAULT_MESSAGE_TRANSPORT, TRANSPORT_SERVER_ENDPOINT
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("payment_service")
 
-mcp = FastMCP()
+mcp = FastMCP(
+  transport_security=TransportSecuritySettings(
+    enable_dns_rebinding_protection=False, # Disabling this as we are managing security at a different layer of our infrastructure
+  )
+)
 
 factory = AgntcyFactory("lungo.payment_mcp_server", enable_tracing=False)
 
