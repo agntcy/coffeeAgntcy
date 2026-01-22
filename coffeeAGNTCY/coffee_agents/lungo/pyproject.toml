@@ -5,7 +5,7 @@ description = ""
 authors = [{ name = "Shridhar Shah", email = "shridhsh@cisco.com" }]
 requires-python = ">=3.13,<4.0"
 dependencies = [
-    "a2a-sdk==0.3.0",
+    "a2a-sdk==0.3.2",
     "click>=8.1.8",
     "coloredlogs>=15.0.1",
     "dotenv>=0.9.9",
@@ -30,7 +30,7 @@ dependencies = [
     "llama-index-llms-litellm==0.6.3",
     "llama-index-core==0.14.9",
     "litellm[proxy]==1.80.5",
-    "agntcy-app-sdk==0.4.5",
+    "agntcy-app-sdk==0.4.6",
     "azure-core==1.38.0",
 
     # Vulnerability fix for requests
@@ -53,14 +53,19 @@ dev = [
     "pytest-cov>=4.0.0,<5",
     "typing-extensions>=4.12.2,<5",
     "openai>=2.8.0,<3.0",
-    "autogen-core>=0.4.3,<0.5",
     "coloredlogs>=15.0.1,<16",
     "langchain-openai>=0.3.14,<0.4",
     "sentence-transformers>=5.1.1",
+    "agntcy-oasf-sdk-grpc-python==1.75.0.1.20250917120021+8b2bf93bf8dc",
+    "agntcy-oasf-sdk-protocolbuffers-python==32.1.0.1.20250917120021+8b2bf93bf8dc",
+    "agntcy-dir>=0.6.0",
 ]
 
 [tool.hatch.metadata]
 allow-direct-references = true
+
+[[tool.uv.index]]
+url = "https://buf.build/gen/python"
 
 [tool.poetry]
 package-mode = false
