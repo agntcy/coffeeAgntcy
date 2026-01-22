@@ -46,7 +46,7 @@ fi
 echo "Ensuring dir-apiserver and zot containers are up..."
 
 # Start dir-apiserver and zot if not already running
-docker-compose up -d dir-api-server zot
+docker-compose up -d dir-api-server dir-mcp-server zot
 
 # Wait for containers to be healthy
 echo "Waiting for dir-apiserver to be healthy..."

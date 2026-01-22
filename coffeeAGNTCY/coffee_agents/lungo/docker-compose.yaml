@@ -332,6 +332,19 @@ services:
       retries: 60
       start_period: 10s
 
+  dir-mcp-server:
+    image: ghcr.io/agntcy/dir-ctl:latest
+    container_name: dir-mcp-server
+    stdin_open: true
+    tty: false
+    command: ["mcp", "serve"]
+    environment:
+      - DIRECTORY_CLIENT_SERVER_ADDRESS=dir-api-server:8888
+      - DIRECTORY_CLIENT_TLS_SKIP_VERIFY=true
+      - OASF_API_VALIDATION_DISABLE=true
+    depends_on:
+      - dir-api-server
+
   zot:
     image: ghcr.io/project-zot/zot:v2.1.10
     container_name: zot

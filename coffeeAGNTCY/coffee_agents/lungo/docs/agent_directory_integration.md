@@ -10,14 +10,15 @@ The integration enables automatic translation and publication of all lungo agent
 
 ### 1. Start the Directory Service
 
-First, launch the agntcy directory API server and registry:
+First, launch the agntcy directory API server, directory MCP server and registry:
 
 ```bash
-docker-compose up -d dirapiserver zot
+docker-compose up -d dir-api-server dir-mcp-server zot
 ```
 
 This starts:
-- `dirapiserver`: The directory API service for agent record management
+- `dir-api-server`: The directory API service for agent record management
+- `dir-mcp-server`: The MCP server in front of the API service
 - `zot`: OCI-compliant registry for storing agent artifacts
 
 ### 2. Install Development Dependencies
