@@ -196,6 +196,8 @@ async def run_vietnam_agent(query: str) -> str:
         2. Route to appropriate sub-agent
         3. Execute query and return response
     """
+    # Static user_id is intentional: ADK sessions require a user context,
+    # and a shared context is sufficient for this agent's use case.
     user_id = "user_1"
 
     # Initialize sessions for all agents
