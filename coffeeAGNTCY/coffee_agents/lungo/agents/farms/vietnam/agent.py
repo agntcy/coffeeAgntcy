@@ -31,6 +31,9 @@ logger = logging.getLogger("lungo.vietnam_farm_agent.agent")
 # ============================================================================
 # LLM Configuration
 # ============================================================================
+# **LiteLLM**: Enables using various LLM providers with Google ADK.
+# See: https://docs.litellm.ai/docs/tutorials/google_adk
+
 LITELLM_PROXY_BASE_URL = os.getenv("LITELLM_PROXY_BASE_URL")
 LITELLM_PROXY_API_KEY = os.getenv("LITELLM_PROXY_API_KEY")
 
@@ -97,6 +100,11 @@ Return ONLY ONE WORD: inventory, orders, or general. Nothing else.""",
 # ============================================================================
 # Session and Runner Configuration
 # ============================================================================
+# **Session**: Manages state for a user interaction.
+# See: https://google.github.io/adk-docs/sessions/session/
+#
+# **Runner**: Orchestrates agent execution.
+# See: https://google.github.io/adk-docs/runtime/event-loop/#runners-role-orchestrator
 
 session_service = InMemorySessionService()
 intent_runner = Runner(
