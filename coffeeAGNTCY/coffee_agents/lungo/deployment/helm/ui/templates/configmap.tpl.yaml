@@ -6,4 +6,5 @@ metadata:
 data:
   VITE_EXCHANGE_APP_API_URL: "{{ .Values.config.exchangeAppApiUrl }}"
   VITE_LOGISTICS_APP_API_URL: "{{ .Values.config.logisticsAppApiUrl }}"
+  VITE_GRAFANA_URL: "{{ .Values.config.grafanaUrl }}"
 

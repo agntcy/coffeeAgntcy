@@ -109,6 +109,7 @@ services:
     environment:
       - VITE_EXCHANGE_APP_API_URL=http://127.0.0.1:8000
       - VITE_LOGISTICS_APP_API_URL=http://127.0.0.1:9090
+      - VITE_GRAFANA_URL=http://127.0.0.1:3001
     depends_on:
       - auction-supervisor
     ports:
