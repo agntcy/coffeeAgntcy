@@ -483,7 +483,7 @@ class ExchangeGraph:
             "messages": [AIMessage(content="I'm not sure how to handle that. Could you please clarify?")],
         }
 
-    async def serve(self, prompt: str):
+    async def serve(self, prompt: str) -> str:
         """
         Processes the input prompt and returns a complete response from the graph execution.
         
@@ -515,7 +515,7 @@ class ExchangeGraph:
                 "messages": [
                 {
                     "role": "user",
-                    "content": prompt
+                    "content": prompt,
                 }
                 ],
             }, {"configurable": {"thread_id": uuid.uuid4()}})
