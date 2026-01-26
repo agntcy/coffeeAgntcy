@@ -5,7 +5,17 @@
   * [Running Corto Locally](#running-corto-locally)
     * [Prerequisites](#prerequisites)
     * [Setup Instructions](#setup-instructions)
+      * [**OpenAI**](#openai)
+      * [**Azure OpenAI**](#azure-openai)
+      * [**GROQ**](#groq)
+      * [**NVIDIA NIM**](#nvidia-nim)
+      * [**LiteLLM Proxy**](#litellm-proxy)
+      * [**Custom OAuth2 Application Exposing OpenAI**](#custom-oauth2-application-exposing-openai)
+      * [**OTEL Configuration**](#otel-configuration)
     * [Execution](#execution)
+      * [Option 1: Docker Compose (Recommended)](#option-1-docker-compose-recommended)
+      * [Option 2: Local Python Development](#option-2-local-python-development)
+      * [Option 3: Local Kind Cluster Deployment](#option-3-local-kind-cluster-deployment)
     * [Observability](#observability)
       * [Trace Visualization via Grafana](#trace-visualization-via-grafana)
       * [Metrics Computation with AGNTCY's Metrics Computation Engine (MCE)](#metrics-computation-with-agntcys-metrics-computation-engine-mce)
@@ -26,7 +36,7 @@ The user interface forwards all prompts to the exchange’s API, which are then 
 
 ## Running Corto Locally
 
-You can use Corto in two ways:
+You can run Corto in three ways:
 
 1. **Local Python**  
    Run each component directly on your machine.
