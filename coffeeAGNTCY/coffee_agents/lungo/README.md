@@ -4,10 +4,20 @@
   * [Running Lungo Locally](#running-lungo-locally)
     * [Prerequisites](#prerequisites)
     * [Setup Instructions](#setup-instructions)
+      * [**OpenAI**](#openai)
+      * [**Azure OpenAI**](#azure-openai)
+      * [**GROQ**](#groq)
+      * [**NVIDIA NIM**](#nvidia-nim)
+      * [**LiteLLM Proxy**](#litellm-proxy)
+      * [**Custom OAuth2 Application Exposing OpenAI**](#custom-oauth2-application-exposing-openai)
     * [Execution](#execution)
+      * [Option 1: Docker Compose (Recommended)](#option-1-docker-compose-recommended)
+      * [Option 2: Local Python Development](#option-2-local-python-development)
+      * [Option 3: Local Kind Cluster Deployment](#option-3-local-kind-cluster-deployment)
     * [Group Conversation Implementation](#group-conversation-implementation)
     * [Observability](#observability)
       * [Trace Visualization via Grafana](#trace-visualization-via-grafana)
+    * [Adding a New Farm Agent](#adding-a-new-farm-agent)
       * [Metrics Computation with AGNTCY's Metrics Computation Engine (MCE)](#metrics-computation-with-agntcys-metrics-computation-engine-mce)
 <!-- TOC -->
 
@@ -30,7 +40,7 @@ One notable component is the **Colombia Farm**, which functions as an **MCP clie
 
 ## Running Lungo Locally
 
-You can use Lungo in two ways:
+You can run Lungo in three ways:
 
 1. **Local Python**  
    Run each component directly on your machine.
