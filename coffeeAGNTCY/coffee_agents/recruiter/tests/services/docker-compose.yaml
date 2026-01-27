@@ -1,0 +1,55 @@
+services:
+  dir-api-server:
+    image: ghcr.io/agntcy/dir-apiserver:v0.6.0
+    env_file:
+      - ./configs/dir/apiserver.env
+    ports:
+      - 8888:8888
+      - 8889:8889
+    depends_on:
+      - zot
+    deploy:
+      mode: replicated
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+    healthcheck:
+      test: wget --no-verbose --tries=1 --spider http://127.0.0.1:8889/healthz/ready || exit 1
+      interval: 10s
+      retries: 60
+      start_period: 10s
+
+  dir-mcp-server:
+    image: ghcr.io/agntcy/dir-ctl:latest
+    container_name: dir-mcp-server
+    stdin_open: true
+    tty: false
+    command: ["mcp", "serve"]
+    environment:
+      - DIRECTORY_CLIENT_SERVER_ADDRESS=dir-api-server:8888
+      - DIRECTORY_CLIENT_TLS_SKIP_VERIFY=true
+      - OASF_API_VALIDATION_DISABLE=true
+    depends_on:
+      - dir-api-server
+
+  zot:
+    image: ghcr.io/project-zot/zot:v2.1.10
+    ports:
+      - 5555:5000
+    deploy:
+      mode: replicated
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+    healthcheck:
+      test: curl -f http://localhost:5000/v2/ || exit 1
+      interval: 5s
+      retries: 60
+      start_period: 15s
+
+  oasf-translation-service:
+    image: ghcr.io/agntcy/oasf-sdk:v0.0.14
+    container_name: oasf-translation-service
+    ports:
+      - "31234:31234"
+
