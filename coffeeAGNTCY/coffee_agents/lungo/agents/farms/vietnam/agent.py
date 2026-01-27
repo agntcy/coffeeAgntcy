@@ -5,10 +5,14 @@
 Vietnam Farm Agent Module
 
 This module implements a multi-agent system for the Vietnam coffee farm.
-It uses intent-based routing to delegate queries to specialized sub-agents:
+It uses ADK's automatic delegation pattern with sub_agents to route queries
+to specialized sub-agents based on their descriptions:
 - Inventory Agent: Handles yield and stock queries
 - Orders Agent: Handles order placement and status queries
 - General Agent: Fallback for unrecognized queries
+
+The root agent automatically delegates to the appropriate sub-agent based on
+the user's query and each sub-agent's description field.
 
 The system uses Google ADK with LiteLLM for LLM interactions.
 """
@@ -49,16 +53,17 @@ else:
 # ============================================================================
 # Sub-Agent Definitions
 # ============================================================================
+# Each sub-agent has a specific role and a description that the root agent
+# uses to determine when to delegate. The description field is crucial for
+# ADK's automatic delegation mechanism.
 
 inventory_agent = Agent(
     name="inventory_agent",
     model=LiteLlm(model=LLM_MODEL),
-    description="Handles yield and inventory requests for the Vietnam coffee farm.",
-    instruction="""You are a helpful coffee farm cultivation manager in Vietnam who handles yield or inventory requests. 
-Your job is to:
-1. Return a random yield estimate for the coffee farm in Vietnam. Make sure the estimate is a reasonable value and in pounds.
-2. Respond with only the yield estimate.
-
+    description="Handles yield, stock, inventory, and product availability requests for the Vietnam coffee farm. Delegate to this agent for questions about coffee quantities, harvest estimates, or what's in stock.",
+    instruction="""You are a helpful coffee farm cultivation manager in Vietnam who handles yield or inventory requests.
+Return a random yield estimate for the coffee farm in Vietnam. Make sure the estimate is a reasonable value and in pounds.
+Respond with ONLY the yield estimate number and unit (e.g., "45,000 pounds"). Do not add any other text or explanation.
 If the user asked in lbs or pounds, respond with the estimate in pounds. If the user asked in kg or kilograms, convert the estimate to kg and respond with that value.""",
     tools=[],
 )
@@ -66,10 +71,16 @@ If the user asked in lbs or pounds, respond with the estimate in pounds. If the 
 orders_agent = Agent(
     name="orders_agent",
     model=LiteLlm(model=LLM_MODEL),
-    description="Handles order-related queries for the Vietnam coffee farm.",
+    description="Handles order-related queries for the Vietnam coffee farm including checking order status, placing new orders, and modifying existing orders. Delegate to this agent for any order or purchase related questions.",
     instruction="""You are an order assistant. Based on the user's question and the following order data, provide a concise and helpful response.
-If they ask about a specific order number, provide its status. 
-If they ask about placing an order, generate a random order id and tracking number.
+If they ask about a specific order number, provide its status.
+If they ask about placing an order, generate a random order id and tracking number and format the response like:
+Sure! Your order has been placed. Here are the details:
+
+- **Order ID**: [random 5-digit number]
+- **Tracking Number**: [random alphanumeric]
+
+Let me know if you need anything else!
 
 Order Data: {'12345': {'status': 'processing', 'estimated_delivery': '2 business days'}, '67890': {'status': 'shipped', 'tracking_number': 'ABCDEF123'}}""",
     tools=[],
@@ -78,23 +89,35 @@ Order Data: {'12345': {'status': 'processing', 'estimated_delivery': '2 business
 general_agent = Agent(
     name="general_agent",
     model=LiteLlm(model=LLM_MODEL),
-    description="Fallback agent for unclear or general queries.",
-    instruction="""Respond with exactly this message: "I'm designed to help with inventory and order-related questions. Could you please rephrase your request?" """,
+    description="Fallback agent for unclear, general, or off-topic queries that don't relate to inventory or orders. Delegate to this agent when the user's request doesn't fit inventory or order categories.",
+    instruction='Respond with exactly this message and nothing else: "I\'m designed to help with inventory and order-related questions. Could you please rephrase your request?"',
     tools=[],
 )
 
-intent_classifier = Agent(
-    name="intent_classifier",
+# ============================================================================
+# Root Agent Definition (Agent Team Coordinator)
+# ============================================================================
+# The root agent uses ADK's automatic delegation pattern.
+# It analyzes user queries and delegates to the appropriate sub-agent
+# based on each sub-agent's description field.
+# See: https://google.github.io/adk-docs/tutorials/agent-team/
+
+root_agent = Agent(
+    name="vietnam_farm_coordinator",
     model=LiteLlm(model=LLM_MODEL),
-    description="Classifies user intent to route to appropriate agent.",
-    instruction="""You are a coffee farm manager in Vietnam who delegates farm cultivation and global sales. Based on the user's message, determine if it's related to 'inventory' or 'orders'.
+    description="The main coordinator agent for the Vietnam coffee farm. Routes requests to specialized sub-agents.",
+    instruction="""You are the main coordinator for the Vietnam coffee farm, managing a team of specialized agents.
+Your role is to analyze user queries and delegate to the appropriate specialist:
 
-Respond with 'inventory' if the message is about checking yield, stock, product availability, or specific coffee item details.
-Respond with 'orders' if the message is about checking order status, placing an order, or modifying an existing order.
-If unsure, respond with 'general'.
+You have the following specialized sub-agents:
+1. 'inventory_agent': Handles yield, stock, inventory, and product availability questions. Delegate to it for questions like "How much coffee do we have?", "What's the yield estimate?", "What's in stock?"
+2. 'orders_agent': Handles order-related queries including status checks, placing orders, and modifications. Delegate to it for questions like "Place an order", "Check order status", "I want to buy coffee"
+3. 'general_agent': Handles unclear or off-topic queries. Delegate to it when the request doesn't fit inventory or orders.
 
-Return ONLY ONE WORD: inventory, orders, or general. Nothing else.""",
+Analyze each user query carefully and delegate to the most appropriate sub-agent.
+Do not try to answer questions directly - always delegate to the appropriate specialist.""",
     tools=[],
+    sub_agents=[inventory_agent, orders_agent, general_agent],
 )
 
 # ============================================================================
@@ -107,26 +130,10 @@ Return ONLY ONE WORD: inventory, orders, or general. Nothing else.""",
 # See: https://google.github.io/adk-docs/runtime/event-loop/#runners-role-orchestrator
 
 session_service = InMemorySessionService()
-intent_runner = Runner(
-    agent=intent_classifier,
-    app_name="vietnam_farm",
-    session_service=session_service
-)
 
-inventory_runner = Runner(
-    agent=inventory_agent,
-    app_name="vietnam_farm",
-    session_service=session_service
-)
-
-orders_runner = Runner(
-    agent=orders_agent,
-    app_name="vietnam_farm",
-    session_service=session_service
-)
-
-general_runner = Runner(
-    agent=general_agent,
+# Single runner for the root agent - ADK handles sub-agent delegation automatically
+root_runner = Runner(
+    agent=root_agent,
     app_name="vietnam_farm",
     session_service=session_service
 )
@@ -137,8 +144,8 @@ general_runner = Runner(
 # ============================================================================
 
 
-async def call_agent_async(query: str, runner, user_id: str, session_id: str) -> str:
-    """Sends a query to an agent and returns the final response."""
+async def call_agent_async(query: str, runner: Runner, user_id: str, session_id: str) -> str:
+    """Send a query to an agent runner and return the final response text."""
     content = types.Content(role='user', parts=[types.Part(text=query)])
 
     final_response_text = "Agent did not produce a final response."
@@ -156,40 +163,8 @@ async def call_agent_async(query: str, runner, user_id: str, session_id: str) ->
     return final_response_text
 
 
-async def detect_intent(message: str, user_id: str, session_id: str) -> str:
-    """Classify user intent using the intent classifier agent.
-
-    Returns one of: 'inventory', 'orders', or 'general'.
-    """
-    result = await call_agent_async(message, intent_runner, user_id, session_id)
-    intent = result.strip().lower()
-
-    if "inventory" in intent:
-        return "inventory"
-    elif "order" in intent:
-        return "orders"
-    else:
-        return "general"
-
-
-def get_runner_for_intent(intent: str):
-    """Map intent to the corresponding agent runner.
-
-    Returns a tuple of (runner, agent_name) for the matched intent.
-    """
-    if intent == "inventory":
-        return inventory_runner, "Inventory Agent"
-    elif intent == "orders":
-        return orders_runner, "Orders Agent"
-    else:
-        return general_runner, "General Agent"
-
-
 async def get_or_create_session(app_name: str, user_id: str, session_id: str):
-    """Retrieve an existing session or create a new one.
-
-    This prevents AlreadyExistsError on repeated agent invocations.
-    """
+    """Retrieve an existing session or create a new one if it doesn't exist."""
     session = await session_service.get_session(app_name=app_name, user_id=user_id, session_id=session_id)
     if session is None:
         session = await session_service.create_session(app_name=app_name, user_id=user_id, session_id=session_id)
@@ -200,38 +175,22 @@ async def run_vietnam_agent(query: str) -> str:
     """Execute the Vietnam Farm Agent workflow.
 
     Workflow:
-        1. Classify user intent
-        2. Route to appropriate sub-agent
-        3. Execute query and return response
+        1. Root agent receives the query
+        2. Root agent automatically delegates to appropriate sub-agent based on descriptions
+        3. Sub-agent processes query and returns response
     """
     # Static user_id is intentional: ADK sessions require a user context,
     # and a shared context is sufficient for this agent's use case.
     user_id = "user_1"
+    session_id = "main_session"
 
-    # Initialize sessions for all agents
-    await get_or_create_session(app_name="vietnam_farm", user_id=user_id, session_id="intent_session")
-    await get_or_create_session(app_name="vietnam_farm", user_id=user_id, session_id="inventory_session")
-    await get_or_create_session(app_name="vietnam_farm", user_id=user_id, session_id="orders_session")
-    await get_or_create_session(app_name="vietnam_farm", user_id=user_id, session_id="general_session")
+    # Initialize session for the root agent
+    await get_or_create_session(app_name="vietnam_farm", user_id=user_id, session_id=session_id)
 
     logger.info(f"User Query: {query}")
 
-    # Classify intent and route to appropriate agent
-    intent = await detect_intent(query, user_id, "intent_session")
-    logger.info(f"[Supervisor] Intent determined: {intent}")
-
-    runner, agent_name = get_runner_for_intent(intent)
-    logger.info(f"[Router] Routing to: {agent_name}")
-
-    session_map = {
-        "inventory": "inventory_session",
-        "orders": "orders_session",
-        "general": "general_session"
-    }
-    session_id = session_map.get(intent, "general_session")
-
-    # Execute query with selected agent
-    response = await call_agent_async(query, runner, user_id, session_id)
+    # Execute query with root agent - delegation happens automatically
+    response = await call_agent_async(query, root_runner, user_id, session_id)
 
     logger.info(f"Agent Response: {response}")
     return response
@@ -260,6 +219,7 @@ class FarmAgent:
 # ============================================================================
 # Development Testing
 # ============================================================================
+# Run this file directly to test the agent with sample queries.
 
 
 async def main():
