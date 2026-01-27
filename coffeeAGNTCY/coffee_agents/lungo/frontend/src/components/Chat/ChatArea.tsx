@@ -12,7 +12,9 @@ import { useAgentAPI } from "@/hooks/useAgentAPI"
 import UserMessage from "./UserMessage"
 import ChatHeader from "./ChatHeader"
 import AgentIcon from "@/assets/Coffee_Icon.svg"
-import ObservabilityDropdown from "./ObservabilityDropdown"
+
+import grafanaIcon from "@/assets/grafana.svg"
+import ExternalLinkButton from "./ExternalLinkButton"
 
 import { cn } from "@/utils/cn.ts"
 import { logger } from "@/utils/logger"
@@ -247,7 +249,11 @@ const ChatArea: React.FC<ChatAreaProps> = ({
                             </div>
                           </div>
                             {showFinalResponse && agentResponse && !isAgentLoading && !isMinimized && (
-                                <ObservabilityDropdown grafanaUrl={grafanaUrl} />
+                                <ExternalLinkButton
+                                    url={grafanaUrl}
+                                    label="Grafana"
+                                    iconSrc={grafanaIcon}
+                                />
                             )}
                         </>
                     )}
