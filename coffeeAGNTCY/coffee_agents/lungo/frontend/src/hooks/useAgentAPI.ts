@@ -7,32 +7,32 @@ import React, { useRef, useState, useEffect } from "react"
 import axios from "axios"
 import { v4 as uuid } from "uuid"
 import { Message } from "@/types/message"
-import {isLocalDev, parseApiError, Role} from "@/utils/const"
+import { isLocalDev, parseApiError, Role } from "@/utils/const"
 import { withRetry, RETRY_CONFIG } from "@/utils/retryUtils"
 import { shouldEnableRetries, getApiUrlForPattern } from "@/utils/patternUtils"
-import {logger} from "@/utils/logger.ts";
 
 interface ApiResponse {
   response: string
+  session_id?: string
 }
 
 interface UseAgentAPIReturn {
   loading: boolean
-  sendMessage: (prompt: string, pattern?: string) => Promise<string>
+  sendMessage: (prompt: string, pattern?: string) => Promise<ApiResponse>
   sendMessageWithCallback: (
-    prompt: string,
-    setMessages: React.Dispatch<React.SetStateAction<Message[]>>,
-    callbacks?: {
-      onStart?: () => void
-      onSuccess?: (response: string) => void
-      onError?: (error: any) => void
-      onRetryAttempt?: (
-        attempt: number,
-        error: Error,
-        nextRetryAt: number,
-      ) => void
-    },
-    pattern?: string,
+      prompt: string,
+      setMessages: React.Dispatch<React.SetStateAction<Message[]>>,
+      callbacks?: {
+        onStart?: () => void
+        onSuccess?: (response: ApiResponse) => void
+        onError?: (error: any) => void
+        onRetryAttempt?: (
+            attempt: number,
+            error: Error,
+            nextRetryAt: number,
+        ) => void
+      },
+      pattern?: string,
   ) => Promise<void>
   cancel: () => void
 }
@@ -58,15 +58,14 @@ export const useAgentAPI = (): UseAgentAPIReturn => {
   }, [])
 
   const sendMessage = async (
-    prompt: string,
-    pattern?: string,
-  ): Promise<string> => {
+      prompt: string,
+      pattern?: string,
+  ): Promise<ApiResponse> => {
     if (!prompt.trim()) {
       throw new Error("Prompt cannot be empty")
     }
 
     const apiUrl = getApiUrlForPattern(pattern)
-
     setLoading(true)
 
     const controller = new AbortController()
@@ -74,18 +73,16 @@ export const useAgentAPI = (): UseAgentAPIReturn => {
     const myRequestId = requestIdRef.current + 1
     requestIdRef.current = myRequestId
 
-    const makeApiCall = async (): Promise<string> => {
+    const makeApiCall = async (): Promise<ApiResponse> => {
       const response = await axios.post<ApiResponse>(
-        `${apiUrl}/agent/prompt`,
-        {
-          prompt,
-        },
-        {
-          signal: controller.signal,
-          withCredentials: !isLocalDev  // do not send credentials if it's local dev env
-        },
+          `${apiUrl}/agent/prompt`,
+          { prompt },
+          {
+            signal: controller.signal,
+            withCredentials: !isLocalDev
+          },
       )
-      return response.data.response
+      return response.data
     }
 
     try {
@@ -96,12 +93,9 @@ export const useAgentAPI = (): UseAgentAPIReturn => {
       }
     } catch (error) {
       const { status, message } = parseApiError(error)
-      // 4xx errors
       if (status && status >= 400 && status < 500) {
         throw new Error(`HTTP ${status} - ${message}`)
       }
-
-      // all other errors
       throw new Error(message)
     } finally {
       if (requestIdRef.current === myRequestId) {
@@ -111,24 +105,23 @@ export const useAgentAPI = (): UseAgentAPIReturn => {
   }
 
   const sendMessageWithCallback = async (
-    prompt: string,
-    setMessages: React.Dispatch<React.SetStateAction<Message[]>>,
-    callbacks?: {
-      onStart?: () => void
-      onSuccess?: (response: string) => void
-      onError?: (error: any) => void
-      onRetryAttempt?: (
-        attempt: number,
-        error: Error,
-        nextRetryAt: number,
-      ) => void
-    },
-    pattern?: string,
+      prompt: string,
+      setMessages: React.Dispatch<React.SetStateAction<Message[]>>,
+      callbacks?: {
+        onStart?: () => void
+        onSuccess?: (response: ApiResponse) => void
+        onError?: (error: any) => void
+        onRetryAttempt?: (
+            attempt: number,
+            error: Error,
+            nextRetryAt: number,
+        ) => void
+      },
+      pattern?: string,
   ): Promise<void> => {
     if (!prompt.trim()) return
 
     const apiUrl = getApiUrlForPattern(pattern)
-
     const controller = new AbortController()
     abortRef.current = controller
     const myRequestId = requestIdRef.current + 1
@@ -159,24 +152,22 @@ export const useAgentAPI = (): UseAgentAPIReturn => {
       callbacks.onStart()
     }
 
-    const makeApiCall = async (): Promise<string> => {
+    const makeApiCall = async (): Promise<ApiResponse> => {
       const response = await axios.post<ApiResponse>(
-        `${apiUrl}/agent/prompt`,
-        {
-          prompt,
-        },
-        {
-          signal: controller.signal,
-          withCredentials: !isLocalDev  // do not send credentials if it's local dev env
-        },
+          `${apiUrl}/agent/prompt`,
+          { prompt },
+          {
+            signal: controller.signal,
+            withCredentials: !isLocalDev
+          },
       )
-      return response.data.response
+      return response.data
     }
 
     const onRetryAttempt = (attempt: number) => {
       const delay =
-        RETRY_CONFIG.baseDelay *
-        Math.pow(RETRY_CONFIG.backoffMultiplier, attempt - 1)
+          RETRY_CONFIG.baseDelay *
+          Math.pow(RETRY_CONFIG.backoffMultiplier, attempt - 1)
       const nextRetryAt = Date.now() + delay
 
       setMessages((prevMessages: Message[]) => {
@@ -192,20 +183,20 @@ export const useAgentAPI = (): UseAgentAPIReturn => {
 
       if (callbacks?.onRetryAttempt) {
         callbacks.onRetryAttempt(
-          attempt,
-          new Error("Retry attempt"),
-          nextRetryAt,
+            attempt,
+            new Error("Retry attempt"),
+            nextRetryAt,
         )
       }
     }
 
     try {
-      let responseText: string
+      let apiResponse: ApiResponse
 
       if (shouldEnableRetries(pattern)) {
-        responseText = await withRetry(makeApiCall, onRetryAttempt)
+        apiResponse = await withRetry(makeApiCall, onRetryAttempt)
       } else {
-        responseText = await makeApiCall()
+        apiResponse = await makeApiCall()
       }
 
       if (requestIdRef.current === myRequestId) {
@@ -213,7 +204,7 @@ export const useAgentAPI = (): UseAgentAPIReturn => {
           const updatedMessages = [...prevMessages]
           updatedMessages[updatedMessages.length - 1] = {
             role: "assistant",
-            content: responseText,
+            content: apiResponse.response,
             id: uuid(),
             animate: true,
           }
@@ -222,15 +213,14 @@ export const useAgentAPI = (): UseAgentAPIReturn => {
       }
 
       if (callbacks?.onSuccess) {
-        callbacks.onSuccess(responseText)
+        callbacks.onSuccess(apiResponse)
       }
     } catch (error) {
       const { status, message } = parseApiError(error)
-
       const userMessage =
-        status && status >= 400 && status < 500
-          ? `HTTP ${status} - ${message}`
-          : message
+          status && status >= 400 && status < 500
+              ? `HTTP ${status} - ${message}`
+              : message
 
       if (requestIdRef.current === myRequestId) {
         setMessages((prevMessages: Message[]) => {
