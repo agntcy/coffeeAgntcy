@@ -55,11 +55,11 @@ async def handle_prompt(request: PromptRequest):
       HTTPException: 400 for invalid input, 500 for server-side errors.
   """
   try:
-    session_start() # Start a new tracing session
-    # Process the prompt using the exchange graph
-    result = await exchange_agent.execute_agent_with_llm(request.prompt)
-    logger.info(f"Final result from exchange agent: {result}")
-    return {"response": result}
+    with session_start() as session_id:
+      # Process the prompt using the exchange graph
+      result = await exchange_agent.execute_agent_with_llm(request.prompt)
+      logger.info(f"Final result from exchange agent: {result}")
+      return {"response": result, "session_id": session_id["executionID"]}
   except ValueError as ve:
     logger.exception(f"ValueError occurred: {str(ve)}")
     raise HTTPException(status_code=400, detail=str(ve))

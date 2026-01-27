@@ -185,6 +185,12 @@
     --info-icon-border: #187adc;
     --info-icon-bg: #ffffff;
     --info-icon-bg-hover: #f5f8fd;
+
+    --external-link-button-bg: #fff;
+  }
+
+  body:not([data-theme="light"]) {
+    --external-link-button-bg: var(--chat-background);
   }
 
   .theme-icon-github {

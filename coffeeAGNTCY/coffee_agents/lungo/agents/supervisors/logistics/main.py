@@ -48,14 +48,14 @@ class PromptRequest(BaseModel):
 @app.post("/agent/prompt")
 async def handle_prompt(request: PromptRequest):
   try:
-    session_start()
-    timeout_val = int(os.getenv("LOGISTIC_TIMEOUT", "200"))
-    result = await asyncio.wait_for(
-      logistic_graph.serve(request.prompt),
-      timeout=timeout_val
-    )
-    logger.info(f"Final result from LangGraph: {result}")
-    return {"response": result}
+    with session_start() as session_id:
+      timeout_val = int(os.getenv("LOGISTIC_TIMEOUT", "200"))
+      result = await asyncio.wait_for(
+        logistic_graph.serve(request.prompt),
+        timeout=timeout_val
+      )
+      logger.info(f"Final result from LangGraph: {result}")
+      return {"response": result, "session_id": session_id["executionID"]}
   except asyncio.TimeoutError:
     logger.error("Request timed out after %s seconds", timeout_val)
     raise HTTPException(status_code=504, detail=f"Request timed out after {timeout_val} seconds")
@@ -129,24 +129,24 @@ async def handle_stream_prompt(request: PromptRequest):
         HTTPException: 400 for invalid input, 500 for server-side errors.
     """
     try:
-        session_start()
+        with session_start() as session_id:  # Start a new tracing session for observability
 
-        async def stream_generator():
-            try:
-                async for chunk in logistic_graph.streaming_serve(request.prompt):
-                    yield json.dumps({"response": chunk}) + "\n"
-            except Exception as e:
-                logger.error(f"Error in stream: {e}")
-                yield json.dumps({"response": f"Error: {str(e)}"}) + "\n"
+          async def stream_generator():
+              try:
+                  async for chunk in logistic_graph.streaming_serve(request.prompt):
+                      yield json.dumps({"response": chunk, "session_id": session_id["executionID"]}) + "\n"
+              except Exception as e:
+                  logger.error(f"Error in stream: {e}")
+                  yield json.dumps({"response": f"Error: {str(e)}"}) + "\n"
 
-        return StreamingResponse(
-            stream_generator(),
-            media_type="application/x-ndjson",
-            headers={
-                "Cache-Control": "no-cache",
-                "Connection": "keep-alive",
-            }
-        )
+          return StreamingResponse(
+              stream_generator(),
+              media_type="application/x-ndjson",
+              headers={
+                  "Cache-Control": "no-cache",
+                  "Connection": "keep-alive",
+              }
+          )
     except ValueError as ve:
         raise HTTPException(status_code=400, detail=str(ve))
     except Exception as e:

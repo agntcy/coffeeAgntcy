@@ -19,6 +19,7 @@ service:
 config:
   exchangeAppApiUrl: ""
   logisticsAppApiUrl: ""
+  grafanaUrl: ""
 
 # You can use your own config here for service account
 serviceaccount:

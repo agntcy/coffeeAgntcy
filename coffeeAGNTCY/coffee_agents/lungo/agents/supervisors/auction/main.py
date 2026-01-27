@@ -100,12 +100,12 @@ async def handle_prompt(request: PromptRequest):
       HTTPException: 400 for invalid input, 500 for server-side errors.
   """
   try:
-    session_start() # Start a new tracing session for observability
+    with session_start() as session_id:
     
     # Execute the graph synchronously - blocks until completion
-    result = await exchange_graph.serve(request.prompt)
-    logger.info(f"Final result from LangGraph: {result}")
-    return {"response": result}
+      result = await exchange_graph.serve(request.prompt)
+      logger.info(f"Final result from LangGraph: {result}")
+      return {"response": result, "session_id": session_id["executionID"]}
   except ValueError as ve:
     raise HTTPException(status_code=400, detail=str(ve))
   except Exception as e:
@@ -131,29 +131,29 @@ async def handle_stream_prompt(request: PromptRequest):
         HTTPException: 400 for invalid input, 500 for server-side errors.
     """
     try:
-        session_start()  # Start a new tracing session for observability
+        with session_start() as session_id: # Start a new tracing session for observability
 
-        async def stream_generator():
-            """
-            Generator that yields JSON chunks as they arrive from the graph.
-            Uses newline-delimited JSON (NDJSON) format for streaming.
-            """
-            try:
-                # Stream chunks from the graph as nodes complete execution
-                async for chunk in exchange_graph.streaming_serve(request.prompt):
-                    yield json.dumps({"response": chunk}) + "\n"
-            except Exception as e:
-                logger.error(f"Error in stream: {e}")
-                yield json.dumps({"response": f"Error: {str(e)}"}) + "\n"
+          async def stream_generator():
+              """
+              Generator that yields JSON chunks as they arrive from the graph.
+              Uses newline-delimited JSON (NDJSON) format for streaming.
+              """
+              try:
+                  # Stream chunks from the graph as nodes complete execution
+                  async for chunk in exchange_graph.streaming_serve(request.prompt):
+                      yield json.dumps({"response": chunk, "session_id": session_id["executionID"]}) + "\n"
+              except Exception as e:
+                  logger.error(f"Error in stream: {e}")
+                  yield json.dumps({"response": f"Error: {str(e)}"}) + "\n"
 
-        return StreamingResponse(
-            stream_generator(),
-            media_type="application/x-ndjson",  # Newline-delimited JSON for streaming
-            headers={
-                "Cache-Control": "no-cache",  # Prevent caching of streaming responses
-                "Connection": "keep-alive",   # Keep connection open for streaming
-            }
-        )
+          return StreamingResponse(
+              stream_generator(),
+              media_type="application/x-ndjson",  # Newline-delimited JSON for streaming
+              headers={
+                  "Cache-Control": "no-cache",  # Prevent caching of streaming responses
+                  "Connection": "keep-alive",   # Keep connection open for streaming
+              }
+          )
     except ValueError as ve:
         raise HTTPException(status_code=400, detail=str(ve))
     except Exception as e:
