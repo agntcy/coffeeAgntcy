@@ -125,21 +125,19 @@ const ChatArea: React.FC<ChatAreaProps> = ({
             setMessages,
             {
                 onSuccess: (response: ApiResponse) => {
-                    console.log("API success response:", response);
-                    setAiReplied(true);
+                    setAiReplied(true)
                     if (onApiResponse) {
-                        onApiResponse(response.response ?? "", false);
+                        onApiResponse(response.response ?? "", false)
                     }
                 },
                 onError: (error) => {
-                    logger.apiError("/agent/prompt", error);
-                    let errorMessage = "Sorry, I encountered an error";
+                    logger.apiError("/agent/prompt", error)
+                    let errorMessage = "Sorry, I encountered an error"
                     if (axios.isAxiosError(error) && error.response?.data?.detail) {
-                        console.log("API error response:", error.response.data);
-                        errorMessage = error.response.data.detail;
+                        errorMessage = error.response.data.detail
                     }
                     if (onApiResponse) {
-                        onApiResponse(errorMessage, true);
+                        onApiResponse(errorMessage, true)
                     }
                 },
             },
@@ -174,6 +172,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
     }
 
     // Build the Grafana URL with session_id if available
+    console.log("Agent response:", agentResponse)
     const sessionIdForUrl = agentResponse?.session_id
     const grafanaSessionUrl = sessionIdForUrl
         ? `${grafanaUrl}${GRAFANA_DASHBOARD_PATH}${encodeURIComponent(sessionIdForUrl)}`
@@ -237,35 +236,36 @@ const ChatArea: React.FC<ChatAreaProps> = ({
                         {showFinalResponse &&
                             (isAgentLoading || agentResponse) &&
                             !isMinimized && (
-                                <>
-                                    <div className="flex w-full flex-row items-start gap-1">
-                                        <div className="chat-avatar-container flex h-10 w-10 flex-none items-center justify-center rounded-full bg-action-background">
-                                            <img
-                                                src={AgentIcon}
-                                                alt="Agent"
-                                                className="h-[22px] w-[22px]"
-                                            />
-                                        </div>
-                                        <div className="flex max-w-[calc(100%-3rem)] flex-1 flex-col items-start justify-center rounded p-1 px-2">
-                                            <div className="whitespace-pre-wrap break-words font-inter text-sm font-normal leading-5 !text-chat-text">
-                                                {isAgentLoading ? (
-                                                    <div className="animate-pulse text-accent-primary">
-                                                        ...
-                                                    </div>
-                                                ) : (
-                                                    agentResponse?.response ?? ""
-                                                )}
-                                            </div>
+                                <div className="flex w-full flex-row items-start gap-1">
+                                    <div className="chat-avatar-container flex h-10 w-10 flex-none items-center justify-center rounded-full bg-action-background">
+                                        <img
+                                            src={AgentIcon}
+                                            alt="Agent"
+                                            className="h-[22px] w-[22px]"
+                                        />
+                                    </div>
+                                    <div className="flex max-w-[calc(100%-3rem)] flex-1 flex-col items-start justify-center rounded p-1 px-2">
+                                        <div className="whitespace-pre-wrap break-words font-inter text-sm font-normal leading-5 !text-chat-text">
+                                            {isAgentLoading ? (
+                                                <div className="animate-pulse text-accent-primary">
+                                                    ...
+                                                </div>
+                                            ) : (
+                                                agentResponse?.response ?? ""
+                                            )}
                                         </div>
                                     </div>
-                                    {showFinalResponse && agentResponse?.response && !isAgentLoading && !isMinimized && (
-                                        <ExternalLinkButton
-                                            url={grafanaSessionUrl}
-                                            label="Grafana"
-                                            iconSrc={grafanaIcon}
-                                        />
-                                    )}
-                                </>
+                                </div>
+                            )}
+
+                        {/* ExternalLinkButton for all relevant patterns */}
+                        {(showFinalResponse || showProgressTracker || showAuctionStreaming) &&
+                            agentResponse?.session_id && !isAgentLoading && !isMinimized && (
+                                <ExternalLinkButton
+                                    url={grafanaSessionUrl}
+                                    label="Grafana"
+                                    iconSrc={grafanaIcon}
+                                />
                             )}
                     </div>
                 )}
