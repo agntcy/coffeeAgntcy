@@ -212,7 +212,7 @@ def agents_up(request, transport_config):
             cwd=str(LUNGO_DIR),
             env=env,
             ready_pattern=spec.get("ready_pattern", r"Transport initialized with tracing enabled"),
-            timeout_s=30.0,
+            timeout_s=60.0,
             log_dir=Path(LUNGO_DIR) / ".pytest-logs",
         ).start()
         _ACTIVE_RUNNERS.append(runner)
