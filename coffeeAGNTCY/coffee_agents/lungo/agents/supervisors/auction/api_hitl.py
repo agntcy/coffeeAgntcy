@@ -3,14 +3,39 @@
 
 """
 Human-in-the-Loop API Endpoints
+================================
 
-This module provides FastAPI endpoints for the HITL-enabled Exchange Graph.
-It supports the interrupt/resume pattern for human intervention in order processing.
+This module provides FastAPI endpoints for the HITL-enabled Exchange Graph,
+supporting the interrupt/resume pattern for human intervention in order processing.
+
+Purpose:
+    Expose REST API endpoints that allow clients to:
+    - Start HITL-enabled requests that may pause for human input
+    - Resume paused requests with human decisions
+    - Query information about HITL models and configuration
 
 Endpoints:
-- POST /agent/prompt/hitl - Start a request with HITL enabled
-- POST /agent/prompt/hitl/resume - Resume an interrupted request with human decision
-- GET /agent/prompt/hitl/status/{thread_id} - Check status of a HITL request
+    POST /agent/prompt/hitl
+        Start a request with HITL enabled. May return with status
+        'awaiting_human_input' if human intervention is needed.
+        
+    POST /agent/prompt/hitl/resume  
+        Resume an interrupted request with the human's decision.
+        Returns the final processed result.
+        
+    GET /agent/prompt/hitl/info
+        Get information about HITL models and configuration.
+
+Example Usage (curl):
+    # Start a HITL request
+    curl -X POST http://localhost:8000/agent/prompt/hitl \
+        -H "Content-Type: application/json" \
+        -d '{"prompt": "500 lbs, budget $2000"}'
+    
+    # Resume with human decision
+    curl -X POST http://localhost:8000/agent/prompt/hitl/resume \
+        -H "Content-Type: application/json" \
+        -d '{"thread_id": "abc-123", "decision": "Balanced Diversification"}'
 
 Reference: https://docs.langchain.com/oss/python/langgraph/interrupts
 """

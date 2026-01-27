@@ -3,23 +3,49 @@
 
 """
 Human-in-the-Loop (HITL) Module for Coffee Exchange
+====================================================
 
-This module implements a two-model approach for intelligent human intervention:
+This module implements a two-model approach for intelligent human intervention
+in the coffee exchange order processing workflow.
 
-1. WHEN-TO-TRIGGER MODEL (Small Language Model)
-   - Input: User query + context (budget, market data, etc.)
-   - Output: Confidence score (0-1) and decision (TRIGGER or NO_TRIGGER)
-   - Purpose: Decides if human intervention is needed
-   
-2. WHAT-TO-RESPOND MODEL (Small Language Model)
-   - Input: User query + trigger context + inventory data
-   - Output: Structured scenarios and recommendations
-   - Purpose: Generates options for human review
+Purpose:
+    Provide pluggable model interfaces and mock implementations for HITL
+    decision-making, enabling human oversight of complex order decisions.
 
-This module provides:
-- Abstract base classes for model inference
-- Mock implementations for development/testing
-- Ready-to-use inference hooks for real models
+Models:
+    1. WHEN-TO-TRIGGER MODEL (Small Language Model)
+       - Input: Raw user query string
+       - Output: TriggerModelOutput (decision, confidence, reasons)
+       - Purpose: Decides if human intervention is needed
+       
+    2. WHAT-TO-RESPOND MODEL (Small Language Model)
+       - Input: User query + trigger context + inventory data
+       - Output: RespondModelOutput (scenarios, recommendations)
+       - Purpose: Generates actionable options for human review
+
+Architecture:
+    - Abstract base classes define the interface for model inference
+    - Mock implementations provide rule-based simulation for development
+    - Factory functions allow easy swapping between mock and real models
+
+Example Usage:
+    >>> from agents.supervisors.auction.graph.hitl import get_trigger_model, get_respond_model
+    >>> 
+    >>> # Initialize models
+    >>> trigger_model = get_trigger_model()
+    >>> respond_model = get_respond_model()
+    >>> 
+    >>> # Run WHEN-TO-TRIGGER inference
+    >>> trigger_output = trigger_model.inference("500 lbs, budget $2000")
+    >>> print(trigger_output.decision)  # TriggerDecision.TRIGGER
+    >>> 
+    >>> # If triggered, run WHAT-TO-RESPOND inference
+    >>> if trigger_output.decision == TriggerDecision.TRIGGER:
+    >>>     respond_output = respond_model.inference(
+    >>>         user_query="500 lbs, budget $2000",
+    >>>         trigger_output=trigger_output
+    >>>     )
+    >>>     print(respond_output.scenarios)  # List of AllocationScenario
 
 Reference: https://docs.langchain.com/oss/python/langgraph/interrupts
 """

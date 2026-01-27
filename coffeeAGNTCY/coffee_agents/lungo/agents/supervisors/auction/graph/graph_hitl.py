@@ -3,19 +3,50 @@
 
 """
 Human-in-the-Loop Exchange Graph
+=================================
 
 This module extends the Exchange Graph with human-in-the-loop capabilities using
-LangGraph's interrupt() function. The flow is:
+LangGraph's interrupt() function for pausing execution during human intervention.
 
-1. User query → Supervisor routes to appropriate node
-2. Orders node gathers context and prepares order
-3. TRIGGER_EVALUATION node runs WHEN-TO-TRIGGER model
-4. If triggered:
-   - RESPONSE_GENERATION node runs WHAT-TO-RESPOND model
-   - HUMAN_INTERVENTION node calls interrupt() with options
-   - Human reviews and responds
-   - Graph resumes with human's decision
-5. Continue with order execution based on human input
+Purpose:
+    Enable human oversight for high-stakes order decisions by pausing graph
+    execution, presenting options to the user, and resuming with their selection.
+
+Graph Flow:
+    1. User query → SUPERVISOR routes to appropriate handler
+    2. For orders: ORDERS node gathers context
+    3. TRIGGER_EVALUATION runs WHEN-TO-TRIGGER model
+    4. If triggered (confidence >= threshold):
+       - RESPONSE_GENERATION runs WHAT-TO-RESPOND model
+       - HUMAN_INTERVENTION calls interrupt() with scenario options
+       - Graph pauses, control returns to caller
+       - On resume: PROCESS_HUMAN_DECISION handles selection
+    5. REFLECTION determines if conversation is complete
+
+Graph Structure:
+    SUPERVISOR
+        ├── INVENTORY_SINGLE_FARM → REFLECTION → END
+        ├── INVENTORY_ALL_FARMS → REFLECTION → END
+        ├── ORDERS → TRIGGER_EVALUATION
+        │              ├── [TRIGGER] → RESPONSE_GENERATION → HUMAN_INTERVENTION
+        │              │                                          ↓
+        │              │                              PROCESS_HUMAN_DECISION → END
+        │              └── [NO_TRIGGER] → ORDERS_TOOLS → REFLECTION → END
+        └── GENERAL_INFO → END
+
+Example Usage:
+    >>> from agents.supervisors.auction.graph.graph_hitl import ExchangeGraphHITL
+    >>> 
+    >>> # Initialize the graph
+    >>> graph = ExchangeGraphHITL(enable_hitl=True)
+    >>> 
+    >>> # Start a request (may interrupt for human input)
+    >>> result = await graph.serve("500 lbs, budget $2000")
+    >>> 
+    >>> if result.get("status") == "awaiting_human_input":
+    >>>     # Present options to user, get their selection
+    >>>     user_choice = "Balanced Diversification"
+    >>>     final_result = await graph.resume(result["thread_id"], user_choice)
 
 Reference: https://docs.langchain.com/oss/python/langgraph/interrupts
 """
@@ -51,9 +82,13 @@ from common.llm import get_llm
 
 logger = logging.getLogger("lungo.supervisor.graph_hitl")
 
-
 class NodeStates:
-    """Node state identifiers for the graph"""
+    """
+    Node state identifiers for the graph.
+    
+    These constants define the node names used in the LangGraph workflow.
+    Using a class with constants ensures consistent naming across the codebase.
+    """
     SUPERVISOR = "exchange_supervisor"
     
     INVENTORY_SINGLE_FARM = "inventory_single_farm"
@@ -283,17 +318,30 @@ class ExchangeGraphHITL:
         else:
             return {"next_node": NodeStates.GENERAL_INFO, "messages": user_message}
     
-    async def _inventory_single_farm_node(self, state: HITLGraphState) -> dict:
-        """Handle single farm inventory queries"""
+    async def _inventory_single_farm_node(self, state: HITLGraphState) -> Dict[str, Any]:
+        """
+        Handle single farm inventory queries.
+        
+        Extracts the farm name from the user query and retrieves inventory data.
+        
+        Args:
+            state: Current graph state containing messages
+            
+        Returns:
+            Dict with AIMessage containing farm inventory or error message
+        """
+        # Find the most recent human message
         user_msg = next((m for m in reversed(state["messages"]) if m.type == "human"), None)
         if not user_msg:
+            logger.warning("No user message found in state for inventory query")
             return {"messages": [AIMessage(content="No user message found.")]}
         
+        # Extract farm name from query
         query = user_msg.content.lower()
-        farm = None
-        for f in ["brazil", "colombia", "vietnam"]:
-            if f in query:
-                farm = f
+        farm: Optional[str] = None
+        for farm_name in ["brazil", "colombia", "vietnam"]:
+            if farm_name in query:
+                farm = farm_name
                 break
         
         if not farm:
@@ -301,30 +349,47 @@ class ExchangeGraphHITL:
         
         try:
             result = await get_farm_yield_inventory(user_msg.content, farm)
-            # Strip trailing whitespace to avoid Bedrock Claude error
+            # Strip trailing whitespace to avoid Bedrock Claude error:
+            # "final assistant content cannot end with trailing whitespace"
             result = result.strip() if isinstance(result, str) else str(result).strip()
             return {"messages": [AIMessage(content=f"**{farm.title()} Farm Inventory:**\n{result}")]}
         except Exception as e:
-            logger.error(f"Error querying {farm} farm: {e}")
-            return {"messages": [AIMessage(content=f"Error retrieving {farm} farm data.")]}
+            # Log full exception with traceback for debugging
+            logger.exception(f"Error querying {farm} farm: {e}")
+            return {"messages": [AIMessage(content=f"Error retrieving {farm} farm data: {type(e).__name__}")]}
     
-    async def _inventory_all_farms_node(self, state: HITLGraphState) -> dict:
-        """Handle all farms inventory queries"""
+    async def _inventory_all_farms_node(self, state: HITLGraphState) -> Dict[str, Any]:
+        """
+        Handle queries for all farms inventory.
+        
+        Streams inventory data from all farms (Brazil, Colombia, Vietnam)
+        and aggregates the results.
+        
+        Args:
+            state: Current graph state containing messages
+            
+        Returns:
+            Dict with AIMessage containing aggregated farm inventory
+        """
         user_msg = next((m for m in reversed(state["messages"]) if m.type == "human"), None)
         if not user_msg:
+            logger.warning("No user message found in state for all-farms inventory query")
             return {"messages": [AIMessage(content="No user message found.")]}
         
         try:
+            # Stream responses from all farms and aggregate
             full_response = ""
             async for chunk in get_all_farms_yield_inventory_streaming(user_msg.content):
                 full_response += chunk + "\n"
             
-            # Strip trailing whitespace to avoid Bedrock Claude error
+            # Strip trailing whitespace to avoid Bedrock Claude error:
+            # "final assistant content cannot end with trailing whitespace"
             full_response = full_response.strip()
             return {"messages": [AIMessage(content=f"**All Farms Inventory:**\n{full_response}")]}
         except Exception as e:
-            logger.error(f"Error querying all farms: {e}")
-            return {"messages": [AIMessage(content="Error retrieving farm data.")]}
+            # Log full exception with traceback for debugging
+            logger.exception(f"Error querying all farms: {e}")
+            return {"messages": [AIMessage(content=f"Error retrieving farm data: {type(e).__name__}")]}
     
     async def _orders_node(self, state: HITLGraphState) -> dict:
         """
