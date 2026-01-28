@@ -6,9 +6,9 @@ import os
 from agent_recruiter.common.logging import get_logger
 
 from agent_recruiter.models.recruiter_models import (
-    RecruitmentRequest, 
+    RecruitmentRequest,
     RecruitmentCriteria,
-    SearchStrategy, 
+    SearchStrategy,
     CandidatePool
 )
 
@@ -21,6 +21,13 @@ from agent_recruiter.common.agent_utils import call_agent_async
 
 from agent_recruiter.agent_registries import create_registry_search_agent
 from agent_recruiter.interviewers import create_evaluation_agent
+from agent_recruiter.plugins import (
+    ToolCachePlugin,
+    CacheConfig,
+    CacheMode,
+    load_cache_config,
+    DEFAULT_EXCLUDED_TOOLS,
+)
 
 logger = get_logger("recruiter.recruiter")
 
@@ -90,7 +97,8 @@ def create_recruiter_agent(sub_agents) -> Agent:
     """Create and configure the Recruiter Agent."""
 
     LLM_MODEL = os.getenv("LLM_MODEL", "openai/gpt-4o")
-    agent_team = Agent(
+
+    root_agent = Agent(
         name="RecruiterAgent",
         model=LiteLlm(model=LLM_MODEL),
         description="The main coordinator agent. Handles recruiter tasks and delegates specialized queries to sub-agents.",
@@ -98,13 +106,39 @@ def create_recruiter_agent(sub_agents) -> Agent:
         sub_agents=sub_agents,
     )
 
-    return agent_team
+    return root_agent
 
 class RecruiterTeam:
-    """"""
-    def __init__(self, app_name: str="agent_recruiter"):
-        """Create necessary agents and runner."""
+    """Multi-agent team for agent recruitment with configurable caching.
+
+    Caching can be configured via environment variables:
+        CACHE_ENABLED: Enable/disable all caching ("true"/"false")
+        CACHE_MODE: "model", "tool", "both", or "none"
+
+        MODEL_CACHE_TTL: Model cache TTL in seconds
+        MODEL_CACHE_MAX_ENTRIES: Model cache max entries
+
+        TOOL_CACHE_TTL: Tool cache TTL in seconds
+        TOOL_CACHE_MAX_ENTRIES: Tool cache max entries
+        TOOL_CACHE_TOOLS: Comma-separated tool names or "all"
+    """
+
+    def __init__(
+        self,
+        app_name: str = "agent_recruiter",
+        cache_config: Optional[CacheConfig] = None
+    ):
+        """Create necessary agents and runner.
+
+        Args:
+            app_name: Application name for session management.
+            cache_config: Optional cache configuration. If None, loads from
+                         environment variables via load_cache_config().
+        """
         self.app_name = app_name
+
+        # Load cache config from env vars if not provided
+        self._cache_config = cache_config or load_cache_config()
 
         # 1. Create sub-agents
         registry_search_agent = create_registry_search_agent()
@@ -115,11 +149,38 @@ class RecruiterTeam:
         root_agent_stateful = create_recruiter_agent(sub_agents)
         self.root_agent = root_agent_stateful
 
-        # 3. Create Runner with stateful session service
+        # 3. Configure plugins based on cache config
+        plugins = []
+        self._tool_cache_plugin: Optional[ToolCachePlugin] = None
+
+        if self._cache_config.tool_cache_enabled:
+            # Use configured excluded tools or default set
+            excluded_tools = self._cache_config.tool.excluded_tools or DEFAULT_EXCLUDED_TOOLS
+
+            self._tool_cache_plugin = ToolCachePlugin(
+                ttl_seconds=self._cache_config.tool.ttl_seconds,
+                max_entries=self._cache_config.tool.max_entries,
+                excluded_tools=excluded_tools,
+                enabled=True
+            )
+            plugins.append(self._tool_cache_plugin)
+            logger.info(
+                f"Tool cache enabled (ttl={self._cache_config.tool.ttl_seconds}s, "
+                f"max_entries={self._cache_config.tool.max_entries}, "
+                f"excluded_tools={excluded_tools})"
+            )
+
+        if not plugins:
+            logger.info("Caching disabled (CACHE_MODE=none or CACHE_ENABLED=false)")
+        else:
+            logger.info(f"Total plugins enabled: {len(plugins)}")
+
+        # 4. Create Runner with stateful session service and plugins
         runner_root_stateful = Runner(
             agent=root_agent_stateful,
             app_name=self.app_name,
-            session_service=session_service
+            session_service=session_service,
+            plugins=plugins
         )
 
         self.runner = runner_root_stateful
@@ -172,161 +233,81 @@ class RecruiterTeam:
         logger.info(f"Cleared found agent records for session '{session_id}'")
         return True
 
-    async def invoke(self, user_message: str, user_id: str, session_id: str) -> str:
-        """Process a user message and return the agent response."""
+    async def invoke(self, user_message: str, user_id: str, session_id: str) -> dict:
+        """Process a user message and return the agent response with any found records.
 
+        Returns:
+            Dict containing:
+                - response: The text response from the agent
+                - found_agent_records: Dict of agent records found during the session
+        """
         await get_or_create_session(app_name=self.app_name, user_id=user_id, session_id=session_id)
 
         response = await call_agent_async(user_message, self.runner, user_id, session_id)
 
         if not response.strip():
             raise RuntimeError("No valid response generated.")
-        return response.strip()
-    
-async def main():
-    recruiter_team = RecruiterTeam()
 
-    print("--- Testing Recruiter Agent ---")
-    messages = [
-        # "What skills can I base searches on?",
-        "Can you find an agent called Accountant agent?",
-    ]
-    user_id = "user_1"
-    session_id = "recruiter_session"
+        # Get any agent records that were found during this invocation
+        found_records = await self.get_found_agent_records(user_id, session_id)
 
-    for msg in messages:
-        print(f"\nUser: {msg}")
-        final_state = await recruiter_team.invoke(msg, user_id, session_id)
-        print(f"Agent: {final_state}")
+        return {
+            "response": response.strip(),
+            "found_agent_records": found_records,
+        }
 
-    # Retrieve found agent records
-    records = await recruiter_team.get_found_agent_records(user_id, session_id)
-    print(f"\nFound {len(records)} agent records in session state:")
-    for record in records:
-        print(record)
-
-if __name__ == "__main__":
-    import asyncio
-    asyncio.run(main())
-
-
-'''class AgentRecruiter:
-    """
-    An Agent Recruiter that can recruit agents from multiple registries, interview them, and select the best candidate.
-    Features to consider implementing:
-
-    - we want to recruiter based on skills, names, semantic search, etc.
-    - we should have some type of semantic search to find agents based on skills and tasks.
-    - we should cache interviews and results to avoid re-interviewing the same agents multiple times.
-    - we should have a no-interview mode for trusted agents.
-    """
-
-    def __init__(self):
-        self._registry: AgentRegistryBase = None
-        self._interviewer: Optional[BaseInterviewer] = None
-
-    def set_registry(self, registry: AgentRegistryBase):
-        """Add a new agent registry to recruit from."""
-        self._registries.append(registry)
-
-    def set_interviewer(self, interviewer: BaseInterviewer):
-        """Set the interviewer to use for evaluating candidates."""
-        self._interviewer = interviewer
-
-    def _merge_search_results(
-        self,
-        results_by_criteria: dict[str, List],
-        strategy: SearchStrategy,
-        max_candidates: int,
-    ) -> List:
-        """
-        Merge search results from multiple criteria based on the search strategy.
-
-        Args:
-            results_by_criteria: Dict mapping criteria key to list of agent results
-            strategy: How to combine results (INTERSECTION, UNION, RANKED)
-            max_candidates: Maximum number of agents to return
+    def get_cache_stats(self) -> dict:
+        """Get cache statistics for tool cache.
 
         Returns:
-            List of merged agent results
+            Dict with mode and tool_cache stats (None if disabled).
         """
-        return []
-    
-    async def find_agents_by_prompt(self, prompt: str, max_candidates: int = 10) -> List:
-        """Find agents based on a natural language prompt."""
+        return {
+            "mode": self._cache_config.mode.value,
+            "tool_cache": (
+                self._tool_cache_plugin.get_stats()
+                if self._tool_cache_plugin else None
+            ),
+        }
 
-        llm = get_llm()
-        
-        # convert prompt to recruitment criteria
-        request = RecruitmentCriteria.from_prompt(prompt, llm=llm)
-        if request is None:
-            raise ValueError("Could not parse recruitment criteria from prompt")
+    def get_tool_cache_stats(self) -> Optional[dict]:
+        """Get tool cache statistics.
 
-        return await self.find_agents_by_search_criteria(request, max_candidates=max_candidates)
+        Returns:
+            Dict with cache stats, or None if tool caching is disabled.
+        """
+        if self._tool_cache_plugin is None:
+            return None
+        return self._tool_cache_plugin.get_stats()
 
-    async def find_agents_by_search_criteria(self, query: RecruitmentCriteria, max_candidates: int = 10) -> List:
-        """Find agents based on the recruitment criteria."""
-    
-        criteria = request.criteria
-        
-        results_by_criteria: dict[str, List] = {}
+    def clear_cache(self) -> dict:
+        """Clear all caches.
 
-        for registry in self._registries:
-            registry_name = registry.registry_metadata().name
-            logger.info(f"Searching in registry: {registry_name}")
+        Returns:
+            Dict with number of entries cleared from each cache.
+        """
+        return {
+            "tool_cache_cleared": (
+                self._tool_cache_plugin.clear()
+                if self._tool_cache_plugin else 0
+            ),
+        }
 
-            # 1. Exact name match
-            if criteria.name:
-                key = f"{registry_name}:name"
-                result = registry.search_agents_by_name(criteria.name, limit=max_candidates)
-                if result is not None:
-                    results_by_criteria[key] = result if isinstance(result, list) else [result]
+    def clear_tool_cache(self) -> int:
+        """Clear tool cache.
 
-            # 2. Skills-based search
-            for skill in criteria.skills:
-                key = f"{registry_name}:skill:{skill}"
-                result = registry.search_agents_by_skill(skill, limit=max_candidates)
-                if result:
-                    results_by_criteria[key] = result
+        Returns:
+            Number of entries cleared, or 0 if tool caching is disabled.
+        """
+        if self._tool_cache_plugin is None:
+            return 0
+        return self._tool_cache_plugin.clear()
 
-            # 3. Semantic query (TODO: implement in registry)
-            if criteria.semantic_query:
-                logger.warning("Semantic query search not yet implemented")
+    def set_cache_enabled(self, enabled: bool) -> None:
+        """Enable or disable tool caching at runtime.
 
-        merged = self._merge_search_results(
-            results_by_criteria,
-            criteria.search_strategy,
-            max_candidates,
-        )
-        logger.info(f"Total agents found after merge: {len(merged)}")
-        return merged
-
-    async def recruit_agents(self, request: RecruitmentRequest) -> CandidatePool:
-        """Recruit agents based on the given criteria."""
-
-        logger.info("Starting agent recruitment process.")
-        # start with list of candidates from registries
-
-        cards = []
-        for registry in self._registries:
-            if request.criteria.name is not None:
-
-
-                agent_data = registry.search_agents_by_name(request.criteria.name)
-
-                card_data = registry.extract_protocol_card_from_record(agent_data)
-                if card_data is not None:
-                    logger.info(f"Extracted card data for agent '{card_data.name}' from registry '{registry.registry_metadata().name}'")
-                    cards.append(card_data)
-
-            logger.info(f"Found {len(cards)} cards in registry: {registry.registry_metadata().name}")
-
-
-        conduct_intervews = input(
-            f"About to conduct interviews with {len(cards)} candidates. Proceed? (y/n): "
-        )
-
-        resp = await self._interviewer.conduct_interview(cards[0])
-        return resp
-
-        #return CandidatePool(candidates=[])'''
+        Args:
+            enabled: Whether to enable caching.
+        """
+        if self._tool_cache_plugin is not None:
+            self._tool_cache_plugin.set_enabled(enabled)

@@ -11,26 +11,13 @@ from agntcy_app_sdk.factory import AgntcyFactory
 from a2a.server.apps import A2AStarletteApplication
 from a2a.server.tasks import InMemoryTaskStore
 from a2a.server.request_handlers import DefaultRequestHandler
-from a2a.types import AgentCard
 from dotenv import load_dotenv
 from uvicorn import Config, Server
 
 from agent_recruiter.server.agent_executor import RecruiterAgentExecutor
+from agent_recruiter.server.card import AGENT_CARD
 
 load_dotenv()
-
-# Define A2A agent card
-AGENT_CARD = AgentCard(
-    name="RecruiterAgent",
-    url="http://example.com",
-    description="Main recruiter agent coordinating sub-agents and handling recruitment tasks.",
-    version="1.0.0",
-    capabilities={},
-    skills=[],
-    default_input_modes=["text/plain"],
-    default_output_modes=["text/plain"],
-    supports_authenticated_extended_card=False,
-)
 
 ENABLE_HTTP = os.getenv("ENABLE_HTTP", "true").lower() == "true"
 MESSAGE_TRANSPORT = os.getenv("MESSAGE_TRANSPORT")
@@ -40,7 +27,7 @@ TRANSPORT_SERVER_ENDPOINT = os.getenv("TRANSPORT_SERVER_ENDPOINT")
 logger = get_logger(__name__)
 
 # Initialize a multi-protocol, multi-transport agntcy factory.
-factory = AgntcyFactory("recruiter", enable_tracing=True)
+factory = AgntcyFactory("recruiter", enable_tracing=False)
 
 async def run_http_server(server):
     """Run the HTTP/REST server."""
@@ -101,9 +88,10 @@ async def main():
     await asyncio.gather(*tasks)
 
 if __name__ == '__main__':
+    logger.info("Starting RecruiterAgent server...")
     try:
         asyncio.run(main())
     except KeyboardInterrupt:
-        print("\nShutting down gracefully on keyboard interrupt.")
+        logger.info("Shutting down gracefully on keyboard interrupt.")
     except Exception as e:
-        print(f"Error occurred: {e}")
+        logger.error(f"Error occurred: {e}")

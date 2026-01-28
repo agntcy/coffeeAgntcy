@@ -11,6 +11,7 @@ transformations.
 """
 
 import os
+import shutil
 import subprocess
 from typing import Optional, Any
 
@@ -28,9 +29,169 @@ load_dotenv()  # Load environment variables from .env file
 
 LLM_MODEL = os.getenv("LLM_MODEL", "openai/gpt-4o")
 
+# MCP connection mode: "binary" (direct dirctl) or "docker" (docker exec)
+# Auto-detects based on dirctl availability if not set
+MCP_CONNECTION_MODE = os.getenv("MCP_CONNECTION_MODE", "auto")
+
 logger = get_logger(__name__)
 
+def _check_dirctl_binary() -> Optional[str]:
+    """
+    Check if dirctl binary is available in PATH.
 
+    Returns:
+        Path to dirctl binary if found, None otherwise.
+    """
+    dirctl_path = shutil.which("dirctl")
+    if dirctl_path:
+        logger.info(f"Found dirctl binary at: {dirctl_path}")
+    return dirctl_path
+
+
+def _check_container_running(container_name: str) -> bool:
+    """
+    Check if a Docker container is running.
+
+    Args:
+        container_name: Name or ID of the container to check.
+
+    Returns:
+        True if container is running, False otherwise.
+    """
+    try:
+        result = subprocess.run(
+            ["docker", "ps", "--filter", f"name={container_name}", "--format", "{{.Names}}"],
+            capture_output=True,
+            text=True,
+            timeout=10
+        )
+
+        if result.returncode != 0:
+            logger.warning(f"Docker command failed: {result.stderr}")
+            return False
+
+        running_containers = result.stdout.strip().split('\n')
+        is_running = container_name in running_containers
+
+        if is_running:
+            logger.info(f"Container '{container_name}' is running")
+        else:
+            logger.warning(f"Container '{container_name}' is not running")
+
+        return is_running
+
+    except subprocess.TimeoutExpired:
+        logger.error(f"Timeout checking container '{container_name}' status")
+        return False
+    except FileNotFoundError:
+        logger.error("Docker command not found. Ensure Docker is installed and in PATH")
+        return False
+    except Exception as e:
+        logger.error(f"Error checking container '{container_name}' status: {e}")
+        return False
+
+
+def _get_connection_mode() -> str:
+    """
+    Determine the MCP connection mode.
+
+    Returns:
+        "binary" if dirctl is available, "docker" otherwise.
+    """
+    if MCP_CONNECTION_MODE != "auto":
+        return MCP_CONNECTION_MODE
+
+    # Auto-detect: prefer binary if available
+    if _check_dirctl_binary():
+        return "binary"
+    return "docker"
+
+
+def create_mcp_toolset(
+    tool_filter: Optional[list[str]] = None,
+) -> McpToolset:
+    """
+    Create an McpToolset for the Agntcy Directory MCP server.
+
+    Supports two connection modes:
+    - "binary": Runs dirctl directly (for container deployment)
+    - "docker": Uses docker exec to connect to MCP container (for local development)
+
+    Mode is controlled by MCP_CONNECTION_MODE env var ("binary", "docker", or "auto").
+    "auto" (default) will use binary mode if dirctl is available in PATH.
+
+    Args:
+        tool_filter: Optional list of tool names to expose (default: all tools).
+
+    Returns:
+        Configured McpToolset.
+
+    Raises:
+        RuntimeError: If connection cannot be established.
+    """
+    mode = _get_connection_mode()
+    logger.info(f"MCP connection mode: {mode}")
+
+    if mode == "binary":
+        # Binary mode: run dirctl directly
+        dirctl_path = _check_dirctl_binary()
+        if not dirctl_path:
+            raise RuntimeError("dirctl binary not found in PATH. Install dirctl or use docker mode.")
+
+        # Build args for dirctl mcp serve
+        args = ["mcp", "serve"]
+
+        # Build environment with directory server config
+        env = {
+            "DIRECTORY_CLIENT_SERVER_ADDRESS": os.getenv("DIRECTORY_CLIENT_SERVER_ADDRESS", "localhost:8888"),
+            "DIRECTORY_CLIENT_TLS_SKIP_VERIFY": os.getenv("DIRECTORY_CLIENT_TLS_SKIP_VERIFY", "true"),
+            "OASF_API_VALIDATION_DISABLE": os.getenv("OASF_API_VALIDATION_DISABLE", "true"),
+        }
+
+        try:
+            toolset = McpToolset(
+                connection_params=StdioConnectionParams(
+                    server_params=StdioServerParameters(
+                        command=dirctl_path,
+                        args=args,
+                        env=env,
+                    ),
+                ),
+                tool_filter=tool_filter,
+            )
+            logger.info(f"Successfully created MCP toolset using binary mode (dirctl at {dirctl_path})")
+            return toolset
+        except Exception as e:
+            error_msg = f"Failed to create MCP toolset in binary mode: {e}"
+            logger.error(error_msg)
+            raise RuntimeError(error_msg) from e
+
+    else:
+        # Docker mode: use docker exec to connect to running container
+        mcp_container_name = os.getenv("MCP_CONTAINER_NAME", "dir-mcp-server")
+        if not _check_container_running(mcp_container_name):
+            error_msg = f"Container '{mcp_container_name}' is not running"
+            logger.error(error_msg)
+            raise RuntimeError(error_msg)
+
+        try:
+            toolset = McpToolset(
+                connection_params=StdioConnectionParams(
+                    server_params=StdioServerParameters(
+                        command="docker",
+                        args=["exec", "-i", mcp_container_name, "./dirctl", "mcp", "serve"],
+                    ),
+                ),
+                tool_filter=tool_filter,
+            )
+            logger.info(f"Successfully created MCP toolset for container: {mcp_container_name}")
+            return toolset
+        except Exception as e:
+            error_msg = f"Failed to create MCP toolset for container '{mcp_container_name}': {e}"
+            logger.error(error_msg)
+            logger.error("Ensure the container has the './dirctl mcp serve' command available")
+            raise RuntimeError(error_msg) from e
+        
 # ============================================================================
 # State-Writing Tool for Agent Records
 # ============================================================================
@@ -112,102 +273,13 @@ IMPORTANT - Your final response MUST include a clear summary in this format:
    - Protocol: [A2A/MCP if known]
 
 [Repeat for each agent found]
-
-Would you like to search for more agents or evaluate any of these agents?
 ---
 
 If no agents were found, clearly state that no matching agents were found.
 """
 
 
-def _check_container_running(container_name: str) -> bool:
-    """
-    Check if a Docker container is running.
-    
-    Args:
-        container_name: Name or ID of the container to check.
-        
-    Returns:
-        True if container is running, False otherwise.
-    """
-    try:
-        result = subprocess.run(
-            ["docker", "ps", "--filter", f"name={container_name}", "--format", "{{.Names}}"],
-            capture_output=True,
-            text=True,
-            timeout=10
-        )
-        
-        if result.returncode != 0:
-            logger.warning(f"Docker command failed: {result.stderr}")
-            return False
-            
-        running_containers = result.stdout.strip().split('\n')
-        is_running = container_name in running_containers
-        
-        if is_running:
-            logger.info(f"Container '{container_name}' is running")
-        else:
-            logger.warning(f"Container '{container_name}' is not running")
-            
-        return is_running
-        
-    except subprocess.TimeoutExpired:
-        logger.error(f"Timeout checking container '{container_name}' status")
-        return False
-    except FileNotFoundError:
-        logger.error("Docker command not found. Ensure Docker is installed and in PATH")
-        return False
-    except Exception as e:
-        logger.error(f"Error checking container '{container_name}' status: {e}")
-        return False
-
-
-def create_mcp_toolset(
-    mcp_container_name: str = "dir-mcp-server",
-    tool_filter: Optional[list[str]] = None,
-) -> McpToolset:
-    """
-    Create an McpToolset for the Agntcy Directory MCP server.
-
-    Args:
-        mcp_container_name: Docker container name running the MCP server.
-        tool_filter: Optional list of tool names to expose (default: all tools).
-
-    Returns:
-        Configured McpToolset.
-        
-    Raises:
-        RuntimeError: If Docker is not available or container is not running.
-        ConnectionError: If unable to connect to the MCP server.
-    """
-    # First check if the container is running
-    if not _check_container_running(mcp_container_name):
-        error_msg = f"Container '{mcp_container_name}' is not running"
-        logger.error(error_msg)
-        raise RuntimeError(error_msg)
-    
-    try:
-        toolset = McpToolset(
-            connection_params=StdioConnectionParams(
-                server_params=StdioServerParameters(
-                    command="docker",
-                    args=["exec", "-i", mcp_container_name, "./dirctl", "mcp", "serve"],
-                ),
-            ),
-            tool_filter=tool_filter,
-        )
-        logger.info(f"Successfully created MCP toolset for container: {mcp_container_name}")
-        return toolset
-    except Exception as e:
-        error_msg = f"Failed to create MCP toolset for container '{mcp_container_name}': {e}"
-        logger.error(error_msg)
-        logger.error("Ensure the container has the './dirctl mcp serve' command available")
-        raise RuntimeError(error_msg) from e
-
-
 def create_registry_search_agent(
-    mcp_container_name: str = "dir-mcp-server",
     tool_filter: Optional[list[str]] = None,
 ) -> Agent:
     """
@@ -217,7 +289,6 @@ def create_registry_search_agent(
     compatible with ADK web server and cloud deployments.
 
     Args:
-        mcp_container_name: Docker container name running the MCP server.
         tool_filter: Optional list of tool names to expose (default: all tools).
         
     Note:
@@ -231,7 +302,7 @@ def create_registry_search_agent(
     """
     try:
         # Create MCP toolset with error handling
-        mcp_toolset = create_mcp_toolset(mcp_container_name, tool_filter)
+        mcp_toolset = create_mcp_toolset(tool_filter)
 
         try:
             agent = Agent(

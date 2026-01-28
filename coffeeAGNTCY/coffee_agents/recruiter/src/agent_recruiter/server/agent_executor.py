@@ -1,9 +1,8 @@
 # Copyright AGNTCY Contributors (https://github.com/agntcy)
 # SPDX-License-Identifier: Apache-2.0
 
-from agent_recruiter.common.logging import get_logger
+import time
 from uuid import uuid4
-
 from a2a.server.agent_execution import AgentExecutor, RequestContext
 from a2a.server.events import EventQueue
 from a2a.types import (
@@ -15,13 +14,16 @@ from a2a.types import (
     Role,
     Part,
     TextPart,
+    DataPart,
     Task)
 from a2a.utils import (
     new_task,
 )
 from a2a.utils.errors import ServerError
 
-from agent_recruiter.recruiter import AGENT_CARD, RecruiterTeam
+from agent_recruiter.common.logging import get_logger
+from agent_recruiter.recruiter import RecruiterTeam
+from agent_recruiter.server.card import AGENT_CARD
 
 logger = get_logger(__name__)
 
@@ -59,23 +61,40 @@ class RecruiterAgentExecutor(AgentExecutor):
             task = new_task(context.message)
             await event_queue.enqueue_event(task)
 
-        # try to get user_id and session_id from context
-        user_id = "anonymous_user"
-        session_id = "default_session"
+        # Extract session_id from A2A context_id (conversation context)
+        session_id = context.context_id or str(uuid4())
+
+        # Extract user_id from message metadata, with fallback
+        user_id = "anonymous"
+        if context.message and context.message.metadata:
+            user_id = context.message.metadata.get("user_id", "anonymous")
+
+        logger.debug(f"Processing request: user_id={user_id}, session_id={session_id}")
 
         try:
-            output = await self.agent.invoke(prompt, user_id=user_id, session_id=session_id)
-        
+            t0 = time.time()
+            result = await self.agent.invoke(prompt, user_id=user_id, session_id=session_id)
+            t1 = time.time()
+            logger.debug(f"Agent execution completed in {t1 - t0:.2f} seconds.")
+
+            # Build message parts: text response + optional data part for records
+            parts = [Part(TextPart(text=result["response"]))]
+
+            # Include found agent records as DataPart if any exist
+            if result.get("found_agent_records"):
+                parts.append(Part(DataPart(
+                    data=result["found_agent_records"],
+                    metadata={"type": "found_agent_records"}
+                )))
+
             message = Message(
                 message_id=str(uuid4()),
                 role=Role.agent,
                 metadata={"name": self.agent_card["name"]},
-                parts=[Part(TextPart(text=output))],
+                parts=parts,
             )
 
-            logger.info("agent output message: %s", message)
-
-            await event_queue.enqueue_event(message)              
+            await event_queue.enqueue_event(message)
         except Exception as e:
             logger.error(f'An error occurred while streaming the yield estimate response: {e}')
             raise ServerError(error=InternalError()) from e

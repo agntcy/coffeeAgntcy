@@ -47,9 +47,27 @@ services:
       retries: 60
       start_period: 15s
 
-  oasf-translation-service:
-    image: ghcr.io/agntcy/oasf-sdk:v0.0.14
-    container_name: oasf-translation-service
+  recruiter-agent:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    container_name: recruiter-agent
     ports:
-      - "31234:31234"
-
+      - "8881:8881"
+    environment:
+      - ENABLE_HTTP=true
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - LLM_MODEL=${LLM_MODEL:-openai/gpt-4o}
+      # MCP connection config (uses binary mode with dirctl installed in container)
+      - MCP_CONNECTION_MODE=binary
+      - DIRECTORY_CLIENT_SERVER_ADDRESS=dir-api-server:8888
+      - DIRECTORY_CLIENT_TLS_SKIP_VERIFY=true
+      - OASF_API_VALIDATION_DISABLE=true
+    depends_on:
+      dir-api-server:
+        condition: service_healthy
+    healthcheck:
+      test: curl -f http://localhost:8881/.well-known/agent.json || exit 1
+      interval: 10s
+      retries: 30
+      start_period: 30s
