@@ -1,7 +1,8 @@
 # Copyright AGNTCY Contributors (https://github.com/agntcy)
 # SPDX-License-Identifier: Apache-2.0
 
-from typing import List, Optional
+from typing import List, Optional, AsyncGenerator
+from contextlib import aclosing
 import os
 from agent_recruiter.common.logging import get_logger
 
@@ -13,7 +14,10 @@ from agent_recruiter.models.recruiter_models import (
 )
 
 from google.adk.agents import Agent
+from google.adk.agents.run_config import RunConfig, StreamingMode
+from google.adk.events.event import Event as AdkEvent
 from google.adk.models.lite_llm import LiteLlm
+from google.genai import types
 from agent_recruiter.common.llm import configure_llm
 from google.adk.runners import Runner
 from google.adk.sessions import InMemorySessionService
@@ -140,16 +144,25 @@ class RecruiterTeam:
         # Load cache config from env vars if not provided
         self._cache_config = cache_config or load_cache_config()
 
-        # 1. Create sub-agents
+        # ================================================================
+        # Phase 1: Initialize Specialized Sub-Agents
+        # ================================================================
         registry_search_agent = create_registry_search_agent()
         evaluation_agent = create_evaluation_agent()
+        
         sub_agents = [registry_search_agent, evaluation_agent]
 
-        # 2. Create the root recruiter agent with sub-agents
+        # ================================================================
+        # Phase 2: Assemble Main Coordinator Agent
+        # ================================================================
+        # Build the primary recruiter agent that orchestrates sub-agent delegation
+        # and manages the overall recruitment workflow
         root_agent_stateful = create_recruiter_agent(sub_agents)
         self.root_agent = root_agent_stateful
 
-        # 3. Configure plugins based on cache config
+        # ================================================================
+        # Phase 3: Configure Plugins for Caching and Optimization
+        # ================================================================
         plugins = []
         self._tool_cache_plugin: Optional[ToolCachePlugin] = None
 
@@ -175,7 +188,11 @@ class RecruiterTeam:
         else:
             logger.info(f"Total plugins enabled: {len(plugins)}")
 
-        # 4. Create Runner with stateful session service and plugins
+        # ================================================================
+        # Phase 4: Initialize Execution Runtime
+        # ================================================================
+        # Create the runner that manages agent execution, session state,
+        # and plugin lifecycle for the complete recruitment workflow
         runner_root_stateful = Runner(
             agent=root_agent_stateful,
             app_name=self.app_name,
@@ -255,6 +272,52 @@ class RecruiterTeam:
             "response": response.strip(),
             "found_agent_records": found_records,
         }
+
+    async def stream(
+        self,
+        user_message: str,
+        user_id: str,
+        session_id: str
+    ) -> AsyncGenerator[AdkEvent, None]:
+        """Stream ADK events progressively instead of waiting for final result.
+
+        This method enables real-time streaming of intermediate events such as
+        tool calls, agent handoffs, and status updates.
+
+        Args:
+            user_message: The user's input message
+            user_id: User ID for the session
+            session_id: Session ID for state management
+
+        Yields:
+            ADK Event objects as they are produced by the agent
+        """
+        await get_or_create_session(
+            app_name=self.app_name,
+            user_id=user_id,
+            session_id=session_id
+        )
+
+        content = types.Content(
+            role='user',
+            parts=[types.Part(text=user_message)]
+        )
+
+        run_config = RunConfig(streaming_mode=StreamingMode.SSE)
+
+        logger.debug(f"Starting streaming execution: user_id={user_id}, session_id={session_id}")
+
+        async with aclosing(
+            self.runner.run_async(
+                user_id=user_id,
+                session_id=session_id,
+                new_message=content,
+                run_config=run_config,
+            )
+        ) as event_stream:
+            async for event in event_stream:
+                logger.debug(f"Streaming event: author={event.author}, partial={event.partial}")
+                yield event
 
     def get_cache_stats(self) -> dict:
         """Get cache statistics for tool cache.
