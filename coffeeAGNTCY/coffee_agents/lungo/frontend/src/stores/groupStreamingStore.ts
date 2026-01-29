@@ -42,7 +42,7 @@ interface LogisticsStreamingState {
   error: string | null
   currentOrderId: string | null
   executionKey: string | null
-  sessionId: string | null // <-- added
+  sessionId: string | null
 }
 
 interface LogisticsStreamingActions {
