@@ -66,7 +66,7 @@ const initialState: LogisticsStreamingState = {
   error: null,
   currentOrderId: null,
   executionKey: null,
-  sessionId: null, // <-- added
+  sessionId: null,
 }
 
 export const useGroupStreamingStore = create<
