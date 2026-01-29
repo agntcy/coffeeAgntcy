@@ -53,7 +53,7 @@ interface LogisticsStreamingActions {
   setComplete: (complete: boolean) => void
   setCurrentOrderId: (orderId: string) => void
   setExecutionKey: (key: string) => void
-  setSessionId: (id: string) => void // <-- added
+  setSessionId: (id: string) => void
   startStreaming: (prompt: string) => Promise<void>
   reset: () => void
 }
