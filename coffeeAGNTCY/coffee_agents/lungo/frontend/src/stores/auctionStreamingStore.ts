@@ -6,28 +6,26 @@
 import { create } from "zustand"
 import { AuctionStreamingResponse } from "@/types/streaming"
 import { getStreamingEndpointForPattern, PATTERNS } from "@/utils/patternUtils"
-import {isLocalDev, parseFetchError} from "@/utils/const.ts";
+import { isLocalDev, parseFetchError } from "@/utils/const.ts"
 
 const isValidAuctionStreamingResponse = (
-  data: any,
+    data: any,
 ): data is AuctionStreamingResponse => {
   return (
-    data &&
-    typeof data === "object" &&
-    typeof data.response === "string" &&
-    data.response.trim() !== ""
+      data &&
+      typeof data === "object" &&
+      typeof data.response === "string" &&
+      data.response.trim() !== ""
   )
 }
 
 interface StreamingState {
   status: "idle" | "connecting" | "streaming" | "completed" | "error"
   error: string | null
-
   events: AuctionStreamingResponse[]
   prompt: string | null
-
   abortController: AbortController | null
-
+  sessionId: string | null // <-- added
   connect: (prompt: string) => Promise<void>
   disconnect: () => void
   reset: () => void
@@ -39,6 +37,7 @@ const initialState = {
   events: [],
   prompt: null,
   abortController: null,
+  sessionId: null, // <-- added
 }
 
 export const useAuctionStreamingStore = create<StreamingState>((set) => ({
@@ -52,11 +51,12 @@ export const useAuctionStreamingStore = create<StreamingState>((set) => ({
       prompt,
       events: [],
       abortController,
+      sessionId: null, // reset sessionId on new connect
     })
 
     try {
       const streamingUrl = getStreamingEndpointForPattern(
-        PATTERNS.PUBLISH_SUBSCRIBE_STREAMING,
+          PATTERNS.PUBLISH_SUBSCRIBE_STREAMING,
       )
 
       const response = await fetch(streamingUrl, {
@@ -67,29 +67,29 @@ export const useAuctionStreamingStore = create<StreamingState>((set) => ({
         signal: abortController.signal,
       })
 
-    if (!response.ok) {
-      const { status, message } = await parseFetchError(response);
-      if (status >= 400 && status < 500) {
+      if (!response.ok) {
+        const { status, message } = await parseFetchError(response)
+        if (status >= 400 && status < 500) {
+          set({
+            status: "error",
+            error: `HTTP ${status} - ${message}`,
+            abortController: null,
+          })
+          return
+        }
+
         set({
           status: "error",
-          error: `HTTP ${status} - ${message}`,
+          error: "Sorry, something went wrong. Please try again later.",
           abortController: null,
         })
         return
       }
 
-      set({
-        status: "error",
-        error: "Sorry, something went wrong. Please try again later.",
-        abortController: null,
-      })
-      return
-    }
-
       const reader = response.body?.getReader()
       if (!reader) {
         throw new Error(
-          "Response body is not readable - streaming not supported",
+            "Response body is not readable - streaming not supported",
         )
       }
 
@@ -115,6 +115,7 @@ export const useAuctionStreamingStore = create<StreamingState>((set) => ({
                 if (isValidAuctionStreamingResponse(parsedData)) {
                   set((state) => ({
                     events: [...state.events, parsedData],
+                    sessionId: parsedData.session_id || state.sessionId, // <-- update sessionId if present
                   }))
                 }
               } catch (parseError) {
@@ -158,20 +159,23 @@ export const useAuctionStreamingStore = create<StreamingState>((set) => ({
 }))
 
 export const useStreamingStatus = () =>
-  useAuctionStreamingStore((state) => state.status)
+    useAuctionStreamingStore((state) => state.status)
 
 export const useStreamingError = () =>
-  useAuctionStreamingStore((state) => state.error)
+    useAuctionStreamingStore((state) => state.error)
 
 export const useStreamingEvents = () =>
-  useAuctionStreamingStore((state) => state.events)
+    useAuctionStreamingStore((state) => state.events)
 
 export const useStreamingPrompt = () =>
-  useAuctionStreamingStore((state) => state.prompt)
+    useAuctionStreamingStore((state) => state.prompt)
+
+export const useStreamingSessionId = () =>
+    useAuctionStreamingStore((state) => state.sessionId)
 
 export const useStreamingActions = () =>
-  useAuctionStreamingStore((state) => ({
-    connect: state.connect,
-    disconnect: state.disconnect,
-    reset: state.reset,
-  }))
+    useAuctionStreamingStore((state) => ({
+      connect: state.connect,
+      disconnect: state.disconnect,
+      reset: state.reset,
+    }))
