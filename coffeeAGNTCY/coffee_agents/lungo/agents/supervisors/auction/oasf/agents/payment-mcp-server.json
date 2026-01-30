@@ -1,0 +1,19 @@
+{
+  "name": "integration/mcp",
+  "data": {
+    "name": "lungo-payment-mcp-server",
+    "connections": [
+      {
+        "type": "stdio",
+        "command": "docker",
+        "args": [
+          "run",
+          "-i",
+          "--rm",
+          "agntcy/coffee-agntcy/payment-mcp-server:latest"
+        ],
+        "env_vars": []
+      }
+    ]
+  }
+}

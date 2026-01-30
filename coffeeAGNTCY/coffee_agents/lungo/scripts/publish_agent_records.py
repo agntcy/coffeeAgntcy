@@ -421,7 +421,9 @@ def _import_agent_cards() -> List[AgentCard]:
         from agents.logistics.helpdesk.card import AGENT_CARD as HELPDESK_AGENT_CARD
         from agents.logistics.shipper.card import AGENT_CARD as SHIPPER_AGENT_CARD
 
-        # TODO: Add supervisor agent cards when available
+        # Supervisor cards
+        from agents.supervisors.logistics.card import LOGISTICS_SUPERVISOR_CARD
+        from agents.supervisors.auction.card import AUCTION_SUPERVISOR_CARD
 
         return [
             BRAZIL_AGENT_CARD,
@@ -431,6 +433,8 @@ def _import_agent_cards() -> List[AgentCard]:
             LOGISTICS_FARM_AGENT_CARD,
             HELPDESK_AGENT_CARD,
             SHIPPER_AGENT_CARD,
+            LOGISTICS_SUPERVISOR_CARD,
+            AUCTION_SUPERVISOR_CARD,
         ]
     except ImportError as e:
         logger.error(f"Failed to import agent cards: {e}")

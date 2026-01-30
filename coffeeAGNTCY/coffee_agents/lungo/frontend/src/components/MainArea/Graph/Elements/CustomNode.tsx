@@ -16,9 +16,10 @@ import { CustomNodeData } from "./types"
 
 interface CustomNodeProps {
   data: CustomNodeData
+  onOpenOasfModal?: (nodeData: CustomNodeData, position: { x: number; y: number }) => void
 }
 
-const CustomNode: React.FC<CustomNodeProps> = ({ data }) => {
+const CustomNode: React.FC<CustomNodeProps> = ({ data, onOpenOasfModal }) => {
   const nodeRef = useRef<HTMLDivElement>(null)
 
   const githubIconSrc = useThemeIcon({
@@ -35,12 +36,8 @@ const CustomNode: React.FC<CustomNodeProps> = ({ data }) => {
     e.preventDefault()
 
     if (nodeRef.current && data.onOpenIdentityModal) {
-      const buttonRect = (
-        e.currentTarget as HTMLElement
-      ).getBoundingClientRect()
-
+      const buttonRect = (e.currentTarget as HTMLElement).getBoundingClientRect()
       const isMcpServer = data.label1?.includes("MCP Server")
-
       let position
       if (isMcpServer) {
         position = {
@@ -54,169 +51,183 @@ const CustomNode: React.FC<CustomNodeProps> = ({ data }) => {
           y: buttonRect.bottom + 12,
         }
       }
-
       data.onOpenIdentityModal(
-        data,
-        position,
-        data.label1 || "",
-        data,
-        isMcpServer,
+          data,
+          position,
+          data.label1 || "",
+          data,
+          isMcpServer,
       )
     } else {
       console.error("No modal handler found or nodeRef missing!")
     }
   }
 
+  const handleAgentDirectoryClick = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    e.preventDefault()
+    console.log("Agent Directory button clicked", { nodeData: data })
+    if (nodeRef.current && data.onOpenOasfModal) {
+      const buttonRect = (e.currentTarget as HTMLElement).getBoundingClientRect()
+      const buttonCenterX = buttonRect.left + buttonRect.width / 2
+      const position = {
+        x: buttonCenterX,
+        y: buttonRect.bottom + 12,
+      }
+      data.onOpenOasfModal(data, position)
+    }
+  }
+
   const activeClasses = data.active
-    ? "bg-node-background-active outline outline-2 outline-accent-border shadow-[var(--shadow-default)_0px_6px_8px]"
-    : "bg-node-background"
+      ? "bg-node-background-active outline outline-2 outline-accent-border shadow-[var(--shadow-default)_0px_6px_8px]"
+      : "bg-node-background"
 
   return (
-    <>
-      <div
-        ref={nodeRef}
-        className={`order-0 relative flex h-[91px] w-[193px] flex-none grow-0 flex-col items-start justify-start gap-2 rounded-lg p-4 ${activeClasses} hover:bg-node-background-hover hover:shadow-[var(--shadow-default)_0px_6px_8px] hover:outline hover:outline-2 hover:outline-accent-border`}
-      >
-        <div className="flex h-5 w-5 flex-shrink-0 items-center justify-center gap-2.5 rounded bg-node-icon-background py-1 opacity-100">
-          <div className="flex h-4 w-4 items-center justify-center opacity-100">
-            {data.icon}
-          </div>
-        </div>
-
+      <>
         <div
-          className="order-0 flex h-5 flex-none grow-0 flex-row items-center gap-1 self-stretch p-0"
-          style={{
-            width: data.verificationStatus === "verified" ? "160px" : "162px",
-          }}
+            ref={nodeRef}
+            className={`order-0 relative flex h-[91px] w-[193px] flex-none grow-0 flex-col items-start justify-start gap-2 rounded-lg p-4 ${activeClasses} hover:bg-node-background-hover hover:shadow-[var(--shadow-default)_0px_6px_8px] hover:outline hover:outline-2 hover:outline-accent-border`}
         >
+          <div className="flex h-5 w-5 flex-shrink-0 items-center justify-center gap-2.5 rounded bg-node-icon-background py-1 opacity-100">
+            <div className="flex h-4 w-4 items-center justify-center opacity-100">
+              {data.icon}
+            </div>
+          </div>
+
+          <div
+              className="order-0 flex h-5 flex-none grow-0 flex-row items-center gap-1 self-stretch p-0"
+              style={{
+                width: data.verificationStatus === "verified" ? "160px" : "162px",
+              }}
+          >
           <span className="order-0 flex h-5 flex-none grow-0 items-center overflow-hidden text-ellipsis whitespace-nowrap font-inter text-sm font-normal leading-5 tracking-normal text-node-text-primary opacity-100">
             {data.label1}
           </span>
-          {data.verificationStatus === "verified" && (
-            <img
-              src={identityBadgeIcon}
-              alt="Verified"
-              className="order-1 h-4 w-4 flex-none grow-0"
-            />
-          )}
-        </div>
-
-        <div
-          className="order-1 h-4 flex-none flex-grow-0 self-stretch overflow-hidden text-ellipsis whitespace-nowrap font-inter text-xs font-light leading-4 text-node-text-secondary"
-          style={{
-            width: "162px",
-          }}
-        >
-          {data.label2}
-        </div>
-
-        <div className="absolute -right-4 top-1/2 z-10 flex -translate-y-1/2 flex-col gap-1">
-          {data.githubLink && (
-            <a
-              href={data.githubLink}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="no-underline"
-            >
-              <div
-                className="flex h-7 w-7 cursor-pointer items-center justify-center rounded-lg border border-solid p-1 opacity-100 shadow-sm transition-opacity duration-200 ease-in-out"
-                style={{
-                  backgroundColor: "var(--custom-node-background)",
-                  borderColor: "var(--custom-node-border)",
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.opacity = "0.8"
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.opacity = "1"
-                }}
-              >
-                <img src={githubIconSrc} alt="GitHub" className="h-5 w-5" />
-              </div>
-            </a>
-          )}
-          {data.agentDirectoryLink && (
-            <a
-              href={data.agentDirectoryLink}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="no-underline"
-            >
-              <div
-                className="flex h-7 w-7 cursor-pointer items-center justify-center rounded-lg border border-solid p-1 opacity-100 shadow-sm"
-                style={{
-                  backgroundColor: "var(--custom-node-background)",
-                  borderColor: "var(--custom-node-border)",
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.opacity = "0.8"
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.opacity = "1"
-                }}
-              >
+            {data.verificationStatus === "verified" && (
                 <img
-                  src={agentDirectoryIcon}
-                  alt="AGNTCY Directory"
-                  className="h-5 w-5"
+                    src={identityBadgeIcon}
+                    alt="Verified"
+                    className="order-1 h-4 w-4 flex-none grow-0"
                 />
-              </div>
-            </a>
-          )}
-          {data.verificationStatus === "verified" && (
-            <div
-              className={`flex h-7 w-7 cursor-pointer items-center justify-center rounded-lg border border-solid p-1 opacity-100 shadow-sm transition-opacity ${
-                data.isModalOpen === true
-                  ? "border-accent-border bg-accent-border bg-opacity-30"
-                  : ""
-              }`}
+            )}
+          </div>
+
+          <div
+              className="order-1 h-4 flex-none flex-grow-0 self-stretch overflow-hidden text-ellipsis whitespace-nowrap font-inter text-xs font-light leading-4 text-node-text-secondary"
               style={{
-                backgroundColor:
-                  data.isModalOpen === true
-                    ? undefined
-                    : "var(--custom-node-background)",
-                borderColor:
-                  data.isModalOpen === true
-                    ? undefined
-                    : "var(--custom-node-border)",
+                width: "162px",
               }}
-              onClick={handleIdentityClick}
-              onMouseEnter={(e) => {
-                if (data.isModalOpen !== true) {
-                  e.currentTarget.style.opacity = "0.8"
-                }
-              }}
-              onMouseLeave={(e) => {
-                if (data.isModalOpen !== true) {
-                  e.currentTarget.style.opacity = "1"
-                }
-              }}
-            >
-              <ClipboardCheck
-                className={`h-5 w-5 ${data.isModalOpen === true ? "text-accent-border" : "accent-icon"}`}
+          >
+            {data.label2}
+          </div>
+
+          <div className="absolute -right-4 top-1/2 z-10 flex -translate-y-1/2 flex-col gap-1">
+            {data.githubLink && (
+                <a
+                    href={data.githubLink}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="no-underline"
+                >
+                  <div
+                      className="flex h-7 w-7 cursor-pointer items-center justify-center rounded-lg border border-solid p-1 opacity-100 shadow-sm transition-opacity duration-200 ease-in-out"
+                      style={{
+                        backgroundColor: "var(--custom-node-background)",
+                        borderColor: "var(--custom-node-border)",
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.opacity = "0.8"
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.opacity = "1"
+                      }}
+                  >
+                    <img src={githubIconSrc} alt="GitHub" className="h-5 w-5" />
+                  </div>
+                </a>
+            )}
+            {data.agentDirectoryLink && (
+                <button
+                    type="button"
+                    className="no-underline"
+                    onClick={handleAgentDirectoryClick}
+                    style={{ background: "none", border: "none", padding: 0, margin: 0 }}
+                >
+                  <div
+                      className="flex h-7 w-7 cursor-pointer items-center justify-center rounded-lg border border-solid p-1 opacity-100 shadow-sm"
+                      style={{
+                        backgroundColor: "var(--custom-node-background)",
+                        borderColor: "var(--custom-node-border)",
+                      }}
+                      onMouseEnter={(e) => {
+                        (e.currentTarget as HTMLDivElement).style.opacity = "0.8"
+                      }}
+                      onMouseLeave={(e) => {
+                        (e.currentTarget as HTMLDivElement).style.opacity = "1"
+                      }}
+                  >
+                    <img
+                        src={agentDirectoryIcon}
+                        alt="AGNTCY Directory"
+                        className="h-5 w-5"
+                    />
+                  </div>
+                </button>
+            )}
+            {data.verificationStatus === "verified" && (
+                <div
+                    className={`flex h-7 w-7 cursor-pointer items-center justify-center rounded-lg border border-solid p-1 opacity-100 shadow-sm transition-opacity ${
+                        data.isModalOpen === true
+                            ? "border-accent-border bg-accent-border bg-opacity-30"
+                            : ""
+                    }`}
+                    style={{
+                      backgroundColor:
+                          data.isModalOpen === true
+                              ? undefined
+                              : "var(--custom-node-background)",
+                      borderColor:
+                          data.isModalOpen === true
+                              ? undefined
+                              : "var(--custom-node-border)",
+                    }}
+                    onClick={handleIdentityClick}
+                    onMouseEnter={(e) => {
+                      if (data.isModalOpen !== true) {
+                        e.currentTarget.style.opacity = "0.8"
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      if (data.isModalOpen !== true) {
+                        e.currentTarget.style.opacity = "1"
+                      }
+                    }}
+                >
+                  <ClipboardCheck
+                      className={`h-5 w-5 ${data.isModalOpen === true ? "text-accent-border" : "accent-icon"}`}
+                  />
+                </div>
+            )}
+          </div>
+
+          {(data.handles === "all" || data.handles === "target") && (
+              <Handle
+                  type="target"
+                  position={Position.Top}
+                  id="target"
+                  className="h-px w-px border border-gray-600 bg-node-data-background"
               />
-            </div>
+          )}
+          {(data.handles === "all" || data.handles === "source") && (
+              <Handle
+                  type="source"
+                  position={Position.Bottom}
+                  id="source"
+                  className="h-px w-px border border-gray-600 bg-node-data-background"
+              />
           )}
         </div>
-
-        {(data.handles === "all" || data.handles === "target") && (
-          <Handle
-            type="target"
-            position={Position.Top}
-            id="target"
-            className="h-px w-px border border-gray-600 bg-node-data-background"
-          />
-        )}
-        {(data.handles === "all" || data.handles === "source") && (
-          <Handle
-            type="source"
-            position={Position.Bottom}
-            id="source"
-            className="h-px w-px border border-gray-600 bg-node-data-background"
-          />
-        )}
-      </div>
-    </>
+      </>
   )
 }
 

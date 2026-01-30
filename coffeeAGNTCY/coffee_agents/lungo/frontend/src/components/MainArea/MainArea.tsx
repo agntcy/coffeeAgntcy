@@ -19,6 +19,7 @@ import CustomEdge from "./Graph/Elements/CustomEdge"
 import BranchingEdge from "./Graph/Elements/BranchingEdge"
 import CustomNode from "./Graph/Elements/CustomNode"
 import ModalContainer from "./ModalContainer"
+import OasfRecordModal from "./Graph/Directory/OasfRecordModal"
 import {
   getGraphConfig,
   updateTransportLabels,
@@ -66,21 +67,19 @@ const HIGHLIGHT = {
 } as const
 
 const MainArea: React.FC<MainAreaProps> = ({
-  pattern,
-  buttonClicked,
-  setButtonClicked,
-  aiReplied,
-  setAiReplied,
-  chatHeight = 0,
-  isExpanded = false,
-  groupCommResponseReceived = false,
-  onNodeHighlight,
-}) => {
+                                             pattern,
+                                             buttonClicked,
+                                             setButtonClicked,
+                                             aiReplied,
+                                             setAiReplied,
+                                             chatHeight = 0,
+                                             isExpanded = false,
+                                             groupCommResponseReceived = false,
+                                             onNodeHighlight,
+                                           }) => {
   const fitViewWithViewport = useViewportAwareFitView()
-
   const isGroupCommConnected =
-    pattern !== "group_communication" || groupCommResponseReceived
-
+      pattern !== "group_communication" || groupCommResponseReceived
   const config: GraphConfig = getGraphConfig(pattern, isGroupCommConnected)
 
   const [nodesDraggable, setNodesDraggable] = useState(true)
@@ -101,6 +100,18 @@ const MainArea: React.FC<MainAreaProps> = ({
   const [edges, setEdges, onEdgesChange] = useEdgesState(config.edges)
   const animationLock = useRef<boolean>(false)
 
+  // OASF Modal state
+  const [oasfModalOpen, setOasfModalOpen] = useState(false)
+  const [oasfModalData, setOasfModalData] = useState<any>(null)
+  const [oasfModalPosition, setOasfModalPosition] = useState<{ x: number; y: number }>({ x: 0, y: 0 })
+
+  const handleOpenOasfModal = (nodeData: any, position: { x: number; y: number }) => {
+    console.log("Opening OASF Modal for node:", nodeData)
+    setOasfModalData(nodeData)
+    setOasfModalPosition(position)
+    setOasfModalOpen(true)
+  }
+
   useEffect(() => {
     animationLock.current = false
   }, [pattern])
@@ -111,10 +122,10 @@ const MainArea: React.FC<MainAreaProps> = ({
 
   useEffect(() => {
     setNodes((nodes) =>
-      nodes.map((node) => ({
-        ...node,
-        data: { ...node.data, active: false },
-      })),
+        nodes.map((node) => ({
+          ...node,
+          data: { ...node.data, active: false },
+        })),
     )
     setEdges([])
   }, [pattern, setNodes, setEdges])
@@ -122,29 +133,24 @@ const MainArea: React.FC<MainAreaProps> = ({
   useEffect(() => {
     const updateGraph = async () => {
       const newConfig = getGraphConfig(pattern, isGroupCommConnected)
-
       const nodesWithHandlers = newConfig.nodes.map((node) => ({
         ...node,
         data: {
           ...node.data,
           onOpenIdentityModal: handleOpenIdentityModal,
+          onOpenOasfModal: handleOpenOasfModal,
           isModalOpen: !!(activeModal && activeNodeData?.id === node.id),
         },
       }))
-
       setNodes(nodesWithHandlers)
-
       await new Promise((resolve) => setTimeout(resolve, 100))
-
       setEdges(newConfig.edges)
-
       await updateTransportLabels(
-        setNodes,
-        setEdges,
-        pattern,
-        isStreamingPattern(pattern),
+          setNodes,
+          setEdges,
+          pattern,
+          isStreamingPattern(pattern),
       )
-
       setTimeout(() => {
         fitViewWithViewport({
           chatHeight: 0,
@@ -152,7 +158,6 @@ const MainArea: React.FC<MainAreaProps> = ({
         })
       }, 200)
     }
-
     updateGraph()
   }, [
     fitViewWithViewport,
@@ -167,16 +172,14 @@ const MainArea: React.FC<MainAreaProps> = ({
     const handleVisibilityChange = async () => {
       if (!document.hidden && supportsTransportUpdates(pattern)) {
         await updateTransportLabels(
-          setNodes,
-          setEdges,
-          pattern,
-          isStreamingPattern(pattern),
+            setNodes,
+            setEdges,
+            pattern,
+            isStreamingPattern(pattern),
         )
       }
     }
-
     document.addEventListener("visibilitychange", handleVisibilityChange)
-
     return () => {
       document.removeEventListener("visibilitychange", handleVisibilityChange)
     }
@@ -193,8 +196,7 @@ const MainArea: React.FC<MainAreaProps> = ({
     const checkEdges = () => {
       const expectedEdges = config.edges.length
       const renderedEdges =
-        document.querySelectorAll(".react-flow__edge").length
-
+          document.querySelectorAll(".react-flow__edge").length
       if (expectedEdges > 0 && renderedEdges === 0 && !animationLock.current) {
         setEdges([])
         setTimeout(() => {
@@ -202,11 +204,8 @@ const MainArea: React.FC<MainAreaProps> = ({
         }, 100)
       }
     }
-
     const intervalId = setInterval(checkEdges, 2000)
-
     const timeoutId = setTimeout(checkEdges, 1000)
-
     return () => {
       clearInterval(intervalId)
       clearTimeout(timeoutId)
@@ -216,10 +215,9 @@ const MainArea: React.FC<MainAreaProps> = ({
   useEffect(() => {
     const addTooltips = () => {
       const controlButtons = document.querySelectorAll(
-        ".react-flow__controls-button",
+          ".react-flow__controls-button",
       )
       const tooltips = ["Zoom In", "Zoom Out", "Fit View", "Lock"]
-
       controlButtons.forEach((button, index) => {
         if (index < tooltips.length) {
           if (index === 3) {
@@ -232,67 +230,55 @@ const MainArea: React.FC<MainAreaProps> = ({
         }
       })
     }
-
     const timeoutId = setTimeout(addTooltips, 100)
-
     return () => clearTimeout(timeoutId)
   }, [pattern, nodesDraggable, nodesConnectable])
 
   const delay = (ms: number): Promise<void> =>
-    new Promise((resolve) => setTimeout(resolve, ms))
+      new Promise((resolve) => setTimeout(resolve, ms))
 
   const updateStyle = useCallback(
-    (id: string, active: boolean): void => {
-      setNodes((nodes) =>
-        nodes.map((node) =>
-          node.id === id ? { ...node, data: { ...node.data, active } } : node,
-        ),
-      )
-
-      setTimeout(() => {
-        setEdges((edges) =>
-          edges.map((edge) =>
-            edge.id === id ? { ...edge, data: { ...edge.data, active } } : edge,
-          ),
+      (id: string, active: boolean): void => {
+        setNodes((nodes) =>
+            nodes.map((node) =>
+                node.id === id ? { ...node, data: { ...node.data, active } } : node,
+            ),
         )
-      }, 10)
-    },
-    [setNodes, setEdges],
+        setTimeout(() => {
+          setEdges((edges) =>
+              edges.map((edge) =>
+                  edge.id === id ? { ...edge, data: { ...edge.data, active } } : edge,
+              ),
+          )
+        }, 10)
+      },
+      [setNodes, setEdges],
   )
 
   useEffect(() => {
     const shouldAnimate = buttonClicked && !aiReplied
-
     if (!shouldAnimate) return
-
     if (pattern === "group_communication") return
-
     const waitForAnimationAndRun = async () => {
       while (animationLock.current) {
         await delay(100)
       }
-
       animationLock.current = true
-
       const animate = async (ids: string[], active: boolean): Promise<void> => {
         ids.forEach((id: string) => updateStyle(id, active))
         await delay(DELAY_DURATION)
       }
-
       const animateGraph = async (): Promise<void> => {
         const animationSequence: AnimationStep[] = config.animationSequence
         for (const step of animationSequence) {
           await animate(step.ids, HIGHLIGHT.ON)
           await animate(step.ids, HIGHLIGHT.OFF)
         }
-
         setButtonClicked(false)
         animationLock.current = false
       }
-
       await animateGraph()
     }
-
     waitForAnimationAndRun()
   }, [
     buttonClicked,
@@ -306,18 +292,16 @@ const MainArea: React.FC<MainAreaProps> = ({
   ])
 
   const highlightNode = useCallback(
-    (nodeId: string) => {
-      if (!nodeId) return
-
-      if (pattern === "group_communication") {
-        updateStyle(nodeId, HIGHLIGHT.ON)
-
-        setTimeout(() => {
-          updateStyle(nodeId, HIGHLIGHT.OFF)
-        }, 1800)
-      }
-    },
-    [updateStyle, pattern],
+      (nodeId: string) => {
+        if (!nodeId) return
+        if (pattern === "group_communication") {
+          updateStyle(nodeId, HIGHLIGHT.ON)
+          setTimeout(() => {
+            updateStyle(nodeId, HIGHLIGHT.OFF)
+          }, 1800)
+        }
+      },
+      [updateStyle, pattern],
   )
 
   useEffect(() => {
@@ -327,52 +311,59 @@ const MainArea: React.FC<MainAreaProps> = ({
   }, [onNodeHighlight, highlightNode])
 
   const onNodeDrag = useCallback(() => {}, [])
-
   const onPaneClick = modalPaneClick
 
   return (
-    <div className="bg-primary-bg order-1 flex h-full w-full flex-none flex-grow flex-col items-start self-stretch p-0">
-      <ReactFlow
-        nodes={nodes}
-        edges={edges}
-        nodeTypes={nodeTypes}
-        edgeTypes={edgeTypes}
-        onNodesChange={onNodesChange}
-        onEdgesChange={onEdgesChange}
-        onNodeDrag={onNodeDrag}
-        onPaneClick={onPaneClick}
-        proOptions={proOptions}
-        defaultViewport={{ x: 0, y: 0, zoom: 0.75 }}
-        minZoom={0.15}
-        maxZoom={1.8}
-        nodesDraggable={nodesDraggable}
-        nodesConnectable={nodesConnectable}
-        elementsSelectable={nodesDraggable}
-      >
-        <Controls
-          onInteractiveChange={(interactiveEnabled) => {
-            setNodesDraggable(interactiveEnabled)
-            setNodesConnectable(interactiveEnabled)
-          }}
-        />
-      </ReactFlow>
+      <div className="bg-primary-bg order-1 flex h-full w-full flex-none flex-grow flex-col items-start self-stretch p-0">
+        <ReactFlow
+            nodes={nodes}
+            edges={edges}
+            nodeTypes={nodeTypes}
+            edgeTypes={edgeTypes}
+            onNodesChange={onNodesChange}
+            onEdgesChange={onEdgesChange}
+            onNodeDrag={onNodeDrag}
+            onPaneClick={onPaneClick}
+            proOptions={proOptions}
+            defaultViewport={{ x: 0, y: 0, zoom: 0.75 }}
+            minZoom={0.15}
+            maxZoom={1.8}
+            nodesDraggable={nodesDraggable}
+            nodesConnectable={nodesConnectable}
+            elementsSelectable={nodesDraggable}
+        >
+          <Controls
+              onInteractiveChange={(interactiveEnabled) => {
+                setNodesDraggable(interactiveEnabled)
+                setNodesConnectable(interactiveEnabled)
+              }}
+          />
+        </ReactFlow>
 
-      <ModalContainer
-        activeModal={activeModal}
-        activeNodeData={activeNodeData}
-        modalPosition={modalPosition}
-        onClose={handleCloseModals}
-        onShowBadgeDetails={handleShowBadgeDetails}
-        onShowPolicyDetails={handleShowPolicyDetails}
-      />
-    </div>
+        <ModalContainer
+            activeModal={activeModal}
+            activeNodeData={activeNodeData}
+            modalPosition={modalPosition}
+            onClose={handleCloseModals}
+            onShowBadgeDetails={handleShowBadgeDetails}
+            onShowPolicyDetails={handleShowPolicyDetails}
+        />
+
+        <OasfRecordModal
+            isOpen={oasfModalOpen}
+            onClose={() => setOasfModalOpen(false)}
+            nodeName={oasfModalData?.label1 || ""}
+            nodeData={oasfModalData}
+            position={oasfModalPosition}
+        />
+      </div>
   )
 }
 
 const MainAreaWithProvider: React.FC<MainAreaProps> = (props) => (
-  <ReactFlowProvider>
-    <MainArea {...props} />
-  </ReactFlowProvider>
+    <ReactFlowProvider>
+      <MainArea {...props} />
+    </ReactFlowProvider>
 )
 
 export default MainAreaWithProvider
