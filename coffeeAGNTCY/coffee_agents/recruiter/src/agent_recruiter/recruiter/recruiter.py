@@ -6,13 +6,6 @@ from contextlib import aclosing
 import os
 from agent_recruiter.common.logging import get_logger
 
-from agent_recruiter.models.recruiter_models import (
-    RecruitmentRequest,
-    RecruitmentCriteria,
-    SearchStrategy,
-    CandidatePool
-)
-
 from google.adk.agents import Agent
 from google.adk.agents.run_config import RunConfig, StreamingMode
 from google.adk.events.event import Event as AdkEvent
@@ -28,7 +21,6 @@ from agent_recruiter.interviewers import create_evaluation_agent
 from agent_recruiter.plugins import (
     ToolCachePlugin,
     CacheConfig,
-    CacheMode,
     load_cache_config,
     DEFAULT_EXCLUDED_TOOLS,
 )
@@ -147,9 +139,13 @@ class RecruiterTeam:
         # ================================================================
         # Phase 1: Initialize Specialized Sub-Agents
         # ================================================================
-        registry_search_agent = create_registry_search_agent()
-        evaluation_agent = create_evaluation_agent()
         
+        # create a registry search agent which can search, pull, and filter agents
+        registry_search_agent = create_registry_search_agent()
+
+        # create an evaluation agent which can evaluate agents based on policies
+        evaluation_agent = create_evaluation_agent()
+
         sub_agents = [registry_search_agent, evaluation_agent]
 
         # ================================================================
