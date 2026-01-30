@@ -101,7 +101,7 @@ async def create_order(farm: str, quantity: int, price: float) -> str:
   # Known issue: concurrent delete_session executions may cause the agents to lose connectivity from SLIM.
   # (see https://github.com/agntcy/slim/issues/780; tentative fix targeted for versions 0.6.0 or 0.7.0).
   # Note: Helpdesk agent is an additional agent that will listen to the group chat messages.
-  helpdesk_enabled = os.getenv("EXPERIMENTAL_FEATURE", "true").lower() == "true"
+  helpdesk_enabled = os.getenv("EXPERIMENTAL_FEATURE", "false").lower() == "true"
   logger.info("Helpdesk enabled: %s", helpdesk_enabled)
   base_cards = (SHIPPER_CARD, TATOOINE_CARD, ACCOUNTANT_CARD)
   cards = base_cards + (HELPDESK_CARD,) if helpdesk_enabled else base_cards
