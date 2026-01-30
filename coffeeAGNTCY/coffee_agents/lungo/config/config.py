@@ -19,7 +19,7 @@ OAUTH2_TOKEN_URL= os.getenv("OAUTH2_TOKEN_URL", "")
 OAUTH2_BASE_URL= os.getenv("OAUTH2_BASE_URL", "")
 OAUTH2_APPKEY= os.getenv("OAUTH2_APPKEY", "")
 
-LOGGING_LEVEL = os.getenv("LOGGING_LEVEL", "DEBUG").upper()
+LOGGING_LEVEL = os.getenv("LOGGING_LEVEL", "INFO").upper()
 
 ENABLE_HTTP = os.getenv("ENABLE_HTTP", "true").lower() in ("true", "1", "yes")
 
