@@ -18,6 +18,7 @@ dependencies = [
     "agntcy-app-sdk==0.4.6",
     "google-adk>=1.0.0",
     "rogue-ai-sdk>=0.3.4",
+    "pydantic-yaml>=1.6.0",
 ]
 
 [project.optional-dependencies]

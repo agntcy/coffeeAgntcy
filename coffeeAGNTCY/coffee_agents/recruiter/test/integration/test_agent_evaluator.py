@@ -11,13 +11,15 @@ from a2a.types import AgentCard, AgentProvider
 
 from agent_recruiter.interviewers.agent_evaluator import (
     evaluate_agents_tool,
-    parse_agent_record,
+    extract_agent_info,
 )
+from agent_recruiter.interviewers.models import AgentEvalConfig
 from rogue_sdk.types import (
     Protocol,
     Scenario,
     AuthType,
     ScenarioType,
+    Transport,
 )
 
 
@@ -74,23 +76,30 @@ def mock_tool_context():
     return context
 
 
-class TestParseAgentRecord:
-    """Tests for parse_agent_record function."""
+class TestExtractAgentInfo:
+    """Tests for extract_agent_info function."""
 
-    def test_parses_valid_agent_card_json(self):
-        """Test parsing a valid AgentCard JSON string."""
-        result = parse_agent_record(SAMPLE_AGENT_CARD_JSON)
+    def test_extracts_valid_agent_card_json(self):
+        """Test extracting info from a valid AgentCard JSON string."""
+        result = extract_agent_info(SAMPLE_AGENT_CARD_JSON)
 
         assert result is not None
-        assert result.name == "Test Agent"
-        assert result.description == "A test agent for evaluation"
-        assert str(result.url).rstrip("/") == "http://localhost:3000"
+        assert isinstance(result, AgentEvalConfig)
+        assert result.agent_name == "Test Agent"
+        assert result.evaluated_agent_url == "http://localhost:3000"
+        assert result.protocol == Protocol.A2A
+        assert result.transport == Transport.HTTP
 
-    def test_returns_none_for_invalid_json(self):
-        """Test that invalid JSON returns None."""
-        result = parse_agent_record("not valid json {{{")
+    def test_raises_for_invalid_json(self):
+        """Test that invalid JSON raises ValueError."""
+        with pytest.raises(ValueError):
+            extract_agent_info("not valid json {{{")
 
-        assert result is None
+    def test_raises_for_missing_url(self):
+        """Test that missing URL raises ValueError."""
+        bad_record = json.dumps({"name": "No URL Agent"})
+        with pytest.raises(ValueError, match="url"):
+            extract_agent_info(bad_record)
 
 
 class TestSampleAgentIntegration:
@@ -469,5 +478,5 @@ class TestEvaluationIntegration:
         # Should get error status
         assert len(result["results"]) == 1
         assert result["results"][0]["status"] == "error"
-        assert "Cannot extract agent URL" in result["results"][0]["error"]
+        assert "url" in result["results"][0]["error"].lower()
         print("✅ Test passed - error handling works for invalid agent URL")

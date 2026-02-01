@@ -1,7 +1,7 @@
 # Copyright AGNTCY Contributors (https://github.com/agntcy)
 # SPDX-License-Identifier: Apache-2.0
 
-from typing import List, Optional, AsyncGenerator
+from typing import Optional, AsyncGenerator
 from contextlib import aclosing
 import os
 from agent_recruiter.common.logging import get_logger
@@ -54,6 +54,8 @@ async def get_or_create_session(
     initial_state = {
         "user_preference_agent_registry": "AGNTCY Directory Service",
         "found_agent_records": {},  # Initialize empty dict for agent records from searches
+        "evaluation_criteria": [],  # Initialize empty list for evaluation criteria
+        "evaluation_results": {}   # Initialize empty dict for evaluation results
     }
 
     session_stateful = await session_service.create_session(
@@ -223,8 +225,30 @@ class RecruiterTeam:
 
         return session.state.get("found_agent_records", {})
 
-    async def clear_found_agent_records(self, user_id: str, session_id: str) -> bool:
-        """Clear the found agent records from session state.
+    async def get_evaluation_results(self, user_id: str, session_id: str) -> dict[str, dict]:
+        """Retrieve evaluation results stored in session state by the agent evaluator.
+
+        Args:
+            user_id: User ID for the session
+            session_id: Session ID to retrieve state from
+
+        Returns:
+            Dict of evaluation results keyed by agent_id, or empty dict if none found.
+            Also includes a "_summary" key with overall evaluation summary.
+        """
+        session = await session_service.get_session(
+            app_name=self.app_name,
+            user_id=user_id,
+            session_id=session_id
+        )
+        if session is None:
+            logger.warning(f"Session '{session_id}' not found for user '{user_id}'")
+            return {}
+
+        return session.state.get("evaluation_results", {})
+
+    async def clear_evaluation_results(self, user_id: str, session_id: str) -> bool:
+        """Clear the evaluation results from session state.
 
         Args:
             user_id: User ID for the session
@@ -242,9 +266,10 @@ class RecruiterTeam:
             logger.warning(f"Session '{session_id}' not found for user '{user_id}'")
             return False
 
-        session.state["found_agent_records"] = {}
-        logger.info(f"Cleared found agent records for session '{session_id}'")
+        session.state["evaluation_results"] = {}
+        logger.info(f"Cleared evaluation results for session '{session_id}'")
         return True
+
 
     async def invoke(self, user_message: str, user_id: str, session_id: str) -> dict:
         """Process a user message and return the agent response with any found records.
@@ -253,6 +278,7 @@ class RecruiterTeam:
             Dict containing:
                 - response: The text response from the agent
                 - found_agent_records: Dict of agent records found during the session
+                - evaluation_results: Dict of evaluation results from the session
         """
         await get_or_create_session(app_name=self.app_name, user_id=user_id, session_id=session_id)
 
@@ -264,9 +290,13 @@ class RecruiterTeam:
         # Get any agent records that were found during this invocation
         found_records = await self.get_found_agent_records(user_id, session_id)
 
+        # Get any evaluation results from this invocation
+        evaluation_results = await self.get_evaluation_results(user_id, session_id)
+
         return {
             "response": response.strip(),
             "found_agent_records": found_records,
+            "evaluation_results": evaluation_results,
         }
 
     async def stream(

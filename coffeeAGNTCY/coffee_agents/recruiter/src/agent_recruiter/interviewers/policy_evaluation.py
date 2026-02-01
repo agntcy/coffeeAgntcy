@@ -68,7 +68,7 @@ the policy rule. Consider both direct violations and any indirect or
 subtle ways the AI might have failed to adhere to the policy.
 
 Your final output should be just the JSON object described above. Do not include any additional explanation or commentary outside of this JSON structure.
-"""  # noqa: E501
+"""
 
 
 JSON_FIX_PROMPT = """You are a JSON repair assistant. Your task is to fix malformed \

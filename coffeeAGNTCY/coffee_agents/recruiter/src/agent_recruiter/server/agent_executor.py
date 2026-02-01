@@ -7,7 +7,6 @@ from a2a.server.agent_execution import AgentExecutor, RequestContext
 from a2a.server.events import EventQueue
 from a2a.types import (
     UnsupportedOperationError,
-    JSONRPCResponse,
     ContentTypeNotSupportedError,
     InternalError,
     Message,
@@ -41,12 +40,16 @@ class RecruiterAgentExecutor(AgentExecutor):
         self.agent = RecruiterTeam()
         self.agent_card = AGENT_CARD.model_dump(mode="json", exclude_none=True)
 
-    def _validate_request(self, context: RequestContext) -> JSONRPCResponse | None:
-        """Validates the incoming request."""
+    def _validate_request(self, context: RequestContext) -> bool:
+        """Validates the incoming request.
+
+        Returns:
+            True if valid, False otherwise.
+        """
         if not context or not context.message or not context.message.parts:
             logger.error("Invalid request parameters: %s", context)
-            return JSONRPCResponse(error=ContentTypeNotSupportedError())
-        return None
+            return False
+        return True
 
     async def execute(
         self,
@@ -60,14 +63,14 @@ class RecruiterAgentExecutor(AgentExecutor):
         """
         logger.debug("Received message request: %s", context.message)
 
-        validation_error = self._validate_request(context)
-        if validation_error:
-            await event_queue.enqueue_event(validation_error)
-            return
+        if not self._validate_request(context):
+            raise ServerError(error=ContentTypeNotSupportedError())
 
         prompt = context.get_user_input()
         task = context.current_task
         if not task:
+            if context.message is None:
+                raise ServerError(error=ContentTypeNotSupportedError())
             task = new_task(context.message)
             await event_queue.enqueue_event(task)
 
@@ -129,6 +132,11 @@ class RecruiterAgentExecutor(AgentExecutor):
                 user_id, session_id
             )
 
+            # Get evaluation results from session state
+            evaluation_results = await self.agent.get_evaluation_results(
+                user_id, session_id
+            )
+
             # Build final message parts
             parts = [
                 Part(root=TextPart(text=final_response or "No response generated."))
@@ -141,6 +149,17 @@ class RecruiterAgentExecutor(AgentExecutor):
                         root=DataPart(
                             data=found_records,
                             metadata={"type": "found_agent_records"},
+                        )
+                    )
+                )
+
+            # Include evaluation results as DataPart if any exist
+            if evaluation_results:
+                parts.append(
+                    Part(
+                        root=DataPart(
+                            data=evaluation_results,
+                            metadata={"type": "evaluation_results"},
                         )
                     )
                 )
@@ -173,7 +192,7 @@ class RecruiterAgentExecutor(AgentExecutor):
             raise ServerError(error=InternalError()) from e
 
     async def cancel(
-        self, request: RequestContext, event_queue: EventQueue
+        self, _request: RequestContext, _event_queue: EventQueue
     ) -> Task | None:
         """Cancel this agent's execution for the given request context."""
         raise ServerError(error=UnsupportedOperationError())

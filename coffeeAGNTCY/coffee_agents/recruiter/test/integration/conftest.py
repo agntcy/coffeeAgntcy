@@ -6,6 +6,7 @@ import sys
 import os
 import signal
 import time
+import re
 import pytest
 import httpx
 from dotenv import load_dotenv
@@ -161,3 +162,71 @@ def sample_agent_card_json():
         })
 
     return _create
+
+
+@pytest.fixture
+def publish_sample_agent_record():
+    """Fixture to publish a sample agent record to the directory and clean up on teardown.
+
+    Uses dirctl to push the record and delete it after the test completes.
+
+    Usage:
+        def test_something(publish_sample_agent_record):
+            cid = publish_sample_agent_record()  # Uses default record path
+            # or
+            cid = publish_sample_agent_record(record_path="path/to/record.json")
+
+    Returns:
+        The CID of the published record
+    """
+    published_cids = []
+
+    def _publish(record_path: str = "test/sample_agent/sample_agent_record.json") -> str:
+        """Push a record to the directory and return its CID."""
+        # Run dirctl push
+        result = subprocess.run(
+            ["dirctl", "push", record_path],
+            capture_output=True,
+            text=True,
+            timeout=30,
+        )
+
+        if result.returncode != 0:
+            raise RuntimeError(
+                f"Failed to push record to directory: {result.stderr}\n"
+                f"stdout: {result.stdout}"
+            )
+
+        # Parse CID from output like "Pushed record with CID: baearei..."
+        output = result.stdout + result.stderr
+        cid_match = re.search(r"CID:\s*(\S+)", output)
+        if not cid_match:
+            raise RuntimeError(
+                f"Could not parse CID from dirctl output: {output}"
+            )
+
+        cid = cid_match.group(1)
+        published_cids.append(cid)
+        print(f"Published sample agent record with CID: {cid}")
+        return cid
+
+    yield _publish
+
+    # Cleanup: delete all published records
+    for cid in published_cids:
+        try:
+            result = subprocess.run(
+                ["dirctl", "delete", cid],
+                capture_output=True,
+                text=True,
+                timeout=30,
+            )
+            if result.returncode == 0:
+                print(f"Deleted sample agent record with CID: {cid}")
+            else:
+                print(f"Warning: Failed to delete record {cid}: {result.stderr}")
+        except subprocess.TimeoutExpired:
+            print(f"Warning: Timeout deleting record {cid}")
+        except FileNotFoundError:
+            print("Warning: dirctl not found, skipping cleanup")
+            break
