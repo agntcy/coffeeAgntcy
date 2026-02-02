@@ -26,7 +26,7 @@ services:
       - "8222:8222"
 
   slim:
-    image: ghcr.io/agntcy/slim:0.6.1
+    image: ghcr.io/agntcy/slim:0.7.1
     container_name: slim-corto
     ports:
       - "46357:46357"

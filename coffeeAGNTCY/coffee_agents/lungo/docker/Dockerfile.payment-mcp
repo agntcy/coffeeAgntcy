@@ -1,4 +1,6 @@
-FROM python:3.13.0-slim
+# SLIM v0.7+ requires to use debian trixie distribution
+FROM python:3.13.11-slim-trixie
+
 # Install system dependencies, including curl, ping, and wget
 RUN apt-get update && \
     apt-get install -y --no-install-recommends git curl wget iputils-ping && \
