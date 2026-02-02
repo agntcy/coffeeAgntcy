@@ -8,7 +8,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import uvicorn
-from fastapi.responses import StreamingResponse
+from fastapi.responses import StreamingResponse, JSONResponse
 import json
 from agntcy_app_sdk.factory import AgntcyFactory
 from ioa_observe.sdk.tracing import session_start
@@ -20,7 +20,6 @@ from config.logging_config import setup_logging
 from pathlib import Path
 from common.version import get_version_info
 from agents.supervisors.auction.api import create_apps_router
-from fastapi import HTTPException
 
 setup_logging()
 logger = logging.getLogger("lungo.supervisor.main")
@@ -212,6 +211,24 @@ async def get_prompts(pattern: str = "default"):
   except Exception as e:
     logger.error(f"Unexpected error while reading prompts: {str(e)}")
     raise HTTPException(status_code=500, detail="An unexpected error occurred while reading prompts.")
+
+
+@app.get("/agents/{slug}/oasf")
+async def get_agent_oasf(slug: str):
+  """
+  Returns the OASF JSON for the specified agent slug from the static files.
+  """
+  oasf_path = Path(__file__).resolve().parent / "oasf" / "agents" / f"{slug}.json"
+  if not oasf_path.exists():
+    raise HTTPException(status_code=404, detail="OASF record not found")
+  try:
+    with oasf_path.open("r", encoding="utf-8") as f:
+      data = json.load(f)
+    return JSONResponse(content=data)
+  except Exception as e:
+    logger.error(f"Failed to read OASF file for slug '{slug}': {e}")
+    raise HTTPException(status_code=500, detail="An unexpected error occurred while retrieving the agent information. Please try again later.")
+
 
 # Run the FastAPI server using uvicorn
 if __name__ == "__main__":
