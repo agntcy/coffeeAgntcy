@@ -15,6 +15,7 @@ service:
   port: 9092
 
 config:
+  agentHost: "logistics-accountant"
   transportServerEndpoint: ""
   defaultMessageTransport: ""
   otlpHttpEndpoint: ""

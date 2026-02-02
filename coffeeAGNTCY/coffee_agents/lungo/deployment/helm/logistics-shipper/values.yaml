@@ -15,6 +15,7 @@ service:
   port: 9091
 
 config:
+  agentHost: "logistics-shipper"
   transportServerEndpoint: ""
   defaultMessageTransport: ""
   otlpHttpEndpoint: ""

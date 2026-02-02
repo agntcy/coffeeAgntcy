@@ -21,14 +21,14 @@ from config.config import (
 )
 from agents.farms.colombia.agent import factory
 from agents.farms.colombia.agent_executor import FarmAgentExecutor
-from agents.farms.colombia.card import AGENT_CARD
+from agents.farms.colombia.card import AGENT_CARD, PORT
 
 load_dotenv()
 
 async def run_http_server(server):
     """Run the HTTP/REST server."""
     try:
-        config = Config(app=server.build(), host="0.0.0.0", port=9998, loop="asyncio")
+        config = Config(app=server.build(), host="0.0.0.0", port=PORT, loop="asyncio")
         userver = Server(config)
         await userver.serve()
     except Exception as e:

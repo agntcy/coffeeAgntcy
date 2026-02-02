@@ -20,7 +20,7 @@ from a2a.server.apps import A2AStarletteApplication
 from a2a.server.request_handlers import DefaultRequestHandler
 from a2a.server.tasks import InMemoryTaskStore
 from agents.logistics.helpdesk.agent_executor import HelpdeskAgentExecutor
-from agents.logistics.helpdesk.card import AGENT_CARD
+from agents.logistics.helpdesk.card import AGENT_CARD, PORT
 from agents.logistics.shipper.card import AGENT_CARD as SHIPPER_AGENT_CARD
 from config.config import (
     DEFAULT_MESSAGE_TRANSPORT,
@@ -94,7 +94,7 @@ app = create_app()
 async def run_http_server(server: A2AStarletteApplication):
     _app = build_http_app(server)
     try:
-        config = Config(app=_app, host="0.0.0.0", port=9094, loop="asyncio")
+        config = Config(app=_app, host="0.0.0.0", port=PORT, loop="asyncio")
         uvicorn_server = Server(config)
         await uvicorn_server.serve()
     except Exception as e:

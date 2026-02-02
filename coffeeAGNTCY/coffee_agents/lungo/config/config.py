@@ -23,6 +23,26 @@ LOGGING_LEVEL = os.getenv("LOGGING_LEVEL", "INFO").upper()
 
 ENABLE_HTTP = os.getenv("ENABLE_HTTP", "true").lower() in ("true", "1", "yes")
 
+# Agent URL configuration for A2A agent cards
+# AGENT_HOST is used to construct the agent card URL for service discovery
+# Defaults to "localhost" for local development
+# In Docker: set to docker service name (e.g., "brazil-farm-server")
+AGENT_HOST = os.getenv("AGENT_HOST", "localhost")
+
+def get_agent_url(port: int) -> str:
+    """
+    Construct agent URL from host and port.
+
+    This URL is used in the agent card for service discovery and routing.
+
+    Args:
+        port: The port number for the agent's HTTP server
+
+    Returns:
+        Full HTTP URL string (e.g., "http://localhost:9999")
+    """
+    return f"http://{AGENT_HOST}:{port}"
+
 # This is for demo purposes only. In production, use secure methods to manage API keys.
 IDENTITY_API_KEY = os.getenv("IDENTITY_API_KEY", "487>t:7:Ke5N[kZ[dOmDg2]0RQx))6k}bjARRN+afG3806h(4j6j[}]F5O)f[6PD")
 IDENTITY_API_SERVER_URL = os.getenv("IDENTITY_API_SERVER_URL", "https://api.agent-identity.outshift.com")

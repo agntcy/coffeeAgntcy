@@ -2,9 +2,14 @@
 # SPDX-License-Identifier: Apache-2.0
 
 from a2a.types import (
-    AgentCapabilities, 
+    AgentCapabilities,
     AgentCard,
     AgentSkill)
+
+from config.config import get_agent_url
+
+# Port configuration for this agent
+PORT = 9091
 
 AGENT_SKILL = AgentSkill(
     id="get_shipping_status",
@@ -26,7 +31,7 @@ AGENT_CARD = AgentCard(
     name='Shipping agent',
     id='shipping-agent',
     description='An AI agent that ships coffee beans and sends status updates.',
-    url='',
+    url=get_agent_url(PORT),
     version='1.0.0',
     defaultInputModes=["text"],
     defaultOutputModes=["text"],

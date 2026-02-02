@@ -15,6 +15,7 @@ service:
   port: 9999
 
 config:
+  agentHost: "brazil-farm"
   azureApiBase: ""
   azureApiVersion: ""
   llmModel: ""

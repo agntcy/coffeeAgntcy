@@ -15,7 +15,7 @@ from agntcy_app_sdk.app_sessions import AppContainer
 from agntcy_app_sdk.factory import AgntcyFactory
 
 from agents.farms.brazil.agent_executor import FarmAgentExecutor
-from agents.farms.brazil.card import AGENT_CARD
+from agents.farms.brazil.card import AGENT_CARD, PORT
 from config.config import (
     DEFAULT_MESSAGE_TRANSPORT,
     TRANSPORT_SERVER_ENDPOINT,
@@ -31,7 +31,7 @@ factory = AgntcyFactory("lungo.brazil_farm", enable_tracing=True)
 async def run_http_server(server):
     """Run the HTTP/REST server."""
     try:
-        config = Config(app=server.build(), host="0.0.0.0", port=9999, loop="asyncio")
+        config = Config(app=server.build(), host="0.0.0.0", port=PORT, loop="asyncio")
         userver = Server(config)
         await userver.serve()
     except Exception as e:

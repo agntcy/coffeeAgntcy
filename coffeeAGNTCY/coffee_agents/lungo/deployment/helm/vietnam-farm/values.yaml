@@ -15,6 +15,7 @@ service:
   port: 9999
 
 config:
+  agentHost: "vietnam-farm"
   azureApiBase: ""
   azureApiVersion: ""
   llmModel: ""

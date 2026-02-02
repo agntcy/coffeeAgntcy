@@ -19,7 +19,7 @@ from agntcy_app_sdk.semantic.a2a.protocol import A2AProtocol
 from agntcy_app_sdk.app_sessions import AppContainer
 
 from agents.logistics.farm.agent_executor import FarmAgentExecutor
-from agents.logistics.farm.card import AGENT_CARD
+from agents.logistics.farm.card import AGENT_CARD, PORT
 from agents.logistics.shipper.card import AGENT_CARD as SHIPPER_AGENT_CARD
 from config.config import (
     DEFAULT_MESSAGE_TRANSPORT,
@@ -102,7 +102,7 @@ app = create_app()
 async def run_http_server(server):
     app_ = build_http_server(server)
     try:
-        config = Config(app=app_, host="0.0.0.0", port=9093, loop="asyncio")
+        config = Config(app=app_, host="0.0.0.0", port=PORT, loop="asyncio")
         userver = Server(config)
         await userver.serve()
     except Exception as e:

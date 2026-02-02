@@ -20,7 +20,7 @@ from agntcy_app_sdk.semantic.a2a.protocol import A2AProtocol
 from agntcy_app_sdk.app_sessions import AppContainer
 
 from agents.logistics.accountant.agent_executor import AccountantAgentExecutor
-from agents.logistics.accountant.card import AGENT_CARD
+from agents.logistics.accountant.card import AGENT_CARD, PORT
 from agents.logistics.shipper.card import AGENT_CARD as SHIPPER_AGENT_CARD
 from config.config import (
     DEFAULT_MESSAGE_TRANSPORT,
@@ -105,7 +105,7 @@ async def run_http_server(server):
     app_.router.routes.append(Route("/v1/health", liveness_probe, methods=["GET"]))
 
     try:
-        config = Config(app=app_, host="0.0.0.0", port=9092, loop="asyncio")
+        config = Config(app=app_, host="0.0.0.0", port=PORT, loop="asyncio")
         userver = Server(config)
         await userver.serve()
     except Exception as e:

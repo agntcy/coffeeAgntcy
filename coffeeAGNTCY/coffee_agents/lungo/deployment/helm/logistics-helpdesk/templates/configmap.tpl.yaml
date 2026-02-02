@@ -4,6 +4,7 @@ metadata:
   name: {{ .Values.appName }}-configmap
   namespace: {{ .Release.Namespace }}
 data:
+  AGENT_HOST: "{{ .Values.config.agentHost }}"
   AZURE_API_BASE: "{{ .Values.config.azureApiBase }}"
   
   AZURE_API_VERSION: "{{ .Values.config.azureApiVersion }}"
