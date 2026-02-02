@@ -68,10 +68,10 @@ const OasfRecordModal: React.FC<OasfRecordModalProps> = ({
         <div className="pointer-events-none fixed inset-0 z-50">
             <div
                 className="pointer-events-auto absolute -translate-x-1/2"
-                style={{ left: `${position.x}px`, top: `${position.y}px` }}
+                style={{ left: `${position.x }px`, top: `${position.y -100}px` }}
             >
                 <div
-                    className="relative flex max-h-[40vh] w-[575px] flex-col items-start gap-4 rounded-md bg-node-background p-4 shadow-lg"
+                    className="relative flex max-h-[70vh] w-[700px] flex-col items-start gap-4 rounded-md bg-node-background p-4 shadow-lg"
                     onClick={handleModalClick}
                     data-modal-content
                 >
