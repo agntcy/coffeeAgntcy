@@ -8,8 +8,7 @@ services:
     env_file:
       - .env
     environment:
-      - FARM_AGENT_HOST=brazil-farm-server
-      - FARM_AGENT_PORT=9999
+      - AGENT_HOST=brazil-farm-server
       - DEFAULT_MESSAGE_TRANSPORT=${DEFAULT_MESSAGE_TRANSPORT:-NATS}
       - TRANSPORT_SERVER_ENDPOINT=${TRANSPORT_SERVER_ENDPOINT:-nats://nats:4222}
       - OTLP_HTTP_ENDPOINT=${OTLP_HTTP_ENDPOINT:-http://otel-collector:4318}
@@ -26,8 +25,7 @@ services:
     env_file:
       - .env
     environment:
-      - FARM_AGENT_HOST=colombia-farm-server
-      - FARM_AGENT_PORT=9998
+      - AGENT_HOST=colombia-farm-server
       - DEFAULT_MESSAGE_TRANSPORT=${DEFAULT_MESSAGE_TRANSPORT:-NATS}
       - TRANSPORT_SERVER_ENDPOINT=${TRANSPORT_SERVER_ENDPOINT:-nats://nats:4222}
       - OTLP_HTTP_ENDPOINT=${OTLP_HTTP_ENDPOINT:-http://otel-collector:4318}
@@ -46,8 +44,7 @@ services:
     env_file:
       - .env
     environment:
-      - FARM_AGENT_HOST=vietnam-farm-server
-      - FARM_AGENT_PORT=9997
+      - AGENT_HOST=vietnam-farm-server
       - DEFAULT_MESSAGE_TRANSPORT=${DEFAULT_MESSAGE_TRANSPORT:-NATS}
       - TRANSPORT_SERVER_ENDPOINT=${TRANSPORT_SERVER_ENDPOINT:-nats://nats:4222}
       - OTLP_HTTP_ENDPOINT=${OTLP_HTTP_ENDPOINT:-http://otel-collector:4318}
@@ -91,8 +88,7 @@ services:
     env_file:
       - .env
     environment:
-      - FARM_AGENT_HOST=farm-server
-      - FARM_AGENT_PORT=9999
+      - AGENT_HOST=auction-supervisor
       - DEFAULT_MESSAGE_TRANSPORT=${DEFAULT_MESSAGE_TRANSPORT:-NATS}
       - TRANSPORT_SERVER_ENDPOINT=${TRANSPORT_SERVER_ENDPOINT:-nats://nats:4222}
       - OTLP_HTTP_ENDPOINT=${OTLP_HTTP_ENDPOINT:-http://otel-collector:4318}
@@ -210,6 +206,7 @@ services:
     image: ghcr.io/agntcy/coffee-agntcy/logistics-shipper:latest
     container_name: logistics-shipper
     environment:
+      - AGENT_HOST=logistics-shipper
       - DEFAULT_MESSAGE_TRANSPORT=SLIM # Do not change. SLIM is required for group conversation.
       - TRANSPORT_SERVER_ENDPOINT=http://slim:46357
       - OTLP_HTTP_ENDPOINT=${OTLP_HTTP_ENDPOINT:-http://otel-collector:4318}
@@ -224,6 +221,7 @@ services:
     image: ghcr.io/agntcy/coffee-agntcy/logistics-accountant:latest
     container_name: logistics-accountant
     environment:
+      - AGENT_HOST=logistics-accountant
       - DEFAULT_MESSAGE_TRANSPORT=SLIM # Do not change. SLIM is required for group conversation.
       - TRANSPORT_SERVER_ENDPOINT=http://slim:46357
       - OTLP_HTTP_ENDPOINT=${OTLP_HTTP_ENDPOINT:-http://otel-collector:4318}
@@ -238,6 +236,7 @@ services:
     image: ghcr.io/agntcy/coffee-agntcy/logistics-farm:latest
     container_name: logistics-farm
     environment:
+      - AGENT_HOST=logistics-farm
       - DEFAULT_MESSAGE_TRANSPORT=SLIM # Do not change. SLIM is required for group conversation.
       - TRANSPORT_SERVER_ENDPOINT=http://slim:46357
       - OTLP_HTTP_ENDPOINT=${OTLP_HTTP_ENDPOINT:-http://otel-collector:4318}
@@ -252,6 +251,7 @@ services:
     image: ghcr.io/agntcy/coffee-agntcy/logistics-helpdesk:latest
     container_name: logistics-helpdesk
     environment:
+      - AGENT_HOST=logistics-helpdesk
       - DEFAULT_MESSAGE_TRANSPORT=SLIM # Do not change. SLIM is required for group conversation.
       - TRANSPORT_SERVER_ENDPOINT=http://slim:46357
       - OTLP_HTTP_ENDPOINT=${OTLP_HTTP_ENDPOINT:-http://otel-collector:4318}

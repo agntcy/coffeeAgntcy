@@ -15,6 +15,7 @@ service:
   port: 9093
 
 config:
+  agentHost: "logistics-farm"
   transportServerEndpoint: ""
   defaultMessageTransport: ""
   otlpHttpEndpoint: ""

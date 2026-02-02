@@ -15,6 +15,7 @@ service:
   port: 9094
 
 config:
+  agentHost: "logistics-helpdesk"
   azureApiBase: ""
   azureApiVersion: ""
   llmModel: ""
