@@ -3,19 +3,23 @@
     "a2a.supports_authenticated_extended_card": "false"
   },
   "version": "1.0.0",
-  "description": "An MCP server agent for payment operations.",
+  "description": "An MCP server agent for payment operations (create payments and list transactions).",
   "schema_version": "0.8.0",
   "domains": [
     {
-      "id": 10204,
-      "name": "technology/software_engineering/apis_integration"
+      "id": 4001,
+      "name": "finance/payments"
     }
   ],
   "name": "Payment MCP Server",
   "skills": [
     {
-      "id": 1004,
-      "name": "agent_orchestration/agent_coordination"
+      "id": 400101,
+      "name": "finance/payments/create"
+    },
+    {
+      "id": 400102,
+      "name": "finance/payments/transactions/list"
     }
   ],
   "modules": [

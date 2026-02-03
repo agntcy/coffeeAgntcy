@@ -16,6 +16,8 @@ export const EdgeLabelIcon = {
 export const EDGE_LABELS = {
   A2A: "A2A",
   MCP: "MCP: ",
+  A2A_OVER_HTTP: "A2A: HTTP",
+  MCP_OVER_HTTP: "MCP: HTTP",
 } as const
 
 export const FarmName = {
@@ -34,6 +36,7 @@ export const NODE_IDS = {
   PAYMENT_MCP: "7",
   LOGISTICS_GROUP: "logistics-group",
   RECRUITER: "recruiter-agent",
+  DIRECTORY: "agntcy-directory",
 } as const
 
 export const EDGE_IDS = {
@@ -46,6 +49,7 @@ export const EDGE_IDS = {
   FARM_TO_TRANSPORT: "3-2",
   TRANSPORT_TO_SHIPPER: "2-4",
   TRANSPORT_TO_ACCOUNTANT: "2-5",
+  RECRUITER_TO_DIRECTORY: "recruiter-directory",
 } as const
 
 export const NODE_TYPES = {

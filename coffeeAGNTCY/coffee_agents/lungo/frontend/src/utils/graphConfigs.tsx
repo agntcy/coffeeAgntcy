@@ -406,9 +406,41 @@ const DISCOVERY_CONFIG: GraphConfig = {
       },
       position: { x: 400, y: 300 },
     },
+
+    // NEW: Directory node
+    {
+      id: NODE_IDS.DIRECTORY,
+      type: NODE_TYPES.CUSTOM,
+      data: {
+        icon: (
+            <img
+                src={supervisorIcon}
+                alt="Directory Icon"
+                className="dark-icon h-4 w-4 object-contain"
+            />
+        ),
+        label1: "Directory",
+        label2: "Agent Directory",
+        handles: HANDLE_TYPES.TARGET,
+      },
+      position: { x: 800, y: 600 },
+    },
   ],
-  edges: [],
-  animationSequence: [{ ids: [NODE_IDS.RECRUITER] }],
+  edges: [
+    // NEW: Recruiter -> Directory edge
+    {
+      id: EDGE_IDS.RECRUITER_TO_DIRECTORY,
+      source: NODE_IDS.RECRUITER,
+      target: NODE_IDS.DIRECTORY,
+      data: { label: EDGE_LABELS.MCP_OVER_HTTP },
+      type: EDGE_TYPES.CUSTOM,
+    },
+  ],
+  animationSequence: [
+    { ids: [NODE_IDS.RECRUITER] },
+    { ids: [EDGE_IDS.RECRUITER_TO_DIRECTORY] },
+    { ids: [NODE_IDS.DIRECTORY] },
+  ],
 }
 
 export const getGraphConfig = (
