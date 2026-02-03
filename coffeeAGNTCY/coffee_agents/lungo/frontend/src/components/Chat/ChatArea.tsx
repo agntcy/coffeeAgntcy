@@ -256,7 +256,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
                                             ) : (
                                                 <>
                                                     {agentResponse?.response ?? ""}
-                                                    {(agentResponse?.session_id || groupSessionId || streamingSessionId) && !isAgentLoading && (
+                                                    {(agentResponse?.session_id || groupSessionId ) && !isAgentLoading && (
                                                         <ExternalLinkButton
                                                             url={grafanaSessionUrl}
                                                             label="Grafana"
