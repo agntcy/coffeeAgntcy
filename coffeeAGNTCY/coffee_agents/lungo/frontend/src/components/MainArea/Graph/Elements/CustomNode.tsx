@@ -66,7 +66,6 @@ const CustomNode: React.FC<CustomNodeProps> = ({ data, onOpenOasfModal }) => {
   const handleAgentDirectoryClick = (e: React.MouseEvent) => {
     e.stopPropagation()
     e.preventDefault()
-    console.log("Agent Directory button clicked", { nodeData: data })
     if (nodeRef.current && data.onOpenOasfModal) {
       const buttonRect = (e.currentTarget as HTMLElement).getBoundingClientRect()
       const buttonCenterX = buttonRect.left + buttonRect.width / 2

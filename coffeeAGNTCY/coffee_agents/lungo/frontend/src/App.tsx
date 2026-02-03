@@ -37,6 +37,13 @@ interface ApiResponse {
   session_id?: string
 }
 
+type DiscoveryResponseEvent = {
+  response: string
+  ts: number
+  sessionId?: string
+  senderLabel?: string
+}
+
 const App: React.FC = () => {
   const { sendMessage } = useAgentAPI()
 
@@ -69,6 +76,13 @@ const App: React.FC = () => {
   const [pendingResponse, setPendingResponse] = useState<string>("")
   const [executionKey, setExecutionKey] = useState<string>("")
   const streamCompleteRef = useRef<boolean>(false)
+  const [discoveryResponseEvent, setDiscoveryResponseEvent] =
+      useState<DiscoveryResponseEvent | null>(null)
+
+  const handleDiscoveryResponse = useCallback((evt: DiscoveryResponseEvent) => {
+    setDiscoveryResponseEvent(evt)
+    console.log("Received discovery response event:", evt)
+  }, [])
 
   const handlePatternChange = useCallback(
       (pattern: PatternType) => {
@@ -227,6 +241,14 @@ const App: React.FC = () => {
         setShowFinalResponse(true)
         const response = await sendMessage(query, selectedPattern)
         handleApiResponse(response, false)
+
+        if (selectedPattern === PATTERNS.ON_DEMAND_DISCOVERY) {
+          handleDiscoveryResponse({
+            response: response.response,
+            ts: Date.now(),
+            sessionId: response.session_id,
+          })
+        }
       }
     } catch (error) {
       logger.apiError("/agent/prompt", error)
@@ -318,6 +340,7 @@ const App: React.FC = () => {
                     isExpanded={isExpanded}
                     groupCommResponseReceived={groupCommResponseReceived}
                     onNodeHighlight={handleNodeHighlightSetup}
+                    discoveryResponseEvent={discoveryResponseEvent}
                 />
               </div>
               <div className="flex min-h-[76px] w-full flex-none flex-col items-center justify-center gap-0 bg-overlay-background p-0 md:min-h-[96px]">
@@ -332,6 +355,9 @@ const App: React.FC = () => {
                     }
                     showLogisticsPrompts={
                         selectedPattern === PATTERNS.GROUP_COMMUNICATION
+                    }
+                    showDiscoveryPrompts={
+                      selectedPattern === PATTERNS.ON_DEMAND_DISCOVERY
                     }
                     showProgressTracker={showProgressTracker}
                     showAuctionStreaming={showAuctionStreaming}
@@ -358,6 +384,7 @@ const App: React.FC = () => {
                       status,
                       error,
                     }}
+                    onDiscoveryResponse={handleDiscoveryResponse}
                 />
               </div>
             </div>

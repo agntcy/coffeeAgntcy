@@ -20,6 +20,10 @@ config:
   exchangeAppApiUrl: ""
   logisticsAppApiUrl: ""
   grafanaUrl: ""
+  discoveryAppApiUrl: ""
+  directoryServerUrl: ""
+  directoryVersion: ""
+
 
 # You can use your own config here for service account
 serviceaccount:

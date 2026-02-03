@@ -7,4 +7,7 @@ data:
   VITE_EXCHANGE_APP_API_URL: "{{ .Values.config.exchangeAppApiUrl }}"
   VITE_LOGISTICS_APP_API_URL: "{{ .Values.config.logisticsAppApiUrl }}"
   VITE_GRAFANA_URL: "{{ .Values.config.grafanaUrl }}"
+  VITE_DISCOVERY_APP_API_URL: "{{ .Values.config.discoveryAppApiUrl }}"
+  VITE_DIRECTORY_SERVER_URL: "{{ .Values.config.directoryServerUrl }}"
+  VITE_DIRECTORY_VERSION: "{{ .Values.config.directoryVersion }}"
 

@@ -31,6 +31,16 @@ import {
 } from "@/utils/patternUtils"
 import { useViewportAwareFitView } from "@/hooks/useViewportAwareFitView"
 import { useModalManager } from "@/hooks/useModalManager"
+import type { Node, Edge } from "@xyflow/react"
+import {EDGE_LABELS} from "@/utils/const.ts";
+import {PUBLISH_SUBSCRIBE_CONFIG, GROUP_COMMUNICATION_CONFIG} from "@/utils/graphConfigs";
+
+type DiscoveryResponseEvent = {
+  response: string
+  ts: number
+  sessionId?: string
+  senderLabel?: string
+}
 
 const proOptions = { hideAttribution: true }
 
@@ -58,6 +68,7 @@ interface MainAreaProps {
   isExpanded?: boolean
   groupCommResponseReceived?: boolean
   onNodeHighlight?: (highlightFunction: (nodeId: string) => void) => void
+  discoveryResponseEvent?: DiscoveryResponseEvent | null
 }
 
 const DELAY_DURATION = 500
@@ -76,6 +87,7 @@ const MainArea: React.FC<MainAreaProps> = ({
                                              isExpanded = false,
                                              groupCommResponseReceived = false,
                                              onNodeHighlight,
+                                             discoveryResponseEvent,
                                            }) => {
   const fitViewWithViewport = useViewportAwareFitView()
   const isGroupCommConnected =
@@ -100,17 +112,179 @@ const MainArea: React.FC<MainAreaProps> = ({
   const [edges, setEdges, onEdgesChange] = useEdgesState(config.edges)
   const animationLock = useRef<boolean>(false)
 
+  const seqRef = useRef(0)
+  const lastTsRef = useRef<number | null>(null)
+
   // OASF Modal state
   const [oasfModalOpen, setOasfModalOpen] = useState(false)
   const [oasfModalData, setOasfModalData] = useState<any>(null)
   const [oasfModalPosition, setOasfModalPosition] = useState<{ x: number; y: number }>({ x: 0, y: 0 })
 
-  const handleOpenOasfModal = (nodeData: any, position: { x: number; y: number }) => {
-    console.log("Opening OASF Modal for node:", nodeData)
-    setOasfModalData(nodeData)
-    setOasfModalPosition(position)
-    setOasfModalOpen(true)
-  }
+  const handleOpenOasfModal = useCallback(
+      (nodeData: any, position: { x: number; y: number }) => {
+        setOasfModalData(nodeData)
+        setOasfModalPosition(position)
+        setOasfModalOpen(true)
+      },
+      [],
+  )
+
+  const addDiscoveryResponseGraph = useCallback(
+    (_evt: DiscoveryResponseEvent) => {
+      console.log("Adding discovery response graph for event:", _evt)
+
+      const responseText = (_evt.response ?? "").toLowerCase()
+      // const responseText = "accountant" // for testing
+
+      const hasKeyword = (kw: string) => new RegExp(`\\b${kw}\\b`, "i").test(responseText)
+
+      const kindsToAdd = ([
+        "brazil",
+        "vietnam",
+        "colombia",
+        "shipper",
+        "accountant",
+        "tatooine",
+      ] as const).filter(hasKeyword)
+
+      if (kindsToAdd.length === 0) return
+
+      const baseId = ++seqRef.current
+
+      const recruiterNodeId = "recruiter-agent"
+      const recruiterPos = { x: 400, y: 300 }
+
+      const templatesByKind: Record<(typeof kindsToAdd)[number], Node | undefined> = {
+        brazil: PUBLISH_SUBSCRIBE_CONFIG.nodes.find((n) =>
+          String(n.data?.label1 ?? "").toLowerCase().includes("brazil"),
+        ),
+        vietnam: PUBLISH_SUBSCRIBE_CONFIG.nodes.find((n) =>
+          String(n.data?.label1 ?? "").toLowerCase().includes("vietnam"),
+        ),
+        colombia: PUBLISH_SUBSCRIBE_CONFIG.nodes.find((n) =>
+          String(n.data?.label1 ?? "").toLowerCase().includes("colombia"),
+        ),
+        shipper: GROUP_COMMUNICATION_CONFIG.nodes.find((n) =>
+          String(n.data?.label1 ?? "").toLowerCase().includes("shipper"),
+        ),
+        accountant: GROUP_COMMUNICATION_CONFIG.nodes.find((n) =>
+          String(n.data?.label1 ?? "").toLowerCase().includes("accountant"),
+        ),
+        tatooine: GROUP_COMMUNICATION_CONFIG.nodes.find((n) =>
+          String(n.data?.label1 ?? "").toLowerCase().includes("tatooine"),
+        ),
+      }
+
+      const NODE_WIDTH = 193
+      const START_Y_OFFSET = 450
+      const HORIZONTAL_GAP = 40
+
+      const makeNodeId = (kind: string) => `discovery-${kind}-${baseId}`
+
+      const cloneTemplateNode = (
+        template: Node,
+        id: string,
+        position: { x: number; y: number },
+        parentExists: boolean,
+      ): Node => {
+        const t: any = template
+        const {
+          parentId: _parentId,
+          extent: _extent,
+          expandParent: _expandParent,
+          ...rest
+        } = t
+
+        return {
+          ...rest,
+          id,
+          position,
+          ...(parentExists ? { parentId: t.parentId, extent: t.extent } : {}),
+          data: {
+            ...(template.data ?? {}),
+            active: false,
+            isModalOpen: false,
+            onOpenIdentityModal: handleOpenIdentityModal,
+            onOpenOasfModal: handleOpenOasfModal,
+          },
+        } as Node
+      }
+
+      setNodes((prevNodes) => {
+        const existingIds = new Set(prevNodes.map((n) => n.id))
+
+        const total = kindsToAdd.length
+        const startCol = -Math.floor(total / 2)
+
+        const newNodes: Node[] = []
+
+        kindsToAdd.forEach((kind, idx) => {
+          const template = templatesByKind[kind]
+          if (!template) return
+
+          const id = makeNodeId(kind)
+          if (existingIds.has(id)) return
+
+          const parentIdNeeded = (template as any)?.parentId as string | undefined
+          const parentExists = parentIdNeeded ? existingIds.has(parentIdNeeded) : false
+
+          const colIndex = startCol + idx
+          newNodes.push(
+            cloneTemplateNode(
+              template,
+              id,
+              {
+                x: recruiterPos.x + colIndex * (NODE_WIDTH + HORIZONTAL_GAP),
+                y: recruiterPos.y + START_Y_OFFSET,
+              },
+              parentExists,
+            ),
+          )
+        })
+
+        return newNodes.length ? [...prevNodes, ...newNodes] : prevNodes
+      })
+
+      setEdges((prevEdges) => {
+        const existingEdgeIds = new Set(prevEdges.map((e) => e.id))
+
+        const newEdges: Edge[] = kindsToAdd
+          .map((kind) => {
+            const template = templatesByKind[kind]
+            if (!template) return null
+
+            const targetId = makeNodeId(kind)
+            const edgeId = `edge-${recruiterNodeId}-${baseId}-${targetId}`
+            if (existingEdgeIds.has(edgeId)) return null
+
+            // Only connect recruiter -> newly added node
+            return {
+              id: edgeId,
+              source: recruiterNodeId,
+              target: targetId,
+              data: { label: EDGE_LABELS.A2A_OVER_HTTP },
+              type: "custom",
+            } as Edge
+          })
+          .filter(Boolean) as Edge[]
+
+        return newEdges.length ? [...prevEdges, ...newEdges] : prevEdges
+      })
+    },
+    [setNodes, setEdges, handleOpenIdentityModal, handleOpenOasfModal],
+  )
+
+  useEffect(() => {
+    if (pattern !== "on_demand_discovery") return
+    if (!discoveryResponseEvent) return
+    if (lastTsRef.current === discoveryResponseEvent.ts) return
+    lastTsRef.current = discoveryResponseEvent.ts
+
+    const text = discoveryResponseEvent.response?.trim()
+    if (!text) return
+
+    addDiscoveryResponseGraph(discoveryResponseEvent)
+  }, [pattern, discoveryResponseEvent, addDiscoveryResponseGraph])
 
   useEffect(() => {
     animationLock.current = false
@@ -118,6 +292,7 @@ const MainArea: React.FC<MainAreaProps> = ({
 
   useEffect(() => {
     handleCloseModals()
+    setOasfModalOpen(false)
   }, [pattern, handleCloseModals])
 
   useEffect(() => {
