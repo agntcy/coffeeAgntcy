@@ -33,6 +33,7 @@ export const NODE_IDS = {
   WEATHER_MCP: "6",
   PAYMENT_MCP: "7",
   LOGISTICS_GROUP: "logistics-group",
+  RECRUITER: "recruiter-agent",
 } as const
 
 export const EDGE_IDS = {

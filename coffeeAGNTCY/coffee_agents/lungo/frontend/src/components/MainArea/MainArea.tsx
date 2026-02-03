@@ -106,7 +106,6 @@ const MainArea: React.FC<MainAreaProps> = ({
   const [oasfModalPosition, setOasfModalPosition] = useState<{ x: number; y: number }>({ x: 0, y: 0 })
 
   const handleOpenOasfModal = (nodeData: any, position: { x: number; y: number }) => {
-    console.log("Opening OASF Modal for node:", nodeData)
     setOasfModalData(nodeData)
     setOasfModalPosition(position)
     setOasfModalOpen(true)
@@ -118,6 +117,7 @@ const MainArea: React.FC<MainAreaProps> = ({
 
   useEffect(() => {
     handleCloseModals()
+    setOasfModalOpen(false)
   }, [pattern, handleCloseModals])
 
   useEffect(() => {

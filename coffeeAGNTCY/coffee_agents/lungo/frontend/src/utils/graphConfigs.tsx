@@ -384,6 +384,33 @@ const GROUP_COMMUNICATION_CONFIG: GraphConfig = {
   ],
 }
 
+const DISCOVERY_CONFIG: GraphConfig = {
+  title: "On-demand Discovery",
+  nodes: [
+    {
+      id: NODE_IDS.RECRUITER,
+      type: NODE_TYPES.CUSTOM,
+      data: {
+        icon: (
+            <img
+                src={supervisorIcon}
+                alt="Recruiter Icon"
+                className="dark-icon h-4 w-4 object-contain"
+            />
+        ),
+        label1: "Recruiter",
+        label2: "Discovery Node",
+        handles: HANDLE_TYPES.ALL,
+        verificationStatus: VERIFICATION_STATUS.VERIFIED,
+        githubLink: `${urlsConfig.github.baseUrl}${urlsConfig.github.agents.recruiter}`,
+      },
+      position: { x: 400, y: 300 },
+    },
+  ],
+  edges: [],
+  animationSequence: [{ ids: [NODE_IDS.RECRUITER] }],
+}
+
 export const getGraphConfig = (
   pattern: string,
   _isConnected?: boolean,
@@ -440,6 +467,8 @@ export const getGraphConfig = (
     }
     case "group_communication":
       return GROUP_COMMUNICATION_CONFIG
+    case "on_demand_discovery":
+      return DISCOVERY_CONFIG
     default:
       return PUBLISH_SUBSCRIBE_CONFIG
   }
