@@ -1,6 +1,10 @@
 # Copyright AGNTCY Contributors (https://github.com/agntcy)
 # SPDX-License-Identifier: Apache-2.0
 
+"""
+Handles generic task updates for A2A agents.
+"""
+
 from a2a.types import (
     TaskArtifactUpdateEvent,
     Task,

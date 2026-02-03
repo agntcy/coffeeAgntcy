@@ -13,7 +13,7 @@ from test.sample_agent.agent import create_test_agent
 load_dotenv()
 
 # Server configuration
-PORT = int(os.getenv("PORT", "3000"))
+PORT = int(os.getenv("PORT", "3210"))
 
 # Create the ADK agent
 root_agent = create_test_agent()

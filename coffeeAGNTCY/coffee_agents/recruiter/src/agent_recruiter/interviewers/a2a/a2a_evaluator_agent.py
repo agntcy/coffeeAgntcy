@@ -1,6 +1,11 @@
 # Copyright AGNTCY Contributors (https://github.com/agntcy)
 # SPDX-License-Identifier: Apache-2.0
 
+"""
+A2A Evaluator Agent implementation. Conduct evaluations of agents using the A2A protocol by sending
+messages and evaluating responses related to predefined scenarios.
+"""
+
 import json
 from types import TracebackType
 from typing import Callable, Optional, Self, Type

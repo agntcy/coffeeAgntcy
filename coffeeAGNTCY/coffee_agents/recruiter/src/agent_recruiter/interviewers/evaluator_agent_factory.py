@@ -4,9 +4,7 @@
 """
 Evaluator Agent Factory.
 
-Creates the appropriate evaluator agent based on protocol.
-Policy evaluation uses these agents, while red team evaluation
-is handled by the server's red_teaming.orchestrator module.
+Creates the appropriate evaluator agent based on protocol. 
 """
 
 from typing import Callable, Optional
@@ -36,8 +34,6 @@ def get_evaluator_agent(
     Get an evaluator agent based on protocol.
 
     This factory creates agents for policy-based scenario evaluation.
-    Red team (vulnerability-centric) evaluation is handled separately
-    by the server's red_teaming.orchestrator module.
 
     Args:
         protocol: Communication protocol (A2A, MCP, or PYTHON)

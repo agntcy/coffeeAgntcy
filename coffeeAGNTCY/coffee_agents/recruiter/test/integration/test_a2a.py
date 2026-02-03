@@ -293,7 +293,7 @@ async def test_recruiter_a2a_evaluation_flow(
     run_recruiter_a2a_server()
 
     # Start the sample agent to be evaluated
-    _sample_process, sample_url = run_sample_a2a_agent(port=3000)
+    _sample_process, sample_url = run_sample_a2a_agent(port=3210)
     logger.info(f"Sample agent started at {sample_url}")
 
     await asyncio.sleep(2)  # Give servers time to start

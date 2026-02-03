@@ -184,10 +184,10 @@ Deploy the full stack including the recruiter agent:
 ```bash
 # Build and start all services
 cd docker
-docker compose up --build
+docker compose -f docker/docker-compose.yaml up --build
 
 # Or run in background
-docker compose up --build -d
+docker compose -f docker/docker-compose.yaml up --build -d
 ```
 
 This starts:

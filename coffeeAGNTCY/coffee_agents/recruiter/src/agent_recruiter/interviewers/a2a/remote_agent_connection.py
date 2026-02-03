@@ -1,6 +1,12 @@
 # Copyright AGNTCY Contributors (https://github.com/agntcy)
 # SPDX-License-Identifier: Apache-2.0
 
+"""
+Store remote A2A Agent Connections in a custom class to manage different connection 
+types. Initial implementation for simple HTTPX-based connections but will be extended
+to support other connection types in A2A and agntcy app-sdk in the future.
+"""
+
 from typing import Callable, TypeAlias
 import httpx
 from a2a.client import ClientFactory, ClientConfig
@@ -91,7 +97,7 @@ class RemoteAgentConnections:
         task = None
 
         try:
-            # The new send_message method returns AsyncIterator automatically
+            # The send_message method returns AsyncIterator automatically
             # It handles both streaming and non-streaming based on config
             async for response in self.agent_client.send_message(message):
                 logger.debug(

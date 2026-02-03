@@ -78,12 +78,12 @@ def run_recruiter_a2a_server():
 def run_sample_a2a_agent():
     """Fixture to run the sample test A2A agent in a subprocess.
 
-    The sample agent runs on port 3000 by default and can be used for
+    The sample agent runs on port 3210 by default and can be used for
     integration testing with the Rogue evaluator.
 
     Usage:
         def test_something(run_sample_a2a_agent):
-            run_sample_a2a_agent()  # Starts on default port 3000
+            run_sample_a2a_agent()  # Starts on default port 3210
             # or
             run_sample_a2a_agent(port=3001)  # Custom port
 
@@ -93,7 +93,7 @@ def run_sample_a2a_agent():
 
     procs = []
 
-    def _run(port: int = 3000, wait_timeout: float = 30.0):
+    def _run(port: int = 3210, wait_timeout: float = 30.0):
         env = {**os.environ, "PORT": str(port)}
         url = f"http://localhost:{port}"
 
@@ -128,7 +128,7 @@ def run_sample_a2a_agent():
 @pytest.fixture
 def sample_agent_url():
     """Returns the default URL for the sample test agent."""
-    return "http://localhost:3000"
+    return "http://localhost:3210"
 
 
 @pytest.fixture
@@ -137,12 +137,12 @@ def sample_agent_card_json():
 
     Usage:
         def test_something(sample_agent_card_json):
-            card_json = sample_agent_card_json()  # Default port 3000
+            card_json = sample_agent_card_json()  # Default port 3210
             card_json = sample_agent_card_json(port=3001)  # Custom port
     """
     import json
 
-    def _create(port: int = 3000):
+    def _create(port: int = 3210):
         return json.dumps({
             "name": "TestAgent",
             "description": "A simple test agent for integration testing with basic tools.",
