@@ -1,3 +1,6 @@
+# Copyright AGNTCY Contributors (https://github.com/agntcy)
+# SPDX-License-Identifier: Apache-2.0
+
 from agent_recruiter.interviewers.agent_evaluator import (
     create_evaluation_agent,
     evaluate_agents_tool,

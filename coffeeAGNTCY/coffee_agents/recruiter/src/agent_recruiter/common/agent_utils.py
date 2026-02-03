@@ -1,3 +1,6 @@
+# Copyright AGNTCY Contributors (https://github.com/agntcy)
+# SPDX-License-Identifier: Apache-2.0
+
 from google.genai import types
 
 async def call_agent_async(query: str, runner, user_id: str, session_id: str) -> str:
