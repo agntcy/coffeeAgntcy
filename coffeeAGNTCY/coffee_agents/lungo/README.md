@@ -414,7 +414,7 @@ _Example prompts:_
 
 **Step 5: Access the UI**
 
-Once all services are running, you can access the React UI by starting the frontend development server (from the `frontend` directory):
+Once all services are running, you can access the React UI by starting the frontend development server (from the `frontend` directory): 
 
 _Local Run:_
 
