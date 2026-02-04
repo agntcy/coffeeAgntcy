@@ -51,8 +51,7 @@ services:
       - DIRECTORY_CLIENT_TLS_SKIP_VERIFY=true
       - OASF_API_VALIDATION_DISABLE=true
     depends_on:
-      dir-api-server:
-        condition: service_healthy
+      - dir-api-server
     healthcheck:
       test: curl -f http://localhost:8881/.well-known/agent.json || exit 1
       interval: 10s
