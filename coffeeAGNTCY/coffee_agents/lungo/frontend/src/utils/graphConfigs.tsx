@@ -421,19 +421,19 @@ const DISCOVERY_CONFIG: GraphConfig = {
         ),
         label1: "Directory",
         label2: "Agent Directory",
-        handles: HANDLE_TYPES.TARGET,
+        handles: HANDLE_TYPES.ALL,
         githubLink: `${urlsConfig.agentDirectory.github}`,
         agentDirectoryLink: `${urlsConfig.agentDirectory.baseUrl}${urlsConfig.agentDirectory.agents.directory}`,
       },
-      position: { x: 800, y: 600 },
+      position: { x: 800, y: 100 },
     },
   ],
   edges: [
     // NEW: Recruiter -> Directory edge
     {
       id: EDGE_IDS.RECRUITER_TO_DIRECTORY,
-      source: NODE_IDS.RECRUITER,
-      target: NODE_IDS.DIRECTORY,
+      source: NODE_IDS.DIRECTORY,
+      target: NODE_IDS.RECRUITER,
       data: { label: EDGE_LABELS.MCP_WITH_STDIO },
       type: EDGE_TYPES.CUSTOM,
     },
