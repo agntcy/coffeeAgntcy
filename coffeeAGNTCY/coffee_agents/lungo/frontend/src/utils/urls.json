@@ -16,7 +16,8 @@
       "logisticSupervisor": "/lungo/agents/supervisors/logistic/graph/tools.py#L150",
       "logisticFarm": "/lungo/agents/logistics/farm/agent_executor.py#L42",
       "logisticShipper": "/lungo/agents/logistics/shipper/agent_executor.py#L41",
-      "logisticAccountant": "/lungo/agents/logistics/accountant/agent_executor.py#L42"
+      "logisticAccountant": "/lungo/agents/logistics/accountant/agent_executor.py#L42",
+      "recruiter": "/lungo/agents/recruiter/agent.py#L32"
     },
     "transports": {
       "general": "/tree/main/src/agntcy_app_sdk/transports",
@@ -44,6 +45,7 @@
       "colombiaFarm": "/baeareiaqub6mci5mnt3iqagxfodfmjym36nshdmjmnzofcdilp7374rwlm",
       "vietnamFarm": "/baeareiheas5bdad2wuurvpvqonuq4ry2u6vdzw4hikrnzssebchjojjr5m",
       "weatherMcp": "/baeareibpoftgep62se35oxuiu3d27cuqef2loupupxdd3xozotxk3mrhhe"
-    }
+    },
+    "github": "https://github.com/agntcy/dir"
   }
 }

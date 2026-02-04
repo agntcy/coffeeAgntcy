@@ -31,6 +31,17 @@ import {
 } from "@/utils/patternUtils"
 import { useViewportAwareFitView } from "@/hooks/useViewportAwareFitView"
 import { useModalManager } from "@/hooks/useModalManager"
+import type { Node, Edge } from "@xyflow/react"
+import farmAgentIcon from "@/assets/Grader-Agent.png";
+import {EDGE_LABELS} from "@/utils/const.ts";
+import {PUBLISH_SUBSCRIBE_CONFIG} from "@/utils/graphConfigs";
+
+type DiscoveryResponseEvent = {
+  response: string
+  ts: number
+  sessionId?: string
+  senderLabel?: string
+}
 
 const proOptions = { hideAttribution: true }
 
@@ -58,6 +69,7 @@ interface MainAreaProps {
   isExpanded?: boolean
   groupCommResponseReceived?: boolean
   onNodeHighlight?: (highlightFunction: (nodeId: string) => void) => void
+  discoveryResponseEvent?: DiscoveryResponseEvent | null
 }
 
 const DELAY_DURATION = 500
@@ -76,6 +88,7 @@ const MainArea: React.FC<MainAreaProps> = ({
                                              isExpanded = false,
                                              groupCommResponseReceived = false,
                                              onNodeHighlight,
+                                             discoveryResponseEvent,
                                            }) => {
   const fitViewWithViewport = useViewportAwareFitView()
   const isGroupCommConnected =
@@ -100,13 +113,103 @@ const MainArea: React.FC<MainAreaProps> = ({
   const [edges, setEdges, onEdgesChange] = useEdgesState(config.edges)
   const animationLock = useRef<boolean>(false)
 
+  const seqRef = useRef(0)
+  const lastTsRef = useRef<number | null>(null)
+
+
+  const addDiscoveryResponseGraph = useCallback(
+    (_evt: DiscoveryResponseEvent) => {
+      const baseId = ++seqRef.current
+
+      const recruiterNodeId = "recruiter-agent"
+      const recruiterPos = { x: 400, y: 300 }
+
+      const publishSubscribeFarmTemplates = PUBLISH_SUBSCRIBE_CONFIG.nodes.filter(
+        (n) => n.data?.label2?.toString().toLowerCase().includes("farm"),
+      )
+
+      const farmNodes: Node[] = Array.from({ length: 3 }).map((_, i) => {
+        const NODE_WIDTH = 193
+        const START_Y_OFFSET = 450
+        const HORIZONTAL_GAP = 40
+        const col = i - 1
+
+        const template = publishSubscribeFarmTemplates[i] as Node | undefined
+        const fallbackId = `discovery-farm-${baseId}-${i + 1}`
+
+        if (!template) {
+          return {
+            id: fallbackId,
+            type: "customNode",
+            position: {
+              x: recruiterPos.x + col * (NODE_WIDTH + HORIZONTAL_GAP),
+              y: recruiterPos.y + START_Y_OFFSET,
+            },
+            data: {
+              label1: `Farm ${i + 1}`,
+              label2: "Coffee Farm Agent",
+              handles: "target",
+              active: false,
+              isModalOpen: false,
+              onOpenIdentityModal: handleOpenIdentityModal,
+              onOpenOasfModal: handleOpenOasfModal,
+            },
+          }
+        }
+
+        const uniqueNodeId = `discovery-farm-${baseId}-${template.id}`
+
+        return {
+          ...template,
+          id: uniqueNodeId, // key fix: prevent node id collisions
+          position: {
+            x: recruiterPos.x + col * (NODE_WIDTH + HORIZONTAL_GAP),
+            y: recruiterPos.y + START_Y_OFFSET,
+          },
+          data: {
+            ...(template.data ?? {}),
+            active: false,
+            isModalOpen: false,
+            onOpenIdentityModal: handleOpenIdentityModal,
+            onOpenOasfModal: handleOpenOasfModal,
+          },
+        }
+      })
+
+      const farmEdges: Edge[] = farmNodes.map((n) => ({
+        id: `edge-${recruiterNodeId}-${baseId}-${n.id}`, // key fix: unique per add
+        source: recruiterNodeId,
+        target: n.id,
+        data: { label: EDGE_LABELS.A2A_OVER_HTTP },
+        type: "custom",
+      }))
+
+      setNodes((prev) => [...prev, ...farmNodes])
+      setEdges((prev) => [...prev, ...farmEdges])
+    },
+    [setNodes, setEdges, handleOpenIdentityModal],
+  )
+
+
+
+  useEffect(() => {
+    if (pattern !== "on_demand_discovery") return
+    if (!discoveryResponseEvent) return
+    if (lastTsRef.current === discoveryResponseEvent.ts) return
+    lastTsRef.current = discoveryResponseEvent.ts
+
+    const text = discoveryResponseEvent.response?.trim()
+    if (!text) return
+
+    addDiscoveryResponseGraph(discoveryResponseEvent)
+  }, [pattern, discoveryResponseEvent, addDiscoveryResponseGraph])
+
   // OASF Modal state
   const [oasfModalOpen, setOasfModalOpen] = useState(false)
   const [oasfModalData, setOasfModalData] = useState<any>(null)
   const [oasfModalPosition, setOasfModalPosition] = useState<{ x: number; y: number }>({ x: 0, y: 0 })
 
   const handleOpenOasfModal = (nodeData: any, position: { x: number; y: number }) => {
-    console.log("Opening OASF Modal for node:", nodeData)
     setOasfModalData(nodeData)
     setOasfModalPosition(position)
     setOasfModalOpen(true)
@@ -118,6 +221,7 @@ const MainArea: React.FC<MainAreaProps> = ({
 
   useEffect(() => {
     handleCloseModals()
+    setOasfModalOpen(false)
   }, [pattern, handleCloseModals])
 
   useEffect(() => {

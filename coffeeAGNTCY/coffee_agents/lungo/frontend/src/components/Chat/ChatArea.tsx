@@ -3,34 +3,45 @@
  * SPDX-License-Identifier: Apache-2.0
  **/
 
-import React, { useState } from "react"
+import React, {useCallback, useEffect, useState} from "react"
+import axios from "axios"
+
 import { Message } from "@/types/message"
-import airplaneSvg from "@/assets/airplane.svg"
-import CoffeePromptsDropdown from "./Prompts/CoffeePromptsDropdown"
-import LogisticsPromptsDropdown from "./Prompts/LogisticsPromptsDropdown"
 import { useAgentAPI } from "@/hooks/useAgentAPI"
-import UserMessage from "./UserMessage"
-import ChatHeader from "./ChatHeader"
-import AgentIcon from "@/assets/Coffee_Icon.svg"
 import { useGroupSessionId } from "@/stores/groupStreamingStore"
 
+import airplaneSvg from "@/assets/airplane.svg"
+import AgentIcon from "@/assets/Coffee_Icon.svg"
 import grafanaIcon from "@/assets/grafana.svg"
+
+import CoffeePromptsDropdown from "./Prompts/CoffeePromptsDropdown"
+import LogisticsPromptsDropdown from "./Prompts/LogisticsPromptsDropdown"
+import DiscoveryPromptsDropdown from "./Prompts/DiscoveryPromptsDropdown"
+
+import UserMessage from "./UserMessage"
+import ChatHeader from "./ChatHeader"
 import ExternalLinkButton from "./ExternalLinkButton"
+import GroupCommunicationFeed from "./GroupCommunicationFeed"
+import AuctionStreamingFeed from "./AuctionStreamingFeed"
 
 import { cn } from "@/utils/cn.ts"
 import { logger } from "@/utils/logger"
-import GroupCommunicationFeed from "./GroupCommunicationFeed"
-import AuctionStreamingFeed from "./AuctionStreamingFeed"
-import axios from "axios";
 
 const DEFAULT_GRAFANA_URL = "http://127.0.0.1:3001"
-const GRAFANA_URL =
-    import.meta.env.VITE_GRAFANA_URL || DEFAULT_GRAFANA_URL
-const GRAFANA_DASHBOARD_PATH = "/d/lungo-dashboard/lungo-dashboard?orgId=1&var-session_id="
+const GRAFANA_URL = import.meta.env.VITE_GRAFANA_URL || DEFAULT_GRAFANA_URL
+const GRAFANA_DASHBOARD_PATH =
+    "/d/lungo-dashboard/lungo-dashboard?orgId=1&var-session_id="
 
 interface ApiResponse {
     response: string
     session_id?: string
+}
+
+type DiscoveryResponseEvent = {
+    response: string
+    ts: number
+    sessionId?: string
+    senderLabel?: string
 }
 
 interface ChatAreaProps {
@@ -40,6 +51,7 @@ interface ChatAreaProps {
     isBottomLayout: boolean
     showCoffeePrompts?: boolean
     showLogisticsPrompts?: boolean
+    showDiscoveryPrompts?: boolean
     showProgressTracker?: boolean
     showAuctionStreaming?: boolean
     showFinalResponse?: boolean
@@ -58,7 +70,8 @@ interface ChatAreaProps {
     apiError: boolean
     chatRef?: React.RefObject<HTMLDivElement | null>
     auctionState?: any
-    grafanaUrl?: string // Add this prop if you want to pass the URL dynamically
+    grafanaUrl?: string
+    onDiscoveryResponse?: (evt: DiscoveryResponseEvent) => void
 }
 
 const ChatArea: React.FC<ChatAreaProps> = ({
@@ -68,6 +81,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
                                                isBottomLayout,
                                                showCoffeePrompts = false,
                                                showLogisticsPrompts = false,
+                                               showDiscoveryPrompts = false,
                                                showProgressTracker = false,
                                                showAuctionStreaming = false,
                                                showFinalResponse = false,
@@ -86,13 +100,37 @@ const ChatArea: React.FC<ChatAreaProps> = ({
                                                apiError,
                                                chatRef,
                                                auctionState,
-                                               grafanaUrl = GRAFANA_URL
+                                               grafanaUrl = GRAFANA_URL,
+                                               onDiscoveryResponse,
                                            }) => {
-
     const [content, setContent] = useState<string>("")
     const [loading, setLoading] = useState<boolean>(false)
     const [isMinimized, setIsMinimized] = useState<boolean>(false)
     const { sendMessageWithCallback } = useAgentAPI()
+
+    const onApiSuccess = useCallback(
+        (apiResponse: { response: string; session_id?: string }) => {
+            if (pattern !== "on_demand_discovery") {
+                console.log("[ChatArea] onApiSuccess: pattern mismatch, returning early", {
+                    pattern,
+                })
+                return
+            }
+
+            console.log("[ChatArea] onApiSuccess: emitting onDiscoveryResponse")
+            onDiscoveryResponse?.({
+                response: apiResponse.response,
+                ts: Date.now(),
+                sessionId: apiResponse.session_id,
+                senderLabel: "Discovery Response",
+            })
+        },
+        [pattern, onDiscoveryResponse],
+    )
+
+    useEffect(() => {
+        console.log("[ChatArea] onApiSuccess reference updated", { pattern })
+    }, [onApiSuccess, pattern])
 
     const handleMinimize = () => {
         setIsMinimized(true)
@@ -112,9 +150,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
         }
     }
 
-    const processMessageWithQuery = async (
-        messageContent: string,
-    ): Promise<void> => {
+    const processMessageWithQuery = async (messageContent: string): Promise<void> => {
         if (!messageContent.trim()) return
 
         setContent("")
@@ -127,6 +163,11 @@ const ChatArea: React.FC<ChatAreaProps> = ({
             {
                 onSuccess: (response: ApiResponse) => {
                     setAiReplied(true)
+
+                    console.log("[ChatArea] API call successful, response:", response)
+
+                    onApiSuccess(response)
+
                     if (onApiResponse) {
                         onApiResponse(response.response ?? "", false)
                     }
@@ -143,7 +184,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
                 },
             },
             pattern,
-        );
+        )
 
         setLoading(false)
     }
@@ -167,19 +208,18 @@ const ChatArea: React.FC<ChatAreaProps> = ({
 
     const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>): void => {
         if (e.key === "Enter" && !e.shiftKey) {
+            console.log("[ChatArea] Enter key pressed, processing message")
             e.preventDefault()
             processMessage()
         }
     }
 
-    // Build the Grafana URL with session_id if available
     const groupSessionId = useGroupSessionId()
     const sessionIdForUrl = agentResponse?.session_id || groupSessionId
 
     const grafanaSessionUrl = sessionIdForUrl
         ? `${grafanaUrl}${GRAFANA_DASHBOARD_PATH}${encodeURIComponent(sessionIdForUrl)}`
         : grafanaUrl
-
 
     if (!isBottomLayout) {
         return null
@@ -236,61 +276,49 @@ const ChatArea: React.FC<ChatAreaProps> = ({
                             </div>
                         )}
 
-                        {showFinalResponse &&
-                            (isAgentLoading || agentResponse) &&
-                            !isMinimized && (
-                                <div className="flex w-full flex-row items-start gap-1">
-                                    <div className="chat-avatar-container flex h-10 w-10 flex-none items-center justify-center rounded-full bg-action-background">
-                                        <img
-                                            src={AgentIcon}
-                                            alt="Agent"
-                                            className="h-[22px] w-[22px]"
-                                        />
-                                    </div>
-                                    <div className="flex max-w-[calc(100%-3rem)] flex-1 flex-col items-start justify-center rounded p-1 px-2">
-                                        <div className="whitespace-pre-wrap break-words font-inter text-sm font-normal leading-5 !text-chat-text">
-                                            {isAgentLoading ? (
-                                                <div className="animate-pulse text-accent-primary">
-                                                    ...
-                                                </div>
-                                            ) : (
-                                                <>
-                                                    {agentResponse?.response ?? ""}
-                                                    {(agentResponse?.session_id || groupSessionId ) && !isAgentLoading && (
-                                                        <ExternalLinkButton
-                                                            url={grafanaSessionUrl}
-                                                            label="Grafana"
-                                                            iconSrc={grafanaIcon}
-                                                            // className="ml-2.5 align-baseline inline-block mt-3"
-                                                        />
-                                                    )}
-
-                                                </>
-                                            )}
-                                        </div>
+                        {showFinalResponse && (isAgentLoading || agentResponse) && !isMinimized && (
+                            <div className="flex w-full flex-row items-start gap-1">
+                                <div className="chat-avatar-container flex h-10 w-10 flex-none items-center justify-center rounded-full bg-action-background">
+                                    <img src={AgentIcon} alt="Agent" className="h-[22px] w-[22px]" />
+                                </div>
+                                <div className="flex max-w-[calc(100%-3rem)] flex-1 flex-col items-start justify-center rounded p-1 px-2">
+                                    <div className="whitespace-pre-wrap break-words font-inter text-sm font-normal leading-5 !text-chat-text">
+                                        {isAgentLoading ? (
+                                            <div className="animate-pulse text-accent-primary">...</div>
+                                        ) : (
+                                            <>
+                                                {agentResponse?.response ?? ""}
+                                                {(agentResponse?.session_id || groupSessionId) && !isAgentLoading && (
+                                                    <ExternalLinkButton
+                                                        url={grafanaSessionUrl}
+                                                        label="Grafana"
+                                                        iconSrc={grafanaIcon}
+                                                    />
+                                                )}
+                                            </>
+                                        )}
                                     </div>
                                 </div>
-                            )
-                        }
+                            </div>
+                        )}
                     </div>
                 )}
 
                 {showCoffeePrompts && (
                     <div className="relative z-10 flex h-9 w-auto w-full max-w-[880px] flex-row items-start gap-2 p-0">
-                        <CoffeePromptsDropdown
-                            visible={true}
-                            onSelect={handleDropdownQuery}
-                            pattern={pattern}
-                        />
+                        <CoffeePromptsDropdown visible={true} onSelect={handleDropdownQuery} pattern={pattern} />
                     </div>
                 )}
 
                 {showLogisticsPrompts && (
                     <div className="relative z-10 flex h-9 w-auto w-full max-w-[880px] flex-row items-start gap-2 p-0">
-                        <LogisticsPromptsDropdown
-                            visible={true}
-                            onSelect={handleDropdownQuery}
-                        />
+                        <LogisticsPromptsDropdown visible={true} onSelect={handleDropdownQuery} />
+                    </div>
+                )}
+
+                {showDiscoveryPrompts && (
+                    <div className="relative z-10 flex h-9 w-auto w-full max-w-[880px] flex-row items-start gap-2 p-0">
+                        <DiscoveryPromptsDropdown visible={true} onSelect={handleDropdownQuery} />
                     </div>
                 )}
 
@@ -301,14 +329,13 @@ const ChatArea: React.FC<ChatAreaProps> = ({
                                 className="h-5 min-w-0 flex-1 border-none bg-transparent font-cisco text-[15px] font-medium leading-5 tracking-[0.005em] text-chat-text outline-none placeholder:text-chat-text placeholder:opacity-60"
                                 placeholder="Type a prompt to interact with the agents"
                                 value={content}
-                                onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                                    setContent(e.target.value)
-                                }
+                                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setContent(e.target.value)}
                                 onKeyPress={handleKeyPress}
                                 disabled={loading}
                             />
                         </div>
                     </div>
+
                     <div className="flex h-11 w-[50px] flex-none flex-row items-start p-0">
                         <button
                             onClick={() => {

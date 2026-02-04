@@ -8,6 +8,7 @@ export const PATTERNS = {
   PUBLISH_SUBSCRIBE: "publish_subscribe",
   PUBLISH_SUBSCRIBE_STREAMING: "publish_subscribe_streaming",
   GROUP_COMMUNICATION: "group_communication",
+  ON_DEMAND_DISCOVERY: "on_demand_discovery",
 } as const
 
 export type PatternType = (typeof PATTERNS)[keyof typeof PATTERNS]

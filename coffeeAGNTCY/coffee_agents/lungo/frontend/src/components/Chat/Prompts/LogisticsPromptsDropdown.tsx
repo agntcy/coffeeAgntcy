@@ -5,7 +5,6 @@
 
 import React, { useState, useRef, useEffect } from "react"
 import LoadingSpinner from "./LoadingSpinner"
-import InfoButton from "./InfoButton"
 import { PromptCategory } from "./PromptTypes"
 
 const DEFAULT_LOGISTICS_APP_API_URL = "http://127.0.0.1:9090"

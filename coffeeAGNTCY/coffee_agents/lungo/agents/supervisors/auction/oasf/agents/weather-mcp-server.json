@@ -7,15 +7,15 @@
   "schema_version": "0.8.0",
   "domains": [
     {
-      "id": 10204.0,
-      "name": "technology/software_engineering/apis_integration"
+      "id": 3001.0,
+      "name": "science/meteorology"
     }
   ],
   "name": "Weather MCP Server",
   "skills": [
     {
-      "id": 1004.0,
-      "name": "agent_orchestration/agent_coordination"
+      "id": 2001.0,
+      "name": "weather/forecasting"
     }
   ],
   "modules": [
