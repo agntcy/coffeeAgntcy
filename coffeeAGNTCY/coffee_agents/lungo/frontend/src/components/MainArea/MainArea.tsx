@@ -34,6 +34,7 @@ import { useModalManager } from "@/hooks/useModalManager"
 import type { Node, Edge } from "@xyflow/react"
 import farmAgentIcon from "@/assets/Grader-Agent.png";
 import {EDGE_LABELS} from "@/utils/const.ts";
+import {PUBLISH_SUBSCRIBE_CONFIG} from "@/utils/graphConfigs";
 
 type DiscoveryResponseEvent = {
   response: string
@@ -70,10 +71,6 @@ interface MainAreaProps {
   onNodeHighlight?: (highlightFunction: (nodeId: string) => void) => void
   discoveryResponseEvent?: DiscoveryResponseEvent | null
 }
-
-const DISCOVERY_CHILD_COUNT = 3
-const DISCOVERY_X_OFFSET = 240
-const DISCOVERY_Y_OFFSET = 120
 
 const DELAY_DURATION = 500
 const HIGHLIGHT = {
@@ -119,64 +116,78 @@ const MainArea: React.FC<MainAreaProps> = ({
   const seqRef = useRef(0)
   const lastTsRef = useRef<number | null>(null)
 
+
   const addDiscoveryResponseGraph = useCallback(
-      (evt: DiscoveryResponseEvent) => {
-        const baseId = ++seqRef.current
+    (_evt: DiscoveryResponseEvent) => {
+      const baseId = ++seqRef.current
 
-        // Assumes the recruiter node already exists in the graph.
-        // If your recruiter node id differs, update this constant.
-        const recruiterNodeId = "recruiter-agent"
+      const recruiterNodeId = "recruiter-agent"
+      const recruiterPos = { x: 400, y: 300 }
 
-        // Compute positions relative to the recruiter node.
-        // If recruiter isn't found, fall back to (0, 0).
-        let recruiterPos = { x: 400, y: 300 }
-        // Place 3 nodes centered under the recruiter node.
-        const farmNodes: Node[] = Array.from({ length: 3 }).map((_, i) => {
-          const NODE_WIDTH = 193 // matches CustomNode width (w-[193px])
-          const START_Y_OFFSET = 450
-          const HORIZONTAL_GAP = 40
+      const publishSubscribeFarmTemplates = PUBLISH_SUBSCRIBE_CONFIG.nodes.filter(
+        (n) => n.data?.label2?.toString().toLowerCase().includes("farm"),
+      )
 
-          // center 3 nodes under recruiter: -1, 0, +1
-          const col = i - 1
+      const farmNodes: Node[] = Array.from({ length: 3 }).map((_, i) => {
+        const NODE_WIDTH = 193
+        const START_Y_OFFSET = 450
+        const HORIZONTAL_GAP = 40
+        const col = i - 1
 
+        const template = publishSubscribeFarmTemplates[i] as Node | undefined
+        const fallbackId = `discovery-farm-${baseId}-${i + 1}`
+
+        if (!template) {
           return {
-            id: `discovery-farm-${baseId}-${i + 1}`,
+            id: fallbackId,
             type: "customNode",
             position: {
               x: recruiterPos.x + col * (NODE_WIDTH + HORIZONTAL_GAP),
               y: recruiterPos.y + START_Y_OFFSET,
             },
             data: {
-              icon: (
-                  <img
-                      src={farmAgentIcon}
-                      alt="Farm Agent Icon"
-                      className="dark-icon h-4 w-4 object-contain opacity-100"
-                  />
-              ),
               label1: `Farm ${i + 1}`,
-              label2: "",
+              label2: "Coffee Farm Agent",
               handles: "target",
               active: false,
+              isModalOpen: false,
+              onOpenIdentityModal: handleOpenIdentityModal,
+              onOpenOasfModal: handleOpenOasfModal,
             },
           }
-        })
+        }
 
+        const uniqueNodeId = `discovery-farm-${baseId}-${template.id}`
 
-        const farmEdges: Edge[] = farmNodes.map((n) => ({
-          id: `edge-${recruiterNodeId}-${n.id}`,
-          source: recruiterNodeId,
-          target: n.id,
-          data:{
-            label: EDGE_LABELS.A2A_OVER_HTTP,
+        return {
+          ...template,
+          id: uniqueNodeId, // key fix: prevent node id collisions
+          position: {
+            x: recruiterPos.x + col * (NODE_WIDTH + HORIZONTAL_GAP),
+            y: recruiterPos.y + START_Y_OFFSET,
           },
-          type: "custom",
-        }))
+          data: {
+            ...(template.data ?? {}),
+            active: false,
+            isModalOpen: false,
+            onOpenIdentityModal: handleOpenIdentityModal,
+            onOpenOasfModal: handleOpenOasfModal,
+          },
+        }
+      })
 
-        setNodes((prev) => [...prev, ...farmNodes])
-        setEdges((prev) => [...prev, ...farmEdges])
-      },
-      [setNodes, setEdges],
+      const farmEdges: Edge[] = farmNodes.map((n) => ({
+        id: `edge-${recruiterNodeId}-${baseId}-${n.id}`, // key fix: unique per add
+        source: recruiterNodeId,
+        target: n.id,
+        data: { label: EDGE_LABELS.A2A_OVER_HTTP },
+        type: "custom",
+      }))
+
+      setNodes((prev) => [...prev, ...farmNodes])
+      setEdges((prev) => [...prev, ...farmEdges])
+    },
+    [setNodes, setEdges, handleOpenIdentityModal],
   )
 
 

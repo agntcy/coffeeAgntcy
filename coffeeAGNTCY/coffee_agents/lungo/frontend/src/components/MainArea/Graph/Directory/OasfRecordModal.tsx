@@ -10,6 +10,14 @@ import { CustomNodeData } from "../Elements/types"
 import { IdentityServiceError } from "../Identity/IdentityApi"
 import { useEscapeKey } from "@/hooks/useEscapeKey"
 
+const DEFAULT_DIRECTORY_SERVER_URL = "http://127.0.0.1:8888"
+const DIRECTORY_SERVER_URL =
+    import.meta.env.VITE_DIRECTORY_SERVER_URL || DEFAULT_DIRECTORY_SERVER_URL
+
+const DEFAULT_DIRECTORY_VERSION = "v0.6.0"
+const DIRECTORY_VERSION =
+    import.meta.env.VITE_DIRECTORY_VERSION || DEFAULT_DIRECTORY_VERSION
+
 export interface OasfRecordModalProps {
     isOpen: boolean
     onClose: () => void
@@ -33,13 +41,14 @@ const OasfRecordModal: React.FC<OasfRecordModalProps> = ({
     const [loading, setLoading] = useState(false)
     const [error, setError] = useState<string | null>(null)
 
+    const isDirectoryNode = nodeName === "Directory"
+
     useEffect(() => {
-        if (isOpen && nodeData) {
-            console.log("[OasfRecordModal] Opening modal for node:", nodeData);
-            fetchOasfRecordData();
-        }
+        if (!isOpen || !nodeData) return
+        if (isDirectoryNode) return // do not fetch JSON for Directory view
+        fetchOasfRecordData()
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [isOpen, nodeName, nodeData])
+    }, [isOpen, nodeName, nodeData, isDirectoryNode])
 
     useEscapeKey(isOpen, onClose)
 
@@ -52,8 +61,7 @@ const OasfRecordModal: React.FC<OasfRecordModalProps> = ({
         } catch (err) {
             const apiError = err as IdentityServiceError
             setError(
-                apiError.message ||
-                "An unexpected error occurred while fetching OASF record."
+                apiError.message || "An unexpected error occurred while fetching OASF record.",
             )
         } finally {
             setLoading(false)
@@ -62,13 +70,28 @@ const OasfRecordModal: React.FC<OasfRecordModalProps> = ({
 
     if (!isOpen) return null
 
+    const directoryUrl =
+        (nodeData as any)?.agentDirectoryLink ||
+        (nodeData as any)?.directoryUrl ||
+        (record as any)?.directory_url ||
+        (record as any)?.directoryUrl ||
+        (record as any)?.url ||
+        ""
+
+    const directoryVersion =
+        (nodeData as any)?.directoryVersion ||
+        (record as any)?.directory_version ||
+        (record as any)?.directoryVersion ||
+        (record as any)?.version ||
+        ""
+
     const handleModalClick = (e: React.MouseEvent) => e.stopPropagation()
 
     return createPortal(
         <div className="pointer-events-none fixed inset-0 z-50">
             <div
                 className="pointer-events-auto absolute -translate-x-1/2"
-                style={{ left: `${position.x }px`, top: `${position.y -100}px` }}
+                style={{ left: `${position.x}px`, top: `${position.y - 100}px` }}
             >
                 <div
                     className="relative flex max-h-[70vh] w-[700px] flex-col items-start gap-4 rounded-md bg-node-background p-4 shadow-lg"
@@ -81,7 +104,45 @@ const OasfRecordModal: React.FC<OasfRecordModalProps> = ({
                     >
                         ×
                     </button>
-                    {loading && !record ? (
+
+                    {isDirectoryNode ? (
+                        <div className="relative flex w-full flex-col gap-3">
+                            <h3 className="mb-1 text-lg font-semibold text-node-text-primary">
+                                Directory Information
+                            </h3>
+
+                            <div className="grid w-full grid-cols-1 gap-3">
+                                <div className="rounded border border-gray-600 p-3">
+                                    <div className="text-xs uppercase tracking-wide text-node-text-secondary opacity-80">
+                                        Directory URL
+                                    </div>
+                                    {directoryUrl ? (
+                                        <a
+                                            className="mt-1 block break-all text-sm text-node-text-primary underline"
+                                            href={DIRECTORY_SERVER_URL}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                        >
+                                            {DIRECTORY_SERVER_URL}
+                                        </a>
+                                    ) : (
+                                        <div className="mt-1 text-sm text-node-text-secondary opacity-80">
+                                            Unavailable
+                                        </div>
+                                    )}
+                                </div>
+
+                                <div className="rounded border border-gray-600 p-3">
+                                    <div className="text-xs uppercase tracking-wide text-node-text-secondary opacity-80">
+                                        Directory Version
+                                    </div>
+                                    <div className="mt-1 text-sm text-node-text-primary">
+                                        {DIRECTORY_VERSION || "Unavailable"}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    ) : loading && !record ? (
                         <div className="flex w-full items-center justify-center py-8">
                             <Spinner />
                         </div>
@@ -122,7 +183,7 @@ const OasfRecordModal: React.FC<OasfRecordModalProps> = ({
                 </div>
             </div>
         </div>,
-        document.body
+        document.body,
     )
 }
 

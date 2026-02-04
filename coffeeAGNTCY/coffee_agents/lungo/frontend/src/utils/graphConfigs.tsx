@@ -37,7 +37,7 @@ const CoffeeBeanIcon = (
   />
 )
 
-const PUBLISH_SUBSCRIBE_CONFIG: GraphConfig = {
+export const PUBLISH_SUBSCRIBE_CONFIG: GraphConfig = {
   title: "Publish Subscribe Coffee Farm Network",
   nodes: [
     {
@@ -422,6 +422,8 @@ const DISCOVERY_CONFIG: GraphConfig = {
         label1: "Directory",
         label2: "Agent Directory",
         handles: HANDLE_TYPES.TARGET,
+        githubLink: `${urlsConfig.agentDirectory.github}`,
+        agentDirectoryLink: `${urlsConfig.agentDirectory.baseUrl}${urlsConfig.agentDirectory.agents.directory}`,
       },
       position: { x: 800, y: 600 },
     },
@@ -432,7 +434,7 @@ const DISCOVERY_CONFIG: GraphConfig = {
       id: EDGE_IDS.RECRUITER_TO_DIRECTORY,
       source: NODE_IDS.RECRUITER,
       target: NODE_IDS.DIRECTORY,
-      data: { label: EDGE_LABELS.MCP_OVER_HTTP },
+      data: { label: EDGE_LABELS.MCP_WITH_STDIO },
       type: EDGE_TYPES.CUSTOM,
     },
   ],
