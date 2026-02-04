@@ -94,7 +94,7 @@ const OasfRecordModal: React.FC<OasfRecordModalProps> = ({
                 style={{ left: `${position.x}px`, top: `${position.y - 100}px` }}
             >
                 <div
-                    className="relative flex max-h-[70vh] w-[700px] flex-col items-start gap-4 rounded-md bg-node-background p-4 shadow-lg"
+                    className="relative flex max-h-[70vh] w-[550px] flex-col items-start gap-4 rounded-md bg-node-background p-4 shadow-lg"
                     onClick={handleModalClick}
                     data-modal-content
                 >
