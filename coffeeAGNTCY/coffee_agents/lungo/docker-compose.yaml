@@ -67,7 +67,7 @@ services:
       - "8222:8222"
 
   slim:
-    image: ghcr.io/agntcy/slim:0.7.1
+    image: ghcr.io/agntcy/slim:1.0.0
     container_name: lungo-slim
     ports:
       - "46357:46357"
