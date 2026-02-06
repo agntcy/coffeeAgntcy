@@ -78,6 +78,8 @@ async def handle_prompt(request: PromptRequest):
             factory = ClientFactory(config)
             client = factory.create(RECRUITER_AGENT_CARD)
 
+            print(f"Sending prompt to recruiter agent at {RECRUITER_AGENT_URL}: {request.prompt}")
+
             message = Message(
                 role=Role.user,
                 message_id=str(uuid4()),

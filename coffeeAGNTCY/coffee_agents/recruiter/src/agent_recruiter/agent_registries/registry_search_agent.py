@@ -145,7 +145,7 @@ def create_mcp_toolset(
         env = {
             "DIRECTORY_CLIENT_SERVER_ADDRESS": os.getenv("DIRECTORY_CLIENT_SERVER_ADDRESS", "localhost:8888"),
             "DIRECTORY_CLIENT_TLS_SKIP_VERIFY": os.getenv("DIRECTORY_CLIENT_TLS_SKIP_VERIFY", "true"),
-            "OASF_API_VALIDATION_DISABLE": os.getenv("OASF_API_VALIDATION_DISABLE", "true"),
+            "OASF_API_VALIDATION_SCHEMA_URL": os.getenv("OASF_API_VALIDATION_SCHEMA_URL", "https://schema.oasf.outshift.com"),
         }
 
         try:
