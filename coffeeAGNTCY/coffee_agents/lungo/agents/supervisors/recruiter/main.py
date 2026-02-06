@@ -3,6 +3,7 @@
 
 import json
 import logging
+from typing import Optional
 from uuid import uuid4
 
 import httpx
@@ -14,20 +15,9 @@ from fastapi.responses import JSONResponse, StreamingResponse
 from pathlib import Path
 from pydantic import BaseModel
 
-from a2a.client import ClientFactory, ClientConfig
-from a2a.types import (
-    DataPart,
-    Message,
-    Part,
-    Role,
-    Task,
-    TaskState,
-    TaskStatusUpdateEvent,
-    TextPart,
-)
-
+from agents.supervisors.recruiter.agent import call_agent, stream_agent
+from agents.supervisors.recruiter.card import RECRUITER_SUPERVISOR_CARD
 from agents.supervisors.recruiter.recruiter_service_card import (
-    RECRUITER_AGENT_CARD,
     RECRUITER_AGENT_URL,
 )
 from config.logging_config import setup_logging
@@ -49,74 +39,19 @@ app.add_middleware(
 
 class PromptRequest(BaseModel):
     prompt: str
-
-
-def _extract_parts(parts: list[Part]) -> tuple[str | None, dict | None, dict | None]:
-    """Extract text, found_agent_records, and evaluation_results from message parts."""
-    text = None
-    agent_records = None
-    evaluation_results = None
-    for part in parts:
-        root = part.root
-        if isinstance(root, TextPart):
-            text = root.text
-        elif isinstance(root, DataPart):
-            meta_type = root.metadata.get("type") if root.metadata else None
-            if meta_type == "found_agent_records":
-                agent_records = root.data
-            elif meta_type == "evaluation_results":
-                evaluation_results = root.data
-    return text, agent_records, evaluation_results
+    session_id: Optional[str] = None
 
 
 @app.post("/agent/prompt")
 async def handle_prompt(request: PromptRequest):
-    """Send prompt to the recruiter A2A agent (non-streaming) and return the result."""
+    """Send prompt to the recruiter supervisor ADK agent and return the result."""
     try:
-        async with httpx.AsyncClient(timeout=httpx.Timeout(120.0)) as httpx_client:
-            config = ClientConfig(httpx_client=httpx_client, streaming=False)
-            factory = ClientFactory(config)
-            client = factory.create(RECRUITER_AGENT_CARD)
-
-            print(f"Sending prompt to recruiter agent at {RECRUITER_AGENT_URL}: {request.prompt}")
-
-            message = Message(
-                role=Role.user,
-                message_id=str(uuid4()),
-                parts=[Part(root=TextPart(text=request.prompt))],
-            )
-
-            text_response = None
-            agent_records = None
-            evaluation_results = None
-            session_id = str(uuid4())
-
-            async for response in client.send_message(message):
-                # Handle direct Message response
-                if isinstance(response, Message):
-                    text_response, agent_records, evaluation_results = _extract_parts(
-                        response.parts
-                    )
-
-                # Handle (Task, update) tuple response
-                elif isinstance(response, tuple) and len(response) == 2:
-                    task, _update = response
-                    if (
-                        isinstance(task, Task)
-                        and task.status.state == TaskState.completed
-                        and task.status.message
-                    ):
-                        text_response, agent_records, evaluation_results = (
-                            _extract_parts(task.status.message.parts)
-                        )
-
-            result: dict = {"response": text_response, "session_id": session_id}
-            if agent_records is not None:
-                result["agent_records"] = agent_records
-            if evaluation_results is not None:
-                result["evaluation_results"] = evaluation_results
-            return result
-
+        session_id = request.session_id or str(uuid4())
+        response_text, session_id = await call_agent(
+            query=request.prompt,
+            session_id=session_id,
+        )
+        return {"response": response_text, "session_id": session_id}
     except Exception as e:
         logger.error(f"Error handling prompt: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Operation failed: {str(e)}")
@@ -124,95 +59,50 @@ async def handle_prompt(request: PromptRequest):
 
 @app.post("/agent/prompt/stream")
 async def handle_stream_prompt(request: PromptRequest):
-    """Stream recruiter agent responses as NDJSON lines."""
+    """Stream recruiter supervisor agent responses as NDJSON lines."""
     try:
-        session_id = str(uuid4())
+        session_id = request.session_id or str(uuid4())
 
         async def stream_generator():
             try:
-                async with httpx.AsyncClient(
-                    timeout=httpx.Timeout(120.0)
-                ) as httpx_client:
-                    config = ClientConfig(httpx_client=httpx_client, streaming=True)
-                    factory = ClientFactory(config)
-                    client = factory.create(RECRUITER_AGENT_CARD)
+                async for event, sid in stream_agent(
+                    query=request.prompt,
+                    session_id=session_id,
+                ):
+                    # Build an NDJSON line from each ADK event
+                    msg_text = None
+                    if event.content and event.content.parts:
+                        for part in event.content.parts:
+                            if hasattr(part, "text") and part.text:
+                                msg_text = part.text
+                                break
 
-                    message = Message(
-                        role=Role.user,
-                        message_id=str(uuid4()),
-                        parts=[Part(root=TextPart(text=request.prompt))],
-                    )
-
-                    async for response in client.send_message(message):
-                        # Handle (Task, TaskStatusUpdateEvent) tuples
-                        if isinstance(response, tuple) and len(response) == 2:
-                            task, update = response
-
-                            if not isinstance(task, Task):
-                                continue
-
-                            if isinstance(update, TaskStatusUpdateEvent):
-                                metadata = {}
-                                msg_text = None
-
-                                if update.status.message:
-                                    metadata = update.status.message.metadata or {}
-                                    # Extract text from message parts
-                                    for part in update.status.message.parts:
-                                        if isinstance(part.root, TextPart):
-                                            msg_text = part.root.text
-                                            break
-
-                                event_type = metadata.get(
-                                    "event_type", "status_update"
-                                )
-                                state = (
-                                    update.status.state.value
-                                    if update.status.state
-                                    else "working"
-                                )
-
-                                # Final event — include full extracted data
-                                if update.final and update.status.state == TaskState.completed:
-                                    text, agent_records, evaluation_results = (
-                                        _extract_parts(
-                                            update.status.message.parts
-                                        )
-                                        if update.status.message
-                                        else (None, None, None)
-                                    )
-                                    line = {
-                                        "response": {
-                                            "event_type": "completed",
-                                            "message": text or msg_text,
-                                            "state": state,
-                                        },
-                                        "session_id": session_id,
-                                    }
-                                    if agent_records is not None:
-                                        line["response"]["agent_records"] = agent_records
-                                    if evaluation_results is not None:
-                                        line["response"]["evaluation_results"] = evaluation_results
-                                    yield json.dumps(line) + "\n"
-                                else:
-                                    # Intermediate event
-                                    line = {
-                                        "response": {
-                                            "event_type": event_type,
-                                            "message": msg_text,
-                                            "state": state,
-                                        },
-                                        "session_id": session_id,
-                                    }
-                                    # Forward extra metadata fields
-                                    for key in ("tool_name", "to_agent", "from_agent"):
-                                        if key in metadata:
-                                            line["response"][key] = metadata[key]
-                                    yield json.dumps(line) + "\n"
-
+                    if event.is_final_response():
+                        line = {
+                            "response": {
+                                "event_type": "completed",
+                                "message": msg_text,
+                                "state": "completed",
+                            },
+                            "session_id": sid,
+                        }
+                        yield json.dumps(line) + "\n"
+                    elif msg_text:
+                        line = {
+                            "response": {
+                                "event_type": "status_update",
+                                "message": msg_text,
+                                "state": "working",
+                                "author": event.author,
+                            },
+                            "session_id": sid,
+                        }
+                        yield json.dumps(line) + "\n"
             except Exception as e:
                 logger.error(f"Error in stream: {e}", exc_info=True)
-                yield json.dumps({"response": {"event_type": "error", "message": str(e)}}) + "\n"
+                yield json.dumps(
+                    {"response": {"event_type": "error", "message": str(e)}}
+                ) + "\n"
 
         return StreamingResponse(
             stream_generator(),
@@ -225,6 +115,12 @@ async def handle_stream_prompt(request: PromptRequest):
     except Exception as e:
         logger.error(f"Error setting up stream: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Operation failed: {str(e)}")
+
+
+@app.get("/.well-known/agent-card.json")
+async def agent_card():
+    """Return the A2A AgentCard for this recruiter supervisor."""
+    return RECRUITER_SUPERVISOR_CARD.model_dump(by_alias=True, exclude_none=True)
 
 
 @app.get("/health")
