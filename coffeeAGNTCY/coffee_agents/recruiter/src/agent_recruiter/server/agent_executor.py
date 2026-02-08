@@ -61,12 +61,13 @@ class RecruiterAgentExecutor(AgentExecutor):
         This method streams intermediate events (tool calls, agent handoffs,
         status updates) as they occur, providing real-time feedback to clients.
         """
-        logger.debug("Received message request: %s", context.message)
-
         if not self._validate_request(context):
             raise ServerError(error=ContentTypeNotSupportedError())
 
         prompt = context.get_user_input()
+
+        logger.info(f"[agent_executor] Received prompt: {prompt!r}")
+
         task = context.current_task
         if not task:
             if context.message is None:
@@ -86,7 +87,7 @@ class RecruiterAgentExecutor(AgentExecutor):
         if context.message and context.message.metadata:
             user_id = context.message.metadata.get("user_id", "anonymous")
 
-        logger.debug(f"Processing request: user_id={user_id}, session_id={session_id}")
+        logger.info(f"[agent_executor] Processing: user_id={user_id}, session_id={session_id}")
 
         try:
             t0 = time.time()
@@ -122,19 +123,27 @@ class RecruiterAgentExecutor(AgentExecutor):
                         )
 
             t1 = time.time()
-            logger.debug(
-                f"Agent execution completed in {t1 - t0:.2f} seconds. "
-                f"Processed {event_count} events."
+            logger.info(
+                f"Agent execution completed in {t1 - t0:.2f}s. "
+                f"Processed {event_count} events. user_id={user_id}, session_id={session_id}"
             )
 
             # Get found agent records from session state
             found_records = await self.agent.get_found_agent_records(
                 user_id, session_id
             )
+            logger.info(
+                f"[agent_executor] get_found_agent_records returned {len(found_records)} records: "
+                f"{list(found_records.keys()) if found_records else '(empty)'}"
+            )
 
             # Get evaluation results from session state
             evaluation_results = await self.agent.get_evaluation_results(
                 user_id, session_id
+            )
+            logger.info(
+                f"[agent_executor] get_evaluation_results returned {len(evaluation_results)} results: "
+                f"{list(evaluation_results.keys()) if evaluation_results else '(empty)'}"
             )
 
             # Build final message parts
@@ -144,6 +153,9 @@ class RecruiterAgentExecutor(AgentExecutor):
 
             # Include found agent records as DataPart if any exist
             if found_records:
+                logger.info(
+                    f"[agent_executor] Including {len(found_records)} agent records in response DataPart"
+                )
                 parts.append(
                     Part(
                         root=DataPart(
@@ -152,9 +164,16 @@ class RecruiterAgentExecutor(AgentExecutor):
                         )
                     )
                 )
+            else:
+                logger.warning(
+                    "[agent_executor] No found_records to include in response (empty or None)"
+                )
 
             # Include evaluation results as DataPart if any exist
             if evaluation_results:
+                logger.info(
+                    f"[agent_executor] Including {len(evaluation_results)} evaluation results in response DataPart"
+                )
                 parts.append(
                     Part(
                         root=DataPart(
@@ -162,6 +181,10 @@ class RecruiterAgentExecutor(AgentExecutor):
                             metadata={"type": "evaluation_results"},
                         )
                     )
+                )
+            else:
+                logger.debug(
+                    "[agent_executor] No evaluation_results to include in response"
                 )
 
             # Create the final message

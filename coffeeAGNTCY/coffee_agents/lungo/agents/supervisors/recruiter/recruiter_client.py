@@ -4,6 +4,7 @@
 """ADK tool function that communicates with the remote recruiter A2A service
 and persists results in session state."""
 
+import json
 import logging
 from uuid import uuid4
 
@@ -32,6 +33,30 @@ from agents.supervisors.recruiter.recruiter_service_card import (
 logger = logging.getLogger("lungo.recruiter.supervisor.recruiter_client")
 
 
+def _parse_dict_values(data: dict) -> dict[str, dict]:
+    """Ensure all values are dicts, parsing JSON strings if needed.
+
+    The recruiter service may return record values as JSON-encoded strings
+    rather than parsed dicts.
+    """
+    result: dict[str, dict] = {}
+    for key, value in data.items():
+        if isinstance(value, dict):
+            result[key] = value
+        elif isinstance(value, str):
+            try:
+                parsed = json.loads(value)
+                if isinstance(parsed, dict):
+                    result[key] = parsed
+                else:
+                    logger.warning("Value for key %s parsed to %s, not dict; skipping", key, type(parsed).__name__)
+            except (json.JSONDecodeError, TypeError):
+                logger.warning("Value for key %s is not valid JSON; skipping", key)
+        else:
+            logger.warning("Unexpected value type %s for key %s; skipping", type(value).__name__, key)
+    return result
+
+
 def _extract_parts(parts: list[Part]) -> RecruitmentResponse:
     """Extract text, agent records, and evaluation results from A2A message parts."""
     text = None
@@ -44,9 +69,9 @@ def _extract_parts(parts: list[Part]) -> RecruitmentResponse:
         elif isinstance(root, DataPart):
             meta_type = root.metadata.get("type") if root.metadata else None
             if meta_type == "found_agent_records":
-                agent_records = root.data
+                agent_records = _parse_dict_values(root.data)
             elif meta_type == "evaluation_results":
-                evaluation_results = root.data
+                evaluation_results = _parse_dict_values(root.data)
     return RecruitmentResponse(
         text=text,
         agent_records=agent_records,
@@ -68,6 +93,8 @@ async def recruit_agents(query: str, tool_context: ToolContext) -> str:
     Returns:
         Human-readable summary of the recruitment results.
     """
+    logger.info("[tool:recruit_agents] Called with query=%r", query)
+
     async with httpx.AsyncClient(timeout=httpx.Timeout(120.0)) as httpx_client:
         config = ClientConfig(httpx_client=httpx_client, streaming=False)
         factory = ClientFactory(config)
@@ -102,9 +129,17 @@ async def recruit_agents(query: str, tool_context: ToolContext) -> str:
     existing_evals.update(response_data.evaluation_results)
     tool_context.state[STATE_KEY_EVALUATION_RESULTS] = existing_evals
 
+    logger.info(
+        "[tool:recruit_agents] Found %d agent(s), %d evaluation(s)",
+        len(response_data.agent_records),
+        len(response_data.evaluation_results),
+    )
+
     # Build a human-readable summary
     if not response_data.agent_records:
-        return response_data.text or "No agents found matching the query."
+        summary = response_data.text or "No agents found matching the query."
+        logger.info("[tool:recruit_agents] Result: %s", summary)
+        return summary
 
     summary_lines = [response_data.text or "Recruitment results:"]
     for cid, record in response_data.agent_records.items():
@@ -112,4 +147,6 @@ async def recruit_agents(query: str, tool_context: ToolContext) -> str:
         desc = record.get("description", "")
         summary_lines.append(f"  - CID: {cid} | Name: {name} | {desc}")
 
-    return "\n".join(summary_lines)
+    result = "\n".join(summary_lines)
+    logger.info("[tool:recruit_agents] Result: %s", result)
+    return result

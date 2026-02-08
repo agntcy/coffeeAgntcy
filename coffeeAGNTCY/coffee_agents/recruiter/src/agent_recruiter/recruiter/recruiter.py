@@ -220,10 +220,14 @@ class RecruiterTeam:
             session_id=session_id
         )
         if session is None:
-            logger.warning(f"Session '{session_id}' not found for user '{user_id}'")
+            logger.warning(f"[get_found_agent_records] Session '{session_id}' not found for user '{user_id}'")
             return {}
 
-        return session.state.get("found_agent_records", {})
+        records = session.state.get("found_agent_records", {})
+        logger.info(
+            f"[get_found_agent_records] session_id={session_id} -> {len(records)} records: {list(records.keys())}"
+        )
+        return records
 
     async def get_evaluation_results(self, user_id: str, session_id: str) -> dict[str, dict]:
         """Retrieve evaluation results stored in session state by the agent evaluator.

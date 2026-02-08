@@ -131,4 +131,4 @@ def load_cache_config() -> CacheConfig:
 
 # Default tools to EXCLUDE from caching (empty = cache all tools)
 # Add tools here that have side effects or should not be cached
-DEFAULT_EXCLUDED_TOOLS: Set[str] = set()
+DEFAULT_EXCLUDED_TOOLS: Set[str] = {"store_search_results"}

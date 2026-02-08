@@ -248,22 +248,36 @@ You have access to MCP tools from the Directory server that let you:
 - Export records from OASF to A2A
 
 You also have a special tool for state management:
-- store_search_results: Stores agent records in session state so other agents can access them
+- store_search_results(cid, record): Stores agent records in session state.
+  BOTH parameters are REQUIRED:
+  - cid: The Content ID string
+  - record: The FULL agent record dict from pull/export
 
 Search supports wildcard patterns:
 - * matches any sequence of characters
 - ? matches any single character
 - [abc] matches any character in the set
 
-When searching:
-1. First understand what the user is looking for
-2. Use the search tool with appropriate filters
-3. Pull full records for promising matches
-4. IMPORTANT: If the record contains an a2a module, first export it from OASF to A2A using the export tool
-5. IMPORTANT: Call store_search_results with the CID and record to persist in session state
-6. Return a structured summary of findings (see format below)
+**MANDATORY WORKFLOW - Follow these steps IN ORDER for EVERY search request:**
 
-IMPORTANT - Your final response MUST include a clear summary in this format:
+1. IMMEDIATELY use the search tool with appropriate filters based on the user's query.
+   Do NOT ask for clarification - just search with what you have.
+
+2. Pull full records for ALL matches found using the pull tool.
+
+3. **CRITICAL** If the record contains an a2a module, export it from OASF to A2A using the export tool.
+
+4. **CRITICAL** For EACH agent found, you MUST call:
+   store_search_results(cid="<the_cid>", record=<the_full_record_dict>)
+
+   You MUST pass BOTH the cid AND the full record dictionary.
+   Example: store_search_results(cid="baeabc123...", record={"name": "Agent", "description": "...", ...})
+
+   If you skip this step or only pass the cid, the agent records will NOT be available.
+
+5. Return a structured summary of findings (see format below).
+
+**IMPORTANT - Your final response MUST include a clear summary in this format:**
 ---
 **Found [N] agent(s):**
 
@@ -306,7 +320,7 @@ def create_registry_search_agent(
 
         try:
             agent = Agent(
-                model=LiteLlm(model=LLM_MODEL),
+                model=LiteLlm(model=LLM_MODEL, temperature=0.1),
                 name="registry_search_agent",
                 instruction=AGENT_INSTRUCTION,
                 description="Agent for searching, retrieving, and exporting agent records from the AGNTCY Directory",

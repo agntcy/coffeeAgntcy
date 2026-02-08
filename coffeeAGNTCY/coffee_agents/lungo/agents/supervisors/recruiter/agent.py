@@ -30,7 +30,9 @@ from agents.supervisors.recruiter.dynamic_workflow_agent import (
     DynamicWorkflowAgent,
 )
 from agents.supervisors.recruiter.models import (
+    STATE_KEY_EVALUATION_RESULTS,
     STATE_KEY_RECRUITED_AGENTS,
+    STATE_KEY_SELECTED_AGENT,
     STATE_KEY_SELECTED_AGENT_CIDS,
     STATE_KEY_TASK_MESSAGE,
 )
@@ -48,7 +50,6 @@ LITELLM_PROXY_API_KEY = os.getenv("LITELLM_PROXY_API_KEY")
 if LITELLM_PROXY_API_KEY and LITELLM_PROXY_BASE_URL:
     os.environ["LITELLM_PROXY_API_KEY"] = LITELLM_PROXY_API_KEY
     os.environ["LITELLM_PROXY_API_BASE"] = LITELLM_PROXY_BASE_URL
-    logger.info(f"Using LiteLLM Proxy: {LITELLM_PROXY_BASE_URL}")
     litellm.use_litellm_proxy = True
 else:
     logger.info("Using direct LLM instance")
@@ -58,47 +59,166 @@ else:
 # ---------------------------------------------------------------------------
 
 
-async def select_and_delegate(
-    agent_cids: list[str], task_message: str, tool_context: ToolContext
-) -> str:
-    """Select recruited agents by CID and prepare for task delegation.
-
-    Call this after recruit_agents has found suitable agents. Provide the CIDs
-    of the agents you want to delegate the task to and the task message to send.
+def _find_agent_by_name_or_cid(
+    identifier: str, recruited: dict[str, dict]
+) -> tuple[str | None, dict | None]:
+    """Find an agent by name or CID from recruited agents.
 
     Args:
-        agent_cids: List of agent CIDs to delegate the task to.
-        task_message: The task or question to send to the selected agents.
+        identifier: Agent name (partial match) or CID (exact match)
+        recruited: Dict of recruited agents keyed by CID
+
+    Returns:
+        Tuple of (cid, record) if found, (None, None) if not found
+    """
+    # First try exact CID match
+    if identifier in recruited:
+        return identifier, recruited[identifier]
+
+    # Try case-insensitive name match
+    identifier_lower = identifier.lower().strip()
+    for cid, record in recruited.items():
+        name = record.get("name", "").lower().strip()
+        if name == identifier_lower:
+            return cid, record
+        # Partial match - identifier is contained in name
+        if identifier_lower in name:
+            return cid, record
+
+    return None, None
+
+
+async def select_agent(
+    agent_identifier: str, tool_context: ToolContext
+) -> str:
+    """Select a recruited agent by name or CID for conversation.
+
+    Call this after recruit_agents has found suitable agents. Once selected,
+    all subsequent messages will be forwarded directly to this agent until
+    you call deselect_agent.
+
+    Args:
+        agent_identifier: The agent's name (e.g., "Shipping agent") or CID.
+                         Name matching is case-insensitive and supports partial matches.
         tool_context: Automatically injected by ADK.
 
     Returns:
-        Confirmation text. After this tool returns, transfer to the
-        ``dynamic_workflow`` sub-agent to execute the delegation.
+        Confirmation message with the selected agent's details.
     """
+    logger.info("[tool:select_agent] Called with identifier=%r", agent_identifier)
+
     recruited = tool_context.state.get(STATE_KEY_RECRUITED_AGENTS, {})
 
-    # Validate that all CIDs exist
-    valid_cids = [cid for cid in agent_cids if cid in recruited]
-    invalid_cids = [cid for cid in agent_cids if cid not in recruited]
-
-    if invalid_cids:
-        logger.warning(f"Invalid CIDs ignored: {invalid_cids}")
-
-    if not valid_cids:
+    if not recruited:
         return (
-            "None of the provided CIDs match recruited agents. "
-            "Please run recruit_agents first, then use the CIDs from the results."
+            "No agents have been recruited yet. "
+            "Please use recruit_agents to search for agents first."
         )
 
-    tool_context.state[STATE_KEY_SELECTED_AGENT_CIDS] = valid_cids
-    tool_context.state[STATE_KEY_TASK_MESSAGE] = task_message
+    cid, record = _find_agent_by_name_or_cid(agent_identifier, recruited)
 
-    agent_names = [
-        recruited[cid].get("name", cid) for cid in valid_cids
-    ]
+    if not cid or not record:
+        # List available agents
+        available = [
+            f"  - {r.get('name', 'Unknown')} (CID: {c[:20]}...)"
+            for c, r in recruited.items()
+        ]
+        available_list = "\n".join(available) if available else "  (none)"
+        return (
+            f"No agent found matching '{agent_identifier}'.\n\n"
+            f"Available agents:\n{available_list}\n\n"
+            "Please provide the exact name or CID of an agent from the list above."
+        )
+
+    # Store the selected agent CID
+    tool_context.state[STATE_KEY_SELECTED_AGENT] = cid
+
+    agent_name = record.get("name", "Unknown")
+    agent_desc = record.get("description", "No description available")
+
+    logger.info(
+        "[tool:select_agent] Selected agent: name=%s, cid=%s",
+        agent_name,
+        cid[:20],
+    )
+
     return (
-        f"Selected {len(valid_cids)} agent(s) for delegation: {', '.join(agent_names)}. "
-        f"Now transfer to the 'dynamic_workflow' sub-agent to execute the task."
+        f"✓ Selected **{agent_name}**\n\n"
+        f"Description: {agent_desc}\n\n"
+        f"You can now send messages directly to this agent. "
+        f"Use 'deselect agent' when you're done to return to the supervisor."
+    )
+
+
+async def deselect_agent(tool_context: ToolContext) -> str:
+    """Deselect the current agent and return to supervisor mode.
+
+    Call this when you want to stop talking to the currently selected agent
+    and return to the recruiter supervisor for searching or selecting a different agent.
+
+    Args:
+        tool_context: Automatically injected by ADK.
+
+    Returns:
+        Confirmation that no agent is selected.
+    """
+    logger.info("[tool:deselect_agent] Called")
+
+    current = tool_context.state.get(STATE_KEY_SELECTED_AGENT)
+    recruited = tool_context.state.get(STATE_KEY_RECRUITED_AGENTS, {})
+
+    if current:
+        record = recruited.get(current, {})
+        agent_name = record.get("name", current[:20])
+        tool_context.state[STATE_KEY_SELECTED_AGENT] = None  # Clear selection
+        logger.info("[tool:deselect_agent] Deselected agent: %s", agent_name)
+        return f"✓ Deselected **{agent_name}**. You are now back in supervisor mode."
+    else:
+        return "No agent was selected. You are in supervisor mode."
+
+
+async def send_to_agent(
+    message: str, tool_context: ToolContext
+) -> str:
+    """Send a message to the currently selected agent.
+
+    This tool forwards your message to the selected agent for processing.
+    You must have an agent selected via select_agent first.
+
+    Args:
+        message: The message to send to the selected agent.
+        tool_context: Automatically injected by ADK.
+
+    Returns:
+        Instruction to transfer to the dynamic_workflow sub-agent.
+    """
+    logger.info("[tool:send_to_agent] Called with message=%r", message[:100] if message else "")
+
+    selected_cid = tool_context.state.get(STATE_KEY_SELECTED_AGENT)
+
+    if not selected_cid:
+        return (
+            "No agent is currently selected. "
+            "Please use select_agent first to choose an agent to talk to."
+        )
+
+    recruited = tool_context.state.get(STATE_KEY_RECRUITED_AGENTS, {})
+    record = recruited.get(selected_cid, {})
+    agent_name = record.get("name", selected_cid[:20])
+
+    # Set up state for dynamic_workflow_agent
+    tool_context.state[STATE_KEY_SELECTED_AGENT_CIDS] = [selected_cid]
+    tool_context.state[STATE_KEY_TASK_MESSAGE] = message
+
+    logger.info(
+        "[tool:send_to_agent] Forwarding to agent: %s, message: %r",
+        agent_name,
+        message[:50],
+    )
+
+    return (
+        f"Forwarding message to **{agent_name}**. "
+        f"Transfer to the 'dynamic_workflow' sub-agent now."
     )
 
 
@@ -109,9 +229,8 @@ async def select_and_delegate(
 dynamic_workflow_agent = DynamicWorkflowAgent(
     name="dynamic_workflow",
     description=(
-        "Executes tasks using previously recruited agents. Transfer to this "
-        "agent AFTER calling select_and_delegate to run the selected agents. "
-        "Do NOT call this agent directly — use select_and_delegate first."
+        "Executes tasks by forwarding messages to the selected remote agent. "
+        "Transfer to this agent AFTER calling send_to_agent."
     ),
 )
 
@@ -121,39 +240,51 @@ dynamic_workflow_agent = DynamicWorkflowAgent(
 
 root_agent = Agent(
     name="recruiter_supervisor",
-    model=LiteLlm(model=LLM_MODEL),
+    model=LiteLlm(model=LLM_MODEL, temperature=0.1),
     description="The main recruiter supervisor agent that finds and delegates tasks to agents.",
     instruction="""You are a Recruiter Supervisor agent. Your job is to help users find agents
-from the AGNTCY directory and delegate tasks to them.
-
-You have two tools and one sub-agent:
+from the AGNTCY directory and connect them to selected agents.
 
 **Tools:**
-1. `recruit_agents(query)` — Search the AGNTCY directory for agents matching a task
-   description. Use this when the user wants to find or discover agents. The results
-   are stored in your session state so you can reference them later.
+1. `recruit_agents(query)` — Search for agents. Pass the user's FULL message as the query.
 
-2. `select_and_delegate(agent_cids, task_message)` — Select one or more previously
-   recruited agents by their CID and prepare a task message for them. Use this when
-   the user wants to execute a task using a recruited agent.
+2. `select_agent(agent_identifier)` — Select an agent by name or CID.
+   Example: select_agent("Shipping agent") or select_agent("baeabc123...")
+
+3. `deselect_agent()` — Clear the current selection and return to supervisor mode.
+
+4. `send_to_agent(message)` — Forward a message to the selected agent. After this,
+   transfer to the 'dynamic_workflow' sub-agent.
 
 **Sub-agent:**
-- `dynamic_workflow` — After calling select_and_delegate, transfer to this sub-agent
-  to actually execute the task on the selected remote agents.
+- `dynamic_workflow` — Executes the actual communication with the selected agent.
+  Only transfer here AFTER calling send_to_agent.
 
 **Workflow:**
-1. When the user asks to find/search/recruit agents: call `recruit_agents` with their query.
-   Present the results clearly, including agent names, CIDs, and descriptions.
 
-2. When the user wants to use a recruited agent for a task:
-   a. Call `select_and_delegate` with the appropriate CID(s) and task message.
-   b. Then transfer to the `dynamic_workflow` sub-agent.
+1. **SEARCH requests** (user says "find", "search", "recruit", "look for"):
+   → Call `recruit_agents` with the full user message
+   → Present results with names and CIDs
 
-3. If the user asks to execute a task but no agents have been recruited yet,
-   first recruit agents, then select and delegate.
+2. **SELECT requests** (user says "select", "choose", "use", "talk to" + agent name/CID):
+   → Call `select_agent` with the identifier
+   → Confirm selection
 
-Always present CIDs when showing recruitment results so the user can reference them.""",
-    tools=[recruit_agents, select_and_delegate],
+3. **DESELECT requests** (user says "deselect", "clear", "back", "stop talking"):
+   → Call `deselect_agent`
+
+4. **MESSAGE to selected agent** (any other message when an agent is selected):
+   → Call `send_to_agent` with the user's message
+   → Transfer to `dynamic_workflow`
+
+5. **No agent selected and not a search/select request**:
+   → Ask the user to either search for agents or select one from previous results
+
+**IMPORTANT:**
+- When an agent is selected, forward ALL non-command messages to that agent
+- The user talks to ONE agent at a time
+- Always show available agents after a search so the user can select by name""",
+    tools=[recruit_agents, select_agent, deselect_agent, send_to_agent],
     sub_agents=[dynamic_workflow_agent],
 )
 
@@ -174,6 +305,29 @@ root_runner = Runner(
 # ---------------------------------------------------------------------------
 
 
+def _log_event(event: Event) -> None:
+    """Log key details from an ADK event for observability."""
+    author = getattr(event, "author", "?")
+    is_final = event.is_final_response()
+
+    # Extract text snippet from content
+    text_snippet = ""
+    if event.content and event.content.parts:
+        for part in event.content.parts:
+            if hasattr(part, "text") and part.text:
+                text_snippet = part.text[:120]
+                break
+            if hasattr(part, "function_call") and part.function_call:
+                text_snippet = f"function_call: {part.function_call.name}({dict(part.function_call.args) if part.function_call.args else {}})"
+                break
+            if hasattr(part, "function_response") and part.function_response:
+                text_snippet = f"function_response: {part.function_response.name}"
+                break
+
+    tag = "FINAL" if is_final else "event"
+    logger.info("[%s] author=%s | %s", tag, author, text_snippet)
+
+
 async def _get_or_create_session(user_id: str, session_id: str):
     """Retrieve an existing session or create a new one."""
     session = await session_service.get_session(
@@ -186,10 +340,78 @@ async def _get_or_create_session(user_id: str, session_id: str):
     return session
 
 
+async def get_recruited_agents(user_id: str, session_id: str) -> dict[str, dict]:
+    """Retrieve agent records stored in session state by recruit_agents tool.
+
+    Args:
+        user_id: User ID for the session
+        session_id: Session ID to retrieve state from
+
+    Returns:
+        Dict of agent records keyed by CID, or empty dict if none found
+    """
+    session = await session_service.get_session(
+        app_name=APP_NAME, user_id=user_id, session_id=session_id
+    )
+    if session is None:
+        logger.warning("Session '%s' not found for user '%s'", session_id, user_id)
+        return {}
+    return session.state.get(STATE_KEY_RECRUITED_AGENTS, {})
+
+
+async def get_evaluation_results(user_id: str, session_id: str) -> dict[str, dict]:
+    """Retrieve evaluation results stored in session state.
+
+    Args:
+        user_id: User ID for the session
+        session_id: Session ID to retrieve state from
+
+    Returns:
+        Dict of evaluation results keyed by agent_id, or empty dict if none found
+    """
+    session = await session_service.get_session(
+        app_name=APP_NAME, user_id=user_id, session_id=session_id
+    )
+    if session is None:
+        logger.warning("Session '%s' not found for user '%s'", session_id, user_id)
+        return {}
+    return session.state.get(STATE_KEY_EVALUATION_RESULTS, {})
+
+
+async def get_selected_agent(user_id: str, session_id: str) -> dict | None:
+    """Retrieve the currently selected agent from session state.
+
+    Args:
+        user_id: User ID for the session
+        session_id: Session ID to retrieve state from
+
+    Returns:
+        Dict with agent info (cid, name, description) or None if no agent selected
+    """
+    session = await session_service.get_session(
+        app_name=APP_NAME, user_id=user_id, session_id=session_id
+    )
+    if session is None:
+        return None
+
+    selected_cid = session.state.get(STATE_KEY_SELECTED_AGENT)
+    if not selected_cid:
+        return None
+
+    recruited = session.state.get(STATE_KEY_RECRUITED_AGENTS, {})
+    record = recruited.get(selected_cid, {})
+
+    return {
+        "cid": selected_cid,
+        "name": record.get("name", "Unknown"),
+        "description": record.get("description", ""),
+    }
+
+
 async def call_agent(
     query: str, user_id: str = "default_user", session_id: str | None = None
-) -> tuple[str, str]:
-    """Send a query to the recruiter supervisor and return (response_text, session_id).
+) -> dict:
+    """Send a query to the recruiter supervisor and return a structured response.
 
     Args:
         query: The user's message.
@@ -198,11 +420,16 @@ async def call_agent(
             If None, a new session is created.
 
     Returns:
-        Tuple of (final_response_text, session_id).
+        Dict containing:
+            - response: The text response from the agent
+            - session_id: The session ID used
+            - agent_records: Dict of recruited agent records (keyed by CID)
+            - evaluation_results: Dict of evaluation results (keyed by agent_id)
     """
     if session_id is None:
         session_id = str(uuid4())
 
+    logger.info("[call_agent] session_id=%s query=%r", session_id, query)
     await _get_or_create_session(user_id, session_id)
 
     content = types.Content(role="user", parts=[types.Part(text=query)])
@@ -212,12 +439,32 @@ async def call_agent(
     async for event in root_runner.run_async(
         user_id=user_id, session_id=session_id, new_message=content
     ):
+        _log_event(event)
         if event.is_final_response():
             if event.content and event.content.parts:
                 final_response = event.content.parts[0].text
             break
 
-    return final_response, session_id
+    # Retrieve structured data from session state
+    agent_records = await get_recruited_agents(user_id, session_id)
+    evaluation_results = await get_evaluation_results(user_id, session_id)
+    selected_agent = await get_selected_agent(user_id, session_id)
+
+    logger.info("[call_agent] Final response: %s", final_response[:200])
+    logger.info(
+        "[call_agent] agent_records=%d, evaluation_results=%d, selected_agent=%s",
+        len(agent_records),
+        len(evaluation_results),
+        selected_agent.get("name") if selected_agent else None,
+    )
+
+    return {
+        "response": final_response,
+        "session_id": session_id,
+        "agent_records": agent_records,
+        "evaluation_results": evaluation_results,
+        "selected_agent": selected_agent,
+    }
 
 
 async def stream_agent(
@@ -236,6 +483,7 @@ async def stream_agent(
     if session_id is None:
         session_id = str(uuid4())
 
+    logger.info("[stream_agent] session_id=%s query=%r", session_id, query)
     await _get_or_create_session(user_id, session_id)
 
     content = types.Content(role="user", parts=[types.Part(text=query)])
@@ -243,4 +491,5 @@ async def stream_agent(
     async for event in root_runner.run_async(
         user_id=user_id, session_id=session_id, new_message=content
     ):
+        _log_event(event)
         yield event, session_id

@@ -79,7 +79,12 @@ class TestPromptEndpoint:
         with patch(
             "agents.supervisors.recruiter.main.call_agent",
             new_callable=AsyncMock,
-            return_value=("Here are the results", "session-123"),
+            return_value={
+                "response": "Here are the results",
+                "session_id": "session-123",
+                "agent_records": {"cid1": {"name": "Agent A"}},
+                "evaluation_results": {},
+            },
         ):
             resp = client.post(
                 "/agent/prompt",
@@ -89,12 +94,19 @@ class TestPromptEndpoint:
             data = resp.json()
             assert data["response"] == "Here are the results"
             assert data["session_id"] == "session-123"
+            assert "agent_records" in data
+            assert data["agent_records"]["cid1"]["name"] == "Agent A"
 
     def test_prompt_with_session_id(self, client):
         with patch(
             "agents.supervisors.recruiter.main.call_agent",
             new_callable=AsyncMock,
-            return_value=("Response", "my-session"),
+            return_value={
+                "response": "Response",
+                "session_id": "my-session",
+                "agent_records": {},
+                "evaluation_results": {},
+            },
         ) as mock_call:
             resp = client.post(
                 "/agent/prompt",
@@ -110,7 +122,12 @@ class TestPromptEndpoint:
         with patch(
             "agents.supervisors.recruiter.main.call_agent",
             new_callable=AsyncMock,
-            return_value=("OK", "auto-generated-id"),
+            return_value={
+                "response": "OK",
+                "session_id": "auto-generated-id",
+                "agent_records": {},
+                "evaluation_results": {},
+            },
         ):
             resp = client.post(
                 "/agent/prompt",
@@ -132,6 +149,32 @@ class TestPromptEndpoint:
             )
             assert resp.status_code == 500
             assert "LLM unavailable" in resp.json()["detail"]
+
+    def test_prompt_returns_selected_agent(self, client):
+        with patch(
+            "agents.supervisors.recruiter.main.call_agent",
+            new_callable=AsyncMock,
+            return_value={
+                "response": "Agent selected",
+                "session_id": "session-123",
+                "agent_records": {"cid1": {"name": "Shipping Agent"}},
+                "evaluation_results": {},
+                "selected_agent": {
+                    "cid": "cid1",
+                    "name": "Shipping Agent",
+                    "description": "Ships things",
+                },
+            },
+        ):
+            resp = client.post(
+                "/agent/prompt",
+                json={"prompt": "Select Shipping Agent"},
+            )
+            assert resp.status_code == 200
+            data = resp.json()
+            assert "selected_agent" in data
+            assert data["selected_agent"]["name"] == "Shipping Agent"
+            assert data["selected_agent"]["cid"] == "cid1"
 
 
 # ---------------------------------------------------------------------------

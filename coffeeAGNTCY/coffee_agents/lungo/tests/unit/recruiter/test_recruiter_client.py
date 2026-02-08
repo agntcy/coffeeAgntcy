@@ -25,8 +25,53 @@ from agents.supervisors.recruiter.models import (
 )
 from agents.supervisors.recruiter.recruiter_client import (
     _extract_parts,
+    _parse_dict_values,
     recruit_agents,
 )
+
+
+# ---------------------------------------------------------------------------
+# _parse_dict_values
+# ---------------------------------------------------------------------------
+
+
+class TestParseDictValues:
+    def test_already_dict_values(self):
+        data = {"cid1": {"name": "Agent A"}}
+        result = _parse_dict_values(data)
+        assert result == {"cid1": {"name": "Agent A"}}
+
+    def test_json_string_values(self):
+        """Recruiter service may return JSON strings instead of dicts."""
+        import json
+        data = {
+            "cid1": json.dumps({"name": "Agent A", "url": "http://a:9000"}),
+            "cid2": json.dumps({"name": "Agent B", "url": "http://b:9000"}),
+        }
+        result = _parse_dict_values(data)
+        assert result["cid1"]["name"] == "Agent A"
+        assert result["cid2"]["name"] == "Agent B"
+
+    def test_mixed_dict_and_string_values(self):
+        import json
+        data = {
+            "cid1": {"name": "Agent A"},
+            "cid2": json.dumps({"name": "Agent B"}),
+        }
+        result = _parse_dict_values(data)
+        assert result["cid1"]["name"] == "Agent A"
+        assert result["cid2"]["name"] == "Agent B"
+
+    def test_invalid_json_string_skipped(self):
+        data = {"cid1": "not valid json {{{"}
+        result = _parse_dict_values(data)
+        assert "cid1" not in result
+
+    def test_non_dict_json_skipped(self):
+        import json
+        data = {"cid1": json.dumps(["a", "list"])}
+        result = _parse_dict_values(data)
+        assert "cid1" not in result
 
 
 # ---------------------------------------------------------------------------

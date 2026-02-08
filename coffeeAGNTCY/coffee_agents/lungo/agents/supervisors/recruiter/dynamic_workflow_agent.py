@@ -5,17 +5,23 @@
 Dynamic Workflow Agent for the Recruiter Supervisor. This agent is responsible for managing
 and orchestrating recruitment searches and evaluations through the agent recruiter service
 and building dynamic workflows from the search results.
-
-References:
-https://dev.to/masahide/building-dynamic-parallel-workflows-in-google-adk-lmn
 """
 
 import logging
 from typing import AsyncGenerator, ClassVar
+from uuid import uuid4
 
-from google.adk.agents import BaseAgent, ParallelAgent
+import httpx
+from a2a.types import (
+    Message,
+    MessageSendParams,
+    Role,
+    SendMessageRequest,
+    TextPart,
+)
+from a2a.utils.message import get_message_text
+from google.adk.agents import BaseAgent
 from google.adk.agents.invocation_context import InvocationContext
-from google.adk.agents.remote_a2a_agent import RemoteA2aAgent
 from google.adk.events.event import Event
 from google.genai import types
 
@@ -30,34 +36,116 @@ logger = logging.getLogger("lungo.recruiter.supervisor.dynamic_workflow")
 
 
 class DynamicWorkflowAgent(BaseAgent):
-    """Creates and runs RemoteA2aAgent sub-agents for LLM-selected recruited agents.
+    """Executes tasks by sending messages to selected recruited agents via A2A HTTP.
 
     The root supervisor sets ``STATE_KEY_SELECTED_AGENT_CIDS`` in session state
-    before transferring to this agent.  This agent reads those CIDs, looks up the
-    full records from ``STATE_KEY_RECRUITED_AGENTS``, and dynamically instantiates
-    ``RemoteA2aAgent`` instances to execute the task.
-
-    Key design constraints (from the dev.to article pattern):
-    - Fresh agent instances per invocation (ADK single-parent rule).
-    - Unique names with ``run_id`` suffix to avoid collisions.
-    - ``ClassVar`` for constants (ADK agents are Pydantic models).
+    before transferring to this agent. This agent reads those CIDs, looks up the
+    full records from ``STATE_KEY_RECRUITED_AGENTS``, and sends A2A messages
+    directly via HTTP.
     """
 
     RESULT_STATE_PREFIX: ClassVar[str] = "dynamic_workflow_result_"
+
+    async def _send_a2a_message(
+        self, url: str, message: str, agent_name: str
+    ) -> str:
+        """Send an A2A message to a remote agent and return the response text."""
+        request_id = str(uuid4())
+        message_id = str(uuid4())
+
+        a2a_request = SendMessageRequest(
+            id=request_id,
+            params=MessageSendParams(
+                message=Message(
+                    messageId=message_id,
+                    role=Role.user,
+                    parts=[TextPart(text=message)],
+                ),
+            ),
+        )
+
+        logger.info(
+            "[agent:dynamic_workflow] Sending A2A request to %s: %r",
+            url,
+            message[:100],
+        )
+
+        try:
+            async with httpx.AsyncClient(timeout=httpx.Timeout(60.0)) as client:
+                response = await client.post(
+                    url,
+                    json=a2a_request.model_dump(mode="json", by_alias=True, exclude_none=True),
+                )
+                response.raise_for_status()
+                data = response.json()
+
+            # Extract text from A2A response using a2a.utils
+            result = data.get("result", {})
+
+            # Try to parse the response message and extract text
+            # Format 1: result is a Message dict directly
+            if "parts" in result and "messageId" in result:
+                try:
+                    response_message = Message.model_validate(result)
+                    text = get_message_text(response_message)
+                    if text:
+                        return text
+                except Exception:
+                    logger.debug("Failed to parse result as Message", exc_info=True)
+
+            # Format 2: result.status.message contains the Message
+            status = result.get("status", {})
+            status_message = status.get("message", {})
+            if status_message and "parts" in status_message:
+                try:
+                    response_message = Message.model_validate(status_message)
+                    text = get_message_text(response_message)
+                    if text:
+                        return text
+                except Exception:
+                    logger.debug("Failed to parse status.message as Message", exc_info=True)
+
+            # Fallback: return raw result as string
+            if result:
+                return str(result)
+
+            return f"Agent {agent_name} returned no response."
+
+        except httpx.HTTPStatusError as e:
+            logger.error(
+                "[agent:dynamic_workflow] HTTP error from %s: %s",
+                url,
+                e.response.status_code,
+            )
+            return f"Error communicating with {agent_name}: HTTP {e.response.status_code}"
+        except Exception as e:
+            logger.error(
+                "[agent:dynamic_workflow] Error sending to %s: %s",
+                url,
+                str(e),
+                exc_info=True,
+            )
+            return f"Error communicating with {agent_name}: {str(e)}"
 
     async def _run_async_impl(
         self, ctx: InvocationContext
     ) -> AsyncGenerator[Event, None]:
         selected_cids: list[str] = ctx.session.state.get(
             STATE_KEY_SELECTED_AGENT_CIDS, []
-        )
+        ) or []
         recruited: dict[str, dict] = ctx.session.state.get(
             STATE_KEY_RECRUITED_AGENTS, {}
+        ) or {}
+        task_message: str = ctx.session.state.get(STATE_KEY_TASK_MESSAGE, "") or ""
+
+        logger.info(
+            "[agent:dynamic_workflow] Running with selected_cids=%s, task=%r",
+            selected_cids,
+            task_message[:100] if task_message else "",
         )
-        task_message: str = ctx.session.state.get(STATE_KEY_TASK_MESSAGE, "")
 
         if not selected_cids:
-            logger.warning("No agent CIDs selected for delegation.")
+            logger.warning("[agent:dynamic_workflow] No agent CIDs selected for delegation.")
             yield Event(
                 author=self.name,
                 invocation_id=ctx.invocation_id,
@@ -73,10 +161,8 @@ class DynamicWorkflowAgent(BaseAgent):
             )
             return
 
-        # Build RemoteA2aAgent instances for each selected CID
-        run_id = ctx.invocation_id[:8]
-        remote_agents: list[RemoteA2aAgent] = []
-        cleanup_clients: list[RemoteA2aAgent] = []
+        # Process each selected agent
+        responses: list[str] = []
 
         for cid in selected_cids:
             record_data = recruited.get(cid)
@@ -93,68 +179,42 @@ class DynamicWorkflowAgent(BaseAgent):
                 )
                 continue
 
-            agent_card = record.to_agent_card()
-            unique_name = f"{record.to_safe_agent_name()}_{run_id}"
-
-            remote_agent = RemoteA2aAgent(
-                name=unique_name,
-                description=record.description or f"Remote agent {record.name}",
-                agent_card=agent_card,
-            )
-            remote_agents.append(remote_agent)
-            cleanup_clients.append(remote_agent)
-
-        if not remote_agents:
-            yield Event(
-                author=self.name,
-                invocation_id=ctx.invocation_id,
-                content=types.Content(
-                    role="model",
-                    parts=[
-                        types.Part(
-                            text="None of the selected agent CIDs matched any recruited agents."
-                        )
-                    ],
-                ),
-            )
-            return
-
-        try:
-            # Single agent: run directly. Multiple: wrap in ParallelAgent.
-            if len(remote_agents) == 1:
-                executor = remote_agents[0]
-            else:
-                executor = ParallelAgent(
-                    name=f"parallel_executor_{run_id}",
-                    sub_agents=remote_agents,
+            if not record.url:
+                logger.warning(
+                    f"Agent {record.name} has no URL; skipping.",
                 )
+                responses.append(f"**{record.name}**: No URL configured for this agent.")
+                continue
 
-            # Inject the task message into the conversation for the remote agent(s)
-            if task_message:
-                ctx.session.events.append(
-                    Event(
-                        author="user",
-                        invocation_id=ctx.invocation_id,
-                        content=types.Content(
-                            role="user",
-                            parts=[types.Part(text=task_message)],
-                        ),
-                    )
-                )
+            logger.info(
+                "[agent:dynamic_workflow] Sending to agent: %s at %s",
+                record.name,
+                record.url,
+            )
 
-            async for event in executor.run_async(ctx):
-                yield event
-        finally:
-            # Cleanup httpx clients created by RemoteA2aAgent
-            for ra in cleanup_clients:
-                try:
-                    if hasattr(ra, "_client") and ra._client is not None:
-                        await ra._client.aclose()
-                except Exception:
-                    logger.debug(
-                        f"Error closing client for {ra.name}", exc_info=True
-                    )
+            # Send A2A message
+            response_text = await self._send_a2a_message(
+                url=record.url,
+                message=task_message,
+                agent_name=record.name,
+            )
+            responses.append(f"**{record.name}**:\n{response_text}")
 
-            # Clear the selection so it doesn't persist for the next turn
-            ctx.session.state.pop(STATE_KEY_SELECTED_AGENT_CIDS, None)
-            ctx.session.state.pop(STATE_KEY_TASK_MESSAGE, None)
+        # Combine responses
+        if responses:
+            combined = "\n\n---\n\n".join(responses)
+        else:
+            combined = "No agents were able to process the request."
+
+        yield Event(
+            author=self.name,
+            invocation_id=ctx.invocation_id,
+            content=types.Content(
+                role="model",
+                parts=[types.Part(text=combined)],
+            ),
+        )
+
+        # Clear the selection so it doesn't persist for the next turn
+        ctx.session.state[STATE_KEY_SELECTED_AGENT_CIDS] = None
+        ctx.session.state[STATE_KEY_TASK_MESSAGE] = None

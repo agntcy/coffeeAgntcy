@@ -15,7 +15,13 @@ from fastapi.responses import JSONResponse, StreamingResponse
 from pathlib import Path
 from pydantic import BaseModel
 
-from agents.supervisors.recruiter.agent import call_agent, stream_agent
+from agents.supervisors.recruiter.agent import (
+    call_agent,
+    stream_agent,
+    get_recruited_agents,
+    get_evaluation_results,
+    get_selected_agent,
+)
 from agents.supervisors.recruiter.card import RECRUITER_SUPERVISOR_CARD
 from agents.supervisors.recruiter.recruiter_service_card import (
     RECRUITER_AGENT_URL,
@@ -46,12 +52,23 @@ class PromptRequest(BaseModel):
 async def handle_prompt(request: PromptRequest):
     """Send prompt to the recruiter supervisor ADK agent and return the result."""
     try:
-        session_id = request.session_id or str(uuid4())
-        response_text, session_id = await call_agent(
+        session_id = request.session_id or "default_session" #or str(uuid4())
+        result = await call_agent(
             query=request.prompt,
             session_id=session_id,
         )
-        return {"response": response_text, "session_id": session_id}
+        # Build response matching original API format
+        response: dict = {
+            "response": result["response"],
+            "session_id": result["session_id"],
+        }
+        if result.get("agent_records"):
+            response["agent_records"] = result["agent_records"]
+        if result.get("evaluation_results"):
+            response["evaluation_results"] = result["evaluation_results"]
+        if result.get("selected_agent"):
+            response["selected_agent"] = result["selected_agent"]
+        return response
     except Exception as e:
         logger.error(f"Error handling prompt: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Operation failed: {str(e)}")
@@ -61,14 +78,17 @@ async def handle_prompt(request: PromptRequest):
 async def handle_stream_prompt(request: PromptRequest):
     """Stream recruiter supervisor agent responses as NDJSON lines."""
     try:
-        session_id = request.session_id or str(uuid4())
+        session_id = request.session_id or "default_session" #or str(uuid4())
+        user_id = "default_user"
 
         async def stream_generator():
             try:
+                final_sid = session_id
                 async for event, sid in stream_agent(
                     query=request.prompt,
                     session_id=session_id,
                 ):
+                    final_sid = sid
                     # Build an NDJSON line from each ADK event
                     msg_text = None
                     if event.content and event.content.parts:
@@ -78,14 +98,25 @@ async def handle_stream_prompt(request: PromptRequest):
                                 break
 
                     if event.is_final_response():
-                        line = {
+                        # Include agent_records, evaluation_results, selected_agent in final event
+                        agent_records = await get_recruited_agents(user_id, final_sid)
+                        evaluation_results = await get_evaluation_results(user_id, final_sid)
+                        selected_agent = await get_selected_agent(user_id, final_sid)
+
+                        line: dict = {
                             "response": {
                                 "event_type": "completed",
                                 "message": msg_text,
                                 "state": "completed",
                             },
-                            "session_id": sid,
+                            "session_id": final_sid,
                         }
+                        if agent_records:
+                            line["response"]["agent_records"] = agent_records
+                        if evaluation_results:
+                            line["response"]["evaluation_results"] = evaluation_results
+                        if selected_agent:
+                            line["response"]["selected_agent"] = selected_agent
                         yield json.dumps(line) + "\n"
                     elif msg_text:
                         line = {
