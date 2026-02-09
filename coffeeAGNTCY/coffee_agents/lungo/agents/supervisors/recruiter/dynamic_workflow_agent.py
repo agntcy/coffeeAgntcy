@@ -32,7 +32,23 @@ from agents.supervisors.recruiter.models import (
     AgentRecord,
 )
 
+
+from config.config import (
+    DEFAULT_MESSAGE_TRANSPORT, 
+    TRANSPORT_SERVER_ENDPOINT,
+)
+from agntcy_app_sdk.semantic.a2a.protocol import A2AProtocol
+from agents.supervisors.recruiter.shared import get_factory
+
 logger = logging.getLogger("lungo.recruiter.supervisor.dynamic_workflow")
+
+# Global factory and transport instances
+factory = get_factory()
+transport = factory.create_transport(
+    DEFAULT_MESSAGE_TRANSPORT,
+    endpoint=TRANSPORT_SERVER_ENDPOINT,
+    name="default/default/dynamic_workflow_agent",
+)
 
 
 class DynamicWorkflowAgent(BaseAgent):
@@ -47,7 +63,7 @@ class DynamicWorkflowAgent(BaseAgent):
     RESULT_STATE_PREFIX: ClassVar[str] = "dynamic_workflow_result_"
 
     async def _send_a2a_message(
-        self, url: str, message: str, agent_name: str
+        self, card: AgentRecord, message: str, agent_name: str
     ) -> str:
         """Send an A2A message to a remote agent and return the response text."""
         request_id = str(uuid4())
@@ -66,18 +82,27 @@ class DynamicWorkflowAgent(BaseAgent):
 
         logger.info(
             "[agent:dynamic_workflow] Sending A2A request to %s: %r",
-            url,
+            card.name,
             message[:100],
         )
 
+        client = await factory.create_client(
+            "A2A",
+            agent_topic=A2AProtocol.create_agent_topic(card),
+            transport=transport,
+        )
+
         try:
-            async with httpx.AsyncClient(timeout=httpx.Timeout(60.0)) as client:
+            '''async with httpx.AsyncClient(timeout=httpx.Timeout(60.0)) as client:
                 response = await client.post(
                     url,
                     json=a2a_request.model_dump(mode="json", by_alias=True, exclude_none=True),
                 )
                 response.raise_for_status()
-                data = response.json()
+                data = response.json()'''
+            
+            response = await client.send_message(a2a_request)
+            data = response.model_dump(mode="json", by_alias=True, exclude_none=True)
 
             # Extract text from A2A response using a2a.utils
             result = data.get("result", {})
@@ -113,15 +138,15 @@ class DynamicWorkflowAgent(BaseAgent):
 
         except httpx.HTTPStatusError as e:
             logger.error(
-                "[agent:dynamic_workflow] HTTP error from %s: %s",
-                url,
+                "[agent:dynamic_workflow] error from %s: %s",
+                card.name,
                 e.response.status_code,
             )
             return f"Error communicating with {agent_name}: HTTP {e.response.status_code}"
         except Exception as e:
             logger.error(
                 "[agent:dynamic_workflow] Error sending to %s: %s",
-                url,
+                card.name,
                 str(e),
                 exc_info=True,
             )
@@ -179,12 +204,12 @@ class DynamicWorkflowAgent(BaseAgent):
                 )
                 continue
 
-            if not record.url:
+            '''if not record.url:
                 logger.warning(
                     f"Agent {record.name} has no URL; skipping.",
                 )
                 responses.append(f"**{record.name}**: No URL configured for this agent.")
-                continue
+                continue'''
 
             logger.info(
                 "[agent:dynamic_workflow] Sending to agent: %s at %s",
@@ -194,7 +219,7 @@ class DynamicWorkflowAgent(BaseAgent):
 
             # Send A2A message
             response_text = await self._send_a2a_message(
-                url=record.url,
+                card=record,
                 message=task_message,
                 agent_name=record.name,
             )

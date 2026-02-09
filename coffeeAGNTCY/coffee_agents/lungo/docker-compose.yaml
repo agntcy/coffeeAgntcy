@@ -373,3 +373,19 @@ services:
       - "31234:31234"
     profiles:
       - oasf-translate
+
+  recruiter:
+    build:
+      context: ../../..
+      dockerfile: coffeeAGNTCY/coffee_agents/recruiter/Dockerfile
+    image: ghcr.io/agntcy/coffee-agntcy/recruiter:latest
+    container_name: recruiter
+    env_file:
+      - .env
+    environment:
+      - DEFAULT_MESSAGE_TRANSPORT=${DEFAULT_MESSAGE_TRANSPORT:-NATS}
+      - TRANSPORT_SERVER_ENDPOINT=${TRANSPORT_SERVER_ENDPOINT:-nats://nats:4222}
+      - OTLP_HTTP_ENDPOINT=${OTLP_HTTP_ENDPOINT:-http://otel-collector:4318}
+      - ENABLE_HTTP=true
+    ports:
+      - "8881:8881"
