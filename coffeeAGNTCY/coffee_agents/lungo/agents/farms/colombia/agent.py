@@ -164,12 +164,10 @@ class FarmAgent:
                         mcp_call_result = "No content returned from tool."
 
                 logger.info(f"Weather forecast result: {mcp_call_result}")
-                return {
-                    "weather_forecast_success": True, "weather_forecast": [AIMessage(mcp_call_result)]}
+                return {"weather_forecast_success": True, "weather_forecast": [AIMessage(mcp_call_result)]}
         except Exception as e:
             logger.error(f"Error during MCP tool call: {e}")
-            return {
-                "weather_forecast_success": False, "weather_forecast": [AIMessage(f"Weather Forecast MCP Server was Unavailable")]}
+            return {"weather_forecast_success": False, "weather_forecast": [AIMessage(f"Weather Forecast MCP Server was Unavailable")]}
         finally:
             pass
 
