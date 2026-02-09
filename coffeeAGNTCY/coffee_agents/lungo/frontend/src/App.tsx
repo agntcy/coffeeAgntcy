@@ -30,19 +30,13 @@ import { ThemeProvider } from "@/contexts/ThemeContext"
 import { Message } from "./types/message"
 import { getGraphConfig } from "@/utils/graphConfigs"
 import { PATTERNS, PatternType } from "@/utils/patternUtils"
-import { parseApiError } from "@/utils/const.ts"
+import {DiscoveryResponseEvent} from "@/components/MainArea/Graph/Directory/types.ts";
 
 interface ApiResponse {
   response: string
   session_id?: string
 }
 
-type DiscoveryResponseEvent = {
-  response: string
-  ts: number
-  sessionId?: string
-  senderLabel?: string
-}
 
 const App: React.FC = () => {
   const { sendMessage } = useAgentAPI()

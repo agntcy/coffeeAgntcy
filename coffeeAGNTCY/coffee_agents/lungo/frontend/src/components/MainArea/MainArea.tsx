@@ -32,15 +32,9 @@ import {
 import { useViewportAwareFitView } from "@/hooks/useViewportAwareFitView"
 import { useModalManager } from "@/hooks/useModalManager"
 import type { Node, Edge } from "@xyflow/react"
-import {EDGE_LABELS} from "@/utils/const.ts";
+import {EDGE_LABELS, HANDLE_TYPES} from "@/utils/const.ts";
 import {PUBLISH_SUBSCRIBE_CONFIG, GROUP_COMMUNICATION_CONFIG} from "@/utils/graphConfigs";
-
-type DiscoveryResponseEvent = {
-  response: string
-  ts: number
-  sessionId?: string
-  senderLabel?: string
-}
+import {DiscoveryResponseEvent} from "@/components/MainArea/Graph/Directory/types.ts";
 
 const proOptions = { hideAttribution: true }
 
@@ -130,149 +124,209 @@ const MainArea: React.FC<MainAreaProps> = ({
   )
 
   const addDiscoveryResponseGraph = useCallback(
-    (_evt: DiscoveryResponseEvent) => {
-      console.log("Adding discovery response graph for event:", _evt)
+      (_evt: DiscoveryResponseEvent) => {
+        console.log("Adding discovery response graph for event:", _evt)
 
-      const responseText = (_evt.response ?? "").toLowerCase()
-      // const responseText = "accountant" // for testing
+        const raw = (_evt as any)?.agent_records as Record<string, any> | undefined
+        if (!raw || typeof raw !== "object" || Array.isArray(raw)) return
 
-      const hasKeyword = (kw: string) => new RegExp(`\\b${kw}\\b`, "i").test(responseText)
+        const entries = Object.entries(raw)
+            .map(([id, rec]) => ({
+              id: String(id),
+              name: String(rec?.name ?? "").trim(),
+              record: rec,
+            }))
+            .filter((e) => e.name.length > 0)
 
-      const kindsToAdd = ([
-        "brazil",
-        "vietnam",
-        "colombia",
-        "shipper",
-        "accountant",
-        "tatooine",
-      ] as const).filter(hasKeyword)
+        if (entries.length === 0) return
 
-      if (kindsToAdd.length === 0) return
 
-      const baseId = ++seqRef.current
+        const KEYWORDS = ["brazil", "vietnam", "colombia", "shipper", "tatooine", "accountant"] as const
+        type Keyword = (typeof KEYWORDS)[number]
 
-      const recruiterNodeId = "recruiter-agent"
-      const recruiterPos = { x: 400, y: 300 }
+        const recruiterNodeId = "recruiter-agent"
+        const recruiterPos = { x: 400, y: 300 }
 
-      const templatesByKind: Record<(typeof kindsToAdd)[number], Node | undefined> = {
-        brazil: PUBLISH_SUBSCRIBE_CONFIG.nodes.find((n) =>
-          String(n.data?.label1 ?? "").toLowerCase().includes("brazil"),
-        ),
-        vietnam: PUBLISH_SUBSCRIBE_CONFIG.nodes.find((n) =>
-          String(n.data?.label1 ?? "").toLowerCase().includes("vietnam"),
-        ),
-        colombia: PUBLISH_SUBSCRIBE_CONFIG.nodes.find((n) =>
-          String(n.data?.label1 ?? "").toLowerCase().includes("colombia"),
-        ),
-        shipper: GROUP_COMMUNICATION_CONFIG.nodes.find((n) =>
-          String(n.data?.label1 ?? "").toLowerCase().includes("shipper"),
-        ),
-        accountant: GROUP_COMMUNICATION_CONFIG.nodes.find((n) =>
-          String(n.data?.label1 ?? "").toLowerCase().includes("accountant"),
-        ),
-        tatooine: GROUP_COMMUNICATION_CONFIG.nodes.find((n) =>
-          String(n.data?.label1 ?? "").toLowerCase().includes("tatooine"),
-        ),
-      }
+        const NODE_WIDTH = 193
+        const START_Y_OFFSET = 450
+        const HORIZONTAL_GAP = 40
 
-      const NODE_WIDTH = 193
-      const START_Y_OFFSET = 450
-      const HORIZONTAL_GAP = 40
+        const baseId = ++seqRef.current
 
-      const makeNodeId = (kind: string) => `discovery-${kind}-${baseId}`
+        const hasKeyword = (name: string, kw: string) =>
+            new RegExp(`\\b${kw}\\b`, "i").test(name)
 
-      const cloneTemplateNode = (
-        template: Node,
-        id: string,
-        position: { x: number; y: number },
-        parentExists: boolean,
-      ): Node => {
-        const t: any = template
-        const {
-          parentId: _parentId,
-          extent: _extent,
-          expandParent: _expandParent,
-          ...rest
-        } = t
+        const safeIdPart = (s: string) =>
+            s.replace(/[^a-zA-Z0-9_-]/g, "_")
 
-        return {
-          ...rest,
-          id,
-          position,
-          ...(parentExists ? { parentId: t.parentId, extent: t.extent } : {}),
-          data: {
-            ...(template.data ?? {}),
-            active: false,
-            isModalOpen: false,
-            onOpenIdentityModal: handleOpenIdentityModal,
-            onOpenOasfModal: handleOpenOasfModal,
-          },
-        } as Node
-      }
+        const templateNodeId = (kind: Keyword) =>
+            `discovery-${kind}-${baseId}`
 
-      setNodes((prevNodes) => {
-        const existingIds = new Set(prevNodes.map((n) => n.id))
+        const generatedNodeId = (agentId: string) =>
+            `discovery-agent-${baseId}-${safeIdPart(agentId)}`
 
-        const total = kindsToAdd.length
-        const startCol = -Math.floor(total / 2)
+        const edgeId = (targetId: string) =>
+            `edge-${recruiterNodeId}-${baseId}-${targetId}`
 
-        const newNodes: Node[] = []
+        const templatesByKeyword: Record<Keyword, Node | undefined> = {
+          brazil: PUBLISH_SUBSCRIBE_CONFIG.nodes.find((n) =>
+              String(n.data?.label1 ?? "").toLowerCase().includes("brazil"),
+          ),
+          vietnam: PUBLISH_SUBSCRIBE_CONFIG.nodes.find((n) =>
+              String(n.data?.label1 ?? "").toLowerCase().includes("vietnam"),
+          ),
+          colombia: PUBLISH_SUBSCRIBE_CONFIG.nodes.find((n) =>
+              String(n.data?.label1 ?? "").toLowerCase().includes("colombia"),
+          ),
+          shipper: GROUP_COMMUNICATION_CONFIG.nodes.find((n) =>
+              String(n.data?.label1 ?? "").toLowerCase().includes("shipper"),
+          ),
+          tatooine: GROUP_COMMUNICATION_CONFIG.nodes.find((n) =>
+              String(n.data?.label1 ?? "").toLowerCase().includes("tatooine"),
+          ),
+          accountant: GROUP_COMMUNICATION_CONFIG.nodes.find((n) =>
+              String(n.data?.label1 ?? "").toLowerCase().includes("accountant"),
+          ),
+        }
 
-        kindsToAdd.forEach((kind, idx) => {
-          const template = templatesByKind[kind]
-          if (!template) return
-
-          const id = makeNodeId(kind)
-          if (existingIds.has(id)) return
-
-          const parentIdNeeded = (template as any)?.parentId as string | undefined
-          const parentExists = parentIdNeeded ? existingIds.has(parentIdNeeded) : false
-
-          const colIndex = startCol + idx
-          newNodes.push(
-            cloneTemplateNode(
-              template,
-              id,
-              {
-                x: recruiterPos.x + colIndex * (NODE_WIDTH + HORIZONTAL_GAP),
-                y: recruiterPos.y + START_Y_OFFSET,
-              },
-              parentExists,
-            ),
+        setNodes((prevNodes) => {
+          const existingIds = new Set(prevNodes.map((n) => n.id))
+          const existingNames = new Set(
+              prevNodes
+                  .map((n: any) =>
+                      String(n?.data?.label1 ?? "").trim().toLowerCase(),
+                  )
+                  .filter(Boolean),
           )
-        })
 
-        return newNodes.length ? [...prevNodes, ...newNodes] : prevNodes
-      })
+          const recruiterNode = prevNodes.find((n) => n.id === recruiterNodeId)
+          const recruiterIcons = recruiterNode?.data
+              ? {
+                icon: recruiterNode.data.icon,
+                iconUrl: recruiterNode.data.iconUrl,
+                image: recruiterNode.data.image,
+              }
+              : {}
 
-      setEdges((prevEdges) => {
-        const existingEdgeIds = new Set(prevEdges.map((e) => e.id))
+          const templateKeywordsToAdd: Keyword[] = KEYWORDS.filter((kw) =>
+              entries.some((e) => hasKeyword(e.name, kw)),
+          )
 
-        const newEdges: Edge[] = kindsToAdd
-          .map((kind) => {
-            const template = templatesByKind[kind]
-            if (!template) return null
+          const generatedEntriesToAdd = (() => {
+            const seen = new Set<string>()
+            return entries.filter((e) => {
+              if (KEYWORDS.some((kw) => hasKeyword(e.name, kw))) return false
 
-            const targetId = makeNodeId(kind)
-            const edgeId = `edge-${recruiterNodeId}-${baseId}-${targetId}`
-            if (existingEdgeIds.has(edgeId)) return null
+              const key = e.name.toLowerCase()
+              if (existingNames.has(key)) return false
+              if (seen.has(key)) return false
 
-            // Only connect recruiter -> newly added node
-            return {
-              id: edgeId,
+              seen.add(key)
+              return true
+            })
+          })()
+
+          const total = templateKeywordsToAdd.length + generatedEntriesToAdd.length
+          const startCol = -Math.floor(total / 2)
+
+          let col = 0
+          const newNodes: Node[] = []
+          const newEdges: Edge[] = []
+
+          /* -------- template nodes -------- */
+
+          for (const kind of templateKeywordsToAdd) {
+            const template = templatesByKeyword[kind]
+            if (!template) continue
+
+            const id = templateNodeId(kind)
+            if (existingIds.has(id)) continue
+
+            const x =
+                recruiterPos.x + (startCol + col) * (NODE_WIDTH + HORIZONTAL_GAP)
+            const y = recruiterPos.y + START_Y_OFFSET
+            col++
+
+            const { parentId, extent, expandParent, ...rest } = template as any
+
+            newNodes.push({
+              ...rest,
+              id,
+              position: { x, y },
+              ...(parentId && existingIds.has(parentId)
+                  ? { parentId, extent }
+                  : {}),
+              data: {
+                ...(template.data ?? {}),
+                active: false,
+                isModalOpen: false,
+                onOpenIdentityModal: handleOpenIdentityModal,
+                onOpenOasfModal: handleOpenOasfModal,
+              },
+            })
+
+            newEdges.push({
+              id: edgeId(id),
               source: recruiterNodeId,
-              target: targetId,
-              data: { label: EDGE_LABELS.A2A_OVER_HTTP },
+              target: id,
               type: "custom",
-            } as Edge
-          })
-          .filter(Boolean) as Edge[]
+              data: { label: EDGE_LABELS.A2A_OVER_HTTP },
+            })
+          }
 
-        return newEdges.length ? [...prevEdges, ...newEdges] : prevEdges
-      })
-    },
-    [setNodes, setEdges, handleOpenIdentityModal, handleOpenOasfModal],
+          /* -------- generated agent nodes -------- */
+
+          for (const entry of generatedEntriesToAdd) {
+            const id = generatedNodeId(entry.id)
+            if (existingIds.has(id)) continue
+
+            const x =
+                recruiterPos.x + (startCol + col) * (NODE_WIDTH + HORIZONTAL_GAP)
+            const y = recruiterPos.y + START_Y_OFFSET
+            col++
+
+            newNodes.push({
+              id,
+              type: "customNode",
+              position: { x, y },
+              data: {
+                label1: entry.name,
+                ...recruiterIcons,
+                active: false,
+                isModalOpen: false,
+                handles: HANDLE_TYPES.TARGET,
+                agentDirectoryLink: "place-holder",
+                oasfRecord: entry.record,
+
+                onOpenIdentityModal: handleOpenIdentityModal,
+                onOpenOasfModal: handleOpenOasfModal,
+              },
+            })
+
+            newEdges.push({
+              id: edgeId(id),
+              source: recruiterNodeId,
+              target: id,
+              type: "custom",
+              data: { label: EDGE_LABELS.A2A_OVER_HTTP },
+            })
+          }
+
+          if (newNodes.length === 0) return prevNodes
+
+          // Apply edges here to avoid ref hacks
+          setEdges((prevEdges) => {
+            const existingEdgeIds = new Set(prevEdges.map((e) => e.id))
+            const filtered = newEdges.filter((e) => !existingEdgeIds.has(e.id))
+            return filtered.length ? [...prevEdges, ...filtered] : prevEdges
+          })
+
+          return [...prevNodes, ...newNodes]
+        })
+      },
+      [setNodes, setEdges, handleOpenIdentityModal, handleOpenOasfModal],
   )
+
 
   useEffect(() => {
     if (pattern !== "on_demand_discovery") return

@@ -62,6 +62,8 @@ async def handle_prompt(request: PromptRequest):
             "response": result["response"],
             "session_id": result["session_id"],
         }
+
+        print("result:", result)
         if result.get("agent_records"):
             response["agent_records"] = result["agent_records"]
         if result.get("evaluation_results"):

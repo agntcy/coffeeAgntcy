@@ -78,13 +78,6 @@ const OasfRecordModal: React.FC<OasfRecordModalProps> = ({
         (record as any)?.url ||
         ""
 
-    const directoryVersion =
-        (nodeData as any)?.directoryVersion ||
-        (record as any)?.directory_version ||
-        (record as any)?.directoryVersion ||
-        (record as any)?.version ||
-        ""
-
     const handleModalClick = (e: React.MouseEvent) => e.stopPropagation()
 
     return createPortal(
