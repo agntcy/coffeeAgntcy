@@ -26,6 +26,7 @@ import AuctionStreamingFeed from "./AuctionStreamingFeed"
 
 import { cn } from "@/utils/cn.ts"
 import { logger } from "@/utils/logger"
+import {DiscoveryResponseEvent} from "@/components/MainArea/Graph/Directory/types.ts";
 
 const DEFAULT_GRAFANA_URL = "http://127.0.0.1:3001"
 const GRAFANA_URL = import.meta.env.VITE_GRAFANA_URL || DEFAULT_GRAFANA_URL
@@ -35,13 +36,6 @@ const GRAFANA_DASHBOARD_PATH =
 interface ApiResponse {
     response: string
     session_id?: string
-}
-
-type DiscoveryResponseEvent = {
-    response: string
-    ts: number
-    sessionId?: string
-    senderLabel?: string
 }
 
 interface ChatAreaProps {
@@ -109,27 +103,24 @@ const ChatArea: React.FC<ChatAreaProps> = ({
     const { sendMessageWithCallback } = useAgentAPI()
 
     const onApiSuccess = useCallback(
-        (apiResponse: { response: string; session_id?: string }) => {
+        (apiResponse: {
+            agent_records: any;
+            response: string; session_id?: string, }) => {
             if (pattern !== "on_demand_discovery") {
-                console.log("[ChatArea] onApiSuccess: pattern mismatch, returning early", {
-                    pattern,
-                })
                 return
             }
 
-            console.log("[ChatArea] onApiSuccess: emitting onDiscoveryResponse")
             onDiscoveryResponse?.({
                 response: apiResponse.response,
                 ts: Date.now(),
                 sessionId: apiResponse.session_id,
-                senderLabel: "Discovery Response",
+                agent_records: apiResponse.agent_records,
             })
         },
         [pattern, onDiscoveryResponse],
     )
 
     useEffect(() => {
-        console.log("[ChatArea] onApiSuccess reference updated", { pattern })
     }, [onApiSuccess, pattern])
 
     const handleMinimize = () => {
@@ -208,7 +199,6 @@ const ChatArea: React.FC<ChatAreaProps> = ({
 
     const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>): void => {
         if (e.key === "Enter" && !e.shiftKey) {
-            console.log("[ChatArea] Enter key pressed, processing message")
             e.preventDefault()
             processMessage()
         }

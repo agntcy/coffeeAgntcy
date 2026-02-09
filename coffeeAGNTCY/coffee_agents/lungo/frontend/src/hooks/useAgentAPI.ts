@@ -10,10 +10,13 @@ import { Message } from "@/types/message"
 import { isLocalDev, parseApiError, Role } from "@/utils/const"
 import { withRetry, RETRY_CONFIG } from "@/utils/retryUtils"
 import { shouldEnableRetries, getApiUrlForPattern } from "@/utils/patternUtils"
+import {AgentRecord} from "@/components/MainArea/Graph/Directory/types.ts";
 
 interface ApiResponse {
   response: string
   session_id?: string
+
+  agent_records?: AgentRecord[]
 }
 
 interface UseAgentAPIReturn {
@@ -82,6 +85,7 @@ export const useAgentAPI = (): UseAgentAPIReturn => {
             withCredentials: !isLocalDev
           },
       )
+
       return response.data
     }
 

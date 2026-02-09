@@ -423,7 +423,7 @@ const DISCOVERY_CONFIG: GraphConfig = {
         label2: "AGNTCY Agent Directory",
         handles: HANDLE_TYPES.ALL,
         githubLink: `${urlsConfig.agentDirectory.github}`,
-        agentDirectoryLink: `${urlsConfig.agentDirectory.baseUrl}${urlsConfig.agentDirectory.agents.directory}`,
+        agentDirectoryLink: "place-holder",
       },
       position: { x: 800, y: 100 },
     },
