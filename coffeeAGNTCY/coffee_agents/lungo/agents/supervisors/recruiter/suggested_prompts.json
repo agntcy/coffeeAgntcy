@@ -1,12 +1,8 @@
 {
   "recruiter_prompts": [
     {
-      "prompt": "Find me an agent that can handle accounting tasks",
-      "description": "Searches the AGNTCY directory for agents matching accounting-related capabilities and returns matching agent records."
-    },
-    {
-      "prompt": "Search for agents with shipping capabilities and evaluate them",
-      "description": "Finds agents with shipping skills in the directory and runs evaluation scenarios to assess their quality and reliability."
+      "prompt": "Can you find an agent named 'Brazil Coffee Farm' in the AGNTCY directory?",
+      "description": "Searches the AGNTCY directory for an agent with the name 'Brazil Coffee Farm' and returns the agent record if found."
     }
   ]
 }

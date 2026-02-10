@@ -17,6 +17,8 @@ services:
       - ENABLE_HTTP=true
     ports:
       - "9999:9999"
+    profiles:
+      - farms
   colombia-farm-server:
     build:
       context: ../../..
@@ -37,6 +39,8 @@ services:
       - MCP_PAYMENT_SERVICE_URL=${MCP_PAYMENT_SERVICE_URL:-http://payment-mcp-server:8081/mcp}
     ports:
       - "9998:9998"
+    profiles:
+      - farms
   vietnam-farm-server:
     build:
       context: ../../..
@@ -57,6 +61,8 @@ services:
       - MCP_PAYMENT_SERVICE_URL=${MCP_PAYMENT_SERVICE_URL:-http://payment-mcp-server:8081/mcp}
     ports:
       - "9997:9997"
+    profiles:
+      - farms
   nats:
     image: nats:latest
     container_name: lungo-nats
@@ -100,6 +106,8 @@ services:
       - IDENTITY_SERVICE_API_KEY=${IDENTITY_SERVICE_API_KEY_AUCTION_SUPERVISOR:-dummy_api_key}
     ports:
       - "8000:8000"
+    profiles:
+      - farms
 
   ui:
     build:
@@ -114,8 +122,8 @@ services:
       - VITE_DISCOVERY_APP_API_URL=http://127.0.0.1:8882 # recruiter supervisor
       - VITE_DIRECTORY_VERSION="v0.6.0"
       - VITE_DIRECTORY_SERVER_URL=http://127.0.0.1:8888
-    depends_on:
-      - auction-supervisor
+    #depends_on:
+    #  - auction-supervisor
     ports:
       - "3000:3000"
 
@@ -129,6 +137,8 @@ services:
       - DEFAULT_MESSAGE_TRANSPORT=${DEFAULT_MESSAGE_TRANSPORT:-NATS}
       - TRANSPORT_SERVER_ENDPOINT=${TRANSPORT_SERVER_ENDPOINT:-nats://nats:4222}
       - OTLP_HTTP_ENDPOINT=${OTLP_HTTP_ENDPOINT:-http://otel-collector:4318}
+    profiles:
+      - farms
 
   payment-mcp-server:
     build:
@@ -144,6 +154,8 @@ services:
       - OTLP_HTTP_ENDPOINT=${OTLP_HTTP_ENDPOINT:-http://otel-collector:4318}
       - IDENTITY_AUTH_ENABLED=${IDENTITY_AUTH_ENABLED:-} # Disabled by default
       - IDENTITY_SERVICE_API_KEY=${IDENTITY_SERVICE_API_KEY_PAYMENT_MCP:-dummy_api_key}
+    profiles:
+      - farms
 
   clickhouse-server:
     image: clickhouse/clickhouse-server
@@ -219,6 +231,8 @@ services:
       - ENABLE_HTTP=true
     ports:
       - "9091:9091"
+    profiles:
+      - logistics
 
   logistics-accountant:
     build:
@@ -233,6 +247,8 @@ services:
       - ENABLE_HTTP=true
     ports:
       - "9092:9092"
+    profiles:
+      - logistics
 
   logistics-farm:
     build:
@@ -247,6 +263,8 @@ services:
       - ENABLE_HTTP=true
     ports:
       - "9093:9093"
+    profiles:
+      - logistics
 
   logistics-helpdesk:
     build:
@@ -261,6 +279,8 @@ services:
       - ENABLE_HTTP=true
     ports:
       - "9094:9094"
+    profiles:
+      - logistics
 
   logistics-supervisor:
     build:
@@ -276,6 +296,8 @@ services:
       - OTLP_HTTP_ENDPOINT=${OTLP_HTTP_ENDPOINT:-http://otel-collector:4318}
     ports:
       - "9090:9090"
+    profiles:
+      - logistics
 
   mce-api-layer:
     image: ghcr.io/agntcy/obs-api:0.1.1
@@ -336,19 +358,8 @@ services:
       interval: 10s
       retries: 60
       start_period: 10s
-
-  dir-mcp-server:
-    image: ghcr.io/agntcy/dir-ctl:latest
-    container_name: dir-mcp-server
-    stdin_open: true
-    tty: false
-    command: ["mcp", "serve"]
-    environment:
-      - DIRECTORY_CLIENT_SERVER_ADDRESS=dir-api-server:8888
-      - DIRECTORY_CLIENT_TLS_SKIP_VERIFY=true
-      - OASF_API_VALIDATION_DISABLE=true
-    depends_on:
-      - dir-api-server
+    profiles:
+      - recruiter
 
   zot:
     image: ghcr.io/project-zot/zot:v2.1.10
@@ -365,14 +376,8 @@ services:
       interval: 5s
       retries: 60
       start_period: 15s
-
-  oasf-translation-service:
-    image: ghcr.io/agntcy/oasf-sdk:v0.0.14
-    container_name: oasf-translation-service
-    ports:
-      - "31234:31234"
     profiles:
-      - oasf-translate
+      - recruiter
 
   recruiter:
     build:
@@ -382,10 +387,39 @@ services:
     container_name: recruiter
     env_file:
       - .env
+    depends_on:
+      - dir-api-server
     environment:
       - DEFAULT_MESSAGE_TRANSPORT=${DEFAULT_MESSAGE_TRANSPORT:-NATS}
       - TRANSPORT_SERVER_ENDPOINT=${TRANSPORT_SERVER_ENDPOINT:-nats://nats:4222}
       - OTLP_HTTP_ENDPOINT=${OTLP_HTTP_ENDPOINT:-http://otel-collector:4318}
       - ENABLE_HTTP=true
+      - MCP_CONNECTION_MODE=binary
+      - DIRECTORY_CLIENT_SERVER_ADDRESS=dir-api-server:8888
+      - DIRECTORY_CLIENT_TLS_SKIP_VERIFY=true
+      - OASF_API_VALIDATION_SCHEMA_URL=https://schema.oasf.outshift.com
     ports:
       - "8881:8881"
+    profiles:
+      - recruiter
+
+  lungo-recruiter-supervisor:
+    build:
+      context: ../../..
+      dockerfile: coffeeAGNTCY/coffee_agents/lungo/docker/Dockerfile.recruiter-supervisor
+    image: ghcr.io/agntcy/coffee-agntcy/recruiter-supervisor:latest
+    container_name: lungo-recruiter-supervisor
+    volumes:
+      # Mount local git metadata so /build/info can derive latest tag/date in dev
+      - ../../../.git:/app/.git:ro
+    env_file:
+      - .env
+    environment:
+      - RECRUITER_AGENT_URL=http://recruiter:8881
+      - DEFAULT_MESSAGE_TRANSPORT=${DEFAULT_MESSAGE_TRANSPORT:-NATS}
+      - TRANSPORT_SERVER_ENDPOINT=${TRANSPORT_SERVER_ENDPOINT:-nats://nats:4222}
+      - OTLP_HTTP_ENDPOINT=${OTLP_HTTP_ENDPOINT:-http://otel-collector:4318}
+    ports:
+      - "8882:8882"
+    profiles:
+      - recruiter

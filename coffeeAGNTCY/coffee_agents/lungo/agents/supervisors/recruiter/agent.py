@@ -33,7 +33,6 @@ from agents.supervisors.recruiter.models import (
     STATE_KEY_EVALUATION_RESULTS,
     STATE_KEY_RECRUITED_AGENTS,
     STATE_KEY_SELECTED_AGENT,
-    STATE_KEY_SELECTED_AGENT_CIDS,
     STATE_KEY_TASK_MESSAGE,
 )
 from agents.supervisors.recruiter.recruiter_client import recruit_agents
@@ -50,6 +49,7 @@ LITELLM_PROXY_API_KEY = os.getenv("LITELLM_PROXY_API_KEY")
 if LITELLM_PROXY_API_KEY and LITELLM_PROXY_BASE_URL:
     os.environ["LITELLM_PROXY_API_KEY"] = LITELLM_PROXY_API_KEY
     os.environ["LITELLM_PROXY_API_BASE"] = LITELLM_PROXY_BASE_URL
+    logger.info(f"Using LiteLLM Proxy: {LITELLM_PROXY_BASE_URL}")
     litellm.use_litellm_proxy = True
 else:
     logger.info("Using direct LLM instance")
@@ -57,7 +57,6 @@ else:
 # ---------------------------------------------------------------------------
 # Tools
 # ---------------------------------------------------------------------------
-
 
 def _find_agent_by_name_or_cid(
     identifier: str, recruited: dict[str, dict]
@@ -207,7 +206,6 @@ async def send_to_agent(
     agent_name = record.get("name", selected_cid[:20])
 
     # Set up state for dynamic_workflow_agent
-    tool_context.state[STATE_KEY_SELECTED_AGENT_CIDS] = [selected_cid]
     tool_context.state[STATE_KEY_TASK_MESSAGE] = message
 
     logger.info(
@@ -240,7 +238,7 @@ dynamic_workflow_agent = DynamicWorkflowAgent(
 
 root_agent = Agent(
     name="recruiter_supervisor",
-    model=LiteLlm(model=LLM_MODEL, temperature=0.1),
+    model=LiteLlm(model=LLM_MODEL),
     description="The main recruiter supervisor agent that finds and delegates tasks to agents.",
     instruction="""You are a Recruiter Supervisor agent. Your job is to help users find agents
 from the AGNTCY directory and connect them to selected agents.

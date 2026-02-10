@@ -10,8 +10,6 @@ and building dynamic workflows from the search results.
 import logging
 from typing import AsyncGenerator, ClassVar
 from uuid import uuid4
-
-import httpx
 from a2a.types import (
     Message,
     MessageSendParams,
@@ -27,7 +25,7 @@ from google.genai import types
 
 from agents.supervisors.recruiter.models import (
     STATE_KEY_RECRUITED_AGENTS,
-    STATE_KEY_SELECTED_AGENT_CIDS,
+    STATE_KEY_SELECTED_AGENT,
     STATE_KEY_TASK_MESSAGE,
     AgentRecord,
 )
@@ -49,7 +47,6 @@ transport = factory.create_transport(
     endpoint=TRANSPORT_SERVER_ENDPOINT,
     name="default/default/dynamic_workflow_agent",
 )
-
 
 class DynamicWorkflowAgent(BaseAgent):
     """Executes tasks by sending messages to selected recruited agents via A2A HTTP.
@@ -136,13 +133,6 @@ class DynamicWorkflowAgent(BaseAgent):
 
             return f"Agent {agent_name} returned no response."
 
-        except httpx.HTTPStatusError as e:
-            logger.error(
-                "[agent:dynamic_workflow] error from %s: %s",
-                card.name,
-                e.response.status_code,
-            )
-            return f"Error communicating with {agent_name}: HTTP {e.response.status_code}"
         except Exception as e:
             logger.error(
                 "[agent:dynamic_workflow] Error sending to %s: %s",
@@ -155,21 +145,19 @@ class DynamicWorkflowAgent(BaseAgent):
     async def _run_async_impl(
         self, ctx: InvocationContext
     ) -> AsyncGenerator[Event, None]:
-        selected_cids: list[str] = ctx.session.state.get(
-            STATE_KEY_SELECTED_AGENT_CIDS, []
-        ) or []
+        selected_cid: str | None = ctx.session.state.get(STATE_KEY_SELECTED_AGENT)
         recruited: dict[str, dict] = ctx.session.state.get(
             STATE_KEY_RECRUITED_AGENTS, {}
         ) or {}
         task_message: str = ctx.session.state.get(STATE_KEY_TASK_MESSAGE, "") or ""
 
         logger.info(
-            "[agent:dynamic_workflow] Running with selected_cids=%s, task=%r",
-            selected_cids,
+            "[agent:dynamic_workflow] Running with selected_cid=%s, task=%r",
+            selected_cid,
             task_message[:100] if task_message else "",
         )
 
-        if not selected_cids:
+        if not selected_cid:
             logger.warning("[agent:dynamic_workflow] No agent CIDs selected for delegation.")
             yield Event(
                 author=self.name,
@@ -186,50 +174,58 @@ class DynamicWorkflowAgent(BaseAgent):
             )
             return
 
-        # Process each selected agent
-        responses: list[str] = []
-
-        for cid in selected_cids:
-            record_data = recruited.get(cid)
-            if not record_data:
-                logger.warning(f"CID {cid} not found in recruited agents; skipping.")
-                continue
-
-            try:
-                record = AgentRecord(cid=cid, **record_data)
-            except Exception:
-                logger.warning(
-                    f"Failed to parse agent record for CID {cid}; skipping.",
-                    exc_info=True,
-                )
-                continue
-
-            '''if not record.url:
-                logger.warning(
-                    f"Agent {record.name} has no URL; skipping.",
-                )
-                responses.append(f"**{record.name}**: No URL configured for this agent.")
-                continue'''
-
-            logger.info(
-                "[agent:dynamic_workflow] Sending to agent: %s at %s",
-                record.name,
-                record.url,
+        # Process the selected agent
+        record_data = recruited.get(selected_cid)
+        if not record_data:
+            logger.warning(f"CID {selected_cid} not found in recruited agents.")
+            yield Event(
+                author=self.name,
+                invocation_id=ctx.invocation_id,
+                content=types.Content(
+                    role="model",
+                    parts=[
+                        types.Part(
+                            text=f"Selected agent (CID: {selected_cid[:20]}...) not found in recruited agents."
+                        )
+                    ],
+                ),
             )
+            return
 
-            # Send A2A message
-            response_text = await self._send_a2a_message(
-                card=record,
-                message=task_message,
-                agent_name=record.name,
+        try:
+            record = AgentRecord(cid=selected_cid, **record_data)
+        except Exception:
+            logger.warning(
+                f"Failed to parse agent record for CID {selected_cid}.",
+                exc_info=True,
             )
-            responses.append(f"**{record.name}**:\n{response_text}")
+            yield Event(
+                author=self.name,
+                invocation_id=ctx.invocation_id,
+                content=types.Content(
+                    role="model",
+                    parts=[
+                        types.Part(
+                            text=f"Failed to parse agent record for selected agent."
+                        )
+                    ],
+                ),
+            )
+            return
 
-        # Combine responses
-        if responses:
-            combined = "\n\n---\n\n".join(responses)
-        else:
-            combined = "No agents were able to process the request."
+        logger.info(
+            "[agent:dynamic_workflow] Sending to agent: %s at %s",
+            record.name,
+            record.url,
+        )
+
+        # Send A2A message
+        response_text = await self._send_a2a_message(
+            card=record,
+            message=task_message,
+            agent_name=record.name,
+        )
+        combined = f"**{record.name}**:\n{response_text}"
 
         yield Event(
             author=self.name,
@@ -241,5 +237,4 @@ class DynamicWorkflowAgent(BaseAgent):
         )
 
         # Clear the selection so it doesn't persist for the next turn
-        ctx.session.state[STATE_KEY_SELECTED_AGENT_CIDS] = None
         ctx.session.state[STATE_KEY_TASK_MESSAGE] = None

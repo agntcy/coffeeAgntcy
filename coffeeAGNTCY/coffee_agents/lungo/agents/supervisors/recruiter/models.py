@@ -15,7 +15,6 @@ from pydantic import BaseModel
 
 STATE_KEY_RECRUITED_AGENTS = "recruited_agents"  # dict[str, dict] keyed by CID
 STATE_KEY_EVALUATION_RESULTS = "evaluation_results"  # dict[str, dict] keyed by agent_id
-STATE_KEY_SELECTED_AGENT_CIDS = "selected_agent_cids"  # list[str] set by supervisor (legacy)
 STATE_KEY_TASK_MESSAGE = "task_message"  # str: message to forward to selected agents
 STATE_KEY_SELECTED_AGENT = "selected_agent"  # str: CID of the currently selected agent
 

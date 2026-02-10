@@ -4,6 +4,9 @@
 import os
 
 from a2a.types import AgentCard
+from dotenv import load_dotenv
+
+load_dotenv()
 
 RECRUITER_AGENT_URL = os.getenv("RECRUITER_AGENT_URL", "http://localhost:8881")
 
