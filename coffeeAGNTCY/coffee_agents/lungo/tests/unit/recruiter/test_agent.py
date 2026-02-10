@@ -20,7 +20,6 @@ from agents.supervisors.recruiter.agent import (
 from agents.supervisors.recruiter.models import (
     STATE_KEY_RECRUITED_AGENTS,
     STATE_KEY_SELECTED_AGENT,
-    STATE_KEY_SELECTED_AGENT_CIDS,
     STATE_KEY_TASK_MESSAGE,
 )
 
@@ -243,7 +242,6 @@ class TestSendToAgent:
             tool_context=tool_context,
         )
 
-        assert tool_context.state[STATE_KEY_SELECTED_AGENT_CIDS] == ["cid_a"]
         assert tool_context.state[STATE_KEY_TASK_MESSAGE] == "Hello agent!"
         assert "Agent A" in result
         assert "dynamic_workflow" in result.lower()
@@ -259,4 +257,4 @@ class TestSendToAgent:
         )
 
         assert "No agent is currently selected" in result
-        assert STATE_KEY_SELECTED_AGENT_CIDS not in tool_context.state
+        assert STATE_KEY_TASK_MESSAGE not in tool_context.state

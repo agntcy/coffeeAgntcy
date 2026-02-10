@@ -9,7 +9,7 @@ from a2a.types import AgentCard
 from agents.supervisors.recruiter.models import (
     STATE_KEY_EVALUATION_RESULTS,
     STATE_KEY_RECRUITED_AGENTS,
-    STATE_KEY_SELECTED_AGENT_CIDS,
+    STATE_KEY_SELECTED_AGENT,
     STATE_KEY_TASK_MESSAGE,
     AgentRecord,
     RecruitmentResponse,
@@ -26,7 +26,7 @@ class TestStateKeys:
         for key in (
             STATE_KEY_RECRUITED_AGENTS,
             STATE_KEY_EVALUATION_RESULTS,
-            STATE_KEY_SELECTED_AGENT_CIDS,
+            STATE_KEY_SELECTED_AGENT,
             STATE_KEY_TASK_MESSAGE,
         ):
             assert isinstance(key, str)
@@ -35,7 +35,7 @@ class TestStateKeys:
         keys = [
             STATE_KEY_RECRUITED_AGENTS,
             STATE_KEY_EVALUATION_RESULTS,
-            STATE_KEY_SELECTED_AGENT_CIDS,
+            STATE_KEY_SELECTED_AGENT,
             STATE_KEY_TASK_MESSAGE,
         ]
         assert len(keys) == len(set(keys))

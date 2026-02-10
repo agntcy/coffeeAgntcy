@@ -281,6 +281,33 @@ The fastest way to get started is using Docker Compose to spin up the entire sta
 docker compose up
 ```
 
+**Using Profiles**
+
+The docker-compose file is organized into profiles for running specific subsets of services:
+
+| Profile | Services |
+|---------|----------|
+| `farms` | brazil-farm-server, colombia-farm-server, vietnam-farm-server, auction-supervisor, weather-mcp-server, payment-mcp-server |
+| `logistics` | slim, logistics-shipper, logistics-accountant, logistics-farm, logistics-helpdesk, logistics-supervisor |
+| `recruiter` | recruiter, lungo-recruiter-supervisor, dir-api-server, dir-mcp-server, zot |
+
+Run a specific profile:
+```sh
+# Run only farms
+docker compose --profile farms up
+
+# Run only logistics
+docker compose --profile logistics up
+
+# Run only recruiter
+docker compose --profile recruiter up
+
+# Run all profiles
+docker compose --profile farms --profile logistics --profile recruiter up
+```
+
+> **Note:** Shared infrastructure services (nats, ui, clickhouse, otel-collector, grafana, etc.) have no profile and will start with any profile.
+
 Once running:
 - Access the UI at: [http://localhost:3000/](http://localhost:3000/)
 - Access Grafana dashboard at: [http://localhost:3001/](http://localhost:3001/)
