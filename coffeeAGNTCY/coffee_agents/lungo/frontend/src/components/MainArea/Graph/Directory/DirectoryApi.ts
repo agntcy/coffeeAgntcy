@@ -14,6 +14,8 @@ const getSlugFromNodeData = (nodeData: any): string => {
         return nodeData.slug;
     }
 
+    console.log("Node data for slug extraction:", nodeData);
+
     const label1 = nodeData.label1?.toLowerCase();
     const label2 = nodeData.label2?.toLowerCase();
 
@@ -62,6 +64,10 @@ const getSlugFromNodeData = (nodeData: any): string => {
 };
 
 export const fetchOasfRecord = async (nodeData: any): Promise<OasfRecord> => {
+    if (nodeData?.oasfRecord) {
+        return nodeData.oasfRecord;
+    }
+
     const slug = getSlugFromNodeData(nodeData);
 
     let pattern: string = PATTERNS.PUBLISH_SUBSCRIBE;
@@ -84,6 +90,7 @@ export const fetchOasfRecord = async (nodeData: any): Promise<OasfRecord> => {
                 },
             }
         );
+
         return response.data;
     } catch (error) {
         if (axios.isAxiosError(error)) {
@@ -91,6 +98,7 @@ export const fetchOasfRecord = async (nodeData: any): Promise<OasfRecord> => {
                 error.response?.data?.message ||
                 error.message ||
                 "Failed to fetch OASF record";
+
             const errorStatus = error.response?.status;
 
             throw {
@@ -104,3 +112,4 @@ export const fetchOasfRecord = async (nodeData: any): Promise<OasfRecord> => {
         } as IdentityServiceError;
     }
 };
+

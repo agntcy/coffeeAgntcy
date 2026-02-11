@@ -31,6 +31,10 @@ import {
 } from "@/utils/patternUtils"
 import { useViewportAwareFitView } from "@/hooks/useViewportAwareFitView"
 import { useModalManager } from "@/hooks/useModalManager"
+import type { Node, Edge } from "@xyflow/react"
+import {EDGE_LABELS, HANDLE_TYPES} from "@/utils/const.ts";
+import {PUBLISH_SUBSCRIBE_CONFIG, GROUP_COMMUNICATION_CONFIG} from "@/utils/graphConfigs";
+import {DiscoveryResponseEvent} from "@/components/MainArea/Graph/Directory/types.ts";
 
 const proOptions = { hideAttribution: true }
 
@@ -58,6 +62,7 @@ interface MainAreaProps {
   isExpanded?: boolean
   groupCommResponseReceived?: boolean
   onNodeHighlight?: (highlightFunction: (nodeId: string) => void) => void
+  discoveryResponseEvent?: DiscoveryResponseEvent | null
 }
 
 const DELAY_DURATION = 500
@@ -76,6 +81,7 @@ const MainArea: React.FC<MainAreaProps> = ({
                                              isExpanded = false,
                                              groupCommResponseReceived = false,
                                              onNodeHighlight,
+                                             discoveryResponseEvent,
                                            }) => {
   const fitViewWithViewport = useViewportAwareFitView()
   const isGroupCommConnected =
@@ -100,17 +106,239 @@ const MainArea: React.FC<MainAreaProps> = ({
   const [edges, setEdges, onEdgesChange] = useEdgesState(config.edges)
   const animationLock = useRef<boolean>(false)
 
+  const seqRef = useRef(0)
+  const lastTsRef = useRef<number | null>(null)
+
   // OASF Modal state
   const [oasfModalOpen, setOasfModalOpen] = useState(false)
   const [oasfModalData, setOasfModalData] = useState<any>(null)
   const [oasfModalPosition, setOasfModalPosition] = useState<{ x: number; y: number }>({ x: 0, y: 0 })
 
-  const handleOpenOasfModal = (nodeData: any, position: { x: number; y: number }) => {
-    console.log("Opening OASF Modal for node:", nodeData)
-    setOasfModalData(nodeData)
-    setOasfModalPosition(position)
-    setOasfModalOpen(true)
-  }
+  const handleOpenOasfModal = useCallback(
+      (nodeData: any, position: { x: number; y: number }) => {
+        setOasfModalData(nodeData)
+        setOasfModalPosition(position)
+        setOasfModalOpen(true)
+      },
+      [],
+  )
+
+  const addDiscoveryResponseGraph = useCallback(
+      (_evt: DiscoveryResponseEvent) => {
+        console.log("Adding discovery response graph for event:", _evt)
+
+        const raw = (_evt as any)?.agent_records as Record<string, any> | undefined
+        if (!raw || typeof raw !== "object" || Array.isArray(raw)) return
+
+        const entries = Object.entries(raw)
+            .map(([id, rec]) => ({
+              id: String(id),
+              name: String(rec?.name ?? "").trim(),
+              record: rec,
+            }))
+            .filter((e) => e.name.length > 0)
+
+        if (entries.length === 0) return
+
+
+        const KEYWORDS = ["brazil", "vietnam", "colombia", "shipper", "tatooine", "accountant"] as const
+        type Keyword = (typeof KEYWORDS)[number]
+
+        const recruiterNodeId = "recruiter-agent"
+        const recruiterPos = { x: 400, y: 300 }
+
+        const NODE_WIDTH = 193
+        const START_Y_OFFSET = 450
+        const HORIZONTAL_GAP = 40
+
+        const baseId = ++seqRef.current
+
+        const hasKeyword = (name: string, kw: string) =>
+            new RegExp(`\\b${kw}\\b`, "i").test(name)
+
+        const safeIdPart = (s: string) =>
+            s.replace(/[^a-zA-Z0-9_-]/g, "_")
+
+        const templateNodeId = (kind: Keyword) =>
+            `discovery-${kind}-${baseId}`
+
+        const generatedNodeId = (agentId: string) =>
+            `discovery-agent-${baseId}-${safeIdPart(agentId)}`
+
+        const edgeId = (targetId: string) =>
+            `edge-${recruiterNodeId}-${baseId}-${targetId}`
+
+        const templatesByKeyword: Record<Keyword, Node | undefined> = {
+          brazil: PUBLISH_SUBSCRIBE_CONFIG.nodes.find((n) =>
+              String(n.data?.label1 ?? "").toLowerCase().includes("brazil"),
+          ),
+          vietnam: PUBLISH_SUBSCRIBE_CONFIG.nodes.find((n) =>
+              String(n.data?.label1 ?? "").toLowerCase().includes("vietnam"),
+          ),
+          colombia: PUBLISH_SUBSCRIBE_CONFIG.nodes.find((n) =>
+              String(n.data?.label1 ?? "").toLowerCase().includes("colombia"),
+          ),
+          shipper: GROUP_COMMUNICATION_CONFIG.nodes.find((n) =>
+              String(n.data?.label1 ?? "").toLowerCase().includes("shipper"),
+          ),
+          tatooine: GROUP_COMMUNICATION_CONFIG.nodes.find((n) =>
+              String(n.data?.label1 ?? "").toLowerCase().includes("tatooine"),
+          ),
+          accountant: GROUP_COMMUNICATION_CONFIG.nodes.find((n) =>
+              String(n.data?.label1 ?? "").toLowerCase().includes("accountant"),
+          ),
+        }
+
+        setNodes((prevNodes) => {
+          const existingIds = new Set(prevNodes.map((n) => n.id))
+          const existingNames = new Set(
+              prevNodes
+                  .map((n: any) =>
+                      String(n?.data?.label1 ?? "").trim().toLowerCase(),
+                  )
+                  .filter(Boolean),
+          )
+
+          const recruiterNode = prevNodes.find((n) => n.id === recruiterNodeId)
+          const recruiterIcons = recruiterNode?.data
+              ? {
+                icon: recruiterNode.data.icon,
+                iconUrl: recruiterNode.data.iconUrl,
+                image: recruiterNode.data.image,
+              }
+              : {}
+
+          const templateKeywordsToAdd: Keyword[] = KEYWORDS.filter((kw) =>
+              entries.some((e) => hasKeyword(e.name, kw)),
+          )
+
+          const generatedEntriesToAdd = (() => {
+            const seen = new Set<string>()
+            return entries.filter((e) => {
+              if (KEYWORDS.some((kw) => hasKeyword(e.name, kw))) return false
+
+              const key = e.name.toLowerCase()
+              if (existingNames.has(key)) return false
+              if (seen.has(key)) return false
+
+              seen.add(key)
+              return true
+            })
+          })()
+
+          const total = templateKeywordsToAdd.length + generatedEntriesToAdd.length
+          const startCol = -Math.floor(total / 2)
+
+          let col = 0
+          const newNodes: Node[] = []
+          const newEdges: Edge[] = []
+
+          /* -------- template nodes -------- */
+
+          for (const kind of templateKeywordsToAdd) {
+            const template = templatesByKeyword[kind]
+            if (!template) continue
+
+            const id = templateNodeId(kind)
+            if (existingIds.has(id)) continue
+
+            const x =
+                recruiterPos.x + (startCol + col) * (NODE_WIDTH + HORIZONTAL_GAP)
+            const y = recruiterPos.y + START_Y_OFFSET
+            col++
+
+            const { parentId, extent, expandParent, ...rest } = template as any
+
+            newNodes.push({
+              ...rest,
+              id,
+              position: { x, y },
+              ...(parentId && existingIds.has(parentId)
+                  ? { parentId, extent }
+                  : {}),
+              data: {
+                ...(template.data ?? {}),
+                active: false,
+                isModalOpen: false,
+                onOpenIdentityModal: handleOpenIdentityModal,
+                onOpenOasfModal: handleOpenOasfModal,
+              },
+            })
+
+            newEdges.push({
+              id: edgeId(id),
+              source: recruiterNodeId,
+              target: id,
+              type: "custom",
+              data: { label: EDGE_LABELS.A2A_OVER_HTTP },
+            })
+          }
+
+          /* -------- generated agent nodes -------- */
+
+          for (const entry of generatedEntriesToAdd) {
+            const id = generatedNodeId(entry.id)
+            if (existingIds.has(id)) continue
+
+            const x =
+                recruiterPos.x + (startCol + col) * (NODE_WIDTH + HORIZONTAL_GAP)
+            const y = recruiterPos.y + START_Y_OFFSET
+            col++
+
+            newNodes.push({
+              id,
+              type: "customNode",
+              position: { x, y },
+              data: {
+                label1: entry.name,
+                ...recruiterIcons,
+                active: false,
+                isModalOpen: false,
+                handles: HANDLE_TYPES.TARGET,
+                agentDirectoryLink: "place-holder",
+                oasfRecord: entry.record,
+
+                onOpenIdentityModal: handleOpenIdentityModal,
+                onOpenOasfModal: handleOpenOasfModal,
+              },
+            })
+
+            newEdges.push({
+              id: edgeId(id),
+              source: recruiterNodeId,
+              target: id,
+              type: "custom",
+              data: { label: EDGE_LABELS.A2A_OVER_HTTP },
+            })
+          }
+
+          if (newNodes.length === 0) return prevNodes
+
+          // Apply edges here to avoid ref hacks
+          setEdges((prevEdges) => {
+            const existingEdgeIds = new Set(prevEdges.map((e) => e.id))
+            const filtered = newEdges.filter((e) => !existingEdgeIds.has(e.id))
+            return filtered.length ? [...prevEdges, ...filtered] : prevEdges
+          })
+
+          return [...prevNodes, ...newNodes]
+        })
+      },
+      [setNodes, setEdges, handleOpenIdentityModal, handleOpenOasfModal],
+  )
+
+
+  useEffect(() => {
+    if (pattern !== "on_demand_discovery") return
+    if (!discoveryResponseEvent) return
+    if (lastTsRef.current === discoveryResponseEvent.ts) return
+    lastTsRef.current = discoveryResponseEvent.ts
+
+    const text = discoveryResponseEvent.response?.trim()
+    if (!text) return
+
+    addDiscoveryResponseGraph(discoveryResponseEvent)
+  }, [pattern, discoveryResponseEvent, addDiscoveryResponseGraph])
 
   useEffect(() => {
     animationLock.current = false
@@ -118,6 +346,7 @@ const MainArea: React.FC<MainAreaProps> = ({
 
   useEffect(() => {
     handleCloseModals()
+    setOasfModalOpen(false)
   }, [pattern, handleCloseModals])
 
   useEffect(() => {

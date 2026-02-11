@@ -8,6 +8,7 @@ export const PATTERNS = {
   PUBLISH_SUBSCRIBE: "publish_subscribe",
   PUBLISH_SUBSCRIBE_STREAMING: "publish_subscribe_streaming",
   GROUP_COMMUNICATION: "group_communication",
+  ON_DEMAND_DISCOVERY: "on_demand_discovery",
 } as const
 
 export type PatternType = (typeof PATTERNS)[keyof typeof PATTERNS]
@@ -23,16 +24,21 @@ export const shouldEnableRetries = (pattern?: string): boolean => {
 export const getApiUrlForPattern = (pattern?: string): string => {
   const DEFAULT_PUB_SUB_API_URL = "http://127.0.0.1:8000"
   const DEFAULT_GROUP_COMM_APP_API_URL = "http://127.0.0.1:9090"
+  const DEFAULT_DISCOVERY_APP_API_URL = "http://127.0.0.1:8882"
 
   const PUB_SUB_APP_API_URL =
     import.meta.env.VITE_EXCHANGE_APP_API_URL || DEFAULT_PUB_SUB_API_URL
   const GROUP_COMM_APP_API_URL =
     import.meta.env.VITE_LOGISTICS_APP_API_URL || DEFAULT_GROUP_COMM_APP_API_URL
+  const DISCOVERY_APP_API_URL =
+    import.meta.env.VITE_DISCOVERY_APP_API_URL || DEFAULT_DISCOVERY_APP_API_URL
 
   if (isGroupCommunication(pattern)) {
     return GROUP_COMM_APP_API_URL
   } else if (pattern === PATTERNS.PUBLISH_SUBSCRIBE_STREAMING) {
     return PUB_SUB_APP_API_URL
+  } else if (pattern === PATTERNS.ON_DEMAND_DISCOVERY) {
+      return DISCOVERY_APP_API_URL
   } else {
     return PUB_SUB_APP_API_URL
   }

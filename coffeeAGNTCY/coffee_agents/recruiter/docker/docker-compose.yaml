@@ -36,23 +36,21 @@ services:
 
   recruiter-agent:
     build:
-      context: ..
-      dockerfile: Dockerfile
+      context: ../../../..
+      dockerfile: coffeeAGNTCY/coffee_agents/recruiter/Dockerfile
     container_name: recruiter-agent
     ports:
       - "8881:8881"
+    env_file:
+      - ../.env
     environment:
       - ENABLE_HTTP=true
-      - OPENAI_API_KEY=${OPENAI_API_KEY}
-      - LLM_MODEL=${LLM_MODEL:-openai/gpt-4o}
-      # MCP connection config (uses binary mode with dirctl installed in container)
       - MCP_CONNECTION_MODE=binary
       - DIRECTORY_CLIENT_SERVER_ADDRESS=dir-api-server:8888
       - DIRECTORY_CLIENT_TLS_SKIP_VERIFY=true
-      - OASF_API_VALIDATION_DISABLE=true
+      - OASF_API_VALIDATION_SCHEMA_URL=https://schema.oasf.outshift.com
     depends_on:
-      dir-api-server:
-        condition: service_healthy
+      - dir-api-server
     healthcheck:
       test: curl -f http://localhost:8881/.well-known/agent.json || exit 1
       interval: 10s

@@ -18,24 +18,26 @@ interface SidebarProps {
 }
 
 const Sidebar: React.FC<SidebarProps> = ({
-  selectedPattern,
-  onPatternChange,
-}) => {
+                                           selectedPattern,
+                                           onPatternChange,
+                                         }) => {
   const [isPublishSubscribeExpanded, setIsPublishSubscribeExpanded] =
-    useState(true)
+      useState(true)
   const [
     isPublishSubscribeStreamingExpanded,
     setIsPublishSubscribeStreamingExpanded,
   ] = useState(true)
   const [isGroupCommunicationExpanded, setIsGroupCommunicationExpanded] =
-    useState(true)
+      useState(true)
+  const [isOnDemandDiscoveryExpanded, setIsOnDemandDiscoveryExpanded] =
+      useState(true)
   const [transport, setTransport] = useState<string>("")
 
   useEffect(() => {
     const fetchTransportConfig = async () => {
       try {
         const response = await fetch(
-          `${getApiUrlForPattern(PATTERNS.PUBLISH_SUBSCRIBE)}/transport/config`,
+            `${getApiUrlForPattern(PATTERNS.PUBLISH_SUBSCRIBE)}/transport/config`,
         )
         const data = await response.json()
         if (data.transport) {
@@ -61,88 +63,125 @@ const Sidebar: React.FC<SidebarProps> = ({
     setIsGroupCommunicationExpanded(!isGroupCommunicationExpanded)
   }
 
+  const handleOnDemandDiscoveryToggle = () => {
+    setIsOnDemandDiscoveryExpanded(!isOnDemandDiscoveryExpanded)
+  }
+
   return (
-    <div className="flex h-full w-64 flex-none flex-col gap-5 border-r border-sidebar-border bg-sidebar-background font-inter lg:w-[320px]">
-      <div className="flex h-full flex-1 flex-col gap-5 p-4">
-        <div className="flex flex-col">
-          <div className="flex min-h-[36px] w-full items-center gap-2 rounded py-2 pl-2 pr-5">
+      <div className="flex h-full w-64 flex-none flex-col gap-5 border-r border-sidebar-border bg-sidebar-background font-inter lg:w-[320px]">
+        <div className="flex h-full flex-1 flex-col gap-5 p-4">
+          {/* Order Fulfilment Section */}
+          <div className="flex flex-col">
+            <div className="flex min-h-[36px] w-full items-center gap-2 rounded py-2 pl-2 pr-5">
             <span className="flex-1 font-inter text-sm font-normal leading-5 tracking-[0.25px] text-sidebar-text">
               Conversation: Order Fulfilment
             </span>
-          </div>
+            </div>
 
-          <div className="flex flex-col">
-            <div className="flex min-h-[36px] w-full items-center gap-2 rounded py-2 pl-5 pr-5">
+            <div className="flex flex-col">
+              <div className="flex min-h-[36px] w-full items-center gap-2 rounded py-2 pl-5 pr-5">
               <span className="flex-1 font-inter text-sm font-normal leading-5 tracking-[0.25px] text-sidebar-text">
                 Agentic Patterns
               </span>
-            </div>
+              </div>
 
-            <div>
-              <SidebarDropdown
-                title="Secure Group Communication"
-                isExpanded={isGroupCommunicationExpanded}
-                onToggle={handleGroupCommunicationToggle}
-              >
-                <SidebarItem
-                  title="A2A SLIM"
-                  isSelected={selectedPattern === PATTERNS.GROUP_COMMUNICATION}
-                  onClick={() => onPatternChange(PATTERNS.GROUP_COMMUNICATION)}
-                />
-              </SidebarDropdown>
+              <div>
+                <SidebarDropdown
+                    title="Secure Group Communication"
+                    isExpanded={isGroupCommunicationExpanded}
+                    onToggle={handleGroupCommunicationToggle}
+                >
+                  <SidebarItem
+                      title="A2A SLIM"
+                      isSelected={selectedPattern === PATTERNS.GROUP_COMMUNICATION}
+                      onClick={() => onPatternChange(PATTERNS.GROUP_COMMUNICATION)}
+                  />
+                </SidebarDropdown>
+              </div>
             </div>
           </div>
-        </div>
 
-        <div className="flex flex-col">
-          <div className="flex min-h-[36px] w-full items-center gap-2 rounded py-2 pl-2 pr-5">
+          {/* Coffee Buying Section */}
+          <div className="flex flex-col">
+            <div className="flex min-h-[36px] w-full items-center gap-2 rounded py-2 pl-2 pr-5">
             <span className="flex-1 font-inter text-sm font-normal leading-5 tracking-[0.25px] text-sidebar-text">
               Conversation: Coffee Buying
             </span>
-          </div>
+            </div>
 
-          <div className="flex flex-col">
-            <div className="flex min-h-[36px] w-full items-center gap-2 rounded py-2 pl-5 pr-5">
+            <div className="flex flex-col">
+              <div className="flex min-h-[36px] w-full items-center gap-2 rounded py-2 pl-5 pr-5">
               <span className="flex-1 font-inter text-sm font-normal leading-5 tracking-[0.25px] text-sidebar-text">
                 Agentic Patterns
               </span>
+              </div>
+
+              <div>
+                <SidebarDropdown
+                    title="Publish Subscribe"
+                    isExpanded={isPublishSubscribeExpanded}
+                    onToggle={handlePublishSubscribeToggle}
+                >
+                  <SidebarItem
+                      title={`A2A ${transport}`}
+                      isSelected={selectedPattern === PATTERNS.PUBLISH_SUBSCRIBE}
+                      onClick={() => onPatternChange(PATTERNS.PUBLISH_SUBSCRIBE)}
+                  />
+                </SidebarDropdown>
+              </div>
+
+              <div>
+                <SidebarDropdown
+                    title="Publish Subscribe: Streaming"
+                    isExpanded={isPublishSubscribeStreamingExpanded}
+                    onToggle={handlePublishSubscribeStreamingToggle}
+                >
+                  <SidebarItem
+                      title={`A2A ${transport}`}
+                      isSelected={
+                          selectedPattern === PATTERNS.PUBLISH_SUBSCRIBE_STREAMING
+                      }
+                      onClick={() =>
+                          onPatternChange(PATTERNS.PUBLISH_SUBSCRIBE_STREAMING)
+                      }
+                  />
+                </SidebarDropdown>
+              </div>
+            </div>
+          </div>
+
+          {/* Generic Task Section */}
+          <div className="flex flex-col">
+            <div className="flex min-h-[36px] w-full items-center gap-2 rounded py-2 pl-2 pr-5">
+            <span className="flex-1 font-inter text-sm font-normal leading-5 tracking-[0.25px] text-sidebar-text">
+              Conversation: Capability Discovery
+            </span>
             </div>
 
-            <div>
-              <SidebarDropdown
-                title="Publish Subscribe"
-                isExpanded={isPublishSubscribeExpanded}
-                onToggle={handlePublishSubscribeToggle}
-              >
-                <SidebarItem
-                  title={`A2A ${transport}`}
-                  isSelected={selectedPattern === PATTERNS.PUBLISH_SUBSCRIBE}
-                  onClick={() => onPatternChange(PATTERNS.PUBLISH_SUBSCRIBE)}
-                />
-              </SidebarDropdown>
-            </div>
+            <div className="flex flex-col">
+              <div className="flex min-h-[36px] w-full items-center gap-2 rounded py-2 pl-5 pr-5">
+              <span className="flex-1 font-inter text-sm font-normal leading-5 tracking-[0.25px] text-sidebar-text">
+                Agentic Patterns
+              </span>
+              </div>
 
-            <div>
-              <SidebarDropdown
-                title="Publish Subscribe: Streaming"
-                isExpanded={isPublishSubscribeStreamingExpanded}
-                onToggle={handlePublishSubscribeStreamingToggle}
-              >
-                <SidebarItem
-                  title={`A2A ${transport}`}
-                  isSelected={
-                    selectedPattern === PATTERNS.PUBLISH_SUBSCRIBE_STREAMING
-                  }
-                  onClick={() =>
-                    onPatternChange(PATTERNS.PUBLISH_SUBSCRIBE_STREAMING)
-                  }
-                />
-              </SidebarDropdown>
+              <div>
+                <SidebarDropdown
+                    title="Recruiter"
+                    isExpanded={isOnDemandDiscoveryExpanded}
+                    onToggle={handleOnDemandDiscoveryToggle}
+                >
+                  <SidebarItem
+                      title={`A2A HTTP`}
+                      isSelected={selectedPattern === PATTERNS.ON_DEMAND_DISCOVERY}
+                      onClick={() => onPatternChange(PATTERNS.ON_DEMAND_DISCOVERY)}
+                  />
+                </SidebarDropdown>
+              </div>
             </div>
           </div>
         </div>
       </div>
-    </div>
   )
 }
 

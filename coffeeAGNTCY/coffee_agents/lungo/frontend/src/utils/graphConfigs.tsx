@@ -37,7 +37,7 @@ const CoffeeBeanIcon = (
   />
 )
 
-const PUBLISH_SUBSCRIBE_CONFIG: GraphConfig = {
+export const PUBLISH_SUBSCRIBE_CONFIG: GraphConfig = {
   title: "Publish Subscribe Coffee Farm Network",
   nodes: [
     {
@@ -218,7 +218,7 @@ const PUBLISH_SUBSCRIBE_CONFIG: GraphConfig = {
   ],
 }
 
-const GROUP_COMMUNICATION_CONFIG: GraphConfig = {
+export const GROUP_COMMUNICATION_CONFIG: GraphConfig = {
   title: "Secure Group Communication Logistics Network",
   nodes: [
     {
@@ -384,6 +384,67 @@ const GROUP_COMMUNICATION_CONFIG: GraphConfig = {
   ],
 }
 
+const DISCOVERY_CONFIG: GraphConfig = {
+  title: "On-demand Discovery",
+  nodes: [
+    {
+      id: NODE_IDS.RECRUITER,
+      type: NODE_TYPES.CUSTOM,
+      data: {
+        icon: (
+            <img
+                src={supervisorIcon}
+                alt="Recruiter Icon"
+                className="dark-icon h-4 w-4 object-contain"
+            />
+        ),
+        label1: "Recruiter",
+        label2: "Discovery Node",
+        handles: HANDLE_TYPES.ALL,
+        verificationStatus: VERIFICATION_STATUS.VERIFIED,
+        githubLink: `${urlsConfig.github.baseUrl}${urlsConfig.github.agents.recruiter}`,
+      },
+      position: { x: 400, y: 300 },
+    },
+
+    // NEW: Directory node
+    {
+      id: NODE_IDS.DIRECTORY,
+      type: NODE_TYPES.CUSTOM,
+      data: {
+        icon: (
+            <img
+                src={supervisorIcon}
+                alt="Directory Icon"
+                className="dark-icon h-4 w-4 object-contain"
+            />
+        ),
+        label1: "Directory",
+        label2: "AGNTCY Agent Directory",
+        handles: HANDLE_TYPES.ALL,
+        githubLink: `${urlsConfig.agentDirectory.github}`,
+        agentDirectoryLink: "place-holder",
+      },
+      position: { x: 800, y: 100 },
+    },
+  ],
+  edges: [
+    // NEW: Recruiter -> Directory edge
+    {
+      id: EDGE_IDS.RECRUITER_TO_DIRECTORY,
+      source: NODE_IDS.DIRECTORY,
+      target: NODE_IDS.RECRUITER,
+      data: { label: EDGE_LABELS.MCP_WITH_STDIO },
+      type: EDGE_TYPES.CUSTOM,
+    },
+  ],
+  animationSequence: [
+    { ids: [NODE_IDS.RECRUITER] },
+    { ids: [EDGE_IDS.RECRUITER_TO_DIRECTORY] },
+    { ids: [NODE_IDS.DIRECTORY] },
+  ],
+}
+
 export const getGraphConfig = (
   pattern: string,
   _isConnected?: boolean,
@@ -440,6 +501,8 @@ export const getGraphConfig = (
     }
     case "group_communication":
       return GROUP_COMMUNICATION_CONFIG
+    case "on_demand_discovery":
+      return DISCOVERY_CONFIG
     default:
       return PUBLISH_SUBSCRIBE_CONFIG
   }

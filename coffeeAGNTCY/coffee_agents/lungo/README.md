@@ -14,6 +14,7 @@
       * [Option 1: Docker Compose (Recommended)](#option-1-docker-compose-recommended)
       * [Option 2: Local Python Development](#option-2-local-python-development)
       * [Option 3: Local Kind Cluster Deployment](#option-3-local-kind-cluster-deployment)
+    * [Recruiter Supervisor](#recruiter-supervisor)
     * [Group Conversation Implementation](#group-conversation-implementation)
     * [Observability](#observability)
       * [Trace Visualization via Grafana](#trace-visualization-via-grafana)
@@ -281,6 +282,33 @@ The fastest way to get started is using Docker Compose to spin up the entire sta
 docker compose up
 ```
 
+**Using Profiles**
+
+The docker-compose file is organized into profiles for running specific subsets of services:
+
+| Profile | Services |
+|---------|----------|
+| `farms` | brazil-farm-server, colombia-farm-server, vietnam-farm-server, auction-supervisor, weather-mcp-server, payment-mcp-server |
+| `logistics` | slim, logistics-shipper, logistics-accountant, logistics-farm, logistics-helpdesk, logistics-supervisor |
+| `recruiter` | recruiter, lungo-recruiter-supervisor, dir-api-server, dir-mcp-server, zot |
+
+Run a specific profile:
+```sh
+# Run only farms
+docker compose --profile farms up
+
+# Run only logistics
+docker compose --profile logistics up
+
+# Run only recruiter
+docker compose --profile recruiter up
+
+# Run all profiles
+docker compose --profile farms --profile logistics --profile recruiter up
+```
+
+> **Note:** Shared infrastructure services (nats, ui, clickhouse, otel-collector, grafana, etc.) have no profile and will start with any profile.
+
 Once running:
 - Access the UI at: [http://localhost:3000/](http://localhost:3000/)
 - Access Grafana dashboard at: [http://localhost:3001/](http://localhost:3001/)
@@ -480,8 +508,63 @@ kubectl get svc --all-namespaces
 
 Once deployment completes, access services via localhost:
 - **UI**: http://localhost:3000
-- **Auction Supervisor **: http://localhost:30080
+- **Auction Supervisor**: http://localhost:30080
 - **Logistics Supervisor**: http://localhost:30081
+- **Recruiter Supervisor**: http://localhost:8882
+
+### Recruiter Supervisor
+
+The **Recruiter Supervisor** is an ADK-based orchestrator that helps users discover and interact with agents from the AGNTCY Directory. It communicates with a **Recruiter Agent** (which searches the directory) and an **Evaluator Agent** (which scores agent suitability), then delegates tasks to the selected agent via A2A protocol.
+
+**Key Features:**
+- **Agent Discovery**: Queries the Recruiter Agent to search the AGNTCY Directory for agents matching natural language requests
+- **Agent Evaluation**: Receives scored agent cards with suitability rankings from the Evaluator Agent
+- **Dynamic Delegation**: Select an agent by name or CID, then forward messages to it via A2A
+
+**Running the Recruiter Supervisor:**
+
+_Docker Compose:_
+```sh
+docker compose --profile recruiter up
+```
+
+_Local Python:_
+
+> **Note:** The Recruiter Supervisor depends on the **Recruiter Agent** and **Directory services** to discover and evaluate agents. Start these dependencies first:
+> ```sh
+> docker compose up nats dir-api-server zot recruiter
+> ```
+
+```sh
+uv run python agents/supervisors/recruiter/main.py
+```
+
+**API Endpoints:**
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/agent/prompt` | POST | Send a prompt and receive a response |
+| `/agent/prompt/stream` | POST | Stream responses as NDJSON |
+| `/suggested-prompts` | GET | Get suggested prompts for the UI |
+
+**Example Usage:**
+
+```bash
+# Search for agents
+curl -X POST http://127.0.0.1:8882/agent/prompt \
+  -H "Content-Type: application/json" \
+  -d '{"prompt": "Find agents that can help with shipping logistics"}'
+
+# Select an agent (after search results are returned)
+curl -X POST http://127.0.0.1:8882/agent/prompt \
+  -H "Content-Type: application/json" \
+  -d '{"prompt": "Select the Shipping Agent", "session_id": "<session_id>"}'
+
+# Send a message to the selected agent
+curl -X POST http://127.0.0.1:8882/agent/prompt \
+  -H "Content-Type: application/json" \
+  -d '{"prompt": "What shipping options do you offer?", "session_id": "<session_id>"}'
+```
 
 ### Group Conversation Implementation
 

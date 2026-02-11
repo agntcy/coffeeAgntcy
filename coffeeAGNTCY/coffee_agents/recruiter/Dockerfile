@@ -1,32 +1,34 @@
 # Copyright AGNTCY Contributors (https://github.com/agntcy)
 # SPDX-License-Identifier: Apache-2.0
 
-FROM python:3.12-slim
+# SLIM v0.7+ requires to use debian trixie distribution
+FROM python:3.13.11-slim-trixie
+
+# Install system dependencies, including ping, curl, and wget
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends git curl wget iputils-ping && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+
+# Install dirctl binary for MCP toolset (detect architecture for multi-platform builds)
+# Note: Using specific version as /releases/latest/ points to GUI release which doesn't include dirctl
+RUN ARCH=$(dpkg --print-architecture) && \
+    curl -L https://github.com/agntcy/dir/releases/download/v1.0.0-rc.3/dirctl-linux-${ARCH} -o /usr/local/bin/dirctl && \
+    chmod +x /usr/local/bin/dirctl
+
+# Install uv and create virtual environment
+RUN pip install --no-cache-dir uv && \
+    uv venv -q /venv
+ENV PATH="/venv/bin:$PATH"
+
+# Set PYTHONPATH to include the application directory
+ENV PYTHONPATH="/app"
 
 WORKDIR /app
+COPY coffeeAGNTCY/coffee_agents/recruiter/pyproject.toml coffeeAGNTCY/coffee_agents/recruiter/uv.lock coffeeAGNTCY/coffee_agents/recruiter/README.md ./
+RUN uv sync --locked --no-editable
 
-# Install curl for downloading dirctl
-RUN apt-get update && apt-get install -y --no-install-recommends curl \
-    && rm -rf /var/lib/apt/lists/*
-
-# Install dirctl binary for MCP toolset
-RUN curl -L https://github.com/agntcy/dir/releases/latest/download/dirctl-linux-amd64 -o /usr/local/bin/dirctl \
-    && chmod +x /usr/local/bin/dirctl
-
-# Install uv for fast dependency management
-COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
-
-# Copy dependency files first for better layer caching
-COPY pyproject.toml uv.lock* README.md ./
-
-# Install dependencies
-RUN uv sync --frozen --no-dev --no-install-project
-
-# Copy application code
-COPY src/ ./src/
-
-# Install the project itself
-RUN uv sync --frozen --no-dev
+COPY coffeeAGNTCY/coffee_agents/recruiter/ .
 
 # Expose the A2A server port
 EXPOSE 8881

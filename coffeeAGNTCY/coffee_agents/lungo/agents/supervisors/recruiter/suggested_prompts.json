@@ -1,0 +1,8 @@
+{
+  "recruiter_prompts": [
+    {
+      "prompt": "Can you find an agent named 'Brazil Coffee Farm' in the AGNTCY directory?",
+      "description": "Searches the AGNTCY directory for an agent with the name 'Brazil Coffee Farm' and returns the agent record if found."
+    }
+  ]
+}
