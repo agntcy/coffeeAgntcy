@@ -403,12 +403,12 @@ services:
     profiles:
       - recruiter
 
-  lungo-recruiter-supervisor:
+  recruiter-supervisor:
     build:
       context: ../../..
       dockerfile: coffeeAGNTCY/coffee_agents/lungo/docker/Dockerfile.recruiter-supervisor
     image: ghcr.io/agntcy/coffee-agntcy/recruiter-supervisor:latest
-    container_name: lungo-recruiter-supervisor
+    container_name: recruiter-supervisor
     volumes:
       # Mount local git metadata so /build/info can derive latest tag/date in dev
       - ../../../.git:/app/.git:ro

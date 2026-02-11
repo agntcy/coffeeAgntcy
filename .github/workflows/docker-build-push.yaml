@@ -47,6 +47,8 @@ jobs:
             dockerfile: coffeeAGNTCY/coffee_agents/lungo/docker/Dockerfile.logistics-helpdesk
           - name: recruiter
             dockerfile: coffeeAGNTCY/coffee_agents/recruiter/Dockerfile
+          - name: recruiter-supervisor
+            dockerfile: coffeeAGNTCY/coffee_agents/lungo/docker/Dockerfile.recruiter-supervisor
 
     permissions:
       packages: write
