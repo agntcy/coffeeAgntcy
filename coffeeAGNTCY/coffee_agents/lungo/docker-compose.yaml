@@ -120,8 +120,8 @@ services:
       - VITE_LOGISTICS_APP_API_URL=http://127.0.0.1:9090
       - VITE_GRAFANA_URL=http://127.0.0.1:3001
       - VITE_DISCOVERY_APP_API_URL=http://127.0.0.1:8882 # recruiter supervisor
-      - VITE_DIRECTORY_VERSION="v0.6.0"
-      - VITE_DIRECTORY_SERVER_URL=http://127.0.0.1:8888
+      - VITE_DIRECTORY_VERSION="v1.0.0"
+      - VITE_DIRECTORY_SERVER_URL=http://0.0.0.0:8888
     #depends_on:
     #  - auction-supervisor
     ports:
