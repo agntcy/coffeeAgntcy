@@ -133,7 +133,7 @@ export const useRecruiterStreamingStore = create<RecruiterStreamingStoreState>((
                       events: [...state.events, event],
                       sessionId: parsedData.session_id || state.sessionId,
                       finalMessage: event.message,
-                      agentRecords: event.agent_records || state.agentRecords,
+                      agentRecords: event.agent_records !== undefined ? event.agent_records : state.agentRecords,
                       evaluationResults: event.evaluation_results || state.evaluationResults,
                       selectedAgent: event.selected_agent || state.selectedAgent,
                     }))

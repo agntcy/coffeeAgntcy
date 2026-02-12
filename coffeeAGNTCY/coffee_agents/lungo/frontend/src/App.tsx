@@ -236,14 +236,13 @@ const App: React.FC = () => {
       }
 
       // Dispatch discovery response event to update the graph with discovered agents
-      if (recruiterAgentRecords) {
-        handleDiscoveryResponse({
-          response: recruiterFinalMessage ?? "",
-          ts: Date.now(),
-          sessionId: recruiterSessionId ?? undefined,
-          agent_records: recruiterAgentRecords as any,
-        })
-      }
+      // Always dispatch, even when agent_records is empty (e.g. "clear all"), to trigger graph cleanup
+      handleDiscoveryResponse({
+        response: recruiterFinalMessage ?? "",
+        ts: Date.now(),
+        sessionId: recruiterSessionId ?? undefined,
+        agent_records: (recruiterAgentRecords ?? {}) as any,
+      })
     } else if (recruiterStatus === "error" && recruiterError) {
       setIsAgentLoading(false)
       setShowFinalResponse(true)

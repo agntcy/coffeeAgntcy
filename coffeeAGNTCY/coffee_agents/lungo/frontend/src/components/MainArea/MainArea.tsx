@@ -138,7 +138,16 @@ const MainArea: React.FC<MainAreaProps> = ({
             }))
             .filter((e) => e.name.length > 0)
 
-        if (entries.length === 0) return
+        if (entries.length === 0) {
+          // Clear all dynamically added discovery nodes and their edges
+          setNodes((prevNodes) =>
+            prevNodes.filter((n) => !n.id.startsWith("discovery-"))
+          )
+          setEdges((prevEdges) =>
+            prevEdges.filter((e) => !e.id.startsWith("edge-recruiter-agent-"))
+          )
+          return
+        }
 
 
         const KEYWORDS = ["brazil", "vietnam", "colombia", "shipper", "tatooine", "accountant"] as const
