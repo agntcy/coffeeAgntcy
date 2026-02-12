@@ -4,6 +4,7 @@
 """ADK tool function that communicates with the remote recruiter A2A service
 and persists results in session state."""
 
+import asyncio
 import json
 import logging
 from uuid import uuid4
@@ -17,6 +18,7 @@ from a2a.types import (
     Role,
     Task,
     TaskState,
+    TaskStatusUpdateEvent,
     TextPart,
 )
 from google.adk.tools.tool_context import ToolContext
@@ -31,6 +33,22 @@ from agents.supervisors.recruiter.recruiter_service_card import (
 )
 
 logger = logging.getLogger("lungo.recruiter.supervisor.recruiter_client")
+
+# ---------------------------------------------------------------------------
+# Side-channel queue for streaming A2A events to main.py
+# ---------------------------------------------------------------------------
+# The ADK runner blocks while a tool executes, so it cannot forward
+# intermediate A2A events.  We use a module-level asyncio.Queue as a
+# side-channel: recruit_agents pushes status dicts onto it and
+# main.py's stream_generator drains it in parallel.
+# ---------------------------------------------------------------------------
+
+_a2a_event_queue: asyncio.Queue[dict | None] = asyncio.Queue()
+
+
+def get_a2a_event_queue() -> asyncio.Queue[dict | None]:
+    """Return the module-level queue that carries A2A streaming events."""
+    return _a2a_event_queue
 
 
 def _parse_dict_values(data: dict) -> dict[str, dict]:
@@ -82,9 +100,9 @@ def _extract_parts(parts: list[Part]) -> RecruitmentResponse:
 async def recruit_agents(query: str, tool_context: ToolContext) -> str:
     """Search the AGNTCY directory for agents matching a task description.
 
-    Sends a recruitment request to the remote recruiter A2A service and stores
-    the discovered agent records in session state for later use by the
-    DynamicWorkflowAgent.
+    Sends a streaming recruitment request to the remote recruiter A2A service
+    and stores the discovered agent records in session state for later use by
+    the DynamicWorkflowAgent.
 
     Args:
         query: Natural-language description of the task or capabilities needed.
@@ -96,7 +114,7 @@ async def recruit_agents(query: str, tool_context: ToolContext) -> str:
     logger.info("[tool:recruit_agents] Called with query=%r", query)
 
     async with httpx.AsyncClient(timeout=httpx.Timeout(120.0)) as httpx_client:
-        config = ClientConfig(httpx_client=httpx_client, streaming=False)
+        config = ClientConfig(httpx_client=httpx_client, streaming=True)
         factory = ClientFactory(config)
         client = factory.create(RECRUITER_AGENT_CARD)
 
@@ -108,17 +126,57 @@ async def recruit_agents(query: str, tool_context: ToolContext) -> str:
 
         response_data = RecruitmentResponse()
 
-        async for response in client.send_message(message):
-            if isinstance(response, Message):
-                response_data = _extract_parts(response.parts)
-            elif isinstance(response, tuple) and len(response) == 2:
-                task, _update = response
+        async for event in client.send_message(message):
+            # Streaming mode yields (Task, UpdateEvent) tuples
+            if isinstance(event, tuple) and len(event) == 2:
+                task, update = event
+
+                # Forward intermediate status updates via the side-channel queue
+                if isinstance(update, TaskStatusUpdateEvent) and not update.final:
+                    if update.status and update.status.message:
+                        parts = update.status.message.parts
+                        if parts:
+                            for p in parts:
+                                if isinstance(p.root, TextPart) and p.root.text:
+                                    status_text = p.root.text
+                                    # Determine author from metadata
+                                    author = None
+                                    if update.status.message.metadata:
+                                        author = update.status.message.metadata.get("author")
+                                        if not author:
+                                            author = update.status.message.metadata.get("from_agent")
+                                    event_type = "a2a_status"
+                                    if update.status.message.metadata:
+                                        event_type = update.status.message.metadata.get("event_type", "a2a_status")
+
+                                    logger.info(
+                                        "[tool:recruit_agents] A2A status: %s (state=%s, final=%s)",
+                                        status_text[:120],
+                                        update.status.state if update.status else "?",
+                                        update.final,
+                                    )
+                                    # Push to side-channel for main.py to pick up
+                                    await _a2a_event_queue.put({
+                                        "event_type": "status_update",
+                                        "message": status_text,
+                                        "state": "working",
+                                        "author": author or "recruiter_service",
+                                        "a2a_event_type": event_type,
+                                    })
+
+                # Extract final result from completed task
                 if (
                     isinstance(task, Task)
+                    and task.status
                     and task.status.state == TaskState.completed
                     and task.status.message
                 ):
                     response_data = _extract_parts(task.status.message.parts)
+            elif isinstance(event, Message):
+                response_data = _extract_parts(event.parts)
+
+        # Signal that A2A streaming is done for this tool invocation
+        await _a2a_event_queue.put(None)
 
     # Merge into session state (preserve previously recruited agents)
     existing_agents = tool_context.state.get(STATE_KEY_RECRUITED_AGENTS, {})

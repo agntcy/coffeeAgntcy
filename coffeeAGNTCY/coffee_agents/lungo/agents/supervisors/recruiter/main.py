@@ -1,6 +1,7 @@
 # Copyright AGNTCY Contributors (https://github.com/agntcy)
 # SPDX-License-Identifier: Apache-2.0
 
+import asyncio
 import json
 import logging
 from typing import Optional
@@ -23,6 +24,7 @@ from agents.supervisors.recruiter.agent import (
     get_selected_agent,
 )
 from agents.supervisors.recruiter.card import RECRUITER_SUPERVISOR_CARD
+from agents.supervisors.recruiter.recruiter_client import get_a2a_event_queue
 from agents.supervisors.recruiter.recruiter_service_card import (
     RECRUITER_AGENT_URL,
 )
@@ -63,7 +65,6 @@ async def handle_prompt(request: PromptRequest):
             "session_id": result["session_id"],
         }
 
-        print("result:", result)
         if result.get("agent_records"):
             response["agent_records"] = result["agent_records"]
         if result.get("evaluation_results"):
@@ -86,51 +87,140 @@ async def handle_stream_prompt(request: PromptRequest):
         async def stream_generator():
             try:
                 final_sid = session_id
-                async for event, sid in stream_agent(
-                    query=request.prompt,
-                    session_id=session_id,
-                ):
-                    final_sid = sid
-                    # Build an NDJSON line from each ADK event
-                    msg_text = None
-                    if event.content and event.content.parts:
-                        for part in event.content.parts:
-                            if hasattr(part, "text") and part.text:
-                                msg_text = part.text
+                a2a_queue = get_a2a_event_queue()
+
+                # Drain any stale events from previous requests
+                while not a2a_queue.empty():
+                    try:
+                        a2a_queue.get_nowait()
+                    except asyncio.QueueEmpty:
+                        break
+
+                # Use an asyncio.Queue to merge ADK events and A2A side-channel events.
+                # Both producers push dicts onto merged_queue; the consumer loop below
+                # serialises them as NDJSON lines.
+                merged_queue: asyncio.Queue[dict | None] = asyncio.Queue()
+
+                async def _adk_producer():
+                    """Iterate the ADK runner and push formatted events."""
+                    nonlocal final_sid
+                    try:
+                        async for event, sid in stream_agent(
+                            query=request.prompt,
+                            session_id=session_id,
+                        ):
+                            final_sid = sid
+
+                            # Extract text content
+                            msg_text = None
+                            if event.content and event.content.parts:
+                                for part in event.content.parts:
+                                    if hasattr(part, "text") and part.text:
+                                        msg_text = part.text
+                                        break
+
+                            # Extract function call / response info
+                            function_calls = event.get_function_calls() if hasattr(event, "get_function_calls") else []
+                            function_responses = event.get_function_responses() if hasattr(event, "get_function_responses") else []
+
+                            if event.is_final_response():
+                                agent_records = await get_recruited_agents(user_id, final_sid)
+                                evaluation_results = await get_evaluation_results(user_id, final_sid)
+                                selected_agent = await get_selected_agent(user_id, final_sid)
+
+                                line: dict = {
+                                    "response": {
+                                        "event_type": "completed",
+                                        "message": msg_text,
+                                        "state": "completed",
+                                    },
+                                    "session_id": final_sid,
+                                }
+                                if agent_records:
+                                    line["response"]["agent_records"] = agent_records
+                                if evaluation_results:
+                                    line["response"]["evaluation_results"] = evaluation_results
+                                if selected_agent:
+                                    line["response"]["selected_agent"] = selected_agent
+                                await merged_queue.put(line)
+                            elif msg_text:
+                                await merged_queue.put({
+                                    "response": {
+                                        "event_type": "status_update",
+                                        "message": msg_text,
+                                        "state": "working",
+                                        "author": event.author,
+                                    },
+                                    "session_id": sid,
+                                })
+                            elif function_calls and not event.partial:
+                                for fc in function_calls:
+                                    await merged_queue.put({
+                                        "response": {
+                                            "event_type": "status_update",
+                                            "message": f"Calling tool: {fc.name}",
+                                            "state": "working",
+                                            "author": event.author,
+                                        },
+                                        "session_id": sid,
+                                    })
+                            elif function_responses and not event.partial:
+                                for fr in function_responses:
+                                    await merged_queue.put({
+                                        "response": {
+                                            "event_type": "status_update",
+                                            "message": f"Tool {fr.name} completed",
+                                            "state": "working",
+                                            "author": event.author,
+                                        },
+                                        "session_id": sid,
+                                    })
+                    except Exception as e:
+                        logger.error(f"Error in ADK stream: {e}", exc_info=True)
+                        await merged_queue.put({
+                            "response": {"event_type": "error", "message": str(e)}
+                        })
+                    finally:
+                        # Signal that the ADK producer is done
+                        await merged_queue.put(None)
+
+                async def _a2a_side_channel_producer():
+                    """Forward A2A streaming events from the recruiter_client queue."""
+                    try:
+                        while True:
+                            # Wait for an A2A event from the tool's side-channel
+                            a2a_event = await a2a_queue.get()
+                            if a2a_event is None:
+                                # Tool invocation finished; stop forwarding
                                 break
+                            await merged_queue.put({
+                                "response": a2a_event,
+                                "session_id": final_sid,
+                            })
+                    except asyncio.CancelledError:
+                        pass
+                    except Exception as e:
+                        logger.error(f"Error in A2A side-channel: {e}", exc_info=True)
 
-                    if event.is_final_response():
-                        # Include agent_records, evaluation_results, selected_agent in final event
-                        agent_records = await get_recruited_agents(user_id, final_sid)
-                        evaluation_results = await get_evaluation_results(user_id, final_sid)
-                        selected_agent = await get_selected_agent(user_id, final_sid)
+                # Launch both producers concurrently
+                adk_task = asyncio.create_task(_adk_producer())
+                a2a_task = asyncio.create_task(_a2a_side_channel_producer())
 
-                        line: dict = {
-                            "response": {
-                                "event_type": "completed",
-                                "message": msg_text,
-                                "state": "completed",
-                            },
-                            "session_id": final_sid,
-                        }
-                        if agent_records:
-                            line["response"]["agent_records"] = agent_records
-                        if evaluation_results:
-                            line["response"]["evaluation_results"] = evaluation_results
-                        if selected_agent:
-                            line["response"]["selected_agent"] = selected_agent
+                # Consume merged events and yield NDJSON lines
+                try:
+                    while True:
+                        line = await merged_queue.get()
+                        if line is None:
+                            # ADK producer finished — we're done
+                            break
                         yield json.dumps(line) + "\n"
-                    elif msg_text:
-                        line = {
-                            "response": {
-                                "event_type": "status_update",
-                                "message": msg_text,
-                                "state": "working",
-                                "author": event.author,
-                            },
-                            "session_id": sid,
-                        }
-                        yield json.dumps(line) + "\n"
+                finally:
+                    # Clean up: cancel the A2A side-channel if still running
+                    if not a2a_task.done():
+                        a2a_task.cancel()
+                    # Ensure both tasks are awaited
+                    await asyncio.gather(adk_task, a2a_task, return_exceptions=True)
+
             except Exception as e:
                 logger.error(f"Error in stream: {e}", exc_info=True)
                 yield json.dumps(

@@ -120,8 +120,8 @@ services:
       - VITE_LOGISTICS_APP_API_URL=http://127.0.0.1:9090
       - VITE_GRAFANA_URL=http://127.0.0.1:3001
       - VITE_DISCOVERY_APP_API_URL=http://127.0.0.1:8882 # recruiter supervisor
-      - VITE_DIRECTORY_VERSION="v0.6.0"
-      - VITE_DIRECTORY_SERVER_URL=http://127.0.0.1:8888
+      - VITE_DIRECTORY_VERSION="v1.0.0"
+      - VITE_DIRECTORY_SERVER_URL=http://0.0.0.0:8888
     #depends_on:
     #  - auction-supervisor
     ports:
@@ -339,7 +339,7 @@ services:
         condition: service_healthy
 
   dir-api-server:
-    image: ghcr.io/agntcy/dir-apiserver:v0.6.0
+    image: ghcr.io/agntcy/dir-apiserver:v1.0.0-rc.2
     container_name: dir-api-server
     env_file:
       - ./config/docker/dir/apiserver.env
@@ -362,8 +362,7 @@ services:
       - recruiter
 
   zot:
-    image: ghcr.io/project-zot/zot:v2.1.10
-    container_name: zot
+    image: ghcr.io/project-zot/zot:v2.1.14
     ports:
       - 5555:5000
     deploy:

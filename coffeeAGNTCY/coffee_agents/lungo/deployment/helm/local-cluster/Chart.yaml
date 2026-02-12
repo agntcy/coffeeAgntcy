@@ -50,6 +50,12 @@ dependencies:
   - name: logistics-accountant
     version: "0.0.1"
     repository: "file://../logistics-accountant"
+  - name: recruiter
+    version: "0.0.1"
+    repository: "file://../recruiter"
+  - name: recruiter-supervisor
+    version: "0.0.1"
+    repository: "file://../recruiter-supervisor"
   - name: lungo-ui
     version: "0.0.5"
     repository: "file://../ui"

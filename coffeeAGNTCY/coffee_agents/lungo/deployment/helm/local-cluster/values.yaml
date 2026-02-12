@@ -40,3 +40,4 @@ lungo-ui:
   config:
     exchangeAppApiUrl: "http://localhost:30080"
     logisticsAppApiUrl: "http://localhost:30081"
+    discoveryAppApiUrl: "http://localhost:30082"

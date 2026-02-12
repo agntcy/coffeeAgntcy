@@ -83,6 +83,38 @@ logistics-supervisor:
           key: my-local-secret
           property: AZURE_API_KEY
 
+recruiter:
+  config:
+{{- $recruiterCfg := merge (deepCopy $shared.config) (deepCopy $nats.config) }}
+{{- toYaml $recruiterCfg | nindent 4 }}
+    enableHttp: "true"
+    mcpConnectionMode: "binary"
+    directoryClientServerAddress: ""
+    directoryClientTlsSkipVerify: "true"
+    oasfApiValidationSchemaUrl: "https://schema.oasf.outshift.com"
+  externalSecrets:
+    secretStoreName: local-secret-store
+    secretStoreKind: ClusterSecretStore
+    data:
+      - secretKey: AZURE_API_KEY
+        remoteRef:
+          key: my-local-secret
+          property: AZURE_API_KEY
+
+recruiter-supervisor:
+  environment: local
+  config:
+{{- toYaml (merge (deepCopy $shared.config) (deepCopy $nats.config)) | nindent 4 }}
+    recruiterAgentUrl: "http://recruiter:8881"
+  externalSecrets:
+    secretStoreName: local-secret-store
+    secretStoreKind: ClusterSecretStore
+    data:
+      - secretKey: AZURE_API_KEY
+        remoteRef:
+          key: my-local-secret
+          property: AZURE_API_KEY
+
 localExternalSecret:
   azureApiKey: {{ env "AZURE_API_KEY" | quote }}
 

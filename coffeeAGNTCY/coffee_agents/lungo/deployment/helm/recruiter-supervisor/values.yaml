@@ -1,0 +1,82 @@
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+appName: recruiter-supervisor
+appVersion: v1
+replicaCount: 1
+environment:
+
+image:
+  repository: ghcr.io/agntcy/coffee-agntcy/recruiter-supervisor
+  tag: latest
+  pullPolicy: Always
+  pullSecret:
+
+
+
+service:
+  port: 8882
+
+config:
+  recruiterAgentUrl: ""
+  azureApiBase: ""
+  azureApiVersion: ""
+  llmModel: ""
+  defaultMessageTransport: ""
+  transportServerEndpoint: ""
+  otlpHttpEndpoint: ""
+
+  # Identity SaaS Org-Level API
+  identityApiServerUrl: ""
+  identityApiKey: ""
+  # Identity TBAC Configuration
+  identityServiceApiKey: ""
+  identityAuthEnabled: "false"
+
+
+# You can use your own config here for service account
+serviceaccount:
+  annotations:
+    eks.amazonaws.com/role-arn: REPLACE_WITH_ROLE_ARN
+
+# You can use your own ingress stack of operators and letsencrypt mechanism
+ingress:
+  enabled: false  # If set to true, configure the values below for your ingress setup
+  name: ""
+  className: ""
+  host: ""
+  serviceName: ""
+  servicePort: ""
+  tlsSecret: ""
+  annotations: {}
+
+extraIngress:
+    enabled: false  # If set to true, configure the values below for your additional ingress setup
+    name: ""
+    className: ""
+    host: ""
+    serviceName: ""
+    servicePort: ""
+    tlsSecret: ""
+    path: ""
+    pathType: ""
+    annotations: {}
+
+probes:
+  livenessProbeEnabled: false
+  readinessProbeEnabled: false
+  port: 8882
+  endpoint: /v1/health
+  initialDelaySeconds: 300
+  periodSeconds: 300
+  timeoutSeconds: 30
+  failureThreshold: 3
+
+resources:
+  enabled: false
+  limits:
+    cpu: 2000m
+    memory: 2500Mi
+  requests:
+    cpu: 200m
+    memory: 500Mi

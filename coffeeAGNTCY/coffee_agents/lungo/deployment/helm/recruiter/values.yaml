@@ -1,0 +1,51 @@
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+appName: recruiter
+appVersion: v1
+replicaCount: 1
+environment:
+
+image:
+  repository: ghcr.io/agntcy/coffee-agntcy/recruiter
+  tag: latest
+  pullPolicy: Always
+  pullSecret:
+
+
+
+service:
+  port: 8881
+
+config:
+  enableHttp: "true"
+  mcpConnectionMode: "binary"
+  directoryClientServerAddress: ""
+  directoryClientTlsSkipVerify: "true"
+  oasfApiValidationSchemaUrl: "https://schema.oasf.outshift.com"
+  llmModel: ""
+  azureApiBase: ""
+  azureApiVersion: ""
+  defaultMessageTransport: ""
+  transportServerEndpoint: ""
+  otlpHttpEndpoint: ""
+
+# You can use your own config here for service account
+serviceaccount:
+  annotations:
+    eks.amazonaws.com/role-arn: REPLACE_WITH_ROLE_ARN
+
+probes:
+  livenessProbeEnabled: false
+  readinessProbeEnabled: false
+  port: 8881
+  endpoint: /.well-known/agent.json
+
+resources:
+  enabled: false
+  limits:
+    cpu: 2000m
+    memory: 2500Mi
+  requests:
+    cpu: 200m
+    memory: 500Mi

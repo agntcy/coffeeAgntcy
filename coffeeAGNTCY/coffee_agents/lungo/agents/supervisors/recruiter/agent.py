@@ -86,6 +86,21 @@ def _find_agent_by_name_or_cid(
 
     return None, None
 
+async def clear_recruited_agents(tool_context: ToolContext) -> str:
+    """Clear all recruited agents from session state.
+
+    This can be used to reset the state if the user wants to start a new search
+    or if there are too many agents stored from previous searches.
+
+    Args:
+        tool_context: Automatically injected by ADK.
+
+    Returns:
+        Confirmation message that recruited agents have been cleared.
+    """
+    logger.info("[tool:clear_recruited_agents] Called")
+    tool_context.state[STATE_KEY_RECRUITED_AGENTS] = {}
+    return "✓ Cleared all recruited agents from memory. You can start a new search now."
 
 async def select_agent(
     agent_identifier: str, tool_context: ToolContext
@@ -254,6 +269,8 @@ from the AGNTCY directory and connect them to selected agents.
 4. `send_to_agent(message)` — Forward a message to the selected agent. After this,
    transfer to the 'dynamic_workflow' sub-agent.
 
+5. `clear_recruited_agents()` — Clear all recruited agents from memory to reset state.
+
 **Sub-agent:**
 - `dynamic_workflow` — Executes the actual communication with the selected agent.
   Only transfer here AFTER calling send_to_agent.
@@ -278,11 +295,14 @@ from the AGNTCY directory and connect them to selected agents.
 5. **No agent selected and not a search/select request**:
    → Ask the user to either search for agents or select one from previous results
 
+6. **CLEAR state** (user says "clear all", "reset all", "remove all agents"):
+   → Call `clear_recruited_agents` to clear memory of recruited agents
+
 **IMPORTANT:**
 - When an agent is selected, forward ALL non-command messages to that agent
 - The user talks to ONE agent at a time
 - Always show available agents after a search so the user can select by name""",
-    tools=[recruit_agents, select_agent, deselect_agent, send_to_agent],
+    tools=[recruit_agents, select_agent, deselect_agent, send_to_agent, clear_recruited_agents],
     sub_agents=[dynamic_workflow_agent],
 )
 
