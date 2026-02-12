@@ -7,7 +7,7 @@ You will:
 1. Interact with **three demos** (Lungo Auction, Lungo Logistic, Corto Sommelier)
 2. Spin up each demo with docker compose
 3. Use **preconfigured prompts** (and your own)
-4. Explore **traces and metrics** 
+4. Explore **traces and metrics**
 
 ## Prerequisites
 
@@ -107,31 +107,31 @@ docker compose up --build
 ```
 
 This will start:
-- The **Exchange** and **Farm** agents  
+- The **Exchange** and **Farm** agents
 - The **UI** frontend
-- The **SLIM and NATS message buses** for agent-to-agent communication  
+- The **SLIM and NATS message buses** for agent-to-agent communication
 - The **observability stack** (Grafana, OTEL Collector, ClickHouse)
 
 Once containers are running, open:
 
-- **Sommelier Demo:** [http://localhost:3000/](http://localhost:3000/)   
+- **Sommelier Demo:** [http://localhost:3000/](http://localhost:3000/)
 - **Grafana Dashboard:** [http://localhost:3001/](http://localhost:3001/)
 
 ### 3. Interact with the Demos
 
-Send prompts to the agentic system.  
+Send prompts to the agentic system.
 Predefined prompts are provided to help you start — but you can also type your own.
 
 #### Sommelier Demo (Agent to Agent Pattern)
 
 This demo showcases an **Supervisor Agent** that communicates with a **Grader Agent**, which acts as a virtual Coffee Sommelier. When queried, the Grader Agent provides detailed flavor profiles for specific coffees.
 
-**Supervisor Agent:** A2A client  
-**Grader Agent:** LangGraph-orchestrated A2A server  
+**Supervisor Agent:** A2A client
+**Grader Agent:** LangGraph-orchestrated A2A server
 
 The two agents communicate via the **SLIM message bus**. You can explore SLIM integrations in the following source files within the app-sdk repository:
 
-- [`exchange/agent.py`](./coffeeAGNTCY/coffee_agents/corto/exchange/agent.py)  
+- [`exchange/agent.py`](./coffeeAGNTCY/coffee_agents/corto/exchange/agent.py)
 - [`farm/farm_server.py`](./coffeeAGNTCY/coffee_agents/corto/farm/farm_server.py)
 
 **Example prompts:**
@@ -161,11 +161,11 @@ Once you’ve executed a few prompts:
    - If already present, select the **ClickHouse** datasource (pre-configured in the Docker Compose setup).
 
    ![Screenshot: ClickHouse Datasource](coffeeAGNTCY/coffee_agents/corto/images/grafana_clickhouse_datasource.png)
-   
-   ![Screenshot: ClickHouse Connection](coffeeAGNTCY/coffee_agents/corto/images/grafana_clickhouse_connection.png) 
-4. Import the OTEL Traces Dashboard 
+
+   ![Screenshot: ClickHouse Connection](coffeeAGNTCY/coffee_agents/corto/images/grafana_clickhouse_connection.png)
+4. Import the OTEL Traces Dashboard
    - In the left sidebar, click on **"Dashboards" > "New" > "Import"**.
-   - Upload or paste the JSON definition for the OTEL traces dashboard, located here:  
+   - Upload or paste the JSON definition for the OTEL traces dashboard, located here:
      [`corto_dashboard.json`](coffeeAGNTCY/coffee_agents/corto/corto_dashboard.json)
    - **When prompted, select `grafana-clickhouse-datasource` as the datasource.**
    - Click **"Import"** to add the dashboard.
@@ -259,19 +259,19 @@ docker compose up --build
 ```
 
 This will start:
-- The **Auction** and **Logistic** agents  
-- The **UI** frontends 
-- The **SLIM and NATS message buses** for agent-to-agent communication  
+- The **Auction** and **Logistic** agents
+- The **UI** frontends
+- The **SLIM and NATS message buses** for agent-to-agent communication
 - The **observability stack** (Grafana, OTEL Collector, ClickHouse)
 
 Once containers are running, open:
 
-- **Auction and Logistic Demos:** [http://localhost:3000/](http://localhost:3000/)    
+- **Auction and Logistic Demos:** [http://localhost:3000/](http://localhost:3000/)
 - **Grafana Dashboard:** [http://localhost:3001/](http://localhost:3001/)
 
 ### 3. Interact with the Demos
 
-Each demo UI lets you send prompts to an agentic system.  
+Each demo UI lets you send prompts to an agentic system.
 Predefined prompts are provided to help you start — but you can also type your own.
 
 #### 🏷️ Auction Demo (Supervisor–Worker Pattern)
@@ -285,16 +285,16 @@ This demo models a **Coffee Exchange** where a **Supervisor Agent** manages mult
 
 The transport layer in this demo is **interchangeable**, powered by **AGNTCY’s App SDK**, enabling agents to switch between different transports or agentic protocols with minimal code changes.
 
-All agents are registered with **AGNTCY’s Identity Service**, which integrates with various Identity Providers. This service acts as a **central hub for managing and verifying digital identities**, allowing agentic services to register, establish unique identities, and validate authenticity through identity badges.  
-In this demo, the **Colombia** and **Vietnam** farms are verified with the Identity Service. The **Supervisor Agent** validates each farm’s badge before sending any orders.  
-Try sending an order to the **Brazil farm** to see what happens when the target agent is **unverified**:  
+All agents are registered with **AGNTCY’s Identity Service**, which integrates with various Identity Providers. This service acts as a **central hub for managing and verifying digital identities**, allowing agentic services to register, establish unique identities, and validate authenticity through identity badges.
+In this demo, the **Colombia** and **Vietnam** farms are verified with the Identity Service. The **Supervisor Agent** validates each farm’s badge before sending any orders.
+Try sending an order to the **Brazil farm** to see what happens when the target agent is **unverified**:
 `I need 50 lb of coffee beans from Brazil for 0.50 cents per lb`
 
 Check out the supervisor agent’s [tools](coffeeAGNTCY/coffee_agents/lungo/agents/supervisors/auction/graph/tools.py) to see how it integrates with the **App SDK** and **Identity Service**.
 
 **Observe in your Docker Compose logs how:**
-- The supervisor delegates requests to individual farms  
-- Responses are aggregated across agents  
+- The supervisor delegates requests to individual farms
+- Responses are aggregated across agents
 - Broadcast vs. unicast messaging is handled automatically
 
 #### 🚚 Logistic Demo (Coordination/ Group Chat Pattern)
@@ -304,7 +304,7 @@ This demo showcases a **supply coordination** scenario where agents communicate 
 **Example prompt:**
 - `I want to order coffee at $3.50 per pound for 500 lbs from the Tatooine farm`
 
-This style of agentic communication is powered by **AGNTCY’s SLIM**.  
+This style of agentic communication is powered by **AGNTCY’s SLIM**.
 Unlike the **Auction flow**, this transport is **not interchangeable**, as **SLIM** is the only protocol that supports **multi-agent group chat communication**.
 
 Explore the [`Logistic Supervisor tools`](coffeeAGNTCY/coffee_agents/lungo/agents/supervisors/logistic/graph/tools.py) to see how the supervisor initializes and manages the SLIM group chat.
@@ -336,7 +336,7 @@ Once you’ve executed a few prompts:
 4. **Import the OTEL Traces Dashboard**
 
    - In the left sidebar, click on **"Dashboards" > "New" > "Import"**.
-   - Upload or paste the JSON definition for the OTEL traces dashboard, located here:  
+   - Upload or paste the JSON definition for the OTEL traces dashboard, located here:
      [`lungo_dashboard.json`](coffeeAGNTCY/coffee_agents/lungo/lungo_dashboard.json)
    - **When prompted, select `grafana-clickhouse-datasource` as the datasource.**
    - Click **"Import"** to add the dashboard.
@@ -352,8 +352,8 @@ Once you’ve executed a few prompts:
    ![Screenshot: OTEL Dashboard](coffeeAGNTCY/coffee_agents/lungo/images/dashboard_grafana.png)
    ![Screenshot: OTEL Traces](coffeeAGNTCY/coffee_agents/lungo/images/dashboard_traces.png)
 6. Explore:
-   - **Trace timelines** showing how each agent processed your prompt  
-   - **Span hierarchies** (Supervisor → Farm or Logistics Agents)  
+   - **Trace timelines** showing how each agent processed your prompt
+   - **Span hierarchies** (Supervisor → Farm or Logistics Agents)
    - Latencies and tool calls between components
 
 > Tip: Click any **Trace ID** to open the full trace and visualize agent interactions end-to-end.
@@ -369,10 +369,10 @@ docker compose down
 ## Recap
 
 In this workshop, you:
-- Deployed Corto's **Sommelier** demo via Docker Compose which showed a 1-1 A2A connection over SLIM 
-- Deployed Lungo’s **Auction** and **Logistic** demos via Docker Compose and explored supervisor-worker and group chat agentic patterns 
-- Interacted with real-time **agentic UIs**  
-- Observed communication traces in **Grafana**  
+- Deployed Corto's **Sommelier** demo via Docker Compose which showed a 1-1 A2A connection over SLIM
+- Deployed Lungo’s **Auction** and **Logistic** demos via Docker Compose and explored supervisor-worker and group chat agentic patterns
+- Interacted with real-time **agentic UIs**
+- Observed communication traces in **Grafana**
 - Understood how different **A2A communication patterns** emerge from design
 - Explored code that shows how agents integrate with **AGNTCY SLIM, Observe, & Agent Identity** components directly or via the **App SDK**
 
