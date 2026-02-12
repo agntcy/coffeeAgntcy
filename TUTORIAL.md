@@ -47,6 +47,10 @@ coffeeAGNTCY/
 
 Copy and configure your environment:
 ```bash
+cd coffeeAGNTCY/coffee_agents/corto
+```
+
+```bash
 cp .env.example .env
 ```
 
@@ -91,6 +95,16 @@ AZURE_API_VERSION=<your_azure_api_version>
 ```env
 LLM_MODEL="groq/<model_of_choice>"
 GROQ_API_KEY=<your_groq_api_key>
+```
+
+---
+
+#### **Litellm Proxy**
+
+```env
+LLM_MODEL="litellm_proxy/azure/<your_deployment_name>"
+LITELLM_PROXY_BASE_URL=<your_litellm_proxy_base_url>
+LITELLM_PROXY_API_KEY=<your_litellm_proxy_api_key>
 ```
 
 ---
@@ -199,6 +213,10 @@ docker compose down
 
 If you tried out Corto Sommelier, copy the .env file from Corto to Lungo.
 ```bash
+cd coffeeAGNTCY/coffee_agents/lungo
+```
+
+```bash
 cp ../corto/.env .env
 ```
 
@@ -252,6 +270,16 @@ GROQ_API_KEY=<your_groq_api_key>
 
 ---
 
+#### **Litellm Proxy**
+
+```env
+LLM_MODEL="litellm_proxy/azure/<your_deployment_name>"
+LITELLM_PROXY_BASE_URL=<your_litellm_proxy_base_url>
+LITELLM_PROXY_API_KEY=<your_litellm_proxy_api_key>
+```
+
+---
+
 #### **NVIDIA NIM**
 
 ```env
@@ -286,6 +314,8 @@ also type your own.
 
 #### 🏷️ Auction Demo (Supervisor–Worker Pattern)
 
+On the frontend select the `Conversation: Coffee Buying / Agentic Patterns / Publish Subscribe / A2A NATS` menu item.
+
 This demo models a **Coffee Exchange** where a **Supervisor Agent** manages multiple **Coffee Farm Agents**. The
 supervisor can communicate with all farms through a single outbound message using a **pub/sub communication model**.
 
@@ -314,6 +344,9 @@ see how it integrates with the **App SDK** and **Identity Service**.
 
 #### 🚚 Logistic Demo (Coordination/ Group Chat Pattern)
 
+On the frontend select the `Conversation: Order fulfillment / Agentic Patterns / Secure Group Communication / A2A SLIM`
+menu item.
+
 This demo showcases a **supply coordination** scenario where agents communicate within a **group chat**. In this setup,
 the **Supervisor Agent** acts as the moderator, inviting various **logistics components** as members and enabling them
 to communicate directly with one another.
@@ -329,6 +362,7 @@ to see how the supervisor initializes and manages the SLIM group chat.
 
 **Observe** how agents coordinate and negotiate within the chat, collaborating to complete their designated tasks and
 share updates dynamically.
+
 ### 4. Inspect Traces in Grafana
 
 Once you’ve executed a few prompts:
