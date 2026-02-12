@@ -52,11 +52,17 @@ export const getStreamingEndpointForPattern = (pattern?: string): string => {
   if (pattern === PATTERNS.PUBLISH_SUBSCRIBE_STREAMING) {
     return `${getApiUrlForPattern(pattern)}/agent/prompt/stream`
   }
+  if (pattern === PATTERNS.ON_DEMAND_DISCOVERY) {
+    return `${getApiUrlForPattern(pattern)}/agent/prompt/stream`
+  }
   throw new Error(`Pattern ${pattern} does not support streaming`)
 }
 
 export const isStreamingPattern = (pattern?: string): boolean => {
-  return pattern === PATTERNS.PUBLISH_SUBSCRIBE_STREAMING
+  return (
+    pattern === PATTERNS.PUBLISH_SUBSCRIBE_STREAMING ||
+    pattern === PATTERNS.ON_DEMAND_DISCOVERY
+  )
 }
 
 export const supportsTransportUpdates = (pattern?: string): boolean => {
@@ -76,6 +82,8 @@ export const getPatternDisplayName = (pattern?: string): string => {
       return "Publish/Subscribe: Streaming"
     case PATTERNS.GROUP_COMMUNICATION:
       return "Group Communication"
+    case PATTERNS.ON_DEMAND_DISCOVERY:
+      return "On-Demand Discovery"
     default:
       return "Unknown Pattern"
   }

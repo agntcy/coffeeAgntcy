@@ -23,6 +23,7 @@ import ChatHeader from "./ChatHeader"
 import ExternalLinkButton from "./ExternalLinkButton"
 import GroupCommunicationFeed from "./GroupCommunicationFeed"
 import AuctionStreamingFeed from "./AuctionStreamingFeed"
+import RecruiterStreamingFeed from "./RecruiterStreamingFeed"
 
 import { cn } from "@/utils/cn.ts"
 import { logger } from "@/utils/logger"
@@ -48,6 +49,7 @@ interface ChatAreaProps {
     showDiscoveryPrompts?: boolean
     showProgressTracker?: boolean
     showAuctionStreaming?: boolean
+    showRecruiterStreaming?: boolean
     showFinalResponse?: boolean
     onStreamComplete?: () => void
     onSenderHighlight?: (nodeId: string) => void
@@ -64,6 +66,7 @@ interface ChatAreaProps {
     apiError: boolean
     chatRef?: React.RefObject<HTMLDivElement | null>
     auctionState?: any
+    recruiterState?: any
     grafanaUrl?: string
     onDiscoveryResponse?: (evt: DiscoveryResponseEvent) => void
 }
@@ -78,6 +81,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
                                                showDiscoveryPrompts = false,
                                                showProgressTracker = false,
                                                showAuctionStreaming = false,
+                                               showRecruiterStreaming = false,
                                                showFinalResponse = false,
                                                onStreamComplete,
                                                onSenderHighlight,
@@ -94,6 +98,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
                                                apiError,
                                                chatRef,
                                                auctionState,
+                                               recruiterState,
                                                grafanaUrl = GRAFANA_URL,
                                                onDiscoveryResponse,
                                            }) => {
@@ -189,7 +194,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
             onUserInput(content)
         }
 
-        if ((showAuctionStreaming || showProgressTracker) && onDropdownSelect) {
+        if ((showAuctionStreaming || showProgressTracker || showRecruiterStreaming) && onDropdownSelect) {
             setContent("")
             onDropdownSelect(content)
         } else {
@@ -262,6 +267,18 @@ const ChatArea: React.FC<ChatAreaProps> = ({
                                     prompt={currentUserMessage || ""}
                                     apiError={apiError}
                                     auctionStreamingState={auctionState}
+                                />
+                            </div>
+                        )}
+
+                        {showRecruiterStreaming && (
+                            <div className={`w-full ${isMinimized ? "hidden" : ""}`}>
+                                <RecruiterStreamingFeed
+                                    isVisible={!isMinimized && showRecruiterStreaming}
+                                    prompt={currentUserMessage || ""}
+                                    apiError={apiError}
+                                    recruiterStreamingState={recruiterState}
+                                    onStreamComplete={onStreamComplete}
                                 />
                             </div>
                         )}

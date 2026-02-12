@@ -21,6 +21,15 @@ import {
   useStartGroupStreaming,
   useGroupStreamingActions,
 } from "@/stores/groupStreamingStore"
+import {
+  useRecruiterStreamingStatus,
+  useRecruiterStreamingEvents,
+  useRecruiterStreamingError,
+  useRecruiterStreamingActions,
+  useRecruiterFinalMessage,
+  useRecruiterAgentRecords,
+  useRecruiterStreamingSessionId,
+} from "@/stores/recruiterStreamingStore"
 import Navigation from "@/components/Navigation/Navigation"
 import MainArea from "@/components/MainArea/MainArea"
 import { useAgentAPI } from "@/hooks/useAgentAPI"
@@ -56,6 +65,15 @@ const App: React.FC = () => {
   const groupFinalResponse = useGroupFinalResponse()
   const groupError = useGroupError()
   const { reset: resetGroup } = useGroupStreamingActions()
+
+  const recruiterStatus = useRecruiterStreamingStatus()
+  const recruiterEvents = useRecruiterStreamingEvents()
+  const recruiterError = useRecruiterStreamingError()
+  const recruiterFinalMessage = useRecruiterFinalMessage()
+  const recruiterAgentRecords = useRecruiterAgentRecords()
+  const recruiterSessionId = useRecruiterStreamingSessionId()
+  const { connect: connectRecruiter, reset: resetRecruiter } = useRecruiterStreamingActions()
+
   const [aiReplied, setAiReplied] = useState<boolean>(false)
   const [buttonClicked, setButtonClicked] = useState<boolean>(false)
   const [currentUserMessage, setCurrentUserMessage] = useState<string>("")
@@ -66,6 +84,7 @@ const App: React.FC = () => {
   const [highlightNodeFunction, setHighlightNodeFunction] = useState<((nodeId: string) => void) | null>(null)
   const [showProgressTracker, setShowProgressTracker] = useState<boolean>(false)
   const [showAuctionStreaming, setShowAuctionStreaming] = useState<boolean>(false)
+  const [showRecruiterStreaming, setShowRecruiterStreaming] = useState<boolean>(false)
   const [showFinalResponse, setShowFinalResponse] = useState<boolean>(false)
   const [pendingResponse, setPendingResponse] = useState<string>("")
   const [executionKey, setExecutionKey] = useState<string>("")
@@ -81,7 +100,9 @@ const App: React.FC = () => {
   const handlePatternChange = useCallback(
       (pattern: PatternType) => {
         reset()
+        resetRecruiter()
         setShowAuctionStreaming(false)
+        setShowRecruiterStreaming(false)
         resetGroup()
         setGroupCommResponseReceived(false)
         setShowFinalResponse(false)
@@ -94,7 +115,7 @@ const App: React.FC = () => {
         setAiReplied(false)
         setSelectedPattern(pattern)
       },
-      [reset, resetGroup],
+      [reset, resetGroup, resetRecruiter],
   )
 
   const [messages, setMessages] = useState<Message[]>(() => {
@@ -141,7 +162,8 @@ const App: React.FC = () => {
     setApiError(false)
     if (
         selectedPattern !== PATTERNS.GROUP_COMMUNICATION &&
-        selectedPattern !== PATTERNS.PUBLISH_SUBSCRIBE_STREAMING
+        selectedPattern !== PATTERNS.PUBLISH_SUBSCRIBE_STREAMING &&
+        selectedPattern !== PATTERNS.ON_DEMAND_DISCOVERY
     ) {
       setShowFinalResponse(true)
     }
@@ -201,6 +223,43 @@ const App: React.FC = () => {
     handleApiResponse,
   ])
 
+  // Handle recruiter streaming completion - fire discovery graph update and final response
+  useEffect(() => {
+    if (selectedPattern !== PATTERNS.ON_DEMAND_DISCOVERY) return
+
+    if (recruiterStatus === "completed") {
+      setIsAgentLoading(false)
+
+      if (recruiterFinalMessage) {
+        setShowFinalResponse(true)
+        handleApiResponse({ response: recruiterFinalMessage, session_id: recruiterSessionId ?? undefined }, false)
+      }
+
+      // Dispatch discovery response event to update the graph with discovered agents
+      if (recruiterAgentRecords) {
+        handleDiscoveryResponse({
+          response: recruiterFinalMessage ?? "",
+          ts: Date.now(),
+          sessionId: recruiterSessionId ?? undefined,
+          agent_records: recruiterAgentRecords as any,
+        })
+      }
+    } else if (recruiterStatus === "error" && recruiterError) {
+      setIsAgentLoading(false)
+      setShowFinalResponse(true)
+      handleApiResponse(`Streaming error: ${recruiterError}`, true)
+    }
+  }, [
+    selectedPattern,
+    recruiterStatus,
+    recruiterFinalMessage,
+    recruiterError,
+    recruiterAgentRecords,
+    recruiterSessionId,
+    handleApiResponse,
+    handleDiscoveryResponse,
+  ])
+
   const handleDropdownSelect = async (query: string) => {
     setCurrentUserMessage(query)
     setIsAgentLoading(true)
@@ -231,18 +290,23 @@ const App: React.FC = () => {
         setAgentResponse(undefined)
         reset()
         await connect(query)
+      } else if (selectedPattern === PATTERNS.ON_DEMAND_DISCOVERY) {
+        setShowFinalResponse(false)
+        setShowRecruiterStreaming(true)
+        setAgentResponse(undefined)
+        resetRecruiter()
+        try {
+          await connectRecruiter(query)
+        } catch (error) {
+          logger.apiError("/agent/prompt/stream", error)
+          const errorMsg = "Sorry, I encountered an error with recruiter streaming."
+          setShowFinalResponse(true)
+          handleApiResponse(errorMsg, true)
+        }
       } else {
         setShowFinalResponse(true)
         const response = await sendMessage(query, selectedPattern)
         handleApiResponse(response, false)
-
-        if (selectedPattern === PATTERNS.ON_DEMAND_DISCOVERY) {
-          handleDiscoveryResponse({
-            response: response.response,
-            ts: Date.now(),
-            sessionId: response.session_id,
-          })
-        }
       }
     } catch (error) {
       logger.apiError("/agent/prompt", error)
@@ -275,8 +339,10 @@ const App: React.FC = () => {
     setAiReplied(false)
     setGroupCommResponseReceived(false)
     setShowFinalResponse(false)
+    setShowRecruiterStreaming(false)
     setPendingResponse("")
     resetGroup()
+    resetRecruiter()
   }
 
   const handleNodeHighlightSetup = useCallback(
@@ -309,6 +375,7 @@ const App: React.FC = () => {
     } else {
       setShowProgressTracker(false)
       setShowAuctionStreaming(false)
+      setShowRecruiterStreaming(false)
       setGroupCommResponseReceived(false)
     }
   }, [selectedPattern, resetGroup])
@@ -355,6 +422,7 @@ const App: React.FC = () => {
                     }
                     showProgressTracker={showProgressTracker}
                     showAuctionStreaming={showAuctionStreaming}
+                    showRecruiterStreaming={showRecruiterStreaming}
                     showFinalResponse={showFinalResponse}
                     onStreamComplete={handleStreamComplete}
                     onSenderHighlight={handleSenderHighlight}
@@ -377,6 +445,11 @@ const App: React.FC = () => {
                       events,
                       status,
                       error,
+                    }}
+                    recruiterState={{
+                      events: recruiterEvents,
+                      status: recruiterStatus,
+                      error: recruiterError,
                     }}
                     onDiscoveryResponse={handleDiscoveryResponse}
                 />
