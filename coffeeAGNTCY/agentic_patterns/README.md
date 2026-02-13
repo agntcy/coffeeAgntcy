@@ -19,3 +19,6 @@ The agentic_patterns directory provides a starting point and reference for agent
 ### Agent Recruiter
 - `AGENTS.MD`, `README.md`
 
+### Gateway (Multi-Platform MCP Aggregation)
+- `AGENTS.MD`, `README.md`
+
