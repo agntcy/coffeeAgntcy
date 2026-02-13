@@ -65,6 +65,12 @@ jobs:
           - name: logistics-helpdesk
             path: coffeeAGNTCY/coffee_agents/lungo/deployment/helm/logistics-helpdesk
             package_name: logistics-helpdesk
+          - name: recruiter
+            path: coffeeAGNTCY/coffee_agents/lungo/deployment/helm/recruiter
+            package_name: recruiter
+          - name: recruiter-supervisor
+            path: coffeeAGNTCY/coffee_agents/lungo/deployment/helm/recruiter-supervisor
+            package_name: recruiter-supervisor
 
     steps:
       - name: Pre-cleanup Docker images
