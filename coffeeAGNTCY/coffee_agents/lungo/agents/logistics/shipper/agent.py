@@ -2,12 +2,16 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import logging
+import os
+from google.adk.agents import Agent
+from google.adk.models.lite_llm import LiteLlm
+from google.adk.sessions import InMemorySessionService
+from google.adk.runners import Runner
+from google.genai import types
+import litellm
+from config.config import LLM_MODEL
 
-from langchain_core.messages import AIMessage
-from langgraph.graph import MessagesState
-from langgraph.graph import StateGraph, END
-
-from ioa_observe.sdk.decorators import agent, graph
+from ioa_observe.sdk.decorators import agent
 
 from common.logistics_states import (
     LogisticsStatus,
@@ -18,113 +22,109 @@ from common.logistics_states import (
 
 logger = logging.getLogger("lungo.shipper_agent.agent")
 
-# --- 1. Define Node Names as Constants ---
-class NodeStates:
-    SHIPPER = "shipper"
+LITELLM_PROXY_BASE_URL = os.getenv("LITELLM_PROXY_BASE_URL")
+LITELLM_PROXY_API_KEY = os.getenv("LITELLM_PROXY_API_KEY")
 
+if LITELLM_PROXY_API_KEY and LITELLM_PROXY_BASE_URL:
+    os.environ["LITELLM_PROXY_API_KEY"] = LITELLM_PROXY_API_KEY
+    os.environ["LITELLM_PROXY_API_BASE"] = LITELLM_PROXY_BASE_URL
+    logger.info(f"Using LiteLLM Proxy: {LITELLM_PROXY_BASE_URL}")
+    litellm.use_litellm_proxy = True
+else:
+    logger.info("Using direct LLM instance")
 
-# --- 2. Define the Graph State ---
-class GraphState(MessagesState):
-    """
-    Represents the state of our graph, passed between nodes.
-    """
-    pass
+shipper_agent_adk = Agent(
+    name="shipper_agent",
+    model=LiteLlm(model=LLM_MODEL),
+    description="Handles shipping and delivery for coffee orders in the logistics workflow.",
+    instruction="""You are the Shipper agent in a logistics workflow.
 
+Your responsibilities:
+1. Receive messages in format: "STATUS | Sender -> Receiver: Details"
+2. Handle two transitions:
+   - HANDOVER_TO_SHIPPER -> CUSTOMS_CLEARANCE
+   - PAYMENT_COMPLETE -> DELIVERED
 
-# --- 3. Implement the Shipper Agent Class ---
+When you receive HANDOVER_TO_SHIPPER:
+- Respond: "CUSTOMS_CLEARANCE | Shipper -> Accountant: Customs docs validated and cleared"
+
+When you receive PAYMENT_COMPLETE:
+- Respond: "DELIVERED | Shipper -> Supervisor: Final handoff completed"
+
+For any other status:
+- Respond: "Shipper remains IDLE. No further action required."
+
+CRITICAL: Follow the exact format. Do not add extra text.""",
+    tools=[],
+)
+
+session_service = InMemorySessionService()
+
+shipper_runner = Runner(
+    agent=shipper_agent_adk,
+    app_name="shipper_agent",
+    session_service=session_service
+)
+
+async def get_or_create_session(app_name: str, user_id: str, session_id: str):
+    session = await session_service.get_session(app_name=app_name, user_id=user_id, session_id=session_id)
+    if session is None:
+        session = await session_service.create_session(app_name=app_name, user_id=user_id, session_id=session_id)
+    return session
+
+def process_shipper_logic(raw_message: str) -> str:
+    """Process shipper business logic."""
+    status = extract_status(raw_message)
+    order_id = ensure_order_id(raw_message)
+
+    if status is LogisticsStatus.HANDOVER_TO_SHIPPER:
+        next_status = LogisticsStatus.CUSTOMS_CLEARANCE
+        msg = build_transition_message(
+            order_id=order_id,
+            sender="Shipper",
+            receiver="Accountant",
+            to_state=next_status.value,
+            details="Customs docs validated and cleared",
+        )
+        return msg
+
+    if status is LogisticsStatus.PAYMENT_COMPLETE:
+        next_status = LogisticsStatus.DELIVERED
+        msg = build_transition_message(
+            order_id=order_id,
+            sender="Shipper",
+            receiver="Supervisor",
+            to_state=next_status.value,
+            details="Final handoff completed",
+        )
+        return msg
+
+    return "Shipper remains IDLE. No further action required."
+
 @agent(name="shipper_agent")
 class ShipperAgent:
     def __init__(self):
-        """
-        Initializes the ShipperAgent with a single node LangGraph workflow.
-        Handles two specific inputs:
-        - HANDOVER_TO_SHIPPER -> CUSTOMS_CLEARANCE
-        - PAYMENT_COMPLETE -> DELIVERED
-        """
-        self.app = self._build_graph()
-
-    # --- Node Definition ---
-
-    def _shipper_node(self, state: GraphState) -> dict:
-        messages = state["messages"]
-        if isinstance(messages, list) and messages:
-            last = messages[-1]
-            text = getattr(last, "content", str(last))
-        else:
-            text = str(messages)
-        raw = text.strip()
-        status = extract_status(raw)
-
-        order_id = ensure_order_id(raw)
-
-        if status is LogisticsStatus.HANDOVER_TO_SHIPPER:
-            next_status = LogisticsStatus.CUSTOMS_CLEARANCE
-            msg = build_transition_message(
-                order_id=order_id,
-                sender="Shipper",
-                receiver="Accountant",
-                to_state=next_status.value,
-                details="Customs docs validated and cleared",
-            )
-            return {"messages": [AIMessage(msg)]}
-
-        if status is LogisticsStatus.PAYMENT_COMPLETE:
-            next_status = LogisticsStatus.DELIVERED
-            msg = build_transition_message(
-                order_id=order_id,
-                sender="Shipper",
-                receiver="Supervisor",
-                to_state=next_status.value,
-                details="Final handoff completed",
-            )
-            return {"messages": [AIMessage(msg)]}
-
-        return {"messages": [AIMessage("Shipper remains IDLE. No further action required.")]}
-
-    # --- Graph Building Method ---
-
-    @graph(name="shipper_graph")
-    def _build_graph(self):
-        """
-        Builds and compiles the LangGraph workflow with single node.
-        """
-        workflow = StateGraph(GraphState)
-
-        # Add single node
-        workflow.add_node(NodeStates.SHIPPER, self._shipper_node)
-
-        # Set the entry point
-        workflow.set_entry_point(NodeStates.SHIPPER)
-
-        # Add edge to END
-        workflow.add_edge(NodeStates.SHIPPER, END)
-
-        return workflow.compile()
-
-    # --- Public Methods for Interaction ---
+        """Initialize the ShipperAgent using Google ADK."""
+        self.runner = shipper_runner
+        self.app_name = "shipper_agent"
 
     async def ainvoke(self, user_message: str) -> str:
         """
-        Invokes the graph with a user message.
-
+        Process a message through the shipper agent.
+        
         Args:
-            user_message (str): The current message from the user.
-
+            user_message (str): The incoming message from the logistics system.
+            
         Returns:
-            str: The final response from the shipper agent.
+            str: The response from the shipper agent.
         """
-        inputs = {"messages": [user_message]}
-        result = await self.app.ainvoke(inputs)
+        user_id = "user_1"
+        session_id = "main_session"
 
-        messages = result.get("messages", [])
-        if not messages:
-            raise RuntimeError("No messages found in the graph response.")
+        await get_or_create_session(app_name=self.app_name, user_id=user_id, session_id=session_id)
 
-        # Find the last AIMessage with non-empty content
-        for message in reversed(messages):
-            if isinstance(message, AIMessage) and message.content.strip():
-                logger.debug(f"Valid AIMessage found: {message.content.strip()}")
-                return message.content.strip()
-
-        # If no valid AIMessage found, return the last message as a fallback
-        return messages[-1].content.strip()
+        logger.info(f"Shipper received: {user_message}")
+        response = process_shipper_logic(user_message)
+        logger.info(f"Shipper response: {response}")
+        
+        return response
