@@ -12,7 +12,14 @@ import agentDirectoryIconDark from "@/assets/Agent_directory.png"
 import agentDirectoryIconLight from "@/assets/Agent_Icon_light.png"
 import identityBadgeIcon from "@/assets/identity_badge.svg"
 import { useThemeIcon } from "@/hooks/useThemeIcon"
-import { CustomNodeData } from "./types"
+import { CustomNodeData, ExtraHandle } from "./types"
+
+const POSITION_MAP: Record<ExtraHandle["position"], Position> = {
+  top: Position.Top,
+  bottom: Position.Bottom,
+  left: Position.Left,
+  right: Position.Right,
+}
 
 interface CustomNodeProps {
   data: CustomNodeData
@@ -79,7 +86,9 @@ const CustomNode: React.FC<CustomNodeProps> = ({ data, onOpenOasfModal }) => {
 
   const activeClasses = data.active
       ? "bg-node-background-active outline outline-2 outline-accent-border shadow-[var(--shadow-default)_0px_6px_8px]"
-      : "bg-node-background"
+      : data.selected
+        ? "bg-node-background outline outline-2 outline-accent-primary shadow-[var(--shadow-default)_0px_6px_8px]"
+        : "bg-node-background"
 
   return (
       <>
@@ -225,6 +234,15 @@ const CustomNode: React.FC<CustomNodeProps> = ({ data, onOpenOasfModal }) => {
                   className="h-px w-px border border-gray-600 bg-node-data-background"
               />
           )}
+          {data.extraHandles?.map((eh) => (
+              <Handle
+                  key={eh.id}
+                  type={eh.type}
+                  position={POSITION_MAP[eh.position]}
+                  id={eh.id}
+                  className="h-px w-px border border-gray-600 bg-node-data-background"
+              />
+          ))}
         </div>
       </>
   )
