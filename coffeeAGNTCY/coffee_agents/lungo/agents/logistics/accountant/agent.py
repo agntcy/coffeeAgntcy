@@ -2,10 +2,14 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import logging
-
-from langchain_core.messages import AIMessage
-from langgraph.graph import MessagesState
-from langgraph.graph import StateGraph, END
+import os
+from google.adk.agents import Agent
+from google.adk.models.lite_llm import LiteLlm
+from google.adk.sessions import InMemorySessionService
+from google.adk.runners import Runner
+from google.genai import types
+import litellm
+from config.config import LLM_MODEL
 
 from ioa_observe.sdk.decorators import agent, graph
 
@@ -18,105 +22,105 @@ from common.logistics_states import (
 
 logger = logging.getLogger("lungo.accountant_agent.agent")
 
-# --- 1. Define Node Names as Constants ---
-class NodeStates:
-    ACCOUNTANT = "accountant"
+LITELLM_PROXY_BASE_URL = os.getenv("LITELLM_PROXY_BASE_URL")
+LITELLM_PROXY_API_KEY = os.getenv("LITELLM_PROXY_API_KEY")
+
+# Configure LiteLLM proxy if environment variables are set
+if LITELLM_PROXY_API_KEY and LITELLM_PROXY_BASE_URL:
+    os.environ["LITELLM_PROXY_API_KEY"] = LITELLM_PROXY_API_KEY
+    os.environ["LITELLM_PROXY_API_BASE"] = LITELLM_PROXY_BASE_URL
+    logger.info(f"Using LiteLLM Proxy: {LITELLM_PROXY_BASE_URL}")
+    litellm.use_litellm_proxy = True
+else:
+    logger.info("Using direct LLM instance")
 
 
-# --- 2. Define the Graph State ---
-class GraphState(MessagesState):
-    """
-    Represents the state of our graph, passed between nodes.
-    """
-    pass
+accountant_agent = Agent(
+    name="accountant_agent",
+    model=LiteLlm(model=LLM_MODEL),
+    description="Handles payment processing for coffee orders in the logistics workflow.",
+    instruction="""You are the Accountant agent in a logistics workflow.
+
+Your responsibilities:
+1. Receive messages from the logistics system in format: "STATUS | Sender -> Receiver: Details"
+2. Extract the order status and order_id from the message
+3. Process payment verification when status is CUSTOMS_CLEARANCE
+4. Transition to PAYMENT_COMPLETE after verifying payment
+5. Remain idle for other statuses
+
+When you receive CUSTOMS_CLEARANCE status:
+- Extract the order_id from the message
+- Respond EXACTLY in this format: "PAYMENT_COMPLETE | Accountant -> Shipper: Payment verified and captured"
+
+For any other status:
+- Respond EXACTLY: "Accountant remains IDLE. No further action required."
+
+CRITICAL: Follow the exact format. Do not add extra text or explanations.""",
+    tools=[],
+)
+
+# ============================================================================
+# Session and Runner Configuration
+# ============================================================================
+session_service = InMemorySessionService()
+
+accountant_runner = Runner(
+    agent=accountant_agent,
+    app_name="accountant_agent",
+    session_service=session_service
+)
+
+async def get_or_create_session(app_name: str, user_id: str, session_id: str):
+    """Retrieve an existing session or create a new one if it doesn't exist."""
+    session = await session_service.get_session(app_name=app_name, user_id=user_id, session_id=session_id)
+    if session is None:
+        session = await session_service.create_session(app_name=app_name, user_id=user_id, session_id=session_id)
+    return session
+
+def process_accountant_logic(raw_message: str) -> str:
+    """Process accountant business logic."""
+    status = extract_status(raw_message)
+    order_id = ensure_order_id(raw_message)
+
+    if status is LogisticsStatus.CUSTOMS_CLEARANCE:
+        next_status = LogisticsStatus.PAYMENT_COMPLETE
+        msg = build_transition_message(
+            order_id=order_id,
+            sender="Accountant",
+            receiver="Shipper",
+            to_state=next_status.value,
+            details="Payment verified and captured",
+        )
+        return msg
+
+    return "Accountant remains IDLE. No further action required."
 
 
-# --- 3. Implement the Accountant Agent Class ---
 @agent(name="accountant_agent")
 class AccountantAgent:
     def __init__(self):
-        """
-        Initializes the AccountantAgent with a single node LangGraph workflow.
-        Handles one specific input:
-        - CUSTOMS_CLEARANCE -> PAYMENT_COMPLETE
-        Ignores all other inputs.
-        """
-        self.app = self._build_graph()
-
-    # --- Node Definition ---
-
-    def _accountant_node(self, state: GraphState) -> dict:
-        """
-        Single node that handles all accountant logic.
-        Transitions:
-          CUSTOMS_CLEARANCE -> PAYMENT_COMPLETE
-        """
-        messages = state["messages"]
-        if isinstance(messages, list) and messages:
-            last = messages[-1]
-            raw = getattr(last, "content", str(last)).strip()
-        else:
-            raw = str(messages).strip()
-
-        status = extract_status(raw)
-        order_id = ensure_order_id(raw)
-
-        if status is LogisticsStatus.CUSTOMS_CLEARANCE:
-            next_status = LogisticsStatus.PAYMENT_COMPLETE
-            msg = build_transition_message(
-                order_id=order_id,
-                sender="Accountant",
-                receiver="Shipper",
-                to_state=next_status.value,
-                details="Payment verified and captured",
-            )
-            return {"messages": [AIMessage(msg)]}
-
-        return {"messages": [AIMessage("Accountant remains IDLE. No further action required.")]}
-
-    # --- Graph Building Method ---
-    @graph(name="accountant_graph")
-    def _build_graph(self):
-        """
-        Builds and compiles the LangGraph workflow with single node.
-        """
-        workflow = StateGraph(GraphState)
-
-        # Add single node
-        workflow.add_node(NodeStates.ACCOUNTANT, self._accountant_node)
-
-        # Set the entry point
-        workflow.set_entry_point(NodeStates.ACCOUNTANT)
-
-        # Add edge to END
-        workflow.add_edge(NodeStates.ACCOUNTANT, END)
-
-        return workflow.compile()
-
-    # --- Public Methods for Interaction ---
+        """Initialize the AccountantAgent using Google ADK."""
+        self.runner = accountant_runner
+        self.app_name = "accountant_agent"
 
     async def ainvoke(self, user_message: str) -> str:
         """
-        Invokes the graph with a user message.
-
+        Process a message through the accountant agent.
+        
         Args:
-            user_message (str): The current message from the user.
-
+            user_message (str): The incoming message from the logistics system.
+            
         Returns:
-            str: The final response from the accountant agent.
+            str: The response from the accountant agent.
         """
-        inputs = {"messages": [user_message]}
-        result = await self.app.ainvoke(inputs)
 
-        messages = result.get("messages", [])
-        if not messages:
-            raise RuntimeError("No messages found in the graph response.")
+        user_id = "user_1"
+        session_id = "main_session"
+        
+        await get_or_create_session(app_name=self.app_name, user_id=user_id, session_id=session_id)
 
-        # Find the last AIMessage with non-empty content
-        for message in reversed(messages):
-            if isinstance(message, AIMessage) and message.content.strip():
-                logger.debug(f"Valid AIMessage found: {message.content.strip()}")
-                return message.content.strip()
+        logger.info(f"Accountant received: {user_message}")
+        response = process_accountant_logic(user_message)
+        logger.info(f"Accountant response: {response}")
 
-        # If no valid AIMessage found, return the last message as a fallback
-        return messages[-1].content.strip()
+        return response
