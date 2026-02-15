@@ -209,6 +209,12 @@ const MainArea: React.FC<MainAreaProps> = ({
                   )
                   .filter(Boolean),
           )
+          // Also track existing agentCid values to prevent duplicates from different IDs
+          const existingCids = new Set(
+              prevNodes
+                  .map((n: any) => n?.data?.agentCid)
+                  .filter(Boolean),
+          )
 
           const recruiterNode = prevNodes.find((n) => n.id === recruiterNodeId)
           const recruiterIcons = recruiterNode?.data
@@ -221,7 +227,16 @@ const MainArea: React.FC<MainAreaProps> = ({
 
           const templateKeywordsToAdd: Keyword[] = KEYWORDS.filter((kw) =>
               entries.some((e) => hasKeyword(e.name, kw)),
-          )
+          ).filter((kw) => {
+            // Skip if a discovery node with this keyword already exists
+            // (existingNames catches label1, but also check for keyword in existing discovery node labels)
+            const alreadyExists = prevNodes.some(
+                (n) =>
+                    n.id.startsWith("discovery-") &&
+                    hasKeyword(String((n.data as any)?.label1 ?? ""), kw),
+            )
+            return !alreadyExists
+          })
 
           const generatedEntriesToAdd = (() => {
             const seen = new Set<string>()
@@ -231,6 +246,8 @@ const MainArea: React.FC<MainAreaProps> = ({
               const key = e.name.toLowerCase()
               if (existingNames.has(key)) return false
               if (seen.has(key)) return false
+              // Skip if a node with this agentCid already exists
+              if (existingCids.has(e.id)) return false
 
               seen.add(key)
               return true
@@ -255,6 +272,9 @@ const MainArea: React.FC<MainAreaProps> = ({
 
             // Find the matching entry to get its CID
             const matchedEntry = entries.find((e) => hasKeyword(e.name, kind))
+
+            // Skip if a node with this agentCid already exists (prevents duplicates across different seqRef values)
+            if (matchedEntry?.id && existingCids.has(matchedEntry.id)) continue
 
             const x =
                 recruiterPos.x + (startCol + col) * (NODE_WIDTH + HORIZONTAL_GAP)
