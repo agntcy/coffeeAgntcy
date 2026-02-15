@@ -35,7 +35,7 @@ from agents.supervisors.recruiter.models import (
     STATE_KEY_SELECTED_AGENT,
     STATE_KEY_TASK_MESSAGE,
 )
-from agents.supervisors.recruiter.recruiter_client import recruit_agents
+from agents.supervisors.recruiter.recruiter_client import evaluate_agent, recruit_agents
 
 logger = logging.getLogger("lungo.recruiter.supervisor.agent")
 
@@ -256,20 +256,26 @@ root_agent = Agent(
     model=LiteLlm(model=LLM_MODEL),
     description="The main recruiter supervisor agent that finds and delegates tasks to agents.",
     instruction="""You are a Recruiter Supervisor agent. Your job is to help users find agents
-from the AGNTCY directory and connect them to selected agents.
+from the AGNTCY directory, evaluate them, and connect them to selected agents.
 
 **Tools:**
 1. `recruit_agents(query)` — Search for agents. Pass the user's FULL message as the query.
 
-2. `select_agent(agent_identifier)` — Select an agent by name or CID.
+2. `evaluate_agent(agent_identifier, query)` — Evaluate a single recruited agent against
+   scenarios or criteria. The agent_identifier can be a name or CID (same matching rules
+   as select_agent). The query contains the evaluation criteria / test scenarios.
+   The user must ask to evaluate a specific agent — do NOT evaluate all agents at once.
+   Example: evaluate_agent("Shipping agent", "Test that the agent handles invalid addresses and refuses to ship prohibited items")
+
+3. `select_agent(agent_identifier)` — Select an agent by name or CID.
    Example: select_agent("Shipping agent") or select_agent("baeabc123...")
 
-3. `deselect_agent()` — Clear the current selection and return to supervisor mode.
+4. `deselect_agent()` — Clear the current selection and return to supervisor mode.
 
-4. `send_to_agent(message)` — Forward a message to the selected agent. After this,
+5. `send_to_agent(message)` — Forward a message to the selected agent. After this,
    transfer to the 'dynamic_workflow' sub-agent.
 
-5. `clear_recruited_agents()` — Clear all recruited agents from memory to reset state.
+6. `clear_recruited_agents()` — Clear all recruited agents from memory to reset state.
 
 **Sub-agent:**
 - `dynamic_workflow` — Executes the actual communication with the selected agent.
@@ -281,28 +287,36 @@ from the AGNTCY directory and connect them to selected agents.
    → Call `recruit_agents` with the full user message
    → Present results with names and CIDs
 
-2. **SELECT requests** (user says "select", "choose", "use", "talk to" + agent name/CID):
+2. **EVALUATE requests** (user says "evaluate", "test", "assess", "interview", "check" + agent name):
+   → Call `evaluate_agent` with the agent identifier and the user's evaluation criteria
+   → Present results showing whether the agent passed or failed each scenario
+   → If the user does not specify which agent, ask them to pick one from the recruited list
+   → If no agents have been recruited yet, inform the user and suggest recruiting first
+
+3. **SELECT requests** (user says "select", "choose", "use", "talk to" + agent name/CID):
    → Call `select_agent` with the identifier
    → Confirm selection
 
-3. **DESELECT requests** (user says "deselect", "clear", "back", "stop talking"):
+4. **DESELECT requests** (user says "deselect", "clear", "back", "stop talking"):
    → Call `deselect_agent`
 
-4. **MESSAGE to selected agent** (any other message when an agent is selected):
+5. **MESSAGE to selected agent** (any other message when an agent is selected):
    → Call `send_to_agent` with the user's message
    → Transfer to `dynamic_workflow`
 
-5. **No agent selected and not a search/select request**:
+6. **No agent selected and not a search/select/evaluate request**:
    → Ask the user to either search for agents or select one from previous results
 
-6. **CLEAR state** (user says "clear all", "reset all", "remove all agents"):
+7. **CLEAR state** (user says "clear all", "reset all", "remove all agents"):
    → Call `clear_recruited_agents` to clear memory of recruited agents
 
 **IMPORTANT:**
 - When an agent is selected, forward ALL non-command messages to that agent
 - The user talks to ONE agent at a time
-- Always show available agents after a search so the user can select by name""",
-    tools=[recruit_agents, select_agent, deselect_agent, send_to_agent, clear_recruited_agents],
+- Always show available agents after a search so the user can select by name
+- For evaluate requests, agents MUST be recruited first — suggest recruiting if none exist
+- Only evaluate ONE agent at a time — ask the user which agent they want to evaluate""",
+    tools=[recruit_agents, evaluate_agent, select_agent, deselect_agent, send_to_agent, clear_recruited_agents],
     sub_agents=[dynamic_workflow_agent],
 )
 

@@ -196,6 +196,47 @@ def create_mcp_toolset(
 # State-Writing Tool for Agent Records
 # ============================================================================
 
+def _extract_a2a_card(record: dict[str, Any]) -> dict[str, Any]:
+    """Extract the A2A AgentCard from an OASF record if present.
+
+    OASF records embed the A2A card inside ``modules`` where
+    ``module.name == "integration/a2a"`` and the card data lives at
+    ``module.data.card_data``.  If the record already looks like a plain
+    A2A card (has ``url`` + ``capabilities`` at the top level) it is
+    returned as-is.
+
+    Args:
+        record: An OASF record dict or an already-exported A2A card dict.
+
+    Returns:
+        The A2A card dict (extracted or original).
+    """
+    # Already an A2A card?  (has url and capabilities at root)
+    if "url" in record and "capabilities" in record:
+        return record
+
+    # Look for the a2a module inside the OASF record
+    modules = record.get("modules") or []
+    for module in modules:
+        if not isinstance(module, dict):
+            continue
+        if module.get("name") != "integration/a2a":
+            continue
+        data = module.get("data")
+        if not isinstance(data, dict):
+            continue
+        card_data = data.get("card_data")
+        if isinstance(card_data, dict) and card_data.get("url"):
+            logger.info(
+                "Extracted A2A card_data from OASF module for agent '%s'",
+                card_data.get("name", record.get("name", "?")),
+            )
+            return card_data
+
+    # No a2a module found — return original record unchanged
+    return record
+
+
 async def store_search_results(
     cid: str,
     record: dict[str, Any],
@@ -221,8 +262,13 @@ async def store_search_results(
     # Check if this is an update or new record
     is_update = cid in existing
 
+    # Ensure we store the A2A card, not the raw OASF wrapper.
+    # The LLM *should* export before storing, but if it passes
+    # the raw OASF record we extract the card_data ourselves.
+    a2a_record = _extract_a2a_card(record)
+
     # Store/update the record keyed by CID
-    existing[cid] = record
+    existing[cid] = a2a_record
     tool_context.state["found_agent_records"] = existing
 
     action = "Updated" if is_update else "Stored"

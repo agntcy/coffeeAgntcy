@@ -95,6 +95,7 @@ class RemoteAgentConnections:
         message = request.message
 
         task = None
+        first_message: Message | None = None
 
         try:
             # The send_message method returns AsyncIterator automatically
@@ -102,13 +103,23 @@ class RemoteAgentConnections:
             async for response in self.agent_client.send_message(message):
                 logger.debug(
                     "received response from remote agent",
-                    extra={"response": response},
+                    extra={
+                        "response_type": type(response).__name__,
+                        "response": response,
+                    },
                 )
 
                 # Response is tuple[Task, Update] or Message
                 if isinstance(response, Message):
-                    # Direct message response (non-streaming)
-                    return response
+                    # Direct message response — don't return immediately.
+                    # Some agents send a Message followed by more streamed
+                    # data; returning early causes the A2A SDK to raise
+                    # "received a streamed Message … after first response".
+                    # Instead, capture the first Message and keep draining
+                    # so the iterator is fully consumed.
+                    if first_message is None:
+                        first_message = response
+                    continue
 
                 # Streaming response: (Task, Update event or None)
                 if isinstance(response, tuple):
@@ -129,10 +140,18 @@ class RemoteAgentConnections:
                     if event and hasattr(event, "final") and event.final:
                         break
 
-            return task
+            # Prefer the streaming task result; fall back to direct Message
+            return task if task is not None else first_message
 
         except Exception as e:
-            logger.error(f"Error sending message to agent: {e}")
+            logger.error(
+                f"Error sending message to agent: {e}",
+                extra={
+                    "agent_name": self.card.name,
+                    "agent_url": self.card.url,
+                    "error_type": type(e).__name__,
+                },
+            )
             # Try to return an appropriate error
             if hasattr(e, "error"):
                 return e.error

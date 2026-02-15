@@ -135,7 +135,7 @@ export const useRecruiterStreamingStore = create<RecruiterStreamingStoreState>((
                       finalMessage: event.message,
                       agentRecords: event.agent_records !== undefined ? event.agent_records : state.agentRecords,
                       evaluationResults: event.evaluation_results || state.evaluationResults,
-                      selectedAgent: event.selected_agent || state.selectedAgent,
+                      selectedAgent: event.selected_agent !== undefined ? event.selected_agent : state.selectedAgent,
                     }))
                   } else if (event.event_type === "error") {
                     set((state) => ({
@@ -149,6 +149,7 @@ export const useRecruiterStreamingStore = create<RecruiterStreamingStoreState>((
                     set((state) => ({
                       events: [...state.events, event],
                       sessionId: parsedData.session_id || state.sessionId,
+                      selectedAgent: event.selected_agent !== undefined ? event.selected_agent : state.selectedAgent,
                     }))
                   }
                 }

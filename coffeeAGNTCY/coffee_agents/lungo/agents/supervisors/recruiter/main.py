@@ -69,8 +69,7 @@ async def handle_prompt(request: PromptRequest):
             response["agent_records"] = result["agent_records"]
         if result.get("evaluation_results"):
             response["evaluation_results"] = result["evaluation_results"]
-        if result.get("selected_agent"):
-            response["selected_agent"] = result["selected_agent"]
+        response["selected_agent"] = result.get("selected_agent")
         return response
     except Exception as e:
         logger.error(f"Error handling prompt: {e}", exc_info=True)
@@ -123,16 +122,19 @@ async def handle_stream_prompt(request: PromptRequest):
                             function_calls = event.get_function_calls() if hasattr(event, "get_function_calls") else []
                             function_responses = event.get_function_responses() if hasattr(event, "get_function_responses") else []
 
+                            # Fetch selected_agent on every event
+                            current_selected_agent = await get_selected_agent(user_id, final_sid)
+
                             if event.is_final_response():
                                 agent_records = await get_recruited_agents(user_id, final_sid)
                                 evaluation_results = await get_evaluation_results(user_id, final_sid)
-                                selected_agent = await get_selected_agent(user_id, final_sid)
 
                                 line: dict = {
                                     "response": {
                                         "event_type": "completed",
                                         "message": msg_text,
                                         "state": "completed",
+                                        "selected_agent": current_selected_agent,
                                     },
                                     "session_id": final_sid,
                                 }
@@ -140,8 +142,6 @@ async def handle_stream_prompt(request: PromptRequest):
                                     line["response"]["agent_records"] = agent_records
                                 if evaluation_results:
                                     line["response"]["evaluation_results"] = evaluation_results
-                                if selected_agent:
-                                    line["response"]["selected_agent"] = selected_agent
                                 await merged_queue.put(line)
                             elif msg_text:
                                 await merged_queue.put({
@@ -150,6 +150,7 @@ async def handle_stream_prompt(request: PromptRequest):
                                         "message": msg_text,
                                         "state": "working",
                                         "author": event.author,
+                                        "selected_agent": current_selected_agent,
                                     },
                                     "session_id": sid,
                                 })
@@ -161,6 +162,7 @@ async def handle_stream_prompt(request: PromptRequest):
                                             "message": f"Calling tool: {fc.name}",
                                             "state": "working",
                                             "author": event.author,
+                                            "selected_agent": current_selected_agent,
                                         },
                                         "session_id": sid,
                                     })
@@ -172,6 +174,7 @@ async def handle_stream_prompt(request: PromptRequest):
                                             "message": f"Tool {fr.name} completed",
                                             "state": "working",
                                             "author": event.author,
+                                            "selected_agent": current_selected_agent,
                                         },
                                         "session_id": sid,
                                     })

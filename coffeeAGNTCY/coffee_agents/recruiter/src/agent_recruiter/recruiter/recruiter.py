@@ -36,18 +36,37 @@ configure_llm()
 session_service = InMemorySessionService()
 
 async def get_or_create_session(
-    app_name: str, 
-    user_id: str, 
-    session_id: str
+    app_name: str,
+    user_id: str,
+    session_id: str,
+    state_overrides: Optional[dict] = None,
 ):
     """Retrieve an existing session or create a new one.
 
     This prevents AlreadyExistsError on repeated agent invocations.
+
+    Args:
+        app_name: Application name for session management.
+        user_id: User identifier.
+        session_id: Session identifier.
+        state_overrides: Optional dict of state keys to merge into the
+            session's initial state (or update on an existing session).
+            Used to seed data like ``found_agent_records`` when the caller
+            already has them.
     """
 
     session = await session_service.get_session(app_name=app_name, user_id=user_id, session_id=session_id)
     if session is not None:
         logger.info(f"✅ Retrieved existing session '{session_id}' for user '{user_id}'.")
+        # Apply overrides to an existing session so that the downstream
+        # sub-agents see the caller-provided data.
+        if state_overrides:
+            for key, value in state_overrides.items():
+                session.state[key] = value
+            logger.info(
+                f"Applied {len(state_overrides)} state override(s) to existing session: "
+                f"{list(state_overrides.keys())}"
+            )
         return session
     
     # Define initial state data
@@ -57,6 +76,14 @@ async def get_or_create_session(
         "evaluation_criteria": [],  # Initialize empty list for evaluation criteria
         "evaluation_results": {}   # Initialize empty dict for evaluation results
     }
+
+    # Merge caller-provided overrides into initial state
+    if state_overrides:
+        initial_state.update(state_overrides)
+        logger.info(
+            f"Merged {len(state_overrides)} state override(s) into initial state: "
+            f"{list(state_overrides.keys())}"
+        )
 
     session_stateful = await session_service.create_session(
         app_name=app_name, # Use the consistent app name
@@ -307,7 +334,8 @@ class RecruiterTeam:
         self,
         user_message: str,
         user_id: str,
-        session_id: str
+        session_id: str,
+        initial_state_overrides: Optional[dict] = None,
     ) -> AsyncGenerator[AdkEvent, None]:
         """Stream ADK events progressively instead of waiting for final result.
 
@@ -318,6 +346,10 @@ class RecruiterTeam:
             user_message: The user's input message
             user_id: User ID for the session
             session_id: Session ID for state management
+            initial_state_overrides: Optional dict of state keys to seed into
+                the session before running the agent.  Used by the A2A executor
+                to pass data (e.g. ``found_agent_records``) received from the
+                calling service.
 
         Yields:
             ADK Event objects as they are produced by the agent
@@ -325,7 +357,8 @@ class RecruiterTeam:
         await get_or_create_session(
             app_name=self.app_name,
             user_id=user_id,
-            session_id=session_id
+            session_id=session_id,
+            state_overrides=initial_state_overrides,
         )
 
         content = types.Content(

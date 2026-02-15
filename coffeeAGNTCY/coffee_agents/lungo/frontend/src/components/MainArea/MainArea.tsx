@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  **/
 
-import React, { useEffect, useRef, useCallback, useState } from "react"
+import React, { useEffect, useRef, useCallback, useState, useMemo } from "react"
 import {
   ReactFlow,
   ReactFlowProvider,
@@ -32,7 +32,7 @@ import {
 import { useViewportAwareFitView } from "@/hooks/useViewportAwareFitView"
 import { useModalManager } from "@/hooks/useModalManager"
 import type { Node, Edge } from "@xyflow/react"
-import {EDGE_LABELS, HANDLE_TYPES} from "@/utils/const.ts";
+import {EDGE_LABELS, HANDLE_TYPES, NODE_IDS} from "@/utils/const.ts";
 import {PUBLISH_SUBSCRIBE_CONFIG, GROUP_COMMUNICATION_CONFIG} from "@/utils/graphConfigs";
 import {DiscoveryResponseEvent} from "@/components/MainArea/Graph/Directory/types.ts";
 
@@ -63,6 +63,7 @@ interface MainAreaProps {
   groupCommResponseReceived?: boolean
   onNodeHighlight?: (highlightFunction: (nodeId: string) => void) => void
   discoveryResponseEvent?: DiscoveryResponseEvent | null
+  selectedAgentCid?: string | null
 }
 
 const DELAY_DURATION = 500
@@ -82,6 +83,7 @@ const MainArea: React.FC<MainAreaProps> = ({
                                              groupCommResponseReceived = false,
                                              onNodeHighlight,
                                              discoveryResponseEvent,
+                                             selectedAgentCid,
                                            }) => {
   const fitViewWithViewport = useViewportAwareFitView()
   const isGroupCommConnected =
@@ -251,6 +253,9 @@ const MainArea: React.FC<MainAreaProps> = ({
             const id = templateNodeId(kind)
             if (existingIds.has(id)) continue
 
+            // Find the matching entry to get its CID
+            const matchedEntry = entries.find((e) => hasKeyword(e.name, kind))
+
             const x =
                 recruiterPos.x + (startCol + col) * (NODE_WIDTH + HORIZONTAL_GAP)
             const y = recruiterPos.y + START_Y_OFFSET
@@ -268,6 +273,8 @@ const MainArea: React.FC<MainAreaProps> = ({
               data: {
                 ...(template.data ?? {}),
                 active: false,
+                selected: false,
+                agentCid: matchedEntry?.id,
                 isModalOpen: false,
                 onOpenIdentityModal: handleOpenIdentityModal,
                 onOpenOasfModal: handleOpenOasfModal,
@@ -302,6 +309,8 @@ const MainArea: React.FC<MainAreaProps> = ({
                 label1: entry.name,
                 ...recruiterIcons,
                 active: false,
+                selected: false,
+                agentCid: entry.id,
                 isModalOpen: false,
                 handles: HANDLE_TYPES.TARGET,
                 agentDirectoryLink: "place-holder",
@@ -348,6 +357,36 @@ const MainArea: React.FC<MainAreaProps> = ({
 
     addDiscoveryResponseGraph(discoveryResponseEvent)
   }, [pattern, discoveryResponseEvent, addDiscoveryResponseGraph])
+
+  // Derive a stable string key of agentCid mappings so the effect only re-fires
+  // when discovery nodes are added/removed, NOT when other node data (like `selected`) changes.
+  const nodeAgentCidKey = useMemo(
+      () =>
+          nodes
+              .filter((n: any) => n.data?.agentCid)
+              .map((n: any) => `${n.id}:${n.data.agentCid}`)
+              .sort()
+              .join(","),
+      [nodes],
+  )
+
+  // Update node `selected` state based on selectedAgentCid
+  useEffect(() => {
+    if (pattern !== "on_demand_discovery") return
+
+    setNodes((prevNodes) =>
+        prevNodes.map((node) => {
+          const shouldBeSelected = selectedAgentCid != null
+              ? (node.data as any)?.agentCid === selectedAgentCid
+              : node.id === NODE_IDS.RECRUITER
+
+          // Skip update if already correct to avoid unnecessary object churn
+          if ((node.data as any)?.selected === shouldBeSelected) return node
+          return { ...node, data: { ...node.data, selected: shouldBeSelected } }
+        }),
+    )
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pattern, selectedAgentCid, nodeAgentCidKey, setNodes])
 
   useEffect(() => {
     animationLock.current = false

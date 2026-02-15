@@ -68,6 +68,30 @@ class RecruiterAgentExecutor(AgentExecutor):
 
         logger.info(f"[agent_executor] Received prompt: {prompt!r}")
 
+        # Extract DataParts from the incoming A2A message.
+        # The Lungo supervisor may send agent records (e.g. for evaluation)
+        # as DataParts alongside the text prompt.  We seed them into the
+        # session state so that downstream sub-agents (like agent_evaluator)
+        # can access them immediately.
+        initial_state_overrides: dict = {}
+        if context.message and context.message.parts:
+            for part in context.message.parts:
+                root = part.root
+                if isinstance(root, DataPart) and root.metadata:
+                    meta_type = root.metadata.get("type")
+                    if meta_type == "found_agent_records" and isinstance(root.data, dict):
+                        initial_state_overrides["found_agent_records"] = root.data
+                        logger.info(
+                            "[agent_executor] Extracted %d found_agent_records from incoming DataPart",
+                            len(root.data),
+                        )
+                    elif meta_type == "evaluation_criteria" and isinstance(root.data, list):
+                        initial_state_overrides["evaluation_criteria"] = root.data
+                        logger.info(
+                            "[agent_executor] Extracted %d evaluation_criteria from incoming DataPart",
+                            len(root.data),
+                        )
+
         task = context.current_task
         if not task:
             if context.message is None:
@@ -106,7 +130,10 @@ class RecruiterAgentExecutor(AgentExecutor):
             event_count = 0
 
             # Stream events from the ADK runner
-            async for adk_event in self.agent.stream(prompt, user_id, session_id):
+            async for adk_event in self.agent.stream(
+                prompt, user_id, session_id,
+                initial_state_overrides=initial_state_overrides or None,
+            ):
                 event_count += 1
 
                 # Convert and emit intermediate events

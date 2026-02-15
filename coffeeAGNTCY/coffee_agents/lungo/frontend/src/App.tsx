@@ -29,6 +29,7 @@ import {
   useRecruiterFinalMessage,
   useRecruiterAgentRecords,
   useRecruiterStreamingSessionId,
+  useRecruiterSelectedAgent,
 } from "@/stores/recruiterStreamingStore"
 import Navigation from "@/components/Navigation/Navigation"
 import MainArea from "@/components/MainArea/MainArea"
@@ -72,6 +73,7 @@ const App: React.FC = () => {
   const recruiterFinalMessage = useRecruiterFinalMessage()
   const recruiterAgentRecords = useRecruiterAgentRecords()
   const recruiterSessionId = useRecruiterStreamingSessionId()
+  const recruiterSelectedAgent = useRecruiterSelectedAgent()
   const { connect: connectRecruiter, reset: resetRecruiter } = useRecruiterStreamingActions()
 
   const [aiReplied, setAiReplied] = useState<boolean>(false)
@@ -401,6 +403,7 @@ const App: React.FC = () => {
                     groupCommResponseReceived={groupCommResponseReceived}
                     onNodeHighlight={handleNodeHighlightSetup}
                     discoveryResponseEvent={discoveryResponseEvent}
+                    selectedAgentCid={recruiterSelectedAgent?.cid ?? null}
                 />
               </div>
               <div className="flex min-h-[76px] w-full flex-none flex-col items-center justify-center gap-0 bg-overlay-background p-0 md:min-h-[96px]">
