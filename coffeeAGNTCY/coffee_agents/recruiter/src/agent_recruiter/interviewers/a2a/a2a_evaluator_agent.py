@@ -64,6 +64,19 @@ class A2AEvaluatorAgent(BaseEvaluatorAgent):
                 self._evaluated_agent_address,
             )
             card = await card_resolver.get_agent_card()
+
+            # Some agents serve a card with an empty or missing url field.
+            # Since we already know the reachable address (we just fetched
+            # the card from it), patch the card so the A2A client can
+            # construct a valid transport.
+            if not card.url:
+                logger.warning(
+                    "Fetched agent card has empty 'url' — "
+                    "patching with evaluated_agent_address: %s",
+                    self._evaluated_agent_address,
+                )
+                card.url = self._evaluated_agent_address
+
             self.__evaluated_agent_client = RemoteAgentConnections(
                 self._http_client,
                 card,
@@ -143,6 +156,18 @@ class A2AEvaluatorAgent(BaseEvaluatorAgent):
             self._add_message_to_chat_history(context_id, "user", message)
 
             agent_client = await self._get_evaluated_agent_client()
+            logger.debug(
+                "Sending message via RemoteAgentConnections",
+                extra={
+                    "card_name": agent_client.card.name,
+                    "card_url": agent_client.card.url,
+                    "card_streaming": (
+                        agent_client.card.capabilities.streaming
+                        if agent_client.card.capabilities
+                        else None
+                    ),
+                },
+            )
             response = await agent_client.send_message(
                 MessageSendParams(
                     message=Message(
@@ -161,11 +186,23 @@ class A2AEvaluatorAgent(BaseEvaluatorAgent):
             )
 
             if not response:
-                logger.debug(
+                logger.warning(
                     "_send_message_to_evaluated_agent - no response",
-                    extra={"protocol": "a2a"},
+                    extra={
+                        "protocol": "a2a",
+                        "agent_url": self._evaluated_agent_address,
+                        "context_id": context_id,
+                    },
                 )
                 return {"response": ""}
+
+            logger.info(
+                "📨 Raw response from evaluated agent",
+                extra={
+                    "response_type": type(response).__name__,
+                    "context_id": context_id,
+                },
+            )
 
             agent_response_text = (
                 self._get_text_from_response(response) or "Not a text response"
@@ -182,11 +219,12 @@ class A2AEvaluatorAgent(BaseEvaluatorAgent):
                 extra={
                     "response_length": len(agent_response_text),
                     "response_preview": (
-                        agent_response_text[:100] + "..."
-                        if len(agent_response_text) > 100
+                        agent_response_text[:200] + "..."
+                        if len(agent_response_text) > 200
                         else agent_response_text
                     ),
                     "context_id": context_id,
+                    "agent_url": self._evaluated_agent_address,
                 },
             )
             return {"response": response.model_dump_json()}

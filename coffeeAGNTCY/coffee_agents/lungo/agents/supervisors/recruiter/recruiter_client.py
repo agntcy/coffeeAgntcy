@@ -208,3 +208,201 @@ async def recruit_agents(query: str, tool_context: ToolContext) -> str:
     result = "\n".join(summary_lines)
     logger.info("[tool:recruit_agents] Result: %s", result)
     return result
+
+async def evaluate_agent(
+    agent_identifier: str, query: str, tool_context: ToolContext
+) -> str:
+    """Evaluate a single recruited agent against user-defined scenarios.
+
+    Looks up the agent by name or CID from session state, then sends its
+    record together with the user's evaluation criteria to the remote
+    recruiter A2A service.  The service delegates to its ``agent_evaluator``
+    sub-agent, which parses scenarios from the query, runs them against the
+    agent, and returns pass/fail results.
+
+    Args:
+        agent_identifier: The agent's name (partial match, case-insensitive)
+                          or CID (exact match).
+        query: Natural-language description of the evaluation criteria /
+               scenarios.  The recruiter service uses an LLM to extract
+               structured scenarios from this text.
+        tool_context: Automatically injected by ADK; provides session state access.
+
+    Returns:
+        Human-readable summary of the evaluation results.
+    """
+    logger.info(
+        "[tool:evaluate_agent] Called with agent_identifier=%r, query=%r",
+        agent_identifier,
+        query,
+    )
+
+    # --- 1. Resolve the single agent from session state --------------------
+    recruited: dict[str, dict] = tool_context.state.get(
+        STATE_KEY_RECRUITED_AGENTS, {}
+    )
+    if not recruited:
+        return (
+            "No agents have been recruited yet. "
+            "Please use recruit_agents to search for agents first, "
+            "then call evaluate_agent to evaluate a specific agent."
+        )
+
+    # Reuse the same lookup helper used by select_agent in agent.py
+    from agents.supervisors.recruiter.agent import _find_agent_by_name_or_cid
+
+    cid, record = _find_agent_by_name_or_cid(agent_identifier, recruited)
+    if not cid or not record:
+        available = [
+            f"  - {r.get('name', 'Unknown')} (CID: {c[:20]}...)"
+            for c, r in recruited.items()
+        ]
+        available_list = "\n".join(available) if available else "  (none)"
+        return (
+            f"No agent found matching '{agent_identifier}'.\n\n"
+            f"Available agents:\n{available_list}\n\n"
+            "Please provide the exact name or CID of an agent from the list above."
+        )
+
+    agent_name = record.get("name", "Unknown")
+    logger.info(
+        "[tool:evaluate_agent] Resolved agent: name=%s, cid=%s",
+        agent_name,
+        cid[:20],
+    )
+
+    # --- 2. Build A2A message with evaluation request ----------------------
+    # Send only the single agent's record so the recruiter service evaluates
+    # just this agent.  The evaluation-focused text triggers delegation to
+    # the agent_evaluator sub-agent on the remote side.
+    single_agent_records = {cid: record}
+
+    parts: list[Part] = [
+        Part(
+            root=TextPart(
+                text=(
+                    f"Evaluate the agent '{agent_name}' using these criteria:\n\n"
+                    f"{query}"
+                )
+            )
+        ),
+        Part(
+            root=DataPart(
+                data=single_agent_records,
+                metadata={"type": "found_agent_records"},
+            )
+        ),
+    ]
+
+    message = Message(
+        role=Role.user,
+        message_id=str(uuid4()),
+        parts=parts,
+    )
+
+    # --- 3. Stream the A2A request -----------------------------------------
+    response_data = RecruitmentResponse()
+
+    async with httpx.AsyncClient(timeout=httpx.Timeout(300.0)) as httpx_client:
+        config = ClientConfig(httpx_client=httpx_client, streaming=True)
+        factory = ClientFactory(config)
+        client = factory.create(RECRUITER_AGENT_CARD)
+
+        async for event in client.send_message(message):
+            if isinstance(event, tuple) and len(event) == 2:
+                task, update = event
+
+                # Forward intermediate status updates via the side-channel queue
+                if isinstance(update, TaskStatusUpdateEvent) and not update.final:
+                    if update.status and update.status.message:
+                        for p in update.status.message.parts or []:
+                            if isinstance(p.root, TextPart) and p.root.text:
+                                status_text = p.root.text
+                                author = None
+                                if update.status.message.metadata:
+                                    author = (
+                                        update.status.message.metadata.get("author")
+                                        or update.status.message.metadata.get("from_agent")
+                                    )
+                                event_type = "a2a_status"
+                                if update.status.message.metadata:
+                                    event_type = update.status.message.metadata.get(
+                                        "event_type", "a2a_status"
+                                    )
+
+                                logger.info(
+                                    "[tool:evaluate_agent] A2A status: %s (state=%s, final=%s)",
+                                    status_text[:120],
+                                    update.status.state if update.status else "?",
+                                    update.final,
+                                )
+                                await _a2a_event_queue.put({
+                                    "event_type": "status_update",
+                                    "message": status_text,
+                                    "state": "working",
+                                    "author": author or "recruiter_service",
+                                    "a2a_event_type": event_type,
+                                })
+
+                # Extract final result from completed task
+                if (
+                    isinstance(task, Task)
+                    and task.status
+                    and task.status.state == TaskState.completed
+                    and task.status.message
+                ):
+                    response_data = _extract_parts(task.status.message.parts)
+            elif isinstance(event, Message):
+                response_data = _extract_parts(event.parts)
+
+        # Signal that A2A streaming is done for this tool invocation
+        await _a2a_event_queue.put(None)
+
+    # --- 4. Persist evaluation results in session state --------------------
+    existing_evals = tool_context.state.get(STATE_KEY_EVALUATION_RESULTS, {})
+    existing_evals.update(response_data.evaluation_results)
+    tool_context.state[STATE_KEY_EVALUATION_RESULTS] = existing_evals
+
+    logger.info(
+        "[tool:evaluate_agent] Received %d evaluation result(s) for '%s'",
+        len(response_data.evaluation_results),
+        agent_name,
+    )
+
+    # --- 5. Build a human-readable summary ---------------------------------
+    if not response_data.evaluation_results:
+        summary = (
+            response_data.text
+            or f"Evaluation of '{agent_name}' completed but no results were returned."
+        )
+        logger.info("[tool:evaluate_agent] Result: %s", summary)
+        return summary
+
+    summary_lines = [
+        response_data.text or f"Evaluation results for **{agent_name}**:"
+    ]
+    for agent_id, result in response_data.evaluation_results.items():
+        if agent_id.startswith("_"):  # skip meta-keys like _summary
+            continue
+        status = result.get("status", "unknown")
+        passed = result.get("passed", None)
+        result_summary = result.get("summary", "")
+
+        if status == "evaluated":
+            icon = "✅" if passed else "❌"
+            summary_lines.append(f"  {icon} {result_summary}")
+
+            # Include per-scenario breakdown if available
+            for scenario_result in result.get("results", []):
+                s_icon = "✅" if scenario_result.get("passed") else "❌"
+                scenario_text = scenario_result.get("scenario", "")
+                summary_lines.append(f"    {s_icon} {scenario_text}")
+        elif status == "error":
+            error_msg = result.get("error", "Unknown error")
+            summary_lines.append(f"  ⚠️ Error — {error_msg}")
+        else:
+            summary_lines.append(f"  - {status}")
+
+    result_text = "\n".join(summary_lines)
+    logger.info("[tool:evaluate_agent] Result: %s", result_text)
+    return result_text
