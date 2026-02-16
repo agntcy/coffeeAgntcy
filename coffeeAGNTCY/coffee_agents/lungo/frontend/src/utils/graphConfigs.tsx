@@ -398,8 +398,8 @@ const DISCOVERY_CONFIG: GraphConfig = {
                 className="dark-icon h-4 w-4 object-contain"
             />
         ),
-        label1: "Recruiter",
-        label2: "Discovery Node",
+        label1: "Agentic Recruiter",
+        label2: "Discovery and delegation",
         handles: HANDLE_TYPES.ALL,
         extraHandles: [
           { id: "target-right", type: "target", position: "right" },

@@ -17,7 +17,7 @@ export const EDGE_LABELS = {
   A2A: "A2A",
   MCP: "MCP: ",
   A2A_OVER_HTTP: "A2A: HTTP",
-  MCP_WITH_STDIO: "MCP: stdio",
+  MCP_WITH_STDIO: "MCP: stdio -> grpc",
 } as const
 
 export const FarmName = {

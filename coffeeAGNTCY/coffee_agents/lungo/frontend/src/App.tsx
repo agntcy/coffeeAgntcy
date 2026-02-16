@@ -93,6 +93,7 @@ const App: React.FC = () => {
   const streamCompleteRef = useRef<boolean>(false)
   const [discoveryResponseEvent, setDiscoveryResponseEvent] =
       useState<DiscoveryResponseEvent | null>(null)
+  const lastDiscoveryKeyRef = useRef<string | null>(null)
 
   const handleDiscoveryResponse = useCallback((evt: DiscoveryResponseEvent) => {
     setDiscoveryResponseEvent(evt)
@@ -116,6 +117,7 @@ const App: React.FC = () => {
         setButtonClicked(false)
         setAiReplied(false)
         setSelectedPattern(pattern)
+        lastDiscoveryKeyRef.current = null
       },
       [reset, resetGroup, resetRecruiter],
   )
@@ -239,12 +241,22 @@ const App: React.FC = () => {
 
       // Dispatch discovery response event to update the graph with discovered agents
       // Always dispatch, even when agent_records is empty (e.g. "clear all"), to trigger graph cleanup
-      handleDiscoveryResponse({
-        response: recruiterFinalMessage ?? "",
-        ts: Date.now(),
-        sessionId: recruiterSessionId ?? undefined,
-        agent_records: (recruiterAgentRecords ?? {}) as any,
-      })
+      // Use a stable fingerprint (session + sorted agent record keys) instead of Date.now()
+      // so that re-renders with the same data don't create duplicate graph nodes
+      const agentKeys = recruiterAgentRecords
+          ? Object.keys(recruiterAgentRecords).sort().join(",")
+          : ""
+      const discoveryKey = `${recruiterSessionId ?? ""}:${agentKeys}`
+
+      if (lastDiscoveryKeyRef.current !== discoveryKey) {
+        lastDiscoveryKeyRef.current = discoveryKey
+        handleDiscoveryResponse({
+          response: recruiterFinalMessage ?? "",
+          ts: Date.now(),
+          sessionId: recruiterSessionId ?? undefined,
+          agent_records: (recruiterAgentRecords ?? {}) as any,
+        })
+      }
     } else if (recruiterStatus === "error" && recruiterError) {
       setIsAgentLoading(false)
       setShowFinalResponse(true)
@@ -344,6 +356,7 @@ const App: React.FC = () => {
     setPendingResponse("")
     resetGroup()
     resetRecruiter()
+    lastDiscoveryKeyRef.current = null
   }
 
   const handleNodeHighlightSetup = useCallback(
