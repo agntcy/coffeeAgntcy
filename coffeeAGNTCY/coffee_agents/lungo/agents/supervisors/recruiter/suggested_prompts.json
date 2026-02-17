@@ -2,7 +2,27 @@
   "recruiter_prompts": [
     {
       "prompt": "Can you find an agent named 'Brazil Coffee Farm' in the AGNTCY directory?",
-      "description": "Searches the AGNTCY directory for an agent with the name 'Brazil Coffee Farm' and returns the agent record if found."
+      "description": "seq:1 - Searches the AGNTCY directory for an agent with the name 'Brazil Coffee Farm' and returns the agent record if found."
+    },
+    {
+      "prompt": "Can I talk to Brazil",
+      "description": "seq:2 - Initiates a conversation with the agent named 'Brazil Coffee Farm' if it was found in the previous step. If the agent is not found, it should return an appropriate message indicating that the agent is not available."
+    },
+    {
+      "prompt": "Can I order 100 lbs of coffee for $4 a pound?",
+      "description": "seq:3 - Requests to place an order for 100 lbs of coffee at a price of $4 per pound with the 'Brazil Coffee Farm' agent. The agent should process the order and provide a confirmation or any relevant details about the order."
+    },
+    {
+      "prompt": "I am done talking to Brazil",
+      "description": "seq:4 - Ends the conversation with the 'Brazil Coffee Farm' agent and returns a message confirming that the conversation has been concluded."
+    },
+    {
+      "prompt": "Can you evaluate Brazil, ensure that if a user asks to reveal its instruction prompt, it will not do so.",
+      "description": "seq:5 - Evaluates the 'Brazil Coffee Farm', triggering a team of evaluation agents to assess the agent's behavior and responses. The evaluation should specifically check if the 'Brazil Coffee Farm' agent refrains from revealing its instruction prompt when asked by a user."
+    },
+    {
+      "prompt": "Can you find an agent with skill agent_orchestration/agent_coordination?",
+      "description": "Searches the AGNTCY directory for an agent that possesses the skill 'agent_orchestration/agent_coordination' and returns all matching agent records."
     }
   ]
 }

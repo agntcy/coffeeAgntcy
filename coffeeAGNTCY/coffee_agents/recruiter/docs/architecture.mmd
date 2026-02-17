@@ -1,4 +1,4 @@
-%%{init: {'theme': 'base', 'themeVariables': { 'primaryColor': '#4A90D9', 'primaryTextColor': '#fff', 'primaryBorderColor': '#2E6DB4', 'lineColor': '#5C6BC0', 'secondaryColor': '#E8EAF6', 'tertiaryColor': '#F3E5F5', 'background': '#FAFAFA', 'mainBkg': '#4A90D9', 'nodeBorder': '#2E6DB4', 'clusterBkg': '#F5F5F5', 'clusterBorder': '#BDBDBD', 'titleColor': '#333' }}}%%
+%%{init: {'theme': 'base', 'themeVariables': { 'primaryColor': '#BBDEFB', 'primaryTextColor': '#1a1a1a', 'primaryBorderColor': '#1565C0', 'lineColor': '#455A64', 'secondaryColor': '#E8EAF6', 'tertiaryColor': '#F3E5F5', 'background': '#ffffff', 'mainBkg': '#BBDEFB', 'nodeBorder': '#1565C0', 'clusterBkg': '#FAFAFA', 'clusterBorder': '#90A4AE', 'titleColor': '#212121', 'edgeLabelBackground': '#ffffff', 'fontSize': '14px' }}}%%
 
 graph TB
     %% ============================================================
@@ -196,16 +196,16 @@ graph TB
     AgentExec -->|"read state"| SessionState
     EventQueue -->|"streaming events"| A2AClient
 
-    %% Styling
-    classDef client fill:#42A5F5,stroke:#1E88E5,color:white,stroke-width:2px
-    classDef server fill:#5C6BC0,stroke:#3949AB,color:white,stroke-width:2px
-    classDef agent fill:#66BB6A,stroke:#43A047,color:white,stroke-width:2px
-    classDef tool fill:#FFA726,stroke:#FB8C00,color:white,stroke-width:2px
-    classDef external fill:#EF5350,stroke:#E53935,color:white,stroke-width:2px
-    classDef state fill:#AB47BC,stroke:#8E24AA,color:white,stroke-width:2px
-    classDef infra fill:#78909C,stroke:#546E7A,color:white,stroke-width:2px
-    classDef judge fill:#EC407A,stroke:#D81B60,color:white,stroke-width:2px
-    classDef llm fill:#FF7043,stroke:#F4511E,color:white,stroke-width:2px
+    %% Styling — pastel fills with dark text for GitHub readability
+    classDef client fill:#BBDEFB,stroke:#1565C0,color:#0D47A1,stroke-width:2px
+    classDef server fill:#C5CAE9,stroke:#283593,color:#1A237E,stroke-width:2px
+    classDef agent fill:#C8E6C9,stroke:#2E7D32,color:#1B5E20,stroke-width:2px
+    classDef tool fill:#FFE0B2,stroke:#E65100,color:#BF360C,stroke-width:2px
+    classDef external fill:#FFCDD2,stroke:#C62828,color:#B71C1C,stroke-width:2px
+    classDef state fill:#E1BEE7,stroke:#6A1B9A,color:#4A148C,stroke-width:2px
+    classDef infra fill:#CFD8DC,stroke:#37474F,color:#263238,stroke-width:2px
+    classDef judge fill:#F8BBD0,stroke:#AD1457,color:#880E4F,stroke-width:2px
+    classDef llm fill:#FFCCBC,stroke:#BF360C,color:#BF360C,stroke-width:2px
 
     class A2AClient,ADKWeb client
     class A2AApp,ReqHandler,AgentExec,EventConv,EventQueue server
