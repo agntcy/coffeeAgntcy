@@ -303,6 +303,8 @@ export TOOL_CACHE_EXCLUDE=tool_a,tool_b
 
 ## Architecture
 
+<img src="./docs/architecture.svg" alt="Agent Recruiter Architecture Diagram" />
+
 ```
 src/agent_recruiter/
 ├── recruiter/           # Main orchestrator (RecruiterTeam)
@@ -317,6 +319,7 @@ src/agent_recruiter/
 
 - **RecruiterTeam**: Main entry point, coordinates sub-agents using Google ADK
 - **RegistrySearchAgent**: Searches AGNTCY Directory via MCP tools
+- **EvaluationAgent**: Orchestrates LLM-driven agent evaluation against policy scenarios
 - **ToolCachePlugin**: Caches tool results for performance
 - **A2A Server**: Exposes the agent via A2A protocol
 
