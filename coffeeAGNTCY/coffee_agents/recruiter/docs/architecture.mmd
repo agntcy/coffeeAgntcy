@@ -1,0 +1,218 @@
+%%{init: {'theme': 'base', 'themeVariables': { 'primaryColor': '#BBDEFB', 'primaryTextColor': '#1a1a1a', 'primaryBorderColor': '#1565C0', 'lineColor': '#455A64', 'secondaryColor': '#E8EAF6', 'tertiaryColor': '#F3E5F5', 'background': '#ffffff', 'mainBkg': '#BBDEFB', 'nodeBorder': '#1565C0', 'clusterBkg': '#FAFAFA', 'clusterBorder': '#90A4AE', 'titleColor': '#212121', 'edgeLabelBackground': '#ffffff', 'fontSize': '14px' }}}%%
+
+graph TB
+    %% ============================================================
+    %% EXTERNAL CLIENTS
+    %% ============================================================
+    subgraph Clients["🌐 External Clients"]
+        direction LR
+        A2AClient["A2A Client<br/><i>HTTP / NATS / SLIM</i>"]
+        ADKWeb["ADK Web UI<br/><i>localhost:8000</i>"]
+    end
+
+    %% ============================================================
+    %% A2A SERVER LAYER
+    %% ============================================================
+    subgraph ServerLayer["⚡ A2A Server Layer — Port 8881"]
+        direction TB
+        A2AApp["A2AStarletteApplication<br/><i>Uvicorn HTTP + Transport</i>"]
+        ReqHandler["DefaultRequestHandler<br/><i>+ InMemoryTaskStore</i>"]
+        AgentExec["RecruiterAgentExecutor<br/><i>Request → ADK Events → Response</i>"]
+        EventConv["EventConverter<br/><i>ADK ↔ A2A event translation</i>"]
+        EventQueue["EventQueue<br/><i>SSE streaming to client</i>"]
+
+        A2AApp --> ReqHandler
+        ReqHandler --> AgentExec
+        AgentExec --> EventConv
+        EventConv --> EventQueue
+    end
+
+    %% ============================================================
+    %% RECRUITER TEAM (CORE ORCHESTRATOR)
+    %% ============================================================
+    subgraph RecruiterCore["🧠 RecruiterTeam — Core Orchestrator"]
+        direction TB
+        RootAgent["RecruiterAgent<br/><i>LlmAgent · Intent Router</i>"]
+
+        subgraph SubAgents["Sub-Agents"]
+            direction LR
+            RegistryAgent["RegistrySearchAgent<br/><i>Agent Discovery</i>"]
+            EvalAgent["EvaluationAgent<br/><i>Agent Assessment</i>"]
+        end
+
+        RootAgent -->|"find agents"| RegistryAgent
+        RootAgent -->|"evaluate agents"| EvalAgent
+    end
+
+    %% ============================================================
+    %% INFRASTRUCTURE LAYER
+    %% ============================================================
+    subgraph Infra["⚙️ Infrastructure"]
+        direction LR
+        SessionSvc["InMemorySessionService<br/><i>State Persistence</i>"]
+        CachePlugin["ToolCachePlugin<br/><i>LRU + TTL Caching</i>"]
+        Runner["ADK Runner<br/><i>Agent Execution Runtime</i>"]
+    end
+
+    %% ============================================================
+    %% REGISTRY SEARCH PIPELINE
+    %% ============================================================
+    subgraph RegistryPipeline["🔍 Agent Discovery Pipeline"]
+        direction TB
+        MCPToolset["McpToolset<br/><i>Auto-discovered MCP tools</i>"]
+        MCPTools["MCP Tools<br/><code>search() · pull() · export()</code>"]
+        StoreTool["store_search_results()<br/><i>Persist to session state</i>"]
+
+        MCPToolset --> MCPTools
+        MCPTools --> StoreTool
+    end
+
+    %% ============================================================
+    %% EVALUATION PIPELINE
+    %% ============================================================
+    subgraph EvalPipeline["🎯 Evaluation Pipeline"]
+        direction TB
+        ParseTool["parse_scenarios_from_input<br/><i>LLM scenario extraction</i>"]
+        SetCriteria["set_evaluation_criteria<br/><i>Store in session state</i>"]
+        EvalTool["evaluate_agents_tool<br/><i>Orchestrate all evaluations</i>"]
+
+        ParseTool --> SetCriteria
+        SetCriteria --> EvalTool
+    end
+
+    subgraph EvaluatorArch["🤖 Evaluator Agent Architecture"]
+        direction TB
+        Factory["EvaluatorAgentFactory<br/><i>Protocol-based creation</i>"]
+        BaseEval["BaseEvaluatorAgent<br/><i>Abstract · LLM-driven test loop</i>"]
+        A2AEval["A2AEvaluatorAgent<br/><i>A2A protocol implementation</i>"]
+
+        subgraph InnerTools["Inner Agent Tools"]
+            direction LR
+            GetCtx["_get_conversation<br/>_context_id()"]
+            SendMsg["_send_message_to<br/>_evaluated_agent()"]
+            LogEval["_log_evaluation()"]
+        end
+
+        Factory --> BaseEval
+        BaseEval --> A2AEval
+        A2AEval --> InnerTools
+    end
+
+    subgraph JudgeLLM["⚖️ Policy Evaluation — Judge LLM"]
+        direction TB
+        PolicyEval["evaluate_policy()<br/><i>Conversation + Policy → Verdict</i>"]
+
+        subgraph FallbackParsing["4-Tier JSON Parsing Fallback"]
+            direction LR
+            Parse1["1. Direct JSON"]
+            Parse2["2. Regex Extract"]
+            Parse3["3. Schema Fix"]
+            Parse4["4. LLM Repair"]
+        end
+
+        PolicyEval --> FallbackParsing
+    end
+
+    %% ============================================================
+    %% EXTERNAL SERVICES
+    %% ============================================================
+    subgraph ExternalServices["🔌 External Services"]
+        direction TB
+        subgraph DirService["AGNTCY Directory Service"]
+            DirAPI["dir-api-server<br/><i>gRPC · Port 8888</i>"]
+            ZotRegistry["Zot OCI Registry<br/><i>Port 5555</i>"]
+            DirCtl["dirctl MCP Server<br/><i>binary or docker mode</i>"]
+        end
+
+        subgraph LLMProvider["LLM Provider — LiteLLM"]
+            LLMProxy["LiteLLM Unified Interface"]
+            OpenAI["OpenAI"]
+            Azure["Azure OpenAI"]
+            GROQ["GROQ"]
+            NVIDIA["NVIDIA NIM"]
+        end
+
+        TargetAgents["🎯 Candidate Agents<br/><i>Remote A2A endpoints</i>"]
+    end
+
+    %% ============================================================
+    %% SESSION STATE
+    %% ============================================================
+    subgraph SessionState["💾 Session State"]
+        direction LR
+        FoundRecords["found_agent_records<br/><i>CID → Agent Card</i>"]
+        EvalCriteria["evaluation_criteria<br/><i>Scenario list</i>"]
+        EvalResults["evaluation_results<br/><i>Agent ID → Results</i>"]
+    end
+
+    %% ============================================================
+    %% CONNECTIONS
+    %% ============================================================
+
+    %% Client → Server
+    A2AClient -->|"A2A Protocol"| A2AApp
+    ADKWeb -->|"Direct ADK"| RecruiterCore
+
+    %% Server → Core
+    AgentExec -->|"stream()"| RecruiterCore
+
+    %% Core → Infrastructure
+    RecruiterCore --- Runner
+    Runner --- SessionSvc
+    Runner --- CachePlugin
+
+    %% Core → Pipelines
+    RegistryAgent --> RegistryPipeline
+    EvalAgent --> EvalPipeline
+    EvalTool --> EvaluatorArch
+
+    %% Evaluator → Judge
+    LogEval -->|"conversation + policy"| PolicyEval
+
+    %% Pipeline → External
+    MCPTools -->|"stdio / docker exec"| DirCtl
+    DirCtl --> DirAPI
+    DirAPI --> ZotRegistry
+    SendMsg -->|"A2A HTTP"| TargetAgents
+
+    %% LLM connections
+    RootAgent -.->|"LLM inference"| LLMProxy
+    ParseTool -.->|"scenario extraction"| LLMProxy
+    BaseEval -.->|"test generation"| LLMProxy
+    PolicyEval -.->|"judge verdict"| LLMProxy
+    LLMProxy -.-> OpenAI
+    LLMProxy -.-> Azure
+    LLMProxy -.-> GROQ
+    LLMProxy -.-> NVIDIA
+
+    %% State connections
+    StoreTool -->|"write"| FoundRecords
+    SetCriteria -->|"write"| EvalCriteria
+    EvalTool -->|"write"| EvalResults
+    EvalTool -->|"read"| FoundRecords
+    EvalTool -->|"read"| EvalCriteria
+
+    %% Response flow
+    AgentExec -->|"read state"| SessionState
+    EventQueue -->|"streaming events"| A2AClient
+
+    %% Styling — pastel fills with dark text for GitHub readability
+    classDef client fill:#BBDEFB,stroke:#1565C0,color:#0D47A1,stroke-width:2px
+    classDef server fill:#C5CAE9,stroke:#283593,color:#1A237E,stroke-width:2px
+    classDef agent fill:#C8E6C9,stroke:#2E7D32,color:#1B5E20,stroke-width:2px
+    classDef tool fill:#FFE0B2,stroke:#E65100,color:#BF360C,stroke-width:2px
+    classDef external fill:#FFCDD2,stroke:#C62828,color:#B71C1C,stroke-width:2px
+    classDef state fill:#E1BEE7,stroke:#6A1B9A,color:#4A148C,stroke-width:2px
+    classDef infra fill:#CFD8DC,stroke:#37474F,color:#263238,stroke-width:2px
+    classDef judge fill:#F8BBD0,stroke:#AD1457,color:#880E4F,stroke-width:2px
+    classDef llm fill:#FFCCBC,stroke:#BF360C,color:#BF360C,stroke-width:2px
+
+    class A2AClient,ADKWeb client
+    class A2AApp,ReqHandler,AgentExec,EventConv,EventQueue server
+    class RootAgent,RegistryAgent,EvalAgent,BaseEval,A2AEval,Factory agent
+    class MCPToolset,MCPTools,StoreTool,ParseTool,SetCriteria,EvalTool,GetCtx,SendMsg,LogEval tool
+    class DirAPI,ZotRegistry,DirCtl,TargetAgents external
+    class FoundRecords,EvalCriteria,EvalResults state
+    class SessionSvc,CachePlugin,Runner infra
+    class PolicyEval,Parse1,Parse2,Parse3,Parse4 judge
+    class LLMProxy,OpenAI,Azure,GROQ,NVIDIA llm

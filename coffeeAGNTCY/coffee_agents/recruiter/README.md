@@ -12,12 +12,12 @@ Discover, evaluate, and dynamically recruit agents for on-demand task execution.
   - [Agent Directory Service](#agent-directory-service)
   - [ADK Web Development](#adk-web-development)
   - [A2A Server](#a2a-server)
+- [Architecture](#architecture)
 - [Deployment](#deployment)
   - [Docker Compose](#docker-compose-recommended)
   - [Service Endpoints](#service-endpoints)
 - [Testing](#testing)
 - [Benchmarking](#benchmarking)
-- [Architecture](#architecture)
 - [Agentic Evaluation](#agentic-evaluation)
   - [Evaluation Flow](#evaluation-flow)
   - [Scenarios and Criteria](#scenarios-and-criteria)
@@ -175,6 +175,28 @@ async for response in client.send_message(message):
                         print(f"Evaluation: {summary.get('summary')}")
 ```
 
+## Architecture
+
+<img src="./docs/architecture.svg" alt="Agent Recruiter Architecture Diagram" />
+
+```
+src/agent_recruiter/
+├── recruiter/           # Main orchestrator (RecruiterTeam)
+├── agent_registries/    # Registry search agent with MCP tools
+├── interviewers/        # Main evaluation agent
+├── plugins/             # ADK plugins (tool caching)
+├── server/              # A2A server implementation
+└── common/              # Logging and utilities
+```
+
+### Key Components
+
+- **RecruiterTeam**: Main entry point, coordinates sub-agents using Google ADK
+- **RegistrySearchAgent**: Searches AGNTCY Directory via MCP tools
+- **EvaluationAgent**: Orchestrates LLM-driven agent evaluation against policy scenarios
+- **ToolCachePlugin**: Caches tool results for performance
+- **A2A Server**: Exposes the agent via A2A protocol
+
 ## Deployment
 
 ### Docker Compose (Recommended)
@@ -300,25 +322,6 @@ export TOOL_CACHE_MAX_ENTRIES=500
 # Exclude specific tools from caching
 export TOOL_CACHE_EXCLUDE=tool_a,tool_b
 ```
-
-## Architecture
-
-```
-src/agent_recruiter/
-├── recruiter/           # Main orchestrator (RecruiterTeam)
-├── agent_registries/    # Registry search agent with MCP tools
-├── interviewers/        # Main evaluation agent
-├── plugins/             # ADK plugins (tool caching)
-├── server/              # A2A server implementation
-└── common/              # Logging and utilities
-```
-
-### Key Components
-
-- **RecruiterTeam**: Main entry point, coordinates sub-agents using Google ADK
-- **RegistrySearchAgent**: Searches AGNTCY Directory via MCP tools
-- **ToolCachePlugin**: Caches tool results for performance
-- **A2A Server**: Exposes the agent via A2A protocol
 
 ## Agentic Evaluation
 
