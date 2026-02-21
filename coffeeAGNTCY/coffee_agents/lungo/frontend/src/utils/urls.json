@@ -17,7 +17,7 @@
       "logisticFarm": "/lungo/agents/logistics/farm/agent_executor.py#L42",
       "logisticShipper": "/lungo/agents/logistics/shipper/agent_executor.py#L41",
       "logisticAccountant": "/lungo/agents/logistics/accountant/agent_executor.py#L42",
-      "recruiter": "/lungo/agents/recruiter/agent.py#L32"
+      "recruiter": "/recruiter/src/agent_recruiter/recruiter/recruiter.py"
     },
     "transports": {
       "general": "/tree/main/src/agntcy_app_sdk/transports",
