@@ -23,6 +23,10 @@
     {
       "prompt": "Can you find an agent with skill agent_orchestration/agent_coordination?",
       "description": "Searches the AGNTCY directory for an agent that possesses the skill 'agent_orchestration/agent_coordination' and returns all matching agent records."
+    },
+    {
+      "prompt": "Can you clear all agents",
+      "description": "Clears the recruiter's memory of all agents, effectively resetting the recruiter's knowledge of previously found agents."
     }
   ]
 }
