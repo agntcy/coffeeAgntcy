@@ -21,6 +21,7 @@ from agents.supervisors.logistics.graph import shared
 from agents.logistics.shipper.card import AGENT_CARD  # assuming similar structure
 from config.config import DEFAULT_MESSAGE_TRANSPORT, TRANSPORT_SERVER_ENDPOINT
 from config.logging_config import setup_logging
+from common.streaming_capability import require_streaming_capability
 from pathlib import Path
 
 setup_logging()
@@ -40,6 +41,7 @@ app.add_middleware(
   allow_headers=["*"],
 )
 
+require_streaming_capability("logistics_supervisor")
 logistic_graph = LogisticGraph()
 
 class PromptRequest(BaseModel):

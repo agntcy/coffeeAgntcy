@@ -25,6 +25,7 @@ from google.adk.tools.tool_context import ToolContext
 from google.genai import types
 
 from config.config import LLM_MODEL
+from common.streaming_capability import require_streaming_capability
 
 from agents.supervisors.recruiter.dynamic_workflow_agent import (
     DynamicWorkflowAgent,
@@ -251,6 +252,7 @@ dynamic_workflow_agent = DynamicWorkflowAgent(
 # Root Supervisor Agent
 # ---------------------------------------------------------------------------
 
+require_streaming_capability("recruiter_supervisor")
 root_agent = Agent(
     name="recruiter_supervisor",
     model=LiteLlm(model=LLM_MODEL),

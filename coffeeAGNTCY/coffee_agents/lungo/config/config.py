@@ -22,6 +22,7 @@ OAUTH2_APPKEY= os.getenv("OAUTH2_APPKEY", "")
 LOGGING_LEVEL = os.getenv("LOGGING_LEVEL", "INFO").upper()
 
 ENABLE_HTTP = os.getenv("ENABLE_HTTP", "true").lower() in ("true", "1", "yes")
+ENSURE_STREAMING_LLM = os.getenv("ENSURE_STREAMING_LLM", "false").strip().lower() in ("true", "1", "yes")
 
 # This is for demo purposes only. In production, use secure methods to manage API keys.
 IDENTITY_API_KEY = os.getenv("IDENTITY_API_KEY", "487>t:7:Ke5N[kZ[dOmDg2]0RQx))6k}bjARRN+afG3806h(4j6j[}]F5O)f[6PD")

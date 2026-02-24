@@ -19,6 +19,7 @@ from config.config import DEFAULT_MESSAGE_TRANSPORT
 from config.logging_config import setup_logging
 from pathlib import Path
 from common.version import get_version_info
+from common.streaming_capability import require_streaming_capability
 from agents.supervisors.auction.api import create_apps_router
 
 setup_logging()
@@ -41,6 +42,7 @@ app.add_middleware(
 
 app.include_router(create_apps_router())
 
+require_streaming_capability("auction_supervisor")
 exchange_graph = ExchangeGraph()
 
 class PromptRequest(BaseModel):
