@@ -252,7 +252,7 @@ dynamic_workflow_agent = DynamicWorkflowAgent(
 # Root Supervisor Agent
 # ---------------------------------------------------------------------------
 
-require_streaming_capability("recruiter_supervisor")
+require_streaming_capability("recruiter_supervisor", LLM_MODEL)
 root_agent = Agent(
     name="recruiter_supervisor",
     model=LiteLlm(model=LLM_MODEL),

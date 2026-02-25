@@ -15,7 +15,7 @@ from ioa_observe.sdk.tracing import session_start
 
 from agents.supervisors.auction.graph.graph import ExchangeGraph
 from agents.supervisors.auction.graph import shared
-from config.config import DEFAULT_MESSAGE_TRANSPORT
+from config.config import DEFAULT_MESSAGE_TRANSPORT, LLM_MODEL
 from config.logging_config import setup_logging
 from pathlib import Path
 from common.version import get_version_info
@@ -42,7 +42,7 @@ app.add_middleware(
 
 app.include_router(create_apps_router())
 
-require_streaming_capability("auction_supervisor")
+require_streaming_capability("auction_supervisor", LLM_MODEL)
 exchange_graph = ExchangeGraph()
 
 class PromptRequest(BaseModel):

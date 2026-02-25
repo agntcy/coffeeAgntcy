@@ -19,7 +19,7 @@ from ioa_observe.sdk.tracing import session_start
 from agents.supervisors.logistics.graph.graph import LogisticGraph
 from agents.supervisors.logistics.graph import shared
 from agents.logistics.shipper.card import AGENT_CARD  # assuming similar structure
-from config.config import DEFAULT_MESSAGE_TRANSPORT, TRANSPORT_SERVER_ENDPOINT
+from config.config import DEFAULT_MESSAGE_TRANSPORT, LLM_MODEL, TRANSPORT_SERVER_ENDPOINT
 from config.logging_config import setup_logging
 from common.streaming_capability import require_streaming_capability
 from pathlib import Path
@@ -41,7 +41,7 @@ app.add_middleware(
   allow_headers=["*"],
 )
 
-require_streaming_capability("logistics_supervisor")
+require_streaming_capability("logistics_supervisor", LLM_MODEL)
 logistic_graph = LogisticGraph()
 
 class PromptRequest(BaseModel):
