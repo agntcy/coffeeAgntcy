@@ -27,43 +27,39 @@ import pytest
 
 
 class TestGetLlmStreamingCapability:
-  def test_returns_true_when_supports_native_streaming_true(self):
-    with patch(f"{_STREAMING_MODULE}.litellm.get_model_info", return_value={"supports_native_streaming": True}):
+  @pytest.mark.parametrize(
+    "model_info,expected_ok",
+    [
+      ({"supports_native_streaming": True}, True),
+      ({"supports_native_streaming": False}, False),
+      ({}, False),
+      ({"supports_native_streaming": None}, False),
+    ],
+    ids=["supports_true", "supports_false", "key_missing", "key_none"],
+  )
+  def test_get_llm_streaming_capability_metadata(self, model_info, expected_ok):
+    with patch(f"{_STREAMING_MODULE}.litellm.get_model_info", return_value=model_info):
       ok, err = get_llm_streaming_capability(_TEST_MODEL)
-      assert ok is True
+      assert ok == expected_ok
       assert err is None
 
-  def test_returns_false_when_supports_native_streaming_false(self):
-    with patch(f"{_STREAMING_MODULE}.litellm.get_model_info", return_value={"supports_native_streaming": False}):
-      ok, err = get_llm_streaming_capability(_TEST_MODEL)
-      assert ok is False
-      assert err is None
-
-  def test_returns_false_when_key_missing(self):
-    with patch(f"{_STREAMING_MODULE}.litellm.get_model_info", return_value={}):
-      ok, err = get_llm_streaming_capability(_TEST_MODEL)
-      assert ok is False
-      assert err is None
-
-  def test_returns_false_when_key_none(self):
-    with patch(f"{_STREAMING_MODULE}.litellm.get_model_info", return_value={"supports_native_streaming": None}):
-      ok, err = get_llm_streaming_capability(_TEST_MODEL)
-      assert ok is False
-      assert err is None
-
-  def test_returns_false_on_exception(self):
-    with patch(f"{_STREAMING_MODULE}.litellm.get_model_info", side_effect=Exception("unknown model")):
+  @pytest.mark.parametrize(
+    "side_effect,expected_args,expected_type",
+    [
+      (Exception("unknown model"), ("unknown model",), None),
+      (litellm.NotFoundError("model not found", _TEST_MODEL, "openai"), None, litellm.NotFoundError),
+    ],
+    ids=["generic_exception", "litellm_not_found"],
+  )
+  def test_get_llm_streaming_capability_on_error(self, side_effect, expected_args, expected_type):
+    with patch(f"{_STREAMING_MODULE}.litellm.get_model_info", side_effect=side_effect):
       ok, err = get_llm_streaming_capability(_TEST_MODEL)
       assert ok is False
       assert err is not None
-      assert err.args == ("unknown model",)
-
-  def test_returns_false_and_exception_on_litellm_error(self):
-    with patch(f"{_STREAMING_MODULE}.litellm.get_model_info", side_effect=litellm.NotFoundError("model not found", _TEST_MODEL, "openai")):
-      ok, err = get_llm_streaming_capability(_TEST_MODEL)
-      assert ok is False
-      assert err is not None
-      assert isinstance(err, litellm.NotFoundError)
+      if expected_args is not None:
+        assert err.args == expected_args
+      if expected_type is not None:
+        assert isinstance(err, expected_type)
 
 
 class TestRequireStreamingCapability:
