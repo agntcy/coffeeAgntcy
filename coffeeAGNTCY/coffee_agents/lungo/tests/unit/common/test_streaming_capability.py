@@ -38,10 +38,11 @@ class TestGetLlmStreamingCapability:
     ids=["supports_true", "supports_false", "key_missing", "key_none"],
   )
   def test_get_llm_streaming_capability_metadata(self, model_info, expected_ok):
-    with patch(f"{_STREAMING_MODULE}.litellm.get_model_info", return_value=model_info):
+    with patch(f"{_STREAMING_MODULE}.litellm.get_model_info", return_value=model_info) as mock_get_model_info:
       ok, err = get_llm_streaming_capability(_TEST_MODEL)
       assert ok == expected_ok
       assert err is None
+      mock_get_model_info.assert_called_once_with(model=_TEST_MODEL)
 
   @pytest.mark.parametrize(
     "side_effect,expected_args,expected_type",
@@ -52,7 +53,7 @@ class TestGetLlmStreamingCapability:
     ids=["generic_exception", "litellm_not_found"],
   )
   def test_get_llm_streaming_capability_on_error(self, side_effect, expected_args, expected_type):
-    with patch(f"{_STREAMING_MODULE}.litellm.get_model_info", side_effect=side_effect):
+    with patch(f"{_STREAMING_MODULE}.litellm.get_model_info", side_effect=side_effect) as mock_get_model_info:
       ok, err = get_llm_streaming_capability(_TEST_MODEL)
       assert ok is False
       assert err is not None
@@ -60,6 +61,7 @@ class TestGetLlmStreamingCapability:
         assert err.args == expected_args
       if expected_type is not None:
         assert isinstance(err, expected_type)
+      mock_get_model_info.assert_called_once_with(model=_TEST_MODEL)
 
 
 class TestRequireStreamingCapability:
@@ -72,33 +74,37 @@ class TestRequireStreamingCapability:
 
   def test_does_not_raise_when_capable(self):
     with patch(f"{_STREAMING_MODULE}.ENSURE_STREAMING_LLM", True):
-      with patch(f"{_STREAMING_MODULE}.litellm.get_model_info", return_value={"supports_native_streaming": True}):
+      with patch(f"{_STREAMING_MODULE}.litellm.get_model_info", return_value={"supports_native_streaming": True}) as mock_get_model_info:
         require_streaming_capability("test_agent", _TEST_MODEL)
+        mock_get_model_info.assert_called_once_with(model=_TEST_MODEL)
 
   def test_raises_streaming_not_supported_error_when_not_capable(self):
     with patch(f"{_STREAMING_MODULE}.ENSURE_STREAMING_LLM", True):
-      with patch(f"{_STREAMING_MODULE}.litellm.get_model_info", return_value={"supports_native_streaming": False}):
+      with patch(f"{_STREAMING_MODULE}.litellm.get_model_info", return_value={"supports_native_streaming": False}) as mock_get_model_info:
         with pytest.raises(StreamingNotSupportedError) as exc_info:
           require_streaming_capability("test_agent", _TEST_MODEL)
         assert exc_info.value.agent_name == "test_agent"
         assert exc_info.value.model == _TEST_MODEL
         assert len(exc_info.value.message) > 0
         assert exc_info.value.__cause__ is None
+        mock_get_model_info.assert_called_once_with(model=_TEST_MODEL)
 
   def test_raises_when_get_model_info_raises(self):
     with patch(f"{_STREAMING_MODULE}.ENSURE_STREAMING_LLM", True):
-      with patch(f"{_STREAMING_MODULE}.litellm.get_model_info", side_effect=Exception("unknown")):
+      with patch(f"{_STREAMING_MODULE}.litellm.get_model_info", side_effect=Exception("unknown")) as mock_get_model_info:
         with pytest.raises(StreamingNotSupportedError) as exc_info:
           require_streaming_capability("other", _TEST_MODEL)
         assert exc_info.value.__cause__ is not None
         assert "unknown" in str(exc_info.value.__cause__)
+        mock_get_model_info.assert_called_once_with(model=_TEST_MODEL)
 
   def test_optional_agent_name_stored_on_exception(self):
     with patch(f"{_STREAMING_MODULE}.ENSURE_STREAMING_LLM", True):
-      with patch(f"{_STREAMING_MODULE}.litellm.get_model_info", return_value={"supports_native_streaming": False}):
+      with patch(f"{_STREAMING_MODULE}.litellm.get_model_info", return_value={"supports_native_streaming": False}) as mock_get_model_info:
         with pytest.raises(StreamingNotSupportedError) as exc_info:
           require_streaming_capability("", _TEST_MODEL)
         assert exc_info.value.agent_name == ""
+        mock_get_model_info.assert_called_once_with(model=_TEST_MODEL)
 
 
 class TestStreamingNotSupportedError:
