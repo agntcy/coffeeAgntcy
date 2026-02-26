@@ -45,17 +45,25 @@ def _purge_modules(prefixes):
 def test_supervisor_raises_when_llm_does_not_support_streaming(monkeypatch, import_module, expected_agent_name):
   """With ENSURE_STREAMING_LLM=true, supervisor startup fails when get_model_info says no streaming."""
   _ensure_root_on_path()
-  monkeypatch.setenv("LLM_MODEL", "openai/gpt-4o-mini")
-  monkeypatch.setenv("ENSURE_STREAMING_LLM", "true")
-  with patch("litellm.get_model_info", return_value={"supports_native_streaming": False}) as mock_get_model_info:
-    prefix = import_module.rsplit(".", 1)[0]
-    _purge_modules([prefix, "config.config", "common"])
-    try:
-      importlib.import_module(import_module)
-    except Exception as e:
-      assert type(e).__name__ == "StreamingNotSupportedError", f"Expected StreamingNotSupportedError, got {type(e)}"
-      assert e.agent_name == expected_agent_name
-      mock_get_model_info.assert_called_once_with(model="openai/gpt-4o-mini")
-      return
-  pytest.fail("Expected StreamingNotSupportedError")
+  import config.config as config_mod
+  saved_ensure = getattr(config_mod, "ENSURE_STREAMING_LLM", False)
+  saved_llm_model = getattr(config_mod, "LLM_MODEL", "")
+
+  try:
+    with patch("litellm.get_model_info", return_value={"supports_native_streaming": False}) as mock_get_model_info:
+      prefix = import_module.rsplit(".", 1)[0]
+      _purge_modules([prefix, "common"])
+      monkeypatch.setattr(config_mod, "ENSURE_STREAMING_LLM", True)
+      monkeypatch.setattr(config_mod, "LLM_MODEL", "openai/gpt-4o-mini")
+      try:
+        importlib.import_module(import_module)
+      except Exception as e:
+        assert type(e).__name__ == "StreamingNotSupportedError", f"Expected StreamingNotSupportedError, got {type(e)}"
+        assert e.agent_name == expected_agent_name
+        mock_get_model_info.assert_called_once_with(model="openai/gpt-4o-mini")
+        return
+    pytest.fail("Expected StreamingNotSupportedError")
+  finally:
+    monkeypatch.setattr(config_mod, "ENSURE_STREAMING_LLM", saved_ensure)
+    monkeypatch.setattr(config_mod, "LLM_MODEL", saved_llm_model)
 
