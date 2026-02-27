@@ -1,0 +1,54 @@
+# Frontend CI: ESLint & Prettier for Lungo frontend when files there change.
+# To run lint/format in the IDE on save or before commit: use Cursor (recommended). Enable Format on Save
+# (Prettier) and ESLint for the frontend; see TUTORIAL.md § IDE setup for CI (lint/format).
+name: FE CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+jobs:
+  changed-files:
+    runs-on: ubuntu-latest
+    outputs:
+      frontend: ${{ steps.filter.outputs.frontend }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            frontend:
+              - "coffeeAGNTCY/coffee_agents/lungo/frontend/**"
+
+  frontend-lint:
+    needs: changed-files
+    if: needs.changed-files.outputs.frontend == 'true'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: coffeeAGNTCY/coffee_agents/lungo/frontend
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: coffeeAGNTCY/coffee_agents/lungo/frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: ESLint
+        run: npm run lint:check
+
+      - name: Prettier
+        run: npm run format:check
