@@ -33,6 +33,21 @@ def _purge_modules(prefixes):
     sys.modules.pop(m, None)
 
 
+def _save_modules(prefixes):
+  """Return a dict of module name -> module for all modules matching prefixes."""
+  return {
+    m: sys.modules[m]
+    for m in list(sys.modules)
+    if any(m == p or m.startswith(p + ".") for p in prefixes)
+  }
+
+
+def _restore_modules(saved):
+  """Put saved modules back into sys.modules so other tests see the same state as before."""
+  for name, mod in saved.items():
+    sys.modules[name] = mod
+
+
 @pytest.mark.parametrize(
   "import_module,expected_agent_name",
   [
@@ -49,10 +64,12 @@ def test_supervisor_raises_when_llm_does_not_support_streaming(monkeypatch, impo
   saved_ensure = getattr(config_mod, "ENSURE_STREAMING_LLM", False)
   saved_llm_model = getattr(config_mod, "LLM_MODEL", "")
 
+  prefix = import_module.rsplit(".", 1)[0]
+  prefixes = [prefix, "common"]
+  saved_modules = _save_modules(prefixes)
   try:
     with patch("litellm.get_model_info", return_value={"supports_native_streaming": False}) as mock_get_model_info:
-      prefix = import_module.rsplit(".", 1)[0]
-      _purge_modules([prefix, "common"])
+      _purge_modules(prefixes)
       monkeypatch.setattr(config_mod, "ENSURE_STREAMING_LLM", True)
       monkeypatch.setattr(config_mod, "LLM_MODEL", "openai/gpt-4o-mini")
       try:
@@ -66,4 +83,6 @@ def test_supervisor_raises_when_llm_does_not_support_streaming(monkeypatch, impo
   finally:
     monkeypatch.setattr(config_mod, "ENSURE_STREAMING_LLM", saved_ensure)
     monkeypatch.setattr(config_mod, "LLM_MODEL", saved_llm_model)
+    _purge_modules(prefixes)
+    _restore_modules(saved_modules)
 
