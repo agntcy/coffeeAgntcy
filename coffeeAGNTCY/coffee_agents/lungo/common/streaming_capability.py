@@ -5,7 +5,7 @@ import logging
 
 import litellm
 
-from config.config import ENSURE_STREAMING_LLM
+import config.config as _config
 
 logger = logging.getLogger(__name__)
 
@@ -37,7 +37,7 @@ def get_llm_streaming_capability(model: str) -> tuple[bool, BaseException | None
 
 def require_streaming_capability(agent_name: str, model: str) -> None:
   """If ENSURE_STREAMING_LLM is true and the given LLM does not support streaming, log and raise StreamingNotSupportedError. agent_name and model are required."""
-  if not ENSURE_STREAMING_LLM:
+  if not _config.ENSURE_STREAMING_LLM:
     return
   supported, err = get_llm_streaming_capability(model)
   if supported:
