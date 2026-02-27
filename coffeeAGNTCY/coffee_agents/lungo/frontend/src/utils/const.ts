@@ -118,43 +118,46 @@ export const parseApiError = (error: any): ApiErrorInfo => {
   }
 }
 
-export type FetchErrorInfo = { status: number; message: string };
+export type FetchErrorInfo = { status: number; message: string }
 
-export const parseFetchError = async (response: Response): Promise<FetchErrorInfo> => {
-  const status = response.status;
-  let message = `HTTP ${response.status}: ${response.statusText}`;
+export const parseFetchError = async (
+  response: Response,
+): Promise<FetchErrorInfo> => {
+  const status = response.status
+  let message = `HTTP ${response.status}: ${response.statusText}`
 
   try {
-    const contentType = response.headers.get("content-type") ?? "";
-    const raw = (await response.text()).trim(); // read once
+    const contentType = response.headers.get("content-type") ?? ""
+    const raw = (await response.text()).trim() // read once
 
-    if (!raw) return { status, message };
+    if (!raw) return { status, message }
 
     if (contentType.includes("application/json")) {
       try {
-        const body = JSON.parse(raw);
+        const body = JSON.parse(raw)
 
         if (body && typeof body === "object") {
           message =
             (body as any).detail ||
             (body as any).message ||
             (body as any).title ||
-            (Array.isArray((body as any).errors) ? (body as any).errors[0] : undefined) ||
-            JSON.stringify(body);
+            (Array.isArray((body as any).errors)
+              ? (body as any).errors[0]
+              : undefined) ||
+            JSON.stringify(body)
         } else if (typeof body === "string") {
-          message = body;
+          message = body
         }
       } catch {
         // Header says JSON but it's not valid JSON; fall back to raw text
-        message = raw;
+        message = raw
       }
     } else {
-      message = raw;
+      message = raw
     }
   } catch {
     // keep default message
   }
 
-  return { status, message };
-};
-
+  return { status, message }
+}

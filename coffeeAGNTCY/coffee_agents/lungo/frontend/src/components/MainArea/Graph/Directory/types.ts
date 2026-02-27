@@ -4,14 +4,14 @@
  **/
 
 export type AgentRecord = {
-    id?: string
-    name?: string
-    [key: string]: unknown
+  id?: string
+  name?: string
+  [key: string]: unknown
 }
 
 export type DiscoveryResponseEvent = {
-    response: string
-    ts: number
-    sessionId?: string
-    agent_records?: AgentRecord[]
+  response: string
+  ts: number
+  sessionId?: string
+  agent_records?: AgentRecord[]
 }

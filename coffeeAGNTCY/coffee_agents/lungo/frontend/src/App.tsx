@@ -40,19 +40,18 @@ import { ThemeProvider } from "@/contexts/ThemeContext"
 import { Message } from "./types/message"
 import { getGraphConfig } from "@/utils/graphConfigs"
 import { PATTERNS, PatternType } from "@/utils/patternUtils"
-import {DiscoveryResponseEvent} from "@/components/MainArea/Graph/Directory/types.ts";
+import { DiscoveryResponseEvent } from "@/components/MainArea/Graph/Directory/types.ts"
 
 interface ApiResponse {
   response: string
   session_id?: string
 }
 
-
 const App: React.FC = () => {
   const { sendMessage } = useAgentAPI()
 
   const [selectedPattern, setSelectedPattern] = useState<PatternType>(
-      PATTERNS.GROUP_COMMUNICATION,
+    PATTERNS.GROUP_COMMUNICATION,
   )
 
   const startStreaming = useStartGroupStreaming()
@@ -74,25 +73,33 @@ const App: React.FC = () => {
   const recruiterAgentRecords = useRecruiterAgentRecords()
   const recruiterSessionId = useRecruiterStreamingSessionId()
   const recruiterSelectedAgent = useRecruiterSelectedAgent()
-  const { connect: connectRecruiter, reset: resetRecruiter } = useRecruiterStreamingActions()
+  const { connect: connectRecruiter, reset: resetRecruiter } =
+    useRecruiterStreamingActions()
 
   const [aiReplied, setAiReplied] = useState<boolean>(false)
   const [buttonClicked, setButtonClicked] = useState<boolean>(false)
   const [currentUserMessage, setCurrentUserMessage] = useState<string>("")
-  const [agentResponse, setAgentResponse] = useState<ApiResponse | undefined>(undefined)
+  const [agentResponse, setAgentResponse] = useState<ApiResponse | undefined>(
+    undefined,
+  )
   const [isAgentLoading, setIsAgentLoading] = useState<boolean>(false)
   const [apiError, setApiError] = useState<boolean>(false)
-  const [groupCommResponseReceived, setGroupCommResponseReceived] = useState(false)
-  const [highlightNodeFunction, setHighlightNodeFunction] = useState<((nodeId: string) => void) | null>(null)
+  const [groupCommResponseReceived, setGroupCommResponseReceived] =
+    useState(false)
+  const [highlightNodeFunction, setHighlightNodeFunction] = useState<
+    ((nodeId: string) => void) | null
+  >(null)
   const [showProgressTracker, setShowProgressTracker] = useState<boolean>(false)
-  const [showAuctionStreaming, setShowAuctionStreaming] = useState<boolean>(false)
-  const [showRecruiterStreaming, setShowRecruiterStreaming] = useState<boolean>(false)
+  const [showAuctionStreaming, setShowAuctionStreaming] =
+    useState<boolean>(false)
+  const [showRecruiterStreaming, setShowRecruiterStreaming] =
+    useState<boolean>(false)
   const [showFinalResponse, setShowFinalResponse] = useState<boolean>(false)
   const [pendingResponse, setPendingResponse] = useState<string>("")
   const [executionKey, setExecutionKey] = useState<string>("")
   const streamCompleteRef = useRef<boolean>(false)
   const [discoveryResponseEvent, setDiscoveryResponseEvent] =
-      useState<DiscoveryResponseEvent | null>(null)
+    useState<DiscoveryResponseEvent | null>(null)
   const lastDiscoveryKeyRef = useRef<string | null>(null)
 
   const handleDiscoveryResponse = useCallback((evt: DiscoveryResponseEvent) => {
@@ -101,25 +108,25 @@ const App: React.FC = () => {
   }, [])
 
   const handlePatternChange = useCallback(
-      (pattern: PatternType) => {
-        reset()
-        resetRecruiter()
-        setShowAuctionStreaming(false)
-        setShowRecruiterStreaming(false)
-        resetGroup()
-        setGroupCommResponseReceived(false)
-        setShowFinalResponse(false)
-        setAgentResponse(undefined)
-        setPendingResponse("")
-        setIsAgentLoading(false)
-        setApiError(false)
-        setCurrentUserMessage("")
-        setButtonClicked(false)
-        setAiReplied(false)
-        setSelectedPattern(pattern)
-        lastDiscoveryKeyRef.current = null
-      },
-      [reset, resetGroup, resetRecruiter],
+    (pattern: PatternType) => {
+      reset()
+      resetRecruiter()
+      setShowAuctionStreaming(false)
+      setShowRecruiterStreaming(false)
+      resetGroup()
+      setGroupCommResponseReceived(false)
+      setShowFinalResponse(false)
+      setAgentResponse(undefined)
+      setPendingResponse("")
+      setIsAgentLoading(false)
+      setApiError(false)
+      setCurrentUserMessage("")
+      setButtonClicked(false)
+      setAiReplied(false)
+      setSelectedPattern(pattern)
+      lastDiscoveryKeyRef.current = null
+    },
+    [reset, resetGroup, resetRecruiter],
   )
 
   const [messages, setMessages] = useState<Message[]>(() => {
@@ -134,10 +141,10 @@ const App: React.FC = () => {
   useEffect(() => {
     if (selectedPattern === PATTERNS.PUBLISH_SUBSCRIBE_STREAMING) {
       if (
-          events.length > 0 &&
-          status !== "connecting" &&
-          status !== "streaming" &&
-          isAgentLoading
+        events.length > 0 &&
+        status !== "connecting" &&
+        status !== "streaming" &&
+        isAgentLoading
       ) {
         setIsAgentLoading(false)
       }
@@ -165,9 +172,9 @@ const App: React.FC = () => {
     setButtonClicked(true)
     setApiError(false)
     if (
-        selectedPattern !== PATTERNS.GROUP_COMMUNICATION &&
-        selectedPattern !== PATTERNS.PUBLISH_SUBSCRIBE_STREAMING &&
-        selectedPattern !== PATTERNS.ON_DEMAND_DISCOVERY
+      selectedPattern !== PATTERNS.GROUP_COMMUNICATION &&
+      selectedPattern !== PATTERNS.PUBLISH_SUBSCRIBE_STREAMING &&
+      selectedPattern !== PATTERNS.ON_DEMAND_DISCOVERY
     ) {
       setShowFinalResponse(true)
     }
@@ -175,34 +182,34 @@ const App: React.FC = () => {
 
   // Accepts ApiResponse or string (for error fallback), but always sets ApiResponse
   const handleApiResponse = useCallback(
-      (response: ApiResponse | string, isError: boolean = false) => {
-        let apiResp: ApiResponse
-        if (typeof response === "string") {
-          apiResp = { response }
-        } else {
-          apiResp = response
-        }
-        setAgentResponse(apiResp)
-        setIsAgentLoading(false)
+    (response: ApiResponse | string, isError: boolean = false) => {
+      let apiResp: ApiResponse
+      if (typeof response === "string") {
+        apiResp = { response }
+      } else {
+        apiResp = response
+      }
+      setAgentResponse(apiResp)
+      setIsAgentLoading(false)
 
-        if (selectedPattern === PATTERNS.GROUP_COMMUNICATION) {
-          setApiError(isError)
-          if (!isError) {
-            setGroupCommResponseReceived(true)
-          }
+      if (selectedPattern === PATTERNS.GROUP_COMMUNICATION) {
+        setApiError(isError)
+        if (!isError) {
+          setGroupCommResponseReceived(true)
         }
+      }
 
-        setMessages((prev) => {
-          const updated = [...prev]
-          updated[updated.length - 1] = {
-            ...updated[updated.length - 1],
-            content: apiResp.response,
-            animate: !isError,
-          }
-          return updated
-        })
-      },
-      [selectedPattern, setMessages],
+      setMessages((prev) => {
+        const updated = [...prev]
+        updated[updated.length - 1] = {
+          ...updated[updated.length - 1],
+          content: apiResp.response,
+          animate: !isError,
+        }
+        return updated
+      })
+    },
+    [selectedPattern, setMessages],
   )
 
   useEffect(() => {
@@ -236,7 +243,13 @@ const App: React.FC = () => {
 
       if (recruiterFinalMessage) {
         setShowFinalResponse(true)
-        handleApiResponse({ response: recruiterFinalMessage, session_id: recruiterSessionId ?? undefined }, false)
+        handleApiResponse(
+          {
+            response: recruiterFinalMessage,
+            session_id: recruiterSessionId ?? undefined,
+          },
+          false,
+        )
       }
 
       // Dispatch discovery response event to update the graph with discovered agents
@@ -244,8 +257,8 @@ const App: React.FC = () => {
       // Use a stable fingerprint (session + sorted agent record keys) instead of Date.now()
       // so that re-renders with the same data don't create duplicate graph nodes
       const agentKeys = recruiterAgentRecords
-          ? Object.keys(recruiterAgentRecords).sort().join(",")
-          : ""
+        ? Object.keys(recruiterAgentRecords).sort().join(",")
+        : ""
       const discoveryKey = `${recruiterSessionId ?? ""}:${agentKeys}`
 
       if (lastDiscoveryKeyRef.current !== discoveryKey) {
@@ -312,7 +325,8 @@ const App: React.FC = () => {
           await connectRecruiter(query)
         } catch (error) {
           logger.apiError("/agent/prompt/stream", error)
-          const errorMsg = "Sorry, I encountered an error with recruiter streaming."
+          const errorMsg =
+            "Sorry, I encountered an error with recruiter streaming."
           setShowFinalResponse(true)
           handleApiResponse(errorMsg, true)
         }
@@ -336,7 +350,7 @@ const App: React.FC = () => {
       setIsAgentLoading(true)
       if (pendingResponse) {
         const isError =
-            pendingResponse.includes("error") || pendingResponse.includes("Error")
+          pendingResponse.includes("error") || pendingResponse.includes("Error")
         handleApiResponse(pendingResponse, isError)
         setPendingResponse("")
       }
@@ -360,19 +374,19 @@ const App: React.FC = () => {
   }
 
   const handleNodeHighlightSetup = useCallback(
-      (highlightFunction: (nodeId: string) => void) => {
-        setHighlightNodeFunction(() => highlightFunction)
-      },
-      [],
+    (highlightFunction: (nodeId: string) => void) => {
+      setHighlightNodeFunction(() => highlightFunction)
+    },
+    [],
   )
 
   const handleSenderHighlight = useCallback(
-      (nodeId: string) => {
-        if (highlightNodeFunction) {
-          highlightNodeFunction(nodeId)
-        }
-      },
-      [highlightNodeFunction],
+    (nodeId: string) => {
+      if (highlightNodeFunction) {
+        highlightNodeFunction(nodeId)
+      }
+    },
+    [highlightNodeFunction],
   )
 
   useEffect(() => {
@@ -395,84 +409,84 @@ const App: React.FC = () => {
   }, [selectedPattern, resetGroup])
 
   return (
-      <ThemeProvider>
-        <div className="bg-primary-bg flex h-screen w-screen flex-col overflow-hidden">
-          <Navigation />
-          <div className="flex flex-1 overflow-hidden">
-            <Sidebar
-                selectedPattern={selectedPattern}
-                onPatternChange={handlePatternChange}
-            />
-            <div className="flex flex-1 flex-col border-l border-action-background bg-app-background">
-              <div className="relative flex-grow">
-                <MainArea
-                    pattern={selectedPattern}
-                    buttonClicked={buttonClicked}
-                    setButtonClicked={setButtonClicked}
-                    aiReplied={aiReplied}
-                    setAiReplied={setAiReplied}
-                    chatHeight={chatHeightValue}
-                    isExpanded={isExpanded}
-                    groupCommResponseReceived={groupCommResponseReceived}
-                    onNodeHighlight={handleNodeHighlightSetup}
-                    discoveryResponseEvent={discoveryResponseEvent}
-                    selectedAgentCid={recruiterSelectedAgent?.cid ?? null}
-                />
-              </div>
-              <div className="flex min-h-[76px] w-full flex-none flex-col items-center justify-center gap-0 bg-overlay-background p-0 md:min-h-[96px]">
-                <ChatArea
-                    setMessages={setMessages}
-                    setButtonClicked={setButtonClicked}
-                    setAiReplied={setAiReplied}
-                    isBottomLayout={true}
-                    showCoffeePrompts={
-                        selectedPattern === PATTERNS.PUBLISH_SUBSCRIBE ||
-                        selectedPattern === PATTERNS.PUBLISH_SUBSCRIBE_STREAMING
-                    }
-                    showLogisticsPrompts={
-                        selectedPattern === PATTERNS.GROUP_COMMUNICATION
-                    }
-                    showDiscoveryPrompts={
-                      selectedPattern === PATTERNS.ON_DEMAND_DISCOVERY
-                    }
-                    showProgressTracker={showProgressTracker}
-                    showAuctionStreaming={showAuctionStreaming}
-                    showRecruiterStreaming={showRecruiterStreaming}
-                    showFinalResponse={showFinalResponse}
-                    onStreamComplete={handleStreamComplete}
-                    onSenderHighlight={handleSenderHighlight}
-                    pattern={selectedPattern}
-                    graphConfig={getGraphConfig(
-                        selectedPattern,
-                        groupCommResponseReceived,
-                    )}
-                    onDropdownSelect={handleDropdownSelect}
-                    onUserInput={handleUserInput}
-                    onApiResponse={handleApiResponse}
-                    onClearConversation={handleClearConversation}
-                    currentUserMessage={currentUserMessage}
-                    agentResponse={agentResponse}
-                    executionKey={executionKey}
-                    isAgentLoading={isAgentLoading}
-                    apiError={apiError}
-                    chatRef={chatRef}
-                    auctionState={{
-                      events,
-                      status,
-                      error,
-                    }}
-                    recruiterState={{
-                      events: recruiterEvents,
-                      status: recruiterStatus,
-                      error: recruiterError,
-                    }}
-                    onDiscoveryResponse={handleDiscoveryResponse}
-                />
-              </div>
+    <ThemeProvider>
+      <div className="bg-primary-bg flex h-screen w-screen flex-col overflow-hidden">
+        <Navigation />
+        <div className="flex flex-1 overflow-hidden">
+          <Sidebar
+            selectedPattern={selectedPattern}
+            onPatternChange={handlePatternChange}
+          />
+          <div className="flex flex-1 flex-col border-l border-action-background bg-app-background">
+            <div className="relative flex-grow">
+              <MainArea
+                pattern={selectedPattern}
+                buttonClicked={buttonClicked}
+                setButtonClicked={setButtonClicked}
+                aiReplied={aiReplied}
+                setAiReplied={setAiReplied}
+                chatHeight={chatHeightValue}
+                isExpanded={isExpanded}
+                groupCommResponseReceived={groupCommResponseReceived}
+                onNodeHighlight={handleNodeHighlightSetup}
+                discoveryResponseEvent={discoveryResponseEvent}
+                selectedAgentCid={recruiterSelectedAgent?.cid ?? null}
+              />
+            </div>
+            <div className="flex min-h-[76px] w-full flex-none flex-col items-center justify-center gap-0 bg-overlay-background p-0 md:min-h-[96px]">
+              <ChatArea
+                setMessages={setMessages}
+                setButtonClicked={setButtonClicked}
+                setAiReplied={setAiReplied}
+                isBottomLayout={true}
+                showCoffeePrompts={
+                  selectedPattern === PATTERNS.PUBLISH_SUBSCRIBE ||
+                  selectedPattern === PATTERNS.PUBLISH_SUBSCRIBE_STREAMING
+                }
+                showLogisticsPrompts={
+                  selectedPattern === PATTERNS.GROUP_COMMUNICATION
+                }
+                showDiscoveryPrompts={
+                  selectedPattern === PATTERNS.ON_DEMAND_DISCOVERY
+                }
+                showProgressTracker={showProgressTracker}
+                showAuctionStreaming={showAuctionStreaming}
+                showRecruiterStreaming={showRecruiterStreaming}
+                showFinalResponse={showFinalResponse}
+                onStreamComplete={handleStreamComplete}
+                onSenderHighlight={handleSenderHighlight}
+                pattern={selectedPattern}
+                graphConfig={getGraphConfig(
+                  selectedPattern,
+                  groupCommResponseReceived,
+                )}
+                onDropdownSelect={handleDropdownSelect}
+                onUserInput={handleUserInput}
+                onApiResponse={handleApiResponse}
+                onClearConversation={handleClearConversation}
+                currentUserMessage={currentUserMessage}
+                agentResponse={agentResponse}
+                executionKey={executionKey}
+                isAgentLoading={isAgentLoading}
+                apiError={apiError}
+                chatRef={chatRef}
+                auctionState={{
+                  events,
+                  status,
+                  error,
+                }}
+                recruiterState={{
+                  events: recruiterEvents,
+                  status: recruiterStatus,
+                  error: recruiterError,
+                }}
+                onDiscoveryResponse={handleDiscoveryResponse}
+              />
             </div>
           </div>
         </div>
-      </ThemeProvider>
+      </div>
+    </ThemeProvider>
   )
 }
 

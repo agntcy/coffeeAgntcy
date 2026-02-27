@@ -392,11 +392,11 @@ const DISCOVERY_CONFIG: GraphConfig = {
       type: NODE_TYPES.CUSTOM,
       data: {
         icon: (
-            <img
-                src={supervisorIcon}
-                alt="Recruiter Icon"
-                className="dark-icon h-4 w-4 object-contain"
-            />
+          <img
+            src={supervisorIcon}
+            alt="Recruiter Icon"
+            className="dark-icon h-4 w-4 object-contain"
+          />
         ),
         label1: "Agentic Recruiter",
         label2: "Discovery and delegation",
@@ -417,18 +417,16 @@ const DISCOVERY_CONFIG: GraphConfig = {
       type: NODE_TYPES.CUSTOM,
       data: {
         icon: (
-            <img
-                src={supervisorIcon}
-                alt="Directory Icon"
-                className="dark-icon h-4 w-4 object-contain"
-            />
+          <img
+            src={supervisorIcon}
+            alt="Directory Icon"
+            className="dark-icon h-4 w-4 object-contain"
+          />
         ),
         label1: "Directory",
         label2: "AGNTCY Agent Directory",
         handles: HANDLE_TYPES.ALL,
-        extraHandles: [
-          { id: "source-left", type: "source", position: "left" },
-        ],
+        extraHandles: [{ id: "source-left", type: "source", position: "left" }],
         githubLink: `${urlsConfig.agentDirectory.github}`,
         agentDirectoryLink: "place-holder",
       },

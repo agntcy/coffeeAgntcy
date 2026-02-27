@@ -7,7 +7,10 @@ import React, { useState, useEffect, useCallback, useRef } from "react"
 import { ChevronDown, ChevronUp, Loader2 } from "lucide-react"
 import AgentIcon from "@/assets/Coffee_Icon.svg"
 import CheckCircle from "@/assets/Check_Circle.png"
-import { RecruiterStreamingFeedProps, RecruiterStreamingEvent } from "@/types/streaming"
+import {
+  RecruiterStreamingFeedProps,
+  RecruiterStreamingEvent,
+} from "@/types/streaming"
 
 const RecruiterStreamingFeed: React.FC<RecruiterStreamingFeedProps> = ({
   isVisible,
@@ -124,24 +127,30 @@ const RecruiterStreamingFeed: React.FC<RecruiterStreamingFeedProps> = ({
         {isExpanded && (
           <>
             <div className="mt-3 flex w-full flex-col items-start gap-3">
-              {statusUpdates.map((event: RecruiterStreamingEvent, index: number) => (
-                <div
-                  key={`recruiter-status-${index}`}
-                  className="flex w-full flex-row items-start gap-1"
-                >
-                  <div className="mt-1 flex items-center">
-                    <img src={CheckCircle} alt="Complete" className="h-4 w-4" />
-                  </div>
-                  <div className="flex-1">
-                    <div className="font-inter text-sm leading-[18px] text-chat-text">
-                      {event.author && (
-                        <span className="font-bold">{event.author}: </span>
-                      )}
-                      <span className="font-normal">{event.message}</span>
+              {statusUpdates.map(
+                (event: RecruiterStreamingEvent, index: number) => (
+                  <div
+                    key={`recruiter-status-${index}`}
+                    className="flex w-full flex-row items-start gap-1"
+                  >
+                    <div className="mt-1 flex items-center">
+                      <img
+                        src={CheckCircle}
+                        alt="Complete"
+                        className="h-4 w-4"
+                      />
+                    </div>
+                    <div className="flex-1">
+                      <div className="font-inter text-sm leading-[18px] text-chat-text">
+                        {event.author && (
+                          <span className="font-bold">{event.author}: </span>
+                        )}
+                        <span className="font-normal">{event.message}</span>
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                ),
+              )}
 
               {events.length > 0 && !isComplete && (
                 <div className="flex w-full flex-row items-start gap-1">

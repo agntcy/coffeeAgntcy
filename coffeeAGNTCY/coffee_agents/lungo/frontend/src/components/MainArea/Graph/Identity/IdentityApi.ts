@@ -18,7 +18,6 @@ export interface IdentityServiceError {
 const getSlugFromNodeData = (nodeData: any): string => {
   console.log(nodeData)
 
-
   if (nodeData.slug) {
     return nodeData.slug
   }

@@ -12,172 +12,173 @@ import { useEscapeKey } from "@/hooks/useEscapeKey"
 
 const DEFAULT_DIRECTORY_SERVER_URL = "http://127.0.0.1:8888"
 const DIRECTORY_SERVER_URL =
-    import.meta.env.VITE_DIRECTORY_SERVER_URL || DEFAULT_DIRECTORY_SERVER_URL
+  import.meta.env.VITE_DIRECTORY_SERVER_URL || DEFAULT_DIRECTORY_SERVER_URL
 
 const DEFAULT_DIRECTORY_VERSION = "v0.6.0"
 const DIRECTORY_VERSION =
-    import.meta.env.VITE_DIRECTORY_VERSION || DEFAULT_DIRECTORY_VERSION
+  import.meta.env.VITE_DIRECTORY_VERSION || DEFAULT_DIRECTORY_VERSION
 
 export interface OasfRecordModalProps {
-    isOpen: boolean
-    onClose: () => void
-    nodeName: string
-    nodeData: CustomNodeData
-    position: { x: number; y: number }
+  isOpen: boolean
+  onClose: () => void
+  nodeName: string
+  nodeData: CustomNodeData
+  position: { x: number; y: number }
 }
 
 const Spinner: React.FC = () => (
-    <div className="inline-block h-6 w-6 animate-spin rounded-full border-2 border-solid border-node-text-primary border-r-transparent"></div>
+  <div className="inline-block h-6 w-6 animate-spin rounded-full border-2 border-solid border-node-text-primary border-r-transparent"></div>
 )
 
 const OasfRecordModal: React.FC<OasfRecordModalProps> = ({
-                                                             isOpen,
-                                                             onClose,
-                                                             nodeName,
-                                                             nodeData,
-                                                             position,
-                                                         }) => {
-    const [record, setRecord] = useState<OasfRecord | null>(null)
-    const [loading, setLoading] = useState(false)
-    const [error, setError] = useState<string | null>(null)
+  isOpen,
+  onClose,
+  nodeName,
+  nodeData,
+  position,
+}) => {
+  const [record, setRecord] = useState<OasfRecord | null>(null)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
-    const isDirectoryNode = nodeName === "Directory"
+  const isDirectoryNode = nodeName === "Directory"
 
-    useEffect(() => {
-        if (!isOpen || !nodeData) return
-        if (isDirectoryNode) return // do not fetch JSON for Directory view
-        fetchOasfRecordData()
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [isOpen, nodeName, nodeData, isDirectoryNode])
+  useEffect(() => {
+    if (!isOpen || !nodeData) return
+    if (isDirectoryNode) return // do not fetch JSON for Directory view
+    fetchOasfRecordData()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen, nodeName, nodeData, isDirectoryNode])
 
-    useEscapeKey(isOpen, onClose)
+  useEscapeKey(isOpen, onClose)
 
-    const fetchOasfRecordData = async () => {
-        setLoading(true)
-        setError(null)
-        try {
-            const data = await fetchOasfRecord(nodeData)
-            setRecord(data)
-        } catch (err) {
-            const apiError = err as IdentityServiceError
-            setError(
-                apiError.message || "An unexpected error occurred while fetching OASF record.",
-            )
-        } finally {
-            setLoading(false)
-        }
+  const fetchOasfRecordData = async () => {
+    setLoading(true)
+    setError(null)
+    try {
+      const data = await fetchOasfRecord(nodeData)
+      setRecord(data)
+    } catch (err) {
+      const apiError = err as IdentityServiceError
+      setError(
+        apiError.message ||
+          "An unexpected error occurred while fetching OASF record.",
+      )
+    } finally {
+      setLoading(false)
     }
+  }
 
-    if (!isOpen) return null
+  if (!isOpen) return null
 
-    const directoryUrl =
-        (nodeData as any)?.agentDirectoryLink ||
-        (nodeData as any)?.directoryUrl ||
-        (record as any)?.directory_url ||
-        (record as any)?.directoryUrl ||
-        (record as any)?.url ||
-        ""
+  const directoryUrl =
+    (nodeData as any)?.agentDirectoryLink ||
+    (nodeData as any)?.directoryUrl ||
+    (record as any)?.directory_url ||
+    (record as any)?.directoryUrl ||
+    (record as any)?.url ||
+    ""
 
-    const handleModalClick = (e: React.MouseEvent) => e.stopPropagation()
+  const handleModalClick = (e: React.MouseEvent) => e.stopPropagation()
 
-    return createPortal(
-        <div className="pointer-events-none fixed inset-0 z-50">
-            <div
-                className="pointer-events-auto absolute -translate-x-1/2"
-                style={{ left: `${position.x}px`, top: `${position.y - 100}px` }}
-            >
-                <div
-                    className="relative flex max-h-[70vh] w-[550px] flex-col items-start gap-4 rounded-md bg-node-background p-4 shadow-lg"
-                    onClick={handleModalClick}
-                    data-modal-content
-                >
-                    <button
-                        onClick={onClose}
-                        className="absolute right-3 top-3 z-10 text-xl leading-none text-node-text-secondary transition-colors hover:text-node-text-primary"
+  return createPortal(
+    <div className="pointer-events-none fixed inset-0 z-50">
+      <div
+        className="pointer-events-auto absolute -translate-x-1/2"
+        style={{ left: `${position.x}px`, top: `${position.y - 100}px` }}
+      >
+        <div
+          className="relative flex max-h-[70vh] w-[550px] flex-col items-start gap-4 rounded-md bg-node-background p-4 shadow-lg"
+          onClick={handleModalClick}
+          data-modal-content
+        >
+          <button
+            onClick={onClose}
+            className="absolute right-3 top-3 z-10 text-xl leading-none text-node-text-secondary transition-colors hover:text-node-text-primary"
+          >
+            ×
+          </button>
+
+          {isDirectoryNode ? (
+            <div className="relative flex w-full flex-col gap-3">
+              <h3 className="mb-1 text-lg font-semibold text-node-text-primary">
+                Directory Information
+              </h3>
+
+              <div className="grid w-full grid-cols-1 gap-3">
+                <div className="rounded border border-gray-600 p-3">
+                  <div className="text-xs uppercase tracking-wide text-node-text-secondary opacity-80">
+                    Directory URL
+                  </div>
+                  {directoryUrl ? (
+                    <a
+                      className="mt-1 block break-all text-sm text-node-text-primary underline"
+                      href={DIRECTORY_SERVER_URL}
+                      target="_blank"
+                      rel="noopener noreferrer"
                     >
-                        ×
-                    </button>
+                      {DIRECTORY_SERVER_URL}
+                    </a>
+                  ) : (
+                    <div className="mt-1 text-sm text-node-text-secondary opacity-80">
+                      Unavailable
+                    </div>
+                  )}
+                </div>
 
-                    {isDirectoryNode ? (
-                        <div className="relative flex w-full flex-col gap-3">
-                            <h3 className="mb-1 text-lg font-semibold text-node-text-primary">
-                                Directory Information
-                            </h3>
-
-                            <div className="grid w-full grid-cols-1 gap-3">
-                                <div className="rounded border border-gray-600 p-3">
-                                    <div className="text-xs uppercase tracking-wide text-node-text-secondary opacity-80">
-                                        Directory URL
-                                    </div>
-                                    {directoryUrl ? (
-                                        <a
-                                            className="mt-1 block break-all text-sm text-node-text-primary underline"
-                                            href={DIRECTORY_SERVER_URL}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                        >
-                                            {DIRECTORY_SERVER_URL}
-                                        </a>
-                                    ) : (
-                                        <div className="mt-1 text-sm text-node-text-secondary opacity-80">
-                                            Unavailable
-                                        </div>
-                                    )}
-                                </div>
-
-                                <div className="rounded border border-gray-600 p-3">
-                                    <div className="text-xs uppercase tracking-wide text-node-text-secondary opacity-80">
-                                        Directory Version
-                                    </div>
-                                    <div className="mt-1 text-sm text-node-text-primary">
-                                        {DIRECTORY_VERSION || "Unavailable"}
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    ) : loading && !record ? (
-                        <div className="flex w-full items-center justify-center py-8">
-                            <Spinner />
-                        </div>
-                    ) : error ? (
-                        <div className="flex w-full flex-col items-center justify-center gap-4 py-8">
-                            <div className="text-center text-node-text-primary">
-                                <p className="font-medium">Failed to load OASF record</p>
-                                <p className="mt-2 text-sm text-node-text-secondary opacity-80">
-                                    {error}
-                                </p>
-                            </div>
-                            <button
-                                onClick={fetchOasfRecordData}
-                                className="rounded bg-node-icon-background px-4 py-2 text-sm text-node-text-primary hover:bg-opacity-80"
-                            >
-                                Retry
-                            </button>
-                        </div>
-                    ) : record ? (
-                        <div className="relative flex max-h-[26vh] min-h-0 w-full flex-col gap-3 overflow-y-auto">
-                            <h3 className="mb-3 text-lg font-semibold text-node-text-primary">
-                                {nodeName} OASF Record
-                            </h3>
-                            <pre className="overflow-auto whitespace-pre-wrap rounded border border-gray-600 p-3 font-mono text-xs text-node-text-primary">
+                <div className="rounded border border-gray-600 p-3">
+                  <div className="text-xs uppercase tracking-wide text-node-text-secondary opacity-80">
+                    Directory Version
+                  </div>
+                  <div className="mt-1 text-sm text-node-text-primary">
+                    {DIRECTORY_VERSION || "Unavailable"}
+                  </div>
+                </div>
+              </div>
+            </div>
+          ) : loading && !record ? (
+            <div className="flex w-full items-center justify-center py-8">
+              <Spinner />
+            </div>
+          ) : error ? (
+            <div className="flex w-full flex-col items-center justify-center gap-4 py-8">
+              <div className="text-center text-node-text-primary">
+                <p className="font-medium">Failed to load OASF record</p>
+                <p className="mt-2 text-sm text-node-text-secondary opacity-80">
+                  {error}
+                </p>
+              </div>
+              <button
+                onClick={fetchOasfRecordData}
+                className="rounded bg-node-icon-background px-4 py-2 text-sm text-node-text-primary hover:bg-opacity-80"
+              >
+                Retry
+              </button>
+            </div>
+          ) : record ? (
+            <div className="relative flex max-h-[26vh] min-h-0 w-full flex-col gap-3 overflow-y-auto">
+              <h3 className="mb-3 text-lg font-semibold text-node-text-primary">
+                {nodeName} OASF Record
+              </h3>
+              <pre className="overflow-auto whitespace-pre-wrap rounded border border-gray-600 p-3 font-mono text-xs text-node-text-primary">
                 {JSON.stringify(record, null, 2)}
               </pre>
-                            {loading && (
-                                <div className="absolute inset-0 flex items-center justify-center bg-node-background bg-opacity-80 backdrop-blur-sm">
-                                    <Spinner />
-                                </div>
-                            )}
-                        </div>
-                    ) : (
-                        <div className="flex w-full items-center justify-center py-8">
-                            <div className="text-node-text-primary">No data available</div>
-                        </div>
-                    )}
+              {loading && (
+                <div className="absolute inset-0 flex items-center justify-center bg-node-background bg-opacity-80 backdrop-blur-sm">
+                  <Spinner />
                 </div>
+              )}
             </div>
-        </div>,
-        document.body,
-    )
+          ) : (
+            <div className="flex w-full items-center justify-center py-8">
+              <div className="text-node-text-primary">No data available</div>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>,
+    document.body,
+  )
 }
 
 export default OasfRecordModal

@@ -4,11 +4,11 @@
  **/
 
 export interface Prompt {
-    prompt: string
-    description: string
+  prompt: string
+  description: string
 }
 
 export interface PromptCategory {
-    name: string
-    prompts: Prompt[]
+  name: string
+  prompts: Prompt[]
 }

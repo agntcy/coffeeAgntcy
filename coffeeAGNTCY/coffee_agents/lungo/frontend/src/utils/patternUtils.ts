@@ -38,7 +38,7 @@ export const getApiUrlForPattern = (pattern?: string): string => {
   } else if (pattern === PATTERNS.PUBLISH_SUBSCRIBE_STREAMING) {
     return PUB_SUB_APP_API_URL
   } else if (pattern === PATTERNS.ON_DEMAND_DISCOVERY) {
-      return DISCOVERY_APP_API_URL
+    return DISCOVERY_APP_API_URL
   } else {
     return PUB_SUB_APP_API_URL
   }
