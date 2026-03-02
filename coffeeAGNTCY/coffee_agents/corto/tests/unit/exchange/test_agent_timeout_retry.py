@@ -28,6 +28,59 @@ def _make_success_response(text: str = "expected response"):
     return response
 
 
+def _side_effect_for(scenario_id: str):
+    from slim_bindings import SlimError
+
+    if scenario_id == "timeout_then_success":
+        return [
+            SlimError.SessionError("receive timeout waiting for message"),
+            _make_success_response("recovered"),
+        ]
+    if scenario_id == "timeout_then_timeout":
+        return [
+            SlimError.SessionError("receive timeout"),
+            SlimError.SessionError("receive timeout"),
+        ]
+    if scenario_id == "timeout_then_non_timeout":
+        return [
+            SlimError.SessionError("receive timeout"),
+            ConnectionError("connection refused"),
+        ]
+    if scenario_id == "non_timeout_no_retry":
+        return [ValueError("bad request")]
+    if scenario_id == "success_first_attempt":
+        return [_make_success_response("first try")]
+    if scenario_id == "no_payload_error":
+        err = AttributeError("'NoneType' object has no attribute 'payload'")
+        err.name = "payload"
+        return [err]
+    if scenario_id == "none_response":
+        return [None]
+    raise ValueError(f"Unknown scenario_id: {scenario_id}")
+
+
+def _timeout_error_exception(scenario_id: str):
+    if scenario_id == "session_error_in_context":
+        from slim_bindings import SlimError
+
+        e = AttributeError("missing payload")
+        e.__context__ = SlimError.SessionError("receive timeout")
+        return e
+    if scenario_id == "plain_value_error":
+        return ValueError("bad")
+    raise ValueError(f"Unknown scenario_id: {scenario_id}")
+
+
+def _no_payload_exception(scenario_id: str):
+    if scenario_id == "no_payload_attribute":
+        e = AttributeError("'NoneType' object has no attribute 'payload'")
+        e.name = "payload"
+        return e
+    if scenario_id == "other_attribute_error":
+        return AttributeError("'str' has no attribute 'foo'")
+    raise ValueError(f"Unknown scenario_id: {scenario_id}")
+
+
 @pytest.fixture
 def mock_factory():
     factory = MagicMock()
@@ -42,119 +95,113 @@ def mock_client():
     return client
 
 
-@pytest.mark.asyncio
-async def test_timeout_then_success(mock_factory, mock_client):
-    from slim_bindings import SlimError
-
-    mock_client.send_message = AsyncMock(
-        side_effect=[
-            SlimError.SessionError("receive timeout waiting for message"),
-            _make_success_response("recovered"),
-        ]
-    )
-    mock_factory.create_client = AsyncMock(return_value=mock_client)
-    agent = ExchangeAgent(factory=mock_factory)
-    result = await agent.a2a_client_send_message("test")
-    assert result == "recovered"
-    assert mock_client.send_message.await_count == 2
-
-
-@pytest.mark.asyncio
-async def test_timeout_then_timeout(mock_factory, mock_client):
-    from slim_bindings import SlimError
-
-    mock_client.send_message = AsyncMock(
-        side_effect=[
-            SlimError.SessionError("receive timeout"),
-            SlimError.SessionError("receive timeout"),
-        ]
-    )
-    mock_factory.create_client = AsyncMock(return_value=mock_client)
-    agent = ExchangeAgent(factory=mock_factory)
-    with pytest.raises(TransportTimeoutError) as exc_info:
-        await agent.a2a_client_send_message("test")
-    assert exc_info.value.__cause__ is not None
-    assert mock_client.send_message.await_count == 2
-
-
-@pytest.mark.asyncio
-async def test_timeout_then_non_timeout_error(mock_factory, mock_client):
-    from slim_bindings import SlimError
-
-    mock_client.send_message = AsyncMock(
-        side_effect=[
-            SlimError.SessionError("receive timeout"),
-            ConnectionError("connection refused"),
-        ]
-    )
-    mock_factory.create_client = AsyncMock(return_value=mock_client)
-    agent = ExchangeAgent(factory=mock_factory)
-    with pytest.raises(ConnectionError):
-        await agent.a2a_client_send_message("test")
-    assert mock_client.send_message.await_count == 2
-
-
-@pytest.mark.asyncio
-async def test_non_timeout_on_first_attempt_no_retry(mock_factory, mock_client):
-    mock_client.send_message = AsyncMock(side_effect=ValueError("bad request"))
-    mock_factory.create_client = AsyncMock(return_value=mock_client)
-    agent = ExchangeAgent(factory=mock_factory)
-    with pytest.raises(ValueError):
-        await agent.a2a_client_send_message("test")
-    assert mock_client.send_message.await_count == 1
+_A2A_SCENARIOS = [
+    pytest.param(
+        "timeout_then_success",
+        "recovered",
+        None,
+        2,
+        False,
+        id="timeout_then_success",
+    ),
+    pytest.param(
+        "timeout_then_timeout",
+        None,
+        TransportTimeoutError,
+        2,
+        True,
+        id="timeout_then_timeout",
+    ),
+    pytest.param(
+        "timeout_then_non_timeout",
+        None,
+        ConnectionError,
+        2,
+        False,
+        id="timeout_then_non_timeout",
+    ),
+    pytest.param(
+        "non_timeout_no_retry",
+        None,
+        ValueError,
+        1,
+        False,
+        id="non_timeout_no_retry",
+    ),
+    pytest.param(
+        "success_first_attempt",
+        "first try",
+        None,
+        1,
+        False,
+        id="success_first_attempt",
+    ),
+    pytest.param(
+        "no_payload_error",
+        None,
+        RemoteAgentNoResponseError,
+        1,
+        False,
+        id="no_payload_error",
+    ),
+    pytest.param(
+        "none_response",
+        None,
+        RemoteAgentNoResponseError,
+        1,
+        False,
+        id="none_response",
+    ),
+]
 
 
 @pytest.mark.asyncio
-async def test_success_on_first_attempt(mock_factory, mock_client):
-    mock_client.send_message = AsyncMock(return_value=_make_success_response("first try"))
+@pytest.mark.parametrize(
+    "scenario_id,expected_result,expected_exception,expected_await_count,check_cause",
+    _A2A_SCENARIOS,
+)
+async def test_a2a_send_message_scenarios(
+    mock_factory,
+    mock_client,
+    scenario_id,
+    expected_result,
+    expected_exception,
+    expected_await_count,
+    check_cause,
+):
+    mock_client.send_message = AsyncMock(side_effect=_side_effect_for(scenario_id))
     mock_factory.create_client = AsyncMock(return_value=mock_client)
     agent = ExchangeAgent(factory=mock_factory)
-    result = await agent.a2a_client_send_message("test")
-    assert result == "first try"
-    assert mock_client.send_message.await_count == 1
+    if expected_exception is not None:
+        with pytest.raises(expected_exception) as exc_info:
+            await agent.a2a_client_send_message("test")
+        if check_cause:
+            assert exc_info.value.__cause__ is not None
+    else:
+        result = await agent.a2a_client_send_message("test")
+        assert result == expected_result
+    assert mock_client.send_message.await_count == expected_await_count
 
 
-@pytest.mark.asyncio
-async def test_no_payload_error_no_timeout_in_chain_no_retry(mock_factory, mock_client):
-    err = AttributeError("'NoneType' object has no attribute 'payload'")
-    err.name = "payload"
-    assert not _is_timeout_error(err)
-    mock_client.send_message = AsyncMock(side_effect=err)
-    mock_factory.create_client = AsyncMock(return_value=mock_client)
-    agent = ExchangeAgent(factory=mock_factory)
-    with pytest.raises(RemoteAgentNoResponseError):
-        await agent.a2a_client_send_message("test")
-    assert mock_client.send_message.await_count == 1
+@pytest.mark.parametrize(
+    "scenario_id,expected",
+    [
+        ("session_error_in_context", True),
+        ("plain_value_error", False),
+    ],
+)
+def test_is_timeout_error(scenario_id, expected):
+    exc = _timeout_error_exception(scenario_id)
+    assert _is_timeout_error(exc) is expected
 
 
-@pytest.mark.asyncio
-async def test_defensive_check_none_response(mock_factory, mock_client):
-    mock_client.send_message = AsyncMock(return_value=None)
-    mock_factory.create_client = AsyncMock(return_value=mock_client)
-    agent = ExchangeAgent(factory=mock_factory)
-    with pytest.raises(RemoteAgentNoResponseError):
-        await agent.a2a_client_send_message("test")
-    assert mock_client.send_message.await_count == 1
-
-
-def test_is_timeout_error_true_when_session_error_in_context():
-    from slim_bindings import SlimError
-
-    e = AttributeError("missing payload")
-    e.__context__ = SlimError.SessionError("receive timeout")
-    assert _is_timeout_error(e) is True
-
-
-def test_is_timeout_error_false_for_plain_value_error():
-    assert _is_timeout_error(ValueError("bad")) is False
-
-
-def test_is_no_payload_error_true():
-    e = AttributeError("'NoneType' object has no attribute 'payload'")
-    e.name = "payload"
-    assert _is_no_payload_error(e) is True
-
-
-def test_is_no_payload_error_false_for_other_attribute_error():
-    assert _is_no_payload_error(AttributeError("'str' has no attribute 'foo'")) is False
-
+@pytest.mark.parametrize(
+    "scenario_id,expected",
+    [
+        ("no_payload_attribute", True),
+        ("other_attribute_error", False),
+    ],
+)
+def test_is_no_payload_error(scenario_id, expected):
+    exc = _no_payload_exception(scenario_id)
+    assert _is_no_payload_error(exc) is expected
