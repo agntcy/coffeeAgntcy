@@ -2,20 +2,68 @@ name: Helm Push Charts
 
 on:
   push:
+    tags: ["*"]
     branches:
       - main
+    paths:
+      - 'coffeeAGNTCY/coffee_agents/*/deployment/helm/**'
   pull_request:
     branches:
       - main
+    paths:
+      - 'coffeeAGNTCY/coffee_agents/*/deployment/helm/**'
   workflow_dispatch:
 
-jobs:
-  helm-push:
-    runs-on: ubuntu-latest
+env:
+  CORTO_DIR: coffeeAGNTCY/coffee_agents/corto
+  LUNGO_DIR: coffeeAGNTCY/coffee_agents/lungo
+  HELM_SUBDIR: deployment/helm
 
-    permissions:
-      packages: write
-      contents: read
+jobs:
+  subprojects-to-build:
+    runs-on: ubuntu-latest
+    outputs:
+      build_corto: ${{ steps.check-subprojects.outputs.build_corto }}
+      build_lungo: ${{ steps.check-subprojects.outputs.build_lungo }}
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+      
+      - name: Detect changed paths for main sub-projects
+        id: check-subprojects
+        run: |
+          build_corto=false
+          build_lungo=false
+
+          if [[ "${{ github.event_name }}" == "push" && ( "${{ github.ref }}" == refs/tags/* || "${{ github.ref }}" == refs/heads/main ) ]]; then
+            build_corto=true
+            build_lungo=true
+          elif [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            base="${{ github.event.pull_request.base.sha }}"
+            head="${{ github.event.pull_request.head.sha }}"
+            echo "Commits to compare: base=$base head=$head"
+
+            # git diff --quiet implies --exit-code (0 means no changes (no need to build), 1 means changes were found (need to build))
+            build_corto=$(git diff --quiet --ignore-blank-lines $base $head "$CORTO_DIR/$HELM_SUBDIR" 2>/dev/null && echo false || echo true)
+            build_lungo=$(git diff --quiet --ignore-blank-lines $base $head "$LUNGO_DIR/$HELM_SUBDIR" 2>/dev/null && echo false || echo true)
+          fi
+
+          # Debug resulting build flags
+          echo "Helm packages to build: corto=$build_corto lungo=$build_lungo"
+
+          # Output build flags for subsequent use
+          echo "build_corto=$build_corto" >> $GITHUB_OUTPUT
+          echo "build_lungo=$build_lungo" >> $GITHUB_OUTPUT
+
+  helm-package-corto:
+    needs: subprojects-to-build
+    if: ${{ needs.subprojects-to-build.outputs.build_corto == 'true' }}
+    runs-on: ubuntu-latest
 
     strategy:
       matrix:
@@ -29,6 +77,65 @@ jobs:
           - name: corto-farm
             path: coffeeAGNTCY/coffee_agents/corto/deployment/helm/farm
             package_name: corto-farm
+
+    permissions:
+      packages: write
+      contents: read
+
+    steps:
+      - name: Pre-cleanup Docker images
+        run: docker system prune -af
+
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Log Pull Request Event
+        if: github.event_name == 'pull_request'
+        run: echo "PR detected - Packaging Helm chart (no push)"
+
+      - name: Log Push Event
+        if: github.event_name == 'push'
+        run: echo "Push to main - Packaging and pushing Helm chart"
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GitHub Container Registry
+        if: github.event_name == 'push'
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Helm
+        uses: azure/setup-helm@v4
+        with:
+          version: "3.18.3"
+
+      - name: Helm lint
+        run: helm lint ${{ matrix.chart.path }} --with-subcharts
+
+      - name: Package Helm Chart
+        id: package
+        run: |
+          CHART_VERSION=$(grep '^version:' ${{ matrix.chart.path }}/Chart.yaml | awk '{print $2}')
+          helm package ${{ matrix.chart.path }} --dependency-update --version $CHART_VERSION
+          echo "chart_version=$CHART_VERSION" >> $GITHUB_OUTPUT
+
+      - name: Push Helm Chart
+        if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/'))
+        run: |
+          helm push ${{ matrix.chart.package_name }}-${{ steps.package.outputs.chart_version }}.tgz oci://ghcr.io/${{ github.repository_owner }}/coffee_agntcy/helm
+
+  helm-package-lungo:
+    needs: subprojects-to-build
+    if: ${{ needs.subprojects-to-build.outputs.build_lungo == 'true' }}
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        chart:
           - name: lungo-ui
             path: coffeeAGNTCY/coffee_agents/lungo/deployment/helm/ui
             package_name: lungo-ui
@@ -72,12 +179,16 @@ jobs:
             path: coffeeAGNTCY/coffee_agents/lungo/deployment/helm/recruiter-supervisor
             package_name: recruiter-supervisor
 
+    permissions:
+      packages: write
+      contents: read
+
     steps:
       - name: Pre-cleanup Docker images
         run: docker system prune -af
 
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Log Pull Request Event
         if: github.event_name == 'pull_request'
@@ -101,7 +212,7 @@ jobs:
       - name: Setup Helm
         uses: azure/setup-helm@v4
         with:
-          version: "3.12.1"
+          version: "3.18.3"
 
       - name: Helm lint
         run: helm lint ${{ matrix.chart.path }} --with-subcharts
@@ -114,6 +225,6 @@ jobs:
           echo "chart_version=$CHART_VERSION" >> $GITHUB_OUTPUT
 
       - name: Push Helm Chart
-        if: github.event_name == 'push'
+        if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/'))
         run: |
           helm push ${{ matrix.chart.package_name }}-${{ steps.package.outputs.chart_version }}.tgz oci://ghcr.io/${{ github.repository_owner }}/coffee_agntcy/helm
