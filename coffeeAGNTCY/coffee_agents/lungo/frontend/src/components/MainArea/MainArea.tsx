@@ -306,7 +306,7 @@ const MainArea: React.FC<MainAreaProps> = ({
           const y = recruiterPos.y + START_Y_OFFSET
           col++
 
-          const { parentId, extent, expandParent, ...rest } = template as any
+          const { parentId, extent, ...rest } = template
 
           newNodes.push({
             ...rest,

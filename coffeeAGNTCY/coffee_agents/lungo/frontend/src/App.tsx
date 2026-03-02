@@ -40,7 +40,10 @@ import { ThemeProvider } from "@/contexts/ThemeContext"
 import { Message } from "./types/message"
 import { getGraphConfig } from "@/utils/graphConfigs"
 import { PATTERNS, PatternType } from "@/utils/patternUtils"
-import { DiscoveryResponseEvent } from "@/components/MainArea/Graph/Directory/types.ts"
+import {
+  DiscoveryResponseEvent,
+  AgentRecord,
+} from "@/components/MainArea/Graph/Directory/types.ts"
 
 interface ApiResponse {
   response: string
@@ -104,7 +107,6 @@ const App: React.FC = () => {
 
   const handleDiscoveryResponse = useCallback((evt: DiscoveryResponseEvent) => {
     setDiscoveryResponseEvent(evt)
-    console.log("Received discovery response event:", evt)
   }, [])
 
   const handlePatternChange = useCallback(
@@ -267,7 +269,9 @@ const App: React.FC = () => {
           response: recruiterFinalMessage ?? "",
           ts: Date.now(),
           sessionId: recruiterSessionId ?? undefined,
-          agent_records: (recruiterAgentRecords ?? {}) as any,
+          agent_records: recruiterAgentRecords
+            ? (Object.values(recruiterAgentRecords) as AgentRecord[])
+            : undefined,
         })
       }
     } else if (recruiterStatus === "error" && recruiterError) {
@@ -456,10 +460,7 @@ const App: React.FC = () => {
                 onStreamComplete={handleStreamComplete}
                 onSenderHighlight={handleSenderHighlight}
                 pattern={selectedPattern}
-                graphConfig={getGraphConfig(
-                  selectedPattern,
-                  groupCommResponseReceived,
-                )}
+                graphConfig={getGraphConfig(selectedPattern)}
                 onDropdownSelect={handleDropdownSelect}
                 onUserInput={handleUserInput}
                 onApiResponse={handleApiResponse}

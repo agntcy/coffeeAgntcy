@@ -41,7 +41,7 @@ const InfoModal: React.FC<InfoModalProps> = ({ isOpen, onClose }) => {
         }
         const data = await res.json()
         if (!cancelled) setInfo(data)
-      } catch (e) {
+      } catch {
         if (!cancelled) {
           setError("Failed to load build info")
           setInfo(null)

@@ -30,7 +30,7 @@ const CoffeePromptsDropdown: React.FC<CoffeePromptsDropdownProps> = ({
   // Fetch prompts on mount or pattern change
   useEffect(() => {
     const controller = new AbortController()
-    let retryTimeoutId: NodeJS.Timeout | null = null
+    let retryTimeoutId: ReturnType<typeof setTimeout> | null = null
     const MAX_RETRY_DELAY = 5000 // 5 seconds max
 
     const fetchPrompts = async (retryCount = 0) => {

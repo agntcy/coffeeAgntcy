@@ -29,7 +29,10 @@ interface CustomNodeProps {
   ) => void
 }
 
-const CustomNode: React.FC<CustomNodeProps> = ({ data, onOpenOasfModal }) => {
+const CustomNode: React.FC<CustomNodeProps> = ({
+  data,
+  //onOpenOasfModal,
+}) => {
   const nodeRef = useRef<HTMLDivElement>(null)
 
   const githubIconSrc = useThemeIcon({

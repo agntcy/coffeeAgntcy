@@ -27,7 +27,7 @@ const DiscoveryPromptsDropdown: React.FC<DiscoveryPromptsDropdownProps> = ({
 
   useEffect(() => {
     const controller = new AbortController()
-    let retryTimeoutId: NodeJS.Timeout | null = null
+    let retryTimeoutId: ReturnType<typeof setTimeout> | null = null
     const MAX_RETRY_DELAY = 5000
 
     const fetchPrompts = async (retryCount = 0) => {
