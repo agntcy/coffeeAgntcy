@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import pytest
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import AsyncMock, MagicMock, patch
 
 from exchange.agent import ExchangeAgent
 from exchange.errors import (
@@ -37,10 +37,7 @@ def _side_effect_for(scenario_id: str):
             _make_success_response("recovered"),
         ]
     if scenario_id == "timeout_then_timeout":
-        return [
-            SlimError.SessionError("receive timeout"),
-            SlimError.SessionError("receive timeout"),
-        ]
+        return [SlimError.SessionError("receive timeout")] * 5
     if scenario_id == "timeout_then_non_timeout":
         return [
             SlimError.SessionError("receive timeout"),
@@ -108,7 +105,7 @@ _A2A_SCENARIOS = [
         "timeout_then_timeout",
         None,
         TransportTimeoutError,
-        2,
+        5,
         True,
         id="timeout_then_timeout",
     ),
@@ -169,18 +166,22 @@ async def test_a2a_send_message_scenarios(
     expected_await_count,
     check_cause,
 ):
-    mock_client.send_message = AsyncMock(side_effect=_side_effect_for(scenario_id))
-    mock_factory.create_client = AsyncMock(return_value=mock_client)
-    agent = ExchangeAgent(factory=mock_factory)
-    if expected_exception is not None:
-        with pytest.raises(expected_exception) as exc_info:
-            await agent.a2a_client_send_message("test")
-        if check_cause:
-            assert exc_info.value.__cause__ is not None
-    else:
-        result = await agent.a2a_client_send_message("test")
-        assert result == expected_result
-    assert mock_client.send_message.await_count == expected_await_count
+    with patch("exchange.agent.asyncio.sleep", new_callable=AsyncMock) as mock_sleep:
+        mock_client.send_message = AsyncMock(side_effect=_side_effect_for(scenario_id))
+        mock_factory.create_client = AsyncMock(return_value=mock_client)
+        agent = ExchangeAgent(factory=mock_factory)
+        if expected_exception is not None:
+            with pytest.raises(expected_exception) as exc_info:
+                await agent.a2a_client_send_message("test")
+            if check_cause:
+                assert exc_info.value.__cause__ is not None
+        else:
+            result = await agent.a2a_client_send_message("test")
+            assert result == expected_result
+        assert mock_client.send_message.await_count == expected_await_count
+        if scenario_id == "timeout_then_timeout":
+            assert mock_sleep.await_count == 4
+            assert [mock_sleep.await_args_list[i][0][0] for i in range(4)] == [1, 3, 9, 27]
 
 
 @pytest.mark.parametrize(

@@ -1,6 +1,7 @@
 # Copyright AGNTCY Contributors (https://github.com/agntcy)
 # SPDX-License-Identifier: Apache-2.0
 
+import asyncio
 import logging
 from uuid import uuid4
 
@@ -85,38 +86,44 @@ def _parse_a2a_response(response):
     return None
 
 
+_A2A_MAX_ATTEMPTS = 5
+_A2A_BACKOFF_BASE = 3
+
+
 async def _send_a2a_with_retry(client, request):
-    try:
-        response = await client.send_message(request)
-        logger.info(f"Response received from A2A agent: {response}")
-        return response
-    except Exception as e:
-        if not _is_timeout_error(e):
-            if _is_no_payload_error(e):
-                raise RemoteAgentNoResponseError(
-                    "Remote agent returned no response (missing or invalid payload).",
-                    cause=e,
-                ) from e
-            logger.error("A2A send_message failed: %s", e)
-            raise
-        logger.warning("A2A request timed out, retrying once.")
+    """
+    Send request to A2A client. On timeout, retry up to 4 times (5 attempts total)
+    with exponential backoff (base 3, delays 1s, 3s, 9s, 27s). Only timeout errors
+    are retried; other errors propagate immediately.
+    """
+    for attempt in range(_A2A_MAX_ATTEMPTS):
         try:
             response = await client.send_message(request)
-            logger.info(f"Response received from A2A agent (retry): {response}")
+            logger.info("Response received from A2A agent.")
             return response
-        except Exception as e2:
-            if _is_timeout_error(e2):
-                raise TransportTimeoutError(
-                    "Remote agent did not respond in time (SLIM receive timeout).",
-                    cause=e2,
-                ) from e2
-            if _is_no_payload_error(e2):
-                raise RemoteAgentNoResponseError(
-                    "Remote agent returned no response (missing or invalid payload).",
-                    cause=e2,
-                ) from e2
-            logger.error("A2A send_message failed after retry: %s", e2)
-            raise
+        except Exception as e:
+            if not _is_timeout_error(e):
+                if _is_no_payload_error(e):
+                    raise RemoteAgentNoResponseError(
+                        "Remote agent returned no response (missing or invalid payload).",
+                        cause=e,
+                    ) from e
+                logger.error("A2A send_message failed: %s", e)
+                raise
+            if attempt < _A2A_MAX_ATTEMPTS - 1:
+                delay = _A2A_BACKOFF_BASE ** attempt
+                logger.warning(
+                    "A2A request timed out, retrying (attempt %s/%s) after %ss.",
+                    attempt + 2,
+                    _A2A_MAX_ATTEMPTS,
+                    delay,
+                )
+                await asyncio.sleep(delay)
+                continue
+            raise TransportTimeoutError(
+                "Remote agent did not respond in time (SLIM receive timeout).",
+                cause=e,
+            ) from e
 
 
 @agent(name="exchange_agent")
