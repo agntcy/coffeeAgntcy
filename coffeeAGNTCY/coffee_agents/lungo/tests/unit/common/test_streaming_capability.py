@@ -65,21 +65,23 @@ class TestGetLlmStreamingCapability:
 
 
 class TestRequireStreamingCapability:
+  """Patch _config.ENSURE_STREAMING_LLM on the under-test module so require_streaming_capability sees it. patch() restores the original when the block exits so other tests are unaffected."""
+
   def test_early_return_when_flag_disabled(self):
     """When ENSURE_STREAMING_LLM is not true, require_streaming_capability returns without raising and does not call get_model_info."""
-    with patch(f"{_STREAMING_MODULE}.ENSURE_STREAMING_LLM", False):
+    with patch(f"{_STREAMING_MODULE}._config.ENSURE_STREAMING_LLM", False):
       with patch(f"{_STREAMING_MODULE}.litellm.get_model_info") as mock_get_model_info:
         require_streaming_capability("test_agent", _TEST_MODEL)
         mock_get_model_info.assert_not_called()
 
   def test_does_not_raise_when_capable(self):
-    with patch(f"{_STREAMING_MODULE}.ENSURE_STREAMING_LLM", True):
+    with patch(f"{_STREAMING_MODULE}._config.ENSURE_STREAMING_LLM", True):
       with patch(f"{_STREAMING_MODULE}.litellm.get_model_info", return_value={"supports_native_streaming": True}) as mock_get_model_info:
         require_streaming_capability("test_agent", _TEST_MODEL)
         mock_get_model_info.assert_called_once_with(model=_TEST_MODEL)
 
   def test_raises_streaming_not_supported_error_when_not_capable(self):
-    with patch(f"{_STREAMING_MODULE}.ENSURE_STREAMING_LLM", True):
+    with patch(f"{_STREAMING_MODULE}._config.ENSURE_STREAMING_LLM", True):
       with patch(f"{_STREAMING_MODULE}.litellm.get_model_info", return_value={"supports_native_streaming": False}) as mock_get_model_info:
         with pytest.raises(StreamingNotSupportedError) as exc_info:
           require_streaming_capability("test_agent", _TEST_MODEL)
@@ -90,7 +92,7 @@ class TestRequireStreamingCapability:
         mock_get_model_info.assert_called_once_with(model=_TEST_MODEL)
 
   def test_raises_when_get_model_info_raises(self):
-    with patch(f"{_STREAMING_MODULE}.ENSURE_STREAMING_LLM", True):
+    with patch(f"{_STREAMING_MODULE}._config.ENSURE_STREAMING_LLM", True):
       with patch(f"{_STREAMING_MODULE}.litellm.get_model_info", side_effect=Exception("unknown")) as mock_get_model_info:
         with pytest.raises(StreamingNotSupportedError) as exc_info:
           require_streaming_capability("other", _TEST_MODEL)
@@ -99,7 +101,7 @@ class TestRequireStreamingCapability:
         mock_get_model_info.assert_called_once_with(model=_TEST_MODEL)
 
   def test_optional_agent_name_stored_on_exception(self):
-    with patch(f"{_STREAMING_MODULE}.ENSURE_STREAMING_LLM", True):
+    with patch(f"{_STREAMING_MODULE}._config.ENSURE_STREAMING_LLM", True):
       with patch(f"{_STREAMING_MODULE}.litellm.get_model_info", return_value={"supports_native_streaming": False}) as mock_get_model_info:
         with pytest.raises(StreamingNotSupportedError) as exc_info:
           require_streaming_capability("", _TEST_MODEL)
