@@ -19,6 +19,12 @@ from a2a.types import (
     Role,
 )
 
+from exchange.errors import (
+    TransportTimeoutError,
+    RemoteAgentNoResponseError,
+    _is_timeout_error,
+    _is_no_payload_error,
+)
 from farm.card import AGENT_CARD as farm_agent_card
 
 logger = logging.getLogger("corto.exchange.agent")
@@ -103,36 +109,39 @@ class ExchangeAgent:
             Any: Whatever payload is returned by `client.send_message`.
 
         Raises:
-            Exception: Propagated when transport or message handling fails.
+            TransportTimeoutError: When the request times out after retry.
+            RemoteAgentNoResponseError: When the remote returns no usable response (e.g. missing/invalid payload).
+            Other exceptions (e.g. ValueError, ConnectionError) propagated as-is.
         """
-        try:
-            factory = self.factory
-            a2a_topic = A2AProtocol.create_agent_topic(farm_agent_card)
-            transport = factory.create_transport(
-                DEFAULT_MESSAGE_TRANSPORT,
-                endpoint=TRANSPORT_SERVER_ENDPOINT,
-                # SLIM transport requires a routable name (org/namespace/agent) to build the PyName used for request-reply routing
-                name="default/default/exchange"
-            )
-            client = await factory.create_client(
-                "A2A",
-                agent_topic=a2a_topic,
-                transport=transport)
-
-            request = SendMessageRequest(
-                id=str(uuid4()),
-                params=MessageSendParams(
-                    message=Message(
-                        message_id=str(uuid4()),
-                        role=Role.user,
-                        parts=[Part(TextPart(text=prompt))],
-                    )
+        factory = self.factory
+        a2a_topic = A2AProtocol.create_agent_topic(farm_agent_card)
+        transport = factory.create_transport(
+            DEFAULT_MESSAGE_TRANSPORT,
+            endpoint=TRANSPORT_SERVER_ENDPOINT,
+            name="default/default/exchange"
+        )
+        client = await factory.create_client(
+            "A2A",
+            agent_topic=a2a_topic,
+            transport=transport,
+        )
+        request = SendMessageRequest(
+            id=str(uuid4()),
+            params=MessageSendParams(
+                message=Message(
+                    message_id=str(uuid4()),
+                    role=Role.user,
+                    parts=[Part(TextPart(text=prompt))],
                 )
-            )
+            ),
+        )
 
-            # Send and validate response
-            response = await client.send_message(request)
-            logger.info(f"Response received from A2A agent: {response}")
+        def _parse_response(response):
+            if response is None or getattr(response, "root", None) is None:
+                raise RemoteAgentNoResponseError(
+                    "Remote agent returned no response (missing or invalid payload).",
+                    cause=None,
+                )
             if response.root.result:
                 if not response.root.result.parts:
                     raise ValueError("No response parts found in the message.")
@@ -141,7 +150,37 @@ class ExchangeAgent:
                     return part.text
             elif response.root.error:
                 raise Exception(f"A2A error: {response.error.message}")
+            return None
 
+        try:
+            response = await client.send_message(request)
+            logger.info(f"Response received from A2A agent: {response}")
+            return _parse_response(response)
         except Exception as e:
-            logger.error(f"Error in serve method: {e}")
-            raise Exception(str(e))
+            if not _is_timeout_error(e):
+                if _is_no_payload_error(e):
+                    raise RemoteAgentNoResponseError(
+                        "Remote agent returned no response (missing or invalid payload).",
+                        cause=e,
+                    ) from e
+                logger.error("A2A send_message failed: %s", e)
+                raise
+            logger.warning("A2A request timed out, retrying once.")
+            try:
+                response = await client.send_message(request)
+                logger.info(f"Response received from A2A agent (retry): {response}")
+                return _parse_response(response)
+            except Exception as e2:
+                if _is_timeout_error(e2):
+                    raise TransportTimeoutError(
+                        "Remote agent did not respond in time (SLIM receive timeout).",
+                        cause=e2,
+                    ) from e2
+                if _is_no_payload_error(e2):
+                    raise RemoteAgentNoResponseError(
+                        "Remote agent returned no response (missing or invalid payload).",
+                        cause=e2,
+                    ) from e2
+                logger.error("A2A send_message failed after retry: %s", e2)
+                raise
+
