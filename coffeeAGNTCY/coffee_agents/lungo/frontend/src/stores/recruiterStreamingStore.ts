@@ -4,19 +4,21 @@
  **/
 
 import { create } from "zustand"
+import type { AgentRecord } from "@/types/agent"
 import { RecruiterStreamingEvent } from "@/types/streaming"
 import { getStreamingEndpointForPattern, PATTERNS } from "@/utils/patternUtils"
 import { isLocalDev, parseFetchError } from "@/utils/const.ts"
 
 const isValidRecruiterStreamingEvent = (
-  data: any,
+  data: unknown,
 ): data is { response: RecruiterStreamingEvent; session_id?: string } => {
+  if (!data || typeof data !== "object" || !("response" in data)) return false
+  const res = (data as { response: unknown }).response
   return (
-    data &&
-    typeof data === "object" &&
-    data.response &&
-    typeof data.response === "object" &&
-    typeof data.response.event_type === "string"
+    res !== null &&
+    typeof res === "object" &&
+    "event_type" in res &&
+    typeof (res as RecruiterStreamingEvent).event_type === "string"
   )
 }
 
@@ -28,9 +30,9 @@ interface RecruiterStreamingStoreState {
   abortController: AbortController | null
   sessionId: string | null
   finalMessage: string | null
-  agentRecords: Record<string, any> | null
-  evaluationResults: Record<string, any> | null
-  selectedAgent: Record<string, any> | null
+  agentRecords: Record<string, AgentRecord> | null
+  evaluationResults: Record<string, unknown> | null
+  selectedAgent: Record<string, unknown> | null
   connect: (prompt: string) => Promise<void>
   disconnect: () => void
   reset: () => void

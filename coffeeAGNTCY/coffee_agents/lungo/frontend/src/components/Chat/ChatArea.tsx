@@ -27,7 +27,7 @@ import RecruiterStreamingFeed from "./RecruiterStreamingFeed"
 
 import { cn } from "@/utils/cn.ts"
 import { logger } from "@/utils/logger"
-import { DiscoveryResponseEvent } from "@/components/MainArea/Graph/Directory/types.ts"
+import { DiscoveryResponseEvent } from "@/types/agent"
 
 const DEFAULT_GRAFANA_URL = "http://127.0.0.1:3001"
 const GRAFANA_URL = import.meta.env.VITE_GRAFANA_URL || DEFAULT_GRAFANA_URL

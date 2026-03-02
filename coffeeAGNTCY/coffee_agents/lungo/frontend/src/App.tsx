@@ -40,10 +40,7 @@ import { ThemeProvider } from "@/contexts/ThemeContext"
 import { Message } from "./types/message"
 import { getGraphConfig } from "@/utils/graphConfigs"
 import { PATTERNS, PatternType } from "@/utils/patternUtils"
-import {
-  DiscoveryResponseEvent,
-  AgentRecord,
-} from "@/components/MainArea/Graph/Directory/types.ts"
+import { DiscoveryResponseEvent, AgentRecord } from "@/types/agent"
 
 interface ApiResponse {
   response: string

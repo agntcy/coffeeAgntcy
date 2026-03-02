@@ -10,7 +10,7 @@ import { Message } from "@/types/message"
 import { isLocalDev, parseApiError, Role } from "@/utils/const"
 import { withRetry, RETRY_CONFIG } from "@/utils/retryUtils"
 import { shouldEnableRetries, getApiUrlForPattern } from "@/utils/patternUtils"
-import { AgentRecord } from "@/components/MainArea/Graph/Directory/types.ts"
+import type { AgentRecord } from "@/types/agent"
 
 interface ApiResponse {
   response: string

@@ -37,7 +37,7 @@ import {
   PUBLISH_SUBSCRIBE_CONFIG,
   GROUP_COMMUNICATION_CONFIG,
 } from "@/utils/graphConfigs"
-import { DiscoveryResponseEvent } from "@/components/MainArea/Graph/Directory/types.ts"
+import { DiscoveryResponseEvent } from "@/types/agent"
 
 const proOptions = { hideAttribution: true }
 
