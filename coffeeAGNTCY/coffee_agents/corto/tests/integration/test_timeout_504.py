@@ -6,8 +6,6 @@
 import pytest
 from unittest.mock import patch, MagicMock, AsyncMock
 
-from exchange.errors import TransportTimeoutError
-
 
 @pytest.mark.parametrize(
     "transport_config",
@@ -16,6 +14,7 @@ from exchange.errors import TransportTimeoutError
 )
 def test_timeout_returns_504(supervisor_client, transport_config):
     import exchange.main as exchange_main
+    from exchange.errors import TransportTimeoutError
 
     with patch.object(exchange_main, "exchange_agent", MagicMock()) as mock_agent:
         mock_agent.execute_agent_with_llm = AsyncMock(
