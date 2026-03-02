@@ -3,22 +3,26 @@
  * SPDX-License-Identifier: Apache-2.0
  **/
 
+import { CustomNodeData } from "@/components/MainArea/Graph/Elements/types"
 import { useState, useCallback } from "react"
 
 export type ModalType = "identity" | "badge" | "policy" | null
 
+/** Node data held in modal state; may include modal-only fields like isMcpServer. */
+export type ModalNodeData = CustomNodeData & { isMcpServer?: boolean }
+
 export interface ModalState {
   activeModal: ModalType
-  activeNodeData: any
+  activeNodeData: ModalNodeData | null
   modalPosition: { x: number; y: number }
 }
 
 export interface ModalActions {
   handleOpenIdentityModal: (
-    nodeData: any,
+    nodeData: CustomNodeData,
     position: { x: number; y: number },
     nodeName?: string,
-    data?: any,
+    data?: CustomNodeData,
     isMcpServer?: boolean,
   ) => void
   handleCloseModals: () => void
@@ -31,15 +35,17 @@ export interface UseModalManagerReturn extends ModalState, ModalActions {}
 
 export const useModalManager = (): UseModalManagerReturn => {
   const [activeModal, setActiveModal] = useState<ModalType>(null)
-  const [activeNodeData, setActiveNodeData] = useState<any>(null)
+  const [activeNodeData, setActiveNodeData] = useState<ModalNodeData | null>(
+    null,
+  )
   const [modalPosition, setModalPosition] = useState({ x: 0, y: 0 })
 
   const handleOpenIdentityModal = useCallback(
     (
-      nodeData: any,
+      nodeData: CustomNodeData,
       position: { x: number; y: number },
       _nodeName?: string,
-      _data?: any,
+      _data?: CustomNodeData,
       isMcpServer?: boolean,
     ) => {
       setActiveNodeData({ ...nodeData, isMcpServer })

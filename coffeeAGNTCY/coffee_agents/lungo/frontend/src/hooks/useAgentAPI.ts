@@ -28,7 +28,7 @@ interface UseAgentAPIReturn {
     callbacks?: {
       onStart?: () => void
       onSuccess?: (response: ApiResponse) => void
-      onError?: (error: any) => void
+      onError?: (error: Error) => void
       onRetryAttempt?: (
         attempt: number,
         error: Error,
@@ -114,7 +114,7 @@ export const useAgentAPI = (): UseAgentAPIReturn => {
     callbacks?: {
       onStart?: () => void
       onSuccess?: (response: ApiResponse) => void
-      onError?: (error: any) => void
+      onError?: (error: Error) => void
       onRetryAttempt?: (
         attempt: number,
         error: Error,
@@ -240,7 +240,7 @@ export const useAgentAPI = (): UseAgentAPIReturn => {
       }
 
       if (callbacks?.onError) {
-        callbacks.onError(error)
+        callbacks.onError(error as Error)
       }
     } finally {
       if (requestIdRef.current === myRequestId) {

@@ -6,13 +6,13 @@
 export type LogLevel = "debug" | "info" | "warn" | "error"
 
 class Logger {
-  private isDev = process.env.NODE_ENV === "development"
+  private isDev = import.meta.env.DEV
 
   private log(level: LogLevel, message: string, data?: unknown) {
     if (!this.isDev && level === "debug") return
 
     const prefix = `[${level.toUpperCase()}]`
-
+    /* eslint-disable no-console */
     switch (level) {
       case "debug":
         console.debug(prefix, message, data)
@@ -27,6 +27,7 @@ class Logger {
         console.error(prefix, message, data)
         break
     }
+    /* eslint-enable no-console */
   }
 
   debug(message: string, data?: unknown) {
