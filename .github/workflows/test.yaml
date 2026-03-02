@@ -1,9 +1,19 @@
 name: Integration Tests
 on:
-  pull_request:
-    branches: [main]
   push:
-    branches: [main]
+    branches:
+      - main
+    paths:
+      - 'coffeeAGNTCY/coffee_agents/corto/**'
+      - 'coffeeAGNTCY/coffee_agents/lungo/**'
+      - '!coffeeAGNTCY/coffee_agents/*/deployment/helm/**'
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'coffeeAGNTCY/coffee_agents/corto/**'
+      - 'coffeeAGNTCY/coffee_agents/lungo/**'
+      - '!coffeeAGNTCY/coffee_agents/*/deployment/helm/**'
   workflow_call:
     inputs:
       pip_overrides:
@@ -21,20 +31,65 @@ on:
         required: false
         type: string
         default: ""
+
+env:
+  CORTO_DIR: coffeeAGNTCY/coffee_agents/corto
+  LUNGO_DIR: coffeeAGNTCY/coffee_agents/lungo
+
 jobs:
-  integration-tests:
+  subprojects-to-test:
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        suite: [coffeeAGNTCY/coffee_agents/corto, coffeeAGNTCY/coffee_agents/lungo]
+    outputs:
+      test_corto: ${{ steps.check-subprojects.outputs.test_corto }}
+      test_lungo: ${{ steps.check-subprojects.outputs.test_lungo }}
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+      
+      - name: Detect changed paths for main sub-projects
+        id: check-subprojects
+        run: |
+          test_corto=false
+          test_lungo=false
+
+          if [[ "${{ github.event_name }}" == "push" && "${{ github.ref }}" == refs/heads/main ]]; then
+            test_corto=true
+            test_lungo=true
+          elif [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            base="${{ github.event.pull_request.base.sha }}"
+            head="${{ github.event.pull_request.head.sha }}"
+            echo "Commits to compare: base=$base head=$head"
+
+            # git diff --quiet implies --exit-code (0 means no changes, 1 means changes were found)
+            test_corto=$(git diff --quiet --ignore-blank-lines $base $head "$CORTO_DIR" 2>/dev/null && echo false || echo true)
+            test_lungo=$(git diff --quiet --ignore-blank-lines $base $head "$LUNGO_DIR" 2>/dev/null && echo false || echo true)
+          fi
+
+          # Debug resulting test flags
+          echo "Subprojects to test: corto=$test_corto lungo=$test_lungo"
+
+          # Output test flags for subsequent use
+          echo "test_corto=$test_corto" >> $GITHUB_OUTPUT
+          echo "test_lungo=$test_lungo" >> $GITHUB_OUTPUT
+
+
+  integration-tests-corto:
+    needs: subprojects-to-test
+    if: ${{ needs.subprojects-to-test.outputs.test_corto == 'true' }}
+    runs-on: ubuntu-latest
 
     defaults:
       run:
-        working-directory: ${{ matrix.suite }}
+        working-directory: ${{ env.CORTO_DIR }}
         
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Set up Python
         uses: actions/setup-python@v4
@@ -42,25 +97,25 @@ jobs:
           python-version: '3.13'
 
       - name: Set up uv
-        uses: astral-sh/setup-uv@v6
+        uses: astral-sh/setup-uv@v7
 
-      - name: Apply uv overrides/constraints (if applicable) — ${{ matrix.suite }}
+      - name: Apply uv overrides/constraints (if applicable) — ${{ env.CORTO_DIR }}
         if: ${{ inputs.pip_overrides != '' || inputs.pip_constraints != '' }}
         uses: ./.github/actions/apply-uv-overrides
         with:
-          project_dir: ${{ matrix.suite }}
+          project_dir: ${{ env.CORTO_DIR }}
           pip_overrides: ${{ inputs.pip_overrides }}
           pip_constraints: ${{ inputs.pip_constraints }}
 
-      - name: Apply compose image overrides (if any) — ${{ matrix.suite }}
+      - name: Apply compose image overrides (if any) — ${{ env.CORTO_DIR }}
         if: ${{ inputs.docker_overrides != '' }}
         uses: ./.github/actions/apply-container-overrides
         with:
-          project_dir: ${{ matrix.suite }}/
+          project_dir: ${{ env.CORTO_DIR }}/
           compose_file: docker-compose.yaml
           docker_overrides: ${{ inputs.docker_overrides }}
 
-      - name: Resolve & install — ${{ matrix.suite }}
+      - name: Resolve & install — ${{ env.CORTO_DIR }}
         run: |
           uv lock --upgrade
           uv sync --extra dev
@@ -74,5 +129,59 @@ jobs:
           AZURE_API_VERSION=${{ secrets.AZURE_API_VERSION }}
           EOF
 
-      - name: Run integration tests — ${{ matrix.suite }}
+      - name: Run integration tests — ${{ env.CORTO_DIR }}
+        run: uv run pytest -s
+
+  integration-tests-lungo:
+    needs: subprojects-to-test
+    if: ${{ needs.subprojects-to-test.outputs.test_lungo == 'true' }}
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: ${{ env.LUNGO_DIR }}
+        
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.13'
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v7
+
+      - name: Apply uv overrides/constraints (if applicable) — ${{ env.LUNGO_DIR }}
+        if: ${{ inputs.pip_overrides != '' || inputs.pip_constraints != '' }}
+        uses: ./.github/actions/apply-uv-overrides
+        with:
+          project_dir: ${{ env.LUNGO_DIR }}
+          pip_overrides: ${{ inputs.pip_overrides }}
+          pip_constraints: ${{ inputs.pip_constraints }}
+
+      - name: Apply compose image overrides (if any) — ${{ env.LUNGO_DIR }}
+        if: ${{ inputs.docker_overrides != '' }}
+        uses: ./.github/actions/apply-container-overrides
+        with:
+          project_dir: ${{ env.LUNGO_DIR }}/
+          compose_file: docker-compose.yaml
+          docker_overrides: ${{ inputs.docker_overrides }}
+
+      - name: Resolve & install — ${{ env.LUNGO_DIR }}
+        run: |
+          uv lock --upgrade
+          uv sync --extra dev
+      
+      - name: Create CI env file
+        run: |
+          cat > .env <<'EOF'
+          LLM_MODEL=${{ secrets.LLM_MODEL }}
+          AZURE_API_KEY=${{ secrets.AZURE_API_KEY }}
+          AZURE_API_BASE=${{ secrets.AZURE_API_BASE }}
+          AZURE_API_VERSION=${{ secrets.AZURE_API_VERSION }}
+          EOF
+
+      - name: Run integration tests — ${{ env.LUNGO_DIR }}
         run: uv run pytest -s
