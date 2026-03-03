@@ -30,6 +30,7 @@ import {
   useRecruiterAgentRecords,
   useRecruiterStreamingSessionId,
   useRecruiterSelectedAgent,
+  useRecruiterEvaluationResults,
 } from "@/stores/recruiterStreamingStore"
 import Navigation from "@/components/Navigation/Navigation"
 import MainArea from "@/components/MainArea/MainArea"
@@ -73,6 +74,7 @@ const App: React.FC = () => {
   const recruiterAgentRecords = useRecruiterAgentRecords()
   const recruiterSessionId = useRecruiterStreamingSessionId()
   const recruiterSelectedAgent = useRecruiterSelectedAgent()
+  const recruiterEvaluationResults = useRecruiterEvaluationResults()
   const { connect: connectRecruiter, reset: resetRecruiter } =
     useRecruiterStreamingActions()
 
@@ -431,7 +433,11 @@ const App: React.FC = () => {
                 groupCommResponseReceived={groupCommResponseReceived}
                 onNodeHighlight={handleNodeHighlightSetup}
                 discoveryResponseEvent={discoveryResponseEvent}
-                selectedAgentCid={recruiterSelectedAgent?.cid ?? null}
+                selectedAgentCid={
+                  typeof recruiterSelectedAgent?.cid === "string"
+                    ? recruiterSelectedAgent.cid
+                    : null
+                }
               />
             </div>
             <div className="flex min-h-[76px] w-full flex-none flex-col items-center justify-center gap-0 bg-overlay-background p-0 md:min-h-[96px]">
@@ -477,6 +483,11 @@ const App: React.FC = () => {
                   events: recruiterEvents,
                   status: recruiterStatus,
                   error: recruiterError,
+                  sessionId: recruiterSessionId,
+                  finalMessage: recruiterFinalMessage,
+                  agentRecords: recruiterAgentRecords,
+                  evaluationResults: recruiterEvaluationResults,
+                  selectedAgent: recruiterSelectedAgent,
                 }}
                 onDiscoveryResponse={handleDiscoveryResponse}
               />

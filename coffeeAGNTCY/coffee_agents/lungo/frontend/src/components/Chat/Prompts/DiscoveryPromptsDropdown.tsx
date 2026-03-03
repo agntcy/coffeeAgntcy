@@ -5,7 +5,7 @@
 
 import React, { useState, useRef, useEffect } from "react"
 import LoadingSpinner from "./LoadingSpinner"
-import { PromptCategory } from "./PromptTypes"
+import { PromptCategory, Prompt } from "./PromptTypes"
 
 const DEFAULT_DISCOVERY_APP_API_URL = "http://127.0.0.1:8882"
 const DISCOVERY_APP_API_URL =
@@ -47,7 +47,7 @@ const DiscoveryPromptsDropdown: React.FC<DiscoveryPromptsDropdownProps> = ({
             data as Record<string, unknown>,
           ).map(([key, value]) => ({
             name: key,
-            prompts: Array.isArray(value) ? (value as any[]) : [],
+            prompts: Array.isArray(value) ? (value as Prompt[]) : [],
           }))
 
           setCategories(nextCategories)
@@ -119,7 +119,7 @@ const DiscoveryPromptsDropdown: React.FC<DiscoveryPromptsDropdownProps> = ({
 
   const handleToggle = () => setIsOpen((v) => !v)
 
-  const handleItemClick = (item: any) => {
+  const handleItemClick = (item: string | Prompt) => {
     const query = typeof item === "string" ? item : item?.prompt
     if (typeof query === "string" && query.trim().length > 0) {
       onSelect(query)
@@ -171,7 +171,7 @@ const DiscoveryPromptsDropdown: React.FC<DiscoveryPromptsDropdownProps> = ({
             <div className="px-2 py-2">
               {categories.map((category, index) => (
                 <div key={`category-${index}`} className="px-2 py-2">
-                  {category.prompts.map((item: any, idx: number) => (
+                  {category.prompts.map((item: Prompt, idx: number) => (
                     <div
                       key={`prompt-${index}-${idx}`}
                       className="mx-0.5 my-0.5 flex min-h-10 w-[calc(100%-4px)] cursor-pointer flex-col items-center gap-y-2 rounded bg-chat-dropdown-background px-2 py-[6px] transition-colors duration-200 ease-in-out hover:bg-chat-background-hover"

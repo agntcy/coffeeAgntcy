@@ -516,8 +516,8 @@ export const getGraphConfig = (
 }
 
 export const updateTransportLabels = async (
-  setNodes: (updater: (nodes: any[]) => any[]) => void,
-  setEdges: (updater: (edges: any[]) => any[]) => void,
+  setNodes: (updater: (nodes: Node[]) => Node[]) => void,
+  setEdges: (updater: (edges: Edge[]) => Edge[]) => void,
   pattern?: string,
   isStreaming?: boolean,
 ): Promise<void> => {
@@ -539,8 +539,8 @@ export const updateTransportLabels = async (
       ? urlsConfig.github.transports.streaming
       : urlsConfig.github.transports.regular
 
-    setNodes((nodes: any[]) =>
-      nodes.map((node: any) =>
+    setNodes((nodes: Node[]) =>
+      nodes.map((node: Node) =>
         node.id === NODE_IDS.TRANSPORT
           ? {
               ...node,
@@ -559,8 +559,8 @@ export const updateTransportLabels = async (
       ),
     )
 
-    setEdges((edges: any[]) =>
-      edges.map((edge: any) => {
+    setEdges((edges: Edge[]) =>
+      edges.map((edge: Edge) => {
         if (edge.id === EDGE_IDS.COLOMBIA_TO_MCP) {
           return {
             ...edge,

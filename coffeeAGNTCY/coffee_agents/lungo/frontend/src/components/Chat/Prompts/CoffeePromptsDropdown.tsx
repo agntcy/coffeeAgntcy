@@ -52,10 +52,15 @@ const CoffeePromptsDropdown: React.FC<CoffeePromptsDropdownProps> = ({
 
         console.log("Fetched prompts data:", data)
 
-        const categories = Object.entries(data).map(([key, value]) => ({
-          name: key,
-          prompts: Array.isArray(value) ? value : [], // Directly use the array if it's valid
-        }))
+        const categories =
+          data !== null && typeof data === "object" && !Array.isArray(data)
+            ? Object.entries(data as Record<string, unknown>).map(
+                ([key, value]) => ({
+                  name: key,
+                  prompts: Array.isArray(value) ? value : [],
+                }),
+              )
+            : []
         setCategories(categories)
 
         // Retry if all categories are empty

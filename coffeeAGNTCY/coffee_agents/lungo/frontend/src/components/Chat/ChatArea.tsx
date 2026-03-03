@@ -27,7 +27,12 @@ import RecruiterStreamingFeed from "./RecruiterStreamingFeed"
 
 import { cn } from "@/utils/cn.ts"
 import { logger } from "@/utils/logger"
-import { DiscoveryResponseEvent } from "@/types/agent"
+import type { GraphConfig } from "@/utils/graphConfigs"
+import { AgentRecord, DiscoveryResponseEvent } from "@/types/agent"
+import type {
+  AuctionStreamingState,
+  RecruiterStreamingState,
+} from "@/types/streaming"
 
 const DEFAULT_GRAFANA_URL = "http://127.0.0.1:3001"
 const GRAFANA_URL = import.meta.env.VITE_GRAFANA_URL || DEFAULT_GRAFANA_URL
@@ -54,7 +59,7 @@ interface ChatAreaProps {
   onStreamComplete?: () => void
   onSenderHighlight?: (nodeId: string) => void
   pattern?: string
-  graphConfig?: any
+  graphConfig?: GraphConfig
   onDropdownSelect?: (query: string) => void
   onUserInput?: (query: string) => void
   onApiResponse?: (response: string, isError?: boolean) => void
@@ -65,8 +70,8 @@ interface ChatAreaProps {
   isAgentLoading?: boolean
   apiError: boolean
   chatRef?: React.RefObject<HTMLDivElement | null>
-  auctionState?: any
-  recruiterState?: any
+  auctionState?: AuctionStreamingState
+  recruiterState?: RecruiterStreamingState
   grafanaUrl?: string
   onDiscoveryResponse?: (evt: DiscoveryResponseEvent) => void
 }
@@ -109,9 +114,9 @@ const ChatArea: React.FC<ChatAreaProps> = ({
 
   const onApiSuccess = useCallback(
     (apiResponse: {
-      agent_records: any
       response: string
       session_id?: string
+      agent_records?: AgentRecord[]
     }) => {
       if (pattern !== "on_demand_discovery") {
         return
