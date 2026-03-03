@@ -1,6 +1,7 @@
 # Copyright AGNTCY Contributors (https://github.com/agntcy)
 # SPDX-License-Identifier: Apache-2.0
 
+import asyncio
 import logging
 from uuid import uuid4
 
@@ -19,6 +20,12 @@ from a2a.types import (
     Role,
 )
 
+from exchange.errors import (
+    TransportTimeoutError,
+    RemoteAgentNoResponseError,
+    _is_timeout_error,
+    _is_no_payload_error,
+)
 from farm.card import AGENT_CARD as farm_agent_card
 
 logger = logging.getLogger("corto.exchange.agent")
@@ -47,6 +54,76 @@ system_prompt = (
     "You are an assistant that checks if the user prompt is relevant to coffee flavor, taste or sensory profile. "
     "If relevant, call the a2a_client_send_message with the prompt. Otherwise, respond with 'I'm sorry, I cannot assist with that request. Please ask about coffee flavor or taste.'"
 )
+
+
+def _build_send_message_request(prompt: str) -> SendMessageRequest:
+    return SendMessageRequest(
+        id=str(uuid4()),
+        params=MessageSendParams(
+            message=Message(
+                message_id=str(uuid4()),
+                role=Role.user,
+                parts=[Part(TextPart(text=prompt))],
+            )
+        ),
+    )
+
+
+def _parse_a2a_response(response):
+    if response is None or getattr(response, "root", None) is None:
+        raise RemoteAgentNoResponseError(
+            "Remote agent returned no response (missing or invalid payload).",
+            cause=None,
+        )
+    if response.root.result:
+        if not response.root.result.parts:
+            raise ValueError("No response parts found in the message.")
+        part = response.root.result.parts[0].root
+        if hasattr(part, "text"):
+            return part.text
+    elif response.root.error:
+        raise Exception(f"A2A error: {response.root.error.message}")
+    return None
+
+
+_A2A_MAX_ATTEMPTS = 5
+_A2A_BACKOFF_BASE = 3
+
+
+async def _send_a2a_with_retry(client, request):
+    """
+    Send request to A2A client. On timeout, retry up to 4 times (5 attempts total)
+    with exponential backoff (base 3, delays 1s, 3s, 9s, 27s). Only timeout errors
+    are retried; other errors propagate immediately.
+    """
+    for attempt in range(_A2A_MAX_ATTEMPTS):
+        try:
+            response = await client.send_message(request)
+            logger.info("Response received from A2A agent.")
+            return response
+        except Exception as e:
+            if not _is_timeout_error(e):
+                if _is_no_payload_error(e):
+                    raise RemoteAgentNoResponseError(
+                        "Remote agent returned no response (missing or invalid payload).",
+                        cause=e,
+                    ) from e
+                logger.error("A2A send_message failed: %s", e)
+                raise
+            if attempt < _A2A_MAX_ATTEMPTS - 1:
+                delay = _A2A_BACKOFF_BASE ** attempt
+                logger.warning(
+                    "A2A request timed out, retrying (attempt %s/%s) after %ss.",
+                    attempt + 2,
+                    _A2A_MAX_ATTEMPTS,
+                    delay,
+                )
+                await asyncio.sleep(delay)
+                continue
+            raise TransportTimeoutError(
+                "Remote agent did not respond in time (SLIM receive timeout).",
+                cause=e,
+            ) from e
 
 
 @agent(name="exchange_agent")
@@ -103,45 +180,23 @@ class ExchangeAgent:
             Any: Whatever payload is returned by `client.send_message`.
 
         Raises:
-            Exception: Propagated when transport or message handling fails.
+            TransportTimeoutError: When the request times out after retry.
+            RemoteAgentNoResponseError: When the remote returns no usable response (e.g. missing/invalid payload).
+            Other exceptions (e.g. ValueError, ConnectionError) propagated as-is.
         """
-        try:
-            factory = self.factory
-            a2a_topic = A2AProtocol.create_agent_topic(farm_agent_card)
-            transport = factory.create_transport(
-                DEFAULT_MESSAGE_TRANSPORT,
-                endpoint=TRANSPORT_SERVER_ENDPOINT,
-                # SLIM transport requires a routable name (org/namespace/agent) to build the PyName used for request-reply routing
-                name="default/default/exchange"
-            )
-            client = await factory.create_client(
-                "A2A",
-                agent_topic=a2a_topic,
-                transport=transport)
+        factory = self.factory
+        a2a_topic = A2AProtocol.create_agent_topic(farm_agent_card)
+        transport = factory.create_transport(
+            DEFAULT_MESSAGE_TRANSPORT,
+            endpoint=TRANSPORT_SERVER_ENDPOINT,
+            name="default/default/exchange"  # SLIM transport requires a routable name (org/namespace/agent) to build the PyName used for request-reply routing
+        )
+        client = await factory.create_client(
+            "A2A",
+            agent_topic=a2a_topic,
+            transport=transport,
+        )
+        request = _build_send_message_request(prompt)
+        response = await _send_a2a_with_retry(client, request)
+        return _parse_a2a_response(response)
 
-            request = SendMessageRequest(
-                id=str(uuid4()),
-                params=MessageSendParams(
-                    message=Message(
-                        message_id=str(uuid4()),
-                        role=Role.user,
-                        parts=[Part(TextPart(text=prompt))],
-                    )
-                )
-            )
-
-            # Send and validate response
-            response = await client.send_message(request)
-            logger.info(f"Response received from A2A agent: {response}")
-            if response.root.result:
-                if not response.root.result.parts:
-                    raise ValueError("No response parts found in the message.")
-                part = response.root.result.parts[0].root
-                if hasattr(part, "text"):
-                    return part.text
-            elif response.root.error:
-                raise Exception(f"A2A error: {response.error.message}")
-
-        except Exception as e:
-            logger.error(f"Error in serve method: {e}")
-            raise Exception(str(e))

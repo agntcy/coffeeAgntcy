@@ -17,6 +17,7 @@ from common.version import get_version_info
 
 from config.logging_config import setup_logging
 from exchange.agent import ExchangeAgent
+from exchange.errors import TransportTimeoutError, RemoteAgentNoResponseError
 
 setup_logging()
 logger = logging.getLogger("corto.supervisor.main")
@@ -52,7 +53,8 @@ async def handle_prompt(request: PromptRequest):
       dict: A dictionary containing the agent's response.
 
   Raises:
-      HTTPException: 400 for invalid input, 500 for server-side errors.
+      HTTPException: 400 for invalid input, 504 for gateway timeout (remote agent did not respond in time),
+      502 for bad gateway (remote agent returned no response / invalid payload), 500 for other server-side errors.
   """
   try:
     with session_start() as session_id:
@@ -63,6 +65,18 @@ async def handle_prompt(request: PromptRequest):
   except ValueError as ve:
     logger.exception(f"ValueError occurred: {str(ve)}")
     raise HTTPException(status_code=400, detail=str(ve))
+  except TransportTimeoutError as e:
+    logger.exception("Transport timeout: %s", e)
+    detail = "Remote agent did not respond in time (SLIM receive timeout)."
+    if e.__cause__ is not None:
+      detail = f"{detail} Cause: {e.__cause__}"
+    raise HTTPException(status_code=504, detail=detail)
+  except RemoteAgentNoResponseError as e:
+    logger.exception("Remote agent returned no response: %s", e)
+    detail = "Remote agent returned no response (missing or invalid payload)."
+    if e.__cause__ is not None:
+      detail = f"{detail} Cause: {e.__cause__}"
+    raise HTTPException(status_code=502, detail=detail)
   except Exception as e:
     logger.exception(f"An error occurred: {str(e)}")
     raise HTTPException(status_code=500, detail=f"Operation failed: {str(e)}")
