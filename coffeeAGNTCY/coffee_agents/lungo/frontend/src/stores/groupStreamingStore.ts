@@ -11,7 +11,9 @@ const DEFAULT_LOGISTICS_APP_API_URL = "http://127.0.0.1:9090"
 const LOGISTICS_APP_API_URL =
   import.meta.env.VITE_LOGISTICS_APP_API_URL || DEFAULT_LOGISTICS_APP_API_URL
 
-const isValidLogisticsStreamStep = (data: any): data is LogisticsStreamStep => {
+const isValidLogisticsStreamStep = (
+  data: unknown,
+): data is LogisticsStreamStep => {
   if (!data || typeof data !== "object") {
     return false
   }
@@ -23,10 +25,12 @@ const isValidLogisticsStreamStep = (data: any): data is LogisticsStreamStep => {
     "message",
     "timestamp",
     "state",
-  ]
+  ] as const
 
+  const obj = data as Record<string, unknown>
   for (const field of requiredStringFields) {
-    if (typeof data[field] !== "string" || data[field].trim() === "") {
+    const value = obj[field]
+    if (typeof value !== "string" || value.trim() === "") {
       return false
     }
   }

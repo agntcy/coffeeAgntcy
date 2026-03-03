@@ -81,7 +81,7 @@ const CustomNode: React.FC<CustomNodeProps> = ({
   const handleAgentDirectoryClick = (e: React.MouseEvent) => {
     e.stopPropagation()
     e.preventDefault()
-    if (nodeRef.current && data.onOpenOasfModal) {
+    if (nodeRef.current && typeof data.onOpenOasfModal === "function") {
       const buttonRect = (
         e.currentTarget as HTMLElement
       ).getBoundingClientRect()

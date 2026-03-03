@@ -10,7 +10,7 @@ export interface PolicyData {
       id: string
       name: string
       description: string
-      tasks: any[]
+      tasks: unknown[]
       action: string
       needsApproval: boolean
       createdAt: string
@@ -41,8 +41,8 @@ export interface BadgeData {
   id: string
   issuanceDate: string
   expirationDate: string
-  credentialSchema: any[]
-  credentialStatus: any[]
+  credentialSchema: unknown[]
+  credentialStatus: unknown[]
   proof: {
     type: string
     proofPurpose: string

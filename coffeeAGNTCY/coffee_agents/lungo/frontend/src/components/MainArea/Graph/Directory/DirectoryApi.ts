@@ -6,10 +6,24 @@
 import axios from "axios"
 import { getApiUrlForPattern, PATTERNS } from "@/utils/patternUtils"
 import { IdentityServiceError } from "@/components/MainArea/Graph/Identity/IdentityApi"
+import type { CustomNodeData } from "../Elements/types"
 
-export type OasfRecord = any // Replace with a stricter type if desired
+/** OASF record from directory API; URL fields used for link in modal. */
+export interface OasfRecord {
+  /** Directory URL (snake_case from API). */
+  directory_url?: string
+  /** Directory URL (camelCase variant). */
+  directoryUrl?: string
+  url?: string
+  [key: string]: unknown
+}
 
-const getSlugFromNodeData = (nodeData: any): string => {
+const getSlugFromNodeData = (
+  nodeData: CustomNodeData | null | undefined,
+): string => {
+  if (!nodeData) {
+    throw new Error("nodeData is required for slug resolution")
+  }
   if (nodeData.slug) {
     return nodeData.slug
   }
@@ -63,7 +77,15 @@ const getSlugFromNodeData = (nodeData: any): string => {
   throw new Error(`No valid slug mapping found for node: ${label1} ${label2}`)
 }
 
-export const fetchOasfRecord = async (nodeData: any): Promise<OasfRecord> => {
+/** Node data that may already include a cached OASF record. */
+type NodeDataForOasf =
+  | (CustomNodeData & { oasfRecord?: OasfRecord })
+  | null
+  | undefined
+
+export const fetchOasfRecord = async (
+  nodeData: NodeDataForOasf,
+): Promise<OasfRecord> => {
   if (nodeData?.oasfRecord) {
     return nodeData.oasfRecord
   }

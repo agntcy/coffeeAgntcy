@@ -98,19 +98,32 @@ export type ApiErrorInfo = {
   raw?: unknown
 }
 
-export const parseApiError = (error: any): ApiErrorInfo => {
-  if (error?.response) {
-    const status = error.response.status
-    const data = error.response.data
-    const message =
-      typeof data === "string"
-        ? data
-        : data?.message || data?.detail || "Request failed"
-
-    return {
-      status,
-      message,
+function getMessageFromUnknown(data: unknown): string {
+  if (typeof data === "string") return data
+  if (data !== null && typeof data === "object") {
+    const obj = data as Record<string, unknown>
+    const msg = obj.message ?? obj.detail
+    if (typeof msg === "string") {
+      return msg
+    } else {
+      return "Request failed"
     }
+  }
+  return "Request failed"
+}
+
+export const parseApiError = (error: unknown): ApiErrorInfo => {
+  if (
+    error !== null &&
+    typeof error === "object" &&
+    "response" in error &&
+    error.response !== null &&
+    typeof error.response === "object"
+  ) {
+    const res = error.response as { status?: number; data?: unknown }
+    const status = res.status
+    const message = getMessageFromUnknown(res.data)
+    return { status, message }
   }
 
   return {
@@ -134,16 +147,27 @@ export const parseFetchError = async (
 
     if (contentType.includes("application/json")) {
       try {
-        const body = JSON.parse(raw)
+        const body: unknown = JSON.parse(raw)
 
-        if (body && typeof body === "object") {
+        if (body !== null && typeof body === "object" && !Array.isArray(body)) {
+          const obj = body as Record<string, unknown>
+          const detail = obj.detail
+          const msg = obj.message
+          const title = obj.title
+          const errors = obj.errors
+          const firstError =
+            Array.isArray(errors) && errors.length > 0 ? errors[0] : undefined
+          const fallback =
+            typeof firstError === "string"
+              ? firstError
+              : firstError !== undefined
+                ? String(firstError)
+                : undefined
           message =
-            (body as any).detail ||
-            (body as any).message ||
-            (body as any).title ||
-            (Array.isArray((body as any).errors)
-              ? (body as any).errors[0]
-              : undefined) ||
+            (typeof detail === "string" ? detail : undefined) ??
+            (typeof msg === "string" ? msg : undefined) ??
+            (typeof title === "string" ? title : undefined) ??
+            fallback ??
             JSON.stringify(body)
         } else if (typeof body === "string") {
           message = body

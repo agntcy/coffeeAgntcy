@@ -1,4 +1,5 @@
 import type { AgentRecord } from "@/types/agent"
+import { GraphConfig } from "@/utils/graphConfigs"
 
 interface LogisticsStreamStep {
   order_id: string
@@ -16,6 +17,7 @@ interface LogisticsStreamStep {
 
 interface AuctionStreamingResponse {
   response: string
+  session_id?: string
 }
 
 interface GroupCommunicationFeedProps {
@@ -24,7 +26,7 @@ interface GroupCommunicationFeedProps {
   prompt: string
   onStreamComplete?: () => void
   onSenderHighlight?: (nodeId: string) => void
-  graphConfig?: any
+  graphConfig?: GraphConfig
   executionKey?: string
   apiError: boolean
 }

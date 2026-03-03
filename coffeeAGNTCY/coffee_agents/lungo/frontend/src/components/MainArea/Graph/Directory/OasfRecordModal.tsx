@@ -22,7 +22,8 @@ export interface OasfRecordModalProps {
   isOpen: boolean
   onClose: () => void
   nodeName: string
-  nodeData: CustomNodeData
+  /** When null/undefined the modal skips fetch (see useEffect). */
+  nodeData?: CustomNodeData | null
   position: { x: number; y: number }
 }
 
@@ -71,13 +72,16 @@ const OasfRecordModal: React.FC<OasfRecordModalProps> = ({
 
   if (!isOpen) return null
 
-  const directoryUrl =
-    (nodeData as any)?.agentDirectoryLink ||
-    (nodeData as any)?.directoryUrl ||
-    (record as any)?.directory_url ||
-    (record as any)?.directoryUrl ||
-    (record as any)?.url ||
-    ""
+  const nodeDataExt = nodeData as Record<string, unknown> | null | undefined
+  const recordObj = record as Record<string, unknown> | null
+  const directoryUrl = String(
+    nodeData?.agentDirectoryLink ??
+      nodeDataExt?.directoryUrl ??
+      recordObj?.directory_url ??
+      recordObj?.directoryUrl ??
+      recordObj?.url ??
+      "",
+  )
 
   const handleModalClick = (e: React.MouseEvent) => e.stopPropagation()
 

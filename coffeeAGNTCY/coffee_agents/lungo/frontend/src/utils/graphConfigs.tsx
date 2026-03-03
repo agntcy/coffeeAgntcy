@@ -452,10 +452,7 @@ const DISCOVERY_CONFIG: GraphConfig = {
   ],
 }
 
-export const getGraphConfig = (
-  pattern: string,
-  //_isConnected?: boolean, // TODO: Remove comment if not used anymore
-): GraphConfig => {
+export const getGraphConfig = (pattern: string): GraphConfig => {
   switch (pattern) {
     case "publish_subscribe":
       return {

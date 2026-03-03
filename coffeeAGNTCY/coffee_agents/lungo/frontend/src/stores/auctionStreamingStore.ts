@@ -9,14 +9,12 @@ import { getStreamingEndpointForPattern, PATTERNS } from "@/utils/patternUtils"
 import { isLocalDev, parseFetchError } from "@/utils/const.ts"
 
 const isValidAuctionStreamingResponse = (
-  data: any,
+  data: unknown,
 ): data is AuctionStreamingResponse => {
-  return (
-    data &&
-    typeof data === "object" &&
-    typeof data.response === "string" &&
-    data.response.trim() !== ""
-  )
+  if (!data || typeof data !== "object") return false
+  const obj = data as Record<string, unknown>
+  const response = obj.response
+  return typeof response === "string" && response.trim() !== ""
 }
 
 interface StreamingState {

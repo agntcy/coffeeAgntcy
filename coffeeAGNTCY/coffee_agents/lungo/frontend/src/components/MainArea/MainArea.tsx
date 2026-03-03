@@ -37,7 +37,8 @@ import {
   PUBLISH_SUBSCRIBE_CONFIG,
   GROUP_COMMUNICATION_CONFIG,
 } from "@/utils/graphConfigs"
-import { DiscoveryResponseEvent } from "@/types/agent"
+import { AgentRecord, DiscoveryResponseEvent } from "@/types/agent"
+import type { CustomNodeData } from "./Graph/Elements/types"
 
 const proOptions = { hideAttribution: true }
 
@@ -91,7 +92,7 @@ const MainArea: React.FC<MainAreaProps> = ({
   const fitViewWithViewport = useViewportAwareFitView()
   const isGroupCommConnected =
     pattern !== "group_communication" || groupCommResponseReceived
-  const config: GraphConfig = getGraphConfig(pattern, isGroupCommConnected)
+  const config: GraphConfig = getGraphConfig(pattern)
 
   const [nodesDraggable, setNodesDraggable] = useState(true)
   const [nodesConnectable, setNodesConnectable] = useState(true)
@@ -116,14 +117,16 @@ const MainArea: React.FC<MainAreaProps> = ({
 
   // OASF Modal state
   const [oasfModalOpen, setOasfModalOpen] = useState(false)
-  const [oasfModalData, setOasfModalData] = useState<any>(null)
+  const [oasfModalData, setOasfModalData] = useState<CustomNodeData | null>(
+    null,
+  )
   const [oasfModalPosition, setOasfModalPosition] = useState<{
     x: number
     y: number
   }>({ x: 0, y: 0 })
 
   const handleOpenOasfModal = useCallback(
-    (nodeData: any, position: { x: number; y: number }) => {
+    (nodeData: CustomNodeData, position: { x: number; y: number }) => {
       setOasfModalData(nodeData)
       setOasfModalPosition(position)
       setOasfModalOpen(true)
@@ -135,9 +138,8 @@ const MainArea: React.FC<MainAreaProps> = ({
     (_evt: DiscoveryResponseEvent) => {
       console.log("Adding discovery response graph for event:", _evt)
 
-      const raw = (_evt as any)?.agent_records as
-        | Record<string, any>
-        | undefined
+      const raw = (_evt as { agent_records?: Record<string, AgentRecord> })
+        ?.agent_records
       if (!raw || typeof raw !== "object" || Array.isArray(raw)) return
 
       const entries = Object.entries(raw)
@@ -228,8 +230,8 @@ const MainArea: React.FC<MainAreaProps> = ({
         const existingIds = new Set(prevNodes.map((n) => n.id))
         const existingNames = new Set(
           prevNodes
-            .map((n: any) =>
-              String(n?.data?.label1 ?? "")
+            .map((n) =>
+              String((n.data as Record<string, unknown>)?.label1 ?? "")
                 .trim()
                 .toLowerCase(),
             )
@@ -237,7 +239,9 @@ const MainArea: React.FC<MainAreaProps> = ({
         )
         // Also track existing agentCid values to prevent duplicates from different IDs
         const existingCids = new Set(
-          prevNodes.map((n: any) => n?.data?.agentCid).filter(Boolean),
+          prevNodes
+            .map((n) => (n.data as Record<string, unknown>)?.agentCid)
+            .filter(Boolean),
         )
 
         const recruiterNode = prevNodes.find((n) => n.id === recruiterNodeId)
@@ -257,7 +261,10 @@ const MainArea: React.FC<MainAreaProps> = ({
           const alreadyExists = prevNodes.some(
             (n) =>
               n.id.startsWith("discovery-") &&
-              hasKeyword(String((n.data as any)?.label1 ?? ""), kw),
+              hasKeyword(
+                String((n.data as Record<string, unknown>)?.label1 ?? ""),
+                kw,
+              ),
           )
           return !alreadyExists
         })
@@ -407,8 +414,8 @@ const MainArea: React.FC<MainAreaProps> = ({
   const nodeAgentCidKey = useMemo(
     () =>
       nodes
-        .filter((n: any) => n.data?.agentCid)
-        .map((n: any) => `${n.id}:${n.data.agentCid}`)
+        .filter((n) => (n.data as Record<string, unknown>)?.agentCid)
+        .map((n) => `${n.id}:${(n.data as Record<string, unknown>)?.agentCid}`)
         .sort()
         .join(","),
     [nodes],
@@ -420,13 +427,14 @@ const MainArea: React.FC<MainAreaProps> = ({
 
     setNodes((prevNodes) =>
       prevNodes.map((node) => {
+        const nodeData = node.data as unknown as CustomNodeData | undefined
         const shouldBeSelected =
           selectedAgentCid != null
-            ? (node.data as any)?.agentCid === selectedAgentCid
+            ? nodeData?.agentCid === selectedAgentCid
             : node.id === NODE_IDS.RECRUITER
 
         // Skip update if already correct to avoid unnecessary object churn
-        if ((node.data as any)?.selected === shouldBeSelected) return node
+        if (nodeData?.selected === shouldBeSelected) return node
         return { ...node, data: { ...node.data, selected: shouldBeSelected } }
       }),
     )
@@ -453,14 +461,17 @@ const MainArea: React.FC<MainAreaProps> = ({
 
   useEffect(() => {
     const updateGraph = async () => {
-      const newConfig = getGraphConfig(pattern, isGroupCommConnected)
+      const newConfig = getGraphConfig(pattern)
       const nodesWithHandlers = newConfig.nodes.map((node) => ({
         ...node,
         data: {
           ...node.data,
           onOpenIdentityModal: handleOpenIdentityModal,
           onOpenOasfModal: handleOpenOasfModal,
-          isModalOpen: !!(activeModal && activeNodeData?.id === node.id),
+          isModalOpen: !!(
+            activeModal &&
+            (activeNodeData as { id?: string } | null)?.id === node.id
+          ),
         },
       }))
       setNodes(nodesWithHandlers)
@@ -487,6 +498,9 @@ const MainArea: React.FC<MainAreaProps> = ({
     setNodes,
     setEdges,
     handleOpenIdentityModal,
+    activeModal,
+    activeNodeData,
+    handleOpenOasfModal,
   ])
 
   useEffect(() => {
@@ -610,6 +624,7 @@ const MainArea: React.FC<MainAreaProps> = ({
     updateStyle,
     setNodes,
     setEdges,
+    config.animationSequence,
   ])
 
   const highlightNode = useCallback(

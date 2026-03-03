@@ -5,7 +5,10 @@ export interface ExtraHandle {
 }
 
 export interface CustomNodeData {
-  onOpenOasfModal: HTMLDivElement | null
+  onOpenOasfModal?: (
+    nodeData: CustomNodeData,
+    position: { x: number; y: number },
+  ) => void
   icon: React.ReactNode
   label1: string
   label2: string
