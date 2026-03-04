@@ -51,21 +51,21 @@ jobs:
           elif [[ "${{ github.event_name }}" == "pull_request" ]]; then
             base="${{ github.event.pull_request.base.sha }}"
             head="${{ github.event.pull_request.head.sha }}"
-            echo "Commits to compare: base=$base head=$head"
 
-            # git diff --quiet implies --exit-code (0 means no changes (no need to build), 1 means changes were found (need to build))
-            build_corto=$(git diff --quiet --ignore-blank-lines $base $head "$CORTO_DIR" 2>/dev/null && echo false || echo true)
-            build_lungo=$(git diff --quiet --ignore-blank-lines $base $head "$LUNGO_DIR" 2>/dev/null && echo false || echo true)
-            build_recruiter=$(git diff --quiet --ignore-blank-lines $base $head "$RECRUITER_DIR" 2>/dev/null && echo false || echo true)
+            # Returns 0 if dir has changes, 1 if no changes
+            dir_has_changes() (
+              local base=$1 head=$2 dir=$3
+              set -x # This option only lives in the subshell of this function because the function is defined with () instead of {}.
+              ! git diff --name-only --exit-code --ignore-blank-lines $base $head "$dir"
+            )
+            dir_has_changes $base $head "$CORTO_DIR" && build_corto=true || build_corto=false
+            dir_has_changes $base $head "$LUNGO_DIR" && build_lungo=true || build_lungo=false
+            dir_has_changes $base $head "$RECRUITER_DIR" && build_recruiter=true || build_recruiter=false
           fi
 
-          # Debug resulting build flags
-          echo "Container images to build for subprojects: corto=$build_corto lungo=$build_lungo recruiter=$build_recruiter"
-
-          # Output build flags for subsequent use
-          echo "build_corto=$build_corto" >> $GITHUB_OUTPUT
-          echo "build_lungo=$build_lungo" >> $GITHUB_OUTPUT
-          echo "build_recruiter=$build_recruiter" >> $GITHUB_OUTPUT
+          echo "build_corto=$build_corto" | tee -a $GITHUB_OUTPUT
+          echo "build_lungo=$build_lungo" | tee -a $GITHUB_OUTPUT
+          echo "build_recruiter=$build_recruiter" | tee -a $GITHUB_OUTPUT
 
   docker-build-corto:
     needs: subprojects-to-build
@@ -98,14 +98,14 @@ jobs:
       - name: Get Git tag (if any)
         id: get_tag
         run: |
-          echo "tag_name=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+          echo "tag_name=${GITHUB_REF#refs/tags/}" | tee -a $GITHUB_OUTPUT
 
       - name: Generate metadata
         id: metadata
         run: |
-          echo "date=$(date -u +'%Y-%m-%dT%H:%M:%SZ')" >> $GITHUB_OUTPUT
-          echo "date_formatted=$(date -u +'%Y-%m-%d')" >> $GITHUB_OUTPUT
-          echo "short_sha=${GITHUB_SHA:0:7}" >> $GITHUB_OUTPUT
+          echo "date=$(date -u +'%Y-%m-%dT%H:%M:%SZ')" | tee -a $GITHUB_OUTPUT
+          echo "date_formatted=$(date -u +'%Y-%m-%d')" | tee -a $GITHUB_OUTPUT
+          echo "short_sha=${GITHUB_SHA:0:7}" | tee -a $GITHUB_OUTPUT
 
       - name: Log Event Type
         run: |
@@ -137,18 +137,11 @@ jobs:
             image_tag=unknown
             git_branch=${{ github.ref_name }}
           fi
-
-          # Debug resulting parameters
-          echo "push_container=$push_container"
-          echo "platforms=$platforms"
-          echo "image_tag=$image_tag"
-          echo "git_branch=$git_branch"
           
-          # Output parameters for use in subsequent steps
-          echo "push_container=$push_container" >> $GITHUB_OUTPUT
-          echo "platforms=$platforms" >> $GITHUB_OUTPUT
-          echo "image_tag=$image_tag" >> $GITHUB_OUTPUT
-          echo "git_branch=$git_branch" >> $GITHUB_OUTPUT
+          echo "push_container=$push_container" | tee -a $GITHUB_OUTPUT
+          echo "platforms=$platforms" | tee -a $GITHUB_OUTPUT
+          echo "image_tag=$image_tag" | tee -a $GITHUB_OUTPUT
+          echo "git_branch=$git_branch" | tee -a $GITHUB_OUTPUT
 
       - name: Log in to GitHub Container Registry
         if: steps.build_params.outputs.push_container == 'true'
@@ -242,14 +235,14 @@ jobs:
       - name: Get Git tag (if any)
         id: get_tag
         run: |
-          echo "tag_name=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+          echo "tag_name=${GITHUB_REF#refs/tags/}" | tee -a $GITHUB_OUTPUT
 
       - name: Generate metadata
         id: metadata
         run: |
-          echo "date=$(date -u +'%Y-%m-%dT%H:%M:%SZ')" >> $GITHUB_OUTPUT
-          echo "date_formatted=$(date -u +'%Y-%m-%d')" >> $GITHUB_OUTPUT
-          echo "short_sha=${GITHUB_SHA:0:7}" >> $GITHUB_OUTPUT
+          echo "date=$(date -u +'%Y-%m-%dT%H:%M:%SZ')" | tee -a $GITHUB_OUTPUT
+          echo "date_formatted=$(date -u +'%Y-%m-%d')" | tee -a $GITHUB_OUTPUT
+          echo "short_sha=${GITHUB_SHA:0:7}" | tee -a $GITHUB_OUTPUT
 
       - name: Log Event Type
         run: |
@@ -281,18 +274,11 @@ jobs:
             image_tag=unknown
             git_branch=${{ github.ref_name }}
           fi
-
-          # Debug resulting parameters
-          echo "push_container=$push_container"
-          echo "platforms=$platforms"
-          echo "image_tag=$image_tag"
-          echo "git_branch=$git_branch"
           
-          # Output parameters for use in subsequent steps
-          echo "push_container=$push_container" >> $GITHUB_OUTPUT
-          echo "platforms=$platforms" >> $GITHUB_OUTPUT
-          echo "image_tag=$image_tag" >> $GITHUB_OUTPUT
-          echo "git_branch=$git_branch" >> $GITHUB_OUTPUT
+          echo "push_container=$push_container" | tee -a $GITHUB_OUTPUT
+          echo "platforms=$platforms" | tee -a $GITHUB_OUTPUT
+          echo "image_tag=$image_tag" | tee -a $GITHUB_OUTPUT
+          echo "git_branch=$git_branch" | tee -a $GITHUB_OUTPUT
 
       - name: Log in to GitHub Container Registry
         if: steps.build_params.outputs.push_container == 'true'
@@ -362,14 +348,14 @@ jobs:
       - name: Get Git tag (if any)
         id: get_tag
         run: |
-          echo "tag_name=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+          echo "tag_name=${GITHUB_REF#refs/tags/}" | tee -a $GITHUB_OUTPUT
 
       - name: Generate metadata
         id: metadata
         run: |
-          echo "date=$(date -u +'%Y-%m-%dT%H:%M:%SZ')" >> $GITHUB_OUTPUT
-          echo "date_formatted=$(date -u +'%Y-%m-%d')" >> $GITHUB_OUTPUT
-          echo "short_sha=${GITHUB_SHA:0:7}" >> $GITHUB_OUTPUT
+          echo "date=$(date -u +'%Y-%m-%dT%H:%M:%SZ')" | tee -a $GITHUB_OUTPUT
+          echo "date_formatted=$(date -u +'%Y-%m-%d')" | tee -a $GITHUB_OUTPUT
+          echo "short_sha=${GITHUB_SHA:0:7}" | tee -a $GITHUB_OUTPUT
 
       - name: Log Event Type
         run: |
@@ -401,18 +387,11 @@ jobs:
             image_tag=unknown
             git_branch=${{ github.ref_name }}
           fi
-
-          # Debug resulting parameters
-          echo "push_container=$push_container"
-          echo "platforms=$platforms"
-          echo "image_tag=$image_tag"
-          echo "git_branch=$git_branch"
           
-          # Output parameters for use in subsequent steps
-          echo "push_container=$push_container" >> $GITHUB_OUTPUT
-          echo "platforms=$platforms" >> $GITHUB_OUTPUT
-          echo "image_tag=$image_tag" >> $GITHUB_OUTPUT
-          echo "git_branch=$git_branch" >> $GITHUB_OUTPUT
+          echo "push_container=$push_container" | tee -a $GITHUB_OUTPUT
+          echo "platforms=$platforms" | tee -a $GITHUB_OUTPUT
+          echo "image_tag=$image_tag" | tee -a $GITHUB_OUTPUT
+          echo "git_branch=$git_branch" | tee -a $GITHUB_OUTPUT
 
       - name: Log in to GitHub Container Registry
         if: steps.build_params.outputs.push_container == 'true'

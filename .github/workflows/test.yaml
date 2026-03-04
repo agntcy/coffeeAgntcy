@@ -63,19 +63,20 @@ jobs:
           elif [[ "${{ github.event_name }}" == "pull_request" ]]; then
             base="${{ github.event.pull_request.base.sha }}"
             head="${{ github.event.pull_request.head.sha }}"
-            echo "Commits to compare: base=$base head=$head"
 
-            # git diff --quiet implies --exit-code (0 means no changes, 1 means changes were found)
-            test_corto=$(git diff --quiet --ignore-blank-lines $base $head "$CORTO_DIR" 2>/dev/null && echo false || echo true)
-            test_lungo=$(git diff --quiet --ignore-blank-lines $base $head "$LUNGO_DIR" 2>/dev/null && echo false || echo true)
+            # Returns 0 if dir has changes, 1 if no changes
+            dir_has_changes() (
+              local base=$1 head=$2 dir=$3
+              set -x # This option only lives in the subshell of this function because the function is defined with () instead of {}.
+              ! git diff --name-only --exit-code --ignore-blank-lines $base $head "$dir"
+            )
+            
+            dir_has_changes $base $head "$CORTO_DIR" && test_corto=true || test_corto=false
+            dir_has_changes $base $head "$LUNGO_DIR" && test_lungo=true || test_lungo=false
           fi
 
-          # Debug resulting test flags
-          echo "Subprojects to test: corto=$test_corto lungo=$test_lungo"
-
-          # Output test flags for subsequent use
-          echo "test_corto=$test_corto" >> $GITHUB_OUTPUT
-          echo "test_lungo=$test_lungo" >> $GITHUB_OUTPUT
+          echo "test_corto=$test_corto" | tee -a $GITHUB_OUTPUT
+          echo "test_lungo=$test_lungo" | tee -a $GITHUB_OUTPUT
 
 
   integration-tests-corto:
