@@ -1,9 +1,12 @@
 # Copyright AGNTCY Contributors (https://github.com/agntcy)
 # SPDX-License-Identifier: Apache-2.0
 
+from agent_recruiter.common.logging import configure_logger, get_logger
+
+configure_logger()
+
 import asyncio
 import os
-from agent_recruiter.common.logging import get_logger
 
 from agntcy_app_sdk.semantic.a2a.protocol import A2AProtocol
 from agntcy_app_sdk.app_sessions import AppContainer

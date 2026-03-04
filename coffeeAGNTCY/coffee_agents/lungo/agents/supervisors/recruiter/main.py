@@ -1,6 +1,8 @@
 # Copyright AGNTCY Contributors (https://github.com/agntcy)
 # SPDX-License-Identifier: Apache-2.0
 
+import config.logging_config  # noqa: F401 - runs setup on import; must be first
+
 import asyncio
 import json
 import logging
@@ -28,9 +30,7 @@ from agents.supervisors.recruiter.recruiter_client import get_a2a_event_queue
 from agents.supervisors.recruiter.recruiter_service_card import (
     RECRUITER_AGENT_URL,
 )
-from config.logging_config import setup_logging
 
-setup_logging()
 logger = logging.getLogger("lungo.recruiter.supervisor.main")
 
 load_dotenv()
