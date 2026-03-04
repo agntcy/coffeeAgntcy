@@ -23,8 +23,16 @@ class FlushingStreamHandler(logging.StreamHandler):
     """StreamHandler that flushes after every emit so log lines appear immediately."""
 
     def emit(self, record):
-        super().emit(record)
-        self.flush()
+        try:
+            super().emit(record)
+            self.flush()
+        except (ValueError, OSError):
+            msg = self.format(record)
+            try:
+                sys.stderr.write(msg + self.terminator)
+                sys.stderr.flush()
+            except (ValueError, OSError):
+                pass
 
 
 def setup_logging():
