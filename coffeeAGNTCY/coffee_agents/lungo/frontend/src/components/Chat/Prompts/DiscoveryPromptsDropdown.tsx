@@ -4,12 +4,13 @@
  **/
 
 import React, { useState, useRef, useEffect } from "react"
+import { env } from "@/utils/env"
 import LoadingSpinner from "./LoadingSpinner"
 import { PromptCategory, Prompt } from "./PromptTypes"
 
 const DEFAULT_DISCOVERY_APP_API_URL = "http://127.0.0.1:8882"
 const DISCOVERY_APP_API_URL =
-  import.meta.env.VITE_DISCOVERY_APP_API_URL || DEFAULT_DISCOVERY_APP_API_URL
+  env.get("VITE_DISCOVERY_APP_API_URL") || DEFAULT_DISCOVERY_APP_API_URL
 
 interface DiscoveryPromptsDropdownProps {
   visible: boolean

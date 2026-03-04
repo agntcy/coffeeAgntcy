@@ -6,6 +6,7 @@
 import axios from "axios"
 import { getApiUrlForPattern, PATTERNS } from "@/utils/patternUtils"
 import { IdentityServiceError } from "@/components/MainArea/Graph/Identity/IdentityApi"
+import { logger } from "@/utils/logger"
 import type { CustomNodeData } from "../Elements/types"
 
 /** OASF record from directory API; URL fields used for link in modal. */
@@ -28,7 +29,7 @@ const getSlugFromNodeData = (
     return nodeData.slug
   }
 
-  console.log("Node data for slug extraction:", nodeData)
+  logger.debug("Node data for slug extraction", nodeData)
 
   const label1 = nodeData.label1?.toLowerCase()
   const label2 = nodeData.label2?.toLowerCase()

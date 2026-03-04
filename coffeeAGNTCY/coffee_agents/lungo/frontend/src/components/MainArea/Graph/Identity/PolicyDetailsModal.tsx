@@ -7,6 +7,7 @@ import React, { useState, useEffect, useCallback } from "react"
 import { createPortal } from "react-dom"
 import { PolicyData } from "./types"
 import { CustomNodeData } from "../Elements/types"
+import { logger } from "@/utils/logger"
 import { fetchPolicyDetails, IdentityServiceError } from "./IdentityApi"
 import { useEscapeKey } from "@/hooks/useEscapeKey"
 
@@ -44,7 +45,7 @@ const PolicyDetailsModal: React.FC<PolicyDetailsModalProps> = ({
       setPolicyData(data)
     } catch (error) {
       const identityError = error as IdentityServiceError
-      console.error("Error fetching policy details:", identityError)
+      logger.error("Error fetching policy details", identityError)
       setError(
         identityError.message ||
           "An unexpected error occurred while fetching policy details.",

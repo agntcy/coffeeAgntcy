@@ -26,6 +26,7 @@ import AuctionStreamingFeed from "./AuctionStreamingFeed"
 import RecruiterStreamingFeed from "./RecruiterStreamingFeed"
 
 import { cn } from "@/utils/cn.ts"
+import { env } from "@/utils/env"
 import { logger } from "@/utils/logger"
 import type { GraphConfig } from "@/utils/graphConfigs"
 import { AgentRecord, DiscoveryResponseEvent } from "@/types/agent"
@@ -35,7 +36,7 @@ import type {
 } from "@/types/streaming"
 
 const DEFAULT_GRAFANA_URL = "http://127.0.0.1:3001"
-const GRAFANA_URL = import.meta.env.VITE_GRAFANA_URL || DEFAULT_GRAFANA_URL
+const GRAFANA_URL = env.get("VITE_GRAFANA_URL") || DEFAULT_GRAFANA_URL
 const GRAFANA_DASHBOARD_PATH =
   "/d/lungo-dashboard/lungo-dashboard?orgId=1&var-session_id="
 
@@ -168,7 +169,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
         onSuccess: (response: ApiResponse) => {
           setAiReplied(true)
 
-          console.log("[ChatArea] API call successful, response:", response)
+          logger.debug("[ChatArea] API call successful, response:", response)
 
           onApiSuccess(response)
 

@@ -9,6 +9,7 @@ import {
   PATTERNS,
   getApiUrlForPattern,
 } from "@/utils/patternUtils"
+import { logger } from "@/utils/logger"
 import SidebarItem from "./sidebarItem"
 import SidebarDropdown from "./SidebarDropdown"
 
@@ -44,7 +45,7 @@ const Sidebar: React.FC<SidebarProps> = ({
           setTransport(data.transport)
         }
       } catch (error) {
-        console.error("Error fetching transport config:", error)
+        logger.error("Error fetching transport config:", error)
       }
     }
 

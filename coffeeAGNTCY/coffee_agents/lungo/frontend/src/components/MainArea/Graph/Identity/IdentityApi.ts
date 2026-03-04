@@ -10,6 +10,7 @@ import {
 } from "@/components/MainArea/Graph/Identity/types"
 import type { CustomNodeData } from "@/components/MainArea/Graph/Elements/types"
 import { getApiUrlForPattern, PATTERNS } from "@/utils/patternUtils"
+import { logger } from "@/utils/logger"
 
 export interface IdentityServiceError {
   message: string
@@ -17,7 +18,7 @@ export interface IdentityServiceError {
 }
 
 const getSlugFromNodeData = (nodeData: CustomNodeData): string => {
-  console.log(nodeData)
+  logger.debug("getSlugFromNodeData", nodeData)
 
   if (nodeData.slug) {
     return nodeData.slug

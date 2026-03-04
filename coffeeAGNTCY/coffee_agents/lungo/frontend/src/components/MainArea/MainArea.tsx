@@ -33,6 +33,7 @@ import { useViewportAwareFitView } from "@/hooks/useViewportAwareFitView"
 import { useModalManager } from "@/hooks/useModalManager"
 import type { Node, Edge } from "@xyflow/react"
 import { EDGE_LABELS, HANDLE_TYPES, NODE_IDS } from "@/utils/const.ts"
+import { logger } from "@/utils/logger"
 import {
   PUBLISH_SUBSCRIBE_CONFIG,
   GROUP_COMMUNICATION_CONFIG,
@@ -136,7 +137,7 @@ const MainArea: React.FC<MainAreaProps> = ({
 
   const addDiscoveryResponseGraph = useCallback(
     (_evt: DiscoveryResponseEvent) => {
-      console.log("Adding discovery response graph for event:", _evt)
+      logger.debug("Adding discovery response graph for event", _evt)
 
       const raw = (_evt as { agent_records?: Record<string, AgentRecord> })
         ?.agent_records

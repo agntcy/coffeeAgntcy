@@ -5,11 +5,13 @@
 
 import { create } from "zustand"
 import { LogisticsStreamStep } from "@/types/streaming"
+import { env } from "@/utils/env"
 import { isLocalDev, parseFetchError } from "@/utils/const.ts"
+import { logger } from "@/utils/logger"
 
 const DEFAULT_LOGISTICS_APP_API_URL = "http://127.0.0.1:9090"
 const LOGISTICS_APP_API_URL =
-  import.meta.env.VITE_LOGISTICS_APP_API_URL || DEFAULT_LOGISTICS_APP_API_URL
+  env.get("VITE_LOGISTICS_APP_API_URL") || DEFAULT_LOGISTICS_APP_API_URL
 
 const isValidLogisticsStreamStep = (
   data: unknown,
@@ -237,12 +239,10 @@ export const useGroupStreamingStore = create<
                       addEvent(eventObj)
                     }
                   } catch (dictParseError) {
-                    console.error(
-                      "Error parsing dict string:",
-                      dictParseError,
-                      "String:",
-                      parsed.response,
-                    )
+                    logger.error("Error parsing dict string:", {
+                      error: dictParseError,
+                      string: parsed.response,
+                    })
                   }
                 } else {
                   setFinalResponse(parsed.response)
@@ -250,12 +250,10 @@ export const useGroupStreamingStore = create<
                 }
               }
             } catch (parseError) {
-              console.error(
-                "Error parsing JSON object:",
-                parseError,
-                "JSON:",
-                jsonStr,
-              )
+              logger.error("Error parsing JSON object:", {
+                error: parseError,
+                json: jsonStr,
+              })
             }
           }
 
@@ -267,7 +265,7 @@ export const useGroupStreamingStore = create<
 
       setComplete(true)
     } catch (error) {
-      console.error("Streaming error:", error)
+      logger.error("Streaming error:", error)
       setError("Sorry, something went wrong. Please try again.")
     }
   },

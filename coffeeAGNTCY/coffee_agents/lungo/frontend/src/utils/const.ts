@@ -3,6 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  **/
 
+import { env } from "./env"
+
 export const Role = {
   ASSISTANT: "assistant",
   USER: "user",
@@ -88,7 +90,7 @@ export type VerificationStatusType =
   (typeof VERIFICATION_STATUS)[keyof typeof VERIFICATION_STATUS]
 
 export const isLocalDev =
-  import.meta.env?.DEV ||
+  env.dev ||
   window.location.hostname === "localhost" ||
   window.location.hostname === "127.0.0.1"
 

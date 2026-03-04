@@ -12,6 +12,7 @@ import agentDirectoryIconDark from "@/assets/Agent_directory.png"
 import agentDirectoryIconLight from "@/assets/Agent_Icon_light.png"
 import identityBadgeIcon from "@/assets/identity_badge.svg"
 import { useThemeIcon } from "@/hooks/useThemeIcon"
+import { logger } from "@/utils/logger"
 import { CustomNodeData, ExtraHandle } from "./types"
 
 const POSITION_MAP: Record<ExtraHandle["position"], Position> = {
@@ -74,7 +75,7 @@ const CustomNode: React.FC<CustomNodeProps> = ({
         isMcpServer,
       )
     } else {
-      console.error("No modal handler found or nodeRef missing!")
+      logger.error("No modal handler found or nodeRef missing!")
     }
   }
 

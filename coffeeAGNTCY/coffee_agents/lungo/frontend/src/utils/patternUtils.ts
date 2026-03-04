@@ -3,6 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  **/
 
+import { env } from "@/utils/env"
+
 export const PATTERNS = {
   SLIM_A2A: "slim_a2a",
   PUBLISH_SUBSCRIBE: "publish_subscribe",
@@ -27,11 +29,11 @@ export const getApiUrlForPattern = (pattern?: string): string => {
   const DEFAULT_DISCOVERY_APP_API_URL = "http://127.0.0.1:8882"
 
   const PUB_SUB_APP_API_URL =
-    import.meta.env.VITE_EXCHANGE_APP_API_URL || DEFAULT_PUB_SUB_API_URL
+    env.get("VITE_EXCHANGE_APP_API_URL") || DEFAULT_PUB_SUB_API_URL
   const GROUP_COMM_APP_API_URL =
-    import.meta.env.VITE_LOGISTICS_APP_API_URL || DEFAULT_GROUP_COMM_APP_API_URL
+    env.get("VITE_LOGISTICS_APP_API_URL") || DEFAULT_GROUP_COMM_APP_API_URL
   const DISCOVERY_APP_API_URL =
-    import.meta.env.VITE_DISCOVERY_APP_API_URL || DEFAULT_DISCOVERY_APP_API_URL
+    env.get("VITE_DISCOVERY_APP_API_URL") || DEFAULT_DISCOVERY_APP_API_URL
 
   if (isGroupCommunication(pattern)) {
     return GROUP_COMM_APP_API_URL

@@ -8,6 +8,7 @@ import type { AgentRecord } from "@/types/agent"
 import { RecruiterStreamingEvent } from "@/types/streaming"
 import { getStreamingEndpointForPattern, PATTERNS } from "@/utils/patternUtils"
 import { isLocalDev, parseFetchError } from "@/utils/const.ts"
+import { logger } from "@/utils/logger"
 
 const isValidRecruiterStreamingEvent = (
   data: unknown,
@@ -168,7 +169,10 @@ export const useRecruiterStreamingStore = create<RecruiterStreamingStoreState>(
                     }
                   }
                 } catch (parseError) {
-                  console.warn("Failed to parse NDJSON line:", line, parseError)
+                  logger.warn("Failed to parse NDJSON line:", {
+                    line,
+                    parseError,
+                  })
                 }
               }
             }
@@ -180,7 +184,7 @@ export const useRecruiterStreamingStore = create<RecruiterStreamingStoreState>(
         }
       } catch (error) {
         if (!abortController.signal.aborted) {
-          console.error("Unexpected recruiter streaming error:", error)
+          logger.error("Unexpected recruiter streaming error:", error)
           set({
             status: "error",
             error: "Sorry, something went wrong. Please try again.",

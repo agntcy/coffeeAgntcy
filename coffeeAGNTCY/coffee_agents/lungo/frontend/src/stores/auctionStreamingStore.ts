@@ -7,6 +7,7 @@ import { create } from "zustand"
 import { AuctionStreamingResponse } from "@/types/streaming"
 import { getStreamingEndpointForPattern, PATTERNS } from "@/utils/patternUtils"
 import { isLocalDev, parseFetchError } from "@/utils/const.ts"
+import { logger } from "@/utils/logger"
 
 const isValidAuctionStreamingResponse = (
   data: unknown,
@@ -117,7 +118,10 @@ export const useAuctionStreamingStore = create<StreamingState>((set) => ({
                   }))
                 }
               } catch (parseError) {
-                console.warn("Failed to parse NDJSON line:", line, parseError)
+                logger.warn("Failed to parse NDJSON line:", {
+                  line,
+                  parseError,
+                })
               }
             }
           }
@@ -129,7 +133,7 @@ export const useAuctionStreamingStore = create<StreamingState>((set) => ({
       }
     } catch (error) {
       if (!abortController.signal.aborted) {
-        console.error("Unexpected streaming error:", error)
+        logger.error("Unexpected streaming error:", error)
         set({
           status: "error",
           error: "Sorry, something went wrong. Please try again.",

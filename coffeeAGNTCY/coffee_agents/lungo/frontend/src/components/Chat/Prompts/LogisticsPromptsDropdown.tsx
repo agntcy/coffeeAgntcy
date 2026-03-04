@@ -4,12 +4,14 @@
  **/
 
 import React, { useState, useRef, useEffect } from "react"
+import { env } from "@/utils/env"
+import { logger } from "@/utils/logger"
 import LoadingSpinner from "./LoadingSpinner"
 import { PromptCategory } from "./PromptTypes"
 
 const DEFAULT_LOGISTICS_APP_API_URL = "http://127.0.0.1:9090"
 const LOGISTICS_APP_API_URL =
-  import.meta.env.VITE_LOGISTICS_APP_API_URL || DEFAULT_LOGISTICS_APP_API_URL
+  env.get("VITE_LOGISTICS_APP_API_URL") || DEFAULT_LOGISTICS_APP_API_URL
 
 interface LogisticsPromptsDropdownProps {
   visible: boolean
@@ -66,7 +68,7 @@ const LogisticsPromptsDropdown: React.FC<LogisticsPromptsDropdownProps> = ({
         setIsLoading(false)
       } catch (err: unknown) {
         if (err instanceof Error && err.name !== "AbortError") {
-          console.warn("Failed to load logistics prompts from API.", err)
+          logger.warn("Failed to load logistics prompts from API.", err)
           // Retry on error with exponential backoff
           const delay = Math.min(
             5000 * Math.pow(2, retryCount),

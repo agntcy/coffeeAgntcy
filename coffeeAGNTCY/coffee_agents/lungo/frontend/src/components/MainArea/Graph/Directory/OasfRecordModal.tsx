@@ -5,6 +5,7 @@
 
 import React, { useState, useEffect } from "react"
 import { createPortal } from "react-dom"
+import { env } from "@/utils/env"
 import { fetchOasfRecord, OasfRecord } from "./DirectoryApi"
 import { CustomNodeData } from "../Elements/types"
 import { IdentityServiceError } from "../Identity/IdentityApi"
@@ -12,11 +13,11 @@ import { useEscapeKey } from "@/hooks/useEscapeKey"
 
 const DEFAULT_DIRECTORY_SERVER_URL = "http://127.0.0.1:8888"
 const DIRECTORY_SERVER_URL =
-  import.meta.env.VITE_DIRECTORY_SERVER_URL || DEFAULT_DIRECTORY_SERVER_URL
+  env.get("VITE_DIRECTORY_SERVER_URL") || DEFAULT_DIRECTORY_SERVER_URL
 
 const DEFAULT_DIRECTORY_VERSION = "v0.6.0"
 const DIRECTORY_VERSION =
-  import.meta.env.VITE_DIRECTORY_VERSION || DEFAULT_DIRECTORY_VERSION
+  env.get("VITE_DIRECTORY_VERSION") || DEFAULT_DIRECTORY_VERSION
 
 export interface OasfRecordModalProps {
   isOpen: boolean
