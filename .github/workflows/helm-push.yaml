@@ -46,19 +46,20 @@ jobs:
           elif [[ "${{ github.event_name }}" == "pull_request" ]]; then
             base="${{ github.event.pull_request.base.sha }}"
             head="${{ github.event.pull_request.head.sha }}"
-            echo "Commits to compare: base=$base head=$head"
 
-            # git diff --quiet implies --exit-code (0 means no changes (no need to build), 1 means changes were found (need to build))
-            build_corto=$(git diff --quiet --ignore-blank-lines $base $head "$CORTO_DIR/$HELM_SUBDIR" 2>/dev/null && echo false || echo true)
-            build_lungo=$(git diff --quiet --ignore-blank-lines $base $head "$LUNGO_DIR/$HELM_SUBDIR" 2>/dev/null && echo false || echo true)
+            # Returns 0 if dir has changes, 1 if no changes
+            dir_has_changes() (
+              local base=$1 head=$2 dir=$3
+              set -x # This option only lives in the subshell of this function because the function is defined with () instead of {}.
+              ! git diff --name-only --exit-code --ignore-blank-lines $base $head "$dir"
+            )
+
+            dir_has_changes $base $head "$CORTO_DIR/$HELM_SUBDIR" && build_corto=true || build_corto=false
+            dir_has_changes $base $head "$LUNGO_DIR/$HELM_SUBDIR" && build_lungo=true || build_lungo=false
           fi
 
-          # Debug resulting build flags
-          echo "Helm packages to build: corto=$build_corto lungo=$build_lungo"
-
-          # Output build flags for subsequent use
-          echo "build_corto=$build_corto" >> $GITHUB_OUTPUT
-          echo "build_lungo=$build_lungo" >> $GITHUB_OUTPUT
+          echo "build_corto=$build_corto" | tee -a $GITHUB_OUTPUT
+          echo "build_lungo=$build_lungo" | tee -a $GITHUB_OUTPUT
 
   helm-package-corto:
     needs: subprojects-to-build
@@ -121,7 +122,7 @@ jobs:
         run: |
           CHART_VERSION=$(grep '^version:' ${{ matrix.chart.path }}/Chart.yaml | awk '{print $2}')
           helm package ${{ matrix.chart.path }} --dependency-update --version $CHART_VERSION
-          echo "chart_version=$CHART_VERSION" >> $GITHUB_OUTPUT
+          echo "chart_version=$CHART_VERSION" | tee -a $GITHUB_OUTPUT
 
       - name: Push Helm Chart
         if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/'))
@@ -222,7 +223,7 @@ jobs:
         run: |
           CHART_VERSION=$(grep '^version:' ${{ matrix.chart.path }}/Chart.yaml | awk '{print $2}')
           helm package ${{ matrix.chart.path }} --dependency-update --version $CHART_VERSION
-          echo "chart_version=$CHART_VERSION" >> $GITHUB_OUTPUT
+          echo "chart_version=$CHART_VERSION" | tee -a $GITHUB_OUTPUT
 
       - name: Push Helm Chart
         if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/'))
