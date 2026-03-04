@@ -48,6 +48,7 @@ export default [
       "@typescript-eslint/no-unused-vars": [
         "error",
       ],
+      "max-lines": ["warn", { max: 400 }],
     },
   },
   {
@@ -60,6 +61,12 @@ export default [
     },
     rules: {
       "@typescript-eslint/no-require-imports": "off",
+    },
+  },
+  {
+    files: ["**/useApp.ts", "**/useMainArea.ts", "**/graphConfigsData.tsx"],
+    rules: {
+      "max-lines": "off",
     },
   },
 ]

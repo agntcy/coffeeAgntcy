@@ -10,14 +10,7 @@ import { Message } from "@/types/message"
 import { isLocalDev, parseApiError, Role } from "@/utils/const"
 import { withRetry, RETRY_CONFIG } from "@/utils/retryUtils"
 import { shouldEnableRetries, getApiUrlForPattern } from "@/utils/patternUtils"
-import type { AgentRecord } from "@/types/agent"
-
-interface ApiResponse {
-  response: string
-  session_id?: string
-
-  agent_records?: AgentRecord[]
-}
+import type { ApiResponse } from "@/types/api"
 
 interface UseAgentAPIReturn {
   loading: boolean

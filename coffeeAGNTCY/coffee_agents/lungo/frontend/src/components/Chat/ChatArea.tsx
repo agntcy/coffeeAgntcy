@@ -29,21 +29,17 @@ import { cn } from "@/utils/cn.ts"
 import { env } from "@/utils/env"
 import { logger } from "@/utils/logger"
 import type { GraphConfig } from "@/utils/graphConfigs"
-import { AgentRecord, DiscoveryResponseEvent } from "@/types/agent"
+import { DiscoveryResponseEvent } from "@/types/agent"
 import type {
   AuctionStreamingState,
   RecruiterStreamingState,
 } from "@/types/streaming"
+import type { ApiResponse } from "@/types/api"
 
 const DEFAULT_GRAFANA_URL = "http://127.0.0.1:3001"
 const GRAFANA_URL = env.get("VITE_GRAFANA_URL") || DEFAULT_GRAFANA_URL
 const GRAFANA_DASHBOARD_PATH =
   "/d/lungo-dashboard/lungo-dashboard?orgId=1&var-session_id="
-
-interface ApiResponse {
-  response: string
-  session_id?: string
-}
 
 interface ChatAreaProps {
   setMessages: React.Dispatch<React.SetStateAction<Message[]>>
@@ -114,11 +110,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
   const { sendMessageWithCallback } = useAgentAPI()
 
   const onApiSuccess = useCallback(
-    (apiResponse: {
-      response: string
-      session_id?: string
-      agent_records?: AgentRecord[]
-    }) => {
+    (apiResponse: ApiResponse) => {
       if (pattern !== "on_demand_discovery") {
         return
       }

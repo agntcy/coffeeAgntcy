@@ -18,9 +18,7 @@ import {
   HANDLE_TYPES,
   VERIFICATION_STATUS,
 } from "./const"
-import { logger } from "./logger"
 import urlsConfig from "./urls.json"
-import { isGroupCommunication, getApiUrlForPattern } from "./patternUtils"
 
 export interface GraphConfig {
   title: string
@@ -84,7 +82,6 @@ export const PUBLISH_SUBSCRIBE_CONFIG: GraphConfig = {
         githubLink: `${urlsConfig.github.baseUrl}${urlsConfig.github.agents.brazilFarm}`,
         agentDirectoryLink: `${urlsConfig.agentDirectory.baseUrl}${urlsConfig.agentDirectory.agents.brazilFarm}`,
       },
-
       position: { x: 232.0903941835277, y: 503.93174725714437 },
     },
     {
@@ -224,9 +221,7 @@ export const GROUP_COMMUNICATION_CONFIG: GraphConfig = {
     {
       id: NODE_IDS.LOGISTICS_GROUP,
       type: NODE_TYPES.GROUP,
-      data: {
-        label: "Logistics Group",
-      },
+      data: { label: "Logistics Group" },
       position: { x: 50, y: 50 },
       style: {
         width: 900,
@@ -384,7 +379,7 @@ export const GROUP_COMMUNICATION_CONFIG: GraphConfig = {
   ],
 }
 
-const DISCOVERY_CONFIG: GraphConfig = {
+export const DISCOVERY_CONFIG: GraphConfig = {
   title: "On-demand Discovery",
   nodes: [
     {
@@ -410,8 +405,6 @@ const DISCOVERY_CONFIG: GraphConfig = {
       },
       position: { x: 400, y: 300 },
     },
-
-    // NEW: Directory node
     {
       id: NODE_IDS.DIRECTORY,
       type: NODE_TYPES.CUSTOM,
@@ -434,7 +427,6 @@ const DISCOVERY_CONFIG: GraphConfig = {
     },
   ],
   edges: [
-    // NEW: Recruiter -> Directory edge
     {
       id: EDGE_IDS.RECRUITER_TO_DIRECTORY,
       source: NODE_IDS.DIRECTORY,
@@ -450,124 +442,4 @@ const DISCOVERY_CONFIG: GraphConfig = {
     { ids: [EDGE_IDS.RECRUITER_TO_DIRECTORY] },
     { ids: [NODE_IDS.DIRECTORY] },
   ],
-}
-
-export const getGraphConfig = (pattern: string): GraphConfig => {
-  switch (pattern) {
-    case "publish_subscribe":
-      return {
-        ...PUBLISH_SUBSCRIBE_CONFIG,
-        nodes: [...PUBLISH_SUBSCRIBE_CONFIG.nodes],
-        edges: [...PUBLISH_SUBSCRIBE_CONFIG.edges],
-      }
-    case "publish_subscribe_streaming": {
-      const streamingConfig = {
-        ...PUBLISH_SUBSCRIBE_CONFIG,
-        nodes: PUBLISH_SUBSCRIBE_CONFIG.nodes.map((node) => {
-          if (node.id === NODE_IDS.AUCTION_AGENT) {
-            return {
-              ...node,
-              data: {
-                ...node.data,
-                githubLink: `${urlsConfig.github.baseUrl}${urlsConfig.github.agents.supervisorAuctionStreaming}`,
-              },
-            }
-          } else if (node.id === NODE_IDS.BRAZIL_FARM) {
-            return {
-              ...node,
-              data: {
-                ...node.data,
-                githubLink: `${urlsConfig.github.baseUrl}${urlsConfig.github.agents.brazilFarmStreaming}`,
-              },
-            }
-          } else if (node.id === NODE_IDS.COLOMBIA_FARM) {
-            return {
-              ...node,
-              data: {
-                ...node.data,
-                githubLink: `${urlsConfig.github.baseUrl}${urlsConfig.github.agents.colombiaFarmStreaming}`,
-              },
-            }
-          } else if (node.id === NODE_IDS.VIETNAM_FARM) {
-            return {
-              ...node,
-              data: {
-                ...node.data,
-                githubLink: `${urlsConfig.github.baseUrl}${urlsConfig.github.agents.vietnamFarmStreaming}`,
-              },
-            }
-          }
-          return node
-        }),
-        edges: [...PUBLISH_SUBSCRIBE_CONFIG.edges],
-      }
-      return streamingConfig
-    }
-    case "group_communication":
-      return GROUP_COMMUNICATION_CONFIG
-    case "on_demand_discovery":
-      return DISCOVERY_CONFIG
-    default:
-      return PUBLISH_SUBSCRIBE_CONFIG
-  }
-}
-
-export const updateTransportLabels = async (
-  setNodes: (updater: (nodes: Node[]) => Node[]) => void,
-  setEdges: (updater: (edges: Edge[]) => Edge[]) => void,
-  pattern?: string,
-  isStreaming?: boolean,
-): Promise<void> => {
-  if (isGroupCommunication(pattern)) {
-    return
-  }
-
-  try {
-    const response = await fetch(
-      `${getApiUrlForPattern(pattern)}/transport/config`,
-    )
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`)
-    }
-    const data = await response.json()
-    const transport = data.transport
-
-    const transportUrls = isStreaming
-      ? urlsConfig.github.transports.streaming
-      : urlsConfig.github.transports.regular
-
-    setNodes((nodes: Node[]) =>
-      nodes.map((node: Node) =>
-        node.id === NODE_IDS.TRANSPORT
-          ? {
-              ...node,
-              data: {
-                ...node.data,
-                label: `Transport: ${transport}`,
-                githubLink:
-                  transport === "SLIM"
-                    ? `${urlsConfig.github.appSdkBaseUrl}${transportUrls.slim}`
-                    : transport === "NATS"
-                      ? `${urlsConfig.github.appSdkBaseUrl}${transportUrls.nats}`
-                      : `${urlsConfig.github.appSdkBaseUrl}${urlsConfig.github.transports.general}`,
-              },
-            }
-          : node,
-      ),
-    )
-
-    setEdges((edges: Edge[]) =>
-      edges.map((edge: Edge) => {
-        if (edge.id === EDGE_IDS.COLOMBIA_TO_MCP) {
-          return {
-            ...edge,
-            data: { ...edge.data, label: `${EDGE_LABELS.MCP}${transport}` },
-          }
-        }
-        return edge
-      }),
-    )
-  } catch (error) {
-    logger.apiError("/transport/config", error)
-  }
 }
