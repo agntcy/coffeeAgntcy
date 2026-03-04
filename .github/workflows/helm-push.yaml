@@ -40,7 +40,7 @@ jobs:
           build_corto=false
           build_lungo=false
 
-          if [[ "${{ github.event_name }}" == "push" && ( "${{ github.ref }}" == refs/tags/* || "${{ github.ref }}" == refs/heads/main ) ]]; then
+          if [[ "${{ github.event_name }}" == "push" ]]; then
             build_corto=true
             build_lungo=true
           elif [[ "${{ github.event_name }}" == "pull_request" ]]; then
@@ -64,75 +64,31 @@ jobs:
   helm-package-corto:
     needs: subprojects-to-build
     if: ${{ needs.subprojects-to-build.outputs.build_corto == 'true' }}
-    runs-on: ubuntu-latest
 
     strategy:
       matrix:
         chart:
-          - name: corto-ui
-            path: coffeeAGNTCY/coffee_agents/corto/deployment/helm/corto-ui
+          - path: coffeeAGNTCY/coffee_agents/corto/deployment/helm/corto-ui
             package_name: corto-ui
-          - name: corto-exchange
-            path: coffeeAGNTCY/coffee_agents/corto/deployment/helm/exchange
+          - path: coffeeAGNTCY/coffee_agents/corto/deployment/helm/exchange
             package_name: corto-exchange
-          - name: corto-farm
-            path: coffeeAGNTCY/coffee_agents/corto/deployment/helm/farm
+          - path: coffeeAGNTCY/coffee_agents/corto/deployment/helm/farm
             package_name: corto-farm
 
-    permissions:
+    permissions: # permissions can only be maintained or reduced (not elevated) throughout a chain of workflows
       packages: write
       contents: read
 
-    steps:
-      - name: Pre-cleanup Docker images
-        run: docker system prune -af
+    uses: ./.github/workflows/helm-package-reusable.yaml
+    with:
+      path: ${{ matrix.chart.path }}
+      package_name: ${{ matrix.chart.package_name }}
+      push: ${{ github.event_name == 'push' }}
 
-      - name: Checkout code
-        uses: actions/checkout@v6
-
-      - name: Log Pull Request Event
-        if: github.event_name == 'pull_request'
-        run: echo "PR detected - Packaging Helm chart (no push)"
-
-      - name: Log Push Event
-        if: github.event_name == 'push'
-        run: echo "Push to main - Packaging and pushing Helm chart"
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Log in to GitHub Container Registry
-        if: github.event_name == 'push'
-        uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Setup Helm
-        uses: azure/setup-helm@v4
-        with:
-          version: "3.18.3"
-
-      - name: Helm lint
-        run: helm lint ${{ matrix.chart.path }} --with-subcharts
-
-      - name: Package Helm Chart
-        id: package
-        run: |
-          CHART_VERSION=$(grep '^version:' ${{ matrix.chart.path }}/Chart.yaml | awk '{print $2}')
-          helm package ${{ matrix.chart.path }} --dependency-update --version $CHART_VERSION
-          echo "chart_version=$CHART_VERSION" | tee -a $GITHUB_OUTPUT
-
-      - name: Push Helm Chart
-        if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/'))
-        run: |
-          helm push ${{ matrix.chart.package_name }}-${{ steps.package.outputs.chart_version }}.tgz oci://ghcr.io/${{ github.repository_owner }}/coffee_agntcy/helm
 
   helm-package-lungo:
     needs: subprojects-to-build
     if: ${{ needs.subprojects-to-build.outputs.build_lungo == 'true' }}
-    runs-on: ubuntu-latest
 
     strategy:
       matrix:
@@ -180,52 +136,12 @@ jobs:
             path: coffeeAGNTCY/coffee_agents/lungo/deployment/helm/recruiter-supervisor
             package_name: recruiter-supervisor
 
-    permissions:
+    permissions: # permissions can only be maintained or reduced (not elevated) throughout a chain of workflows
       packages: write
       contents: read
 
-    steps:
-      - name: Pre-cleanup Docker images
-        run: docker system prune -af
-
-      - name: Checkout code
-        uses: actions/checkout@v6
-
-      - name: Log Pull Request Event
-        if: github.event_name == 'pull_request'
-        run: echo "PR detected - Packaging Helm chart (no push)"
-
-      - name: Log Push Event
-        if: github.event_name == 'push'
-        run: echo "Push to main - Packaging and pushing Helm chart"
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Log in to GitHub Container Registry
-        if: github.event_name == 'push'
-        uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Setup Helm
-        uses: azure/setup-helm@v4
-        with:
-          version: "3.18.3"
-
-      - name: Helm lint
-        run: helm lint ${{ matrix.chart.path }} --with-subcharts
-
-      - name: Package Helm Chart
-        id: package
-        run: |
-          CHART_VERSION=$(grep '^version:' ${{ matrix.chart.path }}/Chart.yaml | awk '{print $2}')
-          helm package ${{ matrix.chart.path }} --dependency-update --version $CHART_VERSION
-          echo "chart_version=$CHART_VERSION" | tee -a $GITHUB_OUTPUT
-
-      - name: Push Helm Chart
-        if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/'))
-        run: |
-          helm push ${{ matrix.chart.package_name }}-${{ steps.package.outputs.chart_version }}.tgz oci://ghcr.io/${{ github.repository_owner }}/coffee_agntcy/helm
+    uses: ./.github/workflows/helm-package-reusable.yaml
+    with:
+      path: ${{ matrix.chart.path }}
+      package_name: ${{ matrix.chart.package_name }}
+      push: ${{ github.event_name == 'push' }}
