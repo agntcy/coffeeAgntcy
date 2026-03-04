@@ -1,0 +1,111 @@
+name: Build and Push Single Docker Image
+
+on:
+  workflow_call:
+    inputs:
+      name:
+        description: 'The name of the image.'
+        required: true
+        type: string
+      dockerfile:
+        description: 'The path to the Dockerfile.'
+        required: true
+        type: string
+      push:
+        description: 'Whether to push the image to the registry.'
+        required: false
+        type: boolean
+        default: false
+      platforms:
+        description: 'The platforms to build the image for.'
+        required: false
+        type: string
+        default: linux/amd64,linux/arm64
+      image_tag:
+        description: 'The tag to use for the image.'
+        required: true
+        type: string
+      git_branch:
+        description: 'The branch to use for the image.'
+        required: true
+        type: string
+
+jobs:
+  docker-build-and-push:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Log inputs
+        run: |
+          echo "name=${{ inputs.name }}"
+          echo "dockerfile=${{ inputs.dockerfile }}"
+          echo "push=${{ inputs.push }}"
+          echo "platforms=${{ inputs.platforms }}"
+          echo "image_tag=${{ inputs.image_tag }}"
+          echo "git_branch=${{ inputs.git_branch }}"
+
+      - name: Pre-cleanup Docker images
+        run: docker system prune -af
+
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Get Git tag (if any)
+        id: get_tag
+        run: |
+          echo "tag_name=${GITHUB_REF#refs/tags/}" | tee -a $GITHUB_OUTPUT
+
+      - name: Generate metadata
+        id: metadata
+        run: |
+          echo "date=$(date -u +'%Y-%m-%dT%H:%M:%SZ')" | tee -a $GITHUB_OUTPUT
+          echo "date_formatted=$(date -u +'%Y-%m-%d')" | tee -a $GITHUB_OUTPUT
+          echo "short_sha=${GITHUB_SHA:0:7}" | tee -a $GITHUB_OUTPUT
+
+      - name: Log Event Type, Ref and Tag
+        run: |
+          echo "Event: ${{ github.event_name }}"
+          echo "Ref: ${{ github.ref }}"
+          echo "Tag: ${{ steps.get_tag.outputs.tag_name }}"
+
+      - name: Log in to GitHub Container Registry
+        if: inputs.push == true
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and conditional push Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ${{ inputs.dockerfile }}
+          push: ${{ inputs.push }}
+          platforms: ${{ inputs.platforms }}
+          tags: ghcr.io/${{ github.repository_owner }}/coffee-agntcy/${{ inputs.name }}:${{ inputs.image_tag }}
+          build-args: |
+            BUILD_VERSION=${{ inputs.image_tag }}
+            BUILD_DATE=${{ steps.metadata.outputs.date_formatted }}
+            BUILD_TIMESTAMP=${{ steps.metadata.outputs.date }}
+            GIT_COMMIT=${{ github.sha }}
+            GIT_COMMIT_SHORT=${{ steps.metadata.outputs.short_sha }}
+            GIT_BRANCH=${{ inputs.git_branch }}
+            BUILD_NUMBER=${{ github.run_number }}
+            BUILD_WORKFLOW=${{ github.workflow }}
+            BUILD_ACTOR=${{ github.actor }}
+            BUILD_SOURCE=ci
+            IMAGE_NAME=ghcr.io/${{ github.repository_owner }}/coffee-agntcy/${{ inputs.name }}
+            IMAGE_TAG=${{ inputs.image_tag }}
+          labels: |
+            org.opencontainers.image.version=${{ inputs.image_tag }}
+            org.opencontainers.image.created=${{ steps.metadata.outputs.date }}
+            org.opencontainers.image.revision=${{ github.sha }}
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+            build.number=${{ github.run_number }}
+            build.workflow=${{ github.workflow }}
+            build.actor=${{ github.actor }}
+            git.branch=${{ inputs.git_branch }}
+            git.commit.short=${{ steps.metadata.outputs.short_sha }}
