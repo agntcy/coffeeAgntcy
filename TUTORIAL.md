@@ -16,7 +16,7 @@ You will:
 - **Node.js ≥ 16.14.0** (if you run any UI locally outside of Docker)
 - **uv** (Python environment manager)
 
-**IDE setup for CI (lint/format):** To run ESLint and Prettier on save or before commit, **Cursor is recommended**. In Cursor: enable **Format on Save** (Settings → search “format on save”) and ensure the ESLint extension is enabled; set the workspace root or open the `coffeeAGNTCY/coffee_agents/lungo/frontend` folder so that `npm run lint:check` and `npm run format:check` apply to the Lungo frontend. You can also run these scripts from the terminal in that directory. The same checks run in CI (see `.github/workflows/fe-ci.yaml` and `.github/workflows/fe-cd.yaml`).
+**IDE setup for CI (lint/format):** To run ESLint and Prettier on save or before commit, **Cursor is recommended**. In Cursor: enable **Format on Save** (Settings → search “format on save”) and ensure the ESLint extension is enabled; set the workspace root or open the `coffeeAGNTCY/coffee_agents/lungo/frontend` folder so that `npm run lint:check` and `npm run format:check` apply to the Lungo frontend. You can also run these scripts from the terminal in that directory. The same checks run in CI (see `.github/workflows/fe-ci.yaml`, job `frontend-build`).
 
 Clone the CoffeeAGNTCY repository:
 ```bash
