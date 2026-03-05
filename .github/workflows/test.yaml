@@ -31,6 +31,43 @@ on:
         required: false
         type: string
         default: ""
+      test_corto:
+        description: 'Whether to test the Corto project.'
+        required: false
+        type: boolean
+        default: true
+      test_lungo:
+        description: 'Whether to test the Lungo project.'
+        required: false
+        type: boolean
+        default: true
+  workflow_dispatch:
+    inputs:
+      pip_overrides:
+        description: 'One-per-line PEP 508 specs to force (shared across demos; applied only if declared).'
+        required: false
+        type: string
+        default: ""
+      pip_constraints:
+        description: 'One-per-line constraints (shared across demos; applied only if declared).'
+        required: false
+        type: string
+        default: ""
+      docker_overrides:
+        description: 'One-per-line service=image[:tag] (shared across demos; applied only if declared).'
+        required: false
+        type: string
+        default: ""
+      test_corto:
+        description: 'Whether to test the Corto project.'
+        required: false
+        type: boolean
+        default: true
+      test_lungo:
+        description: 'Whether to test the Lungo project.'
+        required: false
+        type: boolean
+        default: true
 
 env:
   CORTO_DIR: coffeeAGNTCY/coffee_agents/corto
@@ -50,16 +87,34 @@ jobs:
         uses: actions/checkout@v6
         with:
           fetch-depth: 0
-      
+
+      - name: Log event info
+        run: |
+          echo "event_name=${{ github.event_name }}"
+          echo "ref=${{ github.ref }}"
+          echo "ref_name=${{ github.ref_name }}"
+
+      - name: Log call or dispatch inputs
+        if: ${{ github.event_name == 'workflow_call' || github.event_name == 'workflow_dispatch' }}
+        run: |
+          echo "pip_overrides=${{ inputs.pip_overrides }}"
+          echo "pip_constraints=${{ inputs.pip_constraints }}"
+          echo "docker_overrides=${{ inputs.docker_overrides }}"
+          echo "test_corto=${{ inputs.test_corto }}"
+          echo "test_lungo=${{ inputs.test_lungo }}"
+
       - name: Detect changed paths for main sub-projects
         id: check-subprojects
         run: |
           test_corto=false
           test_lungo=false
 
-          if [[ "${{ github.event_name }}" == "push" && "${{ github.ref }}" == refs/heads/main ]]; then
+          if [[ "${{ github.event_name }}" == "push" ]]; then
             test_corto=true
             test_lungo=true
+          elif [[ "${{ github.event_name }}" == "workflow_call" || "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            test_corto=${{ inputs.test_corto }}
+            test_lungo=${{ inputs.test_lungo }}
           elif [[ "${{ github.event_name }}" == "pull_request" ]]; then
             base="${{ github.event.pull_request.base.sha }}"
             head="${{ github.event.pull_request.head.sha }}"
@@ -78,111 +133,22 @@ jobs:
           echo "test_corto=$test_corto" | tee -a $GITHUB_OUTPUT
           echo "test_lungo=$test_lungo" | tee -a $GITHUB_OUTPUT
 
-
   integration-tests-corto:
     needs: subprojects-to-test
     if: ${{ needs.subprojects-to-test.outputs.test_corto == 'true' }}
-    runs-on: ubuntu-latest
-
-    defaults:
-      run:
-        working-directory: ${{ env.CORTO_DIR }}
-        
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v6
-
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: '3.13'
-
-      - name: Set up uv
-        uses: astral-sh/setup-uv@v7
-
-      - name: Apply uv overrides/constraints (if applicable) — ${{ env.CORTO_DIR }}
-        if: ${{ inputs.pip_overrides != '' || inputs.pip_constraints != '' }}
-        uses: ./.github/actions/apply-uv-overrides
-        with:
-          project_dir: ${{ env.CORTO_DIR }}
-          pip_overrides: ${{ inputs.pip_overrides }}
-          pip_constraints: ${{ inputs.pip_constraints }}
-
-      - name: Apply compose image overrides (if any) — ${{ env.CORTO_DIR }}
-        if: ${{ inputs.docker_overrides != '' }}
-        uses: ./.github/actions/apply-container-overrides
-        with:
-          project_dir: ${{ env.CORTO_DIR }}/
-          compose_file: docker-compose.yaml
-          docker_overrides: ${{ inputs.docker_overrides }}
-
-      - name: Resolve & install — ${{ env.CORTO_DIR }}
-        run: |
-          uv lock --upgrade
-          uv sync --extra dev
-      
-      - name: Create CI env file
-        run: |
-          cat > .env <<'EOF'
-          LLM_MODEL=${{ secrets.LLM_MODEL }}
-          AZURE_API_KEY=${{ secrets.AZURE_API_KEY }}
-          AZURE_API_BASE=${{ secrets.AZURE_API_BASE }}
-          AZURE_API_VERSION=${{ secrets.AZURE_API_VERSION }}
-          EOF
-
-      - name: Run integration tests — ${{ env.CORTO_DIR }}
-        run: uv run pytest -s
+    uses: ./.github/workflows/test-reusable.yaml
+    with:
+      project_dir: coffeeAGNTCY/coffee_agents/corto # cannot access env context here
+      pip_overrides: ${{ inputs.pip_overrides }}
+      pip_constraints: ${{ inputs.pip_constraints }}
+      docker_overrides: ${{ inputs.docker_overrides }}
 
   integration-tests-lungo:
     needs: subprojects-to-test
     if: ${{ needs.subprojects-to-test.outputs.test_lungo == 'true' }}
-    runs-on: ubuntu-latest
-
-    defaults:
-      run:
-        working-directory: ${{ env.LUNGO_DIR }}
-        
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v6
-
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: '3.13'
-
-      - name: Set up uv
-        uses: astral-sh/setup-uv@v7
-
-      - name: Apply uv overrides/constraints (if applicable) — ${{ env.LUNGO_DIR }}
-        if: ${{ inputs.pip_overrides != '' || inputs.pip_constraints != '' }}
-        uses: ./.github/actions/apply-uv-overrides
-        with:
-          project_dir: ${{ env.LUNGO_DIR }}
-          pip_overrides: ${{ inputs.pip_overrides }}
-          pip_constraints: ${{ inputs.pip_constraints }}
-
-      - name: Apply compose image overrides (if any) — ${{ env.LUNGO_DIR }}
-        if: ${{ inputs.docker_overrides != '' }}
-        uses: ./.github/actions/apply-container-overrides
-        with:
-          project_dir: ${{ env.LUNGO_DIR }}/
-          compose_file: docker-compose.yaml
-          docker_overrides: ${{ inputs.docker_overrides }}
-
-      - name: Resolve & install — ${{ env.LUNGO_DIR }}
-        run: |
-          uv lock --upgrade
-          uv sync --extra dev
-      
-      - name: Create CI env file
-        run: |
-          cat > .env <<'EOF'
-          LLM_MODEL=${{ secrets.LLM_MODEL }}
-          AZURE_API_KEY=${{ secrets.AZURE_API_KEY }}
-          AZURE_API_BASE=${{ secrets.AZURE_API_BASE }}
-          AZURE_API_VERSION=${{ secrets.AZURE_API_VERSION }}
-          EOF
-
-      - name: Run integration tests — ${{ env.LUNGO_DIR }}
-        run: uv run pytest -s
+    uses: ./.github/workflows/test-reusable.yaml
+    with:
+      project_dir: coffeeAGNTCY/coffee_agents/lungo # cannot access env context here
+      pip_overrides: ${{ inputs.pip_overrides }}
+      pip_constraints: ${{ inputs.pip_constraints }}
+      docker_overrides: ${{ inputs.docker_overrides }}
