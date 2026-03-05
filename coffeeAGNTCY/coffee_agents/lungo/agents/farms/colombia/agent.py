@@ -52,6 +52,7 @@ class GraphState(MessagesState):
     """
     next_node: str
     weather_forecast_success: bool
+    weather_forecast: str
 
 # --- 3. Implement the LangGraph Application Class ---
 @agent(name="colombia_farm_agent")
@@ -163,10 +164,10 @@ class FarmAgent:
                         mcp_call_result = "No content returned from tool."
 
                 logger.info(f"Weather forecast result: {mcp_call_result}")
-                return {"weather_forecast_success": True, "messages": [AIMessage(mcp_call_result)]}
+                return {"weather_forecast_success": True, "weather_forecast": [AIMessage(mcp_call_result)]}
         except Exception as e:
             logger.error(f"Error during MCP tool call: {e}")
-            return {"weather_forecast_success": False, "messages": [AIMessage(f"Weather Forecast MCP Server was Unavailable")]}
+            return {"weather_forecast_success": False, "weather_forecast": [AIMessage(f"Weather Forecast MCP Server was Unavailable")]}
         finally:
             pass
 
@@ -182,22 +183,26 @@ class FarmAgent:
         if not self.inventory_llm:
             self.inventory_llm = get_llm()
 
-        user_message = state["messages"]
+        user_message = state["messages"][-1] if state.get("messages") else ""
+        weather_forecast = state.get("weather_forecast", "")
 
         prompt = PromptTemplate(
             template="""You are a helpful Colombian coffee farm manager.
                 You should estimate the seasonal coffee yield after checking the weather given.
                 Always return a numeric yield estimate with units (e.g. "5000 lbs").
+                This should contain the the basic yield for colombia (5000 lbs) plus an estimated bonus yield based on the weather forecast (e.g. + 100 lbs per temperature unit above 0).
                 No explanation needed.
 
+                Weather forecast: {weather_forecast}
                 User question: {user_message}
                 """,
-            input_variables=["user_message"]
+            input_variables=["user_message", "weather_forecast"]
         )
         chain = prompt | self.inventory_llm
 
         llm_response = chain.invoke({
             "user_message": user_message,
+            "weather_forecast": weather_forecast,
         }).content
 
         logger.info(f"Inventory response generated: {llm_response}")
