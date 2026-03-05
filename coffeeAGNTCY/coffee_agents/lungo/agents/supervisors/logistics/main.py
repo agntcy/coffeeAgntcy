@@ -1,6 +1,8 @@
 # Copyright AGNTCY Contributors (https://github.com/agntcy)
 # SPDX-License-Identifier: Apache-2.0
 
+import config.logging_config  # noqa: F401 - runs setup on import; must be first
+
 import asyncio
 import json
 import logging
@@ -20,11 +22,9 @@ from agents.supervisors.logistics.graph.graph import LogisticGraph
 from agents.supervisors.logistics.graph import shared
 from agents.logistics.shipper.card import AGENT_CARD  # assuming similar structure
 from config.config import DEFAULT_MESSAGE_TRANSPORT, LLM_MODEL, TRANSPORT_SERVER_ENDPOINT
-from config.logging_config import setup_logging
 from common.streaming_capability import require_streaming_capability
 from pathlib import Path
 
-setup_logging()
 logger = logging.getLogger("lungo.logistics.supervisor.main")
 
 load_dotenv()

@@ -1,6 +1,8 @@
 # Copyright AGNTCY Contributors (https://github.com/agntcy)
 # SPDX-License-Identifier: Apache-2.0
 
+import config.logging_config  # noqa: F401 - runs setup on import; must be first
+
 import asyncio
 import logging
 

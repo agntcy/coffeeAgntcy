@@ -1,6 +1,8 @@
 # Copyright AGNTCY Contributors (https://github.com/agntcy)
 # SPDX-License-Identifier: Apache-2.0
 
+import config.logging_config  # noqa: F401 - runs setup on import; must be first
+
 from typing import Any
 from datetime import datetime, timezone
 import logging
@@ -17,7 +19,6 @@ from config.config import (
     TRANSPORT_SERVER_ENDPOINT,
 )
 
-logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # Initialize a multi-protocol, multi-transport agntcy factory.

@@ -3,11 +3,31 @@
 
 """
 Logging configuration using loguru with structured logging support.
+Unified format with lungo: UTC timestamp, level, name - message; flush after each write.
 """
 
 import sys
 from pathlib import Path
 from loguru import logger
+
+# Canonical format matching lungo: YYYY-MM-DD HH:mm:ss.mmm | LEVEL     | name - message
+LOG_FORMAT = (
+    "{time:YYYY-MM-DD HH:mm:ss.SSS!UTC} | {level: <8} | {extra[name]} - {message}"
+)
+
+
+class _FlushingSink:
+    """Wraps a stream and flushes after every write so log lines appear immediately."""
+
+    def __init__(self, stream):
+        self._stream = stream
+
+    def write(self, message):
+        self._stream.write(message)
+        self._stream.flush()
+
+    def flush(self):
+        self._stream.flush()
 
 
 def configure_logger(
@@ -19,30 +39,20 @@ def configure_logger(
     level = "DEBUG" if debug else "INFO"
 
     if file_path:
-        # log to file
         logger.add(
             sink=file_path,
             level=level,
-            format="{time:YYYY-MM-DD HH:mm:ss} | "
-            "{level: <8} | "
-            "{name}:{function}:{line} - "
-            "{message} - {extra}",
+            format=LOG_FORMAT,
             backtrace=debug,
             rotation="10 MB",
             colorize=False,
         )
-
-        # Because we also want to log errors to stdout,
-        # changing the level before configuring the stdout logger.
         level = "ERROR"
 
     logger.add(
-        sink=sys.stdout,
+        sink=_FlushingSink(sys.stdout),
         level=level,
-        format="<green>{time:YYYY-MM-DD HH:mm:ss}</green> | "
-        "<level>{level: <8}</level> | "
-        "<cyan>{name}</cyan>:<cyan>{function}</cyan>:<cyan>{line}</cyan> - "
-        "<level>{message}</level> - {extra}",
+        format=LOG_FORMAT,
         backtrace=debug,
         colorize=True,
     )
@@ -60,4 +70,4 @@ def get_logger(name: str | None = None):
     """
     if name:
         return logger.bind(name=name)
-    return logger
+    return logger.bind(name="root")

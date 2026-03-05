@@ -1,6 +1,8 @@
 # Copyright AGNTCY Contributors (https://github.com/agntcy)
 # SPDX-License-Identifier: Apache-2.0
 
+import config.logging_config  # noqa: F401 - runs setup on import; must be first
+
 import logging
 
 from dotenv import load_dotenv
@@ -16,13 +18,11 @@ from ioa_observe.sdk.tracing import session_start
 from agents.supervisors.auction.graph.graph import ExchangeGraph
 from agents.supervisors.auction.graph import shared
 from config.config import DEFAULT_MESSAGE_TRANSPORT, LLM_MODEL
-from config.logging_config import setup_logging
 from pathlib import Path
 from common.version import get_version_info
 from common.streaming_capability import require_streaming_capability
 from agents.supervisors.auction.api import create_apps_router
 
-setup_logging()
 logger = logging.getLogger("lungo.supervisor.main")
 
 load_dotenv()

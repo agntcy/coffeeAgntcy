@@ -1,6 +1,8 @@
 # Copyright 2025 AGNTCY Contributors (https://github.com/agntcy)
 # SPDX-License-Identifier: Apache-2.0
 
+import config.logging_config  # noqa: F401 - runs setup on import; must be first
+
 import logging
 import asyncio
 import os
@@ -10,7 +12,6 @@ from agntcy_app_sdk.app_sessions import AppContainer
 from agntcy_app_sdk.factory import AgntcyFactory
 from config.config import DEFAULT_MESSAGE_TRANSPORT, TRANSPORT_SERVER_ENDPOINT
 
-logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("payment_service")
 
 mcp = FastMCP(
