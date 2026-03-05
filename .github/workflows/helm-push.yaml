@@ -13,6 +13,22 @@ on:
     paths:
       - 'coffeeAGNTCY/coffee_agents/*/deployment/helm/**'
   workflow_dispatch:
+    inputs:
+      push:
+        description: 'Whether to push the charts to the registry.'
+        required: false
+        type: boolean
+        default: false
+      build_corto:
+        description: 'Whether to build the corto chart.'
+        required: false
+        type: boolean
+        default: true
+      build_lungo:
+        description: 'Whether to build the lungo chart.'
+        required: false
+        type: boolean
+        default: true
 
 env:
   CORTO_DIR: coffeeAGNTCY/coffee_agents/corto
@@ -33,7 +49,20 @@ jobs:
         uses: actions/checkout@v6
         with:
           fetch-depth: 0
-      
+
+      - name: Log event info
+        run: |
+          echo "event_name=${{ github.event_name }}"
+          echo "ref=${{ github.ref }}"
+          echo "ref_name=${{ github.ref_name }}"
+
+      - name: Log dispatch inputs
+        if: ${{ github.event_name == 'workflow_dispatch' }}
+        run: |
+          echo "push=${{ inputs.push }}"
+          echo "build_corto=${{ inputs.build_corto }}"
+          echo "build_lungo=${{ inputs.build_lungo }}"
+
       - name: Detect changed paths for main sub-projects
         id: check-subprojects
         run: |
@@ -43,6 +72,9 @@ jobs:
           if [[ "${{ github.event_name }}" == "push" ]]; then
             build_corto=true
             build_lungo=true
+          elif [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            build_corto=${{ inputs.build_corto }}
+            build_lungo=${{ inputs.build_lungo }}
           elif [[ "${{ github.event_name }}" == "pull_request" ]]; then
             base="${{ github.event.pull_request.base.sha }}"
             head="${{ github.event.pull_request.head.sha }}"
@@ -83,7 +115,7 @@ jobs:
     with:
       path: ${{ matrix.chart.path }}
       package_name: ${{ matrix.chart.package_name }}
-      push: ${{ github.event_name == 'push' }}
+      push: ${{ github.event_name == 'push' || ( github.event_name == 'workflow_dispatch' && inputs.push ) }}
 
 
   helm-package-lungo:
@@ -144,4 +176,4 @@ jobs:
     with:
       path: ${{ matrix.chart.path }}
       package_name: ${{ matrix.chart.package_name }}
-      push: ${{ github.event_name == 'push' }}
+      push: ${{ github.event_name == 'push' || ( github.event_name == 'workflow_dispatch' && inputs.push )}}
