@@ -71,6 +71,9 @@ docker compose up logistics-farm logistics-supervisor logistics-shipper logistic
 
 This will start the supervisor, shipper, accountant, farm, helpdesk,  and SLIM transport services.
 
+To stop, use list for `docker compose down` or run `docker compose --profile '*' down`.
+A plain `docker compose down` can fail with the "network still in use" message, if the started containers have profiles defined.
+
 ---
 
 ## Run Individually (one terminal per service)

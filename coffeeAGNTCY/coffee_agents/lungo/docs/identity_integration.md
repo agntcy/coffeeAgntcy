@@ -97,6 +97,9 @@ Start the services:
 docker compose up exchange-server payment-mcp-server brazil-farm-server colombia-farm-server vietnam-farm-server weather-mcp-server
 ```
 
+To stop, use the same list for `docker compose down` as when starting, or run `docker compose --profile '*' down`.
+A plain `docker compose down` can fail with the "network still in use" message, if the started containers have profiles defined.
+
 Run without `.env` (inline key):
 
 ```sh

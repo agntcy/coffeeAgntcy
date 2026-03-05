@@ -21,6 +21,9 @@ This starts:
 - `dir-mcp-server`: The MCP server in front of the API service
 - `zot`: OCI-compliant registry for storing agent artifacts
 
+To stop, use the same format for down, e.g. `docker compose down dir-api-server dir-mcp-server zot` or run `docker compose --profile '*' down`.
+A plain `docker compose down` can fail with the "network still in use" message, if the started containers have profiles defined.
+
 ### 2. Install Development Dependencies
 
 Install the required development dependencies for the integration scripts:
