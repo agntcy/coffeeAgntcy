@@ -4,7 +4,7 @@ on:
   workflow_call:
     inputs:
       name:
-        description: 'The name of the image.'
+        description: 'The name of the container image.'
         required: true
         type: string
       dockerfile:
@@ -12,21 +12,21 @@ on:
         required: true
         type: string
       push:
-        description: 'Whether to push the image to the registry.'
+        description: 'Whether to push the container image to the registry.'
         required: false
         type: boolean
         default: false
       platforms:
-        description: 'The platforms to build the image for.'
+        description: 'The platforms to build the container image for.'
         required: false
         type: string
         default: linux/amd64,linux/arm64
       image_tag:
-        description: 'The tag to use for the image.'
+        description: 'The tag to use for the container image.'
         required: true
         type: string
       git_branch:
-        description: 'The branch to use for the image.'
+        description: 'The branch to use for the container image.'
         required: true
         type: string
 
@@ -52,23 +52,12 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Get Git tag (if any)
-        id: get_tag
-        run: |
-          echo "tag_name=${GITHUB_REF#refs/tags/}" | tee -a $GITHUB_OUTPUT
-
       - name: Generate metadata
         id: metadata
         run: |
           echo "date=$(date -u +'%Y-%m-%dT%H:%M:%SZ')" | tee -a $GITHUB_OUTPUT
           echo "date_formatted=$(date -u +'%Y-%m-%d')" | tee -a $GITHUB_OUTPUT
           echo "short_sha=${GITHUB_SHA:0:7}" | tee -a $GITHUB_OUTPUT
-
-      - name: Log Event Type, Ref and Tag
-        run: |
-          echo "Event: ${{ github.event_name }}"
-          echo "Ref: ${{ github.ref }}"
-          echo "Tag: ${{ steps.get_tag.outputs.tag_name }}"
 
       - name: Log in to GitHub Container Registry
         if: inputs.push == true
