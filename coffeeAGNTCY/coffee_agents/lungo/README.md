@@ -307,6 +307,8 @@ docker compose --profile recruiter up
 docker compose --profile farms --profile logistics --profile recruiter up
 ```
 
+If you started services with one or more profiles, run `docker compose down` with the **same profile(s)** (e.g. `docker compose --profile farms down`) or tear everything down with `docker compose --profile '*' down`. Do not run a bare `docker compose down` (no profile): it only stops unprofiled services and the network removal will fail with "Network ... Resource is still in use."
+
 > **Note:** Shared infrastructure services (nats, ui, clickhouse, otel-collector, grafana, etc.) have no profile and will start with any profile.
 
 Once running:
