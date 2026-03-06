@@ -6,7 +6,13 @@
 import React, { useState } from "react"
 import { InformationCircleIcon, XMarkIcon } from "@heroicons/react/24/outline"
 import ReactMarkdown from "react-markdown"
+import rehypeSanitize from "rehype-sanitize"
 
+/**
+ * infoContent must come from trusted app/constants only.
+ * If it ever comes from API or user input, sanitize first or pass plain text.
+ * rehypeSanitize is used as defense-in-depth to strip unsafe HTML.
+ */
 interface InfoButtonProps {
   infoContent: string
   className?: string
@@ -55,7 +61,9 @@ const InfoButton: React.FC<InfoButtonProps> = ({
             </button>
 
             <div className="text-sm" style={{ color: "var(--info-text)" }}>
-              <ReactMarkdown>{infoContent}</ReactMarkdown>
+              <ReactMarkdown rehypePlugins={[rehypeSanitize]}>
+                {infoContent}
+              </ReactMarkdown>
             </div>
           </div>
         </div>
