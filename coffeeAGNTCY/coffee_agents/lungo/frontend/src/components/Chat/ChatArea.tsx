@@ -6,7 +6,7 @@
 import React, { useCallback, useEffect, useState } from "react"
 
 import { Message } from "@/types/message"
-import { parseApiError, stripHtml } from "@/utils/const"
+import { parseApiError } from "@/utils/const"
 import { useAgentAPI } from "@/hooks/useAgentAPI"
 import { useGroupSessionId } from "@/stores/groupStreamingStore"
 
@@ -303,7 +303,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
                         </div>
                       ) : (
                         <>
-                          {stripHtml(agentResponse?.response ?? "")}
+                          {agentResponse?.response ?? ""}
                           {(agentResponse?.session_id || groupSessionId) &&
                             !isAgentLoading &&
                             pattern !== "on_demand_discovery" && (

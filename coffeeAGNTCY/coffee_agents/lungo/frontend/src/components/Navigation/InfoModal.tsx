@@ -5,7 +5,6 @@
 
 import React from "react"
 import { X } from "lucide-react"
-import { stripHtml } from "@/utils/const"
 import { env } from "@/utils/env"
 
 interface InfoModalProps {
@@ -80,14 +79,12 @@ const InfoModal: React.FC<InfoModalProps> = ({ isOpen, onClose }) => {
               <div className="flex justify-between">
                 <span>Release Version:</span>
                 <span className="font-mono text-modal-accent">
-                  {stripHtml(info?.version ?? "…")}
+                  {info?.version ?? "…"}
                 </span>
               </div>
               <div className="flex justify-between">
                 <span>Build Date:</span>
-                <span className="font-mono">
-                  {stripHtml(info?.build_date ?? "…")}
-                </span>
+                <span className="font-mono">{info?.build_date ?? "…"}</span>
               </div>
             </div>
           </div>
@@ -100,10 +97,8 @@ const InfoModal: React.FC<InfoModalProps> = ({ isOpen, onClose }) => {
               {info?.dependencies &&
                 Object.entries(info.dependencies).map(([name, ver]) => (
                   <div key={name} className="flex justify-between">
-                    <span>{stripHtml(name)}:</span>
-                    <span className="font-mono text-modal-accent">
-                      {stripHtml(String(ver))}
-                    </span>
+                    <span>{name}:</span>
+                    <span className="font-mono text-modal-accent">{ver}</span>
                   </div>
                 ))}
               {!info?.dependencies && !error && (

@@ -8,7 +8,6 @@ import { HiUser } from "react-icons/hi"
 import { RiRobot2Fill } from "react-icons/ri"
 import { Waveform } from "ldrs/react"
 import "ldrs/react/Waveform.css"
-import { stripHtml } from "@/utils/const"
 
 interface SlowTextProps {
   text: string
@@ -47,7 +46,6 @@ const Message: React.FC<MessageProps> = ({
   animate,
   loading,
 }) => {
-  const safeContent = stripHtml(content ?? "")
   return (
     <div
       className={`flex w-full items-start gap-2 px-4 py-6 sm:px-8 md:px-16 md:py-[30px] lg:px-[120px] ${aiMessage ? "bg-[rgb(247,247,248)]" : ""}`}
@@ -61,9 +59,9 @@ const Message: React.FC<MessageProps> = ({
             <Waveform size="20" stroke="3.5" speed="1" color="#049FD9" />
           </div>
         ) : animate ? (
-          <SlowText speed={20} text={safeContent} />
+          <SlowText speed={20} text={content} />
         ) : (
-          safeContent
+          content
         )}
       </div>
     </div>

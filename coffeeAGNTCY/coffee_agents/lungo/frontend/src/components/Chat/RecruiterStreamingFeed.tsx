@@ -7,7 +7,6 @@ import React, { useState, useEffect, useCallback, useRef } from "react"
 import { ChevronDown, ChevronUp, Loader2 } from "lucide-react"
 import AgentIcon from "@/assets/Coffee_Icon.svg"
 import CheckCircle from "@/assets/Check_Circle.png"
-import { stripHtml } from "@/utils/const"
 import {
   RecruiterStreamingFeedProps,
   RecruiterStreamingEvent,
@@ -88,7 +87,7 @@ const RecruiterStreamingFeed: React.FC<RecruiterStreamingFeedProps> = ({
       <div className="flex max-w-[calc(100%-3rem)] flex-1 flex-col items-start rounded p-1 px-2">
         {errorMessage ? (
           <div className="whitespace-pre-wrap break-words font-cisco text-sm font-normal leading-5 text-chat-text">
-            Connection error: {stripHtml(errorMessage)}
+            Connection error: {errorMessage}
           </div>
         ) : isComplete ? (
           <div className="whitespace-pre-wrap break-words font-cisco text-sm font-bold leading-5 text-chat-text">
@@ -146,9 +145,7 @@ const RecruiterStreamingFeed: React.FC<RecruiterStreamingFeedProps> = ({
                         {event.author && (
                           <span className="font-bold">{event.author}: </span>
                         )}
-                        <span className="font-normal">
-                          {stripHtml(String(event.message ?? ""))}
-                        </span>
+                        <span className="font-normal">{event.message}</span>
                       </div>
                     </div>
                   </div>
