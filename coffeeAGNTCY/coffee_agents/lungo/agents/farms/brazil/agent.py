@@ -2,27 +2,34 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import logging
+import os
 from typing import Literal
 
+from config.config import LLM_MODEL
+from ioa_observe.sdk.decorators import agent, tool
 from llama_index.core.agent.workflow import FunctionAgent
 from llama_index.llms.litellm import LiteLLM
-from config.config import LLM_MODEL
-from ioa_observe.sdk.decorators import tool, agent, graph
-from llama_index.llms.azure_openai import AzureOpenAI
-import os
 
 logger = logging.getLogger("lungo.brazil_farm_agent.agent")
-# Brazil farm agent is a llama_index based agent
-# Initialize llm with llama_index_LiteLLM
+
 litellm_proxy_base_url = os.getenv("LITELLM_PROXY_BASE_URL")
 litellm_proxy_api_key = os.getenv("LITELLM_PROXY_API_KEY")
 
+# Brazil farm is LlamaIndex + LiteLLM. The proxy exposes OpenAI-style /v1/chat/completions
+# and expects model=azure/gpt-4o in the body. If we don't force the client, LiteLLM sees
+# "azure/gpt-4o" and uses the Azure provider, which builds an Azure-style URL and gets 404.
+# Force custom_llm_provider="openai" so requests go to api_base/chat/completions like curl.
+# Use a metadata-safe model name so LlamaIndex's context-size lookup doesn't raise.
 if litellm_proxy_base_url and litellm_proxy_api_key:
-    logger.info(f"Using LLM via LiteLLM proxy: {litellm_proxy_base_url}")
-    llm = AzureOpenAI(
-        engine=LLM_MODEL,
-        azure_endpoint=litellm_proxy_base_url,
-        api_key=litellm_proxy_api_key
+    logger.info("Using LLM via LiteLLM proxy: %s", litellm_proxy_base_url)
+    llm = LiteLLM(
+        model=LLM_MODEL.removeprefix("azure/"),
+        api_base=litellm_proxy_base_url,
+        api_key=litellm_proxy_api_key,
+        additional_kwargs={
+            "model": LLM_MODEL,
+            "custom_llm_provider": "openai",
+        },
     )
 else:
     llm = LiteLLM(LLM_MODEL)

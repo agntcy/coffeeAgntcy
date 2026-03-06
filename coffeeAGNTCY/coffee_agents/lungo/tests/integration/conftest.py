@@ -210,6 +210,14 @@ def _derive_name_from_spec(spec: dict) -> str:
 def agents_up(request, transport_config):
     """
     Start one or more registered agents via @pytest.mark.agents([...]).
+
+    Farm agents (e.g. brazil-farm, colombia-farm, vietnam-farm) are started as
+    local Python subprocesses (ProcessRunner), not as Docker services. Docker
+    is used only for session-level infra: slim, nats, otel-collector,
+    clickhouse-server, grafana. Each agent runs with env = _base_env() |
+    transport_config (so it inherits the test run's environment, including
+    LLM/LiteLLM vars if set).
+
     Example:
         @pytest.mark.agents(["brazil-farm", "weather-mcp"])
         def test_things(agents_up): ...
