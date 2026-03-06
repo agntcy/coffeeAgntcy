@@ -69,7 +69,17 @@ export default [
     ignores: ["**/logger.ts"],
     rules: {
       "no-restricted-syntax": [
-        "warn",
+        "error",
+        {
+          selector: "JSXAttribute[name.name='dangerouslySetInnerHTML']",
+          message:
+            "dangerouslySetInnerHTML can lead to XSS. Render user or API content as text only (e.g. {value}).",
+        },
+        {
+          selector: "MemberExpression[property.name='innerHTML']",
+          message:
+            "innerHTML can lead to XSS. Render user or API content as text only (e.g. textContent or React text children).",
+        },
         {
           selector: "MemberExpression[object.name='unsafeLogger']",
           message:

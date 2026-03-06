@@ -7,6 +7,7 @@ import React, { useState } from "react"
 import { InformationCircleIcon, XMarkIcon } from "@heroicons/react/24/outline"
 import ReactMarkdown from "react-markdown"
 import rehypeSanitize from "rehype-sanitize"
+import { stripHtml } from "@/utils/const"
 
 /**
  * infoContent must come from trusted app/constants only.
@@ -62,7 +63,7 @@ const InfoButton: React.FC<InfoButtonProps> = ({
 
             <div className="text-sm" style={{ color: "var(--info-text)" }}>
               <ReactMarkdown rehypePlugins={[rehypeSanitize]}>
-                {infoContent}
+                {stripHtml(infoContent)}
               </ReactMarkdown>
             </div>
           </div>

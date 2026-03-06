@@ -5,6 +5,7 @@
 
 import React, { useState, useRef, useEffect } from "react"
 import { env } from "@/utils/env"
+import { stripHtml } from "@/utils/const"
 import { logger } from "@/utils/logger"
 import LoadingSpinner from "./LoadingSpinner"
 import { PromptCategory } from "./PromptTypes"
@@ -165,11 +166,11 @@ const LogisticsPromptsDropdown: React.FC<LogisticsPromptsDropdownProps> = ({
                       onClick={() => handleItemClick(item.prompt)}
                     >
                       <div className="w-full break-words font-cisco text-sm font-normal leading-5 tracking-[0%] text-chat-text">
-                        {item.prompt}
+                        {stripHtml(item.prompt ?? "")}
                       </div>
                       {item.description && (
                         <div className="w-full break-words font-cisco text-xs font-normal leading-4 tracking-[0%] text-chat-text opacity-70">
-                          {item.description}{" "}
+                          {stripHtml(item.description)}{" "}
                           {/* Render item.description here */}
                         </div>
                       )}

@@ -5,6 +5,7 @@
 
 import React, { useState, useEffect } from "react"
 import { createPortal } from "react-dom"
+import { stripHtml } from "@/utils/const"
 import { env } from "@/utils/env"
 import { fetchOasfRecord, OasfRecord } from "./DirectoryApi"
 import { CustomNodeData } from "../Elements/types"
@@ -63,8 +64,10 @@ const OasfRecordModal: React.FC<OasfRecordModalProps> = ({
     } catch (err) {
       const apiError = err as IdentityServiceError
       setError(
-        apiError.message ||
-          "An unexpected error occurred while fetching OASF record.",
+        stripHtml(
+          apiError.message ||
+            "An unexpected error occurred while fetching OASF record.",
+        ),
       )
     } finally {
       setLoading(false)

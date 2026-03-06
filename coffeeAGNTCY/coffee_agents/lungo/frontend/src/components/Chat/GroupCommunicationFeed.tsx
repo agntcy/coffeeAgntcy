@@ -13,6 +13,7 @@ import { ChevronDown, ChevronUp } from "lucide-react"
 import AgentIcon from "@/assets/Coffee_Icon.svg"
 import CheckCircle from "@/assets/CheckCircle.png"
 import type { Node } from "@xyflow/react"
+import { stripHtml } from "@/utils/const"
 import type { GraphConfig } from "@/utils/graphConfigs"
 import {
   GroupCommunicationFeedProps,
@@ -226,7 +227,7 @@ const GroupCommunicationFeed: React.FC<GroupCommunicationFeedProps> = ({
       <div className="flex max-w-[calc(100%-3rem)] flex-1 flex-col items-start rounded p-1 px-2">
         {errorMessage ? (
           <div className="whitespace-pre-wrap break-words font-cisco text-sm font-normal leading-5 text-chat-text">
-            Connection error: {errorMessage}
+            Connection error: {stripHtml(errorMessage)}
           </div>
         ) : storeIsComplete && groupCurrentOrderId ? (
           <div className="whitespace-pre-wrap break-words font-cisco text-sm font-normal leading-5 text-chat-text">
@@ -290,7 +291,10 @@ const GroupCommunicationFeed: React.FC<GroupCommunicationFeedProps> = ({
                             → <span className="font-semibold">All Agents</span>
                           </>
                         )}
-                        : <span className="font-normal">"{step.message}"</span>
+                        :{" "}
+                        <span className="font-normal">
+                          "{stripHtml(String(step.message ?? ""))}"
+                        </span>
                       </span>
                     </div>
                   </div>

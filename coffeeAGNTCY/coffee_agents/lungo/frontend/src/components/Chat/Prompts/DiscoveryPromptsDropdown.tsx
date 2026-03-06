@@ -4,6 +4,7 @@
  **/
 
 import React, { useState, useRef, useEffect } from "react"
+import { stripHtml } from "@/utils/const"
 import { env } from "@/utils/env"
 import LoadingSpinner from "./LoadingSpinner"
 import { PromptCategory, Prompt } from "./PromptTypes"
@@ -179,11 +180,15 @@ const DiscoveryPromptsDropdown: React.FC<DiscoveryPromptsDropdownProps> = ({
                       onClick={() => handleItemClick(item)}
                     >
                       <div className="w-full break-words font-cisco text-sm font-normal leading-5 tracking-[0%] text-chat-text">
-                        {typeof item === "string" ? item : item?.prompt}
+                        {stripHtml(
+                          typeof item === "string"
+                            ? item
+                            : (item?.prompt ?? ""),
+                        )}
                       </div>
                       {typeof item !== "string" && item?.description && (
                         <div className="w-full break-words font-cisco text-xs font-normal leading-4 tracking-[0%] text-chat-text opacity-70">
-                          {item.description}
+                          {stripHtml(item.description)}
                         </div>
                       )}
                     </div>

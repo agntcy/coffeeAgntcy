@@ -6,6 +6,7 @@
 import React, { useState, useEffect, useCallback } from "react"
 import { BadgeData } from "./types"
 import { CustomNodeData } from "../Elements/types"
+import { stripHtml } from "@/utils/const"
 import { logger } from "@/utils/logger"
 import { fetchBadgeDetails, IdentityServiceError } from "./IdentityApi"
 import { useEscapeKey } from "@/hooks/useEscapeKey"
@@ -46,8 +47,10 @@ const BadgeDetailsModal: React.FC<BadgeDetailsModalProps> = ({
       const identityError = error as IdentityServiceError
       logger.error("Error fetching badge details:", identityError)
       setError(
-        identityError.message ||
-          "An unexpected error occurred while fetching badge details.",
+        stripHtml(
+          identityError.message ||
+            "An unexpected error occurred while fetching badge details.",
+        ),
       )
     } finally {
       setLoading(false)
