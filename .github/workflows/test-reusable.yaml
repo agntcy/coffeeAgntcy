@@ -1,0 +1,75 @@
+name: Integration Tests per Project
+
+on:
+  workflow_call:
+    inputs:
+      project_dir:
+        description: 'The directory of the project to test.'
+        required: true
+        type: string
+      pip_overrides:
+        description: 'One-per-line PEP 508 specs to force (shared across demos; applied only if declared).'
+        required: false
+        type: string
+        default: ""
+      pip_constraints:
+        description: 'One-per-line constraints (shared across demos; applied only if declared).'
+        required: false
+        type: string
+        default: ""
+      docker_overrides:
+        description: 'One-per-line service=image[:tag] (shared across demos; applied only if declared).'
+        required: false
+        type: string
+        default: ""
+
+jobs:
+  integration-tests:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ${{ inputs.project_dir }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.13'
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v7
+
+      - name: Apply uv overrides/constraints (if applicable)
+        if: ${{ inputs.pip_overrides != '' || inputs.pip_constraints != '' }}
+        uses: ./.github/actions/apply-uv-overrides
+        with:
+          project_dir: ${{ inputs.project_dir }}
+          pip_overrides: ${{ inputs.pip_overrides }}
+          pip_constraints: ${{ inputs.pip_constraints }}
+
+      - name: Apply compose image overrides (if any)
+        if: ${{ inputs.docker_overrides != '' }}
+        uses: ./.github/actions/apply-container-overrides
+        with:
+          project_dir: ${{ inputs.project_dir }}/
+          compose_file: docker-compose.yaml
+          docker_overrides: ${{ inputs.docker_overrides }}
+
+      - name: Resolve & install
+        run: |
+          uv lock --upgrade
+          uv sync --extra dev
+      
+      - name: Create CI env file
+        run: |
+          cat > .env <<'EOF'
+          LLM_MODEL=${{ secrets.LLM_MODEL }}
+          AZURE_API_KEY=${{ secrets.AZURE_API_KEY }}
+          AZURE_API_BASE=${{ secrets.AZURE_API_BASE }}
+          AZURE_API_VERSION=${{ secrets.AZURE_API_VERSION }}
+          EOF
+
+      - name: Run integration tests
+        run: uv run pytest -s

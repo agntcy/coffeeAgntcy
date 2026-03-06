@@ -4,6 +4,15 @@ on:
   push:
     branches:
       - main
+    paths:
+      - 'README.md'
+      - 'CONTRIBUTING.md'
+      - 'CHANGELOG.md'
+      - 'CODE_OF_CONDUCT.md'
+      - 'LICENSE'
+      - 'SECURITY.md'
+      - 'assets/**'
+      - 'docs/**'
 
 permissions:
   contents: write
@@ -12,8 +21,9 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-python@v6
         with:
           python-version: '3.13'
 
