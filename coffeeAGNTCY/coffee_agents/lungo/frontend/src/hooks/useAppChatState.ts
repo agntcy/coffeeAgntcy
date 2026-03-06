@@ -13,12 +13,21 @@ export interface UseAppChatStateParams {
   selectedPattern: PatternType
 }
 
+/** Safe read of persisted messages; invalid JSON or non-array is treated as no messages. */
+function getInitialMessages(): Message[] {
+  try {
+    const saved = localStorage.getItem(LOCAL_STORAGE_KEY)
+    if (!saved) return []
+    const parsed: unknown = JSON.parse(saved)
+    return Array.isArray(parsed) ? (parsed as Message[]) : []
+  } catch {
+    return []
+  }
+}
+
 /** Chat UI state, messages persistence, and response/input handlers. */
 export function useAppChatState({ selectedPattern }: UseAppChatStateParams) {
-  const [messages, setMessages] = useState<Message[]>(() => {
-    const saved = localStorage.getItem(LOCAL_STORAGE_KEY)
-    return saved ? JSON.parse(saved) : []
-  })
+  const [messages, setMessages] = useState<Message[]>(getInitialMessages)
 
   const [aiReplied, setAiReplied] = useState<boolean>(false)
   const [buttonClicked, setButtonClicked] = useState<boolean>(false)
