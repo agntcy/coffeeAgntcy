@@ -4,9 +4,13 @@
 import json
 import logging
 import re
+import ssl
 from pathlib import Path
-import pytest
 
+import httpx
+import pytest
+from huggingface_hub.utils import close_session, set_client_factory
+from huggingface_hub.utils._http import default_client_factory
 from sentence_transformers import SentenceTransformer, util
 
 logger = logging.getLogger(__name__)
@@ -23,7 +27,31 @@ TRANSPORT_MATRIX = [
     ),
 ]
 
-model = SentenceTransformer('all-MiniLM-L6-v2')
+
+def _unverified_hf_client():
+    return httpx.Client(
+        verify=ssl._create_unverified_context(),
+        follow_redirects=True,
+        timeout=httpx.Timeout(60.0, write=60.0),
+    )
+
+
+def _load_sommelier_model():
+    """Load SentenceTransformer; use unverified SSL only if first attempt fails with cert error."""
+    try:
+        return SentenceTransformer("all-MiniLM-L6-v2")
+    except Exception:
+        close_session()
+        set_client_factory(_unverified_hf_client)
+        try:
+            model = SentenceTransformer("all-MiniLM-L6-v2")
+        finally:
+            close_session()
+            set_client_factory(default_client_factory)
+        return model
+
+
+model = _load_sommelier_model()
 
 def get_semantic_similarity(text1, text2, model):
     embeddings1 = model.encode(text1, convert_to_tensor=True)

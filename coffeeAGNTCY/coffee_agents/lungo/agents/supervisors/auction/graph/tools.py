@@ -197,18 +197,18 @@ async def get_farm_yield_inventory(prompt: str, farm: str) -> str:
 
         response = await client.send_message(request)
         logger.info(f"Response received from A2A agent: {response}")
-        if response.root.result and response.root.result.parts:
-            part = response.root.result.parts[0].root
+        err = getattr(response.root, "error", None)
+        result = getattr(response.root, "result", None)
+        if err:
+            logger.error(f"A2A error from farm '{farm}': {err.message}")
+            raise A2AAgentError(f"Error from farm '{farm}': {err.message}")
+        if result and result.parts:
+            part = result.parts[0].root
             if hasattr(part, "text"):
                 return part.text.strip()
-            else:
-                raise A2AAgentError(f"Farm '{farm}' returned a result without text content.")
-        elif response.root.error:
-                logger.error(f"A2A error from farm '{farm}': {response.root.error.message}")
-                raise A2AAgentError(f"Error from farm '{farm}': {response.root.error.message}")
-        else:
-            logger.error(f"Unknown response type from farm '{farm}'.")
-            raise A2AAgentError(f"Unknown response type from farm '{farm}'.")
+            raise A2AAgentError(f"Farm '{farm}' returned a result without text content.")
+        logger.error(f"Unknown response type from farm '{farm}'.")
+        raise A2AAgentError(f"Unknown response type from farm '{farm}'.")
     except Exception as e: # Catch any underlying communication or client creation errors
         logger.error(f"Failed to communicate with farm '{farm}': {e}")
         raise A2AAgentError(f"Failed to communicate with farm '{farm}'. Details: {e}")
@@ -260,21 +260,20 @@ async def get_all_farms_yield_inventory(prompt: str) -> str:
 
         farm_yields = ""
         for response in responses:
-            # we want a dict for farm name -> yield, the farm_name will be in the response metadata
-            if response.root.result and response.root.result.parts:
-                part = response.root.result.parts[0].root
-                if hasattr(response.root.result, "metadata"):
-                    farm_name = response.root.result.metadata.get("name", "Unknown Farm")
-                else:
-                    farm_name = "Unknown Farm"
-
-                farm_yields += f"{farm_name} : {part.text.strip()}\n"
-            elif response.root.error:
-                err_msg = f"A2A error from farm: {response.root.error.message}"
+            err = getattr(response.root, "error", None)
+            result = getattr(response.root, "result", None)
+            if err:
+                err_msg = f"A2A error from farm: {err.message}"
                 logger.error(err_msg)
                 raise A2AAgentError(err_msg)
+            if result and result.parts:
+                part = result.parts[0].root
+                farm_name = "Unknown Farm"
+                if hasattr(result, "metadata") and result.metadata:
+                    farm_name = result.metadata.get("name", "Unknown Farm")
+                farm_yields += f"{farm_name} : {part.text.strip()}\n"
             else:
-                err_msg = f"Unknown response type from farm"
+                err_msg = "Unknown response type from farm"
                 logger.error(err_msg)
                 raise A2AAgentError(err_msg)
 
@@ -341,23 +340,24 @@ async def get_all_farms_yield_inventory_streaming(prompt: str):
         # Process responses as they arrive
         async for response in response_stream:
             try:
-                if response.root.result and response.root.result.parts:
-                    part = response.root.result.parts[0].root
+                err = getattr(response.root, "error", None)
+                result = getattr(response.root, "result", None)
+                if err:
+                    err_msg = f"A2A error from farm: {err.message}"
+                    logger.error(err_msg)
+                    yield f"Error from farm: {err.message}\n"
+                elif result and result.parts:
+                    part = result.parts[0].root
                     farm_name = "Unknown Farm"
-                    if hasattr(response.root.result, "metadata"):
-                        farm_name = response.root.result.metadata.get("name", "Unknown Farm")
+                    if hasattr(result, "metadata"):
+                        farm_name = result.metadata.get("name", "Unknown Farm")
 
                     if farm_name == "None":
-                        # received error from farm agent
                         errors.append(part.text.strip())
                     else:
                         responded_farms.add(farm_name)
                         logger.info(f"Received response from {farm_name} ({len(responded_farms)}/{len(recipients)})")
                         yield f"{farm_name} : {part.text.strip()}\n"
-                elif response.root.error:
-                    err_msg = f"A2A error from farm: {response.root.error.message}"
-                    logger.error(err_msg)
-                    yield f"Error from farm: {response.root.error.message}\n"
                 else:
                     err_msg = "Unknown response type from farm"
                     logger.error(err_msg)
@@ -454,18 +454,18 @@ async def create_order(farm: str, quantity: int, price: float) -> str:
         response = await client.send_message(request)
         logger.info(f"Response received from A2A agent: {response}")
 
-        if response.root.result and response.root.result.parts:
-            part = response.root.result.parts[0].root
+        err = getattr(response.root, "error", None)
+        result = getattr(response.root, "result", None)
+        if err:
+            logger.error(f"A2A error: {err.message}")
+            raise A2AAgentError(f"Error from order agent for farm '{farm}': {err.message}")
+        if result and result.parts:
+            part = result.parts[0].root
             if hasattr(part, "text"):
                 return part.text.strip()
-            else:
-                raise A2AAgentError(f"Farm '{farm}' returned a result without text content for order creation.")
-        elif response.root.error:
-            logger.error(f"A2A error: {response.root.error.message}")
-            raise A2AAgentError(f"Error from order agent for farm '{farm}': {response.root.error.message}")
-        else:
-            logger.error("Unknown response type")
-            raise A2AAgentError("Unknown response type from order agent")
+            raise A2AAgentError(f"Farm '{farm}' returned a result without text content for order creation.")
+        logger.error("Unknown response type")
+        raise A2AAgentError("Unknown response type from order agent")
     except Exception as e: # Catch any underlying communication or client creation errors
         logger.error(f"Failed to communicate with order agent for farm '{farm}': {e}")
         raise A2AAgentError(f"Failed to communicate with order agent for farm '{farm}'. Details: {e}")
@@ -511,18 +511,18 @@ async def get_order_details(order_id: str) -> str:
         response = await client.send_message(request)
         logger.info(f"Response received from A2A agent: {response}")
 
-        if response.root.result and response.root.result.parts:
-            part = response.root.result.parts[0].root
+        err = getattr(response.root, "error", None)
+        result = getattr(response.root, "result", None)
+        if err:
+            logger.error(f"A2A error from order agent for order ID '{order_id}': {err.message}")
+            raise A2AAgentError(f"Error from order agent for order ID '{order_id}': {err.message}")
+        if result and result.parts:
+            part = result.parts[0].root
             if hasattr(part, "text"):
                 return part.text.strip()
-            else:
-                raise A2AAgentError(f"Order agent returned a result without text content for order ID '{order_id}'.")
-        elif response.root.error:
-            logger.error(f"A2A error from order agent for order ID '{order_id}': {response.root.error.message}")
-            raise A2AAgentError(f"Error from order agent for order ID '{order_id}': {response.root.error.message}")
-        else:
-            logger.error(f"Unknown response type from order agent for order ID '{order_id}'.")
-            raise A2AAgentError(f"Unknown response type from order agent for order ID '{order_id}'.")
+            raise A2AAgentError(f"Order agent returned a result without text content for order ID '{order_id}'.")
+        logger.error(f"Unknown response type from order agent for order ID '{order_id}'.")
+        raise A2AAgentError(f"Unknown response type from order agent for order ID '{order_id}'.")
     except Exception as e: # Catch any underlying communication or client creation errors
         logger.error(f"Failed to communicate with order agent for order ID '{order_id}': {e}")
         raise A2AAgentError(f"Failed to communicate with order agent for order ID '{order_id}'. Details: {e}")

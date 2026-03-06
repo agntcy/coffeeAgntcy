@@ -82,6 +82,27 @@ files = ["docker-compose.yaml"]
 if Path("docker-compose.override.yaml").exists():
     files.append("docker-compose.override.yaml")
 
+
+def _shutdown_otel_sdk():
+    """Flush and shutdown the OpenTelemetry SDK in this process before docker is
+    brought down. Prevents 'Connection refused' to localhost:4318 and
+    'I/O operation on closed file' when the SDK's background thread or atexit
+    hook runs after the collector is gone and pytest has closed stdout/stderr.
+    """
+    try:
+        from opentelemetry import trace, metrics
+
+        tp = trace.get_tracer_provider()
+        mp = metrics.get_meter_provider()
+        for _name, provider in [("TracerProvider", tp), ("MeterProvider", mp)]:
+            if hasattr(provider, "force_flush"):
+                provider.force_flush(timeout_millis=5_000)
+            if hasattr(provider, "shutdown"):
+                provider.shutdown()
+    except Exception:  # noqa: BLE001
+        pass
+
+
 @pytest.fixture(scope="session", autouse=True)
 def orchestrate_session_services():
     print("\n--- Setting up session level service integrations ---")
@@ -90,6 +111,7 @@ def orchestrate_session_services():
     setup_identity()
     print("--- Session level service setup complete. Tests can now run ---")
     yield
+    _shutdown_otel_sdk()
     down(files)
 
 def setup_transports():
@@ -188,6 +210,14 @@ def _derive_name_from_spec(spec: dict) -> str:
 def agents_up(request, transport_config):
     """
     Start one or more registered agents via @pytest.mark.agents([...]).
+
+    Farm agents (e.g. brazil-farm, colombia-farm, vietnam-farm) are started as
+    local Python subprocesses (ProcessRunner), not as Docker services. Docker
+    is used only for session-level infra: slim, nats, otel-collector,
+    clickhouse-server, grafana. Each agent runs with env = _base_env() |
+    transport_config (so it inherits the test run's environment, including
+    LLM/LiteLLM vars if set).
+
     Example:
         @pytest.mark.agents(["brazil-farm", "weather-mcp"])
         def test_things(agents_up): ...
