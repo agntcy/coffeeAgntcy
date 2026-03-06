@@ -78,7 +78,11 @@ See [docs/llm_configuration.md](docs/llm_configuration.md) for more providers (A
 
 ### Agent Directory Service
 
-The recruiter agent searches for agents in AGNTCY's [Directory Service (dir)](https://github.com/agntcy/dir) — a decentralized platform for publishing, discovering, and exchanging agent information across a peer-to-peer network. It enables agents to publish structured metadata describing their capabilities using OASF standards, with cryptographic mechanisms for data integrity and provenance tracking. See the [dir README](https://github.com/agntcy/dir/blob/main/README.md) for full documentation.
+The recruiter agent searches for agents in AGNTCY's [Directory Service (dir)](https://github.com/agntcy/dir) — a
+decentralized platform for publishing, discovering, and exchanging agent information across a peer-to-peer network. It
+enables agents to publish structured metadata describing their capabilities using OASF standards, with cryptographic
+mechanisms for data integrity and provenance tracking. See the [dir
+README](https://github.com/agntcy/dir/blob/main/README.md) for full documentation.
 
 **Connect to an existing directory server:**
 
@@ -93,6 +97,15 @@ OASF_API_VALIDATION_DISABLE="true"
 ```bash
 # Start directory services (API server + Zot registry)
 docker compose -f docker/docker-compose.yaml up -d dir-api-server zot
+```
+
+#### Tests
+
+For the directory related tests, please install the Directory CLI:
+
+```bash
+# MacOS
+brew tap agntcy/dir https://github.com/agntcy/dir/ && brew install dirctl
 ```
 
 ### ADK Web Development
