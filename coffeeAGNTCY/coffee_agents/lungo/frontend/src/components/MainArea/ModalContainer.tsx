@@ -8,10 +8,14 @@ import IdentityModal from "./Graph/Identity/IdentityModal"
 import BadgeDetailsModal from "./Graph/Identity/BadgeDetailsModal"
 import PolicyDetailsModal from "./Graph/Identity/PolicyDetailsModal"
 import { ModalType } from "@/hooks/useModalManager"
+import type { CustomNodeData } from "./Graph/Elements/types"
+
+/** Node data for identity/badge/policy modals; may include isMcpServer from runtime. */
+type ModalNodeData = (CustomNodeData & { isMcpServer?: boolean }) | null
 
 interface ModalContainerProps {
   activeModal: ModalType
-  activeNodeData: any
+  activeNodeData: ModalNodeData
   modalPosition: { x: number; y: number }
   onClose: () => void
   onShowBadgeDetails: () => void
@@ -36,7 +40,7 @@ const ModalContainer: React.FC<ModalContainerProps> = ({
         nodeName={activeNodeData?.label1 || ""}
         position={modalPosition}
         activeModal={activeModal}
-        nodeData={activeNodeData}
+        nodeData={activeNodeData ?? undefined}
         isMcpServer={activeNodeData?.isMcpServer}
       />
 
@@ -45,14 +49,14 @@ const ModalContainer: React.FC<ModalContainerProps> = ({
         onClose={onClose}
         nodeName={activeNodeData?.label1 || ""}
         position={modalPosition}
-        nodeData={activeNodeData}
+        nodeData={(activeNodeData ?? undefined) as CustomNodeData}
         isMcpServer={activeNodeData?.isMcpServer}
       />
 
       <PolicyDetailsModal
         isOpen={activeModal === "policy"}
         onClose={onClose}
-        nodeData={activeNodeData}
+        nodeData={(activeNodeData ?? undefined) as CustomNodeData}
         nodeName={activeNodeData?.label1 || ""}
         position={modalPosition}
         isMcpServer={activeNodeData?.isMcpServer}

@@ -10,32 +10,25 @@ import { Message } from "@/types/message"
 import { isLocalDev, parseApiError, Role } from "@/utils/const"
 import { withRetry, RETRY_CONFIG } from "@/utils/retryUtils"
 import { shouldEnableRetries, getApiUrlForPattern } from "@/utils/patternUtils"
-import {AgentRecord} from "@/components/MainArea/Graph/Directory/types.ts";
-
-interface ApiResponse {
-  response: string
-  session_id?: string
-
-  agent_records?: AgentRecord[]
-}
+import type { ApiResponse } from "@/types/api"
 
 interface UseAgentAPIReturn {
   loading: boolean
   sendMessage: (prompt: string, pattern?: string) => Promise<ApiResponse>
   sendMessageWithCallback: (
-      prompt: string,
-      setMessages: React.Dispatch<React.SetStateAction<Message[]>>,
-      callbacks?: {
-        onStart?: () => void
-        onSuccess?: (response: ApiResponse) => void
-        onError?: (error: any) => void
-        onRetryAttempt?: (
-            attempt: number,
-            error: Error,
-            nextRetryAt: number,
-        ) => void
-      },
-      pattern?: string,
+    prompt: string,
+    setMessages: React.Dispatch<React.SetStateAction<Message[]>>,
+    callbacks?: {
+      onStart?: () => void
+      onSuccess?: (response: ApiResponse) => void
+      onError?: (error: Error) => void
+      onRetryAttempt?: (
+        attempt: number,
+        error: Error,
+        nextRetryAt: number,
+      ) => void
+    },
+    pattern?: string,
   ) => Promise<void>
   cancel: () => void
 }
@@ -61,8 +54,8 @@ export const useAgentAPI = (): UseAgentAPIReturn => {
   }, [])
 
   const sendMessage = async (
-      prompt: string,
-      pattern?: string,
+    prompt: string,
+    pattern?: string,
   ): Promise<ApiResponse> => {
     if (!prompt.trim()) {
       throw new Error("Prompt cannot be empty")
@@ -78,12 +71,12 @@ export const useAgentAPI = (): UseAgentAPIReturn => {
 
     const makeApiCall = async (): Promise<ApiResponse> => {
       const response = await axios.post<ApiResponse>(
-          `${apiUrl}/agent/prompt`,
-          { prompt },
-          {
-            signal: controller.signal,
-            withCredentials: !isLocalDev
-          },
+        `${apiUrl}/agent/prompt`,
+        { prompt },
+        {
+          signal: controller.signal,
+          withCredentials: !isLocalDev,
+        },
       )
 
       return response.data
@@ -109,19 +102,19 @@ export const useAgentAPI = (): UseAgentAPIReturn => {
   }
 
   const sendMessageWithCallback = async (
-      prompt: string,
-      setMessages: React.Dispatch<React.SetStateAction<Message[]>>,
-      callbacks?: {
-        onStart?: () => void
-        onSuccess?: (response: ApiResponse) => void
-        onError?: (error: any) => void
-        onRetryAttempt?: (
-            attempt: number,
-            error: Error,
-            nextRetryAt: number,
-        ) => void
-      },
-      pattern?: string,
+    prompt: string,
+    setMessages: React.Dispatch<React.SetStateAction<Message[]>>,
+    callbacks?: {
+      onStart?: () => void
+      onSuccess?: (response: ApiResponse) => void
+      onError?: (error: Error) => void
+      onRetryAttempt?: (
+        attempt: number,
+        error: Error,
+        nextRetryAt: number,
+      ) => void
+    },
+    pattern?: string,
   ): Promise<void> => {
     if (!prompt.trim()) return
 
@@ -158,20 +151,20 @@ export const useAgentAPI = (): UseAgentAPIReturn => {
 
     const makeApiCall = async (): Promise<ApiResponse> => {
       const response = await axios.post<ApiResponse>(
-          `${apiUrl}/agent/prompt`,
-          { prompt },
-          {
-            signal: controller.signal,
-            withCredentials: !isLocalDev
-          },
+        `${apiUrl}/agent/prompt`,
+        { prompt },
+        {
+          signal: controller.signal,
+          withCredentials: !isLocalDev,
+        },
       )
       return response.data
     }
 
     const onRetryAttempt = (attempt: number) => {
       const delay =
-          RETRY_CONFIG.baseDelay *
-          Math.pow(RETRY_CONFIG.backoffMultiplier, attempt - 1)
+        RETRY_CONFIG.baseDelay *
+        Math.pow(RETRY_CONFIG.backoffMultiplier, attempt - 1)
       const nextRetryAt = Date.now() + delay
 
       setMessages((prevMessages: Message[]) => {
@@ -187,9 +180,9 @@ export const useAgentAPI = (): UseAgentAPIReturn => {
 
       if (callbacks?.onRetryAttempt) {
         callbacks.onRetryAttempt(
-            attempt,
-            new Error("Retry attempt"),
-            nextRetryAt,
+          attempt,
+          new Error("Retry attempt"),
+          nextRetryAt,
         )
       }
     }
@@ -222,9 +215,9 @@ export const useAgentAPI = (): UseAgentAPIReturn => {
     } catch (error) {
       const { status, message } = parseApiError(error)
       const userMessage =
-          status && status >= 400 && status < 500
-              ? `HTTP ${status} - ${message}`
-              : message
+        status && status >= 400 && status < 500
+          ? `HTTP ${status} - ${message}`
+          : message
 
       if (requestIdRef.current === myRequestId) {
         setMessages((prevMessages: Message[]) => {
@@ -240,7 +233,7 @@ export const useAgentAPI = (): UseAgentAPIReturn => {
       }
 
       if (callbacks?.onError) {
-        callbacks.onError(error)
+        callbacks.onError(error as Error)
       }
     } finally {
       if (requestIdRef.current === myRequestId) {

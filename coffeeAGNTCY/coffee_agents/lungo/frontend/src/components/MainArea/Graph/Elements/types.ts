@@ -5,7 +5,10 @@ export interface ExtraHandle {
 }
 
 export interface CustomNodeData {
-  onOpenOasfModal: HTMLDivElement | null
+  onOpenOasfModal?: (
+    nodeData: CustomNodeData,
+    position: { x: number; y: number },
+  ) => void
   icon: React.ReactNode
   label1: string
   label2: string
@@ -18,15 +21,17 @@ export interface CustomNodeData {
   verificationBadge?: React.ReactNode
   githubLink?: string
   agentDirectoryLink?: string
+  /** Optional slug for identity/directory API lookups; when set, avoids label-based resolution. */
+  slug?: string
   farmName?: string
   isModalOpen?: boolean
   hasBadgeDetails?: boolean
   hasPolicyDetails?: boolean
   onOpenIdentityModal?: (
-    nodeData: any,
+    nodeData: CustomNodeData,
     position: { x: number; y: number },
     nodeName?: string,
-    data?: any,
+    data?: CustomNodeData,
     isMcpServer?: boolean,
   ) => void
 }

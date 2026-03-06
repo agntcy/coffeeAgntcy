@@ -5,13 +5,17 @@
 
 import { create } from "zustand"
 import { LogisticsStreamStep } from "@/types/streaming"
+import { env } from "@/utils/env"
 import { isLocalDev, parseFetchError } from "@/utils/const.ts"
+import { logger } from "@/utils/logger"
 
 const DEFAULT_LOGISTICS_APP_API_URL = "http://127.0.0.1:9090"
 const LOGISTICS_APP_API_URL =
-    import.meta.env.VITE_LOGISTICS_APP_API_URL || DEFAULT_LOGISTICS_APP_API_URL
+  env.get("VITE_LOGISTICS_APP_API_URL") || DEFAULT_LOGISTICS_APP_API_URL
 
-const isValidLogisticsStreamStep = (data: any): data is LogisticsStreamStep => {
+const isValidLogisticsStreamStep = (
+  data: unknown,
+): data is LogisticsStreamStep => {
   if (!data || typeof data !== "object") {
     return false
   }
@@ -23,10 +27,12 @@ const isValidLogisticsStreamStep = (data: any): data is LogisticsStreamStep => {
     "message",
     "timestamp",
     "state",
-  ]
+  ] as const
 
+  const obj = data as Record<string, unknown>
   for (const field of requiredStringFields) {
-    if (typeof data[field] !== "string" || data[field].trim() === "") {
+    const value = obj[field]
+    if (typeof value !== "string" || value.trim() === "") {
       return false
     }
   }
@@ -70,57 +76,57 @@ const initialState: LogisticsStreamingState = {
 }
 
 export const useGroupStreamingStore = create<
-    LogisticsStreamingState & LogisticsStreamingActions
+  LogisticsStreamingState & LogisticsStreamingActions
 >((set) => ({
   ...initialState,
 
   addEvent: (event: LogisticsStreamStep) =>
-      set((state) => ({
-        events: [...state.events, event],
-        currentOrderId: event.order_id,
-        isComplete: event.state === "DELIVERED" ? true : state.isComplete,
-        isStreaming: event.state === "DELIVERED" ? false : state.isStreaming,
-      })),
+    set((state) => ({
+      events: [...state.events, event],
+      currentOrderId: event.order_id,
+      isComplete: event.state === "DELIVERED" ? true : state.isComplete,
+      isStreaming: event.state === "DELIVERED" ? false : state.isStreaming,
+    })),
 
   setFinalResponse: (response: string) =>
-      set({
-        finalResponse: response,
-        isComplete: true,
-        isStreaming: false,
-      }),
+    set({
+      finalResponse: response,
+      isComplete: true,
+      isStreaming: false,
+    }),
 
   setError: (error: string) =>
-      set({
-        error,
-        isComplete: true,
-        isStreaming: false,
-      }),
+    set({
+      error,
+      isComplete: true,
+      isStreaming: false,
+    }),
 
   setStreaming: (streaming: boolean) =>
-      set({
-        isStreaming: streaming,
-      }),
+    set({
+      isStreaming: streaming,
+    }),
 
   setComplete: (complete: boolean) =>
-      set({
-        isComplete: complete,
-        isStreaming: false,
-      }),
+    set({
+      isComplete: complete,
+      isStreaming: false,
+    }),
 
   setCurrentOrderId: (orderId: string) =>
-      set({
-        currentOrderId: orderId,
-      }),
+    set({
+      currentOrderId: orderId,
+    }),
 
   setExecutionKey: (key: string) =>
-      set({
-        executionKey: key,
-      }),
+    set({
+      executionKey: key,
+    }),
 
   setSessionId: (id: string) =>
-      set({
-        sessionId: id,
-      }),
+    set({
+      sessionId: id,
+    }),
 
   startStreaming: async (prompt: string) => {
     const {
@@ -138,15 +144,15 @@ export const useGroupStreamingStore = create<
 
     try {
       const response = await fetch(
-          `${LOGISTICS_APP_API_URL}/agent/prompt/stream`,
-          {
-            method: "POST",
-            credentials: isLocalDev ? "omit" : "include",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({ prompt }),
+        `${LOGISTICS_APP_API_URL}/agent/prompt/stream`,
+        {
+          method: "POST",
+          credentials: isLocalDev ? "omit" : "include",
+          headers: {
+            "Content-Type": "application/json",
           },
+          body: JSON.stringify({ prompt }),
+        },
       )
 
       if (!response.ok) {
@@ -217,15 +223,15 @@ export const useGroupStreamingStore = create<
 
               if (parsed.response && typeof parsed.response === "string") {
                 if (
-                    parsed.response.startsWith("{'") ||
-                    parsed.response.startsWith('{"')
+                  parsed.response.startsWith("{'") ||
+                  parsed.response.startsWith('{"')
                 ) {
                   try {
                     const jsonResponse = parsed.response
-                        .replace(/'/g, '"')
-                        .replace(/True/g, "true")
-                        .replace(/False/g, "false")
-                        .replace(/None/g, "null")
+                      .replace(/'/g, '"')
+                      .replace(/True/g, "true")
+                      .replace(/False/g, "false")
+                      .replace(/None/g, "null")
 
                     const eventObj = JSON.parse(jsonResponse)
 
@@ -233,12 +239,10 @@ export const useGroupStreamingStore = create<
                       addEvent(eventObj)
                     }
                   } catch (dictParseError) {
-                    console.error(
-                        "Error parsing dict string:",
-                        dictParseError,
-                        "String:",
-                        parsed.response,
-                    )
+                    logger.error("Error parsing dict string:", {
+                      error: dictParseError,
+                      string: parsed.response,
+                    })
                   }
                 } else {
                   setFinalResponse(parsed.response)
@@ -246,12 +250,10 @@ export const useGroupStreamingStore = create<
                 }
               }
             } catch (parseError) {
-              console.error(
-                  "Error parsing JSON object:",
-                  parseError,
-                  "JSON:",
-                  jsonStr,
-              )
+              logger.error("Error parsing JSON object:", {
+                error: parseError,
+                json: jsonStr,
+              })
             }
           }
 
@@ -263,7 +265,7 @@ export const useGroupStreamingStore = create<
 
       setComplete(true)
     } catch (error) {
-      console.error("Streaming error:", error)
+      logger.error("Streaming error:", error)
       setError("Sorry, something went wrong. Please try again.")
     }
   },
@@ -272,42 +274,42 @@ export const useGroupStreamingStore = create<
 }))
 
 export const useGroupEvents = () =>
-    useGroupStreamingStore((state) => state.events)
+  useGroupStreamingStore((state) => state.events)
 
 export const useGroupFinalResponse = () =>
-    useGroupStreamingStore((state) => state.finalResponse)
+  useGroupStreamingStore((state) => state.finalResponse)
 
 export const useGroupIsStreaming = () =>
-    useGroupStreamingStore((state) => state.isStreaming)
+  useGroupStreamingStore((state) => state.isStreaming)
 
 export const useGroupIsComplete = () =>
-    useGroupStreamingStore((state) => state.isComplete)
+  useGroupStreamingStore((state) => state.isComplete)
 
 export const useGroupError = () =>
-    useGroupStreamingStore((state) => state.error)
+  useGroupStreamingStore((state) => state.error)
 
 export const useGroupCurrentOrderId = () =>
-    useGroupStreamingStore((state) => state.currentOrderId)
+  useGroupStreamingStore((state) => state.currentOrderId)
 
 export const useGroupExecutionKey = () =>
-    useGroupStreamingStore((state) => state.executionKey)
+  useGroupStreamingStore((state) => state.executionKey)
 
 export const useGroupSessionId = () =>
-    useGroupStreamingStore((state) => state.sessionId)
+  useGroupStreamingStore((state) => state.sessionId)
 
 export const useGroupStreamingActions = () =>
-    useGroupStreamingStore((state) => ({
-      addEvent: state.addEvent,
-      setFinalResponse: state.setFinalResponse,
-      setError: state.setError,
-      setStreaming: state.setStreaming,
-      setComplete: state.setComplete,
-      setCurrentOrderId: state.setCurrentOrderId,
-      setExecutionKey: state.setExecutionKey,
-      setSessionId: state.setSessionId,
-      startStreaming: state.startStreaming,
-      reset: state.reset,
-    }))
+  useGroupStreamingStore((state) => ({
+    addEvent: state.addEvent,
+    setFinalResponse: state.setFinalResponse,
+    setError: state.setError,
+    setStreaming: state.setStreaming,
+    setComplete: state.setComplete,
+    setCurrentOrderId: state.setCurrentOrderId,
+    setExecutionKey: state.setExecutionKey,
+    setSessionId: state.setSessionId,
+    startStreaming: state.startStreaming,
+    reset: state.reset,
+  }))
 
 export const useStartGroupStreaming = () =>
-    useGroupStreamingStore((state) => state.startStreaming)
+  useGroupStreamingStore((state) => state.startStreaming)

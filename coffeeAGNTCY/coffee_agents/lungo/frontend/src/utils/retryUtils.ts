@@ -43,20 +43,30 @@ export const withRetry = async <T>(
   throw lastError!
 }
 
-const isRetryableError = (error: any): boolean => {
+const RETRYABLE_CODES = [
+  "ECONNREFUSED",
+  "ETIMEDOUT",
+  "ENOTFOUND",
+  "ECONNRESET",
+] as const
+
+function isRetryableError(error: unknown): boolean {
+  if (typeof error !== "object" || error === null) return false
+
+  const err = error as Record<string, unknown>
+
   if (
-    error.code &&
-    ["ECONNREFUSED", "ETIMEDOUT", "ENOTFOUND", "ECONNRESET"].includes(
-      error.code,
-    )
+    typeof err.code === "string" &&
+    (RETRYABLE_CODES as readonly string[]).includes(err.code)
   ) {
     return true
   }
 
-  if (error.isAxiosError) {
-    if (!error.response) return true
-    const status = error.response.status
-    return status >= 500 || status === 429
+  if (err.isAxiosError) {
+    if (!err.response) return true
+    const response = err.response as { status?: number }
+    const status = response.status
+    return typeof status === "number" && (status >= 500 || status === 429)
   }
 
   return false

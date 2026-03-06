@@ -12,6 +12,8 @@ import { ChevronDown, ChevronUp } from "lucide-react"
 
 import AgentIcon from "@/assets/Coffee_Icon.svg"
 import CheckCircle from "@/assets/CheckCircle.png"
+import type { Node } from "@xyflow/react"
+import type { GraphConfig } from "@/utils/graphConfigs"
 import {
   GroupCommunicationFeedProps,
   LogisticsStreamStep,
@@ -23,35 +25,53 @@ import {
   useGroupIsComplete,
 } from "@/stores/groupStreamingStore"
 
-const buildSenderToNodeMap = (graphConfig: any): Record<string, string> => {
+/**
+ * Minimal node data shape used for sender→node mapping and agent node filtering.
+ * GraphConfig.nodes is heterogeneous (CustomNodeData | TransportNodeData | group data);
+ * we only read these optional fields, which exist on custom nodes and are absent on
+ * transport/group nodes. See @/components/MainArea/Graph/Elements/types (CustomNodeData)
+ * for the full custom-node shape.
+ * Index signature satisfies @xyflow/react Node<T> constraint (T extends Record<string, unknown>).
+ */
+interface GroupCommNodeDataForMapping extends Record<string, unknown> {
+  label1?: string
+  label2?: string
+  agentName?: string
+  farmName?: string
+}
+
+const buildSenderToNodeMap = (
+  graphConfig: GraphConfig | undefined,
+): Record<string, string> => {
   if (!graphConfig?.nodes) return {}
 
   const map: Record<string, string> = {}
 
-  graphConfig.nodes.forEach((node: any) => {
-    if (node.data) {
-      if (node.data.label1) {
-        map[node.data.label1] = node.id
-        map[node.data.label1.toLowerCase()] = node.id
+  graphConfig.nodes.forEach((node: Node<GroupCommNodeDataForMapping>) => {
+    const data = node.data
+    if (data) {
+      if (data.label1) {
+        map[data.label1] = node.id
+        map[data.label1.toLowerCase()] = node.id
       }
-      if (node.data.label2) {
-        map[node.data.label2] = node.id
-        map[node.data.label2.toLowerCase()] = node.id
+      if (data.label2) {
+        map[data.label2] = node.id
+        map[data.label2.toLowerCase()] = node.id
       }
-      if (node.data.agentName) {
-        map[node.data.agentName] = node.id
-        map[node.data.agentName.toLowerCase()] = node.id
+      if (data.agentName) {
+        map[data.agentName] = node.id
+        map[data.agentName.toLowerCase()] = node.id
       }
-      if (node.data.farmName) {
-        map[node.data.farmName] = node.id
-        map[node.data.farmName.toLowerCase()] = node.id
+      if (data.farmName) {
+        map[data.farmName] = node.id
+        map[data.farmName.toLowerCase()] = node.id
       }
 
-      if (node.data.label1 === "Buyer") {
+      if (data.label1 === "Buyer") {
         map["Supervisor"] = node.id
         map["supervisor"] = node.id
       }
-      if (node.data.label1 === "Tatooine") {
+      if (data.label1 === "Tatooine") {
         map["Tatooine Farm"] = node.id
         map["tatooine farm"] = node.id
       }
@@ -61,15 +81,15 @@ const buildSenderToNodeMap = (graphConfig: any): Record<string, string> => {
   return map
 }
 
-const getAllAgentNodeIds = (graphConfig: any): string[] => {
+const getAllAgentNodeIds = (graphConfig: GraphConfig | undefined): string[] => {
   if (!graphConfig?.nodes) return []
 
   return graphConfig.nodes
     .filter(
-      (node: any) =>
+      (node: Node<GroupCommNodeDataForMapping>) =>
         node.type === "customNode" && node.data?.label1 !== "Logistics Agent",
     )
-    .map((node: any) => node.id)
+    .map((node) => node.id)
 }
 
 const formatAgentName = (agentName: string): string => {

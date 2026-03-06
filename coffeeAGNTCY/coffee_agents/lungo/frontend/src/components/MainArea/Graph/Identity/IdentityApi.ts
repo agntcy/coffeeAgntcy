@@ -8,16 +8,17 @@ import {
   BadgeData,
   PolicyData,
 } from "@/components/MainArea/Graph/Identity/types"
+import type { CustomNodeData } from "@/components/MainArea/Graph/Elements/types"
 import { getApiUrlForPattern, PATTERNS } from "@/utils/patternUtils"
+import { logger } from "@/utils/logger"
 
 export interface IdentityServiceError {
   message: string
   status?: number
 }
 
-const getSlugFromNodeData = (nodeData: any): string => {
-  console.log(nodeData)
-
+const getSlugFromNodeData = (nodeData: CustomNodeData): string => {
+  logger.debug("getSlugFromNodeData", nodeData)
 
   if (nodeData.slug) {
     return nodeData.slug
@@ -45,7 +46,9 @@ const getSlugFromNodeData = (nodeData: any): string => {
   throw new Error(`No valid slug mapping found for node: ${label1} ${label2}`)
 }
 
-export const fetchBadgeDetails = async (nodeData: any): Promise<BadgeData> => {
+export const fetchBadgeDetails = async (
+  nodeData: CustomNodeData,
+): Promise<BadgeData> => {
   const slug = getSlugFromNodeData(nodeData)
 
   try {
@@ -81,7 +84,7 @@ export const fetchBadgeDetails = async (nodeData: any): Promise<BadgeData> => {
 }
 
 export const fetchPolicyDetails = async (
-  nodeData: any,
+  nodeData: CustomNodeData,
 ): Promise<PolicyData> => {
   const slug = getSlugFromNodeData(nodeData)
 

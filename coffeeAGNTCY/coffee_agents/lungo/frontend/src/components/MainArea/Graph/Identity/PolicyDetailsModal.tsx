@@ -3,10 +3,11 @@
  * SPDX-License-Identifier: Apache-2.0
  **/
 
-import React, { useState, useEffect } from "react"
+import React, { useState, useEffect, useCallback } from "react"
 import { createPortal } from "react-dom"
 import { PolicyData } from "./types"
 import { CustomNodeData } from "../Elements/types"
+import { logger } from "@/utils/logger"
 import { fetchPolicyDetails, IdentityServiceError } from "./IdentityApi"
 import { useEscapeKey } from "@/hooks/useEscapeKey"
 
@@ -35,15 +36,7 @@ const PolicyDetailsModal: React.FC<PolicyDetailsModalProps> = ({
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  useEffect(() => {
-    if (isOpen && nodeData) {
-      fetchPolicyDetailsData()
-    }
-  }, [isOpen, nodeName, nodeData])
-
-  useEscapeKey(isOpen, onClose)
-
-  const fetchPolicyDetailsData = async () => {
+  const fetchPolicyDetailsData = useCallback(async () => {
     setLoading(true)
     setError(null)
 
@@ -52,7 +45,7 @@ const PolicyDetailsModal: React.FC<PolicyDetailsModalProps> = ({
       setPolicyData(data)
     } catch (error) {
       const identityError = error as IdentityServiceError
-      console.error("Error fetching policy details:", identityError)
+      logger.error("Error fetching policy details", identityError)
       setError(
         identityError.message ||
           "An unexpected error occurred while fetching policy details.",
@@ -60,7 +53,15 @@ const PolicyDetailsModal: React.FC<PolicyDetailsModalProps> = ({
     } finally {
       setLoading(false)
     }
-  }
+  }, [nodeData])
+
+  useEffect(() => {
+    if (isOpen && nodeData) {
+      fetchPolicyDetailsData()
+    }
+  }, [fetchPolicyDetailsData, isOpen, nodeName, nodeData])
+
+  useEscapeKey(isOpen, onClose)
 
   if (!isOpen) return null
 

@@ -1,3 +1,6 @@
+import type { AgentRecord } from "@/types/agent"
+import { GraphConfig } from "@/utils/graphConfigs"
+
 interface LogisticsStreamStep {
   order_id: string
 
@@ -14,6 +17,7 @@ interface LogisticsStreamStep {
 
 interface AuctionStreamingResponse {
   response: string
+  session_id?: string
 }
 
 interface GroupCommunicationFeedProps {
@@ -22,7 +26,7 @@ interface GroupCommunicationFeedProps {
   prompt: string
   onStreamComplete?: () => void
   onSenderHighlight?: (nodeId: string) => void
-  graphConfig?: any
+  graphConfig?: GraphConfig
   executionKey?: string
   apiError: boolean
 }
@@ -64,9 +68,9 @@ interface RecruiterStreamingEvent {
   message: string | null
   state: "working" | "completed"
   author?: string
-  agent_records?: Record<string, any>
-  evaluation_results?: Record<string, any>
-  selected_agent?: Record<string, any>
+  agent_records?: Record<string, AgentRecord>
+  evaluation_results?: Record<string, unknown>
+  selected_agent?: Record<string, unknown>
 }
 
 interface RecruiterStreamingState {
@@ -75,9 +79,9 @@ interface RecruiterStreamingState {
   error: string | null
   sessionId: string | null
   finalMessage: string | null
-  agentRecords: Record<string, any> | null
-  evaluationResults: Record<string, any> | null
-  selectedAgent: Record<string, any> | null
+  agentRecords: Record<string, AgentRecord> | null
+  evaluationResults: Record<string, unknown> | null
+  selectedAgent: Record<string, unknown> | null
 }
 
 interface RecruiterStreamingFeedProps {

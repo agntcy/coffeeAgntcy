@@ -3,476 +3,145 @@
  * SPDX-License-Identifier: Apache-2.0
  **/
 
-import React, { useState, useEffect, useRef, useCallback } from "react"
-import { LOCAL_STORAGE_KEY } from "@/components/Chat/Messages"
-import { logger } from "@/utils/logger"
-import { useChatAreaMeasurement } from "@/hooks/useChatAreaMeasurement"
-import {
-  useStreamingStatus,
-  useStreamingEvents,
-  useStreamingError,
-  useStreamingActions,
-} from "@/stores/auctionStreamingStore"
-import {
-  useGroupIsStreaming,
-  useGroupIsComplete,
-  useGroupFinalResponse,
-  useGroupError,
-  useStartGroupStreaming,
-  useGroupStreamingActions,
-} from "@/stores/groupStreamingStore"
-import {
-  useRecruiterStreamingStatus,
-  useRecruiterStreamingEvents,
-  useRecruiterStreamingError,
-  useRecruiterStreamingActions,
-  useRecruiterFinalMessage,
-  useRecruiterAgentRecords,
-  useRecruiterStreamingSessionId,
-  useRecruiterSelectedAgent,
-} from "@/stores/recruiterStreamingStore"
+import React from "react"
 import Navigation from "@/components/Navigation/Navigation"
 import MainArea from "@/components/MainArea/MainArea"
-import { useAgentAPI } from "@/hooks/useAgentAPI"
 import ChatArea from "@/components/Chat/ChatArea"
 import Sidebar from "@/components/Sidebar/Sidebar"
 import { ThemeProvider } from "@/contexts/ThemeContext"
-import { Message } from "./types/message"
-import { getGraphConfig } from "@/utils/graphConfigs"
-import { PATTERNS, PatternType } from "@/utils/patternUtils"
-import {DiscoveryResponseEvent} from "@/components/MainArea/Graph/Directory/types.ts";
-
-interface ApiResponse {
-  response: string
-  session_id?: string
-}
-
+import { PATTERNS } from "@/utils/patternUtils"
+import { useApp } from "./useApp"
 
 const App: React.FC = () => {
-  const { sendMessage } = useAgentAPI()
-
-  const [selectedPattern, setSelectedPattern] = useState<PatternType>(
-      PATTERNS.GROUP_COMMUNICATION,
-  )
-
-  const startStreaming = useStartGroupStreaming()
-  const { connect, reset } = useStreamingActions()
-  const status = useStreamingStatus()
-  const events = useStreamingEvents()
-  const error = useStreamingError()
-
-  const groupIsStreaming = useGroupIsStreaming()
-  const groupIsComplete = useGroupIsComplete()
-  const groupFinalResponse = useGroupFinalResponse()
-  const groupError = useGroupError()
-  const { reset: resetGroup } = useGroupStreamingActions()
-
-  const recruiterStatus = useRecruiterStreamingStatus()
-  const recruiterEvents = useRecruiterStreamingEvents()
-  const recruiterError = useRecruiterStreamingError()
-  const recruiterFinalMessage = useRecruiterFinalMessage()
-  const recruiterAgentRecords = useRecruiterAgentRecords()
-  const recruiterSessionId = useRecruiterStreamingSessionId()
-  const recruiterSelectedAgent = useRecruiterSelectedAgent()
-  const { connect: connectRecruiter, reset: resetRecruiter } = useRecruiterStreamingActions()
-
-  const [aiReplied, setAiReplied] = useState<boolean>(false)
-  const [buttonClicked, setButtonClicked] = useState<boolean>(false)
-  const [currentUserMessage, setCurrentUserMessage] = useState<string>("")
-  const [agentResponse, setAgentResponse] = useState<ApiResponse | undefined>(undefined)
-  const [isAgentLoading, setIsAgentLoading] = useState<boolean>(false)
-  const [apiError, setApiError] = useState<boolean>(false)
-  const [groupCommResponseReceived, setGroupCommResponseReceived] = useState(false)
-  const [highlightNodeFunction, setHighlightNodeFunction] = useState<((nodeId: string) => void) | null>(null)
-  const [showProgressTracker, setShowProgressTracker] = useState<boolean>(false)
-  const [showAuctionStreaming, setShowAuctionStreaming] = useState<boolean>(false)
-  const [showRecruiterStreaming, setShowRecruiterStreaming] = useState<boolean>(false)
-  const [showFinalResponse, setShowFinalResponse] = useState<boolean>(false)
-  const [pendingResponse, setPendingResponse] = useState<string>("")
-  const [executionKey, setExecutionKey] = useState<string>("")
-  const streamCompleteRef = useRef<boolean>(false)
-  const [discoveryResponseEvent, setDiscoveryResponseEvent] =
-      useState<DiscoveryResponseEvent | null>(null)
-  const lastDiscoveryKeyRef = useRef<string | null>(null)
-
-  const handleDiscoveryResponse = useCallback((evt: DiscoveryResponseEvent) => {
-    setDiscoveryResponseEvent(evt)
-    console.log("Received discovery response event:", evt)
-  }, [])
-
-  const handlePatternChange = useCallback(
-      (pattern: PatternType) => {
-        reset()
-        resetRecruiter()
-        setShowAuctionStreaming(false)
-        setShowRecruiterStreaming(false)
-        resetGroup()
-        setGroupCommResponseReceived(false)
-        setShowFinalResponse(false)
-        setAgentResponse(undefined)
-        setPendingResponse("")
-        setIsAgentLoading(false)
-        setApiError(false)
-        setCurrentUserMessage("")
-        setButtonClicked(false)
-        setAiReplied(false)
-        setSelectedPattern(pattern)
-        lastDiscoveryKeyRef.current = null
-      },
-      [reset, resetGroup, resetRecruiter],
-  )
-
-  const [messages, setMessages] = useState<Message[]>(() => {
-    const saved = localStorage.getItem(LOCAL_STORAGE_KEY)
-    return saved ? JSON.parse(saved) : []
-  })
-
-  useEffect(() => {
-    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(messages))
-  }, [messages])
-
-  useEffect(() => {
-    if (selectedPattern === PATTERNS.PUBLISH_SUBSCRIBE_STREAMING) {
-      if (
-          events.length > 0 &&
-          status !== "connecting" &&
-          status !== "streaming" &&
-          isAgentLoading
-      ) {
-        setIsAgentLoading(false)
-      }
-    }
-  }, [selectedPattern, events.length, status, isAgentLoading])
-
-  useEffect(() => {
-    setButtonClicked(false)
-    setAiReplied(false)
-  }, [selectedPattern])
-
   const {
-    height: chatHeight,
+    selectedPattern,
+    handlePatternChange,
+    chatHeightValue,
     isExpanded,
     chatRef,
-  } = useChatAreaMeasurement({
-    debounceMs: 100,
-  })
-
-  const chatHeightValue = currentUserMessage || agentResponse ? chatHeight : 76
-
-  const handleUserInput = (query: string) => {
-    setCurrentUserMessage(query)
-    setIsAgentLoading(true)
-    setButtonClicked(true)
-    setApiError(false)
-    if (
-        selectedPattern !== PATTERNS.GROUP_COMMUNICATION &&
-        selectedPattern !== PATTERNS.PUBLISH_SUBSCRIBE_STREAMING &&
-        selectedPattern !== PATTERNS.ON_DEMAND_DISCOVERY
-    ) {
-      setShowFinalResponse(true)
-    }
-  }
-
-  // Accepts ApiResponse or string (for error fallback), but always sets ApiResponse
-  const handleApiResponse = useCallback(
-      (response: ApiResponse | string, isError: boolean = false) => {
-        let apiResp: ApiResponse
-        if (typeof response === "string") {
-          apiResp = { response }
-        } else {
-          apiResp = response
-        }
-        setAgentResponse(apiResp)
-        setIsAgentLoading(false)
-
-        if (selectedPattern === PATTERNS.GROUP_COMMUNICATION) {
-          setApiError(isError)
-          if (!isError) {
-            setGroupCommResponseReceived(true)
-          }
-        }
-
-        setMessages((prev) => {
-          const updated = [...prev]
-          updated[updated.length - 1] = {
-            ...updated[updated.length - 1],
-            content: apiResp.response,
-            animate: !isError,
-          }
-          return updated
-        })
-      },
-      [selectedPattern, setMessages],
-  )
-
-  useEffect(() => {
-    if (selectedPattern === PATTERNS.GROUP_COMMUNICATION) {
-      if (groupIsComplete && !groupIsStreaming) {
-        if (groupFinalResponse) {
-          setShowFinalResponse(true)
-          handleApiResponse(groupFinalResponse, false)
-        } else if (groupError) {
-          const errorMsg = `Streaming error: ${groupError}`
-          setShowFinalResponse(true)
-          handleApiResponse(errorMsg, true)
-        }
-      }
-    }
-  }, [
-    selectedPattern,
-    groupIsComplete,
-    groupIsStreaming,
-    groupFinalResponse,
-    groupError,
+    setMessages,
+    aiReplied,
+    setAiReplied,
+    buttonClicked,
+    setButtonClicked,
+    currentUserMessage,
+    agentResponse,
+    executionKey,
+    isAgentLoading,
+    apiError,
+    showProgressTracker,
+    showAuctionStreaming,
+    showRecruiterStreaming,
+    showFinalResponse,
+    groupCommResponseReceived,
+    discoveryResponseEvent,
+    handleUserInput,
     handleApiResponse,
-  ])
-
-  // Handle recruiter streaming completion - fire discovery graph update and final response
-  useEffect(() => {
-    if (selectedPattern !== PATTERNS.ON_DEMAND_DISCOVERY) return
-
-    if (recruiterStatus === "completed") {
-      setIsAgentLoading(false)
-
-      if (recruiterFinalMessage) {
-        setShowFinalResponse(true)
-        handleApiResponse({ response: recruiterFinalMessage, session_id: recruiterSessionId ?? undefined }, false)
-      }
-
-      // Dispatch discovery response event to update the graph with discovered agents
-      // Always dispatch, even when agent_records is empty (e.g. "clear all"), to trigger graph cleanup
-      // Use a stable fingerprint (session + sorted agent record keys) instead of Date.now()
-      // so that re-renders with the same data don't create duplicate graph nodes
-      const agentKeys = recruiterAgentRecords
-          ? Object.keys(recruiterAgentRecords).sort().join(",")
-          : ""
-      const discoveryKey = `${recruiterSessionId ?? ""}:${agentKeys}`
-
-      if (lastDiscoveryKeyRef.current !== discoveryKey) {
-        lastDiscoveryKeyRef.current = discoveryKey
-        handleDiscoveryResponse({
-          response: recruiterFinalMessage ?? "",
-          ts: Date.now(),
-          sessionId: recruiterSessionId ?? undefined,
-          agent_records: (recruiterAgentRecords ?? {}) as any,
-        })
-      }
-    } else if (recruiterStatus === "error" && recruiterError) {
-      setIsAgentLoading(false)
-      setShowFinalResponse(true)
-      handleApiResponse(`Streaming error: ${recruiterError}`, true)
-    }
-  }, [
-    selectedPattern,
-    recruiterStatus,
-    recruiterFinalMessage,
-    recruiterError,
-    recruiterAgentRecords,
-    recruiterSessionId,
-    handleApiResponse,
+    handleDropdownSelect,
+    handleStreamComplete,
+    handleClearConversation,
+    handleNodeHighlightSetup,
+    handleSenderHighlight,
     handleDiscoveryResponse,
-  ])
-
-  const handleDropdownSelect = async (query: string) => {
-    setCurrentUserMessage(query)
-    setIsAgentLoading(true)
-    setButtonClicked(true)
-    setApiError(false)
-
-    try {
-      if (selectedPattern === PATTERNS.GROUP_COMMUNICATION) {
-        const newExecutionKey = Date.now().toString()
-        setExecutionKey(newExecutionKey)
-        setShowFinalResponse(false)
-        setAgentResponse(undefined)
-        setPendingResponse("")
-        setGroupCommResponseReceived(false)
-        streamCompleteRef.current = false
-        resetGroup()
-        try {
-          await startStreaming(query)
-        } catch (error) {
-          logger.apiError("/agent/prompt/stream", error)
-          const errorMsg = "Sorry, I encountered an error with streaming."
-          setShowFinalResponse(true)
-          handleApiResponse(errorMsg, true)
-        }
-      } else if (selectedPattern === PATTERNS.PUBLISH_SUBSCRIBE_STREAMING) {
-        setShowFinalResponse(false)
-        setShowAuctionStreaming(true)
-        setAgentResponse(undefined)
-        reset()
-        await connect(query)
-      } else if (selectedPattern === PATTERNS.ON_DEMAND_DISCOVERY) {
-        setShowFinalResponse(false)
-        setShowRecruiterStreaming(true)
-        setAgentResponse(undefined)
-        resetRecruiter()
-        try {
-          await connectRecruiter(query)
-        } catch (error) {
-          logger.apiError("/agent/prompt/stream", error)
-          const errorMsg = "Sorry, I encountered an error with recruiter streaming."
-          setShowFinalResponse(true)
-          handleApiResponse(errorMsg, true)
-        }
-      } else {
-        setShowFinalResponse(true)
-        const response = await sendMessage(query, selectedPattern)
-        handleApiResponse(response, false)
-      }
-    } catch (error) {
-      logger.apiError("/agent/prompt", error)
-      const errMessage = error instanceof Error ? error.message : String(error)
-      handleApiResponse(errMessage, true)
-      setShowProgressTracker(false)
-    }
-  }
-
-  const handleStreamComplete = () => {
-    streamCompleteRef.current = true
-    if (selectedPattern === PATTERNS.GROUP_COMMUNICATION) {
-      setShowFinalResponse(true)
-      setIsAgentLoading(true)
-      if (pendingResponse) {
-        const isError =
-            pendingResponse.includes("error") || pendingResponse.includes("Error")
-        handleApiResponse(pendingResponse, isError)
-        setPendingResponse("")
-      }
-    }
-  }
-
-  const handleClearConversation = () => {
-    setMessages([])
-    setCurrentUserMessage("")
-    setAgentResponse(undefined)
-    setIsAgentLoading(false)
-    setButtonClicked(false)
-    setAiReplied(false)
-    setGroupCommResponseReceived(false)
-    setShowFinalResponse(false)
-    setShowRecruiterStreaming(false)
-    setPendingResponse("")
-    resetGroup()
-    resetRecruiter()
-    lastDiscoveryKeyRef.current = null
-  }
-
-  const handleNodeHighlightSetup = useCallback(
-      (highlightFunction: (nodeId: string) => void) => {
-        setHighlightNodeFunction(() => highlightFunction)
-      },
-      [],
-  )
-
-  const handleSenderHighlight = useCallback(
-      (nodeId: string) => {
-        if (highlightNodeFunction) {
-          highlightNodeFunction(nodeId)
-        }
-      },
-      [highlightNodeFunction],
-  )
-
-  useEffect(() => {
-    setCurrentUserMessage("")
-    setAgentResponse(undefined)
-    setIsAgentLoading(false)
-    setButtonClicked(false)
-    setAiReplied(false)
-    setShowFinalResponse(false)
-    setPendingResponse("")
-    if (selectedPattern === PATTERNS.GROUP_COMMUNICATION) {
-      setShowProgressTracker(true)
-      resetGroup()
-    } else {
-      setShowProgressTracker(false)
-      setShowAuctionStreaming(false)
-      setShowRecruiterStreaming(false)
-      setGroupCommResponseReceived(false)
-    }
-  }, [selectedPattern, resetGroup])
+    graphConfig,
+    events,
+    status,
+    error,
+    recruiterEvents,
+    recruiterStatus,
+    recruiterError,
+    recruiterSessionId,
+    recruiterFinalMessage,
+    recruiterAgentRecords,
+    recruiterEvaluationResults,
+    recruiterSelectedAgent,
+  } = useApp()
 
   return (
-      <ThemeProvider>
-        <div className="bg-primary-bg flex h-screen w-screen flex-col overflow-hidden">
-          <Navigation />
-          <div className="flex flex-1 overflow-hidden">
-            <Sidebar
-                selectedPattern={selectedPattern}
-                onPatternChange={handlePatternChange}
-            />
-            <div className="flex flex-1 flex-col border-l border-action-background bg-app-background">
-              <div className="relative flex-grow">
-                <MainArea
-                    pattern={selectedPattern}
-                    buttonClicked={buttonClicked}
-                    setButtonClicked={setButtonClicked}
-                    aiReplied={aiReplied}
-                    setAiReplied={setAiReplied}
-                    chatHeight={chatHeightValue}
-                    isExpanded={isExpanded}
-                    groupCommResponseReceived={groupCommResponseReceived}
-                    onNodeHighlight={handleNodeHighlightSetup}
-                    discoveryResponseEvent={discoveryResponseEvent}
-                    selectedAgentCid={recruiterSelectedAgent?.cid ?? null}
-                />
-              </div>
-              <div className="flex min-h-[76px] w-full flex-none flex-col items-center justify-center gap-0 bg-overlay-background p-0 md:min-h-[96px]">
-                <ChatArea
-                    setMessages={setMessages}
-                    setButtonClicked={setButtonClicked}
-                    setAiReplied={setAiReplied}
-                    isBottomLayout={true}
-                    showCoffeePrompts={
-                        selectedPattern === PATTERNS.PUBLISH_SUBSCRIBE ||
-                        selectedPattern === PATTERNS.PUBLISH_SUBSCRIBE_STREAMING
-                    }
-                    showLogisticsPrompts={
-                        selectedPattern === PATTERNS.GROUP_COMMUNICATION
-                    }
-                    showDiscoveryPrompts={
-                      selectedPattern === PATTERNS.ON_DEMAND_DISCOVERY
-                    }
-                    showProgressTracker={showProgressTracker}
-                    showAuctionStreaming={showAuctionStreaming}
-                    showRecruiterStreaming={showRecruiterStreaming}
-                    showFinalResponse={showFinalResponse}
-                    onStreamComplete={handleStreamComplete}
-                    onSenderHighlight={handleSenderHighlight}
-                    pattern={selectedPattern}
-                    graphConfig={getGraphConfig(
-                        selectedPattern,
-                        groupCommResponseReceived,
-                    )}
-                    onDropdownSelect={handleDropdownSelect}
-                    onUserInput={handleUserInput}
-                    onApiResponse={handleApiResponse}
-                    onClearConversation={handleClearConversation}
-                    currentUserMessage={currentUserMessage}
-                    agentResponse={agentResponse}
-                    executionKey={executionKey}
-                    isAgentLoading={isAgentLoading}
-                    apiError={apiError}
-                    chatRef={chatRef}
-                    auctionState={{
-                      events,
-                      status,
-                      error,
-                    }}
-                    recruiterState={{
-                      events: recruiterEvents,
-                      status: recruiterStatus,
-                      error: recruiterError,
-                    }}
-                    onDiscoveryResponse={handleDiscoveryResponse}
-                />
-              </div>
+    <ThemeProvider>
+      <div className="bg-primary-bg flex h-screen w-screen flex-col overflow-hidden">
+        <Navigation />
+        <div className="flex flex-1 overflow-hidden">
+          <Sidebar
+            selectedPattern={selectedPattern}
+            onPatternChange={handlePatternChange}
+          />
+          <div className="flex flex-1 flex-col border-l border-action-background bg-app-background">
+            <div className="relative flex-grow">
+              <MainArea
+                pattern={selectedPattern}
+                buttonClicked={buttonClicked}
+                setButtonClicked={setButtonClicked}
+                aiReplied={aiReplied}
+                setAiReplied={setAiReplied}
+                chatHeight={chatHeightValue}
+                isExpanded={isExpanded}
+                groupCommResponseReceived={groupCommResponseReceived}
+                onNodeHighlight={handleNodeHighlightSetup}
+                discoveryResponseEvent={discoveryResponseEvent}
+                selectedAgentCid={
+                  typeof recruiterSelectedAgent?.cid === "string"
+                    ? recruiterSelectedAgent.cid
+                    : null
+                }
+              />
+            </div>
+            <div className="flex min-h-[76px] w-full flex-none flex-col items-center justify-center gap-0 bg-overlay-background p-0 md:min-h-[96px]">
+              <ChatArea
+                setMessages={setMessages}
+                setButtonClicked={setButtonClicked}
+                setAiReplied={setAiReplied}
+                isBottomLayout={true}
+                showCoffeePrompts={
+                  selectedPattern === PATTERNS.PUBLISH_SUBSCRIBE ||
+                  selectedPattern === PATTERNS.PUBLISH_SUBSCRIBE_STREAMING
+                }
+                showLogisticsPrompts={
+                  selectedPattern === PATTERNS.GROUP_COMMUNICATION
+                }
+                showDiscoveryPrompts={
+                  selectedPattern === PATTERNS.ON_DEMAND_DISCOVERY
+                }
+                showProgressTracker={showProgressTracker}
+                showAuctionStreaming={showAuctionStreaming}
+                showRecruiterStreaming={showRecruiterStreaming}
+                showFinalResponse={showFinalResponse}
+                onStreamComplete={handleStreamComplete}
+                onSenderHighlight={handleSenderHighlight}
+                pattern={selectedPattern}
+                graphConfig={graphConfig}
+                onDropdownSelect={handleDropdownSelect}
+                onUserInput={handleUserInput}
+                onApiResponse={handleApiResponse}
+                onClearConversation={handleClearConversation}
+                currentUserMessage={currentUserMessage}
+                agentResponse={agentResponse}
+                executionKey={executionKey}
+                isAgentLoading={isAgentLoading}
+                apiError={apiError}
+                chatRef={chatRef}
+                auctionState={{
+                  events,
+                  status,
+                  error,
+                }}
+                recruiterState={{
+                  events: recruiterEvents,
+                  status: recruiterStatus,
+                  error: recruiterError,
+                  sessionId: recruiterSessionId,
+                  finalMessage: recruiterFinalMessage,
+                  agentRecords: recruiterAgentRecords,
+                  evaluationResults: recruiterEvaluationResults,
+                  selectedAgent: recruiterSelectedAgent,
+                }}
+                onDiscoveryResponse={handleDiscoveryResponse}
+              />
             </div>
           </div>
         </div>
-      </ThemeProvider>
+      </div>
+    </ThemeProvider>
   )
 }
 

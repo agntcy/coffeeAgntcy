@@ -5,6 +5,7 @@
 
 import React from "react"
 import { X } from "lucide-react"
+import { env } from "@/utils/env"
 
 interface InfoModalProps {
   isOpen: boolean
@@ -24,7 +25,7 @@ interface BuildInfo {
 const InfoModal: React.FC<InfoModalProps> = ({ isOpen, onClose }) => {
   const DEFAULT_EXCHANGE_APP_API_URL = "http://127.0.0.1:8000"
   const EXCHANGE_APP_API_URL =
-    import.meta.env.VITE_EXCHANGE_APP_API_URL || DEFAULT_EXCHANGE_APP_API_URL
+    env.get("VITE_EXCHANGE_APP_API_URL") || DEFAULT_EXCHANGE_APP_API_URL
 
   const [info, setInfo] = React.useState<BuildInfo | null>(null)
   const [error, setError] = React.useState<string | null>(null)
@@ -41,7 +42,7 @@ const InfoModal: React.FC<InfoModalProps> = ({ isOpen, onClose }) => {
         }
         const data = await res.json()
         if (!cancelled) setInfo(data)
-      } catch (e) {
+      } catch {
         if (!cancelled) {
           setError("Failed to load build info")
           setInfo(null)
