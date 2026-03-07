@@ -13,6 +13,7 @@ import agentDirectoryIconLight from "@/assets/Agent_Icon_light.png"
 import identityBadgeIcon from "@/assets/identity_badge.svg"
 import { useThemeIcon } from "@/hooks/useThemeIcon"
 import { logger } from "@/utils/logger"
+import { SecurityClass } from "@/utils/SecurityClass"
 import { CustomNodeData, ExtraHandle } from "./types"
 
 const POSITION_MAP: Record<ExtraHandle["position"], Position> = {
@@ -141,30 +142,31 @@ const CustomNode: React.FC<CustomNodeProps> = ({
         </div>
 
         <div className="absolute -right-4 top-1/2 z-10 flex -translate-y-1/2 flex-col gap-1">
-          {data.githubLink && (
-            <a
-              href={data.githubLink}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="no-underline"
-            >
-              <div
-                className="flex h-7 w-7 cursor-pointer items-center justify-center rounded-lg border border-solid p-1 opacity-100 shadow-sm transition-opacity duration-200 ease-in-out"
-                style={{
-                  backgroundColor: "var(--custom-node-background)",
-                  borderColor: "var(--custom-node-border)",
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.opacity = "0.8"
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.opacity = "1"
-                }}
+          {data.githubLink &&
+            SecurityClass.isSafeExternalUrl(data.githubLink) && (
+              <a
+                href={data.githubLink}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="no-underline"
               >
-                <img src={githubIconSrc} alt="GitHub" className="h-5 w-5" />
-              </div>
-            </a>
-          )}
+                <div
+                  className="flex h-7 w-7 cursor-pointer items-center justify-center rounded-lg border border-solid p-1 opacity-100 shadow-sm transition-opacity duration-200 ease-in-out"
+                  style={{
+                    backgroundColor: "var(--custom-node-background)",
+                    borderColor: "var(--custom-node-border)",
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.opacity = "0.8"
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.opacity = "1"
+                  }}
+                >
+                  <img src={githubIconSrc} alt="GitHub" className="h-5 w-5" />
+                </div>
+              </a>
+            )}
           {data.agentDirectoryLink && (
             <button
               type="button"

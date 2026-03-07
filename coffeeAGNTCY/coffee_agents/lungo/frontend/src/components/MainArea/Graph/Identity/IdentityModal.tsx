@@ -12,6 +12,7 @@ import { useEscapeKey } from "@/hooks/useEscapeKey"
 import githubIcon from "@/assets/Github.png"
 import githubIconLight from "@/assets/Github_lightmode.png"
 import urlsConfig from "@/utils/urls.json"
+import { SecurityClass } from "@/utils/SecurityClass"
 
 const IdentityModal: React.FC<IdentityModalProps> = ({
   isOpen,
@@ -119,23 +120,24 @@ const IdentityModal: React.FC<IdentityModalProps> = ({
               </button>
             )}
 
-            {identityGithubUrl && (
-              <button
-                onClick={() =>
-                  window.open(
-                    identityGithubUrl,
-                    "_blank",
-                    "noopener,noreferrer",
-                  )
-                }
-                className="flex h-11 w-full items-center justify-between gap-3 rounded-sm px-3 transition-colors hover:bg-gray-500 hover:bg-opacity-20"
-              >
-                <span className="text-left font-inter text-sm font-normal leading-5 text-node-text-primary">
-                  Source code
-                </span>
-                <img src={githubIconSrc} alt="GitHub" className="h-4 w-4" />
-              </button>
-            )}
+            {identityGithubUrl &&
+              SecurityClass.isSafeExternalUrl(identityGithubUrl) && (
+                <button
+                  onClick={() =>
+                    window.open(
+                      identityGithubUrl,
+                      "_blank",
+                      "noopener,noreferrer",
+                    )
+                  }
+                  className="flex h-11 w-full items-center justify-between gap-3 rounded-sm px-3 transition-colors hover:bg-gray-500 hover:bg-opacity-20"
+                >
+                  <span className="text-left font-inter text-sm font-normal leading-5 text-node-text-primary">
+                    Source code
+                  </span>
+                  <img src={githubIconSrc} alt="GitHub" className="h-4 w-4" />
+                </button>
+              )}
           </div>
         </div>
       </div>
