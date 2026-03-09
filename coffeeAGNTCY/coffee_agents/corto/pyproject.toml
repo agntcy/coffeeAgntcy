@@ -62,3 +62,11 @@ build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
 packages = ["farm", "exchange"]
+
+[tool.pytest.ini_options]
+addopts = "--asyncio-mode=auto"
+markers = [
+    "agents(names): marks tests that run for specific farms (e.g. @pytest.mark.farms([\"brazil\"]))",
+]
+pythonpath = ["."]
+testpaths = ["tests"]
