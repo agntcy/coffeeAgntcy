@@ -18,6 +18,9 @@ services:
       - ENABLE_HTTP=true
     ports:
       - "9999:9999"
+    depends_on:
+      nats:
+        condition: service_started
     profiles:
       - farms
   colombia-farm-server:
@@ -41,6 +44,9 @@ services:
       - MCP_PAYMENT_SERVICE_URL=${MCP_PAYMENT_SERVICE_URL:-http://payment-mcp-server:8081/mcp}
     ports:
       - "9998:9998"
+    depends_on:
+      nats:
+        condition: service_started
     profiles:
       - farms
   vietnam-farm-server:
@@ -64,6 +70,9 @@ services:
       - MCP_PAYMENT_SERVICE_URL=${MCP_PAYMENT_SERVICE_URL:-http://payment-mcp-server:8081/mcp}
     ports:
       - "9997:9997"
+    depends_on:
+      nats:
+        condition: service_started
     profiles:
       - farms
   nats:
@@ -74,6 +83,8 @@ services:
       - "4223:4223"
       - "6222:6222"
       - "8222:8222"
+    # No healthcheck: standard nats image has no healthcheck unless Alpine variant is used.
+    # Dependents use condition: service_started.
 
   slim:
     image: ghcr.io/agntcy/slim:1.0.0
@@ -86,6 +97,8 @@ services:
     volumes:
       - ./config/docker/slim/server-config.yaml:/config.yaml
     command: ["/slim", "--config", "/config.yaml"]
+    # No healthcheck: ghcr.io/agntcy/slim image has no nc/bash/wget for a portable TCP check.
+    # Dependents use condition: service_started so they start once this container is running.
 
   # auction supervisor App (farm client)
   auction-supervisor:
@@ -110,6 +123,9 @@ services:
       - IDENTITY_SERVICE_API_KEY=${IDENTITY_SERVICE_API_KEY_AUCTION_SUPERVISOR:-dummy_api_key}
     ports:
       - "8000:8000"
+    depends_on:
+      nats:
+        condition: service_started
     profiles:
       - farms
 
@@ -143,6 +159,9 @@ services:
       - DEFAULT_MESSAGE_TRANSPORT=${DEFAULT_MESSAGE_TRANSPORT:-NATS}
       - TRANSPORT_SERVER_ENDPOINT=${TRANSPORT_SERVER_ENDPOINT:-nats://nats:4222}
       - OTLP_HTTP_ENDPOINT=${OTLP_HTTP_ENDPOINT:-http://otel-collector:4318}
+    depends_on:
+      nats:
+        condition: service_started
     profiles:
       - farms
 
@@ -161,6 +180,9 @@ services:
       - OTLP_HTTP_ENDPOINT=${OTLP_HTTP_ENDPOINT:-http://otel-collector:4318}
       - IDENTITY_AUTH_ENABLED=${IDENTITY_AUTH_ENABLED:-} # Disabled by default
       - IDENTITY_SERVICE_API_KEY=${IDENTITY_SERVICE_API_KEY_PAYMENT_MCP:-dummy_api_key}
+    depends_on:
+      nats:
+        condition: service_started
     profiles:
       - farms
 
@@ -239,6 +261,9 @@ services:
       - ENABLE_HTTP=true
     ports:
       - "9091:9091"
+    depends_on:
+      slim:
+        condition: service_started
     profiles:
       - logistics
 
@@ -256,6 +281,9 @@ services:
       - ENABLE_HTTP=true
     ports:
       - "9092:9092"
+    depends_on:
+      slim:
+        condition: service_started
     profiles:
       - logistics
 
@@ -273,6 +301,9 @@ services:
       - ENABLE_HTTP=true
     ports:
       - "9093:9093"
+    depends_on:
+      slim:
+        condition: service_started
     profiles:
       - logistics
 
@@ -290,6 +321,9 @@ services:
       - ENABLE_HTTP=true
     ports:
       - "9094:9094"
+    depends_on:
+      slim:
+        condition: service_started
     profiles:
       - logistics
 
@@ -308,6 +342,9 @@ services:
       - OTLP_HTTP_ENDPOINT=${OTLP_HTTP_ENDPOINT:-http://otel-collector:4318}
     ports:
       - "9090:9090"
+    depends_on:
+      slim:
+        condition: service_started
     profiles:
       - logistics
 
@@ -359,17 +396,15 @@ services:
       - 8888:8888
       - 8889:8889
     depends_on:
-      - zot
+      zot:
+        condition: service_started
     deploy:
       mode: replicated
       replicas: 1
       restart_policy:
         condition: on-failure
-    healthcheck:
-      test: wget --no-verbose --tries=1 --spider http://127.0.0.1:8889/healthz/ready || exit 1
-      interval: 10s
-      retries: 60
-      start_period: 10s
+    # No healthcheck: image may have no wget/curl for ready probe.
+    # Dependents use condition: service_started so they start once this container is running.
     profiles:
       - recruiter
 
@@ -382,11 +417,8 @@ services:
       replicas: 1
       restart_policy:
         condition: on-failure
-    healthcheck:
-      test: curl -f http://localhost:5000/v2/ || exit 1
-      interval: 5s
-      retries: 60
-      start_period: 15s
+    # No healthcheck: image may have neither curl nor wget (e.g. distroless).
+    # Dependents use condition: service_started so they start once this container is running.
     profiles:
       - recruiter
 
@@ -399,7 +431,8 @@ services:
     env_file:
       - .env
     depends_on:
-      - dir-api-server
+      dir-api-server:
+        condition: service_started
     environment:
       - TZ=UTC
       - DEFAULT_MESSAGE_TRANSPORT=${DEFAULT_MESSAGE_TRANSPORT:-NATS}
@@ -434,5 +467,10 @@ services:
       - OTLP_HTTP_ENDPOINT=${OTLP_HTTP_ENDPOINT:-http://otel-collector:4318}
     ports:
       - "8882:8882"
+    depends_on:
+      recruiter:
+        condition: service_started
+      nats:
+        condition: service_started
     profiles:
       - recruiter

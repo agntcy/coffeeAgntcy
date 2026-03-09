@@ -3,10 +3,12 @@
 
 import config.logging_config  # noqa: F401 - runs setup on import; must be first
 
+import asyncio
 import logging
+from contextlib import asynccontextmanager
 
 from dotenv import load_dotenv
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import uvicorn
@@ -15,13 +17,12 @@ import json
 from agntcy_app_sdk.factory import AgntcyFactory
 from ioa_observe.sdk.tracing import session_start
 
-from agents.supervisors.auction.graph.graph import ExchangeGraph
 from agents.supervisors.auction.graph import shared
-from config.config import DEFAULT_MESSAGE_TRANSPORT, LLM_MODEL
-from pathlib import Path
-from common.version import get_version_info
-from common.streaming_capability import require_streaming_capability
 from agents.supervisors.auction.api import create_apps_router
+from config.config import DEFAULT_MESSAGE_TRANSPORT, LLM_MODEL, HOT_RELOAD_MODE
+from pathlib import Path
+from common.streaming_capability import require_streaming_capability
+from common.version import get_version_info
 
 logger = logging.getLogger("lungo.supervisor.main")
 
@@ -29,8 +30,36 @@ load_dotenv()
 
 # Initialize the shared agntcy factory with tracing enabled
 shared.set_factory(AgntcyFactory("lungo.auction_supervisor", enable_tracing=True))
+require_streaming_capability("auction_supervisor", LLM_MODEL)
 
-app = FastAPI()
+
+def _build_graph_sync():
+    from agents.supervisors.auction.graph.graph import ExchangeGraph
+    return ExchangeGraph()
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    async def init_graph():
+        try:
+            graph = await asyncio.to_thread(_build_graph_sync)
+            app.state.exchange_graph = graph
+            logger.info("Auction exchange graph initialized")
+        except Exception as e:
+            logger.exception("Background graph init failed: %s", e)
+
+    init_task = asyncio.create_task(init_graph())
+    try:
+        yield
+    finally:
+        init_task.cancel()
+        try:
+            await init_task
+        except asyncio.CancelledError:
+            pass
+
+
+app = FastAPI(lifespan=lifespan)
 # Add CORS middleware
 app.add_middleware(
   CORSMiddleware,
@@ -41,9 +70,6 @@ app.add_middleware(
 )
 
 app.include_router(create_apps_router())
-
-require_streaming_capability("auction_supervisor", LLM_MODEL)
-exchange_graph = ExchangeGraph()
 
 class PromptRequest(BaseModel):
   prompt: str
@@ -84,7 +110,7 @@ async def get_capabilities():
   }
 
 @app.post("/agent/prompt")
-async def handle_prompt(request: PromptRequest):
+async def handle_prompt(request: PromptRequest, req: Request):
   """
   Processes a user prompt by routing it through the ExchangeGraph.
   
@@ -100,10 +126,12 @@ async def handle_prompt(request: PromptRequest):
   Raises:
       HTTPException: 400 for invalid input, 500 for server-side errors.
   """
+  exchange_graph = getattr(req.app.state, "exchange_graph", None)
+  if exchange_graph is None:
+    raise HTTPException(status_code=503, detail="Service initializing")
   try:
     with session_start() as session_id:
-    
-    # Execute the graph synchronously - blocks until completion
+      # Execute the graph synchronously - blocks until completion
       result = await exchange_graph.serve(request.prompt)
       logger.info(f"Final result from LangGraph: {result}")
       return {"response": result, "session_id": session_id["executionID"]}
@@ -114,7 +142,7 @@ async def handle_prompt(request: PromptRequest):
 
 
 @app.post("/agent/prompt/stream")
-async def handle_stream_prompt(request: PromptRequest):
+async def handle_stream_prompt(request: PromptRequest, req: Request):
     """
     Processes a user prompt and streams the response from the ExchangeGraph.
     
@@ -131,8 +159,11 @@ async def handle_stream_prompt(request: PromptRequest):
     Raises:
         HTTPException: 400 for invalid input, 500 for server-side errors.
     """
+    exchange_graph = getattr(req.app.state, "exchange_graph", None)
+    if exchange_graph is None:
+        raise HTTPException(status_code=503, detail="Service initializing")
     try:
-        with session_start() as session_id: # Start a new tracing session for observability
+        with session_start() as session_id:  # Start a new tracing session for observability
 
           async def stream_generator():
               """
@@ -234,4 +265,4 @@ async def get_agent_oasf(slug: str):
 
 # Run the FastAPI server using uvicorn
 if __name__ == "__main__":
-  uvicorn.run("agents.supervisors.auction.main:app", host="0.0.0.0", port=8000, reload=True)
+  uvicorn.run("agents.supervisors.auction.main:app", host="0.0.0.0", port=8000, reload=HOT_RELOAD_MODE)

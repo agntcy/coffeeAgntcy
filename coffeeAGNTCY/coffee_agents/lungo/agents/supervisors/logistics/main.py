@@ -7,9 +7,10 @@ import asyncio
 import json
 import logging
 import os
+from contextlib import asynccontextmanager
 
 from dotenv import load_dotenv
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import uvicorn
@@ -18,12 +19,11 @@ from agntcy_app_sdk.factory import AgntcyFactory
 from agntcy_app_sdk.semantic.a2a.protocol import A2AProtocol
 from ioa_observe.sdk.tracing import session_start
 
-from agents.supervisors.logistics.graph.graph import LogisticGraph
 from agents.supervisors.logistics.graph import shared
-from agents.logistics.shipper.card import AGENT_CARD  # assuming similar structure
-from config.config import DEFAULT_MESSAGE_TRANSPORT, LLM_MODEL, TRANSPORT_SERVER_ENDPOINT
-from common.streaming_capability import require_streaming_capability
+from agents.logistics.shipper.card import AGENT_CARD
+from config.config import DEFAULT_MESSAGE_TRANSPORT, LLM_MODEL, TRANSPORT_SERVER_ENDPOINT, HOT_RELOAD_MODE
 from pathlib import Path
+from common.streaming_capability import require_streaming_capability
 
 logger = logging.getLogger("lungo.logistics.supervisor.main")
 
@@ -31,8 +31,36 @@ load_dotenv()
 
 # Initialize the shared agntcy factory with tracing enabled
 shared.set_factory(AgntcyFactory("lungo.logistics_supervisor", enable_tracing=True))
+require_streaming_capability("logistics_supervisor", LLM_MODEL)
 
-app = FastAPI()
+
+def _build_graph_sync():
+    from agents.supervisors.logistics.graph.graph import LogisticGraph
+    return LogisticGraph()
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    async def init_graph():
+        try:
+            graph = await asyncio.to_thread(_build_graph_sync)
+            app.state.logistic_graph = graph
+            logger.info("Logistics graph initialized")
+        except Exception as e:
+            logger.exception("Background graph init failed: %s", e)
+
+    init_task = asyncio.create_task(init_graph())
+    try:
+        yield
+    finally:
+        init_task.cancel()
+        try:
+            await init_task
+        except asyncio.CancelledError:
+            pass
+
+
+app = FastAPI(lifespan=lifespan)
 app.add_middleware(
   CORSMiddleware,
   allow_origins=["*"],
@@ -41,14 +69,14 @@ app.add_middleware(
   allow_headers=["*"],
 )
 
-require_streaming_capability("logistics_supervisor", LLM_MODEL)
-logistic_graph = LogisticGraph()
-
 class PromptRequest(BaseModel):
   prompt: str
 
 @app.post("/agent/prompt")
-async def handle_prompt(request: PromptRequest):
+async def handle_prompt(request: PromptRequest, req: Request):
+  logistic_graph = getattr(req.app.state, "logistic_graph", None)
+  if logistic_graph is None:
+    raise HTTPException(status_code=503, detail="Service initializing")
   try:
     with session_start() as session_id:
       timeout_val = int(os.getenv("LOGISTIC_TIMEOUT", "200"))
@@ -71,10 +99,12 @@ async def health_check():
   return {"status": "ok"}
 
 @app.get("/v1/health")
-async def connectivity_health():
+async def connectivity_health(req: Request):
   """
-  Deep liveness: validates transport + client creation.
+  Deep liveness: validates transport + graph ready.
   """
+  if getattr(req.app.state, "logistic_graph", None) is None:
+    raise HTTPException(status_code=503, detail="Service initializing")
   try:
     factory = shared.get_factory() if hasattr(shared, "get_factory") else shared.factory  # fallback
     transport = factory.create_transport(
@@ -104,7 +134,7 @@ async def get_config():
 
 
 @app.post("/agent/prompt/stream")
-async def handle_stream_prompt(request: PromptRequest):
+async def handle_stream_prompt(request: PromptRequest, req: Request):
     """
     Streams real-time order processing events as they occur in the logistics workflow.
 
@@ -130,6 +160,9 @@ async def handle_stream_prompt(request: PromptRequest):
     Raises:
         HTTPException: 400 for invalid input, 500 for server-side errors.
     """
+    logistic_graph = getattr(req.app.state, "logistic_graph", None)
+    if logistic_graph is None:
+        raise HTTPException(status_code=503, detail="Service initializing")
     try:
         with session_start() as session_id:  # Start a new tracing session for observability
 
@@ -199,4 +232,4 @@ async def get_agent_oasf(slug: str):
 
 
 if __name__ == "__main__":
-  uvicorn.run("main:app", host="0.0.0.0", port=9090, reload=True)
+  uvicorn.run("main:app", host="0.0.0.0", port=9090, reload=HOT_RELOAD_MODE)
