@@ -129,6 +129,9 @@ export const useRecruiterStreamingStore = create<RecruiterStreamingStoreState>((
                   const event = parsedData.response
 
                   if (event.event_type === "completed") {
+                    console.log("[RECRUITER] Completed event received:", event)
+                    console.log("[RECRUITER] agent_records:", event.agent_records)
+                    console.log("[RECRUITER] agent_records count:", event.agent_records ? Object.keys(event.agent_records).length : 0)
                     set((state) => ({
                       events: [...state.events, event],
                       sessionId: parsedData.session_id || state.sessionId,

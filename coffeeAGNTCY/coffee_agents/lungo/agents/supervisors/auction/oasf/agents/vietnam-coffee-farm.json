@@ -7,35 +7,56 @@
   "schema_version": "0.8.0",
   "domains": [
     {
-      "id": 10204.0,
+      "id": 10204,
       "name": "technology/software_engineering/apis_integration"
     }
   ],
   "name": "Payment MCP Server",
   "skills": [
     {
-      "id": 1004.0,
+      "id": 1004,
       "name": "agent_orchestration/agent_coordination"
     }
   ],
   "modules": [
     {
-      "name": "integration/mcp",
+      "name": "integration/a2a",
       "data": {
-        "name": "lungo-payment-mcp-server",
-        "connections": [
-          {
-            "type": "stdio",
-            "command": "docker",
-            "args": [
-              "run",
-              "-i",
-              "--rm",
-              "agntcy/coffee-agntcy/payment-mcp-server:latest"
-            ],
-            "env_vars": []
-          }
-        ]
+        "input_modes": [
+          "text/plain",
+          "application/json"
+        ],
+        "output_modes": [
+          "text/html",
+          "application/json"
+        ],
+        "protocol_version": "0.3.0",
+        "transports": [
+          "http"
+        ],
+        "capabilities": [
+          "streaming"
+        ],
+        "security_schemes": [
+          "none"
+        ],
+        "card_data": {
+          "name": "Payment MCP Server",
+          "description": "An MCP server agent for payment operations.",
+          "version": "1.0.0",
+          "protocolVersion": "0.3.0",
+          "defaultInputModes": [
+            "text"
+          ],
+          "defaultOutputModes": [
+            "text"
+          ],
+          "preferredTransport": "JSONRPC",
+          "capabilities": {
+            "streaming": true
+          },
+          "skills": []
+        }
       }
     }
   ],

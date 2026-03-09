@@ -4,17 +4,21 @@
 # SLIM v0.7+ requires to use debian trixie distribution
 FROM python:3.13.11-slim-trixie
 
-# Install system dependencies, including ping, curl, and wget
+# Install system dependencies
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends git curl wget iputils-ping && \
+    apt-get install -y --no-install-recommends git curl wget iputils-ping ca-certificates gnupg && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
-# Install dirctl binary for MCP toolset (detect architecture for multi-platform builds)
-# Note: Using specific version as /releases/latest/ points to GUI release which doesn't include dirctl
-RUN ARCH=$(dpkg --print-architecture) && \
-    curl -L https://github.com/agntcy/dir/releases/download/v1.0.0-rc.3/dirctl-linux-${ARCH} -o /usr/local/bin/dirctl && \
-    chmod +x /usr/local/bin/dirctl
+# Install Docker CLI
+RUN install -m 0755 -d /etc/apt/keyrings && \
+    curl -fsSL https://download.docker.com/linux/debian/gpg -o /etc/apt/keyrings/docker.asc && \
+    chmod a+r /etc/apt/keyrings/docker.asc && \
+    echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/debian trixie stable" > /etc/apt/sources.list.d/docker.list && \
+    apt-get update && \
+    apt-get install -y --no-install-recommends docker-ce-cli && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
 
 # Install uv and create virtual environment
 RUN pip install --no-cache-dir uv && \

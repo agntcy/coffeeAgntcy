@@ -1,0 +1,24 @@
+version: '3.8'
+
+services:
+  dir-mcp-server:
+    build: .
+    container_name: dir-mcp-server
+    stdin_open: true  # Required for MCP stdio communication
+    tty: true
+    environment:
+      # Default directory node
+      DIRECTORY_SERVER_ADDRESS: ${DIRECTORY_SERVER_ADDRESS:-localhost:8888}
+
+      # SPIFFE authentication (optional)
+      SPIFFE_SOCKET_PATH: ${SPIFFE_SOCKET_PATH:-}
+      AUTH_MODE: ${AUTH_MODE:-}
+      JWT_AUDIENCE: ${JWT_AUDIENCE:-}
+
+    volumes:
+      # Mount SPIFFE socket if using SPIFFE auth
+      # The socket directory is mounted, not just the socket file
+      - ${SPIFFE_SOCKET_PATH:-/run/spire/sockets/agent.sock}:/run/spire/sockets/agent.sock:ro
+
+    # No ports needed - MCP uses stdio
+    restart: unless-stopped

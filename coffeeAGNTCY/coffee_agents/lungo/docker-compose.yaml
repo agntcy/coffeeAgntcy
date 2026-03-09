@@ -1,4 +1,16 @@
 services:
+  spire-agent:
+    image: ghcr.io/spiffe/spire-agent:1.9.0
+    container_name: spire-agent
+    command: ["-config", "/opt/spire/conf/agent/agent.conf"]
+    pid: host
+    volumes:
+      - spire-agent-socket:/run/spire/sockets
+      - /opt/spire/conf/agent:/opt/spire/conf/agent:ro
+      - /opt/spire/data/agent:/opt/spire/data/agent
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    restart: unless-stopped
+
   brazil-farm-server:
     build:
       context: ../../..
@@ -116,10 +128,10 @@ services:
     image: ghcr.io/agntcy/coffee-agntcy/lungo-ui:latest
     container_name: lungo-ui
     environment:
-      - VITE_EXCHANGE_APP_API_URL=http://127.0.0.1:8000
-      - VITE_LOGISTICS_APP_API_URL=http://127.0.0.1:9090
+      - VITE_EXCHANGE_APP_API_URL=/lungo # Use recruiter supervisor for all
+      - VITE_LOGISTICS_APP_API_URL=/lungo # Use recruiter supervisor for all
       - VITE_GRAFANA_URL=http://127.0.0.1:3001
-      - VITE_DISCOVERY_APP_API_URL=http://127.0.0.1:8882 # recruiter supervisor
+      - VITE_DISCOVERY_APP_API_URL=/lungo # recruiter supervisor via nginx proxy
       - VITE_DIRECTORY_VERSION="v1.0.0"
       - VITE_DIRECTORY_SERVER_URL=http://0.0.0.0:8888
     #depends_on:
@@ -170,6 +182,11 @@ services:
       nofile:
         soft: 262144
         hard: 262144
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "100m"
+        max-file: "3"
     healthcheck:
       test:
         [
@@ -378,6 +395,25 @@ services:
     profiles:
       - recruiter
 
+  directory-mcp-server:
+    build:
+      context: ../../..
+      dockerfile: coffeeAGNTCY/dir-mcp-server/Dockerfile
+    image: ghcr.io/agntcy/coffee-agntcy/directory-mcp-server:latest
+    container_name: directory-mcp-server
+    stdin_open: true
+    tty: true
+    environment:
+      - DIRECTORY_SERVER_ADDRESS=${DIRECTORY_SERVER_ADDRESS:-dir-api-server:8888}
+      - SPIFFE_SOCKET_PATH=${SPIFFE_SOCKET_PATH:-}
+      - AUTH_MODE=${AUTH_MODE:-}
+      - JWT_AUDIENCE=${JWT_AUDIENCE:-}
+    volumes:
+      - /run/spire/sockets:/run/spire/sockets:ro
+    restart: unless-stopped
+    profiles:
+      - recruiter
+
   recruiter:
     build:
       context: ../../..
@@ -388,15 +424,17 @@ services:
       - .env
     depends_on:
       - dir-api-server
+      - directory-mcp-server
     environment:
       - DEFAULT_MESSAGE_TRANSPORT=${DEFAULT_MESSAGE_TRANSPORT:-NATS}
       - TRANSPORT_SERVER_ENDPOINT=${TRANSPORT_SERVER_ENDPOINT:-nats://nats:4222}
       - OTLP_HTTP_ENDPOINT=${OTLP_HTTP_ENDPOINT:-http://otel-collector:4318}
       - ENABLE_HTTP=true
-      - MCP_CONNECTION_MODE=binary
-      - DIRECTORY_CLIENT_SERVER_ADDRESS=dir-api-server:8888
-      - DIRECTORY_CLIENT_TLS_SKIP_VERIFY=true
-      - OASF_API_VALIDATION_SCHEMA_URL=https://schema.oasf.outshift.com
+      - MCP_CONNECTION_MODE=docker
+      - MCP_CONTAINER_NAME=directory-mcp-server
+      - TOOL_CACHE_EXCLUDE=search,pull,store_search_results  # Disable caching for directory tools
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
     ports:
       - "8881:8881"
     profiles:
@@ -422,3 +460,6 @@ services:
       - "8882:8882"
     profiles:
       - recruiter
+
+volumes:
+  spire-agent-socket:

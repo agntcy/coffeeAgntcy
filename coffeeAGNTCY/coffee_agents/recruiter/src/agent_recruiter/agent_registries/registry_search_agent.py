@@ -133,64 +133,36 @@ def create_mcp_toolset(
     logger.info(f"MCP connection mode: {mode}")
 
     if mode == "binary":
-        # Binary mode: run dirctl directly
-        dirctl_path = _check_dirctl_binary()
-        if not dirctl_path:
-            raise RuntimeError("dirctl binary not found in PATH. Install dirctl or use docker mode.")
+        raise RuntimeError(
+            "Binary mode is no longer supported. "
+            "Please use docker mode with the directory-mcp-server container. "
+            "Set MCP_CONNECTION_MODE=docker and ensure directory-mcp-server is running."
+        )
 
-        # Build args for dirctl mcp serve
-        args = ["mcp", "serve"]
+    # Docker mode: use docker exec to connect to running container
+    mcp_container_name = os.getenv("MCP_CONTAINER_NAME", "directory-mcp-server")
+    if not _check_container_running(mcp_container_name):
+        error_msg = f"Container '{mcp_container_name}' is not running"
+        logger.error(error_msg)
+        raise RuntimeError(error_msg)
 
-        # Build environment with directory server config
-        env = {
-            "DIRECTORY_CLIENT_SERVER_ADDRESS": os.getenv("DIRECTORY_CLIENT_SERVER_ADDRESS", "localhost:8888"),
-            "DIRECTORY_CLIENT_TLS_SKIP_VERIFY": os.getenv("DIRECTORY_CLIENT_TLS_SKIP_VERIFY", "true"),
-            "OASF_API_VALIDATION_SCHEMA_URL": os.getenv("OASF_API_VALIDATION_SCHEMA_URL", "https://schema.oasf.outshift.com"),
-        }
-
-        try:
-            toolset = McpToolset(
-                connection_params=StdioConnectionParams(
-                    server_params=StdioServerParameters(
-                        command=dirctl_path,
-                        args=args,
-                        env=env,
-                    ),
+    try:
+        toolset = McpToolset(
+            connection_params=StdioConnectionParams(
+                server_params=StdioServerParameters(
+                    command="docker",
+                    args=["exec", "-i", mcp_container_name, "python", "server.py"],
                 ),
-                tool_filter=tool_filter,
-            )
-            logger.info(f"Successfully created MCP toolset using binary mode (dirctl at {dirctl_path})")
-            return toolset
-        except Exception as e:
-            error_msg = f"Failed to create MCP toolset in binary mode: {e}"
-            logger.error(error_msg)
-            raise RuntimeError(error_msg) from e
-
-    else:
-        # Docker mode: use docker exec to connect to running container
-        mcp_container_name = os.getenv("MCP_CONTAINER_NAME", "dir-mcp-server")
-        if not _check_container_running(mcp_container_name):
-            error_msg = f"Container '{mcp_container_name}' is not running"
-            logger.error(error_msg)
-            raise RuntimeError(error_msg)
-
-        try:
-            toolset = McpToolset(
-                connection_params=StdioConnectionParams(
-                    server_params=StdioServerParameters(
-                        command="docker",
-                        args=["exec", "-i", mcp_container_name, "./dirctl", "mcp", "serve"],
-                    ),
-                ),
-                tool_filter=tool_filter,
-            )
-            logger.info(f"Successfully created MCP toolset for container: {mcp_container_name}")
-            return toolset
-        except Exception as e:
-            error_msg = f"Failed to create MCP toolset for container '{mcp_container_name}': {e}"
-            logger.error(error_msg)
-            logger.error("Ensure the container has the './dirctl mcp serve' command available")
-            raise RuntimeError(error_msg) from e
+            ),
+            tool_filter=tool_filter,
+        )
+        logger.info(f"Successfully created MCP toolset for container: {mcp_container_name}")
+        return toolset
+    except Exception as e:
+        error_msg = f"Failed to create MCP toolset for container '{mcp_container_name}': {e}"
+        logger.error(error_msg)
+        logger.error("Ensure the directory-mcp-server container is running")
+        raise RuntimeError(error_msg) from e
         
 # ============================================================================
 # State-Writing Tool for Agent Records

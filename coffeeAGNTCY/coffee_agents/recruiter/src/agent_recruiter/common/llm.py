@@ -17,6 +17,8 @@ def configure_llm():
     # **LiteLLM**: Enables using various LLM providers with Google ADK.
     # See: https://docs.litellm.ai/docs/tutorials/google_adk
 
+    # Debug logging disabled - was causing errors
+
     LITELLM_PROXY_BASE_URL = os.getenv("LITELLM_PROXY_BASE_URL")
     LITELLM_PROXY_API_KEY = os.getenv("LITELLM_PROXY_API_KEY")
     LLM_MODEL = os.getenv("LLM_MODEL", "openai/gpt-4o")

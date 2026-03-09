@@ -13,8 +13,12 @@ from a2a.server.tasks import InMemoryTaskStore
 from a2a.server.request_handlers import DefaultRequestHandler
 from dotenv import load_dotenv
 from uvicorn import Config, Server
+from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.responses import StreamingResponse
+import json
 
 from agent_recruiter.server.agent_executor import RecruiterAgentExecutor
+from agent_recruiter.server.request_handler import RecruiterRequestHandler
 from agent_recruiter.server.card import AGENT_CARD
 
 load_dotenv()
@@ -63,7 +67,7 @@ async def main():
     """
     Main entry point to start the server with specified transports.
     """
-    request_handler = DefaultRequestHandler(
+    request_handler = RecruiterRequestHandler(
         agent_executor=RecruiterAgentExecutor(),
         task_store=InMemoryTaskStore(),
     )
