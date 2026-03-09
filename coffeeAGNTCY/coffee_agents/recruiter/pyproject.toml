@@ -42,7 +42,14 @@ packages = ["src/agent_recruiter"]
 [tool.pytest.ini_options]
 testpaths = ["test"]
 addopts = "--asyncio-mode=auto"
-filterwarnings = ["error"]
+filterwarnings = [
+    "error",
+    # google-adk runners.py:1481 reads RunConfig.save_input_blobs_as_artifacts (deprecated).
+    # Warning attributed to google.adk.runners. Remove when ADK stops using it.
+    "ignore:deprecated:DeprecationWarning:google.adk.runners",
+    # google-adk mcp_toolset.py:181 still uses MCPTool (deprecated); should use McpTool. Remove when ADK is updated.
+    "ignore:MCPTool class is deprecated:DeprecationWarning:google.adk.tools.mcp_tool.mcp_tool",
+]
 
 [dependency-groups]
 dev = [
