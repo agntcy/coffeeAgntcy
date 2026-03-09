@@ -4,6 +4,7 @@
 """Unit tests for agents.supervisors.recruiter.main (FastAPI endpoints)."""
 
 import json
+import time
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -15,6 +16,12 @@ from agents.supervisors.recruiter.main import app
 @pytest.fixture()
 def client():
     with TestClient(app) as c:
+        deadline = time.monotonic() + 10.0
+        while time.monotonic() < deadline:
+            resp = c.get("/v1/health")
+            if resp.status_code != 503:
+                break
+            time.sleep(0.1)
         yield c
 
 
@@ -77,7 +84,7 @@ class TestSuggestedPrompts:
 class TestPromptEndpoint:
     def test_prompt_returns_response(self, client):
         with patch(
-            "agents.supervisors.recruiter.main.call_agent",
+            "agents.supervisors.recruiter.agent.call_agent",
             new_callable=AsyncMock,
             return_value={
                 "response": "Here are the results",
@@ -99,7 +106,7 @@ class TestPromptEndpoint:
 
     def test_prompt_with_session_id(self, client):
         with patch(
-            "agents.supervisors.recruiter.main.call_agent",
+            "agents.supervisors.recruiter.agent.call_agent",
             new_callable=AsyncMock,
             return_value={
                 "response": "Response",
@@ -120,7 +127,7 @@ class TestPromptEndpoint:
 
     def test_prompt_generates_session_id_when_not_provided(self, client):
         with patch(
-            "agents.supervisors.recruiter.main.call_agent",
+            "agents.supervisors.recruiter.agent.call_agent",
             new_callable=AsyncMock,
             return_value={
                 "response": "OK",
@@ -139,7 +146,7 @@ class TestPromptEndpoint:
 
     def test_prompt_error_returns_500(self, client):
         with patch(
-            "agents.supervisors.recruiter.main.call_agent",
+            "agents.supervisors.recruiter.agent.call_agent",
             new_callable=AsyncMock,
             side_effect=RuntimeError("LLM unavailable"),
         ):
@@ -152,7 +159,7 @@ class TestPromptEndpoint:
 
     def test_prompt_returns_selected_agent(self, client):
         with patch(
-            "agents.supervisors.recruiter.main.call_agent",
+            "agents.supervisors.recruiter.agent.call_agent",
             new_callable=AsyncMock,
             return_value={
                 "response": "Agent selected",
@@ -194,7 +201,7 @@ class TestStreamEndpoint:
             yield event, "stream-session"
 
         with patch(
-            "agents.supervisors.recruiter.main.stream_agent",
+            "agents.supervisors.recruiter.agent.stream_agent",
             side_effect=fake_stream,
         ):
             resp = client.post(
@@ -232,7 +239,7 @@ class TestStreamEndpoint:
             yield event2, "s1"
 
         with patch(
-            "agents.supervisors.recruiter.main.stream_agent",
+            "agents.supervisors.recruiter.agent.stream_agent",
             side_effect=fake_stream,
         ):
             resp = client.post(
@@ -256,7 +263,7 @@ class TestStreamEndpoint:
             yield event, session_id
 
         with patch(
-            "agents.supervisors.recruiter.main.stream_agent",
+            "agents.supervisors.recruiter.agent.stream_agent",
             side_effect=fake_stream,
         ):
             resp = client.post(

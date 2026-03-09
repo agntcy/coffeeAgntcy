@@ -74,8 +74,20 @@ def up(files: List[str], services: List[str]):
 
 def down(files: List[str]):
     # 'down' ignores service list; it tears down the whole project
-    cmd = _compose_cmd(files) + ["down", "-v"]
+    cmd = _compose_cmd(files) + ["down", "-v", "--remove-orphans"]
     _run(cmd)
+
+
+def remove_container_if_exists(container_name: str) -> None:
+    """Force-remove a container by name if it exists. Use after down() to clear leftovers from other runs."""
+    res = subprocess.run(
+        ["docker", "rm", "-f", container_name],
+        capture_output=True,
+        text=True,
+        cwd=PROJECT_DIR,
+    )
+    if res.returncode == 0:
+        print(f"> Removed leftover container {container_name}")
 
 def _container_id(files: List[str], service: str) -> str:
     cmd = _compose_cmd(files) + ["ps", "-a", "-q", service]

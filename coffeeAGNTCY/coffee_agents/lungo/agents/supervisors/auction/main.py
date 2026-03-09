@@ -190,6 +190,16 @@ async def handle_stream_prompt(request: PromptRequest, req: Request):
         raise HTTPException(status_code=400, detail=str(ve))
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Operation failed: {str(e)}")
+
+
+@app.get("/ready")
+async def ready(req: Request):
+    """Returns 503 until exchange_graph is initialized, then 200. For test/load balancer readiness."""
+    if getattr(req.app.state, "exchange_graph", None) is None:
+        raise HTTPException(status_code=503, detail="Service initializing")
+    return {"status": "ok"}
+
+
 @app.get("/health")
 async def health_check():
     return {"status": "ok"}

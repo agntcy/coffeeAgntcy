@@ -47,7 +47,7 @@
     },
     {
       "id": "vietnam_inventory",
-      "prompt": "What is the inventory of coffee in Vietnam?",
+      "prompt": "What is the current inventory of coffee in Vietnam?",
       "reference_responses": [
         "The response provides the current coffee inventory for the Vietnam farm, including a numeric quantity and pounds/lbs unit."
       ]

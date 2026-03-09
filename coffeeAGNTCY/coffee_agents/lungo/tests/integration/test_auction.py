@@ -115,7 +115,7 @@ class TestAuctionFlows:
         )
         assert resp.status_code == 200
         data = resp.json()
-        logger.info(data) 
+        logger.info(data)
         assert "response" in data
         assert re.search(r'\b[\d,]+\s*(pounds|lbs\.?)\b', data["response"]), "Expected '<number> pounds or <number> lbs or <number> units.' in string"
 

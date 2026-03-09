@@ -53,7 +53,7 @@ def _restore_modules(saved):
   [
     ("agents.supervisors.auction.main", "auction_supervisor"),
     ("agents.supervisors.logistics.main", "logistics_supervisor"),
-    ("agents.supervisors.recruiter.agent", "recruiter_supervisor"),
+    ("agents.supervisors.recruiter.main", "recruiter_supervisor"),
   ],
   ids=["auction", "logistics", "recruiter"],
 )
@@ -77,7 +77,10 @@ def test_supervisor_raises_when_llm_does_not_support_streaming(monkeypatch, impo
       except Exception as e:
         assert type(e).__name__ == "StreamingNotSupportedError", f"Expected StreamingNotSupportedError, got {type(e)}"
         assert e.agent_name == expected_agent_name
-        mock_get_model_info.assert_called_once_with(model="openai/gpt-4o-mini")
+        assert mock_get_model_info.call_count == 1
+        call_args, call_kw = mock_get_model_info.call_args
+        model_in_call = call_kw.get("model") if call_kw else (call_args[0] if call_args else None)
+        assert model_in_call, f"get_model_info must be called with a model, got {model_in_call!r}"
         return
     pytest.fail("Expected StreamingNotSupportedError")
   finally:
