@@ -3,7 +3,7 @@ name = "agent-recruiter"
 version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"
-requires-python = ">=3.12"
+requires-python = ">=3.12,<3.14"
 dependencies = [
     "a2a-sdk==0.3.2",
     "mcp>=1.24.0",
