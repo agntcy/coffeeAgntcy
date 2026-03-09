@@ -42,6 +42,7 @@ packages = ["src/agent_recruiter"]
 [tool.pytest.ini_options]
 testpaths = ["test"]
 addopts = "--asyncio-mode=auto"
+filterwarnings = ["error"]
 
 [dependency-groups]
 dev = [
