@@ -14,6 +14,8 @@ on:
     paths:
       - 'coffeeAGNTCY/coffee_agents/**'
       - '!coffeeAGNTCY/coffee_agents/*/deployment/helm/**'
+      - '!coffeeAGNTCY/coffee_agents/*/tests/**'
+      - '!coffeeAGNTCY/coffee_agents/recruiter/test/**'
   workflow_dispatch:
     inputs:
       push:
