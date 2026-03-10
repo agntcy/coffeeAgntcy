@@ -61,6 +61,31 @@ export default [
     },
     rules: {
       "@typescript-eslint/no-require-imports": "off",
+      "no-console": "off",
+    },
+  },
+  {
+    files: ["**/*.{js,jsx,ts,tsx}"],
+    ignores: ["**/logger.ts"],
+    rules: {
+      "no-restricted-syntax": [
+        "error",
+        {
+          selector: "JSXAttribute[name.name='dangerouslySetInnerHTML']",
+          message:
+            "dangerouslySetInnerHTML can lead to XSS. Render user or API content as text only (e.g. {value}).",
+        },
+        {
+          selector: "MemberExpression[property.name='innerHTML']",
+          message:
+            "innerHTML can lead to XSS. Render user or API content as text only (e.g. textContent or React text children).",
+        },
+        {
+          selector: "MemberExpression[object.name='unsafeLogger']",
+          message:
+            "unsafeLogger may expose data in production. Use only for non-sensitive diagnostics; do not log PII, full responses, or raw payloads. Consider adding // unsafe-logger: <reason>.",
+        },
+      ],
     },
   },
   {

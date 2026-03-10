@@ -6,6 +6,7 @@
 import React from "react"
 import { Handle, Position } from "@xyflow/react"
 import { useThemeIcon } from "@/hooks/useThemeIcon"
+import { SecurityClass } from "@/utils/SecurityClass"
 import githubIcon from "@/assets/Github.png"
 import githubIconLight from "@/assets/Github_lightmode.png"
 import { TransportNodeData } from "./types"
@@ -39,7 +40,7 @@ const TransportNode: React.FC<TransportNodeProps> = ({ data }) => {
         {data.label}
       </div>
 
-      {data.githubLink && (
+      {data.githubLink && SecurityClass.isSafeExternalUrl(data.githubLink) && (
         <a
           href={data.githubLink}
           target="_blank"

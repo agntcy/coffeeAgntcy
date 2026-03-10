@@ -4,9 +4,9 @@
  **/
 
 import React, { useCallback, useEffect, useState } from "react"
-import axios from "axios"
 
 import { Message } from "@/types/message"
+import { parseApiError } from "@/utils/const"
 import { useAgentAPI } from "@/hooks/useAgentAPI"
 import { useGroupSessionId } from "@/stores/groupStreamingStore"
 
@@ -171,10 +171,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
         },
         onError: (error) => {
           logger.apiError("/agent/prompt", error)
-          let errorMessage = "Sorry, I encountered an error"
-          if (axios.isAxiosError(error) && error.response?.data?.detail) {
-            errorMessage = error.response.data.detail
-          }
+          const { message: errorMessage } = parseApiError(error)
           if (onApiResponse) {
             onApiResponse(errorMessage, true)
           }
