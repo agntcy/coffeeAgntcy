@@ -40,7 +40,6 @@ url = "https://buf.build/gen/python"
 packages = ["src/agent_recruiter"]
 
 [tool.pytest.ini_options]
-testpaths = ["test"]
 addopts = "--asyncio-mode=auto"
 filterwarnings = [
     "error",
@@ -50,6 +49,7 @@ filterwarnings = [
     # google-adk mcp_toolset.py:181 still uses MCPTool (deprecated); should use McpTool. Remove when ADK is updated.
     "ignore:MCPTool class is deprecated:DeprecationWarning:google.adk.tools.mcp_tool.mcp_tool",
 ]
+testpaths = ["test"]
 
 [dependency-groups]
 dev = [
