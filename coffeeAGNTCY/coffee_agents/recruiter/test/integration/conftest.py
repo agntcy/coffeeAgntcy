@@ -40,13 +40,20 @@ def wait_for_server(url: str, timeout: float = 30.0, interval: float = 0.5) -> b
     return False
 
 
+RECRUITER_SERVER_URL = "http://localhost:8881"
+
+
 @pytest.fixture
 def run_recruiter_a2a_server():
-    """Fixture to run the recruiter A2A server in a subprocess."""
+    """Fixture to run the recruiter A2A server in a subprocess.
+
+    Waits for the server to be ready (agent card endpoint returns 200) before
+    returning, so tests do not hit ConnectError due to slow startup.
+    """
 
     procs = []
 
-    def _run():
+    def _run(wait_timeout: float = 30.0):
         # Use the same Python interpreter as the test
         process = subprocess.Popen(
             [sys.executable, "src/agent_recruiter/server/server.py"],
@@ -55,7 +62,12 @@ def run_recruiter_a2a_server():
         )
         procs.append(process)
 
-        time.sleep(2)  # Wait for server to start
+        if not wait_for_server(RECRUITER_SERVER_URL, timeout=wait_timeout):
+            process.terminate()
+            process.wait(timeout=5)
+            raise RuntimeError(
+                f"Recruiter A2A server failed to start on {RECRUITER_SERVER_URL} within {wait_timeout}s"
+            )
         return process
 
     yield _run
