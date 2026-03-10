@@ -12,6 +12,8 @@ on:
       - main
     paths:
       - 'coffeeAGNTCY/coffee_agents/*/deployment/helm/**'
+      - '.github/workflows/helm-push.yaml'
+      - '.github/workflows/helm-package-reusable.yaml'
   workflow_dispatch:
     inputs:
       push:

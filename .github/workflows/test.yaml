@@ -14,6 +14,8 @@ on:
       - 'coffeeAGNTCY/coffee_agents/corto/**'
       - 'coffeeAGNTCY/coffee_agents/lungo/**'
       - '!coffeeAGNTCY/coffee_agents/*/deployment/helm/**'
+      - '.github/workflows/test.yaml'
+      - '.github/workflows/test-reusable.yaml'
   workflow_call:
     inputs:
       pip_overrides:

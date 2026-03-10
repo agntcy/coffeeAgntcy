@@ -16,6 +16,8 @@ on:
       - '!coffeeAGNTCY/coffee_agents/*/deployment/helm/**'
       - '!coffeeAGNTCY/coffee_agents/*/tests/**'
       - '!coffeeAGNTCY/coffee_agents/recruiter/test/**'
+      - '.github/workflows/docker-build-push.yaml'
+      - '.github/workflows/docker-build-reusable.yaml'
   workflow_dispatch:
     inputs:
       push:
