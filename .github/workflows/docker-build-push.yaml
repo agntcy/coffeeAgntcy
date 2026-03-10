@@ -1,190 +1,261 @@
-name: Build and Push All Docker Images
+name: Build and Push Project Docker Images
 
 on:
   push:
-    branches: [main]
     tags: ["*"]
+    branches:
+      - main
+    paths:
+      - 'coffeeAGNTCY/coffee_agents/**'
+      - '!coffeeAGNTCY/coffee_agents/*/deployment/helm/**'
   pull_request:
-    branches: [main]
+    branches:
+      - main
+    paths:
+      - 'coffeeAGNTCY/coffee_agents/**'
+      - '!coffeeAGNTCY/coffee_agents/*/deployment/helm/**'
   workflow_dispatch:
+    inputs:
+      push:
+        description: 'Whether to push the container images to the registry.'
+        required: false
+        type: boolean
+        default: false
+      build_corto:
+        description: 'Whether to build the corto container images.'
+        required: false
+        type: boolean
+        default: true
+      build_lungo:
+        description: 'Whether to build the lungo container images.'
+        required: false
+        type: boolean
+        default: true
+      build_recruiter:
+        description: 'Whether to build the recruiter container images.'
+        required: false
+        type: boolean
+        default: true
+      image_tag:
+        description: 'The tag to use for the container images.'
+        required: false
+        type: string
+        default: ''
+
+env:
+  CORTO_DIR: coffeeAGNTCY/coffee_agents/corto
+  LUNGO_DIR: coffeeAGNTCY/coffee_agents/lungo
+  RECRUITER_DIR: coffeeAGNTCY/coffee_agents/recruiter
 
 jobs:
-  build-and-push:
+  subprojects-to-build:
     runs-on: ubuntu-latest
+    outputs:
+      build_corto: ${{ steps.check-subprojects.outputs.build_corto }}
+      build_lungo: ${{ steps.check-subprojects.outputs.build_lungo }}
+      build_recruiter: ${{ steps.check-subprojects.outputs.build_recruiter }}
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Log event info
+        run: |
+          echo "event_name=${{ github.event_name }}"
+          echo "ref=${{ github.ref }}"
+          echo "ref_name=${{ github.ref_name }}"
+
+      - name: Log relevant dispatch inputs
+        if: ${{ github.event_name == 'workflow_dispatch' }}
+        run: |
+          echo "build_corto=${{ inputs.build_corto }}"
+          echo "build_lungo=${{ inputs.build_lungo }}"
+          echo "build_recruiter=${{ inputs.build_recruiter }}"
+
+      - name: Detect changed paths for main sub-projects
+        id: check-subprojects
+        run: |
+          build_corto=false
+          build_lungo=false
+          build_recruiter=false
+
+          if [[ "${{ github.event_name }}" == "push" ]]; then
+            build_corto=true
+            build_lungo=true
+            build_recruiter=true
+          elif [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            build_corto=${{ inputs.build_corto }}
+            build_lungo=${{ inputs.build_lungo }}
+            build_recruiter=${{ inputs.build_recruiter }}
+          elif [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            base="${{ github.event.pull_request.base.sha }}"
+            head="${{ github.event.pull_request.head.sha }}"
+
+            # Returns 0 if dir has changes, 1 if no changes
+            dir_has_changes() (
+              local base=$1 head=$2 dir=$3
+              set -x # This option only lives in the subshell of this function because the function is defined with () instead of {}.
+              ! git diff --name-only --exit-code --ignore-blank-lines $base $head "$dir"
+            )
+            dir_has_changes $base $head "$CORTO_DIR" && build_corto=true || build_corto=false
+            dir_has_changes $base $head "$LUNGO_DIR" && build_lungo=true || build_lungo=false
+            dir_has_changes $base $head "$RECRUITER_DIR" && build_recruiter=true || build_recruiter=false
+          fi
+
+          echo "build_corto=$build_corto" | tee -a $GITHUB_OUTPUT
+          echo "build_lungo=$build_lungo" | tee -a $GITHUB_OUTPUT
+          echo "build_recruiter=$build_recruiter" | tee -a $GITHUB_OUTPUT
+
+  compute-build-parameters:
+    runs-on: ubuntu-latest
+    outputs:
+      push: ${{ steps.build_params.outputs.push}}
+      image_tag: ${{ steps.build_params.outputs.image_tag }}
+      git_branch: ${{ steps.build_params.outputs.git_branch }}
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Log event info
+        run: |
+          echo "event_name=${{ github.event_name }}"
+          echo "ref=${{ github.ref }}"
+          echo "ref_name=${{ github.ref_name }}"
+
+      - name: Log relevant dispatch inputs
+        if: ${{ github.event_name == 'workflow_dispatch' }}
+        run: |
+          echo "push=${{ inputs.push }}"
+          echo "image_tag=${{ inputs.image_tag }}"
+
+      - name: Compute build parameters
+        id: build_params
+        run: |
+          # default values
+          push=false
+          image_tag=unknown
+          git_branch=${{ github.ref_name }}
+
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            image_tag=pr-${{ github.event.pull_request.number }}
+            git_branch=${{ github.head_ref }}
+          elif [[ "${{ github.event_name }}" == "push" && "${{ github.ref }}" == "refs/heads/main" ]]; then
+            push=true
+            image_tag=latest
+          elif [[ "${{ github.event_name }}" == "push" && "${{ github.ref }}" == refs/tags/* ]]; then
+            push=true
+            image_tag=${{ github.ref_name }}
+          elif [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            push=${{ inputs.push }}
+            if [[ "${{ inputs.image_tag }}" != "" ]]; then
+              image_tag=${{ inputs.image_tag }}
+            else
+              short_sha=${GITHUB_SHA:0:7}
+              image_tag="dispatch_${short_sha}_run-${{ github.run_number }}" # informative default tag (though not unique)
+            fi
+          fi
+
+          echo "push=$push" | tee -a $GITHUB_OUTPUT
+          echo "image_tag=$image_tag" | tee -a $GITHUB_OUTPUT
+          echo "git_branch=$git_branch" | tee -a $GITHUB_OUTPUT
+
+  docker-build-corto:
+    needs: [subprojects-to-build, compute-build-parameters]
+    if: ${{ needs.subprojects-to-build.outputs.build_corto == 'true' }}
 
     strategy:
       matrix:
         image:
-          - name: corto-ui
-            dockerfile: coffeeAGNTCY/coffee_agents/corto/docker/Dockerfile.ui
-          - name: corto-exchange
-            dockerfile: coffeeAGNTCY/coffee_agents/corto/docker/Dockerfile.exchange
-          - name: corto-farm
-            dockerfile: coffeeAGNTCY/coffee_agents/corto/docker/Dockerfile.farm
-          - name: lungo-ui
-            dockerfile: coffeeAGNTCY/coffee_agents/lungo/docker/Dockerfile.ui
-          - name: auction-supervisor
-            dockerfile: coffeeAGNTCY/coffee_agents/lungo/docker/Dockerfile.auction-supervisor
-          - name: brazil-farm
-            dockerfile: coffeeAGNTCY/coffee_agents/lungo/docker/Dockerfile.brazil-farm
-          - name: colombia-farm
-            dockerfile: coffeeAGNTCY/coffee_agents/lungo/docker/Dockerfile.colombia-farm
-          - name: vietnam-farm
-            dockerfile: coffeeAGNTCY/coffee_agents/lungo/docker/Dockerfile.vietnam-farm
-          - name: weather-mcp-server
-            dockerfile: coffeeAGNTCY/coffee_agents/lungo/docker/Dockerfile.weather-mcp
-          - name: payment-mcp-server
-            dockerfile: coffeeAGNTCY/coffee_agents/lungo/docker/Dockerfile.payment-mcp
-          - name: logistics-shipper
-            dockerfile: coffeeAGNTCY/coffee_agents/lungo/docker/Dockerfile.logistics-shipper
-          - name: logistics-accountant
-            dockerfile: coffeeAGNTCY/coffee_agents/lungo/docker/Dockerfile.logistics-accountant
-          - name: logistics-farm
-            dockerfile: coffeeAGNTCY/coffee_agents/lungo/docker/Dockerfile.logistics-farm
-          - name: logistics-supervisor
-            dockerfile: coffeeAGNTCY/coffee_agents/lungo/docker/Dockerfile.logistics-supervisor
-          - name: logistics-helpdesk
-            dockerfile: coffeeAGNTCY/coffee_agents/lungo/docker/Dockerfile.logistics-helpdesk
-          - name: recruiter
-            dockerfile: coffeeAGNTCY/coffee_agents/recruiter/Dockerfile
-          - name: recruiter-supervisor
-            dockerfile: coffeeAGNTCY/coffee_agents/lungo/docker/Dockerfile.recruiter-supervisor
+        - name: corto-ui
+          dockerfile: coffeeAGNTCY/coffee_agents/corto/docker/Dockerfile.ui
+        - name: corto-exchange
+          dockerfile: coffeeAGNTCY/coffee_agents/corto/docker/Dockerfile.exchange
+        - name: corto-farm
+          dockerfile: coffeeAGNTCY/coffee_agents/corto/docker/Dockerfile.farm
 
-    permissions:
+    permissions: # permissions can only be maintained or reduced (not elevated) throughout a chain of workflows
       packages: write
       contents: read
 
-    steps:
-      - name: Pre-cleanup Docker images
-        run: docker system prune -af
+    uses: ./.github/workflows/docker-build-reusable.yaml
+    with:
+      name: ${{ matrix.image.name }}
+      dockerfile: ${{ matrix.image.dockerfile }}
+      push: ${{ needs.compute-build-parameters.outputs.push == 'true' }}
+      platforms: linux/amd64,linux/arm64
+      image_tag: ${{ needs.compute-build-parameters.outputs.image_tag }}
+      git_branch: ${{ needs.compute-build-parameters.outputs.git_branch }}
 
-      - name: Checkout repository
-        uses: actions/checkout@v4
+  docker-build-lungo:
+    needs: [subprojects-to-build, compute-build-parameters]
+    if: ${{ needs.subprojects-to-build.outputs.build_lungo == 'true' }}
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+    strategy:
+      matrix:
+        image:
+        - name: lungo-ui
+          dockerfile: coffeeAGNTCY/coffee_agents/lungo/docker/Dockerfile.ui
+        - name: auction-supervisor
+          dockerfile: coffeeAGNTCY/coffee_agents/lungo/docker/Dockerfile.auction-supervisor
+        - name: brazil-farm
+          dockerfile: coffeeAGNTCY/coffee_agents/lungo/docker/Dockerfile.brazil-farm
+        - name: colombia-farm
+          dockerfile: coffeeAGNTCY/coffee_agents/lungo/docker/Dockerfile.colombia-farm
+        - name: vietnam-farm
+          dockerfile: coffeeAGNTCY/coffee_agents/lungo/docker/Dockerfile.vietnam-farm
+        - name: weather-mcp-server
+          dockerfile: coffeeAGNTCY/coffee_agents/lungo/docker/Dockerfile.weather-mcp
+        - name: payment-mcp-server
+          dockerfile: coffeeAGNTCY/coffee_agents/lungo/docker/Dockerfile.payment-mcp
+        - name: logistics-shipper
+          dockerfile: coffeeAGNTCY/coffee_agents/lungo/docker/Dockerfile.logistics-shipper
+        - name: logistics-accountant
+          dockerfile: coffeeAGNTCY/coffee_agents/lungo/docker/Dockerfile.logistics-accountant
+        - name: logistics-farm
+          dockerfile: coffeeAGNTCY/coffee_agents/lungo/docker/Dockerfile.logistics-farm
+        - name: logistics-supervisor
+          dockerfile: coffeeAGNTCY/coffee_agents/lungo/docker/Dockerfile.logistics-supervisor
+        - name: logistics-helpdesk
+          dockerfile: coffeeAGNTCY/coffee_agents/lungo/docker/Dockerfile.logistics-helpdesk
+        - name: recruiter-supervisor
+          dockerfile: coffeeAGNTCY/coffee_agents/lungo/docker/Dockerfile.recruiter-supervisor
 
-      - name: Get Git tag (if any)
-        id: get_tag
-        run: |
-          echo "tag_name=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+    permissions: # permissions can only be maintained or reduced (not elevated) throughout a chain of workflows
+      packages: write
+      contents: read
+      
+    uses: ./.github/workflows/docker-build-reusable.yaml
+    with:
+      name: ${{ matrix.image.name }}
+      dockerfile: ${{ matrix.image.dockerfile }}
+      push: ${{ needs.compute-build-parameters.outputs.push == 'true' }}
+      platforms: linux/amd64,linux/arm64
+      image_tag: ${{ needs.compute-build-parameters.outputs.image_tag }}
+      git_branch: ${{ needs.compute-build-parameters.outputs.git_branch }}
 
-      - name: Generate metadata
-        id: metadata
-        run: |
-          echo "date=$(date -u +'%Y-%m-%dT%H:%M:%SZ')" >> $GITHUB_OUTPUT
-          echo "date_formatted=$(date -u +'%Y-%m-%d')" >> $GITHUB_OUTPUT
-          echo "short_sha=${GITHUB_SHA:0:7}" >> $GITHUB_OUTPUT
+  docker-build-recruiter:
+    needs: [subprojects-to-build, compute-build-parameters]
+    if: ${{ needs.subprojects-to-build.outputs.build_recruiter == 'true' }}
 
-      - name: Log Event Type
-        run: |
-          echo "Event: ${{ github.event_name }}"
-          echo "Ref: ${{ github.ref }}"
-          echo "Tag: ${{ steps.get_tag.outputs.tag_name }}"
+    strategy:
+      matrix:
+        image:
+          - name: recruiter
+            dockerfile: coffeeAGNTCY/coffee_agents/recruiter/Dockerfile
 
-      - name: Log in to GitHub Container Registry
-        if: github.event_name == 'push'
-        uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+    permissions: # permissions can only be maintained or reduced (not elevated) throughout a chain of workflows
+      packages: write
+      contents: read
 
-      - name: Build Docker image (PR)
-        if: github.event_name == 'pull_request'
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          file: ${{ matrix.image.dockerfile }}
-          push: false
-          platforms: linux/amd64
-          tags: ghcr.io/${{ github.repository_owner }}/coffee-agntcy/${{ matrix.image.name }}:pr-${{ github.event.pull_request.number }}
-          build-args: |
-            BUILD_VERSION=pr-${{ github.event.pull_request.number }}
-            BUILD_DATE=${{ steps.metadata.outputs.date_formatted }}
-            BUILD_TIMESTAMP=${{ steps.metadata.outputs.date }}
-            GIT_COMMIT=${{ github.sha }}
-            GIT_COMMIT_SHORT=${{ steps.metadata.outputs.short_sha }}
-            GIT_BRANCH=${{ github.head_ref }}
-            BUILD_NUMBER=${{ github.run_number }}
-            BUILD_WORKFLOW=${{ github.workflow }}
-            BUILD_ACTOR=${{ github.actor }}
-            BUILD_SOURCE=ci
-            IMAGE_NAME=ghcr.io/${{ github.repository_owner }}/coffee-agntcy/${{ matrix.image.name }}
-            IMAGE_TAG=pr-${{ github.event.pull_request.number }}
-          labels: |
-            org.opencontainers.image.version=pr-${{ github.event.pull_request.number }}
-            org.opencontainers.image.created=${{ steps.metadata.outputs.date }}
-            org.opencontainers.image.revision=${{ github.sha }}
-            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
-            build.number=${{ github.run_number }}
-            build.workflow=${{ github.workflow }}
-            build.actor=${{ github.actor }}
-            git.branch=${{ github.head_ref }}
-            git.commit.short=${{ steps.metadata.outputs.short_sha }}
-
-      - name: Build and push Docker image (main)
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          file: ${{ matrix.image.dockerfile }}
-          push: true
-          platforms: linux/amd64,linux/arm64
-          tags: ghcr.io/${{ github.repository_owner }}/coffee-agntcy/${{ matrix.image.name }}:latest
-          build-args: |
-            BUILD_VERSION=latest
-            BUILD_DATE=${{ steps.metadata.outputs.date_formatted }}
-            BUILD_TIMESTAMP=${{ steps.metadata.outputs.date }}
-            GIT_COMMIT=${{ github.sha }}
-            GIT_COMMIT_SHORT=${{ steps.metadata.outputs.short_sha }}
-            GIT_BRANCH=${{ github.ref_name }}
-            BUILD_NUMBER=${{ github.run_number }}
-            BUILD_WORKFLOW=${{ github.workflow }}
-            BUILD_ACTOR=${{ github.actor }}
-            BUILD_SOURCE=ci
-            IMAGE_NAME=ghcr.io/${{ github.repository_owner }}/coffee-agntcy/${{ matrix.image.name }}
-            IMAGE_TAG=latest
-          labels: |
-            org.opencontainers.image.version=latest
-            org.opencontainers.image.created=${{ steps.metadata.outputs.date }}
-            org.opencontainers.image.revision=${{ github.sha }}
-            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
-            build.number=${{ github.run_number }}
-            build.workflow=${{ github.workflow }}
-            build.actor=${{ github.actor }}
-            git.branch=${{ github.ref_name }}
-            git.commit.short=${{ steps.metadata.outputs.short_sha }}
-
-      - name: Build and push Docker image (tag)
-        if: startsWith(github.ref, 'refs/tags/')
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          file: ${{ matrix.image.dockerfile }}
-          push: true
-          platforms: linux/amd64,linux/arm64
-          tags: ghcr.io/${{ github.repository_owner }}/coffee-agntcy/${{ matrix.image.name }}:${{ steps.get_tag.outputs.tag_name }}
-          build-args: |
-            BUILD_VERSION=${{ steps.get_tag.outputs.tag_name }}
-            BUILD_DATE=${{ steps.metadata.outputs.date_formatted }}
-            BUILD_TIMESTAMP=${{ steps.metadata.outputs.date }}
-            GIT_COMMIT=${{ github.sha }}
-            GIT_COMMIT_SHORT=${{ steps.metadata.outputs.short_sha }}
-            GIT_BRANCH=${{ github.ref_name }}
-            BUILD_NUMBER=${{ github.run_number }}
-            BUILD_WORKFLOW=${{ github.workflow }}
-            BUILD_ACTOR=${{ github.actor }}
-            BUILD_SOURCE=ci
-            IMAGE_NAME=ghcr.io/${{ github.repository_owner }}/coffee-agntcy/${{ matrix.image.name }}
-            IMAGE_TAG=${{ steps.get_tag.outputs.tag_name }}
-          labels: |
-            org.opencontainers.image.version=${{ steps.get_tag.outputs.tag_name }}
-            org.opencontainers.image.created=${{ steps.metadata.outputs.date }}
-            org.opencontainers.image.revision=${{ github.sha }}
-            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
-            build.number=${{ github.run_number }}
-            build.workflow=${{ github.workflow }}
-            build.actor=${{ github.actor }}
-            git.branch=${{ github.ref_name }}
-            git.commit.short=${{ steps.metadata.outputs.short_sha }}
+    uses: ./.github/workflows/docker-build-reusable.yaml
+    with:
+      name: ${{ matrix.image.name }}
+      dockerfile: ${{ matrix.image.dockerfile }}
+      push: ${{ needs.compute-build-parameters.outputs.push == 'true' }}
+      platforms: linux/amd64,linux/arm64
+      image_tag: ${{ needs.compute-build-parameters.outputs.image_tag }}
+      git_branch: ${{ needs.compute-build-parameters.outputs.git_branch }}
