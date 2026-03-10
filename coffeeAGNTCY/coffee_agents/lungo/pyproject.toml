@@ -79,6 +79,9 @@ packages = ["farm", "exchange"]
 
 [tool.pytest.ini_options]
 addopts = "--asyncio-mode=auto"
+filterwarnings = [
+    "error",
+]
 markers = [
     "agents(names): marks tests that run for specific farms (e.g. @pytest.mark.farms([\"brazil\"]))",
 ]
