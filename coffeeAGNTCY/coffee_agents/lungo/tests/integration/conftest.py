@@ -13,7 +13,7 @@ import pytest
 from pathlib import Path
 
 from fastapi.testclient import TestClient
-from tests.integration.docker_helpers import up, down
+from tests.integration.docker_helpers import up, down, remove_container_if_exists
 
 from tests.integration.process_helper import ProcessRunner 
 
@@ -77,6 +77,32 @@ def _purge_modules(prefixes):
     for m in to_delete:
         sys.modules.pop(m, None)
 
+
+def _save_modules(prefixes):
+    """Return a dict of module name -> module for all modules matching prefixes."""
+    return {
+        m: sys.modules[m]
+        for m in list(sys.modules)
+        if any(m == p or m.startswith(p + ".") for p in prefixes)
+    }
+
+
+def _restore_modules(saved):
+    """Put saved modules back into sys.modules so other tests see the same state."""
+    for name, mod in saved.items():
+        sys.modules[name] = mod
+
+
+def _wait_ready(client, path, timeout_s=30.0, poll_s=0.5):
+    """Poll GET path until status 200 or timeout."""
+    deadline = time.time() + timeout_s
+    while time.time() < deadline:
+        resp = client.get(path)
+        if resp.status_code == 200:
+            return
+        time.sleep(poll_s)
+    raise RuntimeError(f"Ready check {path} did not return 200 within {timeout_s}s")
+
 # ---------------- session infra ----------------
 files = ["docker-compose.yaml"]
 if Path("docker-compose.override.yaml").exists():
@@ -106,6 +132,12 @@ def _shutdown_otel_sdk():
 @pytest.fixture(scope="session", autouse=True)
 def orchestrate_session_services():
     print("\n--- Setting up session level service integrations ---")
+    down(files)
+    remove_container_if_exists("lungo-slim")
+    remove_container_if_exists("lungo-nats")
+    remove_container_if_exists("lungo-otel-collector")
+    remove_container_if_exists("lungo-clickhouse-server")
+    remove_container_if_exists("grafana-lungo")
     setup_transports()
     setup_observability()
     setup_identity()
@@ -273,18 +305,22 @@ def auction_supervisor_client(transport_config, monkeypatch):
     for k, v in transport_config.items():
         monkeypatch.setenv(k, v)
 
-    _purge_modules([
-        "agents.supervisors.auction",
-        "config.config",
-    ])
+    prefixes = ["agents.supervisors.auction", "config.config"]
+    saved = _save_modules(prefixes)
+    try:
+        _purge_modules(prefixes)
 
-    import agents.supervisors.auction.main as auction_main
-    import importlib
-    importlib.reload(auction_main)
+        import agents.supervisors.auction.main as auction_main
+        import importlib
+        importlib.reload(auction_main)
 
-    app = auction_main.app
-    with TestClient(app) as client:
-        yield client
+        app = auction_main.app
+        with TestClient(app) as client:
+            _wait_ready(client, "/ready")
+            yield client
+    finally:
+        _purge_modules(prefixes)
+        _restore_modules(saved)
 
 @pytest.fixture
 def logistics_supervisor_client(transport_config, monkeypatch):
@@ -293,18 +329,22 @@ def logistics_supervisor_client(transport_config, monkeypatch):
     for k, v in transport_config.items():
         monkeypatch.setenv(k, v)
 
-    _purge_modules([
-        "agents.supervisors.logistics",
-        "config.config",
-    ])
+    prefixes = ["agents.supervisors.logistics", "config.config"]
+    saved = _save_modules(prefixes)
+    try:
+        _purge_modules(prefixes)
 
-    import agents.supervisors.logistics.main as logistics_main
-    import importlib
-    importlib.reload(logistics_main)
+        import agents.supervisors.logistics.main as logistics_main
+        import importlib
+        importlib.reload(logistics_main)
 
-    app = logistics_main.app
-    with TestClient(app) as client:
-        yield client
+        app = logistics_main.app
+        with TestClient(app) as client:
+            _wait_ready(client, "/v1/health")
+            yield client
+    finally:
+        _purge_modules(prefixes)
+        _restore_modules(saved)
 
 @pytest.fixture
 def helpdesk_client(transport_config, monkeypatch):
@@ -313,19 +353,22 @@ def helpdesk_client(transport_config, monkeypatch):
     for k, v in transport_config.items():
         monkeypatch.setenv(k, v)
 
-    _purge_modules([
-        "agents.logistics.helpdesk",
-        "config.config",
-    ])
+    prefixes = ["agents.logistics.helpdesk", "config.config"]
+    saved = _save_modules(prefixes)
+    try:
+        _purge_modules(prefixes)
 
-    import importlib
-    import agents.logistics.helpdesk.server as helpdesk_server
-    importlib.reload(helpdesk_server)
+        import importlib
+        import agents.logistics.helpdesk.server as helpdesk_server
+        importlib.reload(helpdesk_server)
 
-    from fastapi.testclient import TestClient
-    app = helpdesk_server.app
-    with TestClient(app) as client:
-        yield client
+        from fastapi.testclient import TestClient
+        app = helpdesk_server.app
+        with TestClient(app) as client:
+            yield client
+    finally:
+        _purge_modules(prefixes)
+        _restore_modules(saved)
 
 @pytest.fixture
 def logistics_shipper_client(transport_config, monkeypatch):
@@ -334,19 +377,22 @@ def logistics_shipper_client(transport_config, monkeypatch):
     for k, v in transport_config.items():
         monkeypatch.setenv(k, v)
 
-    _purge_modules([
-        "agents.logistics.shipper",
-        "config.config",
-    ])
+    prefixes = ["agents.logistics.shipper", "config.config"]
+    saved = _save_modules(prefixes)
+    try:
+        _purge_modules(prefixes)
 
-    import importlib
-    import agents.logistics.shipper.server as shipper_server
-    importlib.reload(shipper_server)
+        import importlib
+        import agents.logistics.shipper.server as shipper_server
+        importlib.reload(shipper_server)
 
-    from fastapi.testclient import TestClient
-    app = shipper_server.app
-    with TestClient(app) as client:
-        yield client
+        from fastapi.testclient import TestClient
+        app = shipper_server.app
+        with TestClient(app) as client:
+            yield client
+    finally:
+        _purge_modules(prefixes)
+        _restore_modules(saved)
 
 
 @pytest.fixture
@@ -356,19 +402,22 @@ def logistics_farm_client(transport_config, monkeypatch):
     for k, v in transport_config.items():
         monkeypatch.setenv(k, v)
 
-    _purge_modules([
-        "agents.logistics.farm",
-        "config.config",
-    ])
+    prefixes = ["agents.logistics.farm", "config.config"]
+    saved = _save_modules(prefixes)
+    try:
+        _purge_modules(prefixes)
 
-    import importlib
-    import agents.logistics.farm.server as farm_server
-    importlib.reload(farm_server)
+        import importlib
+        import agents.logistics.farm.server as farm_server
+        importlib.reload(farm_server)
 
-    from fastapi.testclient import TestClient
-    app = farm_server.app
-    with TestClient(app) as client:
-        yield client
+        from fastapi.testclient import TestClient
+        app = farm_server.app
+        with TestClient(app) as client:
+            yield client
+    finally:
+        _purge_modules(prefixes)
+        _restore_modules(saved)
 
 
 
@@ -379,16 +428,19 @@ def logistics_accountant_client(transport_config, monkeypatch):
     for k, v in transport_config.items():
         monkeypatch.setenv(k, v)
 
-    _purge_modules([
-        "agents.logistics.farm",
-        "config.config",
-    ])
+    prefixes = ["agents.logistics.accountant", "config.config"]
+    saved = _save_modules(prefixes)
+    try:
+        _purge_modules(prefixes)
 
-    import importlib
-    import agents.logistics.accountant.server as accountant_server
-    importlib.reload(accountant_server)
+        import importlib
+        import agents.logistics.accountant.server as accountant_server
+        importlib.reload(accountant_server)
 
-    from fastapi.testclient import TestClient
-    app = accountant_server.app
-    with TestClient(app) as client:
-        yield client
+        from fastapi.testclient import TestClient
+        app = accountant_server.app
+        with TestClient(app) as client:
+            yield client
+    finally:
+        _purge_modules(prefixes)
+        _restore_modules(saved)

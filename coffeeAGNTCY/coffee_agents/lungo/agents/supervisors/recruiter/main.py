@@ -6,36 +6,62 @@ import config.logging_config  # noqa: F401 - runs setup on import; must be first
 import asyncio
 import json
 import logging
+from contextlib import asynccontextmanager
 from typing import Optional
 from uuid import uuid4
 
 import httpx
 import uvicorn
 from dotenv import load_dotenv
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, StreamingResponse
 from pathlib import Path
 from pydantic import BaseModel
 
-from agents.supervisors.recruiter.agent import (
-    call_agent,
-    stream_agent,
-    get_recruited_agents,
-    get_evaluation_results,
-    get_selected_agent,
-)
 from agents.supervisors.recruiter.card import RECRUITER_SUPERVISOR_CARD
 from agents.supervisors.recruiter.recruiter_client import get_a2a_event_queue
 from agents.supervisors.recruiter.recruiter_service_card import (
     RECRUITER_AGENT_URL,
 )
+from common.streaming_capability import require_streaming_capability
+from config.config import LLM_MODEL, HOT_RELOAD_MODE
 
 logger = logging.getLogger("lungo.recruiter.supervisor.main")
 
 load_dotenv()
 
-app = FastAPI()
+require_streaming_capability("recruiter_supervisor", LLM_MODEL)
+
+
+def _load_agent_module():
+    import agents.supervisors.recruiter.agent as agent_module  # noqa: F401
+    return agent_module
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    async def init_agent():
+        try:
+            agent_module = await asyncio.to_thread(_load_agent_module)
+            app.state.agent_module = agent_module
+            app.state.recruiter_ready = True
+            logger.info("Recruiter agent initialized")
+        except Exception as e:
+            logger.exception("Background agent init failed: %s", e)
+
+    init_task = asyncio.create_task(init_agent())
+    try:
+        yield
+    finally:
+        init_task.cancel()
+        try:
+            await init_task
+        except asyncio.CancelledError:
+            pass
+
+
+app = FastAPI(lifespan=lifespan)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -51,11 +77,16 @@ class PromptRequest(BaseModel):
 
 
 @app.post("/agent/prompt")
-async def handle_prompt(request: PromptRequest):
+async def handle_prompt(request: PromptRequest, req: Request):
     """Send prompt to the recruiter supervisor ADK agent and return the result."""
+    if not getattr(req.app.state, "recruiter_ready", False):
+        raise HTTPException(status_code=503, detail="Service initializing")
+    agent_module = getattr(req.app.state, "agent_module", None)
+    if agent_module is None:
+        raise HTTPException(status_code=503, detail="Service initializing")
     try:
-        session_id = request.session_id or "default_session" #or str(uuid4())
-        result = await call_agent(
+        session_id = request.session_id or "default_session"  # or str(uuid4())
+        result = await agent_module.call_agent(
             query=request.prompt,
             session_id=session_id,
         )
@@ -64,7 +95,6 @@ async def handle_prompt(request: PromptRequest):
             "response": result["response"],
             "session_id": result["session_id"],
         }
-
         if result.get("agent_records"):
             response["agent_records"] = result["agent_records"]
         if result.get("evaluation_results"):
@@ -77,10 +107,15 @@ async def handle_prompt(request: PromptRequest):
 
 
 @app.post("/agent/prompt/stream")
-async def handle_stream_prompt(request: PromptRequest):
+async def handle_stream_prompt(request: PromptRequest, req: Request):
     """Stream recruiter supervisor agent responses as NDJSON lines."""
+    if not getattr(req.app.state, "recruiter_ready", False):
+        raise HTTPException(status_code=503, detail="Service initializing")
+    agent_module = getattr(req.app.state, "agent_module", None)
+    if agent_module is None:
+        raise HTTPException(status_code=503, detail="Service initializing")
     try:
-        session_id = request.session_id or "default_session" #or str(uuid4())
+        session_id = request.session_id or "default_session"  # or str(uuid4())
         user_id = "default_user"
 
         async def stream_generator():
@@ -104,7 +139,7 @@ async def handle_stream_prompt(request: PromptRequest):
                     """Iterate the ADK runner and push formatted events."""
                     nonlocal final_sid
                     try:
-                        async for event, sid in stream_agent(
+                        async for event, sid in agent_module.stream_agent(
                             query=request.prompt,
                             session_id=session_id,
                         ):
@@ -123,11 +158,11 @@ async def handle_stream_prompt(request: PromptRequest):
                             function_responses = event.get_function_responses() if hasattr(event, "get_function_responses") else []
 
                             # Fetch selected_agent on every event
-                            current_selected_agent = await get_selected_agent(user_id, final_sid)
+                            current_selected_agent = await agent_module.get_selected_agent(user_id, final_sid)
 
                             if event.is_final_response():
-                                agent_records = await get_recruited_agents(user_id, final_sid)
-                                evaluation_results = await get_evaluation_results(user_id, final_sid)
+                                agent_records = await agent_module.get_recruited_agents(user_id, final_sid)
+                                evaluation_results = await agent_module.get_evaluation_results(user_id, final_sid)
 
                                 line: dict = {
                                     "response": {
@@ -255,8 +290,10 @@ async def health_check():
 
 
 @app.get("/v1/health")
-async def connectivity_health():
+async def connectivity_health(req: Request):
     """Deep liveness: check that the recruiter A2A service is reachable."""
+    if not getattr(req.app.state, "recruiter_ready", False):
+        raise HTTPException(status_code=503, detail="Service initializing")
     try:
         async with httpx.AsyncClient(timeout=httpx.Timeout(10.0)) as client:
             resp = await client.get(f"{RECRUITER_AGENT_URL}/.well-known/agent.json")
@@ -313,4 +350,4 @@ async def get_agent_oasf(slug: str):
 
 
 if __name__ == "__main__":
-    uvicorn.run("main:app", host="0.0.0.0", port=8882, reload=True)
+    uvicorn.run("main:app", host="0.0.0.0", port=8882, reload=HOT_RELOAD_MODE)
