@@ -84,6 +84,8 @@ jobs:
     defaults:
       run:
         shell: bash
+    env:
+      WORKFLOW_FILES_LIST_JSON: '[".github/workflows/test.yaml", ".github/workflows/test-reusable.yaml"]'
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
@@ -121,15 +123,31 @@ jobs:
             base="${{ github.event.pull_request.base.sha }}"
             head="${{ github.event.pull_request.head.sha }}"
 
-            # Returns 0 if dir has changes, 1 if no changes
-            dir_has_changes() (
-              local base=$1 head=$2 dir=$3
-              set -x # This option only lives in the subshell of this function because the function is defined with () instead of {}.
-              ! git diff --name-only --exit-code --ignore-blank-lines $base $head "$dir"
+            # Returns 0 if there are changes, 1 if no changes
+            paths_have_changes() (
+              local base=$1 head=$2 paths_json_list=$3
+
+              # 1. Initialize an empty array
+              paths=()
+
+              # 2. Fill the array using a while loop
+              # We use IFS= to prevent trimming whitespace and -r to handle backslashes
+              while IFS= read -r line; do
+                paths+=("$line")
+              done < <(echo "$paths_json_list" | jq -r '.[]')
+
+              # This option only lives in the subshell of this function because the function is defined with () instead of {}.
+              set -x 
+
+              # 3. Use the array in the git diff command to detect changes
+              ! git diff --name-only --exit-code --ignore-blank-lines $base $head -- "${paths[@]}"
             )
-            
-            dir_has_changes $base $head "$CORTO_DIR" && test_corto=true || test_corto=false
-            dir_has_changes $base $head "$LUNGO_DIR" && test_lungo=true || test_lungo=false
+
+            paths_json_corto=$(echo $WORKFLOW_FILES_LIST_JSON | jq -c -r --arg new_val "$CORTO_DIR" '[$new_val] + .')
+            paths_have_changes $base $head $paths_json_corto && test_corto=true
+
+            paths_json_lungo=$(echo $WORKFLOW_FILES_LIST_JSON | jq -c -r --arg new_val "$LUNGO_DIR" '[$new_val] + .')
+            paths_have_changes $base $head $paths_json_lungo && test_lungo=true
           fi
 
           echo "test_corto=$test_corto" | tee -a $GITHUB_OUTPUT
