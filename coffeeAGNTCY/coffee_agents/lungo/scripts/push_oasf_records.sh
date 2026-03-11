@@ -102,7 +102,7 @@ for OASF_DIR in "${OASF_DIRS[@]}"; do
         # Check if the agent already exists in the directory
         SEARCH_RESULT=$(dirctl search --name "$AGENT_NAME" --output raw 2>/dev/null || echo "")
         
-        if [[ -n "$SEARCH_RESULT" ]]; then
+        if [[ -n "$SEARCH_RESULT" && "$SEARCH_RESULT" != "[]" ]]; then
             echo -e "    ${GREEN}✓ Already exists in directory (CID: ${SEARCH_RESULT:0:20}...)${NC}"
             ((ALREADY_EXISTS++))
         else
@@ -115,6 +115,9 @@ for OASF_DIR in "${OASF_DIRS[@]}"; do
             if [[ $PUSH_EXIT_CODE -eq 0 && -n "$PUSH_RESULT" ]]; then
                 echo -e "    ${GREEN}✓ Successfully pushed (CID: ${PUSH_RESULT:0:20}...)${NC}"
                 ((PUSHED++))
+                if ! dirctl routing publish "$PUSH_RESULT" 2>/dev/null; then
+                    echo -e "    ${YELLOW}⚠ Pushed but routing publish failed for CID${NC}"
+                fi
             else
                 echo -e "    ${RED}✗ Failed to push: ${PUSH_RESULT}${NC}"
                 ((FAILED++))
