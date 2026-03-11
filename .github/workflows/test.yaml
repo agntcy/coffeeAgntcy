@@ -4,15 +4,13 @@ on:
     branches:
       - main
     paths:
-      - 'coffeeAGNTCY/coffee_agents/corto/**'
-      - 'coffeeAGNTCY/coffee_agents/lungo/**'
+      - 'coffeeAGNTCY/coffee_agents/**'
       - '!coffeeAGNTCY/coffee_agents/*/deployment/helm/**'
   pull_request:
     branches:
       - main
     paths:
-      - 'coffeeAGNTCY/coffee_agents/corto/**'
-      - 'coffeeAGNTCY/coffee_agents/lungo/**'
+      - 'coffeeAGNTCY/coffee_agents/**'
       - '!coffeeAGNTCY/coffee_agents/*/deployment/helm/**'
   workflow_call:
     inputs:
@@ -38,6 +36,11 @@ on:
         default: true
       test_lungo:
         description: 'Whether to test the Lungo project.'
+        required: false
+        type: boolean
+        default: true
+      test_recruiter:
+        description: 'Whether to test the Recruiter project.'
         required: false
         type: boolean
         default: true
@@ -68,10 +71,16 @@ on:
         required: false
         type: boolean
         default: true
+      test_recruiter:
+        description: 'Whether to test the Recruiter project.'
+        required: false
+        type: boolean
+        default: true
 
 env:
   CORTO_DIR: coffeeAGNTCY/coffee_agents/corto
   LUNGO_DIR: coffeeAGNTCY/coffee_agents/lungo
+  RECRUITER_DIR: coffeeAGNTCY/coffee_agents/recruiter
 
 jobs:
   subprojects-to-test:
@@ -79,6 +88,7 @@ jobs:
     outputs:
       test_corto: ${{ steps.check-subprojects.outputs.test_corto }}
       test_lungo: ${{ steps.check-subprojects.outputs.test_lungo }}
+      test_recruiter: ${{ steps.check-subprojects.outputs.test_recruiter }}
     defaults:
       run:
         shell: bash
@@ -108,13 +118,16 @@ jobs:
         run: |
           test_corto=false
           test_lungo=false
+          test_recruiter=false
 
           if [[ "${{ github.event_name }}" == "push" ]]; then
             test_corto=true
             test_lungo=true
+            test_recruiter=true
           elif [[ "${{ github.event_name }}" == "workflow_call" || "${{ github.event_name }}" == "workflow_dispatch" ]]; then
             test_corto=${{ inputs.test_corto }}
             test_lungo=${{ inputs.test_lungo }}
+            test_recruiter=${{ inputs.test_recruiter }}
           elif [[ "${{ github.event_name }}" == "pull_request" ]]; then
             base="${{ github.event.pull_request.base.sha }}"
             head="${{ github.event.pull_request.head.sha }}"
@@ -128,10 +141,12 @@ jobs:
             
             dir_has_changes $base $head "$CORTO_DIR" && test_corto=true || test_corto=false
             dir_has_changes $base $head "$LUNGO_DIR" && test_lungo=true || test_lungo=false
+            dir_has_changes $base $head "$RECRUITER_DIR" && test_recruiter=true || test_recruiter=false
           fi
 
           echo "test_corto=$test_corto" | tee -a $GITHUB_OUTPUT
           echo "test_lungo=$test_lungo" | tee -a $GITHUB_OUTPUT
+          echo "test_recruiter=$test_recruiter" | tee -a $GITHUB_OUTPUT
 
   integration-tests-corto:
     needs: subprojects-to-test
@@ -149,6 +164,16 @@ jobs:
     uses: ./.github/workflows/test-reusable.yaml
     with:
       project_dir: coffeeAGNTCY/coffee_agents/lungo # cannot access env context here
+      pip_overrides: ${{ inputs.pip_overrides }}
+      pip_constraints: ${{ inputs.pip_constraints }}
+      docker_overrides: ${{ inputs.docker_overrides }}
+
+  integration-tests-recruiter:
+    needs: subprojects-to-test
+    if: ${{ needs.subprojects-to-test.outputs.test_recruiter == 'true' }}
+    uses: ./.github/workflows/test-reusable.yaml
+    with:
+      project_dir: coffeeAGNTCY/coffee_agents/recruiter # cannot access env context here
       pip_overrides: ${{ inputs.pip_overrides }}
       pip_constraints: ${{ inputs.pip_constraints }}
       docker_overrides: ${{ inputs.docker_overrides }}
