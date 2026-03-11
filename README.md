@@ -65,6 +65,12 @@ case and the other a more complex MAS:
 
 ---
 
+### Terminology
+
+For a common understanding, please see the [terminologies used](docs/TERMINOLOGY.md) throughout this repository.
+
+---
+
 ## Contributing
 
 This is a developer-facing reference repo.
