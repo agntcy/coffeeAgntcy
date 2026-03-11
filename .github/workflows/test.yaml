@@ -157,6 +157,7 @@ jobs:
       pip_overrides: ${{ inputs.pip_overrides }}
       pip_constraints: ${{ inputs.pip_constraints }}
       docker_overrides: ${{ inputs.docker_overrides }}
+    secrets: inherit
 
   integration-tests-lungo:
     needs: subprojects-to-test
@@ -167,6 +168,7 @@ jobs:
       pip_overrides: ${{ inputs.pip_overrides }}
       pip_constraints: ${{ inputs.pip_constraints }}
       docker_overrides: ${{ inputs.docker_overrides }}
+    secrets: inherit
 
   integration-tests-recruiter:
     needs: subprojects-to-test
@@ -177,3 +179,4 @@ jobs:
       pip_overrides: ${{ inputs.pip_overrides }}
       pip_constraints: ${{ inputs.pip_constraints }}
       docker_overrides: ${{ inputs.docker_overrides }}
+    secrets: inherit
