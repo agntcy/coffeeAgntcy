@@ -1,0 +1,960 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Directory Federation Manager</title>
+    <script src="env.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #0f172a;
+            color: #e2e8f0;
+            padding: 20px;
+        }
+        .container { max-width: 1400px; margin: 0 auto; }
+        h1 {
+            font-size: 2rem;
+            margin-bottom: 10px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .subtitle { color: #94a3b8; margin-bottom: 30px; }
+        
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #1e293b;
+        }
+        .tab {
+            padding: 12px 24px;
+            background: none;
+            border: none;
+            color: #94a3b8;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            border-bottom: 2px solid transparent;
+            margin-bottom: -2px;
+            transition: all 0.2s;
+        }
+        .tab:hover { color: #e2e8f0; }
+        .tab.active {
+            color: #667eea;
+            border-bottom-color: #667eea;
+        }
+        
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        
+        .card {
+            background: #1e293b;
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 20px;
+            border: 1px solid #334155;
+        }
+        
+        .node-selector {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        .node-btn {
+            padding: 10px 20px;
+            background: #334155;
+            border: 2px solid #475569;
+            border-radius: 8px;
+            color: #e2e8f0;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+        .node-btn:hover { background: #475569; }
+        .node-btn.active {
+            background: #667eea;
+            border-color: #667eea;
+        }
+        
+        .search-bar {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        .search-bar select,
+        .search-bar input {
+            padding: 12px;
+            background: #0f172a;
+            border: 1px solid #334155;
+            border-radius: 8px;
+            color: #e2e8f0;
+            font-size: 14px;
+        }
+        .search-bar input { flex: 1; }
+        .search-bar select { min-width: 120px; }
+        
+        .btn {
+            padding: 12px 24px;
+            background: #667eea;
+            border: none;
+            border-radius: 8px;
+            color: white;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+        .btn:hover { background: #5568d3; }
+        .btn-secondary {
+            background: #334155;
+        }
+        .btn-secondary:hover { background: #475569; }
+        .btn-danger {
+            background: #ef4444;
+        }
+        .btn-danger:hover { background: #dc2626; }
+        .btn-sm {
+            padding: 6px 12px;
+            font-size: 12px;
+        }
+        
+        .results {
+            display: grid;
+            gap: 12px;
+        }
+        .agent-card {
+            background: #0f172a;
+            border: 1px solid #334155;
+            border-radius: 8px;
+            padding: 16px;
+            transition: all 0.2s;
+        }
+        .agent-card:hover {
+            border-color: #667eea;
+            transform: translateY(-2px);
+        }
+        .agent-name {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #e2e8f0;
+        }
+        .agent-cid {
+            font-size: 11px;
+            color: #64748b;
+            font-family: monospace;
+            margin-bottom: 8px;
+        }
+        .agent-desc {
+            font-size: 13px;
+            color: #94a3b8;
+            margin-bottom: 12px;
+        }
+        .tags {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+            margin-bottom: 12px;
+        }
+        .tag {
+            padding: 4px 10px;
+            background: #334155;
+            border-radius: 4px;
+            font-size: 11px;
+            color: #94a3b8;
+        }
+        .tag.skill { background: #1e40af; color: #93c5fd; }
+        .tag.domain { background: #065f46; color: #6ee7b7; }
+        
+        .actions {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        
+        .form-group {
+            margin-bottom: 16px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 6px;
+            font-size: 13px;
+            color: #94a3b8;
+        }
+        .form-group input,
+        .form-group textarea,
+        .form-group select {
+            width: 100%;
+            padding: 10px;
+            background: #0f172a;
+            border: 1px solid #334155;
+            border-radius: 6px;
+            color: #e2e8f0;
+            font-size: 14px;
+            font-family: inherit;
+        }
+        .form-group textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+        
+        .status {
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 13px;
+            margin-bottom: 12px;
+        }
+        .status.success {
+            background: #065f46;
+            color: #6ee7b7;
+        }
+        .status.error {
+            background: #7f1d1d;
+            color: #fca5a5;
+        }
+        .status.info {
+            background: #1e3a8a;
+            color: #93c5fd;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #64748b;
+        }
+        
+        .empty {
+            text-align: center;
+            padding: 60px 20px;
+            color: #64748b;
+        }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 1000;
+            padding: 20px;
+            overflow-y: auto;
+            align-items: center;
+            justify-content: center;
+        }
+        .modal-content {
+            background: #1e293b;
+            border-radius: 12px;
+            padding: 24px;
+            max-width: 800px;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        .modal-title {
+            font-size: 20px;
+            font-weight: 600;
+        }
+        .close-btn {
+            background: none;
+            border: none;
+            color: #94a3b8;
+            font-size: 24px;
+            cursor: pointer;
+            padding: 0;
+            width: 32px;
+            height: 32px;
+        }
+        .close-btn:hover { color: #e2e8f0; }
+        
+        pre {
+            background: #0f172a;
+            padding: 16px;
+            border-radius: 8px;
+            overflow-x: auto;
+            font-size: 12px;
+            line-height: 1.5;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Directory Federation Manager</h1>
+        <p class="subtitle">Manage agents across federated directory nodes</p>
+        
+        <div class="tabs">
+            <button class="tab active" onclick="switchTab('search')">Local Search</button>
+            <button class="tab" onclick="switchTab('federation')">Federation Search</button>
+            <button class="tab" onclick="switchTab('push')">Push Agent</button>
+        </div>
+        
+        <!-- Local Search Tab -->
+        <div id="search" class="tab-content active">
+            <div class="card">
+                <h3 style="margin-bottom: 16px;">Search Local Node</h3>
+                <div class="node-selector" id="searchNodes"></div>
+                <div class="search-bar">
+                    <select id="searchType">
+                        <option value="name">Name</option>
+                        <option value="skill">Skill</option>
+                        <option value="domain">Domain</option>
+                    </select>
+                    <input type="text" id="searchValue" placeholder="Filter by query (leave empty for all)">
+                    <button class="btn" onclick="localSearch()">Search</button>
+                </div>
+                <div id="searchStatus"></div>
+            </div>
+            <div id="searchResults"></div>
+        </div>
+        
+        <!-- Federation Search Tab -->
+        <div id="federation" class="tab-content">
+            <div class="card">
+                <h3 style="margin-bottom: 16px;">Federation-Wide Search</h3>
+                <p style="color: #94a3b8; margin-bottom: 16px; font-size: 13px;">
+                    ⚠️ Federation search requires a skill or domain query. P2P routing does not support "show all".
+                </p>
+                <div style="margin-bottom: 12px;">
+                    <div style="font-size: 11px; color: #64748b; margin-bottom: 8px;">SEARCH FROM NODE</div>
+                    <div class="node-selector" id="fedNodes"></div>
+                </div>
+                <div class="search-bar">
+                    <select id="fedSearchType">
+                        <option value="skill">Skill</option>
+                        <option value="domain">Domain</option>
+                    </select>
+                    <input type="text" id="fedSearchValue" placeholder="Required: skill or domain to search (e.g. natural_language_processing)">
+                    <button class="btn" onclick="federationSearch()">Search Federation</button>
+                </div>
+                <div id="fedStatus"></div>
+            </div>
+            <div id="fedResults"></div>
+        </div>
+        
+        <!-- Push Agent Tab -->
+        <div id="push" class="tab-content">
+            <div class="card">
+                <h3 style="margin-bottom: 16px;">Push New Agent</h3>
+                <div class="node-selector" id="pushNodes"></div>
+                
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                    <div class="form-group">
+                        <label>Name *</label>
+                        <input type="text" id="pushName" placeholder="my-agent" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Schema Version</label>
+                        <select id="pushVersion">
+                            <option value="1.0.0" selected>1.0.0</option>
+                            <option value="0.8.0">0.8.0</option>
+                            <option value="0.7.0">0.7.0</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label>Description *</label>
+                    <textarea id="pushDesc" placeholder="Describe what your agent does..." rows="3" required></textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label>Skills * <small style="color: #94a3b8;">(Select from OASF catalog - auto-loaded)</small></label>
+                    <div style="display: flex; gap: 8px; margin-bottom: 8px;">
+                        <input type="text" id="skillSearch" placeholder="Search skills..." style="flex: 1;">
+                    </div>
+                    <select id="skillSelect" size="5" style="width: 100%; background: #1e293b; border: 1px solid #334155; border-radius: 6px; padding: 8px; color: #e2e8f0;">
+                        <option disabled>Loading skills...</option>
+                    </select>
+                    <div id="selectedSkills" style="margin-top: 8px; display: flex; flex-wrap: wrap; gap: 6px;"></div>
+                </div>
+                
+                <div class="form-group">
+                    <label>Domains <small style="color: #94a3b8;">(Select from OASF catalog - auto-loaded)</small></label>
+                    <div style="display: flex; gap: 8px; margin-bottom: 8px;">
+                        <input type="text" id="domainSearch" placeholder="Search domains..." style="flex: 1;">
+                    </div>
+                    <select id="domainSelect" size="5" style="width: 100%; background: #1e293b; border: 1px solid #334155; border-radius: 6px; padding: 8px; color: #e2e8f0;">
+                        <option disabled>Loading domains...</option>
+                    </select>
+                    <div id="selectedDomains" style="margin-top: 8px; display: flex; flex-wrap: wrap; gap: 6px;"></div>
+                </div>
+                
+                <div class="form-group">
+                    <label>Locators <small style="color: #94a3b8;">(Where to find your agent)</small></label>
+                    <div style="display: grid; grid-template-columns: 150px 1fr auto; gap: 8px; align-items: end;" id="locatorsList">
+                        <div>
+                            <select id="locatorType0" style="width: 100%; background: #1e293b; border: 1px solid #334155; border-radius: 6px; padding: 8px; color: #e2e8f0;">
+                                <option value="docker_image">Docker Image</option>
+                                <option value="source_code">Source Code</option>
+                                <option value="api_endpoint">API Endpoint</option>
+                                <option value="other">Other</option>
+                            </select>
+                        </div>
+                        <input type="text" id="locatorUrl0" placeholder="https://hub.docker.com/r/myorg/agent">
+                        <button class="btn btn-sm btn-secondary" onclick="addLocator()">+</button>
+                    </div>
+                </div>
+                
+                <div style="display: flex; gap: 12px; align-items: center;">
+                    <button class="btn" onclick="pushAgent()">Push Agent</button>
+                    <button class="btn btn-secondary" onclick="previewJSON()">Preview JSON</button>
+                    <button class="btn btn-secondary" onclick="clearPushForm()">Clear Form</button>
+                </div>
+                <div id="pushStatus"></div>
+            </div>
+        </div>
+        
+        <!-- Sync Tab -->
+        
+        <!-- Detail Modal -->
+        <div id="detailModal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3 class="modal-title">Agent Details</h3>
+                    <button class="close-btn" onclick="closeModal()">&times;</button>
+                </div>
+                <div id="detailContent"></div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        const API_URL = window.ENV?.API_URL || window.location.origin + '/api';
+        let nodes = [];
+        let selectedNode = '';
+        
+        // Initialize
+        async function init() {
+            const res = await fetch(`${API_URL}/nodes`);
+            nodes = await res.json();
+            selectedNode = nodes[0].address;
+            
+            renderNodeSelectors();
+            
+            // Auto-load OASF catalogs
+            loadSkills();
+            loadDomains();
+            
+            // Auto-load results for first node
+            localSearch();
+        }
+        
+        function renderNodeSelectors() {
+            ['searchNodes', 'fedNodes', 'pushNodes'].forEach(id => {
+                const container = document.getElementById(id);
+                container.innerHTML = nodes.map(n => 
+                    `<button class="node-btn ${n.address === selectedNode ? 'active' : ''}" 
+                             onclick="selectNode('${id}', '${n.address}')">
+                        ${n.name}
+                    </button>`
+                ).join('');
+            });
+        }
+        
+        function renderSyncSelectors() {
+            // Removed - Sync tab no longer exists
+        }
+        
+        async function createSync() {
+            // Removed - Sync tab no longer exists
+        }
+        
+        function selectNode(containerId, address) {
+            selectedNode = address;
+            const container = document.getElementById(containerId);
+            container.querySelectorAll('.node-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.textContent.includes(nodes.find(n => n.address === address).name));
+            });
+            
+            // Auto-load results for local search when node is selected
+            if (containerId === 'searchNodes') {
+                localSearch();
+            }
+            
+            // Re-render federation results if they exist
+            if (containerId === 'fedNodes') {
+                const resultsContainer = document.getElementById('fedResults');
+                if (resultsContainer.innerHTML && !resultsContainer.innerHTML.includes('empty')) {
+                    // Re-render existing results with new node context
+                    const currentResults = window.lastFedResults || [];
+                    renderResults(currentResults, resultsContainer, selectedNode, true);
+                }
+            }
+        }
+        
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+            event.target.classList.add('active');
+            document.getElementById(tabName).classList.add('active');
+        }
+        
+        async function localSearch() {
+            const type = document.getElementById('searchType').value;
+            const value = document.getElementById('searchValue').value;
+            const status = document.getElementById('searchStatus');
+            const results = document.getElementById('searchResults');
+            
+            status.innerHTML = '<div class="status info">Searching...</div>';
+            results.innerHTML = '';
+            
+            try {
+                const res = await fetch(`${API_URL}/search`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({node: selectedNode, type, value, limit: 50})
+                });
+                const data = await res.json();
+                
+                status.innerHTML = `<div class="status success">Found ${data.count} agents</div>`;
+                renderResults(data.results, results, selectedNode);
+            } catch (err) {
+                status.innerHTML = `<div class="status error">Error: ${err.message}</div>`;
+            }
+        }
+        
+        async function federationSearch() {
+            const type = document.getElementById('fedSearchType').value;
+            const value = document.getElementById('fedSearchValue').value;
+            const status = document.getElementById('fedStatus');
+            const results = document.getElementById('fedResults');
+            
+            if (!value) {
+                status.innerHTML = '<div class="status error">Federation search requires a query value. Enter a skill or domain to search.</div>';
+                return;
+            }
+            
+            status.innerHTML = '<div class="status info">Searching federation...</div>';
+            results.innerHTML = '';
+            
+            try {
+                const res = await fetch(`${API_URL}/routing-search`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({node: selectedNode, type, value})
+                });
+                const data = await res.json();
+                
+                // Store results for re-rendering when node changes
+                window.lastFedResults = data.results;
+                
+                status.innerHTML = `<div class="status success">Found ${data.count} agents across federation</div>`;
+                renderResults(data.results, results, selectedNode, true);
+            } catch (err) {
+                status.innerHTML = `<div class="status error">Error: ${err.message}</div>`;
+            }
+        }
+        
+        function renderResults(agents, container, node, showSource = false) {
+            if (agents.length === 0) {
+                container.innerHTML = '<div class="empty">No agents found</div>';
+                return;
+            }
+            
+            container.innerHTML = '<div class="results">' + agents.map(a => {
+                const sourceNode = showSource && a.source_node ? a.source_node : node;
+                const showSyncButton = showSource && a.source_node && a.source_node !== node;
+                
+                return `
+                <div class="agent-card">
+                    <div class="agent-name">${a.name}</div>
+                    <div class="agent-cid">${a.cid}</div>
+                    ${a.description ? `<div class="agent-desc">${a.description}</div>` : ''}
+                    ${a.skills.length > 0 ? `
+                        <div style="margin-bottom: 8px;">
+                            <div style="font-size: 11px; color: #64748b; margin-bottom: 4px;">SKILLS</div>
+                            <div class="tags">
+                                ${a.skills.map(s => `<span class="tag skill">${typeof s === 'string' ? s : s.name || s}</span>`).join('')}
+                            </div>
+                        </div>
+                    ` : ''}
+                    ${a.domains.length > 0 ? `
+                        <div style="margin-bottom: 12px;">
+                            <div style="font-size: 11px; color: #64748b; margin-bottom: 4px;">DOMAINS</div>
+                            <div class="tags">
+                                ${a.domains.map(d => `<span class="tag domain">${typeof d === 'string' ? d : d.name || d}</span>`).join('')}
+                            </div>
+                        </div>
+                    ` : ''}
+                    ${a.locators && a.locators.length > 0 ? `
+                        <div style="margin-bottom: 12px;">
+                            <div style="font-size: 11px; color: #64748b; margin-bottom: 4px;">LOCATORS</div>
+                            <div class="tags">
+                                ${a.locators.map(l => `<span class="tag" style="background: #422006; color: #fdba74;">${l.type || 'unknown'}: ${l.url || l}</span>`).join('')}
+                            </div>
+                        </div>
+                    ` : ''}
+                    ${showSource && a.source_node ? `
+                        <div style="margin-bottom: 12px;">
+                            <div style="font-size: 11px; color: #64748b; margin-bottom: 4px;">SOURCE</div>
+                            <div class="tags">
+                                <span class="tag">📍 ${a.source_node}</span>
+                            </div>
+                        </div>
+                    ` : ''}
+                    <div class="actions">
+                        <button class="btn btn-sm btn-secondary" onclick="viewDetails('${sourceNode}', '${a.cid}')" ${showSource && a.source_node ? `title="Pull from ${a.source_node}"` : ''}>
+                            View (Pull${showSource && a.source_node ? ' from source' : ''})
+                        </button>
+                        ${showSyncButton ? `<button class="btn btn-sm" onclick="syncAgent('${node}', '${a.source_node}', '${a.cid}')">Sync</button>` : ''}
+                        <button class="btn btn-sm btn-secondary" onclick="unpublishAgent('${sourceNode}', '${a.cid}')" ${showSource && a.source_node ? `title="Unpublish from ${a.source_node}"` : ''}>Unpublish</button>
+                        <button class="btn btn-sm btn-danger" onclick="deleteAgent('${sourceNode}', '${a.cid}')" ${showSource && a.source_node ? `title="Delete from ${a.source_node}"` : ''}>Delete</button>
+                    </div>
+                </div>
+            `;
+            }).join('') + '</div>';
+        }
+        
+        async function viewDetails(node, cid) {
+            const modal = document.getElementById('detailModal');
+            const content = document.getElementById('detailContent');
+            
+            content.innerHTML = '<div class="loading">Loading...</div>';
+            modal.style.display = 'flex';
+            
+            try {
+                const res = await fetch(`${API_URL}/pull`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({node, cid})
+                });
+                const data = await res.json();
+                
+                content.innerHTML = `<pre>${JSON.stringify(data, null, 2)}</pre>`;
+            } catch (err) {
+                content.innerHTML = `<div class="status error">Error: ${err.message}</div>`;
+            }
+        }
+        
+        function closeModal() {
+            document.getElementById('detailModal').style.display = 'none';
+        }
+        
+        async function publishAgent(node, cid) {
+            if (!confirm('Publish this agent to the federation?')) return;
+            
+            try {
+                await fetch(`${API_URL}/publish`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({node, cid})
+                });
+                alert('Agent published successfully');
+            } catch (err) {
+                alert('Error: ' + err.message);
+            }
+        }
+        
+        async function unpublishAgent(node, cid) {
+            if (!confirm('Unpublish this agent from the federation?')) return;
+            
+            try {
+                await fetch(`${API_URL}/unpublish`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({node, cid})
+                });
+                alert('Agent unpublished successfully');
+            } catch (err) {
+                alert('Error: ' + err.message);
+            }
+        }
+        
+        async function syncAgent(localNode, remoteNode, cid) {
+            if (localNode === remoteNode) {
+                alert('Cannot sync: agent is already on the selected node');
+                return;
+            }
+            
+            if (!confirm(`Sync agent from ${remoteNode} to ${localNode}?`)) return;
+            
+            try {
+                const res = await fetch(`${API_URL}/sync`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({local_node: localNode, remote_node: remoteNode, cids: [cid]})
+                });
+                const data = await res.json();
+                alert(`Sync created! ID: ${data.sync_id}`);
+            } catch (err) {
+                alert('Error: ' + err.message);
+            }
+        }
+        
+        async function deleteAgent(node, cid) {
+            if (!confirm('Delete this agent? This cannot be undone.')) return;
+            
+            try {
+                await fetch(`${API_URL}/delete`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({node, cid})
+                });
+                alert('Agent deleted successfully');
+                localSearch();
+            } catch (err) {
+                alert('Error: ' + err.message);
+            }
+        }
+        
+        
+        // OASF Catalog Integration
+        let skillsCatalog = [];
+        let domainsCatalog = [];
+        let selectedSkillsData = [];
+        let selectedDomainsData = [];
+        let locatorCount = 1;
+        
+        async function loadSkills() {
+            try {
+                const res = await fetch(`${API_URL}/skills`);
+                skillsCatalog = await res.json();
+                renderSkillOptions();
+            } catch (err) {
+                alert('Failed to load skills catalog: ' + err.message);
+            }
+        }
+        
+        async function loadDomains() {
+            try {
+                const res = await fetch(`${API_URL}/domains`);
+                domainsCatalog = await res.json();
+                renderDomainOptions();
+            } catch (err) {
+                alert('Failed to load domains catalog: ' + err.message);
+            }
+        }
+        
+        function renderSkillOptions() {
+            const search = document.getElementById('skillSearch').value.toLowerCase();
+            const select = document.getElementById('skillSelect');
+            const filtered = skillsCatalog.filter(s => 
+                s.name.toLowerCase().includes(search) || 
+                (s.caption && s.caption.toLowerCase().includes(search)) ||
+                (s.description && s.description.toLowerCase().includes(search))
+            );
+            select.innerHTML = filtered.slice(0, 100).map(s => 
+                `<option value="${s.uid}">${s.caption || s.name}</option>`
+            ).join('');
+            select.onchange = () => addSkill(select.value);
+        }
+        
+        function renderDomainOptions() {
+            const search = document.getElementById('domainSearch').value.toLowerCase();
+            const select = document.getElementById('domainSelect');
+            const filtered = domainsCatalog.filter(d => 
+                d.name.toLowerCase().includes(search) || 
+                (d.caption && d.caption.toLowerCase().includes(search)) ||
+                (d.description && d.description.toLowerCase().includes(search))
+            );
+            select.innerHTML = filtered.slice(0, 100).map(d => 
+                `<option value="${d.uid}">${d.caption || d.name}</option>`
+            ).join('');
+            select.onchange = () => addDomain(select.value);
+        }
+        
+        function addSkill(uid) {
+            const skill = skillsCatalog.find(s => s.uid == uid);
+            if (!skill || selectedSkillsData.find(s => s.uid == uid)) return;
+            selectedSkillsData.push(skill);
+            renderSelectedSkills();
+        }
+        
+        function addDomain(uid) {
+            const domain = domainsCatalog.find(d => d.uid == uid);
+            if (!domain || selectedDomainsData.find(d => d.uid == uid)) return;
+            selectedDomainsData.push(domain);
+            renderSelectedDomains();
+        }
+        
+        function removeSkill(uid) {
+            selectedSkillsData = selectedSkillsData.filter(s => s.uid != uid);
+            renderSelectedSkills();
+        }
+        
+        function removeDomain(uid) {
+            selectedDomainsData = selectedDomainsData.filter(d => d.uid != uid);
+            renderSelectedDomains();
+        }
+        
+        function renderSelectedSkills() {
+            const container = document.getElementById('selectedSkills');
+            container.innerHTML = selectedSkillsData.map(s => 
+                `<span class="tag skill">${s.caption || s.name} <button onclick="removeSkill(${s.uid})" style="margin-left: 6px; background: none; border: none; color: inherit; cursor: pointer;">&times;</button></span>`
+            ).join('');
+        }
+        
+        function renderSelectedDomains() {
+            const container = document.getElementById('selectedDomains');
+            container.innerHTML = selectedDomainsData.map(d => 
+                `<span class="tag domain">${d.caption || d.name} <button onclick="removeDomain(${d.uid})" style="margin-left: 6px; background: none; border: none; color: inherit; cursor: pointer;">&times;</button></span>`
+            ).join('');
+        }
+        
+        function addLocator() {
+            const container = document.getElementById('locatorsList');
+            const html = `
+                <div>
+                    <select id="locatorType${locatorCount}" style="width: 100%; background: #1e293b; border: 1px solid #334155; border-radius: 6px; padding: 8px; color: #e2e8f0;">
+                        <option value="docker_image">Docker Image</option>
+                        <option value="source_code">Source Code</option>
+                        <option value="api_endpoint">API Endpoint</option>
+                        <option value="other">Other</option>
+                    </select>
+                </div>
+                <input type="text" id="locatorUrl${locatorCount}" placeholder="URL">
+                <button class="btn btn-sm btn-danger" onclick="this.parentElement.parentElement.removeChild(this.parentElement)">-</button>
+            `;
+            const div = document.createElement('div');
+            div.style.cssText = 'display: grid; grid-template-columns: 150px 1fr auto; gap: 8px; align-items: end;';
+            div.innerHTML = html;
+            container.appendChild(div);
+            locatorCount++;
+        }
+        
+        function clearPushForm() {
+            document.getElementById('pushName').value = '';
+            document.getElementById('pushVersion').value = '1.0.0';
+            document.getElementById('pushDesc').value = '';
+            selectedSkillsData = [];
+            selectedDomainsData = [];
+            renderSelectedSkills();
+            renderSelectedDomains();
+            document.getElementById('locatorsList').innerHTML = `
+                <div>
+                    <select id="locatorType0" style="width: 100%; background: #1e293b; border: 1px solid #334155; border-radius: 6px; padding: 8px; color: #e2e8f0;">
+                        <option value="docker_image">Docker Image</option>
+                        <option value="source_code">Source Code</option>
+                        <option value="api_endpoint">API Endpoint</option>
+                        <option value="other">Other</option>
+                    </select>
+                </div>
+                <input type="text" id="locatorUrl0" placeholder="https://hub.docker.com/r/myorg/agent">
+                <button class="btn btn-sm btn-secondary" onclick="addLocator()">+</button>
+            `;
+            locatorCount = 1;
+            document.getElementById('pushStatus').innerHTML = '';
+        }
+        
+        // Setup search filters
+        document.addEventListener('DOMContentLoaded', () => {
+            const skillSearch = document.getElementById('skillSearch');
+            const domainSearch = document.getElementById('domainSearch');
+            if (skillSearch) skillSearch.oninput = () => skillsCatalog.length && renderSkillOptions();
+            if (domainSearch) domainSearch.oninput = () => domainsCatalog.length && renderDomainOptions();
+        });
+        
+        
+        function previewJSON() {
+            const name = document.getElementById('pushName').value;
+            const version = document.getElementById('pushVersion').value;
+            const description = document.getElementById('pushDesc').value;
+            
+            if (!name || !description) {
+                alert('Name and description are required');
+                return;
+            }
+            
+            if (selectedSkillsData.length === 0) {
+                alert('At least one skill is required');
+                return;
+            }
+            
+            // Collect locators
+            const locators = [];
+            for (let i = 0; i < locatorCount; i++) {
+                const typeEl = document.getElementById(`locatorType${i}`);
+                const urlEl = document.getElementById(`locatorUrl${i}`);
+                if (typeEl && urlEl && urlEl.value) {
+                    locators.push({type: typeEl.value, url: urlEl.value});
+                }
+            }
+            
+            const record = {
+                name,
+                version,
+                schema_version: "1.0.0",
+                description,
+                skills: selectedSkillsData.map(s => ({name: s.name, id: s.uid})),
+                domains: selectedDomainsData.map(d => ({name: d.name, id: d.uid})),
+                locators,
+                authors: ["Directory UI"],
+                created_at: new Date().toISOString()
+            };
+            
+            document.getElementById('detailContent').innerHTML = `<pre style="background: #0f172a; padding: 16px; border-radius: 6px; overflow: auto; max-height: 600px;">${JSON.stringify(record, null, 2)}</pre>`;
+            document.getElementById('detailModal').style.display = 'flex';
+        }
+        
+        async function pushAgent() {
+            const name = document.getElementById('pushName').value;
+            const version = document.getElementById('pushVersion').value;
+            const description = document.getElementById('pushDesc').value;
+            const status = document.getElementById('pushStatus');
+            
+            if (!name || !description) {
+                status.innerHTML = '<div class="status error">Name and description are required</div>';
+                return;
+            }
+            
+            if (selectedSkillsData.length === 0) {
+                status.innerHTML = '<div class="status error">At least one skill is required</div>';
+                return;
+            }
+            
+            // Collect locators
+            const locators = [];
+            for (let i = 0; i < locatorCount; i++) {
+                const typeEl = document.getElementById(`locatorType${i}`);
+                const urlEl = document.getElementById(`locatorUrl${i}`);
+                if (typeEl && urlEl && urlEl.value) {
+                    locators.push({type: typeEl.value, url: urlEl.value});
+                }
+            }
+            
+            const record = {
+                name,
+                version,
+                schema_version: "1.0.0",
+                description,
+                skills: selectedSkillsData.map(s => ({name: s.name, id: s.uid})),
+                domains: selectedDomainsData.map(d => ({name: d.name, id: d.uid})),
+                locators,
+                authors: ["Directory UI"],
+                created_at: new Date().toISOString()
+            };
+            
+            status.innerHTML = '<div class="status info">Pushing agent...</div>';
+            
+            try {
+                const res = await fetch(`${API_URL}/push`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({node: selectedNode, record})
+                });
+                const data = await res.json();
+                
+                status.innerHTML = `<div class="status success">Agent pushed! CID: ${data.cid}</div>`;
+                clearPushForm();
+            } catch (err) {
+                status.innerHTML = `<div class="status error">Error: ${err.message}</div>`;
+            }
+        }
+        
+
+        // Initialize on load
+        init();
+    </script>
+</body>
+</html>

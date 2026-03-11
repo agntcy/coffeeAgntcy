@@ -33,14 +33,20 @@ class DirectoryMCPServer:
     """MCP server for directory operations with multi-node support"""
     
     def __init__(self):
-        self.default_node = os.getenv("DIRECTORY_SERVER_ADDRESS", "localhost:8888")
+        self.default_node = os.getenv("DIRECTORY_SERVER_ADDRESS")
+        if not self.default_node:
+            raise ValueError(
+                "DIRECTORY_SERVER_ADDRESS environment variable is required. "
+                "The agent must specify which directory server to connect to."
+            )
+        
         spiffe_socket_raw = os.getenv("SPIFFE_SOCKET_PATH", "/run/spire/sockets/agent.sock")
         # Add unix:// scheme if not present
         if spiffe_socket_raw and not spiffe_socket_raw.startswith("unix://"):
             self.spiffe_socket = f"unix://{spiffe_socket_raw}"
         else:
             self.spiffe_socket = spiffe_socket_raw
-        self.auth_mode = os.getenv("AUTH_MODE", "x509")  # x509 or jwt
+        self.auth_mode = os.getenv("AUTH_MODE", "")  # x509, jwt, or empty for auto-detect
         self.jwt_audience = os.getenv("JWT_AUDIENCE", "")
         self.nodes = {}  # Cache of clients by node address
         logger.info(f"Initialized with default node: {self.default_node}")

@@ -6,6 +6,7 @@ services:
     container_name: dir-mcp-server
     stdin_open: true  # Required for MCP stdio communication
     tty: true
+    user: "1000:1000"  # CRITICAL: Must match SPIRE workload entry selector (unix:uid:1000)
     environment:
       # Default directory node
       DIRECTORY_SERVER_ADDRESS: ${DIRECTORY_SERVER_ADDRESS:-localhost:8888}

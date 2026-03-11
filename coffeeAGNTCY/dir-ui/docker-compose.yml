@@ -1,0 +1,23 @@
+services:
+  backend:
+    build: ./backend
+    container_name: dir-ui-backend
+    user: "1000:1000"
+    ports:
+      - "5000:5000"
+    volumes:
+      - /run/spire/sockets:/run/spire/sockets:ro
+    env_file:
+      - .env
+    restart: unless-stopped
+
+  frontend:
+    build: ./frontend
+    container_name: dir-ui-frontend
+    ports:
+      - "8090:80"
+    env_file:
+      - .env
+    depends_on:
+      - backend
+    restart: unless-stopped

@@ -1,0 +1,13 @@
+[project]
+name = "dir-ui-backend"
+version = "0.1.0"
+requires-python = ">=3.10"
+dependencies = [
+    "flask>=3.0.0",
+    "flask-cors>=4.0.0",
+    "agntcy-dir==1.0.0",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
