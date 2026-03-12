@@ -4,7 +4,7 @@
  **/
 
 import { create } from "zustand"
-import { LogisticsStreamStep } from "@/types/streaming"
+import type { LogisticsStreamStep } from "./groupStreaming.types"
 import { env } from "@/utils/env"
 import { isLocalDev, parseFetchError } from "@/utils/const.ts"
 import { logger } from "@/utils/logger"

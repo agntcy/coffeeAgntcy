@@ -14,10 +14,8 @@ import AgentIcon from "@/assets/Coffee_Icon.svg"
 import CheckCircle from "@/assets/CheckCircle.png"
 import type { Node } from "@xyflow/react"
 import type { GraphConfig } from "@/utils/graphConfigs"
-import {
-  GroupCommunicationFeedProps,
-  LogisticsStreamStep,
-} from "@/types/streaming"
+import type { GroupCommunicationFeedProps } from "@/types/streaming"
+import type { LogisticsStreamStep } from "@/stores/groupStreaming.types"
 import {
   useGroupEvents,
   useGroupError,

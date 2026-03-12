@@ -1,19 +1,5 @@
 import { GraphConfig } from "@/utils/graphConfigs"
 
-interface LogisticsStreamStep {
-  order_id: string
-
-  sender: string
-
-  receiver: string
-
-  message: string
-
-  timestamp: string
-
-  state: string
-}
-
 interface AuctionStreamingResponse {
   response: string
   session_id?: string
@@ -40,22 +26,6 @@ interface AuctionStreamingFeedProps {
   auctionStreamingState?: AuctionStreamingState
 }
 
-interface SSERetryState {
-  retryCount: number
-  isRetrying: boolean
-  lastRetryAt: number | null
-  nextRetryAt: number | null
-}
-
-interface SSEState {
-  isConnected: boolean
-  isConnecting: boolean
-  events: LogisticsStreamStep[]
-  currentOrderId: string | null
-  error: string | null
-  retryState: SSERetryState
-}
-
 interface AuctionStreamingState {
   status: "idle" | "connecting" | "streaming" | "completed" | "error"
   events: AuctionStreamingResponse[]
@@ -63,10 +33,8 @@ interface AuctionStreamingState {
 }
 
 export type {
-  LogisticsStreamStep,
   AuctionStreamingResponse,
   AuctionStreamingState,
   GroupCommunicationFeedProps,
   AuctionStreamingFeedProps,
-  SSEState,
 }
