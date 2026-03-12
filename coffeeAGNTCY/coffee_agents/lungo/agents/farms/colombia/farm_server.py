@@ -5,94 +5,63 @@ import config.logging_config  # noqa: F401 - runs setup on import; must be first
 
 import asyncio
 
-from a2a.server.apps import A2AStarletteApplication
-from a2a.server.request_handlers import DefaultRequestHandler
 from a2a.server.tasks import InMemoryTaskStore
-from dotenv import load_dotenv
-from starlette.routing import Route
-from uvicorn import Config, Server
+from a2a.types import AgentCard
+from a2a.server.request_handlers import DefaultRequestHandler
 
-from agntcy_app_sdk.semantic.a2a.protocol import A2AProtocol
-from agntcy_app_sdk.app_sessions import AppContainer
+from agntcy_app_sdk.factory import AgntcyFactory
 
-from config.config import (
-    DEFAULT_MESSAGE_TRANSPORT,
-    TRANSPORT_SERVER_ENDPOINT,
-    FARM_BROADCAST_TOPIC,
-    ENABLE_HTTP,
-)
-from agents.farms.colombia.agent import factory
 from agents.farms.colombia.agent_executor import FarmAgentExecutor
 from agents.farms.colombia.card import AGENT_CARD
 
+from dotenv import load_dotenv
+
 load_dotenv()
 
-async def run_http_server(server):
-    """Run the HTTP/REST server."""
-    try:
-        config = Config(app=server.build(), host="0.0.0.0", port=9998, loop="asyncio")
-        userver = Server(config)
-        await userver.serve()
-    except Exception as e:
-        print(f"HTTP server encountered an error: {e}")
+# Initialize a multi-protocol, multi-transport agntcy factory.
+factory = AgntcyFactory("lungo.colombia_farm", enable_tracing=True)
 
-async def run_transport(server, transport_type, endpoint):
-    """Run the transport and broadcast bridge."""
-    try:
-        personal_topic = A2AProtocol.create_agent_topic(AGENT_CARD)
-        transport = factory.create_transport(transport_type, endpoint=endpoint, name=f"default/default/{personal_topic}")
 
-        # Create an application session with multiple containers
-        app_session = factory.create_app_session(max_sessions=2)
-        
-        # Add containers for broadcast and personal topics
-        app_session.add_app_container("public_session", AppContainer(
-            server,
-            transport=transport,
-            topic=FARM_BROADCAST_TOPIC,
-        ))
-        app_session.add_app_container("private_session", AppContainer(
-            server,
-            transport=transport,
-            topic=personal_topic,
-        ))
+async def serve_all_a2a_interfaces(
+    request_handler: DefaultRequestHandler, 
+    agent_card: AgentCard,
+):
+    """Serve the Colombia Coffee Farm agent across all A2A transports defined in its AgentCard.
 
-        await app_session.start_session("public_session")
-        await app_session.start_session("private_session")
+    Creates an AgntcyFactory application session and registers every transport
+    interface declared in the card's ``additional_interfaces``, which include:
 
-    except Exception as e:
-        print(f"Transport encountered an error: {e}")
-        await app_session.stop_all_sessions()
+    - **slimrpc** – point-to-point transport for direct client-agent communication
+    - **slim** – SLIM-based group communication and pub/sub transport
+    - **nats** – NATS-based pub/sub transport for broadcasting to multiple subscribers
+    - **jsonrpc** – JSON-RPC endpoint for direct client-agent communication over HTTP
 
-async def main(enable_http: bool):
-    """Run the A2A server with both HTTP and transport logic."""
+    The card's ``preferred_transport`` determines the primary ``url`` advertised
+    to callers.  The session is kept alive until the process is interrupted.
+
+    Args:
+        request_handler: The A2A request handler wired to the
+            :class:`FarmAgentExecutor` and an in-memory task store.
+        agent_card: The ``AgentCard`` describing this agent's capabilities,
+            skills, and transport interfaces.
+    """
+
+    session = factory.create_app_session()
+
+    await session.add_a2a_card(agent_card, request_handler).start(keep_alive=True)
+
+async def main():
+    """Main entry point for multi-pattern, multi-transport serving."""
     request_handler = DefaultRequestHandler(
         agent_executor=FarmAgentExecutor(),
         task_store=InMemoryTaskStore(),
     )
 
-    server = A2AStarletteApplication(
-        agent_card=AGENT_CARD, http_handler=request_handler
-    )
-
-    # Run HTTP server and transport logic concurrently using TaskGroup
-    async with asyncio.TaskGroup() as tg:
-        if enable_http:
-            tg.create_task(safe_run(run_http_server, server))
-        tg.create_task(safe_run(run_transport, server, DEFAULT_MESSAGE_TRANSPORT, TRANSPORT_SERVER_ENDPOINT))
-
-async def safe_run(coro, *args, **kwargs):
-    """Run a coroutine safely, catching and logging exceptions."""
-    try:
-        await coro(*args, **kwargs)
-    except asyncio.CancelledError:
-        print(f"Task {coro.__name__} was cancelled.")
-    except Exception as e:
-        print(f"Task {coro.__name__} encountered an error: {e}")
+    await serve_all_a2a_interfaces(request_handler, AGENT_CARD)
 
 if __name__ == '__main__':
     try:
-        asyncio.run(main(ENABLE_HTTP))
+        asyncio.run(main())
     except KeyboardInterrupt:
         print("\nShutting down gracefully on keyboard interrupt.")
     except Exception as e:
