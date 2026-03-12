@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="light">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        
+        
+        
+        <link rel="shortcut icon" href="../img/favicon.ico">
+        <title>Terminology - CoffeeAgntcy Documentation</title>
+        <link href="../css/bootstrap.min.css" rel="stylesheet">
+        <link href="../css/fontawesome.min.css" rel="stylesheet">
+        <link href="../css/brands.min.css" rel="stylesheet">
+        <link href="../css/solid.min.css" rel="stylesheet">
+        <link href="../css/v4-font-face.min.css" rel="stylesheet">
+        <link href="../css/base.css" rel="stylesheet">
+        <link id="hljs-light" rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css" >
+        <link id="hljs-dark" rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github-dark.min.css" disabled>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+        <script>hljs.highlightAll();</script> 
+    </head>
+
+    <body>
+        <div class="navbar fixed-top navbar-expand-lg navbar-dark bg-primary">
+            <div class="container">
+                <a class="navbar-brand" href="..">CoffeeAgntcy Documentation</a>
+                <!-- Expander button -->
+                <button type="button" class="navbar-toggler" data-bs-toggle="collapse" data-bs-target="#navbar-collapse" aria-controls="navbar-collapse" aria-expanded="false" aria-label="Toggle navigation">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+
+                <!-- Expanded navigation -->
+                <div id="navbar-collapse" class="navbar-collapse collapse">
+                        <!-- Main navigation -->
+                        <ul class="nav navbar-nav">
+                            <li class="nav-item">
+                                <a href=".." class="nav-link">Home</a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="../CONTRIBUTING/" class="nav-link">Contributing</a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="../CHANGELOG/" class="nav-link">Changelog</a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="../CODE_OF_CONDUCT/" class="nav-link">Code of Conduct</a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="../SECURITY/" class="nav-link">Security</a>
+                            </li>
+                        </ul>
+
+                    <ul class="nav navbar-nav ms-md-auto">
+                        <li class="nav-item">
+                            <a href="#" class="nav-link" data-bs-toggle="modal" data-bs-target="#mkdocs_search_modal">
+                                <i class="fa fa-search"></i> Search
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="container">
+            <div class="row">
+                    <div class="col-md-3"><div class="navbar-expand-md bs-sidebar hidden-print affix" role="complementary">
+    <div class="navbar-header">
+        <button type="button" class="navbar-toggler collapsed" data-bs-toggle="collapse" data-bs-target="#toc-collapse" title="Table of Contents">
+            <span class="fa fa-angle-down"></span>
+        </button>
+    </div>
+
+    
+    <div id="toc-collapse" class="navbar-collapse collapse card bg-body-tertiary">
+        <ul class="nav flex-column">
+            
+            <li class="nav-item" data-bs-level="1"><a href="#terminology" class="nav-link">Terminology</a>
+              <ul class="nav flex-column">
+            <li class="nav-item" data-bs-level="2"><a href="#table-of-contents" class="nav-link">Table of Contents</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-bs-level="2"><a href="#agentic-design-pattern-short-pattern" class="nav-link">Agentic design pattern (short: pattern)</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-bs-level="2"><a href="#agentic-use-case-short-use-case" class="nav-link">Agentic use-case (short: use-case)</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-bs-level="2"><a href="#agentic-workflow-short-workflow" class="nav-link">Agentic workflow (short: workflow)</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+              </ul>
+            </li>
+        </ul>
+    </div>
+</div></div>
+                    <div class="col-md-9" role="main">
+
+<h1 id="terminology">Terminology</h1>
+<p>A short reference for how we name things in this repo.</p>
+<p>Aimed at new developers and anyone exploring agentic patterns with AGNTCY components.</p>
+<hr />
+<h2 id="table-of-contents">Table of Contents</h2>
+<ul>
+<li><a href="#terminology">Terminology</a></li>
+<li><a href="#agentic-design-pattern-short-pattern">Agentic design pattern (short: pattern)</a></li>
+<li><a href="#agentic-use-case-short-use-case">Agentic use-case (short: use-case)</a></li>
+<li><a href="#agentic-workflow-short-workflow">Agentic workflow (short: workflow)</a></li>
+</ul>
+<hr />
+<h2 id="agentic-design-pattern-short-pattern">Agentic design pattern (short: pattern)</h2>
+<p>An agentic design pattern is a reusable architectural way of structuring how agents (or agent-like services) are
+organized, orchestrated, and communicate to fulfill a capability. It answers:</p>
+<ul>
+<li>Who participates (one coordinator vs many peers, client vs server).</li>
+<li>How they’re coordinated (single orchestrator vs direct calls vs shared conversation).</li>
+<li>How they talk (transport, topology: request-reply, unicast, broadcast, group).</li>
+<li>So it’s the architecture of the agent system: roles, topology, and communication style, independent of the concrete
+  use-case (e.g. auction vs sommelier).</li>
+</ul>
+<p>A couple architectural (agentic design) patterns used throughout CoffeeAGNTCY:</p>
+<ol>
+<li>Point-to-point (agent-to-agent): Direct A2A client–server interaction. No central coordinator. One agent (client)
+   sends requests to another (server); no broadcast, no group chat or coordination. Example: Corto Sommelier/coffee
+   grading.</li>
+<li>Supervisor–workers: One supervisor agent holds the agentic workflow (e.g. LangGraph), receives user input, and
+   delegates to worker agents via A2A. Workers do not coordinate with each other; they respond to the supervisor.
+   Supports broadcast (e.g. “inventory from all farms”) and unicast (e.g. “order at Colombia”). Example: Lungo
+   auction/coffee buying and Lungo recruiter/capability discovery.</li>
+<li>Group chat / coordination: A supervisor sets up and moderates a shared conversation (group). Multiple specialized
+   agents (e.g. farm, shipper, accountant, helpdesk) are members and talk to each other as well as to the supervisor to
+   complete a task. Example: Lungo logistics/order fulfillment.</li>
+</ol>
+<p>A single <strong>(agentic design) pattern</strong> in CoffeeAGNTCY drives one or more <strong>use-case</strong> implementations.</p>
+<hr />
+<h2 id="agentic-use-case-short-use-case">Agentic use-case (short: use-case)</h2>
+<p>A concrete, goal-oriented way an agentic system is used:</p>
+<ul>
+<li>who (or what) interacts with it,</li>
+<li>what outcome they want, and</li>
+<li>the main flow of interaction.</li>
+</ul>
+<p>It describes what the system does in an agent-based setting—the capability or scenario.</p>
+<p><strong>In CoffeeAGNTCY we narrow that idea and tie it to architecture, an (agentic) use-case is a concrete, runnable
+implementation of a distinct capability (e.g. run an auction, fulfill a logistics order, recruit/evaluate agents, act as
+a sommelier).</strong></p>
+<p>Each <strong>(agentic) use-case</strong> is built on exactly one architectural <strong>pattern</strong> — it’s an implementation
+of that pattern to achieve a concrete goal within a defined context.</p>
+<p>The following example (agentic) use-cases are existing in CoffeeAGNTCY:</p>
+<ul>
+<li>Point-to-point: Corto Sommelier / coffee grading.</li>
+<li>Supervisor-workers: Lungo auction / coffee buying, Lungo recruiter / capability discovery.</li>
+<li>Group chat / coordination: Lungo logistics / order fulfillment.</li>
+</ul>
+<hr />
+<h2 id="agentic-workflow-short-workflow">Agentic workflow (short: workflow)</h2>
+<p>An agentic workflow is the runnable orchestrated execution flow/process of an agentic system, the steps, decisions, and
+agent interactions that achieve a goal in an agentic system. It defines:</p>
+<ul>
+<li><strong>What runs in what order</strong> (steps, nodes, tool calls)</li>
+<li><strong>State</strong> that is passed and updated along the way</li>
+<li><strong>Where agents are invoked</strong> (calls to other agents, A2A, etc.) and how their results are used</li>
+</ul>
+<p>In CoffeeAGNTCY each <strong>use-case</strong> has an accompanied <strong>(agentic) workflow</strong> implementing the orchestration
+logic (graph, agent loop/pipeline, state machine) that fulfills the use-case building on top of a <strong>pattern</strong>.</p>
+<hr /></div>
+            </div>
+        </div>
+
+        <footer class="col-md-12">
+            <hr>
+            <p>Documentation built with <a href="https://www.mkdocs.org/">MkDocs</a>.</p>
+        </footer>
+        <script src="../js/bootstrap.bundle.min.js"></script>
+        <script>
+            var base_url = "..",
+                shortcuts = {"help": 191, "next": 78, "previous": 80, "search": 83};
+        </script>
+        <script src="../js/base.js"></script>
+        <script src="../search/main.js"></script>
+
+        <div class="modal" id="mkdocs_search_modal" tabindex="-1" role="dialog" aria-labelledby="searchModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title" id="searchModalLabel">Search</h4>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>From here you can search these documents. Enter your search terms below.</p>
+                <form>
+                    <div class="form-group">
+                        <input type="search" class="form-control" placeholder="Search..." id="mkdocs-search-query" title="Type search term here">
+                    </div>
+                </form>
+                <div id="mkdocs-search-results" data-no-results-text="No results found"></div>
+            </div>
+            <div class="modal-footer">
+            </div>
+        </div>
+    </div>
+</div><div class="modal" id="mkdocs_keyboard_modal" tabindex="-1" role="dialog" aria-labelledby="keyboardModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title" id="keyboardModalLabel">Keyboard Shortcuts</h4>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th style="width: 20%;">Keys</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td class="help shortcut"><kbd>?</kbd></td>
+                    <td>Open this help</td>
+                  </tr>
+                  <tr>
+                    <td class="next shortcut"><kbd>n</kbd></td>
+                    <td>Next page</td>
+                  </tr>
+                  <tr>
+                    <td class="prev shortcut"><kbd>p</kbd></td>
+                    <td>Previous page</td>
+                  </tr>
+                  <tr>
+                    <td class="search shortcut"><kbd>s</kbd></td>
+                    <td>Search</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="modal-footer">
+            </div>
+        </div>
+    </div>
+</div>
+
+    </body>
+</html>
