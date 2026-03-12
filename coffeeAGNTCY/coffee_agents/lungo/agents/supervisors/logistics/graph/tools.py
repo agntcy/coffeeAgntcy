@@ -20,29 +20,16 @@ from a2a.types import (
   SendMessageRequest,
   TextPart,
 )
-from agntcy_app_sdk.semantic.a2a.protocol import A2AProtocol
 
 from agents.logistics.accountant.card import AGENT_CARD as ACCOUNTANT_CARD
 from agents.logistics.farm.card import AGENT_CARD as TATOOINE_CARD
 from agents.logistics.shipper.card import AGENT_CARD as SHIPPER_CARD
 from agents.logistics.helpdesk.card import AGENT_CARD as HELPDESK_CARD
-from agents.supervisors.logistics.graph.shared import get_factory
-from config.config import (
-  DEFAULT_MESSAGE_TRANSPORT,
-  TRANSPORT_SERVER_ENDPOINT,
-)
+from agents.supervisors.logistics.graph.shared import a2a_client_factory
+from agntcy_app_sdk import get_agent_identifier
 from common.logistics_states import LogisticsStatus
 
 logger = logging.getLogger("lungo.logistics.supervisor.tools")
-
-# Global factory and transport instances
-factory = get_factory()
-transport = factory.create_transport(
-  DEFAULT_MESSAGE_TRANSPORT,
-  endpoint=TRANSPORT_SERVER_ENDPOINT,
-  name="default/default/logistic_graph"
-)
-
 
 
 async def create_order(farm: str, quantity: int, price: float) -> str:
@@ -57,8 +44,6 @@ async def create_order(farm: str, quantity: int, price: float) -> str:
   Returns:
       Aggregated status summary string.
   """
-  if DEFAULT_MESSAGE_TRANSPORT != "SLIM":
-    raise ValueError("Only SLIM transport is supported for logistic agents.")
 
   farm = farm.strip().lower()
   logger.info("Creating order | farm=%s quantity=%s price=%s", farm or "<none>", quantity, price)
@@ -69,12 +54,7 @@ async def create_order(farm: str, quantity: int, price: float) -> str:
     return "No farm provided. Please specify a farm."
 
   try:
-    client = await factory.create_client(
-      "A2A",
-      # Use shipper routable name to satisfy SLIM client creation requirement.
-      agent_topic=A2AProtocol.create_agent_topic(SHIPPER_CARD),
-      transport=transport,
-    )
+    client = await a2a_client_factory.create(SHIPPER_CARD)
 
     request = SendMessageRequest(
       id=str(uuid4()),
@@ -97,22 +77,12 @@ async def create_order(farm: str, quantity: int, price: float) -> str:
     logger.error("Failed to create A2A client or message request: %s", e)
     raise HTTPException(status_code=500, detail="Internal server error: failed to create A2A client or message request")
 
-  # Experimental: includes the HelpDesk in the broadcast (enabled by default for broader testing and demos).
-  # Known issue: concurrent delete_session executions may cause the agents to lose connectivity from SLIM.
-  # (see https://github.com/agntcy/slim/issues/780; tentative fix targeted for versions 0.6.0 or 0.7.0).
-  # Note: Helpdesk agent is an additional agent that will listen to the group chat messages.
-  helpdesk_enabled = os.getenv("EXPERIMENTAL_FEATURE", "false").lower() == "true"
-  logger.info("Helpdesk enabled: %s", helpdesk_enabled)
-  base_cards = (SHIPPER_CARD, TATOOINE_CARD, ACCOUNTANT_CARD)
-  cards = base_cards + (HELPDESK_CARD,) if helpdesk_enabled else base_cards
+  cards = (SHIPPER_CARD, TATOOINE_CARD, ACCOUNTANT_CARD)
 
-  recipients = [
-    A2AProtocol.create_agent_topic(card)
-    for card in cards
-  ]
+  recipients = [get_agent_identifier(card) for card in cards]
+
   logger.info(
-    "Broadcasting order to recipients (helpdesk_enabled=%s): %s",
-    helpdesk_enabled,
+    "Broadcasting order to recipients: %s",
     recipients
   )
 
@@ -159,8 +129,6 @@ async def create_order_streaming(farm: str, quantity: int, price: float):
   Yields:
       Response objects from agents as they arrive (idle messages are filtered out).
   """
-  if DEFAULT_MESSAGE_TRANSPORT != "SLIM":
-    raise ValueError("Only SLIM transport is supported for logistic agents.")
 
   farm = farm.strip().lower()
   logger.info("Creating order | farm=%s quantity=%s price=%s", farm or "<none>", quantity, price)
@@ -172,13 +140,11 @@ async def create_order_streaming(farm: str, quantity: int, price: float):
     yield "No farm provided. Please specify a farm."
     return
 
+  cards = (SHIPPER_CARD, TATOOINE_CARD, ACCOUNTANT_CARD)
+  recipients = [get_agent_identifier(card) for card in cards]
+
   try:
-    client = await factory.create_client(
-      "A2A",
-      # Use shipper routable name to satisfy SLIM client creation requirement.
-      agent_topic=A2AProtocol.create_agent_topic(SHIPPER_CARD),
-      transport=transport,
-    )
+    client = await a2a_client_factory.create(SHIPPER_CARD) # slim is set as preferred transport in these cards
     order_id=str(uuid4())
     logger.debug(f"Sending order {order_id} to agent: {farm}")
 
@@ -203,13 +169,6 @@ async def create_order_streaming(farm: str, quantity: int, price: float):
     logger.error("Failed to create A2A client or message request: %s", e)
     raise HTTPException(status_code=500, detail="Internal server error: failed to create A2A client or message request")
 
-  base_cards = (SHIPPER_CARD, TATOOINE_CARD, ACCOUNTANT_CARD)
-
-
-  recipients = [
-    A2AProtocol.create_agent_topic(card)
-    for card in base_cards
-  ]
   logger.info(
     "Streaming order to recipients: %s",
     recipients
