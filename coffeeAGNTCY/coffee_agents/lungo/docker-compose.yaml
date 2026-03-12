@@ -159,6 +159,7 @@ services:
       - DEFAULT_MESSAGE_TRANSPORT=${DEFAULT_MESSAGE_TRANSPORT:-NATS}
       - TRANSPORT_SERVER_ENDPOINT=${TRANSPORT_SERVER_ENDPOINT:-nats://nats:4222}
       - OTLP_HTTP_ENDPOINT=${OTLP_HTTP_ENDPOINT:-http://otel-collector:4318}
+      - OTEL_SDK_DISABLED=${OTEL_SDK_DISABLED:-false}
     depends_on:
       nats:
         condition: service_started
@@ -178,6 +179,7 @@ services:
       - DEFAULT_MESSAGE_TRANSPORT=${DEFAULT_MESSAGE_TRANSPORT:-NATS}
       - TRANSPORT_SERVER_ENDPOINT=${TRANSPORT_SERVER_ENDPOINT:-nats://nats:4222}
       - OTLP_HTTP_ENDPOINT=${OTLP_HTTP_ENDPOINT:-http://otel-collector:4318}
+      - OTEL_SDK_DISABLED=${OTEL_SDK_DISABLED:-false}
       - IDENTITY_AUTH_ENABLED=${IDENTITY_AUTH_ENABLED:-} # Disabled by default
       - IDENTITY_SERVICE_API_KEY=${IDENTITY_SERVICE_API_KEY_PAYMENT_MCP:-dummy_api_key}
     depends_on:
@@ -213,6 +215,8 @@ services:
       timeout: 3s
       retries: 5
       start_period: 10s
+    profiles:
+      - observability
 
   otel-collector:
     image: otel/opentelemetry-collector-contrib:latest
@@ -227,6 +231,8 @@ services:
     depends_on:
       clickhouse-server:
         condition: service_healthy
+    profiles:
+      - observability
 
   grafana:
     image: grafana/grafana
@@ -246,6 +252,8 @@ services:
     depends_on:
       clickhouse-server:
         condition: service_healthy
+    profiles:
+      - observability
 
   logistics-shipper:
     build:
@@ -258,6 +266,7 @@ services:
       - DEFAULT_MESSAGE_TRANSPORT=SLIM # Do not change. SLIM is required for group conversation.
       - TRANSPORT_SERVER_ENDPOINT=http://slim:46357
       - OTLP_HTTP_ENDPOINT=${OTLP_HTTP_ENDPOINT:-http://otel-collector:4318}
+      - OTEL_SDK_DISABLED=${OTEL_SDK_DISABLED:-false}
       - ENABLE_HTTP=true
     ports:
       - "9091:9091"
@@ -278,6 +287,7 @@ services:
       - DEFAULT_MESSAGE_TRANSPORT=SLIM # Do not change. SLIM is required for group conversation.
       - TRANSPORT_SERVER_ENDPOINT=http://slim:46357
       - OTLP_HTTP_ENDPOINT=${OTLP_HTTP_ENDPOINT:-http://otel-collector:4318}
+      - OTEL_SDK_DISABLED=${OTEL_SDK_DISABLED:-false}
       - ENABLE_HTTP=true
     ports:
       - "9092:9092"
@@ -298,6 +308,7 @@ services:
       - DEFAULT_MESSAGE_TRANSPORT=SLIM # Do not change. SLIM is required for group conversation.
       - TRANSPORT_SERVER_ENDPOINT=http://slim:46357
       - OTLP_HTTP_ENDPOINT=${OTLP_HTTP_ENDPOINT:-http://otel-collector:4318}
+      - OTEL_SDK_DISABLED=${OTEL_SDK_DISABLED:-false}
       - ENABLE_HTTP=true
     ports:
       - "9093:9093"
@@ -318,6 +329,7 @@ services:
       - DEFAULT_MESSAGE_TRANSPORT=SLIM # Do not change. SLIM is required for group conversation.
       - TRANSPORT_SERVER_ENDPOINT=http://slim:46357
       - OTLP_HTTP_ENDPOINT=${OTLP_HTTP_ENDPOINT:-http://otel-collector:4318}
+      - OTEL_SDK_DISABLED=${OTEL_SDK_DISABLED:-false}
       - ENABLE_HTTP=true
     ports:
       - "9094:9094"
@@ -372,6 +384,8 @@ services:
       timeout: 5s
       retries: 3
       start_period: 30s
+    profiles:
+      - observability
 
   metrics-computation-engine:
     image: ghcr.io/agntcy/mce:1.2.1
@@ -386,6 +400,8 @@ services:
     depends_on:
       mce-api-layer:
         condition: service_healthy
+    profiles:
+      - observability
 
   dir-api-server:
     image: ghcr.io/agntcy/dir-apiserver:v1.0.0-rc.2

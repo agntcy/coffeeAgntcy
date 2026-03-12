@@ -298,11 +298,13 @@ All workshop services are containerized — start everything with one command:
 docker compose up --build
 ```
 
+The observability stack (Grafana, OTEL Collector, ClickHouse) is started when the `observability` profile is included in `COMPOSE_PROFILES` (e.g. in `.env`); set `OTEL_SDK_DISABLED=false` when you want telemetry. Using the profile without the env var means no telemetry is sent; using the env var without the profile can cause log noise and failed exports.
+
 This will start:
 - The **Auction** and **Logistic** agents
 - The **UI** frontends
 - The **SLIM and NATS message buses** for agent-to-agent communication
-- The **observability stack** (Grafana, OTEL Collector, ClickHouse)
+- The **observability stack** (when the `observability` profile is enabled)
 
 Once containers are running, open:
 
@@ -367,6 +369,8 @@ share updates dynamically.
 
 ### 4. Inspect Traces in Grafana
 
+
+Observability works only when both the `observability` profile (in `COMPOSE_PROFILES`) and `OTEL_SDK_DISABLED=false` are set.
 Once you’ve executed a few prompts:
 
 1. Go to [http://localhost:3001/](http://localhost:3001/)

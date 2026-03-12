@@ -21,7 +21,7 @@ from ioa_observe.sdk.tracing import session_start
 
 from agents.supervisors.logistics.graph import shared
 from agents.logistics.shipper.card import AGENT_CARD
-from config.config import DEFAULT_MESSAGE_TRANSPORT, LLM_MODEL, TRANSPORT_SERVER_ENDPOINT, HOT_RELOAD_MODE
+from config.config import DEFAULT_MESSAGE_TRANSPORT, LLM_MODEL, TRANSPORT_SERVER_ENDPOINT, OTEL_SDK_DISABLED, HOT_RELOAD_MODE
 from pathlib import Path
 from common.streaming_capability import require_streaming_capability
 
@@ -29,8 +29,8 @@ logger = logging.getLogger("lungo.logistics.supervisor.main")
 
 load_dotenv()
 
-# Initialize the shared agntcy factory with tracing enabled
-shared.set_factory(AgntcyFactory("lungo.logistics_supervisor", enable_tracing=True))
+# Initialize the shared agntcy factory (tracing from OTEL_SDK_DISABLED)
+shared.set_factory(AgntcyFactory("lungo.logistics_supervisor", enable_tracing=not OTEL_SDK_DISABLED))
 require_streaming_capability("logistics_supervisor", LLM_MODEL)
 
 

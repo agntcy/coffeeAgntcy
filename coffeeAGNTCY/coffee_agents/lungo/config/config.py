@@ -6,6 +6,12 @@ from dotenv import load_dotenv
 
 load_dotenv()  # Automatically loads from `.env` or `.env.local`
 
+# OTEL_SDK_DISABLED: common var used by 3rd-party libs built on OpenTelemetry (OTEL). When true, tracing is disabled.
+_otel_sdk_disabled_raw = os.getenv("OTEL_SDK_DISABLED", "false").strip().lower()
+OTEL_SDK_DISABLED = _otel_sdk_disabled_raw in ("true", "1", "yes")
+if OTEL_SDK_DISABLED:
+    os.environ.pop("OTLP_HTTP_ENDPOINT", None)
+
 DEFAULT_MESSAGE_TRANSPORT = os.getenv("DEFAULT_MESSAGE_TRANSPORT", "NATS")
 TRANSPORT_SERVER_ENDPOINT = os.getenv("TRANSPORT_SERVER_ENDPOINT", "nats://localhost:4222")
 

@@ -55,7 +55,7 @@ User Prompt
 
 To enable A2A Group communication over SLIM, you need to run the SLIM message bus gateway.
 
-Additionally, run the observability stack that includes OTEL Collector, Grafana, and ClickHouse DB. You can do this by executing the following command:
+With profile-based Compose, set `COMPOSE_PROFILES` to include `observability` and `OTEL_SDK_DISABLED=false` in `.env`. Otherwise, start the observability stack explicitly:
 
 ```sh
 docker compose up slim clickhouse-server otel-collector grafana
@@ -162,4 +162,4 @@ Expected output:
 
 ## Observability
 
-See [Observability](../README.md#observability)
+Observability requires both the `observability` profile in `COMPOSE_PROFILES` and `OTEL_SDK_DISABLED=false`. See [Observability](../README.md#observability).

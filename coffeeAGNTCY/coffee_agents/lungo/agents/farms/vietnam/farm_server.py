@@ -21,12 +21,13 @@ from config.config import (
     TRANSPORT_SERVER_ENDPOINT,
     FARM_BROADCAST_TOPIC,
     ENABLE_HTTP,
+    OTEL_SDK_DISABLED,
 )
 
 load_dotenv()
 
 # Initialize a multi-protocol, multi-transport agntcy factory.
-factory = AgntcyFactory("lungo.vietnam_farm", enable_tracing=True)
+factory = AgntcyFactory("lungo.vietnam_farm", enable_tracing=not OTEL_SDK_DISABLED)
 
 async def run_http_server(server):
     """Run the HTTP/REST server."""
