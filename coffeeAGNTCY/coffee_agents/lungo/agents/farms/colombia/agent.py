@@ -15,6 +15,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import logging
+import os
 
 from langgraph.graph import MessagesState
 from langchain_core.messages import AIMessage
@@ -25,12 +26,8 @@ from agntcy_app_sdk.factory import AgntcyFactory
 from ioa_observe.sdk.decorators import agent, graph
 
 from agents.exceptions import AuthError
-from agents.mcp_servers.utils import invoke_payment_mcp_tool
-from config.config import (
-    DEFAULT_MESSAGE_TRANSPORT,
-    TRANSPORT_SERVER_ENDPOINT,
-    OTEL_SDK_DISABLED,
-)
+from agents.mcp_servers.utils import invoke_payment_mcp_tool, _mcp_transport, _mcp_endpoint
+from config.config import OTEL_SDK_DISABLED
 from common.llm import get_llm
 
 logger = logging.getLogger("lungo.colombia_farm_agent.agent")
@@ -120,19 +117,19 @@ class FarmAgent:
                 or an error message if the call fails.
         """
         transport_instance = factory.create_transport(
-            DEFAULT_MESSAGE_TRANSPORT, 
-            endpoint=TRANSPORT_SERVER_ENDPOINT, 
+            _mcp_transport,
+            endpoint=_mcp_endpoint,
+            shared_secret_identity=os.getenv("SLIM_SHARED_SECRET"),
             name="default/default/mcp_client")
-        mcp_client = factory.create_client(
-            "MCP",
-            agent_topic="lungo_weather_service",
-            transport=transport_instance,
-            message_timeout=45
-        )
 
         # view available tools
         try:
-            async with mcp_client as client:
+            mcp_ctx = await factory.mcp().create_client(
+                topic="lungo_weather_service",
+                transport=transport_instance,
+                message_timeout=45
+            )
+            async with mcp_ctx as client:
                 response = await client.list_tools()
                 available_tools = [
                     {
