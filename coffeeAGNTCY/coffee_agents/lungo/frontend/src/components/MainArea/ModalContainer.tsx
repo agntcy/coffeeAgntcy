@@ -7,16 +7,13 @@ import React from "react"
 import IdentityModal from "./Graph/Identity/IdentityModal"
 import BadgeDetailsModal from "./Graph/Identity/BadgeDetailsModal"
 import PolicyDetailsModal from "./Graph/Identity/PolicyDetailsModal"
-import { ModalType } from "@/hooks/useModalManager"
+import type { ModalType, ModalNodeData, ModalPosition } from "@/types/modal"
 import type { CustomNodeData } from "./Graph/Elements/types"
-
-/** Node data for identity/badge/policy modals; may include isMcpServer from runtime. */
-type ModalNodeData = (CustomNodeData & { isMcpServer?: boolean }) | null
 
 interface ModalContainerProps {
   activeModal: ModalType
   activeNodeData: ModalNodeData
-  modalPosition: { x: number; y: number }
+  modalPosition: ModalPosition
   onClose: () => void
   onShowBadgeDetails: () => void
   onShowPolicyDetails: () => void

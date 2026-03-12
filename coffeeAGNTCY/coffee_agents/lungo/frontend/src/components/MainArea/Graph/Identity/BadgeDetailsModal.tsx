@@ -6,6 +6,7 @@
 import React, { useState, useEffect, useCallback } from "react"
 import { BadgeData } from "./types"
 import { CustomNodeData } from "../Elements/types"
+import type { ModalPosition } from "@/types/modal"
 import { logger } from "@/utils/logger"
 import { fetchBadgeDetails, IdentityServiceError } from "./IdentityApi"
 import { useEscapeKey } from "@/hooks/useEscapeKey"
@@ -20,7 +21,7 @@ interface BadgeDetailsModalProps {
   onClose: () => void
   nodeName: string
   nodeData: CustomNodeData
-  position: { x: number; y: number }
+  position: ModalPosition
   isMcpServer?: boolean
 }
 

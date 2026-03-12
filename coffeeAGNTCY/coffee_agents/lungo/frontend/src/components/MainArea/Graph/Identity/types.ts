@@ -1,4 +1,5 @@
-import { CustomNodeData } from "../Elements/types"
+import type { CustomNodeData } from "../Elements/types"
+import type { ModalType, ModalPosition } from "@/types/modal"
 
 export interface PolicyData {
   policies: Array<{
@@ -25,8 +26,8 @@ export interface IdentityModalProps {
   onShowBadgeDetails: () => void
   onShowPolicyDetails: () => void
   nodeName: string
-  position: { x: number; y: number }
-  activeModal?: string | null
+  position: ModalPosition
+  activeModal?: ModalType
   nodeData?: CustomNodeData
   isMcpServer?: boolean
 }
