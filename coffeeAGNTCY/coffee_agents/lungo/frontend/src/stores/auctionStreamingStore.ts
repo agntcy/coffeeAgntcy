@@ -4,7 +4,7 @@
  **/
 
 import { create } from "zustand"
-import { AuctionStreamingResponse } from "@/types/streaming"
+import type { AuctionStreamingResponse } from "./auctionStreaming.types"
 import { getStreamingEndpointForPattern, PATTERNS } from "@/utils/patternUtils"
 import { isLocalDev, parseFetchError } from "@/utils/const.ts"
 import { logger } from "@/utils/logger"

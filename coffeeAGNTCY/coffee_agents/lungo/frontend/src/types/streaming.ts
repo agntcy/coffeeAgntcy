@@ -1,9 +1,5 @@
+import type { AuctionStreamingState } from "@/stores/auctionStreaming.types"
 import { GraphConfig } from "@/utils/graphConfigs"
-
-interface AuctionStreamingResponse {
-  response: string
-  session_id?: string
-}
 
 interface GroupCommunicationFeedProps {
   isVisible: boolean
@@ -26,15 +22,7 @@ interface AuctionStreamingFeedProps {
   auctionStreamingState?: AuctionStreamingState
 }
 
-interface AuctionStreamingState {
-  status: "idle" | "connecting" | "streaming" | "completed" | "error"
-  events: AuctionStreamingResponse[]
-  error: string | null
-}
-
 export type {
-  AuctionStreamingResponse,
-  AuctionStreamingState,
   GroupCommunicationFeedProps,
   AuctionStreamingFeedProps,
 }

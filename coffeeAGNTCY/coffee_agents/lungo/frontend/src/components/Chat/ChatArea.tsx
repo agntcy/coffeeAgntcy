@@ -30,7 +30,7 @@ import { env } from "@/utils/env"
 import { logger } from "@/utils/logger"
 import type { GraphConfig } from "@/utils/graphConfigs"
 import { DiscoveryResponseEvent } from "@/types/agent"
-import type { AuctionStreamingState } from "@/types/streaming"
+import type { AuctionStreamingState } from "@/stores/auctionStreaming.types"
 import type { RecruiterStreamingState } from "@/stores/recruiterStreaming.types"
 import type { ApiResponse } from "@/types/api"
 
