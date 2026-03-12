@@ -4,8 +4,22 @@
 from typing import Literal
 from agntcy_app_sdk.factory import AgntcyFactory
 from agents.exceptions import AuthError
-from config.config import DEFAULT_MESSAGE_TRANSPORT, TRANSPORT_SERVER_ENDPOINT
+from common.agentic_patterns import PATTERNS, TransportType
+from config.config import SLIM_SERVER, NATS_SERVER
 import os
+
+# Resolve the enabled MCP transport variant (slim or nats) from the pattern registry.
+# To switch transports, toggle the 'enabled' flag in config/agentic_patterns.yaml
+# (e.g. disable slim-mcp-client-server, enable nats-mcp-client-server).
+_mcp_pattern = PATTERNS.resolve("mcp-client-server")
+_mcp_transport = _mcp_pattern.transport.value.upper()  # "slim" -> "SLIM", "nats" -> "NATS"
+
+# Derive the endpoint from the resolved transport type and existing server configs.
+_MCP_ENDPOINT_MAP = {
+    TransportType.SLIM: f"http://{SLIM_SERVER}",
+    TransportType.NATS: f"nats://{NATS_SERVER}",
+}
+_mcp_endpoint = _MCP_ENDPOINT_MAP[_mcp_pattern.transport]
 
 async def invoke_payment_mcp_tool(tool_name: Literal["create_payment", "list_transactions"]) -> dict:
   # don't invoke if identity auth is not enabled
@@ -15,16 +29,16 @@ async def invoke_payment_mcp_tool(tool_name: Literal["create_payment", "list_tra
   factory = AgntcyFactory()
 
   transport_instance = factory.create_transport(
-    transport=DEFAULT_MESSAGE_TRANSPORT,
-    endpoint=TRANSPORT_SERVER_ENDPOINT,
+    transport=_mcp_transport,
+    endpoint=_mcp_endpoint,
     name="default/default/fast_mcp_client",
   )
 
-  client = await factory.create_client(
+  client = await factory.mcp().create_client(
     "FastMCP",
     agent_topic="lungo_payment_service",
     transport=transport_instance,
-    agent_url=os.getenv("MCP_PAYMENT_SERVICE_URL", "http://localhost:8081/mcp"),
+    url=os.getenv("MCP_PAYMENT_SERVICE_URL", "http://localhost:8081/mcp"),
   )
 
   try:
