@@ -1,8 +1,9 @@
 # Copyright AGNTCY Contributors (https://github.com/agntcy)
 # SPDX-License-Identifier: Apache-2.0
 
-from typing import Optional
-from pydantic import BaseModel
+from typing import ClassVar, Optional
+
+from pydantic import BaseModel, ConfigDict
 from rogue_sdk.types import AuthType, Protocol, Transport
 
 
@@ -40,5 +41,6 @@ class AgentEvalConfig(BaseModel):
     agent_description: Optional[str] = None
     """Description of the agent's capabilities"""
 
-    class Config:
-        use_enum_values = False  # Keep enum objects, not just values
+    model_config: ClassVar[ConfigDict] = ConfigDict(
+        use_enum_values=False,  # Keep enum objects, not just values
+    )

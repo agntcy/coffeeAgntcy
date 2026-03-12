@@ -8,6 +8,7 @@ from agent_recruiter.common.logging import get_logger
 
 from google.adk.agents import Agent
 from google.adk.agents.run_config import RunConfig, StreamingMode
+from google.adk.apps.app import App
 from google.adk.events.event import Event as AdkEvent
 from google.adk.models.lite_llm import LiteLlm
 from google.genai import types
@@ -217,13 +218,10 @@ class RecruiterTeam:
         # Phase 4: Initialize Execution Runtime
         # ================================================================
         # Create the runner that manages agent execution, session state,
-        # and plugin lifecycle for the complete recruitment workflow
-        runner_root_stateful = Runner(
-            agent=root_agent_stateful,
-            app_name=self.app_name,
-            session_service=session_service,
-            plugins=plugins
-        )
+        # and plugin lifecycle for the complete recruitment workflow.
+        # Use App (not deprecated plugins=) so Runner does not emit DeprecationWarning.
+        app = App(name=self.app_name, root_agent=root_agent_stateful, plugins=plugins)
+        runner_root_stateful = Runner(app=app, session_service=session_service)
 
         self.runner = runner_root_stateful
 

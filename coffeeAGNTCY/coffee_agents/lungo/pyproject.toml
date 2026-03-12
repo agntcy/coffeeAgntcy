@@ -49,7 +49,7 @@ dependencies = [
 [project.optional-dependencies]
 dev = [
     "pytest~=7.0",
-    "pytest-asyncio>=0.17.0,<0.18",
+    "pytest-asyncio>=0.23.0,<0.24",
     "pytest-cov>=4.0.0,<5",
     "typing-extensions>=4.12.2,<5",
     "openai>=2.8.0,<3.0",
@@ -76,3 +76,14 @@ build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
 packages = ["farm", "exchange"]
+
+[tool.pytest.ini_options]
+addopts = "--asyncio-mode=auto"
+filterwarnings = [
+    "error",
+]
+markers = [
+    "agents(names): marks tests that run for specific farms (e.g. @pytest.mark.farms([\"brazil\"]))",
+]
+pythonpath = ["."]
+testpaths = ["tests"]
