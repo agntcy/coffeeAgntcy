@@ -7,10 +7,10 @@ import React, { useState, useEffect, useCallback, useRef } from "react"
 import { ChevronDown, ChevronUp, Loader2 } from "lucide-react"
 import AgentIcon from "@/assets/Coffee_Icon.svg"
 import CheckCircle from "@/assets/Check_Circle.png"
-import {
+import type {
   RecruiterStreamingFeedProps,
   RecruiterStreamingEvent,
-} from "@/types/streaming"
+} from "@/stores/recruiterStreaming.types"
 
 const RecruiterStreamingFeed: React.FC<RecruiterStreamingFeedProps> = ({
   isVisible,

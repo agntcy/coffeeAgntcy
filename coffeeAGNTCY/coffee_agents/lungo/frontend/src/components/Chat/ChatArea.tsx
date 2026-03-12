@@ -30,10 +30,8 @@ import { env } from "@/utils/env"
 import { logger } from "@/utils/logger"
 import type { GraphConfig } from "@/utils/graphConfigs"
 import { DiscoveryResponseEvent } from "@/types/agent"
-import type {
-  AuctionStreamingState,
-  RecruiterStreamingState,
-} from "@/types/streaming"
+import type { AuctionStreamingState } from "@/types/streaming"
+import type { RecruiterStreamingState } from "@/stores/recruiterStreaming.types"
 import type { ApiResponse } from "@/types/api"
 
 const DEFAULT_GRAFANA_URL = "http://127.0.0.1:3001"
