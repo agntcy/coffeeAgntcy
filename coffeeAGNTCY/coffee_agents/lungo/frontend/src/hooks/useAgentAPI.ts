@@ -6,7 +6,7 @@
 import React, { useRef, useState, useEffect } from "react"
 import axios from "axios"
 import { v4 as uuid } from "uuid"
-import { Message } from "@/types/message"
+import type { Message } from "@/components/Chat/types"
 import { isLocalDev, parseApiError, Role } from "@/utils/const"
 import { withRetry, RETRY_CONFIG } from "@/utils/retryUtils"
 import { shouldEnableRetries, getApiUrlForPattern } from "@/utils/patternUtils"

@@ -5,7 +5,7 @@
 
 import React, { useCallback, useEffect, useState } from "react"
 
-import { Message } from "@/types/message"
+import type { Message } from "./types"
 import { parseApiError } from "@/utils/const"
 import { useAgentAPI } from "@/hooks/useAgentAPI"
 import { useGroupSessionId } from "@/stores/groupStreamingStore"

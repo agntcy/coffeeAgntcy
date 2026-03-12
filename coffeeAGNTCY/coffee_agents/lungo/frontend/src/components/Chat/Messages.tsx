@@ -4,7 +4,7 @@
  **/
 
 import React, { useEffect, useRef } from "react"
-import { Message as MessageType } from "@/types/message"
+import type { Message as MessageType } from "./types"
 import Message from "./Message"
 
 export const LOCAL_STORAGE_KEY = "chat_messages"
