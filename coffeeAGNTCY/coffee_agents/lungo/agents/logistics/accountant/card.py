@@ -4,7 +4,10 @@
 from a2a.types import (
     AgentCapabilities, 
     AgentCard,
-    AgentSkill)
+    AgentInterface,
+    AgentSkill
+)
+from config.config import SLIM_SERVER
 
 AGENT_SKILL = AgentSkill(
     id="get_accounting_status",
@@ -24,11 +27,18 @@ AGENT_CARD = AgentCard(
     name='Accountant agent',
     id='accountant-agent',
     description='An AI agent that confirms the payment.',
-    url='',
     version='1.0.0',
-    defaultInputModes=["text"],
-    defaultOutputModes=["text"],
+    default_input_modes=["text"],
+    default_output_modes=["text"],
     capabilities=AgentCapabilities(streaming=True),
     skills=[AGENT_SKILL],
-    supportsAuthenticatedExtendedCard=False,
+    supports_authenticated_extended_card=False,
+    preferred_transport="slim",
+    url=f"slim://{SLIM_SERVER}/lungo/agents/accountant_agent", # primary endpoint for SLIM-based group communication
+    additional_interfaces=[
+        # slim-based group comm transport
+        AgentInterface(transport="slim", url=f"slim://{SLIM_SERVER}/lungo/agents/accountant_agent"),
+        # point-to-point transport for direct client-agent communication
+        AgentInterface(transport="slimrpc", url=f"slim://{SLIM_SERVER}/lungo/agents/accountant_agent_rpc"),
+    ],
 )
