@@ -26,13 +26,22 @@ def _compose_cmd(files: List[str]) -> List[str]:
             cmd += ["-f", str(compose_file)]
     return cmd
 
+def _compose_env():
+    """Env for docker compose subprocess: use current process env so test-set vars (e.g. OTEL_SDK_DISABLED) are used."""
+    return dict(os.environ)
+
+
 def _run(cmd: List[str]):
     """
     Execute a docker compose command from PROJECT_DIR to make calls location-agnostic.
+    Passes current process env so compose (and variable substitution) uses the same env as the test.
     """
+    compose_env = _compose_env()
     print(">", " ".join(cmd))
     try:
-        result = subprocess.run(cmd, check=True, cwd=PROJECT_DIR, capture_output=True, text=True)
+        result = subprocess.run(
+            cmd, check=True, cwd=PROJECT_DIR, capture_output=True, text=True, env=compose_env
+        )
         return result  # return result so callers (like up()) can inspect .stdout
     except subprocess.CalledProcessError as e:
         print(f"Command failed: {e}\n")
@@ -43,6 +52,7 @@ def _run(cmd: List[str]):
             _compose_cmd([f for f in cmd if f.endswith(('.yaml', '.yml'))]) + ["config"],
             check=False,
             cwd=PROJECT_DIR,
+            env=compose_env,
         )
 
         # 2. Attempt to show logs for the target service(s)
@@ -56,6 +66,7 @@ def _run(cmd: List[str]):
                     cmd[: cmd.index("compose") + 1] + ["logs", "--no-color", "--tail=200", svc],
                     check=False,
                     cwd=PROJECT_DIR,
+                    env=compose_env,
                 )
         except Exception as log_err:
             print(f"(could not get logs: {log_err})")

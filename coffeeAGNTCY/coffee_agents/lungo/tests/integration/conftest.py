@@ -5,7 +5,12 @@
 Pytest fixtures using the simple ProcessRunner.
 Replace prior xprocess usage with these.
 """
+import atexit
 import os
+
+# Force OTel SDK on in tests so we get recording spans; without this NonRecordingSpan would be created (from disabled SDK) which has no .attributes.
+os.environ["OTEL_SDK_DISABLED"] = "false"
+
 import re
 import time
 import sys
@@ -18,7 +23,6 @@ from tests.integration.docker_helpers import up, down, remove_container_if_exist
 from tests.integration.process_helper import ProcessRunner 
 
 LUNGO_DIR = Path(__file__).resolve().parents[2]
-print("LUNGO_DIR:", LUNGO_DIR)
 
 AGENTS = {
     # auction agents
@@ -62,6 +66,8 @@ _ACTIVE_RUNNERS = []
 # ---------------- utils ----------------
 
 def _base_env():
+    # Use test env: SDK on so spans are recording (avoids NonRecordingSpan.attributes error).
+    otel_disabled = os.environ.get("OTEL_SDK_DISABLED", "false")
     return {
         **os.environ,
         "PYTHONPATH": str(LUNGO_DIR),
@@ -70,6 +76,7 @@ def _base_env():
         "OTEL_SDK_DISABLED": "false",
         "PYTHONUNBUFFERED": "1",
         "PYTHONFAULTHANDLER": "1",
+        "OTEL_SDK_DISABLED": str(otel_disabled),
     }
 
 def _purge_modules(prefixes):
@@ -105,9 +112,25 @@ def _wait_ready(client, path, timeout_s=30.0, poll_s=0.5):
     raise RuntimeError(f"Ready check {path} did not return 200 within {timeout_s}s")
 
 # ---------------- session infra ----------------
+# docker_helpers passes env=os.environ to compose so infra containers use the same env as the test (e.g. OTEL_SDK_DISABLED).
 files = ["docker-compose.yaml"]
 if Path("docker-compose.override.yaml").exists():
     files.append("docker-compose.override.yaml")
+
+_session_docker_torn_down = False
+
+
+def _teardown_session_docker():
+    """Run docker compose down so session containers (slim, nats, grafana, etc.) are stopped. Idempotent."""
+    global _session_docker_torn_down
+    if _session_docker_torn_down:
+        return
+    _session_docker_torn_down = True
+    print("--- Tearing down session Docker (slim, nats, otel-collector, clickhouse, grafana) ---")
+    down(files)
+
+
+atexit.register(_teardown_session_docker)
 
 
 def _shutdown_otel_sdk():
@@ -144,8 +167,10 @@ def orchestrate_session_services():
     setup_identity()
     print("--- Session level service setup complete. Tests can now run ---")
     yield
-    _shutdown_otel_sdk()
-    down(files)
+    try:
+        _shutdown_otel_sdk()
+    finally:
+        _teardown_session_docker()
 
 def setup_transports():
     _startup_slim()
