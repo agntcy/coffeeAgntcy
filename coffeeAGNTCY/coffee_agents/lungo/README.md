@@ -134,7 +134,7 @@ Before you begin, ensure the following tools are installed:
 
 Update your .env file with the provider model, credentials, and OTEL endpoint.
 
-**Observability:** To use the observability stack (Grafana, OTEL Collector, ClickHouse), set `COMPOSE_PROFILES` to include `observability` (e.g. `farms,logistics,recruiter,observability`) and set `OTEL_SDK_DISABLED=false` (or leave unset). To run without the stack, omit `observability` from `COMPOSE_PROFILES` and set `OTEL_SDK_DISABLED=true`. Using the observability profile without enabling telemetry (`OTEL_SDK_DISABLED=true`) means the stack runs but no telemetry is sent; using telemetry (`OTEL_SDK_DISABLED=false`) without the observability profile can cause log noise and failed telemetry exports.
+**Observability:** To use the observability stack (Grafana, OTEL Collector, ClickHouse), set `COMPOSE_PROFILES` to include `observability` (or add them alternatively, e.g. listing `farms,logistics,recruiter,observability` for the `up` command, or add `--profile observability` to the `compose` command) and set `OTEL_SDK_DISABLED=false` (or leave unset). To run without the stack, omit `observability` from `COMPOSE_PROFILES` and set `OTEL_SDK_DISABLED=true`. Using the observability profile without enabling telemetry (`OTEL_SDK_DISABLED=true`) means the stack runs but no telemetry is sent; using telemetry (`OTEL_SDK_DISABLED=false`) without the observability profile can cause log noise and failed telemetry exports.
 
 CoffeeAGNTCY uses litellm to manage LLM connections. With litellm, you can seamlessly switch between different model providers using a unified configuration interface. Below are examples of environment variables for setting up various providers. For a comprehensive list of supported providers, see the [official litellm documentation](https://docs.litellm.ai/docs/providers).
 
@@ -570,7 +570,7 @@ Detailed architecture, message flows (SLIM pubsub vs controller channels), servi
 
 ### Observability
 
-Observability requires both the `observability` profile in `COMPOSE_PROFILES` and `OTEL_SDK_DISABLED=false`. Using the profile without the env var means no telemetry is sent; using the env var without the profile can cause log noise and failed exports.
+Observability requires both the `observability` profile (either in `COMPOSE_PROFILES`, or added through `--profile` switch) and an enabled OTEL SDK (it is enabled by default, but you can make it explicit by setting `OTEL_SDK_DISABLED=false`). Using the profile without the env var means no telemetry is sent; using the env var without the profile can cause log noise and failed exports.
 
 #### Trace Visualization via Grafana
 
