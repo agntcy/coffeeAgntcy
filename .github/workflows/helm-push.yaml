@@ -14,6 +14,7 @@ on:
       - 'coffeeAGNTCY/coffee_agents/*/deployment/helm/**'
       - '.github/workflows/helm-push.yaml'
       - '.github/workflows/helm-package-reusable.yaml'
+      - '.github/actions/check-paths-have-changes/**'
   workflow_dispatch:
     inputs:
       push:
@@ -41,13 +42,13 @@ jobs:
   subprojects-to-build:
     runs-on: ubuntu-latest
     outputs:
-      build_corto: ${{ steps.check-subprojects.outputs.build_corto }}
-      build_lungo: ${{ steps.check-subprojects.outputs.build_lungo }}
+      build_corto: ${{ steps.choose-subprojects.outputs.build_corto }}
+      build_lungo: ${{ steps.choose-subprojects.outputs.build_lungo }}
     defaults:
       run:
         shell: bash
     env:
-      WORKFLOW_FILES_LIST_JSON: '[".github/workflows/helm-push.yaml", ".github/workflows/helm-package-reusable.yaml"]'
+      WORKFLOW_FILES_LIST_JSON: '[".github/workflows/helm-push.yaml", ".github/workflows/helm-package-reusable.yaml", ".github/actions/check-paths-have-changes"]'
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
@@ -67,8 +68,36 @@ jobs:
           echo "build_corto=${{ inputs.build_corto }}"
           echo "build_lungo=${{ inputs.build_lungo }}"
 
-      - name: Detect changed paths for main sub-projects
-        id: check-subprojects
+      - name: Prepare subproject paths JSON lists
+        if: ${{ github.event_name == 'pull_request' }}
+        id: prepare-path-lists
+        run: |
+          paths_json_corto=$(echo $WORKFLOW_FILES_LIST_JSON | jq -c -r --arg new_val "$CORTO_DIR/$HELM_SUBDIR" '[$new_val] + .')
+          echo "paths_json_corto=$paths_json_corto" | tee -a $GITHUB_OUTPUT
+          
+          paths_json_lungo=$(echo $WORKFLOW_FILES_LIST_JSON | jq -c -r --arg new_val "$LUNGO_DIR/$HELM_SUBDIR" '[$new_val] + .')
+          echo "paths_json_lungo=$paths_json_lungo" | tee -a $GITHUB_OUTPUT
+
+      - name: Check paths have changes for Corto
+        if: ${{ github.event_name == 'pull_request' }}
+        id: check-paths-corto
+        uses: ./.github/actions/check-paths-have-changes
+        with:
+          base_sha: ${{ github.event.pull_request.base.sha }}
+          head_sha: ${{ github.event.pull_request.head.sha }}
+          paths_json_list: ${{ steps.prepare-path-lists.outputs.paths_json_corto }}
+
+      - name: Check paths have changes for Lungo
+        if: ${{ github.event_name == 'pull_request' }}
+        id: check-paths-lungo
+        uses: ./.github/actions/check-paths-have-changes
+        with:
+          base_sha: ${{ github.event.pull_request.base.sha }}
+          head_sha: ${{ github.event.pull_request.head.sha }}
+          paths_json_list: ${{ steps.prepare-path-lists.outputs.paths_json_lungo }}
+
+      - name: Determine build choices for subprojects
+        id: choose-subprojects
         run: |
           build_corto=false
           build_lungo=false
@@ -80,34 +109,8 @@ jobs:
             build_corto=${{ inputs.build_corto }}
             build_lungo=${{ inputs.build_lungo }}
           elif [[ "${{ github.event_name }}" == "pull_request" ]]; then
-            base="${{ github.event.pull_request.base.sha }}"
-            head="${{ github.event.pull_request.head.sha }}"
-
-            # Returns 0 if there are changes, 1 if no changes
-            paths_have_changes() (
-              local base=$1 head=$2 paths_json_list=$3
-
-              # 1. Initialize an empty array
-              paths=()
-
-              # 2. Fill the array using a while loop
-              # We use IFS= to prevent trimming whitespace and -r to handle backslashes
-              while IFS= read -r line; do
-                paths+=("$line")
-              done < <(echo "$paths_json_list" | jq -r '.[]')
-
-              # This option only lives in the subshell of this function because the function is defined with () instead of {}.
-              set -x 
-
-              # 3. Use the array in the git diff command to detect changes
-              ! git diff --name-only --exit-code --ignore-blank-lines $base $head -- "${paths[@]}"
-            )
-
-            paths_json_corto=$(echo $WORKFLOW_FILES_LIST_JSON | jq -c -r --arg new_val "$CORTO_DIR/$HELM_SUBDIR" '[$new_val] + .')
-            paths_have_changes $base $head $paths_json_corto && build_corto=true
-
-            paths_json_lungo=$(echo $WORKFLOW_FILES_LIST_JSON | jq -c -r --arg new_val "$LUNGO_DIR/$HELM_SUBDIR" '[$new_val] + .')
-            paths_have_changes $base $head $paths_json_lungo && build_lungo=true
+            build_corto=${{ steps.check-paths-corto.outputs.changed }}
+            build_lungo=${{ steps.check-paths-lungo.outputs.changed }}
           fi
 
           echo "build_corto=$build_corto" | tee -a $GITHUB_OUTPUT

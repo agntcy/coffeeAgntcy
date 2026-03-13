@@ -1,0 +1,59 @@
+name: Check filesystem paths for changes
+description: Check whether a list of filesystem paths have changes between two commits
+inputs:
+  base_sha:
+    description: The base SHA to compare against
+    required: true
+  head_sha:
+    description: The head SHA to compare against
+    required: true
+  paths_json_list:
+    description: The paths to check expressed as a string holding a JSON array of strings
+    required: false
+    default: "[]"
+outputs:
+  changed:
+    description: Whether the paths have changes. Result is expressed as a string of "true" or "false".
+    value: ${{ steps.check.outputs.changed }}
+runs:
+  using: composite
+  steps:
+    - name: Validate input paths JSON array
+      shell: bash
+      run: |
+        jq --compact-output --exit-status '., (type == "array" and all(.[] ; type == "string"))' <<< '${{ inputs.paths_json_list }}'
+
+    - name: Check whether paths have changes
+      id: check
+      shell: bash
+      run: |
+        # Returns 0 if there are changes, 1 if no changes
+        paths_have_changes() (
+          local base=$1 head=$2 paths_json_list=$3
+
+          # 1. Initialize an empty array
+          paths=()
+
+          # 2. Fill the array using a while loop
+          # We use IFS= to prevent trimming whitespace and -r to handle backslashes
+          while IFS= read -r line; do
+            paths+=("$line")
+          done < <(echo "$paths_json_list" | jq -r '.[]')
+
+          # This option only lives in the subshell of this function because the function is defined with () instead of {}.
+          set -x 
+
+          # 3. Use the array in the git diff command to detect changes
+          ! git diff --name-only --exit-code --ignore-blank-lines $base $head -- "${paths[@]}"
+        )
+
+        changed=false
+
+        # Note: We need the single quotes around `inputs.paths_json_list` to avoid Bash expansion of the JSON string resulting after Github substitutes the templated value.
+        # That would remove the double quotes within it and make the JSON string invalid.
+        # The error in that case would look like this: `jq: parse error: Invalid numeric literal at line 1, column 50`
+        paths_have_changes ${{ inputs.base_sha }} ${{ inputs.head_sha }} '${{ inputs.paths_json_list }}' \
+          && changed=true
+
+        echo "changed=$changed" | tee -a $GITHUB_OUTPUT
+
