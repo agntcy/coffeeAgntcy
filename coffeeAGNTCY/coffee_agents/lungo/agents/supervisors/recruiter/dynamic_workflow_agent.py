@@ -11,13 +11,11 @@ import logging
 from typing import AsyncGenerator, ClassVar
 from uuid import uuid4
 from a2a.types import (
+    AgentCard,
     Message,
-    MessageSendParams,
     Role,
-    SendMessageRequest,
     TextPart,
 )
-from a2a.utils.message import get_message_text
 from google.adk.agents import BaseAgent
 from google.adk.agents.invocation_context import InvocationContext
 from google.adk.events.event import Event
@@ -27,26 +25,12 @@ from agents.supervisors.recruiter.models import (
     STATE_KEY_RECRUITED_AGENTS,
     STATE_KEY_SELECTED_AGENT,
     STATE_KEY_TASK_MESSAGE,
+    AgentProtocol,
     AgentRecord,
 )
-
-
-from config.config import (
-    DEFAULT_MESSAGE_TRANSPORT, 
-    TRANSPORT_SERVER_ENDPOINT,
-)
-from agntcy_app_sdk.semantic.a2a.protocol import A2AProtocol
-from agents.supervisors.recruiter.shared import get_factory
+from agents.supervisors.recruiter.shared import a2a_client_factory
 
 logger = logging.getLogger("lungo.recruiter.supervisor.dynamic_workflow")
-
-# Global factory and transport instances
-factory = get_factory()
-transport = factory.create_transport(
-    DEFAULT_MESSAGE_TRANSPORT,
-    endpoint=TRANSPORT_SERVER_ENDPOINT,
-    name="default/default/dynamic_workflow_agent",
-)
 
 class DynamicWorkflowAgent(BaseAgent):
     """Executes tasks by sending messages to selected recruited agents via A2A HTTP.
@@ -60,21 +44,15 @@ class DynamicWorkflowAgent(BaseAgent):
     RESULT_STATE_PREFIX: ClassVar[str] = "dynamic_workflow_result_"
 
     async def _send_a2a_message(
-        self, card: AgentRecord, message: str, agent_name: str
+        self, card: AgentCard, message: str, agent_name: str
     ) -> str:
         """Send an A2A message to a remote agent and return the response text."""
-        request_id = str(uuid4())
         message_id = str(uuid4())
 
-        a2a_request = SendMessageRequest(
-            id=request_id,
-            params=MessageSendParams(
-                message=Message(
-                    messageId=message_id,
-                    role=Role.user,
-                    parts=[TextPart(text=message)],
-                ),
-            ),
+        a2a_message = Message(
+            messageId=message_id,
+            role=Role.user,
+            parts=[TextPart(text=message)],
         )
 
         logger.info(
@@ -83,53 +61,37 @@ class DynamicWorkflowAgent(BaseAgent):
             message[:100],
         )
 
-        client = await factory.create_client(
-            "A2A",
-            agent_topic=A2AProtocol.create_agent_topic(card),
-            transport=transport,
-        )
+        # negotiate and create the client based on the card's preferred transport
+        client = await a2a_client_factory.create(card)
 
         try:
-            '''async with httpx.AsyncClient(timeout=httpx.Timeout(60.0)) as client:
-                response = await client.post(
-                    url,
-                    json=a2a_request.model_dump(mode="json", by_alias=True, exclude_none=True),
+            result_text = None
+            async for response in client.send_message(a2a_message):
+                logger.info(
+                    "[agent:dynamic_workflow] Response received from %s: %s",
+                    agent_name,
+                    response,
                 )
-                response.raise_for_status()
-                data = response.json()'''
-            
-            response = await client.send_message(a2a_request)
-            data = response.model_dump(mode="json", by_alias=True, exclude_none=True)
 
-            # Extract text from A2A response using a2a.utils
-            result = data.get("result", {})
+                if isinstance(response, Message):
+                    for part in response.parts:
+                        part_root = part.root
+                        if hasattr(part_root, "text"):
+                            result_text = part_root.text.strip()
+                elif isinstance(response, tuple):
+                    task_update, event = response
+                    if (
+                        hasattr(task_update, "status")
+                        and task_update.status
+                        and task_update.status.message
+                    ):
+                        for part in task_update.status.message.parts:
+                            part_root = part.root
+                            if hasattr(part_root, "text"):
+                                result_text = part_root.text.strip()
 
-            # Try to parse the response message and extract text
-            # Format 1: result is a Message dict directly
-            if "parts" in result and "messageId" in result:
-                try:
-                    response_message = Message.model_validate(result)
-                    text = get_message_text(response_message)
-                    if text:
-                        return text
-                except Exception:
-                    logger.debug("Failed to parse result as Message", exc_info=True)
-
-            # Format 2: result.status.message contains the Message
-            status = result.get("status", {})
-            status_message = status.get("message", {})
-            if status_message and "parts" in status_message:
-                try:
-                    response_message = Message.model_validate(status_message)
-                    text = get_message_text(response_message)
-                    if text:
-                        return text
-                except Exception:
-                    logger.debug("Failed to parse status.message as Message", exc_info=True)
-
-            # Fallback: return raw result as string
-            if result:
-                return str(result)
+            if result_text:
+                return result_text
 
             return f"Agent {agent_name} returned no response."
 
@@ -141,6 +103,11 @@ class DynamicWorkflowAgent(BaseAgent):
                 exc_info=True,
             )
             return f"Error communicating with {agent_name}: {str(e)}"
+        
+    @staticmethod
+    def _protocol_from_record(record: AgentRecord) -> AgentProtocol:
+        """Determine the protocol to use based on the agent record."""
+        return record.protocol
 
     async def _run_async_impl(
         self, ctx: InvocationContext
@@ -213,6 +180,31 @@ class DynamicWorkflowAgent(BaseAgent):
             )
             return
 
+        protocol = self._protocol_from_record(record)
+        if protocol != AgentProtocol.A2A:
+            logger.error(
+                "[agent:dynamic_workflow] Unsupported protocol %r for agent %s. "
+                "Only A2A agents are currently supported.",
+                protocol.value,
+                record.name,
+            )
+            yield Event(
+                author=self.name,
+                invocation_id=ctx.invocation_id,
+                content=types.Content(
+                    role="model",
+                    parts=[
+                        types.Part(
+                            text=f"Agent '{record.name}' uses unsupported protocol "
+                            f"'{protocol.value}'. Only A2A agents are currently supported."
+                        )
+                    ],
+                ),
+            )
+            return
+
+        agent_card = record.to_agent_card()
+
         logger.info(
             "[agent:dynamic_workflow] Sending to agent: %s at %s",
             record.name,
@@ -221,7 +213,7 @@ class DynamicWorkflowAgent(BaseAgent):
 
         # Send A2A message
         response_text = await self._send_a2a_message(
-            card=record,
+            card=agent_card,
             message=task_message,
             agent_name=record.name,
         )
