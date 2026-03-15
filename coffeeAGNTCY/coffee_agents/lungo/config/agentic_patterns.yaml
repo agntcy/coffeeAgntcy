@@ -8,6 +8,12 @@
 # Agent lists are intentionally empty — they will be populated
 # when UI integration is added. For now, patterns serve as
 # transport config lookups for runtime code.
+#
+# Transport control:
+#   Granular — set 'enabled: true/false' on each variant below.
+#   Simple   — set DEFAULT_MESSAGE_TRANSPORT (e.g. "NATS" or "SLIM")
+#              and the Python registry will auto-enable/disable the
+#              matching variants at import time, overriding these flags.
 
 patterns:
   - id: slim-publish-subscribe

@@ -21,6 +21,16 @@ that as a preference to the A2A client factory for negotiation::
     card = remote_agent_card.model_copy()
     card.preferred_transport = pattern.transport.value
     client = await factory.create(card)
+
+Transport control has two levels:
+
+  **Granular** — edit ``config/agentic_patterns.yaml`` and set
+  ``enabled: true/false`` on each transport-specific variant.
+
+  **Simple (backwards compat)** — set ``DEFAULT_MESSAGE_TRANSPORT``
+  (e.g. ``"NATS"`` or ``"SLIM"``) and the registry will auto-enable
+  the matching variant for every transport-switched pattern at import
+  time, overriding the YAML flags.
 """
 
 from enum import Enum
@@ -294,12 +304,22 @@ class PatternRegistry:
 _PATTERNS_YAML = Path(__file__).parent.parent / "config" / "agentic_patterns.yaml"
 PATTERNS = PatternRegistry.from_file(str(_PATTERNS_YAML))
 
-# For backwards compatibility, enable/disable based on DEFAULT_MESSAGE_TRANSPORT
+# Backwards compatibility: DEFAULT_MESSAGE_TRANSPORT as a single lever
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# The YAML file above gives granular, per-pattern control over which
+# transport variant is active (set ``enabled: true/false`` individually).
+# For convenience, DEFAULT_MESSAGE_TRANSPORT acts as a single lever that
+# overrides the YAML flags at import time — every pattern whose id
+# contains one of the base names below is switched to the transport that
+# matches DEFAULT_MESSAGE_TRANSPORT (e.g. "NATS" enables nats-* variants
+# and disables slim-* variants).  Patterns not listed here (e.g.
+# group-communication) are left untouched and keep their YAML defaults.
 from config.config import DEFAULT_MESSAGE_TRANSPORT
 
-# get the publish-subscribe patterns and enable the one that matches the DEFAULT_MESSAGE_TRANSPORT
+_TRANSPORT_SWITCHED_PATTERNS = ("publish-subscribe", "mcp-client-server")
+
 for pattern in PATTERNS.list_all(omit_disabled=False):
-    if "publish-subscribe" in pattern.id:
+    if any(base in pattern.id for base in _TRANSPORT_SWITCHED_PATTERNS):
         if pattern.transport.value.lower() in DEFAULT_MESSAGE_TRANSPORT.lower():
             pattern.enabled = True
         else:
