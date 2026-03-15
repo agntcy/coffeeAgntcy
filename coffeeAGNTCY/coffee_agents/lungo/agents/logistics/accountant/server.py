@@ -149,6 +149,7 @@ async def serve_all_a2a_interfaces(
 
     session = factory.create_app_session()
     await session.add_a2a_card(agent_card, request_handler).start(keep_alive=False)
+    logger.info("Agent ready")
 
 async def main():
     

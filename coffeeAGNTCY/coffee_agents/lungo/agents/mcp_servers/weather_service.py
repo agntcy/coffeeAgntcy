@@ -104,6 +104,8 @@ async def main():
         .with_topic("lungo_weather_service") \
         .with_session_id("default_session").build()
     
+    await app_session.start_all_sessions(keep_alive=False)
+    logger.info("Agent ready")
     await app_session.start_all_sessions(keep_alive=True)
 
 if __name__ == "__main__":
