@@ -41,9 +41,9 @@ AGENT_CARD = AgentCard(
         # point-to-point transport for direct client-agent communication
         AgentInterface(transport="slimrpc", url=f"slim://{SLIM_SERVER}/lungo/agents/vietnam_coffee_farm"),
         # slim-based group comm and pub/sub transport
-        AgentInterface(transport="slim", url=f"slim://{SLIM_SERVER}/lungo/agents/farm_broadcast"),
+        AgentInterface(transport="slim", url=f"slim://{SLIM_SERVER}/lungo/agents/vietnam_coffee_farm"),
         # nats-based pub/sub transport for broadcasting to multiple subscriber
-        AgentInterface(transport="nats", url=f"nats://{NATS_SERVER}/lungo/agents/farm_broadcast"),
+        AgentInterface(transport="nats", url=f"nats://{NATS_SERVER}/lungo/agents/vietnam_coffee_farm"),
         # jsonrpc endpoint for direct client-agent communication over http
         AgentInterface(transport="jsonrpc", url=f"http://0.0.0.0:{PORT}"), 
     ],
