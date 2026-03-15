@@ -162,7 +162,8 @@ class AgenticPatternConfig(BaseModel):
     def __str__(self):
         return f"AgenticPatternConfig(id={self.id}, protocol={self.protocol}, transport={self.transport})"
     
-    def from_file(self, file_path: str) -> "AgenticPatternConfig":
+    @classmethod
+    def from_file(cls, file_path: str) -> "AgenticPatternConfig":
         raise NotImplementedError("from_file is not implemented yet. This is a placeholder for future deserialization logic from a file source.")
     
     def to_file(self, file_path: str, is_json: bool = True, is_yaml: bool = False) -> None:
@@ -292,3 +293,14 @@ class PatternRegistry:
 
 _PATTERNS_YAML = Path(__file__).parent.parent / "config" / "agentic_patterns.yaml"
 PATTERNS = PatternRegistry.from_file(str(_PATTERNS_YAML))
+
+# For backwards compatibility, enable/disable based on DEFAULT_MESSAGE_TRANSPORT
+from config.config import DEFAULT_MESSAGE_TRANSPORT
+
+# get the publish-subscribe patterns and enable the one that matches the DEFAULT_MESSAGE_TRANSPORT
+for pattern in PATTERNS.list_all(omit_disabled=False):
+    if "publish-subscribe" in pattern.id:
+        if pattern.transport.value.lower() in DEFAULT_MESSAGE_TRANSPORT.lower():
+            pattern.enabled = True
+        else:
+            pattern.enabled = False

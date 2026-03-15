@@ -43,6 +43,7 @@ logger = logging.getLogger("lungo.supervisor.tools")
 # (e.g. disable slim-publish-subscribe, enable nats-publish-subscribe).
 _pubsub_pattern = PATTERNS.resolve("publish-subscribe")
 _broadcast_transport = _pubsub_pattern.transport
+
 logger.info(f"Resolved broadcast transport: {_broadcast_transport} from enabled publish-subscribe pattern: {_pubsub_pattern.name}")
 
 
@@ -237,7 +238,7 @@ async def get_all_farms_yield_inventory(prompt: str) -> str:
     
     # create a list of recipients to include in the broadcast
     recipients = [
-        get_agent_identifier(get_farm_card(farm), interface_type=InterfaceTransport.SLIM_RPC) for farm in farm_registry
+        get_agent_identifier(get_farm_card(farm)) for farm in farm_registry
     ]
 
     try:
@@ -304,7 +305,7 @@ async def get_all_farms_yield_inventory_streaming(prompt: str):
     
     # create a list of recipients to include in the broadcast
     recipients = [
-        get_agent_identifier(get_farm_card(farm), interface_type=InterfaceTransport.SLIM_RPC) for farm in farm_registry
+        get_agent_identifier(get_farm_card(farm)) for farm in farm_registry
     ]
 
     try:
@@ -319,7 +320,7 @@ async def get_all_farms_yield_inventory_streaming(prompt: str):
         # Get the async generator for streaming responses
         response_stream = client.broadcast_message_streaming(
             request,
-            recipients=recipients
+            recipients=recipients,
         )
 
         # Track which farms responded
@@ -424,7 +425,6 @@ async def create_order(farm: str, quantity: int, price: float) -> str:
 
     try:
         card = copy.deepcopy(card)  # avoid mutating the singleton card
-        #card.preferred_transport = "slimrpc" # override preferred transport to ensure direct communication for order creation
         # Disable streaming: the SRPCTransport.send_message_streaming wrapper
         # returns a coroutine instead of an async generator, which breaks
         # BaseClient's streaming path.  Force the non-streaming (simple
