@@ -4,6 +4,9 @@
 import config.logging_config  # noqa: F401 - runs setup on import; must be first
 
 import asyncio
+import logging
+
+logger = logging.getLogger(__name__)
 
 from a2a.server.tasks import InMemoryTaskStore
 from a2a.types import AgentCard
@@ -49,7 +52,9 @@ async def serve_all_a2a_interfaces(
 
     session = factory.create_app_session()
 
-    await session.add_a2a_card(agent_card, request_handler).start(keep_alive=True)
+    await session.add_a2a_card(agent_card, request_handler).start(keep_alive=False)
+    logger.info("Agent ready")
+    await session.start_all_sessions(keep_alive=True)
 
 async def main():
     """Main entry point for multi-pattern, multi-transport serving."""
