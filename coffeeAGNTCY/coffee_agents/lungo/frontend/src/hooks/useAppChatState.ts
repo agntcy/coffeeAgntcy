@@ -6,7 +6,7 @@
 import { useState, useEffect, useCallback } from "react"
 import { LOCAL_STORAGE_KEY } from "@/components/Chat/Messages"
 import { PATTERNS, PatternType } from "@/utils/patternUtils"
-import { Message } from "@/types/message"
+import type { Message } from "@/components/Chat/types"
 import type { ApiResponse } from "@/types/api"
 
 export interface UseAppChatStateParams {

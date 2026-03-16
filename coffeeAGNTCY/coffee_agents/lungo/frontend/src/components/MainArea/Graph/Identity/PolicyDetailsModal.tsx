@@ -7,6 +7,7 @@ import React, { useState, useEffect, useCallback } from "react"
 import { createPortal } from "react-dom"
 import { PolicyData } from "./types"
 import { CustomNodeData } from "../Elements/types"
+import type { ModalPosition } from "@/types/modal"
 import { logger } from "@/utils/logger"
 import { fetchPolicyDetails, IdentityServiceError } from "./IdentityApi"
 import { useEscapeKey } from "@/hooks/useEscapeKey"
@@ -20,7 +21,7 @@ export interface PolicyDetailsModalProps {
   onClose: () => void
   nodeName: string
   nodeData: CustomNodeData
-  position: { x: number; y: number }
+  position: ModalPosition
   isMcpServer?: boolean
 }
 

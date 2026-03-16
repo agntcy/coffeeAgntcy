@@ -5,7 +5,7 @@
 
 import { create } from "zustand"
 import type { AgentRecord } from "@/types/agent"
-import { RecruiterStreamingEvent } from "@/types/streaming"
+import type { RecruiterStreamingEvent } from "./recruiterStreaming.types"
 import { getStreamingEndpointForPattern, PATTERNS } from "@/utils/patternUtils"
 import { isLocalDev, parseFetchError } from "@/utils/const.ts"
 import { logger } from "@/utils/logger"

@@ -14,16 +14,24 @@ import AgentIcon from "@/assets/Coffee_Icon.svg"
 import CheckCircle from "@/assets/CheckCircle.png"
 import type { Node } from "@xyflow/react"
 import type { GraphConfig } from "@/utils/graphConfigs"
-import {
-  GroupCommunicationFeedProps,
-  LogisticsStreamStep,
-} from "@/types/streaming"
+import type { LogisticsStreamStep } from "@/stores/groupStreaming.types"
 import {
   useGroupEvents,
   useGroupError,
   useGroupCurrentOrderId,
   useGroupIsComplete,
 } from "@/stores/groupStreamingStore"
+
+export interface GroupCommunicationFeedProps {
+  isVisible: boolean
+  onComplete?: () => void
+  prompt: string
+  onStreamComplete?: () => void
+  onSenderHighlight?: (nodeId: string) => void
+  graphConfig?: GraphConfig
+  executionKey?: string
+  apiError: boolean
+}
 
 /**
  * Minimal node data shape used for sender→node mapping and agent node filtering.
