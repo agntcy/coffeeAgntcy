@@ -60,9 +60,15 @@ def _side_effect_for(scenario_id: str):
     if scenario_id == "no_payload_error":
         err = AttributeError("'NoneType' object has no attribute 'payload'")
         err.name = "payload"
-        return [err]
+        return [err] * 5
     if scenario_id == "none_response":
-        return [None]
+        return [None] * 5
+    if scenario_id == "no_payload_then_success":
+        err = AttributeError("'NoneType' object has no attribute 'payload'")
+        err.name = "payload"
+        return [err, _make_success_response("recovered")]
+    if scenario_id == "none_then_success":
+        return [None, _make_success_response("ok")]
     raise ValueError(f"Unknown scenario_id: {scenario_id}")
 
 
@@ -142,17 +148,33 @@ _A2A_SCENARIOS = [
         "no_payload_error",
         None,
         RemoteAgentNoResponseError,
-        1,
-        False,
+        5,
+        True,
         id="no_payload_error",
     ),
     pytest.param(
         "none_response",
         None,
         RemoteAgentNoResponseError,
-        1,
+        5,
         False,
         id="none_response",
+    ),
+    pytest.param(
+        "no_payload_then_success",
+        "recovered",
+        None,
+        2,
+        False,
+        id="no_payload_then_success",
+    ),
+    pytest.param(
+        "none_then_success",
+        "ok",
+        None,
+        2,
+        False,
+        id="none_then_success",
     ),
 ]
 
@@ -185,9 +207,12 @@ def test_send_a2a_with_retry_scenarios(
             result = asyncio.run(run())
             assert result.root.result.parts[0].root.text == expected_result
         assert mock_client.send_message.await_count == expected_await_count
-        if scenario_id == "timeout_then_timeout":
+        if expected_await_count == 5:
             assert mock_sleep.await_count == 4
             assert [mock_sleep.await_args_list[i][0][0] for i in range(4)] == [1, 3, 9, 27]
+        elif expected_await_count == 2 and expected_exception is None:
+            assert mock_sleep.await_count == 1
+            assert mock_sleep.await_args[0][0] == 1
 
 
 @pytest.mark.parametrize(

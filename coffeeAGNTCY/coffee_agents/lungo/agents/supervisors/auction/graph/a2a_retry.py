@@ -70,42 +70,62 @@ logger = logging.getLogger(__name__)
 
 async def send_a2a_with_retry(client, request):
     """
-    Send request to A2A client. On timeout, retry up to 4 times (5 attempts total)
-    with exponential backoff (base 3, delays 1s, 3s, 9s, 27s). Only timeout errors
-    are retried; other errors propagate immediately.
+    Send request to A2A client. On timeout or no response (None / no_payload), retry
+    up to 4 times (5 attempts total) with exponential backoff (base 3, delays 1s, 3s,
+    9s, 27s). Valid response with empty content is returned as-is.
     """
     for attempt in range(_A2A_MAX_ATTEMPTS):
         try:
             response = await client.send_message(request)
-            if response is None or getattr(response, "root", None) is None:
-                raise RemoteAgentNoResponseError(
-                    "Remote agent returned no response (missing or invalid payload).",
-                    cause=None,
-                )
-            return response
-        except RemoteAgentNoResponseError:
-            raise
-        except Exception as e:
-            if not _is_timeout_error(e):
-                if _is_no_payload_error(e):
-                    raise RemoteAgentNoResponseError(
-                        "Remote agent returned no response (missing or invalid payload).",
-                        cause=e,
-                    ) from e
-                logger.error("A2A send_message failed: %s", e)
-                raise
+            if response is not None and getattr(response, "root", None) is not None:
+                return response
             if attempt < _A2A_MAX_ATTEMPTS - 1:
                 delay = _A2A_BACKOFF_BASE ** attempt
                 logger.warning(
-                    "A2A request timed out, retrying (attempt %s/%s) after %ss.",
+                    "A2A request had no response, retrying (attempt %s/%s) after %ss.",
                     attempt + 2,
                     _A2A_MAX_ATTEMPTS,
                     delay,
                 )
                 await asyncio.sleep(delay)
                 continue
-            raise TransportTimeoutError(
-                "Remote agent did not respond in time (SLIM receive timeout).",
-                cause=e,
-            ) from e
+            raise RemoteAgentNoResponseError(
+                "Remote agent returned no response (missing or invalid payload).",
+                cause=None,
+            )
+        except RemoteAgentNoResponseError:
+            raise
+        except Exception as e:
+            if _is_timeout_error(e):
+                if attempt < _A2A_MAX_ATTEMPTS - 1:
+                    delay = _A2A_BACKOFF_BASE ** attempt
+                    logger.warning(
+                        "A2A request timed out, retrying (attempt %s/%s) after %ss.",
+                        attempt + 2,
+                        _A2A_MAX_ATTEMPTS,
+                        delay,
+                    )
+                    await asyncio.sleep(delay)
+                    continue
+                raise TransportTimeoutError(
+                    "Remote agent did not respond in time (SLIM receive timeout).",
+                    cause=e,
+                ) from e
+            if _is_no_payload_error(e):
+                if attempt < _A2A_MAX_ATTEMPTS - 1:
+                    delay = _A2A_BACKOFF_BASE ** attempt
+                    logger.warning(
+                        "A2A request had no response, retrying (attempt %s/%s) after %ss.",
+                        attempt + 2,
+                        _A2A_MAX_ATTEMPTS,
+                        delay,
+                    )
+                    await asyncio.sleep(delay)
+                    continue
+                raise RemoteAgentNoResponseError(
+                    "Remote agent returned no response (missing or invalid payload).",
+                    cause=e,
+                ) from e
+            logger.error("A2A send_message failed: %s", e)
+            raise
 
