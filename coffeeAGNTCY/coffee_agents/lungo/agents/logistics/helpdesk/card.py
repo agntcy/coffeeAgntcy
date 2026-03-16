@@ -4,8 +4,10 @@
 from a2a.types import (
     AgentCapabilities,
     AgentCard,
-    AgentSkill)
-
+    AgentInterface,
+    AgentSkill
+)
+from config.config import SLIM_SERVER
 
 AGENT_SKILL = AgentSkill(
     id="helpdesk_support",
@@ -24,12 +26,17 @@ AGENT_CARD = AgentCard(
     name='Logistics Helpdesk',
     id='logistics-helpdesk-agent',
     description='An AI agent that provides logistics and support assistance for helpdesk queries.',
-    url='',
     version='1.0.0',
-    defaultInputModes=["text"],
-    defaultOutputModes=["text"],
+    default_input_modes=["text"],
+    default_output_modes=["text"],
     capabilities=AgentCapabilities(streaming=True),
     skills=[AGENT_SKILL],
-    supportsAuthenticatedExtendedCard=False,
+    supports_authenticated_extended_card=False,
+    preferred_transport="slim",
+    url=f"slim://{SLIM_SERVER}/lungo/agents/helpdesk_agent",
+    additional_interfaces=[
+        AgentInterface(transport="slim", url=f"slim://{SLIM_SERVER}/lungo/agents/helpdesk_agent"),
+        AgentInterface(transport="slimrpc", url=f"slim://{SLIM_SERVER}/lungo/agents/helpdesk_agent_rpc"),
+    ],
 )
 

@@ -6,18 +6,14 @@ import config.logging_config  # noqa: F401 - runs setup on import; must be first
 from typing import Any
 from datetime import datetime, timezone
 import logging
+import os
 
 import asyncio
 from mcp.server.fastmcp import FastMCP
 import httpx
-from agntcy_app_sdk.factory import TransportTypes
-from agntcy_app_sdk.app_sessions import AppContainer
 from agntcy_app_sdk.factory import AgntcyFactory
 
-from config.config import (
-    DEFAULT_MESSAGE_TRANSPORT,
-    TRANSPORT_SERVER_ENDPOINT,
-)
+from agents.mcp_servers.utils import _mcp_transport, _mcp_endpoint
 
 logger = logging.getLogger(__name__)
 
@@ -95,15 +91,21 @@ async def get_forecast(location: str) -> str:
 
 async def main():
     # serve the MCP server via a message bridge
-    transport = factory.create_transport(DEFAULT_MESSAGE_TRANSPORT, endpoint=TRANSPORT_SERVER_ENDPOINT, name="default/default/lungo_weather_service")
+    transport = factory.create_transport(
+        _mcp_transport,
+        endpoint=_mcp_endpoint,
+        shared_secret_identity=os.getenv("SLIM_SHARED_SECRET"),
+        name="default/default/lungo_weather_service")
 
-    app_session = factory.create_app_session(max_sessions=1)
-    app_container = AppContainer(
-        mcp._mcp_server,
-        transport=transport,
-        topic="lungo_weather_service",
-    )
-    app_session.add_app_container("default_session", app_container)
+    app_session = factory.create_app_session()
+    app_session \
+        .add(mcp._mcp_server) \
+        .with_transport(transport) \
+        .with_topic("lungo_weather_service") \
+        .with_session_id("default_session").build()
+    
+    await app_session.start_all_sessions(keep_alive=False)
+    logger.info("Agent ready")
     await app_session.start_all_sessions(keep_alive=True)
 
 if __name__ == "__main__":

@@ -24,36 +24,36 @@ AGENTS = {
     # auction agents
     "brazil-farm": {
         "cmd": ["python", "-m", "agents.farms.brazil.farm_server", "--no-reload"],
-        "ready_pattern": r"Transport initialized with tracing enabled",
+        "ready_pattern": r"Agent ready",
     },
     "colombia-farm": {
         "cmd": ["python", "-m", "agents.farms.colombia.farm_server", "--no-reload"],
-        "ready_pattern": r"Transport initialized with tracing enabled",
+        "ready_pattern": r"Agent ready",
     },
     "vietnam-farm": {
         "cmd": ["python", "-m", "agents.farms.vietnam.farm_server", "--no-reload"],
-        "ready_pattern": r"Transport initialized with tracing enabled",
+        "ready_pattern": r"Agent ready",
     },
     "weather-mcp": {
         "cmd": ["uv", "run", "-m", "agents.mcp_servers.weather_service"],
-        "ready_pattern": r"Transport initialized with tracing enabled",
+        "ready_pattern": r"Agent ready",
     },
     # logistics agents
     "logistics-farm": {
         "cmd": ["python", "-m", "agents.logistics.farm.server", "--no-reload"],
-        "ready_pattern": r"Transport initialized with tracing enabled",
+        "ready_pattern": r"Agent ready",
     },
     "accountant": {
         "cmd": ["python", "-m", "agents.logistics.accountant.server", "--no-reload"],
-        "ready_pattern": r"Transport initialized with tracing enabled",
+        "ready_pattern": r"Agent ready",
     },
     "shipper": {
         "cmd": ["python", "-m", "agents.logistics.shipper.server", "--no-reload"],
-        "ready_pattern": r"Transport initialized with tracing enabled",
+        "ready_pattern": r"Agent ready",
     },
     "helpdesk": {
         "cmd": ["python", "-m", "agents.logistics.helpdesk.server", "--no-reload"],
-        "ready_pattern": r"Transport initialized with tracing enabled",
+        "ready_pattern": r"Agent ready",
     }
 }
 
@@ -71,9 +71,12 @@ def _base_env():
         "PYTHONFAULTHANDLER": "1",
     }
 
-def _purge_modules(prefixes):
+def _purge_modules(prefixes, keep=None):
+    keep = set(keep or [])
     to_delete = [m for m in list(sys.modules)
-                 if any(m == p or m.startswith(p + ".") for p in prefixes)]
+                 if any(m == p or m.startswith(p + ".") for p in prefixes)
+                 and m not in keep
+                 and not any(m.startswith(k + ".") for k in keep)]
     for m in to_delete:
         sys.modules.pop(m, None)
 
@@ -214,7 +217,7 @@ def _normalize_agent_spec(spec):
             return {
                 "name": spec.split(".")[-1],
                 "cmd": ["python", "-m", spec],
-                "ready_pattern": "Transport initialized with tracing enabled",
+                "ready_pattern": "Agent ready",
             }
         raise ValueError(f"Unrecognized agent spec string: {spec!r}")
 
@@ -273,7 +276,7 @@ def agents_up(request, transport_config):
             cmd=spec["cmd"],
             cwd=str(LUNGO_DIR),
             env=env,
-            ready_pattern=spec.get("ready_pattern", r"Transport initialized with tracing enabled"),
+            ready_pattern=spec.get("ready_pattern", r"Agent ready"),
             timeout_s=60.0,
             log_dir=Path(LUNGO_DIR) / ".pytest-logs",
         ).start()
@@ -306,9 +309,14 @@ def auction_supervisor_client(transport_config, monkeypatch):
         monkeypatch.setenv(k, v)
 
     prefixes = ["agents.supervisors.auction", "config.config"]
+    # Keep the shared module (holds A2AClientFactory + SLIM connections) alive
+    # across tests — the SLIM native runtime rejects duplicate connections to
+    # the same endpoint, so recreating the factory per-test causes
+    # "client already connected" errors.
+    keep = ["agents.supervisors.auction.graph.shared"]
     saved = _save_modules(prefixes)
     try:
-        _purge_modules(prefixes)
+        _purge_modules(prefixes, keep=keep)
 
         import agents.supervisors.auction.main as auction_main
         import importlib
@@ -319,7 +327,7 @@ def auction_supervisor_client(transport_config, monkeypatch):
             _wait_ready(client, "/ready")
             yield client
     finally:
-        _purge_modules(prefixes)
+        _purge_modules(prefixes, keep=keep)
         _restore_modules(saved)
 
 @pytest.fixture

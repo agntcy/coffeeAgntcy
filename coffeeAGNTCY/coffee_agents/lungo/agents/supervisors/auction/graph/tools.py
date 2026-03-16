@@ -1,6 +1,7 @@
 # Copyright AGNTCY Contributors (https://github.com/agntcy)
 # SPDX-License-Identifier: Apache-2.0
 
+import copy
 import logging
 from typing import Any, Union, Literal, NoReturn
 from uuid import uuid4
@@ -17,22 +18,17 @@ from a2a.types import (
 )
 from langchain_core.tools import tool, ToolException
 from langchain_core.messages import AnyMessage, ToolMessage
-from agntcy_app_sdk.semantic.a2a.protocol import A2AProtocol
+from agntcy_app_sdk import InterfaceTransport, get_agent_identifier
 from ioa_observe.sdk.decorators import tool as ioa_tool_decorator
 
 
-from agents.farms.brazil.card import AGENT_CARD as brazil_agent_card
-from agents.farms.colombia.card import AGENT_CARD as colombia_agent_card
-from agents.farms.vietnam.card import AGENT_CARD as vietnam_agent_card
 from agents.supervisors.auction.graph.models import (
     InventoryArgs,
     CreateOrderArgs,
 )
-from agents.supervisors.auction.graph.shared import get_factory
+from agents.supervisors.auction.graph.shared import a2a_client_factory, farm_registry
+from common.agentic_patterns import PATTERNS, TransportType
 from config.config import (
-    DEFAULT_MESSAGE_TRANSPORT, 
-    TRANSPORT_SERVER_ENDPOINT, 
-    FARM_BROADCAST_TOPIC,
     IDENTITY_API_KEY,
     IDENTITY_API_SERVER_URL,
 )
@@ -42,13 +38,13 @@ from services.identity_service_impl import IdentityServiceImpl
 
 logger = logging.getLogger("lungo.supervisor.tools")
 
-# Global factory and transport instances
-factory = get_factory()
-transport = factory.create_transport(
-    DEFAULT_MESSAGE_TRANSPORT,
-    endpoint=TRANSPORT_SERVER_ENDPOINT,
-    name="default/default/exchange_graph"
-)
+# Resolve the enabled publish-subscribe pattern for broadcast operations.
+# To switch transports, toggle the 'enabled' flag in config/agentic_patterns.yaml
+# (e.g. disable slim-publish-subscribe, enable nats-publish-subscribe).
+_pubsub_pattern = PATTERNS.resolve("publish-subscribe")
+_broadcast_transport = _pubsub_pattern.transport
+
+logger.info(f"Resolved broadcast transport: {_broadcast_transport} from enabled publish-subscribe pattern: {_pubsub_pattern.name}")
 
 
 class A2AAgentError(ToolException):
@@ -101,24 +97,21 @@ def tools_or_next(tools_node: str, end_node: str = "__end__"):
 
 def get_farm_card(farm: str) -> AgentCard | None:
     """
-    Maps a farm name string to its corresponding AgentCard.
+    Look up a farm's AgentCard by its canonical slug.
 
     Args:
-        farm (str): The name of the farm (e.g., "Brazil", "Colombia", "Vietnam").
+        farm (str): The canonical slug of the farm (e.g., "brazil", "colombia", "vietnam").
 
     Returns:
         AgentCard | None: The matching AgentCard if found, otherwise None.
     """
-    farm = farm.strip().lower()
-    if 'brazil' in farm.lower():
-        return brazil_agent_card
-    elif 'colombia' in farm.lower():
-        return colombia_agent_card
-    elif 'vietnam' in farm.lower():
-        return vietnam_agent_card
-    else:
-        logger.error(f"Unknown farm name: {farm}. Expected one of 'brazil', 'colombia', or 'vietnam'.")
-        return None
+    card = farm_registry.get(farm)
+    if card is None:
+        logger.error(
+            "Unknown farm slug: '%s'. Registered farms: %s",
+            farm, farm_registry.slugs(),
+        )
+    return card
 
 def verify_farm_identity(identity_service: IdentityService, farm_name: str):
     """
@@ -152,7 +145,6 @@ def verify_farm_identity(identity_service: IdentityService, farm_name: str):
     except Exception as e:
         raise A2AAgentError(e) # Re-raise as our custom exception
 
-# node utility for streaming
 async def get_farm_yield_inventory(prompt: str, farm: str) -> str:
     """
     Fetch yield inventory from a specific farm.
@@ -175,40 +167,47 @@ async def get_farm_yield_inventory(prompt: str, farm: str) -> str:
     card = get_farm_card(farm)
     if card is None:
         raise A2AAgentError(f"Farm '{farm}' not recognized. Available farms "
-                             f"are: {brazil_agent_card.name}, {colombia_agent_card.name}, {vietnam_agent_card.name}.")
+                             f"are: {', '.join(farm_registry.slugs())}.")
     
     try:
-        client = await factory.create_client(
-            "A2A",
-            agent_topic=A2AProtocol.create_agent_topic(card),
-            transport=transport,
+        card = copy.deepcopy(card)
+        # Disable streaming: send_message returns an async generator,
+        # so we iterate with `async for` instead of `await`.
+        if card.capabilities is None:
+            from a2a.types import AgentCapabilities
+            card.capabilities = AgentCapabilities(streaming=False)
+        else:
+            card.capabilities.streaming = False
+
+        client = await a2a_client_factory.create(card)
+
+        message = Message(
+            messageId=str(uuid4()),
+            role=Role.user,
+            parts=[Part(TextPart(text=prompt))],
         )
 
-        request = SendMessageRequest(
-            id=str(uuid4()),
-            params=MessageSendParams(
-                message=Message(
-                    messageId=str(uuid4()),
-                    role=Role.user,
-                    parts=[Part(TextPart(text=prompt))],
-                ),
-            )
-        )
+        result_text = None
+        async for response in client.send_message(message):
+            logger.info(f"Response received from A2A agent: {response}")
 
-        response = await client.send_message(request)
-        logger.info(f"Response received from A2A agent: {response}")
-        err = getattr(response.root, "error", None)
-        result = getattr(response.root, "result", None)
-        if err:
-            logger.error(f"A2A error from farm '{farm}': {err.message}")
-            raise A2AAgentError(f"Error from farm '{farm}': {err.message}")
-        if result and result.parts:
-            part = result.parts[0].root
-            if hasattr(part, "text"):
-                return part.text.strip()
-            raise A2AAgentError(f"Farm '{farm}' returned a result without text content.")
-        logger.error(f"Unknown response type from farm '{farm}'.")
-        raise A2AAgentError(f"Unknown response type from farm '{farm}'.")
+            if isinstance(response, Message):
+                for part in response.parts:
+                    part_root = part.root
+                    if hasattr(part_root, "text"):
+                        result_text = part_root.text.strip()
+            elif isinstance(response, tuple):
+                task_update, event = response
+                if hasattr(task_update, "status") and task_update.status and task_update.status.message:
+                    for part in task_update.status.message.parts:
+                        part_root = part.root
+                        if hasattr(part_root, "text"):
+                            result_text = part_root.text.strip()
+
+        if result_text:
+            return result_text
+        else:
+            raise A2AAgentError(f"Farm '{farm}' returned no text content.")
     except Exception as e: # Catch any underlying communication or client creation errors
         logger.error(f"Failed to communicate with farm '{farm}': {e}")
         raise A2AAgentError(f"Failed to communicate with farm '{farm}'. Details: {e}")
@@ -236,25 +235,22 @@ async def get_all_farms_yield_inventory(prompt: str) -> str:
             ),
         )
     )
-
-    if DEFAULT_MESSAGE_TRANSPORT == "SLIM":
-        client_handshake_topic = A2AProtocol.create_agent_topic(get_farm_card("brazil"))
-    else:
-        # using NATS 
-        client_handshake_topic = FARM_BROADCAST_TOPIC
+    
+    # create a list of recipients to include in the broadcast
+    recipients = [
+        get_agent_identifier(get_farm_card(farm)) for farm in farm_registry
+    ]
 
     try:
-        # create an A2A client, retrieving an A2A card from agent_topic
-        client = await factory.create_client(
-            "A2A",
-            agent_topic=client_handshake_topic,
-            transport=transport,
-        )
+        # pick any card to initialize the client, will use the recipient list to route to the correct farms
+        card = copy.deepcopy(farm_registry.cards()[0]) # avoid mutating the singleton card
 
-        # create a list of recipients to include in the broadcast
-        recipients = [A2AProtocol.create_agent_topic(get_farm_card(farm)) for farm in ['brazil', 'colombia', 'vietnam']]
+        # use the resolved broadcast transport from the pattern registry
+        card.preferred_transport = _broadcast_transport
+        client = await a2a_client_factory.create(card)
+
         # create a broadcast message and collect responses
-        responses = await client.broadcast_message(request, broadcast_topic=FARM_BROADCAST_TOPIC, recipients=recipients)
+        responses = await client.broadcast_message(request, recipients=recipients)
 
         logger.info(f"got {len(responses)} responses back from farms")
 
@@ -306,31 +302,25 @@ async def get_all_farms_yield_inventory_streaming(prompt: str):
             ),
         )
     )
-
-    if DEFAULT_MESSAGE_TRANSPORT == "SLIM":
-        client_handshake_topic = A2AProtocol.create_agent_topic(get_farm_card("brazil"))
-    else:
-        # using NATS
-        client_handshake_topic = FARM_BROADCAST_TOPIC
+    
+    # create a list of recipients to include in the broadcast
+    recipients = [
+        get_agent_identifier(get_farm_card(farm)) for farm in farm_registry
+    ]
 
     try:
-        # create an A2A client, retrieving an A2A card from agent_topic
-        client = await factory.create_client(
-            "A2A",
-            agent_topic=client_handshake_topic,
-            transport=transport,
-        )
+        logger.info(f"Broadcasting to {len(recipients)} farms: {', '.join(recipients)}")
 
-        # create a list of recipients to include in the broadcast
-        farm_names = ['brazil', 'colombia', 'vietnam']
-        recipients = [A2AProtocol.create_agent_topic(get_farm_card(farm)) for farm in farm_names]
-        logger.info(f"Broadcasting to {len(recipients)} farms: {', '.join(farm_names)}")
+        card = copy.deepcopy(farm_registry.cards()[0]) # avoid mutating the singleton card
+
+        # use the resolved broadcast transport from the pattern registry
+        card.preferred_transport = _broadcast_transport
+        client = await a2a_client_factory.create(card)
 
         # Get the async generator for streaming responses
         response_stream = client.broadcast_message_streaming(
             request,
-            broadcast_topic=FARM_BROADCAST_TOPIC,
-            recipients=recipients
+            recipients=recipients,
         )
 
         # Track which farms responded
@@ -369,7 +359,7 @@ async def get_all_farms_yield_inventory_streaming(prompt: str):
         # Check for missing responses and report them
         if len(responded_farms) < len(recipients):
             # Determine which farms didn't respond by checking farm names
-            expected_farms = {"Brazil Coffee Farm", "Colombia Coffee Farm", "Vietnam Coffee Farm"}
+            expected_farms = farm_registry.display_names()
             missing_farms = expected_farms - responded_farms
             
             if missing_farms:
@@ -423,7 +413,7 @@ async def create_order(farm: str, quantity: int, price: float) -> str:
     
     card = get_farm_card(farm)
     if card is None:
-        raise ValueError(f"Farm '{farm}' not recognized. Available farms are: {brazil_agent_card.name}, {colombia_agent_card.name}, {vietnam_agent_card.name}.")
+        raise ValueError(f"Farm '{farm}' not recognized. Available farms are: {', '.join(farm_registry.slugs())}.")
 
     logger.info(f"Using farm card: {card.name} for order creation")
     identity_service = IdentityServiceImpl(api_key=IDENTITY_API_KEY, base_url=IDENTITY_API_SERVER_URL)
@@ -434,38 +424,46 @@ async def create_order(farm: str, quantity: int, price: float) -> str:
         raise A2AAgentError(f"Identity verification failed for farm '{farm}'. Details: {e}")
 
     try:
-        client = await factory.create_client(
-            "A2A",
-            agent_topic=A2AProtocol.create_agent_topic(card),
-            transport=transport,
+        card = copy.deepcopy(card)  # avoid mutating the singleton card
+        # Disable streaming: the SRPCTransport.send_message_streaming wrapper
+        # returns a coroutine instead of an async generator, which breaks
+        # BaseClient's streaming path.  Force the non-streaming (simple
+        # await) code path instead.
+        if card.capabilities is None:
+            from a2a.types import AgentCapabilities
+            card.capabilities = AgentCapabilities(streaming=False)
+        else:
+            card.capabilities.streaming = False
+
+        client = await a2a_client_factory.create(card)
+
+        message = Message(
+            messageId=str(uuid4()),
+            role=Role.user,
+            parts=[Part(TextPart(text=f"Create an order with price {price} and quantity {quantity}"))],
         )
 
-        request = SendMessageRequest(
-            id=str(uuid4()),
-            params=MessageSendParams(
-                message=Message(
-                    messageId=str(uuid4()),
-                    role=Role.user,
-                    parts=[Part(TextPart(text=f"Create an order with price {price} and quantity {quantity}"))],
-                ),
-            )
-        )
+        result_text = None
+        async for response in client.send_message(message):
+            logger.info(f"Response received from A2A agent: {response}")
 
-        response = await client.send_message(request)
-        logger.info(f"Response received from A2A agent: {response}")
+            if isinstance(response, Message):
+                for part in response.parts:
+                    part_root = part.root
+                    if hasattr(part_root, "text"):
+                        result_text = part_root.text.strip()
+            elif isinstance(response, tuple):
+                task_update, event = response
+                if hasattr(task_update, "status") and task_update.status and task_update.status.message:
+                    for part in task_update.status.message.parts:
+                        part_root = part.root
+                        if hasattr(part_root, "text"):
+                            result_text = part_root.text.strip()
 
-        err = getattr(response.root, "error", None)
-        result = getattr(response.root, "result", None)
-        if err:
-            logger.error(f"A2A error: {err.message}")
-            raise A2AAgentError(f"Error from order agent for farm '{farm}': {err.message}")
-        if result and result.parts:
-            part = result.parts[0].root
-            if hasattr(part, "text"):
-                return part.text.strip()
-            raise A2AAgentError(f"Farm '{farm}' returned a result without text content for order creation.")
-        logger.error("Unknown response type")
-        raise A2AAgentError("Unknown response type from order agent")
+        if result_text:
+            return result_text
+        else:
+            raise A2AAgentError(f"Farm '{farm}' returned no text content for order creation.")
     except Exception as e: # Catch any underlying communication or client creation errors
         logger.error(f"Failed to communicate with order agent for farm '{farm}': {e}")
         raise A2AAgentError(f"Failed to communicate with order agent for farm '{farm}'. Details: {e}")
@@ -491,38 +489,47 @@ async def get_order_details(order_id: str) -> str:
         raise ValueError("Order ID must be provided.")
 
     try:
-        client = await factory.create_client(
-            "A2A",
-            agent_topic=FARM_BROADCAST_TOPIC,
-            transport=transport,
+        # pick any card to initialize the client
+        card = copy.deepcopy(farm_registry.cards()[0]) # avoid mutating the singleton card
+        # override preferred transport to ensure direct communication for order creation
+        card.preferred_transport = InterfaceTransport.SLIM_RPC
+
+        # Disable streaming to use the non-streaming code path
+        if card.capabilities is None:
+            from a2a.types import AgentCapabilities
+            card.capabilities = AgentCapabilities(streaming=False)
+        else:
+            card.capabilities.streaming = False
+
+        client = await a2a_client_factory.create(card)
+
+        message = Message(
+            messageId=str(uuid4()),
+            role=Role.user,
+            parts=[Part(TextPart(text=f"Get details for order ID {order_id}"))],
         )
 
-        request = SendMessageRequest(
-            id=str(uuid4()),
-            params=MessageSendParams(
-                message=Message(
-                    messageId=str(uuid4()),
-                    role=Role.user,
-                    parts=[Part(TextPart(text=f"Get details for order ID {order_id}"))],
-                ),
-            )
-        )
+        result_text = None
+        async for response in client.send_message(message):
+            logger.info(f"Response received from A2A agent: {response}")
 
-        response = await client.send_message(request)
-        logger.info(f"Response received from A2A agent: {response}")
+            if isinstance(response, Message):
+                for part in response.parts:
+                    part_root = part.root
+                    if hasattr(part_root, "text"):
+                        result_text = part_root.text.strip()
+            elif isinstance(response, tuple):
+                task_update, event = response
+                if hasattr(task_update, "status") and task_update.status and task_update.status.message:
+                    for part in task_update.status.message.parts:
+                        part_root = part.root
+                        if hasattr(part_root, "text"):
+                            result_text = part_root.text.strip()
 
-        err = getattr(response.root, "error", None)
-        result = getattr(response.root, "result", None)
-        if err:
-            logger.error(f"A2A error from order agent for order ID '{order_id}': {err.message}")
-            raise A2AAgentError(f"Error from order agent for order ID '{order_id}': {err.message}")
-        if result and result.parts:
-            part = result.parts[0].root
-            if hasattr(part, "text"):
-                return part.text.strip()
-            raise A2AAgentError(f"Order agent returned a result without text content for order ID '{order_id}'.")
-        logger.error(f"Unknown response type from order agent for order ID '{order_id}'.")
-        raise A2AAgentError(f"Unknown response type from order agent for order ID '{order_id}'.")
+        if result_text:
+            return result_text
+        else:
+            raise A2AAgentError(f"Order agent returned no text content for order ID '{order_id}'.")
     except Exception as e: # Catch any underlying communication or client creation errors
         logger.error(f"Failed to communicate with order agent for order ID '{order_id}': {e}")
         raise A2AAgentError(f"Failed to communicate with order agent for order ID '{order_id}'. Details: {e}")
