@@ -6,9 +6,12 @@ import logging
 import re
 import ssl
 from pathlib import Path
+from unittest.mock import AsyncMock, patch
 
 import httpx
 import pytest
+
+from agents.supervisors.auction.graph.a2a_retry import TransportTimeoutError
 from huggingface_hub.utils import close_session, set_client_factory
 from huggingface_hub.utils._http import default_client_factory
 from sentence_transformers import SentenceTransformer, util
@@ -87,6 +90,30 @@ def load_auction_prompt_cases():
 
 
 AUCTION_PROMPT_CASES = load_auction_prompt_cases()
+
+
+@pytest.mark.parametrize(
+    "transport_config",
+    [TRANSPORT_MATRIX[0]],
+    indirect=True,
+)
+def test_auction_a2a_timeout_returns_user_visible_error(auction_supervisor_client):
+    """When send_a2a_with_retry raises TransportTimeoutError, graph returns 200 with error message in body."""
+    with patch(
+        "agents.supervisors.auction.graph.tools.send_a2a_with_retry",
+        new_callable=AsyncMock,
+        side_effect=TransportTimeoutError("timeout", cause=None),
+    ):
+        resp = auction_supervisor_client.post(
+            "/agent/prompt",
+            json={"prompt": "What is the inventory of coffee in Brazil?"},
+        )
+    assert resp.status_code == 200
+    data = resp.json()
+    assert "response" in data
+    response_text = data["response"].lower()
+    assert "issue" in response_text or "try again" in response_text or "fail" in response_text or "communicat" in response_text
+
 
 @pytest.mark.parametrize("transport_config", TRANSPORT_MATRIX, indirect=True)
 class TestAuctionFlows:
