@@ -134,6 +134,8 @@ Before you begin, ensure the following tools are installed:
 
 Update your .env file with the provider model, credentials, and OTEL endpoint.
 
+**Observability:** To use the observability stack (Grafana, OTEL Collector, ClickHouse), set `COMPOSE_PROFILES` to include `observability` (or add them alternatively, e.g. listing `farms,logistics,recruiter,observability` for the `up` command, or add `--profile observability` to the `compose` command) and set `OTEL_SDK_DISABLED=false` (or leave unset). To run without the stack, omit `observability` from `COMPOSE_PROFILES` and set `OTEL_SDK_DISABLED=true`. Using the observability profile without enabling telemetry (`OTEL_SDK_DISABLED=true`) means the stack runs but no telemetry is sent; using telemetry (`OTEL_SDK_DISABLED=false`) without the observability profile can cause log noise and failed telemetry exports.
+
 CoffeeAGNTCY uses litellm to manage LLM connections. With litellm, you can seamlessly switch between different model providers using a unified configuration interface. Below are examples of environment variables for setting up various providers. For a comprehensive list of supported providers, see the [official litellm documentation](https://docs.litellm.ai/docs/providers).
 
 In CoffeeAGNTCY, the environment variable for specifying the model is always LLM_MODEL, regardless of the provider.
@@ -210,7 +212,7 @@ OAUTH2_APP_KEY=<your_app_key> #optional
 
 ---
 
-   _OTEL:_
+   _OTEL:_ Set `OTEL_SDK_DISABLED=false` (or unset) to enable tracing; this variable is used by OTEL-based 3rd-party libs. When tracing is enabled, set the OTLP endpoint:
 
    ```env
    OTLP_HTTP_ENDPOINT="http://localhost:4318"
@@ -246,12 +248,7 @@ For advanced observability of your multi-agent system, integrate the [Observe SD
   - `@agent(name="agent_name", description="Some description")`: Tracks individual agent nodes and activities.
   - `@tool(name="tool_name", description="Some description")`: Monitors tool usage and performance.
 
-- **To enable tracing for the Lungo multi-agent system:**
-
-  - In code, set the factory with tracing enabled:
-    ```python
-    AgntcyFactory("lungo.auction_supervisor", enable_tracing=True)
-    ```
+- **To enable tracing for the Lungo multi-agent system:** Set `OTEL_SDK_DISABLED=false` in your environment (or in `.env`). The app derives `enable_tracing` from this; no code change is required.
 
 - **To start a new trace session for each prompt execution:**  
   Call `session_start()` at the beginning of each prompt execution to ensure each prompt trace is tracked as a new session:
@@ -309,7 +306,7 @@ docker compose --profile farms --profile logistics --profile recruiter up
 
 If you started services with one or more profiles, run `docker compose down` with the **same profile(s)** (e.g. `docker compose --profile farms down`) or tear everything down with `docker compose --profile '*' down`. Do not run a bare `docker compose down` (no profile): it only stops unprofiled services and the network removal will fail with "Network ... Resource is still in use."
 
-> **Note:** Shared infrastructure services (nats, ui, clickhouse, otel-collector, grafana, etc.) have no profile and will start with any profile.
+> **Note:** Shared infrastructure (nats, ui) has no profile. The observability stack (clickhouse-server, otel-collector, grafana, mce-api-layer, metrics-computation-engine) uses the `observability` profile; include it in `COMPOSE_PROFILES` (e.g. in `.env`) to start those services.
 
 Once running:
 - Access the UI at: [http://localhost:3000/](http://localhost:3000/)
@@ -323,9 +320,7 @@ For local development with individual components, follow these steps. Each servi
 
 To enable A2A communication over SLIM, you need to run the SLIM message bus gateway.
 
-Additionally run the observability stack that has OTEL Collector, Grafana and ClickHouse DB.
-
-You can do this by executing the following command:
+When using Docker Compose with profiles, include the `observability` profile in `COMPOSE_PROFILES` (e.g. `farms,logistics,recruiter,observability` in `.env`) to start the observability stack (OTEL Collector, Grafana, ClickHouse), and set `OTEL_SDK_DISABLED=false` when you want telemetry. Alternatively, start the stack explicitly:
 
 ```sh
 docker compose up slim nats clickhouse-server otel-collector grafana
@@ -491,7 +486,7 @@ make apply
 This command:
 - Reads environment variables from your `.env` file
 - Deploys External Secrets Operator for credential management
-- Deploys all Lungo services (farms, auction supervisor, UI, observability stack)
+- Deploys all Lungo services (farms, auction supervisor, UI, observability stack). For local Docker Compose, the observability stack is controlled by the `observability` profile and `OTEL_SDK_DISABLED`.
 - Configures NodePort services for localhost access
 
 **Step 4: View deployment status**
@@ -574,6 +569,8 @@ Detailed architecture, message flows (SLIM pubsub vs controller channels), servi
 
 
 ### Observability
+
+Observability requires both the `observability` profile (either in `COMPOSE_PROFILES`, or added through `--profile` switch) and an enabled OTEL SDK (it is enabled by default, but you can make it explicit by setting `OTEL_SDK_DISABLED=false`). Using the profile without the env var means no telemetry is sent; using the env var without the profile can cause log noise and failed exports.
 
 #### Trace Visualization via Grafana
 

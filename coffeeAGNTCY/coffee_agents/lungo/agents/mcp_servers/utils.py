@@ -4,7 +4,7 @@
 from typing import Literal
 from agntcy_app_sdk.factory import AgntcyFactory
 from agents.exceptions import AuthError
-from config.config import DEFAULT_MESSAGE_TRANSPORT, TRANSPORT_SERVER_ENDPOINT
+from config.config import DEFAULT_MESSAGE_TRANSPORT, TRANSPORT_SERVER_ENDPOINT, OTEL_SDK_DISABLED
 import os
 
 async def invoke_payment_mcp_tool(tool_name: Literal["create_payment", "list_transactions"]) -> dict:
@@ -12,7 +12,7 @@ async def invoke_payment_mcp_tool(tool_name: Literal["create_payment", "list_tra
   if os.getenv("IDENTITY_AUTH_ENABLED", "").lower() not in ["true", "enabled"]:
     return {}
 
-  factory = AgntcyFactory()
+  factory = AgntcyFactory("lungo.payment_mcp_client", enable_tracing=not OTEL_SDK_DISABLED)
 
   transport_instance = factory.create_transport(
     transport=DEFAULT_MESSAGE_TRANSPORT,

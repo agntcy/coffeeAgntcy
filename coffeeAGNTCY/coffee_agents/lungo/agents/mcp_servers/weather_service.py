@@ -17,12 +17,13 @@ from agntcy_app_sdk.factory import AgntcyFactory
 from config.config import (
     DEFAULT_MESSAGE_TRANSPORT,
     TRANSPORT_SERVER_ENDPOINT,
+    OTEL_SDK_DISABLED,
 )
 
 logger = logging.getLogger(__name__)
 
 # Initialize a multi-protocol, multi-transport agntcy factory.
-factory = AgntcyFactory("lungo.mcp_server", enable_tracing=True)
+factory = AgntcyFactory("lungo.mcp_server", enable_tracing=not OTEL_SDK_DISABLED)
 
 # Base URLs
 NOMINATIM_BASE = "https://nominatim.openstreetmap.org/search"

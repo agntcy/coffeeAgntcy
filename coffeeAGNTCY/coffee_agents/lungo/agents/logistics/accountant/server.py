@@ -27,13 +27,14 @@ from agents.logistics.shipper.card import AGENT_CARD as SHIPPER_AGENT_CARD
 from config.config import (
     DEFAULT_MESSAGE_TRANSPORT,
     TRANSPORT_SERVER_ENDPOINT,
-    ENABLE_HTTP
+    ENABLE_HTTP,
+    OTEL_SDK_DISABLED,
 )
 
 load_dotenv()
 
 # Initialize a multi-protocol, multi-transport agntcy factory.
-factory = AgntcyFactory("lungo.logistics_accountant", enable_tracing=True)
+factory = AgntcyFactory("lungo.logistics_accountant", enable_tracing=not OTEL_SDK_DISABLED)
 
 logger = logging.getLogger("lungo.logistics.accountant.server")
 

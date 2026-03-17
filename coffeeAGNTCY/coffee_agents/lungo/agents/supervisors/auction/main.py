@@ -19,7 +19,7 @@ from ioa_observe.sdk.tracing import session_start
 
 from agents.supervisors.auction.graph import shared
 from agents.supervisors.auction.api import create_apps_router
-from config.config import DEFAULT_MESSAGE_TRANSPORT, LLM_MODEL, HOT_RELOAD_MODE
+from config.config import DEFAULT_MESSAGE_TRANSPORT, LLM_MODEL, HOT_RELOAD_MODE, OTEL_SDK_DISABLED
 from pathlib import Path
 from common.streaming_capability import require_streaming_capability
 from common.version import get_version_info
@@ -28,8 +28,8 @@ logger = logging.getLogger("lungo.supervisor.main")
 
 load_dotenv()
 
-# Initialize the shared agntcy factory with tracing enabled
-shared.set_factory(AgntcyFactory("lungo.auction_supervisor", enable_tracing=True))
+# Initialize the shared agntcy factory (tracing from OTEL_SDK_DISABLED)
+shared.set_factory(AgntcyFactory("lungo.auction_supervisor", enable_tracing=not OTEL_SDK_DISABLED))
 require_streaming_capability("auction_supervisor", LLM_MODEL)
 
 

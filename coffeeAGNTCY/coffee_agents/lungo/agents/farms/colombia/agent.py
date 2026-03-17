@@ -29,13 +29,14 @@ from agents.mcp_servers.utils import invoke_payment_mcp_tool
 from config.config import (
     DEFAULT_MESSAGE_TRANSPORT,
     TRANSPORT_SERVER_ENDPOINT,
+    OTEL_SDK_DISABLED,
 )
 from common.llm import get_llm
 
 logger = logging.getLogger("lungo.colombia_farm_agent.agent")
 
 # Initialize a multi-protocol, multi-transport agntcy factory.
-factory = AgntcyFactory("lungo.colombia_farm", enable_tracing=True)
+factory = AgntcyFactory("lungo.colombia_farm", enable_tracing=not OTEL_SDK_DISABLED)
 
 # --- 1. Define Node Names as Constants ---
 class NodeStates:

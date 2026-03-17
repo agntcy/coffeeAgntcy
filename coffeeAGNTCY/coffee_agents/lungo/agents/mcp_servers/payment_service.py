@@ -10,7 +10,7 @@ from mcp.server.fastmcp import FastMCP
 from mcp.server.transport_security import TransportSecuritySettings
 from agntcy_app_sdk.app_sessions import AppContainer
 from agntcy_app_sdk.factory import AgntcyFactory
-from config.config import DEFAULT_MESSAGE_TRANSPORT, TRANSPORT_SERVER_ENDPOINT
+from config.config import DEFAULT_MESSAGE_TRANSPORT, TRANSPORT_SERVER_ENDPOINT, OTEL_SDK_DISABLED
 
 logger = logging.getLogger("payment_service")
 
@@ -20,7 +20,7 @@ mcp = FastMCP(
   )
 )
 
-factory = AgntcyFactory("lungo.payment_mcp_server", enable_tracing=False)
+factory = AgntcyFactory("lungo.payment_mcp_server", enable_tracing=not OTEL_SDK_DISABLED)
 
 @mcp.tool()
 def create_payment() -> dict:

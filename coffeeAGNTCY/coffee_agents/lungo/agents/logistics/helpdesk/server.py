@@ -29,13 +29,14 @@ from config.config import (
     ENABLE_HTTP,
     FARM_BROADCAST_TOPIC,
     TRANSPORT_SERVER_ENDPOINT,
+    OTEL_SDK_DISABLED,
 )
 from agents.logistics.helpdesk.store.singleton import global_store
 
 logger = logging.getLogger("lungo.logistics.helpdesk.server")
 load_dotenv()
 
-factory = AgntcyFactory("lungo.logistics_helpdesk", enable_tracing=True)
+factory = AgntcyFactory("lungo.logistics_helpdesk", enable_tracing=not OTEL_SDK_DISABLED)
 
 class PromptRequest(BaseModel):
     prompt: str
