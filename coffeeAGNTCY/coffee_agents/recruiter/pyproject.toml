@@ -41,6 +41,7 @@ packages = ["src/agent_recruiter"]
 
 [tool.pytest.ini_options]
 addopts = "--asyncio-mode=auto"
+asyncio_default_fixture_loop_scope = "function"
 filterwarnings = [
     "error",
     # google-adk runners.py:1481 reads RunConfig.save_input_blobs_as_artifacts (deprecated).
