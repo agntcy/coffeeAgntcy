@@ -11,9 +11,6 @@ const App: React.FC = () => {
   return (
     <Routes>
       <Route path="/" element={<RootPage />} />
-      {/* <Route path="/agentic-workflows/:workflowId" element={<Workflow />} /> */}
-      {/* <Route path="/patterns" element={<Patterns />} /> */}
-      {/* <Route path="/use-cases" element={<UseCases />} /> */}
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   )
