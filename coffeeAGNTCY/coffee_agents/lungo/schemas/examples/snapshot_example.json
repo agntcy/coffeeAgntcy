@@ -1,0 +1,30 @@
+{
+  "session_id": "sess_abc123",
+  "kind": "snapshot",
+  "timestamp": "2026-03-17T12:00:00Z",
+  "schema_version": "1.0",
+  "source": "auction_supervisor",
+  "use_case_id": "publish_subscribe",
+  "state": {
+    "is_running": false,
+    "current_node": "exchange_supervisor",
+    "running_agents": [],
+    "last_event": {
+      "event_type": "node_exited",
+      "node_name": "reflection"
+    },
+    "use_case_id": "publish_subscribe",
+    "updated_at": "2026-03-17T12:00:00Z"
+  },
+  "topology": {
+    "nodes": [
+      { "id": "1", "type": "customNode", "label": "Auction Agent", "position": { "x": 527, "y": 76 } },
+      { "id": "2", "type": "transportNode", "label": "Transport", "position": { "x": 229, "y": 284 } },
+      { "id": "3", "type": "customNode", "label": "Brazil Farm", "position": { "x": 232, "y": 503 } }
+    ],
+    "edges": [
+      { "id": "1-2", "source": "1", "target": "2" },
+      { "id": "2-3", "source": "2", "target": "3" }
+    ]
+  }
+}

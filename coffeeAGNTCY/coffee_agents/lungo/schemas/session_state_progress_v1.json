@@ -1,0 +1,186 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/agntcy/coffeeAgntcy/schemas/session_state_progress_v1.json",
+  "title": "Session State Progress (v1)",
+  "description": "Single message contract for session state progress: full state snapshot or event/delta. Used by A2A state middleware, in-memory store, and SSE NDJSON stream. One schema, discriminator 'kind' (snapshot | delta). Schema version 1.",
+  "type": "object",
+  "required": ["session_id", "kind", "timestamp"],
+  "properties": {
+    "session_id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Session identifier."
+    },
+    "kind": {
+      "type": "string",
+      "enum": ["snapshot", "delta"],
+      "description": "Discriminator: 'snapshot' for full state (and optional topology), 'delta' for a single event/state change."
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When the message was produced (RFC 3339)."
+    },
+    "schema_version": {
+      "type": "string",
+      "description": "Optional schema version (e.g. '1.0') for future versioning; omit or treat as 1.0."
+    },
+    "source": {
+      "type": "string",
+      "description": "Producer identifier (e.g. agent name, adapter name)."
+    },
+    "use_case_id": {
+      "type": "string",
+      "description": "Use-case this session belongs to (aligns with topology/state APIs)."
+    },
+    "correlation_id": {
+      "type": "string",
+      "description": "Optional request/correlation id for tracing."
+    },
+    "state": { "$ref": "#/$defs/stateSnapshot" },
+    "topology": { "$ref": "#/$defs/topology" },
+    "event_type": {
+      "type": "string",
+      "description": "Event type when kind=delta. Suggested values: node_entered, node_exited, handoff, tool_start, tool_end. Custom values allowed."
+    },
+    "payload": {
+      "type": "object",
+      "additionalProperties": true,
+      "description": "Event-specific data when kind=delta (e.g. node_id, node_name, tool_name, from_agent, to_agent)."
+    },
+    "topology_delta": { "$ref": "#/$defs/topologyDelta" }
+  },
+  "additionalProperties": true,
+  "allOf": [
+    {
+      "if": {
+        "properties": { "kind": { "const": "snapshot" } },
+        "required": ["kind"]
+      },
+      "then": {
+        "required": ["state"],
+        "properties": {
+          "state": { "$ref": "#/$defs/stateSnapshot" },
+          "topology": { "$ref": "#/$defs/topology" }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": { "kind": { "const": "delta" } },
+        "required": ["kind"]
+      },
+      "then": {
+        "required": ["event_type"],
+        "properties": {
+          "event_type": { "type": "string" },
+          "payload": { "type": "object", "additionalProperties": true },
+          "topology_delta": { "$ref": "#/$defs/topologyDelta" }
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "stateSnapshot": {
+      "type": "object",
+      "description": "Current session state (reusable for GET state response).",
+      "properties": {
+        "is_running": {
+          "type": "boolean",
+          "description": "Whether the session/graph is currently executing."
+        },
+        "current_node": {
+          "type": "string",
+          "description": "Current LangGraph node name (e.g. exchange_supervisor, orders_broker)."
+        },
+        "running_agents": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Identifiers of agents currently active."
+        },
+        "last_event": {
+          "description": "Summary of the last event (object or string)."
+        },
+        "use_case_id": {
+          "type": "string",
+          "description": "Use-case id for this session."
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Last state update time (RFC 3339)."
+        }
+      },
+      "additionalProperties": true
+    },
+    "position": {
+      "type": "object",
+      "properties": {
+        "x": { "type": "number" },
+        "y": { "type": "number" }
+      },
+      "description": "Optional position for frontend layout."
+    },
+    "node": {
+      "type": "object",
+      "required": ["id"],
+      "properties": {
+        "id": { "type": "string" },
+        "type": { "type": "string" },
+        "label": { "type": "string" },
+        "position": { "$ref": "#/$defs/position" }
+      },
+      "additionalProperties": true
+    },
+    "edge": {
+      "type": "object",
+      "required": ["source", "target"],
+      "properties": {
+        "source": { "type": "string" },
+        "target": { "type": "string" },
+        "id": { "type": "string" }
+      },
+      "additionalProperties": true
+    },
+    "topology": {
+      "type": "object",
+      "description": "Graph topology: nodes and edges (reusable by topology API and state response).",
+      "properties": {
+        "nodes": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/node" }
+        },
+        "edges": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/edge" }
+        }
+      },
+      "additionalProperties": true
+    },
+    "topologyDelta": {
+      "type": "object",
+      "description": "Incremental topology change when kind=delta.",
+      "properties": {
+        "nodes_added": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/node" }
+        },
+        "edges_added": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/edge" }
+        },
+        "nodes_removed": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Node ids removed."
+        },
+        "edges_removed": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Edge ids or source-target identifiers removed."
+        }
+      },
+      "additionalProperties": true
+    }
+  }
+}
