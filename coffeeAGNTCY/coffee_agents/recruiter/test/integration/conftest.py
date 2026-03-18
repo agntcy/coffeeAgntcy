@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import asyncio
+import atexit
 import os
 import re
 import signal
@@ -12,9 +13,14 @@ import time
 import httpx
 import pytest
 from dotenv import load_dotenv
+from pathlib import Path
+
+from test.integration.docker_helpers import up, down, remove_container_if_exists
 
 load_dotenv()
 
+
+# ---------------- Close possibly hanging event loops ----------------
 @pytest.fixture(scope="session", autouse=True)
 def close_loops_from_policy_factory():
     event_loop_policy = asyncio.get_event_loop_policy()
@@ -38,6 +44,91 @@ def close_loops_from_policy_factory():
             if not loop.is_closed():
                 loop.close()
 
+
+# ---------------- session infra ----------------
+# docker_helpers passes env=os.environ to compose so infra containers use the same env as the test.
+files = ["docker/docker-compose.yaml"]
+if Path("docker/docker-compose.override.yaml").exists():
+    files.append("docker/docker-compose.override.yaml")
+
+_session_docker_torn_down = False
+
+
+def _teardown_session_docker():
+    """Run docker compose down so session containers (zot, dir-api-server, etc) are stopped. Idempotent."""
+    global _session_docker_torn_down
+    if _session_docker_torn_down:
+        return
+    _session_docker_torn_down = True
+    print("--- Tearing down session Docker (zot, dir-api-server, etc) ---")
+    down(files)
+
+
+atexit.register(_teardown_session_docker)
+
+# Host-side readiness (compose maps zot 5000 to 5555;)
+ZOT_REGISTRY_READYZ_URL = "http://127.0.0.1:5555/readyz"
+
+def _wait_http_ready(
+    url: str,
+    *,
+    timeout_s: float = 180.0,
+    poll_s: float = 0.5,
+    accept_status: tuple[int, ...] = (200,),
+) -> None:
+    """Poll GET url from the host until status is acceptable or timeout."""
+    ok = set(accept_status)
+    deadline = time.time() + timeout_s
+    last_err: str | None = None
+    while time.time() < deadline:
+        try:
+            resp = httpx.get(url, timeout=2.0)
+            if resp.status_code in ok:
+                return
+            last_err = f"HTTP {resp.status_code}"
+        except (httpx.RequestError, httpx.TimeoutException) as e:
+            last_err = str(e)
+        time.sleep(poll_s)
+    raise RuntimeError(
+        f"Ready check {url} did not return {accept_status} within {timeout_s}s "
+        f"(last: {last_err})"
+    )
+
+@pytest.fixture(scope="session", autouse=True)
+def orchestrate_session_services():
+    """
+    Start Directory stack (zot + dir-api-server) for integration tests, analogous
+    to lungo's session slim/nats/otel compose setup.
+    """
+    print("\n--- Setting up session level service integrations ---")
+    down(files)
+    remove_container_if_exists("docker-dir-api-server-1")
+    remove_container_if_exists("docker-zot-1")
+    setup_directory_services()
+    print("--- Session level service setup complete. Tests can now run ---")
+    yield
+    _teardown_session_docker()
+
+def setup_directory_services():
+    _startup_zot()
+    # Same idea as Docker Compose Zot healthcheck: GET /readyz
+    _wait_http_ready(ZOT_REGISTRY_READYZ_URL, timeout_s=30.0, poll_s=5.0, accept_status=(200,))
+
+    _startup_dir_api_server()
+    # dir-api-server does not expose an HTTP endpoint but rather a gRPC one at 8888.
+    # In newer versions of dir-apiserver they do the health check with grpc-health-probe but in apiserver v0.6.0 that was not bundled in the image.
+    # For dir-apiserver, this is a fix that will come in a future version (it is not in v1.0.0 but it is fixed in main by https://github.com/agntcy/dir/pull/1017).
+    time.sleep(30) # give dir-api-server time to start up; TODO: long-term we should use a more robust wait mechanism.
+
+def _startup_zot():
+    up(files, ["zot"])
+
+def _startup_dir_api_server():
+    up(files, ["dir-api-server"])
+
+
+
+# ---------------- A2A server related fixtures ----------------
 
 def wait_for_server(url: str, timeout: float = 30.0, interval: float = 0.5) -> bool:
     """Wait for a server to become available by polling its agent card endpoint.
