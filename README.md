@@ -48,6 +48,8 @@ case and the other a more complex MAS:
   It includes an MCP weather-aware farm that fetches live data, observability via the Observe SDK, identity, and a group
   communication pattern with specialized agents (farms, shipper, accountant) that collaborate to fulfill coffee orders.
 
+  Configure **`lungo/.env`** from **`.env.example`**. Web UI (**`VITE_*`**) uses **`frontend/.env`** only — for Docker UI and **`npm run dev`**.
+
   👉 [View the Lungo README](coffeeAGNTCY/coffee_agents/lungo)
 
 ---
