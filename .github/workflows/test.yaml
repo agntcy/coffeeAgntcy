@@ -194,7 +194,6 @@ jobs:
       pip_overrides: ${{ inputs.pip_overrides }}
       pip_constraints: ${{ inputs.pip_constraints }}
       docker_overrides: ${{ inputs.docker_overrides }}
-      install_dirctl: false
     secrets: inherit
 
   integration-tests-lungo:
@@ -206,7 +205,6 @@ jobs:
       pip_overrides: ${{ inputs.pip_overrides }}
       pip_constraints: ${{ inputs.pip_constraints }}
       docker_overrides: ${{ inputs.docker_overrides }}
-      install_dirctl: false
     secrets: inherit
 
   integration-tests-recruiter:
@@ -218,5 +216,4 @@ jobs:
       pip_overrides: ${{ inputs.pip_overrides }}
       pip_constraints: ${{ inputs.pip_constraints }}
       docker_overrides: ${{ inputs.docker_overrides }}
-      install_dirctl: true
     secrets: inherit
