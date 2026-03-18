@@ -1,17 +1,42 @@
 # Copyright AGNTCY Contributors (https://github.com/agntcy)
 # SPDX-License-Identifier: Apache-2.0
 
+import asyncio
+import os
+import re
+import signal
 import subprocess
 import sys
-import os
-import signal
 import time
-import re
-import pytest
+
 import httpx
+import pytest
 from dotenv import load_dotenv
 
 load_dotenv()
+
+@pytest.fixture(scope="session", autouse=True)
+def close_loops_from_policy_factory():
+    event_loop_policy = asyncio.get_event_loop_policy()
+    if not hasattr(event_loop_policy, "_loop_factory"):
+        yield
+        return
+
+    loop_factory = event_loop_policy._loop_factory
+    loops = []
+
+    def tracking_loop_factory(*args, **kwargs):
+        loop = loop_factory(*args, **kwargs)
+        loops.append(loop)
+        return loop
+
+    event_loop_policy._loop_factory = tracking_loop_factory
+    try:
+        yield
+    finally:
+        for loop in loops:
+            if not loop.is_closed():
+                loop.close()
 
 
 def wait_for_server(url: str, timeout: float = 30.0, interval: float = 0.5) -> bool:
