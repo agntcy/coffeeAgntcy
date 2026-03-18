@@ -10,6 +10,7 @@ import path from "path"
 export default defineConfig({
   plugins: [react()],
   server: {
+    port: 3000,
     fs: {
       strict: true,
       allow: [path.resolve(__dirname)],
