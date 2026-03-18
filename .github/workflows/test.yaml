@@ -4,80 +4,80 @@ on:
     branches:
       - main
     paths:
-      - 'coffeeAGNTCY/coffee_agents/corto/**'
-      - 'coffeeAGNTCY/coffee_agents/lungo/**'
-      - 'coffeeAGNTCY/coffee_agents/recruiter/**'
-      - '!coffeeAGNTCY/coffee_agents/*/deployment/helm/**'
+      - "coffeeAGNTCY/coffee_agents/corto/**"
+      - "coffeeAGNTCY/coffee_agents/lungo/**"
+      - "coffeeAGNTCY/coffee_agents/recruiter/**"
+      - "!coffeeAGNTCY/coffee_agents/*/deployment/helm/**"
   pull_request:
     paths:
-      - 'coffeeAGNTCY/coffee_agents/corto/**'
-      - 'coffeeAGNTCY/coffee_agents/lungo/**'
-      - 'coffeeAGNTCY/coffee_agents/recruiter/**'
-      - '!coffeeAGNTCY/coffee_agents/*/deployment/helm/**'
-      - '.github/workflows/test.yaml'
-      - '.github/workflows/test-reusable.yaml'
-      - '.github/actions/check-paths-have-changes/**'
+      - "coffeeAGNTCY/coffee_agents/corto/**"
+      - "coffeeAGNTCY/coffee_agents/lungo/**"
+      - "coffeeAGNTCY/coffee_agents/recruiter/**"
+      - "!coffeeAGNTCY/coffee_agents/*/deployment/helm/**"
+      - ".github/workflows/test.yaml"
+      - ".github/workflows/test-reusable.yaml"
+      - ".github/actions/check-paths-have-changes/**"
   workflow_call:
     inputs:
       pip_overrides:
-        description: 'One-per-line PEP 508 specs to force (shared across demos; applied only if declared).'
+        description: "One-per-line PEP 508 specs to force (shared across demos; applied only if declared)."
         required: false
         type: string
         default: ""
       pip_constraints:
-        description: 'One-per-line constraints (shared across demos; applied only if declared).'
+        description: "One-per-line constraints (shared across demos; applied only if declared)."
         required: false
         type: string
         default: ""
       docker_overrides:
-        description: 'One-per-line service=image[:tag] (shared across demos; applied only if declared).'
+        description: "One-per-line service=image[:tag] (shared across demos; applied only if declared)."
         required: false
         type: string
         default: ""
       test_corto:
-        description: 'Whether to test the Corto project.'
+        description: "Whether to test the Corto project."
         required: false
         type: boolean
         default: true
       test_lungo:
-        description: 'Whether to test the Lungo project.'
+        description: "Whether to test the Lungo project."
         required: false
         type: boolean
         default: true
       test_recruiter:
-        description: 'Whether to test the Recruiter project.'
+        description: "Whether to test the Recruiter project."
         required: false
         type: boolean
         default: true
   workflow_dispatch:
     inputs:
       pip_overrides:
-        description: 'One-per-line PEP 508 specs to force (shared across demos; applied only if declared).'
+        description: "One-per-line PEP 508 specs to force (shared across demos; applied only if declared)."
         required: false
         type: string
         default: ""
       pip_constraints:
-        description: 'One-per-line constraints (shared across demos; applied only if declared).'
+        description: "One-per-line constraints (shared across demos; applied only if declared)."
         required: false
         type: string
         default: ""
       docker_overrides:
-        description: 'One-per-line service=image[:tag] (shared across demos; applied only if declared).'
+        description: "One-per-line service=image[:tag] (shared across demos; applied only if declared)."
         required: false
         type: string
         default: ""
       test_corto:
-        description: 'Whether to test the Corto project.'
+        description: "Whether to test the Corto project."
         required: false
         type: boolean
         default: true
       test_lungo:
-        description: 'Whether to test the Lungo project.'
+        description: "Whether to test the Lungo project."
         required: false
         type: boolean
         default: true
       test_recruiter:
-        description: 'Whether to test the Recruiter project.'
+        description: "Whether to test the Recruiter project."
         required: false
         type: boolean
         default: true
@@ -126,7 +126,7 @@ jobs:
         run: |
           paths_json_corto=$(echo $WORKFLOW_FILES_LIST_JSON | jq -c -r --arg new_val "$CORTO_DIR" '[$new_val] + .')
           echo "paths_json_corto=$paths_json_corto" | tee -a $GITHUB_OUTPUT
-          
+
           paths_json_lungo=$(echo $WORKFLOW_FILES_LIST_JSON | jq -c -r --arg new_val "$LUNGO_DIR" '[$new_val] + .')
           echo "paths_json_lungo=$paths_json_lungo" | tee -a $GITHUB_OUTPUT
 
@@ -194,6 +194,7 @@ jobs:
       pip_overrides: ${{ inputs.pip_overrides }}
       pip_constraints: ${{ inputs.pip_constraints }}
       docker_overrides: ${{ inputs.docker_overrides }}
+      install_dirctl: false
     secrets: inherit
 
   integration-tests-lungo:
@@ -205,6 +206,7 @@ jobs:
       pip_overrides: ${{ inputs.pip_overrides }}
       pip_constraints: ${{ inputs.pip_constraints }}
       docker_overrides: ${{ inputs.docker_overrides }}
+      install_dirctl: false
     secrets: inherit
 
   integration-tests-recruiter:
@@ -216,4 +218,5 @@ jobs:
       pip_overrides: ${{ inputs.pip_overrides }}
       pip_constraints: ${{ inputs.pip_constraints }}
       docker_overrides: ${{ inputs.docker_overrides }}
+      install_dirctl: true
     secrets: inherit
