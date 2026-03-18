@@ -1,23 +1,22 @@
 # Copyright AGNTCY Contributors (https://github.com/agntcy)
 # SPDX-License-Identifier: Apache-2.0
 
+import json
 import logging
 from pathlib import Path
-import json
 
+import uvicorn
+from agntcy_app_sdk.factory import AgntcyFactory
+from common.version import get_version_info
+from config.logging_config import setup_logging
 from dotenv import load_dotenv
+from exchange.agent import ExchangeAgent
+from exchange.errors import RemoteAgentNoResponseError, TransportTimeoutError
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
-import uvicorn
-
-from agntcy_app_sdk.factory import AgntcyFactory
+from fastapi.responses import JSONResponse
 from ioa_observe.sdk.tracing import session_start
-from common.version import get_version_info
-
-from config.logging_config import setup_logging
-from exchange.agent import ExchangeAgent
-from exchange.errors import TransportTimeoutError, RemoteAgentNoResponseError
+from pydantic import BaseModel
 
 setup_logging()
 logger = logging.getLogger("corto.supervisor.main")
@@ -112,6 +111,29 @@ async def get_prompts():
   except Exception as e:
     logger.exception(f"Failed to load suggested prompts: {str(e)}")
     raise HTTPException(status_code=500, detail=f"Failed to load prompts: {str(e)}") from e
+
+
+@app.get("/agents/{slug}/oasf")
+async def get_agent_oasf(slug: str):
+  """
+  Returns the OASF JSON for the specified agent slug from the static files.
+  """
+  oasf_path = Path(__file__).resolve().parent.parent / "oasf" / "agents" / f"{slug}.json"
+  if not oasf_path.exists():
+    raise HTTPException(status_code=404, detail="OASF record not found")
+
+  try:
+    with oasf_path.open("r", encoding="utf-8") as f:
+      data = json.load(f)
+
+    return JSONResponse(content=data)
+  except Exception as e:
+    logger.error(f"Failed to read OASF file for slug '{slug}': {e}")
+    raise HTTPException(
+      status_code=500,
+      detail="An unexpected error occurred while retrieving the agent information. Please try again later.",
+    ) from e
+
 
 # Run the FastAPI server using uvicorn
 if __name__ == "__main__":
