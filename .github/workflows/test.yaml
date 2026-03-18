@@ -42,6 +42,11 @@ on:
         required: false
         type: boolean
         default: true
+      test_recruiter:
+        description: 'Whether to test the Recruiter project.'
+        required: false
+        type: boolean
+        default: true
   workflow_dispatch:
     inputs:
       pip_overrides:
@@ -69,10 +74,16 @@ on:
         required: false
         type: boolean
         default: true
+      test_recruiter:
+        description: 'Whether to test the Recruiter project.'
+        required: false
+        type: boolean
+        default: true
 
 env:
   CORTO_DIR: coffeeAGNTCY/coffee_agents/corto
   LUNGO_DIR: coffeeAGNTCY/coffee_agents/lungo
+  RECRUITER_DIR: coffeeAGNTCY/coffee_agents/recruiter
 
 jobs:
   subprojects-to-test:
@@ -80,6 +91,7 @@ jobs:
     outputs:
       test_corto: ${{ steps.choose-subprojects.outputs.test_corto }}
       test_lungo: ${{ steps.choose-subprojects.outputs.test_lungo }}
+      test_recruiter: ${{ steps.choose-subprojects.outputs.test_recruiter }}
     defaults:
       run:
         shell: bash
@@ -116,6 +128,9 @@ jobs:
           paths_json_lungo=$(echo $WORKFLOW_FILES_LIST_JSON | jq -c -r --arg new_val "$LUNGO_DIR" '[$new_val] + .')
           echo "paths_json_lungo=$paths_json_lungo" | tee -a $GITHUB_OUTPUT
 
+          paths_json_recruiter=$(echo $WORKFLOW_FILES_LIST_JSON | jq -c -r --arg new_val "$RECRUITER_DIR" '[$new_val] + .')
+          echo "paths_json_recruiter=$paths_json_recruiter" | tee -a $GITHUB_OUTPUT
+
       - name: Check paths have changes for Corto
         if: ${{ github.event_name == 'pull_request' }}
         id: check-paths-corto
@@ -134,25 +149,39 @@ jobs:
           head_sha: ${{ github.event.pull_request.head.sha }}
           paths_json_list: ${{ steps.prepare-path-lists.outputs.paths_json_lungo }}
 
+      - name: Check paths have changes for Recruiter
+        if: ${{ github.event_name == 'pull_request' }}
+        id: check-paths-recruiter
+        uses: ./.github/actions/check-paths-have-changes
+        with:
+          base_sha: ${{ github.event.pull_request.base.sha }}
+          head_sha: ${{ github.event.pull_request.head.sha }}
+          paths_json_list: ${{ steps.prepare-path-lists.outputs.paths_json_recruiter }}
+
       - name: Determine test choices for subprojects
         id: choose-subprojects
         run: |
           test_corto=false
           test_lungo=false
+          test_recruiter=false
 
           if [[ "${{ github.event_name }}" == "push" ]]; then
             test_corto=true
             test_lungo=true
+            test_recruiter=true
           elif [[ "${{ github.event_name }}" == "workflow_call" || "${{ github.event_name }}" == "workflow_dispatch" ]]; then
             test_corto=${{ inputs.test_corto }}
             test_lungo=${{ inputs.test_lungo }}
+            test_recruiter=${{ inputs.test_recruiter }}
           elif [[ "${{ github.event_name }}" == "pull_request" ]]; then
             test_corto=${{ steps.check-paths-corto.outputs.changed }}
             test_lungo=${{ steps.check-paths-lungo.outputs.changed }}
+            test_recruiter=${{ steps.check-paths-recruiter.outputs.changed }}
           fi
 
           echo "test_corto=$test_corto" | tee -a $GITHUB_OUTPUT
           echo "test_lungo=$test_lungo" | tee -a $GITHUB_OUTPUT
+          echo "test_recruiter=$test_recruiter" | tee -a $GITHUB_OUTPUT
 
   integration-tests-corto:
     needs: subprojects-to-test
@@ -163,6 +192,7 @@ jobs:
       pip_overrides: ${{ inputs.pip_overrides }}
       pip_constraints: ${{ inputs.pip_constraints }}
       docker_overrides: ${{ inputs.docker_overrides }}
+      install_dirctl: false
     secrets: inherit
 
   integration-tests-lungo:
@@ -174,4 +204,17 @@ jobs:
       pip_overrides: ${{ inputs.pip_overrides }}
       pip_constraints: ${{ inputs.pip_constraints }}
       docker_overrides: ${{ inputs.docker_overrides }}
+      install_dirctl: false
+    secrets: inherit
+
+  integration-tests-recruiter:
+    needs: subprojects-to-test
+    if: ${{ needs.subprojects-to-test.outputs.test_recruiter == 'true' }}
+    uses: ./.github/workflows/test-reusable.yaml
+    with:
+      project_dir: coffeeAGNTCY/coffee_agents/recruiter # cannot access env context here
+      pip_overrides: ${{ inputs.pip_overrides }}
+      pip_constraints: ${{ inputs.pip_constraints }}
+      docker_overrides: ${{ inputs.docker_overrides }}
+      install_dirctl: true
     secrets: inherit
