@@ -22,6 +22,11 @@ on:
         required: false
         type: string
         default: ""
+      install_dirctl:
+        description: 'Install dirctl from agntcy/dir before tests (required for recruiter integration tests).'
+        required: false
+        type: boolean
+        default: false
 
 jobs:
   integration-tests:
@@ -60,6 +65,18 @@ jobs:
       - name: Resolve & install
         run: |
           uv sync --extra dev
+
+      - name: Install dirctl
+        if: ${{ inputs.install_dirctl }}
+        run: |
+          set -euo pipefail
+          ARCH=$(dpkg --print-architecture)
+          mkdir -p "${HOME}/.local/bin"
+          curl -fsSL "https://github.com/agntcy/dir/releases/download/v1.0.0/dirctl-linux-${ARCH}" \
+            -o "${HOME}/.local/bin/dirctl"
+          chmod +x "${HOME}/.local/bin/dirctl"
+          echo "${HOME}/.local/bin" >> "${GITHUB_PATH}"
+          dirctl version
       
       - name: Create CI env file
         run: |
