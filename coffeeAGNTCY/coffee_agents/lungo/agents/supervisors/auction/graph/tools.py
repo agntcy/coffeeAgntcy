@@ -28,6 +28,11 @@ from agents.supervisors.auction.graph.models import (
     InventoryArgs,
     CreateOrderArgs,
 )
+from agents.supervisors.auction.graph.a2a_retry import (
+    send_a2a_with_retry,
+    TransportTimeoutError,
+    RemoteAgentNoResponseError,
+)
 from agents.supervisors.auction.graph.shared import get_factory
 from config.config import (
     DEFAULT_MESSAGE_TRANSPORT, 
@@ -195,7 +200,7 @@ async def get_farm_yield_inventory(prompt: str, farm: str) -> str:
             )
         )
 
-        response = await client.send_message(request)
+        response = await send_a2a_with_retry(client, request)
         logger.info(f"Response received from A2A agent: {response}")
         err = getattr(response.root, "error", None)
         result = getattr(response.root, "result", None)
@@ -209,6 +214,10 @@ async def get_farm_yield_inventory(prompt: str, farm: str) -> str:
             raise A2AAgentError(f"Farm '{farm}' returned a result without text content.")
         logger.error(f"Unknown response type from farm '{farm}'.")
         raise A2AAgentError(f"Unknown response type from farm '{farm}'.")
+    except (TransportTimeoutError, RemoteAgentNoResponseError) as e:
+        msg = "timed out" if isinstance(e, TransportTimeoutError) else "returned no response"
+        logger.error(f"Failed to communicate with farm '{farm}': {msg}")
+        raise A2AAgentError(f"Failed to communicate with farm '{farm}': {msg}.") from e
     except Exception as e: # Catch any underlying communication or client creation errors
         logger.error(f"Failed to communicate with farm '{farm}': {e}")
         raise A2AAgentError(f"Failed to communicate with farm '{farm}'. Details: {e}")
@@ -451,7 +460,7 @@ async def create_order(farm: str, quantity: int, price: float) -> str:
             )
         )
 
-        response = await client.send_message(request)
+        response = await send_a2a_with_retry(client, request)
         logger.info(f"Response received from A2A agent: {response}")
 
         err = getattr(response.root, "error", None)
@@ -466,6 +475,10 @@ async def create_order(farm: str, quantity: int, price: float) -> str:
             raise A2AAgentError(f"Farm '{farm}' returned a result without text content for order creation.")
         logger.error("Unknown response type")
         raise A2AAgentError("Unknown response type from order agent")
+    except (TransportTimeoutError, RemoteAgentNoResponseError) as e:
+        msg = "timed out" if isinstance(e, TransportTimeoutError) else "returned no response"
+        logger.error(f"Failed to communicate with order agent for farm '{farm}': {msg}")
+        raise A2AAgentError(f"Failed to communicate with order agent for farm '{farm}': {msg}.") from e
     except Exception as e: # Catch any underlying communication or client creation errors
         logger.error(f"Failed to communicate with order agent for farm '{farm}': {e}")
         raise A2AAgentError(f"Failed to communicate with order agent for farm '{farm}'. Details: {e}")
@@ -508,7 +521,7 @@ async def get_order_details(order_id: str) -> str:
             )
         )
 
-        response = await client.send_message(request)
+        response = await send_a2a_with_retry(client, request)
         logger.info(f"Response received from A2A agent: {response}")
 
         err = getattr(response.root, "error", None)
@@ -523,6 +536,10 @@ async def get_order_details(order_id: str) -> str:
             raise A2AAgentError(f"Order agent returned a result without text content for order ID '{order_id}'.")
         logger.error(f"Unknown response type from order agent for order ID '{order_id}'.")
         raise A2AAgentError(f"Unknown response type from order agent for order ID '{order_id}'.")
+    except (TransportTimeoutError, RemoteAgentNoResponseError) as e:
+        msg = "timed out" if isinstance(e, TransportTimeoutError) else "returned no response"
+        logger.error(f"Failed to communicate with order agent for order ID '{order_id}': {msg}")
+        raise A2AAgentError(f"Failed to communicate with order agent for order ID '{order_id}': {msg}.") from e
     except Exception as e: # Catch any underlying communication or client creation errors
         logger.error(f"Failed to communicate with order agent for order ID '{order_id}': {e}")
         raise A2AAgentError(f"Failed to communicate with order agent for order ID '{order_id}'. Details: {e}")
