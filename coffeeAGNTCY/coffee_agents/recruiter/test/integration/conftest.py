@@ -4,8 +4,11 @@
 import asyncio
 import atexit
 import os
+import platform
 import re
+import shutil
 import signal
+import stat
 import subprocess
 import sys
 import time
@@ -18,6 +21,98 @@ from pathlib import Path
 from test.integration.docker_helpers import up, down, remove_container_if_exists
 
 load_dotenv()
+
+RECRUITER_DIR = Path(__file__).resolve().parents[2]
+
+# ---------------- Ensure DIRCTL is available ----------------
+DIRCTL_VERSION = "v1.0.0"
+BIN_DIR = RECRUITER_DIR / "bin"
+LOCAL_DIRCTL = BIN_DIR / "dirctl"
+
+
+def _dirctl_download_suffix() -> str:
+    """Return the dir release asset suffix, e.g. linux-amd64 (matches Dockerfile naming)."""
+    if sys.platform not in ("linux", "darwin"):
+        raise RuntimeError(
+            f"Unsupported OS for automatic dirctl download: {sys.platform!r}. "
+            "Only linux and darwin are supported; install dirctl manually."
+        )
+    machine = platform.machine().lower()
+    if machine in ("x86_64", "amd64"):
+        arch = "amd64"
+    elif machine in ("arm64", "aarch64"):
+        arch = "arm64"
+    else:
+        raise RuntimeError(
+            f"Unsupported CPU architecture for dirctl: {machine!r}. "
+            "Install dirctl manually and make sure it is on PATH."
+        )
+    return f"{sys.platform}-{arch}"
+
+
+def _path_is_executable(path: Path) -> bool:
+    """Check if a path is a file and executable."""
+    return path.is_file() and os.access(path, os.X_OK)
+
+
+def _find_executable_on_path(cmd: str) -> str | None:
+    location = shutil.which(cmd)
+    if location and os.access(location, os.X_OK):
+        return location
+    return None
+
+
+def _download_dirctl(dest: Path) -> None:
+    """Download dirctl from the pinned GitHub release (streaming, sync httpx)."""
+    suffix = _dirctl_download_suffix()
+    url = (
+        f"https://github.com/agntcy/dir/releases/download/"
+        f"{DIRCTL_VERSION}/dirctl-{suffix}"
+    )
+    dest.parent.mkdir(parents=True, exist_ok=True)
+    tmp = dest.with_suffix(dest.suffix + ".part")
+    try:
+        with httpx.Client(timeout=120.0, follow_redirects=True) as client:
+            with client.stream("GET", url) as resp:
+                resp.raise_for_status()
+                with tmp.open("wb") as f:
+                    for chunk in resp.iter_bytes():
+                        f.write(chunk)
+        if dest.exists():
+            dest.unlink()
+        tmp.replace(dest)
+    except (httpx.HTTPError, OSError) as e:
+        if tmp.exists():
+            tmp.unlink(missing_ok=True)
+        raise RuntimeError(f"Failed to download dirctl from {url}: {e}") from e
+    mode = dest.stat().st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH
+    dest.chmod(mode)
+
+
+@pytest.fixture(scope="session", autouse=True)
+def ensure_dirctl():
+    """Ensure dirctl is available: use PATH, else reuse `recruiter/bin/dirctl`, else download.
+
+    Prepends recruiter/bin to PATH when using the downloaded binary so subprocess calls to `dirctl` work.
+    """
+    if _find_executable_on_path("dirctl"):
+        return
+    if _path_is_executable(LOCAL_DIRCTL):
+        os.environ["PATH"] = f"{BIN_DIR}{os.pathsep}{os.environ.get('PATH', '')}"
+        return
+    _download_dirctl(LOCAL_DIRCTL)
+    os.environ["PATH"] = f"{BIN_DIR}{os.pathsep}{os.environ.get('PATH', '')}"
+
+
+@pytest.fixture(scope="session")
+def dirctl_path(ensure_dirctl) -> Path:
+    """Absolute path to the dirctl binary after :func:`ensure_dirctl` runs."""
+    p = shutil.which("dirctl")
+    if not p:
+        raise RuntimeError(
+            "dirctl not found on PATH after ensure_dirctl; check download or install."
+        )
+    return Path(p).resolve()
 
 
 # ---------------- Close possibly hanging event loops ----------------
