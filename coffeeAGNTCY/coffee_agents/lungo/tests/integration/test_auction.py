@@ -18,6 +18,12 @@ from sentence_transformers import SentenceTransformer, util
 
 logger = logging.getLogger(__name__)
 
+
+def _response_has_inventory_amount(text: str) -> bool:
+    """True if text contains a numeric inventory amount (e.g. '1,234 pounds' or '500 lbs')."""
+    return bool(re.search(r'\b[\d,]+\s*(pounds|lbs\.?)\b', text))
+
+
 # Reuse the same tests across transports (add/remove configs as needed)
 TRANSPORT_MATRIX = [
     pytest.param(
@@ -103,16 +109,17 @@ def test_auction_a2a_timeout_returns_user_visible_error(auction_supervisor_clien
         "agents.supervisors.auction.graph.tools.send_a2a_with_retry",
         new_callable=AsyncMock,
         side_effect=TransportTimeoutError("timeout", cause=None),
-    ):
+    ) as mock_send_a2a:
         resp = auction_supervisor_client.post(
             "/agent/prompt",
             json={"prompt": "What is the inventory of coffee in Brazil?"},
         )
+        assert mock_send_a2a.called
     assert resp.status_code == 200
     data = resp.json()
     assert "response" in data
-    response_text = data["response"].lower()
-    assert "issue" in response_text or "try again" in response_text or "fail" in response_text or "communicat" in response_text
+    assert not _response_has_inventory_amount(data["response"]), "Expected error response, not inventory success"
+    assert data["response"] == "I encountered an issue retrieving information from the Brazil farm. Please try again later."
 
 
 @pytest.mark.parametrize("transport_config", TRANSPORT_MATRIX, indirect=True)
@@ -134,7 +141,7 @@ class TestAuctionFlows:
         data = resp.json()
         logger.info(data)
         assert "response" in data
-        assert re.search(r'\b[\d,]+\s*(pounds|lbs\.?)\b', data["response"]), "Expected '<number> pounds or <number> lbs or <number> units.' in string"
+        assert _response_has_inventory_amount(data["response"]), "Expected '<number> pounds or <number> lbs' in string"
 
     @pytest.mark.agents(["weather-mcp", "colombia-farm"])
     @pytest.mark.usefixtures("agents_up")
@@ -153,7 +160,7 @@ class TestAuctionFlows:
         data = resp.json()
         logger.info(data)
         assert "response" in data
-        assert re.search(r'\b[\d,]+\s*(pounds|lbs\.?)\b', data["response"]), "Expected '<number> pounds or <number> lbs or <number> units.' in string"
+        assert _response_has_inventory_amount(data["response"]), "Expected '<number> pounds or <number> lbs' in string"
 
     @pytest.mark.agents(["vietnam-farm"])
     @pytest.mark.usefixtures("agents_up")
@@ -172,7 +179,7 @@ class TestAuctionFlows:
         data = resp.json()
         logger.info(data)
         assert "response" in data
-        assert re.search(r'\b[\d,]+\s*(pounds|lbs\.?)\b', data["response"]), "Expected '<number> pounds or <number> lbs or <number> units.' in string"
+        assert _response_has_inventory_amount(data["response"]), "Expected '<number> pounds or <number> lbs' in string"
 
 
     @pytest.mark.agents(["weather-mcp", "brazil-farm", "colombia-farm", "vietnam-farm"])
