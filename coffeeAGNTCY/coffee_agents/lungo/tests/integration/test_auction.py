@@ -6,7 +6,7 @@ import logging
 import re
 import ssl
 from pathlib import Path
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import httpx
 import pytest
@@ -104,8 +104,16 @@ AUCTION_PROMPT_CASES = load_auction_prompt_cases()
     indirect=True,
 )
 def test_auction_a2a_timeout_returns_user_visible_error(auction_supervisor_client):
-    """When send_a2a_with_retry raises TransportTimeoutError, graph returns 200 with error message in body."""
+    """When send_a2a_with_retry raises TransportTimeoutError, graph returns 200 with error message in body.
+
+    Stub factory.create_client so execution reaches send_a2a_with_retry: without it, SLIM/agent-card
+    handshake can fail before A2A send (mock would never be called).
+    """
     with patch(
+        "agents.supervisors.auction.graph.tools.factory.create_client",
+        new_callable=AsyncMock,
+        return_value=MagicMock(),
+    ), patch(
         "agents.supervisors.auction.graph.tools.send_a2a_with_retry",
         new_callable=AsyncMock,
         side_effect=TransportTimeoutError("timeout", cause=None),
