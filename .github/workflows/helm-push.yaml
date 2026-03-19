@@ -8,8 +8,6 @@ on:
     paths:
       - 'coffeeAGNTCY/coffee_agents/*/deployment/helm/**'
   pull_request:
-    branches:
-      - main
     paths:
       - 'coffeeAGNTCY/coffee_agents/*/deployment/helm/**'
       - '.github/workflows/helm-push.yaml'
