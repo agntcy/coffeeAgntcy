@@ -68,4 +68,3 @@ jobs:
         if: inputs.push == true
         run: |
           helm push ${{ inputs.package_name }}-${{ steps.package.outputs.chart_version }}.tgz oci://ghcr.io/${{ github.repository_owner }}/coffee_agntcy/helm
-
