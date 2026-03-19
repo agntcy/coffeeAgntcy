@@ -115,24 +115,29 @@ async def get_prompts():
 
 @app.get("/agents/{slug}/oasf")
 async def get_agent_oasf(slug: str):
-  """
-  Returns the OASF JSON for the specified agent slug from the static files.
-  """
-  oasf_path = Path(__file__).resolve().parent.parent / "oasf" / "agents" / f"{slug}.json"
-  if not oasf_path.exists():
-    raise HTTPException(status_code=404, detail="OASF record not found")
+    """
+    Returns the OASF JSON for the specified agent slug from the static files.
+    """
+    if slug not in ["exchange-supervisor-agent", "flavor-profile-farm-agent"]:
+        raise HTTPException(status_code=404, detail="OASF record not found")
 
-  try:
-    with oasf_path.open("r", encoding="utf-8") as f:
-      data = json.load(f)
+    oasf_path = (
+        Path(__file__).resolve().parent.parent / "oasf" / "agents" / f"{slug}.json"
+    )
+    if not oasf_path.exists():
+        raise HTTPException(status_code=404, detail="OASF record not found")
 
-    return JSONResponse(content=data)
-  except Exception as e:
-    logger.error(f"Failed to read OASF file for slug '{slug}': {e}")
-    raise HTTPException(
-      status_code=500,
-      detail="An unexpected error occurred while retrieving the agent information. Please try again later.",
-    ) from e
+    try:
+        with oasf_path.open("r", encoding="utf-8") as f:
+            data = json.load(f)
+
+        return JSONResponse(content=data)
+    except Exception as e:
+        logger.error(f"Failed to read OASF file for slug '{slug}': {e}")
+        raise HTTPException(
+            status_code=500,
+            detail="An unexpected error occurred while retrieving the agent information. Please try again later.",
+        ) from e
 
 
 # Run the FastAPI server using uvicorn
