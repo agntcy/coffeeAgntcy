@@ -199,5 +199,8 @@ node_modules/
 # dir cids
 *published_cids.json
 
-# Local tool binaries
-**/bin/**
+# Local tool binaries (e.g. dirctl fetched by integration conftest ensure_dirctl).
+# Anchored to each agent project root (equivalent to /bin/ in that repo): only
+# coffee_agents/<agent>/bin/, not deeper paths like .../foo/bin/.
+# Trailing slash on a directory ignores that folder and the entire tree under it (any depth).
+coffeeAGNTCY/coffee_agents/*/bin/
