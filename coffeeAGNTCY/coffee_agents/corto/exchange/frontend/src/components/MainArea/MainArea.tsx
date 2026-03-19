@@ -78,7 +78,9 @@ const MainArea: React.FC<MainAreaProps> = ({
   const animationLock = useRef<boolean>(false)
 
   const [oasfModalOpen, setOasfModalOpen] = useState(false)
-  const [oasfModalData, setOasfModalData] = useState<CustomNodeData | null>(null)
+  const [oasfModalData, setOasfModalData] = useState<CustomNodeData | null>(
+    null,
+  )
   const [oasfModalPosition, setOasfModalPosition] = useState({
     x: 0,
     y: 0,
@@ -90,8 +92,13 @@ const MainArea: React.FC<MainAreaProps> = ({
       setOasfModalPosition(position)
       setOasfModalOpen(true)
     },
-    []
+    [],
   )
+
+  const handleCloseOasfModal = useCallback(() => {
+    setOasfModalOpen(false)
+    setOasfModalData(null)
+  }, [])
 
   useEffect(() => {
     updateA2ALabels(setEdges)
@@ -113,7 +120,14 @@ const MainArea: React.FC<MainAreaProps> = ({
         isExpanded,
       })
     }, 100)
-  }, [setNodes, setEdges, fitViewWithViewport, chatHeight, isExpanded, handleOpenOasfModal])
+  }, [
+    setNodes,
+    setEdges,
+    fitViewWithViewport,
+    chatHeight,
+    isExpanded,
+    handleOpenOasfModal,
+  ])
 
   useEffect(() => {
     // Trigger fitView whenever chat height or expansion state changes
@@ -214,10 +228,7 @@ const MainArea: React.FC<MainAreaProps> = ({
     <div className="bg-primary-bg order-1 flex h-full w-full flex-none flex-grow flex-col items-start self-stretch p-0">
       <OasfRecordModal
         isOpen={oasfModalOpen}
-        onClose={() => {
-          setOasfModalOpen(false)
-          setOasfModalData(null)
-        }}
+        onClose={handleCloseOasfModal}
         nodeName={oasfModalData?.label1 ?? ""}
         nodeData={oasfModalData ?? null}
         position={oasfModalPosition}

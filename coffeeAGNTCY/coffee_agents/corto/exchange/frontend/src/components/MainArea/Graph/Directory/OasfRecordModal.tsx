@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  **/
 
-import React, { useState, useEffect } from "react"
+import React, { useState, useEffect, useCallback } from "react"
 import { createPortal } from "react-dom"
 import { fetchOasfRecord, OasfRecord, OasfApiError } from "./DirectoryApi"
 import { useEscapeKey } from "@/hooks/useEscapeKey"
@@ -39,16 +39,33 @@ const OasfRecordModal: React.FC<OasfRecordModalProps> = ({
     fetchOasfRecord(nodeData)
       .then(setRecord)
       .catch((err: OasfApiError) =>
-        setError(err.message ?? "An unexpected error occurred while fetching OASF record.")
+        setError(
+          err.message ??
+            "An unexpected error occurred while fetching OASF record.",
+        ),
       )
       .finally(() => setLoading(false))
   }, [isOpen, nodeData])
 
   useEscapeKey(isOpen, onClose)
 
-  if (!isOpen) return null
+  const handleModalClick = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation()
+  }, [])
 
-  const handleModalClick = (e: React.MouseEvent) => e.stopPropagation()
+  const handleRetry = useCallback(() => {
+    if (!nodeData) return
+    setError(null)
+    setLoading(true)
+    fetchOasfRecord(nodeData)
+      .then(setRecord)
+      .catch((err: OasfApiError) =>
+        setError(err.message ?? "Failed to fetch OASF record."),
+      )
+      .finally(() => setLoading(false))
+  }, [nodeData])
+
+  if (!isOpen) return null
 
   return createPortal(
     <div className="pointer-events-none fixed inset-0 z-50">
@@ -81,17 +98,8 @@ const OasfRecordModal: React.FC<OasfRecordModalProps> = ({
                 </p>
               </div>
               <button
-                onClick={() => {
-                  if (!nodeData) return
-                  setError(null)
-                  setLoading(true)
-                  fetchOasfRecord(nodeData)
-                    .then(setRecord)
-                    .catch((err: OasfApiError) =>
-                      setError(err.message ?? "Failed to fetch OASF record.")
-                    )
-                    .finally(() => setLoading(false))
-                }}
+                type="button"
+                onClick={handleRetry}
                 className="rounded bg-node-icon-background px-4 py-2 text-sm text-node-text-primary hover:bg-opacity-80"
               >
                 Retry
@@ -114,7 +122,7 @@ const OasfRecordModal: React.FC<OasfRecordModalProps> = ({
         </div>
       </div>
     </div>,
-    document.body
+    document.body,
   )
 }
 
