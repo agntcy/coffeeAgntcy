@@ -56,4 +56,3 @@ runs:
           && changed=true
 
         echo "changed=$changed" | tee -a $GITHUB_OUTPUT
-
