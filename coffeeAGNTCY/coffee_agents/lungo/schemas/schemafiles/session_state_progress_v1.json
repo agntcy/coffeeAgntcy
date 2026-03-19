@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://github.com/agntcy/coffeeAgntcy/schemas/session_state_progress_v1.json",
+  "$id": "https://github.com/agntcy/coffeeAgntcy/schemas/schemafiles/session_state_progress_v1.json",
   "title": "Session State Progress (v1)",
   "description": "Single message contract for session state progress: full state snapshot or event/delta. Used by A2A state middleware, in-memory store, and SSE NDJSON stream. One schema, discriminator 'kind' (snapshot | delta). Schema version 1.",
   "type": "object",

@@ -11,9 +11,9 @@ A single message type with discriminator `kind`:
 
 Required envelope on every message: `session_id`, `kind`, `timestamp`.
 
-## Schema file
+## Schema files
 
-[session_state_progress_v1.json](session_state_progress_v1.json) — JSON Schema (draft 2020-12). Use for validation and tooling. The schema `$id` includes the version path for stable reference.
+[schemafiles/session_state_progress_v1.json](schemafiles/session_state_progress_v1.json) — JSON Schema (draft 2020-12). Use for validation and tooling. The schema `$id` includes the version path for stable reference.
 
 ## Examples
 
@@ -25,6 +25,8 @@ Minimal valid payloads:
 ## Validation
 
 Python: `schemas.validate.validate_session_state_progress(payload)` (requires `jsonschema`).
+
+CLI: `python -m schemas.schemascripts.validate` — validates all JSON schemas in `schemafiles/`.
 
 ## Versioning
 
