@@ -6,11 +6,13 @@ on:
     paths:
       - 'coffeeAGNTCY/coffee_agents/corto/**'
       - 'coffeeAGNTCY/coffee_agents/lungo/**'
+      - 'coffeeAGNTCY/coffee_agents/recruiter/**'
       - '!coffeeAGNTCY/coffee_agents/*/deployment/helm/**'
   pull_request:
     paths:
       - 'coffeeAGNTCY/coffee_agents/corto/**'
       - 'coffeeAGNTCY/coffee_agents/lungo/**'
+      - 'coffeeAGNTCY/coffee_agents/recruiter/**'
       - '!coffeeAGNTCY/coffee_agents/*/deployment/helm/**'
       - '.github/workflows/test.yaml'
       - '.github/workflows/test-reusable.yaml'
