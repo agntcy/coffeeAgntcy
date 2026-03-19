@@ -18,8 +18,10 @@ import "./ReactFlow.css"
 import SlimNode from "./Graph/TransportNode"
 import CustomEdge from "./Graph/CustomEdge"
 import CustomNode from "./Graph/CustomNode"
+import OasfRecordModal from "./Graph/Directory/OasfRecordModal"
 import { graphConfig, updateA2ALabels } from "@/utils/graphConfigs"
 import { useViewportAwareFitView } from "@/hooks/useViewportAwareFitView"
+import type { CustomNodeData } from "./Graph/CustomNode"
 
 const proOptions = { hideAttribution: true }
 
@@ -75,11 +77,41 @@ const MainArea: React.FC<MainAreaProps> = ({
   const [edges, setEdges, onEdgesChange] = useEdgesState(config.edges)
   const animationLock = useRef<boolean>(false)
 
+  const [oasfModalOpen, setOasfModalOpen] = useState(false)
+  const [oasfModalData, setOasfModalData] = useState<CustomNodeData | null>(
+    null,
+  )
+  const [oasfModalPosition, setOasfModalPosition] = useState({
+    x: 0,
+    y: 0,
+  })
+
+  const handleOpenOasfModal = useCallback(
+    (nodeData: CustomNodeData, position: { x: number; y: number }) => {
+      setOasfModalData(nodeData)
+      setOasfModalPosition(position)
+      setOasfModalOpen(true)
+    },
+    [],
+  )
+
+  const handleCloseOasfModal = useCallback(() => {
+    setOasfModalOpen(false)
+    setOasfModalData(null)
+  }, [])
+
   useEffect(() => {
     updateA2ALabels(setEdges)
 
     const newConfig: GraphConfig = graphConfig
-    setNodes(newConfig.nodes)
+    const nodesWithHandlers = newConfig.nodes.map((node) => ({
+      ...node,
+      data: {
+        ...node.data,
+        onOpenOasfModal: handleOpenOasfModal,
+      },
+    }))
+    setNodes(nodesWithHandlers)
     setEdges(newConfig.edges)
 
     setTimeout(() => {
@@ -88,7 +120,14 @@ const MainArea: React.FC<MainAreaProps> = ({
         isExpanded,
       })
     }, 100)
-  }, [setNodes, setEdges, fitViewWithViewport, chatHeight, isExpanded])
+  }, [
+    setNodes,
+    setEdges,
+    fitViewWithViewport,
+    chatHeight,
+    isExpanded,
+    handleOpenOasfModal,
+  ])
 
   useEffect(() => {
     // Trigger fitView whenever chat height or expansion state changes
@@ -187,6 +226,13 @@ const MainArea: React.FC<MainAreaProps> = ({
 
   return (
     <div className="bg-primary-bg order-1 flex h-full w-full flex-none flex-grow flex-col items-start self-stretch p-0">
+      <OasfRecordModal
+        isOpen={oasfModalOpen}
+        onClose={handleCloseOasfModal}
+        nodeName={oasfModalData?.label1 ?? ""}
+        nodeData={oasfModalData ?? null}
+        position={oasfModalPosition}
+      />
       <ReactFlow
         nodes={nodes}
         edges={edges}

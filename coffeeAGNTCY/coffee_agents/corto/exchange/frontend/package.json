@@ -10,7 +10,9 @@
     "lint:check": "eslint .",
     "preview": "vite preview",
     "format": "prettier --write \"src/**/*.{js,jsx,ts,tsx,json,css,md}\"",
-    "format:check": "prettier --check \"src/**/*.{js,jsx,ts,tsx,json,css,md}\""
+    "format:check": "prettier --check \"src/**/*.{js,jsx,ts,tsx,json,css,md}\"",
+    "test:integration": "playwright test",
+    "test:integration:ui": "playwright test --ui"
   },
   "dependencies": {
     "@radix-ui/react-select": "^2.2.5",
@@ -29,6 +31,7 @@
     "uuid": "^11.1.0"
   },
   "devDependencies": {
+    "@playwright/test": "^1.49.0",
     "@eslint/js": "^9.25.0",
     "@types/node": "^24.1.0",
     "@types/react": "^19.1.9",
