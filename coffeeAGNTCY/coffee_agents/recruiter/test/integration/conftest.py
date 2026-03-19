@@ -24,6 +24,9 @@ load_dotenv()
 
 RECRUITER_DIR = Path(__file__).resolve().parents[2]
 
+# Host-side readiness (docker-compose maps zot 5000 to 5555;)
+ZOT_REGISTRY_READYZ_URL = "http://127.0.0.1:5555/readyz"
+
 # ---------------- Ensure DIRCTL is available ----------------
 DIRCTL_VERSION = "v1.0.0"
 BIN_DIR = RECRUITER_DIR / "bin"
@@ -97,14 +100,14 @@ def ensure_dirctl():
     """
     if _find_executable_on_path("dirctl"):
         return
-    if _path_is_executable(LOCAL_DIRCTL):
-        os.environ["PATH"] = f"{BIN_DIR}{os.pathsep}{os.environ.get('PATH', '')}"
-        return
-    _download_dirctl(LOCAL_DIRCTL)
+
+    if not _path_is_executable(LOCAL_DIRCTL):
+        _download_dirctl(LOCAL_DIRCTL)
+
     os.environ["PATH"] = f"{BIN_DIR}{os.pathsep}{os.environ.get('PATH', '')}"
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="session", autouse=True)
 def dirctl_path(ensure_dirctl) -> Path:
     """Absolute path to the dirctl binary after :func:`ensure_dirctl` runs."""
     p = shutil.which("dirctl")
@@ -160,9 +163,6 @@ def _teardown_session_docker():
 
 
 atexit.register(_teardown_session_docker)
-
-# Host-side readiness (compose maps zot 5000 to 5555;)
-ZOT_REGISTRY_READYZ_URL = "http://127.0.0.1:5555/readyz"
 
 def _wait_http_ready(
     url: str,
