@@ -199,3 +199,6 @@ node_modules/
 
 # dir cids
 *published_cids.json
+
+# Local tool binaries
+**/bin/**

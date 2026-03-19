@@ -2,9 +2,13 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import asyncio
+import atexit
 import os
+import platform
 import re
+import shutil
 import signal
+import stat
 import subprocess
 import sys
 import time
@@ -12,9 +16,109 @@ import time
 import httpx
 import pytest
 from dotenv import load_dotenv
+from pathlib import Path
+
+from test.integration.docker_helpers import up, down, remove_container_if_exists
 
 load_dotenv()
 
+RECRUITER_DIR = Path(__file__).resolve().parents[2]
+
+# Host-side readiness (docker-compose maps zot 5000 to 5555;)
+ZOT_REGISTRY_READYZ_URL = "http://127.0.0.1:5555/readyz"
+
+# ---------------- Ensure DIRCTL is available ----------------
+DIRCTL_VERSION = "v1.0.0"
+BIN_DIR = RECRUITER_DIR / "bin"
+LOCAL_DIRCTL = BIN_DIR / "dirctl"
+
+
+def _dirctl_download_suffix() -> str:
+    """Return the dir release asset suffix, e.g. linux-amd64 (matches Dockerfile naming)."""
+    if sys.platform not in ("linux", "darwin"):
+        raise RuntimeError(
+            f"Unsupported OS for automatic dirctl download: {sys.platform!r}. "
+            "Only linux and darwin are supported; install dirctl manually."
+        )
+    machine = platform.machine().lower()
+    if machine in ("x86_64", "amd64"):
+        arch = "amd64"
+    elif machine in ("arm64", "aarch64"):
+        arch = "arm64"
+    else:
+        raise RuntimeError(
+            f"Unsupported CPU architecture for dirctl: {machine!r}. "
+            "Install dirctl manually and make sure it is on PATH."
+        )
+    return f"{sys.platform}-{arch}"
+
+
+def _path_is_executable(path: Path) -> bool:
+    """Check if a path is a file and executable."""
+    return path.is_file() and os.access(path, os.X_OK)
+
+
+def _find_executable_on_path(cmd: str) -> str | None:
+    location = shutil.which(cmd)
+    if location and os.access(location, os.X_OK):
+        return location
+    return None
+
+
+def _download_dirctl(dest: Path) -> None:
+    """Download dirctl from the pinned GitHub release (streaming, sync httpx)."""
+    suffix = _dirctl_download_suffix()
+    url = (
+        f"https://github.com/agntcy/dir/releases/download/"
+        f"{DIRCTL_VERSION}/dirctl-{suffix}"
+    )
+    dest.parent.mkdir(parents=True, exist_ok=True)
+    tmp = dest.with_suffix(dest.suffix + ".part")
+    try:
+        with httpx.Client(timeout=120.0, follow_redirects=True) as client:
+            with client.stream("GET", url) as resp:
+                resp.raise_for_status()
+                with tmp.open("wb") as f:
+                    for chunk in resp.iter_bytes():
+                        f.write(chunk)
+        if dest.exists():
+            dest.unlink()
+        tmp.replace(dest)
+    except (httpx.HTTPError, OSError) as e:
+        if tmp.exists():
+            tmp.unlink(missing_ok=True)
+        raise RuntimeError(f"Failed to download dirctl from {url}: {e}") from e
+    mode = dest.stat().st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH
+    dest.chmod(mode)
+
+
+@pytest.fixture(scope="session", autouse=True)
+def ensure_dirctl():
+    """Ensure dirctl is available: use PATH, else reuse `recruiter/bin/dirctl`, else download.
+
+    Prepends recruiter/bin to PATH when using the downloaded binary so subprocess calls to `dirctl` work.
+    """
+    if _find_executable_on_path("dirctl"):
+        return
+
+    if not _path_is_executable(LOCAL_DIRCTL):
+        _download_dirctl(LOCAL_DIRCTL)
+
+    os.environ["PATH"] = f"{BIN_DIR}{os.pathsep}{os.environ.get('PATH', '')}"
+
+
+@pytest.fixture(scope="session", autouse=True)
+def dirctl_path(ensure_dirctl) -> Path:
+    """Absolute path to the dirctl binary after :func:`ensure_dirctl` runs."""
+    p = shutil.which("dirctl")
+    if not p:
+        raise RuntimeError(
+            "dirctl not found on PATH after ensure_dirctl; check download or install."
+        )
+    return Path(p).resolve()
+
+
+# ---------------- Close possibly hanging event loops ----------------
 @pytest.fixture(scope="session", autouse=True)
 def close_loops_from_policy_factory():
     event_loop_policy = asyncio.get_event_loop_policy()
@@ -38,6 +142,88 @@ def close_loops_from_policy_factory():
             if not loop.is_closed():
                 loop.close()
 
+
+# ---------------- session infra ----------------
+# docker_helpers passes env=os.environ to compose so infra containers use the same env as the test.
+files = ["docker/docker-compose.yaml"]
+if Path("docker/docker-compose.override.yaml").exists():
+    files.append("docker/docker-compose.override.yaml")
+
+_session_docker_torn_down = False
+
+
+def _teardown_session_docker():
+    """Run docker compose down so session containers (zot, dir-api-server, etc) are stopped. Idempotent."""
+    global _session_docker_torn_down
+    if _session_docker_torn_down:
+        return
+    _session_docker_torn_down = True
+    print("--- Tearing down session Docker (zot, dir-api-server, etc) ---")
+    down(files)
+
+
+atexit.register(_teardown_session_docker)
+
+def _wait_http_ready(
+    url: str,
+    *,
+    timeout_s: float = 180.0,
+    poll_s: float = 0.5,
+    accept_status: tuple[int, ...] = (200,),
+) -> None:
+    """Poll GET url from the host until status is acceptable or timeout."""
+    ok = set(accept_status)
+    deadline = time.time() + timeout_s
+    last_err: str | None = None
+    while time.time() < deadline:
+        try:
+            resp = httpx.get(url, timeout=2.0)
+            if resp.status_code in ok:
+                return
+            last_err = f"HTTP {resp.status_code}"
+        except (httpx.RequestError, httpx.TimeoutException) as e:
+            last_err = str(e)
+        time.sleep(poll_s)
+    raise RuntimeError(
+        f"Ready check {url} did not return {accept_status} within {timeout_s}s "
+        f"(last: {last_err})"
+    )
+
+@pytest.fixture(scope="session", autouse=True)
+def orchestrate_session_services():
+    """
+    Start Directory stack (zot + dir-api-server) for integration tests, analogous
+    to lungo's session slim/nats/otel compose setup.
+    """
+    print("\n--- Setting up session level service integrations ---")
+    down(files)
+    remove_container_if_exists("docker-dir-api-server-1")
+    remove_container_if_exists("docker-zot-1")
+    setup_directory_services()
+    print("--- Session level service setup complete. Tests can now run ---")
+    yield
+    _teardown_session_docker()
+
+def setup_directory_services():
+    _startup_zot()
+    # Same idea as Docker Compose Zot healthcheck: GET /readyz
+    _wait_http_ready(ZOT_REGISTRY_READYZ_URL, timeout_s=30.0, poll_s=5.0, accept_status=(200,))
+
+    _startup_dir_api_server()
+    # dir-api-server does not expose an HTTP endpoint but rather a gRPC one at 8888.
+    # In newer versions of dir-apiserver they do the health check with grpc-health-probe but in apiserver v0.6.0 that was not bundled in the image.
+    # For dir-apiserver, this is a fix that will come in a future version (it is not in v1.0.0 but it is fixed in main by https://github.com/agntcy/dir/pull/1017).
+    time.sleep(30) # give dir-api-server time to start up; TODO: long-term we should use a more robust wait mechanism.
+
+def _startup_zot():
+    up(files, ["zot"])
+
+def _startup_dir_api_server():
+    up(files, ["dir-api-server"])
+
+
+
+# ---------------- A2A server related fixtures ----------------
 
 def wait_for_server(url: str, timeout: float = 30.0, interval: float = 0.5) -> bool:
     """Wait for a server to become available by polling its agent card endpoint.
