@@ -33,13 +33,13 @@ def test_get_schema_returns_dict_with_required_structure():
 
 @pytest.mark.parametrize("payload", [
     {"session_id": "s1", "kind": "snapshot", "timestamp": "2026-01-01T00:00:00Z", "state": {}},
-    {"session_id": "s1", "kind": "delta", "timestamp": "2026-01-01T00:00:00Z", "event_type": "node_entered"},
-], ids=["snapshot_minimal", "delta_minimal"])
+    {"session_id": "s1", "kind": "event", "timestamp": "2026-01-01T00:00:00Z", "event_type": "node_entered"},
+], ids=["snapshot_minimal", "event_minimal"])
 def test_validate_valid_payloads(payload):
     validate_session_state_progress(payload)
 
 
-@pytest.mark.parametrize("example_file", ["snapshot_example.json", "delta_example.json"])
+@pytest.mark.parametrize("example_file", ["snapshot_example.json", "event_example.json"])
 def test_validate_example_files(example_file):
     with open(EXAMPLES_DIR / example_file, encoding="utf-8") as f:
         payload = json.load(f)
@@ -49,8 +49,8 @@ def test_validate_example_files(example_file):
 @pytest.mark.parametrize("payload", [
     {"kind": "snapshot", "timestamp": "2026-01-01T00:00:00Z", "state": {}},
     {"session_id": "s1", "kind": "snapshot", "timestamp": "2026-01-01T00:00:00Z"},
-    {"session_id": "s1", "kind": "delta", "timestamp": "2026-01-01T00:00:00Z"},
-], ids=["missing_required_field", "snapshot_without_state", "delta_without_event_type"])
+    {"session_id": "s1", "kind": "event", "timestamp": "2026-01-01T00:00:00Z"},
+], ids=["missing_required_field", "snapshot_without_state", "event_without_event_type"])
 def test_validate_invalid_payloads_raise(payload):
     with pytest.raises(jsonschema.ValidationError):
         validate_session_state_progress(payload)

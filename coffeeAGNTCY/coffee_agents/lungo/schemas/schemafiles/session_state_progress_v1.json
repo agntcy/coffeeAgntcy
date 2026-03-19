@@ -2,32 +2,18 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://github.com/agntcy/coffeeAgntcy/schemas/schemafiles/session_state_progress_v1.json",
   "title": "Session State Progress (v1)",
-  "description": "Single message contract for session state progress: full state snapshot or event/delta. Used by A2A state middleware, in-memory store, and SSE NDJSON stream. One schema, discriminator 'kind' (snapshot | delta). Schema version 1.",
+  "description": "Single message contract for session state progress: full state snapshot or event. Used by A2A state middleware, in-memory store, and SSE NDJSON stream. One schema, discriminator 'kind' (snapshot | event). Schema version 1.",
   "type": "object",
   "required": ["session_id", "kind", "timestamp"],
   "properties": {
-    "session_id": {
-      "type": "string",
-      "minLength": 1,
-      "description": "Session identifier."
-    },
-    "kind": {
-      "type": "string",
-      "enum": ["snapshot", "delta"],
-      "description": "Discriminator: 'snapshot' for full state (and optional topology), 'delta' for a single event/state change."
-    },
-    "timestamp": {
-      "type": "string",
-      "format": "date-time",
-      "description": "When the message was produced (RFC 3339)."
-    },
     "schema_version": {
       "type": "string",
       "description": "Optional schema version (e.g. '1.0') for future versioning; omit or treat as 1.0."
     },
-    "source": {
+    "session_id": {
       "type": "string",
-      "description": "Producer identifier (e.g. agent name, adapter name)."
+      "minLength": 1,
+      "description": "Session identifier."
     },
     "use_case_id": {
       "type": "string",
@@ -37,16 +23,30 @@
       "type": "string",
       "description": "Optional request/correlation id for tracing."
     },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When the message was produced (RFC 3339)."
+    },
+    "source": {
+      "type": "string",
+      "description": "Producer identifier (e.g. agent name, adapter name)."
+    },
+    "kind": {
+      "type": "string",
+      "enum": ["snapshot", "event"],
+      "description": "Discriminator: 'snapshot' for full state (and optional topology), 'event' for a single event/state change."
+    },
     "state": { "$ref": "#/$defs/stateSnapshot" },
     "topology": { "$ref": "#/$defs/topology" },
     "event_type": {
       "type": "string",
-      "description": "Event type when kind=delta. Suggested values: node_entered, node_exited, handoff, tool_start, tool_end. Custom values allowed."
+      "description": "Event type when kind=event. Suggested values: node_entered, node_exited, handoff, tool_start, tool_end. Custom values allowed."
     },
     "payload": {
       "type": "object",
       "additionalProperties": true,
-      "description": "Event-specific data when kind=delta (e.g. node_id, node_name, tool_name, from_agent, to_agent)."
+      "description": "Event-specific data when kind=event (e.g. node_id, node_name, tool_name, from_agent, to_agent)."
     },
     "topology_delta": { "$ref": "#/$defs/topologyDelta" }
   },
@@ -67,7 +67,7 @@
     },
     {
       "if": {
-        "properties": { "kind": { "const": "delta" } },
+        "properties": { "kind": { "const": "event" } },
         "required": ["kind"]
       },
       "then": {
@@ -159,7 +159,7 @@
     },
     "topologyDelta": {
       "type": "object",
-      "description": "Incremental topology change when kind=delta.",
+      "description": "Incremental topology change when kind=event.",
       "properties": {
         "nodes_added": {
           "type": "array",

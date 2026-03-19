@@ -7,7 +7,7 @@ This folder holds the **session state progress** message contract used for backe
 A single message type with discriminator `kind`:
 
 - **`snapshot`** — full state and optional topology (current session view).
-- **`delta`** — a single event with optional `payload` and `topology_delta`.
+- **`event`** — a single event with optional `payload` and `topology_delta`.
 
 Required envelope on every message: `session_id`, `kind`, `timestamp`.
 
@@ -20,7 +20,7 @@ Required envelope on every message: `session_id`, `kind`, `timestamp`.
 Minimal valid payloads:
 
 - [examples/snapshot_example.json](examples/snapshot_example.json)
-- [examples/delta_example.json](examples/delta_example.json)
+- [examples/event_example.json](examples/event_example.json)
 
 ## Validation
 

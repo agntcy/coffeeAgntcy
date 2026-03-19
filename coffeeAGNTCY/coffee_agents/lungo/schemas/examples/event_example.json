@@ -1,6 +1,6 @@
 {
   "session_id": "sess_abc123",
-  "kind": "delta",
+  "kind": "event",
   "timestamp": "2026-03-17T12:00:01Z",
   "source": "auction_supervisor",
   "event_type": "node_entered",
