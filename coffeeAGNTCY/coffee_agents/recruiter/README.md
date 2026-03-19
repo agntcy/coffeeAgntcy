@@ -241,7 +241,9 @@ This starts:
 
 ## Testing
 
-Tests require the directory services to be running. Start them before running tests:
+Tests require the Directory services to be running. There are `pytest` fixtures that deal with setup and teardown automatically.
+
+To manually start the required Directory services:
 
 ```bash
 # Start directory services
@@ -256,7 +258,7 @@ uv run pytest
 
 ### Run Integration Tests
 
-Integration tests require the directory services and test against the A2A server:
+Integration tests require the Directory services and test against the A2A server:
 
 ```bash
 # All integration tests
