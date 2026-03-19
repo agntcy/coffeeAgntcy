@@ -4,21 +4,21 @@ on:
   workflow_call:
     inputs:
       project_dir:
-        description: 'The directory of the project to test.'
+        description: "The directory of the project to test."
         required: true
         type: string
       pip_overrides:
-        description: 'One-per-line PEP 508 specs to force (shared across demos; applied only if declared).'
+        description: "One-per-line PEP 508 specs to force (shared across demos; applied only if declared)."
         required: false
         type: string
         default: ""
       pip_constraints:
-        description: 'One-per-line constraints (shared across demos; applied only if declared).'
+        description: "One-per-line constraints (shared across demos; applied only if declared)."
         required: false
         type: string
         default: ""
       docker_overrides:
-        description: 'One-per-line service=image[:tag] (shared across demos; applied only if declared).'
+        description: "One-per-line service=image[:tag] (shared across demos; applied only if declared)."
         required: false
         type: string
         default: ""
@@ -36,7 +36,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v6
         with:
-          python-version: '3.13'
+          python-version: "3.13"
 
       - name: Set up uv
         uses: astral-sh/setup-uv@v7
@@ -60,7 +60,7 @@ jobs:
       - name: Resolve & install
         run: |
           uv sync --extra dev
-      
+
       - name: Create CI env file
         run: |
           cat > .env <<'EOF'
@@ -71,5 +71,4 @@ jobs:
           EOF
 
       - name: Run integration tests
-        run: uv run pytest -v --durations=0 --durations-min=1.0 -r ap
-
+        run: uv run pytest -s
