@@ -5,12 +5,7 @@ on:
     tags: ["*"]
     branches:
       - main
-    paths:
-      - 'coffeeAGNTCY/coffee_agents/**'
-      - '!coffeeAGNTCY/coffee_agents/*/deployment/helm/**'
   pull_request:
-    branches:
-      - main
     paths:
       - 'coffeeAGNTCY/coffee_agents/**'
       - '!coffeeAGNTCY/coffee_agents/*/deployment/helm/**'

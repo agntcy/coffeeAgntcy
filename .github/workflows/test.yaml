@@ -8,8 +8,6 @@ on:
       - 'coffeeAGNTCY/coffee_agents/lungo/**'
       - '!coffeeAGNTCY/coffee_agents/*/deployment/helm/**'
   pull_request:
-    branches:
-      - main
     paths:
       - 'coffeeAGNTCY/coffee_agents/corto/**'
       - 'coffeeAGNTCY/coffee_agents/lungo/**'
