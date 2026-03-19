@@ -1,0 +1,11 @@
+{
+  "session_id": "sess_abc123",
+  "kind": "event",
+  "timestamp": "2026-03-17T12:00:01Z",
+  "source": "auction_supervisor",
+  "event_type": "node_entered",
+  "payload": {
+    "node_id": "orders_broker",
+    "node_name": "orders_broker"
+  }
+}
