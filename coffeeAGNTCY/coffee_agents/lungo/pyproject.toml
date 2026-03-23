@@ -44,11 +44,11 @@ dependencies = [
     "PyNaCl>=1.6.2",
     "mcp>=1.23.0",
     "cryptography>=44.0.1",
+    "jsonschema>=4.0.0",
 ]
 
 [project.optional-dependencies]
 dev = [
-    "jsonschema>=4.0.0",
     "pytest~=7.0",
     "pytest-asyncio>=0.23.0,<0.24",
     "pytest-cov>=4.0.0,<5",
