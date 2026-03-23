@@ -30,5 +30,11 @@
       "prompt": "I'd like to buy 100 lbs of coffee at USD 250 price from Brazil",
       "description": "Create order with Brazil farm for 100 lbs at $250. Demonstrates identity verification failure - Brazil farm lacks verified identity badge and request will be rejected."
     }
+  ],
+  "streaming_prompts": [
+    {
+      "prompt": "I'd like to buy 100 lbs of coffee at USD 250 price from Brazil",
+      "description": "Create order with Brazil farm for 100 lbs at $250. Demonstrates identity verification failure - Brazil farm lacks verified identity badge and request will be rejected."
+    }
   ]
 }
