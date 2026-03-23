@@ -243,10 +243,6 @@ async def get_prompts(pattern: str = "default"):
     raw = prompts_path.read_text(encoding="utf-8")
     data = json.loads(raw)
 
-    if pattern == "streaming":
-      streaming_prompts = data.get("streaming_prompts", [])
-      return {"streaming": streaming_prompts}
-
     buyer_prompts = data.get("buyer", [])
     purchaser_prompts = data.get("purchaser", [])
     return {"buyer": buyer_prompts, "purchaser": purchaser_prompts}
