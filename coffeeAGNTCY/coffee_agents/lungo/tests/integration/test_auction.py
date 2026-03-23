@@ -329,4 +329,17 @@ class TestAuctionFlows:
         assert "colombia" in full_response
         assert "vietnam" in full_response
 
-    
+
+@pytest.mark.parametrize(
+    "transport_config",
+    [TRANSPORT_MATRIX[0]],
+    indirect=True,
+)
+def test_auction_suggested_prompts_streaming_matches_default(auction_supervisor_client):
+    default_resp = auction_supervisor_client.get("/suggested-prompts")
+    streaming_resp = auction_supervisor_client.get(
+        "/suggested-prompts", params={"pattern": "streaming"}
+    )
+    assert default_resp.status_code == 200
+    assert streaming_resp.status_code == 200
+    assert default_resp.json() == streaming_resp.json()
