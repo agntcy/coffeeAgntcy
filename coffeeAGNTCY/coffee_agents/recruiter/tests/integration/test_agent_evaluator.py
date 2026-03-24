@@ -176,7 +176,7 @@ class TestEvaluationIntegration:
     3. Create evaluation agent, session, and runner
     4. Run the evaluation agent and verify results
 
-    Run with: pytest test/integration/test_agent_evaluator.py::TestEvaluationIntegration -v
+    Run with: pytest tests/integration/test_agent_evaluator.py::TestEvaluationIntegration -v
     """
 
     @pytest.mark.asyncio
