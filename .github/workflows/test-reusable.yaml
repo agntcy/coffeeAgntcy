@@ -71,4 +71,4 @@ jobs:
           EOF
 
       - name: Run integration tests
-        run: uv run pytest -s
+        run: uv run pytest -v --durations=0 --durations-min=1.0
