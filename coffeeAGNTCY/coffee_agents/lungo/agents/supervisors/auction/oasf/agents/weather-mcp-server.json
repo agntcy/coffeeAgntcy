@@ -40,6 +40,12 @@
               "-i",
               "--rm",
               "agntcy/coffee-agntcy/weather-mcp-server:latest"
+            ],
+            "tools": [
+              {
+                "name": "get_forecast",
+                "description": "Returns a short current-weather summary for a named location (geocoding via Nominatim, forecast via Open-Meteo)."
+              }
             ]
           }
         ]
