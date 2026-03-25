@@ -40,16 +40,6 @@
               "-i",
               "--rm",
               "agntcy/coffee-agntcy/payment-mcp-server:latest"
-            ],
-            "tools": [
-              {
-                "name": "create_payment",
-                "description": "Creating a payment.\nNote: This is a sensitive operation that should enforce access control in a real-world payment system."
-              },
-              {
-                "name": "list_transactions",
-                "description": "Listing transactions.\nNote: This is a sensitive operation that should enforce access control in a real-world payment system."
-              }
             ]
           }
         ]
