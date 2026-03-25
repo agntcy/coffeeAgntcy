@@ -7,33 +7,40 @@
   "schema_version": "0.8.0",
   "domains": [
     {
-      "id": 3001.0,
-      "name": "science/meteorology"
+      "id": 1701.0,
+      "name": "environmental_science/climate_science"
     }
   ],
   "name": "Weather MCP Server",
   "skills": [
     {
-      "id": 2001.0,
-      "name": "weather/forecasting"
+      "id": 10302.0,
+      "name": "natural_language_processing/information_retrieval_synthesis/question_answering"
+    },
+    {
+      "id": 10303.0,
+      "name": "natural_language_processing/information_retrieval_synthesis/knowledge_synthesis"
     }
   ],
   "modules": [
     {
+      "id": 202,
       "name": "integration/mcp",
       "data": {
-        "name": "lungo-weather-mcp-server",
-        "connections": [
+        "servers": [
           {
-            "type": "stdio",
+            "name": "lungo-weather-mcp-server",
+            "type": "local",
+            "capabilities": [
+              "subscribe"
+            ],
             "command": "docker",
             "args": [
               "run",
               "-i",
               "--rm",
               "agntcy/coffee-agntcy/weather-mcp-server:latest"
-            ],
-            "env_vars": []
+            ]
           }
         ]
       }
