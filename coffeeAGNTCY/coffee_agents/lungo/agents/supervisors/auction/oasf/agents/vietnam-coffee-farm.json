@@ -3,37 +3,44 @@
     "a2a.supports_authenticated_extended_card": "false"
   },
   "version": "1.0.0",
-  "description": "An MCP server agent for payment operations.",
+  "description": "An AI agent that returns the yield of coffee beans in pounds for the Vietnam farm (MCP integration demo).",
   "schema_version": "0.8.0",
   "domains": [
     {
-      "id": 10204.0,
-      "name": "technology/software_engineering/apis_integration"
+      "id": 1102.0,
+      "name": "agriculture/crop_management"
     }
   ],
-  "name": "Payment MCP Server",
+  "name": "Vietnam Coffee Farm",
   "skills": [
     {
       "id": 1004.0,
       "name": "agent_orchestration/agent_coordination"
+    },
+    {
+      "id": 10302.0,
+      "name": "natural_language_processing/information_retrieval_synthesis/question_answering"
     }
   ],
   "modules": [
     {
+      "id": 202,
       "name": "integration/mcp",
       "data": {
-        "name": "lungo-payment-mcp-server",
-        "connections": [
+        "servers": [
           {
-            "type": "stdio",
+            "name": "lungo-vietnam-farm-mcp",
+            "type": "local",
+            "capabilities": [
+              "subscribe"
+            ],
             "command": "docker",
             "args": [
               "run",
               "-i",
               "--rm",
-              "agntcy/coffee-agntcy/payment-mcp-server:latest"
-            ],
-            "env_vars": []
+              "ghcr.io/agntcy/coffee-agntcy/vietnam-farm:latest"
+            ]
           }
         ]
       }
