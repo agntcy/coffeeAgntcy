@@ -7,37 +7,40 @@
   "schema_version": "0.8.0",
   "domains": [
     {
-      "id": 4001,
-      "name": "finance/payments"
+      "id": 202.0,
+      "name": "finance_and_business/finance"
     }
   ],
   "name": "Payment MCP Server",
   "skills": [
     {
-      "id": 400101,
-      "name": "finance/payments/create"
+      "id": 1401.0,
+      "name": "tool_interaction/api_schema_understanding"
     },
     {
-      "id": 400102,
-      "name": "finance/payments/transactions/list"
+      "id": 1402.0,
+      "name": "tool_interaction/workflow_automation"
     }
   ],
   "modules": [
     {
+      "id": 202,
       "name": "integration/mcp",
       "data": {
-        "name": "lungo-payment-mcp-server",
-        "connections": [
+        "servers": [
           {
-            "type": "stdio",
+            "name": "lungo-payment-mcp-server",
+            "type": "local",
+            "capabilities": [
+              "subscribe"
+            ],
             "command": "docker",
             "args": [
               "run",
               "-i",
               "--rm",
               "agntcy/coffee-agntcy/payment-mcp-server:latest"
-            ],
-            "env_vars": []
+            ]
           }
         ]
       }
