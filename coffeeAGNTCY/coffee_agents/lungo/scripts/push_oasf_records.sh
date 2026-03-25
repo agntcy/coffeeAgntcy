@@ -108,9 +108,11 @@ for OASF_DIR in "${OASF_DIRS[@]}"; do
         else
             echo -e "    ${YELLOW}→ Not found in directory, pushing...${NC}"
             
-            # Push the JSON file to the directory
+            # Push the JSON file to the directory (disable errexit: failing push must not exit before we capture output)
+            set +e
             PUSH_RESULT=$(dirctl push "$JSON_FILE" --output raw 2>&1)
             PUSH_EXIT_CODE=$?
+            set -e
             
             if [[ $PUSH_EXIT_CODE -eq 0 && -n "$PUSH_RESULT" ]]; then
                 echo -e "    ${GREEN}✓ Successfully pushed (CID: ${PUSH_RESULT:0:20}...)${NC}"
