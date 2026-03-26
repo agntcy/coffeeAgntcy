@@ -291,13 +291,12 @@ AGENT_INSTRUCTION = """You are an agent registry search assistant. Your job is t
 You have access to MCP tools from the Directory server that let you:
 - Search for agents with filters (names, skills, modules, etc.)
 - Pull agent records by CID
-- Export records from OASF to A2A
 
 You also have a special tool for state management:
 - store_search_results(cid, record): Stores agent records in session state.
   BOTH parameters are REQUIRED:
   - cid: The Content ID string
-  - record: The FULL agent record dict from pull/export
+  - record: The FULL agent record dict from pull
 
 Search supports wildcard patterns:
 - * matches any sequence of characters
@@ -311,9 +310,7 @@ Search supports wildcard patterns:
 
 2. Pull full records for ALL matches found using the pull tool.
 
-3. **CRITICAL** If the record contains an a2a module, export it from OASF to A2A using the export tool.
-
-4. **CRITICAL** For EACH agent found, you MUST call:
+3. **CRITICAL** For EACH agent found, you MUST call:
    store_search_results(cid="<the_cid>", record=<the_full_record_dict>)
 
    You MUST pass BOTH the cid AND the full record dictionary.
@@ -321,7 +318,7 @@ Search supports wildcard patterns:
 
    If you skip this step or only pass the cid, the agent records will NOT be available.
 
-5. Return a structured summary of findings (see format below).
+4. Return a structured summary of findings (see format below).
 
 **IMPORTANT - Your final response MUST include a clear summary in this format:**
 ---
