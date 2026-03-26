@@ -13,11 +13,13 @@ services:
       replicas: 1
       restart_policy:
         condition: on-failure
-    healthcheck:
-      test: wget --no-verbose --tries=1 --spider http://127.0.0.1:8889/healthz/ready || exit 1
-      interval: 10s
-      retries: 60
-      start_period: 10s
+    # # No healthcheck: production image is distroless and does not have wget/curl/nc or shells. Also, the endpoint at 8888 is only gRPC, not HTTP. The endpoint at 8889 does not exist.
+    # # Future healthcheck via grpc-health-probe on 8888 when newer releases of dir-apiserver bundle grpc-health-probe. Fix was merged in https://github.com/agntcy/dir/pull/1017.
+    # healthcheck:
+    #   test: wget --no-verbose --tries=1 --spider http://127.0.0.1:8889/healthz/ready || exit 1
+    #   interval: 10s
+    #   retries: 60
+    #   start_period: 10s
 
   zot:
     image: ghcr.io/project-zot/zot:v2.1.10
@@ -28,11 +30,14 @@ services:
       replicas: 1
       restart_policy:
         condition: on-failure
-    healthcheck:
-      test: curl -f http://localhost:5000/v2/ || exit 1
-      interval: 5s
-      retries: 60
-      start_period: 15s
+    # # No healthcheck: production image is distroless and does not have wget/curl/nc or shells.
+    # # Note: Zot has a /readyz endpoint (Kubernetes compliant API) since v2.1.6 that can be used for healthchecks.
+    # # Notes for /readyz: https://zotregistry.dev/v2.1.14/general/whats-new/#v216 and https://kubernetes.io/docs/reference/using-api/health-checks/
+    # healthcheck:
+    #   test: curl -f http://localhost:5000/v2/ || exit 1
+    #   interval: 5s
+    #   retries: 60
+    #   start_period: 15s
 
   recruiter-agent:
     build:

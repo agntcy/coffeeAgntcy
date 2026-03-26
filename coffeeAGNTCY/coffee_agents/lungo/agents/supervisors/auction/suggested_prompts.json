@@ -10,7 +10,7 @@
     },
     {
       "prompt": "What is the current inventory for Brazil farm?",
-      "description": "Direct query to Brazil farm for inventory. Demonstrates identity verification failure - Brazil farm lacks verified identity badge and request will be rejected."
+      "description": "Direct query to Brazil farm for current inventory levels. Standard unicast communication without identity verification."
     },
     {
       "prompt": "What is the current inventory for Colombia farm?",
@@ -25,12 +25,10 @@
     {
       "prompt": "I'd like to buy 200 lbs quantity of coffee at USD 500 price from Colombia",
       "description": "Create order with Colombia farm for 200 lbs at $500. Validates tool-level identity policies via TBAC before executing order creation."
-    }
-  ],
-  "streaming_prompts": [
+    },
     {
-      "prompt": "What yield do the farms have?",
-      "description": "Broadcast yield query with real-time streaming. Returns farm responses incrementally as each farm replies, demonstrating async response handling."
+      "prompt": "I'd like to buy 100 lbs of coffee at USD 250 price from Brazil",
+      "description": "Create order with Brazil farm for 100 lbs at $250. Demonstrates identity verification failure - Brazil farm lacks verified identity badge and request will be rejected."
     }
   ]
 }

@@ -11,7 +11,7 @@ import { useAppChatState } from "@/hooks/useAppChatState"
 import { useAgentAPI } from "@/hooks/useAgentAPI"
 import { getGraphConfig } from "@/utils/graphConfigs"
 import { PATTERNS, PatternType } from "@/utils/patternUtils"
-import { DiscoveryResponseEvent, AgentRecord } from "@/types/agent"
+import { DiscoveryResponseEvent } from "@/types/agent"
 
 export type { ApiResponse } from "@/types/api"
 
@@ -133,9 +133,7 @@ export function useApp() {
           response: streaming.recruiterFinalMessage ?? "",
           ts: Date.now(),
           sessionId: streaming.recruiterSessionId ?? undefined,
-          agent_records: streaming.recruiterAgentRecords
-            ? (Object.values(streaming.recruiterAgentRecords) as AgentRecord[])
-            : undefined,
+          agent_records: streaming.recruiterAgentRecords ?? undefined,
         })
       }
     } else if (

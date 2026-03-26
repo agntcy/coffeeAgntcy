@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  **/
 
-import React from "react"
+import React, { useCallback } from "react"
 import { Handle, Position } from "@xyflow/react"
 import githubIconDark from "@/assets/Github.png"
 import githubIconLight from "@/assets/Github_lightmode.png"
@@ -11,7 +11,7 @@ import agentDirectoryIconDark from "@/assets/Agent_directory.png"
 import agentDirectoryIconLight from "@/assets/Agent_Icon_light.png"
 import { useThemeIcon } from "@/hooks/useThemeIcon"
 
-interface CustomNodeData {
+export interface CustomNodeData {
   icon: React.ReactNode
   label1: string
   label2: string
@@ -21,13 +21,27 @@ interface CustomNodeData {
   verificationBadge?: React.ReactNode
   githubLink?: string
   agentDirectoryLink?: string
+  slug?: string
+  onOpenOasfModal?: (
+    nodeData: CustomNodeData,
+    position: { x: number; y: number },
+  ) => void
 }
 
 interface CustomNodeProps {
   data: CustomNodeData
 }
 
+function handleNodeIconMouseEnter(e: React.MouseEvent<HTMLDivElement>) {
+  e.currentTarget.style.opacity = "0.8"
+}
+
+function handleNodeIconMouseLeave(e: React.MouseEvent<HTMLDivElement>) {
+  e.currentTarget.style.opacity = "1"
+}
+
 const CustomNode: React.FC<CustomNodeProps> = ({ data }) => {
+  const nodeRef = React.useRef<HTMLDivElement>(null)
   const githubIcon = useThemeIcon({
     light: githubIconLight,
     dark: githubIconDark,
@@ -37,12 +51,31 @@ const CustomNode: React.FC<CustomNodeProps> = ({ data }) => {
     dark: agentDirectoryIconDark,
   })
 
+  const handleAgentDirectoryClick = useCallback(
+    (e: React.MouseEvent) => {
+      e.stopPropagation()
+      e.preventDefault()
+      if (nodeRef.current && typeof data.onOpenOasfModal === "function") {
+        const buttonRect = (
+          e.currentTarget as HTMLElement
+        ).getBoundingClientRect()
+        const position = {
+          x: buttonRect.left + buttonRect.width / 2,
+          y: buttonRect.bottom + 12,
+        }
+        data.onOpenOasfModal(data, position)
+      }
+    },
+    [data],
+  )
+
   const activeClasses = data.active
     ? "bg-node-background-active outline outline-2 outline-accent-border shadow-[var(--shadow-default)_0px_6px_8px]"
     : "bg-node-background"
 
   return (
     <div
+      ref={nodeRef}
       className={`order-0 relative flex h-[91px] w-[193px] flex-none grow-0 flex-col items-start justify-start gap-2 rounded-lg p-4 ${activeClasses} hover:bg-node-background-hover hover:shadow-[var(--shadow-default)_0px_6px_8px] hover:outline hover:outline-2 hover:outline-accent-border`}
     >
       <div className="flex h-5 w-5 flex-shrink-0 items-center justify-center gap-2.5 rounded bg-node-icon-background py-1 opacity-100">
@@ -87,26 +120,26 @@ const CustomNode: React.FC<CustomNodeProps> = ({ data }) => {
                 backgroundColor: "var(--custom-node-background)",
                 borderColor: "var(--custom-node-border)",
               }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.opacity = "0.8"
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.opacity = "1"
-              }}
+              onMouseEnter={handleNodeIconMouseEnter}
+              onMouseLeave={handleNodeIconMouseLeave}
             >
               <img src={githubIcon} alt="GitHub" className="h-5 w-5" />
             </div>
           </a>
         )}
 
-        {data.agentDirectoryLink && (
-          <a
-            href={data.agentDirectoryLink}
-            target="_blank"
-            rel="noopener noreferrer"
+        {data.onOpenOasfModal && (
+          <button
+            type="button"
+            onClick={handleAgentDirectoryClick}
             style={{
               textDecoration: "none",
+              background: "none",
+              border: "none",
+              padding: 0,
+              cursor: "pointer",
             }}
+            aria-label="AGNTCY Directory"
           >
             <div
               className="node-icon-container flex h-7 w-7 cursor-pointer items-center justify-center rounded-lg border border-solid p-1 opacity-100 shadow-sm"
@@ -114,12 +147,8 @@ const CustomNode: React.FC<CustomNodeProps> = ({ data }) => {
                 backgroundColor: "var(--custom-node-background)",
                 borderColor: "var(--custom-node-border)",
               }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.opacity = "0.8"
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.opacity = "1"
-              }}
+              onMouseEnter={handleNodeIconMouseEnter}
+              onMouseLeave={handleNodeIconMouseLeave}
             >
               <img
                 src={agentDirectoryIcon}
@@ -127,7 +156,7 @@ const CustomNode: React.FC<CustomNodeProps> = ({ data }) => {
                 className="h-5 w-5"
               />
             </div>
-          </a>
+          </button>
         )}
       </div>
 

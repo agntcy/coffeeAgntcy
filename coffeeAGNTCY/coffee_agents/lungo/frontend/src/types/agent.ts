@@ -15,5 +15,5 @@ export type DiscoveryResponseEvent = {
   response: string
   ts: number
   sessionId?: string
-  agent_records?: AgentRecord[]
+  agent_records?: Record<string, AgentRecord>
 }

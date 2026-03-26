@@ -58,7 +58,7 @@ cd coffee_agents/recruiter
 uv sync
 
 # Install with dev dependencies
-uv pip install ".[dev]"
+uv sync --extra dev
 
 # Copy environment template and configure
 cp .env.example .env
@@ -89,7 +89,6 @@ README](https://github.com/agntcy/dir/blob/main/README.md) for full documentatio
 ```bash
 DIRECTORY_CLIENT_SERVER_ADDRESS="localhost:8888"
 DIRECTORY_CLIENT_TLS_SKIP_VERIFY="true"
-OASF_API_VALIDATION_DISABLE="true"
 ```
 
 **Or run locally via docker-compose:**
@@ -101,7 +100,9 @@ docker compose -f docker/docker-compose.yaml up -d dir-api-server zot
 
 #### Tests
 
-For the directory related tests, please install the Directory CLI:
+The Directory related tests need the Directory CLI.  
+The integration tests automatically download a hardcoded version if they cannot find `dirctl` in `$PATH` or in the `recruiter/bin` folder.  
+If you want to download it globally on your system, you can use Homebrew:
 
 ```bash
 # MacOS
@@ -240,7 +241,9 @@ This starts:
 
 ## Testing
 
-Tests require the directory services to be running. Start them before running tests:
+Tests require the Directory services to be running. There are `pytest` fixtures that deal with setup and teardown automatically.
+
+To manually start the required Directory services:
 
 ```bash
 # Start directory services
@@ -255,7 +258,7 @@ uv run pytest
 
 ### Run Integration Tests
 
-Integration tests require the directory services and test against the A2A server:
+Integration tests require the Directory services and test against the A2A server:
 
 ```bash
 # All integration tests

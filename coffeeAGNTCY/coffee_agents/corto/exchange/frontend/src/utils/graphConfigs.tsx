@@ -51,10 +51,9 @@ const SLIM_A2A_CONFIG: GraphConfig = {
         label2: "Buyer",
         handles: "source",
         verificationStatus: "verified",
+        slug: "exchange-supervisor-agent",
         githubLink:
           "https://github.com/agntcy/coffeeAgntcy/blob/main/coffeeAGNTCY/coffee_agents/corto/exchange/graph/graph.py#L22",
-        agentDirectoryLink:
-          "https://agent-directory.outshift.com/explore/baeareictsvltsvud5w44pjkoqgbb2tqdl3dy2fqkzmsydhap5z5svj5uje",
       },
       position: { x: 529.1332569384248, y: 159.4805787605829 },
     },
@@ -66,10 +65,9 @@ const SLIM_A2A_CONFIG: GraphConfig = {
         label1: "Grader Agent",
         label2: "Sommelier",
         handles: "target",
+        slug: "flavor-profile-farm-agent",
         githubLink:
           "https://github.com/agntcy/coffeeAgntcy/blob/main/coffeeAGNTCY/coffee_agents/corto/farm/agent.py#L21",
-        agentDirectoryLink:
-          "https://agent-directory.outshift.com/explore/baeareiaf35jhrvbcdyktkr2qzbp4iarylm6u4ksl4mpgzmq5dh7aerlks4",
       },
       position: { x: 534.0903941835277, y: 582.9317472571444 },
     },
