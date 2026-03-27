@@ -8,7 +8,7 @@ from dotenv import load_dotenv
 from a2a.types import AgentCard
 
 from google.adk.a2a.utils.agent_to_a2a import to_a2a
-from test.sample_agent.agent import create_test_agent
+from tests.sample_agent.agent import create_test_agent
 
 load_dotenv()
 
