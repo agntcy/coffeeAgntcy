@@ -160,18 +160,8 @@ for OASF_DIR in "${OASF_DIRS[@]}"; do
 
             # Push the JSON file to the directory (disable errexit: failing push must not exit before we capture output)
             set +e
-            PUSH_RAW=$(run_dirctl push "$JSON_FILE" --output raw)
+            PUSH_RAW=$(run_dirctl push "$JSON_FILE" --output raw 2>&1)
             PUSH_EXIT_CODE=$?
-            set -e
-            
-
-            PUSH_RESULT=$(printf '%s' "$PUSH_RAW" | xargs)
-            
-            if [[ $PUSH_EXIT_CODE -eq 0 && -n "$PUSH_RESULT" ]]; then
-                echo -e "    ${GREEN}✓ Successfully pushed (CID: ${PUSH_RESULT:0:20}...)${NC}"
-                ((PUSHED++))
-                if ! dirctl routing publish "$PUSH_RESULT" 2>/dev/null; then
-                    echo -e "    ${YELLOW}⚠ Pushed but routing publish failed for CID${NC}"
             set -e
 
             PUSH_CID=$(printf '%s' "$PUSH_RAW" | xargs)
@@ -196,9 +186,10 @@ for OASF_DIR in "${OASF_DIRS[@]}"; do
                     fi
                 fi
             else
-                echo -e "    ${RED}✗ Failed to push${NC}"
                 if [[ -n "$PUSH_RAW" ]]; then
-                    echo -e "    ${RED}${PUSH_RAW}${NC}"
+                    echo -e "    ${RED}✗ Failed to push: ${PUSH_RAW}${NC}"
+                else
+                    echo -e "    ${RED}✗ Failed to push${NC}"
                 fi
                 ((++FAILED))
             fi
