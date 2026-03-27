@@ -18,7 +18,7 @@ import pytest
 from dotenv import load_dotenv
 from pathlib import Path
 
-from test.integration.docker_helpers import up, down, remove_container_if_exists
+from tests.integration.docker_helpers import up, down, remove_container_if_exists
 
 load_dotenv()
 
