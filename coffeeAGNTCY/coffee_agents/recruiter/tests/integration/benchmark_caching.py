@@ -6,7 +6,7 @@ Caching Performance Benchmark
 
 Generates a reproducible report card showing tool cache performance.
 
-Run with: uv run python test/integration/benchmark_caching.py
+Run with: uv run python tests/integration/benchmark_caching.py
 """
 
 import asyncio

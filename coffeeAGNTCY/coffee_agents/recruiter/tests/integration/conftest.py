@@ -18,7 +18,7 @@ import pytest
 from dotenv import load_dotenv
 from pathlib import Path
 
-from test.integration.docker_helpers import up, down, remove_container_if_exists
+from tests.integration.docker_helpers import up, down, remove_container_if_exists
 
 load_dotenv()
 
@@ -321,7 +321,7 @@ def run_sample_a2a_agent():
         url = f"http://localhost:{port}"
 
         process = subprocess.Popen(
-            [sys.executable, "-m", "test.sample_agent.server"],
+            [sys.executable, "-m", "tests.sample_agent.server"],
             env=env,
             start_new_session=True,
         )
@@ -404,7 +404,7 @@ def publish_sample_agent_record():
     """
     published_cids = []
 
-    def _publish(record_path: str = "test/sample_agent/sample_agent_record.json") -> str:
+    def _publish(record_path: str = "tests/sample_agent/sample_agent_record.json") -> str:
         """Push a record to the directory and return its CID."""
         # Run dirctl push
         result = subprocess.run(
