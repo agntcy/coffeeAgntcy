@@ -1,0 +1,41 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$PLUGIN_DIR/scripts/post-bash-tool.sh\"",
+            "timeout": 5,
+            "async": true
+          }
+        ]
+      }
+    ],
+    "SubagentStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$PLUGIN_DIR/scripts/subagent-start.sh\"",
+            "timeout": 5,
+            "async": true
+          }
+        ]
+      }
+    ],
+    "SubagentStop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$PLUGIN_DIR/scripts/subagent-stop.sh\"",
+            "timeout": 5,
+            "async": true
+          }
+        ]
+      }
+    ]
+  }
+}
