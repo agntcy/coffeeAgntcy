@@ -79,9 +79,6 @@ build-backend = "hatchling.build"
 [tool.hatch.build.targets.wheel]
 packages = ["farm", "exchange", "schema"]
 
-[tool.hatch.build.targets.wheel.force-include]
-"schema/jsonschemas" = "schema/jsonschemas"
-
 [tool.pytest.ini_options]
 addopts = "--asyncio-mode=auto"
 filterwarnings = [
