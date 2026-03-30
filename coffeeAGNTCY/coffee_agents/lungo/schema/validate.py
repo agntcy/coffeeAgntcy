@@ -27,7 +27,7 @@ def main(argv: list[str] | None = None) -> int:
         "definition",
         help="Validate one packaged schema definition by logical name.",
     )
-    p_one.add_argument("schema_name", help="Logical schema name (e.g. session_state_progress_v1).")
+    p_one.add_argument("schema_name", help="Logical schema name (e.g. event_v1).")
     p_one.set_defaults(handler=_cmd_validate_definition)
 
     p_inst = sub.add_parser(
@@ -59,7 +59,7 @@ def main(argv: list[str] | None = None) -> int:
         "get-schema",
         help="Print the packaged schema definition.",
     )
-    p_get.add_argument("schema_name", help="Logical schema name (e.g. session_state_progress_v1).")
+    p_get.add_argument("schema_name", help="Logical schema name (e.g. event_v1).")
     p_get.set_defaults(handler=_cmd_get_schema)
 
     ns = parser.parse_args(argv)

@@ -57,9 +57,9 @@ class GetSchemaCase:
 _GET_SCHEMA_CASES = [
     pytest.param(
         GetSchemaCase(
-            schema_name="session_state_progress_v1",
+            schema_name="event_v1",
             expect_error=False,
-            match="session_state_progress_v1.json",
+            match="event_v1.json",
         ),
         id="schema_found",
     ),
@@ -156,10 +156,10 @@ def test_validate_json_schema_definition_on_disk(
 
 
 def test_get_schema_ambiguous_name_raises(json_schema_specs_dir: Path):
-    (json_schema_specs_dir / "session_state_progress_v1.json").write_text("{}")
-    (json_schema_specs_dir / "session_state_progress_v1_alt.json").write_text("{}")
+    (json_schema_specs_dir / "event_v1.json").write_text("{}")
+    (json_schema_specs_dir / "event_v1_alt.json").write_text("{}")
     with pytest.raises(AmbiguousSchemaNameError, match="Ambiguous"):
-        get_schema("session_state_progress_v1")
+        get_schema("event_v1")
 
 
 @dataclass
@@ -336,8 +336,8 @@ def test_validate_json_instance_registry_corrupt_raises_schema_definition_error(
 ):
     clear_event_type_registry_cache()
     shutil.copy2(
-        _PACKAGED_JSONSCHEMAS / "session_state_progress_v1.json",
-        tmp_path / "session_state_progress_v1.json",
+        _PACKAGED_JSONSCHEMAS / "event_v1.json",
+        tmp_path / "event_v1.json",
     )
     shutil.copy2(
         _PACKAGED_JSONSCHEMAS / "event_type_registry.json",
@@ -373,7 +373,7 @@ def test_validate_json_instance_registry_corrupt_raises_schema_definition_error(
         },
     }
     with pytest.raises(SchemaDefinitionError) as exc_info:
-        validate_json_instance(minimal, "session_state_progress_v1")
+        validate_json_instance(minimal, "event_v1")
     err = str(exc_info.value).lower()
     assert "event_type_registry" in err or "$id" in str(exc_info.value)
 

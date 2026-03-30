@@ -113,7 +113,7 @@ def resolve_json_schema_path(schema_name: str) -> Path:
 
 
 def get_schema(schema_name: str) -> dict:
-    """Load and return a schema dict by stem name (e.g. session_state_progress_v1)."""
+    """Load and return a schema dict by stem name (e.g. event_v1)."""
     path = resolve_json_schema_path(schema_name)
     try:
         with open(path, encoding="utf-8") as f:

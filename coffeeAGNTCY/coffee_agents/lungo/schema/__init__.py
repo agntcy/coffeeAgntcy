@@ -9,14 +9,14 @@ Schema files live under their respective schema folders, based on their type, li
 Each file includes the version in the name for stable reference.
 
 Business event types are defined in separate registry file, that can be updated independently of the schemas.
-Emitters can add their own event types to the registry, but they must be registered before they can be used in a session.
+Emitters can add their own event types to the registry, but they must be registered before they can be used in event payloads.
 
 
 Examples
 --------------------
 Example files appear under the schema folders, for example ``schema/jsonschemas/examples/``.
 These files can be used as a reference for developers to understand the schema and for tests.
-Naming convention is ``{schema_stem}_{example_purpose}.json``, e.g.: ``session_state_progress_v1_snapshot.json``.
+Naming convention is ``{schema_stem}_{example_purpose}.json``, e.g.: ``event_v1_full.json``.
 
 
 Validation
@@ -28,25 +28,25 @@ a data package (payload instance) against a specific schema,
 but it also exposes functions to validate schema definitions, 
 that are useful when creating new schemas or new versions of existing schemas.
 
-Example for validating a session state progress payload against the v1 schema:
+Example for validating an event payload against the v1 schema:
 
 Python::
     from schema.validation import validate_data_against_schema
-    validate_data_against_schema(payload, "session_state_progress_v1")
+    validate_data_against_schema(payload, "event_v1")
 or:
     from pathlib import Path
     from schema.validation import validate_datafile_against_schema
-    validate_datafile_against_schema(Path("path/to/payload.json"), "session_state_progress_v1")
+    validate_datafile_against_schema(Path("path/to/payload.json"), "event_v1")
 
 CLI::
-    python -m schema.validate instance-string session_state_progress_v1 '{"session_id":"s1",...}'
+    python -m schema.validate instance-string event_v1 '{"metadata":{...},"data":{...}}'
 or:
-    python -m schema.validate instances session_state_progress_v1 path/to/payload.json
+    python -m schema.validate instances event_v1 path/to/payload.json
 
 Versioning
 ----------
 Schemas are versioned in the file name. New versions are added as separate files (e.g.
-``session_state_progress_v2.json``) without replacing prior versions.
+``event_v2.json``) without replacing prior versions.
 """
 
 from schema.errors import (

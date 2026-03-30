@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://github.com/agntcy/coffeeAgntcy/schema/jsonschemas/session_state_progress_v1.json",
-  "title": "Session State Progress (v1)",
+  "$id": "https://github.com/agntcy/coffeeAgntcy/schema/jsonschemas/event_v1.json",
+  "title": "Event (v1)",
   "description": "Message contract for workflow state progress used as an init or reset when fully filled. Used by components capable of emitting any kind of change event that needs to be communicated.",
   "type": "object",
   "additionalProperties": false,

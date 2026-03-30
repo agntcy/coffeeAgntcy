@@ -1,7 +1,7 @@
 # Copyright AGNTCY Contributors (https://github.com/agntcy)
 # SPDX-License-Identifier: Apache-2.0
 
-"""Table-driven instance validation for session_state_progress_v1."""
+"""Table-driven instance validation for event_v1."""
 
 from pathlib import Path
 
@@ -14,7 +14,7 @@ from schema.json_schema import (
     validate_json_instance,
 )
 
-KNOWN = "session_state_progress_v1"
+KNOWN = "event_v1"
 _LUNGO_ROOT = Path(__file__).resolve().parents[3]
 _EXAMPLES = _LUNGO_ROOT / "schema" / "jsonschemas" / "examples"
 
@@ -50,16 +50,16 @@ _VALID_MINIMAL = {
 @pytest.mark.parametrize(
     "source",
     [
-        pytest.param("file_event", id="file_event_example"),
-        pytest.param("file_snapshot", id="file_snapshot_example"),
+        pytest.param("file_partial", id="file_partial_example"),
+        pytest.param("file_full", id="file_full_example"),
         pytest.param("inline", id="inline_minimal"),
     ],
 )
-def test_session_state_progress_v1_valid_instances(source: str):
-    if source == "file_event":
-        data = load_json_instance_file(_EXAMPLES / "session_state_progress_v1_event.json")
-    elif source == "file_snapshot":
-        data = load_json_instance_file(_EXAMPLES / "session_state_progress_v1_snapshot.json")
+def test_event_v1_valid_instances(source: str):
+    if source == "file_partial":
+        data = load_json_instance_file(_EXAMPLES / "event_v1_partial.json")
+    elif source == "file_full":
+        data = load_json_instance_file(_EXAMPLES / "event_v1_full.json")
     else:
         data = _VALID_MINIMAL
     validate_json_instance(data, KNOWN)
@@ -113,7 +113,7 @@ def test_session_state_progress_v1_valid_instances(source: str):
         ),
     ],
 )
-def test_session_state_progress_v1_invalid_instances(payload, match_substr: str):
+def test_event_v1_invalid_instances(payload, match_substr: str):
     with pytest.raises(SchemaValidationError) as ei:
         validate_json_instance(payload, KNOWN)
     assert match_substr in ei.value.args[0].lower()

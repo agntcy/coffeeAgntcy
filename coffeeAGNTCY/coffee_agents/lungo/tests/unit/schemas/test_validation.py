@@ -23,7 +23,7 @@ from schema.validation import (
     validate_definition,
 )
 
-KNOWN_SCHEMA = "session_state_progress_v1"
+KNOWN_SCHEMA = "event_v1"
 _UNKNOWN = "totally_missing_schema_xyz"
 _VALID_JSON = (
     '{"metadata":{"timestamp":"2026-01-01T00:00:00Z","schema_version":"1.0.0",'
@@ -49,7 +49,7 @@ def test_portable_get_schema_matches_json_layer_and_structure():
     spec = get_schema(KNOWN_SCHEMA)
     assert isinstance(spec, dict)
     assert "$id" in spec
-    assert "session_state_progress_v1.json" in spec["$id"]
+    assert "event_v1.json" in spec["$id"]
     assert spec.get("type") == "object"
     assert spec.get("additionalProperties") is False
     assert set(spec.get("required", [])) == {"metadata", "data"}
@@ -59,10 +59,10 @@ def test_portable_get_schema_matches_json_layer_and_structure():
 
 
 def test_validation_get_schema_ambiguous_propagates(json_schema_specs_dir: Path):
-    (json_schema_specs_dir / "session_state_progress_v1.json").write_text("{}")
-    (json_schema_specs_dir / "session_state_progress_v1_alt.json").write_text("{}")
+    (json_schema_specs_dir / "event_v1.json").write_text("{}")
+    (json_schema_specs_dir / "event_v1_alt.json").write_text("{}")
     with pytest.raises(AmbiguousSchemaNameError, match="Ambiguous"):
-        get_schema("session_state_progress_v1")
+        get_schema("event_v1")
 
 
 def _unknown_datafile(specs_dir: Path) -> None:

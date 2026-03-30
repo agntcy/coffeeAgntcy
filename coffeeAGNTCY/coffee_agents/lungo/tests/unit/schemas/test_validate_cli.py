@@ -9,7 +9,7 @@ import pytest
 
 from schema.validate import main
 
-KNOWN = "session_state_progress_v1"
+KNOWN = "event_v1"
 _UNKNOWN = "totally_missing_schema_xyz"
 _LUNGO_ROOT = Path(__file__).resolve().parents[3]
 _EXAMPLES_DIR = _LUNGO_ROOT / "schema" / "jsonschemas" / "examples"
@@ -49,8 +49,8 @@ def test_cli_instances_valid_tmp_file(capsys, tmp_path: Path):
 @pytest.mark.parametrize(
     "example_name",
     [
-        pytest.param("session_state_progress_v1_event.json", id="event"),
-        pytest.param("session_state_progress_v1_snapshot.json", id="snapshot"),
+        pytest.param("event_v1_partial.json", id="partial"),
+        pytest.param("event_v1_full.json", id="full"),
     ],
 )
 def test_cli_instances_packaged_examples_parametrized(capsys, example_name: str):
