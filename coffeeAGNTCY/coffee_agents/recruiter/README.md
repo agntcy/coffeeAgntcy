@@ -22,7 +22,6 @@ Discover, evaluate, and dynamically recruit agents for on-demand task execution.
   - [Skills vs Sub-Agents](#skills-vs-sub-agents)
   - [`a2a-send` CLI Tool](#a2a-send-cli-tool)
   - [Telemetry](#telemetry)
-- [License](#license)
 
 ## Overview
 
@@ -225,16 +224,7 @@ uv run pytest test/integration/test_agent_evaluator.py -v
 
 The [`claude-code-recruiter/`](./claude-code-recruiter/) directory contains **agntcy-discover-connect** — a [Claude Code](https://docs.anthropic.com/en/docs/claude-code) plugin that brings the recruiter's agent discovery capabilities directly into the Claude Code CLI. Instead of running the recruiter as a standalone A2A service, this plugin lets you search the AGNTCY directory, preview candidates, and connect remote A2A agents as skills or sub-agents — all from within a Claude Code session.
 
-> **Source:** [github.com/agntcy/claude-code-remote-agent-team](https://github.com/agntcy/claude-code-remote-agent-team)
-
 ### Plugin Installation
-
-**From marketplace (recommended):**
-
-```bash
-claude plugin marketplace add agntcy/claude-code-remote-agent-team
-claude plugin install agntcy-discover-connect
-```
 
 **Local development (from this repo):**
 
@@ -248,19 +238,6 @@ claude --plugin-dir ./claude-code-recruiter/plugin
 
 **Prerequisites:** [Claude Code CLI](https://docs.anthropic.com/en/docs/claude-code), [`dirctl`](https://github.com/agntcy/dir-ctl), [Go 1.23+](https://go.dev/dl/) (to build `a2a-send`), and optionally [`jq`](https://stedolan.github.io/jq/) for telemetry hooks.
 
-**Required permissions** — add to `.claude/settings.local.json`:
-
-```json
-{
-  "permissions": {
-    "allow": [
-      "Bash(dirctl *)",
-      "Bash(plugin/scripts/a2a-send/a2a-send *)"
-    ]
-  }
-}
-```
-
 ### Plugin Commands
 
 | Command | Description |
@@ -271,8 +248,7 @@ claude --plugin-dir ./claude-code-recruiter/plugin
 **Example usage:**
 
 ```
-/recruit I need an agent that can tell me coffee farm yields
-/recruit Find me an agent for code review
+/recruit Can you find an agent named Brazil Coffee Farm?
 /a2a-send http://localhost:9999 "What is the current coffee yield?"
 ```
 
@@ -295,23 +271,6 @@ The plugin can connect remote agents in two modes:
 
 > **Note:** If a newly created skill doesn't appear as a slash command, start a new Claude Code session (`/exit` or `Ctrl+C` twice, then relaunch `claude`) for it to be picked up.
 
-**Example generated skill:**
-
-```markdown
----
-name: brazil-coffee-farm
-description: "Send a message to the remote Brazil Coffee Farm agent via A2A protocol."
-allowed-tools: Bash
----
-
-## EXECUTE NOW
-
-Run this command to send the user's message to the remote A2A agent:
-
-​```bash
-plugin/scripts/a2a-send/a2a-send --peer-url http://0.0.0.0:9999 --message "$ARGUMENTS"
-​```
-```
 
 **Managing recruited agents:**
 
@@ -390,9 +349,3 @@ claude-code-recruiter/plugin/
 └── docs/
     └── telemetry.md             # Telemetry documentation
 ```
-
-For full plugin documentation, see the [claude-code-recruiter README](./claude-code-recruiter/README.md).
-
-## License
-
-Apache-2.0 - See [LICENSE](LICENSE) for details.
