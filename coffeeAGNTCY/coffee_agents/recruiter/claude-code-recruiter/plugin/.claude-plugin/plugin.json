@@ -6,7 +6,7 @@
     "name": "AGNTCY",
     "url": "https://github.com/agntcy"
   },
-  "repository": "https://github.com/agntcy/claude-code-remote-agent-team",
+  "repository": "https://github.com/agntcy/coffeeAgntcy/tree/main/coffeeAGNTCY/coffee_agents/recruiter/claude-code-recruiter/plugin",
   "license": "MIT",
   "keywords": ["a2a", "agent-to-agent", "agntcy", "remote-agents", "agent-discovery", "oasf", "mcp", "multi-agent", "dirctl", "json-rpc"]
 }

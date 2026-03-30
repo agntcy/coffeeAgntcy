@@ -21,7 +21,6 @@ Discover, evaluate, and dynamically recruit agents for on-demand task execution.
   - [Plugin Commands](#plugin-commands)
   - [Skills vs Sub-Agents](#skills-vs-sub-agents)
   - [`a2a-send` CLI Tool](#a2a-send-cli-tool)
-  - [Telemetry](#telemetry)
 
 ## Overview
 
@@ -226,17 +225,17 @@ The [`claude-code-recruiter/`](./claude-code-recruiter/) directory contains **ag
 
 ### Plugin Installation
 
-**Local development (from this repo):**
+**Local development (from `recruiter/`):**
 
 ```bash
 # Build the a2a-send CLI tool
-cd claude-code-recruiter/plugin/scripts/a2a-send && go build -o a2a-send . && cd ../../..
+pushd claude-code-recruiter/plugin/scripts/a2a-send && go build -o a2a-send . && popd
 
 # Launch Claude Code with the plugin
 claude --plugin-dir ./claude-code-recruiter/plugin
 ```
 
-**Prerequisites:** [Claude Code CLI](https://docs.anthropic.com/en/docs/claude-code), [`dirctl`](https://github.com/agntcy/dir-ctl), [Go 1.23+](https://go.dev/dl/) (to build `a2a-send`), and optionally [`jq`](https://stedolan.github.io/jq/) for telemetry hooks.
+**Prerequisites:** [Claude Code CLI](https://docs.anthropic.com/en/docs/claude-code), [`dirctl`](https://github.com/agntcy/dir-ctl), [Go 1.23+](https://go.dev/dl/) (to build `a2a-send`), and [`jq`](https://stedolan.github.io/jq/) for record parsing.
 
 ### Plugin Commands
 
@@ -282,42 +281,6 @@ rm -rf .claude/skills/brazil-coffee-farm/
 rm .claude/agents/brazil-coffee-farm.md
 ```
 
-### `a2a-send` CLI Tool
-
-The plugin bundles a standalone Go CLI built on the [a2a-go SDK](https://github.com/a2aproject/a2a-go) that handles A2A protocol details: agent card discovery, JSON-RPC transport, streaming (SSE), non-blocking polling, and multi-turn conversations.
-
-| Mode | Flags | Description |
-|------|-------|-------------|
-| **Blocking** | _(default)_ | Send message, wait for response, print text |
-| **Streaming** | `--stream` | SSE event stream with real-time status updates |
-| **Non-blocking + poll** | `--non-blocking --wait` | Fire-and-forget, then poll until terminal state |
-| **Multi-turn** | `--task-id <id> --context-id <id>` | Continue an existing conversation |
-
-```bash
-# Build
-cd claude-code-recruiter/plugin/scripts/a2a-send && go build -o a2a-send .
-
-# Simple blocking send
-./a2a-send --peer-url http://localhost:9999 --message "What is your name?"
-
-# Streaming mode
-./a2a-send --peer-url http://localhost:9999 --stream --message "Tell me a story"
-
-# Non-blocking with polling
-./a2a-send --peer-url http://localhost:9999 --non-blocking --wait --message "Analyze this data"
-```
-
-### Telemetry
-
-The plugin supports optional OpenTelemetry telemetry for monitoring A2A interactions:
-
-```bash
-export AGNTCY_OTEL_ENABLED=1
-export AGNTCY_OTEL_ENDPOINT=http://localhost:4318
-```
-
-Events emitted: directory searches (`agntcy.dirctl.search`), A2A message sends (`agntcy.a2a.message_send`), agent card fetches (`agntcy.a2a.agent_card_fetch`), and sub-agent lifecycle (`agntcy.subagent.start` / `agntcy.subagent.stop`). Message content is not captured. See [`claude-code-recruiter/plugin/docs/telemetry.md`](./claude-code-recruiter/plugin/docs/telemetry.md) for the full event catalog and collector configuration.
-
 ### Plugin Structure
 
 ```
@@ -328,16 +291,11 @@ claude-code-recruiter/plugin/
 │   ├── recruit.md               # /recruit slash command
 │   └── a2a-send.md              # /a2a-send slash command
 ├── hooks/
-│   └── hooks.json               # Hook configuration (telemetry)
 ├── scripts/
 │   ├── a2a-send/                # Go CLI tool (a2a-go SDK)
 │   │   ├── main.go
 │   │   ├── go.mod
 │   │   └── go.sum
-│   ├── otel-emit.sh             # OTLP log emitter
-│   ├── post-bash-tool.sh        # Bash tool call classifier
-│   ├── subagent-start.sh        # Sub-agent start logger
-│   └── subagent-stop.sh         # Sub-agent stop logger
 ├── skills/
 │   └── a2a-protocol/            # A2A protocol knowledge skill
 │       ├── SKILL.md
@@ -347,5 +305,4 @@ claude-code-recruiter/plugin/
 │           ├── error-handling.md
 │           └── dirctl-search.md
 └── docs/
-    └── telemetry.md             # Telemetry documentation
 ```
