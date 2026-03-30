@@ -15,7 +15,7 @@ RUN apt-get update && \
 RUN ARCH=$(dpkg --print-architecture) && \
     curl -fL https://github.com/agntcy/dir/releases/download/v1.0.0/dirctl-linux-${ARCH} -o /usr/local/bin/dirctl && \
     chmod +x /usr/local/bin/dirctl && \
-    dirctl --version
+    dirctl version
 
 # Install uv and create virtual environment
 RUN pip install --no-cache-dir uv && \
