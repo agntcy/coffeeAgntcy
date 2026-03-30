@@ -330,6 +330,23 @@ def test_validate_json_instance_valid_and_invalid(json_schema_specs_dir: Path):
         validate_json_instance({}, "num")
 
 
+def test_validate_json_instance_unresolvable_ref_maps_to_schema_validation_error(
+    json_schema_specs_dir: Path,
+):
+    """Reference resolution failures (referencing.Unresolvable) map like constraint failures."""
+    bad_ref_schema = (
+        '{"$schema": "https://json-schema.org/draft/2020-12/schema",'
+        '"type": "object",'
+        '"properties": {"x": {"$ref": "https://example.invalid/unresolvable.json"}},'
+        '"required": ["x"]}'
+    )
+    (json_schema_specs_dir / "bad_ref.json").write_text(bad_ref_schema, encoding="utf-8")
+    with pytest.raises(SchemaValidationError) as exc_info:
+        validate_json_instance({"x": 1}, "bad_ref")
+    msg = str(exc_info.value).lower()
+    assert "unresolvable" in msg or "example.invalid" in msg
+
+
 def test_validate_json_instance_registry_corrupt_raises_schema_definition_error(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,

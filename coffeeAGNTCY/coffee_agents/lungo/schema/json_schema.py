@@ -18,6 +18,7 @@ from pathlib import Path
 
 import jsonschema
 from referencing import Registry, Resource
+from referencing.exceptions import Unresolvable
 
 from schema import errors
 from schema.definition_backend import DefinitionBackend
@@ -243,7 +244,7 @@ def validate_json_instance(instance: dict, schema_name: str) -> None:
         )
     except jsonschema.ValidationError as e:
         raise errors.SchemaValidationError(e.message) from e
-    except jsonschema.exceptions._WrappedReferencingError as e:
+    except Unresolvable as e:
         raise errors.SchemaValidationError(str(e.__cause__ or e)) from e
 
 
