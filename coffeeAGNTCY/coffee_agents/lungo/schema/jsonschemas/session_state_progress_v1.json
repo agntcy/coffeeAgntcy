@@ -2,182 +2,231 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://github.com/agntcy/coffeeAgntcy/schema/jsonschemas/session_state_progress_v1.json",
   "title": "Session State Progress (v1)",
-  "description": "Single message contract for session state progress: full state snapshot or event (new or delta). Used by A2A state middleware, in-memory store, and SSE NDJSON stream. One schema, discriminator 'kind' (snapshot | event). Schema version 1.",
+  "description": "Message contract for workflow state progress used as an init or reset when fully filled. Used by components capable of emitting any kind of change event that needs to be communicated.",
   "type": "object",
-  "required": ["session_id", "kind", "timestamp"],
+  "additionalProperties": false,
+  "required": ["metadata", "data"],
   "properties": {
-    "schema_version": {
+    "metadata": { "$ref": "#/$defs/metadata" },
+    "data": { "$ref": "#/$defs/data" }
+  },
+  "$defs": {
+    "event_id": {
       "type": "string",
-      "description": "Optional schema version (e.g. '1.0') for future versioning; omit or treat as 1.0."
-    },
-    "session_id": {
-      "type": "string",
-      "minLength": 1,
-      "description": "Session identifier."
-    },
-    "use_case_id": {
-      "type": "string",
-      "description": "Use-case this session belongs to (aligns with topology/state APIs)."
+      "pattern": "^event://[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
+      "description": "Unique id for an event message."
     },
     "correlation_id": {
       "type": "string",
-      "description": "Optional request/correlation id for tracing."
+      "pattern": "^correlation://[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
+      "description": "Correlation id for one user action or API request."
     },
-    "timestamp": {
+    "instance_id": {
       "type": "string",
-      "format": "date-time",
-      "description": "When the message was produced (RFC 3339)."
+      "pattern": "^instance://[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
+      "description": "Workflow instance id the event belongs to."
     },
-    "source": {
+    "operation": {
       "type": "string",
-      "description": "Producer identifier (e.g. agent name, adapter name)."
+      "enum": ["create", "read", "update", "delete"],
+      "description": "Entity operation kind."
     },
-    "kind": {
+    "node_id": {
       "type": "string",
-      "enum": ["snapshot", "event"],
-      "description": "Discriminator: 'snapshot' for full state (and optional topology), 'event' for a single event/state change."
+      "pattern": "^node://[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
+      "description": "Graph node id. Used in topology definitions"
     },
-    "state": { "$ref": "#/$defs/stateSnapshot" },
-    "topology": { "$ref": "#/$defs/topology" },
-    "event_type": {
+    "edge_id": {
       "type": "string",
-      "description": "Event type when kind=event. Suggested values: node_entered, node_exited, handoff, tool_start, tool_end. Custom values allowed."
+      "pattern": "^edge://[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
+      "description": "Graph edge id. Used in topology definitions."
     },
-    "payload": {
+    "size": {
       "type": "object",
-      "additionalProperties": true,
-      "description": "Event-specific data when kind=event (e.g. node_id, node_name, tool_name, from_agent, to_agent)."
-    },
-    "topology_delta": { "$ref": "#/$defs/topologyDelta" }
-  },
-  "additionalProperties": true,
-  "allOf": [
-    {
-      "if": {
-        "properties": { "kind": { "const": "snapshot" } },
-        "required": ["kind"]
-      },
-      "then": {
-        "required": ["state"],
-        "properties": {
-          "state": { "$ref": "#/$defs/stateSnapshot" },
-          "topology": { "$ref": "#/$defs/topology" }
-        }
-      }
-    },
-    {
-      "if": {
-        "properties": { "kind": { "const": "event" } },
-        "required": ["kind"]
-      },
-      "then": {
-        "required": ["event_type"],
-        "properties": {
-          "event_type": { "type": "string" },
-          "payload": { "type": "object", "additionalProperties": true },
-          "topology_delta": { "$ref": "#/$defs/topologyDelta" }
-        }
-      }
-    }
-  ],
-  "$defs": {
-    "stateSnapshot": {
-      "type": "object",
-      "description": "Current session state (reusable for GET state response).",
+      "description": "Relative layout size vs other nodes. Used in topology drawing and layout algorithms.",
       "properties": {
-        "is_running": {
-          "type": "boolean",
-          "description": "Whether the session/graph is currently executing."
-        },
-        "current_node": {
-          "type": "string",
-          "description": "Current LangGraph node name (e.g. exchange_supervisor, orders_broker)."
-        },
-        "running_agents": {
-          "type": "array",
-          "items": { "type": "string" },
-          "description": "Identifiers of agents currently active."
-        },
-        "last_event": {
-          "description": "Summary of the last event (object or string)."
-        },
-        "use_case_id": {
-          "type": "string",
-          "description": "Use-case id for this session."
-        },
-        "updated_at": {
-          "type": "string",
-          "format": "date-time",
-          "description": "Last state update time (RFC 3339)."
-        }
+        "width": { "type": "number", "default": 1.0 },
+        "height": { "type": "number", "default": 1.0 }
+      },
+      "additionalProperties": false
+    },
+    "partial_node": {
+      "type": "object",
+      "description": "Sparse node data (mainly for updates). Used in topology definitions.",
+      "required": ["id", "operation"],
+      "properties": {
+        "id": { "$ref": "#/$defs/node_id" },
+        "operation": { "$ref": "#/$defs/operation" },
+        "type": { "type": "string" },
+        "label": { "type": "string" },
+        "size": { "$ref": "#/$defs/size" },
+        "layer_index": { "type": "number", "default": 0 }
       },
       "additionalProperties": true
     },
-    "position": {
-      "type": "object",
-      "properties": {
-        "x": { "type": "number" },
-        "y": { "type": "number" }
-      },
-      "description": "Optional position for frontend layout."
-    },
     "node": {
+      "allOf": [
+        { "$ref": "#/$defs/partial_node" },
+        {
+          "type": "object",
+          "description": "Full node data (mainly for init/reset). Used in topology definitions.",
+          "required": ["type", "label", "size", "layer_index"],
+          "properties": {
+            "type": { "type": "string", "minLength": 1 },
+            "label": { "type": "string", "minLength": 1 },
+            "size": { "$ref": "#/$defs/size" },
+            "layer_index": { "type": "number" }
+          }
+        }
+      ]
+    },
+    "topology_node_item": {
+      "anyOf": [{ "$ref": "#/$defs/partial_node" }, { "$ref": "#/$defs/node" }]
+    },
+    "partial_edge": {
       "type": "object",
-      "required": ["id"],
+      "description": "Sparse edge data (mainly for updates). Used in topology definitions.",
+      "required": ["id", "operation"],
       "properties": {
-        "id": { "type": "string" },
+        "id": { "$ref": "#/$defs/edge_id" },
+        "operation": { "$ref": "#/$defs/operation" },
         "type": { "type": "string" },
-        "label": { "type": "string" },
-        "position": { "$ref": "#/$defs/position" }
+        "source": { "$ref": "#/$defs/node_id" },
+        "target": { "$ref": "#/$defs/node_id" },
+        "bidirectional": { "type": "boolean", "default": false },
+        "weight": { "type": "number", "default": 1.0 }
       },
       "additionalProperties": true
     },
     "edge": {
-      "type": "object",
-      "required": ["source", "target"],
-      "properties": {
-        "source": { "type": "string" },
-        "target": { "type": "string" },
-        "id": { "type": "string" }
-      },
-      "additionalProperties": true
+      "allOf": [
+        { "$ref": "#/$defs/partial_edge" },
+        {
+          "type": "object",
+          "description": "Full edge data (mainly for init/reset). Used in topology definitions.",
+          "required": ["type", "source", "target", "bidirectional", "weight"],
+          "properties": {
+            "type": { "type": "string", "minLength": 1 },
+            "source": { "$ref": "#/$defs/node_id" },
+            "target": { "$ref": "#/$defs/node_id" },
+            "bidirectional": { "type": "boolean" },
+            "weight": { "type": "number" }
+          }
+        }
+      ]
     },
-    "topology": {
+    "topology_edge_item": {
+      "anyOf": [{ "$ref": "#/$defs/partial_edge" }, { "$ref": "#/$defs/edge" }]
+    },
+    "partial_topology": {
       "type": "object",
-      "description": "Graph topology: nodes and edges (reusable by topology API and state response).",
+      "description": "Sparse topology under a workflow instance, describing changes compared to starting or previous state",
       "properties": {
         "nodes": {
           "type": "array",
-          "items": { "$ref": "#/$defs/node" }
+          "items": { "$ref": "#/$defs/topology_node_item" }
         },
         "edges": {
           "type": "array",
-          "items": { "$ref": "#/$defs/edge" }
+          "items": { "$ref": "#/$defs/topology_edge_item" }
         }
       },
       "additionalProperties": true
     },
-    "topologyDelta": {
+    "topology": {
+      "allOf": [
+        { "$ref": "#/$defs/partial_topology" },
+        {
+          "type": "object",
+          "description": "Full topology data, describing an initial state.",
+          "required": ["nodes", "edges"],
+          "properties": {
+            "nodes": {
+              "type": "array",
+              "items": { "$ref": "#/$defs/topology_node_item" }
+            },
+            "edges": {
+              "type": "array",
+              "items": { "$ref": "#/$defs/topology_edge_item" }
+            }
+          }
+        }
+      ]
+    },
+    "correlation": {
       "type": "object",
-      "description": "Incremental topology change when kind=event.",
+      "description": "Correlation data for an event message, referencing another event that closely connects to this one.",
+      "required": ["id"],
       "properties": {
-        "nodes_added": {
-          "type": "array",
-          "items": { "$ref": "#/$defs/node" }
+        "id": { "$ref": "#/$defs/correlation_id" },
+        "message": { "type": "string" }
+      },
+      "additionalProperties": true
+    },
+    "metadata": {
+      "type": "object",
+      "description": "General metadata for an event message, including fields for proper identification.",
+      "required": ["timestamp", "schema_version", "correlation", "id", "type", "source"],
+      "properties": {
+        "timestamp": {
+          "type": "string",
+          "format": "date-time",
+          "description": "When the message was produced (RFC 3339)."
         },
-        "edges_added": {
-          "type": "array",
-          "items": { "$ref": "#/$defs/edge" }
+        "schema_version": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Semantic version of this contract (e.g. 1.0.0)."
         },
-        "nodes_removed": {
-          "type": "array",
-          "items": { "type": "string" },
-          "description": "Node ids removed."
+        "correlation": { "$ref": "#/$defs/correlation" },
+        "id": { "$ref": "#/$defs/event_id" },
+        "type": {
+          "$ref": "event_type_registry.json#/$defs/event_type"
         },
-        "edges_removed": {
-          "type": "array",
-          "items": { "type": "string" },
-          "description": "Edge ids or source-target identifiers removed."
+        "source": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Producer identifier (e.g. agent or adapter name)."
+        }
+      },
+      "additionalProperties": true
+    },
+    "workflow_instance": {
+      "type": "object",
+      "description": "Workflow instance data, describing a single instance of a specific workflow.",
+      "required": ["id", "topology"],
+      "properties": {
+        "id": { "$ref": "#/$defs/instance_id" },
+        "topology": { "$ref": "#/$defs/partial_topology" }
+      },
+      "additionalProperties": true
+    },
+    "workflow": {
+      "type": "object",
+      "description": "Workflow data, describing common configuration for a specific workflow, and keep track of instances of that workflow.",
+      "required": ["pattern", "use_case", "name", "starting_topology", "instances"],
+      "properties": {
+        "pattern": { "type": "string", "minLength": 1 },
+        "use_case": { "type": "string", "minLength": 1 },
+        "name": { "type": "string", "minLength": 1 },
+        "starting_topology": { "$ref": "#/$defs/topology" },
+        "instances": {
+          "type": "object",
+          "minProperties": 1,
+          "additionalProperties": { "$ref": "#/$defs/workflow_instance" }
+        }
+      },
+      "additionalProperties": true
+    },
+    "data": {
+      "type": "object",
+      "description": "Payload data object, containing workflow configurations and the targeted instances.",
+      "required": ["workflows"],
+      "properties": {
+        "workflows": {
+          "type": "object",
+          "minProperties": 1,
+          "additionalProperties": { "$ref": "#/$defs/workflow" }
         }
       },
       "additionalProperties": true

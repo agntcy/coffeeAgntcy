@@ -17,11 +17,82 @@ import json
 from pathlib import Path
 
 import jsonschema
+from referencing import Registry, Resource
 
 from schema import errors
 from schema.definition_backend import DefinitionBackend
 
 _JSONSCHEMA_SPECS_DIR = Path(__file__).resolve().parent / "jsonschemas"
+
+_EVENT_TYPE_REGISTRY_NAME = "event_type_registry.json"
+
+# Process-local cache; invalidated when event_type_registry.json mtime changes.
+_event_type_registry_doc_cache: tuple[Path, float, dict] | None = None
+
+
+def clear_event_type_registry_cache() -> None:
+    """Clear the cached event type registry document (for tests or after on-disk edits)."""
+    global _event_type_registry_doc_cache
+    _event_type_registry_doc_cache = None
+
+
+def _parse_event_types(path: Path) -> dict:
+    """Read and validate event_type_registry.json shape; raise SchemaDefinitionError on failure."""
+    try:
+        with open(path, encoding="utf-8") as f:
+            raw = json.load(f)
+    except json.JSONDecodeError as e:
+        raise errors.SchemaDefinitionError(f"Invalid JSON: {e}", path=path) from e
+    if not isinstance(raw, dict):
+        raise errors.SchemaDefinitionError(
+            "event_type_registry.json must be a JSON Schema object", path=path
+        )
+    rid = raw.get("$id")
+    if not isinstance(rid, str) or not rid.strip():
+        raise errors.SchemaDefinitionError(
+            "event_type_registry.json must have a non-empty string $id", path=path
+        )
+    defs = raw.get("$defs")
+    if not isinstance(defs, dict):
+        raise errors.SchemaDefinitionError(
+            "event_type_registry.json missing $defs", path=path
+        )
+    event_type = defs.get("event_type")
+    if not isinstance(event_type, dict):
+        raise errors.SchemaDefinitionError(
+            "event_type_registry.json missing $defs.event_type", path=path
+        )
+    enum = event_type.get("enum")
+    if not isinstance(enum, list) or not enum:
+        raise errors.SchemaDefinitionError(
+            "$defs.event_type.enum must be a non-empty array of strings",
+            path=path,
+        )
+    if not all(isinstance(x, str) for x in enum):
+        raise errors.SchemaDefinitionError(
+            "$defs.event_type.enum must contain only strings", path=path
+        )
+    return raw
+
+
+def _get_cached_event_types() -> dict | None:
+    """
+    Return validated registry dict if the file exists; None if missing.
+    Uses path resolve + mtime cache (process-local).
+    """
+    global _event_type_registry_doc_cache
+    path = event_type_registry_path()
+    if not path.is_file():
+        return None
+    resolved = path.resolve()
+    mtime = path.stat().st_mtime
+    if _event_type_registry_doc_cache is not None:
+        c_resolved, c_mtime, c_doc = _event_type_registry_doc_cache
+        if c_resolved == resolved and c_mtime == mtime:
+            return c_doc
+    doc = _parse_event_types(path)
+    _event_type_registry_doc_cache = (resolved, mtime, doc)
+    return doc
 
 
 def resolve_json_schema_path(schema_name: str) -> Path:
@@ -76,6 +147,50 @@ def _schema_paths():
         yield p
 
 
+def event_type_registry_path() -> Path:
+    """Path to the event type registry JSON Schema document (``$defs.event_type``)."""
+    return _JSONSCHEMA_SPECS_DIR / _EVENT_TYPE_REGISTRY_NAME
+
+
+def _event_type_validation_registry() -> Registry:
+    """Registry for event_type_registry.json when present; raises if file exists but invalid."""
+    path = event_type_registry_path()
+    if not path.is_file():
+        return Registry()
+    doc = _get_cached_event_types()
+    if doc is None:
+        raise errors.SchemaDefinitionError(
+            f"Event type registry not found: {path}", path=path
+        )
+    rid = doc["$id"]
+    return Registry().with_resources([(rid, Resource.from_contents(doc))])
+
+
+def load_event_type_registry() -> list[str]:
+    """
+    Load known ``metadata.type`` strings from ``$defs.event_type.enum`` in
+    ``event_type_registry.json``.
+    Raises SchemaDefinitionError if the file is missing or malformed.
+    """
+    path = event_type_registry_path()
+    if not path.is_file():
+        raise errors.SchemaDefinitionError(
+            f"Event type registry not found: {path}", path=path
+        )
+    doc = _get_cached_event_types()
+    if doc is None:
+        raise errors.SchemaDefinitionError(
+            f"Event type registry not found: {path}", path=path
+        )
+    enum = doc["$defs"]["event_type"]["enum"]
+    return list(enum)
+
+
+def is_event_type_registered(event_type: str) -> bool:
+    """Return True if ``event_type`` is listed in ``event_type_registry.json``."""
+    return event_type in load_event_type_registry()
+
+
 def _validate_json_schema_at_path(path: Path) -> errors.SchemaDefinitionError | None:
     try:
         with open(path, encoding="utf-8") as f:
@@ -118,10 +233,18 @@ def validate_all_json_schema_definitions() -> list[errors.SchemaDefinitionError]
 def validate_json_instance(instance: dict, schema_name: str) -> None:
     """Validate ``instance`` against the named JSON Schema."""
     schema_doc = get_schema(schema_name)
+    registry = _event_type_validation_registry()
     try:
-        jsonschema.validate(instance=instance, schema=schema_doc)
+        jsonschema.validate(
+            instance=instance,
+            schema=schema_doc,
+            cls=jsonschema.Draft202012Validator,
+            registry=registry,
+        )
     except jsonschema.ValidationError as e:
         raise errors.SchemaValidationError(e.message) from e
+    except jsonschema.exceptions._WrappedReferencingError as e:
+        raise errors.SchemaValidationError(str(e.__cause__ or e)) from e
 
 
 class JsonSchemaPackagedBackend:

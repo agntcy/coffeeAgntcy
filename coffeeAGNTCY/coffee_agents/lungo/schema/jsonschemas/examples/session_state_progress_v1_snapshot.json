@@ -1,30 +1,123 @@
 {
-  "session_id": "sess_abc123",
-  "kind": "snapshot",
-  "timestamp": "2026-03-17T12:00:00Z",
-  "schema_version": "1.0",
-  "source": "auction_supervisor",
-  "use_case_id": "publish_subscribe",
-  "state": {
-    "is_running": false,
-    "current_node": "exchange_supervisor",
-    "running_agents": [],
-    "last_event": {
-      "event_type": "node_exited",
-      "node_name": "reflection"
+  "metadata": {
+    "timestamp": "2026-03-17T12:00:00Z",
+    "schema_version": "1.0.0",
+    "correlation": {
+      "id": "correlation://6ba7b810-9dad-11d1-80b4-00c04fd430c8",
+      "message": "full-state refresh"
     },
-    "use_case_id": "publish_subscribe",
-    "updated_at": "2026-03-17T12:00:00Z"
+    "id": "event://6ba7b811-9dad-11d1-80b4-00c04fd430c8",
+    "type": "StateProgressUpdate",
+    "source": "auction_supervisor"
   },
-  "topology": {
-    "nodes": [
-      { "id": "1", "type": "customNode", "label": "Auction Agent", "position": { "x": 527, "y": 76 } },
-      { "id": "2", "type": "transportNode", "label": "Transport", "position": { "x": 229, "y": 284 } },
-      { "id": "3", "type": "customNode", "label": "Brazil Farm", "position": { "x": 232, "y": 503 } }
-    ],
-    "edges": [
-      { "id": "1-2", "source": "1", "target": "2" },
-      { "id": "2-3", "source": "2", "target": "3" }
-    ]
+  "data": {
+    "workflows": {
+      "recruiter": {
+        "pattern": "recruiter_pattern",
+        "use_case": "hiring",
+        "name": "Recruiter",
+        "starting_topology": {
+          "nodes": [
+            {
+              "id": "node://6ba7b812-9dad-11d1-80b4-00c04fd430c8",
+              "operation": "read",
+              "type": "customNode",
+              "label": "Auction Agent",
+              "size": { "width": 1.0, "height": 1.0 },
+              "layer_index": 0
+            },
+            {
+              "id": "node://6ba7b813-9dad-11d1-80b4-00c04fd430c8",
+              "operation": "read",
+              "type": "transportNode",
+              "label": "Transport",
+              "size": { "width": 1.0, "height": 1.0 },
+              "layer_index": 1
+            },
+            {
+              "id": "node://6ba7b814-9dad-11d1-80b4-00c04fd430c8",
+              "operation": "read",
+              "type": "customNode",
+              "label": "Brazil Farm",
+              "size": { "width": 1.0, "height": 1.0 },
+              "layer_index": 2
+            }
+          ],
+          "edges": [
+            {
+              "id": "edge://6ba7b815-9dad-11d1-80b4-00c04fd430c8",
+              "operation": "read",
+              "type": "default",
+              "source": "node://6ba7b812-9dad-11d1-80b4-00c04fd430c8",
+              "target": "node://6ba7b813-9dad-11d1-80b4-00c04fd430c8",
+              "bidirectional": false,
+              "weight": 1.0
+            },
+            {
+              "id": "edge://6ba7b816-9dad-11d1-80b4-00c04fd430c8",
+              "operation": "read",
+              "type": "default",
+              "source": "node://6ba7b813-9dad-11d1-80b4-00c04fd430c8",
+              "target": "node://6ba7b814-9dad-11d1-80b4-00c04fd430c8",
+              "bidirectional": false,
+              "weight": 1.0
+            }
+          ]
+        },
+        "instances": {
+          "instance001": {
+            "id": "instance://6ba7b817-9dad-11d1-80b4-00c04fd430c8",
+            "topology": {
+              "nodes": [
+                {
+                  "id": "node://6ba7b812-9dad-11d1-80b4-00c04fd430c8",
+                  "operation": "read",
+                  "type": "customNode",
+                  "label": "Auction Agent",
+                  "size": { "width": 1.0, "height": 1.0 },
+                  "layer_index": 0
+                },
+                {
+                  "id": "node://6ba7b813-9dad-11d1-80b4-00c04fd430c8",
+                  "operation": "read",
+                  "type": "transportNode",
+                  "label": "Transport",
+                  "size": { "width": 1.0, "height": 1.0 },
+                  "layer_index": 1
+                },
+                {
+                  "id": "node://6ba7b814-9dad-11d1-80b4-00c04fd430c8",
+                  "operation": "read",
+                  "type": "customNode",
+                  "label": "Brazil Farm",
+                  "size": { "width": 1.0, "height": 1.0 },
+                  "layer_index": 2
+                }
+              ],
+              "edges": [
+                {
+                  "id": "edge://6ba7b815-9dad-11d1-80b4-00c04fd430c8",
+                  "operation": "read",
+                  "type": "default",
+                  "source": "node://6ba7b812-9dad-11d1-80b4-00c04fd430c8",
+                  "target": "node://6ba7b813-9dad-11d1-80b4-00c04fd430c8",
+                  "bidirectional": false,
+                  "weight": 1.0
+                },
+                {
+                  "id": "edge://6ba7b816-9dad-11d1-80b4-00c04fd430c8",
+                  "operation": "read",
+                  "type": "default",
+                  "source": "node://6ba7b813-9dad-11d1-80b4-00c04fd430c8",
+                  "target": "node://6ba7b814-9dad-11d1-80b4-00c04fd430c8",
+                  "bidirectional": false,
+                  "weight": 1.0
+                }
+              ]
+            }
+          }
+        }
+      }
+    }
   }
 }

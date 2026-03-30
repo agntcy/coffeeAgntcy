@@ -14,7 +14,12 @@ _UNKNOWN = "totally_missing_schema_xyz"
 _LUNGO_ROOT = Path(__file__).resolve().parents[3]
 _EXAMPLES_DIR = _LUNGO_ROOT / "schema" / "jsonschemas" / "examples"
 _VALID_INSTANCE = (
-    '{"session_id":"s","kind":"snapshot","timestamp":"2026-01-01T00:00:00Z","state":{}}'
+    '{"metadata":{"timestamp":"2026-01-01T00:00:00Z","schema_version":"1.0.0",'
+    '"correlation":{"id":"correlation://550e8400-e29b-41d4-a716-446655440001"},'
+    '"id":"event://550e8400-e29b-41d4-a716-446655440002","type":"RecruiterNodeSearch",'
+    '"source":"cli"},"data":{"workflows":{"w":{"pattern":"p","use_case":"u","name":"n",'
+    '"starting_topology":{"nodes":[],"edges":[]},'
+    '"instances":{"i":{"id":"instance://550e8400-e29b-41d4-a716-446655440003","topology":{}}}}}}}'
 )
 
 
@@ -41,9 +46,17 @@ def test_cli_instances_valid_tmp_file(capsys, tmp_path: Path):
     assert "ok" in capsys.readouterr().out
 
 
-def test_cli_instances_packaged_example_snapshot(capsys):
-    path = _EXAMPLES_DIR / "session_state_progress_v1_snapshot.json"
+@pytest.mark.parametrize(
+    "example_name",
+    [
+        pytest.param("session_state_progress_v1_event.json", id="event"),
+        pytest.param("session_state_progress_v1_snapshot.json", id="snapshot"),
+    ],
+)
+def test_cli_instances_packaged_examples_parametrized(capsys, example_name: str):
+    path = _EXAMPLES_DIR / example_name
     assert main(["instances", KNOWN, str(path)]) == 0
+    assert "ok" in capsys.readouterr().out
 
 
 def test_cli_instances_not_a_file(capsys, tmp_path: Path):
@@ -102,7 +115,7 @@ def test_cli_instance_string_validation_error(capsys):
 def test_cli_get_schema_success(capsys):
     assert main(["get-schema", KNOWN]) == 0
     out = capsys.readouterr().out
-    assert "$id" in out or "session_id" in out
+    assert "$id" in out and "metadata" in out
 
 
 def test_cli_get_schema_unknown_schema(capsys):

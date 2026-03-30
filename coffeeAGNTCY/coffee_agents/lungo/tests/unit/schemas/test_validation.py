@@ -26,7 +26,12 @@ from schema.validation import (
 KNOWN_SCHEMA = "session_state_progress_v1"
 _UNKNOWN = "totally_missing_schema_xyz"
 _VALID_JSON = (
-    '{"session_id": "s1", "kind": "snapshot", "timestamp": "2026-01-01T00:00:00Z", "state": {}}'
+    '{"metadata":{"timestamp":"2026-01-01T00:00:00Z","schema_version":"1.0.0",'
+    '"correlation":{"id":"correlation://550e8400-e29b-41d4-a716-446655440001"},'
+    '"id":"event://550e8400-e29b-41d4-a716-446655440002","type":"RecruiterNodeSearch",'
+    '"source":"test"},"data":{"workflows":{"w":{"pattern":"p","use_case":"u","name":"n",'
+    '"starting_topology":{"nodes":[],"edges":[]},'
+    '"instances":{"i":{"id":"instance://550e8400-e29b-41d4-a716-446655440003","topology":{}}}}}}}'
 )
 
 
@@ -36,16 +41,18 @@ def json_schema_specs_dir(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> Pa
     return tmp_path
 
 
+def test_validate_data_string_against_schema_packaged_minimal():
+    validate_data_string_against_schema(_VALID_JSON, KNOWN_SCHEMA)
+
+
 def test_portable_get_schema_matches_json_layer_and_structure():
     spec = get_schema(KNOWN_SCHEMA)
     assert isinstance(spec, dict)
     assert "$id" in spec
     assert "session_state_progress_v1.json" in spec["$id"]
     assert spec.get("type") == "object"
-    required = spec.get("required", [])
-    assert "session_id" in required
-    assert "kind" in required
-    assert "timestamp" in required
+    assert spec.get("additionalProperties") is False
+    assert set(spec.get("required", [])) == {"metadata", "data"}
     assert "properties" in spec
     assert "$defs" in spec
     assert spec == json_get_schema(KNOWN_SCHEMA)

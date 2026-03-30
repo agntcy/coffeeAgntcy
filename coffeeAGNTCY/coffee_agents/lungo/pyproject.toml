@@ -45,6 +45,7 @@ dependencies = [
     "mcp>=1.23.0",
     "cryptography>=44.0.1",
     "jsonschema>=4.0.0",
+    "referencing>=0.28.0",
 ]
 
 [project.optional-dependencies]

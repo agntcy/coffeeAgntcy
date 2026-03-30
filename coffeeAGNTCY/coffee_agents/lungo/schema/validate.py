@@ -115,6 +115,10 @@ def _cmd_validate_instance_files(ns: argparse.Namespace) -> int:
         except errors.SchemaValidationError as e:
             print(f"{path}: {e}", file=sys.stderr)
             exit_code = 1
+        except errors.SchemaDefinitionError as e:
+            loc = f"{e.path}: " if e.path else ""
+            print(f"{path}: schema definition error: {loc}{e}", file=sys.stderr)
+            exit_code = 1
         except OSError as e:
             print(f"{path}: {e}", file=sys.stderr)
             exit_code = 1
@@ -137,6 +141,10 @@ def _cmd_validate_instance_string(ns: argparse.Namespace) -> int:
         return 1
     except errors.SchemaValidationError as e:
         print(e, file=sys.stderr)
+        return 1
+    except errors.SchemaDefinitionError as e:
+        loc = f"{e.path}: " if e.path else ""
+        print(f"schema definition error: {loc}{e}", file=sys.stderr)
         return 1
     print("ok")
     return 0

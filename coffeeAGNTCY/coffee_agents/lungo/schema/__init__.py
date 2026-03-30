@@ -8,6 +8,9 @@ Schema definitions
 Schema files live under their respective schema folders, based on their type, like ``schema/jsonschemas/`` for json schemas.
 Each file includes the version in the name for stable reference.
 
+Business event types are defined in separate registry file, that can be updated independently of the schemas.
+Emitters can add their own event types to the registry, but they must be registered before they can be used in a session.
+
 
 Examples
 --------------------

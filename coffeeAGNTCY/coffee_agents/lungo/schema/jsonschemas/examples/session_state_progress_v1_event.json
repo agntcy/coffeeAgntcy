@@ -1,11 +1,38 @@
 {
-  "session_id": "sess_abc123",
-  "kind": "event",
-  "timestamp": "2026-03-17T12:00:01Z",
-  "source": "auction_supervisor",
-  "event_type": "node_entered",
-  "payload": {
-    "node_id": "orders_broker",
-    "node_name": "orders_broker"
+  "metadata": {
+    "timestamp": "2026-03-17T12:00:01Z",
+    "schema_version": "1.0.0",
+    "correlation": {
+      "id": "correlation://550e8400-e29b-41d4-a716-446655440001"
+    },
+    "id": "event://550e8400-e29b-41d4-a716-446655440002",
+    "type": "RecruiterNodeSearch",
+    "source": "auction_supervisor"
+  },
+  "data": {
+    "workflows": {
+      "recruiter": {
+        "pattern": "recruiter_pattern",
+        "use_case": "hiring",
+        "name": "Recruiter",
+        "starting_topology": { "nodes": [], "edges": [] },
+        "instances": {
+          "instance001": {
+            "id": "instance://550e8400-e29b-41d4-a716-446655440003",
+            "topology": {
+              "nodes": [
+                {
+                  "id": "node://550e8400-e29b-41d4-a716-446655440010",
+                  "operation": "update",
+                  "type": "customNode",
+                  "label": "Orders broker"
+                }
+              ],
+              "edges": []
+            }
+          }
+        }
+      }
+    }
   }
 }

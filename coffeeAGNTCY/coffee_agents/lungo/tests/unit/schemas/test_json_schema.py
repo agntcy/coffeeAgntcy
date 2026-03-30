@@ -3,6 +3,7 @@
 
 """Unit tests for schema.json_schema (JSON Schema packaged backend mechanics)."""
 
+import shutil
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -16,9 +17,14 @@ from schema.errors import (
     SchemaNotFoundError,
     SchemaValidationError,
 )
+
+_PACKAGED_JSONSCHEMAS = Path(__file__).resolve().parents[3] / "schema" / "jsonschemas"
 from schema.json_schema import (
     JsonSchemaPackagedBackend,
+    clear_event_type_registry_cache,
     get_schema,
+    is_event_type_registered,
+    load_event_type_registry,
     load_json_instance_file,
     packaged_json_schema_backend,
     parse_json_instance_text,
@@ -27,6 +33,12 @@ from schema.json_schema import (
     validate_json_instance,
     validate_json_schema_definition,
 )
+
+
+@pytest.fixture(autouse=True)
+def _clear_event_type_registry_cache_after_each_test():
+    yield
+    clear_event_type_registry_cache()
 
 
 @pytest.fixture
@@ -213,11 +225,157 @@ _MINIMAL_OBJECT_SCHEMA = (
 )
 
 
+_MINIMAL_EVENT_TYPE_REGISTRY = (
+    '{"$schema": "https://json-schema.org/draft/2020-12/schema",'
+    '"$id": "https://example.test/registry/event_type_registry.json",'
+    '"$defs": {"event_type": {"type": "string", "enum": ["A"]}}}'
+)
+
+
+def test_validate_all_includes_event_type_registry_file(json_schema_specs_dir: Path):
+    (json_schema_specs_dir / "event_type_registry.json").write_text(
+        _MINIMAL_EVENT_TYPE_REGISTRY, encoding="utf-8"
+    )
+    (json_schema_specs_dir / "only.json").write_text(_MINIMAL_OBJECT_SCHEMA)
+    assert validate_all_json_schema_definitions() == []
+
+
+@dataclass
+class LoadEventTypeRegistryFailCase:
+    content: str
+    substring: str
+
+
+_LOAD_EVENT_TYPE_REGISTRY_FAIL_CASES = [
+    pytest.param(
+        LoadEventTypeRegistryFailCase("{ not json ", "invalid json"),
+        id="invalid_json",
+    ),
+    pytest.param(
+        LoadEventTypeRegistryFailCase("[]", "json schema object"),
+        id="not_object",
+    ),
+    pytest.param(
+        LoadEventTypeRegistryFailCase(
+            '{"$id": "https://example.test/r.json"}',
+            "$defs",
+        ),
+        id="missing_defs",
+    ),
+    pytest.param(
+        LoadEventTypeRegistryFailCase(
+            '{"$id": "https://example.test/r.json", "$defs": {}}',
+            "event_type",
+        ),
+        id="missing_event_type_def",
+    ),
+    pytest.param(
+        LoadEventTypeRegistryFailCase(
+            '{"$id": "https://example.test/r.json",'
+            '"$defs": {"event_type": {"type": "string", "enum": []}}}',
+            "non-empty",
+        ),
+        id="empty_enum",
+    ),
+    pytest.param(
+        LoadEventTypeRegistryFailCase(
+            '{"$id": "https://example.test/r.json",'
+            '"$defs": {"event_type": {"type": "string", "enum": [1]}}}',
+            "only strings",
+        ),
+        id="enum_non_string",
+    ),
+    pytest.param(
+        LoadEventTypeRegistryFailCase(
+            '{"$defs": {"event_type": {"type": "string", "enum": ["A"]}}}',
+            "$id",
+        ),
+        id="missing_id",
+    ),
+]
+
+
+@pytest.mark.parametrize("case", _LOAD_EVENT_TYPE_REGISTRY_FAIL_CASES)
+def test_load_event_type_registry_invalid_documents(
+    json_schema_specs_dir: Path,
+    case: LoadEventTypeRegistryFailCase,
+):
+    clear_event_type_registry_cache()
+    (json_schema_specs_dir / "event_type_registry.json").write_text(
+        case.content, encoding="utf-8"
+    )
+    with pytest.raises(SchemaDefinitionError) as exc_info:
+        load_event_type_registry()
+    assert case.substring.lower() in str(exc_info.value).lower()
+    assert exc_info.value.path is not None
+    assert exc_info.value.path.name == "event_type_registry.json"
+
+
+def test_load_event_type_registry_packaged():
+    types = load_event_type_registry()
+    assert isinstance(types, list) and all(isinstance(t, str) for t in types)
+    assert "RecruiterNodeSearch" in types
+    assert len(types) == len(set(types))
+
+
+def test_is_event_type_registered_packaged():
+    assert is_event_type_registered("RecruiterNodeSearch") is True
+    assert is_event_type_registered("UnknownEventType_xyz") is False
+
+
 def test_validate_json_instance_valid_and_invalid(json_schema_specs_dir: Path):
     (json_schema_specs_dir / "num.json").write_text(_MINIMAL_OBJECT_SCHEMA)
     validate_json_instance({"n": 1}, "num")
     with pytest.raises(SchemaValidationError):
         validate_json_instance({}, "num")
+
+
+def test_validate_json_instance_registry_corrupt_raises_schema_definition_error(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+):
+    clear_event_type_registry_cache()
+    shutil.copy2(
+        _PACKAGED_JSONSCHEMAS / "session_state_progress_v1.json",
+        tmp_path / "session_state_progress_v1.json",
+    )
+    shutil.copy2(
+        _PACKAGED_JSONSCHEMAS / "event_type_registry.json",
+        tmp_path / "event_type_registry.json",
+    )
+    monkeypatch.setattr(json_schema_mod, "_JSONSCHEMA_SPECS_DIR", tmp_path)
+    (tmp_path / "event_type_registry.json").write_text("{}", encoding="utf-8")
+    clear_event_type_registry_cache()
+    minimal = {
+        "metadata": {
+            "timestamp": "2026-01-01T00:00:00Z",
+            "schema_version": "1.0.0",
+            "correlation": {"id": "correlation://550e8400-e29b-41d4-a716-446655440001"},
+            "id": "event://550e8400-e29b-41d4-a716-446655440002",
+            "type": "RecruiterNodeSearch",
+            "source": "t",
+        },
+        "data": {
+            "workflows": {
+                "w": {
+                    "pattern": "p",
+                    "use_case": "u",
+                    "name": "n",
+                    "starting_topology": {"nodes": [], "edges": []},
+                    "instances": {
+                        "i": {
+                            "id": "instance://550e8400-e29b-41d4-a716-446655440003",
+                            "topology": {},
+                        }
+                    },
+                }
+            }
+        },
+    }
+    with pytest.raises(SchemaDefinitionError) as exc_info:
+        validate_json_instance(minimal, "session_state_progress_v1")
+    err = str(exc_info.value).lower()
+    assert "event_type_registry" in err or "$id" in str(exc_info.value)
 
 
 @pytest.mark.parametrize(
