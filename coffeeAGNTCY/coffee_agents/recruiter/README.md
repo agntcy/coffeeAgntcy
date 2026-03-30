@@ -203,13 +203,13 @@ Integration tests require the Directory services and test against the A2A server
 
 ```bash
 # All integration tests
-uv run pytest test/integration/ -v
+uv run pytest tests/integration/ -v
 
 # A2A server tests (search, streaming, evaluation)
-uv run pytest test/integration/test_a2a.py -v
+uv run pytest tests/integration/test_a2a.py -v
 
 # Agent evaluator tests
-uv run pytest test/integration/test_agent_evaluator.py -v
+uv run pytest tests/integration/test_agent_evaluator.py -v
 ```
 
 ### Test Descriptions
