@@ -15,13 +15,14 @@ services:
       replicas: 1
       restart_policy:
         condition: on-failure
-    # # No healthcheck: production image is distroless and does not have wget/curl/nc or shells. Also, the endpoint at 8888 is only gRPC, not HTTP. The endpoint at 8889 does not exist.
-    # # Future healthcheck via grpc-health-probe on 8888 when newer releases of dir-apiserver bundle grpc-health-probe. Fix was merged in https://github.com/agntcy/dir/pull/1017.
+    # # No healthcheck: production image is distroless and does not have wget/curl/nc or shells. Also, the endpoint at 8888 is only gRPC, not HTTP.
+    # # Future healthcheck will be available via grpc-health-probe on 8888 when dir v1.1.0 is integrated. Fix was merged in https://github.com/agntcy/dir/pull/1017.
     # healthcheck:
-    #   test: wget --no-verbose --tries=1 --spider http://127.0.0.1:8889/healthz/ready || exit 1
+    #   test: wget --no-verbose --tries=1 --spider http://127.0.0.1:8888/healthz/ready || exit 1
     #   interval: 10s
     #   retries: 60
     #   start_period: 10s
+    # Until then dependents should use condition: service_started so they start once this container is running.
 
   dir-mcp-server:
     image: ghcr.io/agntcy/dir-ctl:v1.0.0

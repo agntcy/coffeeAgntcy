@@ -418,8 +418,14 @@ services:
       replicas: 1
       restart_policy:
         condition: on-failure
-    # No healthcheck: image may have no wget/curl for ready probe.
-    # Dependents use condition: service_started so they start once this container is running.
+    # # No healthcheck: production image is distroless and does not have wget/curl/nc or shells. Also, the endpoint at 8888 is only gRPC, not HTTP.
+    # # Future healthcheck will be available via grpc-health-probe on 8888 when dir v1.1.0 is integrated. Fix was merged in https://github.com/agntcy/dir/pull/1017.
+    # healthcheck:
+    #   test: wget --no-verbose --tries=1 --spider http://127.0.0.1:8888/healthz/ready || exit 1
+    #   interval: 10s
+    #   retries: 60
+    #   start_period: 10s
+    # Until then dependents should use condition: service_started so they start once this container is running.
     profiles:
       - recruiter
 
