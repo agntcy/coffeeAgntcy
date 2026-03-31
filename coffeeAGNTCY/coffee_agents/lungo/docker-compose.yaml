@@ -402,14 +402,15 @@ services:
       - observability
 
   dir-api-server:
-    image: ghcr.io/agntcy/dir-apiserver:v1.0.0-rc.2
+    image: ghcr.io/agntcy/dir-apiserver:v1.0.0
     container_name: dir-api-server
     env_file:
       - ./config/docker/dir/apiserver.env
     ports:
       - 8888:8888
-      - 8889:8889
     depends_on:
+      postgres:
+        condition: service_healthy
       zot:
         condition: service_started
     deploy:
@@ -422,8 +423,44 @@ services:
     profiles:
       - recruiter
 
+  dir-mcp-server:
+    image: ghcr.io/agntcy/dir-ctl:v1.0.0
+    container_name: dir-mcp-server
+    stdin_open: true
+    tty: true
+    command: ["mcp", "serve"]
+    environment:
+      OASF_API_VALIDATION_SCHEMA_URL: https://schema.oasf.outshift.com
+      DIRECTORY_CLIENT_SERVER_ADDRESS: dir-api-server:8888
+      DIRECTORY_CLIENT_TLS_SKIP_VERIFY: "true"
+    depends_on:
+      dir-api-server:
+        condition: service_started
+    profiles:
+      - recruiter
+
+  postgres:
+    image: docker.io/library/postgres:16.6-bookworm
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: directory
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d directory"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 15s
+    deploy:
+      mode: replicated
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+    profiles:
+      - recruiter
+
   zot:
-    image: ghcr.io/project-zot/zot:v2.1.14
+    image: ghcr.io/project-zot/zot:v2.1.15
     ports:
       - 5555:5000
     deploy:

@@ -91,17 +91,19 @@ DIRECTORY_CLIENT_SERVER_ADDRESS="localhost:8888"
 DIRECTORY_CLIENT_TLS_SKIP_VERIFY="true"
 ```
 
-**Or run locally via docker-compose:**
+**Or run locally via Docker Compose:**
+
+Directory stack uses **AGNTCY Directory v1.0.0** (`ghcr.io/agntcy/dir-apiserver:v1.0.0`), **PostgreSQL** (`postgres:16.6-bookworm`), **Zot** `v2.1.15`, and optional **`dir-mcp-server`** (`ghcr.io/agntcy/dir-ctl:v1.0.0`) for `MCP_CONNECTION_MODE=docker`.
 
 ```bash
-# Start directory services (API server + Zot registry)
-docker compose -f docker/docker-compose.yaml up -d dir-api-server zot
+# Minimal: Postgres + Zot + API (and optionally MCP for docker-mode MCP)
+docker compose -f docker/docker-compose.yaml up -d postgres zot dir-api-server dir-mcp-server
 ```
 
 #### Tests
 
 The Directory related tests need the Directory CLI.  
-The integration tests automatically download a hardcoded version if they cannot find `dirctl` in `$PATH` or in the `recruiter/bin` folder.  
+The integration tests automatically download **`dirctl` v1.0.0** (see `DIRCTL_VERSION` in `tests/integration/conftest.py`) if they cannot find `dirctl` in `$PATH` or in the `recruiter/bin` folder.  
 If you want to download it globally on your system, you can use Homebrew:
 
 ```bash
@@ -218,8 +220,7 @@ src/agent_recruiter/
 Deploy the full stack including the recruiter agent:
 
 ```bash
-# Build and start all services
-cd docker
+# Build and start all services (from the recruiter agent project root)
 docker compose -f docker/docker-compose.yaml up --build
 
 # Or run in background
@@ -227,8 +228,10 @@ docker compose -f docker/docker-compose.yaml up --build -d
 ```
 
 This starts:
-- **dir-api-server**: Agent Directory Service API
-- **zot**: OCI artifact registry for agent storage
+- **postgres**: PostgreSQL for directory metadata (`directory` database)
+- **dir-api-server**: Agent Directory Service API (`ghcr.io/agntcy/dir-apiserver:v1.0.0`)
+- **dir-mcp-server**: MCP bridge for Docker-mode MCP (`ghcr.io/agntcy/dir-ctl:v1.0.0`)
+- **zot**: OCI artifact registry for agent storage (`ghcr.io/project-zot/zot:v2.1.15`)
 - **recruiter-agent**: The recruiter agent A2A server
 
 #### Service Endpoints
@@ -237,7 +240,8 @@ This starts:
 |---------|------|-------------|
 | recruiter-agent | 8881 | A2A server endpoint |
 | dir-api-server | 8888 | Directory gRPC API |
-| zot | 5555 | OCI registry |
+| zot | 5555 | OCI registry (host maps to container 5000) |
+| postgres | (internal) | PostgreSQL; not exposed in compose by default |
 
 ## Testing
 
@@ -246,8 +250,8 @@ Tests require the Directory services to be running. There are `pytest` fixtures 
 To manually start the required Directory services:
 
 ```bash
-# Start directory services
-docker compose -f docker/docker-compose.yaml up -d dir-api-server zot
+# Start directory services (Postgres + Zot + API; include dir-mcp-server if using MCP docker mode)
+docker compose -f docker/docker-compose.yaml up -d postgres zot dir-api-server dir-mcp-server
 ```
 
 ### Run All Tests

@@ -13,7 +13,7 @@ RUN apt-get update && \
 # Install dirctl binary for MCP toolset (detect architecture for multi-platform builds)
 # Note: Using specific version as /releases/latest/ points to GUI release which doesn't include dirctl
 RUN ARCH=$(dpkg --print-architecture) && \
-    curl -L https://github.com/agntcy/dir/releases/download/v1.0.0-rc.3/dirctl-linux-${ARCH} -o /usr/local/bin/dirctl && \
+    curl -L https://github.com/agntcy/dir/releases/download/v1.0.0/dirctl-linux-${ARCH} -o /usr/local/bin/dirctl && \
     chmod +x /usr/local/bin/dirctl
 
 # Install uv and create virtual environment
