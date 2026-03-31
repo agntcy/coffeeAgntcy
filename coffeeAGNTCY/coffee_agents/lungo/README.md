@@ -278,10 +278,20 @@ For advanced observability of your multi-agent system, integrate the [Observe SD
 
 #### Option 1: Docker Compose (Recommended)
 
-The fastest way to get started is using Docker Compose to spin up the stack **without** the web UI by default. Run the UI with **`docker compose --profile frontend up --build`** (from **`lungo/`**; needs **`frontend/.env`** with **`VITE_*`**) or locally with **`npm run dev`** — see [Step 5](#step-5-access-the-ui).
+From **`lungo/`**, run:
+
 ```sh
 docker compose up --build
 ```
+
+Compose reads **`COMPOSE_PROFILES`** in **`lungo/.env`** (see **`.env.example`**) to decide which profiled services start, including whether the **`ui`** container runs.
+
+##### Web UI: `COMPOSE_PROFILES` vs local Vite
+
+- **Frontend development (hot reload):** Remove **`frontend`** from **`COMPOSE_PROFILES`** in **`lungo/.env`** so Compose does not start the **`ui`** container (otherwise port **3000** is used twice). Run **`docker compose up --build`** from **`lungo/`**, then in **`frontend/`** run **`npm run dev`** with **`frontend/.env`** configured (**`VITE_*`**).
+- **UI only in Docker:** Keep **`frontend`** in **`COMPOSE_PROFILES`** (as in **`.env.example`**). Run **`docker compose up --build`** from **`lungo/`** only; the **`ui`** container needs **`frontend/.env`**.
+
+You can still enable the UI ad hoc without editing **`.env`** using **`docker compose --profile frontend up --build`** — see [Step 5](#step-5-access-the-ui).
 
 **Using Profiles**
 
@@ -314,13 +324,13 @@ docker compose --profile frontend up --build
 
 If you started services with one or more profiles, run `docker compose down` with the **same profile(s)** (e.g. `docker compose --profile farms down`) or tear everything down with `docker compose --profile '*' down`. Do not run a bare `docker compose down` (no profile): it only stops unprofiled services and the network removal will fail with "Network ... Resource is still in use."
 
-> **Note:** The **ui** service uses the **`frontend`** profile and is **not** started by default. Shared infrastructure (e.g. nats) has no profile. The observability stack (clickhouse-server, otel-collector, grafana, mce-api-layer, metrics-computation-engine) uses the `observability` profile; include it in `COMPOSE_PROFILES` (e.g. in `.env`) to start those services.
+> **Note:** The **ui** service uses the **`frontend`** profile; it runs only when that profile is active (e.g. **`frontend`** in **`COMPOSE_PROFILES`** or **`--profile frontend`**). **`.env.example`** includes **`frontend`**, so a copied **`.env`** starts the UI in Docker unless you remove it. Shared infrastructure (e.g. nats) has no profile. The observability stack (clickhouse-server, otel-collector, grafana, mce-api-layer, metrics-computation-engine) uses the `observability` profile; include it in `COMPOSE_PROFILES` (e.g. in `.env`) to start those services.
 
 The containerized UI uses **`frontend/.env`** only for **`VITE_*`** (see **`ui`** in **`docker-compose.yaml`**). Run **`cp frontend/.env.example frontend/.env`** before **`docker compose --profile frontend up --build`** if you have not already.
 
 Once running:
-- **UI (recommended):** `cd frontend && cp .env.example .env && npm run dev` → [http://localhost:3000](http://localhost:3000)
-- **UI (Docker):** `docker compose --profile frontend up --build` → [http://localhost:3000/](http://localhost:3000/)
+- **UI (Vite):** `cd frontend && cp .env.example .env && npm run dev` → [http://localhost:3000](http://localhost:3000) — with Docker backends, omit **`frontend`** from **`COMPOSE_PROFILES`** (see **Web UI: `COMPOSE_PROFILES` vs local Vite** above).
+- **UI (Docker):** include **`frontend`** in **`COMPOSE_PROFILES`** or use **`docker compose --profile frontend up --build`** → [http://localhost:3000/](http://localhost:3000/)
 - Access Grafana dashboard at: [http://localhost:3001/](http://localhost:3001/)
 
 #### Option 2: Local Python Development
