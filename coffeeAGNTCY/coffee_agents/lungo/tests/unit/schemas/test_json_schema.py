@@ -380,7 +380,7 @@ def test_validate_json_instance_registry_corrupt_raises_schema_definition_error(
                     "name": "n",
                     "starting_topology": {"nodes": [], "edges": []},
                     "instances": {
-                        "i": {
+                        "instance://550e8400-e29b-41d4-a716-446655440003": {
                             "id": "instance://550e8400-e29b-41d4-a716-446655440003",
                             "topology": {},
                         }

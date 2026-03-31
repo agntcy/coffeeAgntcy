@@ -37,14 +37,14 @@ def validate_data_against_schema(data: dict, schema_name: str) -> None:
     _backend_for_schema(schema_name).validate_data(data, schema_name)
 
 
-def validate_datafile_against_schema(path: Path, schema_name: str) -> None:
+def validate_file_against_schema(path: Path, schema_name: str) -> None:
     """Parse instance file with the backend for ``schema_name``, then validate. Raises domain errors from parse or validate."""
     backend = _backend_for_schema(schema_name)
     data = backend.parse_instance_file(path)
     backend.validate_data(data, schema_name)
 
 
-def validate_data_string_against_schema(text: str, schema_name: str) -> None:
+def validate_string_against_schema(text: str, schema_name: str) -> None:
     """Parse instance text with the backend for ``schema_name``, then validate."""
     backend = _backend_for_schema(schema_name)
     data = backend.parse_instance_text(text)

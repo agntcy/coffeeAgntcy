@@ -24,7 +24,7 @@
     "instance_id": {
       "type": "string",
       "pattern": "^instance://[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
-      "description": "Workflow instance id the event belongs to."
+      "description": "Workflow instance id. Each key in workflow.instances must use this same instance://... value as the nested object id field."
     },
     "operation": {
       "type": "string",
@@ -188,7 +188,7 @@
     },
     "workflow_instance": {
       "type": "object",
-      "description": "Workflow instance data, describing a single instance of a specific workflow.",
+      "description": "Workflow instance data. The parent object key under workflow.instances must be identical to id (same instance://... string).",
       "required": ["id", "topology"],
       "properties": {
         "id": { "$ref": "#/$defs/instance_id" },
@@ -207,7 +207,8 @@
         "starting_topology": { "$ref": "#/$defs/topology" },
         "instances": {
           "type": "object",
-          "minProperties": 1,
+          "description": "Maps instance id string to instance payload; each property name must match workflow_instance.id exactly (instance://...).",
+          "propertyNames": { "$ref": "#/$defs/instance_id" },
           "additionalProperties": { "$ref": "#/$defs/workflow_instance" }
         }
       },

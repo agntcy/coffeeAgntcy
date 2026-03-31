@@ -35,8 +35,8 @@ Python::
     validate_data_against_schema(payload, "event_v1")
 or:
     from pathlib import Path
-    from schema.validation import validate_datafile_against_schema
-    validate_datafile_against_schema(Path("path/to/payload.json"), "event_v1")
+    from schema.validation import validate_file_against_schema
+    validate_file_against_schema(Path("path/to/payload.json"), "event_v1")
 
 CLI::
     python -m schema.validate instance-string event_v1 '{"metadata":{...},"data":{...}}'
@@ -61,8 +61,8 @@ from schema.validation import (
     get_schema,
     validate_all_definitions,
     validate_data_against_schema,
-    validate_data_string_against_schema,
-    validate_datafile_against_schema,
+    validate_file_against_schema,
+    validate_string_against_schema,
     validate_definition,
 )
 
@@ -77,6 +77,6 @@ __all__ = [
     "validate_all_definitions",
     "validate_definition",
     "validate_data_against_schema",
-    "validate_datafile_against_schema",
-    "validate_data_string_against_schema",
+    "validate_file_against_schema",
+    "validate_string_against_schema",
 ]

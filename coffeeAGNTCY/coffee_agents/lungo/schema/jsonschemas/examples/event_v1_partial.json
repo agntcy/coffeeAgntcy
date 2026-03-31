@@ -15,9 +15,56 @@
         "pattern": "recruiter_pattern",
         "use_case": "hiring",
         "name": "Recruiter",
-        "starting_topology": { "nodes": [], "edges": [] },
+        "starting_topology": {
+          "nodes": [
+            {
+              "id": "node://550e8400-e29b-41d4-a716-446655440010",
+              "operation": "read",
+              "type": "customNode",
+              "label": "Auction Agent",
+              "size": { "width": 1.0, "height": 1.0 },
+              "layer_index": 0
+            },
+            {
+              "id": "node://550e8400-e29b-41d4-a716-446655440011",
+              "operation": "read",
+              "type": "transportNode",
+              "label": "Transport",
+              "size": { "width": 1.0, "height": 1.0 },
+              "layer_index": 1
+            },
+            {
+              "id": "node://550e8400-e29b-41d4-a716-446655440012",
+              "operation": "read",
+              "type": "customNode",
+              "label": "Brazil Farm",
+              "size": { "width": 1.0, "height": 1.0 },
+              "layer_index": 2
+            }
+          ],
+          "edges": [
+            {
+              "id": "edge://550e8400-e29b-41d4-a716-446655440013",
+              "operation": "read",
+              "type": "default",
+              "source": "node://550e8400-e29b-41d4-a716-446655440010",
+              "target": "node://550e8400-e29b-41d4-a716-446655440011",
+              "bidirectional": false,
+              "weight": 1.0
+            },
+            {
+              "id": "edge://550e8400-e29b-41d4-a716-446655440014",
+              "operation": "read",
+              "type": "default",
+              "source": "node://550e8400-e29b-41d4-a716-446655440011",
+              "target": "node://550e8400-e29b-41d4-a716-446655440012",
+              "bidirectional": false,
+              "weight": 1.0
+            }
+          ]
+        },
         "instances": {
-          "instance001": {
+          "instance://550e8400-e29b-41d4-a716-446655440003": {
             "id": "instance://550e8400-e29b-41d4-a716-446655440003",
             "topology": {
               "nodes": [
@@ -25,7 +72,7 @@
                   "id": "node://550e8400-e29b-41d4-a716-446655440010",
                   "operation": "update",
                   "type": "customNode",
-                  "label": "Orders broker"
+                  "label": "Auction Agent (search)"
                 }
               ],
               "edges": []

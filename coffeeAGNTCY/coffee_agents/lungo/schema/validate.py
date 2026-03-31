@@ -102,7 +102,7 @@ def _cmd_validate_instance_files(ns: argparse.Namespace) -> int:
             exit_code = 1
             continue
         try:
-            validation.validate_datafile_against_schema(path, ns.schema_name)
+            validation.validate_file_against_schema(path, ns.schema_name)
         except errors.InstanceDecodeError as e:
             print(f"{path}: invalid instance file: {e}", file=sys.stderr)
             exit_code = 1
@@ -129,7 +129,7 @@ def _cmd_validate_instance_files(ns: argparse.Namespace) -> int:
 
 def _cmd_validate_instance_string(ns: argparse.Namespace) -> int:
     try:
-        validation.validate_data_string_against_schema(ns.payload, ns.schema_name)
+        validation.validate_string_against_schema(ns.payload, ns.schema_name)
     except errors.InstanceDecodeError as e:
         print(f"invalid instance payload: {e}", file=sys.stderr)
         return 1

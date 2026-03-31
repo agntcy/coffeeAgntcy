@@ -231,6 +231,43 @@ def validate_all_json_schema_definitions() -> list[errors.SchemaDefinitionError]
     return failures
 
 
+def _enforce_workflow_instance_map_key_id_match(instance: dict) -> None:
+    """
+    Each ``workflow.instances`` map key must equal the nested value's ``id``.
+    Not expressible in JSON Schema alone; run after schema validation.
+    """
+    data = instance.get("data")
+    if not isinstance(data, dict):
+        return
+    workflows = data.get("workflows")
+    if not isinstance(workflows, dict):
+        return
+    for wf_key, wf in workflows.items():
+        if not isinstance(wf, dict):
+            continue
+        instances = wf.get("instances")
+        if not isinstance(instances, dict):
+            continue
+        for map_key, inst in instances.items():
+            if not isinstance(inst, dict):
+                continue
+            iid = inst.get("id")
+            if map_key != iid:
+                raise errors.SchemaValidationError(
+                    f"data.workflows[{wf_key!r}].instances: map key must equal "
+                    f"workflow_instance.id (key {map_key!r} != id {iid!r})"
+                )
+
+
+def validate_version_specific_criteria(instance: dict, schema_name: str) -> None:
+    """
+    Apply validation that depends on the packaged logical schema name (constraints
+    that JSON Schema cannot encode in the shared spec).
+    """
+    if schema_name == "event_v1":
+        _enforce_workflow_instance_map_key_id_match(instance)
+
+
 def validate_json_instance(instance: dict, schema_name: str) -> None:
     """Validate ``instance`` against the named JSON Schema."""
     schema_doc = get_schema(schema_name)
@@ -246,6 +283,7 @@ def validate_json_instance(instance: dict, schema_name: str) -> None:
         raise errors.SchemaValidationError(e.message) from e
     except Unresolvable as e:
         raise errors.SchemaValidationError(str(e.__cause__ or e)) from e
+    validate_version_specific_criteria(instance, schema_name)
 
 
 class JsonSchemaPackagedBackend:

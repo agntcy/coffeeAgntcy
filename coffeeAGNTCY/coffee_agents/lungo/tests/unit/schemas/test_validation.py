@@ -18,9 +18,9 @@ from schema.validation import (
     get_schema,
     validate_all_definitions,
     validate_data_against_schema,
-    validate_data_string_against_schema,
-    validate_datafile_against_schema,
     validate_definition,
+    validate_file_against_schema,
+    validate_string_against_schema,
 )
 
 KNOWN_SCHEMA = "event_v1"
@@ -31,7 +31,7 @@ _VALID_JSON = (
     '"id":"event://550e8400-e29b-41d4-a716-446655440002","type":"RecruiterNodeSearch",'
     '"source":"test"},"data":{"workflows":{"w":{"pattern":"p","use_case":"u","name":"n",'
     '"starting_topology":{"nodes":[],"edges":[]},'
-    '"instances":{"i":{"id":"instance://550e8400-e29b-41d4-a716-446655440003","topology":{}}}}}}}'
+    '"instances":{"instance://550e8400-e29b-41d4-a716-446655440003":{"id":"instance://550e8400-e29b-41d4-a716-446655440003","topology":{}}}}}}}'
 )
 
 
@@ -41,8 +41,8 @@ def json_schema_specs_dir(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> Pa
     return tmp_path
 
 
-def test_validate_data_string_against_schema_packaged_minimal():
-    validate_data_string_against_schema(_VALID_JSON, KNOWN_SCHEMA)
+def test_validate_string_against_schema_packaged_minimal():
+    validate_string_against_schema(_VALID_JSON, KNOWN_SCHEMA)
 
 
 def test_portable_get_schema_matches_json_layer_and_structure():
@@ -65,10 +65,10 @@ def test_validation_get_schema_ambiguous_propagates(json_schema_specs_dir: Path)
         get_schema("event_v1")
 
 
-def _unknown_datafile(specs_dir: Path) -> None:
+def _unknown_file(specs_dir: Path) -> None:
     ok = specs_dir / "x.json"
     ok.write_text("{}", encoding="utf-8")
-    validate_datafile_against_schema(ok, _UNKNOWN)
+    validate_file_against_schema(ok, _UNKNOWN)
 
 
 @pytest.mark.parametrize(
@@ -77,8 +77,8 @@ def _unknown_datafile(specs_dir: Path) -> None:
         pytest.param(lambda _: validate_definition(_UNKNOWN), id="definition"),
         pytest.param(lambda _: validate_data_against_schema({}, _UNKNOWN), id="data_against_schema"),
         pytest.param(lambda _: get_schema(_UNKNOWN), id="get_schema"),
-        pytest.param(lambda _: validate_data_string_against_schema(_VALID_JSON, _UNKNOWN), id="data_string"),
-        pytest.param(lambda d: _unknown_datafile(d), id="datafile"),
+        pytest.param(lambda _: validate_string_against_schema(_VALID_JSON, _UNKNOWN), id="string"),
+        pytest.param(lambda d: _unknown_file(d), id="file"),
     ],
 )
 def test_unknown_schema_when_specs_empty(json_schema_specs_dir: Path, invoke: Callable[[Path], None]):
@@ -124,20 +124,20 @@ def test_dispatch_validate_data_against_schema(monkeypatch: pytest.MonkeyPatch):
     skip.validate_data.assert_not_called()
 
 
-def test_dispatch_validate_datafile(monkeypatch: pytest.MonkeyPatch, tmp_path: Path):
+def test_dispatch_validate_file(monkeypatch: pytest.MonkeyPatch, tmp_path: Path):
     skip, pick = _backends_with_owner("x")
     monkeypatch.setattr(validation_mod, "_BACKENDS", (skip, pick))
     p = tmp_path / "inst.json"
     p.write_text("{}", encoding="utf-8")
-    validate_datafile_against_schema(p, "x")
+    validate_file_against_schema(p, "x")
     pick.parse_instance_file.assert_called_once_with(p)
     pick.validate_data.assert_called_once_with({"parsed": "file"}, "x")
 
 
-def test_dispatch_validate_data_string(monkeypatch: pytest.MonkeyPatch):
+def test_dispatch_validate_string(monkeypatch: pytest.MonkeyPatch):
     skip, pick = _backends_with_owner("x")
     monkeypatch.setattr(validation_mod, "_BACKENDS", (skip, pick))
-    validate_data_string_against_schema('{"a":1}', "x")
+    validate_string_against_schema('{"a":1}', "x")
     pick.parse_instance_text.assert_called_once_with('{"a":1}')
     pick.validate_data.assert_called_once_with({"parsed": "text"}, "x")
 

@@ -65,7 +65,7 @@
           ]
         },
         "instances": {
-          "instance001": {
+          "instance://6ba7b817-9dad-11d1-80b4-00c04fd430c8": {
             "id": "instance://6ba7b817-9dad-11d1-80b4-00c04fd430c8",
             "topology": {
               "nodes": [

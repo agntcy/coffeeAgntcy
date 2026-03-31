@@ -15,6 +15,7 @@ from schema.json_schema import (
 )
 
 KNOWN = "event_v1"
+_INSTANCE_KEY = "instance://550e8400-e29b-41d4-a716-446655440003"
 _LUNGO_ROOT = Path(__file__).resolve().parents[3]
 _EXAMPLES = _LUNGO_ROOT / "schema" / "jsonschemas" / "examples"
 
@@ -36,8 +37,8 @@ _VALID_MINIMAL = {
                 "name": "n",
                 "starting_topology": {"nodes": [], "edges": []},
                 "instances": {
-                    "i": {
-                        "id": "instance://550e8400-e29b-41d4-a716-446655440003",
+                    _INSTANCE_KEY: {
+                        "id": _INSTANCE_KEY,
                         "topology": {},
                     }
                 },
@@ -99,8 +100,8 @@ def test_event_v1_valid_instances(source: str):
                             "name": "n",
                             "starting_topology": {"nodes": [], "edges": []},
                             "instances": {
-                                "i": {
-                                    "id": "instance://550e8400-e29b-41d4-a716-446655440003",
+                                _INSTANCE_KEY: {
+                                    "id": _INSTANCE_KEY,
                                     "topology": {},
                                 }
                             },
@@ -117,6 +118,33 @@ def test_event_v1_invalid_instances(payload, match_substr: str):
     with pytest.raises(SchemaValidationError) as ei:
         validate_json_instance(payload, KNOWN)
     assert match_substr in ei.value.args[0].lower()
+
+
+def test_instance_map_key_must_match_workflow_instance_id():
+    bad = {
+        **_VALID_MINIMAL,
+        "data": {
+            "workflows": {
+                "w": {
+                    "pattern": "p",
+                    "use_case": "u",
+                    "name": "n",
+                    "starting_topology": {"nodes": [], "edges": []},
+                    "instances": {
+                        "instance://00000000-0000-4000-8000-000000000001": {
+                            "id": _INSTANCE_KEY,
+                            "topology": {},
+                        }
+                    },
+                }
+            }
+        },
+    }
+    with pytest.raises(SchemaValidationError) as ei:
+        validate_json_instance(bad, KNOWN)
+    msg = ei.value.args[0].lower()
+    assert "map key" in msg or "instances" in msg
+    assert "key" in msg
 
 
 def test_unknown_metadata_type_fails_validation():

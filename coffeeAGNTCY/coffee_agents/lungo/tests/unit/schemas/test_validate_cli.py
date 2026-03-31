@@ -19,7 +19,7 @@ _VALID_INSTANCE = (
     '"id":"event://550e8400-e29b-41d4-a716-446655440002","type":"RecruiterNodeSearch",'
     '"source":"cli"},"data":{"workflows":{"w":{"pattern":"p","use_case":"u","name":"n",'
     '"starting_topology":{"nodes":[],"edges":[]},'
-    '"instances":{"i":{"id":"instance://550e8400-e29b-41d4-a716-446655440003","topology":{}}}}}}}'
+    '"instances":{"instance://550e8400-e29b-41d4-a716-446655440003":{"id":"instance://550e8400-e29b-41d4-a716-446655440003","topology":{}}}}}}}'
 )
 
 
