@@ -57,8 +57,8 @@
       "properties": {
         "id": { "$ref": "#/$defs/node_id" },
         "operation": { "$ref": "#/$defs/operation" },
-        "type": { "type": "string" },
-        "label": { "type": "string" },
+        "type": { "type": "string", "minLength": 1 },
+        "label": { "type": "string", "minLength": 1 },
         "size": { "$ref": "#/$defs/size" },
         "layer_index": { "type": "number", "default": 0 }
       },
@@ -70,13 +70,7 @@
         {
           "type": "object",
           "description": "Full node data (mainly for init/reset). Used in topology definitions.",
-          "required": ["type", "label", "size", "layer_index"],
-          "properties": {
-            "type": { "type": "string", "minLength": 1 },
-            "label": { "type": "string", "minLength": 1 },
-            "size": { "$ref": "#/$defs/size" },
-            "layer_index": { "type": "number" }
-          }
+          "required": ["id", "operation", "type", "label", "size", "layer_index"]
         }
       ]
     },
@@ -90,7 +84,7 @@
       "properties": {
         "id": { "$ref": "#/$defs/edge_id" },
         "operation": { "$ref": "#/$defs/operation" },
-        "type": { "type": "string" },
+        "type": { "type": "string", "minLength": 1 },
         "source": { "$ref": "#/$defs/node_id" },
         "target": { "$ref": "#/$defs/node_id" },
         "bidirectional": { "type": "boolean", "default": false },
@@ -104,14 +98,15 @@
         {
           "type": "object",
           "description": "Full edge data (mainly for init/reset). Used in topology definitions.",
-          "required": ["type", "source", "target", "bidirectional", "weight"],
-          "properties": {
-            "type": { "type": "string", "minLength": 1 },
-            "source": { "$ref": "#/$defs/node_id" },
-            "target": { "$ref": "#/$defs/node_id" },
-            "bidirectional": { "type": "boolean" },
-            "weight": { "type": "number" }
-          }
+          "required": [
+            "id",
+            "operation",
+            "type",
+            "source",
+            "target",
+            "bidirectional",
+            "weight"
+          ]
         }
       ]
     },
