@@ -130,19 +130,17 @@ services:
       - farms
 
   ui:
+    profiles:
+      - frontend
     build:
       context: ../../..
       dockerfile: coffeeAGNTCY/coffee_agents/lungo/docker/Dockerfile.ui
     image: ghcr.io/agntcy/coffee-agntcy/lungo-ui:latest
     container_name: lungo-ui
+    env_file:
+      - frontend/.env
     environment:
       - TZ=UTC
-      - VITE_EXCHANGE_APP_API_URL=http://127.0.0.1:8000
-      - VITE_LOGISTICS_APP_API_URL=http://127.0.0.1:9090
-      - VITE_GRAFANA_URL=http://127.0.0.1:3001
-      - VITE_DISCOVERY_APP_API_URL=http://127.0.0.1:8882 # recruiter supervisor
-      - VITE_DIRECTORY_VERSION="v1.0.0"
-      - VITE_DIRECTORY_SERVER_URL=http://0.0.0.0:8888
     #depends_on:
     #  - auction-supervisor
     ports:

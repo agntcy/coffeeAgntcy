@@ -130,6 +130,10 @@ Before you begin, ensure the following tools are installed:
    cp .env.example .env
    ```
 
+   **UI environment**
+
+   **`VITE_*`** for the web UI live only in **`frontend/.env`** (see **`frontend/.env.example`**) — used by **`npm run dev`** and when you run **`docker compose --profile frontend up --build`**. **`lungo/.env`** is for backends, LLM keys, and Compose profiles only.
+
 **Configure LLM Model, Credentials and OTEL endpoint**
 
 Update your .env file with the provider model, credentials, and OTEL endpoint.
@@ -274,10 +278,20 @@ For advanced observability of your multi-agent system, integrate the [Observe SD
 
 #### Option 1: Docker Compose (Recommended)
 
-The fastest way to get started is using Docker Compose to spin up the entire stack:
+From **`lungo/`**, run:
+
 ```sh
-docker compose up
+docker compose up --build
 ```
+
+Compose reads **`COMPOSE_PROFILES`** in **`lungo/.env`** (see **`.env.example`**) to decide which profiled services start, including whether the **`ui`** container runs.
+
+##### Web UI: `COMPOSE_PROFILES` vs local Vite
+
+- **Frontend development (hot reload):** Remove **`frontend`** from **`COMPOSE_PROFILES`** in **`lungo/.env`** so Compose does not start the **`ui`** container (otherwise port **3000** is used twice). Run **`docker compose up --build`** from **`lungo/`**, then in **`frontend/`** run **`npm run dev`** with **`frontend/.env`** configured (**`VITE_*`**).
+- **UI only in Docker:** Keep **`frontend`** in **`COMPOSE_PROFILES`** (as in **`.env.example`**). Run **`docker compose up --build`** from **`lungo/`** only; the **`ui`** container needs **`frontend/.env`**.
+
+You can still enable the UI ad hoc without editing **`.env`** using **`docker compose --profile frontend up --build`** — see [Step 5](#step-5-access-the-ui).
 
 **Using Profiles**
 
@@ -285,6 +299,7 @@ The docker-compose file is organized into profiles for running specific subsets 
 
 | Profile | Services |
 |---------|----------|
+| `frontend` | **ui** (port 3000; env: **`frontend/.env`** only for **`VITE_*`**) |
 | `farms` | brazil-farm-server, colombia-farm-server, vietnam-farm-server, auction-supervisor, weather-mcp-server, payment-mcp-server |
 | `logistics` | slim, logistics-shipper, logistics-accountant, logistics-farm, logistics-helpdesk, logistics-supervisor |
 | `recruiter` | recruiter, lungo-recruiter-supervisor, dir-api-server, dir-mcp-server, zot |
@@ -302,14 +317,20 @@ docker compose --profile recruiter up
 
 # Run all profiles
 docker compose --profile farms --profile logistics --profile recruiter up
+
+# Run the UI in Docker (optional; otherwise use npm run dev in frontend/)
+docker compose --profile frontend up --build
 ```
 
 If you started services with one or more profiles, run `docker compose down` with the **same profile(s)** (e.g. `docker compose --profile farms down`) or tear everything down with `docker compose --profile '*' down`. Do not run a bare `docker compose down` (no profile): it only stops unprofiled services and the network removal will fail with "Network ... Resource is still in use."
 
-> **Note:** Shared infrastructure (nats, ui) has no profile. The observability stack (clickhouse-server, otel-collector, grafana, mce-api-layer, metrics-computation-engine) uses the `observability` profile; include it in `COMPOSE_PROFILES` (e.g. in `.env`) to start those services.
+> **Note:** The **ui** service uses the **`frontend`** profile; it runs only when that profile is active (e.g. **`frontend`** in **`COMPOSE_PROFILES`** or **`--profile frontend`**). **`.env.example`** includes **`frontend`**, so a copied **`.env`** starts the UI in Docker unless you remove it. Shared infrastructure (e.g. nats) has no profile. The observability stack (clickhouse-server, otel-collector, grafana, mce-api-layer, metrics-computation-engine) uses the `observability` profile; include it in `COMPOSE_PROFILES` (e.g. in `.env`) to start those services.
+
+The containerized UI uses **`frontend/.env`** only for **`VITE_*`** (see **`ui`** in **`docker-compose.yaml`**). Run **`cp frontend/.env.example frontend/.env`** before **`docker compose --profile frontend up --build`** if you have not already.
 
 Once running:
-- Access the UI at: [http://localhost:3000/](http://localhost:3000/)
+- **UI (Vite):** `cd frontend && cp .env.example .env && npm run dev` → [http://localhost:3000](http://localhost:3000) — with Docker backends, omit **`frontend`** from **`COMPOSE_PROFILES`** (see **Web UI: `COMPOSE_PROFILES` vs local Vite** above).
+- **UI (Docker):** include **`frontend`** in **`COMPOSE_PROFILES`** or use **`docker compose --profile frontend up --build`** → [http://localhost:3000/](http://localhost:3000/)
 - Access Grafana dashboard at: [http://localhost:3001/](http://localhost:3001/)
 
 #### Option 2: Local Python Development
@@ -439,22 +460,24 @@ _Example prompts:_
 
 **Step 5: Access the UI**
 
-Once all services are running, you can access the React UI by starting the frontend development server (from the `frontend` directory):
-
-_Local Run:_
+Once backend services are running, start the frontend **locally** (recommended):
 
 ```sh
+cd frontend
+cp .env.example .env   # once; see .env.example for rationale; edit if ports differ
 npm install
 npm run dev
 ```
 
-_Docker Compose:_
+Open [http://localhost:3000](http://localhost:3000) (Vite dev port is set in **`vite.config.ts`**).
+
+_To run the UI inside Docker instead:_
 
 ```sh
-docker compose up ui --build
+docker compose --profile frontend up ui --build
 ```
 
-By default, the UI will be available at [http://localhost:3000/](http://localhost:3000/).
+Then open [http://localhost:3000/](http://localhost:3000/). **`VITE_*`** come from **`frontend/.env`** only.
 
 ![Screenshot](images/lungo_ui.png)
 
