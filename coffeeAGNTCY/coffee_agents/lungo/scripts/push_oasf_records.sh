@@ -157,7 +157,6 @@ for OASF_DIR in "${OASF_DIRS[@]}"; do
             ((++ALREADY_EXISTS))
         else
             echo -e "    ${YELLOW}→ Not found in directory, pushing...${NC}"
-            
             # Push the JSON file to the directory (disable errexit: failing push must not exit before we capture output)
             set +e
             PUSH_RAW=$(run_dirctl push "$JSON_FILE" --output raw 2>&1)
