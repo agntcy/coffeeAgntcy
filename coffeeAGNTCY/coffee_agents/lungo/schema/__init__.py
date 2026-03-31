@@ -8,8 +8,10 @@ Schema definitions
 Schema files live under their respective schema folders, based on their type, like ``schema/jsonschemas/`` for json schemas.
 Each file includes the version in the name for stable reference.
 
-Business event types are defined in separate registry file, that can be updated independently of the schemas.
-Emitters can add their own event types to the registry, but they must be registered before they can be used in event payloads.
+Business event types are listed in versioned event_type files like ``event_type_v1.json``,
+alongside the corresponding schema files, and can be updated independently of the event message shape, so emitters can add their own event types to the list.
+The event type list is versioned internally wiht minor versions when additions happen,
+and a major version (appearing in the file name) is bumped when something is removed, or other breaking change happens.
 
 
 Examples

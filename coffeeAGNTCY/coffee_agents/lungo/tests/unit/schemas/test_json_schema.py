@@ -21,7 +21,7 @@ from schema.errors import (
 _PACKAGED_JSONSCHEMAS = Path(__file__).resolve().parents[3] / "schema" / "jsonschemas"
 from schema.json_schema import (
     JsonSchemaPackagedBackend,
-    clear_event_type_registry_cache,
+    clear_event_type_v1_cache,
     get_schema,
     is_event_type_registered,
     load_event_type_registry,
@@ -36,9 +36,9 @@ from schema.json_schema import (
 
 
 @pytest.fixture(autouse=True)
-def _clear_event_type_registry_cache_after_each_test():
+def _clear_event_type_v1_cache_after_each_test():
     yield
-    clear_event_type_registry_cache()
+    clear_event_type_v1_cache()
 
 
 @pytest.fixture
@@ -225,16 +225,16 @@ _MINIMAL_OBJECT_SCHEMA = (
 )
 
 
-_MINIMAL_EVENT_TYPE_REGISTRY = (
+_MINIMAL_EVENT_TYPE_V1 = (
     '{"$schema": "https://json-schema.org/draft/2020-12/schema",'
-    '"$id": "https://example.test/registry/event_type_registry.json",'
+    '"$id": "https://example.test/schema/event_type_v1.json",'
     '"$defs": {"event_type": {"type": "string", "enum": ["A"]}}}'
 )
 
 
-def test_validate_all_includes_event_type_registry_file(json_schema_specs_dir: Path):
-    (json_schema_specs_dir / "event_type_registry.json").write_text(
-        _MINIMAL_EVENT_TYPE_REGISTRY, encoding="utf-8"
+def test_validate_all_includes_event_type_v1_file(json_schema_specs_dir: Path):
+    (json_schema_specs_dir / "event_type_v1.json").write_text(
+        _MINIMAL_EVENT_TYPE_V1, encoding="utf-8"
     )
     (json_schema_specs_dir / "only.json").write_text(_MINIMAL_OBJECT_SCHEMA)
     assert validate_all_json_schema_definitions() == []
@@ -300,15 +300,15 @@ def test_load_event_type_registry_invalid_documents(
     json_schema_specs_dir: Path,
     case: LoadEventTypeRegistryFailCase,
 ):
-    clear_event_type_registry_cache()
-    (json_schema_specs_dir / "event_type_registry.json").write_text(
+    clear_event_type_v1_cache()
+    (json_schema_specs_dir / "event_type_v1.json").write_text(
         case.content, encoding="utf-8"
     )
     with pytest.raises(SchemaDefinitionError) as exc_info:
         load_event_type_registry()
     assert case.substring.lower() in str(exc_info.value).lower()
     assert exc_info.value.path is not None
-    assert exc_info.value.path.name == "event_type_registry.json"
+    assert exc_info.value.path.name == "event_type_v1.json"
 
 
 def test_load_event_type_registry_packaged():
@@ -347,22 +347,22 @@ def test_validate_json_instance_unresolvable_ref_maps_to_schema_validation_error
     assert "unresolvable" in msg or "example.invalid" in msg
 
 
-def test_validate_json_instance_registry_corrupt_raises_schema_definition_error(
+def test_validate_json_instance_event_type_v1_corrupt_raises_schema_definition_error(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ):
-    clear_event_type_registry_cache()
+    clear_event_type_v1_cache()
     shutil.copy2(
         _PACKAGED_JSONSCHEMAS / "event_v1.json",
         tmp_path / "event_v1.json",
     )
     shutil.copy2(
-        _PACKAGED_JSONSCHEMAS / "event_type_registry.json",
-        tmp_path / "event_type_registry.json",
+        _PACKAGED_JSONSCHEMAS / "event_type_v1.json",
+        tmp_path / "event_type_v1.json",
     )
     monkeypatch.setattr(json_schema_mod, "_JSONSCHEMA_SPECS_DIR", tmp_path)
-    (tmp_path / "event_type_registry.json").write_text("{}", encoding="utf-8")
-    clear_event_type_registry_cache()
+    (tmp_path / "event_type_v1.json").write_text("{}", encoding="utf-8")
+    clear_event_type_v1_cache()
     minimal = {
         "metadata": {
             "timestamp": "2026-01-01T00:00:00Z",
@@ -392,7 +392,7 @@ def test_validate_json_instance_registry_corrupt_raises_schema_definition_error(
     with pytest.raises(SchemaDefinitionError) as exc_info:
         validate_json_instance(minimal, "event_v1")
     err = str(exc_info.value).lower()
-    assert "event_type_registry" in err or "$id" in str(exc_info.value)
+    assert "event_type_v1" in err or "$id" in str(exc_info.value)
 
 
 @pytest.mark.parametrize(

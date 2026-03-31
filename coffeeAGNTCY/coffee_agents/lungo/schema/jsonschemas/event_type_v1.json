@@ -1,11 +1,12 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://github.com/agntcy/coffeeAgntcy/schema/jsonschemas/event_type_registry.json",
+  "$id": "https://github.com/agntcy/coffeeAgntcy/schema/jsonschemas/event_type_v1.json",
   "description": "Known business event types. Can be extended as needed for emitters. Listed values are validated by the event_v1 schema.",
   "$defs": {
     "event_type": {
       "type": "string",
       "description": "CURRENT VALUES ARE JUST PLACEHOLDERS. Need to be properly filled when implementing emitters.",
+      "x-minor-version": "0",
       "enum": ["RecruiterNodeSearch", "StateProgressUpdate"]
     }
   }
