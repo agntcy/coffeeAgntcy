@@ -221,18 +221,20 @@ uv run pytest tests/integration/test_agent_evaluator.py -v
 
 ## Claude Code Plugin
 
-The [`claude-code-recruiter/`](./claude-code-recruiter/) directory contains **agntcy-discover-connect** — a [Claude Code](https://docs.anthropic.com/en/docs/claude-code) plugin that brings the recruiter's agent discovery capabilities directly into the Claude Code CLI. Instead of running the recruiter as a standalone A2A service, this plugin lets you search the AGNTCY directory, preview candidates, and connect remote A2A agents as skills or sub-agents — all from within a Claude Code session.
+The [`coding-agent-integrations/claude-code/`](./coding-agent-integrations/claude-code/) directory contains **agntcy-discover-connect** — a [Claude Code](https://docs.anthropic.com/en/docs/claude-code) plugin that brings the recruiter's agent discovery capabilities directly into the Claude Code CLI. Instead of running the recruiter as a standalone A2A service, this plugin lets you search the AGNTCY directory, preview candidates, and connect remote A2A agents as skills or sub-agents — all from within a Claude Code session.
 
 ### Plugin Installation
 
-**Local development (from `recruiter/`):**
+**Local development (from `recruiter/coding-agent-integrations/claude-code/`):**
 
 ```bash
+cd coding-agent-integrations/claude-code
+
 # Build the a2a-send CLI tool
-pushd claude-code-recruiter/plugin/scripts/a2a-send && go build -o a2a-send . && popd
+pushd plugin/scripts/a2a-send && go build -o a2a-send . && popd
 
 # Launch Claude Code with the plugin
-claude --plugin-dir ./claude-code-recruiter/plugin
+claude --plugin-dir ./plugin
 ```
 
 **Prerequisites:** [Claude Code CLI](https://docs.anthropic.com/en/docs/claude-code), [`dirctl`](https://github.com/agntcy/dir-ctl), [Go 1.23+](https://go.dev/dl/) (to build `a2a-send`), and [`jq`](https://stedolan.github.io/jq/) for record parsing.
@@ -284,7 +286,7 @@ rm .claude/agents/brazil-coffee-farm.md
 ### Plugin Structure
 
 ```
-claude-code-recruiter/plugin/
+coding-agent-integrations/claude-code/plugin/
 ├── .claude-plugin/
 │   └── plugin.json              # Plugin manifest
 ├── commands/

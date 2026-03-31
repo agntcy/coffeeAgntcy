@@ -290,6 +290,7 @@ AGENT_INSTRUCTION = """You are an agent registry search assistant. Your job is t
 
 You have access to MCP tools from the Directory server that let you:
 - Search for agents with filters (names, skills, modules, etc.)
+- Retrieves skills from the OASF schema
 - Pull agent records by CID
 
 You also have a special tool for state management:
@@ -302,6 +303,10 @@ Search supports wildcard patterns:
 - * matches any sequence of characters
 - ? matches any single character
 - [abc] matches any character in the set
+
+**Before searching, determine the request type:**
+- If the user is asking ABOUT your capabilities or available filters: use a tool once to discover available options, then answer directly. Do NOT loop.
+- If the user is asking you to PERFORM a search: follow the mandatory workflow below.
 
 **MANDATORY WORKFLOW - Follow these steps IN ORDER for EVERY search request:**
 
@@ -349,10 +354,7 @@ def create_registry_search_agent(
         tool_filter: Optional list of tool names to expose (default: all tools).
         
     Note:
-        Model configuration is read from environment variables via llm.py:
-        - LLM_MODEL: Model identifier (default: "openai/gpt-4o")
-        - LITELLM_PROXY_BASE_URL: Optional proxy URL
-        - LITELLM_PROXY_API_KEY: Optional proxy API key
+        Model configuration is read from environment variables via llm.py.
 
     Returns:
         Configured Agent with MCP toolset.
