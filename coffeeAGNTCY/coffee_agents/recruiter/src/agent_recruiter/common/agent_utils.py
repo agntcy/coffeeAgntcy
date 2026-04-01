@@ -1,18 +1,22 @@
 # Copyright AGNTCY Contributors (https://github.com/agntcy)
 # SPDX-License-Identifier: Apache-2.0
 
+from google.adk.agents.run_config import RunConfig
 from google.genai import types
 
 async def call_agent_async(query: str, runner, user_id: str, session_id: str) -> str:
     """Sends a query to an agent and returns the final response."""
     content = types.Content(role='user', parts=[types.Part(text=query)])
 
+    run_config = RunConfig(max_llm_calls=100)
+
     final_response_text = "Agent did not produce a final response."
 
     async for event in runner.run_async(
             user_id=user_id,
             session_id=session_id,
-            new_message=content
+            new_message=content,
+            run_config=run_config,
     ):
         if event.is_final_response():
             if event.content and event.content.parts:
