@@ -68,7 +68,7 @@ jq '{
   skills: [(.modules[] | select(.name=="integration/a2a") | .data.card_data.skills[]? | {name: .name, description: .description})],
   protocolVersion: (.modules[] | select(.name=="integration/a2a") | .data.card_data.protocolVersion),
   provider: ((.modules[] | select(.name=="integration/a2a") | .data.card_data.provider.organization) // "")
-}' /tmp/recruit_<N>.json
+}' ./tmp/recruit_<N>.json
 ```
 
 If the jq filter fails for a record (missing A2A module, unexpected structure), skip it and note the skip.
@@ -170,7 +170,7 @@ plugin/scripts/a2a-send/a2a-send --peer-url {endpoint} --message "$ARGUMENTS"
 **4A-c. Clean up and summarize:**
 
 ```bash
-rm -f /tmp/recruit_*.json
+rm -f ./tmp/recruit_*.json
 ```
 
 ```
@@ -234,7 +234,7 @@ Return stdout verbatim. If exit code 1, return stderr. Never add commentary or o
 **4B-c. Clean up and summarize:**
 
 ```bash
-rm -f /tmp/recruit_*.json
+rm -f ./tmp/recruit_*.json
 ```
 
 ```
