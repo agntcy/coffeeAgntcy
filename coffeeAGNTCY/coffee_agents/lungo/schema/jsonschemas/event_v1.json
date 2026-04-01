@@ -1,0 +1,231 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/agntcy/coffeeAgntcy/schema/jsonschemas/event_v1.json",
+  "title": "Event (v1)",
+  "description": "Message contract for workflow state progress used as an init or reset when fully filled. Used by components capable of emitting any kind of change event that needs to be communicated.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["metadata", "data"],
+  "properties": {
+    "metadata": { "$ref": "#/$defs/metadata" },
+    "data": { "$ref": "#/$defs/data" }
+  },
+  "$defs": {
+    "event_id": {
+      "type": "string",
+      "pattern": "^event://[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
+      "description": "Unique id for an event message."
+    },
+    "correlation_id": {
+      "type": "string",
+      "pattern": "^correlation://[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
+      "description": "Correlation id for one user action or API request."
+    },
+    "instance_id": {
+      "type": "string",
+      "pattern": "^instance://[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
+      "description": "Workflow instance id. Each key in workflow.instances must use this same instance://... value as the nested object id field."
+    },
+    "operation": {
+      "type": "string",
+      "enum": ["create", "read", "update", "delete"],
+      "description": "Entity operation kind."
+    },
+    "node_id": {
+      "type": "string",
+      "pattern": "^node://[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
+      "description": "Graph node id. Used in topology definitions"
+    },
+    "edge_id": {
+      "type": "string",
+      "pattern": "^edge://[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
+      "description": "Graph edge id. Used in topology definitions."
+    },
+    "size": {
+      "type": "object",
+      "description": "Relative layout size vs other nodes. Used in topology drawing and layout algorithms.",
+      "properties": {
+        "width": { "type": "number", "default": 1.0 },
+        "height": { "type": "number", "default": 1.0 }
+      },
+      "additionalProperties": false
+    },
+    "partial_node": {
+      "type": "object",
+      "description": "Sparse node data (mainly for updates). Used in topology definitions.",
+      "required": ["id", "operation"],
+      "properties": {
+        "id": { "$ref": "#/$defs/node_id" },
+        "operation": { "$ref": "#/$defs/operation" },
+        "type": { "type": "string", "minLength": 1 },
+        "label": { "type": "string", "minLength": 1 },
+        "size": { "$ref": "#/$defs/size" },
+        "layer_index": { "type": "number", "default": 0 }
+      },
+      "additionalProperties": true
+    },
+    "node": {
+      "allOf": [
+        { "$ref": "#/$defs/partial_node" },
+        {
+          "type": "object",
+          "description": "Full node data (mainly for init/reset). Used in topology definitions.",
+          "required": ["id", "operation", "type", "label", "size", "layer_index"]
+        }
+      ]
+    },
+    "topology_node_item": {
+      "anyOf": [{ "$ref": "#/$defs/partial_node" }, { "$ref": "#/$defs/node" }]
+    },
+    "partial_edge": {
+      "type": "object",
+      "description": "Sparse edge data (mainly for updates). Used in topology definitions.",
+      "required": ["id", "operation"],
+      "properties": {
+        "id": { "$ref": "#/$defs/edge_id" },
+        "operation": { "$ref": "#/$defs/operation" },
+        "type": { "type": "string", "minLength": 1 },
+        "source": { "$ref": "#/$defs/node_id" },
+        "target": { "$ref": "#/$defs/node_id" },
+        "bidirectional": { "type": "boolean", "default": false },
+        "weight": { "type": "number", "default": 1.0 }
+      },
+      "additionalProperties": true
+    },
+    "edge": {
+      "allOf": [
+        { "$ref": "#/$defs/partial_edge" },
+        {
+          "type": "object",
+          "description": "Full edge data (mainly for init/reset). Used in topology definitions.",
+          "required": [
+            "id",
+            "operation",
+            "type",
+            "source",
+            "target",
+            "bidirectional",
+            "weight"
+          ]
+        }
+      ]
+    },
+    "topology_edge_item": {
+      "anyOf": [{ "$ref": "#/$defs/partial_edge" }, { "$ref": "#/$defs/edge" }]
+    },
+    "partial_topology": {
+      "type": "object",
+      "description": "Sparse topology under a workflow instance, describing changes compared to starting or previous state",
+      "properties": {
+        "nodes": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/topology_node_item" }
+        },
+        "edges": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/topology_edge_item" }
+        }
+      },
+      "additionalProperties": true
+    },
+    "topology": {
+      "allOf": [
+        { "$ref": "#/$defs/partial_topology" },
+        {
+          "type": "object",
+          "description": "Full topology data, describing an initial state.",
+          "required": ["nodes", "edges"],
+          "properties": {
+            "nodes": {
+              "type": "array",
+              "items": { "$ref": "#/$defs/topology_node_item" }
+            },
+            "edges": {
+              "type": "array",
+              "items": { "$ref": "#/$defs/topology_edge_item" }
+            }
+          }
+        }
+      ]
+    },
+    "correlation": {
+      "type": "object",
+      "description": "Correlation data for an event message, referencing another event that closely connects to this one.",
+      "required": ["id"],
+      "properties": {
+        "id": { "$ref": "#/$defs/correlation_id" },
+        "message": { "type": "string" }
+      },
+      "additionalProperties": true
+    },
+    "metadata": {
+      "type": "object",
+      "description": "General metadata for an event message, including fields for proper identification.",
+      "required": ["timestamp", "schema_version", "correlation", "id", "type", "source"],
+      "properties": {
+        "timestamp": {
+          "type": "string",
+          "format": "date-time",
+          "description": "When the message was produced (RFC 3339)."
+        },
+        "schema_version": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Semantic version of this contract (e.g. 1.0.0)."
+        },
+        "correlation": { "$ref": "#/$defs/correlation" },
+        "id": { "$ref": "#/$defs/event_id" },
+        "type": {
+          "$ref": "event_type_v1.json#/$defs/event_type"
+        },
+        "source": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Producer identifier (e.g. agent or adapter name)."
+        }
+      },
+      "additionalProperties": true
+    },
+    "workflow_instance": {
+      "type": "object",
+      "description": "Workflow instance data. The parent object key under workflow.instances must be identical to id (same instance://... string).",
+      "required": ["id", "topology"],
+      "properties": {
+        "id": { "$ref": "#/$defs/instance_id" },
+        "topology": { "$ref": "#/$defs/partial_topology" }
+      },
+      "additionalProperties": true
+    },
+    "workflow": {
+      "type": "object",
+      "description": "Workflow data, describing common configuration for a specific workflow, and keep track of instances of that workflow.",
+      "required": ["pattern", "use_case", "name", "starting_topology", "instances"],
+      "properties": {
+        "pattern": { "type": "string", "minLength": 1 },
+        "use_case": { "type": "string", "minLength": 1 },
+        "name": { "type": "string", "minLength": 1 },
+        "starting_topology": { "$ref": "#/$defs/topology" },
+        "instances": {
+          "type": "object",
+          "description": "Maps instance id string to instance payload; each property name must match workflow_instance.id exactly (instance://...).",
+          "propertyNames": { "$ref": "#/$defs/instance_id" },
+          "additionalProperties": { "$ref": "#/$defs/workflow_instance" }
+        }
+      },
+      "additionalProperties": true
+    },
+    "data": {
+      "type": "object",
+      "description": "Payload data object, containing workflow configurations and the targeted instances.",
+      "required": ["workflows"],
+      "properties": {
+        "workflows": {
+          "type": "object",
+          "minProperties": 1,
+          "additionalProperties": { "$ref": "#/$defs/workflow" }
+        }
+      },
+      "additionalProperties": true
+    }
+  }
+}
