@@ -302,7 +302,7 @@ The docker-compose file is organized into profiles for running specific subsets 
 | `frontend` | **ui** (port 3000; env: **`frontend/.env`** only for **`VITE_*`**) |
 | `farms` | brazil-farm-server, colombia-farm-server, vietnam-farm-server, auction-supervisor, weather-mcp-server, payment-mcp-server |
 | `logistics` | slim, logistics-shipper, logistics-accountant, logistics-farm, logistics-helpdesk, logistics-supervisor |
-| `recruiter` | recruiter, lungo-recruiter-supervisor, dir-api-server, dir-mcp-server, zot |
+| `recruiter` | recruiter, recruiter-supervisor, postgres, dir-api-server, dir-mcp-server, zot |
 
 Run a specific profile:
 ```sh
@@ -552,7 +552,7 @@ _Local Python:_
 
 > **Note:** The Recruiter Supervisor depends on the **Recruiter Agent** and **Directory services** to discover and evaluate agents. Start these dependencies first:
 > ```sh
-> docker compose up nats dir-api-server zot recruiter
+> docker compose --profile recruiter up nats postgres zot dir-api-server dir-mcp-server recruiter
 > ```
 
 ```sh

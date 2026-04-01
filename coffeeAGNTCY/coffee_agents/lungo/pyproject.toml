@@ -58,7 +58,7 @@ dev = [
     "sentence-transformers>=5.1.1",
     "agntcy-oasf-sdk-grpc-python==1.75.0.1.20250917120021+8b2bf93bf8dc",
     "agntcy-oasf-sdk-protocolbuffers-python==32.1.0.1.20250917120021+8b2bf93bf8dc",
-    "agntcy-dir>=0.6.0",
+    "agntcy-dir==1.0.0",
 ]
 
 [tool.hatch.metadata]

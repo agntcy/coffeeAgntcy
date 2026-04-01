@@ -179,7 +179,7 @@ def create_mcp_toolset(
                 connection_params=StdioConnectionParams(
                     server_params=StdioServerParameters(
                         command="docker",
-                        args=["exec", "-i", mcp_container_name, "./dirctl", "mcp", "serve"],
+                        args=["exec", "-i", mcp_container_name, "/dirctl", "mcp", "serve"],
                     ),
                 ),
                 tool_filter=tool_filter,
@@ -189,7 +189,7 @@ def create_mcp_toolset(
         except Exception as e:
             error_msg = f"Failed to create MCP toolset for container '{mcp_container_name}': {e}"
             logger.error(error_msg)
-            logger.error("Ensure the container has the './dirctl mcp serve' command available")
+            logger.error("Ensure the container has '/dirctl mcp serve' (ghcr.io/agntcy/dir-ctl)")
             raise RuntimeError(error_msg) from e
         
 # ============================================================================

@@ -42,16 +42,17 @@ wheels = [
 
 [[package]]
 name = "agntcy-dir"
-version = "0.6.1"
+version = "1.0.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "grpcio" },
+    { name = "pyasn1" },
     { name = "spiffe" },
     { name = "spiffe-tls" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/4c/52/7fe6734ace807e6ec126c69ef031e0595cbdb88a45c13209a8ffe5212608/agntcy_dir-0.6.1.tar.gz", hash = "sha256:26d0b81e11348470487c67fe8a7e45343aa94bdc364e0c49e57c2b58e3d9639b", size = 55794, upload-time = "2026-01-15T14:00:46.134Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/73/e6/f171bc96414a5ac2657c5ae89712bdd74d43b1125ec6f826c5c633ed7a29/agntcy_dir-1.0.0.tar.gz", hash = "sha256:e39e8e5364b19635e27bf194207a623ea72661a4f2b96f89e6b6feee487c9564", size = 64954, upload-time = "2026-02-20T10:38:44.868Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/82/c1/bc4661ae668d9b306cfb6789a1d543bcc1935faca7b33c7832475d41f4bc/agntcy_dir-0.6.1-py3-none-any.whl", hash = "sha256:7cd4e0dcd6eb7d5a451cd1d4e47755f6f1ab27e828eea160f07c528e471037fb", size = 90592, upload-time = "2026-01-15T14:00:43.924Z" },
+    { url = "https://files.pythonhosted.org/packages/0d/02/e030d66e6344ecf845e56752769a447b2424dc52dcd327f60fa173f0b316/agntcy_dir-1.0.0-py3-none-any.whl", hash = "sha256:db9f2167c1b90a08b25719fc9b686570535a013ea26e39ab3221c8c9264b24e2", size = 104002, upload-time = "2026-02-20T10:38:43.755Z" },
 ]
 
 [[package]]
@@ -2230,7 +2231,7 @@ dev = [
 requires-dist = [
     { name = "a2a-sdk", specifier = "==0.3.2" },
     { name = "agntcy-app-sdk", specifier = "==0.4.7" },
-    { name = "agntcy-dir", marker = "extra == 'dev'", specifier = ">=0.6.0" },
+    { name = "agntcy-dir", marker = "extra == 'dev'", specifier = "==1.0.0" },
     { name = "agntcy-identity-service-sdk", specifier = "==0.0.7" },
     { name = "agntcy-oasf-sdk-grpc-python", marker = "extra == 'dev'", specifier = "==1.75.0.1.20250917120021+8b2bf93bf8dc" },
     { name = "agntcy-oasf-sdk-protocolbuffers-python", marker = "extra == 'dev'", specifier = "==32.1.0.1.20250917120021+8b2bf93bf8dc" },

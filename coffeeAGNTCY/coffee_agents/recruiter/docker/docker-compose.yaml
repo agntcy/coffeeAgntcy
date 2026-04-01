@@ -1,28 +1,63 @@
 services:
   dir-api-server:
-    image: ghcr.io/agntcy/dir-apiserver:v0.6.0
+    image: ghcr.io/agntcy/dir-apiserver:v1.0.0
     env_file:
       - ./configs/dir/apiserver.env
     ports:
       - 8888:8888
-      - 8889:8889
     depends_on:
-      - zot
+      postgres:
+        condition: service_healthy
+      zot:
+        condition: service_started
     deploy:
       mode: replicated
       replicas: 1
       restart_policy:
         condition: on-failure
-    # # No healthcheck: production image is distroless and does not have wget/curl/nc or shells. Also, the endpoint at 8888 is only gRPC, not HTTP. The endpoint at 8889 does not exist.
-    # # Future healthcheck via grpc-health-probe on 8888 when newer releases of dir-apiserver bundle grpc-health-probe. Fix was merged in https://github.com/agntcy/dir/pull/1017.
+    # # No healthcheck: production image is distroless and does not have wget/curl/nc or shells. Also, the endpoint at 8888 is only gRPC, not HTTP.
+    # # Future healthcheck will be available via grpc-health-probe on 8888 when dir v1.1.0 is integrated. Fix was merged in https://github.com/agntcy/dir/pull/1017.
     # healthcheck:
-    #   test: wget --no-verbose --tries=1 --spider http://127.0.0.1:8889/healthz/ready || exit 1
+    #   test: wget --no-verbose --tries=1 --spider http://127.0.0.1:8888/healthz/ready || exit 1
     #   interval: 10s
     #   retries: 60
     #   start_period: 10s
+    # Until then dependents should use condition: service_started so they start once this container is running.
+
+  dir-mcp-server:
+    image: ghcr.io/agntcy/dir-ctl:v1.0.0
+    container_name: dir-mcp-server
+    stdin_open: true
+    tty: true
+    command: ["mcp", "serve"]
+    environment:
+      OASF_API_VALIDATION_SCHEMA_URL: https://schema.oasf.outshift.com
+      DIRECTORY_CLIENT_SERVER_ADDRESS: dir-api-server:8888
+      DIRECTORY_CLIENT_TLS_SKIP_VERIFY: "true"
+    depends_on:
+      dir-api-server:
+        condition: service_started
+
+  postgres:
+    image: docker.io/library/postgres:16.6-bookworm
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: directory
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d directory"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 15s
+    deploy:
+      mode: replicated
+      replicas: 1
+      restart_policy:
+        condition: on-failure
 
   zot:
-    image: ghcr.io/project-zot/zot:v2.1.10
+    image: ghcr.io/project-zot/zot:v2.1.15
     ports:
       - 5555:5000
     deploy:
