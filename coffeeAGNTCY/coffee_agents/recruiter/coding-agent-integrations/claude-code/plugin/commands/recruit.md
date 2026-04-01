@@ -55,7 +55,7 @@ Parse the CID strings from the output. If no CIDs are found, try a broader searc
 For each CID, pull the full OASF record and extract a summary:
 
 ```bash
-dirctl pull <CID> --output json > /tmp/recruit_<N>.json
+dirctl pull <CID> --output json > ./tmp/recruit_<N>.json
 ```
 
 Then extract the fields we need with one jq filter:

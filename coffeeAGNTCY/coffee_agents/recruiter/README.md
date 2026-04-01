@@ -308,3 +308,7 @@ coding-agent-integrations/claude-code/plugin/
 │           └── dirctl-search.md
 └── docs/
 ```
+
+## Advanced Usage
+
+For benchmarking, caching configuration, agentic evaluation internals, ADK web development, and A2A response format details, see [docs/advanced-usage.md](./docs/advanced-usage.md).
