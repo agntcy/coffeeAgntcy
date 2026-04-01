@@ -33,6 +33,9 @@ LLM_MODEL = os.getenv("LLM_MODEL", "openai/gpt-4o")
 # Auto-detects based on dirctl availability if not set
 MCP_CONNECTION_MODE = os.getenv("MCP_CONNECTION_MODE", "auto")
 
+# Timeout for MCP server startup (in seconds) - increase if you see startup timeouts
+MCP_SERVER_STARTUP_TIMEOUT = int(os.getenv("MCP_SERVER_STARTUP_TIMEOUT", "30")) 
+
 logger = get_logger(__name__)
 
 def _check_dirctl_binary() -> Optional[str]:
@@ -156,6 +159,7 @@ def create_mcp_toolset(
                         args=args,
                         env=env,
                     ),
+                    timeout=MCP_SERVER_STARTUP_TIMEOUT
                 ),
                 tool_filter=tool_filter,
             )
@@ -181,6 +185,7 @@ def create_mcp_toolset(
                         command="docker",
                         args=["exec", "-i", mcp_container_name, "./dirctl", "mcp", "serve"],
                     ),
+                    timeout=MCP_SERVER_STARTUP_TIMEOUT, 
                 ),
                 tool_filter=tool_filter,
             )
