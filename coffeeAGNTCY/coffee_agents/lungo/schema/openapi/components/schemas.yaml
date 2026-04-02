@@ -1,0 +1,98 @@
+# Copyright AGNTCY Contributors (https://github.com/agntcy)
+# SPDX-License-Identifier: Apache-2.0
+
+# Shared schemas for the Agentic Workflows API.
+# Event / graph types reference canonical JSON Schema alongside Pydantic in schema/types/event.py.
+
+components:
+  schemas:
+    Event:
+      $ref: ../../jsonschemas/event_v1.json
+    Workflow:
+      $ref: ../../jsonschemas/event_v1.json#/$defs/workflow
+    WorkflowInstance:
+      $ref: ../../jsonschemas/event_v1.json#/$defs/workflow_instance
+    Topology:
+      $ref: ../../jsonschemas/event_v1.json#/$defs/topology
+    PartialTopology:
+      $ref: ../../jsonschemas/event_v1.json#/$defs/partial_topology
+    InstanceId:
+      $ref: ../../jsonschemas/event_v1.json#/$defs/instance_id
+
+    Pattern:
+      type: object
+      required: [name]
+      additionalProperties: false
+      properties:
+        name:
+          type: string
+          minLength: 1
+
+    PatternListResponse:
+      type: object
+      required: [items]
+      additionalProperties: false
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/Pattern"
+
+    UseCase:
+      type: object
+      required: [name]
+      additionalProperties: false
+      properties:
+        name:
+          type: string
+          minLength: 1
+
+    UseCaseListResponse:
+      type: object
+      required: [items]
+      additionalProperties: false
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/UseCase"
+
+    WorkflowSummary:
+      type: object
+      required: [name, pattern, use_case]
+      additionalProperties: false
+      properties:
+        name:
+          type: string
+          minLength: 1
+        pattern:
+          type: string
+          minLength: 1
+        use_case:
+          type: string
+          minLength: 1
+
+    WorkflowSummaryMapResponse:
+      type: object
+      description: Workflows keyed by workflow name (map key equals WorkflowSummary.name).
+      propertyNames:
+        type: string
+        minLength: 1
+      additionalProperties:
+        $ref: "#/components/schemas/WorkflowSummary"
+
+    InstantiateWorkflowResponse:
+      type: object
+      required: [workflow_instance_id]
+      additionalProperties: false
+      properties:
+        workflow_instance_id:
+          $ref: "#/components/schemas/InstanceId"
+
+    WorkflowInstanceMapResponse:
+      type: object
+      description: Workflow instances keyed by workflow instance id (InstanceId URI).
+      propertyNames:
+        $ref: "#/components/schemas/InstanceId"
+      additionalProperties:
+        $ref: "#/components/schemas/WorkflowInstance"
