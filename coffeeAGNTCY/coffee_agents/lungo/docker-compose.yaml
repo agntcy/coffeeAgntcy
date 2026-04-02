@@ -129,6 +129,21 @@ services:
     profiles:
       - farms
 
+  # Agentic Workflows HTTP API
+  agentic-workflows-api:
+    build:
+      context: ../../..
+      dockerfile: coffeeAGNTCY/coffee_agents/lungo/docker/Dockerfile.agentic-workflows-api
+    image: ghcr.io/agntcy/coffee-agntcy/agentic-workflows-api:latest
+    container_name: agentic-workflows-api
+    env_file:
+      - .env
+    environment:
+      - TZ=UTC
+      - PORT=9105
+    ports:
+      - "9105:9105"
+
   ui:
     profiles:
       - frontend
