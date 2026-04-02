@@ -49,6 +49,13 @@ Versioning
 ----------
 Schemas are versioned in the file name. New versions are added as separate files (e.g.
 ``event_v2.json``) without replacing prior versions.
+
+Python types (optional)
+-----------------------
+``schema.types`` provides hand-maintained Pydantic v2 models aligned with the packaged JSON Schemas
+(not code-generated). Use ``schema.validation`` / ``schema.json_schema`` for JSON Schema validation;
+use ``schema.types`` when you want in-process parsing with stricter Python types (e.g. ``AwareDatetime``
+for RFC 3339 timestamps). Keep types in sync when schema files change.
 """
 
 from schema.errors import (
