@@ -59,5 +59,8 @@ dependencies:
   - name: lungo-ui
     version: "0.0.5"
     repository: "file://../ui"
+  - name: agentic-workflows-api
+    version: "0.0.1"
+    repository: "file://../agentic-workflows-api"
 
   

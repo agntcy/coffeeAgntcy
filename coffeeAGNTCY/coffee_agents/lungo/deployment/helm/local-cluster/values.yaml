@@ -35,9 +35,13 @@ weather-mcp-server:
   defaultMessageTransport: "NATS"
   otlpHttpEndpoint: "http://lungo-local-cluster-opentelemetry-collector:4318"
 
+agentic-workflows-api:
+  environment: local
+
 lungo-ui:
   environment: local
   config:
     exchangeAppApiUrl: "http://localhost:30080"
     logisticsAppApiUrl: "http://localhost:30081"
     discoveryAppApiUrl: "http://localhost:30082"
+    agenticWorkflowsApiUrl: "http://localhost:30083"
