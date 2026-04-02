@@ -84,7 +84,7 @@ const InfoModal: React.FC<InfoModalProps> = ({ isOpen, onClose }) => {
               <div className="flex justify-between gap-2">
                 <span className="shrink-0">Agentic Workflows API:</span>
                 <span
-                  className="min-w-0 break-all font-mono text-modal-accent text-right"
+                  className="min-w-0 break-all text-right font-mono text-modal-accent"
                   title={AGENTIC_WORKFLOWS_API_URL}
                 >
                   {AGENTIC_WORKFLOWS_API_URL}
