@@ -8,9 +8,10 @@ from a2a.types import (
     AgentInterface,
     AgentSkill
 )
-from config.config import PREFERRED_A2A_TRANSPORT, SLIM_SERVER, NATS_SERVER
+from config.config import SLIM_SERVER, NATS_SERVER
 
 PORT = os.getenv("FARM_AGENT_PORT", "9998")
+AGENT_ID = "colombia_coffee_farm"
 
 AGENT_SKILL = AgentSkill(
     id="get_yield",
@@ -34,9 +35,8 @@ AGENT_CARD = AgentCard(
     capabilities=AgentCapabilities(streaming=True),
     skills=[AGENT_SKILL],
     supports_authenticated_extended_card=False,
-
-    preferred_transport=PREFERRED_A2A_TRANSPORT,
-    url='', # will be set dynamically based on the preferred transport's additional interface url
+    preferred_transport="slimrpc",
+    url=f"slim://{SLIM_SERVER}/lungo/agents/colombia_coffee_farm",  # default url matches preferred transport interface
     additional_interfaces=[
         # point-to-point transport for direct client-agent communication
         AgentInterface(transport="slimrpc", url=f"slim://{SLIM_SERVER}/lungo/agents/colombia_coffee_farm"),
@@ -48,16 +48,3 @@ AGENT_CARD = AgentCard(
         AgentInterface(transport="jsonrpc", url=f"http://0.0.0.0:{PORT}"), 
     ],
 )
-
-# Set url to match the preferred transport's interface
-_preferred = next(
-    (i for i in (AGENT_CARD.additional_interfaces or []) if i.transport == AGENT_CARD.preferred_transport),
-    None,
-)
-if _preferred:
-    AGENT_CARD.url = _preferred.url
-else:
-    raise ValueError(
-        f"preferred_transport {PREFERRED_A2A_TRANSPORT!r} not found in additional_interfaces. "
-        f"Available: {[i.transport for i in (AGENT_CARD.additional_interfaces or [])]}"
-    )

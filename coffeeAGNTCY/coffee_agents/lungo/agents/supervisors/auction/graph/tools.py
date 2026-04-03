@@ -27,8 +27,8 @@ from agents.supervisors.auction.graph.models import (
     CreateOrderArgs,
 )
 from agents.supervisors.auction.graph.shared import a2a_client_factory, farm_registry
-from common.agentic_patterns import PATTERNS, TransportType
 from config.config import (
+    DEFAULT_MESSAGE_TRANSPORT,
     IDENTITY_API_KEY,
     IDENTITY_API_SERVER_URL,
 )
@@ -37,14 +37,6 @@ from services.identity_service_impl import IdentityServiceImpl
 
 
 logger = logging.getLogger("lungo.supervisor.tools")
-
-# Resolve the enabled publish-subscribe pattern for broadcast operations.
-# To switch transports, toggle the 'enabled' flag in config/agentic_patterns.yaml
-# (e.g. disable slim-publish-subscribe, enable nats-publish-subscribe).
-_pubsub_pattern = PATTERNS.resolve("publish-subscribe")
-_broadcast_transport = _pubsub_pattern.transport
-
-logger.info(f"Resolved broadcast transport: {_broadcast_transport} from enabled publish-subscribe pattern: {_pubsub_pattern.name}")
 
 
 class A2AAgentError(ToolException):
@@ -245,8 +237,8 @@ async def get_all_farms_yield_inventory(prompt: str) -> str:
         # pick any card to initialize the client, will use the recipient list to route to the correct farms
         card = copy.deepcopy(farm_registry.cards()[0]) # avoid mutating the singleton card
 
-        # use the resolved broadcast transport from the pattern registry
-        card.preferred_transport = _broadcast_transport
+        # override preferred transport to ensure we use the intended publish-subscribe transport for broadcasts
+        card.preferred_transport = DEFAULT_MESSAGE_TRANSPORT.lower()
         client = await a2a_client_factory.create(card)
 
         # create a broadcast message and collect responses
@@ -313,8 +305,8 @@ async def get_all_farms_yield_inventory_streaming(prompt: str):
 
         card = copy.deepcopy(farm_registry.cards()[0]) # avoid mutating the singleton card
 
-        # use the resolved broadcast transport from the pattern registry
-        card.preferred_transport = _broadcast_transport
+        # override preferred transport to ensure we use the intended publish-subscribe transport for broadcasts
+        card.preferred_transport = DEFAULT_MESSAGE_TRANSPORT.lower()
         client = await a2a_client_factory.create(card)
 
         # Get the async generator for streaming responses

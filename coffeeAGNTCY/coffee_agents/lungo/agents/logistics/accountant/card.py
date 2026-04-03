@@ -9,6 +9,8 @@ from a2a.types import (
 )
 from config.config import SLIM_SERVER
 
+AGENT_ID = "accountant-agent"
+
 AGENT_SKILL = AgentSkill(
     id="get_accounting_status",
     name="Get Accounting Status",
@@ -34,11 +36,11 @@ AGENT_CARD = AgentCard(
     skills=[AGENT_SKILL],
     supports_authenticated_extended_card=False,
     preferred_transport="slim",
-    url=f"slim://{SLIM_SERVER}/lungo/agents/accountant_agent", # primary endpoint for SLIM-based group communication
+    url=f"slim://{SLIM_SERVER}/lungo/agents/{AGENT_ID}", # primary endpoint for SLIM-based group communication
     additional_interfaces=[
         # slim-based group comm transport
-        AgentInterface(transport="slim", url=f"slim://{SLIM_SERVER}/lungo/agents/accountant_agent"),
+        AgentInterface(transport="slim", url=f"slim://{SLIM_SERVER}/lungo/agents/{AGENT_ID}"),
         # point-to-point transport for direct client-agent communication
-        AgentInterface(transport="slimrpc", url=f"slim://{SLIM_SERVER}/lungo/agents/accountant_agent_rpc"),
+        AgentInterface(transport="slimrpc", url=f"slim://{SLIM_SERVER}/lungo/agents/{AGENT_ID}"),
     ],
 )

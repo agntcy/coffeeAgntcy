@@ -23,9 +23,8 @@ from config.logging_config import setup_logging
 from config.config import LLM_MODEL, HOT_RELOAD_MODE, OTEL_SDK_DISABLED
 from pathlib import Path
 from common.version import get_version_info
-from common.agentic_patterns import PATTERNS
 from agents.supervisors.auction.api import create_apps_router
-from config.config import LLM_MODEL, HOT_RELOAD_MODE
+from config.config import DEFAULT_MESSAGE_TRANSPORT, LLM_MODEL, HOT_RELOAD_MODE
 from common.streaming_capability import require_streaming_capability
 
 logger = logging.getLogger("lungo.supervisor.main")
@@ -216,9 +215,8 @@ async def get_config():
     Returns:
         dict: Configuration containing transport settings.
     """
-    _pubsub_pattern = PATTERNS.resolve("publish-subscribe")
     return {
-      "transport": _pubsub_pattern.transport.value.upper()
+        "transport": DEFAULT_MESSAGE_TRANSPORT.upper()
     }
 
 @app.get("/about")

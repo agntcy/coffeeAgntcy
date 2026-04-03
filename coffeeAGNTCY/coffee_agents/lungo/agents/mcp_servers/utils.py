@@ -4,22 +4,17 @@
 from typing import Literal
 from agntcy_app_sdk.factory import AgntcyFactory
 from agents.exceptions import AuthError
-from common.agentic_patterns import PATTERNS, TransportType
-from config.config import SLIM_SERVER, NATS_SERVER, OTEL_SDK_DISABLED
+from config.config import DEFAULT_MESSAGE_TRANSPORT, SLIM_SERVER, NATS_SERVER, OTEL_SDK_DISABLED
 import os
 
-# Resolve the enabled MCP transport variant (slim or nats) from the pattern registry.
-# To switch transports, toggle the 'enabled' flag in config/agentic_patterns.yaml
-# (e.g. disable slim-mcp-client-server, enable nats-mcp-client-server).
-_mcp_pattern = PATTERNS.resolve("mcp-client-server")
-_mcp_transport = _mcp_pattern.transport.value.upper()  # "slim" -> "SLIM", "nats" -> "NATS"
-
-# Derive the endpoint from the resolved transport type and existing server configs.
-_MCP_ENDPOINT_MAP = {
-    TransportType.SLIM: f"http://{SLIM_SERVER}",
-    TransportType.NATS: f"nats://{NATS_SERVER}",
-}
-_mcp_endpoint = _MCP_ENDPOINT_MAP[_mcp_pattern.transport]
+if DEFAULT_MESSAGE_TRANSPORT.lower() == "slim":
+  _mcp_transport = "SLIM"
+  _mcp_endpoint = f"http://{SLIM_SERVER}"
+elif DEFAULT_MESSAGE_TRANSPORT.lower() == "nats":
+  _mcp_transport = "NATS"
+  _mcp_endpoint = f"nats://{NATS_SERVER}"
+else:
+  raise ValueError(f"Unsupported DEFAULT_MESSAGE_TRANSPORT: {DEFAULT_MESSAGE_TRANSPORT}. Must be 'slim' or 'nats'.")
 
 async def invoke_payment_mcp_tool(tool_name: Literal["create_payment", "list_transactions"]) -> dict:
   # don't invoke if identity auth is not enabled

@@ -16,13 +16,7 @@ SLIM_SERVER = os.getenv("SLIM_SERVER", "localhost:46357")
 
 NATS_SERVER = os.getenv("NATS_SERVER", "localhost:4222")
 
-# set the preferred A2A transport for the agents. This can be overridden per pattern in config/agentic_patterns.yaml
-PREFERRED_A2A_TRANSPORT = os.getenv("PREFERRED_A2A_TRANSPORT", "slimrpc")
-
-# backwards compatibility for global transport settings
-# for more granular control, use PREFERRED_A2A_TRANSPORT and specify transport per pattern in config/agentic_patterns.yaml
 DEFAULT_MESSAGE_TRANSPORT = os.getenv("DEFAULT_MESSAGE_TRANSPORT", "SLIM")
-TRANSPORT_SERVER_ENDPOINT = os.getenv("TRANSPORT_SERVER_ENDPOINT", f"http://{SLIM_SERVER}")
 
 # some services may choose to use http for health checking endpoints, but the agents themselves will communicate over A2A (e.g. via SLIM)
 ENABLE_HTTP = os.getenv("ENABLE_HTTP", "true").lower() in ("true", "1", "yes")

@@ -9,6 +9,8 @@ from a2a.types import (
 )
 from config.config import SLIM_SERVER
 
+AGENT_ID = "logistics_helpdesk_agent"
+
 AGENT_SKILL = AgentSkill(
     id="helpdesk_support",
     name="Helpdesk Support",
@@ -33,10 +35,10 @@ AGENT_CARD = AgentCard(
     skills=[AGENT_SKILL],
     supports_authenticated_extended_card=False,
     preferred_transport="slim",
-    url=f"slim://{SLIM_SERVER}/lungo/agents/helpdesk_agent",
+    url=f"slim://{SLIM_SERVER}/lungo/agents/{AGENT_ID}",
     additional_interfaces=[
-        AgentInterface(transport="slim", url=f"slim://{SLIM_SERVER}/lungo/agents/helpdesk_agent"),
-        AgentInterface(transport="slimrpc", url=f"slim://{SLIM_SERVER}/lungo/agents/helpdesk_agent_rpc"),
+        AgentInterface(transport="slim", url=f"slim://{SLIM_SERVER}/lungo/agents/{AGENT_ID}"),
+        AgentInterface(transport="slimrpc", url=f"slim://{SLIM_SERVER}/lungo/agents/{AGENT_ID}"),
     ],
 )
 
