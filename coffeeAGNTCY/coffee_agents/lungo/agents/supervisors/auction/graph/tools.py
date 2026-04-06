@@ -22,6 +22,11 @@ from agntcy_app_sdk import InterfaceTransport, get_agent_identifier
 from ioa_observe.sdk.decorators import tool as ioa_tool_decorator
 
 
+from agents.supervisors.auction.graph.a2a_retry import (
+    send_a2a_with_retry,
+    TransportTimeoutError,
+    RemoteAgentNoResponseError,
+)
 from agents.supervisors.auction.graph.models import (
     InventoryArgs,
     CreateOrderArgs,
@@ -42,6 +47,29 @@ logger = logging.getLogger("lungo.supervisor.tools")
 class A2AAgentError(ToolException):
     """Custom exception for errors related to A2A agent communication or status."""
     pass
+
+
+def _extract_text_from_events(events: list) -> str | None:
+    """Extract the last text content from a list of A2A stream events.
+
+    Handles both ``Message`` objects and ``ClientEvent`` tuples
+    ``(Task, UpdateEvent)``.  Returns the last text found, or None.
+    """
+    result_text = None
+    for response in events:
+        if isinstance(response, Message):
+            for part in response.parts:
+                part_root = part.root
+                if hasattr(part_root, "text"):
+                    result_text = part_root.text.strip()
+        elif isinstance(response, tuple):
+            task_update, _event = response
+            if hasattr(task_update, "status") and task_update.status and task_update.status.message:
+                for part in task_update.status.message.parts:
+                    part_root = part.root
+                    if hasattr(part_root, "text"):
+                        result_text = part_root.text.strip()
+    return result_text
 
 
 def tools_or_next(tools_node: str, end_node: str = "__end__"):
@@ -163,8 +191,11 @@ async def get_farm_yield_inventory(prompt: str, farm: str) -> str:
     
     try:
         card = copy.deepcopy(card)
-        # Disable streaming: send_message returns an async generator,
-        # so we iterate with `async for` instead of `await`.
+        # Workaround: ioa-observe-sdk instruments SRPCTransport.send_message_streaming
+        # with a coroutine wrapper instead of an async generator, causing TypeError.
+        # Commented out — not needed here since card.capabilities.streaming defaults
+        # to the server value. Re-enable if tracing is on and streaming breaks.
+        # See: https://github.com/agntcy/observe/issues/114
         if card.capabilities is None:
             from a2a.types import AgentCapabilities
             card.capabilities = AgentCapabilities(streaming=False)
@@ -179,27 +210,17 @@ async def get_farm_yield_inventory(prompt: str, farm: str) -> str:
             parts=[Part(TextPart(text=prompt))],
         )
 
-        result_text = None
-        async for response in client.send_message(message):
-            logger.info(f"Response received from A2A agent: {response}")
-
-            if isinstance(response, Message):
-                for part in response.parts:
-                    part_root = part.root
-                    if hasattr(part_root, "text"):
-                        result_text = part_root.text.strip()
-            elif isinstance(response, tuple):
-                task_update, event = response
-                if hasattr(task_update, "status") and task_update.status and task_update.status.message:
-                    for part in task_update.status.message.parts:
-                        part_root = part.root
-                        if hasattr(part_root, "text"):
-                            result_text = part_root.text.strip()
+        events = await send_a2a_with_retry(client, message)
+        result_text = _extract_text_from_events(events)
 
         if result_text:
             return result_text
         else:
             raise A2AAgentError(f"Farm '{farm}' returned no text content.")
+    except (TransportTimeoutError, RemoteAgentNoResponseError) as e:
+        msg = "timed out" if isinstance(e, TransportTimeoutError) else "returned no response"
+        logger.error(f"Failed to communicate with farm '{farm}': {msg}")
+        raise A2AAgentError(f"Failed to communicate with farm '{farm}': {msg}.") from e
     except Exception as e: # Catch any underlying communication or client creation errors
         logger.error(f"Failed to communicate with farm '{farm}': {e}")
         raise A2AAgentError(f"Failed to communicate with farm '{farm}'. Details: {e}")
@@ -417,10 +438,11 @@ async def create_order(farm: str, quantity: int, price: float) -> str:
 
     try:
         card = copy.deepcopy(card)  # avoid mutating the singleton card
-        # Disable streaming: the SRPCTransport.send_message_streaming wrapper
-        # returns a coroutine instead of an async generator, which breaks
-        # BaseClient's streaming path.  Force the non-streaming (simple
-        # await) code path instead.
+        # Workaround: ioa-observe-sdk instruments SRPCTransport.send_message_streaming
+        # with a coroutine wrapper (return await) instead of an async generator
+        # (async for/yield), causing "TypeError: 'coroutine' object is not an
+        # async iterator". Force the non-streaming path until fixed upstream.
+        # See: https://github.com/agntcy/observe/issues/114
         if card.capabilities is None:
             from a2a.types import AgentCapabilities
             card.capabilities = AgentCapabilities(streaming=False)
@@ -435,27 +457,17 @@ async def create_order(farm: str, quantity: int, price: float) -> str:
             parts=[Part(TextPart(text=f"Create an order with price {price} and quantity {quantity}"))],
         )
 
-        result_text = None
-        async for response in client.send_message(message):
-            logger.info(f"Response received from A2A agent: {response}")
-
-            if isinstance(response, Message):
-                for part in response.parts:
-                    part_root = part.root
-                    if hasattr(part_root, "text"):
-                        result_text = part_root.text.strip()
-            elif isinstance(response, tuple):
-                task_update, event = response
-                if hasattr(task_update, "status") and task_update.status and task_update.status.message:
-                    for part in task_update.status.message.parts:
-                        part_root = part.root
-                        if hasattr(part_root, "text"):
-                            result_text = part_root.text.strip()
+        events = await send_a2a_with_retry(client, message)
+        result_text = _extract_text_from_events(events)
 
         if result_text:
             return result_text
         else:
             raise A2AAgentError(f"Farm '{farm}' returned no text content for order creation.")
+    except (TransportTimeoutError, RemoteAgentNoResponseError) as e:
+        msg = "timed out" if isinstance(e, TransportTimeoutError) else "returned no response"
+        logger.error(f"Failed to communicate with order agent for farm '{farm}': {msg}")
+        raise A2AAgentError(f"Failed to communicate with order agent for farm '{farm}': {msg}.") from e
     except Exception as e: # Catch any underlying communication or client creation errors
         logger.error(f"Failed to communicate with order agent for farm '{farm}': {e}")
         raise A2AAgentError(f"Failed to communicate with order agent for farm '{farm}'. Details: {e}")
@@ -486,7 +498,11 @@ async def get_order_details(order_id: str) -> str:
         # override preferred transport to ensure direct communication for order creation
         card.preferred_transport = InterfaceTransport.SLIM_RPC
 
-        # Disable streaming to use the non-streaming code path
+        # Workaround: ioa-observe-sdk instruments SRPCTransport.send_message_streaming
+        # with a coroutine wrapper instead of an async generator, causing TypeError.
+        # Commented out — not needed here since card.capabilities.streaming defaults
+        # to the server value. Re-enable if tracing is on and streaming breaks.
+        # See: https://github.com/agntcy/observe/issues/114
         if card.capabilities is None:
             from a2a.types import AgentCapabilities
             card.capabilities = AgentCapabilities(streaming=False)
@@ -501,27 +517,17 @@ async def get_order_details(order_id: str) -> str:
             parts=[Part(TextPart(text=f"Get details for order ID {order_id}"))],
         )
 
-        result_text = None
-        async for response in client.send_message(message):
-            logger.info(f"Response received from A2A agent: {response}")
-
-            if isinstance(response, Message):
-                for part in response.parts:
-                    part_root = part.root
-                    if hasattr(part_root, "text"):
-                        result_text = part_root.text.strip()
-            elif isinstance(response, tuple):
-                task_update, event = response
-                if hasattr(task_update, "status") and task_update.status and task_update.status.message:
-                    for part in task_update.status.message.parts:
-                        part_root = part.root
-                        if hasattr(part_root, "text"):
-                            result_text = part_root.text.strip()
+        events = await send_a2a_with_retry(client, message)
+        result_text = _extract_text_from_events(events)
 
         if result_text:
             return result_text
         else:
             raise A2AAgentError(f"Order agent returned no text content for order ID '{order_id}'.")
+    except (TransportTimeoutError, RemoteAgentNoResponseError) as e:
+        msg = "timed out" if isinstance(e, TransportTimeoutError) else "returned no response"
+        logger.error(f"Failed to communicate with order agent for order ID '{order_id}': {msg}")
+        raise A2AAgentError(f"Failed to communicate with order agent for order ID '{order_id}': {msg}.") from e
     except Exception as e: # Catch any underlying communication or client creation errors
         logger.error(f"Failed to communicate with order agent for order ID '{order_id}': {e}")
         raise A2AAgentError(f"Failed to communicate with order agent for order ID '{order_id}'. Details: {e}")

@@ -15,19 +15,29 @@ from agents.supervisors.auction.graph.a2a_retry import (
 )
 
 
-def _make_success_response(text: str = "expected response"):
-    part = MagicMock()
-    part.text = text
-    parts = [MagicMock()]
-    parts[0].root = part
-    result = MagicMock()
-    result.parts = parts
-    root = MagicMock()
-    root.result = result
-    root.error = None
-    response = MagicMock()
-    response.root = root
-    return response
+def _make_event(text: str = "expected response"):
+    """Create a simple opaque event object.  The retry wrapper doesn't inspect it."""
+    event = MagicMock()
+    event._text = text  # stashed so tests can assert identity
+    return event
+
+
+async def _async_iter(items):
+    """Turn a list into an async iterator."""
+    for item in items:
+        yield item
+
+
+async def _empty_async_iter():
+    """An async iterator that yields nothing."""
+    return
+    yield
+
+
+async def _raising_async_iter(exc):
+    """An async iterator that raises on first iteration."""
+    raise exc
+    yield  # make it a generator
 
 
 def _side_effect_for(scenario_id: str):
@@ -38,37 +48,47 @@ def _side_effect_for(scenario_id: str):
     if scenario_id == "timeout_then_success":
         if SlimError is None:
             pytest.skip("slim_bindings required for timeout scenarios")
-        return [
-            SlimError.SessionError("receive timeout waiting for message"),
-            _make_success_response("recovered"),
-        ]
+        calls = iter([
+            _raising_async_iter(SlimError.SessionError("receive timeout waiting for message")),
+            _async_iter([_make_event("recovered")]),
+        ])
+        return lambda *a, **kw: next(calls)
     if scenario_id == "timeout_then_timeout":
         if SlimError is None:
             pytest.skip("slim_bindings required for timeout scenarios")
-        return [SlimError.SessionError("receive timeout")] * 5
+        return lambda *a, **kw: _raising_async_iter(SlimError.SessionError("receive timeout"))
     if scenario_id == "timeout_then_non_timeout":
         if SlimError is None:
             pytest.skip("slim_bindings required for timeout scenarios")
-        return [
-            SlimError.SessionError("receive timeout"),
-            ConnectionError("connection refused"),
-        ]
+        calls = iter([
+            _raising_async_iter(SlimError.SessionError("receive timeout")),
+            _raising_async_iter(ConnectionError("connection refused")),
+        ])
+        return lambda *a, **kw: next(calls)
     if scenario_id == "non_timeout_no_retry":
-        return [ValueError("bad request")]
+        return lambda *a, **kw: _raising_async_iter(ValueError("bad request"))
     if scenario_id == "success_first_attempt":
-        return [_make_success_response("first try")]
+        return lambda *a, **kw: _async_iter([_make_event("first try")])
     if scenario_id == "no_payload_error":
         err = AttributeError("'NoneType' object has no attribute 'payload'")
         err.name = "payload"
-        return [err] * 5
+        return lambda *a, **kw: _raising_async_iter(err)
     if scenario_id == "none_response":
-        return [None] * 5
+        return lambda *a, **kw: _empty_async_iter()
     if scenario_id == "no_payload_then_success":
         err = AttributeError("'NoneType' object has no attribute 'payload'")
         err.name = "payload"
-        return [err, _make_success_response("recovered")]
+        calls = iter([
+            _raising_async_iter(err),
+            _async_iter([_make_event("recovered")]),
+        ])
+        return lambda *a, **kw: next(calls)
     if scenario_id == "none_then_success":
-        return [None, _make_success_response("ok")]
+        calls = iter([
+            _empty_async_iter(),
+            _async_iter([_make_event("ok")]),
+        ])
+        return lambda *a, **kw: next(calls)
     raise ValueError(f"Unknown scenario_id: {scenario_id}")
 
 
@@ -99,7 +119,7 @@ def _no_payload_exception(scenario_id: str):
 @pytest.fixture
 def mock_client():
     client = MagicMock()
-    client.send_message = AsyncMock()
+    client.send_message = MagicMock()  # will be replaced per-scenario with a callable returning async iter
     return client
 
 
@@ -180,7 +200,7 @@ _A2A_SCENARIOS = [
 
 
 @pytest.mark.parametrize(
-    "scenario_id,expected_result,expected_exception,expected_await_count,check_cause",
+    "scenario_id,expected_result,expected_exception,expected_call_count,check_cause",
     _A2A_SCENARIOS,
 )
 def test_send_a2a_with_retry_scenarios(
@@ -188,15 +208,15 @@ def test_send_a2a_with_retry_scenarios(
     scenario_id,
     expected_result,
     expected_exception,
-    expected_await_count,
+    expected_call_count,
     check_cause,
 ):
-    request = MagicMock()
+    message = MagicMock()
     with patch("agents.supervisors.auction.graph.a2a_retry.asyncio.sleep", new_callable=AsyncMock) as mock_sleep:
-        mock_client.send_message = AsyncMock(side_effect=_side_effect_for(scenario_id))
+        mock_client.send_message = MagicMock(side_effect=_side_effect_for(scenario_id))
 
         async def run():
-            return await send_a2a_with_retry(mock_client, request)
+            return await send_a2a_with_retry(mock_client, message)
 
         if expected_exception is not None:
             with pytest.raises(expected_exception) as exc_info:
@@ -205,12 +225,15 @@ def test_send_a2a_with_retry_scenarios(
                 assert exc_info.value.__cause__ is not None
         else:
             result = asyncio.run(run())
-            assert result.root.result.parts[0].root.text == expected_result
-        assert mock_client.send_message.await_count == expected_await_count
-        if expected_await_count == 5:
+            # Result is now a list of opaque events; check the stashed marker.
+            assert isinstance(result, list)
+            assert len(result) > 0
+            assert result[0]._text == expected_result
+        assert mock_client.send_message.call_count == expected_call_count
+        if expected_call_count == 5:
             assert mock_sleep.await_count == 4
             assert [mock_sleep.await_args_list[i][0][0] for i in range(4)] == [1, 3, 9, 27]
-        elif expected_await_count == 2 and expected_exception is None:
+        elif expected_call_count == 2 and expected_exception is None:
             assert mock_sleep.await_count == 1
             assert mock_sleep.await_args[0][0] == 1
 
