@@ -45,7 +45,7 @@ from agents.supervisors.auction.graph.graph import ExchangeGraph
         (
             "permission_payment_kw_uses_mcp_template_without_payment_in_content",
             {"supervisor_outcome": "permission", "supervisor_operation": "payment"},
-            "Tool reported authentication failure (code 403). Please try again later.",
+            "Tool reported authentication failure (code 403).",
             True,
             [
                 "Issue details:",

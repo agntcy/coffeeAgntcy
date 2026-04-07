@@ -55,6 +55,62 @@ def _caused_by_transport(exc: BaseException) -> bool:
             stack.append(ctx)
     return False
 
+
+_KNOWN_FARMS = ("colombia", "brazil", "vietnam")
+_PAYMENT_OPERATION_TERMS = ("transaction", "payment")
+_PERMISSION_FALLBACK_MESSAGE = "Authentication or authorization failed. Please check your credentials."
+
+
+def _ai_message_content_lower(last_msg: AIMessage) -> str:
+    content = last_msg.content
+    return content.lower() if isinstance(content, str) else ""
+
+
+def _first_matching_term(content_lower: str, terms: tuple[str, ...]) -> str | None:
+    for term in terms:
+        if term in content_lower:
+            return term
+    return None
+
+
+def _resolve_farm_display(farm_kw: object | None, content_lower: str) -> str | None:
+    if farm_kw:
+        return str(farm_kw).title()
+    hit = _first_matching_term(content_lower, _KNOWN_FARMS)
+    return hit.title() if hit else None
+
+
+def _resolve_payment_operation_keyword(operation_kw: object | None, content_lower: str) -> str | None:
+    if operation_kw:
+        return str(operation_kw)
+    return _first_matching_term(content_lower, _PAYMENT_OPERATION_TERMS)
+
+
+def _permission_farm_message(farm_display: str) -> str:
+    return (
+        f"The supervisor agent doesn't have permission to access the {farm_display} farm. "
+        "Please verify your access credentials."
+    )
+
+
+def _permission_operation_message(operation: str) -> str:
+    return (
+        f"Not authorized to perform '{operation}' operation through the Payment MCP service. "
+        "Please verify your farm credentials."
+    )
+
+
+def _build_permission_user_message(kw: dict, last_msg: AIMessage) -> str:
+    content_lower = _ai_message_content_lower(last_msg)
+    operation = _resolve_payment_operation_keyword(kw.get(_SUPERVISOR_OPERATION_KEY), content_lower)
+    if operation:
+        return _permission_operation_message(operation)
+    farm_display = _resolve_farm_display(kw.get(_SUPERVISOR_FARM_KEY), content_lower)
+    if farm_display:
+        return _permission_farm_message(farm_display)
+    return _PERMISSION_FALLBACK_MESSAGE
+
+
 class NodeStates:
     SUPERVISOR = "exchange_supervisor"
 
@@ -207,6 +263,7 @@ class ExchangeGraph:
             Review the entire conversation history provided.
 
             Decide whether the user's *original query* has been satisfied by the responses given so far. If the prompt is related to order, please ensure the farm information is included in the final response.
+            For permission issues regarding creating a payment or list transaction, please include which operation failed in the final response.
             If the last message from the AI provides a conclusive answer to the user's request, or if the conversation has reached a natural conclusion, then set 'should_continue' to false.
             Do NOT continue if:
             - The last message from the AI is a final answer to the user's initial request.
@@ -241,38 +298,8 @@ class ExchangeGraph:
         if next_node == END and isinstance(last_msg, AIMessage):
             outcome = (last_msg.additional_kwargs or {}).get(_SUPERVISOR_OUTCOME_KEY)
             if outcome == _OUTCOME_PERMISSION:
-                err_msg = "Authentication or authorization failed. Please check your credentials and try again."
                 kw = last_msg.additional_kwargs or {}
-                farm_kw = kw.get(_SUPERVISOR_FARM_KEY)
-                operation_kw = kw.get(_SUPERVISOR_OPERATION_KEY)
-                if farm_kw:
-                    err_msg = (
-                        f"The supervisor agent doesn't have permission to access the {str(farm_kw).title()} farm. "
-                        "Please verify your access credentials and try again."
-                    )
-                else:
-                    content_lower = last_msg.content.lower() if isinstance(last_msg.content, str) else ""
-                    for farm in ["colombia", "brazil", "vietnam"]:
-                        if farm in content_lower:
-                            err_msg = (
-                                f"The supervisor agent doesn't have permission to access the {farm.title()} farm. "
-                                "Please verify your access credentials and try again."
-                            )
-                            break
-                if operation_kw:
-                    err_msg = (
-                        f"Not authorized to perform '{operation_kw}' operation through the Payment MCP service. "
-                        "Please verify your farm credentials and try again."
-                    )
-                else:
-                    content_lower = last_msg.content.lower() if isinstance(last_msg.content, str) else ""
-                    for keyword in ["transaction", "payment"]:
-                        if keyword in content_lower:
-                            err_msg = (
-                                f"Not authorized to perform '{keyword}' operation through the Payment MCP service. "
-                                "Please verify your farm credentials and try again."
-                            )
-                            break
+                err_msg = _build_permission_user_message(kw, last_msg)
                 original = last_msg.content if isinstance(last_msg.content, str) else str(last_msg.content or "")
                 original = original.strip()
                 combined = f"{err_msg} Issue details: {original}"
@@ -526,7 +553,7 @@ class ExchangeGraph:
 
             order_kw = {}
             if auth_failure:
-                forced_error_message = f"{auth_failure} Please try again later."
+                forced_error_message = auth_failure.strip()
                 order_kw[_SUPERVISOR_OUTCOME_KEY] = _OUTCOME_PERMISSION
                 uq = (user_msg.content or "").lower() if user_msg else ""
                 for farm_name in ("brazil", "colombia", "vietnam"):
