@@ -30,7 +30,6 @@ from agents.logistics.helpdesk.agent_executor import HelpdeskAgentExecutor
 from agents.logistics.helpdesk.card import AGENT_CARD
 from agents.logistics.shipper.card import AGENT_CARD as SHIPPER_AGENT_CARD
 from config.config import (
-    ENABLE_HTTP,
     SLIM_SERVER,
     OTEL_SDK_DISABLED,
 )
@@ -164,10 +163,9 @@ async def main():
         agent_card=AGENT_CARD, http_handler=request_handler
     )
 
-    # run the agent on all A2A interfaces defined in the card and spin up the HTTP server if enabled
+    # run the agent on all A2A interfaces defined in the card and always serve the HTTP health endpoint
     tasks = [asyncio.create_task(serve_all_a2a_interfaces(request_handler, AGENT_CARD))]
-    if ENABLE_HTTP:
-        tasks.append(asyncio.create_task(run_http_server(server)))
+    tasks.append(asyncio.create_task(run_http_server(server)))
 
     await asyncio.gather(*tasks)
 

@@ -71,7 +71,6 @@ def _base_env():
     return {
         **os.environ,
         "PYTHONPATH": str(LUNGO_DIR),
-        "ENABLE_HTTP": "true",
         "FARM_BROADCAST_TOPIC": "farm_broadcast",
         "OTEL_SDK_DISABLED": "false",
         "PYTHONUNBUFFERED": "1",
