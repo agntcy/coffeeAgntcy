@@ -20,7 +20,7 @@
     "@heroicons/react": "^2.2.0",
     "@mui/icons-material": "^7.0.1",
     "@mui/material": "^7.0.1",
-    "@open-ui-kit/core": "^1.4.0",
+    "@open-ui-kit/core": "^1.4.2",
     "@radix-ui/react-select": "^2.2.5",
     "@reactflow/node-resizer": "^2.2.14",
     "@xyflow/react": "^12.6.4",
