@@ -4,10 +4,18 @@
 """Shared state keys and data models for the Recruiter Supervisor."""
 
 import re
+from enum import Enum
 from typing import Optional
 
 from a2a.types import AgentCard, AgentCapabilities
 from pydantic import BaseModel
+
+
+class AgentProtocol(str, Enum):
+    """Communication protocol supported by a recruited agent."""
+
+    A2A = "a2a"
+    MCP = "mcp"
 
 # ---------------------------------------------------------------------------
 # Session state keys
@@ -32,6 +40,7 @@ class AgentRecord(BaseModel):
     url: str = ""  # Optional - may not be present in all agent records
     version: str = "1.0.0"
     skills: list[dict] = []
+    protocol: AgentProtocol = AgentProtocol.A2A
 
     def to_agent_card(self) -> AgentCard:
         """Convert to an A2A AgentCard for use with RemoteA2aAgent."""
