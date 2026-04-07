@@ -47,7 +47,7 @@ dependencies = [
     "referencing>=0.28.0",
     "slima2a==0.3.0",
     "slim-bindings~=1.1",
-    "agntcy-app-sdk==0.5.4",
+    "agntcy-app-sdk",
 ]
 
 [project.optional-dependencies]
@@ -68,6 +68,9 @@ allow-direct-references = true
 
 [[tool.uv.index]]
 url = "https://buf.build/gen/python"
+
+[tool.uv.sources]
+agntcy-app-sdk = { path = "../../../../Github/app-sdk" }
 
 [tool.poetry]
 package-mode = false

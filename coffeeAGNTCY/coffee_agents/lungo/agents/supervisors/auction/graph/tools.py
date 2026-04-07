@@ -3,7 +3,7 @@
 
 import copy
 import logging
-from typing import Any, Union, Literal, NoReturn
+from typing import Any, Tuple, Union, Literal, NoReturn
 from uuid import uuid4
 from pydantic import BaseModel
 
@@ -39,6 +39,26 @@ from config.config import (
 )
 from services.identity_service import IdentityService
 from services.identity_service_impl import IdentityServiceImpl
+
+from a2a.client.middleware import ClientCallInterceptor, ClientCallContext
+
+class LoggingInterceptor(ClientCallInterceptor):
+      async def intercept(
+          self,
+          method_name: str,
+          request_payload: dict[str, Any],
+          http_kwargs: dict[str, Any],
+          agent_card: AgentCard | None,
+          context: ClientCallContext | None,
+      ) -> tuple[dict[str, Any], dict[str, Any]]:
+
+          print(f"=== A2A REQUEST [{method_name}] ===")
+          print(f"Agent: {agent_card.name if agent_card else 'unknown'}")
+          print(f"Payload: {request_payload}")
+          print(f"HTTP kwargs: {http_kwargs}")
+
+          # Pass through unmodified                                                                                                                                                                              
+          return request_payload, http_kwargs
 
 
 logger = logging.getLogger("lungo.supervisor.tools")
@@ -202,7 +222,8 @@ async def get_farm_yield_inventory(prompt: str, farm: str) -> str:
         else:
             card.capabilities.streaming = False
 
-        client = await a2a_client_factory.create(card)
+        print("=== DEBUG: Creating A2A client with card ===")
+        client = await a2a_client_factory.create(card, interceptors=[LoggingInterceptor()])
 
         message = Message(
             messageId=str(uuid4()),
@@ -328,7 +349,7 @@ async def get_all_farms_yield_inventory_streaming(prompt: str):
 
         # override preferred transport to ensure we use the intended publish-subscribe transport for broadcasts
         card.preferred_transport = DEFAULT_MESSAGE_TRANSPORT.lower()
-        client = await a2a_client_factory.create(card)
+        client = await a2a_client_factory.create(card, interceptors=[LoggingInterceptor()])
 
         # Get the async generator for streaming responses
         response_stream = client.broadcast_message_streaming(

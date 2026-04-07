@@ -27,7 +27,7 @@ telemetry = [
 [[package]]
 name = "agntcy-app-sdk"
 version = "0.5.4"
-source = { registry = "https://pypi.org/simple" }
+source = { directory = "../../../../Github/app-sdk" }
 dependencies = [
     { name = "a2a-sdk" },
     { name = "agntcy-dir" },
@@ -44,9 +44,38 @@ dependencies = [
     { name = "structlog" },
     { name = "uvicorn" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/bc/1a/77a628ca871ecf1e8a7c8dd95763ffc86113900e94334deb5b443278dbed/agntcy_app_sdk-0.5.4.tar.gz", hash = "sha256:96b7452a3dd20c4b35a261d46867f7f73f0d2bc552a48b9469760d6149415da1", size = 3087074, upload-time = "2026-03-12T20:06:59.058Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/a8/bd/66fd4160d18b47dec970fc332aebd6e6a9c6bc8b1a8e5f24e900a0faae81/agntcy_app_sdk-0.5.4-py3-none-any.whl", hash = "sha256:1e49600e18557416ebc95862df6098ae5a4607fb55d8350011f7417d5c3dc0be", size = 102573, upload-time = "2026-03-12T20:06:57.599Z" },
+
+[package.metadata]
+requires-dist = [
+    { name = "a2a-sdk", specifier = "==0.3.20" },
+    { name = "agntcy-dir", specifier = ">=1.0.0" },
+    { name = "agntcy-identity-service-sdk", specifier = "==0.0.7" },
+    { name = "asgi-lifespan", specifier = ">=2.1.0" },
+    { name = "httpx", specifier = ">=0.28.1" },
+    { name = "ioa-observe-sdk", specifier = "==1.0.34" },
+    { name = "langchain-community", specifier = ">=0.3.24" },
+    { name = "mcp", extras = ["cli"], specifier = ">=1.10.1" },
+    { name = "nats-py", specifier = ">=2.10.0,<3" },
+    { name = "protobuf", specifier = ">=6.33.0" },
+    { name = "slim-bindings", specifier = "~=1.1" },
+    { name = "slima2a", specifier = "==0.3.0" },
+    { name = "structlog", specifier = ">=24.1.0" },
+    { name = "uvicorn", specifier = ">=0.29.0" },
+]
+
+[package.metadata.requires-dev]
+dev = [
+    { name = "langchain-anthropic", specifier = ">=0.3.12,<0.4" },
+    { name = "langchain-openai", specifier = ">=0.3.14,<0.4" },
+    { name = "mypy", specifier = ">=1.10.0" },
+    { name = "openai", specifier = ">=1.60.2,<2" },
+    { name = "pytest", specifier = "~=7.0" },
+    { name = "pytest-asyncio", specifier = ">=0.17.0,<0.18" },
+    { name = "pytest-cov", specifier = ">=4.0.0,<5" },
+    { name = "ruff", specifier = ">=0.4.0" },
+    { name = "tiktoken", specifier = ">=0.8.0,<0.9" },
+    { name = "types-protobuf" },
+    { name = "typing-extensions", specifier = ">=4.12.2,<5" },
 ]
 
 [[package]]
@@ -2166,7 +2195,7 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "a2a-sdk", specifier = "==0.3.20" },
-    { name = "agntcy-app-sdk", specifier = "==0.5.4" },
+    { name = "agntcy-app-sdk", directory = "../../../../Github/app-sdk" },
     { name = "agntcy-dir", marker = "extra == 'dev'", specifier = "==1.0.0" },
     { name = "agntcy-identity-service-sdk", specifier = "==0.0.7" },
     { name = "aiohttp", specifier = ">=3.13.3" },

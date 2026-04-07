@@ -7,6 +7,7 @@ from uuid import uuid4
 from a2a.server.agent_execution import AgentExecutor, RequestContext
 from a2a.server.events import EventQueue
 from a2a.types import (
+    TaskStatusUpdateEvent,
     UnsupportedOperationError,
     JSONRPCResponse,
     ContentTypeNotSupportedError,
