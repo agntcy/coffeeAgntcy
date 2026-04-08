@@ -40,15 +40,14 @@ def _build_validation_registry() -> Registry:
 
 
 def _load_and_validate_starting_workflows_from_file(
-    target: Path = _STARTING_WORKFLOWS_FILE,
+    target: Path,
 ) -> list[dict[str, Any]]:
     """Load a starting-workflows JSON file and validate it.
 
     Parameters
     ----------
-    path:
-        Filesystem path to the JSON data file.  Defaults to
-        ``starting_workflows.json`` co-located with this module.
+    target:
+        Filesystem path to the JSON data file.
 
     Returns
     -------
@@ -57,6 +56,8 @@ def _load_and_validate_starting_workflows_from_file(
 
     Raises
     ------
+    ValueError
+        *target* is ``None`` or its string representation is empty.
     FileNotFoundError
         Data file does not exist.
     schema.errors.InstanceDecodeError
@@ -68,6 +69,9 @@ def _load_and_validate_starting_workflows_from_file(
     schema.errors.SchemaDefinitionError
         A schema definition itself is malformed.
     """
+    if target is None or not str(target).strip():
+        raise ValueError("target path must not be empty")
+
     if not target.is_file():
         raise FileNotFoundError(
             f"Starting workflows data file not found: {target}"
@@ -102,15 +106,23 @@ def _load_and_validate_starting_workflows_from_file(
 _cached_workflows: list[dict[str, Any]] | None = None
 
 
-def get_starting_workflows() -> list[dict[str, Any]]:
+def get_starting_workflows(
+    target: Path = _STARTING_WORKFLOWS_FILE,
+) -> list[dict[str, Any]]:
     """Return the validated starting workflows, loading on first access.
+
+    Parameters
+    ----------
+    target:
+        Filesystem path to the JSON data file.  Defaults to
+        ``starting_workflows.json`` co-located with this module.
 
     The result is cached process-wide after the first successful load.
     Callers **must not** mutate the returned structure.
     """
     global _cached_workflows
     if _cached_workflows is None:
-        _cached_workflows = _load_and_validate_starting_workflows_from_file()
+        _cached_workflows = _load_and_validate_starting_workflows_from_file(target)
     return _cached_workflows
 
 
