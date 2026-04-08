@@ -1,7 +1,7 @@
 [
   {
-    "pattern": "publish_subscribe",
-    "use_case": "Coffee Buying",
+    "pattern": "Supervisor-worker",
+    "use_case": "Coffee Agency",
     "name": "Publish Subscribe Coffee Farm Network",
     "starting_topology": {
       "nodes": [
@@ -122,8 +122,8 @@
     "instances": {}
   },
   {
-    "pattern": "publish_subscribe_streaming",
-    "use_case": "Coffee Buying",
+    "pattern": "Supervisor-worker",
+    "use_case": "Coffee Agency",
     "name": "Publish Subscribe Streaming Coffee Farm Network",
     "starting_topology": {
       "nodes": [
@@ -244,8 +244,8 @@
     "instances": {}
   },
   {
-    "pattern": "group_communication",
-    "use_case": "Order Fulfilment",
+    "pattern": "Group chat",
+    "use_case": "Coffee Agency",
     "name": "Secure Group Communication Logistics Network",
     "starting_topology": {
       "nodes": [
@@ -340,8 +340,8 @@
     "instances": {}
   },
   {
-    "pattern": "on_demand_discovery",
-    "use_case": "Capability Discovery",
+    "pattern": "Recruiter",
+    "use_case": "Coffee Agency",
     "name": "On-demand Discovery",
     "starting_topology": {
       "nodes": [
