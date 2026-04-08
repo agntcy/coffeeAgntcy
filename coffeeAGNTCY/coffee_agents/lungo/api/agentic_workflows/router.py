@@ -10,12 +10,8 @@ from __future__ import annotations
 
 from typing import Annotated
 
-from api.agentic_workflows.catalog import (
-    PATTERNS,
-    USE_CASES,
-    get_patterns_dto_response,
-    get_use_cases_dto_response,
-)
+from api.agentic_workflows.patterns import PATTERNS, get_patterns_dto_response
+from api.agentic_workflows.use_cases import USE_CASES, get_use_cases_dto_response
 from api.agentic_workflows.dtos import (
     InstantiateWorkflowResponse,
     PatternListResponse,
