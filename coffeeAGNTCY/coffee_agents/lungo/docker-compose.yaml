@@ -141,6 +141,7 @@ services:
     environment:
       - TZ=UTC
       - PORT=9105
+      - CORS_ALLOWED_ORIGINS=${CORS_ALLOWED_ORIGINS:-}
     ports:
       - "9105:9105"
 
