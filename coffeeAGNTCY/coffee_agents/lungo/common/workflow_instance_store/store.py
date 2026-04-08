@@ -33,6 +33,8 @@ from common.workflow_instance_store.notifier import NoOpNotifier, NotifierProtoc
 
 EVENT_SCHEMA = "event_v1"
 
+_STORE_CLOSED_MSG = "WorkflowInstanceStateStore is closed"
+
 logger = logging.getLogger(__name__)
 
 _DISPATCH_SENTINEL: Final[object] = object()
@@ -101,7 +103,13 @@ class WorkflowInstanceStateStore:
             )
 
     def wait_dispatch_idle(self, timeout: float | None = 5.0) -> None:
-        """Block until all queued dispatch jobs finished (for tests / read-your-writes)."""
+        """Block until all queued dispatch jobs finished (for tests / read-your-writes).
+
+        Raises ``RuntimeError`` if the store is already :meth:`close`d.
+        """
+        with self._state_lock:
+            if self._closed:
+                raise RuntimeError(_STORE_CLOSED_MSG)
         end = None if timeout is None else time.monotonic() + timeout
         with self._dispatch_cv:
             while self._outstanding_dispatches > 0:
@@ -172,9 +180,7 @@ class WorkflowInstanceStateStore:
     def _submit_core(self, work: dict) -> None:
         """Merge then enqueue dispatch. Lock is released before ``put`` so listeners can read state."""
         with self._state_lock:
-            if self._closed:
-                msg = "WorkflowInstanceStateStore is closed"
-                raise RuntimeError(msg)
+            self._check_open_locked()
             touched = self._merge_snapshot(work)
         if not touched:
             return
@@ -223,10 +229,14 @@ class WorkflowInstanceStateStore:
                         iid,
                     )
 
-    def _reject_if_closed(self) -> None:
+    def _check_open_locked(self) -> None:
+        """Raise if closed. Caller must hold ``_state_lock``."""
         if self._closed:
-            msg = "WorkflowInstanceStateStore is closed"
-            raise RuntimeError(msg)
+            raise RuntimeError(_STORE_CLOSED_MSG)
+
+    def _reject_if_closed(self) -> None:
+        with self._state_lock:
+            self._check_open_locked()
 
     def submit_event_sync(self, event: dict) -> None:
         """Validate, merge, then queue dispatch. Thread-safe for concurrent sync callers."""

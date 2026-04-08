@@ -265,11 +265,12 @@ def test_get_instance_projection():
 def test_slow_notifier_does_not_block_merge():
     entered = threading.Event()
     hold = threading.Event()
+    th: threading.Thread | None = None
 
     class GateNotifier:
         def notify(self, instance_id: str, event: dict) -> None:
             entered.set()
-            assert hold.wait(timeout=30)
+            assert hold.wait(timeout=30), "notifier hold timed out"
 
     store = WorkflowInstanceStateStore(notifier=GateNotifier())
     try:
@@ -314,6 +315,9 @@ def test_slow_notifier_does_not_block_merge():
         assert not th.is_alive()
         store.wait_dispatch_idle()
     finally:
+        hold.set()
+        if th is not None:
+            th.join(timeout=2.0)
         store.close()
 
 
@@ -322,6 +326,21 @@ def test_close_rejects_submits():
     store.close()
     with pytest.raises(RuntimeError, match="closed"):
         store.submit_event_sync(_minimal_valid_event())
+
+
+@pytest.mark.asyncio
+async def test_close_rejects_async_submit():
+    store = WorkflowInstanceStateStore()
+    store.close()
+    with pytest.raises(RuntimeError, match="closed"):
+        await store.submit_event(_minimal_valid_event())
+
+
+def test_wait_dispatch_idle_rejects_when_closed():
+    store = WorkflowInstanceStateStore()
+    store.close()
+    with pytest.raises(RuntimeError, match="closed"):
+        store.wait_dispatch_idle()
 
 
 def test_close_idempotent():
