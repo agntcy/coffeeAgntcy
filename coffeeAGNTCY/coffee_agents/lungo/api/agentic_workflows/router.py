@@ -10,16 +10,18 @@ from __future__ import annotations
 
 from typing import Annotated
 
-from api.agentic_workflows.patterns import PATTERNS, get_patterns_dto_response
-from api.agentic_workflows.use_cases import USE_CASES, get_use_cases_dto_response
 from api.agentic_workflows.dtos import (
     InstantiateWorkflowResponse,
+    Pattern,
     PatternListResponse,
+    UseCase,
     UseCaseListResponse,
     WorkflowInstanceMapResponse,
     WorkflowSummary,
     WorkflowSummaryMapResponse,
 )
+from api.agentic_workflows.patterns import PATTERNS
+from api.agentic_workflows.use_cases import USE_CASES
 from api.agentic_workflows.workflows import get_starting_workflows
 from fastapi import APIRouter, HTTPException, Path, Query
 from fastapi.responses import RedirectResponse
@@ -52,7 +54,7 @@ def create_agentic_workflows_router() -> APIRouter:
     )
     async def list_patterns() -> PatternListResponse:
         """GET /patterns/ — catalog of patterns."""
-        return get_patterns_dto_response(PATTERNS)
+        return PatternListResponse(items=[Pattern(name=n) for n in PATTERNS])
 
     @router.get(
         "/use-cases/",
@@ -61,7 +63,7 @@ def create_agentic_workflows_router() -> APIRouter:
     )
     async def list_use_cases() -> UseCaseListResponse:
         """GET /use-cases/ — catalog of use-cases."""
-        return get_use_cases_dto_response(USE_CASES)
+        return UseCaseListResponse(items=[UseCase(name=n) for n in USE_CASES])
 
     @router.get(
         "/agentic-workflows/",

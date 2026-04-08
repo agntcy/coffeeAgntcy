@@ -1,12 +1,12 @@
 # Copyright AGNTCY Contributors (https://github.com/agntcy)
 # SPDX-License-Identifier: Apache-2.0
 
-"""Unit tests for the patterns catalog endpoint and converter."""
+"""Unit tests for the patterns catalog endpoint."""
 
 from __future__ import annotations
 
 import pytest
-from api.agentic_workflows.patterns import PATTERNS, get_patterns_dto_response
+from api.agentic_workflows.patterns import PATTERNS
 from api.agentic_workflows.router import create_agentic_workflows_router
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
@@ -49,26 +49,6 @@ class TestListPatterns:
     def test_names_match_catalog(self, client: TestClient) -> None:
         names = [p["name"] for p in client.get("/patterns/").json()["items"]]
         assert names == PATTERNS
-
-
-# ---------------------------------------------------------------------------
-# Converter function
-# ---------------------------------------------------------------------------
-
-
-class TestGetPatternsDtoResponse:
-    def test_converts_names_to_dto(self) -> None:
-        resp = get_patterns_dto_response(["A", "B"])
-        assert [p.name for p in resp.items] == ["A", "B"]
-
-    def test_empty_list(self) -> None:
-        resp = get_patterns_dto_response([])
-        assert resp.items == []
-
-    def test_single_item(self) -> None:
-        resp = get_patterns_dto_response(["Solo"])
-        assert len(resp.items) == 1
-        assert resp.items[0].name == "Solo"
 
 
 # ---------------------------------------------------------------------------

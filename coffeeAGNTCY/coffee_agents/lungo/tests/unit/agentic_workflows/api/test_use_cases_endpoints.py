@@ -1,13 +1,13 @@
 # Copyright AGNTCY Contributors (https://github.com/agntcy)
 # SPDX-License-Identifier: Apache-2.0
 
-"""Unit tests for the use-cases catalog endpoint and converter."""
+"""Unit tests for the use-cases catalog endpoint."""
 
 from __future__ import annotations
 
 import pytest
 from api.agentic_workflows.router import create_agentic_workflows_router
-from api.agentic_workflows.use_cases import USE_CASES, get_use_cases_dto_response
+from api.agentic_workflows.use_cases import USE_CASES
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
@@ -49,23 +49,3 @@ class TestListUseCases:
     def test_names_match_catalog(self, client: TestClient) -> None:
         names = [u["name"] for u in client.get("/use-cases/").json()["items"]]
         assert names == USE_CASES
-
-
-# ---------------------------------------------------------------------------
-# Converter function
-# ---------------------------------------------------------------------------
-
-
-class TestGetUseCasesDtoResponse:
-    def test_converts_names_to_dto(self) -> None:
-        resp = get_use_cases_dto_response(["X", "Y"])
-        assert [u.name for u in resp.items] == ["X", "Y"]
-
-    def test_empty_list(self) -> None:
-        resp = get_use_cases_dto_response([])
-        assert resp.items == []
-
-    def test_single_item(self) -> None:
-        resp = get_use_cases_dto_response(["Only"])
-        assert len(resp.items) == 1
-        assert resp.items[0].name == "Only"
