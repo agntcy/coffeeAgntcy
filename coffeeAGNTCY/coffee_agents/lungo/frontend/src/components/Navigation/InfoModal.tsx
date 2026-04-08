@@ -27,6 +27,11 @@ const InfoModal: React.FC<InfoModalProps> = ({ isOpen, onClose }) => {
   const EXCHANGE_APP_API_URL =
     env.get("VITE_EXCHANGE_APP_API_URL") || DEFAULT_EXCHANGE_APP_API_URL
 
+  const DEFAULT_AGENTIC_WORKFLOWS_API_URL = "http://127.0.0.1:9105"
+  const AGENTIC_WORKFLOWS_API_URL =
+    env.get("VITE_AGENTIC_WORKFLOWS_API_URL") ||
+    DEFAULT_AGENTIC_WORKFLOWS_API_URL
+
   const [info, setInfo] = React.useState<BuildInfo | null>(null)
   const [error, setError] = React.useState<string | null>(null)
 
@@ -76,6 +81,15 @@ const InfoModal: React.FC<InfoModalProps> = ({ isOpen, onClose }) => {
             </h3>
             <div className="space-y-2 text-sm text-modal-text-secondary">
               {error && <div className="text-red-500">{error}</div>}
+              <div className="flex justify-between gap-2">
+                <span className="shrink-0">Agentic Workflows API:</span>
+                <span
+                  className="min-w-0 break-all text-right font-mono text-modal-accent"
+                  title={AGENTIC_WORKFLOWS_API_URL}
+                >
+                  {AGENTIC_WORKFLOWS_API_URL}
+                </span>
+              </div>
               <div className="flex justify-between">
                 <span>Release Version:</span>
                 <span className="font-mono text-modal-accent">
