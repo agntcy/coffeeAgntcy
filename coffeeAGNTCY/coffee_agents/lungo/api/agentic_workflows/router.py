@@ -10,6 +10,12 @@ from __future__ import annotations
 
 from typing import Annotated
 
+from api.agentic_workflows.catalog import (
+    PATTERNS,
+    USE_CASES,
+    get_patterns_dto_response,
+    get_use_cases_dto_response,
+)
 from api.agentic_workflows.dtos import (
     InstantiateWorkflowResponse,
     PatternListResponse,
@@ -48,7 +54,7 @@ def create_agentic_workflows_router() -> APIRouter:
     )
     async def list_patterns() -> PatternListResponse:
         """GET /patterns/ — catalog of patterns."""
-        raise HTTPException(status_code=501, detail="Not implemented")
+        return get_patterns_dto_response(PATTERNS)
 
     @router.get(
         "/use-cases/",
@@ -57,7 +63,7 @@ def create_agentic_workflows_router() -> APIRouter:
     )
     async def list_use_cases() -> UseCaseListResponse:
         """GET /use-cases/ — catalog of use-cases."""
-        raise HTTPException(status_code=501, detail="Not implemented")
+        return get_use_cases_dto_response(USE_CASES)
 
     @router.get(
         "/agentic-workflows/",
