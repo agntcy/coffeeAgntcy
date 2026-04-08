@@ -21,8 +21,10 @@ from api.agentic_workflows.dtos import (
     PatternListResponse,
     UseCaseListResponse,
     WorkflowInstanceMapResponse,
+    WorkflowSummary,
     WorkflowSummaryMapResponse,
 )
+from api.agentic_workflows.workflows import get_starting_workflows
 from fastapi import APIRouter, HTTPException, Path, Query
 from fastapi.responses import RedirectResponse
 from schema.types import Event, Workflow, WorkflowInstance
@@ -75,7 +77,25 @@ def create_agentic_workflows_router() -> APIRouter:
         use_cases: Annotated[list[str] | None, Query()] = None,
     ) -> WorkflowSummaryMapResponse:
         """GET /agentic-workflows/ — map keyed by workflow name; optional filters."""
-        raise HTTPException(status_code=501, detail="Not implemented")
+        all_workflows = get_starting_workflows()
+
+        filtered = all_workflows
+        if patterns:
+            pattern_set = set(patterns)
+            filtered = [w for w in filtered if w["pattern"] in pattern_set]
+        if use_cases:
+            uc_set = set(use_cases)
+            filtered = [w for w in filtered if w["use_case"] in uc_set]
+
+        summary_map = {
+            w["name"]: WorkflowSummary(
+                name=w["name"],
+                pattern=w["pattern"],
+                use_case=w["use_case"],
+            )
+            for w in filtered
+        }
+        return WorkflowSummaryMapResponse(summary_map)
 
     @router.get(
         "/agentic-workflows/{workflow_name}/",
@@ -87,7 +107,27 @@ def create_agentic_workflows_router() -> APIRouter:
         topology_only: Annotated[bool, Query()] = False,
     ) -> Workflow:
         """GET /agentic-workflows/{workflow_name}/ — definition + topology."""
-        raise HTTPException(status_code=501, detail="Not implemented")
+        all_workflows = get_starting_workflows()
+        wf_dict = next(
+            (w for w in all_workflows if w["name"] == workflow_name), None
+        )
+        if wf_dict is None:
+            raise HTTPException(
+                status_code=404, detail=f"Workflow not found: {workflow_name}"
+            )
+
+        if topology_only:
+            return Workflow.model_validate(
+                {
+                    "pattern": wf_dict["pattern"],
+                    "use_case": wf_dict["use_case"],
+                    "name": wf_dict["name"],
+                    "starting_topology": wf_dict["starting_topology"],
+                    "instances": {},
+                }
+            )
+
+        return Workflow.model_validate(wf_dict)
 
     @router.post(
         "/agentic-workflows/{workflow_name}/",

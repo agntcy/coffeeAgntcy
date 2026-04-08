@@ -1,0 +1,379 @@
+[
+  {
+    "pattern": "publish_subscribe",
+    "use_case": "Coffee Buying",
+    "name": "Publish Subscribe Coffee Farm Network",
+    "starting_topology": {
+      "nodes": [
+        {
+          "id": "node://1a000001-0001-4000-a001-000000000001",
+          "operation": "read",
+          "type": "customNode",
+          "label": "Auction Agent",
+          "size": { "width": 1.0, "height": 1.0 },
+          "layer_index": 0
+        },
+        {
+          "id": "node://1a000001-0001-4000-a001-000000000002",
+          "operation": "read",
+          "type": "transportNode",
+          "label": "Transport",
+          "size": { "width": 1.0, "height": 1.0 },
+          "layer_index": 1
+        },
+        {
+          "id": "node://1a000001-0001-4000-a001-000000000003",
+          "operation": "read",
+          "type": "customNode",
+          "label": "Brazil Coffee Farm Agent",
+          "size": { "width": 1.0, "height": 1.0 },
+          "layer_index": 2
+        },
+        {
+          "id": "node://1a000001-0001-4000-a001-000000000004",
+          "operation": "read",
+          "type": "customNode",
+          "label": "Colombia Coffee Farm Agent",
+          "size": { "width": 1.0, "height": 1.0 },
+          "layer_index": 2
+        },
+        {
+          "id": "node://1a000001-0001-4000-a001-000000000005",
+          "operation": "read",
+          "type": "customNode",
+          "label": "Vietnam Coffee Farm Agent",
+          "size": { "width": 1.0, "height": 1.0 },
+          "layer_index": 2
+        },
+        {
+          "id": "node://1a000001-0001-4000-a001-000000000006",
+          "operation": "read",
+          "type": "customNode",
+          "label": "Weather MCP Server",
+          "size": { "width": 1.0, "height": 1.0 },
+          "layer_index": 3
+        },
+        {
+          "id": "node://1a000001-0001-4000-a001-000000000007",
+          "operation": "read",
+          "type": "customNode",
+          "label": "Payment MCP Server",
+          "size": { "width": 1.0, "height": 1.0 },
+          "layer_index": 3
+        }
+      ],
+      "edges": [
+        {
+          "id": "edge://1a000001-0001-4000-a001-e00000000001",
+          "operation": "read",
+          "type": "custom",
+          "source": "node://1a000001-0001-4000-a001-000000000001",
+          "target": "node://1a000001-0001-4000-a001-000000000002",
+          "bidirectional": false,
+          "weight": 1.0
+        },
+        {
+          "id": "edge://1a000001-0001-4000-a001-e00000000002",
+          "operation": "read",
+          "type": "custom",
+          "source": "node://1a000001-0001-4000-a001-000000000002",
+          "target": "node://1a000001-0001-4000-a001-000000000003",
+          "bidirectional": false,
+          "weight": 1.0
+        },
+        {
+          "id": "edge://1a000001-0001-4000-a001-e00000000003",
+          "operation": "read",
+          "type": "custom",
+          "source": "node://1a000001-0001-4000-a001-000000000002",
+          "target": "node://1a000001-0001-4000-a001-000000000004",
+          "bidirectional": false,
+          "weight": 1.0
+        },
+        {
+          "id": "edge://1a000001-0001-4000-a001-e00000000004",
+          "operation": "read",
+          "type": "custom",
+          "source": "node://1a000001-0001-4000-a001-000000000002",
+          "target": "node://1a000001-0001-4000-a001-000000000005",
+          "bidirectional": false,
+          "weight": 1.0
+        },
+        {
+          "id": "edge://1a000001-0001-4000-a001-e00000000005",
+          "operation": "read",
+          "type": "branching",
+          "source": "node://1a000001-0001-4000-a001-000000000004",
+          "target": "node://1a000001-0001-4000-a001-000000000006",
+          "bidirectional": false,
+          "weight": 1.0
+        },
+        {
+          "id": "edge://1a000001-0001-4000-a001-e00000000006",
+          "operation": "read",
+          "type": "branching",
+          "source": "node://1a000001-0001-4000-a001-000000000004",
+          "target": "node://1a000001-0001-4000-a001-000000000007",
+          "bidirectional": false,
+          "weight": 1.0
+        }
+      ]
+    },
+    "instances": {}
+  },
+  {
+    "pattern": "publish_subscribe_streaming",
+    "use_case": "Coffee Buying",
+    "name": "Publish Subscribe Streaming Coffee Farm Network",
+    "starting_topology": {
+      "nodes": [
+        {
+          "id": "node://2a000001-0001-4000-a001-000000000001",
+          "operation": "read",
+          "type": "customNode",
+          "label": "Auction Agent",
+          "size": { "width": 1.0, "height": 1.0 },
+          "layer_index": 0
+        },
+        {
+          "id": "node://2a000001-0001-4000-a001-000000000002",
+          "operation": "read",
+          "type": "transportNode",
+          "label": "Transport",
+          "size": { "width": 1.0, "height": 1.0 },
+          "layer_index": 1
+        },
+        {
+          "id": "node://2a000001-0001-4000-a001-000000000003",
+          "operation": "read",
+          "type": "customNode",
+          "label": "Brazil Coffee Farm Agent",
+          "size": { "width": 1.0, "height": 1.0 },
+          "layer_index": 2
+        },
+        {
+          "id": "node://2a000001-0001-4000-a001-000000000004",
+          "operation": "read",
+          "type": "customNode",
+          "label": "Colombia Coffee Farm Agent",
+          "size": { "width": 1.0, "height": 1.0 },
+          "layer_index": 2
+        },
+        {
+          "id": "node://2a000001-0001-4000-a001-000000000005",
+          "operation": "read",
+          "type": "customNode",
+          "label": "Vietnam Coffee Farm Agent",
+          "size": { "width": 1.0, "height": 1.0 },
+          "layer_index": 2
+        },
+        {
+          "id": "node://2a000001-0001-4000-a001-000000000006",
+          "operation": "read",
+          "type": "customNode",
+          "label": "Weather MCP Server",
+          "size": { "width": 1.0, "height": 1.0 },
+          "layer_index": 3
+        },
+        {
+          "id": "node://2a000001-0001-4000-a001-000000000007",
+          "operation": "read",
+          "type": "customNode",
+          "label": "Payment MCP Server",
+          "size": { "width": 1.0, "height": 1.0 },
+          "layer_index": 3
+        }
+      ],
+      "edges": [
+        {
+          "id": "edge://2a000001-0001-4000-a001-e00000000001",
+          "operation": "read",
+          "type": "custom",
+          "source": "node://2a000001-0001-4000-a001-000000000001",
+          "target": "node://2a000001-0001-4000-a001-000000000002",
+          "bidirectional": false,
+          "weight": 1.0
+        },
+        {
+          "id": "edge://2a000001-0001-4000-a001-e00000000002",
+          "operation": "read",
+          "type": "custom",
+          "source": "node://2a000001-0001-4000-a001-000000000002",
+          "target": "node://2a000001-0001-4000-a001-000000000003",
+          "bidirectional": false,
+          "weight": 1.0
+        },
+        {
+          "id": "edge://2a000001-0001-4000-a001-e00000000003",
+          "operation": "read",
+          "type": "custom",
+          "source": "node://2a000001-0001-4000-a001-000000000002",
+          "target": "node://2a000001-0001-4000-a001-000000000004",
+          "bidirectional": false,
+          "weight": 1.0
+        },
+        {
+          "id": "edge://2a000001-0001-4000-a001-e00000000004",
+          "operation": "read",
+          "type": "custom",
+          "source": "node://2a000001-0001-4000-a001-000000000002",
+          "target": "node://2a000001-0001-4000-a001-000000000005",
+          "bidirectional": false,
+          "weight": 1.0
+        },
+        {
+          "id": "edge://2a000001-0001-4000-a001-e00000000005",
+          "operation": "read",
+          "type": "branching",
+          "source": "node://2a000001-0001-4000-a001-000000000004",
+          "target": "node://2a000001-0001-4000-a001-000000000006",
+          "bidirectional": false,
+          "weight": 1.0
+        },
+        {
+          "id": "edge://2a000001-0001-4000-a001-e00000000006",
+          "operation": "read",
+          "type": "branching",
+          "source": "node://2a000001-0001-4000-a001-000000000004",
+          "target": "node://2a000001-0001-4000-a001-000000000007",
+          "bidirectional": false,
+          "weight": 1.0
+        }
+      ]
+    },
+    "instances": {}
+  },
+  {
+    "pattern": "group_communication",
+    "use_case": "Order Fulfilment",
+    "name": "Secure Group Communication Logistics Network",
+    "starting_topology": {
+      "nodes": [
+        {
+          "id": "node://3a000001-0001-4000-a001-000000000001",
+          "operation": "read",
+          "type": "group",
+          "label": "Logistics Group",
+          "size": { "width": 3.0, "height": 2.0 },
+          "layer_index": 0
+        },
+        {
+          "id": "node://3a000001-0001-4000-a001-000000000002",
+          "operation": "read",
+          "type": "customNode",
+          "label": "Buyer Logistics Agent",
+          "size": { "width": 1.0, "height": 1.0 },
+          "layer_index": 1
+        },
+        {
+          "id": "node://3a000001-0001-4000-a001-000000000003",
+          "operation": "read",
+          "type": "transportNode",
+          "label": "Transport",
+          "size": { "width": 1.0, "height": 1.0 },
+          "layer_index": 2
+        },
+        {
+          "id": "node://3a000001-0001-4000-a001-000000000004",
+          "operation": "read",
+          "type": "customNode",
+          "label": "Tatooine Coffee Farm Agent",
+          "size": { "width": 1.0, "height": 1.0 },
+          "layer_index": 1
+        },
+        {
+          "id": "node://3a000001-0001-4000-a001-000000000005",
+          "operation": "read",
+          "type": "customNode",
+          "label": "Shipper Agent",
+          "size": { "width": 1.0, "height": 1.0 },
+          "layer_index": 3
+        },
+        {
+          "id": "node://3a000001-0001-4000-a001-000000000006",
+          "operation": "read",
+          "type": "customNode",
+          "label": "Accountant Agent",
+          "size": { "width": 1.0, "height": 1.0 },
+          "layer_index": 3
+        }
+      ],
+      "edges": [
+        {
+          "id": "edge://3a000001-0001-4000-a001-e00000000001",
+          "operation": "read",
+          "type": "custom",
+          "source": "node://3a000001-0001-4000-a001-000000000002",
+          "target": "node://3a000001-0001-4000-a001-000000000003",
+          "bidirectional": false,
+          "weight": 1.0
+        },
+        {
+          "id": "edge://3a000001-0001-4000-a001-e00000000002",
+          "operation": "read",
+          "type": "custom",
+          "source": "node://3a000001-0001-4000-a001-000000000004",
+          "target": "node://3a000001-0001-4000-a001-000000000003",
+          "bidirectional": false,
+          "weight": 1.0
+        },
+        {
+          "id": "edge://3a000001-0001-4000-a001-e00000000003",
+          "operation": "read",
+          "type": "custom",
+          "source": "node://3a000001-0001-4000-a001-000000000003",
+          "target": "node://3a000001-0001-4000-a001-000000000005",
+          "bidirectional": false,
+          "weight": 1.0
+        },
+        {
+          "id": "edge://3a000001-0001-4000-a001-e00000000004",
+          "operation": "read",
+          "type": "custom",
+          "source": "node://3a000001-0001-4000-a001-000000000003",
+          "target": "node://3a000001-0001-4000-a001-000000000006",
+          "bidirectional": false,
+          "weight": 1.0
+        }
+      ]
+    },
+    "instances": {}
+  },
+  {
+    "pattern": "on_demand_discovery",
+    "use_case": "Capability Discovery",
+    "name": "On-demand Discovery",
+    "starting_topology": {
+      "nodes": [
+        {
+          "id": "node://4a000001-0001-4000-a001-000000000001",
+          "operation": "read",
+          "type": "customNode",
+          "label": "Agentic Recruiter",
+          "size": { "width": 1.0, "height": 1.0 },
+          "layer_index": 0
+        },
+        {
+          "id": "node://4a000001-0001-4000-a001-000000000002",
+          "operation": "read",
+          "type": "customNode",
+          "label": "AGNTCY Agent Directory",
+          "size": { "width": 1.0, "height": 1.0 },
+          "layer_index": 1
+        }
+      ],
+      "edges": [
+        {
+          "id": "edge://4a000001-0001-4000-a001-e00000000001",
+          "operation": "read",
+          "type": "custom",
+          "source": "node://4a000001-0001-4000-a001-000000000002",
+          "target": "node://4a000001-0001-4000-a001-000000000001",
+          "bidirectional": false,
+          "weight": 1.0
+        }
+      ]
+    },
+    "instances": {}
+  }
+]
