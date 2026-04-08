@@ -16,6 +16,7 @@ from a2a.types import (
     TextPart,
     Role,
 )
+from a2a.client import Consumer, ClientEvent
 from langchain_core.tools import tool, ToolException
 from langchain_core.messages import AnyMessage, ToolMessage
 from agntcy_app_sdk import InterfaceTransport, get_agent_identifier
@@ -59,6 +60,18 @@ class LoggingInterceptor(ClientCallInterceptor):
 
           # Pass through unmodified                                                                                                                                                                              
           return request_payload, http_kwargs
+
+# create a consumer that logs incoming messages and their agent cards for debugging purposes
+async def logging_consumer(event: ClientEvent | Message, agent_card: AgentCard) -> None:
+    print(f"=== A2A Event ===")
+    print(f"Agent: {agent_card.name if agent_card else 'unknown'}")
+    if isinstance(event, Message):
+        print(f"Message: {event}")
+    elif isinstance(event, tuple):
+        task_update, update_event = event
+        print(f"Task Update: {task_update}, Update Event: {update_event}")
+    else:
+        print(f"Unknown event type: {event}")
 
 
 logger = logging.getLogger("lungo.supervisor.tools")
@@ -223,7 +236,7 @@ async def get_farm_yield_inventory(prompt: str, farm: str) -> str:
             card.capabilities.streaming = False
 
         print("=== DEBUG: Creating A2A client with card ===")
-        client = await a2a_client_factory.create(card, interceptors=[LoggingInterceptor()])
+        client = await a2a_client_factory.create(card, interceptors=[LoggingInterceptor()], consumers=[logging_consumer])
 
         message = Message(
             messageId=str(uuid4()),
@@ -349,7 +362,7 @@ async def get_all_farms_yield_inventory_streaming(prompt: str):
 
         # override preferred transport to ensure we use the intended publish-subscribe transport for broadcasts
         card.preferred_transport = DEFAULT_MESSAGE_TRANSPORT.lower()
-        client = await a2a_client_factory.create(card, interceptors=[LoggingInterceptor()])
+        client = await a2a_client_factory.create(card, interceptors=[LoggingInterceptor()], consumers=[logging_consumer])
 
         # Get the async generator for streaming responses
         response_stream = client.broadcast_message_streaming(
