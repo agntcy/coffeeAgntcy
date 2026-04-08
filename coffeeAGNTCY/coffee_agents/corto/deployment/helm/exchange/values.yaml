@@ -32,7 +32,7 @@ serviceaccount:
 
 # You can use your own ingress stack of operators and letsencrypt mechanism
 ingress:
-  enabled: false  # If set to true, configure the values below for your ingress setup
+  enabled: false # If set to true, configure the values below for your ingress setup
   name: ""
   className: ""
   host: ""
@@ -40,6 +40,9 @@ ingress:
   servicePort: ""
   tlsSecret: ""
   annotations: {}
+
+cors:
+  allowedOrigins: ""
 
 probes:
   livenessProbeEnabled: false

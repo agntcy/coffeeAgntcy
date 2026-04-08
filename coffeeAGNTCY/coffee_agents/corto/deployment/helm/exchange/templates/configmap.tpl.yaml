@@ -4,6 +4,7 @@ metadata:
   name: {{ .Values.appName }}-configmap
   namespace: {{ .Release.Namespace }}
 data:
+  CORS_ALLOWED_ORIGINS: "{{ .Values.cors.allowedOrigins }}"
   FARM_AGENT_HOST: "{{ .Values.config.farmAgentHost }}"
   FARM_AGENT_PORT: "{{ .Values.config.farmAgentPort }}"
   AZURE_API_BASE: "{{ .Values.config.azureApiBase }}"
