@@ -62,6 +62,9 @@ extraIngress:
     pathType: ""
     annotations: {}
 
+cors:
+  allowedOrigins: ""
+
 probes:
   livenessProbeEnabled: false
   readinessProbeEnabled: false

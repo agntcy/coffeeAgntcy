@@ -21,6 +21,8 @@ from agntcy_app_sdk.factory import AgntcyFactory
 from agntcy_app_sdk.semantic.a2a.protocol import A2AProtocol
 from agntcy_app_sdk.app_sessions import AppContainer
 
+from common.cors import get_cors_allowed_origins
+
 from agents.logistics.accountant.agent_executor import AccountantAgentExecutor
 from agents.logistics.accountant.card import AGENT_CARD
 from agents.logistics.shipper.card import AGENT_CARD as SHIPPER_AGENT_CARD
@@ -76,10 +78,12 @@ async def liveness_probe(request):
         )
 
 def build_http_server(a2a_app: A2AStarletteApplication) -> FastAPI:
+    cors_origins = get_cors_allowed_origins()
+    logger.info("CORS allow_origins: %s", cors_origins)
     app_ = a2a_app.build()
     app_.add_middleware(
         CORSMiddleware,
-        allow_origins=["*"],
+        allow_origins=cors_origins,
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],

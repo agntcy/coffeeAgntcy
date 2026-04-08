@@ -24,6 +24,8 @@ serviceaccount:
   annotations:
     eks.amazonaws.com/role-arn: REPLACE_WITH_ROLE_ARN
 
+cors:
+  allowedOrigins: ""
 
 probes:
   livenessProbeEnabled: false
