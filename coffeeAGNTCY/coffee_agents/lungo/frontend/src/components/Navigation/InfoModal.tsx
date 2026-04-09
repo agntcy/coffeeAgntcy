@@ -3,8 +3,16 @@
  * SPDX-License-Identifier: Apache-2.0
  **/
 
-import React from "react"
+import React, { useEffect } from "react"
 import { X } from "lucide-react"
+import DialogTitle from "@mui/material/DialogTitle"
+import {
+  Dialog,
+  IconButton,
+  ModalContent,
+  Stack,
+  Typography,
+} from "@open-ui-kit/core"
 import { env } from "@/utils/env"
 
 interface InfoModalProps {
@@ -30,7 +38,7 @@ const InfoModal: React.FC<InfoModalProps> = ({ isOpen, onClose }) => {
   const [info, setInfo] = React.useState<BuildInfo | null>(null)
   const [error, setError] = React.useState<string | null>(null)
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (!isOpen) return
     let cancelled = false
     const fetchInfo = async () => {
@@ -55,65 +63,121 @@ const InfoModal: React.FC<InfoModalProps> = ({ isOpen, onClose }) => {
     }
   }, [isOpen, EXCHANGE_APP_API_URL])
 
-  if (!isOpen) return null
-
   return (
-    <div className="fixed inset-0 z-50">
-      <div className="absolute inset-0" onClick={onClose} />
-
-      <div className="absolute right-4 top-16 w-80 rounded-lg border border-modal-border bg-modal-background shadow-lg">
-        <button
+    <Dialog open={isOpen} onClose={onClose} aria-labelledby="info-modal-title">
+      <DialogTitle id="info-modal-title">
+        Build and Release Information
+        <IconButton
+          aria-label="Close"
           onClick={onClose}
-          className="absolute right-2 top-2 rounded-lg p-1 text-modal-text-secondary transition-colors hover:bg-modal-hover"
+          size="small"
+          sx={{
+            position: "absolute",
+            right: 8,
+            top: 8,
+          }}
         >
-          <X className="h-4 w-4" />
-        </button>
+          <X />
+        </IconButton>
+      </DialogTitle>
 
-        <div className="space-y-4 p-4 pr-10">
-          <div>
-            <h3 className="mb-3 text-sm font-normal leading-5 tracking-wide text-modal-text">
-              Build and Release Information
-            </h3>
-            <div className="space-y-2 text-sm text-modal-text-secondary">
-              {error && <div className="text-red-500">{error}</div>}
-              <div className="flex justify-between">
-                <span>Release Version:</span>
-                <span className="font-mono text-modal-accent">
+      <ModalContent>
+        <Stack spacing={3}>
+          <Stack spacing={2}>
+            <Stack spacing={1}>
+              {error && (
+                <Typography variant="body2" color="error">
+                  {error}
+                </Typography>
+              )}
+              <Stack
+                direction="row"
+                justifyContent="space-between"
+                sx={{
+                  typography: "body2",
+                }}
+              >
+                <Typography component="span" variant="body2">
+                  Release Version:
+                </Typography>
+                <Typography
+                  component="span"
+                  variant="body2"
+                  color="var(--modal-accent)"
+                >
                   {info?.version ?? "…"}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span>Build Date:</span>
-                <span className="font-mono">{info?.build_date ?? "…"}</span>
-              </div>
-            </div>
-          </div>
+                </Typography>
+              </Stack>
+              <Stack
+                direction="row"
+                justifyContent="space-between"
+                sx={{
+                  typography: "body2",
+                }}
+              >
+                <Typography component="span" variant="body2" color="inherit">
+                  Build Date:
+                </Typography>
+                <Typography
+                  component="span"
+                  variant="body2"
+                  color="var(--modal-accent)"
+                >
+                  {info?.build_date ?? "…"}
+                </Typography>
+              </Stack>
+            </Stack>
+          </Stack>
 
-          <div>
-            <h3 className="mb-3 text-sm font-normal leading-5 tracking-wide text-modal-text">
+          <Stack spacing={2}>
+            <Typography
+              variant="h6"
+              sx={{
+                color: "var(--modal-text)",
+              }}
+            >
               Dependencies:
-            </h3>
-            <div className="space-y-2 text-sm text-modal-text-secondary">
+            </Typography>
+            <Stack spacing={1}>
               {info?.dependencies &&
                 Object.entries(info.dependencies).map(([name, ver]) => (
-                  <div key={name} className="flex justify-between">
-                    <span>{name}:</span>
-                    <span className="font-mono text-modal-accent">{ver}</span>
-                  </div>
+                  <Stack
+                    key={name}
+                    direction="row"
+                    justifyContent="space-between"
+                    sx={{
+                      typography: "body2",
+                    }}
+                  >
+                    <Typography component="span" variant="body2">
+                      {name}:
+                    </Typography>
+                    <Typography
+                      component="span"
+                      variant="body2"
+                      sx={{
+                        color: "var(--modal-accent)",
+                      }}
+                    >
+                      {ver}
+                    </Typography>
+                  </Stack>
                 ))}
               {!info?.dependencies && !error && (
-                <div className="text-modal-text-secondary">Loading…</div>
+                <Typography variant="body2" color="var(--modal-text-secondary)">
+                  Loading…
+                </Typography>
               )}
               {!info?.dependencies && error && (
-                <div className="text-modal-text-secondary">
+                <Typography variant="body2" color="var(--modal-text-secondary)">
                   No dependency info
-                </div>
+                </Typography>
               )}
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
+            </Stack>
+          </Stack>
+        </Stack>
+      </ModalContent>
+    </Dialog>
   )
 }
 
