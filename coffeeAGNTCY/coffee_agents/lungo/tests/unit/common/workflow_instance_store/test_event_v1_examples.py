@@ -10,6 +10,7 @@ from pathlib import Path
 import pytest
 
 from schema.json_schema import load_json_instance_file
+
 from common.workflow_instance_store.store import WorkflowInstanceStateStore
 
 _LUNGO_ROOT = Path(__file__).resolve().parents[4]
@@ -22,7 +23,8 @@ async def test_submit_partial_example() -> None:
     store = WorkflowInstanceStateStore()
     try:
         await store.submit_event(data)
-        merged = store.get_merged_data()
+        store.wait_merge_idle()
+        merged = store.get_merged_data().model_dump(mode="python")
         wf = merged["workflows"]["recruiter"]
         inst_id = "instance://550e8400-e29b-41d4-a716-446655440003"
         assert inst_id in wf["instances"]
@@ -39,7 +41,8 @@ def test_submit_full_example_sync() -> None:
     store = WorkflowInstanceStateStore()
     try:
         store.submit_event_sync(data)
-        merged = store.get_merged_data()
+        store.wait_merge_idle()
+        merged = store.get_merged_data().model_dump(mode="python")
         assert "recruiter" in merged["workflows"]
     finally:
         store.close()
@@ -50,6 +53,7 @@ def test_chain_partial_then_delta() -> None:
     store = WorkflowInstanceStateStore()
     try:
         store.submit_event_sync(partial)
+        store.wait_merge_idle()
         delta = {
             "metadata": {
                 "timestamp": "2026-01-02T00:00:00Z",
@@ -85,9 +89,10 @@ def test_chain_partial_then_delta() -> None:
             },
         }
         store.submit_event_sync(delta)
-        inst = store.get_merged_data()["workflows"]["recruiter"]["instances"][
-            "instance://550e8400-e29b-41d4-a716-446655440003"
-        ]
+        store.wait_merge_idle()
+        inst = store.get_merged_data().model_dump(mode="python")["workflows"]["recruiter"][
+            "instances"
+        ]["instance://550e8400-e29b-41d4-a716-446655440003"]
         by_id = {n["id"]: n for n in inst["topology"]["nodes"]}
         assert (
             by_id["node://550e8400-e29b-41d4-a716-446655440012"]["label"]

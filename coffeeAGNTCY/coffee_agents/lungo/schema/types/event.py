@@ -322,6 +322,16 @@ class Data(BaseModel):
         return v
 
 
+# TODO: If ``Data._workflows_min_one`` is dropped (empty ``workflows`` allowed on the wire),
+# remove ``MergedData`` and use ``Data`` for the workflow-instance store accumulated state.
+class MergedData(BaseModel):
+    """Accumulated ``data`` subtree for the workflow-instance store (may have empty ``workflows``)."""
+
+    model_config = ConfigDict(extra="allow")
+
+    workflows: dict[str, Workflow] = Field(default_factory=dict)
+
+
 class Event(BaseModel):
     """Root event message: ``metadata`` and ``data`` required; no extra top-level properties."""
 

@@ -9,6 +9,10 @@ Adjust here if product requirements change.
 Topology node/edge items are interpreted **only** via ``operation``:
 ``create``, ``read``, ``update``, ``delete``.
 
+**``read``:** if an entity id already exists in the bucket, the snapshot is
+unchanged for that id (read is not a write). If absent, the payload is stored
+(establish / full representation).
+
 **Node delete:** incident edges are **not** removed automatically (dangling
 edges may remain until a later event removes them).
 
@@ -22,6 +26,14 @@ event is still replaced).
 current event's workflow fields) is copied as the base before applying the
 instance ``topology`` delta, so ``update``-only instance payloads apply to the
 expected graph.
+
+**Topology list order:** ``nodes`` / ``edges`` lists follow **dict insertion
+order** (merge encounter order), not lexicographic id order.
+
+**Topology buckets:** applying node/edge deltas uses **pure** helpers: each step
+returns a new id→entity map without mutating the previous map. Workflow-level
+fields are still merged in place on a snapshot that ``merge_event_data`` has
+already deep-copied.
 """
 
 from __future__ import annotations
@@ -29,9 +41,11 @@ from __future__ import annotations
 import copy
 from typing import Any
 
+from schema.types import Event, MergedData, Operation
 
-def _stable_topology_list(by_id: dict[str, dict]) -> list[dict]:
-    return [copy.deepcopy(by_id[k]) for k in sorted(by_id.keys())]
+
+def _topology_lists_insertion_order(by_id: dict[str, dict]) -> list[dict]:
+    return [copy.deepcopy(by_id[k]) for k in by_id]
 
 
 def _list_to_map(items: list[Any] | None) -> dict[str, dict]:
@@ -47,68 +61,70 @@ def _list_to_map(items: list[Any] | None) -> dict[str, dict]:
     return out
 
 
-def _apply_topology_items(
-    existing_nodes: dict[str, dict],
-    existing_edges: dict[str, dict],
-    items: list[Any] | None,
-    *,
-    kind: str,
-) -> None:
-    if not items:
-        return
-    bucket = existing_nodes if kind == "node" else existing_edges
-    for raw in items:
-        if not isinstance(raw, dict):
-            continue
-        op = raw.get("operation")
-        eid = raw.get("id")
-        if not isinstance(eid, str) or op not in (
-            "create",
-            "read",
-            "update",
-            "delete",
-        ):
-            continue
-        match op:
-            case "create" | "read":
-                bucket[eid] = copy.deepcopy(raw)
-            case "update":
-                if eid not in bucket:
+def _clone_topology_bucket(bucket: dict[str, dict]) -> dict[str, dict]:
+    return {k: copy.deepcopy(v) for k, v in bucket.items()}
+
+
+def _apply_one_topology_item(bucket: dict[str, dict], raw: dict) -> dict[str, dict]:
+    """Return a new id→entity map after one node/edge item; *bucket* is not mutated."""
+    op_raw = raw.get("operation")
+    eid = raw.get("id")
+    if not isinstance(eid, str):
+        return bucket
+    try:
+        op = Operation(op_raw) if op_raw is not None else None
+    except ValueError:
+        return bucket
+    match op:
+        case Operation.CREATE:
+            out = _clone_topology_bucket(bucket)
+            out[eid] = copy.deepcopy(raw)
+            return out
+        case Operation.READ:
+            if eid in bucket:
+                return bucket
+            out = _clone_topology_bucket(bucket)
+            out[eid] = copy.deepcopy(raw)
+            return out
+        case Operation.UPDATE:
+            if eid not in bucket:
+                return bucket
+            target = copy.deepcopy(bucket[eid])
+            for key, val in raw.items():
+                if key == "id":
                     continue
-                target = bucket[eid]
-                for key, val in raw.items():
-                    if key == "id":
-                        continue
-                    if isinstance(val, dict) and isinstance(target.get(key), dict):
-                        target[key].update(val)
-                    else:
-                        target[key] = copy.deepcopy(val)
-            case "delete":
-                bucket.pop(eid, None)
+                if isinstance(val, dict) and isinstance(target.get(key), dict):
+                    target[key] = {**target[key], **val}
+                else:
+                    target[key] = copy.deepcopy(val)
+            out = {}
+            for k, v in bucket.items():
+                out[k] = target if k == eid else copy.deepcopy(v)
+            return out
+        case Operation.DELETE:
+            if eid not in bucket:
+                return bucket
+            return {k: copy.deepcopy(v) for k, v in bucket.items() if k != eid}
+        case _:
+            return bucket
 
 
-def merge_topology_delta(
-    existing_topology: dict,
-    delta_topology: dict,
-) -> dict:
-    """Merge instance ``topology`` using per-item ``operation`` dispatch."""
+def _merge_topology_delta_maps(existing_topology: dict, delta_topology: dict) -> dict:
+    """Merge topology maps and extra keys in one step (nodes + edges atomically).
+
+    Node and edge buckets are reduced with :func:`_apply_one_topology_item` (pure fold).
+    """
     nodes_map = _list_to_map(existing_topology.get("nodes"))
     edges_map = _list_to_map(existing_topology.get("edges"))
-    _apply_topology_items(
-        nodes_map, edges_map, delta_topology.get("nodes"), kind="node"
-    )
-    _apply_topology_items(
-        nodes_map, edges_map, delta_topology.get("edges"), kind="edge"
-    )
+    for raw in delta_topology.get("nodes") or []:
+        if isinstance(raw, dict):
+            nodes_map = _apply_one_topology_item(nodes_map, raw)
+    for raw in delta_topology.get("edges") or []:
+        if isinstance(raw, dict):
+            edges_map = _apply_one_topology_item(edges_map, raw)
     out: dict = {}
-    if nodes_map:
-        out["nodes"] = _stable_topology_list(nodes_map)
-    else:
-        out["nodes"] = []
-    if edges_map:
-        out["edges"] = _stable_topology_list(edges_map)
-    else:
-        out["edges"] = []
+    out["nodes"] = _topology_lists_insertion_order(nodes_map)
+    out["edges"] = _topology_lists_insertion_order(edges_map)
     for key, val in existing_topology.items():
         if key in ("nodes", "edges"):
             continue
@@ -119,6 +135,17 @@ def merge_topology_delta(
             continue
         out[key] = copy.deepcopy(val)
     return out
+
+
+def merge_topology_delta(
+    existing_topology: dict,
+    delta_topology: dict,
+) -> dict:
+    """Merge instance ``topology`` using per-item ``operation`` dispatch.
+
+    Returns a new topology dict; delta application does not mutate *existing_topology*.
+    """
+    return _merge_topology_delta_maps(existing_topology, delta_topology)
 
 
 def _topology_has_entities(topology: dict) -> bool:
@@ -174,36 +201,31 @@ def _merge_workflow(
             inst_out[k] = copy.deepcopy(v)
 
 
-def merge_event_data(existing_data: dict | None, event: dict) -> dict:
+def merge_event_data(existing: MergedData | None, event: Event) -> MergedData:
     """
-    Merge ``event["data"]`` into ``existing_data`` (previous snapshot).
+    Merge ``event.data`` into ``existing`` (previous snapshot).
 
     ``event`` must be a full ``event_v1`` message; only ``data`` is read.
     """
-    data_in = event.get("data")
-    if not isinstance(data_in, dict):
-        return copy.deepcopy(existing_data) if existing_data else {"workflows": {}}
+    data_in = event.data
+    workflows_in = data_in.workflows
 
-    workflows_in = data_in.get("workflows")
-    if not isinstance(workflows_in, dict):
-        base = copy.deepcopy(existing_data) if existing_data else {}
-        if "workflows" not in base:
-            base["workflows"] = {}
-        return base
-
-    out = copy.deepcopy(existing_data) if existing_data else {}
+    existing_dict = (
+        existing.model_dump(mode="python") if existing is not None else {"workflows": {}}
+    )
+    out = copy.deepcopy(existing_dict) if existing_dict else {}
     if "workflows" not in out:
         out["workflows"] = {}
 
     for wf_key, wf_in in workflows_in.items():
-        if not isinstance(wf_in, dict):
-            continue
+        wf_dump = wf_in.model_dump(mode="python", exclude_unset=True)
         wf_out = out["workflows"].setdefault(wf_key, {})
-        _merge_workflow(wf_out, wf_in)
+        _merge_workflow(wf_out, wf_dump)
 
-    for key, val in data_in.items():
+    data_dump = data_in.model_dump(mode="python")
+    for key, val in data_dump.items():
         if key == "workflows":
             continue
         out[key] = copy.deepcopy(val)
 
-    return out
+    return MergedData.model_validate(out)
