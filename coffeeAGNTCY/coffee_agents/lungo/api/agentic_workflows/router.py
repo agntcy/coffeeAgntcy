@@ -3,7 +3,7 @@
 
 """FastAPI router skeleton for the Agentic Workflows API.
 
-Handlers are stubs (501) until store and SSE are implemented.
+Catalog-like endpoints are implemented but other handlers are stubs (501) until store and SSE are implemented.
 """
 
 from __future__ import annotations
