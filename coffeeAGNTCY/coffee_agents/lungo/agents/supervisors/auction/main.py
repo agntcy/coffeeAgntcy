@@ -17,6 +17,8 @@ import json
 from agntcy_app_sdk.factory import AgntcyFactory
 from ioa_observe.sdk.tracing import session_start
 
+from common.cors import get_cors_allowed_origins
+
 from agents.supervisors.auction.graph import shared
 from agents.supervisors.auction.api import create_apps_router
 from config.config import DEFAULT_MESSAGE_TRANSPORT, LLM_MODEL, HOT_RELOAD_MODE, OTEL_SDK_DISABLED
@@ -60,13 +62,14 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(lifespan=lifespan)
-# Add CORS middleware
+_cors_origins = get_cors_allowed_origins()
+logger.info("CORS allow_origins: %s", _cors_origins)
 app.add_middleware(
   CORSMiddleware,
-  allow_origins=["*"],  # Replace "*" with specific origins if needed
+  allow_origins=_cors_origins,
   allow_credentials=True,
-  allow_methods=["*"],  # Allow all HTTP methods
-  allow_headers=["*"],  # Allow all headers
+  allow_methods=["*"],
+  allow_headers=["*"],
 )
 
 app.include_router(create_apps_router())

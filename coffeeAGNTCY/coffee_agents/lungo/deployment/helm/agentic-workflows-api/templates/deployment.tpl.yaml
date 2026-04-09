@@ -31,6 +31,8 @@ spec:
         env:
         - name: PORT
           value: "{{ .Values.service.port }}"
+        - name: CORS_ALLOWED_ORIGINS
+          value: {{ .Values.cors.allowedOrigins | quote }}
         {{ if .Values.resources.enabled }}
         resources:
           requests:

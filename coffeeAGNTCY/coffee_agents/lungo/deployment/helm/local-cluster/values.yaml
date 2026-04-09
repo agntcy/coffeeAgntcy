@@ -37,6 +37,36 @@ weather-mcp-server:
 
 agentic-workflows-api:
   environment: local
+  cors:
+    allowedOrigins: "http://localhost:3000,http://127.0.0.1:3000"
+
+auction-supervisor:
+  cors:
+    allowedOrigins: "http://localhost:3000,http://127.0.0.1:3000"
+
+logistics-accountant:
+  cors:
+    allowedOrigins: "http://localhost:3000,http://127.0.0.1:3000"
+
+logistics-farm:
+  cors:
+    allowedOrigins: "http://localhost:3000,http://127.0.0.1:3000"
+
+logistics-helpdesk:
+  cors:
+    allowedOrigins: "http://localhost:3000,http://127.0.0.1:3000"
+
+logistics-shipper:
+  cors:
+    allowedOrigins: "http://localhost:3000,http://127.0.0.1:3000"
+
+logistics-supervisor:
+  cors:
+    allowedOrigins: "http://localhost:3000,http://127.0.0.1:3000"
+
+recruiter-supervisor:
+  cors:
+    allowedOrigins: "http://localhost:3000,http://127.0.0.1:3000"
 
 lungo-ui:
   environment: local

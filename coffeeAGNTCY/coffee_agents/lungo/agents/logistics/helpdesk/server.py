@@ -21,6 +21,8 @@ from agntcy_app_sdk.app_sessions import AppContainer
 from a2a.server.apps import A2AStarletteApplication
 from a2a.server.request_handlers import DefaultRequestHandler
 from a2a.server.tasks import InMemoryTaskStore
+from common.cors import get_cors_allowed_origins
+
 from agents.logistics.helpdesk.agent_executor import HelpdeskAgentExecutor
 from agents.logistics.helpdesk.card import AGENT_CARD
 from agents.logistics.shipper.card import AGENT_CARD as SHIPPER_AGENT_CARD
@@ -71,10 +73,12 @@ async def health_handler(_request: Request) -> JSONResponse:
         return JSONResponse({"error": str(e)}, status_code=500)
 
 def build_http_app(a2a_app: A2AStarletteApplication) -> FastAPI:
+    cors_origins = get_cors_allowed_origins()
+    logger.info("CORS allow_origins: %s", cors_origins)
     app = a2a_app.build()
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=["*"],
+        allow_origins=cors_origins,
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],

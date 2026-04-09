@@ -4,6 +4,12 @@
 appName: agentic-workflows-api
 appVersion: v1
 replicaCount: 1
+
+# Comma-separated browser origins for Access-Control-Allow-Origin (credentialed CORS).
+# Empty uses application defaults (local UI origins). Set in production to your real UI origin(s).
+cors:
+  allowedOrigins: ""
+
 environment:
 
 image:

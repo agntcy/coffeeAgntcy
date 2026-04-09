@@ -12,8 +12,6 @@ image:
   pullPolicy: Always
   pullSecret:
 
-
-
 service:
   port: 8882
 
@@ -33,7 +31,6 @@ config:
   identityServiceApiKey: ""
   identityAuthEnabled: "false"
 
-
 # You can use your own config here for service account
 serviceaccount:
   annotations:
@@ -41,7 +38,7 @@ serviceaccount:
 
 # You can use your own ingress stack of operators and letsencrypt mechanism
 ingress:
-  enabled: false  # If set to true, configure the values below for your ingress setup
+  enabled: false # If set to true, configure the values below for your ingress setup
   name: ""
   className: ""
   host: ""
@@ -51,16 +48,19 @@ ingress:
   annotations: {}
 
 extraIngress:
-    enabled: false  # If set to true, configure the values below for your additional ingress setup
-    name: ""
-    className: ""
-    host: ""
-    serviceName: ""
-    servicePort: ""
-    tlsSecret: ""
-    path: ""
-    pathType: ""
-    annotations: {}
+  enabled: false # If set to true, configure the values below for your additional ingress setup
+  name: ""
+  className: ""
+  host: ""
+  serviceName: ""
+  servicePort: ""
+  tlsSecret: ""
+  path: ""
+  pathType: ""
+  annotations: {}
+
+cors:
+  allowedOrigins: ""
 
 probes:
   livenessProbeEnabled: false
