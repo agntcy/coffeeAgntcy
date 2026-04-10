@@ -152,6 +152,9 @@ jobs:
           - name: auction-supervisor
             path: coffeeAGNTCY/coffee_agents/lungo/deployment/helm/auction-supervisor
             package_name: auction-supervisor
+          - name: agentic-workflows-api
+            path: coffeeAGNTCY/coffee_agents/lungo/deployment/helm/agentic-workflows-api
+            package_name: agentic-workflows-api
           - name: brazil-farm
             path: coffeeAGNTCY/coffee_agents/lungo/deployment/helm/brazil-farm
             package_name: brazil-farm

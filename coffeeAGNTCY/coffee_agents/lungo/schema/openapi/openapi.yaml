@@ -1,0 +1,19 @@
+# Copyright AGNTCY Contributors (https://github.com/agntcy)
+# SPDX-License-Identifier: Apache-2.0
+
+openapi: 3.1.0
+info:
+  title: Agentic Workflows API
+  version: 1.0.0
+  description: |
+    Agentic workflows catalog, instance lifecycle, internal event ingress, and SSE.
+    Identifiers follow schema/jsonschemas/event_v1.json (e.g. instance:// UUID for workflow_instance_id).
+servers:
+  - url: /
+tags:
+  - name: agentic-workflows
+    description: Single API surface — patterns, use-cases, workflows, instances, events.
+paths:
+  $ref: paths/agentic-workflows.yaml#/paths
+components:
+  $ref: components/schemas.yaml#/components

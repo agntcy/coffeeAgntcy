@@ -30,6 +30,10 @@ nats:
     timeoutSeconds: 2
     failureThreshold: 6
 
+corto-exchange:
+  cors:
+    allowedOrigins: "http://localhost:3000,http://127.0.0.1:3000"
+
 corto-ui:
   environment: local
   config:

@@ -1,0 +1,234 @@
+# Copyright AGNTCY Contributors (https://github.com/agntcy)
+# SPDX-License-Identifier: Apache-2.0
+
+# All path items for the Agentic Workflows API — single surface.
+
+paths:
+  /:
+    get:
+      tags: [agentic-workflows]
+      operationId: redirectRootToPatterns
+      summary: Redirect API root to patterns catalog
+      description: >
+        Default entry point; redirects to GET /patterns/ (temporary redirect).
+      responses:
+        "307":
+          description: Temporary redirect to the patterns list
+          headers:
+            Location:
+              required: true
+              schema:
+                type: string
+                example: /patterns/
+
+  /patterns/:
+    get:
+      tags: [agentic-workflows]
+      operationId: listPatterns
+      summary: List patterns
+      responses:
+        "200":
+          description: List of patterns
+          content:
+            application/json:
+              schema:
+                $ref: ../components/schemas.yaml#/components/schemas/PatternListResponse
+
+  /use-cases/:
+    get:
+      tags: [agentic-workflows]
+      operationId: listUseCases
+      summary: List use-cases
+      responses:
+        "200":
+          description: List of use-cases
+          content:
+            application/json:
+              schema:
+                $ref: ../components/schemas.yaml#/components/schemas/UseCaseListResponse
+
+  /agentic-workflows/:
+    get:
+      tags: [agentic-workflows]
+      operationId: listAgenticWorkflows
+      summary: List workflows (optional filters)
+      parameters:
+        - name: patterns
+          in: query
+          required: false
+          schema:
+            type: array
+            items:
+              type: string
+          style: form
+          explode: true
+          description: Filter by pattern names
+        - name: use_cases
+          in: query
+          required: false
+          schema:
+            type: array
+            items:
+              type: string
+          style: form
+          explode: true
+          description: Filter by use-case names
+      responses:
+        "200":
+          description: Available workflows for the optional filters, keyed by workflow name
+          content:
+            application/json:
+              schema:
+                $ref: ../components/schemas.yaml#/components/schemas/WorkflowSummaryMapResponse
+
+  /agentic-workflows/{workflow_name}/:
+    parameters:
+      - name: workflow_name
+        in: path
+        required: true
+        schema:
+          type: string
+          minLength: 1
+        description: Workflow name (matches Workflow.name in the event contract)
+    get:
+      tags: [agentic-workflows]
+      operationId: getAgenticWorkflow
+      summary: Workflow details (optionally topology only)
+      parameters:
+        - name: topology_only
+          in: query
+          required: false
+          schema:
+            type: boolean
+            default: false
+      responses:
+        "200":
+          description: >
+            Workflow definition including starting topology and instances map.
+            When topology_only is true, servers may return a topology-focused projection.
+          content:
+            application/json:
+              schema:
+                $ref: ../components/schemas.yaml#/components/schemas/Workflow
+    post:
+      tags: [agentic-workflows]
+      operationId: instantiateAgenticWorkflow
+      summary: Instantiate a workflow
+      responses:
+        "200":
+          description: New workflow instance id (InstanceId URI)
+          content:
+            application/json:
+              schema:
+                $ref: ../components/schemas.yaml#/components/schemas/InstantiateWorkflowResponse
+
+  /agentic-workflows/{workflow_name}/instances/:
+    parameters:
+      - name: workflow_name
+        in: path
+        required: true
+        schema:
+          type: string
+          minLength: 1
+    get:
+      tags: [agentic-workflows]
+      operationId: listWorkflowInstances
+      summary: List instances for a workflow
+      responses:
+        "200":
+          description: Workflow instances for this workflow, keyed by instance id (InstanceId URI)
+          content:
+            application/json:
+              schema:
+                $ref: ../components/schemas.yaml#/components/schemas/WorkflowInstanceMapResponse
+
+  /agentic-workflows/{workflow_name}/instances/{workflow_instance_id}/:
+    parameters:
+      - name: workflow_name
+        in: path
+        required: true
+        schema:
+          type: string
+          minLength: 1
+      - name: workflow_instance_id
+        in: path
+        required: true
+        schema:
+          $ref: ../components/schemas.yaml#/components/schemas/InstanceId
+    get:
+      tags: [agentic-workflows]
+      operationId: getWorkflowInstanceState
+      summary: Workflow instance state (full or topology only)
+      parameters:
+        - name: topology_only
+          in: query
+          required: false
+          schema:
+            type: boolean
+            default: false
+      responses:
+        "200":
+          description: Instance state or topology projection
+          content:
+            application/json:
+              schema:
+                $ref: ../components/schemas.yaml#/components/schemas/WorkflowInstance
+
+  /agentic-workflows/{workflow_name}/instances/{workflow_instance_id}/events/:
+    parameters:
+      - name: workflow_name
+        in: path
+        required: true
+        schema:
+          type: string
+          minLength: 1
+      - name: workflow_instance_id
+        in: path
+        required: true
+        schema:
+          $ref: ../components/schemas.yaml#/components/schemas/InstanceId
+    post:
+      tags: [agentic-workflows]
+      operationId: postWorkflowInstanceEvent
+      summary: Apply a workflow instance state update event (internal)
+      description: >
+        Internal middleware / A2A path: updates workflow instance state from an Event message.
+        Not intended for untrusted public clients.
+      x-internal: true
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: ../components/schemas.yaml#/components/schemas/Event
+      responses:
+        "204":
+          description: Event accepted
+        "400":
+          description: Invalid event payload
+
+  /agentic-workflows/{workflow_name}/instances/{workflow_instance_id}/events/stream:
+    parameters:
+      - name: workflow_name
+        in: path
+        required: true
+        schema:
+          type: string
+          minLength: 1
+      - name: workflow_instance_id
+        in: path
+        required: true
+        schema:
+          $ref: ../components/schemas.yaml#/components/schemas/InstanceId
+    get:
+      tags: [agentic-workflows]
+      operationId: streamWorkflowInstanceEvents
+      summary: SSE stream of workflow instance events
+      responses:
+        "200":
+          description: Server-Sent Events stream
+          content:
+            text/event-stream:
+              schema:
+                type: string
+                description: Opaque SSE payload (event frames)

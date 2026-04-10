@@ -7,6 +7,7 @@ from pathlib import Path
 
 import uvicorn
 from agntcy_app_sdk.factory import AgntcyFactory
+from common.cors import get_cors_allowed_origins
 from common.version import get_version_info
 from config.logging_config import setup_logging
 from dotenv import load_dotenv
@@ -25,14 +26,16 @@ load_dotenv()
 # Initialize the agntcy factory with tracing enabled
 factory = AgntcyFactory("corto.exchange", enable_tracing=True)
 
+_cors_origins = get_cors_allowed_origins()
+logger.info("CORS allow_origins: %s", _cors_origins)
+
 app = FastAPI()
-# Add CORS middleware
 app.add_middleware(
   CORSMiddleware,
-  allow_origins=["*"],  # Replace "*" with specific origins if needed
+  allow_origins=_cors_origins,
   allow_credentials=True,
-  allow_methods=["*"],  # Allow all HTTP methods
-  allow_headers=["*"],  # Allow all headers
+  allow_methods=["*"],
+  allow_headers=["*"],
 )
 
 exchange_agent = ExchangeAgent(factory=factory)

@@ -18,6 +18,8 @@ from fastapi.responses import StreamingResponse, JSONResponse
 from agntcy_app_sdk.factory import AgntcyFactory
 from ioa_observe.sdk.tracing import session_start
 
+from common.cors import get_cors_allowed_origins
+
 from agents.supervisors.logistics.graph import shared
 from agents.logistics.shipper.card import AGENT_CARD
 from config.config import LLM_MODEL, HOT_RELOAD_MODE, OTEL_SDK_DISABLED
@@ -60,9 +62,11 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(lifespan=lifespan)
+_cors_origins = get_cors_allowed_origins()
+logger.info("CORS allow_origins: %s", _cors_origins)
 app.add_middleware(
   CORSMiddleware,
-  allow_origins=["*"],
+  allow_origins=_cors_origins,
   allow_credentials=True,
   allow_methods=["*"],
   allow_headers=["*"],

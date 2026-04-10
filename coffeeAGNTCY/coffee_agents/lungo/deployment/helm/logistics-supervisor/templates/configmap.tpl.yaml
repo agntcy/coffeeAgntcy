@@ -6,6 +6,7 @@ metadata:
 data:
   AZURE_API_BASE: "{{ .Values.config.azureApiBase }}"
   AZURE_API_VERSION: "{{ .Values.config.azureApiVersion }}"
+  CORS_ALLOWED_ORIGINS: "{{ .Values.cors.allowedOrigins }}"
   LLM_MODEL: "{{ .Values.config.llmModel }}"
   TRANSPORT_SERVER_ENDPOINT: "{{ .Values.config.transportServerEndpoint }}"
   DEFAULT_MESSAGE_TRANSPORT: "{{ .Values.config.defaultMessageTransport }}"

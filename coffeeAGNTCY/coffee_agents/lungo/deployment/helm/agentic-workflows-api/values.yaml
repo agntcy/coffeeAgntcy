@@ -1,0 +1,43 @@
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+appName: agentic-workflows-api
+appVersion: v1
+replicaCount: 1
+
+# Comma-separated browser origins for Access-Control-Allow-Origin (credentialed CORS).
+# Empty uses application defaults (local UI origins). Set in production to your real UI origin(s).
+cors:
+  allowedOrigins: ""
+
+environment:
+
+image:
+  repository: ghcr.io/agntcy/coffee-agntcy/agentic-workflows-api
+  tag: latest
+  pullPolicy: Always
+  pullSecret:
+
+service:
+  port: 9105
+
+probes:
+  readinessProbeEnabled: true
+  livenessProbeEnabled: true
+  port: 9105
+  endpoint: /health
+  initialDelaySeconds: 5
+  periodSeconds: 15
+
+resources:
+  enabled: false
+  limits:
+    cpu: 1000m
+    memory: 512Mi
+  requests:
+    cpu: 100m
+    memory: 128Mi
+
+serviceaccount:
+  annotations:
+    eks.amazonaws.com/role-arn: REPLACE_WITH_ROLE_ARN
