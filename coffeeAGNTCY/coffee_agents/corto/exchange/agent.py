@@ -88,6 +88,24 @@ def _parse_a2a_response(response):
 
 _A2A_MAX_ATTEMPTS = 5
 _A2A_BACKOFF_BASE = 3
+_A2A_REQUEST_TIMEOUT_SECONDS = 60  # LLM calls on the farm can take 10–30s; the SDK default of 6s is too short
+
+
+def _patch_transport_timeout(transport, timeout_seconds: int = _A2A_REQUEST_TIMEOUT_SECONDS):
+    """
+    Override the default point-to-point request timeout on a SLIMTransport.
+
+    The SDK's factory calls transport.request() without an explicit timeout, so
+    the transport falls back to its hardcoded 6-second default — far too short for
+    an LLM-backed farm agent. Wrapping the method here changes the default so every
+    request through this transport uses `timeout_seconds` unless the caller overrides it.
+    """
+    original_request = transport.request
+
+    async def request_with_timeout(recipient, message, timeout=timeout_seconds, **kwargs):
+        return await original_request(recipient, message, timeout=timeout, **kwargs)
+
+    transport.request = request_with_timeout
 
 
 async def _send_a2a_with_retry(client, request):
@@ -191,6 +209,7 @@ class ExchangeAgent:
             endpoint=TRANSPORT_SERVER_ENDPOINT,
             name="default/default/exchange"  # SLIM transport requires a routable name (org/namespace/agent) to build the PyName used for request-reply routing
         )
+        _patch_transport_timeout(transport)
         client = await factory.create_client(
             "A2A",
             agent_topic=a2a_topic,
