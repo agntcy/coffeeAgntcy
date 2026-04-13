@@ -23,6 +23,7 @@ config:
   transportServerEndpoint: ""
   defaultMessageTransport: ""
   otlpHttpEndpoint: ""
+  corsAllowedOrigins: ""
 #  llmStreaming: False
 
 # You can use your own config here for service account
@@ -40,9 +41,6 @@ ingress:
   servicePort: ""
   tlsSecret: ""
   annotations: {}
-
-cors:
-  allowedOrigins: ""
 
 probes:
   livenessProbeEnabled: false

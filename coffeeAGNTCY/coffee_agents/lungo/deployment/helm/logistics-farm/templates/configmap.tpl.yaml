@@ -4,7 +4,7 @@ metadata:
   name: {{ .Values.appName }}-configmap
   namespace: {{ .Release.Namespace }}
 data:
-  CORS_ALLOWED_ORIGINS: "{{ .Values.cors.allowedOrigins }}"
+  CORS_ALLOWED_ORIGINS: "{{ .Values.config.corsAllowedOrigins }}"
   TRANSPORT_SERVER_ENDPOINT: "{{ .Values.config.transportServerEndpoint }}"
   DEFAULT_MESSAGE_TRANSPORT: "{{ .Values.config.defaultMessageTransport }}"
   OTLP_HTTP_ENDPOINT: "{{ .Values.config.otlpHttpEndpoint }}"
