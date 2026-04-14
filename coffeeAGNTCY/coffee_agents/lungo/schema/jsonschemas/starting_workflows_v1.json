@@ -1,9 +1,0 @@
-{
-  "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://github.com/agntcy/coffeeAgntcy/schema/jsonschemas/starting_workflows_v1.json",
-  "title": "Starting Workflows (v1)",
-  "description": "Array of workflow definitions describing the initial topologies for each pattern and use-case. Each element reuses the workflow object type from event_v1.",
-  "type": "array",
-  "minItems": 1,
-  "items": { "$ref": "event_v1.json#/$defs/workflow" }
-}

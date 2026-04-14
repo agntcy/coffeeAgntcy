@@ -124,7 +124,7 @@
   {
     "pattern": "Supervisor-worker",
     "use_case": "Coffee Agency",
-    "name": "Publish Subscribe Streaming Coffee Farm Network",
+    "name": "Publish Subscribe Streaming Coffee Auction Network",
     "starting_topology": {
       "nodes": [
         {

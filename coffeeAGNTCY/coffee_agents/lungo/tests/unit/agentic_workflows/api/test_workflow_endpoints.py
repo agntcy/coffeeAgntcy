@@ -5,75 +5,84 @@
 
 from __future__ import annotations
 
-from typing import Any
+from typing import NamedTuple
 from unittest.mock import patch
 
 import pytest
 from api.agentic_workflows.router import create_agentic_workflows_router
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
+from schema.types import Workflow
 
-_FAKE_WORKFLOWS: list[dict[str, Any]] = [
-    {
-        "pattern": "publish_subscribe",
-        "use_case": "Coffee Buying",
-        "name": "Pub Sub Coffee",
-        "starting_topology": {
-            "nodes": [
-                {
-                    "id": "node://00000000-0000-4000-a000-000000000001",
-                    "operation": "read",
-                    "type": "customNode",
-                    "label": "Agent A",
-                    "size": {"width": 1.0, "height": 1.0},
-                    "layer_index": 0,
-                },
-            ],
-            "edges": [],
-        },
-        "instances": {},
-    },
-    {
-        "pattern": "group_communication",
-        "use_case": "Order Fulfilment",
-        "name": "Group Logistics",
-        "starting_topology": {
-            "nodes": [
-                {
-                    "id": "node://00000000-0000-4000-a000-000000000002",
-                    "operation": "read",
-                    "type": "customNode",
-                    "label": "Agent B",
-                    "size": {"width": 1.0, "height": 1.0},
-                    "layer_index": 0,
-                },
-            ],
-            "edges": [],
-        },
-        "instances": {},
-    },
-    {
-        "pattern": "publish_subscribe",
-        "use_case": "Order Fulfilment",
-        "name": "Pub Sub Orders",
-        "starting_topology": {
-            "nodes": [
-                {
-                    "id": "node://00000000-0000-4000-a000-000000000003",
-                    "operation": "read",
-                    "type": "customNode",
-                    "label": "Agent C",
-                    "size": {"width": 1.0, "height": 1.0},
-                    "layer_index": 0,
-                },
-            ],
-            "edges": [],
-        },
-        "instances": {},
-    },
+_FAKE_WORKFLOWS: list[Workflow] = [
+    Workflow.model_validate(
+        {
+            "pattern": "publish_subscribe",
+            "use_case": "Coffee Buying",
+            "name": "Pub Sub Coffee",
+            "starting_topology": {
+                "nodes": [
+                    {
+                        "id": "node://00000000-0000-4000-a000-000000000001",
+                        "operation": "read",
+                        "type": "customNode",
+                        "label": "Agent A",
+                        "size": {"width": 1.0, "height": 1.0},
+                        "layer_index": 0,
+                    },
+                ],
+                "edges": [],
+            },
+            "instances": {},
+        }
+    ),
+    Workflow.model_validate(
+        {
+            "pattern": "group_communication",
+            "use_case": "Order Fulfilment",
+            "name": "Group Logistics",
+            "starting_topology": {
+                "nodes": [
+                    {
+                        "id": "node://00000000-0000-4000-a000-000000000002",
+                        "operation": "read",
+                        "type": "customNode",
+                        "label": "Agent B",
+                        "size": {"width": 1.0, "height": 1.0},
+                        "layer_index": 0,
+                    },
+                ],
+                "edges": [],
+            },
+            "instances": {},
+        }
+    ),
+    Workflow.model_validate(
+        {
+            "pattern": "publish_subscribe",
+            "use_case": "Order Fulfilment",
+            "name": "Pub Sub Orders",
+            "starting_topology": {
+                "nodes": [
+                    {
+                        "id": "node://00000000-0000-4000-a000-000000000003",
+                        "operation": "read",
+                        "type": "customNode",
+                        "label": "Agent C",
+                        "size": {"width": 1.0, "height": 1.0},
+                        "layer_index": 0,
+                    },
+                ],
+                "edges": [],
+            },
+            "instances": {},
+        }
+    ),
 ]
 
-_PATCH_TARGET = "api.agentic_workflows.router.get_starting_workflows"
+_ALL_NAMES = {"Pub Sub Coffee", "Group Logistics", "Pub Sub Orders"}
+
+_PATCH_TARGET = "api.agentic_workflows.router.get_workflows"
 
 
 @pytest.fixture()
@@ -89,74 +98,81 @@ def client() -> TestClient:
 # ---------------------------------------------------------------------------
 
 
-class TestListAgenticWorkflows:
-    def test_returns_200(self, client: TestClient) -> None:
-        resp = client.get("/agentic-workflows/")
-        assert resp.status_code == 200
+class ListInputs(NamedTuple):
+    params: dict[str, str | list[str]]
 
-    def test_returns_all_workflows_when_no_filters(self, client: TestClient) -> None:
-        data = client.get("/agentic-workflows/").json()
-        assert set(data.keys()) == {
-            "Pub Sub Coffee",
-            "Group Logistics",
-            "Pub Sub Orders",
-        }
 
-    def test_each_entry_has_required_fields(self, client: TestClient) -> None:
-        data = client.get("/agentic-workflows/").json()
-        for name, summary in data.items():
-            assert summary["name"] == name
-            assert "pattern" in summary
-            assert "use_case" in summary
+class ListOutputs(NamedTuple):
+    status: int
+    expected_names: set[str]
 
-    def test_no_extra_fields_on_summary(self, client: TestClient) -> None:
-        data = client.get("/agentic-workflows/").json()
-        for summary in data.values():
-            assert set(summary.keys()) == {"name", "pattern", "use_case"}
 
-    def test_filter_by_single_pattern(self, client: TestClient) -> None:
-        resp = client.get(
-            "/agentic-workflows/", params={"patterns": "publish_subscribe"}
-        )
-        data = resp.json()
-        assert set(data.keys()) == {"Pub Sub Coffee", "Pub Sub Orders"}
+class ListCase(NamedTuple):
+    case_id: str
+    inputs: ListInputs
+    outputs: ListOutputs
 
-    def test_filter_by_single_use_case(self, client: TestClient) -> None:
-        resp = client.get(
-            "/agentic-workflows/", params={"use_cases": "Order Fulfilment"}
-        )
-        data = resp.json()
-        assert set(data.keys()) == {"Group Logistics", "Pub Sub Orders"}
 
-    def test_filter_by_pattern_and_use_case(self, client: TestClient) -> None:
-        resp = client.get(
-            "/agentic-workflows/",
+_LIST_CASES: tuple[ListCase, ...] = (
+    ListCase(
+        case_id="no_filters_returns_all",
+        inputs=ListInputs(params={}),
+        outputs=ListOutputs(status=200, expected_names=_ALL_NAMES),
+    ),
+    ListCase(
+        case_id="filter_single_pattern",
+        inputs=ListInputs(params={"patterns": "publish_subscribe"}),
+        outputs=ListOutputs(
+            status=200,
+            expected_names={"Pub Sub Coffee", "Pub Sub Orders"},
+        ),
+    ),
+    ListCase(
+        case_id="filter_single_use_case",
+        inputs=ListInputs(params={"use_cases": "Order Fulfilment"}),
+        outputs=ListOutputs(
+            status=200,
+            expected_names={"Group Logistics", "Pub Sub Orders"},
+        ),
+    ),
+    ListCase(
+        case_id="filter_pattern_and_use_case",
+        inputs=ListInputs(
             params={
                 "patterns": "publish_subscribe",
                 "use_cases": "Order Fulfilment",
-            },
-        )
-        data = resp.json()
-        assert set(data.keys()) == {"Pub Sub Orders"}
+            }
+        ),
+        outputs=ListOutputs(status=200, expected_names={"Pub Sub Orders"}),
+    ),
+    ListCase(
+        case_id="filter_no_match_returns_empty",
+        inputs=ListInputs(params={"patterns": "nonexistent"}),
+        outputs=ListOutputs(status=200, expected_names=set()),
+    ),
+    ListCase(
+        case_id="filter_multiple_patterns",
+        inputs=ListInputs(
+            params={"patterns": ["publish_subscribe", "group_communication"]}
+        ),
+        outputs=ListOutputs(status=200, expected_names=_ALL_NAMES),
+    ),
+)
 
-    def test_filter_no_match_returns_empty_map(self, client: TestClient) -> None:
-        resp = client.get(
-            "/agentic-workflows/", params={"patterns": "nonexistent"}
-        )
-        assert resp.status_code == 200
-        assert resp.json() == {}
 
-    def test_filter_by_multiple_patterns(self, client: TestClient) -> None:
-        resp = client.get(
-            "/agentic-workflows/",
-            params={"patterns": ["publish_subscribe", "group_communication"]},
-        )
-        data = resp.json()
-        assert set(data.keys()) == {
-            "Pub Sub Coffee",
-            "Group Logistics",
-            "Pub Sub Orders",
-        }
+@pytest.mark.parametrize(
+    "case", [pytest.param(c, id=c.case_id) for c in _LIST_CASES]
+)
+def test_list_agentic_workflows(case: ListCase, client: TestClient) -> None:
+    resp = client.get("/agentic-workflows/", params=case.inputs.params)
+    assert resp.status_code == case.outputs.status
+
+    data = resp.json()
+    assert set(data.keys()) == case.outputs.expected_names
+
+    for name, summary in data.items():
+        assert summary["name"] == name
+        assert set(summary.keys()) == {"name", "pattern", "use_case"}
 
 
 # ---------------------------------------------------------------------------
@@ -164,55 +180,104 @@ class TestListAgenticWorkflows:
 # ---------------------------------------------------------------------------
 
 
-class TestGetAgenticWorkflow:
-    def test_returns_200_for_existing_workflow(self, client: TestClient) -> None:
-        resp = client.get("/agentic-workflows/Pub Sub Coffee/")
-        assert resp.status_code == 200
+class DetailInputs(NamedTuple):
+    workflow_name: str
+    topology_only: bool | None
 
-    def test_returns_404_for_unknown_workflow(self, client: TestClient) -> None:
-        resp = client.get("/agentic-workflows/does-not-exist/")
-        assert resp.status_code == 404
 
-    def test_response_contains_workflow_fields(self, client: TestClient) -> None:
-        data = client.get("/agentic-workflows/Pub Sub Coffee/").json()
-        assert data["name"] == "Pub Sub Coffee"
-        assert data["pattern"] == "publish_subscribe"
-        assert data["use_case"] == "Coffee Buying"
-        assert "starting_topology" in data
-        assert "instances" in data
+class DetailOutputs(NamedTuple):
+    status: int
+    expected_name: str | None
+    expected_pattern: str | None
+    expected_use_case: str | None
+    instances_empty: bool | None
 
-    def test_starting_topology_has_nodes_and_edges(self, client: TestClient) -> None:
-        topo = client.get("/agentic-workflows/Pub Sub Coffee/").json()[
-            "starting_topology"
-        ]
-        assert "nodes" in topo
-        assert "edges" in topo
-        assert isinstance(topo["nodes"], list)
-        assert isinstance(topo["edges"], list)
 
-    def test_topology_only_returns_empty_instances(self, client: TestClient) -> None:
-        data = client.get(
-            "/agentic-workflows/Pub Sub Coffee/",
-            params={"topology_only": True},
-        ).json()
+class DetailCase(NamedTuple):
+    case_id: str
+    inputs: DetailInputs
+    outputs: DetailOutputs
+
+
+_DETAIL_CASES: tuple[DetailCase, ...] = (
+    DetailCase(
+        case_id="existing_workflow",
+        inputs=DetailInputs(
+            workflow_name="Pub Sub Coffee", topology_only=None
+        ),
+        outputs=DetailOutputs(
+            status=200,
+            expected_name="Pub Sub Coffee",
+            expected_pattern="publish_subscribe",
+            expected_use_case="Coffee Buying",
+            instances_empty=True,
+        ),
+    ),
+    DetailCase(
+        case_id="unknown_workflow_404",
+        inputs=DetailInputs(
+            workflow_name="does-not-exist", topology_only=None
+        ),
+        outputs=DetailOutputs(
+            status=404,
+            expected_name=None,
+            expected_pattern=None,
+            expected_use_case=None,
+            instances_empty=None,
+        ),
+    ),
+    DetailCase(
+        case_id="topology_only_true",
+        inputs=DetailInputs(
+            workflow_name="Pub Sub Coffee", topology_only=True
+        ),
+        outputs=DetailOutputs(
+            status=200,
+            expected_name="Pub Sub Coffee",
+            expected_pattern="publish_subscribe",
+            expected_use_case="Coffee Buying",
+            instances_empty=True,
+        ),
+    ),
+    DetailCase(
+        case_id="topology_only_false_same_as_default",
+        inputs=DetailInputs(
+            workflow_name="Pub Sub Coffee", topology_only=False
+        ),
+        outputs=DetailOutputs(
+            status=200,
+            expected_name="Pub Sub Coffee",
+            expected_pattern="publish_subscribe",
+            expected_use_case="Coffee Buying",
+            instances_empty=True,
+        ),
+    ),
+)
+
+
+@pytest.mark.parametrize(
+    "case", [pytest.param(c, id=c.case_id) for c in _DETAIL_CASES]
+)
+def test_get_agentic_workflow(case: DetailCase, client: TestClient) -> None:
+    params = {}
+    if case.inputs.topology_only is not None:
+        params["topology_only"] = case.inputs.topology_only
+
+    resp = client.get(
+        f"/agentic-workflows/{case.inputs.workflow_name}/", params=params
+    )
+    assert resp.status_code == case.outputs.status
+
+    if case.outputs.status != 200:
+        return
+
+    data = resp.json()
+    assert data["name"] == case.outputs.expected_name
+    assert data["pattern"] == case.outputs.expected_pattern
+    assert data["use_case"] == case.outputs.expected_use_case
+    assert "starting_topology" in data
+    assert isinstance(data["starting_topology"]["nodes"], list)
+    assert isinstance(data["starting_topology"]["edges"], list)
+
+    if case.outputs.instances_empty:
         assert data["instances"] == {}
-        assert "starting_topology" in data
-
-    def test_topology_only_preserves_identity_fields(
-        self, client: TestClient
-    ) -> None:
-        data = client.get(
-            "/agentic-workflows/Pub Sub Coffee/",
-            params={"topology_only": True},
-        ).json()
-        assert data["name"] == "Pub Sub Coffee"
-        assert data["pattern"] == "publish_subscribe"
-        assert data["use_case"] == "Coffee Buying"
-
-    def test_default_topology_only_is_false(self, client: TestClient) -> None:
-        full = client.get("/agentic-workflows/Pub Sub Coffee/").json()
-        topo = client.get(
-            "/agentic-workflows/Pub Sub Coffee/",
-            params={"topology_only": False},
-        ).json()
-        assert full == topo

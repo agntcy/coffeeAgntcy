@@ -22,7 +22,7 @@ from api.agentic_workflows.dtos import (
 )
 from api.agentic_workflows.patterns import PATTERNS
 from api.agentic_workflows.use_cases import USE_CASES
-from api.agentic_workflows.workflows import get_starting_workflows
+from api.agentic_workflows.workflows import get_workflows
 from fastapi import APIRouter, HTTPException, Path, Query
 from fastapi.responses import RedirectResponse
 from schema.types import Event, Workflow, WorkflowInstance
@@ -75,21 +75,21 @@ def create_agentic_workflows_router() -> APIRouter:
         use_cases: Annotated[list[str] | None, Query()] = None,
     ) -> WorkflowSummaryMapResponse:
         """GET /agentic-workflows/ — map keyed by workflow name; optional filters."""
-        all_workflows = get_starting_workflows()
+        all_workflows = get_workflows()
 
         filtered = all_workflows
         if patterns:
             pattern_set = set(patterns)
-            filtered = [w for w in filtered if w["pattern"] in pattern_set]
+            filtered = [w for w in filtered if w.pattern in pattern_set]
         if use_cases:
             uc_set = set(use_cases)
-            filtered = [w for w in filtered if w["use_case"] in uc_set]
+            filtered = [w for w in filtered if w.use_case in uc_set]
 
         summary_map = {
-            w["name"]: WorkflowSummary(
-                name=w["name"],
-                pattern=w["pattern"],
-                use_case=w["use_case"],
+            w.name: WorkflowSummary(
+                name=w.name,
+                pattern=w.pattern,
+                use_case=w.use_case,
             )
             for w in filtered
         }
@@ -105,27 +105,19 @@ def create_agentic_workflows_router() -> APIRouter:
         topology_only: Annotated[bool, Query()] = False,
     ) -> Workflow:
         """GET /agentic-workflows/{workflow_name}/ — definition + topology."""
-        all_workflows = get_starting_workflows()
-        wf_dict = next(
-            (w for w in all_workflows if w["name"] == workflow_name), None
+        all_workflows = get_workflows()
+        wf = next(
+            (w for w in all_workflows if w.name == workflow_name), None
         )
-        if wf_dict is None:
+        if wf is None:
             raise HTTPException(
                 status_code=404, detail=f"Workflow not found: {workflow_name}"
             )
 
         if topology_only:
-            return Workflow.model_validate(
-                {
-                    "pattern": wf_dict["pattern"],
-                    "use_case": wf_dict["use_case"],
-                    "name": wf_dict["name"],
-                    "starting_topology": wf_dict["starting_topology"],
-                    "instances": {},
-                }
-            )
+            return wf.model_copy(update={"instances": {}})
 
-        return Workflow.model_validate(wf_dict)
+        return wf
 
     @router.post(
         "/agentic-workflows/{workflow_name}/",

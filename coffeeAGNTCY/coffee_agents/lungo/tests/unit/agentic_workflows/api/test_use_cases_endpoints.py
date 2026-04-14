@@ -5,6 +5,8 @@
 
 from __future__ import annotations
 
+from typing import NamedTuple
+
 import pytest
 from api.agentic_workflows.router import create_agentic_workflows_router
 from api.agentic_workflows.use_cases import USE_CASES
@@ -24,28 +26,48 @@ def client() -> TestClient:
 # ---------------------------------------------------------------------------
 
 
-class TestListUseCases:
-    def test_returns_200(self, client: TestClient) -> None:
-        resp = client.get("/use-cases/")
-        assert resp.status_code == 200
+class Inputs(NamedTuple):
+    path: str
 
-    def test_response_has_items_key(self, client: TestClient) -> None:
-        data = client.get("/use-cases/").json()
-        assert "items" in data
-        assert isinstance(data["items"], list)
 
-    def test_each_item_has_name(self, client: TestClient) -> None:
-        items = client.get("/use-cases/").json()["items"]
-        for item in items:
-            assert "name" in item
-            assert isinstance(item["name"], str)
-            assert len(item["name"]) >= 1
+class Outputs(NamedTuple):
+    status: int
+    expected_names: list[str]
 
-    def test_no_extra_fields_on_items(self, client: TestClient) -> None:
-        items = client.get("/use-cases/").json()["items"]
-        for item in items:
-            assert set(item.keys()) == {"name"}
 
-    def test_names_match_catalog(self, client: TestClient) -> None:
-        names = [u["name"] for u in client.get("/use-cases/").json()["items"]]
-        assert names == USE_CASES
+class Case(NamedTuple):
+    case_id: str
+    inputs: Inputs
+    outputs: Outputs
+
+
+_CASES: tuple[Case, ...] = (
+    Case(
+        case_id="list_use_cases_returns_catalog",
+        inputs=Inputs(path="/use-cases/"),
+        outputs=Outputs(
+            status=200,
+            expected_names=list(USE_CASES),
+        ),
+    ),
+)
+
+
+@pytest.mark.parametrize(
+    "case", [pytest.param(c, id=c.case_id) for c in _CASES]
+)
+def test_use_cases_endpoint(case: Case, client: TestClient) -> None:
+    resp = client.get(case.inputs.path)
+    assert resp.status_code == case.outputs.status
+
+    data = resp.json()
+    assert "items" in data
+    assert isinstance(data["items"], list)
+
+    for item in data["items"]:
+        assert set(item.keys()) == {"name"}
+        assert isinstance(item["name"], str)
+        assert len(item["name"]) >= 1
+
+    names = [u["name"] for u in data["items"]]
+    assert names == case.outputs.expected_names
