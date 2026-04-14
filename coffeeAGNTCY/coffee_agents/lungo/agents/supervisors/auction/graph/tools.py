@@ -49,10 +49,10 @@ from common.event_middleware import (
 from agents.supervisors.auction.card import AUCTION_SUPERVISOR_CARD
 
 # -- Tool → catalog workflow identity mapping --
-# Used by the event interceptor and consumer to enrich emitted events with workflow context.
-# TODO: Ideally these values are pulled from (or validated against) the
-# catalog's workflow entries at startup so that workflow_name, pattern,
-# and use_case stay consistent with the catalog as it evolves.
+# Values must match the workflow definitions served by the agentic-workflows
+# API (GET /agentic-workflows/), which loads from starting_workflows.json
+# on startup.  Eventually this map should be built by querying the API at
+# init time rather than duplicating strings here.
 _TOOL_WORKFLOW_MAP: dict[str, ToolWorkflowMapping] = {
     "get_farm_yield_inventory": ToolWorkflowMapping(
         workflow_name="Publish Subscribe Coffee Farm Network",
@@ -65,7 +65,7 @@ _TOOL_WORKFLOW_MAP: dict[str, ToolWorkflowMapping] = {
         use_case="Coffee Agency",
     ),
     "get_all_farms_yield_inventory_streaming": ToolWorkflowMapping(
-        workflow_name="Publish Subscribe Streaming Coffee Farm Network",
+        workflow_name="Publish Subscribe Streaming Coffee Auction Network",
         pattern="Supervisor-worker",
         use_case="Coffee Agency",
     ),

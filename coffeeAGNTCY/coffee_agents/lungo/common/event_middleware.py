@@ -15,18 +15,19 @@ pass ``"tool"`` in ``ClientCallContext.state``.
 from __future__ import annotations
 
 import logging
+import os
 import uuid as _uuid_mod
 from abc import ABC, abstractmethod
 from contextvars import ContextVar
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from time import monotonic
-from typing import Any
+from typing import Any, Callable
 from uuid import uuid4
 
 from a2a.client import ClientEvent
 from a2a.client.middleware import ClientCallContext, ClientCallInterceptor
-from a2a.types import AgentCard, Message
+from a2a.types import AgentCard, Message, Task, TaskState
 
 from schema.types import (
     Correlation,
@@ -79,8 +80,6 @@ class ToolWorkflowMapping:
 _SCHEMA_VERSION = "1.0.0"
 
 # Namespace for deterministic UUIDs (uuid5) derived from labels.
-# TODO: Consider deriving from AgentCard.url instead of name for
-# guaranteed stability across label renames.
 _NODE_NS = _uuid_mod.uuid5(_uuid_mod.NAMESPACE_DNS, "lungo.nodes")
 
 # Namespace for deriving a stable correlation UUID from an OTel session ID.
@@ -147,7 +146,28 @@ _interceptor_ctx: ContextVar[_InterceptorContext | None] = ContextVar(
     "event_middleware_interceptor_ctx", default=None,
 )
 
-_INTERCEPTOR_CTX_MAX_AGE_SECONDS = 300.0
+# Per-task tracking of which remotes have sent a terminal response in a
+# fan-out (broadcast) call.  A ContextVar (not a plain set) so overlapping
+# async tasks using the same consumer instance don't cross-contaminate.
+_completed_remotes_ctx: ContextVar[set[str] | None] = ContextVar(
+    "event_middleware_completed_remotes", default=None,
+)
+
+def _parse_max_age_seconds() -> float:
+    """Parse the interceptor context max-age from the environment."""
+    raw = os.getenv("EVENT_MIDDLEWARE_INTERCEPTOR_CTX_MAX_AGE_SECONDS", "300")
+    try:
+        return float(raw)
+    except ValueError:
+        logger.warning(
+            "Invalid EVENT_MIDDLEWARE_INTERCEPTOR_CTX_MAX_AGE_SECONDS: %r, "
+            "falling back to 300s.",
+            raw,
+        )
+        return 300.0
+
+
+_INTERCEPTOR_CTX_MAX_AGE_SECONDS: float = _parse_max_age_seconds()
 
 
 # ---------------------------------------------------------------------------
@@ -170,6 +190,24 @@ def agent_node_id(card: AgentCard) -> str:
     return f"node://{_uuid_mod.uuid5(_NODE_NS, f'agent-{card.name}')}"
 
 
+def transport_node_id(card: AgentCard) -> str:
+    """Deterministic ``node://UUID`` for a transport hop, derived from a card.
+
+    Uses ``card.name`` as the caller identity and ``card.preferred_transport``
+    (falling back to ``"Transport"``) as the transport label.  The result is
+    identical to calling the internal ``_transport_node_id(card.name, label)``
+    so that IDs computed externally (e.g. starting topology generation) match
+    those produced at runtime by the middleware.
+
+    .. todo:: The generated IDs must be validated against the event_v1 JSON
+       Schema (``NodeId`` pattern) and aligned with the transport node IDs
+       in the catalog's ``starting_workflows.json``.
+    """
+    label = card.preferred_transport or "Transport"
+    key = f"{card.name}::{label}"
+    return f"node://{_uuid_mod.uuid5(_NODE_NS, f'transport-{key}')}"
+
+
 def _agent_node_id_from_name(agent_name: str) -> str:
     """Internal shorthand — derive node ID from a plain name string.
 
@@ -179,16 +217,9 @@ def _agent_node_id_from_name(agent_name: str) -> str:
 
 
 def _transport_node_id(caller_name: str, transport_label: str) -> str:
-    """Deterministic ``node://UUID`` for a transport hop.
+    """Internal shorthand — derive transport node ID from raw strings.
 
-    Keyed on ``(caller_name, transport_label)`` so every call from the
-    same caller through the same transport type shares one node.
-    Both the interceptor and consumer can compute this independently
-    from the AgentCard.
-
-    .. todo:: The generated IDs must be validated against the event_v1 JSON
-       Schema (``NodeId`` pattern) and aligned with the transport node IDs
-       in the catalog's ``starting_workflows.json``.
+    Prefer :func:`transport_node_id` (card-based) for new code.
     """
     key = f"{caller_name}::{transport_label}"
     return f"node://{_uuid_mod.uuid5(_NODE_NS, f'transport-{key}')}"
@@ -202,6 +233,29 @@ def _edge_id(source_nid: str, target_nid: str) -> str:
        catalog's ``starting_workflows.json``.
     """
     return f"edge://{_uuid_mod.uuid5(_NODE_NS, f'{source_nid}->{target_nid}')}"
+
+
+# ---------------------------------------------------------------------------
+# Small utility helpers
+# ---------------------------------------------------------------------------
+
+def _slugify_source(card: AgentCard) -> str:
+    """Derive a slug-style ``Metadata.source`` from an agent card name."""
+    return card.name.lower().replace(" ", "_")
+
+
+def _resolve_threaded_id(
+    explicit: str | None,
+    session_id: str | None,
+    session_deriver: Callable[[str], str],
+    prefix: str,
+) -> str:
+    """Resolve an ID with 3-level fallback: explicit > OTel session > random UUID."""
+    return (
+        explicit
+        or (session_deriver(session_id) if session_id else None)
+        or f"{prefix}://{uuid4()}"
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -338,27 +392,11 @@ def _build_event(
 # ---------------------------------------------------------------------------
 # Topology fragment builders
 # ---------------------------------------------------------------------------
-
-# NOTE: The outbound interceptor is stateless — it always emits
-# operation=CREATE because it cannot know whether a node/edge was emitted
-# in a prior request cycle.  The inbound consumer, however, can truthfully
-# emit operation=UPDATE because a response guarantees the outbound
-# interceptor already fired CREATE for the same path within the same
-# request/response cycle.
-#
-# For the outbound side, correct CRUD lifecycle (CREATE on first sight,
-# UPDATE thereafter) should be resolved by the component that owns
-# topology state.  Two approaches:
-#
-#   a) The workflow API / state aggregator normalises CREATE → UPDATE when the
-#      node/edge ID already exists in its store.  This is the preferred path:
-#      it keeps the middleware simple and pushes lifecycle semantics to the
-#      single stateful layer that already aggregates events.
-#
-#   b) The middleware reads back from the event store (EventSinkRegistry) or
-#      tracks a local seen-set (self._seen_ids) to decide CREATE vs UPDATE.
-#      This adds coupling/state to the middleware and doesn't survive restarts
-#      or multi-instance deployments.
+# Outbound interceptor emits CREATE (stateless — can't track prior emissions).
+# Inbound consumer emits UPDATE (response guarantees outbound already fired).
+# The workflow store upserts by ID, so repeated CREATEs are safe.
+# starting_topology is left empty here — the store seeds it from config on
+# startup; see the workflow store's merge_event_data docstring for details.
 
 def _outbound_topology(
     caller_name: str,
@@ -477,7 +515,7 @@ class EventEmittingInterceptor(ClientCallInterceptor):
         if not tool_workflow_map:
             raise ValueError("tool_workflow_map must contain at least one mapping")
         self._caller_label = caller_card.name
-        self._source = caller_card.name.lower().replace(" ", "_")
+        self._source = _slugify_source(caller_card)
         self._tool_workflow_map = tool_workflow_map
         self._agent_call_graph_layer = agent_call_graph_layer
         self._event_sink = event_sink
@@ -508,6 +546,8 @@ class EventEmittingInterceptor(ClientCallInterceptor):
         agent_card: AgentCard | None,
         context: ClientCallContext | None,
     ) -> tuple[dict[str, Any], dict[str, Any]]:
+        
+        t_intercept_start = monotonic()
 
         # if agent_card is None, log an error and skip event emission to avoid crashes
         if agent_card is None:
@@ -549,15 +589,17 @@ class EventEmittingInterceptor(ClientCallInterceptor):
                 self._source,
             )
 
-        correlation_id: str = (
-            ctx_state.get("correlation_id")
-            or (_correlation_id_from_session(session_id) if session_id else None)
-            or f"correlation://{uuid4()}"
+        correlation_id = _resolve_threaded_id(
+            ctx_state.get("correlation_id"),
+            session_id,
+            _correlation_id_from_session,
+            "correlation",
         )
-        instance_id: str = (
-            ctx_state.get("instance_id")
-            or (_instance_id_from_session(session_id, workflow_name) if session_id else None)
-            or f"instance://{uuid4()}"
+        instance_id = _resolve_threaded_id(
+            ctx_state.get("instance_id"),
+            session_id,
+            lambda sid: _instance_id_from_session(sid, workflow_name),
+            "instance",
         )
 
         logger.debug(
@@ -599,6 +641,8 @@ class EventEmittingInterceptor(ClientCallInterceptor):
             transport_label=preferred_transport,
             created_at_monotonic=monotonic(),
         ))
+        # Reset fan-out tracking for this new call.
+        _completed_remotes_ctx.set(None)
 
         # -- Build topology --
         if remote_names:
@@ -648,7 +692,129 @@ class EventEmittingInterceptor(ClientCallInterceptor):
                 event.model_dump_json(indent=2, exclude_none=True),
             )
 
+            logger.info(
+                "EventEmittingInterceptor [%s]: intercept processing time: %.3fs",
+                self._source,
+                monotonic() - t_intercept_start,
+            )
+
         return request_payload, http_kwargs
+
+
+# ---------------------------------------------------------------------------
+# A2A Middleware: Consumer context resolution
+# ---------------------------------------------------------------------------
+
+_TERMINAL_STATUSES: frozenset[TaskState] = frozenset({
+    TaskState.completed,
+    TaskState.failed,
+    TaskState.canceled,
+    TaskState.rejected,
+})
+
+
+def _validate_interceptor_ctx(
+    remote_name: str,
+    preferred_transport: str,
+    source_label: str,
+) -> _InterceptorContext | None:
+    """Read and validate the interceptor ``ContextVar``.
+
+    Returns the context if present and valid, ``None`` if missing, stale,
+    or mismatched (with a warning logged for each rejection reason).
+    """
+    ictx = _interceptor_ctx.get()
+    if ictx is None:
+        return None
+
+    age_seconds = monotonic() - ictx.created_at_monotonic
+    if age_seconds > _INTERCEPTOR_CTX_MAX_AGE_SECONDS:
+        logger.warning(
+            "event_emitting_consumer [%s]: interceptor context is stale "
+            "(age=%.2fs), ignoring it.",
+            source_label, age_seconds,
+        )
+        return None
+
+    if ictx.remote_names and remote_name not in ictx.remote_names:
+        logger.warning(
+            "event_emitting_consumer [%s]: interceptor context remote mismatch "
+            "(event=%s, expected_any=%s), ignoring it.",
+            source_label, remote_name, ",".join(ictx.remote_names),
+        )
+        return None
+
+    if ictx.transport_label != preferred_transport:
+        logger.warning(
+            "event_emitting_consumer [%s]: interceptor context transport mismatch "
+            "(event=%s, expected=%s), ignoring it.",
+            source_label, preferred_transport, ictx.transport_label,
+        )
+        return None
+
+    return ictx
+
+
+def _resolve_consumer_context(
+    remote_name: str,
+    preferred_transport: str,
+    response_status: TaskState | None,
+    *,
+    source_label: str,
+    default_mapping: ToolWorkflowMapping,
+    completed_remotes: set[str],
+) -> tuple[str | None, str | None, ToolWorkflowMapping, bool]:
+    """Resolve correlation IDs and workflow mapping for a consumer response.
+
+    Reads the interceptor ``ContextVar`` (validated by
+    :func:`_validate_interceptor_ctx`) and decides whether the context
+    should be cleared after this response.
+
+    For fan-out (broadcast) calls, defers cleanup until all expected
+    remotes have sent a terminal response.
+
+    Returns:
+        ``(correlation_id, instance_id, mapping, should_clear_ctx)``
+    """
+    ictx = _validate_interceptor_ctx(
+        remote_name, preferred_transport, source_label,
+    )
+
+    # -- Extract IDs or fall back to defaults --
+    if ictx is not None:
+        correlation_id = ictx.correlation_id
+        instance_id = ictx.instance_id
+        mapping = ictx.mapping
+    else:
+        logger.warning(
+            "event_emitting_consumer [%s]: no valid interceptor context "
+            "— correlation/instance IDs will not match outbound event. "
+            "This is expected only for standalone consumer usage.",
+            source_label,
+        )
+        correlation_id = None
+        instance_id = None
+        mapping = default_mapping
+
+    # -- Decide whether to clear the ContextVar --
+    # For fan-out (broadcast) calls, remote_names contains multiple
+    # targets.  We must NOT clear after the first terminal response or
+    # subsequent responses will lose correlation.
+    should_clear_ctx = False
+    if response_status in _TERMINAL_STATUSES:
+        if ictx is not None and len(ictx.remote_names) > 1:
+            completed_remotes.add(remote_name)
+            if completed_remotes >= set(ictx.remote_names):
+                should_clear_ctx = True
+                logger.debug(
+                    "event_emitting_consumer [%s]: all %d remotes responded, "
+                    "clearing interceptor context.",
+                    source_label, len(ictx.remote_names),
+                )
+        else:
+            should_clear_ctx = True
+
+    return correlation_id, instance_id, mapping, should_clear_ctx
 
 
 # ---------------------------------------------------------------------------
@@ -684,7 +850,7 @@ def make_event_emitting_consumer(
         raise ValueError("tool_workflow_map must contain at least one mapping")
 
     caller_label = caller_card.name
-    _source = caller_card.name.lower().replace(" ", "_")
+    _source = _slugify_source(caller_card)
     _default_mapping = next(iter(tool_workflow_map.values()))
 
     async def event_emitting_consumer(
@@ -694,25 +860,25 @@ def make_event_emitting_consumer(
         """Emits a ``StateProgressUpdate`` that updates the
         caller -> transport -> remote path discovered by the outbound call.
         """
+
+        t_receive_start = monotonic()
+
         remote_name = agent_card.name if agent_card else "unknown"
         preferred_transport = (
             agent_card.preferred_transport if agent_card else None
         ) or "Transport"
 
         # -- Determine response status from the event payload --
-        # TODO: Map task.status.state (TaskState enum: "completed",
-        # "working", "failed", etc.) to a visual node state once the
-        # frontend supports it (extra field on PartialNode).
-        response_status: str | None = None
+        # TODO: Map TaskState to a visual node state once the frontend
+        # supports it (extra field on PartialNode).
+        response_status: TaskState | None = None
 
         if isinstance(event, Message):
-            response_status = "completed"
+            response_status = TaskState.completed
         elif isinstance(event, tuple):
-            task, _update_event = event
-            if hasattr(task, "status") and task.status:
-                response_status = (
-                    str(task.status.state) if task.status.state else None
-                )
+            task_obj, _update_event = event
+            if isinstance(task_obj, Task) and task_obj.status and task_obj.status.state:
+                response_status = task_obj.status.state
 
         topology = _inbound_topology(
             caller_label, remote_name,
@@ -720,58 +886,22 @@ def make_event_emitting_consumer(
             layer_index=agent_call_graph_layer,
         )
 
-        # -- Read correlation/instance IDs and workflow mapping from the
-        # interceptor's ContextVar (set during the outbound call in this
-        # same async task).  Falls back to closure defaults when the
-        # interceptor hasn't run.
-        ictx = _interceptor_ctx.get()
-        should_clear_ctx = False
-        if ictx is not None:
-            age_seconds = monotonic() - ictx.created_at_monotonic
-            if age_seconds > _INTERCEPTOR_CTX_MAX_AGE_SECONDS:
-                logger.warning(
-                    "event_emitting_consumer [%s]: interceptor context is stale "
-                    "(age=%.2fs), ignoring it.",
-                    _source,
-                    age_seconds,
-                )
-                ictx = None
-            elif ictx.remote_names and remote_name not in ictx.remote_names:
-                logger.warning(
-                    "event_emitting_consumer [%s]: interceptor context remote mismatch "
-                    "(event=%s, expected_any=%s), ignoring it.",
-                    _source,
-                    remote_name,
-                    ",".join(ictx.remote_names),
-                )
-                ictx = None
-            elif ictx.transport_label != preferred_transport:
-                logger.warning(
-                    "event_emitting_consumer [%s]: interceptor context transport mismatch "
-                    "(event=%s, expected=%s), ignoring it.",
-                    _source,
-                    preferred_transport,
-                    ictx.transport_label,
-                )
-                ictx = None
+        # Lazily initialise per-task fan-out tracking set.
+        completed_remotes = _completed_remotes_ctx.get()
+        if completed_remotes is None:
+            completed_remotes = set()
+            _completed_remotes_ctx.set(completed_remotes)
 
-        if ictx is not None:
-            correlation_id = ictx.correlation_id
-            instance_id = ictx.instance_id
-            mapping = ictx.mapping
-        else:
-            logger.warning(
-                "event_emitting_consumer [%s]: no interceptor context found "
-                "— correlation/instance IDs will not match outbound event. "
-                "This is expected only for standalone consumer usage.",
-                _source,
+        correlation_id, instance_id, mapping, should_clear_ctx = (
+            _resolve_consumer_context(
+                remote_name, preferred_transport, response_status,
+                source_label=_source,
+                default_mapping=_default_mapping,
+                completed_remotes=completed_remotes,
             )
-            correlation_id = None
-            instance_id = None
-            mapping = _default_mapping
+        )
 
-        if response_status in {"completed", "failed", "canceled", "cancelled"}:
-            should_clear_ctx = True
+        status_label = response_status.value if response_status else "unknown"
 
         event_obj = _build_event(
             source=_source,
@@ -780,7 +910,7 @@ def make_event_emitting_consumer(
             instance_id=instance_id,
             topology=topology,
             correlation_id=correlation_id,
-            correlation_message=f"response from {remote_name}, status={response_status}",
+            correlation_message=f"response from {remote_name}, status={status_label}",
             pattern=mapping.pattern,
         )
 
@@ -789,14 +919,16 @@ def make_event_emitting_consumer(
 
         if verbose:
             logger.info(
-                "event_emitting_consumer [%s]: response from %s (status=%s)\n%s",
+                "event_emitting_consumer [%s]: response from %s (status=%s) (processing time=%.3fs)\n%s",
                 _source,
                 remote_name,
-                response_status,
+                status_label,
+                monotonic() - t_receive_start,
                 event_obj.model_dump_json(indent=2, exclude_none=True),
             )
 
         if should_clear_ctx and _interceptor_ctx.get() is not None:
+            _completed_remotes_ctx.set(None)
             _interceptor_ctx.set(None)
 
     return event_emitting_consumer
