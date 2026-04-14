@@ -32,6 +32,7 @@ config:
   # Identity TBAC Configuration
   identityServiceApiKey: ""
   identityAuthEnabled: "false"
+  corsAllowedOrigins: ""
 
 
 # You can use your own config here for service account
@@ -61,9 +62,6 @@ extraIngress:
     path: ""
     pathType: ""
     annotations: {}
-
-cors:
-  allowedOrigins: ""
 
 probes:
   livenessProbeEnabled: false

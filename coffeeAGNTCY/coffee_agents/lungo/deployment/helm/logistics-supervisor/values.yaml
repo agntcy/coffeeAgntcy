@@ -22,6 +22,7 @@ config:
   defaultMessageTransport: ""
   otlpHttpEndpoint: ""
   experimentalFeature: "true"
+  corsAllowedOrigins: ""
 #  llmStreaming: False
 
 # You can use your own config here for service account
@@ -51,9 +52,6 @@ extraIngress:
   path: ""
   pathType: ""
   annotations: {}
-
-cors:
-  allowedOrigins: ""
 
 probes:
   livenessProbeEnabled: false

@@ -2,4 +2,4 @@ apiVersion: v1
 appVersion: "0.0.1"
 description: A Helm chart for the Logistics Farm agent
 name: logistics-farm
-version: 0.0.1
+version: 0.0.2

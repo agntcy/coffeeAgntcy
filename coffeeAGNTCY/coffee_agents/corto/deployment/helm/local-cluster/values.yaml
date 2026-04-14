@@ -31,8 +31,8 @@ nats:
     failureThreshold: 6
 
 corto-exchange:
-  cors:
-    allowedOrigins: "http://localhost:3000,http://127.0.0.1:3000"
+  config:
+    corsAllowedOrigins: "http://localhost:3000,http://127.0.0.1:3000"
 
 corto-ui:
   environment: local
