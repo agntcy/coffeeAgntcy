@@ -10,5 +10,5 @@ store is introduced.
 from __future__ import annotations
 
 USE_CASES: list[str] = [
-    "Coffee Agency",
+    "Coffee Agntcy",
 ]

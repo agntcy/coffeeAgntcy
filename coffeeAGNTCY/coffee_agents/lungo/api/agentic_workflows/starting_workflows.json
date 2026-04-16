@@ -1,7 +1,7 @@
 [
   {
     "pattern": "Supervisor-worker",
-    "use_case": "Coffee Agency",
+    "use_case": "Coffee Agntcy",
     "name": "Publish Subscribe Coffee Farm Network",
     "starting_topology": {
       "nodes": [
@@ -123,7 +123,7 @@
   },
   {
     "pattern": "Supervisor-worker",
-    "use_case": "Coffee Agency",
+    "use_case": "Coffee Agntcy",
     "name": "Publish Subscribe Streaming Coffee Auction Network",
     "starting_topology": {
       "nodes": [
@@ -245,7 +245,7 @@
   },
   {
     "pattern": "Group chat",
-    "use_case": "Coffee Agency",
+    "use_case": "Coffee Agntcy",
     "name": "Secure Group Communication Logistics Network",
     "starting_topology": {
       "nodes": [
@@ -341,7 +341,7 @@
   },
   {
     "pattern": "Recruiter",
-    "use_case": "Coffee Agency",
+    "use_case": "Coffee Agntcy",
     "name": "On-demand Discovery",
     "starting_topology": {
       "nodes": [
