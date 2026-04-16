@@ -11,7 +11,8 @@
           "type": "customNode",
           "label": "Auction Agent",
           "size": { "width": 1.0, "height": 1.0 },
-          "layer_index": 0
+          "layer_index": 0,
+          "agent_record_uri": "../../agents/supervisors/auction/oasf/agents/auction-supervisor-agent.json"
         },
         {
           "id": "node://1a000001-0001-4000-a001-000000000002",
@@ -27,7 +28,8 @@
           "type": "customNode",
           "label": "Brazil Coffee Farm Agent",
           "size": { "width": 1.0, "height": 1.0 },
-          "layer_index": 2
+          "layer_index": 2,
+          "agent_record_uri": "../../agents/supervisors/auction/oasf/agents/brazil-coffee-farm.json"
         },
         {
           "id": "node://1a000001-0001-4000-a001-000000000004",
@@ -35,7 +37,8 @@
           "type": "customNode",
           "label": "Colombia Coffee Farm Agent",
           "size": { "width": 1.0, "height": 1.0 },
-          "layer_index": 2
+          "layer_index": 2,
+          "agent_record_uri": "https://raw.githubusercontent.com/agntcy/coffeeAgntcy/refs/heads/main/coffeeAGNTCY/coffee_agents/lungo/agents/supervisors/auction/oasf/agents/colombia-coffee-farm.json"
         },
         {
           "id": "node://1a000001-0001-4000-a001-000000000005",
@@ -43,7 +46,8 @@
           "type": "customNode",
           "label": "Vietnam Coffee Farm Agent",
           "size": { "width": 1.0, "height": 1.0 },
-          "layer_index": 2
+          "layer_index": 2,
+          "agent_record_uri": "../../agents/supervisors/auction/oasf/agents/vietnam-coffee-farm.json"
         },
         {
           "id": "node://1a000001-0001-4000-a001-000000000006",
@@ -51,7 +55,8 @@
           "type": "customNode",
           "label": "Weather MCP Server",
           "size": { "width": 1.0, "height": 1.0 },
-          "layer_index": 3
+          "layer_index": 3,
+          "agent_record_uri": "../../agents/supervisors/auction/oasf/agents/weather-mcp-server.json"
         },
         {
           "id": "node://1a000001-0001-4000-a001-000000000007",
@@ -59,7 +64,8 @@
           "type": "customNode",
           "label": "Payment MCP Server",
           "size": { "width": 1.0, "height": 1.0 },
-          "layer_index": 3
+          "layer_index": 3,
+          "agent_record_uri": "../../agents/supervisors/auction/oasf/agents/payment-mcp-server.json"
         }
       ],
       "edges": [
@@ -133,7 +139,8 @@
           "type": "customNode",
           "label": "Auction Agent",
           "size": { "width": 1.0, "height": 1.0 },
-          "layer_index": 0
+          "layer_index": 0,
+          "agent_record_uri": "../../agents/supervisors/auction/oasf/agents/auction-supervisor-agent.json"
         },
         {
           "id": "node://2a000001-0001-4000-a001-000000000002",
@@ -149,7 +156,8 @@
           "type": "customNode",
           "label": "Brazil Coffee Farm Agent",
           "size": { "width": 1.0, "height": 1.0 },
-          "layer_index": 2
+          "layer_index": 2,
+          "agent_record_uri": "../../agents/supervisors/auction/oasf/agents/brazil-coffee-farm.json"
         },
         {
           "id": "node://2a000001-0001-4000-a001-000000000004",
@@ -157,7 +165,8 @@
           "type": "customNode",
           "label": "Colombia Coffee Farm Agent",
           "size": { "width": 1.0, "height": 1.0 },
-          "layer_index": 2
+          "layer_index": 2,
+          "agent_record_uri": "https://raw.githubusercontent.com/agntcy/coffeeAgntcy/refs/heads/main/coffeeAGNTCY/coffee_agents/lungo/agents/supervisors/auction/oasf/agents/colombia-coffee-farm.json"
         },
         {
           "id": "node://2a000001-0001-4000-a001-000000000005",
@@ -165,7 +174,8 @@
           "type": "customNode",
           "label": "Vietnam Coffee Farm Agent",
           "size": { "width": 1.0, "height": 1.0 },
-          "layer_index": 2
+          "layer_index": 2,
+          "agent_record_uri": "../../agents/supervisors/auction/oasf/agents/vietnam-coffee-farm.json"
         },
         {
           "id": "node://2a000001-0001-4000-a001-000000000006",
@@ -173,7 +183,8 @@
           "type": "customNode",
           "label": "Weather MCP Server",
           "size": { "width": 1.0, "height": 1.0 },
-          "layer_index": 3
+          "layer_index": 3,
+          "agent_record_uri": "../../agents/supervisors/auction/oasf/agents/weather-mcp-server.json"
         },
         {
           "id": "node://2a000001-0001-4000-a001-000000000007",
@@ -181,7 +192,8 @@
           "type": "customNode",
           "label": "Payment MCP Server",
           "size": { "width": 1.0, "height": 1.0 },
-          "layer_index": 3
+          "layer_index": 3,
+          "agent_record_uri": "../../agents/supervisors/auction/oasf/agents/payment-mcp-server.json"
         }
       ],
       "edges": [
@@ -279,7 +291,8 @@
           "type": "customNode",
           "label": "Tatooine Coffee Farm Agent",
           "size": { "width": 1.0, "height": 1.0 },
-          "layer_index": 1
+          "layer_index": 1,
+          "agent_record_uri": "../../agents/supervisors/logistics/oasf/agents/tatooine-farm-agent.json"
         },
         {
           "id": "node://3a000001-0001-4000-a001-000000000005",
@@ -287,7 +300,8 @@
           "type": "customNode",
           "label": "Shipper Agent",
           "size": { "width": 1.0, "height": 1.0 },
-          "layer_index": 3
+          "layer_index": 3,
+          "agent_record_uri": "../../agents/supervisors/logistics/oasf/agents/shipping-agent.json"
         },
         {
           "id": "node://3a000001-0001-4000-a001-000000000006",
@@ -295,7 +309,8 @@
           "type": "customNode",
           "label": "Accountant Agent",
           "size": { "width": 1.0, "height": 1.0 },
-          "layer_index": 3
+          "layer_index": 3,
+          "agent_record_uri": "../../agents/supervisors/logistics/oasf/agents/accountant-agent.json"
         }
       ],
       "edges": [

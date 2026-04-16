@@ -34,7 +34,7 @@
     "node_id": {
       "type": "string",
       "pattern": "^node://[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
-      "description": "Graph node id. Used in topology definitions"
+      "description": "Graph node id. Used in topology definitions."
     },
     "edge_id": {
       "type": "string",
@@ -60,7 +60,8 @@
         "type": { "type": "string", "minLength": 1 },
         "label": { "type": "string", "minLength": 1 },
         "size": { "$ref": "#/$defs/size" },
-        "layer_index": { "type": "number", "default": 0 }
+        "layer_index": { "type": "number", "default": 0 },
+        "agent_record_uri": { "type": "string", "minLength": 1 }
       },
       "additionalProperties": true
     },
@@ -70,7 +71,7 @@
         {
           "type": "object",
           "description": "Full node data (mainly for init/reset). Used in topology definitions.",
-          "required": ["id", "operation", "type", "label", "size", "layer_index"]
+          "required": ["id", "operation", "type", "label", "size", "layer_index", "agent_record_uri"]
         }
       ]
     },

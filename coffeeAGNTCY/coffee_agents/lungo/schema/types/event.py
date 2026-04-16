@@ -99,10 +99,11 @@ class PartialNode(BaseModel):
     label: Annotated[str, Field(min_length=1)] | None = None
     size: Size | None = None
     layer_index: float = 0
+    agent_record_uri: Annotated[str, Field(min_length=1)] | None = None
 
 
 class Node(BaseModel):
-    """Full node (init/reset); all listed fields required (not a subclass of ``PartialNode``)."""
+    """Full node (init/reset); almost all listed fields are required (not a subclass of ``PartialNode``)."""
 
     model_config = ConfigDict(extra="allow")
 
@@ -112,6 +113,7 @@ class Node(BaseModel):
     label: Annotated[str, Field(min_length=1)]
     size: Size
     layer_index: float
+    agent_record_uri: Annotated[str, Field(min_length=1)] | None = None
 
 
 class PartialEdge(BaseModel):
