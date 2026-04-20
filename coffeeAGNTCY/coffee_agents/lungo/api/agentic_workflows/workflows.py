@@ -13,12 +13,12 @@ import json
 import logging
 from pathlib import Path
 from threading import Lock
-from uuid import uuid4, uuid5, NAMESPACE_DNS
+from uuid import uuid4
 
 import httpx
 from pydantic import ValidationError
 
-from schema.types import EdgeId, NodeId, Workflow
+from schema.types import EdgeId, NodeId, TopologyNodeItem, Workflow
 
 
 logger = logging.getLogger(__name__)
@@ -27,8 +27,6 @@ _DATA_DIR = Path(__file__).resolve().parent
 _STARTING_WORKFLOWS_FILE = _DATA_DIR / "starting_workflows.json"
 
 _STARTING_WORKFLOWS: list[Workflow] | None = None
-
-_NODE_UUID_NS = uuid5(NAMESPACE_DNS, "node.workflow.lungo.coffeeAGNTCY.com")
 
 # This is a global lock to ensure that the starting workflows are initialized only once.
 _INIT_LOCK = Lock()
@@ -81,48 +79,44 @@ def _load_and_validate_starting_workflows_from_file(target: Path) -> list[Workfl
         logger.error("Expected a JSON array in %s, got %s", target, type(data).__name__)
         return []
 
-    validated: list[Workflow] = []
+    validated_workflows: list[Workflow] = []
     for idx_wf, entry in enumerate(data):
         try:
-            validated_entry = Workflow.model_validate(entry)
+            validated_entry_initial = Workflow.model_validate(entry)
 
-            # if entry has a agent_record_uri field, attempt to load the agent record and validate it
-            for idx_nd, node in enumerate(validated_entry.starting_topology.nodes):
-                # print(f"Loading agent record for node {node.id} in workflow at index {idx_wf} ({validated_entry.name})")
+            # If entry has a agent_record_uri field, attempt to load the agent record and validate it.
+            for idx_nd, node in enumerate[TopologyNodeItem](validated_entry_initial.starting_topology.nodes):
+                # Note: not all workflow nodes are agents.
                 if node.agent_record_uri:
+                    # Currently, we are checking that the agent record is accessible and valid (for the puposes of id generation),
+                    # but we are not doing anything with the agent record itself so we are not invalidating the workflow on these grounds.
+                    # In the future, these should be grounds for invalidating the workflow.
                     try:
-                        record_data = _load_agent_record_from_uri(node.agent_record_uri, base_path=target.parent)
-                        node.id = generate_node_id_from_oasf_record(record_data)
+                        _load_agent_record_from_uri(node.agent_record_uri, base_path=target.parent)
                     # FileNotFoundError is a subclass of OSError.
                     except (FileNotFoundError, httpx.HTTPStatusError) as exc:
-                        logger.warning("Failed to load agent record for node %s in workflow at index %d (%s): %s",
-                                       node.id, idx_wf, validated_entry.name, exc)
-                        raise OSError(f"Could not load agent record for node at index {idx_nd} in workflow at index {idx_wf}: {exc}") from exc
-                    except (ValueError, ValidationError) as exc:
-                        logger.warning("Agent record validation failed for node %s in workflow at index %d (%s): %s",
-                                       node.id, idx_wf, validated_entry.name, exc)
-                        raise ValidationError(f"Invalid agent record for node at index {idx_nd} in workflow at index {idx_wf}: {exc}") from exc
-                else:
-                    node.id = NodeId(f"node://{uuid4()}")
+                        logger.warning("Failed to load agent record for node at index %d (id %s) in workflow at index %d (name %s) but will use the workflow anyhow: %s",
+                                       idx_nd, node.id, idx_wf, validated_entry_initial.name, exc)
+                    except ValueError as exc:
+                        logger.warning("Agent record validation failed for node at index %d (id %s) in workflow at index %d (name %s) but will use the workflow anyhow: %s",
+                                       idx_nd, node.id, idx_wf, validated_entry_initial.name, exc)
+                
+                node.id = NodeId(f"node://{uuid4()}")
             
-            for edge in validated_entry.starting_topology.edges:
-                # print(f"Loading edge {edge.id} in workflow at index {idx_wf} ({validated_entry.name})")
+            for edge in validated_entry_initial.starting_topology.edges:
                 edge.id = EdgeId(f"edge://{uuid4()}")
             
             # Validate the workflow again to ensure that modifications made are valid.
             # Note that model_validate() returns a new instance of the model.
-            validated.append(Workflow.model_validate(validated_entry.model_dump()))
+            validated_workflows.append(Workflow.model_validate(validated_entry_initial.model_dump()))
 
         except ValidationError as exc:
             name = entry.get("name", "<unknown>") if isinstance(entry, dict) else "<unknown>"
             logger.warning("Skipping workflow at index %d (%s): validation failed:\n%s", idx_wf, name, exc)
-        except OSError as exc:
-            name = entry.get("name", "<unknown>") if isinstance(entry, dict) else "<unknown>"
-            logger.warning("Skipping workflow at index %d (%s): failed to load agent record:\n%s", idx_wf, name, exc)
 
-    logger.info("Loaded %d of %d workflow(s) from %s", len(validated), len(data), target)
-    print(f"Loaded {len(validated)} of {len(data)} workflow(s) from {target}")
-    return validated
+    logger.info("Loaded %d of %d workflow(s) from %s", len(validated_workflows), len(data), target)
+    print(f"Loaded {len(validated_workflows)} of {len(data)} workflow(s) from {target}")
+    return validated_workflows
 
 
 def _load_agent_record_from_uri(uri: str, base_path: Path | None = None) -> dict:
@@ -153,15 +147,13 @@ def _load_agent_record_from_uri(uri: str, base_path: Path | None = None) -> dict
         with open(resolved, encoding="utf-8") as fh:
             data = json.load(fh)
 
+    # The 'name' field would be the one used to generate a UUIDv5 node id from the agent record.
+    # We are not doing that yet, but we are considering that as a "stable agent id" that would be used to identify the agent across runs.
+    # This stable id would be a different field from the runtime/instance id that is currently under the node.id field.
     if not isinstance(data, dict) or not data.get("name"):
         raise ValueError(f"Agent record JSON at {uri!r} must be an object with a 'name' field")
 
     return data
-    
-
-def generate_node_id_from_oasf_record(record: str) -> NodeId:
-    """Generate a deterministic node ID for an agent based on its OASF record path."""
-    return NodeId(f"node://{uuid5(_NODE_UUID_NS, record["name"])}")
 
 
 def get_workflows() -> list[Workflow]:
