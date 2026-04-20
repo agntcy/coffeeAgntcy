@@ -14,71 +14,74 @@ from fastapi import FastAPI
 from fastapi.testclient import TestClient
 from schema.types import Workflow
 
-_FAKE_WORKFLOWS: list[Workflow] = [
-    Workflow.model_validate(
-        {
-            "pattern": "publish_subscribe",
-            "use_case": "Coffee Buying",
-            "name": "Pub Sub Coffee",
-            "starting_topology": {
-                "nodes": [
-                    {
-                        "id": "node://00000000-0000-4000-a000-000000000001",
-                        "operation": "read",
-                        "type": "customNode",
-                        "label": "Agent A",
-                        "size": {"width": 1.0, "height": 1.0},
-                        "layer_index": 0,
-                    },
-                ],
-                "edges": [],
-            },
-            "instances": {},
-        }
-    ),
-    Workflow.model_validate(
-        {
-            "pattern": "group_communication",
-            "use_case": "Order Fulfilment",
-            "name": "Group Logistics",
-            "starting_topology": {
-                "nodes": [
-                    {
-                        "id": "node://00000000-0000-4000-a000-000000000002",
-                        "operation": "read",
-                        "type": "customNode",
-                        "label": "Agent B",
-                        "size": {"width": 1.0, "height": 1.0},
-                        "layer_index": 0,
-                    },
-                ],
-                "edges": [],
-            },
-            "instances": {},
-        }
-    ),
-    Workflow.model_validate(
-        {
-            "pattern": "publish_subscribe",
-            "use_case": "Order Fulfilment",
-            "name": "Pub Sub Orders",
-            "starting_topology": {
-                "nodes": [
-                    {
-                        "id": "node://00000000-0000-4000-a000-000000000003",
-                        "operation": "read",
-                        "type": "customNode",
-                        "label": "Agent C",
-                        "size": {"width": 1.0, "height": 1.0},
-                        "layer_index": 0,
-                    },
-                ],
-                "edges": [],
-            },
-            "instances": {},
-        }
-    ),
-]
+_FAKE_WORKFLOWS: dict[str, Workflow] = {
+    wf.name: wf
+    for wf in [
+        Workflow.model_validate(
+            {
+                "pattern": "publish_subscribe",
+                "use_case": "Coffee Buying",
+                "name": "Pub Sub Coffee",
+                "starting_topology": {
+                    "nodes": [
+                        {
+                            "id": "node://00000000-0000-4000-a000-000000000001",
+                            "operation": "read",
+                            "type": "customNode",
+                            "label": "Agent A",
+                            "size": {"width": 1.0, "height": 1.0},
+                            "layer_index": 0,
+                        },
+                    ],
+                    "edges": [],
+                },
+                "instances": {},
+            }
+        ),
+        Workflow.model_validate(
+            {
+                "pattern": "group_communication",
+                "use_case": "Order Fulfilment",
+                "name": "Group Logistics",
+                "starting_topology": {
+                    "nodes": [
+                        {
+                            "id": "node://00000000-0000-4000-a000-000000000002",
+                            "operation": "read",
+                            "type": "customNode",
+                            "label": "Agent B",
+                            "size": {"width": 1.0, "height": 1.0},
+                            "layer_index": 0,
+                        },
+                    ],
+                    "edges": [],
+                },
+                "instances": {},
+            }
+        ),
+        Workflow.model_validate(
+            {
+                "pattern": "publish_subscribe",
+                "use_case": "Order Fulfilment",
+                "name": "Pub Sub Orders",
+                "starting_topology": {
+                    "nodes": [
+                        {
+                            "id": "node://00000000-0000-4000-a000-000000000003",
+                            "operation": "read",
+                            "type": "customNode",
+                            "label": "Agent C",
+                            "size": {"width": 1.0, "height": 1.0},
+                            "layer_index": 0,
+                        },
+                    ],
+                    "edges": [],
+                },
+                "instances": {},
+            }
+        ),
+    ]
+}
 
 _ALL_NAMES = {"Pub Sub Coffee", "Group Logistics", "Pub Sub Orders"}
 

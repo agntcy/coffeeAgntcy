@@ -11,6 +11,9 @@ not ``null``).
 """
 
 from schema.types.event import (
+    AgentId,
+    AgentNode,
+    AgentPartialNode,
     Correlation,
     CorrelationId,
     Data,
@@ -36,6 +39,9 @@ from schema.types.event import (
 from schema.types.event_type import EventType
 
 __all__ = [
+    "AgentId",
+    "AgentNode",
+    "AgentPartialNode",
     "Correlation",
     "CorrelationId",
     "Data",

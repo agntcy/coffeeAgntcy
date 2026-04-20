@@ -6,6 +6,10 @@
 ``Node``, ``Edge``, and ``Topology`` are **not** subclasses of their partial counterparts:
 field declarations are repeated with required types so validation matches JSON Schema
 ``allOf`` + ``required`` without inheriting optional ``| None`` fields.
+
+``AgentNode`` and ``AgentPartialNode`` *are* subclasses of ``Node`` and ``PartialNode``
+respectively, extending them with agent-specific fields. Only nodes representing agents carry
+these fields; other topology nodes (e.g. transport) do not.
 """
 
 from __future__ import annotations
@@ -33,6 +37,7 @@ _CORRELATION_ID_REGEX = rf"^correlation://{_UUID_REGEX}$"
 _INSTANCE_ID_REGEX = rf"^instance://{_UUID_REGEX}$"
 _NODE_ID_REGEX = rf"^node://{_UUID_REGEX}$"
 _EDGE_ID_REGEX = rf"^edge://{_UUID_REGEX}$"
+_AGENT_ID_REGEX = rf"^agent://{_UUID_REGEX}$"
 
 
 class EventId(RootModel[str]):
@@ -70,6 +75,10 @@ class EdgeId(RootModel[str]):
     root: Annotated[str, Field(pattern=_EDGE_ID_REGEX, description="Graph edge id.")]
 
 
+class AgentId(RootModel[str]):
+    root: Annotated[str, Field(pattern=_AGENT_ID_REGEX, description="Stable agent id, invariant across runtime instances of the same agent.")]
+
+
 class Operation(StrEnum):
     CREATE = "create"
     READ = "read"
@@ -88,6 +97,34 @@ class Size(BaseModel):
     )
 
 
+_AGENT_SPECIFIC_FIELDS: tuple[str, ...] = ("agent_record_uri", "stable_agent_id")
+
+
+def _reject_agent_specific_extra_fields(instance: BaseModel) -> None:
+    """Reject agent-specific keys if they sneak in via ``extra="allow"``.
+
+    ``Node`` and ``PartialNode`` deliberately do not declare ``agent_record_uri`` or
+    ``stable_agent_id``; those belong to the ``AgentNode`` / ``AgentPartialNode``
+    subclasses. Because ``extra="allow"`` accepts any extra key with any value,
+    without this check an invalid input (e.g. ``agent_record_uri=""`` or
+    ``stable_agent_id="not-a-uri"``) would quietly validate as a non-agent node with
+    the bogus value in ``__pydantic_extra__``. Rejecting them here forces the
+    ``TopologyNodeItem`` union to validate such inputs against the agent subclasses,
+    which enforce the format constraints and raise if they are not met.
+
+    Because Agent subclasses declare these as real fields (not extras), this
+    validator is a no-op for them.
+    """
+    extras = instance.__pydantic_extra__
+    if extras is None:
+        return
+    for name in _AGENT_SPECIFIC_FIELDS:
+        if name in extras:
+            raise ValueError(
+                f"{name} is only valid in AgentNode / AgentPartialNode"
+            )
+
+
 class PartialNode(BaseModel):
     """Sparse node (updates); only ``id`` and ``operation`` are required."""
 
@@ -99,11 +136,15 @@ class PartialNode(BaseModel):
     label: Annotated[str, Field(min_length=1)] | None = None
     size: Size | None = None
     layer_index: float = 0
-    agent_record_uri: Annotated[str, Field(min_length=1)] | None = None
+
+    @model_validator(mode="after")
+    def _no_agent_specific_fields(self) -> Self:
+        _reject_agent_specific_extra_fields(self)
+        return self
 
 
 class Node(BaseModel):
-    """Full node (init/reset); almost all listed fields are required (not a subclass of ``PartialNode``)."""
+    """Full node (init/reset); all listed fields are required (not a subclass of ``PartialNode``)."""
 
     model_config = ConfigDict(extra="allow")
 
@@ -113,7 +154,33 @@ class Node(BaseModel):
     label: Annotated[str, Field(min_length=1)]
     size: Size
     layer_index: float
-    agent_record_uri: Annotated[str, Field(min_length=1)] | None = None
+
+    @model_validator(mode="after")
+    def _no_agent_specific_fields(self) -> Self:
+        _reject_agent_specific_extra_fields(self)
+        return self
+
+
+class AgentPartialNode(PartialNode):
+    """Sparse node representing an agent; extends ``PartialNode``.
+    
+    At least some fields in this model class need to be required because otherwise
+    the validation would fall through to the PartialNode model class and possibly validate as a non-agent node.
+    """
+
+    agent_record_uri: Annotated[str, Field(min_length=1)]
+    stable_agent_id: AgentId | None = None
+
+
+class AgentNode(Node):
+    """Full node representing an agent; extends ``Node``.
+    
+    At least some fields in this model class need to be required because otherwise
+    the validation would fall through to the Node model class and possibly validate as a non-agent node.
+    """
+
+    agent_record_uri: Annotated[str, Field(min_length=1)]
+    stable_agent_id: AgentId
 
 
 class PartialEdge(BaseModel):
@@ -144,7 +211,7 @@ class Edge(BaseModel):
     weight: float
 
 
-TopologyNodeItem = Union[Node, PartialNode]
+TopologyNodeItem = Union[AgentNode, Node, AgentPartialNode, PartialNode]
 TopologyEdgeItem = Union[Edge, PartialEdge]
 
 

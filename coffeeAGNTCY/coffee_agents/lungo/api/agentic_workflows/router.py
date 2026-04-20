@@ -77,7 +77,7 @@ def create_agentic_workflows_router() -> APIRouter:
         """GET /agentic-workflows/ — map keyed by workflow name; optional filters."""
         all_workflows = get_workflows()
 
-        filtered = all_workflows
+        filtered = all_workflows.values()
         if patterns:
             pattern_set = set(patterns)
             filtered = [w for w in filtered if w.pattern in pattern_set]
@@ -106,9 +106,7 @@ def create_agentic_workflows_router() -> APIRouter:
     ) -> Workflow:
         """GET /agentic-workflows/{workflow_name}/ — definition + topology."""
         all_workflows = get_workflows()
-        wf = next(
-            (w for w in all_workflows if w.name == workflow_name), None
-        )
+        wf = all_workflows.get(workflow_name)
         if wf is None:
             raise HTTPException(
                 status_code=404, detail=f"Workflow not found: {workflow_name}"
