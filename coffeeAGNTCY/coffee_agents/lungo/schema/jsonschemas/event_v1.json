@@ -34,7 +34,7 @@
     "node_id": {
       "type": "string",
       "pattern": "^node://[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
-      "description": "Graph node id. Used in topology definitions"
+      "description": "Graph node id. Used in topology definitions."
     },
     "edge_id": {
       "type": "string",

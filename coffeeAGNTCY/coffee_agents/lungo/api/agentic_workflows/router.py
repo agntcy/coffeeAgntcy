@@ -3,7 +3,7 @@
 
 """FastAPI router skeleton for the Agentic Workflows API.
 
-Handlers are stubs (501) until store and SSE are implemented.
+Catalog-like endpoints are implemented but other handlers are stubs (501) until store and SSE are implemented.
 """
 
 from __future__ import annotations
@@ -12,11 +12,17 @@ from typing import Annotated
 
 from api.agentic_workflows.dtos import (
     InstantiateWorkflowResponse,
+    Pattern,
     PatternListResponse,
+    UseCase,
     UseCaseListResponse,
     WorkflowInstanceMapResponse,
+    WorkflowSummary,
     WorkflowSummaryMapResponse,
 )
+from api.agentic_workflows.patterns import PATTERNS
+from api.agentic_workflows.use_cases import USE_CASES
+from api.agentic_workflows.workflows import get_workflows
 from fastapi import APIRouter, HTTPException, Path, Query
 from fastapi.responses import RedirectResponse
 from schema.types import Event, Workflow, WorkflowInstance
@@ -48,7 +54,7 @@ def create_agentic_workflows_router() -> APIRouter:
     )
     async def list_patterns() -> PatternListResponse:
         """GET /patterns/ — catalog of patterns."""
-        raise HTTPException(status_code=501, detail="Not implemented")
+        return PatternListResponse(items=[Pattern(name=n) for n in PATTERNS])
 
     @router.get(
         "/use-cases/",
@@ -57,7 +63,7 @@ def create_agentic_workflows_router() -> APIRouter:
     )
     async def list_use_cases() -> UseCaseListResponse:
         """GET /use-cases/ — catalog of use-cases."""
-        raise HTTPException(status_code=501, detail="Not implemented")
+        return UseCaseListResponse(items=[UseCase(name=n) for n in USE_CASES])
 
     @router.get(
         "/agentic-workflows/",
@@ -69,7 +75,25 @@ def create_agentic_workflows_router() -> APIRouter:
         use_cases: Annotated[list[str] | None, Query()] = None,
     ) -> WorkflowSummaryMapResponse:
         """GET /agentic-workflows/ — map keyed by workflow name; optional filters."""
-        raise HTTPException(status_code=501, detail="Not implemented")
+        all_workflows = get_workflows()
+
+        filtered = all_workflows.values()
+        if patterns:
+            pattern_set = set(patterns)
+            filtered = [w for w in filtered if w.pattern in pattern_set]
+        if use_cases:
+            uc_set = set(use_cases)
+            filtered = [w for w in filtered if w.use_case in uc_set]
+
+        summary_map = {
+            w.name: WorkflowSummary(
+                name=w.name,
+                pattern=w.pattern,
+                use_case=w.use_case,
+            )
+            for w in filtered
+        }
+        return WorkflowSummaryMapResponse(summary_map)
 
     @router.get(
         "/agentic-workflows/{workflow_name}/",
@@ -81,7 +105,17 @@ def create_agentic_workflows_router() -> APIRouter:
         topology_only: Annotated[bool, Query()] = False,
     ) -> Workflow:
         """GET /agentic-workflows/{workflow_name}/ — definition + topology."""
-        raise HTTPException(status_code=501, detail="Not implemented")
+        all_workflows = get_workflows()
+        wf = all_workflows.get(workflow_name)
+        if wf is None:
+            raise HTTPException(
+                status_code=404, detail=f"Workflow not found: {workflow_name}"
+            )
+
+        if topology_only:
+            return wf.model_copy(update={"instances": {}})
+
+        return wf
 
     @router.post(
         "/agentic-workflows/{workflow_name}/",

@@ -8,11 +8,14 @@ from __future__ import annotations
 import logging
 import os
 
-import uvicorn
 from api.agentic_workflows.router import create_agentic_workflows_router
+from api.agentic_workflows.workflows import set_starting_workflows
 from common.cors import get_cors_allowed_origins
+
+import uvicorn
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+
 
 logger = logging.getLogger("lungo.agentic_workflows.server")
 
@@ -43,6 +46,7 @@ def create_agentic_workflows_app() -> FastAPI:
     return app
 
 
+set_starting_workflows()
 app = create_agentic_workflows_app()
 
 
