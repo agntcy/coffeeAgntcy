@@ -5,150 +5,178 @@ import config.logging_config  # noqa: F401 - runs setup on import; must be first
 
 import asyncio
 import logging
-from datetime import datetime, timezone
-from typing import List
+from os import getenv
+
+from a2a.server.apps import A2AStarletteApplication
+from a2a.server.tasks import InMemoryTaskStore
+from a2a.server.request_handlers import DefaultRequestHandler
+from a2a.types import AgentCard
 from dotenv import load_dotenv
-from fastapi import FastAPI, Request
-from fastapi.responses import JSONResponse
-from pydantic import BaseModel
-from starlette.routing import Route
 from uvicorn import Config, Server
+
+from fastapi import FastAPI
+from starlette.responses import JSONResponse
+from starlette.routing import Route
 from starlette.middleware.cors import CORSMiddleware
 
 from agntcy_app_sdk.factory import AgntcyFactory
-from agntcy_app_sdk.semantic.a2a.protocol import A2AProtocol
-from agntcy_app_sdk.app_sessions import AppContainer
-from a2a.server.apps import A2AStarletteApplication
-from a2a.server.request_handlers import DefaultRequestHandler
-from a2a.server.tasks import InMemoryTaskStore
+from agntcy_app_sdk.semantic.a2a.client.factory import A2AClientFactory
+from agntcy_app_sdk.semantic.a2a import (
+    ClientConfig,
+    SlimTransportConfig,
+)
 from common.cors import get_cors_allowed_origins
 
 from agents.logistics.helpdesk.agent_executor import HelpdeskAgentExecutor
 from agents.logistics.helpdesk.card import AGENT_CARD
 from agents.logistics.shipper.card import AGENT_CARD as SHIPPER_AGENT_CARD
 from config.config import (
-    DEFAULT_MESSAGE_TRANSPORT,
-    ENABLE_HTTP,
-    FARM_BROADCAST_TOPIC,
-    TRANSPORT_SERVER_ENDPOINT,
+    SLIM_SERVER,
     OTEL_SDK_DISABLED,
 )
 from agents.logistics.helpdesk.store.singleton import global_store
 
-logger = logging.getLogger("lungo.logistics.helpdesk.server")
+PORT = getenv("AGENT_PORT", "9094")
+
 load_dotenv()
 
+# Initialize a multi-protocol, multi-transport agntcy factory.
 factory = AgntcyFactory("lungo.logistics_helpdesk", enable_tracing=not OTEL_SDK_DISABLED)
 
-class PromptRequest(BaseModel):
-    prompt: str
+logger = logging.getLogger("lungo.logistics.helpdesk.server")
 
-def utc_timestamp() -> str:
-    return datetime.utcnow().replace(tzinfo=timezone.utc).isoformat(timespec="milliseconds")
 
-async def health_handler(_request: Request) -> JSONResponse:
+async def liveness_probe(request):
     """
     Uses the Shipper Agent to create a PointToPoint SLIM session (via A2A protocol)
     in order to verify connectivity with SLIM. If the session creation succeeds
     within the timeout, SLIM is considered 'alive'.
     """
+    config = ClientConfig(
+        slim_config=SlimTransportConfig(
+            endpoint=f"http://{SLIM_SERVER}",
+            name="lungo/agents/helpdesk_agent",
+            shared_secret_identity=getenv("SLIM_SHARED_SECRET", "slim-shared-secret-REPLACE_WITH_RANDOM_32PLUS_CHARS"),
+        ),
+    )
+
+    # -- A2A client factory --
+    a2a_client_factory = A2AClientFactory(config)
+
     try:
-        transport = factory.create_transport(
-            DEFAULT_MESSAGE_TRANSPORT,
-            endpoint=TRANSPORT_SERVER_ENDPOINT,
-            name="default/default/helpdesk_liveness",
-        )
+        # checks connectivity with the SLIM server and should succeed within the timeout if SLIM is alive
         await asyncio.wait_for(
-            factory.create_client(
-                "A2A",
-                agent_topic=A2AProtocol.create_agent_topic(SHIPPER_AGENT_CARD),
-                transport=transport,
-            ),
-            timeout=30,
+            a2a_client_factory.create(SHIPPER_AGENT_CARD),
+            timeout=30
         )
+        logger.info("Liveness probe succeeded: SLIM connectivity verified.")
         return JSONResponse({"status": "alive"})
     except asyncio.TimeoutError:
-        return JSONResponse({"error": "Timeout creating client"}, status_code=500)
+        return JSONResponse(
+            {
+                "error": "Timeout occurred while creating client."
+            },
+            status_code=500
+        )
     except Exception as e:
-        return JSONResponse({"error": str(e)}, status_code=500)
+        return JSONResponse(
+            {
+                "error": f"Error occurred: {str(e)}"
+            },
+            status_code=500
+        )
 
-def build_http_app(a2a_app: A2AStarletteApplication) -> FastAPI:
+def build_http_server(a2a_app: A2AStarletteApplication) -> FastAPI:
     cors_origins = get_cors_allowed_origins()
     logger.info("CORS allow_origins: %s", cors_origins)
-    app = a2a_app.build()
-    app.add_middleware(
+    app_ = a2a_app.build()
+    app_.add_middleware(
         CORSMiddleware,
         allow_origins=cors_origins,
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],
     )
-    app.router.routes.append(Route("/v1/health", health_handler, methods=["GET"]))
-    return app
+    app_.router.routes.append(Route("/v1/health", liveness_probe, methods=["GET"]))
+    return app_
 
-# New: factory + global FastAPI instance for tests/imports
 def create_app() -> FastAPI:
     request_handler = DefaultRequestHandler(
         agent_executor=HelpdeskAgentExecutor(store=global_store),
         task_store=InMemoryTaskStore(),
     )
-    server = A2AStarletteApplication(agent_card=AGENT_CARD, http_handler=request_handler)
-    return build_http_app(server)
+
+    server = A2AStarletteApplication(
+        agent_card=AGENT_CARD, http_handler=request_handler
+    )
+
+    return build_http_server(server)
 
 # Expose module-level app for pytest fixture
 app = create_app()
 
-async def run_http_server(server: A2AStarletteApplication):
-    _app = build_http_app(server)
+async def run_http_server(server):
+    # Add the liveness route to the FastAPI app
+    app_ = server.build()
+    app_.router.routes.append(Route("/v1/health", liveness_probe, methods=["GET"]))
+
     try:
-        config = Config(app=_app, host="0.0.0.0", port=9094, loop="asyncio")
-        uvicorn_server = Server(config)
-        await uvicorn_server.serve()
+        config = Config(app=app_, host="0.0.0.0", port=int(PORT), loop="asyncio")
+        userver = Server(config)
+        await userver.serve()
     except Exception as e:
-        logger.error("HTTP server error: %s", e)
+        logger.error(f"HTTP server encountered an error: {e}")
 
-async def run_transport(server: A2AStarletteApplication, transport_type: str, endpoint: str):
-    try:
-        personal_topic = A2AProtocol.create_agent_topic(AGENT_CARD)
-        transport = factory.create_transport(
-            transport_type,
-            endpoint=endpoint,
-            name=f"default/default/{personal_topic}",
-        )
-        # Create an application session
-        app_session = factory.create_app_session(max_sessions=1)
 
-        # Add container for group communication
-        app_session.add_app_container("group_session", AppContainer(
-            server,
-            transport=transport
-        ))
+async def serve_all_a2a_interfaces(
+    request_handler: DefaultRequestHandler,
+    agent_card: AgentCard,
+):
+    """Serve the Logistics Helpdesk agent across all A2A transports defined in its AgentCard.
 
-        await app_session.start_session("group_session")
-    except Exception as e:
-        logger.error("Transport error: %s", e)
-        await app_session.stop_all_sessions()
+    Creates an AgntcyFactory application session and registers every transport
+    interface declared in the card's ``additional_interfaces``, which include:
 
-async def main(enable_http: bool):
+    - **slim** – SLIM-based group communication transport
+    - **slimrpc** – point-to-point transport for direct client-agent communication
+
+    The card's ``preferred_transport`` (slim) determines the primary ``url``
+    advertised to callers.  The session runs without keep-alive so it can be
+    composed alongside the optional HTTP server via ``asyncio.gather``.
+
+    Args:
+        request_handler: The A2A request handler wired to the
+            :class:`HelpdeskAgentExecutor` and an in-memory task store.
+        agent_card: The ``AgentCard`` describing this agent's capabilities,
+            skills, and transport interfaces.
+    """
+
+    session = factory.create_app_session()
+    await session.add_a2a_card(agent_card, request_handler).start(keep_alive=False)
+    logger.info("Agent ready")
+
+async def main():
+
     request_handler = DefaultRequestHandler(
         agent_executor=HelpdeskAgentExecutor(store=global_store),
         task_store=InMemoryTaskStore(),
     )
-    server = A2AStarletteApplication(agent_card=AGENT_CARD, http_handler=request_handler)
-    tasks: List[asyncio.Task] = []
-    if enable_http:
-        tasks.append(asyncio.create_task(run_http_server(server)))
-    tasks.append(asyncio.create_task(run_transport(
-        server,
-        DEFAULT_MESSAGE_TRANSPORT,
-        TRANSPORT_SERVER_ENDPOINT,
-    )))
+
+    server = A2AStarletteApplication(
+        agent_card=AGENT_CARD, http_handler=request_handler
+    )
+
+    # run the agent on all A2A interfaces defined in the card and always serve the HTTP health endpoint
+    tasks = [asyncio.create_task(serve_all_a2a_interfaces(request_handler, AGENT_CARD))]
+    tasks.append(asyncio.create_task(run_http_server(server)))
+
     await asyncio.gather(*tasks)
 
-if __name__ == "__main__":
+
+if __name__ == '__main__':
     try:
-        asyncio.run(main(ENABLE_HTTP))
+        asyncio.run(main())
     except KeyboardInterrupt:
-        logger.info("Shutting down gracefully.")
+        logger.info("Shutting down gracefully on keyboard interrupt.")
     except Exception as e:
         logger.error(f"Error occurred: {e}")

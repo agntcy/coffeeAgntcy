@@ -106,11 +106,11 @@ AUCTION_PROMPT_CASES = load_auction_prompt_cases()
 def test_auction_a2a_timeout_returns_user_visible_error(auction_supervisor_client):
     """When send_a2a_with_retry raises TransportTimeoutError, graph returns 200 with error message in body.
 
-    Stub factory.create_client so execution reaches send_a2a_with_retry: without it, SLIM/agent-card
+    Stub a2a_client_factory.create so execution reaches send_a2a_with_retry: without it, SLIM/agent-card
     handshake can fail before A2A send (mock would never be called).
     """
     with patch(
-        "agents.supervisors.auction.graph.tools.factory.create_client",
+        "agents.supervisors.auction.graph.tools.a2a_client_factory.create",
         new_callable=AsyncMock,
         return_value=MagicMock(),
     ), patch(

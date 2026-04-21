@@ -20,6 +20,7 @@ from agents.supervisors.auction.graph.tools import (
     get_order_details,
     tools_or_next
 )
+from agents.supervisors.auction.graph.shared import farm_registry
 from common.llm import get_llm
 
 logger = logging.getLogger("lungo.supervisor.graph")
@@ -126,18 +127,19 @@ class ExchangeGraph:
 
         user_message = state["messages"]
 
+        farm_list = ", ".join(s.title() for s in farm_registry.slugs())
         prompt = PromptTemplate(
-            template="""You are a global coffee exchange agent connecting users to coffee farms in Brazil, Colombia, and Vietnam. 
+            template=f"""You are a global coffee exchange agent connecting users to coffee farms: {farm_list}.
             Based on the user's message, determine the appropriate action:
             - Respond with 'orders' if the message includes:
                 * Quantity specifications (e.g., "50 lb", "100 kg")
                 * Price or cost information (e.g., "for $X", "at Y cents per lb")
                 * Purchase intent keywords (e.g., "need", "want", "buy", "order", "purchase")
-            - Respond with 'inventory_single_farm' if the user asks about a SPECIFIC farm (Brazil, Colombia, or Vietnam)
+            - Respond with 'inventory_single_farm' if the user asks about a SPECIFIC farm ({farm_list})
             - Respond with 'inventory_all_farms' if the user asks about inventory/yield from ALL farms or doesn't specify a farm
             - Respond with 'none of the above' if the message is unrelated to coffee 'inventory' or 'orders'
-            
-            User message: {user_message}
+
+            User message: {{user_message}}
             """,
             input_variables=["user_message"]
         )
@@ -209,7 +211,7 @@ class ExchangeGraph:
         if next_node == END and any(keyword in response.reason.lower() for keyword in ["auth", "access", "permission", "identity"]):
 
             err_msg = "Authentication or authorization failed. Please check your credentials and try again."
-            for farm in ['colombia', 'brazil', 'vietnam']:
+            for farm in farm_registry:
                 if farm in state["messages"][-1].content.lower():
                     err_msg = f"The supervisor agent doesn't have permission to access the {farm.title()} farm. Please verify your access credentials and try again."
                     break
@@ -248,15 +250,14 @@ class ExchangeGraph:
 
         # Determine which farm
         farm = None
-        if "brazil" in user_query:
-            farm = "brazil"
-        elif "colombia" in user_query:
-            farm = "colombia"
-        elif "vietnam" in user_query:
-            farm = "vietnam"
+        for slug in farm_registry:
+            if slug in user_query:
+                farm = slug
+                break
 
         if not farm:
-            return {"messages": [AIMessage(content="Please specify which farm you'd like to query (Brazil, Colombia, or Vietnam).")]}
+            farm_list = ", ".join(s.title() for s in farm_registry.slugs())
+            return {"messages": [AIMessage(content=f"Please specify which farm you'd like to query ({farm_list}).")]}
 
         try:
             # Call the function directly

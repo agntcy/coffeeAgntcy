@@ -15,6 +15,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import logging
+import os
 
 from langgraph.graph import MessagesState
 from langchain_core.messages import AIMessage
@@ -25,12 +26,8 @@ from agntcy_app_sdk.factory import AgntcyFactory
 from ioa_observe.sdk.decorators import agent, graph
 
 from agents.exceptions import AuthError
-from agents.mcp_servers.utils import invoke_payment_mcp_tool
-from config.config import (
-    DEFAULT_MESSAGE_TRANSPORT,
-    TRANSPORT_SERVER_ENDPOINT,
-    OTEL_SDK_DISABLED,
-)
+from agents.mcp_servers.utils import invoke_payment_mcp_tool, _mcp_transport, _mcp_endpoint
+from config.config import OTEL_SDK_DISABLED
 from common.llm import get_llm
 
 logger = logging.getLogger("lungo.colombia_farm_agent.agent")
@@ -81,7 +78,7 @@ class FarmAgent:
             self.supervisor_llm = get_llm()
 
         prompt = PromptTemplate(
-            template="""You are a coffee farm manager in Colombia who delegates farm cultivation and global sales. Based on the 
+            template="""You are a coffee farm manager in Colombia who delegates farm cultivation and global sales. Based on the
             user's message, determine if it's related to 'inventory' or 'orders'.
             Respond with 'inventory' if the message is about checking yield, stock, product availability, or specific coffee item details.
             Respond with 'orders' if the message is about checking order status, placing an order, or modifying an existing order.
@@ -105,12 +102,12 @@ class FarmAgent:
             return {"next_node": NodeStates.ORDERS, "messages": state["messages"]}
         else:
             return {"next_node": NodeStates.GENERAL_RESPONSE, "messages": state["messages"]}
-        
+
     async def _get_weather_forecast(self,state: GraphState) -> str:
         """
-        This method creates an agntcy-app-sdk transport instance and MCP client to communicate with the 
-        "lungo_weather_service" agent, lists available tools, and calls the "get_forecast" tool with a 
-        fixed location ("colombia"). It handles both streamed and non-streamed responses, aggregates the 
+        This method creates an agntcy-app-sdk transport instance and MCP client to communicate with the
+        "lungo_weather_service" agent, lists available tools, and calls the "get_forecast" tool with a
+        fixed location ("colombia"). It handles both streamed and non-streamed responses, aggregates the
         forecast content, and returns it wrapped in an AIMessage inside a dictionary under the "messages" key.
 
         If an error occurs during the MCP tool call, it logs the error and returns an error message similarly wrapped.
@@ -120,19 +117,19 @@ class FarmAgent:
                 or an error message if the call fails.
         """
         transport_instance = factory.create_transport(
-            DEFAULT_MESSAGE_TRANSPORT, 
-            endpoint=TRANSPORT_SERVER_ENDPOINT, 
+            _mcp_transport,
+            endpoint=_mcp_endpoint,
+            shared_secret_identity=os.getenv("SLIM_SHARED_SECRET"),
             name="default/default/mcp_client")
-        mcp_client = factory.create_client(
-            "MCP",
-            agent_topic="lungo_weather_service",
-            transport=transport_instance,
-            message_timeout=45
-        )
 
         # view available tools
         try:
-            async with mcp_client as client:
+            mcp_ctx = await factory.mcp().create_client(
+                topic="lungo_weather_service",
+                transport=transport_instance,
+                message_timeout=45
+            )
+            async with mcp_ctx as client:
                 response = await client.list_tools()
                 available_tools = [
                     {
@@ -179,7 +176,7 @@ class FarmAgent:
             err_msg = "Cannot estimate yield because Weather Forecast MCP Server was Unavailable."
             logger.warning(err_msg)
             return {"messages": [AIMessage(err_msg)]}
-        
+
         if not self.inventory_llm:
             self.inventory_llm = get_llm()
 
@@ -241,7 +238,7 @@ class FarmAgent:
 
         prompt = PromptTemplate(
             template="""You are an order assistant. Based on the user's question and the following order data, provide a concise and helpful response.
-            If they ask about a specific order number, provide its status. 
+            If they ask about a specific order number, provide its status.
             If they ask about placing order an order, generate a random order id and tracking number.
 
             Order Data: {order_data}

@@ -12,10 +12,15 @@ OTEL_SDK_DISABLED = _otel_sdk_disabled_raw in ("true", "1", "yes")
 if OTEL_SDK_DISABLED:
     os.environ.pop("OTLP_HTTP_ENDPOINT", None)
 
-DEFAULT_MESSAGE_TRANSPORT = os.getenv("DEFAULT_MESSAGE_TRANSPORT", "NATS")
-TRANSPORT_SERVER_ENDPOINT = os.getenv("TRANSPORT_SERVER_ENDPOINT", "nats://localhost:4222")
+SLIM_SERVER = os.getenv("SLIM_SERVER", "localhost:46357")
 
-FARM_BROADCAST_TOPIC = os.getenv("FARM_BROADCAST_TOPIC", "farm_broadcast")
+NATS_SERVER = os.getenv("NATS_SERVER", "localhost:4222")
+
+DEFAULT_MESSAGE_TRANSPORT = os.getenv("DEFAULT_MESSAGE_TRANSPORT", "SLIM")
+
+if os.getenv("SLIM_SHARED_SECRET") is None:
+    # set a default value for development/testing
+    os.environ["SLIM_SHARED_SECRET"] = "slim-shared-secret-REPLACE_WITH_RANDOM_32PLUS_CHARS"
 
 LLM_MODEL = os.getenv("LLM_MODEL", "")
 ## Oauth2 OpenAI Provider
@@ -27,7 +32,6 @@ OAUTH2_APPKEY= os.getenv("OAUTH2_APPKEY", "")
 
 LOGGING_LEVEL = os.getenv("LOGGING_LEVEL", "INFO").upper()
 
-ENABLE_HTTP = os.getenv("ENABLE_HTTP", "true").lower() in ("true", "1", "yes")
 ENSURE_STREAMING_LLM = os.getenv("ENSURE_STREAMING_LLM", "false").strip().lower() in ("true", "1", "yes")
 HOT_RELOAD_MODE = os.getenv("HOT_RELOAD_MODE", "false").strip().lower() in ("true", "1", "yes")
 

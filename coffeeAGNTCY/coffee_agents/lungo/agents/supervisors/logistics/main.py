@@ -16,14 +16,13 @@ from pydantic import BaseModel
 import uvicorn
 from fastapi.responses import StreamingResponse, JSONResponse
 from agntcy_app_sdk.factory import AgntcyFactory
-from agntcy_app_sdk.semantic.a2a.protocol import A2AProtocol
 from ioa_observe.sdk.tracing import session_start
 
 from common.cors import get_cors_allowed_origins
 
 from agents.supervisors.logistics.graph import shared
 from agents.logistics.shipper.card import AGENT_CARD
-from config.config import DEFAULT_MESSAGE_TRANSPORT, LLM_MODEL, TRANSPORT_SERVER_ENDPOINT, OTEL_SDK_DISABLED, HOT_RELOAD_MODE
+from config.config import LLM_MODEL, HOT_RELOAD_MODE, OTEL_SDK_DISABLED
 from pathlib import Path
 from common.streaming_capability import require_streaming_capability
 
@@ -105,25 +104,20 @@ async def health_check():
 @app.get("/v1/health")
 async def connectivity_health(req: Request):
   """
-  Deep liveness: validates transport + graph ready.
+  Deep liveness: creates an A2A client for the downstream Shipper agent,
+  which establishes a SLIM transport session.  If the handshake succeeds
+  within the timeout, the SLIM broker is considered reachable.
   """
   if getattr(req.app.state, "logistic_graph", None) is None:
     raise HTTPException(status_code=503, detail="Service initializing")
   try:
-    factory = shared.get_factory() if hasattr(shared, "get_factory") else shared.factory  # fallback
-    transport = factory.create_transport(
-      DEFAULT_MESSAGE_TRANSPORT,
-      endpoint=TRANSPORT_SERVER_ENDPOINT,
-      name="default/default/liveness_probe",
-    )
-    _ = await asyncio.wait_for(
-      factory.create_client(
-        "A2A",
-        agent_topic=A2AProtocol.create_agent_topic(AGENT_CARD),
-        transport=transport,
-      ),
+    from agents.supervisors.logistics.graph.shared import a2a_client_factory
+
+    await asyncio.wait_for(
+      a2a_client_factory.create(AGENT_CARD),
       timeout=30,
     )
+    logger.info("Liveness probe succeeded: SLIM connectivity verified.")
     return {"status": "alive"}
   except asyncio.TimeoutError:
     raise HTTPException(status_code=500, detail="Timeout creating A2A client")
@@ -132,8 +126,9 @@ async def connectivity_health(req: Request):
 
 @app.get("/transport/config")
 async def get_config():
+  # Logistics group comm is only supported by SLIM-based moderated group comm
   return {
-    "transport": DEFAULT_MESSAGE_TRANSPORT.upper()
+    "transport": "SLIM",
   }
 
 
