@@ -67,15 +67,24 @@ _ACTIVE_RUNNERS = []
 
 def _base_env():
     # Use test env: SDK on so spans are recording (avoids NonRecordingSpan.attributes error).
-    otel_disabled = os.environ.get("OTEL_SDK_DISABLED", "false")
     return {
         **os.environ,
         "PYTHONPATH": str(LUNGO_DIR),
         "FARM_BROADCAST_TOPIC": "farm_broadcast",
-        "OTEL_SDK_DISABLED": "false",
+        "OTEL_SDK_DISABLED": os.environ.get("OTEL_SDK_DISABLED", "false"),
         "PYTHONUNBUFFERED": "1",
         "PYTHONFAULTHANDLER": "1",
-        "OTEL_SDK_DISABLED": str(otel_disabled),
+        # Host-published ports from docker-compose (session slim/nats); override in CI if needed.
+        "SLIM_SERVER": os.environ.get("SLIM_SERVER", "127.0.0.1:46357"),
+        "NATS_SERVER": os.environ.get("NATS_SERVER", "127.0.0.1:4222"),
+        "DEFAULT_MESSAGE_TRANSPORT": os.environ.get("DEFAULT_MESSAGE_TRANSPORT", "SLIM"),
+        "TRANSPORT_SERVER_ENDPOINT": os.environ.get(
+            "TRANSPORT_SERVER_ENDPOINT", "http://127.0.0.1:46357"
+        ),
+        "SLIM_SHARED_SECRET": os.environ.get(
+            "SLIM_SHARED_SECRET",
+            os.environ.get("SLIM_GATEWAY_PASSWORD", "dummy_password"),
+        ),
     }
 
 def _purge_modules(prefixes, keep=None):
