@@ -5,7 +5,15 @@
 
 import React from "react"
 import { Trash2 } from "lucide-react"
+import { Box, IconButton, Stack, Tooltip } from "@open-ui-kit/core"
 import collapseIcon from "@/assets/collapse.png"
+import { useTheme } from "@/hooks/useTheme"
+
+/** Matches prior `.chat-header-icon` filters in `index.css` (theme via `useTheme`). */
+const collapseIconFilter = (isLightMode: boolean) =>
+  isLightMode
+    ? "brightness(0) saturate(100%) invert(22%) sepia(8%) saturate(1157%) hue-rotate(192deg) brightness(95%) contrast(88%)"
+    : "brightness(0) saturate(100%) invert(85%) sepia(7%) saturate(398%) hue-rotate(186deg) brightness(97%) contrast(92%)"
 
 interface ChatHeaderProps {
   onMinimize?: () => void
@@ -20,44 +28,73 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({
   isMinimized,
   showActions = false,
 }) => {
+  const { isLightMode } = useTheme()
+
   if (!showActions) {
     return null
   }
 
   return (
-    <div
-      className="flex w-full items-center justify-end px-2 py-2 sm:px-4 md:px-8 lg:px-4"
-      style={{ borderBottom: "1px solid var(--control-border-weak)" }}
+    <Box
+      sx={{
+        display: "flex",
+        width: "100%",
+        alignItems: "center",
+        justifyContent: "flex-end",
+        px: { xs: 1, sm: 2, md: 4, lg: 2 },
+        py: 1,
+        borderBottom: "1px solid var(--control-border-weak)",
+      }}
     >
-      <div className="flex items-center gap-2">
-        {onMinimize && (
-          <div className="flex h-7 w-7 items-center justify-center rounded-lg p-1">
-            <button
+      <Stack direction="row" alignItems="center" spacing={1}>
+        {onMinimize ? (
+          <Tooltip title={isMinimized ? "Maximize" : "Minimize"}>
+            <IconButton
+              size="small"
               onClick={onMinimize}
-              className="flex h-5 w-5 items-center justify-center rounded transition-colors"
-              title={isMinimized ? "Maximize" : "Minimize"}
+              aria-label={isMinimized ? "Maximize" : "Minimize"}
+              sx={{
+                width: 28,
+                height: 28,
+                p: 0.5,
+                borderRadius: 1,
+              }}
             >
-              <img
+              <Box
+                component="img"
                 src={collapseIcon}
-                alt={isMinimized ? "Maximize" : "Minimize"}
-                className={`chat-header-icon h-5 w-5 ${isMinimized ? "rotate-180" : ""}`}
+                alt=""
+                sx={{
+                  width: 20,
+                  height: 20,
+                  display: "block",
+                  transform: isMinimized ? "rotate(180deg)" : "none",
+                  filter: collapseIconFilter(isLightMode),
+                }}
               />
-            </button>
-          </div>
-        )}
-        {onClearConversation && (
-          <div className="flex h-7 w-7 items-center justify-center rounded-lg p-1">
-            <button
+            </IconButton>
+          </Tooltip>
+        ) : null}
+        {onClearConversation ? (
+          <Tooltip title="Clear conversation">
+            <IconButton
+              size="small"
               onClick={onClearConversation}
-              className="flex h-5 w-5 items-center justify-center rounded transition-colors"
-              title="Clear conversation"
+              aria-label="Clear conversation"
+              sx={{
+                width: 28,
+                height: 28,
+                p: 0.5,
+                borderRadius: 1,
+                color: isLightMode ? "#3c4551" : "#e8e9ea",
+              }}
             >
-              <Trash2 className="chat-header-trash-icon h-5 w-5" />
-            </button>
-          </div>
-        )}
-      </div>
-    </div>
+              <Trash2 size={20} aria-hidden />
+            </IconButton>
+          </Tooltip>
+        ) : null}
+      </Stack>
+    </Box>
   )
 }
 

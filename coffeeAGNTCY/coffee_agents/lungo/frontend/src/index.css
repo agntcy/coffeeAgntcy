@@ -231,43 +231,12 @@
     color: #187adc;
   }
 
-  .chat-header-icon {
-    filter: brightness(0) saturate(100%) invert(85%) sepia(7%) saturate(398%)
-      hue-rotate(186deg) brightness(97%) contrast(92%);
-  }
-
-  body[data-theme="light"] .chat-header-icon {
-    filter: brightness(0) saturate(100%) invert(22%) sepia(8%) saturate(1157%)
-      hue-rotate(192deg) brightness(95%) contrast(88%);
-  }
-
-  .chat-header-text {
-    font-family: "Inter", sans-serif;
-    font-weight: 700;
-    font-size: 14px;
-    line-height: 20px;
-    letter-spacing: 0.25px;
-    color: #fbfcfe;
-  }
-
-  body[data-theme="light"] .chat-header-text {
-    color: #3c4551;
-  }
-
   .border-b {
     border-bottom: 1px solid #23282e33;
   }
 
   body[data-theme="light"] .border-b {
     border-bottom: 1px solid var(--Control-Border-Weak, #e8eefb);
-  }
-
-  .chat-header-trash-icon {
-    color: #e8e9ea;
-  }
-
-  body[data-theme="light"] .chat-header-trash-icon {
-    color: #3c4551;
   }
 
   .dark {
