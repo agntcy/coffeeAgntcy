@@ -7,7 +7,8 @@ info:
   version: 1.0.0
   description: |
     Agentic workflows catalog, instance lifecycle, internal event ingress, and SSE.
-    Identifiers follow schema/jsonschemas/event_v1.json (e.g. instance:// UUID for workflow_instance_id).
+    Path parameters for instance-scoped routes use a bare UUID (WorkflowInstancePathId); JSON payloads
+    and response fields use full InstanceId URIs (instance://...) per schema/jsonschemas/event_v1.json.
 servers:
   - url: /
 tags:

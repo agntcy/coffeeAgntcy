@@ -154,7 +154,7 @@ paths:
         in: path
         required: true
         schema:
-          $ref: ../components/schemas.yaml#/components/schemas/InstanceId
+          $ref: ../components/schemas.yaml#/components/schemas/WorkflowInstancePathId
     get:
       tags: [agentic-workflows]
       operationId: getWorkflowInstanceState
@@ -186,7 +186,7 @@ paths:
         in: path
         required: true
         schema:
-          $ref: ../components/schemas.yaml#/components/schemas/InstanceId
+          $ref: ../components/schemas.yaml#/components/schemas/WorkflowInstancePathId
     post:
       tags: [agentic-workflows]
       operationId: postWorkflowInstanceEvent
@@ -219,7 +219,7 @@ paths:
         in: path
         required: true
         schema:
-          $ref: ../components/schemas.yaml#/components/schemas/InstanceId
+          $ref: ../components/schemas.yaml#/components/schemas/WorkflowInstancePathId
     get:
       tags: [agentic-workflows]
       operationId: streamWorkflowInstanceEvents
