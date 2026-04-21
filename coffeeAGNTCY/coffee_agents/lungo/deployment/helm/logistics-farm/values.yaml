@@ -17,6 +17,9 @@ service:
 config:
   transportServerEndpoint: ""
   defaultMessageTransport: ""
+  slimServer: ""
+  natsServer: ""
+  slimSharedSecret: ""
   otlpHttpEndpoint: ""
   corsAllowedOrigins: ""
 
