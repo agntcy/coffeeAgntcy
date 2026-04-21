@@ -224,15 +224,21 @@ OAUTH2_APP_KEY=<your_app_key> #optional
 
    **Optional: Configure Transport Layer**
 
-   You can also set the transport protocol and server endpoint by adding the following optional variables:
+   Lungo reads transport settings from `config/config.py`. The primary variables are:
 
    ```env
-   DEFAULT_MESSAGE_TRANSPORT=slim
-   TRANSPORT_SERVER_ENDPOINT=http://localhost:46357
+   DEFAULT_MESSAGE_TRANSPORT=SLIM
+   SLIM_SERVER=127.0.0.1:46357
+   NATS_SERVER=127.0.0.1:4222
+   SLIM_SHARED_SECRET=your_slim_gateway_password
    ```
 
-   - `DEFAULT_MESSAGE_TRANSPORT`: Defines the message transport protocol used for agent communication.
-   - `TRANSPORT_SERVER_ENDPOINT`: The gateway or server endpoint for the specified transport.
+   - `DEFAULT_MESSAGE_TRANSPORT`: `SLIM` or `NATS` (Docker Compose defaults to **SLIM**).
+   - `SLIM_SERVER`: Host and port for the SLIM dataplane only (no `http://` prefix); used in agent cards and RPC URLs.
+   - `NATS_SERVER`: Host and port for NATS; cards reference `nats://{NATS_SERVER}/...`.
+   - `SLIM_SHARED_SECRET`: Shared secret for the SLIM gateway; must match the gateway password (for example `SLIM_GATEWAY_PASSWORD` / slim `PASSWORD` in Compose).
+
+   For backward compatibility and tooling, you can still set `TRANSPORT_SERVER_ENDPOINT` (for example `http://localhost:46357` when using SLIM, or `nats://localhost:4222` when using NATS). Prefer keeping it consistent with `SLIM_SERVER` / `NATS_SERVER` and `DEFAULT_MESSAGE_TRANSPORT`.
 
    For a list of supported protocols and implementation details, see the [Agntcy App SDK README](https://github.com/agntcy/app-sdk). This SDK provides the underlying interfaces for building communication bridges and agent clients.
 
