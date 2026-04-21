@@ -78,6 +78,11 @@ const Navigation: React.FC = () => {
             </Tooltip>
           </Stack>
         }
+        sx={{
+          backgroundColor: isLightMode
+            ? "var(--nav-background)"
+            : "var(--nav-background-secondary)",
+        }}
       />
 
       <InfoModal isOpen={isModalOpen} onClose={handleCloseModal} />
