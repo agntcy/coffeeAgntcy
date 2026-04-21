@@ -19,6 +19,13 @@ components:
     InstanceId:
       $ref: ../../jsonschemas/event_v1.json#/$defs/instance_id
 
+    WorkflowInstancePathId:
+      type: string
+      format: uuid
+      description: >
+        Bare workflow instance UUID used only in URL path segments for instance-scoped routes.
+        Canonical instance identifiers in JSON payloads remain InstanceId URIs (instance://... per event_v1).
+
     Pattern:
       type: object
       required: [name]

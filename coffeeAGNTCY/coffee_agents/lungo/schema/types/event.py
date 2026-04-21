@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import re
 from enum import StrEnum
+from uuid import UUID
 from typing import Annotated, Self, Union
 
 from pydantic import (
@@ -65,6 +66,11 @@ class InstanceId(RootModel[str]):
             description="Workflow instance id; map keys under workflow.instances must match nested id.",
         ),
     ]
+
+
+def instance_id_from_uuid(workflow_instance_uuid: UUID) -> InstanceId:
+    """Build canonical ``instance://`` id from a path-segment UUID (see agentic-workflows HTTP routes)."""
+    return InstanceId(root=f"instance://{workflow_instance_uuid!s}")
 
 
 class NodeId(RootModel[str]):

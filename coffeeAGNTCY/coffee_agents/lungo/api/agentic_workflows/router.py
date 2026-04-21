@@ -9,6 +9,7 @@ Catalog-like endpoints are implemented but other handlers are stubs (501) until 
 from __future__ import annotations
 
 from typing import Annotated
+from uuid import UUID
 
 from api.agentic_workflows.dtos import (
     InstantiateWorkflowResponse,
@@ -25,12 +26,9 @@ from api.agentic_workflows.use_cases import USE_CASES
 from api.agentic_workflows.workflows import get_workflows
 from fastapi import APIRouter, HTTPException, Path, Query
 from fastapi.responses import RedirectResponse
-from schema.types import Event, Workflow, WorkflowInstance
+from schema.types import Event, Workflow, WorkflowInstance, instance_id_from_uuid
 
 _TAG = "agentic-workflows"
-
-# FastAPI path params must be scalar types; pattern matches ``InstanceId`` / event_v1 instance_id.
-_WORKFLOW_INSTANCE_ID_PATH = r"^instance://[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
 
 
 def create_agentic_workflows_router() -> APIRouter:
@@ -147,15 +145,18 @@ def create_agentic_workflows_router() -> APIRouter:
     async def get_workflow_instance_state(
         workflow_name: Annotated[str, Path(min_length=1)],
         workflow_instance_id: Annotated[
-            str,
+            UUID,
             Path(
-                pattern=_WORKFLOW_INSTANCE_ID_PATH,
-                description="Workflow instance id (InstanceId URI)",
+                description=(
+                    "Workflow instance UUID (path segment); canonical JSON id is "
+                    "instance://{uuid} (InstanceId)."
+                ),
             ),
         ],
         topology_only: Annotated[bool, Query()] = False,
     ) -> WorkflowInstance:
         """GET instance state; topology_only for projection."""
+        _canonical_instance_id = instance_id_from_uuid(workflow_instance_id)
         raise HTTPException(status_code=501, detail="Not implemented")
 
     @router.post(
@@ -166,15 +167,18 @@ def create_agentic_workflows_router() -> APIRouter:
     async def post_workflow_instance_event(
         workflow_name: Annotated[str, Path(min_length=1)],
         workflow_instance_id: Annotated[
-            str,
+            UUID,
             Path(
-                pattern=_WORKFLOW_INSTANCE_ID_PATH,
-                description="Workflow instance id (InstanceId URI)",
+                description=(
+                    "Workflow instance UUID (path segment); canonical JSON id is "
+                    "instance://{uuid} (InstanceId)."
+                ),
             ),
         ],
         event: Event,
     ) -> None:
         """POST internal state update event."""
+        _canonical_instance_id = instance_id_from_uuid(workflow_instance_id)
         raise HTTPException(status_code=501, detail="Not implemented")
 
     @router.get(
@@ -184,14 +188,17 @@ def create_agentic_workflows_router() -> APIRouter:
     async def stream_workflow_instance_events(
         workflow_name: Annotated[str, Path(min_length=1)],
         workflow_instance_id: Annotated[
-            str,
+            UUID,
             Path(
-                pattern=_WORKFLOW_INSTANCE_ID_PATH,
-                description="Workflow instance id (InstanceId URI)",
+                description=(
+                    "Workflow instance UUID (path segment); canonical JSON id is "
+                    "instance://{uuid} (InstanceId)."
+                ),
             ),
         ],
     ) -> None:
         """GET SSE stream; placeholder body until implementation."""
+        _canonical_instance_id = instance_id_from_uuid(workflow_instance_id)
         raise HTTPException(status_code=501, detail="Not implemented")
 
     return router
