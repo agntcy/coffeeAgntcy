@@ -1,24 +1,332 @@
 /**
  * Copyright AGNTCY Contributors (https://github.com/agntcy)
  * SPDX-License-Identifier: Apache-2.0
+ *
+ * `LungoSidebarNavigationSlot` is the single ReactElement passed to `SidebarFrame.navigationItems`;
+ * it carries the multi-level menu (headings + `SidebarDropdown`). Only that slot pattern allows
+ * arbitrary composed content beside top-level `SidebarRailItem` rows — keep it unless the frame
+ * API gains a richer tree prop.
  **/
 
-import React, { useState, useEffect } from "react"
+import React, { useEffect, useMemo, useState } from "react"
+import type { SxProps, Theme } from "@mui/material/styles"
+import { Box, Stack, Typography } from "@open-ui-kit/core"
+import { Podcast, Search, Share2, Users } from "lucide-react"
 import {
   PatternType,
   PATTERNS,
   getApiUrlForPattern,
 } from "@/utils/patternUtils"
 import { logger } from "@/utils/logger"
-import SidebarItem from "./sidebarItem"
 import SidebarDropdown from "./SidebarDropdown"
+import { SidebarFrame } from "./SidebarFrame"
+import { SidebarRailRow } from "./SidebarRailRow"
 
-interface SidebarProps {
+interface LungoSidebarProps {
   selectedPattern: PatternType
   onPatternChange: (pattern: PatternType) => void
 }
 
-const Sidebar: React.FC<SidebarProps> = ({
+/** Single source of truth: order defines collapsed rail order and grouping for the expanded tree. */
+interface LungoMenuLeaf {
+  id: string
+  pattern: PatternType
+  conversationTitle: string
+  dropdownTitle: string
+  /** `SidebarSectionHeading` indent for “Agentic Patterns” under this conversation. */
+  agenticHeadingPl: number
+  icon: React.ReactElement
+  getTooltip: (transportLabel: string) => string
+  getAriaLabel: (transportLabel: string) => string
+}
+
+const LUNGO_MENU_LEAVES: LungoMenuLeaf[] = [
+  {
+    id: "lungo-pat-gc",
+    pattern: PATTERNS.GROUP_COMMUNICATION,
+    conversationTitle: "Order Fulfilment",
+    dropdownTitle: "Secure Group Communication",
+    agenticHeadingPl: 2,
+    icon: <Users size={24} aria-hidden />,
+    getTooltip: () => "A2A SLIM",
+    getAriaLabel: () => "A2A SLIM",
+  },
+  {
+    id: "lungo-pat-ps",
+    pattern: PATTERNS.PUBLISH_SUBSCRIBE,
+    conversationTitle: "Coffee Buying",
+    dropdownTitle: "Publish Subscribe",
+    agenticHeadingPl: 2,
+    icon: <Share2 size={24} aria-hidden />,
+    getTooltip: (t) => `A2A ${t} · Publish Subscribe`,
+    getAriaLabel: (t) => `A2A ${t} · Publish Subscribe`,
+  },
+  {
+    id: "lungo-pat-pss",
+    pattern: PATTERNS.PUBLISH_SUBSCRIBE_STREAMING,
+    conversationTitle: "Coffee Buying",
+    dropdownTitle: "Publish Subscribe: Streaming",
+    agenticHeadingPl: 2,
+    icon: <Podcast size={24} aria-hidden />,
+    getTooltip: (t) => `A2A ${t} · Streaming`,
+    getAriaLabel: (t) => `A2A ${t} · Streaming`,
+  },
+  {
+    id: "lungo-pat-odd",
+    pattern: PATTERNS.ON_DEMAND_DISCOVERY,
+    conversationTitle: "Capability Discovery",
+    dropdownTitle: "Recruiter",
+    agenticHeadingPl: 2,
+    icon: <Search size={24} aria-hidden />,
+    getTooltip: () => "A2A HTTP",
+    getAriaLabel: () => "A2A HTTP",
+  },
+]
+
+function groupLeavesByConversation(
+  leaves: LungoMenuLeaf[],
+  transportLabel: string,
+): Array<{
+  conversationTitle: string
+  agenticHeadingPl: number
+  rows: Array<{
+    leaf: LungoMenuLeaf
+    tooltip: string
+    ariaLabel: string
+  }>
+}> {
+  const order: string[] = []
+  const bucket = new Map<
+    string,
+    {
+      conversationTitle: string
+      agenticHeadingPl: number
+      rows: Array<{
+        leaf: LungoMenuLeaf
+        tooltip: string
+        ariaLabel: string
+      }>
+    }
+  >()
+
+  for (const leaf of leaves) {
+    const tooltip = leaf.getTooltip(transportLabel)
+    const ariaLabel = leaf.getAriaLabel(transportLabel)
+    const key = leaf.conversationTitle
+    if (!bucket.has(key)) {
+      order.push(key)
+      bucket.set(key, {
+        conversationTitle: leaf.conversationTitle,
+        agenticHeadingPl: leaf.agenticHeadingPl,
+        rows: [],
+      })
+    }
+    bucket.get(key)!.rows.push({ leaf, tooltip, ariaLabel })
+  }
+
+  return order.map((k) => bucket.get(k)!)
+}
+
+interface LungoSidebarNavigationSlotProps {
+  iconOnly?: boolean
+  selectedPattern: PatternType
+  onPatternChange: (pattern: PatternType) => void
+  transport: string
+  isPublishSubscribeExpanded: boolean
+  setIsPublishSubscribeExpanded: React.Dispatch<React.SetStateAction<boolean>>
+  isPublishSubscribeStreamingExpanded: boolean
+  setIsPublishSubscribeStreamingExpanded: React.Dispatch<
+    React.SetStateAction<boolean>
+  >
+  isGroupCommunicationExpanded: boolean
+  setIsGroupCommunicationExpanded: React.Dispatch<React.SetStateAction<boolean>>
+  isOnDemandDiscoveryExpanded: boolean
+  setIsOnDemandDiscoveryExpanded: React.Dispatch<React.SetStateAction<boolean>>
+}
+
+function getDropdownExpandState(
+  leafId: string,
+  p: Pick<
+    LungoSidebarNavigationSlotProps,
+    | "isPublishSubscribeExpanded"
+    | "setIsPublishSubscribeExpanded"
+    | "isPublishSubscribeStreamingExpanded"
+    | "setIsPublishSubscribeStreamingExpanded"
+    | "isGroupCommunicationExpanded"
+    | "setIsGroupCommunicationExpanded"
+    | "isOnDemandDiscoveryExpanded"
+    | "setIsOnDemandDiscoveryExpanded"
+  >,
+): { isExpanded: boolean; onToggle: () => void } {
+  switch (leafId) {
+    case "lungo-pat-gc":
+      return {
+        isExpanded: p.isGroupCommunicationExpanded,
+        onToggle: () => p.setIsGroupCommunicationExpanded((v) => !v),
+      }
+    case "lungo-pat-ps":
+      return {
+        isExpanded: p.isPublishSubscribeExpanded,
+        onToggle: () => p.setIsPublishSubscribeExpanded((v) => !v),
+      }
+    case "lungo-pat-pss":
+      return {
+        isExpanded: p.isPublishSubscribeStreamingExpanded,
+        onToggle: () => p.setIsPublishSubscribeStreamingExpanded((v) => !v),
+      }
+    case "lungo-pat-odd":
+      return {
+        isExpanded: p.isOnDemandDiscoveryExpanded,
+        onToggle: () => p.setIsOnDemandDiscoveryExpanded((v) => !v),
+      }
+    default:
+      return { isExpanded: true, onToggle: () => {} }
+  }
+}
+
+function LungoSidebarNavigationSlot({
+  iconOnly,
+  selectedPattern,
+  onPatternChange,
+  transport,
+  ...expandProps
+}: LungoSidebarNavigationSlotProps) {
+  const transportLabel = transport || "…"
+  const railOpen = !iconOnly
+
+  const sections = useMemo(
+    () => groupLeavesByConversation(LUNGO_MENU_LEAVES, transportLabel),
+    [transportLabel],
+  )
+
+  const renderRailRow = (args: {
+    leaf: LungoMenuLeaf
+    tooltip: string
+    ariaLabel: string
+  }) => {
+    const { leaf, tooltip, ariaLabel } = args
+    return (
+      <SidebarRailRow
+        key={leaf.id}
+        id={leaf.id}
+        aria-label={ariaLabel}
+        tooltip={tooltip}
+        icon={leaf.icon}
+        railOpen={railOpen}
+        selected={selectedPattern === leaf.pattern}
+        onClick={() => onPatternChange(leaf.pattern)}
+      />
+    )
+  }
+
+  const collapsedMenu = (
+    <Stack spacing={0.5} sx={{ width: "100%", alignItems: "stretch", py: 0.5 }}>
+      {LUNGO_MENU_LEAVES.map((leaf) =>
+        renderRailRow({
+          leaf,
+          tooltip: leaf.getTooltip(transportLabel),
+          ariaLabel: leaf.getAriaLabel(transportLabel),
+        }),
+      )}
+    </Stack>
+  )
+
+  const expandedMenu = (
+    <Stack spacing={2.5} sx={innerSx}>
+      {sections.map((section) => (
+        <Stack key={section.conversationTitle} sx={sectionBlockSx}>
+          <SidebarSectionHeading pl={0}>
+            {section.conversationTitle}
+          </SidebarSectionHeading>
+
+          <Stack sx={sectionBlockSx}>
+            <SidebarSectionHeading pl={section.agenticHeadingPl}>
+              Agentic Patterns
+            </SidebarSectionHeading>
+
+            {section.rows.map(({ leaf, tooltip, ariaLabel }) => {
+              const { isExpanded, onToggle } = getDropdownExpandState(
+                leaf.id,
+                expandProps,
+              )
+              return (
+                <Box key={leaf.id}>
+                  <SidebarDropdown
+                    title={leaf.dropdownTitle}
+                    isExpanded={isExpanded}
+                    onToggle={onToggle}
+                  >
+                    {renderRailRow({ leaf, tooltip, ariaLabel })}
+                  </SidebarDropdown>
+                </Box>
+              )
+            })}
+          </Stack>
+        </Stack>
+      ))}
+    </Stack>
+  )
+
+  return (
+    <Box
+      component="nav"
+      aria-label="Conversation and agentic patterns"
+      sx={{
+        width: "100%",
+        minWidth: 0,
+        alignSelf: "stretch",
+        ...(iconOnly
+          ? {
+              display: "flex",
+              justifyContent: "center",
+            }
+          : { flex: 1 }),
+      }}
+    >
+      {iconOnly ? collapsedMenu : expandedMenu}
+    </Box>
+  )
+}
+
+const innerSx: SxProps<Theme> = {
+  flex: 1,
+  minHeight: 0,
+  overflow: "auto",
+}
+
+const sectionBlockSx: SxProps<Theme> = {
+  display: "flex",
+  flexDirection: "column",
+}
+
+const headingRowSx = (plKey: number): SxProps<Theme> => ({
+  padding: "5px",
+  pl: plKey,
+})
+
+const headingTextSx: SxProps<Theme> = {
+  flex: 1,
+  textWrap: "auto",
+  fontWeight: 600,
+}
+
+function SidebarSectionHeading({
+  children,
+  pl = 1,
+}: {
+  children: React.ReactNode
+  pl?: number
+}) {
+  return (
+    <Box sx={headingRowSx(pl)}>
+      <Typography component="span" variant="body1" sx={headingTextSx}>
+        {children}
+      </Typography>
+    </Box>
+  )
+}
+
+const Sidebar: React.FC<LungoSidebarProps> = ({
   selectedPattern,
   onPatternChange,
 }) => {
@@ -52,137 +360,30 @@ const Sidebar: React.FC<SidebarProps> = ({
     fetchTransportConfig()
   }, [])
 
-  const handlePublishSubscribeToggle = () => {
-    setIsPublishSubscribeExpanded(!isPublishSubscribeExpanded)
-  }
-
-  const handlePublishSubscribeStreamingToggle = () => {
-    setIsPublishSubscribeStreamingExpanded(!isPublishSubscribeStreamingExpanded)
-  }
-
-  const handleGroupCommunicationToggle = () => {
-    setIsGroupCommunicationExpanded(!isGroupCommunicationExpanded)
-  }
-
-  const handleOnDemandDiscoveryToggle = () => {
-    setIsOnDemandDiscoveryExpanded(!isOnDemandDiscoveryExpanded)
-  }
-
   return (
-    <div className="flex h-full w-64 flex-none flex-col gap-5 border-r border-sidebar-border bg-sidebar-background font-inter lg:w-[320px]">
-      <div className="flex h-full flex-1 flex-col gap-5 p-4">
-        {/* Order Fulfilment Section */}
-        <div className="flex flex-col">
-          <div className="flex min-h-[36px] w-full items-center gap-2 rounded py-2 pl-2 pr-5">
-            <span className="flex-1 font-inter text-sm font-normal leading-5 tracking-[0.25px] text-sidebar-text">
-              Conversation: Order Fulfilment
-            </span>
-          </div>
-
-          <div className="flex flex-col">
-            <div className="flex min-h-[36px] w-full items-center gap-2 rounded py-2 pl-5 pr-5">
-              <span className="flex-1 font-inter text-sm font-normal leading-5 tracking-[0.25px] text-sidebar-text">
-                Agentic Patterns
-              </span>
-            </div>
-
-            <div>
-              <SidebarDropdown
-                title="Secure Group Communication"
-                isExpanded={isGroupCommunicationExpanded}
-                onToggle={handleGroupCommunicationToggle}
-              >
-                <SidebarItem
-                  title="A2A SLIM"
-                  isSelected={selectedPattern === PATTERNS.GROUP_COMMUNICATION}
-                  onClick={() => onPatternChange(PATTERNS.GROUP_COMMUNICATION)}
-                />
-              </SidebarDropdown>
-            </div>
-          </div>
-        </div>
-
-        {/* Coffee Buying Section */}
-        <div className="flex flex-col">
-          <div className="flex min-h-[36px] w-full items-center gap-2 rounded py-2 pl-2 pr-5">
-            <span className="flex-1 font-inter text-sm font-normal leading-5 tracking-[0.25px] text-sidebar-text">
-              Conversation: Coffee Buying
-            </span>
-          </div>
-
-          <div className="flex flex-col">
-            <div className="flex min-h-[36px] w-full items-center gap-2 rounded py-2 pl-5 pr-5">
-              <span className="flex-1 font-inter text-sm font-normal leading-5 tracking-[0.25px] text-sidebar-text">
-                Agentic Patterns
-              </span>
-            </div>
-
-            <div>
-              <SidebarDropdown
-                title="Publish Subscribe"
-                isExpanded={isPublishSubscribeExpanded}
-                onToggle={handlePublishSubscribeToggle}
-              >
-                <SidebarItem
-                  title={`A2A ${transport}`}
-                  isSelected={selectedPattern === PATTERNS.PUBLISH_SUBSCRIBE}
-                  onClick={() => onPatternChange(PATTERNS.PUBLISH_SUBSCRIBE)}
-                />
-              </SidebarDropdown>
-            </div>
-
-            <div>
-              <SidebarDropdown
-                title="Publish Subscribe: Streaming"
-                isExpanded={isPublishSubscribeStreamingExpanded}
-                onToggle={handlePublishSubscribeStreamingToggle}
-              >
-                <SidebarItem
-                  title={`A2A ${transport}`}
-                  isSelected={
-                    selectedPattern === PATTERNS.PUBLISH_SUBSCRIBE_STREAMING
-                  }
-                  onClick={() =>
-                    onPatternChange(PATTERNS.PUBLISH_SUBSCRIBE_STREAMING)
-                  }
-                />
-              </SidebarDropdown>
-            </div>
-          </div>
-        </div>
-
-        {/* Generic Task Section */}
-        <div className="flex flex-col">
-          <div className="flex min-h-[36px] w-full items-center gap-2 rounded py-2 pl-2 pr-5">
-            <span className="flex-1 font-inter text-sm font-normal leading-5 tracking-[0.25px] text-sidebar-text">
-              Conversation: Capability Discovery
-            </span>
-          </div>
-
-          <div className="flex flex-col">
-            <div className="flex min-h-[36px] w-full items-center gap-2 rounded py-2 pl-5 pr-5">
-              <span className="flex-1 font-inter text-sm font-normal leading-5 tracking-[0.25px] text-sidebar-text">
-                Agentic Patterns
-              </span>
-            </div>
-
-            <div>
-              <SidebarDropdown
-                title="Recruiter"
-                isExpanded={isOnDemandDiscoveryExpanded}
-                onToggle={handleOnDemandDiscoveryToggle}
-              >
-                <SidebarItem
-                  title={`A2A HTTP`}
-                  isSelected={selectedPattern === PATTERNS.ON_DEMAND_DISCOVERY}
-                  onClick={() => onPatternChange(PATTERNS.ON_DEMAND_DISCOVERY)}
-                />
-              </SidebarDropdown>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
+    <SidebarFrame
+      initialOpen
+      navigationItems={[
+        <LungoSidebarNavigationSlot
+          key="lungo-pattern-nav"
+          selectedPattern={selectedPattern}
+          onPatternChange={onPatternChange}
+          transport={transport}
+          isPublishSubscribeExpanded={isPublishSubscribeExpanded}
+          setIsPublishSubscribeExpanded={setIsPublishSubscribeExpanded}
+          isPublishSubscribeStreamingExpanded={
+            isPublishSubscribeStreamingExpanded
+          }
+          setIsPublishSubscribeStreamingExpanded={
+            setIsPublishSubscribeStreamingExpanded
+          }
+          isGroupCommunicationExpanded={isGroupCommunicationExpanded}
+          setIsGroupCommunicationExpanded={setIsGroupCommunicationExpanded}
+          isOnDemandDiscoveryExpanded={isOnDemandDiscoveryExpanded}
+          setIsOnDemandDiscoveryExpanded={setIsOnDemandDiscoveryExpanded}
+        />,
+      ]}
+    />
   )
 }
 

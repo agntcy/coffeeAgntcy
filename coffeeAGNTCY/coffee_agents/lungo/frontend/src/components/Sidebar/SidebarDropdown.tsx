@@ -5,6 +5,7 @@
 
 import React from "react"
 import { ChevronUp } from "lucide-react"
+import { Box, ListItemButton, Stack, Typography } from "@open-ui-kit/core"
 
 interface SidebarDropdownProps {
   title: string
@@ -21,23 +22,36 @@ const SidebarDropdown: React.FC<SidebarDropdownProps> = ({
   children,
 }) => {
   return (
-    <div className="flex w-full flex-col items-start p-0">
-      <div
-        className="flex h-9 w-full cursor-pointer items-start gap-2 bg-sidebar-background py-2 pl-8 pr-5 transition-colors hover:bg-sidebar-item-selected"
+    <Stack direction="column" alignItems="flex-start">
+      <ListItemButton
         onClick={onToggle}
+        aria-expanded={isExpanded}
+        sx={{
+          width: "100%",
+          justifyContent: "space-between",
+          backgroundColor: "transparent",
+          borderRadius: "8px",
+          textWrap: "auto",
+          "& svg": {
+            transition: "transform 0.2s ease",
+            transform: isExpanded ? "rotate(0deg)" : "rotate(180deg)",
+          },
+        }}
       >
-        <span className="flex-1 font-inter text-sm font-normal leading-5 tracking-[0.25px] text-sidebar-text">
+        <Typography component="span" variant="body1">
           {title}
-        </span>
-        <ChevronUp
-          className={`h-5 w-5 flex-none text-sidebar-text transition-transform ${
-            isExpanded ? "rotate-0" : "rotate-180"
-          }`}
-        />
-      </div>
+        </Typography>
+        <Box>
+          <ChevronUp aria-hidden />
+        </Box>
+      </ListItemButton>
 
-      {isExpanded && <div className="flex w-full flex-col">{children}</div>}
-    </div>
+      {isExpanded ? (
+        <Stack direction="column" sx={{ width: "100%", paddingLeft: "16px" }}>
+          {children}
+        </Stack>
+      ) : null}
+    </Stack>
   )
 }
 
