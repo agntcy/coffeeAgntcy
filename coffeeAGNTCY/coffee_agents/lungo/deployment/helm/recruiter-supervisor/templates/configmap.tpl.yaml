@@ -11,6 +11,8 @@ data:
   AZURE_API_VERSION: "{{ .Values.config.azureApiVersion }}"
   DEFAULT_MESSAGE_TRANSPORT: "{{ .Values.config.defaultMessageTransport }}"
   TRANSPORT_SERVER_ENDPOINT: "{{ .Values.config.transportServerEndpoint }}"
+  SLIM_SERVER: "{{ .Values.config.slimServer }}"
+  NATS_SERVER: "{{ .Values.config.natsServer }}"
   OTLP_HTTP_ENDPOINT: "{{ .Values.config.otlpHttpEndpoint }}"
   IDENTITY_API_SERVER_URL: "{{ .Values.config.identityApiServerUrl }}"
   IDENTITY_API_KEY: "{{ .Values.config.identityApiKey }}"
