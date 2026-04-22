@@ -1,18 +1,20 @@
 /**
-
  * Copyright AGNTCY Contributors (https://github.com/agntcy)
-
  * SPDX-License-Identifier: Apache-2.0
-
  **/
 
 import React, { useState, useEffect, useCallback, useRef } from "react"
 
 import { ChevronDown, ChevronUp } from "lucide-react"
+import { Box, Spinner, Stack, Typography } from "@open-ui-kit/core"
 
-import AgentIcon from "@/assets/Coffee_Icon.svg"
+import { ChatAgentAvatar } from "./ChatAvatarCircle"
+import {
+  buildSenderToNodeMap,
+  formatAgentName,
+  getAllAgentNodeIds,
+} from "./groupCommunicationFeedMapping"
 import CheckCircle from "@/assets/CheckCircle.png"
-import type { Node } from "@xyflow/react"
 import type { GraphConfig } from "@/utils/graphConfigs"
 import type { LogisticsStreamStep } from "@/stores/groupStreaming.types"
 import {
@@ -31,84 +33,6 @@ export interface GroupCommunicationFeedProps {
   graphConfig?: GraphConfig
   executionKey?: string
   apiError: boolean
-}
-
-/**
- * Minimal node data shape used for sender→node mapping and agent node filtering.
- * GraphConfig.nodes is heterogeneous (CustomNodeData | TransportNodeData | group data);
- * we only read these optional fields, which exist on custom nodes and are absent on
- * transport/group nodes. See @/components/MainArea/Graph/Elements/types (CustomNodeData)
- * for the full custom-node shape.
- * Index signature satisfies @xyflow/react Node<T> constraint (T extends Record<string, unknown>).
- */
-interface GroupCommNodeDataForMapping extends Record<string, unknown> {
-  label1?: string
-  label2?: string
-  agentName?: string
-  farmName?: string
-}
-
-const buildSenderToNodeMap = (
-  graphConfig: GraphConfig | undefined,
-): Record<string, string> => {
-  if (!graphConfig?.nodes) return {}
-
-  const map: Record<string, string> = {}
-
-  graphConfig.nodes.forEach((node: Node<GroupCommNodeDataForMapping>) => {
-    const data = node.data
-    if (data) {
-      if (data.label1) {
-        map[data.label1] = node.id
-        map[data.label1.toLowerCase()] = node.id
-      }
-      if (data.label2) {
-        map[data.label2] = node.id
-        map[data.label2.toLowerCase()] = node.id
-      }
-      if (data.agentName) {
-        map[data.agentName] = node.id
-        map[data.agentName.toLowerCase()] = node.id
-      }
-      if (data.farmName) {
-        map[data.farmName] = node.id
-        map[data.farmName.toLowerCase()] = node.id
-      }
-
-      if (data.label1 === "Buyer") {
-        map["Supervisor"] = node.id
-        map["supervisor"] = node.id
-      }
-      if (data.label1 === "Tatooine") {
-        map["Tatooine Farm"] = node.id
-        map["tatooine farm"] = node.id
-      }
-    }
-  })
-
-  return map
-}
-
-const getAllAgentNodeIds = (graphConfig: GraphConfig | undefined): string[] => {
-  if (!graphConfig?.nodes) return []
-
-  return graphConfig.nodes
-    .filter(
-      (node: Node<GroupCommNodeDataForMapping>) =>
-        node.type === "customNode" && node.data?.label1 !== "Logistics Agent",
-    )
-    .map((node) => node.id)
-}
-
-const formatAgentName = (agentName: string): string => {
-  if (agentName === "Supervisor") {
-    return "Buyer"
-  }
-  if (agentName === "Tatooine Farm") {
-    return "Tatooine"
-  }
-
-  return agentName
 }
 
 const GroupCommunicationFeed: React.FC<GroupCommunicationFeedProps> = ({
@@ -226,109 +150,219 @@ const GroupCommunicationFeed: React.FC<GroupCommunicationFeedProps> = ({
   }
 
   return (
-    <div className="flex w-full flex-row items-start gap-1 transition-all duration-300">
-      <div className="chat-avatar-container flex h-10 w-10 flex-none items-center justify-center rounded-full bg-action-background">
-        <img src={AgentIcon} alt="Agent" className="h-[22px] w-[22px]" />
-      </div>
+    <Stack
+      direction="row"
+      alignItems="flex-start"
+      spacing={0.5}
+      sx={{ width: "100%", transition: "all 300ms" }}
+    >
+      <ChatAgentAvatar />
 
-      <div className="flex max-w-[calc(100%-3rem)] flex-1 flex-col items-start rounded p-1 px-2">
+      <Stack
+        sx={{
+          flex: 1,
+          minWidth: 0,
+          maxWidth: "calc(100% - 3rem)",
+          alignItems: "flex-start",
+          borderRadius: 1,
+          py: 0.5,
+          px: 1,
+        }}
+      >
         {errorMessage ? (
-          <div className="whitespace-pre-wrap break-words font-cisco text-sm font-normal leading-5 text-chat-text">
+          <Typography
+            variant="body2"
+            component="div"
+            sx={{
+              whiteSpace: "pre-wrap",
+              overflowWrap: "break-word",
+              wordBreak: "break-word",
+            }}
+          >
             Connection error: {errorMessage}
-          </div>
+          </Typography>
         ) : storeIsComplete && groupCurrentOrderId ? (
-          <div className="whitespace-pre-wrap break-words font-cisco text-sm font-normal leading-5 text-chat-text">
+          <Typography
+            variant="body2"
+            component="div"
+            sx={{
+              whiteSpace: "pre-wrap",
+              overflowWrap: "break-word",
+              wordBreak: "break-word",
+            }}
+          >
             Order {groupCurrentOrderId}
-          </div>
+          </Typography>
         ) : prompt && !apiError ? (
-          <div className="whitespace-pre-wrap break-words font-cisco text-sm font-normal leading-5 text-chat-text">
+          <Typography
+            variant="body2"
+            component="div"
+            sx={{
+              whiteSpace: "pre-wrap",
+              overflowWrap: "break-word",
+              wordBreak: "break-word",
+            }}
+          >
             Processing Request...
-          </div>
+          </Typography>
         ) : null}
 
         {prompt && !storeIsComplete && !apiError && events.length === 0 && (
-          <div className="mt-3 flex w-full flex-row items-start gap-1">
-            <div className="mt-1 flex items-center">
-              <div className="h-4 w-4 animate-spin rounded-full border-2 border-b-transparent border-l-transparent border-r-accent-primary border-t-accent-primary" />
-            </div>
-            <div className="flex-1"></div>
-          </div>
+          <Stack
+            direction="row"
+            alignItems="flex-start"
+            spacing={0.5}
+            sx={{ mt: 3, width: "100%" }}
+          >
+            <Box
+              sx={{
+                mt: 0.5,
+                display: "flex",
+                alignItems: "center",
+              }}
+            >
+              <Spinner size={16} aria-hidden />
+            </Box>
+            <Box sx={{ flex: 1 }} />
+          </Stack>
         )}
 
         {storeIsComplete && !isExpanded && (
-          <div
-            className="mt-1 flex w-full cursor-pointer flex-row items-center gap-1 hover:opacity-75"
+          <Box
             onClick={handleExpand}
+            sx={{
+              mt: 1,
+              display: "flex",
+              width: "100%",
+              cursor: "pointer",
+              flexDirection: "row",
+              alignItems: "center",
+              gap: 0.5,
+              "&:hover": { opacity: 0.75 },
+            }}
           >
-            <div className="h-4 w-4 flex-none">
-              <ChevronDown className="h-4 w-4 text-chat-text" />
-            </div>
+            <Box
+              sx={{
+                width: 16,
+                height: 16,
+                flexShrink: 0,
+              }}
+            >
+              <ChevronDown size={16} aria-hidden />
+            </Box>
 
-            <div className="flex-1">
-              <span className="font-cisco text-sm font-normal leading-[18px] text-chat-text">
+            <Box sx={{ flex: 1, minWidth: 0 }}>
+              <Typography variant="body2" component="span">
                 View Details
-              </span>
-            </div>
-          </div>
+              </Typography>
+            </Box>
+          </Box>
         )}
         {isExpanded && (
           <>
-            <div className="mt-3 flex w-full flex-col items-start gap-3">
+            <Stack
+              spacing={3}
+              sx={{ mt: 3, width: "100%", alignItems: "flex-start" }}
+            >
               {events.map((step: LogisticsStreamStep, index: number) => {
                 return (
-                  <div
+                  <Stack
                     key={`${step.order_id}-${index}`}
-                    className="flex w-full flex-row items-start gap-1"
+                    direction="row"
+                    alignItems="flex-start"
+                    spacing={0.5}
+                    sx={{ width: "100%" }}
                   >
-                    <div className="mt-1 flex items-center">
-                      <img
+                    <Box
+                      sx={{ mt: 0.5, display: "flex", alignItems: "center" }}
+                    >
+                      <Box
+                        component="img"
                         src={CheckCircle}
-                        alt="Complete"
-                        className="h-4 w-4"
+                        alt=""
+                        sx={{ width: 16, height: 16, display: "block" }}
                       />
-                    </div>
+                    </Box>
 
-                    <div className="flex-1">
-                      <span className="font-['Inter'] text-sm leading-[18px] text-chat-text">
-                        <span className="font-semibold">
+                    <Box sx={{ flex: 1, minWidth: 0 }}>
+                      <Typography
+                        variant="body2"
+                        component="div"
+                        sx={{
+                          overflowWrap: "break-word",
+                          wordBreak: "break-word",
+                        }}
+                      >
+                        <Typography component="span">
                           {formatAgentName(step.sender)}
-                        </span>
+                        </Typography>
                         {index === 0 && (
                           <>
-                            → <span className="font-semibold">All Agents</span>
+                            {" "}
+                            →{" "}
+                            <Typography component="span">All Agents</Typography>
                           </>
                         )}
-                        : <span className="font-normal">"{step.message}"</span>
-                      </span>
-                    </div>
-                  </div>
+                        :{" "}
+                        <Typography component="span">
+                          &quot;{step.message}&quot;
+                        </Typography>
+                      </Typography>
+                    </Box>
+                  </Stack>
                 )
               })}
 
               {events.length > 0 && !storeIsComplete && (
-                <div className="flex w-full flex-row items-start gap-1">
-                  <div className="mt-1 flex items-center">
-                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-b-transparent border-l-transparent border-r-accent-primary border-t-accent-primary" />
-                  </div>
-                  <div className="flex-1"></div>
-                </div>
+                <Stack
+                  direction="row"
+                  alignItems="flex-start"
+                  spacing={0.5}
+                  sx={{ width: "100%" }}
+                >
+                  <Box
+                    sx={{
+                      mt: 0.5,
+                      display: "flex",
+                      alignItems: "center",
+                    }}
+                  >
+                    <Spinner size={16} aria-hidden />
+                  </Box>
+                  <Box sx={{ flex: 1 }} />
+                </Stack>
               )}
-            </div>
+            </Stack>
 
             {storeIsComplete && (
-              <div
-                className="flex w-full cursor-pointer flex-row items-center gap-1 pt-2 hover:opacity-75"
+              <Box
                 onClick={handleCollapse}
+                sx={{
+                  display: "flex",
+                  width: "100%",
+                  cursor: "pointer",
+                  flexDirection: "row",
+                  alignItems: "center",
+                  gap: 0.5,
+                  pt: 2,
+                  "&:hover": { opacity: 0.75 },
+                }}
               >
-                <div className="h-4 w-4 flex-none">
-                  <ChevronUp className="h-4 w-4 text-chat-text" />
-                </div>
-              </div>
+                <Box
+                  sx={{
+                    width: 16,
+                    height: 16,
+                    flexShrink: 0,
+                  }}
+                >
+                  <ChevronUp size={16} aria-hidden />
+                </Box>
+              </Box>
             )}
           </>
         )}
-      </div>
-    </div>
+      </Stack>
+    </Stack>
   )
 }
 

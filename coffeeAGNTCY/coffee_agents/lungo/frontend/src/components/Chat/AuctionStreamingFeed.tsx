@@ -4,8 +4,9 @@
  **/
 
 import React, { useEffect } from "react"
-import { Loader2 } from "lucide-react"
-import AgentIcon from "@/assets/Coffee_Icon.svg"
+import { Box, Spinner, Stack, Typography } from "@open-ui-kit/core"
+
+import { ChatAgentAvatar } from "./ChatAvatarCircle"
 import CheckCircle from "@/assets/Check_Circle.png"
 import type { AuctionStreamingState } from "@/stores/auctionStreaming.types"
 
@@ -58,36 +59,88 @@ const AuctionStreamingFeed: React.FC<AuctionStreamingFeedProps> = ({
   }
 
   return (
-    <div className="flex w-full flex-row items-start gap-1 transition-all duration-300">
-      <div className="chat-avatar-container flex h-10 w-10 flex-none items-center justify-center rounded-full bg-action-background">
-        <img src={AgentIcon} alt="Agent" className="h-[22px] w-[22px]" />
-      </div>
+    <Stack
+      direction="row"
+      alignItems="flex-start"
+      spacing={0.5}
+      sx={{ width: "100%", transition: "all 300ms" }}
+    >
+      <ChatAgentAvatar />
 
-      <div className="flex max-w-[calc(100%-3rem)] flex-1 flex-col items-start rounded p-1 px-2">
+      <Stack
+        sx={{
+          flex: 1,
+          minWidth: 0,
+          maxWidth: "calc(100% - 3rem)",
+          alignItems: "flex-start",
+          borderRadius: 1,
+          py: 0.5,
+          px: 1,
+        }}
+      >
         {errorMessage ? (
-          <div className="whitespace-pre-wrap break-words font-cisco text-sm font-normal leading-5 text-chat-text">
+          <Typography
+            variant="body2"
+            component="div"
+            sx={{
+              whiteSpace: "pre-wrap",
+              overflowWrap: "break-word",
+              wordBreak: "break-word",
+            }}
+          >
             Connection error: {errorMessage}
-          </div>
+          </Typography>
         ) : isComplete ? (
-          <div className="whitespace-pre-wrap break-words font-cisco text-sm font-bold leading-5 text-chat-text">
+          <Typography
+            variant="body2"
+            component="div"
+            sx={{
+              whiteSpace: "pre-wrap",
+              overflowWrap: "break-word",
+              wordBreak: "break-word",
+            }}
+          >
             Streaming output:
-          </div>
+          </Typography>
         ) : prompt && !apiError ? (
-          <div className="whitespace-pre-wrap break-words font-cisco text-sm font-bold leading-5 text-chat-text">
-            Streaming<span className="loading-dots ml-1"></span>
-          </div>
+          <Typography
+            variant="body2"
+            component="div"
+            sx={{
+              whiteSpace: "pre-wrap",
+              overflowWrap: "break-word",
+              wordBreak: "break-word",
+            }}
+          >
+            Streaming
+            <Box component="span" className="loading-dots" sx={{ ml: 0.5 }} />
+          </Typography>
         ) : null}
 
         {prompt && !isComplete && !apiError && events.length === 0 && (
-          <div className="mt-3 flex w-full flex-row items-start gap-1">
-            <div className="mt-1 flex items-center">
-              <Loader2 className="h-4 w-4 animate-spin text-accent-primary" />
-            </div>
-            <div className="flex-1"></div>
-          </div>
+          <Stack
+            direction="row"
+            alignItems="flex-start"
+            spacing={0.5}
+            sx={{ mt: 3, width: "100%" }}
+          >
+            <Box
+              sx={{
+                mt: 0.5,
+                display: "flex",
+                alignItems: "center",
+              }}
+            >
+              <Spinner size={16} aria-hidden />
+            </Box>
+            <Box sx={{ flex: 1 }} />
+          </Stack>
         )}
 
-        <div className="mt-3 flex w-full flex-col items-start gap-3">
+        <Stack
+          spacing={3}
+          sx={{ mt: 3, width: "100%", alignItems: "flex-start" }}
+        >
           {events.map((event, index) => {
             const isLastEvent = isComplete && index === events.length - 1
             const label = isLastEvent
@@ -95,33 +148,62 @@ const AuctionStreamingFeed: React.FC<AuctionStreamingFeedProps> = ({
               : `Response ${index + 1}:`
 
             return (
-              <div
+              <Stack
                 key={`auction-${index}`}
-                className="flex w-full flex-row items-start gap-1"
+                direction="row"
+                alignItems="flex-start"
+                spacing={0.5}
+                sx={{ width: "100%" }}
               >
-                <div className="mt-1 flex items-center">
-                  <img src={CheckCircle} alt="Complete" className="h-4 w-4" />
-                </div>
-                <div className="flex-1">
-                  <div className="font-inter text-sm leading-[18px] text-chat-text">
-                    <span className="font-bold">{label}</span> {event.response}
-                  </div>
-                </div>
-              </div>
+                <Box sx={{ mt: 0.5, display: "flex", alignItems: "center" }}>
+                  <Box
+                    component="img"
+                    src={CheckCircle}
+                    alt=""
+                    sx={{ width: 16, height: 16, display: "block" }}
+                  />
+                </Box>
+                <Box sx={{ flex: 1, minWidth: 0 }}>
+                  <Typography
+                    variant="body2"
+                    component="div"
+                    sx={{
+                      overflowWrap: "break-word",
+                      wordBreak: "break-word",
+                    }}
+                  >
+                    <Typography component="span" variant="body2">
+                      {label}
+                    </Typography>{" "}
+                    {event.response}
+                  </Typography>
+                </Box>
+              </Stack>
             )
           })}
 
           {events.length > 0 && !isComplete && (
-            <div className="flex w-full flex-row items-start gap-1">
-              <div className="mt-1 flex items-center">
-                <Loader2 className="h-4 w-4 animate-spin text-accent-primary" />
-              </div>
-              <div className="flex-1"></div>
-            </div>
+            <Stack
+              direction="row"
+              alignItems="flex-start"
+              spacing={0.5}
+              sx={{ width: "100%" }}
+            >
+              <Box
+                sx={{
+                  mt: 0.5,
+                  display: "flex",
+                  alignItems: "center",
+                }}
+              >
+                <Spinner size={16} aria-hidden />
+              </Box>
+              <Box sx={{ flex: 1 }} />
+            </Stack>
           )}
-        </div>
-      </div>
-    </div>
+        </Stack>
+      </Stack>
+    </Stack>
   )
 }
 

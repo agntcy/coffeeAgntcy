@@ -4,6 +4,7 @@
  **/
 
 import React, { useEffect, useRef, useState } from "react"
+import { Box, Stack, Typography } from "@open-ui-kit/core"
 import { HiUser } from "react-icons/hi"
 import { RiRobot2Fill } from "react-icons/ri"
 import { Waveform } from "ldrs/react"
@@ -47,24 +48,56 @@ const Message: React.FC<MessageProps> = ({
   loading,
 }) => {
   return (
-    <div
-      className={`flex w-full items-start gap-2 px-4 py-6 sm:px-8 md:px-16 md:py-[30px] lg:px-[120px] ${aiMessage ? "bg-[rgb(247,247,248)]" : ""}`}
+    <Stack
+      direction="row"
+      alignItems="flex-start"
+      spacing={2}
+      sx={{
+        width: "100%",
+        px: { xs: 2, sm: 4, md: 8, lg: 15 },
+        py: { xs: 3, md: 3.75 },
+        bgcolor: aiMessage ? "rgb(247, 247, 248)" : "transparent",
+      }}
     >
-      <div className="flex h-[35px] w-[35px] flex-shrink-0 items-center justify-center">
+      <Box
+        sx={{
+          width: 35,
+          height: 35,
+          flexShrink: 0,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
         {aiMessage ? <RiRobot2Fill color="#049FD9" /> : <HiUser />}
-      </div>
-      <div className="ml-2 min-w-0 flex-1 break-words">
+      </Box>
+      <Box
+        sx={{
+          minWidth: 0,
+          flex: 1,
+          overflowWrap: "break-word",
+          wordBreak: "break-word",
+        }}
+      >
         {loading ? (
-          <div style={{ opacity: 0.5 }}>
+          <Box sx={{ opacity: 0.5 }}>
             <Waveform size="20" stroke="3.5" speed="1" color="#049FD9" />
-          </div>
-        ) : animate ? (
-          <SlowText speed={20} text={content} />
+          </Box>
         ) : (
-          content
+          <Typography
+            variant="body2"
+            component="div"
+            sx={{
+              whiteSpace: "pre-wrap",
+              overflowWrap: "break-word",
+              wordBreak: "break-word",
+            }}
+          >
+            {animate ? <SlowText speed={20} text={content} /> : content}
+          </Typography>
         )}
-      </div>
-    </div>
+      </Box>
+    </Stack>
   )
 }
 

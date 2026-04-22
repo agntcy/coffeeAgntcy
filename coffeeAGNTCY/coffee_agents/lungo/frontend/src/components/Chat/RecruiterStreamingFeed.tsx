@@ -4,8 +4,10 @@
  **/
 
 import React, { useState, useEffect, useCallback, useRef } from "react"
-import { ChevronDown, ChevronUp, Loader2 } from "lucide-react"
-import AgentIcon from "@/assets/Coffee_Icon.svg"
+import { ChevronDown, ChevronUp } from "lucide-react"
+import { Box, Spinner, Stack, Typography } from "@open-ui-kit/core"
+
+import { ChatAgentAvatar } from "./ChatAvatarCircle"
 import CheckCircle from "@/assets/Check_Circle.png"
 import type {
   RecruiterStreamingFeedProps,
@@ -79,103 +81,207 @@ const RecruiterStreamingFeed: React.FC<RecruiterStreamingFeedProps> = ({
   )
 
   return (
-    <div className="flex w-full flex-row items-start gap-1 transition-all duration-300">
-      <div className="chat-avatar-container flex h-10 w-10 flex-none items-center justify-center rounded-full bg-action-background">
-        <img src={AgentIcon} alt="Agent" className="h-[22px] w-[22px]" />
-      </div>
+    <Stack
+      direction="row"
+      alignItems="flex-start"
+      spacing={0.5}
+      sx={{ width: "100%", transition: "all 300ms" }}
+    >
+      <ChatAgentAvatar />
 
-      <div className="flex max-w-[calc(100%-3rem)] flex-1 flex-col items-start rounded p-1 px-2">
+      <Stack
+        sx={{
+          flex: 1,
+          minWidth: 0,
+          maxWidth: "calc(100% - 3rem)",
+          alignItems: "flex-start",
+          borderRadius: 1,
+          py: 0.5,
+          px: 1,
+        }}
+      >
         {errorMessage ? (
-          <div className="whitespace-pre-wrap break-words font-cisco text-sm font-normal leading-5 text-chat-text">
+          <Typography
+            variant="body2"
+            component="div"
+            sx={{
+              whiteSpace: "pre-wrap",
+              overflowWrap: "break-word",
+              wordBreak: "break-word",
+            }}
+          >
             Connection error: {errorMessage}
-          </div>
+          </Typography>
         ) : isComplete ? (
-          <div className="whitespace-pre-wrap break-words font-cisco text-sm font-bold leading-5 text-chat-text">
+          <Typography
+            variant="body2"
+            component="div"
+            sx={{
+              whiteSpace: "pre-wrap",
+              overflowWrap: "break-word",
+              wordBreak: "break-word",
+            }}
+          >
             Recruiter completed:
-          </div>
+          </Typography>
         ) : prompt && !apiError ? (
-          <div className="whitespace-pre-wrap break-words font-cisco text-sm font-bold leading-5 text-chat-text">
-            Recruiting agents<span className="loading-dots ml-1"></span>
-          </div>
+          <Typography
+            variant="body2"
+            component="div"
+            sx={{
+              whiteSpace: "pre-wrap",
+              overflowWrap: "break-word",
+              wordBreak: "break-word",
+            }}
+          >
+            Recruiting agents
+            <Box component="span" className="loading-dots" sx={{ ml: 0.5 }} />
+          </Typography>
         ) : null}
 
         {prompt && !isComplete && !apiError && events.length === 0 && (
-          <div className="mt-3 flex w-full flex-row items-start gap-1">
-            <div className="mt-1 flex items-center">
-              <Loader2 className="h-4 w-4 animate-spin text-accent-primary" />
-            </div>
-            <div className="flex-1"></div>
-          </div>
+          <Stack
+            direction="row"
+            alignItems="flex-start"
+            spacing={0.5}
+            sx={{ mt: 3, width: "100%" }}
+          >
+            <Box
+              sx={{
+                mt: 0.5,
+                display: "flex",
+                alignItems: "center",
+              }}
+            >
+              <Spinner size={16} aria-hidden />
+            </Box>
+            <Box sx={{ flex: 1 }} />
+          </Stack>
         )}
 
         {isComplete && !isExpanded && (
-          <div
-            className="mt-1 flex w-full cursor-pointer flex-row items-center gap-1 hover:opacity-75"
+          <Box
             onClick={handleExpand}
+            sx={{
+              mt: 1,
+              display: "flex",
+              width: "100%",
+              cursor: "pointer",
+              flexDirection: "row",
+              alignItems: "center",
+              gap: 0.5,
+              "&:hover": { opacity: 0.75 },
+            }}
           >
-            <div className="h-4 w-4 flex-none">
-              <ChevronDown className="h-4 w-4 text-chat-text" />
-            </div>
-            <div className="flex-1">
-              <span className="font-cisco text-sm font-normal leading-[18px] text-chat-text">
+            <Box sx={{ width: 16, height: 16, flexShrink: 0 }}>
+              <ChevronDown size={16} aria-hidden />
+            </Box>
+            <Box sx={{ flex: 1, minWidth: 0 }}>
+              <Typography variant="body2" component="span">
                 View Streaming Events
-              </span>
-            </div>
-          </div>
+              </Typography>
+            </Box>
+          </Box>
         )}
 
         {isExpanded && (
           <>
-            <div className="mt-3 flex w-full flex-col items-start gap-3">
+            <Stack
+              spacing={3}
+              sx={{ mt: 3, width: "100%", alignItems: "flex-start" }}
+            >
               {statusUpdates.map(
                 (event: RecruiterStreamingEvent, index: number) => (
-                  <div
+                  <Stack
                     key={`recruiter-status-${index}`}
-                    className="flex w-full flex-row items-start gap-1"
+                    direction="row"
+                    alignItems="flex-start"
+                    spacing={0.5}
+                    sx={{ width: "100%" }}
                   >
-                    <div className="mt-1 flex items-center">
-                      <img
+                    <Box
+                      sx={{ mt: 0.5, display: "flex", alignItems: "center" }}
+                    >
+                      <Box
+                        component="img"
                         src={CheckCircle}
-                        alt="Complete"
-                        className="h-4 w-4"
+                        alt=""
+                        sx={{ width: 16, height: 16, display: "block" }}
                       />
-                    </div>
-                    <div className="flex-1">
-                      <div className="font-inter text-sm leading-[18px] text-chat-text">
+                    </Box>
+                    <Box sx={{ flex: 1, minWidth: 0 }}>
+                      <Typography
+                        variant="body2"
+                        component="div"
+                        sx={{
+                          overflowWrap: "break-word",
+                          wordBreak: "break-word",
+                        }}
+                      >
                         {event.author && (
-                          <span className="font-bold">{event.author}: </span>
+                          <Typography component="span" variant="body2">
+                            {event.author}:{" "}
+                          </Typography>
                         )}
-                        <span className="font-normal">{event.message}</span>
-                      </div>
-                    </div>
-                  </div>
+                        <Typography component="span" variant="body2">
+                          {event.message}
+                        </Typography>
+                      </Typography>
+                    </Box>
+                  </Stack>
                 ),
               )}
 
               {events.length > 0 && !isComplete && (
-                <div className="flex w-full flex-row items-start gap-1">
-                  <div className="mt-1 flex items-center">
-                    <Loader2 className="h-4 w-4 animate-spin text-accent-primary" />
-                  </div>
-                  <div className="flex-1"></div>
-                </div>
+                <Stack
+                  direction="row"
+                  alignItems="flex-start"
+                  spacing={0.5}
+                  sx={{ width: "100%" }}
+                >
+                  <Box
+                    sx={{
+                      mt: 0.5,
+                      display: "flex",
+                      alignItems: "center",
+                    }}
+                  >
+                    <Spinner size={16} aria-hidden />
+                  </Box>
+                  <Box sx={{ flex: 1 }} />
+                </Stack>
               )}
-            </div>
+            </Stack>
 
             {isComplete && (
-              <div
-                className="flex w-full cursor-pointer flex-row items-center gap-1 pt-2 hover:opacity-75"
+              <Box
                 onClick={handleCollapse}
+                sx={{
+                  display: "flex",
+                  width: "100%",
+                  cursor: "pointer",
+                  flexDirection: "row",
+                  alignItems: "center",
+                  gap: 0.5,
+                  pt: 2,
+                  "&:hover": { opacity: 0.75 },
+                }}
               >
-                <div className="h-4 w-4 flex-none">
-                  <ChevronUp className="h-4 w-4 text-chat-text" />
-                </div>
-              </div>
+                <Box
+                  sx={{
+                    width: 16,
+                    height: 16,
+                    flexShrink: 0,
+                  }}
+                >
+                  <ChevronUp size={16} aria-hidden />
+                </Box>
+              </Box>
             )}
           </>
         )}
-      </div>
-    </div>
+      </Stack>
+    </Stack>
   )
 }
 

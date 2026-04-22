@@ -3,29 +3,25 @@
  * SPDX-License-Identifier: Apache-2.0
  **/
 
-import React, { useCallback, useEffect, useState } from "react"
+import React, { useCallback, useState } from "react"
 
 import type { Message } from "./types"
 import { parseApiError } from "@/utils/const"
 import { useAgentAPI } from "@/hooks/useAgentAPI"
 import { useGroupSessionId } from "@/stores/groupStreamingStore"
 
-import airplaneSvg from "@/assets/airplane.svg"
-import AgentIcon from "@/assets/Coffee_Icon.svg"
 import grafanaIcon from "@/assets/grafana.svg"
 
-import CoffeePromptsDropdown from "./Prompts/CoffeePromptsDropdown"
-import LogisticsPromptsDropdown from "./Prompts/LogisticsPromptsDropdown"
-import DiscoveryPromptsDropdown from "./Prompts/DiscoveryPromptsDropdown"
-
+import ChatAreaComposer from "./ChatAreaComposer"
+import { ChatAgentAvatar } from "./ChatAvatarCircle"
+import { loadingPulse } from "./loadingPulse"
 import UserMessage from "./UserMessage"
 import ChatHeader from "./ChatHeader"
 import ExternalLinkButton from "./ExternalLinkButton"
 import GroupCommunicationFeed from "./GroupCommunicationFeed"
 import AuctionStreamingFeed from "./AuctionStreamingFeed"
 import RecruiterStreamingFeed from "./RecruiterStreamingFeed"
-
-import { cn } from "@/utils/cn.ts"
+import { Box, Stack, Typography } from "@open-ui-kit/core"
 import { env } from "@/utils/env"
 import { logger } from "@/utils/logger"
 import type { GraphConfig } from "@/utils/graphConfigs"
@@ -123,8 +119,6 @@ const ChatArea: React.FC<ChatAreaProps> = ({
     [pattern, onDiscoveryResponse],
   )
 
-  useEffect(() => {}, [onApiSuccess, pattern])
-
   const handleMinimize = () => {
     setIsMinimized(true)
   }
@@ -201,7 +195,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
     }
   }
 
-  const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>): void => {
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>): void => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault()
       processMessage()
@@ -220,10 +214,14 @@ const ChatArea: React.FC<ChatAreaProps> = ({
   }
 
   return (
-    <div
+    <Box
       ref={chatRef}
-      className="relative flex w-full flex-col"
-      style={{ backgroundColor: "var(--overlay-background)" }}
+      sx={{
+        position: "relative",
+        display: "flex",
+        width: "100%",
+        flexDirection: "column",
+      }}
     >
       {currentUserMessage && (
         <ChatHeader
@@ -234,19 +232,27 @@ const ChatArea: React.FC<ChatAreaProps> = ({
         />
       )}
 
-      <div
-        className={cn(
-          "flex w-full flex-col items-center justify-center gap-2 px-4 sm:px-8 md:px-16 lg:px-[120px]",
-          currentUserMessage ? "min-h-auto py-2" : "min-h-[120px] py-4",
-        )}
-        style={{ minHeight: currentUserMessage ? "auto" : "120px" }}
+      <Stack
+        alignItems="center"
+        spacing={1}
+        sx={{
+          width: "100%",
+          minHeight: currentUserMessage ? "auto" : 120,
+          px: { xs: 2, sm: 4, md: 8, lg: 15 },
+          py: currentUserMessage ? 1 : 2,
+        }}
       >
         {currentUserMessage && (
-          <div className="mb-4 flex w-full max-w-[880px] flex-col gap-3">
+          <Stack spacing={1.5} sx={{ width: "100%", maxWidth: 880, mb: 2 }}>
             {!isMinimized && <UserMessage content={currentUserMessage} />}
 
             {showProgressTracker && (
-              <div className={`w-full ${isMinimized ? "hidden" : ""}`}>
+              <Box
+                sx={{
+                  width: "100%",
+                  display: isMinimized ? "none" : "block",
+                }}
+              >
                 <GroupCommunicationFeed
                   isVisible={!isMinimized && showProgressTracker}
                   onComplete={onStreamComplete}
@@ -256,22 +262,32 @@ const ChatArea: React.FC<ChatAreaProps> = ({
                   executionKey={executionKey}
                   apiError={apiError}
                 />
-              </div>
+              </Box>
             )}
 
             {showAuctionStreaming && (
-              <div className={`w-full ${isMinimized ? "hidden" : ""}`}>
+              <Box
+                sx={{
+                  width: "100%",
+                  display: isMinimized ? "none" : "block",
+                }}
+              >
                 <AuctionStreamingFeed
                   isVisible={!isMinimized && showAuctionStreaming}
                   prompt={currentUserMessage || ""}
                   apiError={apiError}
                   auctionStreamingState={auctionState}
                 />
-              </div>
+              </Box>
             )}
 
             {showRecruiterStreaming && (
-              <div className={`w-full ${isMinimized ? "hidden" : ""}`}>
+              <Box
+                sx={{
+                  width: "100%",
+                  display: isMinimized ? "none" : "block",
+                }}
+              >
                 <RecruiterStreamingFeed
                   isVisible={!isMinimized && showRecruiterStreaming}
                   prompt={currentUserMessage || ""}
@@ -279,106 +295,88 @@ const ChatArea: React.FC<ChatAreaProps> = ({
                   recruiterStreamingState={recruiterState}
                   onStreamComplete={onStreamComplete}
                 />
-              </div>
+              </Box>
             )}
 
             {showFinalResponse &&
               (isAgentLoading || agentResponse) &&
               !isMinimized && (
-                <div className="flex w-full flex-row items-start gap-1">
-                  <div className="chat-avatar-container flex h-10 w-10 flex-none items-center justify-center rounded-full bg-action-background">
-                    <img
-                      src={AgentIcon}
-                      alt="Agent"
-                      className="h-[22px] w-[22px]"
-                    />
-                  </div>
-                  <div className="flex max-w-[calc(100%-3rem)] flex-1 flex-col items-start justify-center rounded p-1 px-2">
-                    <div className="whitespace-pre-wrap break-words font-inter text-sm font-normal leading-5 !text-chat-text">
-                      {isAgentLoading ? (
-                        <div className="animate-pulse text-accent-primary">
+                <Stack
+                  direction="row"
+                  alignItems="flex-start"
+                  spacing={0.5}
+                  sx={{ width: "100%" }}
+                >
+                  <ChatAgentAvatar />
+                  <Stack
+                    sx={{
+                      maxWidth: "calc(100% - 3rem)",
+                      flex: 1,
+                      alignItems: "flex-start",
+                      justifyContent: "center",
+                      borderRadius: 1,
+                      py: 0.5,
+                      px: 1,
+                    }}
+                  >
+                    {isAgentLoading ? (
+                      <Box
+                        sx={{
+                          whiteSpace: "pre-wrap",
+                          overflowWrap: "break-word",
+                          wordBreak: "break-word",
+                        }}
+                      >
+                        <Box
+                          sx={{
+                            animation: `${loadingPulse} 2s cubic-bezier(0.4, 0, 0.6, 1) infinite`,
+                          }}
+                        >
                           ...
-                        </div>
-                      ) : (
-                        <>
-                          {agentResponse?.response ?? ""}
-                          {(agentResponse?.session_id || groupSessionId) &&
-                            !isAgentLoading &&
-                            pattern !== "on_demand_discovery" && (
-                              <ExternalLinkButton
-                                url={grafanaSessionUrl}
-                                label="Grafana"
-                                iconSrc={grafanaIcon}
-                              />
-                            )}
-                        </>
-                      )}
-                    </div>
-                  </div>
-                </div>
+                        </Box>
+                      </Box>
+                    ) : (
+                      <Typography
+                        variant="body2"
+                        component="div"
+                        sx={{
+                          whiteSpace: "pre-wrap",
+                          overflowWrap: "break-word",
+                          wordBreak: "break-word",
+                        }}
+                      >
+                        {agentResponse?.response ?? ""}
+                        {(agentResponse?.session_id || groupSessionId) &&
+                          !isAgentLoading &&
+                          pattern !== "on_demand_discovery" && (
+                            <ExternalLinkButton
+                              url={grafanaSessionUrl}
+                              label="Grafana"
+                              iconSrc={grafanaIcon}
+                            />
+                          )}
+                      </Typography>
+                    )}
+                  </Stack>
+                </Stack>
               )}
-          </div>
+          </Stack>
         )}
 
-        {showCoffeePrompts && (
-          <div className="relative z-10 flex h-9 w-auto w-full max-w-[880px] flex-row items-start gap-2 p-0">
-            <CoffeePromptsDropdown
-              visible={true}
-              onSelect={handleDropdownQuery}
-              pattern={pattern}
-            />
-          </div>
-        )}
-
-        {showLogisticsPrompts && (
-          <div className="relative z-10 flex h-9 w-auto w-full max-w-[880px] flex-row items-start gap-2 p-0">
-            <LogisticsPromptsDropdown
-              visible={true}
-              onSelect={handleDropdownQuery}
-            />
-          </div>
-        )}
-
-        {showDiscoveryPrompts && (
-          <div className="relative z-10 flex h-9 w-auto w-full max-w-[880px] flex-row items-start gap-2 p-0">
-            <DiscoveryPromptsDropdown
-              visible={true}
-              onSelect={handleDropdownQuery}
-            />
-          </div>
-        )}
-
-        <div className="flex w-full max-w-[880px] flex-col items-stretch gap-4 p-0 sm:flex-row sm:items-center">
-          <div className="box-border flex h-11 max-w-[814px] flex-1 flex-row items-center rounded border border-node-background bg-chat-input-background px-0 py-[5px]">
-            <div className="flex h-[34px] w-full flex-row items-center gap-[10px] px-4 py-[7px]">
-              <input
-                className="h-5 min-w-0 flex-1 border-none bg-transparent font-cisco text-[15px] font-medium leading-5 tracking-[0.005em] text-chat-text outline-none placeholder:text-chat-text placeholder:opacity-60"
-                placeholder="Type a prompt to interact with the agents"
-                value={content}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                  setContent(e.target.value)
-                }
-                onKeyPress={handleKeyPress}
-                disabled={loading}
-              />
-            </div>
-          </div>
-
-          <div className="flex h-11 w-[50px] flex-none flex-row items-start p-0">
-            <button
-              onClick={() => {
-                if (content.trim() && !loading) {
-                  processMessage()
-                }
-              }}
-              className="flex h-11 w-[50px] cursor-pointer flex-row items-center justify-center gap-[10px] rounded-md border-none bg-gradient-to-r from-[#834DD7] via-[#7670D5] to-[#58C0D0] px-4 py-[15px]"
-            >
-              <img src={airplaneSvg} alt="Send" className="h-[18px] w-[18px]" />
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
+        <ChatAreaComposer
+          showCoffeePrompts={showCoffeePrompts}
+          showLogisticsPrompts={showLogisticsPrompts}
+          showDiscoveryPrompts={showDiscoveryPrompts}
+          pattern={pattern}
+          onDropdownSelect={handleDropdownQuery}
+          content={content}
+          setContent={setContent}
+          loading={loading}
+          onSend={processMessage}
+          onKeyDown={handleKeyDown}
+        />
+      </Stack>
+    </Box>
   )
 }
 
