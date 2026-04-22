@@ -6,22 +6,23 @@
 Outbound interceptor calls emit ``operation: create`` and inbound consumer
 callbacks emit ``operation: update``. Workflow identity is resolved from
 ``ClientCallContext.state["tool"]`` via a resolver.
+
+Lifecycle is bound to the caller's OTel span. The interceptor stores
+per-trace state keyed by ``trace_id`` and the consumer reads it; a
+``SpanProcessor`` evicts state when the owning span ends.
 """
 
 from __future__ import annotations
 
 import asyncio
 import logging
-import os
 import uuid as _uuid_mod
 from abc import ABC, abstractmethod
-from contextvars import ContextVar
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from time import monotonic
 from typing import Any, Callable
 from uuid import uuid4
-from functools import lru_cache
 
 import httpx
 from urllib.parse import quote
@@ -29,6 +30,9 @@ from urllib.parse import quote
 from a2a.client import ClientEvent
 from a2a.client.middleware import ClientCallContext, ClientCallInterceptor
 from a2a.types import AgentCard, Message, Task, TaskState
+
+from opentelemetry import trace as _otel_trace
+from opentelemetry.sdk.trace import ReadableSpan, SpanProcessor
 
 from schema.types import (
     Correlation,
@@ -73,93 +77,105 @@ class WorkflowIdentity:
 WorkflowResolver = Callable[[str | None], WorkflowIdentity]
 
 
-# ---------------------------------------------------------------------------
-# Constants
-# ---------------------------------------------------------------------------
 _SCHEMA_VERSION = "1.0.0"
 
-# Namespace for deriving a stable correlation UUID from an OTel session ID.
 _CORRELATION_NS = _uuid_mod.uuid5(_uuid_mod.NAMESPACE_DNS, "lungo.correlation")
 
-# Empty starting topology — the graph is discovered, not declared.
 def _init_starting_topology() -> Topology:
     return Topology(nodes=[], edges=[])
 
 
-def _get_otel_session_id() -> str | None:
-    """Return current ``ioa_observe`` session ID, if available."""
-    try:
-        from ioa_observe.sdk.tracing.context_utils import get_current_session_id
-        return get_current_session_id()
-    except Exception:
-        logger.debug("Could not read OTel session ID", exc_info=True)
-        return None
-
-
-def _correlation_id_from_session(session_id: str) -> str:
-    """Derive deterministic ``correlation://UUID`` from a session ID."""
-    return f"correlation://{_uuid_mod.uuid5(_CORRELATION_NS, session_id)}"
-
-
-def _instance_id_from_session(session_id: str, workflow_name: str) -> str:
-    """Derive deterministic ``instance://UUID`` from session + workflow."""
-    return f"instance://{_uuid_mod.uuid5(_CORRELATION_NS, f'{session_id}::{workflow_name}')}"
-
-
-# ---------------------------------------------------------------------------
-# Interceptor → consumer context propagation
-# ---------------------------------------------------------------------------
-# The A2A Consumer callback signature is (ClientEvent|Message, AgentCard) —
-# it does not receive ClientCallContext.  We use a ContextVar to propagate
-# the interceptor's resolved IDs and workflow context so the consumer's
-# inbound event correlates with the outbound one.
+# State shared between interceptor and consumer.
+# Consumer callbacks do not receive ``ClientCallContext``, so per-call
+# state is stored by OTel ``trace_id`` and read back in the consumer.
 
 @dataclass(frozen=True)
-class _InterceptorContext:
-    """Per-call context propagated from interceptor to consumer."""
+class _InterceptionState:
+    """Per-interaction state keyed by trace_id."""
     correlation_id: str
     instance_id: str
     workflow_ctx: WorkflowIdentity
     remote_agent_ids: tuple[str, ...]
     transport_label: str
-    created_at_monotonic: float
     allocator: _RuntimeIdAllocator
+    # Span that owns this interaction; eviction happens when this span ends.
+    owner_span_id: int
 
-_interceptor_ctx: ContextVar[_InterceptorContext | None] = ContextVar(
-    "event_middleware_interceptor_ctx", default=None,
-)
 
-# Per-task tracking of which remotes have sent a terminal response in a
-# fan-out (broadcast) call.  A ContextVar (not a plain set) so overlapping
-# async tasks using the same consumer instance don't cross-contaminate.
-_completed_agent_ids_ctx: ContextVar[set[str] | None] = ContextVar(
-    "event_middleware_completed_agent_ids", default=None,
-)
+_in_flight: dict[int, _InterceptionState] = {}
+_in_flight_lock = asyncio.Lock()
 
-_fan_out_lock = asyncio.Lock()
 
-@lru_cache(maxsize=1)
-def _interceptor_ctx_max_age_seconds() -> float:
-    """Return interceptor context max-age in seconds from env."""
-    raw = os.getenv("EVENT_MIDDLEWARE_INTERCEPTOR_CTX_MAX_AGE_SECONDS", "300")
-    try:
-        return float(raw)
-    except ValueError:
-        logger.warning(
-            "Invalid EVENT_MIDDLEWARE_INTERCEPTOR_CTX_MAX_AGE_SECONDS: %r, "
-            "falling back to 300s.",
-            raw,
+def _current_trace_id() -> int | None:
+    """Return the active OTel trace_id, or None if no valid span is active."""
+    ctx = _otel_trace.get_current_span().get_span_context()
+    return ctx.trace_id if ctx.is_valid else None
+
+
+def _format_trace_id(trace_id: int) -> str:
+    """Render an OTel trace_id (int) as a hex string for emission."""
+    return f"{trace_id:032x}"
+
+
+def _format_span_id(span_id: int) -> str:
+    """Render an OTel span_id (int) as a hex string for emission."""
+    return f"{span_id:016x}"
+
+
+class _InFlightCleanupSpanProcessor(SpanProcessor):
+    """Evict ``_in_flight`` entries when their owning span ends."""
+
+    def on_start(self, span, parent_context=None) -> None:  # noqa: D401
+        return None
+
+    def on_end(self, span: ReadableSpan) -> None:  # noqa: D401
+        span_context = span.get_span_context()
+        if span_context is None:
+            return
+        trace_id = span_context.trace_id
+        ending_span_id = span_context.span_id
+        state = _in_flight.get(trace_id)
+        if state is None:
+            return
+        # Evict only for the owning span, not every span in the same trace.
+        if state.owner_span_id != ending_span_id:
+            return
+        _in_flight.pop(trace_id, None)
+        logger.debug(
+            "InFlightCleanup: evicted state for trace_id=%s on owner span end (%s)",
+            _format_trace_id(trace_id), span.name,
         )
-        return 300.0
+
+    def shutdown(self) -> None:  # noqa: D401
+        _in_flight.clear()
+
+    def force_flush(self, timeout_millis: int = 30_000) -> bool:  # noqa: D401
+        return True
 
 
-# ---------------------------------------------------------------------------
-# Runtime ID allocation
-# ---------------------------------------------------------------------------
-# IDs are scoped to a workflow instance — the same semantic key yields the
-# same runtime ID within one instance (so outbound CREATE and inbound UPDATE
-# agree), but different instances produce different IDs even for the same
-# agent name.
+def register_cleanup_span_processor() -> None:
+    """Register the in-flight cleanup processor once on the active provider."""
+    provider = _otel_trace.get_tracer_provider()
+    add_fn = getattr(provider, "add_span_processor", None)
+    if add_fn is None:
+        logger.warning(
+            "register_cleanup_span_processor: active TracerProvider (%s) has no "
+            "add_span_processor; in-flight state will not be auto-evicted. "
+            "Ensure ioa_observe/OTel SDK is configured before calling this.",
+            type(provider).__name__,
+        )
+        return
+    if getattr(provider, "_lungo_cleanup_registered", False):
+        return
+    add_fn(_InFlightCleanupSpanProcessor())
+    try:
+        setattr(provider, "_lungo_cleanup_registered", True)
+    except Exception:
+        # Provider may be immutable; registration already succeeded.
+        pass
+    logger.info("register_cleanup_span_processor: registered on %s",
+                type(provider).__name__)
+
 
 class _RuntimeIdAllocator:
     """Allocate instance-scoped ``node://`` and ``edge://`` IDs."""
@@ -279,7 +295,14 @@ def _build_metadata(
     event_type: EventType,
     correlation_id: str,
     correlation_message: str | None = None,
+    trace_id: int | None = None,
+    span_id: int | None = None,
 ) -> Metadata:
+    extras: dict[str, Any] = {}
+    if trace_id is not None:
+        extras["trace_id"] = _format_trace_id(trace_id)
+    if span_id is not None:
+        extras["span_id"] = _format_span_id(span_id)
     return Metadata(
         timestamp=datetime.now(timezone.utc),
         schema_version=_SCHEMA_VERSION,
@@ -290,6 +313,7 @@ def _build_metadata(
             id=CorrelationId(correlation_id),
             message=correlation_message,
         ),
+        **extras,
     )
 
 
@@ -312,6 +336,8 @@ def _build_event(
     event_type: EventType = EventType.STATE_PROGRESS_UPDATE,
     correlation_id: str | None = None,
     correlation_message: str | None = None,
+    trace_id: int | None = None,
+    span_id: int | None = None,
 ) -> Event:
     """Build an ``Event`` for one workflow-instance topology update."""
     cid, iid = _ensure_ids(correlation_id, instance_id)
@@ -322,6 +348,8 @@ def _build_event(
             event_type=event_type,
             correlation_id=cid,
             correlation_message=correlation_message,
+            trace_id=trace_id,
+            span_id=span_id,
         ),
         data=Data(
             workflows={
@@ -342,14 +370,7 @@ def _build_event(
     )
 
 
-# ---------------------------------------------------------------------------
-# Topology fragment builders
-# ---------------------------------------------------------------------------
-# Outbound interceptor emits CREATE (stateless — can't track prior emissions).
-# Inbound consumer emits UPDATE (response guarantees outbound already fired).
-# The workflow store upserts by ID, so repeated CREATEs are safe.
-# starting_topology is left empty here — the store seeds it from config on
-# startup; see the workflow store's merge_event_data docstring for details.
+# Topology fragment builders. Outbound uses CREATE and inbound uses UPDATE.
 
 async def _outbound_topology(
     caller_agent_id: str,
@@ -453,7 +474,7 @@ class EventEmittingInterceptor(ClientCallInterceptor):
         agent_card: AgentCard | None,
         context: ClientCallContext | None,
     ) -> tuple[dict[str, Any], dict[str, Any]]:
-        
+
         t_intercept_start = monotonic()
 
         if agent_card is None:
@@ -477,51 +498,84 @@ class EventEmittingInterceptor(ClientCallInterceptor):
                     workflow_ctx.workflow_name, workflow_ctx.pattern, workflow_ctx.use_case,
                     ctx_state.get("tool", "unknown"))
 
-        # Precedence: explicit context value -> OTel session -> fresh UUID.
-        session_id = _get_otel_session_id()
-        if not session_id:
-            logger.debug(
-                "EventEmittingInterceptor [%s]: no OTel session active, "
-                "correlation/instance IDs will be random UUIDs.",
-                self._source,
+        # Precedence: explicit context values -> OTel trace_id -> fresh UUID.
+        otel_span = _otel_trace.get_current_span()
+        otel_ctx = otel_span.get_span_context()
+        trace_id_int = otel_ctx.trace_id if otel_ctx.is_valid else None
+        span_id_int = otel_ctx.span_id if otel_ctx.is_valid else None
+
+        # The interceptor runs in a short-lived child span that ends as
+        # soon as this method returns — before remote responses arrive.
+        # The owning lifetime is the parent (the caller's tool span); fall
+        # back to the current span only if there is no parent.
+        otel_parent = getattr(otel_span, "parent", None)
+        owner_span_id_int = (
+            otel_parent.span_id if otel_parent is not None
+            else span_id_int
+        )
+
+        if trace_id_int is None:
+            logger.warning(
+                "EventEmittingInterceptor [%s]: no active OTel span for method '%s'. "
+                "Falling back to random correlation IDs; consumer callbacks will not "
+                "correlate. Ensure ioa_observe is instrumenting the caller.",
+                self._source, method_name,
             )
 
         correlation_id = (
             ctx_state.get("correlation_id")
-            or (_correlation_id_from_session(session_id) if session_id else None)
+            or (f"correlation://{_uuid_mod.UUID(int=trace_id_int)}" if trace_id_int else None)
             or f"correlation://{uuid4()}"
         )
         instance_id = (
             ctx_state.get("instance_id")
-            or (_instance_id_from_session(session_id, workflow_ctx.workflow_name) if session_id else None)
+            or (
+                f"instance://{_uuid_mod.uuid5(_CORRELATION_NS, f'{trace_id_int:032x}::{workflow_ctx.workflow_name}')}"
+                if trace_id_int else None
+            )
             or f"instance://{uuid4()}"
-        )
-
-        logger.debug(
-            "EventEmittingInterceptor [%s]: correlation_id=%s instance_id=%s "
-            "source=%s",
-            self._source, correlation_id, instance_id,
-            "otel_session" if session_id else "context" if ctx_state.get("correlation_id") else "fallback_uuid",
         )
 
         broadcast_cards: list[AgentCard | None] | None = ctx_state.get("broadcast_agent_cards")
         remote_cards: list[AgentCard | None] = broadcast_cards if broadcast_cards else [agent_card]
         remote_agent_ids = agent_ids_from_cards(remote_cards)
 
-        # Stash state for consumer callbacks (which don't receive call context).
-        allocator = _RuntimeIdAllocator()
-        _interceptor_ctx.set(_InterceptorContext(
-            correlation_id=correlation_id,
-            instance_id=instance_id,
-            workflow_ctx=workflow_ctx,
-            remote_agent_ids=tuple(remote_agent_ids),
-            transport_label=agent_card.preferred_transport or "Transport",
-            created_at_monotonic=monotonic(),
-            allocator=allocator,
-        ))
-        _completed_agent_ids_ctx.set(None)
-
         active_transport = agent_card.preferred_transport or "Transport"
+
+        # Register per-interaction state keyed by trace_id so the consumer
+        # (which lacks ClientCallContext) can look it up. Cleanup happens
+        # in _InFlightCleanupSpanProcessor.on_end when the tool span ends.
+        allocator = _RuntimeIdAllocator()
+        if trace_id_int is not None:
+            state = _InterceptionState(
+                correlation_id=correlation_id,
+                instance_id=instance_id,
+                workflow_ctx=workflow_ctx,
+                remote_agent_ids=tuple(remote_agent_ids),
+                transport_label=active_transport,
+                allocator=allocator,
+                owner_span_id=owner_span_id_int or 0,
+            )
+            async with _in_flight_lock:
+                # Preserve allocator to keep node/edge IDs stable within a trace.
+                existing = _in_flight.get(trace_id_int)
+                if existing is not None:
+                    state = _InterceptionState(
+                        correlation_id=existing.correlation_id,
+                        instance_id=existing.instance_id,
+                        workflow_ctx=existing.workflow_ctx,
+                        remote_agent_ids=tuple(
+                            dict.fromkeys(
+                                list(existing.remote_agent_ids) + list(remote_agent_ids)
+                            )
+                        ),
+                        transport_label=existing.transport_label,
+                        allocator=existing.allocator,
+                        owner_span_id=existing.owner_span_id,
+                    )
+                    allocator = existing.allocator
+                _in_flight[trace_id_int] = state
+
         if remote_agent_ids:
             topology = await _outbound_topology(
                 self._caller_agent_id,
@@ -552,6 +606,8 @@ class EventEmittingInterceptor(ClientCallInterceptor):
             topology=topology,
             correlation_id=correlation_id,
             correlation_message=correlation_msg,
+            trace_id=trace_id_int,
+            span_id=span_id_int,
         )
 
         if self._event_sink:
@@ -571,54 +627,8 @@ class EventEmittingInterceptor(ClientCallInterceptor):
 
 
 # ---------------------------------------------------------------------------
-# A2A Middleware: Consumer context resolution
+# A2A Middleware: Consumer helpers
 # ---------------------------------------------------------------------------
-
-_TERMINAL_STATUSES: frozenset[TaskState] = frozenset({
-    TaskState.completed,
-    TaskState.failed,
-    TaskState.canceled,
-    TaskState.rejected,
-})
-
-
-def _validate_interceptor_ctx(
-    remote_agent_id: str,
-    active_transport: str,
-    source_label: str,
-) -> _InterceptorContext | None:
-    """Return validated interceptor context, else ``None``."""
-    ictx = _interceptor_ctx.get()
-    if ictx is None:
-        return None
-
-    age_seconds = monotonic() - ictx.created_at_monotonic
-    if age_seconds > _interceptor_ctx_max_age_seconds():
-        logger.warning(
-            "event_emitting_consumer [%s]: interceptor context is stale "
-            "(age=%.2fs), ignoring it.",
-            source_label, age_seconds,
-        )
-        return None
-
-    if ictx.remote_agent_ids and remote_agent_id not in ictx.remote_agent_ids:
-        logger.warning(
-            "event_emitting_consumer [%s]: interceptor context remote mismatch "
-            "(event=%s, expected_any=%s), ignoring it.",
-            source_label, remote_agent_id, ",".join(ictx.remote_agent_ids),
-        )
-        return None
-
-    if ictx.transport_label != active_transport:
-        logger.warning(
-            "event_emitting_consumer [%s]: interceptor context transport mismatch "
-            "(event=%s, expected=%s), ignoring it.",
-            source_label, active_transport, ictx.transport_label,
-        )
-        return None
-
-    return ictx
-
 
 def _extract_task_from_client_event(event: ClientEvent | Message) -> Task | None:
     """Best-effort extraction of ``Task`` from a ``ClientEvent`` payload."""
@@ -659,105 +669,8 @@ def _extract_remote_agent_id_from_event(
             stripped = agent_id.strip()
             if stripped and stripped not in {"None", "null"}:
                 return stripped
-        if agent_id is not None:
-            logger.debug(
-                "event_emitting_consumer: metadata.name present but unusable (%r); "
-                "falling back to round-robin",
-                agent_id,
-            )
 
     return None
-
-
-async def _resolve_fan_out_remote_agent_id(
-    agent_id: str,
-    event: ClientEvent | Message,
-    completed_agent_ids: set[str],
-) -> str:
-    """Resolve remote agent ID for broadcast response attribution."""
-    ictx = _interceptor_ctx.get()
-    if ictx is None or len(ictx.remote_agent_ids) <= 1:
-        return agent_id
-
-    metadata_name = _extract_remote_agent_id_from_event(event)
-    if metadata_name and metadata_name in ictx.remote_agent_ids:
-        return metadata_name
-
-    logger.debug(
-        "event_emitting_consumer: metadata.name unavailable, "
-        "falling back to round-robin attribution for agent_id=%s",
-        agent_id,
-    )
-    async with _fan_out_lock:
-        if agent_id in ictx.remote_agent_ids and agent_id not in completed_agent_ids:
-            return agent_id
-
-        for name in ictx.remote_agent_ids:
-            if name not in completed_agent_ids:
-                return name
-
-    logger.warning(
-        "event_emitting_consumer: all %d remote_agent_ids already attributed, "
-        "surplus response attributed to agent_id=%s",
-        len(ictx.remote_agent_ids), agent_id,
-    )
-    return agent_id
-
-
-async def _resolve_consumer_context(
-    remote_agent_id: str,
-    preferred_transport: str,
-    response_status: TaskState | None,
-    *,
-    source_label: str,
-    default_workflow_ctx: WorkflowIdentity | None,
-    completed_agent_ids: set[str],
-) -> tuple[str, str | None, WorkflowIdentity, _RuntimeIdAllocator, bool] | None:
-    """Resolve consumer context and lifecycle behavior for a response."""
-    ictx = _validate_interceptor_ctx(
-        remote_agent_id, preferred_transport, source_label,
-    )
-
-    if ictx is not None:
-        correlation_id = ictx.correlation_id
-        instance_id = ictx.instance_id
-        workflow_ctx = ictx.workflow_ctx
-        allocator = ictx.allocator
-    else:
-        if default_workflow_ctx is None:
-            logger.warning(
-                "event_emitting_consumer [%s]: no interceptor context and no "
-                "default workflow — dropping inbound event for %s",
-                source_label, remote_agent_id,
-            )
-            return None
-        logger.warning(
-            "event_emitting_consumer [%s]: no valid interceptor context "
-            "— minting fresh correlation_id; inbound event will not correlate "
-            "with outbound. This is expected only for standalone consumer usage.",
-            source_label,
-        )
-        correlation_id = f"correlation://{uuid4()}"
-        instance_id = None
-        workflow_ctx = default_workflow_ctx
-        allocator = _RuntimeIdAllocator()
-
-    should_clear_ctx = False
-    if response_status in _TERMINAL_STATUSES:
-        if ictx is not None and len(ictx.remote_agent_ids) > 1:
-            async with _fan_out_lock:
-                completed_agent_ids.add(remote_agent_id)
-                if completed_agent_ids >= set(ictx.remote_agent_ids):
-                    should_clear_ctx = True
-                    logger.debug(
-                        "event_emitting_consumer [%s]: all %d remotes responded, "
-                        "clearing interceptor context.",
-                        source_label, len(ictx.remote_agent_ids),
-                    )
-        else:
-            should_clear_ctx = True
-
-    return correlation_id, instance_id, workflow_ctx, allocator, should_clear_ctx
 
 
 # ---------------------------------------------------------------------------
@@ -801,32 +714,58 @@ def make_event_emitting_consumer(
         agent_id = agent_id_from_card(agent_card) or "unknown"
         active_transport = agent_card.preferred_transport or "Transport"
 
-        completed_agent_ids = _completed_agent_ids_ctx.get()
-        if completed_agent_ids is None:
-            completed_agent_ids = set()
-            _completed_agent_ids_ctx.set(completed_agent_ids)
-
-        remote_agent_id = await _resolve_fan_out_remote_agent_id(
-            agent_id,
-            event,
-            completed_agent_ids,
+        # Look up interaction state by the active OTel trace_id. Both the
+        # interceptor and this consumer run under the same tool-wrapping span,
+        # so they share a trace_id. Eviction happens in
+        # _InFlightCleanupSpanProcessor.on_end when that span ends — no
+        # response counting, no terminal-state inference.
+        trace_id_int = _current_trace_id()
+        span_id_int = (
+            _otel_trace.get_current_span().get_span_context().span_id
+            if trace_id_int is not None else None
         )
 
-        response_status: TaskState | None = None
+        state: _InterceptionState | None = None
+        if trace_id_int is not None:
+            state = _in_flight.get(trace_id_int)
 
+        # Prefer metadata remote name; fallback to consumer's agent card name.
+        remote_agent_id = (
+            _extract_remote_agent_id_from_event(event)
+            or agent_id
+        )
+
+        if state is not None:
+            correlation_id = state.correlation_id
+            instance_id: str | None = state.instance_id
+            workflow_ctx = state.workflow_ctx
+            allocator = state.allocator
+        else:
+            if _default_workflow_ctx is None:
+                logger.warning(
+                    "event_emitting_consumer [%s]: no in-flight state for trace_id=%s "
+                    "and no default workflow — dropping inbound event for %s",
+                    _source,
+                    _format_trace_id(trace_id_int) if trace_id_int else "none",
+                    remote_agent_id,
+                )
+                return
+            logger.warning(
+                "event_emitting_consumer [%s]: no in-flight state for trace_id=%s "
+                "— minting fresh correlation_id; inbound event will not correlate "
+                "with outbound. Expected only for standalone consumer usage.",
+                _source,
+                _format_trace_id(trace_id_int) if trace_id_int else "none",
+            )
+            correlation_id = f"correlation://{uuid4()}"
+            instance_id = None
+            workflow_ctx = _default_workflow_ctx
+            allocator = _RuntimeIdAllocator()
+
+        response_status: TaskState | None = None
         task_obj = _extract_task_from_client_event(event)
         if task_obj and task_obj.status and task_obj.status.state:
             response_status = task_obj.status.state
-
-        resolved = await _resolve_consumer_context(
-            remote_agent_id, active_transport, response_status,
-            source_label=_source,
-            default_workflow_ctx=_default_workflow_ctx,
-            completed_agent_ids=completed_agent_ids,
-        )
-        if resolved is None:
-            return
-        correlation_id, instance_id, workflow_ctx, allocator, should_clear_ctx = resolved
 
         topology = await _inbound_topology(
             caller_agent_id, remote_agent_id,
@@ -844,6 +783,8 @@ def make_event_emitting_consumer(
             topology=topology,
             correlation_id=correlation_id,
             correlation_message=f"response from {remote_agent_id}, status={status_label}",
+            trace_id=trace_id_int,
+            span_id=span_id_int,
         )
 
         if event_sink:
@@ -858,10 +799,6 @@ def make_event_emitting_consumer(
                 monotonic() - t_receive_start,
                 event_obj.model_dump_json(indent=2, exclude_none=True),
             )
-
-        if should_clear_ctx and _interceptor_ctx.get() is not None:
-            _completed_agent_ids_ctx.set(None)
-            _interceptor_ctx.set(None)
 
     return event_emitting_consumer
 
