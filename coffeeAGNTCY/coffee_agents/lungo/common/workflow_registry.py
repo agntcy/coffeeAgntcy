@@ -1,18 +1,7 @@
 # Copyright AGNTCY Contributors (https://github.com/agntcy)
 # SPDX-License-Identifier: Apache-2.0
 
-"""Workflow catalog, tool registration, and resolution helpers.
-
-This module centralizes how tools map to workflow catalog entries from
-``api/agentic_workflows/starting_workflows.json``.
-
-Main entry points:
-
-- ``@register_workflow(workflow_name)`` to bind tools to catalog workflows.
-- ``workflow_names()`` to access generated workflow-name constants.
-- ``make_tool_call_context(...)`` to build a consistent ``"tool"`` context.
-- ``get_workflow_registry()`` to access the shared, validated registry.
-"""
+"""Workflow catalog loading, tool registration, and workflow resolution."""
 
 from __future__ import annotations
 
@@ -33,15 +22,7 @@ from common.a2a_event_middleware import WorkflowIdentity
 logger = logging.getLogger("lungo.common.workflow_registry")
 
 
-# ---------------------------------------------------------------------------
 # Catalog source
-# ---------------------------------------------------------------------------
-# The catalog is read directly from starting_workflows.json so this module has
-# no runtime dependency on api.agentic_workflows (which may not be importable
-# from every entrypoint — e.g. tool-only consumers, tests, scripts run from a
-# different CWD, or environments where another 'api' namespace shadows the
-# local package). The JSON is the single source of truth; only the three
-# identity fields (name, pattern, use_case) are consumed here.
 _DEFAULT_WORKFLOWS_JSON = (
     Path(__file__).resolve().parents[1]
     / "api" / "agentic_workflows" / "starting_workflows.json"
@@ -49,23 +30,13 @@ _DEFAULT_WORKFLOWS_JSON = (
 
 
 def _workflows_json_path() -> Path:
-    """Return the path to starting_workflows.json, honouring the env override."""
+    """Return the catalog path, honoring ``LUNGO_WORKFLOWS_JSON``."""
     override = os.getenv("LUNGO_WORKFLOWS_JSON")
     return Path(override) if override else _DEFAULT_WORKFLOWS_JSON
 
 
-# ---------------------------------------------------------------------------
-# Tool identity
-# ---------------------------------------------------------------------------
-
 def _tool_identity_key(obj: Any) -> str:
-    """Return a stable string key for a tool object.
-
-    Probes ``StructuredTool.name`` → ``__name__`` → ``__wrapped__.__name__``
-    so the same key is used whether the caller passes a plain async
-    function, a ``@tool``-wrapped ``StructuredTool``, or anything
-    ``functools.wraps``-wrapped.
-    """
+    """Return a stable tool key from common callable wrapper attributes."""
     key = (
         getattr(obj, "name", None)
         or getattr(obj, "__name__", None)
@@ -76,12 +47,8 @@ def _tool_identity_key(obj: Any) -> str:
     return key
 
 
-# ---------------------------------------------------------------------------
-# Generated WorkflowNames constants
-# ---------------------------------------------------------------------------
-
 def _slugify_const(name: str) -> str:
-    """Workflow name → Python-safe uppercase identifier."""
+    """Convert workflow name to a Python-safe uppercase constant."""
     s = re.sub(r"[^0-9A-Za-z]+", "_", name).strip("_").upper()
     if not s:
         return "WF_UNKNOWN"
@@ -91,7 +58,7 @@ def _slugify_const(name: str) -> str:
 
 
 def _build_workflow_names(catalog: dict[str, WorkflowIdentity]) -> SimpleNamespace:
-    """Build a ``SimpleNamespace`` of uppercase-slug → workflow name."""
+    """Build ``WorkflowNames`` as uppercase constant name -> workflow name."""
     ns: dict[str, str] = {}
     for wf_name in catalog:
         const = _slugify_const(wf_name)
@@ -104,39 +71,20 @@ def _build_workflow_names(catalog: dict[str, WorkflowIdentity]) -> SimpleNamespa
     return SimpleNamespace(**ns)
 
 
-# Populated by get_workflow_registry() on first call.
 WorkflowNames: SimpleNamespace = SimpleNamespace()
 
 
 def workflow_names() -> SimpleNamespace:
-    """Return the generated ``WorkflowNames`` namespace.
-
-    Hydrates the catalog if it has not been loaded yet. Prefer this over
-    importing :data:`WorkflowNames` directly so call sites always see the
-    populated namespace regardless of module-import order.
-    """
+    """Return generated workflow name constants, hydrating registry if needed."""
     get_workflow_registry()
     return WorkflowNames
 
-
-# ---------------------------------------------------------------------------
-# Registration state
-# ---------------------------------------------------------------------------
 
 _TOOL_WORKFLOW_MAP: dict[str, str] = {}
 
 
 def register_workflow(workflow_name: str):
-    """Decorator that registers a tool against a catalog workflow name.
-
-    Validates *workflow_name* against the catalog eagerly so typos — or
-    any fallback to a raw string — fail at import time rather than at
-    first tool call. The decorator is a pass-through: it does not wrap
-    or replace the decorated object, so stacked decorators such as
-    ``@tool`` and ``@ioa_tool_decorator`` behave identically to an
-    unregistered tool.
-    """
-    # Eager validation against the catalog — raises KeyError on typo.
+    """Decorator: map a tool object to a catalog workflow name."""
     get_workflow_registry().get(workflow_name)
 
     def decorator(obj):
@@ -154,33 +102,20 @@ def register_workflow(workflow_name: str):
 
 
 def make_tool_call_context(tool_obj: Any, **extra: Any) -> ClientCallContext:
-    """Build a ``ClientCallContext`` whose ``"tool"`` state matches registration.
-
-    Use this at every A2A call site instead of constructing
-    ``ClientCallContext`` inline so the registration key and the lookup
-    key share one derivation path.
-    """
+    """Build a ``ClientCallContext`` with the normalized tool key."""
     return ClientCallContext(state={"tool": _tool_identity_key(tool_obj), **extra})
 
 
-# ---------------------------------------------------------------------------
-# Registration / resolution primitives
-# ---------------------------------------------------------------------------
-
 @dataclass(frozen=True)
 class WorkflowRegistration:
-    """Per-supervisor registration of tool-specific workflows.
-
-    ``default_workflow_name`` is optional. Supervisors may register every
-    tool explicitly when they can initiate several unrelated workflows.
-    """
+    """Tool-to-workflow mapping plus optional resolver default."""
 
     tool_workflow_map: dict[str, str] = field(default_factory=dict)
     default_workflow_name: str | None = None
 
 
 class WorkflowRegistry:
-    """Lookup validated workflow metadata by workflow name."""
+    """Lookup workflow metadata by name."""
 
     def __init__(self, workflows_by_name: dict[str, WorkflowIdentity]) -> None:
         if not workflows_by_name:
@@ -188,27 +123,15 @@ class WorkflowRegistry:
         self._workflows_by_name = dict(workflows_by_name)
 
     def get(self, workflow_name: str) -> WorkflowIdentity:
-        """Return workflow metadata for *workflow_name* or raise."""
+        """Return metadata for ``workflow_name`` or raise ``KeyError``."""
         try:
             return self._workflows_by_name[workflow_name]
         except KeyError as exc:
             raise KeyError(f"Unknown workflow name: {workflow_name}") from exc
 
-    def validate_registration(self, registration: WorkflowRegistration) -> None:
-        """Ensure every registered workflow name exists in the catalog."""
-        if not registration.tool_workflow_map and registration.default_workflow_name is None:
-            raise ValueError(
-                "WorkflowRegistration must declare at least one tool workflow "
-                "or a default_workflow_name"
-            )
-        if registration.default_workflow_name is not None:
-            self.get(registration.default_workflow_name)
-        for workflow_name in registration.tool_workflow_map.values():
-            self.get(workflow_name)
-
 
 class ToolWorkflowResolver:
-    """Resolve tool names to catalog workflow metadata."""
+    """Resolve tool names to workflow metadata."""
 
     def __init__(
         self,
@@ -216,18 +139,30 @@ class ToolWorkflowResolver:
         registry: WorkflowRegistry,
         registration: WorkflowRegistration,
     ) -> None:
-        registry.validate_registration(registration)
+        self._validate_registration(registry, registration)
         self._registry = registry
         self._registration = registration
 
-    def resolve(self, tool_name: str | None) -> WorkflowIdentity:
-        """Resolve the workflow for *tool_name*.
+    @staticmethod
+    def _validate_registration(
+        registry: WorkflowRegistry,
+        registration: WorkflowRegistration,
+    ) -> None:
+        if not registration.tool_workflow_map and registration.default_workflow_name is None:
+            raise ValueError(
+                "WorkflowRegistration must declare at least one tool workflow "
+                "or a default_workflow_name"
+            )
+        if registration.default_workflow_name is not None:
+            registry.get(registration.default_workflow_name)
+        for workflow_name in registration.tool_workflow_map.values():
+            registry.get(workflow_name)
 
-        Exact tool registration wins. Unknown tools only fall back when an
-        explicit supervisor default is configured.
-        """
-        if tool_name and tool_name in self._registration.tool_workflow_map:
-            return self._registry.get(self._registration.tool_workflow_map[tool_name])
+    def resolve(self, tool_name: str | None) -> WorkflowIdentity:
+        """Resolve a tool name to workflow metadata."""
+        mapping = self._registration.tool_workflow_map
+        if tool_name and tool_name in mapping:
+            return self._registry.get(mapping[tool_name])
 
         if self._registration.default_workflow_name is not None:
             if tool_name:
@@ -247,12 +182,7 @@ class ToolWorkflowResolver:
 def build_registration_from_decorators(
     *, default_workflow_name: str | None = None,
 ) -> WorkflowRegistration:
-    """Snapshot the decorator-collected tool map into a ``WorkflowRegistration``.
-
-    Call after all tool modules have been imported. Raises
-    :class:`RuntimeError` if the map is empty, catching refactors that
-    accidentally build the resolver before the tools are defined.
-    """
+    """Snapshot current ``@register_workflow`` registrations."""
     if not _TOOL_WORKFLOW_MAP:
         raise RuntimeError(
             "No tools registered via @register_workflow. "
@@ -264,18 +194,9 @@ def build_registration_from_decorators(
     )
 
 
-# ---------------------------------------------------------------------------
-# Catalog hydration
-# ---------------------------------------------------------------------------
-
 @lru_cache(maxsize=1)
 def get_workflow_registry() -> WorkflowRegistry:
-    """Return the shared workflow registry, hydrated from the JSON catalog.
-
-    Reads ``starting_workflows.json`` directly (single source of truth) and
-    populates :data:`WorkflowNames` on first call. The path can be overridden
-    via the ``LUNGO_WORKFLOWS_JSON`` environment variable (useful for tests).
-    """
+    """Load and cache the workflow registry from JSON catalog."""
     path = _workflows_json_path()
     if not path.is_file():
         raise FileNotFoundError(f"Starting workflows data file not found: {path}")
