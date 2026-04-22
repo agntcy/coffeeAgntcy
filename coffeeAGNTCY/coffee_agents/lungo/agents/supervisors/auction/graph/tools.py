@@ -191,16 +191,6 @@ async def get_farm_yield_inventory(prompt: str, farm: str) -> str:
 
     try:
         card = copy.deepcopy(card)
-        # Workaround: ioa-observe-sdk instruments SRPCTransport.send_message_streaming
-        # with a coroutine wrapper instead of an async generator, causing TypeError.
-        # Commented out — not needed here since card.capabilities.streaming defaults
-        # to the server value. Re-enable if tracing is on and streaming breaks.
-        # See: https://github.com/agntcy/observe/issues/114
-        if card.capabilities is None:
-            from a2a.types import AgentCapabilities
-            card.capabilities = AgentCapabilities(streaming=False)
-        else:
-            card.capabilities.streaming = False
 
         client = await a2a_client_factory.create(card)
 
@@ -438,16 +428,6 @@ async def create_order(farm: str, quantity: int, price: float) -> str:
 
     try:
         card = copy.deepcopy(card)  # avoid mutating the singleton card
-        # Workaround: ioa-observe-sdk instruments SRPCTransport.send_message_streaming
-        # with a coroutine wrapper (return await) instead of an async generator
-        # (async for/yield), causing "TypeError: 'coroutine' object is not an
-        # async iterator". Force the non-streaming path until fixed upstream.
-        # See: https://github.com/agntcy/observe/issues/114
-        if card.capabilities is None:
-            from a2a.types import AgentCapabilities
-            card.capabilities = AgentCapabilities(streaming=False)
-        else:
-            card.capabilities.streaming = False
 
         client = await a2a_client_factory.create(card)
 
@@ -497,17 +477,6 @@ async def get_order_details(order_id: str) -> str:
         card = copy.deepcopy(farm_registry.cards()[0]) # avoid mutating the singleton card
         # override preferred transport to ensure direct communication for order creation
         card.preferred_transport = InterfaceTransport.SLIM_RPC
-
-        # Workaround: ioa-observe-sdk instruments SRPCTransport.send_message_streaming
-        # with a coroutine wrapper instead of an async generator, causing TypeError.
-        # Commented out — not needed here since card.capabilities.streaming defaults
-        # to the server value. Re-enable if tracing is on and streaming breaks.
-        # See: https://github.com/agntcy/observe/issues/114
-        if card.capabilities is None:
-            from a2a.types import AgentCapabilities
-            card.capabilities = AgentCapabilities(streaming=False)
-        else:
-            card.capabilities.streaming = False
 
         client = await a2a_client_factory.create(card)
 
