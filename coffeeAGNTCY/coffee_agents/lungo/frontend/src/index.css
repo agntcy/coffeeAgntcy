@@ -201,10 +201,6 @@
     content: var(--agent-directory-icon);
   }
 
-  body[data-theme="light"] .chat-avatar-container {
-    background-color: #187adc;
-  }
-
   body[data-theme="light"] .bg-node-background-active .text-node-text-primary {
     color: #ffffff;
   }

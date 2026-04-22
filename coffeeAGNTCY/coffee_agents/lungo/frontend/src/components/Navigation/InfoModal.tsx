@@ -100,11 +100,7 @@ const InfoModal: React.FC<InfoModalProps> = ({ isOpen, onClose }) => {
                 <Typography component="span" variant="body2">
                   Release Version:
                 </Typography>
-                <Typography
-                  component="span"
-                  variant="body2"
-                  color="var(--modal-accent)"
-                >
+                <Typography component="span" variant="body2">
                   {info?.version ?? "…"}
                 </Typography>
               </Stack>
@@ -130,14 +126,7 @@ const InfoModal: React.FC<InfoModalProps> = ({ isOpen, onClose }) => {
           </Stack>
 
           <Stack spacing={2}>
-            <Typography
-              variant="h6"
-              sx={{
-                color: "var(--modal-text)",
-              }}
-            >
-              Dependencies:
-            </Typography>
+            <Typography variant="h6">Dependencies:</Typography>
             <Stack spacing={1}>
               {info?.dependencies &&
                 Object.entries(info.dependencies).map(([name, ver]) => (
@@ -152,24 +141,16 @@ const InfoModal: React.FC<InfoModalProps> = ({ isOpen, onClose }) => {
                     <Typography component="span" variant="body2">
                       {name}:
                     </Typography>
-                    <Typography
-                      component="span"
-                      variant="body2"
-                      sx={{
-                        color: "var(--modal-accent)",
-                      }}
-                    >
+                    <Typography component="span" variant="body2">
                       {ver}
                     </Typography>
                   </Stack>
                 ))}
               {!info?.dependencies && !error && (
-                <Typography variant="body2" color="var(--modal-text-secondary)">
-                  Loading…
-                </Typography>
+                <Typography variant="body2">Loading...</Typography>
               )}
               {!info?.dependencies && error && (
-                <Typography variant="body2" color="var(--modal-text-secondary)">
+                <Typography color="error" variant="body2">
                   No dependency info
                 </Typography>
               )}

@@ -13,7 +13,6 @@ import { useTheme } from "@/hooks/useTheme"
 import InfoModal from "./InfoModal"
 
 const navIconButtonSx: SxProps<Theme> = () => ({
-  color: "var(--nav-text)",
   "&:hover": {
     opacity: 0.85,
     backgroundColor: "transparent",
@@ -78,11 +77,6 @@ const Navigation: React.FC = () => {
             </Tooltip>
           </Stack>
         }
-        sx={{
-          backgroundColor: isLightMode
-            ? "var(--nav-background)"
-            : "var(--nav-background-secondary)",
-        }}
       />
 
       <InfoModal isOpen={isModalOpen} onClose={handleCloseModal} />

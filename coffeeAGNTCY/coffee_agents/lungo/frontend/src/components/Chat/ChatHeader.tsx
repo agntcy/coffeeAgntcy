@@ -43,7 +43,7 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({
         justifyContent: "flex-end",
         px: { xs: 1, sm: 2, md: 4, lg: 2 },
         py: 1,
-        borderBottom: "1px solid var(--control-border-weak)",
+        borderBottom: "1px solid #23282e",
       }}
     >
       <Stack direction="row" alignItems="center" spacing={1}>
