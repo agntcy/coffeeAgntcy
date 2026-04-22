@@ -34,6 +34,13 @@ load_dotenv()
 shared.set_factory(AgntcyFactory("lungo.logistics_supervisor", enable_tracing=not OTEL_SDK_DISABLED))
 require_streaming_capability("logistics_supervisor", LLM_MODEL)
 
+# Register the middleware cleanup SpanProcessor after the factory has
+# initialized the OTel TracerProvider. This hook evicts per-trace state
+# from a2a_event_middleware._in_flight when the caller's tool span ends.
+if not OTEL_SDK_DISABLED:
+    from common.a2a_event_middleware import register_cleanup_span_processor
+    register_cleanup_span_processor()
+
 
 def _build_graph_sync():
     from agents.supervisors.logistics.graph.graph import LogisticGraph
