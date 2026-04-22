@@ -28,7 +28,18 @@ from agents.supervisors.recruiter.models import (
     AgentProtocol,
     AgentRecord,
 )
+from agents.supervisors.recruiter.recruiter_client import (
+    _event_consumer,
+    _event_interceptor,
+)
 from agents.supervisors.recruiter.shared import a2a_client_factory
+from common.workflow_registry import (
+    make_tool_call_context,
+    register_workflow,
+    workflow_names,
+)
+
+WorkflowNames = workflow_names()
 
 logger = logging.getLogger("lungo.recruiter.supervisor.dynamic_workflow")
 
@@ -43,6 +54,7 @@ class DynamicWorkflowAgent(BaseAgent):
 
     RESULT_STATE_PREFIX: ClassVar[str] = "dynamic_workflow_result_"
 
+    @register_workflow(WorkflowNames.ON_DEMAND_DISCOVERY)
     async def _send_a2a_message(
         self, card: AgentCard, message: str, agent_name: str
     ) -> str:
@@ -62,11 +74,16 @@ class DynamicWorkflowAgent(BaseAgent):
         )
 
         # negotiate and create the client based on the card's preferred transport
-        client = await a2a_client_factory.create(card)
+        client = await a2a_client_factory.create(
+            card,
+            interceptors=[_event_interceptor],
+            consumers=[_event_consumer],
+        )
 
         try:
             result_text = None
-            async for response in client.send_message(a2a_message):
+            ctx = make_tool_call_context(DynamicWorkflowAgent._send_a2a_message)
+            async for response in client.send_message(a2a_message, context=ctx):
                 logger.info(
                     "[agent:dynamic_workflow] Response received from %s: %s",
                     agent_name,
