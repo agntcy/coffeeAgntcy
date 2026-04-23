@@ -175,7 +175,7 @@ class TestRecruitAgents:
         # Mock the A2A client to yield our fake message
         mock_client = AsyncMock()
 
-        async def fake_send_message(msg):
+        async def fake_send_message(msg, context=None):
             yield response_message
 
         mock_client.send_message = fake_send_message
@@ -220,7 +220,7 @@ class TestRecruitAgents:
 
         mock_client = AsyncMock()
 
-        async def fake_send_message(msg):
+        async def fake_send_message(msg, context=None):
             yield response_message
 
         mock_client.send_message = fake_send_message
@@ -257,7 +257,7 @@ class TestRecruitAgents:
 
         mock_client = AsyncMock()
 
-        async def fake_send_message(msg):
+        async def fake_send_message(msg, context=None):
             yield response_message
 
         mock_client.send_message = fake_send_message
@@ -306,7 +306,7 @@ class TestRecruitAgents:
 
         mock_client = AsyncMock()
 
-        async def fake_send_message(msg):
+        async def fake_send_message(msg, context=None):
             yield (task, None)
 
         mock_client.send_message = fake_send_message
