@@ -856,6 +856,7 @@ class WorkflowAPIEventSink(EventSink):
             )
             return
 
+        # Strip "instance://" prefix to keep URLs concise; the API expects UUID-shaped IDs.
         instance_uuid = instance_id
         if instance_uuid.startswith(self._INSTANCE_ID_PREFIX):
             instance_uuid = instance_uuid[len(self._INSTANCE_ID_PREFIX):]
