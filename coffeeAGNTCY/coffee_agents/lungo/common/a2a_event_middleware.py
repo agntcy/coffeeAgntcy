@@ -79,7 +79,11 @@ WorkflowResolver = Callable[[str | None], WorkflowIdentity]
 
 _SCHEMA_VERSION = "1.0.0"
 
-_CORRELATION_NS = _uuid_mod.uuid5(_uuid_mod.NAMESPACE_DNS, "lungo.correlation")
+# Stable namespace for deterministic workflow instance IDs.
+# Using uuid5(namespace, "<trace_id_hex>::<workflow_name>") ensures:
+# - same trace/workflow -> same UUID-shaped instance_id
+# - different workflow (or trace) -> different instance_id
+_INSTANCE_ID_NS = _uuid_mod.uuid5(_uuid_mod.NAMESPACE_DNS, "lungo.instance_id")
 
 def _init_starting_topology() -> Topology:
     return Topology(nodes=[], edges=[])
@@ -530,7 +534,7 @@ class EventEmittingInterceptor(ClientCallInterceptor):
         instance_id = (
             ctx_state.get("instance_id")
             or (
-                f"instance://{_uuid_mod.uuid5(_CORRELATION_NS, f'{trace_id_int:032x}::{workflow_ctx.workflow_name}')}"
+                f"instance://{_uuid_mod.uuid5(_INSTANCE_ID_NS, f'{trace_id_int:032x}::{workflow_ctx.workflow_name}')}"
                 if trace_id_int else None
             )
             or f"instance://{uuid4()}"
