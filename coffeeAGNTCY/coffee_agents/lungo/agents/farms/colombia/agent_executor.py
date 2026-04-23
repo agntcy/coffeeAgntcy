@@ -17,9 +17,6 @@ from a2a.types import (
     Part,
     TextPart,
     Task)
-from a2a.utils import (
-    new_task,
-)
 
 from agents.farms.colombia.agent import FarmAgent
 from agents.farms.colombia.card import AGENT_CARD
@@ -67,10 +64,6 @@ class FarmAgentExecutor(AgentExecutor):
             return
         
         prompt = context.get_user_input()
-        task = context.current_task
-        if not task:
-            task = new_task(context.message)
-            await event_queue.enqueue_event(task)
 
         try:
             output = await self.agent.ainvoke(prompt)
