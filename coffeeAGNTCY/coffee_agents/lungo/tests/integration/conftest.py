@@ -21,6 +21,7 @@ from fastapi.testclient import TestClient
 from tests.integration.docker_helpers import up, down, remove_container_if_exists
 
 from tests.integration.process_helper import ProcessRunner
+import config.config # noqa: F401 # Note: imports config.config to set environment variables.
 
 LUNGO_DIR = Path(__file__).resolve().parents[2]
 
@@ -74,16 +75,8 @@ def _base_env():
         "OTEL_SDK_DISABLED": os.environ.get("OTEL_SDK_DISABLED", "false"),
         "PYTHONUNBUFFERED": "1",
         "PYTHONFAULTHANDLER": "1",
-        # Host-published ports from docker-compose (session slim/nats); override in CI if needed.
-        "SLIM_SERVER": os.environ.get("SLIM_SERVER", "127.0.0.1:46357"),
-        "NATS_SERVER": os.environ.get("NATS_SERVER", "127.0.0.1:4222"),
-        "DEFAULT_MESSAGE_TRANSPORT": os.environ.get("DEFAULT_MESSAGE_TRANSPORT", "SLIM"),
         "TRANSPORT_SERVER_ENDPOINT": os.environ.get(
             "TRANSPORT_SERVER_ENDPOINT", "http://127.0.0.1:46357"
-        ),
-        "SLIM_SHARED_SECRET": os.environ.get(
-            "SLIM_SHARED_SECRET",
-            os.environ.get("SLIM_GATEWAY_PASSWORD", "dummy_password"),
         ),
     }
 
