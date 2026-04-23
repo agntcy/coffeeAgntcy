@@ -13,6 +13,10 @@ from langgraph.graph import StateGraph, END
 from langgraph.prebuilt import ToolNode
 from ioa_observe.sdk.decorators import agent, graph
 
+from agents.supervisors.auction.graph.a2a_retry import (
+    RemoteAgentNoResponseError,
+    TransportTimeoutError,
+)
 from agents.supervisors.auction.graph.tools import (
     get_farm_yield_inventory,
     get_all_farms_yield_inventory_streaming,
@@ -24,6 +28,88 @@ from agents.supervisors.auction.graph.shared import farm_registry
 from common.llm import get_llm
 
 logger = logging.getLogger("lungo.supervisor.graph")
+
+_SUPERVISOR_OUTCOME_KEY = "supervisor_outcome"
+_OUTCOME_TRANSPORT = "transport"
+_OUTCOME_PERMISSION = "permission"
+_SUPERVISOR_FARM_KEY = "supervisor_farm"
+_SUPERVISOR_OPERATION_KEY = "supervisor_operation"
+
+
+def _caused_by_transport(exc: BaseException) -> bool:
+    """True if exc or its __cause__/__context__ chain includes a transport timeout or no-response."""
+    seen: set[int] = set()
+    stack = [exc]
+    while stack:
+        e = stack.pop()
+        eid = id(e)
+        if eid in seen:
+            continue
+        seen.add(eid)
+        if isinstance(e, (TransportTimeoutError, RemoteAgentNoResponseError)):
+            return True
+        if e.__cause__ is not None:
+            stack.append(e.__cause__)
+        ctx = getattr(e, "__context__", None)
+        if ctx is not None and ctx is not e.__cause__:
+            stack.append(ctx)
+    return False
+
+
+_KNOWN_FARMS = ("colombia", "brazil", "vietnam")
+_PAYMENT_OPERATION_TERMS = ("transaction", "payment")
+_PERMISSION_FALLBACK_MESSAGE = "Authentication or authorization failed. Please check your credentials."
+
+
+def _ai_message_content_lower(last_msg: AIMessage) -> str:
+    content = last_msg.content
+    return content.lower() if isinstance(content, str) else ""
+
+
+def _first_matching_term(content_lower: str, terms: tuple[str, ...]) -> str | None:
+    for term in terms:
+        if term in content_lower:
+            return term
+    return None
+
+
+def _resolve_farm_display(farm_kw: object | None, content_lower: str) -> str | None:
+    if farm_kw:
+        return str(farm_kw).title()
+    hit = _first_matching_term(content_lower, _KNOWN_FARMS)
+    return hit.title() if hit else None
+
+
+def _resolve_payment_operation_keyword(operation_kw: object | None, content_lower: str) -> str | None:
+    if operation_kw:
+        return str(operation_kw)
+    return _first_matching_term(content_lower, _PAYMENT_OPERATION_TERMS)
+
+
+def _permission_farm_message(farm_display: str) -> str:
+    return (
+        f"The supervisor agent doesn't have permission to access the {farm_display} farm. "
+        "Please verify your access credentials."
+    )
+
+
+def _permission_operation_message(operation: str) -> str:
+    return (
+        f"Not authorized to perform '{operation}' operation through the Payment MCP service. "
+        "Please verify your farm credentials."
+    )
+
+
+def _build_permission_user_message(kw: dict, last_msg: AIMessage) -> str:
+    content_lower = _ai_message_content_lower(last_msg)
+    operation = _resolve_payment_operation_keyword(kw.get(_SUPERVISOR_OPERATION_KEY), content_lower)
+    if operation:
+        return _permission_operation_message(operation)
+    farm_display = _resolve_farm_display(kw.get(_SUPERVISOR_FARM_KEY), content_lower)
+    if farm_display:
+        return _permission_farm_message(farm_display)
+    return _PERMISSION_FALLBACK_MESSAGE
+
 
 class NodeStates:
     SUPERVISOR = "exchange_supervisor"
@@ -208,23 +294,19 @@ class ExchangeGraph:
         should_continue = response.should_continue and not is_duplicate_message
         next_node = NodeStates.SUPERVISOR if should_continue else END
 
-        if next_node == END and any(keyword in response.reason.lower() for keyword in ["auth", "access", "permission", "identity"]):
-
-            err_msg = "Authentication or authorization failed. Please check your credentials and try again."
-            for farm in farm_registry:
-                if farm in state["messages"][-1].content.lower():
-                    err_msg = f"The supervisor agent doesn't have permission to access the {farm.title()} farm. Please verify your access credentials and try again."
-                    break
-
-            for keyword in ["transaction", "payment"]:
-                if keyword in state["messages"][-1].content.lower():
-                    err_msg = f"Not authorized to perform '{keyword}' operation through the Payment MCP service. Please verify your farm credentials and try again."
-                    break
-
-            return {
-                "next_node": END,
-                "messages": [AIMessage(content=err_msg)],
-            }
+        last_msg = state["messages"][-1]
+        if next_node == END and isinstance(last_msg, AIMessage):
+            outcome = (last_msg.additional_kwargs or {}).get(_SUPERVISOR_OUTCOME_KEY)
+            if outcome == _OUTCOME_PERMISSION:
+                kw = last_msg.additional_kwargs or {}
+                err_msg = _build_permission_user_message(kw, last_msg)
+                original = last_msg.content if isinstance(last_msg.content, str) else str(last_msg.content or "")
+                original = original.strip()
+                combined = f"{err_msg} Issue details: {original}"
+                return {
+                    "next_node": END,
+                    "messages": [AIMessage(content=combined)],
+                }
 
         logging.info(f"Next node: {next_node}, Reason: {response.reason}")
 
@@ -295,7 +377,10 @@ class ExchangeGraph:
         except Exception as e:
             logger.error(f"Error in single farm inventory node: {e}")
             error_message = f"I encountered an issue retrieving information from the {farm.title()} farm. Please try again later."
-            return {"messages": [AIMessage(content=error_message)]}
+            inv_kw = {}
+            if _caused_by_transport(e):
+                inv_kw[_SUPERVISOR_OUTCOME_KEY] = _OUTCOME_TRANSPORT
+            return {"messages": [AIMessage(content=error_message, additional_kwargs=inv_kw)]}
 
     async def _inventory_all_farms_node(self, state: GraphState) -> dict:
         """
@@ -357,7 +442,10 @@ class ExchangeGraph:
         except Exception as e:
             logger.error(f"Error in all farms inventory node: {e}")
             error_message = f"I encountered an issue retrieving information from the farms: {str(e)}. Please ensure all farm agents are running and try again."
-            yield {"messages": [AIMessage(content=error_message)]}
+            all_kw = {}
+            if _caused_by_transport(e):
+                all_kw[_SUPERVISOR_OUTCOME_KEY] = _OUTCOME_TRANSPORT
+            yield {"messages": [AIMessage(content=error_message, additional_kwargs=all_kw)]}
 
     async def _orders_node(self, state: GraphState) -> dict:
         """
@@ -463,15 +551,28 @@ class ExchangeGraph:
                 "An issue occurred for some parts. Please try again later."
             )
 
+            order_kw = {}
             if auth_failure:
-                forced_error_message = f"{auth_failure} Please try again later."
+                forced_error_message = auth_failure.strip()
+                order_kw[_SUPERVISOR_OUTCOME_KEY] = _OUTCOME_PERMISSION
+                uq = (user_msg.content or "").lower() if user_msg else ""
+                for farm_name in ("brazil", "colombia", "vietnam"):
+                    if farm_name in uq:
+                        order_kw[_SUPERVISOR_FARM_KEY] = farm_name
+                        break
+                hint = f"{auth_failure} {uq}"
+                for op in ("transaction", "payment"):
+                    if op in hint:
+                        order_kw[_SUPERVISOR_OPERATION_KEY] = op
+                        break
 
             llm_response = AIMessage(
                 content=forced_error_message,
                 tool_calls=[],
                 name=llm_response.name,
                 id=llm_response.id,
-                response_metadata=llm_response.response_metadata
+                response_metadata=llm_response.response_metadata,
+                additional_kwargs=order_kw,
             )
         # --- End Safety Net ---
 
