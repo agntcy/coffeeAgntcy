@@ -174,6 +174,12 @@ def orchestrate_session_services():
     try:
         _shutdown_otel_sdk()
     finally:
+        try:
+            from huggingface_hub.utils import close_session
+
+            close_session()
+        except Exception:
+            pass
         _teardown_session_docker()
 
 def setup_transports():
