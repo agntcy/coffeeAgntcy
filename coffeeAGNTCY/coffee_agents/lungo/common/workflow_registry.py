@@ -36,15 +36,24 @@ def _workflows_json_path() -> Path:
 
 
 def _tool_identity_key(obj: Any) -> str:
-    """Return a stable tool key from common callable wrapper attributes."""
-    key = (
+    """Return a stable tool key as ``<module>:<name>`` (or bare name if no module).
+
+    Namespacing by the defining module lets two supervisors legitimately register
+    tools that share a short name (e.g. ``create_order``) without colliding when
+    both modules are imported in the same process (notably pytest fixtures).
+    """
+    name = (
         getattr(obj, "name", None)
         or getattr(obj, "__name__", None)
         or getattr(getattr(obj, "__wrapped__", None), "__name__", None)
     )
-    if not isinstance(key, str) or not key:
+    if not isinstance(name, str) or not name:
         raise TypeError(f"Cannot derive tool identity key from {obj!r}")
-    return key
+    module = (
+        getattr(obj, "__module__", None)
+        or getattr(getattr(obj, "__wrapped__", None), "__module__", None)
+    )
+    return f"{module}:{name}" if module else name
 
 
 def _slugify_const(name: str) -> str:

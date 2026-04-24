@@ -140,8 +140,6 @@ class TestMakeToolCallContext:
             correlation_id="correlation://abc",
             broadcast_agent_cards=["card1"],
         )
-        assert ctx.state == {
-            "tool": "my_tool",
-            "correlation_id": "correlation://abc",
-            "broadcast_agent_cards": ["card1"],
-        }
+        assert ctx.state["tool"].endswith(":my_tool")
+        assert ctx.state["correlation_id"] == "correlation://abc"
+        assert ctx.state["broadcast_agent_cards"] == ["card1"]
