@@ -21,6 +21,7 @@ from fastapi.testclient import TestClient
 from tests.integration.docker_helpers import up, down, remove_container_if_exists
 
 from tests.integration.process_helper import ProcessRunner
+import config.config # noqa: F401 # Note: imports config.config to set environment variables.
 
 LUNGO_DIR = Path(__file__).resolve().parents[2]
 
@@ -67,15 +68,16 @@ _ACTIVE_RUNNERS = []
 
 def _base_env():
     # Use test env: SDK on so spans are recording (avoids NonRecordingSpan.attributes error).
-    otel_disabled = os.environ.get("OTEL_SDK_DISABLED", "false")
     return {
         **os.environ,
         "PYTHONPATH": str(LUNGO_DIR),
         "FARM_BROADCAST_TOPIC": "farm_broadcast",
-        "OTEL_SDK_DISABLED": "false",
+        "OTEL_SDK_DISABLED": os.environ.get("OTEL_SDK_DISABLED", "false"),
         "PYTHONUNBUFFERED": "1",
         "PYTHONFAULTHANDLER": "1",
-        "OTEL_SDK_DISABLED": str(otel_disabled),
+        "TRANSPORT_SERVER_ENDPOINT": os.environ.get(
+            "TRANSPORT_SERVER_ENDPOINT", "http://127.0.0.1:46357"
+        ),
     }
 
 def _purge_modules(prefixes, keep=None):

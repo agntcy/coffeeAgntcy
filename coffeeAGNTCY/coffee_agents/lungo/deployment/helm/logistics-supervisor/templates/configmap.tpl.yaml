@@ -10,5 +10,7 @@ data:
   LLM_MODEL: "{{ .Values.config.llmModel }}"
   TRANSPORT_SERVER_ENDPOINT: "{{ .Values.config.transportServerEndpoint }}"
   DEFAULT_MESSAGE_TRANSPORT: "{{ .Values.config.defaultMessageTransport }}"
+  SLIM_SERVER: "{{ .Values.config.slimServer }}"
+  NATS_SERVER: "{{ .Values.config.natsServer }}"
   OTLP_HTTP_ENDPOINT: "{{ .Values.config.otlpHttpEndpoint }}"
   EXPERIMENTAL_FEATURE: "{{ .Values.config.experimentalFeature }}"

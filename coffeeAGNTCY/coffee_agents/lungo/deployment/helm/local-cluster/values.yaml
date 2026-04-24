@@ -33,6 +33,10 @@ nats:
 weather-mcp-server:
   transportServerEndpoint: "nats://lungo-local-cluster-nats:4222"
   defaultMessageTransport: "NATS"
+  slimServer: "lungo-local-cluster-slim:46357"
+  natsServer: "lungo-local-cluster-nats:4222"
+  # Set via CI/helmfile or leave empty if using image default from config.config for dev only.
+  slimSharedSecret: ""
   otlpHttpEndpoint: "http://lungo-local-cluster-opentelemetry-collector:4318"
 
 agentic-workflows-api:
@@ -75,3 +79,8 @@ lungo-ui:
     logisticsAppApiUrl: "http://localhost:30081"
     discoveryAppApiUrl: "http://localhost:30082"
     agenticWorkflowsApiUrl: "http://localhost:30083"
+
+# Populated by helmfile / config-overrides.yaml.gotmpl for local dev; defaults avoid nil when templating alone.
+localExternalSecret:
+  azureApiKey: ""
+  slimSharedSecret: "dummy_password"

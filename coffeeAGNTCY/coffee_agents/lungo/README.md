@@ -43,10 +43,10 @@ One notable component is the **Colombia Farm**, which functions as an **MCP clie
 
 You can run Lungo in three ways:
 
-1. **Local Python**  
+1. **Local Python**
    Run each component directly on your machine.
 
-2. **Docker Compose**  
+2. **Docker Compose**
    Quickly spin up all components as containers using Docker Compose.
 
 3. **Local Kind Cluster**
@@ -56,14 +56,14 @@ You can run Lungo in three ways:
 
 Before you begin, ensure the following tools are installed:
 
-- **uv**: A Python package and environment manager.  
+- **uv**: A Python package and environment manager.
   Install via Homebrew:
 
   ```sh
   brew install uv
   ```
 
-- **Node.js** version **16.14.0 or higher**  
+- **Node.js** version **16.14.0 or higher**
   Check your version:
   ```sh
   node -v
@@ -73,25 +73,25 @@ Before you begin, ensure the following tools are installed:
 **Additional prerequisites for Kind deployment:**
 
 - **Docker**: Required to run kind clusters
-- **kind**: Kubernetes in Docker  
+- **kind**: Kubernetes in Docker
   Install via Homebrew:
 ```sh
   brew install kind
 ```
 
-- **kubectl**: Kubernetes command-line tool  
+- **kubectl**: Kubernetes command-line tool
   Install via Homebrew:
 ```sh
   brew install kubectl
 ```
 
-- **helm**: Kubernetes package manager  
+- **helm**: Kubernetes package manager
   Install via Homebrew:
 ```sh
   brew install helm
 ```
 
-- **helmfile**: Declarative Helm chart deployment  
+- **helmfile**: Declarative Helm chart deployment
   Install via Homebrew:
 ```sh
   brew install helmfile
@@ -101,7 +101,7 @@ Before you begin, ensure the following tools are installed:
 
 ### Setup Instructions
 
-1. **(Optional) Create a Virtual Environment**  
+1. **(Optional) Create a Virtual Environment**
    Initialize your virtual environment using `uv`:
 
    ```sh
@@ -109,7 +109,7 @@ Before you begin, ensure the following tools are installed:
    source .venv/bin/activate
    ```
 
-2. **Install Python Dependencies**  
+2. **Install Python Dependencies**
    Use `uv` to install all required dependencies:
 
    ```sh
@@ -123,7 +123,7 @@ Before you begin, ensure the following tools are installed:
    export PYTHONPATH=$(pwd)
    ```
 
-3. **Configure Environment Variables**  
+3. **Configure Environment Variables**
     Copy the example environment file:
 
    ```sh
@@ -224,15 +224,21 @@ OAUTH2_APP_KEY=<your_app_key> #optional
 
    **Optional: Configure Transport Layer**
 
-   You can also set the transport protocol and server endpoint by adding the following optional variables:
+   Lungo reads transport settings from `config/config.py`. The primary variables are:
 
    ```env
-   DEFAULT_MESSAGE_TRANSPORT=slim
-   TRANSPORT_SERVER_ENDPOINT=http://localhost:46357
+   DEFAULT_MESSAGE_TRANSPORT=SLIM
+   SLIM_SERVER=127.0.0.1:46357
+   NATS_SERVER=127.0.0.1:4222
+   SLIM_SHARED_SECRET=my_shared_secret_for_mls
    ```
 
-   - `DEFAULT_MESSAGE_TRANSPORT`: Defines the message transport protocol used for agent communication.
-   - `TRANSPORT_SERVER_ENDPOINT`: The gateway or server endpoint for the specified transport.
+   - `DEFAULT_MESSAGE_TRANSPORT`: `SLIM` or `NATS` (Docker Compose defaults to **SLIM**).
+   - `SLIM_SERVER`: Host and port for the SLIM dataplane only (no `http://` prefix); used in agent cards and RPC URLs.
+   - `NATS_SERVER`: Host and port for NATS; cards reference `nats://{NATS_SERVER}/...`.
+   - `SLIM_SHARED_SECRET`: Shared secret for the SLIM gateway.
+
+   For backward compatibility and tooling, you can still set `TRANSPORT_SERVER_ENDPOINT` (for example `http://localhost:46357` when using SLIM, or `nats://localhost:4222` when using NATS). Prefer keeping it consistent with `SLIM_SERVER` / `NATS_SERVER` and `DEFAULT_MESSAGE_TRANSPORT`.
 
    For a list of supported protocols and implementation details, see the [Agntcy App SDK README](https://github.com/agntcy/app-sdk). This SDK provides the underlying interfaces for building communication bridges and agent clients.
 
@@ -254,7 +260,7 @@ For advanced observability of your multi-agent system, integrate the [Observe SD
 
 - **To enable tracing for the Lungo multi-agent system:** Set `OTEL_SDK_DISABLED=false` in your environment (or in `.env`). The app derives `enable_tracing` from this; no code change is required.
 
-- **To start a new trace session for each prompt execution:**  
+- **To start a new trace session for each prompt execution:**
   Call `session_start()` at the beginning of each prompt execution to ensure each prompt trace is tracked as a new session:
 
   ```python
@@ -597,8 +603,8 @@ Observability requires both the `observability` profile (either in `COMPOSE_PROF
 
 #### Trace Visualization via Grafana
 
-1. **Access Grafana**  
-   Open your browser and go to [http://localhost:3001/](http://localhost:3001/).  
+1. **Access Grafana**
+   Open your browser and go to [http://localhost:3001/](http://localhost:3001/).
    Log in with the default admin credentials (username: `admin`, password: `admin` unless you changed it).
 
    ![Screenshot: Grafana Login](images/grafana_login.png)
@@ -619,7 +625,7 @@ Observability requires both the `observability` profile (either in `COMPOSE_PROF
 3. **Import the OTEL Traces Dashboard**
 
    - In the left sidebar, click on **"Dashboards" > "New" > "Import"**.
-   - Upload or paste the JSON definition for the OTEL traces dashboard, located here:  
+   - Upload or paste the JSON definition for the OTEL traces dashboard, located here:
      [`lungo_dashboard.json`](lungo_dashboard.json)
    - **When prompted, select `grafana-clickhouse-datasource` as the datasource.**
    - Click **"Import"** to add the dashboard.
@@ -650,7 +656,7 @@ If you encounter errors of querying the database, please ensure data linking fro
 To add a new farm agent to the system, follow the instructions in the [Farm_Agent.md](./docs/Farm_Agent.md) file.
 
 ---
- 
+
 #### Metrics Computation with AGNTCY's Metrics Computation Engine (MCE)
 
 Details about AGNTCY's MCE can be found in the Telemetry Hub repository: [Metrics Computation Engine](https://github.com/agntcy/telemetry-hub/tree/main/metrics_computation_engine)
@@ -725,9 +731,9 @@ Example request:
 ```
 
 > Note: this particular session was a result of the prompt: "I'd like to buy 200 lbs quantity of coffee at USD 500 price from Vietnam"
-> 
-> And agent response: 
-> 
+>
+> And agent response:
+>
 > "Your order for 200 lbs of coffee at USD 500 from Vietnam has been successfully created. Here are the details:
 >
 > - **Order ID:** 54321

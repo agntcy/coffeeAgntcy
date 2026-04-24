@@ -8,6 +8,10 @@ replicaCount: 1
 transportServerEndpoint: ""
 otlpHttpEndpoint: ""
 defaultMessageTransport: ""
+slimServer: ""
+natsServer: ""
+# When set, creates a Secret and mounts SLIM_SHARED_SECRET via valueFrom.
+slimSharedSecret: ""
 
 identityServiceApiKey: ""
 identityAuthEnabled: "false"

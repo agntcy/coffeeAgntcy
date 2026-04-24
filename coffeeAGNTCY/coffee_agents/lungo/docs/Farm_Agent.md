@@ -27,8 +27,13 @@ Messaging:
 The supervisor uses these environment variables (see `config/config.py`):
 
 ```env
-DEFAULT_MESSAGE_TRANSPORT=NATS            # or SLIM
-TRANSPORT_SERVER_ENDPOINT=nats://localhost:4222 # or http://localhost:46357
+# Primary knobs (see config/config.py)
+DEFAULT_MESSAGE_TRANSPORT=SLIM               # or NATS
+SLIM_SERVER=127.0.0.1:46357                  # host:port for SLIM dataplane (no http://)
+NATS_SERVER=127.0.0.1:4222                   # host:port for NATS (cards use nats://{NATS_SERVER}/...)
+SLIM_SHARED_SECRET=my_shared_secret_for_mls
+# Legacy / secondary (tooling, some docs); keep aligned with the mode above
+TRANSPORT_SERVER_ENDPOINT=http://127.0.0.1:46357   # or nats://127.0.0.1:4222 when using NATS
 FARM_BROADCAST_TOPIC=farm_broadcast_topic_name
 ```
 

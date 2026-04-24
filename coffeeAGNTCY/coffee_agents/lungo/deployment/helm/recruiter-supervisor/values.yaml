@@ -22,6 +22,9 @@ config:
   llmModel: ""
   defaultMessageTransport: ""
   transportServerEndpoint: ""
+  slimServer: ""
+  natsServer: ""
+  slimSharedSecret: ""
   otlpHttpEndpoint: ""
 
   # Identity SaaS Org-Level API

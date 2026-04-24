@@ -2,20 +2,10 @@
 # SPDX-License-Identifier: Apache-2.0
 
 from typing import Optional
-import os
 from agntcy_app_sdk.factory import AgntcyFactory
 from config.config import OTEL_SDK_DISABLED
-from config.config import (
-    SLIM_SERVER,
-    NATS_SERVER,
-)
 from agntcy_app_sdk.semantic.a2a.client.factory import A2AClientFactory
-from agntcy_app_sdk.semantic.a2a import (
-    ClientConfig,
-    NatsTransportConfig,
-    SlimRpcConfig,
-    SlimTransportConfig,
-)
+from common.a2a_transport_config import build_a2a_client_config
 
 _factory: Optional[AgntcyFactory] = None
 
@@ -28,27 +18,11 @@ def get_factory() -> AgntcyFactory:
         return AgntcyFactory("lungo.recruiter_supervisor", enable_tracing=not OTEL_SDK_DISABLED)
     return _factory
 
-slim_shared_secret = os.getenv("SLIM_SHARED_SECRET")
-
-if not slim_shared_secret:
-    raise ValueError("SLIM_SHARED_SECRET environment variable must be set")
-
-config = ClientConfig(
-    slimrpc_config=SlimRpcConfig(
-        namespace="lungo",
-        group="agents",
-        name="recruiter_supervisor",
-        slim_url=f"http://{SLIM_SERVER}",
-        secret=slim_shared_secret,
-    ),
-    slim_config=SlimTransportConfig(
-        endpoint=f"http://{SLIM_SERVER}",
-        name="lungo/agents/recruiter_supervisor",
-        shared_secret_identity=slim_shared_secret,
-    ),
-    nats_config=NatsTransportConfig(
-        endpoint=NATS_SERVER,
-    ),
+config = build_a2a_client_config(
+    namespace="lungo",
+    group="agents",
+    agent_name="recruiter_supervisor",
+    include_nats=True,
 )
 
 # -- A2A client factory --

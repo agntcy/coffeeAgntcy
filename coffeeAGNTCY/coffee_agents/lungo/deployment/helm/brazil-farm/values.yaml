@@ -20,6 +20,11 @@ config:
   llmModel: ""
   transportServerEndpoint: ""
   defaultMessageTransport: ""
+  # Host:port for SLIM dataplane (no scheme). Set per environment (e.g. slim:46357 in compose DNS).
+  slimServer: ""
+  natsServer: ""
+  # When externalSecrets is not used, set to inject SLIM_SHARED_SECRET via Helm Secret (see transport-secret.tpl.yaml).
+  slimSharedSecret: ""
   otlpHttpEndpoint: ""
 #  llmStreaming: False
 

@@ -63,4 +63,7 @@ spec:
         {{ if .Values.externalSecrets }}
           - secretRef:
               name: {{ .Values.appName }}-secrets
+        {{ else if .Values.config.slimSharedSecret }}
+          - secretRef:
+              name: {{ .Values.appName }}-transport-secret
         {{ end }}

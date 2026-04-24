@@ -17,11 +17,15 @@
 {{- $slim := dict "config" (dict
   "transportServerEndpoint" "http://lungo-local-cluster-slim:46357"
   "defaultMessageTransport" "SLIM"
+  "slimServer" "lungo-local-cluster-slim:46357"
+  "natsServer" "lungo-local-cluster-nats:4222"
 ) -}}
 
 {{- $nats := dict "config" (dict
   "transportServerEndpoint" "nats://lungo-local-cluster-nats:4222"
   "defaultMessageTransport" "NATS"
+  "slimServer" "lungo-local-cluster-slim:46357"
+  "natsServer" "lungo-local-cluster-nats:4222"
 ) -}}
 
 {{- /* Auction targets: merge shared + NATS into one config block */ -}}
@@ -38,6 +42,10 @@
         remoteRef:
           key: my-local-secret
           property: AZURE_API_KEY
+      - secretKey: SLIM_SHARED_SECRET
+        remoteRef:
+          key: my-local-secret
+          property: SLIM_SHARED_SECRET
 {{- end }}
 
 {{- /* Logistics targets: merge shared + SLIM into one config block */ -}}
@@ -54,6 +62,10 @@
         remoteRef:
           key: my-local-secret
           property: AZURE_API_KEY
+      - secretKey: SLIM_SHARED_SECRET
+        remoteRef:
+          key: my-local-secret
+          property: SLIM_SHARED_SECRET
 {{- end }}
 
 # Explicit per-chart overrides with ingress enabled
@@ -69,6 +81,10 @@ auction-supervisor:
         remoteRef:
           key: my-local-secret
           property: AZURE_API_KEY
+      - secretKey: SLIM_SHARED_SECRET
+        remoteRef:
+          key: my-local-secret
+          property: SLIM_SHARED_SECRET
 
 logistics-supervisor:
   environment: local
@@ -82,6 +98,10 @@ logistics-supervisor:
         remoteRef:
           key: my-local-secret
           property: AZURE_API_KEY
+      - secretKey: SLIM_SHARED_SECRET
+        remoteRef:
+          key: my-local-secret
+          property: SLIM_SHARED_SECRET
 
 recruiter:
   config:
@@ -100,6 +120,10 @@ recruiter:
         remoteRef:
           key: my-local-secret
           property: AZURE_API_KEY
+      - secretKey: SLIM_SHARED_SECRET
+        remoteRef:
+          key: my-local-secret
+          property: SLIM_SHARED_SECRET
 
 agentic-workflows-api:
   environment: local
@@ -117,7 +141,12 @@ recruiter-supervisor:
         remoteRef:
           key: my-local-secret
           property: AZURE_API_KEY
+      - secretKey: SLIM_SHARED_SECRET
+        remoteRef:
+          key: my-local-secret
+          property: SLIM_SHARED_SECRET
 
 localExternalSecret:
   azureApiKey: {{ env "AZURE_API_KEY" | quote }}
+  slimSharedSecret: {{ env "SLIM_SHARED_SECRET" | default "dummy_password" | quote }}
 
