@@ -12,6 +12,7 @@ import { useAgentAPI } from "@/hooks/useAgentAPI"
 import { getGraphConfig } from "@/utils/graphConfigs"
 import { PATTERNS, PatternType } from "@/utils/patternUtils"
 import { DiscoveryResponseEvent } from "@/types/agent"
+import type { Story } from "@/stories/types"
 
 export type { ApiResponse } from "@/types/api"
 
@@ -22,6 +23,8 @@ export function useApp() {
   const [selectedPattern, setSelectedPattern] = useState<PatternType>(
     PATTERNS.GROUP_COMMUNICATION,
   )
+
+  const [activeStory, setActiveStory] = useState<Story | null>(null)
 
   const chat = useAppChatState({ selectedPattern })
 
@@ -297,6 +300,8 @@ export function useApp() {
   return {
     selectedPattern,
     handlePatternChange,
+    activeStory,
+    setActiveStory,
     chatHeightValue,
     isExpanded,
     chatRef,

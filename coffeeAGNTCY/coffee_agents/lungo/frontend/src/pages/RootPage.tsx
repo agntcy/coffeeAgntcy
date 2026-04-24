@@ -10,6 +10,8 @@ import Navigation from "@/components/Navigation/Navigation"
 import MainArea from "@/components/MainArea/MainArea"
 import ChatArea from "@/components/Chat/ChatArea"
 import Sidebar from "@/components/Sidebar/Sidebar"
+import WizardFab from "@/components/Wizard/WizardFab"
+import StoryPlayer from "@/components/Wizard/StoryPlayer"
 import { PATTERNS } from "@/utils/patternUtils"
 import { useApp } from "@/useApp"
 
@@ -17,6 +19,8 @@ const RootPage: React.FC = () => {
   const {
     selectedPattern,
     handlePatternChange,
+    activeStory,
+    setActiveStory,
     chatHeightValue,
     isExpanded,
     chatRef,
@@ -85,8 +89,25 @@ const RootPage: React.FC = () => {
                   : null
               }
             />
+            {selectedPattern === PATTERNS.PUBLISH_SUBSCRIBE_STREAMING &&
+              !activeStory && (
+                <WizardFab
+                  selectedPattern={selectedPattern}
+                  onSelectStory={setActiveStory}
+                />
+              )}
           </div>
           <div className="flex min-h-[76px] w-full flex-none flex-col items-center justify-center gap-0 bg-overlay-background p-0 md:min-h-[96px]">
+            {activeStory && (
+              <StoryPlayer
+                story={activeStory}
+                handles={{
+                  handleDropdownSelect,
+                  handleClearConversation,
+                }}
+                onExit={() => setActiveStory(null)}
+              />
+            )}
             <ChatArea
               setMessages={setMessages}
               setButtonClicked={setButtonClicked}
