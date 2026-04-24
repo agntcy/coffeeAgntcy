@@ -293,6 +293,18 @@ async def health_check():
     return {"status": "ok"}
 
 
+@app.get("/v1/ready")
+async def recruiter_init_ready(req: Request):
+    """Process readiness: background agent init finished (no outbound I/O).
+
+    Use this for cheap readiness probes (e.g. TestClient fixtures). Deep
+    connectivity remains on ``/v1/health``.
+    """
+    if not getattr(req.app.state, "recruiter_ready", False):
+        raise HTTPException(status_code=503, detail="Service initializing")
+    return {"status": "ready"}
+
+
 @app.get("/v1/health")
 async def connectivity_health(req: Request):
     """Deep liveness: check that the recruiter A2A service is reachable."""
