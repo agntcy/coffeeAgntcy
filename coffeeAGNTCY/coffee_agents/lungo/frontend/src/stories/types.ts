@@ -10,11 +10,12 @@ export type StoryStep =
       kind: "prompt"
       prompt: string
       narration?: string
+      dialogue?: string
       pauseAfterMs?: number
       maxWaitMs?: number
     }
-  | { kind: "narration"; text: string; durationMs?: number }
-  | { kind: "delay"; ms: number }
+  | { kind: "narration"; text: string; dialogue?: string; durationMs?: number }
+  | { kind: "delay"; ms: number; dialogue?: string }
 
 export interface Story {
   id: string

@@ -12,6 +12,7 @@ import { PATTERNS } from "@/utils/patternUtils"
  */
 const TERMINAL_STATUSES: Partial<Record<PatternType, readonly string[]>> = {
   [PATTERNS.PUBLISH_SUBSCRIBE_STREAMING]: ["completed", "error"],
+  [PATTERNS.ON_DEMAND_DISCOVERY]: ["completed", "error"],
 }
 
 /**

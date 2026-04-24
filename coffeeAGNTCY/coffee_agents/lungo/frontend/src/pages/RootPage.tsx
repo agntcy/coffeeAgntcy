@@ -5,13 +5,12 @@
  * Default root page at / — main app (sidebar + chat + graph).
  **/
 
-import React from "react"
+import React, { useMemo } from "react"
 import Navigation from "@/components/Navigation/Navigation"
 import MainArea from "@/components/MainArea/MainArea"
 import ChatArea from "@/components/Chat/ChatArea"
 import Sidebar from "@/components/Sidebar/Sidebar"
-import WizardFab from "@/components/Wizard/WizardFab"
-import StoryPlayer from "@/components/Wizard/StoryPlayer"
+import { StoryContext } from "@/contexts/StoryContext"
 import { PATTERNS } from "@/utils/patternUtils"
 import { useApp } from "@/useApp"
 
@@ -62,106 +61,108 @@ const RootPage: React.FC = () => {
     recruiterSelectedAgent,
   } = useApp()
 
+  const storyContextValue = useMemo(
+    () => ({
+      activeStory,
+      setActiveStory,
+      selectedPattern,
+      handleDropdownSelect,
+      handleClearConversation,
+    }),
+    [
+      activeStory,
+      setActiveStory,
+      selectedPattern,
+      handleDropdownSelect,
+      handleClearConversation,
+    ],
+  )
+
   return (
-    <div className="bg-primary-bg flex h-screen w-screen flex-col overflow-hidden">
-      <Navigation />
-      <div className="flex flex-1 overflow-hidden">
-        <Sidebar
-          selectedPattern={selectedPattern}
-          onPatternChange={handlePatternChange}
-        />
-        <div className="flex flex-1 flex-col border-l border-action-background bg-app-background">
-          <div className="relative flex-grow">
-            <MainArea
-              pattern={selectedPattern}
-              buttonClicked={buttonClicked}
-              setButtonClicked={setButtonClicked}
-              aiReplied={aiReplied}
-              setAiReplied={setAiReplied}
-              chatHeight={chatHeightValue}
-              isExpanded={isExpanded}
-              groupCommResponseReceived={groupCommResponseReceived}
-              onNodeHighlight={handleNodeHighlightSetup}
-              discoveryResponseEvent={discoveryResponseEvent}
-              selectedAgentCid={
-                typeof recruiterSelectedAgent?.cid === "string"
-                  ? recruiterSelectedAgent.cid
-                  : null
-              }
-            />
-            {selectedPattern === PATTERNS.PUBLISH_SUBSCRIBE_STREAMING &&
-              !activeStory && (
-                <WizardFab
-                  selectedPattern={selectedPattern}
-                  onSelectStory={setActiveStory}
-                />
-              )}
-          </div>
-          <div className="flex min-h-[76px] w-full flex-none flex-col items-center justify-center gap-0 bg-overlay-background p-0 md:min-h-[96px]">
-            {activeStory && (
-              <StoryPlayer
-                story={activeStory}
-                handles={{
-                  handleDropdownSelect,
-                  handleClearConversation,
-                }}
-                onExit={() => setActiveStory(null)}
+    <StoryContext.Provider value={storyContextValue}>
+      <div className="bg-primary-bg flex h-screen w-screen flex-col overflow-hidden">
+        <Navigation />
+        <div className="flex flex-1 overflow-hidden">
+          <Sidebar
+            selectedPattern={selectedPattern}
+            onPatternChange={handlePatternChange}
+          />
+          <div className="flex flex-1 flex-col border-l border-action-background bg-app-background">
+            <div className="relative flex-grow">
+              <MainArea
+                pattern={selectedPattern}
+                buttonClicked={buttonClicked}
+                setButtonClicked={setButtonClicked}
+                aiReplied={aiReplied}
+                setAiReplied={setAiReplied}
+                chatHeight={chatHeightValue}
+                isExpanded={isExpanded}
+                groupCommResponseReceived={groupCommResponseReceived}
+                onNodeHighlight={handleNodeHighlightSetup}
+                discoveryResponseEvent={discoveryResponseEvent}
+                selectedAgentCid={
+                  typeof recruiterSelectedAgent?.cid === "string"
+                    ? recruiterSelectedAgent.cid
+                    : null
+                }
               />
-            )}
-            <ChatArea
-              setMessages={setMessages}
-              setButtonClicked={setButtonClicked}
-              setAiReplied={setAiReplied}
-              isBottomLayout={true}
-              showCoffeePrompts={
-                selectedPattern === PATTERNS.PUBLISH_SUBSCRIBE ||
-                selectedPattern === PATTERNS.PUBLISH_SUBSCRIBE_STREAMING
-              }
-              showLogisticsPrompts={
-                selectedPattern === PATTERNS.GROUP_COMMUNICATION
-              }
-              showDiscoveryPrompts={
-                selectedPattern === PATTERNS.ON_DEMAND_DISCOVERY
-              }
-              showProgressTracker={showProgressTracker}
-              showAuctionStreaming={showAuctionStreaming}
-              showRecruiterStreaming={showRecruiterStreaming}
-              showFinalResponse={showFinalResponse}
-              onStreamComplete={handleStreamComplete}
-              onSenderHighlight={handleSenderHighlight}
-              pattern={selectedPattern}
-              graphConfig={graphConfig}
-              onDropdownSelect={handleDropdownSelect}
-              onUserInput={handleUserInput}
-              onApiResponse={handleApiResponse}
-              onClearConversation={handleClearConversation}
-              currentUserMessage={currentUserMessage}
-              agentResponse={agentResponse}
-              executionKey={executionKey}
-              isAgentLoading={isAgentLoading}
-              apiError={apiError}
-              chatRef={chatRef}
-              auctionState={{
-                events,
-                status,
-                error,
-              }}
-              recruiterState={{
-                events: recruiterEvents,
-                status: recruiterStatus,
-                error: recruiterError,
-                sessionId: recruiterSessionId,
-                finalMessage: recruiterFinalMessage,
-                agentRecords: recruiterAgentRecords,
-                evaluationResults: recruiterEvaluationResults,
-                selectedAgent: recruiterSelectedAgent,
-              }}
-              onDiscoveryResponse={handleDiscoveryResponse}
-            />
+            </div>
+            <div className="flex min-h-[76px] w-full flex-none flex-col items-center justify-center gap-0 bg-overlay-background p-0 md:min-h-[96px]">
+              <ChatArea
+                setMessages={setMessages}
+                setButtonClicked={setButtonClicked}
+                setAiReplied={setAiReplied}
+                isBottomLayout={true}
+                showCoffeePrompts={
+                  selectedPattern === PATTERNS.PUBLISH_SUBSCRIBE ||
+                  selectedPattern === PATTERNS.PUBLISH_SUBSCRIBE_STREAMING
+                }
+                showLogisticsPrompts={
+                  selectedPattern === PATTERNS.GROUP_COMMUNICATION
+                }
+                showDiscoveryPrompts={
+                  selectedPattern === PATTERNS.ON_DEMAND_DISCOVERY
+                }
+                showProgressTracker={showProgressTracker}
+                showAuctionStreaming={showAuctionStreaming}
+                showRecruiterStreaming={showRecruiterStreaming}
+                showFinalResponse={showFinalResponse}
+                onStreamComplete={handleStreamComplete}
+                onSenderHighlight={handleSenderHighlight}
+                pattern={selectedPattern}
+                graphConfig={graphConfig}
+                onDropdownSelect={handleDropdownSelect}
+                onUserInput={handleUserInput}
+                onApiResponse={handleApiResponse}
+                onClearConversation={handleClearConversation}
+                currentUserMessage={currentUserMessage}
+                agentResponse={agentResponse}
+                executionKey={executionKey}
+                isAgentLoading={isAgentLoading}
+                apiError={apiError}
+                chatRef={chatRef}
+                auctionState={{
+                  events,
+                  status,
+                  error,
+                }}
+                recruiterState={{
+                  events: recruiterEvents,
+                  status: recruiterStatus,
+                  error: recruiterError,
+                  sessionId: recruiterSessionId,
+                  finalMessage: recruiterFinalMessage,
+                  agentRecords: recruiterAgentRecords,
+                  evaluationResults: recruiterEvaluationResults,
+                  selectedAgent: recruiterSelectedAgent,
+                }}
+                onDiscoveryResponse={handleDiscoveryResponse}
+              />
+            </div>
           </div>
         </div>
       </div>
-    </div>
+    </StoryContext.Provider>
   )
 }
 

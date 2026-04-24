@@ -7,6 +7,8 @@ import { useCallback, useEffect, useRef, useState } from "react"
 import type { Story, StoryStep } from "@/stories/types"
 import { isTerminalStatus } from "@/stories/completion"
 import { useStreamingStatus } from "@/stores/auctionStreamingStore"
+import { useRecruiterStreamingStatus } from "@/stores/recruiterStreamingStore"
+import { PATTERNS } from "@/utils/patternUtils"
 import { logger } from "@/utils/logger"
 
 export type StoryPhase =
@@ -73,6 +75,11 @@ export function useStoryRunner(
   const [looping, setLooping] = useState(false)
 
   const auctionStatus = useStreamingStatus()
+  const recruiterStatus = useRecruiterStreamingStatus()
+  const streamingStatus =
+    story?.pattern === PATTERNS.ON_DEMAND_DISCOVERY
+      ? recruiterStatus
+      : auctionStatus
 
   // Refs for stable access inside the run loop
   const abortRef = useRef<AbortController | null>(null)
@@ -80,7 +87,7 @@ export function useStoryRunner(
   const nextResolveRef = useRef<(() => void) | null>(null)
   const speedRef = useRef(speed)
   const loopingRef = useRef(looping)
-  const auctionStatusRef = useRef(auctionStatus)
+  const streamingStatusRef = useRef(streamingStatus)
   const handlesRef = useRef(handles)
 
   useEffect(() => {
@@ -90,8 +97,8 @@ export function useStoryRunner(
     loopingRef.current = looping
   }, [looping])
   useEffect(() => {
-    auctionStatusRef.current = auctionStatus
-  }, [auctionStatus])
+    streamingStatusRef.current = streamingStatus
+  }, [streamingStatus])
   useEffect(() => {
     handlesRef.current = handles
   }, [handles])
@@ -101,19 +108,16 @@ export function useStoryRunner(
   useEffect(() => {
     if (
       story &&
-      auctionStatus &&
-      isTerminalStatus(story.pattern, auctionStatus) &&
+      streamingStatus &&
+      isTerminalStatus(story.pattern, streamingStatus) &&
       completionResolveRef.current
     ) {
       completionResolveRef.current()
       completionResolveRef.current = null
     }
-  }, [auctionStatus, story])
+  }, [streamingStatus, story])
 
-  /**
-   * Wait for the pause gate. If the runner is paused, this promise won't
-   * resolve until play() is called.
-   */
+  // Wait for the pause gate; resolves when play() is called.
   const waitForUnpause = useCallback(
     (signal: AbortSignal): Promise<boolean> => {
       return new Promise((resolve) => {
@@ -144,13 +148,14 @@ export function useStoryRunner(
     isPausedRef.current = isPaused
   }, [isPaused])
 
-  /**
-   * Wait for the auction to reach a terminal status, or maxWaitMs.
-   */
+  // Wait for terminal streaming status or maxWaitMs.
   const waitForCompletion = useCallback(
     (maxWaitMs: number, signal: AbortSignal): Promise<boolean> => {
       // Already terminal?
-      if (story && isTerminalStatus(story.pattern, auctionStatusRef.current)) {
+      if (
+        story &&
+        isTerminalStatus(story.pattern, streamingStatusRef.current)
+      ) {
         return Promise.resolve(true)
       }
       return new Promise((resolve) => {
@@ -184,9 +189,7 @@ export function useStoryRunner(
     [story],
   )
 
-  /**
-   * Wait that can be skipped by pressing Next.
-   */
+  // Wait that can be skipped by pressing Next.
   const skippableWait = useCallback(
     (ms: number, signal: AbortSignal): Promise<boolean> => {
       return new Promise((resolve) => {
@@ -216,9 +219,7 @@ export function useStoryRunner(
     [],
   )
 
-  /**
-   * Process a single step.
-   */
+  // Process a single step.
   const processStep = useCallback(
     async (step: StoryStep, signal: AbortSignal): Promise<boolean> => {
       const s = speedRef.current
@@ -246,13 +247,13 @@ export function useStoryRunner(
 
           // Guard: don't dispatch if status is non-idle
           if (
-            auctionStatusRef.current !== "idle" &&
-            auctionStatusRef.current !== "completed" &&
-            auctionStatusRef.current !== "error"
+            streamingStatusRef.current !== "idle" &&
+            streamingStatusRef.current !== "completed" &&
+            streamingStatusRef.current !== "error"
           ) {
             logger.warn(
               "[StoryRunner] Auction not idle, skipping prompt dispatch",
-              auctionStatusRef.current,
+              streamingStatusRef.current,
             )
           }
 
@@ -278,9 +279,7 @@ export function useStoryRunner(
     [story, skippableWait, waitForCompletion],
   )
 
-  /**
-   * Main run loop. Iterates through all steps, handles looping.
-   */
+  // Main run loop.
   const runStory = useCallback(
     async (storyToRun: Story) => {
       const ac = new AbortController()

@@ -4,16 +4,18 @@
  **/
 
 import React from "react"
-import { ReactFlow, ReactFlowProvider, Controls } from "@xyflow/react"
+import { ReactFlow, ReactFlowProvider, Controls, Panel } from "@xyflow/react"
 import "@xyflow/react/dist/style.css"
 import "./ReactFlow.css"
 import TransportNode from "./Graph/Elements/transportNode"
 import CustomEdge from "./Graph/Elements/CustomEdge"
 import BranchingEdge from "./Graph/Elements/BranchingEdge"
 import CustomNode from "./Graph/Elements/CustomNode"
+import WizardPanel from "./Graph/Elements/WizardNode"
 import ModalContainer from "./ModalContainer"
 import OasfRecordModal from "./Graph/Directory/OasfRecordModal"
 import { useMainArea, type MainAreaProps } from "./useMainArea"
+import { storyRegistry } from "@/stories"
 
 const proOptions = { hideAttribution: true }
 
@@ -51,6 +53,8 @@ const MainArea: React.FC<MainAreaProps> = (props) => {
     onNodeDrag,
   } = useMainArea(props)
 
+  const hasStories = !!storyRegistry[props.pattern]?.length
+
   return (
     <div className="bg-primary-bg order-1 flex h-full w-full flex-none flex-grow flex-col items-start self-stretch p-0">
       <ReactFlow
@@ -76,6 +80,11 @@ const MainArea: React.FC<MainAreaProps> = (props) => {
             setNodesConnectable(interactiveEnabled)
           }}
         />
+        {hasStories && (
+          <Panel position="top-right">
+            <WizardPanel />
+          </Panel>
+        )}
       </ReactFlow>
 
       <ModalContainer

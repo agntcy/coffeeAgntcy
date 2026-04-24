@@ -99,6 +99,7 @@ export function useMainAreaGraphEffects({
           ),
         },
       }))
+
       setNodes(nodesWithHandlers)
       await new Promise((resolve) => setTimeout(resolve, 100))
       setEdges(newConfig.edges)

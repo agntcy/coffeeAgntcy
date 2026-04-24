@@ -21,22 +21,22 @@ export default function StoryPicker({
   const stories = storyRegistry[pattern] ?? []
 
   return (
-    <div className="absolute right-4 top-14 z-30 w-72 rounded-lg border border-gray-200 bg-white shadow-lg dark:border-gray-700 dark:bg-gray-800">
-      <div className="flex items-center justify-between border-b border-gray-200 px-4 py-2 dark:border-gray-700">
-        <span className="text-sm font-semibold text-gray-800 dark:text-gray-200">
+    <div className="w-72 rounded-lg bg-node-background shadow-[var(--shadow-default)_0px_6px_8px] outline outline-1 outline-accent-border">
+      <div className="border-accent-border/30 flex items-center justify-between border-b px-4 py-2.5">
+        <span className="font-inter text-sm font-medium text-node-text-primary">
           Stories
         </span>
         <button
           onClick={onClose}
-          className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
+          className="text-node-text-secondary opacity-60 transition-opacity hover:opacity-100"
         >
           ✕
         </button>
       </div>
 
-      <div className="max-h-64 overflow-y-auto p-2">
+      <div className="max-h-64 overflow-y-auto p-1.5">
         {stories.length === 0 ? (
-          <p className="px-2 py-4 text-center text-sm text-gray-400">
+          <p className="px-2 py-4 text-center font-inter text-sm text-node-text-secondary opacity-60">
             No stories available for this pattern.
           </p>
         ) : (
@@ -44,12 +44,12 @@ export default function StoryPicker({
             <button
               key={story.id}
               onClick={() => onSelect(story)}
-              className="w-full rounded-md px-3 py-2 text-left hover:bg-gray-100 dark:hover:bg-gray-700"
+              className="w-full rounded-md px-3 py-2.5 text-left transition-colors hover:bg-node-background-hover"
             >
-              <div className="text-sm font-medium text-gray-800 dark:text-gray-200">
+              <div className="font-inter text-sm font-normal text-node-text-primary">
                 {story.title}
               </div>
-              <div className="text-xs text-gray-500 dark:text-gray-400">
+              <div className="mt-0.5 font-inter text-xs font-light text-node-text-secondary opacity-70">
                 {story.description}
               </div>
             </button>
