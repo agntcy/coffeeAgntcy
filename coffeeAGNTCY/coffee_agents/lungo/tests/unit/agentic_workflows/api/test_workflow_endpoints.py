@@ -93,7 +93,8 @@ def client() -> TestClient:
     app = FastAPI(openapi_url=None, docs_url=None, redoc_url=None)
     app.include_router(create_agentic_workflows_router())
     with patch(_PATCH_TARGET, return_value=_FAKE_WORKFLOWS):
-        yield TestClient(app)
+        with TestClient(app) as test_client:
+            yield test_client
 
 
 # ---------------------------------------------------------------------------
