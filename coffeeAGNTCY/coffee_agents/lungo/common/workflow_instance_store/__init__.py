@@ -3,7 +3,7 @@
 
 """Workflow instance state store (``event_v1`` merge + notifications)."""
 
-from schema.types import MergedData
+from schema.types import Data
 
 from common.workflow_instance_store.interfaces import (
     WorkflowInstanceDataStore,
@@ -14,7 +14,7 @@ from common.workflow_instance_store.notifier import NoOpNotifier, NotifierProtoc
 from common.workflow_instance_store.store import WorkflowInstanceStateStore
 
 __all__ = [
-    "MergedData",
+    "Data",
     "NoOpNotifier",
     "NotifierProtocol",
     "WorkflowInstanceDataStore",

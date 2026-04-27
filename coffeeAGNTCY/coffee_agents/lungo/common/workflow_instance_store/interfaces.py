@@ -7,12 +7,12 @@ from __future__ import annotations
 
 from typing import Callable, Protocol, runtime_checkable
 
-from schema.types import Event, MergedData
+from schema.types import Data, Event
 
 
 @runtime_checkable
 class WorkflowInstanceDataStore(Protocol):
-    """Validate, enqueue, merge, and read accumulated ``MergedData``."""
+    """Validate, enqueue, merge, and read accumulated ``Data``."""
 
     def submit_event_sync(self, event: dict) -> None:
         """Validate and enqueue an event (merge runs asynchronously)."""
@@ -20,7 +20,7 @@ class WorkflowInstanceDataStore(Protocol):
     async def submit_event(self, event: dict) -> None:
         """Async validate and enqueue."""
 
-    def get_merged_data(self) -> MergedData:
+    def get_merged_data(self) -> Data:
         """Deep copy of accumulated state."""
 
     def get_instance_projection(

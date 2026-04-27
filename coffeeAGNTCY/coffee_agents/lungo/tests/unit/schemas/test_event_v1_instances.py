@@ -53,6 +53,7 @@ _VALID_MINIMAL = {
     [
         pytest.param("file_partial", id="file_partial_example"),
         pytest.param("file_full", id="file_full_example"),
+        pytest.param("file_empty_workflows", id="file_empty_workflows_example"),
         pytest.param("inline", id="inline_minimal"),
     ],
 )
@@ -61,6 +62,8 @@ def test_event_v1_valid_instances(source: str):
         data = load_json_instance_file(_EXAMPLES / "event_v1_partial.json")
     elif source == "file_full":
         data = load_json_instance_file(_EXAMPLES / "event_v1_full.json")
+    elif source == "file_empty_workflows":
+        data = load_json_instance_file(_EXAMPLES / "event_v1_empty_workflows.json")
     else:
         data = _VALID_MINIMAL
     validate_json_instance(data, KNOWN)
