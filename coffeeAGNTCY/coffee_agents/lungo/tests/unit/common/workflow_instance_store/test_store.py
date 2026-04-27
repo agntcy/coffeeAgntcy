@@ -92,6 +92,38 @@ def test_validation_failure_no_mutation_no_notifier():
         store.close()
 
 
+def test_empty_workflows_merges_extra_data_without_notifier_calls() -> None:
+    notifier = RecordingNotifier()
+    store = WorkflowInstanceStateStore(notifier=notifier)
+    try:
+        store.submit_event_sync(_minimal_valid_event())
+        store.wait_merge_idle()
+        store.wait_dispatch_idle()
+        assert len(notifier.calls) == 1
+
+        empty_wf_event = {
+            "metadata": {
+                "timestamp": "2026-01-02T00:00:00Z",
+                "schema_version": "1.0.0",
+                "correlation": {"id": "correlation://550e8400-e29b-41d4-a716-446655440099"},
+                "id": "event://550e8400-e29b-41d4-a716-446655440088",
+                "type": "StateProgressUpdate",
+                "source": "test",
+            },
+            "data": {"workflows": {}, "app_state": {"counter": 42}},
+        }
+        store.submit_event_sync(empty_wf_event)
+        store.wait_merge_idle()
+        store.wait_dispatch_idle()
+
+        assert len(notifier.calls) == 1
+        merged = store.get_merged_data().model_dump(mode="python")
+        assert "w" in merged["workflows"]
+        assert merged["app_state"] == {"counter": 42}
+    finally:
+        store.close()
+
+
 def test_notifier_fanout_two_instances():
     notifier = RecordingNotifier()
     store = WorkflowInstanceStateStore(notifier=notifier)

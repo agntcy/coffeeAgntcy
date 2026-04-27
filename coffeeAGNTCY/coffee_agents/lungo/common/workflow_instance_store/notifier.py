@@ -5,6 +5,12 @@
 
 Each notification carries the full ``event_v1`` message as :class:`~schema.types.Event`
 —the same payload #451 will serialize as one NDJSON line on SSE.
+
+Implementations are invoked only for workflow instance ids present in the
+submitted event's ``data.workflows`` instance maps. Events with an empty
+``workflows`` object merge into the store snapshot but do not trigger
+``notify`` (no instance-scoped fan-out); that is intentional unless a separate
+global broadcast is added later.
 """
 
 from __future__ import annotations

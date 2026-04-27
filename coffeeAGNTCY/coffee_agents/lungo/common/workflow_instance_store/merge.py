@@ -41,7 +41,7 @@ from __future__ import annotations
 import copy
 from typing import Any
 
-from schema.types import Event, MergedData, Operation
+from schema.types import Data, Event, Operation
 
 
 def _topology_lists_insertion_order(by_id: dict[str, dict]) -> list[dict]:
@@ -201,7 +201,7 @@ def _merge_workflow(
             inst_out[k] = copy.deepcopy(v)
 
 
-def merge_event_data(existing: MergedData | None, event: Event) -> MergedData:
+def merge_event_data(existing: Data | None, event: Event) -> Data:
     """
     Merge ``event.data`` into ``existing`` (previous snapshot).
 
@@ -228,4 +228,4 @@ def merge_event_data(existing: MergedData | None, event: Event) -> MergedData:
             continue
         out[key] = copy.deepcopy(val)
 
-    return MergedData.model_validate(out)
+    return Data.model_validate(out)
