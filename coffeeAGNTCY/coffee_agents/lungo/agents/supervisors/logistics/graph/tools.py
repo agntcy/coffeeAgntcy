@@ -27,12 +27,30 @@ from agents.logistics.farm.card import AGENT_CARD as TATOOINE_CARD
 from agents.logistics.shipper.card import AGENT_CARD as SHIPPER_CARD
 from agents.logistics.helpdesk.card import AGENT_CARD as HELPDESK_CARD
 from agents.supervisors.logistics.graph.shared import a2a_client_factory
+from agents.supervisors.logistics.card import LOGISTICS_SUPERVISOR_CARD
 from common.logistics_states import LogisticsStatus
+from common.a2a_event_middleware import (
+    EventEmittingInterceptor,
+    make_event_emitting_consumer,
+)
+from common.workflow_registry import (
+    ToolWorkflowResolver,
+    build_registration_from_decorators,
+    get_workflow_registry,
+    make_tool_call_context,
+    register_workflow,
+    workflow_names,
+)
+
+# Hydrate the JSON-backed catalog and fetch the generated constants.
+# Must come before any @register_workflow decorator below.
+WorkflowNames = workflow_names()
 
 logger = logging.getLogger("lungo.logistics.supervisor.tools")
 
 
 
+@register_workflow(WorkflowNames.SECURE_GROUP_COMMUNICATION_LOGISTICS_NETWORK)
 async def create_order(farm: str, quantity: int, price: float) -> str:
   """
   Broadcast a coffee order request to shipper, farm, and accountant agents via SLIM.
@@ -55,7 +73,11 @@ async def create_order(farm: str, quantity: int, price: float) -> str:
     return "No farm provided. Please specify a farm."
 
   try:
-    client = await a2a_client_factory.create(SHIPPER_CARD)
+    client = await a2a_client_factory.create(
+      SHIPPER_CARD,
+      interceptors=[_event_interceptor],
+      consumers=[_event_consumer],
+    )
 
     request = SendMessageRequest(
       id=str(uuid4()),
@@ -100,12 +122,17 @@ async def create_order(farm: str, quantity: int, price: float) -> str:
 
   for attempt in range(max_retries):
     try:
+      ctx = make_tool_call_context(
+        create_order,
+        broadcast_agent_cards=list(cards),
+      )
       responses = await client.start_groupchat(
         init_message=request,
         group_channel=f"{uuid4()}",
         participants=recipients,
         end_message="DELIVERED",
         timeout=60,
+        context=ctx,
       )
       # If we get here, the call succeeded
       break
@@ -125,6 +152,7 @@ async def create_order(farm: str, quantity: int, price: float) -> str:
   return formatted
 
 
+@register_workflow(WorkflowNames.SECURE_GROUP_COMMUNICATION_LOGISTICS_NETWORK)
 async def create_order_streaming(farm: str, quantity: int, price: float):
   """
   Broadcast a coffee order request to shipper, farm, and accountant agents via SLIM with streaming support.
@@ -152,7 +180,11 @@ async def create_order_streaming(farm: str, quantity: int, price: float):
   recipients = [get_agent_identifier(card) for card in cards]
 
   try:
-    client = await a2a_client_factory.create(SHIPPER_CARD) # slim is set as preferred transport in these cards
+    client = await a2a_client_factory.create(
+      SHIPPER_CARD,
+      interceptors=[_event_interceptor],
+      consumers=[_event_consumer],
+    ) # slim is set as preferred transport in these cards
     order_id=str(uuid4())
     logger.debug(f"Sending order {order_id} to agent: {farm}")
 
@@ -200,6 +232,10 @@ async def create_order_streaming(farm: str, quantity: int, price: float):
       participants=recipients,
       end_message="DELIVERED",
       timeout=60,
+      context=make_tool_call_context(
+        create_order_streaming,
+        broadcast_agent_cards=list(cards),
+      ),
     )
     async for response in responses:
       logger.debug("Streaming response: %s", response)
@@ -353,3 +389,25 @@ def _parse_order_event(response: Any) -> Optional[Dict[str, str]]:
   except Exception as e:
     logger.error(f"Failed to parse order event: {e}")
     return None
+
+
+# -- Resolver + event middleware --
+# Built after all @register_workflow decorators above have populated the
+# decorator registry. The resolver then snapshots that registry into a
+# WorkflowRegistration and validates every workflow name against the
+# JSON-backed catalog.
+_workflow_resolver = ToolWorkflowResolver(
+    registry=get_workflow_registry(),
+    registration=build_registration_from_decorators(),
+)
+
+_event_interceptor = EventEmittingInterceptor(
+    caller_card=LOGISTICS_SUPERVISOR_CARD,
+    workflow_resolver=_workflow_resolver.resolve,
+    verbose=True,
+)
+_event_consumer = make_event_emitting_consumer(
+    caller_card=LOGISTICS_SUPERVISOR_CARD,
+    workflow_resolver=_workflow_resolver.resolve,
+    verbose=True,
+)

@@ -16,9 +16,6 @@ from a2a.types import (
     Part,
     TextPart,
     Task)
-from a2a.utils import (
-    new_task,
-)
 from a2a.utils.errors import ServerError
 
 from agents.farms.brazil.agent import FarmAgent
@@ -67,10 +64,6 @@ class FarmAgentExecutor(AgentExecutor):
             return
         
         prompt = context.get_user_input()
-        task = context.current_task
-        if not task:
-            task = new_task(context.message)
-            await event_queue.enqueue_event(task)
 
         try:
             output = await self.agent.llama_index_invoke(prompt)
