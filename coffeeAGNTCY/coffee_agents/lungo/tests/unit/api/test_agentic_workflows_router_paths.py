@@ -9,7 +9,11 @@ from typing import NamedTuple
 from uuid import UUID
 
 import pytest
-from api.agentic_workflows.router import create_agentic_workflows_router
+from api.agentic_workflows.router import (
+    WORKFLOW_INSTANCE_STORE_ATTR,
+    create_agentic_workflows_router,
+)
+from common.workflow_instance_store import WorkflowInstanceStateStore
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 from schema.types import instance_id_from_uuid
@@ -21,9 +25,14 @@ _BARE_UUID_PATH = "/agentic-workflows/W/instances/550e8400-e29b-41d4-a716-446655
 @pytest.fixture()
 def client() -> TestClient:
     app = FastAPI()
+    store = WorkflowInstanceStateStore()
+    setattr(app.state, WORKFLOW_INSTANCE_STORE_ATTR, store)
     app.include_router(create_agentic_workflows_router())
-    with TestClient(app) as c:
-        yield c
+    try:
+        with TestClient(app) as c:
+            yield c
+    finally:
+        store.close()
 
 
 # ---------------------------------------------------------------------------
@@ -57,8 +66,8 @@ _ROUTE_CASES: tuple[RouteCase, ...] = (
         expect_404=False,
     ),
     RouteCase(
-        case_id="get_events_stream_bare_uuid",
-        method="GET",
+        case_id="events_stream_route_registered_bare_uuid",
+        method="HEAD",
         path=f"{_BARE_UUID_PATH}/events/stream",
         json_body=None,
         expect_404=False,
@@ -82,6 +91,8 @@ _ROUTE_CASES: tuple[RouteCase, ...] = (
 def test_instance_scoped_routes(case: RouteCase, client: TestClient) -> None:
     if case.method == "GET":
         resp = client.get(case.path)
+    elif case.method == "HEAD":
+        resp = client.head(case.path)
     elif case.method == "POST":
         resp = client.post(case.path, json=case.json_body or {})
     else:

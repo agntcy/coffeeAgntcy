@@ -17,6 +17,7 @@ from common.workflow_instance_store import (
     WorkflowInstanceDataStore,
     WorkflowInstanceEventFanout,
     WorkflowInstanceStateStore,
+    WorkflowInstanceStoreClosedError,
 )
 
 _INSTANCE_KEY = "instance://550e8400-e29b-41d4-a716-446655440003"
@@ -491,7 +492,7 @@ def test_slow_notifier_does_not_block_merge():
 def test_close_rejects_submits():
     store = WorkflowInstanceStateStore()
     store.close()
-    with pytest.raises(RuntimeError, match="closed"):
+    with pytest.raises(WorkflowInstanceStoreClosedError, match="closed"):
         store.submit_event_sync(_minimal_valid_event())
 
 
@@ -499,21 +500,21 @@ def test_close_rejects_submits():
 async def test_close_rejects_async_submit():
     store = WorkflowInstanceStateStore()
     store.close()
-    with pytest.raises(RuntimeError, match="closed"):
+    with pytest.raises(WorkflowInstanceStoreClosedError, match="closed"):
         await store.submit_event(_minimal_valid_event())
 
 
 def test_wait_dispatch_idle_rejects_when_closed():
     store = WorkflowInstanceStateStore()
     store.close()
-    with pytest.raises(RuntimeError, match="closed"):
+    with pytest.raises(WorkflowInstanceStoreClosedError, match="closed"):
         store.wait_dispatch_idle()
 
 
 def test_wait_merge_idle_rejects_when_closed():
     store = WorkflowInstanceStateStore()
     store.close()
-    with pytest.raises(RuntimeError, match="closed"):
+    with pytest.raises(WorkflowInstanceStoreClosedError, match="closed"):
         store.wait_merge_idle()
 
 

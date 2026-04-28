@@ -11,6 +11,7 @@ from common.workflow_instance_store.interfaces import (
 )
 from common.workflow_instance_store.merge import merge_event_data, merge_topology_delta
 from common.workflow_instance_store.notifier import NoOpNotifier, NotifierProtocol
+from common.workflow_instance_store.errors import WorkflowInstanceStoreClosedError
 from common.workflow_instance_store.store import WorkflowInstanceStateStore
 
 __all__ = [
@@ -20,6 +21,7 @@ __all__ = [
     "WorkflowInstanceDataStore",
     "WorkflowInstanceEventFanout",
     "WorkflowInstanceStateStore",
+    "WorkflowInstanceStoreClosedError",
     "merge_event_data",
     "merge_topology_delta",
 ]
