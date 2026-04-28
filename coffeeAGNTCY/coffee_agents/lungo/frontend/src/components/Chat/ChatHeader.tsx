@@ -5,15 +5,19 @@
 
 import React from "react"
 import { Trash2 } from "lucide-react"
-import { Box, IconButton, Stack, Tooltip } from "@open-ui-kit/core"
+import {
+  useThemeMode,
+  Box,
+  IconButton,
+  Stack,
+  Tooltip,
+} from "@open-ui-kit/core"
 import collapseIcon from "@/assets/collapse.png"
-import { useTheme } from "@/hooks/useTheme"
 
-/** Matches prior `.chat-header-icon` filters in `index.css` (theme via `useTheme`). */
-const collapseIconFilter = (isLightMode: boolean) =>
-  isLightMode
-    ? "brightness(0) saturate(100%) invert(22%) sepia(8%) saturate(1157%) hue-rotate(192deg) brightness(95%) contrast(88%)"
-    : "brightness(0) saturate(100%) invert(85%) sepia(7%) saturate(398%) hue-rotate(186deg) brightness(97%) contrast(92%)"
+const collapseIconFilter = (isDarkMode: boolean) =>
+  isDarkMode
+    ? "brightness(0) saturate(100%) invert(85%) sepia(7%) saturate(398%) hue-rotate(186deg) brightness(97%) contrast(92%)"
+    : "brightness(0) saturate(100%) invert(22%) sepia(8%) saturate(1157%) hue-rotate(192deg) brightness(95%) contrast(88%)"
 
 interface ChatHeaderProps {
   onMinimize?: () => void
@@ -28,7 +32,7 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({
   isMinimized,
   showActions = false,
 }) => {
-  const { isLightMode } = useTheme()
+  const { isDarkMode } = useThemeMode()
 
   if (!showActions) {
     return null
@@ -69,7 +73,7 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({
                   height: 20,
                   display: "block",
                   transform: isMinimized ? "rotate(180deg)" : "none",
-                  filter: collapseIconFilter(isLightMode),
+                  filter: collapseIconFilter(isDarkMode),
                 }}
               />
             </IconButton>
@@ -86,7 +90,6 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({
                 height: 28,
                 p: 0.5,
                 borderRadius: 1,
-                color: isLightMode ? "#3c4551" : "#e8e9ea",
               }}
             >
               <Trash2 size={20} aria-hidden />

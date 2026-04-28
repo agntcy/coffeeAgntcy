@@ -7,6 +7,7 @@ import React from "react"
 import { ReactFlow, ReactFlowProvider, Controls } from "@xyflow/react"
 import "@xyflow/react/dist/style.css"
 import "./ReactFlow.css"
+import { Box } from "@open-ui-kit/core"
 import TransportNode from "./Graph/Elements/transportNode"
 import CustomEdge from "./Graph/Elements/CustomEdge"
 import BranchingEdge from "./Graph/Elements/BranchingEdge"
@@ -52,7 +53,20 @@ const MainArea: React.FC<MainAreaProps> = (props) => {
   } = useMainArea(props)
 
   return (
-    <div className="bg-primary-bg order-1 flex h-full w-full flex-none flex-grow flex-col items-start self-stretch p-0">
+    <Box
+      sx={{
+        order: 1,
+        display: "flex",
+        width: "100%",
+        height: "100%",
+        flexShrink: 0,
+        flexGrow: 1,
+        flexDirection: "column",
+        alignItems: "flex-start",
+        alignSelf: "stretch",
+        p: 0,
+      }}
+    >
       <ReactFlow
         nodes={nodes}
         edges={edges}
@@ -94,7 +108,7 @@ const MainArea: React.FC<MainAreaProps> = (props) => {
         nodeData={oasfModalData}
         position={oasfModalPosition}
       />
-    </div>
+    </Box>
   )
 }
 

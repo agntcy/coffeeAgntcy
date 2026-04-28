@@ -3,13 +3,19 @@
  * SPDX-License-Identifier: Apache-2.0
  **/
 
-import React, { useState } from "react"
+import React, { useCallback, useState } from "react"
 import { HelpCircle } from "lucide-react"
-import type { SxProps, Theme } from "@mui/material/styles"
-import { Header, IconButton, Stack, Tooltip, Box } from "@open-ui-kit/core"
+import { type SxProps, type Theme } from "@mui/material/styles"
+import {
+  useThemeMode,
+  Header,
+  IconButton,
+  Stack,
+  Tooltip,
+  Box,
+} from "@open-ui-kit/core"
 import coffeeAgntcyLogo from "@/assets/coffeeAGNTCY_logo.svg"
 import ThemeToggleIcon from "../icons/ThemeToggleIcon"
-import { useTheme } from "@/hooks/useTheme"
 import InfoModal from "./InfoModal"
 
 const navIconButtonSx: SxProps<Theme> = () => ({
@@ -21,21 +27,17 @@ const navIconButtonSx: SxProps<Theme> = () => ({
 
 const Navigation: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false)
-  const { isLightMode, toggleTheme } = useTheme()
+  const { isDarkMode, toggleTheme } = useThemeMode()
 
-  const handleHelpClick = () => {
+  const handleHelpClick = useCallback(() => {
     setIsModalOpen(true)
-  }
+  }, [setIsModalOpen])
 
-  const handleCloseModal = () => {
+  const handleCloseModal = useCallback(() => {
     setIsModalOpen(false)
-  }
+  }, [setIsModalOpen])
 
-  const handleThemeToggle = () => {
-    toggleTheme()
-  }
-
-  const themeToggleLabel = `Switch to ${isLightMode ? "dark" : "light"} mode`
+  const themeToggleLabel = `Switch to ${isDarkMode ? "light" : "dark"} mode`
 
   return (
     <>
@@ -58,7 +60,7 @@ const Navigation: React.FC = () => {
             <Tooltip title={themeToggleLabel}>
               <IconButton
                 aria-label={themeToggleLabel}
-                onClick={handleThemeToggle}
+                onClick={toggleTheme}
                 size="small"
                 sx={navIconButtonSx}
               >
