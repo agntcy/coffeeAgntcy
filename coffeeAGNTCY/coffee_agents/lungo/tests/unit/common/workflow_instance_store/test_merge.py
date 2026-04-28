@@ -7,7 +7,7 @@ from __future__ import annotations
 
 import copy
 
-from schema.types import Event, MergedData
+from schema.types import Data, Event
 
 from common.workflow_instance_store.merge import merge_event_data, merge_topology_delta
 
@@ -30,7 +30,7 @@ def _evt(data: dict) -> Event:
     return Event.model_validate({"metadata": _METADATA, "data": data})
 
 
-def _dump(m: MergedData) -> dict:
+def _dump(m: Data) -> dict:
     return m.model_dump(mode="python")
 
 
@@ -595,3 +595,36 @@ def test_merge_topology_delta_same_existing_twice_no_mutation_of_nested():
     assert r1 == r2
     node1 = next(n for n in r1["nodes"] if n["id"] == NODE_A)
     assert node1["meta"]["outer"]["inner"] == 2
+
+
+def test_merge_only_empty_workflows_and_extra_data():
+    ev = _evt({"workflows": {}, "app_state": {"counter": 1}})
+    out = merge_event_data(None, ev)
+    d = _dump(out)
+    assert d["workflows"] == {}
+    assert d["app_state"] == {"counter": 1}
+
+
+def test_merge_empty_workflows_preserves_existing_workflows_and_merges_extra():
+    base = merge_event_data(
+        None,
+        _evt(
+            {
+                "workflows": {
+                    "w": {
+                        "pattern": "p",
+                        "use_case": "u",
+                        "name": "n",
+                        "starting_topology": {"nodes": [], "edges": []},
+                        "instances": {INST: {"id": INST, "topology": {}}},
+                    }
+                }
+            }
+        ),
+    )
+    ev2 = _evt({"workflows": {}, "app_state": {"level": 2}})
+    out = merge_event_data(base, ev2)
+    d = _dump(out)
+    assert "w" in d["workflows"]
+    assert d["workflows"]["w"]["pattern"] == "p"
+    assert d["app_state"] == {"level": 2}

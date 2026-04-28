@@ -3,10 +3,16 @@
 
 """In-memory workflow-instance state store (#448).
 
-Holds a merged ``MergedData`` snapshot built from validated ``event_v1``
+Holds a merged ``Data`` snapshot built from validated ``event_v1``
 messages. **Submit** paths validate and enqueue; a **merge worker** applies
 merges in FIFO order; a **dispatch worker** runs notifier and per-instance
 listeners so slow callbacks do not block merging.
+
+Events with ``data.workflows`` empty still merge into the snapshot (including
+any extra keys on ``data`` allowed by the schema). Dispatch runs only when the
+event touches at least one workflow instance; otherwise listeners are not
+invoked. Use :meth:`get_merged_data` to read the merged snapshot, including
+non-workflow fields on ``data``.
 
 **Read-your-writes:** after :meth:`submit_event_sync` / :meth:`submit_event`,
 call :meth:`wait_merge_idle` before reading :meth:`get_merged_data` if you
@@ -30,7 +36,7 @@ import time
 from collections import defaultdict
 from typing import Callable, Final
 
-from schema.types import Event, MergedData
+from schema.types import Data, Event
 from schema.validation import validate_data_against_schema
 
 from common.workflow_instance_store.merge import merge_event_data
@@ -73,7 +79,7 @@ class _MergeCoordinator:
     def __init__(
         self,
         state_lock: threading.RLock,
-        initial_state: MergedData,
+        initial_state: Data,
         on_merged: Callable[[Event, list[str]], None],
     ) -> None:
         self._state_lock = state_lock
@@ -90,11 +96,11 @@ class _MergeCoordinator:
         self._merge_thread.start()
 
     @property
-    def state(self) -> MergedData:
+    def state(self) -> Data:
         return self._state
 
     @state.setter
-    def state(self, v: MergedData) -> None:
+    def state(self, v: Data) -> None:
         self._state = v
 
     def enqueue(self, work: Event) -> None:
@@ -281,7 +287,7 @@ class WorkflowInstanceStateStore:
         self._dispatch = _DispatchHub(self._state_lock, n)
         self._merge = _MergeCoordinator(
             self._state_lock,
-            MergedData(),
+            Data(),
             self._after_merge_enqueue_dispatch,
         )
 
@@ -319,8 +325,8 @@ class WorkflowInstanceStateStore:
                 raise RuntimeError(_STORE_CLOSED_MSG)
         self._dispatch.wait_dispatch_idle(timeout=timeout)
 
-    def get_merged_data(self) -> MergedData:
-        """Deep copy of the accumulated ``MergedData``."""
+    def get_merged_data(self) -> Data:
+        """Deep copy of the accumulated merged ``data`` subtree."""
         with self._state_lock:
             return self._merge.state.model_copy(deep=True)
 

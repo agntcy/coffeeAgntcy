@@ -51,6 +51,7 @@ def test_cli_instances_valid_tmp_file(capsys, tmp_path: Path):
     [
         pytest.param("event_v1_partial.json", id="partial"),
         pytest.param("event_v1_full.json", id="full"),
+        pytest.param("event_v1_empty_workflows.json", id="empty_workflows"),
     ],
 )
 def test_cli_instances_packaged_examples_parametrized(capsys, example_name: str):

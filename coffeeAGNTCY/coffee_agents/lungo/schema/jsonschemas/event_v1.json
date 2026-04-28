@@ -221,7 +221,6 @@
       "properties": {
         "workflows": {
           "type": "object",
-          "minProperties": 1,
           "additionalProperties": { "$ref": "#/$defs/workflow" }
         }
       },

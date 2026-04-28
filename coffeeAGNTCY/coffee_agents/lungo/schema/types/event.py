@@ -310,22 +310,7 @@ class Workflow(BaseModel):
 
 
 class Data(BaseModel):
-    model_config = ConfigDict(extra="allow")
-
-    workflows: dict[str, Workflow]
-
-    @field_validator("workflows")
-    @classmethod
-    def _workflows_min_one(cls, v: dict[str, Workflow]) -> dict[str, Workflow]:
-        if len(v) < 1:
-            raise ValueError("workflows must contain at least one property")
-        return v
-
-
-# TODO: If ``Data._workflows_min_one`` is dropped (empty ``workflows`` allowed on the wire),
-# remove ``MergedData`` and use ``Data`` for the workflow-instance store accumulated state.
-class MergedData(BaseModel):
-    """Accumulated ``data`` subtree for the workflow-instance store (may have empty ``workflows``)."""
+    """``data`` subtree on the wire and accumulated workflow-instance store state."""
 
     model_config = ConfigDict(extra="allow")
 

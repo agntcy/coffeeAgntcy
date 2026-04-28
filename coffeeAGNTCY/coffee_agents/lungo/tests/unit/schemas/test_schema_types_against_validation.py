@@ -76,6 +76,11 @@ _CASES: tuple[Case, ...] = (
         outputs=Outputs(),
     ),
     Case(
+        case_id="empty_workflows_example",
+        inputs=Inputs(example_filename="event_v1_empty_workflows.json"),
+        outputs=Outputs(),
+    ),
+    Case(
         case_id="root_extra_property",
         inputs=Inputs(
             example_filename="event_v1_partial.json",
