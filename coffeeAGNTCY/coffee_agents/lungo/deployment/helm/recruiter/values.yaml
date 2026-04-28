@@ -28,6 +28,9 @@ config:
   azureApiVersion: ""
   defaultMessageTransport: ""
   transportServerEndpoint: ""
+  slimServer: ""
+  natsServer: ""
+  slimSharedSecret: ""
   otlpHttpEndpoint: ""
 
 # You can use your own config here for service account

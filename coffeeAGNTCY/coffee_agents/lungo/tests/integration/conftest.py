@@ -20,7 +20,8 @@ from pathlib import Path
 from fastapi.testclient import TestClient
 from tests.integration.docker_helpers import up, down, remove_container_if_exists
 
-from tests.integration.process_helper import ProcessRunner 
+from tests.integration.process_helper import ProcessRunner
+import config.config # noqa: F401 # Note: imports config.config to set environment variables.
 
 LUNGO_DIR = Path(__file__).resolve().parents[2]
 
@@ -28,36 +29,36 @@ AGENTS = {
     # auction agents
     "brazil-farm": {
         "cmd": ["python", "-m", "agents.farms.brazil.farm_server", "--no-reload"],
-        "ready_pattern": r"Transport initialized with tracing enabled",
+        "ready_pattern": r"Agent ready",
     },
     "colombia-farm": {
         "cmd": ["python", "-m", "agents.farms.colombia.farm_server", "--no-reload"],
-        "ready_pattern": r"Transport initialized with tracing enabled",
+        "ready_pattern": r"Agent ready",
     },
     "vietnam-farm": {
         "cmd": ["python", "-m", "agents.farms.vietnam.farm_server", "--no-reload"],
-        "ready_pattern": r"Transport initialized with tracing enabled",
+        "ready_pattern": r"Agent ready",
     },
     "weather-mcp": {
         "cmd": ["uv", "run", "-m", "agents.mcp_servers.weather_service"],
-        "ready_pattern": r"Transport initialized with tracing enabled",
+        "ready_pattern": r"Agent ready",
     },
     # logistics agents
     "logistics-farm": {
         "cmd": ["python", "-m", "agents.logistics.farm.server", "--no-reload"],
-        "ready_pattern": r"Transport initialized with tracing enabled",
+        "ready_pattern": r"Agent ready",
     },
     "accountant": {
         "cmd": ["python", "-m", "agents.logistics.accountant.server", "--no-reload"],
-        "ready_pattern": r"Transport initialized with tracing enabled",
+        "ready_pattern": r"Agent ready",
     },
     "shipper": {
         "cmd": ["python", "-m", "agents.logistics.shipper.server", "--no-reload"],
-        "ready_pattern": r"Transport initialized with tracing enabled",
+        "ready_pattern": r"Agent ready",
     },
     "helpdesk": {
         "cmd": ["python", "-m", "agents.logistics.helpdesk.server", "--no-reload"],
-        "ready_pattern": r"Transport initialized with tracing enabled",
+        "ready_pattern": r"Agent ready",
     }
 }
 
@@ -67,21 +68,24 @@ _ACTIVE_RUNNERS = []
 
 def _base_env():
     # Use test env: SDK on so spans are recording (avoids NonRecordingSpan.attributes error).
-    otel_disabled = os.environ.get("OTEL_SDK_DISABLED", "false")
     return {
         **os.environ,
         "PYTHONPATH": str(LUNGO_DIR),
-        "ENABLE_HTTP": "true",
         "FARM_BROADCAST_TOPIC": "farm_broadcast",
-        "OTEL_SDK_DISABLED": "false",
+        "OTEL_SDK_DISABLED": os.environ.get("OTEL_SDK_DISABLED", "false"),
         "PYTHONUNBUFFERED": "1",
         "PYTHONFAULTHANDLER": "1",
-        "OTEL_SDK_DISABLED": str(otel_disabled),
+        "TRANSPORT_SERVER_ENDPOINT": os.environ.get(
+            "TRANSPORT_SERVER_ENDPOINT", "http://127.0.0.1:46357"
+        ),
     }
 
-def _purge_modules(prefixes):
+def _purge_modules(prefixes, keep=None):
+    keep = set(keep or [])
     to_delete = [m for m in list(sys.modules)
-                 if any(m == p or m.startswith(p + ".") for p in prefixes)]
+                 if any(m == p or m.startswith(p + ".") for p in prefixes)
+                 and m not in keep
+                 and not any(m.startswith(k + ".") for k in keep)]
     for m in to_delete:
         sys.modules.pop(m, None)
 
@@ -170,6 +174,12 @@ def orchestrate_session_services():
     try:
         _shutdown_otel_sdk()
     finally:
+        try:
+            from huggingface_hub.utils import close_session
+
+            close_session()
+        except Exception:
+            pass
         _teardown_session_docker()
 
 def setup_transports():
@@ -240,7 +250,7 @@ def _normalize_agent_spec(spec):
             return {
                 "name": spec.split(".")[-1],
                 "cmd": ["python", "-m", spec],
-                "ready_pattern": "Transport initialized with tracing enabled",
+                "ready_pattern": "Agent ready",
             }
         raise ValueError(f"Unrecognized agent spec string: {spec!r}")
 
@@ -299,7 +309,7 @@ def agents_up(request, transport_config):
             cmd=spec["cmd"],
             cwd=str(LUNGO_DIR),
             env=env,
-            ready_pattern=spec.get("ready_pattern", r"Transport initialized with tracing enabled"),
+            ready_pattern=spec.get("ready_pattern", r"Agent ready"),
             timeout_s=60.0,
             log_dir=Path(LUNGO_DIR) / ".pytest-logs",
         ).start()
@@ -332,9 +342,14 @@ def auction_supervisor_client(transport_config, monkeypatch):
         monkeypatch.setenv(k, v)
 
     prefixes = ["agents.supervisors.auction", "config.config"]
+    # Keep the shared module (holds A2AClientFactory + SLIM connections) alive
+    # across tests — the SLIM native runtime rejects duplicate connections to
+    # the same endpoint, so recreating the factory per-test causes
+    # "client already connected" errors.
+    keep = ["agents.supervisors.auction.graph.shared"]
     saved = _save_modules(prefixes)
     try:
-        _purge_modules(prefixes)
+        _purge_modules(prefixes, keep=keep)
 
         import agents.supervisors.auction.main as auction_main
         import importlib
@@ -345,7 +360,7 @@ def auction_supervisor_client(transport_config, monkeypatch):
             _wait_ready(client, "/ready")
             yield client
     finally:
-        _purge_modules(prefixes)
+        _purge_modules(prefixes, keep=keep)
         _restore_modules(saved)
 
 @pytest.fixture

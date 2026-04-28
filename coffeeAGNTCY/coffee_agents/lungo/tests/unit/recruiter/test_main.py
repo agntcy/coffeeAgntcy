@@ -18,7 +18,7 @@ def client():
     with TestClient(app) as c:
         deadline = time.monotonic() + 10.0
         while time.monotonic() < deadline:
-            resp = c.get("/v1/health")
+            resp = c.get("/v1/ready")
             if resp.status_code != 503:
                 break
             time.sleep(0.1)

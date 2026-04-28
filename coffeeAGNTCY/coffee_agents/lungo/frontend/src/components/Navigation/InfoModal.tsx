@@ -35,6 +35,11 @@ const InfoModal: React.FC<InfoModalProps> = ({ isOpen, onClose }) => {
   const EXCHANGE_APP_API_URL =
     env.get("VITE_EXCHANGE_APP_API_URL") || DEFAULT_EXCHANGE_APP_API_URL
 
+  const DEFAULT_AGENTIC_WORKFLOWS_API_URL = "http://127.0.0.1:9105"
+  const AGENTIC_WORKFLOWS_API_URL =
+    env.get("VITE_AGENTIC_WORKFLOWS_API_URL") ||
+    DEFAULT_AGENTIC_WORKFLOWS_API_URL
+
   const [info, setInfo] = React.useState<BuildInfo | null>(null)
   const [error, setError] = React.useState<string | null>(null)
 
@@ -80,23 +85,26 @@ const InfoModal: React.FC<InfoModalProps> = ({ isOpen, onClose }) => {
           <X />
         </IconButton>
       </DialogTitle>
-
       <ModalContent>
         <Stack spacing={3}>
           <Stack spacing={2}>
+            <Typography variant="h6">Build and Release Information</Typography>
             <Stack spacing={1}>
               {error && (
                 <Typography variant="body2" color="error">
                   {error}
                 </Typography>
               )}
-              <Stack
-                direction="row"
-                justifyContent="space-between"
-                sx={{
-                  typography: "body2",
-                }}
-              >
+              <div className="flex justify-between gap-2">
+                <span className="shrink-0">Agentic Workflows API:</span>
+                <span
+                  className="min-w-0 break-all text-right font-mono text-modal-accent"
+                  title={AGENTIC_WORKFLOWS_API_URL}
+                >
+                  {AGENTIC_WORKFLOWS_API_URL}
+                </span>
+              </div>
+              <Stack direction="row" justifyContent="space-between">
                 <Typography component="span" variant="body2">
                   Release Version:
                 </Typography>
@@ -104,13 +112,7 @@ const InfoModal: React.FC<InfoModalProps> = ({ isOpen, onClose }) => {
                   {info?.version ?? "…"}
                 </Typography>
               </Stack>
-              <Stack
-                direction="row"
-                justifyContent="space-between"
-                sx={{
-                  typography: "body2",
-                }}
-              >
+              <Stack direction="row" justifyContent="space-between">
                 <Typography component="span" variant="body2" color="inherit">
                   Build Date:
                 </Typography>
@@ -134,9 +136,6 @@ const InfoModal: React.FC<InfoModalProps> = ({ isOpen, onClose }) => {
                     key={name}
                     direction="row"
                     justifyContent="space-between"
-                    sx={{
-                      typography: "body2",
-                    }}
                   >
                     <Typography component="span" variant="body2">
                       {name}:

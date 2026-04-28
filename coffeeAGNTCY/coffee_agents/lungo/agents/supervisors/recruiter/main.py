@@ -19,6 +19,8 @@ from fastapi.responses import JSONResponse, StreamingResponse
 from pathlib import Path
 from pydantic import BaseModel
 
+from common.cors import get_cors_allowed_origins
+
 from agents.supervisors.recruiter.card import RECRUITER_SUPERVISOR_CARD
 from agents.supervisors.recruiter.recruiter_client import get_a2a_event_queue
 from agents.supervisors.recruiter.recruiter_service_card import (
@@ -62,9 +64,11 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(lifespan=lifespan)
+_cors_origins = get_cors_allowed_origins()
+logger.info("CORS allow_origins: %s", _cors_origins)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=_cors_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -287,6 +291,18 @@ async def agent_card():
 @app.get("/health")
 async def health_check():
     return {"status": "ok"}
+
+
+@app.get("/v1/ready")
+async def recruiter_init_ready(req: Request):
+    """Process readiness: background agent init finished (no outbound I/O).
+
+    Use this for cheap readiness probes (e.g. TestClient fixtures). Deep
+    connectivity remains on ``/v1/health``.
+    """
+    if not getattr(req.app.state, "recruiter_ready", False):
+        raise HTTPException(status_code=503, detail="Service initializing")
+    return {"status": "ready"}
 
 
 @app.get("/v1/health")

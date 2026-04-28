@@ -23,6 +23,9 @@ config:
   llmModel: ""
   transportServerEndpoint: ""
   defaultMessageTransport: ""
+  slimServer: ""
+  natsServer: ""
+  slimSharedSecret: ""
   otlpHttpEndpoint: ""
   #  llmStreaming: False
 
@@ -32,6 +35,7 @@ config:
   # Identity TBAC Configuration
   identityServiceApiKey: ""
   identityAuthEnabled: "false"
+  corsAllowedOrigins: ""
 
 
 # You can use your own config here for service account

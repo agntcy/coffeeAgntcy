@@ -21,6 +21,7 @@ config:
   logisticsAppApiUrl: ""
   grafanaUrl: ""
   discoveryAppApiUrl: ""
+  agenticWorkflowsApiUrl: ""
   directoryServerUrl: ""
   directoryVersion: ""
 

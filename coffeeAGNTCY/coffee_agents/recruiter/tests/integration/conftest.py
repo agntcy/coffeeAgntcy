@@ -12,13 +12,13 @@ import stat
 import subprocess
 import sys
 import time
+from pathlib import Path
 
 import httpx
 import pytest
 from dotenv import load_dotenv
-from pathlib import Path
 
-from tests.integration.docker_helpers import up, down, remove_container_if_exists
+from tests.integration.docker_helpers import down, remove_container_if_exists, up
 
 load_dotenv()
 
@@ -158,7 +158,7 @@ def _teardown_session_docker():
     if _session_docker_torn_down:
         return
     _session_docker_torn_down = True
-    print("--- Tearing down session Docker (zot, dir-api-server, etc) ---")
+    print("--- Tearing down session Docker (postgres, zot, dir-api-server, etc) ---")
     down(files)
 
 
@@ -192,31 +192,38 @@ def _wait_http_ready(
 @pytest.fixture(scope="session", autouse=True)
 def orchestrate_session_services():
     """
-    Start Directory stack (zot + dir-api-server) for integration tests, analogous
+    Start Directory stack (postgres + zot + dir-api-server) for integration tests, analogous
     to lungo's session slim/nats/otel compose setup.
     """
     print("\n--- Setting up session level service integrations ---")
     down(files)
     remove_container_if_exists("docker-dir-api-server-1")
     remove_container_if_exists("docker-zot-1")
+    remove_container_if_exists("docker-postgres-1")
     setup_directory_services()
     print("--- Session level service setup complete. Tests can now run ---")
     yield
     _teardown_session_docker()
 
 def setup_directory_services():
+    _startup_postgres()
     _startup_zot()
     # Same idea as Docker Compose Zot healthcheck: GET /readyz
     _wait_http_ready(ZOT_REGISTRY_READYZ_URL, timeout_s=30.0, poll_s=5.0, accept_status=(200,))
 
     _startup_dir_api_server()
     # dir-api-server does not expose an HTTP endpoint but rather a gRPC one at 8888.
-    # In newer versions of dir-apiserver they do the health check with grpc-health-probe but in apiserver v0.6.0 that was not bundled in the image.
-    # For dir-apiserver, this is a fix that will come in a future version (it is not in v1.0.0 but it is fixed in main by https://github.com/agntcy/dir/pull/1017).
+    # In newer versions of dir-apiserver they do the health check with grpc-health-probe but in apiserver v1.0.0 that was not bundled in the image.
+    # For dir-apiserver, this is a fix that will come in v1.1.0.
     time.sleep(30) # give dir-api-server time to start up; TODO: long-term we should use a more robust wait mechanism.
+
+def _startup_postgres():
+    up(files, ["postgres"])
+
 
 def _startup_zot():
     up(files, ["zot"])
+
 
 def _startup_dir_api_server():
     up(files, ["dir-api-server"])

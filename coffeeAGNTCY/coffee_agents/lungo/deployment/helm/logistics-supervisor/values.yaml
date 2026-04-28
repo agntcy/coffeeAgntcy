@@ -20,10 +20,13 @@ config:
   llmModel: ""
   transportServerEndpoint: ""
   defaultMessageTransport: ""
+  slimServer: ""
+  natsServer: ""
+  slimSharedSecret: ""
   otlpHttpEndpoint: ""
   experimentalFeature: "true"
+  corsAllowedOrigins: ""
 #  llmStreaming: False
-
 
 # You can use your own config here for service account
 serviceaccount:
@@ -32,7 +35,7 @@ serviceaccount:
 
 # You can use your own ingress stack of operators and letsencrypt mechanism
 ingress:
-  enabled: false  # If set to true, configure the values below for your ingress setup
+  enabled: false # If set to true, configure the values below for your ingress setup
   name: ""
   className: ""
   host: ""
@@ -42,24 +45,24 @@ ingress:
   annotations: {}
 
 extraIngress:
-    enabled: false  # If set to true, configure the values below for your additional ingress setup
-    name: ""
-    className: ""
-    host: ""
-    serviceName: ""
-    servicePort: ""
-    tlsSecret: ""
-    path: ""
-    pathType: ""
-    annotations: {}
+  enabled: false # If set to true, configure the values below for your additional ingress setup
+  name: ""
+  className: ""
+  host: ""
+  serviceName: ""
+  servicePort: ""
+  tlsSecret: ""
+  path: ""
+  pathType: ""
+  annotations: {}
 
 probes:
   livenessProbeEnabled: false
   readinessProbeEnabled: false
   port: 9090
   endpoint: /v1/health
-  initialDelaySeconds: 300  # Wait 5 minutes before the first check
-  periodSeconds: 300       # Check every 5 minutes
+  initialDelaySeconds: 300 # Wait 5 minutes before the first check
+  periodSeconds: 300 # Check every 5 minutes
   timeoutSeconds: 30
   failureThreshold: 3
 

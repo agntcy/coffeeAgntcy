@@ -31,6 +31,17 @@ spec:
           value: "{{ .Values.defaultMessageTransport }}"
         - name: TRANSPORT_SERVER_ENDPOINT
           value: "{{ .Values.transportServerEndpoint }}"
+        - name: SLIM_SERVER
+          value: "{{ .Values.slimServer }}"
+        - name: NATS_SERVER
+          value: "{{ .Values.natsServer }}"
+        {{- if .Values.slimSharedSecret }}
+        - name: SLIM_SHARED_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Values.appName }}-transport-secret
+              key: SLIM_SHARED_SECRET
+        {{- end }}
         - name: OTLP_HTTP_ENDPOINT
           value: "{{ .Values.otlpHttpEndpoint }}"
         {{ if .Values.resources.enabled }}

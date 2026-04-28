@@ -4,8 +4,18 @@
 from typing import Literal
 from agntcy_app_sdk.factory import AgntcyFactory
 from agents.exceptions import AuthError
-from config.config import DEFAULT_MESSAGE_TRANSPORT, TRANSPORT_SERVER_ENDPOINT, OTEL_SDK_DISABLED
+from config.config import DEFAULT_MESSAGE_TRANSPORT, SLIM_SERVER, NATS_SERVER, OTEL_SDK_DISABLED
 import os
+
+_TRANSPORT_MAP = {
+  "SLIM": ("SLIM", f"http://{SLIM_SERVER}"),
+  "NATS": ("NATS", f"nats://{NATS_SERVER}"),
+}
+
+if DEFAULT_MESSAGE_TRANSPORT not in _TRANSPORT_MAP:
+  raise ValueError(f"Unsupported DEFAULT_MESSAGE_TRANSPORT: {DEFAULT_MESSAGE_TRANSPORT}. Must be 'SLIM' or 'NATS'.")
+
+_mcp_transport, _mcp_endpoint = _TRANSPORT_MAP[DEFAULT_MESSAGE_TRANSPORT]
 
 async def invoke_payment_mcp_tool(tool_name: Literal["create_payment", "list_transactions"]) -> dict:
   # don't invoke if identity auth is not enabled
@@ -15,16 +25,16 @@ async def invoke_payment_mcp_tool(tool_name: Literal["create_payment", "list_tra
   factory = AgntcyFactory("lungo.payment_mcp_client", enable_tracing=not OTEL_SDK_DISABLED)
 
   transport_instance = factory.create_transport(
-    transport=DEFAULT_MESSAGE_TRANSPORT,
-    endpoint=TRANSPORT_SERVER_ENDPOINT,
+    transport=_mcp_transport,
+    endpoint=_mcp_endpoint,
     name="default/default/fast_mcp_client",
   )
 
-  client = await factory.create_client(
+  client = await factory.mcp().create_client(
     "FastMCP",
     agent_topic="lungo_payment_service",
     transport=transport_instance,
-    agent_url=os.getenv("MCP_PAYMENT_SERVICE_URL", "http://localhost:8081/mcp"),
+    url=os.getenv("MCP_PAYMENT_SERVICE_URL", "http://localhost:8081/mcp"),
   )
 
   try:

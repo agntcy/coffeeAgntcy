@@ -2,9 +2,14 @@
 # SPDX-License-Identifier: Apache-2.0
 
 from a2a.types import (
-    AgentCapabilities, 
+    AgentCapabilities,
     AgentCard,
-    AgentSkill)
+    AgentInterface,
+    AgentSkill
+)
+from config.config import SLIM_SERVER
+
+AGENT_ID = "shipping-agent"
 
 AGENT_SKILL = AgentSkill(
     id="get_shipping_status",
@@ -20,17 +25,22 @@ AGENT_SKILL = AgentSkill(
         "What is the current shipping status of my last coffee order?",
         "Has the order been delivered following PAYMENT_COMPLETE?",
     ]
-)   
+)
 
 AGENT_CARD = AgentCard(
     name='Shipping agent',
     id='shipping-agent',
     description='An AI agent that ships coffee beans and sends status updates.',
-    url='',
     version='1.0.0',
     defaultInputModes=["text"],
     defaultOutputModes=["text"],
     capabilities=AgentCapabilities(streaming=True),
     skills=[AGENT_SKILL],
     supportsAuthenticatedExtendedCard=False,
+    preferred_transport="slim",
+    url=f"slim://{SLIM_SERVER}/lungo/agents/{AGENT_ID}",
+    additional_interfaces=[
+        AgentInterface(transport="slim", url=f"slim://{SLIM_SERVER}/lungo/agents/{AGENT_ID}"),
+        AgentInterface(transport="slimrpc", url=f"slim://{SLIM_SERVER}/lungo/agents/{AGENT_ID}"),
+    ],
 )

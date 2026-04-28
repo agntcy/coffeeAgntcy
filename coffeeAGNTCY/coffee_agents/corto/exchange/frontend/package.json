@@ -18,7 +18,7 @@
     "@radix-ui/react-select": "^2.2.5",
     "@reactflow/node-resizer": "^2.2.14",
     "@xyflow/react": "^12.6.4",
-    "axios": "^1.13.0",
+    "axios": "1.13.5",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "ldrs": "^1.1.7",

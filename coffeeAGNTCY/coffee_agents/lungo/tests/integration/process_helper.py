@@ -92,6 +92,12 @@ class ProcessRunner:
                 pass
         if self._thread and self._thread.is_alive():
             self._thread.join(timeout=5)
+        # Avoid ResourceWarning: unclosed file from PIPE after the pump thread stops.
+        if self._proc and self._proc.stdout is not None:
+            try:
+                self._proc.stdout.close()
+            except OSError:
+                pass
 
     def tail(self, n: int = 200) -> str:
         """Return the last N lines of the log file."""

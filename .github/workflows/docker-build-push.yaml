@@ -233,6 +233,8 @@ jobs:
           dockerfile: coffeeAGNTCY/coffee_agents/lungo/docker/Dockerfile.ui
         - name: auction-supervisor
           dockerfile: coffeeAGNTCY/coffee_agents/lungo/docker/Dockerfile.auction-supervisor
+        - name: agentic-workflows-api
+          dockerfile: coffeeAGNTCY/coffee_agents/lungo/docker/Dockerfile.agentic-workflows-api
         - name: brazil-farm
           dockerfile: coffeeAGNTCY/coffee_agents/lungo/docker/Dockerfile.brazil-farm
         - name: colombia-farm

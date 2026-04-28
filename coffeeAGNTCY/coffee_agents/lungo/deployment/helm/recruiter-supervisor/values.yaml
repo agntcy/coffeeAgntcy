@@ -12,8 +12,6 @@ image:
   pullPolicy: Always
   pullSecret:
 
-
-
 service:
   port: 8882
 
@@ -24,6 +22,9 @@ config:
   llmModel: ""
   defaultMessageTransport: ""
   transportServerEndpoint: ""
+  slimServer: ""
+  natsServer: ""
+  slimSharedSecret: ""
   otlpHttpEndpoint: ""
 
   # Identity SaaS Org-Level API
@@ -32,7 +33,7 @@ config:
   # Identity TBAC Configuration
   identityServiceApiKey: ""
   identityAuthEnabled: "false"
-
+  corsAllowedOrigins: ""
 
 # You can use your own config here for service account
 serviceaccount:
@@ -41,7 +42,7 @@ serviceaccount:
 
 # You can use your own ingress stack of operators and letsencrypt mechanism
 ingress:
-  enabled: false  # If set to true, configure the values below for your ingress setup
+  enabled: false # If set to true, configure the values below for your ingress setup
   name: ""
   className: ""
   host: ""
@@ -51,16 +52,16 @@ ingress:
   annotations: {}
 
 extraIngress:
-    enabled: false  # If set to true, configure the values below for your additional ingress setup
-    name: ""
-    className: ""
-    host: ""
-    serviceName: ""
-    servicePort: ""
-    tlsSecret: ""
-    path: ""
-    pathType: ""
-    annotations: {}
+  enabled: false # If set to true, configure the values below for your additional ingress setup
+  name: ""
+  className: ""
+  host: ""
+  serviceName: ""
+  servicePort: ""
+  tlsSecret: ""
+  path: ""
+  pathType: ""
+  annotations: {}
 
 probes:
   livenessProbeEnabled: false

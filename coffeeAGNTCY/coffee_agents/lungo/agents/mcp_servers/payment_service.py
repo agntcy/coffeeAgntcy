@@ -10,7 +10,8 @@ from mcp.server.fastmcp import FastMCP
 from mcp.server.transport_security import TransportSecuritySettings
 from agntcy_app_sdk.app_sessions import AppContainer
 from agntcy_app_sdk.factory import AgntcyFactory
-from config.config import DEFAULT_MESSAGE_TRANSPORT, TRANSPORT_SERVER_ENDPOINT, OTEL_SDK_DISABLED
+from agents.mcp_servers.utils import _mcp_transport, _mcp_endpoint
+from config.config import OTEL_SDK_DISABLED
 
 logger = logging.getLogger("payment_service")
 
@@ -54,18 +55,21 @@ def list_transactions() -> dict:
 
 async def main():
   transport = factory.create_transport(
-    DEFAULT_MESSAGE_TRANSPORT,
-    endpoint=TRANSPORT_SERVER_ENDPOINT,
+    _mcp_transport,
+    endpoint=_mcp_endpoint,
+    shared_secret_identity=os.getenv("SLIM_SHARED_SECRET"),
     name="default/default/lungo_payment_service",
   )
 
-  app_session = factory.create_app_session(max_sessions=1)
-  app_container = AppContainer(
-    mcp,
-    transport=transport,
-    topic="lungo_payment_service",
-  )
-  app_session.add_app_container("default_session", app_container)
+  app_session = factory.create_app_session()
+  app_session \
+    .add(mcp._mcp_server) \
+    .with_transport(transport) \
+    .with_topic("lungo_payment_service") \
+    .with_session_id("default_session").build()
+
+  await app_session.start_all_sessions(keep_alive=False)
+  logger.info("Agent ready")
   await app_session.start_all_sessions(keep_alive=True)
 
 if __name__ == "__main__":

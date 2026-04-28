@@ -1,7 +1,8 @@
 # Copyright AGNTCY Contributors (https://github.com/agntcy)
 # SPDX-License-Identifier: Apache-2.0
 
-"""A2A send_message retry with exponential backoff and timeout/no-payload error classification."""
+"""A2A send_message retry with exponential backoff and timeout/no-payload error classification.
+"""
 
 import asyncio
 import logging
@@ -68,17 +69,24 @@ _A2A_BACKOFF_BASE = 3
 logger = logging.getLogger(__name__)
 
 
-async def send_a2a_with_retry(client, request):
+async def send_a2a_with_retry(client, message):
     """
-    Send request to A2A client. On timeout or no response (None / no_payload), retry
+    Send message to A2A client. On timeout or no response, retry
     up to 4 times (5 attempts total) with exponential backoff (base 3, delays 1s, 3s,
-    9s, 27s). Valid response with empty content is returned as-is.
+    9s, 27s).
+
+    The A2A SDK (>=0.3.x) client.send_message() returns an AsyncIterator.
+    This function collects all events from the stream and returns them as a list.
     """
     for attempt in range(_A2A_MAX_ATTEMPTS):
         try:
-            response = await client.send_message(request)
-            if response is not None and getattr(response, "root", None) is not None:
-                return response
+            events = []
+            async for event in client.send_message(message):
+                events.append(event)
+
+            if events:
+                return events
+
             if attempt < _A2A_MAX_ATTEMPTS - 1:
                 delay = _A2A_BACKOFF_BASE ** attempt
                 logger.warning(

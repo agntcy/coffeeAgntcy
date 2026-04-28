@@ -8,6 +8,9 @@ replicaCount: 1
 transportServerEndpoint: ""
 otlpHttpEndpoint: ""
 defaultMessageTransport: ""
+slimServer: ""
+natsServer: ""
+slimSharedSecret: ""
 
 image:
   repository: ghcr.io/agntcy/coffee-agntcy/weather-mcp-server
