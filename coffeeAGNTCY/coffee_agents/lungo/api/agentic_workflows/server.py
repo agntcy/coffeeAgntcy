@@ -26,18 +26,19 @@ from fastapi.middleware.cors import CORSMiddleware
 logger = logging.getLogger("lungo.agentic_workflows.server")
 
 
-@asynccontextmanager
-async def _close_workflow_instance_store_on_shutdown(app: FastAPI) -> AsyncIterator[None]:
-    """FastAPI ``lifespan`` hook: shutdown-only cleanup for ``app.state`` resources.
-
-    Starlette/FastAPI use the parameter name ``lifespan`` for this async context
-    manager (startup before ``yield``, shutdown after). Today we only need
-    shutdown to close the workflow-instance store; startup is a no-op.
-    """
-    yield
+def _close_workflow_instance_store(app: FastAPI) -> None:
     store = getattr(app.state, WORKFLOW_INSTANCE_STORE_ATTR, None)
     if store is not None:
         store.close()
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI) -> AsyncIterator[None]:
+    setattr(app.state, WORKFLOW_INSTANCE_STORE_ATTR, WorkflowInstanceStateStore())
+    try:
+        yield
+    finally:
+        _close_workflow_instance_store(app)
 
 
 def create_agentic_workflows_app() -> FastAPI:
@@ -49,7 +50,7 @@ def create_agentic_workflows_app() -> FastAPI:
         title="Agentic Workflows API",
         version="1.0.0",
         description="Catalog, workflow instances, internal events, SSE.",
-        lifespan=_close_workflow_instance_store_on_shutdown,
+        lifespan=lifespan,
     )
     app.add_middleware(
         CORSMiddleware,
@@ -63,7 +64,6 @@ def create_agentic_workflows_app() -> FastAPI:
     async def health() -> dict[str, str]:
         return {"status": "ok"}
 
-    setattr(app.state, WORKFLOW_INSTANCE_STORE_ATTR, WorkflowInstanceStateStore())
     app.include_router(create_agentic_workflows_router())
     return app
 

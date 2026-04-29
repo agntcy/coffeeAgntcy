@@ -194,6 +194,7 @@ def test_create_agentic_workflows_app_attaches_store() -> None:
     from api.agentic_workflows.server import create_agentic_workflows_app
 
     app = create_agentic_workflows_app()
-    store = getattr(app.state, WORKFLOW_INSTANCE_STORE_ATTR)
-    assert isinstance(store, WorkflowInstanceStateStore)
-    store.close()
+    with TestClient(app) as client:
+        assert client.get("/health").status_code == 200
+        store = getattr(app.state, WORKFLOW_INSTANCE_STORE_ATTR)
+        assert isinstance(store, WorkflowInstanceStateStore)
