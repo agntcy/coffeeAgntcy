@@ -33,7 +33,7 @@ from common.a2a_event_middleware import (
     EventEmittingInterceptor,
     make_event_emitting_consumer,
 )
-from common.workflow_registry import (
+from common.a2a_event_middleware.workflow_registry import (
     ToolWorkflowResolver,
     build_registration_from_decorators,
     get_workflow_registry,

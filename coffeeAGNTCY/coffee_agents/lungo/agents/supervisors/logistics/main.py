@@ -38,7 +38,7 @@ require_streaming_capability("logistics_supervisor", LLM_MODEL)
 # initialized the OTel TracerProvider. This hook evicts per-trace state
 # from a2a_event_middleware._in_flight when the caller's tool span ends.
 if not OTEL_SDK_DISABLED:
-    from common.a2a_event_middleware import register_cleanup_span_processor
+    from common.a2a_event_middleware.inflight import register_cleanup_span_processor
     register_cleanup_span_processor()
 
 

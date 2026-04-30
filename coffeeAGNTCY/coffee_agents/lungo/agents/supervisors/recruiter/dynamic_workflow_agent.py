@@ -33,7 +33,7 @@ from agents.supervisors.recruiter.recruiter_client import (
     _event_interceptor,
 )
 from agents.supervisors.recruiter.shared import a2a_client_factory
-from common.workflow_registry import (
+from common.a2a_event_middleware.workflow_registry import (
     make_tool_call_context,
     register_workflow,
     workflow_names,

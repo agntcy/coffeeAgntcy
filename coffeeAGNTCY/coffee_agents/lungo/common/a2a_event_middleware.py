@@ -1,15 +1,15 @@
 # Copyright AGNTCY Contributors (https://github.com/agntcy)
 # SPDX-License-Identifier: Apache-2.0
 
-"""A2A middleware that emits topology discovery ``event_v1`` updates.
+"""A2A middleware that emits topology discovery event updates.
 
-Outbound interceptor calls emit ``operation: create`` and inbound consumer
-callbacks emit ``operation: update``. Workflow identity is resolved from
-``ClientCallContext.state["tool"]`` via a resolver.
+Outbound interceptor calls emit operation=create and inbound consumer
+callbacks emit operation=update. Workflow identity is resolved from
+ClientCallContext.state["tool"] via a resolver.
 
 Lifecycle is bound to the caller's OTel span. The interceptor stores
-per-trace state keyed by ``trace_id`` and the consumer reads it; a
-``SpanProcessor`` evicts state when the owning span ends.
+per-trace state keyed by trace_id and the consumer reads it; a
+SpanProcessor evicts state when the owning span ends.
 """
 
 from __future__ import annotations
@@ -21,7 +21,7 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from time import monotonic
-from typing import Any, Callable
+from typing import Any, Callable, Mapping
 from uuid import uuid4
 
 import httpx
@@ -90,8 +90,8 @@ def _init_starting_topology() -> Topology:
 
 
 # State shared between interceptor and consumer.
-# Consumer callbacks do not receive ``ClientCallContext``, so per-call
-# state is stored by OTel ``trace_id`` and read back in the consumer.
+# Consumer callbacks do not receive ClientCallContext, so per-call
+# state is stored by OTel trace_id and read back in the consumer.
 
 @dataclass(frozen=True)
 class _InterceptionState:
@@ -108,6 +108,15 @@ class _InterceptionState:
 
 _in_flight: dict[int, _InterceptionState] = {}
 _in_flight_lock = asyncio.Lock()
+
+
+@dataclass(frozen=True)
+class _TraceContext:
+    """OTel identifiers used for event correlation and cleanup ownership."""
+
+    trace_id: int | None
+    span_id: int | None
+    owner_span_id: int | None
 
 
 def _current_trace_id() -> int | None:
@@ -127,7 +136,7 @@ def _format_span_id(span_id: int) -> str:
 
 
 class _InFlightCleanupSpanProcessor(SpanProcessor):
-    """Evict ``_in_flight`` entries when their owning span ends."""
+    """Evict _in_flight entries when their owning span ends."""
 
     def on_start(self, span, parent_context=None) -> None:  # noqa: D401
         return None
@@ -182,7 +191,7 @@ def register_cleanup_span_processor() -> None:
 
 
 class _RuntimeIdAllocator:
-    """Allocate instance-scoped ``node://`` and ``edge://`` IDs."""
+    """Allocate instance-scoped node:// and edge:// IDs."""
 
     def __init__(self) -> None:
         self._node_cache: dict[str, str] = {}
@@ -190,7 +199,7 @@ class _RuntimeIdAllocator:
         self._lock = asyncio.Lock()
 
     async def node_id(self, semantic_key: str) -> str:
-        """Return stable runtime ``node://UUID`` for a semantic key."""
+        """Return stable runtime node://UUID for a semantic key."""
         async with self._lock:
             nid = self._node_cache.get(semantic_key)
             if nid is None:
@@ -199,7 +208,7 @@ class _RuntimeIdAllocator:
             return nid
 
     async def edge_id(self, source_nid: str, target_nid: str) -> str:
-        """Return stable runtime ``edge://UUID`` for source/target pair."""
+        """Return stable runtime edge://UUID for source/target pair."""
         async with self._lock:
             key = (source_nid, target_nid)
             eid = self._edge_cache.get(key)
@@ -214,7 +223,7 @@ class _RuntimeIdAllocator:
 # ---------------------------------------------------------------------------
 
 def _slugify_source(card: AgentCard) -> str:
-    """Derive a slug-style ``Metadata.source`` from an agent card name."""
+    """Derive a slug-style Metadata.source from an agent card name."""
     return card.name.lower().replace(" ", "_")
 
 def agent_id_from_card(card: AgentCard | None) -> str | None:
@@ -226,7 +235,7 @@ def agent_id_from_card(card: AgentCard | None) -> str | None:
 def agent_ids_from_cards(
     cards: list[AgentCard | None] | None,
 ) -> list[str]:
-    """Build ordered unique agent IDs from ``AgentCard.name`` values."""
+    """Build ordered unique agent IDs from AgentCard.name values."""
     discovered_ids: list[str] = []
 
     for card in cards or []:
@@ -258,7 +267,7 @@ def _make_node(
     layer_index: int,
     include_size: bool = True,
 ) -> PartialNode:
-    """Create a ``PartialNode`` with standard defaults."""
+    """Create a PartialNode with standard defaults."""
     return PartialNode(
         id=NodeId(node_id),
         operation=operation,
@@ -276,7 +285,7 @@ async def _make_edge(
     operation: Operation,
     allocator: _RuntimeIdAllocator,
 ) -> PartialEdge:
-    """Create a ``PartialEdge`` for discovery events."""
+    """Create a PartialEdge for discovery events."""
     kwargs: dict[str, Any] = dict(
         id=EdgeId(await allocator.edge_id(source_nid, target_nid)),
         operation=operation,
@@ -331,6 +340,140 @@ def _ensure_ids(
     )
 
 
+def _read_trace_context() -> _TraceContext:
+    """Read active OTel trace/span IDs and cleanup owner span."""
+    otel_span = _otel_trace.get_current_span()
+    otel_ctx = otel_span.get_span_context()
+    if not otel_ctx.is_valid:
+        return _TraceContext(trace_id=None, span_id=None, owner_span_id=None)
+
+    otel_parent = getattr(otel_span, "parent", None)
+    owner_span_id = otel_parent.span_id if otel_parent is not None else otel_ctx.span_id
+    return _TraceContext(
+        trace_id=otel_ctx.trace_id,
+        span_id=otel_ctx.span_id,
+        owner_span_id=owner_span_id,
+    )
+
+
+def _resolve_interaction_ids(
+    ctx_state: Mapping[str, Any],
+    workflow_ctx: WorkflowIdentity,
+    trace_id: int | None,
+) -> tuple[str, str]:
+    """Resolve correlation_id and instance_id from context or defaults."""
+    correlation_id = (
+        ctx_state.get("correlation_id")
+        or (f"correlation://{_uuid_mod.UUID(int=trace_id)}" if trace_id else None)
+        or f"correlation://{uuid4()}"
+    )
+    instance_id = (
+        ctx_state.get("instance_id")
+        or (
+            f"instance://{_uuid_mod.uuid5(_INSTANCE_ID_NS, f'{trace_id:032x}::{workflow_ctx.workflow_name}') }"
+            if trace_id
+            else None
+        )
+        or f"instance://{uuid4()}"
+    )
+    return correlation_id, instance_id
+
+
+def _collect_remote_agent_ids(
+    ctx_state: Mapping[str, Any],
+    agent_card: AgentCard,
+) -> list[str]:
+    """Collect one or more remote agent IDs for the outbound call."""
+    broadcast_cards: list[AgentCard | None] | None = ctx_state.get("broadcast_agent_cards")
+    remote_cards: list[AgentCard | None] = broadcast_cards if broadcast_cards else [agent_card]
+    return agent_ids_from_cards(remote_cards)
+
+
+async def _upsert_in_flight_state(
+    *,
+    trace_id: int | None,
+    owner_span_id: int | None,
+    correlation_id: str,
+    instance_id: str,
+    workflow_ctx: WorkflowIdentity,
+    remote_agent_ids: list[str],
+    transport_label: str,
+) -> _RuntimeIdAllocator:
+    """Store trace-scoped state for consumer correlation and ID stability."""
+    allocator = _RuntimeIdAllocator()
+    if trace_id is None:
+        return allocator
+
+    state = _InterceptionState(
+        correlation_id=correlation_id,
+        instance_id=instance_id,
+        workflow_ctx=workflow_ctx,
+        remote_agent_ids=tuple(remote_agent_ids),
+        transport_label=transport_label,
+        allocator=allocator,
+        owner_span_id=owner_span_id or 0,
+    )
+    async with _in_flight_lock:
+        existing = _in_flight.get(trace_id)
+        if existing is not None:
+            state = _InterceptionState(
+                correlation_id=existing.correlation_id,
+                instance_id=existing.instance_id,
+                workflow_ctx=existing.workflow_ctx,
+                remote_agent_ids=tuple(
+                    dict.fromkeys(list(existing.remote_agent_ids) + list(remote_agent_ids))
+                ),
+                transport_label=existing.transport_label,
+                allocator=existing.allocator,
+                owner_span_id=existing.owner_span_id,
+            )
+            allocator = existing.allocator
+        _in_flight[trace_id] = state
+    return allocator
+
+
+def _resolve_consumer_state(
+    *,
+    trace_id: int | None,
+    remote_agent_id: str,
+    default_workflow_ctx: WorkflowIdentity | None,
+    source: str,
+) -> tuple[str, str | None, WorkflowIdentity, _RuntimeIdAllocator] | None:
+    """Resolve consumer state from in-flight data or fallback defaults."""
+    state = _in_flight.get(trace_id) if trace_id is not None else None
+    if state is not None:
+        return (
+            state.correlation_id,
+            state.instance_id,
+            state.workflow_ctx,
+            state.allocator,
+        )
+
+    if default_workflow_ctx is None:
+        logger.warning(
+            "event_emitting_consumer [%s]: no in-flight state for trace_id=%s "
+            "and no default workflow; dropping inbound event for %s",
+            source,
+            _format_trace_id(trace_id) if trace_id else "none",
+            remote_agent_id,
+        )
+        return None
+
+    logger.warning(
+        "event_emitting_consumer [%s]: no in-flight state for trace_id=%s "
+        "- minting fresh correlation_id; inbound event will not correlate "
+        "with outbound. Expected only for standalone consumer usage.",
+        source,
+        _format_trace_id(trace_id) if trace_id else "none",
+    )
+    return (
+        f"correlation://{uuid4()}",
+        None,
+        default_workflow_ctx,
+        _RuntimeIdAllocator(),
+    )
+
+
 def _build_event(
     *,
     source: str,
@@ -343,7 +486,7 @@ def _build_event(
     trace_id: int | None = None,
     span_id: int | None = None,
 ) -> Event:
-    """Build an ``Event`` for one workflow-instance topology update."""
+    """Build an Event for one workflow-instance topology update."""
     cid, iid = _ensure_ids(correlation_id, instance_id)
 
     return Event(
@@ -468,7 +611,7 @@ class EventEmittingInterceptor(ClientCallInterceptor):
             )
             self._event_sink = None
         else:
-            self._event_sink = WorkflowAPIEventSink() 
+            self._event_sink = WorkflowAPIEventSink()
 
     async def intercept(
         self,
@@ -502,23 +645,8 @@ class EventEmittingInterceptor(ClientCallInterceptor):
                     workflow_ctx.workflow_name, workflow_ctx.pattern, workflow_ctx.use_case,
                     ctx_state.get("tool", "unknown"))
 
-        # Precedence: explicit context values -> OTel trace_id -> fresh UUID.
-        otel_span = _otel_trace.get_current_span()
-        otel_ctx = otel_span.get_span_context()
-        trace_id_int = otel_ctx.trace_id if otel_ctx.is_valid else None
-        span_id_int = otel_ctx.span_id if otel_ctx.is_valid else None
-
-        # The interceptor runs in a short-lived child span that ends as
-        # soon as this method returns — before remote responses arrive.
-        # The owning lifetime is the parent (the caller's tool span); fall
-        # back to the current span only if there is no parent.
-        otel_parent = getattr(otel_span, "parent", None)
-        owner_span_id_int = (
-            otel_parent.span_id if otel_parent is not None
-            else span_id_int
-        )
-
-        if trace_id_int is None:
+        trace_ctx = _read_trace_context()
+        if trace_ctx.trace_id is None:
             logger.warning(
                 "EventEmittingInterceptor [%s]: no active OTel span for method '%s'. "
                 "Falling back to random correlation IDs; consumer callbacks will not "
@@ -526,59 +654,24 @@ class EventEmittingInterceptor(ClientCallInterceptor):
                 self._source, method_name,
             )
 
-        correlation_id = (
-            ctx_state.get("correlation_id")
-            or (f"correlation://{_uuid_mod.UUID(int=trace_id_int)}" if trace_id_int else None)
-            or f"correlation://{uuid4()}"
+        correlation_id, instance_id = _resolve_interaction_ids(
+            ctx_state,
+            workflow_ctx,
+            trace_ctx.trace_id,
         )
-        instance_id = (
-            ctx_state.get("instance_id")
-            or (
-                f"instance://{_uuid_mod.uuid5(_INSTANCE_ID_NS, f'{trace_id_int:032x}::{workflow_ctx.workflow_name}')}"
-                if trace_id_int else None
-            )
-            or f"instance://{uuid4()}"
-        )
-
-        broadcast_cards: list[AgentCard | None] | None = ctx_state.get("broadcast_agent_cards")
-        remote_cards: list[AgentCard | None] = broadcast_cards if broadcast_cards else [agent_card]
-        remote_agent_ids = agent_ids_from_cards(remote_cards)
+        remote_agent_ids = _collect_remote_agent_ids(ctx_state, agent_card)
 
         active_transport = agent_card.preferred_transport or "Transport"
 
-        # Register per-interaction state keyed by trace_id so the consumer
-        # (which lacks ClientCallContext) can look it up. Cleanup happens
-        # in _InFlightCleanupSpanProcessor.on_end when the tool span ends.
-        allocator = _RuntimeIdAllocator()
-        if trace_id_int is not None:
-            state = _InterceptionState(
-                correlation_id=correlation_id,
-                instance_id=instance_id,
-                workflow_ctx=workflow_ctx,
-                remote_agent_ids=tuple(remote_agent_ids),
-                transport_label=active_transport,
-                allocator=allocator,
-                owner_span_id=owner_span_id_int or 0,
-            )
-            async with _in_flight_lock:
-                # Preserve allocator to keep node/edge IDs stable within a trace.
-                existing = _in_flight.get(trace_id_int)
-                if existing is not None:
-                    state = _InterceptionState(
-                        correlation_id=existing.correlation_id,
-                        instance_id=existing.instance_id,
-                        workflow_ctx=existing.workflow_ctx,
-                        remote_agent_ids=tuple(
-                            dict.fromkeys(
-                                list(existing.remote_agent_ids) + list(remote_agent_ids)
-                            )
-                        ),
-                        transport_label=existing.transport_label,
-                        allocator=existing.allocator,
-                        owner_span_id=existing.owner_span_id,
-                    )
-                    allocator = existing.allocator
-                _in_flight[trace_id_int] = state
+        allocator = await _upsert_in_flight_state(
+            trace_id=trace_ctx.trace_id,
+            owner_span_id=trace_ctx.owner_span_id,
+            correlation_id=correlation_id,
+            instance_id=instance_id,
+            workflow_ctx=workflow_ctx,
+            remote_agent_ids=remote_agent_ids,
+            transport_label=active_transport,
+        )
 
         if remote_agent_ids:
             topology = await _outbound_topology(
@@ -610,8 +703,8 @@ class EventEmittingInterceptor(ClientCallInterceptor):
             topology=topology,
             correlation_id=correlation_id,
             correlation_message=correlation_msg,
-            trace_id=trace_id_int,
-            span_id=span_id_int,
+            trace_id=trace_ctx.trace_id,
+            span_id=trace_ctx.span_id,
         )
 
         if self._event_sink:
@@ -635,7 +728,7 @@ class EventEmittingInterceptor(ClientCallInterceptor):
 # ---------------------------------------------------------------------------
 
 def _extract_task_from_client_event(event: ClientEvent | Message) -> Task | None:
-    """Best-effort extraction of ``Task`` from a ``ClientEvent`` payload."""
+    """Best-effort extraction of Task from a ClientEvent payload."""
     if isinstance(event, Message):
         return None
 
@@ -696,7 +789,7 @@ def make_event_emitting_consumer(
         )
         event_sink = None
     else:
-        event_sink = WorkflowAPIEventSink() 
+        event_sink = WorkflowAPIEventSink()
 
 
     caller_agent_id = caller_card.name
@@ -711,7 +804,7 @@ def make_event_emitting_consumer(
         event: ClientEvent | Message,
         agent_card: AgentCard,
     ) -> None:
-        """Emit a ``StateProgressUpdate`` for an inbound response."""
+        """Emit a StateProgressUpdate for an inbound response."""
 
         t_receive_start = monotonic()
 
@@ -719,19 +812,14 @@ def make_event_emitting_consumer(
         active_transport = agent_card.preferred_transport or "Transport"
 
         # Look up interaction state by the active OTel trace_id. Both the
-        # interceptor and this consumer run under the same tool-wrapping span,
-        # so they share a trace_id. Eviction happens in
-        # _InFlightCleanupSpanProcessor.on_end when that span ends — no
-        # response counting, no terminal-state inference.
+        # interceptor and this consumer run under the same tool span,
+        # so they share a trace_id. Eviction happens in the cleanup
+        # span processor when that span ends.
         trace_id_int = _current_trace_id()
         span_id_int = (
             _otel_trace.get_current_span().get_span_context().span_id
             if trace_id_int is not None else None
         )
-
-        state: _InterceptionState | None = None
-        if trace_id_int is not None:
-            state = _in_flight.get(trace_id_int)
 
         # Prefer metadata remote name; fallback to consumer's agent card name.
         remote_agent_id = (
@@ -739,32 +827,16 @@ def make_event_emitting_consumer(
             or agent_id
         )
 
-        if state is not None:
-            correlation_id = state.correlation_id
-            instance_id: str | None = state.instance_id
-            workflow_ctx = state.workflow_ctx
-            allocator = state.allocator
-        else:
-            if _default_workflow_ctx is None:
-                logger.warning(
-                    "event_emitting_consumer [%s]: no in-flight state for trace_id=%s "
-                    "and no default workflow — dropping inbound event for %s",
-                    _source,
-                    _format_trace_id(trace_id_int) if trace_id_int else "none",
-                    remote_agent_id,
-                )
-                return
-            logger.warning(
-                "event_emitting_consumer [%s]: no in-flight state for trace_id=%s "
-                "— minting fresh correlation_id; inbound event will not correlate "
-                "with outbound. Expected only for standalone consumer usage.",
-                _source,
-                _format_trace_id(trace_id_int) if trace_id_int else "none",
-            )
-            correlation_id = f"correlation://{uuid4()}"
-            instance_id = None
-            workflow_ctx = _default_workflow_ctx
-            allocator = _RuntimeIdAllocator()
+
+        consumer_state = _resolve_consumer_state(
+            trace_id=trace_id_int,
+            remote_agent_id=remote_agent_id,
+            default_workflow_ctx=_default_workflow_ctx,
+            source=_source,
+        )
+        if consumer_state is None:
+            return
+        correlation_id, instance_id, workflow_ctx, allocator = consumer_state
 
         response_status: TaskState | None = None
         task_obj = _extract_task_from_client_event(event)
@@ -816,7 +888,7 @@ class EventSink(ABC):
 
     @abstractmethod
     async def emit(self, event: Event) -> None:
-        """Handle ``event``."""
+        """Handle event."""
 
     async def aclose(self) -> None:
         """Release sink resources (default no-op)."""

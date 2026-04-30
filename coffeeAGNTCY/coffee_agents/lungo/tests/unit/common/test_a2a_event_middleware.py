@@ -24,7 +24,7 @@ from a2a.types import Task, TaskState, TaskStatus
 # ---------------------------------------------------------------------------
 
 def _make_workflow_identity(name: str = "Test Workflow Alpha"):
-    from common.a2a_event_middleware import WorkflowIdentity
+    from common.a2a_event_middleware.workflow_registry import WorkflowIdentity
 
     return WorkflowIdentity(
         workflow_name=name,
@@ -80,7 +80,7 @@ def _correlation_id(event) -> str:
 @pytest.fixture
 def captured_events(monkeypatch):
     """Patch ``WorkflowAPIEventSink`` and collect emitted events in-memory."""
-    from common import a2a_event_middleware as mw
+    from common.a2a_event_middleware import middleware as mw
 
     captured: list[Any] = []
 
@@ -105,10 +105,10 @@ def captured_events(monkeypatch):
 class TestRuntimeIdAllocator:
     async def test_distinct_allocators_yield_distinct_ids(self):
         """Distinct allocators should not share node IDs for the same key."""
-        from common.a2a_event_middleware import _RuntimeIdAllocator
+        from common.a2a_event_middleware.inflight import RuntimeIdAllocator
 
-        a1 = _RuntimeIdAllocator()
-        a2 = _RuntimeIdAllocator()
+        a1 = RuntimeIdAllocator()
+        a2 = RuntimeIdAllocator()
         assert await a1.node_id("same-key") != await a2.node_id("same-key")
 
 
@@ -118,22 +118,22 @@ class TestRuntimeIdAllocator:
 
 class TestInFlightCleanupSpanProcessor:
     def _seed_state(self, trace_id: int, owner_span_id: int):
-        from common import a2a_event_middleware as mw
-        from common.a2a_event_middleware import (
-            _InterceptionState,
-            _RuntimeIdAllocator,
+        from common.a2a_event_middleware import inflight as inflight_mod
+        from common.a2a_event_middleware.inflight import (
+            InterceptionState,
+            RuntimeIdAllocator,
         )
 
-        state = _InterceptionState(
+        state = InterceptionState(
             correlation_id="correlation://x",
             instance_id="instance://x",
             workflow_ctx=_make_workflow_identity(),
             remote_agent_ids=("remote",),
             transport_label="JSONRPC",
-            allocator=_RuntimeIdAllocator(),
+            allocator=RuntimeIdAllocator(),
             owner_span_id=owner_span_id,
         )
-        mw._in_flight[trace_id] = state
+        inflight_mod.in_flight[trace_id] = state
         return state
 
     def _fake_span(self, trace_id: int, span_id: int, name: str = "span"):
@@ -144,37 +144,37 @@ class TestInFlightCleanupSpanProcessor:
         )
 
     def test_evicts_on_owner_span_end(self):
-        from common import a2a_event_middleware as mw
-        from common.a2a_event_middleware import _InFlightCleanupSpanProcessor
+        from common.a2a_event_middleware import inflight as inflight_mod
+        from common.a2a_event_middleware.inflight import InFlightCleanupSpanProcessor
 
         self._seed_state(trace_id=0xAAA, owner_span_id=0xBBB)
-        processor = _InFlightCleanupSpanProcessor()
+        processor = InFlightCleanupSpanProcessor()
 
         processor.on_end(self._fake_span(trace_id=0xAAA, span_id=0xBBB))
 
-        assert 0xAAA not in mw._in_flight
+        assert 0xAAA not in inflight_mod.in_flight
 
     def test_sibling_span_does_not_evict(self):
         """A different span in the same trace must not drop the state — only
         the owning span does."""
-        from common import a2a_event_middleware as mw
-        from common.a2a_event_middleware import _InFlightCleanupSpanProcessor
+        from common.a2a_event_middleware import inflight as inflight_mod
+        from common.a2a_event_middleware.inflight import InFlightCleanupSpanProcessor
 
         self._seed_state(trace_id=0xAAA, owner_span_id=0xBBB)
-        processor = _InFlightCleanupSpanProcessor()
+        processor = InFlightCleanupSpanProcessor()
 
         processor.on_end(self._fake_span(trace_id=0xAAA, span_id=0xDEAD))
 
-        assert 0xAAA in mw._in_flight
+        assert 0xAAA in inflight_mod.in_flight
 
     async def test_owner_span_round_trip_via_interceptor(
         self, agent_card_factory, otel_span, patch_emit_events, captured_events,
     ):
         """State ownership should be tied to parent span, not child interceptor span."""
-        from common import a2a_event_middleware as mw
-        from common.a2a_event_middleware import (
+        from common.a2a_event_middleware import inflight as inflight_mod
+        from common.a2a_event_middleware.inflight import InFlightCleanupSpanProcessor
+        from common.a2a_event_middleware.middleware import (
             EventEmittingInterceptor,
-            _InFlightCleanupSpanProcessor,
         )
 
         patch_emit_events(True)
@@ -197,11 +197,11 @@ class TestInFlightCleanupSpanProcessor:
                 "send_message", {}, {}, agent_card=remote, context=ctx,
             )
 
-        assert trace_id in mw._in_flight
-        state = mw._in_flight[trace_id]
+        assert trace_id in inflight_mod.in_flight
+        state = inflight_mod.in_flight[trace_id]
         assert state.owner_span_id == parent_span_id
 
-        processor = _InFlightCleanupSpanProcessor()
+        processor = InFlightCleanupSpanProcessor()
 
         child_ctx = SimpleNamespace(
             trace_id=trace_id, span_id=interceptor_span_id,
@@ -209,7 +209,7 @@ class TestInFlightCleanupSpanProcessor:
         processor.on_end(SimpleNamespace(
             name="interceptor", get_span_context=lambda: child_ctx,
         ))
-        assert trace_id in mw._in_flight
+        assert trace_id in inflight_mod.in_flight
 
         parent_ctx = SimpleNamespace(
             trace_id=trace_id, span_id=parent_span_id,
@@ -217,36 +217,36 @@ class TestInFlightCleanupSpanProcessor:
         processor.on_end(SimpleNamespace(
             name="tool", get_span_context=lambda: parent_ctx,
         ))
-        assert trace_id not in mw._in_flight
+        assert trace_id not in inflight_mod.in_flight
 
 
 class TestRegisterCleanupSpanProcessor:
     def test_idempotent_on_same_provider(self, monkeypatch):
-        from common import a2a_event_middleware as mw
+        from common.a2a_event_middleware import inflight as inflight_mod
 
         provider = MagicMock()
         del provider._lungo_cleanup_registered  # ensure missing
         monkeypatch.setattr(
-            mw._otel_trace, "get_tracer_provider", lambda: provider,
+            inflight_mod._otel_trace, "get_tracer_provider", lambda: provider,
         )
 
-        mw.register_cleanup_span_processor()
-        mw.register_cleanup_span_processor()
+        inflight_mod.register_cleanup_span_processor()
+        inflight_mod.register_cleanup_span_processor()
 
         assert provider.add_span_processor.call_count == 1
 
     def test_graceful_when_provider_has_no_add_span_processor(
         self, monkeypatch, caplog,
     ):
-        from common import a2a_event_middleware as mw
+        from common.a2a_event_middleware import inflight as inflight_mod
 
         provider = SimpleNamespace()
         monkeypatch.setattr(
-            mw._otel_trace, "get_tracer_provider", lambda: provider,
+            inflight_mod._otel_trace, "get_tracer_provider", lambda: provider,
         )
 
-        with caplog.at_level(logging.WARNING, logger=mw.logger.name):
-            mw.register_cleanup_span_processor()
+        with caplog.at_level(logging.WARNING, logger=inflight_mod.logger.name):
+            inflight_mod.register_cleanup_span_processor()
 
         assert any(
             "no add_span_processor" in rec.getMessage()
@@ -263,7 +263,7 @@ class TestEventEmittingInterceptor:
     def _build(
         self, *, patch_emit_events, caller="Auction Agent", flag=True,
     ):
-        from common.a2a_event_middleware import EventEmittingInterceptor
+        from common.a2a_event_middleware.middleware import EventEmittingInterceptor
 
         patch_emit_events(flag)
         caller_card = MagicMock()
@@ -370,7 +370,7 @@ class TestEventEmittingInterceptor:
         self, agent_card_factory, otel_span, patch_emit_events, captured_events,
     ):
         """Clearing ``_in_flight`` should still recompute the same instance ID."""
-        from common import a2a_event_middleware as mw
+        from common.a2a_event_middleware import inflight as inflight_mod
 
         interceptor = self._build(patch_emit_events=patch_emit_events)
         remote = agent_card_factory("Brazil Farm")
@@ -380,7 +380,7 @@ class TestEventEmittingInterceptor:
             await interceptor.intercept(
                 "send_message", {}, {}, agent_card=remote, context=ctx,
             )
-            mw._in_flight.clear()
+            inflight_mod.in_flight.clear()
             await interceptor.intercept(
                 "send_message", {}, {}, agent_card=remote, context=ctx,
             )
@@ -431,7 +431,7 @@ class TestEventEmittingInterceptor:
 
 class TestEventEmittingConsumer:
     def _build_pair(self, *, patch_emit_events, resolver=None):
-        from common.a2a_event_middleware import (
+        from common.a2a_event_middleware.middleware import (
             EventEmittingInterceptor,
             make_event_emitting_consumer,
         )

@@ -29,14 +29,14 @@ class TestToolIdentityKey:
         ids=["name_wins", "dunder_fallback", "wrapped_fallback"],
     )
     def test_precedence(self, obj, expected):
-        from common.workflow_registry import _tool_identity_key
+        from common.a2a_event_middleware.workflow_registry import _tool_identity_key
 
         assert _tool_identity_key(obj) == expected
 
 
 class TestRegisterWorkflow:
     def test_rejects_unknown_workflow(self, workflows_json):
-        from common.workflow_registry import register_workflow
+        from common.a2a_event_middleware.workflow_registry import register_workflow
 
         with pytest.raises(KeyError):
             @register_workflow("Nonexistent Workflow")
@@ -44,7 +44,7 @@ class TestRegisterWorkflow:
                 pass
 
     def test_conflicting_re_registration_raises(self, workflows_json):
-        from common.workflow_registry import register_workflow
+        from common.a2a_event_middleware.workflow_registry import register_workflow
 
         @register_workflow("Test Workflow Alpha")
         def my_tool():
@@ -56,7 +56,7 @@ class TestRegisterWorkflow:
 
 class TestGetWorkflowRegistry:
     def test_loads_valid_catalog(self, workflows_json):
-        from common.workflow_registry import get_workflow_registry
+        from common.a2a_event_middleware.workflow_registry import get_workflow_registry
 
         wf = get_workflow_registry().get("Test Workflow Alpha")
         assert wf.workflow_name == "Test Workflow Alpha"
@@ -64,7 +64,7 @@ class TestGetWorkflowRegistry:
         assert wf.use_case == "Unit Test"
 
     def test_empty_catalog_raises(self, tmp_path, monkeypatch):
-        from common import workflow_registry as wr
+        from common.a2a_event_middleware import workflow_registry as wr
 
         path = tmp_path / "empty.json"
         path.write_text("[]")
@@ -75,7 +75,7 @@ class TestGetWorkflowRegistry:
 
     def test_malformed_entries_skipped_not_fatal(self, tmp_path, monkeypatch):
         """Mixed catalogs should load valid entries and skip invalid ones."""
-        from common import workflow_registry as wr
+        from common.a2a_event_middleware import workflow_registry as wr
 
         path = tmp_path / "partial.json"
         path.write_text(json.dumps([
@@ -97,7 +97,7 @@ class TestGetWorkflowRegistry:
 
 class TestToolWorkflowResolver:
     def _resolver(self, *, default=None, mapping=None):
-        from common.workflow_registry import (
+        from common.a2a_event_middleware.workflow_registry import (
             ToolWorkflowResolver,
             WorkflowRegistration,
             get_workflow_registry,
@@ -130,7 +130,7 @@ class TestToolWorkflowResolver:
 
 class TestMakeToolCallContext:
     def test_merges_tool_key_with_extras(self):
-        from common.workflow_registry import make_tool_call_context
+        from common.a2a_event_middleware.workflow_registry import make_tool_call_context
 
         def my_tool():
             pass

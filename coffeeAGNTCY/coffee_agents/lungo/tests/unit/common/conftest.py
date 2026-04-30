@@ -35,22 +35,22 @@ import pytest
 def _reset_in_flight() -> Iterator[None]:
     """Clear the middleware's per-trace in-flight state around every test."""
     try:
-        from common import a2a_event_middleware as mw
+        from common.a2a_event_middleware import inflight as inflight_mod
     except Exception:
         yield
         return
-    mw._in_flight.clear()
+    inflight_mod.in_flight.clear()
     try:
         yield
     finally:
-        mw._in_flight.clear()
+        inflight_mod.in_flight.clear()
 
 
 @pytest.fixture(autouse=True)
 def _reset_tool_workflow_map() -> Iterator[None]:
     """Clear the decorator-populated tool->workflow map around every test."""
     try:
-        from common import workflow_registry as wr
+        from common.a2a_event_middleware import workflow_registry as wr
     except Exception:
         yield
         return
@@ -67,7 +67,7 @@ def _reset_tool_workflow_map() -> Iterator[None]:
 def _reset_workflow_registry_cache() -> Iterator[None]:
     """Invalidate the ``lru_cache`` wrapping ``get_workflow_registry``."""
     try:
-        from common import workflow_registry as wr
+        from common.a2a_event_middleware import workflow_registry as wr
     except Exception:
         yield
         return
@@ -90,7 +90,7 @@ def patch_emit_events(monkeypatch):
     """
 
     def _set(enabled: bool) -> None:
-        from common import a2a_event_middleware as mw
+        from common.a2a_event_middleware import middleware as mw
         monkeypatch.setattr(mw, "EMIT_WORKFLOW_EVENTS", enabled, raising=False)
 
     return _set
@@ -183,7 +183,7 @@ def _patched_current_span(
     return a deterministic span. ``trace_id=None`` simulates "no active span"
     by setting ``is_valid=False``.
     """
-    from common import a2a_event_middleware as mw
+    from common.a2a_event_middleware import inflight as inflight_mod
 
     valid = trace_id is not None
     ctx = _FakeSpanContext(
@@ -202,7 +202,7 @@ def _patched_current_span(
 
     fake_tracer = MagicMock()
     fake_tracer.get_current_span.return_value = fake_span
-    monkeypatch.setattr(mw, "_otel_trace", fake_tracer, raising=True)
+    monkeypatch.setattr(inflight_mod, "_otel_trace", fake_tracer, raising=True)
     try:
         yield fake_span
     finally:
