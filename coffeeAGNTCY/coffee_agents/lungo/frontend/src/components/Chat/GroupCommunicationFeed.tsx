@@ -7,8 +7,10 @@
  **/
 
 import React, { useState, useEffect, useCallback, useRef } from "react"
-
-import { ChevronDown, ChevronUp } from "lucide-react"
+import { IconButton } from "@open-ui-kit/core"
+import ExpandMore from "@mui/icons-material/ExpandMore"
+import ExpandLess from "@mui/icons-material/ExpandLess"
+import Box from "@mui/material/Box"
 
 import AgentIcon from "@/assets/Coffee_Icon.svg"
 import CheckCircle from "@/assets/CheckCircle.png"
@@ -228,7 +230,16 @@ const GroupCommunicationFeed: React.FC<GroupCommunicationFeedProps> = ({
   return (
     <div className="flex w-full flex-row items-start gap-1 transition-all duration-300">
       <div className="chat-avatar-container flex h-10 w-10 flex-none items-center justify-center rounded-full bg-action-background">
-        <img src={AgentIcon} alt="Agent" className="h-[22px] w-[22px]" />
+        <Box
+          component="img"
+          src={AgentIcon}
+          alt="Agent"
+          sx={{
+            width: 22,
+            height: 22,
+            bgcolor: "#ffffff",
+          }}
+        />
       </div>
 
       <div className="flex max-w-[calc(100%-3rem)] flex-1 flex-col items-start rounded p-1 px-2">
@@ -256,16 +267,30 @@ const GroupCommunicationFeed: React.FC<GroupCommunicationFeedProps> = ({
         )}
 
         {storeIsComplete && !isExpanded && (
-          <div
-            className="mt-1 flex w-full cursor-pointer flex-row items-center gap-1 hover:opacity-75"
-            onClick={handleExpand}
-          >
-            <div className="h-4 w-4 flex-none">
-              <ChevronDown className="h-4 w-4 text-chat-text" />
-            </div>
+          <div className="mt-1 flex w-full flex-row items-center gap-1 hover:opacity-75">
+            <IconButton
+              size="small"
+              color="inherit"
+              aria-label="View details"
+              onClick={handleExpand}
+              sx={{ flex: "none", p: 0.25 }}
+            >
+              <ExpandMore sx={{ fontSize: 16 }} />
+            </IconButton>
 
             <div className="flex-1">
-              <span className="font-cisco text-sm font-normal leading-[18px] text-chat-text">
+              <span
+                className="cursor-pointer leading-[18px] text-chat-text"
+                onClick={handleExpand}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault()
+                    handleExpand()
+                  }
+                }}
+                role="button"
+                tabIndex={0}
+              >
                 View Details
               </span>
             </div>
@@ -281,10 +306,14 @@ const GroupCommunicationFeed: React.FC<GroupCommunicationFeedProps> = ({
                     className="flex w-full flex-row items-start gap-1"
                   >
                     <div className="mt-1 flex items-center">
-                      <img
+                      <Box
+                        component="img"
                         src={CheckCircle}
                         alt="Complete"
-                        className="h-4 w-4"
+                        sx={{
+                          width: 16,
+                          height: 16,
+                        }}
                       />
                     </div>
 
@@ -316,14 +345,19 @@ const GroupCommunicationFeed: React.FC<GroupCommunicationFeedProps> = ({
             </div>
 
             {storeIsComplete && (
-              <div
-                className="flex w-full cursor-pointer flex-row items-center gap-1 pt-2 hover:opacity-75"
+              <IconButton
+                size="small"
+                color="inherit"
+                aria-label="Collapse details"
                 onClick={handleCollapse}
+                sx={{
+                  alignSelf: "flex-start",
+                  mt: 1,
+                  p: 0.25,
+                }}
               >
-                <div className="h-4 w-4 flex-none">
-                  <ChevronUp className="h-4 w-4 text-chat-text" />
-                </div>
-              </div>
+                <ExpandLess sx={{ fontSize: 16 }} />
+              </IconButton>
             )}
           </>
         )}

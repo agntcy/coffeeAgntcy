@@ -4,10 +4,9 @@
  **/
 
 import React from "react"
+import Box from "@mui/material/Box"
 import { Handle, Position } from "@xyflow/react"
-import { useThemeIcon } from "@/hooks/useThemeIcon"
 import { SecurityClass } from "@/utils/SecurityClass"
-import githubIcon from "@/assets/Github.png"
 import githubIconLight from "@/assets/Github_lightmode.png"
 import { TransportNodeData } from "./types"
 
@@ -16,10 +15,7 @@ interface TransportNodeProps {
 }
 
 const TransportNode: React.FC<TransportNodeProps> = ({ data }) => {
-  const githubIconSrc = useThemeIcon({
-    light: githubIconLight,
-    dark: githubIcon,
-  })
+  const githubIconSrc = githubIconLight
 
   const activeClasses = data.active
     ? "bg-node-background-active outline outline-2 outline-accent-border shadow-[var(--shadow-default)_0px_6px_8px]"
@@ -60,10 +56,15 @@ const TransportNode: React.FC<TransportNodeProps> = ({ data }) => {
               e.currentTarget.style.opacity = "1"
             }}
           >
-            <img
+            <Box
+              component="img"
               src={githubIconSrc}
               alt="GitHub"
-              className={isCircular ? "h-4 w-4" : "h-5 w-5"}
+              sx={{
+                width: isCircular ? 16 : 20,
+                height: isCircular ? 16 : 20,
+                bgcolor: "#ffffff",
+              }}
             />
           </div>
         </a>

@@ -4,7 +4,7 @@
  **/
 
 import React from "react"
-import { User } from "lucide-react"
+import Person from "@mui/icons-material/Person"
 
 interface UserMessageProps {
   content: string
@@ -14,7 +14,7 @@ const UserMessage: React.FC<UserMessageProps> = ({ content }) => {
   return (
     <div className="flex w-full flex-row items-start gap-1">
       <div className="chat-avatar-container flex h-10 w-10 flex-none items-center justify-center rounded-full bg-action-background">
-        <User size={22} className="text-white" />
+        <Person sx={{ fontSize: 22 }} />
       </div>
 
       <div className="flex flex-1 flex-col items-start justify-center rounded p-1 px-2">

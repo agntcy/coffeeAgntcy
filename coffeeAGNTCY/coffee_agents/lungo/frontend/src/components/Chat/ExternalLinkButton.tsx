@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  **/
 
+import Box from "@mui/material/Box"
 import { SecurityClass } from "@/utils/SecurityClass"
 
 interface ExternalLinkButtonProps {
@@ -28,7 +29,16 @@ const ExternalLinkButton: React.FC<ExternalLinkButtonProps> = ({
       className={`hover:bg-accent-primary/10 absolute inline-flex max-h-[20px] max-w-[90px] items-center gap-1 rounded-full border border-gray-300 bg-[var(--external-link-button-bg)] px-2 py-1 font-cisco text-xs text-chat-text shadow transition-colors dark:border-gray-700 ${className ?? ""}`}
       style={{ marginLeft: 12 }}
     >
-      <img src={iconSrc} alt={label} className="h-4 w-4" />
+      <Box
+        component="img"
+        src={iconSrc}
+        alt={label}
+        sx={{
+          width: 16,
+          height: 16,
+          bgcolor: "#ffffff",
+        }}
+      />
       {label}
     </a>
   )
