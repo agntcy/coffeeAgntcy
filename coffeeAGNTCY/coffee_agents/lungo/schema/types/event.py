@@ -314,7 +314,7 @@ class Data(BaseModel):
 
     model_config = ConfigDict(extra="allow")
 
-    workflows: dict[str, Workflow] = Field(default_factory=dict)
+    workflows: dict[str, Workflow]
 
 
 class Event(BaseModel):

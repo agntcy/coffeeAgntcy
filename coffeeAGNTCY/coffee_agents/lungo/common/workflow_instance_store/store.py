@@ -31,6 +31,7 @@ import asyncio
 import copy
 import logging
 import queue
+from schema.types.event import Workflow
 import threading
 import time
 from collections import defaultdict
@@ -286,7 +287,7 @@ class WorkflowInstanceStateStore:
         self._dispatch = _DispatchHub(self._state_lock, n)
         self._merge = _MergeCoordinator(
             self._state_lock,
-            Data(),
+            Data(workflows=dict[str, Workflow]()),
             self._after_merge_enqueue_dispatch,
         )
 
