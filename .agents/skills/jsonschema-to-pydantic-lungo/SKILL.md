@@ -1,18 +1,23 @@
 ---
 name: jsonschema-to-pydantic-lungo
-description: Generates Pydantic v2 model classes from the JSON Schema documents under `coffeeAGNTCY/coffee_agents/lungo/schema/jsonschemas/` into `coffeeAGNTCY/coffee_agents/lungo/schema/types/*.py`. DO NOT TRIGGER AUTOMATICALLY. ASK THE USER IF THE SKILL SHOULD BE USED. Use when a `*_v*.json` schema under that folder is added or modified, when regenerating the lungo Pydantic types after a schema change, or when the user mentions regenerating schema types, lungo types, JSON Schema → Pydantic, or fixing drift between schema and types.
+description: Generates Pydantic v2 model classes from the JSON Schema documents under `coffeeAGNTCY/coffee_agents/lungo/schema/jsonschemas/` into `coffeeAGNTCY/coffee_agents/lungo/schema/types/*.py`, and a matching pytest module per types module under `coffeeAGNTCY/coffee_agents/lungo/tests/unit/schemas/types/test_<module>.py`. DO NOT TRIGGER AUTOMATICALLY. ASK THE USER IF THE SKILL SHOULD BE USED. Use when a `*_v*.json` schema under that folder is added or modified, when regenerating the lungo Pydantic types or their tests after a schema change, or when the user mentions regenerating schema types, JSON Schema → Pydantic, or fixing drift between schema and types.
 ---
 
 # JSON Schema → Pydantic v2 (lungo)
 
 ## What this skill does
 
-Generates one Pydantic v2 module per JSON Schema in `coffeeAGNTCY/coffee_agents/lungo/schema/jsonschemas/*.json`. Output goes to `coffeeAGNTCY/coffee_agents/lungo/schema/types/<schema_name>.py`. The package `__init__.py` is updated to re-export the public symbols.
+Generates one Pydantic v2 module per JSON Schema in `coffeeAGNTCY/coffee_agents/lungo/schema/jsonschemas/*.json` and one matching pytest module per generated types module. Output:
 
-The generator is the schema. **Do not** read existing files in `schema/types/` to decide naming, layout, or behaviour — they may be missing, stale, or wrong. The only authoritative inputs are:
+- Types: `coffeeAGNTCY/coffee_agents/lungo/schema/types/<schema_name>.py` (no `_v<N>` suffix).
+- Tests: `coffeeAGNTCY/coffee_agents/lungo/tests/unit/schemas/types/test_<schema_name>.py` (same stem as the types module, prefixed with `test_`, parallel to the `schema/types/` layout).
+- The package `__init__.py` under `schema/types/` is updated to re-export the public symbols.
+
+The generator is the schema. **Do not** read existing files in `schema/types/` or `tests/unit/schemas/types/test_<module>.py` to decide naming, layout, or behaviour - they may be missing, stale, or wrong. The only authoritative inputs are:
 
 1. The `.json` files under `schema/jsonschemas/` (excluding `examples/`).
-2. Cross-field validation logic that isn't expressible in JSON Schema, found in `coffeeAGNTCY/coffee_agents/lungo/schema/json_schema.py` (and any sibling modules under `schema/`).
+2. The example payloads under `schema/jsonschemas/examples/` — used as round-trip baselines and as the source data that test mutations clone before invalidating.
+3. Cross-field validation logic that isn't expressible in JSON Schema, found in `coffeeAGNTCY/coffee_agents/lungo/schema/json_schema.py` (and any sibling modules under `schema/`).
 
 ## Workflow
 
@@ -24,17 +29,20 @@ Copy this checklist and tick items as you go:
 - [ ] 3. Read schema/json_schema.py for Python-only constraints (e.g. validate_version_specific_criteria)
 - [ ] 4. Generate one schema/types/<name>.py per schema, applying the mapping rules
 - [ ] 5. Update schema/types/__init__.py: re-export every public class, type alias, and `*_from_uuid` helper
-- [ ] 6. Run: cd coffeeAGNTCY/coffee_agents/lungo && uv run --frozen pytest tests/unit/schemas/ -x
-- [ ] 7. Run: cd coffeeAGNTCY/coffee_agents/lungo && uv run --frozen pytest tests/unit/ -x
+- [ ] 6. Generate one tests/unit/schemas/types/test_<name>.py per types module, applying the test-generation rules
+- [ ] 7. Look for possibly affected non-generated consumer code and update it
+- [ ] 8. Run: cd coffeeAGNTCY/coffee_agents/lungo && uv run --frozen pytest tests/unit/schemas/ -x
+- [ ] 9. Run: cd coffeeAGNTCY/coffee_agents/lungo && uv run --frozen pytest tests/unit/ -x
 ```
 
-If step 6 or 7 fails, identify which mapping rule(s) you applied incorrectly and **re-emit** the affected file(s) end-to-end — do not patch the failing portion in isolation. Do not edit tests or non-generated consumer code unless the user explicitly asks. If a rule itself seems wrong or insufficient to make the tests pass, surface that to the user instead of working around it.
+If step 8 or 9 fails, identify which mapping rule(s) or test-generation rule(s) you applied incorrectly and **re-emit** the affected file(s) end-to-end — do not patch the failing portion in isolation.  
+If a rule itself seems wrong or insufficient to make the tests pass, surface that to the user instead of working around it.
 
 ## Naming
 
 | Source artefact | Target Python identifier |
 |---|---|
-| `event_v1.json` | `event.py` (strip the `_v<N>` version suffix) |
+| `event_v1.json` | `schema/types/event.py` and `tests/unit/schemas/types/test_event.py` (strip the `_v<N>` version suffix) |
 | `$defs.foo_bar` | `class FooBar` (snake_case → PascalCase, **no semantic renames**) |
 | Top-level object schema with `title: "Event (v1)"` | `class Event` (title without parenthesised version) |
 | Top-level schema with no root `type` (enum-only / `$defs`-only file, e.g. `event_type_v1.json`) | no root class — the module just contains the `$defs` outputs |
@@ -196,13 +204,60 @@ mirrors ``schema.json_schema._enforce_workflow_instance_map_key_id_match``
 
 Public symbols include: every `class` declared at module level, every type alias (e.g. `TopologyNodeItem`, `Node`, `PartialNode`), and every `<name>_from_uuid` helper.
 
+## Test generation
+
+For every generated `schema/types/<name>.py` emit a matching pytest module at `tests/unit/schemas/types/test_<name>.py` (the `tests/unit/schemas/types/` directory mirrors `schema/types/`). Very short and not meaningful types files don't need to have tests generated for them unless instructed by the user.  
+These test files are owned by this skill: do not read the existing ones to decide layout; re-emit. However, if a file under `schema/types/<name>.py` has not changed, then don't generate a new test file for it, unless specifically instructed by the user.  
+The goal of every test in these modules is to verify that the generated Pydantic types agree with both (a) the JSON Schema layer (`schema.validation.validate_data_against_schema`) and (b) the Python validation logic in `coffeeAGNTCY/coffee_agents/lungo/schema/json_schema.py` (and any sibling modules) that doesn't fit into JSON Schema — Pydantic `Discriminator` callables, `@model_validator` cross-field checks, and `@field_validator` whole-value checks should usually all live alongside the schema-driven cases in the same tables, if possible, not in separate "discriminator-only" or "validator-only" tables.
+
+### File header and imports
+
+Same license header and `Generated from ...` docstring shape as the types module, pointing at the source `.json`. Use `from __future__ import annotations` and group imports stdlib → third-party → first-party (`schema.*`).
+
+Don't re-explain the rules from this SKILL used to generate the file. 
+
+### Test pattern (table-driven, NamedTuple-keyed)
+
+For every test function in the file:
+
+1. Define a top-level `Case = NamedTuple` with `case_id: str` and one or two sub-NamedTuples (`Inputs`, optional `Outputs`). The top-level tuple is always the `Case` shape; only add `Outputs` when the expected result needs more than one field (e.g. distinguishing "valid" from "raises type X"). For tests where the expected result is fully derivable from the inputs (e.g. an id helper that always builds `f"{prefix}://{uuid}"`), `Outputs` may be omitted and the assertion derived from `inputs` directly.
+2. Bring all parameters for that test into one `_<UPPERCASE>_CASES: tuple[<Case>, ...] = (...)` table. Multiple tables per file is the norm — one per concern (id helpers, id pattern enforcement, top-level model agreement, enum member values, parent-schema acceptance, etc.). Do not collapse heterogeneous concerns into a single table.
+3. Parametrize with `@pytest.mark.parametrize("case", [pytest.param(c, id=c.case_id) for c in _<UPPERCASE>_CASES])` so the case id is the pytest test id.
+4. Mutations on a loaded example can be named module-level functions, but if they are short and very simple they should be inline lambdas. If they are named functions, name them `_mutate_<case_id>` and declare them in a single block right above the table that references them. The test body deepcopies the example before invoking the mutation. (For round-trip cases, `inputs.mutate is None`; assert that in the test body so a future case can't accidentally combine "valid" with a mutation.)
+
+### What to cover per artefact kind
+
+The set of tables in a generated test module is a function of what the corresponding types module emits. Use the following recipe:
+
+- **For every `class <X>Id(RootModel[str])` plus `<x>_id_from_uuid` helper**: there's no need to generate dedicated tests for these. They should be covered by cases in other types that use them.
+- **For every `class <X>(StrEnum)`**: there's no need to generated dedicated tests for these. They should be covered by cases in other types that use them.
+- **For every top-level model class** (`Event` etc.): one `_<MODEL>_CASES` table whose rows are either round-trip rows (every packaged example file under `schema/jsonschemas/examples/`, with no mutation) or invalidation rows (same example, with a mutation that violates a single named invariant). Cases must collectively cover, at minimum:
+  - one case per packaged example (round-trip, no mutation),
+  - one case per `additionalProperties: false` boundary the schema declares,
+  - one case per `pattern` constraint reachable from the root (e.g. malformed `metadata.id`, malformed `metadata.correlation.id`),
+  - one case per `enum` constraint reachable from the root (assigning an unknown member),
+  - one case per top-level `required: [...]` field (deletion of the required key — this exercises both the JSON Schema `required` clause and Pydantic's "field required" error),
+  - one case per cross-field invariant in `schema/json_schema.py` that the validator-rule rule (Rule E) implements as a Pydantic `@model_validator` (e.g. `instances` map key vs. nested `id`),
+  - one case per `Discriminator` decision in the types module (input data that should route to each branch must already be exercised by the round-trip examples; if a packaged example doesn't cover both branches of a discriminator, add a focused round-trip row that does, using a deepcopy of an existing example mutated to flip the routing).
+
+Round-trip body: validate via `validate_data_against_schema(data, "<schema_name>")`, then `<Model>.model_validate(data)`, then `dumped = model.model_dump(mode="json", exclude_none=True)`, then re-validate `dumped` through both layers. Also assert `isinstance(dumped[...], str)` for any `format: date-time` fields and that the corresponding `model.<...>.tzinfo is not None`.
+
+Invalid body: assert that **both** `validate_data_against_schema` and `<Model>.model_validate` raise — typically `SchemaValidationError` and `pydantic.ValidationError` respectively. The `Outputs` sub-NamedTuple usually pins both exception types: `EventOutputs(schema_exc, model_exc)`. An invalid case where only one layer rejects the input is a bug in either the types module (Pydantic too lax/strict) or the schema (the JSON Schema doesn't encode the constraint and there's no Python `@model_validator` for it) — surface it to the user instead of writing a one-sided test.
+
+### Anti-patterns specific to test generation
+
+- ❌ Single table mixing id-helper rows with top-level-model rows. Tables are homogeneous; one table per test function.
+- ❌ Module-level helpers with names that don't match the case id they serve (it makes case ↔ mutator mapping a manual diff).
+- ❌ Asserting only one of the two validation layers. If a payload is invalid, both layers must reject it (use `pytest.raises` against each in sequence).
+- ❌ Building round-trip payloads inline as Python literals when a packaged example exists. Load examples from `schema/jsonschemas/examples/` and mutate copies for invalidation rows.
+
 ## Verification
 
 After generating, both must pass:
 
 ```
 cd coffeeAGNTCY/coffee_agents/lungo
-uv run --frozen pytest tests/unit/schemas/  # schema-types parity
+uv run --frozen pytest tests/unit/schemas/  # schema-layer tests + generated tests/unit/schemas/types/test_<module>.py
 uv run --frozen pytest tests/unit/          # consumer compatibility
 ```
 
@@ -211,6 +266,7 @@ If a consumer fails because of a rename you introduced (e.g. it imported the old
 ## Anti-patterns
 
 - ❌ Reading an existing `schema/types/<name>.py` to decide naming.
+- ❌ Reading an existing `tests/unit/schemas/types/test_<name>.py` to decide layout — generated tests are re-emitted end-to-end from the schema and the corresponding types module.
 - ❌ Subclassing `Partial<X>` from `<X>` (or vice versa) when `allOf` only adds required fields.
 - ❌ Using `@model_validator(mode="after")` to police `__pydantic_extra__` for fields that should belong to a sibling union variant.
 - ❌ Putting field-count or per-field validity checks inside a `Discriminator` callable. The discriminator answers exactly one question: which schema `anyOf` branch.
