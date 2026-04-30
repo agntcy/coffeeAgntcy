@@ -49,25 +49,23 @@ WORKFLOW_INSTANCE_SSE_QUEUE_HIGH_WATER = max(
 )
 
 
-def workflow_instance_event_to_sse_bytes(event: Event) -> bytes:
-    """One SSE message: a single ``data:`` line with compact ``event_v1`` JSON."""
-    line = json.dumps(
-        event.model_dump(mode="json", exclude_none=True),
-        separators=(",", ":"),
-    )
-    return f"data: {line}\n\n".encode()
+def workflow_instance_event_to_sse_frame(event: Event) -> str:
+    """One SSE message: a single ``data:`` line with compact ``event_v1`` JSON (UTF-8 text)."""
+    payload = event.model_dump(mode="json", exclude_none=True)
+    line = json.dumps(payload, separators=(",", ":"))
+    return f"data: {line}\n\n"
 
 
 def enqueue_workflow_instance_sse_queue_chunk(
-    queue: asyncio.Queue[bytes],
-    chunk: bytes,
+    queue: asyncio.Queue[str],
+    chunk: str,
     *,
     high_water: int,
 ) -> None:
-    """Append ``chunk`` to ``queue``; at/above ``high_water`` backlog, drop oldest first.
+    """Append ``chunk`` (SSE frame text, typically JSON ``data:`` lines) to ``queue``.
 
-    If ``put_nowait`` still raises :class:`asyncio.QueueFull`, drop oldest and retry
-    until the chunk is queued.
+    At/above ``high_water`` backlog, drop oldest first. If ``put_nowait`` still raises
+    :class:`asyncio.QueueFull`, drop oldest and retry until the chunk is queued.
     """
     if queue.qsize() >= high_water and not queue.empty():
         try:
@@ -290,7 +288,7 @@ def create_agentic_workflows_router() -> APIRouter:
         """GET SSE stream; each message is one ``data:`` line of compact ``event_v1`` JSON."""
         store = _workflow_instance_store(request)
         canonical_id = instance_id_from_uuid(workflow_instance_id).root
-        queue: asyncio.Queue[bytes] = asyncio.Queue(
+        queue: asyncio.Queue[str] = asyncio.Queue(
             maxsize=WORKFLOW_INSTANCE_SSE_QUEUE_MAXSIZE
         )
         loop = asyncio.get_running_loop()
@@ -301,7 +299,7 @@ def create_agentic_workflows_router() -> APIRouter:
             wf_block = ev.data.workflows[workflow_name]
             if canonical_id not in wf_block.instances:
                 return
-            chunk = workflow_instance_event_to_sse_bytes(ev)
+            chunk = workflow_instance_event_to_sse_frame(ev)
 
             def _enqueue() -> None:
                 enqueue_workflow_instance_sse_queue_chunk(
@@ -320,8 +318,8 @@ def create_agentic_workflows_router() -> APIRouter:
             yield b":\n\n"
             try:
                 while True:
-                    chunk = await queue.get()
-                    yield chunk
+                    frame = await queue.get()
+                    yield frame.encode("utf-8")
             finally:
                 unsub()
 

@@ -15,7 +15,7 @@ from api.agentic_workflows.router import (
     WORKFLOW_INSTANCE_SSE_QUEUE_HIGH_WATER_RATIO,
     create_agentic_workflows_router,
     enqueue_workflow_instance_sse_queue_chunk,
-    workflow_instance_event_to_sse_bytes,
+    workflow_instance_event_to_sse_frame,
 )
 from common.workflow_instance_store import WorkflowInstanceStateStore
 from fastapi import FastAPI
@@ -122,15 +122,15 @@ def test_post_workflow_instance_event_invalid_body_returns_422(
     assert r.status_code == 422
 
 
-def test_workflow_instance_event_to_sse_bytes_roundtrips_event_v1() -> None:
+def test_workflow_instance_event_to_sse_frame_roundtrips_event_v1() -> None:
     uid = UUID("550e8400-e29b-41d4-a716-4466554400aa")
     iuri = instance_id_from_uuid(uid).root
     wf_name = "sse_wf"
     body = _event_dict(wf_name, iuri, "event://550e8400-e29b-41d4-a716-4466554400ab")
     ev = Event.model_validate(body)
-    raw = workflow_instance_event_to_sse_bytes(ev)
-    assert raw.startswith(b"data:")
-    first_line = raw.split(b"\n", 1)[0].decode()
+    frame = workflow_instance_event_to_sse_frame(ev)
+    assert frame.startswith("data:")
+    first_line = frame.split("\n", 1)[0]
     json_part = first_line[len("data:") :].strip()
     Event.model_validate(json.loads(json_part))
 
@@ -155,19 +155,19 @@ def test_sse_path_workflow_filter_skips_when_event_has_other_workflow_key() -> N
 def test_enqueue_workflow_instance_sse_queue_chunk_drops_oldest_at_high_water() -> None:
     maxsize = 10
     high_water = _sse_high_water(maxsize)
-    q: asyncio.Queue[bytes] = asyncio.Queue(maxsize=maxsize)
+    q: asyncio.Queue[str] = asyncio.Queue(maxsize=maxsize)
     for i in range(high_water):
         enqueue_workflow_instance_sse_queue_chunk(
-            q, str(i).encode(), high_water=high_water
+            q, str(i), high_water=high_water
         )
     assert q.qsize() == high_water
     enqueue_workflow_instance_sse_queue_chunk(
-        q, b"newest", high_water=high_water
+        q, "newest", high_water=high_water
     )
     assert q.qsize() == high_water
     drained = [q.get_nowait() for _ in range(high_water)]
-    assert b"0" not in drained
-    assert drained[-1] == b"newest"
+    assert "0" not in drained
+    assert drained[-1] == "newest"
 
 
 def test_post_event_updates_merged_store(

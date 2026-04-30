@@ -11,5 +11,5 @@ _WORKFLOW_INSTANCE_STORE_CLOSED_MSG = "WorkflowInstanceStateStore is closed"
 class WorkflowInstanceStoreClosedError(RuntimeError):
     """Raised when the store is closed or shutting down and the operation cannot proceed."""
 
-    def __init__(self, message: str = _WORKFLOW_INSTANCE_STORE_CLOSED_MSG) -> None:
-        super().__init__(message)
+    def __init__(self) -> None:
+        super().__init__(_WORKFLOW_INSTANCE_STORE_CLOSED_MSG)
