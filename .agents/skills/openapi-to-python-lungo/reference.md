@@ -62,11 +62,11 @@ class WorkflowSummaryMapResponse(RootModel[dict[str, WorkflowSummary]]):
     """Map keyed by workflow name."""
 ```
 
-The key type is always `str`, regardless of any `propertyNames` schema. See [§ Map responses with constrained keys](#map-responses-with-constrained-keys) below for why, and for how to enforce key constraints.
+The key type is always `str`, regardless of any `propertyNames` schema. See [§ Map responses with constrained keys](#map-responses-with-constrained-keys) below for why and for the current handling.
 
 ### Map responses with constrained keys
 
-When the OpenAPI map declares `propertyNames` (a pattern, min length, format, or a `$ref` to a typed string), keep the dict key as `str` and enforce the constraint with a `field_validator` on the `RootModel`'s `root`:
+When the OpenAPI map declares `propertyNames` (a pattern, format, `$ref`, etc.), the generated DTO ignores that constraint and uses a plain `dict[str, <value_t>]`:
 
 ```yaml
 WorkflowInstanceMapResponse:
@@ -78,35 +78,17 @@ WorkflowInstanceMapResponse:
 ```
 
 ```python
-import re
-
-_INSTANCE_ID_REGEX = r"^instance://[0-9a-fA-F\-]{36}$"
-
-
 class WorkflowInstanceMapResponse(RootModel[dict[str, WorkflowInstance]]):
     """Workflow instances keyed by InstanceId URI."""
-
-    @field_validator("root")
-    @classmethod
-    def _keys_match_instance_id(
-        cls, v: dict[str, WorkflowInstance]
-    ) -> dict[str, WorkflowInstance]:
-        key_re = re.compile(_INSTANCE_ID_REGEX)
-        for key in v:
-            if not key_re.match(key):
-                raise ValueError(f"map key must match InstanceId pattern: {key!r}")
-        return v
 ```
 
-Add `from pydantic import field_validator` and `import re` to the imports when this pattern is used. If the constraint is just a numeric range or `min_length`, encode the equivalent check; the validator must mirror what `propertyNames` declares.
+> **Known exception — flag in output.** `propertyNames` is **not enforced at the DTO layer**. Re-implementing the constraint here (for instance copying the `InstanceId` regex from `schema/types/event.py` into a `field_validator`) would duplicate logic that already lives in `schema/types/` and silently drift the next time the canonical type changes. The skill deliberately relies on the value type's own validation: a `WorkflowInstance` already validates its `id: InstanceId` field, so any caller that constructs a value with a mismatched key gets a runtime check on the nested id (and the cross-check that key equals nested id is, today, the responsibility of the value type itself — see `Workflow.instances` in `schema/types/event.py`). When generating or validating a DTO with a constrained `propertyNames`, mention this exception in the output and recommend revisiting it once `schema/types/` exposes its key patterns as importable constants (which would let the skill enforce the constraint without duplication).
 
 Why never `dict[InstanceId, V]` (or any other Pydantic `RootModel` subclass as the key):
 
 - `RootModel` instances are unhashable by default (`__hash__ = None`); `model_validate(...)` on the map raises `TypeError: unhashable type` before it can populate anything.
 - Setting `model_config = ConfigDict(frozen=True)` on the key model fixes hashability but `model_dump_json` then serializes keys as the model's Python repr (e.g. `"root='instance://...'"`), which violates the OpenAPI contract that JSON object keys are bare strings.
 - Membership tests with bare strings (`"instance://..." in m.root`) silently return `False`.
-
-The `dict[str, V]` + `field_validator` pattern matches what the lungo codebase already uses for `Workflow.instances` and round-trips JSON correctly.
 
 ### Optional vs required fields
 
