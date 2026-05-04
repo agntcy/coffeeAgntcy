@@ -34,8 +34,6 @@ const ExternalLinkButton: React.FC<ExternalLinkButtonProps> = ({
         src={iconSrc}
         alt={label}
         sx={{
-          width: 16,
-          height: 16,
           bgcolor: "#ffffff",
         }}
       />

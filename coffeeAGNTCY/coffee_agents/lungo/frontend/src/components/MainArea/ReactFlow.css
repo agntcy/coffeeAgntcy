@@ -3,22 +3,6 @@
 * SPDX-License-Identifier: Apache-2.0
 **/
 
-.react-flow {
-  background: #23282e !important;
-}
-
-body[data-theme="light"] .react-flow {
-  background: var(--app-background) !important;
-}
-
-.react-flow__background {
-  fill: #23282e !important;
-}
-
-body[data-theme="light"] .react-flow__background {
-  fill: var(--app-background) !important;
-}
-
 .react-flow__controls {
   background: rgba(35, 40, 46, 0.9);
   border: 1px solid #30363d;

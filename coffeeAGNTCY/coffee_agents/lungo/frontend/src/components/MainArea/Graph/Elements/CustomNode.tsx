@@ -5,9 +5,8 @@
 
 import React, { useRef } from "react"
 import { Handle, Position } from "@xyflow/react"
-import { IconButton } from "@open-ui-kit/core"
 import AssignmentTurnedIn from "@mui/icons-material/AssignmentTurnedIn"
-import Box from "@mui/material/Box"
+import { Box, IconButton, Stack, Typography, useTheme } from "@open-ui-kit/core"
 import githubIconLight from "@/assets/Github_lightmode.png"
 import agentDirectoryIconDark from "@/assets/Agent_directory.png"
 import agentDirectoryIconLight from "@/assets/Agent_Icon_light.png"
@@ -15,6 +14,14 @@ import identityBadgeIcon from "@/assets/identity_badge.svg"
 import { useThemeIcon } from "@/hooks/useThemeIcon"
 import { logger } from "@/utils/logger"
 import { SecurityClass } from "@/utils/SecurityClass"
+import {
+  getGraphNodeHandleStyle,
+  graphNodeIconSlotSx,
+  graphNodeRootSurfaceSx,
+  graphNodeSideIconButtonSx,
+  graphNodeSideIconButtonSxWithModal,
+  type GraphNodeSurfaceState,
+} from "./graphNodeSurface"
 import { CustomNodeData, ExtraHandle } from "./types"
 
 const POSITION_MAP: Record<ExtraHandle["position"], Position> = {
@@ -37,12 +44,21 @@ const CustomNode: React.FC<CustomNodeProps> = ({
   //onOpenOasfModal,
 }) => {
   const nodeRef = useRef<HTMLDivElement>(null)
+  const theme = useTheme()
 
   const githubIconSrc = githubIconLight
   const agentDirectoryIcon = useThemeIcon({
     light: agentDirectoryIconLight,
     dark: agentDirectoryIconDark,
   })
+
+  const surfaceState: GraphNodeSurfaceState = data.active
+    ? "active"
+    : data.selected
+      ? "selected"
+      : "default"
+
+  const handleStyle = getGraphNodeHandleStyle(theme)
 
   const handleIdentityClick = (e: React.MouseEvent) => {
     e.stopPropagation()
@@ -94,58 +110,127 @@ const CustomNode: React.FC<CustomNodeProps> = ({
     }
   }
 
-  const activeClasses = data.active
-    ? "bg-node-background-active outline outline-2 outline-accent-border shadow-[var(--shadow-default)_0px_6px_8px]"
-    : data.selected
-      ? "bg-node-background outline outline-2 outline-accent-primary shadow-[var(--shadow-default)_0px_6px_8px]"
-      : "bg-node-background"
-
   return (
     <>
-      <div
+      <Box
         ref={nodeRef}
-        className={`order-0 relative flex h-[91px] w-[193px] flex-none grow-0 flex-col items-start justify-start gap-2 rounded-lg p-4 ${activeClasses} hover:bg-node-background-hover hover:shadow-[var(--shadow-default)_0px_6px_8px] hover:outline hover:outline-2 hover:outline-accent-border`}
+        component="div"
+        sx={(t) => ({
+          ...graphNodeRootSurfaceSx(t, surfaceState),
+          position: "relative",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "flex-start",
+          justifyContent: "flex-start",
+          gap: t.spacing(1),
+          p: 2,
+          width: 193,
+          flexGrow: 0,
+          flexShrink: 0,
+          order: 0,
+        })}
       >
-        <div className="flex h-5 w-5 flex-shrink-0 items-center justify-center gap-2.5 rounded bg-node-icon-background py-1 opacity-100">
-          <div className="flex h-4 w-4 items-center justify-center opacity-100">
+        <Box
+          sx={(t) => ({
+            display: "flex",
+            width: 20,
+            height: 20,
+            flexShrink: 0,
+            alignItems: "center",
+            justifyContent: "center",
+            py: 0.5,
+            ...graphNodeIconSlotSx(t),
+          })}
+        >
+          <Box
+            sx={{
+              display: "flex",
+              width: 16,
+              height: 16,
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
             {data.icon}
-          </div>
-        </div>
+          </Box>
+        </Box>
 
-        <div
-          className="order-0 flex h-5 flex-none grow-0 flex-row items-center gap-1 self-stretch p-0"
-          style={{
-            width: data.verificationStatus === "verified" ? "160px" : "162px",
+        <Box
+          sx={{
+            display: "flex",
+            flexDirection: "row",
+            alignItems: "center",
+            gap: 0.5,
+            alignSelf: "stretch",
+            p: 0,
+            order: 0,
+            flexGrow: 0,
+            flexShrink: 0,
+            height: 20,
+            width: data.verificationStatus === "verified" ? 160 : 162,
           }}
         >
-          <span className="order-0 flex h-5 flex-none grow-0 items-center overflow-hidden text-ellipsis whitespace-nowrap font-inter text-sm font-normal leading-5 tracking-normal text-node-text-primary opacity-100">
+          <Typography
+            variant="body2"
+            component="span"
+            noWrap
+            sx={{
+              flex: "1 1 auto",
+              minWidth: 0,
+              fontWeight: 400,
+              letterSpacing: "normal",
+              lineHeight: "20px",
+            }}
+          >
             {data.label1}
-          </span>
+          </Typography>
           {data.verificationStatus === "verified" && (
             <Box
               component="img"
               src={identityBadgeIcon}
               alt="Verified"
-              className="order-1 flex-none grow-0"
-              sx={{
-                width: 16,
-                height: 16,
-                bgcolor: "#ffffff",
-              }}
+              sx={(t) => ({
+                flexShrink: 0,
+                flexGrow: 0,
+                order: 1,
+                bgcolor: t.palette.common.white,
+              })}
             />
           )}
-        </div>
+        </Box>
 
-        <div
-          className="order-1 h-4 flex-none flex-grow-0 self-stretch overflow-hidden text-ellipsis whitespace-nowrap font-inter text-xs font-light leading-4 text-node-text-secondary"
-          style={{
-            width: "162px",
+        <Typography
+          variant="caption"
+          component="div"
+          noWrap
+          sx={{
+            order: 1,
+            alignSelf: "stretch",
+            flexGrow: 0,
+            flexShrink: 0,
+            height: 16,
+            width: 162,
+            minWidth: 0,
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+            fontWeight: 300,
+            lineHeight: "16px",
           }}
         >
           {data.label2}
-        </div>
+        </Typography>
 
-        <div className="absolute -right-4 top-1/2 z-10 flex -translate-y-1/2 flex-col gap-1">
+        <Stack
+          direction="column"
+          spacing={0.5}
+          sx={{
+            position: "absolute",
+            right: -16,
+            top: "50%",
+            transform: "translateY(-50%)",
+            zIndex: 10,
+          }}
+        >
           {data.githubLink &&
             SecurityClass.isSafeExternalUrl(data.githubLink) && (
               <IconButton
@@ -155,22 +240,19 @@ const CustomNode: React.FC<CustomNodeProps> = ({
                 rel="noopener noreferrer"
                 size="small"
                 aria-label="Open GitHub repository"
-                sx={{
-                  width: 28,
-                  height: 28,
-                  boxShadow: 1,
-                  "&:hover": { opacity: 0.8 },
-                }}
+                sx={(t) => ({
+                  ...graphNodeSideIconButtonSx(t),
+                })}
               >
                 <Box
                   component="img"
                   src={githubIconSrc}
-                  alt=""
-                  sx={{
+                  alt="GitHub"
+                  sx={(t) => ({
                     width: 20,
                     height: 20,
-                    bgcolor: "#ffffff",
-                  }}
+                    bgcolor: t.palette.common.white,
+                  })}
                 />
               </IconButton>
             )}
@@ -180,22 +262,19 @@ const CustomNode: React.FC<CustomNodeProps> = ({
               size="small"
               aria-label="Open AGNTCY Directory"
               onClick={handleAgentDirectoryClick}
-              sx={{
-                width: 28,
-                height: 28,
-                boxShadow: 1,
-                "&:hover": { opacity: 0.8 },
-              }}
+              sx={(t) => ({
+                ...graphNodeSideIconButtonSx(t),
+              })}
             >
               <Box
                 component="img"
                 src={agentDirectoryIcon}
-                alt=""
-                sx={{
+                alt="AGNTCY Directory"
+                sx={(t) => ({
                   width: 20,
                   height: 20,
-                  bgcolor: "#ffffff",
-                }}
+                  bgcolor: t.palette.common.white,
+                })}
               />
             </IconButton>
           )}
@@ -205,14 +284,12 @@ const CustomNode: React.FC<CustomNodeProps> = ({
               size="small"
               aria-label="Open identity details"
               onClick={handleIdentityClick}
-              sx={{
-                width: 28,
-                height: 28,
-                boxShadow: 1,
-                "&:hover": {
-                  opacity: data.isModalOpen === true ? 1 : 0.8,
-                },
-              }}
+              sx={(t) => ({
+                ...graphNodeSideIconButtonSxWithModal(
+                  t,
+                  data.isModalOpen === true,
+                ),
+              })}
             >
               <AssignmentTurnedIn
                 sx={{
@@ -221,14 +298,14 @@ const CustomNode: React.FC<CustomNodeProps> = ({
               />
             </IconButton>
           )}
-        </div>
+        </Stack>
 
         {(data.handles === "all" || data.handles === "target") && (
           <Handle
             type="target"
             position={Position.Top}
             id="target"
-            className="h-px w-px border border-gray-600 bg-node-data-background"
+            style={handleStyle}
           />
         )}
         {(data.handles === "all" || data.handles === "source") && (
@@ -236,7 +313,7 @@ const CustomNode: React.FC<CustomNodeProps> = ({
             type="source"
             position={Position.Bottom}
             id="source"
-            className="h-px w-px border border-gray-600 bg-node-data-background"
+            style={handleStyle}
           />
         )}
         {data.extraHandles?.map((eh) => (
@@ -245,10 +322,10 @@ const CustomNode: React.FC<CustomNodeProps> = ({
             type={eh.type}
             position={POSITION_MAP[eh.position]}
             id={eh.id}
-            className="h-px w-px border border-gray-600 bg-node-data-background"
+            style={handleStyle}
           />
         ))}
-      </div>
+      </Box>
     </>
   )
 }

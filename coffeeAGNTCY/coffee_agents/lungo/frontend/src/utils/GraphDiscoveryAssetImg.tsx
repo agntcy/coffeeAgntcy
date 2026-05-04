@@ -18,8 +18,6 @@ export function GraphDiscoveryAssetImg({
       src={src}
       alt={alt}
       sx={{
-        width: 16,
-        height: 16,
         objectFit: "contain",
         opacity: 1,
         bgcolor: "#ffffff",
