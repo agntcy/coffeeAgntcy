@@ -155,10 +155,8 @@ const IdentityModal: React.FC<IdentityModalProps> = ({
                   <Box
                     component="img"
                     src={githubIconSrc}
-                    alt=""
+                    alt="Source code"
                     sx={{
-                      width: 16,
-                      height: 16,
                       bgcolor: "#ffffff",
                     }}
                   />

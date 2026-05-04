@@ -71,7 +71,6 @@ const InfoModal: React.FC<InfoModalProps> = ({ isOpen, onClose }) => {
   return (
     <Dialog open={isOpen} onClose={onClose} aria-labelledby="info-modal-title">
       <DialogTitle id="info-modal-title">
-        Build and Release Information
         <IconButton
           aria-label="Close"
           onClick={onClose}
@@ -95,15 +94,14 @@ const InfoModal: React.FC<InfoModalProps> = ({ isOpen, onClose }) => {
                   {error}
                 </Typography>
               )}
-              <div className="flex justify-between gap-2">
-                <span className="shrink-0">Agentic Workflows API:</span>
-                <span
-                  className="min-w-0 break-all text-right font-mono text-modal-accent"
-                  title={AGENTIC_WORKFLOWS_API_URL}
-                >
+              <Stack direction="row" justifyContent="space-between">
+                <Typography component="span" variant="body2">
+                  Agentic Workflows API:
+                </Typography>
+                <Typography component="span" variant="body2">
                   {AGENTIC_WORKFLOWS_API_URL}
-                </span>
-              </div>
+                </Typography>
+              </Stack>
               <Stack direction="row" justifyContent="space-between">
                 <Typography component="span" variant="body2">
                   Release Version:

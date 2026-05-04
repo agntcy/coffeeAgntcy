@@ -207,12 +207,7 @@ const RecruiterStreamingFeed: React.FC<RecruiterStreamingFeedProps> = ({
                     <Box
                       sx={{ mt: 0.5, display: "flex", alignItems: "center" }}
                     >
-                      <Box
-                        component="img"
-                        src={CheckCircle}
-                        alt=""
-                        sx={{ width: 16, height: 16, display: "block" }}
-                      />
+                      <Box component="img" src={CheckCircle} alt="Complete" />
                     </Box>
                     <Box sx={{ flex: 1, minWidth: 0 }}>
                       <Typography

@@ -5,8 +5,9 @@
 
 import React from "react"
 import DeleteOutline from "@mui/icons-material/DeleteOutline"
+import UnfoldLess from "@mui/icons-material/UnfoldLess"
+import UnfoldMore from "@mui/icons-material/UnfoldMore"
 import { Box, IconButton, Stack, Tooltip } from "@open-ui-kit/core"
-import collapseIcon from "@/assets/collapse.png"
 
 interface ChatHeaderProps {
   onMinimize?: () => void
@@ -47,24 +48,12 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({
               color="inherit"
               aria-label={isMinimized ? "Maximize" : "Minimize"}
               title={isMinimized ? "Maximize" : "Minimize"}
-              sx={{
-                width: 28,
-                height: 28,
-                p: 0.5,
-              }}
             >
-              <Box
-                component="img"
-                src={collapseIcon}
-                alt=""
-                className="chat-header-icon"
-                sx={{
-                  width: 20,
-                  height: 20,
-                  transform: isMinimized ? "rotate(180deg)" : undefined,
-                  bgcolor: "#ffffff",
-                }}
-              />
+              {isMinimized ? (
+                <UnfoldMore aria-hidden />
+              ) : (
+                <UnfoldLess aria-hidden />
+              )}
             </IconButton>
           </Tooltip>
         ) : null}
@@ -76,11 +65,6 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({
               color="inherit"
               aria-label="Clear conversation"
               title="Clear conversation"
-              sx={{
-                width: 28,
-                height: 28,
-                p: 0.5,
-              }}
             >
               <DeleteOutline />
             </IconButton>

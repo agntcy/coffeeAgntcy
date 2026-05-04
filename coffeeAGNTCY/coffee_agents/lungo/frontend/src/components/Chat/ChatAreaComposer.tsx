@@ -127,7 +127,7 @@ const ChatAreaComposer: React.FC<ChatAreaComposerProps> = ({
           variant="primary"
           disabled={loading || !content.trim()}
           onClick={() => onSend()}
-          endIcon={<SendIcon fontSize="small" />}
+          endIcon={<SendIcon />}
           sx={{
             flexShrink: 0,
             alignSelf: { xs: "stretch", sm: "center" },

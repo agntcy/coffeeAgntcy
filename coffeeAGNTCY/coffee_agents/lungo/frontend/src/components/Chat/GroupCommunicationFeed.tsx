@@ -221,7 +221,7 @@ const GroupCommunicationFeed: React.FC<GroupCommunicationFeedProps> = ({
                 alignItems: "center",
               }}
             >
-              <Spinner size={16} aria-hidden />
+              <Spinner aria-hidden />
             </Box>
             <Box sx={{ flex: 1 }} />
           </Stack>
@@ -246,7 +246,7 @@ const GroupCommunicationFeed: React.FC<GroupCommunicationFeedProps> = ({
               color="inherit"
               aria-label="View details"
               onClick={handleExpand}
-              sx={{ flex: "none", p: 0.25 }}
+              sx={{ flex: "none" }}
             >
               <ExpandMore />
             </IconButton>
@@ -276,12 +276,7 @@ const GroupCommunicationFeed: React.FC<GroupCommunicationFeedProps> = ({
                     <Box
                       sx={{ mt: 0.5, display: "flex", alignItems: "center" }}
                     >
-                      <Box
-                        component="img"
-                        src={CheckCircle}
-                        alt="Complete"
-                        sx={{ width: 16, height: 16, display: "block" }}
-                      />
+                      <Box component="img" src={CheckCircle} alt="Complete" />
                     </Box>
 
                     <Box sx={{ flex: 1, minWidth: 0 }}>
@@ -343,7 +338,6 @@ const GroupCommunicationFeed: React.FC<GroupCommunicationFeedProps> = ({
                 sx={{
                   alignSelf: "flex-start",
                   mt: 1,
-                  p: 0.25,
                 }}
               >
                 <ExpandLess />
