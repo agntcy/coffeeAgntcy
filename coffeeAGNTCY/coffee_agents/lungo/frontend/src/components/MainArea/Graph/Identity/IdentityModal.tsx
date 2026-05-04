@@ -84,7 +84,7 @@ const IdentityModal: React.FC<IdentityModalProps> = ({
               zIndex: 10,
             }}
           >
-            <Close sx={{ fontSize: 18 }} />
+            <Close />
           </IconButton>
 
           <h3 className="mb-3 text-lg font-semibold text-node-text-primary">
@@ -96,18 +96,14 @@ const IdentityModal: React.FC<IdentityModalProps> = ({
               <IconButton
                 onClick={onShowBadgeDetails}
                 sx={{
-                  width: "100%",
-                  height: 44,
                   justifyContent: "space-between",
                   gap: 1.5,
-                  px: 1.5,
-                  py: 0,
                 }}
               >
                 <span className="text-left font-inter text-sm font-normal leading-5">
                   Badge details
                 </span>
-                <Visibility sx={{ fontSize: 16 }} />
+                <Visibility />
               </IconButton>
             )}
 
@@ -115,18 +111,14 @@ const IdentityModal: React.FC<IdentityModalProps> = ({
               <IconButton
                 onClick={onShowPolicyDetails}
                 sx={{
-                  width: "100%",
-                  height: 44,
                   justifyContent: "space-between",
                   gap: 1.5,
-                  px: 1.5,
-                  py: 0,
                 }}
               >
                 <span className="text-left font-inter text-sm font-normal leading-5">
                   Policy details
                 </span>
-                <Visibility sx={{ fontSize: 16 }} />
+                <Visibility />
               </IconButton>
             )}
 
@@ -141,12 +133,8 @@ const IdentityModal: React.FC<IdentityModalProps> = ({
                     )
                   }
                   sx={{
-                    width: "100%",
-                    height: 44,
                     justifyContent: "space-between",
                     gap: 1.5,
-                    px: 1.5,
-                    py: 0,
                   }}
                 >
                   <span className="text-left font-inter text-sm font-normal leading-5">

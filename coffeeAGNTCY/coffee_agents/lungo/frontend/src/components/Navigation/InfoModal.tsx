@@ -74,7 +74,6 @@ const InfoModal: React.FC<InfoModalProps> = ({ isOpen, onClose }) => {
         <IconButton
           aria-label="Close"
           onClick={onClose}
-          size="small"
           sx={{
             position: "absolute",
             right: 8,
@@ -111,14 +110,10 @@ const InfoModal: React.FC<InfoModalProps> = ({ isOpen, onClose }) => {
                 </Typography>
               </Stack>
               <Stack direction="row" justifyContent="space-between">
-                <Typography component="span" variant="body2" color="inherit">
+                <Typography component="span" variant="body2">
                   Build Date:
                 </Typography>
-                <Typography
-                  component="span"
-                  variant="body2"
-                  color="var(--modal-accent)"
-                >
+                <Typography component="span" variant="body2">
                   {info?.build_date ?? "…"}
                 </Typography>
               </Stack>
