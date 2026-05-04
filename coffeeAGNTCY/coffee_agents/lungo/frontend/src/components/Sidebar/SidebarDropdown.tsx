@@ -4,13 +4,9 @@
  **/
 
 import React from "react"
-import {
-  IconButton,
-  ListItemButton,
-  Stack,
-  Typography,
-} from "@open-ui-kit/core"
+import { ListItemButton, Stack, Typography } from "@open-ui-kit/core"
 import ExpandLess from "@mui/icons-material/ExpandLess"
+import Box from "@mui/material/Box"
 
 interface SidebarDropdownProps {
   title: string
@@ -31,41 +27,37 @@ const SidebarDropdown: React.FC<SidebarDropdownProps> = ({
       <ListItemButton
         onClick={onToggle}
         aria-expanded={isExpanded}
+        aria-label={`${isExpanded ? "Collapse" : "Expand"} ${title}`}
         sx={{
           width: "100%",
           justifyContent: "space-between",
           backgroundColor: "transparent",
           borderRadius: "8px",
           textWrap: "auto",
-          "& svg": {
-            transition: "transform 0.2s ease",
-            transform: isExpanded ? "rotate(0deg)" : "rotate(180deg)",
-          },
         }}
       >
         <Typography component="span" variant="body1">
           {title}
         </Typography>
-        <IconButton
-          size="small"
-          color="inherit"
-          aria-expanded={isExpanded}
-          aria-label={`${isExpanded ? "Collapse" : "Expand"} ${title}`}
-          onClick={onToggle}
+        <Box
+          component="span"
+          aria-hidden
           sx={{
             flex: "none",
+            display: "inline-flex",
+            alignItems: "center",
+            justifyContent: "center",
             mt: "-2px",
             p: 0.25,
           }}
         >
           <ExpandLess
             sx={{
-              fontSize: 20,
               transition: "transform 150ms ease",
               transform: isExpanded ? "rotate(0deg)" : "rotate(180deg)",
             }}
           />
-        </IconButton>
+        </Box>
       </ListItemButton>
 
       {isExpanded ? (

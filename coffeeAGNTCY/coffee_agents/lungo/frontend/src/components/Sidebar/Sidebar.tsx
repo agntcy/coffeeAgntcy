@@ -10,8 +10,11 @@
 
 import React, { useEffect, useMemo, useState } from "react"
 import type { SxProps, Theme } from "@mui/material/styles"
+import People from "@mui/icons-material/People"
+import Podcasts from "@mui/icons-material/Podcasts"
+import Search from "@mui/icons-material/Search"
+import Share from "@mui/icons-material/Share"
 import { Box, Stack, Typography } from "@open-ui-kit/core"
-import { Podcast, Search, Share2, Users } from "lucide-react"
 import {
   PatternType,
   PATTERNS,
@@ -47,7 +50,7 @@ const LUNGO_MENU_LEAVES: LungoMenuLeaf[] = [
     conversationTitle: "Order Fulfilment",
     dropdownTitle: "Secure Group Communication",
     agenticHeadingPl: 2,
-    icon: <Users size={24} aria-hidden />,
+    icon: <People aria-hidden />,
     getTooltip: () => "A2A SLIM",
     getAriaLabel: () => "A2A SLIM",
   },
@@ -57,7 +60,7 @@ const LUNGO_MENU_LEAVES: LungoMenuLeaf[] = [
     conversationTitle: "Coffee Buying",
     dropdownTitle: "Publish Subscribe",
     agenticHeadingPl: 2,
-    icon: <Share2 size={24} aria-hidden />,
+    icon: <Share aria-hidden />,
     getTooltip: (t) => `A2A ${t} · Publish Subscribe`,
     getAriaLabel: (t) => `A2A ${t} · Publish Subscribe`,
   },
@@ -67,7 +70,7 @@ const LUNGO_MENU_LEAVES: LungoMenuLeaf[] = [
     conversationTitle: "Coffee Buying",
     dropdownTitle: "Publish Subscribe: Streaming",
     agenticHeadingPl: 2,
-    icon: <Podcast size={24} aria-hidden />,
+    icon: <Podcasts aria-hidden />,
     getTooltip: (t) => `A2A ${t} · Streaming`,
     getAriaLabel: (t) => `A2A ${t} · Streaming`,
   },
@@ -77,7 +80,7 @@ const LUNGO_MENU_LEAVES: LungoMenuLeaf[] = [
     conversationTitle: "Capability Discovery",
     dropdownTitle: "Recruiter",
     agenticHeadingPl: 2,
-    icon: <Search size={24} aria-hidden />,
+    icon: <Search aria-hidden />,
     getTooltip: () => "A2A HTTP",
     getAriaLabel: () => "A2A HTTP",
   },
@@ -191,7 +194,7 @@ function LungoSidebarNavigationSlot({
   transport,
   ...expandProps
 }: LungoSidebarNavigationSlotProps) {
-  const transportLabel = transport || "…"
+  const transportLabel = transport || ""
   const railOpen = !iconOnly
 
   const sections = useMemo(
