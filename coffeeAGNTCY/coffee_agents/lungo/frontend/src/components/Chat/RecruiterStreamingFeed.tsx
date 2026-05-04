@@ -4,9 +4,9 @@
  **/
 
 import React, { useState, useEffect, useCallback, useRef } from "react"
-import { ChevronDown, ChevronUp } from "lucide-react"
-import { Box, Spinner, Stack, Typography } from "@open-ui-kit/core"
-
+import ExpandMore from "@mui/icons-material/ExpandMore"
+import ExpandLess from "@mui/icons-material/ExpandLess"
+import { Box, IconButton, Spinner, Stack, Typography } from "@open-ui-kit/core"
 import { ChatAgentAvatar } from "./ChatAvatarCircle"
 import CheckCircle from "@/assets/Check_Circle.png"
 import type {
@@ -153,7 +153,7 @@ const RecruiterStreamingFeed: React.FC<RecruiterStreamingFeedProps> = ({
                 alignItems: "center",
               }}
             >
-              <Spinner size={16} aria-hidden />
+              <Spinner aria-hidden />
             </Box>
             <Box sx={{ flex: 1 }} />
           </Stack>
@@ -173,9 +173,14 @@ const RecruiterStreamingFeed: React.FC<RecruiterStreamingFeedProps> = ({
               "&:hover": { opacity: 0.75 },
             }}
           >
-            <Box sx={{ width: 16, height: 16, flexShrink: 0 }}>
-              <ChevronDown size={16} aria-hidden />
-            </Box>
+            <IconButton
+              size="small"
+              color="inherit"
+              aria-label="View streaming events"
+              sx={{ flex: "none", p: 0.25 }}
+            >
+              <ExpandMore />
+            </IconButton>
             <Box sx={{ flex: 1, minWidth: 0 }}>
               <Typography variant="body2" component="span">
                 View Streaming Events
@@ -246,7 +251,7 @@ const RecruiterStreamingFeed: React.FC<RecruiterStreamingFeedProps> = ({
                       alignItems: "center",
                     }}
                   >
-                    <Spinner size={16} aria-hidden />
+                    <Spinner aria-hidden />
                   </Box>
                   <Box sx={{ flex: 1 }} />
                 </Stack>
@@ -254,29 +259,19 @@ const RecruiterStreamingFeed: React.FC<RecruiterStreamingFeedProps> = ({
             </Stack>
 
             {isComplete && (
-              <Box
+              <IconButton
+                size="small"
+                color="inherit"
+                aria-label="Collapse streaming events"
                 onClick={handleCollapse}
                 sx={{
-                  display: "flex",
-                  width: "100%",
-                  cursor: "pointer",
-                  flexDirection: "row",
-                  alignItems: "center",
-                  gap: 0.5,
-                  pt: 2,
-                  "&:hover": { opacity: 0.75 },
+                  alignSelf: "flex-start",
+                  mt: 1,
+                  p: 0.25,
                 }}
               >
-                <Box
-                  sx={{
-                    width: 16,
-                    height: 16,
-                    flexShrink: 0,
-                  }}
-                >
-                  <ChevronUp size={16} aria-hidden />
-                </Box>
-              </Box>
+                <ExpandLess aria-hidden />
+              </IconButton>
             )}
           </>
         )}

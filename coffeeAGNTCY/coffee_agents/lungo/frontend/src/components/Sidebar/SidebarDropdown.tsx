@@ -4,8 +4,13 @@
  **/
 
 import React from "react"
-import { ChevronUp } from "lucide-react"
-import { Box, ListItemButton, Stack, Typography } from "@open-ui-kit/core"
+import {
+  IconButton,
+  ListItemButton,
+  Stack,
+  Typography,
+} from "@open-ui-kit/core"
+import ExpandLess from "@mui/icons-material/ExpandLess"
 
 interface SidebarDropdownProps {
   title: string
@@ -41,9 +46,26 @@ const SidebarDropdown: React.FC<SidebarDropdownProps> = ({
         <Typography component="span" variant="body1">
           {title}
         </Typography>
-        <Box>
-          <ChevronUp aria-hidden />
-        </Box>
+        <IconButton
+          size="small"
+          color="inherit"
+          aria-expanded={isExpanded}
+          aria-label={`${isExpanded ? "Collapse" : "Expand"} ${title}`}
+          onClick={onToggle}
+          sx={{
+            flex: "none",
+            mt: "-2px",
+            p: 0.25,
+          }}
+        >
+          <ExpandLess
+            sx={{
+              fontSize: 20,
+              transition: "transform 150ms ease",
+              transform: isExpanded ? "rotate(0deg)" : "rotate(180deg)",
+            }}
+          />
+        </IconButton>
       </ListItemButton>
 
       {isExpanded ? (

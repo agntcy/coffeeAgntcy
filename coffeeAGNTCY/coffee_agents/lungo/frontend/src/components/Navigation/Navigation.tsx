@@ -4,7 +4,6 @@
  **/
 
 import React, { useCallback, useState } from "react"
-import { HelpCircle } from "lucide-react"
 import { type SxProps, type Theme } from "@mui/material/styles"
 import {
   useThemeMode,
@@ -14,6 +13,8 @@ import {
   Tooltip,
   Box,
 } from "@open-ui-kit/core"
+import HelpOutline from "@mui/icons-material/HelpOutline"
+
 import coffeeAgntcyLogo from "@/assets/coffeeAGNTCY_logo.svg"
 import ThemeToggleIcon from "../icons/ThemeToggleIcon"
 import InfoModal from "./InfoModal"
@@ -74,7 +75,7 @@ const Navigation: React.FC = () => {
                 size="small"
                 sx={navIconButtonSx}
               >
-                <HelpCircle />
+                <HelpOutline />
               </IconButton>
             </Tooltip>
           </Stack>

@@ -9,6 +9,7 @@ import type { Message } from "./types"
 import { parseApiError } from "@/utils/const"
 import { useAgentAPI } from "@/hooks/useAgentAPI"
 import { useGroupSessionId } from "@/stores/groupStreamingStore"
+import { Box, Stack, Typography } from "@open-ui-kit/core"
 
 import grafanaIcon from "@/assets/grafana.svg"
 
@@ -21,7 +22,7 @@ import ExternalLinkButton from "./ExternalLinkButton"
 import GroupCommunicationFeed from "./GroupCommunicationFeed"
 import AuctionStreamingFeed from "./AuctionStreamingFeed"
 import RecruiterStreamingFeed from "./RecruiterStreamingFeed"
-import { Box, Stack, Typography } from "@open-ui-kit/core"
+
 import { env } from "@/utils/env"
 import { logger } from "@/utils/logger"
 import type { GraphConfig } from "@/utils/graphConfigs"

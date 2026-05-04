@@ -4,7 +4,6 @@
  **/
 
 import React, { useEffect } from "react"
-import { X } from "lucide-react"
 import DialogTitle from "@mui/material/DialogTitle"
 import {
   Dialog,
@@ -13,6 +12,7 @@ import {
   Stack,
   Typography,
 } from "@open-ui-kit/core"
+import Close from "@mui/icons-material/Close"
 import { env } from "@/utils/env"
 
 interface InfoModalProps {
@@ -82,7 +82,7 @@ const InfoModal: React.FC<InfoModalProps> = ({ isOpen, onClose }) => {
             top: 8,
           }}
         >
-          <X />
+          <Close />
         </IconButton>
       </DialogTitle>
       <ModalContent>

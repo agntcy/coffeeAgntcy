@@ -4,8 +4,9 @@
  **/
 
 import React from "react"
+
 import { Stack, Typography } from "@open-ui-kit/core"
-import { User } from "lucide-react"
+import Person from "@mui/icons-material/Person"
 
 import { ChatAvatarCircle } from "./ChatAvatarCircle"
 
@@ -22,7 +23,7 @@ const UserMessage: React.FC<UserMessageProps> = ({ content }) => {
       sx={{ width: "100%" }}
     >
       <ChatAvatarCircle>
-        <User size={22} color="white" />
+        <Person sx={{ fontSize: 22 }} />
       </ChatAvatarCircle>
 
       <Stack

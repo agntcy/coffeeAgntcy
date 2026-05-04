@@ -5,8 +5,9 @@
 
 import React, { useRef } from "react"
 import { Handle, Position } from "@xyflow/react"
-import { ClipboardCheck } from "lucide-react"
-import githubIcon from "@/assets/Github.png"
+import { IconButton } from "@open-ui-kit/core"
+import AssignmentTurnedIn from "@mui/icons-material/AssignmentTurnedIn"
+import Box from "@mui/material/Box"
 import githubIconLight from "@/assets/Github_lightmode.png"
 import agentDirectoryIconDark from "@/assets/Agent_directory.png"
 import agentDirectoryIconLight from "@/assets/Agent_Icon_light.png"
@@ -37,10 +38,7 @@ const CustomNode: React.FC<CustomNodeProps> = ({
 }) => {
   const nodeRef = useRef<HTMLDivElement>(null)
 
-  const githubIconSrc = useThemeIcon({
-    light: githubIconLight,
-    dark: githubIcon,
-  })
+  const githubIconSrc = githubIconLight
   const agentDirectoryIcon = useThemeIcon({
     light: agentDirectoryIconLight,
     dark: agentDirectoryIconDark,
@@ -124,10 +122,16 @@ const CustomNode: React.FC<CustomNodeProps> = ({
             {data.label1}
           </span>
           {data.verificationStatus === "verified" && (
-            <img
+            <Box
+              component="img"
               src={identityBadgeIcon}
               alt="Verified"
-              className="order-1 h-4 w-4 flex-none grow-0"
+              className="order-1 flex-none grow-0"
+              sx={{
+                width: 16,
+                height: 16,
+                bgcolor: "#ffffff",
+              }}
             />
           )}
         </div>
@@ -144,95 +148,78 @@ const CustomNode: React.FC<CustomNodeProps> = ({
         <div className="absolute -right-4 top-1/2 z-10 flex -translate-y-1/2 flex-col gap-1">
           {data.githubLink &&
             SecurityClass.isSafeExternalUrl(data.githubLink) && (
-              <a
+              <IconButton
+                component="a"
                 href={data.githubLink}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="no-underline"
+                size="small"
+                aria-label="Open GitHub repository"
+                sx={{
+                  width: 28,
+                  height: 28,
+                  boxShadow: 1,
+                  "&:hover": { opacity: 0.8 },
+                }}
               >
-                <div
-                  className="flex h-7 w-7 cursor-pointer items-center justify-center rounded-lg border border-solid p-1 opacity-100 shadow-sm transition-opacity duration-200 ease-in-out"
-                  style={{
-                    backgroundColor: "var(--custom-node-background)",
-                    borderColor: "var(--custom-node-border)",
+                <Box
+                  component="img"
+                  src={githubIconSrc}
+                  alt=""
+                  sx={{
+                    width: 20,
+                    height: 20,
+                    bgcolor: "#ffffff",
                   }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.opacity = "0.8"
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.opacity = "1"
-                  }}
-                >
-                  <img src={githubIconSrc} alt="GitHub" className="h-5 w-5" />
-                </div>
-              </a>
+                />
+              </IconButton>
             )}
           {data.agentDirectoryLink && (
-            <button
+            <IconButton
               type="button"
-              className="no-underline"
+              size="small"
+              aria-label="Open AGNTCY Directory"
               onClick={handleAgentDirectoryClick}
-              style={{
-                background: "none",
-                border: "none",
-                padding: 0,
-                margin: 0,
+              sx={{
+                width: 28,
+                height: 28,
+                boxShadow: 1,
+                "&:hover": { opacity: 0.8 },
               }}
             >
-              <div
-                className="flex h-7 w-7 cursor-pointer items-center justify-center rounded-lg border border-solid p-1 opacity-100 shadow-sm"
-                style={{
-                  backgroundColor: "var(--custom-node-background)",
-                  borderColor: "var(--custom-node-border)",
+              <Box
+                component="img"
+                src={agentDirectoryIcon}
+                alt=""
+                sx={{
+                  width: 20,
+                  height: 20,
+                  bgcolor: "#ffffff",
                 }}
-                onMouseEnter={(e) => {
-                  ;(e.currentTarget as HTMLDivElement).style.opacity = "0.8"
-                }}
-                onMouseLeave={(e) => {
-                  ;(e.currentTarget as HTMLDivElement).style.opacity = "1"
-                }}
-              >
-                <img
-                  src={agentDirectoryIcon}
-                  alt="AGNTCY Directory"
-                  className="h-5 w-5"
-                />
-              </div>
-            </button>
+              />
+            </IconButton>
           )}
           {data.verificationStatus === "verified" && (
-            <div
-              className={`flex h-7 w-7 cursor-pointer items-center justify-center rounded-lg border border-solid p-1 opacity-100 shadow-sm transition-opacity ${
-                data.isModalOpen === true
-                  ? "border-accent-border bg-accent-border bg-opacity-30"
-                  : ""
-              }`}
-              style={{
-                backgroundColor:
-                  data.isModalOpen === true
-                    ? undefined
-                    : "var(--custom-node-background)",
-                borderColor:
-                  data.isModalOpen === true
-                    ? undefined
-                    : "var(--custom-node-border)",
-              }}
+            <IconButton
+              type="button"
+              size="small"
+              aria-label="Open identity details"
               onClick={handleIdentityClick}
-              onMouseEnter={(e) => {
-                if (data.isModalOpen !== true) {
-                  e.currentTarget.style.opacity = "0.8"
-                }
-              }}
-              onMouseLeave={(e) => {
-                if (data.isModalOpen !== true) {
-                  e.currentTarget.style.opacity = "1"
-                }
+              sx={{
+                width: 28,
+                height: 28,
+                boxShadow: 1,
+                "&:hover": {
+                  opacity: data.isModalOpen === true ? 1 : 0.8,
+                },
               }}
             >
-              <ClipboardCheck
-                className={`h-5 w-5 ${data.isModalOpen === true ? "text-accent-border" : "accent-icon"}`}
+              <AssignmentTurnedIn
+                sx={{
+                  fontSize: 20,
+                }}
               />
-            </div>
+            </IconButton>
           )}
         </div>
 

@@ -66,7 +66,6 @@ const AuctionStreamingFeed: React.FC<AuctionStreamingFeedProps> = ({
       sx={{ width: "100%", transition: "all 300ms" }}
     >
       <ChatAgentAvatar />
-
       <Stack
         sx={{
           flex: 1,
@@ -131,7 +130,7 @@ const AuctionStreamingFeed: React.FC<AuctionStreamingFeedProps> = ({
                 alignItems: "center",
               }}
             >
-              <Spinner size={16} aria-hidden />
+              <Spinner aria-hidden />
             </Box>
             <Box sx={{ flex: 1 }} />
           </Stack>
@@ -196,7 +195,7 @@ const AuctionStreamingFeed: React.FC<AuctionStreamingFeedProps> = ({
                   alignItems: "center",
                 }}
               >
-                <Spinner size={16} aria-hidden />
+                <Spinner aria-hidden />
               </Box>
               <Box sx={{ flex: 1 }} />
             </Stack>

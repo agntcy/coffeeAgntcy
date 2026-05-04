@@ -4,6 +4,8 @@
  **/
 
 import React, { useState, useEffect, useCallback } from "react"
+import { IconButton } from "@open-ui-kit/core"
+import Close from "@mui/icons-material/Close"
 import { BadgeData } from "./types"
 import { CustomNodeData } from "../Elements/types"
 import type { ModalPosition } from "@/types/modal"
@@ -83,12 +85,19 @@ const BadgeDetailsModal: React.FC<BadgeDetailsModalProps> = ({
           onClick={handleModalClick}
           data-modal-content
         >
-          <button
+          <IconButton
             onClick={onClose}
-            className="absolute right-3 top-3 z-10 text-xl leading-none text-node-text-secondary transition-colors hover:text-node-text-primary"
+            aria-label="Close"
+            size="small"
+            sx={{
+              position: "absolute",
+              right: 12,
+              top: 12,
+              zIndex: 10,
+            }}
           >
-            ×
-          </button>
+            <Close sx={{ fontSize: 18 }} />
+          </IconButton>
 
           {loading && !badgeData ? (
             <div className="flex w-full items-center justify-center py-8">

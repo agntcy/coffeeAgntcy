@@ -5,8 +5,8 @@
 
 import React, { useEffect, useRef, useState } from "react"
 import { Box, Stack, Typography } from "@open-ui-kit/core"
-import { HiUser } from "react-icons/hi"
-import { RiRobot2Fill } from "react-icons/ri"
+import Person from "@mui/icons-material/Person"
+import SmartToy from "@mui/icons-material/SmartToy"
 import { Waveform } from "ldrs/react"
 import "ldrs/react/Waveform.css"
 
@@ -69,7 +69,11 @@ const Message: React.FC<MessageProps> = ({
           justifyContent: "center",
         }}
       >
-        {aiMessage ? <RiRobot2Fill color="#049FD9" /> : <HiUser />}
+        {aiMessage ? (
+          <SmartToy sx={{ fontSize: 24 }} />
+        ) : (
+          <Person sx={{ fontSize: 24 }} />
+        )}
       </Box>
       <Box
         sx={{

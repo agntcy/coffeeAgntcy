@@ -4,7 +4,7 @@
  **/
 
 import React from "react"
-import { LoaderCircle } from "lucide-react"
+import { Spinner } from "@open-ui-kit/core"
 
 interface LoadingSpinnerProps {
   message?: string
@@ -13,7 +13,7 @@ interface LoadingSpinnerProps {
 const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({ message }) => {
   return (
     <div className="flex flex-col items-center justify-center gap-2 p-4">
-      <LoaderCircle className="h-6 w-6 animate-spin text-chat-text" />
+      <Spinner size={24} thickness={4} />
       {message && (
         <div className="text-center font-cisco text-[10px] text-chat-text opacity-60">
           {message}
