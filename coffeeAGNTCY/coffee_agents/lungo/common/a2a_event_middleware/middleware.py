@@ -394,13 +394,11 @@ class EventEmittingInterceptor(ClientCallInterceptor):
 		caller_card: AgentCard,
 		workflow_resolver: WorkflowResolver,
 		agent_call_graph_layer: int = 0,
-		verbose: bool = False,
 	) -> None:
 		self._caller_agent_id = caller_card.name
 		self._source = _slugify_source(caller_card)
 		self._workflow_resolver = workflow_resolver
 		self._agent_call_graph_layer = agent_call_graph_layer
-		self._verbose = verbose
 
 		if not EMIT_WORKFLOW_EVENTS:
 			logger.warning(
@@ -520,8 +518,8 @@ class EventEmittingInterceptor(ClientCallInterceptor):
 		if self._event_sink:
 			await self._event_sink.emit(event)
 
-		if self._verbose:
-			logger.info(
+		if logger.isEnabledFor(logging.DEBUG):
+			logger.debug(
 				"EventEmittingInterceptor [%s]: outbound %s -> %s\n%s\nProcessing time: %.3fs",
 				self._source,
 				method_name,
@@ -581,7 +579,6 @@ def make_event_emitting_consumer(
 	caller_card: AgentCard,
 	workflow_resolver: WorkflowResolver,
 	agent_call_graph_layer: int = 0,
-	verbose: bool = False,
 ):
 	"""Create consumer callback that emits inbound topology updates."""
 	if not EMIT_WORKFLOW_EVENTS:
@@ -664,8 +661,8 @@ def make_event_emitting_consumer(
 		if event_sink:
 			await event_sink.emit(event_obj)
 
-		if verbose:
-			logger.info(
+		if logger.isEnabledFor(logging.DEBUG):
+			logger.debug(
 				"event_emitting_consumer [%s]: response from %s (status=%s) (processing time=%.3fs)\n%s",
 				_source,
 				remote_agent_id,

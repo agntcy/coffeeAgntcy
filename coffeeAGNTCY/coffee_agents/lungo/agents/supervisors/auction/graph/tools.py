@@ -3,10 +3,11 @@
 
 import copy
 import logging
-from typing import Any, Union, Literal, NoReturn
+from typing import Any, Awaitable, Callable, Union, Literal, NoReturn
 from uuid import uuid4
 from pydantic import BaseModel
 
+from a2a.client import ClientEvent
 from a2a.types import (
     AgentCard,
     SendMessageRequest,
@@ -59,6 +60,34 @@ WorkflowNames = workflow_names()
 
 
 logger = logging.getLogger("lungo.supervisor.tools")
+
+
+EventConsumer = Callable[[ClientEvent | Message, AgentCard], Awaitable[None]]
+
+_workflow_resolver: ToolWorkflowResolver | None = None
+_event_interceptor: EventEmittingInterceptor | None = None
+_event_consumer: EventConsumer | None = None
+
+
+def _get_event_middleware() -> tuple[EventEmittingInterceptor, EventConsumer]:
+    """Lazily build event middleware after workflow decorators are registered."""
+    global _workflow_resolver, _event_interceptor, _event_consumer
+
+    if _event_interceptor is None or _event_consumer is None:
+        _workflow_resolver = ToolWorkflowResolver(
+            registry=get_workflow_registry(),
+            registration=build_registration_from_decorators(),
+        )
+        _event_interceptor = EventEmittingInterceptor(
+            caller_card=AUCTION_SUPERVISOR_CARD,
+            workflow_resolver=_workflow_resolver.resolve,
+        )
+        _event_consumer = make_event_emitting_consumer(
+            caller_card=AUCTION_SUPERVISOR_CARD,
+            workflow_resolver=_workflow_resolver.resolve,
+        )
+
+    return _event_interceptor, _event_consumer
 
 
 class A2AAgentError(ToolException):
@@ -211,7 +240,8 @@ async def get_farm_yield_inventory(prompt: str, farm: str) -> str:
         card = copy.deepcopy(card)
 
         # create a client with event middleware to capture tool calls and responses for tracing in the UI
-        client = await a2a_client_factory.create(card, interceptors=[_event_interceptor], consumers=[_event_consumer])
+        event_interceptor, event_consumer = _get_event_middleware()
+        client = await a2a_client_factory.create(card, interceptors=[event_interceptor], consumers=[event_consumer])
 
         message = Message(
             messageId=str(uuid4()),
@@ -273,7 +303,8 @@ async def get_all_farms_yield_inventory(prompt: str) -> str:
         # override preferred transport to ensure we use the intended publish-subscribe transport for broadcasts
         card.preferred_transport = DEFAULT_MESSAGE_TRANSPORT.lower()
         
-        client = await a2a_client_factory.create(card, interceptors=[_event_interceptor], consumers=[_event_consumer])
+        event_interceptor, event_consumer = _get_event_middleware()
+        client = await a2a_client_factory.create(card, interceptors=[event_interceptor], consumers=[event_consumer])
 
         # set call context for workflow resolution based on the tool call and broadcast recipients
         ctx = make_tool_call_context(
@@ -349,7 +380,8 @@ async def get_all_farms_yield_inventory_streaming(prompt: str):
         # override preferred transport to ensure we use the intended publish-subscribe transport for broadcasts
         card.preferred_transport = DEFAULT_MESSAGE_TRANSPORT.lower()
         
-        client = await a2a_client_factory.create(card, interceptors=[_event_interceptor], consumers=[_event_consumer])
+        event_interceptor, event_consumer = _get_event_middleware()
+        client = await a2a_client_factory.create(card, interceptors=[event_interceptor], consumers=[event_consumer])
 
         ctx = make_tool_call_context(
             get_all_farms_yield_inventory_streaming,
@@ -467,7 +499,8 @@ async def create_order(farm: str, quantity: int, price: float) -> str:
     try:
         card = copy.deepcopy(card)  # avoid mutating the singleton card
 
-        client = await a2a_client_factory.create(card, interceptors=[_event_interceptor], consumers=[_event_consumer])
+        event_interceptor, event_consumer = _get_event_middleware()
+        client = await a2a_client_factory.create(card, interceptors=[event_interceptor], consumers=[event_consumer])
 
         message = Message(
             messageId=str(uuid4()),
@@ -519,7 +552,8 @@ async def get_order_details(order_id: str) -> str:
         # override preferred transport to ensure direct communication for order creation
         card.preferred_transport = InterfaceTransport.SLIM_RPC
 
-        client = await a2a_client_factory.create(card, interceptors=[_event_interceptor], consumers=[_event_consumer])
+        event_interceptor, event_consumer = _get_event_middleware()
+        client = await a2a_client_factory.create(card, interceptors=[event_interceptor], consumers=[event_consumer])
 
         message = Message(
             messageId=str(uuid4()),
@@ -543,25 +577,3 @@ async def get_order_details(order_id: str) -> str:
     except Exception as e: # Catch any underlying communication or client creation errors
         logger.error(f"Failed to communicate with order agent for order ID '{order_id}': {e}")
         raise A2AAgentError(f"Failed to communicate with order agent for order ID '{order_id}'. Details: {e}")
-
-
-# -- Resolver + event middleware --
-# Built after all @register_workflow decorators above have populated the
-# decorator registry. The resolver then snapshots that registry into a
-# WorkflowRegistration and validates every workflow name against the
-# JSON-backed catalog.
-_workflow_resolver = ToolWorkflowResolver(
-    registry=get_workflow_registry(),
-    registration=build_registration_from_decorators(),
-)
-
-_event_interceptor = EventEmittingInterceptor(
-    caller_card=AUCTION_SUPERVISOR_CARD,
-    workflow_resolver=_workflow_resolver.resolve,
-    verbose=True,
-)
-_event_consumer = make_event_emitting_consumer(
-    caller_card=AUCTION_SUPERVISOR_CARD,
-    workflow_resolver=_workflow_resolver.resolve,
-    verbose=True,
-)

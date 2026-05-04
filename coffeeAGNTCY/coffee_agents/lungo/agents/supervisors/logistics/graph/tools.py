@@ -6,13 +6,15 @@ import logging
 import re
 import uuid
 import os
-from typing import Any, Sequence, AsyncGenerator, Optional, Dict
+from typing import Any, Awaitable, Callable, Sequence, AsyncGenerator, Optional, Dict
 from datetime import datetime, timezone
 from uuid import uuid4
 
 from fastapi import HTTPException
 
+from a2a.client import ClientEvent
 from a2a.types import (
+  AgentCard,
   Message,
   MessageSendParams,
   Part,
@@ -49,6 +51,34 @@ WorkflowNames = workflow_names()
 logger = logging.getLogger("lungo.logistics.supervisor.tools")
 
 
+EventConsumer = Callable[[ClientEvent | Message, AgentCard], Awaitable[None]]
+
+_workflow_resolver: ToolWorkflowResolver | None = None
+_event_interceptor: EventEmittingInterceptor | None = None
+_event_consumer: EventConsumer | None = None
+
+
+def _get_event_middleware() -> tuple[EventEmittingInterceptor, EventConsumer]:
+  """Lazily build event middleware after workflow decorators are registered."""
+  global _workflow_resolver, _event_interceptor, _event_consumer
+
+  if _event_interceptor is None or _event_consumer is None:
+    _workflow_resolver = ToolWorkflowResolver(
+      registry=get_workflow_registry(),
+      registration=build_registration_from_decorators(),
+    )
+    _event_interceptor = EventEmittingInterceptor(
+      caller_card=LOGISTICS_SUPERVISOR_CARD,
+      workflow_resolver=_workflow_resolver.resolve,
+    )
+    _event_consumer = make_event_emitting_consumer(
+      caller_card=LOGISTICS_SUPERVISOR_CARD,
+      workflow_resolver=_workflow_resolver.resolve,
+    )
+
+  return _event_interceptor, _event_consumer
+
+
 
 @register_workflow(WorkflowNames.SECURE_GROUP_COMMUNICATION_LOGISTICS_NETWORK)
 async def create_order(farm: str, quantity: int, price: float) -> str:
@@ -73,10 +103,11 @@ async def create_order(farm: str, quantity: int, price: float) -> str:
     return "No farm provided. Please specify a farm."
 
   try:
+    event_interceptor, event_consumer = _get_event_middleware()
     client = await a2a_client_factory.create(
       SHIPPER_CARD,
-      interceptors=[_event_interceptor],
-      consumers=[_event_consumer],
+      interceptors=[event_interceptor],
+      consumers=[event_consumer],
     )
 
     request = SendMessageRequest(
@@ -180,10 +211,11 @@ async def create_order_streaming(farm: str, quantity: int, price: float):
   recipients = [get_agent_identifier(card) for card in cards]
 
   try:
+    event_interceptor, event_consumer = _get_event_middleware()
     client = await a2a_client_factory.create(
       SHIPPER_CARD,
-      interceptors=[_event_interceptor],
-      consumers=[_event_consumer],
+      interceptors=[event_interceptor],
+      consumers=[event_consumer],
     ) # slim is set as preferred transport in these cards
     order_id=str(uuid4())
     logger.debug(f"Sending order {order_id} to agent: {farm}")
@@ -389,25 +421,3 @@ def _parse_order_event(response: Any) -> Optional[Dict[str, str]]:
   except Exception as e:
     logger.error(f"Failed to parse order event: {e}")
     return None
-
-
-# -- Resolver + event middleware --
-# Built after all @register_workflow decorators above have populated the
-# decorator registry. The resolver then snapshots that registry into a
-# WorkflowRegistration and validates every workflow name against the
-# JSON-backed catalog.
-_workflow_resolver = ToolWorkflowResolver(
-    registry=get_workflow_registry(),
-    registration=build_registration_from_decorators(),
-)
-
-_event_interceptor = EventEmittingInterceptor(
-    caller_card=LOGISTICS_SUPERVISOR_CARD,
-    workflow_resolver=_workflow_resolver.resolve,
-    verbose=True,
-)
-_event_consumer = make_event_emitting_consumer(
-    caller_card=LOGISTICS_SUPERVISOR_CARD,
-    workflow_resolver=_workflow_resolver.resolve,
-    verbose=True,
-)

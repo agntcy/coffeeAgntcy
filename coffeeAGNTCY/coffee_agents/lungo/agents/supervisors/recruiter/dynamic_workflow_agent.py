@@ -29,8 +29,7 @@ from agents.supervisors.recruiter.models import (
     AgentRecord,
 )
 from agents.supervisors.recruiter.recruiter_client import (
-    _event_consumer,
-    _event_interceptor,
+    _get_event_middleware,
 )
 from agents.supervisors.recruiter.shared import a2a_client_factory
 from common.a2a_event_middleware.workflow_registry import (
@@ -74,10 +73,11 @@ class DynamicWorkflowAgent(BaseAgent):
         )
 
         # negotiate and create the client based on the card's preferred transport
+        event_interceptor, event_consumer = _get_event_middleware()
         client = await a2a_client_factory.create(
             card,
-            interceptors=[_event_interceptor],
-            consumers=[_event_consumer],
+            interceptors=[event_interceptor],
+            consumers=[event_consumer],
         )
 
         try:
