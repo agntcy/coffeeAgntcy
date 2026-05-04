@@ -75,11 +75,13 @@ class WorkflowAPIEventSink(EventSink):
             f"/instances/{quote(instance_uuid, safe='')}/events/"
         )
         body = event.model_dump_json(exclude_none=True)
-        task = asyncio.create_task(self._post(url, body))
+        task = asyncio.create_task(self._post(url, body, workflow_name, instance_uuid))
         self._pending.add(task)
         task.add_done_callback(self._pending.discard)
 
-    async def _post(self, url: str, body: str) -> None:
+    async def _post(
+        self, url: str, body: str, workflow_name: str, instance_uuid: str
+    ) -> None:
         """Best-effort POST; errors are logged, never raised."""
         try:
             resp = await self._get_client().post(
@@ -87,9 +89,44 @@ class WorkflowAPIEventSink(EventSink):
                 content=body,
                 headers={"Content-Type": "application/json"},
             )
-            logger.debug("HttpEventSink: POST %s -> %s", url, resp.status_code)
-        except Exception:
-            logger.warning("HttpEventSink: POST %s failed", url, exc_info=True)
+            if resp.is_error:
+                logger.warning(
+                    "HttpEventSink: POST failed workflow=%s instance=%s status=%s",
+                    workflow_name,
+                    instance_uuid,
+                    resp.status_code,
+                )
+                return
+
+            logger.debug(
+                "HttpEventSink: POST ok workflow=%s instance=%s status=%s",
+                workflow_name,
+                instance_uuid,
+                resp.status_code,
+            )
+        except httpx.TimeoutException as exc:
+            logger.warning(
+                "HttpEventSink: timeout workflow=%s instance=%s (%s)",
+                workflow_name,
+                instance_uuid,
+                exc,
+            )
+        except httpx.HTTPError as exc:
+            logger.warning(
+                "HttpEventSink: http error workflow=%s instance=%s (%s: %s)",
+                workflow_name,
+                instance_uuid,
+                type(exc).__name__,
+                exc,
+            )
+        except Exception as exc:
+            logger.warning(
+                "HttpEventSink: unexpected error workflow=%s instance=%s (%s: %s)",
+                workflow_name,
+                instance_uuid,
+                type(exc).__name__,
+                exc,
+            )
 
     async def aclose(self) -> None:
         """Drain pending POSTs and close the underlying HTTP client."""
