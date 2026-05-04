@@ -31,13 +31,13 @@ import asyncio
 import copy
 import logging
 import queue
-from schema.types.event import Workflow
 import threading
 import time
 from collections import defaultdict
 from typing import Callable, Final
 
 from schema.types import Data, Event
+from schema.types.event import Workflow
 from schema.validation import validate_data_against_schema
 
 from common.workflow_instance_store.errors import WorkflowInstanceStoreClosedError
