@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  **/
 
-import { useTheme } from "@/hooks/useTheme"
+import { useThemeMode } from "@open-ui-kit/core"
 
 interface ThemeImageMap {
   light: string
@@ -11,7 +11,7 @@ interface ThemeImageMap {
 }
 
 export const useThemeImage = (imageMap: ThemeImageMap): string => {
-  const { resolvedTheme } = useTheme()
+  const { isDarkMode } = useThemeMode()
 
-  return resolvedTheme === "light" ? imageMap.light : imageMap.dark
+  return isDarkMode ? imageMap.dark : imageMap.light
 }

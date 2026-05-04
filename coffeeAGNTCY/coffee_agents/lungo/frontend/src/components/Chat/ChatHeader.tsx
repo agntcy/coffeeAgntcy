@@ -47,7 +47,8 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({
         justifyContent: "flex-end",
         px: { xs: 1, sm: 2, md: 4, lg: 2 },
         py: 1,
-        borderBottom: "1px solid #23282e",
+        borderBottom: 1,
+        borderColor: "divider",
       }}
     >
       <Stack direction="row" alignItems="center" spacing={1}>
@@ -67,13 +68,15 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({
               <Box
                 component="img"
                 src={collapseIcon}
+                color="currentColor"
                 alt=""
                 sx={{
                   width: 20,
                   height: 20,
                   display: "block",
                   transform: isMinimized ? "rotate(180deg)" : "none",
-                  filter: collapseIconFilter(isDarkMode),
+
+                  //filter: collapseIconFilter(isDarkMode),
                 }}
               />
             </IconButton>
@@ -92,7 +95,7 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({
                 borderRadius: 1,
               }}
             >
-              <Trash2 size={20} aria-hidden />
+              <Trash2 size={20} aria-hidden color="currentColor" />
             </IconButton>
           </Tooltip>
         ) : null}

@@ -39,7 +39,7 @@ const openedMixin = (theme: Theme, width: string): CSSObject => ({
     duration: theme.transitions.duration.enteringScreen,
   }),
   overflowX: "hidden",
-  backgroundColor: "#EFF3FC",
+  backgroundColor: theme.palette.background.paper,
   borderRadius: 0,
 })
 
@@ -49,7 +49,7 @@ const closedMixin = (theme: Theme): CSSObject => ({
     duration: theme.transitions.duration.leavingScreen,
   }),
   overflowX: "hidden",
-  backgroundColor: "#EFF3FC",
+  backgroundColor: theme.palette.background.paper,
   borderRadius: 0,
   width: "5.5rem",
 })

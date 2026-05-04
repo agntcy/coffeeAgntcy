@@ -4,8 +4,7 @@
  **/
 
 import React from "react"
-import { useTheme } from "@mui/material/styles"
-import { Box } from "@open-ui-kit/core"
+import { useTheme, useThemeMode, Box } from "@open-ui-kit/core"
 
 import AgentIcon from "@/assets/Coffee_Icon.svg"
 
@@ -16,11 +15,11 @@ export interface ChatAvatarCircleProps {
 export const ChatAvatarCircle: React.FC<ChatAvatarCircleProps> = ({
   children,
 }) => {
+  const { isDarkMode } = useThemeMode()
   const theme = useTheme()
-  const avatarBg =
-    theme.palette.mode === "light"
-      ? theme.palette.vars.agentcyBlue
-      : theme.palette.vars.agentcyDarkBlue
+  const avatarBg = isDarkMode
+    ? theme.palette.vars.agentcyDarkBlue
+    : theme.palette.vars.agentcyBlue
 
   return (
     <Box

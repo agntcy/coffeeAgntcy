@@ -6,6 +6,7 @@
  **/
 
 import React from "react"
+import { Box } from "@open-ui-kit/core"
 import Navigation from "@/components/Navigation/Navigation"
 import MainArea from "@/components/MainArea/MainArea"
 import ChatArea from "@/components/Chat/ChatArea"
@@ -59,15 +60,37 @@ const RootPage: React.FC = () => {
   } = useApp()
 
   return (
-    <div className="bg-primary-bg flex h-screen w-screen flex-col overflow-hidden">
+    <Box
+      sx={{
+        display: "flex",
+        height: "100vh",
+        width: "100vw",
+        flexDirection: "column",
+        overflow: "hidden",
+      }}
+    >
       <Navigation />
-      <div className="flex flex-1 overflow-hidden">
+      <Box
+        sx={{
+          display: "flex",
+          flex: 1,
+          minHeight: 0,
+          overflow: "hidden",
+        }}
+      >
         <Sidebar
           selectedPattern={selectedPattern}
           onPatternChange={handlePatternChange}
         />
-        <div className="flex flex-1 flex-col border-l border-action-background bg-app-background">
-          <div className="relative flex-grow">
+        <Box
+          sx={{
+            display: "flex",
+            flex: 1,
+            minWidth: 0,
+            flexDirection: "column",
+          }}
+        >
+          <Box sx={{ position: "relative", flexGrow: 1, minHeight: 0 }}>
             <MainArea
               pattern={selectedPattern}
               buttonClicked={buttonClicked}
@@ -85,8 +108,20 @@ const RootPage: React.FC = () => {
                   : null
               }
             />
-          </div>
-          <div className="flex min-h-[76px] w-full flex-none flex-col items-center justify-center gap-0 bg-overlay-background p-0 md:min-h-[96px]">
+          </Box>
+          <Box
+            sx={{
+              display: "flex",
+              width: "100%",
+              flexShrink: 0,
+              flexDirection: "column",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: 0,
+              p: 0,
+              minHeight: { xs: "76px", md: "96px" },
+            }}
+          >
             <ChatArea
               setMessages={setMessages}
               setButtonClicked={setButtonClicked}
@@ -137,10 +172,10 @@ const RootPage: React.FC = () => {
               }}
               onDiscoveryResponse={handleDiscoveryResponse}
             />
-          </div>
-        </div>
-      </div>
-    </div>
+          </Box>
+        </Box>
+      </Box>
+    </Box>
   )
 }
 
