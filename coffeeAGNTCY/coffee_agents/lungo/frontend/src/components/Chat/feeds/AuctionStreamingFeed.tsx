@@ -4,11 +4,13 @@
  **/
 
 import React, { useEffect } from "react"
-import { Box, Spinner, Stack, Typography } from "@open-ui-kit/core"
+import CheckCircleIcon from "@mui/icons-material/CheckCircle"
+import { Box, Stack, Typography } from "@open-ui-kit/core"
 
-import { ChatAgentAvatar } from "./ChatAvatarCircle"
-import CheckCircle from "@/assets/Check_Circle.png"
+import { ChatAgentAvatar } from "../ChatAvatarCircle"
 import type { AuctionStreamingState } from "@/stores/auctionStreaming.types"
+import { FeedSpinnerRow } from "../FeedSpinnerRow"
+import { FeedStatusLine } from "../FeedStatusLine"
 
 export interface AuctionStreamingFeedProps {
   isVisible: boolean
@@ -78,63 +80,16 @@ const AuctionStreamingFeed: React.FC<AuctionStreamingFeedProps> = ({
         }}
       >
         {errorMessage ? (
-          <Typography
-            variant="body2"
-            component="div"
-            sx={{
-              whiteSpace: "pre-wrap",
-              overflowWrap: "break-word",
-              wordBreak: "break-word",
-            }}
-          >
-            Connection error: {errorMessage}
-          </Typography>
+          <FeedStatusLine>Connection error: {errorMessage}</FeedStatusLine>
         ) : isComplete ? (
-          <Typography
-            variant="body2"
-            component="div"
-            sx={{
-              whiteSpace: "pre-wrap",
-              overflowWrap: "break-word",
-              wordBreak: "break-word",
-            }}
-          >
-            Streaming output:
-          </Typography>
+          <FeedStatusLine>Streaming output:</FeedStatusLine>
         ) : prompt && !apiError ? (
-          <Typography
-            variant="body2"
-            component="div"
-            sx={{
-              whiteSpace: "pre-wrap",
-              overflowWrap: "break-word",
-              wordBreak: "break-word",
-            }}
-          >
-            Streaming
-            <Box component="span" className="loading-dots" sx={{ ml: 0.5 }} />
-          </Typography>
+          <FeedStatusLine showDots>Streaming</FeedStatusLine>
         ) : null}
 
-        {prompt && !isComplete && !apiError && events.length === 0 && (
-          <Stack
-            direction="row"
-            alignItems="flex-start"
-            spacing={0.5}
-            sx={{ mt: 3, width: "100%" }}
-          >
-            <Box
-              sx={{
-                mt: 0.5,
-                display: "flex",
-                alignItems: "center",
-              }}
-            >
-              <Spinner aria-hidden />
-            </Box>
-            <Box sx={{ flex: 1 }} />
-          </Stack>
-        )}
+        {prompt && !isComplete && !apiError && events.length === 0 ? (
+          <FeedSpinnerRow mt={3} />
+        ) : null}
 
         <Stack
           spacing={3}
@@ -155,7 +110,10 @@ const AuctionStreamingFeed: React.FC<AuctionStreamingFeedProps> = ({
                 sx={{ width: "100%" }}
               >
                 <Box sx={{ mt: 0.5, display: "flex", alignItems: "center" }}>
-                  <Box component="img" src={CheckCircle} alt="Complete" />
+                  <CheckCircleIcon
+                    sx={{ fontSize: 22, color: "success.main" }}
+                    aria-hidden
+                  />
                 </Box>
                 <Box sx={{ flex: 1, minWidth: 0 }}>
                   <Typography
@@ -176,25 +134,7 @@ const AuctionStreamingFeed: React.FC<AuctionStreamingFeedProps> = ({
             )
           })}
 
-          {events.length > 0 && !isComplete && (
-            <Stack
-              direction="row"
-              alignItems="flex-start"
-              spacing={0.5}
-              sx={{ width: "100%" }}
-            >
-              <Box
-                sx={{
-                  mt: 0.5,
-                  display: "flex",
-                  alignItems: "center",
-                }}
-              >
-                <Spinner aria-hidden />
-              </Box>
-              <Box sx={{ flex: 1 }} />
-            </Stack>
-          )}
+          {events.length > 0 && !isComplete ? <FeedSpinnerRow mt={0} /> : null}
         </Stack>
       </Stack>
     </Stack>

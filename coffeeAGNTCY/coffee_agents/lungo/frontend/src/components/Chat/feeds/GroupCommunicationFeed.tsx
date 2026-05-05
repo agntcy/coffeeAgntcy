@@ -4,17 +4,17 @@
  **/
 
 import React, { useState, useEffect, useCallback, useRef } from "react"
-import { Box, IconButton, Spinner, Stack, Typography } from "@open-ui-kit/core"
+import { Box, IconButton, Stack, Typography } from "@open-ui-kit/core"
 import ExpandMore from "@mui/icons-material/ExpandMore"
 import ExpandLess from "@mui/icons-material/ExpandLess"
+import CheckCircleIcon from "@mui/icons-material/CheckCircle"
 
-import { ChatAgentAvatar } from "./ChatAvatarCircle"
+import { ChatAgentAvatar } from "../ChatAvatarCircle"
 import {
   buildSenderToNodeMap,
   formatAgentName,
   getAllAgentNodeIds,
-} from "./groupCommunicationFeedMapping"
-import CheckCircle from "@/assets/CheckCircle.png"
+} from "../groupCommunicationFeedMapping"
 import type { GraphConfig } from "@/utils/graphConfigs"
 import type { LogisticsStreamStep } from "@/stores/groupStreaming.types"
 import {
@@ -23,6 +23,8 @@ import {
   useGroupCurrentOrderId,
   useGroupIsComplete,
 } from "@/stores/groupStreamingStore"
+import { FeedSpinnerRow } from "../FeedSpinnerRow"
+import { FeedStatusLine } from "../FeedStatusLine"
 
 export interface GroupCommunicationFeedProps {
   isVisible: boolean
@@ -170,62 +172,16 @@ const GroupCommunicationFeed: React.FC<GroupCommunicationFeedProps> = ({
         }}
       >
         {errorMessage ? (
-          <Typography
-            variant="body2"
-            component="div"
-            sx={{
-              whiteSpace: "pre-wrap",
-              overflowWrap: "break-word",
-              wordBreak: "break-word",
-            }}
-          >
-            Connection error: {errorMessage}
-          </Typography>
+          <FeedStatusLine>Connection error: {errorMessage}</FeedStatusLine>
         ) : storeIsComplete && groupCurrentOrderId ? (
-          <Typography
-            variant="body2"
-            component="div"
-            sx={{
-              whiteSpace: "pre-wrap",
-              overflowWrap: "break-word",
-              wordBreak: "break-word",
-            }}
-          >
-            Order {groupCurrentOrderId}
-          </Typography>
+          <FeedStatusLine>Order {groupCurrentOrderId}</FeedStatusLine>
         ) : prompt && !apiError ? (
-          <Typography
-            variant="body2"
-            component="div"
-            sx={{
-              whiteSpace: "pre-wrap",
-              overflowWrap: "break-word",
-              wordBreak: "break-word",
-            }}
-          >
-            Processing Request...
-          </Typography>
+          <FeedStatusLine showDots>Processing Request</FeedStatusLine>
         ) : null}
 
-        {prompt && !storeIsComplete && !apiError && events.length === 0 && (
-          <Stack
-            direction="row"
-            alignItems="flex-start"
-            spacing={0.5}
-            sx={{ mt: 3, width: "100%" }}
-          >
-            <Box
-              sx={{
-                mt: 0.5,
-                display: "flex",
-                alignItems: "center",
-              }}
-            >
-              <Spinner aria-hidden />
-            </Box>
-            <Box sx={{ flex: 1 }} />
-          </Stack>
-        )}
+        {prompt && !storeIsComplete && !apiError && events.length === 0 ? (
+          <FeedSpinnerRow mt={3} />
+        ) : null}
 
         {storeIsComplete && !isExpanded && (
           <Box
@@ -276,7 +232,10 @@ const GroupCommunicationFeed: React.FC<GroupCommunicationFeedProps> = ({
                     <Box
                       sx={{ mt: 0.5, display: "flex", alignItems: "center" }}
                     >
-                      <Box component="img" src={CheckCircle} alt="Complete" />
+                      <CheckCircleIcon
+                        sx={{ fontSize: 22, color: "success.main" }}
+                        aria-hidden
+                      />
                     </Box>
 
                     <Box sx={{ flex: 1, minWidth: 0 }}>
@@ -308,25 +267,9 @@ const GroupCommunicationFeed: React.FC<GroupCommunicationFeedProps> = ({
                 )
               })}
 
-              {events.length > 0 && !storeIsComplete && (
-                <Stack
-                  direction="row"
-                  alignItems="flex-start"
-                  spacing={0.5}
-                  sx={{ width: "100%" }}
-                >
-                  <Box
-                    sx={{
-                      mt: 0.5,
-                      display: "flex",
-                      alignItems: "center",
-                    }}
-                  >
-                    <Spinner aria-hidden />
-                  </Box>
-                  <Box sx={{ flex: 1 }} />
-                </Stack>
-              )}
+              {events.length > 0 && !storeIsComplete ? (
+                <FeedSpinnerRow mt={0} />
+              ) : null}
             </Stack>
 
             {storeIsComplete && (
