@@ -3,42 +3,41 @@
  * SPDX-License-Identifier: Apache-2.0
  **/
 
-import Box from "@mui/material/Box"
+import React from "react"
 import { SecurityClass } from "@/utils/SecurityClass"
+import { Box } from "@open-ui-kit/core"
+import { Chip } from "@mui/material"
 
 interface ExternalLinkButtonProps {
   url: string
   label: string
   iconSrc: string
-  className?: string
 }
 
 const ExternalLinkButton: React.FC<ExternalLinkButtonProps> = ({
   url,
   label,
   iconSrc,
-  className,
 }) => {
   if (!SecurityClass.isSafeExternalUrl(url)) return null
   return (
-    <a
-      href={url}
+    <Chip
+      component="a"
+      label={label}
+      icon={
+        <Box
+          component="img"
+          src={iconSrc}
+          width={14}
+          height={14}
+          alt={label}
+          aria-hidden
+        />
+      }
+      onClick={() => window.open(url, "_blank")}
       target="_blank"
       rel="noopener noreferrer"
-      type="button"
-      className={`hover:bg-accent-primary/10 absolute inline-flex max-h-[20px] max-w-[90px] items-center gap-1 rounded-full border border-gray-300 bg-[var(--external-link-button-bg)] px-2 py-1 font-cisco text-xs text-chat-text shadow transition-colors dark:border-gray-700 ${className ?? ""}`}
-      style={{ marginLeft: 12 }}
-    >
-      <Box
-        component="img"
-        src={iconSrc}
-        alt={label}
-        sx={{
-          bgcolor: "#ffffff",
-        }}
-      />
-      {label}
-    </a>
+    />
   )
 }
 
