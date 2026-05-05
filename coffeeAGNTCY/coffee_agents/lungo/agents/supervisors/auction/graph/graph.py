@@ -26,6 +26,12 @@ from agents.supervisors.auction.graph.tools import (
 )
 from agents.supervisors.auction.graph.shared import farm_registry
 from common.llm import get_llm
+from common.workflow_context_prop import (
+    attach_workflow_context,
+    detach_workflow_context,
+    read_workflow_context,
+    workflow_context_scope,
+)
 
 logger = logging.getLogger("lungo.supervisor.graph")
 
@@ -34,6 +40,11 @@ _OUTCOME_TRANSPORT = "transport"
 _OUTCOME_PERMISSION = "permission"
 _SUPERVISOR_FARM_KEY = "supervisor_farm"
 _SUPERVISOR_OPERATION_KEY = "supervisor_operation"
+
+# Must match entries in api/agentic_workflows/starting_workflows.json.
+# Drift is guarded by tests/unit/auction/test_workflow_names.py.
+_WORKFLOW_NAME_SERVE = "Publish Subscribe Coffee Farm Network"
+_WORKFLOW_NAME_STREAM = "Publish Subscribe Streaming Coffee Auction Network"
 
 
 def _caused_by_transport(exc: BaseException) -> bool:
@@ -585,16 +596,20 @@ class ExchangeGraph:
             "messages": [AIMessage(content="I'm not sure how to handle that. Could you please clarify?")],
         }
 
-    async def serve(self, prompt: str) -> str:
+    async def serve(self, prompt: str, *, workflow_instance_id: str | None = None) -> str:
         """
         Processes the input prompt and returns a complete response from the graph execution.
-        
+
         This method uses LangGraph's ainvoke() to execute the entire graph synchronously,
         waiting for all nodes to complete before returning the final result. Unlike streaming_serve(),
         this method blocks until the full execution is complete and returns only the final output.
 
         Args:
             prompt (str): The input prompt to be processed by the graph.
+            workflow_instance_id (str | None): Optional workflow instance id supplied
+                by the caller. Takes effect only when no upstream OTel-baggage context
+                provides one. If neither source supplies a value, a uuid4 is minted so
+                downstream emitters always see a non-None instance id.
 
         Returns:
             str: The final response content from the last AIMessage in the graph execution.
@@ -604,51 +619,69 @@ class ExchangeGraph:
             RuntimeError: If no valid AIMessage is found in the graph response.
             Exception: If any error occurs during graph execution.
         """
-        try:
-            logger.debug(f"Received prompt: {prompt}")
-            
-            # Validate input prompt
-            if not isinstance(prompt, str) or not prompt.strip():
-                raise ValueError("Prompt must be a non-empty string.")
-            
-            # Execute the graph using ainvoke() - this runs the entire graph to completion
-            # The graph will route through nodes based on the routing logic and return the final state
-            result = await self.graph.ainvoke({
-                "messages": [
-                {
-                    "role": "user",
-                    "content": prompt,
-                }
-                ],
-            }, {"configurable": {"thread_id": uuid.uuid4()}})
+        # Upstream OTel baggage (main.py once wired, or test/orchestrator
+        # scope) wins over the per-graph fallback below.
+        existing = read_workflow_context()
+        resolved_instance_id = (
+            existing.instance_id
+            or workflow_instance_id
+            or f"instance://{uuid.uuid4()}"
+        )
+        resolved_workflow_name = existing.workflow_name or _WORKFLOW_NAME_SERVE
+        logger.debug(
+            "workflow context: name=%s instance_id=%s",
+            resolved_workflow_name,
+            resolved_instance_id,
+        )
+        with workflow_context_scope(
+            workflow_name=resolved_workflow_name,
+            workflow_instance_id=resolved_instance_id,
+        ):
+            try:
+                logger.debug(f"Received prompt: {prompt}")
 
-            # Extract messages from the final state
-            # The messages list contains the full conversation history including user, AI, and tool messages
-            messages = result.get("messages", [])
-            if not messages:
-                raise RuntimeError("No messages found in the graph response.")
+                # Validate input prompt
+                if not isinstance(prompt, str) or not prompt.strip():
+                    raise ValueError("Prompt must be a non-empty string.")
 
-            # Find the last AIMessage with non-empty content
-            # We iterate in reverse to get the most recent response from the agent
-            # This skips over any tool messages or empty responses
-            for message in reversed(messages):
-                if isinstance(message, AIMessage) and message.content.strip():
-                    logger.debug(f"Valid AIMessage found: {message.content.strip()}")
-                    return message.content.strip()
+                # Execute the graph using ainvoke() - this runs the entire graph to completion
+                # The graph will route through nodes based on the routing logic and return the final state
+                result = await self.graph.ainvoke({
+                    "messages": [
+                    {
+                        "role": "user",
+                        "content": prompt,
+                    }
+                    ],
+                }, {"configurable": {"thread_id": uuid.uuid4()}})
 
-            # If no valid AIMessage is found, raise an error
-            raise RuntimeError("No valid AIMessage found in the graph response.")
-        except ValueError as ve:
-            logger.error(f"ValueError in serve method: {ve}")
-            raise ValueError(str(ve))
-        except Exception as e:
-            logger.error(f"Error in serve method: {e}")
-            raise Exception(str(e))
+                # Extract messages from the final state
+                # The messages list contains the full conversation history including user, AI, and tool messages
+                messages = result.get("messages", [])
+                if not messages:
+                    raise RuntimeError("No messages found in the graph response.")
 
-    async def streaming_serve(self, prompt: str):
+                # Find the last AIMessage with non-empty content
+                # We iterate in reverse to get the most recent response from the agent
+                # This skips over any tool messages or empty responses
+                for message in reversed(messages):
+                    if isinstance(message, AIMessage) and message.content.strip():
+                        logger.debug(f"Valid AIMessage found: {message.content.strip()}")
+                        return message.content.strip()
+
+                # If no valid AIMessage is found, raise an error
+                raise RuntimeError("No valid AIMessage found in the graph response.")
+            except ValueError as ve:
+                logger.error(f"ValueError in serve method: {ve}")
+                raise ValueError(str(ve))
+            except Exception as e:
+                logger.error(f"Error in serve method: {e}")
+                raise Exception(str(e))
+
+    async def streaming_serve(self, prompt: str, *, workflow_instance_id: str | None = None):
         """
         Streams the graph execution using LangGraph's astream_events API, yielding chunks as they arrive.
-        
+
         This method leverages LangGraph's event streaming to provide real-time updates as the graph
         executes across multiple nodes. It captures intermediate outputs from each node and streams
         them back to the caller, enabling progressive data delivery for long-running operations.
@@ -659,6 +692,10 @@ class ExchangeGraph:
 
         Args:
             prompt (str): The input prompt to be processed by the graph.
+            workflow_instance_id (str | None): Optional workflow instance id supplied
+                by the caller. Takes effect only when no upstream OTel-baggage context
+                provides one. If neither source supplies a value, a uuid4 is minted so
+                downstream emitters always see a non-None instance id.
 
         Yields:
             str: Message content chunks as they arrive from nodes during graph execution.
@@ -668,76 +705,100 @@ class ExchangeGraph:
             ValueError: If the prompt is empty or not a string.
             Exception: If any error occurs during graph execution or streaming.
         """
+        # Upstream OTel baggage (main.py once wired, or test/orchestrator
+        # scope) wins over the per-graph fallback below.
+        existing = read_workflow_context()
+        resolved_instance_id = (
+            existing.instance_id
+            or workflow_instance_id
+            or f"instance://{uuid.uuid4()}"
+        )
+        resolved_workflow_name = existing.workflow_name or _WORKFLOW_NAME_STREAM
+        logger.debug(
+            "workflow context: name=%s instance_id=%s",
+            resolved_workflow_name,
+            resolved_instance_id,
+        )
+        # Manual attach/detach (not `with`): in an async generator, __exit__
+        # may run on a different Task on aclose()/early break, triggering
+        # OTel "Failed to detach context" warnings.
+        token = attach_workflow_context(
+            workflow_name=resolved_workflow_name,
+            workflow_instance_id=resolved_instance_id,
+        )
         try:
-            logger.debug(f"Received streaming prompt: {prompt}")
-            
-            # Validate input prompt
-            if not isinstance(prompt, str) or not prompt.strip():
-                raise ValueError("Prompt must be a non-empty string.")
+            try:
+                logger.debug(f"Received streaming prompt: {prompt}")
 
-            # Construct the initial state for the LangGraph execution
-            # The state follows the MessageGraph pattern with a messages list
-            state = {
-                "messages": [
-                    {
-                        "role": "user",
-                        "content": prompt
-                    }
-                ],
-            }
+                # Validate input prompt
+                if not isinstance(prompt, str) or not prompt.strip():
+                    raise ValueError("Prompt must be a non-empty string.")
 
-            # Track seen content to prevent duplicate yields when nodes produce the same output
-            seen_contents = set()
-            
-            # Stream events from the graph using astream_events (LangGraph v2 API)
-            # This provides fine-grained control over streaming, emitting events for:
-            # - Node starts/ends (on_chain_start, on_chain_end)
-            # - Intermediate outputs (on_chain_stream)
-            async for event in self.graph.astream_events(state, {"configurable": {"thread_id": uuid.uuid4()}}, version="v2"):
-                logger.debug(f"Event: {event}")
-                
-                # Filter for "on_chain_stream" events which contain intermediate node outputs
-                # These events fire when a node produces output during execution, allowing
-                # us to stream results progressively rather than waiting for full completion
-                if event["event"] == "on_chain_stream":
-                    node_name = event.get("name", "")
-                    data = event.get("data", {})
-                    
-                    # Extract the chunk from the event data
-                    # Chunks contain partial state updates from the executing node
-                    if "chunk" in data:
-                        chunk = data["chunk"]
-                        
-                        # Check if this chunk contains messages (the primary output type)
-                        if "messages" in chunk and chunk["messages"]:
-                            logger.info(f"Streaming chunk from node '{node_name}': {chunk}")
-                            
-                            # Skip messages from the reflection node to avoid streaming internal reasoning
-                            # The reflection node performs self-evaluation and shouldn't be user-facing
-                            if node_name == NodeStates.REFLECTION:
-                                logger.info(f"Skipping messages from reflection node")
-                                continue
-                            
-                            # Process and yield all messages from this chunk
-                            for message in chunk["messages"]:
-                                # Only yield AIMessage content (responses from the agent/LLM)
-                                # Filter out system messages, tool messages, and human messages
-                                if isinstance(message, AIMessage) and message.content:
-                                    content = message.content.strip()
-                                    
-                                    # Deduplicate: Skip if we've already yielded this exact content
-                                    if content in seen_contents:
-                                        logger.info(f"Skipping duplicate content from '{node_name}': {content}")
-                                        continue
-                                    
-                                    # Mark this content as seen and yield it to the caller
-                                    seen_contents.add(content)
-                                    logger.info(f"Yielding message from '{node_name}': {content}")
-                                    yield message.content
+                # Construct the initial state for the LangGraph execution
+                # The state follows the MessageGraph pattern with a messages list
+                state = {
+                    "messages": [
+                        {
+                            "role": "user",
+                            "content": prompt
+                        }
+                    ],
+                }
 
-        except ValueError as ve:
-            logger.error(f"ValueError in streaming_serve method: {ve}")
-            raise ValueError(str(ve))
-        except Exception as e:
-            logger.error(f"Error in streaming_serve method: {e}")
-            raise Exception(str(e))
+                # Track seen content to prevent duplicate yields when nodes produce the same output
+                seen_contents = set()
+
+                # Stream events from the graph using astream_events (LangGraph v2 API)
+                # This provides fine-grained control over streaming, emitting events for:
+                # - Node starts/ends (on_chain_start, on_chain_end)
+                # - Intermediate outputs (on_chain_stream)
+                async for event in self.graph.astream_events(state, {"configurable": {"thread_id": uuid.uuid4()}}, version="v2"):
+                    logger.debug(f"Event: {event}")
+
+                    # Filter for "on_chain_stream" events which contain intermediate node outputs
+                    # These events fire when a node produces output during execution, allowing
+                    # us to stream results progressively rather than waiting for full completion
+                    if event["event"] == "on_chain_stream":
+                        node_name = event.get("name", "")
+                        data = event.get("data", {})
+
+                        # Extract the chunk from the event data
+                        # Chunks contain partial state updates from the executing node
+                        if "chunk" in data:
+                            chunk = data["chunk"]
+
+                            # Check if this chunk contains messages (the primary output type)
+                            if "messages" in chunk and chunk["messages"]:
+                                logger.info(f"Streaming chunk from node '{node_name}': {chunk}")
+
+                                # Skip messages from the reflection node to avoid streaming internal reasoning
+                                # The reflection node performs self-evaluation and shouldn't be user-facing
+                                if node_name == NodeStates.REFLECTION:
+                                    logger.info(f"Skipping messages from reflection node")
+                                    continue
+
+                                # Process and yield all messages from this chunk
+                                for message in chunk["messages"]:
+                                    # Only yield AIMessage content (responses from the agent/LLM)
+                                    # Filter out system messages, tool messages, and human messages
+                                    if isinstance(message, AIMessage) and message.content:
+                                        content = message.content.strip()
+
+                                        # Deduplicate: Skip if we've already yielded this exact content
+                                        if content in seen_contents:
+                                            logger.info(f"Skipping duplicate content from '{node_name}': {content}")
+                                            continue
+
+                                        # Mark this content as seen and yield it to the caller
+                                        seen_contents.add(content)
+                                        logger.info(f"Yielding message from '{node_name}': {content}")
+                                        yield message.content
+
+            except ValueError as ve:
+                logger.error(f"ValueError in streaming_serve method: {ve}")
+                raise ValueError(str(ve))
+            except Exception as e:
+                logger.error(f"Error in streaming_serve method: {e}")
+                raise Exception(str(e))
+        finally:
+            detach_workflow_context(token)
