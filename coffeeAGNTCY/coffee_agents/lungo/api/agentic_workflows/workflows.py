@@ -19,13 +19,13 @@ import httpx
 from pydantic import ValidationError
 
 from schema.types import (
-    AgentId,
     AgentNode,
-    AgentPartialNode,
-    EdgeId,
-    NodeId,
+    PartialAgentNode,
     TopologyNodeItem,
     Workflow,
+    edge_id_from_uuid,
+    node_id_from_uuid,
+    stable_agent_id_from_uuid,
 )
 
 
@@ -102,13 +102,13 @@ def _load_and_validate_starting_workflows_from_file(target: Path) -> dict[str, W
             # Only agent nodes carry an agent_record_uri; attempt to load and validate the record,
             # and derive a stable agent id (uuid5) from the record's ``name`` field.
             for idx_nd, node in enumerate[TopologyNodeItem](validated_entry_initial.starting_topology.nodes):
-                if isinstance(node, (AgentNode, AgentPartialNode)):
+                if isinstance(node, (AgentNode, PartialAgentNode)):
                     # If the agent record cannot be loaded or is invalid we keep the workflow but leave stable_agent_id unset;
                     # in the future these should become grounds for invalidating the workflow entirely.
                     try:
                         record = _load_agent_record_from_uri(node.agent_record_uri, base_path=target.parent)
                         stable_agent_uuid = uuid5(_STABLE_AGENT_ID_NAMESPACE, record["name"])
-                        node.stable_agent_id = AgentId(f"agent://{stable_agent_uuid}")
+                        node.stable_agent_id = stable_agent_id_from_uuid(stable_agent_uuid)
                     # FileNotFoundError is a subclass of OSError.
                     except (FileNotFoundError, httpx.HTTPStatusError) as exc:
                         logger.warning("Failed to load agent record for node at index %d (id %s) in workflow at index %d (name %s) but will use the workflow anyhow: %s",
@@ -118,10 +118,10 @@ def _load_and_validate_starting_workflows_from_file(target: Path) -> dict[str, W
                                        idx_nd, node.id, idx_wf, validated_entry_initial.name, exc)
 
                 # Set the runtime/instance node id. This is not the same as the stable agent id.
-                node.id = NodeId(f"node://{uuid4()}")
+                node.id = node_id_from_uuid(uuid4())
             
             for edge in validated_entry_initial.starting_topology.edges:
-                edge.id = EdgeId(f"edge://{uuid4()}")
+                edge.id = edge_id_from_uuid(uuid4())
             
             # Validate the workflow again to ensure that modifications made are valid.
             # Note that model_validate() returns a new instance of the model.

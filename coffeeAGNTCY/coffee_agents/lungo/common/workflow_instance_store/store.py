@@ -37,14 +37,14 @@ from collections import defaultdict
 from typing import Callable, Final
 
 from schema.types import Data, Event
+from schema.types.event import Workflow
 from schema.validation import validate_data_against_schema
 
+from common.workflow_instance_store.errors import WorkflowInstanceStoreClosedError
 from common.workflow_instance_store.merge import merge_event_data
 from common.workflow_instance_store.notifier import NoOpNotifier, NotifierProtocol
 
 EVENT_SCHEMA = "event_v1"
-
-_STORE_CLOSED_MSG = "WorkflowInstanceStateStore is closed"
 
 logger = logging.getLogger(__name__)
 
@@ -287,7 +287,7 @@ class WorkflowInstanceStateStore:
         self._dispatch = _DispatchHub(self._state_lock, n)
         self._merge = _MergeCoordinator(
             self._state_lock,
-            Data(),
+            Data(workflows=dict[str, Workflow]()),
             self._after_merge_enqueue_dispatch,
         )
 
@@ -308,21 +308,23 @@ class WorkflowInstanceStateStore:
     def wait_merge_idle(self, timeout: float | None = 5.0) -> None:
         """Block until all ingested events have been merged.
 
-        Raises ``RuntimeError`` if the store is already :meth:`close`d.
+        Raises :class:`~common.workflow_instance_store.errors.WorkflowInstanceStoreClosedError`
+        if the store is already :meth:`close`d.
         """
         with self._state_lock:
             if self._closed:
-                raise RuntimeError(_STORE_CLOSED_MSG)
+                raise WorkflowInstanceStoreClosedError()
         self._merge.wait_merge_idle(timeout=timeout)
 
     def wait_dispatch_idle(self, timeout: float | None = 5.0) -> None:
         """Block until all queued dispatch jobs finished.
 
-        Raises ``RuntimeError`` if the store is already :meth:`close`d.
+        Raises :class:`~common.workflow_instance_store.errors.WorkflowInstanceStoreClosedError`
+        if the store is already :meth:`close`d.
         """
         with self._state_lock:
             if self._closed:
-                raise RuntimeError(_STORE_CLOSED_MSG)
+                raise WorkflowInstanceStoreClosedError()
         self._dispatch.wait_dispatch_idle(timeout=timeout)
 
     def get_merged_data(self) -> Data:
@@ -363,7 +365,7 @@ class WorkflowInstanceStateStore:
         """Validate and enqueue; merge runs on the merge worker thread."""
         with self._lifecycle_lock:
             if not self._running:
-                raise RuntimeError(_STORE_CLOSED_MSG)
+                raise WorkflowInstanceStoreClosedError()
             validate_data_against_schema(event, EVENT_SCHEMA)
             work = Event.model_validate(event)
             self._merge.enqueue(work)
@@ -374,7 +376,7 @@ class WorkflowInstanceStateStore:
         def _submit() -> None:
             with self._lifecycle_lock:
                 if not self._running:
-                    raise RuntimeError(_STORE_CLOSED_MSG)
+                    raise WorkflowInstanceStoreClosedError()
                 validate_data_against_schema(event, EVENT_SCHEMA)
                 work = Event.model_validate(event)
                 self._merge.enqueue(work)
