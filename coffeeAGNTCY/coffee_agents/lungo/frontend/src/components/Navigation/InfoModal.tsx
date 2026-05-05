@@ -4,7 +4,8 @@
  **/
 
 import React from "react"
-import { X } from "lucide-react"
+import { IconButton } from "@open-ui-kit/core"
+import Close from "@mui/icons-material/Close"
 import { env } from "@/utils/env"
 
 interface InfoModalProps {
@@ -67,12 +68,19 @@ const InfoModal: React.FC<InfoModalProps> = ({ isOpen, onClose }) => {
       <div className="absolute inset-0" onClick={onClose} />
 
       <div className="absolute right-4 top-16 w-80 rounded-lg border border-modal-border bg-modal-background shadow-lg">
-        <button
+        <IconButton
           onClick={onClose}
-          className="absolute right-2 top-2 rounded-lg p-1 text-modal-text-secondary transition-colors hover:bg-modal-hover"
+          aria-label="Close"
+          size="small"
+          sx={{
+            position: "absolute",
+            right: 8,
+            top: 8,
+            p: 0.5,
+          }}
         >
-          <X className="h-4 w-4" />
-        </button>
+          <Close sx={{ fontSize: 16 }} />
+        </IconButton>
 
         <div className="space-y-4 p-4 pr-10">
           <div>

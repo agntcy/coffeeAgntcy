@@ -4,7 +4,9 @@
  **/
 
 import React from "react"
-import { Trash2 } from "lucide-react"
+import { IconButton } from "@open-ui-kit/core"
+import DeleteOutline from "@mui/icons-material/DeleteOutline"
+import Box from "@mui/material/Box"
 import collapseIcon from "@/assets/collapse.png"
 
 interface ChatHeaderProps {
@@ -31,30 +33,47 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({
     >
       <div className="flex items-center gap-2">
         {onMinimize && (
-          <div className="flex h-7 w-7 items-center justify-center rounded-lg p-1">
-            <button
-              onClick={onMinimize}
-              className="flex h-5 w-5 items-center justify-center rounded transition-colors"
-              title={isMinimized ? "Maximize" : "Minimize"}
-            >
-              <img
-                src={collapseIcon}
-                alt={isMinimized ? "Maximize" : "Minimize"}
-                className={`chat-header-icon h-5 w-5 ${isMinimized ? "rotate-180" : ""}`}
-              />
-            </button>
-          </div>
+          <IconButton
+            onClick={onMinimize}
+            size="small"
+            color="inherit"
+            aria-label={isMinimized ? "Maximize" : "Minimize"}
+            title={isMinimized ? "Maximize" : "Minimize"}
+            sx={{
+              width: 28,
+              height: 28,
+              p: 0.5,
+            }}
+          >
+            <Box
+              component="img"
+              src={collapseIcon}
+              alt=""
+              className="chat-header-icon"
+              sx={{
+                width: 20,
+                height: 20,
+                transform: isMinimized ? "rotate(180deg)" : undefined,
+                bgcolor: "#ffffff",
+              }}
+            />
+          </IconButton>
         )}
         {onClearConversation && (
-          <div className="flex h-7 w-7 items-center justify-center rounded-lg p-1">
-            <button
-              onClick={onClearConversation}
-              className="flex h-5 w-5 items-center justify-center rounded transition-colors"
-              title="Clear conversation"
-            >
-              <Trash2 className="chat-header-trash-icon h-5 w-5" />
-            </button>
-          </div>
+          <IconButton
+            onClick={onClearConversation}
+            size="small"
+            color="inherit"
+            aria-label="Clear conversation"
+            title="Clear conversation"
+            sx={{
+              width: 28,
+              height: 28,
+              p: 0.5,
+            }}
+          >
+            <DeleteOutline sx={{ fontSize: 20 }} />
+          </IconButton>
         )}
       </div>
     </div>

@@ -4,7 +4,8 @@
  **/
 
 import React, { useEffect } from "react"
-import { Loader2 } from "lucide-react"
+import { Spinner } from "@open-ui-kit/core"
+import Box from "@mui/material/Box"
 import AgentIcon from "@/assets/Coffee_Icon.svg"
 import CheckCircle from "@/assets/Check_Circle.png"
 import type { AuctionStreamingState } from "@/stores/auctionStreaming.types"
@@ -60,7 +61,15 @@ const AuctionStreamingFeed: React.FC<AuctionStreamingFeedProps> = ({
   return (
     <div className="flex w-full flex-row items-start gap-1 transition-all duration-300">
       <div className="chat-avatar-container flex h-10 w-10 flex-none items-center justify-center rounded-full bg-action-background">
-        <img src={AgentIcon} alt="Agent" className="h-[22px] w-[22px]" />
+        <Box
+          component="img"
+          src={AgentIcon}
+          alt="Agent"
+          sx={{
+            width: 22,
+            height: 22,
+          }}
+        />
       </div>
 
       <div className="flex max-w-[calc(100%-3rem)] flex-1 flex-col items-start rounded p-1 px-2">
@@ -81,7 +90,7 @@ const AuctionStreamingFeed: React.FC<AuctionStreamingFeedProps> = ({
         {prompt && !isComplete && !apiError && events.length === 0 && (
           <div className="mt-3 flex w-full flex-row items-start gap-1">
             <div className="mt-1 flex items-center">
-              <Loader2 className="h-4 w-4 animate-spin text-accent-primary" />
+              <Spinner size={16} thickness={4} />
             </div>
             <div className="flex-1"></div>
           </div>
@@ -100,7 +109,16 @@ const AuctionStreamingFeed: React.FC<AuctionStreamingFeedProps> = ({
                 className="flex w-full flex-row items-start gap-1"
               >
                 <div className="mt-1 flex items-center">
-                  <img src={CheckCircle} alt="Complete" className="h-4 w-4" />
+                  <Box
+                    component="img"
+                    src={CheckCircle}
+                    alt="Complete"
+                    sx={{
+                      width: 16,
+                      height: 16,
+                      bgcolor: "#ffffff",
+                    }}
+                  />
                 </div>
                 <div className="flex-1">
                   <div className="font-inter text-sm leading-[18px] text-chat-text">
@@ -114,7 +132,7 @@ const AuctionStreamingFeed: React.FC<AuctionStreamingFeedProps> = ({
           {events.length > 0 && !isComplete && (
             <div className="flex w-full flex-row items-start gap-1">
               <div className="mt-1 flex items-center">
-                <Loader2 className="h-4 w-4 animate-spin text-accent-primary" />
+                <Spinner size={16} thickness={4} />
               </div>
               <div className="flex-1"></div>
             </div>

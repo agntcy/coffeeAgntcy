@@ -4,21 +4,18 @@
  **/
 
 import React from "react"
-import { Moon, Sun } from "lucide-react"
+import DarkMode from "@mui/icons-material/DarkMode"
+import LightMode from "@mui/icons-material/LightMode"
 import { useTheme } from "@/hooks/useTheme"
 
-interface ThemeToggleIconProps {
-  className?: string
-}
+const iconSx = {
+  fontSize: 20,
+} as const
 
-const ThemeToggleIcon: React.FC<ThemeToggleIconProps> = ({ className }) => {
+const ThemeToggleIcon: React.FC = () => {
   const { isLightMode } = useTheme()
 
-  return isLightMode ? (
-    <Moon className={className} />
-  ) : (
-    <Sun className={className} />
-  )
+  return isLightMode ? <DarkMode sx={iconSx} /> : <LightMode sx={iconSx} />
 }
 
 export default ThemeToggleIcon

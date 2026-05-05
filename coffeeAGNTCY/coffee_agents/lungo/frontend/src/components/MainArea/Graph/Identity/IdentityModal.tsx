@@ -4,12 +4,13 @@
  **/
 
 import React from "react"
-import { Eye } from "lucide-react"
+import { IconButton } from "@open-ui-kit/core"
+import Close from "@mui/icons-material/Close"
+import Visibility from "@mui/icons-material/Visibility"
+import Box from "@mui/material/Box"
 import { createPortal } from "react-dom"
 import { IdentityModalProps } from "./types"
-import { useThemeIcon } from "@/hooks/useThemeIcon"
 import { useEscapeKey } from "@/hooks/useEscapeKey"
-import githubIcon from "@/assets/Github.png"
 import githubIconLight from "@/assets/Github_lightmode.png"
 import urlsConfig from "@/utils/urls.json"
 import { SecurityClass } from "@/utils/SecurityClass"
@@ -20,14 +21,10 @@ const IdentityModal: React.FC<IdentityModalProps> = ({
   onShowBadgeDetails,
   onShowPolicyDetails,
   position,
-  activeModal,
   nodeData,
   isMcpServer,
 }) => {
-  const githubIconSrc = useThemeIcon({
-    light: githubIconLight,
-    dark: githubIcon,
-  })
+  const githubIconSrc = githubIconLight
 
   const getIdentityGithubUrl = () => {
     if (!nodeData) return null
@@ -76,12 +73,19 @@ const IdentityModal: React.FC<IdentityModalProps> = ({
           onClick={handleModalClick}
           data-modal-content
         >
-          <button
+          <IconButton
             onClick={onClose}
-            className="absolute right-3 top-3 z-10 text-xl leading-none text-node-text-secondary transition-colors hover:text-node-text-primary"
+            aria-label="Close"
+            size="small"
+            sx={{
+              position: "absolute",
+              right: 12,
+              top: 12,
+              zIndex: 10,
+            }}
           >
-            ×
-          </button>
+            <Close sx={{ fontSize: 18 }} />
+          </IconButton>
 
           <h3 className="mb-3 text-lg font-semibold text-node-text-primary">
             Agent Identity Details
@@ -89,40 +93,46 @@ const IdentityModal: React.FC<IdentityModalProps> = ({
 
           <div className="flex w-full flex-col gap-1 overflow-y-auto rounded border border-gray-600 p-3">
             {nodeData?.hasBadgeDetails && (
-              <button
+              <IconButton
                 onClick={onShowBadgeDetails}
-                className={`flex h-11 w-full items-center justify-between gap-3 rounded-sm px-3 transition-colors hover:bg-gray-500 hover:bg-opacity-20 ${
-                  activeModal === "badge"
-                    ? "border border-accent-border bg-accent-border bg-opacity-20"
-                    : ""
-                }`}
+                sx={{
+                  width: "100%",
+                  height: 44,
+                  justifyContent: "space-between",
+                  gap: 1.5,
+                  px: 1.5,
+                  py: 0,
+                }}
               >
-                <span className="text-left font-inter text-sm font-normal leading-5 text-node-text-primary">
+                <span className="text-left font-inter text-sm font-normal leading-5">
                   Badge details
                 </span>
-                <Eye className="h-4 w-4 text-node-text-secondary" />
-              </button>
+                <Visibility sx={{ fontSize: 16 }} />
+              </IconButton>
             )}
 
             {nodeData?.hasPolicyDetails && (
-              <button
+              <IconButton
                 onClick={onShowPolicyDetails}
-                className={`flex h-11 w-full items-center justify-between gap-3 rounded-sm px-3 transition-colors hover:bg-gray-500 hover:bg-opacity-20 ${
-                  activeModal === "policy"
-                    ? "border border-accent-border bg-accent-border bg-opacity-20"
-                    : ""
-                }`}
+                sx={{
+                  width: "100%",
+                  height: 44,
+                  justifyContent: "space-between",
+                  gap: 1.5,
+                  px: 1.5,
+                  py: 0,
+                }}
               >
-                <span className="text-left font-inter text-sm font-normal leading-5 text-node-text-primary">
+                <span className="text-left font-inter text-sm font-normal leading-5">
                   Policy details
                 </span>
-                <Eye className="h-4 w-4 text-node-text-secondary" />
-              </button>
+                <Visibility sx={{ fontSize: 16 }} />
+              </IconButton>
             )}
 
             {identityGithubUrl &&
               SecurityClass.isSafeExternalUrl(identityGithubUrl) && (
-                <button
+                <IconButton
                   onClick={() =>
                     window.open(
                       identityGithubUrl,
@@ -130,13 +140,29 @@ const IdentityModal: React.FC<IdentityModalProps> = ({
                       "noopener,noreferrer",
                     )
                   }
-                  className="flex h-11 w-full items-center justify-between gap-3 rounded-sm px-3 transition-colors hover:bg-gray-500 hover:bg-opacity-20"
+                  sx={{
+                    width: "100%",
+                    height: 44,
+                    justifyContent: "space-between",
+                    gap: 1.5,
+                    px: 1.5,
+                    py: 0,
+                  }}
                 >
-                  <span className="text-left font-inter text-sm font-normal leading-5 text-node-text-primary">
+                  <span className="text-left font-inter text-sm font-normal leading-5">
                     Source code
                   </span>
-                  <img src={githubIconSrc} alt="GitHub" className="h-4 w-4" />
-                </button>
+                  <Box
+                    component="img"
+                    src={githubIconSrc}
+                    alt=""
+                    sx={{
+                      width: 16,
+                      height: 16,
+                      bgcolor: "#ffffff",
+                    }}
+                  />
+                </IconButton>
               )}
           </div>
         </div>

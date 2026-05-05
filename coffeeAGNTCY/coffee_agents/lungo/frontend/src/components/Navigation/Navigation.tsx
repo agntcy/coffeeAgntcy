@@ -4,7 +4,8 @@
  **/
 
 import React, { useState } from "react"
-import { HelpCircle } from "lucide-react"
+import { IconButton, Tooltip } from "@open-ui-kit/core"
+import HelpOutline from "@mui/icons-material/HelpOutline"
 import coffeeAgntcyLogo from "@/assets/coffeeAGNTCY_logo.svg"
 import ThemeToggleIcon from "../icons/ThemeToggleIcon"
 import { useTheme } from "@/hooks/useTheme"
@@ -25,9 +26,12 @@ const Navigation: React.FC = () => {
   const handleThemeToggle = () => {
     toggleTheme()
   }
+
+  const lightModeText = `Switch to ${isLightMode ? "dark" : "light"} mode`
+
   return (
-    <div className="order-0 box-border flex h-[52px] w-full flex-none flex-grow-0 flex-col items-start self-stretch border-r border-nav-border bg-nav-background p-0">
-      <div className="order-0 box-border flex h-[52px] w-full flex-none flex-grow-0 flex-row items-center justify-between gap-2 self-stretch border-b border-nav-border bg-nav-background-secondary px-2 py-[10px] sm:px-4">
+    <div className="order-0 box-border flex h-[52px] w-full flex-none flex-grow-0 flex-col items-start self-stretch border-r border-nav-border p-0">
+      <div className="order-0 box-border flex h-[52px] w-full flex-none flex-grow-0 flex-row items-center justify-between gap-2 self-stretch border-b border-nav-border px-2 py-[10px] sm:px-4">
         <div className="order-0 ml-2 flex h-[45px] w-32 flex-none flex-grow-0 flex-row items-center gap-2 p-0 opacity-100 sm:ml-4 sm:w-40">
           <div className="order-0 flex h-[45px] w-32 flex-none flex-grow-0 flex-row items-center gap-1 p-0 opacity-100 sm:w-40">
             <div className="order-0 flex h-[42px] w-auto flex-none flex-grow-0 items-center justify-center gap-0.5 opacity-100">
@@ -41,21 +45,42 @@ const Navigation: React.FC = () => {
         </div>
 
         <div className="order-3 flex flex-none flex-grow-0 flex-row items-center justify-end gap-2 p-0">
-          <button
-            className="order-0 flex h-8 w-8 flex-none flex-grow-0 items-center justify-center rounded p-1.5 transition-opacity hover:opacity-80"
-            title={`Switch between dark and light mode (currently ${isLightMode ? "light" : "dark"} mode)`}
-            aria-label={`Switch between dark and light mode (currently ${isLightMode ? "light" : "dark"} mode)`}
-            onClick={handleThemeToggle}
-          >
-            <ThemeToggleIcon className="h-5 w-5 text-nav-text" />
-          </button>
-          <button
-            className="order-0 flex h-8 w-8 flex-none flex-grow-0 items-center justify-center rounded p-1.5 transition-opacity hover:opacity-80"
-            title="Help"
-            onClick={handleHelpClick}
-          >
-            <HelpCircle className="h-5 w-5 text-nav-text" />
-          </button>
+          <Tooltip title={lightModeText}>
+            <IconButton
+              aria-label={lightModeText}
+              onClick={handleThemeToggle}
+              size="small"
+              color="inherit"
+              sx={{
+                order: 0,
+                width: 32,
+                height: 32,
+                flex: "none",
+                opacity: 1,
+                "&:hover": { opacity: 0.8 },
+              }}
+            >
+              <ThemeToggleIcon />
+            </IconButton>
+          </Tooltip>
+          <Tooltip title="Help">
+            <IconButton
+              aria-label="Help"
+              onClick={handleHelpClick}
+              size="small"
+              color="inherit"
+              sx={{
+                order: 0,
+                width: 32,
+                height: 32,
+                flex: "none",
+                opacity: 1,
+                "&:hover": { opacity: 0.8 },
+              }}
+            >
+              <HelpOutline sx={{ fontSize: 20 }} />
+            </IconButton>
+          </Tooltip>
         </div>
       </div>
 
