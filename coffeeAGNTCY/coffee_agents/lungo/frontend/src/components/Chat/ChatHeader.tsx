@@ -47,7 +47,6 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({
               size="small"
               color="inherit"
               aria-label={isMinimized ? "Maximize" : "Minimize"}
-              title={isMinimized ? "Maximize" : "Minimize"}
             >
               {isMinimized ? (
                 <UnfoldMore aria-hidden />
@@ -64,7 +63,6 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({
               size="small"
               color="inherit"
               aria-label="Clear conversation"
-              title="Clear conversation"
             >
               <DeleteOutline />
             </IconButton>
