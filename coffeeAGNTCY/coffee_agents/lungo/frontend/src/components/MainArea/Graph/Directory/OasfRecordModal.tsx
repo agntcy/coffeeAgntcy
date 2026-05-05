@@ -12,6 +12,7 @@ import { fetchOasfRecord, OasfRecord } from "./DirectoryApi"
 import { CustomNodeData } from "../Elements/types"
 import { IdentityServiceError } from "../Identity/IdentityApi"
 import { useEscapeKey } from "@/hooks/useEscapeKey"
+import { LoadingSpinner } from "@/components/loading"
 
 const DEFAULT_DIRECTORY_SERVER_URL = "http://127.0.0.1:8888"
 const DIRECTORY_SERVER_URL =
@@ -29,10 +30,6 @@ export interface OasfRecordModalProps {
   nodeData?: CustomNodeData | null
   position: { x: number; y: number }
 }
-
-const Spinner: React.FC = () => (
-  <div className="inline-block h-6 w-6 animate-spin rounded-full border-2 border-solid border-node-text-primary border-r-transparent"></div>
-)
 
 const OasfRecordModal: React.FC<OasfRecordModalProps> = ({
   isOpen,
@@ -152,7 +149,7 @@ const OasfRecordModal: React.FC<OasfRecordModalProps> = ({
             </div>
           ) : loading && !record ? (
             <div className="flex w-full items-center justify-center py-8">
-              <Spinner />
+              <LoadingSpinner compact />
             </div>
           ) : error ? (
             <div className="flex w-full flex-col items-center justify-center gap-4 py-8">
@@ -179,7 +176,7 @@ const OasfRecordModal: React.FC<OasfRecordModalProps> = ({
               </pre>
               {loading && (
                 <div className="absolute inset-0 flex items-center justify-center bg-node-background bg-opacity-80 backdrop-blur-sm">
-                  <Spinner />
+                  <LoadingSpinner compact />
                 </div>
               )}
             </div>

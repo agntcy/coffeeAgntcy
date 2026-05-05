@@ -13,10 +13,7 @@ import { logger } from "@/utils/logger"
 import { fetchBadgeDetails, IdentityServiceError } from "./IdentityApi"
 import { useEscapeKey } from "@/hooks/useEscapeKey"
 import { createPortal } from "react-dom"
-
-const Spinner: React.FC = () => (
-  <div className="inline-block h-6 w-6 animate-spin rounded-full border-2 border-solid border-node-text-primary border-r-transparent"></div>
-)
+import { LoadingSpinner } from "@/components/loading"
 
 interface BadgeDetailsModalProps {
   isOpen: boolean
@@ -101,7 +98,7 @@ const BadgeDetailsModal: React.FC<BadgeDetailsModalProps> = ({
 
           {loading && !badgeData ? (
             <div className="flex w-full items-center justify-center py-8">
-              <Spinner />
+              <LoadingSpinner compact />
             </div>
           ) : error ? (
             <div className="flex w-full flex-col items-center justify-center gap-4 py-8">
@@ -128,7 +125,7 @@ const BadgeDetailsModal: React.FC<BadgeDetailsModalProps> = ({
               </pre>
               {loading && (
                 <div className="absolute inset-0 flex items-center justify-center bg-node-background bg-opacity-80 backdrop-blur-sm">
-                  <Spinner />
+                  <LoadingSpinner compact />
                 </div>
               )}
             </div>

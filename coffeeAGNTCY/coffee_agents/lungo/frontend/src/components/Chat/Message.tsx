@@ -79,9 +79,7 @@ const Message: React.FC<MessageProps> = ({
         }}
       >
         {loading ? (
-          <Box sx={{ opacity: 0.5 }}>
-            <LoadingDots size={12} />
-          </Box>
+          <LoadingDots size={12} />
         ) : (
           <Typography
             variant="body2"

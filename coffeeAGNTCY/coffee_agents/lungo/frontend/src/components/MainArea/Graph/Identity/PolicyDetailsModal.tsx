@@ -13,10 +13,7 @@ import type { ModalPosition } from "@/types/modal"
 import { logger } from "@/utils/logger"
 import { fetchPolicyDetails, IdentityServiceError } from "./IdentityApi"
 import { useEscapeKey } from "@/hooks/useEscapeKey"
-
-const Spinner: React.FC = () => (
-  <div className="inline-block h-6 w-6 animate-spin rounded-full border-2 border-solid border-node-text-primary border-r-transparent"></div>
-)
+import { LoadingSpinner } from "@/components/loading"
 
 export interface PolicyDetailsModalProps {
   isOpen: boolean
@@ -102,7 +99,7 @@ const PolicyDetailsModal: React.FC<PolicyDetailsModalProps> = ({
 
           {loading && !policyData ? (
             <div className="flex w-full items-center justify-center py-8">
-              <Spinner />
+              <LoadingSpinner compact />
             </div>
           ) : error ? (
             <div className="flex w-full flex-col items-center justify-center gap-4 py-8">
@@ -129,7 +126,7 @@ const PolicyDetailsModal: React.FC<PolicyDetailsModalProps> = ({
               </pre>
               {loading && (
                 <div className="absolute inset-0 flex items-center justify-center bg-node-background bg-opacity-80 backdrop-blur-sm">
-                  <Spinner />
+                  <LoadingSpinner compact />
                 </div>
               )}
             </div>
