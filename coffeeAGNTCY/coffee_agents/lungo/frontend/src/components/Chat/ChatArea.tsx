@@ -15,13 +15,15 @@ import grafanaIcon from "@/assets/grafana.svg"
 
 import ChatAreaComposer from "./ChatAreaComposer"
 import { ChatAgentAvatar } from "./ChatAvatarCircle"
-import { loadingPulse } from "./loadingPulse"
+import { LoadingDots } from "@/components/loading"
 import UserMessage from "./UserMessage"
 import ChatHeader from "./ChatHeader"
 import ExternalLinkButton from "./ExternalLinkButton"
-import GroupCommunicationFeed from "./GroupCommunicationFeed"
-import AuctionStreamingFeed from "./AuctionStreamingFeed"
-import RecruiterStreamingFeed from "./RecruiterStreamingFeed"
+import {
+  GroupCommunicationFeed,
+  AuctionStreamingFeed,
+  RecruiterStreamingFeed,
+} from "./feeds"
 
 import { env } from "@/utils/env"
 import { logger } from "@/utils/logger"
@@ -328,13 +330,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
                           wordBreak: "break-word",
                         }}
                       >
-                        <Box
-                          sx={{
-                            animation: `${loadingPulse} 2s cubic-bezier(0.4, 0, 0.6, 1) infinite`,
-                          }}
-                        >
-                          ...
-                        </Box>
+                        <LoadingDots />
                       </Box>
                     ) : (
                       <Typography

@@ -8,9 +8,11 @@ import SendIcon from "@mui/icons-material/Send"
 import { TextField } from "@mui/material"
 import { Button, Stack } from "@open-ui-kit/core"
 
-import CoffeePromptsDropdown from "./Prompts/CoffeePromptsDropdown"
-import LogisticsPromptsDropdown from "./Prompts/LogisticsPromptsDropdown"
-import DiscoveryPromptsDropdown from "./Prompts/DiscoveryPromptsDropdown"
+import {
+  CoffeePromptsDropdown,
+  LogisticsPromptsDropdown,
+  DiscoveryPromptsDropdown,
+} from "./prompts"
 
 const promptStripSx = {
   position: "relative" as const,

@@ -6,8 +6,8 @@
 import React, { useState, useRef, useEffect } from "react"
 import { Box } from "@open-ui-kit/core"
 import { env } from "@/utils/env"
-import LoadingSpinner from "./LoadingSpinner"
-import { PromptCategory, Prompt } from "./PromptTypes"
+import { LoadingSpinner } from "@/components/loading"
+import { PromptCategory, Prompt } from "../prompts/PromptTypes"
 
 const DEFAULT_DISCOVERY_APP_API_URL = "http://127.0.0.1:8882"
 const DISCOVERY_APP_API_URL =

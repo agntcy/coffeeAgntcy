@@ -7,8 +7,8 @@ import React, { useState, useRef, useEffect } from "react"
 import { Box } from "@open-ui-kit/core"
 import { env } from "@/utils/env"
 import { logger } from "@/utils/logger"
-import LoadingSpinner from "./LoadingSpinner"
-import { PromptCategory } from "./PromptTypes"
+import { LoadingSpinner } from "@/components/loading"
+import { PromptCategory } from "../prompts/PromptTypes"
 
 const DEFAULT_LOGISTICS_APP_API_URL = "http://127.0.0.1:9090"
 const LOGISTICS_APP_API_URL =

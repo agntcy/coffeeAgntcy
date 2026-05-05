@@ -35,8 +35,8 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({
         justifyContent: "flex-end",
         px: { xs: 1, sm: 2, md: 4, lg: 2 },
         py: 1,
-        borderBottom: 1,
-        borderColor: "divider",
+        borderTop: "1px solid",
+        borderTopColor: "divider",
       }}
     >
       <Stack direction="row" alignItems="center" spacing={1}>
