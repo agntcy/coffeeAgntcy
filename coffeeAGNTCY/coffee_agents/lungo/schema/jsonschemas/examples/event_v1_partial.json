@@ -23,7 +23,9 @@
               "type": "customNode",
               "label": "Auction Agent",
               "size": { "width": 1.0, "height": 1.0 },
-              "layer_index": 0
+              "layer_index": 0,
+              "agent_record_uri": "../../agents/supervisors/auction/oasf/agents/auction-supervisor-agent.json",
+              "stable_agent_id": "agent://470de4a0-a6bc-5e1b-82dd-e41de2af3f85"
             },
             {
               "id": "node://550e8400-e29b-41d4-a716-446655440011",
@@ -39,7 +41,9 @@
               "type": "customNode",
               "label": "Brazil Farm",
               "size": { "width": 1.0, "height": 1.0 },
-              "layer_index": 2
+              "layer_index": 2,
+              "agent_record_uri": "../../agents/supervisors/auction/oasf/agents/brazil-coffee-farm.json",
+              "stable_agent_id": "agent://aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee"
             }
           ],
           "edges": [
@@ -72,7 +76,8 @@
                   "id": "node://550e8400-e29b-41d4-a716-446655440010",
                   "operation": "update",
                   "type": "customNode",
-                  "label": "Auction Agent (search)"
+                  "label": "Auction Agent (search)",
+                  "agent_record_uri": "../../agents/supervisors/auction/oasf/agents/auction-supervisor-agent.json"
                 }
               ],
               "edges": []

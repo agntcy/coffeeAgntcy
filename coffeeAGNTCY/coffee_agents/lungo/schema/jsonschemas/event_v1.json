@@ -36,6 +36,11 @@
       "pattern": "^node://[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
       "description": "Graph node id. Used in topology definitions."
     },
+    "stable_agent_id": {
+      "type": "string",
+      "pattern": "^agent://[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
+      "description": "Stable, agent-scoped identifier for a node, independent of its graph node id."
+    },
     "edge_id": {
       "type": "string",
       "pattern": "^edge://[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
@@ -50,9 +55,9 @@
       },
       "additionalProperties": false
     },
-    "partial_node": {
+    "partial_regular_node": {
       "type": "object",
-      "description": "Sparse node data (mainly for updates). Used in topology definitions.",
+      "description": "Sparse regular node data (mainly for updates). Used in topology definitions.",
       "required": ["id", "operation"],
       "properties": {
         "id": { "$ref": "#/$defs/node_id" },
@@ -64,14 +69,85 @@
       },
       "additionalProperties": true
     },
-    "node": {
+    "regular_node": {
       "allOf": [
-        { "$ref": "#/$defs/partial_node" },
+        { "$ref": "#/$defs/partial_regular_node" },
         {
           "type": "object",
-          "description": "Full node data (mainly for init/reset). Used in topology definitions.",
+          "description": "Full regular node data (mainly for init/reset). Used in topology definitions.",
           "required": ["id", "operation", "type", "label", "size", "layer_index"]
         }
+      ]
+    },
+    "partial_node_agent_extension": {
+      "type": "object",
+      "description": "Sparse agent extension fields for a node. agent_record_uri is required; stable_agent_id is optional.",
+      "required": ["agent_record_uri"],
+      "properties": {
+        "agent_record_uri": { "type": "string", "minLength": 1 },
+        "stable_agent_id": { "$ref": "#/$defs/stable_agent_id" }
+      }
+    },
+    "node_agent_extension": {
+      "allOf": [
+        { "$ref": "#/$defs/partial_node_agent_extension" },
+        {
+          "type": "object",
+          "description": "Full agent extension fields for a node. Both agent_record_uri and stable_agent_id are required.",
+          "required": ["agent_record_uri", "stable_agent_id"]
+        }
+      ]
+    },
+    "partial_agent_node": {
+      "description": "Sparse agent node data (mainly for updates): a partial_regular_node combined with a partial_node_agent_extension.",
+      "allOf": [
+        { "$ref": "#/$defs/partial_regular_node" },
+        { "$ref": "#/$defs/partial_node_agent_extension" }
+      ]
+    },
+    "agent_node": {
+      "description": "Full agent node data (mainly for init/reset): a regular_node combined with a node_agent_extension.",
+      "allOf": [
+        { "$ref": "#/$defs/regular_node" },
+        { "$ref": "#/$defs/node_agent_extension" }
+      ]
+    },
+    "partial_node": {
+      "description": "Sparse node data: either a partial_regular_node alone (without any agent extension fields), or a partial_agent_node.",
+      "anyOf": [
+        {
+          "allOf": [
+            { "$ref": "#/$defs/partial_regular_node" },
+            {
+              "not": {
+                "anyOf": [
+                  { "required": ["agent_record_uri"] },
+                  { "required": ["stable_agent_id"] }
+                ]
+              }
+            }
+          ]
+        },
+        { "$ref": "#/$defs/partial_agent_node" }
+      ]
+    },
+    "node": {
+      "description": "Full node data: either a regular_node alone (without any agent extension fields), or an agent_node.",
+      "anyOf": [
+        {
+          "allOf": [
+            { "$ref": "#/$defs/regular_node" },
+            {
+              "not": {
+                "anyOf": [
+                  { "required": ["agent_record_uri"] },
+                  { "required": ["stable_agent_id"] }
+                ]
+              }
+            }
+          ]
+        },
+        { "$ref": "#/$defs/agent_node" }
       ]
     },
     "topology_node_item": {
