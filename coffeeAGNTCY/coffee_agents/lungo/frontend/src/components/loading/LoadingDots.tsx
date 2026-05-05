@@ -6,8 +6,9 @@
 import { keyframes } from "@emotion/react"
 import { Box, Stack } from "@open-ui-kit/core"
 
+/** Keep dim phase well above ~0.35 so dots stay visible on light and dark surfaces. */
 const dotPulse = keyframes`
-  0%, 80%, 100% { opacity: 0.2; }
+  0%, 80%, 100% { opacity: 0.58; }
   40% { opacity: 1; }
 `
 
@@ -18,7 +19,7 @@ export interface LoadingDotsProps {
 
 export function LoadingDots({
   size = 14,
-  color = "text.secondary",
+  color = "text.primary",
 }: LoadingDotsProps) {
   return (
     <Stack
@@ -32,13 +33,18 @@ export function LoadingDots({
         <Box
           key={`dot-${i}`}
           component="span"
-          sx={{
+          sx={(theme) => ({
             fontSize: size,
             lineHeight: 1,
-            color,
+            color:
+              color === "inherit"
+                ? "inherit"
+                : color === "text.secondary"
+                  ? theme.palette.text.secondary
+                  : theme.palette.text.primary,
             animation: `${dotPulse} 1.2s infinite`,
             animationDelay: `${i * 0.15}s`,
-          }}
+          })}
         >
           .
         </Box>
