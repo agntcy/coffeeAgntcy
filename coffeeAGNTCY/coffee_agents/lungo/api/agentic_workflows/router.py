@@ -52,6 +52,11 @@ WORKFLOW_INSTANCE_SSE_QUEUE_HIGH_WATER = max(
     int(WORKFLOW_INSTANCE_SSE_QUEUE_MAXSIZE * WORKFLOW_INSTANCE_SSE_QUEUE_HIGH_WATER_RATIO),
 )
 
+INSTANTIATE_MERGE_WAIT_TIMEOUT_DETAIL = (
+    "Instantiate event was accepted and queued; merge did not finish in time. "
+    "Poll list or GET instance state before repeating POST (each POST creates a new instance)."
+)
+
 
 def workflow_instance_event_to_sse_frame(event: Event) -> str:
     """One SSE message: a single ``data:`` line with compact ``event_v1`` JSON (UTF-8 text)."""
@@ -227,6 +232,11 @@ def create_agentic_workflows_router() -> APIRouter:
             raise HTTPException(
                 status_code=503,
                 detail="Workflow instance store is closed",
+            ) from exc
+        except TimeoutError as exc:
+            raise HTTPException(
+                status_code=504,
+                detail=INSTANTIATE_MERGE_WAIT_TIMEOUT_DETAIL,
             ) from exc
         return InstantiateWorkflowResponse(workflow_instance_id=iid)
 

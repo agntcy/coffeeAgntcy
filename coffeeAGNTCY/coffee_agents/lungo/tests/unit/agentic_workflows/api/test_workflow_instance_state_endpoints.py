@@ -15,6 +15,7 @@ from api.agentic_workflows.instance_lifecycle import (
     workflow_instance_from_projection,
 )
 from api.agentic_workflows.router import (
+    INSTANTIATE_MERGE_WAIT_TIMEOUT_DETAIL,
     WORKFLOW_INSTANCE_STORE_ATTR,
     create_agentic_workflows_router,
 )
@@ -200,6 +201,45 @@ def test_build_instantiate_seed_event_rejects_workflow_name_mismatch() -> None:
     iuri = instance_id_from_uuid(uuid4()).root
     with pytest.raises(ValueError, match="must equal Workflow.name"):
         build_instantiate_seed_event(wf, "WrongCatalogKey", iuri)
+
+
+def test_instantiate_merge_wait_timeout_returns_504(
+    client: TestClient,
+    app_with_store: FastAPI,
+) -> None:
+    store = getattr(app_with_store.state, WORKFLOW_INSTANCE_STORE_ATTR)
+    with patch.object(
+        store,
+        "wait_merge_idle",
+        side_effect=TimeoutError("Timed out waiting for merge queue to drain"),
+    ):
+        r = client.post("/agentic-workflows/InstTestWf/")
+    assert r.status_code == 504
+    assert r.json()["detail"] == INSTANTIATE_MERGE_WAIT_TIMEOUT_DETAIL
+
+
+def test_instantiate_merge_wait_timeout_event_still_merges(
+    client: TestClient,
+    app_with_store: FastAPI,
+) -> None:
+    wf_name = "InstTestWf"
+    pre = client.get(f"/agentic-workflows/{wf_name}/instances/")
+    assert pre.status_code == 200
+    baseline = len(pre.json())
+
+    store = getattr(app_with_store.state, WORKFLOW_INSTANCE_STORE_ATTR)
+    with patch.object(
+        store,
+        "wait_merge_idle",
+        side_effect=TimeoutError("Timed out waiting for merge queue to drain"),
+    ):
+        r = client.post(f"/agentic-workflows/{wf_name}/")
+    assert r.status_code == 504
+
+    store.wait_merge_idle()
+    post = client.get(f"/agentic-workflows/{wf_name}/instances/")
+    assert post.status_code == 200
+    assert len(post.json()) == baseline + 1
 
 
 def test_multiple_instantiations_list_two_instances(client: TestClient) -> None:
