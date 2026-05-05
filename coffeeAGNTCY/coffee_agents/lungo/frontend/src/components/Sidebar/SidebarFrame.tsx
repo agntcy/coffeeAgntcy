@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  **/
 
-import React from "react"
+import React, { useCallback } from "react"
 import { Button, List } from "@mui/material"
 import { Drawer } from "@open-ui-kit/core"
 import type { CSSObject, SxProps, Theme } from "@mui/material/styles"
@@ -115,9 +115,9 @@ export function SidebarFrame({
 }: SidebarFrameProps) {
   const [isOpen, setIsOpen] = React.useState(initialOpen)
 
-  const handleToggle = () => {
+  const handleToggle = useCallback(() => {
     setIsOpen(!isOpen)
-  }
+  }, [isOpen])
 
   return (
     <StyledDrawer

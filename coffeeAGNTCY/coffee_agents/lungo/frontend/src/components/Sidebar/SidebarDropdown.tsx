@@ -4,9 +4,8 @@
  **/
 
 import React from "react"
-import { ListItemButton, Stack, Typography } from "@open-ui-kit/core"
+import { Box, ListItemButton, Stack, Typography } from "@open-ui-kit/core"
 import ExpandLess from "@mui/icons-material/ExpandLess"
-import Box from "@mui/material/Box"
 
 interface SidebarDropdownProps {
   title: string
