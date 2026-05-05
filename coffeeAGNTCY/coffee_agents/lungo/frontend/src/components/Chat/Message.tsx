@@ -7,8 +7,7 @@ import React, { useEffect, useRef, useState } from "react"
 import { Box, Stack, Typography } from "@open-ui-kit/core"
 import Person from "@mui/icons-material/Person"
 import SmartToy from "@mui/icons-material/SmartToy"
-import { Waveform } from "ldrs/react"
-import "ldrs/react/Waveform.css"
+import { LoadingDots } from "@/components/loading"
 
 interface SlowTextProps {
   text: string
@@ -69,11 +68,7 @@ const Message: React.FC<MessageProps> = ({
           justifyContent: "center",
         }}
       >
-        {aiMessage ? (
-          <SmartToy sx={{ fontSize: 24 }} />
-        ) : (
-          <Person sx={{ fontSize: 24 }} />
-        )}
+        {aiMessage ? <SmartToy /> : <Person />}
       </Box>
       <Box
         sx={{
@@ -85,7 +80,7 @@ const Message: React.FC<MessageProps> = ({
       >
         {loading ? (
           <Box sx={{ opacity: 0.5 }}>
-            <Waveform size="20" stroke="3.5" speed="1" color="#049FD9" />
+            <LoadingDots size={12} />
           </Box>
         ) : (
           <Typography
