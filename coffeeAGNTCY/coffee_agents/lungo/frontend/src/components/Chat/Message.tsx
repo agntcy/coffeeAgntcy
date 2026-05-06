@@ -55,7 +55,7 @@ const Message: React.FC<MessageProps> = ({
         width: "100%",
         px: { xs: 2, sm: 4, md: 8, lg: 15 },
         py: { xs: 3, md: 3.75 },
-        bgcolor: aiMessage ? "rgb(247, 247, 248)" : "transparent",
+        bgcolor: aiMessage ? "action.hover" : "transparent",
       }}
     >
       <Box

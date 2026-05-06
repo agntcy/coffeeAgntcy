@@ -303,7 +303,7 @@ const sectionBlockSx: SxProps<Theme> = {
 }
 
 const headingRowSx = (plKey: number): SxProps<Theme> => ({
-  padding: "5px",
+  p: 0.5,
   pl: plKey,
 })
 

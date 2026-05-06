@@ -8,15 +8,15 @@
  **/
 
 import React from "react"
+import { ListItemIcon, ListItemText } from "@mui/material"
 import {
   Link,
   ListItem,
   ListItemButton,
-  ListItemIcon,
-  ListItemText,
   Stack,
   Tooltip,
-} from "@mui/material"
+} from "@open-ui-kit/core"
+import { sidebarBorderRadius, sidebarItemMt } from "./sidebarSx"
 
 export interface SidebarRailRowProps {
   id: string
@@ -53,15 +53,15 @@ export function SidebarRailRow({
       justifyContent="center"
       sx={{
         width: "100%",
-        padding: "5px",
-        paddingLeft: railOpen ? "16px" : "5px",
+        p: 0.5,
+        pl: railOpen ? 2 : 0.5,
       }}
     >
       <ListItemIcon
         sx={{
           minWidth: 0,
           justifyContent: "center",
-          marginRight: railOpen ? "8px" : "0px",
+          mr: railOpen ? 1 : 0,
         }}
       >
         {icon}
@@ -69,7 +69,7 @@ export function SidebarRailRow({
       <ListItemText
         primary={tooltip}
         sx={{
-          ml: "3px",
+          ml: 0.5,
           display: railOpen ? "block" : "none",
           textWrap: "auto",
         }}
@@ -94,6 +94,7 @@ export function SidebarRailRow({
         disablePadding
         sx={{
           backgroundColor: "transparent",
+          mt: sidebarItemMt,
         }}
       >
         <ListItemButton
@@ -106,9 +107,9 @@ export function SidebarRailRow({
             color: "inherit",
             backgroundColor: "transparent",
             textDecoration: "none",
-            borderRadius: "8px",
-            padding: "5px",
-            paddingLeft: "16px",
+            borderRadius: sidebarBorderRadius,
+            p: 0.5,
+            pl: 2,
           }}
         >
           {tooltipChild}
@@ -124,7 +125,8 @@ export function SidebarRailRow({
         disablePadding
         sx={{
           backgroundColor: "transparent",
-          borderRadius: "8px",
+          borderRadius: sidebarBorderRadius,
+          mt: sidebarItemMt,
         }}
       >
         <ListItemButton
@@ -133,8 +135,8 @@ export function SidebarRailRow({
           aria-label={ariaLabel}
           sx={{
             backgroundColor: "transparent",
-            borderRadius: "8px",
-            padding: "0px",
+            borderRadius: sidebarBorderRadius,
+            p: 0,
           }}
         >
           {tooltipChild}
@@ -148,6 +150,7 @@ export function SidebarRailRow({
       key={id}
       sx={{
         backgroundColor: "transparent",
+        mt: sidebarItemMt,
       }}
     >
       {tooltipChild}

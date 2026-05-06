@@ -19,13 +19,6 @@ import coffeeAgntcyLogo from "@/assets/coffeeAGNTCY_logo.svg"
 import ThemeToggleIcon from "../icons/ThemeToggleIcon"
 import InfoModal from "./InfoModal"
 
-const navIconButtonSx: SxProps<Theme> = () => ({
-  "&:hover": {
-    opacity: 0.85,
-    backgroundColor: "transparent",
-  },
-})
-
 const Navigation: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false)
   const { isDarkMode, toggleTheme } = useThemeMode()
@@ -63,7 +56,6 @@ const Navigation: React.FC = () => {
                 aria-label={themeToggleLabel}
                 onClick={toggleTheme}
                 size="small"
-                sx={navIconButtonSx}
               >
                 <ThemeToggleIcon />
               </IconButton>
@@ -73,7 +65,6 @@ const Navigation: React.FC = () => {
                 aria-label="Help"
                 onClick={handleHelpClick}
                 size="small"
-                sx={navIconButtonSx}
               >
                 <HelpOutline />
               </IconButton>

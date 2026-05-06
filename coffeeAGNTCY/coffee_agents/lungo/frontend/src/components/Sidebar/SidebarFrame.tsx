@@ -4,12 +4,12 @@
  **/
 
 import React, { useCallback } from "react"
-import { Button, List } from "@mui/material"
-import { Drawer } from "@open-ui-kit/core"
+import { Button, Drawer, List } from "@open-ui-kit/core"
 import type { CSSObject, SxProps, Theme } from "@mui/material/styles"
 import { styled } from "@mui/material/styles"
 import { Icons } from "@open-ui-kit/core"
 import { SidebarRailRow } from "./SidebarRailRow"
+import { sidebarBorderRadius } from "./sidebarSx"
 
 /** Config for icon-rail entries rendered by the internal `renderListItem` helper. */
 export interface SidebarRailItem {
@@ -133,8 +133,8 @@ export function SidebarFrame({
             flexDirection: "column",
             height: "100%",
             justifyContent: "space-between",
-            paddingTop: "0px",
-            paddingRight: "0px",
+            pt: 0,
+            pr: 0,
             ...sx,
           },
         },
@@ -144,11 +144,11 @@ export function SidebarFrame({
         sx={{
           display: "flex",
           flexDirection: "column",
-          gap: "24px",
+          gap: 3,
           alignItems: "baseline",
           overflowY: "auto",
-          padding: "24px",
-          paddingLeft: "0px",
+          p: 3,
+          pl: 0,
         }}
       >
         {navigationItems?.map((item, index) => {
@@ -164,10 +164,9 @@ export function SidebarFrame({
       </List>
       <Button
         sx={{
-          borderRadius: "4px",
-          marginTop: "8px",
-          padding: "8px",
-          "&.MuiButtonBase-root": { ":focus": { outline: "none" } },
+          borderRadius: sidebarBorderRadius,
+          mt: 1,
+          p: 1,
         }}
         variant="outlined"
         onClick={handleToggle}

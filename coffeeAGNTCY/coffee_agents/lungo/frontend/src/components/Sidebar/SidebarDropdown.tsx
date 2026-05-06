@@ -6,6 +6,7 @@
 import React from "react"
 import { Box, ListItemButton, Stack, Typography } from "@open-ui-kit/core"
 import ExpandLess from "@mui/icons-material/ExpandLess"
+import { sidebarBorderRadius, sidebarItemMt } from "./sidebarSx"
 
 interface SidebarDropdownProps {
   title: string
@@ -30,9 +31,9 @@ const SidebarDropdown: React.FC<SidebarDropdownProps> = ({
         sx={{
           width: "100%",
           justifyContent: "space-between",
-          backgroundColor: "transparent",
-          borderRadius: "8px",
+          borderRadius: sidebarBorderRadius,
           textWrap: "auto",
+          mt: sidebarItemMt,
         }}
       >
         <Typography component="span" variant="body1">
@@ -46,7 +47,6 @@ const SidebarDropdown: React.FC<SidebarDropdownProps> = ({
             display: "inline-flex",
             alignItems: "center",
             justifyContent: "center",
-            mt: "-2px",
             p: 0.25,
           }}
         >
@@ -60,7 +60,7 @@ const SidebarDropdown: React.FC<SidebarDropdownProps> = ({
       </ListItemButton>
 
       {isExpanded ? (
-        <Stack direction="column" sx={{ width: "100%", paddingLeft: "16px" }}>
+        <Stack direction="column" sx={{ width: "100%", pl: 2 }}>
           {children}
         </Stack>
       ) : null}
