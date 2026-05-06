@@ -41,18 +41,39 @@ export interface WorkflowNode {
   slug: PatternType | null
 }
 
-export interface UseCaseNode {
-  name: string
+export interface UseCaseScenarioNode {
+  useCase: string
+  scenario: string
+  /** Display label rendered as the middle row of the LHS menu. */
+  label: string
   workflows: WorkflowNode[]
 }
 
 export interface PatternNode {
   name: string
-  useCases: UseCaseNode[]
+  useCaseScenarios: UseCaseScenarioNode[]
+}
+
+/** Build the display label for the middle (use-case + scenario) row. */
+export const formatUseCaseScenarioLabel = (
+  useCase: string,
+  scenario: string,
+): string => `${useCase}: ${scenario}`
+
+/** Composite key used to group workflows that share both use-case and scenario. */
+const makeUseCaseScenarioGroupKey = (
+  useCase: string,
+  scenario: string,
+): string => `${useCase}|${scenario}`
+
+interface GroupBucket {
+  useCase: string
+  scenario: string
+  workflows: WorkflowNode[]
 }
 
 /**
- * Group workflow summaries into the `pattern -> use-case -> workflow` tree.
+ * Group workflow summaries into the `pattern -> (use-case + scenario) -> workflow` tree.
  *
  * Ordering is alphabetical at every level so the menu is stable regardless of
  * the order the API happens to return rows in. Workflow names without a known
@@ -62,20 +83,28 @@ export interface PatternNode {
 export const groupWorkflowsByPatternAndUseCase = (
   summaries: readonly WorkflowSummary[],
 ): PatternNode[] => {
-  const byPattern = new Map<string, Map<string, WorkflowNode[]>>()
+  const byPattern = new Map<string, Map<string, GroupBucket>>()
 
   for (const summary of summaries) {
-    let useCaseMap = byPattern.get(summary.pattern)
-    if (useCaseMap === undefined) {
-      useCaseMap = new Map<string, WorkflowNode[]>()
-      byPattern.set(summary.pattern, useCaseMap)
+    let scenarioMap = byPattern.get(summary.pattern)
+    if (scenarioMap === undefined) {
+      scenarioMap = new Map<string, GroupBucket>()
+      byPattern.set(summary.pattern, scenarioMap)
     }
-    let workflows = useCaseMap.get(summary.use_case)
-    if (workflows === undefined) {
-      workflows = []
-      useCaseMap.set(summary.use_case, workflows)
+    const groupKey = makeUseCaseScenarioGroupKey(
+      summary.use_case,
+      summary.scenario,
+    )
+    let bucket = scenarioMap.get(groupKey)
+    if (bucket === undefined) {
+      bucket = {
+        useCase: summary.use_case,
+        scenario: summary.scenario,
+        workflows: [],
+      }
+      scenarioMap.set(groupKey, bucket)
     }
-    workflows.push({
+    bucket.workflows.push({
       name: summary.name,
       slug: mapWorkflowNameToSlug(summary.name),
     })
@@ -85,18 +114,20 @@ export const groupWorkflowsByPatternAndUseCase = (
     a.localeCompare(b),
   )
   return sortedPatternNames.map((patternName) => {
-    const useCaseMap = byPattern.get(patternName)!
-    const sortedUseCaseNames = [...useCaseMap.keys()].sort((a, b) =>
-      a.localeCompare(b),
-    )
-    return {
-      name: patternName,
-      useCases: sortedUseCaseNames.map((useCaseName) => ({
-        name: useCaseName,
-        workflows: [...useCaseMap.get(useCaseName)!].sort((a, b) =>
+    const scenarioMap = byPattern.get(patternName)!
+    const useCaseScenarios: UseCaseScenarioNode[] = [...scenarioMap.values()]
+      .map((bucket) => ({
+        useCase: bucket.useCase,
+        scenario: bucket.scenario,
+        label: formatUseCaseScenarioLabel(bucket.useCase, bucket.scenario),
+        workflows: [...bucket.workflows].sort((a, b) =>
           a.name.localeCompare(b.name),
         ),
-      })),
+      }))
+      .sort((a, b) => a.label.localeCompare(b.label))
+    return {
+      name: patternName,
+      useCaseScenarios,
     }
   })
 }

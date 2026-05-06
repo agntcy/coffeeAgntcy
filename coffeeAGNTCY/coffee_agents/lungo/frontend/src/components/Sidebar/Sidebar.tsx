@@ -26,19 +26,23 @@ interface SidebarProps {
 const CATALOG_ENDPOINT = "/agentic-workflows/"
 
 const makePatternKey = (patternName: string) => `pattern:${patternName}`
-const makeUseCaseKey = (patternName: string, useCaseName: string) =>
-  `pattern:${patternName}|usecase:${useCaseName}`
+const makeScenarioKey = (
+  patternName: string,
+  useCase: string,
+  scenario: string,
+) => `pattern:${patternName}|usecase:${useCase}|scenario:${scenario}`
 
 /**
- * Initial expansion set: every pattern and every use-case open, mirroring the
- * previous static sidebar UX where every dropdown was open by default.
+ * Initial expansion set: every pattern and every use-case+scenario row open,
+ * mirroring the previous static sidebar UX where every dropdown was open by
+ * default.
  */
 const buildInitialExpanded = (tree: PatternNode[]): Set<string> => {
   const next = new Set<string>()
   for (const pattern of tree) {
     next.add(makePatternKey(pattern.name))
-    for (const useCase of pattern.useCases) {
-      next.add(makeUseCaseKey(pattern.name, useCase.name))
+    for (const ucs of pattern.useCaseScenarios) {
+      next.add(makeScenarioKey(pattern.name, ucs.useCase, ucs.scenario))
     }
   }
   return next
@@ -160,16 +164,20 @@ const CatalogTree: React.FC<CatalogTreeProps> = ({
             onToggle={() => onToggle(pKey)}
             titleClassName="pl-2"
           >
-            {pattern.useCases.map((useCase) => {
-              const ucKey = makeUseCaseKey(pattern.name, useCase.name)
+            {pattern.useCaseScenarios.map((ucs) => {
+              const ucsKey = makeScenarioKey(
+                pattern.name,
+                ucs.useCase,
+                ucs.scenario,
+              )
               return (
                 <UseCaseDropdown
-                  key={ucKey}
-                  title={useCase.name}
-                  isExpanded={expanded.has(ucKey)}
-                  onToggle={() => onToggle(ucKey)}
+                  key={ucsKey}
+                  title={ucs.label}
+                  isExpanded={expanded.has(ucsKey)}
+                  onToggle={() => onToggle(ucsKey)}
                 >
-                  {useCase.workflows.map((workflow) => {
+                  {ucs.workflows.map((workflow) => {
                     const isUnknown = workflow.slug === null
                     const isSelected =
                       !isUnknown && selectedPattern === workflow.slug
