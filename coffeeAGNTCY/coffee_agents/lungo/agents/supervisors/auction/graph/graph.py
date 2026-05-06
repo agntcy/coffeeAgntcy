@@ -42,7 +42,7 @@ _SUPERVISOR_FARM_KEY = "supervisor_farm"
 _SUPERVISOR_OPERATION_KEY = "supervisor_operation"
 
 # Must match entries in api/agentic_workflows/starting_workflows.json.
-# Drift is guarded by tests/unit/auction/test_workflow_names.py.
+# Drift is guarded by the corresponding auction unit tests.
 _WORKFLOW_NAME_SERVE = "Publish Subscribe Coffee Farm Network"
 _WORKFLOW_NAME_STREAM = "Publish Subscribe Streaming Coffee Auction Network"
 

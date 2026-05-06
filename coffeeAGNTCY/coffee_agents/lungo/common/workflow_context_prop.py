@@ -30,12 +30,7 @@ from opentelemetry.context import Token
 
 logger = logging.getLogger("lungo.common.workflow_context_prop")
 
-# Underlying OpenTelemetry baggage keys.
-# These are internal to this module. External code should use the public API.
-# The keys flow from supervisor -> ADK/LangGraph -> A2A interceptor.
-# They are set at HTTP request entry in supervisor entrypoints
-# (auction/recruiter/logistics main.py) when the caller provides a
-# workflow_instance_id from the Agentic Workflows API.
+# Internal OpenTelemetry baggage keys. External code should use the public API.
 _WORKFLOW_INSTANCE_ID_CONTEXT_KEY = "lungo.workflow_instance_id"
 _WORKFLOW_NAME_CONTEXT_KEY = "lungo.workflow_name"
 
@@ -56,7 +51,7 @@ def attach_workflow_context(
     *,
     workflow_instance_id: str | None,
     workflow_name: str | None,
-) -> Token | None:
+) -> Token:
     """Attach workflow id and name to the current context.
 
     Returns a token that must be detached later.
@@ -66,10 +61,15 @@ def attach_workflow_context(
     detach_workflow_context in a finally block, or use
     workflow_context_scope to handle attach/detach automatically.
 
-    Returns None when neither value is provided.
+    Raises ValueError when both values are None: the helper has no
+    well-defined behavior in that case, and surfacing the bug at the
+    call site is preferable to silently no-op'ing.
     """
     if not workflow_instance_id and not workflow_name:
-        return None
+        raise ValueError(
+            "attach_workflow_context requires at least one of "
+            "workflow_instance_id or workflow_name."
+        )
     ctx = _otel_context.get_current()
     if workflow_instance_id:
         ctx = _otel_baggage.set_baggage(

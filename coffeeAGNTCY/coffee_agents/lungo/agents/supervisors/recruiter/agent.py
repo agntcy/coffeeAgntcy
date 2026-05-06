@@ -46,8 +46,8 @@ from common.workflow_context_prop import (
 
 logger = logging.getLogger("lungo.recruiter.supervisor.agent")
 
-# Must match starting_workflows.json. Drift guarded by
-# tests/unit/recruiter/test_workflow_names.py.
+# Must match starting_workflows.json. Drift is guarded by the
+# corresponding recruiter unit tests.
 _WORKFLOW_NAME = "On-demand Discovery"
 
 # ---------------------------------------------------------------------------

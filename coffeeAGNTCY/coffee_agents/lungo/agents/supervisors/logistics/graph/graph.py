@@ -26,8 +26,8 @@ from common.workflow_context_prop import (
 
 logger = logging.getLogger("lungo.logistics.supervisor.graph")
 
-# Must match starting_workflows.json. Drift guarded by
-# tests/unit/logistics/test_workflow_names.py.
+# Must match starting_workflows.json. Drift is guarded by the
+# corresponding logistics unit tests.
 _WORKFLOW_NAME = "Secure Group Communication Logistics Network"
 
 class NodeStates:
