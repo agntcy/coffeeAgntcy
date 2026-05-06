@@ -161,7 +161,7 @@ def test_build_instantiate_seed_event_validates_as_event_and_merges() -> None:
 
 
 def test_instances_map_for_workflow_missing_block() -> None:
-    data = Data()
+    data = Data(workflows={})
     assert instances_map_for_workflow(data, "InstTestWf") == {}
 
 
