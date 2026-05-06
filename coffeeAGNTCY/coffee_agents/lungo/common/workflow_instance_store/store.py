@@ -287,7 +287,7 @@ class WorkflowInstanceStateStore:
         self._dispatch = _DispatchHub(self._state_lock, n)
         self._merge = _MergeCoordinator(
             self._state_lock,
-            Data(workflows=dict[str, Workflow]()),
+            Data(workflows={}),
             self._after_merge_enqueue_dispatch,
         )
 
