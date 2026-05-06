@@ -27,7 +27,6 @@ _WF_W = Workflow.model_validate(
     {
         "pattern": "p",
         "use_case": "u",
-        "scenario": "s",
         "name": "W",
         "starting_topology": {
             "nodes": [

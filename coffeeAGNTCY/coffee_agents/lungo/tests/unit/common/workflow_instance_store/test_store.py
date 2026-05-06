@@ -40,7 +40,6 @@ def _minimal_valid_event() -> dict:
                     "name": "n",
                     "pattern": "p",
                     "use_case": "u",
-                    "scenario": "s",
                     "starting_topology": {"nodes": [], "edges": []},
                     "instances": {
                         _INSTANCE_KEY: {
@@ -146,7 +145,6 @@ def test_notifier_fanout_two_instances():
                         "name": "n",
                         "pattern": "p",
                         "use_case": "u",
-                        "scenario": "s",
                         "starting_topology": {"nodes": [], "edges": []},
                         "instances": {
                             _INSTANCE_KEY: {
@@ -197,7 +195,6 @@ def test_subscribe_invoked_for_touching_instance_only():
                         "name": "n",
                         "pattern": "p",
                         "use_case": "u",
-                        "scenario": "s",
                         "starting_topology": {"nodes": [], "edges": []},
                         "instances": {
                             other: {"id": other, "topology": {}},
@@ -238,7 +235,6 @@ async def test_concurrent_submit_serializes_merges():
                         "name": "n",
                         "pattern": "p",
                         "use_case": "u",
-                        "scenario": "s",
                         "starting_topology": {"nodes": [], "edges": []},
                         "instances": {
                             _INSTANCE_KEY: {
@@ -280,7 +276,6 @@ async def test_concurrent_submit_serializes_merges():
                             "name": "n",
                             "pattern": "p",
                             "use_case": "u",
-                            "scenario": "s",
                             "starting_topology": {"nodes": [], "edges": []},
                             "instances": {
                                 _INSTANCE_KEY: {
@@ -334,7 +329,6 @@ def test_concurrent_sync_submits_fifo_merge_order():
                         "name": "n",
                         "pattern": "p",
                         "use_case": "u",
-                        "scenario": "s",
                         "starting_topology": {"nodes": [], "edges": []},
                         "instances": {
                             _INSTANCE_KEY: {
@@ -379,7 +373,6 @@ def test_concurrent_sync_submits_fifo_merge_order():
                             "name": "n",
                             "pattern": "p",
                             "use_case": "u",
-                            "scenario": "s",
                             "starting_topology": {"nodes": [], "edges": []},
                             "instances": {
                                 _INSTANCE_KEY: {
@@ -461,7 +454,6 @@ def test_slow_notifier_does_not_block_merge():
                         "name": "n2",
                         "pattern": "p2",
                         "use_case": "u2",
-                        "scenario": "s2",
                         "starting_topology": {"nodes": [], "edges": []},
                         "instances": {
                             _INSTANCE_KEY: {

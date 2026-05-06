@@ -69,7 +69,6 @@ def test_chain_partial_then_delta() -> None:
                         "name": "Recruiter",
                         "pattern": "recruiter_pattern",
                         "use_case": "hiring",
-                        "scenario": "agent recruitment",
                         "starting_topology": {"nodes": [], "edges": []},
                         "instances": {
                             "instance://550e8400-e29b-41d4-a716-446655440003": {

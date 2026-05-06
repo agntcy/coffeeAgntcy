@@ -3,7 +3,6 @@
     "name": "Publish Subscribe Coffee Farm Network",
     "pattern": "Supervisor-worker",
     "use_case": "Coffee Agntcy",
-    "scenario": "Coffee Buying",
     "starting_topology": {
       "nodes": [
         {
@@ -132,7 +131,6 @@
     "name": "Publish Subscribe Streaming Coffee Auction Network",
     "pattern": "Supervisor-worker",
     "use_case": "Coffee Agntcy",
-    "scenario": "Coffee Buying",
     "starting_topology": {
       "nodes": [
         {
@@ -261,7 +259,6 @@
     "name": "Secure Group Communication Logistics Network",
     "pattern": "Group chat",
     "use_case": "Coffee Agntcy",
-    "scenario": "Order Fulfilment",
     "starting_topology": {
       "nodes": [
         {
@@ -361,7 +358,6 @@
     "name": "On-demand Discovery",
     "pattern": "Recruiter",
     "use_case": "Coffee Agntcy",
-    "scenario": "Capability Discovery",
     "starting_topology": {
       "nodes": [
         {

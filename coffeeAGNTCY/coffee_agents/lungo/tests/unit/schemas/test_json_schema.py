@@ -378,7 +378,6 @@ def test_validate_json_instance_event_type_v1_corrupt_raises_schema_definition_e
                     "name": "n",
                     "pattern": "p",
                     "use_case": "u",
-                    "scenario": "s",
                     "starting_topology": {"nodes": [], "edges": []},
                     "instances": {
                         "instance://550e8400-e29b-41d4-a716-446655440003": {

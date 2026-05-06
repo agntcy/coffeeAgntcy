@@ -15,7 +15,6 @@
         "name": "Recruiter",
         "pattern": "recruiter_pattern",
         "use_case": "hiring",
-        "scenario": "agent recruitment",
         "starting_topology": {
           "nodes": [
             {

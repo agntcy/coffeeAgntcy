@@ -476,7 +476,6 @@ class Workflow(BaseModel):
     name: Annotated[str, Field(min_length=1)]
     pattern: Annotated[str, Field(min_length=1)]
     use_case: Annotated[str, Field(min_length=1)]
-    scenario: Annotated[str, Field(min_length=1, description="brief extra qualifier for the use-case")]
     starting_topology: Topology
     instances: dict[
         Annotated[str, Field(pattern=_INSTANCE_ID_REGEX)], WorkflowInstance

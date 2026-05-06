@@ -42,7 +42,6 @@ def test_first_event_establishes_workflow_and_instance():
                     "name": "n",
                     "pattern": "p",
                     "use_case": "u",
-                    "scenario": "s",
                     "starting_topology": {"nodes": [], "edges": []},
                     "instances": {
                         INST: {"id": INST, "topology": {}},
@@ -71,7 +70,6 @@ def test_update_merges_fields_not_full_replace():
                         "name": "n",
                         "pattern": "p",
                         "use_case": "u",
-                        "scenario": "s",
                         "starting_topology": {"nodes": [], "edges": []},
                         "instances": {
                             INST: {
@@ -103,7 +101,6 @@ def test_update_merges_fields_not_full_replace():
                     "name": "n",
                     "pattern": "p",
                     "use_case": "u",
-                    "scenario": "s",
                     "starting_topology": {"nodes": [], "edges": []},
                     "instances": {
                         INST: {
@@ -139,7 +136,6 @@ def test_read_does_not_overwrite_existing_node():
                     "name": "n",
                     "pattern": "p",
                     "use_case": "u",
-                    "scenario": "s",
                     "starting_topology": {"nodes": [], "edges": []},
                     "instances": {
                         INST: {
@@ -170,7 +166,6 @@ def test_read_does_not_overwrite_existing_node():
                     "name": "n",
                     "pattern": "p",
                     "use_case": "u",
-                    "scenario": "s",
                     "starting_topology": {"nodes": [], "edges": []},
                     "instances": {
                         INST: {
@@ -211,7 +206,6 @@ def test_read_creates_node_when_absent():
                         "name": "n",
                         "pattern": "p",
                         "use_case": "u",
-                        "scenario": "s",
                         "starting_topology": {"nodes": [], "edges": []},
                         "instances": {
                             INST: {"id": INST, "topology": {"nodes": [], "edges": []}},
@@ -228,7 +222,6 @@ def test_read_creates_node_when_absent():
                     "name": "n",
                     "pattern": "p",
                     "use_case": "u",
-                    "scenario": "s",
                     "starting_topology": {"nodes": [], "edges": []},
                     "instances": {
                         INST: {
@@ -266,7 +259,6 @@ def test_topology_nodes_preserve_insertion_order_not_sorted_ids():
                     "name": "n",
                     "pattern": "p",
                     "use_case": "u",
-                    "scenario": "s",
                     "starting_topology": {"nodes": [], "edges": []},
                     "instances": {
                         INST: {
@@ -316,7 +308,6 @@ def test_delete_idempotent():
                         "name": "n",
                         "pattern": "p",
                         "use_case": "u",
-                        "scenario": "s",
                         "starting_topology": {"nodes": [], "edges": []},
                         "instances": {
                             INST: {
@@ -347,7 +338,6 @@ def test_delete_idempotent():
                     "name": "n",
                     "pattern": "p",
                     "use_case": "u",
-                    "scenario": "s",
                     "starting_topology": {"nodes": [], "edges": []},
                     "instances": {
                         INST: {
@@ -377,7 +367,6 @@ def test_update_missing_node_is_noop():
                         "name": "n",
                         "pattern": "p",
                         "use_case": "u",
-                        "scenario": "s",
                         "starting_topology": {"nodes": [], "edges": []},
                         "instances": {
                             INST: {"id": INST, "topology": {"nodes": [], "edges": []}},
@@ -394,7 +383,6 @@ def test_update_missing_node_is_noop():
                     "name": "n",
                     "pattern": "p",
                     "use_case": "u",
-                    "scenario": "s",
                     "starting_topology": {"nodes": [], "edges": []},
                     "instances": {
                         INST: {
@@ -426,7 +414,6 @@ def test_two_workflow_keys_coexist():
                     "name": "n1",
                     "pattern": "p1",
                     "use_case": "u1",
-                    "scenario": "s1",
                     "starting_topology": {"nodes": [], "edges": []},
                     "instances": {
                         INST: {"id": INST, "topology": {}},
@@ -436,7 +423,6 @@ def test_two_workflow_keys_coexist():
                     "name": "n2",
                     "pattern": "p2",
                     "use_case": "u2",
-                    "scenario": "s2",
                     "starting_topology": {"nodes": [], "edges": []},
                     "instances": {
                         INST: {"id": INST, "topology": {}},
@@ -457,7 +443,6 @@ def test_starting_topology_preserved_when_followup_omits():
                     "name": "n",
                     "pattern": "p",
                     "use_case": "u",
-                    "scenario": "s",
                     "starting_topology": {
                         "nodes": [
                             {
@@ -486,7 +471,6 @@ def test_starting_topology_preserved_when_followup_omits():
                     "name": "n",
                     "pattern": "p",
                     "use_case": "u",
-                    "scenario": "s",
                     "starting_topology": {"nodes": [], "edges": []},
                     "instances": {
                         INST: {"id": INST, "topology": {}},
@@ -509,7 +493,6 @@ def test_node_delete_leaves_dangling_edge():
                         "name": "n",
                         "pattern": "p",
                         "use_case": "u",
-                        "scenario": "s",
                         "starting_topology": {"nodes": [], "edges": []},
                         "instances": {
                             INST: {
@@ -559,7 +542,6 @@ def test_node_delete_leaves_dangling_edge():
                     "name": "n",
                     "pattern": "p",
                     "use_case": "u",
-                    "scenario": "s",
                     "starting_topology": {"nodes": [], "edges": []},
                     "instances": {
                         INST: {
@@ -633,7 +615,6 @@ def test_merge_empty_workflows_preserves_existing_workflows_and_merges_extra():
                         "name": "n",
                         "pattern": "p",
                         "use_case": "u",
-                        "scenario": "s",
                         "starting_topology": {"nodes": [], "edges": []},
                         "instances": {INST: {"id": INST, "topology": {}}},
                     }

@@ -39,7 +39,6 @@ def _event_dict(workflow_name: str, instance_uri: str, event_id: str) -> dict:
                     "name": workflow_name,
                     "pattern": "p",
                     "use_case": "u",
-                    "scenario": "s",
                     "starting_topology": {"nodes": [], "edges": []},
                     "instances": {
                         instance_uri: {

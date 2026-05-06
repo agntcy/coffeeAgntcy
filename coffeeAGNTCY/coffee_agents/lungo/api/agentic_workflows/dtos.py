@@ -47,7 +47,6 @@ class WorkflowSummary(BaseModel):
     name: Annotated[str, Field(min_length=1)]
     pattern: Annotated[str, Field(min_length=1)]
     use_case: Annotated[str, Field(min_length=1)]
-    scenario: Annotated[str, Field(min_length=1, description="brief extra qualifier for the use-case")]
 
 
 class WorkflowSummaryMapResponse(RootModel[dict[str, WorkflowSummary]]):
