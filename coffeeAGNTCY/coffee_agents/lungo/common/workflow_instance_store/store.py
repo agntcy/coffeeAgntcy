@@ -37,6 +37,7 @@ from collections import defaultdict
 from typing import Callable, Final
 
 from schema.types import Data, Event
+from schema.types.event import Workflow
 from schema.validation import validate_data_against_schema
 
 from common.workflow_instance_store.errors import WorkflowInstanceStoreClosedError
@@ -286,7 +287,7 @@ class WorkflowInstanceStateStore:
         self._dispatch = _DispatchHub(self._state_lock, n)
         self._merge = _MergeCoordinator(
             self._state_lock,
-            Data(),
+            Data(workflows=dict[str, Workflow]()),
             self._after_merge_enqueue_dispatch,
         )
 

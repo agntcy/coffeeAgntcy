@@ -4,7 +4,9 @@
  **/
 
 import React, { useState } from "react"
-import { InformationCircleIcon, XMarkIcon } from "@heroicons/react/24/outline"
+import Close from "@mui/icons-material/Close"
+import InfoOutlined from "@mui/icons-material/InfoOutlined"
+import { IconButton } from "@open-ui-kit/core"
 import ReactMarkdown from "react-markdown"
 import rehypeSanitize from "rehype-sanitize"
 import { stripHtml } from "@/utils/const"
@@ -41,25 +43,22 @@ const InfoButton: React.FC<InfoButtonProps> = ({
           }}
         >
           <div className="relative w-72 max-w-md">
-            <button
-              type="button"
-              className="absolute left-[-17.5px] top-[-17.5px] z-[1200] flex h-5 w-5 items-center justify-center rounded-full border hover:cursor-pointer"
-              style={{
-                borderColor: "var(--info-border)",
-                backgroundColor: "var(--info-bg)",
-              }}
+            <IconButton
               onClick={handleClose}
               aria-label="Close"
-              onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor =
-                  "var(--info-icon-bg-hover)"
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = "var(--info-bg)"
+              size="small"
+              sx={{
+                position: "absolute",
+                left: -17.5,
+                top: -17.5,
+                zIndex: 1200,
+                width: 20,
+                height: 20,
+                p: 0,
               }}
             >
-              <XMarkIcon className="h-3 w-3 text-[var(--info-text)]" />
-            </button>
+              <Close sx={{ fontSize: 12 }} />
+            </IconButton>
 
             <div className="text-sm" style={{ color: "var(--info-text)" }}>
               <ReactMarkdown rehypePlugins={[rehypeSanitize]}>
@@ -70,27 +69,19 @@ const InfoButton: React.FC<InfoButtonProps> = ({
         </div>
       )}
 
-      <button
-        type="button"
-        className="absolute z-[1000] flex items-center justify-center rounded border px-0.5 py-0.5 hover:cursor-pointer"
+      <IconButton
         onClick={handleToggle}
         aria-label="More information"
-        style={{
-          borderColor: "var(--info-icon-border)",
-          backgroundColor: "var(--info-icon-bg)",
-        }}
-        onMouseEnter={(e) => {
-          e.currentTarget.style.backgroundColor = "var(--info-icon-bg-hover)"
-        }}
-        onMouseLeave={(e) => {
-          e.currentTarget.style.backgroundColor = "var(--info-icon-bg)"
+        size="small"
+        sx={{
+          position: "absolute",
+          zIndex: 1000,
+          px: 0.25,
+          py: 0.25,
         }}
       >
-        <InformationCircleIcon
-          style={{ width: iconSize, height: iconSize }}
-          className="text-[#00A0D1]"
-        />
-      </button>
+        <InfoOutlined sx={{ fontSize: iconSize }} />
+      </IconButton>
     </div>
   )
 }
