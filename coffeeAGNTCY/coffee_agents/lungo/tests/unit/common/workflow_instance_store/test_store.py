@@ -37,9 +37,9 @@ def _minimal_valid_event() -> dict:
         "data": {
             "workflows": {
                 "w": {
-                    "name": "n",
                     "pattern": "p",
                     "use_case": "u",
+                    "name": "n",
                     "starting_topology": {"nodes": [], "edges": []},
                     "instances": {
                         _INSTANCE_KEY: {
@@ -142,9 +142,9 @@ def test_notifier_fanout_two_instances():
             "data": {
                 "workflows": {
                     "w": {
-                        "name": "n",
                         "pattern": "p",
                         "use_case": "u",
+                        "name": "n",
                         "starting_topology": {"nodes": [], "edges": []},
                         "instances": {
                             _INSTANCE_KEY: {
@@ -192,9 +192,9 @@ def test_subscribe_invoked_for_touching_instance_only():
             "data": {
                 "workflows": {
                     "w": {
-                        "name": "n",
                         "pattern": "p",
                         "use_case": "u",
+                        "name": "n",
                         "starting_topology": {"nodes": [], "edges": []},
                         "instances": {
                             other: {"id": other, "topology": {}},
@@ -232,9 +232,9 @@ async def test_concurrent_submit_serializes_merges():
             "data": {
                 "workflows": {
                     "w": {
-                        "name": "n",
                         "pattern": "p",
                         "use_case": "u",
+                        "name": "n",
                         "starting_topology": {"nodes": [], "edges": []},
                         "instances": {
                             _INSTANCE_KEY: {
@@ -273,9 +273,9 @@ async def test_concurrent_submit_serializes_merges():
                 "data": {
                     "workflows": {
                         "w": {
-                            "name": "n",
                             "pattern": "p",
                             "use_case": "u",
+                            "name": "n",
                             "starting_topology": {"nodes": [], "edges": []},
                             "instances": {
                                 _INSTANCE_KEY: {
@@ -326,9 +326,9 @@ def test_concurrent_sync_submits_fifo_merge_order():
             "data": {
                 "workflows": {
                     "w": {
-                        "name": "n",
                         "pattern": "p",
                         "use_case": "u",
+                        "name": "n",
                         "starting_topology": {"nodes": [], "edges": []},
                         "instances": {
                             _INSTANCE_KEY: {
@@ -370,9 +370,9 @@ def test_concurrent_sync_submits_fifo_merge_order():
                 "data": {
                     "workflows": {
                         "w": {
-                            "name": "n",
                             "pattern": "p",
                             "use_case": "u",
+                            "name": "n",
                             "starting_topology": {"nodes": [], "edges": []},
                             "instances": {
                                 _INSTANCE_KEY: {
@@ -451,9 +451,9 @@ def test_slow_notifier_does_not_block_merge():
             "data": {
                 "workflows": {
                     "w": {
-                        "name": "n2",
                         "pattern": "p2",
                         "use_case": "u2",
+                        "name": "n2",
                         "starting_topology": {"nodes": [], "edges": []},
                         "instances": {
                             _INSTANCE_KEY: {

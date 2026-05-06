@@ -17,7 +17,7 @@ _VALID_INSTANCE = (
     '{"metadata":{"timestamp":"2026-01-01T00:00:00Z","schema_version":"1.0.0",'
     '"correlation":{"id":"correlation://550e8400-e29b-41d4-a716-446655440001"},'
     '"id":"event://550e8400-e29b-41d4-a716-446655440002","type":"RecruiterNodeSearch",'
-    '"source":"cli"},"data":{"workflows":{"w":{"name":"n","pattern":"p","use_case":"u",'
+    '"source":"cli"},"data":{"workflows":{"w":{"pattern":"p","use_case":"u","name":"n",'
     '"starting_topology":{"nodes":[],"edges":[]},'
     '"instances":{"instance://550e8400-e29b-41d4-a716-446655440003":{"id":"instance://550e8400-e29b-41d4-a716-446655440003","topology":{}}}}}}}'
 )

@@ -39,9 +39,9 @@ def test_first_event_establishes_workflow_and_instance():
         {
             "workflows": {
                 "w": {
-                    "name": "n",
                     "pattern": "p",
                     "use_case": "u",
+                    "name": "n",
                     "starting_topology": {"nodes": [], "edges": []},
                     "instances": {
                         INST: {"id": INST, "topology": {}},
@@ -67,9 +67,9 @@ def test_update_merges_fields_not_full_replace():
             {
                 "workflows": {
                     "w": {
-                        "name": "n",
                         "pattern": "p",
                         "use_case": "u",
+                        "name": "n",
                         "starting_topology": {"nodes": [], "edges": []},
                         "instances": {
                             INST: {
@@ -98,9 +98,9 @@ def test_update_merges_fields_not_full_replace():
         {
             "workflows": {
                 "w": {
-                    "name": "n",
                     "pattern": "p",
                     "use_case": "u",
+                    "name": "n",
                     "starting_topology": {"nodes": [], "edges": []},
                     "instances": {
                         INST: {
@@ -133,9 +133,9 @@ def test_read_does_not_overwrite_existing_node():
         {
             "workflows": {
                 "w": {
-                    "name": "n",
                     "pattern": "p",
                     "use_case": "u",
+                    "name": "n",
                     "starting_topology": {"nodes": [], "edges": []},
                     "instances": {
                         INST: {
@@ -163,9 +163,9 @@ def test_read_does_not_overwrite_existing_node():
         {
             "workflows": {
                 "w": {
-                    "name": "n",
                     "pattern": "p",
                     "use_case": "u",
+                    "name": "n",
                     "starting_topology": {"nodes": [], "edges": []},
                     "instances": {
                         INST: {
@@ -203,9 +203,9 @@ def test_read_creates_node_when_absent():
             {
                 "workflows": {
                     "w": {
-                        "name": "n",
                         "pattern": "p",
                         "use_case": "u",
+                        "name": "n",
                         "starting_topology": {"nodes": [], "edges": []},
                         "instances": {
                             INST: {"id": INST, "topology": {"nodes": [], "edges": []}},
@@ -219,9 +219,9 @@ def test_read_creates_node_when_absent():
         {
             "workflows": {
                 "w": {
-                    "name": "n",
                     "pattern": "p",
                     "use_case": "u",
+                    "name": "n",
                     "starting_topology": {"nodes": [], "edges": []},
                     "instances": {
                         INST: {
@@ -256,9 +256,9 @@ def test_topology_nodes_preserve_insertion_order_not_sorted_ids():
         {
             "workflows": {
                 "w": {
-                    "name": "n",
                     "pattern": "p",
                     "use_case": "u",
+                    "name": "n",
                     "starting_topology": {"nodes": [], "edges": []},
                     "instances": {
                         INST: {
@@ -305,9 +305,9 @@ def test_delete_idempotent():
             {
                 "workflows": {
                     "w": {
-                        "name": "n",
                         "pattern": "p",
                         "use_case": "u",
+                        "name": "n",
                         "starting_topology": {"nodes": [], "edges": []},
                         "instances": {
                             INST: {
@@ -335,9 +335,9 @@ def test_delete_idempotent():
         {
             "workflows": {
                 "w": {
-                    "name": "n",
                     "pattern": "p",
                     "use_case": "u",
+                    "name": "n",
                     "starting_topology": {"nodes": [], "edges": []},
                     "instances": {
                         INST: {
@@ -364,9 +364,9 @@ def test_update_missing_node_is_noop():
             {
                 "workflows": {
                     "w": {
-                        "name": "n",
                         "pattern": "p",
                         "use_case": "u",
+                        "name": "n",
                         "starting_topology": {"nodes": [], "edges": []},
                         "instances": {
                             INST: {"id": INST, "topology": {"nodes": [], "edges": []}},
@@ -380,9 +380,9 @@ def test_update_missing_node_is_noop():
         {
             "workflows": {
                 "w": {
-                    "name": "n",
                     "pattern": "p",
                     "use_case": "u",
+                    "name": "n",
                     "starting_topology": {"nodes": [], "edges": []},
                     "instances": {
                         INST: {
@@ -411,18 +411,18 @@ def test_two_workflow_keys_coexist():
         {
             "workflows": {
                 "w1": {
-                    "name": "n1",
                     "pattern": "p1",
                     "use_case": "u1",
+                    "name": "n1",
                     "starting_topology": {"nodes": [], "edges": []},
                     "instances": {
                         INST: {"id": INST, "topology": {}},
                     },
                 },
                 "w2": {
-                    "name": "n2",
                     "pattern": "p2",
                     "use_case": "u2",
+                    "name": "n2",
                     "starting_topology": {"nodes": [], "edges": []},
                     "instances": {
                         INST: {"id": INST, "topology": {}},
@@ -440,9 +440,9 @@ def test_starting_topology_preserved_when_followup_omits():
         {
             "workflows": {
                 "w": {
-                    "name": "n",
                     "pattern": "p",
                     "use_case": "u",
+                    "name": "n",
                     "starting_topology": {
                         "nodes": [
                             {
@@ -468,9 +468,9 @@ def test_starting_topology_preserved_when_followup_omits():
         {
             "workflows": {
                 "w": {
-                    "name": "n",
                     "pattern": "p",
                     "use_case": "u",
+                    "name": "n",
                     "starting_topology": {"nodes": [], "edges": []},
                     "instances": {
                         INST: {"id": INST, "topology": {}},
@@ -490,9 +490,9 @@ def test_node_delete_leaves_dangling_edge():
             {
                 "workflows": {
                     "w": {
-                        "name": "n",
                         "pattern": "p",
                         "use_case": "u",
+                        "name": "n",
                         "starting_topology": {"nodes": [], "edges": []},
                         "instances": {
                             INST: {
@@ -539,9 +539,9 @@ def test_node_delete_leaves_dangling_edge():
         {
             "workflows": {
                 "w": {
-                    "name": "n",
                     "pattern": "p",
                     "use_case": "u",
+                    "name": "n",
                     "starting_topology": {"nodes": [], "edges": []},
                     "instances": {
                         INST: {
@@ -612,9 +612,9 @@ def test_merge_empty_workflows_preserves_existing_workflows_and_merges_extra():
             {
                 "workflows": {
                     "w": {
-                        "name": "n",
                         "pattern": "p",
                         "use_case": "u",
+                        "name": "n",
                         "starting_topology": {"nodes": [], "edges": []},
                         "instances": {INST: {"id": INST, "topology": {}}},
                     }

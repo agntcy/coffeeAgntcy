@@ -66,9 +66,9 @@ def test_chain_partial_then_delta() -> None:
             "data": {
                 "workflows": {
                     "recruiter": {
-                        "name": "Recruiter",
                         "pattern": "recruiter_pattern",
                         "use_case": "hiring",
+                        "name": "Recruiter",
                         "starting_topology": {"nodes": [], "edges": []},
                         "instances": {
                             "instance://550e8400-e29b-41d4-a716-446655440003": {

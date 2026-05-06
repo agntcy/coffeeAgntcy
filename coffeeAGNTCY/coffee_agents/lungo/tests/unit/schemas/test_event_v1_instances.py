@@ -32,9 +32,9 @@ _VALID_MINIMAL = {
     "data": {
         "workflows": {
             "w": {
-                "name": "n",
                 "pattern": "p",
                 "use_case": "u",
+                "name": "n",
                 "starting_topology": {"nodes": [], "edges": []},
                 "instances": {
                     _INSTANCE_KEY: {
@@ -99,8 +99,8 @@ def test_event_v1_valid_instances(source: str):
                 "data": {
                     "workflows": {
                         "w": {
-                            "name": "n",
                             "use_case": "u",
+                            "name": "n",
                             "starting_topology": {"nodes": [], "edges": []},
                             "instances": {
                                 _INSTANCE_KEY: {
@@ -129,9 +129,9 @@ def test_instance_map_key_must_match_workflow_instance_id():
         "data": {
             "workflows": {
                 "w": {
-                    "name": "n",
                     "pattern": "p",
                     "use_case": "u",
+                    "name": "n",
                     "starting_topology": {"nodes": [], "edges": []},
                     "instances": {
                         "instance://00000000-0000-4000-8000-000000000001": {
