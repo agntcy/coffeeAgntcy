@@ -25,6 +25,18 @@ const DISCOVERY_KEYWORDS = [
 type DiscoveryKeyword = (typeof DISCOVERY_KEYWORDS)[number]
 
 const RECRUITER_NODE_ID = "recruiter-agent"
+
+function findRecruiterNodeId(nodes: Node[]): string {
+  const byLabel = nodes.find((n) => {
+    const l1 = String((n.data as { label1?: string } | undefined)?.label1 ?? "")
+      .toLowerCase()
+      .trim()
+    return l1.includes("recruiter")
+  })
+  if (byLabel) return byLabel.id
+  const legacy = nodes.find((n) => n.id === RECRUITER_NODE_ID)
+  return legacy?.id ?? RECRUITER_NODE_ID
+}
 const RECRUITER_POS = { x: 400, y: 300 }
 const NODE_WIDTH = 193
 const START_Y_OFFSET = 450
@@ -117,7 +129,11 @@ export function useMainAreaDiscoveryGraph({
           prevNodes.filter((n) => !n.id.startsWith("discovery-")),
         )
         setEdges((prevEdges) =>
-          prevEdges.filter((e) => !e.id.startsWith("edge-recruiter-agent-")),
+          prevEdges.filter(
+            (e) =>
+              !e.id.startsWith("edge-recruiter-agent-") &&
+              !e.id.startsWith("edge-node://"),
+          ),
         )
         return
       }
@@ -127,8 +143,8 @@ export function useMainAreaDiscoveryGraph({
         `discovery-${kind}-${baseId}`
       const generatedNodeId = (agentId: string) =>
         `discovery-agent-${baseId}-${safeIdPart(agentId)}`
-      const edgeId = (targetId: string) =>
-        `edge-${RECRUITER_NODE_ID}-${baseId}-${targetId}`
+      const edgeId = (targetId: string, sourceId: string) =>
+        `edge-${sourceId}-${baseId}-${targetId}`
 
       setNodes((prevNodes) => {
         const existingIds = new Set(prevNodes.map((n) => n.id))
@@ -146,7 +162,8 @@ export function useMainAreaDiscoveryGraph({
             .map((n) => (n.data as Record<string, unknown>)?.agentCid)
             .filter(Boolean),
         )
-        const recruiterNode = prevNodes.find((n) => n.id === RECRUITER_NODE_ID)
+        const recruiterSourceId = findRecruiterNodeId(prevNodes)
+        const recruiterNode = prevNodes.find((n) => n.id === recruiterSourceId)
         const recruiterIcons = recruiterNode?.data
           ? {
               icon: recruiterNode.data.icon,
@@ -218,8 +235,8 @@ export function useMainAreaDiscoveryGraph({
             },
           })
           newEdges.push({
-            id: edgeId(id),
-            source: RECRUITER_NODE_ID,
+            id: edgeId(id, recruiterSourceId),
+            source: recruiterSourceId,
             target: id,
             type: "custom",
             data: { label: EDGE_LABELS.A2A_OVER_HTTP },
@@ -252,8 +269,8 @@ export function useMainAreaDiscoveryGraph({
             },
           })
           newEdges.push({
-            id: edgeId(id),
-            source: RECRUITER_NODE_ID,
+            id: edgeId(id, recruiterSourceId),
+            source: recruiterSourceId,
             target: id,
             type: "custom",
             data: { label: EDGE_LABELS.A2A_OVER_HTTP },

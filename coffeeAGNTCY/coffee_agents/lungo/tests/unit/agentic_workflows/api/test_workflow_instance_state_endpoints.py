@@ -31,6 +31,7 @@ _MINIMAL_WORKFLOWS: dict[str, Workflow] = {
         {
             "pattern": "test_pattern",
             "use_case": "test_uc",
+            "scenario": "test_scenario",
             "name": "InstTestWf",
             "starting_topology": {
                 "nodes": [

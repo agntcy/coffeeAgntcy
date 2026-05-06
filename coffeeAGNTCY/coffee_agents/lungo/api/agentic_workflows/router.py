@@ -27,7 +27,7 @@ from api.agentic_workflows.dtos import (
 from api.agentic_workflows.instance_lifecycle import (
     build_instantiate_seed_event,
     instances_map_for_workflow,
-    workflow_instance_from_projection,
+    workflow_instance_from_store,
 )
 from api.agentic_workflows.patterns import PATTERNS
 from api.agentic_workflows.use_cases import USE_CASES
@@ -100,6 +100,10 @@ def _workflow_instance_store(request: Request) -> WorkflowInstanceStateStore:
             detail="Workflow instance store is not configured",
         )
     return store
+
+
+def _canonical_instance_uri(instance_uuid: UUID) -> str:
+    return instance_id_from_uuid(instance_uuid).root
 
 
 def create_agentic_workflows_router() -> APIRouter:
@@ -284,21 +288,13 @@ def create_agentic_workflows_router() -> APIRouter:
             raise HTTPException(
                 status_code=404, detail=f"Workflow not found: {workflow_name}"
             )
-        canonical_id = instance_id_from_uuid(workflow_instance_id).root
+        canonical_id = _canonical_instance_uri(workflow_instance_id)
         store = _workflow_instance_store(request)
-        proj = await asyncio.to_thread(
-            store.get_instance_projection,
-            workflow_name,
-            canonical_id,
-        )
-        if proj is None:
-            raise HTTPException(
-                status_code=404,
-                detail="Workflow instance not found",
-            )
         try:
-            return workflow_instance_from_projection(
-                proj,
+            inst = await asyncio.to_thread(
+                workflow_instance_from_store,
+                store,
+                workflow_name,
                 canonical_id,
                 topology_only=topology_only,
             )
@@ -307,6 +303,12 @@ def create_agentic_workflows_router() -> APIRouter:
                 status_code=500,
                 detail="Invalid instance projection",
             ) from exc
+        if inst is None:
+            raise HTTPException(
+                status_code=404,
+                detail="Workflow instance not found",
+            )
+        return inst
 
     @router.post(
         "/agentic-workflows/{workflow_name}/instances/{workflow_instance_id}/events/",
@@ -329,7 +331,7 @@ def create_agentic_workflows_router() -> APIRouter:
     ) -> None:
         """POST internal state update event."""
         store = _workflow_instance_store(request)
-        canonical_id = instance_id_from_uuid(workflow_instance_id).root
+        canonical_id = _canonical_instance_uri(workflow_instance_id)
         if workflow_name not in event.data.workflows:
             raise HTTPException(
                 status_code=400,
@@ -374,7 +376,7 @@ def create_agentic_workflows_router() -> APIRouter:
     ) -> StreamingResponse:
         """GET SSE stream; each message is one ``data:`` line of compact ``event_v1`` JSON."""
         store = _workflow_instance_store(request)
-        canonical_id = instance_id_from_uuid(workflow_instance_id).root
+        canonical_id = _canonical_instance_uri(workflow_instance_id)
         queue: asyncio.Queue[str] = asyncio.Queue(
             maxsize=WORKFLOW_INSTANCE_SSE_QUEUE_MAXSIZE
         )

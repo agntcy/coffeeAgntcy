@@ -15,6 +15,8 @@ import type { CustomNodeData } from "./Graph/Elements/types"
 
 export interface UseMainAreaGraphEffectsParams {
   pattern: string
+  /** When true, skip syncing from `getGraphConfig` (graph owned by Agentic Workflows API). */
+  skipStaticGraphSync?: boolean
   isGroupCommConnected: boolean
   setNodes: React.Dispatch<React.SetStateAction<Node[]>>
   setEdges: React.Dispatch<React.SetStateAction<Edge[]>>
@@ -48,6 +50,7 @@ export interface UseMainAreaGraphEffectsParams {
 /** Runs effects that sync graph config, viewport, transport labels, tooltips, and edge checks. */
 export function useMainAreaGraphEffects({
   pattern,
+  skipStaticGraphSync = false,
   isGroupCommConnected,
   setNodes,
   setEdges,
@@ -75,6 +78,7 @@ export function useMainAreaGraphEffects({
   }, [pattern, handleCloseModals, setOasfModalOpen])
 
   useEffect(() => {
+    if (skipStaticGraphSync) return
     setNodes((nodes) =>
       nodes.map((node) => ({
         ...node,
@@ -82,9 +86,35 @@ export function useMainAreaGraphEffects({
       })),
     )
     setEdges([])
-  }, [pattern, setNodes, setEdges])
+  }, [pattern, setNodes, setEdges, skipStaticGraphSync])
 
   useEffect(() => {
+    if (!skipStaticGraphSync) return
+    setNodes((nodes) =>
+      nodes.map((node) => ({
+        ...node,
+        data: {
+          ...node.data,
+          onOpenIdentityModal: handleOpenIdentityModal,
+          onOpenOasfModal: handleOpenOasfModal,
+          isModalOpen: !!(
+            activeModal &&
+            (activeNodeData as { id?: string } | null)?.id === node.id
+          ),
+        },
+      })),
+    )
+  }, [
+    skipStaticGraphSync,
+    handleOpenIdentityModal,
+    handleOpenOasfModal,
+    activeModal,
+    activeNodeData,
+    setNodes,
+  ])
+
+  useEffect(() => {
+    if (skipStaticGraphSync) return
     const updateGraph = async () => {
       const newConfig = getGraphConfig(pattern)
       const nodesWithHandlers = newConfig.nodes.map((node) => ({
@@ -123,10 +153,12 @@ export function useMainAreaGraphEffects({
     activeModal,
     activeNodeData,
     handleOpenOasfModal,
+    skipStaticGraphSync,
   ])
 
   useEffect(() => {
     const handleVisibilityChange = async () => {
+      if (skipStaticGraphSync) return
       if (!document.hidden && supportsTransportUpdates(pattern)) {
         await updateTransportLabels(
           setNodes,
@@ -139,13 +171,14 @@ export function useMainAreaGraphEffects({
     document.addEventListener("visibilitychange", handleVisibilityChange)
     return () =>
       document.removeEventListener("visibilitychange", handleVisibilityChange)
-  }, [pattern, setNodes, setEdges])
+  }, [pattern, setNodes, setEdges, skipStaticGraphSync])
 
   useEffect(() => {
     fitViewWithViewport({ chatHeight, isExpanded })
   }, [chatHeight, isExpanded, fitViewWithViewport])
 
   useEffect(() => {
+    if (skipStaticGraphSync) return
     const checkEdges = () => {
       const expectedEdges = config.edges.length
       const renderedEdges =
@@ -165,7 +198,7 @@ export function useMainAreaGraphEffects({
       clearInterval(intervalId)
       clearTimeout(timeoutId)
     }
-  }, [config.edges, setEdges, animationLockRef])
+  }, [config.edges, setEdges, animationLockRef, skipStaticGraphSync])
 
   useEffect(() => {
     const addTooltips = () => {

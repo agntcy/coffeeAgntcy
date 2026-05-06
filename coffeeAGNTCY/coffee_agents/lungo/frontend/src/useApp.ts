@@ -9,7 +9,7 @@ import { useChatAreaMeasurement } from "@/hooks/useChatAreaMeasurement"
 import { useAppStreamingState } from "@/hooks/useAppStreamingState"
 import { useAppChatState } from "@/hooks/useAppChatState"
 import { useAgentAPI } from "@/hooks/useAgentAPI"
-import { getGraphConfig } from "@/utils/graphConfigs"
+import { getGraphConfig, type GraphConfig } from "@/utils/graphConfigs"
 import { PATTERNS, PatternType } from "@/utils/patternUtils"
 import { DiscoveryResponseEvent } from "@/types/agent"
 
@@ -21,6 +21,9 @@ export function useApp() {
 
   const [selectedPattern, setSelectedPattern] = useState<PatternType>(
     PATTERNS.GROUP_COMMUNICATION,
+  )
+  const [liveGraphConfig, setLiveGraphConfig] = useState<GraphConfig | null>(
+    null,
   )
 
   const chat = useAppChatState({ selectedPattern })
@@ -55,6 +58,7 @@ export function useApp() {
       chat.setButtonClicked(false)
       chat.setAiReplied(false)
       setSelectedPattern(pattern)
+      setLiveGraphConfig(null)
       lastDiscoveryKeyRef.current = null
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps -- streaming/chat refs stable enough; full deps cause unnecessary runs
@@ -290,8 +294,8 @@ export function useApp() {
     chat.currentUserMessage || chat.agentResponse ? chatHeight : 76
 
   const graphConfig = useMemo(
-    () => getGraphConfig(selectedPattern),
-    [selectedPattern],
+    () => liveGraphConfig ?? getGraphConfig(selectedPattern),
+    [selectedPattern, liveGraphConfig],
   )
 
   return {
@@ -337,5 +341,6 @@ export function useApp() {
     recruiterAgentRecords: streaming.recruiterAgentRecords,
     recruiterEvaluationResults: streaming.recruiterEvaluationResults,
     recruiterSelectedAgent: streaming.recruiterSelectedAgent,
+    setLiveGraphConfig,
   }
 }

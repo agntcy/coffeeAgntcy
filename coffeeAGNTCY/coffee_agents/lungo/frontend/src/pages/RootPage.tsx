@@ -56,6 +56,7 @@ const RootPage: React.FC = () => {
     recruiterAgentRecords,
     recruiterEvaluationResults,
     recruiterSelectedAgent,
+    setLiveGraphConfig,
   } = useApp()
 
   return (
@@ -70,6 +71,7 @@ const RootPage: React.FC = () => {
           <div className="relative flex-grow">
             <MainArea
               pattern={selectedPattern}
+              onLiveGraphConfig={setLiveGraphConfig}
               buttonClicked={buttonClicked}
               setButtonClicked={setButtonClicked}
               aiReplied={aiReplied}

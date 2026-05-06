@@ -14,6 +14,10 @@ import type { DiscoveryResponseEvent } from "@/types/agent"
 import type { CustomNodeData } from "./Graph/Elements/types"
 import { useMainAreaDiscoveryGraph } from "./useMainAreaDiscoveryGraph"
 import { useMainAreaGraphEffects } from "./useMainAreaGraphEffects"
+import { useWorkflowGraphFromAgenticApi } from "@/hooks/useWorkflowGraphFromAgenticApi"
+import { getAgenticWorkflowNameForPattern } from "@/utils/agenticWorkflowCatalog"
+import type { GraphConfig } from "@/utils/graphConfigs"
+import { graphConfigFromNodes } from "@/utils/graphConfigFromNodes"
 
 export interface MainAreaProps {
   pattern: PatternType
@@ -27,6 +31,8 @@ export interface MainAreaProps {
   onNodeHighlight?: (highlightFunction: (nodeId: string) => void) => void
   discoveryResponseEvent?: DiscoveryResponseEvent | null
   selectedAgentCid?: string | null
+  /** Latest graph snapshot for chat/feeds (GroupCommunication sender map). */
+  onLiveGraphConfig?: (config: GraphConfig) => void
 }
 
 const DELAY_DURATION = 500
@@ -44,6 +50,7 @@ export function useMainArea({
   onNodeHighlight,
   discoveryResponseEvent,
   selectedAgentCid,
+  onLiveGraphConfig,
 }: MainAreaProps) {
   const fitViewWithViewport = useViewportAwareFitView()
   const isGroupCommConnected =
@@ -64,10 +71,6 @@ export function useMainArea({
     handlePaneClick: modalPaneClick,
   } = useModalManager()
 
-  const [nodes, setNodes, onNodesChange] = useNodesState(config.nodes)
-  const [edges, setEdges, onEdgesChange] = useEdgesState(config.edges)
-  const animationLock = useRef<boolean>(false)
-
   const [oasfModalOpen, setOasfModalOpen] = useState(false)
   const [oasfModalData, setOasfModalData] = useState<CustomNodeData | null>(
     null,
@@ -86,6 +89,23 @@ export function useMainArea({
     [],
   )
 
+  const [nodes, setNodes, onNodesChange] = useNodesState(config.nodes)
+  const [edges, setEdges, onEdgesChange] = useEdgesState(config.edges)
+  const animationLock = useRef<boolean>(false)
+
+  const { agenticMode } = useWorkflowGraphFromAgenticApi({
+    pattern,
+    setNodes,
+    setEdges,
+    handleOpenIdentityModal,
+    handleOpenOasfModal,
+    onTopologyApplied: () => {
+      setTimeout(() => {
+        fitViewWithViewport({ chatHeight: 0, isExpanded: false })
+      }, 200)
+    },
+  })
+
   useMainAreaDiscoveryGraph({
     pattern,
     discoveryResponseEvent,
@@ -98,8 +118,11 @@ export function useMainArea({
   const nodeAgentCidKey = useMemo(
     () =>
       nodes
-        .filter((n) => (n.data as Record<string, unknown>)?.agentCid)
-        .map((n) => `${n.id}:${(n.data as Record<string, unknown>)?.agentCid}`)
+        .filter((n) => (n.data as unknown as Record<string, unknown>)?.agentCid)
+        .map(
+          (n) =>
+            `${n.id}:${(n.data as unknown as Record<string, unknown>)?.agentCid}`,
+        )
         .sort()
         .join(","),
     [nodes],
@@ -107,21 +130,31 @@ export function useMainArea({
 
   useEffect(() => {
     if (pattern !== "on_demand_discovery") return
-    setNodes((prevNodes) =>
-      prevNodes.map((node) => {
+    setNodes((prevNodes) => {
+      const recruiterId =
+        prevNodes.find((n) => {
+          const l1 = String(
+            (n.data as unknown as CustomNodeData | undefined)?.label1 ?? "",
+          )
+            .toLowerCase()
+            .trim()
+          return l1.includes("recruiter")
+        })?.id ?? NODE_IDS.RECRUITER
+      return prevNodes.map((node) => {
         const nodeData = node.data as unknown as CustomNodeData | undefined
         const shouldBeSelected =
           selectedAgentCid != null
             ? nodeData?.agentCid === selectedAgentCid
-            : node.id === NODE_IDS.RECRUITER
+            : node.id === recruiterId
         if (nodeData?.selected === shouldBeSelected) return node
         return { ...node, data: { ...node.data, selected: shouldBeSelected } }
-      }),
-    )
+      })
+    })
   }, [pattern, selectedAgentCid, nodeAgentCidKey, setNodes])
 
   useMainAreaGraphEffects({
     pattern,
+    skipStaticGraphSync: agenticMode,
     isGroupCommConnected,
     setNodes,
     setEdges,
@@ -164,6 +197,7 @@ export function useMainArea({
   useEffect(() => {
     const shouldAnimate = buttonClicked && !aiReplied
     if (!shouldAnimate) return
+    if (agenticMode) return
     if (pattern === "group_communication") return
     const waitForAnimationAndRun = async () => {
       while (animationLock.current) await delay(100)
@@ -192,6 +226,30 @@ export function useMainArea({
     pattern,
     updateStyle,
     config.animationSequence,
+    agenticMode,
+  ])
+
+  useEffect(() => {
+    if (!onLiveGraphConfig) return
+    const title = agenticMode
+      ? (getAgenticWorkflowNameForPattern(pattern) ?? config.title)
+      : config.title
+    onLiveGraphConfig(
+      graphConfigFromNodes(
+        title,
+        nodes,
+        edges,
+        agenticMode ? [] : config.animationSequence,
+      ),
+    )
+  }, [
+    onLiveGraphConfig,
+    agenticMode,
+    pattern,
+    config.title,
+    config.animationSequence,
+    nodes,
+    edges,
   ])
 
   const highlightNode = useCallback(
