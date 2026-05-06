@@ -150,6 +150,7 @@ def create_agentic_workflows_router() -> APIRouter:
                 name=w.name,
                 pattern=w.pattern,
                 use_case=w.use_case,
+                scenario=w.scenario,
             )
             for w in filtered
         }
