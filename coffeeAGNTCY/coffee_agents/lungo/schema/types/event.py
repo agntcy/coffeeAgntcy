@@ -473,9 +473,9 @@ class Workflow(BaseModel):
 
     model_config = ConfigDict(extra="allow")
 
-    name: Annotated[str, Field(min_length=1)]
     pattern: Annotated[str, Field(min_length=1)]
     use_case: Annotated[str, Field(min_length=1)]
+    name: Annotated[str, Field(min_length=1)]
     starting_topology: Topology
     instances: dict[
         Annotated[str, Field(pattern=_INSTANCE_ID_REGEX)], WorkflowInstance

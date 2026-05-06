@@ -13,9 +13,9 @@
   "data": {
     "workflows": {
       "recruiter": {
-        "name": "Recruiter",
         "pattern": "recruiter_pattern",
         "use_case": "hiring",
+        "name": "Recruiter",
         "starting_topology": {
           "nodes": [
             {
