@@ -4,7 +4,6 @@
  **/
 
 import React, { useCallback, useState } from "react"
-import { type SxProps, type Theme } from "@mui/material/styles"
 import {
   useThemeMode,
   Header,

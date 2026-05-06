@@ -39,13 +39,11 @@ export interface UseMainAreaGraphEffectsParams {
   isExpanded: boolean
   config: GraphConfig
   animationLockRef: React.MutableRefObject<boolean>
-  nodesDraggable: boolean
-  nodesConnectable: boolean
   handleCloseModals: () => void
   setOasfModalOpen: (open: boolean) => void
 }
 
-/** Runs effects that sync graph config, viewport, transport labels, tooltips, and edge checks. */
+/** Runs effects that sync graph config, viewport, transport labels, and edge checks. */
 export function useMainAreaGraphEffects({
   pattern,
   isGroupCommConnected,
@@ -60,8 +58,6 @@ export function useMainAreaGraphEffects({
   isExpanded,
   config,
   animationLockRef,
-  nodesDraggable,
-  nodesConnectable,
   handleCloseModals,
   setOasfModalOpen,
 }: UseMainAreaGraphEffectsParams) {
@@ -166,26 +162,4 @@ export function useMainAreaGraphEffects({
       clearTimeout(timeoutId)
     }
   }, [config.edges, setEdges, animationLockRef])
-
-  useEffect(() => {
-    const addTooltips = () => {
-      const controlButtons = document.querySelectorAll(
-        ".react-flow__controls-button",
-      )
-      const tooltips = ["Zoom In", "Zoom Out", "Fit View", "Lock"]
-      controlButtons.forEach((button, index) => {
-        if (index < tooltips.length) {
-          if (index === 3) {
-            const isLocked = !nodesDraggable || !nodesConnectable
-            button.setAttribute("data-tooltip", isLocked ? "Unlock" : "Lock")
-          } else {
-            button.setAttribute("data-tooltip", tooltips[index])
-          }
-          button.removeAttribute("title")
-        }
-      })
-    }
-    const timeoutId = setTimeout(addTooltips, 100)
-    return () => clearTimeout(timeoutId)
-  }, [pattern, nodesDraggable, nodesConnectable])
 }

@@ -4,9 +4,13 @@
  **/
 
 import React from "react"
-import { Controls, ControlButton, useReactFlow } from "@xyflow/react"
+import { Controls, useReactFlow } from "@xyflow/react"
+import FitScreen from "@mui/icons-material/FitScreen"
 import Lock from "@mui/icons-material/Lock"
 import LockOpen from "@mui/icons-material/LockOpen"
+import ZoomIn from "@mui/icons-material/ZoomIn"
+import ZoomOut from "@mui/icons-material/ZoomOut"
+import { IconButton, Stack, Tooltip } from "@open-ui-kit/core"
 
 interface CustomControlsProps {
   isInteractive?: boolean
@@ -19,40 +23,62 @@ const CustomControls: React.FC<CustomControlsProps> = ({
 }) => {
   const { zoomIn, zoomOut, fitView } = useReactFlow()
 
+  const lockLabel = isInteractive ? "Lock interaction" : "Unlock interaction"
+
   return (
-    <Controls showZoom={false} showFitView={false} showInteractive={false}>
-      <ControlButton
-        onClick={() => zoomIn()}
-        title="Zoom In"
-        aria-label="Zoom In"
+    <Controls
+      position="bottom-left"
+      showZoom={false}
+      showFitView={false}
+      showInteractive={false}
+    >
+      <Stack
+        direction="column"
+        alignItems="flex-start"
+        spacing={1}
+        sx={{ p: 1 }}
       >
-        <span className="text-base font-normal">+</span>
-      </ControlButton>
-      <ControlButton
-        onClick={() => zoomOut()}
-        title="Zoom Out"
-        aria-label="Zoom Out"
-      >
-        <span className="text-base font-normal">−</span>
-      </ControlButton>
-      <ControlButton
-        onClick={() => fitView({ padding: 0.45, duration: 300 })}
-        title="Fit View"
-        aria-label="Fit View"
-      >
-        <span className="text-base font-normal">⛶</span>
-      </ControlButton>
-      <ControlButton
-        onClick={onToggleInteractivity}
-        title={isInteractive ? "Lock interaction" : "Unlock interaction"}
-        aria-label={isInteractive ? "Lock interaction" : "Unlock interaction"}
-      >
-        {isInteractive ? (
-          <LockOpen className="h-4 w-4" />
-        ) : (
-          <Lock className="h-4 w-4" />
-        )}
-      </ControlButton>
+        <Tooltip title="Zoom In" placement="right" arrow>
+          <IconButton
+            size="small"
+            color="inherit"
+            onClick={() => zoomIn()}
+            aria-label="Zoom In"
+          >
+            <ZoomIn />
+          </IconButton>
+        </Tooltip>
+        <Tooltip title="Zoom Out" placement="right" arrow>
+          <IconButton
+            size="small"
+            color="inherit"
+            onClick={() => zoomOut()}
+            aria-label="Zoom Out"
+          >
+            <ZoomOut />
+          </IconButton>
+        </Tooltip>
+        <Tooltip title="Fit View" placement="right" arrow>
+          <IconButton
+            size="small"
+            color="inherit"
+            onClick={() => fitView({ padding: 0.45, duration: 300 })}
+            aria-label="Fit View"
+          >
+            <FitScreen />
+          </IconButton>
+        </Tooltip>
+        <Tooltip title={lockLabel} placement="right" arrow>
+          <IconButton
+            size="small"
+            color="inherit"
+            onClick={onToggleInteractivity}
+            aria-label={lockLabel}
+          >
+            {isInteractive ? <LockOpen /> : <Lock />}
+          </IconButton>
+        </Tooltip>
+      </Stack>
     </Controls>
   )
 }
