@@ -89,6 +89,7 @@ filterwarnings = [
 ]
 markers = [
     "agents(names): marks tests that run for specific farms (e.g. @pytest.mark.farms([\"brazil\"]))",
+    "e2e: subprocess HTTP against a live app (e.g. uvicorn + SSE); skip with -m \"not e2e\"",
 ]
 pythonpath = ["."]
 testpaths = ["tests"]
