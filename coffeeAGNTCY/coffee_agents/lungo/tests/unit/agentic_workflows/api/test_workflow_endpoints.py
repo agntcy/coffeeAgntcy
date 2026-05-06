@@ -21,6 +21,7 @@ _FAKE_WORKFLOWS: dict[str, Workflow] = {
             {
                 "pattern": "publish_subscribe",
                 "use_case": "Coffee Buying",
+                "scenario": "Pub Sub Coffee scenario",
                 "name": "Pub Sub Coffee",
                 "starting_topology": {
                     "nodes": [
@@ -42,6 +43,7 @@ _FAKE_WORKFLOWS: dict[str, Workflow] = {
             {
                 "pattern": "group_communication",
                 "use_case": "Order Fulfilment",
+                "scenario": "Group Logistics scenario",
                 "name": "Group Logistics",
                 "starting_topology": {
                     "nodes": [
@@ -63,6 +65,7 @@ _FAKE_WORKFLOWS: dict[str, Workflow] = {
             {
                 "pattern": "publish_subscribe",
                 "use_case": "Order Fulfilment",
+                "scenario": "Pub Sub Orders scenario",
                 "name": "Pub Sub Orders",
                 "starting_topology": {
                     "nodes": [
@@ -176,7 +179,7 @@ def test_list_agentic_workflows(case: ListCase, client: TestClient) -> None:
 
     for name, summary in data.items():
         assert summary["name"] == name
-        assert set(summary.keys()) == {"name", "pattern", "use_case"}
+        assert set(summary.keys()) == {"name", "pattern", "use_case", "scenario"}
 
 
 # ---------------------------------------------------------------------------
