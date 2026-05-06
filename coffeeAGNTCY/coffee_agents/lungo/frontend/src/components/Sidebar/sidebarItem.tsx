@@ -4,6 +4,7 @@
  **/
 
 import React from "react"
+import { cn } from "@/utils/cn"
 
 interface SidebarItemProps {
   title: string
@@ -16,11 +17,15 @@ const SidebarItem: React.FC<SidebarItemProps> = ({
   title,
   isSelected = false,
   onClick,
-  className = "",
+  className,
 }) => {
   return (
     <div
-      className={`flex w-full cursor-pointer items-start gap-2 py-2 pl-12 pr-5 font-inter text-sm font-normal leading-5 text-sidebar-text transition-colors hover:bg-sidebar-item-selected ${isSelected ? "bg-sidebar-item-selected" : "bg-sidebar-background"} ${className}`}
+      className={cn(
+        "flex w-full cursor-pointer items-start gap-2 py-2 pl-12 pr-5 font-inter text-sm font-normal leading-5 text-sidebar-text transition-colors hover:bg-sidebar-item-selected",
+        isSelected ? "bg-sidebar-item-selected" : "bg-sidebar-background",
+        className,
+      )}
       onClick={onClick}
     >
       <span className="flex-1">{title}</span>

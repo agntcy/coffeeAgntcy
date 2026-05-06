@@ -14,6 +14,7 @@ import {
   type PatternNode,
 } from "@/utils/sidebarHierarchy"
 import { logger } from "@/utils/logger"
+import { cn } from "@/utils/cn"
 import SidebarItem from "./sidebarItem"
 import SidebarDropdown from "./SidebarDropdown"
 
@@ -92,7 +93,7 @@ const Sidebar: React.FC<SidebarProps> = ({
     <div className="flex h-full w-64 flex-none flex-col gap-5 border-r border-sidebar-border bg-sidebar-background font-inter lg:w-[320px]">
       <div className="flex h-full flex-1 flex-col gap-2 p-4">
         <div className="flex min-h-[36px] w-full items-center gap-2 rounded py-2 pl-2 pr-5">
-          <span className="flex-1 font-inter text-sm font-normal leading-5 tracking-[0.25px] text-sidebar-text">
+          <span className="flex-1 font-inter text-base font-semibold leading-6 tracking-[0.15px] text-sidebar-text">
             Agentic Patterns
           </span>
         </div>
@@ -151,44 +152,16 @@ const CatalogTree: React.FC<CatalogTreeProps> = ({
     <>
       {tree.map((pattern) => {
         const pKey = makePatternKey(pattern.name)
-        const renderUseCaseAsDropdown = pattern.useCases.length > 1
         return (
           <SidebarDropdown
             key={pKey}
             title={pattern.name}
             isExpanded={expanded.has(pKey)}
             onToggle={() => onToggle(pKey)}
+            titleClassName="pl-2"
           >
             {pattern.useCases.map((useCase) => {
               const ucKey = makeUseCaseKey(pattern.name, useCase.name)
-              const items = useCase.workflows.map((workflow) => {
-                const isUnknown = workflow.slug === null
-                const isSelected =
-                  !isUnknown && selectedPattern === workflow.slug
-                return (
-                  <SidebarItem
-                    key={workflow.name}
-                    title={workflow.name}
-                    isSelected={isSelected}
-                    onClick={
-                      isUnknown
-                        ? undefined
-                        : () => onPatternChange(workflow.slug!)
-                    }
-                    className={
-                      isUnknown
-                        ? "pointer-events-none cursor-not-allowed opacity-50"
-                        : renderUseCaseAsDropdown
-                          ? "pl-16"
-                          : ""
-                    }
-                  />
-                )
-              })
-
-              if (!renderUseCaseAsDropdown) {
-                return <React.Fragment key={ucKey}>{items}</React.Fragment>
-              }
               return (
                 <UseCaseDropdown
                   key={ucKey}
@@ -196,7 +169,28 @@ const CatalogTree: React.FC<CatalogTreeProps> = ({
                   isExpanded={expanded.has(ucKey)}
                   onToggle={() => onToggle(ucKey)}
                 >
-                  {items}
+                  {useCase.workflows.map((workflow) => {
+                    const isUnknown = workflow.slug === null
+                    const isSelected =
+                      !isUnknown && selectedPattern === workflow.slug
+                    return (
+                      <SidebarItem
+                        key={workflow.name}
+                        title={workflow.name}
+                        isSelected={isSelected}
+                        onClick={
+                          isUnknown
+                            ? undefined
+                            : () => onPatternChange(workflow.slug!)
+                        }
+                        className={cn(
+                          "pl-10",
+                          isUnknown &&
+                            "pointer-events-none cursor-not-allowed opacity-50",
+                        )}
+                      />
+                    )
+                  })}
                 </UseCaseDropdown>
               )
             })}
@@ -216,7 +210,7 @@ interface UseCaseDropdownProps {
 
 /**
  * Lightweight nested dropdown for the use-case level. Visually it matches
- * `SidebarDropdown` but indents one extra step so the pattern -> use-case
+ * `SidebarDropdown` but indents one step further so the pattern -> use-case
  * relationship reads clearly.
  */
 const UseCaseDropdown: React.FC<UseCaseDropdownProps> = ({
@@ -227,7 +221,7 @@ const UseCaseDropdown: React.FC<UseCaseDropdownProps> = ({
 }) => {
   return (
     <div className="flex w-full flex-col items-start p-0">
-      <div className="flex w-full items-start gap-2 bg-sidebar-background py-2 pl-12 pr-5 transition-colors hover:bg-sidebar-item-selected">
+      <div className="flex w-full items-start gap-2 bg-sidebar-background py-2 pl-6 pr-5 transition-colors hover:bg-sidebar-item-selected">
         <span
           className="flex-1 cursor-pointer font-inter text-sm font-normal leading-5 tracking-[0.25px] text-sidebar-text"
           onClick={onToggle}
@@ -274,44 +268,52 @@ const StaticFallbackTree: React.FC<StaticFallbackTreeProps> = ({
         title="Secure Group Communication"
         isExpanded={groupExpanded}
         onToggle={() => setGroupExpanded((v) => !v)}
+        titleClassName="pl-2"
       >
         <SidebarItem
           title="A2A SLIM"
           isSelected={selectedPattern === PATTERNS.GROUP_COMMUNICATION}
           onClick={() => onPatternChange(PATTERNS.GROUP_COMMUNICATION)}
+          className="pl-6"
         />
       </SidebarDropdown>
       <SidebarDropdown
         title="Publish Subscribe"
         isExpanded={pubSubExpanded}
         onToggle={() => setPubSubExpanded((v) => !v)}
+        titleClassName="pl-2"
       >
         <SidebarItem
           title="A2A"
           isSelected={selectedPattern === PATTERNS.PUBLISH_SUBSCRIBE}
           onClick={() => onPatternChange(PATTERNS.PUBLISH_SUBSCRIBE)}
+          className="pl-6"
         />
       </SidebarDropdown>
       <SidebarDropdown
         title="Publish Subscribe: Streaming"
         isExpanded={pubSubStreamExpanded}
         onToggle={() => setPubSubStreamExpanded((v) => !v)}
+        titleClassName="pl-2"
       >
         <SidebarItem
           title="A2A"
           isSelected={selectedPattern === PATTERNS.PUBLISH_SUBSCRIBE_STREAMING}
           onClick={() => onPatternChange(PATTERNS.PUBLISH_SUBSCRIBE_STREAMING)}
+          className="pl-6"
         />
       </SidebarDropdown>
       <SidebarDropdown
         title="Recruiter"
         isExpanded={discoveryExpanded}
         onToggle={() => setDiscoveryExpanded((v) => !v)}
+        titleClassName="pl-2"
       >
         <SidebarItem
           title="A2A HTTP"
           isSelected={selectedPattern === PATTERNS.ON_DEMAND_DISCOVERY}
           onClick={() => onPatternChange(PATTERNS.ON_DEMAND_DISCOVERY)}
+          className="pl-6"
         />
       </SidebarDropdown>
     </>
