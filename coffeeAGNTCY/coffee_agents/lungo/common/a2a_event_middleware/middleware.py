@@ -37,6 +37,7 @@ from schema.types import (
 	Operation,
 	PartialEdge,
 	PartialNode,
+	PartialRegularNode,
 	PartialTopology,
 	Size,
 	Topology,
@@ -118,7 +119,7 @@ def _make_node(
 	include_size: bool = True,
 ) -> PartialNode:
 	"""Create a PartialNode with standard defaults."""
-	return PartialNode(
+	return PartialRegularNode(
 		id=NodeId(node_id),
 		operation=operation,
 		type=node_type,
@@ -541,15 +542,15 @@ class EventEmittingInterceptor(ClientCallInterceptor):
 		if self._event_sink:
 			await self._event_sink.emit(event)
 
-		#if logger.isEnabledFor(logging.DEBUG):
-		logger.info(
-			"EventEmittingInterceptor [%s]: outbound %s -> %s\n%s\nProcessing time: %.3fs",
-			self._source,
-			method_name,
-			", ".join(remote_agent_ids) if remote_agent_ids else "unknown remote",
-			event.model_dump_json(indent=2, exclude_none=True),
-			monotonic() - t_intercept_start,
-		)
+		if logger.isEnabledFor(logging.DEBUG):
+			logger.debug(
+				"EventEmittingInterceptor [%s]: outbound %s -> %s\n%s\nProcessing time: %.3fs",
+				self._source,
+				method_name,
+				", ".join(remote_agent_ids) if remote_agent_ids else "unknown remote",
+				event.model_dump_json(indent=2, exclude_none=True),
+				monotonic() - t_intercept_start,
+			)
 
 		return request_payload, http_kwargs
 
@@ -677,14 +678,14 @@ def make_event_emitting_consumer(
 		if event_sink:
 			await event_sink.emit(event_obj)
 
-		#if logger.isEnabledFor(logging.DEBUG):
-		logger.info(
-			"event_emitting_consumer [%s]: response from %s (status=%s) (processing time=%.3fs)\n%s",
-			_source,
-			remote_agent_id,
-			status_label,
-			monotonic() - t_receive_start,
-			event_obj.model_dump_json(indent=2, exclude_none=True),
-		)
+		if logger.isEnabledFor(logging.DEBUG):
+			logger.debug(
+				"event_emitting_consumer [%s]: response from %s (status=%s) (processing time=%.3fs)\n%s",
+				_source,
+				remote_agent_id,
+				status_label,
+				monotonic() - t_receive_start,
+				event_obj.model_dump_json(indent=2, exclude_none=True),
+			)
 
 	return event_emitting_consumer

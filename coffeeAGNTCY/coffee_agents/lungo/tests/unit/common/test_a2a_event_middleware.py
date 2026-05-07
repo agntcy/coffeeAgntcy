@@ -496,11 +496,10 @@ class TestBaggageCarrier:
             detach_workflow_context as detach_workflow_baggage,
         )
 
-        token = attach_workflow_baggage(
-            workflow_instance_id=None, workflow_name=None,
-        )
-        assert token is None
-        detach_workflow_baggage(token)  # must not raise
+        with pytest.raises(ValueError):
+            attach_workflow_baggage(
+                workflow_instance_id=None, workflow_name=None,
+            )
 
     def test_read_trace_context_surfaces_baggage(self, otel_span):
         from common.workflow_context_prop import (
