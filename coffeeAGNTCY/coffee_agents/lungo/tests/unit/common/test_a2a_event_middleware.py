@@ -23,22 +23,6 @@ from a2a.types import Task, TaskState, TaskStatus
 # Local helpers
 # ---------------------------------------------------------------------------
 
-def _make_workflow_identity(name: str = "Test Workflow Alpha"):
-    from common.a2a_event_middleware.workflow_registry import WorkflowIdentity
-
-    return WorkflowIdentity(
-        workflow_name=name,
-        pattern="Supervisor-worker",
-        use_case="Unit Test",
-    )
-
-
-def _resolver_for(name: str = "Test Workflow Alpha"):
-    """Resolver that always returns the same workflow, regardless of tool."""
-    identity = _make_workflow_identity(name)
-    return lambda _tool: identity
-
-
 def _task(metadata: dict | None = None, state: TaskState = TaskState.completed) -> Task:
     return Task(
         context_id="ctx",
@@ -127,7 +111,7 @@ class TestInFlightCleanupSpanProcessor:
         state = InterceptionState(
             correlation_id="correlation://x",
             instance_id="instance://x",
-            workflow_ctx=_make_workflow_identity(),
+            workflow_name="Test Workflow Alpha",
             remote_agent_ids=("remote",),
             transport_label="JSONRPC",
             allocator=RuntimeIdAllocator(),
@@ -181,7 +165,7 @@ class TestInFlightCleanupSpanProcessor:
         caller_card = MagicMock()
         caller_card.name = "Auction Agent"
         interceptor = EventEmittingInterceptor(
-            caller_card=caller_card, workflow_resolver=_resolver_for(),
+            caller_card=caller_card,
         )
 
         remote = agent_card_factory("Brazil Farm")
@@ -270,7 +254,6 @@ class TestEventEmittingInterceptor:
         caller_card.name = caller
         return EventEmittingInterceptor(
             caller_card=caller_card,
-            workflow_resolver=_resolver_for(),
         )
 
     async def test_emits_create_event_with_trace_derived_ids(
@@ -366,31 +349,6 @@ class TestEventEmittingInterceptor:
         assert all(n.operation == Operation.CREATE for n in instance.topology.nodes)
         assert all(e.operation == Operation.CREATE for e in instance.topology.edges)
 
-    async def test_instance_id_is_deterministic_across_retries(
-        self, agent_card_factory, otel_span, patch_emit_events, captured_events,
-    ):
-        """Clearing ``_in_flight`` should still recompute the same instance ID."""
-        from common.a2a_event_middleware import inflight as inflight_mod
-
-        interceptor = self._build(patch_emit_events=patch_emit_events)
-        remote = agent_card_factory("Brazil Farm")
-        ctx = ClientCallContext(state={"tool": "get_farm_yield_inventory"})
-
-        with otel_span(trace_id=0xFEED, span_id=0xBEEF, parent_span_id=0xCAFE):
-            await interceptor.intercept(
-                "send_message", {}, {}, agent_card=remote, context=ctx,
-            )
-            inflight_mod.in_flight.clear()
-            await interceptor.intercept(
-                "send_message", {}, {}, agent_card=remote, context=ctx,
-            )
-
-        inst_id_1 = _first_instance_id(captured_events[0])
-        inst_id_2 = _first_instance_id(captured_events[1])
-        assert inst_id_1 == inst_id_2, (
-            "instance_id must be deterministic across retries within a trace"
-        )
-
     async def test_flag_disabled_skips_sink(
         self, agent_card_factory, otel_span, patch_emit_events, captured_events,
     ):
@@ -430,7 +388,7 @@ class TestEventEmittingInterceptor:
 # ---------------------------------------------------------------------------
 
 class TestEventEmittingConsumer:
-    def _build_pair(self, *, patch_emit_events, resolver=None):
+    def _build_pair(self, *, patch_emit_events):
         from common.a2a_event_middleware.middleware import (
             EventEmittingInterceptor,
             make_event_emitting_consumer,
@@ -439,12 +397,11 @@ class TestEventEmittingConsumer:
         patch_emit_events(True)
         caller = MagicMock()
         caller.name = "Auction Agent"
-        workflow_resolver = resolver or _resolver_for()
         interceptor = EventEmittingInterceptor(
-            caller_card=caller, workflow_resolver=workflow_resolver,
+            caller_card=caller,
         )
         consumer = make_event_emitting_consumer(
-            caller_card=caller, workflow_resolver=workflow_resolver,
+            caller_card=caller,
         )
         return interceptor, consumer
 
@@ -477,13 +434,9 @@ class TestEventEmittingConsumer:
     async def test_drops_event_when_no_state_and_no_default(
         self, agent_card_factory, otel_span, patch_emit_events, captured_events,
     ):
-        """Without in-flight state or default workflow, consumer should drop."""
-        def no_default_resolver(_tool):
-            raise KeyError("no default")
-
+        """Without in-flight state, consumer should drop the event."""
         _interceptor, consumer = self._build_pair(
             patch_emit_events=patch_emit_events,
-            resolver=no_default_resolver,
         )
 
         remote = agent_card_factory("Brazil Farm")
@@ -524,3 +477,200 @@ class TestEventEmittingConsumer:
         }
         assert "Colombia Farm" in labels
         assert "Generic Farm" not in labels
+
+
+# ---------------------------------------------------------------------------
+# Baggage carrier (workflow_instance_id from Workflow API)
+# ---------------------------------------------------------------------------
+
+class TestBaggageCarrier:
+    """Cover the OTel baggage path that lets the API-minted workflow
+    instance id flow supervisor → tool → A2A interceptor.
+
+    These tests hit the real ``opentelemetry.baggage`` API; no mocking.
+    """
+
+    def test_attach_with_no_fields_is_noop(self):
+        from common.workflow_context_prop import (
+            attach_workflow_context as attach_workflow_baggage,
+            detach_workflow_context as detach_workflow_baggage,
+        )
+
+        token = attach_workflow_baggage(
+            workflow_instance_id=None, workflow_name=None,
+        )
+        assert token is None
+        detach_workflow_baggage(token)  # must not raise
+
+    def test_read_trace_context_surfaces_baggage(self, otel_span):
+        from common.workflow_context_prop import (
+            attach_workflow_context as attach_workflow_baggage,
+            detach_workflow_context as detach_workflow_baggage,
+        )
+        from common.a2a_event_middleware.inflight import read_trace_context
+
+        iid = "instance://550e8400-e29b-41d4-a716-446655440000"
+        wf = "InstTestWf"
+        token = attach_workflow_baggage(
+            workflow_instance_id=iid, workflow_name=wf,
+        )
+        try:
+            with otel_span(trace_id=0xABC, span_id=0xDEF, parent_span_id=0xCAFE):
+                tc = read_trace_context()
+        finally:
+            detach_workflow_baggage(token)
+
+        assert tc.workflow.instance_id == iid
+        assert tc.workflow.workflow_name == wf
+
+    def test_read_trace_context_no_baggage_returns_none(self, no_default_baggage, otel_span):
+        from common.a2a_event_middleware.inflight import read_trace_context
+
+        with otel_span(trace_id=0x1, span_id=0x2):
+            tc = read_trace_context()
+        assert tc.workflow.instance_id is None
+        assert tc.workflow.workflow_name is None
+
+    async def test_interceptor_emits_baggage_instance_id(
+        self, agent_card_factory, otel_span, patch_emit_events, captured_events,
+    ):
+        """The instance_id on the emitted event must be exactly the one
+        propagated via baggage — baggage is the single source of truth."""
+        from common.workflow_context_prop import (
+            attach_workflow_context as attach_workflow_baggage,
+            detach_workflow_context as detach_workflow_baggage,
+        )
+        from common.a2a_event_middleware.middleware import EventEmittingInterceptor
+
+        patch_emit_events(True)
+        caller = MagicMock()
+        caller.name = "Auction Agent"
+        interceptor = EventEmittingInterceptor(
+            caller_card=caller,
+        )
+
+        iid = "instance://11111111-2222-4333-8444-555555555555"
+        token = attach_workflow_baggage(
+            workflow_instance_id=iid, workflow_name=None,
+        )
+        try:
+            with otel_span(trace_id=0xFEED, span_id=0xBEEF, parent_span_id=0xCAFE):
+                await interceptor.intercept(
+                    "send_message", {}, {},
+                    agent_card=agent_card_factory("Brazil Farm"),
+                    context=ClientCallContext(state={"tool": "t"}),
+                )
+        finally:
+            detach_workflow_baggage(token)
+
+        [event] = captured_events
+        assert _first_instance_id(event) == iid
+
+    async def test_interceptor_skips_when_baggage_instance_id_invalid(
+        self, agent_card_factory, otel_span, patch_emit_events, captured_events, caplog,
+    ):
+        from common.workflow_context_prop import (
+            attach_workflow_context as attach_workflow_baggage,
+            detach_workflow_context as detach_workflow_baggage,
+        )
+        from common.a2a_event_middleware.middleware import EventEmittingInterceptor
+
+        patch_emit_events(True)
+        caller = MagicMock()
+        caller.name = "Auction Agent"
+        interceptor = EventEmittingInterceptor(
+            caller_card=caller,
+        )
+
+        # Override the autouse default baggage with an invalid instance_id.
+        token = attach_workflow_baggage(
+            workflow_instance_id="not-a-valid-instance-id",
+            workflow_name="Test Workflow Alpha",
+        )
+        try:
+            with caplog.at_level(logging.WARNING, logger="lungo.common.event_middleware"):
+                with otel_span(trace_id=0xAA, span_id=0xBB, parent_span_id=0xCC):
+                    await interceptor.intercept(
+                        "send_message", {}, {},
+                        agent_card=agent_card_factory("Brazil Farm"),
+                        context=ClientCallContext(state={"tool": "t"}),
+                    )
+        finally:
+            detach_workflow_baggage(token)
+
+        assert captured_events == []
+        assert any(
+            "missing or malformed propagated workflow_instance_id" in r.message
+            for r in caplog.records
+        )
+
+    async def test_workflow_name_baggage_unknown_skips_emission(
+        self, agent_card_factory, otel_span, patch_emit_events, captured_events, caplog,
+    ):
+        from common.workflow_context_prop import (
+            attach_workflow_context as attach_workflow_baggage,
+            detach_workflow_context as detach_workflow_baggage,
+        )
+        from common.a2a_event_middleware.middleware import EventEmittingInterceptor
+
+        patch_emit_events(True)
+        caller = MagicMock()
+        caller.name = "Auction Agent"
+        interceptor = EventEmittingInterceptor(
+            caller_card=caller,
+        )
+
+        token = attach_workflow_baggage(
+            workflow_instance_id=None, workflow_name="Some Other Workflow",
+        )
+        try:
+            with caplog.at_level(logging.WARNING, logger="lungo.common.event_middleware"):
+                with otel_span(trace_id=0x9, span_id=0x10, parent_span_id=0x11):
+                    await interceptor.intercept(
+                        "send_message", {}, {},
+                        agent_card=agent_card_factory("Brazil Farm"),
+                        context=ClientCallContext(state={"tool": "t"}),
+                    )
+        finally:
+            detach_workflow_baggage(token)
+
+        assert captured_events == []
+        assert any(
+            "no catalog match for propagated workflow_name" in r.message
+            for r in caplog.records
+        )
+
+    async def test_baggage_workflow_name_selects_emitted_workflow(
+        self, agent_card_factory, otel_span, patch_emit_events,
+        captured_events,
+    ):
+        """The emitted event's workflow key matches the baggage workflow_name."""
+        from common.workflow_context_prop import (
+            attach_workflow_context as attach_workflow_baggage,
+            detach_workflow_context as detach_workflow_baggage,
+        )
+        from common.a2a_event_middleware.middleware import EventEmittingInterceptor
+
+        patch_emit_events(True)
+        caller = MagicMock()
+        caller.name = "Auction Agent"
+        interceptor = EventEmittingInterceptor(
+            caller_card=caller,
+        )
+
+        token = attach_workflow_baggage(
+            workflow_instance_id=None, workflow_name="Test Workflow Beta",
+        )
+        try:
+            with otel_span(trace_id=0x55, span_id=0x66, parent_span_id=0x77):
+                await interceptor.intercept(
+                    "send_message", {}, {},
+                    agent_card=agent_card_factory("Brazil Farm"),
+                    context=ClientCallContext(state={"tool": "t"}),
+                )
+        finally:
+            detach_workflow_baggage(token)
+
+        [event] = captured_events
+        emitted_name = next(iter(event.data.workflows.keys()))
+        assert emitted_name == "Test Workflow Beta"

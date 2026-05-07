@@ -7,11 +7,10 @@ and persists results in session state."""
 import asyncio
 import json
 import logging
-from typing import Awaitable, Callable
 from uuid import uuid4
 
 import httpx
-from a2a.client import ClientConfig, ClientEvent, ClientFactory
+from a2a.client import ClientConfig, ClientFactory
 from a2a.types import (
     AgentCard,
     DataPart,
@@ -38,48 +37,13 @@ from common.a2a_event_middleware import (
     EventEmittingInterceptor,
     make_event_emitting_consumer,
 )
-from common.a2a_event_middleware.workflow_registry import (
-    ToolWorkflowResolver,
-    build_registration_from_decorators,
-    get_workflow_registry,
-    make_tool_call_context,
-    register_workflow,
-    workflow_names,
-)
-
-# Hydrate the JSON-backed catalog and fetch the generated constants.
-# Must come before any @register_workflow decorator below.
-WorkflowNames = workflow_names()
 
 logger = logging.getLogger("lungo.recruiter.supervisor.recruiter_client")
 
 
-EventConsumer = Callable[[ClientEvent | Message, AgentCard], Awaitable[None]]
-
-_workflow_resolver: ToolWorkflowResolver | None = None
-_event_interceptor: EventEmittingInterceptor | None = None
-_event_consumer: EventConsumer | None = None
-
-
-def _get_event_middleware() -> tuple[EventEmittingInterceptor, EventConsumer]:
-    """Lazily build event middleware after workflow decorators are registered."""
-    global _workflow_resolver, _event_interceptor, _event_consumer
-
-    if _event_interceptor is None or _event_consumer is None:
-        _workflow_resolver = ToolWorkflowResolver(
-            registry=get_workflow_registry(),
-            registration=build_registration_from_decorators(),
-        )
-        _event_interceptor = EventEmittingInterceptor(
-            caller_card=RECRUITER_SUPERVISOR_CARD,
-            workflow_resolver=_workflow_resolver.resolve,
-        )
-        _event_consumer = make_event_emitting_consumer(
-            caller_card=RECRUITER_SUPERVISOR_CARD,
-            workflow_resolver=_workflow_resolver.resolve,
-        )
-
-    return _event_interceptor, _event_consumer
+# A2A middleware singletons that capture outbound and inbound calls.
+_event_interceptor = EventEmittingInterceptor(caller_card=RECRUITER_SUPERVISOR_CARD)
+_event_consumer = make_event_emitting_consumer(caller_card=RECRUITER_SUPERVISOR_CARD)
 
 # ---------------------------------------------------------------------------
 # Side-channel queue for streaming A2A events to main.py
@@ -144,7 +108,6 @@ def _extract_parts(parts: list[Part]) -> RecruitmentResponse:
     )
 
 
-@register_workflow(WorkflowNames.ON_DEMAND_DISCOVERY)
 async def recruit_agents(query: str, tool_context: ToolContext) -> str:
     """Search the AGNTCY directory for agents matching a task description.
 
@@ -164,11 +127,10 @@ async def recruit_agents(query: str, tool_context: ToolContext) -> str:
     async with httpx.AsyncClient(timeout=httpx.Timeout(120.0)) as httpx_client:
         config = ClientConfig(httpx_client=httpx_client, streaming=True)
         factory = ClientFactory(config)
-        event_interceptor, event_consumer = _get_event_middleware()
         client = factory.create(
             RECRUITER_AGENT_CARD,
-            interceptors=[event_interceptor],
-            consumers=[event_consumer],
+            interceptors=[_event_interceptor],
+            consumers=[_event_consumer],
         )
 
         message = Message(
@@ -179,8 +141,7 @@ async def recruit_agents(query: str, tool_context: ToolContext) -> str:
 
         response_data = RecruitmentResponse()
 
-        ctx = make_tool_call_context(recruit_agents)
-        async for event in client.send_message(message, context=ctx):
+        async for event in client.send_message(message):
             # Streaming mode yields (Task, UpdateEvent) tuples
             if isinstance(event, tuple) and len(event) == 2:
                 task, update = event
@@ -263,7 +224,6 @@ async def recruit_agents(query: str, tool_context: ToolContext) -> str:
     logger.info("[tool:recruit_agents] Result: %s", result)
     return result
 
-@register_workflow(WorkflowNames.ON_DEMAND_DISCOVERY)
 async def evaluate_agent(
     agent_identifier: str, query: str, tool_context: ToolContext
 ) -> str:
@@ -361,15 +321,13 @@ async def evaluate_agent(
     async with httpx.AsyncClient(timeout=httpx.Timeout(300.0)) as httpx_client:
         config = ClientConfig(httpx_client=httpx_client, streaming=True)
         factory = ClientFactory(config)
-        event_interceptor, event_consumer = _get_event_middleware()
         client = factory.create(
             RECRUITER_AGENT_CARD,
-            interceptors=[event_interceptor],
-            consumers=[event_consumer],
+            interceptors=[_event_interceptor],
+            consumers=[_event_consumer],
         )
 
-        ctx = make_tool_call_context(evaluate_agent)
-        async for event in client.send_message(message, context=ctx):
+        async for event in client.send_message(message):
             if isinstance(event, tuple) and len(event) == 2:
                 task, update = event
 
@@ -467,6 +425,3 @@ async def evaluate_agent(
     result_text = "\n".join(summary_lines)
     logger.info("[tool:evaluate_agent] Result: %s", result_text)
     return result_text
-
-
-# event middleware is initialized lazily via _get_event_middleware()

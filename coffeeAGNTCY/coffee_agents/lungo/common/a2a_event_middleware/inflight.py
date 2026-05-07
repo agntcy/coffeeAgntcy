@@ -11,21 +11,24 @@ To bridge that gap, this module stores per-trace interaction state when
 the interceptor runs, then resolves it from OTel trace_id inside the
 consumer path. It also owns runtime node/edge ID allocation and span-end
 cleanup registration for bounded state lifetime.
+
+Workflow identity (workflow_name + instance_id) is read from
+``common.workflow_context_prop`` rather than owned here; this module is
+purely about OTel-trace-scoped runtime state.
 """
 
 from __future__ import annotations
 
 import asyncio
 import logging
-import uuid as _uuid_mod
 from dataclasses import dataclass
 from typing import Any, Mapping
-from uuid import uuid4
+from uuid import UUID, uuid4
 
 from opentelemetry import trace as _otel_trace
 from opentelemetry.sdk.trace import ReadableSpan, SpanProcessor
 
-from .workflow_registry import WorkflowIdentity
+from common.workflow_context_prop import WorkflowContext, read_workflow_context
 
 logger = logging.getLogger("lungo.common.event_middleware")
 
@@ -64,7 +67,7 @@ class InterceptionState:
 
 	correlation_id: str
 	instance_id: str
-	workflow_ctx: WorkflowIdentity
+	workflow_name: str
 	remote_agent_ids: tuple[str, ...]
 	transport_label: str
 	allocator: RuntimeIdAllocator
@@ -73,11 +76,17 @@ class InterceptionState:
 
 @dataclass(frozen=True)
 class TraceContext:
-	"""OTel identifiers used for event correlation and cleanup ownership."""
+	"""OTel identifiers plus propagated workflow identity.
+
+	Workflow values are independent of span validity: callers may set them
+	before any span exists, so ``workflow`` may carry data even when
+	``trace_id`` is None.
+	"""
 
 	trace_id: int | None
 	span_id: int | None
 	owner_span_id: int | None
+	workflow: WorkflowContext = WorkflowContext()
 
 
 # Shared bridge between interceptor and consumer when callback context is asymmetric.
@@ -103,11 +112,18 @@ def format_span_id(span_id: int) -> str:
 
 
 def read_trace_context() -> TraceContext:
-	"""Read active OTel trace/span IDs and cleanup owner span."""
+	"""Read active OTel trace/span IDs and propagated workflow identity."""
+	wf_ctx = read_workflow_context()
+
 	otel_span = _otel_trace.get_current_span()
 	otel_ctx = otel_span.get_span_context()
 	if not otel_ctx.is_valid:
-		return TraceContext(trace_id=None, span_id=None, owner_span_id=None)
+		return TraceContext(
+			trace_id=None,
+			span_id=None,
+			owner_span_id=None,
+			workflow=wf_ctx,
+		)
 
 	otel_parent = getattr(otel_span, "parent", None)
 	owner_span_id = otel_parent.span_id if otel_parent is not None else otel_ctx.span_id
@@ -115,6 +131,7 @@ def read_trace_context() -> TraceContext:
 		trace_id=otel_ctx.trace_id,
 		span_id=otel_ctx.span_id,
 		owner_span_id=owner_span_id,
+		workflow=wf_ctx,
 	)
 
 
@@ -177,7 +194,7 @@ async def upsert_in_flight_state(
 	owner_span_id: int | None,
 	correlation_id: str,
 	instance_id: str,
-	workflow_ctx: WorkflowIdentity,
+	workflow_name: str,
 	remote_agent_ids: list[str],
 	transport_label: str,
 ) -> RuntimeIdAllocator:
@@ -189,7 +206,7 @@ async def upsert_in_flight_state(
 	state = InterceptionState(
 		correlation_id=correlation_id,
 		instance_id=instance_id,
-		workflow_ctx=workflow_ctx,
+		workflow_name=workflow_name,
 		remote_agent_ids=tuple(remote_agent_ids),
 		transport_label=transport_label,
 		allocator=allocator,
@@ -201,7 +218,7 @@ async def upsert_in_flight_state(
 			state = InterceptionState(
 				correlation_id=existing.correlation_id,
 				instance_id=existing.instance_id,
-				workflow_ctx=existing.workflow_ctx,
+				workflow_name=existing.workflow_name,
 				remote_agent_ids=tuple(
 					dict.fromkeys(list(existing.remote_agent_ids) + list(remote_agent_ids))
 				),
@@ -214,68 +231,42 @@ async def upsert_in_flight_state(
 	return allocator
 
 
-def resolve_interaction_ids(
+def resolve_correlation_id(
 	*,
 	ctx_state: Mapping[str, Any],
-	workflow_ctx: WorkflowIdentity,
 	trace_id: int | None,
-	instance_id_ns: _uuid_mod.UUID,
-) -> tuple[str, str]:
-	"""Resolve correlation_id and instance_id from context or defaults."""
-	correlation_id = (
+) -> str:
+	"""Resolve correlation_id from ctx override, trace_id, or fresh uuid."""
+	return (
 		ctx_state.get("correlation_id")
-		or (f"correlation://{_uuid_mod.UUID(int=trace_id)}" if trace_id else None)
+		or (f"correlation://{UUID(int=trace_id)}" if trace_id else None)
 		or f"correlation://{uuid4()}"
 	)
-	instance_id = (
-		ctx_state.get("instance_id")
-		or (
-			f"instance://{_uuid_mod.uuid5(instance_id_ns, f'{trace_id:032x}::{workflow_ctx.workflow_name}') }"
-			if trace_id
-			else None
-		)
-		or f"instance://{uuid4()}"
-	)
-	return correlation_id, instance_id
 
 
 def resolve_consumer_state(
 	*,
 	trace_id: int | None,
 	remote_agent_id: str,
-	default_workflow_ctx: WorkflowIdentity | None,
 	source: str,
-) -> tuple[str, str | None, WorkflowIdentity, RuntimeIdAllocator] | None:
-	"""Resolve consumer state from in-flight data or fallback defaults."""
-	state = in_flight.get(trace_id) if trace_id is not None else None
-	if state is not None:
-		return (
-			state.correlation_id,
-			state.instance_id,
-			state.workflow_ctx,
-			state.allocator,
-		)
+) -> tuple[str, str, str, RuntimeIdAllocator] | None:
+	"""Resolve consumer state from in-flight data; drop event when missing.
 
-	if default_workflow_ctx is None:
+	Returns (correlation_id, instance_id, workflow_name, allocator) or None.
+	"""
+	state = in_flight.get(trace_id) if trace_id is not None else None
+	if state is None:
 		logger.warning(
-			"event_emitting_consumer [%s]: no in-flight state for trace_id=%s "
-			"and no default workflow; dropping inbound event for %s",
+			"event_emitting_consumer [%s]: no in-flight state for trace_id=%s; "
+			"dropping inbound event for %s",
 			source,
 			format_trace_id(trace_id) if trace_id else "none",
 			remote_agent_id,
 		)
 		return None
-
-	logger.warning(
-		"event_emitting_consumer [%s]: no in-flight state for trace_id=%s "
-		"- minting fresh correlation_id; inbound event will not correlate "
-		"with outbound. Expected only for standalone consumer usage.",
-		source,
-		format_trace_id(trace_id) if trace_id else "none",
-	)
 	return (
-		f"correlation://{uuid4()}",
-		None,
-		default_workflow_ctx,
-		RuntimeIdAllocator(),
+		state.correlation_id,
+		state.instance_id,
+		state.workflow_name,
+		state.allocator,
 	)

@@ -6,15 +6,13 @@ import logging
 import re
 import uuid
 import os
-from typing import Any, Awaitable, Callable, Sequence, AsyncGenerator, Optional, Dict
+from typing import Any, Sequence, Optional, Dict
 from datetime import datetime, timezone
 from uuid import uuid4
 
 from fastapi import HTTPException
 
-from a2a.client import ClientEvent
 from a2a.types import (
-  AgentCard,
   Message,
   MessageSendParams,
   Part,
@@ -35,52 +33,16 @@ from common.a2a_event_middleware import (
     EventEmittingInterceptor,
     make_event_emitting_consumer,
 )
-from common.a2a_event_middleware.workflow_registry import (
-    ToolWorkflowResolver,
-    build_registration_from_decorators,
-    get_workflow_registry,
-    make_tool_call_context,
-    register_workflow,
-    workflow_names,
-)
-
-# Hydrate the JSON-backed catalog and fetch the generated constants.
-# Must come before any @register_workflow decorator below.
-WorkflowNames = workflow_names()
 
 logger = logging.getLogger("lungo.logistics.supervisor.tools")
 
 
-EventConsumer = Callable[[ClientEvent | Message, AgentCard], Awaitable[None]]
-
-_workflow_resolver: ToolWorkflowResolver | None = None
-_event_interceptor: EventEmittingInterceptor | None = None
-_event_consumer: EventConsumer | None = None
-
-
-def _get_event_middleware() -> tuple[EventEmittingInterceptor, EventConsumer]:
-  """Lazily build event middleware after workflow decorators are registered."""
-  global _workflow_resolver, _event_interceptor, _event_consumer
-
-  if _event_interceptor is None or _event_consumer is None:
-    _workflow_resolver = ToolWorkflowResolver(
-      registry=get_workflow_registry(),
-      registration=build_registration_from_decorators(),
-    )
-    _event_interceptor = EventEmittingInterceptor(
-      caller_card=LOGISTICS_SUPERVISOR_CARD,
-      workflow_resolver=_workflow_resolver.resolve,
-    )
-    _event_consumer = make_event_emitting_consumer(
-      caller_card=LOGISTICS_SUPERVISOR_CARD,
-      workflow_resolver=_workflow_resolver.resolve,
-    )
-
-  return _event_interceptor, _event_consumer
+# A2A middleware singletons that capture outbound and inbound calls.
+_event_interceptor = EventEmittingInterceptor(caller_card=LOGISTICS_SUPERVISOR_CARD)
+_event_consumer = make_event_emitting_consumer(caller_card=LOGISTICS_SUPERVISOR_CARD)
 
 
 
-@register_workflow(WorkflowNames.SECURE_GROUP_COMMUNICATION_LOGISTICS_NETWORK)
 async def create_order(farm: str, quantity: int, price: float) -> str:
   """
   Broadcast a coffee order request to shipper, farm, and accountant agents via SLIM.
@@ -103,11 +65,10 @@ async def create_order(farm: str, quantity: int, price: float) -> str:
     return "No farm provided. Please specify a farm."
 
   try:
-    event_interceptor, event_consumer = _get_event_middleware()
     client = await a2a_client_factory.create(
       SHIPPER_CARD,
-      interceptors=[event_interceptor],
-      consumers=[event_consumer],
+      interceptors=[_event_interceptor],
+      consumers=[_event_consumer],
     )
 
     request = SendMessageRequest(
@@ -153,17 +114,12 @@ async def create_order(farm: str, quantity: int, price: float) -> str:
 
   for attempt in range(max_retries):
     try:
-      ctx = make_tool_call_context(
-        create_order,
-        broadcast_agent_cards=list(cards),
-      )
       responses = await client.start_groupchat(
         init_message=request,
         group_channel=f"{uuid4()}",
         participants=recipients,
         end_message="DELIVERED",
         timeout=60,
-        context=ctx,
       )
       # If we get here, the call succeeded
       break
@@ -183,7 +139,6 @@ async def create_order(farm: str, quantity: int, price: float) -> str:
   return formatted
 
 
-@register_workflow(WorkflowNames.SECURE_GROUP_COMMUNICATION_LOGISTICS_NETWORK)
 async def create_order_streaming(farm: str, quantity: int, price: float):
   """
   Broadcast a coffee order request to shipper, farm, and accountant agents via SLIM with streaming support.
@@ -211,11 +166,10 @@ async def create_order_streaming(farm: str, quantity: int, price: float):
   recipients = [get_agent_identifier(card) for card in cards]
 
   try:
-    event_interceptor, event_consumer = _get_event_middleware()
     client = await a2a_client_factory.create(
       SHIPPER_CARD,
-      interceptors=[event_interceptor],
-      consumers=[event_consumer],
+      interceptors=[_event_interceptor],
+      consumers=[_event_consumer],
     ) # slim is set as preferred transport in these cards
     order_id=str(uuid4())
     logger.debug(f"Sending order {order_id} to agent: {farm}")
@@ -264,10 +218,6 @@ async def create_order_streaming(farm: str, quantity: int, price: float):
       participants=recipients,
       end_message="DELIVERED",
       timeout=60,
-      context=make_tool_call_context(
-        create_order_streaming,
-        broadcast_agent_cards=list(cards),
-      ),
     )
     async for response in responses:
       logger.debug("Streaming response: %s", response)

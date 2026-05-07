@@ -11,7 +11,7 @@ state-progress updates.
 from __future__ import annotations
 
 import logging
-import uuid as _uuid_mod
+import re as _re
 from datetime import datetime, timezone
 from time import monotonic
 from typing import Any, Mapping
@@ -46,6 +46,8 @@ from schema.types import (
 	WorkflowInstance,
 )
 
+from schema.types.event import _INSTANCE_ID_REGEX as INSTANCE_ID_REGEX
+
 from .inflight import (
 	RuntimeIdAllocator,
 	current_trace_id,
@@ -53,21 +55,17 @@ from .inflight import (
 	format_trace_id,
 	read_trace_context,
 	resolve_consumer_state,
-	resolve_interaction_ids,
+	resolve_correlation_id,
 	upsert_in_flight_state,
 )
 from .event_sink import WorkflowAPIEventSink
-from .workflow_registry import WorkflowIdentity, WorkflowResolver
+from .workflow_catalog import lookup_workflow
 
 logger = logging.getLogger("lungo.common.event_middleware")
 
 _SCHEMA_VERSION = "1.0.0"
 
-# Stable namespace for deterministic workflow instance IDs.
-# Using uuid5(namespace, "<trace_id_hex>::<workflow_name>") ensures:
-# - same trace/workflow -> same UUID-shaped instance_id
-# - different workflow (or trace) -> different instance_id
-_INSTANCE_ID_NS = _uuid_mod.uuid5(_uuid_mod.NAMESPACE_DNS, "lungo.instance_id")
+_INSTANCE_ID_PATTERN = _re.compile(INSTANCE_ID_REGEX)
 
 
 def _init_starting_topology() -> Topology:
@@ -178,17 +176,6 @@ def _build_metadata(
 	)
 
 
-def _ensure_ids(
-	correlation_id: str | None,
-	instance_id: str | None,
-) -> tuple[str, str]:
-	"""Return provided IDs or mint new correlation/instance IDs."""
-	return (
-		correlation_id or f"correlation://{uuid4()}",
-		instance_id or f"instance://{uuid4()}",
-	)
-
-
 def _collect_remote_agent_ids(
 	ctx_state: Mapping[str, Any],
 	agent_card: AgentCard,
@@ -205,7 +192,7 @@ async def _bind_outbound_interaction_state(
 	owner_span_id: int | None,
 	correlation_id: str,
 	instance_id: str,
-	workflow_ctx: WorkflowIdentity,
+	workflow_name: str,
 	remote_agent_ids: list[str],
 	transport_label: str,
 ) -> RuntimeIdAllocator:
@@ -219,7 +206,7 @@ async def _bind_outbound_interaction_state(
 		owner_span_id=owner_span_id,
 		correlation_id=correlation_id,
 		instance_id=instance_id,
-		workflow_ctx=workflow_ctx,
+		workflow_name=workflow_name,
 		remote_agent_ids=remote_agent_ids,
 		transport_label=transport_label,
 	)
@@ -228,37 +215,48 @@ async def _bind_outbound_interaction_state(
 def _build_event(
 	*,
 	source: str,
-	workflow: WorkflowIdentity,
-	instance_id: str | None,
+	workflow_name: str,
+	instance_id: str,
 	topology: PartialTopology,
+	correlation_id: str,
 	event_type: EventType = EventType.STATE_PROGRESS_UPDATE,
-	correlation_id: str | None = None,
 	correlation_message: str | None = None,
 	trace_id: int | None = None,
 	span_id: int | None = None,
 ) -> Event:
-	"""Build an Event for one workflow-instance topology update."""
-	cid, iid = _ensure_ids(correlation_id, instance_id)
+	"""Build an Event for one workflow-instance topology update.
 
+	Looks up descriptive metadata (pattern + use_case) from the catalog at
+	emission time so callers only need to carry the workflow name.
+	"""
+	metadata = lookup_workflow(workflow_name)
+	if metadata is None:
+		# This should never happen in practice — intercept() validates the
+		# name against the catalog before storing in-flight state. Log loudly
+		# so we don't silently emit malformed events if invariants slip.
+		raise RuntimeError(
+			f"_build_event: workflow_name {workflow_name!r} not in catalog; "
+			"intercept() should have rejected this earlier."
+		)
 	return Event(
 		metadata=_build_metadata(
 			source=source,
 			event_type=event_type,
-			correlation_id=cid,
+			correlation_id=correlation_id,
 			correlation_message=correlation_message,
 			trace_id=trace_id,
 			span_id=span_id,
 		),
 		data=Data(
 			workflows={
-				workflow.workflow_name: Workflow(
-					pattern=workflow.pattern or workflow.workflow_name,
-					use_case=workflow.use_case,
-					name=workflow.workflow_name,
+				metadata.workflow_name: Workflow(
+					pattern=metadata.pattern or metadata.workflow_name,
+					use_case=metadata.use_case,
+					name=metadata.workflow_name,
 					starting_topology=_init_starting_topology(),
 					instances={
-						iid: WorkflowInstance(
-							id=InstanceId(iid),
+						instance_id: WorkflowInstance(
+							id=InstanceId(instance_id),
 							topology=topology,
 						)
 					},
@@ -392,12 +390,10 @@ class EventEmittingInterceptor(ClientCallInterceptor):
 		self,
 		*,
 		caller_card: AgentCard,
-		workflow_resolver: WorkflowResolver,
 		agent_call_graph_layer: int = 0,
 	) -> None:
 		self._caller_agent_id = caller_card.name
 		self._source = _slugify_source(caller_card)
-		self._workflow_resolver = workflow_resolver
 		self._agent_call_graph_layer = agent_call_graph_layer
 
 		if not EMIT_WORKFLOW_EVENTS:
@@ -437,15 +433,6 @@ class EventEmittingInterceptor(ClientCallInterceptor):
 
 		ctx_state = (context.state if context and context.state else {}) or {}
 
-		workflow_ctx = self._workflow_resolver(ctx_state.get("tool"))
-		logger.debug(
-			"workflow_name=%s pattern=%s use_case=%s tool=%s",
-			workflow_ctx.workflow_name,
-			workflow_ctx.pattern,
-			workflow_ctx.use_case,
-			ctx_state.get("tool", "unknown"),
-		)
-
 		trace_ctx = read_trace_context()
 		if trace_ctx.trace_id is None:
 			logger.warning(
@@ -456,11 +443,47 @@ class EventEmittingInterceptor(ClientCallInterceptor):
 				method_name,
 			)
 
-		correlation_id, instance_id = resolve_interaction_ids(
+		# Workflow identity comes from baggage propagated via OTel context
+		# (set at supervisor request entry from the Agentic Workflows API).
+		# Both workflow_name (catalog hit) and workflow_instance_id are
+		# required; if either is missing or malformed, skip emission.
+		propagated_name = trace_ctx.workflow.workflow_name
+		propagated_instance_id = trace_ctx.workflow.instance_id
+
+		metadata = lookup_workflow(propagated_name)
+		if metadata is None:
+			logger.warning(
+				"EventEmittingInterceptor [%s]: no catalog match for propagated "
+				"workflow_name=%r on method '%s'; skipping event emission.",
+				self._source,
+				propagated_name,
+				method_name,
+			)
+			return request_payload, http_kwargs
+
+		if not propagated_instance_id or not _INSTANCE_ID_PATTERN.match(propagated_instance_id):
+			logger.warning(
+				"EventEmittingInterceptor [%s]: missing or malformed propagated "
+				"workflow_instance_id=%r on method '%s'; skipping event emission.",
+				self._source,
+				propagated_instance_id,
+				method_name,
+			)
+			return request_payload, http_kwargs
+
+		workflow_name = metadata.workflow_name
+		instance_id = propagated_instance_id
+		logger.debug(
+			"workflow_name=%s pattern=%s use_case=%s tool=%s",
+			workflow_name,
+			metadata.pattern,
+			metadata.use_case,
+			ctx_state.get("tool", "unknown"),
+		)
+
+		correlation_id = resolve_correlation_id(
 			ctx_state=ctx_state,
-			workflow_ctx=workflow_ctx,
 			trace_id=trace_ctx.trace_id,
-			instance_id_ns=_INSTANCE_ID_NS,
 		)
 
 		# 2) Build/update trace-scoped state and topology fragment.
@@ -473,7 +496,7 @@ class EventEmittingInterceptor(ClientCallInterceptor):
 			owner_span_id=trace_ctx.owner_span_id,
 			correlation_id=correlation_id,
 			instance_id=instance_id,
-			workflow_ctx=workflow_ctx,
+			workflow_name=workflow_name,
 			remote_agent_ids=remote_agent_ids,
 			transport_label=active_transport,
 		)
@@ -505,7 +528,7 @@ class EventEmittingInterceptor(ClientCallInterceptor):
 
 		event = _build_event(
 			source=self._source,
-			workflow=workflow_ctx,
+			workflow_name=workflow_name,
 			instance_id=instance_id,
 			topology=topology,
 			correlation_id=correlation_id,
@@ -518,15 +541,15 @@ class EventEmittingInterceptor(ClientCallInterceptor):
 		if self._event_sink:
 			await self._event_sink.emit(event)
 
-		if logger.isEnabledFor(logging.DEBUG):
-			logger.debug(
-				"EventEmittingInterceptor [%s]: outbound %s -> %s\n%s\nProcessing time: %.3fs",
-				self._source,
-				method_name,
-				", ".join(remote_agent_ids) if remote_agent_ids else "unknown remote",
-				event.model_dump_json(indent=2, exclude_none=True),
-				monotonic() - t_intercept_start,
-			)
+		#if logger.isEnabledFor(logging.DEBUG):
+		logger.info(
+			"EventEmittingInterceptor [%s]: outbound %s -> %s\n%s\nProcessing time: %.3fs",
+			self._source,
+			method_name,
+			", ".join(remote_agent_ids) if remote_agent_ids else "unknown remote",
+			event.model_dump_json(indent=2, exclude_none=True),
+			monotonic() - t_intercept_start,
+		)
 
 		return request_payload, http_kwargs
 
@@ -577,7 +600,6 @@ def _extract_remote_agent_id_from_event(
 def make_event_emitting_consumer(
 	*,
 	caller_card: AgentCard,
-	workflow_resolver: WorkflowResolver,
 	agent_call_graph_layer: int = 0,
 ):
 	"""Create consumer callback that emits inbound topology updates."""
@@ -592,11 +614,6 @@ def make_event_emitting_consumer(
 
 	caller_agent_id = caller_card.name
 	_source = _slugify_source(caller_card)
-	_workflow_resolver = workflow_resolver
-	try:
-		_default_workflow_ctx = _workflow_resolver(None)
-	except KeyError:
-		_default_workflow_ctx = None
 
 	async def event_emitting_consumer(
 		event: ClientEvent | Message,
@@ -623,12 +640,11 @@ def make_event_emitting_consumer(
 		consumer_state = resolve_consumer_state(
 			trace_id=trace_id_int,
 			remote_agent_id=remote_agent_id,
-			default_workflow_ctx=_default_workflow_ctx,
 			source=_source,
 		)
 		if consumer_state is None:
 			return
-		correlation_id, instance_id, workflow_ctx, allocator = consumer_state
+		correlation_id, instance_id, workflow_name, allocator = consumer_state
 
 		response_status: TaskState | None = None
 		task_obj = _extract_task_from_client_event(event)
@@ -648,7 +664,7 @@ def make_event_emitting_consumer(
 
 		event_obj = _build_event(
 			source=_source,
-			workflow=workflow_ctx,
+			workflow_name=workflow_name,
 			instance_id=instance_id,
 			topology=topology,
 			correlation_id=correlation_id,
@@ -661,14 +677,14 @@ def make_event_emitting_consumer(
 		if event_sink:
 			await event_sink.emit(event_obj)
 
-		if logger.isEnabledFor(logging.DEBUG):
-			logger.debug(
-				"event_emitting_consumer [%s]: response from %s (status=%s) (processing time=%.3fs)\n%s",
-				_source,
-				remote_agent_id,
-				status_label,
-				monotonic() - t_receive_start,
-				event_obj.model_dump_json(indent=2, exclude_none=True),
-			)
+		#if logger.isEnabledFor(logging.DEBUG):
+		logger.info(
+			"event_emitting_consumer [%s]: response from %s (status=%s) (processing time=%.3fs)\n%s",
+			_source,
+			remote_agent_id,
+			status_label,
+			monotonic() - t_receive_start,
+			event_obj.model_dump_json(indent=2, exclude_none=True),
+		)
 
 	return event_emitting_consumer

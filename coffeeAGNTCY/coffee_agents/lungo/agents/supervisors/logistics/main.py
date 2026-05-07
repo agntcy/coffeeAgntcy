@@ -18,6 +18,10 @@ from fastapi.responses import StreamingResponse, JSONResponse
 from agntcy_app_sdk.factory import AgntcyFactory
 from ioa_observe.sdk.tracing import session_start
 
+from common.workflow_context_prop import (
+    attach_workflow_context,
+    detach_workflow_context,
+)
 from common.cors import get_cors_allowed_origins
 
 from agents.supervisors.logistics.graph import shared
@@ -81,12 +85,18 @@ app.add_middleware(
 
 class PromptRequest(BaseModel):
   prompt: str
+  workflow_instance_id: str | None = None
+  workflow_name: str | None = None
 
 @app.post("/agent/prompt")
 async def handle_prompt(request: PromptRequest, req: Request):
   logistic_graph = getattr(req.app.state, "logistic_graph", None)
   if logistic_graph is None:
     raise HTTPException(status_code=503, detail="Service initializing")
+  baggage_token = attach_workflow_context(
+    workflow_instance_id=request.workflow_instance_id,
+    workflow_name=request.workflow_name,
+  )
   try:
     with session_start() as session_id:
       timeout_val = int(os.getenv("LOGISTIC_TIMEOUT", "200"))
@@ -103,6 +113,8 @@ async def handle_prompt(request: PromptRequest, req: Request):
     raise HTTPException(status_code=400, detail=str(ve))
   except Exception as e:
     raise HTTPException(status_code=500, detail=f"Operation failed: {str(e)}")
+  finally:
+    detach_workflow_context(baggage_token)
 
 @app.get("/health")
 async def health_check():
@@ -173,12 +185,19 @@ async def handle_stream_prompt(request: PromptRequest, req: Request):
         with session_start() as session_id:  # Start a new tracing session for observability
 
           async def stream_generator():
+              # Baggage stays bound to this generator's OTel context.
+              baggage_token = attach_workflow_context(
+                  workflow_instance_id=request.workflow_instance_id,
+                  workflow_name=request.workflow_name,
+              )
               try:
                   async for chunk in logistic_graph.streaming_serve(request.prompt):
                       yield json.dumps({"response": chunk, "session_id": session_id["executionID"]}) + "\n"
               except Exception as e:
                   logger.error(f"Error in stream: {e}")
                   yield json.dumps({"response": f"Error: {str(e)}"}) + "\n"
+              finally:
+                  detach_workflow_context(baggage_token)
 
           return StreamingResponse(
               stream_generator(),

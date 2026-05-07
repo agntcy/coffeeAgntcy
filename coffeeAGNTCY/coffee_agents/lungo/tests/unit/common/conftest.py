@@ -5,10 +5,9 @@
 
 Resets module-level state that the middleware keeps between calls:
 
-* ``common.a2a_event_middleware._in_flight`` — the per-trace interaction state
-* ``common.workflow_registry._TOOL_WORKFLOW_MAP`` — the decorator-populated map
-* ``common.workflow_registry.get_workflow_registry`` — the ``lru_cache`` around
-  the JSON catalog loader
+* ``common.a2a_event_middleware.inflight.in_flight`` — the per-trace interaction state
+* ``common.a2a_event_middleware.workflow_catalog._load_catalog`` — the
+  ``lru_cache`` around the JSON catalog loader
 
 Provides helpers for constructing minimal ``AgentCard`` stand-ins and a patched
 OTel span context without needing a real tracer.
@@ -47,35 +46,91 @@ def _reset_in_flight() -> Iterator[None]:
 
 
 @pytest.fixture(autouse=True)
-def _reset_tool_workflow_map() -> Iterator[None]:
-    """Clear the decorator-populated tool->workflow map around every test."""
+def _reset_workflow_catalog_cache() -> Iterator[None]:
+    """Invalidate the ``lru_cache`` wrapping the catalog loader."""
     try:
-        from common.a2a_event_middleware import workflow_registry as wr
+        from common.a2a_event_middleware import workflow_catalog as wr
     except Exception:
         yield
         return
-    saved = dict(wr._TOOL_WORKFLOW_MAP)
-    wr._TOOL_WORKFLOW_MAP.clear()
+    wr._load_catalog.cache_clear()
     try:
         yield
     finally:
-        wr._TOOL_WORKFLOW_MAP.clear()
-        wr._TOOL_WORKFLOW_MAP.update(saved)
+        wr._load_catalog.cache_clear()
 
 
 @pytest.fixture(autouse=True)
-def _reset_workflow_registry_cache() -> Iterator[None]:
-    """Invalidate the ``lru_cache`` wrapping ``get_workflow_registry``."""
-    try:
-        from common.a2a_event_middleware import workflow_registry as wr
-    except Exception:
+def _test_workflows_catalog(request, tmp_path_factory, monkeypatch) -> Iterator[Path | None]:
+    """Point the workflow registry at a fixed Alpha/Beta catalog for tests
+    in this directory by default. Tests that need to import a real
+    supervisor module (which registers production workflow names) opt out
+    by requesting the ``real_workflow_catalog`` fixture.
+    """
+    if "real_workflow_catalog" in request.fixturenames:
+        yield None
+        return
+
+    path = tmp_path_factory.mktemp("wf_catalog") / "starting_workflows.json"
+    path.write_text(json.dumps([
+        {
+            "name": "Test Workflow Alpha",
+            "pattern": "Supervisor-worker",
+            "use_case": "Unit Test",
+        },
+        {
+            "name": "Test Workflow Beta",
+            "pattern": "Group-chat",
+            "use_case": "Unit Test",
+        },
+    ]))
+    monkeypatch.setenv("LUNGO_WORKFLOWS_JSON", str(path))
+    yield path
+
+
+@pytest.fixture
+def real_workflow_catalog() -> bool:
+    """Opt-out fixture: when requested, the autouse Alpha/Beta test catalog
+    is skipped so the production starting_workflows.json is loaded."""
+    return True
+
+
+@pytest.fixture
+def no_default_baggage() -> bool:
+    """Opt-out fixture: when requested, the autouse default-baggage scope
+    becomes a no-op for that test."""
+    return True
+
+
+@pytest.fixture(autouse=True)
+def _default_workflow_baggage(request) -> Iterator[None]:
+    """Attach baggage workflow_name='Test Workflow Alpha' for every test.
+
+    The middleware now reads workflow identity exclusively from OTel
+    context, so every test that drives ``EventEmittingInterceptor.intercept``
+    needs baggage set; making it autouse keeps tests focused on what they
+    actually assert. Tests that need a different workflow_name attach a
+    second scope that wins (last-writer-wins on OTel context). Tests that
+    explicitly verify the no-baggage path request the
+    ``no_default_baggage`` fixture.
+    """
+    if "no_default_baggage" in request.fixturenames:
         yield
         return
-    wr.get_workflow_registry.cache_clear()
+
+    from common.workflow_context_prop import (
+        attach_workflow_context,
+        detach_workflow_context,
+    )
+
+    token = attach_workflow_context(
+        workflow_instance_id="instance://00000000-0000-4000-8000-000000000001",
+        workflow_name="Test Workflow Alpha",
+    )
     try:
         yield
     finally:
-        wr.get_workflow_registry.cache_clear()
+        detach_workflow_context(token)
 
 
 # ---------------------------------------------------------------------------
@@ -94,32 +149,6 @@ def patch_emit_events(monkeypatch):
         monkeypatch.setattr(mw, "EMIT_WORKFLOW_EVENTS", enabled, raising=False)
 
     return _set
-
-
-# ---------------------------------------------------------------------------
-# Workflow catalog helper
-# ---------------------------------------------------------------------------
-
-@pytest.fixture
-def workflows_json(tmp_path: Path, monkeypatch) -> Path:
-    """Write a minimal workflow catalog to disk and point
-    ``LUNGO_WORKFLOWS_JSON`` at it. Returns the path so tests can rewrite it.
-    """
-    path = tmp_path / "starting_workflows.json"
-    path.write_text(json.dumps([
-        {
-            "name": "Test Workflow Alpha",
-            "pattern": "Supervisor-worker",
-            "use_case": "Unit Test",
-        },
-        {
-            "name": "Test Workflow Beta",
-            "pattern": "Group-chat",
-            "use_case": "Unit Test",
-        },
-    ]))
-    monkeypatch.setenv("LUNGO_WORKFLOWS_JSON", str(path))
-    return path
 
 
 # ---------------------------------------------------------------------------
