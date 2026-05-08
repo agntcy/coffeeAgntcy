@@ -55,9 +55,10 @@ def build_instantiate_seed_event(
         "data": {
             "workflows": {
                 workflow_name: {
+                    "name": wf.name,
                     "pattern": wf.pattern,
                     "use_case": wf.use_case,
-                    "name": wf.name,
+                    "scenario": wf.scenario,
                     "starting_topology": wf.starting_topology.model_dump(
                         mode="json",
                     ),

@@ -29,9 +29,10 @@ _PATCH_GET_WORKFLOWS = "api.agentic_workflows.router.get_workflows"
 _MINIMAL_WORKFLOWS: dict[str, Workflow] = {
     "InstTestWf": Workflow.model_validate(
         {
+            "name": "InstTestWf",
             "pattern": "test_pattern",
             "use_case": "test_uc",
-            "name": "InstTestWf",
+            "scenario": "test_scenario",
             "starting_topology": {
                 "nodes": [
                     {
