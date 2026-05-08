@@ -25,9 +25,10 @@ _BARE_UUID_PATH = "/agentic-workflows/W/instances/550e8400-e29b-41d4-a716-446655
 
 _WF_W = Workflow.model_validate(
     {
+        "name": "W",
         "pattern": "p",
         "use_case": "u",
-        "name": "W",
+        "scenario": "s",
         "starting_topology": {
             "nodes": [
                 {

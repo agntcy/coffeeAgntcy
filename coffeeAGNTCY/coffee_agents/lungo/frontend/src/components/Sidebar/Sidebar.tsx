@@ -3,8 +3,10 @@
  * SPDX-License-Identifier: Apache-2.0
  **/
 
-import React, { useEffect, useMemo, useState } from "react"
-import { PATTERNS, PatternType } from "@/utils/patternUtils"
+import React, { useCallback, useEffect, useMemo, useState } from "react"
+import { Spinner } from "@open-ui-kit/core"
+import ErrorOutline from "@mui/icons-material/ErrorOutline"
+import { PatternType } from "@/utils/patternUtils"
 import {
   fetchWorkflowSummaries,
   type WorkflowSummary,
@@ -14,9 +16,9 @@ import {
   type PatternNode,
 } from "@/utils/sidebarHierarchy"
 import { logger } from "@/utils/logger"
-import { cn } from "@/utils/cn"
+import CatalogTree from "./CatalogTree"
 import SidebarItem from "./sidebarItem"
-import SidebarDropdown from "./SidebarDropdown"
+import { makePatternKey, makeScenarioKey } from "./sidebarKeys"
 
 interface SidebarProps {
   selectedPattern: PatternType
@@ -24,24 +26,69 @@ interface SidebarProps {
 }
 
 const CATALOG_ENDPOINT = "/agentic-workflows/"
-
-const makePatternKey = (patternName: string) => `pattern:${patternName}`
-const makeUseCaseKey = (patternName: string, useCase: string) =>
-  `pattern:${patternName}|usecase:${useCase}`
+/**
+ * Total number of attempts (one initial request + this many retries) before
+ * the catalog menu fetch is treated as failed. Mirrors common UX patterns
+ * where transient hiccups don't immediately surface an error to the user.
+ */
+const CATALOG_FETCH_MAX_RETRIES = 2
+/** Backoff (ms) between consecutive retry attempts. */
+const CATALOG_FETCH_RETRY_DELAY_MS = 750
 
 /**
- * Initial expansion set: every pattern and every use-case row open, mirroring
- * the previous static sidebar UX where every dropdown was open by default.
+ * Initial expansion set: every pattern and every use-case+scenario row open,
+ * mirroring the previous static sidebar UX where every dropdown was open by
+ * default.
  */
 const buildInitialExpanded = (tree: PatternNode[]): Set<string> => {
   const next = new Set<string>()
   for (const pattern of tree) {
     next.add(makePatternKey(pattern.name))
-    for (const uc of pattern.useCases) {
-      next.add(makeUseCaseKey(pattern.name, uc.useCase))
+    for (const ucs of pattern.useCaseScenarios) {
+      next.add(makeScenarioKey(pattern.name, ucs.useCase, ucs.scenario))
     }
   }
   return next
+}
+
+const sleep = (ms: number, signal: AbortSignal): Promise<void> =>
+  new Promise((resolve, reject) => {
+    if (signal.aborted) {
+      reject(new DOMException("Aborted", "AbortError"))
+      return
+    }
+    const timer = setTimeout(() => {
+      signal.removeEventListener("abort", onAbort)
+      resolve()
+    }, ms)
+    const onAbort = () => {
+      clearTimeout(timer)
+      reject(new DOMException("Aborted", "AbortError"))
+    }
+    signal.addEventListener("abort", onAbort, { once: true })
+  })
+
+/**
+ * Fetch the workflow catalog with a small retry budget so transient network
+ * blips don't immediately surface as an error to the user. Each retry uses
+ * the same `AbortSignal`, so unmount/cleanup short-circuits the loop.
+ */
+const fetchWorkflowSummariesWithRetry = async (
+  signal: AbortSignal,
+): Promise<WorkflowSummary[]> => {
+  let lastError: unknown
+  for (let attempt = 0; attempt <= CATALOG_FETCH_MAX_RETRIES; attempt += 1) {
+    try {
+      return await fetchWorkflowSummaries(signal)
+    } catch (err) {
+      if (err instanceof DOMException && err.name === "AbortError") throw err
+      lastError = err
+      if (attempt < CATALOG_FETCH_MAX_RETRIES) {
+        await sleep(CATALOG_FETCH_RETRY_DELAY_MS, signal)
+      }
+    }
+  }
+  throw lastError
 }
 
 const Sidebar: React.FC<SidebarProps> = ({
@@ -54,10 +101,10 @@ const Sidebar: React.FC<SidebarProps> = ({
 
   useEffect(() => {
     const controller = new AbortController()
-    fetchWorkflowSummaries(controller.signal)
+    setError(null)
+    fetchWorkflowSummariesWithRetry(controller.signal)
       .then((rows) => {
         setSummaries(rows)
-        setError(null)
       })
       .catch((err: unknown) => {
         if (err instanceof DOMException && err.name === "AbortError") return
@@ -77,7 +124,7 @@ const Sidebar: React.FC<SidebarProps> = ({
     setExpanded(buildInitialExpanded(tree))
   }, [tree, summaries])
 
-  const toggle = (key: string) => {
+  const toggle = useCallback((key: string) => {
     setExpanded((prev) => {
       const next = new Set(prev)
       if (next.has(key)) {
@@ -87,7 +134,7 @@ const Sidebar: React.FC<SidebarProps> = ({
       }
       return next
     })
-  }
+  }, [])
 
   return (
     <div className="flex h-full w-64 flex-none flex-col gap-5 border-r border-sidebar-border bg-sidebar-background font-inter lg:w-[320px]">
@@ -99,20 +146,27 @@ const Sidebar: React.FC<SidebarProps> = ({
         </div>
 
         {summaries === null && error === null && (
-          <SidebarItem title="Loading workflows..." className="opacity-60" />
+          <div
+            className="flex w-full items-center gap-3 px-5 py-2"
+            role="status"
+            aria-label="Loading workflows"
+          >
+            <Spinner size={16} thickness={4} />
+            <SidebarItem
+              title="Loading workflows..."
+              className="flex-1 px-0 py-0 opacity-60 hover:bg-transparent"
+            />
+          </div>
         )}
 
         {error !== null && (
-          <>
-            <div className="px-5 py-1 text-xs leading-4 text-sidebar-text opacity-70">
-              Couldn&apos;t load workflows from the catalog API. Showing the
-              built-in menu.
-            </div>
-            <StaticFallbackTree
-              selectedPattern={selectedPattern}
-              onPatternChange={onPatternChange}
-            />
-          </>
+          <div
+            className="flex w-full items-center gap-2 px-5 py-2 text-xs leading-4 text-sidebar-text opacity-80"
+            role="alert"
+          >
+            <ErrorOutline sx={{ fontSize: 16 }} />
+            <span>Menu is unavailable</span>
+          </div>
         )}
 
         {summaries !== null && error === null && (
@@ -126,197 +180,6 @@ const Sidebar: React.FC<SidebarProps> = ({
         )}
       </div>
     </div>
-  )
-}
-
-interface CatalogTreeProps {
-  tree: PatternNode[]
-  expanded: Set<string>
-  onToggle: (key: string) => void
-  selectedPattern: PatternType
-  onPatternChange: (pattern: PatternType) => void
-}
-
-const CatalogTree: React.FC<CatalogTreeProps> = ({
-  tree,
-  expanded,
-  onToggle,
-  selectedPattern,
-  onPatternChange,
-}) => {
-  if (tree.length === 0) {
-    return <SidebarItem title="No workflows available" className="opacity-60" />
-  }
-
-  return (
-    <>
-      {tree.map((pattern) => {
-        const pKey = makePatternKey(pattern.name)
-        return (
-          <SidebarDropdown
-            key={pKey}
-            title={pattern.name}
-            isExpanded={expanded.has(pKey)}
-            onToggle={() => onToggle(pKey)}
-            titleClassName="pl-2"
-          >
-            {pattern.useCases.map((uc) => {
-              const ucKey = makeUseCaseKey(pattern.name, uc.useCase)
-              return (
-                <UseCaseDropdown
-                  key={ucKey}
-                  title={uc.label}
-                  isExpanded={expanded.has(ucKey)}
-                  onToggle={() => onToggle(ucKey)}
-                >
-                  {uc.workflows.map((workflow) => {
-                    const isUnknown = workflow.slug === null
-                    const isSelected =
-                      !isUnknown && selectedPattern === workflow.slug
-                    return (
-                      <SidebarItem
-                        key={workflow.name}
-                        title={workflow.name}
-                        isSelected={isSelected}
-                        onClick={
-                          isUnknown
-                            ? undefined
-                            : () => onPatternChange(workflow.slug!)
-                        }
-                        className={cn(
-                          "pl-10",
-                          isUnknown &&
-                            "pointer-events-none cursor-not-allowed opacity-50",
-                        )}
-                      />
-                    )
-                  })}
-                </UseCaseDropdown>
-              )
-            })}
-          </SidebarDropdown>
-        )
-      })}
-    </>
-  )
-}
-
-interface UseCaseDropdownProps {
-  title: string
-  isExpanded: boolean
-  onToggle: () => void
-  children: React.ReactNode
-}
-
-/**
- * Lightweight nested dropdown for the use-case level. Visually it matches
- * `SidebarDropdown` but indents one step further so the pattern -> use-case
- * relationship reads clearly.
- */
-const UseCaseDropdown: React.FC<UseCaseDropdownProps> = ({
-  title,
-  isExpanded,
-  onToggle,
-  children,
-}) => {
-  return (
-    <div className="flex w-full flex-col items-start p-0">
-      <div className="flex w-full items-start gap-2 bg-sidebar-background py-2 pl-6 pr-5 transition-colors hover:bg-sidebar-item-selected">
-        <span
-          className="flex-1 cursor-pointer font-inter text-sm font-normal leading-5 tracking-[0.25px] text-sidebar-text"
-          onClick={onToggle}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" || e.key === " ") {
-              e.preventDefault()
-              onToggle()
-            }
-          }}
-          role="button"
-          tabIndex={0}
-          aria-expanded={isExpanded}
-        >
-          {title}
-        </span>
-      </div>
-      {isExpanded && <div className="flex w-full flex-col">{children}</div>}
-    </div>
-  )
-}
-
-interface StaticFallbackTreeProps {
-  selectedPattern: PatternType
-  onPatternChange: (pattern: PatternType) => void
-}
-
-/**
- * Fallback tree rendered when the catalog API is unreachable. Mirrors the
- * pre-#540 static sidebar so the app stays usable even if the agentic
- * workflows service is down.
- */
-const StaticFallbackTree: React.FC<StaticFallbackTreeProps> = ({
-  selectedPattern,
-  onPatternChange,
-}) => {
-  const [groupExpanded, setGroupExpanded] = useState(true)
-  const [pubSubExpanded, setPubSubExpanded] = useState(true)
-  const [pubSubStreamExpanded, setPubSubStreamExpanded] = useState(true)
-  const [discoveryExpanded, setDiscoveryExpanded] = useState(true)
-
-  return (
-    <>
-      <SidebarDropdown
-        title="Secure Group Communication"
-        isExpanded={groupExpanded}
-        onToggle={() => setGroupExpanded((v) => !v)}
-        titleClassName="pl-2"
-      >
-        <SidebarItem
-          title="A2A SLIM"
-          isSelected={selectedPattern === PATTERNS.GROUP_COMMUNICATION}
-          onClick={() => onPatternChange(PATTERNS.GROUP_COMMUNICATION)}
-          className="pl-6"
-        />
-      </SidebarDropdown>
-      <SidebarDropdown
-        title="Publish Subscribe"
-        isExpanded={pubSubExpanded}
-        onToggle={() => setPubSubExpanded((v) => !v)}
-        titleClassName="pl-2"
-      >
-        <SidebarItem
-          title="A2A"
-          isSelected={selectedPattern === PATTERNS.PUBLISH_SUBSCRIBE}
-          onClick={() => onPatternChange(PATTERNS.PUBLISH_SUBSCRIBE)}
-          className="pl-6"
-        />
-      </SidebarDropdown>
-      <SidebarDropdown
-        title="Publish Subscribe: Streaming"
-        isExpanded={pubSubStreamExpanded}
-        onToggle={() => setPubSubStreamExpanded((v) => !v)}
-        titleClassName="pl-2"
-      >
-        <SidebarItem
-          title="A2A"
-          isSelected={selectedPattern === PATTERNS.PUBLISH_SUBSCRIBE_STREAMING}
-          onClick={() => onPatternChange(PATTERNS.PUBLISH_SUBSCRIBE_STREAMING)}
-          className="pl-6"
-        />
-      </SidebarDropdown>
-      <SidebarDropdown
-        title="Recruiter"
-        isExpanded={discoveryExpanded}
-        onToggle={() => setDiscoveryExpanded((v) => !v)}
-        titleClassName="pl-2"
-      >
-        <SidebarItem
-          title="A2A HTTP"
-          isSelected={selectedPattern === PATTERNS.ON_DEMAND_DISCOVERY}
-          onClick={() => onPatternChange(PATTERNS.ON_DEMAND_DISCOVERY)}
-          className="pl-6"
-        />
-      </SidebarDropdown>
-    </>
   )
 }
 

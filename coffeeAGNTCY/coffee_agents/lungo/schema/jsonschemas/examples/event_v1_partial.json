@@ -12,9 +12,10 @@
   "data": {
     "workflows": {
       "recruiter": {
+        "name": "Recruiter",
         "pattern": "recruiter_pattern",
         "use_case": "hiring",
-        "name": "Recruiter",
+        "scenario": "agent recruitment",
         "starting_topology": {
           "nodes": [
             {
