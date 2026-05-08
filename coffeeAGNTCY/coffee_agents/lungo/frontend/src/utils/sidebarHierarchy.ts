@@ -66,7 +66,12 @@ const makeUseCaseScenarioGroupKey = (
   scenario: string,
 ): string => `${useCase}|${scenario}`
 
-interface GroupBucket {
+/**
+ * Internal accumulator used while grouping workflow rows by their
+ * `(use_case, scenario)` composite key. One bucket holds all the workflows
+ * that share that pair within a given pattern.
+ */
+interface UseCaseScenarioBucket {
   useCase: string
   scenario: string
   workflows: WorkflowNode[]
@@ -83,12 +88,12 @@ interface GroupBucket {
 export const groupWorkflowsByPatternAndUseCase = (
   summaries: readonly WorkflowSummary[],
 ): PatternNode[] => {
-  const byPattern = new Map<string, Map<string, GroupBucket>>()
+  const byPattern = new Map<string, Map<string, UseCaseScenarioBucket>>()
 
   for (const summary of summaries) {
     let scenarioMap = byPattern.get(summary.pattern)
     if (scenarioMap === undefined) {
-      scenarioMap = new Map<string, GroupBucket>()
+      scenarioMap = new Map<string, UseCaseScenarioBucket>()
       byPattern.set(summary.pattern, scenarioMap)
     }
     const groupKey = makeUseCaseScenarioGroupKey(
