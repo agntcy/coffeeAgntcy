@@ -15,12 +15,13 @@ import type { CustomNodeData } from "./Graph/Elements/types"
 import { useMainAreaDiscoveryGraph } from "./useMainAreaDiscoveryGraph"
 import { useMainAreaGraphEffects } from "./useMainAreaGraphEffects"
 import { useWorkflowGraphFromAgenticApi } from "@/hooks/useWorkflowGraphFromAgenticApi"
-import { getAgenticWorkflowNameForPattern } from "@/utils/agenticWorkflowCatalog"
+import type { WorkflowSummary } from "@/utils/agenticWorkflowsApi"
 import type { GraphConfig } from "@/utils/graphConfigs"
 import { graphConfigFromNodes } from "@/utils/graphConfigFromNodes"
 
 export interface MainAreaProps {
   pattern: PatternType
+  selectedWorkflowSummary: WorkflowSummary | null
   buttonClicked: boolean
   setButtonClicked: (clicked: boolean) => void
   aiReplied: boolean
@@ -40,6 +41,7 @@ const HIGHLIGHT = { ON: true, OFF: false } as const
 
 export function useMainArea({
   pattern,
+  selectedWorkflowSummary,
   buttonClicked,
   setButtonClicked,
   aiReplied,
@@ -95,6 +97,7 @@ export function useMainArea({
 
   const { agenticMode } = useWorkflowGraphFromAgenticApi({
     pattern,
+    selectedWorkflowSummary,
     setNodes,
     setEdges,
     handleOpenIdentityModal,
@@ -231,9 +234,10 @@ export function useMainArea({
 
   useEffect(() => {
     if (!onLiveGraphConfig) return
-    const title = agenticMode
-      ? (getAgenticWorkflowNameForPattern(pattern) ?? config.title)
-      : config.title
+    const title =
+      agenticMode && selectedWorkflowSummary
+        ? `${selectedWorkflowSummary.name} — ${selectedWorkflowSummary.scenario}`
+        : config.title
     onLiveGraphConfig(
       graphConfigFromNodes(
         title,
@@ -246,6 +250,7 @@ export function useMainArea({
     onLiveGraphConfig,
     agenticMode,
     pattern,
+    selectedWorkflowSummary,
     config.title,
     config.animationSequence,
     nodes,

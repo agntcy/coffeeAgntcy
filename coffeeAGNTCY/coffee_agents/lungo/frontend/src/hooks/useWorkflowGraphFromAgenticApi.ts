@@ -16,10 +16,10 @@ import {
 import type { EventV1Wire } from "@/api/agenticWorkflowsTypes"
 import type { CustomNodeData } from "@/components/MainArea/Graph/Elements/types"
 import {
-  getAgenticWorkflowNameForPattern,
-  patternUsesAgenticWorkflowGraph,
-} from "@/utils/agenticWorkflowCatalog"
-import { getAgenticWorkflowsApiUrl } from "@/utils/agenticWorkflowsApi"
+  getAgenticWorkflowsApiUrl,
+  mapWorkflowNameToSlug,
+  type WorkflowSummary,
+} from "@/utils/agenticWorkflowsApi"
 import { logger } from "@/utils/logger"
 import type { PatternType } from "@/utils/patternUtils"
 import { topologyWireToReactFlow } from "@/utils/topologyToReactFlow"
@@ -44,6 +44,7 @@ function mergeDiscoveryEdges(base: Edge[], prev: Edge[]): Edge[] {
 
 export interface UseWorkflowGraphFromAgenticApiParams {
   pattern: PatternType
+  selectedWorkflowSummary: WorkflowSummary | null
   setNodes: React.Dispatch<React.SetStateAction<Node[]>>
   setEdges: React.Dispatch<React.SetStateAction<Edge[]>>
   handleOpenIdentityModal: (
@@ -68,6 +69,7 @@ export interface UseWorkflowGraphFromAgenticApiResult {
 
 export function useWorkflowGraphFromAgenticApi({
   pattern,
+  selectedWorkflowSummary,
   setNodes,
   setEdges,
   handleOpenIdentityModal,
@@ -75,9 +77,11 @@ export function useWorkflowGraphFromAgenticApi({
   onTopologyApplied,
 }: UseWorkflowGraphFromAgenticApiParams): UseWorkflowGraphFromAgenticApiResult {
   const baseUrl = getAgenticWorkflowsApiUrl().replace(/\/$/, "")
-  const workflowName = getAgenticWorkflowNameForPattern(pattern)
+  const workflowName = selectedWorkflowSummary?.name ?? null
   const agenticMode = Boolean(
-    workflowName && patternUsesAgenticWorkflowGraph(pattern),
+    selectedWorkflowSummary &&
+      workflowName &&
+      mapWorkflowNameToSlug(workflowName) === pattern,
   )
 
   const [agenticError, setAgenticError] = useState<string | null>(null)
@@ -260,6 +264,7 @@ export function useWorkflowGraphFromAgenticApi({
     agenticMode,
     baseUrl,
     workflowName,
+    selectedWorkflowSummary,
     applyInstanceTopology,
     pattern,
     attachHandlers,
