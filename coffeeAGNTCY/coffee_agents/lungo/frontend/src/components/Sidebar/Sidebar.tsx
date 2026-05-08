@@ -17,6 +17,7 @@ import {
 } from "@/utils/sidebarHierarchy"
 import { logger } from "@/utils/logger"
 import CatalogTree from "./CatalogTree"
+import SidebarItem from "./sidebarItem"
 import { makePatternKey, makeScenarioKey } from "./sidebarKeys"
 
 interface SidebarProps {
@@ -146,11 +147,15 @@ const Sidebar: React.FC<SidebarProps> = ({
 
         {summaries === null && error === null && (
           <div
-            className="flex w-full items-center justify-center py-4"
+            className="flex w-full items-center gap-3 px-5 py-2"
             role="status"
             aria-label="Loading workflows"
           >
-            <Spinner size={20} thickness={4} />
+            <Spinner size={16} thickness={4} />
+            <SidebarItem
+              title="Loading workflows..."
+              className="flex-1 px-0 py-0 opacity-60 hover:bg-transparent"
+            />
           </div>
         )}
 
