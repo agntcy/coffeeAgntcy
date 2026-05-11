@@ -253,6 +253,7 @@ def _build_event(
 				metadata.workflow_name: Workflow(
 					pattern=metadata.pattern or metadata.workflow_name,
 					use_case=metadata.use_case,
+					scenario=metadata.scenario,
 					name=metadata.workflow_name,
 					starting_topology=_init_starting_topology(),
 					instances={

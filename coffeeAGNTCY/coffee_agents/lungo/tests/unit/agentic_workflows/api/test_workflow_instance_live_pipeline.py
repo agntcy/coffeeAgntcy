@@ -59,6 +59,7 @@ def test_agentic_workflows_catalog_instantiate_list_state_events_sse() -> None:
             detail = dr.json()
             pattern = detail["pattern"]
             use_case = detail["use_case"]
+            scenario = detail.get("scenario") or use_case
             wf_display_name = detail["name"]
 
             ir = hc.post(f"/agentic-workflows/{wf_name}/")
@@ -91,6 +92,7 @@ def test_agentic_workflows_catalog_instantiate_list_state_events_sse() -> None:
             event_id,
             pattern=pattern,
             use_case=use_case,
+            scenario=scenario,
             workflow_display_name=wf_display_name,
         )
 

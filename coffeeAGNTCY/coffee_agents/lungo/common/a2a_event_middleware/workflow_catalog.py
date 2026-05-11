@@ -28,6 +28,7 @@ class WorkflowMetadata:
 	workflow_name: str
 	pattern: str
 	use_case: str
+	scenario: str
 
 
 _DEFAULT_WORKFLOWS_JSON = (
@@ -68,6 +69,7 @@ def _load_catalog() -> dict[str, WorkflowMetadata]:
 		name = entry.get("name")
 		pattern = entry.get("pattern")
 		use_case = entry.get("use_case")
+		scenario = entry.get("scenario")
 		if not (
 			isinstance(name, str)
 			and isinstance(pattern, str)
@@ -78,6 +80,8 @@ def _load_catalog() -> dict[str, WorkflowMetadata]:
 				idx,
 			)
 			continue
+		if not isinstance(scenario, str) or not scenario.strip():
+			scenario = use_case
 		if name in catalog:
 			logger.warning(
 				"Duplicate workflow name %r at index %d; overwriting previous entry",
@@ -88,6 +92,7 @@ def _load_catalog() -> dict[str, WorkflowMetadata]:
 			workflow_name=name,
 			pattern=pattern,
 			use_case=use_case,
+			scenario=scenario,
 		)
 
 	if not catalog:

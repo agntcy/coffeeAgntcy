@@ -28,6 +28,7 @@ class TestLookupWorkflow:
         assert wf.workflow_name == "Test Workflow Alpha"
         assert wf.pattern == "Supervisor-worker"
         assert wf.use_case == "Unit Test"
+        assert wf.scenario == "Unit Test"
 
     def test_returns_none_for_unknown_name(self):
         assert wc.lookup_workflow("Nonexistent") is None
@@ -61,4 +62,5 @@ class TestLookupWorkflow:
         good = wc.lookup_workflow("Good Workflow")
         assert good is not None
         assert good.pattern == "Supervisor-worker"
+        assert good.scenario == "Unit Test"
         assert wc.lookup_workflow("missing pattern") is None
