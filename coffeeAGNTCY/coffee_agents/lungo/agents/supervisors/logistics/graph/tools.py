@@ -6,7 +6,7 @@ import logging
 import re
 import uuid
 import os
-from typing import Any, Sequence, AsyncGenerator, Optional, Dict
+from typing import Any, Sequence, Optional, Dict
 from datetime import datetime, timezone
 from uuid import uuid4
 
@@ -27,9 +27,19 @@ from agents.logistics.farm.card import AGENT_CARD as TATOOINE_CARD
 from agents.logistics.shipper.card import AGENT_CARD as SHIPPER_CARD
 from agents.logistics.helpdesk.card import AGENT_CARD as HELPDESK_CARD
 from agents.supervisors.logistics.graph.shared import a2a_client_factory
+from agents.supervisors.logistics.card import LOGISTICS_SUPERVISOR_CARD
 from common.logistics_states import LogisticsStatus
+from common.a2a_event_middleware import (
+    EventEmittingInterceptor,
+    make_event_emitting_consumer,
+)
 
 logger = logging.getLogger("lungo.logistics.supervisor.tools")
+
+
+# A2A middleware singletons that capture outbound and inbound calls.
+_event_interceptor = EventEmittingInterceptor(caller_card=LOGISTICS_SUPERVISOR_CARD)
+_event_consumer = make_event_emitting_consumer(caller_card=LOGISTICS_SUPERVISOR_CARD)
 
 
 
@@ -55,7 +65,11 @@ async def create_order(farm: str, quantity: int, price: float) -> str:
     return "No farm provided. Please specify a farm."
 
   try:
-    client = await a2a_client_factory.create(SHIPPER_CARD)
+    client = await a2a_client_factory.create(
+      SHIPPER_CARD,
+      interceptors=[_event_interceptor],
+      consumers=[_event_consumer],
+    )
 
     request = SendMessageRequest(
       id=str(uuid4()),
@@ -152,7 +166,11 @@ async def create_order_streaming(farm: str, quantity: int, price: float):
   recipients = [get_agent_identifier(card) for card in cards]
 
   try:
-    client = await a2a_client_factory.create(SHIPPER_CARD) # slim is set as preferred transport in these cards
+    client = await a2a_client_factory.create(
+      SHIPPER_CARD,
+      interceptors=[_event_interceptor],
+      consumers=[_event_consumer],
+    ) # slim is set as preferred transport in these cards
     order_id=str(uuid4())
     logger.debug(f"Sending order {order_id} to agent: {farm}")
 

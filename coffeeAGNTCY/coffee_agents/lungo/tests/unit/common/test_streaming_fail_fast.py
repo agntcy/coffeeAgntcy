@@ -57,7 +57,7 @@ def _restore_modules(saved):
   ],
   ids=["auction", "logistics", "recruiter"],
 )
-def test_supervisor_raises_when_llm_does_not_support_streaming(monkeypatch, import_module, expected_agent_name):
+def test_supervisor_raises_when_llm_does_not_support_streaming(monkeypatch, real_workflow_catalog, import_module, expected_agent_name):
   """With ENSURE_STREAMING_LLM=true, supervisor startup fails when get_model_info says no streaming."""
   _ensure_root_on_path()
   import config.config as config_mod

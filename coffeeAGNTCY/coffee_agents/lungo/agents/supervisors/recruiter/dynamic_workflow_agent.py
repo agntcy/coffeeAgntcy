@@ -28,6 +28,10 @@ from agents.supervisors.recruiter.models import (
     AgentProtocol,
     AgentRecord,
 )
+from agents.supervisors.recruiter.recruiter_client import (
+    _event_consumer,
+    _event_interceptor,
+)
 from agents.supervisors.recruiter.shared import a2a_client_factory
 
 logger = logging.getLogger("lungo.recruiter.supervisor.dynamic_workflow")
@@ -62,7 +66,11 @@ class DynamicWorkflowAgent(BaseAgent):
         )
 
         # negotiate and create the client based on the card's preferred transport
-        client = await a2a_client_factory.create(card)
+        client = await a2a_client_factory.create(
+            card,
+            interceptors=[_event_interceptor],
+            consumers=[_event_consumer],
+        )
 
         try:
             result_text = None

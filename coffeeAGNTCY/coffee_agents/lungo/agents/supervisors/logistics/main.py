@@ -34,6 +34,10 @@ load_dotenv()
 shared.set_factory(AgntcyFactory("lungo.logistics_supervisor", enable_tracing=not OTEL_SDK_DISABLED))
 require_streaming_capability("logistics_supervisor", LLM_MODEL)
 
+if not OTEL_SDK_DISABLED:
+    from common.a2a_event_middleware.inflight import register_cleanup_span_processor
+    register_cleanup_span_processor()
+
 
 def _build_graph_sync():
     from agents.supervisors.logistics.graph.graph import LogisticGraph

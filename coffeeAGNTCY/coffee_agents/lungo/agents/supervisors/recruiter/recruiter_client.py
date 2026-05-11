@@ -12,6 +12,7 @@ from uuid import uuid4
 import httpx
 from a2a.client import ClientConfig, ClientFactory
 from a2a.types import (
+    AgentCard,
     DataPart,
     Message,
     Part,
@@ -23,6 +24,7 @@ from a2a.types import (
 )
 from google.adk.tools.tool_context import ToolContext
 
+from agents.supervisors.recruiter.card import RECRUITER_SUPERVISOR_CARD
 from agents.supervisors.recruiter.models import (
     STATE_KEY_EVALUATION_RESULTS,
     STATE_KEY_RECRUITED_AGENTS,
@@ -31,8 +33,17 @@ from agents.supervisors.recruiter.models import (
 from agents.supervisors.recruiter.recruiter_service_card import (
     RECRUITER_AGENT_CARD,
 )
+from common.a2a_event_middleware import (
+    EventEmittingInterceptor,
+    make_event_emitting_consumer,
+)
 
 logger = logging.getLogger("lungo.recruiter.supervisor.recruiter_client")
+
+
+# A2A middleware singletons that capture outbound and inbound calls.
+_event_interceptor = EventEmittingInterceptor(caller_card=RECRUITER_SUPERVISOR_CARD)
+_event_consumer = make_event_emitting_consumer(caller_card=RECRUITER_SUPERVISOR_CARD)
 
 # ---------------------------------------------------------------------------
 # Side-channel queue for streaming A2A events to main.py
@@ -116,7 +127,11 @@ async def recruit_agents(query: str, tool_context: ToolContext) -> str:
     async with httpx.AsyncClient(timeout=httpx.Timeout(120.0)) as httpx_client:
         config = ClientConfig(httpx_client=httpx_client, streaming=True)
         factory = ClientFactory(config)
-        client = factory.create(RECRUITER_AGENT_CARD)
+        client = factory.create(
+            RECRUITER_AGENT_CARD,
+            interceptors=[_event_interceptor],
+            consumers=[_event_consumer],
+        )
 
         message = Message(
             role=Role.user,
@@ -306,7 +321,11 @@ async def evaluate_agent(
     async with httpx.AsyncClient(timeout=httpx.Timeout(300.0)) as httpx_client:
         config = ClientConfig(httpx_client=httpx_client, streaming=True)
         factory = ClientFactory(config)
-        client = factory.create(RECRUITER_AGENT_CARD)
+        client = factory.create(
+            RECRUITER_AGENT_CARD,
+            interceptors=[_event_interceptor],
+            consumers=[_event_consumer],
+        )
 
         async for event in client.send_message(message):
             if isinstance(event, tuple) and len(event) == 2:
