@@ -18,6 +18,7 @@ import { useWorkflowGraphFromAgenticApi } from "@/hooks/useWorkflowGraphFromAgen
 import type { WorkflowSummary } from "@/utils/agenticWorkflowsApi"
 import type { GraphConfig } from "@/utils/graphConfigs"
 import { graphConfigFromNodes } from "@/utils/graphConfigFromNodes"
+import { logger } from "@/utils/logger"
 
 export interface MainAreaProps {
   pattern: PatternType
@@ -95,7 +96,7 @@ export function useMainArea({
   const [edges, setEdges, onEdgesChange] = useEdgesState(config.edges)
   const animationLock = useRef<boolean>(false)
 
-  const { agenticMode } = useWorkflowGraphFromAgenticApi({
+  const { agenticMode, agenticError } = useWorkflowGraphFromAgenticApi({
     pattern,
     selectedWorkflowSummary,
     setNodes,
@@ -108,6 +109,11 @@ export function useMainArea({
       }, 200)
     },
   })
+
+  useEffect(() => {
+    if (!agenticError) return
+    logger.error("agentic-workflows/graph-session", { detail: agenticError })
+  }, [agenticError])
 
   useMainAreaDiscoveryGraph({
     pattern,

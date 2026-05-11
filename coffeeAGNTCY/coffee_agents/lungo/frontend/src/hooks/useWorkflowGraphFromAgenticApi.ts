@@ -191,7 +191,8 @@ export function useWorkflowGraphFromAgenticApi({
   }, [refetchAndApplyTopology])
 
   useEffect(() => {
-    if (!agenticMode || !baseUrl || !workflowName) {
+    const catalogWorkflowName = selectedWorkflowSummary?.name
+    if (!agenticMode || !baseUrl || !catalogWorkflowName) {
       clearSession()
       setAgenticError(null)
       return
@@ -207,13 +208,13 @@ export function useWorkflowGraphFromAgenticApi({
       try {
         const { workflow_instance_id: instanceId } = await instantiateWorkflow(
           client,
-          workflowName,
+          catalogWorkflowName,
         )
         if (cancelled) return
         const pathUuid = instanceIdToPathUuid(instanceId)
         const inst = await getWorkflowInstanceState(
           client,
-          workflowName,
+          catalogWorkflowName,
           pathUuid,
           true,
         )
@@ -223,7 +224,7 @@ export function useWorkflowGraphFromAgenticApi({
         const session: Session = {
           client,
           baseUrl,
-          workflowName,
+          workflowName: catalogWorkflowName,
           instanceId,
           closeSse: null,
           debounceTimer: null,
@@ -234,10 +235,11 @@ export function useWorkflowGraphFromAgenticApi({
 
         const close = subscribeWorkflowInstanceSse(
           baseUrl,
-          workflowName,
+          catalogWorkflowName,
           pathUuid,
           (ev: EventV1Wire) => {
-            if (!eventTouchesInstance(ev, workflowName, instanceId)) return
+            if (!eventTouchesInstance(ev, catalogWorkflowName, instanceId))
+              return
             scheduleTopologyRefetch()
           },
           (err) => {
@@ -263,8 +265,7 @@ export function useWorkflowGraphFromAgenticApi({
   }, [
     agenticMode,
     baseUrl,
-    workflowName,
-    selectedWorkflowSummary,
+    selectedWorkflowSummary?.name,
     applyInstanceTopology,
     pattern,
     attachHandlers,

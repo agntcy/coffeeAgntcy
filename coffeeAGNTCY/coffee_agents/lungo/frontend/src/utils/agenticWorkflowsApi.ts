@@ -8,6 +8,11 @@
  *
  * Maps catalog `WorkflowSummary.name` to Lungo `PatternType` for chat/graph
  * routing until the API exposes an explicit slug aligned with stored workflow fields.
+ *
+ * Known limitation: `WORKFLOW_NAME_TO_PATTERN_SLUG` must stay aligned with backend
+ * catalog display names; drift turns agentic graph mode off for a workflow with no
+ * compile-time guard here. Replacing this map with an API-provided slug is deferred
+ * until catalog/schema work lands and the API exposes that slug.
  */
 
 import { env } from "@/utils/env"

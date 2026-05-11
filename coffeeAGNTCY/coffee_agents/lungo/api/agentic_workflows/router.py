@@ -375,6 +375,10 @@ def create_agentic_workflows_router() -> APIRouter:
         ],
     ) -> StreamingResponse:
         """GET SSE stream; each message is one ``data:`` line of compact ``event_v1`` JSON."""
+        if workflow_name not in get_workflows():
+            raise HTTPException(
+                status_code=404, detail=f"Workflow not found: {workflow_name}"
+            )
         store = _workflow_instance_store(request)
         canonical_id = _canonical_instance_uri(workflow_instance_id)
         queue: asyncio.Queue[str] = asyncio.Queue(
