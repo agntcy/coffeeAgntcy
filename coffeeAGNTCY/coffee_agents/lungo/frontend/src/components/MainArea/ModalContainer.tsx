@@ -4,7 +4,10 @@
  **/
 
 import React from "react"
-import IdentityModal from "./Graph/Identity/IdentityModal"
+import InfoOutlined from "@mui/icons-material/InfoOutlined"
+import { Box } from "@open-ui-kit/core"
+import { IconButtonDropdown } from "@/components/IconButtonDropdown"
+import IdentityDetailsDropdown from "./Graph/Identity/IdentityDetailsDropdown"
 import BadgeDetailsModal from "./Graph/Identity/BadgeDetailsModal"
 import PolicyDetailsModal from "./Graph/Identity/PolicyDetailsModal"
 import type { ModalType, ModalNodeData, ModalPosition } from "@/types/modal"
@@ -27,27 +30,55 @@ const ModalContainer: React.FC<ModalContainerProps> = ({
   onShowBadgeDetails,
   onShowPolicyDetails,
 }) => {
+  const isMcpServer = activeNodeData?.isMcpServer
+
   return (
     <>
-      <IdentityModal
-        isOpen={activeModal === "identity"}
-        onClose={onClose}
-        onShowBadgeDetails={onShowBadgeDetails}
-        onShowPolicyDetails={onShowPolicyDetails}
-        nodeName={activeNodeData?.label1 || ""}
-        position={modalPosition}
-        activeModal={activeModal}
-        nodeData={activeNodeData ?? undefined}
-        isMcpServer={activeNodeData?.isMcpServer}
-      />
+      {activeModal === "identity" && activeNodeData ? (
+        <Box
+          sx={{
+            position: "fixed",
+            left: modalPosition.x,
+            top: modalPosition.y,
+            zIndex: (theme) => theme.zIndex.modal,
+            pointerEvents: "auto",
+            ...(isMcpServer ? {} : { transform: "translateX(-50%)" }),
+          }}
+        >
+          <IconButtonDropdown
+            ariaLabel="Agent identity"
+            open
+            onOpenChange={(next) => {
+              if (!next) onClose()
+            }}
+            trigger={{
+              kind: "iconButton",
+              icon: <InfoOutlined fontSize="small" />,
+              iconButtonProps: { size: "small", color: "inherit" },
+            }}
+            closeOnContentClick={false}
+            menuProps={{
+              slotProps: {
+                paper: {
+                  sx: { minWidth: 260, maxWidth: 360, padding: 0 },
+                },
+              },
+            }}
+          >
+            <IdentityDetailsDropdown
+              nodeData={activeNodeData}
+              onShowBadgeDetails={onShowBadgeDetails}
+              onShowPolicyDetails={onShowPolicyDetails}
+            />
+          </IconButtonDropdown>
+        </Box>
+      ) : null}
 
       <BadgeDetailsModal
         isOpen={activeModal === "badge"}
         onClose={onClose}
         nodeName={activeNodeData?.label1 || ""}
-        position={modalPosition}
         nodeData={(activeNodeData ?? undefined) as CustomNodeData}
-        isMcpServer={activeNodeData?.isMcpServer}
       />
 
       <PolicyDetailsModal
@@ -55,8 +86,6 @@ const ModalContainer: React.FC<ModalContainerProps> = ({
         onClose={onClose}
         nodeData={(activeNodeData ?? undefined) as CustomNodeData}
         nodeName={activeNodeData?.label1 || ""}
-        position={modalPosition}
-        isMcpServer={activeNodeData?.isMcpServer}
       />
     </>
   )
