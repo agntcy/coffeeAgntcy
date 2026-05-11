@@ -4,13 +4,12 @@
  **/
 
 import React, { useState, useEffect, useCallback, useRef } from "react"
-import ExpandMore from "@mui/icons-material/ExpandMore"
-import ExpandLess from "@mui/icons-material/ExpandLess"
 import CheckCircleIcon from "@mui/icons-material/CheckCircle"
-import { Box, IconButton, Stack, Typography } from "@open-ui-kit/core"
+import { Box, Stack, Typography } from "@open-ui-kit/core"
 import { ChatAgentAvatar } from "../ChatAvatarCircle"
 import { FeedSpinnerRow } from "../FeedSpinnerRow"
 import { FeedStatusLine } from "../FeedStatusLine"
+import { FeedCollapseButton } from "./FeedCollapseButton"
 import type {
   RecruiterStreamingFeedProps,
   RecruiterStreamingEvent,
@@ -28,12 +27,8 @@ const RecruiterStreamingFeed: React.FC<RecruiterStreamingFeedProps> = ({
   const [isExpanded, setIsExpanded] = useState(true)
   const hasAutoCollapsedRef = useRef(false)
 
-  const handleExpand = useCallback(() => {
-    setIsExpanded(true)
-  }, [])
-
-  const handleCollapse = useCallback(() => {
-    setIsExpanded(false)
+  const toggleDetailsExpanded = useCallback(() => {
+    setIsExpanded((v) => !v)
   }, [])
 
   // Auto-expand when a new prompt arrives and reset auto-collapse flag
@@ -114,103 +109,62 @@ const RecruiterStreamingFeed: React.FC<RecruiterStreamingFeedProps> = ({
           <FeedSpinnerRow mt={3} />
         ) : null}
 
-        {isComplete && !isExpanded && (
-          <Box
-            onClick={handleExpand}
-            sx={{
-              mt: 1,
-              display: "flex",
-              width: "100%",
-              cursor: "pointer",
-              flexDirection: "row",
-              alignItems: "center",
-              gap: 0.5,
-              "&:hover": { opacity: 0.75 },
-            }}
+        {isExpanded && (
+          <Stack
+            spacing={3}
+            sx={{ mt: 3, width: "100%", alignItems: "flex-start" }}
           >
-            <IconButton
-              size="small"
-              color="inherit"
-              aria-label="View streaming events"
-              sx={{ flex: "none", p: 0.25 }}
-            >
-              <ExpandMore />
-            </IconButton>
-            <Box sx={{ flex: 1, minWidth: 0 }}>
-              <Typography variant="body2" component="span">
-                View Streaming Events
-              </Typography>
-            </Box>
-          </Box>
+            {statusUpdates.map(
+              (event: RecruiterStreamingEvent, index: number) => (
+                <Stack
+                  key={`recruiter-status-${index}`}
+                  direction="row"
+                  alignItems="flex-start"
+                  spacing={0.5}
+                  sx={{ width: "100%" }}
+                >
+                  <Box sx={{ mt: 0.5, display: "flex", alignItems: "center" }}>
+                    <CheckCircleIcon
+                      sx={{ fontSize: 22, color: "success.main" }}
+                      aria-hidden
+                    />
+                  </Box>
+                  <Box sx={{ flex: 1, minWidth: 0 }}>
+                    <Typography
+                      variant="body2"
+                      component="div"
+                      sx={{
+                        overflowWrap: "break-word",
+                        wordBreak: "break-word",
+                      }}
+                    >
+                      {event.author && (
+                        <Typography component="span" variant="body2">
+                          {event.author}:{" "}
+                        </Typography>
+                      )}
+                      <Typography component="span" variant="body2">
+                        {event.message}
+                      </Typography>
+                    </Typography>
+                  </Box>
+                </Stack>
+              ),
+            )}
+
+            {events.length > 0 && !isComplete ? (
+              <FeedSpinnerRow mt={0} />
+            ) : null}
+          </Stack>
         )}
 
-        {isExpanded && (
-          <>
-            <Stack
-              spacing={3}
-              sx={{ mt: 3, width: "100%", alignItems: "flex-start" }}
-            >
-              {statusUpdates.map(
-                (event: RecruiterStreamingEvent, index: number) => (
-                  <Stack
-                    key={`recruiter-status-${index}`}
-                    direction="row"
-                    alignItems="flex-start"
-                    spacing={0.5}
-                    sx={{ width: "100%" }}
-                  >
-                    <Box
-                      sx={{ mt: 0.5, display: "flex", alignItems: "center" }}
-                    >
-                      <CheckCircleIcon
-                        sx={{ fontSize: 22, color: "success.main" }}
-                        aria-hidden
-                      />
-                    </Box>
-                    <Box sx={{ flex: 1, minWidth: 0 }}>
-                      <Typography
-                        variant="body2"
-                        component="div"
-                        sx={{
-                          overflowWrap: "break-word",
-                          wordBreak: "break-word",
-                        }}
-                      >
-                        {event.author && (
-                          <Typography component="span" variant="body2">
-                            {event.author}:{" "}
-                          </Typography>
-                        )}
-                        <Typography component="span" variant="body2">
-                          {event.message}
-                        </Typography>
-                      </Typography>
-                    </Box>
-                  </Stack>
-                ),
-              )}
-
-              {events.length > 0 && !isComplete ? (
-                <FeedSpinnerRow mt={0} />
-              ) : null}
-            </Stack>
-
-            {isComplete && (
-              <IconButton
-                size="small"
-                color="inherit"
-                aria-label="Collapse streaming events"
-                onClick={handleCollapse}
-                sx={{
-                  alignSelf: "flex-start",
-                  mt: 1,
-                  p: 0.25,
-                }}
-              >
-                <ExpandLess aria-hidden />
-              </IconButton>
-            )}
-          </>
+        {isComplete && (
+          <FeedCollapseButton
+            expanded={isExpanded}
+            onToggle={toggleDetailsExpanded}
+            expandLabel="View Streaming Events"
+            collapseLabel="Collapse events"
+          />
         )}
       </Stack>
     </Stack>

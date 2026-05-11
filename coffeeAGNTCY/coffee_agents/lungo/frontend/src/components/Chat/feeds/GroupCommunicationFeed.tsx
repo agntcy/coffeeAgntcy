@@ -4,9 +4,7 @@
  **/
 
 import React, { useState, useEffect, useCallback, useRef } from "react"
-import { Box, IconButton, Stack, Typography } from "@open-ui-kit/core"
-import ExpandMore from "@mui/icons-material/ExpandMore"
-import ExpandLess from "@mui/icons-material/ExpandLess"
+import { Box, Stack, Typography } from "@open-ui-kit/core"
 import CheckCircleIcon from "@mui/icons-material/CheckCircle"
 
 import { ChatAgentAvatar } from "../ChatAvatarCircle"
@@ -25,6 +23,7 @@ import {
 } from "@/stores/groupStreamingStore"
 import { FeedSpinnerRow } from "../FeedSpinnerRow"
 import { FeedStatusLine } from "../FeedStatusLine"
+import { FeedCollapseButton } from "./FeedCollapseButton"
 
 export interface GroupCommunicationFeedProps {
   isVisible: boolean
@@ -56,12 +55,8 @@ const GroupCommunicationFeed: React.FC<GroupCommunicationFeedProps> = ({
   const lastProcessedEventRef = useRef<string | null>(null)
   const highlightTimeoutsRef = useRef<number[]>([])
 
-  const handleExpand = useCallback(() => {
-    setIsExpanded(true)
-  }, [])
-
-  const handleCollapse = useCallback(() => {
-    setIsExpanded(false)
+  const toggleDetailsExpanded = useCallback(() => {
+    setIsExpanded((v) => !v)
   }, [])
 
   useEffect(() => {
@@ -183,110 +178,68 @@ const GroupCommunicationFeed: React.FC<GroupCommunicationFeedProps> = ({
           <FeedSpinnerRow mt={3} />
         ) : null}
 
-        {storeIsComplete && !isExpanded && (
-          <Box
-            onClick={handleExpand}
-            sx={{
-              mt: 1,
-              display: "flex",
-              width: "100%",
-              cursor: "pointer",
-              flexDirection: "row",
-              alignItems: "center",
-              gap: 0.5,
-              "&:hover": { opacity: 0.75 },
-            }}
-          >
-            <IconButton
-              size="small"
-              color="inherit"
-              aria-label="View details"
-              onClick={handleExpand}
-              sx={{ flex: "none" }}
-            >
-              <ExpandMore />
-            </IconButton>
-
-            <Box sx={{ flex: 1, minWidth: 0 }}>
-              <Typography variant="body2" component="span">
-                View Details
-              </Typography>
-            </Box>
-          </Box>
-        )}
         {isExpanded && (
-          <>
-            <Stack
-              spacing={3}
-              sx={{ mt: 3, width: "100%", alignItems: "flex-start" }}
-            >
-              {events.map((step: LogisticsStreamStep, index: number) => {
-                return (
-                  <Stack
-                    key={`${step.order_id}-${index}`}
-                    direction="row"
-                    alignItems="flex-start"
-                    spacing={0.5}
-                    sx={{ width: "100%" }}
-                  >
-                    <Box
-                      sx={{ mt: 0.5, display: "flex", alignItems: "center" }}
+          <Stack
+            spacing={3}
+            sx={{ mt: 3, width: "100%", alignItems: "flex-start" }}
+          >
+            {events.map((step: LogisticsStreamStep, index: number) => {
+              return (
+                <Stack
+                  key={`${step.order_id}-${index}`}
+                  direction="row"
+                  alignItems="flex-start"
+                  spacing={0.5}
+                  sx={{ width: "100%" }}
+                >
+                  <Box sx={{ mt: 0.5, display: "flex", alignItems: "center" }}>
+                    <CheckCircleIcon
+                      sx={{ fontSize: 22, color: "success.main" }}
+                      aria-hidden
+                    />
+                  </Box>
+
+                  <Box sx={{ flex: 1, minWidth: 0 }}>
+                    <Typography
+                      variant="body2"
+                      component="div"
+                      sx={{
+                        overflowWrap: "break-word",
+                        wordBreak: "break-word",
+                      }}
                     >
-                      <CheckCircleIcon
-                        sx={{ fontSize: 22, color: "success.main" }}
-                        aria-hidden
-                      />
-                    </Box>
-
-                    <Box sx={{ flex: 1, minWidth: 0 }}>
-                      <Typography
-                        variant="body2"
-                        component="div"
-                        sx={{
-                          overflowWrap: "break-word",
-                          wordBreak: "break-word",
-                        }}
-                      >
-                        <Typography component="span">
-                          {formatAgentName(step.sender)}
-                        </Typography>
-                        {index === 0 && (
-                          <>
-                            {" "}
-                            →{" "}
-                            <Typography component="span">All Agents</Typography>
-                          </>
-                        )}
-                        :{" "}
-                        <Typography component="span">
-                          &quot;{step.message}&quot;
-                        </Typography>
+                      <Typography component="span">
+                        {formatAgentName(step.sender)}
                       </Typography>
-                    </Box>
-                  </Stack>
-                )
-              })}
+                      {index === 0 && (
+                        <>
+                          {" "}
+                          → <Typography component="span">All Agents</Typography>
+                        </>
+                      )}
+                      :{" "}
+                      <Typography component="span">
+                        &quot;{step.message}&quot;
+                      </Typography>
+                    </Typography>
+                  </Box>
+                </Stack>
+              )
+            })}
 
-              {events.length > 0 && !storeIsComplete ? (
-                <FeedSpinnerRow mt={0} />
-              ) : null}
-            </Stack>
+            {events.length > 0 && !storeIsComplete ? (
+              <FeedSpinnerRow mt={0} />
+            ) : null}
+          </Stack>
+        )}
 
-            {storeIsComplete && (
-              <IconButton
-                size="small"
-                color="inherit"
-                aria-label="Collapse details"
-                onClick={handleCollapse}
-                sx={{
-                  alignSelf: "flex-start",
-                  mt: 1,
-                }}
-              >
-                <ExpandLess />
-              </IconButton>
-            )}
-          </>
+        {storeIsComplete && (
+          <FeedCollapseButton
+            expanded={isExpanded}
+            onToggle={toggleDetailsExpanded}
+            expandLabel="View Details"
+            collapseLabel="Collapse details"
+          />
         )}
       </Stack>
     </Stack>
