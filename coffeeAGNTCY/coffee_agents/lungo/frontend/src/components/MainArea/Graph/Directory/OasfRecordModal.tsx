@@ -4,15 +4,29 @@
  **/
 
 import React, { useState, useEffect } from "react"
-import { IconButton } from "@open-ui-kit/core"
+import {
+  Box,
+  Button,
+  IconButton,
+  Link,
+  Modal,
+  ModalContent,
+  ModalTitle,
+  Stack,
+  Typography,
+} from "@open-ui-kit/core"
 import Close from "@mui/icons-material/Close"
-import { createPortal } from "react-dom"
 import { env } from "@/utils/env"
 import { fetchOasfRecord, OasfRecord } from "./DirectoryApi"
 import { CustomNodeData } from "../Elements/types"
 import { IdentityServiceError } from "../Identity/IdentityApi"
-import { useEscapeKey } from "@/hooks/useEscapeKey"
 import { LoadingSpinner } from "@/components/loading"
+import {
+  graphModalFieldCardSx,
+  graphModalLoadingOverlaySx,
+  graphModalPreSx,
+  graphModalScrollBodySx,
+} from "../graphModalStyles"
 
 const DEFAULT_DIRECTORY_SERVER_URL = "http://127.0.0.1:8888"
 const DIRECTORY_SERVER_URL =
@@ -28,7 +42,6 @@ export interface OasfRecordModalProps {
   nodeName: string
   /** When null/undefined the modal skips fetch (see useEffect). */
   nodeData?: CustomNodeData | null
-  position: { x: number; y: number }
 }
 
 const OasfRecordModal: React.FC<OasfRecordModalProps> = ({
@@ -36,7 +49,6 @@ const OasfRecordModal: React.FC<OasfRecordModalProps> = ({
   onClose,
   nodeName,
   nodeData,
-  position,
 }) => {
   const [record, setRecord] = useState<OasfRecord | null>(null)
   const [loading, setLoading] = useState(false)
@@ -50,8 +62,6 @@ const OasfRecordModal: React.FC<OasfRecordModalProps> = ({
     fetchOasfRecordData()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, nodeName, nodeData, isDirectoryNode])
-
-  useEscapeKey(isOpen, onClose)
 
   const fetchOasfRecordData = async () => {
     setLoading(true)
@@ -70,8 +80,6 @@ const OasfRecordModal: React.FC<OasfRecordModalProps> = ({
     }
   }
 
-  if (!isOpen) return null
-
   const nodeDataExt = nodeData as Record<string, unknown> | null | undefined
   const recordObj = record as Record<string, unknown> | null
   const directoryUrl = String(
@@ -83,112 +91,151 @@ const OasfRecordModal: React.FC<OasfRecordModalProps> = ({
       "",
   )
 
-  const handleModalClick = (e: React.MouseEvent) => e.stopPropagation()
-
-  return createPortal(
-    <div className="pointer-events-none fixed inset-0 z-50">
-      <div
-        className="pointer-events-auto absolute -translate-x-1/2"
-        style={{ left: `${position.x}px`, top: `${position.y - 100}px` }}
-      >
-        <div
-          className="relative flex max-h-[70vh] w-[550px] flex-col items-start gap-4 rounded-md bg-node-background p-4 shadow-lg"
-          onClick={handleModalClick}
-          data-modal-content
+  return (
+    <Modal
+      open={isOpen}
+      onClose={onClose}
+      maxWidth="md"
+      fullWidth
+      scroll="paper"
+    >
+      <ModalTitle sx={{ pr: 6, position: "relative" }}>
+        {isDirectoryNode ? "Directory Information" : `${nodeName} OASF Record`}
+        <IconButton
+          onClick={onClose}
+          aria-label="Close"
+          size="small"
+          sx={{ position: "absolute", right: 8, top: 8 }}
         >
-          <IconButton
-            onClick={onClose}
-            aria-label="Close"
-            size="small"
+          <Close sx={{ fontSize: 18 }} />
+        </IconButton>
+      </ModalTitle>
+
+      <ModalContent dividers>
+        {isDirectoryNode ? (
+          <Stack sx={{ width: "100%", gap: 1.5 }}>
+            <Stack sx={{ width: "100%", gap: 1.5 }}>
+              <Box sx={graphModalFieldCardSx}>
+                <Typography
+                  variant="caption"
+                  color="text.secondary"
+                  sx={{
+                    textTransform: "uppercase",
+                    letterSpacing: "0.06em",
+                    opacity: 0.9,
+                  }}
+                >
+                  Directory URL
+                </Typography>
+                {directoryUrl ? (
+                  <Link
+                    href={DIRECTORY_SERVER_URL}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    sx={{
+                      mt: 1,
+                      display: "block",
+                      wordBreak: "break-all",
+                      typography: "body2",
+                    }}
+                  >
+                    {DIRECTORY_SERVER_URL}
+                  </Link>
+                ) : (
+                  <Typography
+                    variant="body2"
+                    color="text.secondary"
+                    sx={{ mt: 1, opacity: 0.9 }}
+                  >
+                    Unavailable
+                  </Typography>
+                )}
+              </Box>
+
+              <Box sx={graphModalFieldCardSx}>
+                <Typography
+                  variant="caption"
+                  color="text.secondary"
+                  sx={{
+                    textTransform: "uppercase",
+                    letterSpacing: "0.06em",
+                    opacity: 0.9,
+                  }}
+                >
+                  Directory Version
+                </Typography>
+                <Typography variant="body2" sx={{ mt: 1 }}>
+                  {DIRECTORY_VERSION || "Unavailable"}
+                </Typography>
+              </Box>
+            </Stack>
+          </Stack>
+        ) : loading && !record ? (
+          <Stack
             sx={{
-              position: "absolute",
-              right: 12,
-              top: 12,
-              zIndex: 10,
+              width: "100%",
+              alignItems: "center",
+              justifyContent: "center",
+              py: 4,
             }}
           >
-            <Close sx={{ fontSize: 18 }} />
-          </IconButton>
-
-          {isDirectoryNode ? (
-            <div className="relative flex w-full flex-col gap-3">
-              <h3 className="mb-1 text-lg font-semibold text-node-text-primary">
-                Directory Information
-              </h3>
-
-              <div className="grid w-full grid-cols-1 gap-3">
-                <div className="rounded border border-gray-600 p-3">
-                  <div className="text-xs uppercase tracking-wide text-node-text-secondary opacity-80">
-                    Directory URL
-                  </div>
-                  {directoryUrl ? (
-                    <a
-                      className="mt-1 block break-all text-sm text-node-text-primary underline"
-                      href={DIRECTORY_SERVER_URL}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      {DIRECTORY_SERVER_URL}
-                    </a>
-                  ) : (
-                    <div className="mt-1 text-sm text-node-text-secondary opacity-80">
-                      Unavailable
-                    </div>
-                  )}
-                </div>
-
-                <div className="rounded border border-gray-600 p-3">
-                  <div className="text-xs uppercase tracking-wide text-node-text-secondary opacity-80">
-                    Directory Version
-                  </div>
-                  <div className="mt-1 text-sm text-node-text-primary">
-                    {DIRECTORY_VERSION || "Unavailable"}
-                  </div>
-                </div>
-              </div>
-            </div>
-          ) : loading && !record ? (
-            <div className="flex w-full items-center justify-center py-8">
-              <LoadingSpinner compact />
-            </div>
-          ) : error ? (
-            <div className="flex w-full flex-col items-center justify-center gap-4 py-8">
-              <div className="text-center text-node-text-primary">
-                <p className="font-medium">Failed to load OASF record</p>
-                <p className="mt-2 text-sm text-node-text-secondary opacity-80">
-                  {error}
-                </p>
-              </div>
-              <button
-                onClick={fetchOasfRecordData}
-                className="rounded bg-node-icon-background px-4 py-2 text-sm text-node-text-primary hover:bg-opacity-80"
+            <LoadingSpinner compact />
+          </Stack>
+        ) : error ? (
+          <Stack
+            sx={{
+              width: "100%",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: 2,
+              py: 4,
+            }}
+          >
+            <Box sx={{ textAlign: "center" }}>
+              <Typography variant="body1" fontWeight="medium">
+                Failed to load OASF record
+              </Typography>
+              <Typography
+                variant="body2"
+                color="text.secondary"
+                sx={{ mt: 1, opacity: 0.9 }}
               >
-                Retry
-              </button>
-            </div>
-          ) : record ? (
-            <div className="relative flex max-h-[26vh] min-h-0 w-full flex-col gap-3 overflow-y-auto">
-              <h3 className="mb-3 text-lg font-semibold text-node-text-primary">
-                {nodeName} OASF Record
-              </h3>
-              <pre className="overflow-auto whitespace-pre-wrap rounded border border-gray-600 p-3 font-mono text-xs text-node-text-primary">
-                {JSON.stringify(record, null, 2)}
-              </pre>
-              {loading && (
-                <div className="absolute inset-0 flex items-center justify-center bg-node-background bg-opacity-80 backdrop-blur-sm">
-                  <LoadingSpinner compact />
-                </div>
-              )}
-            </div>
-          ) : (
-            <div className="flex w-full items-center justify-center py-8">
-              <div className="text-node-text-primary">No data available</div>
-            </div>
-          )}
-        </div>
-      </div>
-    </div>,
-    document.body,
+                {error}
+              </Typography>
+            </Box>
+            <Button
+              variant="outlined"
+              size="small"
+              onClick={fetchOasfRecordData}
+            >
+              Retry
+            </Button>
+          </Stack>
+        ) : record ? (
+          <Stack sx={graphModalScrollBodySx}>
+            <Box component="pre" sx={graphModalPreSx}>
+              {JSON.stringify(record, null, 2)}
+            </Box>
+            {loading && (
+              <Box sx={graphModalLoadingOverlaySx}>
+                <LoadingSpinner compact />
+              </Box>
+            )}
+          </Stack>
+        ) : (
+          <Stack
+            sx={{
+              width: "100%",
+              alignItems: "center",
+              justifyContent: "center",
+              py: 4,
+            }}
+          >
+            <Typography color="text.primary">No data available</Typography>
+          </Stack>
+        )}
+      </ModalContent>
+    </Modal>
   )
 }
 

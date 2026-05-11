@@ -72,15 +72,11 @@ export function useMainArea({
   const [oasfModalData, setOasfModalData] = useState<CustomNodeData | null>(
     null,
   )
-  const [oasfModalPosition, setOasfModalPosition] = useState<{
-    x: number
-    y: number
-  }>({ x: 0, y: 0 })
 
   const handleOpenOasfModal = useCallback(
     (nodeData: CustomNodeData, position: { x: number; y: number }) => {
+      void position
       setOasfModalData(nodeData)
-      setOasfModalPosition(position)
       setOasfModalOpen(true)
     },
     [],
@@ -228,7 +224,6 @@ export function useMainArea({
     oasfModalOpen,
     setOasfModalOpen,
     oasfModalData,
-    oasfModalPosition,
     onPaneClick,
     onNodeDrag,
   }

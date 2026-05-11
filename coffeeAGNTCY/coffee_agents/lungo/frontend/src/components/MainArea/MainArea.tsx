@@ -49,7 +49,6 @@ const MainArea: React.FC<MainAreaProps> = (props) => {
     oasfModalOpen,
     setOasfModalOpen,
     oasfModalData,
-    oasfModalPosition,
     onPaneClick,
     onNodeDrag,
   } = useMainArea(props)
@@ -112,7 +111,6 @@ const MainArea: React.FC<MainAreaProps> = (props) => {
           onClose={() => setOasfModalOpen(false)}
           nodeName={oasfModalData?.label1 || ""}
           nodeData={oasfModalData}
-          position={oasfModalPosition}
         />
       </Box>
     </>

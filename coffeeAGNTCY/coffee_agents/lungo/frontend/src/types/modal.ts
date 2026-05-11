@@ -2,9 +2,8 @@
  * Copyright AGNTCY Contributors (https://github.com/agntcy)
  * SPDX-License-Identifier: Apache-2.0
  *
- * Shared modal contract: identity/badge/policy graph node modals.
- * Used by: useModalManager (state + actions), ModalContainer, and modal components
- * (IdentityModal, BadgeDetailsModal, PolicyDetailsModal).
+ * Shared modal contract: graph identity (dropdown) + badge/policy (OUK `Modal`).
+ * Used by: useModalManager (state + actions), ModalContainer, and graph UI components.
  **/
 
 import type { CustomNodeData } from "@/components/MainArea/Graph/Elements/types"
