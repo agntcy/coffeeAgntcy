@@ -77,11 +77,13 @@ def _test_workflows_catalog(request, tmp_path_factory, monkeypatch) -> Iterator[
             "name": "Test Workflow Alpha",
             "pattern": "Supervisor-worker",
             "use_case": "Unit Test",
+            "scenario": "Alpha Scenario",
         },
         {
             "name": "Test Workflow Beta",
             "pattern": "Group-chat",
             "use_case": "Unit Test",
+            "scenario": "Beta Scenario",
         },
     ]))
     monkeypatch.setenv("LUNGO_WORKFLOWS_JSON", str(path))
