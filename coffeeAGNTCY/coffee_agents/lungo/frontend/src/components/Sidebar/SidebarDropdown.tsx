@@ -22,12 +22,21 @@ const SidebarDropdown: React.FC<SidebarDropdownProps> = ({
   onToggle,
   children,
 }) => {
+  const toggleId = React.useId()
+  const titleId = React.useId()
+  const panelId = React.useId()
+  const toggleLabel = `${isExpanded ? "Collapse" : "Expand"} ${title}`
+
   return (
     <Stack direction="column" alignItems="flex-start">
       <ListItemButton
+        component="button"
+        type="button"
+        id={toggleId}
         onClick={onToggle}
         aria-expanded={isExpanded}
-        aria-label={`${isExpanded ? "Collapse" : "Expand"} ${title}`}
+        aria-controls={panelId}
+        aria-label={toggleLabel}
         sx={{
           width: "100%",
           justifyContent: "space-between",
@@ -36,7 +45,7 @@ const SidebarDropdown: React.FC<SidebarDropdownProps> = ({
           mt: sidebarItemMt,
         }}
       >
-        <Typography component="span" variant="body1">
+        <Typography id={titleId} component="span" variant="body1">
           {title}
         </Typography>
         <Box
@@ -59,11 +68,16 @@ const SidebarDropdown: React.FC<SidebarDropdownProps> = ({
         </Box>
       </ListItemButton>
 
-      {isExpanded ? (
-        <Stack direction="column" sx={{ width: "100%", pl: 2 }}>
-          {children}
-        </Stack>
-      ) : null}
+      <Stack
+        id={panelId}
+        role="region"
+        aria-labelledby={titleId}
+        hidden={!isExpanded}
+        direction="column"
+        sx={{ width: "100%", pl: 2 }}
+      >
+        {children}
+      </Stack>
     </Stack>
   )
 }
