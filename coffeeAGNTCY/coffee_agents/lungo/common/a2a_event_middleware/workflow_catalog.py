@@ -28,6 +28,7 @@ class WorkflowMetadata:
 	workflow_name: str
 	pattern: str
 	use_case: str
+	scenario: str
 
 
 _DEFAULT_WORKFLOWS_JSON = (
@@ -68,13 +69,15 @@ def _load_catalog() -> dict[str, WorkflowMetadata]:
 		name = entry.get("name")
 		pattern = entry.get("pattern")
 		use_case = entry.get("use_case")
+		scenario = entry.get("scenario")
 		if not (
 			isinstance(name, str)
 			and isinstance(pattern, str)
 			and isinstance(use_case, str)
+			and isinstance(scenario, str)
 		):
 			logger.warning(
-				"Skipping workflow at index %d: missing name/pattern/use_case",
+				"Skipping workflow at index %d: missing name/pattern/use_case/scenario",
 				idx,
 			)
 			continue
@@ -88,6 +91,7 @@ def _load_catalog() -> dict[str, WorkflowMetadata]:
 			workflow_name=name,
 			pattern=pattern,
 			use_case=use_case,
+			scenario=scenario,
 		)
 
 	if not catalog:
