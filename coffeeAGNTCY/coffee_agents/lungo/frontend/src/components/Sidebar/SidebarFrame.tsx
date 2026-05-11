@@ -108,6 +108,7 @@ function renderListItem(
 }
 
 export function SidebarFrame({
+  collapsible = true,
   navigationItems,
   drawerWidth = "16.5rem",
   initialOpen = true,
@@ -116,14 +117,17 @@ export function SidebarFrame({
   const [isOpen, setIsOpen] = React.useState(initialOpen)
 
   const handleToggle = useCallback(() => {
+    if (!collapsible) return
     setIsOpen(!isOpen)
-  }, [isOpen])
+  }, [collapsible, isOpen])
+
+  const drawerOpen = collapsible ? isOpen : initialOpen
 
   return (
     <StyledDrawer
       variant="permanent"
       data-testid="sidebar"
-      open={isOpen}
+      open={drawerOpen}
       drawerWidth={drawerWidth}
       slotProps={{
         paper: {
@@ -162,17 +166,20 @@ export function SidebarFrame({
           )
         })}
       </List>
-      <Button
-        sx={{
-          borderRadius: sidebarBorderRadius,
-          mt: 1,
-          p: 1,
-        }}
-        variant="outlined"
-        onClick={handleToggle}
-      >
-        {isOpen ? <Icons.KeyboardArrowLeft /> : <Icons.KeyboardArrowRight />}
-      </Button>
+
+      {collapsible ? (
+        <Button
+          sx={{
+            borderRadius: sidebarBorderRadius,
+            mt: 1,
+            p: 1,
+          }}
+          variant="outlined"
+          onClick={handleToggle}
+        >
+          {isOpen ? <Icons.KeyboardArrowLeft /> : <Icons.KeyboardArrowRight />}
+        </Button>
+      ) : null}
     </StyledDrawer>
   )
 }

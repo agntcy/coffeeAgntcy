@@ -25,6 +25,12 @@ import SidebarDropdown from "./SidebarDropdown"
 import { SidebarFrame } from "./SidebarFrame"
 import { SidebarRailRow } from "./SidebarRailRow"
 
+/**
+ * When false, the rail stays expanded, the collapse toggle is not rendered, and width
+ * does not animate to the narrow rail.
+ */
+const SIDEBAR_FRAME_COLLAPSIBLE = false
+
 interface LungoSidebarProps {
   selectedPattern: PatternType
   onPatternChange: (pattern: PatternType) => void
@@ -365,6 +371,7 @@ const Sidebar: React.FC<LungoSidebarProps> = ({
 
   return (
     <SidebarFrame
+      collapsible={SIDEBAR_FRAME_COLLAPSIBLE}
       initialOpen
       navigationItems={[
         <LungoSidebarNavigationSlot
