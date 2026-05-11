@@ -476,10 +476,11 @@ class EventEmittingInterceptor(ClientCallInterceptor):
 		workflow_name = metadata.workflow_name
 		instance_id = propagated_instance_id
 		logger.debug(
-			"workflow_name=%s pattern=%s use_case=%s tool=%s",
+			"workflow_name=%s pattern=%s use_case=%s scenario=%s tool=%s",
 			workflow_name,
 			metadata.pattern,
 			metadata.use_case,
+			metadata.scenario,
 			ctx_state.get("tool", "unknown"),
 		)
 

@@ -28,7 +28,7 @@ class TestLookupWorkflow:
         assert wf.workflow_name == "Test Workflow Alpha"
         assert wf.pattern == "Supervisor-worker"
         assert wf.use_case == "Unit Test"
-        assert wf.scenario == "Unit Test"
+        assert wf.scenario == "Alpha Scenario"
 
     def test_returns_none_for_unknown_name(self):
         assert wc.lookup_workflow("Nonexistent") is None
@@ -55,6 +55,7 @@ class TestLookupWorkflow:
                 "name": "Good Workflow",
                 "pattern": "Supervisor-worker",
                 "use_case": "Unit Test",
+                "scenario": "Good Scenario",
             },
         ]))
         monkeypatch.setenv("LUNGO_WORKFLOWS_JSON", str(path))
