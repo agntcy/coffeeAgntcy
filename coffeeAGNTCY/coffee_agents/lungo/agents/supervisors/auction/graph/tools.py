@@ -7,6 +7,7 @@ from typing import Any, Union, Literal, NoReturn
 from uuid import uuid4
 from pydantic import BaseModel
 
+from a2a.client.middleware import ClientCallContext
 from a2a.types import (
     AgentCard,
     SendMessageRequest,
@@ -39,9 +40,19 @@ from config.config import (
 )
 from services.identity_service import IdentityService
 from services.identity_service_impl import IdentityServiceImpl
+from common.a2a_event_middleware import (
+    EventEmittingInterceptor,
+    make_event_emitting_consumer,
+)
+from agents.supervisors.auction.card import AUCTION_SUPERVISOR_CARD
 
 
 logger = logging.getLogger("lungo.supervisor.tools")
+
+
+# A2A middleware singletons that capture outbound and inbound calls.
+_event_interceptor = EventEmittingInterceptor(caller_card=AUCTION_SUPERVISOR_CARD)
+_event_consumer = make_event_emitting_consumer(caller_card=AUCTION_SUPERVISOR_CARD)
 
 
 class A2AAgentError(ToolException):
@@ -191,18 +202,9 @@ async def get_farm_yield_inventory(prompt: str, farm: str) -> str:
 
     try:
         card = copy.deepcopy(card)
-        # Workaround: ioa-observe-sdk instruments SRPCTransport.send_message_streaming
-        # with a coroutine wrapper instead of an async generator, causing TypeError.
-        # Commented out — not needed here since card.capabilities.streaming defaults
-        # to the server value. Re-enable if tracing is on and streaming breaks.
-        # See: https://github.com/agntcy/observe/issues/114
-        if card.capabilities is None:
-            from a2a.types import AgentCapabilities
-            card.capabilities = AgentCapabilities(streaming=False)
-        else:
-            card.capabilities.streaming = False
 
-        client = await a2a_client_factory.create(card)
+        # create a client with event middleware to capture tool calls and responses for tracing in the UI
+        client = await a2a_client_factory.create(card, interceptors=[_event_interceptor], consumers=[_event_consumer])
 
         message = Message(
             messageId=str(uuid4()),
@@ -210,7 +212,9 @@ async def get_farm_yield_inventory(prompt: str, farm: str) -> str:
             parts=[Part(TextPart(text=prompt))],
         )
 
-        events = await send_a2a_with_retry(client, message)
+        # call context (workflow identity flows via OTel baggage)
+        ctx = ClientCallContext()
+        events = await send_a2a_with_retry(client, message, context=ctx)
         result_text = _extract_text_from_events(events)
 
         if result_text:
@@ -260,10 +264,16 @@ async def get_all_farms_yield_inventory(prompt: str) -> str:
 
         # override preferred transport to ensure we use the intended publish-subscribe transport for broadcasts
         card.preferred_transport = DEFAULT_MESSAGE_TRANSPORT.lower()
-        client = await a2a_client_factory.create(card)
+
+        client = await a2a_client_factory.create(card, interceptors=[_event_interceptor], consumers=[_event_consumer])
+
+        # set call context for the broadcast (workflow identity comes from baggage)
+        ctx = ClientCallContext(state={
+            "broadcast_agent_cards": [get_farm_card(farm) for farm in farm_registry],
+        })
 
         # create a broadcast message and collect responses
-        responses = await client.broadcast_message(request, recipients=recipients)
+        responses = await client.broadcast_message(request, recipients=recipients, context=ctx)
 
         logger.info(f"got {len(responses)} responses back from farms")
 
@@ -328,12 +338,19 @@ async def get_all_farms_yield_inventory_streaming(prompt: str):
 
         # override preferred transport to ensure we use the intended publish-subscribe transport for broadcasts
         card.preferred_transport = DEFAULT_MESSAGE_TRANSPORT.lower()
-        client = await a2a_client_factory.create(card)
 
-        # Get the async generator for streaming responses
+        client = await a2a_client_factory.create(card, interceptors=[_event_interceptor], consumers=[_event_consumer])
+
+        ctx = ClientCallContext(state={
+            "broadcast_agent_cards": [get_farm_card(farm) for farm in farm_registry],
+        })
+
+        # Get the async generator for streaming responses. Workflow identity
+        # is propagated via OTel context attached in ``graph.py``.
         response_stream = client.broadcast_message_streaming(
             request,
             recipients=recipients,
+            context=ctx
         )
 
         # Track which farms responded
@@ -438,18 +455,8 @@ async def create_order(farm: str, quantity: int, price: float) -> str:
 
     try:
         card = copy.deepcopy(card)  # avoid mutating the singleton card
-        # Workaround: ioa-observe-sdk instruments SRPCTransport.send_message_streaming
-        # with a coroutine wrapper (return await) instead of an async generator
-        # (async for/yield), causing "TypeError: 'coroutine' object is not an
-        # async iterator". Force the non-streaming path until fixed upstream.
-        # See: https://github.com/agntcy/observe/issues/114
-        if card.capabilities is None:
-            from a2a.types import AgentCapabilities
-            card.capabilities = AgentCapabilities(streaming=False)
-        else:
-            card.capabilities.streaming = False
 
-        client = await a2a_client_factory.create(card)
+        client = await a2a_client_factory.create(card, interceptors=[_event_interceptor], consumers=[_event_consumer])
 
         message = Message(
             messageId=str(uuid4()),
@@ -457,7 +464,9 @@ async def create_order(farm: str, quantity: int, price: float) -> str:
             parts=[Part(TextPart(text=f"Create an order with price {price} and quantity {quantity}"))],
         )
 
-        events = await send_a2a_with_retry(client, message)
+        ctx = ClientCallContext()
+
+        events = await send_a2a_with_retry(client, message, context=ctx)
         result_text = _extract_text_from_events(events)
 
         if result_text:
@@ -498,18 +507,7 @@ async def get_order_details(order_id: str) -> str:
         # override preferred transport to ensure direct communication for order creation
         card.preferred_transport = InterfaceTransport.SLIM_RPC
 
-        # Workaround: ioa-observe-sdk instruments SRPCTransport.send_message_streaming
-        # with a coroutine wrapper instead of an async generator, causing TypeError.
-        # Commented out — not needed here since card.capabilities.streaming defaults
-        # to the server value. Re-enable if tracing is on and streaming breaks.
-        # See: https://github.com/agntcy/observe/issues/114
-        if card.capabilities is None:
-            from a2a.types import AgentCapabilities
-            card.capabilities = AgentCapabilities(streaming=False)
-        else:
-            card.capabilities.streaming = False
-
-        client = await a2a_client_factory.create(card)
+        client = await a2a_client_factory.create(card, interceptors=[_event_interceptor], consumers=[_event_consumer])
 
         message = Message(
             messageId=str(uuid4()),
@@ -517,7 +515,9 @@ async def get_order_details(order_id: str) -> str:
             parts=[Part(TextPart(text=f"Get details for order ID {order_id}"))],
         )
 
-        events = await send_a2a_with_retry(client, message)
+        ctx = ClientCallContext()
+
+        events = await send_a2a_with_retry(client, message, context=ctx)
         result_text = _extract_text_from_events(events)
 
         if result_text:
