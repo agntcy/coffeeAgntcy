@@ -80,8 +80,8 @@ export function useWorkflowGraphFromAgenticApi({
   const workflowName = selectedWorkflowSummary?.name ?? null
   const agenticMode = Boolean(
     selectedWorkflowSummary &&
-      workflowName &&
-      mapWorkflowNameToSlug(workflowName) === pattern,
+    workflowName &&
+    mapWorkflowNameToSlug(workflowName) === pattern,
   )
 
   const [agenticError, setAgenticError] = useState<string | null>(null)

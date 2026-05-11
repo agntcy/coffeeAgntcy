@@ -66,7 +66,8 @@ const CatalogTree: React.FC<CatalogTreeProps> = ({
                 >
                   {ucs.workflows.map((workflow) => {
                     const { summary } = workflow
-                    const isUnmapped = mapWorkflowNameToSlug(summary.name) === null
+                    const isUnmapped =
+                      mapWorkflowNameToSlug(summary.name) === null
                     const isSelected =
                       selectedWorkflowSummary?.name === summary.name
                     return (

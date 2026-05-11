@@ -106,10 +106,7 @@ export function useApp() {
     setSelectedWorkflowSummary((prev) => {
       if (prev) {
         const still = workflowCatalogSummaries.find((s) => s.name === prev.name)
-        if (
-          still &&
-          mapWorkflowNameToSlug(still.name) === selectedPattern
-        ) {
+        if (still && mapWorkflowNameToSlug(still.name) === selectedPattern) {
           return still
         }
       }
