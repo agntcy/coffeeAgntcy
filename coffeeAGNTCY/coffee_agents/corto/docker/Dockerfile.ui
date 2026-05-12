@@ -5,8 +5,8 @@ WORKDIR /app
 # Install wget, curl, and ping (iputils)
 RUN apk add --no-cache wget curl iputils
 
-# Copy package.json and package-lock.json, then install dependencies
-COPY coffeeAGNTCY/coffee_agents/corto/exchange/frontend/package.json coffeeAGNTCY/coffee_agents/corto/exchange/frontend/package-lock.json ./
+# Copy package.json, package-lock.json and .npmrc, then install dependencies
+COPY coffeeAGNTCY/coffee_agents/corto/exchange/frontend/package.json coffeeAGNTCY/coffee_agents/corto/exchange/frontend/package-lock.json coffeeAGNTCY/coffee_agents/corto/exchange/frontend/.npmrc ./
 
 # Copy application files, including assets
 COPY coffeeAGNTCY/coffee_agents/corto/exchange/frontend/ .
