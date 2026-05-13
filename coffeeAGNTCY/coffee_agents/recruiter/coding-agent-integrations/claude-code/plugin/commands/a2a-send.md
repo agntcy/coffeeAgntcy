@@ -28,7 +28,7 @@ Use the `a2a-send` Go binary to send the message. The binary handles agent card 
 
 **Simple blocking send:**
 ```bash
-plugin/scripts/a2a-send/a2a-send --peer-url <endpoint_url> --message "<message>"
+${CLAUDE_PLUGIN_ROOT}/scripts/a2a-send/a2a-send --peer-url <endpoint_url> --message "<message>"
 ```
 
 Make sure to properly shell-escape the message text (handle single quotes, double quotes, newlines, backslashes).
@@ -46,19 +46,19 @@ The binary extracts text from the response automatically. Check the **exit code*
 #### For multi-turn (if the agent needs more info):
 If the response indicates the agent needs input, check stderr for `[task] id=<task_id> contextId=<context_id>`. Send a follow-up using those IDs:
 ```bash
-plugin/scripts/a2a-send/a2a-send --peer-url <endpoint_url> --task-id <task_id> --context-id <context_id> --message "<follow_up_message>"
+${CLAUDE_PLUGIN_ROOT}/scripts/a2a-send/a2a-send --peer-url <endpoint_url> --task-id <task_id> --context-id <context_id> --message "<follow_up_message>"
 ```
 
 #### For long-running tasks:
 Use non-blocking mode with polling — the binary will wait for the task to complete:
 ```bash
-plugin/scripts/a2a-send/a2a-send --peer-url <endpoint_url> --non-blocking --wait --timeout-ms 600000 --message "<message>"
+${CLAUDE_PLUGIN_ROOT}/scripts/a2a-send/a2a-send --peer-url <endpoint_url> --non-blocking --wait --timeout-ms 600000 --message "<message>"
 ```
 
 #### For streaming (SSE):
 Use streaming mode to see real-time progress:
 ```bash
-plugin/scripts/a2a-send/a2a-send --peer-url <endpoint_url> --stream --message "<message>"
+${CLAUDE_PLUGIN_ROOT}/scripts/a2a-send/a2a-send --peer-url <endpoint_url> --stream --message "<message>"
 ```
 
 ### Step 4 — Error handling

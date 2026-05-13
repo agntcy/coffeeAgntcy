@@ -1,7 +1,7 @@
 {
   "name": "agntcy-discover-connect",
   "version": "1.0.0",
-  "description": "Discover and communicate with remote A2A agents via the AGNTCY directory. Provides /recruit for discovery, /a2a-send for messaging, and an A2A protocol skill.",
+  "description": "Discover and communicate with remote A2A agents via the AGNTCY directory. Provides /recruit for discovery, /a2a-send for messaging, and an A2A protocol skill. Requires `python3` (>=3.7, stdlib only) on PATH for /check-identity.",
   "author": {
     "name": "AGNTCY",
     "url": "https://github.com/agntcy"

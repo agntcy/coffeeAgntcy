@@ -7,6 +7,15 @@ description: Use this skill when the user asks about A2A (Agent-to-Agent) protoc
 
 This skill provides knowledge about the **A2A (Agent-to-Agent) protocol**, the **AGNTCY directory**, and the **OASF (Open Agent Standard Format)** — everything needed to discover, connect to, and communicate with remote agents.
 
+## Trust Model — Two Stages
+
+Recruited agents go through two independent trust checks:
+
+1. **At recruit time — `dirctl verify`.** The `/recruit` command runs `dirctl verify <CID> --from-server` for each candidate and flags it as `signed ✓` or `unsigned ✗`. This confirms the OASF record itself is signed by a trusted publisher; it does not say anything about the running agent.
+2. **Post-recruit — `/check-identity <name>`.** Looks up the agent in the AGNTCY identity service, verifies its badge, and lists any policies targeting it. Run this on demand after creating a skill or sub-agent. See `commands/check-identity.md`.
+
+These signals are independent: a `signed ✓` record can be missing a badge, and a record with a verified badge can be unsigned. Consider both before trusting an agent for sensitive work.
+
 ## Recruited Agents
 
 The `/recruit` command discovers agents from the AGNTCY directory and connects them to Claude Code. Two creation modes are available:

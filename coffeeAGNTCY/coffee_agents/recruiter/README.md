@@ -19,7 +19,6 @@ Discover, evaluate, and dynamically recruit agents for on-demand task execution.
 - [Claude Code Plugin](#claude-code-plugin)
   - [Plugin Installation](#plugin-installation)
   - [Plugin Commands](#plugin-commands)
-  - [Skills vs Sub-Agents](#skills-vs-sub-agents)
   - [`a2a-send` CLI Tool](#a2a-send-cli-tool)
 
 ## Overview
@@ -225,7 +224,7 @@ uv run pytest tests/integration/test_agent_evaluator.py -v
 
 ## Claude Code Plugin
 
-The [`coding-agent-integrations/claude-code/`](./coding-agent-integrations/claude-code/) directory contains **agntcy-discover-connect** — a [Claude Code](https://docs.anthropic.com/en/docs/claude-code) plugin that brings the recruiter's agent discovery capabilities directly into the Claude Code CLI. Instead of running the recruiter as a standalone A2A service, this plugin lets you search the AGNTCY directory, preview candidates, and connect remote A2A agents as skills or sub-agents — all from within a Claude Code session.
+The [`coding-agent-integrations/claude-code/`](./coding-agent-integrations/claude-code/) directory contains **agntcy-discover-connect** — a [Claude Code](https://docs.anthropic.com/en/docs/claude-code) plugin that brings the recruiter's agent discovery capabilities directly into the Claude Code CLI. Instead of running the recruiter as a standalone A2A service, this plugin lets you search the AGNTCY directory, verify record signatures with `dirctl`, preview candidates, connect remote A2A agents as slash-command skills, and inspect their identity-service badges and policies — all from within a Claude Code session.
 
 ### Plugin Installation
 
@@ -241,50 +240,48 @@ pushd plugin/scripts/a2a-send && go build -o a2a-send . && popd
 claude --plugin-dir ./plugin
 ```
 
-**Prerequisites:** [Claude Code CLI](https://docs.anthropic.com/en/docs/claude-code), [`dirctl`](https://github.com/agntcy/dir-ctl), [Go 1.23+](https://go.dev/dl/) (to build `a2a-send`), and [`jq`](https://stedolan.github.io/jq/) for record parsing.
+**Prerequisites:** [Claude Code CLI](https://docs.anthropic.com/en/docs/claude-code), [`dirctl`](https://github.com/agntcy/dir-ctl), [Go 1.23+](https://go.dev/dl/) (to build `a2a-send`), [`jq`](https://stedolan.github.io/jq/) for record parsing, and `python3` (≥3.7, stdlib only — used by `/agntcy-discover-connect:check-identity`).
 
 ### Plugin Commands
 
-| Command | Description |
-|---------|-------------|
-| **`/recruit <query>`** | Search the AGNTCY directory for agents matching your query, preview candidates in a summary table, and connect them as skills or sub-agents |
-| **`/a2a-send <url> <message>`** | Send a message directly to any A2A agent endpoint for quick testing or one-off communication |
+All commands live under the `agntcy-discover-connect` plugin namespace.
+
+#### `/agntcy-discover-connect:recruit <query>`
+
+Search the AGNTCY directory for agents matching your query, verify each record's Sigstore signature with `dirctl`, preview candidates in a summary table, and connect selected agents as slash-command **skills** under `.claude/skills/<name>/`.
+
+#### `/agntcy-discover-connect:a2a-send <url> <message>`
+
+Send a message directly to any A2A agent endpoint for quick testing or one-off communication.
+
+#### `/agntcy-discover-connect:check-identity <name>`
+
+Inspect the AGNTCY identity-service badge and policies attached to a recruited skill. Read-only; does not modify the skill.
 
 **Example usage:**
 
 ```
-/recruit Can you find an agent named Brazil Coffee Farm?
-/a2a-send http://localhost:9999 "What is the current coffee yield?"
+/agntcy-discover-connect:recruit Can you find an agent named Brazil Coffee Farm?
+/agntcy-discover-connect:a2a-send http://localhost:9999 "What is the current coffee yield?"
+/agntcy-discover-connect:check-identity brazil-coffee-farm
 ```
 
-**`/recruit` workflow:**
-1. Searches the directory using multiple strategies (skill match, domain match, name wildcard, DHT routing)
-2. Presents discovered agents in a summary table
-3. User picks which agents to connect
-4. User chooses creation mode: **skill** (recommended) or **sub-agent**
+**`/agntcy-discover-connect:recruit` workflow:**
+1. Searches the directory using multiple strategies (skill match, domain match, name wildcard, DHT routing).
+2. Pulls each matching OASF record and runs `dirctl verify` locally (Sigstore-based) — each candidate is marked `signed ✓` or `unsigned ✗` in the summary table.
+3. Presents the candidates with name, description, skills, endpoint, verification status, and whether a skill already exists.
+4. User picks which agents to connect (numeric, ranges, or `all`); selecting unsigned candidates triggers a confirmation prompt.
+5. Creates one slash-command skill per selection at `.claude/skills/<name>/SKILL.md`. Skills are available immediately — no restart needed.
 
-### Skills vs Sub-Agents
-
-The plugin can connect remote agents in two modes:
-
-| Mode | How it works | Invoke with | Pros |
-|------|-------------|-------------|------|
-| **Skill** (recommended) | Creates `.claude/skills/<name>/SKILL.md` — the parent model runs `a2a-send` directly | `/agent-name <message>` | Available immediately, no intermediary model to refuse requests |
-| **Sub-agent** | Creates `.claude/agents/<name>.md` — Claude Code spawns a separate model | Natural language: "Use the agent to..." | More autonomous, but may refuse to forward out-of-scope requests |
-
-> **Tip:** Start with skills. If a sub-agent refuses to forward requests the remote agent can handle, delete the sub-agent and re-run `/recruit` to create a skill instead.
+> **Note:** A `signed ✓` Sigstore signature confirms the OASF record itself is signed. It does **not** confirm the agent has a valid identity-service badge or any policies. Run `/agntcy-discover-connect:check-identity <name>` after recruiting to inspect the badge and policies.
 
 > **Note:** If a newly created skill doesn't appear as a slash command, start a new Claude Code session (`/exit` or `Ctrl+C` twice, then relaunch `claude`) for it to be picked up.
 
-
-**Managing recruited agents:**
+**Managing recruited skills:**
 
 ```bash
-# Remove a skill
+# Remove a recruited skill
 rm -rf .claude/skills/brazil-coffee-farm/
-
-# Remove a sub-agent
-rm .claude/agents/brazil-coffee-farm.md
 ```
 
 ### Plugin Structure
@@ -294,23 +291,24 @@ coding-agent-integrations/claude-code/plugin/
 ├── .claude-plugin/
 │   └── plugin.json              # Plugin manifest
 ├── commands/
-│   ├── recruit.md               # /recruit slash command
-│   └── a2a-send.md              # /a2a-send slash command
-├── hooks/
+│   ├── recruit.md               # /agntcy-discover-connect:recruit
+│   ├── a2a-send.md              # /agntcy-discover-connect:a2a-send
+│   └── check-identity.md        # /agntcy-discover-connect:check-identity
 ├── scripts/
 │   ├── a2a-send/                # Go CLI tool (a2a-go SDK)
 │   │   ├── main.go
 │   │   ├── go.mod
 │   │   └── go.sum
-├── skills/
-│   └── a2a-protocol/            # A2A protocol knowledge skill
-│       ├── SKILL.md
-│       └── references/
-│           ├── oasf-structure.md
-│           ├── a2a-protocol-cheatsheet.md
-│           ├── error-handling.md
-│           └── dirctl-search.md
-└── docs/
+│   ├── identity_client.py       # stdlib client for the AGNTCY identity service
+│   └── skill-template.md        # template copied + sed'd by /agntcy-discover-connect:recruit per skill
+└── skills/
+    └── a2a-protocol/            # A2A protocol knowledge skill
+        ├── SKILL.md
+        └── references/
+            ├── oasf-structure.md
+            ├── a2a-protocol-cheatsheet.md
+            ├── error-handling.md
+            └── dirctl-search.md
 ```
 
 ## Advanced Usage

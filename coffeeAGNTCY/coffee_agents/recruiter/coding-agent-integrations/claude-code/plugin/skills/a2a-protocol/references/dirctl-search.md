@@ -42,6 +42,40 @@ dirctl pull <CID> --output json | jq '{
 }'
 ```
 
+## Verify — confirm a record's signature
+
+```bash
+# Local Sigstore verification (default, recommended)
+dirctl verify <CID>
+
+# Scripting-friendly output: empty stdout = trusted; error_message: ... = not trusted
+dirctl verify <CID> --output raw
+
+# Verify locally with an explicit public key
+dirctl verify <CID> --key cosign.pub
+
+# Verify with OIDC identity (Sigstore keyless)
+dirctl verify <CID> \
+  --oidc-issuer https://accounts.google.com \
+  --oidc-subject publisher@example.com
+```
+
+**Two gotchas:**
+- Exit code is **0 in both trusted and not-trusted cases** — it only signals that verification ran. Parse stdout to get the actual result.
+- `--from-server` (cached verification) is often returned as `Unimplemented` by directory servers. Stick with local verification (default).
+
+The `/recruit` flow uses `dirctl verify <CID> --output raw` and treats empty output as `signed ✓`, anything else as `unsigned ✗`.
+
+You can also bias `search` toward trustworthy records up front:
+
+```bash
+# Only return records whose names are verified (DNS / namespace-owned)
+dirctl search --skill "*" --verified
+
+# Only return records with a trusted signature
+dirctl search --skill "*" --trusted
+```
+
 ## Configuration
 
 ```bash

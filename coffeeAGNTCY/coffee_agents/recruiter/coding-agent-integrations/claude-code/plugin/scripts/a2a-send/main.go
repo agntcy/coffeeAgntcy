@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/a2aproject/a2a-go/v2/a2a"
@@ -139,9 +140,23 @@ func run(cfg config) error {
 	}
 
 	// Also patch any interfaces that have an empty URL to use the peer URL.
+	// Additionally, normalize protocol binding names: some servers emit
+	// lowercase / non-canonical strings like "jsonrpc" or "rest" which the
+	// SDK's case-sensitive transport matcher rejects ("no compatible
+	// transports found"). Map them to the canonical a2a.TransportProtocol*
+	// constants. Unknown bindings (e.g. "slim", "slimrpc", "nats") are left
+	// untouched so the SDK simply skips them during negotiation.
 	for _, iface := range card.SupportedInterfaces {
 		if iface.URL == "" {
 			iface.URL = cfg.peerURL
+		}
+		switch strings.ToLower(string(iface.ProtocolBinding)) {
+		case "jsonrpc":
+			iface.ProtocolBinding = a2a.TransportProtocolJSONRPC
+		case "grpc":
+			iface.ProtocolBinding = a2a.TransportProtocolGRPC
+		case "http+json", "rest", "httpjson":
+			iface.ProtocolBinding = a2a.TransportProtocolHTTPJSON
 		}
 	}
 

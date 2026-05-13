@@ -1,0 +1,2 @@
+# Built binary — devs run `go build -o a2a-send .` to produce it.
+a2a-send
