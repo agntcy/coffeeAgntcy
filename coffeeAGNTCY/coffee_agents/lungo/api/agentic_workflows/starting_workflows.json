@@ -396,5 +396,236 @@
       ]
     },
     "instances": {}
+  },
+  {
+    "name": "Adversarial Review Agents",
+    "pattern": "Adversarial Review Agents",
+    "use_case": "---",
+    "scenario": "---",
+    "starting_topology": {
+      "nodes": [],
+      "edges": []
+    },
+    "instances": {}
+  },
+  {
+    "name": "Agent Workflow Chain",
+    "pattern": "Agent Workflow Chain",
+    "use_case": "---",
+    "scenario": "---",
+    "starting_topology": {
+      "nodes": [],
+      "edges": []
+    },
+    "instances": {}
+  },
+  {
+    "name": "Agent-to-System Bridge",
+    "pattern": "Agent-to-System Bridge",
+    "use_case": "---",
+    "scenario": "---",
+    "starting_topology": {
+      "nodes": [],
+      "edges": []
+    },
+    "instances": {}
+  },
+  {
+    "name": "Approval Gate Agent",
+    "pattern": "Approval Gate Agent",
+    "use_case": "---",
+    "scenario": "---",
+    "starting_topology": {
+      "nodes": [],
+      "edges": []
+    },
+    "instances": {}
+  },
+  {
+    "name": "Composable Agent Service",
+    "pattern": "Composable Agent Service",
+    "use_case": "---",
+    "scenario": "---",
+    "starting_topology": {
+      "nodes": [],
+      "edges": []
+    },
+    "instances": {}
+  },
+  {
+    "name": "Coordinator + Worker Agents",
+    "pattern": "Coordinator + Worker Agents",
+    "use_case": "---",
+    "scenario": "---",
+    "starting_topology": {
+      "nodes": [],
+      "edges": []
+    },
+    "instances": {}
+  },
+  {
+    "name": "Decentralized Consensus Agents",
+    "pattern": "Decentralized Consensus Agents",
+    "use_case": "---",
+    "scenario": "---",
+    "starting_topology": {
+      "nodes": [],
+      "edges": []
+    },
+    "instances": {}
+  },
+  {
+    "name": "Directory-Based Dispatch",
+    "pattern": "Directory-Based Dispatch",
+    "use_case": "---",
+    "scenario": "---",
+    "starting_topology": {
+      "nodes": [],
+      "edges": []
+    },
+    "instances": {}
+  },
+  {
+    "name": "Economic Constraint Agent",
+    "pattern": "Economic Constraint Agent",
+    "use_case": "---",
+    "scenario": "---",
+    "starting_topology": {
+      "nodes": [],
+      "edges": []
+    },
+    "instances": {}
+  },
+  {
+    "name": "End-to-End Telemetry",
+    "pattern": "End-to-End Telemetry",
+    "use_case": "---",
+    "scenario": "---",
+    "starting_topology": {
+      "nodes": [],
+      "edges": []
+    },
+    "instances": {}
+  },
+  {
+    "name": "Event Ledger (Episodic Memory)",
+    "pattern": "Event Ledger (Episodic Memory)",
+    "use_case": "---",
+    "scenario": "---",
+    "starting_topology": {
+      "nodes": [],
+      "edges": []
+    },
+    "instances": {}
+  },
+  {
+    "name": "Feedback Loop",
+    "pattern": "Feedback Loop",
+    "use_case": "---",
+    "scenario": "---",
+    "starting_topology": {
+      "nodes": [],
+      "edges": []
+    },
+    "instances": {}
+  },
+  {
+    "name": "Orchestrator Agent",
+    "pattern": "Orchestrator Agent",
+    "use_case": "---",
+    "scenario": "---",
+    "starting_topology": {
+      "nodes": [],
+      "edges": []
+    },
+    "instances": {}
+  },
+  {
+    "name": "Performance Scoring Agent",
+    "pattern": "Performance Scoring Agent",
+    "use_case": "---",
+    "scenario": "---",
+    "starting_topology": {
+      "nodes": [],
+      "edges": []
+    },
+    "instances": {}
+  },
+  {
+    "name": "Policy-Enforced Execution",
+    "pattern": "Policy-Enforced Execution",
+    "use_case": "---",
+    "scenario": "---",
+    "starting_topology": {
+      "nodes": [],
+      "edges": []
+    },
+    "instances": {}
+  },
+  {
+    "name": "Resilience & Re-Routing",
+    "pattern": "Resilience & Re-Routing",
+    "use_case": "---",
+    "scenario": "---",
+    "starting_topology": {
+      "nodes": [],
+      "edges": []
+    },
+    "instances": {}
+  },
+  {
+    "name": "Secure Group Collaboration",
+    "pattern": "Secure Group Collaboration",
+    "use_case": "---",
+    "scenario": "---",
+    "starting_topology": {
+      "nodes": [],
+      "edges": []
+    },
+    "instances": {}
+  },
+  {
+    "name": "Self-Evaluation Agent",
+    "pattern": "Self-Evaluation Agent",
+    "use_case": "---",
+    "scenario": "---",
+    "starting_topology": {
+      "nodes": [],
+      "edges": []
+    },
+    "instances": {}
+  },
+  {
+    "name": "Sense–Decide–Act Loop",
+    "pattern": "Sense–Decide–Act Loop",
+    "use_case": "---",
+    "scenario": "---",
+    "starting_topology": {
+      "nodes": [],
+      "edges": []
+    },
+    "instances": {}
+  },
+  {
+    "name": "Session Context Buffer",
+    "pattern": "Session Context Buffer",
+    "use_case": "---",
+    "scenario": "---",
+    "starting_topology": {
+      "nodes": [],
+      "edges": []
+    },
+    "instances": {}
+  },
+  {
+    "name": "Shared Knowledge Store",
+    "pattern": "Shared Knowledge Store",
+    "use_case": "---",
+    "scenario": "---",
+    "starting_topology": {
+      "nodes": [],
+      "edges": []
+    },
+    "instances": {}
   }
 ]
