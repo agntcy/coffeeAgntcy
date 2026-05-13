@@ -137,9 +137,9 @@ const Sidebar: React.FC<SidebarProps> = ({
   }, [])
 
   return (
-    <div className="flex h-full w-64 flex-none flex-col gap-5 border-r border-sidebar-border bg-sidebar-background font-inter lg:w-[320px]">
-      <div className="flex h-full flex-1 flex-col gap-2 p-4">
-        <div className="flex min-h-[36px] w-full items-center gap-2 rounded py-2 pl-2 pr-5">
+    <div className="flex h-full min-h-0 w-64 flex-none flex-col border-r border-sidebar-border bg-sidebar-background font-inter lg:w-[320px]">
+      <div className="flex min-h-0 flex-1 flex-col gap-2 p-4">
+        <div className="flex flex-none min-h-[36px] w-full items-center gap-2 rounded py-2 pl-2 pr-5">
           <span className="flex-1 font-inter text-base font-semibold leading-6 tracking-[0.15px] text-sidebar-text">
             Agentic Patterns
           </span>
@@ -147,7 +147,7 @@ const Sidebar: React.FC<SidebarProps> = ({
 
         {summaries === null && error === null && (
           <div
-            className="flex w-full items-center gap-3 px-5 py-2"
+            className="flex flex-none w-full items-center gap-3 px-5 py-2"
             role="status"
             aria-label="Loading workflows"
           >
@@ -161,7 +161,7 @@ const Sidebar: React.FC<SidebarProps> = ({
 
         {error !== null && (
           <div
-            className="flex w-full items-center gap-2 px-5 py-2 text-xs leading-4 text-sidebar-text opacity-80"
+            className="flex flex-none w-full items-center gap-2 px-5 py-2 text-xs leading-4 text-sidebar-text opacity-80"
             role="alert"
           >
             <ErrorOutline sx={{ fontSize: 16 }} />
@@ -170,13 +170,15 @@ const Sidebar: React.FC<SidebarProps> = ({
         )}
 
         {summaries !== null && error === null && (
-          <CatalogTree
-            tree={tree}
-            expanded={expanded}
-            onToggle={toggle}
-            selectedPattern={selectedPattern}
-            onPatternChange={onPatternChange}
-          />
+          <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden pr-1">
+            <CatalogTree
+              tree={tree}
+              expanded={expanded}
+              onToggle={toggle}
+              selectedPattern={selectedPattern}
+              onPatternChange={onPatternChange}
+            />
+          </div>
         )}
       </div>
     </div>
