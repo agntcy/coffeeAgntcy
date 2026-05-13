@@ -36,13 +36,11 @@ import time
 from collections import defaultdict
 from typing import Callable, Final
 
-from schema.types import Data, Event
-from schema.types.event import Workflow
-from schema.validation import validate_data_against_schema
-
 from common.workflow_instance_store.errors import WorkflowInstanceStoreClosedError
 from common.workflow_instance_store.merge import merge_event_data
 from common.workflow_instance_store.notifier import NoOpNotifier, NotifierProtocol
+from schema.types import Data, Event
+from schema.validation import validate_data_against_schema
 
 EVENT_SCHEMA = "event_v1"
 
@@ -351,6 +349,8 @@ class WorkflowInstanceStateStore:
                 "pattern": wf.get("pattern"),
                 "use_case": wf.get("use_case"),
                 "name": wf.get("name"),
+                "scenario": wf.get("scenario"),
+                "scenario_documentation_path": wf.get("scenario_documentation_path"),
                 "starting_topology": copy.deepcopy(wf.get("starting_topology")),
                 "instances": {instance_id: copy.deepcopy(inst)},
             }
