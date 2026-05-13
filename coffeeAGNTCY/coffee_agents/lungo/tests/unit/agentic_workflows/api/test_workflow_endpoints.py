@@ -42,7 +42,7 @@ _FAKE_WORKFLOWS: dict[str, Workflow] = {
         Workflow.model_validate(
             {
                 "pattern": "group_communication",
-                "use_case": "Order Fulfilment",
+                "use_case": "Order Fulfillment",
                 "scenario": "Group Logistics scenario",
                 "name": "Group Logistics",
                 "starting_topology": {
@@ -64,7 +64,7 @@ _FAKE_WORKFLOWS: dict[str, Workflow] = {
         Workflow.model_validate(
             {
                 "pattern": "publish_subscribe",
-                "use_case": "Order Fulfilment",
+                "use_case": "Order Fulfillment",
                 "scenario": "Pub Sub Orders scenario",
                 "name": "Pub Sub Orders",
                 "starting_topology": {
@@ -136,7 +136,7 @@ _LIST_CASES: tuple[ListCase, ...] = (
     ),
     ListCase(
         case_id="filter_single_use_case",
-        inputs=ListInputs(params={"use_cases": "Order Fulfilment"}),
+        inputs=ListInputs(params={"use_cases": "Order Fulfillment"}),
         outputs=ListOutputs(
             status=200,
             expected_names={"Group Logistics", "Pub Sub Orders"},
@@ -147,7 +147,7 @@ _LIST_CASES: tuple[ListCase, ...] = (
         inputs=ListInputs(
             params={
                 "patterns": "publish_subscribe",
-                "use_cases": "Order Fulfilment",
+                "use_cases": "Order Fulfillment",
             }
         ),
         outputs=ListOutputs(status=200, expected_names={"Pub Sub Orders"}),
