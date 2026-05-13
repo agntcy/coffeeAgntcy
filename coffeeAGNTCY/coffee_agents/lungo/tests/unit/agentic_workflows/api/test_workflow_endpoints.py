@@ -22,6 +22,7 @@ _FAKE_WORKFLOWS: dict[str, Workflow] = {
                 "pattern": "publish_subscribe",
                 "use_case": "Coffee Buying",
                 "scenario": "Pub Sub Coffee scenario",
+                "scenario_documentation_path": "docs/scenarios/coffee_buying.md",
                 "name": "Pub Sub Coffee",
                 "starting_topology": {
                     "nodes": [
@@ -44,6 +45,7 @@ _FAKE_WORKFLOWS: dict[str, Workflow] = {
                 "pattern": "group_communication",
                 "use_case": "Order Fulfillment",
                 "scenario": "Group Logistics scenario",
+                "scenario_documentation_path": "docs/scenarios/order_fulfillment.md",
                 "name": "Group Logistics",
                 "starting_topology": {
                     "nodes": [
@@ -66,6 +68,7 @@ _FAKE_WORKFLOWS: dict[str, Workflow] = {
                 "pattern": "publish_subscribe",
                 "use_case": "Order Fulfillment",
                 "scenario": "Pub Sub Orders scenario",
+                "scenario_documentation_path": "docs/scenarios/order_fulfillment.md",
                 "name": "Pub Sub Orders",
                 "starting_topology": {
                     "nodes": [
@@ -167,9 +170,7 @@ _LIST_CASES: tuple[ListCase, ...] = (
 )
 
 
-@pytest.mark.parametrize(
-    "case", [pytest.param(c, id=c.case_id) for c in _LIST_CASES]
-)
+@pytest.mark.parametrize("case", [pytest.param(c, id=c.case_id) for c in _LIST_CASES])
 def test_list_agentic_workflows(case: ListCase, client: TestClient) -> None:
     resp = client.get("/agentic-workflows/", params=case.inputs.params)
     assert resp.status_code == case.outputs.status
@@ -179,7 +180,13 @@ def test_list_agentic_workflows(case: ListCase, client: TestClient) -> None:
 
     for name, summary in data.items():
         assert summary["name"] == name
-        assert set(summary.keys()) == {"name", "pattern", "use_case", "scenario"}
+        assert set(summary.keys()) == {
+            "name",
+            "pattern",
+            "use_case",
+            "scenario",
+            "scenario_documentation_path",
+        }
 
 
 # ---------------------------------------------------------------------------
@@ -197,6 +204,7 @@ class DetailOutputs(NamedTuple):
     expected_name: str | None
     expected_pattern: str | None
     expected_use_case: str | None
+    expected_scenario_documentation_path: str | None
     instances_empty: bool | None
 
 
@@ -209,70 +217,62 @@ class DetailCase(NamedTuple):
 _DETAIL_CASES: tuple[DetailCase, ...] = (
     DetailCase(
         case_id="existing_workflow",
-        inputs=DetailInputs(
-            workflow_name="Pub Sub Coffee", topology_only=None
-        ),
+        inputs=DetailInputs(workflow_name="Pub Sub Coffee", topology_only=None),
         outputs=DetailOutputs(
             status=200,
             expected_name="Pub Sub Coffee",
             expected_pattern="publish_subscribe",
             expected_use_case="Coffee Buying",
+            expected_scenario_documentation_path="docs/scenarios/coffee_buying.md",
             instances_empty=True,
         ),
     ),
     DetailCase(
         case_id="unknown_workflow_404",
-        inputs=DetailInputs(
-            workflow_name="does-not-exist", topology_only=None
-        ),
+        inputs=DetailInputs(workflow_name="does-not-exist", topology_only=None),
         outputs=DetailOutputs(
             status=404,
             expected_name=None,
             expected_pattern=None,
             expected_use_case=None,
+            expected_scenario_documentation_path=None,
             instances_empty=None,
         ),
     ),
     DetailCase(
         case_id="topology_only_true",
-        inputs=DetailInputs(
-            workflow_name="Pub Sub Coffee", topology_only=True
-        ),
+        inputs=DetailInputs(workflow_name="Pub Sub Coffee", topology_only=True),
         outputs=DetailOutputs(
             status=200,
             expected_name="Pub Sub Coffee",
             expected_pattern="publish_subscribe",
             expected_use_case="Coffee Buying",
+            expected_scenario_documentation_path="docs/scenarios/coffee_buying.md",
             instances_empty=True,
         ),
     ),
     DetailCase(
         case_id="topology_only_false_same_as_default",
-        inputs=DetailInputs(
-            workflow_name="Pub Sub Coffee", topology_only=False
-        ),
+        inputs=DetailInputs(workflow_name="Pub Sub Coffee", topology_only=False),
         outputs=DetailOutputs(
             status=200,
             expected_name="Pub Sub Coffee",
             expected_pattern="publish_subscribe",
             expected_use_case="Coffee Buying",
+            expected_scenario_documentation_path="docs/scenarios/coffee_buying.md",
             instances_empty=True,
         ),
     ),
 )
 
 
-@pytest.mark.parametrize(
-    "case", [pytest.param(c, id=c.case_id) for c in _DETAIL_CASES]
-)
+@pytest.mark.parametrize("case", [pytest.param(c, id=c.case_id) for c in _DETAIL_CASES])
 def test_get_agentic_workflow(case: DetailCase, client: TestClient) -> None:
     params = {}
     if case.inputs.topology_only is not None:
         params["topology_only"] = case.inputs.topology_only
 
-    resp = client.get(
-        f"/agentic-workflows/{case.inputs.workflow_name}/", params=params
-    )
+    resp = client.get(f"/agentic-workflows/{case.inputs.workflow_name}/", params=params)
     assert resp.status_code == case.outputs.status
 
     if case.outputs.status != 200:
@@ -282,6 +282,10 @@ def test_get_agentic_workflow(case: DetailCase, client: TestClient) -> None:
     assert data["name"] == case.outputs.expected_name
     assert data["pattern"] == case.outputs.expected_pattern
     assert data["use_case"] == case.outputs.expected_use_case
+    assert (
+        data["scenario_documentation_path"]
+        == case.outputs.expected_scenario_documentation_path
+    )
     assert "starting_topology" in data
     assert isinstance(data["starting_topology"]["nodes"], list)
     assert isinstance(data["starting_topology"]["edges"], list)

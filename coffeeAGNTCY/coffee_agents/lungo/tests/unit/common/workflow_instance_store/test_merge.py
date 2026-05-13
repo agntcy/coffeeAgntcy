@@ -7,9 +7,8 @@ from __future__ import annotations
 
 import copy
 
-from schema.types import Data, Event
-
 from common.workflow_instance_store.merge import merge_event_data, merge_topology_delta
+from schema.types import Data, Event
 
 NODE_A = "node://550e8400-e29b-41d4-a716-446655440010"
 NODE_B = "node://550e8400-e29b-41d4-a716-446655440011"
@@ -43,6 +42,7 @@ def test_first_event_establishes_workflow_and_instance():
                     "pattern": "p",
                     "use_case": "u",
                     "scenario": "s",
+                    "scenario_documentation_path": "docs/scenarios/test_scenario.md",
                     "starting_topology": {"nodes": [], "edges": []},
                     "instances": {
                         INST: {"id": INST, "topology": {}},
@@ -72,6 +72,7 @@ def test_update_merges_fields_not_full_replace():
                         "pattern": "p",
                         "use_case": "u",
                         "scenario": "s",
+                        "scenario_documentation_path": "docs/scenarios/test_scenario.md",
                         "starting_topology": {"nodes": [], "edges": []},
                         "instances": {
                             INST: {
@@ -104,6 +105,7 @@ def test_update_merges_fields_not_full_replace():
                     "pattern": "p",
                     "use_case": "u",
                     "scenario": "s",
+                    "scenario_documentation_path": "docs/scenarios/test_scenario.md",
                     "starting_topology": {"nodes": [], "edges": []},
                     "instances": {
                         INST: {
@@ -140,6 +142,7 @@ def test_read_does_not_overwrite_existing_node():
                     "pattern": "p",
                     "use_case": "u",
                     "scenario": "s",
+                    "scenario_documentation_path": "docs/scenarios/test_scenario.md",
                     "starting_topology": {"nodes": [], "edges": []},
                     "instances": {
                         INST: {
@@ -171,6 +174,7 @@ def test_read_does_not_overwrite_existing_node():
                     "pattern": "p",
                     "use_case": "u",
                     "scenario": "s",
+                    "scenario_documentation_path": "docs/scenarios/test_scenario.md",
                     "starting_topology": {"nodes": [], "edges": []},
                     "instances": {
                         INST: {
@@ -212,6 +216,7 @@ def test_read_creates_node_when_absent():
                         "pattern": "p",
                         "use_case": "u",
                         "scenario": "s",
+                        "scenario_documentation_path": "docs/scenarios/test_scenario.md",
                         "starting_topology": {"nodes": [], "edges": []},
                         "instances": {
                             INST: {"id": INST, "topology": {"nodes": [], "edges": []}},
@@ -229,6 +234,7 @@ def test_read_creates_node_when_absent():
                     "pattern": "p",
                     "use_case": "u",
                     "scenario": "s",
+                    "scenario_documentation_path": "docs/scenarios/test_scenario.md",
                     "starting_topology": {"nodes": [], "edges": []},
                     "instances": {
                         INST: {
@@ -267,6 +273,7 @@ def test_topology_nodes_preserve_insertion_order_not_sorted_ids():
                     "pattern": "p",
                     "use_case": "u",
                     "scenario": "s",
+                    "scenario_documentation_path": "docs/scenarios/test_scenario.md",
                     "starting_topology": {"nodes": [], "edges": []},
                     "instances": {
                         INST: {
@@ -317,6 +324,7 @@ def test_delete_idempotent():
                         "pattern": "p",
                         "use_case": "u",
                         "scenario": "s",
+                        "scenario_documentation_path": "docs/scenarios/test_scenario.md",
                         "starting_topology": {"nodes": [], "edges": []},
                         "instances": {
                             INST: {
@@ -348,6 +356,7 @@ def test_delete_idempotent():
                     "pattern": "p",
                     "use_case": "u",
                     "scenario": "s",
+                    "scenario_documentation_path": "docs/scenarios/test_scenario.md",
                     "starting_topology": {"nodes": [], "edges": []},
                     "instances": {
                         INST: {
@@ -378,6 +387,7 @@ def test_update_missing_node_is_noop():
                         "pattern": "p",
                         "use_case": "u",
                         "scenario": "s",
+                        "scenario_documentation_path": "docs/scenarios/test_scenario.md",
                         "starting_topology": {"nodes": [], "edges": []},
                         "instances": {
                             INST: {"id": INST, "topology": {"nodes": [], "edges": []}},
@@ -395,6 +405,7 @@ def test_update_missing_node_is_noop():
                     "pattern": "p",
                     "use_case": "u",
                     "scenario": "s",
+                    "scenario_documentation_path": "docs/scenarios/test_scenario.md",
                     "starting_topology": {"nodes": [], "edges": []},
                     "instances": {
                         INST: {
@@ -427,6 +438,7 @@ def test_two_workflow_keys_coexist():
                     "pattern": "p1",
                     "use_case": "u1",
                     "scenario": "s1",
+                    "scenario_documentation_path": "docs/scenarios/test_scenario.md",
                     "starting_topology": {"nodes": [], "edges": []},
                     "instances": {
                         INST: {"id": INST, "topology": {}},
@@ -437,6 +449,7 @@ def test_two_workflow_keys_coexist():
                     "pattern": "p2",
                     "use_case": "u2",
                     "scenario": "s2",
+                    "scenario_documentation_path": "docs/scenarios/test_scenario.md",
                     "starting_topology": {"nodes": [], "edges": []},
                     "instances": {
                         INST: {"id": INST, "topology": {}},
@@ -458,6 +471,7 @@ def test_starting_topology_preserved_when_followup_omits():
                     "pattern": "p",
                     "use_case": "u",
                     "scenario": "s",
+                    "scenario_documentation_path": "docs/scenarios/test_scenario.md",
                     "starting_topology": {
                         "nodes": [
                             {
@@ -487,6 +501,7 @@ def test_starting_topology_preserved_when_followup_omits():
                     "pattern": "p",
                     "use_case": "u",
                     "scenario": "s",
+                    "scenario_documentation_path": "docs/scenarios/test_scenario.md",
                     "starting_topology": {"nodes": [], "edges": []},
                     "instances": {
                         INST: {"id": INST, "topology": {}},
@@ -510,6 +525,7 @@ def test_node_delete_leaves_dangling_edge():
                         "pattern": "p",
                         "use_case": "u",
                         "scenario": "s",
+                        "scenario_documentation_path": "docs/scenarios/test_scenario.md",
                         "starting_topology": {"nodes": [], "edges": []},
                         "instances": {
                             INST: {
@@ -560,6 +576,7 @@ def test_node_delete_leaves_dangling_edge():
                     "pattern": "p",
                     "use_case": "u",
                     "scenario": "s",
+                    "scenario_documentation_path": "docs/scenarios/test_scenario.md",
                     "starting_topology": {"nodes": [], "edges": []},
                     "instances": {
                         INST: {
@@ -634,6 +651,7 @@ def test_merge_empty_workflows_preserves_existing_workflows_and_merges_extra():
                         "pattern": "p",
                         "use_case": "u",
                         "scenario": "s",
+                        "scenario_documentation_path": "docs/scenarios/test_scenario.md",
                         "starting_topology": {"nodes": [], "edges": []},
                         "instances": {INST: {"id": INST, "topology": {}}},
                     }

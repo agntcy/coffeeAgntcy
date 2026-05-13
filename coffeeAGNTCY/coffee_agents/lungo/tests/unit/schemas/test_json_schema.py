@@ -8,7 +8,6 @@ from dataclasses import dataclass
 from pathlib import Path
 
 import pytest
-
 from schema import json_schema as json_schema_mod
 from schema.errors import (
     AmbiguousSchemaNameError,
@@ -379,6 +378,7 @@ def test_validate_json_instance_event_type_v1_corrupt_raises_schema_definition_e
                     "pattern": "p",
                     "use_case": "u",
                     "scenario": "s",
+                    "scenario_documentation_path": "docs/scenarios/test_scenario.md",
                     "starting_topology": {"nodes": [], "edges": []},
                     "instances": {
                         "instance://550e8400-e29b-41d4-a716-446655440003": {

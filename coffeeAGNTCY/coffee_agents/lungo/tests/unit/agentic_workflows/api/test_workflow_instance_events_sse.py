@@ -11,8 +11,8 @@ from uuid import UUID
 
 import pytest
 from api.agentic_workflows.router import (
-    WORKFLOW_INSTANCE_STORE_ATTR,
     WORKFLOW_INSTANCE_SSE_QUEUE_HIGH_WATER_RATIO,
+    WORKFLOW_INSTANCE_STORE_ATTR,
     create_agentic_workflows_router,
     enqueue_workflow_instance_sse_queue_chunk,
     workflow_instance_event_to_sse_frame,
@@ -40,6 +40,7 @@ def _event_dict(workflow_name: str, instance_uri: str, event_id: str) -> dict:
                     "pattern": "p",
                     "use_case": "u",
                     "scenario": "s",
+                    "scenario_documentation_path": "docs/scenarios/test_scenario.md",
                     "starting_topology": {"nodes": [], "edges": []},
                     "instances": {
                         instance_uri: {

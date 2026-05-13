@@ -9,16 +9,14 @@ import asyncio
 import threading
 
 import pytest
-
-from schema.errors import SchemaValidationError
-from schema.types import Event
-
 from common.workflow_instance_store import (
     WorkflowInstanceDataStore,
     WorkflowInstanceEventFanout,
     WorkflowInstanceStateStore,
     WorkflowInstanceStoreClosedError,
 )
+from schema.errors import SchemaValidationError
+from schema.types import Event
 
 _INSTANCE_KEY = "instance://550e8400-e29b-41d4-a716-446655440003"
 _NODE = "node://550e8400-e29b-41d4-a716-446655440010"
@@ -41,6 +39,7 @@ def _minimal_valid_event() -> dict:
                     "pattern": "p",
                     "use_case": "u",
                     "scenario": "s",
+                    "scenario_documentation_path": "docs/scenarios/test_scenario.md",
                     "starting_topology": {"nodes": [], "edges": []},
                     "instances": {
                         _INSTANCE_KEY: {
@@ -135,7 +134,9 @@ def test_notifier_fanout_two_instances():
             "metadata": {
                 "timestamp": "2026-01-01T00:00:00Z",
                 "schema_version": "1.0.0",
-                "correlation": {"id": "correlation://550e8400-e29b-41d4-a716-446655440001"},
+                "correlation": {
+                    "id": "correlation://550e8400-e29b-41d4-a716-446655440001"
+                },
                 "id": "event://550e8400-e29b-41d4-a716-446655440002",
                 "type": "StateProgressUpdate",
                 "source": "test",
@@ -147,6 +148,7 @@ def test_notifier_fanout_two_instances():
                         "pattern": "p",
                         "use_case": "u",
                         "scenario": "s",
+                        "scenario_documentation_path": "docs/scenarios/test_scenario.md",
                         "starting_topology": {"nodes": [], "edges": []},
                         "instances": {
                             _INSTANCE_KEY: {
@@ -198,6 +200,7 @@ def test_subscribe_invoked_for_touching_instance_only():
                         "pattern": "p",
                         "use_case": "u",
                         "scenario": "s",
+                        "scenario_documentation_path": "docs/scenarios/test_scenario.md",
                         "starting_topology": {"nodes": [], "edges": []},
                         "instances": {
                             other: {"id": other, "topology": {}},
@@ -227,7 +230,9 @@ async def test_concurrent_submit_serializes_merges():
             "metadata": {
                 "timestamp": "2026-01-01T00:00:00Z",
                 "schema_version": "1.0.0",
-                "correlation": {"id": "correlation://550e8400-e29b-41d4-a716-446655440001"},
+                "correlation": {
+                    "id": "correlation://550e8400-e29b-41d4-a716-446655440001"
+                },
                 "id": "event://550e8400-e29b-41d4-a716-4466554400a0",
                 "type": "StateProgressUpdate",
                 "source": "test",
@@ -239,6 +244,7 @@ async def test_concurrent_submit_serializes_merges():
                         "pattern": "p",
                         "use_case": "u",
                         "scenario": "s",
+                        "scenario_documentation_path": "docs/scenarios/test_scenario.md",
                         "starting_topology": {"nodes": [], "edges": []},
                         "instances": {
                             _INSTANCE_KEY: {
@@ -269,7 +275,9 @@ async def test_concurrent_submit_serializes_merges():
                 "metadata": {
                     "timestamp": "2026-01-01T00:00:00Z",
                     "schema_version": "1.0.0",
-                    "correlation": {"id": "correlation://550e8400-e29b-41d4-a716-446655440001"},
+                    "correlation": {
+                        "id": "correlation://550e8400-e29b-41d4-a716-446655440001"
+                    },
                     "id": event_id,
                     "type": "StateProgressUpdate",
                     "source": "test",
@@ -281,6 +289,7 @@ async def test_concurrent_submit_serializes_merges():
                             "pattern": "p",
                             "use_case": "u",
                             "scenario": "s",
+                            "scenario_documentation_path": "docs/scenarios/test_scenario.md",
                             "starting_topology": {"nodes": [], "edges": []},
                             "instances": {
                                 _INSTANCE_KEY: {
@@ -323,7 +332,9 @@ def test_concurrent_sync_submits_fifo_merge_order():
             "metadata": {
                 "timestamp": "2026-01-01T00:00:00Z",
                 "schema_version": "1.0.0",
-                "correlation": {"id": "correlation://550e8400-e29b-41d4-a716-446655440001"},
+                "correlation": {
+                    "id": "correlation://550e8400-e29b-41d4-a716-446655440001"
+                },
                 "id": "event://550e8400-e29b-41d4-a716-4466554400c0",
                 "type": "StateProgressUpdate",
                 "source": "test",
@@ -335,6 +346,7 @@ def test_concurrent_sync_submits_fifo_merge_order():
                         "pattern": "p",
                         "use_case": "u",
                         "scenario": "s",
+                        "scenario_documentation_path": "docs/scenarios/test_scenario.md",
                         "starting_topology": {"nodes": [], "edges": []},
                         "instances": {
                             _INSTANCE_KEY: {
@@ -368,7 +380,9 @@ def test_concurrent_sync_submits_fifo_merge_order():
                 "metadata": {
                     "timestamp": "2026-01-01T00:00:00Z",
                     "schema_version": "1.0.0",
-                    "correlation": {"id": "correlation://550e8400-e29b-41d4-a716-446655440001"},
+                    "correlation": {
+                        "id": "correlation://550e8400-e29b-41d4-a716-446655440001"
+                    },
                     "id": eid,
                     "type": "StateProgressUpdate",
                     "source": "test",
@@ -380,6 +394,7 @@ def test_concurrent_sync_submits_fifo_merge_order():
                             "pattern": "p",
                             "use_case": "u",
                             "scenario": "s",
+                            "scenario_documentation_path": "docs/scenarios/test_scenario.md",
                             "starting_topology": {"nodes": [], "edges": []},
                             "instances": {
                                 _INSTANCE_KEY: {
@@ -450,7 +465,9 @@ def test_slow_notifier_does_not_block_merge():
             "metadata": {
                 "timestamp": "2026-01-01T00:00:01Z",
                 "schema_version": "1.0.0",
-                "correlation": {"id": "correlation://550e8400-e29b-41d4-a716-446655440001"},
+                "correlation": {
+                    "id": "correlation://550e8400-e29b-41d4-a716-446655440001"
+                },
                 "id": "event://550e8400-e29b-41d4-a716-4466554400b1",
                 "type": "StateProgressUpdate",
                 "source": "test",
@@ -462,6 +479,7 @@ def test_slow_notifier_does_not_block_merge():
                         "pattern": "p2",
                         "use_case": "u2",
                         "scenario": "s2",
+                        "scenario_documentation_path": "docs/scenarios/test_scenario.md",
                         "starting_topology": {"nodes": [], "edges": []},
                         "instances": {
                             _INSTANCE_KEY: {

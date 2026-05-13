@@ -25,7 +25,6 @@ from unittest.mock import MagicMock
 
 import pytest
 
-
 # ---------------------------------------------------------------------------
 # State-reset fixtures
 # ---------------------------------------------------------------------------
@@ -72,20 +71,26 @@ def _test_workflows_catalog(request, tmp_path_factory, monkeypatch) -> Iterator[
         return
 
     path = tmp_path_factory.mktemp("wf_catalog") / "starting_workflows.json"
-    path.write_text(json.dumps([
-        {
-            "name": "Test Workflow Alpha",
-            "pattern": "Supervisor-worker",
-            "use_case": "Unit Test",
-            "scenario": "Alpha Scenario",
-        },
-        {
-            "name": "Test Workflow Beta",
-            "pattern": "Group-chat",
-            "use_case": "Unit Test",
-            "scenario": "Beta Scenario",
-        },
-    ]))
+    path.write_text(
+        json.dumps(
+            [
+                {
+                    "name": "Test Workflow Alpha",
+                    "pattern": "Supervisor-worker",
+                    "use_case": "Unit Test",
+                    "scenario": "Alpha Scenario",
+                    "scenario_documentation_path": "docs/scenarios/alpha_scenario.md",
+                },
+                {
+                    "name": "Test Workflow Beta",
+                    "pattern": "Group-chat",
+                    "use_case": "Unit Test",
+                    "scenario": "Beta Scenario",
+                    "scenario_documentation_path": "docs/scenarios/beta_scenario.md",
+                },
+            ]
+        )
+    )
     monkeypatch.setenv("LUNGO_WORKFLOWS_JSON", str(path))
     yield path
 

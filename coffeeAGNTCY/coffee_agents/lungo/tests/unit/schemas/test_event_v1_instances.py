@@ -6,7 +6,6 @@
 from pathlib import Path
 
 import pytest
-
 from schema.errors import SchemaValidationError
 from schema.json_schema import (
     is_event_type_registered,
@@ -36,6 +35,7 @@ _VALID_MINIMAL = {
                 "pattern": "p",
                 "use_case": "u",
                 "scenario": "s",
+                "scenario_documentation_path": "docs/scenarios/test_scenario.md",
                 "starting_topology": {"nodes": [], "edges": []},
                 "instances": {
                     _INSTANCE_KEY: {
@@ -74,7 +74,11 @@ def test_event_v1_valid_instances(source: str):
     "payload,match_substr",
     [
         pytest.param(
-            {"metadata": _VALID_MINIMAL["metadata"], "data": _VALID_MINIMAL["data"], "extra": 1},
+            {
+                "metadata": _VALID_MINIMAL["metadata"],
+                "data": _VALID_MINIMAL["data"],
+                "extra": 1,
+            },
             "additional",
             id="root_extra_property",
         ),
@@ -103,6 +107,7 @@ def test_event_v1_valid_instances(source: str):
                             "name": "n",
                             "use_case": "u",
                             "scenario": "s",
+                            "scenario_documentation_path": "docs/scenarios/test_scenario.md",
                             "starting_topology": {"nodes": [], "edges": []},
                             "instances": {
                                 _INSTANCE_KEY: {
@@ -135,6 +140,7 @@ def test_instance_map_key_must_match_workflow_instance_id():
                     "pattern": "p",
                     "use_case": "u",
                     "scenario": "s",
+                    "scenario_documentation_path": "docs/scenarios/test_scenario.md",
                     "starting_topology": {"nodes": [], "edges": []},
                     "instances": {
                         "instance://00000000-0000-4000-8000-000000000001": {

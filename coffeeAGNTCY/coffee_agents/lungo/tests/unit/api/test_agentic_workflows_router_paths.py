@@ -29,6 +29,7 @@ _WF_W = Workflow.model_validate(
         "pattern": "p",
         "use_case": "u",
         "scenario": "s",
+        "scenario_documentation_path": "docs/scenarios/test_scenario.md",
         "starting_topology": {
             "nodes": [
                 {

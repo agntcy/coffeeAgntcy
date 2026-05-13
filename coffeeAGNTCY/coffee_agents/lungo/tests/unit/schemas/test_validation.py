@@ -8,11 +8,14 @@ from pathlib import Path
 from unittest.mock import MagicMock
 
 import pytest
-
 from schema import json_schema as json_schema_mod
 from schema import validation as validation_mod
 from schema.definition_backend import DefinitionBackend
-from schema.errors import AmbiguousSchemaNameError, SchemaDefinitionError, SchemaNotFoundError
+from schema.errors import (
+    AmbiguousSchemaNameError,
+    SchemaDefinitionError,
+    SchemaNotFoundError,
+)
 from schema.json_schema import get_schema as json_get_schema
 from schema.validation import (
     get_schema,
@@ -30,6 +33,7 @@ _VALID_JSON = (
     '"correlation":{"id":"correlation://550e8400-e29b-41d4-a716-446655440001"},'
     '"id":"event://550e8400-e29b-41d4-a716-446655440002","type":"RecruiterNodeSearch",'
     '"source":"test"},"data":{"workflows":{"w":{"name":"n","pattern":"p","use_case":"u","scenario":"s",'
+    '"scenario_documentation_path":"docs/scenarios/test_scenario.md",'
     '"starting_topology":{"nodes":[],"edges":[]},'
     '"instances":{"instance://550e8400-e29b-41d4-a716-446655440003":{"id":"instance://550e8400-e29b-41d4-a716-446655440003","topology":{}}}}}}}'
 )

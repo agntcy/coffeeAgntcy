@@ -33,6 +33,7 @@ _MINIMAL_WORKFLOWS: dict[str, Workflow] = {
             "pattern": "test_pattern",
             "use_case": "test_uc",
             "scenario": "test_scenario",
+            "scenario_documentation_path": "docs/scenarios/test_scenario.md",
             "starting_topology": {
                 "nodes": [
                     {

@@ -8,10 +8,8 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
-
-from schema.json_schema import load_json_instance_file
-
 from common.workflow_instance_store.store import WorkflowInstanceStateStore
+from schema.json_schema import load_json_instance_file
 
 _LUNGO_ROOT = Path(__file__).resolve().parents[4]
 _EXAMPLES = _LUNGO_ROOT / "schema" / "jsonschemas" / "examples"
@@ -58,7 +56,9 @@ def test_chain_partial_then_delta() -> None:
             "metadata": {
                 "timestamp": "2026-01-02T00:00:00Z",
                 "schema_version": "1.0.0",
-                "correlation": {"id": "correlation://550e8400-e29b-41d4-a716-446655440001"},
+                "correlation": {
+                    "id": "correlation://550e8400-e29b-41d4-a716-446655440001"
+                },
                 "id": "event://550e8400-e29b-41d4-a716-4466554400ff",
                 "type": "StateProgressUpdate",
                 "source": "test",
@@ -70,6 +70,7 @@ def test_chain_partial_then_delta() -> None:
                         "pattern": "recruiter_pattern",
                         "use_case": "hiring",
                         "scenario": "agent recruitment",
+                        "scenario_documentation_path": "docs/scenarios/agent_recruitment.md",
                         "starting_topology": {"nodes": [], "edges": []},
                         "instances": {
                             "instance://550e8400-e29b-41d4-a716-446655440003": {
