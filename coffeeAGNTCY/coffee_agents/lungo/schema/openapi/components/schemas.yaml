@@ -81,6 +81,12 @@ components:
         scenario:
           type: string
           minLength: 1
+        scenario_documentation_path:
+          type: string
+          minLength: 1
+          description: >
+            Path to the scenario documentation relative to the repository root,
+            the documentation will be displayed in the UI.
 
     WorkflowSummaryMapResponse:
       type: object
