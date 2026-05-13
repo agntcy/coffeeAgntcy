@@ -25,7 +25,9 @@ export const STABLE_AGENT_ID_NAMESPACE = uuidv5(
   uuidv5.DNS,
 )
 
-export function stableAgentUuidForRecordName(agentRecordTopLevelName: string): string {
+export function stableAgentUuidForRecordName(
+  agentRecordTopLevelName: string,
+): string {
   return uuidv5(agentRecordTopLevelName.trim(), STABLE_AGENT_ID_NAMESPACE)
 }
 
@@ -162,7 +164,9 @@ export const IDENTITY_UI_BY_STABLE_AGENT_UUID: Record<
 > = buildIdentityUiByStableAgentUuid()
 
 /** Strip `agent://` prefix if present. */
-export function parseStableAgentUuid(stableAgentId: string | undefined): string | null {
+export function parseStableAgentUuid(
+  stableAgentId: string | undefined,
+): string | null {
   if (!stableAgentId || typeof stableAgentId !== "string") return null
   const t = stableAgentId.trim()
   if (!t) return null
@@ -170,7 +174,9 @@ export function parseStableAgentUuid(stableAgentId: string | undefined): string 
 }
 
 /** Read stable agent id from API wire (string or Pydantic RootModel `{ root }`). */
-export function stableAgentIdFromWire(wire: TopologyNodeWire): string | undefined {
+export function stableAgentIdFromWire(
+  wire: TopologyNodeWire,
+): string | undefined {
   const raw = wire.stable_agent_id
   if (typeof raw === "string" && raw.trim()) return raw.trim()
   if (raw && typeof raw === "object" && "root" in raw) {
@@ -196,7 +202,9 @@ export function splitTopologyNodeLabel(label: string): {
  * Normalize catalog `agent_record_uri` relative paths to a repo path segment
  * under `coffeeAGNTCY/coffee_agents` (for GitHub blob URLs).
  */
-export function normalizeAgentRecordUriToRepoPath(agentRecordUri: string): string | null {
+export function normalizeAgentRecordUriToRepoPath(
+  agentRecordUri: string,
+): string | null {
   let u = agentRecordUri.trim()
   if (!u) return null
   if (/^https?:\/\//i.test(u)) return null
@@ -240,7 +248,8 @@ export function resolveGithubFromAgentRecordUri(
   const raw = agentRecordUri.trim()
   if (!raw) return undefined
   if (/^https?:\/\//i.test(raw)) {
-    if (!options.validateUrls || SecurityClass.isSafeExternalUrl(raw)) return raw
+    if (!options.validateUrls || SecurityClass.isSafeExternalUrl(raw))
+      return raw
     return undefined
   }
   const rel = normalizeAgentRecordUriToRepoPath(raw)
@@ -263,7 +272,8 @@ export function enrichAgenticTopologyWellKnownUi(
 
   const safeUrl = (url: string | undefined): string | undefined => {
     if (!url) return undefined
-    if (!options.validateUrls || SecurityClass.isSafeExternalUrl(url)) return url
+    if (!options.validateUrls || SecurityClass.isSafeExternalUrl(url))
+      return url
     return undefined
   }
 
@@ -342,10 +352,9 @@ export function mergeAgenticTopologyIdentityUi(
       : undefined
   const githubResolved =
     githubStreaming &&
-    (!options.validateUrls ||
-      SecurityClass.isSafeExternalUrl(githubStreaming))
+    (!options.validateUrls || SecurityClass.isSafeExternalUrl(githubStreaming))
       ? githubStreaming
-      : ghFromUri ?? data.githubLink
+      : (ghFromUri ?? data.githubLink)
 
   const merged: CustomNodeData = {
     ...data,

@@ -29,7 +29,8 @@ describe("agenticTopologyIdentityUiMap", () => {
     {
       caseName: "relative catalog uri maps under lungo/agents",
       uri: "../../agents/supervisors/auction/oasf/agents/brazil-coffee-farm.json",
-      expected: "lungo/agents/supervisors/auction/oasf/agents/brazil-coffee-farm.json",
+      expected:
+        "lungo/agents/supervisors/auction/oasf/agents/brazil-coffee-farm.json",
     },
     {
       caseName: "https uri returns null for path normalizer",
@@ -79,14 +80,18 @@ describe("agenticTopologyIdentityUiMap", () => {
   })
 
   it("logistics and recruiter rows exist in stable-agent map", () => {
-    const logisticsUuid = stableAgentUuidForRecordName("Logistics Supervisor agent")
-    const recruiterUuid = stableAgentUuidForRecordName("Agentic Recruiter agent")
-    expect(IDENTITY_UI_BY_STABLE_AGENT_UUID[logisticsUuid]?.directoryAgentSlug).toBe(
-      "logistics-supervisor-agent",
+    const logisticsUuid = stableAgentUuidForRecordName(
+      "Logistics Supervisor agent",
     )
-    expect(IDENTITY_UI_BY_STABLE_AGENT_UUID[recruiterUuid]?.directoryAgentSlug).toBe(
-      "recruiter",
+    const recruiterUuid = stableAgentUuidForRecordName(
+      "Agentic Recruiter agent",
     )
+    expect(
+      IDENTITY_UI_BY_STABLE_AGENT_UUID[logisticsUuid]?.directoryAgentSlug,
+    ).toBe("logistics-supervisor-agent")
+    expect(
+      IDENTITY_UI_BY_STABLE_AGENT_UUID[recruiterUuid]?.directoryAgentSlug,
+    ).toBe("recruiter")
   })
 
   describe("getOasfSlugFromNodeData", () => {

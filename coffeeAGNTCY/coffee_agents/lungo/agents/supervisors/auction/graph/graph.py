@@ -365,15 +365,19 @@ class ExchangeGraph:
             prompt = PromptTemplate(
                 template="""You are an inventory broker for a global coffee exchange company.
                 The user asked about inventory from the {farm} farm.
-                
+
                 User's request: {user_message}
-                
+
                 Farm response:
                 {tool_result}
-                
-                Please provide a clear and concise response to the user based on the farm's inventory information.
+
+                Rules:
+                - If the farm response includes any numeric quantity, you must include that quantity in your reply.
+                - Prefer stating weight in pounds or lbs. If the farm gives only kilograms, convert to pounds (1 kg ≈ 2.20462 lb) or give both units.
+                - Do not ask the user to choose pounds vs kilograms when the farm response already contains inventory numbers.
+                - Be clear and concise.
                 """,
-                input_variables=["farm", "user_message", "tool_result"]
+                input_variables=["farm", "user_message", "tool_result"],
             )
 
             chain = prompt | self.inventory_single_farm_llm

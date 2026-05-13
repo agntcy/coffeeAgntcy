@@ -12,7 +12,8 @@ import { getOasfSlugFromNodeData } from "@/utils/agenticTopologyIdentityUiMap"
 export { getOasfSlugFromNodeData }
 
 function messageFromAxiosResponse(error: unknown): string | undefined {
-  if (!axios.isAxiosError(error) || error.response?.data == null) return undefined
+  if (!axios.isAxiosError(error) || error.response?.data == null)
+    return undefined
   const d = error.response.data as { detail?: unknown; message?: unknown }
   if (typeof d.detail === "string") return d.detail
   if (Array.isArray(d.detail)) {

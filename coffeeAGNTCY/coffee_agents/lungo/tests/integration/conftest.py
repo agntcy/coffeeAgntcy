@@ -68,6 +68,10 @@ _ACTIVE_RUNNERS = []
 
 def _base_env():
     # Use test env: SDK on so spans are recording (avoids NonRecordingSpan.attributes error).
+    #
+    # Agents run as host subprocesses but Docker Compose .env often uses service hostnames
+    # (slim, nats). Those do not resolve on the host, so A2A startup never reaches "Agent ready".
+    # Force loopback to match published compose ports (slim 46357, nats 4222).
     return {
         **os.environ,
         "PYTHONPATH": str(LUNGO_DIR),
@@ -78,6 +82,8 @@ def _base_env():
         "TRANSPORT_SERVER_ENDPOINT": os.environ.get(
             "TRANSPORT_SERVER_ENDPOINT", "http://127.0.0.1:46357"
         ),
+        "SLIM_SERVER": "127.0.0.1:46357",
+        "NATS_SERVER": "127.0.0.1:4222",
     }
 
 def _purge_modules(prefixes, keep=None):
@@ -279,12 +285,14 @@ def agents_up(request, transport_config):
     """
     Start one or more registered agents via @pytest.mark.agents([...]).
 
-    Farm agents (e.g. brazil-farm, colombia-farm, vietnam-farm) are started as
-    local Python subprocesses (ProcessRunner), not as Docker services. Docker
-    is used only for session-level infra: slim, nats, otel-collector,
-    clickhouse-server, grafana. Each agent runs with env = _base_env() |
-    transport_config (so it inherits the test run's environment, including
-    LLM/LiteLLM vars if set).
+        Farm agents (e.g. brazil-farm, colombia-farm, vietnam-farm) are started as
+        local Python subprocesses (ProcessRunner), not as Docker services. Docker
+        is used only for session-level infra: slim, nats, otel-collector,
+        clickhouse-server, grafana. Each agent runs with env = _base_env() |
+        transport_config (so it inherits the test run's environment, including
+        LLM/LiteLLM vars if set). ``_base_env`` forces ``SLIM_SERVER`` and
+        ``NATS_SERVER`` to loopback so subprocesses can reach published compose ports
+        even when the shell ``.env`` uses Docker service hostnames.
 
     Example:
         @pytest.mark.agents(["brazil-farm", "weather-mcp"])
