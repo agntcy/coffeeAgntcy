@@ -22,6 +22,7 @@ import {
 } from "@/utils/agenticWorkflowsApi"
 import { logger } from "@/utils/logger"
 import type { PatternType } from "@/utils/patternUtils"
+import { identityUiVariantForPattern } from "@/utils/agenticTopologyIdentityUiMap"
 import { topologyWireToReactFlow } from "@/utils/topologyToReactFlow"
 
 const REFETCH_DEBOUNCE_MS = 80
@@ -121,13 +122,15 @@ export function useWorkflowGraphFromAgenticApi({
       topology: import("@/api/agenticWorkflowsTypes").TopologyWire | undefined,
     ) => {
       const { nodes: mappedNodes, edges: mappedEdges } =
-        topologyWireToReactFlow(topology)
+        topologyWireToReactFlow(topology, {
+          identityUiVariant: identityUiVariantForPattern(pattern),
+        })
       const withHandlers = mappedNodes.map(attachHandlers)
       setNodes((prev) => mergeDiscoveryNodes(withHandlers, prev))
       setEdges((prev) => mergeDiscoveryEdges(mappedEdges, prev))
       onAppliedRef.current?.()
     },
-    [attachHandlers, setNodes, setEdges],
+    [attachHandlers, setNodes, setEdges, pattern],
   )
 
   const clearSession = useCallback(() => {

@@ -24,15 +24,13 @@ import type {
   TransportNodeData,
 } from "@/components/MainArea/Graph/Elements/types"
 import { layoutPositionsByLayer } from "@/utils/topologyLayout"
-import { SecurityClass } from "@/utils/SecurityClass"
-
-function splitLabel(label: string): { label1: string; label2: string } {
-  const t = label.trim()
-  if (!t) return { label1: "", label2: "" }
-  const sp = t.indexOf(" ")
-  if (sp === -1) return { label1: t, label2: "" }
-  return { label1: t.slice(0, sp), label2: t.slice(sp + 1).trim() }
-}
+import {
+  enrichAgenticTopologyWellKnownUi,
+  mergeAgenticTopologyIdentityUi,
+  resolveGithubFromAgentRecordUri,
+  splitTopologyNodeLabel,
+} from "@/utils/agenticTopologyIdentityUiMap"
+import type { IdentityUiGithubVariant } from "@/utils/agenticTopologyIdentityUiMap"
 
 function defaultCustomIcon(label: string): React.ReactNode {
   const lower = label.toLowerCase()
@@ -49,15 +47,11 @@ function defaultCustomIcon(label: string): React.ReactNode {
   return <SmartToy className="dark-icon opacity-100" sx={iconSx} aria-hidden />
 }
 
-function inferGithubLink(agentRecordUri?: string): string | undefined {
-  if (!agentRecordUri || typeof agentRecordUri !== "string") return undefined
-  if (SecurityClass.isSafeExternalUrl(agentRecordUri)) return agentRecordUri
-  return undefined
-}
-
 export interface TopologyToFlowOptions {
   /** When false, skip SecurityClass check for tests. */
   validateUrls?: boolean
+  /** When set, applies stable-agent UI map streaming vs publish GitHub display where applicable. */
+  identityUiVariant?: IdentityUiGithubVariant
 }
 
 export function topologyWireToReactFlow(
@@ -82,16 +76,15 @@ export function topologyWireToReactFlow(
     const nodeType =
       n.type === NODE_TYPES.TRANSPORT ? NODE_TYPES.TRANSPORT : NODE_TYPES.CUSTOM
     const position = pos.get(n.id) ?? { x: 0, y: 0 }
-    const gh = inferGithubLink(n.agent_record_uri as string | undefined)
-    const safeGh =
-      gh && (!validateUrls || SecurityClass.isSafeExternalUrl(gh))
-        ? gh
-        : undefined
+    const gh = resolveGithubFromAgentRecordUri(
+      n.agent_record_uri as string | undefined,
+      { validateUrls },
+    )
 
     if (nodeType === NODE_TYPES.TRANSPORT) {
       const data: TransportNodeData = {
         label: typeof n.label === "string" ? n.label : "Transport",
-        githubLink: safeGh,
+        githubLink: gh,
         compact: false,
       }
       return {
@@ -103,19 +96,20 @@ export function topologyWireToReactFlow(
     }
 
     const labelStr = typeof n.label === "string" ? n.label : ""
-    const { label1, label2 } = splitLabel(labelStr)
-    const data: CustomNodeData = {
+    const { label1, label2 } = splitTopologyNodeLabel(labelStr)
+    let data: CustomNodeData = {
       icon: defaultCustomIcon(labelStr),
       label1,
       label2,
       handles: HANDLE_TYPES.ALL,
       verificationStatus: VERIFICATION_STATUS.VERIFIED,
-      githubLink: safeGh,
-      slug:
-        typeof n.stable_agent_id === "string"
-          ? n.stable_agent_id.replace(/^agent:\/\//, "")
-          : undefined,
+      githubLink: gh,
     }
+    data = mergeAgenticTopologyIdentityUi(data, n, {
+      validateUrls,
+      identityUiVariant: options.identityUiVariant,
+    })
+    data = enrichAgenticTopologyWellKnownUi(data, n, { validateUrls })
 
     return {
       id: n.id,

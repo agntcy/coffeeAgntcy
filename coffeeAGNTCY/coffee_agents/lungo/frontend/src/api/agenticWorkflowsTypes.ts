@@ -18,7 +18,7 @@ export interface TopologyNodeWire {
   size?: TopologySize
   layer_index?: number
   agent_record_uri?: string
-  stable_agent_id?: string
+  stable_agent_id?: string | { root: string }
   [key: string]: unknown
 }
 

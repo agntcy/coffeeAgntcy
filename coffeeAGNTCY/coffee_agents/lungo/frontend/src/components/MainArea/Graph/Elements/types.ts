@@ -21,7 +21,11 @@ export interface CustomNodeData {
   verificationBadge?: React.ReactNode
   githubLink?: string
   agentDirectoryLink?: string
-  /** Optional slug for identity/directory API lookups; when set, avoids label-based resolution. */
+  /** Slug for `GET .../identity-apps/{slug}/...` (differs from directory OASF slug for some agents). */
+  identityAppsSlug?: string
+  /** Slug for `GET .../agents/{slug}/oasf` (AGNTCY Directory / OASF card). */
+  directoryAgentSlug?: string
+  /** Legacy combined slug; prefer `identityAppsSlug` / `directoryAgentSlug` when set. */
   slug?: string
   farmName?: string
   isModalOpen?: boolean

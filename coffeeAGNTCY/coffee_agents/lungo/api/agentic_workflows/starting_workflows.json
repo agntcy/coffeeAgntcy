@@ -278,7 +278,8 @@
           "type": "customNode",
           "label": "Buyer Logistics Agent",
           "size": { "width": 1.0, "height": 1.0 },
-          "layer_index": 1
+          "layer_index": 1,
+          "agent_record_uri": "../../agents/supervisors/logistics/oasf/agents/logistics-supervisor-agent.json"
         },
         {
           "id": "node://3a000001-0001-4000-a001-000000000003",
@@ -370,7 +371,8 @@
           "type": "customNode",
           "label": "Agentic Recruiter",
           "size": { "width": 1.0, "height": 1.0 },
-          "layer_index": 0
+          "layer_index": 0,
+          "agent_record_uri": "../../agents/supervisors/recruiter/oasf/agents/recruiter.json"
         },
         {
           "id": "node://4a000001-0001-4000-a001-000000000002",

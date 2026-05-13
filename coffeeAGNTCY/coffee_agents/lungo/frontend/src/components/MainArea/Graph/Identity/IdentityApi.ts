@@ -12,6 +12,23 @@ import type { CustomNodeData } from "@/components/MainArea/Graph/Elements/types"
 import { getApiUrlForPattern, PATTERNS } from "@/utils/patternUtils"
 import { logger } from "@/utils/logger"
 
+function messageFromAxiosResponse(error: unknown): string | undefined {
+  if (!axios.isAxiosError(error) || error.response?.data == null) return undefined
+  const d = error.response.data as { detail?: unknown; message?: unknown }
+  if (typeof d.detail === "string") return d.detail
+  if (Array.isArray(d.detail)) {
+    return d.detail
+      .map((item) =>
+        item && typeof item === "object" && "msg" in item
+          ? String((item as { msg: unknown }).msg)
+          : String(item),
+      )
+      .join("; ")
+  }
+  if (typeof d.message === "string") return d.message
+  return undefined
+}
+
 export interface IdentityServiceError {
   message: string
   status?: number
@@ -20,6 +37,10 @@ export interface IdentityServiceError {
 const getSlugFromNodeData = (nodeData: CustomNodeData): string => {
   logger.debug("getSlugFromNodeData", nodeData)
 
+  if (nodeData.identityAppsSlug) {
+    return nodeData.identityAppsSlug
+  }
+
   if (nodeData.slug) {
     return nodeData.slug
   }
@@ -27,7 +48,11 @@ const getSlugFromNodeData = (nodeData: CustomNodeData): string => {
   const label1 = nodeData.label1?.toLowerCase()
   const label2 = nodeData.label2?.toLowerCase()
 
-  if (label1 === "auction agent" || label2?.includes("buyer")) {
+  if (
+    label1 === "auction agent" ||
+    label2?.includes("buyer") ||
+    (label1 === "auction" && label2?.includes("agent"))
+  ) {
     return "auction-supervisor"
   }
 
@@ -66,7 +91,7 @@ export const fetchBadgeDetails = async (
   } catch (error) {
     if (axios.isAxiosError(error)) {
       const errorMessage =
-        error.response?.data?.message ||
+        messageFromAxiosResponse(error) ||
         error.message ||
         "Failed to fetch badge details"
       const errorStatus = error.response?.status
@@ -103,7 +128,7 @@ export const fetchPolicyDetails = async (
   } catch (error) {
     if (axios.isAxiosError(error)) {
       const errorMessage =
-        error.response?.data?.message ||
+        messageFromAxiosResponse(error) ||
         error.message ||
         "Failed to fetch policy details"
       const errorStatus = error.response?.status
