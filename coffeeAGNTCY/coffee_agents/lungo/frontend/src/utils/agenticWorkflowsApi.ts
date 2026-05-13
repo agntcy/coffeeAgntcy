@@ -24,6 +24,7 @@ export interface WorkflowSummary {
   pattern: string
   use_case: string
   scenario: string
+  scenario_documentation_path: string
 }
 
 const isNonEmptyString = (value: unknown): value is string =>
@@ -36,7 +37,8 @@ const isWorkflowSummary = (value: unknown): value is WorkflowSummary => {
     isNonEmptyString(obj.name) &&
     isNonEmptyString(obj.pattern) &&
     isNonEmptyString(obj.use_case) &&
-    isNonEmptyString(obj.scenario)
+    isNonEmptyString(obj.scenario) &&
+    isNonEmptyString(obj.scenario_documentation_path)
   )
 }
 
