@@ -17,6 +17,7 @@
         "pattern": "recruiter_pattern",
         "use_case": "hiring",
         "scenario": "agent recruitment",
+        "scenario_documentation_path": "docs/scenarios/agent_recruitment.md",
         "starting_topology": {
           "nodes": [
             {
