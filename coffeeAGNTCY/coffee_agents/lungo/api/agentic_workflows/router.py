@@ -20,6 +20,8 @@ from api.agentic_workflows.dtos import (
     PatternListResponse,
     UseCase,
     UseCaseListResponse,
+    WorkflowDocumentationResponse,
+    WorkflowDocumentationSection,
     WorkflowInstanceMapResponse,
     WorkflowSummary,
     WorkflowSummaryMapResponse,
@@ -31,6 +33,10 @@ from api.agentic_workflows.instance_lifecycle import (
 )
 from api.agentic_workflows.patterns import PATTERNS
 from api.agentic_workflows.use_cases import USE_CASES
+from api.agentic_workflows.workflow_documentation import (
+    load_parsed_workflow_documentation,
+    workflow_name_to_documentation_slug,
+)
 from api.agentic_workflows.workflows import get_workflows
 from common.workflow_instance_store import (
     WorkflowInstanceStateStore,
@@ -186,6 +192,44 @@ def create_agentic_workflows_router() -> APIRouter:
             return wf.model_copy(update={"instances": {}})
 
         return wf
+
+    @router.get(
+        "/agentic-workflows/{workflow_name}/documentation/",
+        response_model=WorkflowDocumentationResponse,
+        summary="Get workflow documentation (markdown, sectioned)",
+    )
+    async def get_workflow_documentation(
+        workflow_name: Annotated[str, Path(min_length=1)],
+    ) -> WorkflowDocumentationResponse:
+        """GET …/documentation/ — markdown from ``docs/workflows`` for this catalog name."""
+        all_workflows = get_workflows()
+        if all_workflows is None:
+            raise HTTPException(
+                status_code=503,
+                detail="Workflow catalog is not initialized",
+            )
+        if workflow_name not in all_workflows:
+            raise HTTPException(
+                status_code=404,
+                detail=f"Workflow not found: {workflow_name}",
+            )
+        slug = workflow_name_to_documentation_slug(workflow_name)
+        parsed = load_parsed_workflow_documentation(slug)
+        if parsed is None:
+            raise HTTPException(
+                status_code=404,
+                detail=f"Workflow documentation not found for: {workflow_name}",
+            )
+        return WorkflowDocumentationResponse(
+            slug=parsed.slug,
+            workflow_name=workflow_name,
+            title=parsed.title,
+            sections=[
+                WorkflowDocumentationSection(anchor=a, heading=h, body_markdown=b)
+                for a, h, b in parsed.sections
+            ],
+            full_markdown=parsed.full_markdown,
+        )
 
     @router.post(
         "/agentic-workflows/{workflow_name}/",

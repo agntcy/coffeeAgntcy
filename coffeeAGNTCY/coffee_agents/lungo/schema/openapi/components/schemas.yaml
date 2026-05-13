@@ -91,6 +91,48 @@ components:
       additionalProperties:
         $ref: "#/components/schemas/WorkflowSummary"
 
+    WorkflowDocumentationSection:
+      type: object
+      required: [anchor, heading, body_markdown]
+      additionalProperties: false
+      properties:
+        anchor:
+          type: string
+          minLength: 1
+          description: Stable id derived from the section heading (for anchors / TOC).
+        heading:
+          type: string
+          minLength: 1
+          description: Markdown ## heading text (without hashes).
+        body_markdown:
+          type: string
+          description: Markdown body for this section.
+
+    WorkflowDocumentationResponse:
+      type: object
+      required: [slug, workflow_name, sections, full_markdown]
+      additionalProperties: false
+      properties:
+        slug:
+          type: string
+          minLength: 1
+          description: Basename used for docs/workflows/{slug}.md.
+        workflow_name:
+          type: string
+          minLength: 1
+          description: Catalog workflow name (matches Workflow.name).
+        title:
+          type: string
+          nullable: true
+          description: Document H1 title when present.
+        sections:
+          type: array
+          items:
+            $ref: "#/components/schemas/WorkflowDocumentationSection"
+        full_markdown:
+          type: string
+          description: Complete markdown file contents.
+
     InstantiateWorkflowResponse:
       type: object
       required: [workflow_instance_id]

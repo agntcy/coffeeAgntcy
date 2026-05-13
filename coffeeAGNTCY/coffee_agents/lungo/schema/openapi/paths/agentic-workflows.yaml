@@ -122,6 +122,33 @@ paths:
               schema:
                 $ref: ../components/schemas.yaml#/components/schemas/InstantiateWorkflowResponse
 
+  /agentic-workflows/{workflow_name}/documentation/:
+    parameters:
+      - name: workflow_name
+        in: path
+        required: true
+        schema:
+          type: string
+          minLength: 1
+        description: Workflow name (matches Workflow.name in the event contract)
+    get:
+      tags: [agentic-workflows]
+      operationId: getWorkflowDocumentation
+      summary: Workflow documentation (markdown, structured sections)
+      description: >
+        Returns markdown from docs/workflows for this catalog workflow name.
+        The server maps the name to a basename slug to find the .md file, then splits
+        at ## headings for structured rendering.
+      responses:
+        "200":
+          description: Parsed workflow documentation
+          content:
+            application/json:
+              schema:
+                $ref: ../components/schemas.yaml#/components/schemas/WorkflowDocumentationResponse
+        "404":
+          description: Unknown workflow name or no markdown file for that name
+
   /agentic-workflows/{workflow_name}/instances/:
     parameters:
       - name: workflow_name
