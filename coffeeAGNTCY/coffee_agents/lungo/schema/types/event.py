@@ -46,9 +46,7 @@ from pydantic import (
     Tag,
     model_validator,
 )
-
 from schema.types.event_type import EventType
-
 
 # ---------------------------------------------------------------------------
 # ``<prefix>://<UUID>`` id types (one per ``$defs.*_id``)
@@ -477,6 +475,16 @@ class Workflow(BaseModel):
     pattern: Annotated[str, Field(min_length=1)]
     use_case: Annotated[str, Field(min_length=1)]
     scenario: Annotated[str, Field(min_length=1, description="brief extra qualifier for the use-case")]
+    scenario_documentation_path: Annotated[
+        str,
+        Field(
+            min_length=1,
+            description=(
+                "Path to the scenario documentation relative to the repository root, "
+                "the documentation will be displayed in the UI."
+            ),
+        ),
+    ]
     starting_topology: Topology
     instances: dict[
         Annotated[str, Field(pattern=_INSTANCE_ID_REGEX)], WorkflowInstance
