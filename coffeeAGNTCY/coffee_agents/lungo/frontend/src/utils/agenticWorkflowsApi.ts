@@ -89,8 +89,10 @@ const isWorkflowSummary = (value: unknown): value is WorkflowSummary => {
  * Fetch the workflow summaries from `GET /agentic-workflows/`.
  *
  * The backend responds with a map keyed by workflow name (`WorkflowSummaryMapResponse`).
- * This helper flattens the map into an array, dropping any entries that do not
- * match the expected shape so a single bad row cannot break the sidebar.
+ * This helper flattens the map into an array in **JSON object key order** (which should
+ * mirror `starting_workflows.json` when the server builds the map in file order).
+ * Entries that do not match the expected shape are skipped so a single bad row cannot
+ * break the sidebar.
  */
 export const fetchWorkflowSummaries = async (
   signal?: AbortSignal,
@@ -110,8 +112,10 @@ export const fetchWorkflowSummaries = async (
     )
   }
 
+  const raw = body as Record<string, unknown>
   const summaries: WorkflowSummary[] = []
-  for (const value of Object.values(body as Record<string, unknown>)) {
+  for (const key of Object.keys(raw)) {
+    const value = raw[key]
     if (isWorkflowSummary(value)) {
       summaries.push(value)
     }
