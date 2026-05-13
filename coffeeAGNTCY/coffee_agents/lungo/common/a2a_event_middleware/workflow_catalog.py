@@ -81,8 +81,9 @@ def _load_catalog() -> dict[str, WorkflowMetadata]:
             and isinstance(scenario_documentation_path, str)
         ):
             logger.warning(
-                "Skipping workflow at index %d: missing name/pattern/use_case/scenario",
+                "Skipping workflow at index %d: missing name/pattern/use_case/scenario/scenario_documentation_path, entry: %s",
                 idx,
+                entry,
             )
             continue
         if name in catalog:
