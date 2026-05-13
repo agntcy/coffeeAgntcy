@@ -20,46 +20,44 @@ from uuid import uuid4
 from a2a.client import ClientEvent
 from a2a.client.middleware import ClientCallContext, ClientCallInterceptor
 from a2a.types import AgentCard, Message, Task, TaskState
-from opentelemetry import trace as _otel_trace
-
 from config.config import EMIT_WORKFLOW_EVENTS
+from opentelemetry import trace as _otel_trace
 from schema.types import (
-	Correlation,
-	CorrelationId,
-	Data,
-	EdgeId,
-	Event,
-	EventId,
-	EventType,
-	InstanceId,
-	Metadata,
-	NodeId,
-	Operation,
-	PartialEdge,
-	PartialNode,
-	PartialRegularNode,
-	PartialTopology,
-	Size,
-	Topology,
-	TopologyEdgeItem,
-	TopologyNodeItem,
-	Workflow,
-	WorkflowInstance,
+    Correlation,
+    CorrelationId,
+    Data,
+    EdgeId,
+    Event,
+    EventId,
+    EventType,
+    InstanceId,
+    Metadata,
+    NodeId,
+    Operation,
+    PartialEdge,
+    PartialNode,
+    PartialRegularNode,
+    PartialTopology,
+    Size,
+    Topology,
+    TopologyEdgeItem,
+    TopologyNodeItem,
+    Workflow,
+    WorkflowInstance,
 )
-
 from schema.types.event import _INSTANCE_ID_REGEX as INSTANCE_ID_REGEX
 
-from .inflight import (
-	RuntimeIdAllocator,
-	current_trace_id,
-	format_span_id,
-	format_trace_id,
-	read_trace_context,
-	resolve_consumer_state,
-	resolve_correlation_id,
-	upsert_in_flight_state,
-)
 from .event_sink import WorkflowAPIEventSink
+from .inflight import (
+    RuntimeIdAllocator,
+    current_trace_id,
+    format_span_id,
+    format_trace_id,
+    read_trace_context,
+    resolve_consumer_state,
+    resolve_correlation_id,
+    upsert_in_flight_state,
+)
 from .workflow_catalog import lookup_workflow
 
 logger = logging.getLogger("lungo.common.event_middleware")
@@ -225,47 +223,48 @@ def _build_event(
 	trace_id: int | None = None,
 	span_id: int | None = None,
 ) -> Event:
-	"""Build an Event for one workflow-instance topology update.
+    """Build an Event for one workflow-instance topology update.
 
-	Looks up descriptive metadata (pattern + use_case) from the catalog at
-	emission time so callers only need to carry the workflow name.
-	"""
-	metadata = lookup_workflow(workflow_name)
-	if metadata is None:
-		# This should never happen in practice — intercept() validates the
-		# name against the catalog before storing in-flight state. Log loudly
-		# so we don't silently emit malformed events if invariants slip.
-		raise RuntimeError(
-			f"_build_event: workflow_name {workflow_name!r} not in catalog; "
-			"intercept() should have rejected this earlier."
-		)
-	return Event(
-		metadata=_build_metadata(
-			source=source,
-			event_type=event_type,
-			correlation_id=correlation_id,
-			correlation_message=correlation_message,
-			trace_id=trace_id,
-			span_id=span_id,
-		),
-		data=Data(
-			workflows={
-				metadata.workflow_name: Workflow(
-					pattern=metadata.pattern or metadata.workflow_name,
-					use_case=metadata.use_case,
-					scenario=metadata.scenario,
-					name=metadata.workflow_name,
-					starting_topology=_init_starting_topology(),
-					instances={
-						instance_id: WorkflowInstance(
-							id=InstanceId(instance_id),
-							topology=topology,
-						)
-					},
-				)
-			}
-		),
-	)
+    Looks up descriptive metadata (pattern + use_case) from the catalog at
+    emission time so callers only need to carry the workflow name.
+    """
+    metadata = lookup_workflow(workflow_name)
+    if metadata is None:
+        # This should never happen in practice — intercept() validates the
+        # name against the catalog before storing in-flight state. Log loudly
+        # so we don't silently emit malformed events if invariants slip.
+        raise RuntimeError(
+            f"_build_event: workflow_name {workflow_name!r} not in catalog; "
+            "intercept() should have rejected this earlier."
+        )
+    return Event(
+        metadata=_build_metadata(
+            source=source,
+            event_type=event_type,
+            correlation_id=correlation_id,
+            correlation_message=correlation_message,
+            trace_id=trace_id,
+            span_id=span_id,
+        ),
+        data=Data(
+            workflows={
+                metadata.workflow_name: Workflow(
+                    pattern=metadata.pattern or metadata.workflow_name,
+                    use_case=metadata.use_case,
+                    scenario=metadata.scenario,
+                    scenario_documentation_path=metadata.scenario_documentation_path,
+                    name=metadata.workflow_name,
+                    starting_topology=_init_starting_topology(),
+                    instances={
+                        instance_id: WorkflowInstance(
+                            id=InstanceId(instance_id),
+                            topology=topology,
+                        )
+                    },
+                )
+            }
+        ),
+    )
 
 
 async def _outbound_topology(
