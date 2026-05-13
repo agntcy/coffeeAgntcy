@@ -77,17 +77,59 @@ interface UseCaseScenarioBucket {
   workflows: WorkflowNode[]
 }
 
+const catalogIndexByName = (
+  summaries: readonly WorkflowSummary[],
+): Map<string, number> => {
+  const m = new Map<string, number>()
+  summaries.forEach((s, i) => {
+    if (!m.has(s.name)) {
+      m.set(s.name, i)
+    }
+  })
+  return m
+}
+
+const minIndexForWorkflows = (
+  workflows: readonly WorkflowNode[],
+  order: Map<string, number>,
+): number => {
+  let m = Number.POSITIVE_INFINITY
+  for (const w of workflows) {
+    const idx = order.get(w.name)
+    if (idx !== undefined && idx < m) {
+      m = idx
+    }
+  }
+  return m
+}
+
+const minIndexForPattern = (
+  scenarioMap: Map<string, UseCaseScenarioBucket>,
+  order: Map<string, number>,
+): number => {
+  let m = Number.POSITIVE_INFINITY
+  for (const bucket of scenarioMap.values()) {
+    const b = minIndexForWorkflows(bucket.workflows, order)
+    if (b < m) {
+      m = b
+    }
+  }
+  return m
+}
+
 /**
  * Group workflow summaries into the `pattern -> (use-case + scenario) -> workflow` tree.
  *
- * Ordering is alphabetical at every level so the menu is stable regardless of
- * the order the API happens to return rows in. Workflow names without a known
- * slug are kept in the tree (with `slug: null`) so the sidebar can render
- * them disabled.
+ * Ordering follows the order of rows in ``summaries`` (intended to mirror
+ * ``starting_workflows.json`` via ``GET /agentic-workflows/``): patterns,
+ * use-case groups, and workflows are ordered by the smallest catalog index among
+ * descendants, with ``localeCompare`` only as a tie-breaker. Workflow names without
+ * a known slug stay in the tree with ``slug: null`` so the sidebar can render them disabled.
  */
 export const groupWorkflowsByPatternAndUseCase = (
   summaries: readonly WorkflowSummary[],
 ): PatternNode[] => {
+  const order = catalogIndexByName(summaries)
   const byPattern = new Map<string, Map<string, UseCaseScenarioBucket>>()
 
   for (const summary of summaries) {
@@ -115,21 +157,40 @@ export const groupWorkflowsByPatternAndUseCase = (
     })
   }
 
-  const sortedPatternNames = [...byPattern.keys()].sort((a, b) =>
-    a.localeCompare(b),
-  )
-  return sortedPatternNames.map((patternName) => {
+  const patternNames = [...byPattern.keys()]
+  patternNames.sort((a, b) => {
+    const ia = minIndexForPattern(byPattern.get(a)!, order)
+    const ib = minIndexForPattern(byPattern.get(b)!, order)
+    if (ia !== ib) {
+      return ia - ib
+    }
+    return a.localeCompare(b)
+  })
+
+  return patternNames.map((patternName) => {
     const scenarioMap = byPattern.get(patternName)!
     const useCaseScenarios: UseCaseScenarioNode[] = [...scenarioMap.values()]
       .map((bucket) => ({
         useCase: bucket.useCase,
         scenario: bucket.scenario,
         label: formatUseCaseScenarioLabel(bucket.useCase, bucket.scenario),
-        workflows: [...bucket.workflows].sort((a, b) =>
-          a.name.localeCompare(b.name),
-        ),
+        workflows: [...bucket.workflows].sort((a, b) => {
+          const ia = order.get(a.name) ?? Number.POSITIVE_INFINITY
+          const ib = order.get(b.name) ?? Number.POSITIVE_INFINITY
+          if (ia !== ib) {
+            return ia - ib
+          }
+          return a.name.localeCompare(b.name)
+        }),
       }))
-      .sort((a, b) => a.label.localeCompare(b.label))
+      .sort((a, b) => {
+        const ia = minIndexForWorkflows(a.workflows, order)
+        const ib = minIndexForWorkflows(b.workflows, order)
+        if (ia !== ib) {
+          return ia - ib
+        }
+        return a.label.localeCompare(b.label)
+      })
     return {
       name: patternName,
       useCaseScenarios,
