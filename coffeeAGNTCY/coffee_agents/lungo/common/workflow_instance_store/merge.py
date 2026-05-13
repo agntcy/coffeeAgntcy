@@ -158,7 +158,13 @@ def _merge_workflow(
     snapshot_wf: dict,
     incoming_wf: dict,
 ) -> None:
-    for key in ("pattern", "use_case", "name", "scenario"):
+    for key in (
+        "pattern",
+        "use_case",
+        "name",
+        "scenario",
+        "scenario_documentation_path",
+    ):
         if key in incoming_wf:
             snapshot_wf[key] = incoming_wf[key]
     if "starting_topology" in incoming_wf:

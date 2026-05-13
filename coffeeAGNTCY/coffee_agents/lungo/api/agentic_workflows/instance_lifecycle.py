@@ -59,6 +59,7 @@ def build_instantiate_seed_event(
                     "pattern": wf.pattern,
                     "use_case": wf.use_case,
                     "scenario": wf.scenario,
+                    "scenario_documentation_path": wf.scenario_documentation_path,
                     "starting_topology": wf.starting_topology.model_dump(
                         mode="json",
                     ),

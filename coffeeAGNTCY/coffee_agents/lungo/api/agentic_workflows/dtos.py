@@ -48,6 +48,16 @@ class WorkflowSummary(BaseModel):
     pattern: Annotated[str, Field(min_length=1)]
     use_case: Annotated[str, Field(min_length=1)]
     scenario: Annotated[str, Field(min_length=1, description="brief extra qualifier for the use-case")]
+    scenario_documentation_path: Annotated[
+        str,
+        Field(
+            min_length=1,
+            description=(
+                "Path to the scenario documentation relative to the repository root, "
+                "the documentation will be displayed in the UI."
+            ),
+        ),
+    ]
 
 
 class WorkflowSummaryMapResponse(RootModel[dict[str, WorkflowSummary]]):

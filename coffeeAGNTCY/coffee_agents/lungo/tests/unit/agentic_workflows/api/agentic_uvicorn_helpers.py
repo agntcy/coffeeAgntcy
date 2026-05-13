@@ -83,6 +83,7 @@ def minimal_event_v1_dict(
     pattern: str = "p",
     use_case: str = "u",
     scenario: str = "s",
+    scenario_documentation_path: str = "docs/scenarios/test_scenario.md",
     workflow_display_name: str | None = None,
 ) -> dict:
     """Wire-shape ``event_v1`` for POST .../events/ (defaults match legacy SSE HTTP test)."""
@@ -103,6 +104,7 @@ def minimal_event_v1_dict(
                     "pattern": pattern,
                     "use_case": use_case,
                     "scenario": scenario,
+                    "scenario_documentation_path": scenario_documentation_path,
                     "starting_topology": {"nodes": [], "edges": []},
                     "instances": {
                         instance_uri: {

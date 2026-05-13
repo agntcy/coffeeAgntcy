@@ -4,6 +4,7 @@
     "pattern": "Supervisor-worker",
     "use_case": "Coffee Agntcy",
     "scenario": "Coffee Buying",
+    "scenario_documentation_path": "docs/scenarios/coffee_buying.md",
     "starting_topology": {
       "nodes": [
         {
@@ -133,6 +134,7 @@
     "pattern": "Supervisor-worker",
     "use_case": "Coffee Agntcy",
     "scenario": "Coffee Buying",
+    "scenario_documentation_path": "docs/scenarios/coffee_buying.md",
     "starting_topology": {
       "nodes": [
         {
@@ -262,6 +264,7 @@
     "pattern": "Group chat",
     "use_case": "Coffee Agntcy",
     "scenario": "Order Fulfillment",
+    "scenario_documentation_path": "docs/scenarios/order_fulfillment.md",
     "starting_topology": {
       "nodes": [
         {
@@ -362,6 +365,7 @@
     "pattern": "Recruiter",
     "use_case": "Coffee Agntcy",
     "scenario": "Capability Discovery",
+    "scenario_documentation_path": "docs/scenarios/capability_discovery.md",
     "starting_topology": {
       "nodes": [
         {
