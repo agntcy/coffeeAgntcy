@@ -242,6 +242,15 @@ claude --plugin-dir ./plugin
 
 **Prerequisites:** [Claude Code CLI](https://docs.anthropic.com/en/docs/claude-code), [`dirctl`](https://github.com/agntcy/dir-ctl), [Go 1.23+](https://go.dev/dl/) (to build `a2a-send`), [`jq`](https://stedolan.github.io/jq/) for record parsing, and `python3` (≥3.7, stdlib only — used by `/agntcy-discover-connect:check-identity`).
 
+**Environment variables:** `/agntcy-discover-connect:check-identity` reads two variables to talk to the AGNTCY identity service. Both are documented in [`.env.example`](./.env.example) under **Agntcy TBAC Settings**:
+
+| Variable | Purpose | Example |
+|---|---|---|
+| `IDENTITY_API_SERVER_URL` | Base URL of the identity service | `https://api.agent-identity.outshift.com` (hosted) or `http://0.0.0.0:4000` (local) |
+| `IDENTITY_SERVICE_API_KEY` | Sent as the `x-id-api-key` header on every call | (your AGNTCY identity-service API key) |
+
+Export them in the shell that runs `claude`, or load them from your `.env` before launch (e.g. `set -a; source .env; set +a`). If either is unset, `/check-identity` exits with a JSON error pointing at this section.
+
 ### Plugin Commands
 
 All commands live under the `agntcy-discover-connect` plugin namespace.
@@ -256,7 +265,7 @@ Send a message directly to any A2A agent endpoint for quick testing or one-off c
 
 #### `/agntcy-discover-connect:check-identity <name>`
 
-Inspect the AGNTCY identity-service badge and policies attached to a recruited skill. Read-only; does not modify the skill.
+Inspect the AGNTCY identity-service badge and policies attached to a recruited skill. Read-only; does not modify the skill. Requires `IDENTITY_API_SERVER_URL` and `IDENTITY_SERVICE_API_KEY` to be exported — see [Environment variables](#plugin-installation) above.
 
 **Example usage:**
 
