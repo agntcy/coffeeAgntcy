@@ -261,7 +261,7 @@
     "name": "Secure Group Communication Logistics Network",
     "pattern": "Group chat",
     "use_case": "Coffee Agntcy",
-    "scenario": "Order Fulfilment",
+    "scenario": "Order Fulfillment",
     "starting_topology": {
       "nodes": [
         {
