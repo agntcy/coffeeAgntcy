@@ -52,8 +52,8 @@ const accordionSummaryExpandLeftSx = {
     flexDirection: "row-reverse" as const,
     justifyContent: "flex-start",
     "& .MuiAccordionSummary-expandIconWrapper": {
-        marginLeft: 0,
-        marginRight: 0,
+          marginLeft: 0,
+          marginRight: 0,
           transition: "transform 150ms cubic-bezier(0.4, 0, 0.2, 1)",
       },
       "& .MuiAccordionSummary-expandIconWrapper.Mui-expanded": {
@@ -253,10 +253,8 @@ const DocumentationDrawer: React.FC<DocumentationDrawerProps> = ({
 
     const transitionMs = `${PANEL_TRANSITION_MS}ms`
 
-    const showFab =
-        mode === "implemented" &&
-        effectiveVisual === "collapsed" &&
-        !panelMounted
+      /** One control, same overlay box as the graph: identical `right`/`top` in every state. */
+      const showDocumentationToggle = Boolean(workflowName)
 
     const markdownShellClass =
         "documentation-drawer-markdown max-w-none text-[15px] leading-relaxed text-sidebar-text/95"
@@ -266,22 +264,6 @@ const DocumentationDrawer: React.FC<DocumentationDrawerProps> = ({
             className="pointer-events-none absolute inset-0 z-[50] flex justify-end"
             aria-hidden={false}
         >
-            {showFab && (
-                <div className="pointer-events-auto absolute right-3 top-3">
-                    <button
-                        type="button"
-                        className={cn(
-                            "flex h-10 w-10 items-center justify-center rounded-lg border border-action-background bg-app-background text-sidebar-text shadow-md hover:bg-sidebar-item-selected",
-                        )}
-                        aria-label="Documentation"
-                        onClick={onDocIconClick}
-                        onContextMenu={onDocIconContextMenu}
-                    >
-                        <DescriptionOutlined fontSize="small" />
-                    </button>
-                </div>
-            )}
-
             {panelMounted && (
                 <div
                     ref={panelRef}
@@ -300,23 +282,14 @@ const DocumentationDrawer: React.FC<DocumentationDrawerProps> = ({
                         transitionDuration: transitionMs,
                     }}
                 >
-                    <div className="relative flex flex-none items-center border-b border-action-background py-2 pl-3 pr-3">
+                    <div className="flex flex-none items-center border-b border-action-background px-3 py-2 pr-14">
                         <Typography
-                            className="min-w-0 flex-1 truncate pr-12 font-semibold tracking-tight text-sidebar-text"
+                            className="min-w-0 flex-1 truncate font-semibold tracking-tight text-sidebar-text"
                             variant="h6"
                             component="div"
                         >
                             {doc?.title ?? workflowName ?? "Documentation"}
                         </Typography>
-                        <button
-                            type="button"
-                            className="absolute right-3 top-1/2 flex h-9 w-9 -translate-y-1/2 flex-none items-center justify-center rounded-md hover:bg-sidebar-item-selected"
-                            aria-label="Documentation"
-                            onClick={onDocIconClick}
-                            onContextMenu={onDocIconContextMenu}
-                        >
-                            <DescriptionOutlined fontSize="small" />
-                        </button>
                     </div>
 
                     <div className="min-h-0 flex-1 overflow-y-auto px-3 py-3">
@@ -354,35 +327,52 @@ const DocumentationDrawer: React.FC<DocumentationDrawerProps> = ({
                                             className="mb-2 border border-action-background shadow-none before:hidden"
                                         >
                                             <AccordionSummary
-                                expandIcon={
-                                    <KeyboardArrowRight fontSize="small" aria-hidden />
-                                }
-                                sx={accordionSummaryExpandLeftSx}
-                            >
-                                <Typography
-                                    variant="subtitle1"
-                                    component="div"
-                                    className="min-w-0 flex-1 pl-1 font-semibold leading-snug tracking-tight text-sidebar-text"
-                                >
-                                    {section.heading}
-                                </Typography>
-                            </AccordionSummary>
-                            <AccordionDetails className="pt-0">
-                                <div className={markdownShellClass}>
-                                    <ReactMarkdown
-                                        components={DOCUMENTATION_MARKDOWN_COMPONENTS}
-                                        rehypePlugins={[rehypeSanitize]}
-                                    >
-                                        {bodyDisplay}
-                                    </ReactMarkdown>
-                                </div>
-                            </AccordionDetails>
-                        </Accordion>
+                                                expandIcon={
+                                                    <KeyboardArrowRight fontSize="small" aria-hidden />
+                                                }
+                                                sx={accordionSummaryExpandLeftSx}
+                                            >
+                                                <Typography
+                                                    variant="subtitle1"
+                                                    component="div"
+                                                    className="min-w-0 flex-1 pl-1 font-semibold leading-snug tracking-tight text-sidebar-text"
+                                                >
+                                                    {section.heading}
+                                                </Typography>
+                                            </AccordionSummary>
+                                            <AccordionDetails className="pt-0">
+                                                <div className={markdownShellClass}>
+                                                    <ReactMarkdown
+                                                        components={DOCUMENTATION_MARKDOWN_COMPONENTS}
+                                                        rehypePlugins={[rehypeSanitize]}
+                                                    >
+                                                        {bodyDisplay}
+                                                    </ReactMarkdown>
+                                                </div>
+                                            </AccordionDetails>
+                                        </Accordion>
                     )
                   })}
                             </>
                         )}
                     </div>
+                </div>
+            )}
+
+            {showDocumentationToggle && (
+                <div className="pointer-events-auto absolute right-3 top-3 z-[52]">
+                    <button
+                        type="button"
+                        className={cn(
+                            "flex h-10 w-10 items-center justify-center rounded-lg border border-action-background bg-app-background text-sidebar-text shadow-md hover:bg-sidebar-item-selected",
+                            mode === "placeholder" && "pointer-events-none opacity-80",
+                        )}
+                        aria-label="Documentation"
+                        onClick={onDocIconClick}
+                        onContextMenu={onDocIconContextMenu}
+                    >
+                        <DescriptionOutlined fontSize="small" />
+                    </button>
                 </div>
             )}
         </div>
