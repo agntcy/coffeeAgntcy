@@ -3,7 +3,10 @@ FROM astral/uv:0.11.14-python3.12-trixie-slim@sha256:13b5883729ec534af5863facf5c
 
 WORKDIR /app
 COPY coffeeAGNTCY/coffee_agents/lungo/pyproject.toml coffeeAGNTCY/coffee_agents/lungo/uv.lock ./
-RUN uv sync --locked --no-editable
+
+ENV UV_LINK_MODE=copy
+RUN --mount=type=cache,target=/root/.cache/uv uv sync --locked --no-editable
+
 
 COPY coffeeAGNTCY/coffee_agents/lungo/ .
 CMD ["uv", "run", "python", "agents/supervisors/logistics/main.py"]

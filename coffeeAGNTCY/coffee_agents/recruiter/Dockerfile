@@ -12,7 +12,9 @@ RUN ARCH=$(dpkg --print-architecture) && \
 
 WORKDIR /app
 COPY coffeeAGNTCY/coffee_agents/recruiter/pyproject.toml coffeeAGNTCY/coffee_agents/recruiter/uv.lock coffeeAGNTCY/coffee_agents/recruiter/README.md ./
-RUN uv sync --locked --no-editable
+
+ENV UV_LINK_MODE=copy
+RUN --mount=type=cache,target=/root/.cache/uv uv sync --locked --no-editable
 
 COPY coffeeAGNTCY/coffee_agents/recruiter/ .
 
