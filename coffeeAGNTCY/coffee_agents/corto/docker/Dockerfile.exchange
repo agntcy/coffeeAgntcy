@@ -17,12 +17,21 @@ ARG IMAGE_NAME=unknown
 ARG IMAGE_TAG=unknown
 
 WORKDIR /app
-COPY coffeeAGNTCY/coffee_agents/corto/pyproject.toml coffeeAGNTCY/coffee_agents/corto/uv.lock ./
 
+# Silences warnings about not being able to link files since the cache and sync target are on separate file systems
 ENV UV_LINK_MODE=copy
-RUN --mount=type=cache,target=/root/.cache/uv  uv sync --locked --no-editable
+
+# Install dependencies
+RUN --mount=type=cache,target=/root/.cache/uv \
+    --mount=type=bind,source=coffeeAGNTCY/coffee_agents/corto/uv.lock,target=uv.lock \
+    --mount=type=bind,source=coffeeAGNTCY/coffee_agents/corto/pyproject.toml,target=pyproject.toml \
+    uv sync --locked --no-install-project
 
 COPY coffeeAGNTCY/coffee_agents/corto/ .
+
+# Sync the project
+RUN --mount=type=cache,target=/root/.cache/uv \
+    uv sync --locked
 
 ## Generate about.properties file with build metadata
 RUN printf "app.name=corto-exchange\n"                > about.properties && \

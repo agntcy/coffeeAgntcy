@@ -2,10 +2,20 @@
 FROM astral/uv:0.11.14-python3.12-trixie-slim@sha256:13b5883729ec534af5863facf5c40ac0869f2c124ad5620c9ed36fe7c03fa87d
 
 WORKDIR /app
-COPY coffeeAGNTCY/coffee_agents/lungo/pyproject.toml coffeeAGNTCY/coffee_agents/lungo/uv.lock ./
 
+# Silences warnings about not being able to link files since the cache and sync target are on separate file systems
 ENV UV_LINK_MODE=copy
-RUN --mount=type=cache,target=/root/.cache/uv uv sync --locked --no-editable
+
+# Install dependencies
+RUN --mount=type=cache,target=/root/.cache/uv \
+    --mount=type=bind,source=coffeeAGNTCY/coffee_agents/lungo/uv.lock,target=uv.lock \
+    --mount=type=bind,source=coffeeAGNTCY/coffee_agents/lungo/pyproject.toml,target=pyproject.toml \
+    uv sync --locked --no-install-project
 
 COPY coffeeAGNTCY/coffee_agents/lungo/ .
+
+# Sync the project
+RUN --mount=type=cache,target=/root/.cache/uv \
+    uv sync --locked
+
 CMD ["uv", "run", "python", "agents/farms/colombia/farm_server.py"]

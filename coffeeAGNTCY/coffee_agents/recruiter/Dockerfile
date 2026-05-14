@@ -11,12 +11,21 @@ RUN ARCH=$(dpkg --print-architecture) && \
     chmod +x /usr/local/bin/dirctl
 
 WORKDIR /app
-COPY coffeeAGNTCY/coffee_agents/recruiter/pyproject.toml coffeeAGNTCY/coffee_agents/recruiter/uv.lock coffeeAGNTCY/coffee_agents/recruiter/README.md ./
 
+# Silences warnings about not being able to link files since the cache and sync target are on separate file systems
 ENV UV_LINK_MODE=copy
-RUN --mount=type=cache,target=/root/.cache/uv uv sync --locked --no-editable
+
+# Install python dependencies
+RUN --mount=type=cache,target=/root/.cache/uv \
+    --mount=type=bind,source=coffeeAGNTCY/coffee_agents/recruiter/uv.lock,target=uv.lock \
+    --mount=type=bind,source=coffeeAGNTCY/coffee_agents/recruiter/pyproject.toml,target=pyproject.toml \
+    uv sync --locked --no-install-project
 
 COPY coffeeAGNTCY/coffee_agents/recruiter/ .
+
+# Sync the project
+RUN --mount=type=cache,target=/root/.cache/uv \
+    uv sync --locked
 
 # Expose the A2A server port
 EXPOSE 8881
