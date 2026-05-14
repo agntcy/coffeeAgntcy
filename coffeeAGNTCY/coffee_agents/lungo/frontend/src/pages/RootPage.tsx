@@ -7,6 +7,7 @@
 
 import React from "react"
 import Navigation from "@/components/Navigation/Navigation"
+import DocumentationDrawer from "@/components/MainArea/DocumentationDrawer"
 import MainArea from "@/components/MainArea/MainArea"
 import ChatArea from "@/components/Chat/ChatArea"
 import Sidebar from "@/components/Sidebar/Sidebar"
@@ -88,6 +89,15 @@ const RootPage: React.FC = () => {
                   ? recruiterSelectedAgent.cid
                   : null
               }
+            />
+            <DocumentationDrawer
+              mode={
+                selectedPattern === PATTERNS.NO_WORKFLOW_IMPLEMENTATION
+                  ? "placeholder"
+                  : "implemented"
+              }
+              selectedPattern={selectedPattern}
+              selectedPlaceholderPatternName={selectedPlaceholderPatternName}
             />
           </div>
           <div className="flex min-h-[76px] w-full flex-none flex-col items-center justify-center gap-0 bg-overlay-background p-0 md:min-h-[96px]">

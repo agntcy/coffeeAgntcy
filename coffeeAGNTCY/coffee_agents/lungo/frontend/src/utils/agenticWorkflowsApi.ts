@@ -18,6 +18,35 @@ export const getAgenticWorkflowsApiUrl = (): string => {
   )
 }
 
+export interface WorkflowDocumentationSection {
+  anchor: string
+  heading: string
+  body_markdown: string
+}
+
+export interface WorkflowDocumentationResponse {
+  slug: string
+  workflow_name: string
+  title: string | null
+  sections: WorkflowDocumentationSection[]
+  full_markdown: string
+}
+
+export async function fetchWorkflowDocumentation(
+  workflowName: string,
+  signal?: AbortSignal,
+): Promise<WorkflowDocumentationResponse> {
+  const encoded = encodeURIComponent(workflowName)
+  const url = `${getAgenticWorkflowsApiUrl()}/agentic-workflows/${encoded}/documentation/`
+  const response = await fetch(url, { signal })
+  if (!response.ok) {
+    throw new Error(
+      `Workflow documentation: HTTP ${response.status} ${response.statusText}`,
+    )
+  }
+  return response.json() as Promise<WorkflowDocumentationResponse>
+}
+
 /** One row of `GET /agentic-workflows/` (matches backend `WorkflowSummary`). */
 export interface WorkflowSummary {
   name: string

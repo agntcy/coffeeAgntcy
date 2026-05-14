@@ -36,6 +36,29 @@ export const mapWorkflowNameToSlug = (name: string): PatternType | null => {
   return WORKFLOW_NAME_TO_PATTERN_SLUG[name] ?? null
 }
 
+/**
+ * Inverse of `WORKFLOW_NAME_TO_PATTERN_SLUG`: maps an implemented graph
+ * `PatternType` to the catalog `Workflow.name` used by
+ * `GET /agentic-workflows/{workflow_name}/documentation/`.
+ *
+ * Patterns without a graph (`no_workflow_implementation`) are not listed.
+ */
+const PATTERN_SLUG_TO_WORKFLOW_NAME: Partial<Record<PatternType, string>> = {}
+for (const [workflowName, slug] of Object.entries(
+  WORKFLOW_NAME_TO_PATTERN_SLUG,
+) as [string, PatternType][]) {
+  PATTERN_SLUG_TO_WORKFLOW_NAME[slug] = workflowName
+}
+
+export function getCatalogWorkflowNameForPattern(
+  pattern: PatternType,
+): string | null {
+  if (pattern === PATTERNS.NO_WORKFLOW_IMPLEMENTATION) {
+    return null
+  }
+  return PATTERN_SLUG_TO_WORKFLOW_NAME[pattern] ?? null
+}
+
 export interface WorkflowNode {
   name: string
   slug: PatternType | null
@@ -242,6 +265,7 @@ export const groupWorkflowsByPatternAndUseCase = (
   const out: CatalogSidebarEntry[] = implementedNames.map((patternName) => ({
     kind: "pattern",
     node: buildPatternNode(patternName, byPattern, order),
+    variant: "implemented",
   }))
 
   if (out.length > 0 && placeholderNames.length > 0) {
@@ -252,6 +276,7 @@ export const groupWorkflowsByPatternAndUseCase = (
     ...placeholderNames.map((patternName) => ({
       kind: "pattern" as const,
       node: buildPatternNode(patternName, byPattern, order),
+      variant: "placeholder" as const,
     })),
   )
 
