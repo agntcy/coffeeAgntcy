@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 # SLIM v0.7+ requires to use debian trixie distribution
-FROM python:3.13.11-slim-trixie
+FROM astral/uv:0.11.14-python3.12-trixie-slim@sha256:13b5883729ec534af5863facf5c40ac0869f2c124ad5620c9ed36fe7c03fa87d
 
 # Install system dependencies, including ping, curl, and wget
 RUN apt-get update && \
@@ -15,14 +15,6 @@ RUN apt-get update && \
 RUN ARCH=$(dpkg --print-architecture) && \
     curl -L https://github.com/agntcy/dir/releases/download/v1.0.0/dirctl-linux-${ARCH} -o /usr/local/bin/dirctl && \
     chmod +x /usr/local/bin/dirctl
-
-# Install uv and create virtual environment
-RUN pip install --no-cache-dir uv && \
-    uv venv -q /venv
-ENV PATH="/venv/bin:$PATH"
-
-# Set PYTHONPATH to include the application directory
-ENV PYTHONPATH="/app"
 
 WORKDIR /app
 COPY coffeeAGNTCY/coffee_agents/recruiter/pyproject.toml coffeeAGNTCY/coffee_agents/recruiter/uv.lock coffeeAGNTCY/coffee_agents/recruiter/README.md ./

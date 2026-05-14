@@ -1,18 +1,10 @@
-FROM python:3.13.11-slim-trixie
+FROM astral/uv:0.11.14-python3.12-trixie-slim@sha256:13b5883729ec534af5863facf5c40ac0869f2c124ad5620c9ed36fe7c03fa87d
 
 # Install system dependencies, including ping, curl, and wget
 RUN apt-get update && \
     apt-get install -y --no-install-recommends git curl wget iputils-ping && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
-
-# Install uv and create virtual environment
-RUN pip install --no-cache-dir uv && \
-    uv venv -q /venv
-ENV PATH="/venv/bin:$PATH"
-
-# Set PYTHONPATH to include the application directory
-ENV PYTHONPATH="/app"
 
 WORKDIR /app
 COPY coffeeAGNTCY/coffee_agents/lungo/pyproject.toml coffeeAGNTCY/coffee_agents/lungo/uv.lock ./
