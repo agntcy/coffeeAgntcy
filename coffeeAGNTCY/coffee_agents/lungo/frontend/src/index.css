@@ -1,43 +1,40 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+/**
+ * Copyright AGNTCY Contributors (https://github.com/agntcy)
+ * SPDX-License-Identifier: Apache-2.0
+ **/
 
-@layer base {
-  body {
-    margin: 0;
-    padding: 0;
-  }
-
-  :root {
-    --github-icon: url("@/assets/Github.png");
-    --agent-directory-icon: url("@/assets/Agent_directory.png");
-    /*     --github-icon: url("@/assets/Github_lightmode.png");
-    --agent-directory-icon: url("@/assets/Agent_Icon_light.png");*/
-  }
-
-  .theme-icon-github {
-    content: var(--github-icon);
-  }
-
-  .theme-icon-agent-directory {
-    content: var(--agent-directory-icon);
-  }
+body {
+  margin: 0;
+  padding: 0;
 }
 
-@layer components {
-  .app-container {
-    display: flex;
-    height: 100vh;
-    width: 100vw;
-    flex-direction: column;
-    overflow: hidden;
-    background-color: var(--app-background);
-  }
+:root {
+  --github-icon: url("@/assets/Github.png");
+  --agent-directory-icon: url("@/assets/Agent_directory.png");
+  /*     --github-icon: url("@/assets/Github_lightmode.png");
+    --agent-directory-icon: url("@/assets/Agent_Icon_light.png");*/
+}
 
-  .main-content {
-    flex-grow: 1;
-    display: flex;
-    flex-direction: column;
-    background-color: var(--app-background);
-  }
+.theme-icon-github {
+  content: var(--github-icon);
+}
+
+.theme-icon-agent-directory {
+  content: var(--agent-directory-icon);
+}
+
+.app-container {
+  display: flex;
+  height: 100vh;
+  width: 100vw;
+  flex-direction: column;
+  overflow: hidden;
+  background-color: var(--app-background);
+}
+
+.main-content {
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  background-color: var(--app-background);
 }
