@@ -7,7 +7,11 @@ import { Node, Edge } from "@xyflow/react"
 import { NODE_IDS, EDGE_IDS, EDGE_LABELS } from "./const"
 import { logger } from "./logger"
 import urlsConfig from "./urls.json"
-import { isGroupCommunication, getApiUrlForPattern, PATTERNS } from "./patternUtils"
+import {
+  isGroupCommunication,
+  getApiUrlForPattern,
+  PATTERNS,
+} from "./patternUtils"
 import {
   type GraphConfig,
   PUBLISH_SUBSCRIBE_CONFIG,

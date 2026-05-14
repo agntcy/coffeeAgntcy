@@ -80,11 +80,11 @@ export interface PatternNode {
 /** One row in the LHS catalog: either a pattern subtree or a visual separator. */
 export type CatalogSidebarEntry =
   | {
-    kind: "pattern"
-    node: PatternNode
-    /** `implemented` = full dropdown tree; `placeholder` = pattern button only. */
-    variant: "implemented" | "placeholder"
-  }
+      kind: "pattern"
+      node: PatternNode
+      /** `implemented` = full dropdown tree; `placeholder` = pattern button only. */
+      variant: "implemented" | "placeholder"
+    }
   | { kind: "separator" }
 
 /** Build the display label for the middle (use-case + scenario) row. */
@@ -111,9 +111,7 @@ interface UseCaseScenarioBucket {
 }
 
 /** True if this pattern has at least one implemented workflow. */
-const patternHasImplementation = (
-  pattern_node: PatternNode,
-): boolean => {
+const patternHasImplementation = (pattern_node: PatternNode): boolean => {
   for (const use_case_scenario of pattern_node.useCaseScenarios) {
     for (const workflow of use_case_scenario.workflows) {
       if (pattern_node.name !== workflow.name) {
@@ -252,12 +250,16 @@ export const groupWorkflowsByPatternAndUseCase = (
 
   const allNames = [...byPattern.keys()]
   const implementedNames = sortPatternNamesByCatalogOrder(
-    allNames.filter((n) => patternHasImplementation(buildPatternNode(n, byPattern, order))),
+    allNames.filter((n) =>
+      patternHasImplementation(buildPatternNode(n, byPattern, order)),
+    ),
     byPattern,
     order,
   )
   const placeholderNames = sortPatternNamesByCatalogOrder(
-    allNames.filter((n) => !patternHasImplementation(buildPatternNode(n, byPattern, order))),
+    allNames.filter(
+      (n) => !patternHasImplementation(buildPatternNode(n, byPattern, order)),
+    ),
     byPattern,
     order,
   )

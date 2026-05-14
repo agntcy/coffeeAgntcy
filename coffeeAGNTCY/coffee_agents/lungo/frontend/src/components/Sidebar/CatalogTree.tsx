@@ -109,7 +109,8 @@ const CatalogTree: React.FC<CatalogTreeProps> = ({
                         onClick={
                           isUnknown
                             ? undefined
-                            : () => onPatternChange(workflow.slug!)}
+                            : () => onPatternChange(workflow.slug!)
+                        }
                         className={cn(
                           "pl-10",
                           isUnknown &&
