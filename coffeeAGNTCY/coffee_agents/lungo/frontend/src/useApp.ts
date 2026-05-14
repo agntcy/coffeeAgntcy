@@ -238,7 +238,7 @@ export function useApp() {
           streamCompleteRef.current = false
           streaming.resetGroup()
           try {
-            await streaming.startStreaming(query)
+            await streaming.startStreaming(query, activeWorkflowInstanceId)
           } catch (err) {
             logger.apiError("/agent/prompt/stream", err)
             chat.setShowFinalResponse(true)
