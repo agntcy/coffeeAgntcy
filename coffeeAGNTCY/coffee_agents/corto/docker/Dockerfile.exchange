@@ -18,7 +18,9 @@ ARG IMAGE_TAG=unknown
 
 WORKDIR /app
 COPY coffeeAGNTCY/coffee_agents/corto/pyproject.toml coffeeAGNTCY/coffee_agents/corto/uv.lock ./
-RUN uv sync --locked --no-editable
+
+ENV UV_LINK_MODE=copy
+RUN --mount=type=cache,target=/root/.cache/uv  uv sync --locked --no-editable
 
 COPY coffeeAGNTCY/coffee_agents/corto/ .
 
