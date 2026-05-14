@@ -50,10 +50,30 @@ from agents.supervisors.auction.card import AUCTION_SUPERVISOR_CARD
 logger = logging.getLogger("lungo.supervisor.tools")
 
 
+def _transport_should_close_after_tool(transport: object) -> bool:
+    """True only for transports that are safe to close after each tool call.
+
+    SLIM/SlimRPC are backed by the process-scoped ``A2AClientFactory`` in
+    ``shared.py``; closing them after every call breaks later discovery/broadcast
+    (integration conftest keeps that module loaded to avoid duplicate SLIM
+    connections). NATS pattern clients are typically per-use and should be
+    released.
+    """
+    cls = type(transport)
+    label = f"{getattr(cls, '__module__', '')}.{getattr(cls, '__name__', '')}".lower()
+    if "slim" in label:
+        return False
+    if "nats" in label:
+        return True
+    return False
+
+
 async def _dispose_a2a_client(client: object) -> None:
-    """Best-effort close for patterns transports (e.g. NATS) after tool calls."""
+    """Best-effort close for transports that own their connection (e.g. NATS)."""
     transport = getattr(client, "transport", None)
     if transport is None:
+        return
+    if not _transport_should_close_after_tool(transport):
         return
     closer = getattr(transport, "close", None)
     if closer is None:
