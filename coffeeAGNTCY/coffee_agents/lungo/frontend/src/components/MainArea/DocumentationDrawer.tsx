@@ -34,8 +34,12 @@ type VisualState = "collapsed" | "expanded" | "full"
 
 const VISUAL_ORDER: VisualState[] = ["collapsed", "expanded", "full"]
 
+/** Left-click: delay before treating as single “forward” (double-click cancels). */
 const CLICK_SINGLE_DELAY_MS = 280
+/** Right `contextmenu`: max gap (ms) between two events to count as “double” → forward. */
 const RIGHT_DOUBLE_WINDOW_MS = 450
+/** Panel `transform` / `width` transition duration (ms). */
+const PANEL_TRANSITION_MS = 300
 
 export interface DocumentationDrawerProps {
     mode: DocumentationDrawerMode
@@ -64,6 +68,13 @@ const DocumentationDrawer: React.FC<DocumentationDrawerProps> = ({
     const leftClickTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
     const lastRightDownRef = useRef<number>(0)
 
+    /** Keeps the panel mounted while sliding out after collapse. */
+    const [panelMounted, setPanelMounted] = useState(false)
+    /** true = sheet on-screen (`translate-x-0`); false = off to the right. */
+    const [panelSlideOpen, setPanelSlideOpen] = useState(false)
+    const panelRef = useRef<HTMLDivElement | null>(null)
+    const prevWantsPanelRef = useRef(false)
+
     const workflowName = useMemo(() => {
         if (selectedPattern === PATTERNS.NO_WORKFLOW_IMPLEMENTATION) {
             return selectedPlaceholderPatternName
@@ -73,6 +84,8 @@ const DocumentationDrawer: React.FC<DocumentationDrawerProps> = ({
 
     const effectiveVisual: VisualState =
         mode === "placeholder" ? "full" : visual
+
+    const wantsPanel = effectiveVisual !== "collapsed"
 
     useEffect(() => {
         if (mode === "implemented") {
@@ -159,24 +172,67 @@ const DocumentationDrawer: React.FC<DocumentationDrawerProps> = ({
         }
     }
 
-    const showPanel = effectiveVisual !== "collapsed"
+    useEffect(() => {
+        if (!wantsPanel) {
+            if (panelMounted) {
+                setPanelSlideOpen(false)
+            }
+            prevWantsPanelRef.current = false
+            return
+        }
+
+        const entering = !prevWantsPanelRef.current
+        prevWantsPanelRef.current = true
+        setPanelMounted(true)
+
+        if (mode === "placeholder") {
+            setPanelSlideOpen(true)
+            return
+        }
+
+        if (entering) {
+            setPanelSlideOpen(false)
+            const id = requestAnimationFrame(() => {
+                requestAnimationFrame(() => setPanelSlideOpen(true))
+            })
+            return () => cancelAnimationFrame(id)
+        }
+
+        setPanelSlideOpen(true)
+    }, [wantsPanel, effectiveVisual, mode, panelMounted])
+
+    const onPanelTransitionEnd = (e: React.TransitionEvent<HTMLDivElement>) => {
+        if (e.target !== panelRef.current) return
+        if (e.propertyName !== "transform" && e.propertyName !== "width") return
+        if (!wantsPanel && !panelSlideOpen) {
+            setPanelMounted(false)
+        }
+    }
+
     const panelWidthClass =
         effectiveVisual === "expanded"
             ? "w-[30%] min-w-[260px] max-w-xl"
             : effectiveVisual === "full"
                 ? "w-full"
-                : ""
+                : "w-[30%] min-w-[260px] max-w-xl"
 
     const preamble = doc?.sections.find((s) => s.heading === "preamble")
     const accordionSections =
         doc?.sections.filter((s) => s.heading !== "preamble") ?? []
+
+    const transitionMs = `${PANEL_TRANSITION_MS}ms`
+
+    const showFab =
+        mode === "implemented" &&
+        effectiveVisual === "collapsed" &&
+        !panelMounted
 
     return (
         <div
             className="pointer-events-none absolute inset-0 z-[50] flex justify-end"
             aria-hidden={false}
         >
-            {effectiveVisual === "collapsed" && (
+            {showFab && (
                 <div className="pointer-events-auto absolute right-3 top-3">
                     <button
                         type="button"
@@ -192,12 +248,23 @@ const DocumentationDrawer: React.FC<DocumentationDrawerProps> = ({
                 </div>
             )}
 
-            {showPanel && (
+            {panelMounted && (
                 <div
+                    ref={panelRef}
+                    onTransitionEnd={onPanelTransitionEnd}
                     className={cn(
-                        "pointer-events-auto flex h-full flex-col border-l border-action-background bg-app-background shadow-xl",
+                        "pointer-events-auto absolute right-0 top-0 z-[51] flex h-full flex-col border-l border-action-background bg-app-background shadow-xl",
+                        "ease-out motion-reduce:transition-none",
                         panelWidthClass,
+                        panelSlideOpen
+                            ? "translate-x-0 opacity-100"
+                            : "translate-x-full opacity-100",
+                        wantsPanel ? "pointer-events-auto" : "pointer-events-none",
                     )}
+                    style={{
+                        transitionProperty: "transform, width",
+                        transitionDuration: transitionMs,
+                    }}
                 >
                     <div className="flex flex-none items-center gap-2 border-b border-action-background px-3 py-2">
                         <button
@@ -228,7 +295,7 @@ const DocumentationDrawer: React.FC<DocumentationDrawerProps> = ({
                         {!loading && !loadError && doc && (
                             <>
                                 {preamble && (
-                                    <div className="documentation-markdown text-sm mb-4 max-w-none">
+                                    <div className="documentation-markdown mb-4 max-w-none text-sm">
                                         <ReactMarkdown rehypePlugins={[rehypeSanitize]}>
                                             {preamble.body_markdown}
                                         </ReactMarkdown>
@@ -247,7 +314,7 @@ const DocumentationDrawer: React.FC<DocumentationDrawerProps> = ({
                                             </Typography>
                                         </AccordionSummary>
                                         <AccordionDetails>
-                                            <div className="documentation-markdown text-sm max-w-none">
+                                            <div className="documentation-markdown max-w-none text-sm">
                                                 <ReactMarkdown rehypePlugins={[rehypeSanitize]}>
                                                     {section.body_markdown}
                                                 </ReactMarkdown>
