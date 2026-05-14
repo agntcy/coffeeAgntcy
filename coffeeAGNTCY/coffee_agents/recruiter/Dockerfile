@@ -4,12 +4,6 @@
 # SLIM v0.7+ requires to use debian trixie distribution
 FROM astral/uv:0.11.14-python3.12-trixie-slim@sha256:13b5883729ec534af5863facf5c40ac0869f2c124ad5620c9ed36fe7c03fa87d
 
-# Install system dependencies, including ping, curl, and wget
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends git curl wget iputils-ping && \
-    apt-get clean && \
-    rm -rf /var/lib/apt/lists/*
-
 # Install dirctl binary for MCP toolset (detect architecture for multi-platform builds)
 # Note: Using specific version as /releases/latest/ points to GUI release which doesn't include dirctl
 RUN ARCH=$(dpkg --print-architecture) && \
