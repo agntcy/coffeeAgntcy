@@ -4,11 +4,7 @@
 # SLIM v0.7+ requires to use debian trixie distribution
 FROM astral/uv:0.11.14-python3.12-trixie-slim@sha256:13b5883729ec534af5863facf5c40ac0869f2c124ad5620c9ed36fe7c03fa87d
 
-# Install dirctl binary for MCP toolset (detect architecture for multi-platform builds)
-# Note: Using specific version as /releases/latest/ points to GUI release which doesn't include dirctl
-RUN ARCH=$(dpkg --print-architecture) && \
-    curl -L https://github.com/agntcy/dir/releases/download/v1.0.0/dirctl-linux-${ARCH} -o /usr/local/bin/dirctl && \
-    chmod +x /usr/local/bin/dirctl
+COPY --from=ghcr.io/agntcy/dir-ctl:v1.0.0 /dirctl /usr/local/bin/dirctl
 
 WORKDIR /app
 
