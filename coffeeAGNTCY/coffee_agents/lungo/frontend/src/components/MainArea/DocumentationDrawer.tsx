@@ -19,7 +19,7 @@ import Accordion from "@mui/material/Accordion"
 import AccordionDetails from "@mui/material/AccordionDetails"
 import AccordionSummary from "@mui/material/AccordionSummary"
 import Typography from "@mui/material/Typography"
-import ExpandMoreIcon from "@mui/icons-material/ExpandMore"
+import KeyboardArrowRight from "@mui/icons-material/KeyboardArrowRight"
 import DescriptionOutlined from "@mui/icons-material/DescriptionOutlined"
 import ReactMarkdown from "react-markdown"
 import rehypeSanitize from "rehype-sanitize"
@@ -42,6 +42,29 @@ const CLICK_SINGLE_DELAY_MS = 280
 const RIGHT_DOUBLE_WINDOW_MS = 450
 /** Panel `transform` / `width` transition duration (ms). */
 const PANEL_TRANSITION_MS = 300
+
+/**
+ * MUI `AccordionSummary`: expand control on the leading edge; chevron points
+ * right when collapsed and rotates 90° to point down when expanded (overrides
+ * default 180° behavior used with `ExpandMoreIcon`).
+ */
+const accordionSummaryExpandLeftSx = {
+    flexDirection: "row-reverse" as const,
+    justifyContent: "flex-start",
+    "& .MuiAccordionSummary-expandIconWrapper": {
+        marginLeft: 0,
+        marginRight: 0,
+          transition: "transform 150ms cubic-bezier(0.4, 0, 0.2, 1)",
+      },
+      "& .MuiAccordionSummary-expandIconWrapper.Mui-expanded": {
+          transform: "rotate(90deg)",
+    },
+    "& .MuiAccordionSummary-content": {
+        flexGrow: 1,
+        marginLeft: 0,
+        marginRight: 0,
+    },
+  }
 
 export interface DocumentationDrawerProps {
     mode: DocumentationDrawerMode
@@ -330,28 +353,33 @@ const DocumentationDrawer: React.FC<DocumentationDrawerProps> = ({
                                             disableGutters
                                             className="mb-2 border border-action-background shadow-none before:hidden"
                                         >
-                                            <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                                                <Typography
-                                                    variant="subtitle1"
-                                                    component="div"
-                                                    className="w-full pr-1 font-semibold leading-snug tracking-tight text-sidebar-text"
-                                                >
-                                                    {section.heading}
-                                                </Typography>
-                                            </AccordionSummary>
-                                            <AccordionDetails className="pt-0">
-                                                <div className={markdownShellClass}>
-                                                    <ReactMarkdown
-                                                        components={DOCUMENTATION_MARKDOWN_COMPONENTS}
-                                                        rehypePlugins={[rehypeSanitize]}
-                                                    >
-                                                        {bodyDisplay}
-                                                    </ReactMarkdown>
-                                                </div>
-                                            </AccordionDetails>
-                                        </Accordion>
-                                    )
-                                })}
+                                            <AccordionSummary
+                                expandIcon={
+                                    <KeyboardArrowRight fontSize="small" aria-hidden />
+                                }
+                                sx={accordionSummaryExpandLeftSx}
+                            >
+                                <Typography
+                                    variant="subtitle1"
+                                    component="div"
+                                    className="min-w-0 flex-1 pl-1 font-semibold leading-snug tracking-tight text-sidebar-text"
+                                >
+                                    {section.heading}
+                                </Typography>
+                            </AccordionSummary>
+                            <AccordionDetails className="pt-0">
+                                <div className={markdownShellClass}>
+                                    <ReactMarkdown
+                                        components={DOCUMENTATION_MARKDOWN_COMPONENTS}
+                                        rehypePlugins={[rehypeSanitize]}
+                                    >
+                                        {bodyDisplay}
+                                    </ReactMarkdown>
+                                </div>
+                            </AccordionDetails>
+                        </Accordion>
+                    )
+                  })}
                             </>
                         )}
                     </div>
