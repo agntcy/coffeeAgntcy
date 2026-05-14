@@ -14,9 +14,9 @@ import Send from "@mui/icons-material/Send"
 import AgentIcon from "@/assets/Coffee_Icon.svg"
 import grafanaIcon from "@/assets/grafana.svg"
 
-import CoffeePromptsDropdown from "./Prompts/CoffeePromptsDropdown"
-import LogisticsPromptsDropdown from "./Prompts/LogisticsPromptsDropdown"
-import DiscoveryPromptsDropdown from "./Prompts/DiscoveryPromptsDropdown"
+import CoffeePromptsDropdown from "./prompts/CoffeePromptsDropdown"
+import LogisticsPromptsDropdown from "./prompts/LogisticsPromptsDropdown"
+import DiscoveryPromptsDropdown from "./prompts/DiscoveryPromptsDropdown"
 
 import UserMessage from "./UserMessage"
 import ChatHeader from "./ChatHeader"
