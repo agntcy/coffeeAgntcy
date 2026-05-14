@@ -25,8 +25,10 @@ import ReactMarkdown from "react-markdown"
 import rehypeSanitize from "rehype-sanitize"
 import { fetchWorkflowDocumentation } from "@/utils/agenticWorkflowsApi"
 import { getCatalogWorkflowNameForPattern } from "@/utils/sidebarHierarchy"
+import { applyHardLineBreaksOutsideFences } from "@/utils/markdownDisplay"
 import { PATTERNS, type PatternType } from "@/utils/patternUtils"
 import { cn } from "@/utils/cn"
+import { DOCUMENTATION_MARKDOWN_COMPONENTS } from "./documentationMarkdown"
 
 export type DocumentationDrawerMode = "implemented" | "placeholder"
 
@@ -220,12 +222,21 @@ const DocumentationDrawer: React.FC<DocumentationDrawerProps> = ({
     const accordionSections =
         doc?.sections.filter((s) => s.heading !== "preamble") ?? []
 
+    const preambleDisplay = useMemo(
+        () =>
+            preamble ? applyHardLineBreaksOutsideFences(preamble.body_markdown) : "",
+        [preamble],
+    )
+
     const transitionMs = `${PANEL_TRANSITION_MS}ms`
 
     const showFab =
         mode === "implemented" &&
         effectiveVisual === "collapsed" &&
         !panelMounted
+
+    const markdownShellClass =
+        "documentation-drawer-markdown max-w-none text-[15px] leading-relaxed text-sidebar-text/95"
 
     return (
         <div
@@ -276,7 +287,11 @@ const DocumentationDrawer: React.FC<DocumentationDrawerProps> = ({
                         >
                             <DescriptionOutlined fontSize="small" />
                         </button>
-                        <Typography className="flex-1 truncate" variant="subtitle1">
+                        <Typography
+                            className="flex-1 truncate font-semibold tracking-tight text-sidebar-text"
+                            variant="h6"
+                            component="div"
+                        >
                             {doc?.title ?? workflowName ?? "Documentation"}
                         </Typography>
                     </div>
@@ -295,33 +310,48 @@ const DocumentationDrawer: React.FC<DocumentationDrawerProps> = ({
                         {!loading && !loadError && doc && (
                             <>
                                 {preamble && (
-                                    <div className="documentation-markdown mb-4 max-w-none text-sm">
-                                        <ReactMarkdown rehypePlugins={[rehypeSanitize]}>
-                                            {preamble.body_markdown}
+                                    <div className={`${markdownShellClass} mb-6`}>
+                                        <ReactMarkdown
+                                            components={DOCUMENTATION_MARKDOWN_COMPONENTS}
+                                            rehypePlugins={[rehypeSanitize]}
+                                        >
+                                            {preambleDisplay}
                                         </ReactMarkdown>
                                     </div>
                                 )}
-                                {accordionSections.map((section) => (
-                                    <Accordion
-                                        key={section.anchor}
-                                        defaultExpanded
-                                        disableGutters
-                                        className="mb-1 border border-action-background shadow-none before:hidden"
-                                    >
-                                        <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                                            <Typography variant="subtitle2">
-                                                {section.heading}
-                                            </Typography>
-                                        </AccordionSummary>
-                                        <AccordionDetails>
-                                            <div className="documentation-markdown max-w-none text-sm">
-                                                <ReactMarkdown rehypePlugins={[rehypeSanitize]}>
-                                                    {section.body_markdown}
-                                                </ReactMarkdown>
-                                            </div>
-                                        </AccordionDetails>
-                                    </Accordion>
-                                ))}
+                                {accordionSections.map((section) => {
+                                    const bodyDisplay = applyHardLineBreaksOutsideFences(
+                                        section.body_markdown,
+                                    )
+                                    return (
+                                        <Accordion
+                                            key={section.anchor}
+                                            defaultExpanded
+                                            disableGutters
+                                            className="mb-2 border border-action-background shadow-none before:hidden"
+                                        >
+                                            <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+                                                <Typography
+                                                    variant="subtitle1"
+                                                    component="div"
+                                                    className="w-full pr-1 font-semibold leading-snug tracking-tight text-sidebar-text"
+                                                >
+                                                    {section.heading}
+                                                </Typography>
+                                            </AccordionSummary>
+                                            <AccordionDetails className="pt-0">
+                                                <div className={markdownShellClass}>
+                                                    <ReactMarkdown
+                                                        components={DOCUMENTATION_MARKDOWN_COMPONENTS}
+                                                        rehypePlugins={[rehypeSanitize]}
+                                                    >
+                                                        {bodyDisplay}
+                                                    </ReactMarkdown>
+                                                </div>
+                                            </AccordionDetails>
+                                        </Accordion>
+                                    )
+                                })}
                             </>
                         )}
                     </div>

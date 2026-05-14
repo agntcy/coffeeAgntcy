@@ -313,6 +313,16 @@
     flex-direction: column;
     background-color: var(--app-background);
   }
+
+  .documentation-drawer-markdown > *:first-child {
+    margin-top: 0;
+  }
+
+  .documentation-drawer-markdown pre code {
+    background-color: transparent;
+    padding: 0;
+    font-size: inherit;
+  }
 }
 
 @layer base {
