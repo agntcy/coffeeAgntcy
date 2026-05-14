@@ -16,12 +16,21 @@ ARG IMAGE_NAME=unknown
 ARG IMAGE_TAG=unknown
 
 WORKDIR /app
-COPY coffeeAGNTCY/coffee_agents/lungo/pyproject.toml coffeeAGNTCY/coffee_agents/lungo/uv.lock ./
 
+# Silences warnings about not being able to link files since the cache and sync target are on separate file systems
 ENV UV_LINK_MODE=copy
-RUN --mount=type=cache,target=/root/.cache/uv uv sync --locked --no-editable
+
+# Install python dependencies
+RUN --mount=type=cache,target=/root/.cache/uv \
+    --mount=type=bind,source=coffeeAGNTCY/coffee_agents/lungo/uv.lock,target=uv.lock \
+    --mount=type=bind,source=coffeeAGNTCY/coffee_agents/lungo/pyproject.toml,target=pyproject.toml \
+    uv sync --locked --no-install-project
 
 COPY coffeeAGNTCY/coffee_agents/lungo/ .
+
+# Sync the project
+RUN --mount=type=cache,target=/root/.cache/uv \
+    uv sync --locked
 
 RUN printf "app.name=agentic-workflows-api\n"                > about.properties && \
     printf "app.service=agentic-workflows-api\n"              >> about.properties && \
