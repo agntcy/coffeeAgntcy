@@ -16,12 +16,6 @@ ARG BUILD_SOURCE=local
 ARG IMAGE_NAME=unknown
 ARG IMAGE_TAG=unknown
 
-# Install system dependencies, including curl, ping, and wget
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends git curl wget iputils-ping && \
-    apt-get clean && \
-    rm -rf /var/lib/apt/lists/*
-
 WORKDIR /app
 COPY coffeeAGNTCY/coffee_agents/corto/pyproject.toml coffeeAGNTCY/coffee_agents/corto/uv.lock ./
 RUN uv sync --locked --no-editable
