@@ -13,7 +13,7 @@ import {
 } from "@/utils/agenticWorkflowsApi"
 import {
   groupWorkflowsByPatternAndUseCase,
-  type PatternNode,
+  type CatalogSidebarEntry,
 } from "@/utils/sidebarHierarchy"
 import { logger } from "@/utils/logger"
 import CatalogTree from "./CatalogTree"
@@ -40,9 +40,13 @@ const CATALOG_FETCH_RETRY_DELAY_MS = 750
  * mirroring the previous static sidebar UX where every dropdown was open by
  * default.
  */
-const buildInitialExpanded = (tree: PatternNode[]): Set<string> => {
+const buildInitialExpanded = (tree: CatalogSidebarEntry[]): Set<string> => {
   const next = new Set<string>()
-  for (const pattern of tree) {
+  for (const entry of tree) {
+    if (entry.kind !== "pattern") {
+      continue
+    }
+    const pattern = entry.node
     next.add(makePatternKey(pattern.name))
     for (const ucs of pattern.useCaseScenarios) {
       next.add(makeScenarioKey(pattern.name, ucs.useCase, ucs.scenario))

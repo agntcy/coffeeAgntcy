@@ -5,7 +5,7 @@
 
 import React from "react"
 import { PatternType } from "@/utils/patternUtils"
-import type { PatternNode } from "@/utils/sidebarHierarchy"
+import type { CatalogSidebarEntry, PatternNode } from "@/utils/sidebarHierarchy"
 import { cn } from "@/utils/cn"
 import SidebarItem from "./sidebarItem"
 import SidebarDropdown from "./SidebarDropdown"
@@ -13,7 +13,7 @@ import UseCaseDropdown from "./UseCaseDropdown"
 import { makePatternKey, makeScenarioKey } from "./sidebarKeys"
 
 interface CatalogTreeProps {
-  tree: PatternNode[]
+  tree: CatalogSidebarEntry[]
   expanded: Set<string>
   onToggle: (key: string) => void
   selectedPattern: PatternType
@@ -38,7 +38,19 @@ const CatalogTree: React.FC<CatalogTreeProps> = ({
 
   return (
     <>
-      {tree.map((pattern) => {
+      {tree.map((entry, index) => {
+        if (entry.kind === "separator") {
+          return (
+            <div
+              key={`catalog-separator-${index}`}
+              className="my-2 border-t border-sidebar-border px-2"
+              role="separator"
+              aria-hidden="true"
+            />
+          )
+        }
+
+        const pattern: PatternNode = entry.node
         const pKey = makePatternKey(pattern.name)
         return (
           <SidebarDropdown
@@ -73,8 +85,7 @@ const CatalogTree: React.FC<CatalogTreeProps> = ({
                         onClick={
                           isUnknown
                             ? undefined
-                            : () => onPatternChange(workflow.slug!)
-                        }
+                            : () => onPatternChange(workflow.slug!)}
                         className={cn(
                           "pl-10",
                           isUnknown &&
