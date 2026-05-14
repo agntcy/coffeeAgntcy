@@ -90,7 +90,7 @@ class WorkflowAPIEventSink(EventSink):
                 headers={"Content-Type": "application/json"},
             )
             if resp.is_error:
-                logger.warning(
+                logger.error(
                     "HttpEventSink: POST failed workflow=%s instance=%s status=%s",
                     workflow_name,
                     instance_uuid,
@@ -98,21 +98,21 @@ class WorkflowAPIEventSink(EventSink):
                 )
                 return
 
-            logger.debug(
+            logger.info(
                 "HttpEventSink: POST ok workflow=%s instance=%s status=%s",
                 workflow_name,
                 instance_uuid,
                 resp.status_code,
             )
         except httpx.TimeoutException as exc:
-            logger.warning(
+            logger.error(
                 "HttpEventSink: timeout workflow=%s instance=%s (%s)",
                 workflow_name,
                 instance_uuid,
                 exc,
             )
         except httpx.HTTPError as exc:
-            logger.warning(
+            logger.error(
                 "HttpEventSink: http error workflow=%s instance=%s (%s: %s)",
                 workflow_name,
                 instance_uuid,
@@ -120,7 +120,7 @@ class WorkflowAPIEventSink(EventSink):
                 exc,
             )
         except Exception as exc:
-            logger.warning(
+            logger.error(
                 "HttpEventSink: unexpected error workflow=%s instance=%s (%s: %s)",
                 workflow_name,
                 instance_uuid,

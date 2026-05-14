@@ -23,6 +23,7 @@ from a2a.types import AgentCard, Message, Task, TaskState
 from opentelemetry import trace as _otel_trace
 
 from config.config import EMIT_WORKFLOW_EVENTS
+from common.stable_agent_id import stable_agent_id_for_name as _stable_agent_id
 from schema.types import (
 	Correlation,
 	CorrelationId,
@@ -117,8 +118,14 @@ def _make_node(
 	label: str,
 	layer_index: int,
 	include_size: bool = True,
+	stable_agent_id: str | None = None,
 ) -> PartialNode:
 	"""Create a PartialNode with standard defaults."""
+	extras: dict[str, Any] = {}
+	if stable_agent_id is not None:
+		extras["stable_agent_id"] = stable_agent_id
+		# Schema requires agent_record_uri on any node with stable_agent_id.
+		extras["agent_record_uri"] = f"agent-card://{stable_agent_id.removeprefix('agent://')}"
 	return PartialRegularNode(
 		id=NodeId(node_id),
 		operation=operation,
@@ -126,6 +133,7 @@ def _make_node(
 		label=label,
 		layer_index=layer_index,
 		**(dict(size=_DEFAULT_NODE_SIZE) if include_size else {}),
+		**extras,
 	)
 
 
@@ -287,6 +295,7 @@ async def _outbound_topology(
 			node_type="customNode",
 			label=caller_agent_id,
 			layer_index=layer_index,
+			stable_agent_id=_stable_agent_id(caller_agent_id),
 		),
 		_make_node(
 			transport_node,
@@ -314,6 +323,7 @@ async def _outbound_topology(
 				node_type="customNode",
 				label=agent_id,
 				layer_index=layer_index + 2,
+				stable_agent_id=_stable_agent_id(agent_id),
 			),
 		)
 		edges.append(
@@ -350,6 +360,7 @@ async def _inbound_topology(
 				label=remote_agent_id,
 				layer_index=layer_index + 2,
 				include_size=False,
+				stable_agent_id=_stable_agent_id(remote_agent_id),
 			),
 			_make_node(
 				transport_node,
@@ -366,6 +377,7 @@ async def _inbound_topology(
 				label=caller_agent_id,
 				layer_index=layer_index,
 				include_size=False,
+				stable_agent_id=_stable_agent_id(caller_agent_id),
 			),
 		],
 		edges=[
@@ -394,7 +406,7 @@ class EventEmittingInterceptor(ClientCallInterceptor):
 		caller_card: AgentCard,
 		agent_call_graph_layer: int = 0,
 	) -> None:
-		self._caller_agent_id = caller_card.name
+		self._caller_agent_id = agent_id_from_card(caller_card) or "unknown"
 		self._source = _slugify_source(caller_card)
 		self._agent_call_graph_layer = agent_call_graph_layer
 
@@ -492,7 +504,7 @@ class EventEmittingInterceptor(ClientCallInterceptor):
 		# 2) Build/update trace-scoped state and topology fragment.
 		remote_agent_ids = _collect_remote_agent_ids(ctx_state, agent_card)
 
-		active_transport = agent_card.preferred_transport or "Transport"
+		active_transport = (agent_card.preferred_transport or "Transport").upper()
 
 		allocator = await _bind_outbound_interaction_state(
 			trace_id=trace_ctx.trace_id,
@@ -523,6 +535,9 @@ class EventEmittingInterceptor(ClientCallInterceptor):
 						node_type="customNode",
 						label=self._caller_agent_id,
 						layer_index=self._agent_call_graph_layer,
+						stable_agent_id=_stable_agent_id(
+							self._caller_agent_id
+						),
 					)
 				],
 				edges=[],
@@ -544,15 +559,15 @@ class EventEmittingInterceptor(ClientCallInterceptor):
 		if self._event_sink:
 			await self._event_sink.emit(event)
 
-		if logger.isEnabledFor(logging.DEBUG):
-			logger.debug(
-				"EventEmittingInterceptor [%s]: outbound %s -> %s\n%s\nProcessing time: %.3fs",
-				self._source,
-				method_name,
-				", ".join(remote_agent_ids) if remote_agent_ids else "unknown remote",
-				event.model_dump_json(indent=2, exclude_none=True),
-				monotonic() - t_intercept_start,
-			)
+		#if logger.isEnabledFor(logging.DEBUG):
+		logger.info(
+			"EventEmittingInterceptor [%s]: outbound %s -> %s\n%s\nProcessing time: %.3fs",
+			self._source,
+			method_name,
+			", ".join(remote_agent_ids) if remote_agent_ids else "unknown remote",
+			event.model_dump_json(indent=2, exclude_none=True),
+			monotonic() - t_intercept_start,
+		)
 
 		return request_payload, http_kwargs
 
@@ -615,7 +630,7 @@ def make_event_emitting_consumer(
 	else:
 		event_sink = WorkflowAPIEventSink()
 
-	caller_agent_id = caller_card.name
+	caller_agent_id = agent_id_from_card(caller_card) or "unknown"
 	_source = _slugify_source(caller_card)
 
 	async def event_emitting_consumer(
@@ -627,7 +642,7 @@ def make_event_emitting_consumer(
 		t_receive_start = monotonic()
 
 		agent_id = agent_id_from_card(agent_card) or "unknown"
-		active_transport = agent_card.preferred_transport or "Transport"
+		active_transport = (agent_card.preferred_transport or "Transport").upper()
 
 		trace_id_int = current_trace_id()
 		span_id_int = (
@@ -680,14 +695,14 @@ def make_event_emitting_consumer(
 		if event_sink:
 			await event_sink.emit(event_obj)
 
-		if logger.isEnabledFor(logging.DEBUG):
-			logger.debug(
-				"event_emitting_consumer [%s]: response from %s (status=%s) (processing time=%.3fs)\n%s",
-				_source,
-				remote_agent_id,
-				status_label,
-				monotonic() - t_receive_start,
-				event_obj.model_dump_json(indent=2, exclude_none=True),
-			)
+		#if logger.isEnabledFor(logging.DEBUG):
+		logger.info(
+			"event_emitting_consumer [%s]: response from %s (status=%s) (processing time=%.3fs)\n%s",
+			_source,
+			remote_agent_id,
+			status_label,
+			monotonic() - t_receive_start,
+			event_obj.model_dump_json(indent=2, exclude_none=True),
+		)
 
 	return event_emitting_consumer

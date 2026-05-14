@@ -22,6 +22,7 @@ import {
 } from "@/utils/agenticWorkflowsApi"
 import { logger } from "@/utils/logger"
 import type { PatternType } from "@/utils/patternUtils"
+import { useActiveWorkflowInstanceStore } from "@/stores/activeWorkflowInstanceStore"
 import { identityUiVariantForPattern } from "@/utils/agenticTopologyIdentityUiMap"
 import { topologyWireToReactFlow } from "@/utils/topologyToReactFlow"
 import {
@@ -74,6 +75,8 @@ export interface UseWorkflowGraphFromAgenticApiResult {
   /** True when the pattern maps to a catalog workflow (uses same API base as LHS menu). */
   agenticMode: boolean
   agenticError: string | null
+  /** Active workflow instance id (e.g. ``instance://<uuid>``) once instantiated. */
+  workflowInstanceId: string | null
 }
 
 export function useWorkflowGraphFromAgenticApi({
@@ -98,6 +101,12 @@ export function useWorkflowGraphFromAgenticApi({
   )
 
   const [agenticError, setAgenticError] = useState<string | null>(null)
+  const workflowInstanceId = useActiveWorkflowInstanceStore(
+    (s) => s.workflowInstanceId,
+  )
+  const setWorkflowInstanceId = useActiveWorkflowInstanceStore(
+    (s) => s.setWorkflowInstanceId,
+  )
   type Session = {
     client: ReturnType<typeof createClient>
     baseUrl: string
@@ -192,29 +201,6 @@ export function useWorkflowGraphFromAgenticApi({
         return merged
       })
       setEdges((prev) => mergeDiscoveryEdges(mappedEdges, prev))
-      // #region agent log
-      fetch(
-        "http://127.0.0.1:7912/ingest/20932a06-6c8a-43ef-ade1-d12165c38237",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "X-Debug-Session-Id": "d269ae",
-          },
-          body: JSON.stringify({
-            sessionId: "d269ae",
-            location: "useWorkflowGraphFromAgenticApi.ts:applyInstanceTopology",
-            message: "topology_applied",
-            data: {
-              mappedNodes: mappedNodes.length,
-              mappedEdges: mappedEdges.length,
-            },
-            timestamp: Date.now(),
-            hypothesisId: "H5",
-          }),
-        },
-      ).catch(() => {})
-      // #endregion
       onAppliedRef.current?.()
       queueMicrotask(() => {
         reapplyMessagingHighlight()
@@ -233,6 +219,7 @@ export function useWorkflowGraphFromAgenticApi({
     if (s.debounceTimer) clearTimeout(s.debounceTimer)
     if (s.retryTimer) clearTimeout(s.retryTimer)
     sessionRef.current = null
+    setWorkflowInstanceId(null)
     clearMessagingHighlightTtl()
     lastMessagingHighlightRef.current = {
       nodeIds: new Set(),
@@ -302,53 +289,7 @@ export function useWorkflowGraphFromAgenticApi({
 
   const handleWorkflowInstanceSseEvent = useCallback(
     (ev: EventV1Wire, catalogWorkflowName: string, instanceId: string) => {
-      const wfMap = ev.data?.workflows
-      const wfKeys =
-        wfMap && typeof wfMap === "object" ? Object.keys(wfMap as object) : []
-      const wfBlock =
-        wfMap && typeof wfMap === "object"
-          ? (wfMap as Record<string, { instances?: unknown }>)[
-              catalogWorkflowName
-            ]
-          : undefined
-      const instRaw = wfBlock?.instances
-      const instKeys =
-        instRaw && typeof instRaw === "object"
-          ? Object.keys(instRaw as object)
-          : []
-      const touches = eventTouchesInstance(ev, catalogWorkflowName, instanceId)
-      // #region agent log
-      fetch(
-        "http://127.0.0.1:7912/ingest/20932a06-6c8a-43ef-ade1-d12165c38237",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "X-Debug-Session-Id": "d269ae",
-          },
-          body: JSON.stringify({
-            sessionId: "d269ae",
-            location:
-              "useWorkflowGraphFromAgenticApi.ts:handleWorkflowInstanceSseEvent",
-            message: "sse_event_received",
-            data: {
-              metaType: ev.metadata?.type,
-              wfKeyCount: wfKeys.length,
-              hasCatalogWfKey: wfKeys.includes(catalogWorkflowName),
-              instKeyCount: instKeys.length,
-              instKeyMatchesExpected: instKeys.includes(instanceId),
-              instKey0Tail:
-                instKeys[0] != null ? String(instKeys[0]).slice(-12) : null,
-              expectedIdTail: instanceId.slice(-12),
-              touches,
-            },
-            timestamp: Date.now(),
-            hypothesisId: "H2",
-          }),
-        },
-      ).catch(() => {})
-      // #endregion
-      if (!touches) return
+      if (!eventTouchesInstance(ev, catalogWorkflowName, instanceId)) return
 
       const partial = extractInstanceTopologyFromEvent(
         ev,
@@ -362,38 +303,6 @@ export function useWorkflowGraphFromAgenticApi({
       for (const id of ids.nodeIds) {
         if (graphIds.has(id)) hlNodesOnGraph++
       }
-      // #region agent log
-      fetch(
-        "http://127.0.0.1:7912/ingest/20932a06-6c8a-43ef-ade1-d12165c38237",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "X-Debug-Session-Id": "d269ae",
-          },
-          body: JSON.stringify({
-            sessionId: "d269ae",
-            location:
-              "useWorkflowGraphFromAgenticApi.ts:handleWorkflowInstanceSseEvent",
-            message: "topology_fragment_for_highlight",
-            data: {
-              hasPartial: partial != null,
-              highlightNodeCount: ids.nodeIds.size,
-              highlightEdgeCount: ids.edgeIds.size,
-              hasAny,
-              graphNodeCount: graphIds.size,
-              hlNodesOnGraph,
-              sampleHlNodeTail:
-                [...ids.nodeIds][0] != null
-                  ? String([...ids.nodeIds][0]).slice(-16)
-                  : null,
-            },
-            timestamp: Date.now(),
-            hypothesisId: "H3-H4",
-          }),
-        },
-      ).catch(() => {})
-      // #endregion
       if (hasAny) {
         lastMessagingHighlightRef.current = {
           nodeIds: new Set(ids.nodeIds),
@@ -416,30 +325,6 @@ export function useWorkflowGraphFromAgenticApi({
             ).edges,
         )
         scheduleMessagingHighlightTtl()
-        // #region agent log
-        fetch(
-          "http://127.0.0.1:7912/ingest/20932a06-6c8a-43ef-ade1-d12165c38237",
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              "X-Debug-Session-Id": "d269ae",
-            },
-            body: JSON.stringify({
-              sessionId: "d269ae",
-              location:
-                "useWorkflowGraphFromAgenticApi.ts:handleWorkflowInstanceSseEvent",
-              message: "highlight_patch_scheduled",
-              data: {
-                hlNodeCount: lastMessagingHighlightRef.current.nodeIds.size,
-                hlEdgeCount: lastMessagingHighlightRef.current.edgeIds.size,
-              },
-              timestamp: Date.now(),
-              hypothesisId: "H4",
-            }),
-          },
-        ).catch(() => {})
-        // #endregion
       }
 
       scheduleTopologyRefetchRef.current()
@@ -497,6 +382,7 @@ export function useWorkflowGraphFromAgenticApi({
           sseReconnectAttempts: 0,
         }
         sessionRef.current = session
+        setWorkflowInstanceId(instanceId)
 
         const attachSse = (): void => {
           const s = sessionRef.current
@@ -523,26 +409,6 @@ export function useWorkflowGraphFromAgenticApi({
               if (!cur || cur.instanceId !== instanceId || cancelled) return
               if (cur.sseReconnectAttempts >= 6) return
               cur.sseReconnectAttempts += 1
-              // #region agent log
-              fetch(
-                "http://127.0.0.1:7912/ingest/20932a06-6c8a-43ef-ade1-d12165c38237",
-                {
-                  method: "POST",
-                  headers: {
-                    "Content-Type": "application/json",
-                    "X-Debug-Session-Id": "d269ae",
-                  },
-                  body: JSON.stringify({
-                    sessionId: "d269ae",
-                    location: "useWorkflowGraphFromAgenticApi.ts:attachSse",
-                    message: "sse_reconnect_scheduled",
-                    data: { attempt: cur.sseReconnectAttempts },
-                    timestamp: Date.now(),
-                    hypothesisId: "H6",
-                  }),
-                },
-              ).catch(() => {})
-              // #endregion
               queueMicrotask(() => {
                 attachSse()
               })
@@ -559,29 +425,6 @@ export function useWorkflowGraphFromAgenticApi({
 
         if (cancelled) return
         attachSse()
-        // #region agent log
-        fetch(
-          "http://127.0.0.1:7912/ingest/20932a06-6c8a-43ef-ade1-d12165c38237",
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              "X-Debug-Session-Id": "d269ae",
-            },
-            body: JSON.stringify({
-              sessionId: "d269ae",
-              location: "useWorkflowGraphFromAgenticApi.ts:bootstrap",
-              message: "sse_subscribed",
-              data: {
-                wf: catalogWorkflowName,
-                pathUuidTail: pathUuid.slice(-8),
-              },
-              timestamp: Date.now(),
-              hypothesisId: "H0",
-            }),
-          },
-        ).catch(() => {})
-        // #endregion
       } catch (e) {
         if (!cancelled) {
           const msg = e instanceof Error ? e.message : String(e)
@@ -599,5 +442,5 @@ export function useWorkflowGraphFromAgenticApi({
     }
   }, [agenticMode, baseUrl, selectedWorkflowSummary?.name])
 
-  return { agenticMode, agenticError }
+  return { agenticMode, agenticError, workflowInstanceId }
 }

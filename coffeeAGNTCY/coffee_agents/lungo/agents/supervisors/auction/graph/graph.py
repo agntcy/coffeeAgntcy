@@ -1,7 +1,9 @@
 # Copyright AGNTCY Contributors (https://github.com/agntcy)
 # SPDX-License-Identifier: Apache-2.0
+import json
 import logging
 import uuid
+from pathlib import Path
 
 from pydantic import BaseModel, Field
 
@@ -41,10 +43,31 @@ _OUTCOME_PERMISSION = "permission"
 _SUPERVISOR_FARM_KEY = "supervisor_farm"
 _SUPERVISOR_OPERATION_KEY = "supervisor_operation"
 
-# Must match entries in api/agentic_workflows/starting_workflows.json.
+# Canonical workflow names sourced from api/agentic_workflows/starting_workflows.json.
 # Drift is guarded by the corresponding auction unit tests.
-_WORKFLOW_NAME_SERVE = "Publish Subscribe Coffee Farm Network"
-_WORKFLOW_NAME_STREAM = "Publish Subscribe Streaming Coffee Auction Network"
+_STARTING_WORKFLOWS_FILE = (
+    Path(__file__).resolve().parents[4]
+    / "api"
+    / "agentic_workflows"
+    / "starting_workflows.json"
+)
+
+
+def _load_workflow_name(name: str) -> str:
+    with open(_STARTING_WORKFLOWS_FILE, encoding="utf-8") as fh:
+        entries = json.load(fh)
+    for entry in entries:
+        if isinstance(entry, dict) and entry.get("name") == name:
+            return name
+    raise RuntimeError(
+        f"Workflow {name!r} not found in {_STARTING_WORKFLOWS_FILE}"
+    )
+
+
+_WORKFLOW_NAME_SERVE = _load_workflow_name("Publish Subscribe Coffee Farm Network")
+_WORKFLOW_NAME_STREAM = _load_workflow_name(
+    "Publish Subscribe Streaming Coffee Auction Network"
+)
 
 
 def _caused_by_transport(exc: BaseException) -> bool:
@@ -712,6 +735,8 @@ class ExchangeGraph:
         # Upstream OTel baggage (main.py once wired, or test/orchestrator
         # scope) wins over the per-graph fallback below.
         existing = read_workflow_context()
+        print("existing", existing)
+        print("input", workflow_instance_id)
         resolved_instance_id = (
             existing.instance_id
             or workflow_instance_id

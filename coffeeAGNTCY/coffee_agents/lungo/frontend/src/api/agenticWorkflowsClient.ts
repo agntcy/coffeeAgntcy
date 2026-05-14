@@ -167,92 +167,15 @@ export function subscribeWorkflowInstanceSse(
         onError?.(new Error(`SSE HTTP ${res.status}`))
         return
       }
-      // #region agent log
-      fetch(
-        "http://127.0.0.1:7912/ingest/20932a06-6c8a-43ef-ade1-d12165c38237",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "X-Debug-Session-Id": "d269ae",
-          },
-          body: JSON.stringify({
-            sessionId: "d269ae",
-            location: "agenticWorkflowsClient.ts:subscribeWorkflowInstanceSse",
-            message: "sse_http_ok",
-            data: { status: res.status },
-            timestamp: Date.now(),
-            hypothesisId: "H1",
-          }),
-        },
-      ).catch(() => {})
-      // #endregion
       const reader = res.body.getReader()
       const decoder = new TextDecoder()
-      let dbgSseFrameBatch = 0
-      let dbgChunkLog = 0
       const dispatchFrames = (frames: string[]) => {
         for (const frame of frames) {
-          const events = parseSseFrameLines(frame)
-          if (events.length > 0 && dbgSseFrameBatch < 25) {
-            dbgSseFrameBatch++
-            // #region agent log
-            fetch(
-              "http://127.0.0.1:7912/ingest/20932a06-6c8a-43ef-ade1-d12165c38237",
-              {
-                method: "POST",
-                headers: {
-                  "Content-Type": "application/json",
-                  "X-Debug-Session-Id": "d269ae",
-                },
-                body: JSON.stringify({
-                  sessionId: "d269ae",
-                  location: "agenticWorkflowsClient.ts:sse_read_loop",
-                  message: "sse_frame_events",
-                  data: {
-                    eventsInFrame: events.length,
-                    batchIdx: dbgSseFrameBatch,
-                    frameLineCount: frame.split("\n").length,
-                  },
-                  timestamp: Date.now(),
-                  hypothesisId: "H1",
-                }),
-              },
-            ).catch(() => {})
-            // #endregion
-          }
-          for (const ev of events) onEvent(ev)
+          for (const ev of parseSseFrameLines(frame)) onEvent(ev)
         }
       }
       while (!aborted) {
         const { value, done } = await reader.read()
-        // #region agent log
-        if (dbgChunkLog < 12 && (value?.byteLength || done)) {
-          fetch(
-            "http://127.0.0.1:7912/ingest/20932a06-6c8a-43ef-ade1-d12165c38237",
-            {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-                "X-Debug-Session-Id": "d269ae",
-              },
-              body: JSON.stringify({
-                sessionId: "d269ae",
-                location: "agenticWorkflowsClient.ts:sse_read_loop",
-                message: "sse_read_chunk",
-                data: {
-                  byteLen: value?.byteLength ?? 0,
-                  done,
-                  aborted,
-                },
-                timestamp: Date.now(),
-                hypothesisId: "H1b",
-              }),
-            },
-          ).catch(() => {})
-          dbgChunkLog++
-        }
-        // #endregion
         if (value?.byteLength) {
           buffer += decoder.decode(value, { stream: true })
         }
@@ -269,33 +192,10 @@ export function subscribeWorkflowInstanceSse(
       }
     } catch (e) {
       if (aborted || controller.signal.aborted) return
-      // #region agent log
-      fetch(
-        "http://127.0.0.1:7912/ingest/20932a06-6c8a-43ef-ade1-d12165c38237",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "X-Debug-Session-Id": "d269ae",
-          },
-          body: JSON.stringify({
-            sessionId: "d269ae",
-            location: "agenticWorkflowsClient.ts:subscribeWorkflowInstanceSse",
-            message: "sse_reader_error",
-            data: {
-              name: e instanceof Error ? e.name : "unknown",
-              msg:
-                e instanceof Error
-                  ? e.message.slice(0, 200)
-                  : String(e).slice(0, 200),
-              isAbort: e instanceof Error && e.name === "AbortError",
-            },
-            timestamp: Date.now(),
-            hypothesisId: "H1",
-          }),
-        },
-      ).catch(() => {})
-      // #endregion
+      console.error("[SSE] reader error", {
+        name: e instanceof Error ? e.name : "unknown",
+        message: e instanceof Error ? e.message : String(e),
+      })
       if (!aborted) onError?.(e)
     }
   }

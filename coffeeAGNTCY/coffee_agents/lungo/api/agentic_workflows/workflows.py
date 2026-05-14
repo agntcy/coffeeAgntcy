@@ -13,11 +13,12 @@ import json
 import logging
 from pathlib import Path
 from threading import Lock
-from uuid import NAMESPACE_DNS, uuid4, uuid5
+from uuid import uuid4
 
 import httpx
 from pydantic import ValidationError
 
+from common.stable_agent_id import stable_agent_uuid_for_name
 from schema.types import (
     AgentNode,
     Edge,
@@ -37,11 +38,6 @@ logger = logging.getLogger(__name__)
 
 _DATA_DIR = Path(__file__).resolve().parent
 _STARTING_WORKFLOWS_FILE = _DATA_DIR / "starting_workflows.json"
-
-# Namespace used to derive deterministic stable agent ids (uuid5) from agent record
-# names. Built once at import time as uuid5(NAMESPACE_DNS, <dns-like label>) so that
-# the same agent name always maps to the same stable id across runs and processes.
-_STABLE_AGENT_ID_NAMESPACE = uuid5(NAMESPACE_DNS, "agent.workflow.lungo.coffeeAGNTCY.com")
 
 # Mapping of workflow name to validated Workflow model.
 _STARTING_WORKFLOWS: dict[str, Workflow] | None = None
@@ -219,8 +215,9 @@ def _load_and_validate_starting_workflows_from_file(target: Path) -> dict[str, W
                     # in the future these should become grounds for invalidating the workflow entirely.
                     try:
                         record = _load_agent_record_from_uri(node.agent_record_uri, base_path=target.parent)
-                        stable_agent_uuid = uuid5(_STABLE_AGENT_ID_NAMESPACE, record["name"])
-                        node.stable_agent_id = stable_agent_id_from_uuid(stable_agent_uuid)
+                        node.stable_agent_id = stable_agent_id_from_uuid(
+                            stable_agent_uuid_for_name(record["name"])
+                        )
                     # FileNotFoundError is a subclass of OSError.
                     except (FileNotFoundError, httpx.RequestError) as exc:
                         logger.warning("Failed to load agent record for node at index %d (id %s) in workflow at index %d (name %s) but will use the workflow anyhow: %s",
