@@ -37,11 +37,11 @@ type VisualState = "collapsed" | "expanded" | "full"
 const VISUAL_ORDER: VisualState[] = ["collapsed", "expanded", "full"]
 
 /** Left-click: delay before treating as single “forward” (double-click cancels). */
-const CLICK_SINGLE_DELAY_MS = 280
+const CLICK_SINGLE_DELAY_MS = 200
 /** Right `contextmenu`: max gap (ms) between two events to count as “double” → forward. */
-const RIGHT_DOUBLE_WINDOW_MS = 450
+const RIGHT_DOUBLE_WINDOW_MS = 200
 /** Panel `transform` / `width` transition duration (ms). */
-const PANEL_TRANSITION_MS = 300
+const PANEL_TRANSITION_MS = 200
 
 /**
  * MUI `AccordionSummary`: expand control on the leading edge; chevron points
