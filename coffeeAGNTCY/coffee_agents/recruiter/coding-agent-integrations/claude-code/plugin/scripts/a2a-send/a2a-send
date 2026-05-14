@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+# Downgrade the benign a2a-go v0.3 / v2 protobuf registration conflict from
+# panic to warn. Must be set before Go runtime init — too late from inside Go.
+export GOLANG_PROTOBUF_REGISTRATION_CONFLICT="${GOLANG_PROTOBUF_REGISTRATION_CONFLICT:-warn}"
+
+dir="$(cd "$(dirname "$0")" && pwd)"
+exec "$dir/a2a-send.bin" "$@"

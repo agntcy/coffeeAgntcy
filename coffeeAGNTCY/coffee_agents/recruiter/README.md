@@ -226,6 +226,18 @@ uv run pytest tests/integration/test_agent_evaluator.py -v
 
 The [`coding-agent-integrations/claude-code/`](./coding-agent-integrations/claude-code/) directory contains **agntcy-discover-connect** — a [Claude Code](https://docs.anthropic.com/en/docs/claude-code) plugin that brings the recruiter's agent discovery capabilities directly into the Claude Code CLI. Instead of running the recruiter as a standalone A2A service, this plugin lets you search the AGNTCY directory, verify record signatures with `dirctl`, preview candidates, connect remote A2A agents as slash-command skills, and inspect their identity-service badges and policies — all from within a Claude Code session.
 
+**Prerequisites:** [Claude Code CLI](https://docs.anthropic.com/en/docs/claude-code), [`dirctl`](https://github.com/agntcy/dir-ctl), [Go 1.25+](https://go.dev/dl/) (to build `a2a-send`; required by `slim-a2a-go`), [`jq`](https://stedolan.github.io/jq/) for record parsing, and `python3` (≥3.7, stdlib only — used by `/agntcy-discover-connect:check-identity`).
+
+**Environment variables:** The plugin reads these variables from the shell (or auto-loaded `.env`) when running its commands. All are documented in [`.env.example`](./.env.example):
+
+| Variable | Purpose | Example |
+|---|---|---|
+| `IDENTITY_API_SERVER_URL` | Base URL of the identity service | `https://api.agent-identity.outshift.com` (hosted) or `http://0.0.0.0:4000` (local) |
+| `IDENTITY_SERVICE_API_KEY` | Sent as the `x-id-api-key` header on every call | (your AGNTCY identity-service API key) |
+| `SLIM_SHARED_SECRET` | **Required when `/a2a-send` (or any recruited skill) talks to an agent that advertises a `slim`/`slimrpc` interface.** Must match the secret the target agent was started with. Without it, the SLIM handshake fails with `Code=15, Session handshake failed: failed to add participant to session`. For the `coffee_agents/lungo` stack, copy the value from `coffee_agents/lungo/.env`. | `slim-shared-secret-…` |
+
+Export them in the shell that runs `claude`, or load them from your `.env` before launch (e.g. `set -a; source .env; set +a`). The plugin commands read whatever is in the environment — they do not search for or auto-load any `.env` file. If a required variable is unset, the command exits with an error indicating which variable to set.
+
 ### Plugin Installation
 
 **Local development (from `recruiter/coding-agent-integrations/claude-code/`):**
@@ -233,23 +245,12 @@ The [`coding-agent-integrations/claude-code/`](./coding-agent-integrations/claud
 ```bash
 cd coding-agent-integrations/claude-code
 
-# Build the a2a-send CLI tool
-pushd plugin/scripts/a2a-send && go build -o a2a-send . && popd
+# Build the a2a-send CLI tool (binary is wrapped by the tracked `a2a-send` shell script)
+pushd plugin/scripts/a2a-send && go build -o a2a-send.bin . && popd
 
 # Launch Claude Code with the plugin
 claude --plugin-dir ./plugin
 ```
-
-**Prerequisites:** [Claude Code CLI](https://docs.anthropic.com/en/docs/claude-code), [`dirctl`](https://github.com/agntcy/dir-ctl), [Go 1.23+](https://go.dev/dl/) (to build `a2a-send`), [`jq`](https://stedolan.github.io/jq/) for record parsing, and `python3` (≥3.7, stdlib only — used by `/agntcy-discover-connect:check-identity`).
-
-**Environment variables:** `/agntcy-discover-connect:check-identity` reads two variables to talk to the AGNTCY identity service. Both are documented in [`.env.example`](./.env.example) under **Agntcy TBAC Settings**:
-
-| Variable | Purpose | Example |
-|---|---|---|
-| `IDENTITY_API_SERVER_URL` | Base URL of the identity service | `https://api.agent-identity.outshift.com` (hosted) or `http://0.0.0.0:4000` (local) |
-| `IDENTITY_SERVICE_API_KEY` | Sent as the `x-id-api-key` header on every call | (your AGNTCY identity-service API key) |
-
-Export them in the shell that runs `claude`, or load them from your `.env` before launch (e.g. `set -a; source .env; set +a`). If either is unset, `/check-identity` exits with a JSON error pointing at this section.
 
 ### Plugin Commands
 
@@ -262,6 +263,19 @@ Search the AGNTCY directory for agents matching your query, verify each record's
 #### `/agntcy-discover-connect:a2a-send <url> <message>`
 
 Send a message directly to any A2A agent endpoint for quick testing or one-off communication.
+
+The underlying `a2a-send` CLI supports **both HTTP JSON-RPC and SLIM transports** (the latter via [`slim-a2a-go`](https://github.com/agntcy/slim-a2a-go)). By default `--transport auto` fetches the agent card and routes over SLIM if the card advertises a `slim`/`slimrpc` interface, otherwise falls back to HTTP. The A2A protocol version (`v0` for agents on `agntcy-app-sdk` 0.3.x, `v1` otherwise) is auto-detected from the card's `protocolVersion`.
+
+Relevant flags:
+
+| Flag | Default | Purpose |
+|---|---|---|
+| `--transport` | `auto` | `auto`, `http`, or `slim` |
+| `--slim-endpoint` | `http://127.0.0.1:46357` | SLIM node address |
+| `--slim-remote-name` | (from card) | 3-segment `org/ns/name`; derived from `slim://host/org/ns/name` in the agent card if omitted |
+| `--slim-local-name` | `lungo/agents/a2a-send-cli` | Local identity |
+| `--slim-secret` | `$SLIM_SHARED_SECRET` | Shared-secret identity (dev only — `NewInsecureClientConfig`) |
+| `--a2a-version` | (from card) | `v0` or `v1` override |
 
 #### `/agntcy-discover-connect:check-identity <name>`
 
@@ -304,7 +318,9 @@ coding-agent-integrations/claude-code/plugin/
 │   ├── a2a-send.md              # /agntcy-discover-connect:a2a-send
 │   └── check-identity.md        # /agntcy-discover-connect:check-identity
 ├── scripts/
-│   ├── a2a-send/                # Go CLI tool (a2a-go SDK)
+│   ├── a2a-send/                # Go CLI tool (a2a-go SDK + slim-a2a-go for SLIM transport)
+│   │   ├── a2a-send              # wrapper script (sets GOLANG_PROTOBUF_REGISTRATION_CONFLICT=warn, execs the binary)
+│   │   ├── a2a-send.bin          # compiled binary (gitignored; built via `go build -o a2a-send.bin .`)
 │   │   ├── main.go
 │   │   ├── go.mod
 │   │   └── go.sum

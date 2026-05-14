@@ -19,7 +19,7 @@ The plugin's identity client reads two env vars:
 | `IDENTITY_API_SERVER_URL` | e.g. `http://0.0.0.0:4000` |
 | `IDENTITY_SERVICE_API_KEY`  | API key for the calling service (`x-id-api-key`) |
 
-If either is unset, stop and tell the user to set them (point at `coffee_agents/recruiter/.env.example` for reference values).
+If `IDENTITY_API_SERVER_URL` is unset, stop and tell the user to set them (point at `coffee_agents/recruiter/.env.example` for reference values).
 
 ---
 
