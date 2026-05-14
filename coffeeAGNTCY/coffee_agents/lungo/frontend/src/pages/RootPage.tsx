@@ -16,7 +16,9 @@ import { useApp } from "@/useApp"
 const RootPage: React.FC = () => {
   const {
     selectedPattern,
+    selectedPlaceholderPatternName,
     handlePatternChange,
+    handlePlaceholderPatternSelect,
     chatHeightValue,
     isExpanded,
     chatRef,
@@ -64,7 +66,9 @@ const RootPage: React.FC = () => {
       <div className="flex flex-1 overflow-hidden">
         <Sidebar
           selectedPattern={selectedPattern}
+          selectedPlaceholderPatternName={selectedPlaceholderPatternName}
           onPatternChange={handlePatternChange}
+          onPlaceholderPatternSelect={handlePlaceholderPatternSelect}
         />
         <div className="flex flex-1 flex-col border-l border-action-background bg-app-background">
           <div className="relative flex-grow">

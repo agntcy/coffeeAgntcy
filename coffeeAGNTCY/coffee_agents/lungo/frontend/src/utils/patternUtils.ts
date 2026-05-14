@@ -11,6 +11,8 @@ export const PATTERNS = {
   PUBLISH_SUBSCRIBE_STREAMING: "publish_subscribe_streaming",
   GROUP_COMMUNICATION: "group_communication",
   ON_DEMAND_DISCOVERY: "on_demand_discovery",
+  /** Catalog design pattern selected; no workflow graph is available. */
+  NO_WORKFLOW_IMPLEMENTATION: "no_workflow_implementation",
 } as const
 
 export type PatternType = (typeof PATTERNS)[keyof typeof PATTERNS]
@@ -86,6 +88,8 @@ export const getPatternDisplayName = (pattern?: string): string => {
       return "Group Communication"
     case PATTERNS.ON_DEMAND_DISCOVERY:
       return "On-Demand Discovery"
+    case PATTERNS.NO_WORKFLOW_IMPLEMENTATION:
+      return "Design pattern"
     default:
       return "Unknown Pattern"
   }

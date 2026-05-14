@@ -102,12 +102,14 @@ export function useMainAreaGraphEffects({
       setNodes(nodesWithHandlers)
       await new Promise((resolve) => setTimeout(resolve, 100))
       setEdges(newConfig.edges)
-      await updateTransportLabels(
-        setNodes,
-        setEdges,
-        pattern,
-        isStreamingPattern(pattern),
-      )
+      if (newConfig.nodes.length > 0) {
+        await updateTransportLabels(
+          setNodes,
+          setEdges,
+          pattern,
+          isStreamingPattern(pattern),
+        )
+      }
       setTimeout(() => {
         fitViewWithViewport({ chatHeight: 0, isExpanded: false })
       }, 200)

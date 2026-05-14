@@ -56,7 +56,12 @@ export interface PatternNode {
 
 /** One row in the LHS catalog: either a pattern subtree or a visual separator. */
 export type CatalogSidebarEntry =
-  | { kind: "pattern"; node: PatternNode }
+  | {
+    kind: "pattern"
+    node: PatternNode
+    /** `implemented` = full dropdown tree; `placeholder` = pattern button only. */
+    variant: "implemented" | "placeholder"
+  }
   | { kind: "separator" }
 
 /** Build the display label for the middle (use-case + scenario) row. */

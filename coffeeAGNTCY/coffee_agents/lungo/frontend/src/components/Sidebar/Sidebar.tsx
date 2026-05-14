@@ -22,7 +22,9 @@ import { makePatternKey, makeScenarioKey } from "./sidebarKeys"
 
 interface SidebarProps {
   selectedPattern: PatternType
+  selectedPlaceholderPatternName: string | null
   onPatternChange: (pattern: PatternType) => void
+  onPlaceholderPatternSelect: (catalogPatternName: string) => void
 }
 
 const CATALOG_ENDPOINT = "/agentic-workflows/"
@@ -43,7 +45,7 @@ const CATALOG_FETCH_RETRY_DELAY_MS = 750
 const buildInitialExpanded = (tree: CatalogSidebarEntry[]): Set<string> => {
   const next = new Set<string>()
   for (const entry of tree) {
-    if (entry.kind !== "pattern") {
+    if (entry.kind !== "pattern" || entry.variant !== "implemented") {
       continue
     }
     const pattern = entry.node
@@ -97,7 +99,9 @@ const fetchWorkflowSummariesWithRetry = async (
 
 const Sidebar: React.FC<SidebarProps> = ({
   selectedPattern,
+  selectedPlaceholderPatternName,
   onPatternChange,
+  onPlaceholderPatternSelect,
 }) => {
   const [summaries, setSummaries] = useState<WorkflowSummary[] | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -180,7 +184,9 @@ const Sidebar: React.FC<SidebarProps> = ({
               expanded={expanded}
               onToggle={toggle}
               selectedPattern={selectedPattern}
+              selectedPlaceholderPatternName={selectedPlaceholderPatternName}
               onPatternChange={onPatternChange}
+              onPlaceholderPatternSelect={onPlaceholderPatternSelect}
             />
           </div>
         )}

@@ -4,7 +4,7 @@
  **/
 
 import React from "react"
-import { PatternType } from "@/utils/patternUtils"
+import { PatternType, PATTERNS } from "@/utils/patternUtils"
 import type { CatalogSidebarEntry, PatternNode } from "@/utils/sidebarHierarchy"
 import { cn } from "@/utils/cn"
 import SidebarItem from "./sidebarItem"
@@ -17,7 +17,9 @@ interface CatalogTreeProps {
   expanded: Set<string>
   onToggle: (key: string) => void
   selectedPattern: PatternType
+  selectedPlaceholderPatternName: string | null
   onPatternChange: (pattern: PatternType) => void
+  onPlaceholderPatternSelect: (catalogPatternName: string) => void
 }
 
 /**
@@ -30,7 +32,9 @@ const CatalogTree: React.FC<CatalogTreeProps> = ({
   expanded,
   onToggle,
   selectedPattern,
+  selectedPlaceholderPatternName,
   onPatternChange,
+  onPlaceholderPatternSelect,
 }) => {
   if (tree.length === 0) {
     return <SidebarItem title="No workflows available" className="opacity-60" />
@@ -51,6 +55,26 @@ const CatalogTree: React.FC<CatalogTreeProps> = ({
         }
 
         const pattern: PatternNode = entry.node
+
+        if (entry.variant === "placeholder") {
+          const isSelected =
+            selectedPattern === PATTERNS.NO_WORKFLOW_IMPLEMENTATION &&
+            selectedPlaceholderPatternName === pattern.name
+          return (
+            <button
+              key={makePatternKey(pattern.name)}
+              type="button"
+              className={cn(
+                "flex w-full items-start gap-2 bg-sidebar-background py-2 pl-8 pr-5 text-left font-inter text-sm font-normal leading-5 tracking-[0.25px] text-sidebar-text transition-colors hover:bg-sidebar-item-selected",
+                isSelected && "bg-sidebar-item-selected",
+              )}
+              onClick={() => onPlaceholderPatternSelect(pattern.name)}
+            >
+              <span className="flex-1">{pattern.name}</span>
+            </button>
+          )
+        }
+
         const pKey = makePatternKey(pattern.name)
         return (
           <SidebarDropdown

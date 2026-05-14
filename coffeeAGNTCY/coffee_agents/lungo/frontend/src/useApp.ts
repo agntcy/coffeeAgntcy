@@ -22,6 +22,8 @@ export function useApp() {
   const [selectedPattern, setSelectedPattern] = useState<PatternType>(
     PATTERNS.GROUP_COMMUNICATION,
   )
+  const [selectedPlaceholderPatternName, setSelectedPlaceholderPatternName] =
+    useState<string | null>(null)
 
   const chat = useAppChatState({ selectedPattern })
 
@@ -55,10 +57,34 @@ export function useApp() {
       chat.setButtonClicked(false)
       chat.setAiReplied(false)
       setSelectedPattern(pattern)
+      setSelectedPlaceholderPatternName(null)
       lastDiscoveryKeyRef.current = null
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps -- streaming/chat refs stable enough; full deps cause unnecessary runs
     [streaming.reset, streaming.resetRecruiter, streaming.resetGroup, chat],
+  )
+
+  const handlePlaceholderPatternSelect = useCallback(
+    (catalogPatternName: string) => {
+      streaming.reset()
+      streaming.resetRecruiter()
+      chat.setShowAuctionStreaming(false)
+      chat.setShowRecruiterStreaming(false)
+      streaming.resetGroup()
+      chat.setGroupCommResponseReceived(false)
+      chat.setShowFinalResponse(false)
+      chat.setAgentResponse(undefined)
+      chat.setPendingResponse("")
+      chat.setIsAgentLoading(false)
+      chat.setApiError(false)
+      chat.setCurrentUserMessage("")
+      chat.setButtonClicked(false)
+      chat.setAiReplied(false)
+      setSelectedPlaceholderPatternName(catalogPatternName)
+      setSelectedPattern(PATTERNS.NO_WORKFLOW_IMPLEMENTATION)
+      lastDiscoveryKeyRef.current = null
+    },
+    [streaming, chat],
   )
 
   useEffect(() => {
@@ -296,6 +322,8 @@ export function useApp() {
 
   return {
     selectedPattern,
+    selectedPlaceholderPatternName,
+    handlePlaceholderPatternSelect,
     handlePatternChange,
     chatHeightValue,
     isExpanded,

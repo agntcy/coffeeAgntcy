@@ -7,7 +7,7 @@ import { Node, Edge } from "@xyflow/react"
 import { NODE_IDS, EDGE_IDS, EDGE_LABELS } from "./const"
 import { logger } from "./logger"
 import urlsConfig from "./urls.json"
-import { isGroupCommunication, getApiUrlForPattern } from "./patternUtils"
+import { isGroupCommunication, getApiUrlForPattern, PATTERNS } from "./patternUtils"
 import {
   type GraphConfig,
   PUBLISH_SUBSCRIBE_CONFIG,
@@ -22,8 +22,22 @@ export {
   DISCOVERY_CONFIG,
 }
 
+const EMPTY_GRAPH_CONFIG: GraphConfig = {
+  title: "",
+  nodes: [],
+  edges: [],
+  animationSequence: [],
+}
+
 export const getGraphConfig = (pattern: string): GraphConfig => {
   switch (pattern) {
+    case PATTERNS.NO_WORKFLOW_IMPLEMENTATION:
+      return {
+        ...EMPTY_GRAPH_CONFIG,
+        nodes: [],
+        edges: [],
+        animationSequence: [],
+      }
     case "publish_subscribe":
       return {
         ...PUBLISH_SUBSCRIBE_CONFIG,
