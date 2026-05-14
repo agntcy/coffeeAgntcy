@@ -47,7 +47,7 @@ export interface DocumentationDrawerProps {
     mode: DocumentationDrawerMode
     selectedPattern: PatternType
     selectedPlaceholderPatternName: string | null
-}
+  }
 
 const stepForward = (v: VisualState): VisualState =>
     VISUAL_ORDER[(VISUAL_ORDER.indexOf(v) + 1) % VISUAL_ORDER.length]!
@@ -59,7 +59,7 @@ const DocumentationDrawer: React.FC<DocumentationDrawerProps> = ({
     mode,
     selectedPattern,
     selectedPlaceholderPatternName,
-}) => {
+  }) => {
     const [visual, setVisual] = useState<VisualState>("collapsed")
     const [doc, setDoc] = useState<Awaited<
         ReturnType<typeof fetchWorkflowDocumentation>
@@ -277,23 +277,23 @@ const DocumentationDrawer: React.FC<DocumentationDrawerProps> = ({
                         transitionDuration: transitionMs,
                     }}
                 >
-                    <div className="flex flex-none items-center gap-2 border-b border-action-background px-3 py-2">
+                    <div className="relative flex flex-none items-center border-b border-action-background py-2 pl-3 pr-3">
+                        <Typography
+                            className="min-w-0 flex-1 truncate pr-12 font-semibold tracking-tight text-sidebar-text"
+                            variant="h6"
+                            component="div"
+                        >
+                            {doc?.title ?? workflowName ?? "Documentation"}
+                        </Typography>
                         <button
                             type="button"
-                            className="flex h-9 w-9 flex-none items-center justify-center rounded-md hover:bg-sidebar-item-selected"
+                            className="absolute right-3 top-1/2 flex h-9 w-9 -translate-y-1/2 flex-none items-center justify-center rounded-md hover:bg-sidebar-item-selected"
                             aria-label="Documentation"
                             onClick={onDocIconClick}
                             onContextMenu={onDocIconContextMenu}
                         >
                             <DescriptionOutlined fontSize="small" />
                         </button>
-                        <Typography
-                            className="flex-1 truncate font-semibold tracking-tight text-sidebar-text"
-                            variant="h6"
-                            component="div"
-                        >
-                            {doc?.title ?? workflowName ?? "Documentation"}
-                        </Typography>
                     </div>
 
                     <div className="min-h-0 flex-1 overflow-y-auto px-3 py-3">
@@ -359,6 +359,6 @@ const DocumentationDrawer: React.FC<DocumentationDrawerProps> = ({
             )}
         </div>
     )
-}
+  }
 
 export default DocumentationDrawer
