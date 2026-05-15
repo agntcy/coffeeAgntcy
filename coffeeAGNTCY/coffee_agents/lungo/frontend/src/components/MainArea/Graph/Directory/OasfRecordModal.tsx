@@ -4,8 +4,6 @@
  **/
 
 import React, { useState, useEffect } from "react"
-import { IconButton } from "@open-ui-kit/core"
-import Close from "@mui/icons-material/Close"
 import { createPortal } from "react-dom"
 import { env } from "@/utils/env"
 import { fetchOasfRecord, OasfRecord } from "./DirectoryApi"
@@ -99,19 +97,12 @@ const OasfRecordModal: React.FC<OasfRecordModalProps> = ({
           onClick={handleModalClick}
           data-modal-content
         >
-          <IconButton
+          <button
             onClick={onClose}
-            aria-label="Close"
-            size="small"
-            sx={{
-              position: "absolute",
-              right: 12,
-              top: 12,
-              zIndex: 10,
-            }}
+            className="absolute right-3 top-3 z-10 text-xl leading-none text-node-text-secondary transition-colors hover:text-node-text-primary"
           >
-            <Close sx={{ fontSize: 18 }} />
-          </IconButton>
+            ×
+          </button>
 
           {isDirectoryNode ? (
             <div className="relative flex w-full flex-col gap-3">

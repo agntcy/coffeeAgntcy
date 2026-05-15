@@ -4,9 +4,7 @@
  **/
 
 import React from "react"
-import { IconButton } from "@open-ui-kit/core"
-import ExpandLess from "@mui/icons-material/ExpandLess"
-import { cn } from "@/utils/cn"
+import { ChevronUp } from "lucide-react"
 
 interface SidebarDropdownProps {
   title: string
@@ -14,7 +12,6 @@ interface SidebarDropdownProps {
   onToggle: () => void
   children: React.ReactNode
   isNested?: boolean
-  titleClassName?: string
 }
 
 const SidebarDropdown: React.FC<SidebarDropdownProps> = ({
@@ -22,50 +19,21 @@ const SidebarDropdown: React.FC<SidebarDropdownProps> = ({
   isExpanded,
   onToggle,
   children,
-  titleClassName,
 }) => {
   return (
     <div className="flex w-full flex-col items-start p-0">
       <div
-        className={cn(
-          "flex w-full items-start gap-2 bg-sidebar-background py-2 pl-8 pr-5 transition-colors hover:bg-sidebar-item-selected",
-          titleClassName,
-        )}
+        className="flex h-9 w-full cursor-pointer items-start gap-2 bg-sidebar-background py-2 pl-8 pr-5 transition-colors hover:bg-sidebar-item-selected"
+        onClick={onToggle}
       >
-        <span
-          className="flex-1 cursor-pointer font-inter text-sm font-normal leading-5 tracking-[0.25px] text-sidebar-text"
-          onClick={onToggle}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" || e.key === " ") {
-              e.preventDefault()
-              onToggle()
-            }
-          }}
-          role="button"
-          tabIndex={0}
-        >
+        <span className="flex-1 font-inter text-sm font-normal leading-5 tracking-[0.25px] text-sidebar-text">
           {title}
         </span>
-        <IconButton
-          size="small"
-          color="inherit"
-          aria-expanded={isExpanded}
-          aria-label={`${isExpanded ? "Collapse" : "Expand"} ${title}`}
-          onClick={onToggle}
-          sx={{
-            flex: "none",
-            mt: "-2px",
-            p: 0.25,
-          }}
-        >
-          <ExpandLess
-            sx={{
-              fontSize: 20,
-              transition: "transform 150ms ease",
-              transform: isExpanded ? "rotate(0deg)" : "rotate(180deg)",
-            }}
-          />
-        </IconButton>
+        <ChevronUp
+          className={`h-5 w-5 flex-none text-sidebar-text transition-transform ${
+            isExpanded ? "rotate-0" : "rotate-180"
+          }`}
+        />
       </div>
 
       {isExpanded && <div className="flex w-full flex-col">{children}</div>}
