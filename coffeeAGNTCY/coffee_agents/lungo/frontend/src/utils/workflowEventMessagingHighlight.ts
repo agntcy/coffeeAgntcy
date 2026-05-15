@@ -13,6 +13,10 @@ import {
 export interface MessagingHighlightIds {
   nodeIds: ReadonlySet<string>
   edgeIds: ReadonlySet<string>
+  /** rfId source->target pairs derived from partial topology, used as a
+   *  fallback when allocator-minted edge ids drift between event and
+   *  refetched topology. */
+  edgePairs: ReadonlySet<string>
 }
 
 /** Read the workflow-instance topology fragment carried on an event_v1. */
@@ -36,26 +40,43 @@ export function messagingHighlightIdsFromTopology(
 ): MessagingHighlightIds {
   const nodeIds = new Set<string>()
   const edgeIds = new Set<string>()
+  const edgePairs = new Set<string>()
+  // wire id -> rf id, so edges can be translated to node-id pairs
+  const wireToRf = new Map<string, string>()
   for (const n of topology?.nodes ?? []) {
     const wireId = (n as { id?: unknown }).id
     const nType = (n as { type?: unknown }).type
     const nLabel = (n as { label?: unknown }).label
     const sid = extractStableAgentId(n as never)
+    let rfId: string | null = null
     if (sid) {
-      nodeIds.add(sid)
+      rfId = sid
     } else if (nType === "transportNode") {
-      nodeIds.add(
-        transportCanonicalRfId(typeof nLabel === "string" ? nLabel : undefined),
+      rfId = transportCanonicalRfId(
+        typeof nLabel === "string" ? nLabel : undefined,
       )
     } else if (typeof wireId === "string" && wireId.length) {
-      nodeIds.add(wireId)
+      rfId = wireId
+    }
+    if (rfId) {
+      nodeIds.add(rfId)
+      if (typeof wireId === "string" && wireId.length) {
+        wireToRf.set(wireId, rfId)
+      }
     }
   }
   for (const e of topology?.edges ?? []) {
     const id = (e as { id?: unknown }).id
     if (typeof id === "string" && id.length) edgeIds.add(id)
+    const src = (e as { source?: unknown }).source
+    const tgt = (e as { target?: unknown }).target
+    if (typeof src === "string" && typeof tgt === "string") {
+      const s = wireToRf.get(src) ?? src
+      const t = wireToRf.get(tgt) ?? tgt
+      edgePairs.add(`${s}->${t}`)
+    }
   }
-  return { nodeIds, edgeIds }
+  return { nodeIds, edgeIds, edgePairs }
 }
 
 export function patchGraphActiveHighlight(
@@ -75,13 +96,16 @@ export function patchGraphActiveHighlight(
     }
   })
   const nextEdges = edges.map((edge) => {
-    const on = highlight.edgeIds.has(edge.id)
+    const on =
+      highlight.edgeIds.has(edge.id) ||
+      highlight.edgePairs.has(`${edge.source}->${edge.target}`)
     const prev = Boolean(
       (edge.data as { active?: unknown } | undefined)?.active,
     )
-    if (prev === on) return edge
+    if (prev === on && Boolean(edge.animated) === on) return edge
     return {
       ...edge,
+      animated: on,
       data: { ...edge.data, active: on },
     }
   })

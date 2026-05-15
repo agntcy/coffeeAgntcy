@@ -125,6 +125,7 @@ export function useWorkflowGraphFromAgenticApi({
   const lastMessagingHighlightRef = useRef<MessagingHighlightIds>({
     nodeIds: new Set(),
     edgeIds: new Set(),
+    edgePairs: new Set(),
   })
   const highlightTtlTimerRef = useRef<ReturnType<typeof setTimeout> | null>(
     null,
@@ -172,6 +173,7 @@ export function useWorkflowGraphFromAgenticApi({
     lastMessagingHighlightRef.current = {
       nodeIds: new Set(),
       edgeIds: new Set(),
+      edgePairs: new Set(),
     }
     const h = lastMessagingHighlightRef.current
     setNodes((prev) => patchGraphActiveHighlight(prev, [], h).nodes)
@@ -224,6 +226,7 @@ export function useWorkflowGraphFromAgenticApi({
     lastMessagingHighlightRef.current = {
       nodeIds: new Set(),
       edgeIds: new Set(),
+      edgePairs: new Set(),
     }
   }, [clearMessagingHighlightTtl])
 
@@ -307,6 +310,7 @@ export function useWorkflowGraphFromAgenticApi({
         lastMessagingHighlightRef.current = {
           nodeIds: new Set(ids.nodeIds),
           edgeIds: new Set(ids.edgeIds),
+          edgePairs: new Set(ids.edgePairs),
         }
         setNodes(
           (prev) =>
