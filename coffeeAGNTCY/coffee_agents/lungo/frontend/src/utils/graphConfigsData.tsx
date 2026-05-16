@@ -3,11 +3,9 @@
  * SPDX-License-Identifier: Apache-2.0
  **/
 
-import Calculate from "@mui/icons-material/Calculate"
-import LocalShipping from "@mui/icons-material/LocalShipping"
-import WbCloudy from "@mui/icons-material/WbCloudy"
+import { TiWeatherCloudy } from "react-icons/ti"
+import { Truck, Calculator } from "lucide-react"
 import { Node, Edge } from "@xyflow/react"
-import { GraphDiscoveryAssetImg } from "@/utils/GraphDiscoveryAssetImg"
 import supervisorIcon from "@/assets/supervisor.png"
 import farmAgentIcon from "@/assets/Grader-Agent.png"
 import {
@@ -22,10 +20,6 @@ import {
 } from "./const"
 import urlsConfig from "./urls.json"
 
-function graphNodeIconImg(src: string, alt: string) {
-  return <GraphDiscoveryAssetImg src={src} alt={alt} />
-}
-
 export interface GraphConfig {
   title: string
   nodes: Node[]
@@ -33,7 +27,13 @@ export interface GraphConfig {
   animationSequence: { ids: string[] }[]
 }
 
-const CoffeeBeanIcon = graphNodeIconImg(farmAgentIcon, "Coffee Farm Agent Icon")
+const CoffeeBeanIcon = (
+  <img
+    src={farmAgentIcon}
+    alt="Coffee Farm Agent Icon"
+    className="dark-icon h-4 w-4 object-contain opacity-100"
+  />
+)
 
 export const PUBLISH_SUBSCRIBE_CONFIG: GraphConfig = {
   title: "Publish Subscribe Coffee Farm Network",
@@ -42,7 +42,13 @@ export const PUBLISH_SUBSCRIBE_CONFIG: GraphConfig = {
       id: NODE_IDS.AUCTION_AGENT,
       type: NODE_TYPES.CUSTOM,
       data: {
-        icon: graphNodeIconImg(supervisorIcon, "Supervisor Icon"),
+        icon: (
+          <img
+            src={supervisorIcon}
+            alt="Supervisor Icon"
+            className="dark-icon h-4 w-4 object-contain"
+          />
+        ),
         label1: "Auction Agent",
         label2: "Buyer",
         handles: HANDLE_TYPES.SOURCE,
@@ -116,7 +122,7 @@ export const PUBLISH_SUBSCRIBE_CONFIG: GraphConfig = {
       id: NODE_IDS.WEATHER_MCP,
       type: NODE_TYPES.CUSTOM,
       data: {
-        icon: <WbCloudy sx={{ fontSize: 16, opacity: 1 }} />,
+        icon: <TiWeatherCloudy className="dark-icon h-4 w-4" />,
         label1: "MCP Server",
         label2: "Weather",
         handles: HANDLE_TYPES.TARGET,
@@ -129,7 +135,7 @@ export const PUBLISH_SUBSCRIBE_CONFIG: GraphConfig = {
       id: NODE_IDS.PAYMENT_MCP,
       type: NODE_TYPES.CUSTOM,
       data: {
-        icon: <Calculate sx={{ fontSize: 16, opacity: 1 }} />,
+        icon: <Calculator className="dark-icon h-4 w-4" />,
         label1: "MCP Server",
         label2: "Payment",
         handles: HANDLE_TYPES.TARGET,
@@ -229,7 +235,13 @@ export const GROUP_COMMUNICATION_CONFIG: GraphConfig = {
       id: NODE_IDS.AUCTION_AGENT,
       type: NODE_TYPES.CUSTOM,
       data: {
-        icon: graphNodeIconImg(supervisorIcon, "Supervisor Icon"),
+        icon: (
+          <img
+            src={supervisorIcon}
+            alt="Supervisor Icon"
+            className="dark-icon h-4 w-4 object-contain"
+          />
+        ),
         label1: "Buyer",
         label2: "Logistics Agent",
         handles: HANDLE_TYPES.SOURCE,
@@ -256,7 +268,13 @@ export const GROUP_COMMUNICATION_CONFIG: GraphConfig = {
       id: NODE_IDS.BRAZIL_FARM,
       type: NODE_TYPES.CUSTOM,
       data: {
-        icon: graphNodeIconImg(farmAgentIcon, "Farm Agent Icon"),
+        icon: (
+          <img
+            src={farmAgentIcon}
+            alt="Farm Agent Icon"
+            className="dark-icon h-4 w-4 object-contain opacity-100"
+          />
+        ),
         label1: "Tatooine",
         label2: "Coffee Farm Agent",
         handles: HANDLE_TYPES.ALL,
@@ -272,7 +290,9 @@ export const GROUP_COMMUNICATION_CONFIG: GraphConfig = {
       id: NODE_IDS.COLOMBIA_FARM,
       type: NODE_TYPES.CUSTOM,
       data: {
-        icon: <LocalShipping sx={{ fontSize: 16, opacity: 1 }} />,
+        icon: (
+          <Truck className="dark-icon h-4 w-4 object-contain opacity-100" />
+        ),
         label1: "Shipper",
         label2: "Shipper Agent",
         handles: HANDLE_TYPES.TARGET,
@@ -288,7 +308,9 @@ export const GROUP_COMMUNICATION_CONFIG: GraphConfig = {
       id: NODE_IDS.VIETNAM_FARM,
       type: NODE_TYPES.CUSTOM,
       data: {
-        icon: <Calculate sx={{ fontSize: 16, opacity: 1 }} />,
+        icon: (
+          <Calculator className="dark-icon h-4 w-4 object-contain opacity-100" />
+        ),
         label1: "Accountant",
         label2: "Accountant Agent",
         handles: HANDLE_TYPES.TARGET,
@@ -364,7 +386,13 @@ export const DISCOVERY_CONFIG: GraphConfig = {
       id: NODE_IDS.RECRUITER,
       type: NODE_TYPES.CUSTOM,
       data: {
-        icon: graphNodeIconImg(supervisorIcon, "Recruiter Icon"),
+        icon: (
+          <img
+            src={supervisorIcon}
+            alt="Recruiter Icon"
+            className="dark-icon h-4 w-4 object-contain"
+          />
+        ),
         label1: "Agentic Recruiter",
         label2: "Discovery and delegation",
         handles: HANDLE_TYPES.ALL,
@@ -381,7 +409,13 @@ export const DISCOVERY_CONFIG: GraphConfig = {
       id: NODE_IDS.DIRECTORY,
       type: NODE_TYPES.CUSTOM,
       data: {
-        icon: graphNodeIconImg(supervisorIcon, "Directory Icon"),
+        icon: (
+          <img
+            src={supervisorIcon}
+            alt="Directory Icon"
+            className="dark-icon h-4 w-4 object-contain"
+          />
+        ),
         label1: "Directory",
         label2: "AGNTCY Agent Directory",
         handles: HANDLE_TYPES.ALL,

@@ -9,6 +9,8 @@ import {
   extractStableAgentId,
   transportCanonicalRfId,
 } from "@/utils/topologyToReactFlow"
+import type { StaticOverlay } from "@/utils/topologyStaticOverlay"
+import { parseStableAgentUuid } from "@/utils/agenticTopologyIdentityUiMap"
 
 export interface MessagingHighlightIds {
   nodeIds: ReadonlySet<string>
@@ -110,4 +112,74 @@ export function patchGraphActiveHighlight(
     }
   })
   return { nodes: nextNodes, edges: nextEdges }
+}
+
+/**
+ * Like `messagingHighlightIdsFromTopology`, but additionally consults wire
+ * labels via the supplied overlay's `idByLabel` map. Labels are the only
+ * way to bridge nodes that don't carry a stable_agent_id (e.g. the
+ * Logistics Group container, the AGNTCY Agent Directory node).
+ *
+ * Falls back to dynamic id form when no overlay match is found, so the
+ * patch step simply skips ids without a static counterpart.
+ */
+export function highlightIdsFromTopologyWithOverlay(
+  topology: TopologyWire | null | undefined,
+  overlay: StaticOverlay,
+): MessagingHighlightIds {
+  const nodeIds = new Set<string>()
+  const edgeIds = new Set<string>()
+  const edgePairs = new Set<string>()
+  const wireToRf = new Map<string, string>()
+  for (const n of topology?.nodes ?? []) {
+    const wireId = (n as { id?: unknown }).id
+    const nType = (n as { type?: unknown }).type
+    const nLabel = (n as { label?: unknown }).label
+    const labelStr = typeof nLabel === "string" ? nLabel : ""
+    const sid = extractStableAgentId(n as never)
+    let rfId: string | null = null
+    // 1. stable_agent_id -> static
+    if (sid) {
+      const uuid = parseStableAgentUuid(sid)
+      if (uuid) {
+        const viaStable = overlay.idByStableAgentUuid.get(uuid)
+        if (viaStable !== undefined) rfId = viaStable
+      }
+      if (rfId === null) rfId = sid // pass through; patch step will skip unmatched
+    }
+    // 2. transport canonical -> static
+    if (rfId === null && nType === "transportNode") {
+      const canon = transportCanonicalRfId(labelStr || undefined)
+      const key = canon.replace(/^transport:\/\//, "")
+      const viaTransport = overlay.idByTransportKey.get(key)
+      rfId = viaTransport !== undefined ? viaTransport : canon
+    }
+    // 3. label -> static (covers logistics-group, agntcy-directory)
+    if (rfId === null && labelStr) {
+      const viaLabel = overlay.idByLabel.get(labelStr.trim().toLowerCase())
+      if (viaLabel !== undefined) rfId = viaLabel
+    }
+    // 4. wire id fallback
+    if (rfId === null && typeof wireId === "string" && wireId.length) {
+      rfId = wireId
+    }
+    if (rfId) {
+      nodeIds.add(rfId)
+      if (typeof wireId === "string" && wireId.length) {
+        wireToRf.set(wireId, rfId)
+      }
+    }
+  }
+  for (const e of topology?.edges ?? []) {
+    const id = (e as { id?: unknown }).id
+    if (typeof id === "string" && id.length) edgeIds.add(id)
+    const src = (e as { source?: unknown }).source
+    const tgt = (e as { target?: unknown }).target
+    if (typeof src === "string" && typeof tgt === "string") {
+      const s = wireToRf.get(src) ?? src
+      const t = wireToRf.get(tgt) ?? tgt
+      edgePairs.add(`${s}->${t}`)
+    }
+  }
+  return { nodeIds, edgeIds, edgePairs }
 }

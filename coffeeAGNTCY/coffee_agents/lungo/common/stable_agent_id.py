@@ -13,7 +13,7 @@ from __future__ import annotations
 from uuid import NAMESPACE_DNS, UUID, uuid5
 
 STABLE_AGENT_ID_NAMESPACE: UUID = uuid5(
-    NAMESPACE_DNS, "agent.workflow.lungo.coffeeAGNTCY.com"
+    NAMESPACE_DNS, "agent.workflow.lungo"
 )
 
 

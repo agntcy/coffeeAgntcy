@@ -3,14 +3,14 @@
  * SPDX-License-Identifier: Apache-2.0
  **/
 
-import React, { useCallback, useState } from "react"
+import React, { useCallback, useEffect, useState } from "react"
 
 import type { Message } from "./types"
 import { parseApiError } from "@/utils/const"
 import { useAgentAPI } from "@/hooks/useAgentAPI"
 import { useGroupSessionId } from "@/stores/groupStreamingStore"
 
-import Send from "@mui/icons-material/Send"
+import airplaneSvg from "@/assets/airplane.svg"
 import AgentIcon from "@/assets/Coffee_Icon.svg"
 import grafanaIcon from "@/assets/grafana.svg"
 
@@ -25,7 +25,6 @@ import GroupCommunicationFeed from "./GroupCommunicationFeed"
 import AuctionStreamingFeed from "./AuctionStreamingFeed"
 import RecruiterStreamingFeed from "./RecruiterStreamingFeed"
 
-import Box from "@mui/material/Box"
 import { cn } from "@/utils/cn.ts"
 import { env } from "@/utils/env"
 import { logger } from "@/utils/logger"
@@ -123,6 +122,8 @@ const ChatArea: React.FC<ChatAreaProps> = ({
     },
     [pattern, onDiscoveryResponse],
   )
+
+  useEffect(() => {}, [onApiSuccess, pattern])
 
   const handleMinimize = () => {
     setIsMinimized(true)
@@ -286,14 +287,10 @@ const ChatArea: React.FC<ChatAreaProps> = ({
               !isMinimized && (
                 <div className="flex w-full flex-row items-start gap-1">
                   <div className="chat-avatar-container flex h-10 w-10 flex-none items-center justify-center rounded-full bg-action-background">
-                    <Box
-                      component="img"
+                    <img
                       src={AgentIcon}
                       alt="Agent"
-                      sx={{
-                        width: 22,
-                        height: 22,
-                      }}
+                      className="h-[22px] w-[22px]"
                     />
                   </div>
                   <div className="flex max-w-[calc(100%-3rem)] flex-1 flex-col items-start justify-center rounded p-1 px-2">
@@ -369,8 +366,6 @@ const ChatArea: React.FC<ChatAreaProps> = ({
 
           <div className="flex h-11 w-[50px] flex-none flex-row items-start p-0">
             <button
-              type="button"
-              aria-label="Send message"
               onClick={() => {
                 if (content.trim() && !loading) {
                   processMessage()
@@ -378,7 +373,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
               }}
               className="flex h-11 w-[50px] cursor-pointer flex-row items-center justify-center gap-[10px] rounded-md border-none bg-gradient-to-r from-[#834DD7] via-[#7670D5] to-[#58C0D0] px-4 py-[15px]"
             >
-              <Send sx={{ fontSize: 18 }} aria-hidden />
+              <img src={airplaneSvg} alt="Send" className="h-[18px] w-[18px]" />
             </button>
           </div>
         </div>

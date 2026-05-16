@@ -247,7 +247,7 @@ describe("topologyWireToReactFlow", () => {
   })
 
   it("merges stable-agent map when stable_agent_id uses RootModel-shaped object", () => {
-    const brazilUuid = "ea3ce2b8-68b6-5fc9-9fa4-491cb71b7bf4"
+    const brazilUuid = "9a6cc736-d6fb-5a3e-82d6-3552d09b5ae9"
     const { nodes } = topologyWireToReactFlow(
       {
         nodes: [
@@ -270,7 +270,7 @@ describe("topologyWireToReactFlow", () => {
   })
 
   it("merges stable-agent map: Brazil farm gets directory slug, link, and resolved github", () => {
-    const brazilUuid = "ea3ce2b8-68b6-5fc9-9fa4-491cb71b7bf4"
+    const brazilUuid = "9a6cc736-d6fb-5a3e-82d6-3552d09b5ae9"
     const { nodes } = topologyWireToReactFlow(
       {
         nodes: [
@@ -303,7 +303,7 @@ describe("topologyWireToReactFlow", () => {
   })
 
   it("merges streaming variant github when referenceGithubUrlStreaming is set", () => {
-    const brazilUuid = "ea3ce2b8-68b6-5fc9-9fa4-491cb71b7bf4"
+    const brazilUuid = "9a6cc736-d6fb-5a3e-82d6-3552d09b5ae9"
     const { nodes } = topologyWireToReactFlow(
       {
         nodes: [

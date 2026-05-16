@@ -45,6 +45,14 @@ export interface UseMainAreaGraphEffectsParams {
   nodesConnectable: boolean
   handleCloseModals: () => void
   setOasfModalOpen: (open: boolean) => void
+  /**
+   * Optional callback invoked after any full graph rebuild from
+   * `getGraphConfig` so the SSE-driven highlight (`data.active` +
+   * `edge.animated`) can be re-applied to the freshly-built nodes/edges.
+   * Used when a static overlay is active so the highlight survives effects
+   * that rebuild the static graph.
+   */
+  reapplyMessagingHighlight?: () => void
 }
 
 /** Runs effects that sync graph config, viewport, transport labels, tooltips, and edge checks. */
@@ -67,6 +75,7 @@ export function useMainAreaGraphEffects({
   nodesConnectable,
   handleCloseModals,
   setOasfModalOpen,
+  reapplyMessagingHighlight,
 }: UseMainAreaGraphEffectsParams) {
   useEffect(() => {
     animationLockRef.current = false
@@ -86,7 +95,15 @@ export function useMainAreaGraphEffects({
       })),
     )
     setEdges([])
-  }, [pattern, setNodes, setEdges, skipStaticGraphSync])
+    // After clearing edges (and any node `active` state), restore the
+    // current SSE highlight so the messaging-path animation isn't lost on
+    // pattern change. Call synchronously so the reapply's functional
+    // updates layer on top of the cleared state in the same React batch
+    // (a microtask hop here can race the static rebuild below).
+    if (reapplyMessagingHighlight) {
+      reapplyMessagingHighlight()
+    }
+  }, [pattern, setNodes, setEdges, skipStaticGraphSync, reapplyMessagingHighlight])
 
   useEffect(() => {
     if (!skipStaticGraphSync) return
@@ -138,6 +155,13 @@ export function useMainAreaGraphEffects({
         pattern,
         isStreamingPattern(pattern),
       )
+      // The full rebuild above wipes `data.active` and resets edges; if
+      // an SSE highlight was active, restore it on the rebuilt graph.
+      // Synchronous (not queueMicrotask) so the reapply's functional
+      // setNodes/setEdges layer on top of the rebuild deterministically.
+      if (reapplyMessagingHighlight) {
+        reapplyMessagingHighlight()
+      }
       setTimeout(() => {
         fitViewWithViewport({ chatHeight: 0, isExpanded: false })
       }, 200)
@@ -154,6 +178,7 @@ export function useMainAreaGraphEffects({
     activeNodeData,
     handleOpenOasfModal,
     skipStaticGraphSync,
+    reapplyMessagingHighlight,
   ])
 
   useEffect(() => {

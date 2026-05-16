@@ -26,7 +26,12 @@ import { useActiveWorkflowInstanceStore } from "@/stores/activeWorkflowInstanceS
 import { identityUiVariantForPattern } from "@/utils/agenticTopologyIdentityUiMap"
 import { topologyWireToReactFlow } from "@/utils/topologyToReactFlow"
 import {
+  overlayForPattern,
+  type StaticOverlay,
+} from "@/utils/topologyStaticOverlay"
+import {
   extractInstanceTopologyFromEvent,
+  highlightIdsFromTopologyWithOverlay,
   messagingHighlightIdsFromTopology,
   patchGraphActiveHighlight,
   type MessagingHighlightIds,
@@ -77,6 +82,20 @@ export interface UseWorkflowGraphFromAgenticApiResult {
   agenticError: string | null
   /** Active workflow instance id (e.g. ``instance://<uuid>``) once instantiated. */
   workflowInstanceId: string | null
+  /**
+   * True when this pattern has a static graph in `graphConfigsData` and the
+   * hook is deferring all positioning to it. Callers should still run their
+   * normal static-graph reconciliation (config sync on pattern change) even
+   * though `agenticMode` is true.
+   */
+  staticOverlayActive: boolean
+  /**
+   * Re-apply the last SSE-derived highlight (`data.active` + `edge.animated`)
+   * to the current node/edge arrays. Callers should invoke this after any
+   * full graph rebuild (e.g. static config sync on pattern change) so the
+   * active messaging path doesn't get wiped.
+   */
+  reapplyMessagingHighlight: () => void
 }
 
 export function useWorkflowGraphFromAgenticApi({
@@ -99,6 +118,20 @@ export function useWorkflowGraphFromAgenticApi({
     workflowName &&
     mapWorkflowNameToSlug(workflowName) === pattern,
   )
+
+  /**
+   * When a pattern ships with a static graph in `graphConfigsData.tsx`
+   * (P/S, GroupComm, Discovery), an overlay maps dynamic event ids onto
+   * the static NODE_IDS. In that mode we keep the static graph's
+   * hand-tuned positions, icons, and data intact; only the live-event
+   * highlight/animation pipeline runs.
+   */
+  const staticOverlay: StaticOverlay | null = useMemo(
+    () => overlayForPattern(pattern),
+    [pattern],
+  )
+  const staticOverlayRef = useRef(staticOverlay)
+  staticOverlayRef.current = staticOverlay
 
   const [agenticError, setAgenticError] = useState<string | null>(null)
   const workflowInstanceId = useActiveWorkflowInstanceStore(
@@ -192,6 +225,17 @@ export function useWorkflowGraphFromAgenticApi({
     (
       topology: import("@/api/agenticWorkflowsTypes").TopologyWire | undefined,
     ) => {
+      // When a static overlay governs the current pattern, we leave the
+      // graphConfigsData-sourced nodes/edges alone — positions, icons, and
+      // node data are authored statically. The SSE pipeline still runs and
+      // overlays highlights/animation on top.
+      if (staticOverlayRef.current) {
+        onAppliedRef.current?.()
+        queueMicrotask(() => {
+          reapplyMessagingHighlight()
+        })
+        return
+      }
       const { nodes: mappedNodes, edges: mappedEdges } =
         topologyWireToReactFlow(topology, {
           identityUiVariant: identityUiVariantForPattern(patternRef.current),
@@ -299,7 +343,18 @@ export function useWorkflowGraphFromAgenticApi({
         catalogWorkflowName,
         instanceId,
       )
-      const ids = messagingHighlightIdsFromTopology(partial)
+      // When an overlay is active, derive highlight ids in the static
+      // namespace directly from the wire labels/stable_agent_ids — this is
+      // what lets the live event animation light up the static nodes laid
+      // out by graphConfigsData.tsx. Otherwise use the legacy path which
+      // operates in the dynamic id namespace.
+      const overlay = staticOverlayRef.current
+      let ids: MessagingHighlightIds
+      if (overlay) {
+        ids = highlightIdsFromTopologyWithOverlay(partial, overlay)
+      } else {
+        ids = messagingHighlightIdsFromTopology(partial)
+      }
       const hasAny = ids.nodeIds.size > 0 || ids.edgeIds.size > 0
       const graphIds = lastAppliedGraphNodeIdsRef.current
       let hlNodesOnGraph = 0
@@ -331,7 +386,12 @@ export function useWorkflowGraphFromAgenticApi({
         scheduleMessagingHighlightTtl()
       }
 
-      scheduleTopologyRefetchRef.current()
+      // With a static overlay, the graph never gets rebuilt from topology
+      // refetches — skip the refetch entirely. Without an overlay, the
+      // graph is reconciled with fresh topology after every event.
+      if (!staticOverlayRef.current) {
+        scheduleTopologyRefetchRef.current()
+      }
     },
     [setNodes, setEdges, scheduleMessagingHighlightTtl],
   )
@@ -446,5 +506,11 @@ export function useWorkflowGraphFromAgenticApi({
     }
   }, [agenticMode, baseUrl, selectedWorkflowSummary?.name])
 
-  return { agenticMode, agenticError, workflowInstanceId }
+  return {
+    agenticMode,
+    agenticError,
+    workflowInstanceId,
+    staticOverlayActive: staticOverlay !== null,
+    reapplyMessagingHighlight,
+  }
 }

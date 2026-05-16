@@ -19,9 +19,9 @@ import { PATTERNS, type PatternType } from "@/utils/patternUtils"
 import urlsConfig from "@/utils/urls.json"
 import { SecurityClass } from "@/utils/SecurityClass"
 
-/** Matches Python `workflows.py`: uuid5(NAMESPACE_DNS, "agent.workflow.lungo.coffeeAGNTCY.com") */
+/** Matches Python `workflows.py`: uuid5(NAMESPACE_DNS, "agent.workflow.lungo") */
 export const STABLE_AGENT_ID_NAMESPACE = uuidv5(
-  "agent.workflow.lungo.coffeeAGNTCY.com",
+  "agent.workflow.lungo",
   uuidv5.DNS,
 )
 
