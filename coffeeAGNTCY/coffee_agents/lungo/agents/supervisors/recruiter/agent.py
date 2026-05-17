@@ -306,7 +306,8 @@ from the AGNTCY directory, evaluate them, and connect them to selected agents.
    → If no agents have been recruited yet, inform the user and suggest recruiting first
 
 3. **SELECT requests** (user says "select", "choose", "use", "talk to" + agent name/CID):
-   → Call `select_agent` with the identifier
+   → If no agents have been recruited yet, FIRST call `recruit_agents` to search for the agent by name, THEN call `select_agent` with the identifier
+   → If agents are already recruited, call `select_agent` directly
    → Confirm selection
 
 4. **DESELECT requests** (user says "deselect", "clear", "back", "stop talking"):
