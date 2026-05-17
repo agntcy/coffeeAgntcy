@@ -25,6 +25,10 @@ from agntcy_app_sdk.semantic.a2a import (
     ClientConfig,
     SlimTransportConfig,
 )
+from agntcy_app_sdk.transport.slim.transport import SLIMTransport
+# The SDK's default SLIM request timeout is 6s, too short for LLM round-trips.
+SLIMTransport.request.__defaults__ = (30,)
+
 from common.cors import get_cors_allowed_origins
 
 from agents.logistics.helpdesk.agent_executor import HelpdeskAgentExecutor
