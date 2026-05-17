@@ -21,10 +21,9 @@ RUN apt-get update && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
-# Install uv and create virtual environment
-RUN pip install --no-cache-dir uv && \
-    uv venv -q /venv
-ENV PATH="/venv/bin:$PATH"
+# Install uv
+RUN pip install --no-cache-dir uv
+ENV PATH="/app/.venv/bin:$PATH"
 
 # Set PYTHONPATH to include the application directory
 ENV PYTHONPATH="/app"
@@ -53,4 +52,4 @@ RUN printf "app.name=lungo-recruiter-supervisor\n"       > about.properties && \
 
 EXPOSE 8882
 
-CMD ["uv", "run", "python", "agents/supervisors/recruiter/main.py"]
+CMD ["python", "agents/supervisors/recruiter/main.py"]

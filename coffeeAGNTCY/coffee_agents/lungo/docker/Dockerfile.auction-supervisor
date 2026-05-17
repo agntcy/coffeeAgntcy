@@ -21,10 +21,9 @@ RUN apt-get update && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
-# Install uv and create virtual environment
-RUN pip install --no-cache-dir uv && \
-    uv venv -q /venv
-ENV PATH="/venv/bin:$PATH"
+# Install uv
+RUN pip install --no-cache-dir uv
+ENV PATH="/app/.venv/bin:$PATH"
 
 # Set PYTHONPATH to include the application directory
 ENV PYTHONPATH="/app"
@@ -51,4 +50,4 @@ RUN printf "app.name=lungo-exchange\n"                > about.properties && \
     printf "image.name=%s\n"            "$IMAGE_NAME"       >> about.properties && \
     printf "image.tag=%s\n"             "$IMAGE_TAG"        >> about.properties
 
-CMD ["uv", "run", "python", "agents/supervisors/auction/main.py"]
+CMD ["python", "agents/supervisors/auction/main.py"]
