@@ -496,6 +496,26 @@ services:
     profiles:
       - recruiter
 
+  dir-seed:
+    build:
+      context: ../../..
+      dockerfile: coffeeAGNTCY/coffee_agents/recruiter/Dockerfile
+    image: ghcr.io/agntcy/coffee-agntcy/recruiter:latest
+    container_name: dir-seed
+    entrypoint: ["/bin/sh", "/scripts/seed_directory.sh"]
+    environment:
+      DIRECTORY_CLIENT_SERVER_ADDRESS: dir-api-server:8888
+      DIRECTORY_CLIENT_TLS_SKIP_VERIFY: "true"
+    volumes:
+      - ./scripts/seed_directory.sh:/scripts/seed_directory.sh:ro
+      - ./agents/supervisors/auction/oasf/agents:/oasf/auction:ro
+      - ./agents/supervisors/logistics/oasf/agents:/oasf/logistics:ro
+    depends_on:
+      dir-api-server:
+        condition: service_started
+    profiles:
+      - recruiter
+
   postgres:
     image: docker.io/library/postgres:16.6-bookworm
     environment:
@@ -568,6 +588,8 @@ services:
     volumes:
       # Mount local git metadata so /build/info can derive latest tag/date in dev
       - ../../../.git:/app/.git:ro
+      - ./common/a2a_transport_config.py:/app/common/a2a_transport_config.py:ro
+      - ./agents/supervisors/recruiter/agent.py:/app/agents/supervisors/recruiter/agent.py:ro
     env_file:
       - .env
     environment:
