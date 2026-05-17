@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import os
 
+import httpx
 from agntcy_app_sdk.semantic.a2a import (
     ClientConfig,
     NatsTransportConfig,
@@ -15,7 +16,9 @@ from agntcy_app_sdk.semantic.a2a import (
 )
 from agntcy_app_sdk.transport.slim.transport import SLIMTransport
 # The SDK's default SLIM request timeout is 6s, too short for LLM round-trips.
-SLIMTransport.request.__defaults__ = (30,)
+SLIMTransport.request.__defaults__ = (120,)
+
+A2A_HTTP_TIMEOUT = float(os.getenv("A2A_HTTP_TIMEOUT", "120"))
 
 from config.config import NATS_SERVER, SLIM_SERVER
 
@@ -47,13 +50,17 @@ def build_a2a_client_config(
         name=f"{namespace}/{group}/{agent_name}",
         shared_secret_identity=slim_shared_secret,
     )
+    httpx_client = httpx.AsyncClient(timeout=httpx.Timeout(A2A_HTTP_TIMEOUT))
+
     if include_nats:
         return ClientConfig(
+            httpx_client=httpx_client,
             slimrpc_config=slimrpc_config,
             slim_config=slim_config,
             nats_config=NatsTransportConfig(endpoint=NATS_SERVER),
         )
     return ClientConfig(
+        httpx_client=httpx_client,
         slimrpc_config=slimrpc_config,
         slim_config=slim_config,
     )
