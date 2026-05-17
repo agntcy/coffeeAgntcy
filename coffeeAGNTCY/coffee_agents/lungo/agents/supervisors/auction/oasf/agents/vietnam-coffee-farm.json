@@ -62,7 +62,7 @@
           "defaultInputModes": [
             "text"
           ],
-          "url": "http://0.0.0.0:9997",
+          "url": "http://vietnam-farm-server:9997",
           "signatures": null,
           "skills": [
             {
