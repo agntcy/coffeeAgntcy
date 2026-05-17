@@ -13,6 +13,10 @@ from agntcy_app_sdk.semantic.a2a import (
     SlimRpcConfig,
     SlimTransportConfig,
 )
+from agntcy_app_sdk.transport.slim.transport import SLIMTransport
+# The SDK's default SLIM request timeout is 6s, too short for LLM round-trips.
+SLIMTransport.request.__defaults__ = (30,)
+
 from config.config import NATS_SERVER, SLIM_SERVER
 
 
