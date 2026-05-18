@@ -226,7 +226,7 @@ uv run pytest tests/integration/test_agent_evaluator.py -v
 
 The [`coding-agent-integrations/claude-code/`](./coding-agent-integrations/claude-code/) directory contains **agntcy-discover-connect** — a [Claude Code](https://docs.anthropic.com/en/docs/claude-code) plugin that brings the recruiter's agent discovery capabilities directly into the Claude Code CLI. Instead of running the recruiter as a standalone A2A service, this plugin lets you search the AGNTCY directory, verify record signatures with `dirctl`, preview candidates, connect remote A2A agents as slash-command skills, and inspect their identity-service badges and policies — all from within a Claude Code session.
 
-**Prerequisites:** [Claude Code CLI](https://docs.anthropic.com/en/docs/claude-code), [`dirctl`](https://github.com/agntcy/dir-ctl), [Go 1.25+](https://go.dev/dl/) (to build `a2a-send`; required by `slim-a2a-go`), [`jq`](https://stedolan.github.io/jq/) for record parsing, and `python3` (≥3.7, stdlib only — used by `/agntcy-discover-connect:check-identity`).
+**Prerequisites:** [Claude Code CLI](https://docs.anthropic.com/en/docs/claude-code), [`dirctl`](https://github.com/agntcy/dir-ctl), [Go 1.25+](https://go.dev/dl/) (to build `a2a-send`; required by `slim-a2a-go`), [`jq`](https://stedolan.github.io/jq/) for record parsing, and `python3` (≥3.7, stdlib only — used by `/check-identity`).
 
 **Environment variables:** The plugin reads these variables from the shell (or auto-loaded `.env`) when running its commands. All are documented in [`.env.example`](./.env.example):
 

@@ -70,8 +70,8 @@ Capture the matched `app_id`.
 
 Possible outcomes:
 - **Exit 0**: badge fetched and verified. Output is `{"app_id":..., "badge":..., "verification":...}`.
-- **Exit 1, stderr says `HTTP 404`**: no badge issued for this app. Treat as a clean "no badge" result, not an error — continue to Step 6 with `Badge: ✗ none issued` and skip Step 5.
-- **Exit 1, any other error**: render `Badge: ⚠ verification failed (<error>)` and skip Step 5.
+- **Exit 1, stderr says `HTTP 404`**: no badge issued for this app. Treat as a clean "no badge" result, not an error — continue to Step 6 with `🛡️  Badge: 🔴 none issued` and skip Step 5.
+- **Exit 1, any other error**: render `🛡️  Badge: 🟡 verification failed (<error>)` and skip Step 5.
 
 ### Step 5 — List policies targeting this app
 
@@ -86,23 +86,26 @@ The script filters policies client-side to those whose `rules[].tasks[].appId ==
 ### Step 6 — Render the report
 
 ```
-## Identity check: <name>
+## 🪪 Identity check: <name>
 
-App:        <display_name>  (id: <app_id>)
-Endpoint:   <endpoint>
-Badge:      <status>
-Policies:   <N attached>
+🏷️  App:        <display_name>  (id: <app_id>)
+🌐  Endpoint:   <endpoint>
+🛡️  Badge:      <status>
+📋  Policies:   <N attached>
 
-- [<action>]  <policy_name>           needsApproval=<true|false>
-              tasks: <task_name>(<toolName>), ...
+┌──────────┬────────────────────┬──────────┬──────────────────────────┐
+│  Action  │ Policy             │ Approval │ Tasks                    │
+├──────────┼────────────────────┼──────────┼──────────────────────────┤
+│ 🔹 <action> │ <policy_name>  │ 🔒 yes / 🔓 no │ <task_name>(<toolName>), … │
+└──────────┴────────────────────┴──────────┴──────────────────────────┘
 ```
 
 Status legend:
-- `✓ verified`
-- `✗ none issued`
-- `⚠ verification failed (<reason>)`
+- `🟢 verified`
+- `🔴 none issued`
+- `🟡 verification failed (<reason>)`
 
-If no policies match, print `Policies:   none attached` and skip the bullet list.
+If no policies match, print `📋  Policies:   none attached` and skip the bullet list.
 
 ---
 
