@@ -65,9 +65,12 @@ def app_with_store() -> FastAPI:
 
 
 @pytest.fixture()
-def client(app_with_store: FastAPI) -> TestClient:
+def client(
+    app_with_store: FastAPI,
+    workflow_api_headers: dict[str, str],
+) -> TestClient:
     with patch(_PATCH_GET_WORKFLOWS, return_value=_MINIMAL_WORKFLOWS):
-        with TestClient(app_with_store) as c:
+        with TestClient(app_with_store, headers=workflow_api_headers) as c:
             yield c
 
 
@@ -166,32 +169,38 @@ def test_instances_map_for_workflow_missing_block() -> None:
     assert instances_map_for_workflow(data, "InstTestWf") == {}
 
 
-def test_instantiate_without_store_returns_503() -> None:
+def test_instantiate_without_store_returns_503(
+    workflow_api_headers: dict[str, str],
+) -> None:
     app = FastAPI(openapi_url=None, docs_url=None, redoc_url=None)
     app.include_router(create_agentic_workflows_router())
     with patch(_PATCH_GET_WORKFLOWS, return_value=_MINIMAL_WORKFLOWS):
-        with TestClient(app) as client:
+        with TestClient(app, headers=workflow_api_headers) as client:
             r = client.post("/agentic-workflows/InstTestWf/")
     assert r.status_code == 503
     assert "not configured" in r.json()["detail"].lower()
 
 
-def test_list_instances_without_store_returns_503() -> None:
+def test_list_instances_without_store_returns_503(
+    workflow_api_headers: dict[str, str],
+) -> None:
     app = FastAPI(openapi_url=None, docs_url=None, redoc_url=None)
     app.include_router(create_agentic_workflows_router())
     with patch(_PATCH_GET_WORKFLOWS, return_value=_MINIMAL_WORKFLOWS):
-        with TestClient(app) as client:
+        with TestClient(app, headers=workflow_api_headers) as client:
             r = client.get("/agentic-workflows/InstTestWf/instances/")
     assert r.status_code == 503
     assert "not configured" in r.json()["detail"].lower()
 
 
-def test_get_instance_without_store_returns_503() -> None:
+def test_get_instance_without_store_returns_503(
+    workflow_api_headers: dict[str, str],
+) -> None:
     app = FastAPI(openapi_url=None, docs_url=None, redoc_url=None)
     app.include_router(create_agentic_workflows_router())
     uid = UUID("550e8400-e29b-41d4-a716-4466554400dd")
     with patch(_PATCH_GET_WORKFLOWS, return_value=_MINIMAL_WORKFLOWS):
-        with TestClient(app) as client:
+        with TestClient(app, headers=workflow_api_headers) as client:
             r = client.get(f"/agentic-workflows/InstTestWf/instances/{uid}/")
     assert r.status_code == 503
     assert "not configured" in r.json()["detail"].lower()
@@ -267,3 +276,108 @@ def test_multiple_instantiations_list_two_instances(client: TestClient) -> None:
     assert g2.status_code == 200
     assert g1.json()["id"] == wid1
     assert g2.json()["id"] == wid2
+
+
+def test_delete_instance_returns_204_then_404(client: TestClient) -> None:
+    wf_name = "InstTestWf"
+    post = client.post(f"/agentic-workflows/{wf_name}/")
+    assert post.status_code == 200
+    wid = post.json()["workflow_instance_id"]
+    path_uuid = UUID(wid.removeprefix("instance://"))
+
+    deleted = client.delete(
+        f"/agentic-workflows/{wf_name}/instances/{path_uuid}/",
+    )
+    assert deleted.status_code == 204
+
+    again = client.delete(
+        f"/agentic-workflows/{wf_name}/instances/{path_uuid}/",
+    )
+    assert again.status_code == 404
+
+    listed = client.get(f"/agentic-workflows/{wf_name}/instances/")
+    assert listed.status_code == 200
+    assert wid not in listed.json()
+
+
+def test_delete_unknown_workflow_returns_404(client: TestClient) -> None:
+    uid = UUID("550e8400-e29b-41d4-a716-446655440011")
+    r = client.delete(f"/agentic-workflows/NoSuch/instances/{uid}/")
+    assert r.status_code == 404
+
+
+def test_delete_unknown_instance_returns_404(client: TestClient) -> None:
+    uid = UUID("550e8400-e29b-41d4-a716-446655440012")
+    r = client.delete(f"/agentic-workflows/InstTestWf/instances/{uid}/")
+    assert r.status_code == 404
+
+
+def test_instantiate_delete_then_post_event_returns_404(
+    client: TestClient,
+) -> None:
+    wf_name = "InstTestWf"
+    post = client.post(f"/agentic-workflows/{wf_name}/")
+    assert post.status_code == 200
+    wid = post.json()["workflow_instance_id"]
+    path_uuid = UUID(wid.removeprefix("instance://"))
+
+    assert (
+        client.delete(
+            f"/agentic-workflows/{wf_name}/instances/{path_uuid}/",
+        ).status_code
+        == 204
+    )
+
+    event_body = build_instantiate_seed_event(
+        _MINIMAL_WORKFLOWS[wf_name],
+        wf_name,
+        wid,
+    )
+    r = client.post(
+        f"/agentic-workflows/{wf_name}/instances/{path_uuid}/events/",
+        json=event_body,
+    )
+    assert r.status_code == 404
+
+
+def test_instantiate_twice_delete_one_list_count(
+    client: TestClient,
+) -> None:
+    wf_name = "InstTestWf"
+    r1 = client.post(f"/agentic-workflows/{wf_name}/")
+    r2 = client.post(f"/agentic-workflows/{wf_name}/")
+    assert r1.status_code == 200 and r2.status_code == 200
+    wid1 = r1.json()["workflow_instance_id"]
+    wid2 = r2.json()["workflow_instance_id"]
+    listed = client.get(f"/agentic-workflows/{wf_name}/instances/")
+    assert len(listed.json()) == 2
+
+    u1 = UUID(wid1.removeprefix("instance://"))
+    assert (
+        client.delete(f"/agentic-workflows/{wf_name}/instances/{u1}/").status_code
+        == 204
+    )
+    listed_after = client.get(f"/agentic-workflows/{wf_name}/instances/")
+    assert len(listed_after.json()) == 1
+    assert wid2 in listed_after.json()
+    assert wid1 not in listed_after.json()
+
+
+def test_post_instantiate_missing_api_key_returns_401(
+    app_with_store: FastAPI,
+) -> None:
+    with patch(_PATCH_GET_WORKFLOWS, return_value=_MINIMAL_WORKFLOWS):
+        with TestClient(app_with_store) as bare:
+            r = bare.post("/agentic-workflows/InstTestWf/")
+    assert r.status_code == 401
+
+
+def test_post_instantiate_wrong_api_key_returns_401(
+    app_with_store: FastAPI,
+    workflow_api_headers: dict[str, str],
+) -> None:
+    bad = {**workflow_api_headers, "Authorization": "Bearer wrong-key"}
+    with patch(_PATCH_GET_WORKFLOWS, return_value=_MINIMAL_WORKFLOWS):
+        with TestClient(app_with_store, headers=bad) as c:
+            r = c.post("/agentic-workflows/InstTestWf/")
+    assert r.status_code == 401

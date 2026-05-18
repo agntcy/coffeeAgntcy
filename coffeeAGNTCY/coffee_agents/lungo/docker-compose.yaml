@@ -130,6 +130,8 @@ services:
       - IDENTITY_AUTH_ENABLED=${IDENTITY_AUTH_ENABLED:-} # Disabled by default
       - IDENTITY_SERVICE_API_KEY=${IDENTITY_SERVICE_API_KEY_AUCTION_SUPERVISOR:-dummy_api_key}
       - CORS_ALLOWED_ORIGINS=${CORS_ALLOWED_ORIGINS:-}
+      - WORKFLOW_API_URL=http://agentic-workflows-api:9105
+      - WORKFLOW_API_KEY=${WORKFLOW_API_KEY:?WORKFLOW_API_KEY must be set in .env}
     ports:
       - "8000:8000"
     depends_on:
@@ -151,6 +153,7 @@ services:
       - TZ=UTC
       - PORT=9105
       - CORS_ALLOWED_ORIGINS=${CORS_ALLOWED_ORIGINS:-}
+      - WORKFLOW_API_KEY=${WORKFLOW_API_KEY:?WORKFLOW_API_KEY must be set in .env}
     ports:
       - "9105:9105"
 
@@ -166,6 +169,7 @@ services:
       - frontend/.env
     environment:
       - TZ=UTC
+      - VITE_AGENTIC_WORKFLOWS_API_KEY=${WORKFLOW_API_KEY:?WORKFLOW_API_KEY must be set in .env}
     depends_on:
       agentic-workflows-api:
         condition: service_started
@@ -402,6 +406,8 @@ services:
       - SLIM_SHARED_SECRET=${SLIM_SHARED_SECRET}
       - OTLP_HTTP_ENDPOINT=${OTLP_HTTP_ENDPOINT:-http://otel-collector:4318}
       - CORS_ALLOWED_ORIGINS=${CORS_ALLOWED_ORIGINS:-}
+      - WORKFLOW_API_URL=http://agentic-workflows-api:9105
+      - WORKFLOW_API_KEY=${WORKFLOW_API_KEY:?WORKFLOW_API_KEY must be set in .env}
     ports:
       - "9090:9090"
     depends_on:
@@ -581,6 +587,8 @@ services:
       - SLIM_SHARED_SECRET=${SLIM_SHARED_SECRET}
       - OTLP_HTTP_ENDPOINT=${OTLP_HTTP_ENDPOINT:-http://otel-collector:4318}
       - CORS_ALLOWED_ORIGINS=${CORS_ALLOWED_ORIGINS:-}
+      - WORKFLOW_API_URL=http://agentic-workflows-api:9105
+      - WORKFLOW_API_KEY=${WORKFLOW_API_KEY:?WORKFLOW_API_KEY must be set in .env}
     ports:
       - "8882:8882"
     depends_on:

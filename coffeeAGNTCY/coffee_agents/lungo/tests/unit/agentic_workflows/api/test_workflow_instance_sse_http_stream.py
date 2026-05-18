@@ -22,6 +22,7 @@ from uuid import UUID
 import httpx
 from schema.types import Event, instance_id_from_uuid
 
+from tests.helpers.workflow_api_auth import workflow_api_auth_headers
 from tests.unit.agentic_workflows.api.agentic_uvicorn_helpers import (
     assert_lungo_package_layout,
     first_sse_data_payload,
@@ -40,17 +41,28 @@ def test_sse_stream_receives_event_after_post() -> None:
     proc = start_agentic_uvicorn(port)
     try:
         wait_health(base_url)
+        api_headers = workflow_api_auth_headers()
 
-        uid = UUID("550e8400-e29b-41d4-a716-4466554400c0")
-        iuri = instance_id_from_uuid(uid).root
         wf = "On-demand Discovery"
         wf_seg = quote(wf, safe="")
         event_id = "event://550e8400-e29b-41d4-a716-4466554400c1"
-        post_path = f"/agentic-workflows/{wf_seg}/instances/{uid}/events/"
-        stream_path = f"/agentic-workflows/{wf_seg}/instances/{uid}/events/stream"
+
+        with httpx.Client(
+            base_url=base_url,
+            timeout=httpx.Timeout(30.0),
+            trust_env=False,
+            headers=api_headers,
+        ) as hc:
+            inst = hc.post(f"/agentic-workflows/{wf_seg}/")
+            assert inst.status_code == 200, inst.text
+            wid = inst.json()["workflow_instance_id"]
+            path_uuid = UUID(wid.removeprefix("instance://"))
+
+        post_path = f"/agentic-workflows/{wf_seg}/instances/{path_uuid}/events/"
+        stream_path = f"/agentic-workflows/{wf_seg}/instances/{path_uuid}/events/stream"
         body = minimal_event_v1_dict(
             wf,
-            iuri,
+            wid,
             event_id,
             pattern="Recruiter",
             use_case="Coffee Agntcy",
@@ -66,6 +78,7 @@ def test_sse_stream_receives_event_after_post() -> None:
                     base_url=base_url,
                     timeout=httpx.Timeout(10.0),
                     trust_env=False,
+                    headers=api_headers,
                 ) as pc:
                     pr = pc.post(post_path, json=body)
                     post_status["code"] = pr.status_code

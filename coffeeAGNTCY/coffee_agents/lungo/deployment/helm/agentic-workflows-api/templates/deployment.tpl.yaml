@@ -31,6 +31,13 @@ spec:
         env:
         - name: PORT
           value: "{{ .Values.service.port }}"
+        {{- if or .Values.config.workflowApiKey .Values.workflowApiKeySecret.name }}
+        - name: WORKFLOW_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Values.workflowApiKeySecret.name }}
+              key: {{ .Values.workflowApiKeySecret.key }}
+        {{- end }}
         envFrom:
           - configMapRef:
               name: {{ .Values.appName }}-configmap

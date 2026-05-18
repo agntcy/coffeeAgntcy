@@ -7,6 +7,7 @@ import { useCallback, useEffect, useRef, useState } from "react"
 import type { Edge, Node } from "@xyflow/react"
 import {
   createClient,
+  deleteWorkflowInstance,
   eventTouchesInstance,
   getWorkflowInstanceState,
   instanceIdToPathUuid,
@@ -139,7 +140,16 @@ export function useWorkflowGraphFromAgenticApi({
     if (s.closeSse) s.closeSse()
     if (s.debounceTimer) clearTimeout(s.debounceTimer)
     if (s.retryTimer) clearTimeout(s.retryTimer)
+    const { client, workflowName, instanceId } = s
     sessionRef.current = null
+    try {
+      const pathUuid = instanceIdToPathUuid(instanceId)
+      void deleteWorkflowInstance(client, workflowName, pathUuid).catch((err) => {
+        logger.apiError("agentic-workflows/delete-instance", err)
+      })
+    } catch {
+      // instance id may be malformed during teardown
+    }
   }, [])
 
   const refetchAndApplyTopology = useCallback(

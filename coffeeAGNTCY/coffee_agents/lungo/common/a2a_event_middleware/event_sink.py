@@ -38,13 +38,19 @@ class WorkflowAPIEventSink(EventSink):
     _TIMEOUT = 5.0
     _INSTANCE_ID_PREFIX = "instance://"
 
-    def __init__(self, base_url: str | None = None) -> None:
+    def __init__(self, base_url: str | None = None, api_key: str | None = None) -> None:
         if base_url is None:
             from config.config import WORKFLOW_API_URL
 
             self._base_url = WORKFLOW_API_URL
         else:
             self._base_url = base_url
+        if api_key is None:
+            from config.config import WORKFLOW_API_KEY
+
+            self._api_key = WORKFLOW_API_KEY
+        else:
+            self._api_key = api_key
 
         self._client: httpx.AsyncClient | None = None
         self._pending: set[asyncio.Task] = set()
@@ -84,10 +90,13 @@ class WorkflowAPIEventSink(EventSink):
     ) -> None:
         """Best-effort POST; errors are logged, never raised."""
         try:
+            headers = {"Content-Type": "application/json"}
+            if self._api_key:
+                headers["Authorization"] = f"Bearer {self._api_key}"
             resp = await self._get_client().post(
                 url,
                 content=body,
-                headers={"Content-Type": "application/json"},
+                headers=headers,
             )
             if resp.is_error:
                 logger.warning(
