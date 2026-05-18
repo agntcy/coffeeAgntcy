@@ -3,7 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  *
  * Helpers to turn a flat list of catalog `WorkflowSummary` rows into the
- * tree the LHS sidebar renders (`pattern -> use-case + scenario -> workflow`).
+ * LHS sidebar: implemented `pattern -> use-case + scenario -> workflow`, plus
+ * a flat Reference Library of placeholder (unimplemented) pattern names.
  */
 
 import type { WorkflowSummary } from "@/utils/agenticWorkflowsApi"
@@ -23,6 +24,16 @@ export interface UseCaseScenarioNode {
 export interface PatternNode {
   name: string
   useCaseScenarios: UseCaseScenarioNode[]
+}
+
+/** Placeholder catalog rows (pattern docs only; no runnable Lungo workflow). */
+export const isPlaceholderWorkflow = (summary: WorkflowSummary): boolean =>
+  summary.use_case === "---" && summary.scenario === "---"
+
+export interface CatalogSidebarLayout {
+  implementedPatterns: PatternNode[]
+  /** Unique pattern names for Reference Library, catalog order. */
+  referencePatternNames: string[]
 }
 
 /** Build the display label for the middle (use-case + scenario) row. */
@@ -61,7 +72,7 @@ const minIndexForWorkflows = (
 ): number => {
   let m = Number.POSITIVE_INFINITY
   for (const w of workflows) {
-    const idx = order.get(w.name)
+    const idx = order.get(w.summary.name)
     if (idx !== undefined && idx < m) {
       m = idx
     }
@@ -83,16 +94,7 @@ const minIndexForPattern = (
   return m
 }
 
-/**
- * Group workflow summaries into the `catalog pattern -> (use-case + scenario) -> workflow` tree.
- *
- * Ordering follows the order of rows in ``summaries`` (intended to mirror
- * ``starting_workflows.json`` via ``GET /agentic-workflows/``): patterns,
- * use-case groups, and workflows are ordered by the smallest catalog index among
- * descendants, with ``localeCompare`` only as a tie-breaker. Workflow names without
- * a known slug stay in the tree with ``slug: null`` so the sidebar can render them disabled.
- */
-export const groupWorkflowsByPatternUseCaseAndScenario = (
+const groupImplementedSummaries = (
   summaries: readonly WorkflowSummary[],
 ): PatternNode[] => {
   const order = catalogIndexByName(summaries)
@@ -160,3 +162,49 @@ export const groupWorkflowsByPatternUseCaseAndScenario = (
     }
   })
 }
+
+const buildReferencePatternNames = (
+  placeholders: readonly WorkflowSummary[],
+  order: Map<string, number>,
+): string[] => {
+  const byPattern = new Map<string, number>()
+  for (const row of placeholders) {
+    const idx = order.get(row.name) ?? Number.POSITIVE_INFINITY
+    const prev = byPattern.get(row.pattern)
+    if (prev === undefined || idx < prev) {
+      byPattern.set(row.pattern, idx)
+    }
+  }
+  return [...byPattern.keys()].sort((a, b) => {
+    const ia = byPattern.get(a) ?? Number.POSITIVE_INFINITY
+    const ib = byPattern.get(b) ?? Number.POSITIVE_INFINITY
+    if (ia !== ib) {
+      return ia - ib
+    }
+    return a.localeCompare(b)
+  })
+}
+
+/**
+ * Split catalog into implemented tree + Reference Library pattern names.
+ */
+export const buildCatalogSidebarLayout = (
+  summaries: readonly WorkflowSummary[],
+): CatalogSidebarLayout => {
+  const order = catalogIndexByName(summaries)
+  const implementedRows = summaries.filter((s) => !isPlaceholderWorkflow(s))
+  const placeholderRows = summaries.filter(isPlaceholderWorkflow)
+
+  return {
+    implementedPatterns: groupImplementedSummaries(implementedRows),
+    referencePatternNames: buildReferencePatternNames(placeholderRows, order),
+  }
+}
+
+/**
+ * Group non-placeholder workflows only (implemented section).
+ */
+export const groupWorkflowsByPatternUseCaseAndScenario = (
+  summaries: readonly WorkflowSummary[],
+): PatternNode[] =>
+  buildCatalogSidebarLayout(summaries).implementedPatterns

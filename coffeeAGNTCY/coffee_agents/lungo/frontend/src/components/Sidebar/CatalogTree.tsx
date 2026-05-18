@@ -3,45 +3,60 @@
  * SPDX-License-Identifier: Apache-2.0
  **/
 
-import React from "react"
+import React, { useCallback } from "react"
 import {
   mapWorkflowNameToSlug,
   type WorkflowSummary,
 } from "@/utils/agenticWorkflowsApi"
-import type { PatternNode } from "@/utils/sidebarHierarchy"
+import {
+  isPlaceholderWorkflow,
+  type CatalogSidebarLayout,
+} from "@/utils/sidebarHierarchy"
+import { openWorkflowDocumentationInNewTab } from "@/utils/workflowDocumentationGithub"
 import { cn } from "@/utils/cn"
 import SidebarItem from "./sidebarItem"
 import SidebarDropdown from "./SidebarDropdown"
 import UseCaseDropdown from "./UseCaseDropdown"
-import { makePatternKey, makeScenarioKey } from "./sidebarKeys"
+import {
+  makePatternKey,
+  makeScenarioKey,
+  REFERENCE_LIBRARY_KEY,
+} from "./sidebarKeys"
 
 interface CatalogTreeProps {
-  tree: PatternNode[]
+  layout: CatalogSidebarLayout
   expanded: Set<string>
   onToggle: (key: string) => void
   selectedWorkflowSummary: WorkflowSummary | null
   onSelectWorkflow: (summary: WorkflowSummary) => void
 }
 
-/**
- * Renders the `pattern -> use-case+scenario -> workflow` tree built from the
- * agentic workflows catalog. Leaf rows are clickable when the workflow name
- * maps to a known Lungo `PatternType`.
- */
 const CatalogTree: React.FC<CatalogTreeProps> = ({
-  tree,
+  layout,
   expanded,
   onToggle,
   selectedWorkflowSummary,
   onSelectWorkflow,
 }) => {
-  if (tree.length === 0) {
+  const { implementedPatterns, referencePatternNames } = layout
+
+  const openDoc = useCallback((catalogName: string) => {
+    openWorkflowDocumentationInNewTab(catalogName)
+  }, [])
+
+  if (
+    implementedPatterns.length === 0 &&
+    referencePatternNames.length === 0
+  ) {
     return <SidebarItem title="No workflows available" className="opacity-60" />
   }
 
+  const showSeparator =
+    implementedPatterns.length > 0 && referencePatternNames.length > 0
+
   return (
     <>
-      {tree.map((pattern) => {
+      {implementedPatterns.map((pattern) => {
         const pKey = makePatternKey(pattern.name)
         return (
           <SidebarDropdown
@@ -70,6 +85,7 @@ const CatalogTree: React.FC<CatalogTreeProps> = ({
                       mapWorkflowNameToSlug(summary.name) === null
                     const isSelected =
                       selectedWorkflowSummary?.name === summary.name
+                    const showWorkflowDoc = !isPlaceholderWorkflow(summary)
                     return (
                       <SidebarItem
                         key={summary.name}
@@ -79,6 +95,12 @@ const CatalogTree: React.FC<CatalogTreeProps> = ({
                           isUnmapped
                             ? undefined
                             : () => onSelectWorkflow(summary)
+                        }
+                        documentationCatalogName={
+                          showWorkflowDoc ? summary.name : undefined
+                        }
+                        onOpenDocumentation={
+                          showWorkflowDoc ? openDoc : undefined
                         }
                         className={cn(
                           "pl-10",
@@ -94,6 +116,34 @@ const CatalogTree: React.FC<CatalogTreeProps> = ({
           </SidebarDropdown>
         )
       })}
+
+      {showSeparator && (
+        <div
+          className="my-2 border-t border-sidebar-border px-2"
+          role="separator"
+          aria-hidden="true"
+        />
+      )}
+
+      {referencePatternNames.length > 0 && (
+        <SidebarDropdown
+          title="Reference Library"
+          isExpanded={expanded.has(REFERENCE_LIBRARY_KEY)}
+          onToggle={() => onToggle(REFERENCE_LIBRARY_KEY)}
+          titleClassName="pl-2"
+        >
+          {referencePatternNames.map((patternName) => (
+            <button
+              key={patternName}
+              type="button"
+              className="flex w-full items-start gap-2 bg-sidebar-background py-2 pl-8 pr-5 text-left font-inter text-sm font-normal leading-5 tracking-[0.25px] text-sidebar-text transition-colors hover:bg-sidebar-item-selected"
+              onClick={() => openDoc(patternName)}
+            >
+              <span className="flex-1">{patternName}</span>
+            </button>
+          ))}
+        </SidebarDropdown>
+      )}
     </>
   )
 }

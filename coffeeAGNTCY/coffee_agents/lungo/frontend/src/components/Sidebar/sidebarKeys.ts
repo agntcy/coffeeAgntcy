@@ -6,6 +6,8 @@
  * pattern and use-case+scenario rows are currently expanded.
  */
 
+export const REFERENCE_LIBRARY_KEY = "reference-library"
+
 export const makePatternKey = (patternName: string): string =>
   `pattern:${patternName}`
 

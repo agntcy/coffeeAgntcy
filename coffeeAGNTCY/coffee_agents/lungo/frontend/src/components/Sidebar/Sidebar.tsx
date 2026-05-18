@@ -8,7 +8,7 @@ import { Spinner } from "@open-ui-kit/core"
 import ErrorOutline from "@mui/icons-material/ErrorOutline"
 import type { WorkflowSummary } from "@/utils/agenticWorkflowsApi"
 import {
-  groupWorkflowsByPatternUseCaseAndScenario,
+  buildCatalogSidebarLayout,
   type PatternNode,
 } from "@/utils/sidebarHierarchy"
 import CatalogTree from "./CatalogTree"
@@ -22,9 +22,11 @@ interface SidebarProps {
   onSelectWorkflow: (summary: WorkflowSummary) => void
 }
 
-const buildInitialExpanded = (tree: PatternNode[]): Set<string> => {
+const buildInitialExpanded = (
+  implementedPatterns: PatternNode[],
+): Set<string> => {
   const next = new Set<string>()
-  for (const pattern of tree) {
+  for (const pattern of implementedPatterns) {
     next.add(makePatternKey(pattern.name))
     for (const ucs of pattern.useCaseScenarios) {
       next.add(makeScenarioKey(pattern.name, ucs.useCase, ucs.scenario))
@@ -41,15 +43,15 @@ const Sidebar: React.FC<SidebarProps> = ({
 }) => {
   const [expanded, setExpanded] = useState<Set<string>>(new Set())
 
-  const tree = useMemo(
-    () => groupWorkflowsByPatternUseCaseAndScenario(summaries ?? []),
+  const layout = useMemo(
+    () => buildCatalogSidebarLayout(summaries ?? []),
     [summaries],
   )
 
   useEffect(() => {
     if (summaries === null) return
-    setExpanded(buildInitialExpanded(tree))
-  }, [tree, summaries])
+    setExpanded(buildInitialExpanded(layout.implementedPatterns))
+  }, [layout.implementedPatterns, summaries])
 
   const toggle = useCallback((key: string) => {
     setExpanded((prev) => {
@@ -74,7 +76,7 @@ const Sidebar: React.FC<SidebarProps> = ({
 
         {summaries === null && error === null && (
           <div
-            className="flex flex-none w-full items-center gap-3 px-5 py-2"
+            className="flex w-full flex-none items-center gap-3 px-5 py-2"
             role="status"
             aria-label="Loading workflows"
           >
@@ -88,7 +90,7 @@ const Sidebar: React.FC<SidebarProps> = ({
 
         {error !== null && (
           <div
-            className="flex flex-none w-full items-center gap-2 px-5 py-2 text-xs leading-4 text-sidebar-text opacity-80"
+            className="flex w-full flex-none items-center gap-2 px-5 py-2 text-xs leading-4 text-sidebar-text opacity-80"
             role="alert"
           >
             <ErrorOutline sx={{ fontSize: 16 }} />
@@ -99,7 +101,7 @@ const Sidebar: React.FC<SidebarProps> = ({
         {summaries !== null && error === null && (
           <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden pr-1">
             <CatalogTree
-              tree={tree}
+              layout={layout}
               expanded={expanded}
               onToggle={toggle}
               selectedWorkflowSummary={selectedWorkflowSummary}
