@@ -28,7 +28,7 @@ The **Lungo Demo** is a continuously evolving showcase of interoperable open-sou
 
 ### Overview
 
-The current demo models a **supervisor-worker agent ecosystem**, where:
+The current demo models a **supervisor agent ecosystem**, where:
 
 - The **Supervisor Agent** acts as a _Coffee Exchange_, responsible for managing inventory and fulfilling orders.
 - The **Worker Agents** represent _Coffee Farms_, which supply the inventory and provide order information.

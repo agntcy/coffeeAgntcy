@@ -430,7 +430,7 @@ docker compose down
 
 In this workshop, you:
 - Deployed Corto's **Sommelier** demo via Docker Compose which showed a 1-1 A2A connection over SLIM
-- Deployed Lungo’s **Auction** and **Logistic** demos via Docker Compose and explored supervisor-worker and peer group
+- Deployed Lungo’s **Auction** and **Logistic** demos via Docker Compose and explored supervisor and peer group
   agentic patterns
 - Interacted with real-time **agentic UIs**
 - Observed communication traces in **Grafana**

@@ -63,7 +63,7 @@ of that pattern to achieve a concrete goal within a defined context.
 The following example (agentic) use-cases are existing in CoffeeAGNTCY:
 
 - Point-to-point: Corto Sommelier / coffee grading.
-- Supervisor-workers: Lungo auction / coffee purchase, Lungo recruiter / capability discovery.
+- Supervisor: Lungo auction / coffee purchase, Lungo recruiter / capability discovery.
 - Peer Group / coordination: Lungo logistics / order fulfillment.
 
 ---
