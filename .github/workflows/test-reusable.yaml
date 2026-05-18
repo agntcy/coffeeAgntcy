@@ -68,6 +68,10 @@ jobs:
           AZURE_API_KEY=${{ secrets.AZURE_API_KEY }}
           AZURE_API_BASE=${{ secrets.AZURE_API_BASE }}
           AZURE_API_VERSION=${{ secrets.AZURE_API_VERSION }}
+          WORKFLOW_API_KEY=ci-integration-test-placeholder
+          COMPOSE_PROFILES=observability
+          OTLP_HTTP_ENDPOINT=http://127.0.0.1:4318
+          OTEL_SDK_DISABLED=false
           EOF
 
       - name: Run integration tests

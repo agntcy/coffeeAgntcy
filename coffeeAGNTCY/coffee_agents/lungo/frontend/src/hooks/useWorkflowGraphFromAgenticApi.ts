@@ -144,9 +144,11 @@ export function useWorkflowGraphFromAgenticApi({
     sessionRef.current = null
     try {
       const pathUuid = instanceIdToPathUuid(instanceId)
-      void deleteWorkflowInstance(client, workflowName, pathUuid).catch((err) => {
-        logger.apiError("agentic-workflows/delete-instance", err)
-      })
+      void deleteWorkflowInstance(client, workflowName, pathUuid).catch(
+        (err) => {
+          logger.apiError("agentic-workflows/delete-instance", err)
+        },
+      )
     } catch {
       // instance id may be malformed during teardown
     }

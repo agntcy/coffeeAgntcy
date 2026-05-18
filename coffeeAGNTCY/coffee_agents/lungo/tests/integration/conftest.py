@@ -7,9 +7,13 @@ Replace prior xprocess usage with these.
 """
 import atexit
 import os
+from urllib.parse import urlparse
 
 # Force OTel SDK on in tests so we get recording spans; without this NonRecordingSpan would be created (from disabled SDK) which has no .attributes.
 os.environ["OTEL_SDK_DISABLED"] = "false"
+os.environ.setdefault("OTLP_HTTP_ENDPOINT", "http://127.0.0.1:4318")
+# Required by docker-compose interpolation for several services (compose config during up/down).
+os.environ.setdefault("WORKFLOW_API_KEY", "integration-test-placeholder")
 
 import re
 import time
@@ -18,12 +22,23 @@ import pytest
 from pathlib import Path
 
 from fastapi.testclient import TestClient
-from tests.integration.docker_helpers import up, down, remove_container_if_exists
+from tests.integration.docker_helpers import (
+    up,
+    down,
+    remove_container_if_exists,
+    ensure_compose_profile,
+    wait_for_tcp_port,
+)
 
 from tests.integration.process_helper import ProcessRunner
 import config.config # noqa: F401 # Note: imports config.config to set environment variables.
 
 LUNGO_DIR = Path(__file__).resolve().parents[2]
+
+# Observability stack services (otel-collector, clickhouse, grafana) use the compose profile.
+ensure_compose_profile("observability")
+
+_otel_shutdown_done = False
 
 AGENTS = {
     # auction agents
@@ -77,6 +92,7 @@ def _base_env():
         "PYTHONPATH": str(LUNGO_DIR),
         "FARM_BROADCAST_TOPIC": "farm_broadcast",
         "OTEL_SDK_DISABLED": os.environ.get("OTEL_SDK_DISABLED", "false"),
+        "OTLP_HTTP_ENDPOINT": os.environ.get("OTLP_HTTP_ENDPOINT", "http://127.0.0.1:4318"),
         "PYTHONUNBUFFERED": "1",
         "PYTHONFAULTHANDLER": "1",
         "TRANSPORT_SERVER_ENDPOINT": os.environ.get(
@@ -140,27 +156,47 @@ def _teardown_session_docker():
     down(files)
 
 
-atexit.register(_teardown_session_docker)
-
-
 def _shutdown_otel_sdk():
-    """Flush and shutdown the OpenTelemetry SDK in this process before docker is
-    brought down. Prevents 'Connection refused' to localhost:4318 and
-    'I/O operation on closed file' when the SDK's background thread or atexit
-    hook runs after the collector is gone and pytest has closed stdout/stderr.
+    """Flush and shutdown OTEL/ioa_observe in this process before the collector stops.
+
+    Metrics export uses a background thread; shut it down while localhost:4318 is still up.
+    ioa_observe registers its own atexit flush — call this before ``docker compose down``.
     """
+    global _otel_shutdown_done
+    if _otel_shutdown_done:
+        return
+    _otel_shutdown_done = True
+
+    timeout_millis = 30_000
     try:
-        from opentelemetry import trace, metrics
+        from opentelemetry import metrics, trace
+
+        mp = metrics.get_meter_provider()
+        if hasattr(mp, "force_flush"):
+            mp.force_flush(timeout_millis=timeout_millis)
+        if hasattr(mp, "shutdown"):
+            mp.shutdown(timeout_millis=timeout_millis)
+
+        try:
+            from ioa_observe.sdk.tracing.tracing import TracerWrapper
+
+            if getattr(TracerWrapper, "endpoint", None) and hasattr(TracerWrapper, "instance"):
+                TracerWrapper.instance.flush()
+        except Exception:  # noqa: BLE001
+            pass
 
         tp = trace.get_tracer_provider()
-        mp = metrics.get_meter_provider()
-        for _name, provider in [("TracerProvider", tp), ("MeterProvider", mp)]:
-            if hasattr(provider, "force_flush"):
-                provider.force_flush(timeout_millis=5_000)
-            if hasattr(provider, "shutdown"):
-                provider.shutdown()
+        if hasattr(tp, "force_flush"):
+            tp.force_flush(timeout_millis=timeout_millis)
+        if hasattr(tp, "shutdown"):
+            tp.shutdown()
     except Exception:  # noqa: BLE001
         pass
+
+
+# atexit is LIFO: register docker first so OTEL shutdown runs before compose down on abrupt exit.
+atexit.register(_teardown_session_docker)
+atexit.register(_shutdown_otel_sdk)
 
 
 @pytest.fixture(scope="session", autouse=True)
@@ -177,24 +213,22 @@ def orchestrate_session_services():
     setup_identity()
     print("--- Session level service setup complete. Tests can now run ---")
     yield
+    _shutdown_otel_sdk()
     try:
-        _shutdown_otel_sdk()
-    finally:
-        try:
-            from huggingface_hub.utils import close_session
+        from huggingface_hub.utils import close_session
 
-            close_session()
-        except Exception:
-            pass
-        _teardown_session_docker()
+        close_session()
+    except Exception:
+        pass
+    # Docker teardown runs from atexit after all OTEL/ioa_observe atexit hooks finish.
 
 def setup_transports():
     _startup_slim()
     _startup_nats()
 
 def setup_observability():
-    _startup_otel_collector()
     _startup_clickhouse()
+    _startup_otel_collector()
     _startup_grafana()
 
 def setup_identity():
@@ -212,9 +246,22 @@ def _startup_grafana():
 def _startup_clickhouse():
     up(files, ["clickhouse-server"])
 
+def _otlp_host_port() -> tuple[str, int]:
+    parsed = urlparse(os.environ.get("OTLP_HTTP_ENDPOINT", "http://127.0.0.1:4318"))
+    host = parsed.hostname or "127.0.0.1"
+    port = parsed.port or 4318
+    return host, port
+
+
+def _wait_otlp_http_endpoint(timeout_s: float = 120.0) -> None:
+    host, port = _otlp_host_port()
+    print(f"--- Waiting for OTLP HTTP endpoint {host}:{port} ---")
+    wait_for_tcp_port(host, port, timeout_s=timeout_s)
+
+
 def _startup_otel_collector():
     up(files, ["otel-collector"])
-    time.sleep(10)
+    _wait_otlp_http_endpoint()
 
 # ---------------- per-test config ----------------
 
@@ -443,7 +490,6 @@ def logistics_shipper_client(transport_config, monkeypatch):
         _purge_modules(prefixes)
         _restore_modules(saved)
 
-
 @pytest.fixture
 def logistics_farm_client(transport_config, monkeypatch):
     for k, v in _base_env().items():
@@ -468,8 +514,6 @@ def logistics_farm_client(transport_config, monkeypatch):
         _purge_modules(prefixes)
         _restore_modules(saved)
 
-
-
 @pytest.fixture
 def logistics_accountant_client(transport_config, monkeypatch):
     for k, v in _base_env().items():
@@ -493,3 +537,7 @@ def logistics_accountant_client(transport_config, monkeypatch):
     finally:
         _purge_modules(prefixes)
         _restore_modules(saved)
+
+
+def pytest_sessionfinish(session, exitstatus) -> None:  # noqa: ARG001
+    _shutdown_otel_sdk()
