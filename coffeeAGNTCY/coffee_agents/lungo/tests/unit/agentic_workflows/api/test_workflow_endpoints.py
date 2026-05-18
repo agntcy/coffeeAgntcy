@@ -41,7 +41,7 @@ _FAKE_WORKFLOWS: dict[str, Workflow] = {
         ),
         Workflow.model_validate(
             {
-                "pattern": "group_communication",
+                "pattern": "group_messaging",
                 "use_case": "Order Fulfillment",
                 "scenario": "Group Logistics scenario",
                 "name": "Group Logistics",
@@ -160,7 +160,7 @@ _LIST_CASES: tuple[ListCase, ...] = (
     ListCase(
         case_id="filter_multiple_patterns",
         inputs=ListInputs(
-            params={"patterns": ["publish_subscribe", "group_communication"]}
+            params={"patterns": ["publish_subscribe", "group_messaging"]}
         ),
         outputs=ListOutputs(status=200, expected_names=_ALL_NAMES),
     ),

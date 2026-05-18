@@ -215,8 +215,8 @@ export const PUBLISH_SUBSCRIBE_CONFIG: GraphConfig = {
   ],
 }
 
-export const GROUP_COMMUNICATION_CONFIG: GraphConfig = {
-  title: "Secure Group Communication Logistics Network",
+export const GROUP_MESSAGING_CONFIG: GraphConfig = {
+  title: "Group Messaging",
   nodes: [
     {
       id: NODE_IDS.LOGISTICS_GROUP,

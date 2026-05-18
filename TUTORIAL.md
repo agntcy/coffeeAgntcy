@@ -359,7 +359,7 @@ to communicate directly with one another.
 - `I want to order coffee at $3.50 per pound for 500 lbs from the Tatooine farm`
 
 This style of agentic communication is powered by **AGNTCY’s SLIM**. Unlike the **Auction flow**, this transport is
-**not interchangeable**, as **SLIM** is the only protocol that supports **multi-agent peer group communication**.
+**not interchangeable**, as **SLIM** is the only protocol that supports **multi-agent peer group messaging**.
 
 Explore the [`Logistic Supervisor tools`](coffeeAGNTCY/coffee_agents/lungo/agents/supervisors/logistic/graph/tools.py)
 to see how the supervisor initializes and manages the SLIM peer group.

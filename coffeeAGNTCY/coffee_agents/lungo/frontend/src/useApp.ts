@@ -27,7 +27,7 @@ export function useApp() {
   const streaming = useAppStreamingState()
 
   const [selectedPattern, setSelectedPattern] = useState<PatternType>(
-    PATTERNS.GROUP_COMMUNICATION,
+    PATTERNS.GROUP_MESSAGING,
   )
   const [liveGraphConfig, setLiveGraphConfig] = useState<GraphConfig | null>(
     null,
@@ -138,7 +138,7 @@ export function useApp() {
   ])
 
   useEffect(() => {
-    if (selectedPattern === PATTERNS.GROUP_COMMUNICATION) {
+    if (selectedPattern === PATTERNS.GROUP_MESSAGING) {
       if (streaming.groupIsComplete && !streaming.groupIsStreaming) {
         if (streaming.groupFinalResponse) {
           chat.setShowFinalResponse(true)
@@ -225,7 +225,7 @@ export function useApp() {
       chat.setApiError(false)
 
       try {
-        if (selectedPattern === PATTERNS.GROUP_COMMUNICATION) {
+        if (selectedPattern === PATTERNS.GROUP_MESSAGING) {
           chat.setExecutionKey(Date.now().toString())
           chat.setShowFinalResponse(false)
           chat.setAgentResponse(undefined)
@@ -283,7 +283,7 @@ export function useApp() {
 
   const handleStreamComplete = useCallback(() => {
     streamCompleteRef.current = true
-    if (selectedPattern === PATTERNS.GROUP_COMMUNICATION) {
+    if (selectedPattern === PATTERNS.GROUP_MESSAGING) {
       chat.setShowFinalResponse(true)
       chat.setIsAgentLoading(true)
       if (chat.pendingResponse) {
@@ -324,7 +324,7 @@ export function useApp() {
     chat.resetChatState()
     chat.setShowFinalResponse(false)
     chat.setPendingResponse("")
-    if (selectedPattern === PATTERNS.GROUP_COMMUNICATION) {
+    if (selectedPattern === PATTERNS.GROUP_MESSAGING) {
       chat.setShowProgressTracker(true)
       streaming.resetGroup()
     } else {

@@ -68,7 +68,7 @@ export function useAppChatState({ selectedPattern }: UseAppChatStateParams) {
       setAgentResponse(apiResp)
       setIsAgentLoading(false)
 
-      if (selectedPattern === PATTERNS.GROUP_COMMUNICATION) {
+      if (selectedPattern === PATTERNS.GROUP_MESSAGING) {
         setApiError(isError)
         if (!isError) {
           setGroupCommResponseReceived(true)
@@ -95,7 +95,7 @@ export function useAppChatState({ selectedPattern }: UseAppChatStateParams) {
       setButtonClicked(true)
       setApiError(false)
       if (
-        selectedPattern !== PATTERNS.GROUP_COMMUNICATION &&
+        selectedPattern !== PATTERNS.GROUP_MESSAGING &&
         selectedPattern !== PATTERNS.PUBLISH_SUBSCRIBE_STREAMING &&
         selectedPattern !== PATTERNS.ON_DEMAND_DISCOVERY
       ) {

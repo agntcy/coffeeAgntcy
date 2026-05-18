@@ -1,8 +1,8 @@
-# Secure Group Communication Logistics Network
+# Group Messaging
 
 ## Pattern
 
-**Group communication and coordination** is a general arrangement when **several specialists** must **see the same
+**Group messaging and coordination** is a general arrangement when **several specialists** must **see the same
 conversation**, **answer one another**, and still have **one accountable place** that keeps order, permissions, and
 progress toward a shared goal. A **supervisor or moderator** opens a **shared channel**; **members** join as first-class
 participants so clarifications, hand-offs, and corrections can flow **peer to peer**, not only through a strict hub in
@@ -108,4 +108,4 @@ fees and choices already visible in the thread.
 
 The **logistics group** names the trusted boundary; **buyer logistics** and **Tatooine** publish into **transport** so
 supply and promise reconcile in public; **shipper** and **accountant** consume that same stream to answer **how it
-moves** and **how it pays**—order fulfillment as **secure group communication** where alignment is the product.
+moves** and **how it pays**—order fulfillment as **group messaging** where alignment is the product.

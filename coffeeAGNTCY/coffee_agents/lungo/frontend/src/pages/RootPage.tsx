@@ -105,7 +105,7 @@ const RootPage: React.FC = () => {
                 selectedPattern === PATTERNS.PUBLISH_SUBSCRIBE_STREAMING
               }
               showLogisticsPrompts={
-                selectedPattern === PATTERNS.GROUP_COMMUNICATION
+                selectedPattern === PATTERNS.GROUP_MESSAGING
               }
               showDiscoveryPrompts={
                 selectedPattern === PATTERNS.ON_DEMAND_DISCOVERY

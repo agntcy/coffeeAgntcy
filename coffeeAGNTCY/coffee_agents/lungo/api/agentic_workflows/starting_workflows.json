@@ -258,7 +258,7 @@
     "instances": {}
   },
   {
-    "name": "Secure Group Communication Logistics Network",
+    "name": "Group Messaging",
     "pattern": "Peer Group",
     "use_case": "Coffee Agntcy",
     "scenario": "Order Fulfillment",

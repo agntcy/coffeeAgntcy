@@ -64,7 +64,7 @@ export const WORKFLOW_NAME_TO_PATTERN_SLUG: Readonly<
   "Publish Subscribe": PATTERNS.PUBLISH_SUBSCRIBE,
   "Publish Subscribe Streaming":
     PATTERNS.PUBLISH_SUBSCRIBE_STREAMING,
-  "Secure Group Communication Logistics Network": PATTERNS.GROUP_COMMUNICATION,
+  "Group Messaging": PATTERNS.GROUP_MESSAGING,
   "On-demand Discovery": PATTERNS.ON_DEMAND_DISCOVERY,
 }
 

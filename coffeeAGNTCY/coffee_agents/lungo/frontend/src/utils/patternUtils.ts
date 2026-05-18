@@ -9,14 +9,14 @@ export const PATTERNS = {
   SLIM_A2A: "slim_a2a",
   PUBLISH_SUBSCRIBE: "publish_subscribe",
   PUBLISH_SUBSCRIBE_STREAMING: "publish_subscribe_streaming",
-  GROUP_COMMUNICATION: "group_communication",
+  GROUP_MESSAGING: "group_messaging",
   ON_DEMAND_DISCOVERY: "on_demand_discovery",
 } as const
 
 export type PatternType = (typeof PATTERNS)[keyof typeof PATTERNS]
 
 export const isGroupCommunication = (pattern?: string): boolean => {
-  return pattern === PATTERNS.GROUP_COMMUNICATION
+  return pattern === PATTERNS.GROUP_MESSAGING
 }
 
 export const shouldEnableRetries = (pattern?: string): boolean => {
@@ -82,8 +82,8 @@ export const getPatternDisplayName = (pattern?: string): string => {
       return "Publish/Subscribe"
     case PATTERNS.PUBLISH_SUBSCRIBE_STREAMING:
       return "Publish/Subscribe: Streaming"
-    case PATTERNS.GROUP_COMMUNICATION:
-      return "Group Communication"
+    case PATTERNS.GROUP_MESSAGING:
+      return "Group Messaging"
     case PATTERNS.ON_DEMAND_DISCOVERY:
       return "On-Demand Discovery"
     default:
