@@ -1,7 +1,7 @@
 [
   {
     "name": "Publish Subscribe Coffee Farm Network",
-    "pattern": "Supervisor-worker",
+    "pattern": "Supervisor",
     "use_case": "Coffee Agntcy",
     "scenario": "Coffee Buying",
     "starting_topology": {
@@ -130,7 +130,7 @@
   },
   {
     "name": "Publish Subscribe Streaming Coffee Auction Network",
-    "pattern": "Supervisor-worker",
+    "pattern": "Supervisor",
     "use_case": "Coffee Agntcy",
     "scenario": "Coffee Buying",
     "starting_topology": {
