@@ -61,8 +61,8 @@ const sleep = (ms: number, signal: AbortSignal): Promise<void> =>
 export const WORKFLOW_NAME_TO_PATTERN_SLUG: Readonly<
   Record<string, PatternType>
 > = {
-  "Publish Subscribe Coffee Farm Network": PATTERNS.PUBLISH_SUBSCRIBE,
-  "Publish Subscribe Streaming Coffee Auction Network":
+  "Publish Subscribe": PATTERNS.PUBLISH_SUBSCRIBE,
+  "Publish Subscribe Streaming":
     PATTERNS.PUBLISH_SUBSCRIBE_STREAMING,
   "Secure Group Communication Logistics Network": PATTERNS.GROUP_COMMUNICATION,
   "On-demand Discovery": PATTERNS.ON_DEMAND_DISCOVERY,

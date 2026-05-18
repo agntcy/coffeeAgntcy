@@ -20,8 +20,8 @@ from fastapi.testclient import TestClient
     ("name", "expected_slug"),
     [
         (
-            "Publish Subscribe Coffee Farm Network",
-            "publish_subscribe_coffee_farm_network",
+            "Publish Subscribe",
+            "publish_subscribe",
         ),
         ("On-demand Discovery", "on-demand_discovery"),
         ("Event Ledger (Episodic Memory)", "event_ledger_episodic_memory"),
@@ -35,7 +35,7 @@ def test_workflow_name_to_documentation_slug(name: str, expected_slug: str) -> N
 
 
 def test_load_parsed_real_file_has_pattern_section() -> None:
-    parsed = load_parsed_workflow_documentation("publish_subscribe_coffee_farm_network")
+    parsed = load_parsed_workflow_documentation("publish_subscribe")
     assert parsed is not None
     headings = [h for _, h, _ in parsed.sections]
     assert "Pattern" in headings
@@ -50,14 +50,14 @@ def doc_client() -> TestClient:
 
 
 def test_get_workflow_documentation_200(doc_client: TestClient) -> None:
-    name = "Publish Subscribe Coffee Farm Network"
+    name = "Publish Subscribe"
     r = doc_client.get(
         f"/agentic-workflows/{quote(name, safe='')}/documentation/",
     )
     assert r.status_code == 200
     data = r.json()
     assert data["workflow_name"] == name
-    assert data["slug"] == "publish_subscribe_coffee_farm_network"
+    assert data["slug"] == "publish_subscribe"
     assert any(s["heading"] == "Pattern" for s in data["sections"])
     assert len(data["full_markdown"]) > 0
 

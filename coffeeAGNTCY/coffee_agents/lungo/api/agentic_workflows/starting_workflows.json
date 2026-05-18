@@ -1,6 +1,6 @@
 [
   {
-    "name": "Publish Subscribe Coffee Farm Network",
+    "name": "Publish Subscribe",
     "pattern": "Supervisor",
     "use_case": "Coffee Agntcy",
     "scenario": "Purchasing",
@@ -129,7 +129,7 @@
     "instances": {}
   },
   {
-    "name": "Publish Subscribe Streaming Coffee Auction Network",
+    "name": "Publish Subscribe Streaming",
     "pattern": "Supervisor",
     "use_case": "Coffee Agntcy",
     "scenario": "Purchasing",

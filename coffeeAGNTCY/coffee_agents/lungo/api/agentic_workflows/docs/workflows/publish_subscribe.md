@@ -1,4 +1,4 @@
-# Publish Subscribe Coffee Farm Network
+# Publish Subscribe
 
 ## Pattern
 

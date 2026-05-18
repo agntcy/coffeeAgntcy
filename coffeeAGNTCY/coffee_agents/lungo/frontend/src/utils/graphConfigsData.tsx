@@ -36,7 +36,7 @@ const CoffeeBeanIcon = (
 )
 
 export const PUBLISH_SUBSCRIBE_CONFIG: GraphConfig = {
-  title: "Publish Subscribe Coffee Farm Network",
+  title: "Publish Subscribe",
   nodes: [
     {
       id: NODE_IDS.AUCTION_AGENT,
