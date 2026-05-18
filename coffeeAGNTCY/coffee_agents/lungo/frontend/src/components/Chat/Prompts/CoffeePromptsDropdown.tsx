@@ -4,7 +4,6 @@
  **/
 
 import React, { useState, useRef, useEffect } from "react"
-import { Box } from "@open-ui-kit/core"
 import { env } from "@/utils/env"
 import { logger } from "@/utils/logger"
 import LoadingSpinner from "./LoadingSpinner"
@@ -146,6 +145,10 @@ const CoffeePromptsDropdown: React.FC<CoffeePromptsDropdownProps> = ({
     isOpen ? "block animate-fadeInDropdown" : "hidden"
   }`
 
+  const iconClasses = `absolute bottom-[36.35%] left-[26.77%] right-[26.77%] top-[36.35%] bg-chat-dropdown-icon transition-transform duration-300 ease-in-out ${
+    isOpen ? "rotate-180" : ""
+  }`
+
   return (
     <div className="flex items-center gap-3">
       <div className="relative inline-block" ref={dropdownRef}>
@@ -155,24 +158,12 @@ const CoffeePromptsDropdown: React.FC<CoffeePromptsDropdownProps> = ({
               Suggested Prompts
             </div>
           </div>
-          <Box
-            className="relative order-1 flex-none flex-grow-0"
-            sx={{ width: 24, height: 24 }}
-          >
-            <Box
-              sx={{
-                position: "absolute",
-                bottom: "36.35%",
-                left: "26.77%",
-                right: "26.77%",
-                top: "36.35%",
-                bgcolor: "#ffffff",
-                transition: "transform 300ms ease-in-out",
-                transform: isOpen ? "rotate(180deg)" : "none",
-                clipPath: "polygon(50% 100%, 0% 0%, 100% 0%)",
-              }}
+          <div className="relative order-1 h-6 w-6 flex-none flex-grow-0">
+            <div
+              className={iconClasses}
+              style={{ clipPath: "polygon(50% 100%, 0% 0%, 100% 0%)" }}
             />
-          </Box>
+          </div>
         </div>
 
         <div className={menuClasses}>
