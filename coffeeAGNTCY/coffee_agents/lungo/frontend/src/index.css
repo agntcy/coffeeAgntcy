@@ -63,7 +63,7 @@
     --custom-node-background: #00142b;
     --custom-node-border: transparent;
 
-    --github-icon: url("@/assets/Github_lightmode.png");
+    --github-icon: url("@/assets/Github.png");
     --agent-directory-icon: url("@/assets/Agent_directory.png");
 
     --shadow-default: rgba(0, 0, 0, 0.6);
@@ -160,6 +160,7 @@
     --custom-node-background: #fbfcfe;
     --custom-node-border: #187adc;
 
+    --github-icon: url("@/assets/Github_lightmode.png");
     --agent-directory-icon: url("@/assets/Agent_Icon_light.png");
 
     --shadow-default: 0 4px 8px rgba(0, 0, 0, 0.1);

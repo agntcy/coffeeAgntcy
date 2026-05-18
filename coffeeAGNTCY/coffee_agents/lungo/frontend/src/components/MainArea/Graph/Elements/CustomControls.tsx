@@ -5,8 +5,7 @@
 
 import React from "react"
 import { Controls, ControlButton, useReactFlow } from "@xyflow/react"
-import Lock from "@mui/icons-material/Lock"
-import LockOpen from "@mui/icons-material/LockOpen"
+import { Lock, Unlock } from "lucide-react"
 
 interface CustomControlsProps {
   isInteractive?: boolean
@@ -48,7 +47,7 @@ const CustomControls: React.FC<CustomControlsProps> = ({
         aria-label={isInteractive ? "Lock interaction" : "Unlock interaction"}
       >
         {isInteractive ? (
-          <LockOpen className="h-4 w-4" />
+          <Unlock className="h-4 w-4" />
         ) : (
           <Lock className="h-4 w-4" />
         )}

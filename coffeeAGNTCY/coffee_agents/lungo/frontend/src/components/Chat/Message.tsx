@@ -4,8 +4,8 @@
  **/
 
 import React, { useEffect, useRef, useState } from "react"
-import Person from "@mui/icons-material/Person"
-import SmartToy from "@mui/icons-material/SmartToy"
+import { HiUser } from "react-icons/hi"
+import { RiRobot2Fill } from "react-icons/ri"
 import { Waveform } from "ldrs/react"
 import "ldrs/react/Waveform.css"
 
@@ -51,11 +51,7 @@ const Message: React.FC<MessageProps> = ({
       className={`flex w-full items-start gap-2 px-4 py-6 sm:px-8 md:px-16 md:py-[30px] lg:px-[120px] ${aiMessage ? "bg-[rgb(247,247,248)]" : ""}`}
     >
       <div className="flex h-[35px] w-[35px] flex-shrink-0 items-center justify-center">
-        {aiMessage ? (
-          <SmartToy sx={{ fontSize: 24 }} />
-        ) : (
-          <Person sx={{ fontSize: 24 }} />
-        )}
+        {aiMessage ? <RiRobot2Fill color="#049FD9" /> : <HiUser />}
       </div>
       <div className="ml-2 min-w-0 flex-1 break-words">
         {loading ? (
