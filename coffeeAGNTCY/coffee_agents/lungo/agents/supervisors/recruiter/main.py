@@ -85,6 +85,7 @@ app.add_middleware(
 class PromptRequest(BaseModel):
     prompt: str
     session_id: Optional[str] = None
+    workflow_instance_id: Optional[str] = None
 
 
 @app.post("/agent/prompt")
@@ -100,6 +101,7 @@ async def handle_prompt(request: PromptRequest, req: Request):
         result = await agent_module.call_agent(
             query=request.prompt,
             session_id=session_id,
+            workflow_instance_id=request.workflow_instance_id,
         )
         # Build response matching original API format
         response: dict = {
@@ -153,6 +155,7 @@ async def handle_stream_prompt(request: PromptRequest, req: Request):
                         async for event, sid in agent_module.stream_agent(
                             query=request.prompt,
                             session_id=session_id,
+                            workflow_instance_id=request.workflow_instance_id,
                         ):
                             final_sid = sid
 

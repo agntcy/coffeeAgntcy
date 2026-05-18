@@ -75,6 +75,7 @@ app.add_middleware(
 
 class PromptRequest(BaseModel):
   prompt: str
+  workflow_instance_id: str | None = None
 
 @app.post("/agent/prompt")
 async def handle_prompt(request: PromptRequest, req: Request):
@@ -85,7 +86,7 @@ async def handle_prompt(request: PromptRequest, req: Request):
     with session_start() as session_id:
       timeout_val = int(os.getenv("LOGISTIC_TIMEOUT", "200"))
       result = await asyncio.wait_for(
-        logistic_graph.serve(request.prompt),
+        logistic_graph.serve(request.prompt, workflow_instance_id=request.workflow_instance_id),
         timeout=timeout_val
       )
       logger.info(f"Final result from LangGraph: {result}")
@@ -168,7 +169,7 @@ async def handle_stream_prompt(request: PromptRequest, req: Request):
 
           async def stream_generator():
               try:
-                  async for chunk in logistic_graph.streaming_serve(request.prompt):
+                  async for chunk in logistic_graph.streaming_serve(request.prompt, workflow_instance_id=request.workflow_instance_id):
                       yield json.dumps({"response": chunk, "session_id": session_id["executionID"]}) + "\n"
               except Exception as e:
                   logger.error(f"Error in stream: {e}")
