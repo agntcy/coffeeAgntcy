@@ -16,11 +16,7 @@ import {
 } from "./graphConfigsData"
 
 export type { GraphConfig }
-export {
-  PUBLISH_SUBSCRIBE_CONFIG,
-  GROUP_MESSAGING_CONFIG,
-  A2A_HTTP_CONFIG,
-}
+export { PUBLISH_SUBSCRIBE_CONFIG, GROUP_MESSAGING_CONFIG, A2A_HTTP_CONFIG }
 
 export const getGraphConfig = (pattern: string): GraphConfig => {
   switch (pattern) {

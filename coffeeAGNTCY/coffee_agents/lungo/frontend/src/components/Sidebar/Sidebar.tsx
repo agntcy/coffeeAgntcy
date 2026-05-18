@@ -13,11 +13,7 @@ import {
 } from "@/utils/sidebarHierarchy"
 import CatalogTree from "./CatalogTree"
 import SidebarItem from "./sidebarItem"
-import {
-  makePatternKey,
-  makeScenarioKey,
-  makeWorkflowKey,
-} from "./sidebarKeys"
+import { makePatternKey, makeScenarioKey, makeWorkflowKey } from "./sidebarKeys"
 
 interface SidebarProps {
   selectedWorkflowSummary: WorkflowSummary | null
@@ -84,7 +80,7 @@ const Sidebar: React.FC<SidebarProps> = ({
   return (
     <div className="flex h-full min-h-0 w-64 flex-none flex-col border-r border-sidebar-border bg-sidebar-background font-inter lg:w-[320px]">
       <div className="flex min-h-0 flex-1 flex-col gap-2 p-4">
-        <div className="flex flex-none min-h-[36px] w-full items-center gap-2 rounded py-2 pl-2 pr-5">
+        <div className="flex min-h-[36px] w-full flex-none items-center gap-2 rounded py-2 pl-2 pr-5">
           <span className="flex-1 font-inter text-base font-semibold leading-6 tracking-[0.15px] text-sidebar-text">
             Agentic Patterns
           </span>

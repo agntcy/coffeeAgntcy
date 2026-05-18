@@ -77,17 +77,14 @@ const CatalogTree: React.FC<CatalogTreeProps> = ({
           <SidebarItem
             title={A2A_SLIM_MENU_LABEL}
             isSelected={isSelected}
-            onClick={
-              isUnmapped ? undefined : () => onSelectWorkflow(summary)
-            }
+            onClick={isUnmapped ? undefined : () => onSelectWorkflow(summary)}
             documentationCatalogName={
               showWorkflowDoc ? summary.name : undefined
             }
             onOpenDocumentation={showWorkflowDoc ? openDoc : undefined}
             className={cn(
               "pl-14",
-              isUnmapped &&
-              "pointer-events-none cursor-not-allowed opacity-50",
+              isUnmapped && "pointer-events-none cursor-not-allowed opacity-50",
             )}
           />
         </WorkflowDropdown>
@@ -110,10 +107,7 @@ const CatalogTree: React.FC<CatalogTreeProps> = ({
     )
   }
 
-  if (
-    implementedPatterns.length === 0 &&
-    referencePatternNames.length === 0
-  ) {
+  if (implementedPatterns.length === 0 && referencePatternNames.length === 0) {
     return <SidebarItem title="No workflows available" className="opacity-60" />
   }
 

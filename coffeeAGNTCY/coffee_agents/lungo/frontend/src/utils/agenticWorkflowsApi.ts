@@ -62,8 +62,7 @@ export const WORKFLOW_NAME_TO_PATTERN_SLUG: Readonly<
   Record<string, PatternType>
 > = {
   "Publish Subscribe": PATTERNS.PUBLISH_SUBSCRIBE,
-  "Publish Subscribe Streaming":
-    PATTERNS.PUBLISH_SUBSCRIBE_STREAMING,
+  "Publish Subscribe Streaming": PATTERNS.PUBLISH_SUBSCRIBE_STREAMING,
   "Group Messaging": PATTERNS.GROUP_MESSAGING,
   "A2A HTTP": PATTERNS.A2A_HTTP,
 }

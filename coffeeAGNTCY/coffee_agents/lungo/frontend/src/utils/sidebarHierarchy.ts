@@ -227,5 +227,4 @@ export const buildCatalogSidebarLayout = (
  */
 export const groupWorkflowsByPatternUseCaseAndScenario = (
   summaries: readonly WorkflowSummary[],
-): PatternNode[] =>
-  buildCatalogSidebarLayout(summaries).implementedPatterns
+): PatternNode[] => buildCatalogSidebarLayout(summaries).implementedPatterns
