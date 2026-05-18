@@ -3,20 +3,34 @@
  * SPDX-License-Identifier: Apache-2.0
  *
  * Helpers to turn a flat list of catalog `WorkflowSummary` rows into the
- * LHS sidebar: implemented `pattern -> use-case + scenario -> workflow`, plus
+ * LHS sidebar: pattern -> conversation (scenario) -> workflow [-> A2A SLIM], plus
  * a flat Reference Library of placeholder (unimplemented) pattern names.
  */
 
 import type { WorkflowSummary } from "@/utils/agenticWorkflowsApi"
 
+/** Label for the transport row under SLIM-backed workflows. */
+export const A2A_SLIM_MENU_LABEL = "A2A SLIM"
+
+/** Catalog workflow names that use a workflow header + A2A SLIM child row. */
+export const WORKFLOWS_WITH_A2A_SLIM_TRANSPORT_LAYER: ReadonlySet<string> =
+  new Set([
+    "Publish Subscribe",
+    "Publish Subscribe Streaming",
+    "Group Messaging",
+  ])
+
+export type WorkflowMenuDisplay = "direct" | "slim_transport"
+
 export interface WorkflowNode {
   summary: WorkflowSummary
+  display: WorkflowMenuDisplay
 }
 
 export interface UseCaseScenarioNode {
   useCase: string
   scenario: string
-  /** Display label rendered as the middle row of the LHS menu. */
+  /** Middle row label, e.g. "Conversation: Purchasing". */
   label: string
   workflows: WorkflowNode[]
 }
@@ -36,11 +50,15 @@ export interface CatalogSidebarLayout {
   referencePatternNames: string[]
 }
 
-/** Build the display label for the middle (use-case + scenario) row. */
-export const formatUseCaseScenarioLabel = (
-  useCase: string,
-  scenario: string,
-): string => `${useCase}: ${scenario}`
+export const usesSlimTransportLayer = (workflowName: string): boolean =>
+  WORKFLOWS_WITH_A2A_SLIM_TRANSPORT_LAYER.has(workflowName)
+
+const workflowDisplay = (summary: WorkflowSummary): WorkflowMenuDisplay =>
+  usesSlimTransportLayer(summary.name) ? "slim_transport" : "direct"
+
+/** Middle-row label: scenario only (use-case is not shown). */
+export const formatConversationLabel = (scenario: string): string =>
+  `Conversation: ${scenario}`
 
 /** Composite key used to group workflows that share both use-case and scenario. */
 const makeUseCaseScenarioGroupKey = (
@@ -119,7 +137,10 @@ const groupImplementedSummaries = (
       }
       scenarioMap.set(groupKey, bucket)
     }
-    bucket.workflows.push({ summary })
+    bucket.workflows.push({
+      summary,
+      display: workflowDisplay(summary),
+    })
   }
 
   const patternNames = [...byPattern.keys()]
@@ -138,7 +159,7 @@ const groupImplementedSummaries = (
       .map((bucket) => ({
         useCase: bucket.useCase,
         scenario: bucket.scenario,
-        label: formatUseCaseScenarioLabel(bucket.useCase, bucket.scenario),
+        label: formatConversationLabel(bucket.scenario),
         workflows: [...bucket.workflows].sort((a, b) => {
           const ia = order.get(a.summary.name) ?? Number.POSITIVE_INFINITY
           const ib = order.get(b.summary.name) ?? Number.POSITIVE_INFINITY

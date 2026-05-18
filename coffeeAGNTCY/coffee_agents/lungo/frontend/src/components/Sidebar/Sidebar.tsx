@@ -13,7 +13,11 @@ import {
 } from "@/utils/sidebarHierarchy"
 import CatalogTree from "./CatalogTree"
 import SidebarItem from "./sidebarItem"
-import { makePatternKey, makeScenarioKey } from "./sidebarKeys"
+import {
+  makePatternKey,
+  makeScenarioKey,
+  makeWorkflowKey,
+} from "./sidebarKeys"
 
 interface SidebarProps {
   selectedWorkflowSummary: WorkflowSummary | null
@@ -30,6 +34,18 @@ const buildInitialExpanded = (
     next.add(makePatternKey(pattern.name))
     for (const ucs of pattern.useCaseScenarios) {
       next.add(makeScenarioKey(pattern.name, ucs.useCase, ucs.scenario))
+      for (const workflow of ucs.workflows) {
+        if (workflow.display === "slim_transport") {
+          next.add(
+            makeWorkflowKey(
+              pattern.name,
+              ucs.useCase,
+              ucs.scenario,
+              workflow.summary.name,
+            ),
+          )
+        }
+      }
     }
   }
   return next

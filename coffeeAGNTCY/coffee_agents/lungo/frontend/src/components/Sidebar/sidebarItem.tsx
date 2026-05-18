@@ -45,7 +45,7 @@ const SidebarItem: React.FC<SidebarItemProps> = ({
             "absolute right-3 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-md text-sidebar-text opacity-0 transition-opacity hover:bg-sidebar-item-selected group-hover:opacity-100",
             isSelected && "opacity-100",
           )}
-          aria-label={`Open documentation for ${title}`}
+          aria-label={`Open documentation for ${documentationCatalogName}`}
           title="View documentation on GitHub"
           onClick={(e) => {
             e.stopPropagation()
