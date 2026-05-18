@@ -318,7 +318,7 @@ also type your own.
 
 #### 🏷️ Auction Demo (Supervisor–Worker Pattern)
 
-On the frontend select the `Conversation: Coffee Buying / Agentic Patterns / Publish Subscribe / A2A NATS` menu item.
+On the frontend select the `Conversation: Purchasing / Agentic Patterns / Publish Subscribe / A2A NATS` menu item.
 
 This demo models a **Coffee Exchange** where a **Supervisor Agent** manages multiple **Coffee Farm Agents**. The
 supervisor can communicate with all farms through a single outbound message using a **pub/sub communication model**.

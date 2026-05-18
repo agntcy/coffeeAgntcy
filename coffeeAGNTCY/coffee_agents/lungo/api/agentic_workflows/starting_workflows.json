@@ -3,7 +3,7 @@
     "name": "Publish Subscribe Coffee Farm Network",
     "pattern": "Supervisor",
     "use_case": "Coffee Agntcy",
-    "scenario": "Coffee Buying",
+    "scenario": "Purchasing",
     "starting_topology": {
       "nodes": [
         {
@@ -132,7 +132,7 @@
     "name": "Publish Subscribe Streaming Coffee Auction Network",
     "pattern": "Supervisor",
     "use_case": "Coffee Agntcy",
-    "scenario": "Coffee Buying",
+    "scenario": "Purchasing",
     "starting_topology": {
       "nodes": [
         {
