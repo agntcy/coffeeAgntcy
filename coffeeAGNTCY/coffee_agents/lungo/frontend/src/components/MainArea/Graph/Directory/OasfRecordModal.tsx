@@ -45,7 +45,14 @@ const OasfRecordModal: React.FC<OasfRecordModalProps> = ({
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const isDirectoryNode = nodeName === "Directory"
+  const combinedLabel = [nodeData?.label1, nodeData?.label2]
+    .filter(Boolean)
+    .join(" ")
+    .toLowerCase()
+  const isDirectoryNode =
+    nodeName === "Directory" ||
+    (combinedLabel.includes("agntcy") &&
+      combinedLabel.includes("agent directory"))
 
   useEffect(() => {
     if (!isOpen || !nodeData) return

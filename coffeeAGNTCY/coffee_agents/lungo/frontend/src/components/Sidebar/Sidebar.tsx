@@ -6,40 +6,22 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react"
 import { Spinner } from "@open-ui-kit/core"
 import ErrorOutline from "@mui/icons-material/ErrorOutline"
-import { PatternType } from "@/utils/patternUtils"
+import type { WorkflowSummary } from "@/utils/agenticWorkflowsApi"
 import {
-  fetchWorkflowSummaries,
-  type WorkflowSummary,
-} from "@/utils/agenticWorkflowsApi"
-import {
-  groupWorkflowsByPatternAndUseCase,
+  groupWorkflowsByPatternUseCaseAndScenario,
   type PatternNode,
 } from "@/utils/sidebarHierarchy"
-import { logger } from "@/utils/logger"
 import CatalogTree from "./CatalogTree"
 import SidebarItem from "./sidebarItem"
 import { makePatternKey, makeScenarioKey } from "./sidebarKeys"
 
 interface SidebarProps {
-  selectedPattern: PatternType
-  onPatternChange: (pattern: PatternType) => void
+  selectedWorkflowSummary: WorkflowSummary | null
+  summaries: WorkflowSummary[] | null
+  error: string | null
+  onSelectWorkflow: (summary: WorkflowSummary) => void
 }
 
-const CATALOG_ENDPOINT = "/agentic-workflows/"
-/**
- * Total number of attempts (one initial request + this many retries) before
- * the catalog menu fetch is treated as failed. Mirrors common UX patterns
- * where transient hiccups don't immediately surface an error to the user.
- */
-const CATALOG_FETCH_MAX_RETRIES = 2
-/** Backoff (ms) between consecutive retry attempts. */
-const CATALOG_FETCH_RETRY_DELAY_MS = 750
-
-/**
- * Initial expansion set: every pattern and every use-case+scenario row open,
- * mirroring the previous static sidebar UX where every dropdown was open by
- * default.
- */
 const buildInitialExpanded = (tree: PatternNode[]): Set<string> => {
   const next = new Set<string>()
   for (const pattern of tree) {
@@ -51,71 +33,16 @@ const buildInitialExpanded = (tree: PatternNode[]): Set<string> => {
   return next
 }
 
-const sleep = (ms: number, signal: AbortSignal): Promise<void> =>
-  new Promise((resolve, reject) => {
-    if (signal.aborted) {
-      reject(new DOMException("Aborted", "AbortError"))
-      return
-    }
-    const timer = setTimeout(() => {
-      signal.removeEventListener("abort", onAbort)
-      resolve()
-    }, ms)
-    const onAbort = () => {
-      clearTimeout(timer)
-      reject(new DOMException("Aborted", "AbortError"))
-    }
-    signal.addEventListener("abort", onAbort, { once: true })
-  })
-
-/**
- * Fetch the workflow catalog with a small retry budget so transient network
- * blips don't immediately surface as an error to the user. Each retry uses
- * the same `AbortSignal`, so unmount/cleanup short-circuits the loop.
- */
-const fetchWorkflowSummariesWithRetry = async (
-  signal: AbortSignal,
-): Promise<WorkflowSummary[]> => {
-  let lastError: unknown
-  for (let attempt = 0; attempt <= CATALOG_FETCH_MAX_RETRIES; attempt += 1) {
-    try {
-      return await fetchWorkflowSummaries(signal)
-    } catch (err) {
-      if (err instanceof DOMException && err.name === "AbortError") throw err
-      lastError = err
-      if (attempt < CATALOG_FETCH_MAX_RETRIES) {
-        await sleep(CATALOG_FETCH_RETRY_DELAY_MS, signal)
-      }
-    }
-  }
-  throw lastError
-}
-
 const Sidebar: React.FC<SidebarProps> = ({
-  selectedPattern,
-  onPatternChange,
+  selectedWorkflowSummary,
+  summaries,
+  error,
+  onSelectWorkflow,
 }) => {
-  const [summaries, setSummaries] = useState<WorkflowSummary[] | null>(null)
-  const [error, setError] = useState<string | null>(null)
   const [expanded, setExpanded] = useState<Set<string>>(new Set())
 
-  useEffect(() => {
-    const controller = new AbortController()
-    setError(null)
-    fetchWorkflowSummariesWithRetry(controller.signal)
-      .then((rows) => {
-        setSummaries(rows)
-      })
-      .catch((err: unknown) => {
-        if (err instanceof DOMException && err.name === "AbortError") return
-        logger.apiError(CATALOG_ENDPOINT, err)
-        setError(err instanceof Error ? err.message : String(err))
-      })
-    return () => controller.abort()
-  }, [])
-
   const tree = useMemo(
-    () => groupWorkflowsByPatternAndUseCase(summaries ?? []),
+    () => groupWorkflowsByPatternUseCaseAndScenario(summaries ?? []),
     [summaries],
   )
 
@@ -174,8 +101,8 @@ const Sidebar: React.FC<SidebarProps> = ({
             tree={tree}
             expanded={expanded}
             onToggle={toggle}
-            selectedPattern={selectedPattern}
-            onPatternChange={onPatternChange}
+            selectedWorkflowSummary={selectedWorkflowSummary}
+            onSelectWorkflow={onSelectWorkflow}
           />
         )}
       </div>

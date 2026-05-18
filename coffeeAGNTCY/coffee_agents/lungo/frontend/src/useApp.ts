@@ -9,9 +9,16 @@ import { useChatAreaMeasurement } from "@/hooks/useChatAreaMeasurement"
 import { useAppStreamingState } from "@/hooks/useAppStreamingState"
 import { useAppChatState } from "@/hooks/useAppChatState"
 import { useAgentAPI } from "@/hooks/useAgentAPI"
-import { getGraphConfig } from "@/utils/graphConfigs"
+import { getGraphConfig, type GraphConfig } from "@/utils/graphConfigs"
 import { PATTERNS, PatternType } from "@/utils/patternUtils"
 import { DiscoveryResponseEvent } from "@/types/agent"
+import {
+  AGENTIC_WORKFLOWS_CATALOG_LOG_PATH,
+  fetchWorkflowSummariesWithRetry,
+  mapWorkflowNameToSlug,
+  pickDefaultWorkflowSummaryForPattern,
+  type WorkflowSummary,
+} from "@/utils/agenticWorkflowsApi"
 
 export type { ApiResponse } from "@/types/api"
 
@@ -22,6 +29,18 @@ export function useApp() {
   const [selectedPattern, setSelectedPattern] = useState<PatternType>(
     PATTERNS.GROUP_COMMUNICATION,
   )
+  const [liveGraphConfig, setLiveGraphConfig] = useState<GraphConfig | null>(
+    null,
+  )
+
+  const [workflowCatalogSummaries, setWorkflowCatalogSummaries] = useState<
+    WorkflowSummary[] | null
+  >(null)
+  const [workflowCatalogError, setWorkflowCatalogError] = useState<
+    string | null
+  >(null)
+  const [selectedWorkflowSummary, setSelectedWorkflowSummary] =
+    useState<WorkflowSummary | null>(null)
 
   const chat = useAppChatState({ selectedPattern })
 
@@ -38,8 +57,10 @@ export function useApp() {
     setDiscoveryResponseEvent(evt)
   }, [])
 
-  const handlePatternChange = useCallback(
-    (pattern: PatternType) => {
+  const selectWorkflowFromCatalog = useCallback(
+    (summary: WorkflowSummary) => {
+      const slug = mapWorkflowNameToSlug(summary.name)
+      if (slug === null) return
       streaming.reset()
       streaming.resetRecruiter()
       chat.setShowAuctionStreaming(false)
@@ -54,12 +75,47 @@ export function useApp() {
       chat.setCurrentUserMessage("")
       chat.setButtonClicked(false)
       chat.setAiReplied(false)
-      setSelectedPattern(pattern)
+      setSelectedPattern(slug)
+      setSelectedWorkflowSummary(summary)
+      setLiveGraphConfig(null)
       lastDiscoveryKeyRef.current = null
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps -- streaming/chat refs stable enough; full deps cause unnecessary runs
     [streaming.reset, streaming.resetRecruiter, streaming.resetGroup, chat],
   )
+
+  useEffect(() => {
+    const controller = new AbortController()
+    setWorkflowCatalogError(null)
+    fetchWorkflowSummariesWithRetry(controller.signal)
+      .then((rows) => {
+        setWorkflowCatalogSummaries(rows)
+      })
+      .catch((err: unknown) => {
+        if (err instanceof DOMException && err.name === "AbortError") return
+        logger.apiError(AGENTIC_WORKFLOWS_CATALOG_LOG_PATH, err)
+        setWorkflowCatalogError(
+          err instanceof Error ? err.message : String(err),
+        )
+      })
+    return () => controller.abort()
+  }, [])
+
+  useEffect(() => {
+    if (workflowCatalogSummaries === null) return
+    setSelectedWorkflowSummary((prev) => {
+      if (prev) {
+        const still = workflowCatalogSummaries.find((s) => s.name === prev.name)
+        if (still && mapWorkflowNameToSlug(still.name) === selectedPattern) {
+          return still
+        }
+      }
+      return pickDefaultWorkflowSummaryForPattern(
+        workflowCatalogSummaries,
+        selectedPattern,
+      )
+    })
+  }, [workflowCatalogSummaries, selectedPattern])
 
   useEffect(() => {
     if (selectedPattern === PATTERNS.PUBLISH_SUBSCRIBE_STREAMING) {
@@ -290,13 +346,16 @@ export function useApp() {
     chat.currentUserMessage || chat.agentResponse ? chatHeight : 76
 
   const graphConfig = useMemo(
-    () => getGraphConfig(selectedPattern),
-    [selectedPattern],
+    () => liveGraphConfig ?? getGraphConfig(selectedPattern),
+    [selectedPattern, liveGraphConfig],
   )
 
   return {
     selectedPattern,
-    handlePatternChange,
+    selectWorkflowFromCatalog,
+    workflowCatalogSummaries,
+    workflowCatalogError,
+    selectedWorkflowSummary,
     chatHeightValue,
     isExpanded,
     chatRef,
@@ -337,5 +396,6 @@ export function useApp() {
     recruiterAgentRecords: streaming.recruiterAgentRecords,
     recruiterEvaluationResults: streaming.recruiterEvaluationResults,
     recruiterSelectedAgent: streaming.recruiterSelectedAgent,
+    setLiveGraphConfig,
   }
 }

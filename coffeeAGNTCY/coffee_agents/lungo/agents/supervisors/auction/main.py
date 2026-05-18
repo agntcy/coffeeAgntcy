@@ -264,7 +264,11 @@ async def get_agent_oasf(slug: str):
   """
   Returns the OASF JSON for the specified agent slug from the static files.
   """
-  oasf_path = Path(__file__).resolve().parent / "oasf" / "agents" / f"{slug}.json"
+  base = Path(__file__).resolve().parent
+  if slug == "recruiter":
+    oasf_path = base.parent / "recruiter" / "oasf" / "agents" / f"{slug}.json"
+  else:
+    oasf_path = base / "oasf" / "agents" / f"{slug}.json"
   if not oasf_path.exists():
     raise HTTPException(status_code=404, detail="OASF record not found")
   try:

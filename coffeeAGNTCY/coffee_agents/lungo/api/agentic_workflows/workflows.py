@@ -20,7 +20,11 @@ from pydantic import ValidationError
 
 from schema.types import (
     AgentNode,
+    Edge,
+    NodeId,
     PartialAgentNode,
+    PartialEdge,
+    TopologyEdgeItem,
     TopologyNodeItem,
     Workflow,
     edge_id_from_uuid,
@@ -45,6 +49,107 @@ _STARTING_WORKFLOWS: dict[str, Workflow] | None = None
 # This is a global lock to ensure that the starting workflows are initialized only once.
 _INIT_LOCK = Lock()
 _INITIALIZED = False
+
+
+def _node_edge_remap_label(node: TopologyNodeItem) -> str | None:
+    """Return a non-empty display label if the node carries one, else None."""
+    raw = getattr(node, "label", None)
+    if raw is None:
+        return None
+    value = raw.root if hasattr(raw, "root") else raw
+    if not isinstance(value, str):
+        return None
+    stripped = value.strip()
+    return stripped or None
+
+
+def _require_old_id_to_unique_label(
+    nodes: list[TopologyNodeItem],
+    *,
+    workflow_name: str,
+    idx_wf: int,
+) -> dict[str, str]:
+    """Build ``old_node_id -> label``; every node must have a unique non-empty label."""
+    old_id_to_label: dict[str, str] = {}
+    label_to_old_id: dict[str, str] = {}
+    for idx_nd, node in enumerate(nodes):
+        old_id = node.id.root
+        label = _node_edge_remap_label(node)
+        if not label:
+            raise ValueError(
+                f"Starting workflow {workflow_name!r} (index {idx_wf}): fatal catalog error — "
+                f"topology node at index {idx_nd} (id {old_id!r}) has no non-empty label; "
+                "labels are required to remap edges after runtime node ids are assigned."
+            )
+        if label in label_to_old_id:
+            first_old = label_to_old_id[label]
+            raise ValueError(
+                f"Starting workflow {workflow_name!r} (index {idx_wf}): fatal catalog error — "
+                f"duplicate node label {label!r} (node ids {first_old!r} and {old_id!r})."
+            )
+        label_to_old_id[label] = old_id
+        old_id_to_label[old_id] = label
+    return old_id_to_label
+
+
+def _remap_starting_topology_edge_endpoints(
+    edges: list[TopologyEdgeItem],
+    old_id_to_label: dict[str, str],
+    label_to_new_id: dict[str, str],
+    *,
+    workflow_name: str,
+    idx_wf: int,
+) -> None:
+    """Rewrite edge ``source`` / ``target`` using node labels after new ids were assigned."""
+    for idx_e, edge in enumerate(edges):
+        if isinstance(edge, PartialEdge):
+            if edge.source is not None:
+                old = edge.source.root
+                lab = old_id_to_label.get(old)
+                if lab is None:
+                    raise ValueError(
+                        f"Starting workflow {workflow_name!r} (index {idx_wf}): fatal catalog error — "
+                        f"PartialEdge at index {idx_e} references unknown source node id {old!r}."
+                    )
+                new = label_to_new_id.get(lab)
+                if new is None:
+                    raise ValueError(
+                        f"Starting workflow {workflow_name!r} (index {idx_wf}): fatal catalog error — "
+                        f"PartialEdge at index {idx_e} source label {lab!r} has no new node id."
+                    )
+                edge.source = NodeId(new)
+            if edge.target is not None:
+                old = edge.target.root
+                lab = old_id_to_label.get(old)
+                if lab is None:
+                    raise ValueError(
+                        f"Starting workflow {workflow_name!r} (index {idx_wf}): fatal catalog error — "
+                        f"PartialEdge at index {idx_e} references unknown target node id {old!r}."
+                    )
+                new = label_to_new_id.get(lab)
+                if new is None:
+                    raise ValueError(
+                        f"Starting workflow {workflow_name!r} (index {idx_wf}): fatal catalog error — "
+                        f"PartialEdge at index {idx_e} target label {lab!r} has no new node id."
+                    )
+                edge.target = NodeId(new)
+        elif isinstance(edge, Edge):
+            for end in ("source", "target"):
+                node_id_obj = getattr(edge, end)
+                old = node_id_obj.root
+                lab = old_id_to_label.get(old)
+                if lab is None:
+                    raise ValueError(
+                        f"Starting workflow {workflow_name!r} (index {idx_wf}): fatal catalog error — "
+                        f"edge {edge.id!r} endpoint {end!r} references unknown node id {old!r}."
+                    )
+                new = label_to_new_id.get(lab)
+                if new is None:
+                    raise ValueError(
+                        f"Starting workflow {workflow_name!r} (index {idx_wf}): fatal catalog error — "
+                        f"edge {edge.id!r} endpoint {end!r} label {lab!r} has no new node id."
+                    )
+                setattr(edge, end, NodeId(new))
 
 
 def set_starting_workflows() -> None:
@@ -99,6 +204,13 @@ def _load_and_validate_starting_workflows_from_file(target: Path) -> dict[str, W
         try:
             validated_entry_initial = Workflow.model_validate(entry)
 
+            old_id_to_label = _require_old_id_to_unique_label(
+                validated_entry_initial.starting_topology.nodes,
+                workflow_name=validated_entry_initial.name,
+                idx_wf=idx_wf,
+            )
+            label_to_new_id: dict[str, str] = {}
+
             # Only agent nodes carry an agent_record_uri; attempt to load and validate the record,
             # and derive a stable agent id (uuid5) from the record's ``name`` field.
             for idx_nd, node in enumerate[TopologyNodeItem](validated_entry_initial.starting_topology.nodes):
@@ -110,7 +222,7 @@ def _load_and_validate_starting_workflows_from_file(target: Path) -> dict[str, W
                         stable_agent_uuid = uuid5(_STABLE_AGENT_ID_NAMESPACE, record["name"])
                         node.stable_agent_id = stable_agent_id_from_uuid(stable_agent_uuid)
                     # FileNotFoundError is a subclass of OSError.
-                    except (FileNotFoundError, httpx.HTTPStatusError) as exc:
+                    except (FileNotFoundError, httpx.RequestError) as exc:
                         logger.warning("Failed to load agent record for node at index %d (id %s) in workflow at index %d (name %s) but will use the workflow anyhow: %s",
                                        idx_nd, node.id, idx_wf, validated_entry_initial.name, exc)
                     except ValueError as exc:
@@ -118,8 +230,19 @@ def _load_and_validate_starting_workflows_from_file(target: Path) -> dict[str, W
                                        idx_nd, node.id, idx_wf, validated_entry_initial.name, exc)
 
                 # Set the runtime/instance node id. This is not the same as the stable agent id.
+                old_node_id = node.id.root
                 node.id = node_id_from_uuid(uuid4())
-            
+                new_node_id = node.id.root
+                label_to_new_id[old_id_to_label[old_node_id]] = new_node_id
+
+            _remap_starting_topology_edge_endpoints(
+                validated_entry_initial.starting_topology.edges,
+                old_id_to_label,
+                label_to_new_id,
+                workflow_name=validated_entry_initial.name,
+                idx_wf=idx_wf,
+            )
+
             for edge in validated_entry_initial.starting_topology.edges:
                 edge.id = edge_id_from_uuid(uuid4())
             
@@ -157,7 +280,7 @@ def _load_agent_record_from_uri(uri: str, base_path: Path | None = None) -> dict
         The parsed agent record.
     """
     if uri.startswith(("http://", "https://")):
-        response = httpx.get(uri, follow_redirects=False)
+        response = httpx.get(uri, follow_redirects=False, timeout=20.0)
         response.raise_for_status()
         data = response.json()
     else:

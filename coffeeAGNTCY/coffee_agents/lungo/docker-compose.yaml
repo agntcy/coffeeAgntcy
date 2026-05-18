@@ -166,8 +166,9 @@ services:
       - frontend/.env
     environment:
       - TZ=UTC
-    #depends_on:
-    #  - auction-supervisor
+    depends_on:
+      agentic-workflows-api:
+        condition: service_started
     ports:
       - "3000:3000"
 

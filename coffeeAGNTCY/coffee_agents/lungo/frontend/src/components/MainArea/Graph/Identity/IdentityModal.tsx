@@ -29,6 +29,13 @@ const IdentityModal: React.FC<IdentityModalProps> = ({
   const getIdentityGithubUrl = () => {
     if (!nodeData) return null
 
+    if (
+      nodeData.githubLink &&
+      SecurityClass.isSafeExternalUrl(nodeData.githubLink)
+    ) {
+      return nodeData.githubLink
+    }
+
     const nodeName = nodeData.label1 || ""
 
     if (

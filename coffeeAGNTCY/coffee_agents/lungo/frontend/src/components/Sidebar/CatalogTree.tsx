@@ -4,7 +4,10 @@
  **/
 
 import React from "react"
-import { PatternType } from "@/utils/patternUtils"
+import {
+  mapWorkflowNameToSlug,
+  type WorkflowSummary,
+} from "@/utils/agenticWorkflowsApi"
 import type { PatternNode } from "@/utils/sidebarHierarchy"
 import { cn } from "@/utils/cn"
 import SidebarItem from "./sidebarItem"
@@ -16,21 +19,21 @@ interface CatalogTreeProps {
   tree: PatternNode[]
   expanded: Set<string>
   onToggle: (key: string) => void
-  selectedPattern: PatternType
-  onPatternChange: (pattern: PatternType) => void
+  selectedWorkflowSummary: WorkflowSummary | null
+  onSelectWorkflow: (summary: WorkflowSummary) => void
 }
 
 /**
  * Renders the `pattern -> use-case+scenario -> workflow` tree built from the
- * agentic workflows catalog. Patterns and use-case rows are collapsible; leaf
- * workflow rows are clickable when their slug maps to a known `PatternType`.
+ * agentic workflows catalog. Leaf rows are clickable when the workflow name
+ * maps to a known Lungo `PatternType`.
  */
 const CatalogTree: React.FC<CatalogTreeProps> = ({
   tree,
   expanded,
   onToggle,
-  selectedPattern,
-  onPatternChange,
+  selectedWorkflowSummary,
+  onSelectWorkflow,
 }) => {
   if (tree.length === 0) {
     return <SidebarItem title="No workflows available" className="opacity-60" />
@@ -62,22 +65,24 @@ const CatalogTree: React.FC<CatalogTreeProps> = ({
                   onToggle={() => onToggle(ucsKey)}
                 >
                   {ucs.workflows.map((workflow) => {
-                    const isUnknown = workflow.slug === null
+                    const { summary } = workflow
+                    const isUnmapped =
+                      mapWorkflowNameToSlug(summary.name) === null
                     const isSelected =
-                      !isUnknown && selectedPattern === workflow.slug
+                      selectedWorkflowSummary?.name === summary.name
                     return (
                       <SidebarItem
-                        key={workflow.name}
-                        title={workflow.name}
+                        key={summary.name}
+                        title={summary.name}
                         isSelected={isSelected}
                         onClick={
-                          isUnknown
+                          isUnmapped
                             ? undefined
-                            : () => onPatternChange(workflow.slug!)
+                            : () => onSelectWorkflow(summary)
                         }
                         className={cn(
                           "pl-10",
-                          isUnknown &&
+                          isUnmapped &&
                             "pointer-events-none cursor-not-allowed opacity-50",
                         )}
                       />

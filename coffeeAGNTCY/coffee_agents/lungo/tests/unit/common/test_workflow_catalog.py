@@ -63,4 +63,6 @@ class TestLookupWorkflow:
         good = wc.lookup_workflow("Good Workflow")
         assert good is not None
         assert good.pattern == "Supervisor-worker"
+        assert good.use_case == "Unit Test"
+        assert good.scenario == "Good Scenario"
         assert wc.lookup_workflow("missing pattern") is None

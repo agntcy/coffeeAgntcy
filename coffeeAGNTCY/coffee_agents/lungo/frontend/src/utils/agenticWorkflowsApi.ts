@@ -5,9 +5,18 @@
  * Thin client for the Lungo Agentic Workflows API catalog endpoints.
  * Today only the workflow-summary listing is consumed; patterns and use-cases
  * are derived client-side from the distinct values seen across summaries.
+ *
+ * Maps catalog `WorkflowSummary.name` to Lungo `PatternType` for chat/graph
+ * routing until the API exposes an explicit slug aligned with stored workflow fields.
+ *
+ * Known limitation: `WORKFLOW_NAME_TO_PATTERN_SLUG` must stay aligned with backend
+ * catalog display names; drift turns agentic graph mode off for a workflow with no
+ * compile-time guard here. Replacing this map with an API-provided slug is deferred
+ * until catalog/schema work lands and the API exposes that slug.
  */
 
 import { env } from "@/utils/env"
+import { PATTERNS, type PatternType } from "@/utils/patternUtils"
 
 const DEFAULT_AGENTIC_WORKFLOWS_API_URL = "http://127.0.0.1:9105"
 
@@ -25,6 +34,42 @@ export interface WorkflowSummary {
   use_case: string
   scenario: string
 }
+
+/** Log label / relative path for catalog requests (matches router mount). */
+export const AGENTIC_WORKFLOWS_CATALOG_LOG_PATH = "/agentic-workflows/"
+
+const CATALOG_FETCH_MAX_RETRIES = 2
+const CATALOG_FETCH_RETRY_DELAY_MS = 750
+
+const sleep = (ms: number, signal: AbortSignal): Promise<void> =>
+  new Promise((resolve, reject) => {
+    if (signal.aborted) {
+      reject(new DOMException("Aborted", "AbortError"))
+      return
+    }
+    const timer = setTimeout(() => {
+      signal.removeEventListener("abort", onAbort)
+      resolve()
+    }, ms)
+    const onAbort = () => {
+      clearTimeout(timer)
+      reject(new DOMException("Aborted", "AbortError"))
+    }
+    signal.addEventListener("abort", onAbort, { once: true })
+  })
+
+export const WORKFLOW_NAME_TO_PATTERN_SLUG: Readonly<
+  Record<string, PatternType>
+> = {
+  "Publish Subscribe Coffee Farm Network": PATTERNS.PUBLISH_SUBSCRIBE,
+  "Publish Subscribe Streaming Coffee Auction Network":
+    PATTERNS.PUBLISH_SUBSCRIBE_STREAMING,
+  "Secure Group Communication Logistics Network": PATTERNS.GROUP_COMMUNICATION,
+  "On-demand Discovery": PATTERNS.ON_DEMAND_DISCOVERY,
+}
+
+export const mapWorkflowNameToSlug = (name: string): PatternType | null =>
+  WORKFLOW_NAME_TO_PATTERN_SLUG[name] ?? null
 
 const isNonEmptyString = (value: unknown): value is string =>
   typeof value === "string" && value.length > 0
@@ -72,4 +117,39 @@ export const fetchWorkflowSummaries = async (
     }
   }
   return summaries
+}
+
+/**
+ * Fetch the workflow catalog with retries (same AbortSignal for attempt + backoff).
+ */
+export const fetchWorkflowSummariesWithRetry = async (
+  signal: AbortSignal,
+): Promise<WorkflowSummary[]> => {
+  let lastError: unknown
+  for (let attempt = 0; attempt <= CATALOG_FETCH_MAX_RETRIES; attempt += 1) {
+    try {
+      return await fetchWorkflowSummaries(signal)
+    } catch (err) {
+      if (err instanceof DOMException && err.name === "AbortError") throw err
+      lastError = err
+      if (attempt < CATALOG_FETCH_MAX_RETRIES) {
+        await sleep(CATALOG_FETCH_RETRY_DELAY_MS, signal)
+      }
+    }
+  }
+  throw lastError
+}
+
+export const pickDefaultWorkflowSummaryForPattern = (
+  rows: WorkflowSummary[],
+  pattern: PatternType,
+): WorkflowSummary | null => {
+  const matches = rows.filter((s) => mapWorkflowNameToSlug(s.name) === pattern)
+  if (matches.length === 0) return null
+  matches.sort((a, b) => {
+    const byName = a.name.localeCompare(b.name)
+    if (byName !== 0) return byName
+    return a.scenario.localeCompare(b.scenario)
+  })
+  return matches[0] ?? null
 }

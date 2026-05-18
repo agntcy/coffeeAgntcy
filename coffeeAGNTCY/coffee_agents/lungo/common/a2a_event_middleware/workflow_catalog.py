@@ -81,6 +81,8 @@ def _load_catalog() -> dict[str, WorkflowMetadata]:
 				idx,
 			)
 			continue
+		if not isinstance(scenario, str) or not scenario.strip():
+			scenario = use_case
 		if name in catalog:
 			logger.warning(
 				"Duplicate workflow name %r at index %d; overwriting previous entry",

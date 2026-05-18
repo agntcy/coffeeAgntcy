@@ -16,7 +16,10 @@ import { useApp } from "@/useApp"
 const RootPage: React.FC = () => {
   const {
     selectedPattern,
-    handlePatternChange,
+    selectWorkflowFromCatalog,
+    workflowCatalogSummaries,
+    workflowCatalogError,
+    selectedWorkflowSummary,
     chatHeightValue,
     isExpanded,
     chatRef,
@@ -56,6 +59,7 @@ const RootPage: React.FC = () => {
     recruiterAgentRecords,
     recruiterEvaluationResults,
     recruiterSelectedAgent,
+    setLiveGraphConfig,
   } = useApp()
 
   return (
@@ -63,13 +67,17 @@ const RootPage: React.FC = () => {
       <Navigation />
       <div className="flex flex-1 overflow-hidden">
         <Sidebar
-          selectedPattern={selectedPattern}
-          onPatternChange={handlePatternChange}
+          selectedWorkflowSummary={selectedWorkflowSummary}
+          summaries={workflowCatalogSummaries}
+          error={workflowCatalogError}
+          onSelectWorkflow={selectWorkflowFromCatalog}
         />
         <div className="flex flex-1 flex-col border-l border-action-background bg-app-background">
           <div className="relative flex-grow">
             <MainArea
               pattern={selectedPattern}
+              selectedWorkflowSummary={selectedWorkflowSummary}
+              onLiveGraphConfig={setLiveGraphConfig}
               buttonClicked={buttonClicked}
               setButtonClicked={setButtonClicked}
               aiReplied={aiReplied}

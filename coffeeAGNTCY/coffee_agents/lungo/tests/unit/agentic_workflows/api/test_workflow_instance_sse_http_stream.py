@@ -16,6 +16,7 @@ from __future__ import annotations
 import subprocess
 import threading
 import time
+from urllib.parse import quote
 from uuid import UUID
 
 import httpx
@@ -42,11 +43,19 @@ def test_sse_stream_receives_event_after_post() -> None:
 
         uid = UUID("550e8400-e29b-41d4-a716-4466554400c0")
         iuri = instance_id_from_uuid(uid).root
-        wf = "stream_http_wf"
+        wf = "On-demand Discovery"
+        wf_seg = quote(wf, safe="")
         event_id = "event://550e8400-e29b-41d4-a716-4466554400c1"
-        post_path = f"/agentic-workflows/{wf}/instances/{uid}/events/"
-        stream_path = f"/agentic-workflows/{wf}/instances/{uid}/events/stream"
-        body = minimal_event_v1_dict(wf, iuri, event_id)
+        post_path = f"/agentic-workflows/{wf_seg}/instances/{uid}/events/"
+        stream_path = f"/agentic-workflows/{wf_seg}/instances/{uid}/events/stream"
+        body = minimal_event_v1_dict(
+            wf,
+            iuri,
+            event_id,
+            pattern="Recruiter",
+            use_case="Coffee Agntcy",
+            scenario="Capability Discovery",
+        )
 
         post_status: dict[str, int | str] = {}
 

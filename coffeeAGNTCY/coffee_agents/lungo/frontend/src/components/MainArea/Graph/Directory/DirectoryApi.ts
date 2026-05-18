@@ -6,8 +6,28 @@
 import axios from "axios"
 import { getApiUrlForPattern, PATTERNS } from "@/utils/patternUtils"
 import { IdentityServiceError } from "@/components/MainArea/Graph/Identity/IdentityApi"
-import { logger } from "@/utils/logger"
 import type { CustomNodeData } from "../Elements/types"
+import { getOasfSlugFromNodeData } from "@/utils/agenticTopologyIdentityUiMap"
+
+export { getOasfSlugFromNodeData }
+
+function messageFromAxiosResponse(error: unknown): string | undefined {
+  if (!axios.isAxiosError(error) || error.response?.data == null)
+    return undefined
+  const d = error.response.data as { detail?: unknown; message?: unknown }
+  if (typeof d.detail === "string") return d.detail
+  if (Array.isArray(d.detail)) {
+    return d.detail
+      .map((item) =>
+        item && typeof item === "object" && "msg" in item
+          ? String((item as { msg: unknown }).msg)
+          : String(item),
+      )
+      .join("; ")
+  }
+  if (typeof d.message === "string") return d.message
+  return undefined
+}
 
 /** OASF record from directory API; URL fields used for link in modal. */
 export interface OasfRecord {
@@ -19,70 +39,18 @@ export interface OasfRecord {
   [key: string]: unknown
 }
 
-const getSlugFromNodeData = (
-  nodeData: CustomNodeData | null | undefined,
-): string => {
-  if (!nodeData) {
-    throw new Error("nodeData is required for slug resolution")
-  }
-  if (nodeData.slug) {
-    return nodeData.slug
-  }
-
-  logger.debug("Node data for slug extraction", nodeData)
-
-  const label1 = nodeData.label1?.toLowerCase()
-  const label2 = nodeData.label2?.toLowerCase()
-
-  if (label1 === "auction agent" || label2?.includes("buyer")) {
-    return "auction-supervisor-agent"
-  }
-
-  if (label1 === "mcp server" && label2 === "weather") {
-    return "weather-mcp-server"
-  }
-
-  if (label1 === "colombia" && label2?.includes("coffee farm")) {
-    return "colombia-coffee-farm"
-  }
-
-  if (label1 === "vietnam" && label2?.includes("coffee farm")) {
-    return "vietnam-coffee-farm"
-  }
-
-  if (label1 === "brazil" && label2?.includes("coffee farm")) {
-    return "brazil-coffee-farm"
-  }
-
-  // Logistics
-  if (label1 === "buyer" || label2?.includes("logistics agent")) {
-    return "logistics-supervisor-agent"
-  }
-
-  if (label1 === "tatooine" && label2?.includes("coffee farm")) {
-    return "tatooine-farm-agent"
-  }
-
-  if (label1 === "mcp server" && label2 === "payment") {
-    return "payment-mcp-server"
-  }
-
-  if (label1 === "shipper") {
-    return "shipping-agent"
-  }
-
-  if (label1 === "accountant") {
-    return "accountant-agent"
-  }
-
-  throw new Error(`No valid slug mapping found for node: ${label1} ${label2}`)
-}
-
 /** Node data that may already include a cached OASF record. */
 type NodeDataForOasf =
   | (CustomNodeData & { oasfRecord?: OasfRecord })
   | null
   | undefined
+
+const OASF_FETCH_CACHE_MAX = 24
+const oasfFetchCache = new Map<string, OasfRecord>()
+
+function oasfCacheKey(pattern: string, slug: string): string {
+  return `${pattern}\0${slug}`
+}
 
 export const fetchOasfRecord = async (
   nodeData: NodeDataForOasf,
@@ -91,7 +59,7 @@ export const fetchOasfRecord = async (
     return nodeData.oasfRecord
   }
 
-  const slug = getSlugFromNodeData(nodeData)
+  const slug = getOasfSlugFromNodeData(nodeData)
 
   let pattern: string = PATTERNS.PUBLISH_SUBSCRIBE
   if (
@@ -101,6 +69,12 @@ export const fetchOasfRecord = async (
     slug === "accountant-agent"
   ) {
     pattern = PATTERNS.GROUP_COMMUNICATION
+  }
+
+  const cacheKey = oasfCacheKey(pattern, slug)
+  const cached = oasfFetchCache.get(cacheKey)
+  if (cached) {
+    return cached
   }
 
   try {
@@ -114,11 +88,17 @@ export const fetchOasfRecord = async (
       },
     )
 
+    if (oasfFetchCache.size >= OASF_FETCH_CACHE_MAX) {
+      const first = oasfFetchCache.keys().next().value
+      if (first !== undefined) oasfFetchCache.delete(first)
+    }
+    oasfFetchCache.set(cacheKey, response.data)
+
     return response.data
   } catch (error) {
     if (axios.isAxiosError(error)) {
       const errorMessage =
-        error.response?.data?.message ||
+        messageFromAxiosResponse(error) ||
         error.message ||
         "Failed to fetch OASF record"
 

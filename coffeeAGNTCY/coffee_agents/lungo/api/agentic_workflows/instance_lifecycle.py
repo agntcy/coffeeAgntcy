@@ -8,6 +8,7 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from uuid import uuid4
 
+from common.workflow_instance_store.interfaces import WorkflowInstanceDataStore
 from schema.types import Data, EventType, Workflow, WorkflowInstance
 
 _EVENT_V1_SCHEMA_VERSION = "1.0.0"
@@ -104,3 +105,25 @@ def workflow_instance_from_projection(
     if topology_only:
         return WorkflowInstance(id=full.id, topology=full.topology)
     return full
+
+
+def workflow_instance_from_store(
+    store: WorkflowInstanceDataStore,
+    workflow_key: str,
+    instance_uri: str,
+    *,
+    topology_only: bool,
+) -> WorkflowInstance | None:
+    """Return one validated :class:`WorkflowInstance`, or ``None`` if missing.
+
+    Reads via :meth:`~WorkflowInstanceDataStore.get_instance_projection` (one
+    locked slice: workflow metadata plus the single instance) then
+    :func:`workflow_instance_from_projection` — avoid :meth:`get_merged_data`
+    for this path so the handler does not deep-copy the full merged graph.
+    """
+    proj = store.get_instance_projection(workflow_key, instance_uri)
+    if proj is None:
+        return None
+    return workflow_instance_from_projection(
+        proj, instance_uri, topology_only=topology_only
+    )
