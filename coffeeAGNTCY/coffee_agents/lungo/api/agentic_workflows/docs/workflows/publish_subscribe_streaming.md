@@ -49,7 +49,7 @@ inside one building holding every fact.
 
 ## Scenario
 
-The scene is still **coffee buying** on a **sourcing floor**: the company works to **secure green coffee** before later
+The scene is still **coffee purchase** on a **sourcing floor**: the company works to **secure green coffee** before later
 plans harden. What the **streaming** framing adds is an **auction rhythm** in time—**offers, hedges, and counsel can
 arrive as a flow** the desk reads while they are still forming, not only as a final package after the room goes quiet.
 
