@@ -22,6 +22,7 @@ from a2a.client.middleware import ClientCallContext, ClientCallInterceptor
 from a2a.types import AgentCard, Message, Task, TaskState
 from opentelemetry import trace as _otel_trace
 
+from common.stable_agent_id import stable_agent_id_for_name as _stable_agent_id
 from config.config import EMIT_WORKFLOW_EVENTS
 from schema.types import (
 	Correlation,
@@ -117,8 +118,14 @@ def _make_node(
 	label: str,
 	layer_index: int,
 	include_size: bool = True,
+	stable_agent_id: str | None = None,
 ) -> PartialNode:
 	"""Create a PartialNode with standard defaults."""
+	extras: dict[str, Any] = {}
+	if stable_agent_id is not None:
+		extras["stable_agent_id"] = stable_agent_id
+		# Schema requires agent_record_uri on any node with stable_agent_id.
+		extras["agent_record_uri"] = f"agent-card://{stable_agent_id.removeprefix('agent://')}"
 	return PartialRegularNode(
 		id=NodeId(node_id),
 		operation=operation,
@@ -126,6 +133,7 @@ def _make_node(
 		label=label,
 		layer_index=layer_index,
 		**(dict(size=_DEFAULT_NODE_SIZE) if include_size else {}),
+		**extras,
 	)
 
 
@@ -287,6 +295,7 @@ async def _outbound_topology(
 			node_type="customNode",
 			label=caller_agent_id,
 			layer_index=layer_index,
+			stable_agent_id=_stable_agent_id(caller_agent_id),
 		),
 		_make_node(
 			transport_node,
@@ -314,6 +323,7 @@ async def _outbound_topology(
 				node_type="customNode",
 				label=agent_id,
 				layer_index=layer_index + 2,
+				stable_agent_id=_stable_agent_id(agent_id),
 			),
 		)
 		edges.append(
@@ -350,6 +360,7 @@ async def _inbound_topology(
 				label=remote_agent_id,
 				layer_index=layer_index + 2,
 				include_size=False,
+				stable_agent_id=_stable_agent_id(remote_agent_id),
 			),
 			_make_node(
 				transport_node,
@@ -366,6 +377,7 @@ async def _inbound_topology(
 				label=caller_agent_id,
 				layer_index=layer_index,
 				include_size=False,
+				stable_agent_id=_stable_agent_id(caller_agent_id),
 			),
 		],
 		edges=[
@@ -523,6 +535,9 @@ class EventEmittingInterceptor(ClientCallInterceptor):
 						node_type="customNode",
 						label=self._caller_agent_id,
 						layer_index=self._agent_call_graph_layer,
+						stable_agent_id=_stable_agent_id(
+							self._caller_agent_id
+						),
 					)
 				],
 				edges=[],
