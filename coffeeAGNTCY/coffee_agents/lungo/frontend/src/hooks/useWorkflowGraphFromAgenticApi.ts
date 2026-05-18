@@ -31,9 +31,9 @@ import {
 } from "@/utils/topologyStaticIdMap"
 import {
   extractInstanceTopologyFromEvent,
-  highlightIdsFromTopologyWithOverlay,
   messagingHighlightIdsFromTopology,
   patchGraphActiveHighlight,
+  staticGraphHighlightIdsFromTopology,
   type MessagingHighlightIds,
 } from "@/utils/workflowEventMessagingHighlight"
 
@@ -346,16 +346,11 @@ export function useWorkflowGraphFromAgenticApi({
       const idMap = staticIdMapRef.current
       let ids: MessagingHighlightIds
       if (idMap) {
-        ids = highlightIdsFromTopologyWithOverlay(partial, idMap)
+        ids = staticGraphHighlightIdsFromTopology(partial, idMap)
       } else {
         ids = messagingHighlightIdsFromTopology(partial)
       }
       const hasAny = ids.nodeIds.size > 0 || ids.edgeIds.size > 0
-      const graphIds = lastAppliedGraphNodeIdsRef.current
-      let hlNodesOnGraph = 0
-      for (const id of ids.nodeIds) {
-        if (graphIds.has(id)) hlNodesOnGraph++
-      }
       if (hasAny) {
         lastMessagingHighlightRef.current = {
           nodeIds: new Set(ids.nodeIds),

@@ -3,7 +3,11 @@
  * SPDX-License-Identifier: Apache-2.0
  **/
 
-import type { EventV1Wire, TopologyWire } from "@/api/agenticWorkflowsTypes"
+import type {
+  EventV1Wire,
+  TopologyNodeWire,
+  TopologyWire,
+} from "@/api/agenticWorkflowsTypes"
 import type { Edge, Node } from "@xyflow/react"
 import {
   extractStableAgentId,
@@ -15,10 +19,102 @@ import { parseStableAgentUuid } from "@/utils/agenticTopologyIdentityUiMap"
 export interface MessagingHighlightIds {
   nodeIds: ReadonlySet<string>
   edgeIds: ReadonlySet<string>
-  /** rfId source->target pairs derived from partial topology, used as a
-   *  fallback when allocator-minted edge ids drift between event and
-   *  refetched topology. */
+  /**
+   * rfId source->target pairs; fallback for drifted allocator-minted edge ids.
+   */
   edgePairs: ReadonlySet<string>
+}
+
+type NodeIdResolver = (node: TopologyNodeWire) => string | null
+
+const TRANSPORT_NODE_TYPE = "transportNode"
+
+/**
+ * Guard for wire fields that must be non-empty before they can identify graph items.
+ */
+function hasText(value: unknown): value is string {
+  return typeof value === "string" && value.length > 0
+}
+
+/** Keep label fallback lookups consistent with the static id maps. */
+function normalizedLabel(value: unknown): string {
+  return typeof value === "string" ? value.trim().toLowerCase() : ""
+}
+
+/**
+ * React Flow edge ids can drift, so source/target pairs provide a stable backup key.
+ */
+function edgePairId(source: string, target: string): string {
+  return `${source}->${target}`
+}
+
+function emptyMessagingHighlightIds(): MessagingHighlightIds {
+  return { nodeIds: new Set(), edgeIds: new Set(), edgePairs: new Set() }
+}
+
+/** Match the dynamic ids produced by `topologyWireToReactFlow`. */
+function resolveDynamicNodeId(node: TopologyNodeWire): string | null {
+  const stableAgentId = extractStableAgentId(node)
+  if (stableAgentId) return stableAgentId
+  if (node.type === TRANSPORT_NODE_TYPE)
+    return transportCanonicalRfId(node.label)
+  return hasText(node.id) ? node.id : null
+}
+
+/** Translate wire ids into authored static graph ids used by legacy patterns. */
+function resolveStaticGraphNodeId(
+  node: TopologyNodeWire,
+  idMap: StaticIdMap,
+): string | null {
+  const stableAgentId = extractStableAgentId(node)
+  if (stableAgentId) {
+    const uuid = parseStableAgentUuid(stableAgentId)
+    const staticId = uuid ? idMap.idByStableAgentUuid.get(uuid) : undefined
+    return staticId ?? stableAgentId
+  }
+
+  if (node.type === TRANSPORT_NODE_TYPE) {
+    const canonicalId = transportCanonicalRfId(node.label)
+    const transportKey = canonicalId.replace(/^transport:\/\//, "")
+    return idMap.idByTransportKey.get(transportKey) ?? canonicalId
+  }
+
+  const labelId = idMap.idByLabel.get(normalizedLabel(node.label))
+  if (labelId !== undefined) return labelId
+
+  return hasText(node.id) ? node.id : null
+}
+
+/** Shared topology traversal; callers only choose how each node id is resolved. */
+function collectMessagingHighlightIds(
+  topology: TopologyWire | null | undefined,
+  resolveNodeId: NodeIdResolver,
+): MessagingHighlightIds {
+  if (!topology) return emptyMessagingHighlightIds()
+
+  const nodeIds = new Set<string>()
+  const edgeIds = new Set<string>()
+  const edgePairs = new Set<string>()
+  const wireIdToRenderedId = new Map<string, string>()
+
+  for (const node of topology.nodes ?? []) {
+    const renderedId = resolveNodeId(node)
+    if (!renderedId) continue
+
+    nodeIds.add(renderedId)
+    if (hasText(node.id)) wireIdToRenderedId.set(node.id, renderedId)
+  }
+
+  for (const edge of topology.edges ?? []) {
+    if (hasText(edge.id)) edgeIds.add(edge.id)
+    if (!hasText(edge.source) || !hasText(edge.target)) continue
+
+    const source = wireIdToRenderedId.get(edge.source) ?? edge.source
+    const target = wireIdToRenderedId.get(edge.target) ?? edge.target
+    edgePairs.add(edgePairId(source, target))
+  }
+
+  return { nodeIds, edgeIds, edgePairs }
 }
 
 /** Read the workflow-instance topology fragment carried on an event_v1. */
@@ -34,51 +130,11 @@ export function extractInstanceTopologyFromEvent(
   return topo as TopologyWire
 }
 
-/** Treat every id listed in the partial topology as part of the current
- *  messaging path. Node ids mirror ``rfIdOf`` in topologyToReactFlow:
- *  stable_agent_id for agents, transport canonical id for transports, wire id otherwise. */
+/** Build highlight ids in the dynamic React Flow id namespace. */
 export function messagingHighlightIdsFromTopology(
   topology: TopologyWire | null | undefined,
 ): MessagingHighlightIds {
-  const nodeIds = new Set<string>()
-  const edgeIds = new Set<string>()
-  const edgePairs = new Set<string>()
-  // wire id -> rf id, so edges can be translated to node-id pairs
-  const wireToRf = new Map<string, string>()
-  for (const n of topology?.nodes ?? []) {
-    const wireId = (n as { id?: unknown }).id
-    const nType = (n as { type?: unknown }).type
-    const nLabel = (n as { label?: unknown }).label
-    const sid = extractStableAgentId(n as never)
-    let rfId: string | null = null
-    if (sid) {
-      rfId = sid
-    } else if (nType === "transportNode") {
-      rfId = transportCanonicalRfId(
-        typeof nLabel === "string" ? nLabel : undefined,
-      )
-    } else if (typeof wireId === "string" && wireId.length) {
-      rfId = wireId
-    }
-    if (rfId) {
-      nodeIds.add(rfId)
-      if (typeof wireId === "string" && wireId.length) {
-        wireToRf.set(wireId, rfId)
-      }
-    }
-  }
-  for (const e of topology?.edges ?? []) {
-    const id = (e as { id?: unknown }).id
-    if (typeof id === "string" && id.length) edgeIds.add(id)
-    const src = (e as { source?: unknown }).source
-    const tgt = (e as { target?: unknown }).target
-    if (typeof src === "string" && typeof tgt === "string") {
-      const s = wireToRf.get(src) ?? src
-      const t = wireToRf.get(tgt) ?? tgt
-      edgePairs.add(`${s}->${t}`)
-    }
-  }
-  return { nodeIds, edgeIds, edgePairs }
+  return collectMessagingHighlightIds(topology, resolveDynamicNodeId)
 }
 
 export function patchGraphActiveHighlight(
@@ -100,7 +156,7 @@ export function patchGraphActiveHighlight(
   const nextEdges = edges.map((edge) => {
     const on =
       highlight.edgeIds.has(edge.id) ||
-      highlight.edgePairs.has(`${edge.source}->${edge.target}`)
+      highlight.edgePairs.has(edgePairId(edge.source, edge.target))
     const prev = Boolean(
       (edge.data as { active?: unknown } | undefined)?.active,
     )
@@ -115,71 +171,13 @@ export function patchGraphActiveHighlight(
 }
 
 /**
- * Like `messagingHighlightIdsFromTopology`, but additionally consults wire
- * labels via the supplied id map's `idByLabel`. Labels are the only way to
- * bridge nodes that don't carry a stable_agent_id (e.g. the Logistics Group
- * container, the AGNTCY Agent Directory node).
- *
- * Falls back to dynamic id form when no static id match is found, so the
- * patch step simply skips ids without a static counterpart.
+ * Build highlight ids in the static graph id namespace when a pattern uses authored nodes.
  */
-export function highlightIdsFromTopologyWithOverlay(
+export function staticGraphHighlightIdsFromTopology(
   topology: TopologyWire | null | undefined,
   idMap: StaticIdMap,
 ): MessagingHighlightIds {
-  const nodeIds = new Set<string>()
-  const edgeIds = new Set<string>()
-  const edgePairs = new Set<string>()
-  const wireToRf = new Map<string, string>()
-  for (const n of topology?.nodes ?? []) {
-    const wireId = (n as { id?: unknown }).id
-    const nType = (n as { type?: unknown }).type
-    const nLabel = (n as { label?: unknown }).label
-    const labelStr = typeof nLabel === "string" ? nLabel : ""
-    const sid = extractStableAgentId(n as never)
-    let rfId: string | null = null
-    // 1. stable_agent_id -> static
-    if (sid) {
-      const uuid = parseStableAgentUuid(sid)
-      if (uuid) {
-        const viaStable = idMap.idByStableAgentUuid.get(uuid)
-        if (viaStable !== undefined) rfId = viaStable
-      }
-      if (rfId === null) rfId = sid // pass through; patch step will skip unmatched
-    }
-    // 2. transport canonical -> static
-    if (rfId === null && nType === "transportNode") {
-      const canon = transportCanonicalRfId(labelStr || undefined)
-      const key = canon.replace(/^transport:\/\//, "")
-      const viaTransport = idMap.idByTransportKey.get(key)
-      rfId = viaTransport !== undefined ? viaTransport : canon
-    }
-    // 3. label -> static (covers logistics-group, agntcy-directory)
-    if (rfId === null && labelStr) {
-      const viaLabel = idMap.idByLabel.get(labelStr.trim().toLowerCase())
-      if (viaLabel !== undefined) rfId = viaLabel
-    }
-    // 4. wire id fallback
-    if (rfId === null && typeof wireId === "string" && wireId.length) {
-      rfId = wireId
-    }
-    if (rfId) {
-      nodeIds.add(rfId)
-      if (typeof wireId === "string" && wireId.length) {
-        wireToRf.set(wireId, rfId)
-      }
-    }
-  }
-  for (const e of topology?.edges ?? []) {
-    const id = (e as { id?: unknown }).id
-    if (typeof id === "string" && id.length) edgeIds.add(id)
-    const src = (e as { source?: unknown }).source
-    const tgt = (e as { target?: unknown }).target
-    if (typeof src === "string" && typeof tgt === "string") {
-      const s = wireToRf.get(src) ?? src
-      const t = wireToRf.get(tgt) ?? tgt
-      edgePairs.add(`${s}->${t}`)
-    }
-  }
-  return { nodeIds, edgeIds, edgePairs }
+  return collectMessagingHighlightIds(topology, (node) =>
+    resolveStaticGraphNodeId(node, idMap),
+  )
 }

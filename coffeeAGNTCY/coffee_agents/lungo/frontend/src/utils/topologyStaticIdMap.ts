@@ -98,7 +98,10 @@ function buildDiscoveryIdMap(): StaticIdMap {
   // Recruiter middleware may emit the OASF record name or the A2A service
   // card name; both collapse to the static recruiter node.
   const idByStableAgentUuid = new Map<string, string>([
-    [stableAgentUuidForRecordName("Agentic Recruiter agent"), "recruiter-agent"],
+    [
+      stableAgentUuidForRecordName("Agentic Recruiter agent"),
+      "recruiter-agent",
+    ],
     [stableAgentUuidForRecordName("RecruiterAgent"), "recruiter-agent"],
   ])
   const idByLabel = new Map<string, string>([

@@ -135,7 +135,10 @@ export function topologyWireToReactFlow(
           CONCRETE_TRANSPORTS.has(nextLabel.trim().toLowerCase())
         if (nextIsConcreteTransport) {
           prev.label = nextLabel
-        } else if (!prevIsConcreteTransport && nextLabel.length > prevLabel.length) {
+        } else if (
+          !prevIsConcreteTransport &&
+          nextLabel.length > prevLabel.length
+        ) {
           prev.label = nextLabel
         }
         if (!prev.agent_record_uri && n.agent_record_uri) {
@@ -180,10 +183,7 @@ export function topologyWireToReactFlow(
     const rfId = rfIdOf(n)
     if (rfId) layerById.set(rfId, n.layer_index ?? 0)
   }
-  const pos = layoutPositionsByLayer(
-    dedupedNodesIn.map(rfIdOf),
-    layerById,
-  )
+  const pos = layoutPositionsByLayer(dedupedNodesIn.map(rfIdOf), layerById)
 
   const nodes: Node[] = dedupedNodesIn.map((n): Node => {
     const rfId = rfIdOf(n)
