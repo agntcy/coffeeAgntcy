@@ -12,6 +12,6 @@ from __future__ import annotations
 
 PATTERNS: list[str] = [
     "Supervisor",
-    "Group chat",
+    "Peer Group",
     "Recruiter",
 ]

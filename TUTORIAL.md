@@ -346,12 +346,12 @@ see how it integrates with the **App SDK** and **Identity Service**.
 - Responses are aggregated across agents
 - Broadcast vs. unicast messaging is handled automatically
 
-#### 🚚 Logistic Demo (Coordination/ Group Chat Pattern)
+#### 🚚 Logistic Demo (Coordination/ Peer Group Pattern)
 
 On the frontend select the `Conversation: Order fulfillment / Agentic Patterns / Secure Group Communication / A2A SLIM`
 menu item.
 
-This demo showcases a **supply coordination** scenario where agents communicate within a **group chat**. In this setup,
+This demo showcases a **supply coordination** scenario where agents communicate within a **peer group**. In this setup,
 the **Supervisor Agent** acts as the moderator, inviting various **logistics components** as members and enabling them
 to communicate directly with one another.
 
@@ -359,10 +359,10 @@ to communicate directly with one another.
 - `I want to order coffee at $3.50 per pound for 500 lbs from the Tatooine farm`
 
 This style of agentic communication is powered by **AGNTCY’s SLIM**. Unlike the **Auction flow**, this transport is
-**not interchangeable**, as **SLIM** is the only protocol that supports **multi-agent group chat communication**.
+**not interchangeable**, as **SLIM** is the only protocol that supports **multi-agent peer group communication**.
 
 Explore the [`Logistic Supervisor tools`](coffeeAGNTCY/coffee_agents/lungo/agents/supervisors/logistic/graph/tools.py)
-to see how the supervisor initializes and manages the SLIM group chat.
+to see how the supervisor initializes and manages the SLIM peer group.
 
 **Observe** how agents coordinate and negotiate within the chat, collaborating to complete their designated tasks and
 share updates dynamically.
@@ -430,7 +430,7 @@ docker compose down
 
 In this workshop, you:
 - Deployed Corto's **Sommelier** demo via Docker Compose which showed a 1-1 A2A connection over SLIM
-- Deployed Lungo’s **Auction** and **Logistic** demos via Docker Compose and explored supervisor-worker and group chat
+- Deployed Lungo’s **Auction** and **Logistic** demos via Docker Compose and explored supervisor-worker and peer group
   agentic patterns
 - Interacted with real-time **agentic UIs**
 - Observed communication traces in **Grafana**

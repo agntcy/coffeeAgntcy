@@ -259,7 +259,7 @@
   },
   {
     "name": "Secure Group Communication Logistics Network",
-    "pattern": "Group chat",
+    "pattern": "Peer Group",
     "use_case": "Coffee Agntcy",
     "scenario": "Order Fulfillment",
     "starting_topology": {
