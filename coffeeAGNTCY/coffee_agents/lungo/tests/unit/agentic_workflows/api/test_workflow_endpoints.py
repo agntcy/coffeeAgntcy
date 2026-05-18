@@ -20,7 +20,7 @@ _FAKE_WORKFLOWS: dict[str, Workflow] = {
         Workflow.model_validate(
             {
                 "pattern": "publish_subscribe",
-                "use_case": "Coffee Buying",
+                "use_case": "Purchasing",
                 "scenario": "Pub Sub Coffee scenario",
                 "name": "Pub Sub Coffee",
                 "starting_topology": {
@@ -41,8 +41,8 @@ _FAKE_WORKFLOWS: dict[str, Workflow] = {
         ),
         Workflow.model_validate(
             {
-                "pattern": "group_communication",
-                "use_case": "Order Fulfilment",
+                "pattern": "group_messaging",
+                "use_case": "Order Fulfillment",
                 "scenario": "Group Logistics scenario",
                 "name": "Group Logistics",
                 "starting_topology": {
@@ -64,7 +64,7 @@ _FAKE_WORKFLOWS: dict[str, Workflow] = {
         Workflow.model_validate(
             {
                 "pattern": "publish_subscribe",
-                "use_case": "Order Fulfilment",
+                "use_case": "Order Fulfillment",
                 "scenario": "Pub Sub Orders scenario",
                 "name": "Pub Sub Orders",
                 "starting_topology": {
@@ -136,7 +136,7 @@ _LIST_CASES: tuple[ListCase, ...] = (
     ),
     ListCase(
         case_id="filter_single_use_case",
-        inputs=ListInputs(params={"use_cases": "Order Fulfilment"}),
+        inputs=ListInputs(params={"use_cases": "Order Fulfillment"}),
         outputs=ListOutputs(
             status=200,
             expected_names={"Group Logistics", "Pub Sub Orders"},
@@ -147,7 +147,7 @@ _LIST_CASES: tuple[ListCase, ...] = (
         inputs=ListInputs(
             params={
                 "patterns": "publish_subscribe",
-                "use_cases": "Order Fulfilment",
+                "use_cases": "Order Fulfillment",
             }
         ),
         outputs=ListOutputs(status=200, expected_names={"Pub Sub Orders"}),
@@ -160,7 +160,7 @@ _LIST_CASES: tuple[ListCase, ...] = (
     ListCase(
         case_id="filter_multiple_patterns",
         inputs=ListInputs(
-            params={"patterns": ["publish_subscribe", "group_communication"]}
+            params={"patterns": ["publish_subscribe", "group_messaging"]}
         ),
         outputs=ListOutputs(status=200, expected_names=_ALL_NAMES),
     ),
@@ -209,22 +209,18 @@ class DetailCase(NamedTuple):
 _DETAIL_CASES: tuple[DetailCase, ...] = (
     DetailCase(
         case_id="existing_workflow",
-        inputs=DetailInputs(
-            workflow_name="Pub Sub Coffee", topology_only=None
-        ),
+        inputs=DetailInputs(workflow_name="Pub Sub Coffee", topology_only=None),
         outputs=DetailOutputs(
             status=200,
             expected_name="Pub Sub Coffee",
             expected_pattern="publish_subscribe",
-            expected_use_case="Coffee Buying",
+            expected_use_case="Purchasing",
             instances_empty=True,
         ),
     ),
     DetailCase(
         case_id="unknown_workflow_404",
-        inputs=DetailInputs(
-            workflow_name="does-not-exist", topology_only=None
-        ),
+        inputs=DetailInputs(workflow_name="does-not-exist", topology_only=None),
         outputs=DetailOutputs(
             status=404,
             expected_name=None,
@@ -235,27 +231,23 @@ _DETAIL_CASES: tuple[DetailCase, ...] = (
     ),
     DetailCase(
         case_id="topology_only_true",
-        inputs=DetailInputs(
-            workflow_name="Pub Sub Coffee", topology_only=True
-        ),
+        inputs=DetailInputs(workflow_name="Pub Sub Coffee", topology_only=True),
         outputs=DetailOutputs(
             status=200,
             expected_name="Pub Sub Coffee",
             expected_pattern="publish_subscribe",
-            expected_use_case="Coffee Buying",
+            expected_use_case="Purchasing",
             instances_empty=True,
         ),
     ),
     DetailCase(
         case_id="topology_only_false_same_as_default",
-        inputs=DetailInputs(
-            workflow_name="Pub Sub Coffee", topology_only=False
-        ),
+        inputs=DetailInputs(workflow_name="Pub Sub Coffee", topology_only=False),
         outputs=DetailOutputs(
             status=200,
             expected_name="Pub Sub Coffee",
             expected_pattern="publish_subscribe",
-            expected_use_case="Coffee Buying",
+            expected_use_case="Purchasing",
             instances_empty=True,
         ),
     ),

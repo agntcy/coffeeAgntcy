@@ -7,7 +7,7 @@ import React, { useEffect, useRef, useCallback } from "react"
 import type { Node, Edge } from "@xyflow/react"
 import {
   PUBLISH_SUBSCRIBE_CONFIG,
-  GROUP_COMMUNICATION_CONFIG,
+  GROUP_MESSAGING_CONFIG,
 } from "@/utils/graphConfigs"
 import { EDGE_LABELS, HANDLE_TYPES } from "@/utils/const.ts"
 import { logger } from "@/utils/logger"
@@ -62,17 +62,17 @@ const TEMPLATES_BY_KEYWORD: Record<DiscoveryKeyword, Node | undefined> = {
       .toLowerCase()
       .includes("colombia"),
   ),
-  shipper: GROUP_COMMUNICATION_CONFIG.nodes.find((n) =>
+  shipper: GROUP_MESSAGING_CONFIG.nodes.find((n) =>
     String(n.data?.label1 ?? "")
       .toLowerCase()
       .includes("shipper"),
   ),
-  tatooine: GROUP_COMMUNICATION_CONFIG.nodes.find((n) =>
+  tatooine: GROUP_MESSAGING_CONFIG.nodes.find((n) =>
     String(n.data?.label1 ?? "")
       .toLowerCase()
       .includes("tatooine"),
   ),
-  accountant: GROUP_COMMUNICATION_CONFIG.nodes.find((n) =>
+  accountant: GROUP_MESSAGING_CONFIG.nodes.find((n) =>
     String(n.data?.label1 ?? "")
       .toLowerCase()
       .includes("accountant"),
@@ -290,7 +290,7 @@ export function useMainAreaDiscoveryGraph({
   )
 
   useEffect(() => {
-    if (pattern !== "on_demand_discovery") return
+    if (pattern !== "a2a_http") return
     if (!discoveryResponseEvent) return
     if (lastTsRef.current === discoveryResponseEvent.ts) return
     lastTsRef.current = discoveryResponseEvent.ts

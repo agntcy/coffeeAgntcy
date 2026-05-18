@@ -11,7 +11,7 @@ The values align with the architectural patterns described in
 from __future__ import annotations
 
 PATTERNS: list[str] = [
-    "Supervisor-worker",
-    "Group chat",
+    "Supervisor",
+    "Peer Group",
     "Recruiter",
 ]

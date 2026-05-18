@@ -68,7 +68,7 @@ export const fetchOasfRecord = async (
     slug === "shipping-agent" ||
     slug === "accountant-agent"
   ) {
-    pattern = PATTERNS.GROUP_COMMUNICATION
+    pattern = PATTERNS.GROUP_MESSAGING
   }
 
   const cacheKey = oasfCacheKey(pattern, slug)

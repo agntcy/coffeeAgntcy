@@ -61,11 +61,10 @@ const sleep = (ms: number, signal: AbortSignal): Promise<void> =>
 export const WORKFLOW_NAME_TO_PATTERN_SLUG: Readonly<
   Record<string, PatternType>
 > = {
-  "Publish Subscribe Coffee Farm Network": PATTERNS.PUBLISH_SUBSCRIBE,
-  "Publish Subscribe Streaming Coffee Auction Network":
-    PATTERNS.PUBLISH_SUBSCRIBE_STREAMING,
-  "Secure Group Communication Logistics Network": PATTERNS.GROUP_COMMUNICATION,
-  "On-demand Discovery": PATTERNS.ON_DEMAND_DISCOVERY,
+  "Publish Subscribe": PATTERNS.PUBLISH_SUBSCRIBE,
+  "Publish Subscribe Streaming": PATTERNS.PUBLISH_SUBSCRIBE_STREAMING,
+  "Group Messaging": PATTERNS.GROUP_MESSAGING,
+  "A2A HTTP": PATTERNS.A2A_HTTP,
 }
 
 export const mapWorkflowNameToSlug = (name: string): PatternType | null =>
@@ -89,8 +88,10 @@ const isWorkflowSummary = (value: unknown): value is WorkflowSummary => {
  * Fetch the workflow summaries from `GET /agentic-workflows/`.
  *
  * The backend responds with a map keyed by workflow name (`WorkflowSummaryMapResponse`).
- * This helper flattens the map into an array, dropping any entries that do not
- * match the expected shape so a single bad row cannot break the sidebar.
+ * This helper flattens the map into an array in **JSON object key order** (which should
+ * mirror `starting_workflows.json` when the server builds the map in file order).
+ * Entries that do not match the expected shape are skipped so a single bad row cannot
+ * break the sidebar.
  */
 export const fetchWorkflowSummaries = async (
   signal?: AbortSignal,
@@ -110,8 +111,10 @@ export const fetchWorkflowSummaries = async (
     )
   }
 
+  const raw = body as Record<string, unknown>
   const summaries: WorkflowSummary[] = []
-  for (const value of Object.values(body as Record<string, unknown>)) {
+  for (const key of Object.keys(raw)) {
+    const value = raw[key]
     if (isWorkflowSummary(value)) {
       summaries.push(value)
     }

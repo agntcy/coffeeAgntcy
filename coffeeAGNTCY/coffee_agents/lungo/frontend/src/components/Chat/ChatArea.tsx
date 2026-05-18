@@ -109,7 +109,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
 
   const onApiSuccess = useCallback(
     (apiResponse: ApiResponse) => {
-      if (pattern !== "on_demand_discovery") {
+      if (pattern !== "a2a_http") {
         return
       }
 
@@ -304,7 +304,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
                           {agentResponse?.response ?? ""}
                           {(agentResponse?.session_id || groupSessionId) &&
                             !isAgentLoading &&
-                            pattern !== "on_demand_discovery" && (
+                            pattern !== "a2a_http" && (
                               <ExternalLinkButton
                                 url={grafanaSessionUrl}
                                 label="Grafana"

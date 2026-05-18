@@ -11,7 +11,6 @@ from __future__ import annotations
 import json
 
 import pytest
-
 from common.a2a_event_middleware import workflow_catalog as wc
 
 
@@ -26,7 +25,7 @@ class TestLookupWorkflow:
         wf = wc.lookup_workflow("Test Workflow Alpha")
         assert wf is not None
         assert wf.workflow_name == "Test Workflow Alpha"
-        assert wf.pattern == "Supervisor-worker"
+        assert wf.pattern == "Supervisor"
         assert wf.use_case == "Unit Test"
         assert wf.scenario == "Alpha Scenario"
 
@@ -48,21 +47,25 @@ class TestLookupWorkflow:
     def test_malformed_entries_skipped_not_fatal(self, tmp_path, monkeypatch):
         """Mixed catalogs should load valid entries and skip invalid ones."""
         path = tmp_path / "partial.json"
-        path.write_text(json.dumps([
-            "not an object",
-            {"name": "missing pattern"},
-            {
-                "name": "Good Workflow",
-                "pattern": "Supervisor-worker",
-                "use_case": "Unit Test",
-                "scenario": "Good Scenario",
-            },
-        ]))
+        path.write_text(
+            json.dumps(
+                [
+                    "not an object",
+                    {"name": "missing pattern"},
+                    {
+                        "name": "Good Workflow",
+                        "pattern": "Supervisor",
+                        "use_case": "Unit Test",
+                        "scenario": "Good Scenario",
+                    },
+                ]
+            )
+        )
         monkeypatch.setenv("LUNGO_WORKFLOWS_JSON", str(path))
         wc._load_catalog.cache_clear()
         good = wc.lookup_workflow("Good Workflow")
         assert good is not None
-        assert good.pattern == "Supervisor-worker"
+        assert good.pattern == "Supervisor"
         assert good.use_case == "Unit Test"
         assert good.scenario == "Good Scenario"
         assert wc.lookup_workflow("missing pattern") is None
