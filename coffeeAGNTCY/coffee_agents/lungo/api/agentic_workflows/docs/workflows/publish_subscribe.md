@@ -42,7 +42,7 @@ inside one building holding every fact.
 
 ## Scenario
 
-The scene is **coffee buying**: a **sourcing floor** where the company works to **secure green coffee** before roasting,
+The scene is **coffee purchase**: a **sourcing floor** where the company works to **secure green coffee** before roasting,
 blending, or packing plans harden. A pressured **auction / buying lead** listens to **many origins at once**, keeps
 comparisons **fair** so the same question lands the same way on each supplier, and **deepens diligence** exactly where
 the next mistake would be expensive.

@@ -34,7 +34,7 @@ A couple architectural (agentic design) patterns used throughout CoffeeAGNTCY:
 2. Supervisor–workers: One supervisor agent holds the agentic workflow (e.g. LangGraph), receives user input, and
    delegates to worker agents via A2A. Workers do not coordinate with each other; they respond to the supervisor.
    Supports broadcast (e.g. “inventory from all farms”) and unicast (e.g. “order at Colombia”). Example: Lungo
-   auction/coffee buying and Lungo recruiter/capability discovery.
+   auction/coffee purchase and Lungo recruiter/capability discovery.
 3. Group chat / coordination: A supervisor sets up and moderates a shared conversation (group). Multiple specialized
    agents (e.g. farm, shipper, accountant, helpdesk) are members and talk to each other as well as to the supervisor to
    complete a task. Example: Lungo logistics/order fulfillment.
@@ -63,7 +63,7 @@ of that pattern to achieve a concrete goal within a defined context.
 The following example (agentic) use-cases are existing in CoffeeAGNTCY:
 
 - Point-to-point: Corto Sommelier / coffee grading.
-- Supervisor-workers: Lungo auction / coffee buying, Lungo recruiter / capability discovery.
+- Supervisor-workers: Lungo auction / coffee purchase, Lungo recruiter / capability discovery.
 - Group chat / coordination: Lungo logistics / order fulfillment.
 
 ---
