@@ -189,7 +189,14 @@ export function topologyWireToReactFlow(
     const rfId = rfIdOf(n)
     const nodeType =
       n.type === NODE_TYPES.TRANSPORT ? NODE_TYPES.TRANSPORT : NODE_TYPES.CUSTOM
-    const position = pos.get(rfId) ?? { x: 0, y: 0 }
+    // Prefer wire-supplied `position` (e.g. starting_workflows.json overrides);
+    // fall back to layered auto-layout when omitted.
+    const position =
+      n.position &&
+      typeof n.position.x === "number" &&
+      typeof n.position.y === "number"
+        ? { x: n.position.x, y: n.position.y }
+        : (pos.get(rfId) ?? { x: 0, y: 0 })
     const gh = resolveGithubFromAgentRecordUri(
       n.agent_record_uri as string | undefined,
       { validateUrls },
