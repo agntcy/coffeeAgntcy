@@ -21,7 +21,6 @@ from uuid import UUID
 
 import httpx
 from schema.types import Event, instance_id_from_uuid
-
 from tests.unit.agentic_workflows.api.agentic_uvicorn_helpers import (
     assert_lungo_package_layout,
     first_sse_data_payload,
@@ -43,7 +42,7 @@ def test_sse_stream_receives_event_after_post() -> None:
 
         uid = UUID("550e8400-e29b-41d4-a716-4466554400c0")
         iuri = instance_id_from_uuid(uid).root
-        wf = "On-demand Discovery"
+        wf = "A2A HTTP"
         wf_seg = quote(wf, safe="")
         event_id = "event://550e8400-e29b-41d4-a716-4466554400c1"
         post_path = f"/agentic-workflows/{wf_seg}/instances/{uid}/events/"

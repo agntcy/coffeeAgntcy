@@ -108,7 +108,7 @@ const RootPage: React.FC = () => {
                 selectedPattern === PATTERNS.GROUP_MESSAGING
               }
               showDiscoveryPrompts={
-                selectedPattern === PATTERNS.ON_DEMAND_DISCOVERY
+                selectedPattern === PATTERNS.A2A_HTTP
               }
               showProgressTracker={showProgressTracker}
               showAuctionStreaming={showAuctionStreaming}

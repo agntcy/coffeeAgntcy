@@ -138,7 +138,7 @@ export function useMainArea({
   )
 
   useEffect(() => {
-    if (pattern !== "on_demand_discovery") return
+    if (pattern !== "a2a_http") return
     setNodes((prevNodes) => {
       const recruiterId =
         prevNodes.find((n) => {

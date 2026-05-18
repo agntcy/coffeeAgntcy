@@ -23,7 +23,7 @@ from fastapi.testclient import TestClient
             "Publish Subscribe",
             "publish_subscribe",
         ),
-        ("On-demand Discovery", "on-demand_discovery"),
+        ("A2A HTTP", "a2a_http"),
         ("Event Ledger (Episodic Memory)", "event_ledger_episodic_memory"),
         ("Coordinator + Worker Agents", "coordinator_+_worker_agents"),
         ("Resilience & Re-Routing", "resilience_&_re-routing"),

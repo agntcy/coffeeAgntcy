@@ -12,14 +12,14 @@ import {
   type GraphConfig,
   PUBLISH_SUBSCRIBE_CONFIG,
   GROUP_MESSAGING_CONFIG,
-  DISCOVERY_CONFIG,
+  A2A_HTTP_CONFIG,
 } from "./graphConfigsData"
 
 export type { GraphConfig }
 export {
   PUBLISH_SUBSCRIBE_CONFIG,
   GROUP_MESSAGING_CONFIG,
-  DISCOVERY_CONFIG,
+  A2A_HTTP_CONFIG,
 }
 
 export const getGraphConfig = (pattern: string): GraphConfig => {
@@ -77,8 +77,8 @@ export const getGraphConfig = (pattern: string): GraphConfig => {
     }
     case "group_messaging":
       return GROUP_MESSAGING_CONFIG
-    case "on_demand_discovery":
-      return DISCOVERY_CONFIG
+    case "a2a_http":
+      return A2A_HTTP_CONFIG
     default:
       return PUBLISH_SUBSCRIBE_CONFIG
   }

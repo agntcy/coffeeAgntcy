@@ -16,17 +16,6 @@ from typing import AsyncGenerator
 from uuid import uuid4
 
 import litellm
-from google.adk.agents import Agent
-from google.adk.events.event import Event
-from google.adk.models.lite_llm import LiteLlm
-from google.adk.runners import Runner
-from google.adk.sessions import InMemorySessionService
-from google.adk.tools.tool_context import ToolContext
-from google.genai import types
-
-from config.config import LLM_MODEL
-from common.streaming_capability import require_streaming_capability
-
 from agents.supervisors.recruiter.dynamic_workflow_agent import (
     DynamicWorkflowAgent,
 )
@@ -37,18 +26,27 @@ from agents.supervisors.recruiter.models import (
     STATE_KEY_TASK_MESSAGE,
 )
 from agents.supervisors.recruiter.recruiter_client import evaluate_agent, recruit_agents
+from common.streaming_capability import require_streaming_capability
 from common.workflow_context_prop import (
     attach_workflow_context,
     detach_workflow_context,
     read_workflow_context,
     workflow_context_scope,
 )
+from config.config import LLM_MODEL
+from google.adk.agents import Agent
+from google.adk.events.event import Event
+from google.adk.models.lite_llm import LiteLlm
+from google.adk.runners import Runner
+from google.adk.sessions import InMemorySessionService
+from google.adk.tools.tool_context import ToolContext
+from google.genai import types
 
 logger = logging.getLogger("lungo.recruiter.supervisor.agent")
 
 # Must match starting_workflows.json. Drift is guarded by the
 # corresponding recruiter unit tests.
-_WORKFLOW_NAME = "On-demand Discovery"
+_WORKFLOW_NAME = "A2A HTTP"
 
 # ---------------------------------------------------------------------------
 # LLM Configuration

@@ -65,7 +65,7 @@ export const WORKFLOW_NAME_TO_PATTERN_SLUG: Readonly<
   "Publish Subscribe Streaming":
     PATTERNS.PUBLISH_SUBSCRIBE_STREAMING,
   "Group Messaging": PATTERNS.GROUP_MESSAGING,
-  "On-demand Discovery": PATTERNS.ON_DEMAND_DISCOVERY,
+  "A2A HTTP": PATTERNS.A2A_HTTP,
 }
 
 export const mapWorkflowNameToSlug = (name: string): PatternType | null =>

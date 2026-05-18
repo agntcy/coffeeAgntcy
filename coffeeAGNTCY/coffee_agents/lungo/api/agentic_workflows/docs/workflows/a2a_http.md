@@ -1,4 +1,4 @@
-# On-demand Discovery
+# A2A HTTP
 
 ## Pattern
 

@@ -290,7 +290,7 @@ export function useMainAreaDiscoveryGraph({
   )
 
   useEffect(() => {
-    if (pattern !== "on_demand_discovery") return
+    if (pattern !== "a2a_http") return
     if (!discoveryResponseEvent) return
     if (lastTsRef.current === discoveryResponseEvent.ts) return
     lastTsRef.current = discoveryResponseEvent.ts

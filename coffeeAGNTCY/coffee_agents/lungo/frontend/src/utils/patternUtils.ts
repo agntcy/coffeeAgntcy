@@ -10,7 +10,7 @@ export const PATTERNS = {
   PUBLISH_SUBSCRIBE: "publish_subscribe",
   PUBLISH_SUBSCRIBE_STREAMING: "publish_subscribe_streaming",
   GROUP_MESSAGING: "group_messaging",
-  ON_DEMAND_DISCOVERY: "on_demand_discovery",
+  A2A_HTTP: "a2a_http",
 } as const
 
 export type PatternType = (typeof PATTERNS)[keyof typeof PATTERNS]
@@ -39,7 +39,7 @@ export const getApiUrlForPattern = (pattern?: string): string => {
     return GROUP_COMM_APP_API_URL
   } else if (pattern === PATTERNS.PUBLISH_SUBSCRIBE_STREAMING) {
     return PUB_SUB_APP_API_URL
-  } else if (pattern === PATTERNS.ON_DEMAND_DISCOVERY) {
+  } else if (pattern === PATTERNS.A2A_HTTP) {
     return DISCOVERY_APP_API_URL
   } else {
     return PUB_SUB_APP_API_URL
@@ -54,7 +54,7 @@ export const getStreamingEndpointForPattern = (pattern?: string): string => {
   if (pattern === PATTERNS.PUBLISH_SUBSCRIBE_STREAMING) {
     return `${getApiUrlForPattern(pattern)}/agent/prompt/stream`
   }
-  if (pattern === PATTERNS.ON_DEMAND_DISCOVERY) {
+  if (pattern === PATTERNS.A2A_HTTP) {
     return `${getApiUrlForPattern(pattern)}/agent/prompt/stream`
   }
   throw new Error(`Pattern ${pattern} does not support streaming`)
@@ -63,7 +63,7 @@ export const getStreamingEndpointForPattern = (pattern?: string): string => {
 export const isStreamingPattern = (pattern?: string): boolean => {
   return (
     pattern === PATTERNS.PUBLISH_SUBSCRIBE_STREAMING ||
-    pattern === PATTERNS.ON_DEMAND_DISCOVERY
+    pattern === PATTERNS.A2A_HTTP
   )
 }
 
@@ -84,8 +84,8 @@ export const getPatternDisplayName = (pattern?: string): string => {
       return "Publish/Subscribe: Streaming"
     case PATTERNS.GROUP_MESSAGING:
       return "Group Messaging"
-    case PATTERNS.ON_DEMAND_DISCOVERY:
-      return "On-Demand Discovery"
+    case PATTERNS.A2A_HTTP:
+      return "A2A HTTP"
     default:
       return "Unknown Pattern"
   }

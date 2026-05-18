@@ -379,8 +379,8 @@ export const GROUP_MESSAGING_CONFIG: GraphConfig = {
   ],
 }
 
-export const DISCOVERY_CONFIG: GraphConfig = {
-  title: "On-demand Discovery",
+export const A2A_HTTP_CONFIG: GraphConfig = {
+  title: "A2A HTTP",
   nodes: [
     {
       id: NODE_IDS.RECRUITER,

@@ -359,7 +359,7 @@
     "instances": {}
   },
   {
-    "name": "On-demand Discovery",
+    "name": "A2A HTTP",
     "pattern": "Recruiter",
     "use_case": "Coffee Agntcy",
     "scenario": "Capability Discovery",

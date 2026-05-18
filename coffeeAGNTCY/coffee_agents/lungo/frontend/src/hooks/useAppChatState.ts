@@ -97,7 +97,7 @@ export function useAppChatState({ selectedPattern }: UseAppChatStateParams) {
       if (
         selectedPattern !== PATTERNS.GROUP_MESSAGING &&
         selectedPattern !== PATTERNS.PUBLISH_SUBSCRIBE_STREAMING &&
-        selectedPattern !== PATTERNS.ON_DEMAND_DISCOVERY
+        selectedPattern !== PATTERNS.A2A_HTTP
       ) {
         setShowFinalResponse(true)
       }

@@ -162,7 +162,7 @@ export function useApp() {
   ])
 
   useEffect(() => {
-    if (selectedPattern !== PATTERNS.ON_DEMAND_DISCOVERY) return
+    if (selectedPattern !== PATTERNS.A2A_HTTP) return
 
     if (streaming.recruiterStatus === "completed") {
       chat.setIsAgentLoading(false)
@@ -249,7 +249,7 @@ export function useApp() {
           chat.setAgentResponse(undefined)
           streaming.reset()
           await streaming.connect(query)
-        } else if (selectedPattern === PATTERNS.ON_DEMAND_DISCOVERY) {
+        } else if (selectedPattern === PATTERNS.A2A_HTTP) {
           chat.setShowFinalResponse(false)
           chat.setShowRecruiterStreaming(true)
           chat.setAgentResponse(undefined)
