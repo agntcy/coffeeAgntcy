@@ -13,6 +13,9 @@ from agntcy_app_sdk.semantic.a2a import (
     NatsTransportConfig,
     SlimTransportConfig,
 )
+from agntcy_app_sdk.transport.slim.transport import SLIMTransport
+
+SLIMTransport.request.__defaults__ = (60,)
 
 
 def build_a2a_client_config(
