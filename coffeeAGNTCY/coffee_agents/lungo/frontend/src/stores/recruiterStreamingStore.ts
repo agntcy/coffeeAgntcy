@@ -72,9 +72,7 @@ export const useRecruiterStreamingStore = create<RecruiterStreamingStoreState>(
       })
 
       try {
-        const streamingUrl = getStreamingEndpointForPattern(
-          PATTERNS.ON_DEMAND_DISCOVERY,
-        )
+        const streamingUrl = getStreamingEndpointForPattern(PATTERNS.A2A_HTTP)
 
         const response = await fetch(streamingUrl, {
           method: "POST",

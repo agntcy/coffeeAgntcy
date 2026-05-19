@@ -1,22 +1,19 @@
 # Copyright AGNTCY Contributors (https://github.com/agntcy)
 # SPDX-License-Identifier: Apache-2.0
 
-import config.logging_config  # noqa: F401 - runs setup on import; must be first
-
 import asyncio
 import logging
 
+import config.logging_config  # noqa: F401 - runs setup on import; must be first
+
 logger = logging.getLogger(__name__)
 
+from a2a.server.request_handlers import DefaultRequestHandler
 from a2a.server.tasks import InMemoryTaskStore
 from a2a.types import AgentCard
-from a2a.server.request_handlers import DefaultRequestHandler
-
-from agntcy_app_sdk.factory import AgntcyFactory
-
 from agents.farms.colombia.agent_executor import FarmAgentExecutor
 from agents.farms.colombia.card import AGENT_CARD
-
+from agntcy_app_sdk.factory import AgntcyFactory
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -35,7 +32,7 @@ async def serve_all_a2a_interfaces(
     interface declared in the card's ``additional_interfaces``, which include:
 
     - **slimrpc** – point-to-point transport for direct client-agent communication
-    - **slim** – SLIM-based group communication and pub/sub transport
+    - **slim** – SLIM-based group messaging and pub/sub transport
     - **nats** – NATS-based pub/sub transport for broadcasting to multiple subscribers
     - **jsonrpc** – JSON-RPC endpoint for direct client-agent communication over HTTP
 

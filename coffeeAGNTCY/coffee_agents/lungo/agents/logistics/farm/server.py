@@ -1,40 +1,35 @@
 # Copyright AGNTCY Contributors (https://github.com/agntcy)
 # SPDX-License-Identifier: Apache-2.0
 
-import config.logging_config  # noqa: F401 - runs setup on import; must be first
-
 import asyncio
 import logging
 from os import getenv
 
+import config.logging_config  # noqa: F401 - runs setup on import; must be first
 from a2a.server.apps import A2AStarletteApplication
-from a2a.server.tasks import InMemoryTaskStore
 from a2a.server.request_handlers import DefaultRequestHandler
+from a2a.server.tasks import InMemoryTaskStore
 from a2a.types import AgentCard
-from dotenv import load_dotenv
-from uvicorn import Config, Server
-
-from fastapi import FastAPI
-from starlette.responses import JSONResponse
-from starlette.routing import Route
-from starlette.middleware.cors import CORSMiddleware
-
+from agents.logistics.farm.agent_executor import FarmAgentExecutor
+from agents.logistics.farm.card import AGENT_CARD
+from agents.logistics.shipper.card import AGENT_CARD as SHIPPER_AGENT_CARD
 from agntcy_app_sdk.factory import AgntcyFactory
-from agntcy_app_sdk.semantic.a2a.client.factory import A2AClientFactory
 from agntcy_app_sdk.semantic.a2a import (
     ClientConfig,
     SlimTransportConfig,
 )
-
+from agntcy_app_sdk.semantic.a2a.client.factory import A2AClientFactory
 from common.cors import get_cors_allowed_origins
-
-from agents.logistics.farm.agent_executor import FarmAgentExecutor
-from agents.logistics.farm.card import AGENT_CARD
-from agents.logistics.shipper.card import AGENT_CARD as SHIPPER_AGENT_CARD
 from config.config import (
-    SLIM_SERVER,
     OTEL_SDK_DISABLED,
+    SLIM_SERVER,
 )
+from dotenv import load_dotenv
+from fastapi import FastAPI
+from starlette.middleware.cors import CORSMiddleware
+from starlette.responses import JSONResponse
+from starlette.routing import Route
+from uvicorn import Config, Server
 
 PORT = getenv("AGENT_PORT", "9093")
 
@@ -137,7 +132,7 @@ async def serve_all_a2a_interfaces(
     Creates an AgntcyFactory application session and registers every transport
     interface declared in the card's ``additional_interfaces``, which include:
 
-    - **slim** – SLIM-based group communication transport
+    - **slim** – SLIM-based group messaging transport
     - **slimrpc** – point-to-point transport for direct client-agent communication
 
     The card's ``preferred_transport`` (slim) determines the primary ``url``

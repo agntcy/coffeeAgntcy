@@ -57,7 +57,7 @@ export function useMainArea({
 }: MainAreaProps) {
   const fitViewWithViewport = useViewportAwareFitView()
   const isGroupCommConnected =
-    pattern !== "group_communication" || groupCommResponseReceived
+    pattern !== "group_messaging" || groupCommResponseReceived
   const config = useMemo(() => getGraphConfig(pattern), [pattern])
 
   const [nodesDraggable, setNodesDraggable] = useState(true)
@@ -96,19 +96,20 @@ export function useMainArea({
   const [edges, setEdges, onEdgesChange] = useEdgesState(config.edges)
   const animationLock = useRef<boolean>(false)
 
-  const { agenticMode, agenticError } = useWorkflowGraphFromAgenticApi({
-    pattern,
-    selectedWorkflowSummary,
-    setNodes,
-    setEdges,
-    handleOpenIdentityModal,
-    handleOpenOasfModal,
-    onTopologyApplied: () => {
-      setTimeout(() => {
-        fitViewWithViewport({ chatHeight: 0, isExpanded: false })
-      }, 200)
-    },
-  })
+  const { agenticMode, agenticError, staticIdMapActive, restoreEdgeAnimation } =
+    useWorkflowGraphFromAgenticApi({
+      pattern,
+      selectedWorkflowSummary,
+      setNodes,
+      setEdges,
+      handleOpenIdentityModal,
+      handleOpenOasfModal,
+      onTopologyApplied: () => {
+        setTimeout(() => {
+          fitViewWithViewport({ chatHeight: 0, isExpanded: false })
+        }, 200)
+      },
+    })
 
   useEffect(() => {
     if (!agenticError) return
@@ -138,7 +139,7 @@ export function useMainArea({
   )
 
   useEffect(() => {
-    if (pattern !== "on_demand_discovery") return
+    if (pattern !== "a2a_http") return
     setNodes((prevNodes) => {
       const recruiterId =
         prevNodes.find((n) => {
@@ -163,7 +164,8 @@ export function useMainArea({
 
   useMainAreaGraphEffects({
     pattern,
-    skipStaticGraphSync: agenticMode,
+    skipStaticGraphSync: agenticMode && !staticIdMapActive,
+    restoreEdgeAnimation: staticIdMapActive ? restoreEdgeAnimation : undefined,
     isGroupCommConnected,
     setNodes,
     setEdges,
@@ -207,7 +209,7 @@ export function useMainArea({
     const shouldAnimate = buttonClicked && !aiReplied
     if (!shouldAnimate) return
     if (agenticMode) return
-    if (pattern === "group_communication") return
+    if (pattern === "group_messaging") return
     const waitForAnimationAndRun = async () => {
       while (animationLock.current) await delay(100)
       animationLock.current = true
@@ -266,7 +268,7 @@ export function useMainArea({
   const highlightNode = useCallback(
     (nodeId: string) => {
       if (!nodeId) return
-      if (pattern === "group_communication") {
+      if (pattern === "group_messaging") {
         updateStyle(nodeId, HIGHLIGHT.ON)
         setTimeout(() => updateStyle(nodeId, HIGHLIGHT.OFF), 1800)
       }

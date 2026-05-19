@@ -1,30 +1,27 @@
 # Copyright AGNTCY Contributors (https://github.com/agntcy)
 # SPDX-License-Identifier: Apache-2.0
 
-import config.logging_config  # noqa: F401 - runs setup on import; must be first
-
 import asyncio
 import json
 import logging
 import os
 from contextlib import asynccontextmanager
+from pathlib import Path
 
+import config.logging_config  # noqa: F401 - runs setup on import; must be first
+import uvicorn
+from agents.logistics.shipper.card import AGENT_CARD
+from agents.supervisors.logistics.graph import shared
+from agntcy_app_sdk.factory import AgntcyFactory
+from common.cors import get_cors_allowed_origins
+from common.streaming_capability import require_streaming_capability
+from config.config import HOT_RELOAD_MODE, LLM_MODEL, OTEL_SDK_DISABLED
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
-import uvicorn
-from fastapi.responses import StreamingResponse, JSONResponse
-from agntcy_app_sdk.factory import AgntcyFactory
+from fastapi.responses import JSONResponse, StreamingResponse
 from ioa_observe.sdk.tracing import session_start
-
-from common.cors import get_cors_allowed_origins
-
-from agents.supervisors.logistics.graph import shared
-from agents.logistics.shipper.card import AGENT_CARD
-from config.config import LLM_MODEL, HOT_RELOAD_MODE, OTEL_SDK_DISABLED
-from pathlib import Path
-from common.streaming_capability import require_streaming_capability
+from pydantic import BaseModel
 
 logger = logging.getLogger("lungo.logistics.supervisor.main")
 
@@ -78,6 +75,7 @@ app.add_middleware(
 
 class PromptRequest(BaseModel):
   prompt: str
+  workflow_instance_id: str | None = None
 
 @app.post("/agent/prompt")
 async def handle_prompt(request: PromptRequest, req: Request):
@@ -88,7 +86,7 @@ async def handle_prompt(request: PromptRequest, req: Request):
     with session_start() as session_id:
       timeout_val = int(os.getenv("LOGISTIC_TIMEOUT", "200"))
       result = await asyncio.wait_for(
-        logistic_graph.serve(request.prompt),
+        logistic_graph.serve(request.prompt, workflow_instance_id=request.workflow_instance_id),
         timeout=timeout_val
       )
       logger.info(f"Final result from LangGraph: {result}")
@@ -130,10 +128,10 @@ async def connectivity_health(req: Request):
 
 @app.get("/transport/config")
 async def get_config():
-  # Logistics group comm is only supported by SLIM-based moderated group comm
-  return {
-    "transport": "SLIM",
-  }
+    # Logistics group messaging is only supported by SLIM-based moderated group messaging
+    return {
+        "transport": "SLIM",
+    }
 
 
 @app.post("/agent/prompt/stream")
@@ -171,7 +169,7 @@ async def handle_stream_prompt(request: PromptRequest, req: Request):
 
           async def stream_generator():
               try:
-                  async for chunk in logistic_graph.streaming_serve(request.prompt):
+                  async for chunk in logistic_graph.streaming_serve(request.prompt, workflow_instance_id=request.workflow_instance_id):
                       yield json.dumps({"response": chunk, "session_id": session_id["executionID"]}) + "\n"
               except Exception as e:
                   logger.error(f"Error in stream: {e}")

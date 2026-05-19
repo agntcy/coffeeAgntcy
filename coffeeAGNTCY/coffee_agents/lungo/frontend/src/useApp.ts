@@ -19,15 +19,19 @@ import {
   pickDefaultWorkflowSummaryForPattern,
   type WorkflowSummary,
 } from "@/utils/agenticWorkflowsApi"
+import { useActiveWorkflowInstanceStore } from "@/stores/activeWorkflowInstanceStore"
 
 export type { ApiResponse } from "@/types/api"
 
 export function useApp() {
   const { sendMessage } = useAgentAPI()
   const streaming = useAppStreamingState()
+  const activeWorkflowInstanceId = useActiveWorkflowInstanceStore(
+    (s) => s.workflowInstanceId,
+  )
 
   const [selectedPattern, setSelectedPattern] = useState<PatternType>(
-    PATTERNS.GROUP_COMMUNICATION,
+    PATTERNS.GROUP_MESSAGING,
   )
   const [liveGraphConfig, setLiveGraphConfig] = useState<GraphConfig | null>(
     null,
@@ -138,7 +142,7 @@ export function useApp() {
   ])
 
   useEffect(() => {
-    if (selectedPattern === PATTERNS.GROUP_COMMUNICATION) {
+    if (selectedPattern === PATTERNS.GROUP_MESSAGING) {
       if (streaming.groupIsComplete && !streaming.groupIsStreaming) {
         if (streaming.groupFinalResponse) {
           chat.setShowFinalResponse(true)
@@ -162,7 +166,7 @@ export function useApp() {
   ])
 
   useEffect(() => {
-    if (selectedPattern !== PATTERNS.ON_DEMAND_DISCOVERY) return
+    if (selectedPattern !== PATTERNS.A2A_HTTP) return
 
     if (streaming.recruiterStatus === "completed") {
       chat.setIsAgentLoading(false)
@@ -225,7 +229,7 @@ export function useApp() {
       chat.setApiError(false)
 
       try {
-        if (selectedPattern === PATTERNS.GROUP_COMMUNICATION) {
+        if (selectedPattern === PATTERNS.GROUP_MESSAGING) {
           chat.setExecutionKey(Date.now().toString())
           chat.setShowFinalResponse(false)
           chat.setAgentResponse(undefined)
@@ -234,7 +238,7 @@ export function useApp() {
           streamCompleteRef.current = false
           streaming.resetGroup()
           try {
-            await streaming.startStreaming(query)
+            await streaming.startStreaming(query, activeWorkflowInstanceId)
           } catch (err) {
             logger.apiError("/agent/prompt/stream", err)
             chat.setShowFinalResponse(true)
@@ -248,8 +252,8 @@ export function useApp() {
           chat.setShowAuctionStreaming(true)
           chat.setAgentResponse(undefined)
           streaming.reset()
-          await streaming.connect(query)
-        } else if (selectedPattern === PATTERNS.ON_DEMAND_DISCOVERY) {
+          await streaming.connect(query, activeWorkflowInstanceId)
+        } else if (selectedPattern === PATTERNS.A2A_HTTP) {
           chat.setShowFinalResponse(false)
           chat.setShowRecruiterStreaming(true)
           chat.setAgentResponse(undefined)
@@ -283,7 +287,7 @@ export function useApp() {
 
   const handleStreamComplete = useCallback(() => {
     streamCompleteRef.current = true
-    if (selectedPattern === PATTERNS.GROUP_COMMUNICATION) {
+    if (selectedPattern === PATTERNS.GROUP_MESSAGING) {
       chat.setShowFinalResponse(true)
       chat.setIsAgentLoading(true)
       if (chat.pendingResponse) {
@@ -324,7 +328,7 @@ export function useApp() {
     chat.resetChatState()
     chat.setShowFinalResponse(false)
     chat.setPendingResponse("")
-    if (selectedPattern === PATTERNS.GROUP_COMMUNICATION) {
+    if (selectedPattern === PATTERNS.GROUP_MESSAGING) {
       chat.setShowProgressTracker(true)
       streaming.resetGroup()
     } else {

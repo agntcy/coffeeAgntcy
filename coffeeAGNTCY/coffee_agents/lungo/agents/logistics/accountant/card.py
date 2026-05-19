@@ -1,12 +1,7 @@
 # Copyright AGNTCY Contributors (https://github.com/agntcy)
 # SPDX-License-Identifier: Apache-2.0
 
-from a2a.types import (
-    AgentCapabilities,
-    AgentCard,
-    AgentInterface,
-    AgentSkill
-)
+from a2a.types import AgentCapabilities, AgentCard, AgentInterface, AgentSkill
 from config.config import SLIM_SERVER
 
 AGENT_ID = "accountant-agent"
@@ -26,10 +21,10 @@ AGENT_SKILL = AgentSkill(
 )
 
 AGENT_CARD = AgentCard(
-    name='Accountant agent',
-    id='accountant-agent',
-    description='An AI agent that confirms the payment.',
-    version='1.0.0',
+    name="Accountant agent",
+    id="accountant-agent",
+    description="An AI agent that confirms the payment.",
+    version="1.0.0",
     defaultInputModes=["text"],
     defaultOutputModes=["text"],
     capabilities=AgentCapabilities(streaming=True),
@@ -38,9 +33,13 @@ AGENT_CARD = AgentCard(
     preferred_transport="slim",
     url=f"slim://{SLIM_SERVER}/lungo/agents/{AGENT_ID}",
     additional_interfaces=[
-        # slim-based group comm transport
-        AgentInterface(transport="slim", url=f"slim://{SLIM_SERVER}/lungo/agents/{AGENT_ID}"),
+        # slim-based group messaging transport
+        AgentInterface(
+            transport="slim", url=f"slim://{SLIM_SERVER}/lungo/agents/{AGENT_ID}"
+        ),
         # point-to-point transport for direct client-agent communication
-        AgentInterface(transport="slimrpc", url=f"slim://{SLIM_SERVER}/lungo/agents/{AGENT_ID}"),
+        AgentInterface(
+            transport="slimrpc", url=f"slim://{SLIM_SERVER}/lungo/agents/{AGENT_ID}"
+        ),
     ],
 )

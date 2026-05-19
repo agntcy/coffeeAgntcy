@@ -13,6 +13,11 @@ services:
       - FARM_AGENT_PORT=9999
       - OTLP_HTTP_ENDPOINT=${OTLP_HTTP_ENDPOINT:-http://otel-collector:4318}
       - IDENTITY_AUTH_ENABLED=disabled
+      - DEFAULT_MESSAGE_TRANSPORT=${DEFAULT_MESSAGE_TRANSPORT}
+      - TRANSPORT_SERVER_ENDPOINT=${TRANSPORT_SERVER_ENDPOINT:-http://slim:46357}
+      - SLIM_SERVER=${SLIM_SERVER}
+      - NATS_SERVER=${NATS_SERVER}
+      - SLIM_SHARED_SECRET=${SLIM_SHARED_SECRET}
       - ENABLE_HTTP=true
     ports:
       - "9999:9999"
@@ -129,6 +134,7 @@ services:
       - OTLP_HTTP_ENDPOINT=${OTLP_HTTP_ENDPOINT:-http://otel-collector:4318}
       - IDENTITY_AUTH_ENABLED=${IDENTITY_AUTH_ENABLED:-} # Disabled by default
       - IDENTITY_SERVICE_API_KEY=${IDENTITY_SERVICE_API_KEY_AUCTION_SUPERVISOR:-dummy_api_key}
+      - WORKFLOW_API_URL=${WORKFLOW_API_URL:-http://agentic-workflows-api:9105}
       - CORS_ALLOWED_ORIGINS=${CORS_ALLOWED_ORIGINS:-}
       - WORKFLOW_API_URL=http://agentic-workflows-api:9105
       - WORKFLOW_API_KEY=${WORKFLOW_API_KEY:?WORKFLOW_API_KEY must be set in .env}
@@ -405,6 +411,7 @@ services:
       - NATS_SERVER=${NATS_SERVER}
       - SLIM_SHARED_SECRET=${SLIM_SHARED_SECRET}
       - OTLP_HTTP_ENDPOINT=${OTLP_HTTP_ENDPOINT:-http://otel-collector:4318}
+      - WORKFLOW_API_URL=${WORKFLOW_API_URL:-http://agentic-workflows-api:9105}
       - CORS_ALLOWED_ORIGINS=${CORS_ALLOWED_ORIGINS:-}
       - WORKFLOW_API_URL=http://agentic-workflows-api:9105
       - WORKFLOW_API_KEY=${WORKFLOW_API_KEY:?WORKFLOW_API_KEY must be set in .env}
@@ -586,6 +593,7 @@ services:
       - NATS_SERVER=${NATS_SERVER}
       - SLIM_SHARED_SECRET=${SLIM_SHARED_SECRET}
       - OTLP_HTTP_ENDPOINT=${OTLP_HTTP_ENDPOINT:-http://otel-collector:4318}
+      - WORKFLOW_API_URL=${WORKFLOW_API_URL:-http://agentic-workflows-api:9105}
       - CORS_ALLOWED_ORIGINS=${CORS_ALLOWED_ORIGINS:-}
       - WORKFLOW_API_URL=http://agentic-workflows-api:9105
       - WORKFLOW_API_KEY=${WORKFLOW_API_KEY:?WORKFLOW_API_KEY must be set in .env}
