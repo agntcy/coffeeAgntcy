@@ -1,12 +1,28 @@
-# Claude Code Plugin
+# Skills-Driven Recruiter for Claude Code
 
-**agntcy-discover-connect** is a [Claude Code](https://docs.anthropic.com/en/docs/claude-code) plugin that brings the recruiter's agent discovery and dynamic invokation. 
+**agntcy-discover-connect** is a [Claude Code](https://docs.anthropic.com/en/docs/claude-code) plugin for **discovering, verifying, and recruiting remote agents as reusable skills**.
 
-Features:
+It is built around a simple idea:
+
+1. **Discover** remote agents through the **AGNTCY Directory Service**
+2. **Verify** their published OASF records locally with `dirctl` and inspect identity and policies with the **AGNTCY Identity Service**
+3. **Connect** to recruited agents over **HTTP or SLIM**
+4. **Generate slash-command interaction skills automatically** so the recruited agent becomes part of your Claude Code workflow
+
+## What this plugin emphasizes
+
+- **Skills-driven interaction** — remote agents are turned into Claude Code slash-command skills under `.claude/skills/<name>/`
+- **Verification before trust** — candidate records are checked locally with `dirctl` (Sigstore-based verification)
+- **Identity-aware recruitment** — recruited agents can be inspected against the AGNTCY identity service for badges and policy metadata
+- **Transport flexibility** — communicate with remote agents over standard HTTP JSON-RPC or **SLIM** when advertised by the agent card
+- **Automatic skill generation** — recruiting an agent creates a ready-to-use interaction skill from the plugin template
+
+## Core capabilities
 
 - Search the AGNTCY directory for remote A2A agents
 - Verify OASF record signatures locally with `dirctl` (Sigstore)
-- Preview candidates and connect them as slash-command skills under `.claude/skills/<name>/`
+- Preview candidates before connecting them
+- Generate slash-command skills automatically under `.claude/skills/<name>/`
 - Send messages directly to any A2A endpoint over HTTP or SLIM transport
 - Inspect identity-service badges and policies attached to recruited agents
 
@@ -21,6 +37,20 @@ Features:
 | `SLIM_SHARED_SECRET` | `/a2a-send` and recruited skills, **only when the target agent advertises a `slim`/`slimrpc` interface** | Must match the secret the target agent was started with. Without it, the SLIM handshake fails with `Code=15, Session handshake failed: failed to add participant to session`. For the `coffee_agents/lungo` stack, copy the value from `coffee_agents/lungo/.env`. HTTP-only agents don't need this. | `slim-shared-secret-…` |
 
 `/recruit` does not require any of these — you can discover and connect agents without identity-service credentials or a SLIM secret. Export the ones you need in the shell that runs `claude`, or load them from your `.env` before launch (e.g. `set -a; source .env; set +a`). The plugin commands read whatever is in the environment — they do not search for or auto-load any `.env` file. If a required variable is unset for the command you're running, that command exits with an error indicating which variable to set; other commands continue to work.
+
+## How recruitment works
+
+The recruiter is intentionally **skills-first**:
+
+1. Search for a remote agent in the AGNTCY directory
+2. Verify the candidate's OASF record locally with `dirctl`
+3. Review the candidate summary in Claude Code
+4. Select one or more agents to recruit
+5. Generate a dedicated slash-command skill for each selected agent
+6. Optionally inspect identity badges and policy attachments with `/agntcy-discover-connect:check-identity`
+7. Interact with the recruited agent directly from Claude Code, using the generated skill
+
+This means the output of recruitment is not just a one-off connection — it is a **persistent interaction surface** embedded in your local Claude Code environment.
 
 ## Plugin Installation
 
@@ -44,6 +74,8 @@ All commands live under the `agntcy-discover-connect` plugin namespace.
 
 Search the AGNTCY directory for agents matching your query, verify each record's Sigstore signature with `dirctl`, preview candidates in a summary table, and connect selected agents as slash-command **skills** under `.claude/skills/<name>/`.
 
+This is the main entry point for **skills-driven remote agent recruitment**.
+
 ### `/agntcy-discover-connect:a2a-send <url> <message>`
 
 Send a message directly to any A2A agent endpoint for quick testing or one-off communication.
@@ -63,7 +95,7 @@ Relevant flags:
 
 ### `/agntcy-discover-connect:check-identity <name>`
 
-Inspect the AGNTCY identity-service badge and policies attached to a recruited skill. Read-only; does not modify the skill. Requires `IDENTITY_API_SERVER_URL` and `IDENTITY_SERVICE_API_KEY` to be exported — see [Environment variables](#plugin-installation) above.
+Inspect the AGNTCY identity-service badge and policies attached to a recruited skill. Read-only; does not modify the skill. Requires `IDENTITY_API_SERVER_URL` and `IDENTITY_SERVICE_API_KEY` to be exported — see [Environment variables](#environment-variables) above.
 
 **Example usage:**
 
@@ -108,7 +140,7 @@ plugin/
 │   │   ├── go.mod
 │   │   └── go.sum
 │   ├── identity_client.py       # stdlib client for the AGNTCY identity service
-│   └── skill-template.md        # template copied + sed'd by /agntcy-discover-connect:recruit per skill
+│   └── skill-template.md        # template used to generate one interaction skill per recruited agent
 └── skills/
     └── a2a-protocol/            # A2A protocol knowledge skill
         ├── SKILL.md
