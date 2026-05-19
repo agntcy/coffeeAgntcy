@@ -10,7 +10,7 @@ components in the **AGNTCY Internet of Agents** ecosystem can work together.
 
 It gives examples of the components of AGNTCY working together as a **Multi-agent System (MAS)**.
 
-This reference agentic application demonstrates how to:
+This reference agentic application demonstrates:
 
 - How **SLIM** enables **request-reply** , **unicast (fire & forget)** and **group communication** patterns.
 - How tools and transports can be reused across agent implementations (e.g., **SLIM**, **NATS**, **MCP**)
