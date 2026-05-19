@@ -2,42 +2,50 @@
 
 ## 0.1.0 — Heartbeat (2026-05-19)
 
-Milestone release: **live workflow-instance events** on the backend and **dynamic graph animations** in the Lungo UI, plus agentic-workflows APIs, SSE streaming, and A2A card-driven transport selection.
+Milestone release: **live workflow-instance events** on the backend and **dynamic graph animations** in the Lungo UI, plus agentic-workflows APIs, SSE streaming, SLIM-first transport, and A2A card-driven transport selection.
 
 ### Summary
 
 **Breaking / migration (read first)**
 
-- **Lungo transport defaults to SLIM** — `DEFAULT_MESSAGE_TRANSPORT=SLIM` replaces NATS-as-default. `TRANSPORT_SERVER_ENDPOINT` is removed in favor of `SLIM_SERVER`, `NATS_SERVER`, and **`SLIM_SHARED_SECRET`** (required; use a random 32+ character value).
+- **Lungo transport defaults to SLIM** — `DEFAULT_MESSAGE_TRANSPORT` is now `SLIM` (was NATS). Configure **`SLIM_SERVER`**, **`NATS_SERVER`**, and **`SLIM_SHARED_SECRET`** (required; use a random 32+ character value). `TRANSPORT_SERVER_ENDPOINT` remains supported in Compose/Helm for compatibility; prefer the new variables in `.env` (see `.env.example`).
 - **Split frontend configuration** — all `VITE_*` variables belong in **`lungo/frontend/.env`** only (copy from `frontend/.env.example`). Do not duplicate them in `lungo/.env`.
-- **Docker Compose profiles** — `COMPOSE_PROFILES` now includes `frontend` by default. For local Vite dev (`npm run dev`), **omit** `frontend` from `COMPOSE_PROFILES` and run Compose + Vite as described in the [Lungo README](coffeeAGNTCY/coffee_agents/lungo/README.md).
-- **CORS** — optional `CORS_ALLOWED_ORIGINS` (comma-separated UI origins). When unset, defaults are `http://localhost:3000` and `http://127.0.0.1:3000`.
+- **Docker Compose profiles** — `COMPOSE_PROFILES` includes `frontend` by default. For local Vite dev (`npm run dev`), **omit** `frontend` from `COMPOSE_PROFILES` and run Compose + Vite as described in the [Lungo README](coffeeAGNTCY/coffee_agents/lungo/README.md).
+- **CORS** — optional `CORS_ALLOWED_ORIGINS` (comma-separated browser origins). When unset, defaults are `http://localhost:3000` and `http://127.0.0.1:3000`.
 - **AGNTCY Directory v1.0.0** — Lungo dev deps pin `agntcy-dir==1.0.0`; refresh local Directory/OASF tooling if you push or query records.
-- **Pinned LLM stack** — `litellm` and `langchain-litellm` are exact-pinned in Corto and Recruiter (see Dependencies).
+- **Helm chart versions** — Lungo agent/MCP subcharts bump to **0.1.0**; umbrellas **`lungo-local-cluster`** and **`corto-local-cluster`** to **0.2.0**; new **`agentic-workflows-api@0.0.2`**; **`corto-exchange@0.0.8`**. Run `helm dependency update` on umbrella charts before upgrade.
+- **Pinned LLM stack (Corto/Recruiter)** — `litellm` and `langchain-litellm` are exact-pinned (see Dependencies).
 
 **Migration steps**
 
 1. From `coffeeAGNTCY/coffee_agents/lungo/`:
 
-   ```sh
-   cp .env.example .env
-   cp frontend/.env.example frontend/.env
-   ```
+    ```sh
+    cp .env.example .env
+    cp frontend/.env.example frontend/.env
+    ```
 
 2. In `lungo/.env`, set transport (minimal SLIM setup):
 
-   ```env
-   DEFAULT_MESSAGE_TRANSPORT=SLIM
-   SLIM_SERVER="slim:46357"
-   NATS_SERVER="nats:4222"
-   SLIM_SHARED_SECRET="<random-32plus-chars>"
-   ```
+    ```env
+    DEFAULT_MESSAGE_TRANSPORT=SLIM
+    SLIM_SERVER="slim:46357"
+    NATS_SERVER="nats:4222"
+    SLIM_SHARED_SECRET="<random-32plus-chars>"
+    ```
 
    For NATS instead: `DEFAULT_MESSAGE_TRANSPORT=NATS` and ensure NATS is running.
 
-3. Reconcile `COMPOSE_PROFILES` with how you run the UI (Compose `frontend` profile vs `npm run dev`).
-4. Reinstall Python deps: `uv sync` in `lungo/`, `corto/`, and `recruiter/` as needed.
-5. If the UI is not on port 3000, set `CORS_ALLOWED_ORIGINS` to your browser origin.
+3. In `lungo/frontend/.env`, point the UI at the new API (example):
+
+    ```env
+    VITE_AGENTIC_WORKFLOWS_API_URL=http://127.0.0.1:9105
+    ```
+
+4. Reconcile `COMPOSE_PROFILES` with how you run the UI (Compose `frontend` profile vs `npm run dev`).
+5. Reinstall Python deps: `uv sync` in `lungo/`, `corto/`, and `recruiter/` as needed.
+6. If the UI is not on port 3000, set `CORS_ALLOWED_ORIGINS` to your browser origin. Example: `http://localhost:1234`.
+7. **Helm / KinD:** upgrade `lungo-local-cluster` to **0.2.0**, run `helm dependency update`, and set per-subchart `config.slimServer`, `config.natsServer`, and `SLIM_SHARED_SECRET` (via `externalSecrets` or `config.slimSharedSecret`). See `lungo/deployment/helm/local-cluster/README.md`.
 
 **Highlights**
 
@@ -45,7 +53,7 @@ Milestone release: **live workflow-instance events** on the backend and **dynami
 - **Dynamic Lungo graph** — React Flow animations driven by live workflow-instance events.
 - **Agentic workflows API** — catalog/sub-API, LHS menu wired to workflows, workflow-context propagation across supervisors.
 - **A2A card-driven transport** — multi-transport agent cards; supervisors use `A2AClientFactory` and async iterator messaging.
-- **SLIM transport in Compose/Helm** — updated charts and compose for current SLIM server layout.
+- **SLIM transport in Compose/Helm** — SLIM-first defaults, shared-secret wiring, and chart bumps for local-cluster installs.
 - **Recruiter** — Claude Code plugin for Directory discovery and A2A messaging.
 - **Separate UI Docker profile** — optional `frontend` Compose profile and documented local UI workflow.
 
