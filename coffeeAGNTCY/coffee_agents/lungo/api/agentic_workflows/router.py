@@ -44,7 +44,16 @@ from common.workflow_instance_store import (
     WorkflowInstanceStateStore,
     WorkflowInstanceStoreClosedError,
 )
-from fastapi import APIRouter, Depends, HTTPException, Path, Query, Request, Response
+from fastapi import (
+    APIRouter,
+    BackgroundTasks,
+    Depends,
+    HTTPException,
+    Path,
+    Query,
+    Request,
+    Response,
+)
 from fastapi.responses import RedirectResponse, StreamingResponse
 from schema import errors as schema_errors
 from schema.types import Event, Workflow, WorkflowInstance, instance_id_from_uuid
@@ -361,11 +370,11 @@ def create_agentic_workflows_router() -> APIRouter:
 
     @router.delete(
         "/agentic-workflows/{workflow_name}/instances/{workflow_instance_id}/",
-        status_code=204,
         summary="Delete workflow instance",
     )
     async def delete_workflow_instance(
         request: Request,
+        background_tasks: BackgroundTasks,
         workflow_name: Annotated[str, Path(min_length=1)],
         workflow_instance_id: Annotated[
             UUID,
@@ -377,25 +386,29 @@ def create_agentic_workflows_router() -> APIRouter:
             ),
         ],
     ) -> Response:
-        """DELETE instance from the store; second delete returns 404."""
+        """DELETE instance: 202 when present, 204 when already absent (idempotent)."""
         if workflow_name not in get_workflows():
             raise HTTPException(
                 status_code=404, detail=f"Workflow not found: {workflow_name}"
             )
         canonical_id = _canonical_instance_uri(workflow_instance_id)
         store = _workflow_instance_store(request)
-        deleted = await asyncio.to_thread(
+        existing = await asyncio.to_thread(
+            workflow_instance_from_store,
+            store,
+            workflow_name,
+            canonical_id,
+            topology_only=True,
+        )
+        if existing is None:
+            return Response(status_code=204)
+        background_tasks.add_task(
             delete_workflow_instance_from_store,
             store,
             workflow_name,
             canonical_id,
         )
-        if not deleted:
-            raise HTTPException(
-                status_code=404,
-                detail="Workflow instance not found",
-            )
-        return Response(status_code=204)
+        return Response(status_code=202)
 
     @router.post(
         "/agentic-workflows/{workflow_name}/instances/{workflow_instance_id}/events/",

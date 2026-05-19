@@ -19,7 +19,7 @@ service:
 config:
   corsAllowedOrigins: ""
   # Set for local/dev chart installs only; production should use an external Secret.
-  workflowApiKey: ""
+  workflowApiKey: "TheAnswerIs42"
 
 workflowApiKeySecret:
   name: agentic-workflows-api-api-key-secret

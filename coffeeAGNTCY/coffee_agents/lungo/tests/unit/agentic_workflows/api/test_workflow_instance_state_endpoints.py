@@ -5,6 +5,7 @@
 
 from __future__ import annotations
 
+from typing import NamedTuple
 from unittest.mock import patch
 from uuid import UUID, uuid4
 
@@ -278,38 +279,84 @@ def test_multiple_instantiations_list_two_instances(client: TestClient) -> None:
     assert g2.json()["id"] == wid2
 
 
-def test_delete_instance_returns_204_then_404(client: TestClient) -> None:
+class DeleteHttpCase(NamedTuple):
+    case_id: str
+    workflow_name: str
+    path_uuid: UUID
+    expected_status: int
+
+
+_DELETE_HTTP_CASES: tuple[DeleteHttpCase, ...] = (
+    DeleteHttpCase(
+        case_id="unknown_workflow",
+        workflow_name="NoSuch",
+        path_uuid=UUID("550e8400-e29b-41d4-a716-446655440011"),
+        expected_status=404,
+    ),
+    DeleteHttpCase(
+        case_id="unknown_instance_on_known_workflow",
+        workflow_name="InstTestWf",
+        path_uuid=UUID("550e8400-e29b-41d4-a716-446655440012"),
+        expected_status=204,
+    ),
+)
+
+
+@pytest.mark.parametrize(
+    "case", [pytest.param(c, id=c.case_id) for c in _DELETE_HTTP_CASES]
+)
+def test_delete_workflow_instance_http_status(
+    client: TestClient,
+    case: DeleteHttpCase,
+) -> None:
+    r = client.delete(
+        f"/agentic-workflows/{case.workflow_name}/instances/{case.path_uuid}/",
+    )
+    assert r.status_code == case.expected_status
+
+
+class DeleteIdempotentCase(NamedTuple):
+    case_id: str
+    delete_index: int
+    expected_status: int
+
+
+_DELETE_IDEMPOTENT_CASES: tuple[DeleteIdempotentCase, ...] = (
+    DeleteIdempotentCase(
+        case_id="first_delete_existing_instance",
+        delete_index=0,
+        expected_status=202,
+    ),
+    DeleteIdempotentCase(
+        case_id="second_delete_already_removed",
+        delete_index=1,
+        expected_status=204,
+    ),
+)
+
+
+@pytest.mark.parametrize(
+    "case", [pytest.param(c, id=c.case_id) for c in _DELETE_IDEMPOTENT_CASES]
+)
+def test_delete_workflow_instance_idempotent_status(
+    client: TestClient,
+    case: DeleteIdempotentCase,
+) -> None:
     wf_name = "InstTestWf"
     post = client.post(f"/agentic-workflows/{wf_name}/")
     assert post.status_code == 200
     wid = post.json()["workflow_instance_id"]
     path_uuid = UUID(wid.removeprefix("instance://"))
 
-    deleted = client.delete(
-        f"/agentic-workflows/{wf_name}/instances/{path_uuid}/",
-    )
-    assert deleted.status_code == 204
+    for index in range(case.delete_index + 1):
+        r = client.delete(f"/agentic-workflows/{wf_name}/instances/{path_uuid}/")
+        if index == case.delete_index:
+            assert r.status_code == case.expected_status
 
-    again = client.delete(
-        f"/agentic-workflows/{wf_name}/instances/{path_uuid}/",
-    )
-    assert again.status_code == 404
-
-    listed = client.get(f"/agentic-workflows/{wf_name}/instances/")
-    assert listed.status_code == 200
-    assert wid not in listed.json()
-
-
-def test_delete_unknown_workflow_returns_404(client: TestClient) -> None:
-    uid = UUID("550e8400-e29b-41d4-a716-446655440011")
-    r = client.delete(f"/agentic-workflows/NoSuch/instances/{uid}/")
-    assert r.status_code == 404
-
-
-def test_delete_unknown_instance_returns_404(client: TestClient) -> None:
-    uid = UUID("550e8400-e29b-41d4-a716-446655440012")
-    r = client.delete(f"/agentic-workflows/InstTestWf/instances/{uid}/")
-    assert r.status_code == 404
+    if case.delete_index == 1:
+        listed = client.get(f"/agentic-workflows/{wf_name}/instances/")
+        assert listed.status_code == 200
+        assert wid not in listed.json()
 
 
 def test_instantiate_delete_then_post_event_returns_404(
@@ -325,7 +372,7 @@ def test_instantiate_delete_then_post_event_returns_404(
         client.delete(
             f"/agentic-workflows/{wf_name}/instances/{path_uuid}/",
         ).status_code
-        == 204
+        == 202
     )
 
     event_body = build_instantiate_seed_event(
@@ -355,7 +402,7 @@ def test_instantiate_twice_delete_one_list_count(
     u1 = UUID(wid1.removeprefix("instance://"))
     assert (
         client.delete(f"/agentic-workflows/{wf_name}/instances/{u1}/").status_code
-        == 204
+        == 202
     )
     listed_after = client.get(f"/agentic-workflows/{wf_name}/instances/")
     assert len(listed_after.json()) == 1

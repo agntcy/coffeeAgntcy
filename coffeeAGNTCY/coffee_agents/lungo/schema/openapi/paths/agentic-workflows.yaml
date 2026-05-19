@@ -205,13 +205,15 @@ paths:
       operationId: deleteWorkflowInstance
       summary: Delete workflow instance
       description: >
-        Removes the instance from the in-memory store. First delete returns 204;
-        a second delete for the same id returns 404.
+        Schedules removal from the in-memory store. Existing instance returns 202;
+        already absent instance returns 204 (idempotent). Unknown workflow returns 404.
       responses:
+        "202":
+          description: Delete accepted
         "204":
-          description: Instance removed
+          description: No instance to delete (already removed or never existed)
         "404":
-          description: Workflow or instance not found
+          description: Workflow not found
 
   /agentic-workflows/{workflow_name}/instances/{workflow_instance_id}/events/:
     parameters:

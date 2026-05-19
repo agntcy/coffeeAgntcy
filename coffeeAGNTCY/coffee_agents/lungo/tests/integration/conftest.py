@@ -13,7 +13,7 @@ from urllib.parse import urlparse
 os.environ["OTEL_SDK_DISABLED"] = "false"
 os.environ.setdefault("OTLP_HTTP_ENDPOINT", "http://127.0.0.1:4318")
 # Required by docker-compose interpolation for several services (compose config during up/down).
-os.environ.setdefault("WORKFLOW_API_KEY", "integration-test-placeholder")
+os.environ.setdefault("WORKFLOW_API_KEY", "TheAnswerIs42")
 
 import re
 import time

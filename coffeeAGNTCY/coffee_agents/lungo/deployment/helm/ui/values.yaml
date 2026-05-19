@@ -22,7 +22,7 @@ config:
   grafanaUrl: ""
   discoveryAppApiUrl: ""
   agenticWorkflowsApiUrl: ""
-  agenticWorkflowsApiKey: ""
+  agenticWorkflowsApiKey: "TheAnswerIs42"
   directoryServerUrl: ""
   directoryVersion: ""
 

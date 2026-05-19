@@ -13,7 +13,7 @@ if OTEL_SDK_DISABLED:
     os.environ.pop("OTLP_HTTP_ENDPOINT", None)
 
 WORKFLOW_API_URL = os.getenv("WORKFLOW_API_URL", "http://localhost:9105")
-WORKFLOW_API_KEY = os.getenv("WORKFLOW_API_KEY", "")
+WORKFLOW_API_KEY = os.getenv("WORKFLOW_API_KEY", "TheAnswerIs42")
 
 EMIT_WORKFLOW_EVENTS = os.getenv("EMIT_WORKFLOW_EVENTS", "true").strip().lower() in ("true", "1", "yes")
 

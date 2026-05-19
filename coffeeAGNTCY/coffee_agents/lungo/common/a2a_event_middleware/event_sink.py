@@ -15,6 +15,7 @@ from urllib.parse import quote
 
 import httpx
 
+from config.config import WORKFLOW_API_KEY, WORKFLOW_API_URL
 from schema.types import Event
 
 logger = logging.getLogger("lungo.common.event_middleware")
@@ -39,18 +40,8 @@ class WorkflowAPIEventSink(EventSink):
     _INSTANCE_ID_PREFIX = "instance://"
 
     def __init__(self, base_url: str | None = None, api_key: str | None = None) -> None:
-        if base_url is None:
-            from config.config import WORKFLOW_API_URL
-
-            self._base_url = WORKFLOW_API_URL
-        else:
-            self._base_url = base_url
-        if api_key is None:
-            from config.config import WORKFLOW_API_KEY
-
-            self._api_key = WORKFLOW_API_KEY
-        else:
-            self._api_key = api_key
+        self._base_url = WORKFLOW_API_URL if base_url is None else base_url
+        self._api_key = WORKFLOW_API_KEY if api_key is None else api_key
 
         self._client: httpx.AsyncClient | None = None
         self._pending: set[asyncio.Task] = set()
