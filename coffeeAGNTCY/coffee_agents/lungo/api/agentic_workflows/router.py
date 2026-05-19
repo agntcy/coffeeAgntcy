@@ -26,8 +26,10 @@ from api.agentic_workflows.dtos import (
     WorkflowSummary,
     WorkflowSummaryMapResponse,
 )
+from api.agentic_workflows.auth import require_workflow_api_key
 from api.agentic_workflows.instance_lifecycle import (
     build_instantiate_seed_event,
+    delete_workflow_instance_from_store,
     instances_map_for_workflow,
     workflow_instance_from_store,
 )
@@ -42,7 +44,16 @@ from common.workflow_instance_store import (
     WorkflowInstanceStateStore,
     WorkflowInstanceStoreClosedError,
 )
-from fastapi import APIRouter, HTTPException, Path, Query, Request
+from fastapi import (
+    APIRouter,
+    BackgroundTasks,
+    Depends,
+    HTTPException,
+    Path,
+    Query,
+    Request,
+    Response,
+)
 from fastapi.responses import RedirectResponse, StreamingResponse
 from schema import errors as schema_errors
 from schema.types import Event, Workflow, WorkflowInstance, instance_id_from_uuid
@@ -114,7 +125,10 @@ def _canonical_instance_uri(instance_uuid: UUID) -> str:
 
 def create_agentic_workflows_router() -> APIRouter:
     """Build an APIRouter for all agentic-workflows endpoints (single tag)."""
-    router = APIRouter(tags=[_TAG])
+    router = APIRouter(
+        tags=[_TAG],
+        dependencies=[Depends(require_workflow_api_key)],
+    )
 
     @router.get(
         "/",
@@ -354,6 +368,48 @@ def create_agentic_workflows_router() -> APIRouter:
             )
         return inst
 
+    @router.delete(
+        "/agentic-workflows/{workflow_name}/instances/{workflow_instance_id}/",
+        summary="Delete workflow instance",
+    )
+    async def delete_workflow_instance(
+        request: Request,
+        background_tasks: BackgroundTasks,
+        workflow_name: Annotated[str, Path(min_length=1)],
+        workflow_instance_id: Annotated[
+            UUID,
+            Path(
+                description=(
+                    "Workflow instance UUID (path segment); canonical JSON id is "
+                    "instance://{uuid} (InstanceId)."
+                ),
+            ),
+        ],
+    ) -> Response:
+        """DELETE instance: 202 when present, 204 when already absent (idempotent)."""
+        if workflow_name not in get_workflows():
+            raise HTTPException(
+                status_code=404, detail=f"Workflow not found: {workflow_name}"
+            )
+        canonical_id = _canonical_instance_uri(workflow_instance_id)
+        store = _workflow_instance_store(request)
+        existing = await asyncio.to_thread(
+            workflow_instance_from_store,
+            store,
+            workflow_name,
+            canonical_id,
+            topology_only=True,
+        )
+        if existing is None:
+            return Response(status_code=204)
+        background_tasks.add_task(
+            delete_workflow_instance_from_store,
+            store,
+            workflow_name,
+            canonical_id,
+        )
+        return Response(status_code=202)
+
     @router.post(
         "/agentic-workflows/{workflow_name}/instances/{workflow_instance_id}/events/",
         status_code=204,
@@ -386,6 +442,23 @@ def create_agentic_workflows_router() -> APIRouter:
             raise HTTPException(
                 status_code=400,
                 detail="Event does not target the path workflow_instance_id",
+            )
+        catalog = get_workflows() or {}
+        if workflow_name not in catalog:
+            raise HTTPException(
+                status_code=404, detail=f"Workflow not found: {workflow_name}"
+            )
+        existing = await asyncio.to_thread(
+            workflow_instance_from_store,
+            store,
+            workflow_name,
+            canonical_id,
+            topology_only=True,
+        )
+        if existing is None:
+            raise HTTPException(
+                status_code=404,
+                detail="Workflow instance not found",
             )
         payload = event.model_dump(mode="json", exclude_none=True)
         try:

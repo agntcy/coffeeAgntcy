@@ -5,6 +5,7 @@
 
 from __future__ import annotations
 
+from typing import NamedTuple
 from unittest.mock import patch
 from uuid import UUID, uuid4
 
@@ -65,9 +66,12 @@ def app_with_store() -> FastAPI:
 
 
 @pytest.fixture()
-def client(app_with_store: FastAPI) -> TestClient:
+def client(
+    app_with_store: FastAPI,
+    workflow_api_headers: dict[str, str],
+) -> TestClient:
     with patch(_PATCH_GET_WORKFLOWS, return_value=_MINIMAL_WORKFLOWS):
-        with TestClient(app_with_store) as c:
+        with TestClient(app_with_store, headers=workflow_api_headers) as c:
             yield c
 
 
@@ -166,32 +170,38 @@ def test_instances_map_for_workflow_missing_block() -> None:
     assert instances_map_for_workflow(data, "InstTestWf") == {}
 
 
-def test_instantiate_without_store_returns_503() -> None:
+def test_instantiate_without_store_returns_503(
+    workflow_api_headers: dict[str, str],
+) -> None:
     app = FastAPI(openapi_url=None, docs_url=None, redoc_url=None)
     app.include_router(create_agentic_workflows_router())
     with patch(_PATCH_GET_WORKFLOWS, return_value=_MINIMAL_WORKFLOWS):
-        with TestClient(app) as client:
+        with TestClient(app, headers=workflow_api_headers) as client:
             r = client.post("/agentic-workflows/InstTestWf/")
     assert r.status_code == 503
     assert "not configured" in r.json()["detail"].lower()
 
 
-def test_list_instances_without_store_returns_503() -> None:
+def test_list_instances_without_store_returns_503(
+    workflow_api_headers: dict[str, str],
+) -> None:
     app = FastAPI(openapi_url=None, docs_url=None, redoc_url=None)
     app.include_router(create_agentic_workflows_router())
     with patch(_PATCH_GET_WORKFLOWS, return_value=_MINIMAL_WORKFLOWS):
-        with TestClient(app) as client:
+        with TestClient(app, headers=workflow_api_headers) as client:
             r = client.get("/agentic-workflows/InstTestWf/instances/")
     assert r.status_code == 503
     assert "not configured" in r.json()["detail"].lower()
 
 
-def test_get_instance_without_store_returns_503() -> None:
+def test_get_instance_without_store_returns_503(
+    workflow_api_headers: dict[str, str],
+) -> None:
     app = FastAPI(openapi_url=None, docs_url=None, redoc_url=None)
     app.include_router(create_agentic_workflows_router())
     uid = UUID("550e8400-e29b-41d4-a716-4466554400dd")
     with patch(_PATCH_GET_WORKFLOWS, return_value=_MINIMAL_WORKFLOWS):
-        with TestClient(app) as client:
+        with TestClient(app, headers=workflow_api_headers) as client:
             r = client.get(f"/agentic-workflows/InstTestWf/instances/{uid}/")
     assert r.status_code == 503
     assert "not configured" in r.json()["detail"].lower()
@@ -267,3 +277,154 @@ def test_multiple_instantiations_list_two_instances(client: TestClient) -> None:
     assert g2.status_code == 200
     assert g1.json()["id"] == wid1
     assert g2.json()["id"] == wid2
+
+
+class DeleteHttpCase(NamedTuple):
+    case_id: str
+    workflow_name: str
+    path_uuid: UUID
+    expected_status: int
+
+
+_DELETE_HTTP_CASES: tuple[DeleteHttpCase, ...] = (
+    DeleteHttpCase(
+        case_id="unknown_workflow",
+        workflow_name="NoSuch",
+        path_uuid=UUID("550e8400-e29b-41d4-a716-446655440011"),
+        expected_status=404,
+    ),
+    DeleteHttpCase(
+        case_id="unknown_instance_on_known_workflow",
+        workflow_name="InstTestWf",
+        path_uuid=UUID("550e8400-e29b-41d4-a716-446655440012"),
+        expected_status=204,
+    ),
+)
+
+
+@pytest.mark.parametrize(
+    "case", [pytest.param(c, id=c.case_id) for c in _DELETE_HTTP_CASES]
+)
+def test_delete_workflow_instance_http_status(
+    client: TestClient,
+    case: DeleteHttpCase,
+) -> None:
+    r = client.delete(
+        f"/agentic-workflows/{case.workflow_name}/instances/{case.path_uuid}/",
+    )
+    assert r.status_code == case.expected_status
+
+
+class DeleteIdempotentCase(NamedTuple):
+    case_id: str
+    delete_index: int
+    expected_status: int
+
+
+_DELETE_IDEMPOTENT_CASES: tuple[DeleteIdempotentCase, ...] = (
+    DeleteIdempotentCase(
+        case_id="first_delete_existing_instance",
+        delete_index=0,
+        expected_status=202,
+    ),
+    DeleteIdempotentCase(
+        case_id="second_delete_already_removed",
+        delete_index=1,
+        expected_status=204,
+    ),
+)
+
+
+@pytest.mark.parametrize(
+    "case", [pytest.param(c, id=c.case_id) for c in _DELETE_IDEMPOTENT_CASES]
+)
+def test_delete_workflow_instance_idempotent_status(
+    client: TestClient,
+    case: DeleteIdempotentCase,
+) -> None:
+    wf_name = "InstTestWf"
+    post = client.post(f"/agentic-workflows/{wf_name}/")
+    assert post.status_code == 200
+    wid = post.json()["workflow_instance_id"]
+    path_uuid = UUID(wid.removeprefix("instance://"))
+
+    for index in range(case.delete_index + 1):
+        r = client.delete(f"/agentic-workflows/{wf_name}/instances/{path_uuid}/")
+        if index == case.delete_index:
+            assert r.status_code == case.expected_status
+
+    if case.delete_index == 1:
+        listed = client.get(f"/agentic-workflows/{wf_name}/instances/")
+        assert listed.status_code == 200
+        assert wid not in listed.json()
+
+
+def test_instantiate_delete_then_post_event_returns_404(
+    client: TestClient,
+) -> None:
+    wf_name = "InstTestWf"
+    post = client.post(f"/agentic-workflows/{wf_name}/")
+    assert post.status_code == 200
+    wid = post.json()["workflow_instance_id"]
+    path_uuid = UUID(wid.removeprefix("instance://"))
+
+    assert (
+        client.delete(
+            f"/agentic-workflows/{wf_name}/instances/{path_uuid}/",
+        ).status_code
+        == 202
+    )
+
+    event_body = build_instantiate_seed_event(
+        _MINIMAL_WORKFLOWS[wf_name],
+        wf_name,
+        wid,
+    )
+    r = client.post(
+        f"/agentic-workflows/{wf_name}/instances/{path_uuid}/events/",
+        json=event_body,
+    )
+    assert r.status_code == 404
+
+
+def test_instantiate_twice_delete_one_list_count(
+    client: TestClient,
+) -> None:
+    wf_name = "InstTestWf"
+    r1 = client.post(f"/agentic-workflows/{wf_name}/")
+    r2 = client.post(f"/agentic-workflows/{wf_name}/")
+    assert r1.status_code == 200 and r2.status_code == 200
+    wid1 = r1.json()["workflow_instance_id"]
+    wid2 = r2.json()["workflow_instance_id"]
+    listed = client.get(f"/agentic-workflows/{wf_name}/instances/")
+    assert len(listed.json()) == 2
+
+    u1 = UUID(wid1.removeprefix("instance://"))
+    assert (
+        client.delete(f"/agentic-workflows/{wf_name}/instances/{u1}/").status_code
+        == 202
+    )
+    listed_after = client.get(f"/agentic-workflows/{wf_name}/instances/")
+    assert len(listed_after.json()) == 1
+    assert wid2 in listed_after.json()
+    assert wid1 not in listed_after.json()
+
+
+def test_post_instantiate_missing_api_key_returns_401(
+    app_with_store: FastAPI,
+) -> None:
+    with patch(_PATCH_GET_WORKFLOWS, return_value=_MINIMAL_WORKFLOWS):
+        with TestClient(app_with_store) as bare:
+            r = bare.post("/agentic-workflows/InstTestWf/")
+    assert r.status_code == 401
+
+
+def test_post_instantiate_wrong_api_key_returns_401(
+    app_with_store: FastAPI,
+    workflow_api_headers: dict[str, str],
+) -> None:
+    bad = {**workflow_api_headers, "Authorization": "Bearer wrong-key"}
+    with patch(_PATCH_GET_WORKFLOWS, return_value=_MINIMAL_WORKFLOWS):
+        with TestClient(app_with_store, headers=bad) as c:
+            r = c.post("/agentic-workflows/InstTestWf/")
+    assert r.status_code == 401

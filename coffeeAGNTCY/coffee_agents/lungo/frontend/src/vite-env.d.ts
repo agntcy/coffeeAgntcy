@@ -11,6 +11,7 @@ interface ImportMetaEnv {
   readonly VITE_GRAFANA_URL?: string
   readonly VITE_DISCOVERY_APP_API_URL?: string
   readonly VITE_AGENTIC_WORKFLOWS_API_URL?: string
+  readonly VITE_AGENTIC_WORKFLOWS_API_KEY?: string
   readonly VITE_AGENTIC_WORKFLOWS_DOCS_GITHUB_BRANCH?: string
   readonly VITE_DIRECTORY_SERVER_URL?: string
   readonly VITE_DIRECTORY_VERSION?: string

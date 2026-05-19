@@ -15,6 +15,7 @@ from urllib.parse import quote
 
 import httpx
 
+from config.config import WORKFLOW_API_KEY, WORKFLOW_API_URL
 from schema.types import Event
 
 logger = logging.getLogger("lungo.common.event_middleware")
@@ -38,13 +39,9 @@ class WorkflowAPIEventSink(EventSink):
     _TIMEOUT = 5.0
     _INSTANCE_ID_PREFIX = "instance://"
 
-    def __init__(self, base_url: str | None = None) -> None:
-        if base_url is None:
-            from config.config import WORKFLOW_API_URL
-
-            self._base_url = WORKFLOW_API_URL
-        else:
-            self._base_url = base_url
+    def __init__(self, base_url: str | None = None, api_key: str | None = None) -> None:
+        self._base_url = WORKFLOW_API_URL if base_url is None else base_url
+        self._api_key = WORKFLOW_API_KEY if api_key is None else api_key
 
         self._client: httpx.AsyncClient | None = None
         self._pending: set[asyncio.Task] = set()
@@ -84,10 +81,13 @@ class WorkflowAPIEventSink(EventSink):
     ) -> None:
         """Best-effort POST; errors are logged, never raised."""
         try:
+            headers = {"Content-Type": "application/json"}
+            if self._api_key:
+                headers["Authorization"] = f"Bearer {self._api_key}"
             resp = await self._get_client().post(
                 url,
                 content=body,
-                headers={"Content-Type": "application/json"},
+                headers=headers,
             )
             if resp.is_error:
                 logger.warning(

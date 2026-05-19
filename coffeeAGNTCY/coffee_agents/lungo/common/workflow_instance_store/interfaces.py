@@ -28,6 +28,9 @@ class WorkflowInstanceDataStore(Protocol):
     ) -> dict | None:
         """Workflow slice for one instance, or ``None``."""
 
+    def delete_instance(self, workflow_key: str, instance_id: str) -> bool:
+        """Remove instance from store; return False if workflow or instance missing."""
+
     def wait_merge_idle(self, timeout: float | None = 5.0) -> None:
         """Block until all ingested events have been merged."""
 

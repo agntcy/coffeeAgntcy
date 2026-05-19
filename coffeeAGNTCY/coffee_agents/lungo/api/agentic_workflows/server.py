@@ -10,6 +10,7 @@ import os
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
+from api.agentic_workflows.auth import assert_workflow_api_key_configured
 from api.agentic_workflows.router import (
     WORKFLOW_INSTANCE_STORE_ATTR,
     create_agentic_workflows_router,
@@ -43,6 +44,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
 
 def create_agentic_workflows_app() -> FastAPI:
     """FastAPI app exposing only the agentic-workflows router plus ``/health``."""
+    assert_workflow_api_key_configured()
     cors_origins = get_cors_allowed_origins()
     logger.info("CORS allow_origins: %s", cors_origins)
 

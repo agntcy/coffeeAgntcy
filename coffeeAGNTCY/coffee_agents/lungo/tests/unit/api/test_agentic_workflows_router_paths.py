@@ -50,7 +50,7 @@ _PATCH = "api.agentic_workflows.router.get_workflows"
 
 
 @pytest.fixture()
-def client() -> TestClient:
+def client(workflow_api_headers: dict[str, str]) -> TestClient:
     app = FastAPI()
     store = WorkflowInstanceStateStore()
     setattr(app.state, WORKFLOW_INSTANCE_STORE_ATTR, store)
@@ -61,7 +61,7 @@ def client() -> TestClient:
     store.wait_merge_idle()
     try:
         with patch(_PATCH, return_value={"W": _WF_W}):
-            with TestClient(app) as c:
+            with TestClient(app, headers=workflow_api_headers) as c:
                 yield c
     finally:
         store.close()

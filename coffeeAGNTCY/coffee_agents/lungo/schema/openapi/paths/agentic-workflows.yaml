@@ -200,6 +200,20 @@ paths:
             application/json:
               schema:
                 $ref: ../components/schemas.yaml#/components/schemas/WorkflowInstance
+    delete:
+      tags: [agentic-workflows]
+      operationId: deleteWorkflowInstance
+      summary: Delete workflow instance
+      description: >
+        Schedules removal from the in-memory store. Existing instance returns 202;
+        already absent instance returns 204 (idempotent). Unknown workflow returns 404.
+      responses:
+        "202":
+          description: Delete accepted
+        "204":
+          description: No instance to delete (already removed or never existed)
+        "404":
+          description: Workflow not found
 
   /agentic-workflows/{workflow_name}/instances/{workflow_instance_id}/events/:
     parameters:

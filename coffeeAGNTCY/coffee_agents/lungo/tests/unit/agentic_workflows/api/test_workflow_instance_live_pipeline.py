@@ -22,6 +22,7 @@ import httpx
 import pytest
 from schema.types import Event
 
+from tests.helpers.workflow_api_auth import workflow_api_auth_headers
 from tests.unit.agentic_workflows.api.agentic_uvicorn_helpers import (
     assert_lungo_package_layout,
     first_sse_data_payload,
@@ -41,10 +42,12 @@ def test_agentic_workflows_catalog_instantiate_list_state_events_sse() -> None:
     proc = start_agentic_uvicorn(port)
     try:
         wait_health(base_url)
+        api_headers = workflow_api_auth_headers()
         with httpx.Client(
             base_url=base_url,
             timeout=httpx.Timeout(30.0),
             trust_env=False,
+            headers=api_headers,
         ) as hc:
             lr = hc.get("/agentic-workflows/")
             assert lr.status_code == 200, lr.text
@@ -105,6 +108,7 @@ def test_agentic_workflows_catalog_instantiate_list_state_events_sse() -> None:
                     base_url=base_url,
                     timeout=httpx.Timeout(10.0),
                     trust_env=False,
+                    headers=api_headers,
                 ) as pc:
                     pr = pc.post(post_path, json=body)
                     post_status["code"] = pr.status_code
