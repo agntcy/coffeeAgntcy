@@ -11,7 +11,7 @@ from agntcy_app_sdk.transport.slim.transport import SLIMTransport
 from common.cors import get_cors_allowed_origins
 
 # The SDK's default SLIM request timeout is 6s, too short for LLM round-trips.
-SLIMTransport.request.__defaults__ = (30,)
+SLIMTransport.request.__defaults__ = (60,)
 from common.version import get_version_info
 from config.logging_config import setup_logging
 from dotenv import load_dotenv

@@ -16,9 +16,9 @@ from agntcy_app_sdk.semantic.a2a import (
 )
 from agntcy_app_sdk.transport.slim.transport import SLIMTransport
 # The SDK's default SLIM request timeout is 6s, too short for LLM round-trips.
-SLIMTransport.request.__defaults__ = (120,)
+SLIMTransport.request.__defaults__ = (60,)
 
-A2A_HTTP_TIMEOUT = float(os.getenv("A2A_HTTP_TIMEOUT", "120"))
+A2A_HTTP_TIMEOUT = float(os.getenv("A2A_HTTP_TIMEOUT", "60"))
 
 from config.config import NATS_SERVER, SLIM_SERVER
 
