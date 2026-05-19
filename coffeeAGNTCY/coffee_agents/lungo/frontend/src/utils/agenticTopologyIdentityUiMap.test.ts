@@ -17,8 +17,8 @@ import {
   stableAgentUuidForRecordName,
 } from "@/utils/agenticTopologyIdentityUiMap"
 
-/** Must match `uuid5(uuid5(NAMESPACE_DNS, "agent.workflow.lungo.coffeeAGNTCY.com"), name)` in Python `workflows.py`. */
-const BRAZIL_UUID = "ea3ce2b8-68b6-5fc9-9fa4-491cb71b7bf4"
+/** Must match `uuid5(uuid5(NAMESPACE_DNS, "agent.workflow.lungo"), name)` in Python `common/stable_agent_id.py`. */
+const BRAZIL_UUID = "9a6cc736-d6fb-5a3e-82d6-3552d09b5ae9"
 
 describe("agenticTopologyIdentityUiMap", () => {
   it("stableAgentUuidForRecordName matches Python backend for Brazil Coffee Farm", () => {

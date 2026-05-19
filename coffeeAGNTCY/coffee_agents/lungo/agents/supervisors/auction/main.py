@@ -80,6 +80,7 @@ app.include_router(create_apps_router())
 
 class PromptRequest(BaseModel):
   prompt: str
+  workflow_instance_id: str | None = None
 
 @app.get("/.well-known/agent.json")
 async def get_capabilities():
@@ -139,7 +140,10 @@ async def handle_prompt(request: PromptRequest, req: Request):
   try:
     with session_start() as session_id:
       # Execute the graph synchronously - blocks until completion
-      result = await exchange_graph.serve(request.prompt)
+      result = await exchange_graph.serve(
+        request.prompt,
+        workflow_instance_id=request.workflow_instance_id,
+      )
       logger.info(f"Final result from LangGraph: {result}")
       return {"response": result, "session_id": session_id["executionID"]}
   except ValueError as ve:
@@ -179,7 +183,10 @@ async def handle_stream_prompt(request: PromptRequest, req: Request):
               """
               try:
                   # Stream chunks from the graph as nodes complete execution
-                  async for chunk in exchange_graph.streaming_serve(request.prompt):
+                  async for chunk in exchange_graph.streaming_serve(
+                      request.prompt,
+                      workflow_instance_id=request.workflow_instance_id,
+                  ):
                       yield json.dumps({"response": chunk, "session_id": session_id["executionID"]}) + "\n"
               except Exception as e:
                   logger.error(f"Error in stream: {e}")

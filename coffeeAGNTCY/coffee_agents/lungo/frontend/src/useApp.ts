@@ -19,12 +19,16 @@ import {
   pickDefaultWorkflowSummaryForPattern,
   type WorkflowSummary,
 } from "@/utils/agenticWorkflowsApi"
+import { useActiveWorkflowInstanceStore } from "@/stores/activeWorkflowInstanceStore"
 
 export type { ApiResponse } from "@/types/api"
 
 export function useApp() {
   const { sendMessage } = useAgentAPI()
   const streaming = useAppStreamingState()
+  const activeWorkflowInstanceId = useActiveWorkflowInstanceStore(
+    (s) => s.workflowInstanceId,
+  )
 
   const [selectedPattern, setSelectedPattern] = useState<PatternType>(
     PATTERNS.GROUP_MESSAGING,
@@ -234,7 +238,7 @@ export function useApp() {
           streamCompleteRef.current = false
           streaming.resetGroup()
           try {
-            await streaming.startStreaming(query)
+            await streaming.startStreaming(query, activeWorkflowInstanceId)
           } catch (err) {
             logger.apiError("/agent/prompt/stream", err)
             chat.setShowFinalResponse(true)
@@ -248,7 +252,7 @@ export function useApp() {
           chat.setShowAuctionStreaming(true)
           chat.setAgentResponse(undefined)
           streaming.reset()
-          await streaming.connect(query)
+          await streaming.connect(query, activeWorkflowInstanceId)
         } else if (selectedPattern === PATTERNS.A2A_HTTP) {
           chat.setShowFinalResponse(false)
           chat.setShowRecruiterStreaming(true)

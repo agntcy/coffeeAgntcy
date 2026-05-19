@@ -25,7 +25,7 @@ interface StreamingState {
   prompt: string | null
   abortController: AbortController | null
   sessionId: string | null // <-- added
-  connect: (prompt: string) => Promise<void>
+  connect: (prompt: string, workflowInstanceId?: string | null) => Promise<void>
   disconnect: () => void
   reset: () => void
 }
@@ -42,7 +42,7 @@ const initialState = {
 export const useAuctionStreamingStore = create<StreamingState>((set) => ({
   ...initialState,
 
-  connect: async (prompt: string) => {
+  connect: async (prompt: string, workflowInstanceId?: string | null) => {
     const abortController = new AbortController()
     set({
       status: "connecting",
@@ -62,7 +62,12 @@ export const useAuctionStreamingStore = create<StreamingState>((set) => ({
         method: "POST",
         credentials: isLocalDev ? "omit" : "include",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ prompt }),
+        body: JSON.stringify({
+          prompt,
+          ...(workflowInstanceId
+            ? { workflow_instance_id: workflowInstanceId }
+            : {}),
+        }),
         signal: abortController.signal,
       })
 

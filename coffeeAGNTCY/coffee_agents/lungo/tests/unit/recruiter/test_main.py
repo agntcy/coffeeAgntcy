@@ -122,7 +122,7 @@ class TestPromptEndpoint:
             assert resp.status_code == 200
             # Verify the session_id was passed through
             mock_call.assert_called_once_with(
-                query="Test", session_id="my-session"
+                query="Test", session_id="my-session", workflow_instance_id=None
             )
 
     def test_prompt_generates_session_id_when_not_provided(self, client):
@@ -191,7 +191,7 @@ class TestPromptEndpoint:
 
 class TestStreamEndpoint:
     def test_stream_returns_ndjson(self, client):
-        async def fake_stream(query, session_id):
+        async def fake_stream(query, session_id, workflow_instance_id=None):
             event = MagicMock()
             event.is_final_response.return_value = True
             event.content = MagicMock()
@@ -218,7 +218,7 @@ class TestStreamEndpoint:
             assert data["response"]["message"] == "Final answer"
 
     def test_stream_intermediate_events(self, client):
-        async def fake_stream(query, session_id):
+        async def fake_stream(query, session_id, workflow_instance_id=None):
             # Intermediate event
             event1 = MagicMock()
             event1.is_final_response.return_value = False
@@ -253,7 +253,7 @@ class TestStreamEndpoint:
             assert intermediate["response"]["state"] == "working"
 
     def test_stream_with_session_id(self, client):
-        async def fake_stream(query, session_id):
+        async def fake_stream(query, session_id, workflow_instance_id=None):
             event = MagicMock()
             event.is_final_response.return_value = True
             event.content = MagicMock()

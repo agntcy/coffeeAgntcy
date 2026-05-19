@@ -45,6 +45,8 @@ export interface UseMainAreaGraphEffectsParams {
   nodesConnectable: boolean
   handleCloseModals: () => void
   setOasfModalOpen: (open: boolean) => void
+  /** Restore edge animation after a static-config rebuild wipes it. */
+  restoreEdgeAnimation?: () => void
 }
 
 /** Runs effects that sync graph config, viewport, transport labels, tooltips, and edge checks. */
@@ -67,6 +69,7 @@ export function useMainAreaGraphEffects({
   nodesConnectable,
   handleCloseModals,
   setOasfModalOpen,
+  restoreEdgeAnimation,
 }: UseMainAreaGraphEffectsParams) {
   useEffect(() => {
     animationLockRef.current = false
@@ -86,7 +89,9 @@ export function useMainAreaGraphEffects({
       })),
     )
     setEdges([])
-  }, [pattern, setNodes, setEdges, skipStaticGraphSync])
+    // Restore SSE-driven edge animation in the same batch as the wipe.
+    if (restoreEdgeAnimation) restoreEdgeAnimation()
+  }, [pattern, setNodes, setEdges, skipStaticGraphSync, restoreEdgeAnimation])
 
   useEffect(() => {
     if (!skipStaticGraphSync) return
@@ -138,6 +143,8 @@ export function useMainAreaGraphEffects({
         pattern,
         isStreamingPattern(pattern),
       )
+      // Rebuild above wiped active/animated; restore in the same batch.
+      if (restoreEdgeAnimation) restoreEdgeAnimation()
       setTimeout(() => {
         fitViewWithViewport({ chatHeight: 0, isExpanded: false })
       }, 200)
@@ -154,6 +161,7 @@ export function useMainAreaGraphEffects({
     activeNodeData,
     handleOpenOasfModal,
     skipStaticGraphSync,
+    restoreEdgeAnimation,
   ])
 
   useEffect(() => {

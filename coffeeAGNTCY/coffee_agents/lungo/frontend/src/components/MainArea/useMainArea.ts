@@ -96,19 +96,20 @@ export function useMainArea({
   const [edges, setEdges, onEdgesChange] = useEdgesState(config.edges)
   const animationLock = useRef<boolean>(false)
 
-  const { agenticMode, agenticError } = useWorkflowGraphFromAgenticApi({
-    pattern,
-    selectedWorkflowSummary,
-    setNodes,
-    setEdges,
-    handleOpenIdentityModal,
-    handleOpenOasfModal,
-    onTopologyApplied: () => {
-      setTimeout(() => {
-        fitViewWithViewport({ chatHeight: 0, isExpanded: false })
-      }, 200)
-    },
-  })
+  const { agenticMode, agenticError, staticIdMapActive, restoreEdgeAnimation } =
+    useWorkflowGraphFromAgenticApi({
+      pattern,
+      selectedWorkflowSummary,
+      setNodes,
+      setEdges,
+      handleOpenIdentityModal,
+      handleOpenOasfModal,
+      onTopologyApplied: () => {
+        setTimeout(() => {
+          fitViewWithViewport({ chatHeight: 0, isExpanded: false })
+        }, 200)
+      },
+    })
 
   useEffect(() => {
     if (!agenticError) return
@@ -163,7 +164,8 @@ export function useMainArea({
 
   useMainAreaGraphEffects({
     pattern,
-    skipStaticGraphSync: agenticMode,
+    skipStaticGraphSync: agenticMode && !staticIdMapActive,
+    restoreEdgeAnimation: staticIdMapActive ? restoreEdgeAnimation : undefined,
     isGroupCommConnected,
     setNodes,
     setEdges,

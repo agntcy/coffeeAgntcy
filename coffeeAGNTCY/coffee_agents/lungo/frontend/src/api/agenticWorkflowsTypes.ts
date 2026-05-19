@@ -10,6 +10,11 @@ export interface TopologySize {
   height?: number
 }
 
+export interface TopologyPosition {
+  x: number
+  y: number
+}
+
 export interface TopologyNodeWire {
   id: string
   operation?: string
@@ -17,6 +22,8 @@ export interface TopologyNodeWire {
   label?: string
   size?: TopologySize
   layer_index?: number
+  /** Optional absolute layout hint; when present the renderer skips auto-layout for this node. */
+  position?: TopologyPosition
   agent_record_uri?: string
   stable_agent_id?: string | { root: string }
   [key: string]: unknown
