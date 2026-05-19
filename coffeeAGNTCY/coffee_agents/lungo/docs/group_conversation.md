@@ -53,7 +53,7 @@ User Prompt
 
 **Step 1: Run the SLIM Message Bus Gateway and Observability stack**
 
-To enable A2A Group communication over SLIM, you need to run the SLIM message bus gateway.
+To enable A2A Group messaging over SLIM, you need to run the SLIM message bus gateway.
 
 For Observability stack to work you need two things:
 -enabling OTEL SDK (setting `OTEL_SDK_DISABLED=false` in `.env`, or leave it unset)
@@ -159,9 +159,9 @@ Expected output:
 {"response": "Order 40821a72-31e1-4da0-9bc0-ff519bc57c78 from Tatooine for 5000 units at $3.52 has been successfully delivered."}
 ```
 
-## Group Communication UI
+## Group messaging UI
 
-![Group Communication UI](../images/group_communication_ui.png)
+![Group messaging UI](../images/group_communication_ui.png)
 
 ## Observability
 

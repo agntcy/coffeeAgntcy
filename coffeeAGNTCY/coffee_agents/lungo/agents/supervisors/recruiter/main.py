@@ -21,19 +21,26 @@ from pydantic import BaseModel
 
 from common.cors import get_cors_allowed_origins
 
+from agents.supervisors.recruiter import shared
 from agents.supervisors.recruiter.card import RECRUITER_SUPERVISOR_CARD
 from agents.supervisors.recruiter.recruiter_client import get_a2a_event_queue
 from agents.supervisors.recruiter.recruiter_service_card import (
     RECRUITER_AGENT_URL,
 )
 from common.streaming_capability import require_streaming_capability
-from config.config import LLM_MODEL, HOT_RELOAD_MODE
+from config.config import LLM_MODEL, HOT_RELOAD_MODE, OTEL_SDK_DISABLED
+from agntcy_app_sdk.factory import AgntcyFactory
 
 logger = logging.getLogger("lungo.recruiter.supervisor.main")
 
 load_dotenv()
 
+shared.set_factory(AgntcyFactory("lungo.recruiter_supervisor", enable_tracing=not OTEL_SDK_DISABLED))
 require_streaming_capability("recruiter_supervisor", LLM_MODEL)
+
+if not OTEL_SDK_DISABLED:
+    from common.a2a_event_middleware.inflight import register_cleanup_span_processor
+    register_cleanup_span_processor()
 
 
 def _load_agent_module():
@@ -78,6 +85,7 @@ app.add_middleware(
 class PromptRequest(BaseModel):
     prompt: str
     session_id: Optional[str] = None
+    workflow_instance_id: Optional[str] = None
 
 
 @app.post("/agent/prompt")
@@ -93,6 +101,7 @@ async def handle_prompt(request: PromptRequest, req: Request):
         result = await agent_module.call_agent(
             query=request.prompt,
             session_id=session_id,
+            workflow_instance_id=request.workflow_instance_id,
         )
         # Build response matching original API format
         response: dict = {
@@ -146,6 +155,7 @@ async def handle_stream_prompt(request: PromptRequest, req: Request):
                         async for event, sid in agent_module.stream_agent(
                             query=request.prompt,
                             session_id=session_id,
+                            workflow_instance_id=request.workflow_instance_id,
                         ):
                             final_sid = sid
 

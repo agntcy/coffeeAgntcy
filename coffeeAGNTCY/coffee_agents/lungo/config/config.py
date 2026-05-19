@@ -12,6 +12,10 @@ OTEL_SDK_DISABLED = _otel_sdk_disabled_raw in ("true", "1", "yes")
 if OTEL_SDK_DISABLED:
     os.environ.pop("OTLP_HTTP_ENDPOINT", None)
 
+WORKFLOW_API_URL = os.getenv("WORKFLOW_API_URL", "http://localhost:9105")
+
+EMIT_WORKFLOW_EVENTS = os.getenv("EMIT_WORKFLOW_EVENTS", "true").strip().lower() in ("true", "1", "yes")
+
 SLIM_SERVER = os.getenv("SLIM_SERVER", "localhost:46357")
 
 NATS_SERVER = os.getenv("NATS_SERVER", "localhost:4222")

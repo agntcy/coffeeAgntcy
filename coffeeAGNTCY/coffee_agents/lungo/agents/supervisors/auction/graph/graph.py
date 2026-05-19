@@ -3,29 +3,32 @@
 import logging
 import uuid
 
-from pydantic import BaseModel, Field
-
-from langchain_core.prompts import PromptTemplate
-from langchain_core.messages import AIMessage, SystemMessage, ToolMessage, HumanMessage
-from langgraph.graph.state import CompiledStateGraph
-from langgraph.graph import MessagesState
-from langgraph.graph import StateGraph, END
-from langgraph.prebuilt import ToolNode
-from ioa_observe.sdk.decorators import agent, graph
-
 from agents.supervisors.auction.graph.a2a_retry import (
     RemoteAgentNoResponseError,
     TransportTimeoutError,
 )
-from agents.supervisors.auction.graph.tools import (
-    get_farm_yield_inventory,
-    get_all_farms_yield_inventory_streaming,
-    create_order,
-    get_order_details,
-    tools_or_next
-)
 from agents.supervisors.auction.graph.shared import farm_registry
+from agents.supervisors.auction.graph.tools import (
+    create_order,
+    get_all_farms_yield_inventory_streaming,
+    get_farm_yield_inventory,
+    get_order_details,
+    tools_or_next,
+)
 from common.llm import get_llm
+from common.workflow_context_prop import (
+    attach_workflow_context,
+    detach_workflow_context,
+    read_workflow_context,
+    workflow_context_scope,
+)
+from ioa_observe.sdk.decorators import agent, graph
+from langchain_core.messages import AIMessage, SystemMessage, ToolMessage
+from langchain_core.prompts import PromptTemplate
+from langgraph.graph import END, MessagesState, StateGraph
+from langgraph.graph.state import CompiledStateGraph
+from langgraph.prebuilt import ToolNode
+from pydantic import BaseModel, Field
 
 logger = logging.getLogger("lungo.supervisor.graph")
 
@@ -34,6 +37,11 @@ _OUTCOME_TRANSPORT = "transport"
 _OUTCOME_PERMISSION = "permission"
 _SUPERVISOR_FARM_KEY = "supervisor_farm"
 _SUPERVISOR_OPERATION_KEY = "supervisor_operation"
+
+# Must match entries in api/agentic_workflows/starting_workflows.json.
+# Drift is guarded by the corresponding auction unit tests.
+_WORKFLOW_NAME_SERVE = "Publish Subscribe"
+_WORKFLOW_NAME_STREAM = "Publish Subscribe Streaming"
 
 
 def _caused_by_transport(exc: BaseException) -> bool:
@@ -58,7 +66,9 @@ def _caused_by_transport(exc: BaseException) -> bool:
 
 _KNOWN_FARMS = ("colombia", "brazil", "vietnam")
 _PAYMENT_OPERATION_TERMS = ("transaction", "payment")
-_PERMISSION_FALLBACK_MESSAGE = "Authentication or authorization failed. Please check your credentials."
+_PERMISSION_FALLBACK_MESSAGE = (
+    "Authentication or authorization failed. Please check your credentials."
+)
 
 
 def _ai_message_content_lower(last_msg: AIMessage) -> str:
@@ -80,7 +90,9 @@ def _resolve_farm_display(farm_kw: object | None, content_lower: str) -> str | N
     return hit.title() if hit else None
 
 
-def _resolve_payment_operation_keyword(operation_kw: object | None, content_lower: str) -> str | None:
+def _resolve_payment_operation_keyword(
+    operation_kw: object | None, content_lower: str
+) -> str | None:
     if operation_kw:
         return str(operation_kw)
     return _first_matching_term(content_lower, _PAYMENT_OPERATION_TERMS)
@@ -102,7 +114,9 @@ def _permission_operation_message(operation: str) -> str:
 
 def _build_permission_user_message(kw: dict, last_msg: AIMessage) -> str:
     content_lower = _ai_message_content_lower(last_msg)
-    operation = _resolve_payment_operation_keyword(kw.get(_SUPERVISOR_OPERATION_KEY), content_lower)
+    operation = _resolve_payment_operation_keyword(
+        kw.get(_SUPERVISOR_OPERATION_KEY), content_lower
+    )
     if operation:
         return _permission_operation_message(operation)
     farm_display = _resolve_farm_display(kw.get(_SUPERVISOR_FARM_KEY), content_lower)
@@ -123,12 +137,15 @@ class NodeStates:
     REFLECTION = "reflection"
     GENERAL_INFO = "general"
 
+
 class GraphState(MessagesState):
     """
     Represents the state of our graph, passed between nodes.
     """
+
     next_node: str
     full_response: str = ""
+
 
 @agent(name="exchange_agent")
 class ExchangeGraph:
@@ -147,7 +164,7 @@ class ExchangeGraph:
 
         inventory_single_farm_agent
             - get inventory for a specific farm
-        
+
         inventory_all_farms_agent
             - broadcast to all farms and aggregate inventory
 
@@ -203,7 +220,7 @@ class ExchangeGraph:
 
         workflow.add_edge(NodeStates.GENERAL_INFO, END)
         return workflow.compile()
-    
+
     async def _supervisor_node(self, state: GraphState) -> dict:
         """
         Determines the intent of the user's message and routes to the appropriate node.
@@ -227,7 +244,7 @@ class ExchangeGraph:
 
             User message: {{user_message}}
             """,
-            input_variables=["user_message"]
+            input_variables=["user_message"],
         )
 
         chain = prompt | self.supervisor_llm
@@ -237,26 +254,34 @@ class ExchangeGraph:
         logger.info(f"Supervisor decided: {intent}")
 
         if "inventory_single_farm" in intent:
-            return {"next_node": NodeStates.INVENTORY_SINGLE_FARM, "messages": user_message}
+            return {
+                "next_node": NodeStates.INVENTORY_SINGLE_FARM,
+                "messages": user_message,
+            }
         elif "inventory_all_farms" in intent:
-            return {"next_node": NodeStates.INVENTORY_ALL_FARMS, "messages": user_message}
+            return {
+                "next_node": NodeStates.INVENTORY_ALL_FARMS,
+                "messages": user_message,
+            }
         elif "orders" in intent:
             return {"next_node": NodeStates.ORDERS, "messages": user_message}
         else:
             return {"next_node": NodeStates.GENERAL_INFO, "messages": user_message}
-        
+
     async def _reflection_node(self, state: GraphState) -> dict:
         """
-        Reflect on the conversation to determine if the user's query has been satisfied 
+        Reflect on the conversation to determine if the user's query has been satisfied
         or if further action is needed.
         """
         if not self.reflection_llm:
             class ShouldContinue(BaseModel):
                 should_continue: bool = Field(description="Whether to continue processing the request.")
                 reason: str = Field(description="Reason for decision whether to continue the request.")
-            
+
             # create a structured output LLM for reflection (streaming=False required for structured output)
-            self.reflection_llm = get_llm(streaming=False).with_structured_output(ShouldContinue, strict=True)
+            self.reflection_llm = get_llm(streaming=False).with_structured_output(
+                ShouldContinue, strict=True
+            )
 
         sys_msg_reflection = SystemMessage(
             content="""You are an AI assistant reflecting on a conversation to determine if the user's request has been fully addressed.
@@ -277,8 +302,7 @@ class ExchangeGraph:
         )
 
         response = await self.reflection_llm.ainvoke(
-          [sys_msg_reflection] + state["messages"],
-          
+            [sys_msg_reflection] + state["messages"],
         )
         logging.info(f"Reflection agent response: {response}")
 
@@ -290,7 +314,7 @@ class ExchangeGraph:
         is_duplicate_message = (
           len(state["messages"]) > 2 and state["messages"][-1].content == state["messages"][-3].content
         )
-        
+
         should_continue = response.should_continue and not is_duplicate_message
         next_node = NodeStates.SUPERVISOR if should_continue else END
 
@@ -300,7 +324,11 @@ class ExchangeGraph:
             if outcome == _OUTCOME_PERMISSION:
                 kw = last_msg.additional_kwargs or {}
                 err_msg = _build_permission_user_message(kw, last_msg)
-                original = last_msg.content if isinstance(last_msg.content, str) else str(last_msg.content or "")
+                original = (
+                    last_msg.content
+                    if isinstance(last_msg.content, str)
+                    else str(last_msg.content or "")
+                )
                 original = original.strip()
                 combined = f"{err_msg} Issue details: {original}"
                 return {
@@ -312,7 +340,7 @@ class ExchangeGraph:
 
         # Don't add messages to state, just return the next_node decision
         return {
-          "next_node": next_node,
+            "next_node": next_node,
         }
 
     async def _inventory_single_farm_node(self, state: GraphState) -> dict:
@@ -323,7 +351,9 @@ class ExchangeGraph:
             self.inventory_single_farm_llm = get_llm()
 
         # Get latest HumanMessage
-        user_msg = next((m for m in reversed(state["messages"]) if m.type == "human"), None)
+        user_msg = next(
+            (m for m in reversed(state["messages"]) if m.type == "human"), None
+        )
         if not user_msg:
             return {"messages": [AIMessage(content="No user message found.")]}
 
@@ -339,12 +369,18 @@ class ExchangeGraph:
 
         if not farm:
             farm_list = ", ".join(s.title() for s in farm_registry.slugs())
-            return {"messages": [AIMessage(content=f"Please specify which farm you'd like to query ({farm_list}).")]}
+            return {
+                "messages": [
+                    AIMessage(
+                        content=f"Please specify which farm you'd like to query ({farm_list})."
+                    )
+                ]
+            }
 
         try:
             # Call the function directly
             tool_result = await get_farm_yield_inventory(user_msg.content, farm)
-            
+
             # Check for errors in the result
             if "error" in str(tool_result).lower() or "failed" in str(tool_result).lower():
                 error_message = f"I encountered an issue retrieving information from the {farm.title()} farm. Please try again later."
@@ -354,15 +390,19 @@ class ExchangeGraph:
             prompt = PromptTemplate(
                 template="""You are an inventory broker for a global coffee exchange company.
                 The user asked about inventory from the {farm} farm.
-                
+
                 User's request: {user_message}
-                
+
                 Farm response:
                 {tool_result}
-                
-                Please provide a clear and concise response to the user based on the farm's inventory information.
+
+                Rules:
+                - If the farm response includes any numeric quantity, you must include that quantity in your reply.
+                - Prefer stating weight in pounds or lbs. If the farm gives only kilograms, convert to pounds (1 kg ≈ 2.20462 lb) or give both units.
+                - Do not ask the user to choose pounds vs kilograms when the farm response already contains inventory numbers.
+                - Be clear and concise.
                 """,
-                input_variables=["farm", "user_message", "tool_result"]
+                input_variables=["farm", "user_message", "tool_result"],
             )
 
             chain = prompt | self.inventory_single_farm_llm
@@ -385,7 +425,7 @@ class ExchangeGraph:
     async def _inventory_all_farms_node(self, state: GraphState) -> dict:
         """
         Handles inventory queries for all farms by streaming data from multiple farm agents.
-        
+
         Behavior:
         - Streaming mode (astream_events): Yields each chunk as it arrives from farms,
           allowing progressive display of inventory data in real-time.
@@ -393,7 +433,9 @@ class ExchangeGraph:
           containing the complete inventory from all farms.
         """
         # Extract the latest user message from the conversation state
-        user_msg = next((m for m in reversed(state["messages"]) if m.type == "human"), None)
+        user_msg = next(
+            (m for m in reversed(state["messages"]) if m.type == "human"), None
+        )
         if not user_msg:
             yield {"messages": [AIMessage(content="No user message found.")]}
 
@@ -405,13 +447,13 @@ class ExchangeGraph:
             success_count = 0
             error_count = 0
             has_timeout_warning = False
-            
+
             async for chunk in get_all_farms_yield_inventory_streaming(user_msg.content):
                 # Yield each chunk immediately for streaming mode
                 # In non-streaming mode, these intermediate yields are ignored
                 yield {"messages": [AIMessage(content=chunk.strip())]}
                 full_response += chunk
-                
+
                 # Track successful responses vs errors from the streaming tool
                 if chunk.strip().startswith("Error"):
                     error_count += 1
@@ -419,24 +461,24 @@ class ExchangeGraph:
                     has_timeout_warning = True
                 else:
                     success_count += 1
-            
+
             # Check if we received any successful responses
             if success_count == 0:
                 error_message = "No responses received from any farms. Please ensure farm agents are running and try again."
                 logger.warning(error_message)
                 yield {"messages": [AIMessage(content=error_message)]}
                 return
-            
+
             # Yield final aggregated response with complete inventory
             # This is what gets returned in non-streaming mode (ainvoke)
             # In streaming mode, this provides the final summary with all data
             final_content = f"Here is the current coffee yield inventory from the farms:\n\n{full_response.strip()}"
-            
+
             # Add note if there were errors or timeout warnings
             if error_count > 0 or has_timeout_warning:
-                final_content += f"\n\nNote: Some farms encountered errors or did not respond in time. Showing available inventory data."
+                final_content += "\n\nNote: Some farms encountered errors or did not respond in time. Showing available inventory data."
                 logger.warning(f"Partial farm responses: {success_count} successful, {error_count} errors")
-            
+
             yield {"messages": [AIMessage(content=final_content)], "full_response": final_content}
 
         except Exception as e:
@@ -585,16 +627,20 @@ class ExchangeGraph:
             "messages": [AIMessage(content="I'm not sure how to handle that. Could you please clarify?")],
         }
 
-    async def serve(self, prompt: str) -> str:
+    async def serve(self, prompt: str, *, workflow_instance_id: str | None = None) -> str:
         """
         Processes the input prompt and returns a complete response from the graph execution.
-        
+
         This method uses LangGraph's ainvoke() to execute the entire graph synchronously,
         waiting for all nodes to complete before returning the final result. Unlike streaming_serve(),
         this method blocks until the full execution is complete and returns only the final output.
 
         Args:
             prompt (str): The input prompt to be processed by the graph.
+            workflow_instance_id (str | None): Optional workflow instance id supplied
+                by the caller. Takes effect only when no upstream OTel-baggage context
+                provides one. If neither source supplies a value, a uuid4 is minted so
+                downstream emitters always see a non-None instance id.
 
         Returns:
             str: The final response content from the last AIMessage in the graph execution.
@@ -604,51 +650,69 @@ class ExchangeGraph:
             RuntimeError: If no valid AIMessage is found in the graph response.
             Exception: If any error occurs during graph execution.
         """
-        try:
-            logger.debug(f"Received prompt: {prompt}")
-            
-            # Validate input prompt
-            if not isinstance(prompt, str) or not prompt.strip():
-                raise ValueError("Prompt must be a non-empty string.")
-            
-            # Execute the graph using ainvoke() - this runs the entire graph to completion
-            # The graph will route through nodes based on the routing logic and return the final state
-            result = await self.graph.ainvoke({
-                "messages": [
-                {
-                    "role": "user",
-                    "content": prompt,
-                }
-                ],
-            }, {"configurable": {"thread_id": uuid.uuid4()}})
+        # Upstream OTel baggage (main.py once wired, or test/orchestrator
+        # scope) wins over the per-graph fallback below.
+        existing = read_workflow_context()
+        resolved_instance_id = (
+            existing.instance_id
+            or workflow_instance_id
+            or f"instance://{uuid.uuid4()}"
+        )
+        resolved_workflow_name = existing.workflow_name or _WORKFLOW_NAME_SERVE
+        logger.debug(
+            "workflow context: name=%s instance_id=%s",
+            resolved_workflow_name,
+            resolved_instance_id,
+        )
+        with workflow_context_scope(
+            workflow_name=resolved_workflow_name,
+            workflow_instance_id=resolved_instance_id,
+        ):
+            try:
+                logger.debug(f"Received prompt: {prompt}")
 
-            # Extract messages from the final state
-            # The messages list contains the full conversation history including user, AI, and tool messages
-            messages = result.get("messages", [])
-            if not messages:
-                raise RuntimeError("No messages found in the graph response.")
+                # Validate input prompt
+                if not isinstance(prompt, str) or not prompt.strip():
+                    raise ValueError("Prompt must be a non-empty string.")
 
-            # Find the last AIMessage with non-empty content
-            # We iterate in reverse to get the most recent response from the agent
-            # This skips over any tool messages or empty responses
-            for message in reversed(messages):
-                if isinstance(message, AIMessage) and message.content.strip():
-                    logger.debug(f"Valid AIMessage found: {message.content.strip()}")
-                    return message.content.strip()
+                # Execute the graph using ainvoke() - this runs the entire graph to completion
+                # The graph will route through nodes based on the routing logic and return the final state
+                result = await self.graph.ainvoke({
+                    "messages": [
+                    {
+                        "role": "user",
+                        "content": prompt,
+                    }
+                    ],
+                }, {"configurable": {"thread_id": uuid.uuid4()}})
 
-            # If no valid AIMessage is found, raise an error
-            raise RuntimeError("No valid AIMessage found in the graph response.")
-        except ValueError as ve:
-            logger.error(f"ValueError in serve method: {ve}")
-            raise ValueError(str(ve))
-        except Exception as e:
-            logger.error(f"Error in serve method: {e}")
-            raise Exception(str(e))
+                # Extract messages from the final state
+                # The messages list contains the full conversation history including user, AI, and tool messages
+                messages = result.get("messages", [])
+                if not messages:
+                    raise RuntimeError("No messages found in the graph response.")
 
-    async def streaming_serve(self, prompt: str):
+                # Find the last AIMessage with non-empty content
+                # We iterate in reverse to get the most recent response from the agent
+                # This skips over any tool messages or empty responses
+                for message in reversed(messages):
+                    if isinstance(message, AIMessage) and message.content.strip():
+                        logger.debug(f"Valid AIMessage found: {message.content.strip()}")
+                        return message.content.strip()
+
+                # If no valid AIMessage is found, raise an error
+                raise RuntimeError("No valid AIMessage found in the graph response.")
+            except ValueError as ve:
+                logger.error(f"ValueError in serve method: {ve}")
+                raise ValueError(str(ve))
+            except Exception as e:
+                logger.error(f"Error in serve method: {e}")
+                raise Exception(str(e))
+
+    async def streaming_serve(self, prompt: str, *, workflow_instance_id: str | None = None):
         """
         Streams the graph execution using LangGraph's astream_events API, yielding chunks as they arrive.
-        
+
         This method leverages LangGraph's event streaming to provide real-time updates as the graph
         executes across multiple nodes. It captures intermediate outputs from each node and streams
         them back to the caller, enabling progressive data delivery for long-running operations.
@@ -659,6 +723,10 @@ class ExchangeGraph:
 
         Args:
             prompt (str): The input prompt to be processed by the graph.
+            workflow_instance_id (str | None): Optional workflow instance id supplied
+                by the caller. Takes effect only when no upstream OTel-baggage context
+                provides one. If neither source supplies a value, a uuid4 is minted so
+                downstream emitters always see a non-None instance id.
 
         Yields:
             str: Message content chunks as they arrive from nodes during graph execution.
@@ -668,76 +736,102 @@ class ExchangeGraph:
             ValueError: If the prompt is empty or not a string.
             Exception: If any error occurs during graph execution or streaming.
         """
+        # Upstream OTel baggage (main.py once wired, or test/orchestrator
+        # scope) wins over the per-graph fallback below.
+        existing = read_workflow_context()
+        resolved_instance_id = (
+            existing.instance_id
+            or workflow_instance_id
+            or f"instance://{uuid.uuid4()}"
+        )
+        resolved_workflow_name = existing.workflow_name or _WORKFLOW_NAME_STREAM
+        logger.debug(
+            "workflow context: name=%s instance_id=%s",
+            resolved_workflow_name,
+            resolved_instance_id,
+        )
+        # Manual attach/detach (not `with`): in an async generator, __exit__
+        # may run on a different Task on aclose()/early break, triggering
+        # OTel "Failed to detach context" warnings.
+        token = attach_workflow_context(
+            workflow_name=resolved_workflow_name,
+            workflow_instance_id=resolved_instance_id,
+        )
         try:
-            logger.debug(f"Received streaming prompt: {prompt}")
-            
-            # Validate input prompt
-            if not isinstance(prompt, str) or not prompt.strip():
-                raise ValueError("Prompt must be a non-empty string.")
+            try:
+                logger.debug(f"Received streaming prompt: {prompt}")
 
-            # Construct the initial state for the LangGraph execution
-            # The state follows the MessageGraph pattern with a messages list
-            state = {
-                "messages": [
-                    {
-                        "role": "user",
-                        "content": prompt
-                    }
-                ],
-            }
+                # Validate input prompt
+                if not isinstance(prompt, str) or not prompt.strip():
+                    raise ValueError("Prompt must be a non-empty string.")
 
-            # Track seen content to prevent duplicate yields when nodes produce the same output
-            seen_contents = set()
-            
-            # Stream events from the graph using astream_events (LangGraph v2 API)
-            # This provides fine-grained control over streaming, emitting events for:
-            # - Node starts/ends (on_chain_start, on_chain_end)
-            # - Intermediate outputs (on_chain_stream)
-            async for event in self.graph.astream_events(state, {"configurable": {"thread_id": uuid.uuid4()}}, version="v2"):
-                logger.debug(f"Event: {event}")
-                
-                # Filter for "on_chain_stream" events which contain intermediate node outputs
-                # These events fire when a node produces output during execution, allowing
-                # us to stream results progressively rather than waiting for full completion
-                if event["event"] == "on_chain_stream":
-                    node_name = event.get("name", "")
-                    data = event.get("data", {})
-                    
-                    # Extract the chunk from the event data
-                    # Chunks contain partial state updates from the executing node
-                    if "chunk" in data:
-                        chunk = data["chunk"]
-                        
-                        # Check if this chunk contains messages (the primary output type)
-                        if "messages" in chunk and chunk["messages"]:
-                            logger.info(f"Streaming chunk from node '{node_name}': {chunk}")
-                            
-                            # Skip messages from the reflection node to avoid streaming internal reasoning
-                            # The reflection node performs self-evaluation and shouldn't be user-facing
-                            if node_name == NodeStates.REFLECTION:
-                                logger.info(f"Skipping messages from reflection node")
-                                continue
-                            
-                            # Process and yield all messages from this chunk
-                            for message in chunk["messages"]:
-                                # Only yield AIMessage content (responses from the agent/LLM)
-                                # Filter out system messages, tool messages, and human messages
-                                if isinstance(message, AIMessage) and message.content:
-                                    content = message.content.strip()
-                                    
-                                    # Deduplicate: Skip if we've already yielded this exact content
-                                    if content in seen_contents:
-                                        logger.info(f"Skipping duplicate content from '{node_name}': {content}")
-                                        continue
-                                    
-                                    # Mark this content as seen and yield it to the caller
-                                    seen_contents.add(content)
-                                    logger.info(f"Yielding message from '{node_name}': {content}")
-                                    yield message.content
+                # Construct the initial state for the LangGraph execution
+                # The state follows the MessageGraph pattern with a messages list
+                state = {
+                    "messages": [
+                        {
+                            "role": "user",
+                            "content": prompt
+                        }
+                    ],
+                }
 
-        except ValueError as ve:
-            logger.error(f"ValueError in streaming_serve method: {ve}")
-            raise ValueError(str(ve))
-        except Exception as e:
-            logger.error(f"Error in streaming_serve method: {e}")
-            raise Exception(str(e))
+                # Track seen content to prevent duplicate yields when nodes produce the same output
+                seen_contents = set()
+
+                # Stream events from the graph using astream_events (LangGraph v2 API)
+                # This provides fine-grained control over streaming, emitting events for:
+                # - Node starts/ends (on_chain_start, on_chain_end)
+                # - Intermediate outputs (on_chain_stream)
+                async for event in self.graph.astream_events(state, {"configurable": {"thread_id": uuid.uuid4()}}, version="v2"):
+                    logger.debug(f"Event: {event}")
+
+                    # Filter for "on_chain_stream" events which contain intermediate node outputs
+                    # These events fire when a node produces output during execution, allowing
+                    # us to stream results progressively rather than waiting for full completion
+                    if event["event"] == "on_chain_stream":
+                        node_name = event.get("name", "")
+                        data = event.get("data", {})
+
+                        # Extract the chunk from the event data
+                        # Chunks contain partial state updates from the executing node
+                        if "chunk" in data:
+                            chunk = data["chunk"]
+
+                            # Check if this chunk contains messages (the primary output type)
+                            if "messages" in chunk and chunk["messages"]:
+                                logger.info(f"Streaming chunk from node '{node_name}': {chunk}")
+
+                                # Skip messages from the reflection node to avoid streaming internal reasoning
+                                # The reflection node performs self-evaluation and shouldn't be user-facing
+                                if node_name == NodeStates.REFLECTION:
+                                    logger.info(
+                                        "Skipping messages from reflection node"
+                                    )
+                                    continue
+
+                                # Process and yield all messages from this chunk
+                                for message in chunk["messages"]:
+                                    # Only yield AIMessage content (responses from the agent/LLM)
+                                    # Filter out system messages, tool messages, and human messages
+                                    if isinstance(message, AIMessage) and message.content:
+                                        content = message.content.strip()
+
+                                        # Deduplicate: Skip if we've already yielded this exact content
+                                        if content in seen_contents:
+                                            logger.info(f"Skipping duplicate content from '{node_name}': {content}")
+                                            continue
+
+                                        # Mark this content as seen and yield it to the caller
+                                        seen_contents.add(content)
+                                        logger.info(f"Yielding message from '{node_name}': {content}")
+                                        yield message.content
+
+            except ValueError as ve:
+                logger.error(f"ValueError in streaming_serve method: {ve}")
+                raise ValueError(str(ve))
+            except Exception as e:
+                logger.error(f"Error in streaming_serve method: {e}")
+                raise Exception(str(e))
+        finally:
+            detach_workflow_context(token)

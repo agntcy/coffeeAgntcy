@@ -6,6 +6,7 @@
 
 import asyncio
 import logging
+from a2a.client.middleware import ClientCallContext
 
 _SENTINEL = object()
 _SLIM_ERROR = None
@@ -69,7 +70,7 @@ _A2A_BACKOFF_BASE = 3
 logger = logging.getLogger(__name__)
 
 
-async def send_a2a_with_retry(client, message):
+async def send_a2a_with_retry(client, message, context: ClientCallContext | None = None):
     """
     Send message to A2A client. On timeout or no response, retry
     up to 4 times (5 attempts total) with exponential backoff (base 3, delays 1s, 3s,
@@ -81,7 +82,7 @@ async def send_a2a_with_retry(client, message):
     for attempt in range(_A2A_MAX_ATTEMPTS):
         try:
             events = []
-            async for event in client.send_message(message):
+            async for event in client.send_message(message, context=context):
                 events.append(event)
 
             if events:

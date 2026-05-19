@@ -16,17 +16,6 @@ from typing import AsyncGenerator
 from uuid import uuid4
 
 import litellm
-from google.adk.agents import Agent
-from google.adk.events.event import Event
-from google.adk.models.lite_llm import LiteLlm
-from google.adk.runners import Runner
-from google.adk.sessions import InMemorySessionService
-from google.adk.tools.tool_context import ToolContext
-from google.genai import types
-
-from config.config import LLM_MODEL
-from common.streaming_capability import require_streaming_capability
-
 from agents.supervisors.recruiter.dynamic_workflow_agent import (
     DynamicWorkflowAgent,
 )
@@ -37,8 +26,27 @@ from agents.supervisors.recruiter.models import (
     STATE_KEY_TASK_MESSAGE,
 )
 from agents.supervisors.recruiter.recruiter_client import evaluate_agent, recruit_agents
+from common.streaming_capability import require_streaming_capability
+from common.workflow_context_prop import (
+    attach_workflow_context,
+    detach_workflow_context,
+    read_workflow_context,
+    workflow_context_scope,
+)
+from config.config import LLM_MODEL
+from google.adk.agents import Agent
+from google.adk.events.event import Event
+from google.adk.models.lite_llm import LiteLlm
+from google.adk.runners import Runner
+from google.adk.sessions import InMemorySessionService
+from google.adk.tools.tool_context import ToolContext
+from google.genai import types
 
 logger = logging.getLogger("lungo.recruiter.supervisor.agent")
+
+# Must match starting_workflows.json. Drift is guarded by the
+# corresponding recruiter unit tests.
+_WORKFLOW_NAME = "A2A HTTP"
 
 # ---------------------------------------------------------------------------
 # LLM Configuration
@@ -443,7 +451,11 @@ async def get_selected_agent(user_id: str, session_id: str) -> dict | None:
 
 
 async def call_agent(
-    query: str, user_id: str = "default_user", session_id: str | None = None
+    query: str,
+    user_id: str = "default_user",
+    session_id: str | None = None,
+    *,
+    workflow_instance_id: str | None = None,
 ) -> dict:
     """Send a query to the recruiter supervisor and return a structured response.
 
@@ -452,6 +464,9 @@ async def call_agent(
         user_id: User identifier for session management.
         session_id: Optional session ID for multi-turn conversations.
             If None, a new session is created.
+        workflow_instance_id: Optional workflow instance id. Upstream OTel
+            baggage takes priority; a uuid4 is minted if no source supplies
+            one. Independent of session_id.
 
     Returns:
         Dict containing:
@@ -460,49 +475,71 @@ async def call_agent(
             - agent_records: Dict of recruited agent records (keyed by CID)
             - evaluation_results: Dict of evaluation results (keyed by agent_id)
     """
-    if session_id is None:
-        session_id = str(uuid4())
-
-    logger.info("[call_agent] session_id=%s query=%r", session_id, query)
-    await _get_or_create_session(user_id, session_id)
-
-    content = types.Content(role="user", parts=[types.Part(text=query)])
-
-    final_response = "Agent did not produce a final response."
-
-    async for event in root_runner.run_async(
-        user_id=user_id, session_id=session_id, new_message=content
-    ):
-        _log_event(event)
-        if event.is_final_response():
-            if event.content and event.content.parts:
-                final_response = event.content.parts[0].text
-            break
-
-    # Retrieve structured data from session state
-    agent_records = await get_recruited_agents(user_id, session_id)
-    evaluation_results = await get_evaluation_results(user_id, session_id)
-    selected_agent = await get_selected_agent(user_id, session_id)
-
-    logger.info("[call_agent] Final response: %s", final_response[:200])
-    logger.info(
-        "[call_agent] agent_records=%d, evaluation_results=%d, selected_agent=%s",
-        len(agent_records),
-        len(evaluation_results),
-        selected_agent.get("name") if selected_agent else None,
+    # Upstream OTel baggage (main.py once wired, or test/orchestrator scope)
+    # wins over the per-agent fallback below.
+    existing = read_workflow_context()
+    resolved_instance_id = (
+        existing.instance_id
+        or workflow_instance_id
+        or f"instance://{uuid4()}"
     )
+    resolved_workflow_name = existing.workflow_name or _WORKFLOW_NAME
+    logger.debug(
+        "workflow context: name=%s instance_id=%s",
+        resolved_workflow_name,
+        resolved_instance_id,
+    )
+    with workflow_context_scope(
+        workflow_name=resolved_workflow_name,
+        workflow_instance_id=resolved_instance_id,
+    ):
+        if session_id is None:
+            session_id = str(uuid4())
 
-    return {
-        "response": final_response,
-        "session_id": session_id,
-        "agent_records": agent_records,
-        "evaluation_results": evaluation_results,
-        "selected_agent": selected_agent,
-    }
+        logger.info("[call_agent] session_id=%s query=%r", session_id, query)
+        await _get_or_create_session(user_id, session_id)
+
+        content = types.Content(role="user", parts=[types.Part(text=query)])
+
+        final_response = "Agent did not produce a final response."
+
+        async for event in root_runner.run_async(
+            user_id=user_id, session_id=session_id, new_message=content
+        ):
+            _log_event(event)
+            if event.is_final_response():
+                if event.content and event.content.parts:
+                    final_response = event.content.parts[0].text
+                break
+
+        # Retrieve structured data from session state
+        agent_records = await get_recruited_agents(user_id, session_id)
+        evaluation_results = await get_evaluation_results(user_id, session_id)
+        selected_agent = await get_selected_agent(user_id, session_id)
+
+        logger.info("[call_agent] Final response: %s", final_response[:200])
+        logger.info(
+            "[call_agent] agent_records=%d, evaluation_results=%d, selected_agent=%s",
+            len(agent_records),
+            len(evaluation_results),
+            selected_agent.get("name") if selected_agent else None,
+        )
+
+        return {
+            "response": final_response,
+            "session_id": session_id,
+            "agent_records": agent_records,
+            "evaluation_results": evaluation_results,
+            "selected_agent": selected_agent,
+        }
 
 
 async def stream_agent(
-    query: str, user_id: str = "default_user", session_id: str | None = None
+    query: str,
+    user_id: str = "default_user",
+    session_id: str | None = None,
+    *,
+    workflow_instance_id: str | None = None,
 ) -> AsyncGenerator[tuple[Event, str], None]:
     """Stream events from the recruiter supervisor.
 
@@ -510,20 +547,47 @@ async def stream_agent(
         query: The user's message.
         user_id: User identifier for session management.
         session_id: Optional session ID for multi-turn conversations.
+        workflow_instance_id: Optional workflow instance id. Upstream OTel
+            baggage takes priority; a uuid4 is minted if no source supplies
+            one. Independent of session_id.
 
     Yields:
         Tuples of (event, session_id).
     """
-    if session_id is None:
-        session_id = str(uuid4())
+    # Upstream OTel baggage (main.py once wired, or test/orchestrator scope)
+    # wins over the per-agent fallback below.
+    existing = read_workflow_context()
+    resolved_instance_id = (
+        existing.instance_id
+        or workflow_instance_id
+        or f"instance://{uuid4()}"
+    )
+    resolved_workflow_name = existing.workflow_name or _WORKFLOW_NAME
+    logger.debug(
+        "workflow context: name=%s instance_id=%s",
+        resolved_workflow_name,
+        resolved_instance_id,
+    )
+    # Manual attach/detach (not `with`): in an async generator, __exit__ may
+    # run on a different Task on aclose()/early break, triggering OTel
+    # "Failed to detach context" warnings.
+    token = attach_workflow_context(
+        workflow_name=resolved_workflow_name,
+        workflow_instance_id=resolved_instance_id,
+    )
+    try:
+        if session_id is None:
+            session_id = str(uuid4())
 
-    logger.info("[stream_agent] session_id=%s query=%r", session_id, query)
-    await _get_or_create_session(user_id, session_id)
+        logger.info("[stream_agent] session_id=%s query=%r", session_id, query)
+        await _get_or_create_session(user_id, session_id)
 
-    content = types.Content(role="user", parts=[types.Part(text=query)])
+        content = types.Content(role="user", parts=[types.Part(text=query)])
 
-    async for event in root_runner.run_async(
-        user_id=user_id, session_id=session_id, new_message=content
-    ):
-        _log_event(event)
-        yield event, session_id
+        async for event in root_runner.run_async(
+            user_id=user_id, session_id=session_id, new_message=content
+        ):
+            _log_event(event)
+            yield event, session_id
+    finally:
+        detach_workflow_context(token)

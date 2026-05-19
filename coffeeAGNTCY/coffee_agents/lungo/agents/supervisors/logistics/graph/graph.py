@@ -4,32 +4,44 @@
 import logging
 import uuid
 
-from pydantic import BaseModel, Field
-from langchain_core.prompts import PromptTemplate
-from langchain_core.messages import AIMessage, SystemMessage
-from langgraph.graph.state import CompiledStateGraph
-from langgraph.graph import MessagesState
-from langgraph.graph import StateGraph, END
-from ioa_observe.sdk.decorators import agent, graph
-
 from agents.supervisors.logistics.graph.tools import (
     create_order,
-    create_order_streaming
+    create_order_streaming,
 )
 from common.llm import get_llm
+from common.workflow_context_prop import (
+    attach_workflow_context,
+    detach_workflow_context,
+    read_workflow_context,
+    workflow_context_scope,
+)
+from ioa_observe.sdk.decorators import agent, graph
+from langchain_core.messages import AIMessage, SystemMessage
+from langchain_core.prompts import PromptTemplate
+from langgraph.graph import END, MessagesState, StateGraph
+from langgraph.graph.state import CompiledStateGraph
+from pydantic import BaseModel, Field
 
 logger = logging.getLogger("lungo.logistics.supervisor.graph")
+
+# Must match starting_workflows.json. Drift is guarded by the
+# corresponding logistics unit tests.
+_WORKFLOW_NAME = "Group Messaging"
+
 
 class NodeStates:
     ORDERS = "orders_broker"
     ORDERS_STREAMING = "orders_broker_streaming"
 
+
 class GraphState(MessagesState):
     """
     Represents the state of our graph, passed between nodes.
     """
+
     next_node: str
     use_streaming: bool = False
+
 
 @agent(name="logistic_agent")
 class LogisticGraph:
@@ -62,16 +74,19 @@ class LogisticGraph:
 
         workflow.add_node(NodeStates.ORDERS, self._orders_node)
         workflow.add_node(NodeStates.ORDERS_STREAMING, self._orders_streaming_node)
-        
+
         # Conditional entry point based on use_streaming flag
         def route_entry(state: GraphState):
             return NodeStates.ORDERS_STREAMING if state.get("use_streaming", False) else NodeStates.ORDERS
-        
-        workflow.set_conditional_entry_point(route_entry, {
-            NodeStates.ORDERS: NodeStates.ORDERS,
-            NodeStates.ORDERS_STREAMING: NodeStates.ORDERS_STREAMING
-        })
-        
+
+        workflow.set_conditional_entry_point(
+            route_entry,
+            {
+                NodeStates.ORDERS: NodeStates.ORDERS,
+                NodeStates.ORDERS_STREAMING: NodeStates.ORDERS_STREAMING,
+            },
+        )
+
         workflow.add_edge(NodeStates.ORDERS, END)
         workflow.add_edge(NodeStates.ORDERS_STREAMING, END)
 
@@ -107,12 +122,12 @@ class LogisticGraph:
         sys_msg = SystemMessage(
             content="""You are an orders broker for a global coffee exchange company.
             Extract the order parameters from the user's request.
-            
+
             Look for:
             - farm: The farm name (tatooine, brazil, colombia, vietnam, etc.)
             - quantity: The number of units to order (extract the number, ignore units like 'lbs')
             - price: The price per unit (extract the number, ignore currency symbols)
-            
+
             Set has_all_params to true only if you found all three parameters.
             If any are missing, set has_all_params to false and list them in missing_params.
             If parameters are present, still populate them with your best guess (use empty string for farm, 0 for quantity/price if truly missing).
@@ -124,46 +139,59 @@ class LogisticGraph:
             # Extract parameters using structured output
             params = await extraction_llm.ainvoke([sys_msg, user_msg])
             logger.info(f"Extracted params: farm={params.farm}, quantity={params.quantity}, price={params.price}, has_all={params.has_all_params}")
-            
+
             # Check if all parameters are present
             if not params.has_all_params:
-                return {"messages": [AIMessage(content=f"Please provide the following information: {params.missing_params}")]}
-            
+                return {
+                    "messages": [
+                        AIMessage(
+                            content=f"Please provide the following information: {params.missing_params}"
+                        )
+                    ]
+                }
+
             # Call the function directly
             tool_result = await create_order(farm=params.farm, quantity=params.quantity, price=params.price)
-            
+
             # Check for errors in the result
-            if "error" in str(tool_result).lower() or "failed" in str(tool_result).lower():
-                error_message = f"I encountered an issue creating the order. Please try again later."
+            if (
+                "error" in str(tool_result).lower()
+                or "failed" in str(tool_result).lower()
+            ):
+                error_message = (
+                    "I encountered an issue creating the order. Please try again later."
+                )
                 return {"messages": [AIMessage(content=error_message)]}
 
             # Use LLM to format the response
             format_prompt = PromptTemplate(
                 template="""You are an orders broker for a global coffee exchange company.
                 The user requested to create an order.
-                
+
                 User's request: {user_message}
-                
+
                 Order result:
                 {tool_result}
-                
+
                 FINAL DELIVERY HANDLING:
-                If the order result contains the exact token 'DELIVERED' (indicates the order was fully delivered), 
+                If the order result contains the exact token 'DELIVERED' (indicates the order was fully delivered),
                 respond ONLY with a multiline plain text summary in the following format without any newline character (and nothing else):
                    Order <extract UUID from create_order function result> from <farm (Title Case) or unknown> for <quantity or unknown> units at <price or unknown> has been successfully delivered.
                    - Extract the UUID/order ID from the tool_result text (look for hex strings or UUID patterns).
                    - Infer farm / quantity / price from prior messages; if missing use 'unknown'.
-                
+
                 Otherwise, provide a clear and concise response to the user based on the order result.
                 """,
-                input_variables=["user_message", "tool_result"]
+                input_variables=["user_message", "tool_result"],
             )
 
             format_chain = format_prompt | self.orders_llm
-            final_response = await format_chain.ainvoke({
-                "user_message": user_msg.content,
-                "tool_result": tool_result,
-            })
+            final_response = await format_chain.ainvoke(
+                {
+                    "user_message": user_msg.content,
+                    "tool_result": tool_result,
+                }
+            )
 
             return {"messages": [AIMessage(content=final_response.content)]}
 
@@ -175,24 +203,24 @@ class LogisticGraph:
     async def _orders_streaming_node(self, state: GraphState):
         """
         Streaming orders node that yields real-time order status updates as they arrive from logistics agents.
-        
+
         This node:
         1. Extracts order parameters (farm, quantity, price) from user input using LLM structured output
         2. Calls create_order_streaming() which yields events as agents process the order
         3. Yields each order event immediately (RECEIVED_ORDER, HANDOVER_TO_SHIPPER, CUSTOMS_CLEARANCE, etc.)
         4. Accumulates all responses to detect when order is DELIVERED
         5. Uses LLM to generate a final formatted summary message when delivery is complete
-        
+
         Flow:
-        - User message -> LLM extraction -> create_order_streaming() -> Yield events in real-time -> 
+        - User message -> LLM extraction -> create_order_streaming() -> Yield events in real-time ->
           Final LLM summary (if delivered)
-        
+
         Event Format:
         Each yielded event is a dict with: order_id, sender, receiver, message, state, timestamp
-        
+
         Args:
             state: GraphState containing messages and routing information
-            
+
         Yields:
             dict: State updates with AIMessage containing either:
                   - Individual order event dicts (during processing)
@@ -220,12 +248,12 @@ class LogisticGraph:
         sys_msg = SystemMessage(
             content="""You are an orders broker for a global coffee exchange company.
             Extract the order parameters from the user's request.
-            
+
             Look for:
             - farm: The farm name (tatooine, brazil, colombia, vietnam, etc.)
             - quantity: The number of units to order (extract the number, ignore units like 'lbs')
             - price: The price per unit (extract the number, ignore currency symbols)
-            
+
             Set has_all_params to true only if you found all three parameters.
             If any are missing, set has_all_params to false and list them in missing_params.
             If parameters are present, still populate them with your best guess (use empty string for farm, 0 for quantity/price if truly missing).
@@ -237,12 +265,18 @@ class LogisticGraph:
             # Extract parameters using structured output
             params = await extraction_llm.ainvoke([sys_msg, user_msg])
             logger.info(f"Extracted params: farm={params.farm}, quantity={params.quantity}, price={params.price}, has_all={params.has_all_params}")
-            
+
             # Check if all parameters are present
             if not params.has_all_params:
-                yield {"messages": [AIMessage(content=f"Please provide the following information: {params.missing_params}")]}
+                yield {
+                    "messages": [
+                        AIMessage(
+                            content=f"Please provide the following information: {params.missing_params}"
+                        )
+                    ]
+                }
                 return
-            
+
             farm = params.farm
             quantity = params.quantity
             price = params.price
@@ -251,51 +285,55 @@ class LogisticGraph:
             all_responses = []
             delivered = False
             order_id = None
-            
+
             # Stream responses from create_order_streaming and yield each one
-            async for response in create_order_streaming(farm=farm, quantity=quantity, price=price):
+            async for response in create_order_streaming(
+                farm=farm, quantity=quantity, price=price
+            ):
                 logger.info(f"Received streaming response: {response}")
                 all_responses.append(response)
-                
+
                 # Check if this is a delivered status
                 if isinstance(response, dict):
                     if response.get("state") == "DELIVERED":
                         delivered = True
                         order_id = response.get("order_id")
-                
+
                 # Yield each response as it arrives for streaming
                 yield {"messages": [AIMessage(content=str(response))]}
-            
+
             # If delivered, generate final formatted message using LLM
             if delivered and all_responses:
                 if not self.orders_llm:
                     self.orders_llm = get_llm()
-                
+
                 format_prompt = PromptTemplate(
                     template="""You are an orders broker for a global coffee exchange company.
                     An order has been successfully delivered. Create a concise summary message.
-                    
+
                     Order details:
                     - Order ID: {order_id}
                     - Farm: {farm}
                     - Quantity: {quantity}
                     - Price: {price}
-                    
+
                     Respond with ONLY a single sentence in this exact format (no extra text):
                     Order {order_id} from {farm} for {quantity} units at ${price} has been successfully delivered.
-                    
+
                     """,
-                    input_variables=["order_id", "farm", "quantity", "price"]
+                    input_variables=["order_id", "farm", "quantity", "price"],
                 )
-                
+
                 format_chain = format_prompt | self.orders_llm
-                final_response = await format_chain.ainvoke({
-                    "order_id": order_id or "unknown",
-                    "farm": farm.title(),
-                    "quantity": quantity,
-                    "price": f"{price:.2f}",
-                })
-                
+                final_response = await format_chain.ainvoke(
+                    {
+                        "order_id": order_id or "unknown",
+                        "farm": farm.title(),
+                        "quantity": quantity,
+                        "price": f"{price:.2f}",
+                    }
+                )
+
                 # Yield the final formatted message
                 yield {"messages": [AIMessage(content=final_response.content.strip())]}
 
@@ -304,7 +342,7 @@ class LogisticGraph:
             error_message = f"I encountered an issue creating the order: {str(e)}"
             yield {"messages": [AIMessage(content=error_message)]}
 
-    async def serve(self, prompt: str):
+    async def serve(self, prompt: str, *, workflow_instance_id: str | None = None):
         """
         Processes the input prompt and returns a response from the graph.
         Args:
@@ -312,55 +350,64 @@ class LogisticGraph:
         Returns:
             str: The response generated by the graph based on the input prompt.
         """
-        try:
-            logger.debug(f"Received prompt: {prompt}")
-            if not isinstance(prompt, str) or not prompt.strip():
-                raise ValueError("Prompt must be a non-empty string.")
-            result = await self.graph.ainvoke({
-                "messages": [
-                {
-                    "role": "user",
-                    "content": prompt
-                }
-                ],
-            }, {"configurable": {"thread_id": uuid.uuid4()}})
+        # Resolution priority: upstream OTel baggage (main.py once wired, or
+        # an outer test/orchestrator scope) > caller kwarg > minted uuid4.
+        existing = read_workflow_context()
+        with workflow_context_scope(
+            workflow_name=existing.workflow_name or _WORKFLOW_NAME,
+            workflow_instance_id=(
+                existing.instance_id or workflow_instance_id or f"instance://{uuid.uuid4()}"
+            ),
+        ):
+            try:
+                logger.debug(f"Received prompt: {prompt}")
+                if not isinstance(prompt, str) or not prompt.strip():
+                    raise ValueError("Prompt must be a non-empty string.")
+                result = await self.graph.ainvoke({
+                    "messages": [
+                    {
+                        "role": "user",
+                        "content": prompt
+                    }
+                    ],
+                }, {"configurable": {"thread_id": uuid.uuid4()}})
 
-            messages = result.get("messages", [])
-            if not messages:
-                raise RuntimeError("No messages found in the graph response.")
+                messages = result.get("messages", [])
+                if not messages:
+                    raise RuntimeError("No messages found in the graph response.")
 
-            # Find the last AIMessage with non-empty content
-            for message in reversed(messages):
-                if isinstance(message, AIMessage) and message.content.strip():
-                    logger.debug(f"Valid AIMessage found: {message.content.strip()}")
-                    return message.content.strip()
+                # Find the last AIMessage with non-empty content
+                for message in reversed(messages):
+                    if isinstance(message, AIMessage) and message.content.strip():
+                        logger.debug(f"Valid AIMessage found: {message.content.strip()}")
+                        return message.content.strip()
 
-            raise RuntimeError("No valid AIMessage found in the graph response.")
-        except ValueError as ve:
-            logger.error(f"ValueError in serve method: {ve}")
-            raise ValueError(str(ve))
-        except Exception as e:
-            logger.error(f"Error in serve method: {e}")
-            raise Exception(str(e))
+                raise RuntimeError("No valid AIMessage found in the graph response.")
+            except ValueError as ve:
+                logger.error(f"ValueError in serve method: {ve}")
+                raise ValueError(str(ve))
+            except Exception as e:
+                logger.error(f"Error in serve method: {e}")
+                raise Exception(str(e))
 
-    async def streaming_serve(self, prompt: str):
+    async def streaming_serve(self, prompt: str, *, workflow_instance_id: str | None = None):
         """
         Streams real-time order processing events using LangGraph's astream_events API.
-        
+
         This method enables progressive delivery of order status updates by:
         1. Setting use_streaming=True flag to route to _orders_streaming_node
         2. Using LangGraph's astream_events() to capture node outputs as they're generated
         3. Filtering for "on_chain_stream" events which contain intermediate results
         4. Yielding AIMessage content as it arrives (order events and final summary)
-        
+
         Flow:
-        - Prompt -> Graph with use_streaming=True -> _orders_streaming_node -> 
+        - Prompt -> Graph with use_streaming=True -> _orders_streaming_node ->
           Stream events via astream_events() -> Filter -> Yield to caller
-        
+
         Event Types Captured:
         - on_chain_stream: Intermediate outputs from nodes (what we yield)
         - on_chain_start/end: Node lifecycle events (logged but not yielded)
-        
+
         Output Format:
         Yields AIMessage content which can be:
         - Order event dicts: {"order_id": "...", "sender": "...", "state": "...", ...}
@@ -377,6 +424,17 @@ class LogisticGraph:
             ValueError: If the prompt is empty or not a string.
             Exception: If any error occurs during graph execution or streaming.
         """
+        # Resolution priority: upstream OTel baggage > caller kwarg > minted
+        # uuid4. Manual attach/detach (not `with workflow_context_scope`):
+        # async-gen __exit__ may run on a different Task on aclose() / early
+        # break, triggering OTel "Failed to detach context" warnings.
+        existing = read_workflow_context()
+        token = attach_workflow_context(
+            workflow_name=existing.workflow_name or _WORKFLOW_NAME,
+            workflow_instance_id=(
+                existing.instance_id or workflow_instance_id or f"instance://{uuid.uuid4()}"
+            ),
+        )
         try:
             logger.debug(f"Received streaming prompt: {prompt}")
 
@@ -447,3 +505,5 @@ class LogisticGraph:
         except Exception as e:
             logger.error(f"Error in streaming_serve method: {e}")
             raise Exception(str(e))
+        finally:
+            detach_workflow_context(token)

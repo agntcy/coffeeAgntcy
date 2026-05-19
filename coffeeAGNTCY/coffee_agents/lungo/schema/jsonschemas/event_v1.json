@@ -275,11 +275,12 @@
     "workflow": {
       "type": "object",
       "description": "Workflow data, describing common configuration for a specific workflow, and keep track of instances of that workflow.",
-      "required": ["pattern", "use_case", "name", "starting_topology", "instances"],
+      "required": ["name", "pattern", "use_case", "scenario", "starting_topology", "instances"],
       "properties": {
+        "name": { "type": "string", "minLength": 1 },
         "pattern": { "type": "string", "minLength": 1 },
         "use_case": { "type": "string", "minLength": 1 },
-        "name": { "type": "string", "minLength": 1 },
+        "scenario": { "type": "string", "minLength": 1, "description": "brief extra qualifier for the use-case" },
         "starting_topology": { "$ref": "#/$defs/topology" },
         "instances": {
           "type": "object",

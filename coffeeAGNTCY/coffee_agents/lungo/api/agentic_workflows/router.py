@@ -3,8 +3,7 @@
 
 """FastAPI router for the Agentic Workflows API.
 
-Catalog endpoints, internal ``POST .../events/``, and instance SSE stream are implemented;
-instance/state lifecycle endpoints remain stubs (501) until #450.
+Catalog endpoints, instance/state lifecycle, internal ``POST .../events/``, and SSE stream.
 """
 
 from __future__ import annotations
@@ -13,7 +12,7 @@ import asyncio
 import json
 from collections.abc import AsyncIterator
 from typing import Annotated
-from uuid import UUID
+from uuid import UUID, uuid4
 
 from api.agentic_workflows.dtos import (
     InstantiateWorkflowResponse,
@@ -21,12 +20,23 @@ from api.agentic_workflows.dtos import (
     PatternListResponse,
     UseCase,
     UseCaseListResponse,
+    WorkflowDocumentationResponse,
+    WorkflowDocumentationSection,
     WorkflowInstanceMapResponse,
     WorkflowSummary,
     WorkflowSummaryMapResponse,
 )
+from api.agentic_workflows.instance_lifecycle import (
+    build_instantiate_seed_event,
+    instances_map_for_workflow,
+    workflow_instance_from_store,
+)
 from api.agentic_workflows.patterns import PATTERNS
 from api.agentic_workflows.use_cases import USE_CASES
+from api.agentic_workflows.workflow_documentation import (
+    load_parsed_workflow_documentation,
+    workflow_name_to_documentation_slug,
+)
 from api.agentic_workflows.workflows import get_workflows
 from common.workflow_instance_store import (
     WorkflowInstanceStateStore,
@@ -46,6 +56,11 @@ WORKFLOW_INSTANCE_SSE_QUEUE_HIGH_WATER_RATIO = 0.9
 WORKFLOW_INSTANCE_SSE_QUEUE_HIGH_WATER = max(
     1,
     int(WORKFLOW_INSTANCE_SSE_QUEUE_MAXSIZE * WORKFLOW_INSTANCE_SSE_QUEUE_HIGH_WATER_RATIO),
+)
+
+INSTANTIATE_MERGE_WAIT_TIMEOUT_DETAIL = (
+    "Instantiate event was accepted and queued; merge did not finish in time. "
+    "Poll list or GET instance state before repeating POST (each POST creates a new instance)."
 )
 
 
@@ -91,6 +106,10 @@ def _workflow_instance_store(request: Request) -> WorkflowInstanceStateStore:
             detail="Workflow instance store is not configured",
         )
     return store
+
+
+def _canonical_instance_uri(instance_uuid: UUID) -> str:
+    return instance_id_from_uuid(instance_uuid).root
 
 
 def create_agentic_workflows_router() -> APIRouter:
@@ -150,6 +169,7 @@ def create_agentic_workflows_router() -> APIRouter:
                 name=w.name,
                 pattern=w.pattern,
                 use_case=w.use_case,
+                scenario=w.scenario,
             )
             for w in filtered
         }
@@ -177,16 +197,97 @@ def create_agentic_workflows_router() -> APIRouter:
 
         return wf
 
+    @router.get(
+        "/agentic-workflows/{workflow_name}/documentation/",
+        response_model=WorkflowDocumentationResponse,
+        summary="Get workflow documentation (markdown, sectioned)",
+    )
+    async def get_workflow_documentation(
+        workflow_name: Annotated[str, Path(min_length=1)],
+    ) -> WorkflowDocumentationResponse:
+        """GET …/documentation/ — markdown from ``docs/workflows`` for this catalog name."""
+        all_workflows = get_workflows()
+        if all_workflows is None:
+            raise HTTPException(
+                status_code=503,
+                detail="Workflow catalog is not initialized",
+            )
+        if workflow_name not in all_workflows:
+            raise HTTPException(
+                status_code=404,
+                detail=f"Workflow not found: {workflow_name}",
+            )
+        slug = workflow_name_to_documentation_slug(workflow_name)
+        parsed = load_parsed_workflow_documentation(slug)
+        if parsed is None:
+            raise HTTPException(
+                status_code=404,
+                detail=f"Workflow documentation not found for: {workflow_name}",
+            )
+        return WorkflowDocumentationResponse(
+            slug=parsed.slug,
+            workflow_name=workflow_name,
+            title=parsed.title,
+            sections=[
+                WorkflowDocumentationSection(anchor=a, heading=h, body_markdown=b)
+                for a, h, b in parsed.sections
+            ],
+            full_markdown=parsed.full_markdown,
+        )
+
     @router.post(
         "/agentic-workflows/{workflow_name}/",
         response_model=InstantiateWorkflowResponse,
         summary="Instantiate a workflow",
     )
     async def instantiate_agentic_workflow(
+        request: Request,
         workflow_name: Annotated[str, Path(min_length=1)],
     ) -> InstantiateWorkflowResponse:
         """POST /agentic-workflows/{workflow_name}/ — new instance id."""
-        raise HTTPException(status_code=501, detail="Not implemented")
+        all_workflows = get_workflows()
+        wf = all_workflows.get(workflow_name)
+        if wf is None:
+            raise HTTPException(
+                status_code=404, detail=f"Workflow not found: {workflow_name}"
+            )
+        uid = uuid4()
+        iid = instance_id_from_uuid(uid)
+        iuri = iid.root
+        try:
+            payload = build_instantiate_seed_event(wf, workflow_name, iuri)
+        except ValueError as exc:
+            raise HTTPException(
+                status_code=500,
+                detail="Workflow catalog inconsistency",
+            ) from exc
+        store = _workflow_instance_store(request)
+        try:
+            await store.submit_event(payload)
+        except schema_errors.SchemaValidationError as exc:
+            raise HTTPException(
+                status_code=400,
+                detail="Event failed schema validation",
+            ) from exc
+        except WorkflowInstanceStoreClosedError as exc:
+            raise HTTPException(
+                status_code=503,
+                detail="Workflow instance store is closed",
+            ) from exc
+
+        try:
+            await asyncio.to_thread(store.wait_merge_idle)
+        except WorkflowInstanceStoreClosedError as exc:
+            raise HTTPException(
+                status_code=503,
+                detail="Workflow instance store is closed",
+            ) from exc
+        except TimeoutError as exc:
+            raise HTTPException(
+                status_code=504,
+                detail=INSTANTIATE_MERGE_WAIT_TIMEOUT_DETAIL,
+            ) from exc
+        return InstantiateWorkflowResponse(workflow_instance_id=iid)
 
     @router.get(
         "/agentic-workflows/{workflow_name}/instances/",
@@ -194,10 +295,18 @@ def create_agentic_workflows_router() -> APIRouter:
         summary="List workflow instances",
     )
     async def list_workflow_instances(
+        request: Request,
         workflow_name: Annotated[str, Path(min_length=1)],
     ) -> WorkflowInstanceMapResponse:
         """GET instances map keyed by instance id."""
-        raise HTTPException(status_code=501, detail="Not implemented")
+        if workflow_name not in get_workflows():
+            raise HTTPException(
+                status_code=404, detail=f"Workflow not found: {workflow_name}"
+            )
+        store = _workflow_instance_store(request)
+        data = await asyncio.to_thread(store.get_merged_data)
+        items = instances_map_for_workflow(data, workflow_name)
+        return WorkflowInstanceMapResponse(items)
 
     @router.get(
         "/agentic-workflows/{workflow_name}/instances/{workflow_instance_id}/",
@@ -205,6 +314,7 @@ def create_agentic_workflows_router() -> APIRouter:
         summary="Get workflow instance state",
     )
     async def get_workflow_instance_state(
+        request: Request,
         workflow_name: Annotated[str, Path(min_length=1)],
         workflow_instance_id: Annotated[
             UUID,
@@ -218,8 +328,31 @@ def create_agentic_workflows_router() -> APIRouter:
         topology_only: Annotated[bool, Query()] = False,
     ) -> WorkflowInstance:
         """GET instance state; topology_only for projection."""
-        _canonical_instance_id = instance_id_from_uuid(workflow_instance_id)
-        raise HTTPException(status_code=501, detail="Not implemented")
+        if workflow_name not in get_workflows():
+            raise HTTPException(
+                status_code=404, detail=f"Workflow not found: {workflow_name}"
+            )
+        canonical_id = _canonical_instance_uri(workflow_instance_id)
+        store = _workflow_instance_store(request)
+        try:
+            inst = await asyncio.to_thread(
+                workflow_instance_from_store,
+                store,
+                workflow_name,
+                canonical_id,
+                topology_only=topology_only,
+            )
+        except ValueError as exc:
+            raise HTTPException(
+                status_code=500,
+                detail="Invalid instance projection",
+            ) from exc
+        if inst is None:
+            raise HTTPException(
+                status_code=404,
+                detail="Workflow instance not found",
+            )
+        return inst
 
     @router.post(
         "/agentic-workflows/{workflow_name}/instances/{workflow_instance_id}/events/",
@@ -242,7 +375,7 @@ def create_agentic_workflows_router() -> APIRouter:
     ) -> None:
         """POST internal state update event."""
         store = _workflow_instance_store(request)
-        canonical_id = instance_id_from_uuid(workflow_instance_id).root
+        canonical_id = _canonical_instance_uri(workflow_instance_id)
         if workflow_name not in event.data.workflows:
             raise HTTPException(
                 status_code=400,
@@ -286,8 +419,12 @@ def create_agentic_workflows_router() -> APIRouter:
         ],
     ) -> StreamingResponse:
         """GET SSE stream; each message is one ``data:`` line of compact ``event_v1`` JSON."""
+        if workflow_name not in get_workflows():
+            raise HTTPException(
+                status_code=404, detail=f"Workflow not found: {workflow_name}"
+            )
         store = _workflow_instance_store(request)
-        canonical_id = instance_id_from_uuid(workflow_instance_id).root
+        canonical_id = _canonical_instance_uri(workflow_instance_id)
         queue: asyncio.Queue[str] = asyncio.Queue(
             maxsize=WORKFLOW_INSTANCE_SSE_QUEUE_MAXSIZE
         )

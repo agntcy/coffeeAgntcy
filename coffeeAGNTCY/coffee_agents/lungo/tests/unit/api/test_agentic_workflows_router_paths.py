@@ -6,9 +6,11 @@
 from __future__ import annotations
 
 from typing import NamedTuple
+from unittest.mock import patch
 from uuid import UUID
 
 import pytest
+from api.agentic_workflows.instance_lifecycle import build_instantiate_seed_event
 from api.agentic_workflows.router import (
     WORKFLOW_INSTANCE_STORE_ATTR,
     create_agentic_workflows_router,
@@ -16,10 +18,35 @@ from api.agentic_workflows.router import (
 from common.workflow_instance_store import WorkflowInstanceStateStore
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
-from schema.types import instance_id_from_uuid
+from schema.types import Workflow, instance_id_from_uuid
 
 _INSTANCE_UUID = UUID("550e8400-e29b-41d4-a716-446655440000")
 _BARE_UUID_PATH = "/agentic-workflows/W/instances/550e8400-e29b-41d4-a716-446655440000"
+
+_WF_W = Workflow.model_validate(
+    {
+        "name": "W",
+        "pattern": "p",
+        "use_case": "u",
+        "scenario": "s",
+        "starting_topology": {
+            "nodes": [
+                {
+                    "id": "node://00000000-0000-4000-a000-000000000001",
+                    "operation": "read",
+                    "type": "customNode",
+                    "label": "n",
+                    "size": {"width": 1.0, "height": 1.0},
+                    "layer_index": 0,
+                },
+            ],
+            "edges": [],
+        },
+        "instances": {},
+    }
+)
+
+_PATCH = "api.agentic_workflows.router.get_workflows"
 
 
 @pytest.fixture()
@@ -28,9 +55,14 @@ def client() -> TestClient:
     store = WorkflowInstanceStateStore()
     setattr(app.state, WORKFLOW_INSTANCE_STORE_ATTR, store)
     app.include_router(create_agentic_workflows_router())
+    iuri = instance_id_from_uuid(_INSTANCE_UUID).root
+    seed = build_instantiate_seed_event(_WF_W, "W", iuri)
+    store.submit_event_sync(seed)
+    store.wait_merge_idle()
     try:
-        with TestClient(app) as c:
-            yield c
+        with patch(_PATCH, return_value={"W": _WF_W}):
+            with TestClient(app) as c:
+                yield c
     finally:
         store.close()
 

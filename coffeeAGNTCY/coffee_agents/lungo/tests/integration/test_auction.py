@@ -20,8 +20,14 @@ logger = logging.getLogger(__name__)
 
 
 def _response_has_inventory_amount(text: str) -> bool:
-    """True if text contains a numeric inventory amount (e.g. '1,234 pounds' or '500 lbs')."""
-    return bool(re.search(r'\b[\d,]+\s*(pounds|lbs\.?)\b', text))
+    """True if text contains a numeric inventory amount (lbs, pounds, or metric from farms)."""
+    return bool(
+        re.search(
+            r"\b[\d,]+(?:\.\d+)?\s*(pounds|lbs\.?|kg|kilograms?|kilos?)\b",
+            text,
+            re.IGNORECASE,
+        ),
+    )
 
 
 # Reuse the same tests across transports (add/remove configs as needed)
@@ -149,7 +155,9 @@ class TestAuctionFlows:
         data = resp.json()
         logger.info(data)
         assert "response" in data
-        assert _response_has_inventory_amount(data["response"]), "Expected '<number> pounds or <number> lbs' in string"
+        assert _response_has_inventory_amount(data["response"]), (
+            "Expected a numeric inventory amount with a weight unit (pounds, lbs, kg, etc.)"
+        )
 
     @pytest.mark.agents(["weather-mcp", "colombia-farm"])
     @pytest.mark.usefixtures("agents_up")
@@ -168,7 +176,9 @@ class TestAuctionFlows:
         data = resp.json()
         logger.info(data)
         assert "response" in data
-        assert _response_has_inventory_amount(data["response"]), "Expected '<number> pounds or <number> lbs' in string"
+        assert _response_has_inventory_amount(data["response"]), (
+            "Expected a numeric inventory amount with a weight unit (pounds, lbs, kg, etc.)"
+        )
 
     @pytest.mark.agents(["vietnam-farm"])
     @pytest.mark.usefixtures("agents_up")
@@ -187,7 +197,9 @@ class TestAuctionFlows:
         data = resp.json()
         logger.info(data)
         assert "response" in data
-        assert _response_has_inventory_amount(data["response"]), "Expected '<number> pounds or <number> lbs' in string"
+        assert _response_has_inventory_amount(data["response"]), (
+            "Expected a numeric inventory amount with a weight unit (pounds, lbs, kg, etc.)"
+        )
 
 
     @pytest.mark.agents(["weather-mcp", "brazil-farm", "colombia-farm", "vietnam-farm"])

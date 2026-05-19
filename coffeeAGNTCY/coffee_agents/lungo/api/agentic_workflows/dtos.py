@@ -47,6 +47,7 @@ class WorkflowSummary(BaseModel):
     name: Annotated[str, Field(min_length=1)]
     pattern: Annotated[str, Field(min_length=1)]
     use_case: Annotated[str, Field(min_length=1)]
+    scenario: Annotated[str, Field(min_length=1, description="brief extra qualifier for the use-case")]
 
 
 class WorkflowSummaryMapResponse(RootModel[dict[str, WorkflowSummary]]):
@@ -61,3 +62,43 @@ class InstantiateWorkflowResponse(BaseModel):
 
 class WorkflowInstanceMapResponse(RootModel[dict[str, WorkflowInstance]]):
     """Instances keyed by ``InstanceId`` string (see OpenAPI ``WorkflowInstanceMapResponse``)."""
+
+class WorkflowDocumentationSection(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    anchor: Annotated[str, Field(min_length=1)]
+    heading: Annotated[str, Field(min_length=1)]
+    body_markdown: Annotated[
+        str,
+        Field(
+            description="Markdown fragment for this section (content below the ## heading).",
+        ),
+    ]
+
+
+class WorkflowDocumentationResponse(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    slug: Annotated[
+        str,
+        Field(
+            min_length=1,
+            description="Basename slug used to load docs/workflows/{slug}.md.",
+        ),
+    ]
+    workflow_name: Annotated[
+        str,
+        Field(
+            min_length=1,
+            description="Catalog workflow name (same as URL path segment).",
+        ),
+    ]
+    title: Annotated[
+        str | None,
+        Field(description="Leading H1 from the markdown file, if present."),
+    ] = None
+    sections: list[WorkflowDocumentationSection]
+    full_markdown: Annotated[
+        str,
+        Field(description="Full markdown source for optional single-pass rendering."),
+    ]
