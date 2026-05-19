@@ -13,6 +13,10 @@ from agntcy_app_sdk.semantic.a2a import (
     SlimRpcConfig,
     SlimTransportConfig,
 )
+from agntcy_app_sdk.transport.slim.transport import SLIMTransport
+
+SLIMTransport.request.__defaults__ = (60,)
+
 from config.config import NATS_SERVER, SLIM_SERVER
 
 
