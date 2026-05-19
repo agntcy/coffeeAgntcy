@@ -20,6 +20,10 @@ from agntcy_app_sdk.semantic.a2a import (
     SlimTransportConfig,
 )
 from agntcy_app_sdk.semantic.a2a.client.factory import A2AClientFactory
+from agntcy_app_sdk.transport.slim.transport import SLIMTransport
+
+SLIMTransport.request.__defaults__ = (60,)
+
 from common.cors import get_cors_allowed_origins
 from config.config import (
     OTEL_SDK_DISABLED,
