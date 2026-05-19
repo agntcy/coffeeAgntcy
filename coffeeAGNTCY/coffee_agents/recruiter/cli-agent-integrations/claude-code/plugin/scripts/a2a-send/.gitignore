@@ -1,0 +1,3 @@
+# Built binary — devs run `go build -o a2a-send.bin .` to produce it.
+# The `a2a-send` wrapper script is tracked; the compiled binary is not.
+a2a-send.bin

@@ -1,0 +1,9 @@
+{
+  "plugins": [
+    {
+      "name": "agntcy-discover-connect",
+      "description": "Discover remote A2A agents from the AGNTCY directory and connect to them from Claude Code",
+      "source": "./plugin"
+    }
+  ]
+}

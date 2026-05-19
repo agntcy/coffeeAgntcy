@@ -16,11 +16,7 @@ Discover, evaluate, and dynamically recruit agents for on-demand task execution.
   - [Docker Compose](#docker-compose-recommended)
   - [Service Endpoints](#service-endpoints)
 - [Testing](#testing)
-- [Claude Code Plugin](#claude-code-plugin)
-  - [Plugin Installation](#plugin-installation)
-  - [Plugin Commands](#plugin-commands)
-  - [Skills vs Sub-Agents](#skills-vs-sub-agents)
-  - [`a2a-send` CLI Tool](#a2a-send-cli-tool)
+- [CLI Agent Integrations](#cli-agent-integrations)
 
 ## Overview
 
@@ -223,95 +219,11 @@ uv run pytest tests/integration/test_agent_evaluator.py -v
 | `test_a2a.py` | A2A server integration tests (search, streaming, evaluation flow) |
 | `test_agent_evaluator.py` | Agent evaluation scenario tests |
 
-## Claude Code Plugin
+## CLI Agent Integrations
 
-The [`coding-agent-integrations/claude-code/`](./coding-agent-integrations/claude-code/) directory contains **agntcy-discover-connect** — a [Claude Code](https://docs.anthropic.com/en/docs/claude-code) plugin that brings the recruiter's agent discovery capabilities directly into the Claude Code CLI. Instead of running the recruiter as a standalone A2A service, this plugin lets you search the AGNTCY directory, preview candidates, and connect remote A2A agents as skills or sub-agents — all from within a Claude Code session.
+The [`cli-agent-integrations/`](./cli-agent-integrations/) directory contains integrations for CLI-based coding agents.
 
-### Plugin Installation
-
-**Local development (from `recruiter/coding-agent-integrations/claude-code/`):**
-
-```bash
-cd coding-agent-integrations/claude-code
-
-# Build the a2a-send CLI tool
-pushd plugin/scripts/a2a-send && go build -o a2a-send . && popd
-
-# Launch Claude Code with the plugin
-claude --plugin-dir ./plugin
-```
-
-**Prerequisites:** [Claude Code CLI](https://docs.anthropic.com/en/docs/claude-code), [`dirctl`](https://github.com/agntcy/dir-ctl), [Go 1.23+](https://go.dev/dl/) (to build `a2a-send`), and [`jq`](https://stedolan.github.io/jq/) for record parsing.
-
-### Plugin Commands
-
-| Command | Description |
-|---------|-------------|
-| **`/recruit <query>`** | Search the AGNTCY directory for agents matching your query, preview candidates in a summary table, and connect them as skills or sub-agents |
-| **`/a2a-send <url> <message>`** | Send a message directly to any A2A agent endpoint for quick testing or one-off communication |
-
-**Example usage:**
-
-```
-/recruit Can you find an agent named Brazil Coffee Farm?
-/a2a-send http://localhost:9999 "What is the current coffee yield?"
-```
-
-**`/recruit` workflow:**
-1. Searches the directory using multiple strategies (skill match, domain match, name wildcard, DHT routing)
-2. Presents discovered agents in a summary table
-3. User picks which agents to connect
-4. User chooses creation mode: **skill** (recommended) or **sub-agent**
-
-### Skills vs Sub-Agents
-
-The plugin can connect remote agents in two modes:
-
-| Mode | How it works | Invoke with | Pros |
-|------|-------------|-------------|------|
-| **Skill** (recommended) | Creates `.claude/skills/<name>/SKILL.md` — the parent model runs `a2a-send` directly | `/agent-name <message>` | Available immediately, no intermediary model to refuse requests |
-| **Sub-agent** | Creates `.claude/agents/<name>.md` — Claude Code spawns a separate model | Natural language: "Use the agent to..." | More autonomous, but may refuse to forward out-of-scope requests |
-
-> **Tip:** Start with skills. If a sub-agent refuses to forward requests the remote agent can handle, delete the sub-agent and re-run `/recruit` to create a skill instead.
-
-> **Note:** If a newly created skill doesn't appear as a slash command, start a new Claude Code session (`/exit` or `Ctrl+C` twice, then relaunch `claude`) for it to be picked up.
-
-
-**Managing recruited agents:**
-
-```bash
-# Remove a skill
-rm -rf .claude/skills/brazil-coffee-farm/
-
-# Remove a sub-agent
-rm .claude/agents/brazil-coffee-farm.md
-```
-
-### Plugin Structure
-
-```
-coding-agent-integrations/claude-code/plugin/
-├── .claude-plugin/
-│   └── plugin.json              # Plugin manifest
-├── commands/
-│   ├── recruit.md               # /recruit slash command
-│   └── a2a-send.md              # /a2a-send slash command
-├── hooks/
-├── scripts/
-│   ├── a2a-send/                # Go CLI tool (a2a-go SDK)
-│   │   ├── main.go
-│   │   ├── go.mod
-│   │   └── go.sum
-├── skills/
-│   └── a2a-protocol/            # A2A protocol knowledge skill
-│       ├── SKILL.md
-│       └── references/
-│           ├── oasf-structure.md
-│           ├── a2a-protocol-cheatsheet.md
-│           ├── error-handling.md
-│           └── dirctl-search.md
-└── docs/
-```
+- **[Claude Code](./cli-agent-integrations/claude-code/README.md)** — the **agntcy-discover-connect** plugin that brings the recruiter's agent discovery capabilities directly into the [Claude Code](https://docs.anthropic.com/en/docs/claude-code) CLI. Search the AGNTCY directory, verify record signatures with `dirctl`, connect remote A2A agents as slash-command skills, and inspect identity-service badges, all from within a Claude Code session.
 
 ## Advanced Usage
 
