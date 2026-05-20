@@ -9,9 +9,8 @@ import uvicorn
 from agntcy_app_sdk.factory import AgntcyFactory
 from agntcy_app_sdk.transport.slim.transport import SLIMTransport
 from common.cors import get_cors_allowed_origins
-
-SLIMTransport.request.__defaults__ = (60,)
 from common.version import get_version_info
+from config.config import SLIM_TRANSPORT_REQUEST_TIMEOUT
 from config.logging_config import setup_logging
 from dotenv import load_dotenv
 from exchange.agent import ExchangeAgent
@@ -21,6 +20,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from ioa_observe.sdk.tracing import session_start
 from pydantic import BaseModel
+
+if SLIM_TRANSPORT_REQUEST_TIMEOUT is not None:
+    SLIMTransport.request.__defaults__ = (SLIM_TRANSPORT_REQUEST_TIMEOUT,)
 
 setup_logging()
 logger = logging.getLogger("corto.supervisor.main")
