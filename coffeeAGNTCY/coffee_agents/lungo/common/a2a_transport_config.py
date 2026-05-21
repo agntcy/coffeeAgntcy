@@ -16,8 +16,7 @@ from agntcy_app_sdk.semantic.a2a import (
 from agntcy_app_sdk.transport.slim.transport import SLIMTransport
 from config.config import NATS_SERVER, SLIM_SERVER, SLIM_TRANSPORT_REQUEST_TIMEOUT
 
-if SLIM_TRANSPORT_REQUEST_TIMEOUT is not None:
-    SLIMTransport.request.__defaults__ = (SLIM_TRANSPORT_REQUEST_TIMEOUT,)
+SLIMTransport.request.__defaults__ = (SLIM_TRANSPORT_REQUEST_TIMEOUT,)
 
 
 def build_a2a_client_config(

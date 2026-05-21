@@ -34,8 +34,7 @@ OAUTH2_TOKEN_URL= os.getenv("OAUTH2_TOKEN_URL", "")
 OAUTH2_BASE_URL= os.getenv("OAUTH2_BASE_URL", "")
 OAUTH2_APPKEY= os.getenv("OAUTH2_APPKEY", "")
 
-_slim_timeout_raw = os.getenv("SLIM_TRANSPORT_REQUEST_TIMEOUT")
-SLIM_TRANSPORT_REQUEST_TIMEOUT = int(_slim_timeout_raw) if _slim_timeout_raw is not None else None
+SLIM_TRANSPORT_REQUEST_TIMEOUT = int(os.getenv("SLIM_TRANSPORT_REQUEST_TIMEOUT", "10"))
 
 LOGGING_LEVEL = os.getenv("LOGGING_LEVEL", "INFO").upper()
 

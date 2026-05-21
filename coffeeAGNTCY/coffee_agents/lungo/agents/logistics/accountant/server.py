@@ -33,8 +33,7 @@ from starlette.responses import JSONResponse
 from starlette.routing import Route
 from uvicorn import Config, Server
 
-if SLIM_TRANSPORT_REQUEST_TIMEOUT is not None:
-    SLIMTransport.request.__defaults__ = (SLIM_TRANSPORT_REQUEST_TIMEOUT,)
+SLIMTransport.request.__defaults__ = (SLIM_TRANSPORT_REQUEST_TIMEOUT,)
 
 PORT = getenv("AGENT_PORT", "9092")
 
