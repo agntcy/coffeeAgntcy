@@ -21,8 +21,7 @@ from fastapi.responses import JSONResponse
 from ioa_observe.sdk.tracing import session_start
 from pydantic import BaseModel
 
-if SLIM_TRANSPORT_REQUEST_TIMEOUT is not None:
-    SLIMTransport.request.__defaults__ = (SLIM_TRANSPORT_REQUEST_TIMEOUT,)
+SLIMTransport.request.__defaults__ = (SLIM_TRANSPORT_REQUEST_TIMEOUT,)
 
 setup_logging()
 logger = logging.getLogger("corto.supervisor.main")
