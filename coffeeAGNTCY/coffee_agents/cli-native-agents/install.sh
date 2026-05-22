@@ -12,12 +12,13 @@ A2A_SEND_BIN="$A2A_SEND_DIR/a2a-send.bin"
 AGENT=""
 SKIP_BUILD=0
 SKILL_ROOT_OVERRIDE=""
+VERBOSE=0
 
 usage() {
 	cat <<'EOF'
 Usage:
-	./install.sh <agent> [--skill-root <path>] [--skip-build]
-	./install.sh --agent <agent> [--skill-root <path>] [--skip-build]
+	./install.sh <agent> [--skill-root <path>] [--skip-build] [--verbose]
+	./install.sh --agent <agent> [--skill-root <path>] [--skip-build] [--verbose]
 
 Supported CLI-native agents:
 	- claude-code
@@ -49,6 +50,11 @@ EOF
 }
 
 info() {
+	[ "$VERBOSE" -eq 1 ] || return 0
+	printf '==> %s\n' "$*"
+}
+
+notice() {
 	printf '==> %s\n' "$*"
 }
 
@@ -116,6 +122,10 @@ parse_args() {
 				;;
 			--skip-build)
 				SKIP_BUILD=1
+				shift
+				;;
+			--verbose|-v)
+				VERBOSE=1
 				shift
 				;;
 			--help|-h)
@@ -286,6 +296,21 @@ check_env_var() {
 }
 
 check_environment() {
+	if [ "$VERBOSE" -eq 0 ]; then
+		missing_env=0
+		for var_name in IDENTITY_API_SERVER_URL IDENTITY_SERVICE_API_KEY SLIM_SHARED_SECRET; do
+			value="${!var_name:-}"
+			if is_placeholder_value "$value"; then
+				missing_env=1
+			fi
+		done
+
+		if [ "$missing_env" -eq 1 ]; then
+			warn "Some optional environment variables are not set. See $SCRIPT_DIR/.env.example."
+		fi
+		return 0
+	fi
+
 	check_env_var "IDENTITY_API_SERVER_URL" "Required only by /check-identity."
 	check_env_var "IDENTITY_SERVICE_API_KEY" "Required only by /check-identity."
 	check_env_var "SLIM_SHARED_SECRET" "Required only when /a2a-send targets an agent that advertises SLIM/SLIMRPC. HTTP-only targets can ignore this."
@@ -303,7 +328,8 @@ build_a2a_send() {
 
 	check_command go || die "Go is required to build a2a-send. Install Go 1.25+ and rerun this script."
 
-	info "Building a2a-send with $(go version)."
+	notice "Building a2a-send"
+	info "Using $(go version)."
 	(
 		cd "$A2A_SEND_DIR"
 		go build -o "$A2A_SEND_BIN" .
@@ -320,6 +346,7 @@ install_skills() {
 
 	write_project_config "$skill_root"
 
+	notice "Installing skills"
 	info "Installing bundled skills into $skill_root"
 	mkdir -p "$skill_root"
 
@@ -336,7 +363,7 @@ install_skills() {
 main() {
 	parse_args "$@"
 
-	info "Preparing CLI-native agent integration for: $AGENT"
+	notice "Preparing $AGENT"
 	check_agent_cli
 	check_common_tools
 	build_a2a_send
@@ -350,11 +377,6 @@ Install check complete for $AGENT.
 Skills directory:
 	$(agent_skill_root)
 
-a2a-send wrapper:
-	$A2A_SEND_WRAPPER
-
-If you saw environment warnings, copy the needed values from:
-	$SCRIPT_DIR/.env.example
 EOF
 }
 
