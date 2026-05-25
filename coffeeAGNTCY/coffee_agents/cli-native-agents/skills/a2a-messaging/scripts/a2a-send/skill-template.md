@@ -6,14 +6,16 @@ allowed-tools: Bash
 
 ## EXECUTE NOW
 
-Run this command to send the user's message to the remote A2A agent:
+Load the project config and send the user's message to the remote A2A agent:
 
 ```bash
-"__A2A_SEND_PATH__" --peer-url "__ENDPOINT__" --message "$ARGUMENTS"
+. "$(pwd)/.agntcy/cli-native-agents/env.sh" || exit 1
+"$AGNTCY_A2A_SEND" --peer-url "__ENDPOINT__" --message "$ARGUMENTS"
 ```
 
-- The `a2a-send` path was resolved to an absolute path at `/recruit` time
-- `$ARGUMENTS` is auto-substituted by Claude Code with whatever the user typed after the slash command
-- stdout contains the agent's response
-- If exit code 1, stderr contains a JSON error — relay the error to the user
-- For long-running tasks, add --non-blocking --wait flags
+- `env.sh` was written by `cli-native-agents/install.sh` and exports `AGNTCY_A2A_SEND`.
+- `$ARGUMENTS` is the substitution token for the user's input (Claude Code syntax; other hosts may differ).
+- stdout contains the agent's response.
+- If exit code 1, stderr contains a JSON error — relay the error to the user.
+- For long-running tasks, add `--non-blocking --wait` flags.
+

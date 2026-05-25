@@ -1,4 +1,4 @@
-module github.com/claude-code-remote-agent-team/a2a-send
+module a2a-cli-gateway
 
 go 1.25.2
 
