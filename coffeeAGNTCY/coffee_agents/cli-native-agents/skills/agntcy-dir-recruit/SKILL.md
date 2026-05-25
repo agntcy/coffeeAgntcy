@@ -1,3 +1,9 @@
+---
+name: agntcy-dir-recruit
+description: Search the AGNTCY directory for remote A2A agents, present candidates, and connect them to the current CLI-native agent as skills. Use when the user wants to recruit, find, browse, or connect to a new remote agent.
+compatibility: Requires dirctl, jq, and a running AGNTCY directory server.
+---
+
 # Recruit — Agent Discovery and Connection
 
 Search the AGNTCY directory for remote A2A agents, present candidates, and connect them to the current CLI-native agent as **skills**.
@@ -9,6 +15,8 @@ Search the AGNTCY directory for remote A2A agents, present candidates, and conne
 - `/recruit I need an agent that can tell me coffee farm yields` — targeted search
 - `/recruit Find me a code review agent` — targeted search
 
+> **Host invocation note:** Examples below use the Claude Code `/skill-name` slash-command syntax and `$ARGUMENTS` substitution. Other CLI-native agent hosts may invoke skills differently — adapt as needed.
+
 ---
 
 ## Instructions
@@ -19,32 +27,21 @@ You are a dynamic agent recruiter. Search the AGNTCY directory, present candidat
 
 ### Step 0 — Resolve the project skill directory
 
-Before searching or creating skills, resolve the directory where generated skills should be written. The installer writes this into `AGNTCY_SKILLS_DIR` and also persists it in `.agntcy/cli-native-agents/config.env` for future CLI sessions.
-
-Run this Bash snippet and reuse the resulting `SKILLS_DIR` for every skill lookup and write in this command:
+Before searching or creating skills, load the project config written by `cli-native-agents/install.sh`. This exports `AGNTCY_SKILLS_DIR` (where generated skills go) and `AGNTCY_A2A_SEND` (the bundled a2a-send binary).
 
 ```bash
-SKILLS_DIR="${AGNTCY_SKILLS_DIR:-}"
-if [ -z "$SKILLS_DIR" ]; then
-  CONFIG_FILE="$(pwd)/.agntcy/cli-native-agents/config.env"
-  if [ -f "$CONFIG_FILE" ]; then
-    SKILLS_DIR="$(set -a; . "$CONFIG_FILE"; printf '%s' "$AGNTCY_SKILLS_DIR")"
-  fi
-fi
-if [ -z "$SKILLS_DIR" ]; then
-  echo "AGNTCY_SKILLS_DIR is not set and .agntcy/cli-native-agents/config.env was not found. Run cli-native-agents/install.sh for your CLI-native agent first."
-  exit 1
-fi
-printf '%s\n' "$SKILLS_DIR"
+. "$(pwd)/.agntcy/cli-native-agents/env.sh" || exit 1
 ```
 
-Do **not** hard-code `.claude/skills`, `.agents/skills`, or `.opencode/skills` in generated commands. Always use `"$SKILLS_DIR"`.
+If sourcing fails, the helper prints a clear error pointing at `install.sh`. After sourcing, use `"$AGNTCY_SKILLS_DIR"` for every skill lookup and write in this command. Pre-set environment variables (e.g. `AGNTCY_SKILLS_DIR=/tmp/foo`) override the config file — useful for testing.
+
+Do **not** hard-code any host-specific skills directory in generated commands. Always use `"$AGNTCY_SKILLS_DIR"`.
 
 ---
 
 ### Step 1 — Search the directory
 
-Parse the slash-command arguments to determine search mode and run `dirctl search`.
+Parse the skill arguments to determine search mode and run `dirctl search`.
 
 **Intent:**
 - Empty / "all" / "list" / "browse" → **Browse**: `dirctl search --skill "*"`
@@ -101,7 +98,7 @@ If the jq filter fails for a record (missing A2A module, unexpected structure), 
 
 **Check for existing skills** (use `find`, not `ls` with globs — zsh's `nomatch` setting will fail the whole command if a glob matches nothing):
 ```bash
-find "$SKILLS_DIR" -name SKILL.md 2>/dev/null
+find "$AGNTCY_SKILLS_DIR" -name SKILL.md 2>/dev/null
 ```
 
 ---
@@ -176,41 +173,28 @@ For each selected agent, **immediately** do the following without asking further
 
 **3b. Create the skill directory and write the SKILL.md by copying the template.**
 
-> **Critical:** Generated skills should not depend on CLI-specific plugin root variables at invoke time. Resolve the `a2a-send` binary to an **absolute path** while `/recruit` runs and bake that absolute path into the generated `SKILL.md`. The only token left for skill-invoke-time substitution is `$ARGUMENTS`, which CLI-native agents substitute with whatever the user typed after the skill command.
+Generated skills load `$AGNTCY_A2A_SEND` at invoke time via the `env.sh` helper, so the template only needs three substitutions: `__SKILL_NAME__`, `__AGENT_DISPLAY_NAME__`, and `__ENDPOINT__`. Everything else stays literal (the `$ARGUMENTS` token, the `env.sh` sourcing line).
 
 Run **one** Bash invocation per skill, substituting `<name>`, `<endpoint>`, and `<agent-display-name>` with the values for the selected agent:
 
 ```bash
-mkdir -p "$SKILLS_DIR/<name>"
-A2A_SEND_PATH="${AGNTCY_A2A_SEND:-}"
-if [ -z "$A2A_SEND_PATH" ]; then
-  CONFIG_FILE="$(pwd)/.agntcy/cli-native-agents/config.env"
-  if [ -f "$CONFIG_FILE" ]; then
-    A2A_SEND_PATH="$(set -a; . "$CONFIG_FILE"; printf '%s' "$AGNTCY_A2A_SEND")"
-  fi
-fi
-if [ -z "$A2A_SEND_PATH" ]; then
-  echo "AGNTCY_A2A_SEND is not set and .agntcy/cli-native-agents/config.env was not found. Run cli-native-agents/install.sh first."
-  exit 1
-fi
+mkdir -p "$AGNTCY_SKILLS_DIR/<name>"
 sed \
   -e "s|__SKILL_NAME__|<name>|g" \
   -e "s|__AGENT_DISPLAY_NAME__|<agent-display-name>|g" \
   -e "s|__ENDPOINT__|<endpoint>|g" \
-  -e "s|__A2A_SEND_PATH__|${A2A_SEND_PATH}|g" \
-  "$SKILLS_DIR/a2a-messaging/scripts/a2a-send/skill-template.md" \
-  > "$SKILLS_DIR/<name>/SKILL.md"
+  "$AGNTCY_SKILLS_DIR/a2a-messaging/scripts/a2a-send/skill-template.md" \
+  > "$AGNTCY_SKILLS_DIR/<name>/SKILL.md"
 ```
 
 Notes:
-- `sed` uses `|` as the delimiter so URLs and absolute paths (which contain `/`) need no escaping.
+- `sed` uses `|` as the delimiter so URLs (which contain `/`) need no escaping.
 - If `<agent-display-name>` contains a literal `|` or `&`, escape it before substitution (`\|`, `\&`). `"`, `'`, and spaces are fine.
-- `${A2A_SEND_PATH}` is intentionally expanded by the shell at recruit time — this is how the absolute path gets baked in.
 
 Verify by `cat`ing the resulting file and confirming:
-- `__A2A_SEND_PATH__` is now an absolute path like `/Users/…/a2a-send`.
 - `$ARGUMENTS` still appears literally (dollar sign intact).
-- The three other placeholders were replaced with the agent's actual values.
+- The `env.sh` sourcing line is present near the top.
+- The three placeholders were replaced with the agent's actual values.
 
 **3c. Clean up and summarize:**
 
@@ -240,4 +224,4 @@ To inspect the agent's identity-service badge and policies, run:
 - **No directory server**: Set `DIRECTORY_CLIENT_SERVER_ADDRESS` env var (default `0.0.0.0:8888`). Run `dirctl info` to verify
 - **No agents found**: Suggest broader search terms or check that agents are registered
 - **jq filter fails on a record**: Skip that record, note it, continue with others
-- **File write failure**: Check permissions on `SKILLS_DIR`
+- **File write failure**: Check permissions on `$AGNTCY_SKILLS_DIR`

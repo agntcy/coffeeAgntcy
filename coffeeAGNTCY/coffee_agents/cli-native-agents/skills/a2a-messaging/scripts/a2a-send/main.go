@@ -1,7 +1,6 @@
 // a2a-send: CLI tool for sending messages to A2A agents using the a2a-go SDK.
 //
-// Inspired by openclaw-a2a-gateway's skill/scripts/a2a-send.mjs but written in Go
-// using the official a2a-go SDK (github.com/a2aproject/a2a-go/v2). The HTTP
+// Built on the official a2a-go SDK (github.com/a2aproject/a2a-go/v2). The HTTP
 // path supports blocking send, non-blocking+polling, SSE streaming, multi-turn
 // conversations (task-id/context-id), and automatic agent card discovery. The
 // SLIM path uses github.com/agntcy/slim-a2a-go for unary send over a running

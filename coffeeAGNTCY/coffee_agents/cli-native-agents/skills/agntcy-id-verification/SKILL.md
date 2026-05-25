@@ -1,3 +1,9 @@
+---
+name: agntcy-id-verification
+description: Inspect the AGNTCY identity-service badge and policies attached to a skill or sub-agent created by recruit. Use when the user wants to check the identity, badge, signing status, or attached policies of a recruited agent.
+compatibility: Requires Python 3.7+, a reachable AGNTCY identity service (IDENTITY_API_SERVER_URL), and an API key (IDENTITY_SERVICE_API_KEY).
+---
+
 # Check Identity — Inspect badge & policies for a recruited agent
 
 Inspect the AGNTCY identity-service badge and policies attached to a skill or sub-agent created by `/recruit`. This is a **post-recruit, on-demand** check — it does not run automatically on send.
@@ -7,6 +13,8 @@ Inspect the AGNTCY identity-service badge and policies attached to a skill or su
 **Examples:**
 - `/check-identity brazil-coffee-farm`
 - `/check-identity review-bot`
+
+> **Host invocation note:** Examples below use the Claude Code `/skill-name` slash-command syntax and `$ARGUMENTS` substitution. Other CLI-native agent hosts may invoke skills differently — adapt as needed.
 
 ---
 
@@ -27,21 +35,11 @@ If `IDENTITY_API_SERVER_URL` is unset, stop and tell the user to set them (point
 
 ### Step 0 — Resolve project paths
 
-Resolve the installed skills directory and bundled identity client. Prefer environment variables, then fall back to the config file written by `cli-native-agents/install.sh`:
+Load the project config written by `cli-native-agents/install.sh`. This exports `AGNTCY_SKILLS_DIR` (where installed skills live) and other AGNTCY env vars. Pre-set env vars override the config file.
 
 ```bash
-SKILLS_DIR="${AGNTCY_SKILLS_DIR:-}"
-if [ -z "$SKILLS_DIR" ]; then
-	CONFIG_FILE="$(pwd)/.agntcy/cli-native-agents/config.env"
-	if [ -f "$CONFIG_FILE" ]; then
-		SKILLS_DIR="$(set -a; . "$CONFIG_FILE"; printf '%s' "$AGNTCY_SKILLS_DIR")"
-	fi
-fi
-if [ -z "$SKILLS_DIR" ]; then
-	echo "AGNTCY_SKILLS_DIR is not set and .agntcy/cli-native-agents/config.env was not found. Run cli-native-agents/install.sh first."
-	exit 1
-fi
-IDENTITY_CLIENT="$SKILLS_DIR/identity-verification/scripts/identity_client.py"
+. "$(pwd)/.agntcy/cli-native-agents/env.sh" || exit 1
+IDENTITY_CLIENT="$AGNTCY_SKILLS_DIR/agntcy-id-verification/scripts/identity_client.py"
 ```
 
 ### Step 1 — Resolve the target file
@@ -49,10 +47,10 @@ IDENTITY_CLIENT="$SKILLS_DIR/identity-verification/scripts/identity_client.py"
 Parse `$ARGUMENTS` to get `<name>`. Look for the corresponding file in this order:
 
 ```bash
-"$SKILLS_DIR/<name>/SKILL.md"
+"$AGNTCY_SKILLS_DIR/<name>/SKILL.md"
 ```
 
-If it does not exist, list what does exist (`find "$SKILLS_DIR" -maxdepth 2 -name SKILL.md`) and stop.
+If it does not exist, list what does exist (`find "$AGNTCY_SKILLS_DIR" -maxdepth 2 -name SKILL.md`) and stop.
 
 ### Step 2 — Extract endpoint and display name
 

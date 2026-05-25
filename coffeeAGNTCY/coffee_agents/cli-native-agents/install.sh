@@ -188,6 +188,7 @@ write_project_config() {
 	skill_root="$1"
 	config_dir="$(pwd)/.agntcy/cli-native-agents"
 	config_file="$config_dir/config.env"
+	env_helper="$config_dir/env.sh"
 
 	mkdir -p "$config_dir"
 	{
@@ -197,7 +198,31 @@ write_project_config() {
 		printf 'AGNTCY_A2A_SEND=%s\n' "$(quote_for_env "$A2A_SEND_WRAPPER")"
 	} > "$config_file"
 
+	cat > "$env_helper" <<'EOF'
+#!/usr/bin/env bash
+# Sourced by AGNTCY CLI-native skills. Env vars already set in the shell win;
+# anything unset falls back to ./.agntcy/cli-native-agents/config.env.
+# Source from the project root (where .agntcy/ lives) or pass an explicit path:
+#   . "$(pwd)/.agntcy/cli-native-agents/env.sh"
+_cfg="$(pwd)/.agntcy/cli-native-agents/config.env"
+if [ ! -f "$_cfg" ]; then
+	echo "ERROR: $_cfg missing. Run cli-native-agents/install.sh from this directory." >&2
+	return 1 2>/dev/null || exit 1
+fi
+_o_skills="${AGNTCY_SKILLS_DIR:-}"
+_o_a2a="${AGNTCY_A2A_SEND:-}"
+_o_agent="${AGNTCY_CLI_AGENT:-}"
+. "$_cfg"
+[ -n "$_o_skills" ] && AGNTCY_SKILLS_DIR="$_o_skills"
+[ -n "$_o_a2a"    ] && AGNTCY_A2A_SEND="$_o_a2a"
+[ -n "$_o_agent"  ] && AGNTCY_CLI_AGENT="$_o_agent"
+export AGNTCY_SKILLS_DIR AGNTCY_A2A_SEND AGNTCY_CLI_AGENT
+unset _cfg _o_skills _o_a2a _o_agent
+EOF
+	chmod +x "$env_helper"
+
 	info "Wrote project config: $config_file"
+	info "Wrote env helper:    $env_helper"
 }
 
 copy_skill_dir() {
