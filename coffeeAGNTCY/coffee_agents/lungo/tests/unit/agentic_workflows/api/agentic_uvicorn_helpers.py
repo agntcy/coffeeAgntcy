@@ -15,6 +15,11 @@ from pathlib import Path
 
 import httpx
 
+from tests.helpers.workflow_api_auth import (
+    TEST_WORKFLOW_API_KEY,
+    workflow_api_auth_headers,
+)
+
 LUNGO_ROOT = Path(__file__).resolve().parents[4]
 
 
@@ -32,7 +37,11 @@ def free_tcp_port() -> int:
 
 def start_agentic_uvicorn(port: int) -> subprocess.Popen:
     """Run ``api.agentic_workflows.server:app`` on ``127.0.0.1:port`` (stdout/stderr discarded)."""
-    env = {**os.environ, "PYTHONPATH": str(LUNGO_ROOT)}
+    env = {
+        **os.environ,
+        "PYTHONPATH": str(LUNGO_ROOT),
+        "WORKFLOW_API_KEY": TEST_WORKFLOW_API_KEY,
+    }
     return subprocess.Popen(
         [
             sys.executable,
@@ -60,6 +69,7 @@ def wait_health(base_url: str, *, deadline_s: float = 15.0) -> None:
         base_url=base_url,
         timeout=httpx.Timeout(2.0),
         trust_env=False,
+        headers=workflow_api_auth_headers(),
     ) as client:
         while time.monotonic() < deadline:
             try:
@@ -134,11 +144,14 @@ def read_sse_until_data_line(
     port: int,
     path: str,
     *,
+    extra_headers: dict[str, str] | None = None,
     overall_deadline_s: float = 30.0,
 ) -> bytes:
     """HTTP/1.1 GET ``path``; return bytes containing at least one ``data:`` SSE line."""
     buf = b""
     end = time.monotonic() + overall_deadline_s
+    hdrs = extra_headers if extra_headers is not None else workflow_api_auth_headers()
+    header_block = "".join(f"{k}: {v}\r\n" for k, v in hdrs.items())
     with socket.create_connection((host, port), timeout=10) as sock:
         sock.settimeout(1.0)
         req = (
@@ -146,6 +159,7 @@ def read_sse_until_data_line(
             f"Host: {host}:{port}\r\n"
             "Accept: text/event-stream\r\n"
             "Cache-Control: no-cache\r\n"
+            f"{header_block}"
             "\r\n"
         ).encode()
         sock.sendall(req)

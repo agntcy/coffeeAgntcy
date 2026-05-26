@@ -530,3 +530,37 @@ def test_close_idempotent():
     store = WorkflowInstanceStateStore()
     store.close()
     store.close()
+
+
+def test_delete_instance_removes_projection_and_subscribers():
+    notifier = RecordingNotifier()
+    store = WorkflowInstanceStateStore(notifier=notifier)
+    try:
+        store.submit_event_sync(_minimal_valid_event())
+        store.wait_merge_idle()
+        store.wait_dispatch_idle()
+
+        received: list[Event] = []
+
+        def listener(ev: Event) -> None:
+            received.append(ev)
+
+        store.subscribe(_INSTANCE_KEY, listener)
+        assert store.delete_instance("w", _INSTANCE_KEY) is True
+        assert store.get_instance_projection("w", _INSTANCE_KEY) is None
+        assert store.delete_instance("w", _INSTANCE_KEY) is False
+        assert store.delete_instance("missing_wf", _INSTANCE_KEY) is False
+
+        store.submit_event_sync(_minimal_valid_event())
+        store.wait_merge_idle()
+        store.wait_dispatch_idle()
+        assert len(received) == 0
+    finally:
+        store.close()
+
+
+def test_delete_instance_rejects_when_closed():
+    store = WorkflowInstanceStateStore()
+    store.close()
+    with pytest.raises(WorkflowInstanceStoreClosedError, match="closed"):
+        store.delete_instance("w", _INSTANCE_KEY)

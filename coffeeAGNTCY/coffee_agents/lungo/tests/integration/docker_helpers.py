@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import os
+import socket
 import time
 from typing import Optional, Tuple
 import json
@@ -26,9 +27,38 @@ def _compose_cmd(files: List[str]) -> List[str]:
             cmd += ["-f", str(compose_file)]
     return cmd
 
+def ensure_compose_profile(profile: str) -> None:
+    """Ensure ``profile`` is listed in COMPOSE_PROFILES (comma-separated)."""
+    existing = [p.strip() for p in os.environ.get("COMPOSE_PROFILES", "").split(",") if p.strip()]
+    if profile not in existing:
+        existing.append(profile)
+        os.environ["COMPOSE_PROFILES"] = ",".join(existing)
+
+
 def _compose_env():
     """Env for docker compose subprocess: use current process env so test-set vars (e.g. OTEL_SDK_DISABLED) are used."""
     return dict(os.environ)
+
+
+def wait_for_tcp_port(
+    host: str,
+    port: int,
+    *,
+    timeout_s: float = 120.0,
+    poll_s: float = 0.5,
+) -> None:
+    """Wait until ``host:port`` accepts TCP connections."""
+    deadline = time.time() + timeout_s
+    while time.time() < deadline:
+        try:
+            with socket.create_connection((host, port), timeout=2):
+                print(f"TCP endpoint {host}:{port} is accepting connections.")
+                return
+        except OSError:
+            time.sleep(poll_s)
+    raise RuntimeError(
+        f"TCP endpoint {host}:{port} did not become ready within {timeout_s}s"
+    )
 
 
 def _run(cmd: List[str]):

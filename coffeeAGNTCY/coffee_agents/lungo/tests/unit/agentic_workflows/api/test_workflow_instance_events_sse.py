@@ -7,9 +7,11 @@ from __future__ import annotations
 
 import asyncio
 import json
+from unittest.mock import patch
 from uuid import UUID
 
 import pytest
+from api.agentic_workflows.instance_lifecycle import build_instantiate_seed_event
 from api.agentic_workflows.router import (
     WORKFLOW_INSTANCE_STORE_ATTR,
     WORKFLOW_INSTANCE_SSE_QUEUE_HIGH_WATER_RATIO,
@@ -20,7 +22,43 @@ from api.agentic_workflows.router import (
 from common.workflow_instance_store import WorkflowInstanceStateStore
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
-from schema.types import Event, instance_id_from_uuid
+from schema.types import Event, Workflow, instance_id_from_uuid
+
+_PATCH_GET_WORKFLOWS = "api.agentic_workflows.router.get_workflows"
+
+_CATALOG_WORKFLOWS: dict[str, Workflow] = {
+    name: Workflow.model_validate(
+        {
+            "name": name,
+            "pattern": "p",
+            "use_case": "u",
+            "scenario": "s",
+            "starting_topology": {"nodes": [], "edges": []},
+            "instances": {},
+        }
+    )
+    for name in (
+        "post_wf",
+        "path_wf",
+        "mismatch_wf",
+        "merge_wf",
+        "w",
+        "sse_wf",
+        "only_in_body",
+        "body_wf",
+    )
+}
+
+
+def _seed_instance_in_store(
+    store: WorkflowInstanceStateStore,
+    workflow_name: str,
+    instance_uri: str,
+) -> None:
+    wf = _CATALOG_WORKFLOWS[workflow_name]
+    payload = build_instantiate_seed_event(wf, workflow_name, instance_uri)
+    store.submit_event_sync(payload)
+    store.wait_merge_idle()
 
 
 def _event_dict(workflow_name: str, instance_uri: str, event_id: str) -> dict:
@@ -66,17 +104,24 @@ def app_with_store() -> FastAPI:
 
 
 @pytest.fixture()
-def client(app_with_store: FastAPI) -> TestClient:
-    with TestClient(app_with_store) as c:
-        yield c
+def client(
+    app_with_store: FastAPI,
+    workflow_api_headers: dict[str, str],
+) -> TestClient:
+    with patch(_PATCH_GET_WORKFLOWS, return_value=_CATALOG_WORKFLOWS):
+        with TestClient(app_with_store, headers=workflow_api_headers) as c:
+            yield c
 
 
 def test_post_workflow_instance_event_valid_returns_204(
     client: TestClient,
+    app_with_store: FastAPI,
 ) -> None:
+    store = getattr(app_with_store.state, WORKFLOW_INSTANCE_STORE_ATTR)
     uid = UUID("550e8400-e29b-41d4-a716-446655440010")
     iuri = instance_id_from_uuid(uid).root
     wf = "post_wf"
+    _seed_instance_in_store(store, wf, iuri)
     body = _event_dict(wf, iuri, "event://550e8400-e29b-41d4-a716-446655440011")
     r = client.post(
         f"/agentic-workflows/{wf}/instances/{uid}/events/",
@@ -87,9 +132,12 @@ def test_post_workflow_instance_event_valid_returns_204(
 
 def test_post_workflow_instance_event_wrong_workflow_returns_400(
     client: TestClient,
+    app_with_store: FastAPI,
 ) -> None:
+    store = getattr(app_with_store.state, WORKFLOW_INSTANCE_STORE_ATTR)
     uid = UUID("550e8400-e29b-41d4-a716-446655440020")
     iuri = instance_id_from_uuid(uid).root
+    _seed_instance_in_store(store, "path_wf", iuri)
     body = _event_dict("only_in_body", iuri, "event://550e8400-e29b-41d4-a716-446655440021")
     r = client.post(
         "/agentic-workflows/path_wf/instances/{}/events/".format(uid),
@@ -100,10 +148,14 @@ def test_post_workflow_instance_event_wrong_workflow_returns_400(
 
 def test_post_workflow_instance_event_wrong_instance_returns_400(
     client: TestClient,
+    app_with_store: FastAPI,
 ) -> None:
+    store = getattr(app_with_store.state, WORKFLOW_INSTANCE_STORE_ATTR)
     uid_path = UUID("550e8400-e29b-41d4-a716-446655440030")
+    path_iuri = instance_id_from_uuid(uid_path).root
     other = "instance://550e8400-e29b-41d4-a716-446655440031"
     wf = "mismatch_wf"
+    _seed_instance_in_store(store, wf, path_iuri)
     body = _event_dict(wf, other, "event://550e8400-e29b-41d4-a716-446655440032")
     r = client.post(
         f"/agentic-workflows/{wf}/instances/{uid_path}/events/",
@@ -179,6 +231,7 @@ def test_post_event_updates_merged_store(
     uid = UUID("550e8400-e29b-41d4-a716-4466554400bb")
     iuri = instance_id_from_uuid(uid).root
     wf_name = "merge_wf"
+    _seed_instance_in_store(store, wf_name, iuri)
     body = _event_dict(wf_name, iuri, "event://550e8400-e29b-41d4-a716-4466554400bc")
     r = client.post(
         f"/agentic-workflows/{wf_name}/instances/{uid}/events/",

@@ -186,6 +186,11 @@ class _DispatchHub:
     def notifier(self) -> NotifierProtocol:
         return self._notifier
 
+    def drop_subscribers(self, instance_id: str) -> None:
+        """Remove all listeners for ``instance_id`` (e.g. after instance deletion)."""
+        with self._state_lock:
+            self._subscribers.pop(instance_id, None)
+
     def subscribe(
         self, instance_id: str, listener: Callable[[Event], None]
     ) -> Callable[[], None]:
@@ -360,6 +365,22 @@ class WorkflowInstanceStateStore:
     ) -> Callable[[], None]:
         """Register ``listener`` for successful events touching ``instance_id``."""
         return self._dispatch.subscribe(instance_id, listener)
+
+    def delete_instance(self, workflow_key: str, instance_id: str) -> bool:
+        """Remove one workflow instance from the merged snapshot (administrative op).
+
+        This is not an ``event_v1`` merge: topology ``delete`` operations do not
+        remove instance entries. Also drops dispatch subscribers for ``instance_id``.
+        """
+        with self._state_lock:
+            if self._closed:
+                raise WorkflowInstanceStoreClosedError()
+            wf = self._merge.state.workflows.get(workflow_key)
+            if wf is None or instance_id not in wf.instances:
+                return False
+            del wf.instances[instance_id]
+            self._dispatch.drop_subscribers(instance_id)
+            return True
 
     def submit_event_sync(self, event: dict) -> None:
         """Validate and enqueue; merge runs on the merge worker thread."""

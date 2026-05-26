@@ -107,6 +107,15 @@ def workflow_instance_from_projection(
     return full
 
 
+def delete_workflow_instance_from_store(
+    store: WorkflowInstanceDataStore,
+    workflow_name: str,
+    canonical_instance_uri: str,
+) -> bool:
+    """Remove one instance from the store; return False if workflow or instance missing."""
+    return store.delete_instance(workflow_name, canonical_instance_uri)
+
+
 def workflow_instance_from_store(
     store: WorkflowInstanceDataStore,
     workflow_key: str,

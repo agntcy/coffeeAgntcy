@@ -42,11 +42,11 @@ def test_load_parsed_real_file_has_pattern_section() -> None:
 
 
 @pytest.fixture()
-def doc_client() -> TestClient:
+def doc_client(workflow_api_headers: dict[str, str]) -> TestClient:
     set_starting_workflows()
     app = FastAPI(openapi_url=None, docs_url=None, redoc_url=None)
     app.include_router(create_agentic_workflows_router())
-    return TestClient(app)
+    return TestClient(app, headers=workflow_api_headers)
 
 
 def test_get_workflow_documentation_200(doc_client: TestClient) -> None:

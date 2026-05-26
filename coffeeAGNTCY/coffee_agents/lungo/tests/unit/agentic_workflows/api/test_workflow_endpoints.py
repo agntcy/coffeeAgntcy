@@ -92,11 +92,11 @@ _PATCH_TARGET = "api.agentic_workflows.router.get_workflows"
 
 
 @pytest.fixture()
-def client() -> TestClient:
+def client(workflow_api_headers: dict[str, str]) -> TestClient:
     app = FastAPI(openapi_url=None, docs_url=None, redoc_url=None)
     app.include_router(create_agentic_workflows_router())
     with patch(_PATCH_TARGET, return_value=_FAKE_WORKFLOWS):
-        with TestClient(app) as test_client:
+        with TestClient(app, headers=workflow_api_headers) as test_client:
             yield test_client
 
 
