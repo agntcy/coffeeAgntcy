@@ -357,8 +357,12 @@ describe("topologyWireToReactFlow", () => {
       },
       { validateUrls: false },
     )
-    const data = nodes[0]?.data as { githubLink?: string }
+    const data = nodes[0]?.data as {
+      githubLink?: string
+      directoryAgentSlug?: string
+    }
     expect(data?.githubLink).toContain("auction-supervisor-agent.json")
+    expect(data?.directoryAgentSlug).toBe("auction-supervisor-agent")
   })
 
   it("merges stable-agent map when stable_agent_id uses RootModel-shaped object", () => {
