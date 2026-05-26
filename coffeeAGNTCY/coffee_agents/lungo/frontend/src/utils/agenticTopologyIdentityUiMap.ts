@@ -6,8 +6,9 @@
  * TEMPORARY: Agentic topology UI enrichment (identity, directory/OASF, GitHub)
  *
  * This map exists only until the backend supplies equivalent fields on workflow
- * topology or catalog API responses (stable slugs, directory URLs, badge flags).
- * Remove or replace with API-driven data when that contract is available.
+ * topology or catalog API responses (directory URLs, badge flags, identity slugs).
+ * `directoryAgentSlug` is derived from topology `agent_record_uri` (record basename).
+ * Remove or replace remaining rows when that contract is available.
  * -----------------------------------------------------------------------------
  */
 
@@ -35,7 +36,6 @@ export interface AgenticTopologyIdentityUiRow {
   /** OASF agent card JSON top-level `name` (must match backend record load). */
   agentRecordName: string
   identityAppsSlug?: string
-  directoryAgentSlug: string
   hasBadgeDetails?: boolean
   hasPolicyDetails?: boolean
   agentDirectoryLink: string
@@ -52,7 +52,6 @@ const RAW_IDENTITY_UI_ROWS: AgenticTopologyIdentityUiRow[] = [
   {
     agentRecordName: "Auction Supervisor agent",
     identityAppsSlug: "auction-supervisor",
-    directoryAgentSlug: "auction-supervisor-agent",
     hasBadgeDetails: true,
     hasPolicyDetails: true,
     agentDirectoryLink: `${urlsConfig.agentDirectory.baseUrl}${urlsConfig.agentDirectory.agents.supervisorAuction}`,
@@ -61,7 +60,6 @@ const RAW_IDENTITY_UI_ROWS: AgenticTopologyIdentityUiRow[] = [
   },
   {
     agentRecordName: "Brazil Coffee Farm",
-    directoryAgentSlug: "brazil-coffee-farm",
     hasBadgeDetails: false,
     hasPolicyDetails: false,
     agentDirectoryLink: `${urlsConfig.agentDirectory.baseUrl}${urlsConfig.agentDirectory.agents.brazilFarm}`,
@@ -72,7 +70,6 @@ const RAW_IDENTITY_UI_ROWS: AgenticTopologyIdentityUiRow[] = [
   {
     agentRecordName: "Colombia Coffee Farm",
     identityAppsSlug: "colombia-coffee-farm",
-    directoryAgentSlug: "colombia-coffee-farm",
     hasBadgeDetails: true,
     hasPolicyDetails: true,
     agentDirectoryLink: `${urlsConfig.agentDirectory.baseUrl}${urlsConfig.agentDirectory.agents.colombiaFarm}`,
@@ -82,7 +79,6 @@ const RAW_IDENTITY_UI_ROWS: AgenticTopologyIdentityUiRow[] = [
   {
     agentRecordName: "Vietnam Coffee Farm",
     identityAppsSlug: "vietnam-coffee-farm",
-    directoryAgentSlug: "vietnam-coffee-farm",
     hasBadgeDetails: true,
     hasPolicyDetails: false,
     agentDirectoryLink: `${urlsConfig.agentDirectory.baseUrl}${urlsConfig.agentDirectory.agents.vietnamFarm}`,
@@ -91,7 +87,6 @@ const RAW_IDENTITY_UI_ROWS: AgenticTopologyIdentityUiRow[] = [
   },
   {
     agentRecordName: "Weather MCP Server",
-    directoryAgentSlug: "weather-mcp-server",
     agentDirectoryLink: `${urlsConfig.agentDirectory.baseUrl}${urlsConfig.agentDirectory.agents.weatherMcp}`,
     referenceGithubUrl: `${urlsConfig.github.baseUrl}${urlsConfig.github.agents.weatherMcp}`,
     verificationStatus: VERIFICATION_STATUS.FAILED,
@@ -99,7 +94,6 @@ const RAW_IDENTITY_UI_ROWS: AgenticTopologyIdentityUiRow[] = [
   {
     agentRecordName: "Payment MCP Server",
     identityAppsSlug: "payment-mcp-server",
-    directoryAgentSlug: "payment-mcp-server",
     hasBadgeDetails: true,
     hasPolicyDetails: false,
     agentDirectoryLink: urlsConfig.agentDirectory.baseUrl,
@@ -107,7 +101,6 @@ const RAW_IDENTITY_UI_ROWS: AgenticTopologyIdentityUiRow[] = [
   },
   {
     agentRecordName: "Logistics Supervisor agent",
-    directoryAgentSlug: "logistics-supervisor-agent",
     hasBadgeDetails: false,
     hasPolicyDetails: false,
     agentDirectoryLink: urlsConfig.agentDirectory.baseUrl,
@@ -115,7 +108,6 @@ const RAW_IDENTITY_UI_ROWS: AgenticTopologyIdentityUiRow[] = [
   },
   {
     agentRecordName: "Tatooine Farm agent",
-    directoryAgentSlug: "tatooine-farm-agent",
     hasBadgeDetails: false,
     hasPolicyDetails: false,
     agentDirectoryLink: `${urlsConfig.agentDirectory.baseUrl}/`,
@@ -123,7 +115,6 @@ const RAW_IDENTITY_UI_ROWS: AgenticTopologyIdentityUiRow[] = [
   },
   {
     agentRecordName: "Shipping agent",
-    directoryAgentSlug: "shipping-agent",
     hasBadgeDetails: false,
     hasPolicyDetails: false,
     agentDirectoryLink: `${urlsConfig.agentDirectory.baseUrl}/`,
@@ -131,7 +122,6 @@ const RAW_IDENTITY_UI_ROWS: AgenticTopologyIdentityUiRow[] = [
   },
   {
     agentRecordName: "Accountant agent",
-    directoryAgentSlug: "accountant-agent",
     hasBadgeDetails: false,
     hasPolicyDetails: false,
     agentDirectoryLink: `${urlsConfig.agentDirectory.baseUrl}/`,
@@ -139,7 +129,6 @@ const RAW_IDENTITY_UI_ROWS: AgenticTopologyIdentityUiRow[] = [
   },
   {
     agentRecordName: "Agentic Recruiter agent",
-    directoryAgentSlug: "recruiter",
     hasBadgeDetails: false,
     hasPolicyDetails: false,
     agentDirectoryLink: urlsConfig.agentDirectory.baseUrl,
@@ -202,6 +191,35 @@ export function splitTopologyNodeLabel(label: string): {
  * Normalize catalog `agent_record_uri` relative paths to a repo path segment
  * under `coffeeAGNTCY/coffee_agents` (for GitHub blob URLs).
  */
+/**
+ * Directory / OASF API slug: basename of the OASF record path without `.json`
+ * (e.g. `.../brazil-coffee-farm.json` → `brazil-coffee-farm`).
+ */
+export function directoryAgentSlugFromAgentRecordUri(
+  agentRecordUri: string | undefined,
+): string | undefined {
+  if (!agentRecordUri || typeof agentRecordUri !== "string") return undefined
+  const raw = agentRecordUri.trim()
+  if (!raw) return undefined
+
+  let pathPart = raw
+  if (/^https?:\/\//i.test(raw)) {
+    try {
+      pathPart = new URL(raw).pathname
+    } catch {
+      return undefined
+    }
+  } else {
+    pathPart = raw.replace(/\\/g, "/")
+  }
+
+  const segments = pathPart.split("/").filter(Boolean)
+  if (segments.length === 0) return undefined
+  const base = segments[segments.length - 1] ?? ""
+  const slug = base.replace(/\.json$/i, "").trim()
+  return slug || undefined
+}
+
 export function normalizeAgentRecordUriToRepoPath(
   agentRecordUri: string,
 ): string | null {
@@ -356,10 +374,16 @@ export function mergeAgenticTopologyIdentityUi(
       ? githubStreaming
       : (ghFromUri ?? data.githubLink)
 
+  const directoryAgentSlug =
+    data.directoryAgentSlug ??
+    directoryAgentSlugFromAgentRecordUri(
+      wire.agent_record_uri as string | undefined,
+    )
+
   const merged: CustomNodeData = {
     ...data,
     identityAppsSlug: row.identityAppsSlug,
-    directoryAgentSlug: row.directoryAgentSlug,
+    ...(directoryAgentSlug ? { directoryAgentSlug } : {}),
     agentDirectoryLink: row.agentDirectoryLink,
     hasBadgeDetails: row.hasBadgeDetails,
     hasPolicyDetails: row.hasPolicyDetails,
@@ -371,7 +395,11 @@ export function mergeAgenticTopologyIdentityUi(
   return merged
 }
 
-/** Resolve `GET .../agents/{slug}/oasf` slug from merged or static graph node data. */
+/**
+ * Resolve `GET .../agents/{slug}/oasf` slug from node data.
+ * Agentic topology sets `directoryAgentSlug` from `agent_record_uri`; label rules
+ * below remain for legacy static graphs without catalog URIs.
+ */
 export function getOasfSlugFromNodeData(
   nodeData: CustomNodeData | null | undefined,
 ): string {
