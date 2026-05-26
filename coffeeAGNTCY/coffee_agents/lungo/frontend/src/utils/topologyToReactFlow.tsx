@@ -27,6 +27,7 @@ import {
 } from "@/utils/topologyLayout"
 import {
   applyDiscoveredAgentInlineUi,
+  directoryAgentSlugFromAgentRecordUri,
   enrichAgenticTopologyWellKnownUi,
   isDirectoryLabel,
   isMcpServerLabel,
@@ -267,6 +268,9 @@ export function topologyWireToReactFlow(
     const label_subtitle = wireLabelSubtitle
       ? wireLabelSubtitle
       : split.label_subtitle
+    const directoryAgentSlug = directoryAgentSlugFromAgentRecordUri(
+      n.agent_record_uri as string | undefined,
+    )
     let data: CustomNodeData = {
       icon: resolveTopologyNodeIcon({ label, label_subtitle }),
       label,
@@ -274,6 +278,7 @@ export function topologyWireToReactFlow(
       handles: HANDLE_TYPES.ALL,
       verificationStatus: VERIFICATION_STATUS.VERIFIED,
       githubLink: gh,
+      ...(directoryAgentSlug ? { directoryAgentSlug } : {}),
     }
     data = mergeAgenticTopologyIdentityUi(data, n, {
       validateUrls,
