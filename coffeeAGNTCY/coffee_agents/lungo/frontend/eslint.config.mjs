@@ -89,7 +89,12 @@ export default [
     },
   },
   {
-    files: ["**/useApp.ts", "**/useMainArea.ts", "**/graphConfigsData.tsx"],
+    files: [
+      "**/useApp.ts",
+      "**/useMainArea.ts",
+      "**/graphConfigsData.tsx",
+      "**/agenticTopologyIdentityUiMap.ts",
+    ],
     rules: {
       "max-lines": "off",
     },
