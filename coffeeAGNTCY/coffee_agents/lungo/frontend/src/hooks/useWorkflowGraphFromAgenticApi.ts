@@ -6,13 +6,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import type { Edge, Node } from "@xyflow/react"
 import {
-  createClient,
   deleteWorkflowInstance,
-  eventTouchesInstance,
-  getWorkflowInstanceState,
   instanceIdToPathUuid,
-  instantiateWorkflow,
-  subscribeWorkflowInstanceSse,
 } from "@/api/agenticWorkflowsClient"
 import type { EventV1Wire } from "@/api/agenticWorkflowsTypes"
 import type { CustomNodeData } from "@/components/MainArea/Graph/Elements/types"
@@ -31,32 +26,22 @@ import {
   type StaticIdMap,
 } from "@/utils/topologyStaticIdMap"
 import {
-  extractInstanceTopologyFromEvent,
-  messagingHighlightIdsFromTopology,
   patchGraphActiveHighlight,
-  staticGraphHighlightIdsFromTopology,
   type MessagingHighlightIds,
 } from "@/utils/workflowEventMessagingHighlight"
+import {
+  bootstrapAgenticWorkflowGraph,
+  handleAgenticWorkflowInstanceSseEvent,
+  mergeDiscoveryEdges,
+  mergeDiscoveryNodes,
+  refetchAndApplyAgenticTopology,
+  scheduleAgenticTopologyRefetch,
+  type AgenticWorkflowSession,
+  type WorkflowGraphAgenticSessionRefs,
+} from "@/utils/workflowGraphAgenticInstanceSession"
 
-const REFETCH_DEBOUNCE_MS = 80
 /** Auto-clear messaging highlights if no newer event refreshes them. */
 const MESSAGING_HIGHLIGHT_TTL_MS = 2_500
-
-function mergeDiscoveryNodes(base: Node[], prev: Node[]): Node[] {
-  const overlay = prev.filter((n) => n.id.startsWith("discovery-"))
-  if (overlay.length === 0) return base
-  return [...base, ...overlay]
-}
-
-function mergeDiscoveryEdges(base: Edge[], prev: Edge[]): Edge[] {
-  const overlay = prev.filter(
-    (e) =>
-      e.source.startsWith("discovery-") || e.target.startsWith("discovery-"),
-  )
-  if (overlay.length === 0) return base
-  const ids = new Set(base.map((e) => e.id))
-  return [...base, ...overlay.filter((e) => !ids.has(e.id))]
-}
 
 export interface UseWorkflowGraphFromAgenticApiParams {
   pattern: PatternType
@@ -136,19 +121,7 @@ export function useWorkflowGraphFromAgenticApi({
   const setWorkflowInstanceId = useActiveWorkflowInstanceStore(
     (s) => s.setWorkflowInstanceId,
   )
-  type Session = {
-    client: ReturnType<typeof createClient>
-    baseUrl: string
-    workflowName: string
-    instanceId: string
-    pathUuid: string
-    closeSse: (() => void) | null
-    debounceTimer: ReturnType<typeof setTimeout> | null
-    retryTimer: ReturnType<typeof setTimeout> | null
-    refetchSeq: number
-    sseReconnectAttempts: number
-  }
-  const sessionRef = useRef<Session | null>(null)
+  const sessionRef = useRef<AgenticWorkflowSession | null>(null)
   /** Latest graph node ids after topology merge (for highlight id overlap checks). */
   const lastAppliedGraphNodeIdsRef = useRef<Set<string>>(new Set())
   const lastMessagingHighlightRef = useRef<MessagingHighlightIds>({
@@ -169,6 +142,15 @@ export function useWorkflowGraphFromAgenticApi({
   identityRef.current = handleOpenIdentityModal
   oasfRef.current = handleOpenOasfModal
   onAppliedRef.current = onTopologyApplied
+
+  const agenticSessionRefs = useRef<WorkflowGraphAgenticSessionRefs>({
+    sessionRef,
+    staticIdMapRef,
+    lastMessagingHighlightRef,
+    applyInstanceTopologyRef: { current: () => {} },
+    refetchAndApplyTopologyRef: { current: async () => {} },
+    scheduleTopologyRefetchRef: { current: () => {} },
+  })
 
   const attachHandlers = useCallback((node: Node): Node => {
     return {
@@ -253,6 +235,7 @@ export function useWorkflowGraphFromAgenticApi({
 
   const applyInstanceTopologyRef = useRef(applyInstanceTopology)
   applyInstanceTopologyRef.current = applyInstanceTopology
+  agenticSessionRefs.current.applyInstanceTopologyRef = applyInstanceTopologyRef
 
   const clearSession = useCallback(() => {
     const s = sessionRef.current
@@ -286,114 +269,40 @@ export function useWorkflowGraphFromAgenticApi({
 
   const refetchAndApplyTopology = useCallback(
     async (seq: number, attempt: number) => {
-      const latest = sessionRef.current
-      if (!latest || latest.refetchSeq !== seq) return
-      try {
-        const path = instanceIdToPathUuid(latest.instanceId)
-        const fresh = await getWorkflowInstanceState(
-          latest.client,
-          latest.workflowName,
-          path,
-          true,
-        )
-        const stillLatest = sessionRef.current
-        if (!stillLatest || stillLatest.refetchSeq !== seq) return
-        applyInstanceTopologyRef.current(fresh.topology)
-      } catch (e) {
-        logger.apiError("agentic-workflows/refetch-topology", e)
-        const s = sessionRef.current
-        if (!s || s.refetchSeq !== seq) return
-        if (attempt >= 2) return
-        const backoffMs = attempt === 0 ? 200 : 500
-        if (s.retryTimer) clearTimeout(s.retryTimer)
-        s.retryTimer = setTimeout(() => {
-          const current = sessionRef.current
-          if (current) current.retryTimer = null
-          if (!current || current.refetchSeq !== seq) return
-          void refetchAndApplyTopologyRef.current(seq, attempt + 1)
-        }, backoffMs)
-      }
+      await refetchAndApplyAgenticTopology(
+        agenticSessionRefs.current,
+        seq,
+        attempt,
+      )
     },
     [],
   )
 
   const refetchAndApplyTopologyRef = useRef(refetchAndApplyTopology)
   refetchAndApplyTopologyRef.current = refetchAndApplyTopology
+  agenticSessionRefs.current.refetchAndApplyTopologyRef =
+    refetchAndApplyTopologyRef
 
   const scheduleTopologyRefetch = useCallback(() => {
-    const s = sessionRef.current
-    if (!s) return
-    s.refetchSeq += 1
-    const seq = s.refetchSeq
-    if (s.debounceTimer) clearTimeout(s.debounceTimer)
-    if (s.retryTimer) {
-      clearTimeout(s.retryTimer)
-      s.retryTimer = null
-    }
-    s.debounceTimer = setTimeout(() => {
-      const latest = sessionRef.current
-      if (!latest || latest.refetchSeq !== seq) return
-      latest.debounceTimer = null
-      void refetchAndApplyTopologyRef.current(seq, 0)
-    }, REFETCH_DEBOUNCE_MS)
+    scheduleAgenticTopologyRefetch(agenticSessionRefs.current)
   }, [])
 
   const scheduleTopologyRefetchRef = useRef(scheduleTopologyRefetch)
   scheduleTopologyRefetchRef.current = scheduleTopologyRefetch
+  agenticSessionRefs.current.scheduleTopologyRefetchRef =
+    scheduleTopologyRefetchRef
 
   const handleWorkflowInstanceSseEvent = useCallback(
     (ev: EventV1Wire, catalogWorkflowName: string, instanceId: string) => {
-      if (!eventTouchesInstance(ev, catalogWorkflowName, instanceId)) return
-
-      const partial = extractInstanceTopologyFromEvent(
+      handleAgenticWorkflowInstanceSseEvent(
+        agenticSessionRefs.current,
+        setNodes,
+        setEdges,
+        scheduleMessagingHighlightTtl,
         ev,
         catalogWorkflowName,
         instanceId,
       )
-      // When a static id map is active, derive highlight ids in the static
-      // namespace directly from the wire labels/stable_agent_ids — this is
-      // what lets the live event animation light up the static nodes laid
-      // out by graphConfigsData.tsx. Otherwise use the legacy path which
-      // operates in the dynamic id namespace.
-      const idMap = staticIdMapRef.current
-      let ids: MessagingHighlightIds
-      if (idMap) {
-        ids = staticGraphHighlightIdsFromTopology(partial, idMap)
-      } else {
-        ids = messagingHighlightIdsFromTopology(partial)
-      }
-      const hasAny = ids.nodeIds.size > 0 || ids.edgeIds.size > 0
-      if (hasAny) {
-        lastMessagingHighlightRef.current = {
-          nodeIds: new Set(ids.nodeIds),
-          edgeIds: new Set(ids.edgeIds),
-          edgePairs: new Set(ids.edgePairs),
-        }
-        setNodes(
-          (prev) =>
-            patchGraphActiveHighlight(
-              prev,
-              [],
-              lastMessagingHighlightRef.current,
-            ).nodes,
-        )
-        setEdges(
-          (prev) =>
-            patchGraphActiveHighlight(
-              [],
-              prev,
-              lastMessagingHighlightRef.current,
-            ).edges,
-        )
-        scheduleMessagingHighlightTtl()
-      }
-
-      // With a static id map, the graph never gets rebuilt from topology
-      // refetches — skip the refetch entirely. Without one, the graph is
-      // reconciled with fresh topology after every event.
-      if (!staticIdMapRef.current) {
-        scheduleTopologyRefetchRef.current()
-      }
     },
     [setNodes, setEdges, scheduleMessagingHighlightTtl],
   )
@@ -413,91 +322,24 @@ export function useWorkflowGraphFromAgenticApi({
 
     clearSessionRef.current()
 
-    const client = createClient(baseUrl)
     let cancelled = false
 
     const run = async () => {
       setAgenticError(null)
-      try {
-        const { workflow_instance_id: instanceId } = await instantiateWorkflow(
-          client,
-          catalogWorkflowName,
-        )
-        if (cancelled) return
-        const pathUuid = instanceIdToPathUuid(instanceId)
-        const inst = await getWorkflowInstanceState(
-          client,
-          catalogWorkflowName,
-          pathUuid,
-          true,
-        )
-        if (cancelled) return
-        applyInstanceTopologyRef.current(inst.topology)
-
-        if (cancelled) return
-        const session: Session = {
-          client,
-          baseUrl,
-          workflowName: catalogWorkflowName,
-          instanceId,
-          pathUuid,
-          closeSse: null,
-          debounceTimer: null,
-          retryTimer: null,
-          refetchSeq: 0,
-          sseReconnectAttempts: 0,
-        }
-        sessionRef.current = session
-        setWorkflowInstanceId(instanceId)
-
-        const attachSse = (): void => {
-          const s = sessionRef.current
-          if (!s || s.instanceId !== instanceId || cancelled) return
-          if (s.closeSse) {
-            s.closeSse()
-            s.closeSse = null
-          }
-          if (cancelled) return
-          const close = subscribeWorkflowInstanceSse(
-            s.baseUrl,
-            s.workflowName,
-            s.pathUuid,
-            (ev: EventV1Wire) => {
-              handleWorkflowInstanceSseEventRef.current(
-                ev,
-                catalogWorkflowName,
-                instanceId,
-              )
-            },
-            (err) => {
-              logger.apiError("agentic-workflows/sse", err)
-              const cur = sessionRef.current
-              if (!cur || cur.instanceId !== instanceId || cancelled) return
-              if (cur.sseReconnectAttempts >= 6) return
-              cur.sseReconnectAttempts += 1
-              queueMicrotask(() => {
-                attachSse()
-              })
-            },
-          )
-          if (cancelled) {
-            close()
-            return
-          }
-          if (sessionRef.current?.instanceId === instanceId) {
-            sessionRef.current.closeSse = close
-          }
-        }
-
-        if (cancelled) return
-        attachSse()
-      } catch (e) {
-        if (!cancelled) {
-          const msg = e instanceof Error ? e.message : String(e)
-          setAgenticError(msg)
-          logger.apiError("agentic-workflows/bootstrap", e)
-        }
-      }
+      await bootstrapAgenticWorkflowGraph({
+        baseUrl,
+        catalogWorkflowName,
+        isCancelled: () => cancelled,
+        sessionRef,
+        applyInstanceTopology: (topology) => {
+          applyInstanceTopologyRef.current(topology)
+        },
+        setWorkflowInstanceId,
+        setAgenticError: (message) => setAgenticError(message),
+        onSseEvent: (ev, name, instanceId) => {
+          handleWorkflowInstanceSseEventRef.current(ev, name, instanceId)
+        },
+      })
     }
 
     void run()
@@ -506,7 +348,12 @@ export function useWorkflowGraphFromAgenticApi({
       cancelled = true
       clearSessionRef.current()
     }
-  }, [agenticMode, baseUrl, selectedWorkflowSummary?.name])
+  }, [
+    agenticMode,
+    baseUrl,
+    selectedWorkflowSummary?.name,
+    setWorkflowInstanceId,
+  ])
 
   return {
     agenticMode,

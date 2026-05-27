@@ -69,12 +69,9 @@ describe("agenticTopologyIdentityUiMap", () => {
       uri: "",
       expected: undefined,
     },
-  ])(
-    "directoryAgentSlugFromAgentRecordUri: $caseName",
-    ({ uri, expected }) => {
-      expect(directoryAgentSlugFromAgentRecordUri(uri)).toBe(expected)
-    },
-  )
+  ])("directoryAgentSlugFromAgentRecordUri: $caseName", ({ uri, expected }) => {
+    expect(directoryAgentSlugFromAgentRecordUri(uri)).toBe(expected)
+  })
 
   it("Brazil row exists in map and includes directory link", () => {
     const row = IDENTITY_UI_BY_STABLE_AGENT_UUID[BRAZIL_UUID]
