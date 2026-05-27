@@ -2,33 +2,26 @@
 # SPDX-License-Identifier: Apache-2.0
 
 # SLIM v0.7+ requires to use debian trixie distribution
-FROM python:3.13.11-slim-trixie
+FROM astral/uv:0.11.16-python3.13-trixie-slim@sha256:d57fc364ed714127c162a01b316bfb7b9a3fd09d97c665781a5607acaa35d254
 
-# Install system dependencies, including ping, curl, and wget
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends git curl wget iputils-ping && \
-    apt-get clean && \
-    rm -rf /var/lib/apt/lists/*
-
-# Install dirctl binary for MCP toolset (detect architecture for multi-platform builds)
-# Note: Using specific version as /releases/latest/ points to GUI release which doesn't include dirctl
-RUN ARCH=$(dpkg --print-architecture) && \
-    curl -L https://github.com/agntcy/dir/releases/download/v1.0.0/dirctl-linux-${ARCH} -o /usr/local/bin/dirctl && \
-    chmod +x /usr/local/bin/dirctl
-
-# Install uv and create virtual environment
-RUN pip install --no-cache-dir uv && \
-    uv venv -q /venv
-ENV PATH="/venv/bin:$PATH"
-
-# Set PYTHONPATH to include the application directory
-ENV PYTHONPATH="/app"
+COPY --from=ghcr.io/agntcy/dir-ctl:v1.0.0 /dirctl /usr/local/bin/dirctl
 
 WORKDIR /app
-COPY coffeeAGNTCY/coffee_agents/recruiter/pyproject.toml coffeeAGNTCY/coffee_agents/recruiter/uv.lock coffeeAGNTCY/coffee_agents/recruiter/README.md ./
-RUN uv sync --locked --no-editable
+
+# Silences warnings about not being able to link files since the cache and sync target are on separate file systems
+ENV UV_LINK_MODE=copy
+
+# Install python dependencies
+RUN --mount=type=cache,target=/root/.cache/uv \
+    --mount=type=bind,source=coffeeAGNTCY/coffee_agents/recruiter/uv.lock,target=uv.lock \
+    --mount=type=bind,source=coffeeAGNTCY/coffee_agents/recruiter/pyproject.toml,target=pyproject.toml \
+    uv sync --locked --no-install-project
 
 COPY coffeeAGNTCY/coffee_agents/recruiter/ .
+
+# Sync the project
+RUN --mount=type=cache,target=/root/.cache/uv \
+    uv sync --locked
 
 # Expose the A2A server port
 EXPOSE 8881
