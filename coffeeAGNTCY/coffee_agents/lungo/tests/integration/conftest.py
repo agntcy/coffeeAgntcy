@@ -379,7 +379,8 @@ def agents_up(request, transport_config):
         print(f"--- {name} ready (logs: {runner.log_path}) ---")
         runners.append(runner)
 
-    if runners and AGENT_POST_READY_SETTLE_SECS > 0:
+    # Wait for the agents to settle after they are ready (might need some time to properly answer even when ready)
+    if runners:
         time.sleep(AGENT_POST_READY_SETTLE_SECS)
 
     try:
