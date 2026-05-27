@@ -11,16 +11,12 @@ import { isGroupCommunication, getApiUrlForPattern } from "./patternUtils"
 import {
   type GraphConfig,
   PUBLISH_SUBSCRIBE_CONFIG,
-  GROUP_COMMUNICATION_CONFIG,
-  DISCOVERY_CONFIG,
+  GROUP_MESSAGING_CONFIG,
+  A2A_HTTP_CONFIG,
 } from "./graphConfigsData"
 
 export type { GraphConfig }
-export {
-  PUBLISH_SUBSCRIBE_CONFIG,
-  GROUP_COMMUNICATION_CONFIG,
-  DISCOVERY_CONFIG,
-}
+export { PUBLISH_SUBSCRIBE_CONFIG, GROUP_MESSAGING_CONFIG, A2A_HTTP_CONFIG }
 
 export const getGraphConfig = (pattern: string): GraphConfig => {
   switch (pattern) {
@@ -75,10 +71,10 @@ export const getGraphConfig = (pattern: string): GraphConfig => {
         edges: [...PUBLISH_SUBSCRIBE_CONFIG.edges],
       }
     }
-    case "group_communication":
-      return GROUP_COMMUNICATION_CONFIG
-    case "on_demand_discovery":
-      return DISCOVERY_CONFIG
+    case "group_messaging":
+      return GROUP_MESSAGING_CONFIG
+    case "a2a_http":
+      return A2A_HTTP_CONFIG
     default:
       return PUBLISH_SUBSCRIBE_CONFIG
   }

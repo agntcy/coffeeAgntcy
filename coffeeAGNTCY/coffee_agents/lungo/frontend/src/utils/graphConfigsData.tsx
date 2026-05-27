@@ -6,6 +6,8 @@
 import Calculate from "@mui/icons-material/Calculate"
 import LocalShipping from "@mui/icons-material/LocalShipping"
 import WbCloudy from "@mui/icons-material/WbCloudy"
+//import Hub from "@mui/icons-material/Hub"
+// TODO: change assets/ icons to use the new icons from MUI
 import { Node, Edge } from "@xyflow/react"
 import { GraphDiscoveryAssetImg } from "@/utils/GraphDiscoveryAssetImg"
 import supervisorIcon from "@/assets/supervisor.png"
@@ -36,7 +38,7 @@ export interface GraphConfig {
 const CoffeeBeanIcon = graphNodeIconImg(farmAgentIcon, "Coffee Farm Agent Icon")
 
 export const PUBLISH_SUBSCRIBE_CONFIG: GraphConfig = {
-  title: "Publish Subscribe Coffee Farm Network",
+  title: "Publish Subscribe",
   nodes: [
     {
       id: NODE_IDS.AUCTION_AGENT,
@@ -209,8 +211,8 @@ export const PUBLISH_SUBSCRIBE_CONFIG: GraphConfig = {
   ],
 }
 
-export const GROUP_COMMUNICATION_CONFIG: GraphConfig = {
-  title: "Secure Group Communication Logistics Network",
+export const GROUP_MESSAGING_CONFIG: GraphConfig = {
+  title: "Group Messaging",
   nodes: [
     {
       id: NODE_IDS.LOGISTICS_GROUP,
@@ -357,8 +359,8 @@ export const GROUP_COMMUNICATION_CONFIG: GraphConfig = {
   ],
 }
 
-export const DISCOVERY_CONFIG: GraphConfig = {
-  title: "On-demand Discovery",
+export const A2A_HTTP_CONFIG: GraphConfig = {
+  title: "A2A HTTP",
   nodes: [
     {
       id: NODE_IDS.RECRUITER,
