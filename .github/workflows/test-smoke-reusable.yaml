@@ -1,10 +1,14 @@
-name: Integration Tests per Project
+name: Smoke tests per project
 
 on:
   workflow_call:
     inputs:
       project_dir:
         description: 'The directory of the project to test.'
+        required: true
+        type: string
+      pytest_command:
+        description: 'Pytest command to run (without uv run prefix).'
         required: true
         type: string
       pip_overrides:
@@ -22,22 +26,12 @@ on:
         required: false
         type: string
         default: ""
-      ref:
-        description: 'Git ref to checkout (fork integration). Omit for default branch SHA.'
-        required: false
-        type: string
-        default: ""
-      repository:
-        description: 'Repository to checkout (fork integration). Omit for default repository.'
-        required: false
-        type: string
-        default: ""
 
 permissions:
   contents: read
 
 jobs:
-  integration-tests:
+  smoke-tests:
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -45,9 +39,6 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
-        with:
-          ref: ${{ inputs.ref != '' && inputs.ref || github.sha }}
-          repository: ${{ inputs.repository != '' && inputs.repository || github.repository }}
 
       - name: Set up Python
         uses: actions/setup-python@v6
@@ -76,24 +67,5 @@ jobs:
       - name: Resolve and install
         run: uv sync --extra dev
 
-      - name: Create CI env file
-        env:
-          LLM_MODEL: ${{ secrets.LLM_MODEL }}
-          AZURE_API_KEY: ${{ secrets.AZURE_API_KEY }}
-          AZURE_API_BASE: ${{ secrets.AZURE_API_BASE }}
-          AZURE_API_VERSION: ${{ secrets.AZURE_API_VERSION }}
-        run: |
-          if [ -z "$LLM_MODEL" ]; then
-            echo "::error::LLM secrets missing"
-            exit 1
-          fi
-          {
-            echo "LLM_MODEL=${LLM_MODEL}"
-            echo "AZURE_API_KEY=${AZURE_API_KEY}"
-            echo "AZURE_API_BASE=${AZURE_API_BASE}"
-            echo "AZURE_API_VERSION=${AZURE_API_VERSION}"
-            echo "WORKFLOW_API_KEY=TheAnswerIs42"
-          } > .env
-
-      - name: Run integration tests
-        run: uv run pytest tests/integration -v --durations=0 --durations-min=1.0 -r ap
+      - name: Run smoke tests
+        run: uv run ${{ inputs.pytest_command }}

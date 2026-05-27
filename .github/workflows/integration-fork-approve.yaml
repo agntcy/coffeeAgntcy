@@ -1,0 +1,174 @@
+# Mandatory integration for fork PRs (branch protection: integration / *). Runs only after an
+# Approve from @agntcy/coffee-agntcy-reviewers; same test-reusable jobs as test.yaml.
+name: Fork integration on approve
+
+on:
+  pull_request_review:
+    types: [submitted]
+
+permissions:
+  contents: read
+  pull-requests: read
+  actions: read
+
+concurrency:
+  group: fork-integration-pr-${{ github.event.pull_request.number }}-${{ github.event.pull_request.head.sha }}
+  cancel-in-progress: false
+
+jobs:
+  gate:
+    if: |
+      github.event.review.state == 'approved' &&
+      github.event.pull_request.head.repo.full_name != github.repository
+    runs-on: ubuntu-latest
+    outputs:
+      proceed: ${{ steps.gate.outputs.proceed }}
+    steps:
+      - name: Check reviewer team and dedupe integration runs
+        id: gate
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GH_TOKEN }}
+          script: |
+            const org = 'agntcy';
+            const teamSlug = 'coffee-agntcy-reviewers';
+            const reviewer = context.payload.review.user.login;
+            const pr = context.payload.pull_request;
+            const headSha = pr.head.sha;
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const currentRunId = context.runId;
+
+            try {
+              await github.rest.teams.getMembershipForUserInOrg({
+                org,
+                team_slug: teamSlug,
+                username: reviewer,
+              });
+            } catch (error) {
+              if (error.status === 404) {
+                core.info(
+                  `Reviewer ${reviewer} is not a member of ${org}/${teamSlug}; skipping fork integration.`,
+                );
+                core.setOutput('proceed', 'false');
+                return;
+              }
+              throw error;
+            }
+
+            const { data } = await github.rest.actions.listWorkflowRuns({
+              owner,
+              repo,
+              workflow_id: 'integration-fork-approve.yaml',
+              head_sha: headSha,
+              per_page: 30,
+            });
+
+            const runs = (data.workflow_runs || []).filter(
+              (run) => run.id !== currentRunId,
+            );
+
+            const activeStatuses = new Set([
+              'queued',
+              'in_progress',
+              'waiting',
+              'pending',
+              'requested',
+            ]);
+            const active = runs.filter((run) => activeStatuses.has(run.status));
+            if (active.length > 0) {
+              core.info(
+                `Integration already running for ${headSha}; skipping duplicate run.`,
+              );
+              core.setOutput('proceed', 'false');
+              return;
+            }
+
+            const succeeded = runs.filter((run) => run.conclusion === 'success');
+            if (succeeded.length > 0) {
+              core.info(
+                `Integration already succeeded for ${headSha}; skipping duplicate run.`,
+              );
+              core.setOutput('proceed', 'false');
+              return;
+            }
+
+            core.info(`Proceeding with fork integration for ${headSha}.`);
+            core.setOutput('proceed', 'true');
+
+  subprojects-to-test:
+    needs: gate
+    if: needs.gate.outputs.proceed == 'true'
+    uses: ./.github/workflows/test-subprojects-reusable.yaml
+
+  integration-tests-corto:
+    name: integration / corto
+    needs: [gate, subprojects-to-test]
+    if: |
+      needs.gate.outputs.proceed == 'true' &&
+      needs.subprojects-to-test.outputs.test_corto == 'true'
+    uses: ./.github/workflows/test-reusable.yaml
+    with:
+      project_dir: coffeeAGNTCY/coffee_agents/corto
+      ref: ${{ github.event.pull_request.head.sha }}
+      repository: ${{ github.event.pull_request.head.repo.full_name }}
+    secrets: inherit
+
+  integration-corto-path-skip:
+    name: integration / corto
+    needs: [gate, subprojects-to-test]
+    if: |
+      needs.gate.outputs.proceed == 'true' &&
+      needs.subprojects-to-test.outputs.test_corto != 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: No corto path changes
+        run: echo "integration / corto satisfied without running tests (no corto path changes)."
+
+  integration-tests-lungo:
+    name: integration / lungo
+    needs: [gate, subprojects-to-test]
+    if: |
+      needs.gate.outputs.proceed == 'true' &&
+      needs.subprojects-to-test.outputs.test_lungo == 'true'
+    uses: ./.github/workflows/test-reusable.yaml
+    with:
+      project_dir: coffeeAGNTCY/coffee_agents/lungo
+      ref: ${{ github.event.pull_request.head.sha }}
+      repository: ${{ github.event.pull_request.head.repo.full_name }}
+    secrets: inherit
+
+  integration-lungo-path-skip:
+    name: integration / lungo
+    needs: [gate, subprojects-to-test]
+    if: |
+      needs.gate.outputs.proceed == 'true' &&
+      needs.subprojects-to-test.outputs.test_lungo != 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: No lungo path changes
+        run: echo "integration / lungo satisfied without running tests (no lungo path changes)."
+
+  integration-tests-recruiter:
+    name: integration / recruiter
+    needs: [gate, subprojects-to-test]
+    if: |
+      needs.gate.outputs.proceed == 'true' &&
+      needs.subprojects-to-test.outputs.test_recruiter == 'true'
+    uses: ./.github/workflows/test-reusable.yaml
+    with:
+      project_dir: coffeeAGNTCY/coffee_agents/recruiter
+      ref: ${{ github.event.pull_request.head.sha }}
+      repository: ${{ github.event.pull_request.head.repo.full_name }}
+    secrets: inherit
+
+  integration-recruiter-path-skip:
+    name: integration / recruiter
+    needs: [gate, subprojects-to-test]
+    if: |
+      needs.gate.outputs.proceed == 'true' &&
+      needs.subprojects-to-test.outputs.test_recruiter != 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: No recruiter path changes
+        run: echo "integration / recruiter satisfied without running tests (no recruiter path changes)."
