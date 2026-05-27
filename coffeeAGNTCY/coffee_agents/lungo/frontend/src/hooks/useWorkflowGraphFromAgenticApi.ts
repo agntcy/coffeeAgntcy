@@ -9,10 +9,7 @@ import {
   deleteWorkflowInstance,
   instanceIdToPathUuid,
 } from "@/api/agenticWorkflowsClient"
-import type {
-  EventV1Wire,
-  TopologyWire,
-} from "@/api/agenticWorkflowsTypes"
+import type { EventV1Wire, TopologyWire } from "@/api/agenticWorkflowsTypes"
 import type { CustomNodeData } from "@/components/MainArea/Graph/Elements/types"
 import {
   getAgenticWorkflowsApiUrl,
@@ -146,13 +143,13 @@ export function useWorkflowGraphFromAgenticApi({
   oasfRef.current = handleOpenOasfModal
   onAppliedRef.current = onTopologyApplied
 
-  const applyInstanceTopologyRef = useRef(
-    (_topology: TopologyWire | undefined) => {},
-  )
-  const refetchAndApplyTopologyRef = useRef(
-    async (_seq: number, _attempt: number) => {},
-  )
-  const scheduleTopologyRefetchRef = useRef(() => {})
+  const applyInstanceTopologyRef = useRef<
+    (topology: TopologyWire | undefined) => void
+  >(() => {})
+  const refetchAndApplyTopologyRef = useRef<
+    (seq: number, attempt: number) => Promise<void>
+  >(async () => {})
+  const scheduleTopologyRefetchRef = useRef<() => void>(() => {})
 
   const agenticSessionRefs = useRef<WorkflowGraphAgenticSessionRefs | null>(
     null,
