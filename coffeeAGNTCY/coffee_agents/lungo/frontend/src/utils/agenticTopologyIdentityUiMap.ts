@@ -219,10 +219,6 @@ export function isDirectoryLabel(label: string): boolean {
 }
 
 /**
- * Normalize catalog `agent_record_uri` relative paths to a repo path segment
- * under `coffeeAGNTCY/coffee_agents` (for GitHub blob URLs).
- */
-/**
  * Directory / OASF API slug: basename of the OASF record path without `.json`
  * (e.g. `.../brazil-coffee-farm.json` → `brazil-coffee-farm`).
  */
@@ -251,6 +247,10 @@ export function directoryAgentSlugFromAgentRecordUri(
   return slug || undefined
 }
 
+/**
+ * Normalize catalog `agent_record_uri` relative paths to a repo path segment
+ * under `coffeeAGNTCY/coffee_agents` (for GitHub blob URLs).
+ */
 export function normalizeAgentRecordUriToRepoPath(
   agentRecordUri: string,
 ): string | null {
