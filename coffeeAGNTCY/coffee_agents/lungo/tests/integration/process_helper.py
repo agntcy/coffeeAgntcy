@@ -35,6 +35,7 @@ class ProcessRunner:
         self.cwd = cwd
         self.env = env
         self.timeout_s = timeout_s
+        self.stop_grace_s = 10.0
         self.ready_re = re.compile(ready_pattern) if ready_pattern else None
 
         self._proc: subprocess.Popen | None = None
@@ -85,7 +86,7 @@ class ProcessRunner:
         if self._proc and self._proc.poll() is None:
             try:
                 self._proc.terminate()
-                self._proc.wait(timeout=5)
+                self._proc.wait(timeout=self.stop_grace_s)
             except subprocess.TimeoutExpired:
                 self._proc.kill()
             except Exception:

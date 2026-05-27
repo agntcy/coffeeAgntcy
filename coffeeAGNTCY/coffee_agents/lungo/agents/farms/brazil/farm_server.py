@@ -14,6 +14,7 @@ from a2a.types import AgentCard
 from agents.farms.brazil.agent_executor import FarmAgentExecutor
 from agents.farms.brazil.card import AGENT_CARD
 from agntcy_app_sdk.factory import AgntcyFactory
+from common.subprocess_lifecycle import run_until_shutdown
 from config.config import OTEL_SDK_DISABLED
 from dotenv import load_dotenv
 
@@ -51,7 +52,7 @@ async def serve_all_a2a_interfaces(
 
     await session.add_a2a_card(agent_card, request_handler).start(keep_alive=False)
     logger.info("Agent ready")
-    await session.start_all_sessions(keep_alive=True)
+    await run_until_shutdown(session, logger=logger)
 
 async def main():
     """Main entry point for multi-pattern, multi-transport serving."""

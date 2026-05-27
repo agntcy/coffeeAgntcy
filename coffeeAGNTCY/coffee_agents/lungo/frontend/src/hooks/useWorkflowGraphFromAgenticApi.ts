@@ -9,7 +9,10 @@ import {
   deleteWorkflowInstance,
   instanceIdToPathUuid,
 } from "@/api/agenticWorkflowsClient"
-import type { EventV1Wire } from "@/api/agenticWorkflowsTypes"
+import type {
+  EventV1Wire,
+  TopologyWire,
+} from "@/api/agenticWorkflowsTypes"
 import type { CustomNodeData } from "@/components/MainArea/Graph/Elements/types"
 import {
   getAgenticWorkflowsApiUrl,
@@ -143,14 +146,27 @@ export function useWorkflowGraphFromAgenticApi({
   oasfRef.current = handleOpenOasfModal
   onAppliedRef.current = onTopologyApplied
 
-  const agenticSessionRefs = useRef<WorkflowGraphAgenticSessionRefs>({
-    sessionRef,
-    staticIdMapRef,
-    lastMessagingHighlightRef,
-    applyInstanceTopologyRef: { current: () => {} },
-    refetchAndApplyTopologyRef: { current: async () => {} },
-    scheduleTopologyRefetchRef: { current: () => {} },
-  })
+  const applyInstanceTopologyRef = useRef(
+    (_topology: TopologyWire | undefined) => {},
+  )
+  const refetchAndApplyTopologyRef = useRef(
+    async (_seq: number, _attempt: number) => {},
+  )
+  const scheduleTopologyRefetchRef = useRef(() => {})
+
+  const agenticSessionRefs = useRef<WorkflowGraphAgenticSessionRefs | null>(
+    null,
+  )
+  if (agenticSessionRefs.current === null) {
+    agenticSessionRefs.current = {
+      sessionRef,
+      staticIdMapRef,
+      lastMessagingHighlightRef,
+      applyInstanceTopologyRef,
+      refetchAndApplyTopologyRef,
+      scheduleTopologyRefetchRef,
+    }
+  }
 
   const attachHandlers = useCallback((node: Node): Node => {
     return {
@@ -200,9 +216,7 @@ export function useWorkflowGraphFromAgenticApi({
   }, [clearMessagingHighlightTtl, clearMessagingHighlightVisual])
 
   const applyInstanceTopology = useCallback(
-    (
-      topology: import("@/api/agenticWorkflowsTypes").TopologyWire | undefined,
-    ) => {
+    (topology: TopologyWire | undefined) => {
       // When a static id map governs the current pattern, we leave the
       // graphConfigsData-sourced nodes/edges alone — positions, icons, and
       // node data are authored statically. The SSE pipeline still runs and
@@ -233,9 +247,7 @@ export function useWorkflowGraphFromAgenticApi({
     [attachHandlers, setNodes, setEdges, restoreEdgeAnimation],
   )
 
-  const applyInstanceTopologyRef = useRef(applyInstanceTopology)
   applyInstanceTopologyRef.current = applyInstanceTopology
-  agenticSessionRefs.current.applyInstanceTopologyRef = applyInstanceTopologyRef
 
   const clearSession = useCallback(() => {
     const s = sessionRef.current
@@ -269,33 +281,29 @@ export function useWorkflowGraphFromAgenticApi({
 
   const refetchAndApplyTopology = useCallback(
     async (seq: number, attempt: number) => {
-      await refetchAndApplyAgenticTopology(
-        agenticSessionRefs.current,
-        seq,
-        attempt,
-      )
+      const refs = agenticSessionRefs.current
+      if (!refs) return
+      await refetchAndApplyAgenticTopology(refs, seq, attempt)
     },
     [],
   )
 
-  const refetchAndApplyTopologyRef = useRef(refetchAndApplyTopology)
   refetchAndApplyTopologyRef.current = refetchAndApplyTopology
-  agenticSessionRefs.current.refetchAndApplyTopologyRef =
-    refetchAndApplyTopologyRef
 
   const scheduleTopologyRefetch = useCallback(() => {
-    scheduleAgenticTopologyRefetch(agenticSessionRefs.current)
+    const refs = agenticSessionRefs.current
+    if (!refs) return
+    scheduleAgenticTopologyRefetch(refs)
   }, [])
 
-  const scheduleTopologyRefetchRef = useRef(scheduleTopologyRefetch)
   scheduleTopologyRefetchRef.current = scheduleTopologyRefetch
-  agenticSessionRefs.current.scheduleTopologyRefetchRef =
-    scheduleTopologyRefetchRef
 
   const handleWorkflowInstanceSseEvent = useCallback(
     (ev: EventV1Wire, catalogWorkflowName: string, instanceId: string) => {
+      const refs = agenticSessionRefs.current
+      if (!refs) return
       handleAgenticWorkflowInstanceSseEvent(
-        agenticSessionRefs.current,
+        refs,
         setNodes,
         setEdges,
         scheduleMessagingHighlightTtl,
