@@ -17,7 +17,10 @@ import { useApp } from "@/useApp"
 const RootPage: React.FC = () => {
   const {
     selectedPattern,
-    handlePatternChange,
+    selectWorkflowFromCatalog,
+    workflowCatalogSummaries,
+    workflowCatalogError,
+    selectedWorkflowSummary,
     chatHeightValue,
     isExpanded,
     chatRef,
@@ -57,6 +60,7 @@ const RootPage: React.FC = () => {
     recruiterAgentRecords,
     recruiterEvaluationResults,
     recruiterSelectedAgent,
+    setLiveGraphConfig,
   } = useApp()
 
   return (
@@ -79,8 +83,10 @@ const RootPage: React.FC = () => {
         }}
       >
         <Sidebar
-          selectedPattern={selectedPattern}
-          onPatternChange={handlePatternChange}
+          selectedWorkflowSummary={selectedWorkflowSummary}
+          summaries={workflowCatalogSummaries}
+          error={workflowCatalogError}
+          onSelectWorkflow={selectWorkflowFromCatalog}
         />
         <Box
           sx={{
@@ -93,6 +99,8 @@ const RootPage: React.FC = () => {
           <Box sx={{ position: "relative", flexGrow: 1, minHeight: 0 }}>
             <MainArea
               pattern={selectedPattern}
+              selectedWorkflowSummary={selectedWorkflowSummary}
+              onLiveGraphConfig={setLiveGraphConfig}
               buttonClicked={buttonClicked}
               setButtonClicked={setButtonClicked}
               aiReplied={aiReplied}
@@ -132,11 +140,9 @@ const RootPage: React.FC = () => {
                 selectedPattern === PATTERNS.PUBLISH_SUBSCRIBE_STREAMING
               }
               showLogisticsPrompts={
-                selectedPattern === PATTERNS.GROUP_COMMUNICATION
+                selectedPattern === PATTERNS.GROUP_MESSAGING
               }
-              showDiscoveryPrompts={
-                selectedPattern === PATTERNS.ON_DEMAND_DISCOVERY
-              }
+              showDiscoveryPrompts={selectedPattern === PATTERNS.A2A_HTTP}
               showProgressTracker={showProgressTracker}
               showAuctionStreaming={showAuctionStreaming}
               showRecruiterStreaming={showRecruiterStreaming}
