@@ -60,7 +60,10 @@ interface LogisticsStreamingActions {
   setCurrentOrderId: (orderId: string) => void
   setExecutionKey: (key: string) => void
   setSessionId: (id: string) => void
-  startStreaming: (prompt: string) => Promise<void>
+  startStreaming: (
+    prompt: string,
+    workflowInstanceId?: string | null,
+  ) => Promise<void>
   reset: () => void
 }
 
@@ -128,7 +131,10 @@ export const useGroupStreamingStore = create<
       sessionId: id,
     }),
 
-  startStreaming: async (prompt: string) => {
+  startStreaming: async (
+    prompt: string,
+    workflowInstanceId?: string | null,
+  ) => {
     const {
       reset,
       setStreaming,
@@ -143,6 +149,8 @@ export const useGroupStreamingStore = create<
     setStreaming(true)
 
     try {
+      const body: { prompt: string; workflow_instance_id?: string } = { prompt }
+      if (workflowInstanceId) body.workflow_instance_id = workflowInstanceId
       const response = await fetch(
         `${LOGISTICS_APP_API_URL}/agent/prompt/stream`,
         {
@@ -151,7 +159,7 @@ export const useGroupStreamingStore = create<
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({ prompt }),
+          body: JSON.stringify(body),
         },
       )
 
