@@ -2,7 +2,7 @@ apiVersion: v2
 name: lungo-local-cluster
 description: A Helm chart for deploying Lungo services in a local cluster
 type: application
-version: 0.3.0
+version: 0.4.0
 appVersion: "1.0"
 dependencies:
   - name: slim
