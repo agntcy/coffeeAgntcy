@@ -45,7 +45,7 @@ jobs:
       run:
         shell: bash
     env:
-      WORKFLOW_FILES_LIST_JSON: '[".github/workflows/test.yaml", ".github/workflows/test-reusable.yaml", ".github/workflows/ci-smoke.yaml", ".github/workflows/test-smoke-reusable.yaml", ".github/workflows/test-subprojects-reusable.yaml", ".github/workflows/integration-fork-approve.yaml", ".github/actions/check-paths-have-changes"]'
+      WORKFLOW_FILES_LIST_JSON: '[".github/workflows/test.yaml", ".github/workflows/test-reusable.yaml", ".github/workflows/ci-smoke.yaml", ".github/workflows/test-smoke-reusable.yaml", ".github/workflows/test-subprojects-reusable.yaml", ".github/workflows/integration-fork-approve.yaml", ".github/actions/check-paths-have-changes", ".dockerignore"]'
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6

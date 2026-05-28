@@ -1,0 +1,15 @@
+# .dockerignore placed in root because every service in the docker-compose files
+# currently uses `context: ../../../` so the build context is always the repo root.
+
+**/.venv
+**/.pytest_cache
+**/.pytest-logs
+**/__pycache__
+**/.DS_Store
+
+# For repo root context
+.git
+.github
+.cursor
+.agents
+

@@ -17,6 +17,7 @@ on:
       - '.github/workflows/test-smoke-reusable.yaml'
       - '.github/workflows/integration-fork-approve.yaml'
       - '.github/actions/check-paths-have-changes/**'
+      - '.dockerignore'
   pull_request:
     paths:
       - 'coffeeAGNTCY/coffee_agents/corto/**'
@@ -30,6 +31,7 @@ on:
       - '.github/workflows/test-smoke-reusable.yaml'
       - '.github/workflows/integration-fork-approve.yaml'
       - '.github/actions/check-paths-have-changes/**'
+      - '.dockerignore'
   workflow_call:
     inputs:
       pip_overrides:

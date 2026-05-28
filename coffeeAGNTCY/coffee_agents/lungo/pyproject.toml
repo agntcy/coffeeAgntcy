@@ -72,6 +72,9 @@ allow-direct-references = true
 [[tool.uv.index]]
 url = "https://buf.build/gen/python"
 
+[tool.uv]
+exclude-newer = "28 days"
+
 [tool.poetry]
 package-mode = false
 

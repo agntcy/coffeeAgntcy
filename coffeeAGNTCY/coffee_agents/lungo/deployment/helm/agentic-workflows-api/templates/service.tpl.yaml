@@ -13,7 +13,7 @@ spec:
   - port: {{ .Values.service.port }}
     name: http
     {{- if eq .Values.environment "local"}}
-    nodePort: 30083
+    nodePort: 30084
     {{- end}}
   selector:
     app:  {{ .Values.appName }}
