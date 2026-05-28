@@ -30,7 +30,7 @@ config:
   transportServerEndpoint: ""
   slimServer: ""
   natsServer: ""
-  slimSharedSecret: ""
+  slimSharedSecret: "" # SLIM_SHARED_SECRET: set here to create {app}-transport-secret (overrides ES when both are used). Leave empty to take SLIM_SHARED_SECRET only from externalSecrets / vault
   otlpHttpEndpoint: ""
 
 # You can use your own config here for service account
