@@ -34,10 +34,10 @@ import {
   handleAgenticWorkflowInstanceSseEvent,
   mergeDiscoveryEdges,
   mergeDiscoveryNodes,
-  refetchAndApplyAgenticTopology,
-  scheduleAgenticTopologyRefetch,
+  refetchWorkflowInstanceTopologyFromApi,
+  scheduleDebouncedWorkflowInstanceTopologyRefetch,
   type AgenticWorkflowSession,
-  type WorkflowGraphAgenticSessionRefs,
+  type WorkflowGraphAgenticSessionContext,
 } from "@/utils/workflowGraphAgenticInstanceSession"
 
 /** Auto-clear messaging highlights if no newer event refreshes them. */
@@ -143,25 +143,27 @@ export function useWorkflowGraphFromAgenticApi({
   oasfRef.current = handleOpenOasfModal
   onAppliedRef.current = onTopologyApplied
 
-  const applyInstanceTopologyRef = useRef<
+  const applyWorkflowTopologyToGraphRef = useRef<
     (topology: TopologyWire | undefined) => void
   >(() => {})
-  const refetchAndApplyTopologyRef = useRef<
+  const refetchWorkflowInstanceTopologyRef = useRef<
     (seq: number, attempt: number) => Promise<void>
   >(async () => {})
-  const scheduleTopologyRefetchRef = useRef<() => void>(() => {})
+  const scheduleWorkflowInstanceTopologyRefetchRef = useRef<() => void>(
+    () => {},
+  )
 
-  const agenticSessionRefs = useRef<WorkflowGraphAgenticSessionRefs | null>(
+  const agenticSessionContext = useRef<WorkflowGraphAgenticSessionContext | null>(
     null,
   )
-  if (agenticSessionRefs.current === null) {
-    agenticSessionRefs.current = {
+  if (agenticSessionContext.current === null) {
+    agenticSessionContext.current = {
       sessionRef,
       staticIdMapRef,
       lastMessagingHighlightRef,
-      applyInstanceTopologyRef,
-      refetchAndApplyTopologyRef,
-      scheduleTopologyRefetchRef,
+      applyWorkflowTopologyToGraphRef,
+      refetchWorkflowInstanceTopologyRef,
+      scheduleWorkflowInstanceTopologyRefetchRef,
     }
   }
 
@@ -212,7 +214,7 @@ export function useWorkflowGraphFromAgenticApi({
     }, MESSAGING_HIGHLIGHT_TTL_MS)
   }, [clearMessagingHighlightTtl, clearMessagingHighlightVisual])
 
-  const applyInstanceTopology = useCallback(
+  const applyWorkflowTopologyToGraph = useCallback(
     (topology: TopologyWire | undefined) => {
       // When a static id map governs the current pattern, we leave the
       // graphConfigsData-sourced nodes/edges alone — positions, icons, and
@@ -244,7 +246,7 @@ export function useWorkflowGraphFromAgenticApi({
     [attachHandlers, setNodes, setEdges, restoreEdgeAnimation],
   )
 
-  applyInstanceTopologyRef.current = applyInstanceTopology
+  applyWorkflowTopologyToGraphRef.current = applyWorkflowTopologyToGraph
 
   const clearSession = useCallback(() => {
     const s = sessionRef.current
@@ -276,31 +278,32 @@ export function useWorkflowGraphFromAgenticApi({
   const clearSessionRef = useRef(clearSession)
   clearSessionRef.current = clearSession
 
-  const refetchAndApplyTopology = useCallback(
+  const refetchWorkflowInstanceTopology = useCallback(
     async (seq: number, attempt: number) => {
-      const refs = agenticSessionRefs.current
-      if (!refs) return
-      await refetchAndApplyAgenticTopology(refs, seq, attempt)
+      const context = agenticSessionContext.current
+      if (!context) return
+      await refetchWorkflowInstanceTopologyFromApi(context, seq, attempt)
     },
     [],
   )
 
-  refetchAndApplyTopologyRef.current = refetchAndApplyTopology
+  refetchWorkflowInstanceTopologyRef.current = refetchWorkflowInstanceTopology
 
-  const scheduleTopologyRefetch = useCallback(() => {
-    const refs = agenticSessionRefs.current
-    if (!refs) return
-    scheduleAgenticTopologyRefetch(refs)
+  const scheduleWorkflowInstanceTopologyRefetch = useCallback(() => {
+    const context = agenticSessionContext.current
+    if (!context) return
+    scheduleDebouncedWorkflowInstanceTopologyRefetch(context)
   }, [])
 
-  scheduleTopologyRefetchRef.current = scheduleTopologyRefetch
+  scheduleWorkflowInstanceTopologyRefetchRef.current =
+    scheduleWorkflowInstanceTopologyRefetch
 
   const handleWorkflowInstanceSseEvent = useCallback(
     (ev: EventV1Wire, catalogWorkflowName: string, instanceId: string) => {
-      const refs = agenticSessionRefs.current
-      if (!refs) return
+      const context = agenticSessionContext.current
+      if (!context) return
       handleAgenticWorkflowInstanceSseEvent(
-        refs,
+        context,
         setNodes,
         setEdges,
         scheduleMessagingHighlightTtl,
@@ -336,8 +339,8 @@ export function useWorkflowGraphFromAgenticApi({
         catalogWorkflowName,
         isCancelled: () => cancelled,
         sessionRef,
-        applyInstanceTopology: (topology) => {
-          applyInstanceTopologyRef.current(topology)
+        applyWorkflowTopologyToGraph: (topology) => {
+          applyWorkflowTopologyToGraphRef.current(topology)
         },
         setWorkflowInstanceId,
         setAgenticError: (message) => setAgenticError(message),
