@@ -8,6 +8,7 @@ on:
       - 'coffeeAGNTCY/coffee_agents/lungo/**'
       - 'coffeeAGNTCY/coffee_agents/recruiter/**'
       - '!coffeeAGNTCY/coffee_agents/*/deployment/helm/**'
+      - '.dockerignore'
   pull_request:
     paths:
       - 'coffeeAGNTCY/coffee_agents/corto/**'
@@ -17,6 +18,7 @@ on:
       - '.github/workflows/test.yaml'
       - '.github/workflows/test-reusable.yaml'
       - '.github/actions/check-paths-have-changes/**'
+      - '.dockerignore'
   workflow_call:
     inputs:
       pip_overrides:
