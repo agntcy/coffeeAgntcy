@@ -78,7 +78,7 @@ lungo-ui:
     exchangeAppApiUrl: "http://localhost:30080"
     logisticsAppApiUrl: "http://localhost:30081"
     discoveryAppApiUrl: "http://localhost:30082"
-    agenticWorkflowsApiUrl: "http://localhost:30083"
+    agenticWorkflowsApiUrl: "http://localhost:30084"
 
 # Populated by helmfile / config-overrides.yaml.gotmpl for local dev; defaults avoid nil when templating alone.
 localExternalSecret:
