@@ -241,8 +241,7 @@ export async function bootstrapAgenticWorkflowGraph(
 
     const attachSse = (): void => {
       const s = sessionRef.current
-      if (!s || s.instanceId !== instanceId || isCancelled())
-        return
+      if (!s || s.instanceId !== instanceId || isCancelled()) return
       if (s.closeSse) {
         s.closeSse()
         s.closeSse = null
@@ -258,12 +257,7 @@ export async function bootstrapAgenticWorkflowGraph(
         (err) => {
           logger.apiError("agentic-workflows/sse", err)
           const cur = sessionRef.current
-          if (
-            !cur ||
-            cur.instanceId !== instanceId ||
-            isCancelled()
-          )
-            return
+          if (!cur || cur.instanceId !== instanceId || isCancelled()) return
           if (cur.sseReconnectAttempts >= 6) return
           cur.sseReconnectAttempts += 1
           queueMicrotask(() => {

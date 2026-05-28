@@ -153,9 +153,8 @@ export function useWorkflowGraphFromAgenticApi({
     () => {},
   )
 
-  const agenticSessionContext = useRef<WorkflowGraphAgenticSessionContext | null>(
-    null,
-  )
+  const agenticSessionContext =
+    useRef<WorkflowGraphAgenticSessionContext | null>(null)
   if (agenticSessionContext.current === null) {
     agenticSessionContext.current = {
       sessionRef,
@@ -332,25 +331,21 @@ export function useWorkflowGraphFromAgenticApi({
 
     let cancelled = false
 
-    const run = async () => {
-      setAgenticError(null)
-      await bootstrapAgenticWorkflowGraph({
-        baseUrl,
-        catalogWorkflowName,
-        isCancelled: () => cancelled,
-        sessionRef,
-        applyWorkflowTopologyToGraph: (topology) => {
-          applyWorkflowTopologyToGraphRef.current(topology)
-        },
-        setWorkflowInstanceId,
-        setAgenticError: (message) => setAgenticError(message),
-        onSseEvent: (ev, name, instanceId) => {
-          handleWorkflowInstanceSseEventRef.current(ev, name, instanceId)
-        },
-      })
-    }
-
-    void run()
+    setAgenticError(null)
+    void bootstrapAgenticWorkflowGraph({
+      baseUrl,
+      catalogWorkflowName,
+      isCancelled: () => cancelled,
+      sessionRef,
+      applyWorkflowTopologyToGraph: (topology) => {
+        applyWorkflowTopologyToGraphRef.current(topology)
+      },
+      setWorkflowInstanceId,
+      setAgenticError: (message) => setAgenticError(message),
+      onSseEvent: (ev, name, instanceId) => {
+        handleWorkflowInstanceSseEventRef.current(ev, name, instanceId)
+      },
+    })
 
     return () => {
       cancelled = true
