@@ -10,7 +10,7 @@ otlpHttpEndpoint: ""
 defaultMessageTransport: ""
 slimServer: ""
 natsServer: ""
-slimSharedSecret: ""
+slimSharedSecret: "" # SLIM_SHARED_SECRET: set here to create {app}-transport-secret (overrides ES when both are used). Leave empty to take SLIM_SHARED_SECRET only from externalSecrets / vault
 
 image:
   repository: ghcr.io/agntcy/coffee-agntcy/weather-mcp-server

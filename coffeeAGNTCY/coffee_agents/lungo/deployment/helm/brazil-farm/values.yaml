@@ -24,7 +24,7 @@ config:
   slimServer: ""
   natsServer: ""
   # When externalSecrets is not used, set to inject SLIM_SHARED_SECRET via Helm Secret (see transport-secret.tpl.yaml).
-  slimSharedSecret: ""
+  slimSharedSecret: "" # SLIM_SHARED_SECRET: set here to create {app}-transport-secret (overrides ES when both are used). Leave empty to take SLIM_SHARED_SECRET only from externalSecrets / vault
   otlpHttpEndpoint: ""
 #  llmStreaming: False
 
