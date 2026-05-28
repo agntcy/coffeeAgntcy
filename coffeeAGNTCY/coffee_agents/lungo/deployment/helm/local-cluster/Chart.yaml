@@ -62,3 +62,6 @@ dependencies:
   - name: agentic-workflows-api
     version: "0.1.0"
     repository: "file://../agentic-workflows-api"
+  - name: payment-mcp-server
+    version: "0.1.1"
+    repository: "file://../payment-mcp-server"
