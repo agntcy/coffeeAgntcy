@@ -60,5 +60,5 @@ dependencies:
     version: "0.0.9"
     repository: "file://../ui"
   - name: agentic-workflows-api
-    version: "0.0.2"
+    version: "0.1.0"
     repository: "file://../agentic-workflows-api"
