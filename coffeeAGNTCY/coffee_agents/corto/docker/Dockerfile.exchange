@@ -21,8 +21,11 @@ WORKDIR /app
 # Silences warnings about not being able to link files since the cache and sync target are on separate file systems
 ENV UV_LINK_MODE=copy
 
+# Pin the uv cache location so BuildKit cache mounts and uv agree on the path
+ENV UV_CACHE_DIR=/root/.cache/uv
+
 # Install dependencies
-RUN --mount=type=cache,target=/root/.cache/uv \
+RUN --mount=type=cache,id=corto-uv,target=/root/.cache/uv \
     --mount=type=bind,source=coffeeAGNTCY/coffee_agents/corto/uv.lock,target=uv.lock \
     --mount=type=bind,source=coffeeAGNTCY/coffee_agents/corto/pyproject.toml,target=pyproject.toml \
     uv sync --locked --no-install-project
@@ -30,7 +33,7 @@ RUN --mount=type=cache,target=/root/.cache/uv \
 COPY coffeeAGNTCY/coffee_agents/corto/ .
 
 # Sync the project
-RUN --mount=type=cache,target=/root/.cache/uv \
+RUN --mount=type=cache,id=corto-uv,target=/root/.cache/uv \
     uv sync --locked
 
 ## Generate about.properties file with build metadata

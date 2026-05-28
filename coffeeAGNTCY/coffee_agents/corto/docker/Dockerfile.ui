@@ -2,8 +2,11 @@ FROM node:24-alpine
 
 WORKDIR /app
 
+# Pin the npm cache location so BuildKit cache mounts and npm agree on the path
+ENV npm_config_cache=/root/.npm
+
 # Install dependencies
-RUN --mount=type=cache,target=/root/.npm \
+RUN --mount=type=cache,id=corto-npm,target=/root/.npm \
     --mount=type=bind,source=coffeeAGNTCY/coffee_agents/corto/exchange/frontend/package.json,target=package.json \
     --mount=type=bind,source=coffeeAGNTCY/coffee_agents/corto/exchange/frontend/package-lock.json,target=package-lock.json \
     npm ci
