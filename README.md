@@ -60,8 +60,8 @@ case and the other a more complex MAS:
 - [SLIM](https://github.com/agntcy/slim) = v1.0.0
 - [NATS](https://github.com/nats-io/nats-server) = latest
 - [A2A](https://github.com/a2aproject/a2a-python) = v0.3.20
-- [MCP](https://github.com/modelcontextprotocol/python-sdk) >= v1.23.0
-- [LangGraph](https://github.com/langchain-ai/langgraph) >= v0.4.1
+- [MCP](https://github.com/modelcontextprotocol/python-sdk) = v1.26.0
+- [LangGraph](https://github.com/langchain-ai/langgraph) = v1.0.7
 - [Observe SDK](https://github.com/agntcy/observe) = 1.0.41
 - [AGNTCY Identity Service SDK](https://github.com/agntcy/identity-service) = 0.0.7
 - [AGNTCY Directory](https://github.com/agntcy/dir) = v1.0.0
