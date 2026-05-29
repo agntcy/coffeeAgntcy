@@ -151,6 +151,35 @@ def create_<tag_snake>_router() -> APIRouter:
     return router
 ```
 
+### Preserving existing `APIRouter(...)` arguments
+
+`tags=[...]` is the only constructor argument the skill derives from the OpenAPI document. Everything else passed to `APIRouter(...)` in existing code is **user-owned router behavior** and must be carried over verbatim on regeneration — the spec cannot tell you it is there, so dropping it silently changes runtime behavior.
+
+The most important case is router-level `dependencies=`, commonly an authentication/authorization gate:
+
+```python
+from api.<tag_snake>.auth import require_workflow_api_key  # whatever the existing import is — keep it
+from fastapi import APIRouter, Depends
+
+
+def create_<tag_snake>_router() -> APIRouter:
+    router = APIRouter(
+        tags=[_TAG],
+        dependencies=[Depends(require_workflow_api_key)],  # example dependency; preserve ANY dependencies found
+    )
+
+    # ... handlers ...
+
+    return router
+```
+
+Rules:
+
+- If the on-disk `APIRouter(...)` has a `dependencies=[...]` list, keep the entire list (and the imports it needs) exactly. Do not assume the dependency is `require_workflow_api_key`; that is only the example here. Apply the same rule to any callable(s) the user passed.
+- Preserve other constructor keywords too (`prefix=`, `responses=`, `default_response_class=`, `deprecated=`, etc.).
+- The skill only reconciles `tags`: add it if missing, otherwise leave the construction's other arguments untouched.
+- When validating (not regenerating), report a router that has lost a previously-present `dependencies=` (or other constructor argument) as a behavior regression, not a cosmetic diff.
+
 ### GET with query params and JSON response
 
 ```yaml
@@ -333,3 +362,4 @@ def test_<tag_snake>_spec_paths_match_fastapi_router() -> None:
 - `additionalProperties: false` must always become `ConfigDict(extra="forbid")`; omitting it lets clients smuggle fields through and silently break the spec contract.
 - For map-style responses, use `RootModel[dict[K, V]]`, not a wrapper class with a single `root: dict[...]` field — the JSON shape differs.
 - When the user added per-tag helpers (constants, helper functions) outside the `create_<tag_snake>_router` function, leave them alone and preserve their imports.
+- Never strip arguments off an existing `APIRouter(...)`. The skill only owns `tags=[...]`; `dependencies=[...]` (auth/authz gates and the like), `prefix=`, `responses=`, etc. are user-owned and must be preserved verbatim, including their imports. See [§ Preserving existing `APIRouter(...)` arguments](#preserving-existing-apirouter-arguments).

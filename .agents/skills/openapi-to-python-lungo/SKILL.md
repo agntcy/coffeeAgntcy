@@ -29,13 +29,14 @@ The skill must remain **general** across tags: never hard-code endpoint names, s
 - `dtos.py` is **owned by this skill**. It is regenerated from scratch on every run; never preserve hand edits inside it. If a user needs to edit a DTO, they must edit the OpenAPI schema instead.
 - `router.py` is **co-owned**. The skill owns:
   - the module-level imports it adds for DTOs,
-  - the `create_<tag_snake>_router()` function signature and the `APIRouter(tags=[...])` construction,
+  - the `create_<tag_snake>_router()` function signature and the presence of `tags=[<tag>]` on the `APIRouter(...)` construction (the skill ensures `tags=[<tag>]` is set, but it must **not** discard other constructor arguments — see below),
   - the route decorators (path, method, `response_model`, `status_code`, `summary`, etc.) and handler **signatures** (parameters, type annotations, return type).
 
   The user owns:
   - the **bodies** of existing handlers,
   - any module-level helpers (constants, helper functions, classes) added around the router function,
-  - additional imports the user added for those helpers.
+  - additional imports the user added for those helpers,
+  - any other arguments already passed to the `APIRouter(...)` constructor (e.g. `dependencies=[...]`, `prefix=`, `responses=`, `default_response_class=`) and the imports backing them. These encode router-level behavior (most notably authentication/authorization) that is not derivable from the OpenAPI document, so the skill must preserve them verbatim rather than overwrite them.
 
   When regenerating an existing handler, preserve its body verbatim. When decorator metadata or the signature must change to match the spec, rewrite the decorator and signature, but keep the body.
 - The OpenAPI tests under `tests/unit/openapi/` are **owned by this skill**. Regenerate them when missing or stale; do not preserve hand edits inside them.
@@ -122,7 +123,21 @@ For each operation under this tag:
    Stale handler: <function_name> is no longer in the OpenAPI spec for tag '<tag>'. Remove it manually if intentional.
    ```
 
-5. Make sure the `APIRouter` is constructed with `tags=["<tag>"]` and that `create_<tag_snake>_router()` returns it.
+5. Make sure the `APIRouter` is constructed with `tags=["<tag>"]` and that `create_<tag_snake>_router()` returns it. **Preserve every other argument already passed to `APIRouter(...)`.** When regenerating an existing router, the OpenAPI document does not describe router-level construction options, so anything the user put on the constructor must survive untouched:
+   - `dependencies=[...]` — router-level dependencies (e.g. an auth gate). Keep the full list and the imports backing it. This rule is **general**: treat any value found in `dependencies=` the same way, regardless of which callable it wraps.
+   - `prefix=`, `responses=`, `default_response_class=`, `deprecated=`, and any other keyword arguments — keep them verbatim.
+
+   Only add `tags=[<tag>]` if it is missing, and only reconcile `tags` itself; never drop, reorder, or rewrite the user's other constructor arguments. If you cannot safely merge `tags` while preserving an existing argument, stop and ask the user.
+
+   ```python
+   # If the existing code looks like this, keep `dependencies=` (and its import) on regen:
+   from api.<tag_snake>.auth import require_workflow_api_key  # example dependency — preserve whatever import is present
+
+   router = APIRouter(
+       tags=[_TAG],
+       dependencies=[Depends(require_workflow_api_key)],  # example only — preserve any dependencies found
+   )
+   ```
 
 See [reference.md § Router templates](reference.md) for concrete snippets.
 
