@@ -2,7 +2,7 @@ apiVersion: v2
 name: lungo-local-cluster
 description: A Helm chart for deploying Lungo services in a local cluster
 type: application
-version: 0.4.0
+version: 0.4.1
 appVersion: "1.0"
 dependencies:
   - name: slim
@@ -57,7 +57,7 @@ dependencies:
     version: "0.1.1"
     repository: "file://../recruiter-supervisor"
   - name: lungo-ui
-    version: "0.1.0"
+    version: "0.1.1"
     repository: "file://../ui"
   - name: agentic-workflows-api
     version: "0.1.0"
