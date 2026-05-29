@@ -33,16 +33,9 @@ const POSITION_MAP: Record<ExtraHandle["position"], Position> = {
 
 interface CustomNodeProps {
   data: CustomNodeData
-  onOpenOasfModal?: (
-    nodeData: CustomNodeData,
-    position: { x: number; y: number },
-  ) => void
 }
 
-const CustomNode: React.FC<CustomNodeProps> = ({
-  data,
-  //onOpenOasfModal,
-}) => {
+const CustomNode: React.FC<CustomNodeProps> = ({ data }) => {
   const nodeRef = useRef<HTMLDivElement>(null)
   const theme = useTheme()
 
@@ -65,30 +58,7 @@ const CustomNode: React.FC<CustomNodeProps> = ({
     e.preventDefault()
 
     if (nodeRef.current && data.onOpenIdentityModal) {
-      const buttonRect = (
-        e.currentTarget as HTMLElement
-      ).getBoundingClientRect()
-      const isMcpServer = data.label1?.includes("MCP Server")
-      let position
-      if (isMcpServer) {
-        position = {
-          x: buttonRect.right + 12,
-          y: buttonRect.top + buttonRect.height / 2,
-        }
-      } else {
-        const buttonCenterX = buttonRect.left + buttonRect.width / 2
-        position = {
-          x: buttonCenterX,
-          y: buttonRect.bottom + 12,
-        }
-      }
-      data.onOpenIdentityModal(
-        data,
-        position,
-        data.label1 || "",
-        data,
-        isMcpServer,
-      )
+      data.onOpenIdentityModal(data, data.label1 || "", data)
     } else {
       logger.error("No modal handler found or nodeRef missing!")
     }
@@ -98,15 +68,7 @@ const CustomNode: React.FC<CustomNodeProps> = ({
     e.stopPropagation()
     e.preventDefault()
     if (nodeRef.current && typeof data.onOpenOasfModal === "function") {
-      const buttonRect = (
-        e.currentTarget as HTMLElement
-      ).getBoundingClientRect()
-      const buttonCenterX = buttonRect.left + buttonRect.width / 2
-      const position = {
-        x: buttonCenterX,
-        y: buttonRect.bottom + 12,
-      }
-      data.onOpenOasfModal(data, position)
+      data.onOpenOasfModal(data)
     }
   }
 

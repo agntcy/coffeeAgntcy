@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  **/
 
-import React, { useState, useEffect } from "react"
+import React, { useState, useEffect, useMemo } from "react"
 import {
   Box,
   Button,
@@ -54,7 +54,22 @@ const OasfRecordModal: React.FC<OasfRecordModalProps> = ({
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const isDirectoryNode = nodeName === "Directory"
+  const combinedLabel = useMemo(
+    () =>
+      [nodeData?.label1, nodeData?.label2]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase(),
+    [nodeData?.label1, nodeData?.label2],
+  )
+
+  const isDirectoryNode = useMemo(
+    () =>
+      nodeName === "Directory" ||
+      (combinedLabel.includes("agntcy") &&
+        combinedLabel.includes("agent directory")),
+    [nodeName, combinedLabel],
+  )
 
   useEffect(() => {
     if (!isOpen || !nodeData) return
@@ -100,7 +115,7 @@ const OasfRecordModal: React.FC<OasfRecordModalProps> = ({
       scroll="paper"
     >
       <ModalTitle sx={{ pr: 6, position: "relative" }}>
-        {isDirectoryNode ? "Directory Information" : `${nodeName} OASF Record`}
+        Directory Information
         <IconButton
           onClick={onClose}
           aria-label="Close"
@@ -213,6 +228,14 @@ const OasfRecordModal: React.FC<OasfRecordModalProps> = ({
           </Stack>
         ) : record ? (
           <Stack sx={graphModalScrollBodySx}>
+            <Typography
+              variant="subtitle1"
+              component="h3"
+              fontWeight="semibold"
+              sx={{ mb: 1.5 }}
+            >
+              {nodeName} OASF Record
+            </Typography>
             <Box component="pre" sx={graphModalPreSx}>
               {JSON.stringify(record, null, 2)}
             </Box>

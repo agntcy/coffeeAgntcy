@@ -20,7 +20,7 @@ export interface PolicyData {
 }
 
 /** Menu body for graph identity actions (used inside `IconButtonDropdown`). */
-export interface IdentityDetailsDropdownProps {
+export interface IdentityDetailsDropdownContentProps {
   onShowBadgeDetails: () => void
   onShowPolicyDetails: () => void
   nodeData?: CustomNodeData

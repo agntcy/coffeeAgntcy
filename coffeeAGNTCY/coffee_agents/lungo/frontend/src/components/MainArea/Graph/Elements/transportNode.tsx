@@ -6,6 +6,7 @@
 import React, { type CSSProperties } from "react"
 import { Handle, Position } from "@xyflow/react"
 import { Box, Typography, useTheme } from "@open-ui-kit/core"
+//import githubIcon from "@/assets/Github.png"
 import githubIconLight from "@/assets/Github_lightmode.png"
 import { SecurityClass } from "@/utils/SecurityClass"
 import {
@@ -21,9 +22,10 @@ interface TransportNodeProps {
 
 const TransportNode: React.FC<TransportNodeProps> = ({ data }) => {
   const theme = useTheme()
+  //TODO: set both dark and light mode of github icon here
   const githubIconSrc = githubIconLight
-  const isCircular = data.compact
 
+  const isCircular = data.compact
   const handleStyle: CSSProperties = getGraphNodeHandleStyle(theme)
 
   return (

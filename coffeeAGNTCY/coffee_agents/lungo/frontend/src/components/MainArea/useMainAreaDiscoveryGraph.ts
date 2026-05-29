@@ -7,7 +7,7 @@ import React, { useEffect, useRef, useCallback } from "react"
 import type { Node, Edge } from "@xyflow/react"
 import {
   PUBLISH_SUBSCRIBE_CONFIG,
-  GROUP_COMMUNICATION_CONFIG,
+  GROUP_MESSAGING_CONFIG,
 } from "@/utils/graphConfigs"
 import { EDGE_LABELS, HANDLE_TYPES } from "@/utils/const.ts"
 import { logger } from "@/utils/logger"
@@ -25,6 +25,18 @@ const DISCOVERY_KEYWORDS = [
 type DiscoveryKeyword = (typeof DISCOVERY_KEYWORDS)[number]
 
 const RECRUITER_NODE_ID = "recruiter-agent"
+
+function findRecruiterNodeId(nodes: Node[]): string {
+  const byLabel = nodes.find((n) => {
+    const l1 = String((n.data as { label1?: string } | undefined)?.label1 ?? "")
+      .toLowerCase()
+      .trim()
+    return l1.includes("recruiter")
+  })
+  if (byLabel) return byLabel.id
+  const legacy = nodes.find((n) => n.id === RECRUITER_NODE_ID)
+  return legacy?.id ?? RECRUITER_NODE_ID
+}
 const RECRUITER_POS = { x: 400, y: 300 }
 const NODE_WIDTH = 193
 const START_Y_OFFSET = 450
@@ -50,17 +62,17 @@ const TEMPLATES_BY_KEYWORD: Record<DiscoveryKeyword, Node | undefined> = {
       .toLowerCase()
       .includes("colombia"),
   ),
-  shipper: GROUP_COMMUNICATION_CONFIG.nodes.find((n) =>
+  shipper: GROUP_MESSAGING_CONFIG.nodes.find((n) =>
     String(n.data?.label1 ?? "")
       .toLowerCase()
       .includes("shipper"),
   ),
-  tatooine: GROUP_COMMUNICATION_CONFIG.nodes.find((n) =>
+  tatooine: GROUP_MESSAGING_CONFIG.nodes.find((n) =>
     String(n.data?.label1 ?? "")
       .toLowerCase()
       .includes("tatooine"),
   ),
-  accountant: GROUP_COMMUNICATION_CONFIG.nodes.find((n) =>
+  accountant: GROUP_MESSAGING_CONFIG.nodes.find((n) =>
     String(n.data?.label1 ?? "")
       .toLowerCase()
       .includes("accountant"),
@@ -74,15 +86,10 @@ export interface UseMainAreaDiscoveryGraphParams {
   setEdges: React.Dispatch<React.SetStateAction<Edge[]>>
   handleOpenIdentityModal: (
     nodeData: CustomNodeData,
-    position: { x: number; y: number },
     nodeName?: string,
     data?: CustomNodeData,
-    isMcpServer?: boolean,
   ) => void
-  handleOpenOasfModal: (
-    nodeData: CustomNodeData,
-    position: { x: number; y: number },
-  ) => void
+  handleOpenOasfModal: (nodeData: CustomNodeData) => void
 }
 
 /** Syncs discovery response events to the graph: adds/removes discovery nodes and edges. */
@@ -117,7 +124,11 @@ export function useMainAreaDiscoveryGraph({
           prevNodes.filter((n) => !n.id.startsWith("discovery-")),
         )
         setEdges((prevEdges) =>
-          prevEdges.filter((e) => !e.id.startsWith("edge-recruiter-agent-")),
+          prevEdges.filter(
+            (e) =>
+              !e.id.startsWith("edge-recruiter-agent-") &&
+              !e.id.startsWith("edge-node://"),
+          ),
         )
         return
       }
@@ -127,8 +138,8 @@ export function useMainAreaDiscoveryGraph({
         `discovery-${kind}-${baseId}`
       const generatedNodeId = (agentId: string) =>
         `discovery-agent-${baseId}-${safeIdPart(agentId)}`
-      const edgeId = (targetId: string) =>
-        `edge-${RECRUITER_NODE_ID}-${baseId}-${targetId}`
+      const edgeId = (targetId: string, sourceId: string) =>
+        `edge-${sourceId}-${baseId}-${targetId}`
 
       setNodes((prevNodes) => {
         const existingIds = new Set(prevNodes.map((n) => n.id))
@@ -146,7 +157,8 @@ export function useMainAreaDiscoveryGraph({
             .map((n) => (n.data as Record<string, unknown>)?.agentCid)
             .filter(Boolean),
         )
-        const recruiterNode = prevNodes.find((n) => n.id === RECRUITER_NODE_ID)
+        const recruiterSourceId = findRecruiterNodeId(prevNodes)
+        const recruiterNode = prevNodes.find((n) => n.id === recruiterSourceId)
         const recruiterIcons = recruiterNode?.data
           ? {
               icon: recruiterNode.data.icon,
@@ -218,8 +230,8 @@ export function useMainAreaDiscoveryGraph({
             },
           })
           newEdges.push({
-            id: edgeId(id),
-            source: RECRUITER_NODE_ID,
+            id: edgeId(id, recruiterSourceId),
+            source: recruiterSourceId,
             target: id,
             type: "custom",
             data: { label: EDGE_LABELS.A2A_OVER_HTTP },
@@ -252,8 +264,8 @@ export function useMainAreaDiscoveryGraph({
             },
           })
           newEdges.push({
-            id: edgeId(id),
-            source: RECRUITER_NODE_ID,
+            id: edgeId(id, recruiterSourceId),
+            source: recruiterSourceId,
             target: id,
             type: "custom",
             data: { label: EDGE_LABELS.A2A_OVER_HTTP },
@@ -273,7 +285,7 @@ export function useMainAreaDiscoveryGraph({
   )
 
   useEffect(() => {
-    if (pattern !== "on_demand_discovery") return
+    if (pattern !== "a2a_http") return
     if (!discoveryResponseEvent) return
     if (lastTsRef.current === discoveryResponseEvent.ts) return
     lastTsRef.current = discoveryResponseEvent.ts

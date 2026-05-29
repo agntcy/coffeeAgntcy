@@ -15,20 +15,17 @@ import type { CustomNodeData } from "./Graph/Elements/types"
 
 export interface UseMainAreaGraphEffectsParams {
   pattern: string
+  /** When true, skip syncing from `getGraphConfig` (graph owned by Agentic Workflows API). */
+  skipStaticGraphSync?: boolean
   isGroupCommConnected: boolean
   setNodes: React.Dispatch<React.SetStateAction<Node[]>>
   setEdges: React.Dispatch<React.SetStateAction<Edge[]>>
   handleOpenIdentityModal: (
     nodeData: CustomNodeData,
-    position: { x: number; y: number },
     nodeName?: string,
     data?: CustomNodeData,
-    isMcpServer?: boolean,
   ) => void
-  handleOpenOasfModal: (
-    nodeData: CustomNodeData,
-    position: { x: number; y: number },
-  ) => void
+  handleOpenOasfModal: (nodeData: CustomNodeData) => void
   activeModal: string | null
   activeNodeData: unknown
   fitViewWithViewport: (opts: {
@@ -39,13 +36,18 @@ export interface UseMainAreaGraphEffectsParams {
   isExpanded: boolean
   config: GraphConfig
   animationLockRef: React.MutableRefObject<boolean>
+  nodesDraggable: boolean
+  nodesConnectable: boolean
   handleCloseModals: () => void
   setOasfModalOpen: (open: boolean) => void
+  /** Restore edge animation after a static-config rebuild wipes it. */
+  restoreEdgeAnimation?: () => void
 }
 
-/** Runs effects that sync graph config, viewport, transport labels, and edge checks. */
+/** Runs effects that sync graph config, viewport, transport labels, tooltips, and edge checks. */
 export function useMainAreaGraphEffects({
   pattern,
+  skipStaticGraphSync = false,
   isGroupCommConnected,
   setNodes,
   setEdges,
@@ -58,8 +60,11 @@ export function useMainAreaGraphEffects({
   isExpanded,
   config,
   animationLockRef,
+  nodesDraggable,
+  nodesConnectable,
   handleCloseModals,
   setOasfModalOpen,
+  restoreEdgeAnimation,
 }: UseMainAreaGraphEffectsParams) {
   useEffect(() => {
     animationLockRef.current = false
@@ -71,6 +76,7 @@ export function useMainAreaGraphEffects({
   }, [pattern, handleCloseModals, setOasfModalOpen])
 
   useEffect(() => {
+    if (skipStaticGraphSync) return
     setNodes((nodes) =>
       nodes.map((node) => ({
         ...node,
@@ -78,9 +84,37 @@ export function useMainAreaGraphEffects({
       })),
     )
     setEdges([])
-  }, [pattern, setNodes, setEdges])
+    // Restore SSE-driven edge animation in the same batch as the wipe.
+    if (restoreEdgeAnimation) restoreEdgeAnimation()
+  }, [pattern, setNodes, setEdges, skipStaticGraphSync, restoreEdgeAnimation])
 
   useEffect(() => {
+    if (!skipStaticGraphSync) return
+    setNodes((nodes) =>
+      nodes.map((node) => ({
+        ...node,
+        data: {
+          ...node.data,
+          onOpenIdentityModal: handleOpenIdentityModal,
+          onOpenOasfModal: handleOpenOasfModal,
+          isModalOpen: !!(
+            activeModal &&
+            (activeNodeData as { id?: string } | null)?.id === node.id
+          ),
+        },
+      })),
+    )
+  }, [
+    skipStaticGraphSync,
+    handleOpenIdentityModal,
+    handleOpenOasfModal,
+    activeModal,
+    activeNodeData,
+    setNodes,
+  ])
+
+  useEffect(() => {
+    if (skipStaticGraphSync) return
     const updateGraph = async () => {
       const newConfig = getGraphConfig(pattern)
       const nodesWithHandlers = newConfig.nodes.map((node) => ({
@@ -104,6 +138,8 @@ export function useMainAreaGraphEffects({
         pattern,
         isStreamingPattern(pattern),
       )
+      // Rebuild above wiped active/animated; restore in the same batch.
+      if (restoreEdgeAnimation) restoreEdgeAnimation()
       setTimeout(() => {
         fitViewWithViewport({ chatHeight: 0, isExpanded: false })
       }, 200)
@@ -119,10 +155,13 @@ export function useMainAreaGraphEffects({
     activeModal,
     activeNodeData,
     handleOpenOasfModal,
+    skipStaticGraphSync,
+    restoreEdgeAnimation,
   ])
 
   useEffect(() => {
     const handleVisibilityChange = async () => {
+      if (skipStaticGraphSync) return
       if (!document.hidden && supportsTransportUpdates(pattern)) {
         await updateTransportLabels(
           setNodes,
@@ -135,13 +174,14 @@ export function useMainAreaGraphEffects({
     document.addEventListener("visibilitychange", handleVisibilityChange)
     return () =>
       document.removeEventListener("visibilitychange", handleVisibilityChange)
-  }, [pattern, setNodes, setEdges])
+  }, [pattern, setNodes, setEdges, skipStaticGraphSync])
 
   useEffect(() => {
     fitViewWithViewport({ chatHeight, isExpanded })
   }, [chatHeight, isExpanded, fitViewWithViewport])
 
   useEffect(() => {
+    if (skipStaticGraphSync) return
     const checkEdges = () => {
       const expectedEdges = config.edges.length
       const renderedEdges =
@@ -161,5 +201,27 @@ export function useMainAreaGraphEffects({
       clearInterval(intervalId)
       clearTimeout(timeoutId)
     }
-  }, [config.edges, setEdges, animationLockRef])
+  }, [config.edges, setEdges, animationLockRef, skipStaticGraphSync])
+
+  useEffect(() => {
+    const addTooltips = () => {
+      const controlButtons = document.querySelectorAll(
+        ".react-flow__controls-button",
+      )
+      const tooltips = ["Zoom In", "Zoom Out", "Fit View", "Lock"]
+      controlButtons.forEach((button, index) => {
+        if (index < tooltips.length) {
+          if (index === 3) {
+            const isLocked = !nodesDraggable || !nodesConnectable
+            button.setAttribute("data-tooltip", isLocked ? "Unlock" : "Lock")
+          } else {
+            button.setAttribute("data-tooltip", tooltips[index])
+          }
+          button.removeAttribute("title")
+        }
+      })
+    }
+    const timeoutId = setTimeout(addTooltips, 100)
+    return () => clearTimeout(timeoutId)
+  }, [pattern, nodesDraggable, nodesConnectable])
 }

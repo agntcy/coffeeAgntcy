@@ -7,37 +7,22 @@ import React, {
   useCallback,
   useId,
   useLayoutEffect,
-  useMemo,
   useRef,
   useState,
 } from "react"
-import { Avatar, IconButton, Menu } from "@open-ui-kit/core"
-import type { AvatarProps, IconButtonProps, MenuProps } from "@mui/material"
+import { Box, IconButton, Menu } from "@open-ui-kit/core"
+import type { IconButtonProps, MenuProps } from "@mui/material"
 
-type IconButtonTrigger = {
-  kind: "iconButton"
+export type IconButtonDropdownTrigger = {
   /** Icon rendered inside the `IconButton`. */
   icon: React.ReactNode
   iconButtonProps?: Omit<IconButtonProps, "children" | "onClick" | "aria-label">
 }
 
-type AvatarTrigger = {
-  kind: "avatar"
-  /** Avatar props (e.g. `src`, `alt`, `children`). */
-  avatarProps: AvatarProps
-  /**
-   * Optional wrapper IconButton props.
-   * The Avatar itself is not a button; we wrap it for a11y and focus/keyboard support.
-   */
-  iconButtonProps?: Omit<IconButtonProps, "children" | "onClick" | "aria-label">
-}
-
-export type IconButtonDropdownTrigger = IconButtonTrigger | AvatarTrigger
-
 export interface IconButtonDropdownProps {
   /** Accessible name for the trigger button. */
   ariaLabel: string
-  /** Trigger rendered as an OUK `IconButton` or an `Avatar`. */
+  /** Trigger rendered as an OUK `IconButton`. */
   trigger: IconButtonDropdownTrigger
   /**
    * Arbitrary dropdown content. This component does not impose a list/options structure.
@@ -118,24 +103,8 @@ export const IconButtonDropdown: React.FC<IconButtonDropdownProps> = ({
     [handleUncontrolledOpen, isControlled, onOpenChange, openControlled],
   )
 
-  const triggerElement = useMemo(() => {
-    if (trigger.kind === "iconButton") {
-      return (
-        <IconButton
-          ref={buttonRef}
-          aria-label={ariaLabel}
-          aria-controls={menuOpen ? menuId : undefined}
-          aria-haspopup="menu"
-          aria-expanded={menuOpen ? "true" : undefined}
-          onClick={handleTriggerClick}
-          {...trigger.iconButtonProps}
-        >
-          {trigger.icon}
-        </IconButton>
-      )
-    }
-
-    return (
+  return (
+    <>
       <IconButton
         ref={buttonRef}
         aria-label={ariaLabel}
@@ -145,14 +114,8 @@ export const IconButtonDropdown: React.FC<IconButtonDropdownProps> = ({
         onClick={handleTriggerClick}
         {...trigger.iconButtonProps}
       >
-        <Avatar {...trigger.avatarProps} />
+        {trigger.icon}
       </IconButton>
-    )
-  }, [ariaLabel, handleTriggerClick, menuId, menuOpen, trigger])
-
-  return (
-    <>
-      {triggerElement}
       <Menu
         id={menuId}
         anchorEl={anchorEl}
@@ -162,13 +125,13 @@ export const IconButtonDropdown: React.FC<IconButtonDropdownProps> = ({
         transformOrigin={{ vertical: "top", horizontal: "left" }}
         {...menuProps}
       >
-        <div
+        <Box
           onClick={() => {
             if (closeOnContentClick) handleClose()
           }}
         >
           {children}
-        </div>
+        </Box>
       </Menu>
     </>
   )

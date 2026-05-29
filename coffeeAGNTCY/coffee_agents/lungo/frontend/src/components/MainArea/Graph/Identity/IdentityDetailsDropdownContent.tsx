@@ -6,16 +6,15 @@
 import React from "react"
 import { Box, IconButton, Stack, Typography } from "@open-ui-kit/core"
 import Visibility from "@mui/icons-material/Visibility"
-import { IdentityDetailsDropdownProps } from "./types"
+import { IdentityDetailsDropdownContentProps } from "./types"
 import githubIconLight from "@/assets/Github_lightmode.png"
 import urlsConfig from "@/utils/urls.json"
 import { SecurityClass } from "@/utils/SecurityClass"
 
-const IdentityDetailsDropdown: React.FC<IdentityDetailsDropdownProps> = ({
-  onShowBadgeDetails,
-  onShowPolicyDetails,
-  nodeData,
-}) => {
+const IdentityDetailsDropdownContent: React.FC<
+  IdentityDetailsDropdownContentProps
+> = ({ onShowBadgeDetails, onShowPolicyDetails, nodeData }) => {
+  //TODO: change GH icon for light/dark mode
   const githubIconSrc = githubIconLight
 
   const getIdentityGithubUrl = () => {
@@ -138,4 +137,4 @@ const IdentityDetailsDropdown: React.FC<IdentityDetailsDropdownProps> = ({
   )
 }
 
-export default IdentityDetailsDropdown
+export default IdentityDetailsDropdownContent
