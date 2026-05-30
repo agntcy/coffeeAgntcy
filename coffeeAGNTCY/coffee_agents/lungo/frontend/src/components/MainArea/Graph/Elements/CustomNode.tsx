@@ -39,6 +39,7 @@ const CustomNode: React.FC<CustomNodeProps> = ({ data }) => {
   const nodeRef = useRef<HTMLDivElement>(null)
   const theme = useTheme()
 
+  // TODO: set both dark and light mode of github icon here
   const githubIconSrc = githubIconLight
   const agentDirectoryIcon = useThemeIcon({
     light: agentDirectoryIconLight,

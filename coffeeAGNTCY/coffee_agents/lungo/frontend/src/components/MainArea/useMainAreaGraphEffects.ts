@@ -20,11 +20,7 @@ export interface UseMainAreaGraphEffectsParams {
   isGroupCommConnected: boolean
   setNodes: React.Dispatch<React.SetStateAction<Node[]>>
   setEdges: React.Dispatch<React.SetStateAction<Edge[]>>
-  handleOpenIdentityModal: (
-    nodeData: CustomNodeData,
-    nodeName?: string,
-    data?: CustomNodeData,
-  ) => void
+  handleOpenIdentityModal: (nodeData: CustomNodeData) => void
   handleOpenOasfModal: (nodeData: CustomNodeData) => void
   activeModal: string | null
   activeNodeData: unknown

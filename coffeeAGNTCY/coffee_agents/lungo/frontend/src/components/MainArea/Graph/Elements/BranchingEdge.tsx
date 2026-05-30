@@ -5,7 +5,7 @@
 
 import React from "react"
 import { Position, getBezierPath, useStore, Node } from "@xyflow/react"
-import { useTheme } from "@mui/material/styles"
+import { useTheme } from "@open-ui-kit/core"
 import CustomEdgeLabel from "./CustomEdgeLabel"
 import { BranchingEdgeData } from "./types"
 

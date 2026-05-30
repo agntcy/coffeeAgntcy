@@ -84,11 +84,7 @@ export interface UseMainAreaDiscoveryGraphParams {
   discoveryResponseEvent: DiscoveryResponseEvent | null | undefined
   setNodes: React.Dispatch<React.SetStateAction<Node[]>>
   setEdges: React.Dispatch<React.SetStateAction<Edge[]>>
-  handleOpenIdentityModal: (
-    nodeData: CustomNodeData,
-    nodeName?: string,
-    data?: CustomNodeData,
-  ) => void
+  handleOpenIdentityModal: (nodeData: CustomNodeData) => void
   handleOpenOasfModal: (nodeData: CustomNodeData) => void
 }
 

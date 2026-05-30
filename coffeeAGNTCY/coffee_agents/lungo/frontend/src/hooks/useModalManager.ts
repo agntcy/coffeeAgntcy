@@ -4,24 +4,13 @@
  **/
 
 import { useState, useCallback } from "react"
-import type {
-  ModalType,
-  ModalState,
-  ModalPosition,
-  ModalNodeData,
-} from "@/types/modal"
+import type { ModalType, ModalState, ModalNodeData } from "@/types/modal"
 import type { CustomNodeData } from "@/components/MainArea/Graph/Elements/types"
 
 export type { ModalType, ModalState, ModalNodeData } from "@/types/modal"
 
 export interface ModalActions {
-  handleOpenIdentityModal: (
-    nodeData: CustomNodeData,
-    position: ModalPosition,
-    nodeName?: string,
-    data?: CustomNodeData,
-    isMcpServer?: boolean,
-  ) => void
+  handleOpenIdentityModal: (nodeData: CustomNodeData) => void
   handleCloseModals: () => void
   handleShowBadgeDetails: () => void
   handleShowPolicyDetails: () => void
@@ -33,25 +22,11 @@ export interface UseModalManagerReturn extends ModalState, ModalActions {}
 export const useModalManager = (): UseModalManagerReturn => {
   const [activeModal, setActiveModal] = useState<ModalType>(null)
   const [activeNodeData, setActiveNodeData] = useState<ModalNodeData>(null)
-  const [modalPosition, setModalPosition] = useState<ModalPosition>({
-    x: 0,
-    y: 0,
-  })
 
-  const handleOpenIdentityModal = useCallback(
-    (
-      nodeData: CustomNodeData,
-      position: ModalPosition,
-      _nodeName?: string,
-      _data?: CustomNodeData,
-      isMcpServer?: boolean,
-    ) => {
-      setActiveNodeData({ ...nodeData, isMcpServer })
-      setModalPosition(position)
-      setActiveModal("identity")
-    },
-    [],
-  )
+  const handleOpenIdentityModal = useCallback((nodeData: CustomNodeData) => {
+    setActiveNodeData({ ...nodeData })
+    setActiveModal("identity")
+  }, [])
 
   const handleCloseModals = useCallback(() => {
     setActiveModal(null)
@@ -75,8 +50,6 @@ export const useModalManager = (): UseModalManagerReturn => {
   return {
     activeModal,
     activeNodeData,
-    modalPosition,
-
     handleOpenIdentityModal,
     handleCloseModals,
     handleShowBadgeDetails,
