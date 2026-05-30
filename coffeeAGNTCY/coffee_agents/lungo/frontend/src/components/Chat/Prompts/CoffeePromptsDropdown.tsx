@@ -15,13 +15,11 @@ const EXCHANGE_APP_API_URL =
   env.get("VITE_EXCHANGE_APP_API_URL") || DEFAULT_EXCHANGE_APP_API_URL
 
 interface CoffeePromptsDropdownProps {
-  visible: boolean
   onSelect: (query: string) => void
   pattern?: string
 }
 
 const CoffeePromptsDropdown: React.FC<CoffeePromptsDropdownProps> = ({
-  visible,
   onSelect,
   pattern,
 }) => {
@@ -84,6 +82,8 @@ const CoffeePromptsDropdown: React.FC<CoffeePromptsDropdownProps> = ({
           )
           retryTimeoutId = setTimeout(() => fetchPrompts(retryCount + 1), delay)
         }
+      } finally {
+        setIsLoading(false)
       }
     }
 
@@ -120,8 +120,6 @@ const CoffeePromptsDropdown: React.FC<CoffeePromptsDropdownProps> = ({
           : undefined,
       }))
   }, [categories])
-
-  if (!visible) return null
 
   const selected = options[0] ?? {
     label: "Suggested Prompts",

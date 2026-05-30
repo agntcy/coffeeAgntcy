@@ -32,6 +32,7 @@ import { DiscoveryResponseEvent } from "@/types/agent"
 import type { AuctionStreamingState } from "@/stores/auctionStreaming.types"
 import type { RecruiterStreamingState } from "@/stores/recruiterStreaming.types"
 import type { ApiResponse } from "@/types/api"
+import { PATTERNS } from "@/utils/patternUtils"
 
 const DEFAULT_GRAFANA_URL = "http://127.0.0.1:3001"
 const GRAFANA_URL = env.get("VITE_GRAFANA_URL") || DEFAULT_GRAFANA_URL
@@ -108,7 +109,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
 
   const onApiSuccess = useCallback(
     (apiResponse: ApiResponse) => {
-      if (pattern !== "on_demand_discovery") {
+      if (pattern !== PATTERNS.A2A_HTTP) {
         return
       }
 
@@ -345,7 +346,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
                         {agentResponse?.response ?? ""}
                         {(agentResponse?.session_id || groupSessionId) &&
                           !isAgentLoading &&
-                          pattern !== "on_demand_discovery" && (
+                          pattern !== PATTERNS.A2A_HTTP && (
                             <ExternalLinkButton
                               url={grafanaSessionUrl}
                               label="Grafana"

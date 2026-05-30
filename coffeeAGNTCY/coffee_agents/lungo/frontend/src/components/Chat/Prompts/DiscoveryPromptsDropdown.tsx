@@ -14,12 +14,10 @@ const DISCOVERY_APP_API_URL =
   env.get("VITE_DISCOVERY_APP_API_URL") || DEFAULT_DISCOVERY_APP_API_URL
 
 interface DiscoveryPromptsDropdownProps {
-  visible: boolean
   onSelect: (query: string) => void
 }
 
 const DiscoveryPromptsDropdown: React.FC<DiscoveryPromptsDropdownProps> = ({
-  visible,
   onSelect,
 }) => {
   const [isLoading, setIsLoading] = useState(true)
@@ -63,11 +61,7 @@ const DiscoveryPromptsDropdown: React.FC<DiscoveryPromptsDropdownProps> = ({
               () => fetchPrompts(retryCount + 1),
               delay,
             )
-          } else {
-            setIsLoading(false)
           }
-        } else {
-          setIsLoading(false)
         }
       } catch (err: unknown) {
         if (err instanceof Error && err.name !== "AbortError") {
@@ -115,8 +109,6 @@ const DiscoveryPromptsDropdown: React.FC<DiscoveryPromptsDropdownProps> = ({
           : undefined,
       }))
   }, [categories])
-
-  if (!visible) return null
 
   const selected = options[0] ?? {
     label: "Suggested Prompts",

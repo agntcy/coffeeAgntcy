@@ -9,12 +9,14 @@ import { Box } from "@open-ui-kit/core"
 import { Chip } from "@mui/material"
 
 interface ExternalLinkButtonProps {
+  component?: "a" | "button"
   url: string
   label: string
   iconSrc: string
 }
 
 const ExternalLinkButton: React.FC<ExternalLinkButtonProps> = ({
+  component = "a",
   url,
   label,
   iconSrc,
@@ -22,7 +24,7 @@ const ExternalLinkButton: React.FC<ExternalLinkButtonProps> = ({
   if (!SecurityClass.isSafeExternalUrl(url)) return null
   return (
     <Chip
-      component="a"
+      component={component}
       label={label}
       icon={
         <Box
@@ -34,9 +36,15 @@ const ExternalLinkButton: React.FC<ExternalLinkButtonProps> = ({
           aria-hidden
         />
       }
-      onClick={() => window.open(url, "_blank")}
-      target="_blank"
-      rel="noopener noreferrer"
+      {...(component === "a"
+        ? {
+            href: url,
+            target: "_blank",
+            rel: "noopener noreferrer",
+          }
+        : {
+            onClick: () => window.open(url, "_blank", "noopener noreferrer"),
+          })}
     />
   )
 }

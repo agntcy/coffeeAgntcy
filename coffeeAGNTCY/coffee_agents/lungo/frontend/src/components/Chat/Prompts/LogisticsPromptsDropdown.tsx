@@ -15,12 +15,10 @@ const LOGISTICS_APP_API_URL =
   env.get("VITE_LOGISTICS_APP_API_URL") || DEFAULT_LOGISTICS_APP_API_URL
 
 interface LogisticsPromptsDropdownProps {
-  visible: boolean
   onSelect: (query: string) => void
 }
 
 const LogisticsPromptsDropdown: React.FC<LogisticsPromptsDropdownProps> = ({
-  visible,
   onSelect,
 }) => {
   const [isLoading, setIsLoading] = useState(true)
@@ -75,6 +73,8 @@ const LogisticsPromptsDropdown: React.FC<LogisticsPromptsDropdownProps> = ({
           )
           retryTimeoutId = setTimeout(() => fetchPrompts(retryCount + 1), delay)
         }
+      } finally {
+        setIsLoading(false)
       }
     }
 
@@ -111,8 +111,6 @@ const LogisticsPromptsDropdown: React.FC<LogisticsPromptsDropdownProps> = ({
           : undefined,
       }))
   }, [categories])
-
-  if (!visible) return null
 
   const selected = options[0] ?? {
     label: "Suggested Prompts",

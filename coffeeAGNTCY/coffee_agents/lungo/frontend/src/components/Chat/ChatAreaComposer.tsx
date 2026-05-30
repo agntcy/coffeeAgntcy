@@ -57,7 +57,6 @@ const ChatAreaComposer: React.FC<ChatAreaComposerProps> = ({
           sx={promptStripSx}
         >
           <CoffeePromptsDropdown
-            visible={true}
             onSelect={onDropdownSelect}
             pattern={pattern}
           />
@@ -71,10 +70,7 @@ const ChatAreaComposer: React.FC<ChatAreaComposerProps> = ({
           spacing={1}
           sx={promptStripSx}
         >
-          <LogisticsPromptsDropdown
-            visible={true}
-            onSelect={onDropdownSelect}
-          />
+          <LogisticsPromptsDropdown onSelect={onDropdownSelect} />
         </Stack>
       )}
 
@@ -85,10 +81,7 @@ const ChatAreaComposer: React.FC<ChatAreaComposerProps> = ({
           spacing={1}
           sx={promptStripSx}
         >
-          <DiscoveryPromptsDropdown
-            visible={true}
-            onSelect={onDropdownSelect}
-          />
+          <DiscoveryPromptsDropdown onSelect={onDropdownSelect} />
         </Stack>
       )}
 
