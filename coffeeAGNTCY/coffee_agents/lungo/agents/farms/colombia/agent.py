@@ -8,7 +8,7 @@
 #
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express oqr implied.
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
@@ -166,8 +166,6 @@ class FarmAgent:
         except Exception as e:
             logger.error(f"Error during MCP tool call: {e}")
             return {"weather_forecast_success": False, "weather_forecast": [AIMessage(f"Weather Forecast MCP Server was Unavailable")]}
-        finally:
-            pass
 
     async def _inventory_node(self, state: GraphState) -> dict:
         """
@@ -188,7 +186,7 @@ class FarmAgent:
             template="""You are a helpful Colombian coffee farm manager.
                 You should estimate the seasonal coffee yield after checking the weather given.
                 Always return a numeric yield estimate with units (e.g. "5000 lbs").
-                This should contain the the basic yield for colombia (5000 lbs) plus an estimated bonus yield based on the weather forecast (e.g. + 100 lbs per temperature unit above 0).
+                This should contain the basic yield for colombia (5000 lbs) plus an estimated bonus yield based on the weather forecast (e.g. + 100 lbs per temperature unit above 0).
                 No explanation needed.
 
                 Weather forecast: {weather_forecast}
@@ -244,7 +242,7 @@ class FarmAgent:
         prompt = PromptTemplate(
             template="""You are an order assistant. Based on the user's question and the following order data, provide a concise and helpful response.
             If they ask about a specific order number, provide its status.
-            If they ask about placing order an order, generate a random order id and tracking number.
+            If they ask about placing an order, generate a random order id and tracking number.
 
             Order Data: {order_data}
             User question: {user_message}
