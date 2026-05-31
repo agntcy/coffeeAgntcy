@@ -19,6 +19,7 @@ const RootPage: React.FC = () => {
     selectedPattern,
     selectWorkflowFromCatalog,
     workflowCatalogSummaries,
+    workflowCatalogLoading,
     workflowCatalogError,
     selectedWorkflowSummary,
     chatHeightValue,
@@ -85,6 +86,7 @@ const RootPage: React.FC = () => {
         <Sidebar
           selectedWorkflowSummary={selectedWorkflowSummary}
           summaries={workflowCatalogSummaries}
+          isLoading={workflowCatalogLoading}
           error={workflowCatalogError}
           onSelectWorkflow={selectWorkflowFromCatalog}
         />

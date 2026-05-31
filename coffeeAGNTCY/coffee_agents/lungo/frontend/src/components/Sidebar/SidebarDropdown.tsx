@@ -6,6 +6,7 @@
 import React from "react"
 import { Box, ListItemButton, Stack, Typography } from "@open-ui-kit/core"
 import ExpandLess from "@mui/icons-material/ExpandLess"
+import { sidebarLevelIndentPx } from "./sidebarLevel"
 import { sidebarBorderRadius, sidebarItemMt } from "./sidebarSx"
 
 interface SidebarDropdownProps {
@@ -13,7 +14,7 @@ interface SidebarDropdownProps {
   isExpanded: boolean
   onToggle: () => void
   children: React.ReactNode
-  isNested?: boolean
+  level?: number
 }
 
 const SidebarDropdown: React.FC<SidebarDropdownProps> = ({
@@ -21,6 +22,7 @@ const SidebarDropdown: React.FC<SidebarDropdownProps> = ({
   isExpanded,
   onToggle,
   children,
+  level = 0,
 }) => {
   const toggleId = React.useId()
   const titleId = React.useId()
@@ -40,6 +42,8 @@ const SidebarDropdown: React.FC<SidebarDropdownProps> = ({
         sx={{
           width: "100%",
           justifyContent: "space-between",
+          pl: sidebarLevelIndentPx(level),
+          pr: 2.5,
           borderRadius: sidebarBorderRadius,
           textWrap: "auto",
           mt: sidebarItemMt,
@@ -74,7 +78,7 @@ const SidebarDropdown: React.FC<SidebarDropdownProps> = ({
         aria-labelledby={titleId}
         hidden={!isExpanded}
         direction="column"
-        sx={{ width: "100%", pl: 2 }}
+        sx={{ width: "100%" }}
       >
         {children}
       </Stack>

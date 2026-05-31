@@ -40,6 +40,7 @@ export function useApp() {
   const [workflowCatalogSummaries, setWorkflowCatalogSummaries] = useState<
     WorkflowSummary[] | null
   >(null)
+  const [workflowCatalogLoading, setWorkflowCatalogLoading] = useState(true)
   const [workflowCatalogError, setWorkflowCatalogError] = useState<
     string | null
   >(null)
@@ -90,6 +91,7 @@ export function useApp() {
 
   useEffect(() => {
     const controller = new AbortController()
+    setWorkflowCatalogLoading(true)
     setWorkflowCatalogError(null)
     fetchWorkflowSummariesWithRetry(controller.signal)
       .then((rows) => {
@@ -101,6 +103,11 @@ export function useApp() {
         setWorkflowCatalogError(
           err instanceof Error ? err.message : String(err),
         )
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) {
+          setWorkflowCatalogLoading(false)
+        }
       })
     return () => controller.abort()
   }, [])
@@ -358,6 +365,7 @@ export function useApp() {
     selectedPattern,
     selectWorkflowFromCatalog,
     workflowCatalogSummaries,
+    workflowCatalogLoading,
     workflowCatalogError,
     selectedWorkflowSummary,
     chatHeightValue,

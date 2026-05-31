@@ -2,23 +2,18 @@
  * Copyright AGNTCY Contributors (https://github.com/agntcy)
  * SPDX-License-Identifier: Apache-2.0
  *
- * Helpers to turn a flat list of catalog `WorkflowSummary` rows into the
- * LHS sidebar: pattern -> conversation (scenario) -> workflow [-> A2A SLIM], plus
- * a flat Reference Library of placeholder (unimplemented) pattern names.
+ * Sidebar-local helpers: expand/collapse keys, initial expanded state, and
+ * catalog row grouping for the LHS tree (pattern -> conversation -> workflow).
  */
 
 import type { WorkflowSummary } from "@/utils/agenticWorkflowsApi"
 
-/** Label for the transport row under SLIM-backed workflows. */
-export const A2A_SLIM_MENU_LABEL = "A2A SLIM"
-
 /** Catalog workflow names that use a workflow header + A2A SLIM child row. */
-export const WORKFLOWS_WITH_A2A_SLIM_TRANSPORT_LAYER: ReadonlySet<string> =
-  new Set([
-    "Publish Subscribe",
-    "Publish Subscribe Streaming",
-    "Group Messaging",
-  ])
+const WORKFLOWS_WITH_A2A_SLIM_TRANSPORT_LAYER: ReadonlySet<string> = new Set([
+  "Publish Subscribe",
+  "Publish Subscribe Streaming",
+  "Group Messaging",
+])
 
 export type WorkflowMenuDisplay = "direct" | "slim_transport"
 
@@ -228,3 +223,40 @@ export const buildCatalogSidebarLayout = (
 export const groupWorkflowsByPatternUseCaseAndScenario = (
   summaries: readonly WorkflowSummary[],
 ): PatternNode[] => buildCatalogSidebarLayout(summaries).implementedPatterns
+
+export const REFERENCE_LIBRARY_KEY = "reference-library"
+
+export const makePatternKey = (patternName: string): string =>
+  `pattern:${patternName}`
+
+export const makeUseCaseKey = (patternName: string, useCase: string): string =>
+  `pattern:${patternName}|usecase:${useCase}`
+
+export const makeScenarioKey = (
+  patternName: string,
+  useCase: string,
+  scenario: string,
+): string => `pattern:${patternName}|usecase:${useCase}|scenario:${scenario}`
+
+/** Expandable workflow header (SLIM transport workflows only). */
+export const makeWorkflowKey = (
+  patternName: string,
+  useCase: string,
+  scenario: string,
+  workflowName: string,
+): string =>
+  `pattern:${patternName}|usecase:${useCase}|scenario:${scenario}|workflow:${workflowName}`
+
+export const buildInitialExpanded = (
+  implementedPatterns: PatternNode[],
+): Set<string> => {
+  const next = new Set<string>()
+  for (const pattern of implementedPatterns) {
+    next.add(makePatternKey(pattern.name))
+    for (const ucs of pattern.useCaseScenarios) {
+      next.add(makeUseCaseKey(pattern.name, ucs.useCase))
+      next.add(makeScenarioKey(pattern.name, ucs.useCase, ucs.scenario))
+    }
+  }
+  return next
+}

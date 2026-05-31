@@ -1,29 +1,38 @@
 /**
  * Copyright AGNTCY Contributors (https://github.com/agntcy)
  * SPDX-License-Identifier: Apache-2.0
- *
- * `LungoSidebarNavigationSlot` is the single ReactElement passed to `SidebarFrame.navigationItems`;
- * it carries the multi-level menu (headings + `SidebarDropdown`). Only that slot pattern allows
- * arbitrary composed content beside top-level `SidebarRailItem` rows — keep it unless the frame
- * API gains a richer tree prop.
  **/
 
-import React, { useEffect, useMemo, useState } from "react"
-import type { SxProps, Theme } from "@mui/material/styles"
-import People from "@mui/icons-material/People"
-import Podcasts from "@mui/icons-material/Podcasts"
-import Search from "@mui/icons-material/Search"
-import Share from "@mui/icons-material/Share"
-import { Box, Stack, Typography } from "@open-ui-kit/core"
-import {
-  PatternType,
-  PATTERNS,
-  getApiUrlForPattern,
-} from "@/utils/patternUtils"
-import { logger } from "@/utils/logger"
-import SidebarDropdown from "./SidebarDropdown"
+import React, { useCallback, useEffect, useMemo, useState } from "react"
+import ErrorOutline from "@mui/icons-material/ErrorOutline"
+import { Box, Spinner, Stack, Typography } from "@open-ui-kit/core"
+import type { WorkflowSummary } from "@/utils/agenticWorkflowsApi"
+import CatalogTree from "./CatalogTree"
 import { SidebarFrame } from "./SidebarFrame"
-import { SidebarRailRow } from "./SidebarRailRow"
+import {
+  buildCatalogSidebarLayout,
+  buildInitialExpanded,
+  type CatalogSidebarLayout,
+} from "./sidebar.utils"
+
+interface SidebarProps {
+  selectedWorkflowSummary: WorkflowSummary | null
+  summaries: WorkflowSummary[] | null
+  isLoading: boolean
+  error: string | null
+  onSelectWorkflow: (summary: WorkflowSummary) => void
+}
+
+interface SidebarCatalogNavigationSlotProps {
+  iconOnly?: boolean
+  layout: CatalogSidebarLayout
+  expandedKeys: Set<string>
+  toggleExpandableDropdown: (key: string) => void
+  selectedWorkflowSummary: WorkflowSummary | null
+  onSelectWorkflow: (summary: WorkflowSummary) => void
+  isLoading: boolean
+  error: string | null
+}
 
 /**
  * When false, the rail stays expanded, the collapse toggle is not rendered, and width
@@ -31,368 +40,137 @@ import { SidebarRailRow } from "./SidebarRailRow"
  */
 const SIDEBAR_FRAME_COLLAPSIBLE = false
 
-interface LungoSidebarProps {
-  selectedPattern: PatternType
-  onPatternChange: (pattern: PatternType) => void
-}
-
-/** Single source of truth: order defines collapsed rail order and grouping for the expanded tree. */
-interface LungoMenuLeaf {
-  id: string
-  pattern: PatternType
-  conversationTitle: string
-  dropdownTitle: string
-  /** `SidebarSectionHeading` indent for “Agentic Patterns” under this conversation. */
-  agenticHeadingPl: number
-  icon: React.ReactElement
-  getTooltip: (transportLabel: string) => string
-  getAriaLabel: (transportLabel: string) => string
-}
-
-const LUNGO_MENU_LEAVES: LungoMenuLeaf[] = [
-  {
-    id: "lungo-pat-gc",
-    pattern: PATTERNS.GROUP_COMMUNICATION,
-    conversationTitle: "Order Fulfilment",
-    dropdownTitle: "Secure Group Communication",
-    agenticHeadingPl: 2,
-    icon: <People aria-hidden />,
-    getTooltip: () => "A2A SLIM",
-    getAriaLabel: () => "A2A SLIM",
-  },
-  {
-    id: "lungo-pat-ps",
-    pattern: PATTERNS.PUBLISH_SUBSCRIBE,
-    conversationTitle: "Coffee Buying",
-    dropdownTitle: "Publish Subscribe",
-    agenticHeadingPl: 2,
-    icon: <Share aria-hidden />,
-    getTooltip: (t) => `A2A ${t} · Publish Subscribe`,
-    getAriaLabel: (t) => `A2A ${t} · Publish Subscribe`,
-  },
-  {
-    id: "lungo-pat-pss",
-    pattern: PATTERNS.PUBLISH_SUBSCRIBE_STREAMING,
-    conversationTitle: "Coffee Buying",
-    dropdownTitle: "Publish Subscribe: Streaming",
-    agenticHeadingPl: 2,
-    icon: <Podcasts aria-hidden />,
-    getTooltip: (t) => `A2A ${t} · Streaming`,
-    getAriaLabel: (t) => `A2A ${t} · Streaming`,
-  },
-  {
-    id: "lungo-pat-odd",
-    pattern: PATTERNS.ON_DEMAND_DISCOVERY,
-    conversationTitle: "Capability Discovery",
-    dropdownTitle: "Recruiter",
-    agenticHeadingPl: 2,
-    icon: <Search aria-hidden />,
-    getTooltip: () => "A2A HTTP",
-    getAriaLabel: () => "A2A HTTP",
-  },
-]
-
-function groupLeavesByConversation(
-  leaves: LungoMenuLeaf[],
-  transportLabel: string,
-): Array<{
-  conversationTitle: string
-  agenticHeadingPl: number
-  rows: Array<{
-    leaf: LungoMenuLeaf
-    tooltip: string
-    ariaLabel: string
-  }>
-}> {
-  const order: string[] = []
-  const bucket = new Map<
-    string,
-    {
-      conversationTitle: string
-      agenticHeadingPl: number
-      rows: Array<{
-        leaf: LungoMenuLeaf
-        tooltip: string
-        ariaLabel: string
-      }>
-    }
-  >()
-
-  for (const leaf of leaves) {
-    const tooltip = leaf.getTooltip(transportLabel)
-    const ariaLabel = leaf.getAriaLabel(transportLabel)
-    const key = leaf.conversationTitle
-    if (!bucket.has(key)) {
-      order.push(key)
-      bucket.set(key, {
-        conversationTitle: leaf.conversationTitle,
-        agenticHeadingPl: leaf.agenticHeadingPl,
-        rows: [],
-      })
-    }
-    bucket.get(key)!.rows.push({ leaf, tooltip, ariaLabel })
-  }
-
-  return order.map((k) => bucket.get(k)!)
-}
-
-interface LungoSidebarNavigationSlotProps {
-  iconOnly?: boolean
-  selectedPattern: PatternType
-  onPatternChange: (pattern: PatternType) => void
-  transport: string
-  isPublishSubscribeExpanded: boolean
-  setIsPublishSubscribeExpanded: React.Dispatch<React.SetStateAction<boolean>>
-  isPublishSubscribeStreamingExpanded: boolean
-  setIsPublishSubscribeStreamingExpanded: React.Dispatch<
-    React.SetStateAction<boolean>
-  >
-  isGroupCommunicationExpanded: boolean
-  setIsGroupCommunicationExpanded: React.Dispatch<React.SetStateAction<boolean>>
-  isOnDemandDiscoveryExpanded: boolean
-  setIsOnDemandDiscoveryExpanded: React.Dispatch<React.SetStateAction<boolean>>
-}
-
-function getDropdownExpandState(
-  leafId: string,
-  p: Pick<
-    LungoSidebarNavigationSlotProps,
-    | "isPublishSubscribeExpanded"
-    | "setIsPublishSubscribeExpanded"
-    | "isPublishSubscribeStreamingExpanded"
-    | "setIsPublishSubscribeStreamingExpanded"
-    | "isGroupCommunicationExpanded"
-    | "setIsGroupCommunicationExpanded"
-    | "isOnDemandDiscoveryExpanded"
-    | "setIsOnDemandDiscoveryExpanded"
-  >,
-): { isExpanded: boolean; onToggle: () => void } {
-  switch (leafId) {
-    case "lungo-pat-gc":
-      return {
-        isExpanded: p.isGroupCommunicationExpanded,
-        onToggle: () => p.setIsGroupCommunicationExpanded((v) => !v),
-      }
-    case "lungo-pat-ps":
-      return {
-        isExpanded: p.isPublishSubscribeExpanded,
-        onToggle: () => p.setIsPublishSubscribeExpanded((v) => !v),
-      }
-    case "lungo-pat-pss":
-      return {
-        isExpanded: p.isPublishSubscribeStreamingExpanded,
-        onToggle: () => p.setIsPublishSubscribeStreamingExpanded((v) => !v),
-      }
-    case "lungo-pat-odd":
-      return {
-        isExpanded: p.isOnDemandDiscoveryExpanded,
-        onToggle: () => p.setIsOnDemandDiscoveryExpanded((v) => !v),
-      }
-    default:
-      return { isExpanded: true, onToggle: () => {} }
-  }
-}
-
-function LungoSidebarNavigationSlot({
+function SidebarCatalogNavigationSlot({
   iconOnly,
-  selectedPattern,
-  onPatternChange,
-  transport,
-  ...expandProps
-}: LungoSidebarNavigationSlotProps) {
-  const transportLabel = transport || ""
-  const railOpen = !iconOnly
-
-  const sections = useMemo(
-    () => groupLeavesByConversation(LUNGO_MENU_LEAVES, transportLabel),
-    [transportLabel],
-  )
-
-  const renderRailRow = (args: {
-    leaf: LungoMenuLeaf
-    tooltip: string
-    ariaLabel: string
-  }) => {
-    const { leaf, tooltip, ariaLabel } = args
-    return (
-      <SidebarRailRow
-        key={leaf.id}
-        id={leaf.id}
-        aria-label={ariaLabel}
-        tooltip={tooltip}
-        icon={leaf.icon}
-        railOpen={railOpen}
-        selected={selectedPattern === leaf.pattern}
-        onClick={() => onPatternChange(leaf.pattern)}
-      />
-    )
+  layout,
+  expandedKeys,
+  toggleExpandableDropdown,
+  selectedWorkflowSummary,
+  onSelectWorkflow,
+  isLoading,
+  error,
+}: SidebarCatalogNavigationSlotProps) {
+  if (iconOnly) {
+    return null
   }
-
-  const collapsedMenu = (
-    <Stack spacing={0.5} sx={{ width: "100%", alignItems: "stretch", py: 0.5 }}>
-      {LUNGO_MENU_LEAVES.map((leaf) =>
-        renderRailRow({
-          leaf,
-          tooltip: leaf.getTooltip(transportLabel),
-          ariaLabel: leaf.getAriaLabel(transportLabel),
-        }),
-      )}
-    </Stack>
-  )
-
-  const expandedMenu = (
-    <Stack spacing={2.5} sx={innerSx}>
-      {sections.map((section) => (
-        <Stack key={section.conversationTitle} sx={sectionBlockSx}>
-          <SidebarSectionHeading pl={0}>
-            {section.conversationTitle}
-          </SidebarSectionHeading>
-
-          <Stack sx={sectionBlockSx}>
-            <SidebarSectionHeading pl={section.agenticHeadingPl}>
-              Agentic Patterns
-            </SidebarSectionHeading>
-
-            {section.rows.map(({ leaf, tooltip, ariaLabel }) => {
-              const { isExpanded, onToggle } = getDropdownExpandState(
-                leaf.id,
-                expandProps,
-              )
-              return (
-                <Box key={leaf.id}>
-                  <SidebarDropdown
-                    title={leaf.dropdownTitle}
-                    isExpanded={isExpanded}
-                    onToggle={onToggle}
-                  >
-                    {renderRailRow({ leaf, tooltip, ariaLabel })}
-                  </SidebarDropdown>
-                </Box>
-              )
-            })}
-          </Stack>
-        </Stack>
-      ))}
-    </Stack>
-  )
 
   return (
     <Box
       component="nav"
-      aria-label="Conversation and agentic patterns"
+      aria-label="Agentic patterns catalog"
       sx={{
         width: "100%",
         minWidth: 0,
         alignSelf: "stretch",
-        ...(iconOnly
-          ? {
-              display: "flex",
-              justifyContent: "center",
-            }
-          : { flex: 1 }),
+        flex: 1,
+        minHeight: 0,
+        overflow: "auto",
       }}
     >
-      {iconOnly ? collapsedMenu : expandedMenu}
+      <Stack direction="column" sx={{ width: "100%" }}>
+        {isLoading ? (
+          <Stack
+            direction="row"
+            alignItems="center"
+            spacing={1.5}
+            role="status"
+            aria-label="Loading workflows"
+            sx={{ px: 2.5, py: 1 }}
+          >
+            <Spinner size={16} thickness={4} />
+            <Typography variant="body2" sx={{ opacity: 0.6 }}>
+              Loading workflows...
+            </Typography>
+          </Stack>
+        ) : null}
+
+        {!isLoading && error !== null ? (
+          <Stack
+            direction="row"
+            alignItems="center"
+            spacing={1}
+            role="alert"
+            sx={{ px: 2.5, py: 1, opacity: 0.8 }}
+          >
+            <ErrorOutline sx={{ fontSize: 16 }} />
+            <Typography variant="caption">Menu is unavailable</Typography>
+          </Stack>
+        ) : null}
+
+        {!isLoading && error === null ? (
+          <CatalogTree
+            layout={layout}
+            expandedKeys={expandedKeys}
+            toggleExpandableDropdown={toggleExpandableDropdown}
+            selectedWorkflowSummary={selectedWorkflowSummary}
+            onSelectWorkflow={onSelectWorkflow}
+          />
+        ) : null}
+      </Stack>
     </Box>
   )
 }
 
-const innerSx: SxProps<Theme> = {
-  flex: 1,
-  minHeight: 0,
-  overflow: "auto",
-}
-
-const sectionBlockSx: SxProps<Theme> = {
-  display: "flex",
-  flexDirection: "column",
-}
-
-const headingRowSx = (plKey: number): SxProps<Theme> => ({
-  p: 0.5,
-  pl: plKey,
-})
-
-const headingTextSx: SxProps<Theme> = {
-  flex: 1,
-  textWrap: "auto",
-  fontWeight: 600,
-}
-
-function SidebarSectionHeading({
-  children,
-  pl = 1,
-}: {
-  children: React.ReactNode
-  pl?: number
-}) {
-  return (
-    <Box sx={headingRowSx(pl)}>
-      <Typography component="span" variant="body1" sx={headingTextSx}>
-        {children}
-      </Typography>
-    </Box>
-  )
-}
-
-const Sidebar: React.FC<LungoSidebarProps> = ({
-  selectedPattern,
-  onPatternChange,
+const Sidebar: React.FC<SidebarProps> = ({
+  selectedWorkflowSummary,
+  summaries,
+  isLoading,
+  error,
+  onSelectWorkflow,
 }) => {
-  const [isPublishSubscribeExpanded, setIsPublishSubscribeExpanded] =
-    useState(true)
-  const [
-    isPublishSubscribeStreamingExpanded,
-    setIsPublishSubscribeStreamingExpanded,
-  ] = useState(true)
-  const [isGroupCommunicationExpanded, setIsGroupCommunicationExpanded] =
-    useState(true)
-  const [isOnDemandDiscoveryExpanded, setIsOnDemandDiscoveryExpanded] =
-    useState(true)
-  const [transport, setTransport] = useState<string>("")
+  const [expandedKeys, setExpandedKeys] = useState<Set<string>>(new Set())
+
+  const layout = useMemo(
+    () => buildCatalogSidebarLayout(summaries ?? []),
+    [summaries],
+  )
+
+  const toggleExpandableDropdown = useCallback((key: string) => {
+    setExpandedKeys((prev) => {
+      const next = new Set(prev)
+      if (next.has(key)) {
+        next.delete(key)
+      } else {
+        next.add(key)
+      }
+      return next
+    })
+  }, [])
 
   useEffect(() => {
-    const fetchTransportConfig = async () => {
-      try {
-        const response = await fetch(
-          `${getApiUrlForPattern(PATTERNS.PUBLISH_SUBSCRIBE)}/transport/config`,
-        )
-        const data = await response.json()
-        if (data.transport) {
-          setTransport(data.transport)
-        }
-      } catch (error) {
-        logger.error("Error fetching transport config:", error)
-      }
-    }
+    if (summaries === null) return
+    setExpandedKeys(buildInitialExpanded(layout.implementedPatterns))
+  }, [layout.implementedPatterns, summaries])
 
-    fetchTransportConfig()
-  }, [])
+  const catalogNavigationSlot = useMemo(
+    () => (
+      <SidebarCatalogNavigationSlot
+        key="catalog-nav"
+        layout={layout}
+        expandedKeys={expandedKeys}
+        toggleExpandableDropdown={toggleExpandableDropdown}
+        selectedWorkflowSummary={selectedWorkflowSummary}
+        onSelectWorkflow={onSelectWorkflow}
+        isLoading={isLoading}
+        error={error}
+      />
+    ),
+    [
+      layout,
+      expandedKeys,
+      toggleExpandableDropdown,
+      selectedWorkflowSummary,
+      onSelectWorkflow,
+      isLoading,
+      error,
+    ],
+  )
 
   return (
     <SidebarFrame
       collapsible={SIDEBAR_FRAME_COLLAPSIBLE}
       initialOpen
-      navigationItems={[
-        <LungoSidebarNavigationSlot
-          key="lungo-pattern-nav"
-          selectedPattern={selectedPattern}
-          onPatternChange={onPatternChange}
-          transport={transport}
-          isPublishSubscribeExpanded={isPublishSubscribeExpanded}
-          setIsPublishSubscribeExpanded={setIsPublishSubscribeExpanded}
-          isPublishSubscribeStreamingExpanded={
-            isPublishSubscribeStreamingExpanded
-          }
-          setIsPublishSubscribeStreamingExpanded={
-            setIsPublishSubscribeStreamingExpanded
-          }
-          isGroupCommunicationExpanded={isGroupCommunicationExpanded}
-          setIsGroupCommunicationExpanded={setIsGroupCommunicationExpanded}
-          isOnDemandDiscoveryExpanded={isOnDemandDiscoveryExpanded}
-          setIsOnDemandDiscoveryExpanded={setIsOnDemandDiscoveryExpanded}
-        />,
-      ]}
+      navigationItems={[catalogNavigationSlot]}
     />
   )
 }
