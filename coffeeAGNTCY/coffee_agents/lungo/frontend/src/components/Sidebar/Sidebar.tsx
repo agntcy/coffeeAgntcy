@@ -5,15 +5,36 @@
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import ErrorOutline from "@mui/icons-material/ErrorOutline"
-import { Box, Spinner, Stack, Typography } from "@open-ui-kit/core"
+import {
+  Box,
+  Drawer,
+  List,
+  Spinner,
+  Stack,
+  Typography,
+} from "@open-ui-kit/core"
+import { styled } from "@mui/material/styles"
 import type { WorkflowSummary } from "@/utils/agenticWorkflowsApi"
 import CatalogTree from "./CatalogTree"
-import { SidebarFrame } from "./SidebarFrame"
 import {
   buildCatalogSidebarLayout,
   buildInitialExpanded,
-  type CatalogSidebarLayout,
 } from "./sidebar.utils"
+
+const SIDEBAR_DRAWER_WIDTH = "16.5rem"
+
+const StyledDrawer = styled(Drawer)(({ theme }) => ({
+  width: SIDEBAR_DRAWER_WIDTH,
+  flexShrink: 0,
+  whiteSpace: "nowrap",
+  boxSizing: "border-box",
+  "& .MuiDrawer-paper": {
+    width: SIDEBAR_DRAWER_WIDTH,
+    overflowX: "hidden",
+    backgroundColor: theme.palette.background.paper,
+    borderRadius: 0,
+  },
+}))
 
 interface SidebarProps {
   selectedWorkflowSummary: WorkflowSummary | null
@@ -21,94 +42,6 @@ interface SidebarProps {
   isLoading: boolean
   error: string | null
   onSelectWorkflow: (summary: WorkflowSummary) => void
-}
-
-interface SidebarCatalogNavigationSlotProps {
-  iconOnly?: boolean
-  layout: CatalogSidebarLayout
-  expandedKeys: Set<string>
-  toggleExpandableDropdown: (key: string) => void
-  selectedWorkflowSummary: WorkflowSummary | null
-  onSelectWorkflow: (summary: WorkflowSummary) => void
-  isLoading: boolean
-  error: string | null
-}
-
-/**
- * When false, the rail stays expanded, the collapse toggle is not rendered, and width
- * does not animate to the narrow rail.
- */
-const SIDEBAR_FRAME_COLLAPSIBLE = false
-
-function SidebarCatalogNavigationSlot({
-  iconOnly = false,
-  layout,
-  expandedKeys,
-  toggleExpandableDropdown,
-  selectedWorkflowSummary,
-  onSelectWorkflow,
-  isLoading,
-  error,
-}: SidebarCatalogNavigationSlotProps) {
-  if (iconOnly) {
-    return null
-  }
-
-  return (
-    <Box
-      component="nav"
-      aria-label="Agentic patterns catalog"
-      sx={{
-        width: "100%",
-        minWidth: 0,
-        alignSelf: "stretch",
-        flex: 1,
-        minHeight: 0,
-        overflow: "auto",
-      }}
-    >
-      <Stack direction="column" sx={{ width: "100%" }}>
-        {isLoading ? (
-          <Stack
-            direction="row"
-            alignItems="center"
-            spacing={1.5}
-            role="status"
-            aria-label="Loading workflows"
-            sx={{ px: 2.5, py: 1 }}
-          >
-            <Spinner size={16} thickness={4} />
-            <Typography variant="body2" sx={{ opacity: 0.6 }}>
-              Loading workflows...
-            </Typography>
-          </Stack>
-        ) : null}
-
-        {!isLoading && error !== null ? (
-          <Stack
-            direction="row"
-            alignItems="center"
-            spacing={1}
-            role="alert"
-            sx={{ px: 2.5, py: 1, opacity: 0.8 }}
-          >
-            <ErrorOutline sx={{ fontSize: 16 }} />
-            <Typography variant="caption">Menu is unavailable</Typography>
-          </Stack>
-        ) : null}
-
-        {!isLoading && error === null ? (
-          <CatalogTree
-            layout={layout}
-            expandedKeys={expandedKeys}
-            toggleExpandableDropdown={toggleExpandableDropdown}
-            selectedWorkflowSummary={selectedWorkflowSummary}
-            onSelectWorkflow={onSelectWorkflow}
-          />
-        ) : null}
-      </Stack>
-    </Box>
-  )
 }
 
 const Sidebar: React.FC<SidebarProps> = ({
@@ -147,22 +80,92 @@ const Sidebar: React.FC<SidebarProps> = ({
   }, [layout.implementedPatterns, summaries])
 
   return (
-    <SidebarFrame
-      collapsible={SIDEBAR_FRAME_COLLAPSIBLE}
-      initialOpen
-      navigationItems={[
-        <SidebarCatalogNavigationSlot
-          key="catalog-nav"
-          layout={layout}
-          expandedKeys={expandedKeys}
-          toggleExpandableDropdown={toggleExpandableDropdown}
-          selectedWorkflowSummary={selectedWorkflowSummary}
-          onSelectWorkflow={onSelectWorkflow}
-          isLoading={isLoading}
-          error={error}
-        />,
-      ]}
-    />
+    <StyledDrawer
+      variant="permanent"
+      data-testid="sidebar"
+      open
+      slotProps={{
+        paper: {
+          sx: {
+            position: "relative",
+            display: "flex",
+            flexDirection: "column",
+            height: "100%",
+            p: 3,
+            pr: 0,
+          },
+        },
+      }}
+    >
+      <List
+        sx={{
+          display: "flex",
+          flexDirection: "column",
+          gap: 3,
+          alignItems: "baseline",
+          overflowY: "auto",
+          p: 0,
+          pr: 3,
+          width: "100%",
+          minHeight: 0,
+          flex: 1,
+        }}
+      >
+        <Box
+          component="nav"
+          aria-label="Agentic patterns catalog"
+          sx={{
+            width: "100%",
+            minWidth: 0,
+            alignSelf: "stretch",
+            flex: 1,
+            minHeight: 0,
+            overflow: "auto",
+          }}
+        >
+          <Stack direction="column" sx={{ width: "100%" }}>
+            {isLoading ? (
+              <Stack
+                direction="row"
+                alignItems="center"
+                spacing={1.5}
+                role="status"
+                aria-label="Loading workflows"
+                sx={{ px: 2.5, py: 1 }}
+              >
+                <Spinner size={16} thickness={4} />
+                <Typography variant="body2" sx={{ opacity: 0.6 }}>
+                  Loading workflows...
+                </Typography>
+              </Stack>
+            ) : null}
+
+            {!isLoading && error !== null ? (
+              <Stack
+                direction="row"
+                alignItems="center"
+                spacing={1}
+                role="alert"
+                sx={{ px: 2.5, py: 1, opacity: 0.8 }}
+              >
+                <ErrorOutline sx={{ fontSize: 16 }} />
+                <Typography variant="caption">Menu is unavailable</Typography>
+              </Stack>
+            ) : null}
+
+            {!isLoading && error === null ? (
+              <CatalogTree
+                layout={layout}
+                expandedKeys={expandedKeys}
+                toggleExpandableDropdown={toggleExpandableDropdown}
+                selectedWorkflowSummary={selectedWorkflowSummary}
+                onSelectWorkflow={onSelectWorkflow}
+              />
+            ) : null}
+          </Stack>
+        </Box>
+      </List>
+    </StyledDrawer>
   )
 }
 
