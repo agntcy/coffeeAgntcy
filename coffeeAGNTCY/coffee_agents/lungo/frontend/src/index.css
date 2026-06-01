@@ -8,21 +8,6 @@ body {
   padding: 0;
 }
 
-:root {
-  --github-icon: url("@/assets/Github.png");
-  --agent-directory-icon: url("@/assets/Agent_directory.png");
-  /*     --github-icon: url("@/assets/Github_lightmode.png");
-    --agent-directory-icon: url("@/assets/Agent_Icon_light.png");*/
-}
-
-.theme-icon-github {
-  content: var(--github-icon);
-}
-
-.theme-icon-agent-directory {
-  content: var(--agent-directory-icon);
-}
-
 .app-container {
   display: flex;
   height: 100vh;
