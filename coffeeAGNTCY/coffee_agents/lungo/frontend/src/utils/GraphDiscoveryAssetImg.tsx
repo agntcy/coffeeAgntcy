@@ -3,25 +3,24 @@
  * SPDX-License-Identifier: Apache-2.0
  **/
 
-import Box from "@mui/material/Box"
+import { AssetPngIcon } from "@/components/AssetPngIcon"
 
 export function GraphDiscoveryAssetImg({
   src,
   alt,
+  invertInDarkMode = false,
 }: {
   src: string
   alt: string
+  invertInDarkMode?: boolean
 }) {
   return (
-    <Box
-      component="img"
+    <AssetPngIcon
+      bare
       src={src}
       alt={alt}
-      sx={{
-        objectFit: "contain",
-        opacity: 1,
-        bgcolor: "#ffffff",
-      }}
+      invertInDarkMode={invertInDarkMode}
+      sx={{ opacity: 1 }}
     />
   )
 }
