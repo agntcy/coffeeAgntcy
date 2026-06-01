@@ -6,8 +6,8 @@
 import React, { type CSSProperties } from "react"
 import { Handle, Position } from "@xyflow/react"
 import { Box, Typography, useTheme } from "@open-ui-kit/core"
-//import githubIcon from "@/assets/Github.png"
-import githubIconLight from "@/assets/Github_lightmode.png"
+import { useGithubIcon } from "@/hooks/useGithubIcon"
+import { AssetPngIcon } from "@/components/AssetPngIcon"
 import { SecurityClass } from "@/utils/SecurityClass"
 import {
   getGraphNodeHandleStyle,
@@ -22,8 +22,7 @@ interface TransportNodeProps {
 
 const TransportNode: React.FC<TransportNodeProps> = ({ data }) => {
   const theme = useTheme()
-  //TODO: set both dark and light mode of github icon here
-  const githubIconSrc = githubIconLight
+  const githubIconSrc = useGithubIcon()
 
   const isCircular = data.compact
   const handleStyle: CSSProperties = getGraphNodeHandleStyle(theme)
@@ -77,36 +76,18 @@ const TransportNode: React.FC<TransportNodeProps> = ({ data }) => {
           rel="noopener noreferrer"
           sx={(t) => ({
             ...graphNodeAuxiliaryControlSurfaceSx(t),
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            p: 0.5,
-            textDecoration: "none",
-            cursor: "pointer",
-            borderRadius: "8px",
             ...(isCircular
-              ? { mt: 0.5, width: 24, height: 24 }
+              ? { mt: 0.5 }
               : {
                   position: "absolute",
                   right: -16,
                   top: "50%",
                   transform: "translateY(-50%)",
                   zIndex: 10,
-                  width: 28,
-                  height: 28,
                 }),
           })}
         >
-          <Box
-            component="img"
-            src={githubIconSrc}
-            alt="GitHub"
-            sx={(t) => ({
-              width: isCircular ? 16 : 20,
-              height: isCircular ? 16 : 20,
-              bgcolor: t.palette.common.white,
-            })}
-          />
+          <AssetPngIcon bare src={githubIconSrc} alt="GitHub" />
         </Box>
       )}
 

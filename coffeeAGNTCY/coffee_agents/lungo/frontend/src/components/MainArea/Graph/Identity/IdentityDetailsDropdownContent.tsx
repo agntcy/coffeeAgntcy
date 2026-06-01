@@ -4,18 +4,19 @@
  **/
 
 import React from "react"
-import { Box, IconButton, Stack, Typography } from "@open-ui-kit/core"
+import { IconButton, Stack, Typography } from "@open-ui-kit/core"
 import Visibility from "@mui/icons-material/Visibility"
 import { IdentityDetailsDropdownContentProps } from "./types"
-import githubIconLight from "@/assets/Github_lightmode.png"
+import { useGithubIcon } from "@/hooks/useGithubIcon"
+import { AssetPngIcon } from "@/components/AssetPngIcon"
 import urlsConfig from "@/utils/urls.json"
 import { SecurityClass } from "@/utils/SecurityClass"
+import { graphSideIconButtonSx } from "@/components/MainArea/Graph/Elements/graphNodeSurface"
 
 const IdentityDetailsDropdownContent: React.FC<
   IdentityDetailsDropdownContentProps
 > = ({ onShowBadgeDetails, onShowPolicyDetails, nodeData }) => {
-  //TODO: change GH icon for light/dark mode
-  const githubIconSrc = githubIconLight
+  const githubIconSrc = useGithubIcon()
 
   const getIdentityGithubUrl = () => {
     if (!nodeData) return null
@@ -71,10 +72,7 @@ const IdentityDetailsDropdownContent: React.FC<
           </Typography>
           <IconButton
             onClick={onShowBadgeDetails}
-            sx={{
-              justifyContent: "space-between",
-              gap: 1.5,
-            }}
+            sx={(t) => graphSideIconButtonSx(t)}
           >
             <Visibility />
           </IconButton>
@@ -92,10 +90,7 @@ const IdentityDetailsDropdownContent: React.FC<
           </Typography>
           <IconButton
             onClick={onShowPolicyDetails}
-            sx={{
-              justifyContent: "space-between",
-              gap: 1.5,
-            }}
+            sx={(t) => graphSideIconButtonSx(t)}
           >
             <Visibility />
           </IconButton>
@@ -116,20 +111,9 @@ const IdentityDetailsDropdownContent: React.FC<
               onClick={() =>
                 window.open(identityGithubUrl, "_blank", "noopener,noreferrer")
               }
-              sx={{
-                justifyContent: "space-between",
-                gap: 1.5,
-              }}
+              sx={(t) => graphSideIconButtonSx(t)}
             >
-              <Box
-                component="img"
-                src={githubIconSrc}
-                alt="Source code"
-                sx={{
-                  bgcolor: "common.white",
-                  maxHeight: 24,
-                }}
-              />
+              <AssetPngIcon bare src={githubIconSrc} alt="Source code" />
             </IconButton>
           </Stack>
         )}

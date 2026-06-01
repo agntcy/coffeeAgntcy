@@ -10,6 +10,11 @@ import type { CSSProperties } from "react"
 import type { Theme } from "@mui/material/styles"
 import { alpha } from "@mui/material/styles"
 import type { SystemStyleObject } from "@mui/system"
+import {
+  getAssetPngIconBackground,
+  getAssetPngIconSize,
+  getGraphIconChipHoverBackground,
+} from "@/utils/assetPngIcon"
 
 export type GraphNodeSurfaceState = "default" | "active" | "selected"
 
@@ -74,53 +79,109 @@ export function graphNodeRootSurfaceSx(
   }
 }
 
-/** Small square behind the node glyph (CustomNode icon row). */
-export function graphNodeIconSlotSx(theme: Theme): SystemStyleObject<Theme> {
+/**
+ * Shared chip for graph icons (MUI SvgIcon, PNG, SVG): theme background, divider border,
+ * and `theme.shape.borderRadius` (MUI IconButton uses 50% but has no border/background).
+ */
+export function graphIconChipSx(theme: Theme): SystemStyleObject<Theme> {
+  const iconSize = getAssetPngIconSize(theme)
+
   return {
-    bgcolor:
-      theme.palette.mode === "light"
-        ? theme.palette.grey[100]
-        : theme.palette.grey[800],
-    borderRadius: 1,
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    width: iconSize,
+    height: iconSize,
+    flexShrink: 0,
+    boxSizing: "border-box",
+    bgcolor: getAssetPngIconBackground(theme),
+    border: "1px solid",
+    borderColor: theme.palette.divider,
+    borderRadius: theme.shape.borderRadius,
+    "& .MuiSvgIcon-root": {
+      fontSize: iconSize,
+    },
   }
 }
 
-/** GitHub / similar auxiliary control: paper surface + divider frame + opacity hover. */
-export function graphNodeAuxiliaryControlSurfaceSx(
+/** @deprecated Use {@link graphIconChipSx}. */
+export function graphNodeIconSlotSx(theme: Theme): SystemStyleObject<Theme> {
+  return graphIconChipSx(theme)
+}
+
+/** Hover for interactive graph icon chips (IconButtons, auxiliary links). */
+export function graphIconChipInteractiveHoverSx(
   theme: Theme,
 ): SystemStyleObject<Theme> {
+  const restingBg = getAssetPngIconBackground(theme)
+  const hoverBg = getGraphIconChipHoverBackground(theme)
+
   return {
-    borderRadius: 1,
-    border: "1px solid",
-    borderColor: theme.palette.divider,
-    bgcolor: theme.palette.background.paper,
-    boxShadow: theme.shadows[1],
-    opacity: 1,
-    transition: theme.transitions.create("opacity", {
+    bgcolor: restingBg,
+    transition: theme.transitions.create("background-color", {
       duration: theme.transitions.duration.shortest,
       easing: theme.transitions.easing.easeInOut,
     }),
-    "&:hover": { opacity: 0.8 },
+    "&:hover": {
+      bgcolor: hoverBg,
+      // Override MUI IconButton semi-transparent hover overlay.
+      backgroundColor: hoverBg,
+      "@media (hover: none)": {
+        bgcolor: restingBg,
+        backgroundColor: restingBg,
+      },
+    },
   }
 }
 
-/** IconButton stack on the side of CustomNode — shadow + hover opacity. */
+/** Graph IconButton chip — MUI default is 40×40 (`padding: 8` + 24px icon). */
+export function graphSideIconButtonSx(
+  theme: Theme,
+): SystemStyleObject<Theme> {
+  const iconButtonSize = theme.spacing(5)
+
+  return {
+    ...graphIconChipSx(theme),
+    ...graphIconChipInteractiveHoverSx(theme),
+    width: iconButtonSize,
+    height: iconButtonSize,
+    minWidth: iconButtonSize,
+    padding: theme.spacing(1),
+    borderRadius: theme.shape.borderRadius,
+    boxShadow: theme.shadows[1],
+  }
+}
+
+/** @deprecated Use {@link graphSideIconButtonSx}. */
 export function graphNodeSideIconButtonSx(
   theme: Theme,
 ): SystemStyleObject<Theme> {
-  return {
-    boxShadow: theme.shadows[1],
-    "&:hover": { opacity: 0.8 },
-  }
+  return graphSideIconButtonSx(theme)
 }
 
+export function graphSideIconButtonSxWithModal(
+  theme: Theme,
+  _isModalOpen: boolean,
+): SystemStyleObject<Theme> {
+  return graphSideIconButtonSx(theme)
+}
+
+/** @deprecated Use {@link graphSideIconButtonSxWithModal}. */
 export function graphNodeSideIconButtonSxWithModal(
   theme: Theme,
   isModalOpen: boolean,
 ): SystemStyleObject<Theme> {
+  return graphSideIconButtonSxWithModal(theme, isModalOpen)
+}
+
+/** GitHub / similar auxiliary link control — same chip as graph IconButtons. */
+export function graphNodeAuxiliaryControlSurfaceSx(
+  theme: Theme,
+): SystemStyleObject<Theme> {
   return {
-    boxShadow: theme.shadows[1],
-    "&:hover": { opacity: isModalOpen ? 1 : 0.8 },
+    ...graphSideIconButtonSx(theme),
+    textDecoration: "none",
+    cursor: "pointer",
   }
 }
 
@@ -132,4 +193,15 @@ export function getGraphNodeHandleStyle(theme: Theme): CSSProperties {
     border: `1px solid ${theme.palette.divider}`,
     backgroundColor: theme.palette.background.default,
   }
+}
+
+/** Stroke/fill for graph edges and arrow markers. */
+export function getGraphEdgeColor(theme: Theme, active?: boolean): string {
+  if (active) {
+    return theme.palette.primary.main
+  }
+
+  return theme.palette.mode === "light"
+    ? theme.palette.grey[700]
+    : theme.palette.text.secondary
 }

@@ -10,6 +10,7 @@ import IdentityDetailsDropdownContent from "./Graph/Identity/IdentityDetailsDrop
 import BadgeDetailsModal from "./Graph/Identity/BadgeDetailsModal"
 import PolicyDetailsModal from "./Graph/Identity/PolicyDetailsModal"
 import type { ModalType, ModalNodeData } from "@/types/modal"
+import { graphSideIconButtonSx } from "./Graph/Elements/graphNodeSurface"
 import type { CustomNodeData } from "./Graph/Elements/types"
 
 interface ModalContainerProps {
@@ -39,7 +40,10 @@ const ModalContainer: React.FC<ModalContainerProps> = ({
           }}
           trigger={{
             icon: <InfoOutlined />,
-            iconButtonProps: { color: "inherit" },
+            iconButtonProps: {
+              color: "inherit",
+              sx: (t) => graphSideIconButtonSx(t),
+            },
           }}
           closeOnContentClick={false}
           menuProps={{

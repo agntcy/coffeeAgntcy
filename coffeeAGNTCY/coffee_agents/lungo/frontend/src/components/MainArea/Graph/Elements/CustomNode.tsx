@@ -6,22 +6,23 @@
 import React, { useRef } from "react"
 import { Handle, Position } from "@xyflow/react"
 import AssignmentTurnedIn from "@mui/icons-material/AssignmentTurnedIn"
+import CheckCircle from "@mui/icons-material/CheckCircle"
 import { Box, IconButton, Stack, Typography, useTheme } from "@open-ui-kit/core"
-import githubIconLight from "@/assets/Github_lightmode.png"
 import agentDirectoryIconDark from "@/assets/Agent_directory.png"
 import agentDirectoryIconLight from "@/assets/Agent_Icon_light.png"
-import identityBadgeIcon from "@/assets/identity_badge.svg"
+import { useGithubIcon } from "@/hooks/useGithubIcon"
 import { useThemeIcon } from "@/hooks/useThemeIcon"
+import { AssetPngIcon } from "@/components/AssetPngIcon"
 import { logger } from "@/utils/logger"
 import { SecurityClass } from "@/utils/SecurityClass"
 import {
   getGraphNodeHandleStyle,
-  graphNodeIconSlotSx,
   graphNodeRootSurfaceSx,
-  graphNodeSideIconButtonSx,
-  graphNodeSideIconButtonSxWithModal,
+  graphSideIconButtonSx,
+  graphSideIconButtonSxWithModal,
   type GraphNodeSurfaceState,
 } from "./graphNodeSurface"
+import { GraphIconChip } from "./GraphIconChip"
 import { CustomNodeData, ExtraHandle } from "./types"
 
 const POSITION_MAP: Record<ExtraHandle["position"], Position> = {
@@ -39,8 +40,7 @@ const CustomNode: React.FC<CustomNodeProps> = ({ data }) => {
   const nodeRef = useRef<HTMLDivElement>(null)
   const theme = useTheme()
 
-  // TODO: set both dark and light mode of github icon here
-  const githubIconSrc = githubIconLight
+  const githubIconSrc = useGithubIcon()
   const agentDirectoryIcon = useThemeIcon({
     light: agentDirectoryIconLight,
     dark: agentDirectoryIconDark,
@@ -93,30 +93,7 @@ const CustomNode: React.FC<CustomNodeProps> = ({ data }) => {
           order: 0,
         })}
       >
-        <Box
-          sx={(t) => ({
-            display: "flex",
-            width: 20,
-            height: 20,
-            flexShrink: 0,
-            alignItems: "center",
-            justifyContent: "center",
-            py: 0.5,
-            ...graphNodeIconSlotSx(t),
-          })}
-        >
-          <Box
-            sx={{
-              display: "flex",
-              width: 16,
-              height: 16,
-              alignItems: "center",
-              justifyContent: "center",
-            }}
-          >
-            {data.icon}
-          </Box>
-        </Box>
+        <GraphIconChip>{data.icon}</GraphIconChip>
 
         <Box
           sx={{
@@ -148,16 +125,14 @@ const CustomNode: React.FC<CustomNodeProps> = ({ data }) => {
             {data.label1}
           </Typography>
           {data.verificationStatus === "verified" && (
-            <Box
-              component="img"
-              src={identityBadgeIcon}
-              alt="Verified"
-              sx={(t) => ({
+            <CheckCircle
+              aria-label="Verified"
+              sx={{
                 flexShrink: 0,
                 flexGrow: 0,
                 order: 1,
-                bgcolor: t.palette.common.white,
-              })}
+                color: "success.main",
+              }}
             />
           )}
         </Box>
@@ -203,19 +178,10 @@ const CustomNode: React.FC<CustomNodeProps> = ({ data }) => {
                 rel="noopener noreferrer"
                 aria-label="Open GitHub repository"
                 sx={(t) => ({
-                  ...graphNodeSideIconButtonSx(t),
+                  ...graphSideIconButtonSx(t),
                 })}
               >
-                <Box
-                  component="img"
-                  src={githubIconSrc}
-                  alt="GitHub"
-                  sx={(t) => ({
-                    width: 20,
-                    height: 20,
-                    bgcolor: t.palette.common.white,
-                  })}
-                />
+                <AssetPngIcon bare src={githubIconSrc} alt="GitHub" />
               </IconButton>
             )}
           {data.agentDirectoryLink && (
@@ -224,19 +190,10 @@ const CustomNode: React.FC<CustomNodeProps> = ({ data }) => {
               aria-label="Open AGNTCY Directory"
               onClick={handleAgentDirectoryClick}
               sx={(t) => ({
-                ...graphNodeSideIconButtonSx(t),
+                ...graphSideIconButtonSx(t),
               })}
             >
-              <Box
-                component="img"
-                src={agentDirectoryIcon}
-                alt="AGNTCY Directory"
-                sx={(t) => ({
-                  width: 20,
-                  height: 20,
-                  bgcolor: t.palette.common.white,
-                })}
-              />
+              <AssetPngIcon bare src={agentDirectoryIcon} alt="AGNTCY Directory" />
             </IconButton>
           )}
           {data.verificationStatus === "verified" && (
@@ -245,7 +202,7 @@ const CustomNode: React.FC<CustomNodeProps> = ({ data }) => {
               aria-label="Open identity details"
               onClick={handleIdentityClick}
               sx={(t) => ({
-                ...graphNodeSideIconButtonSxWithModal(
+                ...graphSideIconButtonSxWithModal(
                   t,
                   data.isModalOpen === true,
                 ),

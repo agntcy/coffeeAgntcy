@@ -11,6 +11,7 @@ import LockOpen from "@mui/icons-material/LockOpen"
 import ZoomIn from "@mui/icons-material/ZoomIn"
 import ZoomOut from "@mui/icons-material/ZoomOut"
 import { IconButton, Stack, Tooltip } from "@open-ui-kit/core"
+import { graphSideIconButtonSx } from "./graphNodeSurface"
 
 interface CustomControlsProps {
   isInteractive?: boolean
@@ -43,6 +44,7 @@ const CustomControls: React.FC<CustomControlsProps> = ({
             color="inherit"
             onClick={() => zoomIn()}
             aria-label="Zoom In"
+            sx={(t) => graphSideIconButtonSx(t)}
           >
             <ZoomIn />
           </IconButton>
@@ -52,6 +54,7 @@ const CustomControls: React.FC<CustomControlsProps> = ({
             color="inherit"
             onClick={() => zoomOut()}
             aria-label="Zoom Out"
+            sx={(t) => graphSideIconButtonSx(t)}
           >
             <ZoomOut />
           </IconButton>
@@ -61,6 +64,7 @@ const CustomControls: React.FC<CustomControlsProps> = ({
             color="inherit"
             onClick={() => fitView({ padding: 0.45, duration: 300 })}
             aria-label="Fit View"
+            sx={(t) => graphSideIconButtonSx(t)}
           >
             <FitScreen />
           </IconButton>
@@ -70,6 +74,7 @@ const CustomControls: React.FC<CustomControlsProps> = ({
             color="inherit"
             onClick={onToggleInteractivity}
             aria-label={lockLabel}
+            sx={(t) => graphSideIconButtonSx(t)}
           >
             {isInteractive ? <LockOpen /> : <Lock />}
           </IconButton>
