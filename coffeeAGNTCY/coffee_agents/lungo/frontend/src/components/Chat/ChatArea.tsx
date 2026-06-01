@@ -348,6 +348,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
                           !isAgentLoading &&
                           pattern !== PATTERNS.A2A_HTTP && (
                             <ExternalLinkButton
+                              component="button"
                               url={grafanaSessionUrl}
                               label="Grafana"
                               iconSrc={grafanaIcon}
