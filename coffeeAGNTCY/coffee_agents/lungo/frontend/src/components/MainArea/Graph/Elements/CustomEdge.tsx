@@ -7,6 +7,7 @@ import React from "react"
 import { getBezierPath, BaseEdge, Position } from "@xyflow/react"
 import { useTheme } from "@mui/material/styles"
 import CustomEdgeLabel from "./CustomEdgeLabel"
+import { getGraphEdgeColor } from "./graphNodeSurface"
 import { CustomEdgeData } from "./types"
 
 interface CustomEdgeProps {
@@ -31,9 +32,7 @@ const CustomEdge: React.FC<CustomEdgeProps> = ({
   data,
 }) => {
   const theme = useTheme()
-  const edgeColor = data?.active
-    ? theme.palette.primary.main
-    : theme.palette.text.secondary
+  const edgeColor = getGraphEdgeColor(theme, data?.active)
 
   const [edgePath, labelX, labelY] = getBezierPath({
     sourceX,

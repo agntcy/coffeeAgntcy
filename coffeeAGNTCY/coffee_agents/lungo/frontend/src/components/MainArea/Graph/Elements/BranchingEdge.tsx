@@ -7,6 +7,7 @@ import React from "react"
 import { Position, getBezierPath, useStore, Node } from "@xyflow/react"
 import { useTheme } from "@open-ui-kit/core"
 import CustomEdgeLabel from "./CustomEdgeLabel"
+import { getGraphEdgeColor } from "./graphNodeSurface"
 import { BranchingEdgeData } from "./types"
 
 interface BranchingEdgeProps {
@@ -31,9 +32,7 @@ const BranchingEdge: React.FC<BranchingEdgeProps> = ({
   data,
 }) => {
   const theme = useTheme()
-  const edgeColor = data?.active
-    ? theme.palette.primary.main
-    : theme.palette.text.secondary
+  const edgeColor = getGraphEdgeColor(theme, data?.active)
 
   const nodes = useStore((store) => Array.from(store.nodeLookup.values()))
 
