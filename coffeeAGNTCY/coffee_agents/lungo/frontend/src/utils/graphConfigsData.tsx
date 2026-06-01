@@ -5,13 +5,13 @@
 
 import Calculate from "@mui/icons-material/Calculate"
 import LocalShipping from "@mui/icons-material/LocalShipping"
-import WbCloudy from "@mui/icons-material/WbCloudy"
 //import Hub from "@mui/icons-material/Hub"
 // TODO: change assets/ icons to use the new icons from MUI
 import { Node, Edge } from "@xyflow/react"
 import { GraphDiscoveryAssetImg } from "@/utils/GraphDiscoveryAssetImg"
 import supervisorIcon from "@/assets/supervisor.png"
 import farmAgentIcon from "@/assets/Grader-Agent.png"
+import mcpIcon from "@/assets/mcp_icon.png"
 import {
   FarmName,
   NODE_IDS,
@@ -24,8 +24,18 @@ import {
 } from "./const"
 import urlsConfig from "./urls.json"
 
-function graphNodeIconImg(src: string, alt: string) {
-  return <GraphDiscoveryAssetImg src={src} alt={alt} />
+function graphNodeIconImg(
+  src: string,
+  alt: string,
+  options?: { invertInDarkMode?: boolean },
+) {
+  return (
+    <GraphDiscoveryAssetImg
+      src={src}
+      alt={alt}
+      invertInDarkMode={options?.invertInDarkMode}
+    />
+  )
 }
 
 export interface GraphConfig {
@@ -35,7 +45,20 @@ export interface GraphConfig {
   animationSequence: { ids: string[] }[]
 }
 
-const CoffeeBeanIcon = graphNodeIconImg(farmAgentIcon, "Coffee Farm Agent Icon")
+const SupervisorIcon = graphNodeIconImg(supervisorIcon, "Supervisor Icon", {
+  invertInDarkMode: true,
+})
+const CoffeeBeanIcon = graphNodeIconImg(
+  farmAgentIcon,
+  "Coffee Farm Agent Icon",
+  {
+    invertInDarkMode: true,
+  },
+)
+const FarmAgentIcon = graphNodeIconImg(farmAgentIcon, "Farm Agent Icon", {
+  invertInDarkMode: true,
+})
+const McpServerIcon = graphNodeIconImg(mcpIcon, "MCP Server Icon")
 
 export const PUBLISH_SUBSCRIBE_CONFIG: GraphConfig = {
   title: "Publish Subscribe",
@@ -44,7 +67,7 @@ export const PUBLISH_SUBSCRIBE_CONFIG: GraphConfig = {
       id: NODE_IDS.AUCTION_AGENT,
       type: NODE_TYPES.CUSTOM,
       data: {
-        icon: graphNodeIconImg(supervisorIcon, "Supervisor Icon"),
+        icon: SupervisorIcon,
         label1: "Auction Agent",
         label2: "Buyer",
         handles: HANDLE_TYPES.SOURCE,
@@ -118,7 +141,7 @@ export const PUBLISH_SUBSCRIBE_CONFIG: GraphConfig = {
       id: NODE_IDS.WEATHER_MCP,
       type: NODE_TYPES.CUSTOM,
       data: {
-        icon: <WbCloudy sx={{ opacity: 1 }} />,
+        icon: McpServerIcon,
         label1: "MCP Server",
         label2: "Weather",
         handles: HANDLE_TYPES.TARGET,
@@ -131,7 +154,7 @@ export const PUBLISH_SUBSCRIBE_CONFIG: GraphConfig = {
       id: NODE_IDS.PAYMENT_MCP,
       type: NODE_TYPES.CUSTOM,
       data: {
-        icon: <Calculate sx={{ opacity: 1 }} />,
+        icon: McpServerIcon,
         label1: "MCP Server",
         label2: "Payment",
         handles: HANDLE_TYPES.TARGET,
@@ -231,7 +254,7 @@ export const GROUP_MESSAGING_CONFIG: GraphConfig = {
       id: NODE_IDS.AUCTION_AGENT,
       type: NODE_TYPES.CUSTOM,
       data: {
-        icon: graphNodeIconImg(supervisorIcon, "Supervisor Icon"),
+        icon: SupervisorIcon,
         label1: "Buyer",
         label2: "Logistics Agent",
         handles: HANDLE_TYPES.SOURCE,
@@ -258,7 +281,7 @@ export const GROUP_MESSAGING_CONFIG: GraphConfig = {
       id: NODE_IDS.BRAZIL_FARM,
       type: NODE_TYPES.CUSTOM,
       data: {
-        icon: graphNodeIconImg(farmAgentIcon, "Farm Agent Icon"),
+        icon: FarmAgentIcon,
         label1: "Tatooine",
         label2: "Coffee Farm Agent",
         handles: HANDLE_TYPES.ALL,
@@ -366,7 +389,9 @@ export const A2A_HTTP_CONFIG: GraphConfig = {
       id: NODE_IDS.RECRUITER,
       type: NODE_TYPES.CUSTOM,
       data: {
-        icon: graphNodeIconImg(supervisorIcon, "Recruiter Icon"),
+        icon: graphNodeIconImg(supervisorIcon, "Recruiter Icon", {
+          invertInDarkMode: true,
+        }),
         label1: "Agentic Recruiter",
         label2: "Discovery and delegation",
         handles: HANDLE_TYPES.ALL,
@@ -383,7 +408,9 @@ export const A2A_HTTP_CONFIG: GraphConfig = {
       id: NODE_IDS.DIRECTORY,
       type: NODE_TYPES.CUSTOM,
       data: {
-        icon: graphNodeIconImg(supervisorIcon, "Directory Icon"),
+        icon: graphNodeIconImg(supervisorIcon, "Directory Icon", {
+          invertInDarkMode: true,
+        }),
         label1: "Directory",
         label2: "AGNTCY Agent Directory",
         handles: HANDLE_TYPES.ALL,
