@@ -40,7 +40,6 @@ const CustomControls: React.FC<CustomControlsProps> = ({
       >
         <Tooltip title="Zoom In" placement="right" arrow>
           <IconButton
-            size="small"
             color="inherit"
             onClick={() => zoomIn()}
             aria-label="Zoom In"
@@ -50,7 +49,6 @@ const CustomControls: React.FC<CustomControlsProps> = ({
         </Tooltip>
         <Tooltip title="Zoom Out" placement="right" arrow>
           <IconButton
-            size="small"
             color="inherit"
             onClick={() => zoomOut()}
             aria-label="Zoom Out"
@@ -60,7 +58,6 @@ const CustomControls: React.FC<CustomControlsProps> = ({
         </Tooltip>
         <Tooltip title="Fit View" placement="right" arrow>
           <IconButton
-            size="small"
             color="inherit"
             onClick={() => fitView({ padding: 0.45, duration: 300 })}
             aria-label="Fit View"
@@ -70,7 +67,6 @@ const CustomControls: React.FC<CustomControlsProps> = ({
         </Tooltip>
         <Tooltip title={lockLabel} placement="right" arrow>
           <IconButton
-            size="small"
             color="inherit"
             onClick={onToggleInteractivity}
             aria-label={lockLabel}

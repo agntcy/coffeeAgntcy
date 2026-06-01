@@ -44,7 +44,6 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({
           <Tooltip title={isMinimized ? "Maximize" : "Minimize"}>
             <IconButton
               onClick={onMinimize}
-              size="small"
               color="inherit"
               aria-label={isMinimized ? "Maximize" : "Minimize"}
             >
@@ -60,7 +59,6 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({
           <Tooltip title="Clear conversation">
             <IconButton
               onClick={onClearConversation}
-              size="small"
               color="inherit"
               aria-label="Clear conversation"
             >

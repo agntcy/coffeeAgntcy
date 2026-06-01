@@ -148,7 +148,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                 role="alert"
                 sx={{ px: 2.5, py: 1, opacity: 0.8 }}
               >
-                <ErrorOutline sx={{ fontSize: 16 }} />
+                <ErrorOutline />
                 <Typography variant="caption">Menu is unavailable</Typography>
               </Stack>
             ) : null}

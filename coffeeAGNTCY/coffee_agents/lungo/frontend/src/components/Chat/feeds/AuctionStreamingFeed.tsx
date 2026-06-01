@@ -110,10 +110,7 @@ const AuctionStreamingFeed: React.FC<AuctionStreamingFeedProps> = ({
                 sx={{ width: "100%" }}
               >
                 <Box sx={{ mt: 0.5, display: "flex", alignItems: "center" }}>
-                  <CheckCircleIcon
-                    sx={{ fontSize: 22, color: "success.main" }}
-                    aria-hidden
-                  />
+                  <CheckCircleIcon sx={{ color: "success.main" }} aria-hidden />
                 </Box>
                 <Box sx={{ flex: 1, minWidth: 0 }}>
                   <Typography

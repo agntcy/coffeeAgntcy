@@ -51,20 +51,12 @@ const Navigation: React.FC = () => {
             }}
           >
             <Tooltip title={themeToggleLabel}>
-              <IconButton
-                aria-label={themeToggleLabel}
-                onClick={toggleTheme}
-                size="small"
-              >
+              <IconButton aria-label={themeToggleLabel} onClick={toggleTheme}>
                 <ThemeToggleIcon />
               </IconButton>
             </Tooltip>
             <Tooltip title="Help">
-              <IconButton
-                aria-label="Help"
-                onClick={handleHelpClick}
-                size="small"
-              >
+              <IconButton aria-label="Help" onClick={handleHelpClick}>
                 <HelpOutline />
               </IconButton>
             </Tooltip>

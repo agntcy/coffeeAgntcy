@@ -104,13 +104,11 @@ export function graphNodeAuxiliaryControlSurfaceSx(
   }
 }
 
-/** IconButton stack on the side of CustomNode — size + shadow + hover opacity. */
+/** IconButton stack on the side of CustomNode — shadow + hover opacity. */
 export function graphNodeSideIconButtonSx(
   theme: Theme,
 ): SystemStyleObject<Theme> {
   return {
-    width: 28,
-    height: 28,
     boxShadow: theme.shadows[1],
     "&:hover": { opacity: 0.8 },
   }
@@ -121,8 +119,6 @@ export function graphNodeSideIconButtonSxWithModal(
   isModalOpen: boolean,
 ): SystemStyleObject<Theme> {
   return {
-    width: 28,
-    height: 28,
     boxShadow: theme.shadows[1],
     "&:hover": { opacity: isModalOpen ? 1 : 0.8 },
   }

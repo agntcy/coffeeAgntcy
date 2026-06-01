@@ -23,7 +23,7 @@ const UserMessage: React.FC<UserMessageProps> = ({ content }) => {
       sx={{ width: "100%" }}
     >
       <ChatAvatarCircle>
-        <Person sx={{ fontSize: 22 }} />
+        <Person />
       </ChatAvatarCircle>
 
       <Stack

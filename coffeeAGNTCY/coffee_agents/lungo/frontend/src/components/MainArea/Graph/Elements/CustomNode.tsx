@@ -201,7 +201,6 @@ const CustomNode: React.FC<CustomNodeProps> = ({ data }) => {
                 href={data.githubLink}
                 target="_blank"
                 rel="noopener noreferrer"
-                size="small"
                 aria-label="Open GitHub repository"
                 sx={(t) => ({
                   ...graphNodeSideIconButtonSx(t),
@@ -222,7 +221,6 @@ const CustomNode: React.FC<CustomNodeProps> = ({ data }) => {
           {data.agentDirectoryLink && (
             <IconButton
               type="button"
-              size="small"
               aria-label="Open AGNTCY Directory"
               onClick={handleAgentDirectoryClick}
               sx={(t) => ({
@@ -244,7 +242,6 @@ const CustomNode: React.FC<CustomNodeProps> = ({ data }) => {
           {data.verificationStatus === "verified" && (
             <IconButton
               type="button"
-              size="small"
               aria-label="Open identity details"
               onClick={handleIdentityClick}
               sx={(t) => ({
@@ -254,11 +251,7 @@ const CustomNode: React.FC<CustomNodeProps> = ({ data }) => {
                 ),
               })}
             >
-              <AssignmentTurnedIn
-                sx={{
-                  fontSize: 20,
-                }}
-              />
+              <AssignmentTurnedIn />
             </IconButton>
           )}
         </Stack>

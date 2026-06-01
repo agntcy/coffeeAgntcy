@@ -119,10 +119,9 @@ const OasfRecordModal: React.FC<OasfRecordModalProps> = ({
         <IconButton
           onClick={onClose}
           aria-label="Close"
-          size="small"
           sx={{ position: "absolute", right: 8, top: 8 }}
         >
-          <Close sx={{ fontSize: 18 }} />
+          <Close />
         </IconButton>
       </ModalTitle>
 

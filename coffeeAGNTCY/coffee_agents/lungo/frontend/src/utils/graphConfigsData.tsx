@@ -118,7 +118,7 @@ export const PUBLISH_SUBSCRIBE_CONFIG: GraphConfig = {
       id: NODE_IDS.WEATHER_MCP,
       type: NODE_TYPES.CUSTOM,
       data: {
-        icon: <WbCloudy sx={{ fontSize: 16, opacity: 1 }} />,
+        icon: <WbCloudy sx={{ opacity: 1 }} />,
         label1: "MCP Server",
         label2: "Weather",
         handles: HANDLE_TYPES.TARGET,
@@ -131,7 +131,7 @@ export const PUBLISH_SUBSCRIBE_CONFIG: GraphConfig = {
       id: NODE_IDS.PAYMENT_MCP,
       type: NODE_TYPES.CUSTOM,
       data: {
-        icon: <Calculate sx={{ fontSize: 16, opacity: 1 }} />,
+        icon: <Calculate sx={{ opacity: 1 }} />,
         label1: "MCP Server",
         label2: "Payment",
         handles: HANDLE_TYPES.TARGET,
@@ -274,7 +274,7 @@ export const GROUP_MESSAGING_CONFIG: GraphConfig = {
       id: NODE_IDS.COLOMBIA_FARM,
       type: NODE_TYPES.CUSTOM,
       data: {
-        icon: <LocalShipping sx={{ fontSize: 16, opacity: 1 }} />,
+        icon: <LocalShipping sx={{ opacity: 1 }} />,
         label1: "Shipper",
         label2: "Shipper Agent",
         handles: HANDLE_TYPES.TARGET,
@@ -290,7 +290,7 @@ export const GROUP_MESSAGING_CONFIG: GraphConfig = {
       id: NODE_IDS.VIETNAM_FARM,
       type: NODE_TYPES.CUSTOM,
       data: {
-        icon: <Calculate sx={{ fontSize: 16, opacity: 1 }} />,
+        icon: <Calculate sx={{ opacity: 1 }} />,
         label1: "Accountant",
         label2: "Accountant Agent",
         handles: HANDLE_TYPES.TARGET,

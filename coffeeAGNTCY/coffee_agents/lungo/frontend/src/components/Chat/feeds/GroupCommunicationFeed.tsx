@@ -194,7 +194,7 @@ const GroupCommunicationFeed: React.FC<GroupCommunicationFeedProps> = ({
                 >
                   <Box sx={{ mt: 0.5, display: "flex", alignItems: "center" }}>
                     <CheckCircleIcon
-                      sx={{ fontSize: 22, color: "success.main" }}
+                      sx={{ color: "success.main" }}
                       aria-hidden
                     />
                   </Box>

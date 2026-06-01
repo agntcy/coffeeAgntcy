@@ -60,11 +60,7 @@ export function FeedCollapseButton({
           alignItems: "center",
         }}
       >
-        {expanded ? (
-          <ExpandLess fontSize="small" />
-        ) : (
-          <ExpandMore fontSize="small" />
-        )}
+        {expanded ? <ExpandLess /> : <ExpandMore />}
       </Box>
       <Typography
         variant="body2"

@@ -38,8 +38,8 @@ const ModalContainer: React.FC<ModalContainerProps> = ({
             if (!next) onClose()
           }}
           trigger={{
-            icon: <InfoOutlined fontSize="small" />,
-            iconButtonProps: { size: "small", color: "inherit" },
+            icon: <InfoOutlined />,
+            iconButtonProps: { color: "inherit" },
           }}
           closeOnContentClick={false}
           menuProps={{
