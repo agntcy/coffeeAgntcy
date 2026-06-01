@@ -4,13 +4,16 @@
  **/
 
 import React from "react"
-import { ListItemButton, Typography } from "@open-ui-kit/core"
-import { sidebarLevelIndentPx } from "./sidebarLevel"
-import { sidebarBorderRadius, sidebarItemMt } from "./sidebarSx"
+import { ListItem, ListItemButton, Typography } from "@open-ui-kit/core"
+import {
+  sidebarBorderRadius,
+  sidebarItemMarginTop,
+  sidebarListItemButtonSx,
+  sidebarListItemSx,
+} from "./sidebarSx"
 
 interface SidebarItemProps {
   title: string
-  level: number
   isSelected?: boolean
   onClick?: () => void
   disabled?: boolean
@@ -18,31 +21,38 @@ interface SidebarItemProps {
 
 const SidebarItem: React.FC<SidebarItemProps> = ({
   title,
-  level,
   isSelected = false,
   onClick,
   disabled = false,
 }) => (
-  <ListItemButton
-    disabled={disabled || onClick === undefined}
-    onClick={onClick}
-    selected={isSelected}
+  <ListItem
+    component="div"
+    disablePadding
     sx={{
       width: "100%",
-      justifyContent: "flex-start",
-      pl: sidebarLevelIndentPx(level),
-      pr: 2.5,
-      py: 1,
-      borderRadius: sidebarBorderRadius,
-      mt: sidebarItemMt,
-      textWrap: "auto",
-      ...(disabled && { opacity: 0.5, pointerEvents: "none" }),
+      mt: sidebarItemMarginTop,
+      ...sidebarListItemSx,
     }}
   >
-    <Typography component="span" variant="body1">
-      {title}
-    </Typography>
-  </ListItemButton>
+    <ListItemButton
+      component={onClick !== undefined ? "button" : "div"}
+      type={onClick !== undefined ? "button" : undefined}
+      disabled={disabled || onClick === undefined}
+      onClick={onClick}
+      selected={isSelected}
+      sx={{
+        ...sidebarListItemButtonSx,
+        justifyContent: "flex-start",
+        borderRadius: sidebarBorderRadius,
+        textWrap: "auto",
+        ...(disabled && { opacity: 0.5, pointerEvents: "none" }),
+      }}
+    >
+      <Typography component="span" variant="body1">
+        {title}
+      </Typography>
+    </ListItemButton>
+  </ListItem>
 )
 
 export default SidebarItem

@@ -4,17 +4,28 @@
  **/
 
 import React from "react"
-import { Box, ListItemButton, Stack, Typography } from "@open-ui-kit/core"
+import {
+  Box,
+  List,
+  ListItem,
+  ListItemButton,
+  Typography,
+} from "@open-ui-kit/core"
 import ExpandLess from "@mui/icons-material/ExpandLess"
-import { sidebarLevelIndentPx } from "./sidebarLevel"
-import { sidebarBorderRadius, sidebarItemMt } from "./sidebarSx"
+import {
+  sidebarDropdownListItemSx,
+  sidebarDropdownPanelExpandedSx,
+  sidebarDropdownToggleExpandedSx,
+  sidebarDropdownToggleSx,
+  sidebarItemMarginTop,
+  sidebarListItemButtonSx,
+} from "./sidebarSx"
 
 interface SidebarDropdownProps {
   title: string
   isExpanded: boolean
   onToggle: () => void
   children: React.ReactNode
-  level?: number
 }
 
 const SidebarDropdown: React.FC<SidebarDropdownProps> = ({
@@ -22,32 +33,44 @@ const SidebarDropdown: React.FC<SidebarDropdownProps> = ({
   isExpanded,
   onToggle,
   children,
-  level = 0,
 }) => {
   const toggleId = React.useId()
   const titleId = React.useId()
   const panelId = React.useId()
   const toggleLabel = `${isExpanded ? "Collapse" : "Expand"} ${title}`
 
+  const handleToggle = (event: React.MouseEvent<HTMLButtonElement>) => {
+    event.stopPropagation()
+    onToggle()
+  }
+
   return (
-    <Stack direction="column" alignItems="flex-start">
+    <ListItem
+      component="div"
+      disablePadding
+      sx={{
+        width: "100%",
+        flexDirection: "column",
+        alignItems: "stretch",
+        mt: sidebarItemMarginTop,
+        ...sidebarDropdownListItemSx,
+      }}
+    >
       <ListItemButton
         component="button"
         type="button"
         id={toggleId}
-        onClick={onToggle}
+        onClick={handleToggle}
         aria-expanded={isExpanded}
         aria-controls={panelId}
         aria-label={toggleLabel}
-        sx={{
-          width: "100%",
+        sx={(theme) => ({
+          ...sidebarListItemButtonSx,
+          ...sidebarDropdownToggleSx,
           justifyContent: "space-between",
-          pl: sidebarLevelIndentPx(level),
-          pr: 2.5,
-          borderRadius: sidebarBorderRadius,
           textWrap: "auto",
-          mt: sidebarItemMt,
-        }}
+          ...(isExpanded ? sidebarDropdownToggleExpandedSx(theme) : {}),
+        })}
       >
         <Typography id={titleId} component="span" variant="body1">
           {title}
@@ -72,17 +95,22 @@ const SidebarDropdown: React.FC<SidebarDropdownProps> = ({
         </Box>
       </ListItemButton>
 
-      <Stack
-        id={panelId}
-        role="region"
-        aria-labelledby={titleId}
-        hidden={!isExpanded}
-        direction="column"
-        sx={{ width: "100%" }}
-      >
-        {children}
-      </Stack>
-    </Stack>
+      {isExpanded ? (
+        <List
+          component="div"
+          disablePadding
+          id={panelId}
+          role="region"
+          aria-labelledby={titleId}
+          sx={(theme) => ({
+            width: "100%",
+            ...sidebarDropdownPanelExpandedSx(theme),
+          })}
+        >
+          {children}
+        </List>
+      ) : null}
+    </ListItem>
   )
 }
 

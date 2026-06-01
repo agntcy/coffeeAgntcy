@@ -16,7 +16,12 @@ import {
   Stack,
   Tooltip,
 } from "@open-ui-kit/core"
-import { sidebarBorderRadius, sidebarItemMt } from "./sidebarSx"
+import {
+  sidebarBorderRadius,
+  sidebarItemMarginTop,
+  sidebarListItemButtonSx,
+  sidebarListItemSx,
+} from "./sidebarSx"
 
 export interface SidebarRailRowProps {
   id: string
@@ -93,8 +98,8 @@ export function SidebarRailRow({
         key={id}
         disablePadding
         sx={{
-          backgroundColor: "transparent",
-          mt: sidebarItemMt,
+          mt: sidebarItemMarginTop,
+          ...sidebarListItemSx,
         }}
       >
         <ListItemButton
@@ -104,8 +109,8 @@ export function SidebarRailRow({
           target={target}
           rel={target === "_blank" ? "noopener noreferrer" : undefined}
           sx={{
+            ...sidebarListItemButtonSx,
             color: "inherit",
-            backgroundColor: "transparent",
             textDecoration: "none",
             borderRadius: sidebarBorderRadius,
             p: 0.5,
@@ -124,9 +129,8 @@ export function SidebarRailRow({
         key={id}
         disablePadding
         sx={{
-          backgroundColor: "transparent",
-          borderRadius: sidebarBorderRadius,
-          mt: sidebarItemMt,
+          mt: sidebarItemMarginTop,
+          ...sidebarListItemSx,
         }}
       >
         <ListItemButton
@@ -134,7 +138,7 @@ export function SidebarRailRow({
           onClick={onClick}
           aria-label={ariaLabel}
           sx={{
-            backgroundColor: "transparent",
+            ...sidebarListItemButtonSx,
             borderRadius: sidebarBorderRadius,
             p: 0,
           }}
@@ -149,8 +153,8 @@ export function SidebarRailRow({
     <ListItem
       key={id}
       sx={{
-        backgroundColor: "transparent",
-        mt: sidebarItemMt,
+        mt: sidebarItemMarginTop,
+        ...sidebarListItemSx,
       }}
     >
       {tooltipChild}

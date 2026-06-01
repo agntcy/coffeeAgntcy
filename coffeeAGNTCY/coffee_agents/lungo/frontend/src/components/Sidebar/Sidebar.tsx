@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  **/
 
-import React, { useCallback, useEffect, useMemo, useState } from "react"
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import ErrorOutline from "@mui/icons-material/ErrorOutline"
 import { Box, Spinner, Stack, Typography } from "@open-ui-kit/core"
 import type { WorkflowSummary } from "@/utils/agenticWorkflowsApi"
@@ -41,7 +41,7 @@ interface SidebarCatalogNavigationSlotProps {
 const SIDEBAR_FRAME_COLLAPSIBLE = false
 
 function SidebarCatalogNavigationSlot({
-  iconOnly,
+  iconOnly = false,
   layout,
   expandedKeys,
   toggleExpandableDropdown,
@@ -137,40 +137,31 @@ const Sidebar: React.FC<SidebarProps> = ({
     })
   }, [])
 
+  const catalogSummariesRef = useRef<WorkflowSummary[] | null>(null)
+
   useEffect(() => {
     if (summaries === null) return
+    if (catalogSummariesRef.current === summaries) return
+    catalogSummariesRef.current = summaries
     setExpandedKeys(buildInitialExpanded(layout.implementedPatterns))
   }, [layout.implementedPatterns, summaries])
-
-  const catalogNavigationSlot = useMemo(
-    () => (
-      <SidebarCatalogNavigationSlot
-        key="catalog-nav"
-        layout={layout}
-        expandedKeys={expandedKeys}
-        toggleExpandableDropdown={toggleExpandableDropdown}
-        selectedWorkflowSummary={selectedWorkflowSummary}
-        onSelectWorkflow={onSelectWorkflow}
-        isLoading={isLoading}
-        error={error}
-      />
-    ),
-    [
-      layout,
-      expandedKeys,
-      toggleExpandableDropdown,
-      selectedWorkflowSummary,
-      onSelectWorkflow,
-      isLoading,
-      error,
-    ],
-  )
 
   return (
     <SidebarFrame
       collapsible={SIDEBAR_FRAME_COLLAPSIBLE}
       initialOpen
-      navigationItems={[catalogNavigationSlot]}
+      navigationItems={[
+        <SidebarCatalogNavigationSlot
+          key="catalog-nav"
+          layout={layout}
+          expandedKeys={expandedKeys}
+          toggleExpandableDropdown={toggleExpandableDropdown}
+          selectedWorkflowSummary={selectedWorkflowSummary}
+          onSelectWorkflow={onSelectWorkflow}
+          isLoading={isLoading}
+          error={error}
+        />,
+      ]}
     />
   )
 }

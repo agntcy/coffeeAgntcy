@@ -4,7 +4,7 @@
  **/
 
 import React, { useCallback } from "react"
-import { Box, Stack, Typography } from "@open-ui-kit/core"
+import { Box, List, Typography } from "@open-ui-kit/core"
 import {
   mapWorkflowNameToSlug,
   type WorkflowSummary,
@@ -12,7 +12,6 @@ import {
 import { openWorkflowDocumentationInNewTab } from "@/utils/workflowDocumentationGithub"
 import SidebarDropdown from "./SidebarDropdown"
 import SidebarItem from "./SidebarItem"
-import { CatalogTreeLevel } from "./sidebarLevel"
 import {
   makePatternKey,
   makeScenarioKey,
@@ -72,7 +71,6 @@ const CatalogTree: React.FC<CatalogTreeProps> = ({
       <SidebarItem
         key={`${patternName}|${ucs.useCase}|${ucs.scenario}|${summary.name}`}
         title={summary.name}
-        level={CatalogTreeLevel.Workflow}
         isSelected={isSelected}
         disabled={isUnmapped}
         onClick={isUnmapped ? undefined : () => onSelectWorkflow(summary)}
@@ -88,7 +86,6 @@ const CatalogTree: React.FC<CatalogTreeProps> = ({
       <SidebarDropdown
         key={patternKey}
         title={pattern.name}
-        level={CatalogTreeLevel.Pattern}
         isExpanded={expandedKeys.has(patternKey)}
         onToggle={() => toggleExpandableDropdown(patternKey)}
       >
@@ -98,7 +95,6 @@ const CatalogTree: React.FC<CatalogTreeProps> = ({
             <SidebarDropdown
               key={useCaseKey}
               title={useCase}
-              level={CatalogTreeLevel.UseCase}
               isExpanded={expandedKeys.has(useCaseKey)}
               onToggle={() => toggleExpandableDropdown(useCaseKey)}
             >
@@ -112,7 +108,6 @@ const CatalogTree: React.FC<CatalogTreeProps> = ({
                   <SidebarDropdown
                     key={scenarioKey}
                     title={ucs.scenario}
-                    level={CatalogTreeLevel.Scenario}
                     isExpanded={expandedKeys.has(scenarioKey)}
                     onToggle={() => toggleExpandableDropdown(scenarioKey)}
                   >
@@ -141,7 +136,7 @@ const CatalogTree: React.FC<CatalogTreeProps> = ({
     implementedPatterns.length > 0 && referencePatternNames.length > 0
 
   return (
-    <Stack direction="column" sx={{ width: "100%" }}>
+    <List component="div" disablePadding sx={{ width: "100%" }}>
       {implementedPatterns.map(renderPattern)}
 
       {showSeparator ? (
@@ -161,11 +156,10 @@ const CatalogTree: React.FC<CatalogTreeProps> = ({
         <SidebarItem
           key={patternName}
           title={patternName}
-          level={CatalogTreeLevel.Pattern}
           onClick={() => openDoc(patternName)}
         />
       ))}
-    </Stack>
+    </List>
   )
 }
 

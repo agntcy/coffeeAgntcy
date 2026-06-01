@@ -4,12 +4,12 @@
  **/
 
 import React, { useCallback } from "react"
-import { Button, Drawer, List } from "@open-ui-kit/core"
+import { Button, Drawer, List, ListItem } from "@open-ui-kit/core"
 import type { CSSObject, SxProps, Theme } from "@mui/material/styles"
 import { styled } from "@mui/material/styles"
 import { Icons } from "@open-ui-kit/core"
 import { SidebarRailRow } from "./SidebarRailRow"
-import { sidebarBorderRadius } from "./sidebarSx"
+import { sidebarBorderRadius, sidebarListItemSx } from "./sidebarSx"
 
 /** Config for icon-rail entries rendered by the internal `renderListItem` helper. */
 export interface SidebarRailItem {
@@ -83,11 +83,23 @@ function renderListItem(
   isOpen: boolean,
 ): React.ReactNode {
   if (React.isValidElement(item)) {
-    return React.cloneElement(
-      item as React.ReactElement<{ iconOnly?: boolean }>,
-      {
-        iconOnly: !isOpen,
-      },
+    return (
+      <ListItem
+        disablePadding
+        sx={{
+          width: "100%",
+          display: "block",
+          alignItems: "stretch",
+          ...sidebarListItemSx,
+        }}
+      >
+        {React.cloneElement(
+          item as React.ReactElement<{ iconOnly?: boolean }>,
+          {
+            iconOnly: !isOpen,
+          },
+        )}
+      </ListItem>
     )
   }
 
@@ -137,7 +149,7 @@ export function SidebarFrame({
             flexDirection: "column",
             height: "100%",
             justifyContent: "space-between",
-            pt: 0,
+            p: 3,
             pr: 0,
             ...sx,
           },
@@ -151,8 +163,8 @@ export function SidebarFrame({
           gap: 3,
           alignItems: "baseline",
           overflowY: "auto",
-          p: 3,
-          pl: 0,
+          p: 0,
+          pr: 3,
         }}
       >
         {navigationItems?.map((item, index) => {
