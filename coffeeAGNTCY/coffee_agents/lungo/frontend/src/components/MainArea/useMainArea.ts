@@ -65,6 +65,7 @@ export function useMainArea({
 
   const {
     activeModal,
+    activeNodeId,
     activeNodeData,
     handleOpenIdentityModal,
     handleCloseModals,
@@ -159,7 +160,9 @@ export function useMainArea({
     handleOpenIdentityModal,
     handleOpenOasfModal,
     activeModal,
-    activeNodeData,
+    activeNodeId,
+    handleShowBadgeDetails,
+    handleShowPolicyDetails,
     fitViewWithViewport,
     chatHeight,
     isExpanded,
@@ -282,8 +285,6 @@ export function useMainArea({
     activeModal,
     activeNodeData,
     handleCloseModals,
-    handleShowBadgeDetails,
-    handleShowPolicyDetails,
     oasfModalOpen,
     setOasfModalOpen,
     oasfModalData,

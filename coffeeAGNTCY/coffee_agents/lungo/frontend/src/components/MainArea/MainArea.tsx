@@ -48,8 +48,6 @@ const MainArea: React.FC<MainAreaProps> = (props) => {
     activeModal,
     activeNodeData,
     handleCloseModals,
-    handleShowBadgeDetails,
-    handleShowPolicyDetails,
     oasfModalOpen,
     setOasfModalOpen,
     oasfModalData,
@@ -106,8 +104,6 @@ const MainArea: React.FC<MainAreaProps> = (props) => {
           activeModal={activeModal}
           activeNodeData={activeNodeData}
           onClose={handleCloseModals}
-          onShowBadgeDetails={handleShowBadgeDetails}
-          onShowPolicyDetails={handleShowPolicyDetails}
         />
 
         <OasfRecordModal

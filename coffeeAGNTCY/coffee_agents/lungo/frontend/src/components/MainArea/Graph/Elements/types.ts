@@ -26,13 +26,14 @@ export interface CustomNodeData {
   slug?: string
   farmName?: string
   isModalOpen?: boolean
+  /** True when this node's identity dropdown is open. */
+  isIdentityDropdownOpen?: boolean
   hasBadgeDetails?: boolean
   hasPolicyDetails?: boolean
-  onOpenIdentityModal?: (
-    nodeData: CustomNodeData,
-    nodeName?: string,
-    data?: CustomNodeData,
-  ) => void
+  onOpenIdentityModal?: (nodeId: string, nodeData: CustomNodeData) => void
+  onCloseIdentityDropdown?: () => void
+  onShowBadgeDetails?: () => void
+  onShowPolicyDetails?: () => void
 }
 
 export interface TransportNodeData {

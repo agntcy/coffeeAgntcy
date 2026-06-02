@@ -104,63 +104,61 @@ const ChatAreaMessageThread: React.FC<ChatAreaMessageThreadProps> = ({
       </Box>
     )}
 
-    {showFinalResponse &&
-      (isAgentLoading || agentResponse) &&
-      !isMinimized && (
+    {showFinalResponse && (isAgentLoading || agentResponse) && !isMinimized && (
+      <Stack
+        direction="row"
+        alignItems="flex-start"
+        spacing={0.5}
+        sx={{ width: "100%" }}
+      >
+        <ChatAgentAvatar />
         <Stack
-          direction="row"
-          alignItems="flex-start"
-          spacing={0.5}
-          sx={{ width: "100%" }}
+          sx={{
+            maxWidth: "calc(100% - 3rem)",
+            flex: 1,
+            alignItems: "flex-start",
+            justifyContent: "center",
+            borderRadius: 1,
+            py: 0.5,
+            px: 1,
+          }}
         >
-          <ChatAgentAvatar />
-          <Stack
-            sx={{
-              maxWidth: "calc(100% - 3rem)",
-              flex: 1,
-              alignItems: "flex-start",
-              justifyContent: "center",
-              borderRadius: 1,
-              py: 0.5,
-              px: 1,
-            }}
-          >
-            {isAgentLoading ? (
-              <Box
-                sx={{
-                  whiteSpace: "pre-wrap",
-                  overflowWrap: "break-word",
-                  wordBreak: "break-word",
-                }}
-              >
-                <LoadingDots />
-              </Box>
-            ) : (
-              <Typography
-                variant="body2"
-                component="div"
-                sx={{
-                  whiteSpace: "pre-wrap",
-                  overflowWrap: "break-word",
-                  wordBreak: "break-word",
-                }}
-              >
-                {agentResponse?.response ?? ""}
-                {(agentResponse?.session_id || groupSessionId) &&
-                  !isAgentLoading &&
-                  pattern !== PATTERNS.A2A_HTTP && (
-                    <ExternalLinkButton
-                      component="button"
-                      url={grafanaSessionUrl}
-                      label="Grafana"
-                      iconSrc={grafanaIcon}
-                    />
-                  )}
-              </Typography>
-            )}
-          </Stack>
+          {isAgentLoading ? (
+            <Box
+              sx={{
+                whiteSpace: "pre-wrap",
+                overflowWrap: "break-word",
+                wordBreak: "break-word",
+              }}
+            >
+              <LoadingDots />
+            </Box>
+          ) : (
+            <Typography
+              variant="body2"
+              component="div"
+              sx={{
+                whiteSpace: "pre-wrap",
+                overflowWrap: "break-word",
+                wordBreak: "break-word",
+              }}
+            >
+              {agentResponse?.response ?? ""}
+              {(agentResponse?.session_id || groupSessionId) &&
+                !isAgentLoading &&
+                pattern !== PATTERNS.A2A_HTTP && (
+                  <ExternalLinkButton
+                    component="button"
+                    url={grafanaSessionUrl}
+                    label="Grafana"
+                    iconSrc={grafanaIcon}
+                  />
+                )}
+            </Typography>
+          )}
         </Stack>
-      )}
+      </Stack>
+    )}
   </Stack>
 )
 

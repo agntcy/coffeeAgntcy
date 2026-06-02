@@ -117,7 +117,11 @@ const IdentityDetailsDropdownContent: React.FC<
             <GraphSideIconTooltip title="Open source code on GitHub">
               <IconButton
                 onClick={() =>
-                  window.open(identityGithubUrl, "_blank", "noopener,noreferrer")
+                  window.open(
+                    identityGithubUrl,
+                    "_blank",
+                    "noopener,noreferrer",
+                  )
                 }
                 aria-label="Open source code on GitHub"
                 sx={(t) => graphSideIconButtonSx(t)}

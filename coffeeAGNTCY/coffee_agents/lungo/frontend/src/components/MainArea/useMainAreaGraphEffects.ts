@@ -5,6 +5,7 @@
 
 import React, { useEffect } from "react"
 import type { Node, Edge } from "@xyflow/react"
+import type { ModalType } from "@/types/modal"
 import { getGraphConfig, updateTransportLabels } from "@/utils/graphConfigs"
 import {
   isStreamingPattern,
@@ -13,6 +14,39 @@ import {
 import type { GraphConfig } from "@/utils/graphConfigs"
 import type { CustomNodeData } from "./Graph/Elements/types"
 
+function withNodeModalHandlers(
+  node: Node,
+  {
+    activeModal,
+    activeNodeId,
+    handleOpenIdentityModal,
+    handleOpenOasfModal,
+    handleCloseModals,
+    handleShowBadgeDetails,
+    handleShowPolicyDetails,
+  }: {
+    activeModal: ModalType
+    activeNodeId: string | null
+    handleOpenIdentityModal: (nodeId: string, nodeData: CustomNodeData) => void
+    handleOpenOasfModal: (nodeData: CustomNodeData) => void
+    handleCloseModals: () => void
+    handleShowBadgeDetails: () => void
+    handleShowPolicyDetails: () => void
+  },
+): Record<string, unknown> {
+  return {
+    ...node.data,
+    onOpenIdentityModal: handleOpenIdentityModal,
+    onOpenOasfModal: handleOpenOasfModal,
+    isIdentityDropdownOpen:
+      activeModal === "identity" && activeNodeId === node.id,
+    onCloseIdentityDropdown: handleCloseModals,
+    onShowBadgeDetails: handleShowBadgeDetails,
+    onShowPolicyDetails: handleShowPolicyDetails,
+    isModalOpen: Boolean(activeModal && activeNodeId === node.id),
+  }
+}
+
 export interface UseMainAreaGraphEffectsParams {
   pattern: string
   /** When true, skip syncing from `getGraphConfig` (graph owned by Agentic Workflows API). */
@@ -20,10 +54,12 @@ export interface UseMainAreaGraphEffectsParams {
   isGroupCommConnected: boolean
   setNodes: React.Dispatch<React.SetStateAction<Node[]>>
   setEdges: React.Dispatch<React.SetStateAction<Edge[]>>
-  handleOpenIdentityModal: (nodeData: CustomNodeData) => void
+  handleOpenIdentityModal: (nodeId: string, nodeData: CustomNodeData) => void
   handleOpenOasfModal: (nodeData: CustomNodeData) => void
-  activeModal: string | null
-  activeNodeData: unknown
+  activeModal: ModalType
+  activeNodeId: string | null
+  handleShowBadgeDetails: () => void
+  handleShowPolicyDetails: () => void
   fitViewWithViewport: (opts: {
     chatHeight: number
     isExpanded: boolean
@@ -50,7 +86,9 @@ export function useMainAreaGraphEffects({
   handleOpenIdentityModal,
   handleOpenOasfModal,
   activeModal,
-  activeNodeData,
+  activeNodeId,
+  handleShowBadgeDetails,
+  handleShowPolicyDetails,
   fitViewWithViewport,
   chatHeight,
   isExpanded,
@@ -89,23 +127,26 @@ export function useMainAreaGraphEffects({
     setNodes((nodes) =>
       nodes.map((node) => ({
         ...node,
-        data: {
-          ...node.data,
-          onOpenIdentityModal: handleOpenIdentityModal,
-          onOpenOasfModal: handleOpenOasfModal,
-          isModalOpen: !!(
-            activeModal &&
-            (activeNodeData as { id?: string } | null)?.id === node.id
-          ),
-        },
+        data: withNodeModalHandlers(node, {
+          activeModal,
+          activeNodeId,
+          handleOpenIdentityModal,
+          handleOpenOasfModal,
+          handleCloseModals,
+          handleShowBadgeDetails,
+          handleShowPolicyDetails,
+        }),
       })),
     )
   }, [
     skipStaticGraphSync,
     handleOpenIdentityModal,
     handleOpenOasfModal,
+    handleCloseModals,
+    handleShowBadgeDetails,
+    handleShowPolicyDetails,
     activeModal,
-    activeNodeData,
+    activeNodeId,
     setNodes,
   ])
 
@@ -115,15 +156,15 @@ export function useMainAreaGraphEffects({
       const newConfig = getGraphConfig(pattern)
       const nodesWithHandlers = newConfig.nodes.map((node) => ({
         ...node,
-        data: {
-          ...node.data,
-          onOpenIdentityModal: handleOpenIdentityModal,
-          onOpenOasfModal: handleOpenOasfModal,
-          isModalOpen: !!(
-            activeModal &&
-            (activeNodeData as { id?: string } | null)?.id === node.id
-          ),
-        },
+        data: withNodeModalHandlers(node, {
+          activeModal,
+          activeNodeId,
+          handleOpenIdentityModal,
+          handleOpenOasfModal,
+          handleCloseModals,
+          handleShowBadgeDetails,
+          handleShowPolicyDetails,
+        }),
       }))
       setNodes(nodesWithHandlers)
       await new Promise((resolve) => setTimeout(resolve, 100))
@@ -149,7 +190,10 @@ export function useMainAreaGraphEffects({
     setEdges,
     handleOpenIdentityModal,
     activeModal,
-    activeNodeData,
+    activeNodeId,
+    handleCloseModals,
+    handleShowBadgeDetails,
+    handleShowPolicyDetails,
     handleOpenOasfModal,
     skipStaticGraphSync,
     restoreEdgeAnimation,

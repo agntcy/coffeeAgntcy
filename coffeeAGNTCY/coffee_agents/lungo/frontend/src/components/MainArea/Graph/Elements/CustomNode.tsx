@@ -5,7 +5,6 @@
 
 import React, { useRef } from "react"
 import { Handle, Position } from "@xyflow/react"
-import AssignmentTurnedIn from "@mui/icons-material/AssignmentTurnedIn"
 import CheckCircle from "@mui/icons-material/CheckCircle"
 import { Box, IconButton, Stack, Typography, useTheme } from "@open-ui-kit/core"
 import agentDirectoryIconDark from "@/assets/Agent_directory.png"
@@ -13,17 +12,16 @@ import agentDirectoryIconLight from "@/assets/Agent_Icon_light.png"
 import { useGithubIcon } from "@/hooks/useGithubIcon"
 import { useThemeIcon } from "@/hooks/useThemeIcon"
 import { AssetPngIcon } from "@/components/AssetPngIcon"
-import { logger } from "@/utils/logger"
 import { SecurityClass } from "@/utils/SecurityClass"
 import {
   getGraphNodeHandleStyle,
   graphNodeRootSurfaceSx,
   graphNodeIconButtonSx,
-  graphSideIconButtonSxWithModal,
   type GraphNodeSurfaceState,
 } from "./graphNodeSurface"
 import { GraphIconChip } from "./GraphIconChip"
 import { GraphSideIconTooltip } from "./GraphSideIconTooltip"
+import NodeIdentityDropdown from "../Identity/NodeIdentityDropdown"
 import { CustomNodeData, ExtraHandle } from "./types"
 
 const POSITION_MAP: Record<ExtraHandle["position"], Position> = {
@@ -34,10 +32,11 @@ const POSITION_MAP: Record<ExtraHandle["position"], Position> = {
 }
 
 interface CustomNodeProps {
+  id: string
   data: CustomNodeData
 }
 
-const CustomNode: React.FC<CustomNodeProps> = ({ data }) => {
+const CustomNode: React.FC<CustomNodeProps> = ({ id, data }) => {
   const nodeRef = useRef<HTMLDivElement>(null)
   const theme = useTheme()
 
@@ -54,17 +53,6 @@ const CustomNode: React.FC<CustomNodeProps> = ({ data }) => {
       : "default"
 
   const handleStyle = getGraphNodeHandleStyle(theme)
-
-  const handleIdentityClick = (e: React.MouseEvent) => {
-    e.stopPropagation()
-    e.preventDefault()
-
-    if (nodeRef.current && data.onOpenIdentityModal) {
-      data.onOpenIdentityModal(data, data.label1 || "", data)
-    } else {
-      logger.error("No modal handler found or nodeRef missing!")
-    }
-  }
 
   const handleAgentDirectoryClick = (e: React.MouseEvent) => {
     e.stopPropagation()
@@ -205,20 +193,7 @@ const CustomNode: React.FC<CustomNodeProps> = ({ data }) => {
               </IconButton>
             </GraphSideIconTooltip>
           )}
-          {data.verificationStatus === "verified" && (
-            <GraphSideIconTooltip title="View agent identity details">
-              <IconButton
-                type="button"
-                aria-label="Open identity details"
-                onClick={handleIdentityClick}
-                sx={(t) => ({
-                  ...graphSideIconButtonSxWithModal(t),
-                })}
-              >
-                <AssignmentTurnedIn />
-              </IconButton>
-            </GraphSideIconTooltip>
-          )}
+          <NodeIdentityDropdown nodeId={id} data={data} />
         </Stack>
 
         {(data.handles === "all" || data.handles === "target") && (

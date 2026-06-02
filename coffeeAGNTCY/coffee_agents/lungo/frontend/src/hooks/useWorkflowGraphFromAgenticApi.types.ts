@@ -34,7 +34,7 @@ export interface UseWorkflowGraphFromAgenticApiParams {
   selectedWorkflowSummary: WorkflowSummary | null
   setNodes: React.Dispatch<React.SetStateAction<Node[]>>
   setEdges: React.Dispatch<React.SetStateAction<Edge[]>>
-  handleOpenIdentityModal: (nodeData: CustomNodeData) => void
+  handleOpenIdentityModal: (nodeId: string, nodeData: CustomNodeData) => void
   handleOpenOasfModal: (nodeData: CustomNodeData) => void
   onTopologyApplied?: () => void
 }
