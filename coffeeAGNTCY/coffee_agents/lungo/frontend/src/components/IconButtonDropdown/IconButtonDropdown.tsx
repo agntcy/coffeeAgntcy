@@ -10,7 +10,7 @@ import React, {
   useRef,
   useState,
 } from "react"
-import { Box, IconButton, Menu } from "@open-ui-kit/core"
+import { Box, IconButton, Menu, Tooltip } from "@open-ui-kit/core"
 import type { IconButtonProps, MenuProps } from "@mui/material"
 
 export type IconButtonDropdownTrigger = {
@@ -22,6 +22,8 @@ export type IconButtonDropdownTrigger = {
 export interface IconButtonDropdownProps {
   /** Accessible name for the trigger button. */
   ariaLabel: string
+  /** Optional hover label for the trigger (e.g. graph identity menu). */
+  tooltipTitle?: string
   /** Trigger rendered as an OUK `IconButton`. */
   trigger: IconButtonDropdownTrigger
   /**
@@ -49,6 +51,7 @@ export interface IconButtonDropdownProps {
 
 export const IconButtonDropdown: React.FC<IconButtonDropdownProps> = ({
   ariaLabel,
+  tooltipTitle,
   trigger,
   children,
   closeOnContentClick = true,
@@ -103,19 +106,31 @@ export const IconButtonDropdown: React.FC<IconButtonDropdownProps> = ({
     [handleUncontrolledOpen, isControlled, onOpenChange, openControlled],
   )
 
+  const triggerButton = (
+    <IconButton
+      ref={buttonRef}
+      aria-label={ariaLabel}
+      aria-controls={menuOpen ? menuId : undefined}
+      aria-haspopup="menu"
+      aria-expanded={menuOpen ? "true" : undefined}
+      onClick={handleTriggerClick}
+      {...trigger.iconButtonProps}
+    >
+      {trigger.icon}
+    </IconButton>
+  )
+
   return (
     <>
-      <IconButton
-        ref={buttonRef}
-        aria-label={ariaLabel}
-        aria-controls={menuOpen ? menuId : undefined}
-        aria-haspopup="menu"
-        aria-expanded={menuOpen ? "true" : undefined}
-        onClick={handleTriggerClick}
-        {...trigger.iconButtonProps}
-      >
-        {trigger.icon}
-      </IconButton>
+      {tooltipTitle ? (
+        <Tooltip title={tooltipTitle} placement="left" arrow>
+          <Box component="span" sx={{ display: "inline-flex" }}>
+            {triggerButton}
+          </Box>
+        </Tooltip>
+      ) : (
+        triggerButton
+      )}
       <Menu
         id={menuId}
         anchorEl={anchorEl}

@@ -34,6 +34,7 @@ const ModalContainer: React.FC<ModalContainerProps> = ({
       {activeModal === "identity" && activeNodeData ? (
         <IconButtonDropdown
           ariaLabel="Agent identity"
+          tooltipTitle="View agent identity details"
           open
           onOpenChange={(next) => {
             if (!next) onClose()

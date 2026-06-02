@@ -6,6 +6,7 @@
 import React, { type CSSProperties } from "react"
 import { Handle, Position } from "@xyflow/react"
 import { Box, Typography, useTheme } from "@open-ui-kit/core"
+import { GraphSideIconTooltip } from "./GraphSideIconTooltip"
 import { useGithubIcon } from "@/hooks/useGithubIcon"
 import { AssetPngIcon } from "@/components/AssetPngIcon"
 import { SecurityClass } from "@/utils/SecurityClass"
@@ -69,26 +70,29 @@ const TransportNode: React.FC<TransportNodeProps> = ({ data }) => {
       </Typography>
 
       {data.githubLink && SecurityClass.isSafeExternalUrl(data.githubLink) && (
-        <Box
-          component="a"
-          href={data.githubLink}
-          target="_blank"
-          rel="noopener noreferrer"
-          sx={(t) => ({
-            ...graphNodeAuxiliaryControlSurfaceSx(t),
-            ...(isCircular
-              ? { mt: 0.5 }
-              : {
-                  position: "absolute",
-                  right: -16,
-                  top: "50%",
-                  transform: "translateY(-50%)",
-                  zIndex: 10,
-                }),
-          })}
-        >
-          <AssetPngIcon bare src={githubIconSrc} alt="GitHub" />
-        </Box>
+        <GraphSideIconTooltip title="Open repository on GitHub">
+          <Box
+            component="a"
+            href={data.githubLink}
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="Open GitHub repository"
+            sx={(t) => ({
+              ...graphNodeAuxiliaryControlSurfaceSx(t),
+              ...(isCircular
+                ? { mt: 0.5 }
+                : {
+                    position: "absolute",
+                    right: -16,
+                    top: "50%",
+                    transform: "translateY(-50%)",
+                    zIndex: 10,
+                  }),
+            })}
+          >
+            <AssetPngIcon bare src={githubIconSrc} alt="GitHub" />
+          </Box>
+        </GraphSideIconTooltip>
       )}
 
       {isCircular ? (

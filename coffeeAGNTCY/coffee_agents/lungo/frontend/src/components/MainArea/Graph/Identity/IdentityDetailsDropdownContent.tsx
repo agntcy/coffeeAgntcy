@@ -5,6 +5,7 @@
 
 import React from "react"
 import { IconButton, Stack, Typography } from "@open-ui-kit/core"
+import { GraphSideIconTooltip } from "@/components/MainArea/Graph/Elements/GraphSideIconTooltip"
 import Visibility from "@mui/icons-material/Visibility"
 import { IdentityDetailsDropdownContentProps } from "./types"
 import { useGithubIcon } from "@/hooks/useGithubIcon"
@@ -70,12 +71,15 @@ const IdentityDetailsDropdownContent: React.FC<
           <Typography variant="body2" sx={{ textAlign: "left" }}>
             Badge details
           </Typography>
-          <IconButton
-            onClick={onShowBadgeDetails}
-            sx={(t) => graphSideIconButtonSx(t)}
-          >
-            <Visibility />
-          </IconButton>
+          <GraphSideIconTooltip title="View badge details">
+            <IconButton
+              onClick={onShowBadgeDetails}
+              aria-label="View badge details"
+              sx={(t) => graphSideIconButtonSx(t)}
+            >
+              <Visibility />
+            </IconButton>
+          </GraphSideIconTooltip>
         </Stack>
       )}
 
@@ -88,12 +92,15 @@ const IdentityDetailsDropdownContent: React.FC<
           <Typography variant="body2" sx={{ textAlign: "left" }}>
             Policy details
           </Typography>
-          <IconButton
-            onClick={onShowPolicyDetails}
-            sx={(t) => graphSideIconButtonSx(t)}
-          >
-            <Visibility />
-          </IconButton>
+          <GraphSideIconTooltip title="View policy details">
+            <IconButton
+              onClick={onShowPolicyDetails}
+              aria-label="View policy details"
+              sx={(t) => graphSideIconButtonSx(t)}
+            >
+              <Visibility />
+            </IconButton>
+          </GraphSideIconTooltip>
         </Stack>
       )}
 
@@ -107,14 +114,17 @@ const IdentityDetailsDropdownContent: React.FC<
             <Typography variant="body2" sx={{ textAlign: "left" }}>
               Source code
             </Typography>
-            <IconButton
-              onClick={() =>
-                window.open(identityGithubUrl, "_blank", "noopener,noreferrer")
-              }
-              sx={(t) => graphSideIconButtonSx(t)}
-            >
-              <AssetPngIcon bare src={githubIconSrc} alt="Source code" />
-            </IconButton>
+            <GraphSideIconTooltip title="Open source code on GitHub">
+              <IconButton
+                onClick={() =>
+                  window.open(identityGithubUrl, "_blank", "noopener,noreferrer")
+                }
+                aria-label="Open source code on GitHub"
+                sx={(t) => graphSideIconButtonSx(t)}
+              >
+                <AssetPngIcon bare src={githubIconSrc} alt="Source code" />
+              </IconButton>
+            </GraphSideIconTooltip>
           </Stack>
         )}
     </Stack>

@@ -23,6 +23,7 @@ import {
   type GraphNodeSurfaceState,
 } from "./graphNodeSurface"
 import { GraphIconChip } from "./GraphIconChip"
+import { GraphSideIconTooltip } from "./GraphSideIconTooltip"
 import { CustomNodeData, ExtraHandle } from "./types"
 
 const POSITION_MAP: Record<ExtraHandle["position"], Position> = {
@@ -171,46 +172,52 @@ const CustomNode: React.FC<CustomNodeProps> = ({ data }) => {
         >
           {data.githubLink &&
             SecurityClass.isSafeExternalUrl(data.githubLink) && (
+              <GraphSideIconTooltip title="Open repository on GitHub">
+                <IconButton
+                  component="a"
+                  href={data.githubLink}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label="Open GitHub repository"
+                  sx={(t) => ({
+                    ...graphNodeIconButtonSx(t),
+                  })}
+                >
+                  <AssetPngIcon bare src={githubIconSrc} alt="GitHub" />
+                </IconButton>
+              </GraphSideIconTooltip>
+            )}
+          {data.agentDirectoryLink && (
+            <GraphSideIconTooltip title="View OASF record in AGNTCY Directory">
               <IconButton
-                component="a"
-                href={data.githubLink}
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label="Open GitHub repository"
+                type="button"
+                aria-label="Open AGNTCY Directory"
+                onClick={handleAgentDirectoryClick}
                 sx={(t) => ({
                   ...graphNodeIconButtonSx(t),
                 })}
               >
-                <AssetPngIcon bare src={githubIconSrc} alt="GitHub" />
+                <AssetPngIcon
+                  bare
+                  src={agentDirectoryIcon}
+                  alt="AGNTCY Directory"
+                />
               </IconButton>
-            )}
-          {data.agentDirectoryLink && (
-            <IconButton
-              type="button"
-              aria-label="Open AGNTCY Directory"
-              onClick={handleAgentDirectoryClick}
-              sx={(t) => ({
-                ...graphNodeIconButtonSx(t),
-              })}
-            >
-              <AssetPngIcon
-                bare
-                src={agentDirectoryIcon}
-                alt="AGNTCY Directory"
-              />
-            </IconButton>
+            </GraphSideIconTooltip>
           )}
           {data.verificationStatus === "verified" && (
-            <IconButton
-              type="button"
-              aria-label="Open identity details"
-              onClick={handleIdentityClick}
-              sx={(t) => ({
-                ...graphSideIconButtonSxWithModal(t),
-              })}
-            >
-              <AssignmentTurnedIn />
-            </IconButton>
+            <GraphSideIconTooltip title="View agent identity details">
+              <IconButton
+                type="button"
+                aria-label="Open identity details"
+                onClick={handleIdentityClick}
+                sx={(t) => ({
+                  ...graphSideIconButtonSxWithModal(t),
+                })}
+              >
+                <AssignmentTurnedIn />
+              </IconButton>
+            </GraphSideIconTooltip>
           )}
         </Stack>
 
