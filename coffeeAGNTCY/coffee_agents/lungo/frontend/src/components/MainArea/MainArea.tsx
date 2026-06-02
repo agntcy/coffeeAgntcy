@@ -85,6 +85,7 @@ const MainArea: React.FC<MainAreaProps> = (props) => {
           nodesDraggable={nodesDraggable}
           nodesConnectable={nodesConnectable}
           elementsSelectable={nodesDraggable}
+          elevateNodesOnSelect={false}
         >
           <CustomControls
             isInteractive={nodesDraggable && nodesConnectable}

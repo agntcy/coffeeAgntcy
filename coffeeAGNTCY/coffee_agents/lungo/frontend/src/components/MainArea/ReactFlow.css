@@ -19,3 +19,12 @@
   opacity: 0 !important;
   pointer-events: none !important;
 }
+
+/* Keep edges above nodes (RF renders nodes after edges in the DOM). */
+.react-flow .react-flow__edges {
+  z-index: 2;
+}
+
+.react-flow .react-flow__nodes {
+  z-index: 1;
+}
