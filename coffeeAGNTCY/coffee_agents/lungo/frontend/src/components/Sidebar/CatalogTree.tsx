@@ -16,6 +16,7 @@ import {
   makePatternKey,
   makeScenarioKey,
   makeUseCaseKey,
+  REFERENCE_LIBRARY_KEY,
   type CatalogSidebarLayout,
   type PatternNode,
   type UseCaseScenarioNode,
@@ -73,6 +74,7 @@ const CatalogTree: React.FC<CatalogTreeProps> = ({
         title={summary.name}
         isSelected={isSelected}
         disabled={isUnmapped}
+        documentationCatalogName={summary.name}
         onClick={isUnmapped ? undefined : () => onSelectWorkflow(summary)}
       />
     )
@@ -152,13 +154,22 @@ const CatalogTree: React.FC<CatalogTreeProps> = ({
         />
       ) : null}
 
-      {referencePatternNames.map((patternName) => (
-        <SidebarItem
-          key={patternName}
-          title={patternName}
-          onClick={() => openDoc(patternName)}
-        />
-      ))}
+      {referencePatternNames.length > 0 ? (
+        <SidebarDropdown
+          title="Reference Library"
+          isExpanded={expandedKeys.has(REFERENCE_LIBRARY_KEY)}
+          onToggle={() => toggleExpandableDropdown(REFERENCE_LIBRARY_KEY)}
+        >
+          {referencePatternNames.map((patternName) => (
+            <SidebarItem
+              key={patternName}
+              title={patternName}
+              documentationCatalogName={patternName}
+              onClick={() => openDoc(patternName)}
+            />
+          ))}
+        </SidebarDropdown>
+      ) : null}
     </List>
   )
 }

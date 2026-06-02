@@ -30,7 +30,8 @@ export const sidebarDropdownListItemBackground = (theme: Theme) =>
  * ListItem wrappers stay transparent; hover, focus, and selected styles belong on
  * the inner ListItemButton.
  */
-export const sidebarListItemSx = {
+export const sidebarListItemSx = (theme: Theme) => ({
+  paddingRight: theme.spacing(0.625),
   backgroundColor: "transparent",
   "&:hover": {
     backgroundColor: "transparent",
@@ -47,7 +48,7 @@ export const sidebarListItemSx = {
   "&.Mui-selected": {
     backgroundColor: "transparent",
   },
-} as const
+})
 
 /** `.MuiListItem-root` surface for `SidebarDropdown` at every tree level. */
 export const sidebarDropdownListItemSx = {

@@ -124,6 +124,7 @@ const Sidebar: React.FC<SidebarProps> = ({
           }}
         >
           <Stack direction="column" sx={{ width: "100%" }}>
+            <Typography variant="h6">Agentic Patterns</Typography>
             {isLoading ? (
               <Stack
                 direction="row"
