@@ -9,21 +9,11 @@ import type { Message } from "./types"
 import { parseApiError } from "@/utils/const"
 import { useAgentAPI } from "@/hooks/useAgentAPI"
 import { useGroupSessionId } from "@/stores/groupStreamingStore"
-import { Box, Stack, Typography } from "@open-ui-kit/core"
-
-import grafanaIcon from "@/assets/grafana.svg"
+import { Box, Stack } from "@open-ui-kit/core"
 
 import ChatAreaComposer from "./ChatAreaComposer"
-import { ChatAgentAvatar } from "./ChatAvatarCircle"
-import { LoadingDots } from "@/components/loading"
-import UserMessage from "./UserMessage"
+import ChatAreaMessageThread from "./ChatAreaMessageThread"
 import ChatHeader from "./ChatHeader"
-import ExternalLinkButton from "./ExternalLinkButton"
-import {
-  GroupCommunicationFeed,
-  AuctionStreamingFeed,
-  RecruiterStreamingFeed,
-} from "./feeds"
 
 import { env } from "@/utils/env"
 import { logger } from "@/utils/logger"
@@ -217,6 +207,8 @@ const ChatArea: React.FC<ChatAreaProps> = ({
     return null
   }
 
+  const chatHorizontalPadding = { xs: 2, sm: 4, md: 8, lg: 15 }
+
   return (
     <Box
       ref={chatRef}
@@ -224,144 +216,84 @@ const ChatArea: React.FC<ChatAreaProps> = ({
         position: "relative",
         display: "flex",
         width: "100%",
+        height: "100%",
+        maxHeight: "100%",
+        minHeight: 0,
         flexDirection: "column",
+        boxSizing: "border-box",
+        overflow: "hidden",
       }}
     >
-      {currentUserMessage && (
-        <ChatHeader
-          onMinimize={isMinimized ? handleRestore : handleMinimize}
-          onClearConversation={onClearConversation}
-          isMinimized={isMinimized}
-          showActions={!!agentResponse && !isAgentLoading}
-        />
-      )}
+      {currentUserMessage ? (
+        <Box sx={{ flexShrink: 0, width: "100%" }}>
+          <ChatHeader
+            onMinimize={isMinimized ? handleRestore : handleMinimize}
+            onClearConversation={onClearConversation}
+            isMinimized={isMinimized}
+          />
+        </Box>
+      ) : null}
+
+      <Box
+        sx={{
+          flex: "1 1 auto",
+          minHeight: 0,
+          width: "100%",
+          overflowY: "auto",
+          overflowX: "hidden",
+          ...(currentUserMessage
+            ? { borderTop: "1px solid", borderColor: "divider" }
+            : {}),
+        }}
+      >
+        <Stack
+          alignItems="center"
+          spacing={1}
+          sx={{
+            width: "100%",
+            minHeight: currentUserMessage ? 0 : 120,
+            px: chatHorizontalPadding,
+            py: currentUserMessage ? 1 : 0,
+          }}
+        >
+          {currentUserMessage ? (
+            <ChatAreaMessageThread
+              currentUserMessage={currentUserMessage}
+              isMinimized={isMinimized}
+              showProgressTracker={showProgressTracker}
+              showAuctionStreaming={showAuctionStreaming}
+              showRecruiterStreaming={showRecruiterStreaming}
+              showFinalResponse={showFinalResponse}
+              isAgentLoading={!!isAgentLoading}
+              agentResponse={agentResponse}
+              apiError={apiError}
+              pattern={pattern}
+              graphConfig={graphConfig}
+              executionKey={executionKey}
+              auctionState={auctionState}
+              recruiterState={recruiterState}
+              groupSessionId={groupSessionId}
+              grafanaSessionUrl={grafanaSessionUrl}
+              onStreamComplete={onStreamComplete}
+              onSenderHighlight={onSenderHighlight}
+            />
+          ) : null}
+        </Stack>
+      </Box>
 
       <Stack
         alignItems="center"
         spacing={1}
         sx={{
+          flexShrink: 0,
           width: "100%",
-          minHeight: currentUserMessage ? "auto" : 120,
-          px: { xs: 2, sm: 4, md: 8, lg: 15 },
+          px: chatHorizontalPadding,
           py: currentUserMessage ? 1 : 2,
+          borderTop: currentUserMessage ? "1px solid" : "none",
+          borderColor: "divider",
+          bgcolor: "background.paper",
         }}
       >
-        {currentUserMessage && (
-          <Stack spacing={1.5} sx={{ width: "100%", maxWidth: 880, mb: 2 }}>
-            {!isMinimized && <UserMessage content={currentUserMessage} />}
-
-            {showProgressTracker && (
-              <Box
-                sx={{
-                  width: "100%",
-                  display: isMinimized ? "none" : "block",
-                }}
-              >
-                <GroupCommunicationFeed
-                  isVisible={!isMinimized && showProgressTracker}
-                  onComplete={onStreamComplete}
-                  onSenderHighlight={onSenderHighlight}
-                  graphConfig={graphConfig}
-                  prompt={currentUserMessage || ""}
-                  executionKey={executionKey}
-                  apiError={apiError}
-                />
-              </Box>
-            )}
-
-            {showAuctionStreaming && (
-              <Box
-                sx={{
-                  width: "100%",
-                  display: isMinimized ? "none" : "block",
-                }}
-              >
-                <AuctionStreamingFeed
-                  isVisible={!isMinimized && showAuctionStreaming}
-                  prompt={currentUserMessage || ""}
-                  apiError={apiError}
-                  auctionStreamingState={auctionState}
-                />
-              </Box>
-            )}
-
-            {showRecruiterStreaming && (
-              <Box
-                sx={{
-                  width: "100%",
-                  display: isMinimized ? "none" : "block",
-                }}
-              >
-                <RecruiterStreamingFeed
-                  isVisible={!isMinimized && showRecruiterStreaming}
-                  prompt={currentUserMessage || ""}
-                  apiError={apiError}
-                  recruiterStreamingState={recruiterState}
-                  onStreamComplete={onStreamComplete}
-                />
-              </Box>
-            )}
-
-            {showFinalResponse &&
-              (isAgentLoading || agentResponse) &&
-              !isMinimized && (
-                <Stack
-                  direction="row"
-                  alignItems="flex-start"
-                  spacing={0.5}
-                  sx={{ width: "100%" }}
-                >
-                  <ChatAgentAvatar />
-                  <Stack
-                    sx={{
-                      maxWidth: "calc(100% - 3rem)",
-                      flex: 1,
-                      alignItems: "flex-start",
-                      justifyContent: "center",
-                      borderRadius: 1,
-                      py: 0.5,
-                      px: 1,
-                    }}
-                  >
-                    {isAgentLoading ? (
-                      <Box
-                        sx={{
-                          whiteSpace: "pre-wrap",
-                          overflowWrap: "break-word",
-                          wordBreak: "break-word",
-                        }}
-                      >
-                        <LoadingDots />
-                      </Box>
-                    ) : (
-                      <Typography
-                        variant="body2"
-                        component="div"
-                        sx={{
-                          whiteSpace: "pre-wrap",
-                          overflowWrap: "break-word",
-                          wordBreak: "break-word",
-                        }}
-                      >
-                        {agentResponse?.response ?? ""}
-                        {(agentResponse?.session_id || groupSessionId) &&
-                          !isAgentLoading &&
-                          pattern !== PATTERNS.A2A_HTTP && (
-                            <ExternalLinkButton
-                              component="button"
-                              url={grafanaSessionUrl}
-                              label="Grafana"
-                              iconSrc={grafanaIcon}
-                            />
-                          )}
-                      </Typography>
-                    )}
-                  </Stack>
-                </Stack>
-              )}
-          </Stack>
-        )}
-
         <ChatAreaComposer
           showCoffeePrompts={showCoffeePrompts}
           showLogisticsPrompts={showLogisticsPrompts}

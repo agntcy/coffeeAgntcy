@@ -13,19 +13,13 @@ interface ChatHeaderProps {
   onMinimize?: () => void
   onClearConversation?: () => void
   isMinimized?: boolean
-  showActions?: boolean
 }
 
 const ChatHeader: React.FC<ChatHeaderProps> = ({
   onMinimize,
   onClearConversation,
   isMinimized,
-  showActions = false,
 }) => {
-  if (!showActions) {
-    return null
-  }
-
   return (
     <Box
       sx={{

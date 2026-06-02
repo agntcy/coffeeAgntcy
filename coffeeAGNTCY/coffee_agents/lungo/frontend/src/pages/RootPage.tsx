@@ -95,10 +95,20 @@ const RootPage: React.FC = () => {
             display: "flex",
             flex: 1,
             minWidth: 0,
+            minHeight: 0,
             flexDirection: "column",
+            overflow: "hidden",
           }}
         >
-          <Box sx={{ position: "relative", flexGrow: 1, minHeight: 0 }}>
+          <Box
+            sx={{
+              position: "relative",
+              flex: "1 1 50%",
+              minHeight: "50%",
+              minWidth: 0,
+              overflow: "hidden",
+            }}
+          >
             <MainArea
               pattern={selectedPattern}
               selectedWorkflowSummary={selectedWorkflowSummary}
@@ -123,13 +133,17 @@ const RootPage: React.FC = () => {
             sx={{
               display: "flex",
               width: "100%",
+              flex: "0 1 auto",
               flexShrink: 0,
               flexDirection: "column",
               alignItems: "center",
-              justifyContent: "center",
+              justifyContent: "flex-start",
               gap: 0,
               p: 0,
-              minHeight: { xs: "76px", md: "96px" },
+              maxHeight: "50%",
+              minHeight: { xs: "min(76px, 50%)", md: "min(96px, 50%)" },
+              minWidth: 0,
+              overflow: "hidden",
             }}
           >
             <ChatArea
