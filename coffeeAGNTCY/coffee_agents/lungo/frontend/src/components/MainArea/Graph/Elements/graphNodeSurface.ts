@@ -93,11 +93,11 @@ export function graphIconChipSx(theme: Theme): SystemStyleObject<Theme> {
     width: iconSize,
     height: iconSize,
     flexShrink: 0,
-    boxSizing: "border-box",
+    boxSizing: "content-box",
     bgcolor: getAssetPngIconBackground(theme),
     border: "1px solid",
     borderColor: theme.palette.divider,
-    borderRadius: theme.shape.borderRadius,
+    borderRadius: (theme.shape.borderRadius as number) * 0.25,
     "& .MuiSvgIcon-root": {
       fontSize: iconSize,
     },
