@@ -12,7 +12,7 @@ import LockOpen from "@mui/icons-material/LockOpen"
 import ZoomIn from "@mui/icons-material/ZoomIn"
 import ZoomOut from "@mui/icons-material/ZoomOut"
 import { Box, IconButton, Stack, Tooltip } from "@open-ui-kit/core"
-import { graphSideIconButtonSx } from "./graphNodeSurface"
+import { graphNodeIconButtonSx } from "./graphNodeSurface"
 
 interface CustomControlsProps {
   isInteractive?: boolean
@@ -36,11 +36,12 @@ const TooltipControlButton: React.FC<{
       }}
     >
       <IconButton
+        size="medium"
         color="inherit"
         disabled={disabled}
         onClick={onClick}
         aria-label={ariaLabel}
-        sx={(t) => graphSideIconButtonSx(t)}
+        sx={(t) => graphNodeIconButtonSx(t)}
       >
         {children}
       </IconButton>

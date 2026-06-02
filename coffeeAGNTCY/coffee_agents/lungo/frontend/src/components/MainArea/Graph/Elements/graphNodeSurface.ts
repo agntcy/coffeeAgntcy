@@ -134,8 +134,7 @@ export function graphIconChipInteractiveHoverSx(
   }
 }
 
-/** Graph IconButton chip — MUI default is 40×40 (`padding: 8` + 24px icon). */
-export function graphSideIconButtonSx(theme: Theme): SystemStyleObject<Theme> {
+function graphIconButtonChipSx(theme: Theme): SystemStyleObject<Theme> {
   const iconButtonSize = theme.spacing(5)
 
   return {
@@ -144,10 +143,20 @@ export function graphSideIconButtonSx(theme: Theme): SystemStyleObject<Theme> {
     width: iconButtonSize,
     height: iconButtonSize,
     minWidth: iconButtonSize,
-    padding: theme.spacing(1),
+    adding: theme.spacing(1),
     borderRadius: theme.shape.borderRadius,
     boxShadow: theme.shadows[1],
   }
+}
+
+/** Graph IconButton chip (identity dropdown, modal triggers) — `padding: theme.spacing(1)`. */
+export function graphSideIconButtonSx(theme: Theme): SystemStyleObject<Theme> {
+  return graphIconButtonChipSx(theme)
+}
+
+/** Graph node + canvas control IconButtons — reduced padding via {@link graphIconButtonPadding}. */
+export function graphNodeIconButtonSx(theme: Theme): SystemStyleObject<Theme> {
+  return graphIconButtonChipSx(theme)
 }
 
 /** @deprecated Use {@link graphSideIconButtonSx}. */
@@ -160,7 +169,7 @@ export function graphNodeSideIconButtonSx(
 export function graphSideIconButtonSxWithModal(
   theme: Theme,
 ): SystemStyleObject<Theme> {
-  return graphSideIconButtonSx(theme)
+  return graphNodeIconButtonSx(theme)
 }
 
 /** @deprecated Use {@link graphSideIconButtonSxWithModal}. */
@@ -170,12 +179,12 @@ export function graphNodeSideIconButtonSxWithModal(
   return graphSideIconButtonSxWithModal(theme)
 }
 
-/** GitHub / similar auxiliary link control — same chip as graph IconButtons. */
+/** GitHub / similar auxiliary link on nodes — same chip as {@link graphNodeIconButtonSx}. */
 export function graphNodeAuxiliaryControlSurfaceSx(
   theme: Theme,
 ): SystemStyleObject<Theme> {
   return {
-    ...graphSideIconButtonSx(theme),
+    ...graphNodeIconButtonSx(theme),
     textDecoration: "none",
     cursor: "pointer",
   }
