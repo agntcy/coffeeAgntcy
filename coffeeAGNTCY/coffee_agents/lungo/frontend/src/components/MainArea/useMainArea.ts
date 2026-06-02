@@ -96,7 +96,7 @@ export function useMainArea({
       handleOpenOasfModal,
       onTopologyApplied: () => {
         setTimeout(() => {
-          fitViewWithViewport({ chatHeight: 0, isExpanded: false })
+          fitViewWithViewport()
         }, 200)
       },
     })

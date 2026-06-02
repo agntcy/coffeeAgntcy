@@ -16,6 +16,11 @@ import CustomNode from "./Graph/Elements/CustomNode"
 import CustomControls from "./Graph/Elements/CustomControls"
 import ModalContainer from "./ModalContainer"
 import OasfRecordModal from "./Graph/Directory/OasfRecordModal"
+import {
+  GRAPH_MAX_ZOOM,
+  GRAPH_MIN_ZOOM,
+  GRAPH_VIEW_DEFAULT_VIEWPORT,
+} from "@/config/graphViewDefaults"
 import { useMainArea, type MainAreaProps } from "./useMainArea"
 
 const proOptions = { hideAttribution: true }
@@ -79,9 +84,9 @@ const MainArea: React.FC<MainAreaProps> = (props) => {
           onNodeDrag={onNodeDrag}
           onPaneClick={onPaneClick}
           proOptions={proOptions}
-          defaultViewport={{ x: 0, y: 0, zoom: 0.75 }}
-          minZoom={0.15}
-          maxZoom={1.8}
+          defaultViewport={GRAPH_VIEW_DEFAULT_VIEWPORT}
+          minZoom={GRAPH_MIN_ZOOM}
+          maxZoom={GRAPH_MAX_ZOOM}
           nodesDraggable={nodesDraggable}
           nodesConnectable={nodesConnectable}
           elementsSelectable={nodesDraggable}
