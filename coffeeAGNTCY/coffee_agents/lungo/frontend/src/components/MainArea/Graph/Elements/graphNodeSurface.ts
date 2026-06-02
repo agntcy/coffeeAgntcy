@@ -135,9 +135,7 @@ export function graphIconChipInteractiveHoverSx(
 }
 
 /** Graph IconButton chip — MUI default is 40×40 (`padding: 8` + 24px icon). */
-export function graphSideIconButtonSx(
-  theme: Theme,
-): SystemStyleObject<Theme> {
+export function graphSideIconButtonSx(theme: Theme): SystemStyleObject<Theme> {
   const iconButtonSize = theme.spacing(5)
 
   return {
@@ -161,7 +159,6 @@ export function graphNodeSideIconButtonSx(
 
 export function graphSideIconButtonSxWithModal(
   theme: Theme,
-  _isModalOpen: boolean,
 ): SystemStyleObject<Theme> {
   return graphSideIconButtonSx(theme)
 }
@@ -169,9 +166,8 @@ export function graphSideIconButtonSxWithModal(
 /** @deprecated Use {@link graphSideIconButtonSxWithModal}. */
 export function graphNodeSideIconButtonSxWithModal(
   theme: Theme,
-  isModalOpen: boolean,
 ): SystemStyleObject<Theme> {
-  return graphSideIconButtonSxWithModal(theme, isModalOpen)
+  return graphSideIconButtonSxWithModal(theme)
 }
 
 /** GitHub / similar auxiliary link control — same chip as graph IconButtons. */

@@ -193,7 +193,11 @@ const CustomNode: React.FC<CustomNodeProps> = ({ data }) => {
                 ...graphSideIconButtonSx(t),
               })}
             >
-              <AssetPngIcon bare src={agentDirectoryIcon} alt="AGNTCY Directory" />
+              <AssetPngIcon
+                bare
+                src={agentDirectoryIcon}
+                alt="AGNTCY Directory"
+              />
             </IconButton>
           )}
           {data.verificationStatus === "verified" && (
@@ -202,10 +206,7 @@ const CustomNode: React.FC<CustomNodeProps> = ({ data }) => {
               aria-label="Open identity details"
               onClick={handleIdentityClick}
               sx={(t) => ({
-                ...graphSideIconButtonSxWithModal(
-                  t,
-                  data.isModalOpen === true,
-                ),
+                ...graphSideIconButtonSxWithModal(t),
               })}
             >
               <AssignmentTurnedIn />

@@ -42,7 +42,6 @@ const MainArea: React.FC<MainAreaProps> = (props) => {
     setNodesConnectable,
     activeModal,
     activeNodeData,
-    modalPosition,
     handleCloseModals,
     handleShowBadgeDetails,
     handleShowPolicyDetails,
@@ -100,7 +99,6 @@ const MainArea: React.FC<MainAreaProps> = (props) => {
         <ModalContainer
           activeModal={activeModal}
           activeNodeData={activeNodeData}
-          modalPosition={modalPosition}
           onClose={handleCloseModals}
           onShowBadgeDetails={handleShowBadgeDetails}
           onShowPolicyDetails={handleShowPolicyDetails}

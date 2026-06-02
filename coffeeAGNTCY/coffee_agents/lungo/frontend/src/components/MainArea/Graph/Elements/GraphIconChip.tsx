@@ -16,7 +16,12 @@ export interface GraphIconChipProps {
 /** Wraps MUI icons, PNGs, or SVGs in the graph with shared chip styling. */
 export function GraphIconChip({ children, sx }: GraphIconChipProps) {
   return (
-    <Box sx={(theme) => [graphIconChipSx(theme), ...(sx ? [sx] : [])]}>
+    <Box
+      sx={(theme) => ({
+        ...graphIconChipSx(theme),
+        ...(typeof sx === "function" ? sx(theme) : sx),
+      })}
+    >
       {children}
     </Box>
   )
