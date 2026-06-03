@@ -2,6 +2,9 @@
 <!-- TOC -->
 * [Corto Exchange, Farm Server, UI](#corto-exchange-farm-server-ui)
   * [Overview](#overview)
+  * [Architecture At A Glance](#architecture-at-a-glance)
+  * [Transport, Topics, and A2A Setup](#transport-topics-and-a2a-setup)
+  * [Where App SDK Fits](#where-app-sdk-fits)
   * [Running Corto Locally](#running-corto-locally)
     * [Prerequisites](#prerequisites)
     * [Setup Instructions](#setup-instructions)
@@ -33,6 +36,61 @@ The Farm Agent serves as a backend flavor profile generator, processing incoming
 
 The user interface forwards all prompts to the exchange’s API, which are then given to an A2A client. This A2A client connects to the farm’s A2A server. The underlying A2A transport layer is fully configurable. By default, the system uses AGNTCY's SLIM. 
 
+## Architecture At A Glance
+
+```mermaid
+flowchart LR
+    UI[React UI]
+    API[Exchange FastAPI API]
+    EX[Exchange agent and LangGraph]
+    SDK[AGNTCY App SDK transport bridge]
+    SLIM[SLIM gateway]
+    FARMHTTP[Farm A2A server]
+    FARM[Farm executor and flavor graph]
+
+    UI --> API
+    API --> EX
+    EX -->|A2A client call| SDK
+    SDK -->|DEFAULT_MESSAGE_TRANSPORT=SLIM| SLIM
+    SLIM -->|A2A agent topic| FARMHTTP
+    FARMHTTP --> FARM
+```
+
+The runtime path is intentionally small:
+
+1. The UI sends a prompt to the Exchange API.
+2. The Exchange agent decides whether the prompt is about coffee flavor and, if so, calls the farm over A2A.
+3. The App SDK binds that A2A client to the configured transport, which is `SLIM` by default in `docker-compose.yaml`.
+4. The farm server exposes the same A2A handler over the transport and hands execution to the farm executor.
+
+This keeps the business logic transport-agnostic: the Exchange and Farm code still speak A2A, while the App SDK handles how those messages are moved.
+
+## Transport, Topics, and A2A Setup
+
+Corto uses one point-to-point A2A route between the Exchange client and the Farm server.
+
+- The Exchange creates a transport with `DEFAULT_MESSAGE_TRANSPORT` and `TRANSPORT_SERVER_ENDPOINT`, then creates an A2A client for the farm topic.
+- The Farm server registers an App SDK session on that same A2A topic so transport messages can be forwarded into the local A2A server.
+- With the default Docker setup, both sides use `SLIM` and connect to `http://slim:46357`.
+
+The topic wiring comes from `A2AProtocol.create_agent_topic(...)` on both sides:
+
+- `exchange/agent.py` computes the farm topic from the farm `AGENT_CARD`.
+- `farm/farm_server.py` registers the farm server on that exact topic.
+- Both components also provide a routable transport name such as `default/default/exchange` or `default/default/<farm-topic>` because SLIM requires a routable PyName for request-reply delivery.
+
+There are two deployment modes:
+
+- `DEFAULT_MESSAGE_TRANSPORT=A2A`: the farm is served directly over local HTTP via `A2AStarletteApplication`.
+- Any other supported transport such as `SLIM`: the farm is wrapped in an App SDK session and exposed through the external transport endpoint.
+
+## Where App SDK Fits
+
+The App SDK is the glue layer between the A2A protocol objects and the underlying transport:
+
+- `exchange/agent.py` uses `AgntcyFactory.create_transport(...)` plus `create_client("A2A", ...)` to send a prompt to the farm.
+- `farm/farm_server.py` uses `create_transport(...)`, `create_app_session()`, and `add_app_container(...)` to expose the farm server on the transport.
+- The result is that Corto can preserve the same A2A interaction model while swapping the transport by configuration instead of rewriting the Exchange or Farm logic.
 
 ## Running Corto Locally
 
