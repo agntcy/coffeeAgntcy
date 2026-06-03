@@ -224,6 +224,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
         overflow: "hidden",
         borderTop: "1px solid",
         borderColor: "divider",
+        backgroundColor: "background.paper",
       }}
     >
       {currentUserMessage ? (
