@@ -222,6 +222,8 @@ const ChatArea: React.FC<ChatAreaProps> = ({
         flexDirection: "column",
         boxSizing: "border-box",
         overflow: "hidden",
+        borderTop: "1px solid",
+        borderColor: "divider",
       }}
     >
       {currentUserMessage ? (
@@ -243,7 +245,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
           overflowX: "hidden",
           ...(currentUserMessage
             ? { borderTop: "1px solid", borderColor: "divider" }
-            : {}),
+            : { display: "none" }),
         }}
       >
         <Stack
@@ -254,6 +256,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
             minHeight: currentUserMessage ? 0 : 120,
             px: chatHorizontalPadding,
             py: currentUserMessage ? 1 : 0,
+            display: isMinimized ? "none" : "block",
           }}
         >
           {currentUserMessage ? (
