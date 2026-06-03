@@ -7,19 +7,3 @@ body {
   margin: 0;
   padding: 0;
 }
-
-.app-container {
-  display: flex;
-  height: 100vh;
-  width: 100vw;
-  flex-direction: column;
-  overflow: hidden;
-  background-color: var(--app-background);
-}
-
-.main-content {
-  flex-grow: 1;
-  display: flex;
-  flex-direction: column;
-  background-color: var(--app-background);
-}

@@ -68,9 +68,9 @@ export function extractStableAgentId(n: TopologyNodeWire): string {
 function defaultCustomIcon(label: string): React.ReactNode {
   const lower = label.toLowerCase()
   if (lower.includes("transport")) {
-    return <LocalShipping className="dark-icon opacity-100" aria-hidden />
+    return <LocalShipping aria-hidden />
   }
-  return <SmartToy className="dark-icon opacity-100" aria-hidden />
+  return <SmartToy aria-hidden />
 }
 
 export interface TopologyToFlowOptions {
