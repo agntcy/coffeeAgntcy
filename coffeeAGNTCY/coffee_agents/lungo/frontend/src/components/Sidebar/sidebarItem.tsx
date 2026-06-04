@@ -4,58 +4,94 @@
  **/
 
 import React from "react"
-import DescriptionOutlined from "@mui/icons-material/DescriptionOutlined"
-import { cn } from "@/utils/cn"
+import DescriptionOutlinedIcon from "@mui/icons-material/DescriptionOutlined"
+import {
+  IconButton,
+  ListItem,
+  ListItemButton,
+  Tooltip,
+  Typography,
+} from "@open-ui-kit/core"
+import { openWorkflowDocumentationInNewTab } from "@/utils/workflowDocumentationGithub"
+import {
+  sidebarBorderRadius,
+  sidebarItemMarginTop,
+  sidebarListItemButtonSx,
+  sidebarListItemSx,
+} from "./sidebarSx"
 
 interface SidebarItemProps {
   title: string
   isSelected?: boolean
   onClick?: () => void
-  className?: string
+  disabled?: boolean
   documentationCatalogName?: string
-  onOpenDocumentation?: (catalogName: string) => void
 }
 
 const SidebarItem: React.FC<SidebarItemProps> = ({
   title,
   isSelected = false,
   onClick,
-  className,
+  disabled = false,
   documentationCatalogName,
-  onOpenDocumentation,
 }) => {
-  const showDoc =
-    documentationCatalogName !== undefined && onOpenDocumentation !== undefined
+  const isRowDisabled = disabled || onClick === undefined
+  const hasDocumentationAction = documentationCatalogName !== undefined
+
+  const handleDocumentationClick = () => {
+    openWorkflowDocumentationInNewTab(documentationCatalogName!)
+  }
 
   return (
-    <div
-      className={cn(
-        "group relative flex w-full items-start gap-1 py-2 pl-12 pr-5 font-inter text-sm font-normal leading-5 text-sidebar-text transition-colors hover:bg-sidebar-item-selected",
-        isSelected ? "bg-sidebar-item-selected" : "bg-sidebar-background",
-        onClick ? "cursor-pointer" : "cursor-default",
-        className,
-      )}
-      onClick={onClick}
+    <ListItem
+      component="div"
+      disablePadding
+      sx={(theme) => ({
+        width: "100%",
+        display: "flex",
+        alignItems: "center",
+        gap: 0.5,
+        mt: sidebarItemMarginTop,
+        ...sidebarListItemSx(theme),
+      })}
     >
-      <span className="min-w-0 flex-1 pr-8">{title}</span>
-      {showDoc && (
-        <button
-          type="button"
-          className={cn(
-            "absolute right-3 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-md text-sidebar-text opacity-0 transition-opacity hover:bg-sidebar-item-selected group-hover:opacity-100",
-            isSelected && "opacity-100",
-          )}
-          aria-label={`Open documentation for ${documentationCatalogName}`}
-          title="View documentation on GitHub"
-          onClick={(e) => {
-            e.stopPropagation()
-            onOpenDocumentation(documentationCatalogName)
-          }}
-        >
-          <DescriptionOutlined sx={{ fontSize: 16 }} />
-        </button>
-      )}
-    </div>
+      <ListItemButton
+        component={!isRowDisabled ? "button" : "div"}
+        type={!isRowDisabled ? "button" : undefined}
+        disabled={isRowDisabled && !hasDocumentationAction}
+        aria-disabled={isRowDisabled || undefined}
+        aria-label={isRowDisabled ? `${title}, unavailable` : undefined}
+        onClick={!disabled ? onClick : undefined}
+        selected={isSelected}
+        sx={{
+          ...sidebarListItemButtonSx,
+          flex: 1,
+          minWidth: 0,
+          justifyContent: "flex-start",
+          borderRadius: sidebarBorderRadius,
+          textWrap: "auto",
+          ...(disabled && { opacity: 0.5 }),
+          ...(isRowDisabled &&
+            !hasDocumentationAction && { pointerEvents: "none" }),
+        }}
+      >
+        <Typography component="span" variant="body1">
+          {title}
+        </Typography>
+      </ListItemButton>
+      {hasDocumentationAction ? (
+        <Tooltip title="View documentation on GitHub">
+          <IconButton
+            size="small"
+            aria-label={`Open documentation for ${documentationCatalogName}`}
+            onClick={handleDocumentationClick}
+            sx={{ flexShrink: 0, p: 0.625 }}
+          >
+            <DescriptionOutlinedIcon fontSize="small" />
+          </IconButton>
+        </Tooltip>
+      ) : null}
+    </ListItem>
   )
 }
 

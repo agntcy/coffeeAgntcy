@@ -3,29 +3,18 @@
  * SPDX-License-Identifier: Apache-2.0
  **/
 
-import React, { useCallback, useEffect, useState } from "react"
+import React, { useCallback, useState } from "react"
 
 import type { Message } from "./types"
 import { parseApiError } from "@/utils/const"
 import { useAgentAPI } from "@/hooks/useAgentAPI"
 import { useGroupSessionId } from "@/stores/groupStreamingStore"
+import { Box, Stack } from "@open-ui-kit/core"
 
-import airplaneSvg from "@/assets/airplane.svg"
-import AgentIcon from "@/assets/Coffee_Icon.svg"
-import grafanaIcon from "@/assets/grafana.svg"
-
-import CoffeePromptsDropdown from "./prompts/CoffeePromptsDropdown"
-import LogisticsPromptsDropdown from "./prompts/LogisticsPromptsDropdown"
-import DiscoveryPromptsDropdown from "./prompts/DiscoveryPromptsDropdown"
-
-import UserMessage from "./UserMessage"
+import ChatAreaComposer from "./ChatAreaComposer"
+import ChatAreaMessageThread from "./ChatAreaMessageThread"
 import ChatHeader from "./ChatHeader"
-import ExternalLinkButton from "./ExternalLinkButton"
-import GroupCommunicationFeed from "./GroupCommunicationFeed"
-import AuctionStreamingFeed from "./AuctionStreamingFeed"
-import RecruiterStreamingFeed from "./RecruiterStreamingFeed"
 
-import { cn } from "@/utils/cn.ts"
 import { env } from "@/utils/env"
 import { logger } from "@/utils/logger"
 import type { GraphConfig } from "@/utils/graphConfigs"
@@ -33,11 +22,15 @@ import { DiscoveryResponseEvent } from "@/types/agent"
 import type { AuctionStreamingState } from "@/stores/auctionStreaming.types"
 import type { RecruiterStreamingState } from "@/stores/recruiterStreaming.types"
 import type { ApiResponse } from "@/types/api"
+import { PATTERNS } from "@/utils/patternUtils"
 
 const DEFAULT_GRAFANA_URL = "http://127.0.0.1:3001"
 const GRAFANA_URL = env.get("VITE_GRAFANA_URL") || DEFAULT_GRAFANA_URL
 const GRAFANA_DASHBOARD_PATH =
   "/d/lungo-dashboard/lungo-dashboard?orgId=1&var-session_id="
+
+/** Panel expanded/collapsed by the chat header minimize control. */
+export const CHAT_MESSAGE_PANEL_ID = "chat-message-panel"
 
 interface ChatAreaProps {
   setMessages: React.Dispatch<React.SetStateAction<Message[]>>
@@ -109,7 +102,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
 
   const onApiSuccess = useCallback(
     (apiResponse: ApiResponse) => {
-      if (pattern !== "a2a_http") {
+      if (pattern !== PATTERNS.A2A_HTTP) {
         return
       }
 
@@ -122,8 +115,6 @@ const ChatArea: React.FC<ChatAreaProps> = ({
     },
     [pattern, onDiscoveryResponse],
   )
-
-  useEffect(() => {}, [onApiSuccess, pattern])
 
   const handleMinimize = () => {
     setIsMinimized(true)
@@ -201,7 +192,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
     }
   }
 
-  const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>): void => {
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>): void => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault()
       processMessage()
@@ -219,166 +210,116 @@ const ChatArea: React.FC<ChatAreaProps> = ({
     return null
   }
 
+  const chatHorizontalPadding = { xs: 2, sm: 4, md: 8, lg: 15 }
+
   return (
-    <div
+    <Box
       ref={chatRef}
-      className="relative flex w-full flex-col"
-      style={{ backgroundColor: "var(--overlay-background)" }}
+      sx={{
+        position: "relative",
+        display: "flex",
+        width: "100%",
+        height: "100%",
+        maxHeight: "100%",
+        minHeight: 0,
+        flexDirection: "column",
+        boxSizing: "border-box",
+        overflow: "hidden",
+        borderTop: "1px solid",
+        borderColor: "divider",
+        backgroundColor: "background.paper",
+      }}
     >
-      {currentUserMessage && (
-        <ChatHeader
-          onMinimize={isMinimized ? handleRestore : handleMinimize}
-          onClearConversation={onClearConversation}
-          isMinimized={isMinimized}
-          showActions={!!agentResponse && !isAgentLoading}
-        />
-      )}
+      {currentUserMessage ? (
+        <Box sx={{ flexShrink: 0, width: "100%" }}>
+          <ChatHeader
+            onMinimize={isMinimized ? handleRestore : handleMinimize}
+            onClearConversation={onClearConversation}
+            isMinimized={isMinimized}
+            messagePanelId={CHAT_MESSAGE_PANEL_ID}
+          />
+        </Box>
+      ) : null}
 
-      <div
-        className={cn(
-          "flex w-full flex-col items-center justify-center gap-2 px-4 sm:px-8 md:px-16 lg:px-[120px]",
-          currentUserMessage ? "min-h-auto py-2" : "min-h-[120px] py-4",
-        )}
-        style={{ minHeight: currentUserMessage ? "auto" : "120px" }}
+      <Box
+        id={CHAT_MESSAGE_PANEL_ID}
+        role="region"
+        aria-label="Chat messages"
+        aria-hidden={isMinimized ? true : undefined}
+        sx={{
+          flex: "1 1 auto",
+          minHeight: 0,
+          width: "100%",
+          overflowY: "auto",
+          overflowX: "hidden",
+          ...(currentUserMessage
+            ? { borderTop: "1px solid", borderColor: "divider" }
+            : { display: "none" }),
+        }}
       >
-        {currentUserMessage && (
-          <div className="mb-4 flex w-full max-w-[880px] flex-col gap-3">
-            {!isMinimized && <UserMessage content={currentUserMessage} />}
-
-            {showProgressTracker && (
-              <div className={`w-full ${isMinimized ? "hidden" : ""}`}>
-                <GroupCommunicationFeed
-                  isVisible={!isMinimized && showProgressTracker}
-                  onComplete={onStreamComplete}
-                  onSenderHighlight={onSenderHighlight}
-                  graphConfig={graphConfig}
-                  prompt={currentUserMessage || ""}
-                  executionKey={executionKey}
-                  apiError={apiError}
-                />
-              </div>
-            )}
-
-            {showAuctionStreaming && (
-              <div className={`w-full ${isMinimized ? "hidden" : ""}`}>
-                <AuctionStreamingFeed
-                  isVisible={!isMinimized && showAuctionStreaming}
-                  prompt={currentUserMessage || ""}
-                  apiError={apiError}
-                  auctionStreamingState={auctionState}
-                />
-              </div>
-            )}
-
-            {showRecruiterStreaming && (
-              <div className={`w-full ${isMinimized ? "hidden" : ""}`}>
-                <RecruiterStreamingFeed
-                  isVisible={!isMinimized && showRecruiterStreaming}
-                  prompt={currentUserMessage || ""}
-                  apiError={apiError}
-                  recruiterStreamingState={recruiterState}
-                  onStreamComplete={onStreamComplete}
-                />
-              </div>
-            )}
-
-            {showFinalResponse &&
-              (isAgentLoading || agentResponse) &&
-              !isMinimized && (
-                <div className="flex w-full flex-row items-start gap-1">
-                  <div className="chat-avatar-container flex h-10 w-10 flex-none items-center justify-center rounded-full bg-action-background">
-                    <img
-                      src={AgentIcon}
-                      alt="Agent"
-                      className="h-[22px] w-[22px]"
-                    />
-                  </div>
-                  <div className="flex max-w-[calc(100%-3rem)] flex-1 flex-col items-start justify-center rounded p-1 px-2">
-                    <div className="whitespace-pre-wrap break-words font-inter text-sm font-normal leading-5 !text-chat-text">
-                      {isAgentLoading ? (
-                        <div className="animate-pulse text-accent-primary">
-                          ...
-                        </div>
-                      ) : (
-                        <>
-                          {agentResponse?.response ?? ""}
-                          {(agentResponse?.session_id || groupSessionId) &&
-                            !isAgentLoading &&
-                            pattern !== "a2a_http" && (
-                              <ExternalLinkButton
-                                url={grafanaSessionUrl}
-                                label="Grafana"
-                                iconSrc={grafanaIcon}
-                              />
-                            )}
-                        </>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              )}
-          </div>
-        )}
-
-        {showCoffeePrompts && (
-          <div className="relative z-10 flex h-9 w-auto w-full max-w-[880px] flex-row items-start gap-2 p-0">
-            <CoffeePromptsDropdown
-              visible={true}
-              onSelect={handleDropdownQuery}
+        <Stack
+          alignItems="center"
+          spacing={1}
+          sx={{
+            width: "100%",
+            minHeight: currentUserMessage ? 0 : 120,
+            px: chatHorizontalPadding,
+            py: currentUserMessage ? 1 : 0,
+            display: isMinimized ? "none" : "block",
+          }}
+        >
+          {currentUserMessage ? (
+            <ChatAreaMessageThread
+              currentUserMessage={currentUserMessage}
+              isMinimized={isMinimized}
+              showProgressTracker={showProgressTracker}
+              showAuctionStreaming={showAuctionStreaming}
+              showRecruiterStreaming={showRecruiterStreaming}
+              showFinalResponse={showFinalResponse}
+              isAgentLoading={!!isAgentLoading}
+              agentResponse={agentResponse}
+              apiError={apiError}
               pattern={pattern}
+              graphConfig={graphConfig}
+              executionKey={executionKey}
+              auctionState={auctionState}
+              recruiterState={recruiterState}
+              groupSessionId={groupSessionId}
+              grafanaSessionUrl={grafanaSessionUrl}
+              onStreamComplete={onStreamComplete}
+              onSenderHighlight={onSenderHighlight}
             />
-          </div>
-        )}
+          ) : null}
+        </Stack>
+      </Box>
 
-        {showLogisticsPrompts && (
-          <div className="relative z-10 flex h-9 w-auto w-full max-w-[880px] flex-row items-start gap-2 p-0">
-            <LogisticsPromptsDropdown
-              visible={true}
-              onSelect={handleDropdownQuery}
-            />
-          </div>
-        )}
-
-        {showDiscoveryPrompts && (
-          <div className="relative z-10 flex h-9 w-auto w-full max-w-[880px] flex-row items-start gap-2 p-0">
-            <DiscoveryPromptsDropdown
-              visible={true}
-              onSelect={handleDropdownQuery}
-            />
-          </div>
-        )}
-
-        <div className="flex w-full max-w-[880px] flex-col items-stretch gap-4 p-0 sm:flex-row sm:items-center">
-          <div className="box-border flex h-11 max-w-[814px] flex-1 flex-row items-center rounded border border-node-background bg-chat-input-background px-0 py-[5px]">
-            <div className="flex h-[34px] w-full flex-row items-center gap-[10px] px-4 py-[7px]">
-              <input
-                className="h-5 min-w-0 flex-1 border-none bg-transparent font-cisco text-[15px] font-medium leading-5 tracking-[0.005em] text-chat-text outline-none placeholder:text-chat-text placeholder:opacity-60"
-                placeholder="Type a prompt to interact with the agents"
-                value={content}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                  setContent(e.target.value)
-                }
-                onKeyPress={handleKeyPress}
-                disabled={loading}
-              />
-            </div>
-          </div>
-
-          <div className="flex h-11 w-[50px] flex-none flex-row items-start p-0">
-            <button
-              onClick={() => {
-                if (content.trim() && !loading) {
-                  processMessage()
-                }
-              }}
-              className="flex h-11 w-[50px] cursor-pointer flex-row items-center justify-center gap-[10px] rounded-md border-none bg-gradient-to-r from-[#834DD7] via-[#7670D5] to-[#58C0D0] px-4 py-[15px]"
-            >
-              <img src={airplaneSvg} alt="Send" className="h-[18px] w-[18px]" />
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
+      <Stack
+        alignItems="center"
+        spacing={1}
+        sx={{
+          flexShrink: 0,
+          width: "100%",
+          px: chatHorizontalPadding,
+          py: currentUserMessage ? 1 : 2,
+          borderTop: currentUserMessage ? "1px solid" : "none",
+          borderColor: "divider",
+          bgcolor: "background.paper",
+        }}
+      >
+        <ChatAreaComposer
+          showCoffeePrompts={showCoffeePrompts}
+          showLogisticsPrompts={showLogisticsPrompts}
+          showDiscoveryPrompts={showDiscoveryPrompts}
+          pattern={pattern}
+          onDropdownSelect={handleDropdownQuery}
+          content={content}
+          setContent={setContent}
+          loading={loading}
+          onSend={processMessage}
+          onKeyDown={handleKeyDown}
+        />
+      </Stack>
+    </Box>
   )
 }
 

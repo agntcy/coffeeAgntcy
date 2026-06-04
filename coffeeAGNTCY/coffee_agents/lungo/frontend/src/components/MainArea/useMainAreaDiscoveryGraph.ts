@@ -84,17 +84,8 @@ export interface UseMainAreaDiscoveryGraphParams {
   discoveryResponseEvent: DiscoveryResponseEvent | null | undefined
   setNodes: React.Dispatch<React.SetStateAction<Node[]>>
   setEdges: React.Dispatch<React.SetStateAction<Edge[]>>
-  handleOpenIdentityModal: (
-    nodeData: CustomNodeData,
-    position: { x: number; y: number },
-    nodeName?: string,
-    data?: CustomNodeData,
-    isMcpServer?: boolean,
-  ) => void
-  handleOpenOasfModal: (
-    nodeData: CustomNodeData,
-    position: { x: number; y: number },
-  ) => void
+  handleOpenIdentityModal: (nodeId: string, nodeData: CustomNodeData) => void
+  handleOpenOasfModal: (nodeData: CustomNodeData) => void
 }
 
 /** Syncs discovery response events to the graph: adds/removes discovery nodes and edges. */

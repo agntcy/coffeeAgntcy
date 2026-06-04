@@ -4,60 +4,67 @@
  **/
 
 import React from "react"
-import { Trash2 } from "lucide-react"
-import collapseIcon from "@/assets/collapse.png"
+import DeleteOutline from "@mui/icons-material/DeleteOutline"
+import UnfoldLess from "@mui/icons-material/UnfoldLess"
+import UnfoldMore from "@mui/icons-material/UnfoldMore"
+import { Box, IconButton, Stack, Tooltip } from "@open-ui-kit/core"
 
 interface ChatHeaderProps {
   onMinimize?: () => void
   onClearConversation?: () => void
   isMinimized?: boolean
-  showActions?: boolean
+  /** ID of the expandable message panel controlled by the minimize button. */
+  messagePanelId?: string
 }
 
 const ChatHeader: React.FC<ChatHeaderProps> = ({
   onMinimize,
   onClearConversation,
-  isMinimized,
-  showActions = false,
+  isMinimized = false,
+  messagePanelId,
 }) => {
-  if (!showActions) {
-    return null
-  }
-
   return (
-    <div
-      className="flex w-full items-center justify-end px-2 py-2 sm:px-4 md:px-8 lg:px-4"
-      style={{ borderBottom: "1px solid var(--control-border-weak)" }}
+    <Box
+      sx={{
+        display: "flex",
+        width: "100%",
+        alignItems: "center",
+        justifyContent: "flex-end",
+        px: { xs: 1, sm: 2, md: 4, lg: 2 },
+        py: 1,
+      }}
     >
-      <div className="flex items-center gap-2">
-        {onMinimize && (
-          <div className="flex h-7 w-7 items-center justify-center rounded-lg p-1">
-            <button
+      <Stack direction="row" alignItems="center" spacing={1}>
+        {onMinimize ? (
+          <Tooltip title={isMinimized ? "Maximize" : "Minimize"}>
+            <IconButton
               onClick={onMinimize}
-              className="flex h-5 w-5 items-center justify-center rounded transition-colors"
-              title={isMinimized ? "Maximize" : "Minimize"}
+              color="inherit"
+              aria-label={isMinimized ? "Maximize" : "Minimize"}
+              aria-expanded={!isMinimized}
+              aria-controls={messagePanelId}
             >
-              <img
-                src={collapseIcon}
-                alt={isMinimized ? "Maximize" : "Minimize"}
-                className={`chat-header-icon h-5 w-5 ${isMinimized ? "rotate-180" : ""}`}
-              />
-            </button>
-          </div>
-        )}
-        {onClearConversation && (
-          <div className="flex h-7 w-7 items-center justify-center rounded-lg p-1">
-            <button
+              {isMinimized ? (
+                <UnfoldMore aria-hidden />
+              ) : (
+                <UnfoldLess aria-hidden />
+              )}
+            </IconButton>
+          </Tooltip>
+        ) : null}
+        {onClearConversation ? (
+          <Tooltip title="Clear conversation">
+            <IconButton
               onClick={onClearConversation}
-              className="flex h-5 w-5 items-center justify-center rounded transition-colors"
-              title="Clear conversation"
+              color="inherit"
+              aria-label="Clear conversation"
             >
-              <Trash2 className="chat-header-trash-icon h-5 w-5" />
-            </button>
-          </div>
-        )}
-      </div>
-    </div>
+              <DeleteOutline />
+            </IconButton>
+          </Tooltip>
+        ) : null}
+      </Stack>
+    </Box>
   )
 }
 

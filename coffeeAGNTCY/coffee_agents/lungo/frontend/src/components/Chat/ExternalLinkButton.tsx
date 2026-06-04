@@ -3,34 +3,49 @@
  * SPDX-License-Identifier: Apache-2.0
  **/
 
+import React from "react"
 import { SecurityClass } from "@/utils/SecurityClass"
+import { Box } from "@open-ui-kit/core"
+import { Chip } from "@mui/material"
 
 interface ExternalLinkButtonProps {
+  component?: "a" | "button"
   url: string
   label: string
   iconSrc: string
-  className?: string
 }
 
 const ExternalLinkButton: React.FC<ExternalLinkButtonProps> = ({
+  component = "a",
   url,
   label,
   iconSrc,
-  className,
 }) => {
   if (!SecurityClass.isSafeExternalUrl(url)) return null
   return (
-    <a
-      href={url}
-      target="_blank"
-      rel="noopener noreferrer"
-      type="button"
-      className={`hover:bg-accent-primary/10 absolute inline-flex max-h-[20px] max-w-[90px] items-center gap-1 rounded-full border border-gray-300 bg-[var(--external-link-button-bg)] px-2 py-1 font-cisco text-xs text-chat-text shadow transition-colors dark:border-gray-700 ${className ?? ""}`}
-      style={{ marginLeft: 12 }}
-    >
-      <img src={iconSrc} alt={label} className="h-4 w-4" />
-      {label}
-    </a>
+    <Chip
+      component={component}
+      label={label}
+      icon={
+        <Box
+          component="img"
+          src={iconSrc}
+          width={14}
+          height={14}
+          alt={label}
+          aria-hidden
+        />
+      }
+      {...(component === "a"
+        ? {
+            href: url,
+            target: "_blank",
+            rel: "noopener noreferrer",
+          }
+        : {
+            onClick: () => window.open(url, "_blank", "noopener noreferrer"),
+          })}
+    />
   )
 }
 

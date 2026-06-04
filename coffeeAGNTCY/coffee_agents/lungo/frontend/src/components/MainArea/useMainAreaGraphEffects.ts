@@ -5,6 +5,7 @@
 
 import React, { useEffect } from "react"
 import type { Node, Edge } from "@xyflow/react"
+import type { ModalType } from "@/types/modal"
 import { getGraphConfig, updateTransportLabels } from "@/utils/graphConfigs"
 import {
   isStreamingPattern,
@@ -13,6 +14,39 @@ import {
 import type { GraphConfig } from "@/utils/graphConfigs"
 import type { CustomNodeData } from "./Graph/Elements/types"
 
+function withNodeModalHandlers(
+  node: Node,
+  {
+    activeModal,
+    activeNodeId,
+    handleOpenIdentityModal,
+    handleOpenOasfModal,
+    handleCloseModals,
+    handleShowBadgeDetails,
+    handleShowPolicyDetails,
+  }: {
+    activeModal: ModalType
+    activeNodeId: string | null
+    handleOpenIdentityModal: (nodeId: string, nodeData: CustomNodeData) => void
+    handleOpenOasfModal: (nodeData: CustomNodeData) => void
+    handleCloseModals: () => void
+    handleShowBadgeDetails: () => void
+    handleShowPolicyDetails: () => void
+  },
+): Record<string, unknown> {
+  return {
+    ...node.data,
+    onOpenIdentityModal: handleOpenIdentityModal,
+    onOpenOasfModal: handleOpenOasfModal,
+    isIdentityDropdownOpen:
+      activeModal === "identity" && activeNodeId === node.id,
+    onCloseIdentityDropdown: handleCloseModals,
+    onShowBadgeDetails: handleShowBadgeDetails,
+    onShowPolicyDetails: handleShowPolicyDetails,
+    isModalOpen: Boolean(activeModal && activeNodeId === node.id),
+  }
+}
+
 export interface UseMainAreaGraphEffectsParams {
   pattern: string
   /** When true, skip syncing from `getGraphConfig` (graph owned by Agentic Workflows API). */
@@ -20,19 +54,12 @@ export interface UseMainAreaGraphEffectsParams {
   isGroupCommConnected: boolean
   setNodes: React.Dispatch<React.SetStateAction<Node[]>>
   setEdges: React.Dispatch<React.SetStateAction<Edge[]>>
-  handleOpenIdentityModal: (
-    nodeData: CustomNodeData,
-    position: { x: number; y: number },
-    nodeName?: string,
-    data?: CustomNodeData,
-    isMcpServer?: boolean,
-  ) => void
-  handleOpenOasfModal: (
-    nodeData: CustomNodeData,
-    position: { x: number; y: number },
-  ) => void
-  activeModal: string | null
-  activeNodeData: unknown
+  handleOpenIdentityModal: (nodeId: string, nodeData: CustomNodeData) => void
+  handleOpenOasfModal: (nodeData: CustomNodeData) => void
+  activeModal: ModalType
+  activeNodeId: string | null
+  handleShowBadgeDetails: () => void
+  handleShowPolicyDetails: () => void
   fitViewWithViewport: (opts: {
     chatHeight: number
     isExpanded: boolean
@@ -41,15 +68,13 @@ export interface UseMainAreaGraphEffectsParams {
   isExpanded: boolean
   config: GraphConfig
   animationLockRef: React.MutableRefObject<boolean>
-  nodesDraggable: boolean
-  nodesConnectable: boolean
   handleCloseModals: () => void
   setOasfModalOpen: (open: boolean) => void
   /** Restore edge animation after a static-config rebuild wipes it. */
   restoreEdgeAnimation?: () => void
 }
 
-/** Runs effects that sync graph config, viewport, transport labels, tooltips, and edge checks. */
+/** Runs effects that sync graph config, viewport, transport labels, and edge checks. */
 export function useMainAreaGraphEffects({
   pattern,
   skipStaticGraphSync = false,
@@ -59,14 +84,14 @@ export function useMainAreaGraphEffects({
   handleOpenIdentityModal,
   handleOpenOasfModal,
   activeModal,
-  activeNodeData,
+  activeNodeId,
+  handleShowBadgeDetails,
+  handleShowPolicyDetails,
   fitViewWithViewport,
   chatHeight,
   isExpanded,
   config,
   animationLockRef,
-  nodesDraggable,
-  nodesConnectable,
   handleCloseModals,
   setOasfModalOpen,
   restoreEdgeAnimation,
@@ -98,23 +123,26 @@ export function useMainAreaGraphEffects({
     setNodes((nodes) =>
       nodes.map((node) => ({
         ...node,
-        data: {
-          ...node.data,
-          onOpenIdentityModal: handleOpenIdentityModal,
-          onOpenOasfModal: handleOpenOasfModal,
-          isModalOpen: !!(
-            activeModal &&
-            (activeNodeData as { id?: string } | null)?.id === node.id
-          ),
-        },
+        data: withNodeModalHandlers(node, {
+          activeModal,
+          activeNodeId,
+          handleOpenIdentityModal,
+          handleOpenOasfModal,
+          handleCloseModals,
+          handleShowBadgeDetails,
+          handleShowPolicyDetails,
+        }),
       })),
     )
   }, [
     skipStaticGraphSync,
     handleOpenIdentityModal,
     handleOpenOasfModal,
+    handleCloseModals,
+    handleShowBadgeDetails,
+    handleShowPolicyDetails,
     activeModal,
-    activeNodeData,
+    activeNodeId,
     setNodes,
   ])
 
@@ -124,15 +152,15 @@ export function useMainAreaGraphEffects({
       const newConfig = getGraphConfig(pattern)
       const nodesWithHandlers = newConfig.nodes.map((node) => ({
         ...node,
-        data: {
-          ...node.data,
-          onOpenIdentityModal: handleOpenIdentityModal,
-          onOpenOasfModal: handleOpenOasfModal,
-          isModalOpen: !!(
-            activeModal &&
-            (activeNodeData as { id?: string } | null)?.id === node.id
-          ),
-        },
+        data: withNodeModalHandlers(node, {
+          activeModal,
+          activeNodeId,
+          handleOpenIdentityModal,
+          handleOpenOasfModal,
+          handleCloseModals,
+          handleShowBadgeDetails,
+          handleShowPolicyDetails,
+        }),
       }))
       setNodes(nodesWithHandlers)
       await new Promise((resolve) => setTimeout(resolve, 100))
@@ -158,7 +186,10 @@ export function useMainAreaGraphEffects({
     setEdges,
     handleOpenIdentityModal,
     activeModal,
-    activeNodeData,
+    activeNodeId,
+    handleCloseModals,
+    handleShowBadgeDetails,
+    handleShowPolicyDetails,
     handleOpenOasfModal,
     skipStaticGraphSync,
     restoreEdgeAnimation,
@@ -207,26 +238,4 @@ export function useMainAreaGraphEffects({
       clearTimeout(timeoutId)
     }
   }, [config.edges, setEdges, animationLockRef, skipStaticGraphSync])
-
-  useEffect(() => {
-    const addTooltips = () => {
-      const controlButtons = document.querySelectorAll(
-        ".react-flow__controls-button",
-      )
-      const tooltips = ["Zoom In", "Zoom Out", "Fit View", "Lock"]
-      controlButtons.forEach((button, index) => {
-        if (index < tooltips.length) {
-          if (index === 3) {
-            const isLocked = !nodesDraggable || !nodesConnectable
-            button.setAttribute("data-tooltip", isLocked ? "Unlock" : "Lock")
-          } else {
-            button.setAttribute("data-tooltip", tooltips[index])
-          }
-          button.removeAttribute("title")
-        }
-      })
-    }
-    const timeoutId = setTimeout(addTooltips, 100)
-    return () => clearTimeout(timeoutId)
-  }, [pattern, nodesDraggable, nodesConnectable])
 }

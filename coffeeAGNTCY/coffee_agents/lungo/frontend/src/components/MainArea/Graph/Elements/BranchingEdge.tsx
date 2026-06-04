@@ -5,7 +5,9 @@
 
 import React from "react"
 import { Position, getBezierPath, useStore, Node } from "@xyflow/react"
+import { useTheme } from "@open-ui-kit/core"
 import CustomEdgeLabel from "./CustomEdgeLabel"
+import { getGraphEdgeColor } from "./graphNodeSurface"
 import { BranchingEdgeData } from "./types"
 
 interface BranchingEdgeProps {
@@ -29,7 +31,8 @@ const BranchingEdge: React.FC<BranchingEdgeProps> = ({
   targetPosition,
   data,
 }) => {
-  const defaultEdgeColor = data?.active ? "#00409F" : "#00409F"
+  const theme = useTheme()
+  const edgeColor = getGraphEdgeColor(theme, data?.active)
 
   const nodes = useStore((store) => Array.from(store.nodeLookup.values()))
 
@@ -45,7 +48,7 @@ const BranchingEdge: React.FC<BranchingEdgeProps> = ({
 
     return (
       <>
-        <svg className="absolute left-0 top-0">
+        <svg style={{ position: "absolute", left: 0, top: 0 }}>
           <defs>
             <marker
               id={`${id}-arrow-start`}
@@ -55,7 +58,7 @@ const BranchingEdge: React.FC<BranchingEdgeProps> = ({
               refY="2.5"
               orient="auto"
             >
-              <path d="M5,0 L0,2.5 L5,5 Z" fill={defaultEdgeColor} />
+              <path d="M5,0 L0,2.5 L5,5 Z" fill={edgeColor} />
             </marker>
             <marker
               id={`${id}-arrow-end`}
@@ -65,7 +68,7 @@ const BranchingEdge: React.FC<BranchingEdgeProps> = ({
               refY="2.5"
               orient="auto"
             >
-              <path d="M0,0 L5,2.5 L0,5 Z" fill={defaultEdgeColor} />
+              <path d="M0,0 L5,2.5 L0,5 Z" fill={edgeColor} />
             </marker>
           </defs>
         </svg>
@@ -74,10 +77,11 @@ const BranchingEdge: React.FC<BranchingEdgeProps> = ({
           d={edgePath}
           markerStart={`url(#${id}-arrow-start)`}
           markerEnd={`url(#${id}-arrow-end)`}
-          className="react-flow__edge-path cursor-pointer"
+          className="react-flow__edge-path"
           style={{
-            stroke: defaultEdgeColor,
+            stroke: edgeColor,
             strokeWidth: 1,
+            cursor: "pointer",
           }}
         />
         <CustomEdgeLabel
@@ -143,7 +147,7 @@ const BranchingEdge: React.FC<BranchingEdgeProps> = ({
 
   return (
     <>
-      <svg className="absolute left-0 top-0">
+      <svg style={{ position: "absolute", left: 0, top: 0 }}>
         <defs>
           <marker
             id={`${id}-arrow-start`}
@@ -153,7 +157,7 @@ const BranchingEdge: React.FC<BranchingEdgeProps> = ({
             refY="2.5"
             orient="auto"
           >
-            <path d="M5,0 L0,2.5 L5,5 Z" fill={defaultEdgeColor} />
+            <path d="M5,0 L0,2.5 L5,5 Z" fill={edgeColor} />
           </marker>
           <marker
             id={`${id}-arrow-end`}
@@ -163,7 +167,7 @@ const BranchingEdge: React.FC<BranchingEdgeProps> = ({
             refY="2.5"
             orient="auto"
           >
-            <path d="M0,0 L5,2.5 L0,5 Z" fill={defaultEdgeColor} />
+            <path d="M0,0 L5,2.5 L0,5 Z" fill={edgeColor} />
           </marker>
         </defs>
       </svg>
@@ -171,10 +175,11 @@ const BranchingEdge: React.FC<BranchingEdgeProps> = ({
       <path
         d={trunkPath}
         markerStart={`url(#${id}-arrow-start)`}
-        className="react-flow__edge-path cursor-pointer"
+        className="react-flow__edge-path"
         style={{
-          stroke: defaultEdgeColor,
+          stroke: edgeColor,
           strokeWidth: 1,
+          cursor: "pointer",
         }}
       />
 
@@ -182,7 +187,7 @@ const BranchingEdge: React.FC<BranchingEdgeProps> = ({
         cx={branchX}
         cy={branchY}
         r={3}
-        fill={defaultEdgeColor}
+        fill={edgeColor}
         className="react-flow__edge-path"
       />
 
@@ -192,10 +197,11 @@ const BranchingEdge: React.FC<BranchingEdgeProps> = ({
             key={`branch-${branch.nodeId}-${index}`}
             d={branch.path}
             markerEnd={`url(#${id}-arrow-end)`}
-            className="react-flow__edge-path cursor-pointer"
+            className="react-flow__edge-path"
             style={{
-              stroke: defaultEdgeColor,
+              stroke: edgeColor,
               strokeWidth: 1,
+              cursor: "pointer",
             }}
           />
         ) : null,

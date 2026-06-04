@@ -4,7 +4,11 @@
  **/
 
 import React from "react"
-import { User } from "lucide-react"
+
+import { Stack, Typography } from "@open-ui-kit/core"
+import Person from "@mui/icons-material/Person"
+
+import { ChatAvatarCircle } from "./ChatAvatarCircle"
 
 interface UserMessageProps {
   content: string
@@ -12,17 +16,40 @@ interface UserMessageProps {
 
 const UserMessage: React.FC<UserMessageProps> = ({ content }) => {
   return (
-    <div className="flex w-full flex-row items-start gap-1">
-      <div className="chat-avatar-container flex h-10 w-10 flex-none items-center justify-center rounded-full bg-action-background">
-        <User size={22} className="text-white" />
-      </div>
+    <Stack
+      direction="row"
+      alignItems="flex-start"
+      spacing={0.5}
+      sx={{ width: "100%" }}
+    >
+      <ChatAvatarCircle>
+        <Person />
+      </ChatAvatarCircle>
 
-      <div className="flex flex-1 flex-col items-start justify-center rounded p-1 px-2">
-        <div className="whitespace-pre-wrap break-words font-inter text-sm font-normal leading-5 !text-chat-text">
+      <Stack
+        sx={{
+          flex: 1,
+          minWidth: 0,
+          alignItems: "flex-start",
+          justifyContent: "center",
+          borderRadius: 1,
+          py: 0.5,
+          px: 1,
+        }}
+      >
+        <Typography
+          variant="body2"
+          component="div"
+          sx={{
+            whiteSpace: "pre-wrap",
+            overflowWrap: "break-word",
+            wordBreak: "break-word",
+          }}
+        >
           {content}
-        </div>
-      </div>
-    </div>
+        </Typography>
+      </Stack>
+    </Stack>
   )
 }
 

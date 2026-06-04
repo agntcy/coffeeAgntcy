@@ -65,36 +65,27 @@ export function useMainArea({
 
   const {
     activeModal,
+    activeNodeId,
     activeNodeData,
-    modalPosition,
     handleOpenIdentityModal,
     handleCloseModals,
     handleShowBadgeDetails,
     handleShowPolicyDetails,
     handlePaneClick: modalPaneClick,
   } = useModalManager()
-
   const [oasfModalOpen, setOasfModalOpen] = useState(false)
   const [oasfModalData, setOasfModalData] = useState<CustomNodeData | null>(
     null,
-  )
-  const [oasfModalPosition, setOasfModalPosition] = useState<{
-    x: number
-    y: number
-  }>({ x: 0, y: 0 })
-
-  const handleOpenOasfModal = useCallback(
-    (nodeData: CustomNodeData, position: { x: number; y: number }) => {
-      setOasfModalData(nodeData)
-      setOasfModalPosition(position)
-      setOasfModalOpen(true)
-    },
-    [],
   )
 
   const [nodes, setNodes, onNodesChange] = useNodesState(config.nodes)
   const [edges, setEdges, onEdgesChange] = useEdgesState(config.edges)
   const animationLock = useRef<boolean>(false)
+
+  const handleOpenOasfModal = useCallback((nodeData: CustomNodeData) => {
+    setOasfModalData(nodeData)
+    setOasfModalOpen(true)
+  }, [])
 
   const { agenticMode, agenticError, staticIdMapActive, restoreEdgeAnimation } =
     useWorkflowGraphFromAgenticApi({
@@ -106,7 +97,7 @@ export function useMainArea({
       handleOpenOasfModal,
       onTopologyApplied: () => {
         setTimeout(() => {
-          fitViewWithViewport({ chatHeight: 0, isExpanded: false })
+          fitViewWithViewport()
         }, 200)
       },
     })
@@ -128,11 +119,8 @@ export function useMainArea({
   const nodeAgentCidKey = useMemo(
     () =>
       nodes
-        .filter((n) => (n.data as unknown as Record<string, unknown>)?.agentCid)
-        .map(
-          (n) =>
-            `${n.id}:${(n.data as unknown as Record<string, unknown>)?.agentCid}`,
-        )
+        .filter((n) => (n.data as Record<string, unknown>)?.agentCid)
+        .map((n) => `${n.id}:${(n.data as Record<string, unknown>)?.agentCid}`)
         .sort()
         .join(","),
     [nodes],
@@ -172,14 +160,14 @@ export function useMainArea({
     handleOpenIdentityModal,
     handleOpenOasfModal,
     activeModal,
-    activeNodeData,
+    activeNodeId,
+    handleShowBadgeDetails,
+    handleShowPolicyDetails,
     fitViewWithViewport,
     chatHeight,
     isExpanded,
     config,
     animationLockRef: animationLock,
-    nodesDraggable,
-    nodesConnectable,
     handleCloseModals,
     setOasfModalOpen,
   })
@@ -294,14 +282,10 @@ export function useMainArea({
     setNodesConnectable,
     activeModal,
     activeNodeData,
-    modalPosition,
     handleCloseModals,
-    handleShowBadgeDetails,
-    handleShowPolicyDetails,
     oasfModalOpen,
     setOasfModalOpen,
     oasfModalData,
-    oasfModalPosition,
     onPaneClick,
     onNodeDrag,
   }
