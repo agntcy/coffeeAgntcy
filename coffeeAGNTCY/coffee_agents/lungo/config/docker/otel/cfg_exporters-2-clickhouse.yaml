@@ -3,3 +3,10 @@ clickhouse:
   database: "default"
   username: "admin"
   password: "admin"
+  timeout: 5s
+  retry_on_failure:
+    enabled: true
+    initial_interval: 10s
+    max_interval: 60s
+    multiplier: 1.5
+    max_elapsed_time: 60s

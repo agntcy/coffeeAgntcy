@@ -9,5 +9,11 @@ processors:
 
 exporters: ${file:${env:OTELCOL_EXPORTERS_CFG_FILE:-/etc/otel/cfg_exporters-1-nop.yaml}}
 
+extensions:
+  health_check:
+    endpoint: 0.0.0.0:13133
+    path: /health/status
+
 service:
+  extensions: [health_check]
   pipelines: ${file:${env:OTELCOL_PIPELINES_CFG_FILE:-/etc/otel/cfg_pipelines-1-nop.yaml}}

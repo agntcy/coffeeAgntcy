@@ -265,6 +265,7 @@ services:
     ports:
       - "4317:4317"
       - "4318:4318"
+      - "13133:13133"
     volumes:
       - ./config/docker/otel/:/etc/otel
     env_file:
