@@ -4,6 +4,7 @@
  **/
 
 import React, { useEffect, useRef } from "react"
+import { Box } from "@open-ui-kit/core"
 import type { Message as MessageType } from "./types"
 import Message from "./Message"
 
@@ -21,7 +22,7 @@ const Messages: React.FC<MessagesProps> = ({ messages }) => {
   }, [messages])
 
   return (
-    <div>
+    <Box>
       {messages.map((msg: MessageType) => (
         <Message
           key={msg.id}
@@ -32,8 +33,8 @@ const Messages: React.FC<MessagesProps> = ({ messages }) => {
         />
       ))}
 
-      <div ref={messagesEndRef} />
-    </div>
+      <Box ref={messagesEndRef} />
+    </Box>
   )
 }
 

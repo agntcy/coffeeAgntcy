@@ -21,11 +21,13 @@ cp .env.example .env
 ## Quick Start
 
 1. Install the necessary dependencies:
+
    ```sh
    npm install
    ```
 
 2. Start the development server:
+
    ```sh
    npm run dev
    ```

@@ -3,8 +3,16 @@
  * SPDX-License-Identifier: Apache-2.0
  **/
 
-import React from "react"
-import { X } from "lucide-react"
+import React, { useEffect } from "react"
+import DialogTitle from "@mui/material/DialogTitle"
+import {
+  Dialog,
+  IconButton,
+  ModalContent,
+  Stack,
+  Typography,
+} from "@open-ui-kit/core"
+import Close from "@mui/icons-material/Close"
 import { env } from "@/utils/env"
 
 interface InfoModalProps {
@@ -35,7 +43,7 @@ const InfoModal: React.FC<InfoModalProps> = ({ isOpen, onClose }) => {
   const [info, setInfo] = React.useState<BuildInfo | null>(null)
   const [error, setError] = React.useState<string | null>(null)
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (!isOpen) return
     let cancelled = false
     const fetchInfo = async () => {
@@ -60,74 +68,89 @@ const InfoModal: React.FC<InfoModalProps> = ({ isOpen, onClose }) => {
     }
   }, [isOpen, EXCHANGE_APP_API_URL])
 
-  if (!isOpen) return null
-
   return (
-    <div className="fixed inset-0 z-50">
-      <div className="absolute inset-0" onClick={onClose} />
-
-      <div className="absolute right-4 top-16 w-80 rounded-lg border border-modal-border bg-modal-background shadow-lg">
-        <button
+    <Dialog open={isOpen} onClose={onClose} aria-labelledby="info-modal-title">
+      <DialogTitle id="info-modal-title">
+        <IconButton
+          aria-label="Close"
           onClick={onClose}
-          className="absolute right-2 top-2 rounded-lg p-1 text-modal-text-secondary transition-colors hover:bg-modal-hover"
+          sx={{
+            position: "absolute",
+            right: 8,
+            top: 8,
+          }}
         >
-          <X className="h-4 w-4" />
-        </button>
-
-        <div className="space-y-4 p-4 pr-10">
-          <div>
-            <h3 className="mb-3 text-sm font-normal leading-5 tracking-wide text-modal-text">
-              Build and Release Information
-            </h3>
-            <div className="space-y-2 text-sm text-modal-text-secondary">
-              {error && <div className="text-red-500">{error}</div>}
-              <div className="flex justify-between gap-2">
-                <span className="shrink-0">Agentic Workflows API:</span>
-                <span
-                  className="min-w-0 break-all text-right font-mono text-modal-accent"
-                  title={AGENTIC_WORKFLOWS_API_URL}
-                >
+          <Close />
+        </IconButton>
+      </DialogTitle>
+      <ModalContent>
+        <Stack spacing={3}>
+          <Stack spacing={2}>
+            <Typography variant="h6">Build and Release Information</Typography>
+            <Stack spacing={1}>
+              {error && (
+                <Typography variant="body2" color="error">
+                  {error}
+                </Typography>
+              )}
+              <Stack direction="row" justifyContent="space-between">
+                <Typography component="span" variant="body2">
+                  Agentic Workflows API:
+                </Typography>
+                <Typography component="span" variant="body2">
                   {AGENTIC_WORKFLOWS_API_URL}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span>Release Version:</span>
-                <span className="font-mono text-modal-accent">
+                </Typography>
+              </Stack>
+              <Stack direction="row" justifyContent="space-between">
+                <Typography component="span" variant="body2">
+                  Release Version:
+                </Typography>
+                <Typography component="span" variant="body2">
                   {info?.version ?? "…"}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span>Build Date:</span>
-                <span className="font-mono">{info?.build_date ?? "…"}</span>
-              </div>
-            </div>
-          </div>
+                </Typography>
+              </Stack>
+              <Stack direction="row" justifyContent="space-between">
+                <Typography component="span" variant="body2">
+                  Build Date:
+                </Typography>
+                <Typography component="span" variant="body2">
+                  {info?.build_date ?? "…"}
+                </Typography>
+              </Stack>
+            </Stack>
+          </Stack>
 
-          <div>
-            <h3 className="mb-3 text-sm font-normal leading-5 tracking-wide text-modal-text">
-              Dependencies:
-            </h3>
-            <div className="space-y-2 text-sm text-modal-text-secondary">
+          <Stack spacing={2}>
+            <Typography variant="h6">Dependencies:</Typography>
+            <Stack spacing={1}>
               {info?.dependencies &&
                 Object.entries(info.dependencies).map(([name, ver]) => (
-                  <div key={name} className="flex justify-between">
-                    <span>{name}:</span>
-                    <span className="font-mono text-modal-accent">{ver}</span>
-                  </div>
+                  <Stack
+                    key={name}
+                    direction="row"
+                    justifyContent="space-between"
+                  >
+                    <Typography component="span" variant="body2">
+                      {name}:
+                    </Typography>
+                    <Typography component="span" variant="body2">
+                      {ver}
+                    </Typography>
+                  </Stack>
                 ))}
               {!info?.dependencies && !error && (
-                <div className="text-modal-text-secondary">Loading…</div>
+                <Typography variant="body2">Loading...</Typography>
               )}
               {!info?.dependencies && error && (
-                <div className="text-modal-text-secondary">
+                <Typography color="error" variant="body2">
                   No dependency info
-                </div>
+                </Typography>
               )}
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
+            </Stack>
+          </Stack>
+        </Stack>
+      </ModalContent>
+    </Dialog>
   )
 }
 

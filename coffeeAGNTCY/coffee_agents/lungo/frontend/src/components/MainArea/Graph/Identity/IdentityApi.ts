@@ -12,6 +12,11 @@ import type { CustomNodeData } from "@/components/MainArea/Graph/Elements/types"
 import { getApiUrlForPattern, PATTERNS } from "@/utils/patternUtils"
 import { logger } from "@/utils/logger"
 
+export interface IdentityServiceError {
+  message: string
+  status?: number
+}
+
 function messageFromAxiosResponse(error: unknown): string | undefined {
   if (!axios.isAxiosError(error) || error.response?.data == null)
     return undefined
@@ -28,11 +33,6 @@ function messageFromAxiosResponse(error: unknown): string | undefined {
   }
   if (typeof d.message === "string") return d.message
   return undefined
-}
-
-export interface IdentityServiceError {
-  message: string
-  status?: number
 }
 
 const getSlugFromNodeData = (nodeData: CustomNodeData): string => {

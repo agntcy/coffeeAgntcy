@@ -6,6 +6,8 @@
  **/
 
 import React from "react"
+import { Box } from "@open-ui-kit/core"
+import { skipLinkSx } from "@/utils/a11ySx"
 import Navigation from "@/components/Navigation/Navigation"
 import MainArea from "@/components/MainArea/MainArea"
 import ChatArea from "@/components/Chat/ChatArea"
@@ -18,6 +20,7 @@ const RootPage: React.FC = () => {
     selectedPattern,
     selectWorkflowFromCatalog,
     workflowCatalogSummaries,
+    workflowCatalogLoading,
     workflowCatalogError,
     selectedWorkflowSummary,
     chatHeightValue,
@@ -63,17 +66,59 @@ const RootPage: React.FC = () => {
   } = useApp()
 
   return (
-    <div className="bg-primary-bg flex h-screen w-screen flex-col overflow-hidden">
+    <Box
+      sx={{
+        display: "flex",
+        height: "100vh",
+        width: "100vw",
+        flexDirection: "column",
+        overflow: "hidden",
+        position: "relative",
+      }}
+    >
+      <Box component="a" href="#main-content" sx={skipLinkSx}>
+        Skip to main content
+      </Box>
       <Navigation />
-      <div className="flex flex-1 overflow-hidden">
+      <Box
+        sx={{
+          display: "flex",
+          flex: 1,
+          minHeight: 0,
+          overflow: "hidden",
+        }}
+      >
         <Sidebar
           selectedWorkflowSummary={selectedWorkflowSummary}
           summaries={workflowCatalogSummaries}
+          isLoading={workflowCatalogLoading}
           error={workflowCatalogError}
           onSelectWorkflow={selectWorkflowFromCatalog}
         />
-        <div className="flex flex-1 flex-col border-l border-action-background bg-app-background">
-          <div className="relative flex-grow">
+        <Box
+          component="main"
+          id="main-content"
+          aria-label="Workflow graph and agent chat"
+          sx={{
+            display: "flex",
+            flex: 1,
+            minWidth: 0,
+            minHeight: 0,
+            flexDirection: "column",
+            overflow: "hidden",
+          }}
+        >
+          <Box
+            component="section"
+            aria-label="Workflow graph"
+            sx={{
+              position: "relative",
+              flex: "1 1 50%",
+              minHeight: "50%",
+              minWidth: 0,
+              overflow: "hidden",
+            }}
+          >
             <MainArea
               pattern={selectedPattern}
               selectedWorkflowSummary={selectedWorkflowSummary}
@@ -93,8 +138,26 @@ const RootPage: React.FC = () => {
                   : null
               }
             />
-          </div>
-          <div className="flex min-h-[76px] w-full flex-none flex-col items-center justify-center gap-0 bg-overlay-background p-0 md:min-h-[96px]">
+          </Box>
+          <Box
+            component="section"
+            aria-label="Agent chat"
+            sx={{
+              display: "flex",
+              width: "100%",
+              flex: "0 1 auto",
+              flexShrink: 0,
+              flexDirection: "column",
+              alignItems: "center",
+              justifyContent: "flex-start",
+              gap: 0,
+              p: 0,
+              maxHeight: "50%",
+              minHeight: { xs: "min(76px, 50%)", md: "min(96px, 50%)" },
+              minWidth: 0,
+              overflow: "hidden",
+            }}
+          >
             <ChatArea
               setMessages={setMessages}
               setButtonClicked={setButtonClicked}
@@ -143,10 +206,10 @@ const RootPage: React.FC = () => {
               }}
               onDiscoveryResponse={handleDiscoveryResponse}
             />
-          </div>
-        </div>
-      </div>
-    </div>
+          </Box>
+        </Box>
+      </Box>
+    </Box>
   )
 }
 
