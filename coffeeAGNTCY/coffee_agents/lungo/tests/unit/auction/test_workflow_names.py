@@ -15,7 +15,7 @@ from agents.supervisors.auction.graph.graph import (
     _WORKFLOW_NAME_SERVE,
     _WORKFLOW_NAME_STREAM,
 )
-from common.a2a_event_middleware.workflow_catalog import lookup_workflow
+from common.workflow_utils.workflow_catalog import lookup_workflow
 
 
 def test_serve_workflow_name_in_catalog():

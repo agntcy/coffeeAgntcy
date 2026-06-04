@@ -3,19 +3,16 @@
 
 """A2A client middleware for emitting workflow topology events.
 
-This module contains outbound interceptor and inbound consumer logic,
-event/topology builders, and the workflow API sink used to publish
-state-progress updates.
+This module contains outbound interceptor and inbound consumer logic
+for A2A transport. Shared event builders and sinks live in workflow_utils.
 """
 
 from __future__ import annotations
 
 import logging
 import re as _re
-from datetime import datetime, timezone
 from time import monotonic
 from typing import Any, Mapping
-from uuid import uuid4
 
 from a2a.client import ClientEvent
 from a2a.client.middleware import ClientCallContext, ClientCallInterceptor
@@ -23,56 +20,30 @@ from a2a.types import AgentCard, Message, Task, TaskState
 from opentelemetry import trace as _otel_trace
 
 from common.stable_agent_id import stable_agent_id_for_name as _stable_agent_id
-from config.config import EMIT_WORKFLOW_EVENTS
-from schema.types import (
-	Correlation,
-	CorrelationId,
-	Data,
-	EdgeId,
-	Event,
-	EventId,
-	EventType,
-	InstanceId,
-	Metadata,
-	NodeId,
-	Operation,
-	PartialEdge,
-	PartialNode,
-	PartialRegularNode,
-	PartialTopology,
-	Size,
-	Topology,
-	TopologyEdgeItem,
-	TopologyNodeItem,
-	Workflow,
-	WorkflowInstance,
-)
-
-from schema.types.event import _INSTANCE_ID_REGEX as INSTANCE_ID_REGEX
-
-from .inflight import (
+from common.workflow_utils.builders import build_event, make_edge, make_node
+from common.workflow_utils.event_sink import WorkflowAPIEventSink
+from common.workflow_utils.inflight import (
 	RuntimeIdAllocator,
 	current_trace_id,
-	format_span_id,
-	format_trace_id,
 	read_trace_context,
 	resolve_consumer_state,
 	resolve_correlation_id,
 	upsert_in_flight_state,
 )
-from .event_sink import WorkflowAPIEventSink
-from .workflow_catalog import lookup_workflow
+from common.workflow_utils.workflow_catalog import lookup_workflow
+from config.config import EMIT_WORKFLOW_EVENTS
+from schema.types import (
+	Operation,
+	PartialTopology,
+	TopologyEdgeItem,
+	TopologyNodeItem,
+)
+
+from schema.types.event import _INSTANCE_ID_REGEX as INSTANCE_ID_REGEX
 
 logger = logging.getLogger("lungo.common.event_middleware")
 
-_SCHEMA_VERSION = "1.0.0"
-
 _INSTANCE_ID_PATTERN = _re.compile(INSTANCE_ID_REGEX)
-
-
-def _init_starting_topology() -> Topology:
-	"""Return an empty starting topology for workflow instances."""
-	return Topology(nodes=[], edges=[])
 
 
 def _slugify_source(card: AgentCard) -> str:
@@ -104,85 +75,6 @@ def agent_ids_from_cards(
 			)
 
 	return list(dict.fromkeys(discovered_ids))
-
-
-# long-term: use schema-generated types and add init/build functions there
-_DEFAULT_NODE_SIZE = Size(width=1.0, height=1.0)
-
-
-def _make_node(
-	node_id: str,
-	*,
-	operation: Operation,
-	node_type: str,
-	label: str,
-	layer_index: int,
-	include_size: bool = True,
-	stable_agent_id: str | None = None,
-) -> PartialNode:
-	"""Create a PartialNode with standard defaults."""
-	extras: dict[str, Any] = {}
-	if stable_agent_id is not None:
-		extras["stable_agent_id"] = stable_agent_id
-		# Schema requires agent_record_uri on any node with stable_agent_id.
-		extras["agent_record_uri"] = f"agent-card://{stable_agent_id.removeprefix('agent://')}"
-	return PartialRegularNode(
-		id=NodeId(node_id),
-		operation=operation,
-		type=node_type,
-		label=label,
-		layer_index=layer_index,
-		**(dict(size=_DEFAULT_NODE_SIZE) if include_size else {}),
-		**extras,
-	)
-
-
-async def _make_edge(
-	source_nid: str,
-	target_nid: str,
-	*,
-	operation: Operation,
-	allocator: RuntimeIdAllocator,
-) -> PartialEdge:
-	"""Create a PartialEdge for discovery events."""
-	kwargs: dict[str, Any] = dict(
-		id=EdgeId(await allocator.edge_id(source_nid, target_nid)),
-		operation=operation,
-		type="custom",
-		source=NodeId(source_nid),
-		target=NodeId(target_nid),
-	)
-	if operation == Operation.CREATE:
-		kwargs["bidirectional"] = False
-		kwargs["weight"] = 1.0
-	return PartialEdge(**kwargs)
-
-
-def _build_metadata(
-	source: str,
-	event_type: EventType,
-	correlation_id: str,
-	correlation_message: str | None = None,
-	trace_id: int | None = None,
-	span_id: int | None = None,
-) -> Metadata:
-	extras: dict[str, Any] = {}
-	if trace_id is not None:
-		extras["trace_id"] = format_trace_id(trace_id)
-	if span_id is not None:
-		extras["span_id"] = format_span_id(span_id)
-	return Metadata(
-		timestamp=datetime.now(timezone.utc),
-		schema_version=_SCHEMA_VERSION,
-		id=EventId(f"event://{uuid4()}"),
-		type=event_type,
-		source=source,
-		correlation=Correlation(
-			id=CorrelationId(correlation_id),
-			message=correlation_message,
-		),
-		**extras,
-	)
 
 
 def _collect_remote_agent_ids(
@@ -221,61 +113,6 @@ async def _bind_outbound_interaction_state(
 	)
 
 
-def _build_event(
-	*,
-	source: str,
-	workflow_name: str,
-	instance_id: str,
-	topology: PartialTopology,
-	correlation_id: str,
-	event_type: EventType = EventType.STATE_PROGRESS_UPDATE,
-	correlation_message: str | None = None,
-	trace_id: int | None = None,
-	span_id: int | None = None,
-) -> Event:
-	"""Build an Event for one workflow-instance topology update.
-
-	Looks up descriptive metadata (pattern + use_case) from the catalog at
-	emission time so callers only need to carry the workflow name.
-	"""
-	metadata = lookup_workflow(workflow_name)
-	if metadata is None:
-		# This should never happen in practice — intercept() validates the
-		# name against the catalog before storing in-flight state. Log loudly
-		# so we don't silently emit malformed events if invariants slip.
-		raise RuntimeError(
-			f"_build_event: workflow_name {workflow_name!r} not in catalog; "
-			"intercept() should have rejected this earlier."
-		)
-	return Event(
-		metadata=_build_metadata(
-			source=source,
-			event_type=event_type,
-			correlation_id=correlation_id,
-			correlation_message=correlation_message,
-			trace_id=trace_id,
-			span_id=span_id,
-		),
-		data=Data(
-			workflows={
-				metadata.workflow_name: Workflow(
-					pattern=metadata.pattern or metadata.workflow_name,
-					use_case=metadata.use_case,
-					scenario=metadata.scenario,
-					name=metadata.workflow_name,
-					starting_topology=_init_starting_topology(),
-					instances={
-						instance_id: WorkflowInstance(
-							id=InstanceId(instance_id),
-							topology=topology,
-						)
-					},
-				)
-			}
-		),
-	)
-
-
 async def _outbound_topology(
 	caller_agent_id: str,
 	remote_agent_ids: list[str],
@@ -289,7 +126,7 @@ async def _outbound_topology(
 	transport_node = await allocator.node_id(f"transport-{caller_agent_id}::{transport_label}")
 
 	nodes: list[TopologyNodeItem] = [
-		_make_node(
+		make_node(
 			caller_node,
 			operation=Operation.CREATE,
 			node_type="customNode",
@@ -297,7 +134,7 @@ async def _outbound_topology(
 			layer_index=layer_index,
 			stable_agent_id=_stable_agent_id(caller_agent_id),
 		),
-		_make_node(
+		make_node(
 			transport_node,
 			operation=Operation.CREATE,
 			node_type="transportNode",
@@ -306,7 +143,7 @@ async def _outbound_topology(
 		),
 	]
 	edges: list[TopologyEdgeItem] = [
-		await _make_edge(
+		await make_edge(
 			caller_node,
 			transport_node,
 			operation=Operation.CREATE,
@@ -317,7 +154,7 @@ async def _outbound_topology(
 	for agent_id in remote_agent_ids:
 		remote_node = await allocator.node_id(f"agent-{agent_id}")
 		nodes.append(
-			_make_node(
+			make_node(
 				remote_node,
 				operation=Operation.CREATE,
 				node_type="customNode",
@@ -327,7 +164,7 @@ async def _outbound_topology(
 			),
 		)
 		edges.append(
-			await _make_edge(
+			await make_edge(
 				transport_node,
 				remote_node,
 				operation=Operation.CREATE,
@@ -353,7 +190,7 @@ async def _inbound_topology(
 
 	return PartialTopology(
 		nodes=[
-			_make_node(
+			make_node(
 				remote_node,
 				operation=Operation.UPDATE,
 				node_type="customNode",
@@ -362,7 +199,7 @@ async def _inbound_topology(
 				include_size=False,
 				stable_agent_id=_stable_agent_id(remote_agent_id),
 			),
-			_make_node(
+			make_node(
 				transport_node,
 				operation=Operation.UPDATE,
 				node_type="transportNode",
@@ -370,7 +207,7 @@ async def _inbound_topology(
 				layer_index=layer_index + 1,
 				include_size=False,
 			),
-			_make_node(
+			make_node(
 				caller_node,
 				operation=Operation.UPDATE,
 				node_type="customNode",
@@ -381,13 +218,13 @@ async def _inbound_topology(
 			),
 		],
 		edges=[
-			await _make_edge(
+			await make_edge(
 				transport_node,
 				remote_node,
 				operation=Operation.UPDATE,
 				allocator=allocator,
 			),
-			await _make_edge(
+			await make_edge(
 				caller_node,
 				transport_node,
 				operation=Operation.UPDATE,
@@ -529,7 +366,7 @@ class EventEmittingInterceptor(ClientCallInterceptor):
 			caller_node = await allocator.node_id(f"agent-{self._caller_agent_id}")
 			topology = PartialTopology(
 				nodes=[
-					_make_node(
+					make_node(
 						caller_node,
 						operation=Operation.CREATE,
 						node_type="customNode",
@@ -544,7 +381,7 @@ class EventEmittingInterceptor(ClientCallInterceptor):
 			)
 			correlation_msg = f"outbound {method_name} to unknown"
 
-		event = _build_event(
+		event = build_event(
 			source=self._source,
 			workflow_name=workflow_name,
 			instance_id=instance_id,
@@ -680,7 +517,7 @@ def make_event_emitting_consumer(
 
 		status_label = response_status.value if response_status else "unknown"
 
-		event_obj = _build_event(
+		event_obj = build_event(
 			source=_source,
 			workflow_name=workflow_name,
 			instance_id=instance_id,
