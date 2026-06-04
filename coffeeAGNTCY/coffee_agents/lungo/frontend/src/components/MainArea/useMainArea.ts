@@ -168,8 +168,6 @@ export function useMainArea({
     isExpanded,
     config,
     animationLockRef: animationLock,
-    nodesDraggable,
-    nodesConnectable,
     handleCloseModals,
     setOasfModalOpen,
   })
