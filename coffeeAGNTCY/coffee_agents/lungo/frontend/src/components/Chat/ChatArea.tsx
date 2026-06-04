@@ -29,6 +29,9 @@ const GRAFANA_URL = env.get("VITE_GRAFANA_URL") || DEFAULT_GRAFANA_URL
 const GRAFANA_DASHBOARD_PATH =
   "/d/lungo-dashboard/lungo-dashboard?orgId=1&var-session_id="
 
+/** Panel expanded/collapsed by the chat header minimize control. */
+export const CHAT_MESSAGE_PANEL_ID = "chat-message-panel"
+
 interface ChatAreaProps {
   setMessages: React.Dispatch<React.SetStateAction<Message[]>>
   setButtonClicked: (clicked: boolean) => void
@@ -233,11 +236,16 @@ const ChatArea: React.FC<ChatAreaProps> = ({
             onMinimize={isMinimized ? handleRestore : handleMinimize}
             onClearConversation={onClearConversation}
             isMinimized={isMinimized}
+            messagePanelId={CHAT_MESSAGE_PANEL_ID}
           />
         </Box>
       ) : null}
 
       <Box
+        id={CHAT_MESSAGE_PANEL_ID}
+        role="region"
+        aria-label="Chat messages"
+        aria-hidden={isMinimized ? true : undefined}
         sx={{
           flex: "1 1 auto",
           minHeight: 0,

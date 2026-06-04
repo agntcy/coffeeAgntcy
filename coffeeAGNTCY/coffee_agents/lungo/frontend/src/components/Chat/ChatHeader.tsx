@@ -13,12 +13,15 @@ interface ChatHeaderProps {
   onMinimize?: () => void
   onClearConversation?: () => void
   isMinimized?: boolean
+  /** ID of the expandable message panel controlled by the minimize button. */
+  messagePanelId?: string
 }
 
 const ChatHeader: React.FC<ChatHeaderProps> = ({
   onMinimize,
   onClearConversation,
-  isMinimized,
+  isMinimized = false,
+  messagePanelId,
 }) => {
   return (
     <Box
@@ -38,6 +41,8 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({
               onClick={onMinimize}
               color="inherit"
               aria-label={isMinimized ? "Maximize" : "Minimize"}
+              aria-expanded={!isMinimized}
+              aria-controls={messagePanelId}
             >
               {isMinimized ? (
                 <UnfoldMore aria-hidden />

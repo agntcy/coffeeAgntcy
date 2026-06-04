@@ -22,6 +22,7 @@ import type { AuctionStreamingState } from "@/stores/auctionStreaming.types"
 import type { RecruiterStreamingState } from "@/stores/recruiterStreaming.types"
 import type { ApiResponse } from "@/types/api"
 import { PATTERNS } from "@/utils/patternUtils"
+import { visuallyHiddenSx } from "@/utils/a11ySx"
 
 export interface ChatAreaMessageThreadProps {
   currentUserMessage: string
@@ -64,7 +65,23 @@ const ChatAreaMessageThread: React.FC<ChatAreaMessageThreadProps> = ({
   onStreamComplete,
   onSenderHighlight,
 }) => (
-  <Stack spacing={1.5} sx={{ width: "100%", maxWidth: 880, mb: 2 }}>
+  <Stack
+    component="section"
+    aria-label="Conversation"
+    aria-live="polite"
+    aria-relevant="additions text"
+    aria-atomic={false}
+    spacing={1.5}
+    sx={{ width: "100%", maxWidth: 880, mb: 2 }}
+  >
+    {apiError ? (
+      <Box role="alert" aria-live="assertive">
+        <Typography variant="body2" color="error">
+          The request failed. Check the workflow or try again.
+        </Typography>
+      </Box>
+    ) : null}
+
     {!isMinimized && <UserMessage content={currentUserMessage} />}
 
     {showProgressTracker && (
@@ -131,6 +148,9 @@ const ChatAreaMessageThread: React.FC<ChatAreaMessageThreadProps> = ({
                 wordBreak: "break-word",
               }}
             >
+              <Box component="span" sx={visuallyHiddenSx}>
+                Agent is responding
+              </Box>
               <LoadingDots />
             </Box>
           ) : (

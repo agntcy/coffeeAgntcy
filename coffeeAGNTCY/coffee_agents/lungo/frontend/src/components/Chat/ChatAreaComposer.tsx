@@ -93,8 +93,9 @@ const ChatAreaComposer: React.FC<ChatAreaComposerProps> = ({
       >
         <TextField
           fullWidth
-          margin="none"
+          margin="dense"
           variant="standard"
+          label="Message to agents"
           placeholder="Type a prompt to interact with the agents"
           value={content}
           onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
@@ -103,6 +104,9 @@ const ChatAreaComposer: React.FC<ChatAreaComposerProps> = ({
           onKeyDown={onKeyDown}
           disabled={loading}
           slotProps={{
+            inputLabel: {
+              shrink: true,
+            },
             input: {
               disableUnderline: true,
             },
@@ -110,9 +114,6 @@ const ChatAreaComposer: React.FC<ChatAreaComposerProps> = ({
           sx={{
             flex: 1,
             minWidth: 0,
-            "& .MuiInputBase-root.MuiInput-root": {
-              marginTop: 0,
-            },
             "& .MuiInputBase-input": {
               "&::placeholder": {
                 opacity: 0.6,
@@ -121,6 +122,7 @@ const ChatAreaComposer: React.FC<ChatAreaComposerProps> = ({
           }}
         />
         <Button
+          size="large"
           type="button"
           variant="primary"
           disabled={loading || !content.trim()}
@@ -128,7 +130,7 @@ const ChatAreaComposer: React.FC<ChatAreaComposerProps> = ({
           endIcon={<SendIcon />}
           sx={{
             flexShrink: 0,
-            alignSelf: { xs: "stretch", sm: "center" },
+            alignSelf: { xs: "stretch", sm: "flex-end" },
           }}
         >
           Send

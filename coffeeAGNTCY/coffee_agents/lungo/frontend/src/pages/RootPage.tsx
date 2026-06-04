@@ -7,6 +7,7 @@
 
 import React from "react"
 import { Box } from "@open-ui-kit/core"
+import { skipLinkSx } from "@/utils/a11ySx"
 import Navigation from "@/components/Navigation/Navigation"
 import MainArea from "@/components/MainArea/MainArea"
 import ChatArea from "@/components/Chat/ChatArea"
@@ -72,8 +73,12 @@ const RootPage: React.FC = () => {
         width: "100vw",
         flexDirection: "column",
         overflow: "hidden",
+        position: "relative",
       }}
     >
+      <Box component="a" href="#main-content" sx={skipLinkSx}>
+        Skip to main content
+      </Box>
       <Navigation />
       <Box
         sx={{
@@ -91,6 +96,9 @@ const RootPage: React.FC = () => {
           onSelectWorkflow={selectWorkflowFromCatalog}
         />
         <Box
+          component="main"
+          id="main-content"
+          aria-label="Workflow graph and agent chat"
           sx={{
             display: "flex",
             flex: 1,
@@ -101,6 +109,8 @@ const RootPage: React.FC = () => {
           }}
         >
           <Box
+            component="section"
+            aria-label="Workflow graph"
             sx={{
               position: "relative",
               flex: "1 1 50%",
@@ -130,6 +140,8 @@ const RootPage: React.FC = () => {
             />
           </Box>
           <Box
+            component="section"
+            aria-label="Agent chat"
             sx={{
               display: "flex",
               width: "100%",

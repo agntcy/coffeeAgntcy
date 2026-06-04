@@ -81,6 +81,8 @@ const Sidebar: React.FC<SidebarProps> = ({
 
   return (
     <StyledDrawer
+      component="aside"
+      aria-label="Workflow catalog"
       variant="permanent"
       data-testid="sidebar"
       open
