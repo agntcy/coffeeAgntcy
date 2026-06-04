@@ -1,0 +1,5 @@
+clickhouse:
+  endpoint: "tcp://clickhouse-server:9000"
+  database: "default"
+  username: "admin"
+  password: "admin"

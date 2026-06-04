@@ -1,0 +1,6 @@
+metrics:
+  receivers: [otlp]
+  exporters: [clickhouse]
+traces:
+  receivers: [otlp]
+  exporters: [clickhouse]

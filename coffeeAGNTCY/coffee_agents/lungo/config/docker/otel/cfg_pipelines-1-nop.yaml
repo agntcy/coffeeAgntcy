@@ -1,0 +1,6 @@
+metrics:
+  receivers: [otlp]
+  exporters: [nop]
+traces:
+  receivers: [otlp]
+  exporters: [nop]
