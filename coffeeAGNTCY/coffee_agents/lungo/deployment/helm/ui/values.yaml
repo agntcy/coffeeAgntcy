@@ -16,16 +16,18 @@ image:
 service:
   port: 3000
 
-config:
-  exchangeAppApiUrl: ""
-  logisticsAppApiUrl: ""
-  grafanaUrl: ""
-  discoveryAppApiUrl: ""
-  agenticWorkflowsApiUrl: ""
-  agenticWorkflowsApiKey: "TheAnswerIs42"
-  directoryServerUrl: ""
-  directoryVersion: ""
-
+configs:
+  env:
+    data:
+      VITE_AGENTIC_WORKFLOWS_API_KEY: TheAnswerIs42 # Must match WORKFLOW_API_KEY on the Agentic Workflows API.
+      VITE_AGENTIC_WORKFLOWS_API_URL: http://127.0.0.1:9105
+      VITE_AGENTIC_WORKFLOWS_DOCS_GITHUB_BRANCH: main
+      VITE_DIRECTORY_SERVER_URL: http://127.0.0.1:8888
+      VITE_DIRECTORY_VERSION: v1.0.0
+      VITE_DISCOVERY_APP_API_URL: http://127.0.0.1:8882
+      VITE_EXCHANGE_APP_API_URL: http://127.0.0.1:8000
+      VITE_GRAFANA_URL: http://127.0.0.1:3001
+      VITE_LOGISTICS_APP_API_URL: http://127.0.0.1:9090
 
 # You can use your own config here for service account
 serviceaccount:

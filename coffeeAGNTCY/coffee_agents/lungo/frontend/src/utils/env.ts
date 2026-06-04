@@ -6,15 +6,27 @@
  * so all env access is centralized and testable.
  **/
 
+declare global {
+  interface Window {
+    __ENV__?: Readonly<Record<string, string>>
+  }
+}
+
 const rawEnv = import.meta.env
 
-/**
- * Get a string env value by key (e.g. VITE_DIRECTORY_SERVER_URL, VITE_DIRECTORY_VERSION).
- * Returns undefined if the key is missing or not a string.
- */
+function runtimeEnv(key: string): string | undefined {
+  if (typeof window === "undefined") return undefined
+  const v = window.__ENV__?.[key]
+  return typeof v === "string" && v !== "" ? v : undefined
+}
+
 export function getEnvValueByKey(key: string): string | undefined {
-  const v = rawEnv[key]
-  return typeof v === "string" ? v : undefined
+  return runtimeEnv(key) ?? (typeof rawEnv[key] === "string" && rawEnv[key] !== "" ? rawEnv[key] : undefined)
+}
+
+/** Optional convenience at call sites */
+export function envOrDefault(key: string, defaultValue: string): string {
+  return getEnvValueByKey(key) ?? defaultValue
 }
 
 /** True when running in Vite dev server. */
