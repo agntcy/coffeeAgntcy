@@ -12,7 +12,7 @@ import {
   CoffeePromptsDropdown,
   LogisticsPromptsDropdown,
   DiscoveryPromptsDropdown,
-} from "./Prompts"
+} from "./prompts"
 
 const promptStripSx = {
   position: "relative" as const,
