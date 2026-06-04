@@ -14,7 +14,10 @@ import {
 } from "@/api/agenticWorkflowsClient"
 import type { EventV1Wire, TopologyWire } from "@/api/agenticWorkflowsTypes"
 import { logger } from "@/utils/logger"
-import type { WorkflowGraphAgenticSession } from "./useWorkflowGraphFromAgenticApi.types"
+import {
+  SSE_RECONNECT_BACKOFF_MS,
+  type WorkflowGraphAgenticSession,
+} from "./useWorkflowGraphFromAgenticApi.types"
 
 interface UseWorkflowGraphAgenticBootstrapParams {
   agenticMode: boolean
@@ -85,6 +88,7 @@ export function useWorkflowGraphAgenticBootstrap({
           closeSse: null,
           debounceTimer: null,
           retryTimer: null,
+          sseReconnectTimer: null,
           refetchSeq: 0,
           sseReconnectAttempts: 0,
         }
@@ -116,9 +120,21 @@ export function useWorkflowGraphAgenticBootstrap({
               if (!cur || cur.instanceId !== instanceId || cancelled) return
               if (cur.sseReconnectAttempts >= 6) return
               cur.sseReconnectAttempts += 1
-              queueMicrotask(() => {
+              const delayMs =
+                SSE_RECONNECT_BACKOFF_MS * cur.sseReconnectAttempts
+              if (cur.sseReconnectTimer) clearTimeout(cur.sseReconnectTimer)
+              cur.sseReconnectTimer = setTimeout(() => {
+                const current = sessionRef.current
+                if (current) current.sseReconnectTimer = null
+                if (
+                  !current ||
+                  current.instanceId !== instanceId ||
+                  cancelled
+                ) {
+                  return
+                }
                 attachSse()
-              })
+              }, delayMs)
             },
           )
           if (cancelled) {

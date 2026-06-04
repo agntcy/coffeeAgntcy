@@ -3,6 +3,9 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
+  "engines": {
+    "npm": ">=11.10.1"
+  },
   "scripts": {
     "check": "npm run lint:check && npm run format:check && npm run typecheck && npm run test",
     "dev": "vite",
