@@ -5,13 +5,18 @@
 
 import { useCallback, useMemo, useRef, useState } from "react"
 import type { Node } from "@xyflow/react"
-import { eventTouchesInstance } from "@/api/agenticWorkflowsClient"
+import {
+  deleteWorkflowInstance,
+  eventTouchesInstance,
+  instanceIdToPathUuid,
+} from "@/api/agenticWorkflowsClient"
 import type { EventV1Wire } from "@/api/agenticWorkflowsTypes"
 import {
   getAgenticWorkflowsApiUrl,
   mapWorkflowNameToSlug,
 } from "@/utils/agenticWorkflowsApi"
 import { useActiveWorkflowInstanceStore } from "@/stores/activeWorkflowInstanceStore"
+import { logger } from "@/utils/logger"
 import { staticIdMapForPattern } from "@/utils/topologyStaticIdMap"
 import {
   extractInstanceTopologyFromEvent,
@@ -113,7 +118,18 @@ export function useWorkflowGraphFromAgenticApi({
     if (s.closeSse) s.closeSse()
     if (s.debounceTimer) clearTimeout(s.debounceTimer)
     if (s.retryTimer) clearTimeout(s.retryTimer)
+    const { client, workflowName, instanceId } = s
     sessionRef.current = null
+    try {
+      const pathUuid = instanceIdToPathUuid(instanceId)
+      void deleteWorkflowInstance(client, workflowName, pathUuid).catch(
+        (err) => {
+          logger.apiError("agentic-workflows/delete-instance", err)
+        },
+      )
+    } catch (err) {
+      logger.apiError("agentic-workflows/teardown-invalid-instance-id", err)
+    }
     setWorkflowInstanceId(null)
     resetMessagingHighlightState()
   }, [resetMessagingHighlightState, setWorkflowInstanceId])

@@ -13,9 +13,11 @@ import { openWorkflowDocumentationInNewTab } from "@/utils/workflowDocumentation
 import SidebarDropdown from "./SidebarDropdown"
 import SidebarItem from "./SidebarItem"
 import {
+  isPlaceholderWorkflow,
   makePatternKey,
   makeScenarioKey,
-  makeUseCaseKey,
+  makeWorkflowKey,
+  A2A_SLIM_MENU_LABEL,
   REFERENCE_LIBRARY_KEY,
   type CatalogSidebarLayout,
   type PatternNode,
@@ -31,21 +33,6 @@ interface CatalogTreeProps {
   onSelectWorkflow: (summary: WorkflowSummary) => void
 }
 
-const groupScenariosByUseCase = (
-  scenarios: readonly UseCaseScenarioNode[],
-): Map<string, UseCaseScenarioNode[]> => {
-  const byUseCase = new Map<string, UseCaseScenarioNode[]>()
-  for (const ucs of scenarios) {
-    const list = byUseCase.get(ucs.useCase)
-    if (list === undefined) {
-      byUseCase.set(ucs.useCase, [ucs])
-    } else {
-      list.push(ucs)
-    }
-  }
-  return byUseCase
-}
-
 const CatalogTree: React.FC<CatalogTreeProps> = ({
   layout,
   expandedKeys,
@@ -59,30 +46,64 @@ const CatalogTree: React.FC<CatalogTreeProps> = ({
     openWorkflowDocumentationInNewTab(catalogName)
   }, [])
 
-  const renderWorkflow = (
-    patternName: string,
-    ucs: UseCaseScenarioNode,
-    workflow: WorkflowNode,
-  ): React.ReactNode => {
-    const { summary } = workflow
-    const isUnmapped = mapWorkflowNameToSlug(summary.name) === null
-    const isSelected = selectedWorkflowSummary?.name === summary.name
+  const renderWorkflow = useCallback(
+    (
+      patternName: string,
+      ucs: UseCaseScenarioNode,
+      workflow: WorkflowNode,
+    ): React.ReactNode => {
+      const { summary, display } = workflow
+      const isUnmapped = mapWorkflowNameToSlug(summary.name) === null
+      const isSelected = selectedWorkflowSummary?.name === summary.name
+      const showWorkflowDoc = !isPlaceholderWorkflow(summary)
 
-    return (
-      <SidebarItem
-        key={`${patternName}|${ucs.useCase}|${ucs.scenario}|${summary.name}`}
-        title={summary.name}
-        isSelected={isSelected}
-        disabled={isUnmapped}
-        documentationCatalogName={summary.name}
-        onClick={isUnmapped ? undefined : () => onSelectWorkflow(summary)}
-      />
-    )
-  }
+      if (display === "slim_transport") {
+        const workflowKey = makeWorkflowKey(
+          patternName,
+          ucs.useCase,
+          ucs.scenario,
+          summary.name,
+        )
+
+        return (
+          <SidebarDropdown
+            key={summary.name}
+            title={summary.name}
+            isExpanded={expandedKeys.has(workflowKey)}
+            onToggle={() => toggleExpandableDropdown(workflowKey)}
+          >
+            <SidebarItem
+              title={A2A_SLIM_MENU_LABEL}
+              isSelected={isSelected}
+              onClick={isUnmapped ? undefined : () => onSelectWorkflow(summary)}
+              documentationCatalogName={
+                showWorkflowDoc ? summary.name : undefined
+              }
+            />
+          </SidebarDropdown>
+        )
+      }
+
+      return (
+        <SidebarItem
+          key={summary.name}
+          title={summary.name}
+          isSelected={isSelected}
+          onClick={isUnmapped ? undefined : () => onSelectWorkflow(summary)}
+          documentationCatalogName={showWorkflowDoc ? summary.name : undefined}
+        />
+      )
+    },
+    [
+      expandedKeys,
+      onSelectWorkflow,
+      selectedWorkflowSummary,
+      toggleExpandableDropdown,
+    ],
+  )
 
   const renderPattern = (pattern: PatternNode): React.ReactNode => {
     const patternKey = makePatternKey(pattern.name)
-    const byUseCase = groupScenariosByUseCase(pattern.useCaseScenarios)
 
     return (
       <SidebarDropdown
@@ -91,34 +112,22 @@ const CatalogTree: React.FC<CatalogTreeProps> = ({
         isExpanded={expandedKeys.has(patternKey)}
         onToggle={() => toggleExpandableDropdown(patternKey)}
       >
-        {[...byUseCase.entries()].map(([useCase, scenarios]) => {
-          const useCaseKey = makeUseCaseKey(pattern.name, useCase)
+        {pattern.useCaseScenarios.map((scenario: UseCaseScenarioNode) => {
+          const scenarioKey = makeScenarioKey(
+            pattern.name,
+            scenario.useCase,
+            scenario.scenario,
+          )
           return (
             <SidebarDropdown
-              key={useCaseKey}
-              title={useCase}
-              isExpanded={expandedKeys.has(useCaseKey)}
-              onToggle={() => toggleExpandableDropdown(useCaseKey)}
+              key={scenarioKey}
+              title={scenario.label}
+              isExpanded={expandedKeys.has(scenarioKey)}
+              onToggle={() => toggleExpandableDropdown(scenarioKey)}
             >
-              {scenarios.map((ucs) => {
-                const scenarioKey = makeScenarioKey(
-                  pattern.name,
-                  ucs.useCase,
-                  ucs.scenario,
-                )
-                return (
-                  <SidebarDropdown
-                    key={scenarioKey}
-                    title={ucs.scenario}
-                    isExpanded={expandedKeys.has(scenarioKey)}
-                    onToggle={() => toggleExpandableDropdown(scenarioKey)}
-                  >
-                    {ucs.workflows.map((workflow) =>
-                      renderWorkflow(pattern.name, ucs, workflow),
-                    )}
-                  </SidebarDropdown>
-                )
-              })}
+              {scenario.workflows.map((wf: WorkflowNode) =>
+                renderWorkflow(pattern.name, scenario, wf),
+              )}
             </SidebarDropdown>
           )
         })}

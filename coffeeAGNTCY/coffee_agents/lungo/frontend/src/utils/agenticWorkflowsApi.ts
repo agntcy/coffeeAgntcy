@@ -15,6 +15,7 @@
  * until catalog/schema work lands and the API exposes that slug.
  */
 
+import { agenticWorkflowsAuthHeaders } from "@/api/agenticWorkflowsClient"
 import { env } from "@/utils/env"
 import { PATTERNS, type PatternType } from "@/utils/patternUtils"
 
@@ -97,7 +98,13 @@ export const fetchWorkflowSummaries = async (
   signal?: AbortSignal,
 ): Promise<WorkflowSummary[]> => {
   const url = `${getAgenticWorkflowsApiUrl()}/agentic-workflows/`
-  const response = await fetch(url, { signal })
+  const response = await fetch(url, {
+    signal,
+    headers: {
+      Accept: "application/json",
+      ...agenticWorkflowsAuthHeaders(),
+    },
+  })
   if (!response.ok) {
     throw new Error(
       `Failed to fetch agentic workflows: HTTP ${response.status} ${response.statusText}`,

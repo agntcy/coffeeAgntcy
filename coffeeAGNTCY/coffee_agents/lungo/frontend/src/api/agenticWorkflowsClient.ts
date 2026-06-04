@@ -9,12 +9,26 @@ import type {
   InstantiateWorkflowResponseWire,
   WorkflowInstanceWire,
 } from "@/api/agenticWorkflowsTypes"
+import { env } from "@/utils/env"
+
+export function getAgenticWorkflowsApiKey(): string {
+  return env.get("VITE_AGENTIC_WORKFLOWS_API_KEY") ?? ""
+}
+
+export function agenticWorkflowsAuthHeaders(): Record<string, string> {
+  const key = getAgenticWorkflowsApiKey()
+  if (!key) return {}
+  return { Authorization: `Bearer ${key}` }
+}
 
 export function createClient(baseURL: string): AxiosInstance {
   return axios.create({
     baseURL: baseURL.replace(/\/$/, ""),
     timeout: 60_000,
-    headers: { Accept: "application/json" },
+    headers: {
+      Accept: "application/json",
+      ...agenticWorkflowsAuthHeaders(),
+    },
   })
 }
 
@@ -59,6 +73,17 @@ export async function instantiateWorkflow(
   return {
     workflow_instance_id: normalizeInstanceId(raw),
   }
+}
+
+export async function deleteWorkflowInstance(
+  client: AxiosInstance,
+  workflowName: string,
+  instancePathUuid: string,
+): Promise<void> {
+  const path = encodeWorkflowPathSegment(workflowName)
+  await client.delete(
+    `/agentic-workflows/${path}/instances/${instancePathUuid}/`,
+  )
 }
 
 export async function getWorkflowInstanceState(
@@ -158,7 +183,10 @@ export function subscribeWorkflowInstanceSse(
   const run = async () => {
     try {
       const res = await fetch(url, {
-        headers: { Accept: "text/event-stream" },
+        headers: {
+          Accept: "text/event-stream",
+          ...agenticWorkflowsAuthHeaders(),
+        },
         cache: "no-store",
         signal: controller.signal,
       })

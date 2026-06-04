@@ -15,6 +15,8 @@ const WORKFLOWS_WITH_A2A_SLIM_TRANSPORT_LAYER: ReadonlySet<string> = new Set([
   "Group Messaging",
 ])
 
+export const A2A_SLIM_MENU_LABEL = "A2A SLIM"
+
 export type WorkflowMenuDisplay = "direct" | "slim_transport"
 
 export interface WorkflowNode {
@@ -34,10 +36,6 @@ export interface PatternNode {
   name: string
   useCaseScenarios: UseCaseScenarioNode[]
 }
-
-/** Placeholder catalog rows (pattern docs only; no runnable Lungo workflow). */
-export const isPlaceholderWorkflow = (summary: WorkflowSummary): boolean =>
-  summary.use_case === "---" && summary.scenario === "---"
 
 export interface CatalogSidebarLayout {
   implementedPatterns: PatternNode[]
@@ -226,6 +224,9 @@ export const groupWorkflowsByPatternUseCaseAndScenario = (
 
 export const REFERENCE_LIBRARY_KEY = "reference-library"
 
+export const isPlaceholderWorkflow = (summary: WorkflowSummary): boolean =>
+  summary.use_case === "---" && summary.scenario === "---"
+
 export const makePatternKey = (patternName: string): string =>
   `pattern:${patternName}`
 
@@ -256,7 +257,34 @@ export const buildInitialExpanded = (
     for (const ucs of pattern.useCaseScenarios) {
       next.add(makeUseCaseKey(pattern.name, ucs.useCase))
       next.add(makeScenarioKey(pattern.name, ucs.useCase, ucs.scenario))
+      for (const workflow of ucs.workflows) {
+        if (workflow.display === "slim_transport") {
+          next.add(
+            makeWorkflowKey(
+              pattern.name,
+              ucs.useCase,
+              ucs.scenario,
+              workflow.summary.name,
+            ),
+          )
+        }
+      }
     }
   }
   return next
+}
+
+export const groupScenariosByUseCase = (
+  scenarios: readonly UseCaseScenarioNode[],
+): Map<string, UseCaseScenarioNode[]> => {
+  const byUseCase = new Map<string, UseCaseScenarioNode[]>()
+  for (const ucs of scenarios) {
+    const list = byUseCase.get(ucs.useCase)
+    if (list === undefined) {
+      byUseCase.set(ucs.useCase, [ucs])
+    } else {
+      list.push(ucs)
+    }
+  }
+  return byUseCase
 }
