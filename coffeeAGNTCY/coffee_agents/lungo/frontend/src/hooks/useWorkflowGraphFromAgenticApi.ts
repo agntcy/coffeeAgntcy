@@ -118,6 +118,7 @@ export function useWorkflowGraphFromAgenticApi({
     if (s.closeSse) s.closeSse()
     if (s.debounceTimer) clearTimeout(s.debounceTimer)
     if (s.retryTimer) clearTimeout(s.retryTimer)
+    if (s.sseReconnectTimer) clearTimeout(s.sseReconnectTimer)
     const { client, workflowName, instanceId } = s
     sessionRef.current = null
     try {
