@@ -5,8 +5,6 @@
 
 import Calculate from "@mui/icons-material/Calculate"
 import LocalShipping from "@mui/icons-material/LocalShipping"
-//import Hub from "@mui/icons-material/Hub"
-// TODO: change assets/ icons to use the new icons from MUI
 import { Node, Edge } from "@xyflow/react"
 import { GraphDiscoveryAssetImg } from "@/utils/GraphDiscoveryAssetImg"
 import supervisorIcon from "@/assets/supervisor.png"
