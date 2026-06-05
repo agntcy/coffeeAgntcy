@@ -145,9 +145,9 @@ def close_loops_from_policy_factory():
 
 # ---------------- session infra ----------------
 # docker_helpers passes env=os.environ to compose so infra containers use the same env as the test.
-files = ["docker/docker-compose.yaml"]
-if Path("docker/docker-compose.override.yaml").exists():
-    files.append("docker/docker-compose.override.yaml")
+files = ["../../docker/recruiter/docker-compose.yaml"]
+if Path("../../docker/recruiter/docker-compose.override.yaml").exists():
+    files.append("../../docker/recruiter/docker-compose.override.yaml")
 
 _session_docker_torn_down = False
 

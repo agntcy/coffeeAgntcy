@@ -132,7 +132,7 @@ Before you begin, ensure the following tools are installed:
 
    **UI environment**
 
-   **`VITE_*`** for the web UI live only in **`frontend/.env`** (see **`frontend/.env.example`**) — used by **`npm run dev`** and when you run **`docker compose --profile frontend up --build`**. **`lungo/.env`** is for backends, LLM keys, and Compose profiles only.
+   **`VITE_*`** for the web UI live only in **`frontend/.env`** (see **`frontend/.env.example`**) — used by **`npm run dev`** and when you run **`docker compose -f ../../docker/lungo/docker-compose.yaml --profile frontend up --build`**. **`lungo/.env`** is for backends, LLM keys, and Compose profiles only.
 
 **Configure LLM Model, Credentials and OTEL endpoint**
 
@@ -284,20 +284,20 @@ For advanced observability of your multi-agent system, integrate the [Observe SD
 
 #### Option 1: Docker Compose (Recommended)
 
-From **`lungo/`**, run:
+From **`coffeeAGNTCY/docker/lungo/`** (or use `-f ../../docker/lungo/docker-compose.yaml` from **`lungo/`**), run:
 
 ```sh
-docker compose up --build
+docker compose -f ../../docker/lungo/docker-compose.yaml up --build
 ```
 
 Compose reads **`COMPOSE_PROFILES`** in **`lungo/.env`** (see **`.env.example`**) to decide which profiled services start, including whether the **`ui`** container runs.
 
 ##### Web UI: `COMPOSE_PROFILES` vs local Vite
 
-- **Frontend development (hot reload):** Remove **`frontend`** from **`COMPOSE_PROFILES`** in **`lungo/.env`** so Compose does not start the **`ui`** container (otherwise port **3000** is used twice). Run **`docker compose up --build`** from **`lungo/`**, then in **`frontend/`** run **`npm run dev`** with **`frontend/.env`** configured (**`VITE_*`**).
-- **UI only in Docker:** Keep **`frontend`** in **`COMPOSE_PROFILES`** (as in **`.env.example`**). Run **`docker compose up --build`** from **`lungo/`** only; the **`ui`** container needs **`frontend/.env`**.
+- **Frontend development (hot reload):** Remove **`frontend`** from **`COMPOSE_PROFILES`** in **`lungo/.env`** so Compose does not start the **`ui`** container (otherwise port **3000** is used twice). Run **`docker compose -f ../../docker/lungo/docker-compose.yaml up --build`** from **`lungo/`**, then in **`frontend/`** run **`npm run dev`** with **`frontend/.env`** configured (**`VITE_*`**).
+- **UI only in Docker:** Keep **`frontend`** in **`COMPOSE_PROFILES`** (as in **`.env.example`**). Run **`docker compose -f ../../docker/lungo/docker-compose.yaml up --build`** from **`lungo/`** only; the **`ui`** container needs **`frontend/.env`**.
 
-You can still enable the UI ad hoc without editing **`.env`** using **`docker compose --profile frontend up --build`** — see [Step 5](#step-5-access-the-ui).
+You can still enable the UI ad hoc without editing **`.env`** using **`docker compose -f ../../docker/lungo/docker-compose.yaml --profile frontend up --build`** — see [Step 5](#step-5-access-the-ui).
 
 **Using Profiles**
 
@@ -313,30 +313,30 @@ The docker-compose file is organized into profiles for running specific subsets 
 Run a specific profile:
 ```sh
 # Run only farms
-docker compose --profile farms up
+docker compose -f ../../docker/lungo/docker-compose.yaml --profile farms up
 
 # Run only logistics
-docker compose --profile logistics up
+docker compose -f ../../docker/lungo/docker-compose.yaml --profile logistics up
 
 # Run only recruiter
-docker compose --profile recruiter up
+docker compose -f ../../docker/lungo/docker-compose.yaml --profile recruiter up
 
 # Run all profiles
-docker compose --profile farms --profile logistics --profile recruiter up
+docker compose -f ../../docker/lungo/docker-compose.yaml --profile farms --profile logistics --profile recruiter up
 
 # Run the UI in Docker (optional; otherwise use npm run dev in frontend/)
-docker compose --profile frontend up --build
+docker compose -f ../../docker/lungo/docker-compose.yaml --profile frontend up --build
 ```
 
-If you started services with one or more profiles, run `docker compose down` with the **same profile(s)** (e.g. `docker compose --profile farms down`) or tear everything down with `docker compose --profile '*' down`. Do not run a bare `docker compose down` (no profile): it only stops unprofiled services and the network removal will fail with "Network ... Resource is still in use."
+If you started services with one or more profiles, run `docker compose -f ../../docker/lungo/docker-compose.yaml down` with the **same profile(s)** (e.g. `docker compose -f ../../docker/lungo/docker-compose.yaml --profile farms down`) or tear everything down with `docker compose -f ../../docker/lungo/docker-compose.yaml --profile '*' down`. Do not run a bare `docker compose -f ../../docker/lungo/docker-compose.yaml down` (no profile): it only stops unprofiled services and the network removal will fail with "Network ... Resource is still in use."
 
 > **Note:** The **ui** service uses the **`frontend`** profile; it runs only when that profile is active (e.g. **`frontend`** in **`COMPOSE_PROFILES`** or **`--profile frontend`**). **`.env.example`** includes **`frontend`**, so a copied **`.env`** starts the UI in Docker unless you remove it. Shared infrastructure (e.g. nats) has no profile. The observability stack (clickhouse-server, otel-collector, grafana, mce-api-layer, metrics-computation-engine) uses the `observability` profile; include it in `COMPOSE_PROFILES` (e.g. in `.env`) to start those services.
 
-The containerized UI uses **`frontend/.env`** only for **`VITE_*`** (see **`ui`** in **`docker-compose.yaml`**). Run **`cp frontend/.env.example frontend/.env`** before **`docker compose --profile frontend up --build`** if you have not already.
+The containerized UI uses **`frontend/.env`** only for **`VITE_*`** (see **`ui`** in **`docker-compose.yaml`**). Run **`cp frontend/.env.example frontend/.env`** before **`docker compose -f ../../docker/lungo/docker-compose.yaml --profile frontend up --build`** if you have not already.
 
 Once running:
 - **UI (Vite):** `cd frontend && cp .env.example .env && npm run dev` → [http://localhost:3000](http://localhost:3000) — with Docker backends, omit **`frontend`** from **`COMPOSE_PROFILES`** (see **Web UI: `COMPOSE_PROFILES` vs local Vite** above).
-- **UI (Docker):** include **`frontend`** in **`COMPOSE_PROFILES`** or use **`docker compose --profile frontend up --build`** → [http://localhost:3000/](http://localhost:3000/)
+- **UI (Docker):** include **`frontend`** in **`COMPOSE_PROFILES`** or use **`docker compose -f ../../docker/lungo/docker-compose.yaml --profile frontend up --build`** → [http://localhost:3000/](http://localhost:3000/)
 - Access Grafana dashboard at: [http://localhost:3001/](http://localhost:3001/)
 
 #### Option 2: Local Python Development
@@ -350,7 +350,7 @@ To enable A2A communication over SLIM, you need to run the SLIM message bus gate
 When using Docker Compose with profiles, include the `observability` profile in `COMPOSE_PROFILES` (e.g. `farms,logistics,recruiter,observability` in `.env`) to start the observability stack (OTEL Collector, Grafana, ClickHouse), and set `OTEL_SDK_DISABLED=false` when you want telemetry. Alternatively, start the stack explicitly:
 
 ```sh
-docker compose up slim nats clickhouse-server otel-collector grafana
+docker compose -f ../../docker/lungo/docker-compose.yaml up slim nats clickhouse-server otel-collector grafana
 ```
 
 **Step 2: Run the Weather MCP Server**
@@ -366,7 +366,7 @@ uv run python agents/mcp_servers/weather_service.py
 _Docker Compose:_
 
 ```sh
-docker compose up weather-mcp-server --build
+docker compose -f ../../docker/lungo/docker-compose.yaml up weather-mcp-server --build
 ```
 
 This MCP server is required for the Colombia Farm to function correctly.
@@ -412,7 +412,7 @@ uv run python agents/farms/vietnam/farm_server.py
 _Docker Compose:_
 
 ```sh
-docker compose up brazil-farm-server colombia-farm-server vietnam-farm-server --build
+docker compose -f ../../docker/lungo/docker-compose.yaml up brazil-farm-server colombia-farm-server vietnam-farm-server --build
 ```
 
 The farm servers handle incoming requests from the auction supervisor and process them using a directed LangGraph containing two directed paths: one for fetching inventory and another for generating orders, depending on the prompt.
@@ -430,7 +430,7 @@ uv run python agents/supervisors/auction/main.py
 _Docker Compose:_
 
 ```sh
-docker compose up auction-supervisor --build
+docker compose -f ../../docker/lungo/docker-compose.yaml up auction-supervisor --build
 ```
 
 This command starts a FastAPI server that processes user prompts by passing them to a LangGraph-based supervisor, which manages delegation to worker agents. The supervisor is implemented as a directed LangGraph with nodes for Inventory, Orders, General Information, and Reflection.
@@ -480,7 +480,7 @@ Open [http://localhost:3000](http://localhost:3000) (Vite dev port is set in **`
 _To run the UI inside Docker instead:_
 
 ```sh
-docker compose --profile frontend up ui --build
+docker compose -f ../../docker/lungo/docker-compose.yaml --profile frontend up ui --build
 ```
 
 Then open [http://localhost:3000/](http://localhost:3000/). **`VITE_*`** come from **`frontend/.env`** only.
@@ -551,14 +551,14 @@ The **Recruiter Supervisor** is an ADK-based orchestrator that helps users disco
 
 _Docker Compose:_
 ```sh
-docker compose --profile recruiter up
+docker compose -f ../../docker/lungo/docker-compose.yaml --profile recruiter up
 ```
 
 _Local Python:_
 
 > **Note:** The Recruiter Supervisor depends on the **Recruiter Agent** and **Directory services** to discover and evaluate agents. Start these dependencies first:
 > ```sh
-> docker compose --profile recruiter up nats postgres zot dir-api-server dir-mcp-server recruiter
+> docker compose -f ../../docker/lungo/docker-compose.yaml --profile recruiter up nats postgres zot dir-api-server dir-mcp-server recruiter
 > ```
 
 ```sh
@@ -664,7 +664,7 @@ Details about AGNTCY's MCE can be found in the Telemetry Hub repository: [Metric
 1. Run the MCE Components
 
 ```sh
-docker compose up metrics-computation-engine mce-api-layer
+docker compose -f ../../docker/lungo/docker-compose.yaml up metrics-computation-engine mce-api-layer
 ```
 
 2. Get session IDs within a given time range.

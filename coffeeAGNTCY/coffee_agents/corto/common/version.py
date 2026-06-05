@@ -66,7 +66,7 @@ def get_dependencies():
                         dependencies[display] = "unknown"
         
         # Get SLIM version from docker-compose.yaml
-        compose_path = Path(__file__).parent.parent / "docker-compose.yaml"
+        compose_path = Path(__file__).parent.parent.parent / "docker" / "corto" / "docker-compose.yaml"
         if compose_path.exists():
             with open(compose_path, 'r') as f:
                 content = f.read()

@@ -265,9 +265,9 @@ For advanced observability of your multi-agent system, integrate the [Observe SD
 
 #### Option 1: Docker Compose (Recommended)
 
-The fastest way to get started is using Docker Compose to spin up the entire stack:
+The fastest way to get started is using Docker Compose to spin up the entire stack (from `coffeeAGNTCY/docker/corto/`, or with `-f` from `coffee_agents/corto/`):
 ```sh
-docker compose up
+docker compose -f ../../docker/corto/docker-compose.yaml up --build
 ```
 
 Once running:
@@ -287,7 +287,7 @@ Additionally run the observability stack that has OTEL Collector, Grafana and Cl
 You can do this by executing the following command:
 
 ```sh
-docker compose up slim clickhouse-server otel-collector grafana
+docker compose -f ../../docker/corto/docker-compose.yaml up slim clickhouse-server otel-collector grafana
 ```
 
 **Step 2: Run the Farm Server**
@@ -303,7 +303,7 @@ uv run python farm/farm_server.py
 *Docker Compose*
 
 ```sh
-docker compose up farm-server --build
+docker compose -f ../../docker/corto/docker-compose.yaml up farm-server --build
 ```
 
 The `farm_server` listens for requests from the `exchange` and processes them using LangGraph. It generates flavor profiles based on user inputs such as location and season.
@@ -321,7 +321,7 @@ uv run python exchange/main.py
 *Docker Compose*
 
 ```sh
-docker compose up exchange-server --build
+docker compose -f ../../docker/corto/docker-compose.yaml up exchange-server --build
 ```
 
 This starts a FastAPI server that processes prompts, collecting them and relaying messages to the A2A server when they are relevant to coffee flavors or profiles.
@@ -352,7 +352,7 @@ npm run dev
 *Docker Compose:*
 
 ```sh
-docker compose up ui --build
+docker compose -f ../../docker/corto/docker-compose.yaml up ui --build
 ```
 
 By default, the UI will be available at [http://localhost:3000/](http://localhost:3000/).
@@ -465,7 +465,7 @@ Details about AGNTCY's MCE can be found in the Telemetry Hub repository: [Metric
 1. Run the MCE Components
 
 ```sh
-docker compose up metrics-computation-engine mce-api-layer
+docker compose -f ../../docker/corto/docker-compose.yaml up metrics-computation-engine mce-api-layer
 ```
 
 2. Get session IDs within a given time range.

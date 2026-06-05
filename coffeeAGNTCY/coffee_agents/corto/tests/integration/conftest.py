@@ -45,9 +45,9 @@ def _purge_modules(prefixes):
         sys.modules.pop(m, None)
 
 # ---------------- session infra ----------------
-files = ["docker-compose.yaml"]
-if Path("docker-compose.override.yaml").exists():
-    files.append("docker-compose.override.yaml")
+files = ["../../docker/corto/docker-compose.yaml"]
+if Path("../../docker/corto/docker-compose.override.yaml").exists():
+    files.append("../../docker/corto/docker-compose.override.yaml")
  
 def _shutdown_otel_sdk():
     """Flush and shutdown the OpenTelemetry SDK in this process before docker is

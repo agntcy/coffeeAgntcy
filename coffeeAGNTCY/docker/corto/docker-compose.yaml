@@ -2,7 +2,7 @@ services:
   farm-server:
     build:
       context: ../../..
-      dockerfile: coffeeAGNTCY/docker/Dockerfile.python-uv
+      dockerfile: coffeeAGNTCY/docker/common/Dockerfile.python-uv
       args:
         PROJECT_PATH: coffeeAGNTCY/coffee_agents/corto
         UV_CACHE_ID: corto-uv
@@ -10,7 +10,7 @@ services:
     image: ghcr.io/agntcy/coffee-agntcy/corto-farm:latest
     container_name: farm-server
     env_file:
-      - .env
+      - ../../coffee_agents/corto/.env
     environment:
       - FARM_AGENT_HOST=farm-server
       - FARM_AGENT_PORT=9999
@@ -38,14 +38,14 @@ services:
       - PASSWORD=${SLIM_GATEWAY_PASSWORD:-dummy_password}
       - CONFIG_PATH=/config.yaml
     volumes:
-      - ./config/docker/slim/server-config.yaml:/config.yaml
+      - ../../coffee_agents/corto/config/docker/slim/server-config.yaml:/config.yaml
     command: ["/slim", "--config", "/config.yaml"]
 
   # Exchange server App (farm client)
   exchange-server:
     build:
       context: ../../..
-      dockerfile: coffeeAGNTCY/docker/Dockerfile.python-uv
+      dockerfile: coffeeAGNTCY/docker/common/Dockerfile.python-uv
       args:
         PROJECT_PATH: coffeeAGNTCY/coffee_agents/corto
         UV_CACHE_ID: corto-uv
@@ -55,7 +55,7 @@ services:
     image: ghcr.io/agntcy/coffee-agntcy/corto-exchange:latest
     container_name: exchange-server-corto
     env_file:
-      - .env
+      - ../../coffee_agents/corto/.env
     environment:
       - FARM_AGENT_HOST=farm-server
       - FARM_AGENT_PORT=9999
@@ -74,7 +74,7 @@ services:
   ui:
     build:
       context: ../../..
-      dockerfile: coffeeAGNTCY/docker/Dockerfile.node-frontend
+      dockerfile: coffeeAGNTCY/docker/common/Dockerfile.node-frontend
       args:
         FRONTEND_PATH: coffeeAGNTCY/coffee_agents/corto/exchange/frontend
         NPM_CACHE_ID: corto-npm
@@ -123,7 +123,7 @@ services:
       - "4317:4317"
       - "4318:4318"
     volumes:
-      - ./config/docker/otel/otel-collector-config.yaml:/etc/otel-collector-config.yaml
+      - ../../coffee_agents/corto/config/docker/otel/otel-collector-config.yaml:/etc/otel-collector-config.yaml
     command: ["--config", "/etc/otel-collector-config.yaml"]
     depends_on:
       clickhouse-server:

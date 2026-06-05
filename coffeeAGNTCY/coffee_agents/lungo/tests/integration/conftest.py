@@ -139,9 +139,9 @@ def _wait_ready(client, path, timeout_s=30.0, poll_s=0.5):
 
 # ---------------- session infra ----------------
 # docker_helpers passes env=os.environ to compose so infra containers use the same env as the test (e.g. OTEL_SDK_DISABLED).
-files = ["docker-compose.yaml"]
-if Path("docker-compose.override.yaml").exists():
-    files.append("docker-compose.override.yaml")
+files = ["../../docker/lungo/docker-compose.yaml"]
+if Path("../../docker/lungo/docker-compose.override.yaml").exists():
+    files.append("../../docker/lungo/docker-compose.override.yaml")
 
 _session_docker_torn_down = False
 

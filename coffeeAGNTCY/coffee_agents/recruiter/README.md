@@ -92,7 +92,7 @@ Directory stack uses **AGNTCY Directory v1.0.0** (`ghcr.io/agntcy/dir-apiserver:
 
 ```bash
 # Minimal: Postgres + Zot + API (and optionally MCP for docker-mode MCP)
-docker compose -f docker/docker-compose.yaml up -d postgres zot dir-api-server dir-mcp-server
+docker compose -f ../../docker/recruiter/docker-compose.yaml up -d postgres zot dir-api-server dir-mcp-server
 ```
 
 #### Tests
@@ -162,10 +162,10 @@ Deploy the full stack including the recruiter agent:
 
 ```bash
 # Build and start all services (from the recruiter agent project root)
-docker compose -f docker/docker-compose.yaml up --build
+docker compose -f ../../docker/recruiter/docker-compose.yaml up --build
 
 # Or run in background
-docker compose -f docker/docker-compose.yaml up --build -d
+docker compose -f ../../docker/recruiter/docker-compose.yaml up --build -d
 ```
 
 This starts:
@@ -192,7 +192,7 @@ To manually start the required Directory services:
 
 ```bash
 # Start directory services (Postgres + Zot + API; include dir-mcp-server if using MCP docker mode)
-docker compose -f docker/docker-compose.yaml up -d postgres zot dir-api-server dir-mcp-server
+docker compose -f ../../docker/recruiter/docker-compose.yaml up -d postgres zot dir-api-server dir-mcp-server
 ```
 
 ### Run All Tests

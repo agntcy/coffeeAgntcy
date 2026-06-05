@@ -61,7 +61,7 @@ For Observability stack to work you need two things:
 
 Alternatively you can list the observability-related components like this (still depending on the env var):
 ```sh
-docker compose up slim clickhouse-server otel-collector grafana
+docker compose -f ../../docker/lungo/docker-compose.yaml up slim clickhouse-server otel-collector grafana
 ```
 
 **Step 2: Run the Group Conversation Stack**
@@ -69,13 +69,13 @@ docker compose up slim clickhouse-server otel-collector grafana
 If you want to run the group conversation stack separately, you can do so by running the following command:
 
 ```sh
-docker compose up logistics-farm logistics-supervisor logistics-shipper logistics-accountant logistics-helpdesk
+docker compose -f ../../docker/lungo/docker-compose.yaml up logistics-farm logistics-supervisor logistics-shipper logistics-accountant logistics-helpdesk
 ```
 
 This will start the supervisor, shipper, accountant, farm, helpdesk,  and SLIM transport services.
 
-To stop, use list for `docker compose down` or run `docker compose --profile '*' down`.
-A plain `docker compose down` can fail with the "network still in use" message, if the started containers have profiles defined.
+To stop, use list for `docker compose -f ../../docker/lungo/docker-compose.yaml down` or run `docker compose -f ../../docker/lungo/docker-compose.yaml --profile '*' down`.
+A plain `docker compose -f ../../docker/lungo/docker-compose.yaml down` can fail with the "network still in use" message, if the started containers have profiles defined.
 
 ---
 

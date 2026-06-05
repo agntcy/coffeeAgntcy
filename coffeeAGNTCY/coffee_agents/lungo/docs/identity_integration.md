@@ -94,16 +94,16 @@ IDENTITY_SERVICE_API_KEY_VIETNAM_FARM=vietnam_key
 Start the services:
 
 ```sh
-docker compose up exchange-server payment-mcp-server brazil-farm-server colombia-farm-server vietnam-farm-server weather-mcp-server
+docker compose -f ../../docker/lungo/docker-compose.yaml up exchange-server payment-mcp-server brazil-farm-server colombia-farm-server vietnam-farm-server weather-mcp-server
 ```
 
-To stop, use the same list for `docker compose down` as when starting, or run `docker compose --profile '*' down`.
-A plain `docker compose down` can fail with the "network still in use" message, if the started containers have profiles defined.
+To stop, use the same list for `docker compose -f ../../docker/lungo/docker-compose.yaml down` as when starting, or run `docker compose -f ../../docker/lungo/docker-compose.yaml --profile '*' down`.
+A plain `docker compose -f ../../docker/lungo/docker-compose.yaml down` can fail with the "network still in use" message, if the started containers have profiles defined.
 
 Run without `.env` (inline key):
 
 ```sh
-IDENTITY_SERVICE_API_KEY_AUCTION_SUPERVISOR=new_supervisor_key docker compose up exchange-server
+IDENTITY_SERVICE_API_KEY_AUCTION_SUPERVISOR=new_supervisor_key docker compose -f ../../docker/lungo/docker-compose.yaml up exchange-server
 ```
 
 **Production Recommendation:**

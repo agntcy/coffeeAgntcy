@@ -2,7 +2,7 @@ services:
   brazil-farm-server:
     build:
       context: ../../..
-      dockerfile: coffeeAGNTCY/docker/Dockerfile.python-uv
+      dockerfile: coffeeAGNTCY/docker/common/Dockerfile.python-uv
       args:
         PROJECT_PATH: coffeeAGNTCY/coffee_agents/lungo
         UV_CACHE_ID: lungo-uv
@@ -10,7 +10,7 @@ services:
     image: ghcr.io/agntcy/coffee-agntcy/brazil-farm:latest
     container_name: brazil-farm-server
     env_file:
-      - .env
+      - ../../coffee_agents/lungo/.env
     environment:
       - TZ=UTC
       - FARM_AGENT_HOST=brazil-farm-server
@@ -33,7 +33,7 @@ services:
   colombia-farm-server:
     build:
       context: ../../..
-      dockerfile: coffeeAGNTCY/docker/Dockerfile.python-uv
+      dockerfile: coffeeAGNTCY/docker/common/Dockerfile.python-uv
       args:
         PROJECT_PATH: coffeeAGNTCY/coffee_agents/lungo
         UV_CACHE_ID: lungo-uv
@@ -41,7 +41,7 @@ services:
     image: ghcr.io/agntcy/coffee-agntcy/colombia-farm:latest
     container_name: colombia-farm-server
     env_file:
-      - .env
+      - ../../coffee_agents/lungo/.env
     environment:
       - TZ=UTC
       - FARM_AGENT_HOST=colombia-farm-server
@@ -66,7 +66,7 @@ services:
   vietnam-farm-server:
     build:
       context: ../../..
-      dockerfile: coffeeAGNTCY/docker/Dockerfile.python-uv
+      dockerfile: coffeeAGNTCY/docker/common/Dockerfile.python-uv
       args:
         PROJECT_PATH: coffeeAGNTCY/coffee_agents/lungo
         UV_CACHE_ID: lungo-uv
@@ -74,7 +74,7 @@ services:
     image: ghcr.io/agntcy/coffee-agntcy/vietnam-farm:latest
     container_name: vietnam-farm-server
     env_file:
-      - .env
+      - ../../coffee_agents/lungo/.env
     environment:
       - TZ=UTC
       - FARM_AGENT_HOST=vietnam-farm-server
@@ -117,7 +117,7 @@ services:
       - PASSWORD=${SLIM_SHARED_SECRET:-${SLIM_GATEWAY_PASSWORD:-dummy_password}}
       - CONFIG_PATH=/config.yaml
     volumes:
-      - ./config/docker/slim/server-config.yaml:/config.yaml
+      - ../../coffee_agents/lungo/config/docker/slim/server-config.yaml:/config.yaml
     command: ["/slim", "--config", "/config.yaml"]
     # No healthcheck: ghcr.io/agntcy/slim image has no nc/bash/wget for a portable TCP check.
     # Dependents use condition: service_started so they start once this container is running.
@@ -126,7 +126,7 @@ services:
   auction-supervisor:
     build:
       context: ../../..
-      dockerfile: coffeeAGNTCY/docker/Dockerfile.python-uv
+      dockerfile: coffeeAGNTCY/docker/common/Dockerfile.python-uv
       args:
         PROJECT_PATH: coffeeAGNTCY/coffee_agents/lungo
         UV_CACHE_ID: lungo-uv
@@ -139,7 +139,7 @@ services:
       # Mount local git metadata so /build/info can derive latest tag/date in dev
       - ../../../.git:/app/.git:ro
     env_file:
-      - .env
+      - ../../coffee_agents/lungo/.env
     environment:
       - TZ=UTC
       - FARM_AGENT_HOST=farm-server
@@ -168,7 +168,7 @@ services:
   agentic-workflows-api:
     build:
       context: ../../..
-      dockerfile: coffeeAGNTCY/docker/Dockerfile.python-uv
+      dockerfile: coffeeAGNTCY/docker/common/Dockerfile.python-uv
       args:
         PROJECT_PATH: coffeeAGNTCY/coffee_agents/lungo
         UV_CACHE_ID: lungo-uv
@@ -179,7 +179,7 @@ services:
     image: ghcr.io/agntcy/coffee-agntcy/agentic-workflows-api:latest
     container_name: agentic-workflows-api
     env_file:
-      - .env
+      - ../../coffee_agents/lungo/.env
     environment:
       - TZ=UTC
       - PORT=9105
@@ -193,14 +193,14 @@ services:
       - frontend
     build:
       context: ../../..
-      dockerfile: coffeeAGNTCY/docker/Dockerfile.node-frontend
+      dockerfile: coffeeAGNTCY/docker/common/Dockerfile.node-frontend
       args:
         FRONTEND_PATH: coffeeAGNTCY/coffee_agents/lungo/frontend
         NPM_CACHE_ID: lungo-npm
     image: ghcr.io/agntcy/coffee-agntcy/lungo-ui:latest
     container_name: lungo-ui
     env_file:
-      - frontend/.env
+      - ../../coffee_agents/lungo/frontend/.env
     environment:
       - TZ=UTC
       - VITE_AGENTIC_WORKFLOWS_API_KEY=${WORKFLOW_API_KEY:?WORKFLOW_API_KEY must be set in .env}
@@ -213,7 +213,7 @@ services:
   weather-mcp-server:
     build:
       context: ../../..
-      dockerfile: coffeeAGNTCY/docker/Dockerfile.python-uv
+      dockerfile: coffeeAGNTCY/docker/common/Dockerfile.python-uv
       args:
         PROJECT_PATH: coffeeAGNTCY/coffee_agents/lungo
         UV_CACHE_ID: lungo-uv
@@ -238,7 +238,7 @@ services:
   payment-mcp-server:
     build:
       context: ../../..
-      dockerfile: coffeeAGNTCY/docker/Dockerfile.python-uv
+      dockerfile: coffeeAGNTCY/docker/common/Dockerfile.python-uv
       args:
         PROJECT_PATH: coffeeAGNTCY/coffee_agents/lungo
         UV_CACHE_ID: lungo-uv
@@ -302,7 +302,7 @@ services:
       - "4317:4317"
       - "4318:4318"
     volumes:
-      - ./config/docker/otel/otel-collector-config.yaml:/etc/otel-collector-config.yaml
+      - ../../coffee_agents/lungo/config/docker/otel/otel-collector-config.yaml:/etc/otel-collector-config.yaml
     command: ["--config", "/etc/otel-collector-config.yaml"]
     depends_on:
       clickhouse-server:
@@ -322,9 +322,9 @@ services:
       - GF_AUTH_ANONYMOUS_ENABLED=true
       - GF_AUTH_ANONYMOUS_ORG_ROLE=Admin
     volumes:
-      - ./config/docker/grafana/datasources.yaml:/etc/grafana/provisioning/datasources/datasources.yaml
-      - ./config/docker/grafana/dashboards.yaml:/etc/grafana/provisioning/dashboards/dashboards.yaml
-      - ./config/docker/grafana/dashboards:/var/lib/grafana/dashboards
+      - ../../coffee_agents/lungo/config/docker/grafana/datasources.yaml:/etc/grafana/provisioning/datasources/datasources.yaml
+      - ../../coffee_agents/lungo/config/docker/grafana/dashboards.yaml:/etc/grafana/provisioning/dashboards/dashboards.yaml
+      - ../../coffee_agents/lungo/config/docker/grafana/dashboards:/var/lib/grafana/dashboards
     depends_on:
       clickhouse-server:
         condition: service_healthy
@@ -334,7 +334,7 @@ services:
   logistics-shipper:
     build:
       context: ../../..
-      dockerfile: coffeeAGNTCY/docker/Dockerfile.python-uv
+      dockerfile: coffeeAGNTCY/docker/common/Dockerfile.python-uv
       args:
         PROJECT_PATH: coffeeAGNTCY/coffee_agents/lungo
         UV_CACHE_ID: lungo-uv
@@ -363,7 +363,7 @@ services:
   logistics-accountant:
     build:
       context: ../../..
-      dockerfile: coffeeAGNTCY/docker/Dockerfile.python-uv
+      dockerfile: coffeeAGNTCY/docker/common/Dockerfile.python-uv
       args:
         PROJECT_PATH: coffeeAGNTCY/coffee_agents/lungo
         UV_CACHE_ID: lungo-uv
@@ -392,7 +392,7 @@ services:
   logistics-farm:
     build:
       context: ../../..
-      dockerfile: coffeeAGNTCY/docker/Dockerfile.python-uv
+      dockerfile: coffeeAGNTCY/docker/common/Dockerfile.python-uv
       args:
         PROJECT_PATH: coffeeAGNTCY/coffee_agents/lungo
         UV_CACHE_ID: lungo-uv
@@ -421,7 +421,7 @@ services:
   logistics-helpdesk:
     build:
       context: ../../..
-      dockerfile: coffeeAGNTCY/docker/Dockerfile.python-uv
+      dockerfile: coffeeAGNTCY/docker/common/Dockerfile.python-uv
       args:
         PROJECT_PATH: coffeeAGNTCY/coffee_agents/lungo
         UV_CACHE_ID: lungo-uv
@@ -450,7 +450,7 @@ services:
   logistics-supervisor:
     build:
       context: ../../..
-      dockerfile: coffeeAGNTCY/docker/Dockerfile.python-uv
+      dockerfile: coffeeAGNTCY/docker/common/Dockerfile.python-uv
       args:
         PROJECT_PATH: coffeeAGNTCY/coffee_agents/lungo
         UV_CACHE_ID: lungo-uv
@@ -458,7 +458,7 @@ services:
     image: ghcr.io/agntcy/coffee-agntcy/logistics-supervisor:latest
     container_name: logistics-supervisor
     env_file:
-      - .env
+      - ../../coffee_agents/lungo/.env
     environment:
       - TZ=UTC
       - DEFAULT_MESSAGE_TRANSPORT=SLIM # Do not change. SLIM is required for group conversation.
@@ -526,7 +526,7 @@ services:
     image: ghcr.io/agntcy/dir-apiserver:v1.0.0
     container_name: dir-api-server
     env_file:
-      - ./config/docker/dir/apiserver.env
+      - ../../coffee_agents/lungo/config/docker/dir/apiserver.env
     ports:
       - 8888:8888
     depends_on:
@@ -603,7 +603,7 @@ services:
   recruiter:
     build:
       context: ../../..
-      dockerfile: coffeeAGNTCY/docker/Dockerfile.python-uv
+      dockerfile: coffeeAGNTCY/docker/common/Dockerfile.python-uv
       target: python-uv-with-dirctl
       args:
         PROJECT_PATH: coffeeAGNTCY/coffee_agents/recruiter
@@ -614,7 +614,7 @@ services:
     image: ghcr.io/agntcy/coffee-agntcy/recruiter:latest
     container_name: recruiter
     env_file:
-      - .env
+      - ../../coffee_agents/lungo/.env
     depends_on:
       dir-api-server:
         condition: service_started
@@ -639,7 +639,7 @@ services:
   recruiter-supervisor:
     build:
       context: ../../..
-      dockerfile: coffeeAGNTCY/docker/Dockerfile.python-uv
+      dockerfile: coffeeAGNTCY/docker/common/Dockerfile.python-uv
       args:
         PROJECT_PATH: coffeeAGNTCY/coffee_agents/lungo
         UV_CACHE_ID: lungo-uv
@@ -652,7 +652,7 @@ services:
       # Mount local git metadata so /build/info can derive latest tag/date in dev
       - ../../../.git:/app/.git:ro
     env_file:
-      - .env
+      - ../../coffee_agents/lungo/.env
     environment:
       - TZ=UTC
       - RECRUITER_AGENT_URL=http://recruiter:8881

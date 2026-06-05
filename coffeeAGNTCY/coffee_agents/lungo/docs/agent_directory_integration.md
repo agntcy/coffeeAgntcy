@@ -15,7 +15,7 @@ The integration enables automatic translation and publication of all lungo agent
 From the **lungo** project directory, launch Postgres, the directory API server, MCP server (`dirctl`), and the OCI registry (all use the `recruiter` compose profile):
 
 ```bash
-docker compose --profile recruiter up -d postgres zot dir-api-server dir-mcp-server
+docker compose -f ../../docker/lungo/docker-compose.yaml --profile recruiter up -d postgres zot dir-api-server dir-mcp-server
 ```
 
 This starts:
@@ -25,8 +25,8 @@ This starts:
 - `dir-mcp-server`: MCP bridge (`ghcr.io/agntcy/dir-ctl:v1.0.0`, `mcp serve` with open stdin)
 - `zot`: OCI-compliant registry (`ghcr.io/project-zot/zot:v2.1.15`) for agent artifacts
 
-To stop, use the same service list for `down`, e.g. `docker compose --profile recruiter down` or `docker compose --profile '*' down`.
-A plain `docker compose down` can fail with the "network still in use" message if the started containers have profiles defined.
+To stop, use the same service list for `down`, e.g. `docker compose -f ../../docker/lungo/docker-compose.yaml --profile recruiter down` or `docker compose -f ../../docker/lungo/docker-compose.yaml --profile '*' down`.
+A plain `docker compose -f ../../docker/lungo/docker-compose.yaml down` can fail with the "network still in use" message if the started containers have profiles defined.
 
 ### 2. Install Development Dependencies
 
