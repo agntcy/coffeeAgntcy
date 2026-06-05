@@ -6,6 +6,7 @@
 import { describe, expect, it } from "vitest"
 import { NODE_TYPES, EDGE_TYPES } from "@/utils/const"
 import { topologyWireToReactFlow } from "@/utils/topologyToReactFlow"
+import { stableAgentUuidForRecordName } from "@/utils/agenticTopologyIdentityUiMap"
 
 describe("topologyWireToReactFlow", () => {
   it.each([
@@ -247,7 +248,7 @@ describe("topologyWireToReactFlow", () => {
   })
 
   it("merges stable-agent map when stable_agent_id uses RootModel-shaped object", () => {
-    const brazilUuid = "ea3ce2b8-68b6-5fc9-9fa4-491cb71b7bf4"
+    const brazilUuid = stableAgentUuidForRecordName("Brazil Coffee Farm")
     const { nodes } = topologyWireToReactFlow(
       {
         nodes: [
@@ -270,7 +271,7 @@ describe("topologyWireToReactFlow", () => {
   })
 
   it("merges stable-agent map: Brazil farm gets directory slug, link, and resolved github", () => {
-    const brazilUuid = "ea3ce2b8-68b6-5fc9-9fa4-491cb71b7bf4"
+    const brazilUuid = stableAgentUuidForRecordName("Brazil Coffee Farm")
     const { nodes } = topologyWireToReactFlow(
       {
         nodes: [
@@ -303,7 +304,7 @@ describe("topologyWireToReactFlow", () => {
   })
 
   it("merges streaming variant github when referenceGithubUrlStreaming is set", () => {
-    const brazilUuid = "ea3ce2b8-68b6-5fc9-9fa4-491cb71b7bf4"
+    const brazilUuid = stableAgentUuidForRecordName("Brazil Coffee Farm")
     const { nodes } = topologyWireToReactFlow(
       {
         nodes: [

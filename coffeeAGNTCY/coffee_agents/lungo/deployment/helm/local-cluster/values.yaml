@@ -74,11 +74,18 @@ recruiter-supervisor:
 
 lungo-ui:
   environment: local
-  config:
-    exchangeAppApiUrl: "http://localhost:30080"
-    logisticsAppApiUrl: "http://localhost:30081"
-    discoveryAppApiUrl: "http://localhost:30082"
-    agenticWorkflowsApiUrl: "http://localhost:30084"
+  configs:
+    env:
+      data:
+        VITE_AGENTIC_WORKFLOWS_API_KEY: TheAnswerIs42 # Must match WORKFLOW_API_KEY on the Agentic Workflows API.
+        VITE_AGENTIC_WORKFLOWS_API_URL: http://localhost:30084
+        VITE_AGENTIC_WORKFLOWS_DOCS_GITHUB_BRANCH: main
+        # VITE_DIRECTORY_SERVER_URL: http://127.0.0.1:8888
+        VITE_DIRECTORY_VERSION: v1.0.0
+        VITE_DISCOVERY_APP_API_URL: http://localhost:30082
+        VITE_EXCHANGE_APP_API_URL: http://localhost:30080
+        # VITE_GRAFANA_URL: http://127.0.0.1:3001
+        VITE_LOGISTICS_APP_API_URL: http://localhost:30081
 
 # Populated by helmfile / config-overrides.yaml.gotmpl for local dev; defaults avoid nil when templating alone.
 localExternalSecret:

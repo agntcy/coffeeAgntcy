@@ -23,40 +23,52 @@ spec:
     {{ end }}
       serviceAccountName: {{ .Values.appName }}-sa
       containers:
-      - name: {{ .Values.appName }}
-        image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
-        imagePullPolicy: {{ .Values.image.pullPolicy }}
-        {{ if .Values.resources.enabled }}
-        resources:
-          requests:
-            cpu: {{ .Values.resources.requests.cpu }}
-            memory: {{ .Values.resources.requests.memory }}
-          limits:
-            cpu: {{ .Values.resources.limits.cpu }}
-            memory: {{ .Values.resources.limits.memory }}
-        {{ end }}
-        ports:
-        - containerPort: {{ .Values.service.port }}
-        {{ if .Values.probes.readinessProbeEnabled }}
-        readinessProbe:
-          httpGet:
-            path: {{ .Values.probes.endpoint }}
-            port: {{ .Values.probes.port }}
-          initialDelaySeconds: 20
-          periodSeconds: 10
-        {{ end }}
-        {{ if .Values.probes.livenessProbeEnabled }}
-        livenessProbe:
-          httpGet:
-            path: {{ .Values.probes.endpoint }}
-            port: {{ .Values.probes.port }}
-          initialDelaySeconds: 20
-          periodSeconds: 10
-        {{ end }}
-        envFrom:
-          - configMapRef:
-              name: {{ .Values.appName }}-configmap
-        {{ if .Values.externalSecrets }}
-          - secretRef:
-              name: {{ .Values.appName }}-secrets
-        {{ end }}
+        - name: {{ .Values.appName }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          {{ if .Values.resources.enabled }}
+          resources:
+            requests:
+              cpu: {{ .Values.resources.requests.cpu }}
+              memory: {{ .Values.resources.requests.memory }}
+            limits:
+              cpu: {{ .Values.resources.limits.cpu }}
+              memory: {{ .Values.resources.limits.memory }}
+          {{ end }}
+          ports:
+          - containerPort: {{ .Values.service.port }}
+          {{ if .Values.probes.readinessProbeEnabled }}
+          readinessProbe:
+            httpGet:
+              path: {{ .Values.probes.endpoint }}
+              port: {{ .Values.probes.port }}
+            initialDelaySeconds: 20
+            periodSeconds: 10
+          {{ end }}
+          {{ if .Values.probes.livenessProbeEnabled }}
+          livenessProbe:
+            httpGet:
+              path: {{ .Values.probes.endpoint }}
+              port: {{ .Values.probes.port }}
+            initialDelaySeconds: 20
+            periodSeconds: 10
+          {{ end }}
+          envFrom:
+            - configMapRef:
+                name: {{ .Values.appName }}-configmap
+          {{ if .Values.externalSecrets }}
+            - secretRef:
+                name: {{ .Values.appName }}-secrets
+          {{ end }}
+          volumeMounts:
+            - name: env-config-js
+              mountPath: /app/dist/env-config.js
+              subPath: env-config.js
+              readOnly: true
+      volumes:
+        - name: env-config-js
+          configMap:
+            name: {{ .Values.appName }}-configmap
+            items:
+              - key: env-config.js
+                path: env-config.js
