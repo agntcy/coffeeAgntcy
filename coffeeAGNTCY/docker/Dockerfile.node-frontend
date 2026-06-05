@@ -1,0 +1,23 @@
+# Shared Node frontend image. Parameterize per UI via build args.
+FROM node:24-alpine
+
+ARG FRONTEND_PATH
+ARG NPM_CACHE_ID
+
+WORKDIR /app
+
+ENV npm_config_cache=/root/.npm
+
+RUN --mount=type=cache,id=${NPM_CACHE_ID},target=/root/.npm \
+    --mount=type=bind,source=${FRONTEND_PATH}/package.json,target=package.json \
+    --mount=type=bind,source=${FRONTEND_PATH}/package-lock.json,target=package-lock.json \
+    npm ci
+
+COPY ${FRONTEND_PATH}/ .
+
+RUN npm install --verbose
+RUN npm run build --verbose
+
+EXPOSE 3000
+
+CMD ["npx", "serve", "-s", "dist", "-l", "3000"]
