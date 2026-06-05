@@ -68,7 +68,7 @@ spec:
       volumes:
         - name: env-config-js
           configMap:
-            name: {{ .Values.appName }}-configmap
+            name: {{ .Values.appName }}-env-configmap
             items:
               - key: env-config.js
                 path: env-config.js
