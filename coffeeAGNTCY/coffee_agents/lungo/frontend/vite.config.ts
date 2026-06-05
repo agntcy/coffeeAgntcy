@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  **/
 
-import { defineConfig } from "vite"
+import { defineConfig } from "vitest/config"
 import react from "@vitejs/plugin-react"
 import path from "path"
 
@@ -21,5 +21,10 @@ export default defineConfig({
       "@": path.resolve(__dirname, "src"),
     },
     extensions: [".tsx", ".ts", ".jsx", ".js", ".json"],
+  },
+  test: {
+    environment: "jsdom",
+    include: ["src/**/*.test.{ts,tsx}"],
+    setupFiles: ["src/test/setup.ts"],
   },
 })
