@@ -1,0 +1,96 @@
+name: Python smoke tests
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'coffeeAGNTCY/coffee_agents/corto/**'
+      - 'coffeeAGNTCY/coffee_agents/lungo/**'
+      - 'coffeeAGNTCY/coffee_agents/recruiter/**'
+      - '!coffeeAGNTCY/coffee_agents/*/deployment/helm/**'
+      - '.github/workflows/ci-smoke.yaml'
+      - '.github/workflows/test-smoke-reusable.yaml'
+      - '.github/workflows/test-subprojects-reusable.yaml'
+      - '.github/workflows/test.yaml'
+      - '.github/workflows/test-reusable.yaml'
+      - '.github/workflows/integration-fork-approve.yaml'
+      - '.github/actions/check-paths-have-changes/**'
+  pull_request:
+    paths:
+      - 'coffeeAGNTCY/coffee_agents/corto/**'
+      - 'coffeeAGNTCY/coffee_agents/lungo/**'
+      - 'coffeeAGNTCY/coffee_agents/recruiter/**'
+      - '!coffeeAGNTCY/coffee_agents/*/deployment/helm/**'
+      - '.github/workflows/ci-smoke.yaml'
+      - '.github/workflows/test-smoke-reusable.yaml'
+      - '.github/workflows/test-subprojects-reusable.yaml'
+      - '.github/workflows/test.yaml'
+      - '.github/workflows/test-reusable.yaml'
+      - '.github/workflows/integration-fork-approve.yaml'
+      - '.github/actions/check-paths-have-changes/**'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: smoke-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  subprojects-to-test:
+    uses: ./.github/workflows/test-subprojects-reusable.yaml
+
+  smoke-corto:
+    name: smoke / corto
+    needs: subprojects-to-test
+    if: ${{ needs.subprojects-to-test.outputs.test_corto == 'true' }}
+    uses: ./.github/workflows/test-smoke-reusable.yaml
+    with:
+      project_dir: coffeeAGNTCY/coffee_agents/corto
+      pytest_command: pytest tests/unit -v
+
+  smoke-corto-path-skip:
+    name: smoke / corto
+    needs: subprojects-to-test
+    if: ${{ needs.subprojects-to-test.outputs.test_corto != 'true' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: No corto path changes
+        run: echo "smoke / corto satisfied without running tests (no corto path changes)."
+
+  smoke-lungo:
+    name: smoke / lungo
+    needs: subprojects-to-test
+    if: ${{ needs.subprojects-to-test.outputs.test_lungo == 'true' }}
+    uses: ./.github/workflows/test-smoke-reusable.yaml
+    with:
+      project_dir: coffeeAGNTCY/coffee_agents/lungo
+      pytest_command: pytest tests/unit -m "not e2e" -v
+
+  smoke-lungo-path-skip:
+    name: smoke / lungo
+    needs: subprojects-to-test
+    if: ${{ needs.subprojects-to-test.outputs.test_lungo != 'true' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: No lungo path changes
+        run: echo "smoke / lungo satisfied without running tests (no lungo path changes)."
+
+  smoke-recruiter:
+    name: smoke / recruiter
+    needs: subprojects-to-test
+    if: ${{ needs.subprojects-to-test.outputs.test_recruiter == 'true' }}
+    uses: ./.github/workflows/test-smoke-reusable.yaml
+    with:
+      project_dir: coffeeAGNTCY/coffee_agents/recruiter
+      pytest_command: pytest tests/ --collect-only -q
+
+  smoke-recruiter-path-skip:
+    name: smoke / recruiter
+    needs: subprojects-to-test
+    if: ${{ needs.subprojects-to-test.outputs.test_recruiter != 'true' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: No recruiter path changes
+        run: echo "smoke / recruiter satisfied without running tests (no recruiter path changes)."

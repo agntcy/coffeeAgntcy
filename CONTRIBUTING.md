@@ -37,6 +37,27 @@ We expect new pull requests to include tests for any affected behavior, and, as
 we follow semantic versioning, we may reserve breaking changes until the next
 major version release.
 
+### CI: smoke and mandatory integration
+
+For pull requests that change agent code (`corto`, `lungo`, `recruiter`):
+
+1. **Smoke** tests run on every push (no LLM secrets).
+2. **Integration** tests are **required to merge** for everyone. They use repo LLM/Azure secrets and must pass on the PR’s latest commit for each affected project.
+
+**Same-repo branches:** integration runs automatically when you push.
+
+**Fork PRs:** integration runs only after a member of `@agntcy/coffee-agntcy-reviewers` submits an **Approve** review on GitHub. Until then, required `integration / *` checks stay pending and merge is blocked. After you push new commits, a new **Approve** is needed before integration runs again (once per commit SHA).
+
+See [`.github/workflows/README.md`](.github/workflows/README.md) for workflow details and branch protection setup.
+
+Run smoke tests locally before opening a PR:
+
+```bash
+cd coffeeAGNTCY/coffee_agents/lungo && uv run pytest tests/unit -m "not e2e" -q
+cd coffeeAGNTCY/coffee_agents/corto && uv run pytest tests/unit -q
+cd coffeeAGNTCY/coffee_agents/recruiter && uv run pytest tests/ --collect-only -q
+```
+
 ## Other Ways to Contribute
 
 We welcome anyone that wants to contribute to `coffeeAgntcy` to triage and

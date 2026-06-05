@@ -21,6 +21,11 @@ Link the primary issue in the PR description using `#` (e.g. `Fixes #123`). This
 - [ ] Documentation
 - [ ] Other (please describe)
 
+## CI (automated checks)
+
+- **Python (agent paths):** [smoke](.github/workflows/ci-smoke.yaml) runs on every push. **Integration** (`integration / corto|lungo|recruiter`) is **mandatory to merge** for all PRs. Same-repo PRs run integration on each push; **fork PRs** must receive an **Approve** from [`@agntcy/coffee-agntcy-reviewers`](https://github.com/orgs/agntcy/teams/coffee-agntcy-reviewers) before [fork integration](.github/workflows/integration-fork-approve.yaml) runs (once per commit; re-approve after new pushes).
+- **Lungo frontend:** [FE CI](.github/workflows/fe-ci.yaml) (typecheck, ESLint, Prettier) when `lungo/frontend/**` changes.
+
 ## Checklist
 
 - [ ] I have read the [contributing guidelines](/agntcy/coffeeAgntcy/blob/main/CONTRIBUTING.md)
