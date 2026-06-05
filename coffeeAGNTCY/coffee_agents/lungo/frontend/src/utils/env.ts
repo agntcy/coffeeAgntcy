@@ -21,7 +21,12 @@ function runtimeEnv(key: string): string | undefined {
 }
 
 export function getEnvValueByKey(key: string): string | undefined {
-  return runtimeEnv(key) ?? (typeof rawEnv[key] === "string" && rawEnv[key] !== "" ? rawEnv[key] : undefined)
+  return (
+    runtimeEnv(key) ??
+    (typeof rawEnv[key] === "string" && rawEnv[key] !== ""
+      ? rawEnv[key]
+      : undefined)
+  )
 }
 
 /** Optional convenience at call sites */
