@@ -2,4 +2,4 @@ apiVersion: v1
 appVersion: "0.0.9"
 description: A Helm chart for Lungo UI
 name: lungo-ui
-version: 0.1.2-dev-pregnor-ui-fix-misi-bp-ui-refactor
+version: 0.1.2-dev-2-pregnor-ui-fix-misi-bp-ui-refactor
