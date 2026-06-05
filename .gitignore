@@ -201,3 +201,6 @@ node_modules/
 
 # Local tool binaries
 **/bin/**
+
+# Frontend, UI, JS, TS, etc.
+**/*.tsbuildinfo
