@@ -25,6 +25,7 @@ import type {
 } from "@/components/MainArea/Graph/Elements/types"
 import { layoutPositionsByLayer } from "@/utils/topologyLayout"
 import {
+  directoryAgentSlugFromAgentRecordUri,
   enrichAgenticTopologyWellKnownUi,
   mergeAgenticTopologyIdentityUi,
   resolveGithubFromAgentRecordUri,
@@ -218,6 +219,9 @@ export function topologyWireToReactFlow(
 
     const labelStr = typeof n.label === "string" ? n.label : ""
     const { label1, label2 } = splitTopologyNodeLabel(labelStr)
+    const directoryAgentSlug = directoryAgentSlugFromAgentRecordUri(
+      n.agent_record_uri as string | undefined,
+    )
     let data: CustomNodeData = {
       icon: defaultCustomIcon(labelStr),
       label1,
@@ -225,6 +229,7 @@ export function topologyWireToReactFlow(
       handles: HANDLE_TYPES.ALL,
       verificationStatus: VERIFICATION_STATUS.VERIFIED,
       githubLink: gh,
+      ...(directoryAgentSlug ? { directoryAgentSlug } : {}),
     }
     data = mergeAgenticTopologyIdentityUi(data, n, {
       validateUrls,

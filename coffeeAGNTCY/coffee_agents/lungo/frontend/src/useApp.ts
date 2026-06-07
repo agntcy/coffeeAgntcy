@@ -282,7 +282,7 @@ export function useApp() {
         chat.setShowProgressTracker(false)
       }
     },
-    [selectedPattern, sendMessage, streaming, chat],
+    [selectedPattern, sendMessage, streaming, chat, activeWorkflowInstanceId],
   )
 
   const handleStreamComplete = useCallback(() => {
