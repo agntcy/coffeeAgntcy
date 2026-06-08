@@ -5,13 +5,9 @@
 
 import { create } from "zustand"
 import type { LogisticsStreamStep } from "./groupStreaming.types"
-import { env } from "@/utils/env"
+import { getLogisticsAppApiUrl, joinBaseUrl, LUNGO_FRONTEND_URLS } from "@/urls"
 import { isLocalDev, parseFetchError } from "@/utils/const.ts"
 import { logger } from "@/utils/logger"
-
-const DEFAULT_LOGISTICS_APP_API_URL = "http://127.0.0.1:9090"
-const LOGISTICS_APP_API_URL =
-  env.get("VITE_LOGISTICS_APP_API_URL") || DEFAULT_LOGISTICS_APP_API_URL
 
 const isValidLogisticsStreamStep = (
   data: unknown,
@@ -152,7 +148,10 @@ export const useGroupStreamingStore = create<
       const body: { prompt: string; workflow_instance_id?: string } = { prompt }
       if (workflowInstanceId) body.workflow_instance_id = workflowInstanceId
       const response = await fetch(
-        `${LOGISTICS_APP_API_URL}/agent/prompt/stream`,
+        joinBaseUrl(
+          getLogisticsAppApiUrl(),
+          LUNGO_FRONTEND_URLS.apiPaths.agentPromptStream,
+        ),
         {
           method: "POST",
           credentials: isLocalDev ? "omit" : "include",

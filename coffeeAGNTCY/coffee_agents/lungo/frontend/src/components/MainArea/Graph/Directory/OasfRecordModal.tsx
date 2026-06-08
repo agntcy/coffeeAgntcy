@@ -16,7 +16,7 @@ import {
   Typography,
 } from "@open-ui-kit/core"
 import Close from "@mui/icons-material/Close"
-import { env } from "@/utils/env"
+import { getDirectoryServerUrl, getDirectoryVersion } from "@/urls"
 import { fetchOasfRecord, OasfRecord } from "./DirectoryApi"
 import { CustomNodeData } from "../Elements/types"
 import { IdentityServiceError } from "../Identity/IdentityApi"
@@ -27,14 +27,6 @@ import {
   graphModalPreSx,
   graphModalScrollBodySx,
 } from "../graphModalStyles"
-
-const DEFAULT_DIRECTORY_SERVER_URL = "http://127.0.0.1:8888"
-const DIRECTORY_SERVER_URL =
-  env.get("VITE_DIRECTORY_SERVER_URL") || DEFAULT_DIRECTORY_SERVER_URL
-
-const DEFAULT_DIRECTORY_VERSION = "v1.0.0"
-const DIRECTORY_VERSION =
-  env.get("VITE_DIRECTORY_VERSION") || DEFAULT_DIRECTORY_VERSION
 
 export interface OasfRecordModalProps {
   isOpen: boolean
@@ -50,6 +42,8 @@ const OasfRecordModal: React.FC<OasfRecordModalProps> = ({
   nodeName,
   nodeData,
 }) => {
+  const directoryServerUrl = getDirectoryServerUrl()
+  const directoryVersion = getDirectoryVersion()
   const [record, setRecord] = useState<OasfRecord | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -143,7 +137,7 @@ const OasfRecordModal: React.FC<OasfRecordModalProps> = ({
                 </Typography>
                 {directoryUrl ? (
                   <Link
-                    href={DIRECTORY_SERVER_URL}
+                    href={directoryServerUrl}
                     target="_blank"
                     rel="noopener noreferrer"
                     sx={{
@@ -153,7 +147,7 @@ const OasfRecordModal: React.FC<OasfRecordModalProps> = ({
                       typography: "body2",
                     }}
                   >
-                    {DIRECTORY_SERVER_URL}
+                    {directoryServerUrl}
                   </Link>
                 ) : (
                   <Typography
@@ -179,7 +173,7 @@ const OasfRecordModal: React.FC<OasfRecordModalProps> = ({
                   Directory Version
                 </Typography>
                 <Typography variant="body2" sx={{ mt: 1 }}>
-                  {DIRECTORY_VERSION || "Unavailable"}
+                  {directoryVersion || "Unavailable"}
                 </Typography>
               </Box>
             </Stack>

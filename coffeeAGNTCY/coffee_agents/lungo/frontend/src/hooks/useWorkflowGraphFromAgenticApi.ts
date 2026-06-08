@@ -11,10 +11,8 @@ import {
   instanceIdToPathUuid,
 } from "@/api/agenticWorkflowsClient"
 import type { EventV1Wire } from "@/api/agenticWorkflowsTypes"
-import {
-  getAgenticWorkflowsApiUrl,
-  mapWorkflowNameToSlug,
-} from "@/utils/agenticWorkflowsApi"
+import { getAgenticWorkflowsApiUrl } from "@/urls"
+import { mapWorkflowNameToSlug } from "@/utils/agenticWorkflowsApi"
 import { useActiveWorkflowInstanceStore } from "@/stores/activeWorkflowInstanceStore"
 import { logger } from "@/utils/logger"
 import { staticIdMapForPattern } from "@/utils/topologyStaticIdMap"

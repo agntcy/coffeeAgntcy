@@ -4,6 +4,7 @@
  **/
 
 import axios from "axios"
+import { joinBaseUrl, LUNGO_FRONTEND_URLS } from "@/urls"
 import { getApiUrlForPattern, PATTERNS } from "@/utils/patternUtils"
 import { IdentityServiceError } from "@/components/MainArea/Graph/Identity/IdentityApi"
 import type { CustomNodeData } from "../Elements/types"
@@ -79,7 +80,10 @@ export const fetchOasfRecord = async (
 
   try {
     const response = await axios.get<OasfRecord>(
-      `${getApiUrlForPattern(pattern)}/agents/${slug}/oasf`,
+      joinBaseUrl(
+        getApiUrlForPattern(pattern),
+        LUNGO_FRONTEND_URLS.apiPaths.agentsOasf(slug),
+      ),
       {
         timeout: 10000,
         headers: {

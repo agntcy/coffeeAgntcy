@@ -5,13 +5,9 @@
 
 import React, { useEffect, useMemo, useState } from "react"
 import { Dropdown } from "@open-ui-kit/core"
-import { env } from "@/utils/env"
+import { getDiscoveryAppApiUrl, joinBaseUrl, LUNGO_FRONTEND_URLS } from "@/urls"
 import { CustomDropdownListItemContent } from "./CustomDropdownListItemContent"
 import { PromptCategory, Prompt } from "./PromptTypes"
-
-const DEFAULT_DISCOVERY_APP_API_URL = "http://127.0.0.1:8882"
-const DISCOVERY_APP_API_URL =
-  env.get("VITE_DISCOVERY_APP_API_URL") || DEFAULT_DISCOVERY_APP_API_URL
 
 interface DiscoveryPromptsDropdownProps {
   onSelect: (query: string) => void
@@ -31,10 +27,16 @@ const DiscoveryPromptsDropdown: React.FC<DiscoveryPromptsDropdownProps> = ({
     const fetchPrompts = async (retryCount = 0) => {
       try {
         setIsLoading(true)
-        const res = await fetch(`${DISCOVERY_APP_API_URL}/suggested-prompts`, {
-          cache: "no-cache",
-          signal: controller.signal,
-        })
+        const res = await fetch(
+          joinBaseUrl(
+            getDiscoveryAppApiUrl(),
+            LUNGO_FRONTEND_URLS.apiPaths.suggestedPrompts,
+          ),
+          {
+            cache: "no-cache",
+            signal: controller.signal,
+          },
+        )
 
         if (!res.ok) throw new Error(`HTTP ${res.status}`)
 

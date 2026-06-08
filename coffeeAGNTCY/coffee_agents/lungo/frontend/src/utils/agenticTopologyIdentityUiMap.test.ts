@@ -5,7 +5,7 @@
 
 import { describe, expect, it } from "vitest"
 import type { TopologyNodeWire } from "@/api/agenticWorkflowsTypes"
-import urlsConfig from "@/utils/urls.json"
+import { LUNGO_FRONTEND_URLS } from "@/urls"
 import type { CustomNodeData } from "@/components/MainArea/Graph/Elements/types"
 import {
   getOasfSlugFromNodeData,
@@ -46,7 +46,7 @@ describe("agenticTopologyIdentityUiMap", () => {
       "../../agents/supervisors/auction/oasf/agents/brazil-coffee-farm.json",
       { validateUrls: false },
     )
-    const root = urlsConfig.github.baseUrl.replace(/\/$/, "")
+    const root = LUNGO_FRONTEND_URLS.github.baseUrl.replace(/\/$/, "")
     expect(url).toBe(
       `${root}/lungo/agents/supervisors/auction/oasf/agents/brazil-coffee-farm.json`,
     )

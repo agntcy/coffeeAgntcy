@@ -10,7 +10,7 @@ import Visibility from "@mui/icons-material/Visibility"
 import { IdentityDetailsDropdownContentProps } from "./types"
 import { useGithubIcon } from "@/hooks/useGithubIcon"
 import { AssetPngIcon } from "@/components/AssetPngIcon"
-import urlsConfig from "@/utils/urls.json"
+import { LUNGO_FRONTEND_URLS } from "@/urls"
 import { SecurityClass } from "@/utils/SecurityClass"
 import { graphSideIconButtonSx } from "@/components/MainArea/Graph/Elements/graphNodeSurface"
 
@@ -28,15 +28,15 @@ const IdentityDetailsDropdownContent: React.FC<
       nodeName.toLowerCase().includes("colombia") ||
       nodeName.toLowerCase().includes("vietnam")
     ) {
-      return urlsConfig.identity.colombia
+      return LUNGO_FRONTEND_URLS.identity.colombia
     }
 
     if (nodeName.toLowerCase().includes("auction")) {
-      return urlsConfig.identity.auction
+      return LUNGO_FRONTEND_URLS.identity.auction
     }
 
     if (nodeData.label2?.toLowerCase().includes("payment")) {
-      return urlsConfig.identity.payment
+      return LUNGO_FRONTEND_URLS.identity.payment
     }
 
     return nodeData.githubLink

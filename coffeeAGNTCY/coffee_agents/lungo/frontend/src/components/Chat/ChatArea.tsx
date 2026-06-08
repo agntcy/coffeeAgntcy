@@ -15,19 +15,18 @@ import ChatAreaComposer from "./ChatAreaComposer"
 import ChatAreaMessageThread from "./ChatAreaMessageThread"
 import ChatHeader from "./ChatHeader"
 
-import { env } from "@/utils/env"
 import { logger } from "@/utils/logger"
+import {
+  buildGrafanaSessionDashboardUrl,
+  getGrafanaUrl,
+  LUNGO_FRONTEND_URLS,
+} from "@/urls"
 import type { GraphConfig } from "@/utils/graphConfigs"
 import { DiscoveryResponseEvent } from "@/types/agent"
 import type { AuctionStreamingState } from "@/stores/auctionStreaming.types"
 import type { RecruiterStreamingState } from "@/stores/recruiterStreaming.types"
 import type { ApiResponse } from "@/types/api"
 import { PATTERNS } from "@/utils/patternUtils"
-
-const DEFAULT_GRAFANA_URL = "http://127.0.0.1:3001"
-const GRAFANA_URL = env.get("VITE_GRAFANA_URL") || DEFAULT_GRAFANA_URL
-const GRAFANA_DASHBOARD_PATH =
-  "/d/lungo-dashboard/lungo-dashboard?orgId=1&var-session_id="
 
 /** Panel expanded/collapsed by the chat header minimize control. */
 export const CHAT_MESSAGE_PANEL_ID = "chat-message-panel"
@@ -92,7 +91,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
   chatRef,
   auctionState,
   recruiterState,
-  grafanaUrl = GRAFANA_URL,
+  grafanaUrl = getGrafanaUrl(),
   onDiscoveryResponse,
 }) => {
   const [content, setContent] = useState<string>("")
@@ -159,7 +158,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
           }
         },
         onError: (error) => {
-          logger.apiError("/agent/prompt", error)
+          logger.apiError(LUNGO_FRONTEND_URLS.apiPaths.agentPrompt, error)
           const { message: errorMessage } = parseApiError(error)
           if (onApiResponse) {
             onApiResponse(errorMessage, true)
@@ -203,7 +202,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
   const sessionIdForUrl = agentResponse?.session_id || groupSessionId
 
   const grafanaSessionUrl = sessionIdForUrl
-    ? `${grafanaUrl}${GRAFANA_DASHBOARD_PATH}${encodeURIComponent(sessionIdForUrl)}`
+    ? buildGrafanaSessionDashboardUrl(sessionIdForUrl)
     : grafanaUrl
 
   if (!isBottomLayout) {

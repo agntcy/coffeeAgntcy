@@ -9,6 +9,7 @@ import {
   PolicyData,
 } from "@/components/MainArea/Graph/Identity/types"
 import type { CustomNodeData } from "@/components/MainArea/Graph/Elements/types"
+import { joinBaseUrl, LUNGO_FRONTEND_URLS } from "@/urls"
 import { getApiUrlForPattern, PATTERNS } from "@/utils/patternUtils"
 import { logger } from "@/utils/logger"
 
@@ -79,7 +80,10 @@ export const fetchBadgeDetails = async (
 
   try {
     const response = await axios.get<BadgeData>(
-      `${getApiUrlForPattern(PATTERNS.PUBLISH_SUBSCRIBE)}/identity-apps/${slug}/badge`,
+      joinBaseUrl(
+        getApiUrlForPattern(PATTERNS.PUBLISH_SUBSCRIBE),
+        LUNGO_FRONTEND_URLS.apiPaths.identityAppsBadge(slug),
+      ),
       {
         timeout: 10000,
         headers: {
@@ -116,7 +120,10 @@ export const fetchPolicyDetails = async (
 
   try {
     const response = await axios.get<PolicyData>(
-      `${getApiUrlForPattern(PATTERNS.PUBLISH_SUBSCRIBE)}/identity-apps/${slug}/policies`,
+      joinBaseUrl(
+        getApiUrlForPattern(PATTERNS.PUBLISH_SUBSCRIBE),
+        LUNGO_FRONTEND_URLS.apiPaths.identityAppsPolicies(slug),
+      ),
       {
         timeout: 10000,
         headers: {
