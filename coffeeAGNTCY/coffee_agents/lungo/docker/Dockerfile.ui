@@ -11,12 +11,12 @@ RUN --mount=type=cache,id=lungo-npm,target=/root/.npm \
     --mount=type=bind,source=coffeeAGNTCY/coffee_agents/lungo/frontend/package-lock.json,target=package-lock.json \
     npm ci
 
-# Copy application files, including assets
+# Copy application files, including assets (node_modules excluded via .dockerignore)
 COPY coffeeAGNTCY/coffee_agents/lungo/frontend/ .
 
 # Build the frontend
-RUN npm install --verbose
-RUN npm run build --verbose
+RUN --mount=type=cache,id=lungo-npm,target=/root/.npm \
+    npm run build --verbose
 
 # Expose port 3000
 EXPOSE 3000

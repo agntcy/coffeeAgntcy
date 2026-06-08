@@ -7,6 +7,10 @@
 **/__pycache__
 **/.DS_Store
 
+# Node: never copy host-built deps or build output into images
+**/node_modules
+**/dist
+
 # For repo root context
 .git
 .github
