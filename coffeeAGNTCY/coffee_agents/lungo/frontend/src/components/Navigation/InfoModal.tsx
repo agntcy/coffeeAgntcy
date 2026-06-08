@@ -13,7 +13,12 @@ import {
   Typography,
 } from "@open-ui-kit/core"
 import Close from "@mui/icons-material/Close"
-import { env } from "@/utils/env"
+import {
+  getAgenticWorkflowsApiUrl,
+  getExchangeAppApiUrl,
+  joinBaseUrl,
+  LUNGO_FRONTEND_URLS,
+} from "@/urls"
 
 interface InfoModalProps {
   isOpen: boolean
@@ -31,14 +36,8 @@ interface BuildInfo {
 }
 
 const InfoModal: React.FC<InfoModalProps> = ({ isOpen, onClose }) => {
-  const DEFAULT_EXCHANGE_APP_API_URL = "http://127.0.0.1:8000"
-  const EXCHANGE_APP_API_URL =
-    env.get("VITE_EXCHANGE_APP_API_URL") || DEFAULT_EXCHANGE_APP_API_URL
-
-  const DEFAULT_AGENTIC_WORKFLOWS_API_URL = "http://127.0.0.1:9105"
-  const AGENTIC_WORKFLOWS_API_URL =
-    env.get("VITE_AGENTIC_WORKFLOWS_API_URL") ||
-    DEFAULT_AGENTIC_WORKFLOWS_API_URL
+  const EXCHANGE_APP_API_URL = getExchangeAppApiUrl()
+  const AGENTIC_WORKFLOWS_API_URL = getAgenticWorkflowsApiUrl()
 
   const [info, setInfo] = React.useState<BuildInfo | null>(null)
   const [error, setError] = React.useState<string | null>(null)
@@ -49,7 +48,9 @@ const InfoModal: React.FC<InfoModalProps> = ({ isOpen, onClose }) => {
     const fetchInfo = async () => {
       try {
         setError(null)
-        const res = await fetch(`${EXCHANGE_APP_API_URL}/about`)
+        const res = await fetch(
+          joinBaseUrl(EXCHANGE_APP_API_URL, LUNGO_FRONTEND_URLS.apiPaths.about),
+        )
         if (!res.ok) {
           throw new Error(`HTTP ${res.status}: ${res.statusText}`)
         }

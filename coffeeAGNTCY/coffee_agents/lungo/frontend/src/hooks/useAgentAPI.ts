@@ -9,6 +9,7 @@ import { v4 as uuid } from "uuid"
 import type { Message } from "@/components/Chat/types"
 import { isLocalDev, parseApiError, Role } from "@/utils/const"
 import { withRetry, RETRY_CONFIG } from "@/utils/retryUtils"
+import { joinBaseUrl, LUNGO_FRONTEND_URLS } from "@/urls"
 import { shouldEnableRetries, getApiUrlForPattern } from "@/utils/patternUtils"
 import type { ApiResponse } from "@/types/api"
 
@@ -71,7 +72,7 @@ export const useAgentAPI = (): UseAgentAPIReturn => {
 
     const makeApiCall = async (): Promise<ApiResponse> => {
       const response = await axios.post<ApiResponse>(
-        `${apiUrl}/agent/prompt`,
+        joinBaseUrl(apiUrl, LUNGO_FRONTEND_URLS.apiPaths.agentPrompt),
         { prompt },
         {
           signal: controller.signal,
@@ -151,7 +152,7 @@ export const useAgentAPI = (): UseAgentAPIReturn => {
 
     const makeApiCall = async (): Promise<ApiResponse> => {
       const response = await axios.post<ApiResponse>(
-        `${apiUrl}/agent/prompt`,
+        joinBaseUrl(apiUrl, LUNGO_FRONTEND_URLS.apiPaths.agentPrompt),
         { prompt },
         {
           signal: controller.signal,

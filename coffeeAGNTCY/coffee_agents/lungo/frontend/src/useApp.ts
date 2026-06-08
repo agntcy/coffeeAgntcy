@@ -4,6 +4,7 @@
  **/
 
 import { useState, useEffect, useRef, useCallback, useMemo } from "react"
+import { LUNGO_FRONTEND_URLS } from "@/urls"
 import { logger } from "@/utils/logger"
 import { useChatAreaMeasurement } from "@/hooks/useChatAreaMeasurement"
 import { useAppStreamingState } from "@/hooks/useAppStreamingState"
@@ -247,7 +248,7 @@ export function useApp() {
           try {
             await streaming.startStreaming(query, activeWorkflowInstanceId)
           } catch (err) {
-            logger.apiError("/agent/prompt/stream", err)
+            logger.apiError(LUNGO_FRONTEND_URLS.apiPaths.agentPromptStream, err)
             chat.setShowFinalResponse(true)
             chat.handleApiResponse(
               "Sorry, I encountered an error with streaming.",
@@ -268,7 +269,7 @@ export function useApp() {
           try {
             await streaming.connectRecruiter(query)
           } catch (err) {
-            logger.apiError("/agent/prompt/stream", err)
+            logger.apiError(LUNGO_FRONTEND_URLS.apiPaths.agentPromptStream, err)
             chat.setShowFinalResponse(true)
             chat.handleApiResponse(
               "Sorry, I encountered an error with recruiter streaming.",
@@ -281,7 +282,7 @@ export function useApp() {
           chat.handleApiResponse(response, false)
         }
       } catch (err) {
-        logger.apiError("/agent/prompt", err)
+        logger.apiError(LUNGO_FRONTEND_URLS.apiPaths.agentPrompt, err)
         chat.handleApiResponse(
           err instanceof Error ? err.message : String(err),
           true,

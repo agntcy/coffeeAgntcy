@@ -5,14 +5,10 @@
 
 import React, { useEffect, useMemo, useState } from "react"
 import { Dropdown } from "@open-ui-kit/core"
-import { env } from "@/utils/env"
 import { logger } from "@/utils/logger"
+import { getExchangeAppApiUrl, joinBaseUrl, LUNGO_FRONTEND_URLS } from "@/urls"
 import { CustomDropdownListItemContent } from "./CustomDropdownListItemContent"
 import { PromptCategory } from "./PromptTypes"
-
-const DEFAULT_EXCHANGE_APP_API_URL = "http://127.0.0.1:8000"
-const EXCHANGE_APP_API_URL =
-  env.get("VITE_EXCHANGE_APP_API_URL") || DEFAULT_EXCHANGE_APP_API_URL
 
 interface CoffeePromptsDropdownProps {
   onSelect: (query: string) => void
@@ -36,9 +32,13 @@ const CoffeePromptsDropdown: React.FC<CoffeePromptsDropdownProps> = ({
       try {
         setIsLoading(true)
         const isStreamingPattern = pattern === "publish_subscribe_streaming"
-        const url = isStreamingPattern
-          ? `${EXCHANGE_APP_API_URL}/suggested-prompts?pattern=streaming`
-          : `${EXCHANGE_APP_API_URL}/suggested-prompts`
+        const baseUrl = getExchangeAppApiUrl()
+        const url = joinBaseUrl(
+          baseUrl,
+          isStreamingPattern
+            ? LUNGO_FRONTEND_URLS.apiPaths.suggestedPromptsStreaming
+            : LUNGO_FRONTEND_URLS.apiPaths.suggestedPrompts,
+        )
 
         const res = await fetch(url, {
           cache: "no-cache",

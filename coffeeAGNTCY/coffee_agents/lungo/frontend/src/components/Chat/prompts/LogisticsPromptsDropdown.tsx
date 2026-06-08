@@ -5,14 +5,10 @@
 
 import React, { useEffect, useMemo, useState } from "react"
 import { Dropdown } from "@open-ui-kit/core"
-import { env } from "@/utils/env"
 import { logger } from "@/utils/logger"
+import { getLogisticsAppApiUrl, joinBaseUrl, LUNGO_FRONTEND_URLS } from "@/urls"
 import { CustomDropdownListItemContent } from "./CustomDropdownListItemContent"
 import { PromptCategory } from "./PromptTypes"
-
-const DEFAULT_LOGISTICS_APP_API_URL = "http://127.0.0.1:9090"
-const LOGISTICS_APP_API_URL =
-  env.get("VITE_LOGISTICS_APP_API_URL") || DEFAULT_LOGISTICS_APP_API_URL
 
 interface LogisticsPromptsDropdownProps {
   onSelect: (query: string) => void
@@ -33,10 +29,16 @@ const LogisticsPromptsDropdown: React.FC<LogisticsPromptsDropdownProps> = ({
     const fetchPrompts = async (retryCount = 0) => {
       try {
         setIsLoading(true)
-        const res = await fetch(`${LOGISTICS_APP_API_URL}/suggested-prompts`, {
-          cache: "no-cache",
-          signal: controller.signal,
-        })
+        const res = await fetch(
+          joinBaseUrl(
+            getLogisticsAppApiUrl(),
+            LUNGO_FRONTEND_URLS.apiPaths.suggestedPrompts,
+          ),
+          {
+            cache: "no-cache",
+            signal: controller.signal,
+          },
+        )
 
         if (!res.ok) throw new Error(`HTTP ${res.status}`)
 
