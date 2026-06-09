@@ -1,7 +1,7 @@
 # Copyright AGNTCY Contributors (https://github.com/agntcy)
 # SPDX-License-Identifier: Apache-2.0
 
-"""Unit tests for ``common.a2a_event_middleware.workflow_catalog``.
+"""Unit tests for ``common.workflow_utils.workflow_catalog``.
 
 Covers JSON catalog loading and the ``lookup_workflow`` lookup.
 """
@@ -11,7 +11,12 @@ from __future__ import annotations
 import json
 
 import pytest
-from common.a2a_event_middleware import workflow_catalog as wc
+from common.a2a_event_middleware import event_sink as shim_es
+from common.a2a_event_middleware import inflight as shim_if
+from common.a2a_event_middleware import workflow_catalog as shim_wc
+from common.workflow_utils import event_sink as es
+from common.workflow_utils import inflight as inflight
+from common.workflow_utils import workflow_catalog as wc
 
 
 class TestLookupWorkflow:
@@ -69,3 +74,38 @@ class TestLookupWorkflow:
         assert good.use_case == "Unit Test"
         assert good.scenario == "Good Scenario"
         assert wc.lookup_workflow("missing pattern") is None
+
+
+class TestWorkflowCatalogShim:
+    """Shim modules must reference the same callables and cache as canonical."""
+
+    def test_lookup_workflow_is_shim_alias(self):
+        assert shim_wc.lookup_workflow is wc.lookup_workflow
+
+    def test_load_catalog_is_shim_alias(self):
+        assert shim_wc._load_catalog is wc._load_catalog
+
+
+class TestInflightShim:
+    """Shim must share module-level in-flight state with canonical inflight."""
+
+    def test_in_flight_is_shim_alias(self):
+        assert shim_if.in_flight is inflight.in_flight
+
+    def test_in_flight_lock_is_shim_alias(self):
+        assert shim_if.in_flight_lock is inflight.in_flight_lock
+
+    def test_register_cleanup_is_shim_alias(self):
+        assert shim_if.register_cleanup_span_processor is (
+            inflight.register_cleanup_span_processor
+        )
+
+
+class TestEventSinkShim:
+    """Shim must reference the same sink types as canonical event_sink."""
+
+    def test_workflow_api_event_sink_is_shim_alias(self):
+        assert shim_es.WorkflowAPIEventSink is es.WorkflowAPIEventSink
+
+    def test_event_sink_is_shim_alias(self):
+        assert shim_es.EventSink is es.EventSink

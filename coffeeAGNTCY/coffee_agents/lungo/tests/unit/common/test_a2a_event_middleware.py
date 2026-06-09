@@ -89,7 +89,7 @@ def captured_events(monkeypatch):
 class TestRuntimeIdAllocator:
     async def test_distinct_allocators_yield_distinct_ids(self):
         """Distinct allocators should not share node IDs for the same key."""
-        from common.a2a_event_middleware.inflight import RuntimeIdAllocator
+        from common.workflow_utils.inflight import RuntimeIdAllocator
 
         a1 = RuntimeIdAllocator()
         a2 = RuntimeIdAllocator()
@@ -102,8 +102,8 @@ class TestRuntimeIdAllocator:
 
 class TestInFlightCleanupSpanProcessor:
     def _seed_state(self, trace_id: int, owner_span_id: int):
-        from common.a2a_event_middleware import inflight as inflight_mod
-        from common.a2a_event_middleware.inflight import (
+        from common.workflow_utils import inflight as inflight_mod
+        from common.workflow_utils.inflight import (
             InterceptionState,
             RuntimeIdAllocator,
         )
@@ -128,8 +128,8 @@ class TestInFlightCleanupSpanProcessor:
         )
 
     def test_evicts_on_owner_span_end(self):
-        from common.a2a_event_middleware import inflight as inflight_mod
-        from common.a2a_event_middleware.inflight import InFlightCleanupSpanProcessor
+        from common.workflow_utils import inflight as inflight_mod
+        from common.workflow_utils.inflight import InFlightCleanupSpanProcessor
 
         self._seed_state(trace_id=0xAAA, owner_span_id=0xBBB)
         processor = InFlightCleanupSpanProcessor()
@@ -141,8 +141,8 @@ class TestInFlightCleanupSpanProcessor:
     def test_sibling_span_does_not_evict(self):
         """A different span in the same trace must not drop the state — only
         the owning span does."""
-        from common.a2a_event_middleware import inflight as inflight_mod
-        from common.a2a_event_middleware.inflight import InFlightCleanupSpanProcessor
+        from common.workflow_utils import inflight as inflight_mod
+        from common.workflow_utils.inflight import InFlightCleanupSpanProcessor
 
         self._seed_state(trace_id=0xAAA, owner_span_id=0xBBB)
         processor = InFlightCleanupSpanProcessor()
@@ -155,8 +155,8 @@ class TestInFlightCleanupSpanProcessor:
         self, agent_card_factory, otel_span, patch_emit_events, captured_events,
     ):
         """State ownership should be tied to parent span, not child interceptor span."""
-        from common.a2a_event_middleware import inflight as inflight_mod
-        from common.a2a_event_middleware.inflight import InFlightCleanupSpanProcessor
+        from common.workflow_utils import inflight as inflight_mod
+        from common.workflow_utils.inflight import InFlightCleanupSpanProcessor
         from common.a2a_event_middleware.middleware import (
             EventEmittingInterceptor,
         )
@@ -206,7 +206,7 @@ class TestInFlightCleanupSpanProcessor:
 
 class TestRegisterCleanupSpanProcessor:
     def test_idempotent_on_same_provider(self, monkeypatch):
-        from common.a2a_event_middleware import inflight as inflight_mod
+        from common.workflow_utils import inflight as inflight_mod
 
         provider = MagicMock()
         del provider._lungo_cleanup_registered  # ensure missing
@@ -222,7 +222,7 @@ class TestRegisterCleanupSpanProcessor:
     def test_graceful_when_provider_has_no_add_span_processor(
         self, monkeypatch, caplog,
     ):
-        from common.a2a_event_middleware import inflight as inflight_mod
+        from common.workflow_utils import inflight as inflight_mod
 
         provider = SimpleNamespace()
         monkeypatch.setattr(
@@ -506,7 +506,7 @@ class TestBaggageCarrier:
             attach_workflow_context as attach_workflow_baggage,
             detach_workflow_context as detach_workflow_baggage,
         )
-        from common.a2a_event_middleware.inflight import read_trace_context
+        from common.workflow_utils.inflight import read_trace_context
 
         iid = "instance://550e8400-e29b-41d4-a716-446655440000"
         wf = "InstTestWf"
@@ -523,7 +523,7 @@ class TestBaggageCarrier:
         assert tc.workflow.workflow_name == wf
 
     def test_read_trace_context_no_baggage_returns_none(self, no_default_baggage, otel_span):
-        from common.a2a_event_middleware.inflight import read_trace_context
+        from common.workflow_utils.inflight import read_trace_context
 
         with otel_span(trace_id=0x1, span_id=0x2):
             tc = read_trace_context()

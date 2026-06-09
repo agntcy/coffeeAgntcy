@@ -5,8 +5,8 @@
 
 Resets module-level state that the middleware keeps between calls:
 
-* ``common.a2a_event_middleware.inflight.in_flight`` — the per-trace interaction state
-* ``common.a2a_event_middleware.workflow_catalog._load_catalog`` — the
+* ``common.workflow_utils.inflight.in_flight`` — the per-trace interaction state
+* ``common.workflow_utils.workflow_catalog._load_catalog`` — the
   ``lru_cache`` around the JSON catalog loader
 
 Provides helpers for constructing minimal ``AgentCard`` stand-ins and a patched
@@ -33,7 +33,7 @@ import pytest
 def _reset_in_flight() -> Iterator[None]:
     """Clear the middleware's per-trace in-flight state around every test."""
     try:
-        from common.a2a_event_middleware import inflight as inflight_mod
+        from common.workflow_utils import inflight as inflight_mod
     except Exception:
         yield
         return
@@ -48,7 +48,7 @@ def _reset_in_flight() -> Iterator[None]:
 def _reset_workflow_catalog_cache() -> Iterator[None]:
     """Invalidate the ``lru_cache`` wrapping the catalog loader."""
     try:
-        from common.a2a_event_middleware import workflow_catalog as wr
+        from common.workflow_utils import workflow_catalog as wr
     except Exception:
         yield
         return
@@ -213,11 +213,11 @@ def _patched_current_span(
     span_id: int | None,
     parent_span_id: int | None = None,
 ):
-    """Patch ``common.a2a_event_middleware._otel_trace.get_current_span`` to
-    return a deterministic span. ``trace_id=None`` simulates "no active span"
-    by setting ``is_valid=False``.
+    """Patch ``inflight_mod._otel_trace.get_current_span`` to return a
+    deterministic span. ``trace_id=None`` simulates "no active span" by
+    setting ``is_valid=False``.
     """
-    from common.a2a_event_middleware import inflight as inflight_mod
+    from common.workflow_utils import inflight as inflight_mod
 
     valid = trace_id is not None
     ctx = _FakeSpanContext(

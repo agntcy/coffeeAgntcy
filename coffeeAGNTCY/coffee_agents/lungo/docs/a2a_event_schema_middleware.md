@@ -1,21 +1,22 @@
 # A2A Event Schema Middleware Flow
 
-This document explains how the `common/a2a_event_middleware/` package emits workflow topology events for A2A calls.
+This document explains how Lungo emits workflow topology events for A2A calls.
 
 ## Package Layout
 
-- `common/a2a_event_middleware/middleware.py`
-  - Outbound interceptor and inbound consumer orchestration.
-  - Topology/event assembly logic.
-- `common/a2a_event_middleware/inflight.py`
-  - Trace-scoped in-flight bridge state.
-  - Runtime node/edge ID allocation and span-end cleanup processor.
-- `common/a2a_event_middleware/workflow_registry.py`
-  - Workflow identity catalog, tool registration, and resolver logic.
-- `common/a2a_event_middleware/event_sink.py`
-  - Event sink abstraction and workflow API HTTP delivery.
-- `common/a2a_event_middleware/__init__.py`
-  - Minimal public API: interceptor, consumer factory, and cleanup registration.
+Shared, transport-agnostic pieces live in `common/workflow_utils/` (also used by future MCP emission in #587):
+
+- `common/workflow_utils/builders.py` — `event_v1` metadata, nodes, edges, and full `Event` assembly.
+- `common/workflow_utils/event_sink.py` — `EventSink` and `WorkflowAPIEventSink` (HTTP POST to workflow API).
+- `common/workflow_utils/inflight.py` — trace-scoped in-flight state, runtime ID allocator, span-end cleanup.
+- `common/workflow_utils/workflow_catalog.py` — workflow name → pattern/use-case metadata (`lookup_workflow`).
+- `common/workflow_utils/__init__.py` — public exports for emitters (A2A, MCP, etc.).
+
+A2A-specific orchestration remains in `common/a2a_event_middleware/`:
+
+- `common/a2a_event_middleware/middleware.py` — `EventEmittingInterceptor`, `make_event_emitting_consumer`, A2A topology builders.
+- `common/a2a_event_middleware/__init__.py` — minimal public API: interceptor, consumer factory, cleanup registration.
+- `common/a2a_event_middleware/{event_sink,inflight,workflow_catalog}.py` — compatibility shims re-exporting from `workflow_utils`.
 
 ## Purpose
 
@@ -30,7 +31,7 @@ Both events are correlated by OTel `trace_id` and a shared in-flight state map.
 
 - **`EventEmittingInterceptor`**
   - Runs before outbound A2A calls.
-  - Resolves workflow identity from `ClientCallContext.state["tool"]`.
+  - Resolves workflow identity from OTel baggage (`common.workflow_context_prop`).
   - Computes correlation and instance IDs.
   - Builds outbound topology and emits an event.
   - Stores trace-scoped state for the consumer.
@@ -39,7 +40,7 @@ Both events are correlated by OTel `trace_id` and a shared in-flight state map.
   - Returns a consumer callback for inbound events.
   - Looks up previously stored trace-scoped state.
   - Builds inbound topology and emits an event.
-  - Falls back to a default workflow context when no in-flight state exists.
+  - Drops the event with a warning when no in-flight state exists.
 
 - **`InFlightCleanupSpanProcessor`**
   - Removes trace-scoped state when the owning span ends.
@@ -52,13 +53,13 @@ Both events are correlated by OTel `trace_id` and a shared in-flight state map.
 ## Outbound Flow
 
 1. Interceptor receives `method_name`, `agent_card`, and optional `context`.
-2. Workflow identity is resolved via `workflow_resolver(context.state["tool"])`.
+2. Workflow identity is read from propagated OTel baggage (`workflow_name`, `workflow_instance_id`) and validated against the catalog.
 3. Trace context (`trace_id`, `span_id`, `owner_span_id`) is read from OTel.
-4. Correlation and instance IDs are resolved from context, trace, or new UUIDs.
+4. Correlation ID is resolved from context, trace, or a new UUID.
 5. Remote targets are collected from broadcast cards (or single target card).
 6. In-flight state is upserted by `trace_id` (`upsert_in_flight_state`).
 7. Topology is generated using `Operation.CREATE`.
-8. Event is built and emitted to the sink.
+8. Event is built (`workflow_utils.builders.build_event`) and emitted to the sink.
 
 ## Inbound Flow
 
@@ -66,8 +67,7 @@ Both events are correlated by OTel `trace_id` and a shared in-flight state map.
 2. Trace context is read from OTel.
 3. Remote agent ID is extracted from response metadata (fallback to card name).
 4. Correlation/workflow/allocator are resolved from in-flight state (`resolve_consumer_state`).
-   - If missing, fallback uses default workflow context.
-   - If no fallback is available, event is dropped with warning.
+   - If missing, event is dropped with warning.
 5. Topology is generated using `Operation.UPDATE`.
 6. Event is built and emitted to the sink.
 
@@ -78,20 +78,17 @@ Both events are correlated by OTel `trace_id` and a shared in-flight state map.
   1. `context.state["correlation_id"]`
   2. `correlation://<trace-based UUID>`
   3. random UUID
-- `instance_id` precedence:
-  1. `context.state["instance_id"]`
-  2. deterministic `uuid5(trace_id + workflow_name)`
-  3. random UUID
+- `workflow_instance_id` comes from OTel baggage; emission is skipped if missing or malformed.
 - Runtime topology IDs (`node://...`, `edge://...`) are allocated per interaction and reused within a trace.
 
 ## Failure/Degradation Behavior
 
 - If `EMIT_WORKFLOW_EVENTS` is false: sink is disabled, no emission occurs.
-- If OTel context is missing: middleware still emits, but correlation across outbound/inbound may be lost.
+- If OTel context is missing: middleware still emits outbound, but inbound correlation may be lost.
 - If sink POST fails: error is logged, exception is not raised to caller.
 
 ## Design Notes
 
-- Keep transformation logic in small focused helpers (`resolve_interaction_ids`, `_collect_remote_agent_ids`, `resolve_consumer_state`).
+- Keep transformation logic in small focused helpers (`resolve_correlation_id`, `_collect_remote_agent_ids`, `resolve_consumer_state`).
 - Keep side effects localized (`upsert_in_flight_state`, `WorkflowAPIEventSink.emit`).
-- Keep middleware orchestration in `middleware.py` and isolate OTel/in-flight lifecycle in `inflight.py`.
+- Keep A2A orchestration in `middleware.py`; shared builders/sink/inflight/catalog in `workflow_utils`.
