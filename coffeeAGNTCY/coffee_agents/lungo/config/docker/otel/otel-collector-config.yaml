@@ -2,30 +2,18 @@
 # SPDX-License-Identifier: Apache-2.0
 
 ---
-receivers:
-  otlp:
-    protocols:
-      grpc:
-        endpoint: "0.0.0.0:4317"
-      http:
-        endpoint: "0.0.0.0:4318"
+receivers: ${file:${env:OTELCOL_RECEIVERS_CFG_FILE:-/etc/otel/cfg_receivers-1.yaml}}
 
 processors:
   batch: {}
 
-exporters:
-  clickhouse:
-    endpoint: "tcp://clickhouse-server:9000"
-    database: "default"
-    username: "admin"
-    password: "admin"
+exporters: ${file:${env:OTELCOL_EXPORTERS_CFG_FILE:-/etc/otel/cfg_exporters-1-nop.yaml}}
+
+extensions:
+  health_check:
+    endpoint: 0.0.0.0:13133
+    path: /health/status
 
 service:
-  pipelines:
-    metrics:
-      receivers: [otlp]
-      exporters: [clickhouse]
-
-    traces:
-      receivers: [otlp]
-      exporters: [clickhouse]
+  extensions: [health_check]
+  pipelines: ${file:${env:OTELCOL_PIPELINES_CFG_FILE:-/etc/otel/cfg_pipelines-1-nop.yaml}}
