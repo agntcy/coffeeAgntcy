@@ -5,7 +5,7 @@
 
 import React from "react"
 
-import { Stack, Typography } from "@open-ui-kit/core"
+import { Stack, Typography, useThemeMode } from "@open-ui-kit/core"
 import Person from "@mui/icons-material/Person"
 
 import { ChatAvatarCircle } from "./ChatAvatarCircle"
@@ -15,6 +15,8 @@ interface UserMessageProps {
 }
 
 const UserMessage: React.FC<UserMessageProps> = ({ content }) => {
+  const { isDarkMode } = useThemeMode()
+
   return (
     <Stack
       direction="row"
@@ -23,7 +25,7 @@ const UserMessage: React.FC<UserMessageProps> = ({ content }) => {
       sx={{ width: "100%" }}
     >
       <ChatAvatarCircle>
-        <Person />
+        <Person sx={isDarkMode ? undefined : { color: "common.white" }} />
       </ChatAvatarCircle>
 
       <Stack
