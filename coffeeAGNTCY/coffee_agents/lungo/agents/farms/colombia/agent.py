@@ -26,9 +26,11 @@ from agntcy_app_sdk.factory import AgntcyFactory
 from ioa_observe.sdk.decorators import agent, graph
 
 from agents.exceptions import AuthError
+from agents.farms.colombia.card import AGENT_CARD, AGENT_ID
 from agents.mcp_servers.utils import invoke_payment_mcp_tool, _mcp_transport, _mcp_endpoint
 from config.config import OTEL_SDK_DISABLED
 from common.llm import get_llm
+from common.mcp_event_middleware import wrap_mcp_client
 
 logger = logging.getLogger("lungo.colombia_farm_agent.agent")
 
@@ -130,6 +132,12 @@ class FarmAgent:
                 transport=transport_instance,
                 message_timeout=45
             )
+            mcp_ctx = wrap_mcp_client(
+                mcp_ctx,
+                agent_id=AGENT_CARD.name,
+                mcp_server="lungo_weather_service",
+                source=AGENT_ID,
+            )
             async with mcp_ctx as client:
                 response = await client.list_tools()
                 available_tools = [
@@ -220,10 +228,14 @@ class FarmAgent:
 
         # Call MCP tools before processing the order
         try:
-            payment_result = await invoke_payment_mcp_tool("create_payment")
+            payment_result = await invoke_payment_mcp_tool(
+                "create_payment", agent_id=AGENT_CARD.name, source=AGENT_ID,
+            )
             logger.info(f"Payment result: {payment_result}")
 
-            transactions_details = await invoke_payment_mcp_tool("list_transactions")
+            transactions_details = await invoke_payment_mcp_tool(
+                "list_transactions", agent_id=AGENT_CARD.name, source=AGENT_ID,
+            )
             logger.info(f"Transactions details: {transactions_details}")
 
         except AuthError as auth_err:
