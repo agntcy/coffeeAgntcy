@@ -20,6 +20,7 @@ from a2a.types import (
 
 from agents.farms.colombia.agent import FarmAgent
 from agents.farms.colombia.card import AGENT_CARD
+from common.workflow_context_prop import workflow_context_scope
 
 logger = logging.getLogger("longo.colombia_farm_agent.agent_executor")
 
@@ -34,7 +35,26 @@ class FarmAgentExecutor(AgentExecutor):
             logger.error("Invalid request parameters: %s", context)
             return JSONRPCResponse(error=ContentTypeNotSupportedError())
         return None
-    
+
+    @staticmethod
+    def _read_workflow_identity(context: RequestContext) -> tuple[str | None, str | None]:
+        """Extract workflow identity propagated in the A2A message metadata.
+
+        The supervisor stamps workflow_name/workflow_instance_id so MCP
+        tool-call events emitted by this farm correlate to the same workflow
+        instance the user is observing.
+        """
+        message = getattr(context, "message", None)
+        metadata = getattr(message, "metadata", None) if message else None
+        if not isinstance(metadata, dict):
+            return None, None
+        workflow_name = metadata.get("workflow_name")
+        workflow_instance_id = metadata.get("workflow_instance_id")
+        return (
+            workflow_name if isinstance(workflow_name, str) else None,
+            workflow_instance_id if isinstance(workflow_instance_id, str) else None,
+        )
+
     async def execute(
         self,
         context: RequestContext,
@@ -65,9 +85,18 @@ class FarmAgentExecutor(AgentExecutor):
         
         prompt = context.get_user_input()
 
+        workflow_name, workflow_instance_id = self._read_workflow_identity(context)
+
         try:
-            output = await self.agent.ainvoke(prompt)
-        
+            if workflow_name or workflow_instance_id:
+                with workflow_context_scope(
+                    workflow_name=workflow_name,
+                    workflow_instance_id=workflow_instance_id,
+                ):
+                    output = await self.agent.ainvoke(prompt)
+            else:
+                output = await self.agent.ainvoke(prompt)
+
             message = Message(
                 message_id=str(uuid4()),
                 role=Role.agent,
