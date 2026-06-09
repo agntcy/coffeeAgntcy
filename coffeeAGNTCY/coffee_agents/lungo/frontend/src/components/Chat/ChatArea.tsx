@@ -3,7 +3,9 @@
  * SPDX-License-Identifier: Apache-2.0
  **/
 
-import React, { useCallback, useState } from "react"
+import React, { useCallback, useRef, useState } from "react"
+
+import { useScrollPanelOnContentResize } from "@/utils/chatScroll"
 
 import type { Message } from "./types"
 import { parseApiError } from "@/utils/const"
@@ -98,7 +100,15 @@ const ChatArea: React.FC<ChatAreaProps> = ({
   const [content, setContent] = useState<string>("")
   const [loading, setLoading] = useState<boolean>(false)
   const [isMinimized, setIsMinimized] = useState<boolean>(false)
+  const messagePanelRef = useRef<HTMLDivElement>(null)
+  const threadContentRef = useRef<HTMLDivElement>(null)
   const { sendMessageWithCallback } = useAgentAPI()
+
+  useScrollPanelOnContentResize(
+    messagePanelRef,
+    threadContentRef,
+    Boolean(currentUserMessage) && !isMinimized,
+  )
 
   const onApiSuccess = useCallback(
     (apiResponse: ApiResponse) => {
@@ -242,6 +252,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
       ) : null}
 
       <Box
+        ref={messagePanelRef}
         id={CHAT_MESSAGE_PANEL_ID}
         role="region"
         aria-label="Chat messages"
@@ -258,6 +269,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
         }}
       >
         <Stack
+          ref={threadContentRef}
           alignItems="center"
           spacing={1}
           sx={{
