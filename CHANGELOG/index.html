@@ -1,0 +1,1016 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="light">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        
+        
+        
+        <link rel="shortcut icon" href="../img/favicon.ico">
+        <title>Changelog - CoffeeAgntcy Documentation</title>
+        <link href="../css/bootstrap.min.css" rel="stylesheet">
+        <link href="../css/fontawesome.min.css" rel="stylesheet">
+        <link href="../css/brands.min.css" rel="stylesheet">
+        <link href="../css/solid.min.css" rel="stylesheet">
+        <link href="../css/v4-font-face.min.css" rel="stylesheet">
+        <link href="../css/base.css" rel="stylesheet">
+        <link id="hljs-light" rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css" >
+        <link id="hljs-dark" rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github-dark.min.css" disabled>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+        <script>hljs.highlightAll();</script> 
+    </head>
+
+    <body>
+        <div class="navbar fixed-top navbar-expand-lg navbar-dark bg-primary">
+            <div class="container">
+                <a class="navbar-brand" href="..">CoffeeAgntcy Documentation</a>
+                <!-- Expander button -->
+                <button type="button" class="navbar-toggler" data-bs-toggle="collapse" data-bs-target="#navbar-collapse" aria-controls="navbar-collapse" aria-expanded="false" aria-label="Toggle navigation">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+
+                <!-- Expanded navigation -->
+                <div id="navbar-collapse" class="navbar-collapse collapse">
+                        <!-- Main navigation -->
+                        <ul class="nav navbar-nav">
+                            <li class="nav-item">
+                                <a href=".." class="nav-link">Home</a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="../CONTRIBUTING/" class="nav-link">Contributing</a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="./" class="nav-link active" aria-current="page">Changelog</a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="../CODE_OF_CONDUCT/" class="nav-link">Code of Conduct</a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="../SECURITY/" class="nav-link">Security</a>
+                            </li>
+                        </ul>
+
+                    <ul class="nav navbar-nav ms-md-auto">
+                        <li class="nav-item">
+                            <a href="#" class="nav-link" data-bs-toggle="modal" data-bs-target="#mkdocs_search_modal">
+                                <i class="fa fa-search"></i> Search
+                            </a>
+                        </li>
+                            <li class="nav-item">
+                                <a rel="prev" href="../CONTRIBUTING/" class="nav-link">
+                                    <i class="fa fa-arrow-left"></i> Previous
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a rel="next" href="../CODE_OF_CONDUCT/" class="nav-link">
+                                    Next <i class="fa fa-arrow-right"></i>
+                                </a>
+                            </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="container">
+            <div class="row">
+                    <div class="col-md-3"><div class="navbar-expand-md bs-sidebar hidden-print affix" role="complementary">
+    <div class="navbar-header">
+        <button type="button" class="navbar-toggler collapsed" data-bs-toggle="collapse" data-bs-target="#toc-collapse" title="Table of Contents">
+            <span class="fa fa-angle-down"></span>
+        </button>
+    </div>
+
+    
+    <div id="toc-collapse" class="navbar-collapse collapse card bg-body-tertiary">
+        <ul class="nav flex-column">
+            
+            <li class="nav-item" data-bs-level="1"><a href="#changelog" class="nav-link">Changelog</a>
+              <ul class="nav flex-column">
+            <li class="nav-item" data-bs-level="2"><a href="#012-2026-06-09" class="nav-link">0.1.2 (2026-06-09)</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-bs-level="2"><a href="#011-2026-05-28" class="nav-link">0.1.1 (2026-05-28)</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-bs-level="2"><a href="#010-heartbeat-2026-05-19" class="nav-link">0.1.0 — Heartbeat (2026-05-19)</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-bs-level="2"><a href="#0059-2025-11-24" class="nav-link">0.0.59 (2025-11-24)</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-bs-level="2"><a href="#breaking-changes" class="nav-link">🚨 Breaking Changes</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-bs-level="2"><a href="#001-2025-05-30" class="nav-link">0.0.1 (2025-05-30)</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+              </ul>
+            </li>
+        </ul>
+    </div>
+</div></div>
+                    <div class="col-md-9" role="main">
+
+<h1 id="changelog">Changelog</h1>
+<h2 id="012-2026-06-09">0.1.2 (2026-06-09)</h2>
+<p>Patch release: <strong>runtime UI env injection</strong> for Helm/KinD, <strong>workflow-utils refactor</strong> paving the way for MCP live events (#587), <strong>otel-collector on the default Compose profile</strong>, and <strong>Docker UI build fixes</strong>.</p>
+<h3 id="summary">Summary</h3>
+<p><strong>Breaking / migration (read first)</strong></p>
+<details>
+<summary><strong>Helm UI runtime env</strong> — <code>window.__ENV__</code> via ConfigMap-mounted <code>env-config.js</code></summary>
+
+- Containerized Lungo UI reads **`VITE_*`** from **`window.__ENV__`** at runtime (before build-time `import.meta.env`).
+- Helm chart **`lungo-ui@0.1.2`** renders **`env-config.js`** into a ConfigMap and mounts it at **`/app/dist/env-config.js`**; **`index.html`** loads it before the app bundle ([#613](https://github.com/agntcy/coffeeAgntcy/pull/613), [#620](https://github.com/agntcy/coffeeAgntcy/pull/620)).
+- Set **`configs.env.data`** in **`deployment/helm/ui/values.yaml`** (or your umbrella overrides) for every **`VITE_*`** the UI needs — especially **`VITE_AGENTIC_WORKFLOWS_API_KEY`** and service URLs.
+- **`npm run dev`** is unchanged: use **`frontend/.env`** as before.
+</details>
+
+<details>
+<summary><strong>Helm chart bump</strong> — <code>lungo-ui</code> 0.1.1 → 0.1.2</summary>
+
+- Bumps **`lungo-ui`** chart version and fixes ConfigMap mount paths for runtime env ([#620](https://github.com/agntcy/coffeeAgntcy/pull/620)).
+- Upgrade UI subchart / run **`helm dependency update`** before deploying.
+</details>
+
+<details>
+<summary><strong>OTEL collector</strong> — default Compose profile, modular config via env</summary>
+
+- **`otel-collector`** no longer requires the **`observability`** Compose profile or a running ClickHouse instance ([#616](https://github.com/agntcy/coffeeAgntcy/pull/616)).
+- Config is split under **`config/docker/otel/`**; defaults use **nop** exporters. Uncomment **`OTELCOL_EXPORTERS_CFG_FILE`** / **`OTELCOL_PIPELINES_CFG_FILE`** in **`lungo/.env`** (see **`.env.example`**) to enable ClickHouse export when the **`observability`** profile is active.
+- Refresh **`lungo/.env`** from **`.env.example`** on upgrade.
+</details>
+
+<details>
+<summary><strong>Docker UI builds</strong> — lockfile discipline and ignore host <code>node_modules</code>/<code>dist</code></summary>
+
+- **`Dockerfile.ui`**: drops redundant **`npm install`**; **`npm run build`** reuses the BuildKit npm cache ([#623](https://github.com/agntcy/coffeeAgntcy/pull/623)).
+- Root **`.dockerignore`** excludes **`**/node_modules`** and **`**/dist`** so local macOS artifacts cannot overwrite Linux image layers.
+- Rebuild UI images after pull; ensure **`package-lock.json`** is in sync ( **`npm ci`** fails hard if not).
+</details>
+
+<p><strong>Migration steps</strong></p>
+<ol>
+<li>
+<p>Refresh Lungo env templates:</p>
+<p>cp coffeeAGNTCY/coffee_agents/lungo/.env.example coffeeAGNTCY/coffee_agents/lungo/.env
+   cp coffeeAGNTCY/coffee_agents/lungo/frontend/.env.example coffeeAGNTCY/coffee_agents/lungo/frontend/.env</p>
+</li>
+<li>
+<p><strong>Helm / KinD:</strong> upgrade to <strong><code>lungo-ui@0.1.2</code></strong>, set <strong><code>configs.env.data</code></strong> for all <strong><code>VITE_*</code></strong> keys, then upgrade the release.</p>
+</li>
+<li>
+<p><strong>Docker Compose:</strong> rebuild the UI (and otel-collector if you changed OTEL env vars):</p>
+<p>docker compose --profile frontend up --build</p>
+</li>
+<li>
+<p><strong>ClickHouse observability (optional):</strong> with the <strong><code>observability</code></strong> profile, uncomment the <strong><code>OTELCOL_*</code></strong> ClickHouse lines in <strong><code>lungo/.env</code></strong> per <strong><code>.env.example</code></strong>.</p>
+</li>
+</ol>
+<p><strong>Highlights</strong></p>
+<details>
+<summary><strong>Workflow event utilities refactor</strong> — shared <code>workflow_utils</code> for A2A and future MCP emission</summary>
+
+- Extracts builders, event sink, in-flight state, and workflow catalog into **`common/workflow_utils/`**; A2A middleware keeps thin shims ([#615](https://github.com/agntcy/coffeeAgntcy/pull/615), issue [#587](https://github.com/agntcy/coffeeAgntcy/issues/587)).
+- No intended runtime behavior change; docs and tests updated (**`docs/a2a_event_schema_middleware.md`**).
+</details>
+
+<details>
+<summary><strong>Agent skills & DX</strong> — OpenAPI/codegen and release-notes automation</summary>
+
+- OpenAPI → Python / JSON Schema → Pydantic agent skills ([#543](https://github.com/agntcy/coffeeAgntcy/pull/543)).
+- Release-notes prompt, skill, and **`AGENTS.md`** index ([#617](https://github.com/agntcy/coffeeAgntcy/pull/617)).
+</details>
+
+<details>
+<summary><strong>Frontend CI</strong> — consolidated Vitest config and <code>npm run check</code></summary>
+
+- Merges Vitest into **`vite.config.ts`**; FE CI runs **`npm run check`** ([#620](https://github.com/agntcy/coffeeAgntcy/pull/620)).
+</details>
+
+<details>
+<summary><strong>Supply chain</strong> — smaller, faster UI images</summary>
+
+- Lungo UI image ~**940 MB → ~540 MB**; no-cache build ~**55–65 s → ~30 s** locally ([#623](https://github.com/agntcy/coffeeAgntcy/pull/623)).
+</details>
+
+<h3 id="dependencies">Dependencies</h3>
+<table>
+<thead>
+<tr>
+<th>Component</th>
+<th>0.1.1</th>
+<th>0.1.2</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>lungo-ui</code> Helm chart</td>
+<td>0.1.1</td>
+<td><strong>0.1.2</strong></td>
+</tr>
+</tbody>
+</table>
+<p>Resolved <strong>Python</strong> pins in <code>lungo/uv.lock</code> and <strong>npm</strong> pins in <code>lungo/frontend/package-lock.json</code> are unchanged from 0.1.1 (<code>agntcy-app-sdk</code> 0.5.5, <code>a2a-sdk</code> 0.3.20, <code>ioa-observe-sdk</code> 1.0.41, <code>mcp</code> 1.26.0, <code>langgraph</code> 1.0.7).</p>
+<h3 id="built-with">Built With</h3>
+<p>(Versions from <code>coffeeAGNTCY/coffee_agents/lungo/uv.lock</code> and <code>lungo/frontend/package-lock.json</code>.)</p>
+<ul>
+<li><a href="https://github.com/agntcy/app-sdk">AGNTCY App SDK</a> = v0.5.5</li>
+<li><a href="https://github.com/agntcy/slim">SLIM</a> = v1.0.0</li>
+<li><a href="https://github.com/nats-io/nats-server">NATS</a> = latest</li>
+<li><a href="https://github.com/a2aproject/a2a-python">A2A</a> = v0.3.20</li>
+<li><a href="https://github.com/modelcontextprotocol/python-sdk">MCP</a> = v1.26.0</li>
+<li><a href="https://github.com/langchain-ai/langgraph">LangGraph</a> = v1.0.7</li>
+<li><a href="https://github.com/agntcy/observe">Observe SDK</a> = 1.0.41</li>
+<li><a href="https://github.com/agntcy/identity-service">AGNTCY Identity Service SDK</a> = 0.0.7</li>
+<li><a href="https://github.com/agntcy/dir">AGNTCY Directory</a> = v1.0.0</li>
+</ul>
+<h3 id="changeset">Changeset</h3>
+<details>
+<summary><a href="https://github.com/agntcy/coffeeAgntcy/pull/543">#543</a> — @mihaialexandrescu — feat(lungo): add Skill for OpenAPI spec to Python code and Pydantic types</summary>
+
+- Adds agent skills for generating FastAPI routers/DTOs from Lungo OpenAPI specs and Pydantic types from JSON Schema.
+</details>
+
+<details>
+<summary><a href="https://github.com/agntcy/coffeeAgntcy/pull/617">#617</a> — @pregnor — chore(repo): add release notes gen prompt/skill</summary>
+
+- Adds **`.agents/prompts/release-notes/`**, **`generate-release-notes`** skill, and **`AGENTS.md`** index for LLM tooling.
+</details>
+
+<details>
+<summary><a href="https://github.com/agntcy/coffeeAgntcy/pull/613">#613</a> — @pregnor — fix(lungo,fe): runtime load env</summary>
+
+- UI loads **`VITE_*`** from **`window.__ENV__`** at runtime; Helm ConfigMap renders **`env-config.js`** and mounts it into the UI container.
+- Updates **`local-cluster`** values and UI Helm templates for runtime env injection.
+</details>
+
+<details>
+<summary><a href="https://github.com/agntcy/coffeeAgntcy/pull/620">#620</a> — @pregnor — fix(lungo,fe,ui,helm): fix small issues</summary>
+
+- Fixes Helm env ConfigMap mount; bumps **`lungo-ui@0.1.2`**.
+- Consolidates Vitest into **`vite.config.ts`**; FE CI runs **`npm run check`**; ignores **`*.tsbuildinfo`**.
+</details>
+
+<details>
+<summary><a href="https://github.com/agntcy/coffeeAgntcy/pull/615">#615</a> — @delthazor — Initial refactor before MCP event logic</summary>
+
+- Moves shared workflow-event utilities to **`common/workflow_utils/`** with A2A compatibility shims; prepares [#587](https://github.com/agntcy/coffeeAgntcy/issues/587) MCP live-event emission.
+- Adds unit tests for builders and updates middleware/catalog tests.
+</details>
+
+<details>
+<summary><a href="https://github.com/agntcy/coffeeAgntcy/pull/623">#623</a> — @mihaialexandrescu — feat(lungo, corto): re-tweak Dockerfile.ui</summary>
+
+- Removes redundant **`npm install`**; BuildKit cache for **`npm run build`**; **`.dockerignore`** excludes host **`node_modules`** / **`dist`**.
+- Smaller, faster Lungo UI Docker images.
+</details>
+
+<details>
+<summary><a href="https://github.com/agntcy/coffeeAgntcy/pull/616">#616</a> — @mihaialexandrescu — feat(lungo): move otel-collector to default docker compose profile</summary>
+
+- **`otel-collector`** runs on the default profile with modular OTEL config files and env-driven exporter/pipeline selection (nop by default; ClickHouse opt-in).
+- Documents observability profile as optional; adds health-check extension and ClickHouse **`retry_on_failure`**.
+</details>
+
+<hr />
+<h2 id="011-2026-05-28">0.1.1 (2026-05-28)</h2>
+<p>Patch release: <strong>authenticated Agentic Workflows API</strong>, <strong>Helm/KinD fixes</strong> for workflows and SLIM, <strong>Colombia farm weather-aware inventory</strong>, and <strong>Docker/supply-chain hardening</strong>.</p>
+<h3 id="summary_1">Summary</h3>
+<p><strong>Breaking / migration (read first)</strong></p>
+<details>
+<summary><strong>WORKFLOW_API_KEY</strong> required for Agentic Workflows API and UI</summary>
+
+- Workflow instance **POST**, **GET**, **DELETE**, and internal **POST …/events/** now require a shared secret header.
+- **`lungo/.env`**: set `WORKFLOW_API_KEY` (and `WORKFLOW_API_URL` for agents emitting events).
+- **`frontend/.env`**: set `VITE_AGENTIC_WORKFLOWS_API_KEY` to the **same** value as the backend key.
+- Docker Compose and Helm templates fail fast if the key is unset.
+- Introduced in [#571](https://github.com/agntcy/coffeeAgntcy/pull/571); UI chart wiring in [#601](https://github.com/agntcy/coffeeAgntcy/pull/601).
+</details>
+
+<details>
+<summary><strong>Workflow instance cleanup</strong> — authenticated DELETE endpoint</summary>
+
+- Leaving a workflow view in the UI triggers **DELETE** on the workflow instance so in-memory state is released.
+- DELETE uses the same API key as other workflow-instance operations ([#571](https://github.com/agntcy/coffeeAgntcy/pull/571)).
+</details>
+
+<details>
+<summary><strong>KinD / Helm</strong> — agentic-workflows NodePort 30083 → 30084</summary>
+
+- Avoids a port clash with the Lungo UI service (UI stays on **30083**; API moves to **30084**).
+- `lungo-local-cluster` default `agenticWorkflowsApiUrl` is `http://localhost:30084`.
+- Part of [#597](https://github.com/agntcy/coffeeAgntcy/pull/597); refresh KinD port-forwards after upgrade.
+</details>
+
+<details>
+<summary><strong>Helm chart bumps</strong> — ui 0.1.1, local-cluster 0.4.0, service subcharts 0.1.1</summary>
+
+- **`lungo-ui@0.1.1`** — workflow API key passed into the UI build via ConfigMap.
+- Lungo agent/MCP/supervisor subcharts **0.1.0 → 0.1.1**; umbrella **`lungo-local-cluster@0.4.0`**.
+- **`agentic-workflows-api`** dependency **0.0.2 → 0.1.0**; **`payment-mcp-server@0.1.1`** added to the umbrella chart.
+- Run `helm dependency update` under `deployment/helm/local-cluster` before upgrading ([#597](https://github.com/agntcy/coffeeAgntcy/pull/597), [#601](https://github.com/agntcy/coffeeAgntcy/pull/601)).
+</details>
+
+<details>
+<summary><strong>Dependency age policy</strong> — 28-day minimum for uv and npm</summary>
+
+- **`exclude-newer = "28 days"`** in `[tool.uv]` (Lungo, Corto, Recruiter).
+- **`min-release-age=28`** in Lungo/Corto frontend `.npmrc`.
+- Brand-new PyPI/npm releases are rejected until they age in ([#559](https://github.com/agntcy/coffeeAgntcy/pull/559)).
+</details>
+
+<p><strong>Migration steps</strong></p>
+<ol>
+<li>
+<p>Set matching workflow API credentials in backend and frontend:</p>
+<p># lungo/.env
+   WORKFLOW_API_KEY=TheAnswerIs42
+   WORKFLOW_API_URL=http://agentic-workflows-api:9105</p>
+<p># frontend/.env
+   VITE_AGENTIC_WORKFLOWS_API_KEY=TheAnswerIs42</p>
+</li>
+<li>
+<p>Refresh env templates on upgrade:</p>
+<p>cp coffeeAGNTCY/coffee_agents/lungo/.env.example coffeeAGNTCY/coffee_agents/lungo/.env
+   cp coffeeAGNTCY/coffee_agents/lungo/frontend/.env.example coffeeAGNTCY/coffee_agents/lungo/frontend/.env</p>
+</li>
+<li>
+<p><strong>Helm / KinD:</strong> upgrade to <strong><code>lungo-local-cluster@0.4.1</code></strong>, run <code>helm dependency update</code>, use NodePort <strong>30084</strong> for the API (or port-forward):</p>
+<p>kubectl port-forward svc/lungo-local-cluster-agentic-workflows-api 9105:9105</p>
+</li>
+<li>
+<p><strong>Docker:</strong> rebuild after pull — root <code>.dockerignore</code>, <code>uv</code> base images, and BuildKit cache paths changed (<a href="https://github.com/agntcy/coffeeAgntcy/pull/600">#600</a>, <a href="https://github.com/agntcy/coffeeAgntcy/pull/581">#581</a>, <a href="https://github.com/agntcy/coffeeAgntcy/pull/596">#596</a>):</p>
+<p>docker compose --profile frontend up --build</p>
+</li>
+</ol>
+<p><strong>Highlights</strong></p>
+<details>
+<summary><strong>Authenticated workflow API</strong> — shared key and instance lifecycle</summary>
+
+- End-to-end protection for workflow-instance APIs and UI calls.
+- Prevents unauthenticated instance creation and event posts; enables safe cleanup via DELETE ([#571](https://github.com/agntcy/coffeeAgntcy/pull/571)).
+</details>
+
+<details>
+<summary><strong>Dedicated agentic-workflows ingress</strong> on KinD</summary>
+
+- Agentic Workflows API can be exposed on its own Ingress instead of sharing the UI ingress workaround ([#597](https://github.com/agntcy/coffeeAgntcy/pull/597)).
+</details>
+
+<details>
+<summary><strong>Colombia farm</strong> — weather MCP drives inventory yield</summary>
+
+- Weather service MCP results are passed into the inventory prompt for weather-aware yield estimates ([#369](https://github.com/agntcy/coffeeAgntcy/pull/369)).
+</details>
+
+<details>
+<summary><strong>CI stability</strong> — transport socket teardown in tests</summary>
+
+- Test fixtures close transport sockets on teardown to avoid GC warnings that fail CI ([#564](https://github.com/agntcy/coffeeAgntcy/pull/564)).
+</details>
+
+<details>
+<summary><strong>Supply chain & Docker</strong> — age limits, slimmer context, faster agent builds</summary>
+
+- 28-day minimum package age for `uv` and npm ([#559](https://github.com/agntcy/coffeeAgntcy/pull/559)).
+- Root `.dockerignore` ([#600](https://github.com/agntcy/coffeeAgntcy/pull/600)), official `uv` base images ([#581](https://github.com/agntcy/coffeeAgntcy/pull/581)), per-project BuildKit caches ([#596](https://github.com/agntcy/coffeeAgntcy/pull/596)).
+- Helm: SLIM shared-secret precedence fix ([#599](https://github.com/agntcy/coffeeAgntcy/pull/599)).
+</details>
+
+<h3 id="dependencies_1">Dependencies</h3>
+<table>
+<thead>
+<tr>
+<th>Component</th>
+<th>0.1.0</th>
+<th>0.1.1</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>uv</code> policy (<code>exclude-newer</code>, Lungo/Corto/Recruiter)</td>
+<td>—</td>
+<td><strong>28 days</strong></td>
+</tr>
+<tr>
+<td>npm policy (<code>min-release-age</code>, Lungo/Corto frontends)</td>
+<td>—</td>
+<td><strong>28 days</strong></td>
+</tr>
+<tr>
+<td><code>@open-ui-kit/core</code> (Lungo <code>package-lock.json</code>)</td>
+<td>1.4.0</td>
+<td><strong>1.4.2</strong></td>
+</tr>
+<tr>
+<td><code>styled-components</code> (Lungo)</td>
+<td>6.3.11</td>
+<td><strong>6.4.0</strong></td>
+</tr>
+<tr>
+<td><code>lodash</code> (Lungo)</td>
+<td>4.17.23</td>
+<td><strong>4.18.1</strong></td>
+</tr>
+<tr>
+<td><code>postcss</code> (Lungo)</td>
+<td>8.5.6</td>
+<td><strong>8.5.10</strong></td>
+</tr>
+<tr>
+<td><code>dompurify</code> (Lungo)</td>
+<td>3.3.2</td>
+<td><strong>3.4.0</strong></td>
+</tr>
+<tr>
+<td><code>follow-redirects</code> (Lungo)</td>
+<td>1.15.11</td>
+<td><strong>1.16.0</strong></td>
+</tr>
+<tr>
+<td><code>lungo-local-cluster</code> Helm chart</td>
+<td>0.2.0</td>
+<td><strong>0.4.1</strong></td>
+</tr>
+<tr>
+<td><code>lungo-ui</code> Helm chart</td>
+<td>0.1.0</td>
+<td><strong>0.1.1</strong></td>
+</tr>
+<tr>
+<td>Lungo service subcharts (farms, MCP, supervisors, etc.)</td>
+<td>0.1.0</td>
+<td><strong>0.1.1</strong></td>
+</tr>
+<tr>
+<td><code>agentic-workflows-api</code> Helm subchart</td>
+<td>0.0.2</td>
+<td><strong>0.1.0</strong></td>
+</tr>
+</tbody>
+</table>
+<p>Resolved <strong>Python</strong> pins in <code>lungo/uv.lock</code> are unchanged from 0.1.0 (<code>agntcy-app-sdk</code> 0.5.5, <code>a2a-sdk</code> 0.3.20, <code>ioa-observe-sdk</code> 1.0.41, <code>mcp</code> 1.26.0, <code>langgraph</code> 1.0.7). The lockfile records the new <strong>28-day</strong> <code>exclude-newer-span</code> metadata from <a href="https://github.com/agntcy/coffeeAgntcy/pull/559">#559</a>.</p>
+<h3 id="built-with_1">Built With</h3>
+<p>(Versions from <code>coffeeAGNTCY/coffee_agents/lungo/uv.lock</code> and <code>lungo/frontend/package-lock.json</code>.)</p>
+<ul>
+<li><a href="https://github.com/agntcy/app-sdk">AGNTCY App SDK</a> = v0.5.5</li>
+<li><a href="https://github.com/agntcy/slim">SLIM</a> = v1.0.0</li>
+<li><a href="https://github.com/nats-io/nats-server">NATS</a> = latest</li>
+<li><a href="https://github.com/a2aproject/a2a-python">A2A</a> = v0.3.20</li>
+<li><a href="https://github.com/modelcontextprotocol/python-sdk">MCP</a> = v1.26.0</li>
+<li><a href="https://github.com/langchain-ai/langgraph">LangGraph</a> = v1.0.7</li>
+<li><a href="https://github.com/agntcy/observe">Observe SDK</a> = 1.0.41</li>
+<li><a href="https://github.com/agntcy/identity-service">AGNTCY Identity Service SDK</a> = 0.0.7</li>
+<li><a href="https://github.com/agntcy/dir">AGNTCY Directory</a> = v1.0.0</li>
+</ul>
+<h3 id="changeset_1">Changeset</h3>
+<details>
+<summary><a href="https://github.com/agntcy/coffeeAgntcy/pull/576">#576</a> — @pregnor — docs(README,CHANGELOG): update to 0.1.0 release</summary>
+
+- Published the **0.1.0 — Heartbeat** changelog entry and aligned root **README** “Built With” pins with Lungo lockfiles.
+</details>
+
+<details>
+<summary><a href="https://github.com/agntcy/coffeeAgntcy/pull/564">#564</a> — @delthazor — Fix test flakiness by cleaning up leftover transport sockets</summary>
+
+- Closes transport sockets on test teardown (including error paths) so GC does not emit warnings that fail CI.
+</details>
+
+<details>
+<summary><a href="https://github.com/agntcy/coffeeAgntcy/pull/571">#571</a> — @delthazor — Fix backend leak by adding DELETE workflow endpoint</summary>
+
+- Adds authenticated **DELETE** for workflow instances; UI calls it when leaving a view.
+- Introduces **`WORKFLOW_API_KEY`** / **`VITE_AGENTIC_WORKFLOWS_API_KEY`** wiring across Compose, Helm, and tests.
+</details>
+
+<details>
+<summary><a href="https://github.com/agntcy/coffeeAgntcy/pull/369">#369</a> — @JulianLegler — feat(colombia-farm): use weather service mcp results in inventory prompt</summary>
+
+- Feeds weather MCP output into the Colombia farm inventory prompt for weather-aware yield estimates.
+</details>
+
+<details>
+<summary><a href="https://github.com/agntcy/coffeeAgntcy/pull/581">#581</a> — @arpad-csepi — refactor: use uv docker base image for agents</summary>
+
+- Agent Dockerfiles use the official **`uv`** image; reported ~30s faster local Compose builds for agent services.
+</details>
+
+<details>
+<summary><a href="https://github.com/agntcy/coffeeAgntcy/pull/559">#559</a> — @mihaialexandrescu — feat(lungo, corto): limit release age for pulled uv and npm dependencies</summary>
+
+- **`exclude-newer = "28 days"`** (`uv`) and **`min-release-age=28`** (npm) on Lungo and Corto frontends.
+</details>
+
+<details>
+<summary><a href="https://github.com/agntcy/coffeeAgntcy/pull/596">#596</a> — @mihaialexandrescu — feat: Dockerfiles - pin uv and npm cache location and use per-project id field in Buildkit cache</summary>
+
+- Pins **`UV_CACHE_DIR`** / npm cache paths; per-project BuildKit cache IDs (`lungo`, `corto`, `recruiter`).
+</details>
+
+<details>
+<summary><a href="https://github.com/agntcy/coffeeAgntcy/pull/597">#597</a> — @pregnor — feat(lungo,age-wf): add ingress, fix port & local-cluster</summary>
+
+- Dedicated **Ingress** for Agentic Workflows API; NodePort **30083 → 30084**; **`lungo-local-cluster@0.4.0`** with subchart **0.1.1** dependencies and **`payment-mcp-server`**.
+</details>
+
+<details>
+<summary><a href="https://github.com/agntcy/coffeeAgntcy/pull/599">#599</a> — @pregnor — fix(lungo,helm): fix SLIM shared secret propagation</summary>
+
+- Chart values can override incomplete ExternalSecrets for **`SLIM_SHARED_SECRET`**.
+</details>
+
+<details>
+<summary><a href="https://github.com/agntcy/coffeeAgntcy/pull/600">#600</a> — @mihaialexandrescu — feat: add .dockerignore at repo root level</summary>
+
+- Root **`.dockerignore`** excludes `.git`, `.venv`, pytest caches, and other build-context noise (Compose uses repo root as context).
+</details>
+
+<details>
+<summary><a href="https://github.com/agntcy/coffeeAgntcy/pull/601">#601</a> — @pregnor — release(lungo,helm,ui): bump chart ->0.1.1</summary>
+
+- **`lungo-ui@0.1.1`** and Lungo service subcharts **0.1.1** for workflow API key propagation from #571.
+</details>
+
+<details>
+<summary><a href="https://github.com/agntcy/coffeeAgntcy/pull/604">#604</a> — @pregnor — release: 0.1.1</summary>
+
+- Bumped **lungo-ui** chart in lungo-local-cluster to **0.1.1** chart version and also lungo-local-cluster to **0.4.1**.
+</details>
+
+<h3 id="contributors">Contributors</h3>
+<p><strong>First-time contributors</strong> — thank you for your first merged contribution to coffeeAgntcy:</p>
+<ul>
+<li><a href="https://github.com/JulianLegler">@JulianLegler</a></li>
+<li><a href="https://github.com/arpad-csepi">@arpad-csepi</a></li>
+</ul>
+<hr />
+<h2 id="010-heartbeat-2026-05-19">0.1.0 — Heartbeat (2026-05-19)</h2>
+<p>Milestone release: <strong>live workflow-instance events</strong> on the backend and <strong>dynamic graph animations</strong> in the Lungo UI, plus agentic-workflows APIs, SSE streaming, SLIM-first transport, and A2A card-driven transport selection.</p>
+<h3 id="summary_2">Summary</h3>
+<p><strong>Breaking / migration (read first)</strong></p>
+<ul>
+<li><strong>Lungo transport defaults to SLIM</strong> — <code>DEFAULT_MESSAGE_TRANSPORT</code> is now <code>SLIM</code> (was NATS). Configure <strong><code>SLIM_SERVER</code></strong>, <strong><code>NATS_SERVER</code></strong>, and <strong><code>SLIM_SHARED_SECRET</code></strong> (required; use a random 32+ character value). <code>TRANSPORT_SERVER_ENDPOINT</code> remains supported in Compose/Helm for compatibility; prefer the new variables in <code>.env</code> (see <code>.env.example</code>).</li>
+<li><strong>Split frontend configuration</strong> — all <code>VITE_*</code> variables belong in <strong><code>lungo/frontend/.env</code></strong> only (copy from <code>frontend/.env.example</code>). Do not duplicate them in <code>lungo/.env</code>.</li>
+<li><strong>Docker Compose profiles</strong> — <code>COMPOSE_PROFILES</code> includes <code>frontend</code> by default. For local Vite dev (<code>npm run dev</code>), <strong>omit</strong> <code>frontend</code> from <code>COMPOSE_PROFILES</code> and run Compose + Vite as described in the <a href="coffeeAGNTCY/coffee_agents/lungo/README.md">Lungo README</a>.</li>
+<li><strong>CORS</strong> — optional <code>CORS_ALLOWED_ORIGINS</code> (comma-separated browser origins). When unset, defaults are <code>http://localhost:3000</code> and <code>http://127.0.0.1:3000</code>.</li>
+<li><strong>AGNTCY Directory v1.0.0</strong> — Lungo dev deps pin <code>agntcy-dir==1.0.0</code>; refresh local Directory/OASF tooling if you push or query records.</li>
+<li><strong>Helm chart versions</strong> — Lungo agent/MCP subcharts bump to <strong>0.1.0</strong>; umbrellas <strong><code>lungo-local-cluster</code></strong> and <strong><code>corto-local-cluster</code></strong> to <strong>0.2.0</strong>; new <strong><code>agentic-workflows-api@0.0.2</code></strong>; <strong><code>corto-exchange@0.0.8</code></strong>. Run <code>helm dependency update</code> on umbrella charts before upgrade.</li>
+<li><strong>Pinned LLM stack (Corto/Recruiter)</strong> — <code>litellm</code> and <code>langchain-litellm</code> are exact-pinned (see Dependencies).</li>
+</ul>
+<p><strong>Migration steps</strong></p>
+<ol>
+<li>
+<p>From <code>coffeeAGNTCY/coffee_agents/lungo/</code>:</p>
+<p><code>sh
+cp .env.example .env
+cp frontend/.env.example frontend/.env</code></p>
+</li>
+<li>
+<p>In <code>lungo/.env</code>, set transport (minimal SLIM setup):</p>
+<p><code>env
+DEFAULT_MESSAGE_TRANSPORT=SLIM
+SLIM_SERVER="slim:46357"
+NATS_SERVER="nats:4222"
+SLIM_SHARED_SECRET="&lt;random-32plus-chars&gt;"</code></p>
+</li>
+</ol>
+<p>For NATS instead: <code>DEFAULT_MESSAGE_TRANSPORT=NATS</code> and ensure NATS is running.</p>
+<ol>
+<li>
+<p>In <code>lungo/frontend/.env</code>, point the UI at the new API (example):</p>
+<p><code>env
+VITE_AGENTIC_WORKFLOWS_API_URL=http://127.0.0.1:9105</code></p>
+</li>
+<li>
+<p>Reconcile <code>COMPOSE_PROFILES</code> with how you run the UI (Compose <code>frontend</code> profile vs <code>npm run dev</code>).</p>
+</li>
+<li>Reinstall Python deps: <code>uv sync</code> in <code>lungo/</code>, <code>corto/</code>, and <code>recruiter/</code> as needed.</li>
+<li>If the UI is not on port 3000, set <code>CORS_ALLOWED_ORIGINS</code> to your browser origin. Example: <code>http://localhost:1234</code>.</li>
+<li><strong>Helm / KinD:</strong> upgrade <code>lungo-local-cluster</code> to <strong>0.2.0</strong>, run <code>helm dependency update</code>, and set per-subchart <code>config.slimServer</code>, <code>config.natsServer</code>, and <code>SLIM_SHARED_SECRET</code> (via <code>externalSecrets</code> or <code>config.slimSharedSecret</code>). See <code>lungo/deployment/helm/local-cluster/README.md</code>.</li>
+</ol>
+<p><strong>Highlights</strong></p>
+<ul>
+<li><strong>Workflow instance events</strong> — versioned JSON Schema, in-memory state store, middleware + REST/SSE endpoints, and UI consumption for live progress.</li>
+<li><strong>Dynamic Lungo graph</strong> — React Flow animations driven by live workflow-instance events.</li>
+<li><strong>Agentic workflows API</strong> — catalog/sub-API, LHS menu wired to workflows, workflow-context propagation across supervisors.</li>
+<li><strong>A2A card-driven transport</strong> — multi-transport agent cards; supervisors use <code>A2AClientFactory</code> and async iterator messaging.</li>
+<li><strong>SLIM transport in Compose/Helm</strong> — SLIM-first defaults, shared-secret wiring, and chart bumps for local-cluster installs.</li>
+<li><strong>Recruiter</strong> — Claude Code plugin for Directory discovery and A2A messaging.</li>
+<li><strong>Separate UI Docker profile</strong> — optional <code>frontend</code> Compose profile and documented local UI workflow.</li>
+</ul>
+<h3 id="dependencies_2">Dependencies</h3>
+<table>
+<thead>
+<tr>
+<th>Component</th>
+<th>0.0.77</th>
+<th>0.1.0</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="https://github.com/agntcy/app-sdk">AGNTCY App SDK</a> (Lungo)</td>
+<td>0.4.7</td>
+<td><strong>0.5.5</strong></td>
+</tr>
+<tr>
+<td><a href="https://github.com/a2aproject/a2a-python">A2A Python SDK</a> (Lungo)</td>
+<td>0.3.2</td>
+<td><strong>0.3.20</strong></td>
+</tr>
+<tr>
+<td><a href="https://github.com/agntcy/dir">AGNTCY Directory</a> (<code>agntcy-dir</code>, Lungo dev)</td>
+<td>≥ 0.6.0</td>
+<td><strong>1.0.0</strong></td>
+</tr>
+<tr>
+<td><a href="https://github.com/agntcy/observe">Observe SDK</a> (Lungo)</td>
+<td>1.0.34</td>
+<td><strong>1.0.41</strong></td>
+</tr>
+<tr>
+<td><code>slim-bindings</code> / <code>slima2a</code> (Lungo)</td>
+<td>—</td>
+<td><strong>1.1.0</strong> / <strong>0.3.0</strong></td>
+</tr>
+<tr>
+<td><code>langchain-litellm</code> (Lungo, Corto, Recruiter)</td>
+<td>≥ 0.3.0</td>
+<td><strong>== 0.3.5</strong></td>
+</tr>
+<tr>
+<td><code>litellm</code> (Corto, Recruiter)</td>
+<td>≥ 1.82.0</td>
+<td><strong>== 1.82.1</strong></td>
+</tr>
+<tr>
+<td><code>axios</code> (Corto/Lungo frontends)</td>
+<td>^1.13.0</td>
+<td><strong>1.13.5</strong></td>
+</tr>
+</tbody>
+</table>
+<h3 id="changeset_2">Changeset</h3>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Author</th>
+<th>Title</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="https://github.com/agntcy/coffeeAgntcy/pull/492">#492</a></td>
+<td>codyhartsook</td>
+<td>hotfix(litellm): pin litellm version in corto and recruter to 1.82.1</td>
+</tr>
+<tr>
+<td><a href="https://github.com/agntcy/coffeeAgntcy/pull/494">#494</a></td>
+<td>delthazor</td>
+<td>(fix) Update incorrect OASF records</td>
+</tr>
+<tr>
+<td><a href="https://github.com/agntcy/coffeeAgntcy/pull/493">#493</a></td>
+<td>codyhartsook</td>
+<td>chore: pin langchain-litellm to 0.5.3</td>
+</tr>
+<tr>
+<td><a href="https://github.com/agntcy/coffeeAgntcy/pull/491">#491</a></td>
+<td>mihaialexandrescu</td>
+<td>chore: use tests folder name also under Recruiter</td>
+</tr>
+<tr>
+<td><a href="https://github.com/agntcy/coffeeAgntcy/pull/489">#489</a></td>
+<td>mihaialexandrescu</td>
+<td>feat: update pytest integration tests command</td>
+</tr>
+<tr>
+<td><a href="https://github.com/agntcy/coffeeAgntcy/pull/490">#490</a></td>
+<td>delthazor</td>
+<td>Update OASF push script</td>
+</tr>
+<tr>
+<td><a href="https://github.com/agntcy/coffeeAgntcy/pull/501">#501</a></td>
+<td>misi-bp</td>
+<td>[Docker]: Separate UI profile &amp; add UI local running</td>
+</tr>
+<tr>
+<td><a href="https://github.com/agntcy/coffeeAgntcy/pull/503">#503</a></td>
+<td>pregnor</td>
+<td>chore(dep,lungo,recruiter): upgrade dir to v1.0.0</td>
+</tr>
+<tr>
+<td><a href="https://github.com/agntcy/coffeeAgntcy/pull/504">#504</a></td>
+<td>pregnor</td>
+<td>chore(lungo,frontend): sync frontend deps</td>
+</tr>
+<tr>
+<td><a href="https://github.com/agntcy/coffeeAgntcy/pull/502">#502</a></td>
+<td>pregnor</td>
+<td>test(recruiter,cache): fix flaky cache hit time</td>
+</tr>
+<tr>
+<td><a href="https://github.com/agntcy/coffeeAgntcy/pull/468">#468</a></td>
+<td>delthazor</td>
+<td>Initial approach for state message schema</td>
+</tr>
+<tr>
+<td><a href="https://github.com/agntcy/coffeeAgntcy/pull/498">#498</a></td>
+<td>codyhartsook</td>
+<td>Add Claude Code plugin for agent discovery and A2A messaging</td>
+</tr>
+<tr>
+<td><a href="https://github.com/agntcy/coffeeAgntcy/pull/507">#507</a></td>
+<td>pregnor</td>
+<td>chore(corto,lungo): pin axios to 1.13.5</td>
+</tr>
+<tr>
+<td><a href="https://github.com/agntcy/coffeeAgntcy/pull/506">#506</a></td>
+<td>pregnor</td>
+<td>chore(recruiter,claude,plugin): fix abs tmp path</td>
+</tr>
+<tr>
+<td><a href="https://github.com/agntcy/coffeeAgntcy/pull/508">#508</a></td>
+<td>pregnor</td>
+<td>feat(lungo,schema): gen event schema types</td>
+</tr>
+<tr>
+<td><a href="https://github.com/agntcy/coffeeAgntcy/pull/511">#511</a></td>
+<td>pregnor</td>
+<td>feat(lungo,api,workflow): add skeleton</td>
+</tr>
+<tr>
+<td><a href="https://github.com/agntcy/coffeeAgntcy/pull/515">#515</a></td>
+<td>pregnor</td>
+<td>fix(api,cors): add cors origins</td>
+</tr>
+<tr>
+<td><a href="https://github.com/agntcy/coffeeAgntcy/pull/521">#521</a></td>
+<td>pregnor</td>
+<td>release(helm,APIs): bump CORS helm charts</td>
+</tr>
+<tr>
+<td><a href="https://github.com/agntcy/coffeeAgntcy/pull/517">#517</a></td>
+<td>mihaialexandrescu</td>
+<td>feat: add catalog agentic workflows subAPI endpoints</td>
+</tr>
+<tr>
+<td><a href="https://github.com/agntcy/coffeeAgntcy/pull/527">#527</a></td>
+<td>pregnor</td>
+<td>fix(lungo,agentic-wf): fix path instance ID</td>
+</tr>
+<tr>
+<td><a href="https://github.com/agntcy/coffeeAgntcy/pull/514">#514</a></td>
+<td>codyhartsook</td>
+<td>feat: enable A2A card-driven transport negotiation</td>
+</tr>
+<tr>
+<td><a href="https://github.com/agntcy/coffeeAgntcy/pull/513">#513</a></td>
+<td>delthazor</td>
+<td>Initial version for in-memory state storage</td>
+</tr>
+<tr>
+<td><a href="https://github.com/agntcy/coffeeAgntcy/pull/505">#505</a></td>
+<td>delthazor</td>
+<td>(fix) Auction test flakiness fix for timeout errors</td>
+</tr>
+<tr>
+<td><a href="https://github.com/agntcy/coffeeAgntcy/pull/526">#526</a></td>
+<td>pregnor</td>
+<td>release(lungo,SLIM): update compose,charts with new SLIM transport</td>
+</tr>
+<tr>
+<td><a href="https://github.com/agntcy/coffeeAgntcy/pull/534">#534</a></td>
+<td>pregnor</td>
+<td>test(lungo): fix plugin teardown issue</td>
+</tr>
+<tr>
+<td><a href="https://github.com/agntcy/coffeeAgntcy/pull/533">#533</a></td>
+<td>delthazor</td>
+<td>Remove workflow minimum requirement</td>
+</tr>
+<tr>
+<td><a href="https://github.com/agntcy/coffeeAgntcy/pull/535">#535</a></td>
+<td>delthazor</td>
+<td>Implement SSE endpoints</td>
+</tr>
+<tr>
+<td><a href="https://github.com/agntcy/coffeeAgntcy/pull/538">#538</a></td>
+<td>misi-bp</td>
+<td>feat(lungo icons): Replace icons and unify icon usage</td>
+</tr>
+<tr>
+<td><a href="https://github.com/agntcy/coffeeAgntcy/pull/536">#536</a></td>
+<td>mihaialexandrescu</td>
+<td>feat(lungo): add Skill for jsonschema to pydanticv2 types</td>
+</tr>
+<tr>
+<td><a href="https://github.com/agntcy/coffeeAgntcy/pull/547">#547</a></td>
+<td>delthazor</td>
+<td>Add test env to UI</td>
+</tr>
+<tr>
+<td><a href="https://github.com/agntcy/coffeeAgntcy/pull/539">#539</a></td>
+<td>delthazor</td>
+<td>Implement sub-API middleware endpoints for workflow instance states</td>
+</tr>
+<tr>
+<td><a href="https://github.com/agntcy/coffeeAgntcy/pull/548">#548</a></td>
+<td>codyhartsook</td>
+<td>feat(lungo): propagate workflow context across supervisors (#453)</td>
+</tr>
+<tr>
+<td><a href="https://github.com/agntcy/coffeeAgntcy/pull/550">#550</a></td>
+<td>pregnor</td>
+<td>chore(lungo,env): updated SLIM and NATS serveraddr</td>
+</tr>
+<tr>
+<td><a href="https://github.com/agntcy/coffeeAgntcy/pull/549">#549</a></td>
+<td>mihaialexandrescu</td>
+<td>feat(lungo): update left hand side menu to use agentic-workflows api</td>
+</tr>
+<tr>
+<td><a href="https://github.com/agntcy/coffeeAgntcy/pull/528">#528</a></td>
+<td>codyhartsook</td>
+<td>feat(lungo): emit workflow-instance state progress via A2A middleware (#453)</td>
+</tr>
+<tr>
+<td><a href="https://github.com/agntcy/coffeeAgntcy/pull/554">#554</a></td>
+<td>mihaialexandrescu</td>
+<td>fix(lungo): add scenario field to event stream metadata</td>
+</tr>
+<tr>
+<td><a href="https://github.com/agntcy/coffeeAgntcy/pull/560">#560</a></td>
+<td>pregnor</td>
+<td>docs(README): add milestones as planned</td>
+</tr>
+<tr>
+<td><a href="https://github.com/agntcy/coffeeAgntcy/pull/551">#551</a></td>
+<td>delthazor</td>
+<td>Implement UI workflow instance event endpoints</td>
+</tr>
+<tr>
+<td><a href="https://github.com/agntcy/coffeeAgntcy/pull/566">#566</a></td>
+<td>misi-bp</td>
+<td>fix(heartbreak-release): Icons reset</td>
+</tr>
+<tr>
+<td><a href="https://github.com/agntcy/coffeeAgntcy/pull/570">#570</a></td>
+<td>pregnor</td>
+<td>refactor(wf,lhs): patterns, docs, lhs menu (John)</td>
+</tr>
+<tr>
+<td><a href="https://github.com/agntcy/coffeeAgntcy/pull/572">#572</a></td>
+<td>codyhartsook</td>
+<td>feat(fe,graph): dynamic animations from live workflow events</td>
+</tr>
+<tr>
+<td><a href="https://github.com/agntcy/coffeeAgntcy/pull/573">#573</a></td>
+<td>isaacc2</td>
+<td>docs(README): corrected grammar</td>
+</tr>
+</tbody>
+</table>
+<h3 id="contributors_1">Contributors</h3>
+<p><strong>First-time contributors</strong> — thank you for your first merged contribution to coffeeAgntcy:</p>
+<ul>
+<li><a href="https://github.com/isaacc2">@isaacc2</a></li>
+</ul>
+<hr />
+<h2 id="0059-2025-11-24">0.0.59 (2025-11-24)</h2>
+<h2 id="breaking-changes">🚨 Breaking Changes</h2>
+<h3 id="migration-from-cnoe-agent-utils-to-litellm">🔧 Migration from <code>cnoe-agent-utils</code> to <code>litellm</code></h3>
+<p>We have replaced the internal LLM provider dependency <code>cnoe-agent-utils</code> with <code>litellm</code> to enable support for a wider range of LLM providers.</p>
+<p><strong>Impact</strong>
+- This is a <strong>breaking change</strong>.
+- Environment variables for LLM credentials must be updated in your environment to match the litellm convention for your preferred LLM provider. For a comprehensive list of supported providers, see the <a href="https://docs.litellm.ai/docs/providers">official litellm documentation</a>.
+- LLM provider and model must be specified by the LLM_MODEL env variable. Examples:</p>
+<h4 id="openai"><strong>OpenAI</strong></h4>
+<pre><code class="language-env">LLM_MODEL=&quot;openai/&lt;model_of_choice&gt;&quot;
+OPENAI_API_KEY=&lt;your_openai_api_key&gt;
+</code></pre>
+<h4 id="azure-openai"><strong>Azure OpenAI</strong></h4>
+<pre><code class="language-env">LLM_MODEL=&quot;azure/&lt;your_deployment_name&gt;&quot;
+AZURE_API_BASE=https://your-azure-resource.openai.azure.com/
+AZURE_API_KEY=&lt;your_azure_api_key&gt;
+AZURE_API_VERSION=&lt;your_azure_api_version&gt;
+</code></pre>
+<h4 id="groq"><strong>GROQ</strong></h4>
+<pre><code class="language-env">LLM_MODEL=&quot;groq/&lt;model_of_choice&gt;&quot;
+GROQ_API_KEY=&lt;your_groq_api_key&gt;
+</code></pre>
+<hr />
+<h2 id="001-2025-05-30">0.0.1 (2025-05-30)</h2>
+<h3 id="feat">Feat</h3>
+<ul>
+<li><strong>Corto Demo</strong>: Completed the implementation of the Corto demo, including:</li>
+<li><strong>Frontend</strong>:<ul>
+<li>Developed a React-based frontend for the Corto Exchange</li>
+</ul>
+</li>
+<li><strong>Backend</strong>:<ul>
+<li>Implemented the Corto Exchange backend with modules for:</li>
+<li>SLIM transport integration</li>
+<li>A2A client</li>
+<li>Graph operations</li>
+<li>Main entry point</li>
+<li>Developed the Corto Farm backend with:</li>
+<li>SLIM transport integration</li>
+<li>A2A agent execution and card management</li>
+<li>Farm server</li>
+</ul>
+</li>
+<li><strong>Configuration</strong>:<ul>
+<li>Docker support</li>
+<li>Example environment file</li>
+<li>Logging and server configuration</li>
+</ul>
+</li>
+<li><strong>Documentation</strong>:</li>
+</ul></div>
+            </div>
+        </div>
+
+        <footer class="col-md-12">
+            <hr>
+            <p>Documentation built with <a href="https://www.mkdocs.org/">MkDocs</a>.</p>
+        </footer>
+        <script src="../js/bootstrap.bundle.min.js"></script>
+        <script>
+            var base_url = "..",
+                shortcuts = {"help": 191, "next": 78, "previous": 80, "search": 83};
+        </script>
+        <script src="../js/base.js"></script>
+        <script src="../search/main.js"></script>
+
+        <div class="modal" id="mkdocs_search_modal" tabindex="-1" role="dialog" aria-labelledby="searchModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title" id="searchModalLabel">Search</h4>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>From here you can search these documents. Enter your search terms below.</p>
+                <form>
+                    <div class="form-group">
+                        <input type="search" class="form-control" placeholder="Search..." id="mkdocs-search-query" title="Type search term here">
+                    </div>
+                </form>
+                <div id="mkdocs-search-results" data-no-results-text="No results found"></div>
+            </div>
+            <div class="modal-footer">
+            </div>
+        </div>
+    </div>
+</div><div class="modal" id="mkdocs_keyboard_modal" tabindex="-1" role="dialog" aria-labelledby="keyboardModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title" id="keyboardModalLabel">Keyboard Shortcuts</h4>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th style="width: 20%;">Keys</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td class="help shortcut"><kbd>?</kbd></td>
+                    <td>Open this help</td>
+                  </tr>
+                  <tr>
+                    <td class="next shortcut"><kbd>n</kbd></td>
+                    <td>Next page</td>
+                  </tr>
+                  <tr>
+                    <td class="prev shortcut"><kbd>p</kbd></td>
+                    <td>Previous page</td>
+                  </tr>
+                  <tr>
+                    <td class="search shortcut"><kbd>s</kbd></td>
+                    <td>Search</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="modal-footer">
+            </div>
+        </div>
+    </div>
+</div>
+
+    </body>
+</html>
