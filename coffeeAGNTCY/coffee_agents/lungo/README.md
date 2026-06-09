@@ -330,7 +330,7 @@ docker compose --profile frontend up --build
 
 If you started services with one or more profiles, run `docker compose down` with the **same profile(s)** (e.g. `docker compose --profile farms down`) or tear everything down with `docker compose --profile '*' down`. Do not run a bare `docker compose down` (no profile): it only stops unprofiled services and the network removal will fail with "Network ... Resource is still in use."
 
-> **Note:** The **ui** service uses the **`frontend`** profile; it runs only when that profile is active (e.g. **`frontend`** in **`COMPOSE_PROFILES`** or **`--profile frontend`**). **`.env.example`** includes **`frontend`**, so a copied **`.env`** starts the UI in Docker unless you remove it. Shared infrastructure (e.g. nats) has no profile. The observability stack (clickhouse-server, otel-collector, grafana, mce-api-layer, metrics-computation-engine) uses the `observability` profile; include it in `COMPOSE_PROFILES` (e.g. in `.env`) to start those services.
+> **Note:** The **ui** service uses the **`frontend`** profile; it runs only when that profile is active (e.g. **`frontend`** in **`COMPOSE_PROFILES`** or **`--profile frontend`**). **`.env.example`** includes **`frontend`**, so a copied **`.env`** starts the UI in Docker unless you remove it. Shared infrastructure (e.g. nats) has no profile. The observability stack (clickhouse-server, grafana, mce-api-layer, metrics-computation-engine) uses the `observability` profile; include it in `COMPOSE_PROFILES` (e.g. in `.env`) to start those services. The `otel-collector` docker compose service is part of the default profile.
 
 The containerized UI uses **`frontend/.env`** only for **`VITE_*`** (see **`ui`** in **`docker-compose.yaml`**). Run **`cp frontend/.env.example frontend/.env`** before **`docker compose --profile frontend up --build`** if you have not already.
 
@@ -347,7 +347,7 @@ For local development with individual components, follow these steps. Each servi
 
 To enable A2A communication over SLIM, you need to run the SLIM message bus gateway.
 
-When using Docker Compose with profiles, include the `observability` profile in `COMPOSE_PROFILES` (e.g. `farms,logistics,recruiter,observability` in `.env`) to start the observability stack (OTEL Collector, Grafana, ClickHouse), and set `OTEL_SDK_DISABLED=false` when you want telemetry. Alternatively, start the stack explicitly:
+When using Docker Compose with profiles, include the `observability` profile in `COMPOSE_PROFILES` (e.g. `farms,logistics,recruiter,observability` in `.env`) to start the observability stack (Grafana, ClickHouse), and set `OTEL_SDK_DISABLED=false` when you want telemetry. The `otel-collector` service is part of the default docker compose profile. Alternatively, start the stack explicitly:
 
 ```sh
 docker compose up slim nats clickhouse-server otel-collector grafana

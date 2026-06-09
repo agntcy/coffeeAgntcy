@@ -298,7 +298,7 @@ All workshop services are containerized — start everything with one command:
 docker compose up --build
 ```
 
-The observability stack (Grafana, OTEL Collector, ClickHouse) is started when the `observability` profile is included in `COMPOSE_PROFILES` (or as a part of the `-- profile` switch in the compose command). for it to work, `OTEL_SDK_DISABLED` should remain usnet OR set to false. Using the profile without the env var means no telemetry is sent; using the env var without the profile can cause log noise and failed exports.
+The observability stack (Grafana, ClickHouse) is started when the `observability` profile is included in `COMPOSE_PROFILES` (or as a part of the `--profile` switch in the compose command). For it to work, `OTEL_SDK_DISABLED` should remain unset OR set to false. Using the profile without the env var means no telemetry is sent; using the env var without the profile can cause log noise and failed exports. Note that the OTEL Collector is part of the default docker compose profile.
 
 This will start:
 - The **Auction** and **Logistic** agents
