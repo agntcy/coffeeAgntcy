@@ -16,10 +16,17 @@ from agents.farms.colombia.card import AGENT_CARD
 from agntcy_app_sdk.factory import AgntcyFactory
 from dotenv import load_dotenv
 
+from common.workflow_utils.inflight import register_cleanup_span_processor
+from config.config import OTEL_SDK_DISABLED
+
 load_dotenv()
 
 # Initialize a multi-protocol, multi-transport agntcy factory.
 factory = AgntcyFactory("lungo.colombia_farm", enable_tracing=True)
+
+# Evict trace-scoped event state when owning spans end (parity with supervisor).
+if not OTEL_SDK_DISABLED:
+    register_cleanup_span_processor()
 
 
 async def serve_all_a2a_interfaces(
