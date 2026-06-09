@@ -11,6 +11,11 @@ from common.workflow_utils.builders import (
 	make_node,
 )
 from common.workflow_utils.event_sink import EventSink, WorkflowAPIEventSink
+from common.workflow_utils.mcp import (
+	MCP_TOOL_NODE_TYPE,
+	build_mcp_tool_topology,
+	emit_mcp_tool_call_event,
+)
 from common.workflow_utils.inflight import (
 	InterceptionState,
 	RuntimeIdAllocator,
@@ -46,6 +51,9 @@ __all__ = [
 	"build_metadata",
 	"build_event",
 	"init_starting_topology",
+	"MCP_TOOL_NODE_TYPE",
+	"build_mcp_tool_topology",
+	"emit_mcp_tool_call_event",
 	"read_trace_context",
 	"resolve_correlation_id",
 	"resolve_consumer_state",

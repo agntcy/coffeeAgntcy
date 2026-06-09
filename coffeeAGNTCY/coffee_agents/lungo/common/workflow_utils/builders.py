@@ -6,7 +6,7 @@
 from __future__ import annotations
 
 from datetime import datetime, timezone
-from typing import Any
+from typing import Any, Mapping
 from uuid import uuid4
 
 from schema.types import (
@@ -57,13 +57,16 @@ def make_node(
 	layer_index: int,
 	include_size: bool = True,
 	stable_agent_id: str | None = None,
+	extras: Mapping[str, Any] | None = None,
 ) -> PartialNode:
 	"""Create a PartialNode with standard defaults."""
-	extras: dict[str, Any] = {}
+	node_extras: dict[str, Any] = {}
 	if stable_agent_id is not None:
-		extras["stable_agent_id"] = stable_agent_id
+		node_extras["stable_agent_id"] = stable_agent_id
 		# Schema requires agent_record_uri on any node with stable_agent_id.
-		extras["agent_record_uri"] = f"agent-card://{stable_agent_id.removeprefix('agent://')}"
+		node_extras["agent_record_uri"] = f"agent-card://{stable_agent_id.removeprefix('agent://')}"
+	if extras:
+		node_extras.update(extras)
 	return PartialRegularNode(
 		id=NodeId(node_id),
 		operation=operation,
@@ -71,7 +74,7 @@ def make_node(
 		label=label,
 		layer_index=layer_index,
 		**(dict(size=_DEFAULT_NODE_SIZE) if include_size else {}),
-		**extras,
+		**node_extras,
 	)
 
 
