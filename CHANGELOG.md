@@ -1,5 +1,161 @@
 # Changelog
 
+## 0.1.2 (2026-06-09)
+
+Patch release: **runtime UI env injection** for Helm/KinD, **workflow-utils refactor** paving the way for MCP live events (#587), **otel-collector on the default Compose profile**, and **Docker UI build fixes**.
+
+### Summary
+
+**Breaking / migration (read first)**
+
+<details>
+<summary><strong>Helm UI runtime env</strong> — <code>window.__ENV__</code> via ConfigMap-mounted <code>env-config.js</code></summary>
+
+- Containerized Lungo UI reads **`VITE_*`** from **`window.__ENV__`** at runtime (before build-time `import.meta.env`).
+- Helm chart **`lungo-ui@0.1.2`** renders **`env-config.js`** into a ConfigMap and mounts it at **`/app/dist/env-config.js`**; **`index.html`** loads it before the app bundle ([#613](https://github.com/agntcy/coffeeAgntcy/pull/613), [#620](https://github.com/agntcy/coffeeAgntcy/pull/620)).
+- Set **`configs.env.data`** in **`deployment/helm/ui/values.yaml`** (or your umbrella overrides) for every **`VITE_*`** the UI needs — especially **`VITE_AGENTIC_WORKFLOWS_API_KEY`** and service URLs.
+- **`npm run dev`** is unchanged: use **`frontend/.env`** as before.
+</details>
+
+<details>
+<summary><strong>Helm chart bump</strong> — <code>lungo-ui</code> 0.1.1 → 0.1.2</summary>
+
+- Bumps **`lungo-ui`** chart version and fixes ConfigMap mount paths for runtime env ([#620](https://github.com/agntcy/coffeeAgntcy/pull/620)).
+- Upgrade UI subchart / run **`helm dependency update`** before deploying.
+</details>
+
+<details>
+<summary><strong>OTEL collector</strong> — default Compose profile, modular config via env</summary>
+
+- **`otel-collector`** no longer requires the **`observability`** Compose profile or a running ClickHouse instance ([#616](https://github.com/agntcy/coffeeAgntcy/pull/616)).
+- Config is split under **`config/docker/otel/`**; defaults use **nop** exporters. Uncomment **`OTELCOL_EXPORTERS_CFG_FILE`** / **`OTELCOL_PIPELINES_CFG_FILE`** in **`lungo/.env`** (see **`.env.example`**) to enable ClickHouse export when the **`observability`** profile is active.
+- Refresh **`lungo/.env`** from **`.env.example`** on upgrade.
+</details>
+
+<details>
+<summary><strong>Docker UI builds</strong> — lockfile discipline and ignore host <code>node_modules</code>/<code>dist</code></summary>
+
+- **`Dockerfile.ui`**: drops redundant **`npm install`**; **`npm run build`** reuses the BuildKit npm cache ([#623](https://github.com/agntcy/coffeeAgntcy/pull/623)).
+- Root **`.dockerignore`** excludes **`**/node_modules`** and **`**/dist`** so local macOS artifacts cannot overwrite Linux image layers.
+- Rebuild UI images after pull; ensure **`package-lock.json`** is in sync ( **`npm ci`** fails hard if not).
+</details>
+
+**Migration steps**
+
+1. Refresh Lungo env templates:
+
+       cp coffeeAGNTCY/coffee_agents/lungo/.env.example coffeeAGNTCY/coffee_agents/lungo/.env
+       cp coffeeAGNTCY/coffee_agents/lungo/frontend/.env.example coffeeAGNTCY/coffee_agents/lungo/frontend/.env
+
+2. **Helm / KinD:** upgrade to **`lungo-ui@0.1.2`**, set **`configs.env.data`** for all **`VITE_*`** keys, then upgrade the release.
+
+3. **Docker Compose:** rebuild the UI (and otel-collector if you changed OTEL env vars):
+
+       docker compose --profile frontend up --build
+
+4. **ClickHouse observability (optional):** with the **`observability`** profile, uncomment the **`OTELCOL_*`** ClickHouse lines in **`lungo/.env`** per **`.env.example`**.
+
+**Highlights**
+
+<details>
+<summary><strong>Workflow event utilities refactor</strong> — shared <code>workflow_utils</code> for A2A and future MCP emission</summary>
+
+- Extracts builders, event sink, in-flight state, and workflow catalog into **`common/workflow_utils/`**; A2A middleware keeps thin shims ([#615](https://github.com/agntcy/coffeeAgntcy/pull/615), issue [#587](https://github.com/agntcy/coffeeAgntcy/issues/587)).
+- No intended runtime behavior change; docs and tests updated (**`docs/a2a_event_schema_middleware.md`**).
+</details>
+
+<details>
+<summary><strong>Agent skills & DX</strong> — OpenAPI/codegen and release-notes automation</summary>
+
+- OpenAPI → Python / JSON Schema → Pydantic agent skills ([#543](https://github.com/agntcy/coffeeAgntcy/pull/543)).
+- Release-notes prompt, skill, and **`AGENTS.md`** index ([#617](https://github.com/agntcy/coffeeAgntcy/pull/617)).
+</details>
+
+<details>
+<summary><strong>Frontend CI</strong> — consolidated Vitest config and <code>npm run check</code></summary>
+
+- Merges Vitest into **`vite.config.ts`**; FE CI runs **`npm run check`** ([#620](https://github.com/agntcy/coffeeAgntcy/pull/620)).
+</details>
+
+<details>
+<summary><strong>Supply chain</strong> — smaller, faster UI images</summary>
+
+- Lungo UI image ~**940 MB → ~540 MB**; no-cache build ~**55–65 s → ~30 s** locally ([#623](https://github.com/agntcy/coffeeAgntcy/pull/623)).
+</details>
+
+### Dependencies
+
+| Component | 0.1.1 | 0.1.2 |
+| --- | --- | --- |
+| `lungo-ui` Helm chart | 0.1.1 | **0.1.2** |
+
+Resolved **Python** pins in `lungo/uv.lock` and **npm** pins in `lungo/frontend/package-lock.json` are unchanged from 0.1.1 (`agntcy-app-sdk` 0.5.5, `a2a-sdk` 0.3.20, `ioa-observe-sdk` 1.0.41, `mcp` 1.26.0, `langgraph` 1.0.7).
+
+### Built With
+
+(Versions from `coffeeAGNTCY/coffee_agents/lungo/uv.lock` and `lungo/frontend/package-lock.json`.)
+
+- [AGNTCY App SDK](https://github.com/agntcy/app-sdk) = v0.5.5
+- [SLIM](https://github.com/agntcy/slim) = v1.0.0
+- [NATS](https://github.com/nats-io/nats-server) = latest
+- [A2A](https://github.com/a2aproject/a2a-python) = v0.3.20
+- [MCP](https://github.com/modelcontextprotocol/python-sdk) = v1.26.0
+- [LangGraph](https://github.com/langchain-ai/langgraph) = v1.0.7
+- [Observe SDK](https://github.com/agntcy/observe) = 1.0.41
+- [AGNTCY Identity Service SDK](https://github.com/agntcy/identity-service) = 0.0.7
+- [AGNTCY Directory](https://github.com/agntcy/dir) = v1.0.0
+
+### Changeset
+
+<details>
+<summary><a href="https://github.com/agntcy/coffeeAgntcy/pull/543">#543</a> — @mihaialexandrescu — feat(lungo): add Skill for OpenAPI spec to Python code and Pydantic types</summary>
+
+- Adds agent skills for generating FastAPI routers/DTOs from Lungo OpenAPI specs and Pydantic types from JSON Schema.
+</details>
+
+<details>
+<summary><a href="https://github.com/agntcy/coffeeAgntcy/pull/617">#617</a> — @pregnor — chore(repo): add release notes gen prompt/skill</summary>
+
+- Adds **`.agents/prompts/release-notes/`**, **`generate-release-notes`** skill, and **`AGENTS.md`** index for LLM tooling.
+</details>
+
+<details>
+<summary><a href="https://github.com/agntcy/coffeeAgntcy/pull/613">#613</a> — @pregnor — fix(lungo,fe): runtime load env</summary>
+
+- UI loads **`VITE_*`** from **`window.__ENV__`** at runtime; Helm ConfigMap renders **`env-config.js`** and mounts it into the UI container.
+- Updates **`local-cluster`** values and UI Helm templates for runtime env injection.
+</details>
+
+<details>
+<summary><a href="https://github.com/agntcy/coffeeAgntcy/pull/620">#620</a> — @pregnor — fix(lungo,fe,ui,helm): fix small issues</summary>
+
+- Fixes Helm env ConfigMap mount; bumps **`lungo-ui@0.1.2`**.
+- Consolidates Vitest into **`vite.config.ts`**; FE CI runs **`npm run check`**; ignores **`*.tsbuildinfo`**.
+</details>
+
+<details>
+<summary><a href="https://github.com/agntcy/coffeeAgntcy/pull/615">#615</a> — @delthazor — Initial refactor before MCP event logic</summary>
+
+- Moves shared workflow-event utilities to **`common/workflow_utils/`** with A2A compatibility shims; prepares [#587](https://github.com/agntcy/coffeeAgntcy/issues/587) MCP live-event emission.
+- Adds unit tests for builders and updates middleware/catalog tests.
+</details>
+
+<details>
+<summary><a href="https://github.com/agntcy/coffeeAgntcy/pull/623">#623</a> — @mihaialexandrescu — feat(lungo, corto): re-tweak Dockerfile.ui</summary>
+
+- Removes redundant **`npm install`**; BuildKit cache for **`npm run build`**; **`.dockerignore`** excludes host **`node_modules`** / **`dist`**.
+- Smaller, faster Lungo UI Docker images.
+</details>
+
+<details>
+<summary><a href="https://github.com/agntcy/coffeeAgntcy/pull/616">#616</a> — @mihaialexandrescu — feat(lungo): move otel-collector to default docker compose profile</summary>
+
+- **`otel-collector`** runs on the default profile with modular OTEL config files and env-driven exporter/pipeline selection (nop by default; ClickHouse opt-in).
+- Documents observability profile as optional; adds health-check extension and ClickHouse **`retry_on_failure`**.
+</details>
+
+---
+
 ## 0.1.1 (2026-05-28)
 
 Patch release: **authenticated Agentic Workflows API**, **Helm/KinD fixes** for workflows and SLIM, **Colombia farm weather-aware inventory**, and **Docker/supply-chain hardening**.
