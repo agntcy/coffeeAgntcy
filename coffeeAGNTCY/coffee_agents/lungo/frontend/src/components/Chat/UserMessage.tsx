@@ -4,9 +4,11 @@
  **/
 
 import React from "react"
-
-import { Stack, Typography, useThemeMode } from "@open-ui-kit/core"
 import Person from "@mui/icons-material/Person"
+
+import { Stack, Typography, useTheme } from "@open-ui-kit/core"
+
+import { iconGlyphFillSx } from "@/utils/iconGlyphFill"
 
 import { ChatAvatarCircle } from "./ChatAvatarCircle"
 
@@ -15,7 +17,8 @@ interface UserMessageProps {
 }
 
 const UserMessage: React.FC<UserMessageProps> = ({ content }) => {
-  const { isDarkMode } = useThemeMode()
+  const theme = useTheme()
+  const avatarIconColor = theme.palette.grey[50]
 
   return (
     <Stack
@@ -25,7 +28,7 @@ const UserMessage: React.FC<UserMessageProps> = ({ content }) => {
       sx={{ width: "100%" }}
     >
       <ChatAvatarCircle>
-        <Person sx={isDarkMode ? undefined : { color: "common.white" }} />
+        <Person sx={iconGlyphFillSx(avatarIconColor, { important: true })} />
       </ChatAvatarCircle>
 
       <Stack

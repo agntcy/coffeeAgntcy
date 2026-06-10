@@ -8,6 +8,8 @@ import SendIcon from "@mui/icons-material/Send"
 import { TextField } from "@mui/material"
 import { Box, Button, Stack } from "@open-ui-kit/core"
 
+import { iconGlyphFillSx } from "@/utils/iconGlyphFill"
+
 import {
   CoffeePromptsDropdown,
   LogisticsPromptsDropdown,
@@ -113,10 +115,14 @@ const ChatAreaComposer: React.FC<ChatAreaComposerProps> = ({
         disabled={loading || !content.trim()}
         onClick={() => onSend()}
         endIcon={<SendIcon />}
-        sx={{
+        sx={(theme) => ({
           flexShrink: 0,
           alignSelf: { xs: "stretch", sm: "flex-end" },
-        }}
+          "& .MuiButton-endIcon": iconGlyphFillSx(
+            theme.palette.vars.baseTextInverse,
+            { important: true },
+          ),
+        })}
       >
         Send
       </Button>

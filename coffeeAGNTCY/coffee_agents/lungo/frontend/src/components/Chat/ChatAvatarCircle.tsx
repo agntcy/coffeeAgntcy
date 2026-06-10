@@ -39,15 +39,31 @@ export const ChatAvatarCircle: React.FC<ChatAvatarCircleProps> = ({
   )
 }
 
-export const ChatAgentAvatar: React.FC = () => (
-  <ChatAvatarCircle>
-    <Box
-      component="img"
-      src={AgentIcon}
-      alt="Agent"
-      sx={{ width: 22, height: 22 }}
-    />
-  </ChatAvatarCircle>
-)
+export const ChatAgentAvatar: React.FC = () => {
+  const theme = useTheme()
+
+  return (
+    <ChatAvatarCircle>
+      <Box
+        role="img"
+        aria-label="Agent"
+        sx={{
+          width: 22,
+          height: 22,
+          flexShrink: 0,
+          bgcolor: theme.palette.grey[50],
+          maskImage: `url(${AgentIcon})`,
+          maskSize: "contain",
+          maskRepeat: "no-repeat",
+          maskPosition: "center",
+          WebkitMaskImage: `url(${AgentIcon})`,
+          WebkitMaskSize: "contain",
+          WebkitMaskRepeat: "no-repeat",
+          WebkitMaskPosition: "center",
+        }}
+      />
+    </ChatAvatarCircle>
+  )
+}
 
 export default ChatAvatarCircle

@@ -37,7 +37,6 @@ const TooltipControlButton: React.FC<{
     >
       <IconButton
         size="medium"
-        color="inherit"
         disabled={disabled}
         onClick={onClick}
         aria-label={ariaLabel}

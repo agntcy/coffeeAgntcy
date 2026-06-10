@@ -7,7 +7,36 @@ import React from "react"
 import DeleteOutline from "@mui/icons-material/DeleteOutline"
 import UnfoldLess from "@mui/icons-material/UnfoldLess"
 import UnfoldMore from "@mui/icons-material/UnfoldMore"
+import type { Theme } from "@mui/material/styles"
 import { Box, IconButton, Stack, Tooltip } from "@open-ui-kit/core"
+
+import { iconGlyphFillSx } from "@/utils/iconGlyphFill"
+
+/** OUK `Button` `variant="outlined"` look for header `IconButton`s. */
+function chatHeaderIconButtonSx(theme: Theme) {
+  return {
+    width: 32,
+    height: 32,
+    minWidth: 32,
+    padding: "6px",
+    borderRadius: theme.shape.borderRadius,
+    border: `2px solid ${theme.palette.vars.interactiveTertiaryDefault}`,
+    background: "none",
+    backgroundColor: "transparent",
+    boxShadow: "none",
+    ...iconGlyphFillSx(theme.palette.vars.controlIconDefault, {
+      important: true,
+    }),
+    "&:hover": {
+      border: `2px solid ${theme.palette.vars.interactiveTertiaryHover}`,
+      background: "none",
+      backgroundColor: "transparent",
+    },
+    "&:active": {
+      border: `2px solid ${theme.palette.vars.interactiveTertiaryActive}`,
+    },
+  }
+}
 
 interface ChatHeaderProps {
   onMinimize?: () => void
@@ -39,10 +68,10 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({
           <Tooltip title={isMinimized ? "Maximize" : "Minimize"}>
             <IconButton
               onClick={onMinimize}
-              color="inherit"
               aria-label={isMinimized ? "Maximize" : "Minimize"}
               aria-expanded={!isMinimized}
               aria-controls={messagePanelId}
+              sx={chatHeaderIconButtonSx}
             >
               {isMinimized ? (
                 <UnfoldMore aria-hidden />
@@ -56,8 +85,8 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({
           <Tooltip title="Clear conversation">
             <IconButton
               onClick={onClearConversation}
-              color="inherit"
               aria-label="Clear conversation"
+              sx={chatHeaderIconButtonSx}
             >
               <DeleteOutline />
             </IconButton>

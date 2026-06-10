@@ -15,8 +15,14 @@ import {
   getAssetPngIconSize,
   getGraphIconChipHoverBackground,
 } from "@/utils/assetPngIcon"
+import { iconGlyphFillSx } from "@/utils/iconGlyphFill"
 
 export type GraphNodeSurfaceState = "default" | "active" | "selected"
+
+/** OUK control icon fill (`#e8e9ea` in dark mode) — not `brandIconPrimaryDefault`. */
+export function getControlIconColor(theme: Theme): string {
+  return theme.palette.vars.controlIconDefault
+}
 
 export interface GraphNodeRootSurfaceOptions {
   /** Defaults to 2× theme.shape.borderRadius (typically 8px). */
@@ -136,10 +142,12 @@ export function graphIconChipInteractiveHoverSx(
 
 function graphIconButtonChipSx(theme: Theme): SystemStyleObject<Theme> {
   const iconButtonSize = theme.spacing(5)
+  const iconColor = getControlIconColor(theme)
 
   return {
     ...graphIconChipSx(theme),
     ...graphIconChipInteractiveHoverSx(theme),
+    ...iconGlyphFillSx(iconColor, { important: true }),
     width: iconButtonSize,
     height: iconButtonSize,
     minWidth: iconButtonSize,
