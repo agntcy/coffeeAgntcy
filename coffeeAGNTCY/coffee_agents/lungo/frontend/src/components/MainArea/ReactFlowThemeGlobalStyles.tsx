@@ -10,8 +10,20 @@
 import GlobalStyles from "@mui/material/GlobalStyles"
 import type { Theme } from "@mui/material/styles"
 
+import { getControlIconColor } from "./Graph/Elements/graphNodeSurface"
+import { getMainAreaBackgroundColor } from "./mainAreaBackground"
+import { iconGlyphFillSx } from "@/utils/iconGlyphFill"
+
 function reactFlowGlobalStyles(theme: Theme) {
+  const mainAreaBackground = getMainAreaBackgroundColor(theme)
+
   return {
+    ".react-flow": {
+      background: mainAreaBackground,
+    },
+    ".react-flow__pane": {
+      background: `${mainAreaBackground} !important`,
+    },
     ".react-flow__controls": {
       bottom: `${theme.spacing(5)} !important`,
       left: `${theme.spacing(2)} !important`,
@@ -31,6 +43,7 @@ function reactFlowGlobalStyles(theme: Theme) {
           ? `${theme.shape.borderRadius}px`
           : `${theme.shape.borderRadius}`,
       boxShadow: "none !important",
+      ...iconGlyphFillSx(getControlIconColor(theme), { important: true }),
     },
   }
 }

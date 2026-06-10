@@ -21,6 +21,7 @@ import {
   GRAPH_MIN_ZOOM,
   GRAPH_VIEW_DEFAULT_VIEWPORT,
 } from "@/config/graphViewDefaults"
+import { getMainAreaBackgroundColor } from "./mainAreaBackground"
 import { useMainArea, type MainAreaProps } from "./useMainArea"
 
 const proOptions = { hideAttribution: true }
@@ -70,6 +71,7 @@ const MainArea: React.FC<MainAreaProps> = (props) => {
           alignItems: "flex-start",
           alignSelf: "stretch",
           p: 0,
+          bgcolor: (theme) => getMainAreaBackgroundColor(theme),
         }}
       >
         <ReactFlow
