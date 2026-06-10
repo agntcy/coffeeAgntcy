@@ -9,6 +9,11 @@ import { logger } from "@/utils/logger"
 import { getLogisticsAppApiUrl, joinBaseUrl, LUNGO_FRONTEND_URLS } from "@/urls"
 import { CustomDropdownListItemContent } from "./CustomDropdownListItemContent"
 import { PromptCategory } from "./PromptTypes"
+import {
+  getPromptsDropdownButtonProps,
+  getPromptsDropdownButtonTooltipProps,
+  promptsDropdownEndIcon,
+} from "./promptsDropdownProps"
 
 interface LogisticsPromptsDropdownProps {
   onSelect: (query: string) => void
@@ -130,10 +135,12 @@ const LogisticsPromptsDropdown: React.FC<LogisticsPromptsDropdownProps> = ({
       }}
       label="Suggested Prompts"
       showSelectedOption={false}
-      buttonProps={{
-        size: "small",
-        disabled: isLoading || options.length === 0,
-      }}
+      buttonProps={getPromptsDropdownButtonProps(isLoading, options.length)}
+      buttonTooltipProps={getPromptsDropdownButtonTooltipProps(
+        isLoading,
+        options.length,
+      )}
+      endIcon={promptsDropdownEndIcon}
       fixedWidth
     />
   )

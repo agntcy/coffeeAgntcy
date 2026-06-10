@@ -9,6 +9,11 @@ import { logger } from "@/utils/logger"
 import { getExchangeAppApiUrl, joinBaseUrl, LUNGO_FRONTEND_URLS } from "@/urls"
 import { CustomDropdownListItemContent } from "./CustomDropdownListItemContent"
 import { PromptCategory } from "./PromptTypes"
+import {
+  getPromptsDropdownButtonProps,
+  getPromptsDropdownButtonTooltipProps,
+  promptsDropdownEndIcon,
+} from "./promptsDropdownProps"
 
 interface CoffeePromptsDropdownProps {
   onSelect: (query: string) => void
@@ -137,10 +142,12 @@ const CoffeePromptsDropdown: React.FC<CoffeePromptsDropdownProps> = ({
       }}
       label="Suggested Prompts"
       showSelectedOption={false}
-      buttonProps={{
-        size: "small",
-        disabled: isLoading || options.length === 0,
-      }}
+      buttonProps={getPromptsDropdownButtonProps(isLoading, options.length)}
+      buttonTooltipProps={getPromptsDropdownButtonTooltipProps(
+        isLoading,
+        options.length,
+      )}
+      endIcon={promptsDropdownEndIcon}
       fixedWidth
     />
   )

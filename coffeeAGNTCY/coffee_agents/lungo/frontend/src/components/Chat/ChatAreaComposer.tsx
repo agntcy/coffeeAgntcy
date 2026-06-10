@@ -6,7 +6,7 @@
 import React from "react"
 import SendIcon from "@mui/icons-material/Send"
 import { TextField } from "@mui/material"
-import { Button, Stack } from "@open-ui-kit/core"
+import { Box, Button, Stack } from "@open-ui-kit/core"
 
 import {
   CoffeePromptsDropdown,
@@ -14,12 +14,9 @@ import {
   DiscoveryPromptsDropdown,
 } from "./prompts"
 
-const promptStripSx = {
-  position: "relative" as const,
-  zIndex: 10,
-  height: 36,
-  width: "100%",
-  maxWidth: 880,
+const promptsDropdownSx = {
+  flexShrink: 0,
+  alignSelf: { xs: "stretch" as const, sm: "flex-end" as const },
 }
 
 interface ChatAreaComposerProps {
@@ -48,95 +45,78 @@ const ChatAreaComposer: React.FC<ChatAreaComposerProps> = ({
   onKeyDown,
 }) => {
   return (
-    <>
-      {showCoffeePrompts && (
-        <Stack
-          direction="row"
-          alignItems="flex-start"
-          spacing={1}
-          sx={promptStripSx}
-        >
+    <Stack
+      direction={{ xs: "column", sm: "row" }}
+      alignItems={{ sm: "center" }}
+      spacing={2}
+      sx={{ width: "100%", maxWidth: 880 }}
+    >
+      {showCoffeePrompts ? (
+        <Box sx={promptsDropdownSx}>
           <CoffeePromptsDropdown
             onSelect={onDropdownSelect}
             pattern={pattern}
           />
-        </Stack>
-      )}
+        </Box>
+      ) : null}
 
-      {showLogisticsPrompts && (
-        <Stack
-          direction="row"
-          alignItems="flex-start"
-          spacing={1}
-          sx={promptStripSx}
-        >
+      {showLogisticsPrompts ? (
+        <Box sx={promptsDropdownSx}>
           <LogisticsPromptsDropdown onSelect={onDropdownSelect} />
-        </Stack>
-      )}
+        </Box>
+      ) : null}
 
-      {showDiscoveryPrompts && (
-        <Stack
-          direction="row"
-          alignItems="flex-start"
-          spacing={1}
-          sx={promptStripSx}
-        >
+      {showDiscoveryPrompts ? (
+        <Box sx={promptsDropdownSx}>
           <DiscoveryPromptsDropdown onSelect={onDropdownSelect} />
-        </Stack>
-      )}
+        </Box>
+      ) : null}
 
-      <Stack
-        direction={{ xs: "column", sm: "row" }}
-        alignItems={{ sm: "center" }}
-        spacing={2}
-        sx={{ width: "100%", maxWidth: 880 }}
+      <TextField
+        fullWidth
+        margin="dense"
+        variant="standard"
+        label="Message to agents"
+        placeholder="Type a prompt to interact with the agents"
+        value={content}
+        onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+          setContent(e.target.value)
+        }
+        onKeyDown={onKeyDown}
+        disabled={loading}
+        slotProps={{
+          inputLabel: {
+            shrink: true,
+          },
+          input: {
+            disableUnderline: true,
+          },
+        }}
+        sx={{
+          flex: 1,
+          minWidth: 0,
+          "& .MuiInputBase-input": {
+            "&::placeholder": {
+              opacity: 0.6,
+            },
+          },
+        }}
+      />
+      <Button
+        size="large"
+        type="button"
+        variant="primary"
+        disabled={loading || !content.trim()}
+        onClick={() => onSend()}
+        endIcon={<SendIcon />}
+        sx={{
+          flexShrink: 0,
+          alignSelf: { xs: "stretch", sm: "flex-end" },
+        }}
       >
-        <TextField
-          fullWidth
-          margin="dense"
-          variant="standard"
-          label="Message to agents"
-          placeholder="Type a prompt to interact with the agents"
-          value={content}
-          onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-            setContent(e.target.value)
-          }
-          onKeyDown={onKeyDown}
-          disabled={loading}
-          slotProps={{
-            inputLabel: {
-              shrink: true,
-            },
-            input: {
-              disableUnderline: true,
-            },
-          }}
-          sx={{
-            flex: 1,
-            minWidth: 0,
-            "& .MuiInputBase-input": {
-              "&::placeholder": {
-                opacity: 0.6,
-              },
-            },
-          }}
-        />
-        <Button
-          size="large"
-          type="button"
-          variant="primary"
-          disabled={loading || !content.trim()}
-          onClick={() => onSend()}
-          endIcon={<SendIcon />}
-          sx={{
-            flexShrink: 0,
-            alignSelf: { xs: "stretch", sm: "flex-end" },
-          }}
-        >
-          Send
-        </Button>
-      </Stack>
-    </>
+        Send
+      </Button>
+    </Stack>
   )
 }
 

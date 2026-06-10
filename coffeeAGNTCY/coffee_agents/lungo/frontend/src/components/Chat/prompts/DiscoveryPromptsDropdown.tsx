@@ -8,6 +8,11 @@ import { Dropdown } from "@open-ui-kit/core"
 import { getDiscoveryAppApiUrl, joinBaseUrl, LUNGO_FRONTEND_URLS } from "@/urls"
 import { CustomDropdownListItemContent } from "./CustomDropdownListItemContent"
 import { PromptCategory, Prompt } from "./PromptTypes"
+import {
+  getPromptsDropdownButtonProps,
+  getPromptsDropdownButtonTooltipProps,
+  promptsDropdownEndIcon,
+} from "./promptsDropdownProps"
 
 interface DiscoveryPromptsDropdownProps {
   onSelect: (query: string) => void
@@ -128,10 +133,12 @@ const DiscoveryPromptsDropdown: React.FC<DiscoveryPromptsDropdownProps> = ({
       }}
       label="Suggested Prompts"
       showSelectedOption={false}
-      buttonProps={{
-        size: "small",
-        disabled: isLoading || options.length === 0,
-      }}
+      buttonProps={getPromptsDropdownButtonProps(isLoading, options.length)}
+      buttonTooltipProps={getPromptsDropdownButtonTooltipProps(
+        isLoading,
+        options.length,
+      )}
+      endIcon={promptsDropdownEndIcon}
       fixedWidth
     />
   )
