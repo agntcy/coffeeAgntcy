@@ -172,6 +172,7 @@ const ChatAreaMessageThread: React.FC<ChatAreaMessageThreadProps> = ({
                     url={grafanaSessionUrl}
                     label="Grafana"
                     iconSrc={grafanaIcon}
+                    sx={{ ml: 1 }}
                   />
                 )}
             </Typography>

@@ -7,12 +7,14 @@ import React from "react"
 import { SecurityClass } from "@/utils/SecurityClass"
 import { Box } from "@open-ui-kit/core"
 import { Chip } from "@mui/material"
+import type { SxProps, Theme } from "@mui/material/styles"
 
 interface ExternalLinkButtonProps {
   component?: "a" | "button"
   url: string
   label: string
   iconSrc: string
+  sx?: SxProps<Theme>
 }
 
 const ExternalLinkButton: React.FC<ExternalLinkButtonProps> = ({
@@ -20,11 +22,13 @@ const ExternalLinkButton: React.FC<ExternalLinkButtonProps> = ({
   url,
   label,
   iconSrc,
+  sx,
 }) => {
   if (!SecurityClass.isSafeExternalUrl(url)) return null
   return (
     <Chip
       component={component}
+      sx={sx}
       label={label}
       icon={
         <Box
