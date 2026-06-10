@@ -28,7 +28,7 @@ export function getPromptsDropdownButtonProps(
   isLoading: boolean,
   optionCount: number,
 ): ButtonProps {
-  const base: ButtonProps = { size: "large", variant: "outlined" }
+  const base: ButtonProps = { size: "medium", variant: "outlined" }
 
   if (!isPromptsDropdownInactive(isLoading, optionCount)) {
     return base
