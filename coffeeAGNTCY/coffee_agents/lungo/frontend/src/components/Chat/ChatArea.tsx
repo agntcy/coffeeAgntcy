@@ -273,7 +273,6 @@ const ChatArea: React.FC<ChatAreaProps> = ({
           spacing={1}
           sx={{
             width: "100%",
-            minHeight: currentUserMessage ? 0 : 120,
             px: chatHorizontalPadding,
             py: currentUserMessage ? 1 : 0,
             display: isMinimized ? "none" : "block",

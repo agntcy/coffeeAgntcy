@@ -153,7 +153,6 @@ const RootPage: React.FC = () => {
               gap: 0,
               p: 0,
               maxHeight: "50%",
-              minHeight: { xs: "min(76px, 50%)", md: "min(96px, 50%)" },
               minWidth: 0,
               overflow: "hidden",
             }}

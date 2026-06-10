@@ -95,6 +95,10 @@ const ChatAreaComposer: React.FC<ChatAreaComposerProps> = ({
         sx={{
           flex: 1,
           minWidth: 0,
+          "& .MuiInput-root": {
+            marginTop: 0,
+            height: 32,
+          },
           "& .MuiInputBase-input": {
             "&::placeholder": {
               opacity: 0.6,
@@ -103,7 +107,7 @@ const ChatAreaComposer: React.FC<ChatAreaComposerProps> = ({
         }}
       />
       <Button
-        size="large"
+        size="medium"
         type="button"
         variant="primary"
         disabled={loading || !content.trim()}
