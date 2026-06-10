@@ -90,13 +90,8 @@ const CustomNode: React.FC<CustomNodeProps> = ({ id, data }) => {
             flexDirection: "row",
             alignItems: "center",
             gap: 0.5,
-            alignSelf: "stretch",
             p: 0,
-            order: 0,
-            flexGrow: 0,
-            flexShrink: 0,
             height: 20,
-            width: data.verificationStatus === "verified" ? 160 : 162,
           }}
         >
           <Typography
