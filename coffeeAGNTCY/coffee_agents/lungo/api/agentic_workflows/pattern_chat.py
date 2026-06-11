@@ -13,7 +13,8 @@ from __future__ import annotations
 
 import logging
 import os
-from typing import AsyncIterator
+import time
+from typing import AsyncIterator, Callable
 
 import litellm
 from google.adk.agents import Agent
@@ -38,6 +39,15 @@ DEFAULT_USER_ID = "pattern-chat-user"
 
 STATE_KEY_MARKDOWN = "pattern_markdown"
 STATE_KEY_PATTERN_NAME = "pattern_name"
+
+SESSION_TTL_SECONDS = 30 * 60
+MAX_EVICTIONS_PER_CALL = 10
+
+# Injectable clock so tests can advance "time" without sleeping.
+_clock: Callable[[], float] = time.monotonic
+
+# (pattern_name::session_id) -> last-used monotonic timestamp.
+_last_used: dict[str, float] = {}
 
 
 _LITELLM_PROXY_BASE_URL = os.getenv("LITELLM_PROXY_BASE_URL")
@@ -136,14 +146,30 @@ def _extract_text_chunks(event) -> list[str]:
     return out
 
 
+async def _sweep_expired_sessions() -> None:
+    """Drop sessions idle past SESSION_TTL_SECONDS; cap evictions per call."""
+    now = _clock()
+    expired = [
+        sid for sid, last in _last_used.items()
+        if now - last > SESSION_TTL_SECONDS
+    ][:MAX_EVICTIONS_PER_CALL]
+    for sid in expired:
+        await _session_service.delete_session(
+            app_name=APP_NAME, user_id=DEFAULT_USER_ID, session_id=sid
+        )
+        _last_used.pop(sid, None)
+
+
 async def stream_one_turn(
     pattern_name: str,
     fe_session_id: str,
     user_message: str,
 ) -> AsyncIterator[str]:
     """Yield text chunks for one user turn. Raises PatternReferenceNotFound."""
+    await _sweep_expired_sessions()
     await _ensure_session(pattern_name, fe_session_id)
     sid = _session_key(pattern_name, fe_session_id)
+    _last_used[sid] = _clock()
     content = types.Content(role="user", parts=[types.Part(text=user_message)])
 
     # Forward partial chunks; fall back to the final non-partial when the model

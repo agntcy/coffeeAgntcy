@@ -39,11 +39,12 @@ def client() -> TestClient:
 
 @pytest.fixture(autouse=True)
 def _isolate_pattern_chat_sessions():
-    """Reset the module-level ADK session store before each test."""
-    pattern_chat._session_service._sessions.clear() if hasattr(
-        pattern_chat._session_service, "_sessions"
-    ) else None
+    """Reset the module-level ADK session store and TTL clock before each test."""
+    pattern_chat._session_service.sessions.clear()
+    pattern_chat._last_used.clear()
+    original_clock = pattern_chat._clock
     yield
+    pattern_chat._clock = original_clock
 
 
 # ---------------------------------------------------------------------------
@@ -299,3 +300,109 @@ def test_tool_call_events_are_filtered_from_stream(client: TestClient) -> None:
         {"response": "here."},
         {"done": True},
     ]
+
+
+def test_same_session_id_under_different_patterns_is_isolated(client: TestClient) -> None:
+    """Test 8 — same FE session_id under two patterns yields two independent ADK sessions."""
+    import asyncio
+
+    events = [_text_event("ok", partial=False)]
+    shared_uuid = "shared-fe-uuid"
+
+    with _stub_runner_events(events):
+        client.post(
+            "/patterns/Feedback Loop/chat",
+            json={"session_id": shared_uuid, "message": "hello"},
+        )
+        client.post(
+            "/patterns/Recruiter/chat",
+            json={"session_id": shared_uuid, "message": "hello"},
+        )
+
+    fb_session = asyncio.run(
+        pattern_chat._session_service.get_session(
+            app_name=pattern_chat.APP_NAME,
+            user_id=pattern_chat.DEFAULT_USER_ID,
+            session_id=pattern_chat._session_key("Feedback Loop", shared_uuid),
+        )
+    )
+    rc_session = asyncio.run(
+        pattern_chat._session_service.get_session(
+            app_name=pattern_chat.APP_NAME,
+            user_id=pattern_chat.DEFAULT_USER_ID,
+            session_id=pattern_chat._session_key("Recruiter", shared_uuid),
+        )
+    )
+    assert fb_session is not None and rc_session is not None
+    assert fb_session.id != rc_session.id
+    assert (
+        fb_session.state[pattern_chat.STATE_KEY_PATTERN_NAME] == "Feedback Loop"
+    )
+    assert rc_session.state[pattern_chat.STATE_KEY_PATTERN_NAME] == "Recruiter"
+    assert (
+        fb_session.state[pattern_chat.STATE_KEY_MARKDOWN]
+        != rc_session.state[pattern_chat.STATE_KEY_MARKDOWN]
+    )
+
+
+def test_idle_session_is_evicted_after_ttl(client: TestClient) -> None:
+    """Test 9 — a session idle past SESSION_TTL_SECONDS is dropped on the next call."""
+    import asyncio
+
+    events = [_text_event("ok", partial=False)]
+    fake_now = [1000.0]
+    pattern_chat._clock = lambda: fake_now[0]
+
+    with _stub_runner_events(events):
+        client.post(
+            "/patterns/Feedback Loop/chat",
+            json={"session_id": "evict-1", "message": "first"},
+        )
+
+    sid = pattern_chat._session_key("Feedback Loop", "evict-1")
+    first = asyncio.run(
+        pattern_chat._session_service.get_session(
+            app_name=pattern_chat.APP_NAME,
+            user_id=pattern_chat.DEFAULT_USER_ID,
+            session_id=sid,
+        )
+    )
+    assert first is not None
+
+    # Advance "now" past the TTL and POST a different session to trigger the sweep.
+    fake_now[0] += pattern_chat.SESSION_TTL_SECONDS + 1
+    with _stub_runner_events(events):
+        client.post(
+            "/patterns/Feedback Loop/chat",
+            json={"session_id": "trigger-sweep", "message": "second"},
+        )
+
+    after_sweep = asyncio.run(
+        pattern_chat._session_service.get_session(
+            app_name=pattern_chat.APP_NAME,
+            user_id=pattern_chat.DEFAULT_USER_ID,
+            session_id=sid,
+        )
+    )
+    assert after_sweep is None, "idle session should have been evicted"
+    assert sid not in pattern_chat._last_used
+
+    # Next POST under the same id starts a fresh session (no carried-over history).
+    with _stub_runner_events(events):
+        client.post(
+            "/patterns/Feedback Loop/chat",
+            json={"session_id": "evict-1", "message": "third"},
+        )
+    revived = asyncio.run(
+        pattern_chat._session_service.get_session(
+            app_name=pattern_chat.APP_NAME,
+            user_id=pattern_chat.DEFAULT_USER_ID,
+            session_id=sid,
+        )
+    )
+    assert revived is not None
+    # Fresh session: created after the eviction, so its timestamp is strictly
+    # later than the pre-eviction one, and its event history begins empty.
+    assert revived.last_update_time > first.last_update_time, (
+        "revived session should be created strictly after the original was evicted"
+    )
