@@ -89,11 +89,18 @@ class FarmAgentExecutor(AgentExecutor):
 
         try:
             if workflow_name or workflow_instance_id:
+                # Baggage is the primary identity channel; the explicit kwargs
+                # are an in-process fallback the MCP wrapper uses if baggage is
+                # ever unavailable inside the graph run.
                 with workflow_context_scope(
                     workflow_name=workflow_name,
                     workflow_instance_id=workflow_instance_id,
                 ):
-                    output = await self.agent.ainvoke(prompt)
+                    output = await self.agent.ainvoke(
+                        prompt,
+                        workflow_name=workflow_name,
+                        workflow_instance_id=workflow_instance_id,
+                    )
             else:
                 output = await self.agent.ainvoke(prompt)
 

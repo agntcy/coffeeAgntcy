@@ -53,6 +53,10 @@ class GraphState(MessagesState):
     next_node: str
     weather_forecast_success: bool
     weather_forecast: str
+    # Workflow identity propagated from the supervisor; used as an explicit
+    # fallback for MCP event emission when OTel baggage is unavailable.
+    workflow_name: str | None
+    workflow_instance_id: str | None
 
 # --- 3. Implement the LangGraph Application Class ---
 @agent(name="colombia_farm_agent")
@@ -137,6 +141,8 @@ class FarmAgent:
                 agent_id=AGENT_CARD.name,
                 mcp_server="lungo_weather_service",
                 source=AGENT_ID,
+                workflow_name=state.get("workflow_name"),
+                instance_id=state.get("workflow_instance_id"),
             )
             async with mcp_ctx as client:
                 response = await client.list_tools()
@@ -226,15 +232,20 @@ class FarmAgent:
 
         logger.info(f"Received order query: {user_message}")
 
+        workflow_name = state.get("workflow_name")
+        workflow_instance_id = state.get("workflow_instance_id")
+
         # Call MCP tools before processing the order
         try:
             payment_result = await invoke_payment_mcp_tool(
                 "create_payment", agent_id=AGENT_CARD.name, source=AGENT_ID,
+                workflow_name=workflow_name, instance_id=workflow_instance_id,
             )
             logger.info(f"Payment result: {payment_result}")
 
             transactions_details = await invoke_payment_mcp_tool(
                 "list_transactions", agent_id=AGENT_CARD.name, source=AGENT_ID,
+                workflow_name=workflow_name, instance_id=workflow_instance_id,
             )
             logger.info(f"Transactions details: {transactions_details}")
 
@@ -318,17 +329,31 @@ class FarmAgent:
 
         return workflow.compile()
 
-    async def ainvoke(self, user_message: str) -> dict:
+    async def ainvoke(
+        self,
+        user_message: str,
+        *,
+        workflow_name: str | None = None,
+        workflow_instance_id: str | None = None,
+    ) -> dict:
         """
         Invokes the graph with a user message.
 
         Args:
             user_message (str): The current message from the user.
+            workflow_name: Optional supervisor workflow name, threaded into
+                graph state as an explicit fallback for MCP event identity.
+            workflow_instance_id: Optional supervisor workflow instance id,
+                threaded into graph state alongside workflow_name.
 
         Returns:
             str: The final state of the graph after processing the message.
         """
-        inputs = {"messages": [user_message]}
+        inputs = {
+            "messages": [user_message],
+            "workflow_name": workflow_name,
+            "workflow_instance_id": workflow_instance_id,
+        }
         result = await self.app.ainvoke(inputs)
 
         messages = result.get("messages", [])

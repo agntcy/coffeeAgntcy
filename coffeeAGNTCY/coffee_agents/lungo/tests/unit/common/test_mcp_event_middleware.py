@@ -10,11 +10,17 @@ from schema.types import Operation
 
 from common.mcp_event_middleware import wrap_mcp_client
 from common.mcp_event_middleware import wrapper as wrapper_mod
+from common.workflow_context_prop import (
+    attach_workflow_context,
+    detach_workflow_context,
+)
 from common.workflow_utils.mcp import MCP_TOOL_NODE_TYPE
 
 _AGENT_ID = "Colombia Coffee Farm"
 _SERVER = "lungo_weather_service"
 _SOURCE = "colombia_coffee_farm"
+_WORKFLOW_NAME = "Test Workflow Alpha"
+_INSTANCE_ID = "instance://00000000-0000-4000-8000-000000000001"
 
 
 class _CapturingSink:
@@ -94,6 +100,48 @@ class _StreamThenValueClient:
         if self.calls == 1:
             return _aiter(self.stream)
         return self.value
+
+
+class _DistinctSession:
+    """Session object yielded by a context manager (exposes call_tool)."""
+
+    def __init__(self, result="ok") -> None:
+        self.result = result
+        self.calls: list = []
+        self.session_exited = False
+
+    async def call_tool(self, *args, **kwargs):
+        self.calls.append((args, kwargs))
+        return self.result
+
+    async def __aexit__(self, *exc_info):
+        # If the wrapper wrongly exits the session instead of the context
+        # manager, this flips True and the CM teardown never runs (the bug
+        # that left SDK streams open and hung CI).
+        self.session_exited = True
+        return False
+
+
+class _DistinctSessionClient:
+    """Context manager whose __aenter__ yields a *distinct* session object.
+
+    Mirrors the agntcy SDK MCP client: the object exposing call_tool differs
+    from the context manager, and only the context manager's __aexit__ runs
+    the teardown.
+    """
+
+    def __init__(self, session: _DistinctSession) -> None:
+        self._session = session
+        self.entered = False
+        self.cm_exited = False
+
+    async def __aenter__(self):
+        self.entered = True
+        return self._session
+
+    async def __aexit__(self, *exc_info):
+        self.cm_exited = True
+        return False
 
 
 @pytest.fixture
@@ -253,19 +301,6 @@ async def test_agent_node_deleted_only_after_last_inflight_call(emit_enabled):
     assert _deleted_agent_node(final_delete) is not None
 
 
-async def test_emit_disabled_passthrough(monkeypatch):
-    """With emission disabled the wrapper is a transparent passthrough."""
-    monkeypatch.setattr(wrapper_mod, "EMIT_WORKFLOW_EVENTS", False, raising=False)
-    fake = _FakeMCPClient(result="ok")
-    wrapped = _wrap(fake)
-
-    assert wrapped._event_sink is None
-    result = await wrapped.call_tool("get_forecast")
-
-    assert result == "ok"
-    assert fake.calls == [(("get_forecast",), {})]
-
-
 async def test_list_tools_passthrough(emit_enabled):
     """Non-call_tool methods delegate to the underlying client, no events."""
     fake = _FakeMCPClient()
@@ -291,12 +326,91 @@ async def test_async_context_manager_delegation(emit_enabled):
     assert len(client._event_sink.events) == 2
 
 
-async def test_missing_workflow_context_skips_emission(emit_enabled, no_default_baggage):
-    """Absent workflow identity skips emission but still runs the tool."""
+async def test_aexit_targets_context_manager_not_session(emit_enabled):
+    """Regression: __aexit__ must close the context manager, not the session.
+
+    When __aenter__ yields a distinct session (as the real SDK client does),
+    the wrapper must still exit the original context manager so its teardown
+    runs. Exiting the yielded session instead skips that teardown and leaks
+    the SDK's background streams — the bug that hung CI.
+    """
+    session = _DistinctSession(result="forecast")
+    cm = _DistinctSessionClient(session)
+
+    async with _wrap(cm) as client:
+        result = await client.call_tool("get_forecast")
+
+    assert result == "forecast"
+    assert session.calls == [(("get_forecast",), {})]
+    assert cm.entered is True
+    assert cm.cm_exited is True
+    assert session.session_exited is False
+    assert len(client._event_sink.events) == 2
+
+
+async def test_emit_disabled_returns_unwrapped(monkeypatch):
+    """With emission disabled the original client is returned unwrapped."""
+    monkeypatch.setattr(wrapper_mod, "EMIT_WORKFLOW_EVENTS", False, raising=False)
     fake = _FakeMCPClient(result="ok")
     wrapped = _wrap(fake)
 
+    assert wrapped is fake
     result = await wrapped.call_tool("get_forecast")
 
     assert result == "ok"
-    assert wrapped._event_sink.events == []
+    assert fake.calls == [(("get_forecast",), {})]
+
+
+async def test_missing_workflow_context_returns_unwrapped(emit_enabled, no_default_baggage):
+    """Absent workflow identity returns the unwrapped client (no events)."""
+    fake = _FakeMCPClient(result="ok")
+    wrapped = _wrap(fake)
+
+    assert wrapped is fake
+    result = await wrapped.call_tool("get_forecast")
+
+    assert result == "ok"
+    assert fake.calls == [(("get_forecast",), {})]
+
+
+async def test_explicit_identity_used_when_baggage_absent(emit_enabled, no_default_baggage):
+    """With no baggage, explicit workflow_name/instance_id resolve identity."""
+    fake = _FakeMCPClient(result="forecast")
+    wrapped = wrap_mcp_client(
+        fake,
+        agent_id=_AGENT_ID,
+        mcp_server=_SERVER,
+        source=_SOURCE,
+        workflow_name=_WORKFLOW_NAME,
+        instance_id=_INSTANCE_ID,
+    )
+
+    assert wrapped is not fake
+    result = await wrapped.call_tool("get_forecast")
+
+    assert result == "forecast"
+    assert len(wrapped._event_sink.events) == 2
+
+
+async def test_explicit_fallback_when_baggage_unknown(emit_enabled, no_default_baggage):
+    """Baggage present but unknown to the catalog falls through to explicit."""
+    token = attach_workflow_context(
+        workflow_name="Unknown Workflow",
+        workflow_instance_id="instance://00000000-0000-4000-8000-000000000099",
+    )
+    try:
+        fake = _FakeMCPClient(result="ok")
+        wrapped = wrap_mcp_client(
+            fake,
+            agent_id=_AGENT_ID,
+            mcp_server=_SERVER,
+            source=_SOURCE,
+            workflow_name=_WORKFLOW_NAME,
+            instance_id=_INSTANCE_ID,
+        )
+
+        assert wrapped is not fake
+        await wrapped.call_tool("get_forecast")
+        assert len(wrapped._event_sink.events) == 2
+    finally:
+        detach_workflow_context(token)

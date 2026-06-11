@@ -100,9 +100,10 @@ MCP tool calls are modeled as **transient** topology nodes rather than the
 persistent caller/transport/remote nodes used for A2A.
 
 - **`EventEmittingMCPClient` / `wrap_mcp_client(...)`**
-  - Wraps an MCP client (or its async context manager); delegates `__aenter__`/`__aexit__` and forwards every non-`call_tool` attribute (e.g. `list_tools`) to the underlying client.
+  - `wrap_mcp_client(...)` resolves identity once (see below) and returns either an `EventEmittingMCPClient` or, when no identity resolves (or `EMIT_WORKFLOW_EVENTS` is false), the **original client unwrapped** so the tool call behaves exactly as before.
+  - The wrapper keeps the original async context manager (`_cm`) and the object it yields (`_session`) separate: `__aexit__` always closes `_cm` so the SDK client's teardown (cancelling its anyio task group, closing streams) runs, while `call_tool`/`list_tools` and other attributes delegate to `_session`. Exiting the yielded session instead leaks those streams and hangs the event loop.
   - Intercepts `call_tool` (positional `name` or `name=` keyword), emitting one event when the call starts and one when it ends.
-  - Best-effort: emission failures are logged, never raised to the tool caller; disabled entirely when `EMIT_WORKFLOW_EVENTS` is false.
+  - Best-effort: emission failures are logged, never raised to the tool caller.
 
 ### Lifecycle
 
@@ -119,8 +120,12 @@ MCP events are emitted from the farm process but must correlate to the
 supervisor's workflow instance:
 
 1. The supervisor stamps `workflow_name` + `workflow_instance_id` (read from OTel baggage) into the outbound A2A message `metadata` (`agents/supervisors/auction/graph/tools.py`).
-2. The farm executor (`agents/farms/colombia/agent_executor.py`) reads that metadata and wraps `agent.ainvoke(...)` in `workflow_context_scope`, re-establishing baggage for the duration of the graph run.
-3. The MCP wrapper resolves identity via `read_trace_context()`; when `workflow_name` is absent from the catalog or `workflow_instance_id` is missing/malformed, emission is skipped (the tool call still runs).
+2. The farm executor (`agents/farms/colombia/agent_executor.py`) reads that metadata, wraps `agent.ainvoke(...)` in `workflow_context_scope` (re-establishing baggage for the graph run), and also threads the same identity explicitly through graph state.
+3. `wrap_mcp_client(...)` resolves identity once, in this order:
+   1. **OTel baggage** if present and non-empty (the primary channel established in step 2).
+   2. otherwise the **explicit** `workflow_name`/`instance_id` passed by the call site (threaded through graph state as an in-process fallback).
+   3. otherwise **None** — the client is returned unwrapped and no events are emitted (the tool call still runs).
+   In all cases the candidate must validate (workflow_name in the catalog, `instance_id` matching `instance://<uuid>`); an invalid candidate falls through to the next source.
 4. `register_cleanup_span_processor()` is registered on the farm (`farm_server.py`) for parity with the supervisor.
 
 ## Design Notes

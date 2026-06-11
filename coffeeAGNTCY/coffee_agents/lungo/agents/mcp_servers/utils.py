@@ -23,6 +23,8 @@ async def invoke_payment_mcp_tool(
   *,
   agent_id: str,
   source: str,
+  workflow_name: str | None = None,
+  instance_id: str | None = None,
 ) -> dict:
   # don't invoke if identity auth is not enabled
   if os.getenv("IDENTITY_AUTH_ENABLED", "").lower() not in ["true", "enabled"]:
@@ -48,6 +50,8 @@ async def invoke_payment_mcp_tool(
     agent_id=agent_id,
     mcp_server="lungo_payment_service",
     source=source,
+    workflow_name=workflow_name,
+    instance_id=instance_id,
   )
 
   try:
