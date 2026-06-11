@@ -35,6 +35,10 @@ from api.agentic_workflows.instance_lifecycle import (
     workflow_instance_from_store,
 )
 from api.agentic_workflows.patterns import PATTERNS
+from api.agentic_workflows.pattern_chat import (
+    PatternReferenceNotFound,
+    run_one_turn,
+)
 from api.agentic_workflows.use_cases import USE_CASES
 from api.agentic_workflows.workflow_documentation import (
     load_parsed_workflow_documentation,
@@ -160,30 +164,22 @@ def create_agentic_workflows_router() -> APIRouter:
     ) -> StreamingResponse:
         """POST /patterns/{name}/chat — NDJSON stream grounded in the pattern markdown.
 
-        Returns 404 when no reference markdown exists for ``name``. On success the
-        response is ``application/x-ndjson``: one ``{"response": "..."}`` object
+        Returns 404 when no reference markdown exists for ``name``. The wire
+        protocol is ``application/x-ndjson``: one ``{"response": "..."}`` object
         per chunk, terminated by ``{"done": true}``; in-stream failures emit a
         single ``{"error": "..."}`` line and close the connection.
-
-        The streaming/LLM wiring is added in a later checkpoint; this stub
-        exercises the HTTP contract (404 path, request validation, NDJSON shape).
         """
+        # 404 early — before opening a stream — when the pattern has no doc.
         slug = workflow_name_to_documentation_slug(name)
-        parsed = load_parsed_workflow_documentation(slug)
-        if parsed is None:
+        if load_parsed_workflow_documentation(slug) is None:
             raise HTTPException(
                 status_code=404,
                 detail=f"No reference material for pattern: {name}",
             )
 
         async def ndjson_stream() -> AsyncIterator[bytes]:
-            # Stub response — replaced with the real LLM stream in the next
-            # checkpoint. Shape matches the documented protocol so frontends and
-            # tests can be wired against it now.
-            yield (
-                json.dumps({"response": f"(stub) pattern={name} message={body.message!r}"})
-                + "\n"
-            ).encode("utf-8")
+            response_text = await run_one_turn(name, body.session_id, body.message)
+            yield (json.dumps({"response": response_text}) + "\n").encode("utf-8")
             yield (json.dumps({"done": True}) + "\n").encode("utf-8")
 
         return StreamingResponse(
