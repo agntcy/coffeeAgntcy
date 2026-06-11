@@ -406,3 +406,38 @@ def test_idle_session_is_evicted_after_ttl(client: TestClient) -> None:
     assert revived.last_update_time > first.last_update_time, (
         "revived session should be created strictly after the original was evicted"
     )
+
+
+def test_runner_raises_mid_stream_emits_error_then_closes(client: TestClient) -> None:
+    """Test 11 — LLM/runner failure mid-stream emits {"error": ...} and no {"done": true}."""
+
+    async def fake_run_async(*args, **kwargs):
+        yield _text_event("partial ", partial=True)
+        raise RuntimeError("upstream LLM blew up: SECRET=abc123")
+
+    with patch.object(
+        pattern_chat._runner, "run_async", side_effect=fake_run_async
+    ):
+        with client.stream(
+            "POST",
+            "/patterns/Feedback Loop/chat",
+            json={"session_id": "sess-err-1", "message": "explain"},
+        ) as r:
+            lines = _ndjson_lines(r.iter_lines())
+
+    assert lines[0] == {"response": "partial "}
+    assert "error" in lines[-1]
+    # Sanitized: must not leak the internal exception text.
+    assert "SECRET" not in lines[-1]["error"]
+    assert not any("done" in line for line in lines), (
+        "done terminator must not be emitted when the stream errored"
+    )
+
+
+def test_agent_is_configured_with_litellm_and_expected_model() -> None:
+    """Test 13 — shared Agent uses LiteLlm(model=LLM_MODEL)."""
+    from config.config import LLM_MODEL
+    from google.adk.models.lite_llm import LiteLlm
+
+    assert isinstance(pattern_chat._root_agent.model, LiteLlm)
+    assert pattern_chat._root_agent.model.model == LLM_MODEL

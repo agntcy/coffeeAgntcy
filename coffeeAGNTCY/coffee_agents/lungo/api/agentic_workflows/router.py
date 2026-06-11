@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+import logging
 from collections.abc import AsyncIterator
 from typing import Annotated
 from uuid import UUID, uuid4
@@ -61,6 +62,8 @@ from schema import errors as schema_errors
 from schema.types import Event, Workflow, WorkflowInstance, instance_id_from_uuid
 
 _TAG = "agentic-workflows"
+
+logger = logging.getLogger(__name__)
 
 WORKFLOW_INSTANCE_STORE_ATTR = "workflow_instance_store"
 
@@ -175,8 +178,19 @@ def create_agentic_workflows_router() -> APIRouter:
             )
 
         async def ndjson_stream() -> AsyncIterator[bytes]:
-            async for chunk in stream_one_turn(name, body.session_id, body.message):
-                yield (json.dumps({"response": chunk}) + "\n").encode("utf-8")
+            try:
+                async for chunk in stream_one_turn(name, body.session_id, body.message):
+                    yield (json.dumps({"response": chunk}) + "\n").encode("utf-8")
+            except Exception:
+                logger.exception(
+                    "pattern_chat stream failed (pattern=%s, session=%s)",
+                    name,
+                    body.session_id,
+                )
+                yield (
+                    json.dumps({"error": "Pattern chat stream failed."}) + "\n"
+                ).encode("utf-8")
+                return
             yield (json.dumps({"done": True}) + "\n").encode("utf-8")
 
         return StreamingResponse(
