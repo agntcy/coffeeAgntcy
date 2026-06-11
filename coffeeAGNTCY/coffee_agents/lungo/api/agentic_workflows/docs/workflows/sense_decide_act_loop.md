@@ -1,5 +1,22 @@
 # Sense–Decide–Act Loop
 
+## Agent Interaction Diagram
+
+```mermaid
+graph TD
+    Sense["Sensing Agent"]
+    Decide["Decision Agent"]
+    Act["Action Agent"]
+    Transport["Transport / Partner Messages"]
+    Telemetry["Operational Telemetry"]
+
+    Telemetry -->|"Fresh Signals"| Sense
+    Sense -->|"Normalized Situation"| Decide
+    Decide -->|"Next Action"| Act
+    Act -->|"Route / Replan Message"| Transport
+    Transport -->|"New State"| Telemetry
+```
+
 ## Pattern
 
 The **sense–decide–act loop** runs **observe → act → re-evaluate** in cycles so plans update when the world moves—ports

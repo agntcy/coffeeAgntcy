@@ -1,5 +1,21 @@
 # Agent-to-System Bridge
 
+## Agent Interaction Diagram
+
+```mermaid
+graph TD
+    Carbon["Carbon Accounting Agent"]
+    Bridge["System Bridge / Adapter"]
+    Emissions["Emissions Service"]
+    Finance["Finance System"]
+    Decision["Route Decision Agent"]
+
+    Carbon <-->|"System Query"| Bridge
+    Bridge <-->|"Emissions Facts"| Emissions
+    Bridge <-->|"Recognized Cost Data"| Finance
+    Carbon -->|"Normalized Evidence"| Decision
+```
+
 ## Pattern
 
 An **agent-to-system bridge** lets agents **invoke trusted external systems**—enterprise planning tools, emissions

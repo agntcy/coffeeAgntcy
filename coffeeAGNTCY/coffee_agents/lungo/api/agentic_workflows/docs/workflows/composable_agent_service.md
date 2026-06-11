@@ -1,5 +1,21 @@
 # Composable Agent Service
 
+## Agent Interaction Diagram
+
+```mermaid
+graph TD
+    Catalog["Agent Catalog"]
+    Carbon["Carbon Accounting Agent Service"]
+    Procurement["Procurement Agent"]
+    Logistics["Logistics Agent"]
+    Reporting["Reporting Agent"]
+
+    Catalog <-->|"Service Registration + Version"| Carbon
+    Procurement <-->|"Emissions Request"| Carbon
+    Logistics <-->|"Route Carbon Request"| Carbon
+    Reporting <-->|"Reusable Carbon Facts"| Carbon
+```
+
 ## Pattern
 
 **Composable agent service** packages an agent like a **product**: discoverable in a catalog, **versioned interfaces**,

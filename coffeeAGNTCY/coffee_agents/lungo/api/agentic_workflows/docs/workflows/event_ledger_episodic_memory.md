@@ -1,5 +1,21 @@
 # Event Ledger (Episodic Memory)
 
+## Agent Interaction Diagram
+
+```mermaid
+graph TD
+    Buyer["Buying Agent"]
+    Logistics["Logistics Agent"]
+    Policy["Policy Agent"]
+    Ledger["Event Ledger"]
+    Ops["Operations Reviewer"]
+
+    Buyer -->|"Decision Event"| Ledger
+    Logistics -->|"Tool Call Event"| Ledger
+    Policy -->|"Policy Check Event"| Ledger
+    Ops <-->|"Replay Timeline"| Ledger
+```
+
 ## Pattern
 
 An **event ledger** (episodic memory for agents) appends a **faithful history of decisions**—prompts, tool calls, policy

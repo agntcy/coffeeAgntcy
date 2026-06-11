@@ -1,5 +1,21 @@
 # Group Messaging
 
+## Agent Interaction Diagram
+
+```mermaid
+graph TD
+    Transport["Transport: SLIM"]
+    Buyer["Buyer Logistics Agent"]
+    Farm["Tatooine Coffee Farm Agent"]
+    Shipper["Shipper Agent"]
+    Accountant["Accountant Agent"]
+
+    Buyer <-->|"A2A"| Transport
+    Farm <-->|"A2A"| Transport
+    Shipper <-->|"A2A"| Transport
+    Accountant <-->|"A2A"| Transport
+```
+
 ## Pattern
 
 **Group messaging and coordination** is a general arrangement when **several specialists** must **see the same

@@ -1,5 +1,21 @@
 # Self-Evaluation Agent
 
+## Agent Interaction Diagram
+
+```mermaid
+graph TD
+    Telemetry["Telemetry Collector"]
+    Outcomes["Business Outcomes Store"]
+    Reflection["Self-Evaluation Agent"]
+    Human["Human Reviewer"]
+    Policy["Prompt / Policy Store"]
+
+    Telemetry -->|"Past Run Data"| Reflection
+    Outcomes -->|"Forecast vs Actual"| Reflection
+    Reflection -->|"Recommended Change"| Human
+    Human -->|"Approved Update"| Policy
+```
+
 ## Pattern
 
 A **self-evaluation** (reflection) pattern compares **past outcomes** to intent—forecasts versus arrivals, routing

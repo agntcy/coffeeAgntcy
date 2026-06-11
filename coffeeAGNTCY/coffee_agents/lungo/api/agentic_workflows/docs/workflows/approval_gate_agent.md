@@ -1,5 +1,21 @@
 # Approval Gate Agent
 
+## Agent Interaction Diagram
+
+```mermaid
+graph TD
+    Buying["Buying Agent"]
+    Gate["Approval Gate Agent"]
+    Policy["Policy Agent"]
+    Exec["Executive Approver"]
+    Contract["Contract / Purchase System"]
+
+    Buying -->|"High-Risk Purchase Proposal"| Gate
+    Gate <-->|"Policy + Risk Context"| Policy
+    Gate <-->|"Approval Request / Decision"| Exec
+    Gate -->|"Approved Commitment"| Contract
+```
+
 ## Pattern
 
 An **approval gate** pauses automated flow when **stakes exceed autonomy**: bulk purchases, novel counterparties, or
