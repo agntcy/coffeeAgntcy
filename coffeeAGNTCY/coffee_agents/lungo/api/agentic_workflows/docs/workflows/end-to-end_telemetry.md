@@ -1,5 +1,21 @@
 # End-to-End Telemetry
 
+## Agent Interaction Diagram
+
+```mermaid
+graph TD
+    Farm["Farm Agent"]
+    Buyer["Buying Agent"]
+    Logistics["Logistics Agent"]
+    Finance["Finance Agent"]
+    Telemetry["Telemetry Collector"]
+
+    Farm -->|"Trace Span: Supply"| Telemetry
+    Buyer -->|"Trace Span: Decision"| Telemetry
+    Logistics -->|"Trace Span: Movement"| Telemetry
+    Finance -->|"Trace Span: Settlement"| Telemetry
+```
+
 ## Pattern
 
 **End-to-end telemetry** traces **decisions and interactions across the whole chain**—from early inputs through

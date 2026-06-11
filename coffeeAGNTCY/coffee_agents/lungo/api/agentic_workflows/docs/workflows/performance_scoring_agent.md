@@ -1,5 +1,21 @@
 # Performance Scoring Agent
 
+## Agent Interaction Diagram
+
+```mermaid
+graph TD
+    Procurement["Procurement Agent"]
+    Telemetry["Telemetry Collector"]
+    Outcomes["Business Outcomes Store"]
+    Scoring["Performance Scoring Agent"]
+    Feedback["Feedback / Reflection Agent"]
+
+    Procurement -->|"Run Metadata"| Telemetry
+    Outcomes -->|"Cost Time Carbon Quality"| Scoring
+    Telemetry -->|"Trace + Timing Data"| Scoring
+    Scoring -->|"KPI Score"| Feedback
+```
+
 ## Pattern
 
 A **performance scoring agent** measures how well agentic runs meet **declared KPIs**—cost, time, carbon, quality, or

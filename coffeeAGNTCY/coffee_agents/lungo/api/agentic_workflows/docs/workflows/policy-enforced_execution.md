@@ -1,5 +1,21 @@
 # Policy-Enforced Execution
 
+## Agent Interaction Diagram
+
+```mermaid
+graph TD
+    Buying["Buying Agent"]
+    Policy["Policy Enforcement Agent"]
+    Identity["Identity / Trust Agent"]
+    Supplier["Supplier Agent"]
+    Contract["Contract System"]
+
+    Buying -->|"Contract Request"| Policy
+    Policy <-->|"Identity + Attestation"| Identity
+    Policy <-->|"Supplier Facts"| Supplier
+    Policy -->|"Allow / Deny"| Contract
+```
+
 ## Pattern
 
 **Policy-enforced execution** **blocks or conditions actions** against explicit **trust and ethics rules**—labor,

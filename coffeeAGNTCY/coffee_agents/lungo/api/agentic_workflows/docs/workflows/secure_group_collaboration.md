@@ -1,5 +1,23 @@
 # Secure Group Collaboration
 
+## Agent Interaction Diagram
+
+```mermaid
+graph TD
+    Room["Secure Collaboration Room"]
+    Farm["Farm Agent"]
+    Coop["Coop Agent"]
+    Exporter["Exporter Agent"]
+    Finance["Finance Agent"]
+    Moderator["Moderator Agent"]
+
+    Farm <-->|"Scoped Offer"| Room
+    Coop <-->|"Allocation Update"| Room
+    Exporter <-->|"Export Terms"| Room
+    Finance <-->|"Payment Terms"| Room
+    Moderator <-->|"Membership + Phase Control"| Room
+```
+
 ## Pattern
 
 **Secure group collaboration** lets **several agents coordinate inside a trusted boundary**: authenticated membership,

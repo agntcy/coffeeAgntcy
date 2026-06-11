@@ -1,5 +1,20 @@
 # Adversarial Review Agents
 
+## Agent Interaction Diagram
+
+```mermaid
+graph TD
+    Buyer["Buying / Pricing Agent"]
+    Critic["Risk Review Agent"]
+    Policy["Policy Agent"]
+    Approver["Human Approver"]
+
+    Buyer <-->|"Proposal + Evidence"| Critic
+    Critic <-->|"Policy Check"| Policy
+    Critic -->|"Structured Objections"| Buyer
+    Critic <-->|"Escalation / Decision"| Approver
+```
+
 ## Pattern
 
 **Adversarial review** is a way to force a **challenger voice** before expensive commitments: risk against optimism,

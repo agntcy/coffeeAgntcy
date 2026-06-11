@@ -1,5 +1,21 @@
 # Agent Workflow Chain
 
+## Agent Interaction Diagram
+
+```mermaid
+graph TD
+    Farm["Farm Data Agent"]
+    Quality["Quality Agent"]
+    Pricing["Pricing Agent"]
+    Commitment["Commitment Agent"]
+    State["Shared Procurement State"]
+
+    Farm <-->|"Farm Facts"| State
+    State <-->|"Quality Assessment"| Quality
+    State <-->|"Price Recommendation"| Pricing
+    State <-->|"Commitment Package"| Commitment
+```
+
 ## Pattern
 
 **Agent workflow chain** means breaking a **complex goal into ordered agent steps**, each enriching **shared state** so

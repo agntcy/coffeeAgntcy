@@ -1,5 +1,25 @@
 # Decentralized Consensus Agents
 
+## Agent Interaction Diagram
+
+```mermaid
+graph TD
+    NA["North America Demand Agent"]
+    EU["Europe Demand Agent"]
+    APAC["APAC Demand Agent"]
+    Merge["Consensus Merge Agent"]
+    Plan["Global Demand Plan"]
+
+    NA <-->|"Belief Update"| EU
+    EU <-->|"Belief Update"| APAC
+    APAC <-->|"Belief Update"| NA
+
+    NA -->|"Regional Forecast"| Merge
+    EU -->|"Regional Forecast"| Merge
+    APAC -->|"Regional Forecast"| Merge
+    Merge -->|"Converged Number"| Plan
+```
+
 ## Pattern
 
 **Decentralized consensus** aims to **reach agreement without a single permanent hub**: local agents exchange beliefs
