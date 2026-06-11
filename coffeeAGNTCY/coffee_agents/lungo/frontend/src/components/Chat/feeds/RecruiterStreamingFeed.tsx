@@ -81,7 +81,6 @@ const RecruiterStreamingFeed: React.FC<RecruiterStreamingFeedProps> = ({
     <Stack
       direction="row"
       alignItems="flex-start"
-      spacing={0.5}
       sx={{ width: "100%", transition: "all 300ms" }}
     >
       <ChatAgentAvatar />

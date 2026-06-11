@@ -10,6 +10,7 @@ import { Box, Stack, Typography } from "@open-ui-kit/core"
 import grafanaIcon from "@/assets/grafana.svg"
 import { ChatAgentAvatar } from "./ChatAvatarCircle"
 import { LoadingDots } from "@/components/loading"
+import Message from "./Message"
 import UserMessage from "./UserMessage"
 import ExternalLinkButton from "./ExternalLinkButton"
 import {
@@ -122,63 +123,31 @@ const ChatAreaMessageThread: React.FC<ChatAreaMessageThreadProps> = ({
     )}
 
     {showFinalResponse && (isAgentLoading || agentResponse) && !isMinimized && (
-      <Stack
-        direction="row"
-        alignItems="flex-start"
-        spacing={0.5}
-        sx={{ width: "100%" }}
-      >
-        <ChatAgentAvatar />
-        <Stack
-          sx={{
-            maxWidth: "calc(100% - 3rem)",
-            flex: 1,
-            alignItems: "flex-start",
-            justifyContent: "center",
-            borderRadius: 1,
-            py: 0.5,
-            px: 1,
-          }}
-        >
-          {isAgentLoading ? (
-            <Box
-              sx={{
-                whiteSpace: "pre-wrap",
-                overflowWrap: "break-word",
-                wordBreak: "break-word",
-              }}
-            >
-              <Box component="span" sx={visuallyHiddenSx}>
-                Agent is responding
-              </Box>
-              <LoadingDots />
+      <Message icon={<ChatAgentAvatar />} highlighted>
+        {isAgentLoading ? (
+          <>
+            <Box component="span" sx={visuallyHiddenSx}>
+              Agent is responding
             </Box>
-          ) : (
-            <Typography
-              variant="body2"
-              component="div"
-              sx={{
-                whiteSpace: "pre-wrap",
-                overflowWrap: "break-word",
-                wordBreak: "break-word",
-              }}
-            >
-              {agentResponse?.response ?? ""}
-              {(agentResponse?.session_id || groupSessionId) &&
-                !isAgentLoading &&
-                pattern !== PATTERNS.A2A_HTTP && (
-                  <ExternalLinkButton
-                    component="button"
-                    url={grafanaSessionUrl}
-                    label="Grafana"
-                    iconSrc={grafanaIcon}
-                    sx={{ ml: 1 }}
-                  />
-                )}
-            </Typography>
-          )}
-        </Stack>
-      </Stack>
+            <LoadingDots />
+          </>
+        ) : (
+          <>
+            {agentResponse?.response ?? ""}
+            {(agentResponse?.session_id || groupSessionId) &&
+              !isAgentLoading &&
+              pattern !== PATTERNS.A2A_HTTP && (
+                <ExternalLinkButton
+                  component="button"
+                  url={grafanaSessionUrl}
+                  label="Grafana"
+                  iconSrc={grafanaIcon}
+                  sx={{ ml: 1 }}
+                />
+              )}
+          </>
+        )}
+      </Message>
     )}
   </Stack>
 )

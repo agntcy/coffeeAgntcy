@@ -5,12 +5,12 @@
 
 import React from "react"
 import Person from "@mui/icons-material/Person"
-
-import { Stack, Typography, useTheme } from "@open-ui-kit/core"
+import { useTheme } from "@open-ui-kit/core"
 
 import { iconGlyphFillSx } from "@/utils/iconGlyphFill"
 
 import { ChatAvatarCircle } from "./ChatAvatarCircle"
+import Message from "./Message"
 
 interface UserMessageProps {
   content: string
@@ -21,40 +21,15 @@ const UserMessage: React.FC<UserMessageProps> = ({ content }) => {
   const avatarIconColor = theme.palette.grey[50]
 
   return (
-    <Stack
-      direction="row"
-      alignItems="flex-start"
-      spacing={0.5}
-      sx={{ width: "100%" }}
+    <Message
+      icon={
+        <ChatAvatarCircle>
+          <Person sx={iconGlyphFillSx(avatarIconColor, { important: true })} />
+        </ChatAvatarCircle>
+      }
     >
-      <ChatAvatarCircle>
-        <Person sx={iconGlyphFillSx(avatarIconColor, { important: true })} />
-      </ChatAvatarCircle>
-
-      <Stack
-        sx={{
-          flex: 1,
-          minWidth: 0,
-          alignItems: "flex-start",
-          justifyContent: "center",
-          borderRadius: 1,
-          py: 0.5,
-          px: 1,
-        }}
-      >
-        <Typography
-          variant="body2"
-          component="div"
-          sx={{
-            whiteSpace: "pre-wrap",
-            overflowWrap: "break-word",
-            wordBreak: "break-word",
-          }}
-        >
-          {content}
-        </Typography>
-      </Stack>
-    </Stack>
+      {content}
+    </Message>
   )
 }
 

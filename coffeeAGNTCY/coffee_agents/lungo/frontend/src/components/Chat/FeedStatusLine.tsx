@@ -24,6 +24,8 @@ export function FeedStatusLine({
         whiteSpace: "pre-wrap",
         overflowWrap: "break-word",
         wordBreak: "break-word",
+        py: 1,
+        px: 1,
       }}
     >
       {children}
