@@ -144,6 +144,22 @@ func main() {
 		flag.Usage()
 		os.Exit(1)
 	}
+
+	// Normalize slim:// URLs in --peer-url. Lets the same flag carry either
+	// an HTTP agent-card URL or a SLIM name, so callers (including generated
+	// skills from the recruit flow) don't need to branch on transport.
+	if rest, ok := strings.CutPrefix(cfg.peerURL, "slim://"); ok {
+		if cfg.transport != "auto" && cfg.transport != "slim" {
+			fmt.Fprintf(os.Stderr, "error: slim:// URL in --peer-url is incompatible with --transport %q\n", cfg.transport)
+			os.Exit(1)
+		}
+		cfg.transport = "slim"
+		if cfg.slimRemoteName == "" {
+			cfg.slimRemoteName = rest
+		}
+		cfg.peerURL = "" // not an HTTP URL; clear so HTTP paths don't try to use it
+	}
+
 	switch cfg.transport {
 	case "http":
 		if cfg.peerURL == "" {
