@@ -17,6 +17,7 @@ from uuid import UUID, uuid4
 from api.agentic_workflows.dtos import (
     InstantiateWorkflowResponse,
     Pattern,
+    PatternChatRequest,
     PatternListResponse,
     UseCase,
     UseCaseListResponse,
@@ -148,6 +149,52 @@ def create_agentic_workflows_router() -> APIRouter:
     async def list_patterns() -> PatternListResponse:
         """GET /patterns/ — catalog of patterns."""
         return PatternListResponse(items=[Pattern(name=n) for n in PATTERNS])
+
+    @router.post(
+        "/patterns/{name}/chat",
+        summary="Chat with a pattern's reference docs",
+    )
+    async def pattern_chat(
+        name: Annotated[str, Path(min_length=1)],
+        body: PatternChatRequest,
+    ) -> StreamingResponse:
+        """POST /patterns/{name}/chat — NDJSON stream grounded in the pattern markdown.
+
+        Returns 404 when no reference markdown exists for ``name``. On success the
+        response is ``application/x-ndjson``: one ``{"response": "..."}`` object
+        per chunk, terminated by ``{"done": true}``; in-stream failures emit a
+        single ``{"error": "..."}`` line and close the connection.
+
+        The streaming/LLM wiring is added in a later checkpoint; this stub
+        exercises the HTTP contract (404 path, request validation, NDJSON shape).
+        """
+        slug = workflow_name_to_documentation_slug(name)
+        parsed = load_parsed_workflow_documentation(slug)
+        if parsed is None:
+            raise HTTPException(
+                status_code=404,
+                detail=f"No reference material for pattern: {name}",
+            )
+
+        async def ndjson_stream() -> AsyncIterator[bytes]:
+            # Stub response — replaced with the real LLM stream in the next
+            # checkpoint. Shape matches the documented protocol so frontends and
+            # tests can be wired against it now.
+            yield (
+                json.dumps({"response": f"(stub) pattern={name} message={body.message!r}"})
+                + "\n"
+            ).encode("utf-8")
+            yield (json.dumps({"done": True}) + "\n").encode("utf-8")
+
+        return StreamingResponse(
+            ndjson_stream(),
+            media_type="application/x-ndjson",
+            headers={
+                "Cache-Control": "no-store",
+                "Connection": "keep-alive",
+                "X-Accel-Buffering": "no",
+            },
+        )
 
     @router.get(
         "/use-cases/",
