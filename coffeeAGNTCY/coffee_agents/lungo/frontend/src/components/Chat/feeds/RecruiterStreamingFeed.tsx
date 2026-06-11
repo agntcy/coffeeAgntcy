@@ -77,6 +77,8 @@ const RecruiterStreamingFeed: React.FC<RecruiterStreamingFeedProps> = ({
     (e: RecruiterStreamingEvent) => e.event_type === "status_update",
   )
 
+  console.log("events", events)
+
   return (
     <Stack
       direction="row"
@@ -99,7 +101,7 @@ const RecruiterStreamingFeed: React.FC<RecruiterStreamingFeedProps> = ({
         {errorMessage ? (
           <FeedStatusLine>Connection error: {errorMessage}</FeedStatusLine>
         ) : isComplete ? (
-          <FeedStatusLine>Recruiter completed:</FeedStatusLine>
+          <FeedStatusLine>{`Recruiter completed${events.length > 1 ? ":" : "."}`}</FeedStatusLine>
         ) : prompt && !apiError ? (
           <FeedStatusLine showDots>Recruiting agents</FeedStatusLine>
         ) : null}
@@ -157,7 +159,7 @@ const RecruiterStreamingFeed: React.FC<RecruiterStreamingFeedProps> = ({
           </Stack>
         )}
 
-        {isComplete && (
+        {isComplete && events.length > 1 && (
           <FeedCollapseButton
             expanded={isExpanded}
             onToggle={toggleDetailsExpanded}
