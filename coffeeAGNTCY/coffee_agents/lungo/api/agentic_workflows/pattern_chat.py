@@ -3,22 +3,25 @@
 
 """Pattern chat: docs-grounded LLM advisor for POST /patterns/{name}/chat.
 
-Per-pattern ADK Agent (instruction carries the pattern markdown) + a shared
-InMemorySessionService keyed by (pattern, fe_session_id). Non-streaming
-internally; the router wraps the response as one NDJSON chunk for now.
+One shared ADK Agent + Runner. The pattern's reference markdown lives in the
+Session.state and is fetched via the ``read_pattern_doc`` tool; the agent's
+instruction tells the LLM to call that tool before answering pattern-specific
+questions. Sessions are keyed by (pattern_name, fe_session_id).
 """
 
 from __future__ import annotations
 
 import logging
 import os
-from threading import Lock
+from typing import AsyncIterator
 
 import litellm
 from google.adk.agents import Agent
+from google.adk.agents.run_config import RunConfig, StreamingMode
 from google.adk.models.lite_llm import LiteLlm
 from google.adk.runners import Runner
 from google.adk.sessions import InMemorySessionService
+from google.adk.tools.tool_context import ToolContext
 from google.genai import types
 
 from api.agentic_workflows.workflow_documentation import (
@@ -33,6 +36,9 @@ logger = logging.getLogger(__name__)
 APP_NAME = "pattern_chat"
 DEFAULT_USER_ID = "pattern-chat-user"
 
+STATE_KEY_MARKDOWN = "pattern_markdown"
+STATE_KEY_PATTERN_NAME = "pattern_name"
+
 
 _LITELLM_PROXY_BASE_URL = os.getenv("LITELLM_PROXY_BASE_URL")
 _LITELLM_PROXY_API_KEY = os.getenv("LITELLM_PROXY_API_KEY")
@@ -43,23 +49,24 @@ if _LITELLM_PROXY_API_KEY and _LITELLM_PROXY_BASE_URL:
 
 
 BASE_SYSTEM_PROMPT = (
-    "You are the AGNTCY patterns advisor. Ground your answers in the reference "
-    "material below. Be helpful about implementation, trade-offs, and how the "
-    "pattern composes; decline questions unrelated to agentic patterns."
+    "You are the AGNTCY patterns advisor. The pattern in scope for this "
+    "conversation is recorded in your session state; call the "
+    "``read_pattern_doc`` tool to fetch its reference markdown before "
+    "answering any question about the pattern's behaviour, structure, "
+    "implementation, or trade-offs. Ground those answers in the returned "
+    "material. Drawing on general agentic-systems knowledge is appropriate "
+    "for follow-up implementation advice, but flag clearly when you go "
+    "beyond the reference. Decline questions unrelated to agentic patterns."
 )
 
 
-def _instruction_for_pattern(pattern_name: str, full_markdown: str) -> str:
-    return (
-        f"{BASE_SYSTEM_PROMPT}\n\n"
-        f"## Pattern in scope\n\n{pattern_name}\n\n"
-        f"## Reference material\n\n{full_markdown}\n"
-    )
+def read_pattern_doc(tool_context: ToolContext) -> str:
+    """Return the reference markdown for the pattern currently in scope.
 
-
-_session_service = InMemorySessionService()
-_runners: dict[str, Runner] = {}
-_runners_lock = Lock()
+    Call this before answering questions about the pattern's behaviour,
+    structure, implementation, or trade-offs.
+    """
+    return tool_context.state.get(STATE_KEY_MARKDOWN, "")
 
 
 class PatternReferenceNotFound(Exception):
@@ -70,27 +77,17 @@ class PatternReferenceNotFound(Exception):
         super().__init__(f"No reference material for pattern: {pattern_name}")
 
 
-def _get_or_build_runner(pattern_name: str) -> Runner:
-    with _runners_lock:
-        runner = _runners.get(pattern_name)
-        if runner is not None:
-            return runner
+_session_service = InMemorySessionService()
 
-        slug = workflow_name_to_documentation_slug(pattern_name)
-        parsed = load_parsed_workflow_documentation(slug)
-        if parsed is None:
-            raise PatternReferenceNotFound(pattern_name)
+_root_agent = Agent(
+    name="pattern_chat",
+    model=LiteLlm(model=LLM_MODEL),
+    description="Docs-grounded advisor for AGNTCY agentic patterns.",
+    instruction=BASE_SYSTEM_PROMPT,
+    tools=[read_pattern_doc],
+)
 
-        agent = Agent(
-            name=f"pattern_chat_{slug}",
-            model=LiteLlm(model=LLM_MODEL),
-            description=f"Docs-grounded advisor for the {pattern_name} agentic pattern.",
-            instruction=_instruction_for_pattern(pattern_name, parsed.full_markdown),
-            tools=[],
-        )
-        runner = Runner(agent=agent, app_name=APP_NAME, session_service=_session_service)
-        _runners[pattern_name] = runner
-        return runner
+_runner = Runner(agent=_root_agent, app_name=APP_NAME, session_service=_session_service)
 
 
 def _session_key(pattern_name: str, fe_session_id: str) -> str:
@@ -98,33 +95,73 @@ def _session_key(pattern_name: str, fe_session_id: str) -> str:
 
 
 async def _ensure_session(pattern_name: str, fe_session_id: str) -> None:
+    """Create the ADK session and seed the pattern markdown if it doesn't exist."""
     sid = _session_key(pattern_name, fe_session_id)
-    existing = await _session_service.get_session(
+    if await _session_service.get_session(
         app_name=APP_NAME, user_id=DEFAULT_USER_ID, session_id=sid
+    ) is not None:
+        return
+
+    slug = workflow_name_to_documentation_slug(pattern_name)
+    parsed = load_parsed_workflow_documentation(slug)
+    if parsed is None:
+        raise PatternReferenceNotFound(pattern_name)
+
+    await _session_service.create_session(
+        app_name=APP_NAME,
+        user_id=DEFAULT_USER_ID,
+        session_id=sid,
+        state={
+            STATE_KEY_MARKDOWN: parsed.full_markdown,
+            STATE_KEY_PATTERN_NAME: pattern_name,
+        },
     )
-    if existing is None:
-        await _session_service.create_session(
-            app_name=APP_NAME, user_id=DEFAULT_USER_ID, session_id=sid
-        )
 
 
-async def run_one_turn(pattern_name: str, fe_session_id: str, user_message: str) -> str:
-    """Run one user turn; raises PatternReferenceNotFound if the pattern has no doc."""
-    runner = _get_or_build_runner(pattern_name)
+def _extract_text_chunks(event) -> list[str]:
+    """Return the text payload(s) of a runner event, or [] for non-text events.
+
+    Tool-call events (function_call) and tool-result events (function_response)
+    are filtered out — the FE-visible stream only carries the model's text.
+    """
+    if event.get_function_calls() or event.get_function_responses():
+        return []
+    if not event.content or not event.content.parts:
+        return []
+    out: list[str] = []
+    for part in event.content.parts:
+        text = getattr(part, "text", None)
+        if text:
+            out.append(text)
+    return out
+
+
+async def stream_one_turn(
+    pattern_name: str,
+    fe_session_id: str,
+    user_message: str,
+) -> AsyncIterator[str]:
+    """Yield text chunks for one user turn. Raises PatternReferenceNotFound."""
     await _ensure_session(pattern_name, fe_session_id)
-
     sid = _session_key(pattern_name, fe_session_id)
     content = types.Content(role="user", parts=[types.Part(text=user_message)])
 
-    final_response = ""
-    async for event in runner.run_async(
+    # Forward partial chunks; fall back to the final non-partial when the model
+    # didn't stream. Both together would double-render the answer.
+    saw_partials = False
+    async for event in _runner.run_async(
         user_id=DEFAULT_USER_ID,
         session_id=sid,
         new_message=content,
+        run_config=RunConfig(streaming_mode=StreamingMode.SSE),
     ):
-        if event.is_final_response():
-            if event.content and event.content.parts:
-                final_response = event.content.parts[0].text or ""
-            break
-
-    return final_response
+        chunks = _extract_text_chunks(event)
+        if not chunks:
+            continue
+        if event.partial:
+            saw_partials = True
+            for chunk in chunks:
+                yield chunk
+        elif not saw_partials:
+            for chunk in chunks:
+                yield chunk

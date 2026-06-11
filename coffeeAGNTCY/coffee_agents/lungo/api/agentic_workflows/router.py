@@ -35,10 +35,7 @@ from api.agentic_workflows.instance_lifecycle import (
     workflow_instance_from_store,
 )
 from api.agentic_workflows.patterns import PATTERNS
-from api.agentic_workflows.pattern_chat import (
-    PatternReferenceNotFound,
-    run_one_turn,
-)
+from api.agentic_workflows.pattern_chat import stream_one_turn
 from api.agentic_workflows.use_cases import USE_CASES
 from api.agentic_workflows.workflow_documentation import (
     load_parsed_workflow_documentation,
@@ -178,8 +175,8 @@ def create_agentic_workflows_router() -> APIRouter:
             )
 
         async def ndjson_stream() -> AsyncIterator[bytes]:
-            response_text = await run_one_turn(name, body.session_id, body.message)
-            yield (json.dumps({"response": response_text}) + "\n").encode("utf-8")
+            async for chunk in stream_one_turn(name, body.session_id, body.message):
+                yield (json.dumps({"response": chunk}) + "\n").encode("utf-8")
             yield (json.dumps({"done": True}) + "\n").encode("utf-8")
 
         return StreamingResponse(
