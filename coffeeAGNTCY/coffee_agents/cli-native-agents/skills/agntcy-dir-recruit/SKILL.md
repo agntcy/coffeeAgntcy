@@ -87,12 +87,34 @@ Then extract the fields we need with one jq filter:
 jq '{
   name: .name,
   description: .description,
-  endpoint: (.modules[] | select(.name=="integration/a2a") | .data.card_data.url),
+  endpoint: (
+    ( [ .modules[]
+        | select(.name=="integration/a2a")
+        | .data.card_data.supportedInterfaces[]?
+        | select((.protocolBinding // "" | ascii_downcase) | . == "slim" or . == "slimrpc")
+        | "slim://" + .url
+      ] | first )
+    // (.modules[] | select(.name=="integration/a2a") | .data.card_data.url)
+  ),
+  transport: (
+    if [ .modules[]
+         | select(.name=="integration/a2a")
+         | .data.card_data.supportedInterfaces[]?
+         | select((.protocolBinding // "" | ascii_downcase) | . == "slim" or . == "slimrpc")
+       ] | length > 0
+    then "slim" else "http" end
+  ),
   skills: [(.modules[] | select(.name=="integration/a2a") | .data.card_data.skills[]? | {name: .name, description: .description})],
   protocolVersion: (.modules[] | select(.name=="integration/a2a") | .data.card_data.protocolVersion),
   provider: ((.modules[] | select(.name=="integration/a2a") | .data.card_data.provider.organization) // "")
 }' ./tmp/recruit_<N>.json
 ```
+
+The `endpoint` value is **scheme-prefixed**:
+- `slim://org/ns/name` for SLIM agents (extracted from `supportedInterfaces[]` with `protocolBinding` of `slim` or `slimrpc`),
+- `http(s)://host:port` for HTTP agents (from `card_data.url`).
+
+The bundled `a2a-send` binary detects transport from this prefix at invocation time, so generated skills don't need to branch on transport themselves.
 
 If the jq filter fails for a record (missing A2A module, unexpected structure), skip it and note the skip.
 
@@ -129,14 +151,17 @@ If `dirctl verify` is not available in the user's environment, or it errors out 
 ```
 ## Available Agents
 
-| # | Name | Description | Skills | Endpoint | Verified | Status |
-|---|------|-------------|--------|----------|----------|--------|
-| 1 | CoffeeFarmAgent | Coffee yield analysis | Get Coffee Yield | http://0.0.0.0:9999 | signed ✓ | new |
-| 2 | ReviewBot | Code review | code_analysis | http://0.0.0.0:7777 | unsigned ✗ | [exists] |
+| # | Name | Description | Skills | Transport | Endpoint | Verified | Status |
+|---|------|-------------|--------|-----------|----------|----------|--------|
+| 1 | CoffeeFarmAgent | Coffee yield analysis | Get Coffee Yield | http | http://0.0.0.0:9999 | signed ✓ | new |
+| 2 | Hello World Agent | Just a hello world agent | Hello, world! | slim | slim://agntcy/foundry/gateway | signed ✓ | new |
+| 3 | ReviewBot | Code review | code_analysis | http | http://0.0.0.0:7777 | unsigned ✗ | [exists] |
 ```
 
 - **Description**: truncate to ~80 chars
 - **Skills**: comma-separated skill names
+- **Transport**: `http` or `slim` (from the jq `transport` field)
+- **Endpoint**: the scheme-prefixed value from the jq `endpoint` field (this is what gets pasted into the skill as `--peer-url`)
 - **Verified**: `signed ✓` / `unsigned ✗` from Step 2.5 (omit column if dirctl verify was skipped)
 - **Status**: `new` or `[exists]` if a skill already exists for that agent name
 
@@ -205,12 +230,17 @@ rm -f ./tmp/recruit_*.json
 ```
 ## Skills Created
 
-| Skill | Agent | Endpoint | Invoke with |
-|-------|-------|----------|-------------|
-| /brazil-coffee-farm | Brazil Coffee Farm | http://0.0.0.0:9999 | /brazil-coffee-farm <message> |
+| Skill | Agent | Transport | Endpoint | Invoke with |
+|-------|-------|-----------|----------|-------------|
+| /brazil-coffee-farm | Brazil Coffee Farm | http | http://0.0.0.0:9999 | /brazil-coffee-farm <message> |
+| /hello-world-agent | Hello World Agent | slim | slim://agntcy/foundry/gateway | /hello-world-agent <message> |
 
 Skills are available immediately — no restart needed.
 Example: `/brazil-coffee-farm What is the current yield?`
+
+**If any generated skills use the `slim` transport**, also note:
+- `SLIM_SHARED_SECRET` must be exported in the environment (must match the value the remote agent was started with).
+- `SLIM_ENDPOINT` defaults to `http://127.0.0.1:46357`; override if your SLIM node lives elsewhere.
 
 To inspect the agent's identity-service badge and policies, run:
 `/check-identity brazil-coffee-farm`
