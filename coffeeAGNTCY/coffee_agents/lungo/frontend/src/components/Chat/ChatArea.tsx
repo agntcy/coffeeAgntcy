@@ -27,6 +27,7 @@ import RecruiterStreamingFeed from "./RecruiterStreamingFeed"
 
 import { cn } from "@/utils/cn.ts"
 import { env } from "@/utils/env"
+import { isStreamingPattern } from "@/utils/patternUtils"
 import { logger } from "@/utils/logger"
 import type { GraphConfig } from "@/utils/graphConfigs"
 import { DiscoveryResponseEvent } from "@/types/agent"
@@ -191,7 +192,10 @@ const ChatArea: React.FC<ChatAreaProps> = ({
     }
 
     if (
-      (showAuctionStreaming || showProgressTracker || showRecruiterStreaming) &&
+      (showAuctionStreaming ||
+        showProgressTracker ||
+        showRecruiterStreaming ||
+        isStreamingPattern(pattern)) &&
       onDropdownSelect
     ) {
       setContent("")
