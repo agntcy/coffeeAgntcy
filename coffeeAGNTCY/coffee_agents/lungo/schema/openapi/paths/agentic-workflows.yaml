@@ -34,6 +34,41 @@ paths:
               schema:
                 $ref: ../components/schemas.yaml#/components/schemas/PatternListResponse
 
+  /patterns/{name}/chat:
+    post:
+      tags: [agentic-workflows]
+      operationId: patternChat
+      summary: Chat with a pattern's reference docs
+      description: >
+        NDJSON stream grounded in the named pattern's markdown. One
+        {"response": "..."} per chunk; terminated by {"done": true} or
+        {"error": "..."}. Session state held in memory keyed by
+        (pattern_name, session_id).
+      parameters:
+        - name: name
+          in: path
+          required: true
+          schema:
+            type: string
+            minLength: 1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: ../components/schemas.yaml#/components/schemas/PatternChatRequest
+      responses:
+        "200":
+          description: NDJSON stream of response chunks.
+          content:
+            application/x-ndjson:
+              schema:
+                type: string
+        "404":
+          description: No reference material for the given pattern name.
+        "422":
+          description: Request body failed validation.
+
   /use-cases/:
     get:
       tags: [agentic-workflows]
