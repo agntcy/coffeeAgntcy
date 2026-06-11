@@ -7,7 +7,13 @@
  * `color`/`currentColor` alone cannot reliably override.
  */
 
+import type { CSSProperties } from "react"
 import type { SystemStyleObject } from "@mui/system"
+
+/** Inline glyph color for a single SvgIcon (avoids `sx` bleed onto sibling IconButtons). */
+export function iconGlyphFillStyle(fill: string): CSSProperties {
+  return { color: fill, fill }
+}
 
 export function iconGlyphFillSx(
   fill: string,

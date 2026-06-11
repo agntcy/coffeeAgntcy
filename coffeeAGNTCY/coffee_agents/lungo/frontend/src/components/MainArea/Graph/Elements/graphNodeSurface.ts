@@ -15,7 +15,6 @@ import {
   getAssetPngIconSize,
   getGraphIconChipHoverBackground,
 } from "@/utils/assetPngIcon"
-import { iconGlyphFillSx } from "@/utils/iconGlyphFill"
 
 export type GraphNodeSurfaceState = "default" | "active" | "selected"
 
@@ -142,27 +141,28 @@ export function graphIconChipInteractiveHoverSx(
 
 function graphIconButtonChipSx(theme: Theme): SystemStyleObject<Theme> {
   const iconButtonSize = theme.spacing(5)
-  const iconColor = getControlIconColor(theme)
 
   return {
     ...graphIconChipSx(theme),
     ...graphIconChipInteractiveHoverSx(theme),
-    ...iconGlyphFillSx(iconColor, { important: true }),
     width: iconButtonSize,
     height: iconButtonSize,
     minWidth: iconButtonSize,
-    adding: theme.spacing(1),
+    padding: theme.spacing(1),
     borderRadius: theme.shape.borderRadius,
     boxShadow: theme.shadows[1],
   }
 }
 
-/** Graph IconButton chip (identity dropdown, modal triggers) — `padding: theme.spacing(1)`. */
+/**
+ * Graph node side IconButtons (GitHub, directory, identity checkmark).
+ * Chip layout only — glyph color stays OUK default (`brandIconPrimaryDefault`, blue in light mode).
+ */
 export function graphSideIconButtonSx(theme: Theme): SystemStyleObject<Theme> {
   return graphIconButtonChipSx(theme)
 }
 
-/** Graph node + canvas control IconButtons — reduced padding via {@link graphIconButtonPadding}. */
+/** Canvas zoom/fit/lock controls — chip layout only; glyph color via {@link iconGlyphFillStyle} on each SvgIcon. */
 export function graphNodeIconButtonSx(theme: Theme): SystemStyleObject<Theme> {
   return graphIconButtonChipSx(theme)
 }
@@ -177,7 +177,7 @@ export function graphNodeSideIconButtonSx(
 export function graphSideIconButtonSxWithModal(
   theme: Theme,
 ): SystemStyleObject<Theme> {
-  return graphNodeIconButtonSx(theme)
+  return graphSideIconButtonSx(theme)
 }
 
 /** @deprecated Use {@link graphSideIconButtonSxWithModal}. */
@@ -187,12 +187,12 @@ export function graphNodeSideIconButtonSxWithModal(
   return graphSideIconButtonSxWithModal(theme)
 }
 
-/** GitHub / similar auxiliary link on nodes — same chip as {@link graphNodeIconButtonSx}. */
+/** GitHub / similar auxiliary link on nodes — same chip as {@link graphSideIconButtonSx}. */
 export function graphNodeAuxiliaryControlSurfaceSx(
   theme: Theme,
 ): SystemStyleObject<Theme> {
   return {
-    ...graphNodeIconButtonSx(theme),
+    ...graphSideIconButtonSx(theme),
     textDecoration: "none",
     cursor: "pointer",
   }

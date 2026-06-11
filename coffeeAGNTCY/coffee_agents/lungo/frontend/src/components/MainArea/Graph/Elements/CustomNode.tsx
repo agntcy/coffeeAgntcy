@@ -16,7 +16,7 @@ import { SecurityClass } from "@/utils/SecurityClass"
 import {
   getGraphNodeHandleStyle,
   graphNodeRootSurfaceSx,
-  graphNodeIconButtonSx,
+  graphSideIconButtonSx,
   type GraphNodeSurfaceState,
 } from "./graphNodeSurface"
 import { GraphIconChip } from "./GraphIconChip"
@@ -162,9 +162,7 @@ const CustomNode: React.FC<CustomNodeProps> = ({ id, data }) => {
                   target="_blank"
                   rel="noopener noreferrer"
                   aria-label="Open GitHub repository"
-                  sx={(t) => ({
-                    ...graphNodeIconButtonSx(t),
-                  })}
+                  sx={(t) => graphSideIconButtonSx(t)}
                 >
                   <AssetPngIcon bare src={githubIconSrc} alt="GitHub" />
                 </IconButton>
@@ -176,9 +174,7 @@ const CustomNode: React.FC<CustomNodeProps> = ({ id, data }) => {
                 type="button"
                 aria-label="Open AGNTCY Directory"
                 onClick={handleAgentDirectoryClick}
-                sx={(t) => ({
-                  ...graphNodeIconButtonSx(t),
-                })}
+                sx={(t) => graphSideIconButtonSx(t)}
               >
                 <AssetPngIcon
                   bare
