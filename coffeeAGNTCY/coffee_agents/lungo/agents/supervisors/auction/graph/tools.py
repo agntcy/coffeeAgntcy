@@ -44,10 +44,26 @@ from common.a2a_event_middleware import (
     EventEmittingInterceptor,
     make_event_emitting_consumer,
 )
+from common.workflow_context_prop import read_workflow_context
 from agents.supervisors.auction.card import AUCTION_SUPERVISOR_CARD
 
 
 logger = logging.getLogger("lungo.supervisor.tools")
+
+
+def _workflow_message_metadata() -> dict[str, str] | None:
+    """Workflow identity for outbound farm messages.
+
+    Farms emit MCP tool-call events correlated to the supervisor's workflow
+    instance; that identity is propagated in the A2A message metadata.
+    """
+    workflow = read_workflow_context()
+    metadata: dict[str, str] = {}
+    if workflow.workflow_name:
+        metadata["workflow_name"] = workflow.workflow_name
+    if workflow.instance_id:
+        metadata["workflow_instance_id"] = workflow.instance_id
+    return metadata or None
 
 
 def _transport_should_close_after_tool(transport: object) -> bool:
@@ -248,6 +264,7 @@ async def get_farm_yield_inventory(prompt: str, farm: str) -> str:
                 messageId=str(uuid4()),
                 role=Role.user,
                 parts=[Part(TextPart(text=prompt))],
+                metadata=_workflow_message_metadata(),
             )
 
             # call context (workflow identity flows via OTel baggage)
@@ -289,6 +306,7 @@ async def get_all_farms_yield_inventory(prompt: str) -> str:
                 messageId=str(uuid4()),
                 role=Role.user,
                 parts=[Part(TextPart(text=prompt))],
+                metadata=_workflow_message_metadata(),
             ),
         )
     )
@@ -369,6 +387,7 @@ async def get_all_farms_yield_inventory_streaming(prompt: str):
                 messageId=str(uuid4()),
                 role=Role.user,
                 parts=[Part(TextPart(text=prompt))],
+                metadata=_workflow_message_metadata(),
             ),
         )
     )
