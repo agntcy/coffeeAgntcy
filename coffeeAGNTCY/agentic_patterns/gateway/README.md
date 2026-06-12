@@ -337,9 +337,15 @@ regressions, and attaches before/after evidence to the change record.
 ## Reference Implementation
 
 [MIGA MCP Gateway](https://github.com/keewillidevnet/miga-mcp-gateway)
-implements this pattern for Cisco infrastructure, aggregating 15 platform MCP
-servers (Catalyst Center, Meraki, ThousandEyes, XDR, ISE, Security Cloud
-Control, Duo, Nexus Dashboard, SD-WAN, AppDynamics, Splunk, Hypershield,
-ServiceNow, NetBox) behind a single gateway with a correlation engine (INFER)
-and a WebEx conversational interface. MIGA is available on the
+implements this pattern for enterprise network infrastructure. It routes to
+eight real, published upstream MCP servers, a mix of Cisco-official, community,
+and vendor-official servers (ThousandEyes, Splunk, Meraki, Catalyst SD-WAN,
+Catalyst Center, ISE, ServiceNow, and NetBox), plus its own correlation engine,
+INFER, behind a single role-based gateway with a Webex conversational interface.
+
+MIGA implements the discovery, role-based routing, fan-out, and rule-based
+correlation core described above, and publishes an OASF record per server to an
+AGNTCY Directory. Identity badge verification, TBAC enforcement, SLIM telemetry
+fusion, and OpenTelemetry tracing are described by this pattern and are on MIGA's
+roadmap rather than fully wired today. MIGA is available on the
 [Cisco Code Exchange](https://developer.cisco.com/codeexchange/).
