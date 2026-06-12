@@ -21,6 +21,43 @@ interface TransportNodeProps {
   data: TransportNodeData
 }
 
+/** Circular compact transport node — keep handle geometry in sync with width/height. */
+const CIRCULAR_TRANSPORT_NODE_SIZE = 176
+const CIRCULAR_NODE_CENTER = CIRCULAR_TRANSPORT_NODE_SIZE / 2
+const CIRCULAR_NODE_RADIUS = CIRCULAR_NODE_CENTER
+const CIRCULAR_DIAGONAL_SIN = Math.sin(Math.PI / 4)
+const CIRCULAR_DIAGONAL_COS = Math.cos(Math.PI / 4)
+
+function circularDiagonalHandlePosition(
+  quadrant: "top_left" | "top_right" | "bottom_left" | "bottom_right",
+): Pick<CSSProperties, "top" | "bottom" | "left"> {
+  const offset = CIRCULAR_NODE_RADIUS * CIRCULAR_DIAGONAL_SIN
+  const axial = CIRCULAR_NODE_RADIUS * CIRCULAR_DIAGONAL_COS
+
+  switch (quadrant) {
+    case "top_right":
+      return {
+        top: `${CIRCULAR_NODE_CENTER - axial}px`,
+        left: `${CIRCULAR_NODE_CENTER + offset}px`,
+      }
+    case "top_left":
+      return {
+        top: `${CIRCULAR_NODE_CENTER - axial}px`,
+        left: `${CIRCULAR_NODE_CENTER - offset}px`,
+      }
+    case "bottom_right":
+      return {
+        bottom: `${CIRCULAR_NODE_CENTER - axial}px`,
+        left: `${CIRCULAR_NODE_CENTER + offset}px`,
+      }
+    case "bottom_left":
+      return {
+        bottom: `${CIRCULAR_NODE_CENTER - axial}px`,
+        left: `${CIRCULAR_NODE_CENTER - offset}px`,
+      }
+  }
+}
+
 const TransportNode: React.FC<TransportNodeProps> = ({ data }) => {
   const theme = useTheme()
   const githubIconSrc = useGithubIcon()
@@ -41,8 +78,8 @@ const TransportNode: React.FC<TransportNodeProps> = ({ data }) => {
         justifyContent: "center",
         p: 2,
         textAlign: "center",
-        width: isCircular ? 176 : 1200,
-        height: isCircular ? 176 : 52,
+        width: isCircular ? CIRCULAR_TRANSPORT_NODE_SIZE : 1200,
+        height: isCircular ? CIRCULAR_TRANSPORT_NODE_SIZE : 52,
       })}
     >
       <Typography
@@ -112,8 +149,7 @@ const TransportNode: React.FC<TransportNodeProps> = ({ data }) => {
             position={Position.Top}
             style={{
               ...handleStyle,
-              top: `${60 - 50 * Math.cos(Math.PI / 4)}px`,
-              left: `${60 + 50 * Math.sin(Math.PI / 4)}px`,
+              ...circularDiagonalHandlePosition("top_right"),
             }}
           />
           <Handle
@@ -133,8 +169,7 @@ const TransportNode: React.FC<TransportNodeProps> = ({ data }) => {
             id="bottom_right"
             style={{
               ...handleStyle,
-              bottom: `${60 - 50 * Math.cos(Math.PI / 4)}px`,
-              left: `${60 + 50 * Math.sin(Math.PI / 4)}px`,
+              ...circularDiagonalHandlePosition("bottom_right"),
             }}
           />
           <Handle
@@ -154,8 +189,7 @@ const TransportNode: React.FC<TransportNodeProps> = ({ data }) => {
             id="bottom_left"
             style={{
               ...handleStyle,
-              bottom: `${60 - 50 * Math.cos(Math.PI / 4)}px`,
-              left: `${60 - 50 * Math.sin(Math.PI / 4)}px`,
+              ...circularDiagonalHandlePosition("bottom_left"),
             }}
           />
           <Handle
@@ -175,8 +209,7 @@ const TransportNode: React.FC<TransportNodeProps> = ({ data }) => {
             position={Position.Top}
             style={{
               ...handleStyle,
-              top: `${60 - 50 * Math.cos(Math.PI / 4)}px`,
-              left: `${60 - 50 * Math.sin(Math.PI / 4)}px`,
+              ...circularDiagonalHandlePosition("top_left"),
             }}
           />
         </>
