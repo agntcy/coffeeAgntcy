@@ -12,7 +12,7 @@ import { AssetPngIcon } from "@/components/AssetPngIcon"
 import { SecurityClass } from "@/utils/SecurityClass"
 import {
   getGraphNodeHandleStyle,
-  graphNodeAuxiliaryControlSurfaceSx,
+  graphNodeSideIconLinkSx,
   graphNodeRootSurfaceSx,
 } from "./graphNodeSurface"
 import { TransportNodeData } from "./types"
@@ -41,30 +41,28 @@ const TransportNode: React.FC<TransportNodeProps> = ({ data }) => {
         justifyContent: "center",
         p: 2,
         textAlign: "center",
-        width: isCircular ? 120 : 1200,
-        height: isCircular ? 120 : 52,
+        width: isCircular ? 176 : 1200,
+        height: isCircular ? 176 : 52,
       })}
     >
       <Typography
         component="div"
-        variant={isCircular ? "caption" : "body2"}
-        sx={{
+        variant="h6"
+        sx={() => ({
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
           whiteSpace: "nowrap",
           textAlign: "center",
-          fontWeight: 400,
-          letterSpacing: "normal",
           ...(isCircular && !data.githubLink ? { mb: 1 } : {}),
           ...(!isCircular
             ? {
-                height: 20,
+                minHeight: 20,
                 width: 94,
                 minWidth: 0,
               }
             : {}),
-        }}
+        })}
       >
         {data.label}
       </Typography>
@@ -78,7 +76,7 @@ const TransportNode: React.FC<TransportNodeProps> = ({ data }) => {
             rel="noopener noreferrer"
             aria-label="Open GitHub repository"
             sx={(t) => ({
-              ...graphNodeAuxiliaryControlSurfaceSx(t),
+              ...graphNodeSideIconLinkSx(t),
               ...(isCircular
                 ? { mt: 0.5 }
                 : {

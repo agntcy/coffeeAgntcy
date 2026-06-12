@@ -33,6 +33,52 @@ function defaultCardRadius(theme: Theme): string | number {
   return typeof r === "number" ? r * 2 : r
 }
 
+function getGraphNodeRestingBackground(
+  theme: Theme,
+  state: GraphNodeSurfaceState,
+): string {
+  if (theme.palette.mode === "dark") {
+    switch (state) {
+      case "active":
+      case "selected":
+        return theme.palette.vars.controlBackgroundMedium
+      default:
+        return theme.palette.vars.baseBackgroundWeak
+    }
+  }
+
+  switch (state) {
+    case "active":
+      return theme.palette.action.selected
+    case "selected":
+      return theme.palette.vars.baseBackgroundHover
+    default:
+      return theme.palette.background.default
+  }
+}
+
+function getGraphNodeHoverBackground(
+  theme: Theme,
+  state: GraphNodeSurfaceState,
+): string {
+  if (theme.palette.mode === "dark") {
+    if (state === "default") {
+      return theme.palette.vars.controlBackgroundMedium
+    }
+
+    return theme.palette.vars.baseBorderMedium
+  }
+
+  if (state === "default") {
+    return theme.palette.vars.baseBackgroundHover
+  }
+
+  return alpha(
+    theme.palette.primary.main,
+    theme.palette.action.selectedOpacity + theme.palette.action.focusOpacity,
+  )
+}
+
 /**
  * Root node surface: palette-driven border/background, hover lift, and focus ring.
  * Merge with layout-only `sx` (width, flexDirection, etc.) in each node component.
@@ -43,14 +89,10 @@ export function graphNodeRootSurfaceSx(
   options: GraphNodeRootSurfaceOptions = {},
 ): SystemStyleObject<Theme> {
   const borderRadius = options.borderRadius ?? defaultCardRadius(theme)
-  const paper = theme.palette.background.paper
   const borderColor = theme.palette.divider
   const primary = theme.palette.primary.main
-
-  const restingBg =
-    state === "active"
-      ? alpha(primary, theme.palette.action.selectedOpacity)
-      : paper
+  const restingBg = getGraphNodeRestingBackground(theme, state)
+  const hoverBg = getGraphNodeHoverBackground(theme, state)
 
   const restingOutline =
     state === "active"
@@ -76,7 +118,7 @@ export function graphNodeRootSurfaceSx(
       duration: theme.transitions.duration.shortest,
     }),
     "&:hover": {
-      bgcolor: theme.palette.action.hover,
+      bgcolor: hoverBg,
       boxShadow: theme.shadows[6],
       outline: `2px solid ${primary}`,
       borderColor: alpha(primary, 0.45),
@@ -92,6 +134,7 @@ export function graphIconChipSx(theme: Theme): SystemStyleObject<Theme> {
   const iconSize = getAssetPngIconSize(theme)
 
   return {
+    overflow: "hidden",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
@@ -107,11 +150,6 @@ export function graphIconChipSx(theme: Theme): SystemStyleObject<Theme> {
       fontSize: iconSize,
     },
   }
-}
-
-/** @deprecated Use {@link graphIconChipSx}. */
-export function graphNodeIconSlotSx(theme: Theme): SystemStyleObject<Theme> {
-  return graphIconChipSx(theme)
 }
 
 /** Hover for interactive graph icon chips (IconButtons, auxiliary links). */
@@ -140,7 +178,7 @@ export function graphIconChipInteractiveHoverSx(
 }
 
 function graphIconButtonChipSx(theme: Theme): SystemStyleObject<Theme> {
-  const iconButtonSize = theme.spacing(5)
+  const iconButtonSize = theme.spacing(3)
 
   return {
     ...graphIconChipSx(theme),
@@ -162,29 +200,10 @@ export function graphSideIconButtonSx(theme: Theme): SystemStyleObject<Theme> {
   return graphIconButtonChipSx(theme)
 }
 
-/** Canvas zoom/fit/lock controls — chip layout only; glyph color via {@link iconGlyphFillStyle} on each SvgIcon. */
-export function graphNodeIconButtonSx(theme: Theme): SystemStyleObject<Theme> {
-  return graphIconButtonChipSx(theme)
-}
-
-/** @deprecated Use {@link graphSideIconButtonSx}. */
-export function graphNodeSideIconButtonSx(
-  theme: Theme,
-): SystemStyleObject<Theme> {
-  return graphSideIconButtonSx(theme)
-}
-
 export function graphSideIconButtonSxWithModal(
   theme: Theme,
 ): SystemStyleObject<Theme> {
   return graphSideIconButtonSx(theme)
-}
-
-/** @deprecated Use {@link graphSideIconButtonSxWithModal}. */
-export function graphNodeSideIconButtonSxWithModal(
-  theme: Theme,
-): SystemStyleObject<Theme> {
-  return graphSideIconButtonSxWithModal(theme)
 }
 
 /** GitHub / similar auxiliary link on nodes — same chip as {@link graphSideIconButtonSx}. */
@@ -193,6 +212,75 @@ export function graphNodeAuxiliaryControlSurfaceSx(
 ): SystemStyleObject<Theme> {
   return {
     ...graphSideIconButtonSx(theme),
+    textDecoration: "none",
+    cursor: "pointer",
+  }
+}
+
+/** Fixed outer box for CustomNode / TransportNode side `button` and `a` icons. */
+export const GRAPH_NODE_SIDE_ICON_SIZE = "1.6rem"
+
+/** Inner glyph/image — fits inside {@link GRAPH_NODE_SIDE_ICON_SIZE} with 1px border. */
+const GRAPH_NODE_SIDE_ICON_INNER_SIZE = "1.125rem"
+
+/** Shared compact side control surface (no `graphIconButtonChipSx` padding/content-box). */
+function graphNodeSideIconControlBaseSx(
+  theme: Theme,
+): SystemStyleObject<Theme> {
+  return {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    flexShrink: 0,
+    boxSizing: "border-box",
+    ...graphIconChipInteractiveHoverSx(theme),
+    bgcolor: getAssetPngIconBackground(theme),
+    border: "1px solid",
+    borderColor: theme.palette.divider,
+    borderRadius: theme.shape.borderRadius,
+    boxShadow: theme.shadows[1],
+    minWidth: 0,
+    width: GRAPH_NODE_SIDE_ICON_SIZE,
+    height: GRAPH_NODE_SIDE_ICON_SIZE,
+    maxWidth: GRAPH_NODE_SIDE_ICON_SIZE,
+    maxHeight: GRAPH_NODE_SIDE_ICON_SIZE,
+    padding: 0,
+    overflow: "hidden",
+    "&&": {
+      minWidth: 0,
+      width: GRAPH_NODE_SIDE_ICON_SIZE,
+      height: GRAPH_NODE_SIDE_ICON_SIZE,
+      padding: 0,
+    },
+    "& .MuiSvgIcon-root": {
+      fontSize: GRAPH_NODE_SIDE_ICON_INNER_SIZE,
+      width: GRAPH_NODE_SIDE_ICON_INNER_SIZE,
+      height: GRAPH_NODE_SIDE_ICON_INNER_SIZE,
+    },
+    "& img": {
+      width: GRAPH_NODE_SIDE_ICON_INNER_SIZE,
+      height: GRAPH_NODE_SIDE_ICON_INNER_SIZE,
+      maxWidth: "100%",
+      maxHeight: "100%",
+      objectFit: "contain",
+      display: "block",
+    },
+  }
+}
+
+/** CustomNode side `IconButton` (`button` / `a`). */
+export function graphNodeSideIconControlSx(
+  theme: Theme,
+): SystemStyleObject<Theme> {
+  return graphNodeSideIconControlBaseSx(theme)
+}
+
+/** TransportNode side `a` link control. */
+export function graphNodeSideIconLinkSx(
+  theme: Theme,
+): SystemStyleObject<Theme> {
+  return {
+    ...graphNodeSideIconControlBaseSx(theme),
     textDecoration: "none",
     cursor: "pointer",
   }

@@ -10,7 +10,7 @@ import AssignmentTurnedIn from "@mui/icons-material/AssignmentTurnedIn"
 import { Box } from "@open-ui-kit/core"
 import { IconButtonDropdown } from "@/components/IconButtonDropdown"
 import { GraphSideIconTooltip } from "@/components/MainArea/Graph/Elements/GraphSideIconTooltip"
-import { graphSideIconButtonSxWithModal } from "@/components/MainArea/Graph/Elements/graphNodeSurface"
+import { graphNodeSideIconControlSx } from "@/components/MainArea/Graph/Elements/graphNodeSurface"
 import type { CustomNodeData } from "@/components/MainArea/Graph/Elements/types"
 import IdentityDetailsDropdownContent from "./IdentityDetailsDropdownContent"
 
@@ -52,7 +52,7 @@ export const NodeIdentityDropdown: React.FC<NodeIdentityDropdownProps> = ({
           trigger={{
             icon: <AssignmentTurnedIn />,
             iconButtonProps: {
-              sx: (t) => graphSideIconButtonSxWithModal(t),
+              sx: (t) => graphNodeSideIconControlSx(t),
             },
           }}
           closeOnContentClick={false}

@@ -16,7 +16,7 @@ import { SecurityClass } from "@/utils/SecurityClass"
 import {
   getGraphNodeHandleStyle,
   graphNodeRootSurfaceSx,
-  graphSideIconButtonSx,
+  graphNodeSideIconControlSx,
   type GraphNodeSurfaceState,
 } from "./graphNodeSurface"
 import { GraphIconChip } from "./GraphIconChip"
@@ -76,7 +76,6 @@ const CustomNode: React.FC<CustomNodeProps> = ({ id, data }) => {
           justifyContent: "flex-start",
           gap: t.spacing(1),
           p: 2,
-          width: 193,
           flexGrow: 0,
           flexShrink: 0,
           order: 0,
@@ -91,20 +90,16 @@ const CustomNode: React.FC<CustomNodeProps> = ({ id, data }) => {
             alignItems: "center",
             gap: 0.5,
             p: 0,
-            height: 20,
           }}
         >
           <Typography
-            variant="body2"
+            variant="h6"
             component="span"
             noWrap
-            sx={{
+            sx={() => ({
               flex: "1 1 auto",
               minWidth: 0,
-              fontWeight: 400,
-              letterSpacing: "normal",
-              lineHeight: "20px",
-            }}
+            })}
           >
             {data.label1}
           </Typography>
@@ -162,7 +157,7 @@ const CustomNode: React.FC<CustomNodeProps> = ({ id, data }) => {
                   target="_blank"
                   rel="noopener noreferrer"
                   aria-label="Open GitHub repository"
-                  sx={(t) => graphSideIconButtonSx(t)}
+                  sx={(t) => graphNodeSideIconControlSx(t)}
                 >
                   <AssetPngIcon bare src={githubIconSrc} alt="GitHub" />
                 </IconButton>
@@ -174,7 +169,7 @@ const CustomNode: React.FC<CustomNodeProps> = ({ id, data }) => {
                 type="button"
                 aria-label="Open AGNTCY Directory"
                 onClick={handleAgentDirectoryClick}
-                sx={(t) => graphSideIconButtonSx(t)}
+                sx={(t) => graphNodeSideIconControlSx(t)}
               >
                 <AssetPngIcon
                   bare
