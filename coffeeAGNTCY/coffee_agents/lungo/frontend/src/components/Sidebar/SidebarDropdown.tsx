@@ -13,18 +13,20 @@ import {
 } from "@open-ui-kit/core"
 import ExpandLess from "@mui/icons-material/ExpandLess"
 import {
-  sidebarDropdownListItemSx,
-  sidebarDropdownPanelExpandedSx,
-  sidebarDropdownToggleExpandedSx,
-  sidebarDropdownToggleSx,
+  sidebarBorderRadius,
+  sidebarDropdownPanelPaddingLeft,
   sidebarItemMarginTop,
   sidebarListItemButtonSx,
+  sidebarListItemSx,
+  sidebarRowButtonStateSx,
 } from "./sidebarSx"
 
 interface SidebarDropdownProps {
   title: string
   isExpanded: boolean
   onToggle: () => void
+  /** Highlight toggle when a descendant workflow row is selected. */
+  containsSelectedWorkflow?: boolean
   children: React.ReactNode
 }
 
@@ -32,6 +34,7 @@ const SidebarDropdown: React.FC<SidebarDropdownProps> = ({
   title,
   isExpanded,
   onToggle,
+  containsSelectedWorkflow = false,
   children,
 }) => {
   const toggleId = React.useId()
@@ -48,13 +51,13 @@ const SidebarDropdown: React.FC<SidebarDropdownProps> = ({
     <ListItem
       component="div"
       disablePadding
-      sx={{
+      sx={(theme) => ({
         width: "100%",
         flexDirection: "column",
         alignItems: "stretch",
         mt: sidebarItemMarginTop,
-        ...sidebarDropdownListItemSx,
-      }}
+        ...sidebarListItemSx(theme),
+      })}
     >
       <ListItemButton
         component="button"
@@ -64,12 +67,15 @@ const SidebarDropdown: React.FC<SidebarDropdownProps> = ({
         aria-expanded={isExpanded}
         aria-controls={panelId}
         aria-label={toggleLabel}
+        selected={containsSelectedWorkflow}
         sx={(theme) => ({
           ...sidebarListItemButtonSx,
-          ...sidebarDropdownToggleSx,
+          ...sidebarRowButtonStateSx(theme),
+          width: "100%",
+          minWidth: 0,
           justifyContent: "space-between",
+          borderRadius: sidebarBorderRadius,
           textWrap: "auto",
-          ...(isExpanded ? sidebarDropdownToggleExpandedSx(theme) : {}),
         })}
       >
         <Typography id={titleId} component="span" variant="body1">
@@ -104,7 +110,7 @@ const SidebarDropdown: React.FC<SidebarDropdownProps> = ({
           aria-labelledby={titleId}
           sx={(theme) => ({
             width: "100%",
-            ...sidebarDropdownPanelExpandedSx(theme),
+            pl: sidebarDropdownPanelPaddingLeft(theme),
           })}
         >
           {children}

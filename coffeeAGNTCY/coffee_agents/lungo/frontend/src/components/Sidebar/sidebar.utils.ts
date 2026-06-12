@@ -224,6 +224,26 @@ export const groupWorkflowsByPatternUseCaseAndScenario = (
 
 export const REFERENCE_LIBRARY_KEY = "reference-library"
 
+export const patternContainsSelectedWorkflow = (
+  pattern: PatternNode,
+  selectedWorkflowName: string | null | undefined,
+): boolean => {
+  if (!selectedWorkflowName) return false
+  return pattern.useCaseScenarios.some((scenario) =>
+    scenarioContainsSelectedWorkflow(scenario, selectedWorkflowName),
+  )
+}
+
+export const scenarioContainsSelectedWorkflow = (
+  scenario: UseCaseScenarioNode,
+  selectedWorkflowName: string | null | undefined,
+): boolean => {
+  if (!selectedWorkflowName) return false
+  return scenario.workflows.some(
+    (workflow) => workflow.summary.name === selectedWorkflowName,
+  )
+}
+
 export const isPlaceholderWorkflow = (summary: WorkflowSummary): boolean =>
   summary.use_case === "---" && summary.scenario === "---"
 

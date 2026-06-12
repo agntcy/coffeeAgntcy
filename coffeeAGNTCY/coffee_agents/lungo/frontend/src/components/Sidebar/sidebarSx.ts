@@ -20,11 +20,68 @@ export const sidebarListItemButtonSx = {
 } as const
 
 /**
- * OUK `baseBackgroundWeak` — `#fbfcfe` in light mode (`theme.palette.vars`).
- * Used on `SidebarDropdown` `ListItem` roots only.
+ * Sidebar row buttons: neutral text with rounded fill emphasis on hover,
+ * selection, focus, and active press.
  */
-export const sidebarDropdownListItemBackground = (theme: Theme) =>
-  theme.palette.vars.baseBackgroundWeak
+export const sidebarRowButtonStateSx = (theme: Theme) => {
+  const radius = sidebarBorderRadius(theme)
+  const hoverFill = {
+    bgcolor: theme.palette.action.hover,
+    backgroundColor: theme.palette.action.hover,
+  }
+  const activeFill = {
+    bgcolor: theme.palette.action.selected,
+    backgroundColor: theme.palette.action.selected,
+  }
+  const surfaceTransition = theme.transitions.create(["background-color"], {
+    duration: theme.transitions.duration.shortest,
+  })
+
+  return {
+    color: theme.palette.text.primary,
+    bgcolor: "transparent",
+    backgroundColor: "transparent",
+    borderRadius: radius,
+    transition: surfaceTransition,
+    "& .MuiTypography-root": {
+      color: "inherit",
+      fontWeight: 400,
+    },
+    "& .MuiSvgIcon-root": {
+      color: "inherit",
+    },
+    "&:hover": {
+      ...hoverFill,
+      color: theme.palette.text.primary,
+    },
+    "&:active": {
+      ...activeFill,
+      color: theme.palette.text.primary,
+    },
+    "&.Mui-selected": {
+      ...activeFill,
+      color: theme.palette.text.primary,
+      "& .MuiTypography-root": {
+        fontWeight: 600,
+      },
+    },
+    "&.Mui-selected:hover": {
+      ...hoverFill,
+      color: theme.palette.text.primary,
+    },
+    "&.Mui-focusVisible": {
+      ...hoverFill,
+      outline: `2px solid ${theme.palette.divider}`,
+      outlineOffset: 2,
+    },
+  }
+}
+
+/** Composed ListItemButton styles for catalog `SidebarItem` rows. */
+export const sidebarItemButtonSx = (theme: Theme) => ({
+  ...sidebarListItemButtonSx,
+  ...sidebarRowButtonStateSx(theme),
+})
 
 /**
  * ListItem wrappers stay transparent; hover, focus, and selected styles belong on
@@ -50,96 +107,6 @@ export const sidebarListItemSx = (theme: Theme) => ({
   },
 })
 
-/** `.MuiListItem-root` surface for `SidebarDropdown` at every tree level. */
-export const sidebarDropdownListItemSx = {
-  bgcolor: sidebarDropdownListItemBackground,
-  borderRadius: sidebarBorderRadius,
-  overflow: "hidden",
-  "&:hover": {
-    bgcolor: sidebarDropdownListItemBackground,
-  },
-  "&:focus": {
-    bgcolor: sidebarDropdownListItemBackground,
-  },
-  "&:focus-within": {
-    bgcolor: sidebarDropdownListItemBackground,
-  },
-  "&.Mui-focusVisible": {
-    bgcolor: sidebarDropdownListItemBackground,
-  },
-  "&.Mui-selected": {
-    bgcolor: sidebarDropdownListItemBackground,
-  },
-} as const
-
-/**
- * Same fill as `.MuiListItemButton-root:hover` (theme `action.hover` token).
- */
-export const sidebarListItemButtonHoverBackgroundSx = {
-  bgcolor: sidebarDropdownListItemBackground,
-  "&:hover": {
-    bgcolor: "action.hover",
-  },
-  "&.Mui-focusVisible": {
-    bgcolor: "action.hover",
-  },
-} as const
-
-const sidebarDropdownCornerRadiiSx = (theme: Theme) => {
-  const radius = sidebarBorderRadius(theme)
-  return {
-    borderRadius: radius,
-    borderTopLeftRadius: radius,
-    borderTopRightRadius: radius,
-    borderBottomLeftRadius: radius,
-    borderBottomRightRadius: radius,
-  }
-}
-
-const sidebarDropdownExpandedTopCornersSx = (theme: Theme) => ({
-  ...sidebarDropdownCornerRadiiSx(theme),
-  borderBottomLeftRadius: 0,
-  borderBottomRightRadius: 0,
-})
-
-const sidebarDropdownExpandedBottomCornersSx = (theme: Theme) => ({
-  ...sidebarDropdownCornerRadiiSx(theme),
-  borderTopLeftRadius: 0,
-  borderTopRightRadius: 0,
-})
-
-/** ListItemButton radius for collapsed dropdown toggles. */
-export const sidebarDropdownToggleSx = {
-  borderRadius: sidebarBorderRadius,
-} as const
-
-/** Expanded dropdown toggle: fill + top corners (same radius token). */
-export const sidebarDropdownToggleExpandedSx = (theme: Theme) => {
-  const corners = sidebarDropdownExpandedTopCornersSx(theme)
-  return {
-    ...sidebarListItemButtonHoverBackgroundSx,
-    ...corners,
-    "&:hover": {
-      ...sidebarListItemButtonHoverBackgroundSx["&:hover"],
-      ...corners,
-    },
-    "&.Mui-focusVisible": {
-      ...sidebarListItemButtonHoverBackgroundSx["&.Mui-focusVisible"],
-      ...corners,
-    },
-  }
-}
-
 /** Left padding for nested content in an expanded `SidebarDropdown` panel. */
 export const sidebarDropdownPanelPaddingLeft = (theme: Theme) =>
   theme.spacing(1)
-
-/** Expanded dropdown panel: nested indent + bottom corners (same radius token). */
-export const sidebarDropdownPanelExpandedSx = (theme: Theme) => {
-  const corners = sidebarDropdownExpandedBottomCornersSx(theme)
-  return {
-    pl: sidebarDropdownPanelPaddingLeft(theme),
-    ...sidebarListItemButtonHoverBackgroundSx,
-    ...corners,
-  }
-}
