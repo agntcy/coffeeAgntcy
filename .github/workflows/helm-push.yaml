@@ -40,6 +40,7 @@ jobs:
   subprojects-to-build:
     runs-on: ubuntu-latest
     outputs:
+      push: ${{ steps.choose-subprojects.outputs.push }}
       build_corto: ${{ steps.choose-subprojects.outputs.build_corto }}
       build_lungo: ${{ steps.choose-subprojects.outputs.build_lungo }}
     defaults:
@@ -72,7 +73,7 @@ jobs:
         run: |
           paths_json_corto=$(echo $WORKFLOW_FILES_LIST_JSON | jq -c -r --arg new_val "$CORTO_DIR/$HELM_SUBDIR" '[$new_val] + .')
           echo "paths_json_corto=$paths_json_corto" | tee -a $GITHUB_OUTPUT
-          
+
           paths_json_lungo=$(echo $WORKFLOW_FILES_LIST_JSON | jq -c -r --arg new_val "$LUNGO_DIR/$HELM_SUBDIR" '[$new_val] + .')
           echo "paths_json_lungo=$paths_json_lungo" | tee -a $GITHUB_OUTPUT
 
@@ -101,18 +102,97 @@ jobs:
           build_lungo=false
 
           if [[ "${{ github.event_name }}" == "push" ]]; then
+            if [[ "${{ github.ref_name }}" == "main" ]]; then
+              push=true
+            else
+              push=false
+            fi
+
             build_corto=true
             build_lungo=true
           elif [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            push=${{ inputs.push }}
             build_corto=${{ inputs.build_corto }}
             build_lungo=${{ inputs.build_lungo }}
           elif [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            push=false
             build_corto=${{ steps.check-paths-corto.outputs.changed }}
             build_lungo=${{ steps.check-paths-lungo.outputs.changed }}
           fi
 
+          echo "push=$push" | tee -a $GITHUB_OUTPUT
           echo "build_corto=$build_corto" | tee -a $GITHUB_OUTPUT
           echo "build_lungo=$build_lungo" | tee -a $GITHUB_OUTPUT
+
+  check-push-target-existence:
+    needs: [subprojects-to-build]
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash
+    permissions:
+      packages: read
+      contents: read
+    steps:
+      - name: Check Helm integrity
+        run: |
+          push=${{ needs.subprojects-to-build.outputs.push }}
+          build_corto=${{ needs.subprojects-to-build.outputs.build_corto }}
+          build_lungo=${{ needs.subprojects-to-build.outputs.build_lungo }}
+
+          existing_charts=()
+          for project in corto lungo; do
+            build=build_$project
+
+            if [[ "${!build}" == "true" ]] && [[ "${push}" == "true" ]]; then
+              if [[ "${project}" == "corto" ]]; then
+                charts=(corto-ui corto-exchange corto-farm)
+              elif [[ "${project}" == "lungo" ]]; then
+                charts=(lungo-ui auction-supervisor agentic-workflows-api brazil-farm colombia-farm vietnam-farm weather-mcp-server payment-mcp-server logistics-shipper logistics-accountant logistics-farm logistics-supervisor logistics-helpdesk recruiter recruiter-supervisor)
+              fi
+
+              for chart in "${charts[@]}"; do
+                chart_path="coffee_agntcy%2Fhelm%2F${chart}"
+
+                directory="${chart}"
+                if [[ "${chart}" == "lungo-ui" ]]; then
+                  directory="ui"
+                fi
+                chart_directory="coffeeAGNTCY/coffee_agents/${project}/deployment/helm/${directory}"
+
+                base="${{ github.event.before }}"
+                head="${{ github.sha }}"
+                if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+                  base="${{ github.event.pull_request.base.sha }}"
+                  head="${{ github.event.pull_request.head.sha }}"
+                fi
+
+                if git diff --name-only --exit-code "$base" "$head" -- "${chart_directory}/"; then
+                  continue # Note: If the chart directory has no changes, skip checking for existing chart versions.
+                fi
+
+                chart_version=$(grep '^version:' ${chart_directory}/Chart.yaml | awk '{print $2}')
+
+                version_id=$(gh api "/orgs/agntcy/packages/container/${chart_path}/versions" \
+                  --jq '.[] | select(.metadata.container.tags[]? == "'${chart_version}'") | .id' \
+                  | head -n1)
+
+                if [[ -n "${version_id}" ]]; then
+                  existing_charts+=("ghcr.io/agntcy/${chart_path}:${chart_version}")
+                fi
+              done
+            fi
+          done
+
+          if [[ "${#existing_charts[@]}" -gt 0 ]]; then
+            echo "Error: The following chart versions already exist:"
+            for chart in "${existing_charts[@]}"; do
+              echo "- $chart"
+            done
+            echo "Cancelling package and push. Change the version or use the 'Delete GHCR Package Version' workflow to delete the existing chart versions before retrying."
+
+            exit 1
+          fi
 
   helm-package-corto:
     needs: subprojects-to-build
