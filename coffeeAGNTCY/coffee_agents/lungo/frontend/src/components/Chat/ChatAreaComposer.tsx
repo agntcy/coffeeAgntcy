@@ -15,6 +15,9 @@ import {
   SuggestedPromptsDropdown,
 } from "./prompts"
 
+/** Matches OUK `Button` `size="medium"` in the compact shell (see ChatHeader icon buttons). */
+const COMPOSER_CONTROL_HEIGHT_PX = 32
+
 const promptsDropdownSx = {
   flexShrink: 0,
   alignSelf: { xs: "stretch" as const, sm: "flex-end" as const },
@@ -54,7 +57,7 @@ const ChatAreaComposer: React.FC<ChatAreaComposerProps> = ({
   return (
     <Stack
       direction={{ xs: "column", sm: "row" }}
-      alignItems={{ sm: "center" }}
+      alignItems={{ xs: "stretch", sm: "flex-end" }}
       spacing={2}
       sx={{ width: "100%", maxWidth: 880 }}
     >
@@ -70,7 +73,7 @@ const ChatAreaComposer: React.FC<ChatAreaComposerProps> = ({
 
       <TextField
         fullWidth
-        margin="dense"
+        margin="none"
         variant="standard"
         label="Message to agents"
         placeholder="Type a prompt to interact with the agents"
@@ -87,22 +90,43 @@ const ChatAreaComposer: React.FC<ChatAreaComposerProps> = ({
           input: {
             disableUnderline: true,
           },
+          htmlInput: {
+            sx: {
+              minWidth: 0,
+            },
+          },
         }}
         sx={(theme) => ({
           flex: 1,
           minWidth: 0,
-          "& .MuiInput-root": {
+          maxWidth: "100%",
+          my: 0,
+          "& .MuiInputBase-root": {
+            width: "100%",
+            minWidth: 0,
             marginTop: 0,
-            height: 32,
+            height: COMPOSER_CONTROL_HEIGHT_PX,
+            minHeight: COMPOSER_CONTROL_HEIGHT_PX,
+            boxSizing: "border-box",
+            alignItems: "center",
           },
           "& .MuiInputBase-input": {
             ...theme.typography.body1,
+            width: "100%",
+            minWidth: 0,
+            boxSizing: "border-box",
+            height: theme.typography.body1.lineHeight,
+            padding: 0,
             "&::placeholder": {
               opacity: 0.6,
             },
           },
           "& .MuiInputLabel-root": {
-            ...theme.typography.body1,
+            ...theme.typography.caption,
+            maxWidth: "100%",
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+            whiteSpace: "nowrap",
           },
         })}
       />
