@@ -5,7 +5,7 @@
  * Default root page at / — main app (sidebar + chat + graph).
  **/
 
-import React from "react"
+import React, { useMemo, useRef } from "react"
 import { Box } from "@open-ui-kit/core"
 import { skipLinkSx } from "@/utils/a11ySx"
 import Navigation from "@/components/Navigation/Navigation"
@@ -14,6 +14,9 @@ import ChatArea from "@/components/Chat/ChatArea"
 import Sidebar from "@/components/Sidebar/Sidebar"
 import { PATTERNS } from "@/utils/patternUtils"
 import { useApp } from "@/useApp"
+import { GraphCanvasLayoutContext } from "@/contexts/graphCanvasLayout"
+import { useElementWidth } from "@/hooks/useElementWidth"
+import { useElementRect } from "@/hooks/useElementRect"
 
 const RootPage: React.FC = () => {
   const {
@@ -65,6 +68,20 @@ const RootPage: React.FC = () => {
     setLiveGraphConfig,
   } = useApp()
 
+  const graphSectionRef = useRef<HTMLElement>(null)
+  const mainContentRef = useRef<HTMLElement>(null)
+  const graphCanvasWidth = useElementWidth(graphSectionRef)
+  const mainContentRect = useElementRect(mainContentRef)
+
+  const graphCanvasLayout = useMemo(
+    () => ({
+      graphCanvasWidth,
+      mainContentLeft: mainContentRect?.left,
+      mainContentWidth: mainContentRect?.width,
+    }),
+    [graphCanvasWidth, mainContentRect?.left, mainContentRect?.width],
+  )
+
   return (
     <Box
       sx={{
@@ -98,6 +115,7 @@ const RootPage: React.FC = () => {
         <Box
           component="main"
           id="main-content"
+          ref={mainContentRef}
           aria-label="Workflow graph and agent chat"
           sx={{
             display: "flex",
@@ -108,104 +126,107 @@ const RootPage: React.FC = () => {
             overflow: "hidden",
           }}
         >
-          <Box
-            component="section"
-            aria-label="Workflow graph"
-            sx={{
-              position: "relative",
-              flex: "1 1 50%",
-              minHeight: "50%",
-              minWidth: 0,
-              overflow: "hidden",
-            }}
-          >
-            <MainArea
-              pattern={selectedPattern}
-              selectedWorkflowSummary={selectedWorkflowSummary}
-              onLiveGraphConfig={setLiveGraphConfig}
-              buttonClicked={buttonClicked}
-              setButtonClicked={setButtonClicked}
-              aiReplied={aiReplied}
-              setAiReplied={setAiReplied}
-              chatHeight={chatHeightValue}
-              isExpanded={isExpanded}
-              groupCommResponseReceived={groupCommResponseReceived}
-              onNodeHighlight={handleNodeHighlightSetup}
-              discoveryResponseEvent={discoveryResponseEvent}
-              selectedAgentCid={
-                typeof recruiterSelectedAgent?.cid === "string"
-                  ? recruiterSelectedAgent.cid
-                  : null
-              }
-            />
-          </Box>
-          <Box
-            component="section"
-            aria-label="Agent chat"
-            sx={{
-              display: "flex",
-              width: "100%",
-              flex: "0 1 auto",
-              flexShrink: 0,
-              flexDirection: "column",
-              alignItems: "center",
-              justifyContent: "flex-start",
-              gap: 0,
-              p: 0,
-              maxHeight: "50%",
-              minWidth: 0,
-              overflow: "hidden",
-            }}
-          >
-            <ChatArea
-              setMessages={setMessages}
-              setButtonClicked={setButtonClicked}
-              setAiReplied={setAiReplied}
-              isBottomLayout={true}
-              showCoffeePrompts={
-                selectedPattern === PATTERNS.PUBLISH_SUBSCRIBE ||
-                selectedPattern === PATTERNS.PUBLISH_SUBSCRIBE_STREAMING
-              }
-              showLogisticsPrompts={
-                selectedPattern === PATTERNS.GROUP_MESSAGING
-              }
-              showDiscoveryPrompts={selectedPattern === PATTERNS.A2A_HTTP}
-              showProgressTracker={showProgressTracker}
-              showAuctionStreaming={showAuctionStreaming}
-              showRecruiterStreaming={showRecruiterStreaming}
-              showFinalResponse={showFinalResponse}
-              onStreamComplete={handleStreamComplete}
-              onSenderHighlight={handleSenderHighlight}
-              pattern={selectedPattern}
-              graphConfig={graphConfig}
-              onDropdownSelect={handleDropdownSelect}
-              onUserInput={handleUserInput}
-              onApiResponse={handleApiResponse}
-              onClearConversation={handleClearConversation}
-              currentUserMessage={currentUserMessage}
-              agentResponse={agentResponse}
-              executionKey={executionKey}
-              isAgentLoading={isAgentLoading}
-              apiError={apiError}
-              chatRef={chatRef}
-              auctionState={{
-                events,
-                status,
-                error,
+          <GraphCanvasLayoutContext.Provider value={graphCanvasLayout}>
+            <Box
+              component="section"
+              aria-label="Workflow graph"
+              ref={graphSectionRef}
+              sx={{
+                position: "relative",
+                flex: "1 1 50%",
+                minHeight: "50%",
+                minWidth: 0,
+                overflow: "hidden",
               }}
-              recruiterState={{
-                events: recruiterEvents,
-                status: recruiterStatus,
-                error: recruiterError,
-                sessionId: recruiterSessionId,
-                finalMessage: recruiterFinalMessage,
-                agentRecords: recruiterAgentRecords,
-                evaluationResults: recruiterEvaluationResults,
-                selectedAgent: recruiterSelectedAgent,
+            >
+              <MainArea
+                pattern={selectedPattern}
+                selectedWorkflowSummary={selectedWorkflowSummary}
+                onLiveGraphConfig={setLiveGraphConfig}
+                buttonClicked={buttonClicked}
+                setButtonClicked={setButtonClicked}
+                aiReplied={aiReplied}
+                setAiReplied={setAiReplied}
+                chatHeight={chatHeightValue}
+                isExpanded={isExpanded}
+                groupCommResponseReceived={groupCommResponseReceived}
+                onNodeHighlight={handleNodeHighlightSetup}
+                discoveryResponseEvent={discoveryResponseEvent}
+                selectedAgentCid={
+                  typeof recruiterSelectedAgent?.cid === "string"
+                    ? recruiterSelectedAgent.cid
+                    : null
+                }
+              />
+            </Box>
+            <Box
+              component="section"
+              aria-label="Agent chat"
+              sx={{
+                display: "flex",
+                width: "100%",
+                flex: "0 1 auto",
+                flexShrink: 0,
+                flexDirection: "column",
+                alignItems: "center",
+                justifyContent: "flex-start",
+                gap: 0,
+                p: 0,
+                maxHeight: "50%",
+                minWidth: 0,
+                overflow: "hidden",
               }}
-              onDiscoveryResponse={handleDiscoveryResponse}
-            />
-          </Box>
+            >
+              <ChatArea
+                setMessages={setMessages}
+                setButtonClicked={setButtonClicked}
+                setAiReplied={setAiReplied}
+                isBottomLayout={true}
+                showCoffeePrompts={
+                  selectedPattern === PATTERNS.PUBLISH_SUBSCRIBE ||
+                  selectedPattern === PATTERNS.PUBLISH_SUBSCRIBE_STREAMING
+                }
+                showLogisticsPrompts={
+                  selectedPattern === PATTERNS.GROUP_MESSAGING
+                }
+                showDiscoveryPrompts={selectedPattern === PATTERNS.A2A_HTTP}
+                showProgressTracker={showProgressTracker}
+                showAuctionStreaming={showAuctionStreaming}
+                showRecruiterStreaming={showRecruiterStreaming}
+                showFinalResponse={showFinalResponse}
+                onStreamComplete={handleStreamComplete}
+                onSenderHighlight={handleSenderHighlight}
+                pattern={selectedPattern}
+                graphConfig={graphConfig}
+                onDropdownSelect={handleDropdownSelect}
+                onUserInput={handleUserInput}
+                onApiResponse={handleApiResponse}
+                onClearConversation={handleClearConversation}
+                currentUserMessage={currentUserMessage}
+                agentResponse={agentResponse}
+                executionKey={executionKey}
+                isAgentLoading={isAgentLoading}
+                apiError={apiError}
+                chatRef={chatRef}
+                auctionState={{
+                  events,
+                  status,
+                  error,
+                }}
+                recruiterState={{
+                  events: recruiterEvents,
+                  status: recruiterStatus,
+                  error: recruiterError,
+                  sessionId: recruiterSessionId,
+                  finalMessage: recruiterFinalMessage,
+                  agentRecords: recruiterAgentRecords,
+                  evaluationResults: recruiterEvaluationResults,
+                  selectedAgent: recruiterSelectedAgent,
+                }}
+                onDiscoveryResponse={handleDiscoveryResponse}
+              />
+            </Box>
+          </GraphCanvasLayoutContext.Provider>
         </Box>
       </Box>
     </Box>

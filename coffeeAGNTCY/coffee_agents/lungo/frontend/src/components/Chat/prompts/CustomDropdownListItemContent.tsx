@@ -6,6 +6,12 @@
 import React from "react"
 import { Stack, Typography } from "@open-ui-kit/core"
 
+const dropdownItemTextSx = {
+  whiteSpace: "normal" as const,
+  overflowWrap: "anywhere" as const,
+  wordBreak: "break-word" as const,
+}
+
 export interface CustomDropdownListItemContentProps {
   prompt: string
   description?: string
@@ -15,10 +21,14 @@ export const CustomDropdownListItemContent: React.FC<
   CustomDropdownListItemContentProps
 > = ({ prompt, description }) => {
   return (
-    <Stack direction="column">
-      <Typography variant="body2">{prompt}</Typography>
+    <Stack direction="column" sx={{ minWidth: 0, width: "100%" }}>
+      <Typography variant="body2Semibold" sx={dropdownItemTextSx}>
+        {prompt}
+      </Typography>
       {description ? (
-        <Typography variant="caption">{description}</Typography>
+        <Typography variant="caption" sx={dropdownItemTextSx}>
+          {description}
+        </Typography>
       ) : null}
     </Stack>
   )

@@ -11,9 +11,8 @@ import { Box, Button, Stack } from "@open-ui-kit/core"
 import { iconGlyphFillSx } from "@/utils/iconGlyphFill"
 
 import {
-  CoffeePromptsDropdown,
-  LogisticsPromptsDropdown,
-  DiscoveryPromptsDropdown,
+  resolveSuggestedPromptsSource,
+  SuggestedPromptsDropdown,
 } from "./prompts"
 
 const promptsDropdownSx = {
@@ -46,6 +45,12 @@ const ChatAreaComposer: React.FC<ChatAreaComposerProps> = ({
   onSend,
   onKeyDown,
 }) => {
+  const promptsSource = resolveSuggestedPromptsSource({
+    showCoffeePrompts,
+    showLogisticsPrompts,
+    showDiscoveryPrompts,
+  })
+
   return (
     <Stack
       direction={{ xs: "column", sm: "row" }}
@@ -53,24 +58,13 @@ const ChatAreaComposer: React.FC<ChatAreaComposerProps> = ({
       spacing={2}
       sx={{ width: "100%", maxWidth: 880 }}
     >
-      {showCoffeePrompts ? (
+      {promptsSource ? (
         <Box sx={promptsDropdownSx}>
-          <CoffeePromptsDropdown
-            onSelect={onDropdownSelect}
+          <SuggestedPromptsDropdown
+            source={promptsSource}
             pattern={pattern}
+            onSelect={onDropdownSelect}
           />
-        </Box>
-      ) : null}
-
-      {showLogisticsPrompts ? (
-        <Box sx={promptsDropdownSx}>
-          <LogisticsPromptsDropdown onSelect={onDropdownSelect} />
-        </Box>
-      ) : null}
-
-      {showDiscoveryPrompts ? (
-        <Box sx={promptsDropdownSx}>
-          <DiscoveryPromptsDropdown onSelect={onDropdownSelect} />
         </Box>
       ) : null}
 
@@ -94,7 +88,7 @@ const ChatAreaComposer: React.FC<ChatAreaComposerProps> = ({
             disableUnderline: true,
           },
         }}
-        sx={{
+        sx={(theme) => ({
           flex: 1,
           minWidth: 0,
           "& .MuiInput-root": {
@@ -102,11 +96,15 @@ const ChatAreaComposer: React.FC<ChatAreaComposerProps> = ({
             height: 32,
           },
           "& .MuiInputBase-input": {
+            ...theme.typography.body1,
             "&::placeholder": {
               opacity: 0.6,
             },
           },
-        }}
+          "& .MuiInputLabel-root": {
+            ...theme.typography.body1,
+          },
+        })}
       />
       <Button
         size="medium"

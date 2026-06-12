@@ -77,8 +77,6 @@ const RecruiterStreamingFeed: React.FC<RecruiterStreamingFeedProps> = ({
     (e: RecruiterStreamingEvent) => e.event_type === "status_update",
   )
 
-  console.log("events", events)
-
   return (
     <Stack
       direction="row"

@@ -1,9 +1,6 @@
-import CoffeePromptsDropdown from "./CoffeePromptsDropdown"
-import DiscoveryPromptsDropdown from "./DiscoveryPromptsDropdown"
-import LogisticsPromptsDropdown from "./LogisticsPromptsDropdown"
+import SuggestedPromptsDropdown from "./SuggestedPromptsDropdown"
+import { resolveSuggestedPromptsSource } from "./suggestedPromptsUtils"
 
-export {
-  CoffeePromptsDropdown,
-  DiscoveryPromptsDropdown,
-  LogisticsPromptsDropdown,
-}
+export { SuggestedPromptsDropdown, resolveSuggestedPromptsSource }
+
+export type { SuggestedPromptsSource } from "./suggestedPromptsUtils"
