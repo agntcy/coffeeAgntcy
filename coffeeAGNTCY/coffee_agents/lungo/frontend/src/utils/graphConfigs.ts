@@ -6,7 +6,7 @@
 import { Node, Edge } from "@xyflow/react"
 import { NODE_IDS, EDGE_IDS, EDGE_LABELS } from "./const"
 import { logger } from "./logger"
-import urlsConfig from "./urls.json"
+import { joinBaseUrl, LUNGO_FRONTEND_URLS } from "@/urls"
 import { isGroupCommunication, getApiUrlForPattern } from "./patternUtils"
 import {
   type GraphConfig,
@@ -35,7 +35,7 @@ export const getGraphConfig = (pattern: string): GraphConfig => {
               ...node,
               data: {
                 ...node.data,
-                githubLink: `${urlsConfig.github.baseUrl}${urlsConfig.github.agents.supervisorAuctionStreaming}`,
+                githubLink: `${LUNGO_FRONTEND_URLS.github.baseUrl}${LUNGO_FRONTEND_URLS.github.agents.supervisorAuctionStreaming}`,
               },
             }
           }
@@ -44,7 +44,7 @@ export const getGraphConfig = (pattern: string): GraphConfig => {
               ...node,
               data: {
                 ...node.data,
-                githubLink: `${urlsConfig.github.baseUrl}${urlsConfig.github.agents.brazilFarmStreaming}`,
+                githubLink: `${LUNGO_FRONTEND_URLS.github.baseUrl}${LUNGO_FRONTEND_URLS.github.agents.brazilFarmStreaming}`,
               },
             }
           }
@@ -53,7 +53,7 @@ export const getGraphConfig = (pattern: string): GraphConfig => {
               ...node,
               data: {
                 ...node.data,
-                githubLink: `${urlsConfig.github.baseUrl}${urlsConfig.github.agents.colombiaFarmStreaming}`,
+                githubLink: `${LUNGO_FRONTEND_URLS.github.baseUrl}${LUNGO_FRONTEND_URLS.github.agents.colombiaFarmStreaming}`,
               },
             }
           }
@@ -62,7 +62,7 @@ export const getGraphConfig = (pattern: string): GraphConfig => {
               ...node,
               data: {
                 ...node.data,
-                githubLink: `${urlsConfig.github.baseUrl}${urlsConfig.github.agents.vietnamFarmStreaming}`,
+                githubLink: `${LUNGO_FRONTEND_URLS.github.baseUrl}${LUNGO_FRONTEND_URLS.github.agents.vietnamFarmStreaming}`,
               },
             }
           }
@@ -92,7 +92,10 @@ export const updateTransportLabels = async (
 
   try {
     const response = await fetch(
-      `${getApiUrlForPattern(pattern)}/transport/config`,
+      joinBaseUrl(
+        getApiUrlForPattern(pattern),
+        LUNGO_FRONTEND_URLS.apiPaths.transportConfig,
+      ),
     )
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`)
@@ -101,8 +104,8 @@ export const updateTransportLabels = async (
     const transport = data.transport
 
     const transportUrls = isStreaming
-      ? urlsConfig.github.transports.streaming
-      : urlsConfig.github.transports.regular
+      ? LUNGO_FRONTEND_URLS.github.transports.streaming
+      : LUNGO_FRONTEND_URLS.github.transports.regular
 
     setNodes((nodes: Node[]) =>
       nodes.map((node: Node) =>
@@ -114,10 +117,10 @@ export const updateTransportLabels = async (
                 label: `Transport: ${transport}`,
                 githubLink:
                   transport === "SLIM"
-                    ? `${urlsConfig.github.appSdkBaseUrl}${transportUrls.slim}`
+                    ? `${LUNGO_FRONTEND_URLS.github.appSdkBaseUrl}${transportUrls.slim}`
                     : transport === "NATS"
-                      ? `${urlsConfig.github.appSdkBaseUrl}${transportUrls.nats}`
-                      : `${urlsConfig.github.appSdkBaseUrl}${urlsConfig.github.transports.general}`,
+                      ? `${LUNGO_FRONTEND_URLS.github.appSdkBaseUrl}${transportUrls.nats}`
+                      : `${LUNGO_FRONTEND_URLS.github.appSdkBaseUrl}${LUNGO_FRONTEND_URLS.github.transports.general}`,
               },
             }
           : node,
@@ -136,6 +139,6 @@ export const updateTransportLabels = async (
       }),
     )
   } catch (error) {
-    logger.apiError("/transport/config", error)
+    logger.apiError(LUNGO_FRONTEND_URLS.apiPaths.transportConfig, error)
   }
 }

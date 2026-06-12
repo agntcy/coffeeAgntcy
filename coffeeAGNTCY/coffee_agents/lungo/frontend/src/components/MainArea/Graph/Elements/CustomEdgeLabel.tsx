@@ -5,7 +5,7 @@
 
 import React from "react"
 import { EdgeLabelRenderer } from "@xyflow/react"
-import { cn } from "@/utils/cn.ts"
+import { Box } from "@open-ui-kit/core"
 
 interface CustomEdgeLabelProps {
   x: number
@@ -28,37 +28,37 @@ const CustomEdgeLabel: React.FC<CustomEdgeLabelProps> = ({
 
   return (
     <EdgeLabelRenderer>
-      <div
-        className={cn(
-          "pointer-events-none absolute -translate-x-1/2 -translate-y-1/2",
-          "h-5 rounded-lg px-[5px] py-[2px] font-inter text-xs font-normal leading-4",
-          "flex items-center justify-center border-none opacity-100 shadow-none",
-
-          isLongLabel
-            ? "w-auto min-w-[80px] max-w-[120px] gap-[6px]"
-            : "w-[34px] gap-1",
-          active
-            ? "bg-edge-label-background-active text-edge-label-text-active"
-            : "bg-edge-label-background text-edge-label-text",
-        )}
-        style={{
-          left: `${x}px`,
-          top: `${y}px`,
-          zIndex: 9999,
+      <Box
+        sx={{
+          pointerEvents: "none",
           position: "absolute",
+          left: x,
+          top: y,
+          zIndex: 9999,
+          transform: "translate(-50%, -50%)",
+          height: 20,
+          px: 0.75,
+          py: 0.25,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          gap: isLongLabel ? 0.75 : 0.5,
+          minWidth: isLongLabel ? 80 : 34,
+          maxWidth: isLongLabel ? 120 : 34,
+          borderRadius: (theme) => theme.shape.borderRadius,
+          typography: "caption",
+          fontWeight: 400,
+          lineHeight: "16px",
+          bgcolor: active ? "primary.main" : "background.paper",
+          color: active ? "primary.contrastText" : "text.primary",
+          boxShadow: 0,
+          whiteSpace: "nowrap",
+          overflow: "hidden",
+          textOverflow: "ellipsis",
         }}
       >
-        {label && (
-          <div
-            className={cn(
-              "flex flex-shrink-0 items-center justify-center whitespace-nowrap",
-              "font-inter text-xs font-normal leading-4",
-            )}
-          >
-            {label}
-          </div>
-        )}
-      </div>
+        {label ?? ""}
+      </Box>
     </EdgeLabelRenderer>
   )
 }

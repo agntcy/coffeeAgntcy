@@ -4,25 +4,32 @@
  **/
 
 import React from "react"
-import { User } from "lucide-react"
+import Person from "@mui/icons-material/Person"
+import { useTheme } from "@open-ui-kit/core"
+
+import { iconGlyphFillSx } from "@/utils/iconGlyphFill"
+
+import { ChatAvatarCircle } from "./ChatAvatarCircle"
+import Message from "./Message"
 
 interface UserMessageProps {
   content: string
 }
 
 const UserMessage: React.FC<UserMessageProps> = ({ content }) => {
-  return (
-    <div className="flex w-full flex-row items-start gap-1">
-      <div className="chat-avatar-container flex h-10 w-10 flex-none items-center justify-center rounded-full bg-action-background">
-        <User size={22} className="text-white" />
-      </div>
+  const theme = useTheme()
+  const avatarIconColor = theme.palette.grey[50]
 
-      <div className="flex flex-1 flex-col items-start justify-center rounded p-1 px-2">
-        <div className="whitespace-pre-wrap break-words font-inter text-sm font-normal leading-5 !text-chat-text">
-          {content}
-        </div>
-      </div>
-    </div>
+  return (
+    <Message
+      icon={
+        <ChatAvatarCircle>
+          <Person sx={iconGlyphFillSx(avatarIconColor, { important: true })} />
+        </ChatAvatarCircle>
+      }
+    >
+      {content}
+    </Message>
   )
 }
 

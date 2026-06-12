@@ -3,7 +3,13 @@
  * SPDX-License-Identifier: Apache-2.0
  **/
 
-import { env } from "@/utils/env"
+import {
+  getDiscoveryAppApiUrl,
+  getExchangeAppApiUrl,
+  getLogisticsAppApiUrl,
+  joinBaseUrl,
+  LUNGO_FRONTEND_URLS,
+} from "@/urls"
 
 export const PATTERNS = {
   SLIM_A2A: "slim_a2a",
@@ -24,26 +30,16 @@ export const shouldEnableRetries = (pattern?: string): boolean => {
 }
 
 export const getApiUrlForPattern = (pattern?: string): string => {
-  const DEFAULT_PUB_SUB_API_URL = "http://127.0.0.1:8000"
-  const DEFAULT_GROUP_COMM_APP_API_URL = "http://127.0.0.1:9090"
-  const DEFAULT_DISCOVERY_APP_API_URL = "http://127.0.0.1:8882"
-
-  const PUB_SUB_APP_API_URL =
-    env.get("VITE_EXCHANGE_APP_API_URL") || DEFAULT_PUB_SUB_API_URL
-  const GROUP_COMM_APP_API_URL =
-    env.get("VITE_LOGISTICS_APP_API_URL") || DEFAULT_GROUP_COMM_APP_API_URL
-  const DISCOVERY_APP_API_URL =
-    env.get("VITE_DISCOVERY_APP_API_URL") || DEFAULT_DISCOVERY_APP_API_URL
-
   if (isGroupCommunication(pattern)) {
-    return GROUP_COMM_APP_API_URL
-  } else if (pattern === PATTERNS.PUBLISH_SUBSCRIBE_STREAMING) {
-    return PUB_SUB_APP_API_URL
-  } else if (pattern === PATTERNS.A2A_HTTP) {
-    return DISCOVERY_APP_API_URL
-  } else {
-    return PUB_SUB_APP_API_URL
+    return getLogisticsAppApiUrl()
   }
+  if (pattern === PATTERNS.PUBLISH_SUBSCRIBE_STREAMING) {
+    return getExchangeAppApiUrl()
+  }
+  if (pattern === PATTERNS.A2A_HTTP) {
+    return getDiscoveryAppApiUrl()
+  }
+  return getExchangeAppApiUrl()
 }
 
 export const supportsSSE = (pattern?: string): boolean => {
@@ -51,11 +47,14 @@ export const supportsSSE = (pattern?: string): boolean => {
 }
 
 export const getStreamingEndpointForPattern = (pattern?: string): string => {
-  if (pattern === PATTERNS.PUBLISH_SUBSCRIBE_STREAMING) {
-    return `${getApiUrlForPattern(pattern)}/agent/prompt/stream`
-  }
-  if (pattern === PATTERNS.A2A_HTTP) {
-    return `${getApiUrlForPattern(pattern)}/agent/prompt/stream`
+  if (
+    pattern === PATTERNS.PUBLISH_SUBSCRIBE_STREAMING ||
+    pattern === PATTERNS.A2A_HTTP
+  ) {
+    return joinBaseUrl(
+      getApiUrlForPattern(pattern),
+      LUNGO_FRONTEND_URLS.apiPaths.agentPromptStream,
+    )
   }
   throw new Error(`Pattern ${pattern} does not support streaming`)
 }

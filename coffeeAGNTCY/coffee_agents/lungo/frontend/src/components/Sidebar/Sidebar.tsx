@@ -3,70 +3,41 @@
  * SPDX-License-Identifier: Apache-2.0
  **/
 
-import React, { useCallback, useEffect, useMemo, useState } from "react"
-import { Spinner } from "@open-ui-kit/core"
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import ErrorOutline from "@mui/icons-material/ErrorOutline"
+import { Box, List, Spinner, Stack, Typography } from "@open-ui-kit/core"
 import type { WorkflowSummary } from "@/utils/agenticWorkflowsApi"
+import { getAppShellBackgroundColor } from "../MainArea/mainAreaBackground"
+import CatalogTree from "./CatalogTree"
 import {
   buildCatalogSidebarLayout,
-  type PatternNode,
-} from "@/utils/sidebarHierarchy"
-import CatalogTree from "./CatalogTree"
-import SidebarItem from "./sidebarItem"
-import { makePatternKey, makeScenarioKey, makeWorkflowKey } from "./sidebarKeys"
+  buildInitialExpanded,
+} from "./sidebar.utils"
 
 interface SidebarProps {
   selectedWorkflowSummary: WorkflowSummary | null
   summaries: WorkflowSummary[] | null
+  isLoading: boolean
   error: string | null
   onSelectWorkflow: (summary: WorkflowSummary) => void
-}
-
-const buildInitialExpanded = (
-  implementedPatterns: PatternNode[],
-): Set<string> => {
-  const next = new Set<string>()
-  for (const pattern of implementedPatterns) {
-    next.add(makePatternKey(pattern.name))
-    for (const ucs of pattern.useCaseScenarios) {
-      next.add(makeScenarioKey(pattern.name, ucs.useCase, ucs.scenario))
-      for (const workflow of ucs.workflows) {
-        if (workflow.display === "slim_transport") {
-          next.add(
-            makeWorkflowKey(
-              pattern.name,
-              ucs.useCase,
-              ucs.scenario,
-              workflow.summary.name,
-            ),
-          )
-        }
-      }
-    }
-  }
-  return next
 }
 
 const Sidebar: React.FC<SidebarProps> = ({
   selectedWorkflowSummary,
   summaries,
+  isLoading,
   error,
   onSelectWorkflow,
 }) => {
-  const [expanded, setExpanded] = useState<Set<string>>(new Set())
+  const [expandedKeys, setExpandedKeys] = useState<Set<string>>(new Set())
 
   const layout = useMemo(
     () => buildCatalogSidebarLayout(summaries ?? []),
     [summaries],
   )
 
-  useEffect(() => {
-    if (summaries === null) return
-    setExpanded(buildInitialExpanded(layout.implementedPatterns))
-  }, [layout.implementedPatterns, summaries])
-
-  const toggle = useCallback((key: string) => {
-    setExpanded((prev) => {
+  const toggleExpandableDropdown = useCallback((key: string) => {
+    setExpandedKeys((prev) => {
       const next = new Set(prev)
       if (next.has(key)) {
         next.delete(key)
@@ -77,52 +48,105 @@ const Sidebar: React.FC<SidebarProps> = ({
     })
   }, [])
 
+  const catalogSummariesRef = useRef<WorkflowSummary[] | null>(null)
+
+  useEffect(() => {
+    if (summaries === null) return
+    if (catalogSummariesRef.current === summaries) return
+    catalogSummariesRef.current = summaries
+    setExpandedKeys(buildInitialExpanded(layout.implementedPatterns))
+  }, [layout.implementedPatterns, summaries])
+
   return (
-    <div className="flex h-full min-h-0 w-64 flex-none flex-col border-r border-sidebar-border bg-sidebar-background font-inter lg:w-[320px]">
-      <div className="flex min-h-0 flex-1 flex-col gap-2 p-4">
-        <div className="flex min-h-[36px] w-full flex-none items-center gap-2 rounded py-2 pl-2 pr-5">
-          <span className="flex-1 font-inter text-base font-semibold leading-6 tracking-[0.15px] text-sidebar-text">
-            Agentic Patterns
-          </span>
-        </div>
+    <Box
+      component="aside"
+      aria-label="Workflow catalog"
+      data-testid="sidebar"
+      sx={{
+        display: "flex",
+        flexDirection: "column",
+        boxSizing: "border-box",
+        width: "100%",
+        height: "100%",
+        minWidth: 0,
+        minHeight: 0,
+        overflowX: "hidden",
+        whiteSpace: "nowrap",
+        backgroundColor: (theme) => getAppShellBackgroundColor(theme),
+        p: 3,
+        pr: 0,
+      }}
+    >
+      <List
+        sx={{
+          display: "flex",
+          flexDirection: "column",
+          gap: 3,
+          alignItems: "baseline",
+          overflowY: "auto",
+          p: 0,
+          pr: 3,
+          width: "100%",
+          minHeight: 0,
+          flex: 1,
+        }}
+      >
+        <Box
+          component="nav"
+          aria-label="Agentic patterns catalog"
+          sx={{
+            width: "100%",
+            minWidth: 0,
+            alignSelf: "stretch",
+            flex: 1,
+            minHeight: 0,
+            overflow: "auto",
+          }}
+        >
+          <Stack direction="column" sx={{ width: "100%" }}>
+            <Typography variant="h6">Agentic Patterns</Typography>
+            {isLoading ? (
+              <Stack
+                direction="row"
+                alignItems="center"
+                spacing={1.5}
+                role="status"
+                aria-label="Loading workflows"
+                sx={{ px: 2.5, py: 1 }}
+              >
+                <Spinner size={16} thickness={4} />
+                <Typography variant="body2" sx={{ opacity: 0.6 }}>
+                  Loading workflows...
+                </Typography>
+              </Stack>
+            ) : null}
 
-        {summaries === null && error === null && (
-          <div
-            className="flex w-full flex-none items-center gap-3 px-5 py-2"
-            role="status"
-            aria-label="Loading workflows"
-          >
-            <Spinner size={16} thickness={4} />
-            <SidebarItem
-              title="Loading workflows..."
-              className="flex-1 px-0 py-0 opacity-60 hover:bg-transparent"
-            />
-          </div>
-        )}
+            {!isLoading && error !== null ? (
+              <Stack
+                direction="row"
+                alignItems="center"
+                spacing={1}
+                role="alert"
+                sx={{ px: 2.5, py: 1, opacity: 0.8 }}
+              >
+                <ErrorOutline />
+                <Typography variant="caption">Menu is unavailable</Typography>
+              </Stack>
+            ) : null}
 
-        {error !== null && (
-          <div
-            className="flex w-full flex-none items-center gap-2 px-5 py-2 text-xs leading-4 text-sidebar-text opacity-80"
-            role="alert"
-          >
-            <ErrorOutline sx={{ fontSize: 16 }} />
-            <span>Menu is unavailable</span>
-          </div>
-        )}
-
-        {summaries !== null && error === null && (
-          <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden pr-1">
-            <CatalogTree
-              layout={layout}
-              expanded={expanded}
-              onToggle={toggle}
-              selectedWorkflowSummary={selectedWorkflowSummary}
-              onSelectWorkflow={onSelectWorkflow}
-            />
-          </div>
-        )}
-      </div>
-    </div>
+            {!isLoading && error === null ? (
+              <CatalogTree
+                layout={layout}
+                expandedKeys={expandedKeys}
+                toggleExpandableDropdown={toggleExpandableDropdown}
+                selectedWorkflowSummary={selectedWorkflowSummary}
+                onSelectWorkflow={onSelectWorkflow}
+              />
+            ) : null}
+          </Stack>
+        </Box>
+      </List>
+    </Box>
   )
 }
 

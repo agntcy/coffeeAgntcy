@@ -4,179 +4,188 @@
  **/
 
 import React, { useCallback } from "react"
+import { Box, List, Typography } from "@open-ui-kit/core"
 import {
   mapWorkflowNameToSlug,
   type WorkflowSummary,
 } from "@/utils/agenticWorkflowsApi"
-import {
-  A2A_SLIM_MENU_LABEL,
-  isPlaceholderWorkflow,
-  type CatalogSidebarLayout,
-  type UseCaseScenarioNode,
-  type WorkflowNode,
-} from "@/utils/sidebarHierarchy"
 import { openWorkflowDocumentationInNewTab } from "@/utils/workflowDocumentationGithub"
-import { cn } from "@/utils/cn"
-import SidebarItem from "./sidebarItem"
 import SidebarDropdown from "./SidebarDropdown"
-import UseCaseDropdown from "./UseCaseDropdown"
-import WorkflowDropdown from "./WorkflowDropdown"
+import SidebarItem from "./SidebarItem"
 import {
   makePatternKey,
   makeScenarioKey,
   makeWorkflowKey,
+  patternContainsSelectedWorkflow,
+  scenarioContainsSelectedWorkflow,
+  A2A_SLIM_MENU_LABEL,
   REFERENCE_LIBRARY_KEY,
-} from "./sidebarKeys"
+  type CatalogSidebarLayout,
+  type PatternNode,
+  type UseCaseScenarioNode,
+  type WorkflowNode,
+} from "./sidebar.utils"
 
 interface CatalogTreeProps {
   layout: CatalogSidebarLayout
-  expanded: Set<string>
-  onToggle: (key: string) => void
+  expandedKeys: Set<string>
+  toggleExpandableDropdown: (key: string) => void
   selectedWorkflowSummary: WorkflowSummary | null
   onSelectWorkflow: (summary: WorkflowSummary) => void
 }
 
 const CatalogTree: React.FC<CatalogTreeProps> = ({
   layout,
-  expanded,
-  onToggle,
+  expandedKeys,
+  toggleExpandableDropdown,
   selectedWorkflowSummary,
   onSelectWorkflow,
 }) => {
   const { implementedPatterns, referencePatternNames } = layout
 
+  const selectedWorkflowName = selectedWorkflowSummary?.name ?? null
+
   const openDoc = useCallback((catalogName: string) => {
     openWorkflowDocumentationInNewTab(catalogName)
   }, [])
 
-  const renderWorkflow = (
-    patternName: string,
-    ucs: UseCaseScenarioNode,
-    workflow: WorkflowNode,
-  ): React.ReactNode => {
-    const { summary, display } = workflow
-    const isUnmapped = mapWorkflowNameToSlug(summary.name) === null
-    const isSelected = selectedWorkflowSummary?.name === summary.name
-    const showWorkflowDoc = !isPlaceholderWorkflow(summary)
+  const renderWorkflow = useCallback(
+    (
+      patternName: string,
+      ucs: UseCaseScenarioNode,
+      workflow: WorkflowNode,
+    ): React.ReactNode => {
+      const { summary, display } = workflow
+      const isUnmapped = mapWorkflowNameToSlug(summary.name) === null
+      const isSelected = selectedWorkflowSummary?.name === summary.name
 
-    if (display === "slim_transport") {
-      const workflowKey = makeWorkflowKey(
-        patternName,
-        ucs.useCase,
-        ucs.scenario,
-        summary.name,
-      )
+      if (display === "slim_transport") {
+        const workflowKey = makeWorkflowKey(
+          patternName,
+          ucs.useCase,
+          ucs.scenario,
+          summary.name,
+        )
+
+        return (
+          <SidebarDropdown
+            key={summary.name}
+            title={summary.name}
+            isExpanded={expandedKeys.has(workflowKey)}
+            onToggle={() => toggleExpandableDropdown(workflowKey)}
+            containsSelectedWorkflow={isSelected}
+          >
+            <SidebarItem
+              title={A2A_SLIM_MENU_LABEL}
+              isSelected={isSelected}
+              onClick={isUnmapped ? undefined : () => onSelectWorkflow(summary)}
+            />
+          </SidebarDropdown>
+        )
+      }
+
       return (
-        <WorkflowDropdown
+        <SidebarItem
           key={summary.name}
           title={summary.name}
-          isExpanded={expanded.has(workflowKey)}
-          onToggle={() => onToggle(workflowKey)}
-          isChildSelected={isSelected}
-        >
-          <SidebarItem
-            title={A2A_SLIM_MENU_LABEL}
-            isSelected={isSelected}
-            onClick={isUnmapped ? undefined : () => onSelectWorkflow(summary)}
-            documentationCatalogName={
-              showWorkflowDoc ? summary.name : undefined
-            }
-            onOpenDocumentation={showWorkflowDoc ? openDoc : undefined}
-            className={cn(
-              "pl-14",
-              isUnmapped && "pointer-events-none cursor-not-allowed opacity-50",
-            )}
-          />
-        </WorkflowDropdown>
+          isSelected={isSelected}
+          onClick={isUnmapped ? undefined : () => onSelectWorkflow(summary)}
+        />
       )
-    }
+    },
+    [
+      expandedKeys,
+      onSelectWorkflow,
+      selectedWorkflowSummary,
+      toggleExpandableDropdown,
+    ],
+  )
+
+  const renderPattern = (pattern: PatternNode): React.ReactNode => {
+    const patternKey = makePatternKey(pattern.name)
 
     return (
-      <SidebarItem
-        key={summary.name}
-        title={summary.name}
-        isSelected={isSelected}
-        onClick={isUnmapped ? undefined : () => onSelectWorkflow(summary)}
-        documentationCatalogName={showWorkflowDoc ? summary.name : undefined}
-        onOpenDocumentation={showWorkflowDoc ? openDoc : undefined}
-        className={cn(
-          "pl-10",
-          isUnmapped && "pointer-events-none cursor-not-allowed opacity-50",
+      <SidebarDropdown
+        key={patternKey}
+        title={pattern.name}
+        isExpanded={expandedKeys.has(patternKey)}
+        onToggle={() => toggleExpandableDropdown(patternKey)}
+        containsSelectedWorkflow={patternContainsSelectedWorkflow(
+          pattern,
+          selectedWorkflowName,
         )}
-      />
+      >
+        {pattern.useCaseScenarios.map((scenario: UseCaseScenarioNode) => {
+          const scenarioKey = makeScenarioKey(
+            pattern.name,
+            scenario.useCase,
+            scenario.scenario,
+          )
+          return (
+            <SidebarDropdown
+              key={scenarioKey}
+              title={scenario.label}
+              isExpanded={expandedKeys.has(scenarioKey)}
+              onToggle={() => toggleExpandableDropdown(scenarioKey)}
+              containsSelectedWorkflow={scenarioContainsSelectedWorkflow(
+                scenario,
+                selectedWorkflowName,
+              )}
+            >
+              {scenario.workflows.map((wf: WorkflowNode) =>
+                renderWorkflow(pattern.name, scenario, wf),
+              )}
+            </SidebarDropdown>
+          )
+        })}
+      </SidebarDropdown>
     )
   }
 
   if (implementedPatterns.length === 0 && referencePatternNames.length === 0) {
-    return <SidebarItem title="No workflows available" className="opacity-60" />
+    return (
+      <Typography variant="body2" sx={{ px: 2.5, py: 1, opacity: 0.6 }}>
+        No workflows available
+      </Typography>
+    )
   }
 
   const showSeparator =
     implementedPatterns.length > 0 && referencePatternNames.length > 0
 
   return (
-    <>
-      {implementedPatterns.map((pattern) => {
-        const pKey = makePatternKey(pattern.name)
-        return (
-          <SidebarDropdown
-            key={pKey}
-            title={pattern.name}
-            isExpanded={expanded.has(pKey)}
-            onToggle={() => onToggle(pKey)}
-            titleClassName="pl-2"
-          >
-            {pattern.useCaseScenarios.map((ucs) => {
-              const ucsKey = makeScenarioKey(
-                pattern.name,
-                ucs.useCase,
-                ucs.scenario,
-              )
-              return (
-                <UseCaseDropdown
-                  key={ucsKey}
-                  title={ucs.label}
-                  isExpanded={expanded.has(ucsKey)}
-                  onToggle={() => onToggle(ucsKey)}
-                >
-                  {ucs.workflows.map((workflow) =>
-                    renderWorkflow(pattern.name, ucs, workflow),
-                  )}
-                </UseCaseDropdown>
-              )
-            })}
-          </SidebarDropdown>
-        )
-      })}
+    <List component="div" disablePadding sx={{ width: "100%" }}>
+      {implementedPatterns.map(renderPattern)}
 
-      {showSeparator && (
-        <div
-          className="my-2 border-t border-sidebar-border px-2"
+      {showSeparator ? (
+        <Box
           role="separator"
-          aria-hidden="true"
+          aria-hidden
+          sx={{
+            width: "100%",
+            my: 1,
+            borderTop: 1,
+            borderColor: "divider",
+          }}
         />
-      )}
+      ) : null}
 
-      {referencePatternNames.length > 0 && (
+      {referencePatternNames.length > 0 ? (
         <SidebarDropdown
           title="Reference Library"
-          isExpanded={expanded.has(REFERENCE_LIBRARY_KEY)}
-          onToggle={() => onToggle(REFERENCE_LIBRARY_KEY)}
-          titleClassName="pl-2"
+          isExpanded={expandedKeys.has(REFERENCE_LIBRARY_KEY)}
+          onToggle={() => toggleExpandableDropdown(REFERENCE_LIBRARY_KEY)}
         >
           {referencePatternNames.map((patternName) => (
-            <button
+            <SidebarItem
               key={patternName}
-              type="button"
-              className="flex w-full items-start gap-2 bg-sidebar-background py-2 pl-8 pr-5 text-left font-inter text-sm font-normal leading-5 tracking-[0.25px] text-sidebar-text transition-colors hover:bg-sidebar-item-selected"
+              title={patternName}
               onClick={() => openDoc(patternName)}
-            >
-              <span className="flex-1">{patternName}</span>
-            </button>
+            />
           ))}
         </SidebarDropdown>
-      )}
-    </>
+      ) : null}
+    </List>
   )
 }
 

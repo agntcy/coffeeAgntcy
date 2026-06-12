@@ -4,46 +4,119 @@
  **/
 
 import React from "react"
-import { ChevronUp } from "lucide-react"
-import { cn } from "@/utils/cn"
+import {
+  Box,
+  List,
+  ListItem,
+  ListItemButton,
+  Typography,
+} from "@open-ui-kit/core"
+import ExpandLess from "@mui/icons-material/ExpandLess"
+import {
+  sidebarBorderRadius,
+  sidebarDropdownPanelPaddingLeft,
+  sidebarItemMarginTop,
+  sidebarListItemButtonSx,
+  sidebarListItemSx,
+  sidebarRowButtonStateSx,
+} from "./sidebarSx"
 
 interface SidebarDropdownProps {
   title: string
   isExpanded: boolean
   onToggle: () => void
+  /** Highlight toggle when a descendant workflow row is selected. */
+  containsSelectedWorkflow?: boolean
   children: React.ReactNode
-  isNested?: boolean
-  titleClassName?: string
 }
 
 const SidebarDropdown: React.FC<SidebarDropdownProps> = ({
   title,
   isExpanded,
   onToggle,
+  containsSelectedWorkflow = false,
   children,
-  titleClassName,
 }) => {
-  return (
-    <div className="flex w-full flex-col items-start p-0">
-      <div
-        className={cn(
-          "flex w-full items-start gap-2 bg-sidebar-background py-2 pl-8 pr-5 transition-colors hover:bg-sidebar-item-selected",
-          titleClassName,
-        )}
-        onClick={onToggle}
-      >
-        <span className="flex-1 font-inter text-sm font-normal leading-5 tracking-[0.25px] text-sidebar-text">
-          {title}
-        </span>
-        <ChevronUp
-          className={`h-5 w-5 flex-none text-sidebar-text transition-transform ${
-            isExpanded ? "rotate-0" : "rotate-180"
-          }`}
-        />
-      </div>
+  const toggleId = React.useId()
+  const titleId = React.useId()
+  const panelId = React.useId()
+  const toggleLabel = `${isExpanded ? "Collapse" : "Expand"} ${title}`
 
-      {isExpanded && <div className="flex w-full flex-col">{children}</div>}
-    </div>
+  const handleToggle = (event: React.MouseEvent<HTMLButtonElement>) => {
+    event.stopPropagation()
+    onToggle()
+  }
+
+  return (
+    <ListItem
+      component="div"
+      disablePadding
+      sx={() => ({
+        width: "100%",
+        flexDirection: "column",
+        alignItems: "stretch",
+        mt: sidebarItemMarginTop,
+        ...sidebarListItemSx(),
+      })}
+    >
+      <ListItemButton
+        component="button"
+        type="button"
+        id={toggleId}
+        onClick={handleToggle}
+        aria-expanded={isExpanded}
+        aria-controls={panelId}
+        aria-label={toggleLabel}
+        selected={containsSelectedWorkflow}
+        sx={(theme) => ({
+          ...sidebarListItemButtonSx,
+          ...sidebarRowButtonStateSx(theme),
+          width: "100%",
+          minWidth: 0,
+          justifyContent: "space-between",
+          borderRadius: sidebarBorderRadius,
+          textWrap: "auto",
+        })}
+      >
+        <Typography id={titleId} component="span" variant="body1">
+          {title}
+        </Typography>
+        <Box
+          component="span"
+          aria-hidden
+          sx={{
+            flex: "none",
+            display: "inline-flex",
+            alignItems: "center",
+            justifyContent: "center",
+            p: 0.25,
+          }}
+        >
+          <ExpandLess
+            sx={{
+              transition: "transform 150ms ease",
+              transform: isExpanded ? "rotate(0deg)" : "rotate(180deg)",
+            }}
+          />
+        </Box>
+      </ListItemButton>
+
+      {isExpanded ? (
+        <List
+          component="div"
+          disablePadding
+          id={panelId}
+          role="region"
+          aria-labelledby={titleId}
+          sx={(theme) => ({
+            width: "100%",
+            pl: sidebarDropdownPanelPaddingLeft(theme),
+          })}
+        >
+          {children}
+        </List>
+      ) : null}
+    </ListItem>
   )
 }
 

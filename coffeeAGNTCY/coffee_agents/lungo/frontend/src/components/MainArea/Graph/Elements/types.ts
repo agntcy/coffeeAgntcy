@@ -5,10 +5,7 @@ export interface ExtraHandle {
 }
 
 export interface CustomNodeData {
-  onOpenOasfModal?: (
-    nodeData: CustomNodeData,
-    position: { x: number; y: number },
-  ) => void
+  onOpenOasfModal?: (nodeData: CustomNodeData) => void
   icon: React.ReactNode
   label1: string
   label2: string
@@ -29,15 +26,14 @@ export interface CustomNodeData {
   slug?: string
   farmName?: string
   isModalOpen?: boolean
+  /** True when this node's identity dropdown is open. */
+  isIdentityDropdownOpen?: boolean
   hasBadgeDetails?: boolean
   hasPolicyDetails?: boolean
-  onOpenIdentityModal?: (
-    nodeData: CustomNodeData,
-    position: { x: number; y: number },
-    nodeName?: string,
-    data?: CustomNodeData,
-    isMcpServer?: boolean,
-  ) => void
+  onOpenIdentityModal?: (nodeId: string, nodeData: CustomNodeData) => void
+  onCloseIdentityDropdown?: () => void
+  onShowBadgeDetails?: () => void
+  onShowPolicyDetails?: () => void
 }
 
 export interface TransportNodeData {
