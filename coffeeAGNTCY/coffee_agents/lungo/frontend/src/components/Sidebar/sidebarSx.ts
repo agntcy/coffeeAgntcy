@@ -87,8 +87,7 @@ export const sidebarItemButtonSx = (theme: Theme) => ({
  * ListItem wrappers stay transparent; hover, focus, and selected styles belong on
  * the inner ListItemButton.
  */
-export const sidebarListItemSx = (theme: Theme) => ({
-  paddingRight: theme.spacing(0.625),
+export const sidebarListItemSx = () => ({
   backgroundColor: "transparent",
   "&:hover": {
     backgroundColor: "transparent",

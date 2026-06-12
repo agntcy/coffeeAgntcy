@@ -5,15 +5,7 @@
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import ErrorOutline from "@mui/icons-material/ErrorOutline"
-import {
-  Box,
-  Drawer,
-  List,
-  Spinner,
-  Stack,
-  Typography,
-} from "@open-ui-kit/core"
-import { styled } from "@mui/material/styles"
+import { Box, List, Spinner, Stack, Typography } from "@open-ui-kit/core"
 import type { WorkflowSummary } from "@/utils/agenticWorkflowsApi"
 import { getAppShellBackgroundColor } from "../MainArea/mainAreaBackground"
 import CatalogTree from "./CatalogTree"
@@ -21,21 +13,6 @@ import {
   buildCatalogSidebarLayout,
   buildInitialExpanded,
 } from "./sidebar.utils"
-
-const SIDEBAR_DRAWER_WIDTH = "16.5rem"
-
-const StyledDrawer = styled(Drawer)(({ theme }) => ({
-  width: SIDEBAR_DRAWER_WIDTH,
-  flexShrink: 0,
-  whiteSpace: "nowrap",
-  boxSizing: "border-box",
-  "& .MuiDrawer-paper": {
-    width: SIDEBAR_DRAWER_WIDTH,
-    overflowX: "hidden",
-    backgroundColor: getAppShellBackgroundColor(theme),
-    borderRadius: 0,
-  },
-}))
 
 interface SidebarProps {
   selectedWorkflowSummary: WorkflowSummary | null
@@ -81,23 +58,23 @@ const Sidebar: React.FC<SidebarProps> = ({
   }, [layout.implementedPatterns, summaries])
 
   return (
-    <StyledDrawer
+    <Box
       component="aside"
       aria-label="Workflow catalog"
-      variant="permanent"
       data-testid="sidebar"
-      open
-      slotProps={{
-        paper: {
-          sx: {
-            position: "relative",
-            display: "flex",
-            flexDirection: "column",
-            height: "100%",
-            p: 3,
-            pr: 0,
-          },
-        },
+      sx={{
+        display: "flex",
+        flexDirection: "column",
+        boxSizing: "border-box",
+        width: "100%",
+        height: "100%",
+        minWidth: 0,
+        minHeight: 0,
+        overflowX: "hidden",
+        whiteSpace: "nowrap",
+        backgroundColor: (theme) => getAppShellBackgroundColor(theme),
+        p: 3,
+        pr: 0,
       }}
     >
       <List
@@ -169,7 +146,7 @@ const Sidebar: React.FC<SidebarProps> = ({
           </Stack>
         </Box>
       </List>
-    </StyledDrawer>
+    </Box>
   )
 }
 

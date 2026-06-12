@@ -31,10 +31,10 @@ const SidebarItem: React.FC<SidebarItemProps> = ({
     <ListItem
       component="div"
       disablePadding
-      sx={(theme) => ({
+      sx={() => ({
         width: "100%",
         mt: sidebarItemMarginTop,
-        ...sidebarListItemSx(theme),
+        ...sidebarListItemSx(),
       })}
     >
       <ListItemButton

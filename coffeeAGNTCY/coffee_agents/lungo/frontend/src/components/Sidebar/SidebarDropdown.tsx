@@ -51,12 +51,12 @@ const SidebarDropdown: React.FC<SidebarDropdownProps> = ({
     <ListItem
       component="div"
       disablePadding
-      sx={(theme) => ({
+      sx={() => ({
         width: "100%",
         flexDirection: "column",
         alignItems: "stretch",
         mt: sidebarItemMarginTop,
-        ...sidebarListItemSx(theme),
+        ...sidebarListItemSx(),
       })}
     >
       <ListItemButton
