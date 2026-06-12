@@ -71,8 +71,3 @@ export function assetPngIconChipSx(...extra: SxProps<Theme>[]): SxProps<Theme> {
     ...extra,
   ] as SxProps<Theme>
 }
-
-/** @deprecated Use {@link assetPngIconChipSx} or {@link assetPngIconBareSx}. */
-export function assetPngIconSx(...extra: SxProps<Theme>[]): SxProps<Theme> {
-  return assetPngIconChipSx(...extra)
-}

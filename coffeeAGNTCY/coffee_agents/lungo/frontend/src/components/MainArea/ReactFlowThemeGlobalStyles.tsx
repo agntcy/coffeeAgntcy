@@ -34,13 +34,6 @@ function reactFlowGlobalStyles(theme: Theme) {
       justifyContent: "center !important",
       margin: 0,
       padding: 0,
-      //background: `${theme.palette.background.paper} !important`,
-      //border: `1px solid ${theme.palette.divider} !important`,
-      /*borderRadius:
-        typeof theme.shape.borderRadius === "number"
-          ? `${theme.shape.borderRadius}px`
-          : `${theme.shape.borderRadius}`,
-          */
       boxShadow: "none !important",
     },
   }

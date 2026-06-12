@@ -67,7 +67,9 @@ function canvasIconFilterSx(filter: string): SystemStyleObject<Theme> {
 }
 
 /** Zoom/fit/lock controls and the documentation floating button. */
-export function graphCanvasIconButtonSx(theme: Theme): SystemStyleObject<Theme> {
+export function graphCanvasIconButtonSx(
+  theme: Theme,
+): SystemStyleObject<Theme> {
   const iconButtonSize = theme.spacing(3)
   const iconSize = getAssetPngIconSize(theme)
   const iconFilters = getCanvasIconFilters(theme)

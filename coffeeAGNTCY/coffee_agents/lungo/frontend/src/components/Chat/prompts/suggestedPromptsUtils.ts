@@ -111,9 +111,7 @@ export function computePromptsMenuMaxWidth(
     candidates.push(graphCanvasWidth)
   }
 
-  return candidates.length > 0
-    ? Math.floor(Math.min(...candidates))
-    : undefined
+  return candidates.length > 0 ? Math.floor(Math.min(...candidates)) : undefined
 }
 
 export function getPromptsMenuProps(menuMaxWidth?: number): Partial<MenuProps> {
