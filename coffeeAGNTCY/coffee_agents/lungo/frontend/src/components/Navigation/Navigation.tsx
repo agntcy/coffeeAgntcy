@@ -17,6 +17,10 @@ import HelpOutline from "@mui/icons-material/HelpOutline"
 import coffeeAgntcyLogo from "@/assets/coffeeAGNTCY_logo.svg"
 import ThemeToggleIcon from "../icons/ThemeToggleIcon"
 import InfoModal from "./InfoModal"
+import {
+  navigationHeaderIconButtonSx,
+  navigationHeaderSx,
+} from "./navigationHeaderSx"
 
 const Navigation: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false)
@@ -36,6 +40,7 @@ const Navigation: React.FC = () => {
     <>
       <Header
         position="static"
+        sx={navigationHeaderSx()}
         logo={
           <Box
             component="img"
@@ -51,12 +56,20 @@ const Navigation: React.FC = () => {
             }}
           >
             <Tooltip title={themeToggleLabel}>
-              <IconButton aria-label={themeToggleLabel} onClick={toggleTheme}>
+              <IconButton
+                aria-label={themeToggleLabel}
+                onClick={toggleTheme}
+                sx={navigationHeaderIconButtonSx()}
+              >
                 <ThemeToggleIcon />
               </IconButton>
             </Tooltip>
             <Tooltip title="Help">
-              <IconButton aria-label="Help" onClick={handleHelpClick}>
+              <IconButton
+                aria-label="Help"
+                onClick={handleHelpClick}
+                sx={navigationHeaderIconButtonSx()}
+              >
                 <HelpOutline />
               </IconButton>
             </Tooltip>

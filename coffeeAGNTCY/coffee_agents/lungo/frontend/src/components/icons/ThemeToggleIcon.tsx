@@ -11,7 +11,8 @@ import LightMode from "@mui/icons-material/LightMode"
 const ThemeToggleIcon: React.FC = () => {
   const { isDarkMode } = useThemeMode()
 
-  return isDarkMode ? <DarkMode /> : <LightMode />
+  // Moon when app is light (switch to dark); sun when app is dark (switch to light).
+  return isDarkMode ? <LightMode /> : <DarkMode />
 }
 
 export default ThemeToggleIcon
