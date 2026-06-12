@@ -14,6 +14,9 @@ import CustomEdge from "./Graph/Elements/CustomEdge"
 import BranchingEdge from "./Graph/Elements/BranchingEdge"
 import CustomNode from "./Graph/Elements/CustomNode"
 import CustomControls from "./Graph/Elements/CustomControls"
+import GraphDocumentationButton from "./Graph/Elements/GraphDocumentationButton"
+import { isPlaceholderWorkflow } from "@/components/Sidebar/sidebar.utils"
+import { getWorkflowDocumentationGithubUrl } from "@/urls"
 import ModalContainer from "./ModalContainer"
 import OasfRecordModal from "./Graph/Directory/OasfRecordModal"
 import {
@@ -21,7 +24,7 @@ import {
   GRAPH_MIN_ZOOM,
   GRAPH_VIEW_DEFAULT_VIEWPORT,
 } from "@/config/graphViewDefaults"
-import { getMainAreaBackgroundColor } from "./mainAreaBackground"
+import { getAppShellBackgroundColor } from "./mainAreaBackground"
 import { useMainArea, type MainAreaProps } from "./useMainArea"
 
 const proOptions = { hideAttribution: true }
@@ -37,6 +40,7 @@ const edgeTypes = {
 }
 
 const MainArea: React.FC<MainAreaProps> = (props) => {
+  const { selectedWorkflowSummary } = props
   const {
     nodes,
     edges,
@@ -56,6 +60,16 @@ const MainArea: React.FC<MainAreaProps> = (props) => {
     onNodeDrag,
   } = useMainArea(props)
 
+  const activeWorkflowSummary =
+    selectedWorkflowSummary && !isPlaceholderWorkflow(selectedWorkflowSummary)
+      ? selectedWorkflowSummary
+      : undefined
+
+  const documentationUrl = activeWorkflowSummary
+    ? getWorkflowDocumentationGithubUrl(activeWorkflowSummary.name)
+    : undefined
+  const documentationLabel = activeWorkflowSummary?.name
+
   return (
     <>
       <ReactFlowThemeGlobalStyles />
@@ -71,7 +85,7 @@ const MainArea: React.FC<MainAreaProps> = (props) => {
           alignItems: "flex-start",
           alignSelf: "stretch",
           p: 0,
-          bgcolor: (theme) => getMainAreaBackgroundColor(theme),
+          bgcolor: (theme) => getAppShellBackgroundColor(theme),
         }}
       >
         <ReactFlow
@@ -99,6 +113,10 @@ const MainArea: React.FC<MainAreaProps> = (props) => {
               setNodesDraggable(next)
               setNodesConnectable(next)
             }}
+          />
+          <GraphDocumentationButton
+            documentationUrl={documentationUrl}
+            documentationLabel={documentationLabel}
           />
         </ReactFlow>
 

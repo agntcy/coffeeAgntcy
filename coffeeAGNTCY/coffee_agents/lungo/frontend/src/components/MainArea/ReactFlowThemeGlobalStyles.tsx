@@ -10,10 +10,10 @@
 import GlobalStyles from "@mui/material/GlobalStyles"
 import type { Theme } from "@mui/material/styles"
 
-import { getMainAreaBackgroundColor } from "./mainAreaBackground"
+import { getAppShellBackgroundColor } from "./mainAreaBackground"
 
 function reactFlowGlobalStyles(theme: Theme) {
-  const mainAreaBackground = getMainAreaBackgroundColor(theme)
+  const mainAreaBackground = getAppShellBackgroundColor(theme)
 
   return {
     ".react-flow": {
@@ -34,12 +34,13 @@ function reactFlowGlobalStyles(theme: Theme) {
       justifyContent: "center !important",
       margin: 0,
       padding: 0,
-      background: `${theme.palette.background.paper} !important`,
-      border: `1px solid ${theme.palette.divider} !important`,
-      borderRadius:
+      //background: `${theme.palette.background.paper} !important`,
+      //border: `1px solid ${theme.palette.divider} !important`,
+      /*borderRadius:
         typeof theme.shape.borderRadius === "number"
           ? `${theme.shape.borderRadius}px`
           : `${theme.shape.borderRadius}`,
+          */
       boxShadow: "none !important",
     },
   }

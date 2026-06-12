@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  **/
 
-import React, { useCallback, useMemo } from "react"
+import React, { useCallback } from "react"
 import { Controls, useReactFlow } from "@xyflow/react"
 import { applyDefaultGraphView } from "@/hooks/applyDefaultGraphView"
 import FitScreen from "@mui/icons-material/FitScreen"
@@ -11,10 +11,8 @@ import Lock from "@mui/icons-material/Lock"
 import LockOpen from "@mui/icons-material/LockOpen"
 import ZoomIn from "@mui/icons-material/ZoomIn"
 import ZoomOut from "@mui/icons-material/ZoomOut"
-import { useTheme } from "@mui/material/styles"
 import { Box, IconButton, Stack, Tooltip } from "@open-ui-kit/core"
-import { iconGlyphFillStyle } from "@/utils/iconGlyphFill"
-import { getControlIconColor, graphNodeIconButtonSx } from "./graphNodeSurface"
+import { graphCanvasIconButtonSx } from "./graphCanvasIconButtonSx"
 
 interface CustomControlsProps {
   isInteractive?: boolean
@@ -42,7 +40,7 @@ const TooltipControlButton: React.FC<{
         disabled={disabled}
         onClick={onClick}
         aria-label={ariaLabel}
-        sx={(t) => graphNodeIconButtonSx(t)}
+        sx={(t) => graphCanvasIconButtonSx(t)}
       >
         {children}
       </IconButton>
@@ -54,11 +52,6 @@ const CustomControls: React.FC<CustomControlsProps> = ({
   isInteractive = true,
   onToggleInteractivity,
 }) => {
-  const theme = useTheme()
-  const controlIconStyle = useMemo(
-    () => iconGlyphFillStyle(getControlIconColor(theme)),
-    [theme],
-  )
   const { zoomIn, zoomOut, fitView, getNodes, getNodesBounds } = useReactFlow()
 
   const handleFitView = useCallback(() => {
@@ -85,32 +78,28 @@ const CustomControls: React.FC<CustomControlsProps> = ({
           ariaLabel="Zoom In"
           onClick={() => zoomIn()}
         >
-          <ZoomIn style={controlIconStyle} />
+          <ZoomIn />
         </TooltipControlButton>
         <TooltipControlButton
           title="Zoom Out"
           ariaLabel="Zoom Out"
           onClick={() => zoomOut()}
         >
-          <ZoomOut style={controlIconStyle} />
+          <ZoomOut />
         </TooltipControlButton>
         <TooltipControlButton
           title="Fit View"
           ariaLabel="Fit View"
           onClick={handleFitView}
         >
-          <FitScreen style={controlIconStyle} />
+          <FitScreen />
         </TooltipControlButton>
         <TooltipControlButton
           title={lockLabel}
           ariaLabel={lockLabel}
           onClick={() => onToggleInteractivity?.()}
         >
-          {isInteractive ? (
-            <LockOpen style={controlIconStyle} />
-          ) : (
-            <Lock style={controlIconStyle} />
-          )}
+          {isInteractive ? <LockOpen /> : <Lock />}
         </TooltipControlButton>
       </Stack>
     </Controls>

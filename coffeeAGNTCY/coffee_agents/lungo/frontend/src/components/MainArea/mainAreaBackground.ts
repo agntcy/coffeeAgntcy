@@ -2,12 +2,12 @@
  * Copyright AGNTCY Contributors (https://github.com/agntcy)
  * SPDX-License-Identifier: Apache-2.0
  *
- * Graph canvas background — contrasts with Sidebar and ChatArea (`background.paper`).
- * OUK `agentcyBlue` (`#187adc`) at 10% opacity.
+ * Shared background for the workflow sidebar and graph canvas (MainArea / React Flow).
+ * OUK light mode: `theme.palette.background.paper` (Ft palette 100).
  */
 
-import { alpha, type Theme } from "@mui/material/styles"
+import type { Theme } from "@mui/material/styles"
 
-export function getMainAreaBackgroundColor(theme: Theme): string {
-  return alpha(theme.palette.vars.agentcyBlue, 0.1)
+export function getAppShellBackgroundColor(theme: Theme): string {
+  return theme.palette.background.paper
 }

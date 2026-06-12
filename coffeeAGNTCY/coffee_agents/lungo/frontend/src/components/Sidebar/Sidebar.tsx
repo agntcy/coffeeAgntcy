@@ -15,6 +15,7 @@ import {
 } from "@open-ui-kit/core"
 import { styled } from "@mui/material/styles"
 import type { WorkflowSummary } from "@/utils/agenticWorkflowsApi"
+import { getAppShellBackgroundColor } from "../MainArea/mainAreaBackground"
 import CatalogTree from "./CatalogTree"
 import {
   buildCatalogSidebarLayout,
@@ -31,7 +32,7 @@ const StyledDrawer = styled(Drawer)(({ theme }) => ({
   "& .MuiDrawer-paper": {
     width: SIDEBAR_DRAWER_WIDTH,
     overflowX: "hidden",
-    backgroundColor: theme.palette.background.paper,
+    backgroundColor: getAppShellBackgroundColor(theme),
     borderRadius: 0,
   },
 }))
