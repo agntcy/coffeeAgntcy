@@ -11,6 +11,23 @@ import { isLocalDev, parseApiError, Role } from "@/utils/const"
 import { withRetry, RETRY_CONFIG } from "@/utils/retryUtils"
 import { shouldEnableRetries, getApiUrlForPattern } from "@/utils/patternUtils"
 import type { ApiResponse } from "@/types/api"
+import { useActiveWorkflowInstanceStore } from "@/stores/activeWorkflowInstanceStore"
+
+/** Builds the non-streaming /agent/prompt body, tagging it with the active
+ *  workflow instance id (when present) so the backend emits workflow events on
+ *  the same instance the events SSE listener is subscribed under. Without this
+ *  the backend mints a throwaway instance id, its events 404 on the internal
+ *  events endpoint, and graph animations never render in non-streaming mode. */
+export const buildPromptRequestBody = (
+  prompt: string,
+): { prompt: string; workflow_instance_id?: string } => {
+  const workflowInstanceId =
+    useActiveWorkflowInstanceStore.getState().workflowInstanceId
+  return {
+    prompt,
+    ...(workflowInstanceId ? { workflow_instance_id: workflowInstanceId } : {}),
+  }
+}
 
 interface UseAgentAPIReturn {
   loading: boolean
@@ -72,7 +89,7 @@ export const useAgentAPI = (): UseAgentAPIReturn => {
     const makeApiCall = async (): Promise<ApiResponse> => {
       const response = await axios.post<ApiResponse>(
         `${apiUrl}/agent/prompt`,
-        { prompt },
+        buildPromptRequestBody(prompt),
         {
           signal: controller.signal,
           withCredentials: !isLocalDev,
@@ -152,7 +169,7 @@ export const useAgentAPI = (): UseAgentAPIReturn => {
     const makeApiCall = async (): Promise<ApiResponse> => {
       const response = await axios.post<ApiResponse>(
         `${apiUrl}/agent/prompt`,
-        { prompt },
+        buildPromptRequestBody(prompt),
         {
           signal: controller.signal,
           withCredentials: !isLocalDev,
