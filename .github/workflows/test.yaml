@@ -8,6 +8,8 @@ on:
       - 'coffeeAGNTCY/coffee_agents/lungo/**'
       - 'coffeeAGNTCY/coffee_agents/recruiter/**'
       - '!coffeeAGNTCY/coffee_agents/*/deployment/helm/**'
+      - '!coffeeAGNTCY/coffee_agents/corto/exchange/frontend/**'
+      - '!coffeeAGNTCY/coffee_agents/lungo/frontend/**'
       - '.dockerignore'
   pull_request:
     paths:
@@ -15,6 +17,8 @@ on:
       - 'coffeeAGNTCY/coffee_agents/lungo/**'
       - 'coffeeAGNTCY/coffee_agents/recruiter/**'
       - '!coffeeAGNTCY/coffee_agents/*/deployment/helm/**'
+      - '!coffeeAGNTCY/coffee_agents/corto/exchange/frontend/**'
+      - '!coffeeAGNTCY/coffee_agents/lungo/frontend/**'
       - '.github/workflows/test.yaml'
       - '.github/workflows/test-reusable.yaml'
       - '.github/actions/check-paths-have-changes/**'
