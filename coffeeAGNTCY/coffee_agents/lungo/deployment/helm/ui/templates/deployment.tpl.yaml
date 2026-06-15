@@ -53,9 +53,6 @@ spec:
             initialDelaySeconds: 20
             periodSeconds: 10
           {{ end }}
-          envFrom:
-            - configMapRef:
-                name: {{ .Values.appName }}-configmap
           {{ if .Values.externalSecrets }}
             - secretRef:
                 name: {{ .Values.appName }}-secrets
