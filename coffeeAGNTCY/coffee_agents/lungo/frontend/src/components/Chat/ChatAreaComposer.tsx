@@ -28,7 +28,7 @@ interface ChatAreaComposerProps {
   showLogisticsPrompts: boolean
   showDiscoveryPrompts: boolean
   pattern?: string
-  onDropdownSelect: (query: string) => void
+  onSuggestedPromptSelect: (query: string) => void
   content: string
   setContent: (value: string) => void
   loading: boolean
@@ -41,7 +41,7 @@ const ChatAreaComposer: React.FC<ChatAreaComposerProps> = ({
   showLogisticsPrompts,
   showDiscoveryPrompts,
   pattern,
-  onDropdownSelect,
+  onSuggestedPromptSelect,
   content,
   setContent,
   loading,
@@ -66,7 +66,7 @@ const ChatAreaComposer: React.FC<ChatAreaComposerProps> = ({
           <SuggestedPromptsDropdown
             source={promptsSource}
             pattern={pattern}
-            onSelect={onDropdownSelect}
+            onSelect={onSuggestedPromptSelect}
           />
         </Box>
       ) : null}

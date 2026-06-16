@@ -58,7 +58,7 @@ const RootPage: React.FC = () => {
     discoveryResponseEvent,
     handleUserInput,
     handleApiResponse,
-    handleDropdownSelect,
+    handleSendPrompt,
     handleStreamComplete,
     handleClearConversation,
     handleNodeHighlightSetup,
@@ -231,7 +231,7 @@ const RootPage: React.FC = () => {
                     onSenderHighlight={handleSenderHighlight}
                     pattern={selectedPattern}
                     graphConfig={graphConfig}
-                    onDropdownSelect={handleDropdownSelect}
+                    onSendPrompt={handleSendPrompt}
                     onUserInput={handleUserInput}
                     onApiResponse={handleApiResponse}
                     onClearConversation={handleClearConversation}

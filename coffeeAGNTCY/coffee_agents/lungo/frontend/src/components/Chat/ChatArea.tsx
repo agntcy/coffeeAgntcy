@@ -50,7 +50,7 @@ interface ChatAreaProps {
   onSenderHighlight?: (nodeId: string) => void
   pattern?: string
   graphConfig?: GraphConfig
-  onDropdownSelect?: (query: string) => void
+  onSendPrompt?: (query: string) => void
   onUserInput?: (query: string) => void
   onApiResponse?: (response: string, isError?: boolean) => void
   onClearConversation?: () => void
@@ -82,7 +82,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
   onSenderHighlight,
   pattern,
   graphConfig,
-  onDropdownSelect,
+  onSendPrompt,
   onUserInput,
   onApiResponse,
   onClearConversation,
@@ -134,14 +134,11 @@ const ChatArea: React.FC<ChatAreaProps> = ({
     setIsMinimized(false)
   }
 
-  const handleDropdownQuery = (query: string) => {
+  const handleSuggestedPromptSelect = (query: string) => {
     if (isMinimized) {
       setIsMinimized(false)
     }
-
-    if (onDropdownSelect) {
-      onDropdownSelect(query)
-    }
+    setContent(query)
   }
 
   const processMessageWithQuery = async (
@@ -193,10 +190,10 @@ const ChatArea: React.FC<ChatAreaProps> = ({
 
     if (
       (showAuctionStreaming || showProgressTracker || showRecruiterStreaming) &&
-      onDropdownSelect
+      onSendPrompt
     ) {
       setContent("")
-      onDropdownSelect(content)
+      onSendPrompt(content)
     } else {
       await processMessageWithQuery(content)
     }
@@ -322,7 +319,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
           showLogisticsPrompts={showLogisticsPrompts}
           showDiscoveryPrompts={showDiscoveryPrompts}
           pattern={pattern}
-          onDropdownSelect={handleDropdownQuery}
+          onSuggestedPromptSelect={handleSuggestedPromptSelect}
           content={content}
           setContent={setContent}
           loading={loading}

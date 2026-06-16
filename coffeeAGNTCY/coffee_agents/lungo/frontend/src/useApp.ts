@@ -229,7 +229,7 @@ export function useApp() {
     handleDiscoveryResponse,
   ])
 
-  const handleDropdownSelect = useCallback(
+  const handleSendPrompt = useCallback(
     async (query: string) => {
       chat.setCurrentUserMessage(query)
       chat.setIsAgentLoading(true)
@@ -391,7 +391,7 @@ export function useApp() {
     discoveryResponseEvent,
     handleUserInput: chat.handleUserInput,
     handleApiResponse: chat.handleApiResponse,
-    handleDropdownSelect,
+    handleSendPrompt,
     handleStreamComplete,
     handleClearConversation,
     handleNodeHighlightSetup,
