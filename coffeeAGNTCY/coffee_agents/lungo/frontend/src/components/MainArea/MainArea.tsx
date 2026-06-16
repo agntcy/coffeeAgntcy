@@ -22,7 +22,7 @@ import OasfRecordModal from "./Graph/Directory/OasfRecordModal"
 import {
   GRAPH_MAX_ZOOM,
   GRAPH_MIN_ZOOM,
-  GRAPH_VIEW_DEFAULT_VIEWPORT,
+  GRAPH_DEFAULT_VIEWPORT,
 } from "@/config/graphViewDefaults"
 import { getAppShellBackgroundColor } from "./mainAreaBackground"
 import { useMainArea, type MainAreaProps } from "./useMainArea"
@@ -98,7 +98,7 @@ const MainArea: React.FC<MainAreaProps> = (props) => {
           onNodeDrag={onNodeDrag}
           onPaneClick={onPaneClick}
           proOptions={proOptions}
-          defaultViewport={GRAPH_VIEW_DEFAULT_VIEWPORT}
+          defaultViewport={GRAPH_DEFAULT_VIEWPORT}
           minZoom={GRAPH_MIN_ZOOM}
           maxZoom={GRAPH_MAX_ZOOM}
           nodesDraggable={nodesDraggable}

@@ -8,8 +8,8 @@ import { getViewportForBounds } from "@xyflow/react"
 import {
   GRAPH_MAX_ZOOM,
   GRAPH_MIN_ZOOM,
-  GRAPH_VIEW_DEFAULT_FIT_VIEW_OPTIONS,
-  GRAPH_VIEW_ZOOM_SCALE_VS_RAW_FIT,
+  GRAPH_DEFAULT_FIT_VIEW_OPTIONS,
+  GRAPH_FIT_ZOOM_RATIO,
 } from "@/config/graphViewDefaults"
 
 export const measureGraphContainerSize = (): {
@@ -40,11 +40,11 @@ export const computeDefaultFitViewZoom = (
     containerHeight,
     GRAPH_MIN_ZOOM,
     GRAPH_MAX_ZOOM,
-    GRAPH_VIEW_DEFAULT_FIT_VIEW_OPTIONS.padding,
+    GRAPH_DEFAULT_FIT_VIEW_OPTIONS.padding,
   )
 
   return Math.min(
-    Math.max(rawFit.zoom * GRAPH_VIEW_ZOOM_SCALE_VS_RAW_FIT, GRAPH_MIN_ZOOM),
+    Math.max(rawFit.zoom * GRAPH_FIT_ZOOM_RATIO, GRAPH_MIN_ZOOM),
     GRAPH_MAX_ZOOM,
   )
 }
@@ -55,7 +55,7 @@ interface ApplyDefaultGraphViewDeps {
   getNodesBounds: (nodes: Node[]) => Rect
 }
 
-/** Applies {@link GRAPH_VIEW_DEFAULT_FIT_VIEW_OPTIONS} with zoom derived from live layout. */
+/** Applies {@link GRAPH_DEFAULT_FIT_VIEW_OPTIONS} with zoom derived from live layout. */
 export async function applyDefaultGraphView({
   fitView,
   getNodes,
@@ -75,7 +75,7 @@ export async function applyDefaultGraphView({
   )
 
   await fitView({
-    ...GRAPH_VIEW_DEFAULT_FIT_VIEW_OPTIONS,
+    ...GRAPH_DEFAULT_FIT_VIEW_OPTIONS,
     minZoom: targetZoom,
     maxZoom: targetZoom,
   })

@@ -2,22 +2,23 @@
  * Copyright AGNTCY Contributors (https://github.com/agntcy)
  * SPDX-License-Identifier: Apache-2.0
  *
- * Default graph canvas view — captured via graph controls → "Log fitView settings"
- * (last diagnostics session: zoomScaleVsRawFit ≈ 0.9099).
+ * Default graph canvas view (diagnostics capture). Used for initial load and Fit View.
  *
- * Zoom is applied as `rawFitZoom * GRAPH_VIEW_ZOOM_SCALE_VS_RAW_FIT` so it adapts
- * to the live `.react-flow` container size and current node bounds.
+ * Fit zoom: `rawFitZoom * GRAPH_FIT_ZOOM_RATIO`
  **/
 
 import type { FitViewOptions, Viewport } from "@xyflow/react"
 
-/** currentZoom / rawFitZoom at padding 0 (from last console capture). */
-export const GRAPH_VIEW_ZOOM_SCALE_VS_RAW_FIT = 0.9099
+/** Ratio applied to raw fitView zoom (initial load + Fit View). */
+export const GRAPH_FIT_ZOOM_RATIO = 0.632015625
+
+/** Converts {@link GRAPH_FIT_ZOOM_RATIO} to defaultViewport absolute zoom. */
+const GRAPH_VIEWPORT_ZOOM_PER_FIT_RATIO = 0.824265304978623
 
 /** Passed to `fitView()` together with computed minZoom/maxZoom. */
-export const GRAPH_VIEW_DEFAULT_FIT_VIEW_OPTIONS = {
+export const GRAPH_DEFAULT_FIT_VIEW_OPTIONS = {
   padding: 0,
-  duration: 300,
+  duration: 200,
 } as const satisfies Pick<FitViewOptions, "padding" | "duration">
 
 /** React Flow canvas zoom limits. */
@@ -27,8 +28,8 @@ export const GRAPH_MAX_ZOOM = 1.8
 /**
  * Fallback before nodes are measured / fitView runs (overridden by applyDefaultGraphView).
  */
-export const GRAPH_VIEW_DEFAULT_VIEWPORT: Viewport = {
+export const GRAPH_DEFAULT_VIEWPORT: Viewport = {
   x: 0,
   y: 0,
-  zoom: 0.75,
+  zoom: GRAPH_FIT_ZOOM_RATIO * GRAPH_VIEWPORT_ZOOM_PER_FIT_RATIO,
 }
