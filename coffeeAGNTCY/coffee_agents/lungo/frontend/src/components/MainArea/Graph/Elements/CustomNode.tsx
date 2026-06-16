@@ -22,6 +22,11 @@ import {
 import { GraphIconChip } from "./GraphIconChip"
 import { GraphSideIconTooltip } from "./GraphSideIconTooltip"
 import NodeIdentityDropdown from "../Identity/NodeIdentityDropdown"
+import {
+  CUSTOM_NODE_HEIGHT,
+  CUSTOM_NODE_INNER_WIDTH,
+  CUSTOM_NODE_WIDTH,
+} from "@/utils/graphNodeDimensions"
 import { CustomNodeData, ExtraHandle } from "./types"
 
 const POSITION_MAP: Record<ExtraHandle["position"], Position> = {
@@ -46,11 +51,7 @@ const CustomNode: React.FC<CustomNodeProps> = ({ id, data }) => {
     dark: agentDirectoryIconDark,
   })
 
-  const surfaceState: GraphNodeSurfaceState = data.active
-    ? "active"
-    : data.selected
-      ? "selected"
-      : "default"
+  const surfaceState: GraphNodeSurfaceState = data.active ? "active" : "default"
 
   const handleStyle = getGraphNodeHandleStyle(theme)
 
@@ -76,6 +77,9 @@ const CustomNode: React.FC<CustomNodeProps> = ({ id, data }) => {
           justifyContent: "flex-start",
           gap: t.spacing(1),
           p: 2,
+          boxSizing: "border-box",
+          width: CUSTOM_NODE_WIDTH,
+          height: CUSTOM_NODE_HEIGHT,
           flexGrow: 0,
           flexShrink: 0,
           order: 0,
@@ -126,7 +130,8 @@ const CustomNode: React.FC<CustomNodeProps> = ({ id, data }) => {
             flexGrow: 0,
             flexShrink: 0,
             height: 16,
-            width: 162,
+            width: CUSTOM_NODE_INNER_WIDTH,
+            maxWidth: "100%",
             minWidth: 0,
             overflow: "hidden",
             textOverflow: "ellipsis",

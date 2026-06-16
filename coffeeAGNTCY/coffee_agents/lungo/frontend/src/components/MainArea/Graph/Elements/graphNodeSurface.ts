@@ -16,7 +16,7 @@ import {
   getGraphIconChipHoverBackground,
 } from "@/utils/assetPngIcon"
 
-export type GraphNodeSurfaceState = "default" | "active" | "selected"
+export type GraphNodeSurfaceState = "default" | "active"
 
 /** OUK control icon fill (`#e8e9ea` in dark mode) — not `brandIconPrimaryDefault`. */
 export function getControlIconColor(theme: Theme): string {
@@ -38,45 +38,23 @@ function getGraphNodeRestingBackground(
   state: GraphNodeSurfaceState,
 ): string {
   if (theme.palette.mode === "dark") {
-    switch (state) {
-      case "active":
-      case "selected":
-        return theme.palette.vars.controlBackgroundMedium
-      default:
-        return theme.palette.vars.baseBackgroundWeak
-    }
+    return state === "active"
+      ? theme.palette.vars.controlBackgroundMedium
+      : theme.palette.vars.baseBackgroundWeak
   }
 
-  switch (state) {
-    case "active":
-      return theme.palette.action.selected
-    case "selected":
-      return theme.palette.vars.baseBackgroundHover
-    default:
-      return theme.palette.background.default
-  }
+  return state === "active"
+    ? theme.palette.action.selected
+    : theme.palette.background.default
 }
 
-function getGraphNodeHoverBackground(
-  theme: Theme,
-  state: GraphNodeSurfaceState,
-): string {
+/** Hover background for every graph node surface (CustomNode, TransportNode, …). */
+export function getGraphNodeHoverBackground(theme: Theme): string {
   if (theme.palette.mode === "dark") {
-    if (state === "default") {
-      return theme.palette.vars.controlBackgroundMedium
-    }
-
-    return theme.palette.vars.baseBorderMedium
+    return theme.palette.vars.controlBackgroundMedium
   }
 
-  if (state === "default") {
-    return theme.palette.vars.baseBackgroundHover
-  }
-
-  return alpha(
-    theme.palette.primary.main,
-    theme.palette.action.selectedOpacity + theme.palette.action.focusOpacity,
-  )
+  return theme.palette.vars.baseBackgroundHover
 }
 
 /**
@@ -92,17 +70,12 @@ export function graphNodeRootSurfaceSx(
   const borderColor = theme.palette.divider
   const primary = theme.palette.primary.main
   const restingBg = getGraphNodeRestingBackground(theme, state)
-  const hoverBg = getGraphNodeHoverBackground(theme, state)
+  const hoverBg = getGraphNodeHoverBackground(theme)
 
   const restingOutline =
-    state === "active"
-      ? `2px solid ${alpha(primary, 0.45)}`
-      : state === "selected"
-        ? `2px solid ${primary}`
-        : "none"
+    state === "active" ? `2px solid ${alpha(primary, 0.45)}` : "none"
 
-  const restingShadow =
-    state === "active" || state === "selected" ? theme.shadows[4] : "none"
+  const restingShadow = state === "active" ? theme.shadows[4] : "none"
 
   return {
     border: "1px solid",

@@ -14,20 +14,26 @@ import {
   GROUP_MESSAGING_CONFIG,
   A2A_HTTP_CONFIG,
 } from "./graphConfigsData"
+import { layoutSlimTransportGraph } from "./topologyLayout"
 
 export type { GraphConfig }
 export { PUBLISH_SUBSCRIBE_CONFIG, GROUP_MESSAGING_CONFIG, A2A_HTTP_CONFIG }
 
+const withSlimTransportLayout = (config: GraphConfig): GraphConfig => {
+  const { nodes, edges } = layoutSlimTransportGraph(config.nodes, config.edges)
+  return { ...config, nodes, edges }
+}
+
 export const getGraphConfig = (pattern: string): GraphConfig => {
   switch (pattern) {
     case "publish_subscribe":
-      return {
+      return withSlimTransportLayout({
         ...PUBLISH_SUBSCRIBE_CONFIG,
         nodes: [...PUBLISH_SUBSCRIBE_CONFIG.nodes],
         edges: [...PUBLISH_SUBSCRIBE_CONFIG.edges],
-      }
+      })
     case "publish_subscribe_streaming": {
-      return {
+      return withSlimTransportLayout({
         ...PUBLISH_SUBSCRIBE_CONFIG,
         nodes: PUBLISH_SUBSCRIBE_CONFIG.nodes.map((node) => {
           if (node.id === NODE_IDS.AUCTION_AGENT) {
@@ -69,10 +75,14 @@ export const getGraphConfig = (pattern: string): GraphConfig => {
           return node
         }),
         edges: [...PUBLISH_SUBSCRIBE_CONFIG.edges],
-      }
+      })
     }
     case "group_messaging":
-      return GROUP_MESSAGING_CONFIG
+      return withSlimTransportLayout({
+        ...GROUP_MESSAGING_CONFIG,
+        nodes: [...GROUP_MESSAGING_CONFIG.nodes],
+        edges: [...GROUP_MESSAGING_CONFIG.edges],
+      })
     case "a2a_http":
       return A2A_HTTP_CONFIG
     default:

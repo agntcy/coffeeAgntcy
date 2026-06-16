@@ -23,7 +23,10 @@ import type {
   CustomNodeData,
   TransportNodeData,
 } from "@/components/MainArea/Graph/Elements/types"
-import { layoutPositionsByLayer } from "@/utils/topologyLayout"
+import {
+  layoutPositionsByLayer,
+  layoutSlimTransportGraph,
+} from "@/utils/topologyLayout"
 import {
   enrichAgenticTopologyWellKnownUi,
   mergeAgenticTopologyIdentityUi,
@@ -178,18 +181,23 @@ export function topologyWireToReactFlow(
   }
   const pos = layoutPositionsByLayer(dedupedNodesIn.map(rfIdOf), layerById)
 
-  const nodes: Node[] = dedupedNodesIn.map((n): Node => {
+  const positions = new Map<string, { x: number; y: number }>()
+  for (const n of dedupedNodesIn) {
     const rfId = rfIdOf(n)
-    const nodeType =
-      n.type === NODE_TYPES.TRANSPORT ? NODE_TYPES.TRANSPORT : NODE_TYPES.CUSTOM
-    // Prefer wire-supplied `position` (e.g. starting_workflows.json overrides);
-    // fall back to layered auto-layout when omitted.
     const position =
       n.position &&
       typeof n.position.x === "number" &&
       typeof n.position.y === "number"
         ? { x: n.position.x, y: n.position.y }
         : (pos.get(rfId) ?? { x: 0, y: 0 })
+    positions.set(rfId, position)
+  }
+
+  const nodes: Node[] = dedupedNodesIn.map((n): Node => {
+    const rfId = rfIdOf(n)
+    const nodeType =
+      n.type === NODE_TYPES.TRANSPORT ? NODE_TYPES.TRANSPORT : NODE_TYPES.CUSTOM
+    const position = positions.get(rfId) ?? { x: 0, y: 0 }
     const gh = resolveGithubFromAgentRecordUri(
       n.agent_record_uri as string | undefined,
       { validateUrls },
@@ -267,5 +275,5 @@ export function topologyWireToReactFlow(
     edges.push(base)
   }
 
-  return { nodes, edges }
+  return layoutSlimTransportGraph(nodes, edges)
 }

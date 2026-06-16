@@ -13,6 +13,7 @@ import { EDGE_LABELS, HANDLE_TYPES } from "@/utils/const.ts"
 import { logger } from "@/utils/logger"
 import { AgentRecord, DiscoveryResponseEvent } from "@/types/agent"
 import type { CustomNodeData } from "./Graph/Elements/types"
+import { CUSTOM_NODE_WIDTH } from "@/utils/graphNodeDimensions"
 
 const DISCOVERY_KEYWORDS = [
   "brazil",
@@ -38,7 +39,7 @@ function findRecruiterNodeId(nodes: Node[]): string {
   return legacy?.id ?? RECRUITER_NODE_ID
 }
 const RECRUITER_POS = { x: 400, y: 300 }
-const NODE_WIDTH = 193
+const NODE_WIDTH = CUSTOM_NODE_WIDTH
 const START_Y_OFFSET = 450
 const HORIZONTAL_GAP = 40
 
