@@ -5,26 +5,33 @@
 
 import React from "react"
 import { Separator } from "react-resizable-panels"
-import { styled } from "@mui/material/styles"
+import { alpha, styled } from "@mui/material/styles"
 
-const StyledSeparator = styled(Separator)(({ theme }) => ({
-  flexShrink: 0,
-  width: 4,
-  margin: 0,
-  padding: 0,
-  border: 0,
-  backgroundColor: "transparent",
-  transition: theme.transitions.create("background-color", {
-    duration: theme.transitions.duration.shortest,
-  }),
-  "&:hover": {
-    backgroundColor: theme.palette.divider,
-  },
-  "&:focus-visible": {
-    outline: `2px solid ${theme.palette.primary.main}`,
-    outlineOffset: -2,
-  },
-}))
+const StyledSeparator = styled(Separator)(({ theme }) => {
+  const isLight = theme.palette.mode === "light"
+  const restingOpacity = isLight ? 0.18 : 0.22
+  const hoverOpacity = isLight ? 0.32 : 0.38
+
+  return {
+    flexShrink: 0,
+    width: 4,
+    margin: 0,
+    padding: 0,
+    border: 0,
+    backgroundColor: alpha(theme.palette.text.primary, restingOpacity),
+    cursor: "col-resize",
+    transition: theme.transitions.create("background-color", {
+      duration: theme.transitions.duration.shortest,
+    }),
+    "&:hover": {
+      backgroundColor: alpha(theme.palette.text.primary, hoverOpacity),
+    },
+    "&:focus-visible": {
+      outline: `2px solid ${theme.palette.primary.main}`,
+      outlineOffset: -2,
+    },
+  }
+})
 
 const SidebarPanelSeparator: React.FC = () => (
   <StyledSeparator
