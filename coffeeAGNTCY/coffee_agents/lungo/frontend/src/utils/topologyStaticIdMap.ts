@@ -56,8 +56,10 @@ function buildPublishSubscribeIdMap(): StaticIdMap {
     [lc("Colombia"), "4"],
     [lc("Vietnam"), "5"],
     [lc("Weather"), "6"],
+    [lc("Weather MCP Server"), "6"],
     [lc("MCP Server Weather"), "6"],
     [lc("Payment"), "7"],
+    [lc("Payment MCP Server"), "7"],
     [lc("MCP Server Payment"), "7"],
   ])
   const idByTransportKey = new Map<string, string>([["transport", "2"]])

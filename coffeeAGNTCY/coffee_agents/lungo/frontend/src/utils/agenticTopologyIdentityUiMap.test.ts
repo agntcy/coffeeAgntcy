@@ -126,6 +126,26 @@ describe("agenticTopologyIdentityUiMap", () => {
         } as unknown as CustomNodeData,
         expected: "logistics-supervisor-agent",
       },
+      {
+        caseName: "MCP weather labels (title + role)",
+        data: {
+          icon: null,
+          label1: "Weather",
+          label2: "MCP Server",
+          handles: "all",
+        } as unknown as CustomNodeData,
+        expected: "weather-mcp-server",
+      },
+      {
+        caseName: "MCP payment labels (title + role)",
+        data: {
+          icon: null,
+          label1: "Payment",
+          label2: "MCP Server",
+          handles: "all",
+        } as unknown as CustomNodeData,
+        expected: "payment-mcp-server",
+      },
     ])("$caseName", ({ data, expected }) => {
       expect(getOasfSlugFromNodeData(data)).toBe(expected)
     })

@@ -140,8 +140,9 @@ export const PUBLISH_SUBSCRIBE_CONFIG: GraphConfig = {
       type: NODE_TYPES.CUSTOM,
       data: {
         icon: McpServerIcon,
-        label1: "MCP Server",
-        label2: "Weather",
+        label1: "Weather",
+        label2: "MCP Server",
+        directoryAgentSlug: "weather-mcp-server",
         handles: HANDLE_TYPES.TARGET,
         githubLink: `${LUNGO_FRONTEND_URLS.github.baseUrl}${LUNGO_FRONTEND_URLS.github.agents.weatherMcp}`,
         agentDirectoryLink: `${LUNGO_FRONTEND_URLS.agentDirectory.baseUrl}${LUNGO_FRONTEND_URLS.agentDirectory.agents.weatherMcp}`,
@@ -153,8 +154,9 @@ export const PUBLISH_SUBSCRIBE_CONFIG: GraphConfig = {
       type: NODE_TYPES.CUSTOM,
       data: {
         icon: McpServerIcon,
-        label1: "MCP Server",
-        label2: "Payment",
+        label1: "Payment",
+        label2: "MCP Server",
+        directoryAgentSlug: "payment-mcp-server",
         handles: HANDLE_TYPES.TARGET,
         verificationStatus: VERIFICATION_STATUS.VERIFIED,
         hasBadgeDetails: true,

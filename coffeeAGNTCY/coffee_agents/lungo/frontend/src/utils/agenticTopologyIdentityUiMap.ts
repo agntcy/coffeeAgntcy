@@ -189,13 +189,24 @@ export function stableAgentIdFromWire(
   return undefined
 }
 
-/** Split a topology wire `label` into two lines for `CustomNodeData` (first space). */
+/** Split a topology wire `label` into title (`label1`) and role (`label2`). */
 export function splitTopologyNodeLabel(label: string): {
   label1: string
   label2: string
 } {
   const t = label.trim()
   if (!t) return { label1: "", label2: "" }
+
+  const mcpSuffix = t.match(/^(.+?)\s+MCP\s+Server$/i)
+  if (mcpSuffix) {
+    return { label1: mcpSuffix[1].trim(), label2: "MCP Server" }
+  }
+
+  const mcpPrefix = t.match(/^MCP\s+Server\s+(.+)$/i)
+  if (mcpPrefix) {
+    return { label1: mcpPrefix[1].trim(), label2: "MCP Server" }
+  }
+
   const sp = t.indexOf(" ")
   if (sp === -1) return { label1: t, label2: "" }
   return { label1: t.slice(0, sp), label2: t.slice(sp + 1).trim() }
@@ -374,6 +385,22 @@ export function mergeAgenticTopologyIdentityUi(
   return merged
 }
 
+function mcpDirectorySlugFromLabels(
+  label1: string | undefined,
+  label2: string | undefined,
+): string | null {
+  const pair = new Set(
+    [label1, label2].filter(Boolean).map((part) => part!.trim().toLowerCase()),
+  )
+  if (pair.has("weather") && pair.has("mcp server")) {
+    return "weather-mcp-server"
+  }
+  if (pair.has("payment") && pair.has("mcp server")) {
+    return "payment-mcp-server"
+  }
+  return null
+}
+
 /** Resolve `GET .../agents/{slug}/oasf` slug from merged or static graph node data. */
 export function getOasfSlugFromNodeData(
   nodeData: CustomNodeData | null | undefined,
@@ -393,6 +420,9 @@ export function getOasfSlugFromNodeData(
   const label2 = nodeData.label2?.toLowerCase()
   const labelsText = `${label1 ?? ""} ${label2 ?? ""}`.trim()
 
+  const mcpSlug = mcpDirectorySlugFromLabels(label1, label2)
+  if (mcpSlug) return mcpSlug
+
   if (/\bagentic\b/.test(labelsText) && /\brecruiter\b/.test(labelsText)) {
     return "recruiter"
   }
@@ -407,10 +437,6 @@ export function getOasfSlugFromNodeData(
 
   if (label1 === "auction" && label2?.includes("agent")) {
     return "auction-supervisor-agent"
-  }
-
-  if (label1 === "mcp server" && label2 === "weather") {
-    return "weather-mcp-server"
   }
 
   if (label1 === "colombia" && label2?.includes("coffee farm")) {
@@ -431,10 +457,6 @@ export function getOasfSlugFromNodeData(
 
   if (label1 === "tatooine" && label2?.includes("coffee farm")) {
     return "tatooine-farm-agent"
-  }
-
-  if (label1 === "mcp server" && label2 === "payment") {
-    return "payment-mcp-server"
   }
 
   if (label1 === "shipper") {
