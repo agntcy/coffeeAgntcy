@@ -66,3 +66,7 @@ spec:
           - secretRef:
               name: {{ .Values.appName }}-transport-secret
         {{ end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

@@ -62,6 +62,10 @@ spec:
               mountPath: /app/dist/env-config.js
               subPath: env-config.js
               readOnly: true
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
       volumes:
         - name: env-config-js
           configMap:
