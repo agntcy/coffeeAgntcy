@@ -66,6 +66,15 @@ export const isStreamingPattern = (pattern?: string): boolean => {
   )
 }
 
+/** Patterns whose chat Send action must call `handleSendPrompt` (streaming handler). */
+export const usesStreamingChatSend = (pattern?: string): boolean => {
+  return (
+    pattern === PATTERNS.GROUP_MESSAGING ||
+    pattern === PATTERNS.PUBLISH_SUBSCRIBE_STREAMING ||
+    pattern === PATTERNS.A2A_HTTP
+  )
+}
+
 export const supportsTransportUpdates = (pattern?: string): boolean => {
   return (
     pattern === PATTERNS.PUBLISH_SUBSCRIBE ||

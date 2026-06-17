@@ -29,7 +29,7 @@ import { DiscoveryResponseEvent } from "@/types/agent"
 import type { AuctionStreamingState } from "@/stores/auctionStreaming.types"
 import type { RecruiterStreamingState } from "@/stores/recruiterStreaming.types"
 import type { ApiResponse } from "@/types/api"
-import { PATTERNS } from "@/utils/patternUtils"
+import { PATTERNS, usesStreamingChatSend } from "@/utils/patternUtils"
 
 /** Panel expanded/collapsed by the chat header minimize control. */
 export const CHAT_MESSAGE_PANEL_ID = "chat-message-panel"
@@ -188,10 +188,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
       onUserInput(content)
     }
 
-    if (
-      (showAuctionStreaming || showProgressTracker || showRecruiterStreaming) &&
-      onSendPrompt
-    ) {
+    if (usesStreamingChatSend(pattern) && onSendPrompt) {
       setContent("")
       onSendPrompt(content)
     } else {
