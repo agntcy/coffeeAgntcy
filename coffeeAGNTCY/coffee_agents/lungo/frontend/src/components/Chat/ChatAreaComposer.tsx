@@ -75,7 +75,6 @@ const ChatAreaComposer: React.FC<ChatAreaComposerProps> = ({
         fullWidth
         margin="none"
         variant="standard"
-        label="Message to agents"
         placeholder="Type a prompt to interact with the agents"
         value={content}
         onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
@@ -84,13 +83,11 @@ const ChatAreaComposer: React.FC<ChatAreaComposerProps> = ({
         onKeyDown={onKeyDown}
         disabled={loading}
         slotProps={{
-          inputLabel: {
-            shrink: true,
-          },
           input: {
             disableUnderline: true,
           },
           htmlInput: {
+            "aria-label": "Message to agents",
             sx: {
               minWidth: 0,
             },
@@ -120,13 +117,6 @@ const ChatAreaComposer: React.FC<ChatAreaComposerProps> = ({
             "&::placeholder": {
               opacity: 0.6,
             },
-          },
-          "& .MuiInputLabel-root": {
-            ...theme.typography.caption,
-            maxWidth: "100%",
-            overflow: "hidden",
-            textOverflow: "ellipsis",
-            whiteSpace: "nowrap",
           },
         })}
       />
