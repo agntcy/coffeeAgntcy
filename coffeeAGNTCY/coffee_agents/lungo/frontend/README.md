@@ -1,8 +1,9 @@
 ## Prerequisites
 
-- Ensure your **Node.js** version is **16.14.0** or higher. Check your version with:
+- **Node.js** 24.x with **npm** 11.10.1 or higher. Check your versions with:
   ```sh
   node -v
+  npm -v
   ```
 - If Node.js is not installed, download and install it from the [official website](https://nodejs.org/).
 
