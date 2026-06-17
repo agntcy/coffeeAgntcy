@@ -1,5 +1,4 @@
 import type { CustomNodeData } from "../Elements/types"
-import type { ModalType, ModalPosition } from "@/types/modal"
 
 export interface PolicyData {
   policies: Array<{
@@ -20,16 +19,11 @@ export interface PolicyData {
   }>
 }
 
-export interface IdentityModalProps {
-  isOpen: boolean
-  onClose: () => void
+/** Menu body for graph identity actions (used inside `IconButtonDropdown`). */
+export interface IdentityDetailsDropdownContentProps {
   onShowBadgeDetails: () => void
   onShowPolicyDetails: () => void
-  nodeName: string
-  position: ModalPosition
-  activeModal?: ModalType
   nodeData?: CustomNodeData
-  isMcpServer?: boolean
 }
 export interface BadgeData {
   context: string[]

@@ -1,0 +1,183 @@
+/**
+ * Copyright AGNTCY Contributors (https://github.com/agntcy)
+ * SPDX-License-Identifier: Apache-2.0
+ *
+ * Suggested Prompts dropdown for the chat composer (fetch + menu).
+ */
+
+import React, { useCallback, useMemo, useState } from "react"
+import KeyboardArrowDown from "@mui/icons-material/KeyboardArrowDown"
+import {
+  Box,
+  Button,
+  Menu,
+  MenuItem,
+  Tooltip,
+  type DropdownOption,
+} from "@open-ui-kit/core"
+import { useGraphCanvasLayout } from "@/contexts/graphCanvasLayout"
+import {
+  computePromptsMenuMaxWidth,
+  categoriesToMenuOptions,
+  getPromptsMenuProps,
+  getPromptsTriggerButtonProps,
+  getPromptsTriggerTooltipProps,
+  SUGGESTED_PROMPTS_LABEL,
+  type SuggestedPromptsSource,
+} from "./suggestedPromptsUtils"
+import { CustomDropdownListItemContent } from "./CustomDropdownListItemContent"
+import { useSuggestedPrompts } from "./useSuggestedPrompts"
+
+interface PromptMenuItemProps {
+  option: DropdownOption<string>
+  itemKey: string
+  onSelect: (value: string) => void
+  onClose: () => void
+}
+
+function PromptMenuItem({
+  option,
+  itemKey,
+  onSelect,
+  onClose,
+}: PromptMenuItemProps) {
+  const handleClick = (event: React.MouseEvent<HTMLElement>) => {
+    if (typeof option.value === "string" && option.value.trim()) {
+      onSelect(option.value)
+    }
+    onClose()
+    event.stopPropagation()
+  }
+
+  const menuItem = (
+    <MenuItem
+      onClick={handleClick}
+      sx={{ whiteSpace: "normal", alignItems: "flex-start", py: 1 }}
+    >
+      {option.customElement ?? <span>{option.label || option.value}</span>}
+    </MenuItem>
+  )
+
+  if (!option.menuItemTooltipProps?.title) {
+    return React.cloneElement(menuItem, { key: itemKey })
+  }
+
+  return (
+    <Tooltip
+      key={itemKey}
+      title={option.menuItemTooltipProps.title}
+      {...option.menuItemTooltipProps}
+      arrow
+    >
+      {menuItem}
+    </Tooltip>
+  )
+}
+
+export interface SuggestedPromptsDropdownProps {
+  source: SuggestedPromptsSource
+  pattern?: string
+  onSelect: (query: string) => void
+}
+
+const SuggestedPromptsDropdown: React.FC<SuggestedPromptsDropdownProps> = ({
+  source,
+  pattern,
+  onSelect,
+}) => {
+  const layout = useGraphCanvasLayout()
+  const { categories, isLoading } = useSuggestedPrompts(source, pattern)
+  const options = useMemo(
+    () =>
+      categoriesToMenuOptions(categories, (prompt, description) => (
+        <CustomDropdownListItemContent
+          prompt={prompt}
+          description={description}
+        />
+      )),
+    [categories],
+  )
+  const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null)
+  const [menuMaxWidth, setMenuMaxWidth] = useState<number>()
+  const open = Boolean(anchorEl)
+
+  const handleOpen = useCallback(
+    (event: React.MouseEvent<HTMLButtonElement>) => {
+      const triggerRect = event.currentTarget.getBoundingClientRect()
+      setMenuMaxWidth(computePromptsMenuMaxWidth(triggerRect, layout))
+      setAnchorEl(event.currentTarget)
+      event.stopPropagation()
+    },
+    [layout],
+  )
+
+  const handleClose = useCallback(() => {
+    setAnchorEl(null)
+  }, [])
+
+  const buttonProps = getPromptsTriggerButtonProps(isLoading, options.length)
+  const buttonTooltipProps = getPromptsTriggerTooltipProps(
+    isLoading,
+    options.length,
+  )
+  const menuProps = useMemo(
+    () => getPromptsMenuProps(menuMaxWidth),
+    [menuMaxWidth],
+  )
+
+  const triggerButton = (
+    <Button
+      {...buttonProps}
+      variant={open ? "primary" : (buttonProps.variant ?? "outlined")}
+      aria-haspopup="menu"
+      aria-expanded={open ? "true" : undefined}
+      onClick={handleOpen}
+      endIcon={
+        <KeyboardArrowDown
+          aria-hidden
+          sx={{
+            transition: (theme) =>
+              theme.transitions.create("transform", {
+                duration: theme.transitions.duration.shortest,
+              }),
+            transform: open ? "rotate(180deg)" : "rotate(0deg)",
+          }}
+        />
+      }
+    >
+      {SUGGESTED_PROMPTS_LABEL}
+    </Button>
+  )
+
+  return (
+    <>
+      {buttonTooltipProps?.title ? (
+        <Tooltip title={buttonTooltipProps.title} {...buttonTooltipProps} arrow>
+          <Box component="span" sx={{ display: "inline-flex" }}>
+            {triggerButton}
+          </Box>
+        </Tooltip>
+      ) : (
+        triggerButton
+      )}
+      <Menu
+        anchorEl={anchorEl}
+        open={open}
+        onClose={handleClose}
+        {...menuProps}
+      >
+        {options.map((option, index) => (
+          <PromptMenuItem
+            key={`${option.value}-${index}`}
+            itemKey={`${option.value}-${index}`}
+            option={option}
+            onSelect={onSelect}
+            onClose={handleClose}
+          />
+        ))}
+      </Menu>
+    </>
+  )
+}
+
+export default SuggestedPromptsDropdown

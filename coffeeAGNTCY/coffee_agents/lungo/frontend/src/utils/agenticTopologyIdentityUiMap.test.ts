@@ -5,7 +5,7 @@
 
 import { describe, expect, it } from "vitest"
 import type { TopologyNodeWire } from "@/api/agenticWorkflowsTypes"
-import urlsConfig from "@/utils/urls.json"
+import { LUNGO_FRONTEND_URLS } from "@/urls"
 import type { CustomNodeData } from "@/components/MainArea/Graph/Elements/types"
 import {
   getOasfSlugFromNodeData,
@@ -46,7 +46,7 @@ describe("agenticTopologyIdentityUiMap", () => {
       "../../agents/supervisors/auction/oasf/agents/brazil-coffee-farm.json",
       { validateUrls: false },
     )
-    const root = urlsConfig.github.baseUrl.replace(/\/$/, "")
+    const root = LUNGO_FRONTEND_URLS.github.baseUrl.replace(/\/$/, "")
     expect(url).toBe(
       `${root}/lungo/agents/supervisors/auction/oasf/agents/brazil-coffee-farm.json`,
     )
@@ -125,6 +125,26 @@ describe("agenticTopologyIdentityUiMap", () => {
           handles: "all",
         } as unknown as CustomNodeData,
         expected: "logistics-supervisor-agent",
+      },
+      {
+        caseName: "MCP weather labels (title + role)",
+        data: {
+          icon: null,
+          label1: "Weather",
+          label2: "MCP Server",
+          handles: "all",
+        } as unknown as CustomNodeData,
+        expected: "weather-mcp-server",
+      },
+      {
+        caseName: "MCP payment labels (title + role)",
+        data: {
+          icon: null,
+          label1: "Payment",
+          label2: "MCP Server",
+          handles: "all",
+        } as unknown as CustomNodeData,
+        expected: "payment-mcp-server",
       },
     ])("$caseName", ({ data, expected }) => {
       expect(getOasfSlugFromNodeData(data)).toBe(expected)

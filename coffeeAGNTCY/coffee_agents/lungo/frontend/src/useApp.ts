@@ -4,6 +4,7 @@
  **/
 
 import { useState, useEffect, useRef, useCallback, useMemo } from "react"
+import { LUNGO_FRONTEND_URLS } from "@/urls"
 import { logger } from "@/utils/logger"
 import { useChatAreaMeasurement } from "@/hooks/useChatAreaMeasurement"
 import { useAppStreamingState } from "@/hooks/useAppStreamingState"
@@ -40,6 +41,7 @@ export function useApp() {
   const [workflowCatalogSummaries, setWorkflowCatalogSummaries] = useState<
     WorkflowSummary[] | null
   >(null)
+  const [workflowCatalogLoading, setWorkflowCatalogLoading] = useState(true)
   const [workflowCatalogError, setWorkflowCatalogError] = useState<
     string | null
   >(null)
@@ -90,6 +92,7 @@ export function useApp() {
 
   useEffect(() => {
     const controller = new AbortController()
+    setWorkflowCatalogLoading(true)
     setWorkflowCatalogError(null)
     fetchWorkflowSummariesWithRetry(controller.signal)
       .then((rows) => {
@@ -101,6 +104,11 @@ export function useApp() {
         setWorkflowCatalogError(
           err instanceof Error ? err.message : String(err),
         )
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) {
+          setWorkflowCatalogLoading(false)
+        }
       })
     return () => controller.abort()
   }, [])
@@ -221,7 +229,7 @@ export function useApp() {
     handleDiscoveryResponse,
   ])
 
-  const handleDropdownSelect = useCallback(
+  const handleSendPrompt = useCallback(
     async (query: string) => {
       chat.setCurrentUserMessage(query)
       chat.setIsAgentLoading(true)
@@ -240,7 +248,7 @@ export function useApp() {
           try {
             await streaming.startStreaming(query, activeWorkflowInstanceId)
           } catch (err) {
-            logger.apiError("/agent/prompt/stream", err)
+            logger.apiError(LUNGO_FRONTEND_URLS.apiPaths.agentPromptStream, err)
             chat.setShowFinalResponse(true)
             chat.handleApiResponse(
               "Sorry, I encountered an error with streaming.",
@@ -261,7 +269,7 @@ export function useApp() {
           try {
             await streaming.connectRecruiter(query)
           } catch (err) {
-            logger.apiError("/agent/prompt/stream", err)
+            logger.apiError(LUNGO_FRONTEND_URLS.apiPaths.agentPromptStream, err)
             chat.setShowFinalResponse(true)
             chat.handleApiResponse(
               "Sorry, I encountered an error with recruiter streaming.",
@@ -274,7 +282,7 @@ export function useApp() {
           chat.handleApiResponse(response, false)
         }
       } catch (err) {
-        logger.apiError("/agent/prompt", err)
+        logger.apiError(LUNGO_FRONTEND_URLS.apiPaths.agentPrompt, err)
         chat.handleApiResponse(
           err instanceof Error ? err.message : String(err),
           true,
@@ -282,7 +290,7 @@ export function useApp() {
         chat.setShowProgressTracker(false)
       }
     },
-    [selectedPattern, sendMessage, streaming, chat],
+    [activeWorkflowInstanceId, selectedPattern, sendMessage, streaming, chat],
   )
 
   const handleStreamComplete = useCallback(() => {
@@ -358,6 +366,7 @@ export function useApp() {
     selectedPattern,
     selectWorkflowFromCatalog,
     workflowCatalogSummaries,
+    workflowCatalogLoading,
     workflowCatalogError,
     selectedWorkflowSummary,
     chatHeightValue,
@@ -382,7 +391,7 @@ export function useApp() {
     discoveryResponseEvent,
     handleUserInput: chat.handleUserInput,
     handleApiResponse: chat.handleApiResponse,
-    handleDropdownSelect,
+    handleSendPrompt,
     handleStreamComplete,
     handleClearConversation,
     handleNodeHighlightSetup,

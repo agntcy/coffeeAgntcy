@@ -3,68 +3,69 @@
  * SPDX-License-Identifier: Apache-2.0
  **/
 
-import React, { useEffect, useRef, useState } from "react"
-import { HiUser } from "react-icons/hi"
-import { RiRobot2Fill } from "react-icons/ri"
-import { Waveform } from "ldrs/react"
-import "ldrs/react/Waveform.css"
+import React from "react"
+import { Box, Stack, Typography } from "@open-ui-kit/core"
+import type { SystemStyleObject } from "@mui/system"
+import type { Theme } from "@mui/material/styles"
 
-interface SlowTextProps {
-  text: string
-  speed?: number
+const messageBodyTypographySx: SystemStyleObject<Theme> = {
+  whiteSpace: "pre-wrap",
+  overflowWrap: "break-word",
+  wordBreak: "break-word",
+  py: 1,
 }
 
-const SlowText: React.FC<SlowTextProps> = ({ text, speed = 25 }) => {
-  const [displayedText, setDisplayedText] = useState<string>("")
-  const idx = useRef<number>(-1)
-
-  useEffect(() => {
-    function tick(): void {
-      idx.current++
-      setDisplayedText((prev: string) => prev + text[idx.current])
-    }
-
-    if (idx.current < text.length - 1) {
-      const addChar = setInterval(tick, speed)
-      return () => clearInterval(addChar)
-    }
-  }, [displayedText, speed, text])
-
-  return <span>{displayedText}</span>
-}
-
-interface MessageProps {
-  content: string
-  aiMessage: boolean
-  animate: boolean
-  loading: boolean
+export interface MessageProps {
+  /** Leading avatar or icon for the row. */
+  icon: React.ReactNode
+  /** Message body; wrapped in shared `body2` typography styles. */
+  children: React.ReactNode
+  /** Assistant / highlighted rows use `action.hover` background. */
+  highlighted?: boolean
 }
 
 const Message: React.FC<MessageProps> = ({
-  content,
-  aiMessage,
-  animate,
-  loading,
+  icon,
+  children,
+  highlighted = false,
 }) => {
   return (
-    <div
-      className={`flex w-full items-start gap-2 px-4 py-6 sm:px-8 md:px-16 md:py-[30px] lg:px-[120px] ${aiMessage ? "bg-[rgb(247,247,248)]" : ""}`}
+    <Stack
+      direction="row"
+      alignItems="flex-start"
+      spacing={2}
+      sx={{
+        width: "100%",
+        bgcolor: highlighted ? "action.hover" : "transparent",
+      }}
     >
-      <div className="flex h-[35px] w-[35px] flex-shrink-0 items-center justify-center">
-        {aiMessage ? <RiRobot2Fill color="#049FD9" /> : <HiUser />}
-      </div>
-      <div className="ml-2 min-w-0 flex-1 break-words">
-        {loading ? (
-          <div style={{ opacity: 0.5 }}>
-            <Waveform size="20" stroke="3.5" speed="1" color="#049FD9" />
-          </div>
-        ) : animate ? (
-          <SlowText speed={20} text={content} />
-        ) : (
-          content
-        )}
-      </div>
-    </div>
+      <Box
+        sx={{
+          flexShrink: 0,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        {icon}
+      </Box>
+      <Box
+        sx={{
+          minWidth: 0,
+          flex: 1,
+          overflowWrap: "break-word",
+          wordBreak: "break-word",
+        }}
+      >
+        <Typography
+          variant="body2"
+          component="div"
+          sx={messageBodyTypographySx}
+        >
+          {children}
+        </Typography>
+      </Box>
+    </Stack>
   )
 }
 

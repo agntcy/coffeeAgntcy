@@ -5,7 +5,6 @@
 
 import React from "react"
 import { BrowserRouter } from "react-router-dom"
-import { ThemeProvider } from "@/contexts/ThemeContext"
 import { OpenUiKitThemeBridge } from "@/contexts/OpenUiKitThemeBridge"
 
 interface AppProvidersProps {
@@ -15,9 +14,7 @@ interface AppProvidersProps {
 const AppProviders: React.FC<AppProvidersProps> = ({ children }) => {
   return (
     <BrowserRouter>
-      <ThemeProvider>
-        <OpenUiKitThemeBridge>{children}</OpenUiKitThemeBridge>
-      </ThemeProvider>
+      <OpenUiKitThemeBridge>{children}</OpenUiKitThemeBridge>
     </BrowserRouter>
   )
 }

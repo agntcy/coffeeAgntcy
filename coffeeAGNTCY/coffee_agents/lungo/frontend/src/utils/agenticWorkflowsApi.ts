@@ -16,17 +16,8 @@
  */
 
 import { agenticWorkflowsAuthHeaders } from "@/api/agenticWorkflowsClient"
-import { env } from "@/utils/env"
+import { buildAgenticWorkflowsCatalogUrl, LUNGO_FRONTEND_URLS } from "@/urls"
 import { PATTERNS, type PatternType } from "@/utils/patternUtils"
-
-const DEFAULT_AGENTIC_WORKFLOWS_API_URL = "http://127.0.0.1:9105"
-
-export const getAgenticWorkflowsApiUrl = (): string => {
-  return (
-    env.get("VITE_AGENTIC_WORKFLOWS_API_URL") ||
-    DEFAULT_AGENTIC_WORKFLOWS_API_URL
-  )
-}
 
 /** One row of `GET /agentic-workflows/` (matches backend `WorkflowSummary`). */
 export interface WorkflowSummary {
@@ -37,7 +28,8 @@ export interface WorkflowSummary {
 }
 
 /** Log label / relative path for catalog requests (matches router mount). */
-export const AGENTIC_WORKFLOWS_CATALOG_LOG_PATH = "/agentic-workflows/"
+export const AGENTIC_WORKFLOWS_CATALOG_LOG_PATH =
+  LUNGO_FRONTEND_URLS.apiPaths.agenticWorkflowsCatalog
 
 const CATALOG_FETCH_MAX_RETRIES = 2
 const CATALOG_FETCH_RETRY_DELAY_MS = 750
@@ -97,7 +89,7 @@ const isWorkflowSummary = (value: unknown): value is WorkflowSummary => {
 export const fetchWorkflowSummaries = async (
   signal?: AbortSignal,
 ): Promise<WorkflowSummary[]> => {
-  const url = `${getAgenticWorkflowsApiUrl()}/agentic-workflows/`
+  const url = buildAgenticWorkflowsCatalogUrl()
   const response = await fetch(url, {
     signal,
     headers: {

@@ -9,11 +9,11 @@ import type {
   InstantiateWorkflowResponseWire,
   WorkflowInstanceWire,
 } from "@/api/agenticWorkflowsTypes"
-import { env } from "@/utils/env"
-
-export function getAgenticWorkflowsApiKey(): string {
-  return env.get("VITE_AGENTIC_WORKFLOWS_API_KEY") ?? ""
-}
+import {
+  buildWorkflowInstanceSseUrl,
+  getAgenticWorkflowsApiKey,
+  LUNGO_FRONTEND_URLS,
+} from "@/urls"
 
 export function agenticWorkflowsAuthHeaders(): Record<string, string> {
   const key = getAgenticWorkflowsApiKey()
@@ -30,19 +30,6 @@ export function createClient(baseURL: string): AxiosInstance {
       ...agenticWorkflowsAuthHeaders(),
     },
   })
-}
-
-export function encodeWorkflowPathSegment(workflowName: string): string {
-  return encodeURIComponent(workflowName)
-}
-
-export function buildWorkflowInstanceSseUrl(
-  baseUrl: string,
-  workflowName: string,
-  instancePathUuid: string,
-): string {
-  const enc = encodeWorkflowPathSegment(workflowName)
-  return `${baseUrl.replace(/\/$/, "")}/agentic-workflows/${enc}/instances/${instancePathUuid}/events/stream`
 }
 
 function normalizeInstanceId(raw: unknown): string {
@@ -62,9 +49,8 @@ export async function instantiateWorkflow(
   client: AxiosInstance,
   workflowName: string,
 ): Promise<InstantiateWorkflowResponseWire> {
-  const path = encodeWorkflowPathSegment(workflowName)
   const { data } = await client.post<InstantiateWorkflowResponseWire>(
-    `/agentic-workflows/${path}/`,
+    LUNGO_FRONTEND_URLS.apiPaths.agenticWorkflowsInstantiate(workflowName),
   )
   const raw = (data as { workflow_instance_id?: unknown }).workflow_instance_id
   if (raw == null) {
@@ -80,9 +66,11 @@ export async function deleteWorkflowInstance(
   workflowName: string,
   instancePathUuid: string,
 ): Promise<void> {
-  const path = encodeWorkflowPathSegment(workflowName)
   await client.delete(
-    `/agentic-workflows/${path}/instances/${instancePathUuid}/`,
+    LUNGO_FRONTEND_URLS.apiPaths.agenticWorkflowsInstance(
+      workflowName,
+      instancePathUuid,
+    ),
   )
 }
 
@@ -92,9 +80,11 @@ export async function getWorkflowInstanceState(
   instancePathUuid: string,
   topologyOnly: boolean,
 ): Promise<WorkflowInstanceWire> {
-  const path = encodeWorkflowPathSegment(workflowName)
   const { data } = await client.get<WorkflowInstanceWire>(
-    `/agentic-workflows/${path}/instances/${instancePathUuid}/`,
+    LUNGO_FRONTEND_URLS.apiPaths.agenticWorkflowsInstance(
+      workflowName,
+      instancePathUuid,
+    ),
     { params: topologyOnly ? { topology_only: true } : undefined },
   )
   return data

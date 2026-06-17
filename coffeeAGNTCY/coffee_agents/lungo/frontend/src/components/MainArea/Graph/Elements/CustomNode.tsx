@@ -5,15 +5,34 @@
 
 import React, { useRef } from "react"
 import { Handle, Position } from "@xyflow/react"
-import { ClipboardCheck } from "lucide-react"
-import githubIcon from "@/assets/Github.png"
-import githubIconLight from "@/assets/Github_lightmode.png"
+import CheckCircle from "@mui/icons-material/CheckCircle"
+import {
+  Box,
+  IconButton,
+  Stack,
+  Tooltip,
+  Typography,
+  useTheme,
+} from "@open-ui-kit/core"
 import agentDirectoryIconDark from "@/assets/Agent_directory.png"
 import agentDirectoryIconLight from "@/assets/Agent_Icon_light.png"
-import identityBadgeIcon from "@/assets/identity_badge.svg"
+import { useGithubIcon } from "@/hooks/useGithubIcon"
 import { useThemeIcon } from "@/hooks/useThemeIcon"
-import { logger } from "@/utils/logger"
+import { AssetPngIcon } from "@/components/AssetPngIcon"
 import { SecurityClass } from "@/utils/SecurityClass"
+import {
+  getGraphNodeHandleStyle,
+  graphNodeRootSurfaceSx,
+  graphNodeSideIconControlSx,
+} from "./graphNodeSurface"
+import { GraphIconChip } from "./GraphIconChip"
+import { GraphSideIconTooltip } from "./GraphSideIconTooltip"
+import NodeIdentityDropdown from "../Identity/NodeIdentityDropdown"
+import {
+  CUSTOM_NODE_HEIGHT,
+  CUSTOM_NODE_INNER_WIDTH,
+  CUSTOM_NODE_WIDTH,
+} from "@/utils/graphNodeDimensions"
 import { CustomNodeData, ExtraHandle } from "./types"
 
 const POSITION_MAP: Record<ExtraHandle["position"], Position> = {
@@ -24,224 +43,162 @@ const POSITION_MAP: Record<ExtraHandle["position"], Position> = {
 }
 
 interface CustomNodeProps {
+  id: string
   data: CustomNodeData
-  onOpenOasfModal?: (
-    nodeData: CustomNodeData,
-    position: { x: number; y: number },
-  ) => void
 }
 
-const CustomNode: React.FC<CustomNodeProps> = ({
-  data,
-  //onOpenOasfModal,
-}) => {
+const CustomNode: React.FC<CustomNodeProps> = ({ id, data }) => {
   const nodeRef = useRef<HTMLDivElement>(null)
+  const theme = useTheme()
 
-  const githubIconSrc = useThemeIcon({
-    light: githubIconLight,
-    dark: githubIcon,
-  })
+  const githubIconSrc = useGithubIcon()
   const agentDirectoryIcon = useThemeIcon({
     light: agentDirectoryIconLight,
     dark: agentDirectoryIconDark,
   })
 
-  const handleIdentityClick = (e: React.MouseEvent) => {
-    e.stopPropagation()
-    e.preventDefault()
-
-    if (nodeRef.current && data.onOpenIdentityModal) {
-      const buttonRect = (
-        e.currentTarget as HTMLElement
-      ).getBoundingClientRect()
-      const isMcpServer = data.label1?.includes("MCP Server")
-      let position
-      if (isMcpServer) {
-        position = {
-          x: buttonRect.right + 12,
-          y: buttonRect.top + buttonRect.height / 2,
-        }
-      } else {
-        const buttonCenterX = buttonRect.left + buttonRect.width / 2
-        position = {
-          x: buttonCenterX,
-          y: buttonRect.bottom + 12,
-        }
-      }
-      data.onOpenIdentityModal(
-        data,
-        position,
-        data.label1 || "",
-        data,
-        isMcpServer,
-      )
-    } else {
-      logger.error("No modal handler found or nodeRef missing!")
-    }
-  }
+  const handleStyle = getGraphNodeHandleStyle(theme)
 
   const handleAgentDirectoryClick = (e: React.MouseEvent) => {
     e.stopPropagation()
     e.preventDefault()
     if (nodeRef.current && typeof data.onOpenOasfModal === "function") {
-      const buttonRect = (
-        e.currentTarget as HTMLElement
-      ).getBoundingClientRect()
-      const buttonCenterX = buttonRect.left + buttonRect.width / 2
-      const position = {
-        x: buttonCenterX,
-        y: buttonRect.bottom + 12,
-      }
-      data.onOpenOasfModal(data, position)
+      data.onOpenOasfModal(data)
     }
   }
 
-  const activeClasses = data.active
-    ? "bg-node-background-active outline outline-2 outline-accent-border shadow-[var(--shadow-default)_0px_6px_8px]"
-    : data.selected
-      ? "bg-node-background outline outline-2 outline-accent-primary shadow-[var(--shadow-default)_0px_6px_8px]"
-      : "bg-node-background"
-
   return (
     <>
-      <div
+      <Box
         ref={nodeRef}
-        className={`order-0 relative flex h-[91px] w-[193px] flex-none grow-0 flex-col items-start justify-start gap-2 rounded-lg p-4 ${activeClasses} hover:bg-node-background-hover hover:shadow-[var(--shadow-default)_0px_6px_8px] hover:outline hover:outline-2 hover:outline-accent-border`}
+        component="div"
+        sx={(t) => ({
+          ...graphNodeRootSurfaceSx(t, {
+            active: data.active,
+            selected: data.selected,
+          }),
+          position: "relative",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "flex-start",
+          justifyContent: "flex-start",
+          gap: t.spacing(1),
+          p: 2,
+          boxSizing: "border-box",
+          width: CUSTOM_NODE_WIDTH,
+          height: CUSTOM_NODE_HEIGHT,
+          flexGrow: 0,
+          flexShrink: 0,
+          order: 0,
+        })}
       >
-        <div className="flex h-5 w-5 flex-shrink-0 items-center justify-center gap-2.5 rounded bg-node-icon-background py-1 opacity-100">
-          <div className="flex h-4 w-4 items-center justify-center opacity-100">
-            {data.icon}
-          </div>
-        </div>
+        <GraphIconChip>{data.icon}</GraphIconChip>
 
-        <div
-          className="order-0 flex h-5 flex-none grow-0 flex-row items-center gap-1 self-stretch p-0"
-          style={{
-            width: data.verificationStatus === "verified" ? "160px" : "162px",
+        <Box
+          sx={{
+            display: "flex",
+            flexDirection: "row",
+            alignItems: "center",
+            gap: 0.5,
+            p: 0,
           }}
         >
-          <span className="order-0 flex h-5 flex-none grow-0 items-center overflow-hidden text-ellipsis whitespace-nowrap font-inter text-sm font-normal leading-5 tracking-normal text-node-text-primary opacity-100">
-            {data.label1}
-          </span>
+          <Tooltip title={data.label1} arrow>
+            <Typography
+              variant="h6"
+              component="span"
+              noWrap
+              sx={{ flex: "1 1 auto", minWidth: 0 }}
+            >
+              {data.label1}
+            </Typography>
+          </Tooltip>
           {data.verificationStatus === "verified" && (
-            <img
-              src={identityBadgeIcon}
-              alt="Verified"
-              className="order-1 h-4 w-4 flex-none grow-0"
+            <CheckCircle
+              aria-label="Verified"
+              sx={{
+                flexShrink: 0,
+                flexGrow: 0,
+                order: 1,
+                color: "success.main",
+              }}
             />
           )}
-        </div>
+        </Box>
 
-        <div
-          className="order-1 h-4 flex-none flex-grow-0 self-stretch overflow-hidden text-ellipsis whitespace-nowrap font-inter text-xs font-light leading-4 text-node-text-secondary"
-          style={{
-            width: "162px",
+        <Tooltip title={data.label2} arrow>
+          <Typography
+            variant="caption"
+            component="div"
+            noWrap
+            sx={{
+              order: 1,
+              alignSelf: "stretch",
+              flexGrow: 0,
+              flexShrink: 0,
+              height: 16,
+              width: CUSTOM_NODE_INNER_WIDTH,
+              maxWidth: "100%",
+              minWidth: 0,
+              fontWeight: 300,
+              lineHeight: "16px",
+            }}
+          >
+            {data.label2}
+          </Typography>
+        </Tooltip>
+
+        <Stack
+          direction="column"
+          spacing={0.5}
+          sx={{
+            position: "absolute",
+            right: -16,
+            top: "50%",
+            transform: "translateY(-50%)",
+            zIndex: 10,
           }}
         >
-          {data.label2}
-        </div>
-
-        <div className="absolute -right-4 top-1/2 z-10 flex -translate-y-1/2 flex-col gap-1">
           {data.githubLink &&
             SecurityClass.isSafeExternalUrl(data.githubLink) && (
-              <a
-                href={data.githubLink}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="no-underline"
-              >
-                <div
-                  className="flex h-7 w-7 cursor-pointer items-center justify-center rounded-lg border border-solid p-1 opacity-100 shadow-sm transition-opacity duration-200 ease-in-out"
-                  style={{
-                    backgroundColor: "var(--custom-node-background)",
-                    borderColor: "var(--custom-node-border)",
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.opacity = "0.8"
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.opacity = "1"
-                  }}
+              <GraphSideIconTooltip title="Open repository on GitHub">
+                <IconButton
+                  component="a"
+                  href={data.githubLink}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label="Open GitHub repository"
+                  sx={(t) => graphNodeSideIconControlSx(t)}
                 >
-                  <img src={githubIconSrc} alt="GitHub" className="h-5 w-5" />
-                </div>
-              </a>
+                  <AssetPngIcon bare src={githubIconSrc} alt="GitHub" />
+                </IconButton>
+              </GraphSideIconTooltip>
             )}
           {data.agentDirectoryLink && (
-            <button
-              type="button"
-              className="no-underline"
-              onClick={handleAgentDirectoryClick}
-              style={{
-                background: "none",
-                border: "none",
-                padding: 0,
-                margin: 0,
-              }}
-            >
-              <div
-                className="flex h-7 w-7 cursor-pointer items-center justify-center rounded-lg border border-solid p-1 opacity-100 shadow-sm"
-                style={{
-                  backgroundColor: "var(--custom-node-background)",
-                  borderColor: "var(--custom-node-border)",
-                }}
-                onMouseEnter={(e) => {
-                  ;(e.currentTarget as HTMLDivElement).style.opacity = "0.8"
-                }}
-                onMouseLeave={(e) => {
-                  ;(e.currentTarget as HTMLDivElement).style.opacity = "1"
-                }}
+            <GraphSideIconTooltip title="View OASF record in AGNTCY Directory">
+              <IconButton
+                type="button"
+                aria-label="Open AGNTCY Directory"
+                onClick={handleAgentDirectoryClick}
+                sx={(t) => graphNodeSideIconControlSx(t)}
               >
-                <img
+                <AssetPngIcon
+                  bare
                   src={agentDirectoryIcon}
                   alt="AGNTCY Directory"
-                  className="h-5 w-5"
                 />
-              </div>
-            </button>
+              </IconButton>
+            </GraphSideIconTooltip>
           )}
-          {data.verificationStatus === "verified" && (
-            <div
-              className={`flex h-7 w-7 cursor-pointer items-center justify-center rounded-lg border border-solid p-1 opacity-100 shadow-sm transition-opacity ${
-                data.isModalOpen === true
-                  ? "border-accent-border bg-accent-border bg-opacity-30"
-                  : ""
-              }`}
-              style={{
-                backgroundColor:
-                  data.isModalOpen === true
-                    ? undefined
-                    : "var(--custom-node-background)",
-                borderColor:
-                  data.isModalOpen === true
-                    ? undefined
-                    : "var(--custom-node-border)",
-              }}
-              onClick={handleIdentityClick}
-              onMouseEnter={(e) => {
-                if (data.isModalOpen !== true) {
-                  e.currentTarget.style.opacity = "0.8"
-                }
-              }}
-              onMouseLeave={(e) => {
-                if (data.isModalOpen !== true) {
-                  e.currentTarget.style.opacity = "1"
-                }
-              }}
-            >
-              <ClipboardCheck
-                className={`h-5 w-5 ${data.isModalOpen === true ? "text-accent-border" : "accent-icon"}`}
-              />
-            </div>
-          )}
-        </div>
+          <NodeIdentityDropdown nodeId={id} data={data} />
+        </Stack>
 
         {(data.handles === "all" || data.handles === "target") && (
           <Handle
             type="target"
             position={Position.Top}
             id="target"
-            className="h-px w-px border border-gray-600 bg-node-data-background"
+            style={handleStyle}
           />
         )}
         {(data.handles === "all" || data.handles === "source") && (
@@ -249,7 +206,7 @@ const CustomNode: React.FC<CustomNodeProps> = ({
             type="source"
             position={Position.Bottom}
             id="source"
-            className="h-px w-px border border-gray-600 bg-node-data-background"
+            style={handleStyle}
           />
         )}
         {data.extraHandles?.map((eh) => (
@@ -258,10 +215,10 @@ const CustomNode: React.FC<CustomNodeProps> = ({
             type={eh.type}
             position={POSITION_MAP[eh.position]}
             id={eh.id}
-            className="h-px w-px border border-gray-600 bg-node-data-background"
+            style={handleStyle}
           />
         ))}
-      </div>
+      </Box>
     </>
   )
 }

@@ -13,6 +13,7 @@ import { EDGE_LABELS, HANDLE_TYPES } from "@/utils/const.ts"
 import { logger } from "@/utils/logger"
 import { AgentRecord, DiscoveryResponseEvent } from "@/types/agent"
 import type { CustomNodeData } from "./Graph/Elements/types"
+import { CUSTOM_NODE_WIDTH } from "@/utils/graphNodeDimensions"
 
 const DISCOVERY_KEYWORDS = [
   "brazil",
@@ -38,7 +39,7 @@ function findRecruiterNodeId(nodes: Node[]): string {
   return legacy?.id ?? RECRUITER_NODE_ID
 }
 const RECRUITER_POS = { x: 400, y: 300 }
-const NODE_WIDTH = 193
+const NODE_WIDTH = CUSTOM_NODE_WIDTH
 const START_Y_OFFSET = 450
 const HORIZONTAL_GAP = 40
 
@@ -84,17 +85,8 @@ export interface UseMainAreaDiscoveryGraphParams {
   discoveryResponseEvent: DiscoveryResponseEvent | null | undefined
   setNodes: React.Dispatch<React.SetStateAction<Node[]>>
   setEdges: React.Dispatch<React.SetStateAction<Edge[]>>
-  handleOpenIdentityModal: (
-    nodeData: CustomNodeData,
-    position: { x: number; y: number },
-    nodeName?: string,
-    data?: CustomNodeData,
-    isMcpServer?: boolean,
-  ) => void
-  handleOpenOasfModal: (
-    nodeData: CustomNodeData,
-    position: { x: number; y: number },
-  ) => void
+  handleOpenIdentityModal: (nodeId: string, nodeData: CustomNodeData) => void
+  handleOpenOasfModal: (nodeData: CustomNodeData) => void
 }
 
 /** Syncs discovery response events to the graph: adds/removes discovery nodes and edges. */

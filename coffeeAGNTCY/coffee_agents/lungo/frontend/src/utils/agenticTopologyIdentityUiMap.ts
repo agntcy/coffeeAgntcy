@@ -16,7 +16,7 @@ import type { CustomNodeData } from "@/components/MainArea/Graph/Elements/types"
 import type { TopologyNodeWire } from "@/api/agenticWorkflowsTypes"
 import { VERIFICATION_STATUS } from "@/utils/const"
 import { PATTERNS, type PatternType } from "@/utils/patternUtils"
-import urlsConfig from "@/utils/urls.json"
+import { LUNGO_FRONTEND_URLS } from "@/urls"
 import { SecurityClass } from "@/utils/SecurityClass"
 
 /** Matches Python `common.stable_agent_id`: uuid5(NAMESPACE_DNS, "agent.workflow.lungo") */
@@ -46,7 +46,10 @@ export interface AgenticTopologyIdentityUiRow {
   verificationStatus?: "verified" | "failed"
 }
 
-const GITHUB_AGNTCY_BROWSE_ROOT = urlsConfig.github.baseUrl.replace(/\/$/, "")
+const GITHUB_AGNTCY_BROWSE_ROOT = LUNGO_FRONTEND_URLS.github.baseUrl.replace(
+  /\/$/,
+  "",
+)
 
 const RAW_IDENTITY_UI_ROWS: AgenticTopologyIdentityUiRow[] = [
   {
@@ -55,18 +58,18 @@ const RAW_IDENTITY_UI_ROWS: AgenticTopologyIdentityUiRow[] = [
     directoryAgentSlug: "auction-supervisor-agent",
     hasBadgeDetails: true,
     hasPolicyDetails: true,
-    agentDirectoryLink: `${urlsConfig.agentDirectory.baseUrl}${urlsConfig.agentDirectory.agents.supervisorAuction}`,
-    referenceGithubUrl: `${urlsConfig.github.baseUrl}${urlsConfig.github.agents.supervisorAuction}`,
-    referenceGithubUrlStreaming: `${urlsConfig.github.baseUrl}${urlsConfig.github.agents.supervisorAuctionStreaming}`,
+    agentDirectoryLink: `${LUNGO_FRONTEND_URLS.agentDirectory.baseUrl}${LUNGO_FRONTEND_URLS.agentDirectory.agents.supervisorAuction}`,
+    referenceGithubUrl: `${LUNGO_FRONTEND_URLS.github.baseUrl}${LUNGO_FRONTEND_URLS.github.agents.supervisorAuction}`,
+    referenceGithubUrlStreaming: `${LUNGO_FRONTEND_URLS.github.baseUrl}${LUNGO_FRONTEND_URLS.github.agents.supervisorAuctionStreaming}`,
   },
   {
     agentRecordName: "Brazil Coffee Farm",
     directoryAgentSlug: "brazil-coffee-farm",
     hasBadgeDetails: false,
     hasPolicyDetails: false,
-    agentDirectoryLink: `${urlsConfig.agentDirectory.baseUrl}${urlsConfig.agentDirectory.agents.brazilFarm}`,
-    referenceGithubUrl: `${urlsConfig.github.baseUrl}${urlsConfig.github.agents.brazilFarm}`,
-    referenceGithubUrlStreaming: `${urlsConfig.github.baseUrl}${urlsConfig.github.agents.brazilFarmStreaming}`,
+    agentDirectoryLink: `${LUNGO_FRONTEND_URLS.agentDirectory.baseUrl}${LUNGO_FRONTEND_URLS.agentDirectory.agents.brazilFarm}`,
+    referenceGithubUrl: `${LUNGO_FRONTEND_URLS.github.baseUrl}${LUNGO_FRONTEND_URLS.github.agents.brazilFarm}`,
+    referenceGithubUrlStreaming: `${LUNGO_FRONTEND_URLS.github.baseUrl}${LUNGO_FRONTEND_URLS.github.agents.brazilFarmStreaming}`,
     verificationStatus: VERIFICATION_STATUS.FAILED,
   },
   {
@@ -75,9 +78,9 @@ const RAW_IDENTITY_UI_ROWS: AgenticTopologyIdentityUiRow[] = [
     directoryAgentSlug: "colombia-coffee-farm",
     hasBadgeDetails: true,
     hasPolicyDetails: true,
-    agentDirectoryLink: `${urlsConfig.agentDirectory.baseUrl}${urlsConfig.agentDirectory.agents.colombiaFarm}`,
-    referenceGithubUrl: `${urlsConfig.github.baseUrl}${urlsConfig.github.agents.colombiaFarm}`,
-    referenceGithubUrlStreaming: `${urlsConfig.github.baseUrl}${urlsConfig.github.agents.colombiaFarmStreaming}`,
+    agentDirectoryLink: `${LUNGO_FRONTEND_URLS.agentDirectory.baseUrl}${LUNGO_FRONTEND_URLS.agentDirectory.agents.colombiaFarm}`,
+    referenceGithubUrl: `${LUNGO_FRONTEND_URLS.github.baseUrl}${LUNGO_FRONTEND_URLS.github.agents.colombiaFarm}`,
+    referenceGithubUrlStreaming: `${LUNGO_FRONTEND_URLS.github.baseUrl}${LUNGO_FRONTEND_URLS.github.agents.colombiaFarmStreaming}`,
   },
   {
     agentRecordName: "Vietnam Coffee Farm",
@@ -85,15 +88,15 @@ const RAW_IDENTITY_UI_ROWS: AgenticTopologyIdentityUiRow[] = [
     directoryAgentSlug: "vietnam-coffee-farm",
     hasBadgeDetails: true,
     hasPolicyDetails: false,
-    agentDirectoryLink: `${urlsConfig.agentDirectory.baseUrl}${urlsConfig.agentDirectory.agents.vietnamFarm}`,
-    referenceGithubUrl: `${urlsConfig.github.baseUrl}${urlsConfig.github.agents.vietnamFarm}`,
-    referenceGithubUrlStreaming: `${urlsConfig.github.baseUrl}${urlsConfig.github.agents.vietnamFarmStreaming}`,
+    agentDirectoryLink: `${LUNGO_FRONTEND_URLS.agentDirectory.baseUrl}${LUNGO_FRONTEND_URLS.agentDirectory.agents.vietnamFarm}`,
+    referenceGithubUrl: `${LUNGO_FRONTEND_URLS.github.baseUrl}${LUNGO_FRONTEND_URLS.github.agents.vietnamFarm}`,
+    referenceGithubUrlStreaming: `${LUNGO_FRONTEND_URLS.github.baseUrl}${LUNGO_FRONTEND_URLS.github.agents.vietnamFarmStreaming}`,
   },
   {
     agentRecordName: "Weather MCP Server",
     directoryAgentSlug: "weather-mcp-server",
-    agentDirectoryLink: `${urlsConfig.agentDirectory.baseUrl}${urlsConfig.agentDirectory.agents.weatherMcp}`,
-    referenceGithubUrl: `${urlsConfig.github.baseUrl}${urlsConfig.github.agents.weatherMcp}`,
+    agentDirectoryLink: `${LUNGO_FRONTEND_URLS.agentDirectory.baseUrl}${LUNGO_FRONTEND_URLS.agentDirectory.agents.weatherMcp}`,
+    referenceGithubUrl: `${LUNGO_FRONTEND_URLS.github.baseUrl}${LUNGO_FRONTEND_URLS.github.agents.weatherMcp}`,
     verificationStatus: VERIFICATION_STATUS.FAILED,
   },
   {
@@ -102,48 +105,48 @@ const RAW_IDENTITY_UI_ROWS: AgenticTopologyIdentityUiRow[] = [
     directoryAgentSlug: "payment-mcp-server",
     hasBadgeDetails: true,
     hasPolicyDetails: false,
-    agentDirectoryLink: urlsConfig.agentDirectory.baseUrl,
-    referenceGithubUrl: `${urlsConfig.github.baseUrl}${urlsConfig.github.agents.paymentMcp}`,
+    agentDirectoryLink: LUNGO_FRONTEND_URLS.agentDirectory.baseUrl,
+    referenceGithubUrl: `${LUNGO_FRONTEND_URLS.github.baseUrl}${LUNGO_FRONTEND_URLS.github.agents.paymentMcp}`,
   },
   {
     agentRecordName: "Logistics Supervisor agent",
     directoryAgentSlug: "logistics-supervisor-agent",
     hasBadgeDetails: false,
     hasPolicyDetails: false,
-    agentDirectoryLink: urlsConfig.agentDirectory.baseUrl,
-    referenceGithubUrl: `${urlsConfig.github.baseUrl}${urlsConfig.github.agents.logisticSupervisor}`,
+    agentDirectoryLink: LUNGO_FRONTEND_URLS.agentDirectory.baseUrl,
+    referenceGithubUrl: `${LUNGO_FRONTEND_URLS.github.baseUrl}${LUNGO_FRONTEND_URLS.github.agents.logisticSupervisor}`,
   },
   {
     agentRecordName: "Tatooine Farm agent",
     directoryAgentSlug: "tatooine-farm-agent",
     hasBadgeDetails: false,
     hasPolicyDetails: false,
-    agentDirectoryLink: `${urlsConfig.agentDirectory.baseUrl}/`,
-    referenceGithubUrl: `${urlsConfig.github.baseUrl}${urlsConfig.github.agents.logisticFarm}`,
+    agentDirectoryLink: `${LUNGO_FRONTEND_URLS.agentDirectory.baseUrl}/`,
+    referenceGithubUrl: `${LUNGO_FRONTEND_URLS.github.baseUrl}${LUNGO_FRONTEND_URLS.github.agents.logisticFarm}`,
   },
   {
     agentRecordName: "Shipping agent",
     directoryAgentSlug: "shipping-agent",
     hasBadgeDetails: false,
     hasPolicyDetails: false,
-    agentDirectoryLink: `${urlsConfig.agentDirectory.baseUrl}/`,
-    referenceGithubUrl: `${urlsConfig.github.baseUrl}${urlsConfig.github.agents.logisticShipper}`,
+    agentDirectoryLink: `${LUNGO_FRONTEND_URLS.agentDirectory.baseUrl}/`,
+    referenceGithubUrl: `${LUNGO_FRONTEND_URLS.github.baseUrl}${LUNGO_FRONTEND_URLS.github.agents.logisticShipper}`,
   },
   {
     agentRecordName: "Accountant agent",
     directoryAgentSlug: "accountant-agent",
     hasBadgeDetails: false,
     hasPolicyDetails: false,
-    agentDirectoryLink: `${urlsConfig.agentDirectory.baseUrl}/`,
-    referenceGithubUrl: `${urlsConfig.github.baseUrl}${urlsConfig.github.agents.logisticAccountant}`,
+    agentDirectoryLink: `${LUNGO_FRONTEND_URLS.agentDirectory.baseUrl}/`,
+    referenceGithubUrl: `${LUNGO_FRONTEND_URLS.github.baseUrl}${LUNGO_FRONTEND_URLS.github.agents.logisticAccountant}`,
   },
   {
     agentRecordName: "Agentic Recruiter agent",
     directoryAgentSlug: "recruiter",
     hasBadgeDetails: false,
     hasPolicyDetails: false,
-    agentDirectoryLink: urlsConfig.agentDirectory.baseUrl,
-    referenceGithubUrl: `${urlsConfig.github.baseUrl}${urlsConfig.github.agents.recruiter}`,
+    agentDirectoryLink: LUNGO_FRONTEND_URLS.agentDirectory.baseUrl,
+    referenceGithubUrl: `${LUNGO_FRONTEND_URLS.github.baseUrl}${LUNGO_FRONTEND_URLS.github.agents.recruiter}`,
   },
 ]
 
@@ -186,13 +189,24 @@ export function stableAgentIdFromWire(
   return undefined
 }
 
-/** Split a topology wire `label` into two lines for `CustomNodeData` (first space). */
+/** Split a topology wire `label` into title (`label1`) and role (`label2`). */
 export function splitTopologyNodeLabel(label: string): {
   label1: string
   label2: string
 } {
   const t = label.trim()
   if (!t) return { label1: "", label2: "" }
+
+  const mcpSuffix = t.match(/^(.+?)\s+MCP\s+Server$/i)
+  if (mcpSuffix) {
+    return { label1: mcpSuffix[1].trim(), label2: "MCP Server" }
+  }
+
+  const mcpPrefix = t.match(/^MCP\s+Server\s+(.+)$/i)
+  if (mcpPrefix) {
+    return { label1: mcpPrefix[1].trim(), label2: "MCP Server" }
+  }
+
   const sp = t.indexOf(" ")
   if (sp === -1) return { label1: t, label2: "" }
   return { label1: t.slice(0, sp), label2: t.slice(sp + 1).trim() }
@@ -238,7 +252,7 @@ export function identityUiVariantForPattern(
 
 /**
  * Build a browse-safe GitHub URL for the OASF record file from `agent_record_uri`,
- * using the same browse root as the legacy static graph (`urlsConfig.github.baseUrl`).
+ * using the same browse root as the legacy static graph (`LUNGO_FRONTEND_URLS.github.baseUrl`).
  */
 export function resolveGithubFromAgentRecordUri(
   agentRecordUri: string | undefined,
@@ -278,12 +292,12 @@ export function enrichAgenticTopologyWellKnownUi(
   }
 
   if (typeLower === "group" || combinedLower === "logistics group") {
-    const transportUrl = `${urlsConfig.github.appSdkBaseUrl}${urlsConfig.github.transports.group}`
+    const transportUrl = `${LUNGO_FRONTEND_URLS.github.appSdkBaseUrl}${LUNGO_FRONTEND_URLS.github.transports.group}`
     return {
       ...data,
       githubLink: data.githubLink ?? safeUrl(transportUrl),
       agentDirectoryLink:
-        data.agentDirectoryLink ?? urlsConfig.agentDirectory.baseUrl,
+        data.agentDirectoryLink ?? LUNGO_FRONTEND_URLS.agentDirectory.baseUrl,
       directoryAgentSlug:
         data.directoryAgentSlug ?? "logistics-supervisor-agent",
       verificationStatus: VERIFICATION_STATUS.VERIFIED,
@@ -295,12 +309,12 @@ export function enrichAgenticTopologyWellKnownUi(
     combinedLower.includes("agent directory")
 
   if (isAgntcyDirectory) {
-    const dirGh = urlsConfig.agentDirectory.github
+    const dirGh = LUNGO_FRONTEND_URLS.agentDirectory.github
     return {
       ...data,
       githubLink: data.githubLink ?? safeUrl(dirGh),
       agentDirectoryLink:
-        data.agentDirectoryLink ?? urlsConfig.agentDirectory.baseUrl,
+        data.agentDirectoryLink ?? LUNGO_FRONTEND_URLS.agentDirectory.baseUrl,
       verificationStatus: VERIFICATION_STATUS.VERIFIED,
     }
   }
@@ -313,7 +327,7 @@ export function enrichAgenticTopologyWellKnownUi(
     /\brecruiter\b/.test(recruiterLabels) &&
     !data.githubLink
   ) {
-    const ref = `${urlsConfig.github.baseUrl}${urlsConfig.github.agents.recruiter}`
+    const ref = `${LUNGO_FRONTEND_URLS.github.baseUrl}${LUNGO_FRONTEND_URLS.github.agents.recruiter}`
     return {
       ...data,
       githubLink: safeUrl(ref),
@@ -371,6 +385,22 @@ export function mergeAgenticTopologyIdentityUi(
   return merged
 }
 
+function mcpDirectorySlugFromLabels(
+  label1: string | undefined,
+  label2: string | undefined,
+): string | null {
+  const pair = new Set(
+    [label1, label2].filter(Boolean).map((part) => part!.trim().toLowerCase()),
+  )
+  if (pair.has("weather") && pair.has("mcp server")) {
+    return "weather-mcp-server"
+  }
+  if (pair.has("payment") && pair.has("mcp server")) {
+    return "payment-mcp-server"
+  }
+  return null
+}
+
 /** Resolve `GET .../agents/{slug}/oasf` slug from merged or static graph node data. */
 export function getOasfSlugFromNodeData(
   nodeData: CustomNodeData | null | undefined,
@@ -390,6 +420,9 @@ export function getOasfSlugFromNodeData(
   const label2 = nodeData.label2?.toLowerCase()
   const labelsText = `${label1 ?? ""} ${label2 ?? ""}`.trim()
 
+  const mcpSlug = mcpDirectorySlugFromLabels(label1, label2)
+  if (mcpSlug) return mcpSlug
+
   if (/\bagentic\b/.test(labelsText) && /\brecruiter\b/.test(labelsText)) {
     return "recruiter"
   }
@@ -404,10 +437,6 @@ export function getOasfSlugFromNodeData(
 
   if (label1 === "auction" && label2?.includes("agent")) {
     return "auction-supervisor-agent"
-  }
-
-  if (label1 === "mcp server" && label2 === "weather") {
-    return "weather-mcp-server"
   }
 
   if (label1 === "colombia" && label2?.includes("coffee farm")) {
@@ -428,10 +457,6 @@ export function getOasfSlugFromNodeData(
 
   if (label1 === "tatooine" && label2?.includes("coffee farm")) {
     return "tatooine-farm-agent"
-  }
-
-  if (label1 === "mcp server" && label2 === "payment") {
-    return "payment-mcp-server"
   }
 
   if (label1 === "shipper") {

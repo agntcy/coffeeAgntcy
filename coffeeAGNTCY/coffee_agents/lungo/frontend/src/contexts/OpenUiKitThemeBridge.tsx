@@ -2,19 +2,24 @@
  * Copyright AGNTCY Contributors (https://github.com/agntcy)
  * SPDX-License-Identifier: Apache-2.0
  *
- * Syncs Open UI Kit (MUI) theme with Lungo ThemeContext.
- * Render only inside ThemeProvider from @/contexts/ThemeContext.
+ * Open UI Kit theme provider with persisted light/dark mode.
  **/
 
-import type { ReactNode } from "react"
+import { type ReactNode } from "react"
 import { ThemeProvider as OpenUiKitThemeProvider } from "@open-ui-kit/core"
-import { useTheme } from "@/hooks/useTheme"
+
+import { LungoCompactTheme } from "@/contexts/LungoCompactTheme"
+import { ThemeModePersistence } from "@/contexts/ThemeModePersistence"
+import { readStoredIsDarkMode } from "@/utils/themeStorage"
 
 export function OpenUiKitThemeBridge({ children }: { children: ReactNode }) {
-  const { isLightMode } = useTheme()
+  const storedIsDarkMode = readStoredIsDarkMode()
+
   return (
-    <OpenUiKitThemeProvider isDarkMode={!isLightMode}>
-      {children}
+    <OpenUiKitThemeProvider defaultDarkMode={storedIsDarkMode ?? false}>
+      <LungoCompactTheme>
+        <ThemeModePersistence>{children}</ThemeModePersistence>
+      </LungoCompactTheme>
     </OpenUiKitThemeProvider>
   )
 }

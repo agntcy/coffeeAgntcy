@@ -3,9 +3,11 @@
  * SPDX-License-Identifier: Apache-2.0
  **/
 
-import { TiWeatherCloudy } from "react-icons/ti"
-import { Truck, Calculator } from "lucide-react"
+import Air from "@mui/icons-material/Air"
+import Calculate from "@mui/icons-material/Calculate"
+import LocalShipping from "@mui/icons-material/LocalShipping"
 import { Node, Edge } from "@xyflow/react"
+import { GraphDiscoveryAssetImg } from "@/utils/GraphDiscoveryAssetImg"
 import supervisorIcon from "@/assets/supervisor.png"
 import farmAgentIcon from "@/assets/Grader-Agent.png"
 import {
@@ -18,7 +20,21 @@ import {
   HANDLE_TYPES,
   VERIFICATION_STATUS,
 } from "./const"
-import urlsConfig from "./urls.json"
+import { LUNGO_FRONTEND_URLS } from "@/urls"
+
+function graphNodeIconImg(
+  src: string,
+  alt: string,
+  options?: { invertInDarkMode?: boolean },
+) {
+  return (
+    <GraphDiscoveryAssetImg
+      src={src}
+      alt={alt}
+      invertInDarkMode={options?.invertInDarkMode}
+    />
+  )
+}
 
 export interface GraphConfig {
   title: string
@@ -27,13 +43,19 @@ export interface GraphConfig {
   animationSequence: { ids: string[] }[]
 }
 
-const CoffeeBeanIcon = (
-  <img
-    src={farmAgentIcon}
-    alt="Coffee Farm Agent Icon"
-    className="dark-icon h-4 w-4 object-contain opacity-100"
-  />
+const SupervisorIcon = graphNodeIconImg(supervisorIcon, "Supervisor Icon", {
+  invertInDarkMode: true,
+})
+const CoffeeBeanIcon = graphNodeIconImg(
+  farmAgentIcon,
+  "Coffee Farm Agent Icon",
+  {
+    invertInDarkMode: true,
+  },
 )
+const FarmAgentIcon = graphNodeIconImg(farmAgentIcon, "Farm Agent Icon", {
+  invertInDarkMode: true,
+})
 
 export const PUBLISH_SUBSCRIBE_CONFIG: GraphConfig = {
   title: "Publish Subscribe",
@@ -42,21 +64,15 @@ export const PUBLISH_SUBSCRIBE_CONFIG: GraphConfig = {
       id: NODE_IDS.AUCTION_AGENT,
       type: NODE_TYPES.CUSTOM,
       data: {
-        icon: (
-          <img
-            src={supervisorIcon}
-            alt="Supervisor Icon"
-            className="dark-icon h-4 w-4 object-contain"
-          />
-        ),
+        icon: SupervisorIcon,
         label1: "Auction Agent",
         label2: "Buyer",
         handles: HANDLE_TYPES.SOURCE,
         verificationStatus: VERIFICATION_STATUS.VERIFIED,
         hasBadgeDetails: true,
         hasPolicyDetails: true,
-        githubLink: `${urlsConfig.github.baseUrl}${urlsConfig.github.agents.supervisorAuction}`,
-        agentDirectoryLink: `${urlsConfig.agentDirectory.baseUrl}${urlsConfig.agentDirectory.agents.supervisorAuction}`,
+        githubLink: `${LUNGO_FRONTEND_URLS.github.baseUrl}${LUNGO_FRONTEND_URLS.github.agents.supervisorAuction}`,
+        agentDirectoryLink: `${LUNGO_FRONTEND_URLS.agentDirectory.baseUrl}${LUNGO_FRONTEND_URLS.agentDirectory.agents.supervisorAuction}`,
       },
       position: { x: 527.1332569384248, y: 76.4805787605829 },
     },
@@ -65,7 +81,7 @@ export const PUBLISH_SUBSCRIBE_CONFIG: GraphConfig = {
       type: NODE_TYPES.TRANSPORT,
       data: {
         label: "Transport: ",
-        githubLink: `${urlsConfig.github.appSdkBaseUrl}${urlsConfig.github.transports.general}`,
+        githubLink: `${LUNGO_FRONTEND_URLS.github.appSdkBaseUrl}${LUNGO_FRONTEND_URLS.github.transports.general}`,
       },
       position: { x: 229.02370449534635, y: 284.688426426175 },
     },
@@ -79,8 +95,8 @@ export const PUBLISH_SUBSCRIBE_CONFIG: GraphConfig = {
         handles: HANDLE_TYPES.TARGET,
         farmName: FarmName?.BrazilCoffeeFarm || "Brazil Coffee Farm",
         verificationStatus: VERIFICATION_STATUS.FAILED,
-        githubLink: `${urlsConfig.github.baseUrl}${urlsConfig.github.agents.brazilFarm}`,
-        agentDirectoryLink: `${urlsConfig.agentDirectory.baseUrl}${urlsConfig.agentDirectory.agents.brazilFarm}`,
+        githubLink: `${LUNGO_FRONTEND_URLS.github.baseUrl}${LUNGO_FRONTEND_URLS.github.agents.brazilFarm}`,
+        agentDirectoryLink: `${LUNGO_FRONTEND_URLS.agentDirectory.baseUrl}${LUNGO_FRONTEND_URLS.agentDirectory.agents.brazilFarm}`,
       },
       position: { x: 232.0903941835277, y: 503.93174725714437 },
     },
@@ -96,8 +112,8 @@ export const PUBLISH_SUBSCRIBE_CONFIG: GraphConfig = {
         verificationStatus: VERIFICATION_STATUS.VERIFIED,
         hasBadgeDetails: true,
         hasPolicyDetails: true,
-        githubLink: `${urlsConfig.github.baseUrl}${urlsConfig.github.agents.colombiaFarm}`,
-        agentDirectoryLink: `${urlsConfig.agentDirectory.baseUrl}${urlsConfig.agentDirectory.agents.colombiaFarm}`,
+        githubLink: `${LUNGO_FRONTEND_URLS.github.baseUrl}${LUNGO_FRONTEND_URLS.github.agents.colombiaFarm}`,
+        agentDirectoryLink: `${LUNGO_FRONTEND_URLS.agentDirectory.baseUrl}${LUNGO_FRONTEND_URLS.agentDirectory.agents.colombiaFarm}`,
       },
       position: { x: 521.266082170288, y: 505.38817113883306 },
     },
@@ -113,8 +129,8 @@ export const PUBLISH_SUBSCRIBE_CONFIG: GraphConfig = {
         verificationStatus: VERIFICATION_STATUS.VERIFIED,
         hasBadgeDetails: true,
         hasPolicyDetails: false,
-        githubLink: `${urlsConfig.github.baseUrl}${urlsConfig.github.agents.vietnamFarm}`,
-        agentDirectoryLink: `${urlsConfig.agentDirectory.baseUrl}${urlsConfig.agentDirectory.agents.vietnamFarm}`,
+        githubLink: `${LUNGO_FRONTEND_URLS.github.baseUrl}${LUNGO_FRONTEND_URLS.github.agents.vietnamFarm}`,
+        agentDirectoryLink: `${LUNGO_FRONTEND_URLS.agentDirectory.baseUrl}${LUNGO_FRONTEND_URLS.agentDirectory.agents.vietnamFarm}`,
       },
       position: { x: 832.9824511707582, y: 505.08339631990395 },
     },
@@ -122,12 +138,13 @@ export const PUBLISH_SUBSCRIBE_CONFIG: GraphConfig = {
       id: NODE_IDS.WEATHER_MCP,
       type: NODE_TYPES.CUSTOM,
       data: {
-        icon: <TiWeatherCloudy className="dark-icon h-4 w-4" />,
-        label1: "MCP Server",
-        label2: "Weather",
+        icon: <Air />,
+        label1: "Weather",
+        label2: "MCP Server",
+        directoryAgentSlug: "weather-mcp-server",
         handles: HANDLE_TYPES.TARGET,
-        githubLink: `${urlsConfig.github.baseUrl}${urlsConfig.github.agents.weatherMcp}`,
-        agentDirectoryLink: `${urlsConfig.agentDirectory.baseUrl}${urlsConfig.agentDirectory.agents.weatherMcp}`,
+        githubLink: `${LUNGO_FRONTEND_URLS.github.baseUrl}${LUNGO_FRONTEND_URLS.github.agents.weatherMcp}`,
+        agentDirectoryLink: `${LUNGO_FRONTEND_URLS.agentDirectory.baseUrl}${LUNGO_FRONTEND_URLS.agentDirectory.agents.weatherMcp}`,
       },
       position: { x: 371.266082170288, y: 731.9104402412228 },
     },
@@ -135,15 +152,16 @@ export const PUBLISH_SUBSCRIBE_CONFIG: GraphConfig = {
       id: NODE_IDS.PAYMENT_MCP,
       type: NODE_TYPES.CUSTOM,
       data: {
-        icon: <Calculator className="dark-icon h-4 w-4" />,
-        label1: "MCP Server",
-        label2: "Payment",
+        icon: <Calculate />,
+        label1: "Payment",
+        label2: "MCP Server",
+        directoryAgentSlug: "payment-mcp-server",
         handles: HANDLE_TYPES.TARGET,
         verificationStatus: VERIFICATION_STATUS.VERIFIED,
         hasBadgeDetails: true,
         hasPolicyDetails: false,
-        githubLink: `${urlsConfig.github.baseUrl}${urlsConfig.github.agents.paymentMcp}`,
-        agentDirectoryLink: urlsConfig.agentDirectory.baseUrl,
+        githubLink: `${LUNGO_FRONTEND_URLS.github.baseUrl}${LUNGO_FRONTEND_URLS.github.agents.paymentMcp}`,
+        agentDirectoryLink: LUNGO_FRONTEND_URLS.agentDirectory.baseUrl,
       },
       position: { x: 671.266082170288, y: 731.9104402412228 },
     },
@@ -235,18 +253,12 @@ export const GROUP_MESSAGING_CONFIG: GraphConfig = {
       id: NODE_IDS.AUCTION_AGENT,
       type: NODE_TYPES.CUSTOM,
       data: {
-        icon: (
-          <img
-            src={supervisorIcon}
-            alt="Supervisor Icon"
-            className="dark-icon h-4 w-4 object-contain"
-          />
-        ),
+        icon: SupervisorIcon,
         label1: "Buyer",
         label2: "Logistics Agent",
         handles: HANDLE_TYPES.SOURCE,
-        githubLink: `${urlsConfig.github.baseUrl}${urlsConfig.github.agents.logisticSupervisor}`,
-        agentDirectoryLink: urlsConfig.agentDirectory.baseUrl,
+        githubLink: `${LUNGO_FRONTEND_URLS.github.baseUrl}${LUNGO_FRONTEND_URLS.github.agents.logisticSupervisor}`,
+        agentDirectoryLink: LUNGO_FRONTEND_URLS.agentDirectory.baseUrl,
       },
       position: { x: 150, y: 100 },
       parentId: NODE_IDS.LOGISTICS_GROUP,
@@ -258,7 +270,7 @@ export const GROUP_MESSAGING_CONFIG: GraphConfig = {
       data: {
         label: "Transport: SLIM",
         compact: true,
-        githubLink: `${urlsConfig.github.appSdkBaseUrl}${urlsConfig.github.transports.group}`,
+        githubLink: `${LUNGO_FRONTEND_URLS.github.appSdkBaseUrl}${LUNGO_FRONTEND_URLS.github.transports.group}`,
       },
       position: { x: 380, y: 270 },
       parentId: NODE_IDS.LOGISTICS_GROUP,
@@ -268,19 +280,13 @@ export const GROUP_MESSAGING_CONFIG: GraphConfig = {
       id: NODE_IDS.BRAZIL_FARM,
       type: NODE_TYPES.CUSTOM,
       data: {
-        icon: (
-          <img
-            src={farmAgentIcon}
-            alt="Farm Agent Icon"
-            className="dark-icon h-4 w-4 object-contain opacity-100"
-          />
-        ),
+        icon: FarmAgentIcon,
         label1: "Tatooine",
         label2: "Coffee Farm Agent",
         handles: HANDLE_TYPES.ALL,
         farmName: "Tatooine Farm",
-        githubLink: `${urlsConfig.github.baseUrl}${urlsConfig.github.agents.logisticFarm}`,
-        agentDirectoryLink: `${urlsConfig.agentDirectory.baseUrl}/`,
+        githubLink: `${LUNGO_FRONTEND_URLS.github.baseUrl}${LUNGO_FRONTEND_URLS.github.agents.logisticFarm}`,
+        agentDirectoryLink: `${LUNGO_FRONTEND_URLS.agentDirectory.baseUrl}/`,
       },
       position: { x: 550, y: 100 },
       parentId: NODE_IDS.LOGISTICS_GROUP,
@@ -290,15 +296,13 @@ export const GROUP_MESSAGING_CONFIG: GraphConfig = {
       id: NODE_IDS.COLOMBIA_FARM,
       type: NODE_TYPES.CUSTOM,
       data: {
-        icon: (
-          <Truck className="dark-icon h-4 w-4 object-contain opacity-100" />
-        ),
+        icon: <LocalShipping />,
         label1: "Shipper",
         label2: "Shipper Agent",
         handles: HANDLE_TYPES.TARGET,
         agentName: "Shipper Logistics",
-        githubLink: `${urlsConfig.github.baseUrl}${urlsConfig.github.agents.logisticShipper}`,
-        agentDirectoryLink: `${urlsConfig.agentDirectory.baseUrl}/`,
+        githubLink: `${LUNGO_FRONTEND_URLS.github.baseUrl}${LUNGO_FRONTEND_URLS.github.agents.logisticShipper}`,
+        agentDirectoryLink: `${LUNGO_FRONTEND_URLS.agentDirectory.baseUrl}/`,
       },
       position: { x: 150, y: 500 },
       parentId: NODE_IDS.LOGISTICS_GROUP,
@@ -308,15 +312,13 @@ export const GROUP_MESSAGING_CONFIG: GraphConfig = {
       id: NODE_IDS.VIETNAM_FARM,
       type: NODE_TYPES.CUSTOM,
       data: {
-        icon: (
-          <Calculator className="dark-icon h-4 w-4 object-contain opacity-100" />
-        ),
+        icon: <Calculate />,
         label1: "Accountant",
         label2: "Accountant Agent",
         handles: HANDLE_TYPES.TARGET,
         agentName: "Accountant Logistics",
-        githubLink: `${urlsConfig.github.baseUrl}${urlsConfig.github.agents.logisticAccountant}`,
-        agentDirectoryLink: `${urlsConfig.agentDirectory.baseUrl}/`,
+        githubLink: `${LUNGO_FRONTEND_URLS.github.baseUrl}${LUNGO_FRONTEND_URLS.github.agents.logisticAccountant}`,
+        agentDirectoryLink: `${LUNGO_FRONTEND_URLS.agentDirectory.baseUrl}/`,
       },
       position: { x: 500, y: 500 },
       parentId: NODE_IDS.LOGISTICS_GROUP,
@@ -386,13 +388,9 @@ export const A2A_HTTP_CONFIG: GraphConfig = {
       id: NODE_IDS.RECRUITER,
       type: NODE_TYPES.CUSTOM,
       data: {
-        icon: (
-          <img
-            src={supervisorIcon}
-            alt="Recruiter Icon"
-            className="dark-icon h-4 w-4 object-contain"
-          />
-        ),
+        icon: graphNodeIconImg(supervisorIcon, "Recruiter Icon", {
+          invertInDarkMode: true,
+        }),
         label1: "Agentic Recruiter",
         label2: "Discovery and delegation",
         handles: HANDLE_TYPES.ALL,
@@ -401,7 +399,7 @@ export const A2A_HTTP_CONFIG: GraphConfig = {
         ],
         selected: true,
         verificationStatus: VERIFICATION_STATUS.VERIFIED,
-        githubLink: `${urlsConfig.github.baseUrl}${urlsConfig.github.agents.recruiter}`,
+        githubLink: `${LUNGO_FRONTEND_URLS.github.baseUrl}${LUNGO_FRONTEND_URLS.github.agents.recruiter}`,
       },
       position: { x: 400, y: 300 },
     },
@@ -409,18 +407,14 @@ export const A2A_HTTP_CONFIG: GraphConfig = {
       id: NODE_IDS.DIRECTORY,
       type: NODE_TYPES.CUSTOM,
       data: {
-        icon: (
-          <img
-            src={supervisorIcon}
-            alt="Directory Icon"
-            className="dark-icon h-4 w-4 object-contain"
-          />
-        ),
+        icon: graphNodeIconImg(supervisorIcon, "Directory Icon", {
+          invertInDarkMode: true,
+        }),
         label1: "Directory",
         label2: "AGNTCY Agent Directory",
         handles: HANDLE_TYPES.ALL,
         extraHandles: [{ id: "source-left", type: "source", position: "left" }],
-        githubLink: `${urlsConfig.agentDirectory.github}`,
+        githubLink: `${LUNGO_FRONTEND_URLS.agentDirectory.github}`,
         agentDirectoryLink: "place-holder",
       },
       position: { x: 800, y: 100 },
