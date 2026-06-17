@@ -24,7 +24,7 @@ import { PATTERNS, type PatternType } from "@/utils/patternUtils"
 export interface StaticIdMap {
   /** UUID (no `agent://` prefix) -> static NODE_IDS value. */
   idByStableAgentUuid: ReadonlyMap<string, string>
-  /** Lowercased label/label1/label1+label2 -> static NODE_IDS value. */
+  /** Lowercased wire `label` -> static NODE_IDS value (no stable_agent_id only). */
   idByLabel: ReadonlyMap<string, string>
   /** Transport canonical key (e.g. `"transport"`) -> static NODE_IDS value. */
   idByTransportKey: ReadonlyMap<string, string>
@@ -51,16 +51,8 @@ function buildPublishSubscribeIdMap(): StaticIdMap {
   const idByLabel = new Map<string, string>([
     // Defensive label fallbacks if the wire lacks a stable_agent_id.
     [lc("Auction Agent"), "1"],
-    [lc("Auction Agent Buyer"), "1"],
-    [lc("Brazil"), "3"],
-    [lc("Colombia"), "4"],
-    [lc("Vietnam"), "5"],
-    [lc("Weather"), "6"],
     [lc("Weather MCP Server"), "6"],
-    [lc("MCP Server Weather"), "6"],
-    [lc("Payment"), "7"],
     [lc("Payment MCP Server"), "7"],
-    [lc("MCP Server Payment"), "7"],
   ])
   const idByTransportKey = new Map<string, string>([["transport", "2"]])
   return {
@@ -79,11 +71,7 @@ function buildGroupCommunicationIdMap(): StaticIdMap {
   ])
   const idByLabel = new Map<string, string>([
     [lc("Buyer Logistics Agent"), "1"],
-    [lc("Buyer"), "1"],
-    [lc("Tatooine"), "3"],
-    [lc("Shipper"), "4"],
     [lc("Shipper Agent"), "4"],
-    [lc("Accountant"), "5"],
     [lc("Accountant Agent"), "5"],
     // The group container has no stable_agent_id; match by label only.
     [lc("Logistics Group"), "logistics-group"],
@@ -108,12 +96,8 @@ function buildDiscoveryIdMap(): StaticIdMap {
   ])
   const idByLabel = new Map<string, string>([
     [lc("Agentic Recruiter"), "recruiter-agent"],
-    [lc("Agentic Recruiter Discovery and delegation"), "recruiter-agent"],
-    [lc("Recruiter"), "recruiter-agent"],
     // No OASF record for the directory; resolved by label only.
-    [lc("Directory"), "agntcy-directory"],
     [lc("AGNTCY Agent Directory"), "agntcy-directory"],
-    [lc("Directory AGNTCY Agent Directory"), "agntcy-directory"],
   ])
   // Discovery pattern has no transport node in the static config.
   const idByTransportKey = new Map<string, string>()
