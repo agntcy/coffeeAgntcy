@@ -14,18 +14,22 @@ import type {
   RecruiterStreamingFeedProps,
   RecruiterStreamingEvent,
 } from "@/stores/recruiterStreaming.types"
+import { resolveStreamAuthorToNodeId } from "../chatStreamGraphHighlight"
 
 const RecruiterStreamingFeed: React.FC<RecruiterStreamingFeedProps> = ({
   isVisible,
   onComplete,
   prompt,
   onStreamComplete,
+  onSenderHighlight,
+  graphConfig,
   recruiterStreamingState,
   apiError,
 }) => {
   const isComplete = recruiterStreamingState?.status === "completed"
   const [isExpanded, setIsExpanded] = useState(true)
   const hasAutoCollapsedRef = useRef(false)
+  const lastProcessedEventRef = useRef<string | null>(null)
 
   const toggleDetailsExpanded = useCallback(() => {
     setIsExpanded((v) => !v)
@@ -36,8 +40,26 @@ const RecruiterStreamingFeed: React.FC<RecruiterStreamingFeedProps> = ({
     if (prompt) {
       setIsExpanded(true)
       hasAutoCollapsedRef.current = false
+      lastProcessedEventRef.current = null
     }
   }, [prompt])
+
+  useEffect(() => {
+    const events = recruiterStreamingState?.events ?? []
+    if (!events.length || !onSenderHighlight) return
+
+    const lastEvent = events[events.length - 1]
+    if (lastEvent.event_type !== "status_update") return
+
+    const eventKey = `${lastEvent.event_type}-${lastEvent.author ?? ""}-${lastEvent.message ?? ""}-${events.length}`
+    if (lastProcessedEventRef.current === eventKey) return
+    lastProcessedEventRef.current = eventKey
+
+    const nodeId = resolveStreamAuthorToNodeId(lastEvent.author, graphConfig)
+    if (nodeId) {
+      onSenderHighlight(nodeId)
+    }
+  }, [recruiterStreamingState?.events, onSenderHighlight, graphConfig])
 
   // Auto-collapse once when streaming completes
   useEffect(() => {

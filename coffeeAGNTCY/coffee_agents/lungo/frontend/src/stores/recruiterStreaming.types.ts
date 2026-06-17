@@ -4,6 +4,7 @@
  **/
 
 import type { AgentRecord } from "@/types/agent"
+import type { GraphConfig } from "@/utils/graphConfigs"
 
 export interface RecruiterStreamingEvent {
   event_type: "status_update" | "completed" | "error"
@@ -31,6 +32,8 @@ export interface RecruiterStreamingFeedProps {
   onComplete?: () => void
   prompt: string
   onStreamComplete?: () => void
+  onSenderHighlight?: (nodeId: string) => void
+  graphConfig?: GraphConfig
   apiError: boolean
   recruiterStreamingState?: RecruiterStreamingState
 }

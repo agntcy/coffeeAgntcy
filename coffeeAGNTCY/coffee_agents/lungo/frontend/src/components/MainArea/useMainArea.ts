@@ -235,12 +235,7 @@ export function useMainArea({
         ? `${selectedWorkflowSummary.name} — ${selectedWorkflowSummary.scenario}`
         : config.title
     onLiveGraphConfig(
-      graphConfigFromNodes(
-        title,
-        nodes,
-        edges,
-        agenticMode ? [] : config.animationSequence,
-      ),
+      graphConfigFromNodes(title, nodes, edges, config.animationSequence),
     )
   }, [
     onLiveGraphConfig,
@@ -254,14 +249,12 @@ export function useMainArea({
   ])
 
   const highlightNode = useCallback(
-    (nodeId: string) => {
-      if (!nodeId) return
-      if (pattern === "group_messaging") {
-        updateStyle(nodeId, HIGHLIGHT.ON)
-        setTimeout(() => updateStyle(nodeId, HIGHLIGHT.OFF), 1800)
-      }
+    (graphElementId: string) => {
+      if (!graphElementId) return
+      updateStyle(graphElementId, HIGHLIGHT.ON)
+      setTimeout(() => updateStyle(graphElementId, HIGHLIGHT.OFF), 1800)
     },
-    [updateStyle, pattern],
+    [updateStyle],
   )
 
   useEffect(() => {

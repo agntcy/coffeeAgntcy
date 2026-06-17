@@ -3,12 +3,14 @@
  * SPDX-License-Identifier: Apache-2.0
  **/
 
-import React, { useEffect } from "react"
+import React, { useEffect, useRef } from "react"
 import CheckCircleIcon from "@mui/icons-material/CheckCircle"
 import { Box, Stack, Typography } from "@open-ui-kit/core"
 
 import { ChatAgentAvatar } from "../ChatAvatarCircle"
 import type { AuctionStreamingState } from "@/stores/auctionStreaming.types"
+import type { GraphConfig } from "@/utils/graphConfigs"
+import { animationSequenceStepIds } from "../chatStreamGraphHighlight"
 import { FeedSpinnerRow } from "../FeedSpinnerRow"
 import { FeedStatusLine } from "../FeedStatusLine"
 
@@ -17,6 +19,8 @@ export interface AuctionStreamingFeedProps {
   onComplete?: () => void
   prompt: string
   onStreamComplete?: () => void
+  onSenderHighlight?: (nodeId: string) => void
+  graphConfig?: GraphConfig
   executionKey?: string
   apiError: boolean
   auctionStreamingState?: AuctionStreamingState
@@ -27,10 +31,35 @@ const AuctionStreamingFeed: React.FC<AuctionStreamingFeedProps> = ({
   onComplete,
   prompt,
   onStreamComplete,
+  onSenderHighlight,
+  graphConfig,
   auctionStreamingState,
   apiError,
 }) => {
   const isComplete = auctionStreamingState?.status === "completed"
+  const lastProcessedStepRef = useRef<number | null>(null)
+
+  useEffect(() => {
+    if (prompt) {
+      lastProcessedStepRef.current = null
+    }
+  }, [prompt])
+
+  useEffect(() => {
+    const events = auctionStreamingState?.events ?? []
+    if (!events.length || !onSenderHighlight) return
+
+    const stepIndex = events.length - 1
+    if (lastProcessedStepRef.current === stepIndex) return
+    lastProcessedStepRef.current = stepIndex
+
+    for (const graphElementId of animationSequenceStepIds(
+      graphConfig,
+      stepIndex,
+    )) {
+      onSenderHighlight(graphElementId)
+    }
+  }, [auctionStreamingState?.events, onSenderHighlight, graphConfig])
 
   useEffect(() => {
     if (isComplete && auctionStreamingState?.events.length > 0) {

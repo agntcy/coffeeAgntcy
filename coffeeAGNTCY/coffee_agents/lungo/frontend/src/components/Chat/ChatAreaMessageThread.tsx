@@ -106,6 +106,8 @@ const ChatAreaMessageThread: React.FC<ChatAreaMessageThreadProps> = ({
           prompt={currentUserMessage}
           apiError={apiError}
           auctionStreamingState={auctionState}
+          onSenderHighlight={onSenderHighlight}
+          graphConfig={graphConfig}
         />
       </Box>
     )}
@@ -118,6 +120,8 @@ const ChatAreaMessageThread: React.FC<ChatAreaMessageThreadProps> = ({
           apiError={apiError}
           recruiterStreamingState={recruiterState}
           onStreamComplete={onStreamComplete}
+          onSenderHighlight={onSenderHighlight}
+          graphConfig={graphConfig}
         />
       </Box>
     )}
