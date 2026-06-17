@@ -6,7 +6,14 @@
 import React, { useRef } from "react"
 import { Handle, Position } from "@xyflow/react"
 import CheckCircle from "@mui/icons-material/CheckCircle"
-import { Box, IconButton, Stack, Typography, useTheme } from "@open-ui-kit/core"
+import {
+  Box,
+  IconButton,
+  Stack,
+  Tooltip,
+  Typography,
+  useTheme,
+} from "@open-ui-kit/core"
 import agentDirectoryIconDark from "@/assets/Agent_directory.png"
 import agentDirectoryIconLight from "@/assets/Agent_Icon_light.png"
 import { useGithubIcon } from "@/hooks/useGithubIcon"
@@ -96,17 +103,16 @@ const CustomNode: React.FC<CustomNodeProps> = ({ id, data }) => {
             p: 0,
           }}
         >
-          <Typography
-            variant="h6"
-            component="span"
-            noWrap
-            sx={() => ({
-              flex: "1 1 auto",
-              minWidth: 0,
-            })}
-          >
-            {data.label1}
-          </Typography>
+          <Tooltip title={data.label1} arrow>
+            <Typography
+              variant="h6"
+              component="span"
+              noWrap
+              sx={{ flex: "1 1 auto", minWidth: 0 }}
+            >
+              {data.label1}
+            </Typography>
+          </Tooltip>
           {data.verificationStatus === "verified" && (
             <CheckCircle
               aria-label="Verified"
@@ -120,27 +126,27 @@ const CustomNode: React.FC<CustomNodeProps> = ({ id, data }) => {
           )}
         </Box>
 
-        <Typography
-          variant="caption"
-          component="div"
-          noWrap
-          sx={{
-            order: 1,
-            alignSelf: "stretch",
-            flexGrow: 0,
-            flexShrink: 0,
-            height: 16,
-            width: CUSTOM_NODE_INNER_WIDTH,
-            maxWidth: "100%",
-            minWidth: 0,
-            overflow: "hidden",
-            textOverflow: "ellipsis",
-            fontWeight: 300,
-            lineHeight: "16px",
-          }}
-        >
-          {data.label2}
-        </Typography>
+        <Tooltip title={data.label2} arrow>
+          <Typography
+            variant="caption"
+            component="div"
+            noWrap
+            sx={{
+              order: 1,
+              alignSelf: "stretch",
+              flexGrow: 0,
+              flexShrink: 0,
+              height: 16,
+              width: CUSTOM_NODE_INNER_WIDTH,
+              maxWidth: "100%",
+              minWidth: 0,
+              fontWeight: 300,
+              lineHeight: "16px",
+            }}
+          >
+            {data.label2}
+          </Typography>
+        </Tooltip>
 
         <Stack
           direction="column"

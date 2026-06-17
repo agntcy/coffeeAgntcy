@@ -208,7 +208,7 @@ describe("optimizeBarTransportEdgeHandles", () => {
 
 describe("graphNodeDimensions", () => {
   it("uses outer card width including CustomNode padding", () => {
-    expect(CUSTOM_NODE_WIDTH).toBe(194)
+    expect(CUSTOM_NODE_WIDTH).toBe(230)
   })
 })
 

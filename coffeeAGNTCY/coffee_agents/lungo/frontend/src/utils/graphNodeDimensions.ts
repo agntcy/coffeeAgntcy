@@ -7,15 +7,15 @@
 
 import type { Node } from "@xyflow/react"
 
-/** Inner text column — matches label2 width in CustomNode. */
-export const CUSTOM_NODE_INNER_WIDTH = 162
-
 /** CustomNode root `p: 2` horizontal inset (theme.spacing(2) × 2). */
 export const CUSTOM_NODE_HORIZONTAL_PADDING = 32
 
 /** Outer custom card width for layout and React Flow positioning. */
-export const CUSTOM_NODE_WIDTH =
-  CUSTOM_NODE_INNER_WIDTH + CUSTOM_NODE_HORIZONTAL_PADDING
+export const CUSTOM_NODE_WIDTH = 230
+
+/** Inner text column — matches label widths in CustomNode. */
+export const CUSTOM_NODE_INNER_WIDTH =
+  CUSTOM_NODE_WIDTH - CUSTOM_NODE_HORIZONTAL_PADDING
 
 /** Outer custom card height — icon, labels, and vertical padding. */
 export const CUSTOM_NODE_HEIGHT = 120
