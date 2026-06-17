@@ -17,7 +17,6 @@ import {
   getGraphNodeHandleStyle,
   graphNodeRootSurfaceSx,
   graphNodeSideIconControlSx,
-  type GraphNodeSurfaceState,
 } from "./graphNodeSurface"
 import { GraphIconChip } from "./GraphIconChip"
 import { GraphSideIconTooltip } from "./GraphSideIconTooltip"
@@ -51,8 +50,6 @@ const CustomNode: React.FC<CustomNodeProps> = ({ id, data }) => {
     dark: agentDirectoryIconDark,
   })
 
-  const surfaceState: GraphNodeSurfaceState = data.active ? "active" : "default"
-
   const handleStyle = getGraphNodeHandleStyle(theme)
 
   const handleAgentDirectoryClick = (e: React.MouseEvent) => {
@@ -69,7 +66,10 @@ const CustomNode: React.FC<CustomNodeProps> = ({ id, data }) => {
         ref={nodeRef}
         component="div"
         sx={(t) => ({
-          ...graphNodeRootSurfaceSx(t, surfaceState),
+          ...graphNodeRootSurfaceSx(t, {
+            active: data.active,
+            selected: data.selected,
+          }),
           position: "relative",
           display: "flex",
           flexDirection: "column",

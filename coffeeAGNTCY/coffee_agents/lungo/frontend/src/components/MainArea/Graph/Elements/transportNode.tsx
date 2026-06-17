@@ -68,9 +68,13 @@ const TransportNode: React.FC<TransportNodeProps> = ({ data }) => {
   return (
     <Box
       sx={(t) => ({
-        ...graphNodeRootSurfaceSx(t, data.active ? "active" : "default", {
-          borderRadius: isCircular ? "50%" : undefined,
-        }),
+        ...graphNodeRootSurfaceSx(
+          t,
+          { active: data.active },
+          {
+            borderRadius: isCircular ? "50%" : undefined,
+          },
+        ),
         position: "relative",
         display: "flex",
         flexDirection: isCircular ? "column" : "row",

@@ -16,7 +16,11 @@ import {
   getGraphIconChipHoverBackground,
 } from "@/utils/assetPngIcon"
 
-export type GraphNodeSurfaceState = "default" | "active"
+/** Workflow highlight (`data.active`) and chat selection (`data.selected`) are independent. */
+export interface GraphNodeSurfaceFlags {
+  active?: boolean
+  selected?: boolean
+}
 
 /** OUK control icon fill (`#e8e9ea` in dark mode) — not `brandIconPrimaryDefault`. */
 export function getControlIconColor(theme: Theme): string {
@@ -24,28 +28,33 @@ export function getControlIconColor(theme: Theme): string {
 }
 
 export interface GraphNodeRootSurfaceOptions {
-  /** Defaults to 2× theme.shape.borderRadius (typically 8px). */
+  /** Defaults to theme.shape.borderRadius (typically 4px). */
   borderRadius?: string | number
 }
 
 function defaultCardRadius(theme: Theme): string | number {
-  const r = theme.shape.borderRadius
-  return typeof r === "number" ? r * 2 : r
+  return theme.shape.borderRadius
 }
 
 function getGraphNodeRestingBackground(
   theme: Theme,
-  state: GraphNodeSurfaceState,
+  flags: GraphNodeSurfaceFlags,
 ): string {
+  const { active = false, selected = false } = flags
+
   if (theme.palette.mode === "dark") {
-    return state === "active"
-      ? theme.palette.vars.controlBackgroundMedium
-      : theme.palette.vars.baseBackgroundWeak
+    if (active || selected) {
+      return theme.palette.vars.controlBackgroundMedium
+    }
+
+    return theme.palette.vars.baseBackgroundWeak
   }
 
-  return state === "active"
-    ? theme.palette.action.selected
-    : theme.palette.background.default
+  if (active || selected) {
+    return theme.palette.action.selected
+  }
+
+  return theme.palette.background.default
 }
 
 /** Hover background for every graph node surface (CustomNode, TransportNode, …). */
@@ -63,23 +72,35 @@ export function getGraphNodeHoverBackground(theme: Theme): string {
  */
 export function graphNodeRootSurfaceSx(
   theme: Theme,
-  state: GraphNodeSurfaceState,
+  flags: GraphNodeSurfaceFlags = {},
   options: GraphNodeRootSurfaceOptions = {},
 ): SystemStyleObject<Theme> {
+  const { active = false, selected = false } = flags
   const borderRadius = options.borderRadius ?? defaultCardRadius(theme)
-  const borderColor = theme.palette.divider
+  const dividerBorder = theme.palette.divider
   const primary = theme.palette.primary.main
-  const restingBg = getGraphNodeRestingBackground(theme, state)
+  const restingBg = getGraphNodeRestingBackground(theme, flags)
   const hoverBg = getGraphNodeHoverBackground(theme)
 
-  const restingOutline =
-    state === "active" ? `2px solid ${alpha(primary, 0.45)}` : "none"
+  const selectionOutline = `2px solid ${primary}`
+  const activeOutline = `2px solid ${alpha(primary, 0.45)}`
 
-  const restingShadow = state === "active" ? theme.shadows[4] : "none"
+  const restingOutline = selected
+    ? selectionOutline
+    : active
+      ? activeOutline
+      : "none"
+
+  const restingShadow = selected || active ? theme.shadows[4] : "none"
+  const restingBorderColor = selected
+    ? alpha(primary, 0.55)
+    : active
+      ? alpha(primary, 0.45)
+      : dividerBorder
 
   return {
     border: "1px solid",
-    borderColor,
+    borderColor: restingBorderColor,
     borderRadius,
     bgcolor: restingBg,
     color: theme.palette.text.primary,
@@ -92,9 +113,14 @@ export function graphNodeRootSurfaceSx(
     }),
     "&:hover": {
       bgcolor: hoverBg,
-      boxShadow: theme.shadows[6],
-      outline: `2px solid ${primary}`,
-      borderColor: alpha(primary, 0.45),
+      boxShadow: selected ? theme.shadows[6] : theme.shadows[2],
+      // Selection ring is persistent; hover only lifts unselected nodes subtly.
+      outline: selected ? selectionOutline : active ? activeOutline : "none",
+      borderColor: selected
+        ? alpha(primary, 0.55)
+        : active
+          ? alpha(primary, 0.45)
+          : dividerBorder,
     },
   }
 }
