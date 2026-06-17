@@ -3,13 +3,13 @@
  * SPDX-License-Identifier: Apache-2.0
  **/
 
+import Air from "@mui/icons-material/Air"
 import Calculate from "@mui/icons-material/Calculate"
 import LocalShipping from "@mui/icons-material/LocalShipping"
 import { Node, Edge } from "@xyflow/react"
 import { GraphDiscoveryAssetImg } from "@/utils/GraphDiscoveryAssetImg"
 import supervisorIcon from "@/assets/supervisor.png"
 import farmAgentIcon from "@/assets/Grader-Agent.png"
-import mcpIcon from "@/assets/mcp_icon.png"
 import {
   FarmName,
   NODE_IDS,
@@ -56,7 +56,6 @@ const CoffeeBeanIcon = graphNodeIconImg(
 const FarmAgentIcon = graphNodeIconImg(farmAgentIcon, "Farm Agent Icon", {
   invertInDarkMode: true,
 })
-const McpServerIcon = graphNodeIconImg(mcpIcon, "MCP Server Icon")
 
 export const PUBLISH_SUBSCRIBE_CONFIG: GraphConfig = {
   title: "Publish Subscribe",
@@ -139,7 +138,7 @@ export const PUBLISH_SUBSCRIBE_CONFIG: GraphConfig = {
       id: NODE_IDS.WEATHER_MCP,
       type: NODE_TYPES.CUSTOM,
       data: {
-        icon: McpServerIcon,
+        icon: <Air />,
         label1: "Weather",
         label2: "MCP Server",
         directoryAgentSlug: "weather-mcp-server",
@@ -153,7 +152,7 @@ export const PUBLISH_SUBSCRIBE_CONFIG: GraphConfig = {
       id: NODE_IDS.PAYMENT_MCP,
       type: NODE_TYPES.CUSTOM,
       data: {
-        icon: McpServerIcon,
+        icon: <Calculate />,
         label1: "Payment",
         label2: "MCP Server",
         directoryAgentSlug: "payment-mcp-server",
@@ -297,7 +296,7 @@ export const GROUP_MESSAGING_CONFIG: GraphConfig = {
       id: NODE_IDS.COLOMBIA_FARM,
       type: NODE_TYPES.CUSTOM,
       data: {
-        icon: <LocalShipping sx={{ opacity: 1 }} />,
+        icon: <LocalShipping />,
         label1: "Shipper",
         label2: "Shipper Agent",
         handles: HANDLE_TYPES.TARGET,
@@ -313,7 +312,7 @@ export const GROUP_MESSAGING_CONFIG: GraphConfig = {
       id: NODE_IDS.VIETNAM_FARM,
       type: NODE_TYPES.CUSTOM,
       data: {
-        icon: <Calculate sx={{ opacity: 1 }} />,
+        icon: <Calculate />,
         label1: "Accountant",
         label2: "Accountant Agent",
         handles: HANDLE_TYPES.TARGET,

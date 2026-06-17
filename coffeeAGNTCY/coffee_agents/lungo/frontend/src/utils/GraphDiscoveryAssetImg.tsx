@@ -20,7 +20,6 @@ export function GraphDiscoveryAssetImg({
       src={src}
       alt={alt}
       invertInDarkMode={invertInDarkMode}
-      sx={{ opacity: 1 }}
     />
   )
 }
