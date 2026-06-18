@@ -264,7 +264,7 @@ jobs:
           fi
 
   docker-build-corto:
-    needs: [subprojects-to-build, compute-build-parameters]
+    needs: [subprojects-to-build, compute-build-parameters, check-push-target-existence]
     if: ${{ needs.subprojects-to-build.outputs.build_corto == 'true' }}
 
     strategy:
@@ -291,7 +291,7 @@ jobs:
       git_branch: ${{ needs.compute-build-parameters.outputs.git_branch }}
 
   docker-build-lungo:
-    needs: [subprojects-to-build, compute-build-parameters]
+    needs: [subprojects-to-build, compute-build-parameters, check-push-target-existence]
     if: ${{ needs.subprojects-to-build.outputs.build_lungo == 'true' }}
 
     strategy:
@@ -340,7 +340,7 @@ jobs:
       git_branch: ${{ needs.compute-build-parameters.outputs.git_branch }}
 
   docker-build-recruiter:
-    needs: [subprojects-to-build, compute-build-parameters]
+    needs: [subprojects-to-build, compute-build-parameters, check-push-target-existence]
     if: ${{ needs.subprojects-to-build.outputs.build_recruiter == 'true' }}
 
     strategy:

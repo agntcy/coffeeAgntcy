@@ -195,7 +195,7 @@ jobs:
           fi
 
   helm-package-corto:
-    needs: subprojects-to-build
+    needs: [subprojects-to-build, check-push-target-existence]
     if: ${{ needs.subprojects-to-build.outputs.build_corto == 'true' }}
 
     strategy:
@@ -220,7 +220,7 @@ jobs:
 
 
   helm-package-lungo:
-    needs: subprojects-to-build
+    needs: [subprojects-to-build, check-push-target-existence]
     if: ${{ needs.subprojects-to-build.outputs.build_lungo == 'true' }}
 
     strategy:
