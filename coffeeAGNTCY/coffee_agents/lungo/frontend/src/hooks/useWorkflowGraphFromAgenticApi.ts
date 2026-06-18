@@ -12,7 +12,7 @@ import {
 } from "@/api/agenticWorkflowsClient"
 import type { EventV1Wire } from "@/api/agenticWorkflowsTypes"
 import { getAgenticWorkflowsApiUrl } from "@/urls"
-import { mapWorkflowNameToSlug } from "@/utils/agenticWorkflowsApi"
+import { patternTypeFromSummary } from "@/utils/agenticWorkflowsApi"
 import { useActiveWorkflowInstanceStore } from "@/stores/activeWorkflowInstanceStore"
 import { logger } from "@/utils/logger"
 import { staticIdMapForPattern } from "@/utils/topologyStaticIdMap"
@@ -53,7 +53,7 @@ export function useWorkflowGraphFromAgenticApi({
   const agenticMode = Boolean(
     selectedWorkflowSummary &&
     workflowName &&
-    mapWorkflowNameToSlug(workflowName) === pattern,
+    patternTypeFromSummary(selectedWorkflowSummary) === pattern,
   )
 
   const staticIdMap = useMemo(() => staticIdMapForPattern(pattern), [pattern])
@@ -68,9 +68,6 @@ export function useWorkflowGraphFromAgenticApi({
     (s) => s.setWorkflowInstanceId,
   )
   const sessionRef = useRef<WorkflowGraphAgenticSession | null>(null)
-
-  const patternRef = useRef(pattern)
-  patternRef.current = pattern
 
   const identityRef = useRef(handleOpenIdentityModal)
   const oasfRef = useRef(handleOpenOasfModal)
@@ -100,7 +97,6 @@ export function useWorkflowGraphFromAgenticApi({
 
   const { applyInstanceTopologyRef, scheduleTopologyRefetchRef } =
     useWorkflowGraphTopologySync({
-      patternRef,
       staticIdMapRef,
       sessionRef,
       onAppliedRef,

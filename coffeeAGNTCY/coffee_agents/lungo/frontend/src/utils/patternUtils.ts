@@ -21,6 +21,8 @@ export const PATTERNS = {
 
 export type PatternType = (typeof PATTERNS)[keyof typeof PATTERNS]
 
+export type ChatApiTarget = "exchange" | "logistics" | "discovery"
+
 export const isGroupCommunication = (pattern?: string): boolean => {
   return pattern === PATTERNS.GROUP_MESSAGING
 }
@@ -37,6 +39,19 @@ export const getApiUrlForPattern = (pattern?: string): string => {
     return getExchangeAppApiUrl()
   }
   if (pattern === PATTERNS.A2A_HTTP) {
+    return getDiscoveryAppApiUrl()
+  }
+  return getExchangeAppApiUrl()
+}
+
+/** Resolves the backend app URL for a workflow's `chat_api_target`. */
+export const getApiUrlForChatTarget = (
+  target?: ChatApiTarget | null,
+): string => {
+  if (target === "logistics") {
+    return getLogisticsAppApiUrl()
+  }
+  if (target === "discovery") {
     return getDiscoveryAppApiUrl()
   }
   return getExchangeAppApiUrl()

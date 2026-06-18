@@ -251,7 +251,7 @@ describe("topologyWireToReactFlow", () => {
     expect(data?.directoryAgentSlug).toBe("auction-supervisor-agent")
   })
 
-  it("merges stable-agent map when stable_agent_id uses RootModel-shaped object", () => {
+  it("merges wire enrichment when stable_agent_id uses RootModel-shaped object", () => {
     const brazilUuid = stableAgentUuidForRecordName("Brazil Coffee Farm")
     const { nodes } = topologyWireToReactFlow(
       {
@@ -268,13 +268,13 @@ describe("topologyWireToReactFlow", () => {
         ],
         edges: [],
       },
-      { validateUrls: false, identityUiVariant: "publish_subscribe" },
+      { validateUrls: false },
     )
     const data = nodes[0]?.data as { directoryAgentSlug?: string }
     expect(data?.directoryAgentSlug).toBe("brazil-coffee-farm")
   })
 
-  it("merges stable-agent map: Brazil farm gets directory slug, link, and resolved github", () => {
+  it("applies backend wire fields: directory link from cid, github from uri, badge/verification overrides", () => {
     const brazilUuid = stableAgentUuidForRecordName("Brazil Coffee Farm")
     const { nodes } = topologyWireToReactFlow(
       {
@@ -287,46 +287,30 @@ describe("topologyWireToReactFlow", () => {
             stable_agent_id: `agent://${brazilUuid}`,
             agent_record_uri:
               "../../agents/supervisors/auction/oasf/agents/brazil-coffee-farm.json",
+            agent_directory_cid:
+              "/baeareigpu5jgm3xrkouspfacgvq65i25cz63nnseqatu5davp35jenwlla",
+            has_badge_override: false,
+            has_policy_override: false,
+            verification_status_override: "failed",
           },
         ],
         edges: [],
       },
-      { validateUrls: false, identityUiVariant: "publish_subscribe" },
+      { validateUrls: false },
     )
     const data = nodes[0]?.data as {
       directoryAgentSlug?: string
       agentDirectoryLink?: string
       githubLink?: string
-      identityAppsSlug?: string
+      hasBadgeDetails?: boolean
       verificationStatus?: string
     }
     expect(data?.directoryAgentSlug).toBe("brazil-coffee-farm")
-    expect(data?.agentDirectoryLink).toBeDefined()
-    expect(data?.githubLink).toContain("brazil-coffee-farm.json")
-    expect(data?.identityAppsSlug).toBeUndefined()
-    expect(data?.verificationStatus).toBe("failed")
-  })
-
-  it("merges streaming variant github when referenceGithubUrlStreaming is set", () => {
-    const brazilUuid = stableAgentUuidForRecordName("Brazil Coffee Farm")
-    const { nodes } = topologyWireToReactFlow(
-      {
-        nodes: [
-          {
-            id: "node://10101010-1010-4101-8101-101010101010",
-            type: "customNode",
-            label: "Brazil Coffee Farm Agent",
-            layer_index: 0,
-            stable_agent_id: `agent://${brazilUuid}`,
-            agent_record_uri:
-              "../../agents/supervisors/auction/oasf/agents/brazil-coffee-farm.json",
-          },
-        ],
-        edges: [],
-      },
-      { validateUrls: false, identityUiVariant: "publish_subscribe_streaming" },
+    expect(data?.agentDirectoryLink).toContain(
+      "baeareigpu5jgm3xrkouspfacgvq65i25cz63nnseqatu5davp35jenwlla",
     )
-    const data = nodes[0]?.data as { githubLink?: string }
-    expect(data?.githubLink).toContain("#L193")
+    expect(data?.githubLink).toContain("brazil-coffee-farm.json")
+    expect(data?.hasBadgeDetails).toBe(false)
+    expect(data?.verificationStatus).toBe("failed")
   })
 })
