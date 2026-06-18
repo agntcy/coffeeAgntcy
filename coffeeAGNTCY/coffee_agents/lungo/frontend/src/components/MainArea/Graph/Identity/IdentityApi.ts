@@ -10,7 +10,7 @@ import {
 } from "@/components/MainArea/Graph/Identity/types"
 import type { CustomNodeData } from "@/components/MainArea/Graph/Elements/types"
 import { joinBaseUrl, LUNGO_FRONTEND_URLS } from "@/urls"
-import { getApiUrlForPattern, PATTERNS } from "@/utils/patternUtils"
+import { getApiUrlForChatTarget } from "@/utils/patternUtils"
 import { logger } from "@/utils/logger"
 
 export interface IdentityServiceError {
@@ -81,7 +81,7 @@ export const fetchBadgeDetails = async (
   try {
     const response = await axios.get<BadgeData>(
       joinBaseUrl(
-        getApiUrlForPattern(PATTERNS.PUBLISH_SUBSCRIBE),
+        getApiUrlForChatTarget("exchange"),
         LUNGO_FRONTEND_URLS.apiPaths.identityAppsBadge(slug),
       ),
       {
@@ -121,7 +121,7 @@ export const fetchPolicyDetails = async (
   try {
     const response = await axios.get<PolicyData>(
       joinBaseUrl(
-        getApiUrlForPattern(PATTERNS.PUBLISH_SUBSCRIBE),
+        getApiUrlForChatTarget("exchange"),
         LUNGO_FRONTEND_URLS.apiPaths.identityAppsPolicies(slug),
       ),
       {

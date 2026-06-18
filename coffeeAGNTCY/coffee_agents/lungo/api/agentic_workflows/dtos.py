@@ -11,7 +11,7 @@ and Pydantic stay a single source of truth.
 
 from __future__ import annotations
 
-from typing import Annotated
+from typing import Annotated, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, RootModel
 from schema.types import InstanceId, WorkflowInstance
@@ -48,6 +48,18 @@ class WorkflowSummary(BaseModel):
     pattern: Annotated[str, Field(min_length=1)]
     use_case: Annotated[str, Field(min_length=1)]
     scenario: Annotated[str, Field(min_length=1, description="brief extra qualifier for the use-case")]
+    supports_sse: bool
+    supports_streaming: bool
+    chat_api_target: (
+        Annotated[
+            Literal["exchange", "logistics", "discovery"] | None,
+            Field(
+                description=(
+                    "Which Lungo chat API base to use; null when the workflow is not runnable in the UI."
+                ),
+            ),
+        ]
+    ) = None
 
 
 class WorkflowSummaryMapResponse(RootModel[dict[str, WorkflowSummary]]):

@@ -65,6 +65,8 @@ const MainArea: React.FC<MainAreaProps> = (props) => {
       ? selectedWorkflowSummary
       : undefined
 
+  const chatApiTarget = activeWorkflowSummary?.chat_api_target ?? null
+
   const documentationUrl = activeWorkflowSummary
     ? getWorkflowDocumentationGithubUrl(activeWorkflowSummary.name)
     : undefined
@@ -131,6 +133,7 @@ const MainArea: React.FC<MainAreaProps> = (props) => {
           onClose={() => setOasfModalOpen(false)}
           nodeName={oasfModalData?.label1 || ""}
           nodeData={oasfModalData}
+          chatApiTarget={chatApiTarget}
         />
       </Box>
     </>

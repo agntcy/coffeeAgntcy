@@ -26,6 +26,12 @@ export interface TopologyNodeWire {
   position?: TopologyPosition
   agent_record_uri?: string
   stable_agent_id?: string | { root: string }
+  /** Backend OASF enrichment (see api/agentic_workflows/agent_ui_enrichment.py). */
+  agent_directory_cid?: string
+  identity_app_slug?: string
+  has_badge_override?: boolean
+  has_policy_override?: boolean
+  verification_status_override?: "verified" | "failed"
   [key: string]: unknown
 }
 

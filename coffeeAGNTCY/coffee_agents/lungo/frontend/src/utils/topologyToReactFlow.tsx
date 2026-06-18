@@ -28,13 +28,12 @@ import {
   layoutSlimTransportGraph,
 } from "@/utils/topologyLayout"
 import {
+  applyBackendTopologyWireFields,
   directoryAgentSlugFromAgentRecordUri,
   enrichAgenticTopologyWellKnownUi,
-  mergeAgenticTopologyIdentityUi,
   resolveGithubFromAgentRecordUri,
   splitTopologyNodeLabel,
 } from "@/utils/agenticTopologyIdentityUiMap"
-import type { IdentityUiGithubVariant } from "@/utils/agenticTopologyIdentityUiMap"
 
 // Transport label -> canonical synonym. Seed emits "transport"; runtime emits
 // "slim"/"nats"/"jsonrpc" for the same logical transport. Distinct logical
@@ -80,8 +79,6 @@ function defaultCustomIcon(label: string): React.ReactNode {
 export interface TopologyToFlowOptions {
   /** When false, skip SecurityClass check for tests. */
   validateUrls?: boolean
-  /** When set, applies stable-agent UI map streaming vs publish GitHub display where applicable. */
-  identityUiVariant?: IdentityUiGithubVariant
 }
 
 export function topologyWireToReactFlow(
@@ -232,10 +229,7 @@ export function topologyWireToReactFlow(
       githubLink: gh,
       ...(directoryAgentSlug ? { directoryAgentSlug } : {}),
     }
-    data = mergeAgenticTopologyIdentityUi(data, n, {
-      validateUrls,
-      identityUiVariant: options.identityUiVariant,
-    })
+    data = applyBackendTopologyWireFields(data, n, { validateUrls })
     data = enrichAgenticTopologyWellKnownUi(data, n, { validateUrls })
 
     return {

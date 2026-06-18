@@ -8,9 +8,10 @@ import type { TopologyNodeWire } from "@/api/agenticWorkflowsTypes"
 import { LUNGO_FRONTEND_URLS } from "@/urls"
 import type { CustomNodeData } from "@/components/MainArea/Graph/Elements/types"
 import {
+  applyBackendTopologyWireFields,
   directoryAgentSlugFromAgentRecordUri,
+  enrichAgenticTopologyWellKnownUi,
   getOasfSlugFromNodeData,
-  IDENTITY_UI_BY_STABLE_AGENT_UUID,
   normalizeAgentRecordUriToRepoPath,
   parseStableAgentUuid,
   resolveGithubFromAgentRecordUri,
@@ -73,11 +74,49 @@ describe("agenticTopologyIdentityUiMap", () => {
     expect(directoryAgentSlugFromAgentRecordUri(uri)).toBe(expected)
   })
 
-  it("Brazil row exists in map and includes directory link", () => {
-    const row = IDENTITY_UI_BY_STABLE_AGENT_UUID[BRAZIL_UUID]
-    expect(row).toBeDefined()
-    expect(row?.agentDirectoryLink).toContain("agent-directory")
-    expect(row?.identityAppsSlug).toBeUndefined()
+  it("applyBackendTopologyWireFields applies enrichment and defaults", () => {
+    const base = {
+      icon: null,
+      label1: "Brazil",
+      label2: "Coffee Farm",
+      handles: "all",
+    } as unknown as CustomNodeData
+    const wire: TopologyNodeWire = {
+      id: "node://1",
+      agent_directory_cid:
+        "/baeareigpu5jgm3xrkouspfacgvq65i25cz63nnseqatu5davp35jenwlla",
+      has_badge_override: false,
+      has_policy_override: false,
+      verification_status_override: "failed",
+    }
+    const merged = applyBackendTopologyWireFields(base, wire, {
+      validateUrls: false,
+    })
+    expect(merged.agentDirectoryLink).toContain(
+      "baeareigpu5jgm3xrkouspfacgvq65i25cz63nnseqatu5davp35jenwlla",
+    )
+    expect(merged.hasBadgeDetails).toBe(false)
+    expect(merged.hasPolicyDetails).toBe(false)
+    expect(merged.verificationStatus).toBe("failed")
+  })
+
+  it("applyBackendTopologyWireFields defaults badge/policy to true when overrides absent", () => {
+    const base = {
+      icon: null,
+      label1: "Colombia",
+      label2: "Coffee Farm",
+      handles: "all",
+    } as unknown as CustomNodeData
+    const wire: TopologyNodeWire = {
+      id: "node://1",
+      identity_app_slug: "colombia-coffee-farm",
+    }
+    const merged = applyBackendTopologyWireFields(base, wire, {
+      validateUrls: false,
+    })
+    expect(merged.identityAppsSlug).toBe("colombia-coffee-farm")
+    expect(merged.hasBadgeDetails).toBe(true)
+    expect(merged.hasPolicyDetails).toBe(true)
   })
 
   it("parseStableAgentUuid strips agent scheme", () => {
@@ -99,15 +138,61 @@ describe("agenticTopologyIdentityUiMap", () => {
     expect(stableAgentIdFromWire(wire as TopologyNodeWire)).toBe(expected)
   })
 
-  it("logistics and recruiter rows exist in stable-agent map", () => {
-    const logisticsUuid = stableAgentUuidForRecordName(
-      "Logistics Supervisor agent",
-    )
-    const recruiterUuid = stableAgentUuidForRecordName(
-      "Agentic Recruiter agent",
-    )
-    expect(IDENTITY_UI_BY_STABLE_AGENT_UUID[logisticsUuid]).toBeDefined()
-    expect(IDENTITY_UI_BY_STABLE_AGENT_UUID[recruiterUuid]).toBeDefined()
+  describe("enrichAgenticTopologyWellKnownUi", () => {
+    it("enriches group node by type only", () => {
+      const data = {
+        icon: null,
+        label1: "Not",
+        label2: "Logistics Group",
+        handles: "all",
+      } as unknown as CustomNodeData
+      const wire: TopologyNodeWire = {
+        id: "g1",
+        type: "group",
+        label: "Anything",
+      }
+      const out = enrichAgenticTopologyWellKnownUi(data, wire, {
+        validateUrls: false,
+      })
+      expect(out.directoryAgentSlug).toBe("logistics-supervisor-agent")
+      expect(out.githubLink).toContain("transport")
+    })
+
+    it("enriches directory node only for customNode + label", () => {
+      const data = {
+        icon: null,
+        label1: "AGNTCY Agent",
+        label2: "Directory",
+        handles: "all",
+      } as unknown as CustomNodeData
+      const wire: TopologyNodeWire = {
+        id: "d1",
+        type: "customNode",
+        label: "AGNTCY Agent Directory",
+      }
+      const out = enrichAgenticTopologyWellKnownUi(data, wire, {
+        validateUrls: false,
+      })
+      expect(out.githubLink).toContain("github.com")
+    })
+
+    it("does not enrich directory labels on non-customNode types", () => {
+      const data = {
+        icon: null,
+        label1: "AGNTCY Agent",
+        label2: "Directory",
+        handles: "all",
+      } as unknown as CustomNodeData
+      const wire: TopologyNodeWire = {
+        id: "d1",
+        type: "group",
+        label: "AGNTCY Agent Directory",
+      }
+      const out = enrichAgenticTopologyWellKnownUi(data, wire, {
+        validateUrls: false,
+      })
+      expect(out.githubLink).toContain("transport")
+    })
   })
 
   describe("getOasfSlugFromNodeData", () => {
