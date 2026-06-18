@@ -184,6 +184,7 @@ jobs:
           git_branch=${{ github.ref_name }}
 
           if [[ "$EVENT_NAME" == "pull_request" ]]; then
+            push=false
             image_tag=pr-${{ github.event.pull_request.number }}
             git_branch="$HEAD_REF"
           elif [[ "$EVENT_NAME" == "push" && "$REF" == "refs/heads/main" ]]; then
