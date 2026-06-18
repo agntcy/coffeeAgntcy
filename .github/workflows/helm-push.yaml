@@ -134,6 +134,9 @@ jobs:
       packages: read
       contents: read
     steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
       - name: Check Helm integrity
         run: |
           push=${{ needs.subprojects-to-build.outputs.push }}
