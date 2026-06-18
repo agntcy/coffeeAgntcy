@@ -10,8 +10,8 @@ import {
   type WorkflowSummary,
 } from "@/utils/agenticWorkflowsApi"
 import { openWorkflowDocumentationInNewTab } from "@/utils/workflowDocumentationGithub"
-import SidebarDropdown from "./SidebarDropdown"
 import SidebarItem from "./SidebarItem"
+import SidebarDropdown from "./SidebarDropdown"
 import {
   makePatternKey,
   makeScenarioKey,
