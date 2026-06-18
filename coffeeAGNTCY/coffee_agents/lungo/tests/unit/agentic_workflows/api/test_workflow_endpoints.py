@@ -21,8 +21,8 @@ _FAKE_WORKFLOWS: dict[str, Workflow] = {
             {
                 "pattern": "publish_subscribe",
                 "use_case": "Purchasing",
-                "scenario": "Pub Sub Coffee scenario",
-                "name": "Pub Sub Coffee",
+                "scenario": "Publish Subscribe scenario",
+                "name": "Publish Subscribe",
                 "starting_topology": {
                     "nodes": [
                         {
@@ -50,8 +50,8 @@ _FAKE_WORKFLOWS: dict[str, Workflow] = {
                         {
                             "id": "node://00000000-0000-4000-a000-000000000002",
                             "operation": "read",
-                            "type": "customNode",
-                            "label": "Agent B",
+                            "type": "group",
+                            "label": "Logistics Group",
                             "size": {"width": 1.0, "height": 1.0},
                             "layer_index": 0,
                         },
@@ -65,8 +65,8 @@ _FAKE_WORKFLOWS: dict[str, Workflow] = {
             {
                 "pattern": "publish_subscribe",
                 "use_case": "Order Fulfillment",
-                "scenario": "Pub Sub Orders scenario",
-                "name": "Pub Sub Orders",
+                "scenario": "Publish Subscribe Streaming scenario",
+                "name": "Publish Subscribe Streaming",
                 "starting_topology": {
                     "nodes": [
                         {
@@ -86,7 +86,11 @@ _FAKE_WORKFLOWS: dict[str, Workflow] = {
     ]
 }
 
-_ALL_NAMES = {"Pub Sub Coffee", "Group Logistics", "Pub Sub Orders"}
+_ALL_NAMES = {
+    "Publish Subscribe",
+    "Group Logistics",
+    "Publish Subscribe Streaming",
+}
 
 _PATCH_TARGET = "api.agentic_workflows.router.get_workflows"
 
@@ -131,7 +135,7 @@ _LIST_CASES: tuple[ListCase, ...] = (
         inputs=ListInputs(params={"patterns": "publish_subscribe"}),
         outputs=ListOutputs(
             status=200,
-            expected_names={"Pub Sub Coffee", "Pub Sub Orders"},
+            expected_names={"Publish Subscribe", "Publish Subscribe Streaming"},
         ),
     ),
     ListCase(
@@ -139,7 +143,7 @@ _LIST_CASES: tuple[ListCase, ...] = (
         inputs=ListInputs(params={"use_cases": "Order Fulfillment"}),
         outputs=ListOutputs(
             status=200,
-            expected_names={"Group Logistics", "Pub Sub Orders"},
+            expected_names={"Group Logistics", "Publish Subscribe Streaming"},
         ),
     ),
     ListCase(
@@ -150,7 +154,9 @@ _LIST_CASES: tuple[ListCase, ...] = (
                 "use_cases": "Order Fulfillment",
             }
         ),
-        outputs=ListOutputs(status=200, expected_names={"Pub Sub Orders"}),
+        outputs=ListOutputs(
+            status=200, expected_names={"Publish Subscribe Streaming"}
+        ),
     ),
     ListCase(
         case_id="filter_no_match_returns_empty",
@@ -179,7 +185,22 @@ def test_list_agentic_workflows(case: ListCase, client: TestClient) -> None:
 
     for name, summary in data.items():
         assert summary["name"] == name
-        assert set(summary.keys()) == {"name", "pattern", "use_case", "scenario"}
+        assert set(summary.keys()) == {
+            "name",
+            "pattern",
+            "use_case",
+            "scenario",
+            "supports_sse",
+            "supports_streaming",
+            "chat_api_target",
+        }
+        assert isinstance(summary["supports_sse"], bool)
+        assert isinstance(summary["supports_streaming"], bool)
+        if name == "Group Logistics":
+            assert summary["supports_sse"] is True
+            assert summary["chat_api_target"] == "logistics"
+        elif name in {"Publish Subscribe", "Publish Subscribe Streaming"}:
+            assert summary["chat_api_target"] == "exchange"
 
 
 # ---------------------------------------------------------------------------
@@ -209,10 +230,10 @@ class DetailCase(NamedTuple):
 _DETAIL_CASES: tuple[DetailCase, ...] = (
     DetailCase(
         case_id="existing_workflow",
-        inputs=DetailInputs(workflow_name="Pub Sub Coffee", topology_only=None),
+        inputs=DetailInputs(workflow_name="Publish Subscribe", topology_only=None),
         outputs=DetailOutputs(
             status=200,
-            expected_name="Pub Sub Coffee",
+            expected_name="Publish Subscribe",
             expected_pattern="publish_subscribe",
             expected_use_case="Purchasing",
             instances_empty=True,
@@ -231,10 +252,10 @@ _DETAIL_CASES: tuple[DetailCase, ...] = (
     ),
     DetailCase(
         case_id="topology_only_true",
-        inputs=DetailInputs(workflow_name="Pub Sub Coffee", topology_only=True),
+        inputs=DetailInputs(workflow_name="Publish Subscribe", topology_only=True),
         outputs=DetailOutputs(
             status=200,
-            expected_name="Pub Sub Coffee",
+            expected_name="Publish Subscribe",
             expected_pattern="publish_subscribe",
             expected_use_case="Purchasing",
             instances_empty=True,
@@ -242,10 +263,10 @@ _DETAIL_CASES: tuple[DetailCase, ...] = (
     ),
     DetailCase(
         case_id="topology_only_false_same_as_default",
-        inputs=DetailInputs(workflow_name="Pub Sub Coffee", topology_only=False),
+        inputs=DetailInputs(workflow_name="Publish Subscribe", topology_only=False),
         outputs=DetailOutputs(
             status=200,
-            expected_name="Pub Sub Coffee",
+            expected_name="Publish Subscribe",
             expected_pattern="publish_subscribe",
             expected_use_case="Purchasing",
             instances_empty=True,

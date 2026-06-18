@@ -1,7 +1,9 @@
 {
   "version": "1.0.0",
   "annotations": {
-    "a2a.supports_authenticated_extended_card": "false"
+    "a2a.supports_authenticated_extended_card": "false",
+    "lungo.agentDirectoryCid": "/baeareicltg46rvjhqxd6pn47z5du3rgxoynvct6poeknf5tyemsxygwdrq",
+    "lungo.identityAppSlug": "auction-supervisor"
   },
   "description": "An AI agent that supervises and reports on coffee auctions.",
   "domains": [
