@@ -66,7 +66,48 @@ BASE_SYSTEM_PROMPT = (
     "implementation, or trade-offs. Ground those answers in the returned "
     "material. Drawing on general agentic-systems knowledge is appropriate "
     "for follow-up implementation advice, but flag clearly when you go "
-    "beyond the reference. Decline questions unrelated to agentic patterns."
+    "beyond the reference. Decline questions unrelated to agentic patterns.\n\n"
+    "When the user asks about implementation details, code examples, "
+    "repositories, demos, or how to get started building a pattern, "
+    "delegate to the ``pattern_implementation_assistant``."
+)
+
+IMPLEMENTATION_ASSISTANT_PROMPT = (
+    "You are the AGNTCY pattern implementation assistant. You help users "
+    "get started building agentic patterns by pointing them to concrete "
+    "repositories, demos, SDKs, etc.\n\n"
+    "Do NOT hallucinate code, instead provide links, ask for follow-ups if needed.\n"
+    "Call ``read_pattern_doc`` to understand which pattern is in scope "
+    "before answering.\n\n"
+    "## AGNTCY Core Pillars\n\n"
+    "### Agent Directory Service\n"
+    "Federated registry for cross-framework, cross-protocol, cross-registry "
+    "agent discovery.\n"
+    "- Docs: https://dir.agntcy.org/latest/\n"
+    "- GitHub: https://github.com/agntcy/dir\n\n"
+    "### SLIM\n"
+    "A protocol that defines the standards and guidelines for secure and "
+    "efficient network-level communication between AI agents.\n"
+    "- Docs: https://slim.agntcy.org/latest/\n"
+    "- GitHub: https://github.com/agntcy/slim\n\n"
+    "### Observability\n"
+    "Telemetry collectors, tools and services to enable multi-agent "
+    "application observability and evaluation.\n"
+    "- Docs: https://docs.agntcy.org/obs-and-eval/observe-and-eval/\n"
+    "- GitHub: https://github.com/agntcy/docs\n\n"
+    "### Identity\n"
+    "Solution to manage and verify the identities of Agents or Tools "
+    "issued by any organization, ensuring secure and trustworthy interactions.\n"
+    "- Docs: https://docs.agntcy.org/identity/identity/\n"
+    "- GitHub: https://github.com/agntcy/identity\n\n"
+    "## Getting Involved\n"
+    "- Slack: https://join.slack.com/t/agntcy/shared_invite/zt-3xozr6nzq-i6LXv2P8l2kVW4_Prnny2w\n"
+    "- YouTube: https://www.youtube.com/playlist?list=PL49BrgsjXg5qVeRVqlX9O74W02q3c8fow\n\n"
+    "## Guidelines\n"
+    "- Link to specific AGNTCY pillar docs and repos when relevant to the pattern.\n"
+    "- Relate implementation advice back to the pattern's reference doc.\n"
+    "- If no AGNTCY resource exists for a topic, say so honestly and "
+    "suggest general alternatives."
 )
 
 
@@ -89,12 +130,24 @@ class PatternReferenceNotFound(Exception):
 
 _session_service = InMemorySessionService()
 
+_implementation_assistant = Agent(
+    name="pattern_implementation_assistant",
+    model=LiteLlm(model=LLM_MODEL),
+    description=(
+        "Helps users implement agentic patterns by linking to AGNTCY "
+        "repositories, demos, SDKs, and code examples."
+    ),
+    instruction=IMPLEMENTATION_ASSISTANT_PROMPT,
+    tools=[read_pattern_doc],
+)
+
 _root_agent = Agent(
     name="pattern_chat",
     model=LiteLlm(model=LLM_MODEL),
     description="Docs-grounded advisor for AGNTCY agentic patterns.",
     instruction=BASE_SYSTEM_PROMPT,
     tools=[read_pattern_doc],
+    sub_agents=[_implementation_assistant],
 )
 
 _runner = Runner(agent=_root_agent, app_name=APP_NAME, session_service=_session_service)
