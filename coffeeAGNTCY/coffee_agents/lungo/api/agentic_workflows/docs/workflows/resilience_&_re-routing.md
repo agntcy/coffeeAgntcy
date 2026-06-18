@@ -1,5 +1,23 @@
 # Resilience & Re-Routing
 
+## Agent Interaction Diagram
+
+```mermaid
+graph TD
+    Coordinator["Fulfillment Coordinator Agent"]
+    Monitor["Failure Monitor Agent"]
+    Directory["Certified Logistics Directory"]
+    CarrierA["Primary Carrier Agent"]
+    CarrierB["Alternate Carrier Agent"]
+    Customer["Customer Promise Agent"]
+
+    Coordinator <-->|"Shipment Plan"| CarrierA
+    CarrierA -->|"Failure Signal"| Monitor
+    Monitor <-->|"Alternate Lookup"| Directory
+    Coordinator <-->|"Re-route Task"| CarrierB
+    Coordinator -->|"Updated Promise"| Customer
+```
+
 ## Pattern
 
 **Resilience and re-routing** recovers from failure by **switching agents or paths**: discover alternates, compensate

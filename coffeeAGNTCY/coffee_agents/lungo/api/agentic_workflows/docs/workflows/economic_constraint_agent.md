@@ -1,5 +1,21 @@
 # Economic Constraint Agent
 
+## Agent Interaction Diagram
+
+```mermaid
+graph TD
+    Route["Route Planning Agent"]
+    Constraint["Economic Constraint Agent"]
+    Carbon["Carbon Budget Model"]
+    Cost["Cost Model"]
+    Time["Delivery Time Model"]
+
+    Route <-->|"Optimization Request"| Constraint
+    Constraint <-->|"Carbon Limit"| Carbon
+    Constraint <-->|"Dollar Cost"| Cost
+    Constraint <-->|"Delivery Days"| Time
+```
+
 ## Pattern
 
 An **economic constraint agent** optimizes under **explicit budgets**—cost, time, carbon, or other currencies—so

@@ -1,5 +1,21 @@
 # Orchestrator Agent
 
+## Agent Interaction Diagram
+
+```mermaid
+graph TD
+    Orchestrator["Global Operations Orchestrator"]
+    RegionA["Americas Regional Agent"]
+    RegionB["EMEA Regional Agent"]
+    RegionC["APAC Regional Agent"]
+    Policy["Global Policy Agent"]
+
+    Orchestrator <-->|"Inventory Claim / Status"| RegionA
+    Orchestrator <-->|"Inventory Claim / Status"| RegionB
+    Orchestrator <-->|"Inventory Claim / Status"| RegionC
+    Orchestrator <-->|"Precedence Rules"| Policy
+```
+
 ## Pattern
 
 A **top-level orchestrator** coordinates, monitors, and governs **many workflows at once**: it resolves conflicts,

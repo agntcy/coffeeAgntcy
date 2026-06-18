@@ -1,5 +1,26 @@
 # Publish Subscribe Streaming Coffee Auction Network
 
+## Agent Interaction Diagram
+
+```mermaid
+graph TD
+    Auction["Auction Agent"]
+    Transport["Transport: Streaming Pub/Sub"]
+    Brazil["Brazil Coffee Farm Agent"]
+    Colombia["Colombia Coffee Farm Agent"]
+    Vietnam["Vietnam Coffee Farm Agent"]
+    Weather["Weather MCP Server"]
+    Payment["Payment MCP Server"]
+
+    Auction <-->|"Streaming Market Inquiry"| Transport
+    Transport <-->|"Streaming Offer Chunks"| Brazil
+    Transport <-->|"Streaming Offer Chunks"| Colombia
+    Transport <-->|"Streaming Offer Chunks"| Vietnam
+
+    Colombia <-->|"Streaming Weather Counsel"| Weather
+    Colombia <-->|"Streaming Payment Counsel"| Payment
+```
+
 ## Pattern
 
 **Supervisor and workers** is a general arrangement for multi-agent work: **one coordinator** owns the end-to-end
