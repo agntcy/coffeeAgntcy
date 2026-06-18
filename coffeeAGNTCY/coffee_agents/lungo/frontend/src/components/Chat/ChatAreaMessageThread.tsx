@@ -11,6 +11,7 @@ import grafanaIcon from "@/assets/grafana.svg"
 import { ChatAgentAvatar } from "./ChatAvatarCircle"
 import { LoadingDots } from "@/components/loading"
 import Message from "./Message"
+import ChatMarkdown from "./ChatMarkdown"
 import UserMessage from "./UserMessage"
 import ExternalLinkButton from "./ExternalLinkButton"
 import {
@@ -73,7 +74,7 @@ const ChatAreaMessageThread: React.FC<ChatAreaMessageThreadProps> = ({
     aria-relevant="additions text"
     aria-atomic={false}
     spacing={1.5}
-    sx={{ width: "100%", maxWidth: 880, mb: 2 }}
+    sx={{ width: "100%", maxWidth: 1100, mx: "auto", mb: 2 }}
   >
     {apiError ? (
       <Box role="alert" aria-live="assertive">
@@ -137,7 +138,7 @@ const ChatAreaMessageThread: React.FC<ChatAreaMessageThreadProps> = ({
           </>
         ) : (
           <>
-            {agentResponse?.response ?? ""}
+            <ChatMarkdown content={agentResponse?.response ?? ""} />
             {(agentResponse?.session_id || groupSessionId) &&
               !isAgentLoading &&
               pattern !== PATTERNS.A2A_HTTP && (
