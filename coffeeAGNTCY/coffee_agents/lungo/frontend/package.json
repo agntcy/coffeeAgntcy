@@ -37,6 +37,8 @@
     "react-resizable-panels": "^4.11.1",
     "react-router-dom": "^7.13.1",
     "rehype-sanitize": "^6.0.0",
+    "remark-breaks": "^4.0.0",
+    "remark-gfm": "^4.0.1",
     "uuid": "^11.1.0"
   },
   "devDependencies": {
