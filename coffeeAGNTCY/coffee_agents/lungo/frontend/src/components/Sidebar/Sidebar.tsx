@@ -20,6 +20,8 @@ interface SidebarProps {
   isLoading: boolean
   error: string | null
   onSelectWorkflow: (summary: WorkflowSummary) => void
+  selectedReferencePattern?: string | null
+  onSelectReferencePattern?: (patternName: string) => void
 }
 
 const Sidebar: React.FC<SidebarProps> = ({
@@ -28,6 +30,8 @@ const Sidebar: React.FC<SidebarProps> = ({
   isLoading,
   error,
   onSelectWorkflow,
+  selectedReferencePattern,
+  onSelectReferencePattern,
 }) => {
   const [expandedKeys, setExpandedKeys] = useState<Set<string>>(new Set())
 
@@ -141,6 +145,8 @@ const Sidebar: React.FC<SidebarProps> = ({
                 toggleExpandableDropdown={toggleExpandableDropdown}
                 selectedWorkflowSummary={selectedWorkflowSummary}
                 onSelectWorkflow={onSelectWorkflow}
+                selectedReferencePattern={selectedReferencePattern}
+                onSelectReferencePattern={onSelectReferencePattern}
               />
             ) : null}
           </Stack>

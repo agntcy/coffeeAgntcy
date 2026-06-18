@@ -4,8 +4,14 @@
  **/
 
 import { useState, useEffect, useRef, useCallback, useMemo } from "react"
+import { v4 as uuid } from "uuid"
 import { LUNGO_FRONTEND_URLS } from "@/urls"
 import { logger } from "@/utils/logger"
+import type { CanvasMode, PatternDocState } from "@/types/patternDoc"
+import {
+  fetchWorkflowDocumentation,
+  WorkflowDocumentationNotFoundError,
+} from "@/utils/agenticWorkflowsApi"
 import { useChatAreaMeasurement } from "@/hooks/useChatAreaMeasurement"
 import { useAppStreamingState } from "@/hooks/useAppStreamingState"
 import { useAppChatState } from "@/hooks/useAppChatState"
@@ -48,7 +54,24 @@ export function useApp() {
   const [selectedWorkflowSummary, setSelectedWorkflowSummary] =
     useState<WorkflowSummary | null>(null)
 
-  const chat = useAppChatState({ selectedPattern })
+  const [selectedReferencePattern, setSelectedReferencePattern] = useState<
+    string | null
+  >(null)
+  const [patternChatSessionId, setPatternChatSessionId] = useState<
+    string | null
+  >(null)
+  const [patternDocState, setPatternDocState] = useState<PatternDocState>({
+    status: "idle",
+    documentation: null,
+    errorMessage: null,
+  })
+
+  const canvasMode: CanvasMode = useMemo(
+    () => (selectedReferencePattern !== null ? "pattern_doc" : "workflow"),
+    [selectedReferencePattern],
+  )
+
+  const chat = useAppChatState({ selectedPattern, canvasMode })
 
   const streamCompleteRef = useRef<boolean>(false)
   const [discoveryResponseEvent, setDiscoveryResponseEvent] =
@@ -84,11 +107,66 @@ export function useApp() {
       setSelectedPattern(slug)
       setSelectedWorkflowSummary(summary)
       setLiveGraphConfig(null)
+      setSelectedReferencePattern(null)
       lastDiscoveryKeyRef.current = null
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps -- streaming/chat refs stable enough; full deps cause unnecessary runs
     [streaming.reset, streaming.resetRecruiter, streaming.resetGroup, chat],
   )
+
+  const selectReferencePattern = useCallback(
+    (patternName: string | null) => {
+      setSelectedReferencePattern(patternName)
+      if (patternName !== null) {
+        setPatternChatSessionId(uuid())
+        chat.resetChatState()
+      } else {
+        setPatternChatSessionId(null)
+        setPatternDocState({
+          status: "idle",
+          documentation: null,
+          errorMessage: null,
+        })
+      }
+    },
+    [chat],
+  )
+
+  useEffect(() => {
+    if (selectedReferencePattern === null) return
+    const controller = new AbortController()
+    setPatternDocState({
+      status: "loading",
+      documentation: null,
+      errorMessage: null,
+    })
+    fetchWorkflowDocumentation(selectedReferencePattern, controller.signal)
+      .then((doc) => {
+        if (controller.signal.aborted) return
+        setPatternDocState({
+          status: "ready",
+          documentation: doc,
+          errorMessage: null,
+        })
+      })
+      .catch((err: unknown) => {
+        if (err instanceof DOMException && err.name === "AbortError") return
+        if (err instanceof WorkflowDocumentationNotFoundError) {
+          setPatternDocState({
+            status: "not_found",
+            documentation: null,
+            errorMessage: null,
+          })
+        } else {
+          setPatternDocState({
+            status: "error",
+            documentation: null,
+            errorMessage: err instanceof Error ? err.message : String(err),
+          })
+        }
+      })
+    return () => controller.abort()
+  }, [selectedReferencePattern])
 
   useEffect(() => {
     const controller = new AbortController()
@@ -410,5 +488,10 @@ export function useApp() {
     recruiterEvaluationResults: streaming.recruiterEvaluationResults,
     recruiterSelectedAgent: streaming.recruiterSelectedAgent,
     setLiveGraphConfig,
+    selectedReferencePattern,
+    selectReferencePattern,
+    canvasMode,
+    patternDocState,
+    patternChatSessionId,
   }
 }

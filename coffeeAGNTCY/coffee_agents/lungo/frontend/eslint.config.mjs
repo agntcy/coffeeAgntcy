@@ -92,6 +92,7 @@ export default [
     files: [
       "**/useApp.ts",
       "**/useMainArea.ts",
+      "**/ChatArea.tsx",
       "**/graphConfigsData.tsx",
       "**/agenticTopologyIdentityUiMap.ts",
     ],

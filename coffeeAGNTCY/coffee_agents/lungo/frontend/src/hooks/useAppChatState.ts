@@ -8,9 +8,11 @@ import { LOCAL_STORAGE_KEY } from "@/components/Chat/Messages"
 import { PATTERNS, PatternType } from "@/utils/patternUtils"
 import type { Message } from "@/components/Chat/types"
 import type { ApiResponse } from "@/types/api"
+import type { CanvasMode } from "@/types/patternDoc"
 
 export interface UseAppChatStateParams {
   selectedPattern: PatternType
+  canvasMode?: CanvasMode
 }
 
 /** Safe read of persisted messages; invalid JSON or non-array is treated as no messages. */
@@ -26,7 +28,10 @@ function getInitialMessages(): Message[] {
 }
 
 /** Chat UI state, messages persistence, and response/input handlers. */
-export function useAppChatState({ selectedPattern }: UseAppChatStateParams) {
+export function useAppChatState({
+  selectedPattern,
+  canvasMode,
+}: UseAppChatStateParams) {
   const [messages, setMessages] = useState<Message[]>(getInitialMessages)
 
   const [aiReplied, setAiReplied] = useState<boolean>(false)
@@ -94,7 +99,9 @@ export function useAppChatState({ selectedPattern }: UseAppChatStateParams) {
       setIsAgentLoading(true)
       setButtonClicked(true)
       setApiError(false)
-      if (
+      if (canvasMode === "pattern_doc") {
+        setShowFinalResponse(true)
+      } else if (
         selectedPattern !== PATTERNS.GROUP_MESSAGING &&
         selectedPattern !== PATTERNS.PUBLISH_SUBSCRIBE_STREAMING &&
         selectedPattern !== PATTERNS.A2A_HTTP
@@ -102,7 +109,7 @@ export function useAppChatState({ selectedPattern }: UseAppChatStateParams) {
         setShowFinalResponse(true)
       }
     },
-    [selectedPattern],
+    [selectedPattern, canvasMode],
   )
 
   const resetChatState = useCallback(() => {

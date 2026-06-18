@@ -32,6 +32,8 @@ interface CatalogTreeProps {
   toggleExpandableDropdown: (key: string) => void
   selectedWorkflowSummary: WorkflowSummary | null
   onSelectWorkflow: (summary: WorkflowSummary) => void
+  selectedReferencePattern?: string | null
+  onSelectReferencePattern?: (patternName: string) => void
 }
 
 const CatalogTree: React.FC<CatalogTreeProps> = ({
@@ -40,6 +42,8 @@ const CatalogTree: React.FC<CatalogTreeProps> = ({
   toggleExpandableDropdown,
   selectedWorkflowSummary,
   onSelectWorkflow,
+  selectedReferencePattern,
+  onSelectReferencePattern,
 }) => {
   const { implementedPatterns, referencePatternNames } = layout
 
@@ -180,7 +184,12 @@ const CatalogTree: React.FC<CatalogTreeProps> = ({
             <SidebarItem
               key={patternName}
               title={patternName}
-              onClick={() => openDoc(patternName)}
+              isSelected={selectedReferencePattern === patternName}
+              onClick={
+                onSelectReferencePattern
+                  ? () => onSelectReferencePattern(patternName)
+                  : () => openDoc(patternName)
+              }
             />
           ))}
         </SidebarDropdown>

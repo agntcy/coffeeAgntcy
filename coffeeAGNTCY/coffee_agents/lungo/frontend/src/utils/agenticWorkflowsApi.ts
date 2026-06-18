@@ -16,7 +16,11 @@
  */
 
 import { agenticWorkflowsAuthHeaders } from "@/api/agenticWorkflowsClient"
-import { buildAgenticWorkflowsCatalogUrl, LUNGO_FRONTEND_URLS } from "@/urls"
+import {
+  buildAgenticWorkflowsCatalogUrl,
+  getAgenticWorkflowsApiUrl,
+  LUNGO_FRONTEND_URLS,
+} from "@/urls"
 import { PATTERNS, type PatternType } from "@/utils/patternUtils"
 
 /** One row of `GET /agentic-workflows/` (matches backend `WorkflowSummary`). */
@@ -140,6 +144,58 @@ export const fetchWorkflowSummariesWithRetry = async (
     }
   }
   throw lastError
+}
+
+export class WorkflowDocumentationNotFoundError extends Error {
+  constructor(workflowName: string) {
+    super(`Workflow documentation not found for: ${workflowName}`)
+    this.name = "WorkflowDocumentationNotFoundError"
+  }
+}
+
+export interface WorkflowDocumentation {
+  workflow_name: string
+  title: string
+  full_markdown: string
+}
+
+export const fetchWorkflowDocumentation = async (
+  workflowName: string,
+  signal?: AbortSignal,
+): Promise<WorkflowDocumentation> => {
+  const url = `${getAgenticWorkflowsApiUrl()}/agentic-workflows/${encodeURIComponent(workflowName)}/documentation/`
+  const response = await fetch(url, {
+    signal,
+    headers: {
+      Accept: "application/json",
+      ...agenticWorkflowsAuthHeaders(),
+    },
+  })
+
+  if (response.status === 404) {
+    throw new WorkflowDocumentationNotFoundError(workflowName)
+  }
+  if (!response.ok) {
+    throw new Error(
+      `Failed to fetch workflow documentation: HTTP ${response.status} ${response.statusText}`,
+    )
+  }
+
+  const body: unknown = await response.json()
+  if (
+    body === null ||
+    typeof body !== "object" ||
+    !("workflow_name" in body) ||
+    !("title" in body) ||
+    !("full_markdown" in body)
+  ) {
+    throw new Error(
+      "Failed to fetch workflow documentation: unexpected response shape",
+    )
+  }
+
+  const doc = body as WorkflowDocumentation
+  return doc
 }
 
 export const pickDefaultWorkflowSummaryForPattern = (
