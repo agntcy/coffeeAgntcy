@@ -428,16 +428,9 @@ export function mergeAgenticTopologyIdentityUi(
       ? githubStreaming
       : (ghFromUri ?? data.githubLink)
 
-  const directoryAgentSlug =
-    data.directoryAgentSlug ??
-    directoryAgentSlugFromAgentRecordUri(
-      wire.agent_record_uri as string | undefined,
-    )
-
   const merged: CustomNodeData = {
     ...data,
     identityAppsSlug: row.identityAppsSlug,
-    ...(directoryAgentSlug ? { directoryAgentSlug } : {}),
     agentDirectoryLink: row.agentDirectoryLink,
     hasBadgeDetails: row.hasBadgeDetails,
     hasPolicyDetails: row.hasPolicyDetails,

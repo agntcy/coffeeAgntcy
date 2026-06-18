@@ -15,9 +15,15 @@ import pytest
 from common.subprocess_lifecycle import run_until_shutdown
 
 
+async def _block_until_cancelled(*, keep_alive: bool) -> None:
+    """Stand-in for a real keep-alive session that runs until cancelled."""
+    await asyncio.Event().wait()
+
+
 SHUTDOWN_CASES = [
     pytest.param(
         False,
+        None,
         None,
         None,
         id="loop add_signal_handler path cancels keep-alive and stops",
@@ -26,28 +32,42 @@ SHUTDOWN_CASES = [
         True,
         None,
         None,
+        None,
         id="signal.signal fallback path registers SIGTERM and stops",
     ),
     pytest.param(
         False,
+        None,
         RuntimeError("stop failed"),
         RuntimeError,
         id="stop_all_sessions error propagates",
+    ),
+    pytest.param(
+        False,
+        RuntimeError("keep-alive failed"),
+        None,
+        RuntimeError,
+        id="keep-alive failure still stops then propagates",
     ),
 ]
 
 
 @pytest.mark.parametrize(
-    ("use_signal_fallback", "stop_error", "expected_error"),
+    ("use_signal_fallback", "start_error", "stop_error", "expected_error"),
     SHUTDOWN_CASES,
 )
 async def test_run_until_shutdown(
     use_signal_fallback: bool,
+    start_error: Exception | None,
     stop_error: Exception | None,
     expected_error: type[Exception] | None,
 ) -> None:
     """``run_until_shutdown`` registers a handler, then stops sessions on signal."""
     session = AsyncMock()
+    if start_error is not None:
+        session.start_all_sessions.side_effect = start_error
+    else:
+        session.start_all_sessions.side_effect = _block_until_cancelled
     if stop_error is not None:
         session.stop_all_sessions.side_effect = stop_error
 
@@ -75,11 +95,13 @@ async def test_run_until_shutdown(
         await asyncio.sleep(0)
         assert signal.SIGTERM in handlers
 
-        trigger = handlers[signal.SIGTERM]
-        if use_signal_fallback:
-            trigger(signal.SIGTERM, None)
-        else:
-            trigger()
+        # A failing keep-alive ends on its own; otherwise a signal drives shutdown.
+        if start_error is None:
+            trigger = handlers[signal.SIGTERM]
+            if use_signal_fallback:
+                trigger(signal.SIGTERM, None)
+            else:
+                trigger()
 
         if expected_error is not None:
             with pytest.raises(expected_error):
