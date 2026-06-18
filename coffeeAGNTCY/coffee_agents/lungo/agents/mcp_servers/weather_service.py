@@ -111,8 +111,5 @@ async def main():
     await run_until_shutdown(app_session, logger=logger)
 
 if __name__ == "__main__":
-    logging.info("Starting weather service...")
-    try:
-        asyncio.run(main())
-    except KeyboardInterrupt:
-        logger.info("Shutting down gracefully on keyboard interrupt.")
+    logger.info("Starting weather service...")
+    asyncio.run(main())
