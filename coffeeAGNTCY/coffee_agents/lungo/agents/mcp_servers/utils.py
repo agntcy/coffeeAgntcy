@@ -4,6 +4,7 @@
 from typing import Literal
 from agntcy_app_sdk.factory import AgntcyFactory
 from agents.exceptions import AuthError
+from common.mcp_event_middleware import wrap_mcp_client
 from config.config import DEFAULT_MESSAGE_TRANSPORT, SLIM_SERVER, NATS_SERVER, OTEL_SDK_DISABLED
 import os
 
@@ -17,7 +18,14 @@ if DEFAULT_MESSAGE_TRANSPORT not in _TRANSPORT_MAP:
 
 _mcp_transport, _mcp_endpoint = _TRANSPORT_MAP[DEFAULT_MESSAGE_TRANSPORT]
 
-async def invoke_payment_mcp_tool(tool_name: Literal["create_payment", "list_transactions"]) -> dict:
+async def invoke_payment_mcp_tool(
+  tool_name: Literal["create_payment", "list_transactions"],
+  *,
+  agent_id: str,
+  source: str,
+  workflow_name: str | None = None,
+  instance_id: str | None = None,
+) -> dict:
   # don't invoke if identity auth is not enabled
   if os.getenv("IDENTITY_AUTH_ENABLED", "").lower() not in ["true", "enabled"]:
     return {}
@@ -35,6 +43,15 @@ async def invoke_payment_mcp_tool(tool_name: Literal["create_payment", "list_tra
     agent_topic="lungo_payment_service",
     transport=transport_instance,
     url=os.getenv("MCP_PAYMENT_SERVICE_URL", "http://localhost:8081/mcp"),
+  )
+
+  client = wrap_mcp_client(
+    client,
+    agent_id=agent_id,
+    mcp_server="lungo_payment_service",
+    source=source,
+    workflow_name=workflow_name,
+    instance_id=instance_id,
   )
 
   try:

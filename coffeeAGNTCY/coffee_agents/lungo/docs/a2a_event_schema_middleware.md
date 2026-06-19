@@ -1,12 +1,14 @@
-# A2A Event Schema Middleware Flow
+# A2A and MCP Event Schema Middleware Flow
 
-This document explains how Lungo emits workflow topology events for A2A calls.
+This document explains how Lungo emits workflow topology events for A2A calls
+and MCP tool calls.
 
 ## Package Layout
 
-Shared, transport-agnostic pieces live in `common/workflow_utils/` (also used by future MCP emission in #587):
+Shared, transport-agnostic pieces live in `common/workflow_utils/`:
 
 - `common/workflow_utils/builders.py` — `event_v1` metadata, nodes, edges, and full `Event` assembly.
+- `common/workflow_utils/mcp.py` — transient MCP tool-call topology builders + `emit_mcp_tool_call_event`.
 - `common/workflow_utils/event_sink.py` — `EventSink` and `WorkflowAPIEventSink` (HTTP POST to workflow API).
 - `common/workflow_utils/inflight.py` — trace-scoped in-flight state, runtime ID allocator, span-end cleanup.
 - `common/workflow_utils/workflow_catalog.py` — workflow name → pattern/use-case metadata (`lookup_workflow`).
@@ -17,6 +19,11 @@ A2A-specific orchestration remains in `common/a2a_event_middleware/`:
 - `common/a2a_event_middleware/middleware.py` — `EventEmittingInterceptor`, `make_event_emitting_consumer`, A2A topology builders.
 - `common/a2a_event_middleware/__init__.py` — minimal public API: interceptor, consumer factory, cleanup registration.
 - `common/a2a_event_middleware/{event_sink,inflight,workflow_catalog}.py` — compatibility shims re-exporting from `workflow_utils`.
+
+MCP-specific orchestration lives in `common/mcp_event_middleware/`:
+
+- `common/mcp_event_middleware/wrapper.py` — `EventEmittingMCPClient` and `wrap_mcp_client` (client-side `call_tool` instrumentation).
+- `common/mcp_event_middleware/__init__.py` — public API: wrapper class + factory.
 
 ## Purpose
 
@@ -87,8 +94,42 @@ Both events are correlated by OTel `trace_id` and a shared in-flight state map.
 - If OTel context is missing: middleware still emits outbound, but inbound correlation may be lost.
 - If sink POST fails: error is logged, exception is not raised to caller.
 
+## MCP Tool-Call Events
+
+MCP tool calls are modeled as **transient** topology nodes rather than the
+persistent caller/transport/remote nodes used for A2A.
+
+- **`EventEmittingMCPClient` / `wrap_mcp_client(...)`**
+  - `wrap_mcp_client(...)` resolves identity once (see below) and returns either an `EventEmittingMCPClient` or, when no identity resolves (or `EMIT_WORKFLOW_EVENTS` is false), the **original client unwrapped** so the tool call behaves exactly as before.
+  - The wrapper keeps the original async context manager (`_cm`) and the object it yields (`_session`) separate: `__aexit__` always closes `_cm` so the SDK client's teardown (cancelling its anyio task group, closing streams) runs, while `call_tool`/`list_tools` and other attributes delegate to `_session`. Exiting the yielded session instead leaks those streams and hangs the event loop.
+  - Intercepts `call_tool` (positional `name` or `name=` keyword), emitting one event when the call starts and one when it ends.
+  - Best-effort: emission failures are logged, never raised to the tool caller.
+
+### Lifecycle
+
+1. **Start** → `Operation.CREATE`: emits the invoking-agent node (carrying `stable_agent_id` so it merges with the A2A agent node), a transient `mcp_tool_call` node (extras `tool_name`, `mcp_server`), and the connecting edge.
+2. **End** → `Operation.DELETE`: removes the `mcp_tool_call` node and edge, attaching `duration_ms` and (on failure) `error`. The wrapper refcounts in-flight calls and, when the last one ends, the DELETE also removes the invoking-agent node so it does not linger in the instance snapshot (the frontend still renders the agent via the A2A node, which shares the same `stable_agent_id`).
+   - For non-streaming results, DELETE is emitted as soon as `call_tool` returns.
+   - For streamed (async-iterable) results, the wrapper returns a proxy iterator and emits DELETE only when iteration completes or raises.
+
+The CREATE and DELETE of one call share a `node://`/`edge://` id (same per-instance `RuntimeIdAllocator` + per-call `call_key`), so the frontend can add and later remove the same transient node.
+
+### Workflow Identity Propagation (supervisor → farm)
+
+MCP events are emitted from the farm process but must correlate to the
+supervisor's workflow instance:
+
+1. The supervisor stamps `workflow_name` + `workflow_instance_id` (read from OTel baggage) into the outbound A2A message `metadata` (`agents/supervisors/auction/graph/tools.py`).
+2. The farm executor (`agents/farms/colombia/agent_executor.py`) reads that metadata, wraps `agent.ainvoke(...)` in `workflow_context_scope` (re-establishing baggage for the graph run), and also threads the same identity explicitly through graph state.
+3. `wrap_mcp_client(...)` resolves identity once, in this order:
+   1. **OTel baggage** if present and non-empty (the primary channel established in step 2).
+   2. otherwise the **explicit** `workflow_name`/`instance_id` passed by the call site (threaded through graph state as an in-process fallback).
+   3. otherwise **None** — the client is returned unwrapped and no events are emitted (the tool call still runs).
+   In all cases the candidate must validate (workflow_name in the catalog, `instance_id` matching `instance://<uuid>`); an invalid candidate falls through to the next source.
+4. `register_cleanup_span_processor()` is registered on the farm (`farm_server.py`) for parity with the supervisor.
+
 ## Design Notes
 
 - Keep transformation logic in small focused helpers (`resolve_correlation_id`, `_collect_remote_agent_ids`, `resolve_consumer_state`).
 - Keep side effects localized (`upsert_in_flight_state`, `WorkflowAPIEventSink.emit`).
-- Keep A2A orchestration in `middleware.py`; shared builders/sink/inflight/catalog in `workflow_utils`.
+- Keep A2A orchestration in `middleware.py` and MCP orchestration in `mcp_event_middleware/wrapper.py`; shared builders/sink/inflight/catalog in `workflow_utils`.
