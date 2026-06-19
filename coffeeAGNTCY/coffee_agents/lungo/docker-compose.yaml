@@ -2,7 +2,11 @@ services:
   brazil-farm-server:
     build:
       context: ../../..
-      dockerfile: coffeeAGNTCY/coffee_agents/lungo/docker/Dockerfile.brazil-farm
+      dockerfile: coffeeAGNTCY/docker/common/Dockerfile.python-uv
+      args:
+        PROJECT_PATH: coffeeAGNTCY/coffee_agents/lungo
+        UV_CACHE_ID: lungo-uv
+        RUN_COMMAND: uv run python agents/farms/brazil/farm_server.py
     image: ghcr.io/agntcy/coffee-agntcy/brazil-farm:latest
     container_name: brazil-farm-server
     env_file:
@@ -29,7 +33,11 @@ services:
   colombia-farm-server:
     build:
       context: ../../..
-      dockerfile: coffeeAGNTCY/coffee_agents/lungo/docker/Dockerfile.colombia-farm
+      dockerfile: coffeeAGNTCY/docker/common/Dockerfile.python-uv
+      args:
+        PROJECT_PATH: coffeeAGNTCY/coffee_agents/lungo
+        UV_CACHE_ID: lungo-uv
+        RUN_COMMAND: uv run python agents/farms/colombia/farm_server.py
     image: ghcr.io/agntcy/coffee-agntcy/colombia-farm:latest
     container_name: colombia-farm-server
     env_file:
@@ -58,7 +66,11 @@ services:
   vietnam-farm-server:
     build:
       context: ../../..
-      dockerfile: coffeeAGNTCY/coffee_agents/lungo/docker/Dockerfile.vietnam-farm
+      dockerfile: coffeeAGNTCY/docker/common/Dockerfile.python-uv
+      args:
+        PROJECT_PATH: coffeeAGNTCY/coffee_agents/lungo
+        UV_CACHE_ID: lungo-uv
+        RUN_COMMAND: uv run python agents/farms/vietnam/farm_server.py
     image: ghcr.io/agntcy/coffee-agntcy/vietnam-farm:latest
     container_name: vietnam-farm-server
     env_file:
@@ -114,7 +126,13 @@ services:
   auction-supervisor:
     build:
       context: ../../..
-      dockerfile: coffeeAGNTCY/coffee_agents/lungo/docker/Dockerfile.auction-supervisor
+      dockerfile: coffeeAGNTCY/docker/common/Dockerfile.python-uv
+      args:
+        PROJECT_PATH: coffeeAGNTCY/coffee_agents/lungo
+        UV_CACHE_ID: lungo-uv
+        RUN_COMMAND: uv run python agents/supervisors/auction/main.py
+        APP_NAME: lungo-exchange
+        APP_SERVICE: lungo-exchange
     image: ghcr.io/agntcy/coffee-agntcy/auction-supervisor:latest
     container_name: auction-supervisor
     volumes:
@@ -150,7 +168,14 @@ services:
   agentic-workflows-api:
     build:
       context: ../../..
-      dockerfile: coffeeAGNTCY/coffee_agents/lungo/docker/Dockerfile.agentic-workflows-api
+      dockerfile: coffeeAGNTCY/docker/common/Dockerfile.python-uv
+      args:
+        PROJECT_PATH: coffeeAGNTCY/coffee_agents/lungo
+        UV_CACHE_ID: lungo-uv
+        RUN_COMMAND: uv run python -m api.agentic_workflows.server
+        APP_NAME: agentic-workflows-api
+        APP_SERVICE: agentic-workflows-api
+        ENV_PORT: "9105"
     image: ghcr.io/agntcy/coffee-agntcy/agentic-workflows-api:latest
     container_name: agentic-workflows-api
     env_file:
@@ -168,7 +193,10 @@ services:
       - frontend
     build:
       context: ../../..
-      dockerfile: coffeeAGNTCY/coffee_agents/lungo/docker/Dockerfile.ui
+      dockerfile: coffeeAGNTCY/docker/common/Dockerfile.node-frontend
+      args:
+        FRONTEND_PATH: coffeeAGNTCY/coffee_agents/lungo/frontend
+        NPM_CACHE_ID: lungo-npm
     image: ghcr.io/agntcy/coffee-agntcy/lungo-ui:latest
     container_name: lungo-ui
     env_file:
@@ -185,7 +213,11 @@ services:
   weather-mcp-server:
     build:
       context: ../../..
-      dockerfile: coffeeAGNTCY/coffee_agents/lungo/docker/Dockerfile.weather-mcp
+      dockerfile: coffeeAGNTCY/docker/common/Dockerfile.python-uv
+      args:
+        PROJECT_PATH: coffeeAGNTCY/coffee_agents/lungo
+        UV_CACHE_ID: lungo-uv
+        RUN_COMMAND: uv run python agents/mcp_servers/weather_service.py
     image: ghcr.io/agntcy/coffee-agntcy/weather-mcp-server:latest
     container_name: weather-mcp-server
     environment:
@@ -206,7 +238,11 @@ services:
   payment-mcp-server:
     build:
       context: ../../..
-      dockerfile: coffeeAGNTCY/coffee_agents/lungo/docker/Dockerfile.payment-mcp
+      dockerfile: coffeeAGNTCY/docker/common/Dockerfile.python-uv
+      args:
+        PROJECT_PATH: coffeeAGNTCY/coffee_agents/lungo
+        UV_CACHE_ID: lungo-uv
+        RUN_COMMAND: uv run python agents/mcp_servers/payment_service.py
     image: ghcr.io/agntcy/coffee-agntcy/payment-mcp-server:latest
     container_name: payment-mcp-server
     ports:
@@ -296,7 +332,11 @@ services:
   logistics-shipper:
     build:
       context: ../../..
-      dockerfile: coffeeAGNTCY/coffee_agents/lungo/docker/Dockerfile.logistics-shipper
+      dockerfile: coffeeAGNTCY/docker/common/Dockerfile.python-uv
+      args:
+        PROJECT_PATH: coffeeAGNTCY/coffee_agents/lungo
+        UV_CACHE_ID: lungo-uv
+        RUN_COMMAND: uv run python agents/logistics/shipper/server.py
     image: ghcr.io/agntcy/coffee-agntcy/logistics-shipper:latest
     container_name: logistics-shipper
     environment:
@@ -321,7 +361,11 @@ services:
   logistics-accountant:
     build:
       context: ../../..
-      dockerfile: coffeeAGNTCY/coffee_agents/lungo/docker/Dockerfile.logistics-accountant
+      dockerfile: coffeeAGNTCY/docker/common/Dockerfile.python-uv
+      args:
+        PROJECT_PATH: coffeeAGNTCY/coffee_agents/lungo
+        UV_CACHE_ID: lungo-uv
+        RUN_COMMAND: uv run python agents/logistics/accountant/server.py
     image: ghcr.io/agntcy/coffee-agntcy/logistics-accountant:latest
     container_name: logistics-accountant
     environment:
@@ -346,7 +390,11 @@ services:
   logistics-farm:
     build:
       context: ../../..
-      dockerfile: coffeeAGNTCY/coffee_agents/lungo/docker/Dockerfile.logistics-farm
+      dockerfile: coffeeAGNTCY/docker/common/Dockerfile.python-uv
+      args:
+        PROJECT_PATH: coffeeAGNTCY/coffee_agents/lungo
+        UV_CACHE_ID: lungo-uv
+        RUN_COMMAND: uv run python agents/logistics/farm/server.py
     image: ghcr.io/agntcy/coffee-agntcy/logistics-farm:latest
     container_name: logistics-farm
     environment:
@@ -371,7 +419,11 @@ services:
   logistics-helpdesk:
     build:
       context: ../../..
-      dockerfile: coffeeAGNTCY/coffee_agents/lungo/docker/Dockerfile.logistics-helpdesk
+      dockerfile: coffeeAGNTCY/docker/common/Dockerfile.python-uv
+      args:
+        PROJECT_PATH: coffeeAGNTCY/coffee_agents/lungo
+        UV_CACHE_ID: lungo-uv
+        RUN_COMMAND: uv run python agents/logistics/helpdesk/server.py
     image: ghcr.io/agntcy/coffee-agntcy/logistics-helpdesk:latest
     container_name: logistics-helpdesk
     environment:
@@ -396,7 +448,11 @@ services:
   logistics-supervisor:
     build:
       context: ../../..
-      dockerfile: coffeeAGNTCY/coffee_agents/lungo/docker/Dockerfile.logistics-supervisor
+      dockerfile: coffeeAGNTCY/docker/common/Dockerfile.python-uv
+      args:
+        PROJECT_PATH: coffeeAGNTCY/coffee_agents/lungo
+        UV_CACHE_ID: lungo-uv
+        RUN_COMMAND: uv run python agents/supervisors/logistics/main.py
     image: ghcr.io/agntcy/coffee-agntcy/logistics-supervisor:latest
     container_name: logistics-supervisor
     env_file:
@@ -545,7 +601,14 @@ services:
   recruiter:
     build:
       context: ../../..
-      dockerfile: coffeeAGNTCY/coffee_agents/recruiter/Dockerfile
+      dockerfile: coffeeAGNTCY/docker/common/Dockerfile.python-uv
+      target: python-uv-with-dirctl
+      args:
+        PROJECT_PATH: coffeeAGNTCY/coffee_agents/recruiter
+        UV_CACHE_ID: recruiter-uv
+        RUN_COMMAND: uv run python src/agent_recruiter/server/server.py
+        ENV_PYTHONUNBUFFERED: "1"
+        ENV_ENABLE_HTTP: "true"
     image: ghcr.io/agntcy/coffee-agntcy/recruiter:latest
     container_name: recruiter
     env_file:
@@ -574,7 +637,13 @@ services:
   recruiter-supervisor:
     build:
       context: ../../..
-      dockerfile: coffeeAGNTCY/coffee_agents/lungo/docker/Dockerfile.recruiter-supervisor
+      dockerfile: coffeeAGNTCY/docker/common/Dockerfile.python-uv
+      args:
+        PROJECT_PATH: coffeeAGNTCY/coffee_agents/lungo
+        UV_CACHE_ID: lungo-uv
+        RUN_COMMAND: uv run python agents/supervisors/recruiter/main.py
+        APP_NAME: lungo-recruiter-supervisor
+        APP_SERVICE: lungo-recruiter-supervisor
     image: ghcr.io/agntcy/coffee-agntcy/recruiter-supervisor:latest
     container_name: recruiter-supervisor
     volumes:

@@ -5,7 +5,7 @@ This project consists of three main components:
 2. **React Frontend** (UI)
 3. **Farm Server** (Agent Backend)
 
-Both components are containerized using Docker for easy deployment.
+All components use shared Dockerfiles under [`coffeeAGNTCY/docker/common/`](../../../docker/common/). Per-service differences are supplied via build args in `docker-compose.yaml`.
 
 ---
 
@@ -16,57 +16,54 @@ Both components are containerized using Docker for easy deployment.
 
 ---
 
-## Docker Files
-### Backend: `Dockerfile.exchange`
-This Dockerfile sets up the FastAPI Exchange Server.
+## Shared Dockerfiles
 
-### Frontend: `Dockerfile.ui`
-This Dockerfile sets up the React Frontend.
+| Service | Dockerfile | Key build args |
+|---------|------------|----------------|
+| Exchange server | `Dockerfile.python-uv` | `PROJECT_PATH`, `UV_CACHE_ID`, `RUN_COMMAND`, `APP_NAME` |
+| Farm server | `Dockerfile.python-uv` | `PROJECT_PATH`, `UV_CACHE_ID`, `RUN_COMMAND` |
+| UI | `Dockerfile.node-frontend` | `FRONTEND_PATH`, `NPM_CACHE_ID` |
 
-### Farm Server: `Dockerfile.farm`
-This Dockerfile sets up the Farm Agent backend.
+See [`coffeeAGNTCY/docker/common/README.md`](../../../docker/common/README.md) for the full build-arg reference.
 
 ---
 
 ## Build and Run Instructions
 
-### 1. Backend (FastAPI Exchange Server)
-#### Build the Docker Image
+### Docker Compose (recommended)
+
+From this directory:
+
 ```bash
-docker build -f coffeeAGNTCY/coffee_agents/corto/docker/Dockerfile.exchange -t exchange-server .
+docker compose up --build
 ```
 
-#### Run the Container
+### Manual builds (from repo root)
+
+#### Exchange server
 ```bash
-docker run -d -p 8000:8000 exchange-server
+docker build -f coffeeAGNTCY/docker/common/Dockerfile.python-uv \
+  --build-arg PROJECT_PATH=coffeeAGNTCY/coffee_agents/corto \
+  --build-arg UV_CACHE_ID=corto-uv \
+  --build-arg RUN_COMMAND="uv run python exchange/main.py" \
+  --build-arg APP_NAME=corto-exchange \
+  --build-arg APP_SERVICE=corto-exchange \
+  -t exchange-server .
 ```
 
-The backend will be accessible at `http://localhost:8000`.
-
----
-
-### 2. Frontend (React UI)
-#### Build the Docker Image
+#### UI
 ```bash
-docker build -f coffeeAGNTCY/coffee_agents/corto/docker/Dockerfile.ui -t ui-server .
+docker build -f coffeeAGNTCY/docker/common/Dockerfile.node-frontend \
+  --build-arg FRONTEND_PATH=coffeeAGNTCY/coffee_agents/corto/exchange/frontend \
+  --build-arg NPM_CACHE_ID=corto-npm \
+  -t ui-server .
 ```
 
-#### Run the Container
+#### Farm server
 ```bash
-docker run -d -p 3000:3000 ui-server
-```
-
-The frontend will be accessible at `http://localhost:3000`.
-
----
-
-### 3. Farm Server (Agent Backend)
-#### Build the Docker Image
-```bash
-docker build -f coffeeAGNTCY/coffee_agents/corto/docker/Dockerfile.farm -t farm-server .
-```
-
-#### Run the Container
-```bash
-docker run -d -p 9999:9999 farm-server
+docker build -f coffeeAGNTCY/docker/common/Dockerfile.python-uv \
+  --build-arg PROJECT_PATH=coffeeAGNTCY/coffee_agents/corto \
+  --build-arg UV_CACHE_ID=corto-uv \
+  --build-arg RUN_COMMAND="uv run python farm/farm_server.py" \
+  -t farm-server .
 ```

@@ -16,17 +16,23 @@ This directory contains CI/CD workflows for building images, packaging Helm char
 
 Matrix builds all defined images (see matrix.image array). PRs build (no push) with tag pr-<PR_NUMBER>. Main pushes publish :latest. Git tags publish the tag as image tag.
 
-Key build args (BUILD_VERSION, BUILD_DATE, GIT_COMMIT_SHORT, etc.) and OCI labels supply provenance. Update the matrix to add/remove images:
+Key build args (BUILD_VERSION, BUILD_DATE, GIT_COMMIT_SHORT, etc.) and OCI labels supply provenance. All Python agents and UIs share parameterized Dockerfiles under `coffeeAGNTCY/docker/common/`. Update the matrix to add/remove images:
 
 ```yaml
 strategy:
   matrix:
     image:
       - name: new-component
-        dockerfile: coffeeAGNTCY/coffee_agents/.../docker/Dockerfile.new
+        dockerfile: coffeeAGNTCY/docker/common/Dockerfile.python-uv
+        extra_build_args: |
+          PROJECT_PATH=coffeeAGNTCY/coffee_agents/lungo
+          UV_CACHE_ID=lungo-uv
+          RUN_COMMAND=uv run python path/to/server.py
 ```
 
-Ensure Dockerfile path is correct and name unique under ghcr.io/<org>/coffee-agntcy/.
+For frontend images use `Dockerfile.node-frontend` with `FRONTEND_PATH` and `NPM_CACHE_ID`. For recruiter use target `python-uv-with-dirctl`. See [`coffeeAGNTCY/docker/common/README.md`](../../coffeeAGNTCY/docker/common/README.md).
+
+Ensure image name is unique under ghcr.io/<org>/coffee-agntcy/.
 
 ## helm-push
 

@@ -2,7 +2,11 @@ services:
   farm-server:
     build:
       context: ../../..
-      dockerfile: coffeeAGNTCY/coffee_agents/corto/docker/Dockerfile.farm
+      dockerfile: coffeeAGNTCY/docker/common/Dockerfile.python-uv
+      args:
+        PROJECT_PATH: coffeeAGNTCY/coffee_agents/corto
+        UV_CACHE_ID: corto-uv
+        RUN_COMMAND: uv run python farm/farm_server.py
     image: ghcr.io/agntcy/coffee-agntcy/corto-farm:latest
     container_name: farm-server
     env_file:
@@ -41,7 +45,13 @@ services:
   exchange-server:
     build:
       context: ../../..
-      dockerfile: coffeeAGNTCY/coffee_agents/corto/docker/Dockerfile.exchange
+      dockerfile: coffeeAGNTCY/docker/common/Dockerfile.python-uv
+      args:
+        PROJECT_PATH: coffeeAGNTCY/coffee_agents/corto
+        UV_CACHE_ID: corto-uv
+        RUN_COMMAND: uv run python exchange/main.py
+        APP_NAME: corto-exchange
+        APP_SERVICE: corto-exchange
     image: ghcr.io/agntcy/coffee-agntcy/corto-exchange:latest
     container_name: exchange-server-corto
     env_file:
@@ -64,7 +74,10 @@ services:
   ui:
     build:
       context: ../../..
-      dockerfile: coffeeAGNTCY/coffee_agents/corto/docker/Dockerfile.ui
+      dockerfile: coffeeAGNTCY/docker/common/Dockerfile.node-frontend
+      args:
+        FRONTEND_PATH: coffeeAGNTCY/coffee_agents/corto/exchange/frontend
+        NPM_CACHE_ID: corto-npm
     image: ghcr.io/agntcy/coffee-agntcy/corto-ui:latest
     container_name: ui-corto
     environment:

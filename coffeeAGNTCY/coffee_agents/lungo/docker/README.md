@@ -1,13 +1,6 @@
 # Project Setup and Docker Instructions
 
-This project consists of five main components:
-1. **FastAPI Exchange Server** (Backend)
-2. **React Frontend** (UI)
-3. **Brazil Farm Server** (Brazil Farm Agent Backend)
-4. **Colombia Farm Server** (Colombia Farm Agent Backend)
-5. **Vietnam Farm Server** (Vietnam Farm Agent Backend)
-
-Both components are containerized using Docker for easy deployment.
+Lungo services are containerized using shared Dockerfiles under [`coffeeAGNTCY/docker/common/`](../../../docker/common/). Per-service differences are supplied via build args in `docker-compose.yaml`.
 
 ---
 
@@ -18,52 +11,55 @@ Both components are containerized using Docker for easy deployment.
 
 ---
 
-## Docker Files
-### Backend: `Dockerfile.exchange`
-This Dockerfile sets up the FastAPI Exchange Server.
+## Shared Dockerfiles
 
-### Frontend: `Dockerfile.ui`
-This Dockerfile sets up the React Frontend.
+| Dockerfile | Used for |
+|------------|----------|
+| `Dockerfile.python-uv` | All Python agents (farms, supervisors, MCP servers, logistics, recruiter-supervisor) |
+| `Dockerfile.node-frontend` | Lungo React UI |
 
-### Brazil Farm Server: `Dockerfile.brazil-farm`
-This Dockerfile sets up the Brazil Farm Agent backend.
+The standalone recruiter agent uses `Dockerfile.python-uv` with target `python-uv-with-dirctl` (bundles `dirctl`).
 
-### Colombia Farm Server: `Dockerfile.colombia-farm`
-This Dockerfile sets up the Brazil Farm Agent backend.
-
-### Vietnam Farm Server: `Dockerfile.vietnam-farm`
-This Dockerfile sets up the Vietnam Farm Agent backend.
+See [`coffeeAGNTCY/docker/common/README.md`](../../../docker/common/README.md) for the full build-arg reference.
 
 ---
 
 ## Build and Run Instructions
 
-### 1. Backend (FastAPI Exchange Server)
-#### Build the Docker Image
+### Docker Compose (recommended)
+
+From the lungo project directory:
+
 ```bash
-docker build -f coffeeAGNTCY/coffee_agents/corto/docker/Dockerfile.exchange -t exchange-server .
+docker compose --profile farms up --build
 ```
 
-#### Run the Container
+### Manual build examples (from repo root)
+
+#### Brazil farm
 ```bash
-docker run -d -p 8000:8000 exchange-server
+docker build -f coffeeAGNTCY/docker/common/Dockerfile.python-uv \
+  --build-arg PROJECT_PATH=coffeeAGNTCY/coffee_agents/lungo \
+  --build-arg UV_CACHE_ID=lungo-uv \
+  --build-arg RUN_COMMAND="uv run python agents/farms/brazil/farm_server.py" \
+  -t brazil-farm .
 ```
 
-The backend will be accessible at `http://localhost:8000`.
-
----
-
-### 2. Frontend (React UI)
-#### Build the Docker Image
+#### Auction supervisor (with build metadata)
 ```bash
-docker build -f coffeeAGNTCY/coffee_agents/corto/docker/Dockerfile.ui -t ui-server .
+docker build -f coffeeAGNTCY/docker/common/Dockerfile.python-uv \
+  --build-arg PROJECT_PATH=coffeeAGNTCY/coffee_agents/lungo \
+  --build-arg UV_CACHE_ID=lungo-uv \
+  --build-arg RUN_COMMAND="uv run python agents/supervisors/auction/main.py" \
+  --build-arg APP_NAME=lungo-exchange \
+  --build-arg APP_SERVICE=lungo-exchange \
+  -t auction-supervisor .
 ```
 
-#### Run the Container
+#### UI
 ```bash
-docker run -d -p 3000:3000 ui-server
+docker build -f coffeeAGNTCY/docker/common/Dockerfile.node-frontend \
+  --build-arg FRONTEND_PATH=coffeeAGNTCY/coffee_agents/lungo/frontend \
+  --build-arg NPM_CACHE_ID=lungo-npm \
+  -t lungo-ui .
 ```
-
-The frontend will be accessible at `http://localhost:3000`.
-
----

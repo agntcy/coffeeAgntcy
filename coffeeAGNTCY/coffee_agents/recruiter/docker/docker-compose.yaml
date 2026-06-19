@@ -77,7 +77,14 @@ services:
   recruiter-agent:
     build:
       context: ../../../..
-      dockerfile: coffeeAGNTCY/coffee_agents/recruiter/Dockerfile
+      dockerfile: coffeeAGNTCY/docker/common/Dockerfile.python-uv
+      target: python-uv-with-dirctl
+      args:
+        PROJECT_PATH: coffeeAGNTCY/coffee_agents/recruiter
+        UV_CACHE_ID: recruiter-uv
+        RUN_COMMAND: uv run python src/agent_recruiter/server/server.py
+        ENV_PYTHONUNBUFFERED: "1"
+        ENV_ENABLE_HTTP: "true"
     container_name: recruiter-agent
     ports:
       - "8881:8881"
