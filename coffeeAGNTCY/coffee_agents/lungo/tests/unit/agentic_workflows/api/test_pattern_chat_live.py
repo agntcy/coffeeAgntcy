@@ -19,6 +19,7 @@ from urllib.parse import quote
 
 import httpx
 import pytest
+from tests.helpers.workflow_api_auth import workflow_api_auth_headers
 from tests.unit.agentic_workflows.api.agentic_uvicorn_helpers import (
     assert_lungo_package_layout,
     free_tcp_port,
@@ -50,6 +51,7 @@ def test_live_pattern_chat_streams_real_response() -> None:
             base_url=base_url,
             timeout=httpx.Timeout(60.0),
             trust_env=False,
+            headers=workflow_api_auth_headers(),
         ) as client:
             with client.stream("POST", path, json=body) as r:
                 assert r.status_code == 200

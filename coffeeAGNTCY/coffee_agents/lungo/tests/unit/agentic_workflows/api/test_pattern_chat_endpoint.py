@@ -30,10 +30,10 @@ _MAX_MESSAGE_BYTES = 32 * 1024
 
 
 @pytest.fixture()
-def client() -> TestClient:
+def client(workflow_api_headers: dict[str, str]) -> TestClient:
     app = FastAPI(openapi_url=None, docs_url=None, redoc_url=None)
     app.include_router(create_agentic_workflows_router())
-    with TestClient(app) as test_client:
+    with TestClient(app, headers=workflow_api_headers) as test_client:
         yield test_client
 
 
@@ -213,7 +213,7 @@ def test_first_post_creates_session_and_seeds_markdown(client: TestClient) -> No
     assert session is not None, "session should be created on first POST"
     assert session.state.get(pattern_chat.STATE_KEY_PATTERN_NAME) == "Feedback Loop"
     markdown = session.state.get(pattern_chat.STATE_KEY_MARKDOWN, "")
-    assert "```mermaid" in markdown, "session state must include the pattern markdown"
+    assert "# Feedback Loop" in markdown, "session state must include the pattern markdown"
 
 
 def test_second_post_reuses_session(client: TestClient) -> None:
