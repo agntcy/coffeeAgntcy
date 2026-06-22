@@ -4,10 +4,13 @@
  **/
 
 import { describe, expect, it } from "vitest"
-import { NODE_TYPES, EDGE_TYPES } from "@/utils/const"
+import { NODE_TYPES, EDGE_TYPES, EDGE_LABELS } from "@/utils/const"
 import { topologyWireToReactFlow } from "@/utils/topologyToReactFlow"
 import { stableAgentUuidForRecordName } from "@/utils/agenticTopologyIdentityUiMap"
 
+function wireNode(id: string, type: string, label: string, layerIndex: number) {
+  return { id, type, label, layer_index: layerIndex }
+}
 describe("topologyWireToReactFlow", () => {
   it.each([
     {
@@ -177,30 +180,99 @@ describe("topologyWireToReactFlow", () => {
     expect(data?.label2).toBe("Farm Agent")
   })
 
-  it("enrich: logistics group node gets transport github link", () => {
+  it("renders a group container with children parented and compact transport", () => {
+    const groupId = "node://aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa"
     const { nodes } = topologyWireToReactFlow(
       {
         nodes: [
-          {
-            id: "node://aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
-            type: "group",
-            label: "Logistics Group",
-            layer_index: 0,
-          },
+          wireNode(groupId, "group", "Logistics Group", 0),
+          wireNode(
+            "node://bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
+            "customNode",
+            "Buyer Logistics Agent",
+            1,
+          ),
+          wireNode(
+            "node://cccccccc-cccc-4ccc-8ccc-cccccccccccc",
+            "transportNode",
+            "Transport",
+            2,
+          ),
         ],
         edges: [],
       },
       { validateUrls: false },
     )
-    const data = nodes[0]?.data as {
-      githubLink?: string
-      label1?: string
-      directoryAgentSlug?: string
-    }
-    expect(data?.label1).toBe("Logistics")
-    expect(data?.githubLink).toBeDefined()
-    expect(data?.githubLink).toContain("transport")
-    expect(data?.directoryAgentSlug).toBe("logistics-supervisor-agent")
+    const group = nodes.find((node) => node.id === groupId)
+    const transport = nodes.find((node) => node.type === "transportNode")
+    const child = nodes.find(
+      (node) => node.type === "customNode" && node.parentId === groupId,
+    )
+    expect(group?.type).toBe("group")
+    expect(group?.style).toBeDefined()
+    expect(transport?.parentId).toBe(groupId)
+    expect((transport?.data as { compact?: boolean })?.compact).toBe(true)
+    expect(child).toBeDefined()
+    expect(child?.extent).toBe("parent")
+  })
+
+  it("labels edges into MCP servers as MCP and keeps them branching", () => {
+    const colombiaId = "node://10101010-1010-4101-8101-101010101010"
+    const weatherId = "node://20202020-2020-4202-8202-202020202020"
+    const { edges } = topologyWireToReactFlow(
+      {
+        nodes: [
+          wireNode(colombiaId, "customNode", "Colombia Coffee Farm Agent", 0),
+          wireNode(weatherId, "customNode", "Weather MCP Server", 1),
+        ],
+        edges: [
+          {
+            id: "edge://30303030-3030-4303-8303-303030303030",
+            type: "branching",
+            source: colombiaId,
+            target: weatherId,
+          },
+        ],
+      },
+      { validateUrls: false },
+    )
+    expect(edges[0]?.type).toBe(EDGE_TYPES.BRANCHING)
+    expect((edges[0]?.data as { label?: string })?.label).toBe(EDGE_LABELS.MCP)
+  })
+
+  it("adds A2A directory/recruiter handles and stdio edge label", () => {
+    const recruiterId = "node://40404040-4040-4404-8404-404040404040"
+    const directoryId = "node://50505050-5050-4505-8505-505050505050"
+    const { nodes, edges } = topologyWireToReactFlow(
+      {
+        nodes: [
+          wireNode(recruiterId, "customNode", "Agentic Recruiter", 0),
+          wireNode(directoryId, "customNode", "AGNTCY Agent Directory", 1),
+        ],
+        edges: [
+          {
+            id: "edge://60606060-6060-4606-8606-606060606060",
+            type: "custom",
+            source: directoryId,
+            target: recruiterId,
+          },
+        ],
+      },
+      { validateUrls: false },
+    )
+    const recruiter = nodes.find((node) => node.id === recruiterId)
+    const directory = nodes.find((node) => node.id === directoryId)
+    const recruiterHandles = (recruiter?.data as { extraHandles?: unknown[] })
+      ?.extraHandles
+    const directoryHandles = (directory?.data as { extraHandles?: unknown[] })
+      ?.extraHandles
+    expect(recruiterHandles).toHaveLength(1)
+    expect(directoryHandles).toHaveLength(1)
+    expect(edges[0]?.sourceHandle).toBe("source-left")
+    expect(edges[0]?.targetHandle).toBe("target-right")
+    expect((edges[0]?.data as { label?: string })?.label).toBe(
+      EDGE_LABELS.MCP_WITH_STDIO,
+    )
   })
 
   it("enrich: AGNTCY Agent Directory gets directory github link", () => {
