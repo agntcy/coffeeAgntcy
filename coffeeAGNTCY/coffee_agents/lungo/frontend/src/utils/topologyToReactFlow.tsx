@@ -234,7 +234,7 @@ export function topologyWireToReactFlow(
         hidden: true,
         width: GROUP_DEFAULT_WIDTH,
         height: GROUP_DEFAULT_HEIGHT,
-        data: { label: labelStr },
+        data: {},
       }
     }
 
