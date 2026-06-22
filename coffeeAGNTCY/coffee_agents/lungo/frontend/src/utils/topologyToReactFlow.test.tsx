@@ -7,7 +7,6 @@ import { describe, expect, it } from "vitest"
 import { NODE_TYPES, EDGE_TYPES, EDGE_LABELS } from "@/utils/const"
 import { topologyWireToReactFlow } from "@/utils/topologyToReactFlow"
 import { stableAgentUuidForRecordName } from "@/utils/agenticTopologyIdentityUiMap"
-
 function wireNode(id: string, type: string, label: string, layerIndex: number) {
   return { id, type, label, layer_index: layerIndex }
 }
@@ -180,7 +179,7 @@ describe("topologyWireToReactFlow", () => {
     expect(data?.label2).toBe("Farm Agent")
   })
 
-  it("renders a group container with children parented and compact transport", () => {
+  it("keeps a hidden group container with children parented and compact transport", () => {
     const groupId = "node://aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa"
     const { nodes } = topologyWireToReactFlow(
       {
@@ -209,7 +208,8 @@ describe("topologyWireToReactFlow", () => {
       (node) => node.type === "customNode" && node.parentId === groupId,
     )
     expect(group?.type).toBe("group")
-    expect(group?.style).toBeDefined()
+    expect(group?.hidden).toBe(true)
+    expect((group?.width ?? 0) > 0 && (group?.height ?? 0) > 0).toBe(true)
     expect(transport?.parentId).toBe(groupId)
     expect((transport?.data as { compact?: boolean })?.compact).toBe(true)
     expect(child).toBeDefined()
