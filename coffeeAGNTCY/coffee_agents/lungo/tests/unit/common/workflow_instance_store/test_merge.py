@@ -15,6 +15,7 @@ NODE_A = "node://550e8400-e29b-41d4-a716-446655440010"
 NODE_B = "node://550e8400-e29b-41d4-a716-446655440011"
 NODE_Z = "node://550e8400-e29b-41d4-a716-446655440099"
 INST = "instance://550e8400-e29b-41d4-a716-446655440003"
+STABLE_AGENT = "agent://550e8400-e29b-41d4-a716-446655440020"
 
 _METADATA = {
     "timestamp": "2026-01-01T00:00:00Z",
@@ -613,6 +614,64 @@ def test_merge_topology_delta_same_existing_twice_no_mutation_of_nested():
     assert r1 == r2
     node1 = next(n for n in r1["nodes"] if n["id"] == NODE_A)
     assert node1["meta"]["outer"]["inner"] == 2
+
+
+def _discovered_agent_node(**overrides) -> dict:
+    """Agent node carrying its OASF record + CID inline as extras (extra="allow")."""
+    node = {
+        "id": NODE_A,
+        "operation": "create",
+        "type": "customNode",
+        "label": "Brazil",
+        "size": {"width": 1, "height": 1},
+        "layer_index": 1,
+        "stable_agent_id": STABLE_AGENT,
+        "agent_record_uri": "agent-card://550e8400-e29b-41d4-a716-446655440020",
+        "oasf_record": {"name": "Brazil", "url": "http://brazil:9000", "skills": ["x"]},
+        "agent_cid": "cidB",
+    }
+    node.update(overrides)
+    return node
+
+
+def _wf_with_nodes(nodes: list[dict]) -> dict:
+    return {
+        "workflows": {
+            "w": {
+                "name": "n",
+                "pattern": "p",
+                "use_case": "u",
+                "scenario": "s",
+                "starting_topology": {"nodes": [], "edges": []},
+                "instances": {
+                    INST: {
+                        "id": INST,
+                        "topology": {"nodes": nodes, "edges": []},
+                    }
+                },
+            }
+        }
+    }
+
+
+def test_merge_preserves_inline_oasf_record_on_create():
+    """Discovered-agent extras (oasf_record, agent_cid) survive create round-trip."""
+    node_in = _discovered_agent_node()
+    out = merge_event_data(None, _evt(_wf_with_nodes([node_in])))
+    node = _dump(out)["workflows"]["w"]["instances"][INST]["topology"]["nodes"][0]
+    assert node["oasf_record"] == node_in["oasf_record"]
+    assert node["agent_cid"] == "cidB"
+
+
+def test_update_preserves_inline_oasf_record_extras():
+    """A later partial update that omits the extras must not drop them."""
+    base = merge_event_data(None, _evt(_wf_with_nodes([_discovered_agent_node()])))
+    update = {"id": NODE_A, "operation": "update", "label": "Brazil Coffee Farm"}
+    out = merge_event_data(base, _evt(_wf_with_nodes([update])))
+    node = _dump(out)["workflows"]["w"]["instances"][INST]["topology"]["nodes"][0]
+    assert node["label"] == "Brazil Coffee Farm"
+    assert node["oasf_record"]["name"] == "Brazil"
+    assert node["agent_cid"] == "cidB"
 
 
 def test_merge_only_empty_workflows_and_extra_data():

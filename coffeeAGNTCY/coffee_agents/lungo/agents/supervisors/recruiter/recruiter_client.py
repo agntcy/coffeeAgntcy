@@ -7,10 +7,10 @@ and persists results in session state."""
 import asyncio
 import json
 import logging
-import re
 from uuid import NAMESPACE_DNS, UUID, uuid4, uuid5
 
 import httpx
+from pydantic import ValidationError
 from a2a.client import ClientConfig, ClientFactory
 from a2a.types import (
     AgentCard,
@@ -40,8 +40,14 @@ from common.workflow_utils.event_sink import WorkflowAPIEventSink
 from common.workflow_utils.inflight import read_trace_context
 from common.workflow_utils.workflow_catalog import lookup_workflow
 from config.config import EMIT_WORKFLOW_EVENTS
-from schema.types import EdgeId, NodeId, Operation, PartialEdge, PartialTopology
-from schema.types.event import _INSTANCE_ID_REGEX
+from schema.types import (
+    EdgeId,
+    InstanceId,
+    NodeId,
+    Operation,
+    PartialEdge,
+    PartialTopology,
+)
 
 logger = logging.getLogger("lungo.recruiter.supervisor.recruiter_client")
 
@@ -52,8 +58,16 @@ logger = logging.getLogger("lungo.recruiter.supervisor.recruiter_client")
 # re-points the discovered-agent edges there.
 _RECRUITER_ANCHOR_LABEL = "Agentic Recruiter"
 _DISCOVERY_NS = uuid5(NAMESPACE_DNS, "recruiter.discovery.lungo")
-_INSTANCE_ID_PATTERN = re.compile(_INSTANCE_ID_REGEX)
 _discovery_event_sink = WorkflowAPIEventSink() if EMIT_WORKFLOW_EVENTS else None
+
+
+def _is_valid_instance_id(value: str) -> bool:
+    """True when value is a canonical ``instance://<uuid>`` id (schema-validated)."""
+    try:
+        InstanceId(root=value)
+    except ValidationError:
+        return False
+    return True
 
 # ---------------------------------------------------------------------------
 # Side-channel queue for streaming A2A events to main.py
@@ -149,7 +163,7 @@ async def _emit_discovery_topology(agent_records: dict[str, dict]) -> None:
             workflow_name,
         )
         return
-    if not instance_id or not _INSTANCE_ID_PATTERN.match(instance_id):
+    if not instance_id or not _is_valid_instance_id(instance_id):
         logger.debug(
             "recruit discovery: missing/invalid instance_id=%r; skipping topology emit",
             instance_id,
@@ -225,6 +239,48 @@ async def _emit_discovery_topology(agent_records: dict[str, dict]) -> None:
     )
 
 
+async def _forward_status_update(
+    update: TaskStatusUpdateEvent, tool_name: str
+) -> None:
+    """Forward one intermediate A2A status update onto the side-channel queue.
+
+    Shared by recruit_agents and evaluate_agent: each non-final text status part
+    is republished as a ``status_update`` event for main.py's stream_generator
+    to drain in parallel.
+    """
+    if update.final or not update.status or not update.status.message:
+        return
+    message = update.status.message
+    for part in message.parts or []:
+        root = part.root
+        if not isinstance(root, TextPart) or not root.text:
+            continue
+        status_text = root.text
+        author = None
+        event_type = "a2a_status"
+        if message.metadata:
+            author = message.metadata.get("author") or message.metadata.get(
+                "from_agent"
+            )
+            event_type = message.metadata.get("event_type", "a2a_status")
+        logger.info(
+            "[tool:%s] A2A status: %s (state=%s, final=%s)",
+            tool_name,
+            status_text[:120],
+            update.status.state if update.status else "?",
+            update.final,
+        )
+        await _a2a_event_queue.put(
+            {
+                "event_type": "status_update",
+                "message": status_text,
+                "state": "working",
+                "author": author or "recruiter_service",
+                "a2a_event_type": event_type,
+            }
+        )
+
+
 async def recruit_agents(query: str, tool_context: ToolContext) -> str:
     """Search the AGNTCY directory for agents matching a task description.
 
@@ -264,37 +320,8 @@ async def recruit_agents(query: str, tool_context: ToolContext) -> str:
                 task, update = event
 
                 # Forward intermediate status updates via the side-channel queue
-                if isinstance(update, TaskStatusUpdateEvent) and not update.final:
-                    if update.status and update.status.message:
-                        parts = update.status.message.parts
-                        if parts:
-                            for p in parts:
-                                if isinstance(p.root, TextPart) and p.root.text:
-                                    status_text = p.root.text
-                                    # Determine author from metadata
-                                    author = None
-                                    if update.status.message.metadata:
-                                        author = update.status.message.metadata.get("author")
-                                        if not author:
-                                            author = update.status.message.metadata.get("from_agent")
-                                    event_type = "a2a_status"
-                                    if update.status.message.metadata:
-                                        event_type = update.status.message.metadata.get("event_type", "a2a_status")
-
-                                    logger.info(
-                                        "[tool:recruit_agents] A2A status: %s (state=%s, final=%s)",
-                                        status_text[:120],
-                                        update.status.state if update.status else "?",
-                                        update.final,
-                                    )
-                                    # Push to side-channel for main.py to pick up
-                                    await _a2a_event_queue.put({
-                                        "event_type": "status_update",
-                                        "message": status_text,
-                                        "state": "working",
-                                        "author": author or "recruiter_service",
-                                        "a2a_event_type": event_type,
-                                    })
+                if isinstance(update, TaskStatusUpdateEvent):
+                    await _forward_status_update(update, "recruit_agents")
 
                 # Extract final result from completed task
                 if (
@@ -450,36 +477,8 @@ async def evaluate_agent(
                 task, update = event
 
                 # Forward intermediate status updates via the side-channel queue
-                if isinstance(update, TaskStatusUpdateEvent) and not update.final:
-                    if update.status and update.status.message:
-                        for p in update.status.message.parts or []:
-                            if isinstance(p.root, TextPart) and p.root.text:
-                                status_text = p.root.text
-                                author = None
-                                if update.status.message.metadata:
-                                    author = (
-                                        update.status.message.metadata.get("author")
-                                        or update.status.message.metadata.get("from_agent")
-                                    )
-                                event_type = "a2a_status"
-                                if update.status.message.metadata:
-                                    event_type = update.status.message.metadata.get(
-                                        "event_type", "a2a_status"
-                                    )
-
-                                logger.info(
-                                    "[tool:evaluate_agent] A2A status: %s (state=%s, final=%s)",
-                                    status_text[:120],
-                                    update.status.state if update.status else "?",
-                                    update.final,
-                                )
-                                await _a2a_event_queue.put({
-                                    "event_type": "status_update",
-                                    "message": status_text,
-                                    "state": "working",
-                                    "author": author or "recruiter_service",
-                                    "a2a_event_type": event_type,
-                                })
+                if isinstance(update, TaskStatusUpdateEvent):
+                    await _forward_status_update(update, "evaluate_agent")
 
                 # Extract final result from completed task
                 if (
