@@ -153,7 +153,6 @@ export function getPromptsTriggerButtonProps(
     ...base,
     "aria-disabled": true,
     tabIndex: -1,
-    sx: { opacity: 0.5, pointerEvents: "none" },
   }
 }
 

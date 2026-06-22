@@ -152,7 +152,7 @@ const RecruiterStreamingFeed: React.FC<RecruiterStreamingFeedProps> = ({
                   </Box>
                   <Box sx={{ flex: 1, minWidth: 0 }}>
                     <Typography
-                      variant="body2"
+                      variant="body1"
                       component="div"
                       sx={{
                         overflowWrap: "break-word",
@@ -160,11 +160,11 @@ const RecruiterStreamingFeed: React.FC<RecruiterStreamingFeedProps> = ({
                       }}
                     >
                       {event.author && (
-                        <Typography component="span" variant="body2">
+                        <Typography component="span" variant="body1">
                           {event.author}:{" "}
                         </Typography>
                       )}
-                      <Typography component="span" variant="body2">
+                      <Typography component="span" variant="body1">
                         {event.message}
                       </Typography>
                     </Typography>
