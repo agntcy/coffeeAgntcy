@@ -3,9 +3,6 @@
  * SPDX-License-Identifier: Apache-2.0
  **/
 
-import React from "react"
-import LocalShipping from "@mui/icons-material/LocalShipping"
-import SmartToy from "@mui/icons-material/SmartToy"
 import type { Edge, Node } from "@xyflow/react"
 import type {
   TopologyEdgeWire,
@@ -34,6 +31,7 @@ import {
   splitTopologyNodeLabel,
 } from "@/utils/agenticTopologyIdentityUiMap"
 import type { IdentityUiGithubVariant } from "@/utils/agenticTopologyIdentityUiMap"
+import { resolveTopologyNodeIcon } from "@/utils/topologyNodeIcons"
 
 // Transport label -> canonical synonym. Seed emits "transport"; runtime emits
 // "slim"/"nats"/"jsonrpc" for the same logical transport. Distinct logical
@@ -66,14 +64,6 @@ export function extractStableAgentId(n: TopologyNodeWire): string {
   if (typeof s === "string") return s
   if (s && typeof s === "object" && typeof s.root === "string") return s.root
   return ""
-}
-
-function defaultCustomIcon(label: string): React.ReactNode {
-  const lower = label.toLowerCase()
-  if (lower.includes("transport")) {
-    return <LocalShipping aria-hidden />
-  }
-  return <SmartToy aria-hidden />
 }
 
 export interface TopologyToFlowOptions {
@@ -220,7 +210,7 @@ export function topologyWireToReactFlow(
     const labelStr = typeof n.label === "string" ? n.label : ""
     const { label1, label2 } = splitTopologyNodeLabel(labelStr)
     let data: CustomNodeData = {
-      icon: defaultCustomIcon(labelStr),
+      icon: resolveTopologyNodeIcon({ label1, label2 }),
       label1,
       label2,
       handles: HANDLE_TYPES.ALL,
@@ -232,6 +222,16 @@ export function topologyWireToReactFlow(
       identityUiVariant: options.identityUiVariant,
     })
     data = enrichAgenticTopologyWellKnownUi(data, n, { validateUrls })
+    if (data.directoryAgentSlug) {
+      data = {
+        ...data,
+        icon: resolveTopologyNodeIcon({
+          label1: data.label1,
+          label2: data.label2,
+          directoryAgentSlug: data.directoryAgentSlug,
+        }),
+      }
+    }
 
     return {
       id: rfId,
