@@ -30,8 +30,6 @@ const MermaidBlock: React.FC<MermaidBlockProps> = ({ chart }) => {
       try {
         mermaid.initialize({
           startOnLoad: false,
-          // "base" is the theme mermaid intends for themeVariables overrides;
-          // colors are pulled from the OUK palette so diagrams follow the app theme.
           theme: "base",
           securityLevel: "strict",
           themeVariables: {
@@ -42,7 +40,7 @@ const MermaidBlock: React.FC<MermaidBlockProps> = ({ chart }) => {
             primaryTextColor: palette.text.primary,
             secondaryColor: palette.action.selected,
             tertiaryColor: palette.background.default,
-            lineColor: palette.text.secondary,
+            lineColor: palette.primary.main,
             textColor: palette.text.primary,
             fontSize: "16px",
           },
