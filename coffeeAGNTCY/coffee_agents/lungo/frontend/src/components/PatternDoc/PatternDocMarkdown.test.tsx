@@ -16,14 +16,6 @@ vi.mock("mermaid", () => ({
   },
 }))
 
-vi.mock("@open-ui-kit/core", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("@open-ui-kit/core")>()
-  return {
-    ...actual,
-    useThemeMode: () => ({ isDarkMode: true, toggleTheme: vi.fn() }),
-  }
-})
-
 vi.mock("@/utils/logger", () => ({
   logger: {
     error: vi.fn(),
