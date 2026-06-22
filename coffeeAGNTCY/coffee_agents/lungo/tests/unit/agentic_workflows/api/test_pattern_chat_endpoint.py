@@ -193,7 +193,7 @@ def _ndjson_lines(resp_iter) -> list[dict[str, Any]]:
 
 
 def test_first_post_creates_session_and_seeds_markdown(client: TestClient) -> None:
-    """Test 6 — first POST creates the ADK session and seeds the pattern markdown in state."""
+    """First POST creates the ADK session and seeds the pattern markdown in state."""
     import asyncio
 
     events = [_text_event("hello", partial=False)]
@@ -217,7 +217,7 @@ def test_first_post_creates_session_and_seeds_markdown(client: TestClient) -> No
 
 
 def test_second_post_reuses_session(client: TestClient) -> None:
-    """Test 7 — second POST with the same session_id doesn't re-seed state."""
+    """Second POST with the same session_id doesn't re-seed state."""
     import asyncio
 
     events = [_text_event("hello", partial=False)]
@@ -254,7 +254,7 @@ def test_second_post_reuses_session(client: TestClient) -> None:
 
 
 def test_happy_path_streams_ndjson_then_done(client: TestClient) -> None:
-    """Test 10 — partial chunks are forwarded as {"response": ...} and stream ends with {"done": true}."""
+    """Partial chunks are forwarded as {"response": ...} and stream ends with {"done": true}."""
     events = [
         _text_event("Hel", partial=True),
         _text_event("lo ", partial=True),
@@ -280,7 +280,7 @@ def test_happy_path_streams_ndjson_then_done(client: TestClient) -> None:
 
 
 def test_tool_call_events_are_filtered_from_stream(client: TestClient) -> None:
-    """Test 12 — function_call / function_response events do not reach the FE stream."""
+    """function_call / function_response events do not reach the FE stream."""
     events = [
         _function_call_event("read_pattern_doc"),
         _function_response_event("read_pattern_doc", {"result": "DOC"}),
@@ -303,7 +303,7 @@ def test_tool_call_events_are_filtered_from_stream(client: TestClient) -> None:
 
 
 def test_same_session_id_under_different_patterns_is_isolated(client: TestClient) -> None:
-    """Test 8 — same FE session_id under two patterns yields two independent ADK sessions."""
+    """Same FE session_id under two patterns yields two independent ADK sessions."""
     import asyncio
 
     events = [_text_event("ok", partial=False)]
@@ -346,7 +346,7 @@ def test_same_session_id_under_different_patterns_is_isolated(client: TestClient
 
 
 def test_idle_session_is_evicted_after_ttl(client: TestClient) -> None:
-    """Test 9 — a session idle past SESSION_TTL_SECONDS is dropped on the next call."""
+    """A session idle past SESSION_TTL_SECONDS is dropped on the next call."""
     import asyncio
 
     events = [_text_event("ok", partial=False)]
@@ -409,7 +409,7 @@ def test_idle_session_is_evicted_after_ttl(client: TestClient) -> None:
 
 
 def test_runner_raises_mid_stream_emits_error_then_closes(client: TestClient) -> None:
-    """Test 11 — LLM/runner failure mid-stream emits {"error": ...} and no {"done": true}."""
+    """LLM/runner failure mid-stream emits {"error": ...} and no {"done": true}."""
 
     async def fake_run_async(*args, **kwargs):
         yield _text_event("partial ", partial=True)
@@ -435,7 +435,7 @@ def test_runner_raises_mid_stream_emits_error_then_closes(client: TestClient) ->
 
 
 def test_agent_is_configured_with_litellm_and_expected_model() -> None:
-    """Test 13 — shared Agent uses LiteLlm(model=LLM_MODEL)."""
+    """Shared Agent uses LiteLlm(model=LLM_MODEL)."""
     from config.config import LLM_MODEL
     from google.adk.models.lite_llm import LiteLlm
 
