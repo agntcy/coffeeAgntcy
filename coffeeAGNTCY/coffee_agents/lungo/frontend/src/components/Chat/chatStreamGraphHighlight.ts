@@ -35,13 +35,12 @@ const AUTHOR_SLUG_ALIASES: Readonly<Record<string, string>> = {
 }
 
 /**
- * Stable identity key shared by static-config and API-driven nodes. Transport and
- * group nodes resolve by type; directory has no OASF slug, so it is detected from
- * its labels; everything else defers to `getOasfSlugFromNodeData`.
+ * Stable identity key shared by static-config and API-driven nodes. Transport
+ * resolves by type; directory has no OASF slug, so it is detected from its
+ * labels; everything else defers to `getOasfSlugFromNodeData`.
  */
 function nodeSlugKey(node: Node): string | null {
   if (node.type === NODE_TYPES.TRANSPORT) return "transport"
-  if (node.type === NODE_TYPES.GROUP) return "logistics-group"
 
   const data = node.data as unknown as CustomNodeData | undefined
   const label1 = data?.label1?.toLowerCase() ?? ""
