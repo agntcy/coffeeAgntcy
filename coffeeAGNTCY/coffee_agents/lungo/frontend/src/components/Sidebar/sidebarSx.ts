@@ -61,9 +61,6 @@ export const sidebarRowButtonStateSx = (theme: Theme) => {
     "&.Mui-selected": {
       ...activeFill,
       color: theme.palette.text.primary,
-      "& .MuiTypography-root": {
-        fontWeight: 600,
-      },
     },
     "&.Mui-selected:hover": {
       ...hoverFill,
