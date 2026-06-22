@@ -103,6 +103,6 @@ export const sidebarListItemSx = () => ({
   },
 })
 
-/** Left padding for nested content in an expanded `SidebarDropdown` panel. */
+/** Left padding per nesting level in an expanded `SidebarDropdown` panel (`theme.spacing(2)` → 12px). */
 export const sidebarDropdownPanelPaddingLeft = (theme: Theme) =>
-  theme.spacing(1)
+  theme.spacing(3)
