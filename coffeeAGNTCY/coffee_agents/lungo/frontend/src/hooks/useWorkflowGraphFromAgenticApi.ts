@@ -15,12 +15,10 @@ import { getAgenticWorkflowsApiUrl } from "@/urls"
 import { mapWorkflowNameToSlug } from "@/utils/agenticWorkflowsApi"
 import { useActiveWorkflowInstanceStore } from "@/stores/activeWorkflowInstanceStore"
 import { logger } from "@/utils/logger"
-import { staticIdMapForPattern } from "@/utils/topologyStaticIdMap"
 import {
   extractInstanceTopologyFromEvent,
   messagingHighlightIdsFromTopology,
   patchGraphActiveHighlight,
-  staticGraphHighlightIdsFromTopology,
 } from "@/utils/workflowEventMessagingHighlight"
 import { useWorkflowGraphAgenticBootstrap } from "./useWorkflowGraphAgenticBootstrap"
 import { useWorkflowGraphMessagingHighlight } from "./useWorkflowGraphMessagingHighlight"
@@ -55,10 +53,6 @@ export function useWorkflowGraphFromAgenticApi({
     workflowName &&
     mapWorkflowNameToSlug(workflowName) === pattern,
   )
-
-  const staticIdMap = useMemo(() => staticIdMapForPattern(pattern), [pattern])
-  const staticIdMapRef = useRef(staticIdMap)
-  staticIdMapRef.current = staticIdMap
 
   const [agenticError, setAgenticError] = useState<string | null>(null)
   const workflowInstanceId = useActiveWorkflowInstanceStore(
@@ -101,7 +95,6 @@ export function useWorkflowGraphFromAgenticApi({
   const { applyInstanceTopologyRef, scheduleTopologyRefetchRef } =
     useWorkflowGraphTopologySync({
       patternRef,
-      staticIdMapRef,
       sessionRef,
       onAppliedRef,
       attachHandlers,
@@ -145,10 +138,7 @@ export function useWorkflowGraphFromAgenticApi({
         catalogWorkflowName,
         instanceId,
       )
-      const idMap = staticIdMapRef.current
-      const ids = idMap
-        ? staticGraphHighlightIdsFromTopology(partial, idMap)
-        : messagingHighlightIdsFromTopology(partial)
+      const ids = messagingHighlightIdsFromTopology(partial)
       const hasAny = ids.nodeIds.size > 0 || ids.edgeIds.size > 0
       if (hasAny) {
         lastMessagingHighlightRef.current = {
@@ -175,9 +165,7 @@ export function useWorkflowGraphFromAgenticApi({
         scheduleMessagingHighlightTtl()
       }
 
-      if (!staticIdMapRef.current) {
-        scheduleTopologyRefetchRef.current()
-      }
+      scheduleTopologyRefetchRef.current()
     },
     [
       lastMessagingHighlightRef,
@@ -209,7 +197,5 @@ export function useWorkflowGraphFromAgenticApi({
     agenticMode,
     agenticError,
     workflowInstanceId,
-    staticIdMapActive: staticIdMap !== null,
-    restoreEdgeAnimation,
   }
 }

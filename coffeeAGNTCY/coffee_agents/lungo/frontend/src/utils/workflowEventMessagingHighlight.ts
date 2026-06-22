@@ -13,8 +13,6 @@ import {
   extractStableAgentId,
   transportCanonicalRfId,
 } from "@/utils/topologyToReactFlow"
-import type { StaticIdMap } from "@/utils/topologyStaticIdMap"
-import { parseStableAgentUuid } from "@/utils/agenticTopologyIdentityUiMap"
 
 export interface MessagingHighlightIds {
   nodeIds: ReadonlySet<string>
@@ -36,11 +34,6 @@ function hasText(value: unknown): value is string {
   return typeof value === "string" && value.length > 0
 }
 
-/** Keep label fallback lookups consistent with the static id maps. */
-function normalizedLabel(value: unknown): string {
-  return typeof value === "string" ? value.trim().toLowerCase() : ""
-}
-
 /**
  * React Flow edge ids can drift, so source/target pairs provide a stable backup key.
  */
@@ -58,30 +51,6 @@ function resolveDynamicNodeId(node: TopologyNodeWire): string | null {
   if (stableAgentId) return stableAgentId
   if (node.type === TRANSPORT_NODE_TYPE)
     return transportCanonicalRfId(node.label)
-  return hasText(node.id) ? node.id : null
-}
-
-/** Translate wire ids into authored static graph ids used by legacy patterns. */
-function resolveStaticGraphNodeId(
-  node: TopologyNodeWire,
-  idMap: StaticIdMap,
-): string | null {
-  const stableAgentId = extractStableAgentId(node)
-  if (stableAgentId) {
-    const uuid = parseStableAgentUuid(stableAgentId)
-    const staticId = uuid ? idMap.idByStableAgentUuid.get(uuid) : undefined
-    return staticId ?? stableAgentId
-  }
-
-  if (node.type === TRANSPORT_NODE_TYPE) {
-    const canonicalId = transportCanonicalRfId(node.label)
-    const transportKey = canonicalId.replace(/^transport:\/\//, "")
-    return idMap.idByTransportKey.get(transportKey) ?? canonicalId
-  }
-
-  const labelId = idMap.idByLabel.get(normalizedLabel(node.label))
-  if (labelId !== undefined) return labelId
-
   return hasText(node.id) ? node.id : null
 }
 
@@ -168,16 +137,4 @@ export function patchGraphActiveHighlight(
     }
   })
   return { nodes: nextNodes, edges: nextEdges }
-}
-
-/**
- * Build highlight ids in the static graph id namespace when a pattern uses authored nodes.
- */
-export function staticGraphHighlightIdsFromTopology(
-  topology: TopologyWire | null | undefined,
-  idMap: StaticIdMap,
-): MessagingHighlightIds {
-  return collectMessagingHighlightIds(topology, (node) =>
-    resolveStaticGraphNodeId(node, idMap),
-  )
 }

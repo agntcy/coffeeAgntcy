@@ -13,7 +13,6 @@ import type { TopologyWire } from "@/api/agenticWorkflowsTypes"
 import { logger } from "@/utils/logger"
 import { identityUiVariantForPattern } from "@/utils/agenticTopologyIdentityUiMap"
 import { topologyWireToReactFlow } from "@/utils/topologyToReactFlow"
-import type { StaticIdMap } from "@/utils/topologyStaticIdMap"
 import type { PatternType } from "@/utils/patternUtils"
 import {
   mergeDiscoveryEdges,
@@ -24,7 +23,6 @@ import {
 
 interface UseWorkflowGraphTopologySyncParams {
   patternRef: React.RefObject<PatternType>
-  staticIdMapRef: React.RefObject<StaticIdMap | null>
   sessionRef: React.RefObject<WorkflowGraphAgenticSession | null>
   onAppliedRef: React.RefObject<(() => void) | undefined>
   attachHandlers: (node: Node) => Node
@@ -35,7 +33,6 @@ interface UseWorkflowGraphTopologySyncParams {
 
 export function useWorkflowGraphTopologySync({
   patternRef,
-  staticIdMapRef,
   sessionRef,
   onAppliedRef,
   attachHandlers,
@@ -47,13 +44,6 @@ export function useWorkflowGraphTopologySync({
 
   const applyInstanceTopology = useCallback(
     (topology: TopologyWire | undefined) => {
-      if (staticIdMapRef.current) {
-        onAppliedRef.current?.()
-        queueMicrotask(() => {
-          restoreEdgeAnimation()
-        })
-        return
-      }
       const { nodes: mappedNodes, edges: mappedEdges } =
         topologyWireToReactFlow(topology, {
           identityUiVariant: identityUiVariantForPattern(patternRef.current),
@@ -77,7 +67,6 @@ export function useWorkflowGraphTopologySync({
       restoreEdgeAnimation,
       setEdges,
       setNodes,
-      staticIdMapRef,
     ],
   )
 

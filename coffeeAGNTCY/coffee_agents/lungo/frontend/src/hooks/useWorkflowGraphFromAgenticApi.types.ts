@@ -47,15 +47,6 @@ export interface UseWorkflowGraphFromAgenticApiResult {
   agenticError: string | null
   /** Active workflow instance id (e.g. ``instance://<uuid>``) once instantiated. */
   workflowInstanceId: string | null
-  /**
-   * True when this pattern has a static graph in `graphConfigsData` and the
-   * hook is deferring all positioning to it. Callers should still run their
-   * normal static-graph reconciliation (config sync on pattern change) even
-   * though `agenticMode` is true.
-   */
-  staticIdMapActive: boolean
-  /** Restore edge animation after a static-config rebuild wipes it. */
-  restoreEdgeAnimation: () => void
 }
 
 export type WorkflowGraphAgenticSession = {

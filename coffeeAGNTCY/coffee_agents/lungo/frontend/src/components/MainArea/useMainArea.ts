@@ -5,11 +5,12 @@
 
 import { useEffect, useRef, useCallback, useState, useMemo } from "react"
 import { useNodesState, useEdgesState } from "@xyflow/react"
-import { PatternType } from "@/utils/patternUtils"
+import { PatternType, isStreamingPattern } from "@/utils/patternUtils"
 import { getGraphConfig } from "@/utils/graphConfigs"
 import { useViewportAwareFitView } from "@/hooks/useViewportAwareFitView"
 import { useModalManager } from "@/hooks/useModalManager"
 import { NODE_IDS } from "@/utils/const.ts"
+import { applyDynamicTransportLabels } from "@/utils/dynamicTransportLabels"
 import type { DiscoveryResponseEvent } from "@/types/agent"
 import type { CustomNodeData } from "./Graph/Elements/types"
 import { useMainAreaDiscoveryGraph } from "./useMainAreaDiscoveryGraph"
@@ -87,20 +88,25 @@ export function useMainArea({
     setOasfModalOpen(true)
   }, [])
 
-  const { agenticMode, agenticError, staticIdMapActive, restoreEdgeAnimation } =
-    useWorkflowGraphFromAgenticApi({
-      pattern,
-      selectedWorkflowSummary,
-      setNodes,
-      setEdges,
-      handleOpenIdentityModal,
-      handleOpenOasfModal,
-      onTopologyApplied: () => {
-        setTimeout(() => {
-          fitViewWithViewport()
-        }, 200)
-      },
-    })
+  const { agenticMode, agenticError } = useWorkflowGraphFromAgenticApi({
+    pattern,
+    selectedWorkflowSummary,
+    setNodes,
+    setEdges,
+    handleOpenIdentityModal,
+    handleOpenOasfModal,
+    onTopologyApplied: () => {
+      setTimeout(() => {
+        fitViewWithViewport()
+      }, 200)
+      void applyDynamicTransportLabels(
+        setNodes,
+        setEdges,
+        pattern,
+        isStreamingPattern(pattern),
+      )
+    },
+  })
 
   useEffect(() => {
     if (!agenticError) return
@@ -152,8 +158,7 @@ export function useMainArea({
 
   useMainAreaGraphEffects({
     pattern,
-    skipStaticGraphSync: agenticMode && !staticIdMapActive,
-    restoreEdgeAnimation: staticIdMapActive ? restoreEdgeAnimation : undefined,
+    skipStaticGraphSync: agenticMode,
     isGroupCommConnected,
     setNodes,
     setEdges,
