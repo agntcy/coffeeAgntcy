@@ -5,34 +5,8 @@
 
 import React, { useEffect, useId, useRef, useState } from "react"
 import mermaid from "mermaid"
-import { useThemeMode } from "@open-ui-kit/core"
+import { useTheme } from "@open-ui-kit/core"
 import { logger } from "@/utils/logger"
-
-const DARK_THEME_VARS = {
-  darkMode: true,
-  background: "transparent",
-  primaryColor: "#1e3a5f",
-  primaryTextColor: "#e8e9ea",
-  primaryBorderColor: "#58c0d0",
-  secondaryColor: "#2d4a6e",
-  tertiaryColor: "#3a5a7e",
-  lineColor: "#7670d5",
-  textColor: "#e8e9ea",
-  fontSize: "16px",
-}
-
-const LIGHT_THEME_VARS = {
-  darkMode: false,
-  background: "transparent",
-  primaryColor: "#d0e8f2",
-  primaryTextColor: "#1a1a1a",
-  primaryBorderColor: "#3a8fb7",
-  secondaryColor: "#e3eef5",
-  tertiaryColor: "#f0f5fa",
-  lineColor: "#5b5bbd",
-  textColor: "#1a1a1a",
-  fontSize: "16px",
-}
 
 interface MermaidBlockProps {
   chart: string
@@ -44,20 +18,34 @@ const MermaidBlock: React.FC<MermaidBlockProps> = ({ chart }) => {
   const [svg, setSvg] = useState<string | null>(null)
   const [error, setError] = useState<boolean>(false)
   const cancelledRef = useRef<boolean>(false)
-  const { isDarkMode } = useThemeMode()
+  const theme = useTheme()
 
   useEffect(() => {
     cancelledRef.current = false
     setError(false)
     setSvg(null)
 
+    const { palette } = theme
     const render = async (): Promise<void> => {
       try {
         mermaid.initialize({
           startOnLoad: false,
-          theme: isDarkMode ? "dark" : "default",
+          // "base" is the theme mermaid intends for themeVariables overrides;
+          // colors are pulled from the OUK palette so diagrams follow the app theme.
+          theme: "base",
           securityLevel: "strict",
-          themeVariables: isDarkMode ? DARK_THEME_VARS : LIGHT_THEME_VARS,
+          themeVariables: {
+            darkMode: palette.mode === "dark",
+            background: "transparent",
+            primaryColor: palette.action.hover,
+            primaryBorderColor: palette.primary.main,
+            primaryTextColor: palette.text.primary,
+            secondaryColor: palette.action.selected,
+            tertiaryColor: palette.background.default,
+            lineColor: palette.text.secondary,
+            textColor: palette.text.primary,
+            fontSize: "16px",
+          },
           flowchart: {
             curve: "basis",
             padding: 20,
@@ -80,7 +68,7 @@ const MermaidBlock: React.FC<MermaidBlockProps> = ({ chart }) => {
     return () => {
       cancelledRef.current = true
     }
-  }, [chart, svgId, isDarkMode])
+  }, [chart, svgId, theme])
 
   if (error) {
     return (

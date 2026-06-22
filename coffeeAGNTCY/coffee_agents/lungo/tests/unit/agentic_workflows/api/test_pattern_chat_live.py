@@ -44,7 +44,7 @@ def test_live_pattern_chat_streams_real_response() -> None:
 
         path = f"/patterns/{quote('Feedback Loop', safe='')}/chat"
         body = {
-            "session_id": "live-smoke-1",
+            "session_id": "session://00000000-0000-4000-a000-000000000020",
             "message": "In one sentence, what is the Feedback Loop pattern?",
         }
         with httpx.Client(

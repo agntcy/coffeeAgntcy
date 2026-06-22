@@ -6,6 +6,7 @@
 import React from "react"
 import ReactMarkdown from "react-markdown"
 import rehypeSanitize from "rehype-sanitize"
+import { Box } from "@open-ui-kit/core"
 import MermaidBlock from "./MermaidBlock"
 
 interface PatternDocMarkdownProps {
@@ -22,7 +23,7 @@ const PatternDocMarkdown: React.FC<PatternDocMarkdownProps> = ({
   className,
 }) => {
   return (
-    <div className={className}>
+    <Box className={className}>
       <ReactMarkdown
         rehypePlugins={[rehypeSanitize]}
         components={{
@@ -41,7 +42,7 @@ const PatternDocMarkdown: React.FC<PatternDocMarkdownProps> = ({
       >
         {markdown}
       </ReactMarkdown>
-    </div>
+    </Box>
   )
 }
 

@@ -52,9 +52,8 @@ components:
       properties:
         session_id:
           type: string
-          minLength: 1
-          maxLength: 128
-          description: Client-minted opaque conversation id (e.g. UUIDv4).
+          pattern: "^session://[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
+          description: Client-minted opaque conversation id, a UUIDv4 wrapped as a session URI (e.g. session://<uuid>).
         message:
           type: string
           minLength: 1

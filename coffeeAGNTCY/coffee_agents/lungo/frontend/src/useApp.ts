@@ -7,7 +7,7 @@ import { useState, useEffect, useRef, useCallback, useMemo } from "react"
 import { v4 as uuid } from "uuid"
 import { LUNGO_FRONTEND_URLS } from "@/urls"
 import { logger } from "@/utils/logger"
-import type { CanvasMode, PatternDocState } from "@/types/patternDoc"
+import { CanvasMode, type PatternDocState } from "@/types/patternDoc"
 import {
   fetchWorkflowDocumentation,
   WorkflowDocumentationNotFoundError,
@@ -67,7 +67,10 @@ export function useApp() {
   })
 
   const canvasMode: CanvasMode = useMemo(
-    () => (selectedReferencePattern !== null ? "pattern_doc" : "workflow"),
+    () =>
+      selectedReferencePattern !== null
+        ? CanvasMode.PATTERN_DOC
+        : CanvasMode.WORKFLOW,
     [selectedReferencePattern],
   )
 
@@ -118,7 +121,7 @@ export function useApp() {
     (patternName: string | null) => {
       setSelectedReferencePattern(patternName)
       if (patternName !== null) {
-        setPatternChatSessionId(uuid())
+        setPatternChatSessionId(`session://${uuid()}`)
         chat.resetChatState()
       } else {
         setPatternChatSessionId(null)
@@ -391,8 +394,18 @@ export function useApp() {
     streaming.resetGroup()
     streaming.resetRecruiter()
     lastDiscoveryKeyRef.current = null
+    // In pattern_doc mode the server keys conversation state by session_id;
+    // rotate it so a cleared chat starts a genuinely fresh backend session.
+    if (selectedReferencePattern !== null) {
+      setPatternChatSessionId(`session://${uuid()}`)
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps -- stable reset fns only
-  }, [chat.resetChatState, streaming.resetGroup, streaming.resetRecruiter])
+  }, [
+    chat.resetChatState,
+    streaming.resetGroup,
+    streaming.resetRecruiter,
+    selectedReferencePattern,
+  ])
 
   const handleNodeHighlightSetup = useCallback(
     (highlightFunction: (nodeId: string) => void) => {

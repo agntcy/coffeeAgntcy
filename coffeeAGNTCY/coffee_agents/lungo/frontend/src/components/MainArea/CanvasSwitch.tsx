@@ -7,7 +7,7 @@ import React from "react"
 import MainArea from "./MainArea"
 import PatternDocCanvas from "./PatternDocCanvas"
 import type { MainAreaProps } from "./useMainArea"
-import type { CanvasMode, PatternDocState } from "@/types/patternDoc"
+import { CanvasMode, type PatternDocState } from "@/types/patternDoc"
 
 export interface CanvasSwitchProps extends MainAreaProps {
   canvasMode?: CanvasMode
@@ -22,7 +22,7 @@ const CanvasSwitch: React.FC<CanvasSwitchProps> = ({
   ...mainAreaProps
 }) => {
   if (
-    canvasMode === "pattern_doc" &&
+    canvasMode === CanvasMode.PATTERN_DOC &&
     typeof selectedReferencePattern === "string" &&
     patternDocState !== undefined
   ) {

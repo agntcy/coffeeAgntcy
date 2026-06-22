@@ -58,7 +58,7 @@ const makeCallbacks = () => ({
 
 const REQ = {
   patternName: "Feedback Loop",
-  sessionId: "sess-1",
+  sessionId: "session://00000000-0000-4000-a000-000000000001",
   message: "What is it?",
 } as const
 
@@ -191,7 +191,10 @@ describe("usePatternChatAPI", () => {
     )
     expect(firstCall[1]?.method).toBe("POST")
     expect(firstCall[1]?.body).toBe(
-      JSON.stringify({ session_id: "sess-1", message: "What is it?" }),
+      JSON.stringify({
+        session_id: "session://00000000-0000-4000-a000-000000000001",
+        message: "What is it?",
+      }),
     )
   })
 

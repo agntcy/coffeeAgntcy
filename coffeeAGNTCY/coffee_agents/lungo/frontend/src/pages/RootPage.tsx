@@ -24,6 +24,7 @@ import {
   SIDEBAR_PANEL_ID,
 } from "@/components/Sidebar/sidebarPanelLayout"
 import { PATTERNS } from "@/utils/patternUtils"
+import { CanvasMode } from "@/types/patternDoc"
 import { useApp } from "@/useApp"
 import { GraphCanvasLayoutContext } from "@/contexts/graphCanvasLayout"
 import { useElementWidth } from "@/hooks/useElementWidth"
@@ -229,27 +230,30 @@ const RootPage: React.FC = () => {
                     selectedReferencePattern={selectedReferencePattern}
                     patternChatSessionId={patternChatSessionId}
                     showCoffeePrompts={
-                      canvasMode !== "pattern_doc" &&
+                      canvasMode !== CanvasMode.PATTERN_DOC &&
                       (selectedPattern === PATTERNS.PUBLISH_SUBSCRIBE ||
                         selectedPattern ===
                           PATTERNS.PUBLISH_SUBSCRIBE_STREAMING)
                     }
                     showLogisticsPrompts={
-                      canvasMode !== "pattern_doc" &&
+                      canvasMode !== CanvasMode.PATTERN_DOC &&
                       selectedPattern === PATTERNS.GROUP_MESSAGING
                     }
                     showDiscoveryPrompts={
-                      canvasMode !== "pattern_doc" &&
+                      canvasMode !== CanvasMode.PATTERN_DOC &&
                       selectedPattern === PATTERNS.A2A_HTTP
                     }
                     showProgressTracker={
-                      canvasMode !== "pattern_doc" && showProgressTracker
+                      canvasMode !== CanvasMode.PATTERN_DOC &&
+                      showProgressTracker
                     }
                     showAuctionStreaming={
-                      canvasMode !== "pattern_doc" && showAuctionStreaming
+                      canvasMode !== CanvasMode.PATTERN_DOC &&
+                      showAuctionStreaming
                     }
                     showRecruiterStreaming={
-                      canvasMode !== "pattern_doc" && showRecruiterStreaming
+                      canvasMode !== CanvasMode.PATTERN_DOC &&
+                      showRecruiterStreaming
                     }
                     showFinalResponse={showFinalResponse}
                     onStreamComplete={handleStreamComplete}

@@ -72,6 +72,15 @@ describe("fetchWorkflowDocumentation", () => {
     )
   })
 
+  it("throws a generic Error (not NotFound) on 401 Unauthorized", async () => {
+    mockFetch(401, { detail: "Unauthorized" })
+
+    const err = await fetchWorkflowDocumentation("Anything").catch((e) => e)
+    expect(err).toBeInstanceOf(Error)
+    expect(err).not.toBeInstanceOf(WorkflowDocumentationNotFoundError)
+    expect(String(err)).toMatch(/HTTP 401/)
+  })
+
   it("throws a generic Error on other non-OK responses", async () => {
     mockFetch(500, { detail: "Server error" })
 

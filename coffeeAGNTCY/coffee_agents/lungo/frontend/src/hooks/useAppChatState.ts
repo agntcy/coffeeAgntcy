@@ -8,7 +8,7 @@ import { LOCAL_STORAGE_KEY } from "@/components/Chat/Messages"
 import { PATTERNS, PatternType } from "@/utils/patternUtils"
 import type { Message } from "@/components/Chat/types"
 import type { ApiResponse } from "@/types/api"
-import type { CanvasMode } from "@/types/patternDoc"
+import { CanvasMode } from "@/types/patternDoc"
 
 export interface UseAppChatStateParams {
   selectedPattern: PatternType
@@ -99,12 +99,11 @@ export function useAppChatState({
       setIsAgentLoading(true)
       setButtonClicked(true)
       setApiError(false)
-      if (canvasMode === "pattern_doc") {
-        setShowFinalResponse(true)
-      } else if (
-        selectedPattern !== PATTERNS.GROUP_MESSAGING &&
-        selectedPattern !== PATTERNS.PUBLISH_SUBSCRIBE_STREAMING &&
-        selectedPattern !== PATTERNS.A2A_HTTP
+      if (
+        canvasMode === CanvasMode.PATTERN_DOC ||
+        (selectedPattern !== PATTERNS.GROUP_MESSAGING &&
+          selectedPattern !== PATTERNS.PUBLISH_SUBSCRIBE_STREAMING &&
+          selectedPattern !== PATTERNS.A2A_HTTP)
       ) {
         setShowFinalResponse(true)
       }

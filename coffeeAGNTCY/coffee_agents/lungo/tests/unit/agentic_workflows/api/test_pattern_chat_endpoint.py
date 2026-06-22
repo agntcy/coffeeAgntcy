@@ -73,7 +73,7 @@ _CASES: tuple[Case, ...] = (
         case_id="unknown_pattern_returns_404",
         inputs=Inputs(
             pattern_name="Definitely Not A Pattern",
-            body={"session_id": "00000000-0000-4000-a000-000000000001", "message": "hi"},
+            body={"session_id": "session://00000000-0000-4000-a000-000000000001", "message": "hi"},
         ),
         outputs=Outputs(status=404, detail_substr="No reference material for pattern"),
     ),
@@ -82,7 +82,7 @@ _CASES: tuple[Case, ...] = (
         case_id="pattern_without_markdown_returns_404",
         inputs=Inputs(
             pattern_name="Some Pattern With No Doc File",
-            body={"session_id": "00000000-0000-4000-a000-000000000002", "message": "hi"},
+            body={"session_id": "session://00000000-0000-4000-a000-000000000002", "message": "hi"},
         ),
         outputs=Outputs(status=404, detail_substr="No reference material for pattern"),
     ),
@@ -90,7 +90,7 @@ _CASES: tuple[Case, ...] = (
         case_id="empty_message_returns_400",
         inputs=Inputs(
             pattern_name="Feedback Loop",
-            body={"session_id": "00000000-0000-4000-a000-000000000003", "message": ""},
+            body={"session_id": "session://00000000-0000-4000-a000-000000000003", "message": ""},
         ),
         outputs=Outputs(status=422, detail_substr=None),  # pydantic validation = 422
     ),
@@ -107,9 +107,18 @@ _CASES: tuple[Case, ...] = (
         inputs=Inputs(
             pattern_name="Feedback Loop",
             body={
-                "session_id": "00000000-0000-4000-a000-000000000004",
+                "session_id": "session://00000000-0000-4000-a000-000000000004",
                 "message": "x" * (_MAX_MESSAGE_BYTES + 1),
             },
+        ),
+        outputs=Outputs(status=422, detail_substr=None),
+    ),
+    Case(
+        # session_id must match the session://<uuid> pattern.
+        case_id="malformed_session_id_returns_422",
+        inputs=Inputs(
+            pattern_name="Feedback Loop",
+            body={"session_id": "not-a-session-uri", "message": "hi"},
         ),
         outputs=Outputs(status=422, detail_substr=None),
     ),
@@ -200,14 +209,14 @@ def test_first_post_creates_session_and_seeds_markdown(client: TestClient) -> No
     with _stub_runner_events(events):
         client.post(
             "/patterns/Feedback Loop/chat",
-            json={"session_id": "sess-create-1", "message": "hi"},
+            json={"session_id": "session://00000000-0000-4000-a000-000000000010", "message": "hi"},
         )
 
     session = asyncio.run(
         pattern_chat._session_service.get_session(
             app_name=pattern_chat.APP_NAME,
             user_id=pattern_chat.DEFAULT_USER_ID,
-            session_id=pattern_chat._session_key("Feedback Loop", "sess-create-1"),
+            session_id=pattern_chat._session_key("Feedback Loop", "session://00000000-0000-4000-a000-000000000010"),
         )
     )
     assert session is not None, "session should be created on first POST"
@@ -224,10 +233,10 @@ def test_second_post_reuses_session(client: TestClient) -> None:
     with _stub_runner_events(events):
         client.post(
             "/patterns/Feedback Loop/chat",
-            json={"session_id": "sess-reuse-1", "message": "first"},
+            json={"session_id": "session://00000000-0000-4000-a000-000000000011", "message": "first"},
         )
 
-    sid = pattern_chat._session_key("Feedback Loop", "sess-reuse-1")
+    sid = pattern_chat._session_key("Feedback Loop", "session://00000000-0000-4000-a000-000000000011")
     first = asyncio.run(
         pattern_chat._session_service.get_session(
             app_name=pattern_chat.APP_NAME,
@@ -240,7 +249,7 @@ def test_second_post_reuses_session(client: TestClient) -> None:
     with _stub_runner_events(events):
         client.post(
             "/patterns/Feedback Loop/chat",
-            json={"session_id": "sess-reuse-1", "message": "second"},
+            json={"session_id": "session://00000000-0000-4000-a000-000000000011", "message": "second"},
         )
 
     second = asyncio.run(
@@ -265,7 +274,7 @@ def test_happy_path_streams_ndjson_then_done(client: TestClient) -> None:
         with client.stream(
             "POST",
             "/patterns/Feedback Loop/chat",
-            json={"session_id": "sess-happy-1", "message": "say hi"},
+            json={"session_id": "session://00000000-0000-4000-a000-000000000012", "message": "say hi"},
         ) as r:
             assert r.status_code == 200
             assert r.headers["content-type"].startswith("application/x-ndjson")
@@ -291,7 +300,7 @@ def test_tool_call_events_are_filtered_from_stream(client: TestClient) -> None:
         with client.stream(
             "POST",
             "/patterns/Feedback Loop/chat",
-            json={"session_id": "sess-tool-1", "message": "explain"},
+            json={"session_id": "session://00000000-0000-4000-a000-000000000013", "message": "explain"},
         ) as r:
             lines = _ndjson_lines(r.iter_lines())
 
@@ -307,7 +316,7 @@ def test_same_session_id_under_different_patterns_is_isolated(client: TestClient
     import asyncio
 
     events = [_text_event("ok", partial=False)]
-    shared_uuid = "shared-fe-uuid"
+    shared_uuid = "session://00000000-0000-4000-a000-000000000014"
 
     with _stub_runner_events(events):
         client.post(
@@ -356,10 +365,10 @@ def test_idle_session_is_evicted_after_ttl(client: TestClient) -> None:
     with _stub_runner_events(events):
         client.post(
             "/patterns/Feedback Loop/chat",
-            json={"session_id": "evict-1", "message": "first"},
+            json={"session_id": "session://00000000-0000-4000-a000-000000000015", "message": "first"},
         )
 
-    sid = pattern_chat._session_key("Feedback Loop", "evict-1")
+    sid = pattern_chat._session_key("Feedback Loop", "session://00000000-0000-4000-a000-000000000015")
     first = asyncio.run(
         pattern_chat._session_service.get_session(
             app_name=pattern_chat.APP_NAME,
@@ -374,7 +383,7 @@ def test_idle_session_is_evicted_after_ttl(client: TestClient) -> None:
     with _stub_runner_events(events):
         client.post(
             "/patterns/Feedback Loop/chat",
-            json={"session_id": "trigger-sweep", "message": "second"},
+            json={"session_id": "session://00000000-0000-4000-a000-000000000016", "message": "second"},
         )
 
     after_sweep = asyncio.run(
@@ -391,7 +400,7 @@ def test_idle_session_is_evicted_after_ttl(client: TestClient) -> None:
     with _stub_runner_events(events):
         client.post(
             "/patterns/Feedback Loop/chat",
-            json={"session_id": "evict-1", "message": "third"},
+            json={"session_id": "session://00000000-0000-4000-a000-000000000015", "message": "third"},
         )
     revived = asyncio.run(
         pattern_chat._session_service.get_session(
@@ -421,7 +430,7 @@ def test_runner_raises_mid_stream_emits_error_then_closes(client: TestClient) ->
         with client.stream(
             "POST",
             "/patterns/Feedback Loop/chat",
-            json={"session_id": "sess-err-1", "message": "explain"},
+            json={"session_id": "session://00000000-0000-4000-a000-000000000017", "message": "explain"},
         ) as r:
             lines = _ndjson_lines(r.iter_lines())
 

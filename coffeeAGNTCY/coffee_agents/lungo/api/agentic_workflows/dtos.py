@@ -90,9 +90,14 @@ class PatternChatRequest(BaseModel):
     session_id: Annotated[
         str,
         Field(
-            min_length=1,
-            max_length=128,
-            description="Client-minted opaque conversation id (e.g. UUIDv4).",
+            pattern=(
+                r"^session://[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}"
+                r"-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
+            ),
+            description=(
+                "Client-minted opaque conversation id, a UUIDv4 wrapped as a "
+                "session URI (e.g. session://<uuid>)."
+            ),
         ),
     ]
     message: Annotated[

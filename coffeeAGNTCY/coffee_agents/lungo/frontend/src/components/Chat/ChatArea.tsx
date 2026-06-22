@@ -30,7 +30,7 @@ import type { AuctionStreamingState } from "@/stores/auctionStreaming.types"
 import type { RecruiterStreamingState } from "@/stores/recruiterStreaming.types"
 import type { ApiResponse } from "@/types/api"
 import { PATTERNS, usesStreamingChatSend } from "@/utils/patternUtils"
-import type { CanvasMode } from "@/types/patternDoc"
+import { CanvasMode } from "@/types/patternDoc"
 import { usePatternChatAPI } from "@/hooks/usePatternChatAPI"
 import { streamPatternChat } from "./streamPatternChat"
 
@@ -195,7 +195,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
     }
 
     if (
-      canvasMode === "pattern_doc" &&
+      canvasMode === CanvasMode.PATTERN_DOC &&
       selectedReferencePattern &&
       patternChatSessionId
     ) {
@@ -291,6 +291,10 @@ const ChatArea: React.FC<ChatAreaProps> = ({
           width: "100%",
           overflowY: "auto",
           overflowX: "hidden",
+          // Reserve the scrollbar gutter on both edges so the centered thread
+          // doesn't shift left when a scrollbar appears (keeps it aligned with
+          // the composer below).
+          scrollbarGutter: "stable both-edges",
           ...(currentUserMessage
             ? { borderTop: "1px solid", borderColor: "divider" }
             : { display: "none" }),
@@ -304,7 +308,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
             width: "100%",
             px: chatHorizontalPadding,
             py: currentUserMessage ? 1 : 0,
-            display: isMinimized ? "none" : "block",
+            display: isMinimized ? "none" : "flex",
           }}
         >
           {currentUserMessage ? (
