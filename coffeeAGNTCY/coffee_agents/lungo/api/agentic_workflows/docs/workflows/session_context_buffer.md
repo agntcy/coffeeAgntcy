@@ -1,5 +1,24 @@
 # Session Context Buffer
 
+## Agent Interaction Diagram
+
+```mermaid
+graph TD
+    Buyer["Buyer Agent"]
+    Farm["Farm Agent"]
+    Finance["Finance Agent"]
+    Buffer["Session Context Buffer"]
+    Room["Negotiation Thread"]
+
+    Buyer <-->|"Bid Floor + Counter"| Buffer
+    Farm <-->|"Offer + Availability"| Buffer
+    Finance <-->|"Payment Constraint"| Buffer
+
+    Buyer <-->|"Negotiation Message"| Room
+    Farm <-->|"Negotiation Message"| Room
+    Finance <-->|"Negotiation Message"| Room
+```
+
 ## Pattern
 
 A **session context buffer** is a **temporary, shared scratchpad** for one negotiation or task—bids, floors, deadlines,

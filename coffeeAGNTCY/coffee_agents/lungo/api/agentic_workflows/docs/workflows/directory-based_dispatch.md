@@ -1,5 +1,21 @@
 # Directory-Based Dispatch
 
+## Agent Interaction Diagram
+
+```mermaid
+graph TD
+    Router["Dispatch Router Agent"]
+    Directory["Agent Directory"]
+    Weather["Weather Agent"]
+    Soil["Soil Agent"]
+    Logistics["Logistics Agent"]
+
+    Router <-->|"Skill + Trust Lookup"| Directory
+    Router <-->|"Weather Emphasis"| Weather
+    Router <-->|"Soil Emphasis"| Soil
+    Router <-->|"Logistics Emphasis"| Logistics
+```
+
 ## Pattern
 
 **Directory-based dispatch** chooses the **next specialist from intent and context** instead of hard-wiring a single

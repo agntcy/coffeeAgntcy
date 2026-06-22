@@ -1,5 +1,21 @@
 # Coordinator + Worker Agents
 
+## Agent Interaction Diagram
+
+```mermaid
+graph TD
+    Coordinator["Fulfillment Coordinator Agent"]
+    Warehouse["Warehouse Agent"]
+    Customs["Customs Agent"]
+    Carrier["Carrier Agent"]
+    Finance["Finance Agent"]
+
+    Coordinator <-->|"Release Task / Status"| Warehouse
+    Coordinator <-->|"Filing Task / Clearance"| Customs
+    Coordinator <-->|"Booking Task / ETA"| Carrier
+    Coordinator <-->|"Invoice Task / Settlement"| Finance
+```
+
 ## Pattern
 
 **Coordinator and worker** arrangements **separate planning from execution**: one agent keeps the work breakdown,

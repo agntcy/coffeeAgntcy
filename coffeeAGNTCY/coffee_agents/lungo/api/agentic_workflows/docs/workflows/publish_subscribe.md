@@ -1,5 +1,26 @@
 # Publish Subscribe
 
+## Agent Interaction Diagram
+
+```mermaid
+graph TD
+    Auction["Auction Agent"]
+    Transport["Transport: Pub/Sub"]
+    Brazil["Brazil Coffee Farm Agent"]
+    Colombia["Colombia Coffee Farm Agent"]
+    Vietnam["Vietnam Coffee Farm Agent"]
+    Weather["Weather MCP Server"]
+    Payment["Payment MCP Server"]
+
+    Auction <-->|"Market Inquiry"| Transport
+    Transport <-->|"Offer Topic"| Brazil
+    Transport <-->|"Offer Topic"| Colombia
+    Transport <-->|"Offer Topic"| Vietnam
+
+    Colombia <-->|"Weather Diligence"| Weather
+    Colombia <-->|"Payment Diligence"| Payment
+```
+
 ## Pattern
 
 **Supervisor and workers** is a general arrangement for multi-agent work: **one coordinator** owns the end-to-end

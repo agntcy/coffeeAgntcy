@@ -1,5 +1,21 @@
 # A2A HTTP
 
+## Agent Interaction Diagram
+
+```mermaid
+graph TD
+    User["User / Requester"]
+    Recruiter["Agentic Recruiter"]
+    Directory["AGNTCY Agent Directory"]
+    CandidateA["Candidate Agent A"]
+    CandidateB["Candidate Agent B"]
+
+    User <-->|"Discovery Request / Shortlist"| Recruiter
+    Directory -->|"Agent Listings + Metadata"| Recruiter
+    Recruiter <-->|"A2A Probe"| CandidateA
+    Recruiter <-->|"A2A Probe"| CandidateB
+```
+
 ## Pattern
 
 **Recruiter-style discovery** is a general pattern for **on-demand selection** in an ecosystem of many possible

@@ -1,5 +1,22 @@
 # Feedback Loop
 
+## Agent Interaction Diagram
+
+```mermaid
+graph TD
+    Buyer["Buyer Agent"]
+    Supplier["Supplier / Farm Agent"]
+    Feedback["Feedback Agent"]
+    Policy["Routing Policy Agent"]
+    Directory["Agent Directory"]
+
+    Buyer <-->|"Order / Outcome"| Supplier
+    Buyer -->|"Satisfaction Score"| Feedback
+    Supplier -->|"Delivery Result"| Feedback
+    Feedback -->|"Performance Signal"| Policy
+    Policy -->|"Updated Selection Weight"| Directory
+```
+
 ## Pattern
 
 A **feedback loop** folds **human or system feedback**—scores, disputes, delivery outcomes—back into **routing and

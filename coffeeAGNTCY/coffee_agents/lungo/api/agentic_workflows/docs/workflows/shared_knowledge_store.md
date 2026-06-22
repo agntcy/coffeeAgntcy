@@ -1,5 +1,21 @@
 # Shared Knowledge Store
 
+## Agent Interaction Diagram
+
+```mermaid
+graph TD
+    Store["Shared Knowledge Store"]
+    Planner["Planning Agent"]
+    Buyer["Buying Agent"]
+    Farm["Farm Agent"]
+    Analytics["Analytics / Ingestion Agent"]
+
+    Planner <-->|"Yield History Query"| Store
+    Buyer <-->|"Settled Price Query"| Store
+    Farm -->|"Partner Record Update"| Store
+    Analytics -->|"Curated Corrections"| Store
+```
+
 ## Pattern
 
 A **shared knowledge store** **persists knowledge across tasks and time**—yield history, supplier reliability, settled
