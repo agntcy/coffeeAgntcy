@@ -19,6 +19,7 @@ import { useWorkflowGraphFromAgenticApi } from "@/hooks/useWorkflowGraphFromAgen
 import type { WorkflowSummary } from "@/utils/agenticWorkflowsApi"
 import type { GraphConfig } from "@/utils/graphConfigs"
 import { graphConfigFromNodes } from "@/utils/graphConfigFromNodes"
+import { deriveAnimationSequenceFromGraph } from "@/components/Chat/chatStreamGraphHighlight"
 import { logger } from "@/utils/logger"
 
 export interface MainAreaProps {
@@ -239,16 +240,17 @@ export function useMainArea({
       agenticMode && selectedWorkflowSummary
         ? `${selectedWorkflowSummary.name} — ${selectedWorkflowSummary.scenario}`
         : config.title
+    const animationSequence = agenticMode
+      ? deriveAnimationSequenceFromGraph(nodes, edges)
+      : config.animationSequence
     onLiveGraphConfig(
-      graphConfigFromNodes(title, nodes, edges, config.animationSequence),
+      graphConfigFromNodes(title, nodes, edges, animationSequence),
     )
   }, [
     onLiveGraphConfig,
     agenticMode,
-    pattern,
     selectedWorkflowSummary,
-    config.title,
-    config.animationSequence,
+    config,
     nodes,
     edges,
   ])
