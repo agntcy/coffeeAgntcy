@@ -143,14 +143,14 @@ const AuctionStreamingFeed: React.FC<AuctionStreamingFeedProps> = ({
                 </Box>
                 <Box sx={{ flex: 1, minWidth: 0 }}>
                   <Typography
-                    variant="body2"
+                    variant="body1"
                     component="div"
                     sx={{
                       overflowWrap: "break-word",
                       wordBreak: "break-word",
                     }}
                   >
-                    <Typography component="span" variant="body2">
+                    <Typography component="span" variant="body1">
                       {label}
                     </Typography>{" "}
                     {event.response}

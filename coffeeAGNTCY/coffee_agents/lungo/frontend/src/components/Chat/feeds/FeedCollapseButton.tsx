@@ -63,7 +63,7 @@ export function FeedCollapseButton({
         {expanded ? <ExpandLess /> : <ExpandMore />}
       </Box>
       <Typography
-        variant="body2"
+        variant="body1"
         component="span"
         sx={expanded ? undefined : { flex: 1, minWidth: 0 }}
       >

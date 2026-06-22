@@ -77,7 +77,7 @@ const ChatAreaMessageThread: React.FC<ChatAreaMessageThreadProps> = ({
   >
     {apiError ? (
       <Box role="alert" aria-live="assertive">
-        <Typography variant="body2" color="error">
+        <Typography variant="body1" color="error">
           The request failed. Check the workflow or try again.
         </Typography>
       </Box>
@@ -146,7 +146,10 @@ const ChatAreaMessageThread: React.FC<ChatAreaMessageThreadProps> = ({
                   url={grafanaSessionUrl}
                   label="Grafana"
                   iconSrc={grafanaIcon}
-                  sx={{ ml: 1 }}
+                  sx={(theme) => ({
+                    ml: 1,
+                    "& .MuiChip-label": theme.typography.body1,
+                  })}
                 />
               )}
           </>

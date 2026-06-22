@@ -18,7 +18,7 @@ export function FeedStatusLine({
 }: FeedStatusLineProps) {
   return (
     <Typography
-      variant="body2"
+      variant="body1"
       component="div"
       sx={{
         whiteSpace: "pre-wrap",

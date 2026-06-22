@@ -201,24 +201,27 @@ const GroupCommunicationFeed: React.FC<GroupCommunicationFeedProps> = ({
 
                   <Box sx={{ flex: 1, minWidth: 0 }}>
                     <Typography
-                      variant="body2"
+                      variant="body1"
                       component="div"
                       sx={{
                         overflowWrap: "break-word",
                         wordBreak: "break-word",
                       }}
                     >
-                      <Typography component="span">
+                      <Typography component="span" variant="body1">
                         {formatAgentName(step.sender)}
                       </Typography>
                       {index === 0 && (
                         <>
                           {" "}
-                          → <Typography component="span">All Agents</Typography>
+                          →{" "}
+                          <Typography component="span" variant="body1">
+                            All Agents
+                          </Typography>
                         </>
                       )}
                       :{" "}
-                      <Typography component="span">
+                      <Typography component="span" variant="body1">
                         &quot;{step.message}&quot;
                       </Typography>
                     </Typography>

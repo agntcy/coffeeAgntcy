@@ -67,6 +67,7 @@ const ChatAreaComposer: React.FC<ChatAreaComposerProps> = ({
             source={promptsSource}
             pattern={pattern}
             onSelect={onSuggestedPromptSelect}
+            sx={(theme) => theme.typography.body1}
           />
         </Box>
       ) : null}
@@ -130,6 +131,7 @@ const ChatAreaComposer: React.FC<ChatAreaComposerProps> = ({
         sx={(theme) => ({
           flexShrink: 0,
           alignSelf: { xs: "stretch", sm: "flex-end" },
+          ...theme.typography.body1,
           "& .MuiButton-endIcon": iconGlyphFillSx(
             theme.palette.vars.baseTextInverse,
             { important: true },
