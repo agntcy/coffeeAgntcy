@@ -40,6 +40,8 @@ ensure_compose_profile("observability")
 
 _otel_shutdown_done = False
 
+AGENT_POST_READY_SETTLE_SECS = 1.0
+
 AGENTS = {
     # auction agents
     "brazil-farm": {
@@ -76,8 +78,6 @@ AGENTS = {
         "ready_pattern": r"Agent ready",
     }
 }
-
-_ACTIVE_RUNNERS = []
 
 # ---------------- utils ----------------
 
@@ -368,7 +368,6 @@ def agents_up(request, transport_config):
             timeout_s=60.0,
             log_dir=Path(LUNGO_DIR) / ".pytest-logs",
         ).start()
-        _ACTIVE_RUNNERS.append(runner)
 
         try:
             runner.wait_ready()
@@ -380,10 +379,14 @@ def agents_up(request, transport_config):
         print(f"--- {name} ready (logs: {runner.log_path}) ---")
         runners.append(runner)
 
+    # Wait for the agents to settle after they are ready (might need some time to properly answer even when ready)
+    if runners:
+        time.sleep(AGENT_POST_READY_SETTLE_SECS)
+
     try:
         yield
     finally:
-        for r in runners:
+        for r in reversed(runners):
             print(f"--- Stopping {r.name} ---")
             r.stop()
 

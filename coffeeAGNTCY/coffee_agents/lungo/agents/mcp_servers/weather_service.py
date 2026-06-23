@@ -14,6 +14,7 @@ import httpx
 from agntcy_app_sdk.factory import AgntcyFactory
 
 from agents.mcp_servers.utils import _mcp_transport, _mcp_endpoint
+from common.subprocess_lifecycle import run_until_shutdown
 from config.config import OTEL_SDK_DISABLED
 
 logger = logging.getLogger(__name__)
@@ -107,8 +108,8 @@ async def main():
 
     await app_session.start_all_sessions(keep_alive=False)
     logger.info("Agent ready")
-    await app_session.start_all_sessions(keep_alive=True)
+    await run_until_shutdown(app_session, logger=logger)
 
 if __name__ == "__main__":
-    logging.info("Starting weather service...")
+    logger.info("Starting weather service...")
     asyncio.run(main())

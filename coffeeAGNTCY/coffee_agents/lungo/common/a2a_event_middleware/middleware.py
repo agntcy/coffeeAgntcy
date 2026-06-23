@@ -10,7 +10,6 @@ for A2A transport. Shared event builders and sinks live in workflow_utils.
 from __future__ import annotations
 
 import logging
-import re as _re
 from time import monotonic
 from typing import Any, Mapping
 
@@ -18,6 +17,7 @@ from a2a.client import ClientEvent
 from a2a.client.middleware import ClientCallContext, ClientCallInterceptor
 from a2a.types import AgentCard, Message, Task, TaskState
 from opentelemetry import trace as _otel_trace
+from pydantic import ValidationError
 
 from common.stable_agent_id import stable_agent_id_for_name as _stable_agent_id
 from common.workflow_utils.builders import build_event, make_edge, make_node
@@ -33,17 +33,23 @@ from common.workflow_utils.inflight import (
 from common.workflow_utils.workflow_catalog import lookup_workflow
 from config.config import EMIT_WORKFLOW_EVENTS
 from schema.types import (
+	InstanceId,
 	Operation,
 	PartialTopology,
 	TopologyEdgeItem,
 	TopologyNodeItem,
 )
 
-from schema.types.event import _INSTANCE_ID_REGEX as INSTANCE_ID_REGEX
-
 logger = logging.getLogger("lungo.common.event_middleware")
 
-_INSTANCE_ID_PATTERN = _re.compile(INSTANCE_ID_REGEX)
+
+def _is_valid_instance_id(value: str) -> bool:
+	"""True when value is a canonical ``instance://<uuid>`` id (schema-validated)."""
+	try:
+		InstanceId(root=value)
+	except ValidationError:
+		return False
+	return True
 
 
 def _slugify_source(card: AgentCard) -> str:
@@ -312,7 +318,7 @@ class EventEmittingInterceptor(ClientCallInterceptor):
 			)
 			return request_payload, http_kwargs
 
-		if not propagated_instance_id or not _INSTANCE_ID_PATTERN.match(propagated_instance_id):
+		if not propagated_instance_id or not _is_valid_instance_id(propagated_instance_id):
 			logger.warning(
 				"EventEmittingInterceptor [%s]: missing or malformed propagated "
 				"workflow_instance_id=%r on method '%s'; skipping event emission.",

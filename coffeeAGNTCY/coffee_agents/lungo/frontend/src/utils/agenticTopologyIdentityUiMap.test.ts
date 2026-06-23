@@ -8,8 +8,13 @@ import type { TopologyNodeWire } from "@/api/agenticWorkflowsTypes"
 import { LUNGO_FRONTEND_URLS } from "@/urls"
 import type { CustomNodeData } from "@/components/MainArea/Graph/Elements/types"
 import {
+  applyDiscoveredAgentInlineUi,
+  directoryAgentSlugFromAgentRecordUri,
   getOasfSlugFromNodeData,
   IDENTITY_UI_BY_STABLE_AGENT_UUID,
+  isDirectoryLabel,
+  isMcpServerLabel,
+  isRecruiterLabel,
   normalizeAgentRecordUriToRepoPath,
   parseStableAgentUuid,
   resolveGithubFromAgentRecordUri,
@@ -52,10 +57,29 @@ describe("agenticTopologyIdentityUiMap", () => {
     )
   })
 
-  it("Brazil row exists in map and includes directory slug and link", () => {
+  it.each([
+    {
+      caseName: "relative path",
+      uri: "../../agents/supervisors/auction/oasf/agents/brazil-coffee-farm.json",
+      expected: "brazil-coffee-farm",
+    },
+    {
+      caseName: "https raw github path",
+      uri: "https://raw.githubusercontent.com/agntcy/coffeeAgntcy/refs/heads/main/coffeeAGNTCY/coffee_agents/lungo/agents/supervisors/recruiter/oasf/agents/recruiter.json",
+      expected: "recruiter",
+    },
+    {
+      caseName: "empty",
+      uri: "",
+      expected: undefined,
+    },
+  ])("directoryAgentSlugFromAgentRecordUri: $caseName", ({ uri, expected }) => {
+    expect(directoryAgentSlugFromAgentRecordUri(uri)).toBe(expected)
+  })
+
+  it("Brazil row exists in map and includes directory link", () => {
     const row = IDENTITY_UI_BY_STABLE_AGENT_UUID[BRAZIL_UUID]
     expect(row).toBeDefined()
-    expect(row?.directoryAgentSlug).toBe("brazil-coffee-farm")
     expect(row?.agentDirectoryLink).toContain("agent-directory")
     expect(row?.identityAppsSlug).toBeUndefined()
   })
@@ -86,12 +110,8 @@ describe("agenticTopologyIdentityUiMap", () => {
     const recruiterUuid = stableAgentUuidForRecordName(
       "Agentic Recruiter agent",
     )
-    expect(
-      IDENTITY_UI_BY_STABLE_AGENT_UUID[logisticsUuid]?.directoryAgentSlug,
-    ).toBe("logistics-supervisor-agent")
-    expect(
-      IDENTITY_UI_BY_STABLE_AGENT_UUID[recruiterUuid]?.directoryAgentSlug,
-    ).toBe("recruiter")
+    expect(IDENTITY_UI_BY_STABLE_AGENT_UUID[logisticsUuid]).toBeDefined()
+    expect(IDENTITY_UI_BY_STABLE_AGENT_UUID[recruiterUuid]).toBeDefined()
   })
 
   describe("getOasfSlugFromNodeData", () => {
@@ -160,6 +180,98 @@ describe("agenticTopologyIdentityUiMap", () => {
           directoryAgentSlug: "recruiter",
         } as unknown as CustomNodeData),
       ).toBe("recruiter")
+    })
+  })
+
+  describe("applyDiscoveredAgentInlineUi", () => {
+    const baseData = {
+      icon: null,
+      label1: "Brazil",
+      label2: "",
+      handles: "all",
+    } as unknown as CustomNodeData
+
+    it("returns data unchanged when the wire has no inline OASF record", () => {
+      const out = applyDiscoveredAgentInlineUi(baseData, {
+        id: "n1",
+      } as TopologyNodeWire)
+      expect(out).toBe(baseData)
+    })
+
+    it("threads inline OASF record, cid, target handle and directory link", () => {
+      const record = { name: "Brazil", url: "http://brazil:9000" }
+      const out = applyDiscoveredAgentInlineUi(baseData, {
+        id: "n1",
+        oasf_record: record,
+        agent_cid: "cidB",
+      } as unknown as TopologyNodeWire)
+      expect(out.oasfRecord).toEqual(record)
+      expect(out.agentCid).toBe("cidB")
+      expect(out.handles).toBe("target")
+      expect(out.agentDirectoryLink).toBe(
+        LUNGO_FRONTEND_URLS.agentDirectory.baseUrl,
+      )
+    })
+
+    it("keeps an existing directory link when already present", () => {
+      const out = applyDiscoveredAgentInlineUi(
+        { ...baseData, agentDirectoryLink: "https://example.com/x" },
+        {
+          id: "n1",
+          oasf_record: { name: "Brazil" },
+        } as unknown as TopologyNodeWire,
+      )
+      expect(out.agentDirectoryLink).toBe("https://example.com/x")
+    })
+  })
+
+  describe("label predicates", () => {
+    it.each([
+      { caseName: "weather mcp server", label: "Weather MCP Server", v: true },
+      {
+        caseName: "lowercased mcp server",
+        label: "payment mcp server",
+        v: true,
+      },
+      {
+        caseName: "trailing whitespace",
+        label: "Weather MCP Server  ",
+        v: true,
+      },
+      { caseName: "not at end", label: "MCP Server Gateway", v: false },
+      { caseName: "plain agent", label: "Brazil Coffee Farm Agent", v: false },
+    ])("isMcpServerLabel: $caseName", ({ label, v }) => {
+      expect(isMcpServerLabel(label)).toBe(v)
+    })
+
+    it.each([
+      { caseName: "agentic recruiter", label: "Agentic Recruiter", v: true },
+      {
+        caseName: "split labels combined",
+        label: "agentic recruiter delegation",
+        v: true,
+      },
+      { caseName: "recruiter alone", label: "Recruiter", v: false },
+      { caseName: "directory", label: "AGNTCY Agent Directory", v: false },
+    ])("isRecruiterLabel: $caseName", ({ label, v }) => {
+      expect(isRecruiterLabel(label)).toBe(v)
+    })
+
+    it.each([
+      {
+        caseName: "agntcy agent directory",
+        label: "AGNTCY Agent Directory",
+        v: true,
+      },
+      {
+        caseName: "combined labels",
+        label: "directory agntcy agent directory",
+        v: true,
+      },
+      { caseName: "missing agntcy", label: "Agent Directory", v: false },
+      { caseName: "recruiter", label: "Agentic Recruiter", v: false },
+    ])("isDirectoryLabel: $caseName", ({ label, v }) => {
+      expect(isDirectoryLabel(label)).toBe(v)
     })
   })
 })

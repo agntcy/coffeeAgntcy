@@ -20,12 +20,18 @@ export interface TopologyNodeWire {
   operation?: string
   type?: string
   label?: string
+  /** Optional curated second display line (event_v1 >= 1.1.0); split fallback when absent. */
+  label2?: string
   size?: TopologySize
   layer_index?: number
   /** Optional absolute layout hint; when present the renderer skips auto-layout for this node. */
   position?: TopologyPosition
   agent_record_uri?: string
   stable_agent_id?: string | { root: string }
+  /** Full OASF record carried inline for agents discovered at runtime. */
+  oasf_record?: Record<string, unknown>
+  /** Directory content id (CID) for a discovered agent. */
+  agent_cid?: string
   [key: string]: unknown
 }
 

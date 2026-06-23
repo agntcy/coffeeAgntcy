@@ -13,18 +13,14 @@ import type { TopologyWire } from "@/api/agenticWorkflowsTypes"
 import { logger } from "@/utils/logger"
 import { identityUiVariantForPattern } from "@/utils/agenticTopologyIdentityUiMap"
 import { topologyWireToReactFlow } from "@/utils/topologyToReactFlow"
-import type { StaticIdMap } from "@/utils/topologyStaticIdMap"
 import type { PatternType } from "@/utils/patternUtils"
 import {
-  mergeDiscoveryEdges,
-  mergeDiscoveryNodes,
   REFETCH_DEBOUNCE_MS,
   type WorkflowGraphAgenticSession,
 } from "./useWorkflowGraphFromAgenticApi.types"
 
 interface UseWorkflowGraphTopologySyncParams {
   patternRef: React.RefObject<PatternType>
-  staticIdMapRef: React.RefObject<StaticIdMap | null>
   sessionRef: React.RefObject<WorkflowGraphAgenticSession | null>
   onAppliedRef: React.RefObject<(() => void) | undefined>
   attachHandlers: (node: Node) => Node
@@ -35,7 +31,6 @@ interface UseWorkflowGraphTopologySyncParams {
 
 export function useWorkflowGraphTopologySync({
   patternRef,
-  staticIdMapRef,
   sessionRef,
   onAppliedRef,
   attachHandlers,
@@ -47,24 +42,16 @@ export function useWorkflowGraphTopologySync({
 
   const applyInstanceTopology = useCallback(
     (topology: TopologyWire | undefined) => {
-      if (staticIdMapRef.current) {
-        onAppliedRef.current?.()
-        queueMicrotask(() => {
-          restoreEdgeAnimation()
-        })
-        return
-      }
       const { nodes: mappedNodes, edges: mappedEdges } =
         topologyWireToReactFlow(topology, {
           identityUiVariant: identityUiVariantForPattern(patternRef.current),
         })
       const withHandlers = mappedNodes.map(attachHandlers)
-      setNodes((prev) => {
-        const merged = mergeDiscoveryNodes(withHandlers, prev)
-        lastAppliedGraphNodeIdsRef.current = new Set(merged.map((n) => n.id))
-        return merged
-      })
-      setEdges((prev) => mergeDiscoveryEdges(mappedEdges, prev))
+      lastAppliedGraphNodeIdsRef.current = new Set(
+        withHandlers.map((n) => n.id),
+      )
+      setNodes(withHandlers)
+      setEdges(mappedEdges)
       onAppliedRef.current?.()
       queueMicrotask(() => {
         restoreEdgeAnimation()
@@ -77,7 +64,6 @@ export function useWorkflowGraphTopologySync({
       restoreEdgeAnimation,
       setEdges,
       setNodes,
-      staticIdMapRef,
     ],
   )
 

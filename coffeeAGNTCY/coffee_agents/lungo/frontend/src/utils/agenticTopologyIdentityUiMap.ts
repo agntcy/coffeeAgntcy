@@ -6,15 +6,16 @@
  * TEMPORARY: Agentic topology UI enrichment (identity, directory/OASF, GitHub)
  *
  * This map exists only until the backend supplies equivalent fields on workflow
- * topology or catalog API responses (stable slugs, directory URLs, badge flags).
- * Remove or replace with API-driven data when that contract is available.
+ * topology or catalog API responses (directory URLs, badge flags, identity slugs).
+ * `directoryAgentSlug` is derived from topology `agent_record_uri` (record basename).
+ * Remove or replace remaining rows when that contract is available.
  * -----------------------------------------------------------------------------
  */
 
 import { v5 as uuidv5 } from "uuid"
 import type { CustomNodeData } from "@/components/MainArea/Graph/Elements/types"
 import type { TopologyNodeWire } from "@/api/agenticWorkflowsTypes"
-import { VERIFICATION_STATUS } from "@/utils/const"
+import { HANDLE_TYPES, VERIFICATION_STATUS } from "@/utils/const"
 import { PATTERNS, type PatternType } from "@/utils/patternUtils"
 import { LUNGO_FRONTEND_URLS } from "@/urls"
 import { SecurityClass } from "@/utils/SecurityClass"
@@ -35,7 +36,6 @@ export interface AgenticTopologyIdentityUiRow {
   /** OASF agent card JSON top-level `name` (must match backend record load). */
   agentRecordName: string
   identityAppsSlug?: string
-  directoryAgentSlug: string
   hasBadgeDetails?: boolean
   hasPolicyDetails?: boolean
   agentDirectoryLink: string
@@ -55,7 +55,6 @@ const RAW_IDENTITY_UI_ROWS: AgenticTopologyIdentityUiRow[] = [
   {
     agentRecordName: "Auction Supervisor agent",
     identityAppsSlug: "auction-supervisor",
-    directoryAgentSlug: "auction-supervisor-agent",
     hasBadgeDetails: true,
     hasPolicyDetails: true,
     agentDirectoryLink: `${LUNGO_FRONTEND_URLS.agentDirectory.baseUrl}${LUNGO_FRONTEND_URLS.agentDirectory.agents.supervisorAuction}`,
@@ -64,7 +63,6 @@ const RAW_IDENTITY_UI_ROWS: AgenticTopologyIdentityUiRow[] = [
   },
   {
     agentRecordName: "Brazil Coffee Farm",
-    directoryAgentSlug: "brazil-coffee-farm",
     hasBadgeDetails: false,
     hasPolicyDetails: false,
     agentDirectoryLink: `${LUNGO_FRONTEND_URLS.agentDirectory.baseUrl}${LUNGO_FRONTEND_URLS.agentDirectory.agents.brazilFarm}`,
@@ -75,7 +73,6 @@ const RAW_IDENTITY_UI_ROWS: AgenticTopologyIdentityUiRow[] = [
   {
     agentRecordName: "Colombia Coffee Farm",
     identityAppsSlug: "colombia-coffee-farm",
-    directoryAgentSlug: "colombia-coffee-farm",
     hasBadgeDetails: true,
     hasPolicyDetails: true,
     agentDirectoryLink: `${LUNGO_FRONTEND_URLS.agentDirectory.baseUrl}${LUNGO_FRONTEND_URLS.agentDirectory.agents.colombiaFarm}`,
@@ -85,7 +82,6 @@ const RAW_IDENTITY_UI_ROWS: AgenticTopologyIdentityUiRow[] = [
   {
     agentRecordName: "Vietnam Coffee Farm",
     identityAppsSlug: "vietnam-coffee-farm",
-    directoryAgentSlug: "vietnam-coffee-farm",
     hasBadgeDetails: true,
     hasPolicyDetails: false,
     agentDirectoryLink: `${LUNGO_FRONTEND_URLS.agentDirectory.baseUrl}${LUNGO_FRONTEND_URLS.agentDirectory.agents.vietnamFarm}`,
@@ -94,7 +90,6 @@ const RAW_IDENTITY_UI_ROWS: AgenticTopologyIdentityUiRow[] = [
   },
   {
     agentRecordName: "Weather MCP Server",
-    directoryAgentSlug: "weather-mcp-server",
     agentDirectoryLink: `${LUNGO_FRONTEND_URLS.agentDirectory.baseUrl}${LUNGO_FRONTEND_URLS.agentDirectory.agents.weatherMcp}`,
     referenceGithubUrl: `${LUNGO_FRONTEND_URLS.github.baseUrl}${LUNGO_FRONTEND_URLS.github.agents.weatherMcp}`,
     verificationStatus: VERIFICATION_STATUS.FAILED,
@@ -102,7 +97,6 @@ const RAW_IDENTITY_UI_ROWS: AgenticTopologyIdentityUiRow[] = [
   {
     agentRecordName: "Payment MCP Server",
     identityAppsSlug: "payment-mcp-server",
-    directoryAgentSlug: "payment-mcp-server",
     hasBadgeDetails: true,
     hasPolicyDetails: false,
     agentDirectoryLink: LUNGO_FRONTEND_URLS.agentDirectory.baseUrl,
@@ -110,7 +104,6 @@ const RAW_IDENTITY_UI_ROWS: AgenticTopologyIdentityUiRow[] = [
   },
   {
     agentRecordName: "Logistics Supervisor agent",
-    directoryAgentSlug: "logistics-supervisor-agent",
     hasBadgeDetails: false,
     hasPolicyDetails: false,
     agentDirectoryLink: LUNGO_FRONTEND_URLS.agentDirectory.baseUrl,
@@ -118,7 +111,6 @@ const RAW_IDENTITY_UI_ROWS: AgenticTopologyIdentityUiRow[] = [
   },
   {
     agentRecordName: "Tatooine Farm agent",
-    directoryAgentSlug: "tatooine-farm-agent",
     hasBadgeDetails: false,
     hasPolicyDetails: false,
     agentDirectoryLink: `${LUNGO_FRONTEND_URLS.agentDirectory.baseUrl}/`,
@@ -126,7 +118,6 @@ const RAW_IDENTITY_UI_ROWS: AgenticTopologyIdentityUiRow[] = [
   },
   {
     agentRecordName: "Shipping agent",
-    directoryAgentSlug: "shipping-agent",
     hasBadgeDetails: false,
     hasPolicyDetails: false,
     agentDirectoryLink: `${LUNGO_FRONTEND_URLS.agentDirectory.baseUrl}/`,
@@ -134,7 +125,6 @@ const RAW_IDENTITY_UI_ROWS: AgenticTopologyIdentityUiRow[] = [
   },
   {
     agentRecordName: "Accountant agent",
-    directoryAgentSlug: "accountant-agent",
     hasBadgeDetails: false,
     hasPolicyDetails: false,
     agentDirectoryLink: `${LUNGO_FRONTEND_URLS.agentDirectory.baseUrl}/`,
@@ -142,7 +132,6 @@ const RAW_IDENTITY_UI_ROWS: AgenticTopologyIdentityUiRow[] = [
   },
   {
     agentRecordName: "Agentic Recruiter agent",
-    directoryAgentSlug: "recruiter",
     hasBadgeDetails: false,
     hasPolicyDetails: false,
     agentDirectoryLink: LUNGO_FRONTEND_URLS.agentDirectory.baseUrl,
@@ -210,6 +199,52 @@ export function splitTopologyNodeLabel(label: string): {
   const sp = t.indexOf(" ")
   if (sp === -1) return { label1: t, label2: "" }
   return { label1: t.slice(0, sp), label2: t.slice(sp + 1).trim() }
+}
+
+/** True when a node label denotes an MCP server (e.g. "Weather MCP Server"). */
+export function isMcpServerLabel(label: string): boolean {
+  return /mcp\s+server$/i.test(label.trim())
+}
+
+/** True when a node label denotes the agentic recruiter. */
+export function isRecruiterLabel(label: string): boolean {
+  const lower = label.toLowerCase()
+  return /\bagentic\b/.test(lower) && /\brecruiter\b/.test(lower)
+}
+
+/** True when a node label denotes the AGNTCY agent directory. */
+export function isDirectoryLabel(label: string): boolean {
+  const lower = label.toLowerCase()
+  return lower.includes("agntcy") && lower.includes("agent directory")
+}
+
+/**
+ * Directory / OASF API slug: basename of the OASF record path without `.json`
+ * (e.g. `.../brazil-coffee-farm.json` → `brazil-coffee-farm`).
+ */
+export function directoryAgentSlugFromAgentRecordUri(
+  agentRecordUri: string | undefined,
+): string | undefined {
+  if (!agentRecordUri || typeof agentRecordUri !== "string") return undefined
+  const raw = agentRecordUri.trim()
+  if (!raw) return undefined
+
+  let pathPart = raw
+  if (/^https?:\/\//i.test(raw)) {
+    try {
+      pathPart = new URL(raw).pathname
+    } catch {
+      return undefined
+    }
+  } else {
+    pathPart = raw.replace(/\\/g, "/")
+  }
+
+  const segments = pathPart.split("/").filter(Boolean)
+  if (segments.length === 0) return undefined
+  const base = segments[segments.length - 1] ?? ""
+  const slug = base.replace(/\.json$/i, "").trim()
+  return slug || undefined
 }
 
 /**
@@ -339,6 +374,29 @@ export function enrichAgenticTopologyWellKnownUi(
 }
 
 /**
+ * Apply inline UI for runtime-discovered agents. The recruiter emits the full
+ * OASF record (and CID) on the wire node, so the OASF modal reads it directly
+ * instead of resolving a static directory slug. Discovered agents are leaf
+ * targets of the recruiter edge, so they expose a target handle only.
+ */
+export function applyDiscoveredAgentInlineUi(
+  data: CustomNodeData,
+  wire: TopologyNodeWire,
+): CustomNodeData {
+  const record = wire.oasf_record
+  if (!record || typeof record !== "object") return data
+  const cid = typeof wire.agent_cid === "string" ? wire.agent_cid : undefined
+  return {
+    ...data,
+    oasfRecord: record as Record<string, unknown>,
+    agentCid: cid,
+    handles: HANDLE_TYPES.TARGET,
+    agentDirectoryLink:
+      data.agentDirectoryLink ?? LUNGO_FRONTEND_URLS.agentDirectory.baseUrl,
+  }
+}
+
+/**
  * Merge map + resolved GitHub into agentic `CustomNodeData`. Does not set legacy `slug`
  * (use `identityAppsSlug` / `directoryAgentSlug` on node data).
  */
@@ -373,7 +431,6 @@ export function mergeAgenticTopologyIdentityUi(
   const merged: CustomNodeData = {
     ...data,
     identityAppsSlug: row.identityAppsSlug,
-    directoryAgentSlug: row.directoryAgentSlug,
     agentDirectoryLink: row.agentDirectoryLink,
     hasBadgeDetails: row.hasBadgeDetails,
     hasPolicyDetails: row.hasPolicyDetails,
@@ -401,7 +458,11 @@ function mcpDirectorySlugFromLabels(
   return null
 }
 
-/** Resolve `GET .../agents/{slug}/oasf` slug from merged or static graph node data. */
+/**
+ * Resolve `GET .../agents/{slug}/oasf` slug from node data.
+ * Agentic topology sets `directoryAgentSlug` from `agent_record_uri`; label rules
+ * below remain for legacy static graphs without catalog URIs.
+ */
 export function getOasfSlugFromNodeData(
   nodeData: CustomNodeData | null | undefined,
 ): string {

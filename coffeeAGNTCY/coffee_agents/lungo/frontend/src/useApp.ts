@@ -12,7 +12,6 @@ import { useAppChatState } from "@/hooks/useAppChatState"
 import { useAgentAPI } from "@/hooks/useAgentAPI"
 import { getGraphConfig, type GraphConfig } from "@/utils/graphConfigs"
 import { PATTERNS, PatternType } from "@/utils/patternUtils"
-import { DiscoveryResponseEvent } from "@/types/agent"
 import {
   AGENTIC_WORKFLOWS_CATALOG_LOG_PATH,
   fetchWorkflowSummariesWithRetry,
@@ -51,17 +50,10 @@ export function useApp() {
   const chat = useAppChatState({ selectedPattern })
 
   const streamCompleteRef = useRef<boolean>(false)
-  const [discoveryResponseEvent, setDiscoveryResponseEvent] =
-    useState<DiscoveryResponseEvent | null>(null)
-  const lastDiscoveryKeyRef = useRef<string | null>(null)
 
   const [highlightNodeFunction, setHighlightNodeFunction] = useState<
     ((nodeId: string) => void) | null
   >(null)
-
-  const handleDiscoveryResponse = useCallback((evt: DiscoveryResponseEvent) => {
-    setDiscoveryResponseEvent(evt)
-  }, [])
 
   const selectWorkflowFromCatalog = useCallback(
     (summary: WorkflowSummary) => {
@@ -84,7 +76,6 @@ export function useApp() {
       setSelectedPattern(slug)
       setSelectedWorkflowSummary(summary)
       setLiveGraphConfig(null)
-      lastDiscoveryKeyRef.current = null
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps -- streaming/chat refs stable enough; full deps cause unnecessary runs
     [streaming.reset, streaming.resetRecruiter, streaming.resetGroup, chat],
@@ -189,21 +180,6 @@ export function useApp() {
           false,
         )
       }
-
-      const agentKeys = streaming.recruiterAgentRecords
-        ? Object.keys(streaming.recruiterAgentRecords).sort().join(",")
-        : ""
-      const discoveryKey = `${streaming.recruiterSessionId ?? ""}:${agentKeys}`
-
-      if (lastDiscoveryKeyRef.current !== discoveryKey) {
-        lastDiscoveryKeyRef.current = discoveryKey
-        handleDiscoveryResponse({
-          response: streaming.recruiterFinalMessage ?? "",
-          ts: Date.now(),
-          sessionId: streaming.recruiterSessionId ?? undefined,
-          agent_records: streaming.recruiterAgentRecords ?? undefined,
-        })
-      }
     } else if (
       streaming.recruiterStatus === "error" &&
       streaming.recruiterError
@@ -226,7 +202,6 @@ export function useApp() {
     chat.handleApiResponse,
     chat.setIsAgentLoading,
     chat.setShowFinalResponse,
-    handleDiscoveryResponse,
   ])
 
   const handleSendPrompt = useCallback(
@@ -267,7 +242,7 @@ export function useApp() {
           chat.setAgentResponse(undefined)
           streaming.resetRecruiter()
           try {
-            await streaming.connectRecruiter(query)
+            await streaming.connectRecruiter(query, activeWorkflowInstanceId)
           } catch (err) {
             logger.apiError(LUNGO_FRONTEND_URLS.apiPaths.agentPromptStream, err)
             chat.setShowFinalResponse(true)
@@ -312,7 +287,6 @@ export function useApp() {
     chat.resetChatState()
     streaming.resetGroup()
     streaming.resetRecruiter()
-    lastDiscoveryKeyRef.current = null
     // eslint-disable-next-line react-hooks/exhaustive-deps -- stable reset fns only
   }, [chat.resetChatState, streaming.resetGroup, streaming.resetRecruiter])
 
@@ -388,7 +362,6 @@ export function useApp() {
     showRecruiterStreaming: chat.showRecruiterStreaming,
     showFinalResponse: chat.showFinalResponse,
     groupCommResponseReceived: chat.groupCommResponseReceived,
-    discoveryResponseEvent,
     handleUserInput: chat.handleUserInput,
     handleApiResponse: chat.handleApiResponse,
     handleSendPrompt,
@@ -396,7 +369,6 @@ export function useApp() {
     handleClearConversation,
     handleNodeHighlightSetup,
     handleSenderHighlight,
-    handleDiscoveryResponse,
     graphConfig,
     events: streaming.events,
     status: streaming.status,
