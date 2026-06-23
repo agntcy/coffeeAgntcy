@@ -25,8 +25,6 @@ interface SidebarDropdownProps {
   title: string
   isExpanded: boolean
   onToggle: () => void
-  /** Highlight toggle when a descendant workflow row is selected. */
-  containsSelectedWorkflow?: boolean
   children: React.ReactNode
 }
 
@@ -34,7 +32,6 @@ const SidebarDropdown: React.FC<SidebarDropdownProps> = ({
   title,
   isExpanded,
   onToggle,
-  containsSelectedWorkflow = false,
   children,
 }) => {
   const toggleId = React.useId()
@@ -67,7 +64,6 @@ const SidebarDropdown: React.FC<SidebarDropdownProps> = ({
         aria-expanded={isExpanded}
         aria-controls={panelId}
         aria-label={toggleLabel}
-        selected={containsSelectedWorkflow}
         sx={(theme) => ({
           ...sidebarListItemButtonSx,
           ...sidebarRowButtonStateSx(theme),

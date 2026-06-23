@@ -16,8 +16,6 @@ import {
   makePatternKey,
   makeScenarioKey,
   makeWorkflowKey,
-  patternContainsSelectedWorkflow,
-  scenarioContainsSelectedWorkflow,
   A2A_SLIM_MENU_LABEL,
   REFERENCE_LIBRARY_KEY,
   type CatalogSidebarLayout,
@@ -47,8 +45,6 @@ const CatalogTree: React.FC<CatalogTreeProps> = ({
 }) => {
   const { implementedPatterns, referencePatternNames } = layout
 
-  const selectedWorkflowName = selectedWorkflowSummary?.name ?? null
-
   const openDoc = useCallback((catalogName: string) => {
     openWorkflowDocumentationInNewTab(catalogName)
   }, [])
@@ -77,7 +73,6 @@ const CatalogTree: React.FC<CatalogTreeProps> = ({
             title={summary.name}
             isExpanded={expandedKeys.has(workflowKey)}
             onToggle={() => toggleExpandableDropdown(workflowKey)}
-            containsSelectedWorkflow={isSelected}
           >
             <SidebarItem
               title={A2A_SLIM_MENU_LABEL}
@@ -114,10 +109,6 @@ const CatalogTree: React.FC<CatalogTreeProps> = ({
         title={pattern.name}
         isExpanded={expandedKeys.has(patternKey)}
         onToggle={() => toggleExpandableDropdown(patternKey)}
-        containsSelectedWorkflow={patternContainsSelectedWorkflow(
-          pattern,
-          selectedWorkflowName,
-        )}
       >
         {pattern.useCaseScenarios.map((scenario: UseCaseScenarioNode) => {
           const scenarioKey = makeScenarioKey(
@@ -131,10 +122,6 @@ const CatalogTree: React.FC<CatalogTreeProps> = ({
               title={scenario.label}
               isExpanded={expandedKeys.has(scenarioKey)}
               onToggle={() => toggleExpandableDropdown(scenarioKey)}
-              containsSelectedWorkflow={scenarioContainsSelectedWorkflow(
-                scenario,
-                selectedWorkflowName,
-              )}
             >
               {scenario.workflows.map((wf: WorkflowNode) =>
                 renderWorkflow(pattern.name, scenario, wf),
