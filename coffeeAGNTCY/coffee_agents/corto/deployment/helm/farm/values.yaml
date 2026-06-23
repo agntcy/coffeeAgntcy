@@ -23,6 +23,7 @@ config:
   transportServerEndpoint: ""
   defaultMessageTransport: ""
   otlpHttpEndpoint: ""
+  slimSharedSecret: ""
 #  llmStreaming: False
 
 # You can use your own config here for service account
