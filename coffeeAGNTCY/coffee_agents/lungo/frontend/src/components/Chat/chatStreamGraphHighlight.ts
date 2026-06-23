@@ -14,7 +14,10 @@ import type { Edge, Node } from "@xyflow/react"
 import type { GraphConfig } from "@/utils/graphConfigs"
 import type { CustomNodeData } from "@/components/MainArea/Graph/Elements/types"
 import { NODE_TYPES } from "@/utils/const"
-import { getOasfSlugFromNodeData } from "@/utils/agenticTopologyIdentityUiMap"
+import {
+  getOasfSlugFromNodeData,
+  isDirectoryLabel,
+} from "@/utils/agenticTopologyIdentityUiMap"
 import { buildSenderToNodeMap } from "./groupCommunicationFeedMapping"
 
 function normalizeAuthor(value: string): string {
@@ -44,10 +47,7 @@ function nodeSlugKey(node: Node): string | null {
   const label1 = data?.label1?.toLowerCase() ?? ""
   const label2 = data?.label2?.toLowerCase() ?? ""
   const combined = `${label1} ${label2}`.trim()
-  if (
-    label1 === "directory" ||
-    (combined.includes("agntcy") && combined.includes("agent directory"))
-  ) {
+  if (label1 === "directory" || isDirectoryLabel(combined)) {
     return "directory"
   }
 
