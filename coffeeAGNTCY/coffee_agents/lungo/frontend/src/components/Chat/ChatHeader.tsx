@@ -8,7 +8,7 @@ import DeleteOutline from "@mui/icons-material/DeleteOutline"
 import UnfoldLess from "@mui/icons-material/UnfoldLess"
 import UnfoldMore from "@mui/icons-material/UnfoldMore"
 import type { Theme } from "@mui/material/styles"
-import { Box, IconButton, Stack, Tooltip } from "@open-ui-kit/core"
+import { Box, IconButton, Tooltip } from "@open-ui-kit/core"
 
 import { iconGlyphFillSx } from "@/utils/iconGlyphFill"
 
@@ -58,12 +58,12 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({
         display: "flex",
         width: "100%",
         alignItems: "center",
-        justifyContent: "flex-end",
+        justifyContent: "space-between",
         px: { xs: 1, sm: 2, md: 4, lg: 2 },
         py: 1,
       }}
     >
-      <Stack direction="row" alignItems="center" spacing={1}>
+      <Box sx={{ display: "flex", alignItems: "center" }}>
         {onMinimize ? (
           <Tooltip title={isMinimized ? "Maximize" : "Minimize"}>
             <IconButton
@@ -81,6 +81,8 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({
             </IconButton>
           </Tooltip>
         ) : null}
+      </Box>
+      <Box sx={{ display: "flex", alignItems: "center" }}>
         {onClearConversation ? (
           <Tooltip title="Clear conversation">
             <IconButton
@@ -92,7 +94,7 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({
             </IconButton>
           </Tooltip>
         ) : null}
-      </Stack>
+      </Box>
     </Box>
   )
 }
