@@ -38,7 +38,7 @@ app.add_middleware(
   allow_headers=["*"],
 )
 
-exchange_agent = ExchangeAgent(factory=factory)
+exchange_agent = ExchangeAgent()
 
 class PromptRequest(BaseModel):
   prompt: str

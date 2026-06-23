@@ -36,6 +36,10 @@ def _base_env():
         **os.environ,
         "PYTHONPATH": CORTO_DIR,
         "ENABLE_HTTP": "true",
+        # Host subprocesses must use loopback, not Docker service names.
+        "SLIM_SERVER": "127.0.0.1:46357",
+        "NATS_SERVER": "127.0.0.1:4222",
+        "TRANSPORT_SERVER_ENDPOINT": "http://127.0.0.1:46357",
     }
 
 def _purge_modules(prefixes):
@@ -192,6 +196,7 @@ def agents_up(request, transport_config):
 
         env = _base_env()
         env.update(transport_config or {})
+        env["FARM_AGENT_PORT"] = "19099"  # don't collide with docker farm on 9999
 
         print(f"\n--- Starting {name} ---")
         runner = ProcessRunner(

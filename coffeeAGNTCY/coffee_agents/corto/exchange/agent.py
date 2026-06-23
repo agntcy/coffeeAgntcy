@@ -5,30 +5,29 @@ import asyncio
 import logging
 from uuid import uuid4
 
-from ioa_observe.sdk.decorators import agent
-from agntcy_app_sdk.factory import AgntcyFactory
-from agntcy_app_sdk.semantic.a2a.protocol import A2AProtocol
-from config.config import DEFAULT_MESSAGE_TRANSPORT, TRANSPORT_SERVER_ENDPOINT
-from langchain_core.messages import HumanMessage, SystemMessage
+from a2a.types import Message, Part, Role, TextPart
+from agntcy_app_sdk.semantic.a2a.client.factory import A2AClientFactory
+from common.a2a_transport_config import build_a2a_client_config
 from common.llm import get_llm
-from a2a.types import (
-    SendMessageRequest,
-    MessageSendParams,
-    Message,
-    Part,
-    TextPart,
-    Role,
-)
-
 from exchange.errors import (
-    TransportTimeoutError,
     RemoteAgentNoResponseError,
-    _is_timeout_error,
+    TransportTimeoutError,
     _is_no_payload_error,
+    _is_timeout_error,
 )
 from farm.card import AGENT_CARD as farm_agent_card
+from ioa_observe.sdk.decorators import agent
+from langchain_core.messages import HumanMessage, SystemMessage
 
 logger = logging.getLogger("corto.exchange.agent")
+
+a2a_client_factory = A2AClientFactory(
+    build_a2a_client_config(
+        namespace="default",
+        group="default",
+        agent_name="exchange",
+    )
+)
 
 tools = [
     {
@@ -41,12 +40,12 @@ tools = [
                 "properties": {
                     "prompt": {
                         "type": "string",
-                        "description": "The user prompt to process"
+                        "description": "The user prompt to process",
                     }
                 },
-                "required": ["prompt"]
-            }
-        }
+                "required": ["prompt"],
+            },
+        },
     }
 ]
 
@@ -55,52 +54,50 @@ system_prompt = (
     "If relevant, call the a2a_client_send_message with the prompt. Otherwise, respond with 'I'm sorry, I cannot assist with that request. Please ask about coffee flavor or taste.'"
 )
 
-
-def _build_send_message_request(prompt: str) -> SendMessageRequest:
-    return SendMessageRequest(
-        id=str(uuid4()),
-        params=MessageSendParams(
-            message=Message(
-                message_id=str(uuid4()),
-                role=Role.user,
-                parts=[Part(TextPart(text=prompt))],
-            )
-        ),
-    )
-
-
-def _parse_a2a_response(response):
-    if response is None or getattr(response, "root", None) is None:
-        raise RemoteAgentNoResponseError(
-            "Remote agent returned no response (missing or invalid payload).",
-            cause=None,
-        )
-    if response.root.result:
-        if not response.root.result.parts:
-            raise ValueError("No response parts found in the message.")
-        part = response.root.result.parts[0].root
-        if hasattr(part, "text"):
-            return part.text
-    elif response.root.error:
-        raise Exception(f"A2A error: {response.root.error.message}")
-    return None
-
-
 _A2A_MAX_ATTEMPTS = 5
 _A2A_BACKOFF_BASE = 3
 
 
-async def _send_a2a_with_retry(client, request):
-    """
-    Send request to A2A client. On timeout, retry up to 4 times (5 attempts total)
-    with exponential backoff (base 3, delays 1s, 3s, 9s, 27s). Only timeout errors
-    are retried; other errors propagate immediately.
-    """
+def _build_message(prompt: str) -> Message:
+    return Message(
+        messageId=str(uuid4()),
+        role=Role.user,
+        parts=[Part(root=TextPart(text=prompt))],
+    )
+
+
+def _extract_text_from_events(events: list) -> str | None:
+    result_text = None
+    for event in events:
+        if isinstance(event, Message):
+            for part in event.parts:
+                if hasattr(part.root, "text"):
+                    result_text = part.root.text
+        elif isinstance(event, tuple):
+            task, _update = event
+            if hasattr(task, "status") and task.status and task.status.message:
+                for part in task.status.message.parts:
+                    if hasattr(part.root, "text"):
+                        result_text = part.root.text
+    return result_text
+
+
+async def _send_a2a_with_retry(client, message: Message):
     for attempt in range(_A2A_MAX_ATTEMPTS):
         try:
-            response = await client.send_message(request)
-            logger.info("Response received from A2A agent.")
-            return response
+            events = []
+            async for event in client.send_message(message):
+                events.append(event)
+
+            if events:
+                return events
+
+            raise RemoteAgentNoResponseError(
+                "Remote agent returned no response (missing or invalid payload).",
+                cause=None,
+            )
+        except RemoteAgentNoResponseError:
+            raise
         except Exception as e:
             if not _is_timeout_error(e):
                 if _is_no_payload_error(e):
@@ -111,7 +108,7 @@ async def _send_a2a_with_retry(client, request):
                 logger.error("A2A send_message failed: %s", e)
                 raise
             if attempt < _A2A_MAX_ATTEMPTS - 1:
-                delay = _A2A_BACKOFF_BASE ** attempt
+                delay = _A2A_BACKOFF_BASE**attempt
                 logger.warning(
                     "A2A request timed out, retrying (attempt %s/%s) after %ss.",
                     attempt + 2,
@@ -128,75 +125,28 @@ async def _send_a2a_with_retry(client, request):
 
 @agent(name="exchange_agent")
 class ExchangeAgent:
-    def __init__(self, factory: AgntcyFactory):
-        self.factory = factory
-
     async def execute_agent_with_llm(self, user_prompt: str):
-        """
-        Processes a user prompt using the LLM to determine if the prompt is relevant to coffee flavor, taste or sensory profile.
-        If relevant, calls the a2a_client_send_message with the prompt. Otherwise, responds with 'I'm sorry, I cannot assist with that request. Please ask about coffee flavor or taste.'
-
-        Args:
-            user_prompt (str): The user prompt to process.
-
-        Returns:
-            str: The response from the LLM or the tool if called.
-        """
         messages = [
             SystemMessage(content=system_prompt),
-            HumanMessage(content=user_prompt)
+            HumanMessage(content=user_prompt),
         ]
-
-        # Invoke LLM WITHOUT binding - pass tools directly in kwargs
         response = get_llm().invoke(messages, tools=tools)
 
-        # Check if tool was called
-        if hasattr(response, 'tool_calls') and response.tool_calls:
-            logger.info("Tool was called!")
+        if hasattr(response, "tool_calls") and response.tool_calls:
             for tool_call in response.tool_calls:
-                tool_name = tool_call["name"]
-                tool_args = tool_call["args"]
-                logger.info(f"Tool: {tool_name}")
-                logger.info(f"Arguments: {tool_args}")
-
-                # Manual local routing to the tool
-                if tool_name == "a2a_client_send_message":
-                    result = await self.a2a_client_send_message(tool_args["prompt"])
-                    logger.info(f"Tool Result: {result}")
-                    return result
-        else:
-            logger.info("No tool called - LLM responded directly")
-            return response.content
+                if tool_call["name"] == "a2a_client_send_message":
+                    return await self.a2a_client_send_message(
+                        tool_call["args"]["prompt"]
+                    )
+        return response.content
 
     async def a2a_client_send_message(self, prompt: str):
-        """
-        Send the user-provided prompt to the farm agent over A2A transport and
-        return the resulting response payload.
-
-        Args:
-            prompt (str): Plain-text prompt to forward to the farm agent.
-
-        Returns:
-            Any: Whatever payload is returned by `client.send_message`.
-
-        Raises:
-            TransportTimeoutError: When the request times out after retry.
-            RemoteAgentNoResponseError: When the remote returns no usable response (e.g. missing/invalid payload).
-            Other exceptions (e.g. ValueError, ConnectionError) propagated as-is.
-        """
-        factory = self.factory
-        a2a_topic = A2AProtocol.create_agent_topic(farm_agent_card)
-        transport = factory.create_transport(
-            DEFAULT_MESSAGE_TRANSPORT,
-            endpoint=TRANSPORT_SERVER_ENDPOINT,
-            name="default/default/exchange"  # SLIM transport requires a routable name (org/namespace/agent) to build the PyName used for request-reply routing
-        )
-        client = await factory.create_client(
-            "A2A",
-            agent_topic=a2a_topic,
-            transport=transport,
-        )
-        request = _build_send_message_request(prompt)
-        response = await _send_a2a_with_retry(client, request)
-        return _parse_a2a_response(response)
-
+        client = await a2a_client_factory.create(farm_agent_card)
+        events = await _send_a2a_with_retry(client, _build_message(prompt))
+        text = _extract_text_from_events(events)
+        if text is None:
+            raise RemoteAgentNoResponseError(
+                "Remote agent returned no response (missing or invalid payload).",
+                cause=None,
+            )
+        return text
