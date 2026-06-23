@@ -30,6 +30,9 @@ import type { AuctionStreamingState } from "@/stores/auctionStreaming.types"
 import type { RecruiterStreamingState } from "@/stores/recruiterStreaming.types"
 import type { ApiResponse } from "@/types/api"
 import { PATTERNS, usesStreamingChatSend } from "@/utils/patternUtils"
+import { CanvasMode } from "@/types/patternDoc"
+import { usePatternChatAPI } from "@/hooks/usePatternChatAPI"
+import { streamPatternChat } from "./streamPatternChat"
 
 /** Panel expanded/collapsed by the chat header minimize control. */
 export const CHAT_MESSAGE_PANEL_ID = "chat-message-panel"
@@ -64,6 +67,9 @@ interface ChatAreaProps {
   recruiterState?: RecruiterStreamingState
   grafanaUrl?: string
   onDiscoveryResponse?: (evt: DiscoveryResponseEvent) => void
+  canvasMode?: CanvasMode
+  selectedReferencePattern?: string | null
+  patternChatSessionId?: string | null
 }
 
 const ChatArea: React.FC<ChatAreaProps> = ({
@@ -96,6 +102,9 @@ const ChatArea: React.FC<ChatAreaProps> = ({
   recruiterState,
   grafanaUrl = getGrafanaUrl(),
   onDiscoveryResponse,
+  canvasMode,
+  selectedReferencePattern,
+  patternChatSessionId,
 }) => {
   const [content, setContent] = useState<string>("")
   const [loading, setLoading] = useState<boolean>(false)
@@ -103,6 +112,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
   const messagePanelRef = useRef<HTMLDivElement>(null)
   const threadContentRef = useRef<HTMLDivElement>(null)
   const { sendMessageWithCallback } = useAgentAPI()
+  const { sendPatternMessage } = usePatternChatAPI()
 
   useScrollPanelOnContentResize(
     messagePanelRef,
@@ -184,6 +194,30 @@ const ChatArea: React.FC<ChatAreaProps> = ({
       setIsMinimized(false)
     }
 
+    if (
+      canvasMode === CanvasMode.PATTERN_DOC &&
+      selectedReferencePattern &&
+      patternChatSessionId
+    ) {
+      const msg = content
+      setContent("")
+      await streamPatternChat({
+        patternName: selectedReferencePattern,
+        sessionId: patternChatSessionId,
+        message: msg,
+        send: sendPatternMessage,
+        onUserInput,
+        onApiResponse,
+        onStart: () => {
+          setLoading(true)
+          setButtonClicked(true)
+        },
+        onSettled: () => setLoading(false),
+        onSuccess: () => setAiReplied(true),
+      })
+      return
+    }
+
     if (onUserInput) {
       onUserInput(content)
     }
@@ -257,6 +291,10 @@ const ChatArea: React.FC<ChatAreaProps> = ({
           width: "100%",
           overflowY: "auto",
           overflowX: "hidden",
+          // Reserve the scrollbar gutter on both edges so the centered thread
+          // doesn't shift left when a scrollbar appears (keeps it aligned with
+          // the composer below).
+          scrollbarGutter: "stable both-edges",
           ...(currentUserMessage
             ? { borderTop: "1px solid", borderColor: "divider" }
             : { display: "none" }),
@@ -270,7 +308,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
             width: "100%",
             px: chatHorizontalPadding,
             py: currentUserMessage ? 1 : 0,
-            display: isMinimized ? "none" : "block",
+            display: isMinimized ? "none" : "flex",
           }}
         >
           {currentUserMessage ? (

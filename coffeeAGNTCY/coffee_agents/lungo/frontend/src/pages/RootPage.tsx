@@ -10,7 +10,7 @@ import { Group, Panel, useDefaultLayout } from "react-resizable-panels"
 import { Box } from "@open-ui-kit/core"
 import { skipLinkSx } from "@/utils/a11ySx"
 import Navigation from "@/components/Navigation/Navigation"
-import MainArea from "@/components/MainArea/MainArea"
+import CanvasSwitch from "@/components/MainArea/CanvasSwitch"
 import ChatArea from "@/components/Chat/ChatArea"
 import Sidebar from "@/components/Sidebar/Sidebar"
 import SidebarPanelSeparator from "@/components/Sidebar/SidebarPanelSeparator"
@@ -24,6 +24,7 @@ import {
   SIDEBAR_PANEL_ID,
 } from "@/components/Sidebar/sidebarPanelLayout"
 import { PATTERNS } from "@/utils/patternUtils"
+import { CanvasMode } from "@/types/patternDoc"
 import { useApp } from "@/useApp"
 import { GraphCanvasLayoutContext } from "@/contexts/graphCanvasLayout"
 import { useElementWidth } from "@/hooks/useElementWidth"
@@ -77,6 +78,11 @@ const RootPage: React.FC = () => {
     recruiterEvaluationResults,
     recruiterSelectedAgent,
     setLiveGraphConfig,
+    selectedReferencePattern,
+    selectReferencePattern,
+    canvasMode,
+    patternDocState,
+    patternChatSessionId,
   } = useApp()
 
   const graphSectionRef = useRef<HTMLElement>(null)
@@ -140,6 +146,8 @@ const RootPage: React.FC = () => {
               isLoading={workflowCatalogLoading}
               error={workflowCatalogError}
               onSelectWorkflow={selectWorkflowFromCatalog}
+              selectedReferencePattern={selectedReferencePattern}
+              onSelectReferencePattern={selectReferencePattern}
             />
           </Panel>
           <SidebarPanelSeparator />
@@ -172,7 +180,10 @@ const RootPage: React.FC = () => {
                     overflow: "hidden",
                   }}
                 >
-                  <MainArea
+                  <CanvasSwitch
+                    canvasMode={canvasMode}
+                    selectedReferencePattern={selectedReferencePattern}
+                    patternDocState={patternDocState}
                     pattern={selectedPattern}
                     selectedWorkflowSummary={selectedWorkflowSummary}
                     onLiveGraphConfig={setLiveGraphConfig}
@@ -215,17 +226,35 @@ const RootPage: React.FC = () => {
                     setButtonClicked={setButtonClicked}
                     setAiReplied={setAiReplied}
                     isBottomLayout={true}
+                    canvasMode={canvasMode}
+                    selectedReferencePattern={selectedReferencePattern}
+                    patternChatSessionId={patternChatSessionId}
                     showCoffeePrompts={
-                      selectedPattern === PATTERNS.PUBLISH_SUBSCRIBE ||
-                      selectedPattern === PATTERNS.PUBLISH_SUBSCRIBE_STREAMING
+                      canvasMode !== CanvasMode.PATTERN_DOC &&
+                      (selectedPattern === PATTERNS.PUBLISH_SUBSCRIBE ||
+                        selectedPattern ===
+                          PATTERNS.PUBLISH_SUBSCRIBE_STREAMING)
                     }
                     showLogisticsPrompts={
+                      canvasMode !== CanvasMode.PATTERN_DOC &&
                       selectedPattern === PATTERNS.GROUP_MESSAGING
                     }
-                    showDiscoveryPrompts={selectedPattern === PATTERNS.A2A_HTTP}
-                    showProgressTracker={showProgressTracker}
-                    showAuctionStreaming={showAuctionStreaming}
-                    showRecruiterStreaming={showRecruiterStreaming}
+                    showDiscoveryPrompts={
+                      canvasMode !== CanvasMode.PATTERN_DOC &&
+                      selectedPattern === PATTERNS.A2A_HTTP
+                    }
+                    showProgressTracker={
+                      canvasMode !== CanvasMode.PATTERN_DOC &&
+                      showProgressTracker
+                    }
+                    showAuctionStreaming={
+                      canvasMode !== CanvasMode.PATTERN_DOC &&
+                      showAuctionStreaming
+                    }
+                    showRecruiterStreaming={
+                      canvasMode !== CanvasMode.PATTERN_DOC &&
+                      showRecruiterStreaming
+                    }
                     showFinalResponse={showFinalResponse}
                     onStreamComplete={handleStreamComplete}
                     onSenderHighlight={handleSenderHighlight}

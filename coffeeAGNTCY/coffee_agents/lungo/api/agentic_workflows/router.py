@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+import logging
 from collections.abc import AsyncIterator
 from typing import Annotated
 from uuid import UUID, uuid4
@@ -17,6 +18,7 @@ from uuid import UUID, uuid4
 from api.agentic_workflows.dtos import (
     InstantiateWorkflowResponse,
     Pattern,
+    PatternChatRequest,
     PatternListResponse,
     UseCase,
     UseCaseListResponse,
@@ -34,6 +36,7 @@ from api.agentic_workflows.instance_lifecycle import (
     workflow_instance_from_store,
 )
 from api.agentic_workflows.patterns import PATTERNS
+from api.agentic_workflows.pattern_chat import stream_one_turn
 from api.agentic_workflows.use_cases import USE_CASES
 from api.agentic_workflows.workflow_documentation import (
     load_parsed_workflow_documentation,
@@ -59,6 +62,8 @@ from schema import errors as schema_errors
 from schema.types import Event, Workflow, WorkflowInstance, instance_id_from_uuid
 
 _TAG = "agentic-workflows"
+
+logger = logging.getLogger(__name__)
 
 WORKFLOW_INSTANCE_STORE_ATTR = "workflow_instance_store"
 
@@ -148,6 +153,55 @@ def create_agentic_workflows_router() -> APIRouter:
     async def list_patterns() -> PatternListResponse:
         """GET /patterns/ — catalog of patterns."""
         return PatternListResponse(items=[Pattern(name=n) for n in PATTERNS])
+
+    @router.post(
+        "/patterns/{name}/chat",
+        summary="Chat with a pattern's reference docs",
+    )
+    async def pattern_chat(
+        name: Annotated[str, Path(min_length=1)],
+        body: PatternChatRequest,
+    ) -> StreamingResponse:
+        """POST /patterns/{name}/chat — NDJSON stream grounded in the pattern markdown.
+
+        Returns 404 when no reference markdown exists for ``name``. The wire
+        protocol is ``application/x-ndjson``: one ``{"response": "..."}`` object
+        per chunk, terminated by ``{"done": true}``; in-stream failures emit a
+        single ``{"error": "..."}`` line and close the connection.
+        """
+        # 404 early — before opening a stream — when the pattern has no doc.
+        slug = workflow_name_to_documentation_slug(name)
+        if load_parsed_workflow_documentation(slug) is None:
+            raise HTTPException(
+                status_code=404,
+                detail=f"No reference material for pattern: {name}",
+            )
+
+        async def ndjson_stream() -> AsyncIterator[bytes]:
+            try:
+                async for chunk in stream_one_turn(name, body.session_id, body.message):
+                    yield (json.dumps({"response": chunk}) + "\n").encode("utf-8")
+            except Exception:
+                logger.exception(
+                    "pattern_chat stream failed (pattern=%s, session=%s)",
+                    name,
+                    body.session_id,
+                )
+                yield (
+                    json.dumps({"error": "Pattern chat stream failed."}) + "\n"
+                ).encode("utf-8")
+                return
+            yield (json.dumps({"done": True}) + "\n").encode("utf-8")
+
+        return StreamingResponse(
+            ndjson_stream(),
+            media_type="application/x-ndjson",
+            headers={
+                "Cache-Control": "no-store",
+                "Connection": "keep-alive",
+                "X-Accel-Buffering": "no",
+            },
+        )
 
     @router.get(
         "/use-cases/",

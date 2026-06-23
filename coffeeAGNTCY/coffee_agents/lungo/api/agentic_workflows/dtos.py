@@ -76,6 +76,40 @@ class WorkflowDocumentationSection(BaseModel):
     ]
 
 
+class PatternChatRequest(BaseModel):
+    """Body of ``POST /patterns/{name}/chat``.
+
+    The server holds per-session conversation state and the pattern reference
+    markdown in memory, keyed by ``(pattern_name, session_id)``. The client mints
+    ``session_id`` once per conversation and resends it each turn; the latest user
+    turn is sent in ``message``.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    session_id: Annotated[
+        str,
+        Field(
+            pattern=(
+                r"^session://[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}"
+                r"-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
+            ),
+            description=(
+                "Client-minted opaque conversation id, a UUIDv4 wrapped as a "
+                "session URI (e.g. session://<uuid>)."
+            ),
+        ),
+    ]
+    message: Annotated[
+        str,
+        Field(
+            min_length=1,
+            max_length=32 * 1024,
+            description="Latest user turn. Server holds the rest of the conversation.",
+        ),
+    ]
+
+
 class WorkflowDocumentationResponse(BaseModel):
     model_config = ConfigDict(extra="forbid")
 

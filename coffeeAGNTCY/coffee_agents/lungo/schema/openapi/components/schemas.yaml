@@ -45,6 +45,21 @@ components:
           items:
             $ref: "#/components/schemas/Pattern"
 
+    PatternChatRequest:
+      type: object
+      required: [session_id, message]
+      additionalProperties: false
+      properties:
+        session_id:
+          type: string
+          pattern: "^session://[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
+          description: Client-minted opaque conversation id, a UUIDv4 wrapped as a session URI (e.g. session://<uuid>).
+        message:
+          type: string
+          minLength: 1
+          maxLength: 32768
+          description: Latest user turn. Server holds the rest of the conversation.
+
     UseCase:
       type: object
       required: [name]
