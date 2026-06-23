@@ -34,7 +34,7 @@ interface RecruiterStreamingStoreState {
   agentRecords: Record<string, AgentRecord> | null
   evaluationResults: Record<string, unknown> | null
   selectedAgent: Record<string, unknown> | null
-  connect: (prompt: string) => Promise<void>
+  connect: (prompt: string, workflowInstanceId?: string | null) => Promise<void>
   disconnect: () => void
   reset: () => void
 }
@@ -56,7 +56,7 @@ export const useRecruiterStreamingStore = create<RecruiterStreamingStoreState>(
   (set) => ({
     ...initialState,
 
-    connect: async (prompt: string) => {
+    connect: async (prompt: string, workflowInstanceId?: string | null) => {
       const abortController = new AbortController()
       set({
         status: "connecting",
@@ -78,7 +78,12 @@ export const useRecruiterStreamingStore = create<RecruiterStreamingStoreState>(
           method: "POST",
           credentials: isLocalDev ? "omit" : "include",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ prompt }),
+          body: JSON.stringify({
+            prompt,
+            ...(workflowInstanceId
+              ? { workflow_instance_id: workflowInstanceId }
+              : {}),
+          }),
           signal: abortController.signal,
         })
 

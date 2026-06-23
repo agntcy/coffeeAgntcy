@@ -55,7 +55,6 @@ const RootPage: React.FC = () => {
     showRecruiterStreaming,
     showFinalResponse,
     groupCommResponseReceived,
-    discoveryResponseEvent,
     handleUserInput,
     handleApiResponse,
     handleSendPrompt,
@@ -63,7 +62,6 @@ const RootPage: React.FC = () => {
     handleClearConversation,
     handleNodeHighlightSetup,
     handleSenderHighlight,
-    handleDiscoveryResponse,
     graphConfig,
     events,
     status,
@@ -184,7 +182,6 @@ const RootPage: React.FC = () => {
                     isExpanded={isExpanded}
                     groupCommResponseReceived={groupCommResponseReceived}
                     onNodeHighlight={handleNodeHighlightSetup}
-                    discoveryResponseEvent={discoveryResponseEvent}
                     selectedAgentCid={
                       typeof recruiterSelectedAgent?.cid === "string"
                         ? recruiterSelectedAgent.cid
@@ -256,7 +253,6 @@ const RootPage: React.FC = () => {
                       evaluationResults: recruiterEvaluationResults,
                       selectedAgent: recruiterSelectedAgent,
                     }}
-                    onDiscoveryResponse={handleDiscoveryResponse}
                   />
                 </Box>
               </GraphCanvasLayoutContext.Provider>

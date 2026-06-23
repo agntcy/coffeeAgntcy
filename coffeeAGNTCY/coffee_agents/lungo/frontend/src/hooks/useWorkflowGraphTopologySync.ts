@@ -15,8 +15,6 @@ import { identityUiVariantForPattern } from "@/utils/agenticTopologyIdentityUiMa
 import { topologyWireToReactFlow } from "@/utils/topologyToReactFlow"
 import type { PatternType } from "@/utils/patternUtils"
 import {
-  mergeDiscoveryEdges,
-  mergeDiscoveryNodes,
   REFETCH_DEBOUNCE_MS,
   type WorkflowGraphAgenticSession,
 } from "./useWorkflowGraphFromAgenticApi.types"
@@ -49,12 +47,11 @@ export function useWorkflowGraphTopologySync({
           identityUiVariant: identityUiVariantForPattern(patternRef.current),
         })
       const withHandlers = mappedNodes.map(attachHandlers)
-      setNodes((prev) => {
-        const merged = mergeDiscoveryNodes(withHandlers, prev)
-        lastAppliedGraphNodeIdsRef.current = new Set(merged.map((n) => n.id))
-        return merged
-      })
-      setEdges((prev) => mergeDiscoveryEdges(mappedEdges, prev))
+      lastAppliedGraphNodeIdsRef.current = new Set(
+        withHandlers.map((n) => n.id),
+      )
+      setNodes(withHandlers)
+      setEdges(mappedEdges)
       onAppliedRef.current?.()
       queueMicrotask(() => {
         restoreEdgeAnimation()

@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  **/
 
-import React, { useCallback, useRef, useState } from "react"
+import React, { useRef, useState } from "react"
 
 import { useScrollPanelOnContentResize } from "@/utils/chatScroll"
 
@@ -25,11 +25,10 @@ import {
   LUNGO_FRONTEND_URLS,
 } from "@/urls"
 import type { GraphConfig } from "@/utils/graphConfigs"
-import { DiscoveryResponseEvent } from "@/types/agent"
 import type { AuctionStreamingState } from "@/stores/auctionStreaming.types"
 import type { RecruiterStreamingState } from "@/stores/recruiterStreaming.types"
 import type { ApiResponse } from "@/types/api"
-import { PATTERNS, usesStreamingChatSend } from "@/utils/patternUtils"
+import { usesStreamingChatSend } from "@/utils/patternUtils"
 
 /** Panel expanded/collapsed by the chat header minimize control. */
 export const CHAT_MESSAGE_PANEL_ID = "chat-message-panel"
@@ -63,7 +62,6 @@ interface ChatAreaProps {
   auctionState?: AuctionStreamingState
   recruiterState?: RecruiterStreamingState
   grafanaUrl?: string
-  onDiscoveryResponse?: (evt: DiscoveryResponseEvent) => void
 }
 
 const ChatArea: React.FC<ChatAreaProps> = ({
@@ -95,7 +93,6 @@ const ChatArea: React.FC<ChatAreaProps> = ({
   auctionState,
   recruiterState,
   grafanaUrl = getGrafanaUrl(),
-  onDiscoveryResponse,
 }) => {
   const [content, setContent] = useState<string>("")
   const [loading, setLoading] = useState<boolean>(false)
@@ -108,22 +105,6 @@ const ChatArea: React.FC<ChatAreaProps> = ({
     messagePanelRef,
     threadContentRef,
     Boolean(currentUserMessage) && !isMinimized,
-  )
-
-  const onApiSuccess = useCallback(
-    (apiResponse: ApiResponse) => {
-      if (pattern !== PATTERNS.A2A_HTTP) {
-        return
-      }
-
-      onDiscoveryResponse?.({
-        response: apiResponse.response,
-        ts: Date.now(),
-        sessionId: apiResponse.session_id,
-        agent_records: apiResponse.agent_records,
-      })
-    },
-    [pattern, onDiscoveryResponse],
   )
 
   const handleMinimize = () => {
@@ -158,8 +139,6 @@ const ChatArea: React.FC<ChatAreaProps> = ({
           setAiReplied(true)
 
           logger.debug("[ChatArea] API call successful, response:", response)
-
-          onApiSuccess(response)
 
           if (onApiResponse) {
             onApiResponse(response.response ?? "", false)

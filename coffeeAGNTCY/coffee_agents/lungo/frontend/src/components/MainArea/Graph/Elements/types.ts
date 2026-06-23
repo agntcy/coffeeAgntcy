@@ -12,6 +12,8 @@ export interface CustomNodeData {
   active?: boolean
   selected?: boolean
   agentCid?: string
+  /** Inline OASF record for runtime-discovered agents (skips directory fetch). */
+  oasfRecord?: Record<string, unknown>
   handles?: "all" | "target" | "source"
   extraHandles?: ExtraHandle[]
   verificationStatus?: "verified" | "failed" | "pending"

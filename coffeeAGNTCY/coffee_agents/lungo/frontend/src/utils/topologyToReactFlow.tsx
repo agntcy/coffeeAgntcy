@@ -26,6 +26,7 @@ import {
   layoutSlimTransportGraph,
 } from "@/utils/topologyLayout"
 import {
+  applyDiscoveredAgentInlineUi,
   enrichAgenticTopologyWellKnownUi,
   isDirectoryLabel,
   isMcpServerLabel,
@@ -271,6 +272,7 @@ export function topologyWireToReactFlow(
       identityUiVariant: options.identityUiVariant,
     })
     data = enrichAgenticTopologyWellKnownUi(data, n, { validateUrls })
+    data = applyDiscoveredAgentInlineUi(data, n)
     if (data.directoryAgentSlug) {
       data = {
         ...data,

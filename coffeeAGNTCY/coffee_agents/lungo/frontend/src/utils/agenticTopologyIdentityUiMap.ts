@@ -14,7 +14,7 @@
 import { v5 as uuidv5 } from "uuid"
 import type { CustomNodeData } from "@/components/MainArea/Graph/Elements/types"
 import type { TopologyNodeWire } from "@/api/agenticWorkflowsTypes"
-import { VERIFICATION_STATUS } from "@/utils/const"
+import { HANDLE_TYPES, VERIFICATION_STATUS } from "@/utils/const"
 import { PATTERNS, type PatternType } from "@/utils/patternUtils"
 import { LUNGO_FRONTEND_URLS } from "@/urls"
 import { SecurityClass } from "@/utils/SecurityClass"
@@ -353,6 +353,29 @@ export function enrichAgenticTopologyWellKnownUi(
   }
 
   return data
+}
+
+/**
+ * Apply inline UI for runtime-discovered agents. The recruiter emits the full
+ * OASF record (and CID) on the wire node, so the OASF modal reads it directly
+ * instead of resolving a static directory slug. Discovered agents are leaf
+ * targets of the recruiter edge, so they expose a target handle only.
+ */
+export function applyDiscoveredAgentInlineUi(
+  data: CustomNodeData,
+  wire: TopologyNodeWire,
+): CustomNodeData {
+  const record = wire.oasf_record
+  if (!record || typeof record !== "object") return data
+  const cid = typeof wire.agent_cid === "string" ? wire.agent_cid : undefined
+  return {
+    ...data,
+    oasfRecord: record as Record<string, unknown>,
+    agentCid: cid,
+    handles: HANDLE_TYPES.TARGET,
+    agentDirectoryLink:
+      data.agentDirectoryLink ?? LUNGO_FRONTEND_URLS.agentDirectory.baseUrl,
+  }
 }
 
 /**
