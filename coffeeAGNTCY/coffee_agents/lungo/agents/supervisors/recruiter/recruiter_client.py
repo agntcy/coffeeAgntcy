@@ -7,7 +7,8 @@ and persists results in session state."""
 import asyncio
 import json
 import logging
-from uuid import uuid4
+import re
+from uuid import NAMESPACE_DNS, UUID, uuid4, uuid5
 
 import httpx
 from a2a.client import ClientConfig, ClientFactory
@@ -24,7 +25,6 @@ from a2a.types import (
 )
 from google.adk.tools.tool_context import ToolContext
 
-from agents.supervisors.recruiter.card import RECRUITER_SUPERVISOR_CARD
 from agents.supervisors.recruiter.models import (
     STATE_KEY_EVALUATION_RESULTS,
     STATE_KEY_RECRUITED_AGENTS,
@@ -33,17 +33,27 @@ from agents.supervisors.recruiter.models import (
 from agents.supervisors.recruiter.recruiter_service_card import (
     RECRUITER_AGENT_CARD,
 )
-from common.a2a_event_middleware import (
-    EventEmittingInterceptor,
-    make_event_emitting_consumer,
-)
+from common.stable_agent_id import stable_agent_id_for_name
+from common.workflow_context_prop import read_workflow_context
+from common.workflow_utils.builders import build_event, make_node
+from common.workflow_utils.event_sink import WorkflowAPIEventSink
+from common.workflow_utils.inflight import read_trace_context
+from common.workflow_utils.workflow_catalog import lookup_workflow
+from config.config import EMIT_WORKFLOW_EVENTS
+from schema.types import EdgeId, NodeId, Operation, PartialEdge, PartialTopology
+from schema.types.event import _INSTANCE_ID_REGEX
 
 logger = logging.getLogger("lungo.recruiter.supervisor.recruiter_client")
 
-
-# A2A middleware singletons that capture outbound and inbound calls.
-_event_interceptor = EventEmittingInterceptor(caller_card=RECRUITER_SUPERVISOR_CARD)
-_event_consumer = make_event_emitting_consumer(caller_card=RECRUITER_SUPERVISOR_CARD)
+# Discovered agents are merged into the live workflow instance topology so the
+# frontend renders and disposes of them through the normal topology channel.
+# The anchor node shares the seeded recruiter node's label (and carries no
+# stable_agent_id) so the frontend collapses it onto "Agentic Recruiter" and
+# re-points the discovered-agent edges there.
+_RECRUITER_ANCHOR_LABEL = "Agentic Recruiter"
+_DISCOVERY_NS = uuid5(NAMESPACE_DNS, "recruiter.discovery.lungo")
+_INSTANCE_ID_PATTERN = re.compile(_INSTANCE_ID_REGEX)
+_discovery_event_sink = WorkflowAPIEventSink() if EMIT_WORKFLOW_EVENTS else None
 
 # ---------------------------------------------------------------------------
 # Side-channel queue for streaming A2A events to main.py
@@ -108,6 +118,113 @@ def _extract_parts(parts: list[Part]) -> RecruitmentResponse:
     )
 
 
+def _discovery_node_id(cid: str) -> str:
+    """Deterministic runtime node id for a discovered agent CID."""
+    return f"node://{uuid5(_DISCOVERY_NS, f'agent::{cid}')}"
+
+
+def _discovery_edge_id(source_nid: str, target_nid: str) -> str:
+    """Deterministic edge id for an anchor -> discovered-agent connection."""
+    return f"edge://{uuid5(_DISCOVERY_NS, f'{source_nid}->{target_nid}')}"
+
+
+async def _emit_discovery_topology(agent_records: dict[str, dict]) -> None:
+    """Merge discovered agents into the live workflow instance topology.
+
+    Emits a STATE_PROGRESS_UPDATE that creates one node per discovered agent
+    (carrying its full OASF record inline) plus an anchor node sharing the
+    seeded recruiter's label so the frontend collapses it onto "Agentic
+    Recruiter" and re-points the new edges there. Nodes therefore arrive,
+    render, and dispose through the normal topology channel.
+    """
+    if _discovery_event_sink is None or not agent_records:
+        return
+
+    wf_ctx = read_workflow_context()
+    workflow_name = wf_ctx.workflow_name
+    instance_id = wf_ctx.instance_id
+    if not workflow_name or lookup_workflow(workflow_name) is None:
+        logger.debug(
+            "recruit discovery: no/unknown workflow_name=%r; skipping topology emit",
+            workflow_name,
+        )
+        return
+    if not instance_id or not _INSTANCE_ID_PATTERN.match(instance_id):
+        logger.debug(
+            "recruit discovery: missing/invalid instance_id=%r; skipping topology emit",
+            instance_id,
+        )
+        return
+
+    trace_ctx = read_trace_context()
+    anchor_id = f"node://{uuid5(_DISCOVERY_NS, 'recruiter-anchor')}"
+    nodes: list = [
+        make_node(
+            anchor_id,
+            operation=Operation.CREATE,
+            node_type="customNode",
+            label=_RECRUITER_ANCHOR_LABEL,
+            layer_index=0,
+        )
+    ]
+    edges: list = []
+    for cid, record in agent_records.items():
+        name = str(record.get("name") or "").strip() or cid
+        node_id = _discovery_node_id(cid)
+        nodes.append(
+            make_node(
+                node_id,
+                operation=Operation.CREATE,
+                node_type="customNode",
+                label=name,
+                layer_index=1,
+                stable_agent_id=stable_agent_id_for_name(name),
+                extras={"oasf_record": record, "agent_cid": cid},
+            )
+        )
+        edges.append(
+            PartialEdge(
+                id=EdgeId(_discovery_edge_id(anchor_id, node_id)),
+                operation=Operation.CREATE,
+                type="custom",
+                source=NodeId(anchor_id),
+                target=NodeId(node_id),
+                bidirectional=False,
+                weight=1.0,
+            )
+        )
+
+    topology = PartialTopology(nodes=nodes, edges=edges)
+    correlation_id = (
+        f"correlation://{UUID(int=trace_ctx.trace_id)}"
+        if trace_ctx.trace_id is not None
+        else f"correlation://{uuid4()}"
+    )
+    try:
+        event = build_event(
+            source="recruiter_supervisor",
+            workflow_name=workflow_name,
+            instance_id=instance_id,
+            topology=topology,
+            correlation_id=correlation_id,
+            correlation_message=f"discovered {len(agent_records)} agent(s)",
+            trace_id=trace_ctx.trace_id,
+            span_id=trace_ctx.span_id,
+        )
+    except RuntimeError:
+        logger.warning(
+            "recruit discovery: build_event failed for workflow=%r", workflow_name
+        )
+        return
+
+    await _discovery_event_sink.emit(event)
+    logger.info(
+        "recruit discovery: emitted %d discovered node(s) to instance %s",
+        len(agent_records),
+        instance_id,
+    )
+
+
 async def recruit_agents(query: str, tool_context: ToolContext) -> str:
     """Search the AGNTCY directory for agents matching a task description.
 
@@ -127,11 +244,11 @@ async def recruit_agents(query: str, tool_context: ToolContext) -> str:
     async with httpx.AsyncClient(timeout=httpx.Timeout(120.0)) as httpx_client:
         config = ClientConfig(httpx_client=httpx_client, streaming=True)
         factory = ClientFactory(config)
-        client = factory.create(
-            RECRUITER_AGENT_CARD,
-            interceptors=[_event_interceptor],
-            consumers=[_event_consumer],
-        )
+        # No A2A topology middleware here: the internal hop to the recruiter
+        # service is an implementation detail. Discovery results are surfaced
+        # via _emit_discovery_topology so only the seeded recruiter node and
+        # the discovered agents appear on the graph.
+        client = factory.create(RECRUITER_AGENT_CARD)
 
         message = Message(
             role=Role.user,
@@ -201,6 +318,10 @@ async def recruit_agents(query: str, tool_context: ToolContext) -> str:
     existing_evals = tool_context.state.get(STATE_KEY_EVALUATION_RESULTS, {})
     existing_evals.update(response_data.evaluation_results)
     tool_context.state[STATE_KEY_EVALUATION_RESULTS] = existing_evals
+
+    # Merge discovered agents into the live instance topology so the frontend
+    # renders/disposes them like any other instance node.
+    await _emit_discovery_topology(response_data.agent_records)
 
     logger.info(
         "[tool:recruit_agents] Found %d agent(s), %d evaluation(s)",
@@ -321,11 +442,8 @@ async def evaluate_agent(
     async with httpx.AsyncClient(timeout=httpx.Timeout(300.0)) as httpx_client:
         config = ClientConfig(httpx_client=httpx_client, streaming=True)
         factory = ClientFactory(config)
-        client = factory.create(
-            RECRUITER_AGENT_CARD,
-            interceptors=[_event_interceptor],
-            consumers=[_event_consumer],
-        )
+        # See recruit_agents: no A2A topology middleware on the internal hop.
+        client = factory.create(RECRUITER_AGENT_CARD)
 
         async for event in client.send_message(message):
             if isinstance(event, tuple) and len(event) == 2:

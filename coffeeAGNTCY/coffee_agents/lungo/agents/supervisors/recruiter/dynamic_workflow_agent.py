@@ -21,6 +21,7 @@ from google.adk.agents.invocation_context import InvocationContext
 from google.adk.events.event import Event
 from google.genai import types
 
+from agents.supervisors.recruiter.card import RECRUITER_SUPERVISOR_CARD
 from agents.supervisors.recruiter.models import (
     STATE_KEY_RECRUITED_AGENTS,
     STATE_KEY_SELECTED_AGENT,
@@ -28,13 +29,19 @@ from agents.supervisors.recruiter.models import (
     AgentProtocol,
     AgentRecord,
 )
-from agents.supervisors.recruiter.recruiter_client import (
-    _event_consumer,
-    _event_interceptor,
-)
 from agents.supervisors.recruiter.shared import a2a_client_factory
+from common.a2a_event_middleware import (
+    EventEmittingInterceptor,
+    make_event_emitting_consumer,
+)
 
 logger = logging.getLogger("lungo.recruiter.supervisor.dynamic_workflow")
+
+# A2A middleware singletons that capture the delegation call to the selected
+# agent (drawing its execution edges). The recruiter-service discovery hop in
+# recruiter_client intentionally omits this so only the discovered agents show.
+_event_interceptor = EventEmittingInterceptor(caller_card=RECRUITER_SUPERVISOR_CARD)
+_event_consumer = make_event_emitting_consumer(caller_card=RECRUITER_SUPERVISOR_CARD)
 
 class DynamicWorkflowAgent(BaseAgent):
     """Executes tasks by sending messages to selected recruited agents via A2A HTTP.
