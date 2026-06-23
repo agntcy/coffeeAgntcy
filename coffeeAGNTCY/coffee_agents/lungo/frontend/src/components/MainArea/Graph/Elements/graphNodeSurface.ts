@@ -36,25 +36,8 @@ function defaultCardRadius(theme: Theme): string | number {
   return theme.shape.borderRadius
 }
 
-function getGraphNodeRestingBackground(
-  theme: Theme,
-  flags: GraphNodeSurfaceFlags,
-): string {
-  const { active = false, selected = false } = flags
-
-  if (theme.palette.mode === "dark") {
-    if (active || selected) {
-      return theme.palette.vars.controlBackgroundMedium
-    }
-
-    return theme.palette.vars.baseBackgroundWeak
-  }
-
-  if (active || selected) {
-    return theme.palette.action.selected
-  }
-
-  return theme.palette.background.default
+function getGraphNodeRestingBackground(theme: Theme): string {
+  return theme.palette.action.selected
 }
 
 /** Hover background for every graph node surface (CustomNode, TransportNode, …). */
@@ -79,7 +62,7 @@ export function graphNodeRootSurfaceSx(
   const borderRadius = options.borderRadius ?? defaultCardRadius(theme)
   const dividerBorder = theme.palette.divider
   const primary = theme.palette.primary.main
-  const restingBg = getGraphNodeRestingBackground(theme, flags)
+  const restingBg = getGraphNodeRestingBackground(theme)
   const hoverBg = getGraphNodeHoverBackground(theme)
 
   const selectionOutline = `2px solid ${primary}`
@@ -291,7 +274,7 @@ export function getGraphNodeHandleStyle(theme: Theme): CSSProperties {
     width: 1,
     height: 1,
     border: `1px solid ${theme.palette.divider}`,
-    backgroundColor: theme.palette.background.default,
+    backgroundColor: theme.palette.action.selected,
   }
 }
 
