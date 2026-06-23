@@ -19,6 +19,10 @@ import Calculate from "@mui/icons-material/Calculate"
 import LocalShipping from "@mui/icons-material/LocalShipping"
 import SmartToy from "@mui/icons-material/SmartToy"
 import { GraphDiscoveryAssetImg } from "@/utils/GraphDiscoveryAssetImg"
+import {
+  isDirectoryLabel,
+  isRecruiterLabel,
+} from "@/utils/agenticTopologyIdentityUiMap"
 import supervisorIcon from "@/assets/supervisor.png"
 import farmAgentIcon from "@/assets/Grader-Agent.png"
 
@@ -66,14 +70,11 @@ function iconKindFromLabels(
     return "default"
   }
 
-  if (/\bagentic\b/.test(combined) && /\brecruiter\b/.test(combined)) {
+  if (isRecruiterLabel(combined)) {
     return "recruiter"
   }
 
-  if (
-    label1 === "directory" ||
-    (combined.includes("agntcy") && combined.includes("agent directory"))
-  ) {
+  if (label1 === "directory" || isDirectoryLabel(combined)) {
     return "directory"
   }
 

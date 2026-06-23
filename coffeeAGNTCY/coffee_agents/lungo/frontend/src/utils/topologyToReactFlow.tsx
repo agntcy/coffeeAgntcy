@@ -27,6 +27,9 @@ import {
 } from "@/utils/topologyLayout"
 import {
   enrichAgenticTopologyWellKnownUi,
+  isDirectoryLabel,
+  isMcpServerLabel,
+  isRecruiterLabel,
   mergeAgenticTopologyIdentityUi,
   resolveGithubFromAgentRecordUri,
   splitTopologyNodeLabel,
@@ -71,20 +74,6 @@ export function extractStableAgentId(n: TopologyNodeWire): string {
 // from content, these are only the pre-layout box.
 const GROUP_DEFAULT_WIDTH = 900
 const GROUP_DEFAULT_HEIGHT = 650
-
-function isMcpServerLabel(label: string): boolean {
-  return /mcp\s+server$/i.test(label.trim())
-}
-
-function isRecruiterLabel(label: string): boolean {
-  const lower = label.toLowerCase()
-  return /\bagentic\b/.test(lower) && /\brecruiter\b/.test(lower)
-}
-
-function isDirectoryLabel(label: string): boolean {
-  const lower = label.toLowerCase()
-  return lower.includes("agntcy") && lower.includes("agent directory")
-}
 
 function a2aExtraHandlesForLabel(label: string): ExtraHandle[] | undefined {
   if (isRecruiterLabel(label)) {
