@@ -31,10 +31,9 @@ STATE_KEY_SELECTED_AGENT = "selected_agent"  # str: CID of the currently selecte
 
 
 class AgentRecord(BaseModel):
-    """A recruited agent: its CID plus the full A2A AgentCard from the recruiter.
+    """A recruited agent: its CID plus the full A2A AgentCard.
 
-    The card is preserved verbatim (transport, interfaces, capabilities) so the
-    A2A client factory can negotiate the agent's preferred transport.
+    The card is preserved verbatim so the client factory can negotiate transport.
     """
 
     cid: str

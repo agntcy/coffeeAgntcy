@@ -100,10 +100,6 @@ def create_discovery_mcp_toolset(
 # ============================================================================
 # Search + Export + Persist — single deterministic tool
 # ============================================================================
-#
-# One `dirctl export --output-dir ... --format=a2a <filters>` call searches,
-# pulls, and transforms every match to its A2A AgentCard server-side; we read
-# the written cards and persist them to session state in a single write.
 
 
 async def _run_dirctl(args: list[str], timeout: float = 30.0) -> str:
@@ -131,6 +127,7 @@ async def _run_dirctl(args: list[str], timeout: float = 30.0) -> str:
         stdout, stderr = await asyncio.wait_for(proc.communicate(), timeout=timeout)
     except asyncio.TimeoutError as e:
         proc.kill()
+        await proc.wait()
         raise RuntimeError(f"dirctl {' '.join(args)} timed out after {timeout}s") from e
 
     if proc.returncode != 0:
