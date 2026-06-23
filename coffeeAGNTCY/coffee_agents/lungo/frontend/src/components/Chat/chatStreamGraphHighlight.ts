@@ -141,6 +141,10 @@ export function animationSequenceStepIds(
  * root node(s) (no inbound edges, at least one outbound), then the edges fanning
  * out, then the next layer of nodes, and so on. Isolated nodes (e.g. the group
  * container) are skipped. No authored sequence or static config required.
+ *
+ * Re-entrant edges (fan-in / back-to-source, e.g. a farm replying to the
+ * transport) still pulse so no edge that the static sequence animated goes
+ * missing; each node is only scheduled once so the traversal still terminates.
  */
 export function deriveAnimationSequenceFromGraph(
   nodes: Node[],
@@ -165,6 +169,7 @@ export function deriveAnimationSequenceFromGraph(
 
   const steps: { ids: string[] }[] = [{ ids: [...roots] }]
   const visited = new Set<string>(roots)
+  const pulsedEdges = new Set<string>()
   let frontier = roots
 
   while (frontier.length > 0) {
@@ -172,9 +177,12 @@ export function deriveAnimationSequenceFromGraph(
     const nextNodes: string[] = []
     for (const nodeId of frontier) {
       for (const edge of outgoing.get(nodeId) ?? []) {
-        if (visited.has(edge.target)) continue
+        if (pulsedEdges.has(edge.id)) continue
+        pulsedEdges.add(edge.id)
         edgeIds.push(edge.id)
-        if (!nextNodes.includes(edge.target)) nextNodes.push(edge.target)
+        if (!visited.has(edge.target) && !nextNodes.includes(edge.target)) {
+          nextNodes.push(edge.target)
+        }
       }
     }
     for (const id of nextNodes) visited.add(id)
@@ -185,4 +193,20 @@ export function deriveAnimationSequenceFromGraph(
   }
 
   return steps
+}
+
+/**
+ * Pick the animation sequence for the current mode: the live BFS-derived
+ * sequence when the backend owns the graph (agentic), else the authored static
+ * sequence. Keeps the button-pulse and live-config paths in lockstep.
+ */
+export function selectAnimationSequence(
+  agenticMode: boolean,
+  nodes: Node[],
+  edges: Edge[],
+  staticSequence: GraphConfig["animationSequence"],
+): GraphConfig["animationSequence"] {
+  return agenticMode
+    ? deriveAnimationSequenceFromGraph(nodes, edges)
+    : staticSequence
 }
