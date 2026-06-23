@@ -17,7 +17,7 @@ import { useWorkflowGraphFromAgenticApi } from "@/hooks/useWorkflowGraphFromAgen
 import type { WorkflowSummary } from "@/utils/agenticWorkflowsApi"
 import type { GraphConfig } from "@/utils/graphConfigs"
 import { graphConfigFromNodes } from "@/utils/graphConfigFromNodes"
-import { deriveAnimationSequenceFromGraph } from "@/components/Chat/chatStreamGraphHighlight"
+import { selectAnimationSequence } from "@/components/Chat/chatStreamGraphHighlight"
 import { logger } from "@/utils/logger"
 
 export interface MainAreaProps {
@@ -79,6 +79,14 @@ export function useMainArea({
   const [nodes, setNodes, onNodesChange] = useNodesState(config.nodes)
   const [edges, setEdges, onEdgesChange] = useEdgesState(config.edges)
   const animationLock = useRef<boolean>(false)
+  // Latest graph snapshot read at animation start so the agentic button-pulse
+  // targets live ids without re-triggering the effect on every node mutation.
+  const nodesRef = useRef(nodes)
+  const edgesRef = useRef(edges)
+  useEffect(() => {
+    nodesRef.current = nodes
+    edgesRef.current = edges
+  }, [nodes, edges])
 
   const handleOpenOasfModal = useCallback((nodeData: CustomNodeData) => {
     setOasfModalData(nodeData)
@@ -189,7 +197,6 @@ export function useMainArea({
   useEffect(() => {
     const shouldAnimate = buttonClicked && !aiReplied
     if (!shouldAnimate) return
-    if (agenticMode) return
     if (pattern === "group_messaging") return
     const waitForAnimationAndRun = async () => {
       while (animationLock.current) await delay(100)
@@ -199,7 +206,12 @@ export function useMainArea({
         await delay(DELAY_DURATION)
       }
       const animateGraph = async (): Promise<void> => {
-        const animationSequence = config.animationSequence
+        const animationSequence = selectAnimationSequence(
+          agenticMode,
+          nodesRef.current,
+          edgesRef.current,
+          config.animationSequence,
+        )
         for (const step of animationSequence) {
           await animate(step.ids, HIGHLIGHT.ON)
           await animate(step.ids, HIGHLIGHT.OFF)
@@ -227,9 +239,12 @@ export function useMainArea({
       agenticMode && selectedWorkflowSummary
         ? `${selectedWorkflowSummary.name} — ${selectedWorkflowSummary.scenario}`
         : config.title
-    const animationSequence = agenticMode
-      ? deriveAnimationSequenceFromGraph(nodes, edges)
-      : config.animationSequence
+    const animationSequence = selectAnimationSequence(
+      agenticMode,
+      nodes,
+      edges,
+      config.animationSequence,
+    )
     onLiveGraphConfig(
       graphConfigFromNodes(title, nodes, edges, animationSequence),
     )
