@@ -16,7 +16,6 @@ import { Box, Stack } from "@open-ui-kit/core"
 import ChatAreaComposer from "./ChatAreaComposer"
 import ChatAreaMessageThread from "./ChatAreaMessageThread"
 import ChatHeader from "./ChatHeader"
-import { getChatAreaBackgroundColor } from "./chatAreaBackground"
 
 import { logger } from "@/utils/logger"
 import {
@@ -231,7 +230,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
         overflow: "hidden",
         borderTop: "1px solid",
         borderColor: "divider",
-        backgroundColor: (theme) => getChatAreaBackgroundColor(theme),
+        backgroundColor: (theme) => theme.palette.action.selected,
       }}
     >
       {currentUserMessage ? (
@@ -308,7 +307,6 @@ const ChatArea: React.FC<ChatAreaProps> = ({
           py: currentUserMessage ? 1 : 2,
           borderTop: currentUserMessage ? "1px solid" : "none",
           borderColor: "divider",
-          bgcolor: (theme) => getChatAreaBackgroundColor(theme),
         }}
       >
         <ChatAreaComposer
