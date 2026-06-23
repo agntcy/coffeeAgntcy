@@ -1,6 +1,6 @@
 {
   "authors": [
-    "Unknown"
+    "agntcy/coffee-agntcy-maintainers"
   ],
   "created_at": "2026-06-23T03:33:02Z",
   "description": "An AI agent that confirms the payment.",
@@ -12,12 +12,6 @@
   ],
   "modules": [
     {
-      "artifact": {
-        "data": "eyJhZGRpdGlvbmFsSW50ZXJmYWNlcyI6W3sidHJhbnNwb3J0Ijoic2xpbSIsInVybCI6InNsaW06Ly9zbGltOjQ2MzU3L2x1bmdvL2FnZW50cy9hY2NvdW50YW50LWFnZW50In0seyJ0cmFuc3BvcnQiOiJzbGltcnBjIiwidXJsIjoic2xpbTovL3NsaW06NDYzNTcvbHVuZ28vYWdlbnRzL2FjY291bnRhbnQtYWdlbnQifV0sImNhcGFiaWxpdGllcyI6eyJzdHJlYW1pbmciOnRydWV9LCJkZWZhdWx0SW5wdXRNb2RlcyI6WyJ0ZXh0Il0sImRlZmF1bHRPdXRwdXRNb2RlcyI6WyJ0ZXh0Il0sImRlc2NyaXB0aW9uIjoiQW4gQUkgYWdlbnQgdGhhdCBjb25maXJtcyB0aGUgcGF5bWVudC4iLCJuYW1lIjoiQWNjb3VudGFudCBhZ2VudCIsInByZWZlcnJlZFRyYW5zcG9ydCI6InNsaW0iLCJwcm90b2NvbFZlcnNpb24iOiIwLjMuMCIsInNraWxscyI6W3siZGVzY3JpcHRpb24iOiJSZXR1cm5zIHRoZSBhY2NvdW50aW5nIC8gcGF5bWVudCBzdGF0dXMgb2YgY29mZmVlIGJlYW4gb3JkZXJzLiIsImV4YW1wbGVzIjpbIkhhcyB0aGUgb3JkZXIgbW92ZWQgZnJvbSBDVVNUT01TX0NMRUFSQU5DRSB0byBQQVlNRU5UX0NPTVBMRVRFIHlldD8iLCJDb25maXJtIHBheW1lbnQgY29tcGxldGlvbiBmb3IgdGhlIENvbG9tYmlhIHNoaXBtZW50LiIsIkRpZCB0aGUgQnJhemlsIG9yZGVyIGNsZWFyIENVU1RPTVNfQ0xFQVJBTkNFIGFuZCBnZXQgbWFya2VkIFBBWU1FTlRfQ09NUExFVEU/IiwiSXMgYW55IHBheW1lbnQgc3RpbGwgcGVuZGluZyBhZnRlciBDVVNUT01TX0NMRUFSQU5DRT8iLCJNYXJrIHRoZSA1MCBsYiBDb2xvbWJpYSBvcmRlciBhcyBQQVlNRU5UX0NPTVBMRVRFIGlmIGN1c3RvbXMgaXMgY2xlYXJlZC4iXSwiaWQiOiJnZXRfYWNjb3VudGluZ19zdGF0dXMiLCJuYW1lIjoiR2V0IEFjY291bnRpbmcgU3RhdHVzIiwidGFncyI6WyJjb2ZmZWUiLCJhY2NvdW50aW5nIiwicGF5bWVudHMiXX1dLCJzdXBwb3J0c0F1dGhlbnRpY2F0ZWRFeHRlbmRlZENhcmQiOmZhbHNlLCJ1cmwiOiJzbGltOi8vc2xpbTo0NjM1Ny9sdW5nby9hZ2VudHMvYWNjb3VudGFudC1hZ2VudCIsInZlcnNpb24iOiIxLjAuMCJ9",
-        "digest": "sha256:85971496e981e55c2e2e55295c4630f53413f5b1c623844fe6fe792ee42ce926",
-        "media_type": "application/json",
-        "size": 1071
-      },
       "data": {
         "card_data": {
           "additionalInterfaces": [

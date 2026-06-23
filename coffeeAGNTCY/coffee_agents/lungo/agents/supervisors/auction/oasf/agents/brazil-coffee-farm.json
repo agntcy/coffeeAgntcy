@@ -1,6 +1,6 @@
 {
   "authors": [
-    "Unknown"
+    "agntcy/coffee-agntcy-maintainers"
   ],
   "created_at": "2026-06-23T03:32:24Z",
   "description": "An AI agent that returns the yield of coffee beans in pounds for the Brazil farm.",
@@ -16,12 +16,6 @@
   ],
   "modules": [
     {
-      "artifact": {
-        "data": "eyJhZGRpdGlvbmFsSW50ZXJmYWNlcyI6W3sidHJhbnNwb3J0Ijoic2xpbXJwYyIsInVybCI6InNsaW06Ly9zbGltOjQ2MzU3L2x1bmdvL2FnZW50cy9icmF6aWxfY29mZmVlX2Zhcm0ifSx7InRyYW5zcG9ydCI6InNsaW0iLCJ1cmwiOiJzbGltOi8vc2xpbTo0NjM1Ny9sdW5nby9hZ2VudHMvYnJhemlsX2NvZmZlZV9mYXJtIn0seyJ0cmFuc3BvcnQiOiJuYXRzIiwidXJsIjoibmF0czovL25hdHM6NDIyMi9sdW5nby9hZ2VudHMvYnJhemlsX2NvZmZlZV9mYXJtIn0seyJ0cmFuc3BvcnQiOiJqc29ucnBjIiwidXJsIjoiaHR0cDovLzAuMC4wLjA6OTk5OSJ9XSwiY2FwYWJpbGl0aWVzIjp7InN0cmVhbWluZyI6dHJ1ZX0sImRlZmF1bHRJbnB1dE1vZGVzIjpbInRleHQiXSwiZGVmYXVsdE91dHB1dE1vZGVzIjpbInRleHQiXSwiZGVzY3JpcHRpb24iOiJBbiBBSSBhZ2VudCB0aGF0IHJldHVybnMgdGhlIHlpZWxkIG9mIGNvZmZlZSBiZWFucyBpbiBwb3VuZHMgZm9yIHRoZSBCcmF6aWwgZmFybS4iLCJuYW1lIjoiQnJhemlsIENvZmZlZSBGYXJtIiwicHJlZmVycmVkVHJhbnNwb3J0Ijoic2xpbXJwYyIsInByb3RvY29sVmVyc2lvbiI6IjAuMy4wIiwic2tpbGxzIjpbeyJkZXNjcmlwdGlvbiI6IlJldHVybnMgdGhlIGNvZmZlZSBmYXJtJ3MgeWllbGQgaW4gbGIuIiwiZXhhbXBsZXMiOlsiV2hhdCBpcyB0aGUgeWllbGQgb2YgdGhlIEJyYXppbCBjb2ZmZWUgZmFybT8iLCJIb3cgbXVjaCBjb2ZmZWUgZG9lcyB0aGUgQnJhemlsIGZhcm0gcHJvZHVjZT8iLCJXaGF0IGlzIHRoZSB5aWVsZCBvZiB0aGUgQnJhemlsIGNvZmZlZSBmYXJtIGluIHBvdW5kcz8iLCJIb3cgbWFueSBwb3VuZHMgb2YgY29mZmVlIGRvZXMgdGhlIEJyYXppbCBmYXJtIHByb2R1Y2U/Il0sImlkIjoiZ2V0X3lpZWxkIiwibmFtZSI6IkdldCBDb2ZmZWUgWWllbGQiLCJ0YWdzIjpbImNvZmZlZSIsImZhcm0iXX1dLCJzdXBwb3J0c0F1dGhlbnRpY2F0ZWRFeHRlbmRlZENhcmQiOmZhbHNlLCJ1cmwiOiJzbGltOi8vc2xpbTo0NjM1Ny9sdW5nby9hZ2VudHMvYnJhemlsX2NvZmZlZV9mYXJtIiwidmVyc2lvbiI6IjEuMC4wIn0=",
-        "digest": "sha256:79e2b11501167564b2f4181e0cbcd408494fe23b5c8fc3640ba6680d9bbcc096",
-        "media_type": "application/json",
-        "size": 1070
-      },
       "data": {
         "card_data": {
           "additionalInterfaces": [

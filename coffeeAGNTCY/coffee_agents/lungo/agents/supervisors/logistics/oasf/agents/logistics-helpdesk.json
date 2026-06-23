@@ -1,6 +1,6 @@
 {
   "authors": [
-    "Unknown"
+    "agntcy/coffee-agntcy-maintainers"
   ],
   "created_at": "2026-06-23T03:33:25Z",
   "description": "An AI agent that provides logistics and support assistance for helpdesk queries.",
@@ -12,12 +12,6 @@
   ],
   "modules": [
     {
-      "artifact": {
-        "data": "eyJhZGRpdGlvbmFsSW50ZXJmYWNlcyI6W3sidHJhbnNwb3J0Ijoic2xpbSIsInVybCI6InNsaW06Ly9zbGltOjQ2MzU3L2x1bmdvL2FnZW50cy9sb2dpc3RpY3NfaGVscGRlc2tfYWdlbnQifSx7InRyYW5zcG9ydCI6InNsaW1ycGMiLCJ1cmwiOiJzbGltOi8vc2xpbTo0NjM1Ny9sdW5nby9hZ2VudHMvbG9naXN0aWNzX2hlbHBkZXNrX2FnZW50In1dLCJjYXBhYmlsaXRpZXMiOnsic3RyZWFtaW5nIjp0cnVlfSwiZGVmYXVsdElucHV0TW9kZXMiOlsidGV4dCJdLCJkZWZhdWx0T3V0cHV0TW9kZXMiOlsidGV4dCJdLCJkZXNjcmlwdGlvbiI6IkFuIEFJIGFnZW50IHRoYXQgcHJvdmlkZXMgbG9naXN0aWNzIGFuZCBzdXBwb3J0IGFzc2lzdGFuY2UgZm9yIGhlbHBkZXNrIHF1ZXJpZXMuIiwibmFtZSI6IkxvZ2lzdGljcyBIZWxwZGVzayIsInByZWZlcnJlZFRyYW5zcG9ydCI6InNsaW0iLCJwcm90b2NvbFZlcnNpb24iOiIwLjMuMCIsInNraWxscyI6W3siZGVzY3JpcHRpb24iOiJQcm92aWRlcyBhc3Npc3RhbmNlIHdpdGggbG9naXN0aWNzIGFuZCBzdXBwb3J0IHF1ZXJpZXMuIiwiZXhhbXBsZXMiOlsiSG93IGNhbiBJIHRyYWNrIG15IHNoaXBtZW50PyIsIldoYXQgaXMgdGhlIHN0YXR1cyBvZiBteSBvcmRlcj8iLCJDYW4geW91IGhlbHAgbWUgd2l0aCBhIGxvZ2lzdGljcyBpc3N1ZT8iLCJJIG5lZWQgYXNzaXN0YW5jZSB3aXRoIG15IGRlbGl2ZXJ5LiJdLCJpZCI6ImhlbHBkZXNrX3N1cHBvcnQiLCJuYW1lIjoiSGVscGRlc2sgU3VwcG9ydCIsInRhZ3MiOlsibG9naXN0aWNzIiwic3VwcG9ydCIsImhlbHBkZXNrIl19XSwic3VwcG9ydHNBdXRoZW50aWNhdGVkRXh0ZW5kZWRDYXJkIjpmYWxzZSwidXJsIjoic2xpbTovL3NsaW06NDYzNTcvbHVuZ28vYWdlbnRzL2xvZ2lzdGljc19oZWxwZGVza19hZ2VudCIsInZlcnNpb24iOiIxLjAuMCJ9",
-        "digest": "sha256:3370b5f6b02668b9428da2cdf11a13673654c4063baf72407fbb7f229dfb7ee6",
-        "media_type": "application/json",
-        "size": 930
-      },
       "data": {
         "card_data": {
           "additionalInterfaces": [
