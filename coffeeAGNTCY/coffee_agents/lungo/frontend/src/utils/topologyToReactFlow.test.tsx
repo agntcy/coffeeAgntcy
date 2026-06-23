@@ -179,6 +179,48 @@ describe("topologyWireToReactFlow", () => {
     expect(data?.label2).toBe("Farm Agent")
   })
 
+  it("honors a curated wire label2 instead of splitting the label", () => {
+    const { nodes } = topologyWireToReactFlow(
+      {
+        nodes: [
+          {
+            id: "node://10101010-1010-4101-8101-101010101010",
+            type: "customNode",
+            label: "Auction Agent",
+            label2: "Buyer",
+            layer_index: 0,
+          },
+        ],
+        edges: [],
+      },
+      { validateUrls: false },
+    )
+    const data = nodes[0]?.data as { label1?: string; label2?: string }
+    expect(data?.label1).toBe("Auction Agent")
+    expect(data?.label2).toBe("Buyer")
+  })
+
+  it("falls back to splitting when wire label2 is absent or blank", () => {
+    const { nodes } = topologyWireToReactFlow(
+      {
+        nodes: [
+          {
+            id: "node://10101010-1010-4101-8101-101010101010",
+            type: "customNode",
+            label: "Auction Agent",
+            label2: "   ",
+            layer_index: 0,
+          },
+        ],
+        edges: [],
+      },
+      { validateUrls: false },
+    )
+    const data = nodes[0]?.data as { label1?: string; label2?: string }
+    expect(data?.label1).toBe("Auction")
+    expect(data?.label2).toBe("Agent")
+  })
+
   it("keeps a hidden group container with children parented and compact transport", () => {
     const groupId = "node://aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa"
     const { nodes } = topologyWireToReactFlow(

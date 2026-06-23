@@ -190,6 +190,19 @@ _EVENT_CASES: tuple[EventCase, ...] = (
         ),
     ),
     EventCase(
+        case_id="node_label2_empty_string",
+        inputs=EventInputs(
+            example_filename="event_v1_partial.json",
+            mutate=lambda d: (
+                d["data"]["workflows"]["recruiter"]["starting_topology"]["nodes"][0]
+            ).update({"label2": ""}),
+        ),
+        outputs=EventOutputs(
+            schema_exc=SchemaValidationError,
+            model_exc=ValidationError,
+        ),
+    ),
+    EventCase(
         case_id="size_extra_property",
         inputs=EventInputs(
             example_filename="event_v1_partial.json",
@@ -259,3 +272,21 @@ def test_event_payload_schema_and_model(case: EventCase) -> None:
     Event.model_validate(dumped)
     assert isinstance(dumped["metadata"]["timestamp"], str)
     assert event.metadata.timestamp.tzinfo is not None
+
+
+def test_optional_label2_round_trips() -> None:
+    data = load_json_instance_file(_EXAMPLES / "event_v1_partial.json")
+    data = deepcopy(data)
+    node = data["data"]["workflows"]["recruiter"]["starting_topology"]["nodes"][0]
+    node["label2"] = "Buyer"
+
+    validate_data_against_schema(data, _KNOWN)
+    event = Event.model_validate(data)
+    dumped = event.model_dump(mode="json", exclude_none=True)
+    validate_data_against_schema(dumped, _KNOWN)
+    Event.model_validate(dumped)
+
+    dumped_node = (
+        dumped["data"]["workflows"]["recruiter"]["starting_topology"]["nodes"][0]
+    )
+    assert dumped_node["label2"] == "Buyer"
