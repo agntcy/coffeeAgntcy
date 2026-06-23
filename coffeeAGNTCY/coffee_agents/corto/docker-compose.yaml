@@ -13,6 +13,9 @@ services:
       - DEFAULT_MESSAGE_TRANSPORT=${DEFAULT_MESSAGE_TRANSPORT:-SLIM}
       - TRANSPORT_SERVER_ENDPOINT=${TRANSPORT_SERVER_ENDPOINT:-http://slim:46357}
       - OTLP_HTTP_ENDPOINT=${OTLP_HTTP_ENDPOINT:-http://otel-collector:4318}
+      - SLIM_SHARED_SECRET=${SLIM_SHARED_SECRET:-"slim-shared-secret-REPLACE_WITH_RANDOM_32PLUS_CHARS"}
+      - SLIM_SERVER=${SLIM_SERVER}
+      - NATS_SERVER=${NATS_SERVER}
     ports:
       - "9999:9999"
 
@@ -26,12 +29,13 @@ services:
       - "8222:8222"
 
   slim:
-    image: ghcr.io/agntcy/slim:1.0.0
+    image: ghcr.io/agntcy/slim:1.4.0
     container_name: slim-corto
     ports:
       - "46357:46357"
     environment:
-      - PASSWORD=${SLIM_GATEWAY_PASSWORD:-dummy_password}
+      - PASSWORD=${SLIM_SHARED_SECRET:-"slim-shared-secret-REPLACE_WITH_RANDOM_32PLUS_CHARS"}
+      - SLIM_SHARED_SECRET=${SLIM_SHARED_SECRET:-"slim-shared-secret-REPLACE_WITH_RANDOM_32PLUS_CHARS"}
       - CONFIG_PATH=/config.yaml
     volumes:
       - ./config/docker/slim/server-config.yaml:/config.yaml
@@ -53,6 +57,9 @@ services:
       - TRANSPORT_SERVER_ENDPOINT=${TRANSPORT_SERVER_ENDPOINT:-http://slim:46357}
       - OTLP_HTTP_ENDPOINT=${OTLP_HTTP_ENDPOINT:-http://otel-collector:4318}
       - CORS_ALLOWED_ORIGINS=${CORS_ALLOWED_ORIGINS:-}
+      - SLIM_SHARED_SECRET=${SLIM_SHARED_SECRET:-"slim-shared-secret-REPLACE_WITH_RANDOM_32PLUS_CHARS"}
+      - SLIM_SERVER=${SLIM_SERVER}
+      - NATS_SERVER=${NATS_SERVER}
     depends_on:
       - farm-server
     ports:
