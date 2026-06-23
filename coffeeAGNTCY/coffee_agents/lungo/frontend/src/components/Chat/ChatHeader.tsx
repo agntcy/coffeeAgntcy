@@ -12,7 +12,6 @@ import { Box, IconButton, Tooltip } from "@open-ui-kit/core"
 
 import { iconGlyphFillSx } from "@/utils/iconGlyphFill"
 
-/** OUK `Button` `variant="outlined"` look for header `IconButton`s. */
 function chatHeaderIconButtonSx(theme: Theme) {
   return {
     width: 32,
@@ -20,21 +19,12 @@ function chatHeaderIconButtonSx(theme: Theme) {
     minWidth: 32,
     padding: "6px",
     borderRadius: theme.shape.borderRadius,
-    border: `2px solid ${theme.palette.vars.interactiveTertiaryDefault}`,
     background: "none",
     backgroundColor: "transparent",
     boxShadow: "none",
     ...iconGlyphFillSx(theme.palette.vars.controlIconDefault, {
       important: true,
     }),
-    "&:hover": {
-      border: `2px solid ${theme.palette.vars.interactiveTertiaryHover}`,
-      background: "none",
-      backgroundColor: "transparent",
-    },
-    "&:active": {
-      border: `2px solid ${theme.palette.vars.interactiveTertiaryActive}`,
-    },
   }
 }
 
