@@ -1,3 +1,5 @@
+import type { AgentTransport } from "./transportMeta"
+
 export interface ExtraHandle {
   id: string
   type: "source" | "target"
@@ -18,6 +20,8 @@ export interface CustomNodeData {
   verificationBadge?: React.ReactNode
   githubLink?: string
   agentDirectoryLink?: string
+  transportInterfaces?: AgentTransport[]
+  activeTransport?: string
   /** Slug for `GET .../identity-apps/{slug}/...` (differs from directory OASF slug for some agents). */
   identityAppsSlug?: string
   /** Slug for `GET .../agents/{slug}/oasf` (AGNTCY Directory / OASF card). */
