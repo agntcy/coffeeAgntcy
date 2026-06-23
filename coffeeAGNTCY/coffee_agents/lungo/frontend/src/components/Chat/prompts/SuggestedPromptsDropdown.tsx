@@ -133,7 +133,7 @@ const SuggestedPromptsDropdown: React.FC<SuggestedPromptsDropdownProps> = ({
   const triggerButton = (
     <Button
       {...buttonProps}
-      variant={open ? "primary" : (buttonProps.variant ?? "outlined")}
+      variant="primary"
       aria-haspopup="menu"
       aria-expanded={open ? "true" : undefined}
       onClick={handleOpen}

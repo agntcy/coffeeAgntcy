@@ -107,6 +107,17 @@ const ChatAreaComposer: React.FC<ChatAreaComposerProps> = ({
             minHeight: COMPOSER_CONTROL_HEIGHT_PX,
             boxSizing: "border-box",
             alignItems: "center",
+            //px: 1,
+            border: "2px solid transparent",
+            transition: theme.transitions.create(["border-color"], {
+              duration: theme.transitions.duration.shortest,
+            }),
+            "&:has(.MuiInputBase-input:not(:placeholder-shown))": {
+              borderColor: theme.palette.vars.interactiveTertiaryDefault,
+            },
+            "&:has(.MuiInputBase-input:not(:placeholder-shown)):hover": {
+              borderColor: theme.palette.vars.interactiveTertiaryHover,
+            },
           },
           "& .MuiInputBase-input": {
             ...theme.typography.body1,
