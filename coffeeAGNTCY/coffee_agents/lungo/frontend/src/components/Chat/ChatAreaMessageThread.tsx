@@ -128,7 +128,7 @@ const ChatAreaMessageThread: React.FC<ChatAreaMessageThreadProps> = ({
     )}
 
     {showFinalResponse && (isAgentLoading || agentResponse) && !isMinimized && (
-      <Message icon={<ChatAgentAvatar />} highlighted>
+      <Message icon={<ChatAgentAvatar />}>
         {isAgentLoading ? (
           <>
             <Box component="span" sx={visuallyHiddenSx}>
