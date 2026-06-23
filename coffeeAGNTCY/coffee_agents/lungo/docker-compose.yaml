@@ -96,10 +96,11 @@ services:
     # Dependents use condition: service_started.
 
   slim:
-    image: ghcr.io/agntcy/slim:1.0.0
+    image: ghcr.io/agntcy/slim:1.4.0
     container_name: lungo-slim
     ports:
       - "46357:46357"
+      - "46358:46358"
     environment:
       # Must match SLIM_SHARED_SECRET used by Lungo agents (compose defaults chain both from SLIM_GATEWAY_PASSWORD).
       - PASSWORD=${SLIM_SHARED_SECRET:-${SLIM_GATEWAY_PASSWORD:-dummy_password}}
