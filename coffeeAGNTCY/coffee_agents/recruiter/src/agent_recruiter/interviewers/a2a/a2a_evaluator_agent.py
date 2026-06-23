@@ -77,7 +77,7 @@ class A2AEvaluatorAgent(BaseEvaluatorAgent):
                 )
                 card.url = self._evaluated_agent_address
 
-            self.__evaluated_agent_client = RemoteAgentConnections(
+            self.__evaluated_agent_client = await RemoteAgentConnections.create(
                 self._http_client,
                 card,
             )

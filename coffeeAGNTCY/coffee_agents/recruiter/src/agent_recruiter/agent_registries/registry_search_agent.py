@@ -2,17 +2,21 @@
 # SPDX-License-Identifier: Apache-2.0
 
 """
-ADK-based agent for searching agent registries via MCP.
+ADK-based agent for searching agent registries via the AGNTCY Directory.
 
-This agent uses Google ADK with McpToolset to automatically 
-discover and use tools from the Directory MCP server. It can
-search for agents based on user queries and manage schema 
-transformations.
+Searches run a single tool (`search_agents`) that drives the local `dirctl`
+binary directly: one batch `dirctl export` searches, transforms each match to
+its A2A AgentCard, and writes them out, which we then persist to session state.
+A small MCP toolset is also attached, filtered down to the OASF schema-discovery
+tools so the agent can resolve valid skill/domain names before filtering on them.
 """
 
+import asyncio
+import json
 import os
 import shutil
-import subprocess
+import tempfile
+from pathlib import Path
 from typing import Optional, Any
 
 from google.adk.agents import Agent
@@ -29,315 +33,248 @@ load_dotenv()  # Load environment variables from .env file
 
 LLM_MODEL = os.getenv("LLM_MODEL", "openai/gpt-4o")
 
-# MCP connection mode: "binary" (direct dirctl) or "docker" (docker exec)
-# Auto-detects based on dirctl availability if not set
-MCP_CONNECTION_MODE = os.getenv("MCP_CONNECTION_MODE", "auto")
-
 # Timeout for MCP server startup (in seconds) - increase if you see startup timeouts
-MCP_SERVER_STARTUP_TIMEOUT = int(os.getenv("MCP_SERVER_STARTUP_TIMEOUT", "30")) 
+MCP_SERVER_STARTUP_TIMEOUT = int(os.getenv("MCP_SERVER_STARTUP_TIMEOUT", "30"))
+
+# Read-only OASF schema tools exposed for skill/domain discovery. The atomic
+# search/pull/export MCP tools are intentionally excluded — `search_agents`
+# replaces them with a single bulk call.
+DISCOVERY_TOOLS = [
+    "agntcy_oasf_get_schema_skills",
+    "agntcy_oasf_get_schema_domains",
+    "agntcy_oasf_list_versions",
+]
 
 logger = get_logger(__name__)
 
-def _check_dirctl_binary() -> Optional[str]:
-    """
-    Check if dirctl binary is available in PATH.
 
-    Returns:
-        Path to dirctl binary if found, None otherwise.
-    """
-    dirctl_path = shutil.which("dirctl")
-    if dirctl_path:
-        logger.info(f"Found dirctl binary at: {dirctl_path}")
-    return dirctl_path
+def _dirctl_path() -> str:
+    """Return the dirctl binary path, raising if it is not on PATH."""
+    path = shutil.which("dirctl")
+    if not path:
+        raise RuntimeError("dirctl binary not found in PATH. Install dirctl to use the directory.")
+    return path
 
 
-def _check_container_running(container_name: str) -> bool:
-    """
-    Check if a Docker container is running.
-
-    Args:
-        container_name: Name or ID of the container to check.
-
-    Returns:
-        True if container is running, False otherwise.
-    """
-    try:
-        result = subprocess.run(
-            ["docker", "ps", "--filter", f"name={container_name}", "--format", "{{.Names}}"],
-            capture_output=True,
-            text=True,
-            timeout=10
-        )
-
-        if result.returncode != 0:
-            logger.warning(f"Docker command failed: {result.stderr}")
-            return False
-
-        running_containers = result.stdout.strip().split('\n')
-        is_running = container_name in running_containers
-
-        if is_running:
-            logger.info(f"Container '{container_name}' is running")
-        else:
-            logger.warning(f"Container '{container_name}' is not running")
-
-        return is_running
-
-    except subprocess.TimeoutExpired:
-        logger.error(f"Timeout checking container '{container_name}' status")
-        return False
-    except FileNotFoundError:
-        logger.error("Docker command not found. Ensure Docker is installed and in PATH")
-        return False
-    except Exception as e:
-        logger.error(f"Error checking container '{container_name}' status: {e}")
-        return False
-
-
-def _get_connection_mode() -> str:
-    """
-    Determine the MCP connection mode.
-
-    Returns:
-        "binary" if dirctl is available, "docker" otherwise.
-    """
-    if MCP_CONNECTION_MODE != "auto":
-        return MCP_CONNECTION_MODE
-
-    # Auto-detect: prefer binary if available
-    if _check_dirctl_binary():
-        return "binary"
-    return "docker"
-
-
-def create_mcp_toolset(
-    tool_filter: Optional[list[str]] = None,
-) -> McpToolset:
-    """
-    Create an McpToolset for the Agntcy Directory MCP server.
-
-    Supports two connection modes:
-    - "binary": Runs dirctl directly (for container deployment)
-    - "docker": Uses docker exec to connect to MCP container (for local development)
-
-    Mode is controlled by MCP_CONNECTION_MODE env var ("binary", "docker", or "auto").
-    "auto" (default) will use binary mode if dirctl is available in PATH.
-
-    Args:
-        tool_filter: Optional list of tool names to expose (default: all tools).
-
-    Returns:
-        Configured McpToolset.
-
-    Raises:
-        RuntimeError: If connection cannot be established.
-    """
-    mode = _get_connection_mode()
-    logger.info(f"MCP connection mode: {mode}")
-
-    if mode == "binary":
-        # Binary mode: run dirctl directly
-        dirctl_path = _check_dirctl_binary()
-        if not dirctl_path:
-            raise RuntimeError("dirctl binary not found in PATH. Install dirctl or use docker mode.")
-
-        # Build args for dirctl mcp serve
-        args = ["mcp", "serve"]
-
-        # Build environment with directory server config
-        env = {
-            "DIRECTORY_CLIENT_SERVER_ADDRESS": os.getenv("DIRECTORY_CLIENT_SERVER_ADDRESS", "localhost:8888"),
-            "DIRECTORY_CLIENT_TLS_SKIP_VERIFY": os.getenv("DIRECTORY_CLIENT_TLS_SKIP_VERIFY", "true"),
-            "OASF_API_VALIDATION_SCHEMA_URL": os.getenv("OASF_API_VALIDATION_SCHEMA_URL", "https://schema.oasf.outshift.com"),
-        }
-
-        try:
-            toolset = McpToolset(
-                connection_params=StdioConnectionParams(
-                    server_params=StdioServerParameters(
-                        command=dirctl_path,
-                        args=args,
-                        env=env,
-                    ),
-                    timeout=MCP_SERVER_STARTUP_TIMEOUT
-                ),
-                tool_filter=tool_filter,
-            )
-            logger.info(f"Successfully created MCP toolset using binary mode (dirctl at {dirctl_path})")
-            return toolset
-        except Exception as e:
-            error_msg = f"Failed to create MCP toolset in binary mode: {e}"
-            logger.error(error_msg)
-            raise RuntimeError(error_msg) from e
-
-    else:
-        # Docker mode: use docker exec to connect to running container
-        mcp_container_name = os.getenv("MCP_CONTAINER_NAME", "dir-mcp-server")
-        if not _check_container_running(mcp_container_name):
-            error_msg = f"Container '{mcp_container_name}' is not running"
-            logger.error(error_msg)
-            raise RuntimeError(error_msg)
-
-        try:
-            toolset = McpToolset(
-                connection_params=StdioConnectionParams(
-                    server_params=StdioServerParameters(
-                        command="docker",
-                        args=["exec", "-i", mcp_container_name, "/dirctl", "mcp", "serve"],
-                    ),
-                    timeout=MCP_SERVER_STARTUP_TIMEOUT, 
-                ),
-                tool_filter=tool_filter,
-            )
-            logger.info(f"Successfully created MCP toolset for container: {mcp_container_name}")
-            return toolset
-        except Exception as e:
-            error_msg = f"Failed to create MCP toolset for container '{mcp_container_name}': {e}"
-            logger.error(error_msg)
-            logger.error("Ensure the container has '/dirctl mcp serve' (ghcr.io/agntcy/dir-ctl)")
-            raise RuntimeError(error_msg) from e
-        
-# ============================================================================
-# State-Writing Tool for Agent Records
-# ============================================================================
-
-def _extract_a2a_card(record: dict[str, Any]) -> dict[str, Any]:
-    """Extract the A2A AgentCard from an OASF record if present.
-
-    OASF records embed the A2A card inside ``modules`` where
-    ``module.name == "integration/a2a"`` and the card data lives at
-    ``module.data.card_data``.  If the record already looks like a plain
-    A2A card (has ``url`` + ``capabilities`` at the top level) it is
-    returned as-is.
-
-    Args:
-        record: An OASF record dict or an already-exported A2A card dict.
-
-    Returns:
-        The A2A card dict (extracted or original).
-    """
-    # Already an A2A card?  (has url and capabilities at root)
-    if "url" in record and "capabilities" in record:
-        return record
-
-    # Look for the a2a module inside the OASF record
-    modules = record.get("modules") or []
-    for module in modules:
-        if not isinstance(module, dict):
-            continue
-        if module.get("name") != "integration/a2a":
-            continue
-        data = module.get("data")
-        if not isinstance(data, dict):
-            continue
-        card_data = data.get("card_data")
-        if isinstance(card_data, dict) and card_data.get("url"):
-            logger.info(
-                "Extracted A2A card_data from OASF module for agent '%s'",
-                card_data.get("name", record.get("name", "?")),
-            )
-            return card_data
-
-    # No a2a module found — return original record unchanged
-    return record
-
-
-async def store_search_results(
-    cid: str,
-    record: dict[str, Any],
-    tool_context: ToolContext
-) -> dict[str, Any]:
-    """Store an agent record in session state for other agents to access.
-
-    Call this tool after searching for agents or exporting/translating records
-    to persist them in session state. This allows other agents in the team
-    to access the found agent records.
-
-    Args:
-        cid: The Content ID (CID) of the agent record, used as the key
-        record: The raw JSON record from search or export/translation
-        tool_context: ADK tool context for state access (automatically injected)
-
-    Returns:
-        Confirmation with storage status
-    """
-    # Get existing records dict or initialize empty
-    existing: dict[str, Any] = tool_context.state.get("found_agent_records", {})
-
-    # Check if this is an update or new record
-    is_update = cid in existing
-
-    # Ensure we store the A2A card, not the raw OASF wrapper.
-    # The LLM *should* export before storing, but if it passes
-    # the raw OASF record we extract the card_data ourselves.
-    a2a_record = _extract_a2a_card(record)
-
-    # Store/update the record keyed by CID
-    existing[cid] = a2a_record
-    tool_context.state["found_agent_records"] = existing
-
-    action = "Updated" if is_update else "Stored"
-    logger.info(f"{action} agent record with CID '{cid}' in session state (total records: {len(existing)})")
-
+def _dirctl_env() -> dict[str, str]:
+    """Directory client settings passed to every dirctl invocation."""
     return {
-        "status": "success",
-        "action": "updated" if is_update else "stored",
-        "cid": cid,
-        "total_records": len(existing)
+        "DIRECTORY_CLIENT_SERVER_ADDRESS": os.getenv("DIRECTORY_CLIENT_SERVER_ADDRESS", "localhost:8888"),
+        "DIRECTORY_CLIENT_TLS_SKIP_VERIFY": os.getenv("DIRECTORY_CLIENT_TLS_SKIP_VERIFY", "true"),
+        "OASF_API_VALIDATION_SCHEMA_URL": os.getenv("OASF_API_VALIDATION_SCHEMA_URL", "https://schema.oasf.outshift.com"),
     }
 
 
-# Create the tool wrapper for the store function
-store_search_results_tool = FunctionTool(func=store_search_results)
+def create_discovery_mcp_toolset(
+    tool_filter: Optional[list[str]] = None,
+) -> McpToolset:
+    """Create an McpToolset exposing the OASF schema-discovery tools.
+
+    Args:
+        tool_filter: Tool names to expose (default: ``DISCOVERY_TOOLS``).
+
+    Raises:
+        RuntimeError: If the toolset cannot be created.
+    """
+    dirctl_path = _dirctl_path()
+    try:
+        toolset = McpToolset(
+            connection_params=StdioConnectionParams(
+                server_params=StdioServerParameters(
+                    command=dirctl_path,
+                    args=["mcp", "serve"],
+                    env=_dirctl_env(),
+                ),
+                timeout=MCP_SERVER_STARTUP_TIMEOUT,
+            ),
+            tool_filter=tool_filter if tool_filter is not None else DISCOVERY_TOOLS,
+        )
+        logger.info(f"Created discovery MCP toolset (dirctl at {dirctl_path})")
+        return toolset
+    except Exception as e:
+        error_msg = f"Failed to create discovery MCP toolset: {e}"
+        logger.error(error_msg)
+        raise RuntimeError(error_msg) from e
 
 
-AGENT_INSTRUCTION = """You are an agent registry search assistant. Your job is to SEARCH for agents in the AGNTCY Directory Service.
+# ============================================================================
+# Search + Export + Persist — single deterministic tool
+# ============================================================================
+#
+# One `dirctl export --output-dir ... --format=a2a <filters>` call searches,
+# pulls, and transforms every match to its A2A AgentCard server-side; we read
+# the written cards and persist them to session state in a single write.
 
-You have access to MCP tools from the Directory server that let you:
-- Search for agents with filters (names, skills, modules, etc.)
-- Retrieves skills from the OASF schema
-- Pull agent records by CID
 
-You also have a special tool for state management:
-- store_search_results(cid, record): Stores agent records in session state.
-  BOTH parameters are REQUIRED:
-  - cid: The Content ID string
-  - record: The FULL agent record dict from pull
+async def _run_dirctl(args: list[str], timeout: float = 30.0) -> str:
+    """Run a dirctl command and return its stdout.
 
-Search supports wildcard patterns:
-- * matches any sequence of characters
-- ? matches any single character
-- [abc] matches any character in the set
+    Args:
+        args: dirctl subcommand and flags (e.g. ``["search", "--name", "web*"]``).
+        timeout: Seconds to wait before killing the process.
 
-**Before searching, determine the request type:**
-- If the user is asking ABOUT your capabilities or available filters: use a tool once to discover available options, then answer directly. Do NOT loop.
-- If the user is asking you to PERFORM a search: follow the mandatory workflow below.
+    Raises:
+        RuntimeError: If dirctl exits non-zero or times out.
+    """
+    env = _dirctl_env()
+    global_flags: list[str] = []
+    if env["DIRECTORY_CLIENT_TLS_SKIP_VERIFY"].strip().lower() in ("1", "true", "yes"):
+        global_flags.append("--tls-skip-verify")
 
-**MANDATORY WORKFLOW - Follow these steps IN ORDER for EVERY search request:**
+    proc = await asyncio.create_subprocess_exec(
+        _dirctl_path(), *args, *global_flags,
+        stdout=asyncio.subprocess.PIPE,
+        stderr=asyncio.subprocess.PIPE,
+        env={**os.environ, **env},
+    )
+    try:
+        stdout, stderr = await asyncio.wait_for(proc.communicate(), timeout=timeout)
+    except asyncio.TimeoutError as e:
+        proc.kill()
+        raise RuntimeError(f"dirctl {' '.join(args)} timed out after {timeout}s") from e
 
-1. IMMEDIATELY use the search tool with appropriate filters based on the user's query.
-   Do NOT ask for clarification - just search with what you have.
+    if proc.returncode != 0:
+        raise RuntimeError(
+            f"dirctl {' '.join(args)} failed (exit {proc.returncode}): {stderr.decode().strip()}"
+        )
+    return stdout.decode()
 
-2. Pull full records for ALL matches found using the pull tool.
 
-3. **CRITICAL** For EACH agent found, you MUST call:
-   store_search_results(cid="<the_cid>", record=<the_full_record_dict>)
+# Batch a2a export fails on any record lacking an A2A module, so we restrict to
+# A2A-capable records by default. This also satisfies dirctl's "≥1 filter" rule.
+_A2A_MODULE = "integration/a2a"
 
-   You MUST pass BOTH the cid AND the full record dictionary.
-   Example: store_search_results(cid="baeabc123...", record={"name": "Agent", "description": "...", ...})
 
-   If you skip this step or only pass the cid, the agent records will NOT be available.
+async def search_agents(
+    tool_context: ToolContext,
+    name: Optional[list[str]] = None,
+    skill: Optional[list[str]] = None,
+    module: Optional[list[str]] = None,
+    version: Optional[list[str]] = None,
+    domain: Optional[list[str]] = None,
+    limit: int = 20,
+) -> dict[str, Any]:
+    """Search the AGNTCY Directory and persist every match as an A2A card.
 
-4. Return a structured summary of findings (see format below).
+    Queries the directory with the given filters, exports each match to its A2A
+    AgentCard, and stores them all in session state under ``found_agent_records``
+    (keyed by CID) for other agents to consume.
 
-**IMPORTANT - Your final response MUST include a clear summary in this format:**
+    Pass only the filters implied by the request (no filters matches every
+    agent). All filters accept wildcards: ``*`` (any sequence), ``?`` (single
+    char), ``[abc]`` (any char in the set).
+
+    Args:
+        tool_context: ADK tool context for state access (auto-injected).
+        name: Agent name patterns (e.g. ``["web*", "*-agent"]``).
+        skill: Skill names (e.g. ``["natural_language_processing"]``).
+        module: Module names (defaults to ``["integration/a2a"]`` when omitted,
+            since results are exported as A2A cards).
+        version: Version patterns or comparisons (e.g. ``["v1.*"]``, ``[">=1.0.0"]``).
+        domain: Domain patterns (e.g. ``["*education*"]``).
+        limit: Maximum number of records to return (default 20).
+
+    Returns:
+        Summary dict: ``status``, ``count``, ``agents`` (id/name/description/
+        skills), and ``total_records`` now in session state.
+    """
+    filters: list[str] = []
+    for flag, values in (
+        ("--name", name),
+        ("--skill", skill),
+        ("--module", module),
+        ("--version", version),
+        ("--domain", domain),
+    ):
+        # The LLM may pass a bare string; wrap it so we don't iterate characters.
+        if isinstance(values, str):
+            values = [values]
+        for value in values or []:
+            filters.extend([flag, value])
+    # Restrict to A2A-capable records unless the caller named a specific module.
+    if not module:
+        filters.extend(["--module", _A2A_MODULE])
+
+    # One batch export: search + OASF->A2A transform + write, for every match.
+    records: dict[str, Any] = tool_context.state.get("found_agent_records", {})
+    found: list[dict[str, Any]] = []
+    export_dir = tempfile.mkdtemp(prefix="agntcy_a2a_")
+    try:
+        await _run_dirctl(
+            ["export", "--output-dir", export_dir, "--format", "a2a", *filters, "--limit", str(limit)]
+        )
+        for path in sorted(Path(export_dir).glob("*.json")):
+            try:
+                card = json.loads(path.read_text())
+            except (OSError, json.JSONDecodeError) as e:
+                logger.warning(f"Skipping unreadable A2A card '{path.name}': {e}")
+                continue
+            key = path.stem  # dirctl names files by agent (latest version per name)
+            records[key] = card
+            found.append(
+                {
+                    "id": key,
+                    "name": card.get("name", "Unknown"),
+                    "description": card.get("description", ""),
+                    "skills": [s.get("name") for s in card.get("skills") or [] if isinstance(s, dict)],
+                }
+            )
+    finally:
+        shutil.rmtree(export_dir, ignore_errors=True)
+
+    if not found:
+        logger.info(f"Search returned no matching agents (filters={filters})")
+        return {
+            "status": "success",
+            "count": 0,
+            "agents": [],
+            "message": "No matching agents were found.",
+        }
+
+    tool_context.state["found_agent_records"] = records
+    logger.info(f"Stored {len(found)} agent record(s) in session state in one batch (total: {len(records)})")
+
+    return {
+        "status": "success",
+        "count": len(found),
+        "agents": found,
+        "total_records": len(records),
+    }
+
+
+# Create the tool wrapper for the search function
+search_agents_tool = FunctionTool(func=search_agents)
+
+
+AGENT_INSTRUCTION = """You are an agent registry search assistant for the AGNTCY Directory Service.
+
+For ANY request to find or search for agents:
+1. If the request references a skill or domain, you may call the discovery tools
+   (agntcy_oasf_get_schema_skills / agntcy_oasf_get_schema_domains) to confirm
+   the exact name. Skill and domain names are full hierarchical paths of the
+   form "parent/child" (e.g. "agent_orchestration/agent_coordination") — always
+   use the COMPLETE name, never just the parent or just the child. Do this ONCE.
+2. Call `search_agents` EXACTLY ONCE with filters from the request, passing each
+   value VERBATIM (do not split or shorten it). It searches, exports each match
+   to its A2A card, and persists everything in one step.
+   Filters (pass only those implied by the request; all accept wildcards
+   * ? [abc]):
+   - name: agent name patterns
+   - skill: full skill paths ("parent/child")
+   - module: module names (e.g. integration/a2a)
+   - version: version patterns or comparisons (e.g. v1.*, >=1.0.0)
+   - domain: full domain names
+   - limit: max results (default 20)
+   Do NOT ask for clarification — just search with what you have.
+3. Summarize the results returned by `search_agents` in the format below.
+
+**Your final response MUST include a clear summary in this format:**
 ---
 **Found [N] agent(s):**
 
-1. **[Agent Name]** (CID: [cid])
+1. **[Agent Name]**
    - Description: [brief description]
    - Skills: [list of skills if available]
-   - Protocol: [A2A/MCP if known]
 
 [Repeat for each agent found]
 ---
@@ -349,39 +286,27 @@ If no agents were found, clearly state that no matching agents were found.
 def create_registry_search_agent(
     tool_filter: Optional[list[str]] = None,
 ) -> Agent:
-    """
-    Create an ADK agent for searching agent registries via MCP.
+    """Create an ADK agent for searching agent registries.
 
-    This is the synchronous factory function for creating the agent,
-    compatible with ADK web server and cloud deployments.
+    Synchronous factory compatible with the ADK web server and cloud
+    deployments. Model configuration is read from environment variables.
 
     Args:
-        tool_filter: Optional list of tool names to expose (default: all tools).
-        
-    Note:
-        Model configuration is read from environment variables via llm.py.
+        tool_filter: Optional override for the discovery MCP tools to expose
+            (default: ``DISCOVERY_TOOLS``).
 
     Returns:
-        Configured Agent with MCP toolset.
+        Configured Agent with the `search_agents` tool and the discovery toolset.
     """
     try:
-        # Create MCP toolset with error handling
-        mcp_toolset = create_mcp_toolset(tool_filter)
-
-        try:
-            agent = Agent(
-                model=LiteLlm(model=LLM_MODEL, temperature=0.1),
-                name="registry_search_agent",
-                instruction=AGENT_INSTRUCTION,
-                description="Agent for searching, retrieving, and exporting agent records from the AGNTCY Directory",
-                tools=[mcp_toolset, store_search_results_tool],
-            )
-            return agent
-        except Exception as e:
-            error_msg = f"Failed to create Agent: {e}"
-            logger.error(error_msg)
-            raise RuntimeError(error_msg) from e
-            
+        discovery_toolset = create_discovery_mcp_toolset(tool_filter)
+        return Agent(
+            model=LiteLlm(model=LLM_MODEL, temperature=0.1),
+            name="registry_search_agent",
+            instruction=AGENT_INSTRUCTION,
+            description="Agent for searching and retrieving agent records from the AGNTCY Directory",
+            tools=[search_agents_tool, discovery_toolset],
+        )
     except Exception as e:
         logger.error(f"Failed to create registry search agent: {e}")
         raise

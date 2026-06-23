@@ -3,11 +3,10 @@
 
 """Shared state keys and data models for the Recruiter Supervisor."""
 
-import re
 from enum import Enum
 from typing import Optional
 
-from a2a.types import AgentCard, AgentCapabilities
+from a2a.types import AgentCard
 from pydantic import BaseModel
 
 
@@ -32,40 +31,30 @@ STATE_KEY_SELECTED_AGENT = "selected_agent"  # str: CID of the currently selecte
 
 
 class AgentRecord(BaseModel):
-    """A recruited agent record returned by the recruiter service."""
+    """A recruited agent: its CID plus the full A2A AgentCard from the recruiter.
+
+    The card is preserved verbatim (transport, interfaces, capabilities) so the
+    A2A client factory can negotiate the agent's preferred transport.
+    """
 
     cid: str
-    name: str
-    description: str = ""
-    url: str = ""  # Optional - may not be present in all agent records
-    version: str = "1.0.0"
-    skills: list[dict] = []
+    card: AgentCard
     protocol: AgentProtocol = AgentProtocol.A2A
 
-    def to_agent_card(self) -> AgentCard:
-        """Convert to an A2A AgentCard for use with RemoteA2aAgent."""
-        return AgentCard(
-            name=self.name,
-            url=self.url,
-            description=self.description,
-            version=self.version,
-            capabilities=AgentCapabilities(streaming=False),
-            skills=[],
-            defaultInputModes=["text"],
-            defaultOutputModes=["text"],
-            supportsAuthenticatedExtendedCard=False,
+    @classmethod
+    def from_record_data(cls, cid: str, data: dict) -> "AgentRecord":
+        """Build from a stored record dict (a full A2A AgentCard)."""
+        raw_protocol = data.get("protocol")
+        protocol = (
+            AgentProtocol(raw_protocol.lower())
+            if isinstance(raw_protocol, str)
+            else AgentProtocol.A2A
         )
+        return cls(cid=cid, card=AgentCard.model_validate(data), protocol=protocol)
 
-    def to_safe_agent_name(self) -> str:
-        """Return a valid Python identifier suitable for ADK agent naming.
-
-        BaseAgent validates that ``name.isidentifier()`` is True, so we
-        sanitise the human-readable name into a safe form.
-        """
-        safe = re.sub(r"[^a-zA-Z0-9_]", "_", self.name).strip("_").lower()
-        if not safe or not safe[0].isalpha():
-            safe = "agent_" + safe
-        return safe
+    @property
+    def name(self) -> str:
+        return self.card.name
 
 
 class RecruitmentResponse(BaseModel):

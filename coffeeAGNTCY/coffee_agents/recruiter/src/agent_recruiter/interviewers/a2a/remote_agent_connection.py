@@ -2,16 +2,18 @@
 # SPDX-License-Identifier: Apache-2.0
 
 """
-Store remote A2A Agent Connections in a custom class to manage different connection 
-types. Initial implementation for simple HTTPX-based connections but will be extended
-to support other connection types in A2A and agntcy app-sdk in the future.
+Store a remote A2A agent connection. The client is built with the agntcy
+app-sdk A2AClientFactory, which negotiates the transport from the agent card's
+interfaces.
 """
 
 from typing import Callable, TypeAlias
 import httpx
-from a2a.client import ClientFactory, ClientConfig
+from agntcy_app_sdk.semantic.a2a.client.factory import A2AClientFactory
+from agntcy_app_sdk.semantic.a2a.client.config import ClientConfig
 from a2a.types import (
     AgentCard,
+    TransportProtocol,
     Task,
     Message,
     MessageSendParams,
@@ -54,23 +56,25 @@ TaskUpdateCallback: TypeAlias = Callable[[TaskCallbackArg, AgentCard], Task]
 
 
 class RemoteAgentConnections:
-    """A class to hold the connections to the remote agents."""
+    """Holds an A2A client connection to a remote agent."""
 
-    def __init__(
-        self,
+    def __init__(self, agent_client, agent_card: AgentCard):
+        self.agent_client = agent_client
+        self.card = agent_card
+
+    @classmethod
+    async def create(
+        cls,
         client: httpx.AsyncClient,
         agent_card: AgentCard,
-    ):
-        # Create client configuration
-        config = ClientConfig(
-            httpx_client=client,
-            streaming=True,  # Enable streaming support
-        )
-
-        # Create factory and client
-        factory = ClientFactory(config)
-        self.agent_client = factory.create(agent_card)
-        self.card = agent_card
+    ) -> "RemoteAgentConnections":
+        # JSONRPC is the only transport needed; prefer it so the factory builds
+        # an HTTP JSONRPC client from the card's interfaces.
+        agent_card.preferred_transport = TransportProtocol.jsonrpc
+        config = ClientConfig(httpx_client=client, streaming=True)
+        factory = A2AClientFactory(config)
+        agent_client = await factory.create(agent_card)
+        return cls(agent_client, agent_card)
 
     def get_agent(self) -> AgentCard:
         return self.card
