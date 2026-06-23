@@ -219,6 +219,159 @@ def test_subscribe_invoked_for_touching_instance_only():
         store.close()
 
 
+def test_dispatched_event_is_normalized_for_discovery_anchor():
+    """SSE-bound event has the anchor dropped and edges repointed to the seed."""
+    recruiter_runtime = "node://550e8400-e29b-41d4-a716-446655440100"
+    anchor = "node://550e8400-e29b-41d4-a716-446655440101"
+    discovered = "node://550e8400-e29b-41d4-a716-446655440102"
+    recruiter_sid = "agent://550e8400-e29b-41d4-a716-446655440200"
+    discovered_sid = "agent://550e8400-e29b-41d4-a716-446655440202"
+    edge_id = "edge://550e8400-e29b-41d4-a716-446655440300"
+
+    store = WorkflowInstanceStateStore()
+    try:
+        seed = {
+            "metadata": {
+                "timestamp": "2026-01-01T00:00:00Z",
+                "schema_version": "1.0.0",
+                "correlation": {
+                    "id": "correlation://550e8400-e29b-41d4-a716-446655440001"
+                },
+                "id": "event://550e8400-e29b-41d4-a716-4466554400d0",
+                "type": "StateProgressUpdate",
+                "source": "test",
+            },
+            "data": {
+                "workflows": {
+                    "w": {
+                        "name": "n",
+                        "pattern": "p",
+                        "use_case": "u",
+                        "scenario": "s",
+                        "starting_topology": {"nodes": [], "edges": []},
+                        "instances": {
+                            _INSTANCE_KEY: {
+                                "id": _INSTANCE_KEY,
+                                "topology": {
+                                    "nodes": [
+                                        {
+                                            "id": recruiter_runtime,
+                                            "operation": "create",
+                                            "type": "customNode",
+                                            "label": "Agentic Recruiter",
+                                            "size": {"width": 1, "height": 1},
+                                            "layer_index": 0,
+                                            "stable_agent_id": recruiter_sid,
+                                            "agent_record_uri": (
+                                                "agent-card://"
+                                                "550e8400-e29b-41d4-a716-446655440200"
+                                            ),
+                                        }
+                                    ],
+                                    "edges": [],
+                                },
+                            }
+                        },
+                    }
+                }
+            },
+        }
+        store.submit_event_sync(seed)
+        store.wait_merge_idle()
+        store.wait_dispatch_idle()
+
+        captured: list[Event] = []
+
+        def listener(ev: Event) -> None:
+            captured.append(ev)
+
+        store.subscribe(_INSTANCE_KEY, listener)
+
+        discovery = {
+            "metadata": {
+                "timestamp": "2026-01-01T00:00:01Z",
+                "schema_version": "1.0.0",
+                "correlation": {
+                    "id": "correlation://550e8400-e29b-41d4-a716-446655440002"
+                },
+                "id": "event://550e8400-e29b-41d4-a716-4466554400d1",
+                "type": "StateProgressUpdate",
+                "source": "recruiter_supervisor",
+            },
+            "data": {
+                "workflows": {
+                    "w": {
+                        "name": "n",
+                        "pattern": "p",
+                        "use_case": "u",
+                        "scenario": "s",
+                        "starting_topology": {"nodes": [], "edges": []},
+                        "instances": {
+                            _INSTANCE_KEY: {
+                                "id": _INSTANCE_KEY,
+                                "topology": {
+                                    "nodes": [
+                                        {
+                                            "id": anchor,
+                                            "operation": "create",
+                                            "type": "customNode",
+                                            "label": "Agentic Recruiter",
+                                            "size": {"width": 1, "height": 1},
+                                            "layer_index": 0,
+                                            "stable_agent_id": recruiter_sid,
+                                            "agent_record_uri": (
+                                                "agent-card://"
+                                                "550e8400-e29b-41d4-a716-446655440200"
+                                            ),
+                                        },
+                                        {
+                                            "id": discovered,
+                                            "operation": "create",
+                                            "type": "customNode",
+                                            "label": "Brazil",
+                                            "size": {"width": 1, "height": 1},
+                                            "layer_index": 1,
+                                            "stable_agent_id": discovered_sid,
+                                            "agent_record_uri": (
+                                                "agent-card://"
+                                                "550e8400-e29b-41d4-a716-446655440202"
+                                            ),
+                                        },
+                                    ],
+                                    "edges": [
+                                        {
+                                            "id": edge_id,
+                                            "operation": "create",
+                                            "type": "custom",
+                                            "source": anchor,
+                                            "target": discovered,
+                                            "bidirectional": False,
+                                            "weight": 1.0,
+                                        }
+                                    ],
+                                },
+                            }
+                        },
+                    }
+                }
+            },
+        }
+        store.submit_event_sync(discovery)
+        store.wait_merge_idle()
+        store.wait_dispatch_idle()
+
+        assert len(captured) == 1
+        topo = captured[0].data.workflows["w"].instances[_INSTANCE_KEY].topology
+        node_ids = [n.id.root for n in topo.nodes]
+        assert anchor not in node_ids
+        assert discovered in node_ids
+        assert len(topo.edges) == 1
+        assert topo.edges[0].source.root == recruiter_runtime
+        assert topo.edges[0].target.root == discovered
+    finally:
+        store.close()
+
+
 @pytest.mark.asyncio
 async def test_concurrent_submit_serializes_merges():
     store = WorkflowInstanceStateStore()

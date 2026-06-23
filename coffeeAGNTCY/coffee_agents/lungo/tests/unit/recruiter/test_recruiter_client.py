@@ -20,6 +20,7 @@ from agents.supervisors.recruiter.models import (
     STATE_KEY_EVALUATION_RESULTS,
     STATE_KEY_RECRUITED_AGENTS,
 )
+from common.stable_agent_id import stable_agent_id_for_name
 from common.workflow_context_prop import WorkflowContext
 from common.workflow_utils.inflight import TraceContext
 
@@ -411,6 +412,11 @@ class TestEmitDiscoveryTopology:
         labels = [node.label for node in topology.nodes]
         assert labels[0] == "Agentic Recruiter"
         assert "Brazil" in labels and "Colombia" in labels
+        # The anchor carries the seeded recruiter's stable_agent_id so the
+        # backend merge layer reconciles it onto the real recruiter node.
+        assert topology.nodes[0].stable_agent_id == stable_agent_id_for_name(
+            "Agentic Recruiter agent"
+        )
         # One edge per discovered agent, all sourced from the anchor node.
         anchor_id = topology.nodes[0].id
         assert len(topology.edges) == 2

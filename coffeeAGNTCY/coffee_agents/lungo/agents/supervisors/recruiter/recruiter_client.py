@@ -53,10 +53,14 @@ logger = logging.getLogger("lungo.recruiter.supervisor.recruiter_client")
 
 # Discovered agents are merged into the live workflow instance topology so the
 # frontend renders and disposes of them through the normal topology channel.
-# The anchor node shares the seeded recruiter node's label (and carries no
-# stable_agent_id) so the frontend collapses it onto "Agentic Recruiter" and
-# re-points the discovered-agent edges there.
+# The anchor node carries the seeded recruiter's stable_agent_id so the backend
+# merge layer (reconcile_event_node_identities) recognizes it as the same node,
+# drops the duplicate, and re-points the discovered-agent edges onto the real
+# "Agentic Recruiter" node. The frontend makes no anchoring decision.
+# _RECRUITER_ANCHOR_RECORD_NAME must match the recruiter OASF record "name"
+# (oasf/agents/recruiter.json) so the derived stable_agent_id matches the seed.
 _RECRUITER_ANCHOR_LABEL = "Agentic Recruiter"
+_RECRUITER_ANCHOR_RECORD_NAME = "Agentic Recruiter agent"
 _DISCOVERY_NS = uuid5(NAMESPACE_DNS, "recruiter.discovery.lungo")
 _discovery_event_sink = WorkflowAPIEventSink() if EMIT_WORKFLOW_EVENTS else None
 
@@ -146,10 +150,11 @@ async def _emit_discovery_topology(agent_records: dict[str, dict]) -> None:
     """Merge discovered agents into the live workflow instance topology.
 
     Emits a STATE_PROGRESS_UPDATE that creates one node per discovered agent
-    (carrying its full OASF record inline) plus an anchor node sharing the
-    seeded recruiter's label so the frontend collapses it onto "Agentic
-    Recruiter" and re-points the new edges there. Nodes therefore arrive,
-    render, and dispose through the normal topology channel.
+    (carrying its full OASF record inline) plus an anchor node carrying the
+    seeded recruiter's stable_agent_id. The backend merge layer reconciles the
+    anchor onto the existing "Agentic Recruiter" node and re-points the new
+    edges there, so nodes arrive, render, and dispose through the normal
+    topology channel without any frontend anchoring decision.
     """
     if _discovery_event_sink is None or not agent_records:
         return
@@ -179,6 +184,7 @@ async def _emit_discovery_topology(agent_records: dict[str, dict]) -> None:
             node_type="customNode",
             label=_RECRUITER_ANCHOR_LABEL,
             layer_index=0,
+            stable_agent_id=stable_agent_id_for_name(_RECRUITER_ANCHOR_RECORD_NAME),
         )
     ]
     edges: list = []
