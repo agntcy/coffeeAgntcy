@@ -258,7 +258,12 @@ export function topologyWireToReactFlow(
       }
     }
 
-    const { label1, label2 } = splitTopologyNodeLabel(labelStr)
+    // Curated second line from the wire (event_v1 >= 1.1.0) wins; otherwise
+    // fall back to splitting the single label (older minors / discovered nodes).
+    const wireLabel2 = typeof n.label2 === "string" ? n.label2.trim() : ""
+    const split = splitTopologyNodeLabel(labelStr)
+    const label1 = wireLabel2 ? labelStr : split.label1
+    const label2 = wireLabel2 ? wireLabel2 : split.label2
     let data: CustomNodeData = {
       icon: resolveTopologyNodeIcon({ label1, label2 }),
       label1,

@@ -64,6 +64,11 @@
         "operation": { "$ref": "#/$defs/operation" },
         "type": { "type": "string", "minLength": 1 },
         "label": { "type": "string", "minLength": 1 },
+        "label2": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Optional curated second display line. Consumers fall back to splitting label when absent (added in 1.1.0)."
+        },
         "size": { "$ref": "#/$defs/size" },
         "layer_index": { "type": "number", "default": 0 }
       },
