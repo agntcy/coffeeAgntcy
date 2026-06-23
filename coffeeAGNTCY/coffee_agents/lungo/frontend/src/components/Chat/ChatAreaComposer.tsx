@@ -57,9 +57,9 @@ const ChatAreaComposer: React.FC<ChatAreaComposerProps> = ({
   return (
     <Stack
       direction={{ xs: "column", sm: "row" }}
-      alignItems={{ xs: "stretch", sm: "flex-end" }}
+      alignItems={{ xs: "stretch", sm: "space-between" }}
       spacing={2}
-      sx={{ width: "100%", maxWidth: 1100, mx: "auto" }}
+      sx={{ width: "100%" }}
     >
       {promptsSource ? (
         <Box sx={promptsDropdownSx}>

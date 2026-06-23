@@ -274,6 +274,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
             onClearConversation={onClearConversation}
             isMinimized={isMinimized}
             messagePanelId={CHAT_MESSAGE_PANEL_ID}
+            horizontalPadding={chatHorizontalPadding}
           />
         </Box>
       ) : null}
@@ -336,7 +337,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
       </Box>
 
       <Stack
-        alignItems="center"
+        alignItems="space-between"
         spacing={1}
         sx={{
           flexShrink: 0,

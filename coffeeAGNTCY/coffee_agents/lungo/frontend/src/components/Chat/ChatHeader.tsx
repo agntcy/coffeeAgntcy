@@ -34,6 +34,7 @@ interface ChatHeaderProps {
   isMinimized?: boolean
   /** ID of the expandable message panel controlled by the minimize button. */
   messagePanelId?: string
+  horizontalPadding?: { xs: number; sm: number; md: number; lg: number }
 }
 
 const ChatHeader: React.FC<ChatHeaderProps> = ({
@@ -41,6 +42,7 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({
   onClearConversation,
   isMinimized = false,
   messagePanelId,
+  horizontalPadding = { xs: 2, sm: 4, md: 8, lg: 15 },
 }) => {
   return (
     <Box
@@ -49,7 +51,7 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({
         width: "100%",
         alignItems: "center",
         justifyContent: "space-between",
-        px: { xs: 1, sm: 2, md: 4, lg: 2 },
+        px: horizontalPadding,
         py: 1,
       }}
     >
