@@ -28,7 +28,7 @@ RECRUITER_DIR = Path(__file__).resolve().parents[2]
 ZOT_REGISTRY_READYZ_URL = "http://127.0.0.1:5555/readyz"
 
 # ---------------- Ensure DIRCTL is available ----------------
-DIRCTL_VERSION = "v1.0.0"
+DIRCTL_VERSION = "v1.5.0"
 BIN_DIR = RECRUITER_DIR / "bin"
 LOCAL_DIRCTL = BIN_DIR / "dirctl"
 
