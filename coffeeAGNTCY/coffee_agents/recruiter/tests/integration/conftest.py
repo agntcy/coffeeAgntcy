@@ -98,6 +98,10 @@ def ensure_dirctl():
 
     Prepends recruiter/bin to PATH when using the downloaded binary so subprocess calls to `dirctl` work.
     """
+    # dirctl v1.5+ requires an explicit server address (no localhost default).
+    os.environ.setdefault("DIRECTORY_CLIENT_SERVER_ADDRESS", "localhost:8888")
+    os.environ.setdefault("DIRECTORY_CLIENT_TLS_SKIP_VERIFY", "true")
+
     if _find_executable_on_path("dirctl"):
         return
 
