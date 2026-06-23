@@ -5,23 +5,20 @@ Pytest fixtures using the simple ProcessRunner.
 Replace prior xprocess usage with these.
 """
 import os
-from pathlib import Path
-import pytest
 import re
 import sys
 import time
+from pathlib import Path
 
+import pytest
 from fastapi.testclient import TestClient
-
-from tests.integration.docker_helpers import up, down
-from tests.integration.process_helper import ProcessRunner 
-
-
+from tests.integration.docker_helpers import down, up
+from tests.integration.process_helper import ProcessRunner
 
 AGENTS = {
     "farm": {
         "cmd": ["python", "-m", "farm.farm_server", "--no-reload"],
-        "ready_pattern": r"Transport initialized with tracing enabled",
+        "ready_pattern": "Agent ready",
     }
 }
 
@@ -30,6 +27,7 @@ _ACTIVE_RUNNERS = []
 CORTO_DIR = Path(__file__).resolve().parents[2]
 
 # ---------------- utils ----------------
+
 
 def _base_env():
     return {
@@ -42,17 +40,23 @@ def _base_env():
         "TRANSPORT_SERVER_ENDPOINT": "http://127.0.0.1:46357",
     }
 
+
 def _purge_modules(prefixes):
-    to_delete = [m for m in list(sys.modules)
-                 if any(m == p or m.startswith(p + ".") for p in prefixes)]
+    to_delete = [
+        m
+        for m in list(sys.modules)
+        if any(m == p or m.startswith(p + ".") for p in prefixes)
+    ]
     for m in to_delete:
         sys.modules.pop(m, None)
+
 
 # ---------------- session infra ----------------
 files = ["docker-compose.yaml"]
 if Path("docker-compose.override.yaml").exists():
     files.append("docker-compose.override.yaml")
- 
+
+
 def _shutdown_otel_sdk():
     """Flush and shutdown the OpenTelemetry SDK in this process before docker is
     brought down. Prevents 'Connection refused' to localhost:4318 and
@@ -60,7 +64,7 @@ def _shutdown_otel_sdk():
     hook runs after the collector is gone and pytest has closed stdout/stderr.
     """
     try:
-        from opentelemetry import trace, metrics
+        from opentelemetry import metrics, trace
 
         tp = trace.get_tracer_provider()
         mp = metrics.get_meter_provider()
@@ -143,7 +147,7 @@ def _normalize_agent_spec(spec):
         if not name:
             # try to derive a name from cmd or module
             name = _derive_name_from_spec(spec)
-        ready = "Started server process"
+        ready = spec.get("ready_pattern", "Agent ready")
         return {"name": name, "cmd": cmd, "ready_pattern": ready}
 
     if isinstance(spec, str):
@@ -152,7 +156,7 @@ def _normalize_agent_spec(spec):
             return {
                 "name": spec.split(".")[-1],
                 "cmd": ["python", "-m", spec],
-                "ready_pattern": "Transport initialized with tracing enabled",
+                "ready_pattern": "Agent ready",
             }
         raise ValueError(f"Unrecognized agent spec string: {spec!r}")
 
@@ -204,7 +208,7 @@ def agents_up(request, transport_config):
             cmd=spec["cmd"],
             cwd=str(CORTO_DIR),
             env=env,
-            ready_pattern=spec.get("ready_pattern", r"Transport initialized with tracing enabled"),
+            ready_pattern=spec.get("ready_pattern", "Agent ready"),
             timeout_s=30.0,
             log_dir=Path(CORTO_DIR) / ".pytest-logs",
         ).start()
@@ -241,8 +245,9 @@ def supervisor_client(transport_config, monkeypatch):
         "config.config",
     ])
 
-    import exchange.main as exchange_main
     import importlib
+
+    import exchange.main as exchange_main
     importlib.reload(exchange_main)
 
     app = exchange_main.app
