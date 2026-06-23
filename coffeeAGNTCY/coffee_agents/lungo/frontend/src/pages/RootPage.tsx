@@ -55,7 +55,6 @@ const RootPage: React.FC = () => {
     showRecruiterStreaming,
     showFinalResponse,
     groupCommResponseReceived,
-    discoveryResponseEvent,
     handleUserInput,
     handleApiResponse,
     handleSendPrompt,
@@ -193,7 +192,6 @@ const RootPage: React.FC = () => {
                     isExpanded={isExpanded}
                     groupCommResponseReceived={groupCommResponseReceived}
                     onNodeHighlight={handleNodeHighlightSetup}
-                    discoveryResponseEvent={discoveryResponseEvent}
                     selectedAgentCid={
                       typeof recruiterSelectedAgent?.cid === "string"
                         ? recruiterSelectedAgent.cid

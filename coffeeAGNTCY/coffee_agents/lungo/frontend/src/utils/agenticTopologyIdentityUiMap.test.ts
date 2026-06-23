@@ -8,6 +8,7 @@ import type { TopologyNodeWire } from "@/api/agenticWorkflowsTypes"
 import { LUNGO_FRONTEND_URLS } from "@/urls"
 import type { CustomNodeData } from "@/components/MainArea/Graph/Elements/types"
 import {
+  applyDiscoveredAgentInlineUi,
   getOasfSlugFromNodeData,
   IDENTITY_UI_BY_STABLE_AGENT_UUID,
   isDirectoryLabel,
@@ -163,6 +164,48 @@ describe("agenticTopologyIdentityUiMap", () => {
           directoryAgentSlug: "recruiter",
         } as unknown as CustomNodeData),
       ).toBe("recruiter")
+    })
+  })
+
+  describe("applyDiscoveredAgentInlineUi", () => {
+    const baseData = {
+      icon: null,
+      label1: "Brazil",
+      label2: "",
+      handles: "all",
+    } as unknown as CustomNodeData
+
+    it("returns data unchanged when the wire has no inline OASF record", () => {
+      const out = applyDiscoveredAgentInlineUi(baseData, {
+        id: "n1",
+      } as TopologyNodeWire)
+      expect(out).toBe(baseData)
+    })
+
+    it("threads inline OASF record, cid, target handle and directory link", () => {
+      const record = { name: "Brazil", url: "http://brazil:9000" }
+      const out = applyDiscoveredAgentInlineUi(baseData, {
+        id: "n1",
+        oasf_record: record,
+        agent_cid: "cidB",
+      } as unknown as TopologyNodeWire)
+      expect(out.oasfRecord).toEqual(record)
+      expect(out.agentCid).toBe("cidB")
+      expect(out.handles).toBe("target")
+      expect(out.agentDirectoryLink).toBe(
+        LUNGO_FRONTEND_URLS.agentDirectory.baseUrl,
+      )
+    })
+
+    it("keeps an existing directory link when already present", () => {
+      const out = applyDiscoveredAgentInlineUi(
+        { ...baseData, agentDirectoryLink: "https://example.com/x" },
+        {
+          id: "n1",
+          oasf_record: { name: "Brazil" },
+        } as unknown as TopologyNodeWire,
+      )
+      expect(out.agentDirectoryLink).toBe("https://example.com/x")
     })
   })
 

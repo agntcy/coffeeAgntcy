@@ -11,9 +11,7 @@ import { useViewportAwareFitView } from "@/hooks/useViewportAwareFitView"
 import { useModalManager } from "@/hooks/useModalManager"
 import { NODE_IDS } from "@/utils/const.ts"
 import { applyDynamicTransportLabels } from "@/utils/dynamicTransportLabels"
-import type { DiscoveryResponseEvent } from "@/types/agent"
 import type { CustomNodeData } from "./Graph/Elements/types"
-import { useMainAreaDiscoveryGraph } from "./useMainAreaDiscoveryGraph"
 import { useMainAreaGraphEffects } from "./useMainAreaGraphEffects"
 import { useWorkflowGraphFromAgenticApi } from "@/hooks/useWorkflowGraphFromAgenticApi"
 import { useNodeTransportInterfaces } from "./useNodeTransportInterfaces"
@@ -34,7 +32,6 @@ export interface MainAreaProps {
   isExpanded?: boolean
   groupCommResponseReceived?: boolean
   onNodeHighlight?: (highlightFunction: (nodeId: string) => void) => void
-  discoveryResponseEvent?: DiscoveryResponseEvent | null
   selectedAgentCid?: string | null
   /** Latest graph snapshot for chat/feeds (GroupCommunication sender map). */
   onLiveGraphConfig?: (config: GraphConfig) => void
@@ -54,7 +51,6 @@ export function useMainArea({
   isExpanded = false,
   groupCommResponseReceived = false,
   onNodeHighlight,
-  discoveryResponseEvent,
   selectedAgentCid,
   onLiveGraphConfig,
 }: MainAreaProps) {
@@ -114,15 +110,6 @@ export function useMainArea({
     if (!agenticError) return
     logger.error("agentic-workflows/graph-session", { detail: agenticError })
   }, [agenticError])
-
-  useMainAreaDiscoveryGraph({
-    pattern,
-    discoveryResponseEvent,
-    setNodes,
-    setEdges,
-    handleOpenIdentityModal,
-    handleOpenOasfModal,
-  })
 
   const nodeAgentCidKey = useMemo(
     () =>
