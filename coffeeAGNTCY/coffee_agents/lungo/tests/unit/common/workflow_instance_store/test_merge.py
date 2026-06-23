@@ -7,9 +7,15 @@ from __future__ import annotations
 
 import copy
 
+import pytest
+
 from schema.types import Data, Event
 
-from common.workflow_instance_store.merge import merge_event_data, merge_topology_delta
+from common.workflow_instance_store.merge import (
+    merge_event_data,
+    merge_topology_delta,
+    reconcile_event_node_identities,
+)
 
 NODE_A = "node://550e8400-e29b-41d4-a716-446655440010"
 NODE_B = "node://550e8400-e29b-41d4-a716-446655440011"
@@ -680,6 +686,186 @@ def test_merge_only_empty_workflows_and_extra_data():
     d = _dump(out)
     assert d["workflows"] == {}
     assert d["app_state"] == {"counter": 1}
+
+
+# ---------------------------------------------------------------------------
+# reconcile_event_node_identities (backend-authoritative anchoring)
+# ---------------------------------------------------------------------------
+
+RECRUITER_RUNTIME_ID = "node://550e8400-e29b-41d4-a716-446655440100"
+ANCHOR_ID = "node://550e8400-e29b-41d4-a716-446655440101"
+DISCOVERED_ID = "node://550e8400-e29b-41d4-a716-446655440102"
+RECRUITER_SID = "agent://550e8400-e29b-41d4-a716-446655440200"
+DISCOVERED_SID = "agent://550e8400-e29b-41d4-a716-446655440202"
+DISCOVERY_EDGE_ID = "edge://550e8400-e29b-41d4-a716-446655440300"
+
+
+def _recruiter_seed_node() -> dict:
+    """Full agent node for the seeded recruiter (carries runtime id + sid)."""
+    return {
+        "id": RECRUITER_RUNTIME_ID,
+        "operation": "create",
+        "type": "customNode",
+        "label": "Agentic Recruiter",
+        "size": {"width": 1, "height": 1},
+        "layer_index": 0,
+        "stable_agent_id": RECRUITER_SID,
+        "agent_record_uri": "agent-card://550e8400-e29b-41d4-a716-446655440200",
+    }
+
+
+def _discovery_event() -> Event:
+    """Anchor (recruiter sid) + discovered agent + anchor->discovered edge."""
+    anchor = {
+        "id": ANCHOR_ID,
+        "operation": "create",
+        "type": "customNode",
+        "label": "Agentic Recruiter",
+        "size": {"width": 1, "height": 1},
+        "layer_index": 0,
+        "stable_agent_id": RECRUITER_SID,
+        "agent_record_uri": "agent-card://550e8400-e29b-41d4-a716-446655440200",
+    }
+    discovered = {
+        "id": DISCOVERED_ID,
+        "operation": "create",
+        "type": "customNode",
+        "label": "Brazil",
+        "size": {"width": 1, "height": 1},
+        "layer_index": 1,
+        "stable_agent_id": DISCOVERED_SID,
+        "agent_record_uri": "agent-card://550e8400-e29b-41d4-a716-446655440202",
+        "oasf_record": {"name": "Brazil"},
+        "agent_cid": "cidB",
+    }
+    edge = {
+        "id": DISCOVERY_EDGE_ID,
+        "operation": "create",
+        "type": "custom",
+        "source": ANCHOR_ID,
+        "target": DISCOVERED_ID,
+        "bidirectional": False,
+        "weight": 1.0,
+    }
+    return _evt(
+        {
+            "workflows": {
+                "w": {
+                    "name": "n",
+                    "pattern": "p",
+                    "use_case": "u",
+                    "scenario": "s",
+                    "starting_topology": {"nodes": [], "edges": []},
+                    "instances": {
+                        INST: {
+                            "id": INST,
+                            "topology": {
+                                "nodes": [anchor, discovered],
+                                "edges": [edge],
+                            },
+                        }
+                    },
+                }
+            }
+        }
+    )
+
+
+def _state_recruiter_in_instance() -> Data:
+    """Recruiter node lives in the merged instance topology."""
+    return merge_event_data(None, _evt(_wf_with_nodes([_recruiter_seed_node()])))
+
+
+def _state_recruiter_in_starting_only() -> Data:
+    """Recruiter node only in starting_topology; instance topology still empty."""
+    return Data.model_validate(
+        {
+            "workflows": {
+                "w": {
+                    "name": "n",
+                    "pattern": "p",
+                    "use_case": "u",
+                    "scenario": "s",
+                    "starting_topology": {
+                        "nodes": [_recruiter_seed_node()],
+                        "edges": [],
+                    },
+                    "instances": {
+                        INST: {
+                            "id": INST,
+                            "topology": {"nodes": [], "edges": []},
+                        }
+                    },
+                }
+            }
+        }
+    )
+
+
+@pytest.mark.parametrize(
+    "description,state_factory",
+    [
+        ("recruiter in instance topology", _state_recruiter_in_instance),
+        ("recruiter only in starting_topology", _state_recruiter_in_starting_only),
+    ],
+)
+def test_reconcile_drops_anchor_and_repoints_edge(description, state_factory):
+    normalized = reconcile_event_node_identities(state_factory(), _discovery_event())
+    topo = normalized.data.workflows["w"].instances[INST].topology
+    node_ids = [n.id.root for n in topo.nodes]
+    assert ANCHOR_ID not in node_ids
+    assert node_ids == [DISCOVERED_ID]
+    assert len(topo.edges) == 1
+    assert topo.edges[0].source.root == RECRUITER_RUNTIME_ID
+    assert topo.edges[0].target.root == DISCOVERED_ID
+
+
+def test_reconcile_keeps_node_when_sid_absent_from_state():
+    """A genuinely new node (no matching sid) is preserved untouched."""
+    ev = _evt(_wf_with_nodes([_discovered_agent_node()]))
+    normalized = reconcile_event_node_identities(_state_recruiter_in_instance(), ev)
+    nodes = normalized.data.workflows["w"].instances[INST].topology.nodes
+    assert [n.id.root for n in nodes] == [NODE_A]
+
+
+def test_reconcile_does_not_mutate_input_event():
+    ev = _discovery_event()
+    reconcile_event_node_identities(_state_recruiter_in_instance(), ev)
+    original_ids = {
+        n.id.root for n in ev.data.workflows["w"].instances[INST].topology.nodes
+    }
+    assert original_ids == {ANCHOR_ID, DISCOVERED_ID}
+    assert ev.data.workflows["w"].instances[INST].topology.edges[0].source.root == (
+        ANCHOR_ID
+    )
+
+
+def test_reconcile_then_merge_single_recruiter_no_duplicate_anchor():
+    state = _state_recruiter_in_instance()
+    out = merge_event_data(
+        state, reconcile_event_node_identities(state, _discovery_event())
+    )
+    topo = _dump(out)["workflows"]["w"]["instances"][INST]["topology"]
+    node_ids = [n["id"] for n in topo["nodes"]]
+    assert node_ids.count(RECRUITER_RUNTIME_ID) == 1
+    assert ANCHOR_ID not in node_ids
+    assert DISCOVERED_ID in node_ids
+    assert len(topo["edges"]) == 1
+    assert topo["edges"][0]["source"] == RECRUITER_RUNTIME_ID
+    assert topo["edges"][0]["target"] == DISCOVERED_ID
+
+
+def test_reconcile_then_merge_idempotent_on_reemit():
+    state = _state_recruiter_in_instance()
+    ev = _discovery_event()
+    out1 = merge_event_data(state, reconcile_event_node_identities(state, ev))
+    out2 = merge_event_data(out1, reconcile_event_node_identities(out1, ev))
+    topo = _dump(out2)["workflows"]["w"]["instances"][INST]["topology"]
+    node_ids = [n["id"] for n in topo["nodes"]]
+    assert node_ids.count(DISCOVERED_ID) == 1
+    assert ANCHOR_ID not in node_ids
+    assert len(topo["edges"]) == 1
+    assert topo["edges"][0]["source"] == RECRUITER_RUNTIME_ID
 
 
 def test_merge_empty_workflows_preserves_existing_workflows_and_merges_extra():
