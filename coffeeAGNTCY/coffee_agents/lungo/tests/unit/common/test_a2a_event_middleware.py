@@ -382,6 +382,40 @@ class TestEventEmittingInterceptor:
         assert out_kwargs is http_kwargs
         assert captured_events == []
 
+    async def test_edge_only_delegation_emits_anchors_without_transport(
+        self, agent_card_factory, otel_span, patch_emit_events, captured_events,
+    ):
+        """Recruiter delegation should anchor onto existing nodes, not add transport."""
+        from common.stable_agent_id import stable_agent_id_for_name
+        from common.a2a_event_middleware.middleware import EventEmittingInterceptor
+
+        patch_emit_events(True)
+        caller_card = MagicMock()
+        caller_card.name = "Recruiter Supervisor"
+        recruiter_sid = stable_agent_id_for_name("Agentic Recruiter agent")
+        interceptor = EventEmittingInterceptor(
+            caller_card=caller_card,
+            delegation_mode="edge_only",
+            delegation_anchor_stable_agent_id=recruiter_sid,
+        )
+        remote = agent_card_factory("Brazil")
+        ctx = ClientCallContext(state={"tool": "delegate_task"})
+
+        with otel_span(trace_id=0x1, span_id=0x2, parent_span_id=0x3):
+            await interceptor.intercept(
+                "send_message", {}, {}, agent_card=remote, context=ctx,
+            )
+
+        [event] = captured_events
+        instance = _first_instance(event)
+        node_types = {n.type for n in instance.topology.nodes}
+        labels = {n.label for n in instance.topology.nodes}
+        assert "transportNode" not in node_types
+        assert "Recruiter Supervisor" not in labels
+        assert "Agentic Recruiter" in labels
+        assert "Brazil" in labels
+        assert len(instance.topology.edges) == 1
+
 
 # ---------------------------------------------------------------------------
 # make_event_emitting_consumer
