@@ -159,7 +159,7 @@ describe("topologyWireToReactFlow", () => {
     },
   )
 
-  it("splits single label into label1 and label2", () => {
+  it("splits single label into label and label_subtitle", () => {
     const { nodes } = topologyWireToReactFlow(
       {
         nodes: [
@@ -174,9 +174,51 @@ describe("topologyWireToReactFlow", () => {
       },
       { validateUrls: false },
     )
-    const data = nodes[0]?.data as { label1?: string; label2?: string }
-    expect(data?.label1).toBe("Brazil")
-    expect(data?.label2).toBe("Farm Agent")
+    const data = nodes[0]?.data as { label?: string; label_subtitle?: string }
+    expect(data?.label).toBe("Brazil")
+    expect(data?.label_subtitle).toBe("Farm Agent")
+  })
+
+  it("honors a curated wire label_subtitle instead of splitting the label", () => {
+    const { nodes } = topologyWireToReactFlow(
+      {
+        nodes: [
+          {
+            id: "node://10101010-1010-4101-8101-101010101010",
+            type: "customNode",
+            label: "Auction Agent",
+            label_subtitle: "Buyer",
+            layer_index: 0,
+          },
+        ],
+        edges: [],
+      },
+      { validateUrls: false },
+    )
+    const data = nodes[0]?.data as { label?: string; label_subtitle?: string }
+    expect(data?.label).toBe("Auction Agent")
+    expect(data?.label_subtitle).toBe("Buyer")
+  })
+
+  it("falls back to splitting when wire label_subtitle is absent or blank", () => {
+    const { nodes } = topologyWireToReactFlow(
+      {
+        nodes: [
+          {
+            id: "node://10101010-1010-4101-8101-101010101010",
+            type: "customNode",
+            label: "Auction Agent",
+            label_subtitle: "   ",
+            layer_index: 0,
+          },
+        ],
+        edges: [],
+      },
+      { validateUrls: false },
+    )
+    const data = nodes[0]?.data as { label?: string; label_subtitle?: string }
+    expect(data?.label).toBe("Auction")
+    expect(data?.label_subtitle).toBe("Agent")
   })
 
   it("keeps a hidden group container with children parented and compact transport", () => {

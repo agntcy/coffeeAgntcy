@@ -103,14 +103,14 @@ const CustomNode: React.FC<CustomNodeProps> = ({ id, data }) => {
             p: 0,
           }}
         >
-          <Tooltip title={data.label1} arrow>
+          <Tooltip title={data.label} arrow>
             <Typography
               variant="h6"
               component="span"
               noWrap
               sx={{ flex: "1 1 auto", minWidth: 0 }}
             >
-              {data.label1}
+              {data.label}
             </Typography>
           </Tooltip>
           {data.verificationStatus === "verified" && (
@@ -126,7 +126,7 @@ const CustomNode: React.FC<CustomNodeProps> = ({ id, data }) => {
           )}
         </Box>
 
-        <Tooltip title={data.label2} arrow>
+        <Tooltip title={data.label_subtitle} arrow>
           <Typography
             variant="caption"
             component="div"
@@ -144,7 +144,7 @@ const CustomNode: React.FC<CustomNodeProps> = ({ id, data }) => {
               lineHeight: "16px",
             }}
           >
-            {data.label2}
+            {data.label_subtitle}
           </Typography>
         </Tooltip>
 

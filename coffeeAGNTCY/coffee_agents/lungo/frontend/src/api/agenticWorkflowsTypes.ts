@@ -20,6 +20,8 @@ export interface TopologyNodeWire {
   operation?: string
   type?: string
   label?: string
+  /** Optional curated subtitle (event_v1 >= 1.1.0); split fallback when absent. */
+  label_subtitle?: string
   size?: TopologySize
   layer_index?: number
   /** Optional absolute layout hint; when present the renderer skips auto-layout for this node. */
