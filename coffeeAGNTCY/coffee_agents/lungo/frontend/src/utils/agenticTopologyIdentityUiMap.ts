@@ -189,27 +189,27 @@ export function stableAgentIdFromWire(
   return undefined
 }
 
-/** Split a topology wire `label` into title (`label1`) and role (`label2`). */
-export function splitTopologyNodeLabel(label: string): {
-  label1: string
-  label2: string
+/** Split a single wire `label` into display title and subtitle when no `label_subtitle` is set. */
+export function splitTopologyNodeLabel(wireLabel: string): {
+  label: string
+  label_subtitle: string
 } {
-  const t = label.trim()
-  if (!t) return { label1: "", label2: "" }
+  const t = wireLabel.trim()
+  if (!t) return { label: "", label_subtitle: "" }
 
   const mcpSuffix = t.match(/^(.+?)\s+MCP\s+Server$/i)
   if (mcpSuffix) {
-    return { label1: mcpSuffix[1].trim(), label2: "MCP Server" }
+    return { label: mcpSuffix[1].trim(), label_subtitle: "MCP Server" }
   }
 
   const mcpPrefix = t.match(/^MCP\s+Server\s+(.+)$/i)
   if (mcpPrefix) {
-    return { label1: mcpPrefix[1].trim(), label2: "MCP Server" }
+    return { label: mcpPrefix[1].trim(), label_subtitle: "MCP Server" }
   }
 
   const sp = t.indexOf(" ")
-  if (sp === -1) return { label1: t, label2: "" }
-  return { label1: t.slice(0, sp), label2: t.slice(sp + 1).trim() }
+  if (sp === -1) return { label: t, label_subtitle: "" }
+  return { label: t.slice(0, sp), label_subtitle: t.slice(sp + 1).trim() }
 }
 
 /** True when a node label denotes an MCP server (e.g. "Weather MCP Server"). */
@@ -298,7 +298,10 @@ export function enrichAgenticTopologyWellKnownUi(
   options: { validateUrls: boolean },
 ): CustomNodeData {
   const typeLower = typeof wire.type === "string" ? wire.type.toLowerCase() : ""
-  const combined = [data.label1, data.label2].filter(Boolean).join(" ").trim()
+  const combined = [data.label, data.label_subtitle]
+    .filter(Boolean)
+    .join(" ")
+    .trim()
   const combinedLower = combined.toLowerCase()
 
   const safeUrl = (url: string | undefined): string | undefined => {
@@ -336,9 +339,9 @@ export function enrichAgenticTopologyWellKnownUi(
     }
   }
 
-  const label1Lower = data.label1?.toLowerCase() ?? ""
-  const label2Lower = data.label2?.toLowerCase() ?? ""
-  const recruiterLabels = `${label1Lower} ${label2Lower}`.trim()
+  const labelLower = data.label?.toLowerCase() ?? ""
+  const labelSubtitleLower = data.label_subtitle?.toLowerCase() ?? ""
+  const recruiterLabels = `${labelLower} ${labelSubtitleLower}`.trim()
   if (
     /\bagentic\b/.test(recruiterLabels) &&
     /\brecruiter\b/.test(recruiterLabels) &&
@@ -427,11 +430,13 @@ export function mergeAgenticTopologyIdentityUi(
 }
 
 function mcpDirectorySlugFromLabels(
-  label1: string | undefined,
-  label2: string | undefined,
+  label: string | undefined,
+  label_subtitle: string | undefined,
 ): string | null {
   const pair = new Set(
-    [label1, label2].filter(Boolean).map((part) => part!.trim().toLowerCase()),
+    [label, label_subtitle]
+      .filter(Boolean)
+      .map((part) => part!.trim().toLowerCase()),
   )
   if (pair.has("weather") && pair.has("mcp server")) {
     return "weather-mcp-server"
@@ -457,11 +462,11 @@ export function getOasfSlugFromNodeData(
     return nodeData.slug
   }
 
-  const label1 = nodeData.label1?.toLowerCase()
-  const label2 = nodeData.label2?.toLowerCase()
-  const labelsText = `${label1 ?? ""} ${label2 ?? ""}`.trim()
+  const label = nodeData.label?.toLowerCase()
+  const label_subtitle = nodeData.label_subtitle?.toLowerCase()
+  const labelsText = `${label ?? ""} ${label_subtitle ?? ""}`.trim()
 
-  const mcpSlug = mcpDirectorySlugFromLabels(label1, label2)
+  const mcpSlug = mcpDirectorySlugFromLabels(label, label_subtitle)
   if (mcpSlug) return mcpSlug
 
   if (/\bagentic\b/.test(labelsText) && /\brecruiter\b/.test(labelsText)) {
@@ -472,41 +477,43 @@ export function getOasfSlugFromNodeData(
     return "logistics-supervisor-agent"
   }
 
-  if (label1 === "auction agent" || label2?.includes("buyer")) {
+  if (label === "auction agent" || label_subtitle?.includes("buyer")) {
     return "auction-supervisor-agent"
   }
 
-  if (label1 === "auction" && label2?.includes("agent")) {
+  if (label === "auction" && label_subtitle?.includes("agent")) {
     return "auction-supervisor-agent"
   }
 
-  if (label1 === "colombia" && label2?.includes("coffee farm")) {
+  if (label === "colombia" && label_subtitle?.includes("coffee farm")) {
     return "colombia-coffee-farm"
   }
 
-  if (label1 === "vietnam" && label2?.includes("coffee farm")) {
+  if (label === "vietnam" && label_subtitle?.includes("coffee farm")) {
     return "vietnam-coffee-farm"
   }
 
-  if (label1 === "brazil" && label2?.includes("coffee farm")) {
+  if (label === "brazil" && label_subtitle?.includes("coffee farm")) {
     return "brazil-coffee-farm"
   }
 
-  if (label1 === "buyer" || label2?.includes("logistics agent")) {
+  if (label === "buyer" || label_subtitle?.includes("logistics agent")) {
     return "logistics-supervisor-agent"
   }
 
-  if (label1 === "tatooine" && label2?.includes("coffee farm")) {
+  if (label === "tatooine" && label_subtitle?.includes("coffee farm")) {
     return "tatooine-farm-agent"
   }
 
-  if (label1 === "shipper") {
+  if (label === "shipper") {
     return "shipping-agent"
   }
 
-  if (label1 === "accountant") {
+  if (label === "accountant") {
     return "accountant-agent"
   }
 
-  throw new Error(`No valid slug mapping found for node: ${label1} ${label2}`)
+  throw new Error(
+    `No valid slug mapping found for node: ${label} ${label_subtitle}`,
+  )
 }

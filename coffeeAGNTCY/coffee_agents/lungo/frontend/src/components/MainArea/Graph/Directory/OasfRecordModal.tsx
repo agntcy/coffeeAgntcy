@@ -50,11 +50,11 @@ const OasfRecordModal: React.FC<OasfRecordModalProps> = ({
 
   const combinedLabel = useMemo(
     () =>
-      [nodeData?.label1, nodeData?.label2]
+      [nodeData?.label, nodeData?.label_subtitle]
         .filter(Boolean)
         .join(" ")
         .toLowerCase(),
-    [nodeData?.label1, nodeData?.label2],
+    [nodeData?.label, nodeData?.label_subtitle],
   )
 
   const isDirectoryNode = useMemo(

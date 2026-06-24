@@ -258,16 +258,19 @@ export function topologyWireToReactFlow(
       }
     }
 
-    // Curated second line from the wire (event_v1 >= 1.1.0) wins; otherwise
+    // Curated subtitle from the wire (event_v1 >= 1.1.0) wins; otherwise
     // fall back to splitting the single label (older minors / discovered nodes).
-    const wireLabel2 = typeof n.label2 === "string" ? n.label2.trim() : ""
+    const wireLabelSubtitle =
+      typeof n.label_subtitle === "string" ? n.label_subtitle.trim() : ""
     const split = splitTopologyNodeLabel(labelStr)
-    const label1 = wireLabel2 ? labelStr : split.label1
-    const label2 = wireLabel2 ? wireLabel2 : split.label2
+    const label = wireLabelSubtitle ? labelStr : split.label
+    const label_subtitle = wireLabelSubtitle
+      ? wireLabelSubtitle
+      : split.label_subtitle
     let data: CustomNodeData = {
-      icon: resolveTopologyNodeIcon({ label1, label2 }),
-      label1,
-      label2,
+      icon: resolveTopologyNodeIcon({ label, label_subtitle }),
+      label,
+      label_subtitle,
       handles: HANDLE_TYPES.ALL,
       verificationStatus: VERIFICATION_STATUS.VERIFIED,
       githubLink: gh,
@@ -282,8 +285,8 @@ export function topologyWireToReactFlow(
       data = {
         ...data,
         icon: resolveTopologyNodeIcon({
-          label1: data.label1,
-          label2: data.label2,
+          label: data.label,
+          label_subtitle: data.label_subtitle,
           directoryAgentSlug: data.directoryAgentSlug,
         }),
       }

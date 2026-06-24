@@ -22,7 +22,7 @@ const IdentityDetailsDropdownContent: React.FC<
   const getIdentityGithubUrl = () => {
     if (!nodeData) return null
 
-    const nodeName = nodeData.label1 || ""
+    const nodeName = nodeData.label || ""
 
     if (
       nodeName.toLowerCase().includes("colombia") ||
@@ -35,7 +35,7 @@ const IdentityDetailsDropdownContent: React.FC<
       return LUNGO_FRONTEND_URLS.identity.auction
     }
 
-    if (nodeData.label2?.toLowerCase().includes("payment")) {
+    if (nodeData.label_subtitle?.toLowerCase().includes("payment")) {
       return LUNGO_FRONTEND_URLS.identity.payment
     }
 

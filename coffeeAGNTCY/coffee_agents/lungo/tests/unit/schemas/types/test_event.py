@@ -195,7 +195,7 @@ _EVENT_CASES: tuple[EventCase, ...] = (
             example_filename="event_v1_partial.json",
             mutate=lambda d: (
                 d["data"]["workflows"]["recruiter"]["starting_topology"]["nodes"][0]
-            ).update({"label2": ""}),
+            ).update({"label_subtitle": ""}),
         ),
         outputs=EventOutputs(
             schema_exc=SchemaValidationError,
@@ -278,7 +278,7 @@ def test_optional_label2_round_trips() -> None:
     data = load_json_instance_file(_EXAMPLES / "event_v1_partial.json")
     data = deepcopy(data)
     node = data["data"]["workflows"]["recruiter"]["starting_topology"]["nodes"][0]
-    node["label2"] = "Buyer"
+    node["label_subtitle"] = "Buyer"
 
     validate_data_against_schema(data, _KNOWN)
     event = Event.model_validate(data)
@@ -289,4 +289,4 @@ def test_optional_label2_round_trips() -> None:
     dumped_node = (
         dumped["data"]["workflows"]["recruiter"]["starting_topology"]["nodes"][0]
     )
-    assert dumped_node["label2"] == "Buyer"
+    assert dumped_node["label_subtitle"] == "Buyer"

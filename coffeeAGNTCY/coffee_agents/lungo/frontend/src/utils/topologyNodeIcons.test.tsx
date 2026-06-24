@@ -22,8 +22,8 @@ describe("topologyNodeIconKind", () => {
       caseName: "slug wins over labels (auction supervisor)",
       input: {
         directoryAgentSlug: "auction-supervisor-agent",
-        label1: "Weather",
-        label2: "MCP Server",
+        label: "Weather",
+        label_subtitle: "MCP Server",
       },
       expected: TopologyNodeIconKind.Supervisor,
     },
@@ -69,65 +69,65 @@ describe("topologyNodeIconKind", () => {
     },
     {
       caseName: "unknown slug falls back to labels",
-      input: { directoryAgentSlug: "mystery", label1: "Shipper" },
+      input: { directoryAgentSlug: "mystery", label: "Shipper" },
       expected: TopologyNodeIconKind.Shipping,
     },
     {
       caseName: "weather mcp by labels",
-      input: { label1: "Weather", label2: "MCP Server" },
+      input: { label: "Weather", label_subtitle: "MCP Server" },
       expected: TopologyNodeIconKind.WeatherMcp,
     },
     {
       caseName: "payment mcp by labels",
-      input: { label1: "Payment", label2: "MCP Server" },
+      input: { label: "Payment", label_subtitle: "MCP Server" },
       expected: TopologyNodeIconKind.PaymentMcp,
     },
     {
       caseName: "generic mcp by labels -> default",
-      input: { label1: "Inventory", label2: "MCP Server" },
+      input: { label: "Inventory", label_subtitle: "MCP Server" },
       expected: TopologyNodeIconKind.Default,
     },
     {
       caseName: "agentic recruiter by labels",
       input: {
-        label1: "Agentic Recruiter",
-        label2: "Discovery and delegation",
+        label: "Agentic Recruiter",
+        label_subtitle: "Discovery and delegation",
       },
       expected: TopologyNodeIconKind.Recruiter,
     },
     {
       caseName: "agntcy agent directory by labels",
-      input: { label1: "Directory", label2: "AGNTCY Agent Directory" },
+      input: { label: "Directory", label_subtitle: "AGNTCY Agent Directory" },
       expected: TopologyNodeIconKind.Directory,
     },
     {
       caseName: "coffee farm by labels",
-      input: { label1: "Brazil", label2: "Coffee Farm Agent" },
+      input: { label: "Brazil", label_subtitle: "Coffee Farm Agent" },
       expected: TopologyNodeIconKind.Farm,
     },
     {
       caseName: "auction agent by labels",
-      input: { label1: "Auction Agent", label2: "Buyer" },
+      input: { label: "Auction Agent", label_subtitle: "Buyer" },
       expected: TopologyNodeIconKind.Supervisor,
     },
     {
       caseName: "logistics buyer by labels",
-      input: { label1: "Buyer", label2: "Logistics Agent" },
+      input: { label: "Buyer", label_subtitle: "Logistics Agent" },
       expected: TopologyNodeIconKind.Supervisor,
     },
     {
       caseName: "shipper by labels",
-      input: { label1: "Shipper", label2: "Shipper Agent" },
+      input: { label: "Shipper", label_subtitle: "Shipper Agent" },
       expected: TopologyNodeIconKind.Shipping,
     },
     {
       caseName: "accountant by labels",
-      input: { label1: "Accountant", label2: "Accountant Agent" },
+      input: { label: "Accountant", label_subtitle: "Accountant Agent" },
       expected: TopologyNodeIconKind.Accountant,
     },
     {
       caseName: "unknown -> default",
-      input: { label1: "Mystery", label2: "Thing" },
+      input: { label: "Mystery", label_subtitle: "Thing" },
       expected: TopologyNodeIconKind.Default,
     },
     {
@@ -142,7 +142,7 @@ describe("topologyNodeIconKind", () => {
 
 describe("resolveTopologyNodeIcon", () => {
   it("returns a renderable element for every input", () => {
-    expect(isValidElement(resolveTopologyNodeIcon({ label1: "Shipper" }))).toBe(
+    expect(isValidElement(resolveTopologyNodeIcon({ label: "Shipper" }))).toBe(
       true,
     )
     expect(isValidElement(resolveTopologyNodeIcon({}))).toBe(true)

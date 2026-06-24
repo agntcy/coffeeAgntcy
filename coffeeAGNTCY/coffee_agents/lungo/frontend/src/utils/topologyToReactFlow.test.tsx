@@ -159,7 +159,7 @@ describe("topologyWireToReactFlow", () => {
     },
   )
 
-  it("splits single label into label1 and label2", () => {
+  it("splits single label into label and label_subtitle", () => {
     const { nodes } = topologyWireToReactFlow(
       {
         nodes: [
@@ -174,12 +174,12 @@ describe("topologyWireToReactFlow", () => {
       },
       { validateUrls: false },
     )
-    const data = nodes[0]?.data as { label1?: string; label2?: string }
-    expect(data?.label1).toBe("Brazil")
-    expect(data?.label2).toBe("Farm Agent")
+    const data = nodes[0]?.data as { label?: string; label_subtitle?: string }
+    expect(data?.label).toBe("Brazil")
+    expect(data?.label_subtitle).toBe("Farm Agent")
   })
 
-  it("honors a curated wire label2 instead of splitting the label", () => {
+  it("honors a curated wire label_subtitle instead of splitting the label", () => {
     const { nodes } = topologyWireToReactFlow(
       {
         nodes: [
@@ -187,7 +187,7 @@ describe("topologyWireToReactFlow", () => {
             id: "node://10101010-1010-4101-8101-101010101010",
             type: "customNode",
             label: "Auction Agent",
-            label2: "Buyer",
+            label_subtitle: "Buyer",
             layer_index: 0,
           },
         ],
@@ -195,12 +195,12 @@ describe("topologyWireToReactFlow", () => {
       },
       { validateUrls: false },
     )
-    const data = nodes[0]?.data as { label1?: string; label2?: string }
-    expect(data?.label1).toBe("Auction Agent")
-    expect(data?.label2).toBe("Buyer")
+    const data = nodes[0]?.data as { label?: string; label_subtitle?: string }
+    expect(data?.label).toBe("Auction Agent")
+    expect(data?.label_subtitle).toBe("Buyer")
   })
 
-  it("falls back to splitting when wire label2 is absent or blank", () => {
+  it("falls back to splitting when wire label_subtitle is absent or blank", () => {
     const { nodes } = topologyWireToReactFlow(
       {
         nodes: [
@@ -208,7 +208,7 @@ describe("topologyWireToReactFlow", () => {
             id: "node://10101010-1010-4101-8101-101010101010",
             type: "customNode",
             label: "Auction Agent",
-            label2: "   ",
+            label_subtitle: "   ",
             layer_index: 0,
           },
         ],
@@ -216,9 +216,9 @@ describe("topologyWireToReactFlow", () => {
       },
       { validateUrls: false },
     )
-    const data = nodes[0]?.data as { label1?: string; label2?: string }
-    expect(data?.label1).toBe("Auction")
-    expect(data?.label2).toBe("Agent")
+    const data = nodes[0]?.data as { label?: string; label_subtitle?: string }
+    expect(data?.label).toBe("Auction")
+    expect(data?.label_subtitle).toBe("Agent")
   })
 
   it("keeps a hidden group container with children parented and compact transport", () => {
