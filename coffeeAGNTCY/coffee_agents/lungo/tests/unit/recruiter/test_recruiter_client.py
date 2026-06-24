@@ -6,7 +6,6 @@
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-
 from a2a.types import (
     DataPart,
     Message,
@@ -17,18 +16,10 @@ from a2a.types import (
     TaskStatus,
     TextPart,
 )
-
 from agents.supervisors.recruiter.models import (
     STATE_KEY_EVALUATION_RESULTS,
     STATE_KEY_RECRUITED_AGENTS,
-    RecruitmentResponse,
 )
-from agents.supervisors.recruiter.recruiter_client import (
-    _extract_parts,
-    _parse_dict_values,
-    recruit_agents,
-)
-
 
 # ---------------------------------------------------------------------------
 # _parse_dict_values
@@ -36,41 +27,41 @@ from agents.supervisors.recruiter.recruiter_client import (
 
 
 class TestParseDictValues:
-    def test_already_dict_values(self):
+    def test_already_dict_values(self, recruiter_client_mod):
         data = {"cid1": {"name": "Agent A"}}
-        result = _parse_dict_values(data)
+        result = recruiter_client_mod._parse_dict_values(data)
         assert result == {"cid1": {"name": "Agent A"}}
 
-    def test_json_string_values(self):
+    def test_json_string_values(self, recruiter_client_mod):
         """Recruiter service may return JSON strings instead of dicts."""
         import json
         data = {
             "cid1": json.dumps({"name": "Agent A", "url": "http://a:9000"}),
             "cid2": json.dumps({"name": "Agent B", "url": "http://b:9000"}),
         }
-        result = _parse_dict_values(data)
+        result = recruiter_client_mod._parse_dict_values(data)
         assert result["cid1"]["name"] == "Agent A"
         assert result["cid2"]["name"] == "Agent B"
 
-    def test_mixed_dict_and_string_values(self):
+    def test_mixed_dict_and_string_values(self, recruiter_client_mod):
         import json
         data = {
             "cid1": {"name": "Agent A"},
             "cid2": json.dumps({"name": "Agent B"}),
         }
-        result = _parse_dict_values(data)
+        result = recruiter_client_mod._parse_dict_values(data)
         assert result["cid1"]["name"] == "Agent A"
         assert result["cid2"]["name"] == "Agent B"
 
-    def test_invalid_json_string_skipped(self):
+    def test_invalid_json_string_skipped(self, recruiter_client_mod):
         data = {"cid1": "not valid json {{{"}
-        result = _parse_dict_values(data)
+        result = recruiter_client_mod._parse_dict_values(data)
         assert "cid1" not in result
 
-    def test_non_dict_json_skipped(self):
+    def test_non_dict_json_skipped(self, recruiter_client_mod):
         import json
         data = {"cid1": json.dumps(["a", "list"])}
-        result = _parse_dict_values(data)
+        result = recruiter_client_mod._parse_dict_values(data)
         assert "cid1" not in result
 
 
@@ -80,14 +71,14 @@ class TestParseDictValues:
 
 
 class TestExtractParts:
-    def test_text_only(self):
+    def test_text_only(self, recruiter_client_mod):
         parts = [Part(root=TextPart(text="Hello world"))]
-        result = _extract_parts(parts)
+        result = recruiter_client_mod._extract_parts(parts)
         assert result.text == "Hello world"
         assert result.agent_records == {}
         assert result.evaluation_results == {}
 
-    def test_agent_records(self):
+    def test_agent_records(self, recruiter_client_mod):
         parts = [
             Part(
                 root=DataPart(
@@ -96,11 +87,11 @@ class TestExtractParts:
                 )
             ),
         ]
-        result = _extract_parts(parts)
+        result = recruiter_client_mod._extract_parts(parts)
         assert result.text is None
         assert "cid1" in result.agent_records
 
-    def test_evaluation_results(self):
+    def test_evaluation_results(self, recruiter_client_mod):
         parts = [
             Part(
                 root=DataPart(
@@ -109,10 +100,10 @@ class TestExtractParts:
                 )
             ),
         ]
-        result = _extract_parts(parts)
+        result = recruiter_client_mod._extract_parts(parts)
         assert "cid1" in result.evaluation_results
 
-    def test_all_parts_combined(self):
+    def test_all_parts_combined(self, recruiter_client_mod):
         parts = [
             Part(root=TextPart(text="Found 1 agent")),
             Part(
@@ -128,20 +119,20 @@ class TestExtractParts:
                 )
             ),
         ]
-        result = _extract_parts(parts)
+        result = recruiter_client_mod._extract_parts(parts)
         assert result.text == "Found 1 agent"
         assert "cid1" in result.agent_records
         assert "cid1" in result.evaluation_results
 
-    def test_data_part_without_metadata(self):
+    def test_data_part_without_metadata(self, recruiter_client_mod):
         parts = [Part(root=DataPart(data={"key": "val"}, metadata=None))]
-        result = _extract_parts(parts)
+        result = recruiter_client_mod._extract_parts(parts)
         assert result.text is None
         assert result.agent_records == {}
         assert result.evaluation_results == {}
 
-    def test_empty_parts(self):
-        result = _extract_parts([])
+    def test_empty_parts(self, recruiter_client_mod):
+        result = recruiter_client_mod._extract_parts([])
         assert result.text is None
         assert result.agent_records == {}
 
@@ -153,7 +144,7 @@ class TestExtractParts:
 
 class TestRecruitAgents:
     @pytest.mark.asyncio
-    async def test_recruit_agents_stores_in_state(self):
+    async def test_recruit_agents_stores_in_state(self, recruiter_client_mod):
         """recruit_agents should merge results into tool_context.state."""
         agent_records = {"cid_abc": {"name": "Agent A", "url": "http://a:9000"}}
 
@@ -174,6 +165,11 @@ class TestRecruitAgents:
 
         # Mock the A2A client to yield our fake message
         mock_client = AsyncMock()
+        mock_client.__aenter__.return_value = mock_client
+        mock_client.__aexit__.return_value = None
+        patch.object(
+            recruiter_client_mod.httpx, "AsyncClient", return_value=mock_client
+        )
 
         async def fake_send_message(msg, context=None):
             yield response_message
@@ -193,14 +189,16 @@ class TestRecruitAgents:
             "agents.supervisors.recruiter.recruiter_client.ClientFactory",
             return_value=mock_factory,
         ):
-            result = await recruit_agents("find accounting agents", tool_context)
+            result = await recruiter_client_mod.recruit_agents(
+                "find accounting agents", tool_context
+            )
 
         assert STATE_KEY_RECRUITED_AGENTS in tool_context.state
         assert "cid_abc" in tool_context.state[STATE_KEY_RECRUITED_AGENTS]
         assert "Found 1 agent" in result
 
     @pytest.mark.asyncio
-    async def test_recruit_agents_merges_with_existing(self):
+    async def test_recruit_agents_merges_with_existing(self, recruiter_client_mod):
         """recruit_agents should merge new results with pre-existing state."""
         new_records = {"cid_new": {"name": "New Agent", "url": "http://new:9000"}}
 
@@ -219,6 +217,11 @@ class TestRecruitAgents:
         )
 
         mock_client = AsyncMock()
+        mock_client.__aenter__.return_value = mock_client
+        mock_client.__aexit__.return_value = None
+        patch.object(
+            recruiter_client_mod.httpx, "AsyncClient", return_value=mock_client
+        )
 
         async def fake_send_message(msg, context=None):
             yield response_message
@@ -240,14 +243,14 @@ class TestRecruitAgents:
             "agents.supervisors.recruiter.recruiter_client.ClientFactory",
             return_value=mock_factory,
         ):
-            await recruit_agents("find more", tool_context)
+            await recruiter_client_mod.recruit_agents("find more", tool_context)
 
         state_agents = tool_context.state[STATE_KEY_RECRUITED_AGENTS]
         assert "cid_old" in state_agents
         assert "cid_new" in state_agents
 
     @pytest.mark.asyncio
-    async def test_recruit_agents_no_results(self):
+    async def test_recruit_agents_no_results(self, recruiter_client_mod):
         """recruit_agents should return a message when no agents are found."""
         response_message = Message(
             role=Role.agent,
@@ -256,6 +259,11 @@ class TestRecruitAgents:
         )
 
         mock_client = AsyncMock()
+        mock_client.__aenter__.return_value = mock_client
+        mock_client.__aexit__.return_value = None
+        patch.object(
+            recruiter_client_mod.httpx, "AsyncClient", return_value=mock_client
+        )
 
         async def fake_send_message(msg, context=None):
             yield response_message
@@ -274,12 +282,15 @@ class TestRecruitAgents:
             "agents.supervisors.recruiter.recruiter_client.ClientFactory",
             return_value=mock_factory,
         ):
-            result = await recruit_agents("find xyz", tool_context)
+            result = await recruiter_client_mod.recruit_agents("find xyz", tool_context)
 
         assert "No matching agents found" in result
 
     @pytest.mark.asyncio
-    async def test_recruit_agents_handles_task_tuple_response(self):
+    async def test_recruit_agents_handles_task_tuple_response(
+        self,
+        recruiter_client_mod,
+    ):
         """recruit_agents should handle (Task, update) tuple responses from A2A."""
         agent_records = {"cid_task": {"name": "Task Agent", "url": "http://t:9000"}}
 
@@ -305,6 +316,11 @@ class TestRecruitAgents:
         )
 
         mock_client = AsyncMock()
+        mock_client.__aenter__.return_value = mock_client
+        mock_client.__aexit__.return_value = None
+        patch.object(
+            recruiter_client_mod.httpx, "AsyncClient", return_value=mock_client
+        )
 
         async def fake_send_message(msg, context=None):
             yield (task, None)
@@ -323,7 +339,9 @@ class TestRecruitAgents:
             "agents.supervisors.recruiter.recruiter_client.ClientFactory",
             return_value=mock_factory,
         ):
-            result = await recruit_agents("find task agents", tool_context)
+            result = await recruiter_client_mod.recruit_agents(
+                "find task agents", tool_context
+            )
 
         assert "cid_task" in tool_context.state[STATE_KEY_RECRUITED_AGENTS]
         assert "Task completed" in result

@@ -453,24 +453,6 @@ def auction_supervisor_client(transport_config, monkeypatch, request):
         importlib.reload(auction_main)
         app = auction_main.app
 
-        # TEMP DEBUG — remove after confirming
-        import config.config as config_mod
-        from agents.supervisors.auction.graph.shared import (
-            a2a_client_factory,
-            farm_registry,
-        )
-
-        card = farm_registry.get("brazil")
-        print(f"DEBUG SLIM_SERVER={config_mod.SLIM_SERVER!r}")
-        print(f"DEBUG card.url={card.url!r}")
-        print(
-            f"DEBUG factory endpoint={a2a_client_factory._config.slim_config.endpoint!r}"
-        )  # adjust attr if needed
-        assert "127.0.0.1" in card.url, f"stale card: {card.url}"
-        assert "slim:" not in card.url.removeprefix("slim://"), (
-            f"docker hostname in card: {card.url}"
-        )
-
         # Snapshot the good state only after a successful reload
         if pin_shared:
             reloaded = _save_modules(prefixes)
