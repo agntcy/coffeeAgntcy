@@ -104,8 +104,8 @@ describe("agenticTopologyIdentityUiMap", () => {
         caseName: "static discovery: Agentic Recruiter + subtitle",
         data: {
           icon: null,
-          label1: "Agentic Recruiter",
-          label2: "Discovery and delegation",
+          label: "Agentic Recruiter",
+          label_subtitle: "Discovery and delegation",
           handles: "all",
         } as unknown as CustomNodeData,
         expected: "recruiter",
@@ -114,8 +114,8 @@ describe("agenticTopologyIdentityUiMap", () => {
         caseName: "topology split: Agentic + Recruiter",
         data: {
           icon: null,
-          label1: "Agentic",
-          label2: "Recruiter",
+          label: "Agentic",
+          label_subtitle: "Recruiter",
           handles: "all",
         } as unknown as CustomNodeData,
         expected: "recruiter",
@@ -124,8 +124,8 @@ describe("agenticTopologyIdentityUiMap", () => {
         caseName: "logistics group labels",
         data: {
           icon: null,
-          label1: "Logistics",
-          label2: "Group",
+          label: "Logistics",
+          label_subtitle: "Group",
           handles: "all",
         } as unknown as CustomNodeData,
         expected: "logistics-supervisor-agent",
@@ -134,8 +134,8 @@ describe("agenticTopologyIdentityUiMap", () => {
         caseName: "MCP weather labels (title + role)",
         data: {
           icon: null,
-          label1: "Weather",
-          label2: "MCP Server",
+          label: "Weather",
+          label_subtitle: "MCP Server",
           handles: "all",
         } as unknown as CustomNodeData,
         expected: "weather-mcp-server",
@@ -144,8 +144,8 @@ describe("agenticTopologyIdentityUiMap", () => {
         caseName: "MCP payment labels (title + role)",
         data: {
           icon: null,
-          label1: "Payment",
-          label2: "MCP Server",
+          label: "Payment",
+          label_subtitle: "MCP Server",
           handles: "all",
         } as unknown as CustomNodeData,
         expected: "payment-mcp-server",
@@ -158,8 +158,8 @@ describe("agenticTopologyIdentityUiMap", () => {
       expect(
         getOasfSlugFromNodeData({
           icon: null,
-          label1: "Wrong",
-          label2: "Labels",
+          label: "Wrong",
+          label_subtitle: "Labels",
           handles: "all",
           directoryAgentSlug: "recruiter",
         } as unknown as CustomNodeData),
@@ -170,8 +170,8 @@ describe("agenticTopologyIdentityUiMap", () => {
   describe("applyDiscoveredAgentInlineUi", () => {
     const baseData = {
       icon: null,
-      label1: "Brazil",
-      label2: "",
+      label: "Brazil",
+      label_subtitle: "",
       handles: "all",
     } as unknown as CustomNodeData
 

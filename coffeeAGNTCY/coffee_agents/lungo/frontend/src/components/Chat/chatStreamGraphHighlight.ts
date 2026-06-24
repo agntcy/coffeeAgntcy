@@ -43,10 +43,10 @@ function nodeSlugKey(node: Node): string | null {
   if (node.type === NODE_TYPES.TRANSPORT) return "transport"
 
   const data = node.data as unknown as CustomNodeData | undefined
-  const label1 = data?.label1?.toLowerCase() ?? ""
-  const label2 = data?.label2?.toLowerCase() ?? ""
-  const combined = `${label1} ${label2}`.trim()
-  if (label1 === "directory" || isDirectoryLabel(combined)) {
+  const label = data?.label?.toLowerCase() ?? ""
+  const label_subtitle = data?.label_subtitle?.toLowerCase() ?? ""
+  const combined = `${label} ${label_subtitle}`.trim()
+  if (label === "directory" || isDirectoryLabel(combined)) {
     return "directory"
   }
 

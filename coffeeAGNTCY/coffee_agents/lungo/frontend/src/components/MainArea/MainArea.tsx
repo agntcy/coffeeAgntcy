@@ -129,7 +129,7 @@ const MainArea: React.FC<MainAreaProps> = (props) => {
         <OasfRecordModal
           isOpen={oasfModalOpen}
           onClose={() => setOasfModalOpen(false)}
-          nodeName={oasfModalData?.label1 || ""}
+          nodeName={oasfModalData?.label || ""}
           nodeData={oasfModalData}
         />
       </Box>
