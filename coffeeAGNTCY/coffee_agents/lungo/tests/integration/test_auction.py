@@ -66,11 +66,15 @@ def _load_sommelier_model():
         return model
 
 
-model = _load_sommelier_model()
+_cached_model = None
 
-def get_semantic_similarity(text1, text2, model):
-    embeddings1 = model.encode(text1, convert_to_tensor=True)
-    embeddings2 = model.encode(text2, convert_to_tensor=True)
+
+def get_semantic_similarity(text1, text2):
+    global _cached_model
+    if _cached_model is None:
+        _cached_model = _load_sommelier_model()
+    embeddings1 = _cached_model.encode(text1, convert_to_tensor=True)
+    embeddings2 = _cached_model.encode(text2, convert_to_tensor=True)
     cosine_score = util.cos_sim(embeddings1, embeddings2)
     return cosine_score.item()
 
