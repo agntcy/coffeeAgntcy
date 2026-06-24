@@ -35,11 +35,8 @@ AGENT_CARD = AgentCard(
     additional_interfaces=[
         # slim-based group messaging transport
         AgentInterface(
-            transport="slim", url=f"slim://{SLIM_SERVER}/lungo/agents/{AGENT_ID}"
-        ),
-        # point-to-point transport for direct client-agent communication
-        AgentInterface(
-            transport="slimrpc", url=f"slim://{SLIM_SERVER}/lungo/agents/{AGENT_ID}"
+            transport="slim",
+            url=f"slim://{SLIM_SERVER}/lungo/agents/{AGENT_ID}",
         ),
     ],
 )

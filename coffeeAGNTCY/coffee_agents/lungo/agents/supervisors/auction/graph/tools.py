@@ -3,50 +3,46 @@
 
 import copy
 import logging
-from typing import Any, Union, Literal, NoReturn
+from typing import Any, Literal, Union
 from uuid import uuid4
-from pydantic import BaseModel
 
 from a2a.client.middleware import ClientCallContext
 from a2a.types import (
     AgentCard,
-    SendMessageRequest,
-    MessageSendParams,
     Message,
+    MessageSendParams,
     Part,
-    TextPart,
     Role,
+    SendMessageRequest,
+    TextPart,
 )
-from langchain_core.tools import tool, ToolException
-from langchain_core.messages import AnyMessage, ToolMessage
-from agntcy_app_sdk import InterfaceTransport, get_agent_identifier
-from ioa_observe.sdk.decorators import tool as ioa_tool_decorator
-
-
+from agents.supervisors.auction.card import AUCTION_SUPERVISOR_CARD
 from agents.supervisors.auction.graph.a2a_retry import (
-    send_a2a_with_retry,
-    TransportTimeoutError,
     RemoteAgentNoResponseError,
+    TransportTimeoutError,
+    send_a2a_with_retry,
 )
 from agents.supervisors.auction.graph.models import (
-    InventoryArgs,
     CreateOrderArgs,
 )
 from agents.supervisors.auction.graph.shared import a2a_client_factory, farm_registry
-from config.config import (
-    DEFAULT_MESSAGE_TRANSPORT,
-    IDENTITY_API_KEY,
-    IDENTITY_API_SERVER_URL,
-)
-from services.identity_service import IdentityService
-from services.identity_service_impl import IdentityServiceImpl
+from agntcy_app_sdk import InterfaceTransport, get_agent_identifier
 from common.a2a_event_middleware import (
     EventEmittingInterceptor,
     make_event_emitting_consumer,
 )
 from common.workflow_context_prop import read_workflow_context
-from agents.supervisors.auction.card import AUCTION_SUPERVISOR_CARD
-
+from config.config import (
+    DEFAULT_MESSAGE_TRANSPORT,
+    IDENTITY_API_KEY,
+    IDENTITY_API_SERVER_URL,
+)
+from ioa_observe.sdk.decorators import tool as ioa_tool_decorator
+from langchain_core.messages import AnyMessage, ToolMessage
+from langchain_core.tools import ToolException, tool
+from pydantic import BaseModel
+from services.identity_service import IdentityService
+from services.identity_service_impl import IdentityServiceImpl
 
 logger = logging.getLogger("lungo.supervisor.tools")
 
@@ -211,7 +207,7 @@ def verify_farm_identity(identity_service: IdentityService, farm_name: str):
         matched_app = next((app for app in all_apps.apps if app.name.lower() == farm_name.lower()), None)
 
         if not matched_app:
-            err_msg = f"No matching identity app service found, this farm does not have identity service enabled."
+            err_msg = "No matching identity app service found, this farm does not have identity service enabled."
             logger.error(err_msg)
             raise A2AAgentError(err_msg)
 
@@ -220,7 +216,7 @@ def verify_farm_identity(identity_service: IdentityService, farm_name: str):
         success = identity_service.verify_badges(badge)
 
         if success.get("status") is not True:
-            raise A2AAgentError(f"Failed to verify badge.")
+            raise A2AAgentError("Failed to verify badge.")
 
         logger.info(f"Verification successful for farm '{farm_name}'.")
     except Exception as e:
@@ -249,6 +245,8 @@ async def get_farm_yield_inventory(prompt: str, farm: str) -> str:
     if card is None:
         raise A2AAgentError(f"Farm '{farm}' not recognized. Available farms "
                              f"are: {', '.join(farm_registry.slugs())}.")
+
+    card.preferred_transport = DEFAULT_MESSAGE_TRANSPORT.lower()
 
     client = None
     try:
@@ -594,7 +592,7 @@ async def get_order_details(order_id: str) -> str:
             # pick any card to initialize the client
             card = copy.deepcopy(farm_registry.cards()[0])  # avoid mutating the singleton card
             # override preferred transport to ensure direct communication for order creation
-            card.preferred_transport = InterfaceTransport.SLIM_RPC
+            card.preferred_transport = InterfaceTransport.SLIM
 
             client = await a2a_client_factory.create(
                 card, interceptors=[_event_interceptor], consumers=[_event_consumer],

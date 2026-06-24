@@ -10,7 +10,6 @@ import os
 from agntcy_app_sdk.semantic.a2a import (
     ClientConfig,
     NatsTransportConfig,
-    SlimRpcConfig,
     SlimTransportConfig,
 )
 from config.config import NATS_SERVER, SLIM_SERVER
@@ -31,13 +30,6 @@ def build_a2a_client_config(
     if not slim_shared_secret:
         raise ValueError("SLIM_SHARED_SECRET environment variable must be set")
 
-    slimrpc_config = SlimRpcConfig(
-        namespace=namespace,
-        group=group,
-        name=agent_name,
-        slim_url=f"http://{SLIM_SERVER}",
-        secret=slim_shared_secret,
-    )
     slim_config = SlimTransportConfig(
         endpoint=f"http://{SLIM_SERVER}",
         name=f"{namespace}/{group}/{agent_name}",
@@ -45,11 +37,9 @@ def build_a2a_client_config(
     )
     if include_nats:
         return ClientConfig(
-            slimrpc_config=slimrpc_config,
             slim_config=slim_config,
             nats_config=NatsTransportConfig(endpoint=NATS_SERVER),
         )
     return ClientConfig(
-        slimrpc_config=slimrpc_config,
         slim_config=slim_config,
     )

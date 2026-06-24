@@ -31,14 +31,9 @@ AGENT_CARD = AgentCard(
     capabilities=AgentCapabilities(streaming=True),
     skills=[AGENT_SKILL],
     supportsAuthenticatedExtendedCard=False,
-    preferred_transport="slimrpc",
+    preferred_transport="slim",
     url=f"slim://{SLIM_SERVER}/lungo/agents/colombia_coffee_farm",
     additional_interfaces=[
-        # point-to-point transport for direct client-agent communication
-        AgentInterface(
-            transport="slimrpc",
-            url=f"slim://{SLIM_SERVER}/lungo/agents/colombia_coffee_farm",
-        ),
         # slim-based group messaging and pub/sub transport
         AgentInterface(
             transport="slim",
