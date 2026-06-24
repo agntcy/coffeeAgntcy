@@ -26,7 +26,9 @@ config = build_a2a_client_config(
     include_nats=True,
 )
 
-# Discovered agents are reached over JSONRPC; httpx defaults to a 5s read timeout.
+# Discovered agents are reached over JSONRPC (their OASF records advertise it),
+# and httpx defaults to a 5s read timeout — too short for LLM-backed agents.
+# Only the JSONRPC transport consumes httpx_client; SLIM/NATS ignore it.
 config.httpx_client = httpx.AsyncClient(
     timeout=httpx.Timeout(A2A_CLIENT_TIMEOUT_SECONDS, connect=10.0)
 )

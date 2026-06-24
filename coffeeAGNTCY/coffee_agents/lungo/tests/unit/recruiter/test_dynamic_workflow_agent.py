@@ -10,7 +10,6 @@ import pytest
 from agents.supervisors.recruiter import dynamic_workflow_agent as dwa
 from agents.supervisors.recruiter.dynamic_workflow_agent import (
     DynamicWorkflowAgent,
-    _reachable_card,
     _reachable_url,
 )
 from agents.supervisors.recruiter.models import (
@@ -86,28 +85,6 @@ class TestReachableUrl:
     def test_reachable_url(self, case, url, host, expected):
         with patch.object(dwa, "DISCOVERED_AGENT_HOST", host):
             assert _reachable_url(url) == expected, case
-
-
-class TestReachableCard:
-    def test_reachable_card_does_not_mutate_original(self):
-        from a2a.types import AgentCard
-
-        original = AgentCard(
-            name="Brazil Farm",
-            description="Brazil coffee farm agent",
-            url="http://0.0.0.0:9999",
-            version="1.0.0",
-            capabilities={},
-            default_input_modes=["text"],
-            default_output_modes=["text"],
-            skills=[],
-        )
-        with patch.object(dwa, "DISCOVERED_AGENT_HOST", "host.docker.internal"):
-            reachable = _reachable_card(original)
-
-        assert original.url == "http://0.0.0.0:9999"
-        assert reachable.url == "http://host.docker.internal:9999"
-        assert reachable is not original
 
 
 class TestDynamicWorkflowAgentConstruction:
