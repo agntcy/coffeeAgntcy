@@ -16,22 +16,21 @@ os.environ.setdefault("OTLP_HTTP_ENDPOINT", "http://127.0.0.1:4318")
 os.environ.setdefault("WORKFLOW_API_KEY", "TheAnswerIs42")
 
 import re
-import time
 import sys
-import pytest
+import time
 from pathlib import Path
 
+import config.config  # noqa: F401 # Note: imports config.config to set environment variables.
+import pytest
 from fastapi.testclient import TestClient
 from tests.integration.docker_helpers import (
-    up,
     down,
-    remove_container_if_exists,
     ensure_compose_profile,
+    remove_container_if_exists,
+    up,
     wait_for_tcp_port,
 )
-
 from tests.integration.process_helper import ProcessRunner
-import config.config # noqa: F401 # Note: imports config.config to set environment variables.
 
 LUNGO_DIR = Path(__file__).resolve().parents[2]
 
@@ -39,6 +38,8 @@ LUNGO_DIR = Path(__file__).resolve().parents[2]
 ensure_compose_profile("observability")
 
 _otel_shutdown_done = False
+
+_auction_shared_initialized_by_integration = False
 
 AGENTS = {
     # auction agents
@@ -263,6 +264,20 @@ def _startup_otel_collector():
     up(files, ["otel-collector"])
     _wait_otlp_http_endpoint()
 
+
+@pytest.fixture(scope="session", autouse=True)
+def _drop_supervisor_modules_imported_at_collection():
+    """Collection imports auction.shared / recruiter before integration monkeypatch."""
+    for name in list(sys.modules):
+        if name in (
+            "agents.supervisors.auction.graph.shared",
+            "agents.supervisors.recruiter.shared",
+            "agents.supervisors.logistics.graph.shared",
+        ) or name.startswith("agents.supervisors.recruiter"):
+            sys.modules.pop(name, None)
+    yield
+
+
 # ---------------- per-test config ----------------
 
 @pytest.fixture(scope="function")
@@ -390,33 +405,89 @@ def agents_up(request, transport_config):
 # ---------------- http client ----------------
 
 @pytest.fixture
-def auction_supervisor_client(transport_config, monkeypatch):
+def auction_supervisor_client(transport_config, monkeypatch, request):
+    global _auction_shared_initialized_by_integration
+
     for k, v in _base_env().items():
         monkeypatch.setenv(k, str(v))
     for k, v in transport_config.items():
         monkeypatch.setenv(k, v)
-
     prefixes = ["agents.supervisors.auction", "config.config"]
-    # Keep the shared module (holds A2AClientFactory + SLIM connections) alive
-    # across tests — the SLIM native runtime rejects duplicate connections to
-    # the same endpoint, so recreating the factory per-test causes
-    # "client already connected" errors.
-    keep = ["agents.supervisors.auction.graph.shared"]
-    saved = _save_modules(prefixes)
+    pin_shared = request.node.get_closest_marker("no_pin_auction_shared") is None
+
+    # First integration use: drop shared imported during unit-test collection
+    if not _auction_shared_initialized_by_integration:
+        sys.modules.pop("agents.supervisors.auction.graph.shared", None)
+        keep = []
+        import importlib
+
+        import config.config as config_mod
+
+        importlib.reload(config_mod)
+        for m in list(sys.modules):
+            if m.startswith("agents.farms.") and m.endswith(".card"):
+                sys.modules.pop(m, None)
+    else:
+        keep = ["agents.supervisors.auction.graph.shared"] if pin_shared else []
+
+    # Collection of unit tests may import recruiter.shared + A2AClientFactory
+    # before auction integration runs; drop it so SLIM native state is not shared.
+    for m in list(sys.modules):
+        if m.startswith(
+            ("agents.supervisors.recruiter", "agents.supervisors.logistics")
+        ):
+            sys.modules.pop(m, None)
+
+    if not pin_shared:
+        for m in list(sys.modules):
+            if m.startswith("agents.farms.") and m.endswith(".card"):
+                sys.modules.pop(m, None)
+
+    reloaded = None
     try:
         _purge_modules(prefixes, keep=keep)
+        import importlib
 
         import agents.supervisors.auction.main as auction_main
-        import importlib
-        importlib.reload(auction_main)
 
+        importlib.reload(auction_main)
         app = auction_main.app
+
+        # TEMP DEBUG — remove after confirming
+        import config.config as config_mod
+        from agents.supervisors.auction.graph.shared import (
+            a2a_client_factory,
+            farm_registry,
+        )
+
+        card = farm_registry.get("brazil")
+        print(f"DEBUG SLIM_SERVER={config_mod.SLIM_SERVER!r}")
+        print(f"DEBUG card.url={card.url!r}")
+        print(
+            f"DEBUG factory endpoint={a2a_client_factory._config.slim_config.endpoint!r}"
+        )  # adjust attr if needed
+        assert "127.0.0.1" in card.url, f"stale card: {card.url}"
+        assert "slim:" not in card.url.removeprefix("slim://"), (
+            f"docker hostname in card: {card.url}"
+        )
+
+        # Snapshot the good state only after a successful reload
+        if pin_shared:
+            reloaded = _save_modules(prefixes)
         with TestClient(app) as client:
             _wait_ready(client, "/ready")
             yield client
     finally:
-        _purge_modules(prefixes, keep=keep)
-        _restore_modules(saved)
+        # Clear auction modules so the next test can reload cleanly
+        _purge_modules(prefixes, keep=[])
+        if pin_shared and reloaded is not None:
+            _restore_modules(reloaded)
+            _auction_shared_initialized_by_integration = True
+        elif not pin_shared:
+            for m in list(sys.modules):
+                if m.startswith("agents.farms.") and m.endswith(".card"):
+                    sys.modules.pop(m, None)
+
 
 @pytest.fixture
 def logistics_supervisor_client(transport_config, monkeypatch):
@@ -430,8 +501,10 @@ def logistics_supervisor_client(transport_config, monkeypatch):
     try:
         _purge_modules(prefixes)
 
-        import agents.supervisors.logistics.main as logistics_main
         import importlib
+
+        import agents.supervisors.logistics.main as logistics_main
+
         importlib.reload(logistics_main)
 
         app = logistics_main.app
@@ -441,6 +514,7 @@ def logistics_supervisor_client(transport_config, monkeypatch):
     finally:
         _purge_modules(prefixes)
         _restore_modules(saved)
+
 
 @pytest.fixture
 def helpdesk_client(transport_config, monkeypatch):
@@ -455,16 +529,20 @@ def helpdesk_client(transport_config, monkeypatch):
         _purge_modules(prefixes)
 
         import importlib
+
         import agents.logistics.helpdesk.server as helpdesk_server
+
         importlib.reload(helpdesk_server)
 
         from fastapi.testclient import TestClient
+
         app = helpdesk_server.app
         with TestClient(app) as client:
             yield client
     finally:
         _purge_modules(prefixes)
         _restore_modules(saved)
+
 
 @pytest.fixture
 def logistics_shipper_client(transport_config, monkeypatch):
@@ -479,16 +557,20 @@ def logistics_shipper_client(transport_config, monkeypatch):
         _purge_modules(prefixes)
 
         import importlib
+
         import agents.logistics.shipper.server as shipper_server
+
         importlib.reload(shipper_server)
 
         from fastapi.testclient import TestClient
+
         app = shipper_server.app
         with TestClient(app) as client:
             yield client
     finally:
         _purge_modules(prefixes)
         _restore_modules(saved)
+
 
 @pytest.fixture
 def logistics_farm_client(transport_config, monkeypatch):
@@ -503,16 +585,20 @@ def logistics_farm_client(transport_config, monkeypatch):
         _purge_modules(prefixes)
 
         import importlib
+
         import agents.logistics.farm.server as farm_server
+
         importlib.reload(farm_server)
 
         from fastapi.testclient import TestClient
+
         app = farm_server.app
         with TestClient(app) as client:
             yield client
     finally:
         _purge_modules(prefixes)
         _restore_modules(saved)
+
 
 @pytest.fixture
 def logistics_accountant_client(transport_config, monkeypatch):
@@ -527,6 +613,7 @@ def logistics_accountant_client(transport_config, monkeypatch):
         _purge_modules(prefixes)
 
         import importlib
+
         import agents.logistics.accountant.server as accountant_server
         importlib.reload(accountant_server)
 

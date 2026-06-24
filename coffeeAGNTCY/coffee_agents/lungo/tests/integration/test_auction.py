@@ -10,7 +10,6 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import httpx
 import pytest
-
 from agents.supervisors.auction.graph.a2a_retry import TransportTimeoutError
 from huggingface_hub.utils import close_session, set_client_factory
 from huggingface_hub.utils._http import default_client_factory
@@ -102,38 +101,6 @@ def load_auction_prompt_cases():
 
 
 AUCTION_PROMPT_CASES = load_auction_prompt_cases()
-
-
-@pytest.mark.parametrize(
-    "transport_config",
-    [TRANSPORT_MATRIX[0]],
-    indirect=True,
-)
-def test_auction_a2a_timeout_returns_user_visible_error(auction_supervisor_client):
-    """When send_a2a_with_retry raises TransportTimeoutError, graph returns 200 with error message in body.
-
-    Stub a2a_client_factory.create so execution reaches send_a2a_with_retry: without it, SLIM/agent-card
-    handshake can fail before A2A send (mock would never be called).
-    """
-    with patch(
-        "agents.supervisors.auction.graph.tools.a2a_client_factory.create",
-        new_callable=AsyncMock,
-        return_value=MagicMock(),
-    ), patch(
-        "agents.supervisors.auction.graph.tools.send_a2a_with_retry",
-        new_callable=AsyncMock,
-        side_effect=TransportTimeoutError("timeout", cause=None),
-    ) as mock_send_a2a:
-        resp = auction_supervisor_client.post(
-            "/agent/prompt",
-            json={"prompt": "What is the inventory of coffee in Brazil?"},
-        )
-        assert mock_send_a2a.called
-    assert resp.status_code == 200
-    data = resp.json()
-    assert "response" in data
-    assert not _response_has_inventory_amount(data["response"]), "Expected error response, not inventory success"
-    assert data["response"] == "I encountered an issue retrieving information from the Brazil farm. Please try again later."
 
 
 @pytest.mark.parametrize("transport_config", TRANSPORT_MATRIX, indirect=True)
@@ -237,7 +204,7 @@ class TestAuctionFlows:
             json={"prompt": prompt_case["prompt"]}
         )
         assert resp.status_code in [200, 500]
-        
+
         # If 500, expect identity verification failure for Brazil Coffee Farm
         if resp.status_code == 500:
             data = resp.json()
@@ -247,18 +214,21 @@ class TestAuctionFlows:
             assert "identity verification failed" in detail_lower
             assert "brazil" in detail_lower
 
-    @pytest.mark.agents(["weather-mcp","colombia-farm"])
+    @pytest.mark.agents(["weather-mcp", "colombia-farm"])
     @pytest.mark.usefixtures("agents_up")
     @pytest.mark.parametrize(
         "prompt_case",
         [c for c in AUCTION_PROMPT_CASES if c["id"] == "colombia_create_order"],
         ids=["colombia_create_order"],
     )
-    def test_auction_create_order_colombia(self, auction_supervisor_client, transport_config, prompt_case):
-        logger.info(f"\n---Test: test_auction_create_order_colombia ({prompt_case['id']}) with transport {transport_config}---")
+    def test_auction_create_order_colombia(
+        self, auction_supervisor_client, transport_config, prompt_case
+    ):
+        logger.info(
+            f"\n---Test: test_auction_create_order_colombia ({prompt_case['id']}) with transport {transport_config}---"
+        )
         resp = auction_supervisor_client.post(
-            "/agent/prompt",
-            json={"prompt": prompt_case["prompt"]}
+            "/agent/prompt", json={"prompt": prompt_case["prompt"]}
         )
         assert resp.status_code == 200
         data = resp.json()
@@ -276,11 +246,14 @@ class TestAuctionFlows:
         [c for c in AUCTION_PROMPT_CASES if c["id"] == "vietnam_create_order"],
         ids=["vietnam_create_order"],
     )
-    def test_auction_create_order_vietnam(self, auction_supervisor_client, transport_config, prompt_case):
-        logger.info(f"\n---Test: test_auction_create_order_vietnam ({prompt_case['id']}) with transport {transport_config}---")
+    def test_auction_create_order_vietnam(
+        self, auction_supervisor_client, transport_config, prompt_case
+    ):
+        logger.info(
+            f"\n---Test: test_auction_create_order_vietnam ({prompt_case['id']}) with transport {transport_config}---"
+        )
         resp = auction_supervisor_client.post(
-            "/agent/prompt",
-            json={"prompt": prompt_case["prompt"]}
+            "/agent/prompt", json={"prompt": prompt_case["prompt"]}
         )
         assert resp.status_code == 200
         data = resp.json()
@@ -297,11 +270,14 @@ class TestAuctionFlows:
         [c for c in AUCTION_PROMPT_CASES if c["id"] == "invalid_prompt"],
         ids=["invalid_prompt"],
     )
-    def test_auction_invalid_prompt(self, auction_supervisor_client, transport_config, prompt_case):
-        logger.info(f"\n---Test: test_auction_invalid_prompt ({prompt_case['id']}) with transport {transport_config}---")
+    def test_auction_invalid_prompt(
+        self, auction_supervisor_client, transport_config, prompt_case
+    ):
+        logger.info(
+            f"\n---Test: test_auction_invalid_prompt ({prompt_case['id']}) with transport {transport_config}---"
+        )
         resp = auction_supervisor_client.post(
-            "/agent/prompt",
-            json={"prompt": prompt_case["prompt"]}
+            "/agent/prompt", json={"prompt": prompt_case["prompt"]}
         )
         assert resp.status_code == 200
         data = resp.json()
@@ -315,16 +291,20 @@ class TestAuctionFlows:
         [c for c in AUCTION_PROMPT_CASES if c["id"] == "all_farms_yield"],
         ids=["all_farms_yield_streaming"],
     )
-    def test_auction_all_farms_inventory_streaming(self, auction_supervisor_client, transport_config, prompt_case):
+    def test_auction_all_farms_inventory_streaming(
+        self, auction_supervisor_client, transport_config, prompt_case
+    ):
         """Test the streaming endpoint returns multiple chunks with all farm data."""
-        logger.info(f"\n---Test: test_auction_all_farms_inventory_streaming ({prompt_case['id']}) with transport {transport_config}---")
-        
+        logger.info(
+            f"\n---Test: test_auction_all_farms_inventory_streaming ({prompt_case['id']}) with transport {transport_config}---"
+        )
+
         resp = auction_supervisor_client.post(
             "/agent/prompt/stream",
             json={"prompt": prompt_case["prompt"]}
         )
         assert resp.status_code == 200
-        
+
         # Collect all chunks from the stream
         chunks = []
         for line in resp.iter_lines():
@@ -333,7 +313,7 @@ class TestAuctionFlows:
                 if "response" in chunk_data:
                     chunks.append(chunk_data["response"])
                     logger.info(f"Chunk: {chunk_data['response']}")
-        
+
         # Validate streaming behavior and farm coverage
         assert len(chunks) > 1, f"Expected multiple chunks, got {len(chunks)}"
         full_response = "\n".join(chunks).lower()
@@ -355,3 +335,36 @@ def test_auction_suggested_prompts_streaming_matches_default(auction_supervisor_
     assert default_resp.status_code == 200
     assert streaming_resp.status_code == 200
     assert default_resp.json() == streaming_resp.json()
+
+
+@pytest.mark.no_pin_auction_shared
+@pytest.mark.parametrize(
+    "transport_config",
+    [TRANSPORT_MATRIX[0]],
+    indirect=True,
+)
+def test_auction_a2a_timeout_returns_user_visible_error(auction_supervisor_client):
+    """When send_a2a_with_retry raises TransportTimeoutError, graph returns 200 with error message in body.
+
+    Stub a2a_client_factory.create so execution reaches send_a2a_with_retry: without it, SLIM/agent-card
+    handshake can fail before A2A send (mock would never be called).
+    """
+    with patch(
+        "agents.supervisors.auction.graph.tools.a2a_client_factory.create",
+        new_callable=AsyncMock,
+        return_value=MagicMock(),
+    ), patch(
+        "agents.supervisors.auction.graph.tools.send_a2a_with_retry",
+        new_callable=AsyncMock,
+        side_effect=TransportTimeoutError("timeout", cause=None),
+    ) as mock_send_a2a:
+        resp = auction_supervisor_client.post(
+            "/agent/prompt",
+            json={"prompt": "What is the inventory of coffee in Brazil?"},
+        )
+        assert mock_send_a2a.called
+    assert resp.status_code == 200
+    data = resp.json()
+    assert "response" in data
+    assert not _response_has_inventory_amount(data["response"]), "Expected error response, not inventory success"
+    assert data["response"] == "I encountered an issue retrieving information from the Brazil farm. Please try again later."

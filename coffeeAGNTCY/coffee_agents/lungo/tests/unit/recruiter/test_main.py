@@ -8,21 +8,18 @@ import time
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-from fastapi.testclient import TestClient
-
-from agents.supervisors.recruiter.main import app
 
 
 @pytest.fixture()
-def client():
-    with TestClient(app) as c:
-        deadline = time.monotonic() + 10.0
-        while time.monotonic() < deadline:
-            resp = c.get("/v1/ready")
-            if resp.status_code != 503:
-                break
-            time.sleep(0.1)
-        yield c
+def client(recruiter_client):
+    """Wait for recruiter app to leave 503 starting state."""
+    deadline = time.monotonic() + 10.0
+    while time.monotonic() < deadline:
+        resp = recruiter_client.get("/v1/ready")
+        if resp.status_code != 503:
+            break
+        time.sleep(0.1)
+    yield recruiter_client
 
 
 # ---------------------------------------------------------------------------
