@@ -3,13 +3,14 @@
 
 """Integration test: when the agent raises TransportTimeoutError, the API returns 504."""
 
+from unittest.mock import AsyncMock, MagicMock, patch
+
 import pytest
-from unittest.mock import patch, MagicMock, AsyncMock
 
 
 @pytest.mark.parametrize(
     "transport_config",
-    [{"DEFAULT_MESSAGE_TRANSPORT": "SLIM", "TRANSPORT_SERVER_ENDPOINT": "http://127.0.0.1:46357"}],
+    [{"DEFAULT_MESSAGE_TRANSPORT": "SLIM", "SLIM_SERVER": "127.0.0.1:46357"}],
     indirect=True,
 )
 def test_timeout_returns_504(supervisor_client, transport_config):

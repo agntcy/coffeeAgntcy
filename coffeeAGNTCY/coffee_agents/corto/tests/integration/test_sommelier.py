@@ -24,14 +24,14 @@ TRANSPORT_MATRIX = [
     pytest.param(
         {
             "DEFAULT_MESSAGE_TRANSPORT": "SLIM",
-            "TRANSPORT_SERVER_ENDPOINT": "http://127.0.0.1:46357",
+            "SLIM_SERVER": "127.0.0.1:46357",
         },
         id="SLIM",
     ),
     pytest.param(
         {
             "DEFAULT_MESSAGE_TRANSPORT": "NATS",
-            "TRANSPORT_SERVER_ENDPOINT": "nats://127.0.0.1:4222",
+            "NATS_SERVER": "127.0.0.1:4222",
         },
         id="NATS",
     ),

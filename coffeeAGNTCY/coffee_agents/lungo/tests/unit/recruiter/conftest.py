@@ -19,6 +19,16 @@ def _purge_modules(prefixes):
     for m in to_delete:
         sys.modules.pop(m, None)
 
+@pytest.fixture()
+def recruiter_agent(monkeypatch):
+    monkeypatch.setenv("LLM_MODEL", "openai/gpt-4o-mini")
+    monkeypatch.setenv("RECRUITER_AGENT_URL", "http://localhost:8881")
+    _purge_modules(["agents.supervisors.recruiter", "config.config"])
+    import agents.supervisors.recruiter.agent as agent_mod
+
+    importlib.reload(agent_mod)
+    return agent_mod
+
 
 @pytest.fixture()
 def recruiter_client(monkeypatch):
@@ -35,12 +45,23 @@ def recruiter_client(monkeypatch):
         "config.config",
     ])
 
+    import agents.supervisors.recruiter.agent as recruiter_agent
     import agents.supervisors.recruiter.main as recruiter_main
 
+    importlib.reload(recruiter_agent)
     importlib.reload(recruiter_main)
-
     with TestClient(recruiter_main.app) as client:
         yield client
+
+
+@pytest.fixture()
+def recruiter_client_mod(monkeypatch):
+    monkeypatch.setenv("LLM_MODEL", "openai/gpt-4o-mini")
+    _purge_modules(["agents.supervisors.recruiter", "config.config"])
+    import agents.supervisors.recruiter.recruiter_client as mod
+
+    importlib.reload(mod)
+    return mod
 
 
 # -- sample data used across tests ------------------------------------------

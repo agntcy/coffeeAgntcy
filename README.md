@@ -57,7 +57,7 @@ case and the other a more complex MAS:
 ### Built With
 
 - [AGNTCY App SDK](https://github.com/agntcy/app-sdk) = v0.5.5
-- [SLIM](https://github.com/agntcy/slim) = v1.0.0
+- [SLIM](https://github.com/agntcy/slim) = v1.4.0
 - [NATS](https://github.com/nats-io/nats-server) = latest
 - [A2A](https://github.com/a2aproject/a2a-python) = v0.3.20
 - [MCP](https://github.com/modelcontextprotocol/python-sdk) = v1.26.0

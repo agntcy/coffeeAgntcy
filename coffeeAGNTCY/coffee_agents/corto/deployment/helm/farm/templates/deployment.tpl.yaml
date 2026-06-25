@@ -60,6 +60,10 @@ spec:
           - secretRef:
               name: {{ .Values.appName }}-secrets
         {{ end }}
+        {{ if .Values.config.slimSharedSecret }}
+          - secretRef:
+              name: {{ .Values.appName }}-transport-secret
+        {{ end }}
       {{- with .Values.tolerations }}
       tolerations:
         {{- toYaml . | nindent 8 }}

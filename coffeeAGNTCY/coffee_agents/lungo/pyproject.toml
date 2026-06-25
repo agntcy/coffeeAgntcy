@@ -32,7 +32,7 @@ dependencies = [
     "litellm==1.81.1",
     "google-adk==1.24.0",
     "slima2a==0.3.0",
-    "slim-bindings==1.1.0",
+    "slim-bindings==1.4.0",
     "agntcy-app-sdk==0.5.5",
     "azure-core==1.38.0",
     # Vulnerability fix for requests
@@ -93,6 +93,7 @@ filterwarnings = [
 markers = [
     "agents(names): marks tests that run for specific farms (e.g. @pytest.mark.farms([\"brazil\"]))",
     "e2e: subprocess HTTP against a live app (e.g. uvicorn + SSE); skip with -m \"not e2e\"",
+    "no_pin_auction_shared: do not keep agents.supervisors.auction.graph.shared across this test",
 ]
 pythonpath = ["."]
 testpaths = ["tests"]

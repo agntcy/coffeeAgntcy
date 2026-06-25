@@ -1,58 +1,78 @@
 # Copyright AGNTCY Contributors (https://github.com/agntcy)
 # SPDX-License-Identifier: Apache-2.0
 
-import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
+from uuid import uuid4
 
-from exchange.agent import ExchangeAgent
+import pytest
+from a2a.types import Message, Part, Role, TextPart
 from exchange.errors import (
-    TransportTimeoutError,
     RemoteAgentNoResponseError,
-    _is_timeout_error,
+    TransportTimeoutError,
     _is_no_payload_error,
+    _is_timeout_error,
 )
 
 
-def _make_success_response(text: str = "expected response"):
-    part = MagicMock()
-    part.text = text
-    parts = [MagicMock()]
-    parts[0].root = part
-    result = MagicMock()
-    result.parts = parts
-    root = MagicMock()
-    root.result = result
-    root.error = None
-    response = MagicMock()
-    response.root = root
-    return response
+def _make_success_response(text: str = "expected response") -> Message:
+    """Real Message so _extract_text_from_events() accepts the mock response."""
+    return Message(
+        messageId=str(uuid4()),
+        role=Role.user,
+        parts=[Part(root=TextPart(text=text))],
+    )
+
+
+async def _async_iter(items):
+    for item in items:
+        yield item
+
+
+async def _empty_async_iter():
+    return
+    yield
+
+
+async def _raising_async_iter(exc):
+    raise exc
+    yield
 
 
 def _side_effect_for(scenario_id: str):
     from slim_bindings import SlimError
 
     if scenario_id == "timeout_then_success":
-        return [
-            SlimError.SessionError("receive timeout waiting for message"),
-            _make_success_response("recovered"),
-        ]
+        calls = iter(
+            [
+                _raising_async_iter(
+                    SlimError.SessionError("receive timeout waiting for message")
+                ),
+                _async_iter([_make_success_response("recovered")]),
+            ]
+        )
+        return lambda *a, **kw: next(calls)
     if scenario_id == "timeout_then_timeout":
-        return [SlimError.SessionError("receive timeout")] * 5
+        return lambda *a, **kw: _raising_async_iter(
+            SlimError.SessionError("receive timeout")
+        )
     if scenario_id == "timeout_then_non_timeout":
-        return [
-            SlimError.SessionError("receive timeout"),
-            ConnectionError("connection refused"),
-        ]
+        calls = iter(
+            [
+                _raising_async_iter(SlimError.SessionError("receive timeout")),
+                _raising_async_iter(ConnectionError("connection refused")),
+            ]
+        )
+        return lambda *a, **kw: next(calls)
     if scenario_id == "non_timeout_no_retry":
-        return [ValueError("bad request")]
+        return lambda *a, **kw: _raising_async_iter(ValueError("bad request"))
     if scenario_id == "success_first_attempt":
-        return [_make_success_response("first try")]
+        return lambda *a, **kw: _async_iter([_make_success_response("first try")])
     if scenario_id == "no_payload_error":
         err = AttributeError("'NoneType' object has no attribute 'payload'")
         err.name = "payload"
-        return [err]
+        return lambda *a, **kw: _raising_async_iter(err)
     if scenario_id == "none_response":
-        return [None]
+        return lambda *a, **kw: _empty_async_iter()
     raise ValueError(f"Unknown scenario_id: {scenario_id}")
 
 
@@ -79,27 +99,13 @@ def _no_payload_exception(scenario_id: str):
 
 
 @pytest.fixture
-def mock_factory():
-    factory = MagicMock()
-    factory.create_transport.return_value = MagicMock()
-    return factory
-
-
-@pytest.fixture
 def mock_client():
-    client = MagicMock()
-    client.send_message = AsyncMock()
-    return client
+    return MagicMock()
 
 
 _A2A_SCENARIOS = [
     pytest.param(
-        "timeout_then_success",
-        "recovered",
-        None,
-        2,
-        False,
-        id="timeout_then_success",
+        "timeout_then_success", "recovered", None, 2, False, id="timeout_then_success"
     ),
     pytest.param(
         "timeout_then_timeout",
@@ -118,20 +124,10 @@ _A2A_SCENARIOS = [
         id="timeout_then_non_timeout",
     ),
     pytest.param(
-        "non_timeout_no_retry",
-        None,
-        ValueError,
-        1,
-        False,
-        id="non_timeout_no_retry",
+        "non_timeout_no_retry", None, ValueError, 1, False, id="non_timeout_no_retry"
     ),
     pytest.param(
-        "success_first_attempt",
-        "first try",
-        None,
-        1,
-        False,
-        id="success_first_attempt",
+        "success_first_attempt", "first try", None, 1, False, id="success_first_attempt"
     ),
     pytest.param(
         "no_payload_error",
@@ -142,67 +138,78 @@ _A2A_SCENARIOS = [
         id="no_payload_error",
     ),
     pytest.param(
-        "none_response",
-        None,
-        RemoteAgentNoResponseError,
-        1,
-        False,
-        id="none_response",
+        "none_response", None, RemoteAgentNoResponseError, 1, False, id="none_response"
     ),
 ]
 
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize(
-    "scenario_id,expected_result,expected_exception,expected_await_count,check_cause",
+    "scenario_id,expected_result,expected_exception,expected_call_count,check_cause",
     _A2A_SCENARIOS,
 )
 async def test_a2a_send_message_scenarios(
-    mock_factory,
     mock_client,
     scenario_id,
     expected_result,
     expected_exception,
-    expected_await_count,
+    expected_call_count,
     check_cause,
 ):
-    with patch("exchange.agent.asyncio.sleep", new_callable=AsyncMock) as mock_sleep:
-        mock_client.send_message = AsyncMock(side_effect=_side_effect_for(scenario_id))
-        mock_factory.create_client = AsyncMock(return_value=mock_client)
-        agent = ExchangeAgent(factory=mock_factory)
+    import exchange.agent as agent_module  # Note: required here, because of module reloads for integration tests.
+    import exchange.errors as exchange_errors  # Note: required here, because of module reloads for integration tests.
+
+    mock_client.send_message = MagicMock(side_effect=_side_effect_for(scenario_id))
+    with (
+        patch.object(
+            agent_module.asyncio, "sleep", new_callable=AsyncMock
+        ) as mock_sleep,
+        patch.object(
+            agent_module.a2a_client_factory,
+            "create",
+            new_callable=AsyncMock,
+            return_value=mock_client,
+        ),
+    ):
+        agent = agent_module.ExchangeAgent()
         if expected_exception is not None:
-            with pytest.raises(expected_exception) as exc_info:
+            if getattr(expected_exception, "__module__", "") == "exchange.errors":
+                exc_type = getattr(exchange_errors, expected_exception.__name__)
+            else:
+                exc_type = expected_exception
+            with pytest.raises(exc_type) as exc_info:
                 await agent.a2a_client_send_message("test")
             if check_cause:
                 assert exc_info.value.__cause__ is not None
         else:
             result = await agent.a2a_client_send_message("test")
             assert result == expected_result
-        assert mock_client.send_message.await_count == expected_await_count
+
+        assert mock_client.send_message.call_count == expected_call_count
         if scenario_id == "timeout_then_timeout":
             assert mock_sleep.await_count == 4
-            assert [mock_sleep.await_args_list[i][0][0] for i in range(4)] == [1, 3, 9, 27]
+            assert [mock_sleep.await_args_list[i][0][0] for i in range(4)] == [
+                1,
+                3,
+                9,
+                27,
+            ]
+        elif scenario_id == "timeout_then_success":
+            assert mock_sleep.await_count == 1
+            assert mock_sleep.await_args[0][0] == 1
 
 
 @pytest.mark.parametrize(
     "scenario_id,expected",
-    [
-        ("session_error_in_context", True),
-        ("plain_value_error", False),
-    ],
+    [("session_error_in_context", True), ("plain_value_error", False)],
 )
 def test_is_timeout_error(scenario_id, expected):
-    exc = _timeout_error_exception(scenario_id)
-    assert _is_timeout_error(exc) is expected
+    assert _is_timeout_error(_timeout_error_exception(scenario_id)) is expected
 
 
 @pytest.mark.parametrize(
     "scenario_id,expected",
-    [
-        ("no_payload_attribute", True),
-        ("other_attribute_error", False),
-    ],
+    [("no_payload_attribute", True), ("other_attribute_error", False)],
 )
 def test_is_no_payload_error(scenario_id, expected):
-    exc = _no_payload_exception(scenario_id)
-    assert _is_no_payload_error(exc) is expected
+    assert _is_no_payload_error(_no_payload_exception(scenario_id)) is expected

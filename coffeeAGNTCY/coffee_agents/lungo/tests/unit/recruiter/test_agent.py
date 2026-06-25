@@ -6,23 +6,11 @@
 from unittest.mock import MagicMock
 
 import pytest
-
-from agents.supervisors.recruiter.agent import (
-    root_agent,
-    select_agent,
-    deselect_agent,
-    send_to_agent,
-    dynamic_workflow_agent,
-    root_runner,
-    APP_NAME,
-    _find_agent_by_name_or_cid,
-)
 from agents.supervisors.recruiter.models import (
     STATE_KEY_RECRUITED_AGENTS,
     STATE_KEY_SELECTED_AGENT,
     STATE_KEY_TASK_MESSAGE,
 )
-
 
 # ---------------------------------------------------------------------------
 # Agent structure
@@ -30,33 +18,33 @@ from agents.supervisors.recruiter.models import (
 
 
 class TestAgentStructure:
-    def test_root_agent_name(self):
-        assert root_agent.name == "recruiter_supervisor"
+    def test_root_agent_name(self, recruiter_agent):
+        assert recruiter_agent.root_agent.name == "recruiter_supervisor"
 
-    def test_root_agent_has_tools(self):
-        tool_names = [t.__name__ for t in root_agent.tools]
+    def test_root_agent_has_tools(self, recruiter_agent):
+        tool_names = [t.__name__ for t in recruiter_agent.root_agent.tools]
         assert "recruit_agents" in tool_names
         assert "select_agent" in tool_names
         assert "deselect_agent" in tool_names
         assert "send_to_agent" in tool_names
 
-    def test_root_agent_has_sub_agents(self):
-        sub_names = [a.name for a in root_agent.sub_agents]
+    def test_root_agent_has_sub_agents(self, recruiter_agent):
+        sub_names = [a.name for a in recruiter_agent.root_agent.sub_agents]
         assert "dynamic_workflow" in sub_names
 
-    def test_dynamic_workflow_agent_type(self):
+    def test_dynamic_workflow_agent_type(self, recruiter_agent):
         from agents.supervisors.recruiter.dynamic_workflow_agent import (
             DynamicWorkflowAgent,
         )
 
-        assert isinstance(dynamic_workflow_agent, DynamicWorkflowAgent)
+        assert isinstance(recruiter_agent.dynamic_workflow_agent, DynamicWorkflowAgent)
 
-    def test_runner_app_name(self):
-        assert APP_NAME == "recruiter_supervisor"
+    def test_runner_app_name(self, recruiter_agent):
+        assert recruiter_agent.APP_NAME == "recruiter_supervisor"
 
-    def test_root_agent_has_instruction(self):
-        assert root_agent.instruction is not None
-        assert len(root_agent.instruction) > 50
+    def test_root_agent_has_instruction(self, recruiter_agent):
+        assert recruiter_agent.root_agent.instruction is not None
+        assert len(recruiter_agent.root_agent.instruction) > 50
 
 
 # ---------------------------------------------------------------------------
@@ -65,39 +53,45 @@ class TestAgentStructure:
 
 
 class TestFindAgentByNameOrCid:
-    def test_exact_cid_match(self):
+    def test_exact_cid_match(self, recruiter_agent):
         recruited = {
             "cid_abc123": {"name": "Agent A", "description": "Test agent"},
         }
-        cid, record = _find_agent_by_name_or_cid("cid_abc123", recruited)
+        cid, record = recruiter_agent._find_agent_by_name_or_cid(
+            "cid_abc123", recruited
+        )
         assert cid == "cid_abc123"
         assert record["name"] == "Agent A"
 
-    def test_exact_name_match_case_insensitive(self):
+    def test_exact_name_match_case_insensitive(self, recruiter_agent):
         recruited = {
             "cid_abc123": {"name": "Shipping Agent", "description": "Ships things"},
         }
-        cid, record = _find_agent_by_name_or_cid("shipping agent", recruited)
+        cid, record = recruiter_agent._find_agent_by_name_or_cid(
+            "shipping agent", recruited
+        )
         assert cid == "cid_abc123"
         assert record["name"] == "Shipping Agent"
 
-    def test_partial_name_match(self):
+    def test_partial_name_match(self, recruiter_agent):
         recruited = {
             "cid_abc123": {"name": "Shipping Agent", "description": "Ships things"},
         }
-        cid, record = _find_agent_by_name_or_cid("shipping", recruited)
+        cid, record = recruiter_agent._find_agent_by_name_or_cid("shipping", recruited)
         assert cid == "cid_abc123"
 
-    def test_no_match_returns_none(self):
+    def test_no_match_returns_none(self, recruiter_agent):
         recruited = {
             "cid_abc123": {"name": "Shipping Agent", "description": "Ships things"},
         }
-        cid, record = _find_agent_by_name_or_cid("accounting", recruited)
+        cid, record = recruiter_agent._find_agent_by_name_or_cid(
+            "accounting", recruited
+        )
         assert cid is None
         assert record is None
 
-    def test_empty_recruited_returns_none(self):
-        cid, record = _find_agent_by_name_or_cid("anything", {})
+    def test_empty_recruited_returns_none(self, recruiter_agent):
+        cid, record = recruiter_agent._find_agent_by_name_or_cid("anything", {})
         assert cid is None
         assert record is None
 
@@ -109,7 +103,7 @@ class TestFindAgentByNameOrCid:
 
 class TestSelectAgent:
     @pytest.mark.asyncio
-    async def test_select_by_cid(self):
+    async def test_select_by_cid(self, recruiter_agent):
         tool_context = MagicMock()
         tool_context.state = {
             STATE_KEY_RECRUITED_AGENTS: {
@@ -117,7 +111,7 @@ class TestSelectAgent:
             }
         }
 
-        result = await select_agent(
+        result = await recruiter_agent.select_agent(
             agent_identifier="cid_a",
             tool_context=tool_context,
         )
@@ -127,15 +121,18 @@ class TestSelectAgent:
         assert "✓" in result or "Selected" in result
 
     @pytest.mark.asyncio
-    async def test_select_by_name(self):
+    async def test_select_by_name(self, recruiter_agent):
         tool_context = MagicMock()
         tool_context.state = {
             STATE_KEY_RECRUITED_AGENTS: {
-                "cid_shipping": {"name": "Shipping Agent", "description": "Ships things"},
+                "cid_shipping": {
+                    "name": "Shipping Agent",
+                    "description": "Ships things",
+                },
             }
         }
 
-        result = await select_agent(
+        result = await recruiter_agent.select_agent(
             agent_identifier="Shipping Agent",
             tool_context=tool_context,
         )
@@ -144,15 +141,18 @@ class TestSelectAgent:
         assert "Shipping Agent" in result
 
     @pytest.mark.asyncio
-    async def test_select_by_partial_name(self):
+    async def test_select_by_partial_name(self, recruiter_agent):
         tool_context = MagicMock()
         tool_context.state = {
             STATE_KEY_RECRUITED_AGENTS: {
-                "cid_shipping": {"name": "Shipping Agent", "description": "Ships things"},
+                "cid_shipping": {
+                    "name": "Shipping Agent",
+                    "description": "Ships things",
+                },
             }
         }
 
-        result = await select_agent(
+        result = await recruiter_agent.select_agent(
             agent_identifier="shipping",
             tool_context=tool_context,
         )
@@ -160,7 +160,7 @@ class TestSelectAgent:
         assert tool_context.state[STATE_KEY_SELECTED_AGENT] == "cid_shipping"
 
     @pytest.mark.asyncio
-    async def test_select_no_match_shows_available(self):
+    async def test_select_no_match_shows_available(self, recruiter_agent):
         tool_context = MagicMock()
         tool_context.state = {
             STATE_KEY_RECRUITED_AGENTS: {
@@ -168,7 +168,7 @@ class TestSelectAgent:
             }
         }
 
-        result = await select_agent(
+        result = await recruiter_agent.select_agent(
             agent_identifier="nonexistent",
             tool_context=tool_context,
         )
@@ -177,11 +177,11 @@ class TestSelectAgent:
         assert "Agent A" in result  # Should show available agents
 
     @pytest.mark.asyncio
-    async def test_select_no_recruited_agents(self):
+    async def test_select_no_recruited_agents(self, recruiter_agent):
         tool_context = MagicMock()
         tool_context.state = {}
 
-        result = await select_agent(
+        result = await recruiter_agent.select_agent(
             agent_identifier="anything",
             tool_context=tool_context,
         )
@@ -196,7 +196,7 @@ class TestSelectAgent:
 
 class TestDeselectAgent:
     @pytest.mark.asyncio
-    async def test_deselect_when_agent_selected(self):
+    async def test_deselect_when_agent_selected(self, recruiter_agent):
         tool_context = MagicMock()
         tool_context.state = {
             STATE_KEY_SELECTED_AGENT: "cid_a",
@@ -205,18 +205,18 @@ class TestDeselectAgent:
             },
         }
 
-        result = await deselect_agent(tool_context=tool_context)
+        result = await recruiter_agent.deselect_agent(tool_context=tool_context)
 
         assert tool_context.state[STATE_KEY_SELECTED_AGENT] is None  # Cleared to None
         assert "Deselected" in result
         assert "Agent A" in result
 
     @pytest.mark.asyncio
-    async def test_deselect_when_no_agent_selected(self):
+    async def test_deselect_when_no_agent_selected(self, recruiter_agent):
         tool_context = MagicMock()
         tool_context.state = {}
 
-        result = await deselect_agent(tool_context=tool_context)
+        result = await recruiter_agent.deselect_agent(tool_context=tool_context)
 
         assert "No agent was selected" in result
 
@@ -228,7 +228,7 @@ class TestDeselectAgent:
 
 class TestSendToAgent:
     @pytest.mark.asyncio
-    async def test_send_when_agent_selected(self):
+    async def test_send_when_agent_selected(self, recruiter_agent):
         tool_context = MagicMock()
         tool_context.state = {
             STATE_KEY_SELECTED_AGENT: "cid_a",
@@ -237,7 +237,7 @@ class TestSendToAgent:
             },
         }
 
-        result = await send_to_agent(
+        result = await recruiter_agent.send_to_agent(
             message="Hello agent!",
             tool_context=tool_context,
         )
@@ -247,11 +247,11 @@ class TestSendToAgent:
         assert "dynamic_workflow" in result.lower()
 
     @pytest.mark.asyncio
-    async def test_send_when_no_agent_selected(self):
+    async def test_send_when_no_agent_selected(self, recruiter_agent):
         tool_context = MagicMock()
         tool_context.state = {}
 
-        result = await send_to_agent(
+        result = await recruiter_agent.send_to_agent(
             message="Hello!",
             tool_context=tool_context,
         )

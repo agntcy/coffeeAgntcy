@@ -67,7 +67,7 @@ jobs:
       pip_constraints: |
         grpcio<1.65
       docker_overrides: |
-        slim=ghcr.io/agntcy/slim:0.5.0
+        slim=ghcr.io/agntcy/slim:1.4.0
 ```
 
 ## version-override-test

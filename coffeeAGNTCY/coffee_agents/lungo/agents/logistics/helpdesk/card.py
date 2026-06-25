@@ -1,12 +1,7 @@
 # Copyright AGNTCY Contributors (https://github.com/agntcy)
 # SPDX-License-Identifier: Apache-2.0
 
-from a2a.types import (
-    AgentCapabilities,
-    AgentCard,
-    AgentInterface,
-    AgentSkill
-)
+from a2a.types import AgentCapabilities, AgentCard, AgentInterface, AgentSkill
 from config.config import SLIM_SERVER
 
 AGENT_ID = "logistics_helpdesk_agent"
@@ -25,10 +20,10 @@ AGENT_SKILL = AgentSkill(
 )
 
 AGENT_CARD = AgentCard(
-    name='Logistics Helpdesk',
-    id='logistics-helpdesk-agent',
-    description='An AI agent that provides logistics and support assistance for helpdesk queries.',
-    version='1.0.0',
+    name="Logistics Helpdesk",
+    id="logistics-helpdesk-agent",
+    description="An AI agent that provides logistics and support assistance for helpdesk queries.",
+    version="1.0.0",
     defaultInputModes=["text"],
     defaultOutputModes=["text"],
     capabilities=AgentCapabilities(streaming=True),
@@ -37,7 +32,9 @@ AGENT_CARD = AgentCard(
     preferred_transport="slim",
     url=f"slim://{SLIM_SERVER}/lungo/agents/{AGENT_ID}",
     additional_interfaces=[
-        AgentInterface(transport="slim", url=f"slim://{SLIM_SERVER}/lungo/agents/{AGENT_ID}"),
-        AgentInterface(transport="slimrpc", url=f"slim://{SLIM_SERVER}/lungo/agents/{AGENT_ID}"),
+        AgentInterface(
+            transport="slim",
+            url=f"slim://{SLIM_SERVER}/lungo/agents/{AGENT_ID}",
+        ),
     ],
 )
