@@ -1,5 +1,5 @@
 # Edit before each release-notes run.
-previous_version: "0.1.1"
-current_version: "0.1.2"
+previous_version: "0.1.2"
+current_version: "0.2.0"
 repo_url: "https://github.com/agntcy/coffeeAgntcy"
 github_repo: "agntcy/coffeeAgntcy"
