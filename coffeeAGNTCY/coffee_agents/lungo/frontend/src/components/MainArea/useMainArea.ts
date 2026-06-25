@@ -15,6 +15,7 @@ import type { CustomNodeData } from "./Graph/Elements/types"
 import { useMainAreaDiscoveryGraph } from "./useMainAreaDiscoveryGraph"
 import { useMainAreaGraphEffects } from "./useMainAreaGraphEffects"
 import { useWorkflowGraphFromAgenticApi } from "@/hooks/useWorkflowGraphFromAgenticApi"
+import { useNodeTransportInterfaces } from "./useNodeTransportInterfaces"
 import type { WorkflowSummary } from "@/utils/agenticWorkflowsApi"
 import type { GraphConfig } from "@/utils/graphConfigs"
 import { graphConfigFromNodes } from "@/utils/graphConfigFromNodes"
@@ -171,6 +172,8 @@ export function useMainArea({
     handleCloseModals,
     setOasfModalOpen,
   })
+
+  useNodeTransportInterfaces(pattern, nodes, setNodes)
 
   const delay = (ms: number): Promise<void> =>
     new Promise((resolve) => setTimeout(resolve, ms))

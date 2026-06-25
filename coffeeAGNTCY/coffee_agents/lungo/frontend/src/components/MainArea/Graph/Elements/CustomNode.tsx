@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  **/
 
-import React, { useRef } from "react"
+import React, { useRef, useState } from "react"
 import { Handle, Position } from "@xyflow/react"
 import CheckCircle from "@mui/icons-material/CheckCircle"
 import {
@@ -34,6 +34,7 @@ import {
   CUSTOM_NODE_WIDTH,
 } from "@/utils/graphNodeDimensions"
 import { CustomNodeData, ExtraHandle } from "./types"
+import TransportRail, { railBackgroundImage } from "./TransportRail"
 
 const POSITION_MAP: Record<ExtraHandle["position"], Position> = {
   top: Position.Top,
@@ -49,6 +50,7 @@ interface CustomNodeProps {
 
 const CustomNode: React.FC<CustomNodeProps> = ({ id, data }) => {
   const nodeRef = useRef<HTMLDivElement>(null)
+  const [nodeHovered, setNodeHovered] = useState(false)
   const theme = useTheme()
 
   const githubIconSrc = useGithubIcon()
@@ -58,6 +60,11 @@ const CustomNode: React.FC<CustomNodeProps> = ({ id, data }) => {
   })
 
   const handleStyle = getGraphNodeHandleStyle(theme)
+  const railGradient = railBackgroundImage(
+    data.transportInterfaces,
+    data.activeTransport,
+    theme,
+  )
 
   const handleAgentDirectoryClick = (e: React.MouseEvent) => {
     e.stopPropagation()
@@ -72,11 +79,21 @@ const CustomNode: React.FC<CustomNodeProps> = ({ id, data }) => {
       <Box
         ref={nodeRef}
         component="div"
+        onMouseEnter={() => setNodeHovered(true)}
+        onMouseLeave={() => setNodeHovered(false)}
         sx={(t) => ({
           ...graphNodeRootSurfaceSx(t, {
             active: data.active,
             selected: data.selected,
           }),
+          ...(railGradient
+            ? {
+                backgroundImage: railGradient,
+                backgroundSize: "8px 100%",
+                backgroundPosition: "left top",
+                backgroundRepeat: "no-repeat",
+              }
+            : {}),
           position: "relative",
           display: "flex",
           flexDirection: "column",
@@ -92,7 +109,17 @@ const CustomNode: React.FC<CustomNodeProps> = ({ id, data }) => {
           order: 0,
         })}
       >
-        <GraphIconChip>{data.icon}</GraphIconChip>
+        {data.transportInterfaces && data.transportInterfaces.length > 0 && (
+          <TransportRail
+            transports={data.transportInterfaces}
+            expanded={nodeHovered}
+            activeTransport={data.activeTransport}
+          />
+        )}
+
+        <Box sx={{ position: "relative", zIndex: 1 }}>
+          <GraphIconChip>{data.icon}</GraphIconChip>
+        </Box>
 
         <Box
           sx={{
@@ -101,6 +128,8 @@ const CustomNode: React.FC<CustomNodeProps> = ({ id, data }) => {
             alignItems: "center",
             gap: 0.5,
             p: 0,
+            position: "relative",
+            zIndex: 1,
           }}
         >
           <Tooltip title={data.label1} arrow>
@@ -142,6 +171,8 @@ const CustomNode: React.FC<CustomNodeProps> = ({ id, data }) => {
               minWidth: 0,
               fontWeight: 300,
               lineHeight: "16px",
+              position: "relative",
+              zIndex: 1,
             }}
           >
             {data.label2}
