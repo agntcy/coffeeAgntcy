@@ -57,9 +57,9 @@ const ChatAreaComposer: React.FC<ChatAreaComposerProps> = ({
   return (
     <Stack
       direction={{ xs: "column", sm: "row" }}
-      alignItems={{ xs: "stretch", sm: "flex-end" }}
+      alignItems={{ xs: "stretch", sm: "space-between" }}
       spacing={2}
-      sx={{ width: "100%", maxWidth: 1100, mx: "auto" }}
+      sx={{ width: "100%" }}
     >
       {promptsSource ? (
         <Box sx={promptsDropdownSx}>
@@ -67,6 +67,7 @@ const ChatAreaComposer: React.FC<ChatAreaComposerProps> = ({
             source={promptsSource}
             pattern={pattern}
             onSelect={onSuggestedPromptSelect}
+            sx={(theme) => theme.typography.body1}
           />
         </Box>
       ) : null}
@@ -106,6 +107,16 @@ const ChatAreaComposer: React.FC<ChatAreaComposerProps> = ({
             minHeight: COMPOSER_CONTROL_HEIGHT_PX,
             boxSizing: "border-box",
             alignItems: "center",
+            border: "2px solid transparent",
+            transition: theme.transitions.create(["border-color"], {
+              duration: theme.transitions.duration.shortest,
+            }),
+            "&:has(.MuiInputBase-input:not(:placeholder-shown))": {
+              borderColor: theme.palette.vars.interactiveTertiaryDefault,
+            },
+            "&:has(.MuiInputBase-input:not(:placeholder-shown)):hover": {
+              borderColor: theme.palette.vars.interactiveTertiaryHover,
+            },
           },
           "& .MuiInputBase-input": {
             ...theme.typography.body1,
@@ -130,6 +141,7 @@ const ChatAreaComposer: React.FC<ChatAreaComposerProps> = ({
         sx={(theme) => ({
           flexShrink: 0,
           alignSelf: { xs: "stretch", sm: "flex-end" },
+          ...theme.typography.body1,
           "& .MuiButton-endIcon": iconGlyphFillSx(
             theme.palette.vars.baseTextInverse,
             { important: true },

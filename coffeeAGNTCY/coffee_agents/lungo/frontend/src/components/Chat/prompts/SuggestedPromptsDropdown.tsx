@@ -7,6 +7,8 @@
 
 import React, { useCallback, useMemo, useState } from "react"
 import KeyboardArrowDown from "@mui/icons-material/KeyboardArrowDown"
+import type { SxProps, Theme } from "@mui/material/styles"
+import type { SystemStyleObject } from "@mui/system"
 import {
   Box,
   Button,
@@ -78,12 +80,14 @@ export interface SuggestedPromptsDropdownProps {
   source: SuggestedPromptsSource
   pattern?: string
   onSelect: (query: string) => void
+  sx?: SxProps<Theme>
 }
 
 const SuggestedPromptsDropdown: React.FC<SuggestedPromptsDropdownProps> = ({
   source,
   pattern,
   onSelect,
+  sx,
 }) => {
   const layout = useGraphCanvasLayout()
   const { categories, isLoading } = useSuggestedPrompts(source, pattern)
@@ -116,6 +120,7 @@ const SuggestedPromptsDropdown: React.FC<SuggestedPromptsDropdownProps> = ({
   }, [])
 
   const buttonProps = getPromptsTriggerButtonProps(isLoading, options.length)
+  const isInactive = isLoading || options.length === 0
   const buttonTooltipProps = getPromptsTriggerTooltipProps(
     isLoading,
     options.length,
@@ -128,10 +133,20 @@ const SuggestedPromptsDropdown: React.FC<SuggestedPromptsDropdownProps> = ({
   const triggerButton = (
     <Button
       {...buttonProps}
-      variant={open ? "primary" : (buttonProps.variant ?? "outlined")}
+      variant="primary"
       aria-haspopup="menu"
       aria-expanded={open ? "true" : undefined}
       onClick={handleOpen}
+      sx={(theme): SystemStyleObject<Theme> => {
+        const callerSx = typeof sx === "function" ? sx(theme) : sx
+        const resolvedCallerSx = (
+          Array.isArray(callerSx) ? {} : (callerSx ?? {})
+        ) as SystemStyleObject<Theme>
+        return {
+          ...resolvedCallerSx,
+          ...(isInactive ? { opacity: 0.5, pointerEvents: "none" } : {}),
+        }
+      }}
       endIcon={
         <KeyboardArrowDown
           aria-hidden

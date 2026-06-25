@@ -143,7 +143,7 @@ export function getPromptsTriggerButtonProps(
   isLoading: boolean,
   optionCount: number,
 ): ButtonProps {
-  const base: ButtonProps = { size: "medium", variant: "outlined" }
+  const base: ButtonProps = { size: "medium", variant: "primary" }
 
   if (!isInactive(isLoading, optionCount)) {
     return base
@@ -153,7 +153,6 @@ export function getPromptsTriggerButtonProps(
     ...base,
     "aria-disabled": true,
     tabIndex: -1,
-    sx: { opacity: 0.5, pointerEvents: "none" },
   }
 }
 

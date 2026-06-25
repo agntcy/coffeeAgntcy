@@ -22,11 +22,11 @@ export const CustomDropdownListItemContent: React.FC<
 > = ({ prompt, description }) => {
   return (
     <Stack direction="column" sx={{ minWidth: 0, width: "100%" }}>
-      <Typography variant="body2Semibold" sx={dropdownItemTextSx}>
+      <Typography variant="body1Semibold" sx={dropdownItemTextSx}>
         {prompt}
       </Typography>
       {description ? (
-        <Typography variant="caption" sx={dropdownItemTextSx}>
+        <Typography variant="body1" sx={dropdownItemTextSx}>
           {description}
         </Typography>
       ) : null}

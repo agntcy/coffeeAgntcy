@@ -18,7 +18,7 @@ const messageBodyTypographySx: SystemStyleObject<Theme> = {
 export interface MessageProps {
   /** Leading avatar or icon for the row. */
   icon: React.ReactNode
-  /** Message body; wrapped in shared `body2` typography styles. */
+  /** Message body; wrapped in shared chat-area `body1` typography styles. */
   children: React.ReactNode
   /** Assistant / highlighted rows use `action.hover` background. */
   highlighted?: boolean
@@ -58,7 +58,7 @@ const Message: React.FC<MessageProps> = ({
         }}
       >
         <Typography
-          variant="body2"
+          variant="body1"
           component="div"
           sx={messageBodyTypographySx}
         >
