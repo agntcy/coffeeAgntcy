@@ -168,7 +168,7 @@ class DynamicWorkflowAgent(BaseAgent):
             return
 
         try:
-            record = AgentRecord(cid=selected_cid, **record_data)
+            record = AgentRecord.from_record_data(selected_cid, record_data)
         except Exception:
             logger.warning(
                 f"Failed to parse agent record for CID {selected_cid}.",
@@ -213,12 +213,11 @@ class DynamicWorkflowAgent(BaseAgent):
             )
             return
 
-        agent_card = record.to_agent_card()
+        agent_card = record.card
 
         logger.info(
-            "[agent:dynamic_workflow] Sending to agent: %s at %s",
+            "[agent:dynamic_workflow] Sending to agent: %s",
             record.name,
-            record.url,
         )
 
         # Send A2A message

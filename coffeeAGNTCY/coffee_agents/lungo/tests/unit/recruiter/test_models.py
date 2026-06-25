@@ -11,6 +11,7 @@ from agents.supervisors.recruiter.models import (
     STATE_KEY_RECRUITED_AGENTS,
     STATE_KEY_SELECTED_AGENT,
     STATE_KEY_TASK_MESSAGE,
+    AgentProtocol,
     AgentRecord,
     RecruitmentResponse,
 )
@@ -46,68 +47,45 @@ class TestStateKeys:
 # ---------------------------------------------------------------------------
 
 
+SAMPLE_CARD = {
+    "name": "Test Agent",
+    "description": "A test agent",
+    "version": "2.0.0",
+    "protocolVersion": "0.3.0",
+    "url": "slim://slim:46357/lungo/agents/test",
+    "preferredTransport": "slimrpc",
+    "capabilities": {"streaming": True},
+    "defaultInputModes": ["text"],
+    "defaultOutputModes": ["text"],
+    "skills": [],
+    "additionalInterfaces": [
+        {"transport": "slimrpc", "url": "slim://slim:46357/lungo/agents/test"},
+        {"transport": "jsonrpc", "url": "http://0.0.0.0:9999"},
+    ],
+}
+
+
 class TestAgentRecord:
-    def test_minimal_construction(self):
-        record = AgentRecord(cid="abc", name="Test", url="http://localhost:9000")
+    def test_from_record_data_basics(self):
+        record = AgentRecord.from_record_data("abc", SAMPLE_CARD)
         assert record.cid == "abc"
-        assert record.name == "Test"
-        assert record.url == "http://localhost:9000"
-        assert record.description == ""
+        assert record.name == "Test Agent"
+        assert record.protocol == AgentProtocol.A2A
+        assert isinstance(record.card, AgentCard)
 
-    def test_full_construction(self):
-        record = AgentRecord(
-            cid="abc",
-            name="Test Agent",
-            description="A test agent",
-            url="http://localhost:9000",
-            version="2.0.0",
-            skills=[{"id": "s1", "name": "Skill 1"}],
-        )
-        assert record.version == "2.0.0"
-        assert len(record.skills) == 1
+    def test_from_record_data_preserves_transport_and_interfaces(self):
+        """The full card is kept so the client factory can negotiate transport."""
+        record = AgentRecord.from_record_data("abc", SAMPLE_CARD)
+        assert record.card.preferred_transport == "slimrpc"
+        assert record.card.additional_interfaces is not None
+        assert {i.transport for i in record.card.additional_interfaces} == {
+            "slimrpc",
+            "jsonrpc",
+        }
 
-    def test_to_agent_card_returns_valid_card(self):
-        record = AgentRecord(
-            cid="abc",
-            name="Test Agent",
-            description="A test",
-            url="http://localhost:9000",
-            version="2.0.0",
-        )
-        card = record.to_agent_card()
-
-        assert isinstance(card, AgentCard)
-        assert card.name == "Test Agent"
-        assert card.url == "http://localhost:9000"
-        assert card.description == "A test"
-        assert card.version == "2.0.0"
-
-    def test_to_safe_agent_name_simple(self):
-        record = AgentRecord(cid="x", name="my_agent", url="http://x")
-        assert record.to_safe_agent_name() == "my_agent"
-
-    def test_to_safe_agent_name_with_spaces_and_special_chars(self):
-        record = AgentRecord(cid="x", name="My Agent (v2)", url="http://x")
-        safe = record.to_safe_agent_name()
-        assert safe.isidentifier(), f"'{safe}' is not a valid identifier"
-        assert "my" in safe.lower()
-
-    def test_to_safe_agent_name_starting_with_number(self):
-        record = AgentRecord(cid="x", name="123-agent", url="http://x")
-        safe = record.to_safe_agent_name()
-        assert safe.isidentifier(), f"'{safe}' is not a valid identifier"
-        assert safe.startswith("agent_")
-
-    def test_to_safe_agent_name_with_hyphens(self):
-        record = AgentRecord(cid="x", name="accounting-agent-v3", url="http://x")
-        safe = record.to_safe_agent_name()
-        assert safe.isidentifier(), f"'{safe}' is not a valid identifier"
-
-    def test_to_safe_agent_name_empty_name(self):
-        """Edge case: if name somehow becomes empty after sanitisation."""
-        record = AgentRecord(cid="x", name="---", url="http://x")
-        safe = record.to_safe_agent_name()
-        assert safe.isidentifier(), f"'{safe}' is not a valid identifier"
+    def test_from_record_data_reads_protocol(self):
+        record = AgentRecord.from_record_data("abc", {**SAMPLE_CARD, "protocol": "a2a"})
+        assert record.protocol == AgentProtocol.A2A
 
 
 # ---------------------------------------------------------------------------

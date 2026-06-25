@@ -4,7 +4,7 @@
 # SLIM v0.7+ requires to use debian trixie distribution
 FROM astral/uv:0.11.16-python3.13-trixie-slim@sha256:d57fc364ed714127c162a01b316bfb7b9a3fd09d97c665781a5607acaa35d254
 
-COPY --from=ghcr.io/agntcy/dir-ctl:v1.0.0 /dirctl /usr/local/bin/dirctl
+COPY --from=ghcr.io/agntcy/dir-ctl:v1.5.0 /dirctl /usr/local/bin/dirctl
 
 WORKDIR /app
 

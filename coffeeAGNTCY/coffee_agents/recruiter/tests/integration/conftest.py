@@ -28,7 +28,7 @@ RECRUITER_DIR = Path(__file__).resolve().parents[2]
 ZOT_REGISTRY_READYZ_URL = "http://127.0.0.1:5555/readyz"
 
 # ---------------- Ensure DIRCTL is available ----------------
-DIRCTL_VERSION = "v1.0.0"
+DIRCTL_VERSION = "v1.5.0"
 BIN_DIR = RECRUITER_DIR / "bin"
 LOCAL_DIRCTL = BIN_DIR / "dirctl"
 
@@ -98,6 +98,10 @@ def ensure_dirctl():
 
     Prepends recruiter/bin to PATH when using the downloaded binary so subprocess calls to `dirctl` work.
     """
+    # dirctl v1.5+ requires an explicit server address (no localhost default).
+    os.environ.setdefault("DIRECTORY_CLIENT_SERVER_ADDRESS", "localhost:8888")
+    os.environ.setdefault("DIRECTORY_CLIENT_TLS_SKIP_VERIFY", "true")
+
     if _find_executable_on_path("dirctl"):
         return
 
