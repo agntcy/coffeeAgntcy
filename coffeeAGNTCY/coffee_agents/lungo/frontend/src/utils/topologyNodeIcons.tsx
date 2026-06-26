@@ -32,29 +32,44 @@ export interface TopologyNodeIconInput {
   directoryAgentSlug?: string
 }
 
-export type TopologyNodeIconKind =
-  | "supervisor"
-  | "recruiter"
-  | "directory"
-  | "farm"
-  | "weatherMcp"
-  | "paymentMcp"
-  | "shipping"
-  | "accountant"
-  | "default"
+export enum TopologyNodeIconKind {
+  Supervisor = "supervisor",
+  Recruiter = "recruiter",
+  Directory = "directory",
+  Farm = "farm",
+  WeatherMcp = "weatherMcp",
+  PaymentMcp = "paymentMcp",
+  Shipping = "shipping",
+  Accountant = "accountant",
+  Default = "default",
+}
 
 function normalize(value: string | undefined): string {
   return typeof value === "string" ? value.trim().toLowerCase() : ""
 }
 
 function iconKindFromSlug(slug: string): TopologyNodeIconKind | null {
-  if (slug.includes("supervisor")) return "supervisor"
-  if (slug.includes("recruiter")) return "recruiter"
-  if (slug.includes("farm")) return "farm"
-  if (slug.includes("weather")) return "weatherMcp"
-  if (slug.includes("payment")) return "paymentMcp"
-  if (slug.includes("shipping")) return "shipping"
-  if (slug.includes("accountant")) return "accountant"
+  if (slug.includes(TopologyNodeIconKind.Supervisor)) {
+    return TopologyNodeIconKind.Supervisor
+  }
+  if (slug.includes(TopologyNodeIconKind.Recruiter)) {
+    return TopologyNodeIconKind.Recruiter
+  }
+  if (slug.includes(TopologyNodeIconKind.Farm)) {
+    return TopologyNodeIconKind.Farm
+  }
+  if (slug.includes("weather")) {
+    return TopologyNodeIconKind.WeatherMcp
+  }
+  if (slug.includes("payment")) {
+    return TopologyNodeIconKind.PaymentMcp
+  }
+  if (slug.includes(TopologyNodeIconKind.Shipping)) {
+    return TopologyNodeIconKind.Shipping
+  }
+  if (slug.includes(TopologyNodeIconKind.Accountant)) {
+    return TopologyNodeIconKind.Accountant
+  }
   return null
 }
 
@@ -65,22 +80,22 @@ function iconKindFromLabels(
   const combined = `${label1} ${label2}`.trim()
 
   if (label2 === "mcp server" || label1.endsWith("mcp server")) {
-    if (label1.includes("weather")) return "weatherMcp"
-    if (label1.includes("payment")) return "paymentMcp"
-    return "default"
+    if (label1.includes("weather")) return TopologyNodeIconKind.WeatherMcp
+    if (label1.includes("payment")) return TopologyNodeIconKind.PaymentMcp
+    return TopologyNodeIconKind.Default
   }
 
   if (isRecruiterLabel(combined)) {
-    return "recruiter"
+    return TopologyNodeIconKind.Recruiter
   }
 
   if (label1 === "directory" || isDirectoryLabel(combined)) {
-    return "directory"
+    return TopologyNodeIconKind.Directory
   }
 
-  if (label2.includes("coffee farm")) return "farm"
-  if (label1 === "shipper") return "shipping"
-  if (label1 === "accountant") return "accountant"
+  if (label2.includes("coffee farm")) return TopologyNodeIconKind.Farm
+  if (label1 === "shipper") return TopologyNodeIconKind.Shipping
+  if (label1 === "accountant") return TopologyNodeIconKind.Accountant
 
   if (
     label1 === "auction agent" ||
@@ -90,10 +105,10 @@ function iconKindFromLabels(
     label2.includes("logistics agent") ||
     combined === "logistics group"
   ) {
-    return "supervisor"
+    return TopologyNodeIconKind.Supervisor
   }
 
-  return "default"
+  return TopologyNodeIconKind.Default
 }
 
 export function topologyNodeIconKind(
@@ -115,21 +130,21 @@ export function resolveTopologyNodeIcon(
   input: TopologyNodeIconInput,
 ): React.ReactNode {
   switch (topologyNodeIconKind(input)) {
-    case "supervisor":
+    case TopologyNodeIconKind.Supervisor:
       return brandedImg(supervisorIcon, "Supervisor Icon")
-    case "recruiter":
+    case TopologyNodeIconKind.Recruiter:
       return brandedImg(supervisorIcon, "Recruiter Icon")
-    case "directory":
+    case TopologyNodeIconKind.Directory:
       return brandedImg(supervisorIcon, "Directory Icon")
-    case "farm":
+    case TopologyNodeIconKind.Farm:
       return brandedImg(farmAgentIcon, "Farm Agent Icon")
-    case "weatherMcp":
+    case TopologyNodeIconKind.WeatherMcp:
       return <Air aria-hidden />
-    case "paymentMcp":
+    case TopologyNodeIconKind.PaymentMcp:
       return <Calculate aria-hidden />
-    case "shipping":
+    case TopologyNodeIconKind.Shipping:
       return <LocalShipping aria-hidden />
-    case "accountant":
+    case TopologyNodeIconKind.Accountant:
       return <Calculate aria-hidden />
     default:
       return <SmartToy aria-hidden />

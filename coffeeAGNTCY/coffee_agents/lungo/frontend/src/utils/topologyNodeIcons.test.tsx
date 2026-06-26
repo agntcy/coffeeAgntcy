@@ -8,8 +8,8 @@ import { describe, expect, it } from "vitest"
 import {
   resolveTopologyNodeIcon,
   topologyNodeIconKind,
+  TopologyNodeIconKind,
   type TopologyNodeIconInput,
-  type TopologyNodeIconKind,
 } from "@/utils/topologyNodeIcons"
 
 describe("topologyNodeIconKind", () => {
@@ -25,67 +25,67 @@ describe("topologyNodeIconKind", () => {
         label1: "Weather",
         label2: "MCP Server",
       },
-      expected: "supervisor",
+      expected: TopologyNodeIconKind.Supervisor,
     },
     {
       caseName: "logistics supervisor slug -> supervisor",
       input: { directoryAgentSlug: "logistics-supervisor-agent" },
-      expected: "supervisor",
+      expected: TopologyNodeIconKind.Supervisor,
     },
     {
       caseName: "recruiter slug -> recruiter",
       input: { directoryAgentSlug: "recruiter" },
-      expected: "recruiter",
+      expected: TopologyNodeIconKind.Recruiter,
     },
     {
       caseName: "coffee farm slug -> farm",
       input: { directoryAgentSlug: "colombia-coffee-farm" },
-      expected: "farm",
+      expected: TopologyNodeIconKind.Farm,
     },
     {
       caseName: "tatooine farm slug -> farm",
       input: { directoryAgentSlug: "tatooine-farm-agent" },
-      expected: "farm",
+      expected: TopologyNodeIconKind.Farm,
     },
     {
       caseName: "weather mcp slug -> weatherMcp",
       input: { directoryAgentSlug: "weather-mcp-server" },
-      expected: "weatherMcp",
+      expected: TopologyNodeIconKind.WeatherMcp,
     },
     {
       caseName: "payment mcp slug -> paymentMcp",
       input: { directoryAgentSlug: "payment-mcp-server" },
-      expected: "paymentMcp",
+      expected: TopologyNodeIconKind.PaymentMcp,
     },
     {
       caseName: "shipping slug -> shipping",
       input: { directoryAgentSlug: "shipping-agent" },
-      expected: "shipping",
+      expected: TopologyNodeIconKind.Shipping,
     },
     {
       caseName: "accountant slug -> accountant",
       input: { directoryAgentSlug: "accountant-agent" },
-      expected: "accountant",
+      expected: TopologyNodeIconKind.Accountant,
     },
     {
       caseName: "unknown slug falls back to labels",
       input: { directoryAgentSlug: "mystery", label1: "Shipper" },
-      expected: "shipping",
+      expected: TopologyNodeIconKind.Shipping,
     },
     {
       caseName: "weather mcp by labels",
       input: { label1: "Weather", label2: "MCP Server" },
-      expected: "weatherMcp",
+      expected: TopologyNodeIconKind.WeatherMcp,
     },
     {
       caseName: "payment mcp by labels",
       input: { label1: "Payment", label2: "MCP Server" },
-      expected: "paymentMcp",
+      expected: TopologyNodeIconKind.PaymentMcp,
     },
     {
       caseName: "generic mcp by labels -> default",
       input: { label1: "Inventory", label2: "MCP Server" },
-      expected: "default",
+      expected: TopologyNodeIconKind.Default,
     },
     {
       caseName: "agentic recruiter by labels",
@@ -93,47 +93,47 @@ describe("topologyNodeIconKind", () => {
         label1: "Agentic Recruiter",
         label2: "Discovery and delegation",
       },
-      expected: "recruiter",
+      expected: TopologyNodeIconKind.Recruiter,
     },
     {
       caseName: "agntcy agent directory by labels",
       input: { label1: "Directory", label2: "AGNTCY Agent Directory" },
-      expected: "directory",
+      expected: TopologyNodeIconKind.Directory,
     },
     {
       caseName: "coffee farm by labels",
       input: { label1: "Brazil", label2: "Coffee Farm Agent" },
-      expected: "farm",
+      expected: TopologyNodeIconKind.Farm,
     },
     {
       caseName: "auction agent by labels",
       input: { label1: "Auction Agent", label2: "Buyer" },
-      expected: "supervisor",
+      expected: TopologyNodeIconKind.Supervisor,
     },
     {
       caseName: "logistics buyer by labels",
       input: { label1: "Buyer", label2: "Logistics Agent" },
-      expected: "supervisor",
+      expected: TopologyNodeIconKind.Supervisor,
     },
     {
       caseName: "shipper by labels",
       input: { label1: "Shipper", label2: "Shipper Agent" },
-      expected: "shipping",
+      expected: TopologyNodeIconKind.Shipping,
     },
     {
       caseName: "accountant by labels",
       input: { label1: "Accountant", label2: "Accountant Agent" },
-      expected: "accountant",
+      expected: TopologyNodeIconKind.Accountant,
     },
     {
       caseName: "unknown -> default",
       input: { label1: "Mystery", label2: "Thing" },
-      expected: "default",
+      expected: TopologyNodeIconKind.Default,
     },
     {
       caseName: "empty input -> default",
       input: {},
-      expected: "default",
+      expected: TopologyNodeIconKind.Default,
     },
   ])("$caseName", ({ input, expected }) => {
     expect(topologyNodeIconKind(input)).toBe(expected)
