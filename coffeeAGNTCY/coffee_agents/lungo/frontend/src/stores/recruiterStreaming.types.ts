@@ -36,4 +36,5 @@ export interface RecruiterStreamingFeedProps {
   graphConfig?: GraphConfig
   apiError: boolean
   recruiterStreamingState?: RecruiterStreamingState
+  observabilitySessionId?: string | null
 }

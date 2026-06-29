@@ -10,6 +10,7 @@ import { ChatAgentAvatar } from "../ChatAvatarCircle"
 import { FeedSpinnerRow } from "../FeedSpinnerRow"
 import { FeedStatusLine } from "../FeedStatusLine"
 import { FeedCollapseButton } from "./FeedCollapseButton"
+import GrafanaSessionLink from "../GrafanaSessionLink"
 import type {
   RecruiterStreamingFeedProps,
   RecruiterStreamingEvent,
@@ -25,6 +26,7 @@ const RecruiterStreamingFeed: React.FC<RecruiterStreamingFeedProps> = ({
   graphConfig,
   recruiterStreamingState,
   apiError,
+  observabilitySessionId,
 }) => {
   const isComplete = recruiterStreamingState?.status === "completed"
   const [isExpanded, setIsExpanded] = useState(true)
@@ -69,13 +71,8 @@ const RecruiterStreamingFeed: React.FC<RecruiterStreamingFeedProps> = ({
         setIsExpanded(false)
       }
 
-      if (onComplete) {
-        onComplete()
-      }
-
-      if (onStreamComplete) {
-        onStreamComplete()
-      }
+      onComplete?.()
+      onStreamComplete?.()
     }
   }, [
     isComplete,
@@ -121,9 +118,15 @@ const RecruiterStreamingFeed: React.FC<RecruiterStreamingFeedProps> = ({
         {errorMessage ? (
           <FeedStatusLine>Connection error: {errorMessage}</FeedStatusLine>
         ) : isComplete ? (
-          <FeedStatusLine>{`Recruiter completed${events.length > 1 ? ":" : "."}`}</FeedStatusLine>
+          <Stack direction="row" alignItems="center" flexWrap="wrap" gap={0.5}>
+            <FeedStatusLine>{`Recruiter completed${events.length > 1 ? ":" : "."}`}</FeedStatusLine>
+            <GrafanaSessionLink sessionId={observabilitySessionId} />
+          </Stack>
         ) : prompt && !apiError ? (
-          <FeedStatusLine showDots>Recruiting agents</FeedStatusLine>
+          <Stack direction="row" alignItems="center" flexWrap="wrap" gap={0.5}>
+            <FeedStatusLine showDots>Recruiting agents</FeedStatusLine>
+            <GrafanaSessionLink sessionId={observabilitySessionId} />
+          </Stack>
         ) : null}
 
         {prompt && !isComplete && !apiError && events.length === 0 ? (

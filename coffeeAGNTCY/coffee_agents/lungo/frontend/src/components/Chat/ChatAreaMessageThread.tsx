@@ -118,6 +118,7 @@ const ChatAreaMessageThread: React.FC<ChatAreaMessageThreadProps> = ({
           onStreamComplete={onStreamComplete}
           onSenderHighlight={onSenderHighlight}
           graphConfig={graphConfig}
+          observabilitySessionId={observabilitySessionId}
         />
       </Box>
     )}
