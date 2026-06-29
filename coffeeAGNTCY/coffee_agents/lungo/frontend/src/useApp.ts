@@ -361,6 +361,7 @@ export function useApp() {
           chat.setShowFinalResponse(true)
           const response = await sendMessage(query, selectedPattern)
           chat.handleApiResponse(response, false)
+          chat.setAiReplied(true)
         }
       } catch (err) {
         logger.apiError(LUNGO_FRONTEND_URLS.apiPaths.agentPrompt, err)
