@@ -17,6 +17,8 @@ service:
   port: 9105
 
 config:
+  azureApiBase: ""
+  azureApiVersion: ""
   corsAllowedOrigins: ""
   llmModel: ""
   # Set for local/dev chart installs only; production should use an external Secret.
