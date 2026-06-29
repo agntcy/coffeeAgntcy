@@ -12,4 +12,5 @@ export interface AuctionStreamingState {
   status: "idle" | "connecting" | "streaming" | "completed" | "error"
   events: AuctionStreamingResponse[]
   error: string | null
+  sessionId?: string | null
 }

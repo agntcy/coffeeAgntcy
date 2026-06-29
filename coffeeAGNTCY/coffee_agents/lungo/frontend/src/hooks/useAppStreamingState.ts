@@ -8,6 +8,7 @@ import {
   useStreamingEvents,
   useStreamingError,
   useStreamingActions,
+  useStreamingSessionId,
 } from "@/stores/auctionStreamingStore"
 import {
   useGroupIsStreaming,
@@ -36,6 +37,7 @@ export function useAppStreamingState() {
   const status = useStreamingStatus()
   const events = useStreamingEvents()
   const error = useStreamingError()
+  const sessionId = useStreamingSessionId()
 
   const groupIsStreaming = useGroupIsStreaming()
   const groupIsComplete = useGroupIsComplete()
@@ -61,6 +63,7 @@ export function useAppStreamingState() {
     status,
     events,
     error,
+    sessionId,
     groupIsStreaming,
     groupIsComplete,
     groupFinalResponse,

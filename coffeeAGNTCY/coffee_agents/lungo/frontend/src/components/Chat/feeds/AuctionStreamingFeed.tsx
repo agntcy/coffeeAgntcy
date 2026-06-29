@@ -13,6 +13,7 @@ import type { GraphConfig } from "@/utils/graphConfigs"
 import { animationSequenceStepIds } from "../chatStreamGraphHighlight"
 import { FeedSpinnerRow } from "../FeedSpinnerRow"
 import { FeedStatusLine } from "../FeedStatusLine"
+import GrafanaSessionLink from "../GrafanaSessionLink"
 
 export interface AuctionStreamingFeedProps {
   isVisible: boolean
@@ -24,6 +25,7 @@ export interface AuctionStreamingFeedProps {
   executionKey?: string
   apiError: boolean
   auctionStreamingState?: AuctionStreamingState
+  observabilitySessionId?: string | null
 }
 
 const AuctionStreamingFeed: React.FC<AuctionStreamingFeedProps> = ({
@@ -35,6 +37,7 @@ const AuctionStreamingFeed: React.FC<AuctionStreamingFeedProps> = ({
   graphConfig,
   auctionStreamingState,
   apiError,
+  observabilitySessionId,
 }) => {
   const isComplete = auctionStreamingState?.status === "completed"
   const lastProcessedStepRef = useRef<number | null>(null)
@@ -159,6 +162,10 @@ const AuctionStreamingFeed: React.FC<AuctionStreamingFeedProps> = ({
               </Stack>
             )
           })}
+
+          {isComplete && events.length > 0 ? (
+            <GrafanaSessionLink sessionId={observabilitySessionId} />
+          ) : null}
 
           {events.length > 0 && !isComplete ? <FeedSpinnerRow mt={0} /> : null}
         </Stack>

@@ -506,5 +506,6 @@ export function useApp() {
     canvasMode,
     patternDocState,
     patternChatSessionId,
+    auctionSessionId: streaming.sessionId,
   }
 }

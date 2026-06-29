@@ -10,7 +10,7 @@ import { useScrollPanelOnContentResize } from "@/utils/chatScroll"
 import type { Message } from "./types"
 import { parseApiError } from "@/utils/const"
 import { useAgentAPI } from "@/hooks/useAgentAPI"
-import { useGroupSessionId } from "@/stores/groupStreamingStore"
+import { useObservabilitySessionId } from "@/hooks/useObservabilitySessionId"
 import { Box, Stack } from "@open-ui-kit/core"
 
 import ChatAreaComposer from "./ChatAreaComposer"
@@ -18,11 +18,7 @@ import ChatAreaMessageThread from "./ChatAreaMessageThread"
 import ChatHeader from "./ChatHeader"
 
 import { logger } from "@/utils/logger"
-import {
-  buildGrafanaSessionDashboardUrl,
-  getGrafanaUrl,
-  LUNGO_FRONTEND_URLS,
-} from "@/urls"
+import { LUNGO_FRONTEND_URLS } from "@/urls"
 import type { GraphConfig } from "@/utils/graphConfigs"
 import { DiscoveryResponseEvent } from "@/types/agent"
 import type { AuctionStreamingState } from "@/stores/auctionStreaming.types"
@@ -54,7 +50,7 @@ interface ChatAreaProps {
   graphConfig?: GraphConfig
   onSendPrompt?: (query: string) => void
   onUserInput?: (query: string) => void
-  onApiResponse?: (response: string, isError?: boolean) => void
+  onApiResponse?: (response: ApiResponse | string, isError?: boolean) => void
   onClearConversation?: () => void
   currentUserMessage?: string
   agentResponse?: ApiResponse
@@ -64,7 +60,6 @@ interface ChatAreaProps {
   chatRef?: React.RefObject<HTMLDivElement | null>
   auctionState?: AuctionStreamingState
   recruiterState?: RecruiterStreamingState
-  grafanaUrl?: string
   onDiscoveryResponse?: (evt: DiscoveryResponseEvent) => void
   canvasMode?: CanvasMode
   selectedReferencePattern?: string | null
@@ -99,7 +94,6 @@ const ChatArea: React.FC<ChatAreaProps> = ({
   chatRef,
   auctionState,
   recruiterState,
-  grafanaUrl = getGrafanaUrl(),
   onDiscoveryResponse,
   canvasMode,
   selectedReferencePattern,
@@ -171,7 +165,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
           onApiSuccess(response)
 
           if (onApiResponse) {
-            onApiResponse(response.response ?? "", false)
+            onApiResponse(response, false)
           }
         },
         onError: (error) => {
@@ -236,12 +230,9 @@ const ChatArea: React.FC<ChatAreaProps> = ({
     }
   }
 
-  const groupSessionId = useGroupSessionId()
-  const sessionIdForUrl = agentResponse?.session_id || groupSessionId
-
-  const grafanaSessionUrl = sessionIdForUrl
-    ? buildGrafanaSessionDashboardUrl(sessionIdForUrl)
-    : grafanaUrl
+  const observabilitySessionId = useObservabilitySessionId(
+    agentResponse?.session_id,
+  )
 
   if (!isBottomLayout) {
     return null
@@ -322,13 +313,11 @@ const ChatArea: React.FC<ChatAreaProps> = ({
               isAgentLoading={!!isAgentLoading}
               agentResponse={agentResponse}
               apiError={apiError}
-              pattern={pattern}
               graphConfig={graphConfig}
               executionKey={executionKey}
               auctionState={auctionState}
               recruiterState={recruiterState}
-              groupSessionId={groupSessionId}
-              grafanaSessionUrl={grafanaSessionUrl}
+              observabilitySessionId={observabilitySessionId}
               onStreamComplete={onStreamComplete}
               onSenderHighlight={onSenderHighlight}
             />
