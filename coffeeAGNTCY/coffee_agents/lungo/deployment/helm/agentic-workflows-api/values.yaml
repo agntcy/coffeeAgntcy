@@ -18,6 +18,7 @@ service:
 
 config:
   corsAllowedOrigins: ""
+  llmModel: ""
   # Set for local/dev chart installs only; production should use an external Secret.
   workflowApiKey: "TheAnswerIs42"
 
