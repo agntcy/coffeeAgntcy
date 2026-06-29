@@ -41,6 +41,10 @@ spec:
         envFrom:
           - configMapRef:
               name: {{ .Values.appName }}-configmap
+        {{ if .Values.externalSecrets }}
+          - secretRef:
+              name: {{ .Values.appName }}-secrets
+        {{ end }}
         {{ if .Values.resources.enabled }}
         resources:
           requests:
