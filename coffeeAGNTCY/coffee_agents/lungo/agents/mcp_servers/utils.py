@@ -39,10 +39,8 @@ async def invoke_payment_mcp_tool(
   )
 
   client = await factory.mcp().create_client(
-    "FastMCP",
-    agent_topic="lungo_payment_service",
+    topic="lungo_payment_service",
     transport=transport_instance,
-    url=os.getenv("MCP_PAYMENT_SERVICE_URL", "http://localhost:8081/mcp"),
   )
 
   client = wrap_mcp_client(
