@@ -90,6 +90,7 @@ const ChatAreaMessageThread: React.FC<ChatAreaMessageThreadProps> = ({
           prompt={currentUserMessage}
           executionKey={executionKey}
           apiError={apiError}
+          observabilitySessionId={observabilitySessionId}
         />
       </Box>
     )}

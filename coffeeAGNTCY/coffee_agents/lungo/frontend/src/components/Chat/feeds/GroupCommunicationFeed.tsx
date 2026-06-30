@@ -24,6 +24,7 @@ import {
 import { FeedSpinnerRow } from "../FeedSpinnerRow"
 import { FeedStatusLine } from "../FeedStatusLine"
 import { FeedCollapseButton } from "./FeedCollapseButton"
+import GrafanaSessionLink from "../GrafanaSessionLink"
 
 export interface GroupCommunicationFeedProps {
   isVisible: boolean
@@ -34,6 +35,7 @@ export interface GroupCommunicationFeedProps {
   graphConfig?: GraphConfig
   executionKey?: string
   apiError: boolean
+  observabilitySessionId?: string | null
 }
 
 const GroupCommunicationFeed: React.FC<GroupCommunicationFeedProps> = ({
@@ -44,6 +46,7 @@ const GroupCommunicationFeed: React.FC<GroupCommunicationFeedProps> = ({
   graphConfig,
   executionKey,
   apiError,
+  observabilitySessionId,
 }) => {
   const groupEvents = useGroupEvents()
   const groupError = useGroupError()
@@ -237,12 +240,15 @@ const GroupCommunicationFeed: React.FC<GroupCommunicationFeedProps> = ({
         )}
 
         {storeIsComplete && (
-          <FeedCollapseButton
-            expanded={isExpanded}
-            onToggle={toggleDetailsExpanded}
-            expandLabel="View Details"
-            collapseLabel="Collapse details"
-          />
+          <>
+            <GrafanaSessionLink sessionId={observabilitySessionId} />
+            <FeedCollapseButton
+              expanded={isExpanded}
+              onToggle={toggleDetailsExpanded}
+              expandLabel="View Details"
+              collapseLabel="Collapse details"
+            />
+          </>
         )}
       </Stack>
     </Stack>
