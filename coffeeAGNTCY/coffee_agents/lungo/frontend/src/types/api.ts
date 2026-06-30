@@ -9,5 +9,6 @@ import type { AgentRecord } from "@/types/agent"
 export interface ApiResponse {
   response: string
   session_id?: string
+  trace_id?: string
   agent_records?: Record<string, AgentRecord>
 }

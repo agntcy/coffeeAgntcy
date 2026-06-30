@@ -12,7 +12,11 @@ import { logger } from "@/utils/logger"
 
 const isValidRecruiterStreamingEvent = (
   data: unknown,
-): data is { response: RecruiterStreamingEvent; session_id?: string } => {
+): data is {
+  response: RecruiterStreamingEvent
+  session_id?: string
+  trace_id?: string
+} => {
   if (!data || typeof data !== "object" || !("response" in data)) return false
   const res = (data as { response: unknown }).response
   return (
@@ -30,11 +34,16 @@ interface RecruiterStreamingStoreState {
   prompt: string | null
   abortController: AbortController | null
   sessionId: string | null
+  traceId: string | null
   finalMessage: string | null
   agentRecords: Record<string, AgentRecord> | null
   evaluationResults: Record<string, unknown> | null
   selectedAgent: Record<string, unknown> | null
-  connect: (prompt: string) => Promise<void>
+  connect: (
+    prompt: string,
+    workflowInstanceId?: string | null,
+    sessionId?: string | null,
+  ) => Promise<void>
   disconnect: () => void
   reset: () => void
 }
@@ -46,6 +55,7 @@ const initialState = {
   prompt: null,
   abortController: null,
   sessionId: null,
+  traceId: null,
   finalMessage: null,
   agentRecords: null,
   evaluationResults: null,
@@ -56,7 +66,11 @@ export const useRecruiterStreamingStore = create<RecruiterStreamingStoreState>(
   (set) => ({
     ...initialState,
 
-    connect: async (prompt: string) => {
+    connect: async (
+      prompt: string,
+      workflowInstanceId?: string | null,
+      sessionId?: string | null,
+    ) => {
       const abortController = new AbortController()
       set({
         status: "connecting",
@@ -64,7 +78,8 @@ export const useRecruiterStreamingStore = create<RecruiterStreamingStoreState>(
         prompt,
         events: [],
         abortController,
-        sessionId: null,
+        sessionId: sessionId ?? null,
+        traceId: null,
         finalMessage: null,
         agentRecords: null,
         evaluationResults: null,
@@ -78,7 +93,13 @@ export const useRecruiterStreamingStore = create<RecruiterStreamingStoreState>(
           method: "POST",
           credentials: isLocalDev ? "omit" : "include",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ prompt }),
+          body: JSON.stringify({
+            prompt,
+            ...(workflowInstanceId
+              ? { workflow_instance_id: workflowInstanceId }
+              : {}),
+            ...(sessionId ? { session_id: sessionId } : {}),
+          }),
           signal: abortController.signal,
         })
 
@@ -134,6 +155,7 @@ export const useRecruiterStreamingStore = create<RecruiterStreamingStoreState>(
                       set((state) => ({
                         events: [...state.events, event],
                         sessionId: parsedData.session_id || state.sessionId,
+                        traceId: parsedData.trace_id || state.traceId,
                         finalMessage: event.message,
                         agentRecords:
                           event.agent_records !== undefined
@@ -159,6 +181,7 @@ export const useRecruiterStreamingStore = create<RecruiterStreamingStoreState>(
                       set((state) => ({
                         events: [...state.events, event],
                         sessionId: parsedData.session_id || state.sessionId,
+                        traceId: parsedData.trace_id || state.traceId,
                         selectedAgent:
                           event.selected_agent !== undefined
                             ? event.selected_agent
@@ -236,6 +259,9 @@ export const useRecruiterEvaluationResults = () =>
 
 export const useRecruiterSelectedAgent = () =>
   useRecruiterStreamingStore((state) => state.selectedAgent)
+
+export const useRecruiterTraceId = () =>
+  useRecruiterStreamingStore((state) => state.traceId)
 
 export const useRecruiterStreamingActions = () =>
   useRecruiterStreamingStore((state) => ({

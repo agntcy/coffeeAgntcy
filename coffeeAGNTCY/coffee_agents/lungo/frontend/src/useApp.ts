@@ -266,6 +266,7 @@ export function useApp() {
           {
             response: streaming.recruiterFinalMessage,
             session_id: streaming.recruiterSessionId ?? undefined,
+            trace_id: streaming.recruiterTraceId ?? undefined,
           },
           false,
         )
@@ -304,6 +305,7 @@ export function useApp() {
     streaming.recruiterError,
     streaming.recruiterAgentRecords,
     streaming.recruiterSessionId,
+    streaming.recruiterTraceId,
     chat.handleApiResponse,
     chat.setIsAgentLoading,
     chat.setShowFinalResponse,
@@ -346,9 +348,14 @@ export function useApp() {
           chat.setShowFinalResponse(false)
           chat.setShowRecruiterStreaming(true)
           chat.setAgentResponse(undefined)
+          const priorSessionId = streaming.recruiterSessionId
           streaming.resetRecruiter()
           try {
-            await streaming.connectRecruiter(query)
+            await streaming.connectRecruiter(
+              query,
+              activeWorkflowInstanceId,
+              priorSessionId,
+            )
           } catch (err) {
             logger.apiError(LUNGO_FRONTEND_URLS.apiPaths.agentPromptStream, err)
             chat.setShowFinalResponse(true)

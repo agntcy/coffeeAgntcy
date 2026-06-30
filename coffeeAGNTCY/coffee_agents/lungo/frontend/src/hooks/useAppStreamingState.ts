@@ -27,6 +27,7 @@ import {
   useRecruiterAgentRecords,
   useRecruiterStreamingSessionId,
   useRecruiterSelectedAgent,
+  useRecruiterTraceId,
   useRecruiterEvaluationResults,
 } from "@/stores/recruiterStreamingStore"
 
@@ -51,6 +52,7 @@ export function useAppStreamingState() {
   const recruiterFinalMessage = useRecruiterFinalMessage()
   const recruiterAgentRecords = useRecruiterAgentRecords()
   const recruiterSessionId = useRecruiterStreamingSessionId()
+  const recruiterTraceId = useRecruiterTraceId()
   const recruiterSelectedAgent = useRecruiterSelectedAgent()
   const recruiterEvaluationResults = useRecruiterEvaluationResults()
   const { connect: connectRecruiter, reset: resetRecruiter } =
@@ -75,6 +77,7 @@ export function useAppStreamingState() {
     recruiterFinalMessage,
     recruiterAgentRecords,
     recruiterSessionId,
+    recruiterTraceId,
     recruiterSelectedAgent,
     recruiterEvaluationResults,
     connectRecruiter,

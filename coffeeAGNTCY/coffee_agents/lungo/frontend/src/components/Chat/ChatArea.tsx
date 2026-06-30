@@ -163,6 +163,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
 
   const observabilitySessionId = useObservabilitySessionId(
     agentResponse?.session_id,
+    agentResponse?.trace_id,
   )
 
   if (!isBottomLayout) {

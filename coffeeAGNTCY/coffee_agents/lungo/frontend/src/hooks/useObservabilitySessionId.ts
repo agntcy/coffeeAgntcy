@@ -5,7 +5,10 @@
 
 import { useGroupSessionId } from "@/stores/groupStreamingStore"
 import { useStreamingSessionId } from "@/stores/auctionStreamingStore"
-import { useRecruiterStreamingSessionId } from "@/stores/recruiterStreamingStore"
+import {
+  useRecruiterStreamingSessionId,
+  useRecruiterTraceId,
+} from "@/stores/recruiterStreamingStore"
 
 /**
  * Resolves the OTEL/ioa_observe session id for Grafana deep-linking,
@@ -13,15 +16,18 @@ import { useRecruiterStreamingSessionId } from "@/stores/recruiterStreamingStore
  */
 export function useObservabilitySessionId(
   agentResponseSessionId?: string,
+  agentResponseTraceId?: string,
 ): string | null {
   const groupSessionId = useGroupSessionId()
   const auctionSessionId = useStreamingSessionId()
   const recruiterSessionId = useRecruiterStreamingSessionId()
-
+  const recruiterTraceId = useRecruiterTraceId()
   return (
-    agentResponseSessionId ??
+    agentResponseTraceId ??
+    recruiterTraceId ??
     groupSessionId ??
     auctionSessionId ??
+    agentResponseSessionId ??
     recruiterSessionId ??
     null
   )
