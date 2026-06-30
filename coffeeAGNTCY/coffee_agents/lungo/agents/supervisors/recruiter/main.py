@@ -1,6 +1,8 @@
 # Copyright AGNTCY Contributors (https://github.com/agntcy)
 # SPDX-License-Identifier: Apache-2.0
 
+import config.logging_config  # noqa: F401 - runs setup on import; must be first
+
 import asyncio
 import json
 import logging
@@ -8,7 +10,6 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Optional
 
-import config.logging_config  # noqa: F401 - runs setup on import; must be first
 import httpx
 import uvicorn
 from agents.supervisors.recruiter import shared
