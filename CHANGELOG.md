@@ -1,5 +1,118 @@
 # Changelog
 
+## 0.2.1 (2026-07-01)
+
+Patch release: **Helm hardening for agentic-workflows-api and lungo-ui**, **Grafana observability deep-links** across chat patterns, and a **Colombia payment MCP** client fix.
+
+### Summary
+
+**Breaking / migration (read first)**
+
+<details>
+<summary><strong>Agentic Workflows API Helm</strong> — <code>agentic-workflows-api@0.1.4</code>, ExternalSecret, Azure + LLM config</summary>
+
+- Adds optional **ExternalSecret** wiring and **`secretRef`** env injection when **`externalSecrets`** is set ([#675](https://github.com/agntcy/coffeeAgntcy/pull/675)).
+- ConfigMap now exposes **`AZURE_API_BASE`**, **`AZURE_API_VERSION`**, and **`LLM_MODEL`** for pattern chat / Azure-backed models ([#676](https://github.com/agntcy/coffeeAgntcy/pull/676), [#677](https://github.com/agntcy/coffeeAgntcy/pull/677)).
+- Chart **`agentic-workflows-api`** **0.1.1 → 0.1.4** across those fixes.
+- Set in **`deployment/helm/agentic-workflows-api/values.yaml`** (or umbrella overrides):
+
+      config:
+        azureApiBase: "<your-azure-openai-endpoint>"
+        azureApiVersion: "2024-02-15-preview"
+        llmModel: "<deployment-name>"
+        corsAllowedOrigins: "<allowed-origins>"
+
+- For cluster secret stores, configure **`externalSecrets`** (see other Lungo subcharts / **`local-cluster/config-overrides.yaml.gotmpl`** for examples).
+</details>
+
+<details>
+<summary><strong>Lungo UI Helm</strong> — <code>lungo-ui@0.1.5</code>, <code>envFrom</code> template fix</summary>
+
+- Fixes **`lungo-ui`** deployment template so **`envFrom`** is always declared before optional **`secretRef`** entries ([#686](https://github.com/agntcy/coffeeAgntcy/pull/686)).
+- Chart **`lungo-ui`** **0.1.4 → 0.1.5**.
+- Run **`helm dependency update`** under **`deployment/helm/local-cluster`** (or your umbrella) before upgrading.
+</details>
+
+**Migration steps**
+
+1. **Helm / KinD:** bump subcharts to **`agentic-workflows-api@0.1.4`** and **`lungo-ui@0.1.5`**, then upgrade the release.
+2. **Pattern chat on Azure:** set **`config.azureApiBase`**, **`config.azureApiVersion`**, and **`config.llmModel`** in agentic-workflows-api values (or equivalent ConfigMap overrides).
+3. **Production secrets:** enable **`externalSecrets`** on **`agentic-workflows-api`** (and **`lungo-ui`** if needed) instead of relying on inline chart secrets.
+4. **Docker Compose:** rebuild agents/UI if you run Colombia farm workflows — payment MCP client creation changed ([#678](https://github.com/agntcy/coffeeAgntcy/pull/678)).
+
+**Highlights**
+
+<details>
+<summary><strong>Grafana session deep-links</strong> — correct OTEL session/trace IDs in all chat feeds</summary>
+
+- New **`GrafanaSessionLink`** component and **`useObservabilitySessionId`** hook resolve the right session/trace id across auction, group, recruiter, and standard agent responses ([#683](https://github.com/agntcy/coffeeAgntcy/pull/683), closes [#671](https://github.com/agntcy/coffeeAgntcy/issues/671)).
+- Recruiter supervisor emits trace metadata for streaming Grafana links; **`ChatArea`** message routing simplified.
+- Unit tests for **`useObservabilitySessionId`** and recruiter supervisor paths.
+</details>
+
+<details>
+<summary><strong>Colombia payment MCP</strong> — SLIM topic-based client creation</summary>
+
+- **`invoke_payment_mcp_tool`** uses App SDK **`topic=`** (not legacy FastMCP/url args) when creating the payment MCP client ([#678](https://github.com/agntcy/coffeeAgntcy/pull/678)).
+- Adds **`test_payment_client.py`** coverage for the corrected invocation path.
+</details>
+
+### Dependencies
+
+| Component | 0.2.0 | 0.2.1 |
+| --- | --- | --- |
+| `agentic-workflows-api` Helm chart | 0.1.1 | **0.1.4** |
+| `lungo-ui` Helm chart | 0.1.4 | **0.1.5** |
+
+No changes to **`lungo/uv.lock`**, **`corto/uv.lock`**, **`recruiter/uv.lock`**, or **`frontend/package-lock.json`** since 0.2.0.
+
+### Changeset
+
+<details>
+<summary><a href="https://github.com/agntcy/coffeeAgntcy/pull/675">#675</a> — @pregnor — fix(lungo,helm,awapi): add externalSecret resource</summary>
+
+- Adds **`es-secrets.tpl.yaml`** and optional **`secretRef`** in the agentic-workflows-api deployment when **`externalSecrets`** is configured.
+- Bumps **`agentic-workflows-api`** chart **0.1.1 → 0.1.2**.
+</details>
+
+<details>
+<summary><a href="https://github.com/agntcy/coffeeAgntcy/pull/676">#676</a> — @pregnor — fix(lungo,helm,awapi): specify model4 pattern_chat</summary>
+
+- Wires **`LLM_MODEL`** from **`values.config.llmModel`** into the agentic-workflows-api ConfigMap for pattern chat.
+- Bumps **`agentic-workflows-api`** chart **0.1.2 → 0.1.3**.
+</details>
+
+<details>
+<summary><a href="https://github.com/agntcy/coffeeAgntcy/pull/677">#677</a> — @pregnor — fix(lungo,helm,awapi): fix azure env vars</summary>
+
+- Exposes **`AZURE_API_BASE`** and **`AZURE_API_VERSION`** via ConfigMap for Azure OpenAI-backed pattern chat.
+- Bumps **`agentic-workflows-api`** chart **0.1.3 → 0.1.4**.
+</details>
+
+<details>
+<summary><a href="https://github.com/agntcy/coffeeAgntcy/pull/678">#678</a> — @pregnor — fix(lungo,columbia): fix payment MCP call</summary>
+
+- Corrects payment MCP client factory call to use **`topic="lungo_payment_service"`** with the configured transport instance.
+- Adds unit tests in **`tests/unit/mcp_servers/test_payment_client.py`**.
+</details>
+
+<details>
+<summary><a href="https://github.com/agntcy/coffeeAgntcy/pull/683">#683</a> — @pregnor — fix(#671,lungo,fe): fix UI response grafana link</summary>
+
+- Introduces **`GrafanaSessionLink`** and **`useObservabilitySessionId`** for pattern-aware Grafana deep-links in chat feeds.
+- Refactors recruiter supervisor streaming to propagate trace/session ids; simplifies **`ChatArea`** routing.
+- Adds frontend and recruiter unit tests for observability session resolution.
+</details>
+
+<details>
+<summary><a href="https://github.com/agntcy/coffeeAgntcy/pull/686">#686</a> — @pregnor — fix(lungoui,helm): fix deployment template envfrom</summary>
+
+- Declares **`envFrom:`** unconditionally in **`lungo-ui`** deployment template so optional ExternalSecret refs render valid YAML.
+- Bumps **`lungo-ui`** chart **0.1.4 → 0.1.5**.
+</details>
+
+---
+
 ## 0.2.0 (2026-06-25)
 
 Fiber milestone: **Open UI Kit frontend**, **SLIM 1.4 upgrade** (Lungo + Corto), **MCP live workflow events**, **pattern reference library chat**, **A2A transport rails** on agent nodes, and **recruiter flow optimizations**.
