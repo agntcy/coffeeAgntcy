@@ -10,6 +10,7 @@ on:
       - 'coffeeAGNTCY/coffee_agents/**'
       - '!coffeeAGNTCY/coffee_agents/*/deployment/helm/**'
       - '!coffeeAGNTCY/coffee_agents/*/tests/**'
+      - '!coffeeAGNTCY/coffee_agents/*/docs/**'
       - '.github/workflows/docker-build-push.yaml'
       - '.github/workflows/docker-build-reusable.yaml'
       - '.github/actions/check-paths-have-changes/**'
