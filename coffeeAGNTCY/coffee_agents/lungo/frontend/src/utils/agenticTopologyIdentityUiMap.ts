@@ -212,6 +212,23 @@ export function splitTopologyNodeLabel(label: string): {
   return { label1: t.slice(0, sp), label2: t.slice(sp + 1).trim() }
 }
 
+/** True when a node label denotes an MCP server (e.g. "Weather MCP Server"). */
+export function isMcpServerLabel(label: string): boolean {
+  return /mcp\s+server$/i.test(label.trim())
+}
+
+/** True when a node label denotes the agentic recruiter. */
+export function isRecruiterLabel(label: string): boolean {
+  const lower = label.toLowerCase()
+  return /\bagentic\b/.test(lower) && /\brecruiter\b/.test(lower)
+}
+
+/** True when a node label denotes the AGNTCY agent directory. */
+export function isDirectoryLabel(label: string): boolean {
+  const lower = label.toLowerCase()
+  return lower.includes("agntcy") && lower.includes("agent directory")
+}
+
 /**
  * Normalize catalog `agent_record_uri` relative paths to a repo path segment
  * under `coffeeAGNTCY/coffee_agents` (for GitHub blob URLs).

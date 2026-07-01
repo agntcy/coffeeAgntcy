@@ -10,6 +10,9 @@ import type { CustomNodeData } from "@/components/MainArea/Graph/Elements/types"
 import {
   getOasfSlugFromNodeData,
   IDENTITY_UI_BY_STABLE_AGENT_UUID,
+  isDirectoryLabel,
+  isMcpServerLabel,
+  isRecruiterLabel,
   normalizeAgentRecordUriToRepoPath,
   parseStableAgentUuid,
   resolveGithubFromAgentRecordUri,
@@ -160,6 +163,56 @@ describe("agenticTopologyIdentityUiMap", () => {
           directoryAgentSlug: "recruiter",
         } as unknown as CustomNodeData),
       ).toBe("recruiter")
+    })
+  })
+
+  describe("label predicates", () => {
+    it.each([
+      { caseName: "weather mcp server", label: "Weather MCP Server", v: true },
+      {
+        caseName: "lowercased mcp server",
+        label: "payment mcp server",
+        v: true,
+      },
+      {
+        caseName: "trailing whitespace",
+        label: "Weather MCP Server  ",
+        v: true,
+      },
+      { caseName: "not at end", label: "MCP Server Gateway", v: false },
+      { caseName: "plain agent", label: "Brazil Coffee Farm Agent", v: false },
+    ])("isMcpServerLabel: $caseName", ({ label, v }) => {
+      expect(isMcpServerLabel(label)).toBe(v)
+    })
+
+    it.each([
+      { caseName: "agentic recruiter", label: "Agentic Recruiter", v: true },
+      {
+        caseName: "split labels combined",
+        label: "agentic recruiter delegation",
+        v: true,
+      },
+      { caseName: "recruiter alone", label: "Recruiter", v: false },
+      { caseName: "directory", label: "AGNTCY Agent Directory", v: false },
+    ])("isRecruiterLabel: $caseName", ({ label, v }) => {
+      expect(isRecruiterLabel(label)).toBe(v)
+    })
+
+    it.each([
+      {
+        caseName: "agntcy agent directory",
+        label: "AGNTCY Agent Directory",
+        v: true,
+      },
+      {
+        caseName: "combined labels",
+        label: "directory agntcy agent directory",
+        v: true,
+      },
+      { caseName: "missing agntcy", label: "Agent Directory", v: false },
+      { caseName: "recruiter", label: "Agentic Recruiter", v: false },
+    ])("isDirectoryLabel: $caseName", ({ label, v }) => {
+      expect(isDirectoryLabel(label)).toBe(v)
     })
   })
 })

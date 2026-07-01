@@ -3,9 +3,6 @@
  * SPDX-License-Identifier: Apache-2.0
  **/
 
-import React from "react"
-import LocalShipping from "@mui/icons-material/LocalShipping"
-import SmartToy from "@mui/icons-material/SmartToy"
 import type { Edge, Node } from "@xyflow/react"
 import type {
   TopologyEdgeWire,
@@ -21,6 +18,7 @@ import {
 } from "@/utils/const"
 import type {
   CustomNodeData,
+  ExtraHandle,
   TransportNodeData,
 } from "@/components/MainArea/Graph/Elements/types"
 import {
@@ -29,11 +27,15 @@ import {
 } from "@/utils/topologyLayout"
 import {
   enrichAgenticTopologyWellKnownUi,
+  isDirectoryLabel,
+  isMcpServerLabel,
+  isRecruiterLabel,
   mergeAgenticTopologyIdentityUi,
   resolveGithubFromAgentRecordUri,
   splitTopologyNodeLabel,
 } from "@/utils/agenticTopologyIdentityUiMap"
 import type { IdentityUiGithubVariant } from "@/utils/agenticTopologyIdentityUiMap"
+import { resolveTopologyNodeIcon } from "@/utils/topologyNodeIcons"
 
 // Transport label -> canonical synonym. Seed emits "transport"; runtime emits
 // "slim"/"nats"/"jsonrpc" for the same logical transport. Distinct logical
@@ -68,12 +70,19 @@ export function extractStableAgentId(n: TopologyNodeWire): string {
   return ""
 }
 
-function defaultCustomIcon(label: string): React.ReactNode {
-  const lower = label.toLowerCase()
-  if (lower.includes("transport")) {
-    return <LocalShipping aria-hidden />
+// Group container defaults; the compact-group layout recomputes width/height
+// from content, these are only the pre-layout box.
+const GROUP_DEFAULT_WIDTH = 900
+const GROUP_DEFAULT_HEIGHT = 650
+
+function a2aExtraHandlesForLabel(label: string): ExtraHandle[] | undefined {
+  if (isRecruiterLabel(label)) {
+    return [{ id: "target-right", type: "target", position: "right" }]
   }
-  return <SmartToy aria-hidden />
+  if (isDirectoryLabel(label)) {
+    return [{ id: "source-left", type: "source", position: "left" }]
+  }
+  return undefined
 }
 
 export interface TopologyToFlowOptions {
@@ -193,34 +202,65 @@ export function topologyWireToReactFlow(
     positions.set(rfId, position)
   }
 
+  // A single group node turns the workflow into a contained graph: members
+  // become children (parentId/extent) and the transport renders compact.
+  const groupRfIds = dedupedNodesIn
+    .filter((n) => n.type === NODE_TYPES.GROUP)
+    .map(rfIdOf)
+  const groupRfId = groupRfIds.length === 1 ? groupRfIds[0] : null
+
+  const labelByRfId = new Map<string, string>()
+  for (const n of dedupedNodesIn) {
+    labelByRfId.set(rfIdOf(n), typeof n.label === "string" ? n.label : "")
+  }
+
   const nodes: Node[] = dedupedNodesIn.map((n): Node => {
     const rfId = rfIdOf(n)
-    const nodeType =
-      n.type === NODE_TYPES.TRANSPORT ? NODE_TYPES.TRANSPORT : NODE_TYPES.CUSTOM
     const position = positions.get(rfId) ?? { x: 0, y: 0 }
+    const labelStr = labelByRfId.get(rfId) ?? ""
     const gh = resolveGithubFromAgentRecordUri(
       n.agent_record_uri as string | undefined,
       { validateUrls },
     )
 
-    if (nodeType === NODE_TYPES.TRANSPORT) {
+    if (n.type === NODE_TYPES.GROUP) {
+      return {
+        id: rfId,
+        type: NODE_TYPES.GROUP,
+        position,
+        data: { label: labelStr },
+        style: {
+          width: GROUP_DEFAULT_WIDTH,
+          height: GROUP_DEFAULT_HEIGHT,
+          backgroundColor: "var(--group-background)",
+          border: "none",
+          borderRadius: "8px",
+        },
+      }
+    }
+
+    const childProps = groupRfId
+      ? { parentId: groupRfId, extent: "parent" as const }
+      : {}
+
+    if (n.type === NODE_TYPES.TRANSPORT) {
       const data: TransportNodeData = {
-        label: typeof n.label === "string" ? n.label : "Transport",
+        label: labelStr || "Transport",
         githubLink: gh,
-        compact: false,
+        compact: groupRfId != null,
       }
       return {
         id: rfId,
         type: NODE_TYPES.TRANSPORT,
         position,
         data: data as unknown as Record<string, unknown>,
+        ...childProps,
       }
     }
 
-    const labelStr = typeof n.label === "string" ? n.label : ""
     const { label1, label2 } = splitTopologyNodeLabel(labelStr)
     let data: CustomNodeData = {
-      icon: defaultCustomIcon(labelStr),
+      icon: resolveTopologyNodeIcon({ label1, label2 }),
       label1,
       label2,
       handles: HANDLE_TYPES.ALL,
@@ -232,12 +272,27 @@ export function topologyWireToReactFlow(
       identityUiVariant: options.identityUiVariant,
     })
     data = enrichAgenticTopologyWellKnownUi(data, n, { validateUrls })
+    if (data.directoryAgentSlug) {
+      data = {
+        ...data,
+        icon: resolveTopologyNodeIcon({
+          label1: data.label1,
+          label2: data.label2,
+          directoryAgentSlug: data.directoryAgentSlug,
+        }),
+      }
+    }
+    const extraHandles = a2aExtraHandlesForLabel(labelStr)
+    if (extraHandles) {
+      data = { ...data, extraHandles }
+    }
 
     return {
       id: rfId,
       type: NODE_TYPES.CUSTOM,
       position,
       data: data as unknown as Record<string, unknown>,
+      ...childProps,
     }
   })
 
@@ -253,18 +308,29 @@ export function topologyWireToReactFlow(
     seenEdgePairs.add(pairKey)
     const edgeType =
       e.type === EDGE_TYPES.BRANCHING ? EDGE_TYPES.BRANCHING : EDGE_TYPES.CUSTOM
+    const sourceLabel = labelByRfId.get(source) ?? ""
+    const targetLabel = labelByRfId.get(target) ?? ""
+
+    let label: string = EDGE_LABELS.A2A
+    let sourceHandle: string | undefined
+    let targetHandle: string | undefined
+    if (isMcpServerLabel(targetLabel)) {
+      label = EDGE_LABELS.MCP
+    } else if (isDirectoryLabel(sourceLabel) && isRecruiterLabel(targetLabel)) {
+      label = EDGE_LABELS.MCP_WITH_STDIO
+      sourceHandle = "source-left"
+      targetHandle = "target-right"
+    }
+
     const base: Edge = {
       id: e.id,
       source,
       target,
       type: edgeType,
-      data: {
-        label:
-          typeof e.type === "string" && e.type.toLowerCase().includes("mcp")
-            ? EDGE_LABELS.MCP
-            : EDGE_LABELS.A2A,
-      },
+      data: { label },
     }
+    if (sourceHandle) base.sourceHandle = sourceHandle
+    if (targetHandle) base.targetHandle = targetHandle
     const branches = (e as { branches?: string[] }).branches
     if (edgeType === EDGE_TYPES.BRANCHING && Array.isArray(branches)) {
       base.data = {
