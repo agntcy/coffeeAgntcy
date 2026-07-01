@@ -53,8 +53,8 @@ spec:
             initialDelaySeconds: 20
             periodSeconds: 10
           {{ end }}
-          envFrom:
           {{ if .Values.externalSecrets }}
+          envFrom:
             - secretRef:
                 name: {{ .Values.appName }}-secrets
           {{ end }}
