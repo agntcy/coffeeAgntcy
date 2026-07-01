@@ -7,44 +7,46 @@ import asyncio
 import json
 import logging
 from contextlib import asynccontextmanager
+from pathlib import Path
 from typing import Optional
-from uuid import uuid4
 
 import httpx
 import uvicorn
-from dotenv import load_dotenv
-from fastapi import FastAPI, HTTPException, Request
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse, StreamingResponse
-from pathlib import Path
-from pydantic import BaseModel
-
-from common.cors import get_cors_allowed_origins
-
 from agents.supervisors.recruiter import shared
 from agents.supervisors.recruiter.card import RECRUITER_SUPERVISOR_CARD
 from agents.supervisors.recruiter.recruiter_client import get_a2a_event_queue
 from agents.supervisors.recruiter.recruiter_service_card import (
     RECRUITER_AGENT_URL,
 )
-from common.streaming_capability import require_streaming_capability
-from config.config import LLM_MODEL, HOT_RELOAD_MODE, OTEL_SDK_DISABLED
 from agntcy_app_sdk.factory import AgntcyFactory
+from common.cors import get_cors_allowed_origins
+from common.streaming_capability import require_streaming_capability
+from config.config import HOT_RELOAD_MODE, LLM_MODEL, OTEL_SDK_DISABLED
+from dotenv import load_dotenv
+from fastapi import FastAPI, HTTPException, Request
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse, StreamingResponse
+from ioa_observe.sdk.tracing import session_start
+from pydantic import BaseModel
 
 logger = logging.getLogger("lungo.recruiter.supervisor.main")
 
 load_dotenv()
 
-shared.set_factory(AgntcyFactory("lungo.recruiter_supervisor", enable_tracing=not OTEL_SDK_DISABLED))
+shared.set_factory(
+    AgntcyFactory("lungo.recruiter_supervisor", enable_tracing=not OTEL_SDK_DISABLED)
+)
 require_streaming_capability("recruiter_supervisor", LLM_MODEL)
 
 if not OTEL_SDK_DISABLED:
     from common.a2a_event_middleware.inflight import register_cleanup_span_processor
+
     register_cleanup_span_processor()
 
 
 def _load_agent_module():
     import agents.supervisors.recruiter.agent as agent_module  # noqa: F401
+
     return agent_module
 
 
@@ -97,23 +99,27 @@ async def handle_prompt(request: PromptRequest, req: Request):
     if agent_module is None:
         raise HTTPException(status_code=503, detail="Service initializing")
     try:
-        session_id = request.session_id or "default_session"  # or str(uuid4())
-        result = await agent_module.call_agent(
-            query=request.prompt,
-            session_id=session_id,
-            workflow_instance_id=request.workflow_instance_id,
-        )
-        # Build response matching original API format
-        response: dict = {
-            "response": result["response"],
-            "session_id": result["session_id"],
-        }
-        if result.get("agent_records"):
-            response["agent_records"] = result["agent_records"]
-        if result.get("evaluation_results"):
-            response["evaluation_results"] = result["evaluation_results"]
-        response["selected_agent"] = result.get("selected_agent")
-        return response
+        with session_start() as trace_meta:
+            trace_id = trace_meta["executionID"]
+            session_id = request.session_id or "default_session"  # or str(uuid4())
+
+            result = await agent_module.call_agent(
+                query=request.prompt,
+                session_id=session_id,
+                workflow_instance_id=request.workflow_instance_id,
+            )
+            # Build response matching original API format
+            response: dict = {
+                "response": result["response"],
+                "session_id": result["session_id"],
+                "trace_id": trace_id,
+            }
+            if result.get("agent_records"):
+                response["agent_records"] = result["agent_records"]
+            if result.get("evaluation_results"):
+                response["evaluation_results"] = result["evaluation_results"]
+            response["selected_agent"] = result.get("selected_agent")
+            return response
     except Exception as e:
         logger.error(f"Error handling prompt: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Operation failed: {str(e)}")
@@ -128,165 +134,221 @@ async def handle_stream_prompt(request: PromptRequest, req: Request):
     if agent_module is None:
         raise HTTPException(status_code=503, detail="Service initializing")
     try:
-        session_id = request.session_id or "default_session"  # or str(uuid4())
-        user_id = "default_user"
+        with session_start() as trace_meta:
+            trace_id = trace_meta["executionID"]
 
-        async def stream_generator():
-            try:
-                final_sid = session_id
-                a2a_queue = get_a2a_event_queue()
+            session_id = request.session_id or "default_session"  # or str(uuid4())
+            user_id = "default_user"
 
-                # Drain any stale events from previous requests
-                while not a2a_queue.empty():
-                    try:
-                        a2a_queue.get_nowait()
-                    except asyncio.QueueEmpty:
-                        break
+            async def stream_generator():
+                try:
+                    final_sid = session_id
+                    a2a_queue = get_a2a_event_queue()
 
-                # Use an asyncio.Queue to merge ADK events and A2A side-channel events.
-                # Both producers push dicts onto merged_queue; the consumer loop below
-                # serialises them as NDJSON lines.
-                merged_queue: asyncio.Queue[dict | None] = asyncio.Queue()
+                    # Drain any stale events from previous requests
+                    while not a2a_queue.empty():
+                        try:
+                            a2a_queue.get_nowait()
+                        except asyncio.QueueEmpty:
+                            break
 
-                async def _adk_producer():
-                    """Iterate the ADK runner and push formatted events."""
-                    nonlocal final_sid
-                    try:
-                        async for event, sid in agent_module.stream_agent(
-                            query=request.prompt,
-                            session_id=session_id,
-                            workflow_instance_id=request.workflow_instance_id,
-                        ):
-                            final_sid = sid
+                    # Use an asyncio.Queue to merge ADK events and A2A side-channel events.
+                    # Both producers push dicts onto merged_queue; the consumer loop below
+                    # serialises them as NDJSON lines.
+                    merged_queue: asyncio.Queue[dict | None] = asyncio.Queue()
 
-                            # Extract text content
-                            msg_text = None
-                            if event.content and event.content.parts:
-                                for part in event.content.parts:
-                                    if hasattr(part, "text") and part.text:
-                                        msg_text = part.text
-                                        break
+                    async def _adk_producer():
+                        """Iterate the ADK runner and push formatted events."""
+                        nonlocal final_sid
+                        try:
+                            async for event, sid in agent_module.stream_agent(
+                                query=request.prompt,
+                                session_id=session_id,
+                                workflow_instance_id=request.workflow_instance_id,
+                            ):
+                                final_sid = sid
 
-                            # Extract function call / response info
-                            function_calls = event.get_function_calls() if hasattr(event, "get_function_calls") else []
-                            function_responses = event.get_function_responses() if hasattr(event, "get_function_responses") else []
+                                # Extract text content
+                                msg_text = None
+                                if event.content and event.content.parts:
+                                    for part in event.content.parts:
+                                        if hasattr(part, "text") and part.text:
+                                            msg_text = part.text
+                                            break
 
-                            # Fetch selected_agent on every event
-                            current_selected_agent = await agent_module.get_selected_agent(user_id, final_sid)
+                                # Extract function call / response info
+                                function_calls = (
+                                    event.get_function_calls()
+                                    if hasattr(event, "get_function_calls")
+                                    else []
+                                )
+                                function_responses = (
+                                    event.get_function_responses()
+                                    if hasattr(event, "get_function_responses")
+                                    else []
+                                )
 
-                            if event.is_final_response():
-                                agent_records = await agent_module.get_recruited_agents(user_id, final_sid)
-                                evaluation_results = await agent_module.get_evaluation_results(user_id, final_sid)
+                                # Fetch selected_agent on every event
+                                current_selected_agent = (
+                                    await agent_module.get_selected_agent(
+                                        user_id, final_sid
+                                    )
+                                )
 
-                                line: dict = {
+                                if event.is_final_response():
+                                    agent_records = (
+                                        await agent_module.get_recruited_agents(
+                                            user_id, final_sid
+                                        )
+                                    )
+                                    evaluation_results = (
+                                        await agent_module.get_evaluation_results(
+                                            user_id, final_sid
+                                        )
+                                    )
+
+                                    line: dict = {
+                                        "response": {
+                                            "event_type": "completed",
+                                            "message": msg_text,
+                                            "state": "completed",
+                                            "selected_agent": current_selected_agent,
+                                        },
+                                        "session_id": final_sid,
+                                        "trace_id": trace_id,
+                                    }
+                                    if agent_records:
+                                        line["response"]["agent_records"] = (
+                                            agent_records
+                                        )
+                                    if evaluation_results:
+                                        line["response"]["evaluation_results"] = (
+                                            evaluation_results
+                                        )
+                                    await merged_queue.put(line)
+                                elif msg_text:
+                                    await merged_queue.put(
+                                        {
+                                            "response": {
+                                                "event_type": "status_update",
+                                                "message": msg_text,
+                                                "state": "working",
+                                                "author": event.author,
+                                                "selected_agent": current_selected_agent,
+                                            },
+                                            "session_id": sid,
+                                            "trace_id": trace_id,
+                                        }
+                                    )
+                                elif function_calls and not event.partial:
+                                    for fc in function_calls:
+                                        await merged_queue.put(
+                                            {
+                                                "response": {
+                                                    "event_type": "status_update",
+                                                    "message": f"Calling tool: {fc.name}",
+                                                    "state": "working",
+                                                    "author": event.author,
+                                                    "selected_agent": current_selected_agent,
+                                                },
+                                                "session_id": sid,
+                                                "trace_id": trace_id,
+                                            }
+                                        )
+                                elif function_responses and not event.partial:
+                                    for fr in function_responses:
+                                        await merged_queue.put(
+                                            {
+                                                "response": {
+                                                    "event_type": "status_update",
+                                                    "message": f"Tool {fr.name} completed",
+                                                    "state": "working",
+                                                    "author": event.author,
+                                                    "selected_agent": current_selected_agent,
+                                                },
+                                                "session_id": sid,
+                                                "trace_id": trace_id,
+                                            }
+                                        )
+                        except Exception as e:
+                            logger.error(f"Error in ADK stream: {e}", exc_info=True)
+                            await merged_queue.put(
+                                {
                                     "response": {
-                                        "event_type": "completed",
-                                        "message": msg_text,
-                                        "state": "completed",
-                                        "selected_agent": current_selected_agent,
+                                        "event_type": "error",
+                                        "message": str(e),
                                     },
                                     "session_id": final_sid,
+                                    "trace_id": trace_id,
                                 }
-                                if agent_records:
-                                    line["response"]["agent_records"] = agent_records
-                                if evaluation_results:
-                                    line["response"]["evaluation_results"] = evaluation_results
-                                await merged_queue.put(line)
-                            elif msg_text:
-                                await merged_queue.put({
-                                    "response": {
-                                        "event_type": "status_update",
-                                        "message": msg_text,
-                                        "state": "working",
-                                        "author": event.author,
-                                        "selected_agent": current_selected_agent,
-                                    },
-                                    "session_id": sid,
-                                })
-                            elif function_calls and not event.partial:
-                                for fc in function_calls:
-                                    await merged_queue.put({
-                                        "response": {
-                                            "event_type": "status_update",
-                                            "message": f"Calling tool: {fc.name}",
-                                            "state": "working",
-                                            "author": event.author,
-                                            "selected_agent": current_selected_agent,
-                                        },
-                                        "session_id": sid,
-                                    })
-                            elif function_responses and not event.partial:
-                                for fr in function_responses:
-                                    await merged_queue.put({
-                                        "response": {
-                                            "event_type": "status_update",
-                                            "message": f"Tool {fr.name} completed",
-                                            "state": "working",
-                                            "author": event.author,
-                                            "selected_agent": current_selected_agent,
-                                        },
-                                        "session_id": sid,
-                                    })
-                    except Exception as e:
-                        logger.error(f"Error in ADK stream: {e}", exc_info=True)
-                        await merged_queue.put({
-                            "response": {"event_type": "error", "message": str(e)}
-                        })
-                    finally:
-                        # Signal that the ADK producer is done
-                        await merged_queue.put(None)
+                            )
+                        finally:
+                            # Signal that the ADK producer is done
+                            await merged_queue.put(None)
 
-                async def _a2a_side_channel_producer():
-                    """Forward A2A streaming events from the recruiter_client queue."""
+                    async def _a2a_side_channel_producer():
+                        """Forward A2A streaming events from the recruiter_client queue."""
+                        try:
+                            while True:
+                                # Wait for an A2A event from the tool's side-channel
+                                a2a_event = await a2a_queue.get()
+                                if a2a_event is None:
+                                    # Tool invocation finished; stop forwarding
+                                    break
+                                await merged_queue.put(
+                                    {
+                                        "response": a2a_event,
+                                        "session_id": final_sid,
+                                        "trace_id": trace_id,
+                                    }
+                                )
+                        except asyncio.CancelledError:
+                            pass
+                        except Exception as e:
+                            logger.error(
+                                f"Error in A2A side-channel: {e}", exc_info=True
+                            )
+
+                    # Launch both producers concurrently
+                    adk_task = asyncio.create_task(_adk_producer())
+                    a2a_task = asyncio.create_task(_a2a_side_channel_producer())
+
+                    # Consume merged events and yield NDJSON lines
                     try:
                         while True:
-                            # Wait for an A2A event from the tool's side-channel
-                            a2a_event = await a2a_queue.get()
-                            if a2a_event is None:
-                                # Tool invocation finished; stop forwarding
+                            line = await merged_queue.get()
+                            if line is None:
+                                # ADK producer finished — we're done
                                 break
-                            await merged_queue.put({
-                                "response": a2a_event,
+                            yield json.dumps(line) + "\n"
+                    finally:
+                        # Clean up: cancel the A2A side-channel if still running
+                        if not a2a_task.done():
+                            a2a_task.cancel()
+                        # Ensure both tasks are awaited
+                        await asyncio.gather(adk_task, a2a_task, return_exceptions=True)
+
+                except Exception as e:
+                    logger.error(f"Error in stream: {e}", exc_info=True)
+                    yield (
+                        json.dumps(
+                            {
+                                "response": {"event_type": "error", "message": str(e)},
                                 "session_id": final_sid,
-                            })
-                    except asyncio.CancelledError:
-                        pass
-                    except Exception as e:
-                        logger.error(f"Error in A2A side-channel: {e}", exc_info=True)
+                                "trace_id": trace_id,
+                            }
+                        )
+                        + "\n"
+                    )
 
-                # Launch both producers concurrently
-                adk_task = asyncio.create_task(_adk_producer())
-                a2a_task = asyncio.create_task(_a2a_side_channel_producer())
-
-                # Consume merged events and yield NDJSON lines
-                try:
-                    while True:
-                        line = await merged_queue.get()
-                        if line is None:
-                            # ADK producer finished — we're done
-                            break
-                        yield json.dumps(line) + "\n"
-                finally:
-                    # Clean up: cancel the A2A side-channel if still running
-                    if not a2a_task.done():
-                        a2a_task.cancel()
-                    # Ensure both tasks are awaited
-                    await asyncio.gather(adk_task, a2a_task, return_exceptions=True)
-
-            except Exception as e:
-                logger.error(f"Error in stream: {e}", exc_info=True)
-                yield json.dumps(
-                    {"response": {"event_type": "error", "message": str(e)}}
-                ) + "\n"
-
-        return StreamingResponse(
-            stream_generator(),
-            media_type="application/x-ndjson",
-            headers={
-                "Cache-Control": "no-cache",
-                "Connection": "keep-alive",
-            },
-        )
+            return StreamingResponse(
+                stream_generator(),
+                media_type="application/x-ndjson",
+                headers={
+                    "Cache-Control": "no-cache",
+                    "Connection": "keep-alive",
+                },
+            )
     except Exception as e:
         logger.error(f"Error setting up stream: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Operation failed: {str(e)}")

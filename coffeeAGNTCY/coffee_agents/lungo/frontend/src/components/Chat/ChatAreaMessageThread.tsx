@@ -7,13 +7,11 @@
 
 import React from "react"
 import { Box, Stack, Typography } from "@open-ui-kit/core"
-import grafanaIcon from "@/assets/grafana.svg"
 import { ChatAgentAvatar } from "./ChatAvatarCircle"
 import { LoadingDots } from "@/components/loading"
 import Message from "./Message"
 import ChatMarkdown from "./ChatMarkdown"
 import UserMessage from "./UserMessage"
-import ExternalLinkButton from "./ExternalLinkButton"
 import {
   GroupCommunicationFeed,
   AuctionStreamingFeed,
@@ -23,8 +21,8 @@ import type { GraphConfig } from "@/utils/graphConfigs"
 import type { AuctionStreamingState } from "@/stores/auctionStreaming.types"
 import type { RecruiterStreamingState } from "@/stores/recruiterStreaming.types"
 import type { ApiResponse } from "@/types/api"
-import { PATTERNS } from "@/utils/patternUtils"
 import { visuallyHiddenSx } from "@/utils/a11ySx"
+import GrafanaSessionLink from "./GrafanaSessionLink"
 
 export interface ChatAreaMessageThreadProps {
   currentUserMessage: string
@@ -36,13 +34,11 @@ export interface ChatAreaMessageThreadProps {
   isAgentLoading: boolean
   agentResponse?: ApiResponse
   apiError: boolean
-  pattern?: string
   graphConfig?: GraphConfig
   executionKey?: string
   auctionState?: AuctionStreamingState
   recruiterState?: RecruiterStreamingState
-  groupSessionId: string | null
-  grafanaSessionUrl: string
+  observabilitySessionId: string | null
   onStreamComplete?: () => void
   onSenderHighlight?: (nodeId: string) => void
 }
@@ -57,13 +53,11 @@ const ChatAreaMessageThread: React.FC<ChatAreaMessageThreadProps> = ({
   isAgentLoading,
   agentResponse,
   apiError,
-  pattern,
   graphConfig,
   executionKey,
   auctionState,
   recruiterState,
-  groupSessionId,
-  grafanaSessionUrl,
+  observabilitySessionId,
   onStreamComplete,
   onSenderHighlight,
 }) => (
@@ -96,6 +90,7 @@ const ChatAreaMessageThread: React.FC<ChatAreaMessageThreadProps> = ({
           prompt={currentUserMessage}
           executionKey={executionKey}
           apiError={apiError}
+          observabilitySessionId={observabilitySessionId}
         />
       </Box>
     )}
@@ -109,6 +104,7 @@ const ChatAreaMessageThread: React.FC<ChatAreaMessageThreadProps> = ({
           auctionStreamingState={auctionState}
           onSenderHighlight={onSenderHighlight}
           graphConfig={graphConfig}
+          observabilitySessionId={observabilitySessionId}
         />
       </Box>
     )}
@@ -123,6 +119,7 @@ const ChatAreaMessageThread: React.FC<ChatAreaMessageThreadProps> = ({
           onStreamComplete={onStreamComplete}
           onSenderHighlight={onSenderHighlight}
           graphConfig={graphConfig}
+          observabilitySessionId={observabilitySessionId}
         />
       </Box>
     )}
@@ -139,20 +136,9 @@ const ChatAreaMessageThread: React.FC<ChatAreaMessageThreadProps> = ({
         ) : (
           <>
             <ChatMarkdown content={agentResponse?.response ?? ""} />
-            {(agentResponse?.session_id || groupSessionId) &&
-              !isAgentLoading &&
-              pattern !== PATTERNS.A2A_HTTP && (
-                <ExternalLinkButton
-                  component="button"
-                  url={grafanaSessionUrl}
-                  label="Grafana"
-                  iconSrc={grafanaIcon}
-                  sx={(theme) => ({
-                    ml: 1,
-                    "& .MuiChip-label": theme.typography.body1,
-                  })}
-                />
-              )}
+            {!isAgentLoading && (
+              <GrafanaSessionLink sessionId={observabilitySessionId} />
+            )}
           </>
         )}
       </Message>

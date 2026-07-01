@@ -8,6 +8,7 @@ import {
   useStreamingEvents,
   useStreamingError,
   useStreamingActions,
+  useStreamingSessionId,
 } from "@/stores/auctionStreamingStore"
 import {
   useGroupIsStreaming,
@@ -26,6 +27,7 @@ import {
   useRecruiterAgentRecords,
   useRecruiterStreamingSessionId,
   useRecruiterSelectedAgent,
+  useRecruiterTraceId,
   useRecruiterEvaluationResults,
 } from "@/stores/recruiterStreamingStore"
 
@@ -36,6 +38,7 @@ export function useAppStreamingState() {
   const status = useStreamingStatus()
   const events = useStreamingEvents()
   const error = useStreamingError()
+  const sessionId = useStreamingSessionId()
 
   const groupIsStreaming = useGroupIsStreaming()
   const groupIsComplete = useGroupIsComplete()
@@ -49,6 +52,7 @@ export function useAppStreamingState() {
   const recruiterFinalMessage = useRecruiterFinalMessage()
   const recruiterAgentRecords = useRecruiterAgentRecords()
   const recruiterSessionId = useRecruiterStreamingSessionId()
+  const recruiterTraceId = useRecruiterTraceId()
   const recruiterSelectedAgent = useRecruiterSelectedAgent()
   const recruiterEvaluationResults = useRecruiterEvaluationResults()
   const { connect: connectRecruiter, reset: resetRecruiter } =
@@ -61,6 +65,7 @@ export function useAppStreamingState() {
     status,
     events,
     error,
+    sessionId,
     groupIsStreaming,
     groupIsComplete,
     groupFinalResponse,
@@ -72,6 +77,7 @@ export function useAppStreamingState() {
     recruiterFinalMessage,
     recruiterAgentRecords,
     recruiterSessionId,
+    recruiterTraceId,
     recruiterSelectedAgent,
     recruiterEvaluationResults,
     connectRecruiter,

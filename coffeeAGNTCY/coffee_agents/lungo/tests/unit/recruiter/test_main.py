@@ -5,6 +5,7 @@
 
 import json
 import time
+from contextlib import contextmanager
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -21,6 +22,16 @@ def client(recruiter_client):
         time.sleep(0.1)
     yield recruiter_client
 
+@contextmanager
+def mock_trace_session(execution_id: str):
+    mock_cm = MagicMock()
+    mock_cm.__enter__ = MagicMock(return_value={"executionID": execution_id})
+    mock_cm.__exit__ = MagicMock(return_value=False)
+    with patch(
+        "agents.supervisors.recruiter.main.session_start",
+        return_value=mock_cm,
+    ):
+        yield
 
 # ---------------------------------------------------------------------------
 # Health endpoints
@@ -180,6 +191,32 @@ class TestPromptEndpoint:
             assert data["selected_agent"]["name"] == "Shipping Agent"
             assert data["selected_agent"]["cid"] == "cid1"
 
+    def test_prompt_returns_trace_id(self, client):
+        trace_id = "execution://test-trace"
+        with (
+            mock_trace_session(trace_id),
+            patch(
+                "agents.supervisors.recruiter.agent.call_agent",
+                new_callable=AsyncMock,
+                return_value={
+                    "response": "OK",
+                    "session_id": "conv-1",
+                    "agent_records": {},
+                    "evaluation_results": {},
+                },
+            ) as mock_call,
+        ):
+            resp = client.post(
+                "/agent/prompt",
+                json={"prompt": "hi", "session_id": "conv-1"},
+            )
+        data = resp.json()
+        assert data["trace_id"] == trace_id
+        assert data["session_id"] != trace_id  # ADK key unchanged
+        mock_call.assert_called_once_with(
+            query="hi", session_id="conv-1", workflow_instance_id=None
+        )
+
 
 # ---------------------------------------------------------------------------
 # POST /agent/prompt/stream
@@ -270,6 +307,30 @@ class TestStreamEndpoint:
             lines = resp.text.strip().split("\n")
             data = json.loads(lines[0])
             assert data["session_id"] == "my-sess"
+
+    def test_stream_error_includes_trace_id(self, client):
+        trace_id = "execution://stream-error"
+
+        async def fake_stream(query, session_id, workflow_instance_id=None):
+            raise RuntimeError("stream blew up")
+            yield  # pragma: no cover
+
+        with (
+            mock_trace_session(trace_id),
+            patch(
+                "agents.supervisors.recruiter.agent.stream_agent",
+                side_effect=fake_stream,
+            ),
+        ):
+            resp = client.post(
+                "/agent/prompt/stream",
+                json={"prompt": "fail"},
+            )
+            lines = [ln for ln in resp.text.strip().split("\n") if ln.strip()]
+            assert len(lines) >= 1
+            data = json.loads(lines[-1])
+            assert data["response"]["event_type"] == "error"
+            assert data["trace_id"] == trace_id
 
 
 # ---------------------------------------------------------------------------

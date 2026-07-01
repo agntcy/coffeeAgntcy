@@ -41,7 +41,6 @@ const RootPage: React.FC = () => {
     chatHeightValue,
     isExpanded,
     chatRef,
-    setMessages,
     aiReplied,
     setAiReplied,
     buttonClicked,
@@ -64,7 +63,6 @@ const RootPage: React.FC = () => {
     handleClearConversation,
     handleNodeHighlightSetup,
     handleSenderHighlight,
-    handleDiscoveryResponse,
     graphConfig,
     events,
     status,
@@ -222,13 +220,11 @@ const RootPage: React.FC = () => {
                   }}
                 >
                   <ChatArea
-                    setMessages={setMessages}
-                    setButtonClicked={setButtonClicked}
-                    setAiReplied={setAiReplied}
                     isBottomLayout={true}
                     canvasMode={canvasMode}
                     selectedReferencePattern={selectedReferencePattern}
                     patternChatSessionId={patternChatSessionId}
+                    onPatternChatSuccess={() => setAiReplied(true)}
                     showCoffeePrompts={
                       canvasMode !== CanvasMode.PATTERN_DOC &&
                       (selectedPattern === PATTERNS.PUBLISH_SUBSCRIBE ||
@@ -285,7 +281,6 @@ const RootPage: React.FC = () => {
                       evaluationResults: recruiterEvaluationResults,
                       selectedAgent: recruiterSelectedAgent,
                     }}
-                    onDiscoveryResponse={handleDiscoveryResponse}
                   />
                 </Box>
               </GraphCanvasLayoutContext.Provider>
