@@ -3,29 +3,75 @@
  * SPDX-License-Identifier: Apache-2.0
  *
  * Map chat stream authors / sequence steps to React Flow graph element ids.
+ *
+ * The backend owns the graph, so there are no authored NODE_IDS/EDGE_IDS to map
+ * from. Stream authors resolve through a slug bridge (recruiter/directory slug
+ * aliases, then live labels), and the streaming animation sequence is derived
+ * straight from the live graph topology rather than translated from a static one.
  */
 
+import type { Edge, Node } from "@xyflow/react"
 import type { GraphConfig } from "@/utils/graphConfigs"
-import { NODE_IDS } from "@/utils/const"
+import type { CustomNodeData } from "@/components/MainArea/Graph/Elements/types"
+import { NODE_TYPES } from "@/utils/const"
+import {
+  getOasfSlugFromNodeData,
+  isDirectoryLabel,
+} from "@/utils/agenticTopologyIdentityUiMap"
 import { buildSenderToNodeMap } from "./groupCommunicationFeedMapping"
 
 function normalizeAuthor(value: string): string {
   return value.trim().toLowerCase()
 }
 
-/** Known recruiter / directory author strings from the discovery stream. */
-const AUTHOR_ALIASES: Readonly<Record<string, string>> = {
-  recruiter_service: NODE_IDS.RECRUITER,
-  recruiter_supervisor: NODE_IDS.RECRUITER,
-  recruiteragent: NODE_IDS.RECRUITER,
-  "agentic recruiter": NODE_IDS.RECRUITER,
-  "agntcy agent directory": NODE_IDS.DIRECTORY,
-  directory: NODE_IDS.DIRECTORY,
+/** Known recruiter / directory stream authors mapped to a canonical node slug. */
+const AUTHOR_SLUG_ALIASES: Readonly<Record<string, string>> = {
+  recruiter_service: "recruiter",
+  recruiter_supervisor: "recruiter",
+  recruiteragent: "recruiter",
+  "agentic recruiter": "recruiter",
+  "agntcy agent directory": "directory",
+  directory: "directory",
 }
 
 /**
- * Resolve a stream event author to a graph node id using live graph labels and
- * recruiter-specific aliases.
+ * Stable identity key shared by static-config and API-driven nodes. Transport and
+ * group nodes resolve by type; directory has no OASF slug, so it is detected from
+ * its labels; everything else defers to `getOasfSlugFromNodeData`.
+ */
+function nodeSlugKey(node: Node): string | null {
+  if (node.type === NODE_TYPES.TRANSPORT) return "transport"
+  if (node.type === NODE_TYPES.GROUP) return "logistics-group"
+
+  const data = node.data as unknown as CustomNodeData | undefined
+  const label1 = data?.label1?.toLowerCase() ?? ""
+  const label2 = data?.label2?.toLowerCase() ?? ""
+  const combined = `${label1} ${label2}`.trim()
+  if (label1 === "directory" || isDirectoryLabel(combined)) {
+    return "directory"
+  }
+
+  try {
+    return getOasfSlugFromNodeData(data)
+  } catch {
+    return null
+  }
+}
+
+function slugToNodeIdMap(
+  graphConfig: GraphConfig | undefined,
+): Map<string, string> {
+  const map = new Map<string, string>()
+  for (const node of graphConfig?.nodes ?? []) {
+    const slug = nodeSlugKey(node)
+    if (slug && !map.has(slug)) map.set(slug, node.id)
+  }
+  return map
+}
+
+/**
+ * Resolve a stream event author to a graph node id using recruiter/directory
+ * slug aliases first, then live graph labels.
  */
 export function resolveStreamAuthorToNodeId(
   author: string | undefined,
@@ -34,8 +80,11 @@ export function resolveStreamAuthorToNodeId(
   if (!author?.trim()) return null
 
   const normalized = normalizeAuthor(author)
-  const alias = AUTHOR_ALIASES[normalized]
-  if (alias) return alias
+  const slug = AUTHOR_SLUG_ALIASES[normalized]
+  if (slug) {
+    const bySlug = slugToNodeIdMap(graphConfig).get(slug)
+    if (bySlug) return bySlug
+  }
 
   const labelMap = buildSenderToNodeMap(graphConfig)
   return labelMap[author] ?? labelMap[normalized] ?? null
@@ -48,4 +97,55 @@ export function animationSequenceStepIds(
 ): readonly string[] {
   const step = graphConfig?.animationSequence?.[stepIndex]
   return step?.ids ?? []
+}
+
+/**
+ * Build a streaming animation sequence straight from the live graph: pulse the
+ * root node(s) (no inbound edges, at least one outbound), then the edges fanning
+ * out, then the next layer of nodes, and so on. Isolated nodes (e.g. the group
+ * container) are skipped. No authored sequence or static config required.
+ */
+export function deriveAnimationSequenceFromGraph(
+  nodes: Node[],
+  edges: Edge[],
+): GraphConfig["animationSequence"] {
+  const outgoing = new Map<string, Edge[]>()
+  const inDegree = new Map<string, number>()
+  for (const node of nodes) inDegree.set(node.id, 0)
+  for (const edge of edges) {
+    const list = outgoing.get(edge.source) ?? []
+    list.push(edge)
+    outgoing.set(edge.source, list)
+    inDegree.set(edge.target, (inDegree.get(edge.target) ?? 0) + 1)
+  }
+
+  const roots = nodes
+    .filter(
+      (node) => (inDegree.get(node.id) ?? 0) === 0 && outgoing.has(node.id),
+    )
+    .map((node) => node.id)
+  if (roots.length === 0) return []
+
+  const steps: { ids: string[] }[] = [{ ids: [...roots] }]
+  const visited = new Set<string>(roots)
+  let frontier = roots
+
+  while (frontier.length > 0) {
+    const edgeIds: string[] = []
+    const nextNodes: string[] = []
+    for (const nodeId of frontier) {
+      for (const edge of outgoing.get(nodeId) ?? []) {
+        if (visited.has(edge.target)) continue
+        edgeIds.push(edge.id)
+        if (!nextNodes.includes(edge.target)) nextNodes.push(edge.target)
+      }
+    }
+    for (const id of nextNodes) visited.add(id)
+    if (edgeIds.length > 0) steps.push({ ids: edgeIds })
+    if (nextNodes.length === 0) break
+    steps.push({ ids: nextNodes })
+    frontier = nextNodes
+  }
+
+  return steps
 }
