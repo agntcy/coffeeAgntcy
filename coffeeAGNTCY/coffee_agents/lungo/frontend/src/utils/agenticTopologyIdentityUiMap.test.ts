@@ -168,12 +168,12 @@ describe("agenticTopologyIdentityUiMap", () => {
   })
 
   describe("applyDiscoveredAgentInlineUi", () => {
-    const baseData = {
+    const baseData: CustomNodeData = {
       icon: null,
       label1: "Brazil",
       label2: "",
       handles: "all",
-    } as unknown as CustomNodeData
+    }
 
     it("returns data unchanged when the wire has no inline OASF record", () => {
       const out = applyDiscoveredAgentInlineUi(baseData, {
