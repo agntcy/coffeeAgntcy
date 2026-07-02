@@ -9,9 +9,9 @@ import {
   Button,
   IconButton,
   Link,
-  Modal,
-  ModalContent,
-  ModalTitle,
+  Dialog,
+  DialogContent,
+  DialogTitle,
   Stack,
   Typography,
 } from "@open-ui-kit/core"
@@ -101,14 +101,14 @@ const OasfRecordModal: React.FC<OasfRecordModalProps> = ({
   )
 
   return (
-    <Modal
+    <Dialog
       open={isOpen}
       onClose={onClose}
       maxWidth="md"
       fullWidth
       scroll="paper"
     >
-      <ModalTitle sx={{ pr: 6, position: "relative" }}>
+      <DialogTitle sx={{ pr: 6, position: "relative" }}>
         Directory Information
         <IconButton
           onClick={onClose}
@@ -117,9 +117,9 @@ const OasfRecordModal: React.FC<OasfRecordModalProps> = ({
         >
           <Close />
         </IconButton>
-      </ModalTitle>
+      </DialogTitle>
 
-      <ModalContent dividers>
+      <DialogContent dividers>
         {isDirectoryNode ? (
           <Stack sx={{ width: "100%", gap: 1.5 }}>
             <Stack sx={{ width: "100%", gap: 1.5 }}>
@@ -250,8 +250,8 @@ const OasfRecordModal: React.FC<OasfRecordModalProps> = ({
             <Typography color="text.primary">No data available</Typography>
           </Stack>
         )}
-      </ModalContent>
-    </Modal>
+      </DialogContent>
+    </Dialog>
   )
 }
 

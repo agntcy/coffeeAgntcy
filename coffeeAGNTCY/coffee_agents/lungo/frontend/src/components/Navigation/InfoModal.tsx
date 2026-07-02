@@ -7,8 +7,8 @@ import React, { useEffect } from "react"
 import DialogTitle from "@mui/material/DialogTitle"
 import {
   Dialog,
+  DialogContent,
   IconButton,
-  ModalContent,
   Stack,
   Typography,
 } from "@open-ui-kit/core"
@@ -84,7 +84,7 @@ const InfoModal: React.FC<InfoModalProps> = ({ isOpen, onClose }) => {
           <Close />
         </IconButton>
       </DialogTitle>
-      <ModalContent>
+      <DialogContent>
         <Stack spacing={3}>
           <Stack spacing={2}>
             <Typography variant="h6">Build and Release Information</Typography>
@@ -150,7 +150,7 @@ const InfoModal: React.FC<InfoModalProps> = ({ isOpen, onClose }) => {
             </Stack>
           </Stack>
         </Stack>
-      </ModalContent>
+      </DialogContent>
     </Dialog>
   )
 }

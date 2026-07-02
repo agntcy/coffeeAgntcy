@@ -39,7 +39,6 @@ const SidebarItem: React.FC<SidebarItemProps> = ({
     >
       <ListItemButton
         component={!isRowDisabled ? "button" : "div"}
-        type={!isRowDisabled ? "button" : undefined}
         disabled={isRowDisabled}
         aria-disabled={isRowDisabled || undefined}
         aria-label={isRowDisabled ? `${title}, unavailable` : undefined}
