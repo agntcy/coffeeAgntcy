@@ -34,7 +34,8 @@ import {
   CUSTOM_NODE_WIDTH,
 } from "@/utils/graphNodeDimensions"
 import { CustomNodeData, ExtraHandle } from "./types"
-import TransportRail, { railBackgroundImage } from "./TransportRail"
+import TransportRail from "./TransportRail"
+import { railBackgroundImage } from "./transportRailBackground"
 
 const POSITION_MAP: Record<ExtraHandle["position"], Position> = {
   top: Position.Top,
