@@ -4,17 +4,11 @@
  **/
 
 import React, { useCallback, useState } from "react"
-import {
-  useThemeMode,
-  Header,
-  IconButton,
-  Stack,
-  Tooltip,
-  Box,
-} from "@open-ui-kit/core"
+import { Header, IconButton, Stack, Tooltip, Box } from "@open-ui-kit/core"
 import HelpOutline from "@mui/icons-material/HelpOutline"
 
 import coffeeAgntcyLogo from "@/assets/coffeeAGNTCY_logo.svg"
+import { useAppThemeMode } from "@/hooks/useAppThemeMode"
 import ThemeToggleIcon from "../icons/ThemeToggleIcon"
 import InfoModal from "./InfoModal"
 import {
@@ -24,7 +18,7 @@ import {
 
 const Navigation: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false)
-  const { isDarkMode, toggleTheme } = useThemeMode()
+  const { isDarkMode, toggleTheme } = useAppThemeMode()
 
   const handleHelpClick = useCallback(() => {
     setIsModalOpen(true)
