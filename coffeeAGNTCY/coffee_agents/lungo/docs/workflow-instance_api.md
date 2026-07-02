@@ -254,7 +254,7 @@ Returns `404` when `workflow_name` is not in the catalog.
 
 ### `POST /agentic-workflows/{workflow_name}/` — instantiate
 
-Creates a new instance of the workflow and seeds its starting topology into the store. Responds with the instance id to track (as an `instance://…` URI).
+Creates a new empty instance of the workflow and registers it in the store. The corresponding starting topology is stored at the workflow level and seeded into the instance with a follow-up event. Responds with the instance id to track (as an `instance://…` URI).
 
 ```json
 { "workflow_instance_id": "instance://6ba7b817-9dad-11d1-80b4-00c04fd430c8" }
@@ -265,6 +265,7 @@ Behavior and status codes:
 - `200` — instance created; body is `InstantiateWorkflowResponse`.
 - `404` — unknown `workflow_name`.
 - `400` — the seed event failed schema validation.
+- `500` — catalog inconsistency: the seed builder found the catalog `Workflow.name` did not match the resolved `workflow_name` (a server-side data-integrity fault, not client input).
 - `503` — store not configured / closed.
 - `504` — the event was accepted and queued but the in-memory merge did not finish in time. **Each `POST` creates a new instance**, so do not blindly retry; poll the instances list or `GET` the instance state first.
 
@@ -293,7 +294,12 @@ Query parameter:
 
 `{workflow_instance_id}` is the **bare UUID** path segment; the response `id` field is the full `instance://<uuid>` URI.
 
-Status codes: `200` on success; `404` when the workflow or the instance is unknown.
+Status codes:
+
+- `200` — success.
+- `404` — the workflow or the instance is unknown.
+- `500` — the store returned a malformed instance projection (a server-side data-integrity fault).
+- `503` — the instance store is not configured.
 
 ### `DELETE /agentic-workflows/{workflow_name}/instances/{workflow_instance_id}/` — delete instance
 
@@ -379,7 +385,10 @@ A newline-delimited JSON (`application/x-ndjson`) stream for chatting with a pat
 {"done": true}
 ```
 
-Returns `404` (before opening the stream) when the pattern has no reference markdown, and `422` when the request body fails validation.
+Status codes:
+
+- `404` — the pattern has no reference markdown (returned before opening the stream).
+- `422` — the request body failed validation.
 
 ---
 

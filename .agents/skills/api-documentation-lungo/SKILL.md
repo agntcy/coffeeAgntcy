@@ -28,7 +28,8 @@ These are the authoritative inputs. Read them fresh on every run; do not trust t
 | **Canonical state schema** | `schema/jsonschemas/event_v1.json` | `$defs`, required fields, full-vs-partial variants, identifier patterns, invariants |
 | Event-type enum | `schema/jsonschemas/event_type_v1.json` | `metadata.type` enum values and extensibility note |
 | Schema examples | `schema/jsonschemas/examples/*.json` | Worked full/partial/empty payloads to link and (sparingly) excerpt |
-| Router (behavior not in spec) | `api/agentic_workflows/router.py` | Status-code semantics, SSE framing/comment-frame, backpressure, NDJSON framing, `topology_only` projection behavior |
+| Router (behavior not in spec) | `api/agentic_workflows/router.py` | Per-endpoint status codes and their trigger conditions (every `HTTPException` in the handler **and** in dependencies/helpers it calls, not just the OpenAPI-declared responses), SSE framing/comment-frame, backpressure, NDJSON framing, `topology_only` projection behavior |
+| Instance lifecycle helpers | `api/agentic_workflows/instance_lifecycle.py` | Error conditions the handlers translate into status codes (e.g. `ValueError` from `build_instantiate_seed_event`/projection helpers → `500`) |
 | DTOs | `api/agentic_workflows/dtos.py` | Field constraints; "temporary until #468" status note |
 | Auth | `api/agentic_workflows/auth.py` | Bearer requirement, `401`, startup key assertion |
 | Store interface | `common/workflow_instance_store/interfaces.py` | In-memory, keyed-by-instance, read vs write/fan-out split |
@@ -64,7 +65,7 @@ Copy this checklist and tick items as you go:
 ```
 - [ ] 1. Read every input in the Source registry (specs first, then router for behavior)
 - [ ] 2. Enumerate endpoints from OpenAPI and $defs from event_v1.json (do not hard-code)
-- [ ] 3. Reconcile spec against router.py; capture behavior the spec can't (status codes, SSE/NDJSON framing, backpressure)
+- [ ] 3. Reconcile spec against router.py; capture behavior the spec can't (the full reachable status-code set + trigger conditions from handlers, dependencies, and helper modules; SSE/NDJSON framing; backpressure)
 - [ ] 4. Write/refresh each document section per "Document structure", deriving every shape from a source
 - [ ] 5. Use real example values from the catalog data files; link (don't inline) full example payloads
 - [ ] 6. Apply the writing conventions
@@ -76,6 +77,7 @@ Copy this checklist and tick items as you go:
 
 - **Derive, never invent.** Every endpoint, field, status code, and constraint must trace to a source file. If the spec and the router disagree, document the router's actual behavior and flag the drift to the user.
 - **Spec for shape, router for behavior.** OpenAPI/JSON Schema give request/response shapes; `router.py` is authoritative for things the spec omits — exact status codes (e.g. `504` on instantiate merge timeout, `202`/`204` idempotent delete), the SSE leading comment frame and `exclude_none` compaction, per-subscriber queue bounds/drop-oldest, and the NDJSON `{"response"}`/`{"done"}`/`{"error"}` frames.
+- **Derive the full status-code set from the code, not just the OpenAPI `responses`.** For each endpoint, trace every reachable `HTTPException` — in the handler body, in shared dependencies it uses (e.g. `_workflow_instance_store` → `503` when the store is unset), and in helper modules it calls (e.g. `instance_lifecycle.py` `ValueError` → `500`). The OpenAPI spec often documents only the happy-path and a subset of errors; the document must list the codes the code can actually return. For each code, state the **condition** that triggers it (and note when it reflects a server-side fault vs. client input).
 - **Enumerate, don't count.** Build the endpoint summary and `$defs` table by listing what's in the specs so the document stays correct as endpoints/types are added.
 - **Real examples.** Pull patterns, use-cases, workflow summaries, and topology from `patterns.py`, `use_cases.py`, and `starting_workflows.json` so samples match what the API returns.
 
@@ -85,6 +87,7 @@ Copy this checklist and tick items as you go:
 - Link to source files with paths relative to `docs/` (`../schema/...`, `../api/...`). Link full example payloads rather than pasting them; excerpt only small, illustrative fragments.
 - Use fenced code blocks with a language tag (`json`, `jsonc`, `http`, `text`, `bash`) for samples; these are illustrative, not citations of repo lines.
 - Keep terminology consistent: "endpoint", "workflow instance", "topology", "event".
+- Present per-endpoint status codes as a markdown bullet list introduced by a `Status codes:` line (or an equivalent lead-in such as `Behavior and status codes:`), one code per item in the form `` - `<code>` — <condition>. `` — never as an inline semicolon- or comma-separated sentence. Keep this consistent across every endpoint that lists more than one code.
 
 ### Verification
 
