@@ -8,9 +8,9 @@ import {
   Box,
   Button,
   IconButton,
-  Modal,
-  ModalContent,
-  ModalTitle,
+  Dialog,
+  DialogContent,
+  DialogTitle,
   Stack,
   Typography,
 } from "@open-ui-kit/core"
@@ -68,14 +68,14 @@ const BadgeDetailsModal: React.FC<BadgeDetailsModalProps> = ({
   }, [fetchBadgeDetailsData, isOpen, nodeName, nodeData])
 
   return (
-    <Modal
+    <Dialog
       open={isOpen}
       onClose={onClose}
       maxWidth="md"
       fullWidth
       scroll="paper"
     >
-      <ModalTitle sx={{ pr: 6, position: "relative" }}>
+      <DialogTitle sx={{ pr: 6, position: "relative" }}>
         {nodeName} Badge Details
         <IconButton
           onClick={onClose}
@@ -84,9 +84,9 @@ const BadgeDetailsModal: React.FC<BadgeDetailsModalProps> = ({
         >
           <Close />
         </IconButton>
-      </ModalTitle>
+      </DialogTitle>
 
-      <ModalContent dividers>
+      <DialogContent dividers>
         {loading && !badgeData ? (
           <Stack
             sx={{
@@ -151,8 +151,8 @@ const BadgeDetailsModal: React.FC<BadgeDetailsModalProps> = ({
             <Typography color="text.primary">No data available</Typography>
           </Stack>
         )}
-      </ModalContent>
-    </Modal>
+      </DialogContent>
+    </Dialog>
   )
 }
 
