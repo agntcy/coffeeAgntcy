@@ -7,12 +7,12 @@
  */
 
 import { type ReactNode, useEffect, useLayoutEffect } from "react"
-import { useThemeMode } from "@open-ui-kit/core"
 
+import { useAppThemeMode, ThemeMode } from "@/hooks/useAppThemeMode"
 import { readStoredThemeMode, writeStoredThemeMode } from "@/utils/themeStorage"
 
 export function ThemeModePersistence({ children }: { children: ReactNode }) {
-  const { isDarkMode, setIsDarkMode } = useThemeMode()
+  const { mode, setIsDarkMode } = useAppThemeMode()
 
   useLayoutEffect(() => {
     const storedMode = readStoredThemeMode()
@@ -22,8 +22,8 @@ export function ThemeModePersistence({ children }: { children: ReactNode }) {
   }, [setIsDarkMode])
 
   useEffect(() => {
-    writeStoredThemeMode(isDarkMode ? "dark" : "light")
-  }, [isDarkMode])
+    writeStoredThemeMode(mode === ThemeMode.Dark ? "dark" : "light")
+  }, [mode])
 
   return children
 }

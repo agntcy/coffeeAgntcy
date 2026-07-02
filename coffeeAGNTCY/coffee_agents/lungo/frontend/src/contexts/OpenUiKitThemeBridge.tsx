@@ -8,18 +8,21 @@
 import { type ReactNode } from "react"
 import { ThemeProvider as OpenUiKitThemeProvider } from "@open-ui-kit/core"
 
-import { LungoCompactTheme } from "@/contexts/LungoCompactTheme"
+import { CompactTheme } from "@/contexts/CompactTheme"
 import { ThemeModePersistence } from "@/contexts/ThemeModePersistence"
+import { ThemeMode } from "@/hooks/useAppThemeMode"
 import { readStoredIsDarkMode } from "@/utils/themeStorage"
 
 export function OpenUiKitThemeBridge({ children }: { children: ReactNode }) {
   const storedIsDarkMode = readStoredIsDarkMode()
 
   return (
-    <OpenUiKitThemeProvider defaultDarkMode={storedIsDarkMode ?? false}>
-      <LungoCompactTheme>
+    <OpenUiKitThemeProvider
+      defaultMode={storedIsDarkMode ? ThemeMode.Dark : ThemeMode.Light}
+    >
+      <CompactTheme>
         <ThemeModePersistence>{children}</ThemeModePersistence>
-      </LungoCompactTheme>
+      </CompactTheme>
     </OpenUiKitThemeProvider>
   )
 }
