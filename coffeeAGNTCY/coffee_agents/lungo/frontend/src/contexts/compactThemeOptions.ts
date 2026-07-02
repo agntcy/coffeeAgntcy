@@ -2,14 +2,14 @@
  * Copyright AGNTCY Contributors (https://github.com/agntcy)
  * SPDX-License-Identifier: Apache-2.0
  *
- * Compact density layer merged onto the OUK theme (see LungoCompactTheme).
+ * Compact density layer merged onto the OUK theme (see CompactTheme).
  * Body scale shifts one OUK tier down (body1: 16px → 14px); spacing unit: 6px.
  */
 
 import type { ThemeOptions } from "@mui/material/styles"
 
 /** 6px per spacing unit (default MUI/OUK is 8px). */
-export const LUNGO_SPACING_UNIT_PX = 6
+export const COMPACT_SPACING_UNIT_PX = 6
 
 type SpacingFn = ((...args: number[]) => string) & { mui: true }
 
@@ -17,7 +17,7 @@ type SpacingFn = ((...args: number[]) => string) & { mui: true }
  * Must be a spacing factory when merging onto an existing theme — `spacing: 6`
  * deep-merges as a number and breaks `theme.spacing()` (e.g. MuiToolbar).
  */
-function createLungoSpacing(unitPx: number): SpacingFn {
+function createCompactSpacing(unitPx: number): SpacingFn {
   const spacing = (...args: number[]) => {
     const factors = args.length === 0 ? [1] : args
     return factors.map((factor) => `${unitPx * factor}px`).join(" ")
@@ -26,10 +26,10 @@ function createLungoSpacing(unitPx: number): SpacingFn {
   return spacing
 }
 
-const lungoSpacing = createLungoSpacing(LUNGO_SPACING_UNIT_PX)
+const compactSpacing = createCompactSpacing(COMPACT_SPACING_UNIT_PX)
 
-export const lungoCompactThemeOptions: ThemeOptions = {
-  spacing: lungoSpacing,
+export const compactThemeOptions: ThemeOptions = {
+  spacing: compactSpacing,
 
   typography: {
     htmlFontSize: 16,
