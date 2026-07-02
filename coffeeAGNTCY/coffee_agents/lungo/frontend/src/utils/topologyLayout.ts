@@ -163,10 +163,9 @@ function layoutCompactGroup(nodes: Node[], transport: Node): Node[] {
 
   return nodes.map((node) => {
     if (node.id === group.id) {
-      return {
-        ...node,
-        style: { ...node.style, width: groupWidth, height: groupHeight },
-      }
+      // The group is hidden, so extent clamping resolves its box from top-level
+      // width/height (style is never measured). Write the fitted size there.
+      return { ...node, width: groupWidth, height: groupHeight }
     }
     if (node.parentId === group.id) {
       const next = positions.get(node.id)

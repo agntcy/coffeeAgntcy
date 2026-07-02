@@ -10,14 +10,14 @@ for A2A transport. Shared event builders and sinks live in workflow_utils.
 from __future__ import annotations
 
 import logging
-import re as _re
 from time import monotonic
-from typing import Any, Mapping
+from typing import Any, Literal, Mapping
 
 from a2a.client import ClientEvent
 from a2a.client.middleware import ClientCallContext, ClientCallInterceptor
 from a2a.types import AgentCard, Message, Task, TaskState
 from opentelemetry import trace as _otel_trace
+from pydantic import ValidationError
 
 from common.stable_agent_id import stable_agent_id_for_name as _stable_agent_id
 from common.workflow_utils.builders import build_event, make_edge, make_node
@@ -33,17 +33,23 @@ from common.workflow_utils.inflight import (
 from common.workflow_utils.workflow_catalog import lookup_workflow
 from config.config import EMIT_WORKFLOW_EVENTS
 from schema.types import (
+	InstanceId,
 	Operation,
 	PartialTopology,
 	TopologyEdgeItem,
 	TopologyNodeItem,
 )
 
-from schema.types.event import _INSTANCE_ID_REGEX as INSTANCE_ID_REGEX
-
 logger = logging.getLogger("lungo.common.event_middleware")
 
-_INSTANCE_ID_PATTERN = _re.compile(INSTANCE_ID_REGEX)
+
+def _is_valid_instance_id(value: str) -> bool:
+	"""True when value is a canonical ``instance://<uuid>`` id (schema-validated)."""
+	try:
+		InstanceId(root=value)
+	except ValidationError:
+		return False
+	return True
 
 
 def _slugify_source(card: AgentCard) -> str:
@@ -175,6 +181,54 @@ async def _outbound_topology(
 	return PartialTopology(nodes=nodes, edges=edges)
 
 
+async def _delegation_edge_topology(
+	anchor_stable_agent_id: str,
+	anchor_label: str,
+	remote_agent_ids: list[str],
+	layer_index: int,
+	*,
+	allocator: RuntimeIdAllocator,
+) -> PartialTopology:
+	"""Build recruiter-style delegation: anchor nodes + edges only (no transport).
+
+	Anchor nodes carry ``stable_agent_id`` values so the merge layer reconciles
+	them onto existing seeded/discovered nodes instead of creating duplicates.
+	"""
+	anchor_id = await allocator.node_id("delegation-recruiter-anchor")
+	nodes: list[TopologyNodeItem] = [
+		make_node(
+			anchor_id,
+			operation=Operation.CREATE,
+			node_type="customNode",
+			label=anchor_label,
+			layer_index=layer_index,
+			stable_agent_id=anchor_stable_agent_id,
+		),
+	]
+	edges: list[TopologyEdgeItem] = []
+	for agent_id in remote_agent_ids:
+		remote_anchor_id = await allocator.node_id(f"delegation-remote-{agent_id}")
+		nodes.append(
+			make_node(
+				remote_anchor_id,
+				operation=Operation.CREATE,
+				node_type="customNode",
+				label=agent_id,
+				layer_index=layer_index + 1,
+				stable_agent_id=_stable_agent_id(agent_id),
+			),
+		)
+		edges.append(
+			await make_edge(
+				anchor_id,
+				remote_anchor_id,
+				operation=Operation.CREATE,
+				allocator=allocator,
+			),
+		)
+	return PartialTopology(nodes=nodes, edges=edges)
+
+
 async def _inbound_topology(
 	caller_agent_id: str,
 	remote_agent_id: str,
@@ -242,10 +296,20 @@ class EventEmittingInterceptor(ClientCallInterceptor):
 		*,
 		caller_card: AgentCard,
 		agent_call_graph_layer: int = 0,
+		delegation_mode: Literal["full", "edge_only"] = "full",
+		delegation_anchor_stable_agent_id: str | None = None,
+		delegation_anchor_label: str = "Agentic Recruiter",
 	) -> None:
 		self._caller_agent_id = caller_card.name
 		self._source = _slugify_source(caller_card)
 		self._agent_call_graph_layer = agent_call_graph_layer
+		self._delegation_mode = delegation_mode
+		self._delegation_anchor_stable_agent_id = delegation_anchor_stable_agent_id
+		self._delegation_anchor_label = delegation_anchor_label
+
+		if delegation_mode == "edge_only" and not delegation_anchor_stable_agent_id:
+			msg = "delegation_anchor_stable_agent_id is required when delegation_mode='edge_only'"
+			raise ValueError(msg)
 
 		if not EMIT_WORKFLOW_EVENTS:
 			logger.warning(
@@ -312,7 +376,7 @@ class EventEmittingInterceptor(ClientCallInterceptor):
 			)
 			return request_payload, http_kwargs
 
-		if not propagated_instance_id or not _INSTANCE_ID_PATTERN.match(propagated_instance_id):
+		if not propagated_instance_id or not _is_valid_instance_id(propagated_instance_id):
 			logger.warning(
 				"EventEmittingInterceptor [%s]: missing or malformed propagated "
 				"workflow_instance_id=%r on method '%s'; skipping event emission.",
@@ -354,13 +418,25 @@ class EventEmittingInterceptor(ClientCallInterceptor):
 		)
 
 		if remote_agent_ids:
-			topology = await _outbound_topology(
-				self._caller_agent_id,
-				remote_agent_ids,
-				transport_label=active_transport,
-				layer_index=self._agent_call_graph_layer,
-				allocator=allocator,
-			)
+			if (
+				self._delegation_mode == "edge_only"
+				and self._delegation_anchor_stable_agent_id is not None
+			):
+				topology = await _delegation_edge_topology(
+					self._delegation_anchor_stable_agent_id,
+					self._delegation_anchor_label,
+					remote_agent_ids,
+					layer_index=self._agent_call_graph_layer,
+					allocator=allocator,
+				)
+			else:
+				topology = await _outbound_topology(
+					self._caller_agent_id,
+					remote_agent_ids,
+					transport_label=active_transport,
+					layer_index=self._agent_call_graph_layer,
+					allocator=allocator,
+				)
 			correlation_msg = f"outbound {method_name} to [{', '.join(remote_agent_ids)}]"
 		else:
 			caller_node = await allocator.node_id(f"agent-{self._caller_agent_id}")
@@ -456,6 +532,7 @@ def make_event_emitting_consumer(
 	*,
 	caller_card: AgentCard,
 	agent_call_graph_layer: int = 0,
+	delegation_mode: Literal["full", "edge_only"] = "full",
 ):
 	"""Create consumer callback that emits inbound topology updates."""
 	if not EMIT_WORKFLOW_EVENTS:
@@ -475,6 +552,9 @@ def make_event_emitting_consumer(
 		agent_card: AgentCard,
 	) -> None:
 		"""Emit a StateProgressUpdate for an inbound response."""
+
+		if delegation_mode == "edge_only":
+			return
 
 		t_receive_start = monotonic()
 

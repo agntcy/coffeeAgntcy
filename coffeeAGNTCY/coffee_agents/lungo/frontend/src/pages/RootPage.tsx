@@ -55,7 +55,6 @@ const RootPage: React.FC = () => {
     showRecruiterStreaming,
     showFinalResponse,
     groupCommResponseReceived,
-    discoveryResponseEvent,
     handleUserInput,
     handleApiResponse,
     handleSendPrompt,
@@ -188,12 +187,10 @@ const RootPage: React.FC = () => {
                     buttonClicked={buttonClicked}
                     setButtonClicked={setButtonClicked}
                     aiReplied={aiReplied}
-                    setAiReplied={setAiReplied}
                     chatHeight={chatHeightValue}
                     isExpanded={isExpanded}
                     groupCommResponseReceived={groupCommResponseReceived}
                     onNodeHighlight={handleNodeHighlightSetup}
-                    discoveryResponseEvent={discoveryResponseEvent}
                     selectedAgentCid={
                       typeof recruiterSelectedAgent?.cid === "string"
                         ? recruiterSelectedAgent.cid

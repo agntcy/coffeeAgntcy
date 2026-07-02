@@ -216,7 +216,7 @@ describe("layoutSlimTransportGraph (compact group)", () => {
   it("centers transport and custom rows with equal group margins", () => {
     const config = getGraphConfig("group_messaging")
     const group = config.nodes.find((node) => node.type === NODE_TYPES.GROUP)!
-    const groupWidth = group.style?.width as number
+    const groupWidth = group.width as number
     const transport = config.nodes.find(
       (node) => node.id === NODE_IDS.TRANSPORT,
     )!
