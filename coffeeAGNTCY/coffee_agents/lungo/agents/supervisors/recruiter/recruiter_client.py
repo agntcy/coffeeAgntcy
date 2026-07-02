@@ -57,7 +57,7 @@ logger = logging.getLogger("lungo.recruiter.supervisor.recruiter_client")
 # merge layer (reconcile_event_node_identities) recognizes it as the same node,
 # drops the duplicate, and re-points the discovered-agent edges onto the real
 # "Agentic Recruiter" node. The frontend makes no anchoring decision.
-# _RECRUITER_ANCHOR_RECORD_NAME must match the recruiter OASF record "name"
+# _RECRUITER_ANCHOR_RECORD_NAME must match the seeded recruiter record "name"
 # (oasf/agents/recruiter.json) so the derived stable_agent_id matches the seed.
 _RECRUITER_ANCHOR_LABEL = "Agentic Recruiter"
 _RECRUITER_ANCHOR_RECORD_NAME = "Agentic Recruiter agent"
@@ -150,7 +150,8 @@ async def _emit_discovery_topology(agent_records: dict[str, dict]) -> None:
     """Merge discovered agents into the live workflow instance topology.
 
     Emits a STATE_PROGRESS_UPDATE that creates one node per discovered agent
-    (carrying its full OASF record inline) plus an anchor node carrying the
+    (carrying its inline agent record / flat AgentCard dict on ``oasf_record``)
+    plus an anchor node carrying the
     seeded recruiter's stable_agent_id. The backend merge layer reconciles the
     anchor onto the existing "Agentic Recruiter" node and re-points the new
     edges there, so nodes arrive, render, and dispose through the normal

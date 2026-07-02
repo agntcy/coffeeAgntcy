@@ -103,7 +103,6 @@ export function useApp() {
       setSelectedWorkflowSummary(summary)
       setLiveGraphConfig(null)
       setSelectedReferencePattern(null)
-      lastDiscoveryKeyRef.current = null
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps -- streaming/chat refs stable enough; full deps cause unnecessary runs
     [streaming.reset, streaming.resetRecruiter, streaming.resetGroup, chat],
@@ -327,7 +326,11 @@ export function useApp() {
           const priorSessionId = streaming.recruiterSessionId
           streaming.resetRecruiter()
           try {
-await streaming.connectRecruiter(query, activeWorkflowInstanceId, priorSessionId)
+            await streaming.connectRecruiter(
+              query,
+              activeWorkflowInstanceId,
+              priorSessionId,
+            )
           } catch (err) {
             logger.apiError(LUNGO_FRONTEND_URLS.apiPaths.agentPromptStream, err)
             chat.setShowFinalResponse(true)
@@ -373,7 +376,6 @@ await streaming.connectRecruiter(query, activeWorkflowInstanceId, priorSessionId
     chat.resetChatState()
     streaming.resetGroup()
     streaming.resetRecruiter()
-    lastDiscoveryKeyRef.current = null
     // In pattern_doc mode the server keys conversation state by session_id;
     // rotate it so a cleared chat starts a genuinely fresh backend session.
     if (selectedReferencePattern !== null) {

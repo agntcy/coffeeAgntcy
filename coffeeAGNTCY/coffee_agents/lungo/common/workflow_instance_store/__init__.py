@@ -9,6 +9,7 @@ from common.workflow_instance_store.interfaces import (
     WorkflowInstanceDataStore,
     WorkflowInstanceEventFanout,
 )
+from common.workflow_instance_store.discovery_layout import enrich_discovery_node_layout
 from common.workflow_instance_store.merge import (
     merge_event_data,
     merge_topology_delta,
@@ -26,6 +27,7 @@ __all__ = [
     "WorkflowInstanceEventFanout",
     "WorkflowInstanceStateStore",
     "WorkflowInstanceStoreClosedError",
+    "enrich_discovery_node_layout",
     "merge_event_data",
     "merge_topology_delta",
     "reconcile_event_node_identities",

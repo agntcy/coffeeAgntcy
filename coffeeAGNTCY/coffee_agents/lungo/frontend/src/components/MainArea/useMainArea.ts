@@ -27,7 +27,6 @@ export interface MainAreaProps {
   buttonClicked: boolean
   setButtonClicked: (clicked: boolean) => void
   aiReplied: boolean
-  setAiReplied: (replied: boolean) => void
   chatHeight?: number
   isExpanded?: boolean
   groupCommResponseReceived?: boolean
@@ -46,7 +45,6 @@ export function useMainArea({
   buttonClicked,
   setButtonClicked,
   aiReplied,
-  setAiReplied,
   chatHeight = 0,
   isExpanded = false,
   groupCommResponseReceived = false,
@@ -217,7 +215,6 @@ export function useMainArea({
     buttonClicked,
     setButtonClicked,
     aiReplied,
-    setAiReplied,
     pattern,
     updateStyle,
     config.animationSequence,

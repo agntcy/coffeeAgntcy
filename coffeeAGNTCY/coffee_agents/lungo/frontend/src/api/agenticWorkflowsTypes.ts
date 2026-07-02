@@ -26,7 +26,7 @@ export interface TopologyNodeWire {
   position?: TopologyPosition
   agent_record_uri?: string
   stable_agent_id?: string | { root: string }
-  /** Full OASF record carried inline for agents discovered at runtime. */
+  /** Inline agent record (flat AgentCard dict) for runtime-discovered agents. */
   oasf_record?: Record<string, unknown>
   /** Directory content id (CID) for a discovered agent. */
   agent_cid?: string

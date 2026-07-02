@@ -21,7 +21,6 @@ import type { ApiResponse } from "@/types/api"
 import { CanvasMode } from "@/types/patternDoc"
 import { usePatternChatAPI } from "@/hooks/usePatternChatAPI"
 import { streamPatternChat } from "./streamPatternChat"
-import { usesStreamingChatSend } from "@/utils/patternUtils"
 
 /** Panel expanded/collapsed by the chat header minimize control. */
 export const CHAT_MESSAGE_PANEL_ID = "chat-message-panel"
@@ -55,7 +54,6 @@ interface ChatAreaProps {
   canvasMode?: CanvasMode
   selectedReferencePattern?: string | null
   patternChatSessionId?: string | null
-  grafanaUrl?: string
 }
 
 const ChatArea: React.FC<ChatAreaProps> = ({
@@ -87,7 +85,6 @@ const ChatArea: React.FC<ChatAreaProps> = ({
   canvasMode,
   selectedReferencePattern,
   patternChatSessionId,
-  grafanaUrl = getGrafanaUrl(),
 }) => {
   const [content, setContent] = useState<string>("")
   const [loading, setLoading] = useState<boolean>(false)
@@ -117,41 +114,6 @@ const ChatArea: React.FC<ChatAreaProps> = ({
     setContent(query)
   }
 
-  const processMessageWithQuery = async (
-    messageContent: string,
-  ): Promise<void> => {
-    if (!messageContent.trim()) return
-
-    setContent("")
-    setLoading(true)
-    setButtonClicked(true)
-
-    await sendMessageWithCallback(
-      messageContent,
-      setMessages,
-      {
-        onSuccess: (response: ApiResponse) => {
-          setAiReplied(true)
-
-          logger.debug("[ChatArea] API call successful, response:", response)
-
-          if (onApiResponse) {
-            onApiResponse(response.response ?? "", false)
-          }
-        },
-        onError: (error) => {
-          logger.apiError(LUNGO_FRONTEND_URLS.apiPaths.agentPrompt, error)
-          const { message: errorMessage } = parseApiError(error)
-          if (onApiResponse) {
-            onApiResponse(errorMessage, true)
-          }
-        },
-      },
-      pattern,
-    )
-
-    setLoading(false)
-  }
   const processMessage = async (): Promise<void> => {
     if (isMinimized) {
       setIsMinimized(false)

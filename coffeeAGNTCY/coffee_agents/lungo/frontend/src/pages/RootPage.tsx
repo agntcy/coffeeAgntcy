@@ -187,7 +187,6 @@ const RootPage: React.FC = () => {
                     buttonClicked={buttonClicked}
                     setButtonClicked={setButtonClicked}
                     aiReplied={aiReplied}
-                    setAiReplied={setAiReplied}
                     chatHeight={chatHeightValue}
                     isExpanded={isExpanded}
                     groupCommResponseReceived={groupCommResponseReceived}

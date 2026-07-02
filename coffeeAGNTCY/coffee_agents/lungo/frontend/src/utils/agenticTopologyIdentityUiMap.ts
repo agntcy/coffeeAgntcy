@@ -356,10 +356,11 @@ export function enrichAgenticTopologyWellKnownUi(
 }
 
 /**
- * Apply inline UI for runtime-discovered agents. The recruiter emits the full
- * OASF record (and CID) on the wire node, so the OASF modal reads it directly
- * instead of resolving a static directory slug. Discovered agents are leaf
- * targets of the recruiter edge, so they expose a target handle only.
+ * Apply inline UI for runtime-discovered agents. The recruiter emits the flat
+ * agent record (and CID) on the wire ``oasf_record`` field, so the directory
+ * modal reads it directly instead of resolving a static directory slug.
+ * Discovered agents are leaf targets of the recruiter edge, so they expose a
+ * target handle only.
  */
 export function applyDiscoveredAgentInlineUi(
   data: CustomNodeData,

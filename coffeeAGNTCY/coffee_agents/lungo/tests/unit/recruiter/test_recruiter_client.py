@@ -421,7 +421,7 @@ class TestEmitDiscoveryTopology:
         anchor_id = topology.nodes[0].id
         assert len(topology.edges) == 2
         assert all(edge.source == anchor_id for edge in topology.edges)
-        # The full OASF record travels inline on the discovered node.
+        # The inline agent record travels on the discovered node (``oasf_record``).
         brazil = next(node for node in topology.nodes if node.label == "Brazil")
         assert brazil.oasf_record == records["cidB"]
         assert brazil.agent_cid == "cidB"

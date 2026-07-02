@@ -5,9 +5,9 @@
  * Map chat stream authors / sequence steps to React Flow graph element ids.
  *
  * The backend owns the graph, so there are no authored NODE_IDS/EDGE_IDS to map
- * from. Stream authors resolve through a slug bridge (recruiter/directory slug
- * aliases, then live labels), and the streaming animation sequence is derived
- * straight from the live graph topology rather than translated from a static one.
+ * from. Stream authors resolve through recruiter/directory slug aliases, inline
+ * discovered-agent record keys (CID / record name / label), then live labels.
+ * The streaming animation sequence is derived from the live graph topology.
  */
 
 import type { Edge, Node } from "@xyflow/react"
@@ -22,6 +22,41 @@ import { buildSenderToNodeMap } from "./groupCommunicationFeedMapping"
 
 function normalizeAuthor(value: string): string {
   return value.trim().toLowerCase()
+}
+
+function discoveredAgentLookupKeys(
+  data: CustomNodeData | undefined,
+): readonly string[] {
+  if (!data) return []
+  const keys: string[] = []
+  if (typeof data.agentCid === "string" && data.agentCid.trim()) {
+    keys.push(normalizeAuthor(data.agentCid))
+  }
+  const record = data.oasfRecord
+  if (record && typeof record === "object") {
+    const name = record.name
+    if (typeof name === "string" && name.trim()) {
+      keys.push(normalizeAuthor(name))
+    }
+  }
+  if (typeof data.label1 === "string" && data.label1.trim()) {
+    keys.push(normalizeAuthor(data.label1))
+  }
+  return keys
+}
+
+function discoveredAgentNodeIdMap(
+  graphConfig: GraphConfig | undefined,
+): Map<string, string> {
+  const map = new Map<string, string>()
+  for (const node of graphConfig?.nodes ?? []) {
+    const data = node.data as unknown as CustomNodeData | undefined
+    if (!data?.oasfRecord && !data?.agentCid) continue
+    for (const key of discoveredAgentLookupKeys(data)) {
+      if (!map.has(key)) map.set(key, node.id)
+    }
+  }
+  return map
 }
 
 /** Known recruiter / directory stream authors mapped to a canonical node slug. */
@@ -84,6 +119,9 @@ export function resolveStreamAuthorToNodeId(
     const bySlug = slugToNodeIdMap(graphConfig).get(slug)
     if (bySlug) return bySlug
   }
+
+  const byDiscovered = discoveredAgentNodeIdMap(graphConfig).get(normalized)
+  if (byDiscovered) return byDiscovered
 
   const labelMap = buildSenderToNodeMap(graphConfig)
   return labelMap[author] ?? labelMap[normalized] ?? null
