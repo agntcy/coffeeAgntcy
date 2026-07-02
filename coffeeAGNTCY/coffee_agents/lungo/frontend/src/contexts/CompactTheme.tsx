@@ -13,12 +13,12 @@ import {
   useTheme,
 } from "@mui/material/styles"
 
-import { lungoCompactThemeOptions } from "./lungoCompactThemeOptions"
+import { compactThemeOptions } from "./compactThemeOptions"
 
-export function LungoCompactTheme({ children }: { children: ReactNode }) {
+export function CompactTheme({ children }: { children: ReactNode }) {
   const oukTheme = useTheme()
   const theme = useMemo(
-    () => createTheme(oukTheme, lungoCompactThemeOptions),
+    () => createTheme(oukTheme, compactThemeOptions),
     [oukTheme],
   )
 
