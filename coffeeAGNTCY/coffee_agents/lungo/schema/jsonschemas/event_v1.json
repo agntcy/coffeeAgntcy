@@ -55,9 +55,9 @@
       },
       "additionalProperties": false
     },
-    "partial_regular_node": {
+    "partial_base_node": {
       "type": "object",
-      "description": "Sparse regular node data (mainly for updates). Used in topology definitions.",
+      "description": "Sparse base node data (mainly for updates). Used in topology definitions.",
       "required": ["id", "operation"],
       "properties": {
         "id": { "$ref": "#/$defs/node_id" },
@@ -69,12 +69,12 @@
       },
       "additionalProperties": true
     },
-    "regular_node": {
+    "base_node": {
       "allOf": [
-        { "$ref": "#/$defs/partial_regular_node" },
+        { "$ref": "#/$defs/partial_base_node" },
         {
           "type": "object",
-          "description": "Full regular node data (mainly for init/reset). Used in topology definitions.",
+          "description": "Full base node data (mainly for init/reset). Used in topology definitions.",
           "required": ["id", "operation", "type", "label", "size", "layer_index"]
         }
       ]
@@ -99,25 +99,25 @@
       ]
     },
     "partial_agent_node": {
-      "description": "Sparse agent node data (mainly for updates): a partial_regular_node combined with a partial_node_agent_extension.",
+      "description": "Sparse agent node data (mainly for updates): a partial_base_node combined with a partial_node_agent_extension.",
       "allOf": [
-        { "$ref": "#/$defs/partial_regular_node" },
+        { "$ref": "#/$defs/partial_base_node" },
         { "$ref": "#/$defs/partial_node_agent_extension" }
       ]
     },
     "agent_node": {
-      "description": "Full agent node data (mainly for init/reset): a regular_node combined with a node_agent_extension.",
+      "description": "Full agent node data (mainly for init/reset): a base_node combined with a node_agent_extension.",
       "allOf": [
-        { "$ref": "#/$defs/regular_node" },
+        { "$ref": "#/$defs/base_node" },
         { "$ref": "#/$defs/node_agent_extension" }
       ]
     },
     "partial_node": {
-      "description": "Sparse node data: either a partial_regular_node alone (without any agent extension fields), or a partial_agent_node.",
+      "description": "Sparse node data: either a partial_base_node alone (without any agent extension fields), or a partial_agent_node.",
       "anyOf": [
         {
           "allOf": [
-            { "$ref": "#/$defs/partial_regular_node" },
+            { "$ref": "#/$defs/partial_base_node" },
             {
               "not": {
                 "anyOf": [
@@ -132,11 +132,11 @@
       ]
     },
     "node": {
-      "description": "Full node data: either a regular_node alone (without any agent extension fields), or an agent_node.",
+      "description": "Full node data: either a base_node alone (without any agent extension fields), or an agent_node.",
       "anyOf": [
         {
           "allOf": [
-            { "$ref": "#/$defs/regular_node" },
+            { "$ref": "#/$defs/base_node" },
             {
               "not": {
                 "anyOf": [

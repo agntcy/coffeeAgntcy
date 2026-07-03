@@ -12,18 +12,18 @@ Source title and description:
 
 The class hierarchy mirrors the ``$defs`` of the source schema:
 
-* ``RegularNode`` / ``Edge`` / ``Topology`` are **not** subclasses of their
+* ``BaseNode`` / ``Edge`` / ``Topology`` are **not** subclasses of their
   partial counterparts: their fields are repeated as required so JSON Schema
   ``allOf`` + ``required`` semantics are preserved without inheriting optional
   ``| None`` fields (Rule C).
 * ``PartialAgentNode`` / ``AgentNode`` correspond to ``$defs.partial_agent_node``
-  / ``$defs.agent_node``. They subclass the regular node classes because the
+  / ``$defs.agent_node``. They subclass the base node classes because the
   ``partial_node_agent_extension`` / ``node_agent_extension`` composition only
   *adds* fields (Rule D step 1).
 * ``$defs.partial_node`` / ``$defs.node`` are sibling-key-discriminated
   ``anyOf`` unions (Rule D): a callable Pydantic ``Discriminator`` mirrors the
   schema's ``not { required: [...] }`` test and routes inputs to the
-  ``regular`` or ``agent`` branch; smart-union picks ``Full`` over ``Partial``
+  ``base`` or ``agent`` branch; smart-union picks ``Full`` over ``Partial``
   inside each branch.
 * Cross-field constraints not expressible in JSON Schema (e.g.
   ``workflow.instances`` map keys must equal the nested ``id``) are encoded as
@@ -209,7 +209,7 @@ class Size(BaseModel):
 
 
 # ---------------------------------------------------------------------------
-# Node hierarchy (``$defs.partial_regular_node`` / ``regular_node`` /
+# Node hierarchy (``$defs.partial_base_node`` / ``base_node`` /
 # ``partial_agent_node`` / ``agent_node`` / ``partial_node`` / ``node``).
 #
 # ``$defs.partial_node_agent_extension`` and ``$defs.node_agent_extension``
@@ -220,8 +220,8 @@ class Size(BaseModel):
 # ---------------------------------------------------------------------------
 
 
-class PartialRegularNode(BaseModel):
-    """Generated from ``$defs.partial_regular_node``: sparse regular node data
+class PartialBaseNode(BaseModel):
+    """Generated from ``$defs.partial_base_node``: sparse base node data
     (mainly for updates). ``additionalProperties: true``; agent-extension keys
     live on the ``PartialAgentNode`` subclass and are routed there by the
     ``$defs.partial_node`` / ``$defs.node`` discriminator."""
@@ -236,10 +236,10 @@ class PartialRegularNode(BaseModel):
     layer_index: float = 0
 
 
-class RegularNode(BaseModel):
-    """Generated from ``$defs.regular_node``: full regular node data (mainly
+class BaseNode(BaseModel):
+    """Generated from ``$defs.base_node``: full base node data (mainly
     for init/reset). All listed fields are required. Standalone class (not a
-    subclass of ``PartialRegularNode``) so optional ``| None`` field types do
+    subclass of ``PartialBaseNode``) so optional ``| None`` field types do
     not leak into the required form."""
 
     model_config = ConfigDict(extra="allow")
@@ -252,8 +252,8 @@ class RegularNode(BaseModel):
     layer_index: float
 
 
-class PartialAgentNode(PartialRegularNode):
-    """Generated from ``$defs.partial_agent_node``: ``partial_regular_node``
+class PartialAgentNode(PartialBaseNode):
+    """Generated from ``$defs.partial_agent_node``: ``partial_base_node``
     combined with ``partial_node_agent_extension``. ``agent_record_uri`` is
     required by the extension; ``stable_agent_id`` remains optional."""
 
@@ -261,8 +261,8 @@ class PartialAgentNode(PartialRegularNode):
     stable_agent_id: StableAgentId | None = None
 
 
-class AgentNode(RegularNode):
-    """Generated from ``$defs.agent_node``: ``regular_node`` combined with
+class AgentNode(BaseNode):
+    """Generated from ``$defs.agent_node``: ``base_node`` combined with
     ``node_agent_extension``. Both ``agent_record_uri`` and ``stable_agent_id``
     are required."""
 
@@ -271,32 +271,32 @@ class AgentNode(RegularNode):
 
 
 # ``$defs.partial_node`` and ``$defs.node`` are ``anyOf`` choices between a
-# *regular* shape and an *agent_node* shape, distinguished by the presence of
+# *base* shape and an *agent_node* shape, distinguished by the presence of
 # ``agent_record_uri`` / ``stable_agent_id``. We mirror exactly that single
 # decision with a callable Pydantic discriminator and let smart union handle
 # the *full vs. partial* sub-choice (which is a pure more-required-fields
 # question) inside each branch.
 
-_REGULAR_TAG = "regular"
+_BASE_TAG = "base"
 _AGENT_TAG = "agent"
 
 
 def _node_kind_discriminator(value: Any) -> str | None:
-    """Route to the *regular* or *agent* node branch.
+    """Route to the *base* or *agent* node branch.
 
     Returns ``"agent"`` when the input carries any
     ``$defs.partial_node_agent_extension`` key (``agent_record_uri`` or
-    ``stable_agent_id``); otherwise ``"regular"``.
+    ``stable_agent_id``); otherwise ``"base"``.
     """
     if isinstance(value, (AgentNode, PartialAgentNode)):
         return _AGENT_TAG
-    if isinstance(value, (RegularNode, PartialRegularNode)):
-        return _REGULAR_TAG
+    if isinstance(value, (BaseNode, PartialBaseNode)):
+        return _BASE_TAG
     if not isinstance(value, dict):
         return None
     if "agent_record_uri" in value or "stable_agent_id" in value:
         return _AGENT_TAG
-    return _REGULAR_TAG
+    return _BASE_TAG
 
 
 # Generated from ``$defs.topology_node_item`` (anyOf of partial_node and node).
@@ -304,7 +304,7 @@ def _node_kind_discriminator(value: Any) -> str | None:
 # required fields are populated and falls back to the partial variant otherwise.
 TopologyNodeItem = Annotated[
     Union[
-        Annotated[Union[RegularNode, PartialRegularNode], Tag(_REGULAR_TAG)],
+        Annotated[Union[BaseNode, PartialBaseNode], Tag(_BASE_TAG)],
         Annotated[Union[AgentNode, PartialAgentNode], Tag(_AGENT_TAG)],
     ],
     Discriminator(_node_kind_discriminator),
@@ -313,7 +313,7 @@ TopologyNodeItem = Annotated[
 # Generated from ``$defs.partial_node`` (anyOf).
 PartialNode = Annotated[
     Union[
-        Annotated[PartialRegularNode, Tag(_REGULAR_TAG)],
+        Annotated[PartialBaseNode, Tag(_BASE_TAG)],
         Annotated[PartialAgentNode, Tag(_AGENT_TAG)],
     ],
     Discriminator(_node_kind_discriminator),
@@ -322,7 +322,7 @@ PartialNode = Annotated[
 # Generated from ``$defs.node`` (anyOf).
 Node = Annotated[
     Union[
-        Annotated[RegularNode, Tag(_REGULAR_TAG)],
+        Annotated[BaseNode, Tag(_BASE_TAG)],
         Annotated[AgentNode, Tag(_AGENT_TAG)],
     ],
     Discriminator(_node_kind_discriminator),

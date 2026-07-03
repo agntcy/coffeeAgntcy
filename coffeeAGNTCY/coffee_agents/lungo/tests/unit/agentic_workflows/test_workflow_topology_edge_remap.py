@@ -11,7 +11,7 @@ from api.agentic_workflows.workflows import (
     _remap_starting_topology_edge_endpoints,
     _require_old_id_to_unique_label,
 )
-from schema.types import Edge, NodeId, Operation, PartialEdge, PartialRegularNode, RegularNode
+from schema.types import Edge, NodeId, Operation, PartialEdge, PartialBaseNode, BaseNode
 
 
 def _edge(
@@ -32,8 +32,8 @@ def _edge(
     )
 
 
-def _regular_node(nid: str, label: str) -> RegularNode:
-    return RegularNode.model_validate(
+def _base_node(nid: str, label: str) -> BaseNode:
+    return BaseNode.model_validate(
         {
             "id": nid,
             "operation": Operation.READ.value,
@@ -111,7 +111,7 @@ def test_remap_unknown_edge_endpoint_raises() -> None:
 
 
 def test_require_unique_label_missing_raises() -> None:
-    n = PartialRegularNode.model_validate(
+    n = PartialBaseNode.model_validate(
         {
             "id": "node://aaaaaaaa-0000-4000-a000-000000000099",
             "operation": Operation.READ.value,
@@ -124,7 +124,7 @@ def test_require_unique_label_missing_raises() -> None:
 
 
 def test_require_unique_label_duplicate_raises() -> None:
-    a = _regular_node("node://aaaaaaaa-0000-4000-a000-000000000001", "Same")
-    b = _regular_node("node://bbbbbbbb-0000-4000-a000-000000000002", "Same")
+    a = _base_node("node://aaaaaaaa-0000-4000-a000-000000000001", "Same")
+    b = _base_node("node://bbbbbbbb-0000-4000-a000-000000000002", "Same")
     with pytest.raises(ValueError, match="duplicate node label"):
         _require_old_id_to_unique_label([a, b], workflow_name="DupWf", idx_wf=0)
