@@ -5,6 +5,7 @@
 
 from __future__ import annotations
 
+import json
 from copy import deepcopy
 from pathlib import Path
 from typing import Callable, NamedTuple
@@ -19,6 +20,7 @@ from schema.validation import validate_data_against_schema
 KNOWN = "event_v1"
 _LUNGO_ROOT = Path(__file__).resolve().parents[3]
 _EXAMPLES = _LUNGO_ROOT / "schema" / "jsonschemas" / "examples"
+_EVENT_SCHEMA = _LUNGO_ROOT / "schema" / "jsonschemas" / "event_v1.json"
 _INSTANCE_KEY = "instance://550e8400-e29b-41d4-a716-446655440003"
 
 
@@ -142,3 +144,20 @@ def test_event_payload_schema_and_model(case: Case) -> None:
 
     assert isinstance(dumped["metadata"]["timestamp"], str)
     assert event.metadata.timestamp.tzinfo is not None
+
+
+def test_node_schema_and_public_types_use_base_names() -> None:
+    schema = json.loads(_EVENT_SCHEMA.read_text())
+    defs = schema["$defs"]
+
+    assert "partial_base_node" in defs
+    assert "base_node" in defs
+    assert "partial_regular_node" not in defs
+    assert "regular_node" not in defs
+
+    import schema.types as schema_types
+
+    assert hasattr(schema_types, "PartialBaseNode")
+    assert hasattr(schema_types, "BaseNode")
+    assert not hasattr(schema_types, "PartialRegularNode")
+    assert not hasattr(schema_types, "RegularNode")
