@@ -51,7 +51,7 @@
           ],
           "description": "An AI agent that returns the yield of coffee beans in pounds for the Vietnam farm.",
           "name": "Vietnam Coffee Farm",
-          "preferredTransport": "slimrpc",
+          "preferredTransport": "slim",
           "protocolVersion": "0.3.0",
           "skills": [
             {
