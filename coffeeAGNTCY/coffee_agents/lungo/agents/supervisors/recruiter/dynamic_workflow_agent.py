@@ -108,14 +108,14 @@ class DynamicWorkflowAgent(BaseAgent):
             message[:100],
         )
 
-        # negotiate and create the client based on the card's preferred transport
-        client = await a2a_client_factory.create(
-            card,
-            interceptors=[_event_interceptor],
-            consumers=[_event_consumer],
-        )
-
         try:
+            # negotiate and create the client based on the card's preferred transport
+            client = await a2a_client_factory.create(
+                card,
+                interceptors=[_event_interceptor],
+                consumers=[_event_consumer],
+            )
+
             result_text = None
             async for response in client.send_message(a2a_message):
                 logger.info(
@@ -153,7 +153,7 @@ class DynamicWorkflowAgent(BaseAgent):
                 str(e),
                 exc_info=True,
             )
-            return f"Error communicating with {agent_name}: {str(e)}"
+            raise
 
     @staticmethod
     def _protocol_from_record(record: AgentRecord) -> AgentProtocol:
@@ -268,12 +268,35 @@ class DynamicWorkflowAgent(BaseAgent):
             agent_card.url,
         )
 
-        # Send A2A message
-        response_text = await self._send_a2a_message(
-            card=agent_card,
-            message=task_message,
-            agent_name=record.name,
-        )
+        try:
+            response_text = await self._send_a2a_message(
+                card=agent_card,
+                message=task_message,
+                agent_name=record.name,
+            )
+        except Exception as e:
+            logger.error(
+                "[agent:dynamic_workflow] Delegation to %s failed: %s",
+                record.name,
+                str(e),
+                exc_info=True,
+            )
+            yield Event(
+                author=self.name,
+                invocation_id=ctx.invocation_id,
+                content=types.Content(
+                    role="model",
+                    parts=[
+                        types.Part(
+                            text=(
+                                f"Failed to delegate to agent '{record.name}': {e}"
+                            )
+                        )
+                    ],
+                ),
+            )
+            return
+
         combined = f"**{record.name}**:\n{response_text}"
 
         yield Event(

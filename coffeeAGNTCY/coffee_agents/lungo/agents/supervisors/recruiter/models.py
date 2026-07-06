@@ -32,6 +32,25 @@ STATE_KEY_SELECTED_AGENT = "selected_agent"  # str: CID of the currently selecte
 # ---------------------------------------------------------------------------
 
 
+def _card_has_transport_endpoint(card: AgentCard) -> bool:
+    """True when the card advertises at least one non-empty transport URL."""
+    if (card.url or "").strip():
+        return True
+    if card.additional_interfaces:
+        for interface in card.additional_interfaces:
+            if (interface.url or "").strip():
+                return True
+    return False
+
+
+def _require_delegation_card(card: AgentCard) -> None:
+    """Reject cards that cannot be used for A2A delegation."""
+    if not (card.name or "").strip():
+        raise ValueError("agent record is missing a name")
+    if not _card_has_transport_endpoint(card):
+        raise ValueError("agent record has no transport endpoint")
+
+
 class AgentRecord(BaseModel):
     """A recruited agent: its CID plus the full A2A AgentCard.
 
@@ -88,6 +107,7 @@ class AgentRecord(BaseModel):
             if isinstance(raw_protocol, str)
             else AgentProtocol.A2A
         )
+        _require_delegation_card(card)
         instance = cls(cid=cid, card=card, protocol=protocol)
         instance._raw = record
         return instance
