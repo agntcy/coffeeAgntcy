@@ -1,7 +1,23 @@
+{{- range $configMapName, $configMapSpec := .Values.configs }}
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: {{ .Values.appName }}-configmap
-  namespace: {{ .Release.Namespace }}
+{{- if eq $configMapName "_" }}
+  name: {{ $.Values.appName }}-configmap
+{{- else }}
+  name: {{ $.Values.appName }}-{{ $configMapName }}-configmap
+{{- end }}
+  namespace: {{ $.Release.Namespace }}
 data:
-  VITE_EXCHANGE_APP_API_URL: "{{ .Values.config.exchangeAppApiUrl }}"
+{{- range $key, $value := $configMapSpec.data }}
+{{- if kindIs "string" $value }}
+  {{ $key }}: {{ $value | quote }}
+{{- else }}
+  {{ $key }}: {{ $value }}
+{{- end }}
+{{- end }}
+{{- if eq $configMapName "env" }}
+  env-config.js: |
+    {{ include "corto-ui.envConfigJs" $ }}
+{{- end }}
+{{- end }}

@@ -8,10 +8,11 @@ import axios from "axios"
 import { v4 as uuid } from "uuid"
 import { Role } from "@/utils/const"
 import { Message } from "@/types/Message"
+import { env } from "@/utils/env"
 
 const DEFAULT_EXCHANGE_APP_API_URL = "http://127.0.0.1:8000"
 const EXCHANGE_APP_API_URL =
-  import.meta.env["VITE_EXCHANGE_APP_API_URL"] || DEFAULT_EXCHANGE_APP_API_URL
+  env.get("VITE_EXCHANGE_APP_API_URL") ?? DEFAULT_EXCHANGE_APP_API_URL
 
 interface ApiResponse {
   response: string

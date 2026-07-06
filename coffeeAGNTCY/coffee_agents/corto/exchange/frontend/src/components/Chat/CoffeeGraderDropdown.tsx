@@ -5,10 +5,11 @@
 
 import React, { useState, useRef, useEffect } from "react"
 import LoadingSpinner from "./LoadingSpinner"
+import { env } from "@/utils/env"
 
 const DEFAULT_EXCHANGE_APP_API_URL = "http://127.0.0.1:8000"
 const EXCHANGE_APP_API_URL =
-    import.meta.env.VITE_EXCHANGE_APP_API_URL || DEFAULT_EXCHANGE_APP_API_URL
+  env.get("VITE_EXCHANGE_APP_API_URL") ?? DEFAULT_EXCHANGE_APP_API_URL
 
 interface CoffeeGraderDropdownProps {
   visible: boolean
