@@ -41,7 +41,7 @@ from __future__ import annotations
 import copy
 from typing import Any
 
-from schema.types import Data, Event, Operation
+from schema.types import Data, Event, NodeId, Operation, Workflow
 
 
 def _topology_lists_insertion_order(by_id: dict[str, dict]) -> list[dict]:
@@ -229,3 +229,89 @@ def merge_event_data(existing: Data | None, event: Event) -> Data:
         out[key] = copy.deepcopy(val)
 
     return Data.model_validate(out)
+
+
+def _node_stable_agent_id(node: Any) -> str | None:
+    """Return a node's ``stable_agent_id`` string, or ``None`` when absent."""
+    sid = getattr(node, "stable_agent_id", None)
+    if sid is None:
+        return None
+    root = getattr(sid, "root", None)
+    if isinstance(root, str):
+        return root
+    return sid if isinstance(sid, str) else None
+
+
+def _existing_stable_agent_id_index(
+    state_wf: Workflow | None,
+    instance_id: str,
+) -> dict[str, str]:
+    """Map ``stable_agent_id`` -> existing node id for one instance.
+
+    Uses the instance topology when it already has nodes, else falls back to
+    the workflow ``starting_topology`` (mirrors the instance-seeding policy in
+    :func:`_merge_workflow`).
+    """
+    if state_wf is None:
+        return {}
+    nodes: list = []
+    inst = state_wf.instances.get(instance_id)
+    if inst is not None and inst.topology is not None and inst.topology.nodes:
+        nodes = inst.topology.nodes
+    elif (
+        state_wf.starting_topology is not None and state_wf.starting_topology.nodes
+    ):
+        nodes = state_wf.starting_topology.nodes
+    index: dict[str, str] = {}
+    for node in nodes:
+        sid = _node_stable_agent_id(node)
+        if sid is not None:
+            index.setdefault(sid, node.id.root)
+    return index
+
+
+def reconcile_event_node_identities(state: Data, event: Event) -> Event:
+    """Resolve node identity server-side before merging.
+
+    When an incoming ``create`` node carries a ``stable_agent_id`` that already
+    exists in the target instance (a cross-service "anchor" reference, e.g. the
+    recruiter pointing discovered agents at the seeded recruiter node), it is
+    treated as the **same** node: the duplicate ``create`` is dropped and every
+    edge endpoint referencing its id is repointed to the existing node id. This
+    makes anchoring an authoritative backend decision rather than a frontend
+    one.
+
+    Returns a new :class:`Event`; the input is never mutated.
+    """
+    result = event.model_copy(deep=True)
+    for wf_name, wf in result.data.workflows.items():
+        state_wf = state.workflows.get(wf_name)
+        for instance_id, inst in wf.instances.items():
+            topology = inst.topology
+            if topology is None:
+                continue
+            existing = _existing_stable_agent_id_index(state_wf, instance_id)
+            if not existing:
+                continue
+            id_remap: dict[str, str] = {}
+            kept_nodes: list = []
+            for node in topology.nodes or []:
+                sid = _node_stable_agent_id(node)
+                existing_id = existing.get(sid) if sid is not None else None
+                if (
+                    node.operation == Operation.CREATE
+                    and existing_id is not None
+                    and existing_id != node.id.root
+                ):
+                    id_remap[node.id.root] = existing_id
+                    continue
+                kept_nodes.append(node)
+            if not id_remap:
+                continue
+            topology.nodes = kept_nodes
+            for edge in topology.edges or []:
+                if edge.source is not None and edge.source.root in id_remap:
+                    edge.source = NodeId(root=id_remap[edge.source.root])
+                if edge.target is not None and edge.target.root in id_remap:
+                    edge.target = NodeId(root=id_remap[edge.target.root])
+    return result

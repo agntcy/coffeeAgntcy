@@ -7,8 +7,11 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
+from agents.supervisors.recruiter import dynamic_workflow_agent as dwa
 from agents.supervisors.recruiter.dynamic_workflow_agent import (
     DynamicWorkflowAgent,
+    _reachable_card,
+    _reachable_url,
 )
 from agents.supervisors.recruiter.models import (
     STATE_KEY_RECRUITED_AGENTS,
@@ -24,6 +27,87 @@ def _make_ctx(state: dict | None = None):
     ctx.invocation_id = "abcd1234-5678"
     ctx.session.events = []
     return ctx
+
+
+class TestReachableUrl:
+    @pytest.mark.parametrize(
+        "case, url, host, expected",
+        [
+            (
+                "rewrites 0.0.0.0 keeping port",
+                "http://0.0.0.0:9999",
+                "host.docker.internal",
+                "http://host.docker.internal:9999",
+            ),
+            (
+                "rewrites 0.0.0.0 to localhost for host run",
+                "http://0.0.0.0:9998",
+                "localhost",
+                "http://localhost:9998",
+            ),
+            (
+                "rewrites 127.0.0.1",
+                "http://127.0.0.1:9997/a2a",
+                "host.docker.internal",
+                "http://host.docker.internal:9997/a2a",
+            ),
+            (
+                "rewrites localhost",
+                "http://localhost:9999",
+                "host.docker.internal",
+                "http://host.docker.internal:9999",
+            ),
+            (
+                "leaves routable host untouched",
+                "http://brazil-farm-server:9999",
+                "host.docker.internal",
+                "http://brazil-farm-server:9999",
+            ),
+            (
+                "leaves non-http transport untouched",
+                "slim://0.0.0.0:46357",
+                "host.docker.internal",
+                "slim://0.0.0.0:46357",
+            ),
+            (
+                "handles missing port",
+                "http://0.0.0.0",
+                "host.docker.internal",
+                "http://host.docker.internal",
+            ),
+            (
+                "returns empty unchanged",
+                "",
+                "host.docker.internal",
+                "",
+            ),
+        ],
+    )
+    def test_reachable_url(self, case, url, host, expected):
+        with patch.object(dwa, "DISCOVERED_AGENT_HOST", host):
+            assert _reachable_url(url) == expected, case
+
+
+class TestReachableCard:
+    def test_reachable_card_does_not_mutate_original(self):
+        from a2a.types import AgentCard
+
+        original = AgentCard(
+            name="Brazil Farm",
+            description="Brazil coffee farm agent",
+            url="http://0.0.0.0:9999",
+            version="1.0.0",
+            capabilities={},
+            default_input_modes=["text"],
+            default_output_modes=["text"],
+            skills=[],
+        )
+        with patch.object(dwa, "DISCOVERED_AGENT_HOST", "host.docker.internal"):
+            reachable = _reachable_card(original)
+
+        assert original.url == "http://0.0.0.0:9999"
+        assert reachable.url == "http://host.docker.internal:9999"
+        assert reachable is not original
 
 
 class TestDynamicWorkflowAgentConstruction:

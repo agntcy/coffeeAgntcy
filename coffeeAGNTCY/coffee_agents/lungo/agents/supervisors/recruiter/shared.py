@@ -2,8 +2,9 @@
 # SPDX-License-Identifier: Apache-2.0
 
 from typing import Optional
+import httpx
 from agntcy_app_sdk.factory import AgntcyFactory
-from config.config import OTEL_SDK_DISABLED
+from config.config import OTEL_SDK_DISABLED, A2A_CLIENT_TIMEOUT_SECONDS
 from agntcy_app_sdk.semantic.a2a.client.factory import A2AClientFactory
 from common.a2a_transport_config import build_a2a_client_config
 
@@ -23,6 +24,11 @@ config = build_a2a_client_config(
     group="agents",
     agent_name="recruiter_supervisor",
     include_nats=True,
+)
+
+# Discovered agents are reached over JSONRPC; httpx defaults to a 5s read timeout.
+config.httpx_client = httpx.AsyncClient(
+    timeout=httpx.Timeout(A2A_CLIENT_TIMEOUT_SECONDS, connect=10.0)
 )
 
 # -- A2A client factory --

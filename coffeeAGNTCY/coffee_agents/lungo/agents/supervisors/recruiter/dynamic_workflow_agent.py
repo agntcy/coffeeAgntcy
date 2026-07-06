@@ -9,6 +9,7 @@ and building dynamic workflows from the search results.
 
 import logging
 from typing import AsyncGenerator, ClassVar
+from urllib.parse import urlsplit, urlunsplit
 from uuid import uuid4
 from a2a.types import (
     AgentCard,
@@ -21,6 +22,7 @@ from google.adk.agents.invocation_context import InvocationContext
 from google.adk.events.event import Event
 from google.genai import types
 
+from agents.supervisors.recruiter.card import RECRUITER_SUPERVISOR_CARD
 from agents.supervisors.recruiter.models import (
     STATE_KEY_RECRUITED_AGENTS,
     STATE_KEY_SELECTED_AGENT,
@@ -28,13 +30,57 @@ from agents.supervisors.recruiter.models import (
     AgentProtocol,
     AgentRecord,
 )
-from agents.supervisors.recruiter.recruiter_client import (
-    _event_consumer,
-    _event_interceptor,
-)
 from agents.supervisors.recruiter.shared import a2a_client_factory
+from common.a2a_event_middleware import (
+    EventEmittingInterceptor,
+    make_event_emitting_consumer,
+)
+from common.stable_agent_id import stable_agent_id_for_name
+from config.config import DISCOVERED_AGENT_HOST
 
 logger = logging.getLogger("lungo.recruiter.supervisor.dynamic_workflow")
+
+# Matches the seeded recruiter node and discovery anchor in recruiter_client.
+_RECRUITER_ANCHOR_STABLE_AGENT_ID = stable_agent_id_for_name("Agentic Recruiter agent")
+
+# Delegation emits anchor nodes + edges only (no transport / duplicate caller).
+_event_interceptor = EventEmittingInterceptor(
+    caller_card=RECRUITER_SUPERVISOR_CARD,
+    delegation_mode="edge_only",
+    delegation_anchor_stable_agent_id=_RECRUITER_ANCHOR_STABLE_AGENT_ID,
+)
+_event_consumer = make_event_emitting_consumer(
+    caller_card=RECRUITER_SUPERVISOR_CARD,
+    delegation_mode="edge_only",
+)
+
+# Hosts an agent advertises for its own bind address; these are not routable
+# from the supervisor and get rewritten to DISCOVERED_AGENT_HOST.
+_UNROUTABLE_ADVERTISED_HOSTS = frozenset({"0.0.0.0", "127.0.0.1", "localhost"})
+
+
+def _reachable_url(url: str) -> str:
+    """Rewrite an unroutable advertised host to a reachable one."""
+    if not url:
+        return url
+    parts = urlsplit(url)
+    if parts.scheme not in ("http", "https"):
+        return url
+    if parts.hostname not in _UNROUTABLE_ADVERTISED_HOSTS:
+        return url
+    netloc = f"{DISCOVERED_AGENT_HOST}:{parts.port}" if parts.port else DISCOVERED_AGENT_HOST
+    return urlunsplit((parts.scheme, netloc, parts.path, parts.query, parts.fragment))
+
+
+def _reachable_card(card: AgentCard) -> AgentCard:
+    """Return a card copy with HTTP interface URLs rewritten for delegation."""
+    reachable = card.model_copy(deep=True)
+    reachable.url = _reachable_url(reachable.url)
+    if reachable.additional_interfaces:
+        for interface in reachable.additional_interfaces:
+            interface.url = _reachable_url(interface.url)
+    return reachable
+
 
 class DynamicWorkflowAgent(BaseAgent):
     """Executes tasks by sending messages to selected recruited agents via A2A HTTP.
@@ -213,11 +259,12 @@ class DynamicWorkflowAgent(BaseAgent):
             )
             return
 
-        agent_card = record.card
+        agent_card = _reachable_card(record.card)
 
         logger.info(
-            "[agent:dynamic_workflow] Sending to agent: %s",
+            "[agent:dynamic_workflow] Sending to agent: %s at %s",
             record.name,
+            agent_card.url,
         )
 
         # Send A2A message

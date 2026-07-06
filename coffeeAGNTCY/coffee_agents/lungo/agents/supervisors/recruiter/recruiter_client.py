@@ -7,9 +7,10 @@ and persists results in session state."""
 import asyncio
 import json
 import logging
-from uuid import uuid4
+from uuid import NAMESPACE_DNS, UUID, uuid4, uuid5
 
 import httpx
+from pydantic import ValidationError
 from a2a.client import ClientConfig, ClientFactory
 from a2a.types import (
     AgentCard,
@@ -24,7 +25,6 @@ from a2a.types import (
 )
 from google.adk.tools.tool_context import ToolContext
 
-from agents.supervisors.recruiter.card import RECRUITER_SUPERVISOR_CARD
 from agents.supervisors.recruiter.models import (
     STATE_KEY_EVALUATION_RESULTS,
     STATE_KEY_RECRUITED_AGENTS,
@@ -33,17 +33,45 @@ from agents.supervisors.recruiter.models import (
 from agents.supervisors.recruiter.recruiter_service_card import (
     RECRUITER_AGENT_CARD,
 )
-from common.a2a_event_middleware import (
-    EventEmittingInterceptor,
-    make_event_emitting_consumer,
+from common.stable_agent_id import stable_agent_id_for_name
+from common.workflow_context_prop import read_workflow_context
+from common.workflow_utils.builders import build_event, make_node
+from common.workflow_utils.event_sink import WorkflowAPIEventSink
+from common.workflow_utils.inflight import read_trace_context
+from common.workflow_utils.workflow_catalog import lookup_workflow
+from config.config import EMIT_WORKFLOW_EVENTS
+from schema.types import (
+    EdgeId,
+    InstanceId,
+    NodeId,
+    Operation,
+    PartialEdge,
+    PartialTopology,
 )
 
 logger = logging.getLogger("lungo.recruiter.supervisor.recruiter_client")
 
+# Discovered agents are merged into the live workflow instance topology so the
+# frontend renders and disposes of them through the normal topology channel.
+# The anchor node carries the seeded recruiter's stable_agent_id so the backend
+# merge layer (reconcile_event_node_identities) recognizes it as the same node,
+# drops the duplicate, and re-points the discovered-agent edges onto the real
+# "Agentic Recruiter" node. The frontend makes no anchoring decision.
+# _RECRUITER_ANCHOR_RECORD_NAME must match the seeded recruiter record "name"
+# (oasf/agents/recruiter.json) so the derived stable_agent_id matches the seed.
+_RECRUITER_ANCHOR_LABEL = "Agentic Recruiter"
+_RECRUITER_ANCHOR_RECORD_NAME = "Agentic Recruiter agent"
+_DISCOVERY_NS = uuid5(NAMESPACE_DNS, "recruiter.discovery.lungo")
+_discovery_event_sink = WorkflowAPIEventSink() if EMIT_WORKFLOW_EVENTS else None
 
-# A2A middleware singletons that capture outbound and inbound calls.
-_event_interceptor = EventEmittingInterceptor(caller_card=RECRUITER_SUPERVISOR_CARD)
-_event_consumer = make_event_emitting_consumer(caller_card=RECRUITER_SUPERVISOR_CARD)
+
+def _is_valid_instance_id(value: str) -> bool:
+    """True when value is a canonical ``instance://<uuid>`` id (schema-validated)."""
+    try:
+        InstanceId(root=value)
+    except ValidationError:
+        return False
+    return True
 
 # ---------------------------------------------------------------------------
 # Side-channel queue for streaming A2A events to main.py
@@ -108,6 +136,158 @@ def _extract_parts(parts: list[Part]) -> RecruitmentResponse:
     )
 
 
+def _discovery_node_id(cid: str) -> str:
+    """Deterministic runtime node id for a discovered agent CID."""
+    return f"node://{uuid5(_DISCOVERY_NS, f'agent::{cid}')}"
+
+
+def _discovery_edge_id(source_nid: str, target_nid: str) -> str:
+    """Deterministic edge id for an anchor -> discovered-agent connection."""
+    return f"edge://{uuid5(_DISCOVERY_NS, f'{source_nid}->{target_nid}')}"
+
+
+async def _emit_discovery_topology(agent_records: dict[str, dict]) -> None:
+    """Merge discovered agents into the live workflow instance topology.
+
+    Emits a STATE_PROGRESS_UPDATE that creates one node per discovered agent
+    (carrying its inline agent record / flat AgentCard dict on ``oasf_record``)
+    plus an anchor node carrying the
+    seeded recruiter's stable_agent_id. The backend merge layer reconciles the
+    anchor onto the existing "Agentic Recruiter" node and re-points the new
+    edges there, so nodes arrive, render, and dispose through the normal
+    topology channel without any frontend anchoring decision.
+    """
+    if _discovery_event_sink is None or not agent_records:
+        return
+
+    wf_ctx = read_workflow_context()
+    workflow_name = wf_ctx.workflow_name
+    instance_id = wf_ctx.instance_id
+    if not workflow_name or lookup_workflow(workflow_name) is None:
+        logger.debug(
+            "recruit discovery: no/unknown workflow_name=%r; skipping topology emit",
+            workflow_name,
+        )
+        return
+    if not instance_id or not _is_valid_instance_id(instance_id):
+        logger.debug(
+            "recruit discovery: missing/invalid instance_id=%r; skipping topology emit",
+            instance_id,
+        )
+        return
+
+    trace_ctx = read_trace_context()
+    anchor_id = f"node://{uuid5(_DISCOVERY_NS, 'recruiter-anchor')}"
+    nodes: list = [
+        make_node(
+            anchor_id,
+            operation=Operation.CREATE,
+            node_type="customNode",
+            label=_RECRUITER_ANCHOR_LABEL,
+            layer_index=0,
+            stable_agent_id=stable_agent_id_for_name(_RECRUITER_ANCHOR_RECORD_NAME),
+        )
+    ]
+    edges: list = []
+    for cid, record in agent_records.items():
+        name = str(record.get("name") or "").strip() or cid
+        node_id = _discovery_node_id(cid)
+        nodes.append(
+            make_node(
+                node_id,
+                operation=Operation.CREATE,
+                node_type="customNode",
+                label=name,
+                layer_index=1,
+                stable_agent_id=stable_agent_id_for_name(name),
+                extras={"oasf_record": record, "agent_cid": cid},
+            )
+        )
+        edges.append(
+            PartialEdge(
+                id=EdgeId(_discovery_edge_id(anchor_id, node_id)),
+                operation=Operation.CREATE,
+                type="custom",
+                source=NodeId(anchor_id),
+                target=NodeId(node_id),
+                bidirectional=False,
+                weight=1.0,
+            )
+        )
+
+    topology = PartialTopology(nodes=nodes, edges=edges)
+    correlation_id = (
+        f"correlation://{UUID(int=trace_ctx.trace_id)}"
+        if trace_ctx.trace_id is not None
+        else f"correlation://{uuid4()}"
+    )
+    try:
+        event = build_event(
+            source="recruiter_supervisor",
+            workflow_name=workflow_name,
+            instance_id=instance_id,
+            topology=topology,
+            correlation_id=correlation_id,
+            correlation_message=f"discovered {len(agent_records)} agent(s)",
+            trace_id=trace_ctx.trace_id,
+            span_id=trace_ctx.span_id,
+        )
+    except RuntimeError:
+        logger.warning(
+            "recruit discovery: build_event failed for workflow=%r", workflow_name
+        )
+        return
+
+    await _discovery_event_sink.emit(event)
+    logger.info(
+        "recruit discovery: emitted %d discovered node(s) to instance %s",
+        len(agent_records),
+        instance_id,
+    )
+
+
+async def _forward_status_update(
+    update: TaskStatusUpdateEvent, tool_name: str
+) -> None:
+    """Forward one intermediate A2A status update onto the side-channel queue.
+
+    Shared by recruit_agents and evaluate_agent: each non-final text status part
+    is republished as a ``status_update`` event for main.py's stream_generator
+    to drain in parallel.
+    """
+    if update.final or not update.status or not update.status.message:
+        return
+    message = update.status.message
+    for part in message.parts or []:
+        root = part.root
+        if not isinstance(root, TextPart) or not root.text:
+            continue
+        status_text = root.text
+        author = None
+        event_type = "a2a_status"
+        if message.metadata:
+            author = message.metadata.get("author") or message.metadata.get(
+                "from_agent"
+            )
+            event_type = message.metadata.get("event_type", "a2a_status")
+        logger.info(
+            "[tool:%s] A2A status: %s (state=%s, final=%s)",
+            tool_name,
+            status_text[:120],
+            update.status.state if update.status else "?",
+            update.final,
+        )
+        await _a2a_event_queue.put(
+            {
+                "event_type": "status_update",
+                "message": status_text,
+                "state": "working",
+                "author": author or "recruiter_service",
+                "a2a_event_type": event_type,
+            }
+        )
+
+
 async def recruit_agents(query: str, tool_context: ToolContext) -> str:
     """Search the AGNTCY directory for agents matching a task description.
 
@@ -127,11 +307,11 @@ async def recruit_agents(query: str, tool_context: ToolContext) -> str:
     async with httpx.AsyncClient(timeout=httpx.Timeout(120.0)) as httpx_client:
         config = ClientConfig(httpx_client=httpx_client, streaming=True)
         factory = ClientFactory(config)
-        client = factory.create(
-            RECRUITER_AGENT_CARD,
-            interceptors=[_event_interceptor],
-            consumers=[_event_consumer],
-        )
+        # No A2A topology middleware here: the internal hop to the recruiter
+        # service is an implementation detail. Discovery results are surfaced
+        # via _emit_discovery_topology so only the seeded recruiter node and
+        # the discovered agents appear on the graph.
+        client = factory.create(RECRUITER_AGENT_CARD)
 
         message = Message(
             role=Role.user,
@@ -147,37 +327,8 @@ async def recruit_agents(query: str, tool_context: ToolContext) -> str:
                 task, update = event
 
                 # Forward intermediate status updates via the side-channel queue
-                if isinstance(update, TaskStatusUpdateEvent) and not update.final:
-                    if update.status and update.status.message:
-                        parts = update.status.message.parts
-                        if parts:
-                            for p in parts:
-                                if isinstance(p.root, TextPart) and p.root.text:
-                                    status_text = p.root.text
-                                    # Determine author from metadata
-                                    author = None
-                                    if update.status.message.metadata:
-                                        author = update.status.message.metadata.get("author")
-                                        if not author:
-                                            author = update.status.message.metadata.get("from_agent")
-                                    event_type = "a2a_status"
-                                    if update.status.message.metadata:
-                                        event_type = update.status.message.metadata.get("event_type", "a2a_status")
-
-                                    logger.info(
-                                        "[tool:recruit_agents] A2A status: %s (state=%s, final=%s)",
-                                        status_text[:120],
-                                        update.status.state if update.status else "?",
-                                        update.final,
-                                    )
-                                    # Push to side-channel for main.py to pick up
-                                    await _a2a_event_queue.put({
-                                        "event_type": "status_update",
-                                        "message": status_text,
-                                        "state": "working",
-                                        "author": author or "recruiter_service",
-                                        "a2a_event_type": event_type,
-                                    })
+                if isinstance(update, TaskStatusUpdateEvent):
+                    await _forward_status_update(update, "recruit_agents")
 
                 # Extract final result from completed task
                 if (
@@ -201,6 +352,10 @@ async def recruit_agents(query: str, tool_context: ToolContext) -> str:
     existing_evals = tool_context.state.get(STATE_KEY_EVALUATION_RESULTS, {})
     existing_evals.update(response_data.evaluation_results)
     tool_context.state[STATE_KEY_EVALUATION_RESULTS] = existing_evals
+
+    # Merge discovered agents into the live instance topology so the frontend
+    # renders/disposes them like any other instance node.
+    await _emit_discovery_topology(response_data.agent_records)
 
     logger.info(
         "[tool:recruit_agents] Found %d agent(s), %d evaluation(s)",
@@ -321,47 +476,16 @@ async def evaluate_agent(
     async with httpx.AsyncClient(timeout=httpx.Timeout(300.0)) as httpx_client:
         config = ClientConfig(httpx_client=httpx_client, streaming=True)
         factory = ClientFactory(config)
-        client = factory.create(
-            RECRUITER_AGENT_CARD,
-            interceptors=[_event_interceptor],
-            consumers=[_event_consumer],
-        )
+        # See recruit_agents: no A2A topology middleware on the internal hop.
+        client = factory.create(RECRUITER_AGENT_CARD)
 
         async for event in client.send_message(message):
             if isinstance(event, tuple) and len(event) == 2:
                 task, update = event
 
                 # Forward intermediate status updates via the side-channel queue
-                if isinstance(update, TaskStatusUpdateEvent) and not update.final:
-                    if update.status and update.status.message:
-                        for p in update.status.message.parts or []:
-                            if isinstance(p.root, TextPart) and p.root.text:
-                                status_text = p.root.text
-                                author = None
-                                if update.status.message.metadata:
-                                    author = (
-                                        update.status.message.metadata.get("author")
-                                        or update.status.message.metadata.get("from_agent")
-                                    )
-                                event_type = "a2a_status"
-                                if update.status.message.metadata:
-                                    event_type = update.status.message.metadata.get(
-                                        "event_type", "a2a_status"
-                                    )
-
-                                logger.info(
-                                    "[tool:evaluate_agent] A2A status: %s (state=%s, final=%s)",
-                                    status_text[:120],
-                                    update.status.state if update.status else "?",
-                                    update.final,
-                                )
-                                await _a2a_event_queue.put({
-                                    "event_type": "status_update",
-                                    "message": status_text,
-                                    "state": "working",
-                                    "author": author or "recruiter_service",
-                                    "a2a_event_type": event_type,
-                                })
+                if isinstance(update, TaskStatusUpdateEvent):
+                    await _forward_status_update(update, "evaluate_agent")
 
                 # Extract final result from completed task
                 if (

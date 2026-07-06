@@ -5,6 +5,7 @@
 
 import type { Edge, Node } from "@xyflow/react"
 import { describe, expect, it } from "vitest"
+import type { GraphConfig } from "@/utils/graphConfigs"
 import {
   A2A_HTTP_CONFIG,
   GROUP_MESSAGING_CONFIG,
@@ -15,6 +16,18 @@ import {
   deriveAnimationSequenceFromGraph,
   resolveStreamAuthorToNodeId,
 } from "./chatStreamGraphHighlight"
+
+function liveNode(
+  id: string,
+  type: string,
+  data: Record<string, unknown>,
+): Node {
+  return { id, type, position: { x: 0, y: 0 }, data }
+}
+
+function liveEdge(id: string, source: string, target: string): Edge {
+  return { id, source, target }
+}
 
 describe("resolveStreamAuthorToNodeId", () => {
   it.each([
@@ -36,6 +49,40 @@ describe("resolveStreamAuthorToNodeId", () => {
       config: GROUP_MESSAGING_CONFIG,
       expected: NODE_IDS.AUCTION_AGENT,
     },
+    {
+      caseName: "discovered agent author via inline record name",
+      author: "Brazil Farm Agent",
+      config: {
+        title: "Discovery",
+        animationSequence: [],
+        nodes: [
+          liveNode("agent://brazil", "customNode", {
+            label1: "Brazil",
+            oasfRecord: { name: "Brazil Farm Agent" },
+            agentCid: "cid-brazil",
+          }),
+        ],
+        edges: [],
+      } satisfies GraphConfig,
+      expected: "agent://brazil",
+    },
+    {
+      caseName: "discovered agent author via cid",
+      author: "cid-brazil",
+      config: {
+        title: "Discovery",
+        animationSequence: [],
+        nodes: [
+          liveNode("agent://brazil", "customNode", {
+            label1: "Brazil",
+            oasfRecord: { name: "Brazil Farm Agent" },
+            agentCid: "cid-brazil",
+          }),
+        ],
+        edges: [],
+      } satisfies GraphConfig,
+      expected: "agent://brazil",
+    },
   ])("$caseName", ({ author, config, expected }) => {
     expect(resolveStreamAuthorToNodeId(author, config)).toBe(expected)
   })
@@ -56,18 +103,6 @@ describe("animationSequenceStepIds", () => {
     expect(animationSequenceStepIds(GROUP_MESSAGING_CONFIG, 99)).toEqual([])
   })
 })
-
-function liveNode(
-  id: string,
-  type: string,
-  data: Record<string, unknown>,
-): Node {
-  return { id, type, position: { x: 0, y: 0 }, data }
-}
-
-function liveEdge(id: string, source: string, target: string): Edge {
-  return { id, source, target }
-}
 
 describe("deriveAnimationSequenceFromGraph", () => {
   const nodes: Node[] = [

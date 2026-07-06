@@ -20,6 +20,9 @@ from agents.supervisors.recruiter.models import (
     STATE_KEY_EVALUATION_RESULTS,
     STATE_KEY_RECRUITED_AGENTS,
 )
+from common.stable_agent_id import stable_agent_id_for_name
+from common.workflow_context_prop import WorkflowContext
+from common.workflow_utils.inflight import TraceContext
 
 # ---------------------------------------------------------------------------
 # _parse_dict_values
@@ -345,3 +348,180 @@ class TestRecruitAgents:
 
         assert "cid_task" in tool_context.state[STATE_KEY_RECRUITED_AGENTS]
         assert "Task completed" in result
+
+
+# ---------------------------------------------------------------------------
+# _emit_discovery_topology
+# ---------------------------------------------------------------------------
+
+
+_VALID_INSTANCE = "instance://11111111-1111-4111-8111-111111111111"
+_NO_TRACE = TraceContext(trace_id=None, span_id=None, owner_span_id=None)
+
+
+def _patch_discovery_context(
+    recruiter_client_mod,
+    *,
+    instance_id: str | None,
+    workflow_name: str | None,
+    workflow_known: bool = True,
+):
+    """Build the patch stack shared by discovery-emit tests."""
+    return [
+        patch.object(
+            recruiter_client_mod,
+            "read_workflow_context",
+            return_value=WorkflowContext(
+                instance_id=instance_id, workflow_name=workflow_name
+            ),
+        ),
+        patch.object(
+            recruiter_client_mod, "read_trace_context", return_value=_NO_TRACE
+        ),
+        patch.object(
+            recruiter_client_mod,
+            "lookup_workflow",
+            return_value=object() if workflow_known else None,
+        ),
+    ]
+
+
+class TestEmitDiscoveryTopology:
+    @pytest.mark.asyncio
+    async def test_emits_anchor_node_and_discovered_agents(self, recruiter_client_mod):
+        """A valid context emits an anchor node plus one node/edge per agent."""
+        records = {
+            "cidB": {"name": "Brazil", "url": "http://brazil:9000"},
+            "cidC": {"name": "Colombia", "url": "http://colombia:9000"},
+        }
+        sink = AsyncMock()
+        build_event_mock = MagicMock(return_value=MagicMock())
+
+        ctx_patches = _patch_discovery_context(
+            recruiter_client_mod,
+            instance_id=_VALID_INSTANCE,
+            workflow_name="recruiter_pattern",
+        )
+        with ctx_patches[0], ctx_patches[1], ctx_patches[2], patch.object(
+            recruiter_client_mod, "build_event", build_event_mock
+        ), patch.object(recruiter_client_mod, "_discovery_event_sink", sink):
+            await recruiter_client_mod._emit_discovery_topology(records)
+
+        sink.emit.assert_awaited_once()
+        topology = build_event_mock.call_args.kwargs["topology"]
+        labels = [node.label for node in topology.nodes]
+        assert labels[0] == "Agentic Recruiter"
+        assert "Brazil" in labels and "Colombia" in labels
+        # The anchor carries the seeded recruiter's stable_agent_id so the
+        # backend merge layer reconciles it onto the real recruiter node.
+        assert topology.nodes[0].stable_agent_id == stable_agent_id_for_name(
+            "Agentic Recruiter agent"
+        )
+        # One edge per discovered agent, all sourced from the anchor node.
+        anchor_id = topology.nodes[0].id
+        assert len(topology.edges) == 2
+        assert all(edge.source == anchor_id for edge in topology.edges)
+        # The inline agent record travels on the discovered node (``oasf_record``).
+        brazil = next(node for node in topology.nodes if node.label == "Brazil")
+        assert brazil.oasf_record == records["cidB"]
+        assert brazil.agent_cid == "cidB"
+
+    @pytest.mark.asyncio
+    async def test_discovery_node_ids_are_deterministic(self, recruiter_client_mod):
+        """Re-discovering the same CID yields the same node id (idempotent merge)."""
+        records = {"cidB": {"name": "Brazil"}}
+        first = MagicMock(return_value=MagicMock())
+        second = MagicMock(return_value=MagicMock())
+
+        for build_mock in (first, second):
+            ctx_patches = _patch_discovery_context(
+                recruiter_client_mod,
+                instance_id=_VALID_INSTANCE,
+                workflow_name="recruiter_pattern",
+            )
+            with ctx_patches[0], ctx_patches[1], ctx_patches[2], patch.object(
+                recruiter_client_mod, "build_event", build_mock
+            ), patch.object(
+                recruiter_client_mod, "_discovery_event_sink", AsyncMock()
+            ):
+                await recruiter_client_mod._emit_discovery_topology(records)
+
+        first_node = first.call_args.kwargs["topology"].nodes[1].id
+        second_node = second.call_args.kwargs["topology"].nodes[1].id
+        assert first_node == second_node
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize(
+        "description,records,instance_id,workflow_name,workflow_known",
+        [
+            ("empty records", {}, _VALID_INSTANCE, "recruiter_pattern", True),
+            (
+                "missing instance id",
+                {"cidB": {"name": "Brazil"}},
+                None,
+                "recruiter_pattern",
+                True,
+            ),
+            (
+                "invalid instance id",
+                {"cidB": {"name": "Brazil"}},
+                "not-an-instance",
+                "recruiter_pattern",
+                True,
+            ),
+            (
+                "unknown workflow",
+                {"cidB": {"name": "Brazil"}},
+                _VALID_INSTANCE,
+                "ghost_workflow",
+                False,
+            ),
+            (
+                "missing workflow name",
+                {"cidB": {"name": "Brazil"}},
+                _VALID_INSTANCE,
+                None,
+                True,
+            ),
+        ],
+    )
+    async def test_no_emit_when_context_incomplete(
+        self,
+        recruiter_client_mod,
+        description,
+        records,
+        instance_id,
+        workflow_name,
+        workflow_known,
+    ):
+        sink = AsyncMock()
+        build_event_mock = MagicMock()
+        ctx_patches = _patch_discovery_context(
+            recruiter_client_mod,
+            instance_id=instance_id,
+            workflow_name=workflow_name,
+            workflow_known=workflow_known,
+        )
+        with ctx_patches[0], ctx_patches[1], ctx_patches[2], patch.object(
+            recruiter_client_mod, "build_event", build_event_mock
+        ), patch.object(recruiter_client_mod, "_discovery_event_sink", sink):
+            await recruiter_client_mod._emit_discovery_topology(records)
+
+        sink.emit.assert_not_awaited()
+        build_event_mock.assert_not_called()
+
+    @pytest.mark.asyncio
+    async def test_no_emit_when_sink_disabled(self, recruiter_client_mod):
+        """With events disabled (_discovery_event_sink is None) nothing is emitted."""
+        ctx_patches = _patch_discovery_context(
+            recruiter_client_mod,
+            instance_id=_VALID_INSTANCE,
+            workflow_name="recruiter_pattern",
+        )
+        with ctx_patches[0], ctx_patches[1], ctx_patches[2], patch.object(
+            recruiter_client_mod, "_discovery_event_sink", None
+        ):
+            await recruiter_client_mod._emit_discovery_topology(
+                {"cidB": {"name": "Brazil"}}
+            )
+        # No exception means the guard short-circuited cleanly.

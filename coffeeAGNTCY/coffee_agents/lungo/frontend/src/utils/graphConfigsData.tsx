@@ -239,15 +239,11 @@ export const GROUP_MESSAGING_CONFIG: GraphConfig = {
     {
       id: NODE_IDS.LOGISTICS_GROUP,
       type: NODE_TYPES.GROUP,
-      data: { label: "Logistics Group" },
+      data: {},
       position: { x: 50, y: 50 },
-      style: {
-        width: 900,
-        height: 650,
-        backgroundColor: "var(--group-background)",
-        border: "none",
-        borderRadius: "8px",
-      },
+      hidden: true,
+      width: 900,
+      height: 650,
     },
     {
       id: NODE_IDS.AUCTION_AGENT,

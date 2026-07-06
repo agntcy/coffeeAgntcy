@@ -26,6 +26,7 @@ import {
   layoutSlimTransportGraph,
 } from "@/utils/topologyLayout"
 import {
+  applyDiscoveredAgentInlineUi,
   enrichAgenticTopologyWellKnownUi,
   isDirectoryLabel,
   isMcpServerLabel,
@@ -224,18 +225,17 @@ export function topologyWireToReactFlow(
     )
 
     if (n.type === NODE_TYPES.GROUP) {
+      // The group is never drawn; it only exists so children can anchor to it
+      // via parentId/extent. width/height must live on the node (not style) so
+      // extent clamping still resolves the box while the node stays hidden.
       return {
         id: rfId,
         type: NODE_TYPES.GROUP,
         position,
-        data: { label: labelStr },
-        style: {
-          width: GROUP_DEFAULT_WIDTH,
-          height: GROUP_DEFAULT_HEIGHT,
-          backgroundColor: "var(--group-background)",
-          border: "none",
-          borderRadius: "8px",
-        },
+        hidden: true,
+        width: GROUP_DEFAULT_WIDTH,
+        height: GROUP_DEFAULT_HEIGHT,
+        data: {},
       }
     }
 
@@ -272,6 +272,7 @@ export function topologyWireToReactFlow(
       identityUiVariant: options.identityUiVariant,
     })
     data = enrichAgenticTopologyWellKnownUi(data, n, { validateUrls })
+    data = applyDiscoveredAgentInlineUi(data, n)
     if (data.directoryAgentSlug) {
       data = {
         ...data,
