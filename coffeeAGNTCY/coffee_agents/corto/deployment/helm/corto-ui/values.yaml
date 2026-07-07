@@ -14,8 +14,10 @@ image:
 service:
   port: 3000
 
-config:
-  exchangeAppApiUrl: ""
+configs:
+  env:
+    data:
+      VITE_EXCHANGE_APP_API_URL: http://127.0.0.1:8000
 
 # You can use your own config here for service account
 serviceaccount:
