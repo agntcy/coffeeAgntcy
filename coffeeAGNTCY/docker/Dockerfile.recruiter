@@ -1,0 +1,43 @@
+# Copyright AGNTCY Contributors (https://github.com/agntcy)
+# SPDX-License-Identifier: Apache-2.0
+
+# SLIM v0.7+ requires to use debian trixie distribution
+FROM astral/uv:0.11.16-python3.13-trixie-slim@sha256:d57fc364ed714127c162a01b316bfb7b9a3fd09d97c665781a5607acaa35d254
+
+COPY --from=ghcr.io/agntcy/dir-ctl:v1.5.0 /dirctl /usr/local/bin/dirctl
+
+# Build arguments — required:
+#   PROJECT_PATH  path to the agent project directory (relative to build context)
+#   UV_CACHE_ID   identifier used as the BuildKit uv cache mount ID (e.g. "recruiter")
+#   AGENT_SCRIPT  argument(s) to pass to `uv run python`
+ARG PROJECT_PATH
+ARG UV_CACHE_ID
+ARG AGENT_SCRIPT
+
+WORKDIR /app
+
+# Silences warnings about not being able to link files since the cache and sync target are on separate file systems
+ENV UV_LINK_MODE=copy
+
+# Pin the uv cache location so BuildKit cache mounts and uv agree on the path
+ENV UV_CACHE_DIR=/root/.cache/uv
+
+# Install dependencies (project source excluded for better layer caching)
+COPY ${PROJECT_PATH}/uv.lock ${PROJECT_PATH}/pyproject.toml ./
+RUN --mount=type=cache,id=${UV_CACHE_ID},target=/root/.cache/uv \
+    uv sync --locked --no-install-project
+
+COPY ${PROJECT_PATH}/ .
+
+# Sync the project
+RUN --mount=type=cache,id=${UV_CACHE_ID},target=/root/.cache/uv \
+    uv sync --locked
+
+# Expose the A2A server port
+EXPOSE 8881
+
+ENV PYTHONUNBUFFERED=1
+ENV ENABLE_HTTP=true
+
+ENV AGENT_SCRIPT=${AGENT_SCRIPT}
+CMD ["sh", "-c", "exec uv run python ${AGENT_SCRIPT}"]
