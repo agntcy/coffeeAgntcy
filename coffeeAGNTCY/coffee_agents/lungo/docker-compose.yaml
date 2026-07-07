@@ -596,8 +596,11 @@ services:
       - CORS_ALLOWED_ORIGINS=${CORS_ALLOWED_ORIGINS:-}
       - WORKFLOW_API_URL=http://agentic-workflows-api:9105
       - WORKFLOW_API_KEY=${WORKFLOW_API_KEY:?WORKFLOW_API_KEY must be set in .env}
+      # Discovered farm records advertise http://0.0.0.0:<port>; reach them via
+      # the host gateway and their host-published ports from inside the network.
       - DISCOVERED_AGENT_HOST=${DISCOVERED_AGENT_HOST:-host.docker.internal}
     extra_hosts:
+      # Make host.docker.internal resolvable on Linux (no-op on Docker Desktop).
       - "host.docker.internal:host-gateway"
     ports:
       - "8882:8882"

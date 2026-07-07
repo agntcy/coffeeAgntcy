@@ -10,7 +10,6 @@ import pytest
 from agents.supervisors.recruiter import dynamic_workflow_agent as dwa
 from agents.supervisors.recruiter.dynamic_workflow_agent import (
     DynamicWorkflowAgent,
-    _reachable_card,
     _reachable_url,
 )
 from agents.supervisors.recruiter.models import (
@@ -88,28 +87,6 @@ class TestReachableUrl:
             assert _reachable_url(url) == expected, case
 
 
-class TestReachableCard:
-    def test_reachable_card_does_not_mutate_original(self):
-        from a2a.types import AgentCard
-
-        original = AgentCard(
-            name="Brazil Farm",
-            description="Brazil coffee farm agent",
-            url="http://0.0.0.0:9999",
-            version="1.0.0",
-            capabilities={},
-            default_input_modes=["text"],
-            default_output_modes=["text"],
-            skills=[],
-        )
-        with patch.object(dwa, "DISCOVERED_AGENT_HOST", "host.docker.internal"):
-            reachable = _reachable_card(original)
-
-        assert original.url == "http://0.0.0.0:9999"
-        assert reachable.url == "http://host.docker.internal:9999"
-        assert reachable is not original
-
-
 class TestDynamicWorkflowAgentConstruction:
     def test_can_instantiate(self):
         agent = DynamicWorkflowAgent(
@@ -177,3 +154,39 @@ class TestDynamicWorkflowAgentRun:
         # Should get an error about failing to parse
         assert len(events) == 1
         assert "Failed to parse" in events[0].content.parts[0].text
+
+    @pytest.mark.asyncio
+    async def test_delegation_transport_error_yields_error(self):
+        """Transport/client setup failures should yield a delegation error event."""
+        agent = DynamicWorkflowAgent(name="dw_test", description="test")
+        record = {
+            "name": "Farm Agent",
+            "url": "http://farm:9999",
+            "preferredTransport": "jsonrpc",
+            "description": "desc",
+            "version": "1.0.0",
+            "capabilities": {"streaming": False},
+            "defaultInputModes": ["text"],
+            "defaultOutputModes": ["text"],
+            "skills": [],
+        }
+        state = {
+            STATE_KEY_SELECTED_AGENT: "farm_cid",
+            STATE_KEY_RECRUITED_AGENTS: {"farm_cid": record},
+            STATE_KEY_TASK_MESSAGE: "Try this",
+        }
+        ctx = _make_ctx(state=state)
+
+        mock_factory = MagicMock()
+        mock_factory.create = AsyncMock(
+            side_effect=ValueError("no compatible transports found.")
+        )
+
+        events = []
+        with patch.object(dwa, "a2a_client_factory", mock_factory):
+            async for event in agent._run_async_impl(ctx):
+                events.append(event)
+
+        assert len(events) == 1
+        assert "Failed to delegate" in events[0].content.parts[0].text
+        assert "no compatible transports found" in events[0].content.parts[0].text

@@ -15,6 +15,7 @@ import {
   animationSequenceStepIds,
   deriveAnimationSequenceFromGraph,
   resolveStreamAuthorToNodeId,
+  selectAnimationSequence,
 } from "./chatStreamGraphHighlight"
 
 function liveNode(
@@ -178,5 +179,57 @@ describe("deriveAnimationSequenceFromGraph", () => {
       ],
     )
     expect(seq).toEqual([])
+  })
+
+  it("pulses fan-in / back-to-source edges without looping", () => {
+    const seq = deriveAnimationSequenceFromGraph(
+      [
+        liveNode("agent://auction", "customNode", {}),
+        liveNode("transport://slim", "transportNode", {}),
+        liveNode("agent://brazil", "customNode", {}),
+      ],
+      [
+        liveEdge("e-auction-transport", "agent://auction", "transport://slim"),
+        liveEdge("e-transport-brazil", "transport://slim", "agent://brazil"),
+        liveEdge("e-brazil-transport", "agent://brazil", "transport://slim"),
+      ],
+    )
+    expect(seq.map((step) => step.ids)).toEqual([
+      ["agent://auction"],
+      ["e-auction-transport"],
+      ["transport://slim"],
+      ["e-transport-brazil"],
+      ["agent://brazil"],
+      ["e-brazil-transport"],
+    ])
+  })
+})
+
+describe("selectAnimationSequence", () => {
+  const nodes: Node[] = [
+    liveNode("agent://recruiter", "customNode", {}),
+    liveNode("agent://directory", "customNode", {}),
+  ]
+  const edges: Edge[] = [
+    liveEdge("e-recruiter-directory", "agent://recruiter", "agent://directory"),
+  ]
+  const staticSequence = [{ ids: ["static-node"] }]
+
+  it("derives from the live graph in agentic mode", () => {
+    expect(
+      selectAnimationSequence(true, nodes, edges, staticSequence).map(
+        (step) => step.ids,
+      ),
+    ).toEqual([
+      ["agent://recruiter"],
+      ["e-recruiter-directory"],
+      ["agent://directory"],
+    ])
+  })
+
+  it("uses the authored static sequence outside agentic mode", () => {
+    expect(selectAnimationSequence(false, nodes, edges, staticSequence)).toBe(
+      staticSequence,
+    )
   })
 })

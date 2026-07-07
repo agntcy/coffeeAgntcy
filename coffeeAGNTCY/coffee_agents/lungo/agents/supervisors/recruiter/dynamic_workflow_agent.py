@@ -60,7 +60,14 @@ _UNROUTABLE_ADVERTISED_HOSTS = frozenset({"0.0.0.0", "127.0.0.1", "localhost"})
 
 
 def _reachable_url(url: str) -> str:
-    """Rewrite an unroutable advertised host to a reachable one."""
+    """Rewrite an unroutable advertised host to a reachable one.
+
+    Discovered records advertise the agent's own bind address (e.g.
+    ``http://0.0.0.0:9999``), which the supervisor cannot dial. Replace such
+    hosts with DISCOVERED_AGENT_HOST while preserving scheme, port, and path.
+    Non-HTTP transports (slim://, nats://) and already-routable hosts are
+    returned unchanged.
+    """
     if not url:
         return url
     parts = urlsplit(url)
@@ -70,16 +77,6 @@ def _reachable_url(url: str) -> str:
         return url
     netloc = f"{DISCOVERED_AGENT_HOST}:{parts.port}" if parts.port else DISCOVERED_AGENT_HOST
     return urlunsplit((parts.scheme, netloc, parts.path, parts.query, parts.fragment))
-
-
-def _reachable_card(card: AgentCard) -> AgentCard:
-    """Return a card copy with HTTP interface URLs rewritten for delegation."""
-    reachable = card.model_copy(deep=True)
-    reachable.url = _reachable_url(reachable.url)
-    if reachable.additional_interfaces:
-        for interface in reachable.additional_interfaces:
-            interface.url = _reachable_url(interface.url)
-    return reachable
 
 
 class DynamicWorkflowAgent(BaseAgent):
@@ -111,14 +108,14 @@ class DynamicWorkflowAgent(BaseAgent):
             message[:100],
         )
 
-        # negotiate and create the client based on the card's preferred transport
-        client = await a2a_client_factory.create(
-            card,
-            interceptors=[_event_interceptor],
-            consumers=[_event_consumer],
-        )
-
         try:
+            # negotiate and create the client based on the card's preferred transport
+            client = await a2a_client_factory.create(
+                card,
+                interceptors=[_event_interceptor],
+                consumers=[_event_consumer],
+            )
+
             result_text = None
             async for response in client.send_message(a2a_message):
                 logger.info(
@@ -156,7 +153,7 @@ class DynamicWorkflowAgent(BaseAgent):
                 str(e),
                 exc_info=True,
             )
-            return f"Error communicating with {agent_name}: {str(e)}"
+            raise
 
     @staticmethod
     def _protocol_from_record(record: AgentRecord) -> AgentProtocol:
@@ -214,7 +211,7 @@ class DynamicWorkflowAgent(BaseAgent):
             return
 
         try:
-            record = AgentRecord.from_record_data(selected_cid, record_data)
+            record = AgentRecord.from_record(selected_cid, record_data)
         except Exception:
             logger.warning(
                 f"Failed to parse agent record for CID {selected_cid}.",
@@ -259,7 +256,11 @@ class DynamicWorkflowAgent(BaseAgent):
             )
             return
 
-        agent_card = _reachable_card(record.card)
+        agent_card = record.to_agent_card()
+        agent_card.url = _reachable_url(agent_card.url)
+        if agent_card.additional_interfaces:
+            for interface in agent_card.additional_interfaces:
+                interface.url = _reachable_url(interface.url)
 
         logger.info(
             "[agent:dynamic_workflow] Sending to agent: %s at %s",
@@ -267,12 +268,35 @@ class DynamicWorkflowAgent(BaseAgent):
             agent_card.url,
         )
 
-        # Send A2A message
-        response_text = await self._send_a2a_message(
-            card=agent_card,
-            message=task_message,
-            agent_name=record.name,
-        )
+        try:
+            response_text = await self._send_a2a_message(
+                card=agent_card,
+                message=task_message,
+                agent_name=record.name,
+            )
+        except Exception as e:
+            logger.error(
+                "[agent:dynamic_workflow] Delegation to %s failed: %s",
+                record.name,
+                str(e),
+                exc_info=True,
+            )
+            yield Event(
+                author=self.name,
+                invocation_id=ctx.invocation_id,
+                content=types.Content(
+                    role="model",
+                    parts=[
+                        types.Part(
+                            text=(
+                                f"Failed to delegate to agent '{record.name}': {e}"
+                            )
+                        )
+                    ],
+                ),
+            )
+            return
+
         combined = f"**{record.name}**:\n{response_text}"
 
         yield Event(

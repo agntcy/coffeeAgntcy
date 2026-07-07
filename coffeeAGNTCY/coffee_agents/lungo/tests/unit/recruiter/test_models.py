@@ -89,6 +89,90 @@ class TestAgentRecord:
 
 
 # ---------------------------------------------------------------------------
+# AgentRecord.from_record / OASF-aware to_agent_card
+# ---------------------------------------------------------------------------
+
+
+class TestAgentRecordFromRecord:
+    @pytest.mark.parametrize(
+        "case,record,expected_url,expected_transport",
+        [
+            (
+                "oasf record extracts card_data url and transport",
+                {
+                    "name": "Accountant agent",
+                    "modules": [
+                        {
+                            "name": "integration/a2a",
+                            "data": {
+                                "card_data": {
+                                    "name": "Accountant agent",
+                                    "url": "http://localhost:3000",
+                                    "preferredTransport": "JSONRPC",
+                                    "version": "1.0.0",
+                                    "description": "An AI agent that confirms the payment.",
+                                    "defaultInputModes": ["text"],
+                                    "defaultOutputModes": ["text"],
+                                    "capabilities": {"streaming": True},
+                                    "skills": [],
+                                    "supportsAuthenticatedExtendedCard": False,
+                                }
+                            },
+                        }
+                    ],
+                },
+                "http://localhost:3000",
+                "JSONRPC",
+            ),
+            (
+                "flat record fallback uses top-level url",
+                {
+                    "name": "Flat Agent",
+                    "url": "http://farm:9999",
+                    "preferredTransport": "slimrpc",
+                    "description": "desc",
+                    "version": "2.0.0",
+                },
+                "http://farm:9999",
+                "slimrpc",
+            ),
+        ],
+        ids=lambda case: case,
+    )
+    def test_to_agent_card_from_record(self, case, record, expected_url, expected_transport):
+        card = AgentRecord.from_record("cid-1", record).to_agent_card()
+
+        assert isinstance(card, AgentCard)
+        assert card.url == expected_url
+        assert card.preferred_transport == expected_transport
+
+    @pytest.mark.parametrize(
+        "case,record,expected_message",
+        [
+            (
+                "missing name",
+                {"description": "No name field"},
+                "missing a name",
+            ),
+            (
+                "empty name and no transport",
+                {"name": "", "url": ""},
+                "missing a name",
+            ),
+            (
+                "name but no transport endpoint",
+                {"name": "Orphan Agent", "description": "no url"},
+                "no transport endpoint",
+            ),
+        ],
+        ids=lambda case: case,
+    )
+    def test_from_record_rejects_unusable_card(self, case, record, expected_message):
+        with pytest.raises(ValueError, match=expected_message):
+            AgentRecord.from_record("cid-bad", record)
+
+
+# ---------------------------------------------------------------------------
 # RecruitmentResponse
 # ---------------------------------------------------------------------------
 

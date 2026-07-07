@@ -24,11 +24,14 @@ NATS_SERVER = os.getenv("NATS_SERVER", "localhost:4222")
 DEFAULT_MESSAGE_TRANSPORT = os.getenv("DEFAULT_MESSAGE_TRANSPORT", "SLIM")
 
 # Host used to reach discovered agents that advertise an unroutable bind
-# address (e.g. http://0.0.0.0:9999). Defaults to localhost for host runs;
-# set to host.docker.internal inside containers.
+# address (e.g. http://0.0.0.0:9999). Defaults to localhost for host runs
+# (the farm ports are published there); set to host.docker.internal inside
+# containers so the supervisor reaches the host-published ports.
 DISCOVERED_AGENT_HOST = os.getenv("DISCOVERED_AGENT_HOST", "localhost")
 
 # Read timeout (seconds) for the recruiter's JSONRPC delegation client.
+# Discovered agents are reached over JSONRPC, and httpx's 5s default is too
+# short for LLM-backed agents that take several seconds to respond.
 A2A_CLIENT_TIMEOUT_SECONDS = float(os.getenv("A2A_CLIENT_TIMEOUT_SECONDS", "30"))
 
 if os.getenv("SLIM_SHARED_SECRET") is None:
