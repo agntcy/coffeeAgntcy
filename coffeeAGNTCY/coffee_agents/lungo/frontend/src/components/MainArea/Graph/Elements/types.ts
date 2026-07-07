@@ -9,8 +9,8 @@ export interface ExtraHandle {
 export interface CustomNodeData {
   onOpenOasfModal?: (nodeData: CustomNodeData) => void
   icon: React.ReactNode
-  label1: string
-  label2: string
+  label: string
+  label_subtitle: string
   active?: boolean
   selected?: boolean
   agentCid?: string

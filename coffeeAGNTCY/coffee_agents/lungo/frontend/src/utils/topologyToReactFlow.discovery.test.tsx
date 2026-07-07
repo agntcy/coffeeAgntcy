@@ -61,7 +61,7 @@ describe("topologyWireToReactFlow discovery merge", () => {
 
   it("collapses the anchor onto the single seeded recruiter node", () => {
     const recruiters = nodes.filter(
-      (n) => (n.data as unknown as CustomNodeData)?.label1 === "Agentic",
+      (n) => (n.data as unknown as CustomNodeData)?.label === "Agentic",
     )
     expect(recruiters).toHaveLength(1)
     expect(recruiters[0]?.id).toBe(SEED_RECRUITER)

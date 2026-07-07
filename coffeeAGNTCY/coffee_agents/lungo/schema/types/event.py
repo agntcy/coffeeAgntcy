@@ -232,6 +232,7 @@ class PartialRegularNode(BaseModel):
     operation: Operation
     type: Annotated[str, Field(min_length=1)] | None = None
     label: Annotated[str, Field(min_length=1)] | None = None
+    label_subtitle: Annotated[str, Field(min_length=1)] | None = None
     size: Size | None = None
     layer_index: float = 0
 
@@ -248,6 +249,7 @@ class RegularNode(BaseModel):
     operation: Operation
     type: Annotated[str, Field(min_length=1)]
     label: Annotated[str, Field(min_length=1)]
+    label_subtitle: Annotated[str, Field(min_length=1)] | None = None
     size: Size
     layer_index: float
 

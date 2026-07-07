@@ -25,7 +25,7 @@ const ModalContainer: React.FC<ModalContainerProps> = ({
       <BadgeDetailsModal
         isOpen={activeModal === "badge"}
         onClose={onClose}
-        nodeName={activeNodeData?.label1 || ""}
+        nodeName={activeNodeData?.label || ""}
         nodeData={(activeNodeData ?? undefined) as CustomNodeData}
       />
 
@@ -33,7 +33,7 @@ const ModalContainer: React.FC<ModalContainerProps> = ({
         isOpen={activeModal === "policy"}
         onClose={onClose}
         nodeData={(activeNodeData ?? undefined) as CustomNodeData}
-        nodeName={activeNodeData?.label1 || ""}
+        nodeName={activeNodeData?.label || ""}
       />
     </>
   )

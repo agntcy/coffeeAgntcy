@@ -19,7 +19,7 @@ import { NODE_TYPES } from "@/utils/const"
 function readNodeData(node: Node): CustomNodeData | null {
   if (node.type !== NODE_TYPES.CUSTOM) return null
   const data = node.data as unknown as CustomNodeData | undefined
-  if (!data?.label1 || !data?.label2) return null
+  if (!data?.label?.trim()) return null
   return data
 }
 

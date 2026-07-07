@@ -47,30 +47,32 @@ const getSlugFromNodeData = (nodeData: CustomNodeData): string => {
     return nodeData.slug
   }
 
-  const label1 = nodeData.label1?.toLowerCase()
-  const label2 = nodeData.label2?.toLowerCase()
+  const label = nodeData.label?.toLowerCase()
+  const label_subtitle = nodeData.label_subtitle?.toLowerCase()
 
   if (
-    label1 === "auction agent" ||
-    label2?.includes("buyer") ||
-    (label1 === "auction" && label2?.includes("agent"))
+    label === "auction agent" ||
+    label_subtitle?.includes("buyer") ||
+    (label === "auction" && label_subtitle?.includes("agent"))
   ) {
     return "auction-supervisor"
   }
 
-  if (label1 === "colombia" && label2?.includes("coffee farm")) {
+  if (label === "colombia" && label_subtitle?.includes("coffee farm")) {
     return "colombia-coffee-farm"
   }
 
-  if (label1 === "vietnam" && label2?.includes("coffee farm")) {
+  if (label === "vietnam" && label_subtitle?.includes("coffee farm")) {
     return "vietnam-coffee-farm"
   }
 
-  if (label1 === "mcp server" && label2 === "payment") {
+  if (label === "mcp server" && label_subtitle === "payment") {
     return "payment-mcp-server"
   }
 
-  throw new Error(`No valid slug mapping found for node: ${label1} ${label2}`)
+  throw new Error(
+    `No valid slug mapping found for node: ${label} ${label_subtitle}`,
+  )
 }
 
 export const fetchBadgeDetails = async (

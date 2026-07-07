@@ -58,7 +58,8 @@ describe("resolveStreamAuthorToNodeId", () => {
         animationSequence: [],
         nodes: [
           liveNode("agent://brazil", "customNode", {
-            label1: "Brazil",
+            label: "Brazil",
+            label_subtitle: "",
             oasfRecord: { name: "Brazil Farm Agent" },
             agentCid: "cid-brazil",
           }),
@@ -75,7 +76,8 @@ describe("resolveStreamAuthorToNodeId", () => {
         animationSequence: [],
         nodes: [
           liveNode("agent://brazil", "customNode", {
-            label1: "Brazil",
+            label: "Brazil",
+            label_subtitle: "",
             oasfRecord: { name: "Brazil Farm Agent" },
             agentCid: "cid-brazil",
           }),

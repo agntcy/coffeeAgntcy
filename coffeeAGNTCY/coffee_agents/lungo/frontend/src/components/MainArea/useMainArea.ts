@@ -133,7 +133,7 @@ export function useMainArea({
       const recruiterId =
         prevNodes.find((n) => {
           const l1 = String(
-            (n.data as unknown as CustomNodeData | undefined)?.label1 ?? "",
+            (n.data as unknown as CustomNodeData | undefined)?.label ?? "",
           )
             .toLowerCase()
             .trim()
