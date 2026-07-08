@@ -233,6 +233,7 @@ jobs:
     with:
       name: ${{ matrix.image.name }}
       dockerfile: ${{ matrix.image.dockerfile }}
+      target: ${{ matrix.image.target }}
       extra_build_args: ${{ matrix.image.extra_build_args }}
       push: ${{ needs.compute-build-parameters.outputs.push == 'true' }}
       platforms: linux/amd64,linux/arm64
@@ -351,6 +352,7 @@ jobs:
     with:
       name: ${{ matrix.image.name }}
       dockerfile: ${{ matrix.image.dockerfile }}
+      target: ${{ matrix.image.target }}
       extra_build_args: ${{ matrix.image.extra_build_args }}
       push: ${{ needs.compute-build-parameters.outputs.push == 'true' }}
       platforms: linux/amd64,linux/arm64
@@ -365,11 +367,13 @@ jobs:
       matrix:
         image:
           - name: recruiter
-            dockerfile: coffeeAGNTCY/docker/Dockerfile.recruiter
+            dockerfile: coffeeAGNTCY/docker/Dockerfile.python-agent
+            target: agent-with-dirctl
             extra_build_args: |
               PROJECT_PATH=coffeeAGNTCY/coffee_agents/recruiter
               UV_CACHE_ID=recruiter
               AGENT_SCRIPT=src/agent_recruiter/server/server.py
+              APP_NAME=recruiter
 
     permissions: # permissions can only be maintained or reduced (not elevated) throughout a chain of workflows
       packages: write
@@ -379,6 +383,7 @@ jobs:
     with:
       name: ${{ matrix.image.name }}
       dockerfile: ${{ matrix.image.dockerfile }}
+      target: ${{ matrix.image.target }}
       extra_build_args: ${{ matrix.image.extra_build_args }}
       push: ${{ needs.compute-build-parameters.outputs.push == 'true' }}
       platforms: linux/amd64,linux/arm64

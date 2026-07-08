@@ -609,11 +609,13 @@ services:
   recruiter:
     build:
       context: ../../..
-      dockerfile: coffeeAGNTCY/docker/Dockerfile.recruiter
+      dockerfile: coffeeAGNTCY/docker/Dockerfile.python-agent
+      target: agent-with-dirctl
       args:
         PROJECT_PATH: coffeeAGNTCY/coffee_agents/recruiter
         UV_CACHE_ID: recruiter
         AGENT_SCRIPT: src/agent_recruiter/server/server.py
+        APP_NAME: recruiter
     image: ghcr.io/agntcy/coffee-agntcy/recruiter:latest
     container_name: recruiter
     env_file:
