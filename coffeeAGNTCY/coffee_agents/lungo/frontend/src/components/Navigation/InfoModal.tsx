@@ -4,10 +4,10 @@
  **/
 
 import React, { useEffect } from "react"
-import DialogTitle from "@mui/material/DialogTitle"
 import {
   Dialog,
   DialogContent,
+  DialogTitle,
   IconButton,
   Stack,
   Typography,

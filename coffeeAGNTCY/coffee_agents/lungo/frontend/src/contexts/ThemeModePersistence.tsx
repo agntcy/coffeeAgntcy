@@ -22,7 +22,11 @@ export function ThemeModePersistence({ children }: { children: ReactNode }) {
   }, [setIsDarkMode])
 
   useEffect(() => {
-    writeStoredThemeMode(mode === ThemeMode.Dark ? "dark" : "light")
+    if (mode === ThemeMode.Dark) {
+      writeStoredThemeMode("dark")
+    } else if (mode === ThemeMode.Light) {
+      writeStoredThemeMode("light")
+    }
   }, [mode])
 
   return children
