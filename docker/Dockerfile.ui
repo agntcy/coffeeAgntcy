@@ -1,0 +1,27 @@
+FROM node:24-alpine
+
+# Build arguments — required:
+#   PROJECT_PATH  path to the frontend directory (relative to build context)
+#   NPM_CACHE_ID  identifier used as the BuildKit npm cache mount ID (e.g. "corto", "lungo")
+ARG PROJECT_PATH
+ARG NPM_CACHE_ID
+
+WORKDIR /app
+
+# Pin the npm cache location so BuildKit cache mounts and npm agree on the path
+ENV npm_config_cache=/root/.npm
+
+# Install dependencies (application code excluded for better layer caching)
+COPY ${PROJECT_PATH}/package.json ${PROJECT_PATH}/package-lock.json ./
+RUN --mount=type=cache,id=${NPM_CACHE_ID},target=/root/.npm \
+    npm ci
+
+# Copy application files (node_modules excluded via .dockerignore)
+COPY ${PROJECT_PATH}/ .
+
+# Build the frontend
+RUN --mount=type=cache,id=${NPM_CACHE_ID},target=/root/.npm \
+    npm run build --verbose
+
+EXPOSE 3000
+CMD ["npx", "serve", "-s", "dist", "-l", "3000"]

@@ -7,41 +7,42 @@ on:
       - main
   pull_request:
     paths:
-      - 'coffeeAGNTCY/coffee_agents/**'
-      - '!coffeeAGNTCY/coffee_agents/*/deployment/helm/**'
-      - '!coffeeAGNTCY/coffee_agents/*/tests/**'
-      - '!coffeeAGNTCY/coffee_agents/*/docs/**'
-      - '.github/workflows/docker-build-push.yaml'
-      - '.github/workflows/docker-build-reusable.yaml'
-      - '.github/actions/check-paths-have-changes/**'
-      - '.dockerignore'
+      - "coffeeAGNTCY/coffee_agents/**"
+      - "docker/**"
+      - "!coffeeAGNTCY/coffee_agents/*/deployment/helm/**"
+      - "!coffeeAGNTCY/coffee_agents/*/tests/**"
+      - "!coffeeAGNTCY/coffee_agents/*/docs/**"
+      - ".github/workflows/docker-build-push.yaml"
+      - ".github/workflows/docker-build-reusable.yaml"
+      - ".github/actions/check-paths-have-changes/**"
+      - ".dockerignore"
   workflow_dispatch:
     inputs:
       push:
-        description: 'Whether to push the container images to the registry.'
+        description: "Whether to push the container images to the registry."
         required: false
         type: boolean
         default: false
       build_corto:
-        description: 'Whether to build the corto container images.'
+        description: "Whether to build the corto container images."
         required: false
         type: boolean
         default: true
       build_lungo:
-        description: 'Whether to build the lungo container images.'
+        description: "Whether to build the lungo container images."
         required: false
         type: boolean
         default: true
       build_recruiter:
-        description: 'Whether to build the recruiter container images.'
+        description: "Whether to build the recruiter container images."
         required: false
         type: boolean
         default: true
       image_tag:
-        description: 'The tag to use for the container images.'
+        description: "The tag to use for the container images."
         required: false
         type: string
-        default: ''
+        default: ""
 
 env:
   CORTO_DIR: coffeeAGNTCY/coffee_agents/corto
@@ -204,12 +205,25 @@ jobs:
     strategy:
       matrix:
         image:
-        - name: corto-ui
-          dockerfile: coffeeAGNTCY/coffee_agents/corto/docker/Dockerfile.ui
-        - name: corto-exchange
-          dockerfile: coffeeAGNTCY/coffee_agents/corto/docker/Dockerfile.exchange
-        - name: corto-farm
-          dockerfile: coffeeAGNTCY/coffee_agents/corto/docker/Dockerfile.farm
+          - name: corto-ui
+            dockerfile: docker/Dockerfile.ui
+            extra_build_args: |
+              PROJECT_PATH=coffeeAGNTCY/coffee_agents/corto/exchange/frontend
+              NPM_CACHE_ID=corto
+          - name: corto-exchange
+            dockerfile: docker/Dockerfile.python-agent
+            extra_build_args: |
+              PROJECT_PATH=coffeeAGNTCY/coffee_agents/corto
+              UV_CACHE_ID=corto
+              APP_NAME=corto-exchange
+              AGENT_SCRIPT=exchange/main.py
+          - name: corto-farm
+            dockerfile: docker/Dockerfile.python-agent
+            extra_build_args: |
+              PROJECT_PATH=coffeeAGNTCY/coffee_agents/corto
+              UV_CACHE_ID=corto
+              APP_NAME=corto-farm
+              AGENT_SCRIPT=farm/farm_server.py
 
     permissions: # permissions can only be maintained or reduced (not elevated) throughout a chain of workflows
       packages: write
@@ -219,6 +233,8 @@ jobs:
     with:
       name: ${{ matrix.image.name }}
       dockerfile: ${{ matrix.image.dockerfile }}
+      target: ${{ matrix.image.target }}
+      extra_build_args: ${{ matrix.image.extra_build_args }}
       push: ${{ needs.compute-build-parameters.outputs.push == 'true' }}
       platforms: linux/amd64,linux/arm64
       image_tag: ${{ needs.compute-build-parameters.outputs.image_tag }}
@@ -231,43 +247,113 @@ jobs:
     strategy:
       matrix:
         image:
-        - name: lungo-ui
-          dockerfile: coffeeAGNTCY/coffee_agents/lungo/docker/Dockerfile.ui
-        - name: auction-supervisor
-          dockerfile: coffeeAGNTCY/coffee_agents/lungo/docker/Dockerfile.auction-supervisor
-        - name: agentic-workflows-api
-          dockerfile: coffeeAGNTCY/coffee_agents/lungo/docker/Dockerfile.agentic-workflows-api
-        - name: brazil-farm
-          dockerfile: coffeeAGNTCY/coffee_agents/lungo/docker/Dockerfile.brazil-farm
-        - name: colombia-farm
-          dockerfile: coffeeAGNTCY/coffee_agents/lungo/docker/Dockerfile.colombia-farm
-        - name: vietnam-farm
-          dockerfile: coffeeAGNTCY/coffee_agents/lungo/docker/Dockerfile.vietnam-farm
-        - name: weather-mcp-server
-          dockerfile: coffeeAGNTCY/coffee_agents/lungo/docker/Dockerfile.weather-mcp
-        - name: payment-mcp-server
-          dockerfile: coffeeAGNTCY/coffee_agents/lungo/docker/Dockerfile.payment-mcp
-        - name: logistics-shipper
-          dockerfile: coffeeAGNTCY/coffee_agents/lungo/docker/Dockerfile.logistics-shipper
-        - name: logistics-accountant
-          dockerfile: coffeeAGNTCY/coffee_agents/lungo/docker/Dockerfile.logistics-accountant
-        - name: logistics-farm
-          dockerfile: coffeeAGNTCY/coffee_agents/lungo/docker/Dockerfile.logistics-farm
-        - name: logistics-supervisor
-          dockerfile: coffeeAGNTCY/coffee_agents/lungo/docker/Dockerfile.logistics-supervisor
-        - name: logistics-helpdesk
-          dockerfile: coffeeAGNTCY/coffee_agents/lungo/docker/Dockerfile.logistics-helpdesk
-        - name: recruiter-supervisor
-          dockerfile: coffeeAGNTCY/coffee_agents/lungo/docker/Dockerfile.recruiter-supervisor
+          - name: lungo-ui
+            dockerfile: docker/Dockerfile.ui
+            extra_build_args: |
+              PROJECT_PATH=coffeeAGNTCY/coffee_agents/lungo/frontend
+              NPM_CACHE_ID=lungo
+          - name: auction-supervisor
+            dockerfile: docker/Dockerfile.python-agent
+            extra_build_args: |
+              PROJECT_PATH=coffeeAGNTCY/coffee_agents/lungo
+              UV_CACHE_ID=lungo
+              APP_NAME=lungo-auction-supervisor
+              AGENT_SCRIPT=agents/supervisors/auction/main.py
+          - name: agentic-workflows-api
+            dockerfile: docker/Dockerfile.python-agent
+            extra_build_args: |
+              PROJECT_PATH=coffeeAGNTCY/coffee_agents/lungo
+              UV_CACHE_ID=lungo
+              APP_NAME=agentic-workflows-api
+              AGENT_SCRIPT=-m api.agentic_workflows.server
+          - name: brazil-farm
+            dockerfile: docker/Dockerfile.python-agent
+            extra_build_args: |
+              PROJECT_PATH=coffeeAGNTCY/coffee_agents/lungo
+              UV_CACHE_ID=lungo
+              APP_NAME=brazil-farm
+              AGENT_SCRIPT=agents/farms/brazil/farm_server.py
+          - name: colombia-farm
+            dockerfile: docker/Dockerfile.python-agent
+            extra_build_args: |
+              PROJECT_PATH=coffeeAGNTCY/coffee_agents/lungo
+              UV_CACHE_ID=lungo
+              APP_NAME=colombia-farm
+              AGENT_SCRIPT=agents/farms/colombia/farm_server.py
+          - name: vietnam-farm
+            dockerfile: docker/Dockerfile.python-agent
+            extra_build_args: |
+              PROJECT_PATH=coffeeAGNTCY/coffee_agents/lungo
+              UV_CACHE_ID=lungo
+              APP_NAME=vietnam-farm
+              AGENT_SCRIPT=agents/farms/vietnam/farm_server.py
+          - name: weather-mcp-server
+            dockerfile: docker/Dockerfile.python-agent
+            extra_build_args: |
+              PROJECT_PATH=coffeeAGNTCY/coffee_agents/lungo
+              UV_CACHE_ID=lungo
+              APP_NAME=weather-mcp-server
+              AGENT_SCRIPT=agents/mcp_servers/weather_service.py
+          - name: payment-mcp-server
+            dockerfile: docker/Dockerfile.python-agent
+            extra_build_args: |
+              PROJECT_PATH=coffeeAGNTCY/coffee_agents/lungo
+              UV_CACHE_ID=lungo
+              APP_NAME=payment-mcp-server
+              AGENT_SCRIPT=agents/mcp_servers/payment_service.py
+          - name: logistics-shipper
+            dockerfile: docker/Dockerfile.python-agent
+            extra_build_args: |
+              PROJECT_PATH=coffeeAGNTCY/coffee_agents/lungo
+              UV_CACHE_ID=lungo
+              APP_NAME=logistics-shipper
+              AGENT_SCRIPT=agents/logistics/shipper/server.py
+          - name: logistics-accountant
+            dockerfile: docker/Dockerfile.python-agent
+            extra_build_args: |
+              PROJECT_PATH=coffeeAGNTCY/coffee_agents/lungo
+              UV_CACHE_ID=lungo
+              APP_NAME=logistics-accountant
+              AGENT_SCRIPT=agents/logistics/accountant/server.py
+          - name: logistics-farm
+            dockerfile: docker/Dockerfile.python-agent
+            extra_build_args: |
+              PROJECT_PATH=coffeeAGNTCY/coffee_agents/lungo
+              UV_CACHE_ID=lungo
+              APP_NAME=logistics-farm
+              AGENT_SCRIPT=agents/logistics/farm/server.py
+          - name: logistics-supervisor
+            dockerfile: docker/Dockerfile.python-agent
+            extra_build_args: |
+              PROJECT_PATH=coffeeAGNTCY/coffee_agents/lungo
+              UV_CACHE_ID=lungo
+              APP_NAME=logistics-supervisor
+              AGENT_SCRIPT=agents/supervisors/logistics/main.py
+          - name: logistics-helpdesk
+            dockerfile: docker/Dockerfile.python-agent
+            extra_build_args: |
+              PROJECT_PATH=coffeeAGNTCY/coffee_agents/lungo
+              UV_CACHE_ID=lungo
+              APP_NAME=logistics-helpdesk
+              AGENT_SCRIPT=agents/logistics/helpdesk/server.py
+          - name: recruiter-supervisor
+            dockerfile: docker/Dockerfile.python-agent
+            extra_build_args: |
+              PROJECT_PATH=coffeeAGNTCY/coffee_agents/lungo
+              UV_CACHE_ID=lungo
+              APP_NAME=lungo-recruiter-supervisor
+              AGENT_SCRIPT=agents/supervisors/recruiter/main.py
 
     permissions: # permissions can only be maintained or reduced (not elevated) throughout a chain of workflows
       packages: write
       contents: read
-      
+
     uses: ./.github/workflows/docker-build-reusable.yaml
     with:
       name: ${{ matrix.image.name }}
       dockerfile: ${{ matrix.image.dockerfile }}
+      target: ${{ matrix.image.target }}
+      extra_build_args: ${{ matrix.image.extra_build_args }}
       push: ${{ needs.compute-build-parameters.outputs.push == 'true' }}
       platforms: linux/amd64,linux/arm64
       image_tag: ${{ needs.compute-build-parameters.outputs.image_tag }}
@@ -281,7 +367,13 @@ jobs:
       matrix:
         image:
           - name: recruiter
-            dockerfile: coffeeAGNTCY/coffee_agents/recruiter/Dockerfile
+            dockerfile: docker/Dockerfile.python-agent
+            target: agent-with-dirctl
+            extra_build_args: |
+              PROJECT_PATH=coffeeAGNTCY/coffee_agents/recruiter
+              UV_CACHE_ID=recruiter
+              AGENT_SCRIPT=src/agent_recruiter/server/server.py
+              APP_NAME=recruiter
 
     permissions: # permissions can only be maintained or reduced (not elevated) throughout a chain of workflows
       packages: write
@@ -291,6 +383,8 @@ jobs:
     with:
       name: ${{ matrix.image.name }}
       dockerfile: ${{ matrix.image.dockerfile }}
+      target: ${{ matrix.image.target }}
+      extra_build_args: ${{ matrix.image.extra_build_args }}
       push: ${{ needs.compute-build-parameters.outputs.push == 'true' }}
       platforms: linux/amd64,linux/arm64
       image_tag: ${{ needs.compute-build-parameters.outputs.image_tag }}

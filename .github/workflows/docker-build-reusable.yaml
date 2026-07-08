@@ -29,6 +29,16 @@ on:
         description: 'The branch to use for the container image.'
         required: true
         type: string
+      extra_build_args:
+        description: 'Additional build-args to pass to docker build (newline-separated KEY=value pairs).'
+        required: false
+        type: string
+        default: ''
+      target:
+        description: 'Target build stage (multi-stage builds). Empty string builds the last stage.'
+        required: false
+        type: string
+        default: ''
 
 jobs:
   docker-build-and-push:
@@ -72,6 +82,7 @@ jobs:
         with:
           context: .
           file: ${{ inputs.dockerfile }}
+          target: ${{ inputs.target }}
           push: ${{ inputs.push }}
           platforms: ${{ inputs.platforms }}
           tags: ghcr.io/${{ github.repository_owner }}/coffee-agntcy/${{ inputs.name }}:${{ inputs.image_tag }}
@@ -88,6 +99,7 @@ jobs:
             BUILD_SOURCE=ci
             IMAGE_NAME=ghcr.io/${{ github.repository_owner }}/coffee-agntcy/${{ inputs.name }}
             IMAGE_TAG=${{ inputs.image_tag }}
+            ${{ inputs.extra_build_args }}
           labels: |
             org.opencontainers.image.version=${{ inputs.image_tag }}
             org.opencontainers.image.created=${{ steps.metadata.outputs.date }}
