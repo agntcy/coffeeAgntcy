@@ -2,7 +2,7 @@ services:
   brazil-farm-server:
     build:
       context: ../../..
-      dockerfile: coffeeAGNTCY/docker/Dockerfile.python-agent
+      dockerfile: docker/Dockerfile.python-agent
       args:
         PROJECT_PATH: coffeeAGNTCY/coffee_agents/lungo
         UV_CACHE_ID: lungo
@@ -34,7 +34,7 @@ services:
   colombia-farm-server:
     build:
       context: ../../..
-      dockerfile: coffeeAGNTCY/docker/Dockerfile.python-agent
+      dockerfile: docker/Dockerfile.python-agent
       args:
         PROJECT_PATH: coffeeAGNTCY/coffee_agents/lungo
         UV_CACHE_ID: lungo
@@ -68,7 +68,7 @@ services:
   vietnam-farm-server:
     build:
       context: ../../..
-      dockerfile: coffeeAGNTCY/docker/Dockerfile.python-agent
+      dockerfile: docker/Dockerfile.python-agent
       args:
         PROJECT_PATH: coffeeAGNTCY/coffee_agents/lungo
         UV_CACHE_ID: lungo
@@ -130,7 +130,7 @@ services:
   auction-supervisor:
     build:
       context: ../../..
-      dockerfile: coffeeAGNTCY/docker/Dockerfile.python-agent
+      dockerfile: docker/Dockerfile.python-agent
       args:
         PROJECT_PATH: coffeeAGNTCY/coffee_agents/lungo
         UV_CACHE_ID: lungo
@@ -171,7 +171,7 @@ services:
   agentic-workflows-api:
     build:
       context: ../../..
-      dockerfile: coffeeAGNTCY/docker/Dockerfile.python-agent
+      dockerfile: docker/Dockerfile.python-agent
       args:
         PROJECT_PATH: coffeeAGNTCY/coffee_agents/lungo
         UV_CACHE_ID: lungo
@@ -194,7 +194,7 @@ services:
       - frontend
     build:
       context: ../../..
-      dockerfile: coffeeAGNTCY/docker/Dockerfile.ui
+      dockerfile: docker/Dockerfile.ui
       args:
         PROJECT_PATH: coffeeAGNTCY/coffee_agents/lungo/frontend
         NPM_CACHE_ID: lungo
@@ -214,7 +214,7 @@ services:
   weather-mcp-server:
     build:
       context: ../../..
-      dockerfile: coffeeAGNTCY/docker/Dockerfile.python-agent
+      dockerfile: docker/Dockerfile.python-agent
       args:
         PROJECT_PATH: coffeeAGNTCY/coffee_agents/lungo
         UV_CACHE_ID: lungo
@@ -240,7 +240,7 @@ services:
   payment-mcp-server:
     build:
       context: ../../..
-      dockerfile: coffeeAGNTCY/docker/Dockerfile.python-agent
+      dockerfile: docker/Dockerfile.python-agent
       args:
         PROJECT_PATH: coffeeAGNTCY/coffee_agents/lungo
         UV_CACHE_ID: lungo
@@ -335,7 +335,7 @@ services:
   logistics-shipper:
     build:
       context: ../../..
-      dockerfile: coffeeAGNTCY/docker/Dockerfile.python-agent
+      dockerfile: docker/Dockerfile.python-agent
       args:
         PROJECT_PATH: coffeeAGNTCY/coffee_agents/lungo
         UV_CACHE_ID: lungo
@@ -365,7 +365,7 @@ services:
   logistics-accountant:
     build:
       context: ../../..
-      dockerfile: coffeeAGNTCY/docker/Dockerfile.python-agent
+      dockerfile: docker/Dockerfile.python-agent
       args:
         PROJECT_PATH: coffeeAGNTCY/coffee_agents/lungo
         UV_CACHE_ID: lungo
@@ -395,7 +395,7 @@ services:
   logistics-farm:
     build:
       context: ../../..
-      dockerfile: coffeeAGNTCY/docker/Dockerfile.python-agent
+      dockerfile: docker/Dockerfile.python-agent
       args:
         PROJECT_PATH: coffeeAGNTCY/coffee_agents/lungo
         UV_CACHE_ID: lungo
@@ -425,7 +425,7 @@ services:
   logistics-helpdesk:
     build:
       context: ../../..
-      dockerfile: coffeeAGNTCY/docker/Dockerfile.python-agent
+      dockerfile: docker/Dockerfile.python-agent
       args:
         PROJECT_PATH: coffeeAGNTCY/coffee_agents/lungo
         UV_CACHE_ID: lungo
@@ -455,7 +455,7 @@ services:
   logistics-supervisor:
     build:
       context: ../../..
-      dockerfile: coffeeAGNTCY/docker/Dockerfile.python-agent
+      dockerfile: docker/Dockerfile.python-agent
       args:
         PROJECT_PATH: coffeeAGNTCY/coffee_agents/lungo
         UV_CACHE_ID: lungo
@@ -609,7 +609,7 @@ services:
   recruiter:
     build:
       context: ../../..
-      dockerfile: coffeeAGNTCY/docker/Dockerfile.python-agent
+      dockerfile: docker/Dockerfile.python-agent
       target: agent-with-dirctl
       args:
         PROJECT_PATH: coffeeAGNTCY/coffee_agents/recruiter
@@ -644,7 +644,7 @@ services:
   recruiter-supervisor:
     build:
       context: ../../..
-      dockerfile: coffeeAGNTCY/docker/Dockerfile.python-agent
+      dockerfile: docker/Dockerfile.python-agent
       args:
         PROJECT_PATH: coffeeAGNTCY/coffee_agents/lungo
         UV_CACHE_ID: lungo

@@ -1,6 +1,6 @@
 # Corto Docker Build Instructions
 
-All Dockerfiles for corto images are shared common templates located in this directory (`coffeeAGNTCY/docker/`).
+All Dockerfiles for corto images are shared common templates located in this directory (`docker/`).
 Build arguments specify the project path and entrypoint for each service.
 
 ## Prerequisites
@@ -20,7 +20,7 @@ docker build \
   --build-arg UV_CACHE_ID=corto \
   --build-arg APP_NAME=corto-farm \
   --build-arg AGENT_SCRIPT=farm/farm_server.py \
-  -f coffeeAGNTCY/docker/Dockerfile.python-agent \
+  -f docker/Dockerfile.python-agent \
   -t corto-farm .
 ```
 
@@ -32,7 +32,7 @@ docker build \
   --build-arg UV_CACHE_ID=corto \
   --build-arg APP_NAME=corto-exchange \
   --build-arg AGENT_SCRIPT=exchange/main.py \
-  -f coffeeAGNTCY/docker/Dockerfile.python-agent \
+  -f docker/Dockerfile.python-agent \
   -t corto-exchange .
 ```
 
@@ -42,7 +42,7 @@ docker build \
 docker build \
   --build-arg PROJECT_PATH=coffeeAGNTCY/coffee_agents/corto/exchange/frontend \
   --build-arg NPM_CACHE_ID=corto \
-  -f coffeeAGNTCY/docker/Dockerfile.ui \
+  -f docker/Dockerfile.ui \
   -t corto-ui .
 ```
 

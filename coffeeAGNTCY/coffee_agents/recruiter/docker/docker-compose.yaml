@@ -77,7 +77,7 @@ services:
   recruiter-agent:
     build:
       context: ../../../..
-      dockerfile: coffeeAGNTCY/docker/Dockerfile.python-agent
+      dockerfile: docker/Dockerfile.python-agent
       target: agent-with-dirctl
       args:
         PROJECT_PATH: coffeeAGNTCY/coffee_agents/recruiter

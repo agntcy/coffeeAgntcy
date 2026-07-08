@@ -8,7 +8,7 @@ on:
   pull_request:
     paths:
       - "coffeeAGNTCY/coffee_agents/**"
-      - "coffeeAGNTCY/docker/**"
+      - "docker/**"
       - "!coffeeAGNTCY/coffee_agents/*/deployment/helm/**"
       - "!coffeeAGNTCY/coffee_agents/*/tests/**"
       - "!coffeeAGNTCY/coffee_agents/*/docs/**"
@@ -206,19 +206,19 @@ jobs:
       matrix:
         image:
           - name: corto-ui
-            dockerfile: coffeeAGNTCY/docker/Dockerfile.ui
+            dockerfile: docker/Dockerfile.ui
             extra_build_args: |
               PROJECT_PATH=coffeeAGNTCY/coffee_agents/corto/exchange/frontend
               NPM_CACHE_ID=corto
           - name: corto-exchange
-            dockerfile: coffeeAGNTCY/docker/Dockerfile.python-agent
+            dockerfile: docker/Dockerfile.python-agent
             extra_build_args: |
               PROJECT_PATH=coffeeAGNTCY/coffee_agents/corto
               UV_CACHE_ID=corto
               APP_NAME=corto-exchange
               AGENT_SCRIPT=exchange/main.py
           - name: corto-farm
-            dockerfile: coffeeAGNTCY/docker/Dockerfile.python-agent
+            dockerfile: docker/Dockerfile.python-agent
             extra_build_args: |
               PROJECT_PATH=coffeeAGNTCY/coffee_agents/corto
               UV_CACHE_ID=corto
@@ -248,96 +248,96 @@ jobs:
       matrix:
         image:
           - name: lungo-ui
-            dockerfile: coffeeAGNTCY/docker/Dockerfile.ui
+            dockerfile: docker/Dockerfile.ui
             extra_build_args: |
               PROJECT_PATH=coffeeAGNTCY/coffee_agents/lungo/frontend
               NPM_CACHE_ID=lungo
           - name: auction-supervisor
-            dockerfile: coffeeAGNTCY/docker/Dockerfile.python-agent
+            dockerfile: docker/Dockerfile.python-agent
             extra_build_args: |
               PROJECT_PATH=coffeeAGNTCY/coffee_agents/lungo
               UV_CACHE_ID=lungo
               APP_NAME=lungo-auction-supervisor
               AGENT_SCRIPT=agents/supervisors/auction/main.py
           - name: agentic-workflows-api
-            dockerfile: coffeeAGNTCY/docker/Dockerfile.python-agent
+            dockerfile: docker/Dockerfile.python-agent
             extra_build_args: |
               PROJECT_PATH=coffeeAGNTCY/coffee_agents/lungo
               UV_CACHE_ID=lungo
               APP_NAME=agentic-workflows-api
               AGENT_SCRIPT=-m api.agentic_workflows.server
           - name: brazil-farm
-            dockerfile: coffeeAGNTCY/docker/Dockerfile.python-agent
+            dockerfile: docker/Dockerfile.python-agent
             extra_build_args: |
               PROJECT_PATH=coffeeAGNTCY/coffee_agents/lungo
               UV_CACHE_ID=lungo
               APP_NAME=brazil-farm
               AGENT_SCRIPT=agents/farms/brazil/farm_server.py
           - name: colombia-farm
-            dockerfile: coffeeAGNTCY/docker/Dockerfile.python-agent
+            dockerfile: docker/Dockerfile.python-agent
             extra_build_args: |
               PROJECT_PATH=coffeeAGNTCY/coffee_agents/lungo
               UV_CACHE_ID=lungo
               APP_NAME=colombia-farm
               AGENT_SCRIPT=agents/farms/colombia/farm_server.py
           - name: vietnam-farm
-            dockerfile: coffeeAGNTCY/docker/Dockerfile.python-agent
+            dockerfile: docker/Dockerfile.python-agent
             extra_build_args: |
               PROJECT_PATH=coffeeAGNTCY/coffee_agents/lungo
               UV_CACHE_ID=lungo
               APP_NAME=vietnam-farm
               AGENT_SCRIPT=agents/farms/vietnam/farm_server.py
           - name: weather-mcp-server
-            dockerfile: coffeeAGNTCY/docker/Dockerfile.python-agent
+            dockerfile: docker/Dockerfile.python-agent
             extra_build_args: |
               PROJECT_PATH=coffeeAGNTCY/coffee_agents/lungo
               UV_CACHE_ID=lungo
               APP_NAME=weather-mcp-server
               AGENT_SCRIPT=agents/mcp_servers/weather_service.py
           - name: payment-mcp-server
-            dockerfile: coffeeAGNTCY/docker/Dockerfile.python-agent
+            dockerfile: docker/Dockerfile.python-agent
             extra_build_args: |
               PROJECT_PATH=coffeeAGNTCY/coffee_agents/lungo
               UV_CACHE_ID=lungo
               APP_NAME=payment-mcp-server
               AGENT_SCRIPT=agents/mcp_servers/payment_service.py
           - name: logistics-shipper
-            dockerfile: coffeeAGNTCY/docker/Dockerfile.python-agent
+            dockerfile: docker/Dockerfile.python-agent
             extra_build_args: |
               PROJECT_PATH=coffeeAGNTCY/coffee_agents/lungo
               UV_CACHE_ID=lungo
               APP_NAME=logistics-shipper
               AGENT_SCRIPT=agents/logistics/shipper/server.py
           - name: logistics-accountant
-            dockerfile: coffeeAGNTCY/docker/Dockerfile.python-agent
+            dockerfile: docker/Dockerfile.python-agent
             extra_build_args: |
               PROJECT_PATH=coffeeAGNTCY/coffee_agents/lungo
               UV_CACHE_ID=lungo
               APP_NAME=logistics-accountant
               AGENT_SCRIPT=agents/logistics/accountant/server.py
           - name: logistics-farm
-            dockerfile: coffeeAGNTCY/docker/Dockerfile.python-agent
+            dockerfile: docker/Dockerfile.python-agent
             extra_build_args: |
               PROJECT_PATH=coffeeAGNTCY/coffee_agents/lungo
               UV_CACHE_ID=lungo
               APP_NAME=logistics-farm
               AGENT_SCRIPT=agents/logistics/farm/server.py
           - name: logistics-supervisor
-            dockerfile: coffeeAGNTCY/docker/Dockerfile.python-agent
+            dockerfile: docker/Dockerfile.python-agent
             extra_build_args: |
               PROJECT_PATH=coffeeAGNTCY/coffee_agents/lungo
               UV_CACHE_ID=lungo
               APP_NAME=logistics-supervisor
               AGENT_SCRIPT=agents/supervisors/logistics/main.py
           - name: logistics-helpdesk
-            dockerfile: coffeeAGNTCY/docker/Dockerfile.python-agent
+            dockerfile: docker/Dockerfile.python-agent
             extra_build_args: |
               PROJECT_PATH=coffeeAGNTCY/coffee_agents/lungo
               UV_CACHE_ID=lungo
               APP_NAME=logistics-helpdesk
               AGENT_SCRIPT=agents/logistics/helpdesk/server.py
           - name: recruiter-supervisor
-            dockerfile: coffeeAGNTCY/docker/Dockerfile.python-agent
+            dockerfile: docker/Dockerfile.python-agent
             extra_build_args: |
               PROJECT_PATH=coffeeAGNTCY/coffee_agents/lungo
               UV_CACHE_ID=lungo
@@ -367,7 +367,7 @@ jobs:
       matrix:
         image:
           - name: recruiter
-            dockerfile: coffeeAGNTCY/docker/Dockerfile.python-agent
+            dockerfile: docker/Dockerfile.python-agent
             target: agent-with-dirctl
             extra_build_args: |
               PROJECT_PATH=coffeeAGNTCY/coffee_agents/recruiter

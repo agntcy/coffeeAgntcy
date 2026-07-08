@@ -20,7 +20,7 @@ docker build \
   --build-arg UV_CACHE_ID=recruiter \
   --build-arg AGENT_SCRIPT=src/agent_recruiter/server/server.py \
   --build-arg APP_NAME=recruiter \
-  -f coffeeAGNTCY/docker/Dockerfile.python-agent \
+  -f docker/Dockerfile.python-agent \
   -t recruiter .
 ```
 

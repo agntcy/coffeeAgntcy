@@ -2,7 +2,7 @@ services:
   farm-server:
     build:
       context: ../../..
-      dockerfile: coffeeAGNTCY/docker/Dockerfile.python-agent
+      dockerfile: docker/Dockerfile.python-agent
       args:
         PROJECT_PATH: coffeeAGNTCY/coffee_agents/corto
         UV_CACHE_ID: corto
@@ -50,7 +50,7 @@ services:
   exchange-server:
     build:
       context: ../../..
-      dockerfile: coffeeAGNTCY/docker/Dockerfile.python-agent
+      dockerfile: docker/Dockerfile.python-agent
       args:
         PROJECT_PATH: coffeeAGNTCY/coffee_agents/corto
         UV_CACHE_ID: corto
@@ -81,7 +81,7 @@ services:
   ui:
     build:
       context: ../../..
-      dockerfile: coffeeAGNTCY/docker/Dockerfile.ui
+      dockerfile: docker/Dockerfile.ui
       args:
         PROJECT_PATH: coffeeAGNTCY/coffee_agents/corto/exchange/frontend
         NPM_CACHE_ID: corto
