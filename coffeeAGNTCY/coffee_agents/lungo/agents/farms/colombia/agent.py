@@ -15,27 +15,21 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import logging
-import os
 
 from langgraph.graph import MessagesState
 from langchain_core.messages import AIMessage
 from langchain_core.prompts import PromptTemplate
 from langgraph.graph import StateGraph, END
 
-from agntcy_app_sdk.factory import AgntcyFactory
 from ioa_observe.sdk.decorators import agent, graph
 
 from agents.exceptions import AuthError
 from agents.farms.colombia.card import AGENT_CARD, AGENT_ID
-from agents.mcp_servers.utils import invoke_payment_mcp_tool, _mcp_transport, _mcp_endpoint
-from config.config import OTEL_SDK_DISABLED
+from agents.mcp_servers.utils import invoke_payment_mcp_tool
 from common.llm import get_llm
-from common.mcp_event_middleware import wrap_mcp_client
+from common.mcp_client import call_mcp_tool
 
 logger = logging.getLogger("lungo.colombia_farm_agent.agent")
-
-# Initialize a multi-protocol, multi-transport agntcy factory.
-factory = AgntcyFactory("lungo.colombia_farm", enable_tracing=not OTEL_SDK_DISABLED)
 
 # --- 1. Define Node Names as Constants ---
 class NodeStates:
@@ -110,78 +104,39 @@ class FarmAgent:
         else:
             return {"next_node": NodeStates.GENERAL_RESPONSE, "messages": state["messages"]}
 
-    async def _get_weather_forecast(self,state: GraphState) -> str:
+    async def _get_weather_forecast(self, state: GraphState) -> dict:
         """
-        This method creates an agntcy-app-sdk transport instance and MCP client to communicate with the
-        "lungo_weather_service" agent, lists available tools, and calls the "get_forecast" tool with a
-        fixed location ("colombia"). It handles both streamed and non-streamed responses, aggregates the
-        forecast content, and returns it wrapped in an AIMessage inside a dictionary under the "messages" key.
+        Calls the "get_forecast" tool on the "lungo_weather_service" MCP server for a
+        fixed location ("colombia") through the shared ``call_mcp_tool`` helper, which
+        owns the agntcy-app-sdk client contract and result normalization (including
+        streamed responses). Returns the forecast wrapped in an AIMessage under the
+        "weather_forecast" key.
 
-        If an error occurs during the MCP tool call, it logs the error and returns an error message similarly wrapped.
+        If the MCP tool call fails, it logs the error and returns an error message
+        similarly wrapped.
 
         Returns:
-            dict: A dictionary containing a list with a single AIMessage object holding the weather forecast string
-                or an error message if the call fails.
+            dict: ``weather_forecast_success`` plus a single AIMessage holding the
+                forecast string, or an error message if the call fails.
         """
-        transport_instance = factory.create_transport(
-            _mcp_transport,
-            endpoint=_mcp_endpoint,
-            shared_secret_identity=os.getenv("SLIM_SHARED_SECRET"),
-            name="default/default/mcp_client")
-
-        # view available tools
         try:
-            mcp_ctx = await factory.mcp().create_client(
+            forecast = await call_mcp_tool(
                 topic="lungo_weather_service",
-                transport=transport_instance,
-                message_timeout=45
-            )
-            mcp_ctx = wrap_mcp_client(
-                mcp_ctx,
+                tool_name="get_forecast",
+                arguments={"location": "colombia"},
                 agent_id=AGENT_CARD.name,
-                mcp_server="lungo_weather_service",
                 source=AGENT_ID,
                 workflow_name=state.get("workflow_name"),
                 instance_id=state.get("workflow_instance_id"),
+                message_timeout=45,
+                list_tools_first=True,
+                extract_text=True,
             )
-            async with mcp_ctx as client:
-                response = await client.list_tools()
-                available_tools = [
-                    {
-                        "name": tool.name,
-                        "description": tool.description,
-                        "input_schema": tool.inputSchema,
-                    }
-                    for tool in response.tools
-                ]
-                logger.info(f"Available tools: {available_tools}")
-
-                result = await client.call_tool(
-                    name="get_forecast",
-                    arguments={"location": "colombia"},
-                )
-                logger.info(f"Tool call result: {result}")
-
-                mcp_call_result = ""
-                if hasattr(result, "__aiter__"):
-                    # gather streamed chunks
-                    async for chunk in result:
-                        delta = chunk.choices[0].delta
-                        mcp_call_result += delta.content or ""
-                else:
-                    content_list = result.content
-                    if isinstance(content_list, list) and len(content_list) > 0:
-                        mcp_call_result = content_list[0].text
-                    else:
-                        mcp_call_result = "No content returned from tool."
-
-                logger.info(f"Weather forecast result: {mcp_call_result}")
-                return {"weather_forecast_success": True, "weather_forecast": [AIMessage(mcp_call_result)]}
+            logger.info(f"Weather forecast result: {forecast}")
+            return {"weather_forecast_success": True, "weather_forecast": [AIMessage(forecast)]}
         except Exception as e:
             logger.error(f"Error during MCP tool call: {e}")
-            return {"weather_forecast_success": False, "weather_forecast": [AIMessage(f"Weather Forecast MCP Server was Unavailable")]}
-        finally:
-            pass
+            return {"weather_forecast_success": False, "weather_forecast": [AIMessage("Weather Forecast MCP Server was Unavailable")]}
 
     async def _inventory_node(self, state: GraphState) -> dict:
         """
