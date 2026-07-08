@@ -183,6 +183,8 @@ const RootPage: React.FC = () => {
                     patternDocState={patternDocState}
                     pattern={selectedPattern}
                     selectedWorkflowSummary={selectedWorkflowSummary}
+                    workflowCatalogLoading={workflowCatalogLoading}
+                    workflowCatalogError={workflowCatalogError}
                     onLiveGraphConfig={setLiveGraphConfig}
                     buttonClicked={buttonClicked}
                     setButtonClicked={setButtonClicked}

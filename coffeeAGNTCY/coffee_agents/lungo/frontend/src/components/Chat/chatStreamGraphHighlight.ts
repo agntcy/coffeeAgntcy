@@ -194,19 +194,3 @@ export function deriveAnimationSequenceFromGraph(
 
   return steps
 }
-
-/**
- * Pick the animation sequence for the current mode: the live BFS-derived
- * sequence when the backend owns the graph (agentic), else the authored static
- * sequence. Keeps the button-pulse and live-config paths in lockstep.
- */
-export function selectAnimationSequence(
-  agenticMode: boolean,
-  nodes: Node[],
-  edges: Edge[],
-  staticSequence: GraphConfig["animationSequence"],
-): GraphConfig["animationSequence"] {
-  return agenticMode
-    ? deriveAnimationSequenceFromGraph(nodes, edges)
-    : staticSequence
-}

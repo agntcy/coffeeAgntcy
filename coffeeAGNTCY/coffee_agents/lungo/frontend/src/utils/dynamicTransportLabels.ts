@@ -5,10 +5,10 @@
  * -----------------------------------------------------------------------------
  * Transport-name patch for the API-driven graph.
  *
- * Mirrors `updateTransportLabels`, but targets dynamically rendered nodes/edges:
- * transport nodes by React Flow type and MCP edges by their "MCP: " label prefix
- * instead of the authored static ids that no longer exist once the backend owns
- * the topology. The transport config is immutable per deployment, so the fetch
+ * Patches transport labels on dynamically rendered nodes/edges: transport nodes
+ * by React Flow type and MCP edges by their "MCP: " label prefix instead of the
+ * authored static ids that no longer exist once the backend owns the topology.
+ * The transport config is immutable per deployment, so the fetch
  * result is cached and the state patch is idempotent (returns the same array when
  * nothing changes) to stay cheap when called after every topology apply.
  * -----------------------------------------------------------------------------
