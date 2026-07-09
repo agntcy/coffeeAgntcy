@@ -3,6 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  **/
 
+/* eslint-disable max-lines -- cohesive test suite for topologyWireToReactFlow */
+
 import { describe, expect, it } from "vitest"
 import { NODE_TYPES, EDGE_TYPES, EDGE_LABELS } from "@/utils/const"
 import { topologyWireToReactFlow } from "@/utils/topologyToReactFlow"
