@@ -5,11 +5,10 @@
 
 import { useEffect, useRef, useCallback, useState, useMemo } from "react"
 import { useNodesState, useEdgesState } from "@xyflow/react"
+import type { Node, Edge } from "@xyflow/react"
 import { PatternType, isStreamingPattern } from "@/utils/patternUtils"
-import { getGraphConfig } from "@/utils/graphConfigs"
 import { useViewportAwareFitView } from "@/hooks/useViewportAwareFitView"
 import { useModalManager } from "@/hooks/useModalManager"
-import { NODE_IDS } from "@/utils/const.ts"
 import { applyDynamicTransportLabels } from "@/utils/dynamicTransportLabels"
 import type { CustomNodeData } from "./Graph/Elements/types"
 import { useMainAreaGraphEffects } from "./useMainAreaGraphEffects"
@@ -18,12 +17,14 @@ import { useNodeTransportInterfaces } from "./useNodeTransportInterfaces"
 import type { WorkflowSummary } from "@/utils/agenticWorkflowsApi"
 import type { GraphConfig } from "@/utils/graphConfigs"
 import { graphConfigFromNodes } from "@/utils/graphConfigFromNodes"
-import { selectAnimationSequence } from "@/components/Chat/chatStreamGraphHighlight"
+import { deriveAnimationSequenceFromGraph } from "@/components/Chat/chatStreamGraphHighlight"
 import { logger } from "@/utils/logger"
 
 export interface MainAreaProps {
   pattern: PatternType
   selectedWorkflowSummary: WorkflowSummary | null
+  workflowCatalogLoading?: boolean
+  workflowCatalogError?: string | null
   buttonClicked: boolean
   setButtonClicked: (clicked: boolean) => void
   aiReplied: boolean
@@ -47,18 +48,15 @@ export function useMainArea({
   aiReplied,
   chatHeight = 0,
   isExpanded = false,
-  groupCommResponseReceived = false,
   onNodeHighlight,
   selectedAgentCid,
   onLiveGraphConfig,
 }: MainAreaProps) {
   const fitViewWithViewport = useViewportAwareFitView()
-  const isGroupCommConnected =
-    pattern !== "group_messaging" || groupCommResponseReceived
-  const config = useMemo(() => getGraphConfig(pattern), [pattern])
 
   const [nodesDraggable, setNodesDraggable] = useState(true)
   const [nodesConnectable, setNodesConnectable] = useState(true)
+  const [topologyApplied, setTopologyApplied] = useState(false)
 
   const {
     activeModal,
@@ -75,8 +73,8 @@ export function useMainArea({
     null,
   )
 
-  const [nodes, setNodes, onNodesChange] = useNodesState(config.nodes)
-  const [edges, setEdges, onEdgesChange] = useEdgesState(config.edges)
+  const [nodes, setNodes, onNodesChange] = useNodesState<Node>([])
+  const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([])
   const animationLock = useRef<boolean>(false)
   // Latest graph snapshot read at animation start so the agentic button-pulse
   // targets live ids without re-triggering the effect on every node mutation.
@@ -100,6 +98,7 @@ export function useMainArea({
     handleOpenIdentityModal,
     handleOpenOasfModal,
     onTopologyApplied: () => {
+      setTopologyApplied(true)
       setTimeout(() => {
         fitViewWithViewport()
       }, 200)
@@ -111,6 +110,10 @@ export function useMainArea({
       )
     },
   })
+
+  useEffect(() => {
+    setTopologyApplied(false)
+  }, [selectedWorkflowSummary?.name, pattern])
 
   useEffect(() => {
     if (!agenticError) return
@@ -130,15 +133,14 @@ export function useMainArea({
   useEffect(() => {
     if (pattern !== "a2a_http") return
     setNodes((prevNodes) => {
-      const recruiterId =
-        prevNodes.find((n) => {
-          const l1 = String(
-            (n.data as unknown as CustomNodeData | undefined)?.label ?? "",
-          )
-            .toLowerCase()
-            .trim()
-          return l1.includes("recruiter")
-        })?.id ?? NODE_IDS.RECRUITER
+      const recruiterId = prevNodes.find((n) => {
+        const l1 = String(
+          (n.data as unknown as CustomNodeData | undefined)?.label ?? "",
+        )
+          .toLowerCase()
+          .trim()
+        return l1.includes("recruiter")
+      })?.id
       return prevNodes.map((node) => {
         const nodeData = node.data as unknown as CustomNodeData | undefined
         const shouldBeSelected =
@@ -153,10 +155,7 @@ export function useMainArea({
 
   useMainAreaGraphEffects({
     pattern,
-    skipStaticGraphSync: agenticMode,
-    isGroupCommConnected,
     setNodes,
-    setEdges,
     handleOpenIdentityModal,
     handleOpenOasfModal,
     activeModal,
@@ -166,7 +165,6 @@ export function useMainArea({
     fitViewWithViewport,
     chatHeight,
     isExpanded,
-    config,
     animationLockRef: animationLock,
     handleCloseModals,
     setOasfModalOpen,
@@ -207,11 +205,9 @@ export function useMainArea({
         await delay(DELAY_DURATION)
       }
       const animateGraph = async (): Promise<void> => {
-        const animationSequence = selectAnimationSequence(
-          agenticMode,
+        const animationSequence = deriveAnimationSequenceFromGraph(
           nodesRef.current,
           edgesRef.current,
-          config.animationSequence,
         )
         for (const step of animationSequence) {
           await animate(step.ids, HIGHLIGHT.ON)
@@ -223,39 +219,18 @@ export function useMainArea({
       await animateGraph()
     }
     waitForAnimationAndRun()
-  }, [
-    buttonClicked,
-    setButtonClicked,
-    aiReplied,
-    pattern,
-    updateStyle,
-    config.animationSequence,
-    agenticMode,
-  ])
+  }, [buttonClicked, setButtonClicked, aiReplied, pattern, updateStyle])
 
   useEffect(() => {
     if (!onLiveGraphConfig) return
-    const title =
-      agenticMode && selectedWorkflowSummary
-        ? `${selectedWorkflowSummary.name} — ${selectedWorkflowSummary.scenario}`
-        : config.title
-    const animationSequence = selectAnimationSequence(
-      agenticMode,
-      nodes,
-      edges,
-      config.animationSequence,
-    )
+    const title = selectedWorkflowSummary
+      ? `${selectedWorkflowSummary.name} — ${selectedWorkflowSummary.scenario}`
+      : ""
+    const animationSequence = deriveAnimationSequenceFromGraph(nodes, edges)
     onLiveGraphConfig(
       graphConfigFromNodes(title, nodes, edges, animationSequence),
     )
-  }, [
-    onLiveGraphConfig,
-    agenticMode,
-    selectedWorkflowSummary,
-    config,
-    nodes,
-    edges,
-  ])
+  }, [onLiveGraphConfig, selectedWorkflowSummary, nodes, edges])
 
   const highlightNode = useCallback(
     (graphElementId: string) => {
@@ -290,5 +265,8 @@ export function useMainArea({
     oasfModalData,
     onPaneClick,
     onNodeDrag,
+    topologyApplied,
+    agenticMode,
+    agenticError,
   }
 }

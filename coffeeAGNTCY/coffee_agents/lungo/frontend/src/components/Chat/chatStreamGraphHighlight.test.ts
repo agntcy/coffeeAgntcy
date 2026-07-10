@@ -7,15 +7,9 @@ import type { Edge, Node } from "@xyflow/react"
 import { describe, expect, it } from "vitest"
 import type { GraphConfig } from "@/utils/graphConfigs"
 import {
-  A2A_HTTP_CONFIG,
-  GROUP_MESSAGING_CONFIG,
-} from "@/utils/graphConfigsData"
-import { NODE_IDS } from "@/utils/const"
-import {
   animationSequenceStepIds,
   deriveAnimationSequenceFromGraph,
   resolveStreamAuthorToNodeId,
-  selectAnimationSequence,
 } from "./chatStreamGraphHighlight"
 
 function liveNode(
@@ -30,25 +24,47 @@ function liveEdge(id: string, source: string, target: string): Edge {
   return { id, source, target }
 }
 
+const RECRUITER_DIRECTORY_CONFIG: GraphConfig = {
+  title: "A2A HTTP",
+  animationSequence: [],
+  nodes: [
+    liveNode("recruiter-agent", "customNode", {
+      label: "Agentic Recruiter",
+      directoryAgentSlug: "recruiter",
+    }),
+    liveNode("agntcy-directory", "customNode", {
+      label: "Directory",
+    }),
+  ],
+  edges: [],
+}
+
+const GROUP_SUPERVISOR_CONFIG: GraphConfig = {
+  title: "Group Messaging",
+  animationSequence: [{ ids: ["auction-agent"] }],
+  nodes: [liveNode("auction-agent", "customNode", { label: "Buyer" })],
+  edges: [],
+}
+
 describe("resolveStreamAuthorToNodeId", () => {
   it.each([
     {
       caseName: "recruiter author -> live recruiter node via slug",
       author: "recruiter_service",
-      config: A2A_HTTP_CONFIG,
-      expected: NODE_IDS.RECRUITER,
+      config: RECRUITER_DIRECTORY_CONFIG,
+      expected: "recruiter-agent",
     },
     {
       caseName: "directory author -> live directory node via slug",
       author: "directory",
-      config: A2A_HTTP_CONFIG,
-      expected: NODE_IDS.DIRECTORY,
+      config: RECRUITER_DIRECTORY_CONFIG,
+      expected: "agntcy-directory",
     },
     {
       caseName: "group supervisor -> buyer node via label fallback",
       author: "Supervisor",
-      config: GROUP_MESSAGING_CONFIG,
-      expected: NODE_IDS.AUCTION_AGENT,
+      config: GROUP_SUPERVISOR_CONFIG,
+      expected: "auction-agent",
     },
     {
       caseName: "discovered agent author via inline record name",
@@ -97,13 +113,13 @@ describe("resolveStreamAuthorToNodeId", () => {
 
 describe("animationSequenceStepIds", () => {
   it("returns ids for a valid step index", () => {
-    expect(animationSequenceStepIds(GROUP_MESSAGING_CONFIG, 0)).toEqual([
-      NODE_IDS.AUCTION_AGENT,
+    expect(animationSequenceStepIds(GROUP_SUPERVISOR_CONFIG, 0)).toEqual([
+      "auction-agent",
     ])
   })
 
   it("returns empty when step is out of range", () => {
-    expect(animationSequenceStepIds(GROUP_MESSAGING_CONFIG, 99)).toEqual([])
+    expect(animationSequenceStepIds(GROUP_SUPERVISOR_CONFIG, 99)).toEqual([])
   })
 })
 
@@ -204,34 +220,5 @@ describe("deriveAnimationSequenceFromGraph", () => {
       ["agent://brazil"],
       ["e-brazil-transport"],
     ])
-  })
-})
-
-describe("selectAnimationSequence", () => {
-  const nodes: Node[] = [
-    liveNode("agent://recruiter", "customNode", {}),
-    liveNode("agent://directory", "customNode", {}),
-  ]
-  const edges: Edge[] = [
-    liveEdge("e-recruiter-directory", "agent://recruiter", "agent://directory"),
-  ]
-  const staticSequence = [{ ids: ["static-node"] }]
-
-  it("derives from the live graph in agentic mode", () => {
-    expect(
-      selectAnimationSequence(true, nodes, edges, staticSequence).map(
-        (step) => step.ids,
-      ),
-    ).toEqual([
-      ["agent://recruiter"],
-      ["e-recruiter-directory"],
-      ["agent://directory"],
-    ])
-  })
-
-  it("uses the authored static sequence outside agentic mode", () => {
-    expect(selectAnimationSequence(false, nodes, edges, staticSequence)).toBe(
-      staticSequence,
-    )
   })
 })

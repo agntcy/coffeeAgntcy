@@ -16,7 +16,7 @@ import { useChatAreaMeasurement } from "@/hooks/useChatAreaMeasurement"
 import { useAppStreamingState } from "@/hooks/useAppStreamingState"
 import { useAppChatState } from "@/hooks/useAppChatState"
 import { useAgentAPI } from "@/hooks/useAgentAPI"
-import { getGraphConfig, type GraphConfig } from "@/utils/graphConfigs"
+import { type GraphConfig } from "@/utils/graphConfigs"
 import { PATTERNS, PatternType } from "@/utils/patternUtils"
 import {
   AGENTIC_WORKFLOWS_CATALOG_LOG_PATH,
@@ -431,8 +431,8 @@ export function useApp() {
     chat.currentUserMessage || chat.agentResponse ? chatHeight : 76
 
   const graphConfig = useMemo(
-    () => liveGraphConfig ?? getGraphConfig(selectedPattern),
-    [selectedPattern, liveGraphConfig],
+    () => liveGraphConfig ?? undefined,
+    [liveGraphConfig],
   )
 
   return {

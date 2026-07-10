@@ -92,7 +92,6 @@ export default [
     files: [
       "**/useApp.ts",
       "**/useMainArea.ts",
-      "**/graphConfigsData.tsx",
       "**/agenticTopologyIdentityUiMap.ts",
     ],
     rules: {
