@@ -3,6 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  **/
 
+/* eslint-disable max-lines -- cohesive test suite for topologyWireToReactFlow */
+
 import { describe, expect, it } from "vitest"
 import { NODE_TYPES, EDGE_TYPES, EDGE_LABELS } from "@/utils/const"
 import { topologyWireToReactFlow } from "@/utils/topologyToReactFlow"
@@ -357,8 +359,12 @@ describe("topologyWireToReactFlow", () => {
       },
       { validateUrls: false },
     )
-    const data = nodes[0]?.data as { githubLink?: string }
+    const data = nodes[0]?.data as {
+      githubLink?: string
+      directoryAgentSlug?: string
+    }
     expect(data?.githubLink).toContain("auction-supervisor-agent.json")
+    expect(data?.directoryAgentSlug).toBe("auction-supervisor-agent")
   })
 
   it("merges stable-agent map when stable_agent_id uses RootModel-shaped object", () => {
