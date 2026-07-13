@@ -38,6 +38,7 @@ from api.agentic_workflows.instance_lifecycle import (
 from api.agentic_workflows.patterns import PATTERNS
 from api.agentic_workflows.pattern_chat import stream_one_turn
 from api.agentic_workflows.use_cases import USE_CASES
+from api.agentic_workflows.workflow_capabilities import derive_workflow_capabilities
 from api.agentic_workflows.workflow_documentation import (
     load_parsed_workflow_documentation,
     workflow_name_to_documentation_slug,
@@ -232,15 +233,20 @@ def create_agentic_workflows_router() -> APIRouter:
             uc_set = set(use_cases)
             filtered = [w for w in filtered if w.use_case in uc_set]
 
-        summary_map = {
-            w.name: WorkflowSummary(
+        summary_map = {}
+        for w in filtered:
+            supports_sse, supports_streaming, chat_api_target = (
+                derive_workflow_capabilities(w)
+            )
+            summary_map[w.name] = WorkflowSummary(
                 name=w.name,
                 pattern=w.pattern,
                 use_case=w.use_case,
                 scenario=w.scenario,
+                supports_sse=supports_sse,
+                supports_streaming=supports_streaming,
+                chat_api_target=chat_api_target,
             )
-            for w in filtered
-        }
         return WorkflowSummaryMapResponse(summary_map)
 
     @router.get(
