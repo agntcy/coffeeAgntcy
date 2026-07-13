@@ -22,6 +22,8 @@ config:
   llmModel: ""
   transportServerEndpoint: ""
   defaultMessageTransport: ""
+  slimServer: ""
+  natsServer: ""
   otlpHttpEndpoint: ""
   corsAllowedOrigins: ""
   slimSharedSecret: ""
