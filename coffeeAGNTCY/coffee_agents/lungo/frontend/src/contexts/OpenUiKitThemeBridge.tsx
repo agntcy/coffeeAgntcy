@@ -15,11 +15,15 @@ import { readStoredIsDarkMode } from "@/utils/themeStorage"
 
 export function OpenUiKitThemeBridge({ children }: { children: ReactNode }) {
   const storedIsDarkMode = readStoredIsDarkMode()
+  const defaultMode =
+    storedIsDarkMode === null
+      ? ThemeMode.Light
+      : storedIsDarkMode
+        ? ThemeMode.Dark
+        : ThemeMode.Light
 
   return (
-    <OpenUiKitThemeProvider
-      defaultMode={storedIsDarkMode ? ThemeMode.Dark : ThemeMode.Light}
-    >
+    <OpenUiKitThemeProvider defaultMode={defaultMode}>
       <CompactTheme>
         <ThemeModePersistence>{children}</ThemeModePersistence>
       </CompactTheme>

@@ -6,20 +6,13 @@
  * Must render inside ThemeProvider from @open-ui-kit/core.
  */
 
-import { type ReactNode, useEffect, useLayoutEffect } from "react"
+import { type ReactNode, useEffect } from "react"
 
 import { useAppThemeMode, ThemeMode } from "@/hooks/useAppThemeMode"
-import { readStoredThemeMode, writeStoredThemeMode } from "@/utils/themeStorage"
+import { writeStoredThemeMode } from "@/utils/themeStorage"
 
 export function ThemeModePersistence({ children }: { children: ReactNode }) {
-  const { mode, setIsDarkMode } = useAppThemeMode()
-
-  useLayoutEffect(() => {
-    const storedMode = readStoredThemeMode()
-    if (storedMode !== null) {
-      setIsDarkMode(storedMode === "dark")
-    }
-  }, [setIsDarkMode])
+  const { mode } = useAppThemeMode()
 
   useEffect(() => {
     if (mode === ThemeMode.Dark) {
