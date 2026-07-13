@@ -10,7 +10,7 @@ from mcp.server.fastmcp import FastMCP
 from mcp.server.transport_security import TransportSecuritySettings
 from agntcy_app_sdk.app_sessions import AppContainer
 from agntcy_app_sdk.factory import AgntcyFactory
-from agents.mcp_servers.utils import _mcp_transport, _mcp_endpoint
+from common.mcp_client import mcp_transport, mcp_endpoint
 from config.config import OTEL_SDK_DISABLED
 
 logger = logging.getLogger("payment_service")
@@ -55,8 +55,8 @@ def list_transactions() -> dict:
 
 async def main():
   transport = factory.create_transport(
-    _mcp_transport,
-    endpoint=_mcp_endpoint,
+    mcp_transport,
+    endpoint=mcp_endpoint,
     shared_secret_identity=os.getenv("SLIM_SHARED_SECRET"),
     name="default/default/lungo_payment_service",
   )

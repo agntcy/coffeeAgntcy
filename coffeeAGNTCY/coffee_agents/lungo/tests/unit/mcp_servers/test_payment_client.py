@@ -3,13 +3,16 @@
 
 """Unit tests for agents.mcp_servers.utils.invoke_payment_mcp_tool.
 
-Guards the payment MCP client call. agntcy-app-sdk create_client is keyword-only;
-a positional protocol arg or wrong topic keyword breaks before any network activity.
+The payment helper is now a thin wrapper over the shared
+``common.mcp_client.call_mcp_tool`` primitive. These tests guard the
+payment-specific behavior: the identity-auth gate, delegation with the correct
+payment arguments, and mapping auth failures to ``AuthError``. The shared MCP
+client contract itself is covered in tests/unit/common/test_mcp_client.py.
 """
 
 from __future__ import annotations
 
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 import pytest
 from agents.exceptions import AuthError
@@ -17,43 +20,6 @@ from agents.mcp_servers import utils
 
 _AGENT_ID = "Colombia Coffee Farm"
 _SOURCE = "colombia_coffee_farm"
-
-
-class _FakeClientSession:
-    """Async context manager standing in for an MCP client session."""
-
-    def __init__(self, tool_result):
-        self._tool_result = tool_result
-        self.called_with = None
-
-    async def __aenter__(self):
-        return self
-
-    async def __aexit__(self, *exc):
-        return False
-
-    async def call_tool(self, name, arguments):
-        self.called_with = (name, arguments)
-        return self._tool_result
-
-
-def _factory_with_recording_client(captured, tool_result):
-    """Fake AgntcyFactory that records how create_client was called."""
-    session = _FakeClientSession(tool_result)
-
-    async def create_client(*, topic=None, transport=None, **kwargs):
-        captured["topic"] = topic
-        captured["transport"] = transport
-        captured["extra_kwargs"] = kwargs
-        return session
-
-    mcp_accessor = MagicMock()
-    mcp_accessor.create_client = create_client
-
-    factory = MagicMock()
-    factory.create_transport.return_value = "transport-sentinel"
-    factory.mcp.return_value = mcp_accessor
-    return factory, session
 
 
 @pytest.fixture
@@ -64,7 +30,7 @@ def identity_auth_on(monkeypatch):
 async def test_returns_empty_when_identity_auth_disabled(monkeypatch):
     monkeypatch.delenv("IDENTITY_AUTH_ENABLED", raising=False)
 
-    with patch.object(utils, "AgntcyFactory") as factory_cls:
+    with patch.object(utils, "call_mcp_tool") as call_mcp_tool:
         result = await utils.invoke_payment_mcp_tool(
             "create_payment",
             agent_id=_AGENT_ID,
@@ -72,46 +38,70 @@ async def test_returns_empty_when_identity_auth_disabled(monkeypatch):
         )
 
     assert result == {}
-    factory_cls.assert_not_called()
+    call_mcp_tool.assert_not_called()
 
 
-async def test_create_client_uses_keyword_topic(identity_auth_on):
+async def test_delegates_to_call_mcp_tool_with_payment_args(identity_auth_on):
     captured = {}
     expected = {"ok": True, "status": "payment created"}
-    factory, session = _factory_with_recording_client(captured, expected)
 
-    with (
-        patch.object(utils, "AgntcyFactory", return_value=factory),
-        patch.object(utils, "wrap_mcp_client", side_effect=lambda client, **_: client),
-    ):
+    async def fake_call_mcp_tool(**kwargs):
+        captured.update(kwargs)
+        return expected
+
+    with patch.object(utils, "call_mcp_tool", side_effect=fake_call_mcp_tool):
         result = await utils.invoke_payment_mcp_tool(
             "create_payment",
             agent_id=_AGENT_ID,
             source=_SOURCE,
+            workflow_name="Test Workflow Alpha",
+            instance_id="instance://00000000-0000-4000-8000-000000000001",
         )
 
-    assert captured["topic"] == "lungo_payment_service"
-    assert captured["transport"] == "transport-sentinel"
-    assert captured["extra_kwargs"] == {}
-    assert session.called_with == ("create_payment", {})
     assert result == expected
+    assert captured["topic"] == "lungo_payment_service"
+    assert captured["tool_name"] == "create_payment"
+    assert captured["agent_id"] == _AGENT_ID
+    assert captured["source"] == _SOURCE
+    assert captured["workflow_name"] == "Test Workflow Alpha"
+    assert captured["instance_id"] == "instance://00000000-0000-4000-8000-000000000001"
+    # Payment-specific transport config preserved through consolidation.
+    assert captured["use_shared_secret"] is False
+    assert captured["transport_name"] == "default/default/fast_mcp_client"
 
 
-async def test_authentication_failure_is_wrapped_as_auth_error(identity_auth_on):
-    factory, session = _factory_with_recording_client({}, {})
-
-    async def unauthorized(name, arguments):
+@pytest.mark.parametrize(
+    "tool_name, expected_fragment",
+    [
+        ("create_payment", "creating a payment"),
+        ("list_transactions", "listing transactions"),
+    ],
+)
+async def test_authentication_failure_is_wrapped_as_auth_error(
+    identity_auth_on, tool_name, expected_fragment
+):
+    async def unauthorized(**kwargs):
         raise RuntimeError("Authentication failed for the payment service")
 
-    session.call_tool = unauthorized
-
-    with (
-        patch.object(utils, "AgntcyFactory", return_value=factory),
-        patch.object(utils, "wrap_mcp_client", side_effect=lambda client, **_: client),
-    ):
-        with pytest.raises(AuthError):
+    with patch.object(utils, "call_mcp_tool", side_effect=unauthorized):
+        with pytest.raises(AuthError) as exc_info:
             await utils.invoke_payment_mcp_tool(
-                "list_transactions",
+                tool_name,
+                agent_id=_AGENT_ID,
+                source=_SOURCE,
+            )
+
+    assert expected_fragment in str(exc_info.value)
+
+
+async def test_non_auth_error_propagates_unchanged(identity_auth_on):
+    async def boom(**kwargs):
+        raise RuntimeError("transport exploded")
+
+    with patch.object(utils, "call_mcp_tool", side_effect=boom):
+        with pytest.raises(RuntimeError, match="transport exploded"):
+            await utils.invoke_payment_mcp_tool(
+                "create_payment",
                 agent_id=_AGENT_ID,
                 source=_SOURCE,
             )
