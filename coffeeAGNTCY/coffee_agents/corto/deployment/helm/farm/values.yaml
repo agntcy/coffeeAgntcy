@@ -22,6 +22,8 @@ config:
   llmModel: ""
   transportServerEndpoint: ""
   defaultMessageTransport: ""
+  slimServer: ""
+  natsServer: ""
   otlpHttpEndpoint: ""
   slimSharedSecret: ""
 #  llmStreaming: False
