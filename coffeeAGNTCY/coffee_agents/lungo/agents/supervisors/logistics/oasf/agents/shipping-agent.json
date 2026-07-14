@@ -1,4 +1,9 @@
 {
+  "annotations": {
+    "a2a.supports_authenticated_extended_card": "false",
+    "lungo.hasBadgeOverride": "false",
+    "lungo.hasPolicyOverride": "false"
+  },
   "authors": [
     "agntcy/coffee-agntcy-maintainers"
   ],

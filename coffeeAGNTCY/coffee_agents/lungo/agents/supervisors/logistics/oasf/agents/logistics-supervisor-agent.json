@@ -1,7 +1,9 @@
 {
   "version": "1.0.0",
   "annotations": {
-    "a2a.supports_authenticated_extended_card": "false"
+    "a2a.supports_authenticated_extended_card": "false",
+    "lungo.hasBadgeOverride": "false",
+    "lungo.hasPolicyOverride": "false"
   },
   "description": "An AI agent that supervises and tracks coffee logistics and shipments.",
   "domains": [

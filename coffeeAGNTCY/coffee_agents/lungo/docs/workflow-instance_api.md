@@ -154,6 +154,8 @@ GET /agentic-workflows/?patterns=Supervisor&use_cases=Coffee%20Agntcy
 
 Each value is a `WorkflowSummary`: `name`, `pattern`, `use_case`, and `scenario` (a brief extra qualifier for the use-case), plus UI capability fields `supports_sse`, `supports_streaming`, and `chat_api_target` (`exchange`, `logistics`, or `discovery`; `null` when the workflow is not runnable in the Lungo UI). The map key always equals `WorkflowSummary.name`.
 
+**Source of truth:** runnable workflows declare `supports_sse`, `supports_streaming`, and `chat_api_target` in [`starting_workflows.json`](../api/agentic_workflows/starting_workflows.json). The list endpoint reads those fields from catalog metadata; it does not infer capabilities from workflow name or topology shape.
+
 ### `GET /agentic-workflows/{workflow_name}/documentation/` — workflow docs
 
 Returns the reference markdown for a catalog workflow, both as a single blob and split into sections at `##` headings (for TOC / anchored rendering). Backed by files under [`../api/agentic_workflows/docs/workflows/`](../api/agentic_workflows/docs/workflows).
@@ -201,6 +203,33 @@ A **topology** (`event_v1.json#/$defs/topology`) is an object with `nodes` and `
 **Node** (`#/$defs/regular_node`, required for a full node): `id` (`node://…`), `operation` (`create` | `read` | `update` | `delete`), `type` (e.g. `customNode`, `transportNode`, `group`), `label`, `size` (`{ width, height }`, relative layout sizing), and `layer_index`. `additionalProperties` is allowed (the starting catalog, for example, carries an extra `position: { x, y }`).
 
 An **agent node** (`#/$defs/agent_node`) additionally carries `agent_record_uri` (required) and `stable_agent_id` (`agent://…`). Nodes without agent extension fields are plain regular nodes; the schema keeps the two mutually exclusive via `anyOf`/`not`.
+
+#### Topology wire enrichment (GET workflow / instance only)
+
+`GET /agentic-workflows/{workflow_name}/` and `GET …/instances/{workflow_instance_id}/` merge optional UI fields onto topology nodes before returning JSON. Enrichment does **not** apply to the catalog list endpoint or to SSE event payloads.
+
+**Agent nodes** (from OASF `lungo.*` annotations on `agent_record_uri` targets, cached at catalog load):
+
+| Wire field | OASF annotation |
+|------------|-----------------|
+| `agent_directory_cid` | `lungo.agentDirectoryCid` |
+| `identity_app_slug` | `lungo.identityAppSlug` |
+| `has_badge_override` | `lungo.hasBadgeOverride` (`"true"` / `"false"`) |
+| `has_policy_override` | `lungo.hasPolicyOverride` |
+| `verification_status_override` | `lungo.verificationStatusOverride` |
+
+**Transport nodes** (`type: transportNode`) when catalog `chat_api_target` is `exchange` or `logistics`:
+
+| Wire field | Example | Notes |
+|------------|---------|-------|
+| `message_transport` | `"SLIM"` | Deployment message transport (`DEFAULT_MESSAGE_TRANSPORT` for exchange; `"SLIM"` for logistics) |
+| `label` | `"Transport: SLIM"` | Replaces the generic catalog `"Transport"` label |
+
+When `chat_api_target` is `discovery` or absent, transport nodes are returned unchanged.
+
+**GitHub URLs are not on the wire.** Clients derive repository links from `message_transport`, `supports_streaming`, and `chat_api_target` (frontend `urls.ts`; see PR E).
+
+Non-`topology_only` workflow GET also enriches each `instances.*.topology` projection the same way as `starting_topology`.
 
 **Edge** (`#/$defs/edge`, required for a full edge): `id` (`edge://…`), `operation`, `type`, `source` (`node://…`), `target` (`node://…`), `bidirectional` (boolean), and `weight` (number). `additionalProperties` is allowed.
 

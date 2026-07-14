@@ -5,18 +5,15 @@
 
 from __future__ import annotations
 
-from pathlib import Path
 from typing import NamedTuple
 
 import pytest
 from api.agentic_workflows.workflow_capabilities import derive_workflow_capabilities
 from api.agentic_workflows.workflows import _load_and_validate_starting_workflows_from_file
 from schema.types import Workflow
+from tests.unit.agentic_workflows.catalog_test_helpers import STARTING_WORKFLOWS_JSON
 
-_LUNGO_ROOT = Path(__file__).resolve().parents[4]
-_STARTING_WORKFLOWS_JSON = (
-    _LUNGO_ROOT / "api" / "agentic_workflows" / "starting_workflows.json"
-)
+_STARTING_WORKFLOWS_JSON = STARTING_WORKFLOWS_JSON
 
 _RUNNABLE_CATALOG_EXPECTATIONS: tuple[tuple[str, bool, bool, str | None], ...] = (
     ("Publish Subscribe", False, False, "exchange"),
@@ -46,6 +43,9 @@ _CAP_CASES: tuple[CapCase, ...] = (
             "pattern": "Supervisor",
             "use_case": "Purchasing",
             "scenario": "x",
+            "supports_sse": False,
+            "supports_streaming": False,
+            "chat_api_target": "exchange",
             "starting_topology": {"nodes": [], "edges": []},
             "instances": {},
         },
@@ -60,6 +60,9 @@ _CAP_CASES: tuple[CapCase, ...] = (
             "pattern": "Supervisor",
             "use_case": "Purchasing",
             "scenario": "x",
+            "supports_sse": False,
+            "supports_streaming": True,
+            "chat_api_target": "exchange",
             "starting_topology": {"nodes": [], "edges": []},
             "instances": {},
         },
@@ -74,6 +77,9 @@ _CAP_CASES: tuple[CapCase, ...] = (
             "pattern": "Supervisor",
             "use_case": "Order Fulfillment",
             "scenario": "x",
+            "supports_sse": True,
+            "supports_streaming": False,
+            "chat_api_target": "logistics",
             "starting_topology": {
                 "nodes": [
                     {
@@ -100,6 +106,9 @@ _CAP_CASES: tuple[CapCase, ...] = (
             "pattern": "Supervisor",
             "use_case": "Discovery",
             "scenario": "x",
+            "supports_sse": False,
+            "supports_streaming": True,
+            "chat_api_target": "discovery",
             "starting_topology": {"nodes": [], "edges": []},
             "instances": {},
         },

@@ -38,6 +38,11 @@ from api.agentic_workflows.instance_lifecycle import (
 from api.agentic_workflows.patterns import PATTERNS
 from api.agentic_workflows.pattern_chat import stream_one_turn
 from api.agentic_workflows.use_cases import USE_CASES
+from api.agentic_workflows.topology_enrichment import (
+    enrich_workflow_instance_topology,
+    enrich_workflow_topology,
+)
+from api.agentic_workflows.catalog_types import chat_api_target_from_workflow
 from api.agentic_workflows.workflow_capabilities import derive_workflow_capabilities
 from api.agentic_workflows.workflow_documentation import (
     load_parsed_workflow_documentation,
@@ -267,9 +272,9 @@ def create_agentic_workflows_router() -> APIRouter:
             )
 
         if topology_only:
-            return wf.model_copy(update={"instances": {}})
+            return enrich_workflow_topology(wf.model_copy(update={"instances": {}}))
 
-        return wf
+        return enrich_workflow_topology(wf)
 
     @router.get(
         "/agentic-workflows/{workflow_name}/documentation/",
@@ -426,7 +431,9 @@ def create_agentic_workflows_router() -> APIRouter:
                 status_code=404,
                 detail="Workflow instance not found",
             )
-        return inst
+        catalog_wf = get_workflows().get(workflow_name)
+        target = chat_api_target_from_workflow(catalog_wf) if catalog_wf else None
+        return enrich_workflow_instance_topology(inst, chat_api_target=target)
 
     @router.delete(
         "/agentic-workflows/{workflow_name}/instances/{workflow_instance_id}/",

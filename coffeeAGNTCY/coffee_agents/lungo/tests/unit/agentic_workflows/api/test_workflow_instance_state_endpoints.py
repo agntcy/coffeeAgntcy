@@ -24,6 +24,7 @@ from common.workflow_instance_store import WorkflowInstanceStateStore
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 from schema.types import Data, Event, Workflow, instance_id_from_uuid
+from tests.unit.agentic_workflows.catalog_test_helpers import load_catalog_with_transport_cache
 
 _PATCH_GET_WORKFLOWS = "api.agentic_workflows.router.get_workflows"
 
@@ -428,3 +429,43 @@ def test_post_instantiate_wrong_api_key_returns_401(
         with TestClient(app_with_store, headers=bad) as c:
             r = c.post("/agentic-workflows/InstTestWf/")
     assert r.status_code == 401
+
+
+@pytest.fixture()
+def catalog_store_client(workflow_api_headers: dict[str, str]) -> TestClient:
+    catalog = load_catalog_with_transport_cache()
+    app = FastAPI(openapi_url=None, docs_url=None, redoc_url=None)
+    store = WorkflowInstanceStateStore()
+    setattr(app.state, WORKFLOW_INSTANCE_STORE_ATTR, store)
+    app.include_router(create_agentic_workflows_router())
+    with patch(_PATCH_GET_WORKFLOWS, return_value=catalog):
+        with TestClient(app, headers=workflow_api_headers) as test_client:
+            try:
+                yield test_client
+            finally:
+                store.close()
+
+
+def test_get_instance_enriches_group_messaging_transport_node(
+    catalog_store_client: TestClient,
+) -> None:
+    wf_name = "Group Messaging"
+    post = catalog_store_client.post(f"/agentic-workflows/{wf_name}/")
+    assert post.status_code == 200, post.text
+    path_uuid = UUID(
+        post.json()["workflow_instance_id"].removeprefix("instance://")
+    )
+
+    got = catalog_store_client.get(
+        f"/agentic-workflows/{wf_name}/instances/{path_uuid}/"
+    )
+    assert got.status_code == 200
+    transport_nodes = [
+        node
+        for node in got.json()["topology"]["nodes"]
+        if node.get("type") == "transportNode"
+    ]
+    assert len(transport_nodes) == 1
+    node = transport_nodes[0]
+    assert node["message_transport"] == "SLIM"
+    assert node["label"] == "Transport: SLIM"

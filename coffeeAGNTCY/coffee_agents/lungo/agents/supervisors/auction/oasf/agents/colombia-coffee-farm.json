@@ -1,4 +1,9 @@
 {
+  "annotations": {
+    "a2a.supports_authenticated_extended_card": "false",
+    "lungo.agentDirectoryCid": "/baeareiaqub6mci5mnt3iqagxfodfmjym36nshdmjmnzofcdilp7374rwlm",
+    "lungo.identityAppSlug": "colombia-coffee-farm"
+  },
   "authors": [
     "agntcy/coffee-agntcy-maintainers"
   ],
