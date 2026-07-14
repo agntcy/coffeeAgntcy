@@ -135,18 +135,24 @@ GET /agentic-workflows/?patterns=Supervisor&use_cases=Coffee%20Agntcy
     "name": "Publish Subscribe",
     "pattern": "Supervisor",
     "use_case": "Coffee Agntcy",
-    "scenario": "Purchasing"
+    "scenario": "Purchasing",
+    "supports_sse": false,
+    "supports_streaming": false,
+    "chat_api_target": "exchange"
   },
   "Publish Subscribe Streaming": {
     "name": "Publish Subscribe Streaming",
     "pattern": "Supervisor",
     "use_case": "Coffee Agntcy",
-    "scenario": "Purchasing"
+    "scenario": "Purchasing",
+    "supports_sse": false,
+    "supports_streaming": true,
+    "chat_api_target": "exchange"
   }
 }
 ```
 
-Each value is a `WorkflowSummary`: `name`, `pattern`, `use_case`, and `scenario` (a brief extra qualifier for the use-case). The map key always equals `WorkflowSummary.name`.
+Each value is a `WorkflowSummary`: `name`, `pattern`, `use_case`, and `scenario` (a brief extra qualifier for the use-case), plus UI capability fields `supports_sse`, `supports_streaming`, and `chat_api_target` (`exchange`, `logistics`, or `discovery`; `null` when the workflow is not runnable in the Lungo UI). The map key always equals `WorkflowSummary.name`.
 
 ### `GET /agentic-workflows/{workflow_name}/documentation/` — workflow docs
 
