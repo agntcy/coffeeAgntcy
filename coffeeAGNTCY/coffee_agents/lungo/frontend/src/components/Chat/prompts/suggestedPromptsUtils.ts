@@ -5,9 +5,8 @@
 
 import type { ReactNode } from "react"
 import type { MenuProps } from "@mui/material/Menu"
-import type { ButtonProps } from "@mui/material/Button"
-import type { TooltipProps } from "@open-ui-kit/core"
-import type { DropdownOption } from "@open-ui-kit/core"
+import type { ButtonProps, TooltipProps } from "@open-ui-kit/core"
+import type { DropdownOption } from "@/types/dropdownOption"
 import type { GraphCanvasLayoutMetrics } from "@/contexts/graphCanvasLayout"
 import {
   getDiscoveryAppApiUrl,

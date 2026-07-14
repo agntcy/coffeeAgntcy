@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  *
  * Shared `sx` fragments for graph-related panels (JSON blocks, loading overlays).
- * Positioned portal/backdrop styles were removed in favor of OUK `Modal` / `IconButtonDropdown`.
+ * Positioned portal/backdrop styles were removed in favor of OUK `Dialog` / `IconButtonDropdown`.
  */
 
 import { alpha } from "@mui/material/styles"

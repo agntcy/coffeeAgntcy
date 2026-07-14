@@ -2,7 +2,7 @@
  * Copyright AGNTCY Contributors (https://github.com/agntcy)
  * SPDX-License-Identifier: Apache-2.0
  *
- * Shared modal contract: graph identity (dropdown) + badge/policy (OUK `Modal`).
+ * Shared modal contract: graph identity (dropdown) + badge/policy (OUK `Dialog`).
  * Used by: useModalManager (state + actions), ModalContainer, and graph UI components.
  **/
 

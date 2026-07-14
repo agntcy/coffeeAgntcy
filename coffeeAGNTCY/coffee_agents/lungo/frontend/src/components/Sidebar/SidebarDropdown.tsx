@@ -39,7 +39,7 @@ const SidebarDropdown: React.FC<SidebarDropdownProps> = ({
   const panelId = React.useId()
   const toggleLabel = `${isExpanded ? "Collapse" : "Expand"} ${title}`
 
-  const handleToggle = (event: React.MouseEvent<HTMLButtonElement>) => {
+  const handleToggle = (event: React.MouseEvent) => {
     event.stopPropagation()
     onToggle()
   }
@@ -58,7 +58,6 @@ const SidebarDropdown: React.FC<SidebarDropdownProps> = ({
     >
       <ListItemButton
         component="button"
-        type="button"
         id={toggleId}
         onClick={handleToggle}
         aria-expanded={isExpanded}

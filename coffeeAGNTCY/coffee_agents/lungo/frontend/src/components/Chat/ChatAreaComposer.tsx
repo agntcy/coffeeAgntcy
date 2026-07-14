@@ -5,8 +5,7 @@
 
 import React from "react"
 import SendIcon from "@mui/icons-material/Send"
-import { TextField } from "@mui/material"
-import { Box, Button, Stack } from "@open-ui-kit/core"
+import { Box, Button, InputField, Stack } from "@open-ui-kit/core"
 
 import { iconGlyphFillSx } from "@/utils/iconGlyphFill"
 
@@ -15,8 +14,8 @@ import {
   SuggestedPromptsDropdown,
 } from "./prompts"
 
-/** Matches OUK `Button` `size="medium"` in the compact shell (see ChatHeader icon buttons). */
-const COMPOSER_CONTROL_HEIGHT_PX = 32
+/** Matches OUK `Button` `size="medium"` with compact `body1` typography (7 + 20 + 7 = 34px). */
+const COMPOSER_CONTROL_HEIGHT_PX = 34
 
 const promptsDropdownSx = {
   flexShrink: 0,
@@ -72,10 +71,9 @@ const ChatAreaComposer: React.FC<ChatAreaComposerProps> = ({
         </Box>
       ) : null}
 
-      <TextField
+      <InputField
         fullWidth
-        margin="none"
-        variant="standard"
+        size="small"
         placeholder="Type a prompt to interact with the agents"
         value={content}
         onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
@@ -84,49 +82,22 @@ const ChatAreaComposer: React.FC<ChatAreaComposerProps> = ({
         onKeyDown={onKeyDown}
         disabled={loading}
         slotProps={{
-          input: {
-            disableUnderline: true,
-          },
           htmlInput: {
             "aria-label": "Message to agents",
-            sx: {
-              minWidth: 0,
-            },
           },
         }}
         sx={(theme) => ({
-          flex: 1,
-          minWidth: 0,
-          maxWidth: "100%",
-          my: 0,
-          "& .MuiInputBase-root": {
-            width: "100%",
-            minWidth: 0,
+          "& .MuiInput-root.MuiInputBase-sizeSmall": {
             marginTop: 0,
             height: COMPOSER_CONTROL_HEIGHT_PX,
             minHeight: COMPOSER_CONTROL_HEIGHT_PX,
-            boxSizing: "border-box",
-            alignItems: "center",
-            border: "2px solid transparent",
-            transition: theme.transitions.create(["border-color"], {
-              duration: theme.transitions.duration.shortest,
-            }),
-            "&:has(.MuiInputBase-input:not(:placeholder-shown))": {
+            borderColor: "transparent",
+
+            "&:has(.MuiInput-input:not(:placeholder-shown))": {
               borderColor: theme.palette.vars.interactiveTertiaryDefault,
             },
-            "&:has(.MuiInputBase-input:not(:placeholder-shown)):hover": {
+            "&:has(.MuiInput-input:not(:placeholder-shown)):hover": {
               borderColor: theme.palette.vars.interactiveTertiaryHover,
-            },
-          },
-          "& .MuiInputBase-input": {
-            ...theme.typography.body1,
-            width: "100%",
-            minWidth: 0,
-            boxSizing: "border-box",
-            height: theme.typography.body1.lineHeight,
-            padding: 0,
-            "&::placeholder": {
-              opacity: 0.6,
             },
           },
         })}

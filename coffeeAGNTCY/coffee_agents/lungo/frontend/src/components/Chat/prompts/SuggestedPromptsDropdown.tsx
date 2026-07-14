@@ -9,14 +9,8 @@ import React, { useCallback, useMemo, useState } from "react"
 import KeyboardArrowDown from "@mui/icons-material/KeyboardArrowDown"
 import type { SxProps, Theme } from "@mui/material/styles"
 import type { SystemStyleObject } from "@mui/system"
-import {
-  Box,
-  Button,
-  Menu,
-  MenuItem,
-  Tooltip,
-  type DropdownOption,
-} from "@open-ui-kit/core"
+import { Box, Button, Menu, MenuItem, Tooltip } from "@open-ui-kit/core"
+import type { DropdownOption } from "@/types/dropdownOption"
 import { useGraphCanvasLayout } from "@/contexts/graphCanvasLayout"
 import {
   computePromptsMenuMaxWidth,

@@ -4,12 +4,12 @@
  **/
 
 import React from "react"
-import { useThemeMode } from "@open-ui-kit/core"
+import { useAppThemeMode } from "@/hooks/useAppThemeMode"
 import DarkMode from "@mui/icons-material/DarkMode"
 import LightMode from "@mui/icons-material/LightMode"
 
 const ThemeToggleIcon: React.FC = () => {
-  const { isDarkMode } = useThemeMode()
+  const { isDarkMode } = useAppThemeMode()
 
   // Moon when app is light (switch to dark); sun when app is dark (switch to light).
   return isDarkMode ? <LightMode /> : <DarkMode />
