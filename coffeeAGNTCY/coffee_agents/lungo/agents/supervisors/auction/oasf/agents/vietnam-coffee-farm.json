@@ -2,8 +2,8 @@
   "annotations": {
     "a2a.supports_authenticated_extended_card": "false",
     "lungo.agentDirectoryCid": "/baeareiheas5bdad2wuurvpvqonuq4ry2u6vdzw4hikrnzssebchjojjr5m",
-    "lungo.identityAppSlug": "vietnam-coffee-farm",
     "lungo.hasPolicyOverride": "false"
+    "lungo.identityAppSlug": "vietnam-coffee-farm",
   },
   "authors": [
     "agntcy/coffee-agntcy-maintainers"
