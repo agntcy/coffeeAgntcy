@@ -12,3 +12,7 @@ export {
   type HttpErrorOptions,
   type ParseHttpErrorOptions,
 } from "@/api/http"
+export {
+  reportRequestError,
+  type ReportRequestErrorContext,
+} from "./reportRequestError"
