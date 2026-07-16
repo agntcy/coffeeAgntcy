@@ -6,6 +6,7 @@
 import React from "react"
 import { BrowserRouter } from "react-router-dom"
 import { OpenUiKitThemeBridge } from "@/contexts/OpenUiKitThemeBridge"
+import { ErrorNotifications } from "@/errors/ui"
 
 interface AppProvidersProps {
   children: React.ReactNode
@@ -14,7 +15,10 @@ interface AppProvidersProps {
 const AppProviders: React.FC<AppProvidersProps> = ({ children }) => {
   return (
     <BrowserRouter>
-      <OpenUiKitThemeBridge>{children}</OpenUiKitThemeBridge>
+      <OpenUiKitThemeBridge>
+        <ErrorNotifications />
+        {children}
+      </OpenUiKitThemeBridge>
     </BrowserRouter>
   )
 }

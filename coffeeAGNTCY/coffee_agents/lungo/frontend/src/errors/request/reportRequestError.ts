@@ -4,6 +4,7 @@
  **/
 
 import { HttpError, isHttpError, parseHttpError } from "@/api/http"
+import { reportUiError } from "@/errors/ui/reportUiError"
 import { env } from "@/utils/env"
 import { logger, unsafeLogger } from "@/utils/logger"
 
@@ -56,6 +57,14 @@ export function reportRequestError(
   const log = env.dev ? logger : unsafeLogger
 
   log.error(`API Error - ${endpoint}`, buildLogPayload(httpError, context))
+
+  if (context?.userMessage) {
+    reportUiError({
+      title: "Request failed",
+      message: context.userMessage,
+      source: endpoint,
+    })
+  }
 
   return httpError
 }

@@ -5,6 +5,7 @@
 
 import { beforeEach, describe, expect, it, vi } from "vitest"
 import { HttpError } from "@/api/http"
+import { useErrorNotificationStore } from "@/errors/ui/errorNotificationStore"
 
 const mockLoggerError = vi.fn()
 const mockUnsafeLoggerError = vi.fn()
@@ -37,6 +38,7 @@ describe("reportRequestError", () => {
     mockLoggerError.mockReset()
     mockUnsafeLoggerError.mockReset()
     envState.dev = true
+    useErrorNotificationStore.setState({ notifications: [] })
   })
 
   it("returns an existing HttpError unchanged", () => {
@@ -101,6 +103,20 @@ describe("reportRequestError", () => {
         status: 400,
       }),
     )
+  })
+
+  it("pushes a user-visible notification when userMessage is provided", () => {
+    reportRequestError("/api/catalog", new HttpError("nope", { status: 503 }), {
+      userMessage: "Menu is unavailable",
+    })
+
+    expect(useErrorNotificationStore.getState().notifications).toEqual([
+      expect.objectContaining({
+        title: "Request failed",
+        message: "Menu is unavailable",
+        source: "/api/catalog",
+      }),
+    ])
   })
 
   it("fills endpoint on HttpError when missing", () => {
