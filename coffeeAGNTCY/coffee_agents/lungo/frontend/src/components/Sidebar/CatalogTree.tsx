@@ -5,10 +5,8 @@
 
 import React, { useCallback } from "react"
 import { Box, List, Typography } from "@open-ui-kit/core"
-import {
-  patternTypeFromSummary,
-  type WorkflowSummary,
-} from "@/utils/agenticWorkflowsApi"
+import { type WorkflowSummary } from "@/utils/agenticWorkflowsApi"
+import { patternTypeFromSummary } from "@/utils/workflow"
 import { openWorkflowDocumentationInNewTab } from "@/utils/workflowDocumentationGithub"
 import SidebarDropdown from "./SidebarDropdown"
 import SidebarItem from "./SidebarItem"

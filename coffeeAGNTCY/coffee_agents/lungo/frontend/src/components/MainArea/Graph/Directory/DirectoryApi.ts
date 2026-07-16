@@ -5,7 +5,10 @@
 
 import axios from "axios"
 import { joinBaseUrl, LUNGO_FRONTEND_URLS } from "@/urls"
-import { getApiUrlForChatTarget, type ChatApiTarget } from "@/utils/patternUtils"
+import {
+  getApiUrlForChatTarget,
+  type ChatApiTarget,
+} from "@/utils/patternUtils"
 import { IdentityServiceError } from "@/components/MainArea/Graph/Identity/IdentityApi"
 import type { CustomNodeData } from "../Elements/types"
 import { getOasfSlugFromNodeData } from "@/utils/agenticTopologyIdentityUiMap"

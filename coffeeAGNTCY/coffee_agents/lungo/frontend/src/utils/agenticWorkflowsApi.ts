@@ -18,11 +18,8 @@ import {
   getAgenticWorkflowsApiUrl,
   LUNGO_FRONTEND_URLS,
 } from "@/urls"
-import {
-  PATTERNS,
-  type ChatApiTarget,
-  type PatternType,
-} from "@/utils/patternUtils"
+import { type ChatApiTarget, type PatternType } from "@/utils/patternUtils"
+import { patternTypeFromSummary } from "@/utils/workflowCapabilities"
 
 export type { ChatApiTarget }
 
@@ -60,18 +57,6 @@ const sleep = (ms: number, signal: AbortSignal): Promise<void> =>
     }
     signal.addEventListener("abort", onAbort, { once: true })
   })
-
-/** Derive the static-graph `PatternType` from a row's capability fields. */
-export const patternTypeFromSummary = (
-  summary: WorkflowSummary,
-): PatternType | null => {
-  if (summary.chat_api_target === null) return null
-  if (summary.supports_sse) return PATTERNS.GROUP_MESSAGING
-  if (summary.chat_api_target === "discovery") return PATTERNS.A2A_HTTP
-  if (summary.supports_streaming) return PATTERNS.PUBLISH_SUBSCRIBE_STREAMING
-  if (summary.chat_api_target === "exchange") return PATTERNS.PUBLISH_SUBSCRIBE
-  return null
-}
 
 const isNonEmptyString = (value: unknown): value is string =>
   typeof value === "string" && value.length > 0

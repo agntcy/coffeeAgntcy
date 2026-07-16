@@ -9,10 +9,7 @@ import { Box, Button, InputField, Stack } from "@open-ui-kit/core"
 
 import { iconGlyphFillSx } from "@/utils/iconGlyphFill"
 
-import {
-  resolveSuggestedPromptsSource,
-  SuggestedPromptsDropdown,
-} from "./prompts"
+import { SuggestedPromptsDropdown } from "./prompts"
 
 /** Matches OUK `Button` `size="medium"` with compact `body1` typography (7 + 20 + 7 = 34px). */
 const COMPOSER_CONTROL_HEIGHT_PX = 34
@@ -23,10 +20,7 @@ const promptsDropdownSx = {
 }
 
 interface ChatAreaComposerProps {
-  showCoffeePrompts: boolean
-  showLogisticsPrompts: boolean
-  showDiscoveryPrompts: boolean
-  pattern?: string
+  suggestedPromptsUrl?: string | null
   onSuggestedPromptSelect: (query: string) => void
   content: string
   setContent: (value: string) => void
@@ -36,10 +30,7 @@ interface ChatAreaComposerProps {
 }
 
 const ChatAreaComposer: React.FC<ChatAreaComposerProps> = ({
-  showCoffeePrompts,
-  showLogisticsPrompts,
-  showDiscoveryPrompts,
-  pattern,
+  suggestedPromptsUrl,
   onSuggestedPromptSelect,
   content,
   setContent,
@@ -47,12 +38,6 @@ const ChatAreaComposer: React.FC<ChatAreaComposerProps> = ({
   onSend,
   onKeyDown,
 }) => {
-  const promptsSource = resolveSuggestedPromptsSource({
-    showCoffeePrompts,
-    showLogisticsPrompts,
-    showDiscoveryPrompts,
-  })
-
   return (
     <Stack
       direction={{ xs: "column", sm: "row" }}
@@ -60,11 +45,10 @@ const ChatAreaComposer: React.FC<ChatAreaComposerProps> = ({
       spacing={2}
       sx={{ width: "100%" }}
     >
-      {promptsSource ? (
+      {suggestedPromptsUrl ? (
         <Box sx={promptsDropdownSx}>
           <SuggestedPromptsDropdown
-            source={promptsSource}
-            pattern={pattern}
+            promptsUrl={suggestedPromptsUrl}
             onSelect={onSuggestedPromptSelect}
             sx={(theme) => theme.typography.body1}
           />

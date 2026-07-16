@@ -12,6 +12,7 @@ import type { TopologyNodeWire } from "@/api/agenticWorkflowsTypes"
 import { HANDLE_TYPES, VERIFICATION_STATUS } from "@/utils/const"
 import { LUNGO_FRONTEND_URLS } from "@/urls"
 import { SecurityClass } from "@/utils/SecurityClass"
+import { resolveAgentSlug } from "@/utils/resolveAgentSlug"
 
 /** Matches Python `common.stable_agent_id`: uuid5(NAMESPACE_DNS, "agent.workflow.lungo") */
 export const STABLE_AGENT_ID_NAMESPACE = uuidv5(
@@ -301,24 +302,6 @@ export function applyBackendTopologyWireFields(
   return merged
 }
 
-function mcpDirectorySlugFromLabels(
-  label: string | undefined,
-  label_subtitle: string | undefined,
-): string | null {
-  const pair = new Set(
-    [label, label_subtitle]
-      .filter(Boolean)
-      .map((part) => part!.trim().toLowerCase()),
-  )
-  if (pair.has("weather") && pair.has("mcp server")) {
-    return "weather-mcp-server"
-  }
-  if (pair.has("payment") && pair.has("mcp server")) {
-    return "payment-mcp-server"
-  }
-  return null
-}
-
 /**
  * Resolve `GET .../agents/{slug}/oasf` slug from node data.
  * Agentic topology sets `directoryAgentSlug` from `agent_record_uri`; label rules
@@ -327,69 +310,5 @@ function mcpDirectorySlugFromLabels(
 export function getOasfSlugFromNodeData(
   nodeData: CustomNodeData | null | undefined,
 ): string {
-  if (!nodeData) {
-    throw new Error("nodeData is required for slug resolution")
-  }
-  if (nodeData.directoryAgentSlug) {
-    return nodeData.directoryAgentSlug
-  }
-
-  if (nodeData.slug) {
-    return nodeData.slug
-  }
-
-  const label = nodeData.label?.toLowerCase()
-  const label_subtitle = nodeData.label_subtitle?.toLowerCase()
-  const labelsText = `${label ?? ""} ${label_subtitle ?? ""}`.trim()
-
-  const mcpSlug = mcpDirectorySlugFromLabels(label, label_subtitle)
-  if (mcpSlug) return mcpSlug
-
-  if (/\bagentic\b/.test(labelsText) && /\brecruiter\b/.test(labelsText)) {
-    return "recruiter"
-  }
-
-  if (labelsText === "logistics group") {
-    return "logistics-supervisor-agent"
-  }
-
-  if (label === "auction agent" || label_subtitle?.includes("buyer")) {
-    return "auction-supervisor-agent"
-  }
-
-  if (label === "auction" && label_subtitle?.includes("agent")) {
-    return "auction-supervisor-agent"
-  }
-
-  if (label === "colombia" && label_subtitle?.includes("coffee farm")) {
-    return "colombia-coffee-farm"
-  }
-
-  if (label === "vietnam" && label_subtitle?.includes("coffee farm")) {
-    return "vietnam-coffee-farm"
-  }
-
-  if (label === "brazil" && label_subtitle?.includes("coffee farm")) {
-    return "brazil-coffee-farm"
-  }
-
-  if (label === "buyer" || label_subtitle?.includes("logistics agent")) {
-    return "logistics-supervisor-agent"
-  }
-
-  if (label === "tatooine" && label_subtitle?.includes("coffee farm")) {
-    return "tatooine-farm-agent"
-  }
-
-  if (label === "shipper") {
-    return "shipping-agent"
-  }
-
-  if (label === "accountant") {
-    return "accountant-agent"
-  }
-
-  throw new Error(
-    `No valid slug mapping found for node: ${label} ${label_subtitle}`,
-  )
+  return resolveAgentSlug(nodeData, "oasf")
 }

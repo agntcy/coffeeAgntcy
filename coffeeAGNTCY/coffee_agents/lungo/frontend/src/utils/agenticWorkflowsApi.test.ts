@@ -7,9 +7,9 @@ import { afterEach, describe, expect, it, vi } from "vitest"
 import { PATTERNS, type PatternType } from "@/utils/patternUtils"
 import {
   fetchWorkflowSummaries,
-  patternTypeFromSummary,
   type WorkflowSummary,
 } from "@/utils/agenticWorkflowsApi"
+import { patternTypeFromSummary } from "@/utils/workflow"
 
 const makeSummary = (over: Partial<WorkflowSummary>): WorkflowSummary => ({
   name: "Workflow",

@@ -5,7 +5,6 @@
 
 import { create } from "zustand"
 import type { LogisticsStreamStep } from "./groupStreaming.types"
-import { getLogisticsAppApiUrl, joinBaseUrl, LUNGO_FRONTEND_URLS } from "@/urls"
 import { isLocalDev, parseFetchError } from "@/utils/const.ts"
 import { logger } from "@/utils/logger"
 
@@ -59,6 +58,7 @@ interface LogisticsStreamingActions {
   startStreaming: (
     prompt: string,
     workflowInstanceId?: string | null,
+    streamUrl?: string,
   ) => Promise<void>
   reset: () => void
 }
@@ -130,6 +130,7 @@ export const useGroupStreamingStore = create<
   startStreaming: async (
     prompt: string,
     workflowInstanceId?: string | null,
+    streamUrl?: string,
   ) => {
     const {
       reset,
@@ -141,26 +142,27 @@ export const useGroupStreamingStore = create<
       setSessionId,
     } = useGroupStreamingStore.getState()
 
+    if (!streamUrl) {
+      setError("Streaming URL is required")
+      setComplete(true)
+      setStreaming(false)
+      return
+    }
+
     reset()
     setStreaming(true)
 
     try {
       const body: { prompt: string; workflow_instance_id?: string } = { prompt }
       if (workflowInstanceId) body.workflow_instance_id = workflowInstanceId
-      const response = await fetch(
-        joinBaseUrl(
-          getLogisticsAppApiUrl(),
-          LUNGO_FRONTEND_URLS.apiPaths.agentPromptStream,
-        ),
-        {
-          method: "POST",
-          credentials: isLocalDev ? "omit" : "include",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(body),
+      const response = await fetch(streamUrl, {
+        method: "POST",
+        credentials: isLocalDev ? "omit" : "include",
+        headers: {
+          "Content-Type": "application/json",
         },
-      )
+        body: JSON.stringify(body),
+      })
 
       if (!response.ok) {
         const { status, message } = await parseFetchError(response)

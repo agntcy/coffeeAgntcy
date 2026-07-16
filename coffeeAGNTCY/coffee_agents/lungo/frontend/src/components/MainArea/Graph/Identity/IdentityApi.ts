@@ -11,6 +11,7 @@ import {
 import type { CustomNodeData } from "@/components/MainArea/Graph/Elements/types"
 import { joinBaseUrl, LUNGO_FRONTEND_URLS } from "@/urls"
 import { getApiUrlForChatTarget } from "@/utils/patternUtils"
+import { resolveAgentSlug } from "@/utils/resolveAgentSlug"
 import { logger } from "@/utils/logger"
 
 export interface IdentityServiceError {
@@ -38,41 +39,7 @@ function messageFromAxiosResponse(error: unknown): string | undefined {
 
 const getSlugFromNodeData = (nodeData: CustomNodeData): string => {
   logger.debug("getSlugFromNodeData", nodeData)
-
-  if (nodeData.identityAppsSlug) {
-    return nodeData.identityAppsSlug
-  }
-
-  if (nodeData.slug) {
-    return nodeData.slug
-  }
-
-  const label = nodeData.label?.toLowerCase()
-  const label_subtitle = nodeData.label_subtitle?.toLowerCase()
-
-  if (
-    label === "auction agent" ||
-    label_subtitle?.includes("buyer") ||
-    (label === "auction" && label_subtitle?.includes("agent"))
-  ) {
-    return "auction-supervisor"
-  }
-
-  if (label === "colombia" && label_subtitle?.includes("coffee farm")) {
-    return "colombia-coffee-farm"
-  }
-
-  if (label === "vietnam" && label_subtitle?.includes("coffee farm")) {
-    return "vietnam-coffee-farm"
-  }
-
-  if (label === "mcp server" && label_subtitle === "payment") {
-    return "payment-mcp-server"
-  }
-
-  throw new Error(
-    `No valid slug mapping found for node: ${label} ${label_subtitle}`,
-  )
+  return resolveAgentSlug(nodeData, "identity")
 }
 
 export const fetchBadgeDetails = async (

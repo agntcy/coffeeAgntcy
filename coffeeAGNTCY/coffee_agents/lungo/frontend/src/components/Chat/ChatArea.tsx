@@ -27,16 +27,13 @@ export const CHAT_MESSAGE_PANEL_ID = "chat-message-panel"
 
 interface ChatAreaProps {
   isBottomLayout: boolean
-  showCoffeePrompts?: boolean
-  showLogisticsPrompts?: boolean
-  showDiscoveryPrompts?: boolean
+  suggestedPromptsUrl?: string | null
   showProgressTracker?: boolean
   showAuctionStreaming?: boolean
   showRecruiterStreaming?: boolean
   showFinalResponse?: boolean
   onStreamComplete?: () => void
   onSenderHighlight?: (nodeId: string) => void
-  pattern?: string
   graphConfig?: GraphConfig
   onSendPrompt?: (query: string) => void | Promise<void>
   onUserInput?: (query: string) => void
@@ -58,16 +55,13 @@ interface ChatAreaProps {
 
 const ChatArea: React.FC<ChatAreaProps> = ({
   isBottomLayout,
-  showCoffeePrompts = false,
-  showLogisticsPrompts = false,
-  showDiscoveryPrompts = false,
+  suggestedPromptsUrl = null,
   showProgressTracker = false,
   showAuctionStreaming = false,
   showRecruiterStreaming = false,
   showFinalResponse = false,
   onStreamComplete,
   onSenderHighlight,
-  pattern,
   graphConfig,
   onSendPrompt,
   onUserInput,
@@ -270,10 +264,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
         }}
       >
         <ChatAreaComposer
-          showCoffeePrompts={showCoffeePrompts}
-          showLogisticsPrompts={showLogisticsPrompts}
-          showDiscoveryPrompts={showDiscoveryPrompts}
-          pattern={pattern}
+          suggestedPromptsUrl={suggestedPromptsUrl}
           onSuggestedPromptSelect={handleSuggestedPromptSelect}
           content={content}
           setContent={setContent}

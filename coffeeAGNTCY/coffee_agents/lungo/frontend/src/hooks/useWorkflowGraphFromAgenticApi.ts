@@ -12,7 +12,7 @@ import {
 } from "@/api/agenticWorkflowsClient"
 import type { EventV1Wire } from "@/api/agenticWorkflowsTypes"
 import { getAgenticWorkflowsApiUrl } from "@/urls"
-import { patternTypeFromSummary } from "@/utils/agenticWorkflowsApi"
+import { patternTypeFromSummary } from "@/utils/workflow"
 import { useActiveWorkflowInstanceStore } from "@/stores/activeWorkflowInstanceStore"
 import { logger } from "@/utils/logger"
 import {

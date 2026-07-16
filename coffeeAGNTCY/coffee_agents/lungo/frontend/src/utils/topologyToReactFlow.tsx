@@ -259,7 +259,9 @@ export function topologyWireToReactFlow(
 
     if (n.type === NODE_TYPES.TRANSPORT) {
       const transportName =
-        typeof n.message_transport === "string" ? n.message_transport : undefined
+        typeof n.message_transport === "string"
+          ? n.message_transport
+          : undefined
       const transportGithub =
         transportName != null
           ? transportGithubLink(transportName, isStreaming)

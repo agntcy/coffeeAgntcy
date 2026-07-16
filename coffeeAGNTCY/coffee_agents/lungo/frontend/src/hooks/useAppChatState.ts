@@ -5,13 +5,14 @@
 
 import { useState, useEffect, useCallback } from "react"
 import { LOCAL_STORAGE_KEY } from "@/components/Chat/Messages"
-import { PATTERNS, PatternType } from "@/utils/patternUtils"
 import type { Message } from "@/components/Chat/types"
 import type { ApiResponse } from "@/types/api"
 import { CanvasMode } from "@/types/patternDoc"
+import type { WorkflowSummary } from "@/utils/agenticWorkflowsApi"
+import { workflowChatUiMode } from "@/utils/workflow"
 
 export interface UseAppChatStateParams {
-  selectedPattern: PatternType
+  selectedWorkflowSummary: WorkflowSummary | null
   canvasMode?: CanvasMode
 }
 
@@ -29,7 +30,7 @@ function getInitialMessages(): Message[] {
 
 /** Chat UI state, messages persistence, and response/input handlers. */
 export function useAppChatState({
-  selectedPattern,
+  selectedWorkflowSummary,
   canvasMode,
 }: UseAppChatStateParams) {
   const [messages, setMessages] = useState<Message[]>(getInitialMessages)
@@ -60,7 +61,7 @@ export function useAppChatState({
   useEffect(() => {
     setButtonClicked(false)
     setAiReplied(false)
-  }, [selectedPattern])
+  }, [selectedWorkflowSummary?.name])
 
   const handleApiResponse = useCallback(
     (response: ApiResponse | string, isError: boolean = false) => {
@@ -73,7 +74,8 @@ export function useAppChatState({
       setAgentResponse(apiResp)
       setIsAgentLoading(false)
 
-      if (selectedPattern === PATTERNS.GROUP_MESSAGING) {
+      const uiMode = workflowChatUiMode(selectedWorkflowSummary)
+      if (uiMode?.isGroupMessaging) {
         setApiError(isError)
         if (!isError) {
           setGroupCommResponseReceived(true)
@@ -90,7 +92,7 @@ export function useAppChatState({
         return updated
       })
     },
-    [selectedPattern],
+    [selectedWorkflowSummary],
   )
 
   const handleUserInput = useCallback(
@@ -99,16 +101,15 @@ export function useAppChatState({
       setIsAgentLoading(true)
       setButtonClicked(true)
       setApiError(false)
+      const uiMode = workflowChatUiMode(selectedWorkflowSummary)
       if (
         canvasMode === CanvasMode.PATTERN_DOC ||
-        (selectedPattern !== PATTERNS.GROUP_MESSAGING &&
-          selectedPattern !== PATTERNS.PUBLISH_SUBSCRIBE_STREAMING &&
-          selectedPattern !== PATTERNS.A2A_HTTP)
+        uiMode?.usesPlainFinalResponse === true
       ) {
         setShowFinalResponse(true)
       }
     },
-    [selectedPattern, canvasMode],
+    [selectedWorkflowSummary, canvasMode],
   )
 
   const resetChatState = useCallback(() => {

@@ -21,11 +21,19 @@ import { PATTERNS, PatternType } from "@/utils/patternUtils"
 import {
   AGENTIC_WORKFLOWS_CATALOG_LOG_PATH,
   fetchWorkflowSummariesWithRetry,
-  patternTypeFromSummary,
   pickDefaultWorkflowSummaryForPattern,
   type WorkflowSummary,
 } from "@/utils/agenticWorkflowsApi"
 import { useActiveWorkflowInstanceStore } from "@/stores/activeWorkflowInstanceStore"
+import { isPlaceholderWorkflow } from "@/components/Sidebar/sidebar.utils"
+import {
+  getAgentPromptStreamUrlForWorkflow,
+  getSuggestedPromptsUrlForWorkflow,
+  isChatEnabledWorkflow,
+  patternTypeFromSummary,
+  workflowChatTransport,
+  workflowChatUiMode,
+} from "@/utils/workflow"
 
 export type { ApiResponse } from "@/types/api"
 
@@ -73,7 +81,12 @@ export function useApp() {
     [selectedReferencePattern],
   )
 
-  const chat = useAppChatState({ selectedPattern, canvasMode })
+  const suggestedPromptsUrl = useMemo(() => {
+    if (canvasMode === CanvasMode.PATTERN_DOC) return null
+    return getSuggestedPromptsUrlForWorkflow(selectedWorkflowSummary)
+  }, [canvasMode, selectedWorkflowSummary])
+
+  const chat = useAppChatState({ selectedWorkflowSummary, canvasMode })
 
   const streamCompleteRef = useRef<boolean>(false)
 
@@ -202,7 +215,8 @@ export function useApp() {
   }, [workflowCatalogSummaries, selectedPattern])
 
   useEffect(() => {
-    if (selectedPattern === PATTERNS.PUBLISH_SUBSCRIBE_STREAMING) {
+    const transport = workflowChatTransport(selectedWorkflowSummary)
+    if (transport === "auction_stream") {
       if (
         streaming.events.length > 0 &&
         streaming.status !== "connecting" &&
@@ -212,9 +226,9 @@ export function useApp() {
         chat.setIsAgentLoading(false)
       }
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- only run when streaming state or pattern changes
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- only run when streaming state or workflow changes
   }, [
-    selectedPattern,
+    selectedWorkflowSummary,
     streaming.events.length,
     streaming.status,
     chat.isAgentLoading,
@@ -222,7 +236,8 @@ export function useApp() {
   ])
 
   useEffect(() => {
-    if (selectedPattern === PATTERNS.GROUP_MESSAGING) {
+    const transport = workflowChatTransport(selectedWorkflowSummary)
+    if (transport === "group_sse") {
       if (streaming.groupIsComplete && !streaming.groupIsStreaming) {
         if (streaming.groupFinalResponse) {
           chat.setShowFinalResponse(true)
@@ -234,9 +249,9 @@ export function useApp() {
         }
       }
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- only run when group streaming state or pattern changes
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- only run when group streaming state or workflow changes
   }, [
-    selectedPattern,
+    selectedWorkflowSummary,
     streaming.groupIsComplete,
     streaming.groupIsStreaming,
     streaming.groupFinalResponse,
@@ -246,7 +261,8 @@ export function useApp() {
   ])
 
   useEffect(() => {
-    if (selectedPattern !== PATTERNS.A2A_HTTP) return
+    const transport = workflowChatTransport(selectedWorkflowSummary)
+    if (transport !== "recruiter_stream") return
 
     if (streaming.recruiterStatus === "completed") {
       chat.setIsAgentLoading(false)
@@ -273,9 +289,9 @@ export function useApp() {
         true,
       )
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- only run when recruiter streaming state or pattern changes
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- only run when recruiter streaming state or workflow changes
   }, [
-    selectedPattern,
+    selectedWorkflowSummary,
     streaming.recruiterStatus,
     streaming.recruiterFinalMessage,
     streaming.recruiterError,
@@ -294,8 +310,27 @@ export function useApp() {
       chat.setButtonClicked(true)
       chat.setApiError(false)
 
+      const transport = workflowChatTransport(selectedWorkflowSummary)
+      if (
+        !selectedWorkflowSummary ||
+        isPlaceholderWorkflow(selectedWorkflowSummary) ||
+        !isChatEnabledWorkflow(selectedWorkflowSummary) ||
+        transport === null
+      ) {
+        chat.handleApiResponse(
+          "No chat backend configured for this workflow.",
+          true,
+        )
+        chat.setIsAgentLoading(false)
+        return
+      }
+
+      const streamUrl = getAgentPromptStreamUrlForWorkflow(
+        selectedWorkflowSummary,
+      )
+
       try {
-        if (selectedPattern === PATTERNS.GROUP_MESSAGING) {
+        if (transport === "group_sse") {
           chat.setExecutionKey(Date.now().toString())
           chat.setShowFinalResponse(false)
           chat.setAgentResponse(undefined)
@@ -304,7 +339,11 @@ export function useApp() {
           streamCompleteRef.current = false
           streaming.resetGroup()
           try {
-            await streaming.startStreaming(query, activeWorkflowInstanceId)
+            await streaming.startStreaming(
+              query,
+              activeWorkflowInstanceId,
+              streamUrl,
+            )
           } catch (err) {
             logger.apiError(LUNGO_FRONTEND_URLS.apiPaths.agentPromptStream, err)
             chat.setShowFinalResponse(true)
@@ -313,13 +352,13 @@ export function useApp() {
               true,
             )
           }
-        } else if (selectedPattern === PATTERNS.PUBLISH_SUBSCRIBE_STREAMING) {
+        } else if (transport === "auction_stream") {
           chat.setShowFinalResponse(false)
           chat.setShowAuctionStreaming(true)
           chat.setAgentResponse(undefined)
           streaming.reset()
-          await streaming.connect(query, activeWorkflowInstanceId)
-        } else if (selectedPattern === PATTERNS.A2A_HTTP) {
+          await streaming.connect(query, activeWorkflowInstanceId, streamUrl)
+        } else if (transport === "recruiter_stream") {
           chat.setShowFinalResponse(false)
           chat.setShowRecruiterStreaming(true)
           chat.setAgentResponse(undefined)
@@ -330,6 +369,7 @@ export function useApp() {
               query,
               activeWorkflowInstanceId,
               priorSessionId,
+              streamUrl,
             )
           } catch (err) {
             logger.apiError(LUNGO_FRONTEND_URLS.apiPaths.agentPromptStream, err)
@@ -341,7 +381,7 @@ export function useApp() {
           }
         } else {
           chat.setShowFinalResponse(true)
-          const response = await sendMessage(query, selectedPattern)
+          const response = await sendMessage(query, selectedWorkflowSummary)
           chat.handleApiResponse(response, false)
           chat.setAiReplied(true)
         }
@@ -354,12 +394,19 @@ export function useApp() {
         chat.setShowProgressTracker(false)
       }
     },
-    [activeWorkflowInstanceId, selectedPattern, sendMessage, streaming, chat],
+    [
+      activeWorkflowInstanceId,
+      selectedWorkflowSummary,
+      sendMessage,
+      streaming,
+      chat,
+    ],
   )
 
   const handleStreamComplete = useCallback(() => {
     streamCompleteRef.current = true
-    if (selectedPattern === PATTERNS.GROUP_MESSAGING) {
+    const uiMode = workflowChatUiMode(selectedWorkflowSummary)
+    if (uiMode?.isGroupMessaging) {
       chat.setShowFinalResponse(true)
       chat.setIsAgentLoading(true)
       if (chat.pendingResponse) {
@@ -370,7 +417,7 @@ export function useApp() {
         chat.setPendingResponse("")
       }
     }
-  }, [selectedPattern, chat])
+  }, [selectedWorkflowSummary, chat])
 
   const handleClearConversation = useCallback(() => {
     chat.resetChatState()
@@ -409,7 +456,8 @@ export function useApp() {
     chat.resetChatState()
     chat.setShowFinalResponse(false)
     chat.setPendingResponse("")
-    if (selectedPattern === PATTERNS.GROUP_MESSAGING) {
+    const uiMode = workflowChatUiMode(selectedWorkflowSummary)
+    if (uiMode?.showProgressTracker) {
       chat.setShowProgressTracker(true)
       streaming.resetGroup()
     } else {
@@ -418,8 +466,8 @@ export function useApp() {
       chat.setShowRecruiterStreaming(false)
       chat.setGroupCommResponseReceived(false)
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- only run when pattern or resetGroup identity changes
-  }, [selectedPattern, streaming.resetGroup])
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- only run when workflow or resetGroup identity changes
+  }, [selectedWorkflowSummary, streaming.resetGroup])
 
   const {
     height: chatHeight,
@@ -442,6 +490,7 @@ export function useApp() {
     workflowCatalogLoading,
     workflowCatalogError,
     selectedWorkflowSummary,
+    suggestedPromptsUrl,
     chatHeightValue,
     isExpanded,
     chatRef,

@@ -9,10 +9,13 @@ import { v4 as uuid } from "uuid"
 import type { Message } from "@/components/Chat/types"
 import { isLocalDev, parseApiError, Role } from "@/utils/const"
 import { withRetry, RETRY_CONFIG } from "@/utils/retryUtils"
-import { joinBaseUrl, LUNGO_FRONTEND_URLS } from "@/urls"
-import { shouldEnableRetries, getApiUrlForPattern } from "@/utils/patternUtils"
-import type { ApiResponse } from "@/types/api"
+import type { WorkflowSummary } from "@/utils/agenticWorkflowsApi"
+import {
+  getAgentPromptUrlForWorkflow,
+  shouldEnableRetriesForWorkflow,
+} from "@/utils/workflow"
 import { useActiveWorkflowInstanceStore } from "@/stores/activeWorkflowInstanceStore"
+import type { ApiResponse } from "@/types/api"
 
 /** Builds the non-streaming /agent/prompt body, tagging it with the active
  *  workflow instance id (when present) so the backend emits workflow events on
@@ -32,7 +35,10 @@ export const buildPromptRequestBody = (
 
 interface UseAgentAPIReturn {
   loading: boolean
-  sendMessage: (prompt: string, pattern?: string) => Promise<ApiResponse>
+  sendMessage: (
+    prompt: string,
+    summary?: WorkflowSummary | null,
+  ) => Promise<ApiResponse>
   sendMessageWithCallback: (
     prompt: string,
     setMessages: React.Dispatch<React.SetStateAction<Message[]>>,
@@ -46,7 +52,7 @@ interface UseAgentAPIReturn {
         nextRetryAt: number,
       ) => void
     },
-    pattern?: string,
+    summary?: WorkflowSummary | null,
   ) => Promise<void>
   cancel: () => void
 }
@@ -73,13 +79,13 @@ export const useAgentAPI = (): UseAgentAPIReturn => {
 
   const sendMessage = async (
     prompt: string,
-    pattern?: string,
+    summary?: WorkflowSummary | null,
   ): Promise<ApiResponse> => {
     if (!prompt.trim()) {
       throw new Error("Prompt cannot be empty")
     }
 
-    const apiUrl = getApiUrlForPattern(pattern)
+    const promptUrl = getAgentPromptUrlForWorkflow(summary)
     setLoading(true)
 
     const controller = new AbortController()
@@ -89,7 +95,7 @@ export const useAgentAPI = (): UseAgentAPIReturn => {
 
     const makeApiCall = async (): Promise<ApiResponse> => {
       const response = await axios.post<ApiResponse>(
-        joinBaseUrl(apiUrl, LUNGO_FRONTEND_URLS.apiPaths.agentPrompt),
+        promptUrl,
         buildPromptRequestBody(prompt),
         {
           signal: controller.signal,
@@ -101,7 +107,7 @@ export const useAgentAPI = (): UseAgentAPIReturn => {
     }
 
     try {
-      if (shouldEnableRetries(pattern)) {
+      if (shouldEnableRetriesForWorkflow(summary)) {
         return await withRetry(makeApiCall)
       } else {
         return await makeApiCall()
@@ -132,11 +138,11 @@ export const useAgentAPI = (): UseAgentAPIReturn => {
         nextRetryAt: number,
       ) => void
     },
-    pattern?: string,
+    summary?: WorkflowSummary | null,
   ): Promise<void> => {
     if (!prompt.trim()) return
 
-    const apiUrl = getApiUrlForPattern(pattern)
+    const promptUrl = getAgentPromptUrlForWorkflow(summary)
     const controller = new AbortController()
     abortRef.current = controller
     const myRequestId = requestIdRef.current + 1
@@ -169,7 +175,7 @@ export const useAgentAPI = (): UseAgentAPIReturn => {
 
     const makeApiCall = async (): Promise<ApiResponse> => {
       const response = await axios.post<ApiResponse>(
-        joinBaseUrl(apiUrl, LUNGO_FRONTEND_URLS.apiPaths.agentPrompt),
+        promptUrl,
         buildPromptRequestBody(prompt),
         {
           signal: controller.signal,
@@ -208,7 +214,7 @@ export const useAgentAPI = (): UseAgentAPIReturn => {
     try {
       let apiResponse: ApiResponse
 
-      if (shouldEnableRetries(pattern)) {
+      if (shouldEnableRetriesForWorkflow(summary)) {
         apiResponse = await withRetry(makeApiCall, onRetryAttempt)
       } else {
         apiResponse = await makeApiCall()
