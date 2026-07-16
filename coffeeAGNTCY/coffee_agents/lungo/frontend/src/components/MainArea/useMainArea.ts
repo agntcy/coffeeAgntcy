@@ -6,10 +6,9 @@
 import { useEffect, useRef, useCallback, useState, useMemo } from "react"
 import { useNodesState, useEdgesState } from "@xyflow/react"
 import type { Node, Edge } from "@xyflow/react"
-import { PatternType, isStreamingPattern } from "@/utils/patternUtils"
+import { PatternType } from "@/utils/patternUtils"
 import { useViewportAwareFitView } from "@/hooks/useViewportAwareFitView"
 import { useModalManager } from "@/hooks/useModalManager"
-import { applyDynamicTransportLabels } from "@/utils/dynamicTransportLabels"
 import type { CustomNodeData } from "./Graph/Elements/types"
 import { useMainAreaGraphEffects } from "./useMainAreaGraphEffects"
 import { useWorkflowGraphFromAgenticApi } from "@/hooks/useWorkflowGraphFromAgenticApi"
@@ -102,12 +101,6 @@ export function useMainArea({
       setTimeout(() => {
         fitViewWithViewport()
       }, 200)
-      void applyDynamicTransportLabels(
-        setNodes,
-        setEdges,
-        pattern,
-        isStreamingPattern(pattern),
-      )
     },
   })
 
