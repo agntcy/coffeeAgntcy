@@ -21,7 +21,7 @@ import { PATTERNS, PatternType } from "@/utils/patternUtils"
 import {
   AGENTIC_WORKFLOWS_CATALOG_LOG_PATH,
   fetchWorkflowSummariesWithRetry,
-  mapWorkflowNameToSlug,
+  patternTypeFromSummary,
   pickDefaultWorkflowSummaryForPattern,
   type WorkflowSummary,
 } from "@/utils/agenticWorkflowsApi"
@@ -83,7 +83,7 @@ export function useApp() {
 
   const selectWorkflowFromCatalog = useCallback(
     (summary: WorkflowSummary) => {
-      const slug = mapWorkflowNameToSlug(summary.name)
+      const slug = patternTypeFromSummary(summary)
       if (slug === null) return
       streaming.reset()
       streaming.resetRecruiter()
@@ -190,7 +190,7 @@ export function useApp() {
     setSelectedWorkflowSummary((prev) => {
       if (prev) {
         const still = workflowCatalogSummaries.find((s) => s.name === prev.name)
-        if (still && mapWorkflowNameToSlug(still.name) === selectedPattern) {
+        if (still && patternTypeFromSummary(still) === selectedPattern) {
           return still
         }
       }
