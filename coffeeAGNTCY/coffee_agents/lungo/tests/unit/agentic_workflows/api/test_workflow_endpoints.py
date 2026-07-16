@@ -13,6 +13,7 @@ from api.agentic_workflows.router import create_agentic_workflows_router
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 from schema.types import Workflow
+from tests.unit.agentic_workflows.catalog_test_helpers import load_catalog_with_transport_cache
 
 _FAKE_WORKFLOWS: dict[str, Workflow] = {
     wf.name: wf
@@ -23,6 +24,9 @@ _FAKE_WORKFLOWS: dict[str, Workflow] = {
                 "use_case": "Purchasing",
                 "scenario": "Publish Subscribe scenario",
                 "name": "Publish Subscribe",
+                "supports_sse": False,
+                "supports_streaming": False,
+                "chat_api_target": "exchange",
                 "starting_topology": {
                     "nodes": [
                         {
@@ -45,6 +49,9 @@ _FAKE_WORKFLOWS: dict[str, Workflow] = {
                 "use_case": "Order Fulfillment",
                 "scenario": "Group Logistics scenario",
                 "name": "Group Logistics",
+                "supports_sse": True,
+                "supports_streaming": False,
+                "chat_api_target": "logistics",
                 "starting_topology": {
                     "nodes": [
                         {
@@ -67,6 +74,9 @@ _FAKE_WORKFLOWS: dict[str, Workflow] = {
                 "use_case": "Order Fulfillment",
                 "scenario": "Publish Subscribe Streaming scenario",
                 "name": "Publish Subscribe Streaming",
+                "supports_sse": False,
+                "supports_streaming": True,
+                "chat_api_target": "exchange",
                 "starting_topology": {
                     "nodes": [
                         {
@@ -304,3 +314,73 @@ def test_get_agentic_workflow(case: DetailCase, client: TestClient) -> None:
 
     if case.outputs.instances_empty:
         assert data["instances"] == {}
+
+
+# ---------------------------------------------------------------------------
+# Topology enrichment (real catalog)
+# ---------------------------------------------------------------------------
+
+
+@pytest.fixture()
+def catalog_client(workflow_api_headers: dict[str, str]) -> TestClient:
+    catalog = load_catalog_with_transport_cache()
+    app = FastAPI(openapi_url=None, docs_url=None, redoc_url=None)
+    app.include_router(create_agentic_workflows_router())
+    with patch(_PATCH_TARGET, return_value=catalog):
+        with TestClient(app, headers=workflow_api_headers) as test_client:
+            yield test_client
+
+
+def _transport_nodes(topology: dict) -> list[dict]:
+    return [n for n in topology.get("nodes", []) if n.get("type") == "transportNode"]
+
+
+def _agent_nodes_with_stable_id(topology: dict) -> list[dict]:
+    return [n for n in topology.get("nodes", []) if n.get("stable_agent_id")]
+
+
+def test_get_group_messaging_topology_enriches_transport_node(
+    catalog_client: TestClient,
+) -> None:
+    resp = catalog_client.get(
+        "/agentic-workflows/Group Messaging/",
+        params={"topology_only": True},
+    )
+    assert resp.status_code == 200
+    transport_nodes = _transport_nodes(resp.json()["starting_topology"])
+    assert len(transport_nodes) == 1
+    node = transport_nodes[0]
+    assert node["message_transport"] == "SLIM"
+    assert node["label"] == "Transport: SLIM"
+
+
+def test_get_publish_subscribe_topology_enriches_transport_node(
+    catalog_client: TestClient,
+) -> None:
+    resp = catalog_client.get(
+        "/agentic-workflows/Publish Subscribe/",
+        params={"topology_only": True},
+    )
+    assert resp.status_code == 200
+    transport_nodes = _transport_nodes(resp.json()["starting_topology"])
+    assert len(transport_nodes) == 1
+    node = transport_nodes[0]
+    assert node["message_transport"] == "SLIM"
+    assert node["label"] == "Transport: SLIM"
+
+
+def test_get_publish_subscribe_topology_enriches_agent_wire_fields(
+    catalog_client: TestClient,
+) -> None:
+    resp = catalog_client.get(
+        "/agentic-workflows/Publish Subscribe/",
+        params={"topology_only": True},
+    )
+    assert resp.status_code == 200
+    agent_nodes = _agent_nodes_with_stable_id(resp.json()["starting_topology"])
+    assert agent_nodes
+    buyer = next(n for n in agent_nodes if n.get("label_subtitle") == "Buyer")
+    assert buyer.get("identity_app_slug") == "auction-supervisor"
+    assert buyer.get("agent_directory_cid") == (
+        "/baeareicltg46rvjhqxd6pn47z5du3rgxoynvct6poeknf5tyemsxygwdrq"
+    )

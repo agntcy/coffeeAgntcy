@@ -4,6 +4,9 @@
     "pattern": "Supervisor",
     "use_case": "Coffee Agntcy",
     "scenario": "Purchasing",
+    "supports_sse": false,
+    "supports_streaming": false,
+    "chat_api_target": "exchange",
     "starting_topology": {
       "nodes": [
         {
@@ -141,6 +144,9 @@
     "pattern": "Supervisor",
     "use_case": "Coffee Agntcy",
     "scenario": "Purchasing",
+    "supports_sse": false,
+    "supports_streaming": true,
+    "chat_api_target": "exchange",
     "starting_topology": {
       "nodes": [
         {
@@ -278,6 +284,9 @@
     "pattern": "Peer Group",
     "use_case": "Coffee Agntcy",
     "scenario": "Order Fulfillment",
+    "supports_sse": true,
+    "supports_streaming": false,
+    "chat_api_target": "logistics",
     "starting_topology": {
       "nodes": [
         {
@@ -293,7 +302,8 @@
           "id": "node://3a000001-0001-4000-a001-000000000002",
           "operation": "read",
           "type": "customNode",
-          "label": "Buyer Logistics Agent",
+          "label": "Logistics Agent",
+          "label_subtitle": "Buyer",
           "size": { "width": 1.0, "height": 1.0 },
           "layer_index": 1,
           "position": { "x": 150, "y": 100 },
@@ -387,6 +397,9 @@
     "pattern": "Recruiter",
     "use_case": "Coffee Agntcy",
     "scenario": "Capability Discovery",
+    "supports_sse": false,
+    "supports_streaming": true,
+    "chat_api_target": "discovery",
     "starting_topology": {
       "nodes": [
         {

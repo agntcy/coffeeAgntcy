@@ -1,4 +1,11 @@
 {
+  "annotations": {
+    "a2a.supports_authenticated_extended_card": "false",
+    "lungo.agentDirectoryCid": "/baeareigpu5jgm3xrkouspfacgvq65i25cz63nnseqatu5davp35jenwlla",
+    "lungo.hasBadgeOverride": "false",
+    "lungo.hasPolicyOverride": "false",
+    "lungo.verificationStatusOverride": "failed"
+  },
   "authors": [
     "agntcy/coffee-agntcy-maintainers"
   ],
