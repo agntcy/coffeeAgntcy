@@ -15,6 +15,10 @@ export type ReportUiErrorInput = {
   message: string
   severity?: ErrorNotificationSeverity
   source?: string
+  /** React component stack from ErrorBoundary (logged only). */
+  componentStack?: string
+  /** When false, log only — skip global Banner (e.g. full-page ErrorFallback). */
+  notify?: boolean
 }
 
 const DEFAULT_UI_ERROR_TITLE = "Something went wrong"
@@ -30,7 +34,12 @@ export function reportUiError(input: ReportUiErrorInput): string {
     message: input.message,
     source: input.source,
     severity: input.severity ?? "error",
+    componentStack: input.componentStack,
   })
+
+  if (input.notify === false) {
+    return ""
+  }
 
   return useErrorNotificationStore.getState().pushError({
     title,

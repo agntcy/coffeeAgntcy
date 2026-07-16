@@ -10,4 +10,6 @@ export {
   type PushErrorInput,
 } from "./errorNotificationStore"
 export { default as ErrorNotifications } from "./ErrorNotifications"
+export { default as ErrorBoundary } from "./ErrorBoundary"
+export { default as ErrorFallback } from "./ErrorFallback"
 export { reportUiError, type ReportUiErrorInput } from "./reportUiError"

@@ -6,6 +6,7 @@
 import React from "react"
 import { BrowserRouter } from "react-router-dom"
 import { OpenUiKitThemeBridge } from "@/contexts/OpenUiKitThemeBridge"
+import ErrorBoundary from "@/errors/ui/ErrorBoundary"
 import { ErrorNotifications } from "@/errors/ui"
 
 interface AppProvidersProps {
@@ -17,7 +18,9 @@ const AppProviders: React.FC<AppProvidersProps> = ({ children }) => {
     <BrowserRouter>
       <OpenUiKitThemeBridge>
         <ErrorNotifications />
-        {children}
+        <ErrorBoundary source="App" useReload>
+          {children}
+        </ErrorBoundary>
       </OpenUiKitThemeBridge>
     </BrowserRouter>
   )

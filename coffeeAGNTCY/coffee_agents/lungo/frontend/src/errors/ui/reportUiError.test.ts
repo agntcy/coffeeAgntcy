@@ -71,4 +71,15 @@ describe("reportUiError", () => {
     expect(mockUnsafeLoggerError).toHaveBeenCalledOnce()
     expect(mockLoggerError).not.toHaveBeenCalled()
   })
+
+  it("skips the notification banner when notify is false", () => {
+    const id = reportUiError({
+      message: "Boundary caught a render error",
+      notify: false,
+    })
+
+    expect(id).toBe("")
+    expect(useErrorNotificationStore.getState().notifications).toEqual([])
+    expect(mockLoggerError).toHaveBeenCalledOnce()
+  })
 })
