@@ -9,7 +9,10 @@ export {
   parseHttpError,
   parseHttpErrorFromResponse,
   stripHtml,
+  fetchJson,
+  httpFetch,
   type HttpErrorOptions,
+  type HttpFetchOptions,
   type ParseHttpErrorOptions,
 } from "@/api/http"
 export {

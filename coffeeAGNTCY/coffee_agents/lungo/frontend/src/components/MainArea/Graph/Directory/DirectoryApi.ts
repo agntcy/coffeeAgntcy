@@ -3,35 +3,18 @@
  * SPDX-License-Identifier: Apache-2.0
  **/
 
-import axios from "axios"
+import { fetchJson } from "@/api/http"
 import { joinBaseUrl, LUNGO_FRONTEND_URLS } from "@/urls"
 import {
   getApiUrlForChatTarget,
   type ChatApiTarget,
 } from "@/utils/patternUtils"
-import { IdentityServiceError } from "@/components/MainArea/Graph/Identity/IdentityApi"
 import type { CustomNodeData } from "../Elements/types"
 import { getOasfSlugFromNodeData } from "@/utils/agenticTopologyIdentityUiMap"
 
 export { getOasfSlugFromNodeData }
 
-function messageFromAxiosResponse(error: unknown): string | undefined {
-  if (!axios.isAxiosError(error) || error.response?.data == null)
-    return undefined
-  const d = error.response.data as { detail?: unknown; message?: unknown }
-  if (typeof d.detail === "string") return d.detail
-  if (Array.isArray(d.detail)) {
-    return d.detail
-      .map((item) =>
-        item && typeof item === "object" && "msg" in item
-          ? String((item as { msg: unknown }).msg)
-          : String(item),
-      )
-      .join("; ")
-  }
-  if (typeof d.message === "string") return d.message
-  return undefined
-}
+const DIRECTORY_REQUEST_TIMEOUT_MS = 10_000
 
 /** OASF record from directory API; URL fields used for link in modal. */
 export interface OasfRecord {
@@ -73,44 +56,21 @@ export const fetchOasfRecord = async (
     return cached
   }
 
-  try {
-    const response = await axios.get<OasfRecord>(
-      joinBaseUrl(
-        getApiUrlForChatTarget(target),
-        LUNGO_FRONTEND_URLS.apiPaths.agentsOasf(slug),
-      ),
-      {
-        timeout: 10000,
-        headers: {
-          "Content-Type": "application/json",
-        },
-      },
-    )
+  const endpoint = LUNGO_FRONTEND_URLS.apiPaths.agentsOasf(slug)
+  const url = joinBaseUrl(getApiUrlForChatTarget(target), endpoint)
+  const record = await fetchJson<OasfRecord>(url, {
+    endpoint,
+    timeoutMs: DIRECTORY_REQUEST_TIMEOUT_MS,
+    headers: {
+      "Content-Type": "application/json",
+    },
+  })
 
-    if (oasfFetchCache.size >= OASF_FETCH_CACHE_MAX) {
-      const first = oasfFetchCache.keys().next().value
-      if (first !== undefined) oasfFetchCache.delete(first)
-    }
-    oasfFetchCache.set(cacheKey, response.data)
-
-    return response.data
-  } catch (error) {
-    if (axios.isAxiosError(error)) {
-      const errorMessage =
-        messageFromAxiosResponse(error) ||
-        error.message ||
-        "Failed to fetch OASF record"
-
-      const errorStatus = error.response?.status
-
-      throw {
-        message: errorMessage,
-        status: errorStatus,
-      } as IdentityServiceError
-    }
-
-    throw {
-      message: "An unexpected error occurred while fetching OASF record",
-    } as IdentityServiceError
+  if (oasfFetchCache.size >= OASF_FETCH_CACHE_MAX) {
+    const first = oasfFetchCache.keys().next().value
+    if (first !== undefined) oasfFetchCache.delete(first)
   }
+  oasfFetchCache.set(cacheKey, record)
+
+  return record
 }

@@ -6,19 +6,18 @@
 import React, { useState, useEffect, useCallback } from "react"
 import {
   Box,
-  Button,
-  IconButton,
   Dialog,
   DialogContent,
   DialogTitle,
+  IconButton,
+  LoadingErrorState,
   Stack,
-  Typography,
 } from "@open-ui-kit/core"
 import Close from "@mui/icons-material/Close"
 import { PolicyData } from "./types"
 import { CustomNodeData } from "../Elements/types"
-import { logger } from "@/utils/logger"
-import { fetchPolicyDetails, IdentityServiceError } from "./IdentityApi"
+import { fetchPolicyDetails } from "./IdentityApi"
+import { reportRequestError } from "@/errors/request"
 import { LoadingSpinner } from "@/components/loading"
 import {
   graphModalLoadingOverlaySx,
@@ -50,13 +49,9 @@ const PolicyDetailsModal: React.FC<PolicyDetailsModalProps> = ({
     try {
       const data = await fetchPolicyDetails(nodeData)
       setPolicyData(data)
-    } catch (error) {
-      const identityError = error as IdentityServiceError
-      logger.error("Error fetching policy details", identityError)
-      setError(
-        identityError.message ||
-          "An unexpected error occurred while fetching policy details.",
-      )
+    } catch (caught) {
+      const httpError = reportRequestError("identity/policy-details", caught)
+      setError(httpError.message)
     } finally {
       setLoading(false)
     }
@@ -88,70 +83,38 @@ const PolicyDetailsModal: React.FC<PolicyDetailsModalProps> = ({
       </DialogTitle>
 
       <DialogContent dividers>
-        {loading && !policyData ? (
-          <Stack
-            sx={{
-              width: "100%",
-              alignItems: "center",
-              justifyContent: "center",
-              py: 4,
-            }}
-          >
-            <LoadingSpinner compact />
-          </Stack>
-        ) : error ? (
-          <Stack
-            sx={{
-              width: "100%",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: 2,
-              py: 4,
-            }}
-          >
-            <Box sx={{ textAlign: "center" }}>
-              <Typography variant="body1" fontWeight="medium">
-                Failed to load policy details
-              </Typography>
-              <Typography
-                variant="body2"
-                color="text.secondary"
-                sx={{ mt: 1, opacity: 0.9 }}
-              >
-                {error}
-              </Typography>
-            </Box>
-            <Button
-              variant="outlined"
-              size="small"
-              onClick={fetchPolicyDetailsData}
-            >
-              Retry
-            </Button>
-          </Stack>
-        ) : policyData ? (
-          <Stack sx={graphModalScrollBodySx}>
-            <Box component="pre" sx={graphModalPreSx}>
-              {JSON.stringify(policyData, null, 2)}
-            </Box>
-            {loading && (
-              <Box sx={graphModalLoadingOverlaySx}>
-                <LoadingSpinner compact />
+        <LoadingErrorState
+          loading={loading && !policyData}
+          error={error !== null}
+          data={error ? null : policyData}
+          skipEmptyCheck
+          errorStateProps={{
+            variant: "negative",
+            title: "Failed to load policy details",
+            description: error ?? "",
+            actionTitle: "Retry",
+            actionCallback: () => {
+              void fetchPolicyDetailsData()
+            },
+          }}
+          emptyStateProps={{
+            variant: "info",
+            title: "No data available",
+          }}
+        >
+          {policyData ? (
+            <Stack sx={graphModalScrollBodySx}>
+              <Box component="pre" sx={graphModalPreSx}>
+                {JSON.stringify(policyData, null, 2)}
               </Box>
-            )}
-          </Stack>
-        ) : (
-          <Stack
-            sx={{
-              width: "100%",
-              alignItems: "center",
-              justifyContent: "center",
-              py: 4,
-            }}
-          >
-            <Typography color="text.primary">No data available</Typography>
-          </Stack>
-        )}
+              {loading ? (
+                <Box sx={graphModalLoadingOverlaySx}>
+                  <LoadingSpinner compact />
+                </Box>
+              ) : null}
+            </Stack>
+          ) : null}
+        </LoadingErrorState>
       </DialogContent>
     </Dialog>
   )

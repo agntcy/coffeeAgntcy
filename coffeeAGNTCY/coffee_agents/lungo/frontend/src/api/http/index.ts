@@ -10,3 +10,5 @@ export {
   type ParseHttpErrorOptions,
 } from "./parseHttpError.ts"
 export { stripHtml } from "./stripHtml.ts"
+export { httpFetch, type HttpFetchOptions } from "./httpClient.ts"
+export { fetchJson } from "./fetchJson.ts"
