@@ -17,6 +17,7 @@ import {
 } from "@open-ui-kit/core"
 import Close from "@mui/icons-material/Close"
 import { getDirectoryServerUrl, getDirectoryVersion } from "@/urls"
+import type { ChatApiTarget } from "@/utils/patternUtils"
 import { fetchOasfRecord, OasfRecord } from "./DirectoryApi"
 import { CustomNodeData } from "../Elements/types"
 import { IdentityServiceError } from "../Identity/IdentityApi"
@@ -34,6 +35,7 @@ export interface OasfRecordModalProps {
   nodeName: string
   /** When null/undefined the modal skips fetch (see useEffect). */
   nodeData?: CustomNodeData | null
+  chatApiTarget?: ChatApiTarget | null
 }
 
 const OasfRecordModal: React.FC<OasfRecordModalProps> = ({
@@ -41,6 +43,7 @@ const OasfRecordModal: React.FC<OasfRecordModalProps> = ({
   onClose,
   nodeName,
   nodeData,
+  chatApiTarget = null,
 }) => {
   const directoryServerUrl = getDirectoryServerUrl()
   const directoryVersion = getDirectoryVersion()
@@ -76,7 +79,7 @@ const OasfRecordModal: React.FC<OasfRecordModalProps> = ({
     setLoading(true)
     setError(null)
     try {
-      const data = await fetchOasfRecord(nodeData)
+      const data = await fetchOasfRecord(nodeData, chatApiTarget)
       setRecord(data)
     } catch (err) {
       const apiError = err as IdentityServiceError

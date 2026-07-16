@@ -74,6 +74,8 @@ const MainArea: React.FC<MainAreaProps> = (props) => {
       ? selectedWorkflowSummary
       : undefined
 
+  const chatApiTarget = activeWorkflowSummary?.chat_api_target ?? null
+
   const overlayError = agenticError ?? workflowCatalogError ?? null
   const showLoading =
     !overlayError &&
@@ -172,6 +174,7 @@ const MainArea: React.FC<MainAreaProps> = (props) => {
           onClose={() => setOasfModalOpen(false)}
           nodeName={oasfModalData?.label || ""}
           nodeData={oasfModalData}
+          chatApiTarget={chatApiTarget}
         />
       </Box>
     </>

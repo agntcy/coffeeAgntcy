@@ -170,18 +170,6 @@ export const LUNGO_FRONTEND_URLS = {
 
   agentDirectory: {
     baseUrl: "https://agent-directory.outshift.com/explore",
-    agents: {
-      supervisorAuction:
-        "/baeareicltg46rvjhqxd6pn47z5du3rgxoynvct6poeknf5tyemsxygwdrq",
-      brazilFarm:
-        "/baeareigpu5jgm3xrkouspfacgvq65i25cz63nnseqatu5davp35jenwlla",
-      colombiaFarm:
-        "/baeareiaqub6mci5mnt3iqagxfodfmjym36nshdmjmnzofcdilp7374rwlm",
-      vietnamFarm:
-        "/baeareiheas5bdad2wuurvpvqonuq4ry2u6vdzw4hikrnzssebchjojjr5m",
-      weatherMcp:
-        "/baeareibpoftgep62se35oxuiu3d27cuqef2loupupxdd3xozotxk3mrhhe",
-    },
     github: "https://github.com/agntcy/dir",
   },
 } as const

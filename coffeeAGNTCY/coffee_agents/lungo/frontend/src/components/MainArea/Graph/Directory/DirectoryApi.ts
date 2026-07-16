@@ -5,7 +5,7 @@
 
 import axios from "axios"
 import { joinBaseUrl, LUNGO_FRONTEND_URLS } from "@/urls"
-import { getApiUrlForPattern, PATTERNS } from "@/utils/patternUtils"
+import { getApiUrlForChatTarget, type ChatApiTarget } from "@/utils/patternUtils"
 import { IdentityServiceError } from "@/components/MainArea/Graph/Identity/IdentityApi"
 import type { CustomNodeData } from "../Elements/types"
 import { getOasfSlugFromNodeData } from "@/utils/agenticTopologyIdentityUiMap"
@@ -49,30 +49,22 @@ type NodeDataForOasf =
 const OASF_FETCH_CACHE_MAX = 24
 const oasfFetchCache = new Map<string, OasfRecord>()
 
-function oasfCacheKey(pattern: string, slug: string): string {
-  return `${pattern}\0${slug}`
+function oasfCacheKey(target: ChatApiTarget, slug: string): string {
+  return `${target}\0${slug}`
 }
 
 export const fetchOasfRecord = async (
   nodeData: NodeDataForOasf,
+  chatApiTarget?: ChatApiTarget | null,
 ): Promise<OasfRecord> => {
   if (nodeData?.oasfRecord) {
     return nodeData.oasfRecord
   }
 
   const slug = getOasfSlugFromNodeData(nodeData)
+  const target: ChatApiTarget = chatApiTarget ?? "exchange"
 
-  let pattern: string = PATTERNS.PUBLISH_SUBSCRIBE
-  if (
-    slug === "logistics-supervisor-agent" ||
-    slug === "tatooine-farm-agent" ||
-    slug === "shipping-agent" ||
-    slug === "accountant-agent"
-  ) {
-    pattern = PATTERNS.GROUP_MESSAGING
-  }
-
-  const cacheKey = oasfCacheKey(pattern, slug)
+  const cacheKey = oasfCacheKey(target, slug)
   const cached = oasfFetchCache.get(cacheKey)
   if (cached) {
     return cached
@@ -81,7 +73,7 @@ export const fetchOasfRecord = async (
   try {
     const response = await axios.get<OasfRecord>(
       joinBaseUrl(
-        getApiUrlForPattern(pattern),
+        getApiUrlForChatTarget(target),
         LUNGO_FRONTEND_URLS.apiPaths.agentsOasf(slug),
       ),
       {

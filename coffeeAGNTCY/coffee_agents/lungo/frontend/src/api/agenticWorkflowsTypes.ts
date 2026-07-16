@@ -32,6 +32,12 @@ export interface TopologyNodeWire {
   oasf_record?: Record<string, unknown>
   /** Directory content id (CID) for a discovered agent. */
   agent_cid?: string
+  agent_directory_cid?: string
+  identity_app_slug?: string
+  has_badge_override?: boolean
+  has_policy_override?: boolean
+  verification_status_override?: "verified" | "failed"
+  message_transport?: string
   [key: string]: unknown
 }
 

@@ -26,18 +26,18 @@ import {
   layoutSlimTransportGraph,
 } from "@/utils/topologyLayout"
 import {
+  applyBackendTopologyWireFields,
   applyDiscoveredAgentInlineUi,
   directoryAgentSlugFromAgentRecordUri,
   enrichAgenticTopologyWellKnownUi,
   isDirectoryLabel,
   isMcpServerLabel,
   isRecruiterLabel,
-  mergeAgenticTopologyIdentityUi,
   resolveGithubFromAgentRecordUri,
   splitTopologyNodeLabel,
 } from "@/utils/agenticTopologyIdentityUiMap"
-import type { IdentityUiGithubVariant } from "@/utils/agenticTopologyIdentityUiMap"
 import { resolveTopologyNodeIcon } from "@/utils/topologyNodeIcons"
+import { transportGithubLink } from "@/utils/transportGithub"
 
 // Transport label -> canonical synonym. Seed emits "transport"; runtime emits
 // "slim"/"nats"/"jsonrpc" for the same logical transport. Distinct logical
@@ -90,8 +90,19 @@ function a2aExtraHandlesForLabel(label: string): ExtraHandle[] | undefined {
 export interface TopologyToFlowOptions {
   /** When false, skip SecurityClass check for tests. */
   validateUrls?: boolean
-  /** When set, applies stable-agent UI map streaming vs publish GitHub display where applicable. */
-  identityUiVariant?: IdentityUiGithubVariant
+  /** When true, transport GitHub links use the streaming variant paths. */
+  isStreaming?: boolean
+}
+
+function messageTransportFromNodes(
+  nodes: TopologyNodeWire[],
+): string | undefined {
+  for (const n of nodes) {
+    if (n.type !== NODE_TYPES.TRANSPORT) continue
+    const value = n.message_transport
+    if (typeof value === "string" && value.trim()) return value.trim()
+  }
+  return undefined
 }
 
 export function topologyWireToReactFlow(
@@ -99,6 +110,7 @@ export function topologyWireToReactFlow(
   options: TopologyToFlowOptions = {},
 ): { nodes: Node[]; edges: Edge[] } {
   const validateUrls = options.validateUrls !== false
+  const isStreaming = options.isStreaming === true
   const nodesIn = topology?.nodes ?? []
   const edgesIn = topology?.edges ?? []
 
@@ -210,6 +222,7 @@ export function topologyWireToReactFlow(
     .filter((n) => n.type === NODE_TYPES.GROUP)
     .map(rfIdOf)
   const groupRfId = groupRfIds.length === 1 ? groupRfIds[0] : null
+  const messageTransport = messageTransportFromNodes(dedupedNodesIn)
 
   const labelByRfId = new Map<string, string>()
   for (const n of dedupedNodesIn) {
@@ -245,9 +258,15 @@ export function topologyWireToReactFlow(
       : {}
 
     if (n.type === NODE_TYPES.TRANSPORT) {
+      const transportName =
+        typeof n.message_transport === "string" ? n.message_transport : undefined
+      const transportGithub =
+        transportName != null
+          ? transportGithubLink(transportName, isStreaming)
+          : gh
       const data: TransportNodeData = {
         label: labelStr || "Transport",
-        githubLink: gh,
+        githubLink: transportGithub,
         compact: groupRfId != null,
       }
       return {
@@ -280,10 +299,7 @@ export function topologyWireToReactFlow(
       githubLink: gh,
       ...(directoryAgentSlug ? { directoryAgentSlug } : {}),
     }
-    data = mergeAgenticTopologyIdentityUi(data, n, {
-      validateUrls,
-      identityUiVariant: options.identityUiVariant,
-    })
+    data = applyBackendTopologyWireFields(data, n, { validateUrls })
     data = enrichAgenticTopologyWellKnownUi(data, n, { validateUrls })
     data = applyDiscoveredAgentInlineUi(data, n)
     if (data.directoryAgentSlug) {
@@ -329,7 +345,9 @@ export function topologyWireToReactFlow(
     let sourceHandle: string | undefined
     let targetHandle: string | undefined
     if (isMcpServerLabel(targetLabel)) {
-      label = EDGE_LABELS.MCP
+      label = messageTransport
+        ? `${EDGE_LABELS.MCP}${messageTransport}`
+        : EDGE_LABELS.MCP
     } else if (isDirectoryLabel(sourceLabel) && isRecruiterLabel(targetLabel)) {
       label = EDGE_LABELS.MCP_WITH_STDIO
       sourceHandle = "source-left"
