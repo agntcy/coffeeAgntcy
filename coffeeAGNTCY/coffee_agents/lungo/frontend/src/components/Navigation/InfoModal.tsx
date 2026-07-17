@@ -14,10 +14,9 @@ import {
 } from "@open-ui-kit/core"
 import Close from "@mui/icons-material/Close"
 import {
+  buildAboutRequest,
   getAgenticWorkflowsApiUrl,
   getExchangeAppApiUrl,
-  joinBaseUrl,
-  LUNGO_FRONTEND_URLS,
 } from "@/urls"
 
 interface InfoModalProps {
@@ -48,9 +47,7 @@ const InfoModal: React.FC<InfoModalProps> = ({ isOpen, onClose }) => {
     const fetchInfo = async () => {
       try {
         setError(null)
-        const res = await fetch(
-          joinBaseUrl(EXCHANGE_APP_API_URL, LUNGO_FRONTEND_URLS.apiPaths.about),
-        )
+        const res = await fetch(buildAboutRequest().url)
         if (!res.ok) {
           throw new Error(`HTTP ${res.status}: ${res.statusText}`)
         }

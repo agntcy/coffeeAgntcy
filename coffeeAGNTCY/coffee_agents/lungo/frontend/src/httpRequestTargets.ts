@@ -16,6 +16,10 @@ import {
   LUNGO_FRONTEND_URLS,
   type HttpRequestTarget,
 } from "@/urls"
+import {
+  getApiUrlForChatTarget,
+  type ChatApiTarget,
+} from "@/utils/patternUtils"
 
 function normalizeAgenticWorkflowsBase(baseUrl?: string): string {
   return (baseUrl ?? getAgenticWorkflowsApiUrl()).replace(/\/$/, "")
@@ -76,10 +80,10 @@ export function buildIdentityPolicyRequest(slug: string): HttpRequestTarget {
 
 export function buildAgentsOasfRequest(
   slug: string,
-  pattern?: string,
+  chatApiTarget?: ChatApiTarget | null,
 ): HttpRequestTarget {
   return joinHttpRequest(
-    getApiBaseForPattern(pattern),
+    getApiUrlForChatTarget(chatApiTarget),
     LUNGO_FRONTEND_URLS.apiPaths.agentsOasf(slug),
   )
 }

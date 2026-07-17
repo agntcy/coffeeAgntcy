@@ -6,6 +6,7 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react"
 import { v4 as uuid } from "uuid"
 import { LUNGO_FRONTEND_URLS } from "@/urls"
+import { reportRequestError } from "@/errors/request"
 import { logger } from "@/utils/logger"
 import { CanvasMode, type PatternDocState } from "@/types/patternDoc"
 import {
@@ -185,10 +186,11 @@ export function useApp() {
       })
       .catch((err: unknown) => {
         if (err instanceof DOMException && err.name === "AbortError") return
-        logger.apiError(AGENTIC_WORKFLOWS_CATALOG_LOG_PATH, err)
-        setWorkflowCatalogError(
-          err instanceof Error ? err.message : String(err),
+        const httpError = reportRequestError(
+          AGENTIC_WORKFLOWS_CATALOG_LOG_PATH,
+          err,
         )
+        setWorkflowCatalogError(httpError.message)
       })
       .finally(() => {
         if (!controller.signal.aborted) {
@@ -345,7 +347,10 @@ export function useApp() {
               streamUrl,
             )
           } catch (err) {
-            logger.apiError(LUNGO_FRONTEND_URLS.apiPaths.agentPromptStream, err)
+            logger.apiError(
+              LUNGO_FRONTEND_URLS.apiPaths.agentPromptStream.endpointLabel,
+              err,
+            )
             chat.setShowFinalResponse(true)
             chat.handleApiResponse(
               "Sorry, I encountered an error with streaming.",
@@ -372,7 +377,10 @@ export function useApp() {
               streamUrl,
             )
           } catch (err) {
-            logger.apiError(LUNGO_FRONTEND_URLS.apiPaths.agentPromptStream, err)
+            logger.apiError(
+              LUNGO_FRONTEND_URLS.apiPaths.agentPromptStream.endpointLabel,
+              err,
+            )
             chat.setShowFinalResponse(true)
             chat.handleApiResponse(
               "Sorry, I encountered an error with recruiter streaming.",
@@ -386,7 +394,10 @@ export function useApp() {
           chat.setAiReplied(true)
         }
       } catch (err) {
-        logger.apiError(LUNGO_FRONTEND_URLS.apiPaths.agentPrompt, err)
+        logger.apiError(
+          LUNGO_FRONTEND_URLS.apiPaths.agentPrompt.endpointLabel,
+          err,
+        )
         chat.handleApiResponse(
           err instanceof Error ? err.message : String(err),
           true,

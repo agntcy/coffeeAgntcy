@@ -4,15 +4,10 @@
  **/
 
 import { fetchJson } from "@/api/http"
-import { joinBaseUrl, LUNGO_FRONTEND_URLS } from "@/urls"
-import {
-  getApiUrlForChatTarget,
-  type ChatApiTarget,
-} from "@/utils/patternUtils"
+import { buildAgentsOasfRequest } from "@/urls"
+import { type ChatApiTarget } from "@/utils/patternUtils"
 import type { CustomNodeData } from "../Elements/types"
 import { getOasfSlugFromNodeData } from "@/utils/agenticTopologyIdentityUiMap"
-
-export { getOasfSlugFromNodeData }
 
 const DIRECTORY_REQUEST_TIMEOUT_MS = 10_000
 
@@ -56,10 +51,9 @@ export const fetchOasfRecord = async (
     return cached
   }
 
-  const endpoint = LUNGO_FRONTEND_URLS.apiPaths.agentsOasf(slug)
-  const url = joinBaseUrl(getApiUrlForChatTarget(target), endpoint)
-  const record = await fetchJson<OasfRecord>(url, {
-    endpoint,
+  const request = buildAgentsOasfRequest(slug, target)
+  const record = await fetchJson<OasfRecord>(request.url, {
+    endpointLabel: request.endpointLabel,
     timeoutMs: DIRECTORY_REQUEST_TIMEOUT_MS,
     headers: {
       "Content-Type": "application/json",
