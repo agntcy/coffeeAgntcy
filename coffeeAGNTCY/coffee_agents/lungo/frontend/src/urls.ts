@@ -37,6 +37,10 @@ export function apiRoute(path: string, endpointLabel: string = path): ApiRoute {
  * - `agentic-workflows/bootstrap` — `useWorkflowGraphAgenticBootstrap.ts`
  *   Covers instantiate + topology fetch + SSE attach in one catch; no single
  *   apiPath describes that composite flow.
+ * - `agentic-workflows/sse` — `useWorkflowGraphAgenticBootstrap.ts`
+ *   SSE reconnect exhaustion after repeated stream failures.
+ * - `agentic-workflows/refetch-topology` — `useWorkflowGraphTopologySync.ts`
+ *   Topology refetch exhaustion after debounced retries.
  * - `identity/badge-details` — `BadgeDetailsModal.tsx`
  *   Modal-level reporting; HTTP traffic uses `identityAppsBadge(slug)`.
  * - `identity/policy-details` — `PolicyDetailsModal.tsx`

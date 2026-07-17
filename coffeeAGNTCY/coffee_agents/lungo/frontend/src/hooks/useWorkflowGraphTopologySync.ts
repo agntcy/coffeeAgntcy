@@ -10,7 +10,7 @@ import {
   instanceIdToPathUuid,
 } from "@/api/agenticWorkflowsClient"
 import type { TopologyWire } from "@/api/agenticWorkflowsTypes"
-import { logger } from "@/utils/logger"
+import { reportRequestError } from "@/errors/request"
 import { topologyWireToReactFlow } from "@/utils/topologyToReactFlow"
 import {
   REFETCH_DEBOUNCE_MS,
@@ -27,6 +27,7 @@ interface UseWorkflowGraphTopologySyncParams {
   setNodes: React.Dispatch<React.SetStateAction<Node[]>>
   setEdges: React.Dispatch<React.SetStateAction<Edge[]>>
   restoreEdgeAnimation: () => void
+  setAgenticError: (error: string | null) => void
 }
 
 export function useWorkflowGraphTopologySync({
@@ -37,6 +38,7 @@ export function useWorkflowGraphTopologySync({
   setNodes,
   setEdges,
   restoreEdgeAnimation,
+  setAgenticError,
 }: UseWorkflowGraphTopologySyncParams) {
   const lastAppliedGraphNodeIdsRef = useRef<Set<string>>(new Set())
 
@@ -86,10 +88,17 @@ export function useWorkflowGraphTopologySync({
         if (!stillLatest || stillLatest.refetchSeq !== seq) return
         applyInstanceTopologyRef.current(fresh.topology)
       } catch (e) {
-        logger.apiError("agentic-workflows/refetch-topology", e)
         const s = sessionRef.current
         if (!s || s.refetchSeq !== seq) return
-        if (attempt >= 2) return
+        if (attempt >= 2) {
+          // Logical label for topology refetch exhaustion — see urls.ts.
+          const endpointLabel = "agentic-workflows/refetch-topology"
+          const userMessage =
+            "Could not refresh the workflow graph. It may be outdated."
+          reportRequestError(endpointLabel, e, { userMessage })
+          setAgenticError(userMessage)
+          return
+        }
         const backoffMs = attempt === 0 ? 200 : 500
         if (s.retryTimer) clearTimeout(s.retryTimer)
         s.retryTimer = setTimeout(() => {
@@ -100,7 +109,7 @@ export function useWorkflowGraphTopologySync({
         }, backoffMs)
       }
     },
-    [sessionRef],
+    [sessionRef, setAgenticError],
   )
 
   const refetchAndApplyTopologyRef = useRef(refetchAndApplyTopology)

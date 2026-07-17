@@ -14,7 +14,6 @@ import {
 } from "@/api/agenticWorkflowsClient"
 import type { EventV1Wire, TopologyWire } from "@/api/agenticWorkflowsTypes"
 import { reportRequestError } from "@/errors/request"
-import { logger } from "@/utils/logger"
 import {
   SSE_RECONNECT_BACKOFF_MS,
   type WorkflowGraphAgenticSession,
@@ -114,10 +113,17 @@ export function useWorkflowGraphAgenticBootstrap({
               )
             },
             (err) => {
-              logger.apiError("agentic-workflows/sse", err)
               const cur = sessionRef.current
               if (!cur || cur.instanceId !== instanceId || cancelled) return
-              if (cur.sseReconnectAttempts >= 6) return
+              if (cur.sseReconnectAttempts >= 6) {
+                // Logical label for SSE reconnect exhaustion — see urls.ts.
+                const endpointLabel = "agentic-workflows/sse"
+                const userMessage =
+                  "Live workflow updates stopped. The graph may be outdated."
+                reportRequestError(endpointLabel, err, { userMessage })
+                setAgenticError(userMessage)
+                return
+              }
               cur.sseReconnectAttempts += 1
               const delayMs =
                 SSE_RECONNECT_BACKOFF_MS * cur.sseReconnectAttempts

@@ -106,6 +106,7 @@ export function useWorkflowGraphFromAgenticApi({
       setNodes,
       setEdges,
       restoreEdgeAnimation,
+      setAgenticError,
     })
 
   const clearSession = useCallback(() => {

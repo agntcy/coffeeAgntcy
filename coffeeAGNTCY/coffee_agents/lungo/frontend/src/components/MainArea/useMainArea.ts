@@ -18,7 +18,6 @@ import type { WorkflowSummary } from "@/utils/agenticWorkflowsApi"
 import type { GraphConfig } from "@/utils/graphConfigs"
 import { graphConfigFromNodes } from "@/utils/graphConfigFromNodes"
 import { deriveAnimationSequenceFromGraph } from "@/components/Chat/chatStreamGraphHighlight"
-import { logger } from "@/utils/logger"
 
 export interface MainAreaProps {
   pattern: PatternType
@@ -124,11 +123,6 @@ export function useMainArea({
     setLayoutSyncNodeIds([])
     setLayoutSyncFitViewport(false)
   }, [selectedWorkflowSummary?.name, pattern])
-
-  useEffect(() => {
-    if (!agenticError) return
-    logger.error("agentic-workflows/graph-session", { detail: agenticError })
-  }, [agenticError])
 
   const nodeAgentCidKey = useMemo(
     () =>

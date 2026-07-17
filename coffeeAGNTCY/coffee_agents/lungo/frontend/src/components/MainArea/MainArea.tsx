@@ -8,7 +8,7 @@ import { ReactFlow, ReactFlowProvider } from "@xyflow/react"
 import "@xyflow/react/dist/style.css"
 import "./ReactFlow.css"
 import { ReactFlowThemeGlobalStyles } from "./ReactFlowThemeGlobalStyles"
-import { Box } from "@open-ui-kit/core"
+import { Box, EmptyState, GeneralSize } from "@open-ui-kit/core"
 import TransportNode from "./Graph/Elements/transportNode"
 import CustomEdge from "./Graph/Elements/CustomEdge"
 import BranchingEdge from "./Graph/Elements/BranchingEdge"
@@ -27,7 +27,6 @@ import {
 } from "@/config/graphViewDefaults"
 import { getAppShellBackgroundColor } from "./mainAreaBackground"
 import { LoadingSpinner } from "@/components/loading/LoadingSpinner"
-import { Typography } from "@open-ui-kit/core"
 import { useMainArea, type MainAreaProps } from "./useMainArea"
 
 const proOptions = { hideAttribution: true }
@@ -124,12 +123,14 @@ const MainArea: React.FC<MainAreaProps> = (props) => {
             }}
           >
             {overlayError ? (
-              <Typography
-                variant="body2"
-                sx={{ textAlign: "center", opacity: 0.7, maxWidth: 360, px: 2 }}
-              >
-                {overlayError}
-              </Typography>
+              <EmptyState
+                variant="negative"
+                hideIllustration
+                size={GeneralSize.Small}
+                title="Workflow graph unavailable"
+                description={overlayError}
+                containerProps={{ role: "alert" }}
+              />
             ) : (
               <LoadingSpinner message="Loading workflow graph..." />
             )}
