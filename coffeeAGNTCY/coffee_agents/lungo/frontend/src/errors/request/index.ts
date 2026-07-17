@@ -11,6 +11,7 @@ export {
   stripHtml,
   fetchJson,
   httpFetch,
+  fetchSse,
   type HttpErrorOptions,
   type HttpFetchOptions,
   type ParseHttpErrorOptions,

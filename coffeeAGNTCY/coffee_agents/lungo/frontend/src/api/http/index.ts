@@ -12,3 +12,13 @@ export {
 export { stripHtml } from "./stripHtml.ts"
 export { httpFetch, type HttpFetchOptions } from "./httpClient.ts"
 export { fetchJson } from "./fetchJson.ts"
+export {
+  fetchSse,
+  type FetchSseClose,
+  type FetchSseOptions,
+} from "./fetchSse.ts"
+export {
+  parseSseDataLine,
+  parseSseFrameLines,
+  splitSseFrames,
+} from "./sseParsing.ts"
