@@ -78,9 +78,9 @@ For a common understanding, please see the [terminologies used](docs/TERMINOLOGY
 
 |                            Milestone                            | Version (intended) |                    Focus Area                    | Release Date (intended) |
 | :-------------------------------------------------------------: | :----------------: | :----------------------------------------------: | :---------------------: |
-| [Heartbeat](https://github.com/agntcy/coffeeAgntcy/milestone/1) |       0.1.0        | Backend live events & Frontend dynamic animation |       (May 12th)        |
-|   [Fiber](https://github.com/agntcy/coffeeAgntcy/milestone/3)   |      (0.2.0)       |    Breadth of patterns, Recruit & Collaborate    |       (June 12th)       |
-| [Synapsis](https://github.com/agntcy/coffeeAgntcy/milestone/4)  |      (0.3.0)       |         Internet of Cognition alignment          |       (July 12th)       |
+| [Heartbeat](https://github.com/agntcy/coffeeAgntcy/milestone/1) |       0.1.0        | Backend live events & Frontend dynamic animation |       (May)             |
+|   [Fiber](https://github.com/agntcy/coffeeAgntcy/milestone/3)   |      (0.2.0)       |    Breadth of patterns, Recruit & Collaborate    |       (June)            |
+| [Synapsis](https://github.com/agntcy/coffeeAgntcy/milestone/4)  |      (0.3.0)       |         Internet of Cognition alignment          |       (July)            |
 
 ---
 
