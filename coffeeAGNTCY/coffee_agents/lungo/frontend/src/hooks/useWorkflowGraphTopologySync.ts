@@ -20,7 +20,9 @@ import {
 interface UseWorkflowGraphTopologySyncParams {
   isStreamingRef: React.RefObject<boolean>
   sessionRef: React.RefObject<WorkflowGraphAgenticSession | null>
-  onAppliedRef: React.RefObject<(() => void) | undefined>
+  onAppliedRef: React.RefObject<
+    ((nodeIds: readonly string[]) => void) | undefined
+  >
   attachHandlers: (node: Node) => Node
   setNodes: React.Dispatch<React.SetStateAction<Node[]>>
   setEdges: React.Dispatch<React.SetStateAction<Edge[]>>
@@ -50,7 +52,7 @@ export function useWorkflowGraphTopologySync({
       )
       setNodes(withHandlers)
       setEdges(mappedEdges)
-      onAppliedRef.current?.()
+      onAppliedRef.current?.(withHandlers.map((node) => node.id))
       queueMicrotask(() => {
         restoreEdgeAnimation()
       })

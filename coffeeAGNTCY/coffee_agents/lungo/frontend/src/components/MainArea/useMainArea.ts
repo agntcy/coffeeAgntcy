@@ -56,6 +56,12 @@ export function useMainArea({
   const [nodesDraggable, setNodesDraggable] = useState(true)
   const [nodesConnectable, setNodesConnectable] = useState(true)
   const [topologyApplied, setTopologyApplied] = useState(false)
+  const [layoutSyncGeneration, setLayoutSyncGeneration] = useState(0)
+  const [layoutSyncNodeIds, setLayoutSyncNodeIds] = useState<readonly string[]>(
+    [],
+  )
+  const [layoutSyncFitViewport, setLayoutSyncFitViewport] = useState(false)
+  const hasInitialViewportFitRef = useRef(false)
 
   const {
     activeModal,
@@ -89,6 +95,17 @@ export function useMainArea({
     setOasfModalOpen(true)
   }, [])
 
+  const handleLayoutSyncReady = useCallback(() => {
+    hasInitialViewportFitRef.current = true
+    setTopologyApplied(true)
+  }, [])
+
+  const handleTopologyApplied = useCallback((nodeIds: readonly string[]) => {
+    setLayoutSyncNodeIds(nodeIds)
+    setLayoutSyncFitViewport(!hasInitialViewportFitRef.current)
+    setLayoutSyncGeneration((generation) => generation + 1)
+  }, [])
+
   const { agenticMode, agenticError } = useWorkflowGraphFromAgenticApi({
     pattern,
     selectedWorkflowSummary,
@@ -96,16 +113,15 @@ export function useMainArea({
     setEdges,
     handleOpenIdentityModal,
     handleOpenOasfModal,
-    onTopologyApplied: () => {
-      setTopologyApplied(true)
-      setTimeout(() => {
-        fitViewWithViewport()
-      }, 200)
-    },
+    onTopologyApplied: handleTopologyApplied,
   })
 
   useEffect(() => {
+    hasInitialViewportFitRef.current = false
     setTopologyApplied(false)
+    setLayoutSyncGeneration(0)
+    setLayoutSyncNodeIds([])
+    setLayoutSyncFitViewport(false)
   }, [selectedWorkflowSummary?.name, pattern])
 
   useEffect(() => {
@@ -261,5 +277,9 @@ export function useMainArea({
     topologyApplied,
     agenticMode,
     agenticError,
+    layoutSyncGeneration,
+    layoutSyncNodeIds,
+    layoutSyncFitViewport,
+    handleLayoutSyncReady,
   }
 }

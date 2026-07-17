@@ -451,4 +451,46 @@ describe("topologyWireToReactFlow", () => {
     expect(data?.label).toBe("Transport: SLIM")
     expect(data?.githubLink).toContain("slim")
   })
+
+  it.each([
+    {
+      caseName: "enriched seed label Transport: SLIM",
+      label: "Transport: SLIM",
+    },
+    {
+      caseName: "runtime middleware label slim",
+      label: "slim",
+    },
+    {
+      caseName: "seed catalog label Transport",
+      label: "Transport",
+    },
+  ])(
+    "collapses transport nodes onto one canonical rf id ($caseName)",
+    ({ label }) => {
+      const { nodes } = topologyWireToReactFlow(
+        {
+          nodes: [
+            {
+              id: "node://seed-transport",
+              type: "transportNode",
+              label: "Transport: SLIM",
+              layer_index: 1,
+            },
+            {
+              id: "node://runtime-transport",
+              type: "transportNode",
+              label,
+              layer_index: 1,
+            },
+          ],
+          edges: [],
+        },
+        { validateUrls: false },
+      )
+      const transportNodes = nodes.filter((n) => n.type === "transportNode")
+      expect(transportNodes).toHaveLength(1)
+      expect(transportNodes[0]?.id).toBe("transport://transport")
+    },
+  )
 })

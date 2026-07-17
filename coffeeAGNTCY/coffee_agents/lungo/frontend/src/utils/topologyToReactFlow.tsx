@@ -54,8 +54,20 @@ const CONCRETE_TRANSPORTS = new Set(
     .map(([k]) => k),
 )
 
+function stripTransportLabelPrefix(label: string): string {
+  const trimmed = label.trim()
+  const lower = trimmed.toLowerCase()
+  const prefix = "transport:"
+  if (lower.startsWith(prefix)) {
+    return trimmed.slice(prefix.length).trim()
+  }
+  return trimmed
+}
+
 function normalizedTransportKey(label: string | undefined): string {
-  const lower = typeof label === "string" ? label.trim().toLowerCase() : ""
+  const stripped =
+    typeof label === "string" ? stripTransportLabelPrefix(label) : ""
+  const lower = stripped.toLowerCase()
   return TRANSPORT_SYNONYMS[lower] ?? lower
 }
 
