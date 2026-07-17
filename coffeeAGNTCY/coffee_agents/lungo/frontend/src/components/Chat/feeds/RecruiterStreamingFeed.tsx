@@ -15,6 +15,7 @@ import type {
   RecruiterStreamingFeedProps,
   RecruiterStreamingEvent,
 } from "@/stores/recruiterStreaming.types"
+import { NDJSON_STREAMING_STATUS } from "@/stores/ndjsonStreamingStatus"
 import { resolveStreamAuthorToNodeId } from "../chatStreamGraphHighlight"
 
 const RecruiterStreamingFeed: React.FC<RecruiterStreamingFeedProps> = ({
@@ -28,7 +29,8 @@ const RecruiterStreamingFeed: React.FC<RecruiterStreamingFeedProps> = ({
   apiError,
   observabilitySessionId,
 }) => {
-  const isComplete = recruiterStreamingState?.status === "completed"
+  const isComplete =
+    recruiterStreamingState?.status === NDJSON_STREAMING_STATUS.COMPLETED
   const [isExpanded, setIsExpanded] = useState(true)
   const hasAutoCollapsedRef = useRef(false)
   const lastProcessedEventRef = useRef<string | null>(null)

@@ -7,7 +7,7 @@ import { useState, useEffect, useRef, useCallback, useMemo } from "react"
 import { v4 as uuid } from "uuid"
 import { LUNGO_FRONTEND_URLS } from "@/urls"
 import { reportRequestError } from "@/errors/request"
-import { logger } from "@/utils/logger"
+import { NDJSON_STREAMING_STATUS } from "@/stores/ndjsonStreamingStatus"
 import { CanvasMode, type PatternDocState } from "@/types/patternDoc"
 import {
   fetchWorkflowDocumentation,
@@ -218,15 +218,20 @@ export function useApp() {
 
   useEffect(() => {
     const transport = workflowChatTransport(selectedWorkflowSummary)
-    if (transport === "auction_stream") {
-      if (
-        streaming.events.length > 0 &&
-        streaming.status !== "connecting" &&
-        streaming.status !== "streaming" &&
-        chat.isAgentLoading
-      ) {
-        chat.setIsAgentLoading(false)
-      }
+    if (transport !== "auction_stream") return
+    if (!chat.isAgentLoading) return
+
+    if (streaming.status === NDJSON_STREAMING_STATUS.ERROR) {
+      chat.setIsAgentLoading(false)
+      return
+    }
+
+    if (
+      streaming.events.length > 0 &&
+      streaming.status !== NDJSON_STREAMING_STATUS.CONNECTING &&
+      streaming.status !== NDJSON_STREAMING_STATUS.STREAMING
+    ) {
+      chat.setIsAgentLoading(false)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps -- only run when streaming state or workflow changes
   }, [
@@ -235,6 +240,29 @@ export function useApp() {
     streaming.status,
     chat.isAgentLoading,
     chat.setIsAgentLoading,
+  ])
+
+  useEffect(() => {
+    const transport = workflowChatTransport(selectedWorkflowSummary)
+    if (transport !== "auction_stream") return
+
+    if (streaming.status === NDJSON_STREAMING_STATUS.ERROR && streaming.error) {
+      reportRequestError(
+        LUNGO_FRONTEND_URLS.apiPaths.agentPromptStream.endpointLabel,
+        new Error(streaming.error),
+      )
+      chat.setIsAgentLoading(false)
+      chat.setShowFinalResponse(true)
+      chat.handleApiResponse(`Streaming error: ${streaming.error}`, true)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- only run when auction streaming state or workflow changes
+  }, [
+    selectedWorkflowSummary,
+    streaming.status,
+    streaming.error,
+    chat.handleApiResponse,
+    chat.setIsAgentLoading,
+    chat.setShowFinalResponse,
   ])
 
   useEffect(() => {
@@ -266,7 +294,7 @@ export function useApp() {
     const transport = workflowChatTransport(selectedWorkflowSummary)
     if (transport !== "recruiter_stream") return
 
-    if (streaming.recruiterStatus === "completed") {
+    if (streaming.recruiterStatus === NDJSON_STREAMING_STATUS.COMPLETED) {
       chat.setIsAgentLoading(false)
 
       if (streaming.recruiterFinalMessage) {
@@ -281,7 +309,7 @@ export function useApp() {
         )
       }
     } else if (
-      streaming.recruiterStatus === "error" &&
+      streaming.recruiterStatus === NDJSON_STREAMING_STATUS.ERROR &&
       streaming.recruiterError
     ) {
       chat.setIsAgentLoading(false)
@@ -347,9 +375,12 @@ export function useApp() {
               streamUrl,
             )
           } catch (err) {
-            logger.apiError(
+            reportRequestError(
               LUNGO_FRONTEND_URLS.apiPaths.agentPromptStream.endpointLabel,
               err,
+              {
+                userMessage: "Sorry, I encountered an error with streaming.",
+              },
             )
             chat.setShowFinalResponse(true)
             chat.handleApiResponse(
@@ -362,7 +393,23 @@ export function useApp() {
           chat.setShowAuctionStreaming(true)
           chat.setAgentResponse(undefined)
           streaming.reset()
-          await streaming.connect(query, activeWorkflowInstanceId, streamUrl)
+          try {
+            await streaming.connect(query, activeWorkflowInstanceId, streamUrl)
+          } catch (err) {
+            reportRequestError(
+              LUNGO_FRONTEND_URLS.apiPaths.agentPromptStream.endpointLabel,
+              err,
+              {
+                userMessage:
+                  "Sorry, I encountered an error with auction streaming.",
+              },
+            )
+            chat.setShowFinalResponse(true)
+            chat.handleApiResponse(
+              "Sorry, I encountered an error with auction streaming.",
+              true,
+            )
+          }
         } else if (transport === "recruiter_stream") {
           chat.setShowFinalResponse(false)
           chat.setShowRecruiterStreaming(true)
@@ -377,9 +424,13 @@ export function useApp() {
               streamUrl,
             )
           } catch (err) {
-            logger.apiError(
+            reportRequestError(
               LUNGO_FRONTEND_URLS.apiPaths.agentPromptStream.endpointLabel,
               err,
+              {
+                userMessage:
+                  "Sorry, I encountered an error with recruiter streaming.",
+              },
             )
             chat.setShowFinalResponse(true)
             chat.handleApiResponse(
@@ -394,7 +445,7 @@ export function useApp() {
           chat.setAiReplied(true)
         }
       } catch (err) {
-        logger.apiError(
+        reportRequestError(
           LUNGO_FRONTEND_URLS.apiPaths.agentPrompt.endpointLabel,
           err,
         )

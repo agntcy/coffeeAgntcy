@@ -9,6 +9,7 @@ import { Box, Stack, Typography } from "@open-ui-kit/core"
 
 import { ChatAgentAvatar } from "../ChatAvatarCircle"
 import type { AuctionStreamingState } from "@/stores/auctionStreaming.types"
+import { NDJSON_STREAMING_STATUS } from "@/stores/ndjsonStreamingStatus"
 import type { GraphConfig } from "@/utils/graphConfigs"
 import { animationSequenceStepIds } from "../chatStreamGraphHighlight"
 import { FeedSpinnerRow } from "../FeedSpinnerRow"
@@ -39,7 +40,8 @@ const AuctionStreamingFeed: React.FC<AuctionStreamingFeedProps> = ({
   apiError,
   observabilitySessionId,
 }) => {
-  const isComplete = auctionStreamingState?.status === "completed"
+  const isComplete =
+    auctionStreamingState?.status === NDJSON_STREAMING_STATUS.COMPLETED
   const lastProcessedStepRef = useRef<number | null>(null)
 
   useEffect(() => {

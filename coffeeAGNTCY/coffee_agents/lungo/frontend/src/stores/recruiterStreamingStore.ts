@@ -6,6 +6,10 @@
 import { create } from "zustand"
 import type { AgentRecord } from "@/types/agent"
 import type { RecruiterStreamingEvent } from "./recruiterStreaming.types"
+import {
+  NDJSON_STREAMING_STATUS,
+  type NdjsonStreamingStatus,
+} from "./ndjsonStreamingStatus"
 import { isLocalDev, parseFetchError } from "@/utils/const.ts"
 import { logger } from "@/utils/logger"
 
@@ -27,7 +31,7 @@ const isValidRecruiterStreamingEvent = (
 }
 
 interface RecruiterStreamingStoreState {
-  status: "idle" | "connecting" | "streaming" | "completed" | "error"
+  status: NdjsonStreamingStatus
   error: string | null
   events: RecruiterStreamingEvent[]
   prompt: string | null
@@ -49,7 +53,7 @@ interface RecruiterStreamingStoreState {
 }
 
 const initialState = {
-  status: "idle" as const,
+  status: NDJSON_STREAMING_STATUS.IDLE,
   error: null,
   events: [],
   prompt: null,
@@ -74,7 +78,7 @@ export const useRecruiterStreamingStore = create<RecruiterStreamingStoreState>(
     ) => {
       const abortController = new AbortController()
       set({
-        status: "connecting",
+        status: NDJSON_STREAMING_STATUS.CONNECTING,
         error: null,
         prompt,
         events: [],
@@ -89,7 +93,7 @@ export const useRecruiterStreamingStore = create<RecruiterStreamingStoreState>(
 
       if (!streamUrl) {
         set({
-          status: "error",
+          status: NDJSON_STREAMING_STATUS.ERROR,
           error: "Streaming URL is required",
           abortController: null,
         })
@@ -115,7 +119,7 @@ export const useRecruiterStreamingStore = create<RecruiterStreamingStoreState>(
           const { status, message } = await parseFetchError(response)
           if (status >= 400 && status < 500) {
             set({
-              status: "error",
+              status: NDJSON_STREAMING_STATUS.ERROR,
               error: `HTTP ${status} - ${message}`,
               abortController: null,
             })
@@ -123,7 +127,7 @@ export const useRecruiterStreamingStore = create<RecruiterStreamingStoreState>(
           }
 
           set({
-            status: "error",
+            status: NDJSON_STREAMING_STATUS.ERROR,
             error: "Sorry, something went wrong. Please try again later.",
             abortController: null,
           })
@@ -137,7 +141,7 @@ export const useRecruiterStreamingStore = create<RecruiterStreamingStoreState>(
           )
         }
 
-        set({ status: "streaming" })
+        set({ status: NDJSON_STREAMING_STATUS.STREAMING })
 
         const decoder = new TextDecoder()
         let buffer = ""
@@ -178,7 +182,7 @@ export const useRecruiterStreamingStore = create<RecruiterStreamingStoreState>(
                       }))
                     } else if (event.event_type === "error") {
                       set((state) => ({
-                        status: "error",
+                        status: NDJSON_STREAMING_STATUS.ERROR,
                         error:
                           event.message || "An error occurred during streaming",
                         events: [...state.events, event],
@@ -207,7 +211,10 @@ export const useRecruiterStreamingStore = create<RecruiterStreamingStoreState>(
             }
           }
 
-          set({ status: "completed", abortController: null })
+          set({
+            status: NDJSON_STREAMING_STATUS.COMPLETED,
+            abortController: null,
+          })
         } finally {
           reader.releaseLock()
         }
@@ -215,7 +222,7 @@ export const useRecruiterStreamingStore = create<RecruiterStreamingStoreState>(
         if (!abortController.signal.aborted) {
           logger.error("Unexpected recruiter streaming error:", error)
           set({
-            status: "error",
+            status: NDJSON_STREAMING_STATUS.ERROR,
             error: "Sorry, something went wrong. Please try again.",
             abortController: null,
           })
@@ -228,7 +235,7 @@ export const useRecruiterStreamingStore = create<RecruiterStreamingStoreState>(
       if (abortController) {
         abortController.abort()
       }
-      set({ status: "idle", abortController: null })
+      set({ status: NDJSON_STREAMING_STATUS.IDLE, abortController: null })
     },
 
     reset: () => {
