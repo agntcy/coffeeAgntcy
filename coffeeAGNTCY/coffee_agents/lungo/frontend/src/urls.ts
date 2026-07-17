@@ -2,7 +2,8 @@
  * Copyright AGNTCY Contributors (https://github.com/agntcy)
  * SPDX-License-Identifier: Apache-2.0
  *
- * Single source of truth for Lungo frontend URLs, env-backed config, and builders.
+ * Single source of truth for Lungo frontend HTTP configuration: API base URLs,
+ * relative paths (with endpointLabel), assembled fetch URLs, and static link catalogs.
  * Import via `@/urls`.
  **/
 
@@ -17,32 +18,61 @@ export function joinBaseUrl(base: string, path: string): string {
   return `${base.replace(/\/$/, "")}${path}`
 }
 
+/** Relative API route: path joins to a base URL; endpointLabel is for logs and HttpError metadata. */
+export type ApiRoute = {
+  readonly path: string
+  readonly endpointLabel: string
+}
+
+export function apiRoute(path: string, endpointLabel: string = path): ApiRoute {
+  return { path, endpointLabel }
+}
+
+/**
+ * Logical endpoint labels live at feature/UI boundaries and are intentionally
+ * **not** entries in `apiPaths` below. Each maps to one or more apiPaths calls,
+ * but names the user-facing workflow or surface for logs, HttpError metadata,
+ * and `reportRequestError`.
+ *
+ * - `agentic-workflows/bootstrap` — `useWorkflowGraphAgenticBootstrap.ts`
+ *   Covers instantiate + topology fetch + SSE attach in one catch; no single
+ *   apiPath describes that composite flow.
+ * - `identity/badge-details` — `BadgeDetailsModal.tsx`
+ *   Modal-level reporting; HTTP traffic uses `identityAppsBadge(slug)`.
+ * - `identity/policy-details` — `PolicyDetailsModal.tsx`
+ *   Modal-level reporting; HTTP traffic uses `identityAppsPolicies(slug)`.
+ * - `directory/oasf-record` — `OasfRecordModal.tsx`
+ *   Modal-level reporting; HTTP traffic uses `agentsOasf(slug)`.
+ */
+
 /** Relative API paths appended to pattern-specific or agentic-workflows bases. */
 export type LungoFrontendApiPaths = {
-  readonly about: "/about"
-  readonly suggestedPrompts: "/suggested-prompts"
-  readonly suggestedPromptsStreaming: "/suggested-prompts?pattern=streaming"
-  readonly agentPrompt: "/agent/prompt"
-  readonly agentPromptStream: "/agent/prompt/stream"
-  readonly transportConfig: "/transport/config"
-  readonly agenticWorkflowsCatalog: "/agentic-workflows/"
-  readonly identityAppsBadge: (slug: string) => string
-  readonly identityAppsPolicies: (slug: string) => string
-  readonly agentsOasf: (slug: string) => string
-  readonly agenticWorkflowsInstantiate: (workflowName: string) => string
+  readonly about: ApiRoute
+  readonly suggestedPrompts: ApiRoute
+  readonly suggestedPromptsStreaming: ApiRoute
+  readonly agentPrompt: ApiRoute
+  readonly agentPromptStream: ApiRoute
+  readonly transportConfig: ApiRoute
+  readonly agenticWorkflowsCatalog: ApiRoute
+  readonly identityAppsBadge: (slug: string) => ApiRoute
+  readonly identityAppsPolicies: (slug: string) => ApiRoute
+  readonly agentsOasf: (slug: string) => ApiRoute
+  readonly agenticWorkflowsInstantiate: (workflowName: string) => ApiRoute
   readonly agenticWorkflowsInstance: (
     workflowName: string,
     instanceUuid: string,
-  ) => string
+  ) => ApiRoute
   readonly agenticWorkflowsInstanceSse: (
     workflowName: string,
     instanceUuid: string,
-  ) => string
+  ) => ApiRoute
+  readonly agenticWorkflowsDocumentation: (workflowName: string) => ApiRoute
 }
 
 /** URLs, env-backed config, and static link catalogs for the Lungo frontend. */
 export const LUNGO_FRONTEND_URLS = {
-  urlDefaults: {
+  /** Env-backed API host roots (scheme + host + port). */
+  apiBaseDefaults: {
     exchangeAppApi: "http://127.0.0.1:8000",
     logisticsAppApi: "http://127.0.0.1:9090",
     discoveryAppApi: "http://127.0.0.1:8882",
@@ -57,7 +87,7 @@ export const LUNGO_FRONTEND_URLS = {
     agenticWorkflowsDocsGithubBranch: "main",
   } as const,
 
-  urlEnvKeys: {
+  apiBaseEnvKeys: {
     exchangeAppApi: "VITE_EXCHANGE_APP_API_URL",
     logisticsAppApi: "VITE_LOGISTICS_APP_API_URL",
     discoveryAppApi: "VITE_DISCOVERY_APP_API_URL",
@@ -82,34 +112,41 @@ export const LUNGO_FRONTEND_URLS = {
   } as const,
 
   apiPaths: {
-    about: "/about",
-    suggestedPrompts: "/suggested-prompts",
-    suggestedPromptsStreaming: "/suggested-prompts?pattern=streaming",
-    agentPrompt: "/agent/prompt",
-    agentPromptStream: "/agent/prompt/stream",
-    transportConfig: "/transport/config",
-    agenticWorkflowsCatalog: "/agentic-workflows/",
-    identityAppsBadge: (slug: string): string => `/identity-apps/${slug}/badge`,
-    identityAppsPolicies: (slug: string): string =>
-      `/identity-apps/${slug}/policies`,
-    agentsOasf: (slug: string): string => `/agents/${slug}/oasf`,
-    agenticWorkflowsInstantiate: (workflowName: string): string => {
+    about: apiRoute("/about"),
+    suggestedPrompts: apiRoute("/suggested-prompts"),
+    suggestedPromptsStreaming: apiRoute("/suggested-prompts?pattern=streaming"),
+    agentPrompt: apiRoute("/agent/prompt"),
+    agentPromptStream: apiRoute("/agent/prompt/stream"),
+    transportConfig: apiRoute("/transport/config"),
+    agenticWorkflowsCatalog: apiRoute("/agentic-workflows/"),
+    identityAppsBadge: (slug: string): ApiRoute =>
+      apiRoute(`/identity-apps/${slug}/badge`),
+    identityAppsPolicies: (slug: string): ApiRoute =>
+      apiRoute(`/identity-apps/${slug}/policies`),
+    agentsOasf: (slug: string): ApiRoute => apiRoute(`/agents/${slug}/oasf`),
+    agenticWorkflowsInstantiate: (workflowName: string): ApiRoute => {
       const path = encodeWorkflowPathSegment(workflowName)
-      return `/agentic-workflows/${path}/`
+      return apiRoute(`/agentic-workflows/${path}/`)
     },
     agenticWorkflowsInstance: (
       workflowName: string,
       instanceUuid: string,
-    ): string => {
+    ): ApiRoute => {
       const path = encodeWorkflowPathSegment(workflowName)
-      return `/agentic-workflows/${path}/instances/${instanceUuid}/`
+      return apiRoute(`/agentic-workflows/${path}/instances/${instanceUuid}/`)
     },
     agenticWorkflowsInstanceSse: (
       workflowName: string,
       instanceUuid: string,
-    ): string => {
+    ): ApiRoute => {
       const path = encodeWorkflowPathSegment(workflowName)
-      return `/agentic-workflows/${path}/instances/${instanceUuid}/events/stream`
+      return apiRoute(
+        `/agentic-workflows/${path}/instances/${instanceUuid}/events/stream`,
+      )
+    },
+    agenticWorkflowsDocumentation: (workflowName: string): ApiRoute => {
+      const path = encodeWorkflowPathSegment(workflowName)
+      return apiRoute(`/agentic-workflows/${path}/documentation/`)
     },
   } satisfies LungoFrontendApiPaths,
 
@@ -174,12 +211,12 @@ export const LUNGO_FRONTEND_URLS = {
   },
 } as const
 
-type UrlDefaultKey = keyof typeof LUNGO_FRONTEND_URLS.urlDefaults
+type ApiBaseDefaultKey = keyof typeof LUNGO_FRONTEND_URLS.apiBaseDefaults
 type ConfigDefaultKey = keyof typeof LUNGO_FRONTEND_URLS.configDefaults
 
-function resolveUrlDefault(key: UrlDefaultKey): string {
-  const envKey = LUNGO_FRONTEND_URLS.urlEnvKeys[key]
-  return env.get(envKey) ?? LUNGO_FRONTEND_URLS.urlDefaults[key]
+function resolveApiBaseDefault(key: ApiBaseDefaultKey): string {
+  const envKey = LUNGO_FRONTEND_URLS.apiBaseEnvKeys[key]
+  return env.get(envKey) ?? LUNGO_FRONTEND_URLS.apiBaseDefaults[key]
 }
 
 function resolveConfigDefault(key: ConfigDefaultKey): string {
@@ -188,27 +225,27 @@ function resolveConfigDefault(key: ConfigDefaultKey): string {
 }
 
 export function getExchangeAppApiUrl(): string {
-  return resolveUrlDefault("exchangeAppApi")
+  return resolveApiBaseDefault("exchangeAppApi")
 }
 
 export function getLogisticsAppApiUrl(): string {
-  return resolveUrlDefault("logisticsAppApi")
+  return resolveApiBaseDefault("logisticsAppApi")
 }
 
 export function getDiscoveryAppApiUrl(): string {
-  return resolveUrlDefault("discoveryAppApi")
+  return resolveApiBaseDefault("discoveryAppApi")
 }
 
 export function getAgenticWorkflowsApiUrl(): string {
-  return resolveUrlDefault("agenticWorkflowsApi")
+  return resolveApiBaseDefault("agenticWorkflowsApi")
 }
 
 export function getGrafanaUrl(): string {
-  return resolveUrlDefault("grafana")
+  return resolveApiBaseDefault("grafana")
 }
 
 export function getDirectoryServerUrl(): string {
-  return resolveUrlDefault("directoryServer")
+  return resolveApiBaseDefault("directoryServer")
 }
 
 export function getDirectoryVersion(): string {
@@ -223,25 +260,37 @@ export function getAgenticWorkflowsApiKey(): string {
   return env.get(LUNGO_FRONTEND_URLS.secretEnvKeys.agenticWorkflowsApiKey) ?? ""
 }
 
-export function buildAgenticWorkflowsCatalogUrl(): string {
-  return joinBaseUrl(
-    getAgenticWorkflowsApiUrl(),
-    LUNGO_FRONTEND_URLS.apiPaths.agenticWorkflowsCatalog,
-  )
+/** Assembled HTTP fetch target: full URL plus stable endpointLabel for errors/logs. */
+export type HttpRequestTarget = {
+  readonly url: string
+  readonly endpointLabel: string
 }
 
-export function buildWorkflowInstanceSseUrl(
-  baseUrl: string,
-  workflowName: string,
-  instancePathUuid: string,
-): string {
-  return joinBaseUrl(
-    baseUrl,
-    LUNGO_FRONTEND_URLS.apiPaths.agenticWorkflowsInstanceSse(
-      workflowName,
-      instancePathUuid,
-    ),
-  )
+export function joinHttpRequest(
+  base: string,
+  route: ApiRoute,
+  query?: Record<string, string>,
+): HttpRequestTarget {
+  let url = joinBaseUrl(base.replace(/\/$/, ""), route.path)
+  if (query && Object.keys(query).length > 0) {
+    const qs = new URLSearchParams(query).toString()
+    url += `${url.includes("?") ? "&" : "?"}${qs}`
+  }
+  return { url, endpointLabel: route.endpointLabel }
+}
+
+/** Pick the pattern-app API host for agent/chat/transport requests. */
+export function getApiBaseForPattern(pattern?: string): string {
+  if (pattern === "group_messaging") {
+    return getLogisticsAppApiUrl()
+  }
+  if (pattern === "publish_subscribe_streaming") {
+    return getExchangeAppApiUrl()
+  }
+  if (pattern === "a2a_http") {
+    return getDiscoveryAppApiUrl()
+  }
+  return getExchangeAppApiUrl()
 }
 
 export function buildGrafanaSessionDashboardUrl(sessionId: string): string {
@@ -266,3 +315,23 @@ export function getWorkflowDocumentationGithubUrl(catalogName: string): string {
     LUNGO_FRONTEND_URLS.workflowDocumentation
   return `${githubRepoBlobRoot}/${branchSegment}/${docsWorkflowsPath}/${slug}.md`
 }
+
+export {
+  buildAboutRequest,
+  buildAgentPromptRequest,
+  buildAgentPromptStreamRequest,
+  buildAgenticWorkflowsCatalogRequest,
+  buildAgenticWorkflowsCatalogUrl,
+  buildAgenticWorkflowsDocumentationRequest,
+  buildAgenticWorkflowsInstantiateRequest,
+  buildAgenticWorkflowsInstanceRequest,
+  buildAgenticWorkflowsInstanceSseRequest,
+  buildAgentsOasfRequest,
+  buildGroupAgentPromptStreamRequest,
+  buildIdentityBadgeRequest,
+  buildIdentityPolicyRequest,
+  buildSuggestedPromptsRequest,
+  buildTransportConfigRequest,
+  buildWorkflowInstanceSseUrl,
+  type SuggestedPromptsSource,
+} from "./httpRequestTargets.ts"
