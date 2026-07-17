@@ -49,8 +49,9 @@ const PolicyDetailsModal: React.FC<PolicyDetailsModalProps> = ({
     try {
       const data = await fetchPolicyDetails(nodeData)
       setPolicyData(data)
-    } catch (caught) {
-      const httpError = reportRequestError("identity/policy-details", caught)
+    } catch (err) {
+      // Modal boundary label; HTTP route is identityAppsPolicies — see urls.ts.
+      const httpError = reportRequestError("identity/policy-details", err)
       setError(httpError.message)
     } finally {
       setLoading(false)

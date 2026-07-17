@@ -49,6 +49,7 @@ const BadgeDetailsModal: React.FC<BadgeDetailsModalProps> = ({
       const data = await fetchBadgeDetails(nodeData)
       setBadgeData(data)
     } catch (err) {
+      // Modal boundary label; HTTP route is identityAppsBadge — see urls.ts.
       const httpError = reportRequestError("identity/badge-details", err)
       setError(httpError.message)
     } finally {

@@ -81,8 +81,9 @@ const OasfRecordModal: React.FC<OasfRecordModalProps> = ({
     try {
       const data = await fetchOasfRecord(nodeData, chatApiTarget)
       setRecord(data)
-    } catch (caught) {
-      const httpError = reportRequestError("directory/oasf-record", caught)
+    } catch (err) {
+      // Modal boundary label; HTTP route is agentsOasf — see urls.ts.
+      const httpError = reportRequestError("directory/oasf-record", err)
       setError(httpError.message)
     } finally {
       setLoading(false)

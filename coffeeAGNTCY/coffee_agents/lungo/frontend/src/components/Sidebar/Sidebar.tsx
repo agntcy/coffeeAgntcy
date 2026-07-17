@@ -4,8 +4,14 @@
  **/
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
-import ErrorOutline from "@mui/icons-material/ErrorOutline"
-import { Box, List, Spinner, Stack, Typography } from "@open-ui-kit/core"
+import {
+  Box,
+  List,
+  Message,
+  Spinner,
+  Stack,
+  Typography,
+} from "@open-ui-kit/core"
 import type { WorkflowSummary } from "@/utils/agenticWorkflowsApi"
 import { getAppShellBackgroundColor } from "../MainArea/mainAreaBackground"
 import CatalogTree from "./CatalogTree"
@@ -126,16 +132,14 @@ const Sidebar: React.FC<SidebarProps> = ({
             ) : null}
 
             {!isLoading && error !== null ? (
-              <Stack
-                direction="row"
-                alignItems="center"
-                spacing={1}
+              <Message
+                type="error"
+                hideClose
                 role="alert"
-                sx={{ px: 2.5, py: 1, opacity: 0.8 }}
+                sx={{ mx: 2.5, my: 1 }}
               >
-                <ErrorOutline />
-                <Typography variant="caption">Menu is unavailable</Typography>
-              </Stack>
+                {error}
+              </Message>
             ) : null}
 
             {!isLoading && error === null ? (
