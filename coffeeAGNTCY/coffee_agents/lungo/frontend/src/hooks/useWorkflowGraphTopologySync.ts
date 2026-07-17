@@ -77,7 +77,7 @@ export function useWorkflowGraphTopologySync({
       try {
         const path = instanceIdToPathUuid(latest.instanceId)
         const fresh = await getWorkflowInstanceState(
-          latest.client,
+          latest.baseUrl,
           latest.workflowName,
           path,
           true,

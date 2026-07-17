@@ -115,11 +115,11 @@ export function useWorkflowGraphFromAgenticApi({
     if (s.debounceTimer) clearTimeout(s.debounceTimer)
     if (s.retryTimer) clearTimeout(s.retryTimer)
     if (s.sseReconnectTimer) clearTimeout(s.sseReconnectTimer)
-    const { client, workflowName, instanceId } = s
+    const { baseUrl, workflowName, instanceId } = s
     sessionRef.current = null
     try {
       const pathUuid = instanceIdToPathUuid(instanceId)
-      void deleteWorkflowInstance(client, workflowName, pathUuid).catch(
+      void deleteWorkflowInstance(baseUrl, workflowName, pathUuid).catch(
         (err) => {
           logger.apiError("agentic-workflows/delete-instance", err)
         },

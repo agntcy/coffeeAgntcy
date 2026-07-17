@@ -4,7 +4,6 @@
  **/
 
 import type { Edge, Node } from "@xyflow/react"
-import type { createClient } from "@/api/agenticWorkflowsClient"
 import type { CustomNodeData } from "@/components/MainArea/Graph/Elements/types"
 import type { PatternType } from "@/utils/patternUtils"
 import type { WorkflowSummary } from "@/utils/agenticWorkflowsApi"
@@ -34,7 +33,6 @@ export interface UseWorkflowGraphFromAgenticApiResult {
 }
 
 export type WorkflowGraphAgenticSession = {
-  client: ReturnType<typeof createClient>
   baseUrl: string
   workflowName: string
   instanceId: string
