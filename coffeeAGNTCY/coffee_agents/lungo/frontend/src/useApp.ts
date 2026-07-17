@@ -109,7 +109,7 @@ export function useApp() {
       chat.setAgentResponse(undefined)
       chat.setPendingResponse("")
       chat.setIsAgentLoading(false)
-      chat.setApiError(false)
+      chat.setApiErrorMessage(null)
       chat.setCurrentUserMessage("")
       chat.setButtonClicked(false)
       chat.setAiReplied(false)
@@ -338,7 +338,7 @@ export function useApp() {
       chat.setCurrentUserMessage(query)
       chat.setIsAgentLoading(true)
       chat.setButtonClicked(true)
-      chat.setApiError(false)
+      chat.setApiErrorMessage(null)
 
       const transport = workflowChatTransport(selectedWorkflowSummary)
       if (
@@ -566,7 +566,7 @@ export function useApp() {
     agentResponse: chat.agentResponse,
     executionKey: chat.executionKey,
     isAgentLoading: chat.isAgentLoading,
-    apiError: chat.apiError,
+    apiErrorMessage: chat.apiErrorMessage,
     showProgressTracker: chat.showProgressTracker,
     showAuctionStreaming: chat.showAuctionStreaming,
     showRecruiterStreaming: chat.showRecruiterStreaming,

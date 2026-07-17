@@ -14,6 +14,7 @@ import type { GraphConfig } from "@/utils/graphConfigs"
 import { animationSequenceStepIds } from "../chatStreamGraphHighlight"
 import { FeedSpinnerRow } from "../FeedSpinnerRow"
 import { FeedStatusLine } from "../FeedStatusLine"
+import { FeedErrorMessage } from "./FeedErrorMessage"
 import GrafanaSessionLink from "../GrafanaSessionLink"
 
 export interface AuctionStreamingFeedProps {
@@ -114,7 +115,7 @@ const AuctionStreamingFeed: React.FC<AuctionStreamingFeedProps> = ({
         }}
       >
         {errorMessage ? (
-          <FeedStatusLine>Connection error: {errorMessage}</FeedStatusLine>
+          <FeedErrorMessage>{errorMessage}</FeedErrorMessage>
         ) : isComplete ? (
           <FeedStatusLine>Streaming output:</FeedStatusLine>
         ) : prompt && !apiError ? (

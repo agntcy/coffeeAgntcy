@@ -44,7 +44,7 @@ interface ChatAreaProps {
   agentResponse?: ApiResponse
   executionKey?: string
   isAgentLoading?: boolean
-  apiError: boolean
+  apiErrorMessage?: string | null
   chatRef?: React.RefObject<HTMLDivElement | null>
   auctionState?: AuctionStreamingState
   recruiterState?: RecruiterStreamingState
@@ -72,7 +72,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
   agentResponse,
   executionKey,
   isAgentLoading,
-  apiError,
+  apiErrorMessage,
   chatRef,
   auctionState,
   recruiterState,
@@ -238,7 +238,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
               showFinalResponse={showFinalResponse}
               isAgentLoading={!!isAgentLoading}
               agentResponse={agentResponse}
-              apiError={apiError}
+              apiErrorMessage={apiErrorMessage}
               graphConfig={graphConfig}
               executionKey={executionKey}
               auctionState={auctionState}

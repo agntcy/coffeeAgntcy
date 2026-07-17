@@ -50,7 +50,7 @@ const RootPage: React.FC = () => {
     agentResponse,
     executionKey,
     isAgentLoading,
-    apiError,
+    apiErrorMessage,
     showProgressTracker,
     showAuctionStreaming,
     showRecruiterStreaming,
@@ -261,7 +261,7 @@ const RootPage: React.FC = () => {
                     agentResponse={agentResponse}
                     executionKey={executionKey}
                     isAgentLoading={isAgentLoading}
-                    apiError={apiError}
+                    apiErrorMessage={apiErrorMessage}
                     chatRef={chatRef}
                     auctionState={{
                       events,

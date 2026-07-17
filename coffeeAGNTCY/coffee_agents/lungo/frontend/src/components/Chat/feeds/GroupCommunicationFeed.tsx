@@ -23,6 +23,7 @@ import {
 } from "@/stores/groupStreamingStore"
 import { FeedSpinnerRow } from "../FeedSpinnerRow"
 import { FeedStatusLine } from "../FeedStatusLine"
+import { FeedErrorMessage } from "./FeedErrorMessage"
 import { FeedCollapseButton } from "./FeedCollapseButton"
 import GrafanaSessionLink from "../GrafanaSessionLink"
 
@@ -170,7 +171,7 @@ const GroupCommunicationFeed: React.FC<GroupCommunicationFeedProps> = ({
         }}
       >
         {errorMessage ? (
-          <FeedStatusLine>Connection error: {errorMessage}</FeedStatusLine>
+          <FeedErrorMessage>{errorMessage}</FeedErrorMessage>
         ) : storeIsComplete && groupCurrentOrderId ? (
           <FeedStatusLine>Order {groupCurrentOrderId}</FeedStatusLine>
         ) : prompt && !apiError ? (

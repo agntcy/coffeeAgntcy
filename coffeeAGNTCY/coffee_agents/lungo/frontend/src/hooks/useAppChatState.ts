@@ -42,7 +42,7 @@ export function useAppChatState({
     undefined,
   )
   const [isAgentLoading, setIsAgentLoading] = useState<boolean>(false)
-  const [apiError, setApiError] = useState<boolean>(false)
+  const [apiErrorMessage, setApiErrorMessage] = useState<string | null>(null)
   const [groupCommResponseReceived, setGroupCommResponseReceived] =
     useState(false)
   const [showProgressTracker, setShowProgressTracker] = useState<boolean>(false)
@@ -74,10 +74,12 @@ export function useAppChatState({
       setAgentResponse(apiResp)
       setIsAgentLoading(false)
 
-      const uiMode = workflowChatUiMode(selectedWorkflowSummary)
-      if (uiMode?.isGroupMessaging) {
-        setApiError(isError)
-        if (!isError) {
+      if (isError) {
+        setApiErrorMessage(apiResp.response)
+      } else {
+        setApiErrorMessage(null)
+        const uiMode = workflowChatUiMode(selectedWorkflowSummary)
+        if (uiMode?.isGroupMessaging) {
           setGroupCommResponseReceived(true)
         }
       }
@@ -100,7 +102,7 @@ export function useAppChatState({
       setCurrentUserMessage(query)
       setIsAgentLoading(true)
       setButtonClicked(true)
-      setApiError(false)
+      setApiErrorMessage(null)
       const uiMode = workflowChatUiMode(selectedWorkflowSummary)
       if (
         canvasMode === CanvasMode.PATTERN_DOC ||
@@ -120,6 +122,7 @@ export function useAppChatState({
     setButtonClicked(false)
     setAiReplied(false)
     setGroupCommResponseReceived(false)
+    setApiErrorMessage(null)
     setShowFinalResponse(false)
     setShowRecruiterStreaming(false)
     setPendingResponse("")
@@ -138,8 +141,8 @@ export function useAppChatState({
     setAgentResponse,
     isAgentLoading,
     setIsAgentLoading,
-    apiError,
-    setApiError,
+    apiErrorMessage,
+    setApiErrorMessage,
     groupCommResponseReceived,
     setGroupCommResponseReceived,
     showProgressTracker,
