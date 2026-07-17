@@ -10,12 +10,12 @@ export async function fetchJson<T>(
   url: string,
   options: HttpFetchOptions = {},
 ): Promise<T> {
-  const endpoint = options.endpoint ?? url
+  const endpointLabel = options.endpointLabel ?? url
 
   try {
     const response = await httpFetch(url, {
       ...options,
-      endpoint,
+      endpointLabel,
       headers: {
         Accept: "application/json",
         ...options.headers,
@@ -25,9 +25,9 @@ export async function fetchJson<T>(
     try {
       return (await response.json()) as T
     } catch (error) {
-      throw parseHttpError(error, { endpoint })
+      throw parseHttpError(error, { endpointLabel })
     }
   } catch (error) {
-    throw parseHttpError(error, { endpoint })
+    throw parseHttpError(error, { endpointLabel })
   }
 }

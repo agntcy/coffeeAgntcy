@@ -13,18 +13,21 @@ export type ReportRequestErrorContext = Record<string, unknown> & {
   userMessage?: string
 }
 
-function normalizeRequestError(endpoint: string, error: unknown): HttpError {
+function normalizeRequestError(
+  endpointLabel: string,
+  error: unknown,
+): HttpError {
   if (isHttpError(error)) {
-    return error.endpoint
+    return error.endpointLabel
       ? error
       : new HttpError(error.message, {
           status: error.status,
-          endpoint,
+          endpointLabel,
           cause: error.cause,
         })
   }
 
-  return parseHttpError(error, { endpoint })
+  return parseHttpError(error, { endpointLabel })
 }
 
 function buildLogPayload(
@@ -36,7 +39,7 @@ function buildLogPayload(
   return {
     message: httpError.message,
     status: httpError.status,
-    endpoint: httpError.endpoint,
+    endpointLabel: httpError.endpointLabel,
     ...(userMessage !== undefined ? { userMessage } : {}),
     ...rest,
     error: httpError.message,
@@ -49,20 +52,20 @@ function buildLogPayload(
  * Uses `logger` in dev and redacted `unsafeLogger` in production.
  */
 export function reportRequestError(
-  endpoint: string,
+  endpointLabel: string,
   error: unknown,
   context?: ReportRequestErrorContext,
 ): HttpError {
-  const httpError = normalizeRequestError(endpoint, error)
+  const httpError = normalizeRequestError(endpointLabel, error)
   const log = env.dev ? logger : unsafeLogger
 
-  log.error(`API Error - ${endpoint}`, buildLogPayload(httpError, context))
+  log.error(`API Error - ${endpointLabel}`, buildLogPayload(httpError, context))
 
   if (context?.userMessage) {
     reportUiError({
       title: "Request failed",
       message: context.userMessage,
-      source: endpoint,
+      source: endpointLabel,
     })
   }
 

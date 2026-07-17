@@ -5,20 +5,20 @@
 
 export type HttpErrorOptions = {
   status?: number
-  endpoint?: string
+  endpointLabel?: string
   cause?: unknown
 }
 
 export class HttpError extends Error {
   readonly status?: number
-  readonly endpoint?: string
+  readonly endpointLabel?: string
   readonly cause?: unknown
 
   constructor(message: string, options?: HttpErrorOptions) {
     super(message)
     this.name = "HttpError"
     this.status = options?.status
-    this.endpoint = options?.endpoint
+    this.endpointLabel = options?.endpointLabel
     this.cause = options?.cause
   }
 }

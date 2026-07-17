@@ -12,14 +12,14 @@ export type HttpFetchOptions = FetchInit & {
   /** Request timeout in milliseconds. Defaults to 60_000. */
   timeoutMs?: number
   /** Logical endpoint label used in HttpError reporting. */
-  endpoint?: string
+  endpointLabel?: string
 }
 
 export async function httpFetch(
   url: string,
   options: HttpFetchOptions = {},
 ): Promise<Response> {
-  const { timeoutMs = 60_000, endpoint = url, ...init } = options
+  const { timeoutMs = 60_000, endpointLabel = url, ...init } = options
   const controller = new AbortController()
   const timeoutId = setTimeout(() => controller.abort(), timeoutMs)
 
@@ -40,7 +40,7 @@ export async function httpFetch(
     })
 
     if (!response.ok) {
-      throw await parseHttpErrorFromResponse(response, { endpoint })
+      throw await parseHttpErrorFromResponse(response, { endpointLabel })
     }
 
     return response
@@ -49,7 +49,7 @@ export async function httpFetch(
       throw error
     }
 
-    throw parseHttpError(error, { endpoint })
+    throw parseHttpError(error, { endpointLabel })
   } finally {
     clearTimeout(timeoutId)
   }

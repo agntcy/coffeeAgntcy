@@ -7,7 +7,7 @@ import { HttpError } from "./types.ts"
 import { stripHtml } from "./stripHtml.ts"
 
 export type ParseHttpErrorOptions = {
-  endpoint?: string
+  endpointLabel?: string
 }
 
 const DEFAULT_MESSAGE = "Sorry, something went wrong. Please try again later."
@@ -114,14 +114,14 @@ export function parseHttpError(
 
   if (isAbortError(error)) {
     return new HttpError("Request was cancelled.", {
-      endpoint: options?.endpoint,
+      endpointLabel: options?.endpointLabel,
       cause: error,
     })
   }
 
   if (isNetworkError(error)) {
     return new HttpError("Network error. Please check your connection.", {
-      endpoint: options?.endpoint,
+      endpointLabel: options?.endpointLabel,
       cause: error,
     })
   }
@@ -136,20 +136,20 @@ export function parseHttpError(
     const res = error.response as { status?: number; data?: unknown }
     return new HttpError(getMessageFromUnknown(res.data), {
       status: res.status,
-      endpoint: options?.endpoint,
+      endpointLabel: options?.endpointLabel,
       cause: error,
     })
   }
 
   if (error instanceof Error && error.message.trim().length > 0) {
     return new HttpError(stripHtml(error.message), {
-      endpoint: options?.endpoint,
+      endpointLabel: options?.endpointLabel,
       cause: error,
     })
   }
 
   return new HttpError(DEFAULT_MESSAGE, {
-    endpoint: options?.endpoint,
+    endpointLabel: options?.endpointLabel,
     cause: error,
   })
 }
@@ -168,7 +168,7 @@ export async function parseHttpErrorFromResponse(
     if (!raw) {
       return new HttpError(message, {
         status,
-        endpoint: options?.endpoint,
+        endpointLabel: options?.endpointLabel,
         cause: response,
       })
     }
@@ -189,7 +189,7 @@ export async function parseHttpErrorFromResponse(
 
   return new HttpError(stripHtml(message), {
     status,
-    endpoint: options?.endpoint,
+    endpointLabel: options?.endpointLabel,
     cause: response,
   })
 }

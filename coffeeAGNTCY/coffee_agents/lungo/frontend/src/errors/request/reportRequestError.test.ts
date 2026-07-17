@@ -44,7 +44,7 @@ describe("reportRequestError", () => {
   it("returns an existing HttpError unchanged", () => {
     const original = new HttpError("Catalog unavailable", {
       status: 503,
-      endpoint: "/api/catalog",
+      endpointLabel: "/api/catalog",
     })
 
     const result = reportRequestError("/api/catalog", original)
@@ -55,19 +55,19 @@ describe("reportRequestError", () => {
       expect.objectContaining({
         message: "Catalog unavailable",
         status: 503,
-        endpoint: "/api/catalog",
+        endpointLabel: "/api/catalog",
       }),
     )
   })
 
-  it("normalizes unknown errors to HttpError with endpoint metadata", () => {
+  it("normalizes unknown errors to HttpError with endpointLabel metadata", () => {
     const result = reportRequestError(
       "/api/workflows",
       new TypeError("Failed to fetch"),
     )
 
     expect(result).toBeInstanceOf(HttpError)
-    expect(result.endpoint).toBe("/api/workflows")
+    expect(result.endpointLabel).toBe("/api/workflows")
     expect(result.message).toBe("Network error. Please check your connection.")
   })
 
@@ -119,13 +119,13 @@ describe("reportRequestError", () => {
     ])
   })
 
-  it("fills endpoint on HttpError when missing", () => {
+  it("fills endpointLabel on HttpError when missing", () => {
     const original = new HttpError("Menu unavailable", { status: 500 })
     const result = reportRequestError("/api/catalog", original)
 
     expect(result).toBeInstanceOf(HttpError)
     expect(result).not.toBe(original)
-    expect(result.endpoint).toBe("/api/catalog")
+    expect(result.endpointLabel).toBe("/api/catalog")
     expect(result.message).toBe("Menu unavailable")
   })
 })

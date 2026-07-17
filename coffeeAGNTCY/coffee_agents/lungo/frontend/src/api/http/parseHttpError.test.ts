@@ -89,11 +89,11 @@ describe("parseHttpError", () => {
     )
   })
 
-  it("preserves endpoint metadata", () => {
+  it("preserves endpointLabel metadata", () => {
     const parsed = parseHttpError(new TypeError("Failed to fetch"), {
-      endpoint: "/api/workflows",
+      endpointLabel: "/api/workflows",
     })
-    expect(parsed.endpoint).toBe("/api/workflows")
+    expect(parsed.endpointLabel).toBe("/api/workflows")
   })
 })
 
@@ -159,15 +159,15 @@ describe("parseHttpErrorFromResponse", () => {
     expect(parsed.message).toBe("HTTP 502: Bad Gateway")
   })
 
-  it("preserves endpoint metadata", async () => {
+  it("preserves endpointLabel metadata", async () => {
     const response = makeResponse(JSON.stringify({ detail: "nope" }), {
       status: 400,
       contentType: "application/json",
     })
     const parsed = await parseHttpErrorFromResponse(response, {
-      endpoint: "/api/catalog",
+      endpointLabel: "/api/catalog",
     })
-    expect(parsed.endpoint).toBe("/api/catalog")
+    expect(parsed.endpointLabel).toBe("/api/catalog")
   })
 })
 

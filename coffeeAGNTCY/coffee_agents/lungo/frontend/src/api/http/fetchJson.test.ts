@@ -39,12 +39,12 @@ describe("fetchJson", () => {
     )
 
     await expect(
-      fetchJson("https://api.test/badge", { endpoint: "/identity/badge" }),
+      fetchJson("https://api.test/badge", { endpointLabel: "/identity/badge" }),
     ).rejects.toSatisfy((error: unknown) => {
       expect(isHttpError(error)).toBe(true)
       expect((error as HttpError).status).toBe(404)
       expect((error as HttpError).message).toBe("Badge not found")
-      expect((error as HttpError).endpoint).toBe("/identity/badge")
+      expect((error as HttpError).endpointLabel).toBe("/identity/badge")
       return true
     })
   })
