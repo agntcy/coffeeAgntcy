@@ -16,8 +16,7 @@ import {
 } from "@open-ui-kit/core"
 import agentDirectoryIconDark from "@/assets/Agent_directory.png"
 import agentDirectoryIconLight from "@/assets/Agent_Icon_light.png"
-import { useGithubIcon } from "@/hooks/useGithubIcon"
-import { useThemeIcon } from "@/hooks/useThemeIcon"
+import { useGithubIcon, useThemeIcon } from "@/hooks/ui"
 import { AssetPngIcon } from "@/components/AssetPngIcon"
 import { SecurityClass } from "@/utils/SecurityClass"
 import {

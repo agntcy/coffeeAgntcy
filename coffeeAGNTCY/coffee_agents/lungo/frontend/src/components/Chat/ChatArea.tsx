@@ -7,7 +7,7 @@ import React, { useRef, useState } from "react"
 
 import { useScrollPanelOnContentResize } from "@/utils/chatScroll"
 
-import { useObservabilitySessionId } from "@/hooks/useObservabilitySessionId"
+import { useObservabilitySessionId, usePatternChatAPI } from "@/hooks/chat"
 import { Box, Stack } from "@open-ui-kit/core"
 
 import ChatAreaComposer from "./ChatAreaComposer"
@@ -18,8 +18,8 @@ import type { GraphConfig } from "@/utils/graphConfigs"
 import type { AuctionStreamingState } from "@/stores/auctionStreaming.types"
 import type { RecruiterStreamingState } from "@/stores/recruiterStreaming.types"
 import type { ApiResponse } from "@/types/api"
+import type { HttpRequestTarget } from "@/urls"
 import { CanvasMode } from "@/types/patternDoc"
-import { usePatternChatAPI } from "@/hooks/usePatternChatAPI"
 import { streamPatternChat } from "./streamPatternChat"
 
 /** Panel expanded/collapsed by the chat header minimize control. */
@@ -27,7 +27,7 @@ export const CHAT_MESSAGE_PANEL_ID = "chat-message-panel"
 
 interface ChatAreaProps {
   isBottomLayout: boolean
-  suggestedPromptsUrl?: string | null
+  suggestedPromptsRequest?: HttpRequestTarget | null
   showProgressTracker?: boolean
   showAuctionStreaming?: boolean
   showRecruiterStreaming?: boolean
@@ -55,7 +55,7 @@ interface ChatAreaProps {
 
 const ChatArea: React.FC<ChatAreaProps> = ({
   isBottomLayout,
-  suggestedPromptsUrl = null,
+  suggestedPromptsRequest = null,
   showProgressTracker = false,
   showAuctionStreaming = false,
   showRecruiterStreaming = false,
@@ -264,7 +264,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
         }}
       >
         <ChatAreaComposer
-          suggestedPromptsUrl={suggestedPromptsUrl}
+          suggestedPromptsRequest={suggestedPromptsRequest}
           onSuggestedPromptSelect={handleSuggestedPromptSelect}
           content={content}
           setContent={setContent}

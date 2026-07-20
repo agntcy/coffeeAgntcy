@@ -27,8 +27,7 @@ import {
 import { CanvasMode } from "@/types/patternDoc"
 import { useApp } from "@/useApp"
 import { GraphCanvasLayoutContext } from "@/contexts/graphCanvasLayout"
-import { useElementWidth } from "@/hooks/useElementWidth"
-import { useElementRect } from "@/hooks/useElementRect"
+import { useElementWidth, useElementRect } from "@/hooks/layout"
 
 const RootPage: React.FC = () => {
   const {
@@ -38,7 +37,7 @@ const RootPage: React.FC = () => {
     workflowCatalogLoading,
     workflowCatalogError,
     selectedWorkflowSummary,
-    suggestedPromptsUrl,
+    suggestedPromptsRequest,
     chatHeightValue,
     isExpanded,
     chatRef,
@@ -236,7 +235,7 @@ const RootPage: React.FC = () => {
                     selectedReferencePattern={selectedReferencePattern}
                     patternChatSessionId={patternChatSessionId}
                     onPatternChatSuccess={() => setAiReplied(true)}
-                    suggestedPromptsUrl={suggestedPromptsUrl}
+                    suggestedPromptsRequest={suggestedPromptsRequest}
                     showProgressTracker={
                       canvasMode !== CanvasMode.PATTERN_DOC &&
                       showProgressTracker

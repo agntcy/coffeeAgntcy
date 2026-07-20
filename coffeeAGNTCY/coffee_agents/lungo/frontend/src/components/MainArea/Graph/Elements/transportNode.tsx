@@ -7,7 +7,7 @@ import React, { type CSSProperties } from "react"
 import { Handle, Position } from "@xyflow/react"
 import { Box, Typography, useTheme } from "@open-ui-kit/core"
 import { GraphSideIconTooltip } from "./GraphSideIconTooltip"
-import { useGithubIcon } from "@/hooks/useGithubIcon"
+import { useGithubIcon } from "@/hooks/ui"
 import { AssetPngIcon } from "@/components/AssetPngIcon"
 import { SecurityClass } from "@/utils/SecurityClass"
 import {

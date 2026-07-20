@@ -9,7 +9,7 @@ import {
   PatternChatTransportError,
   type PatternChatCallbacks,
   type PatternChatRequest,
-} from "@/hooks/usePatternChatAPI"
+} from "@/hooks/chat"
 
 export interface StreamPatternChatParams {
   patternName: string

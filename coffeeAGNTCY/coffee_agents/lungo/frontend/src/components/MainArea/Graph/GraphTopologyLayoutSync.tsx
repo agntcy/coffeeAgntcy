@@ -5,7 +5,7 @@
 
 import { useEffect } from "react"
 import { useReactFlow, useUpdateNodeInternals } from "@xyflow/react"
-import { applyDefaultGraphView } from "@/hooks/applyDefaultGraphView"
+import { applyDefaultGraphView } from "@/hooks/graph"
 
 const FIT_VIEW_DELAY_MS = 200
 
