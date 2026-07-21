@@ -5,14 +5,12 @@
 
 import { useCallback, useEffect, useRef, useState } from "react"
 import { v4 as uuid } from "uuid"
-import { LUNGO_FRONTEND_URLS } from "@/urls"
-import { reportRequestError } from "@/errors/request"
 import type { useAppChatState, useAppStreamingState } from "@/hooks/useApp"
 import { isPlaceholderWorkflow } from "@/components/Sidebar/sidebar.utils"
 import type { useAgentAPI } from "@/hooks/agent"
 import type { WorkflowSummary } from "@/utils/agenticWorkflowsApi"
 import {
-  getAgentPromptStreamUrlForWorkflow,
+  getAgentPromptStreamRequestForWorkflow,
   isChatEnabledWorkflow,
   workflowChatTransport,
   workflowChatUiMode,
@@ -67,12 +65,11 @@ export function useAppPromptHandlers({
         return
       }
 
-      const streamUrl = getAgentPromptStreamUrlForWorkflow(
-        selectedWorkflowSummary,
-      )
-
       try {
         if (transport === "group_sse") {
+          const streamRequest = getAgentPromptStreamRequestForWorkflow(
+            selectedWorkflowSummary,
+          )
           chat.setExecutionKey(Date.now().toString())
           chat.setShowFinalResponse(false)
           chat.setAgentResponse(undefined)
@@ -84,16 +81,9 @@ export function useAppPromptHandlers({
             await streaming.startStreaming(
               query,
               activeWorkflowInstanceId,
-              streamUrl,
+              streamRequest,
             )
-          } catch (err) {
-            reportRequestError(
-              LUNGO_FRONTEND_URLS.apiPaths.agentPromptStream.endpointLabel,
-              err,
-              {
-                userMessage: "Sorry, I encountered an error with streaming.",
-              },
-            )
+          } catch {
             chat.setShowFinalResponse(true)
             chat.handleApiResponse(
               "Sorry, I encountered an error with streaming.",
@@ -101,21 +91,20 @@ export function useAppPromptHandlers({
             )
           }
         } else if (transport === "auction_stream") {
+          const streamRequest = getAgentPromptStreamRequestForWorkflow(
+            selectedWorkflowSummary,
+          )
           chat.setShowFinalResponse(false)
           chat.setShowAuctionStreaming(true)
           chat.setAgentResponse(undefined)
           streaming.reset()
           try {
-            await streaming.connect(query, activeWorkflowInstanceId, streamUrl)
-          } catch (err) {
-            reportRequestError(
-              LUNGO_FRONTEND_URLS.apiPaths.agentPromptStream.endpointLabel,
-              err,
-              {
-                userMessage:
-                  "Sorry, I encountered an error with auction streaming.",
-              },
+            await streaming.connect(
+              query,
+              activeWorkflowInstanceId,
+              streamRequest,
             )
+          } catch {
             chat.setShowFinalResponse(true)
             chat.handleApiResponse(
               "Sorry, I encountered an error with auction streaming.",
@@ -123,6 +112,9 @@ export function useAppPromptHandlers({
             )
           }
         } else if (transport === "recruiter_stream") {
+          const streamRequest = getAgentPromptStreamRequestForWorkflow(
+            selectedWorkflowSummary,
+          )
           chat.setShowFinalResponse(false)
           chat.setShowRecruiterStreaming(true)
           chat.setAgentResponse(undefined)
@@ -133,17 +125,9 @@ export function useAppPromptHandlers({
               query,
               activeWorkflowInstanceId,
               priorSessionId,
-              streamUrl,
+              streamRequest,
             )
-          } catch (err) {
-            reportRequestError(
-              LUNGO_FRONTEND_URLS.apiPaths.agentPromptStream.endpointLabel,
-              err,
-              {
-                userMessage:
-                  "Sorry, I encountered an error with recruiter streaming.",
-              },
-            )
+          } catch {
             chat.setShowFinalResponse(true)
             chat.handleApiResponse(
               "Sorry, I encountered an error with recruiter streaming.",
@@ -157,10 +141,6 @@ export function useAppPromptHandlers({
           chat.setAiReplied(true)
         }
       } catch (err) {
-        reportRequestError(
-          LUNGO_FRONTEND_URLS.apiPaths.agentPrompt.endpointLabel,
-          err,
-        )
         chat.handleApiResponse(
           err instanceof Error ? err.message : String(err),
           true,

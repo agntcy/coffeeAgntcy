@@ -5,7 +5,10 @@
 
 import { create } from "zustand"
 import type { LogisticsStreamStep } from "./groupStreaming.types"
-import { isLocalDev, parseFetchError } from "@/utils/const.ts"
+import { fetchNdjsonStream, ndjsonStreamUserMessage } from "@/api/http"
+import { reportRequestError } from "@/errors/request"
+import type { HttpRequestTarget } from "@/urls"
+import { isLocalDev } from "@/utils/const.ts"
 import { logger } from "@/utils/logger"
 
 const isValidLogisticsStreamStep = (
@@ -58,7 +61,7 @@ interface LogisticsStreamingActions {
   startStreaming: (
     prompt: string,
     workflowInstanceId?: string | null,
-    streamUrl?: string,
+    streamRequest?: HttpRequestTarget,
   ) => Promise<void>
   reset: () => void
 }
@@ -72,6 +75,51 @@ const initialState: LogisticsStreamingState = {
   currentOrderId: null,
   executionKey: null,
   sessionId: null,
+}
+
+function handleGroupStreamPayload(
+  parsed: unknown,
+  actions: Pick<
+    LogisticsStreamingActions,
+    "addEvent" | "setFinalResponse" | "setSessionId"
+  >,
+): "stop" | void {
+  if (!parsed || typeof parsed !== "object") return
+
+  const record = parsed as Record<string, unknown>
+
+  if (typeof record.session_id === "string") {
+    actions.setSessionId(record.session_id)
+  }
+
+  if (typeof record.response !== "string") return
+
+  const response = record.response
+
+  if (response.startsWith("{'") || response.startsWith('{"')) {
+    try {
+      const jsonResponse = response
+        .replace(/'/g, '"')
+        .replace(/True/g, "true")
+        .replace(/False/g, "false")
+        .replace(/None/g, "null")
+
+      const eventObj = JSON.parse(jsonResponse)
+
+      if (isValidLogisticsStreamStep(eventObj)) {
+        actions.addEvent(eventObj)
+      }
+    } catch (dictParseError) {
+      logger.error("Error parsing dict string:", {
+        error: dictParseError,
+        string: response,
+      })
+    }
+    return
+  }
+
+  actions.setFinalResponse(response)
+  return "stop"
 }
 
 export const useGroupStreamingStore = create<
@@ -130,7 +178,7 @@ export const useGroupStreamingStore = create<
   startStreaming: async (
     prompt: string,
     workflowInstanceId?: string | null,
-    streamUrl?: string,
+    streamRequest?: HttpRequestTarget,
   ) => {
     const {
       reset,
@@ -142,8 +190,8 @@ export const useGroupStreamingStore = create<
       setSessionId,
     } = useGroupStreamingStore.getState()
 
-    if (!streamUrl) {
-      setError("Streaming URL is required")
+    if (!streamRequest?.url) {
+      setError("Streaming request target is required")
       setComplete(true)
       setStreaming(false)
       return
@@ -152,130 +200,34 @@ export const useGroupStreamingStore = create<
     reset()
     setStreaming(true)
 
+    const body: { prompt: string; workflow_instance_id?: string } = { prompt }
+    if (workflowInstanceId) body.workflow_instance_id = workflowInstanceId
+
     try {
-      const body: { prompt: string; workflow_instance_id?: string } = { prompt }
-      if (workflowInstanceId) body.workflow_instance_id = workflowInstanceId
-      const response = await fetch(streamUrl, {
+      await fetchNdjsonStream(streamRequest.url, {
         method: "POST",
         credentials: isLocalDev ? "omit" : "include",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        endpointLabel: streamRequest.endpointLabel,
         body: JSON.stringify(body),
+        splitMode: "json-objects",
+        onLine: (parsed) =>
+          handleGroupStreamPayload(parsed, {
+            addEvent,
+            setFinalResponse,
+            setSessionId,
+          }),
+        onParseError: (jsonStr, parseError) => {
+          logger.error("Error parsing JSON object:", {
+            error: parseError,
+            json: jsonStr,
+          })
+        },
       })
-
-      if (!response.ok) {
-        const { status, message } = await parseFetchError(response)
-
-        if (status >= 400 && status < 500) {
-          setError(`HTTP ${status} - ${message}`)
-          setComplete(true)
-          setStreaming(false)
-          return
-        }
-
-        setError("Sorry, something went wrong. Please try again later.")
-        setComplete(true)
-        setStreaming(false)
-        return
-      }
-
-      const reader = response.body?.getReader()
-      if (!reader) {
-        setError("No response body reader available")
-        setComplete(true)
-        setStreaming(false)
-        return
-      }
-
-      const decoder = new TextDecoder()
-      let buffer = ""
-
-      try {
-        while (true) {
-          const { done, value } = await reader.read()
-          if (done) break
-
-          buffer += decoder.decode(value, { stream: true })
-          let remaining = buffer
-
-          while (remaining.length > 0) {
-            let braceCount = 0
-            let jsonEnd = -1
-
-            for (let i = 0; i < remaining.length; i++) {
-              if (remaining[i] === "{") braceCount++
-              else if (remaining[i] === "}") {
-                braceCount--
-                if (braceCount === 0) {
-                  jsonEnd = i
-                  break
-                }
-              }
-            }
-
-            if (jsonEnd === -1) {
-              buffer = remaining
-              break
-            }
-
-            const jsonStr = remaining.substring(0, jsonEnd + 1)
-            remaining = remaining.substring(jsonEnd + 1)
-
-            try {
-              const parsed = JSON.parse(jsonStr)
-
-              // Store session_id if present
-              if (parsed.session_id && typeof parsed.session_id === "string") {
-                setSessionId(parsed.session_id)
-              }
-
-              if (parsed.response && typeof parsed.response === "string") {
-                if (
-                  parsed.response.startsWith("{'") ||
-                  parsed.response.startsWith('{"')
-                ) {
-                  try {
-                    const jsonResponse = parsed.response
-                      .replace(/'/g, '"')
-                      .replace(/True/g, "true")
-                      .replace(/False/g, "false")
-                      .replace(/None/g, "null")
-
-                    const eventObj = JSON.parse(jsonResponse)
-
-                    if (isValidLogisticsStreamStep(eventObj)) {
-                      addEvent(eventObj)
-                    }
-                  } catch (dictParseError) {
-                    logger.error("Error parsing dict string:", {
-                      error: dictParseError,
-                      string: parsed.response,
-                    })
-                  }
-                } else {
-                  setFinalResponse(parsed.response)
-                  return
-                }
-              }
-            } catch (parseError) {
-              logger.error("Error parsing JSON object:", {
-                error: parseError,
-                json: jsonStr,
-              })
-            }
-          }
-
-          buffer = remaining
-        }
-      } finally {
-        reader.releaseLock()
-      }
 
       setComplete(true)
     } catch (error) {
-      logger.error("Streaming error:", error)
-      setError("Sorry, something went wrong. Please try again.")
+      const httpError = reportRequestError(streamRequest.endpointLabel, error)
+      setError(ndjsonStreamUserMessage(httpError, "short"))
     }
   },
 

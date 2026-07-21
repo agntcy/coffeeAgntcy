@@ -59,15 +59,16 @@ export function useApp() {
   } = useAppPatternReference()
 
   const chat = useAppChatState({ selectedWorkflowSummary, canvasMode })
+  const { resetChatState } = chat
 
   const selectReferencePattern = useCallback(
     (patternName: string | null) => {
       selectReferencePatternBase(patternName)
       if (patternName !== null) {
-        chat.resetChatState()
+        resetChatState()
       }
     },
-    [selectReferencePatternBase, chat.resetChatState],
+    [selectReferencePatternBase, resetChatState],
   )
 
   const suggestedPromptsRequest = useMemo(() => {

@@ -22,23 +22,35 @@ export function getApiBaseUrlForWorkflow(
 }
 
 /** Non-streaming POST .../agent/prompt */
-export function getAgentPromptUrlForWorkflow(
+export function getAgentPromptRequestForWorkflow(
   summary: WorkflowSummary | null | undefined,
-): string {
+): HttpRequestTarget {
   return joinHttpRequest(
     getApiBaseUrlForWorkflow(summary),
     LUNGO_FRONTEND_URLS.apiPaths.agentPrompt,
-  ).url
+  )
+}
+
+export function getAgentPromptUrlForWorkflow(
+  summary: WorkflowSummary | null | undefined,
+): string {
+  return getAgentPromptRequestForWorkflow(summary).url
 }
 
 /** Streaming POST .../agent/prompt/stream */
-export function getAgentPromptStreamUrlForWorkflow(
+export function getAgentPromptStreamRequestForWorkflow(
   summary: WorkflowSummary | null | undefined,
-): string {
+): HttpRequestTarget {
   return joinHttpRequest(
     getApiBaseUrlForWorkflow(summary),
     LUNGO_FRONTEND_URLS.apiPaths.agentPromptStream,
-  ).url
+  )
+}
+
+export function getAgentPromptStreamUrlForWorkflow(
+  summary: WorkflowSummary | null | undefined,
+): string {
+  return getAgentPromptStreamRequestForWorkflow(summary).url
 }
 
 /** Suggested prompts fetch target (path varies when workflow supports streaming). */

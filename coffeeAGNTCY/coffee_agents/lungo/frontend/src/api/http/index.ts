@@ -13,6 +13,20 @@ export { stripHtml } from "./stripHtml.ts"
 export { httpFetch, type HttpFetchOptions } from "./httpClient.ts"
 export { fetchJson } from "./fetchJson.ts"
 export {
+  fetchNdjsonStream,
+  type FetchNdjsonStreamOptions,
+  type NdjsonSplitMode,
+} from "./fetchNdjsonStream.ts"
+export {
+  ndjsonStreamUserMessage,
+  asHttpError,
+  type NdjsonStreamUserMessageVariant,
+} from "./ndjsonStreamUserMessage.ts"
+export {
+  consumeJsonObjectsFromBuffer,
+  consumeNdjsonLines,
+} from "./ndjsonParsing.ts"
+export {
   fetchSse,
   type FetchSseClose,
   type FetchSseOptions,

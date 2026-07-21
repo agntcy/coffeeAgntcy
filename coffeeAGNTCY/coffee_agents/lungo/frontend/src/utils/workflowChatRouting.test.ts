@@ -12,6 +12,8 @@ import {
 } from "@/urls"
 import type { WorkflowSummary } from "@/utils/agenticWorkflowsApi"
 import {
+  getAgentPromptRequestForWorkflow,
+  getAgentPromptStreamRequestForWorkflow,
   getAgentPromptStreamUrlForWorkflow,
   getAgentPromptUrlForWorkflow,
   getApiBaseUrlForWorkflow,
@@ -106,14 +108,25 @@ describe("workflowChatRouting", () => {
     })
   })
 
-  it("builds agent prompt URLs on workflow base", () => {
+  it("builds agent prompt targets on workflow base", () => {
     const summary = makeSummary({ chat_api_target: "discovery" })
-    expect(getAgentPromptUrlForWorkflow(summary)).toBe(
+    const promptRequest = getAgentPromptRequestForWorkflow(summary)
+    expect(promptRequest.url).toBe(
       `${getDiscoveryAppApiUrl()}${LUNGO_FRONTEND_URLS.apiPaths.agentPrompt.path}`,
     )
-    expect(getAgentPromptStreamUrlForWorkflow(summary)).toBe(
+    expect(promptRequest.endpointLabel).toBe(
+      LUNGO_FRONTEND_URLS.apiPaths.agentPrompt.endpointLabel,
+    )
+    expect(getAgentPromptUrlForWorkflow(summary)).toBe(promptRequest.url)
+
+    const streamRequest = getAgentPromptStreamRequestForWorkflow(summary)
+    expect(streamRequest.url).toBe(
       `${getDiscoveryAppApiUrl()}${LUNGO_FRONTEND_URLS.apiPaths.agentPromptStream.path}`,
     )
+    expect(streamRequest.endpointLabel).toBe(
+      LUNGO_FRONTEND_URLS.apiPaths.agentPromptStream.endpointLabel,
+    )
+    expect(getAgentPromptStreamUrlForWorkflow(summary)).toBe(streamRequest.url)
   })
 
   it("uses streaming suggested prompts path when supports_streaming", () => {

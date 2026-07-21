@@ -4,8 +4,6 @@
  **/
 
 import { useEffect } from "react"
-import { LUNGO_FRONTEND_URLS } from "@/urls"
-import { reportRequestError } from "@/errors/request"
 import { NDJSON_STREAMING_STATUS } from "@/stores/ndjsonStreamingStatus"
 import type { useAppChatState, useAppStreamingState } from "@/hooks/useApp"
 import type { WorkflowSummary } from "@/utils/agenticWorkflowsApi"
@@ -50,10 +48,6 @@ export function useAppStreamingChatEffects(
     if (transport !== "auction_stream") return
 
     if (streaming.status === NDJSON_STREAMING_STATUS.ERROR && streaming.error) {
-      reportRequestError(
-        LUNGO_FRONTEND_URLS.apiPaths.agentPromptStream.endpointLabel,
-        new Error(streaming.error),
-      )
       chat.setIsAgentLoading(false)
       chat.setShowFinalResponse(true)
       chat.handleApiResponse(`Streaming error: ${streaming.error}`, true)

@@ -17,6 +17,7 @@ import type {
   RecruiterStreamingEvent,
 } from "@/stores/recruiterStreaming.types"
 import { NDJSON_STREAMING_STATUS } from "@/stores/ndjsonStreamingStatus"
+import { RECRUITER_STREAM_EVENT_TYPE } from "@/stores/recruiterStreamEventType"
 import { resolveStreamAuthorToNodeId } from "../chatStreamGraphHighlight"
 
 const RecruiterStreamingFeed: React.FC<RecruiterStreamingFeedProps> = ({
@@ -54,7 +55,8 @@ const RecruiterStreamingFeed: React.FC<RecruiterStreamingFeedProps> = ({
     if (!events.length || !onSenderHighlight) return
 
     const lastEvent = events[events.length - 1]
-    if (lastEvent.event_type !== "status_update") return
+    if (lastEvent.event_type !== RECRUITER_STREAM_EVENT_TYPE.STATUS_UPDATE)
+      return
 
     const eventKey = `${lastEvent.event_type}-${lastEvent.author ?? ""}-${lastEvent.message ?? ""}-${events.length}`
     if (lastProcessedEventRef.current === eventKey) return
@@ -96,7 +98,8 @@ const RecruiterStreamingFeed: React.FC<RecruiterStreamingFeedProps> = ({
   }
 
   const statusUpdates = events.filter(
-    (e: RecruiterStreamingEvent) => e.event_type === "status_update",
+    (e: RecruiterStreamingEvent) =>
+      e.event_type === RECRUITER_STREAM_EVENT_TYPE.STATUS_UPDATE,
   )
 
   return (

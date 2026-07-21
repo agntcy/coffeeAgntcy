@@ -4,6 +4,7 @@
  */
 
 import { useCallback, useEffect, useRef } from "react"
+import { fetchNdjsonStream, isHttpError } from "@/api/http"
 import { getAgenticWorkflowsApiUrl } from "@/urls"
 import { agenticWorkflowsAuthHeaders } from "@/api/agenticWorkflowsClient"
 
@@ -68,16 +69,10 @@ const isErrorFrame = (v: unknown): v is PatternChatFrameError =>
   "error" in v &&
   typeof (v as { error: unknown }).error === "string"
 
-const parseFrame = (raw: string): PatternChatFrame | null => {
-  let parsed: unknown
-  try {
-    parsed = JSON.parse(raw)
-  } catch {
-    return null
-  }
-  if (isResponseFrame(parsed)) return parsed
-  if (isDoneFrame(parsed)) return parsed
-  if (isErrorFrame(parsed)) return parsed
+const parseFrame = (raw: unknown): PatternChatFrame | null => {
+  if (isResponseFrame(raw)) return raw
+  if (isDoneFrame(raw)) return raw
+  if (isErrorFrame(raw)) return raw
   return null
 }
 
@@ -113,99 +108,47 @@ export const usePatternChatAPI = (): UsePatternChatAPIReturn => {
       abortRef.current = controller
 
       const url = `${getAgenticWorkflowsApiUrl()}/patterns/${encodeURIComponent(patternName)}/chat`
+      const endpointLabel = `/patterns/${patternName}/chat`
+      let sawDone = false
+      let streamError: Error | null = null
 
-      let response: Response
       try {
-        response = await fetch(url, {
+        await fetchNdjsonStream(url, {
           method: "POST",
           headers: {
-            "Content-Type": "application/json",
             ...agenticWorkflowsAuthHeaders(),
           },
           body: JSON.stringify({ session_id: sessionId, message }),
           signal: controller.signal,
-        })
-      } catch (err) {
-        if (err instanceof DOMException && err.name === "AbortError") return
-        onError(
-          new PatternChatTransportError(
-            err instanceof Error ? err.message : String(err),
-          ),
-        )
-        return
-      }
+          endpointLabel,
+          onLine: (rawFrame, line) => {
+            if (streamError) return "stop"
 
-      if (response.status === 404) {
-        onError(new PatternChatNotFoundError(patternName))
-        return
-      }
-      if (!response.ok) {
-        onError(
-          new PatternChatTransportError(
-            `HTTP ${response.status} ${response.statusText}`,
-          ),
-        )
-        return
-      }
-      if (response.body === null) {
-        onError(new PatternChatTransportError("Response body was empty"))
-        return
-      }
-
-      const reader = response.body.getReader()
-      const decoder = new TextDecoder()
-      let buffer = ""
-      let sawDone = false
-
-      try {
-        while (true) {
-          const { value, done } = await reader.read()
-          if (done) break
-          buffer += decoder.decode(value, { stream: true })
-          let nl = buffer.indexOf("\n")
-          while (nl !== -1) {
-            const line = buffer.slice(0, nl).trim()
-            buffer = buffer.slice(nl + 1)
-            if (line.length > 0) {
-              const frame = parseFrame(line)
-              if (frame === null) {
-                onError(
-                  new PatternChatTransportError(
-                    `Malformed NDJSON frame: ${line.slice(0, 80)}`,
-                  ),
-                )
-                return
-              }
-              if (isErrorFrame(frame)) {
-                onError(new Error(frame.error))
-                return
-              }
-              if (isDoneFrame(frame)) {
-                sawDone = true
-                onDone()
-                return
-              }
-              onChunk(frame.response)
+            const frame = parseFrame(rawFrame)
+            if (frame === null) {
+              streamError = new PatternChatTransportError(
+                `Malformed NDJSON frame: ${line.slice(0, 80)}`,
+              )
+              return "stop"
             }
-            nl = buffer.indexOf("\n")
-          }
-        }
-        const tail = buffer.trim()
-        if (tail.length > 0) {
-          const frame = parseFrame(tail)
-          if (frame !== null) {
             if (isErrorFrame(frame)) {
-              onError(new Error(frame.error))
-              return
+              streamError = new Error(frame.error)
+              return "stop"
             }
             if (isDoneFrame(frame)) {
               sawDone = true
               onDone()
-              return
+              return "stop"
             }
             onChunk(frame.response)
-          }
+          },
+        })
+
+        if (streamError) {
+          onError(streamError)
+          return
         }
+
         if (!sawDone) {
           onError(
             new PatternChatTransportError("Stream ended without a done frame"),
@@ -213,6 +156,18 @@ export const usePatternChatAPI = (): UsePatternChatAPIReturn => {
         }
       } catch (err) {
         if (err instanceof DOMException && err.name === "AbortError") return
+        if (isHttpError(err) && err.status === 404) {
+          onError(new PatternChatNotFoundError(patternName))
+          return
+        }
+        if (isHttpError(err)) {
+          onError(
+            new PatternChatTransportError(
+              `HTTP ${err.status ?? "?"} - ${err.message}`,
+            ),
+          )
+          return
+        }
         onError(
           new PatternChatTransportError(
             err instanceof Error ? err.message : String(err),
