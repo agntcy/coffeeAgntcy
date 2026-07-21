@@ -65,6 +65,16 @@ describe("parseHttpError", () => {
     })
     expect(parsed.endpointLabel).toBe("/api/workflows")
   })
+
+  it("maps plain AbortError-shaped objects to cancellation", () => {
+    const parsed = parseHttpError({ name: "AbortError", message: "aborted" })
+    expect(parsed.message).toBe("Request was cancelled.")
+  })
+
+  it("strips HTML from generic Error messages", () => {
+    const parsed = parseHttpError(new Error("<b>Bad</b> request"))
+    expect(parsed.message).toBe("Bad request")
+  })
 })
 
 describe("parseHttpErrorFromResponse", () => {
@@ -100,6 +110,48 @@ describe("parseHttpErrorFromResponse", () => {
     expect(parsed.message).toBe(
       "prompt: Prompt is required; session_id: Session is required",
     )
+  })
+
+  it("parses JSON message field when detail is absent", async () => {
+    const response = makeResponse(
+      JSON.stringify({ message: "Workflow not found" }),
+      { status: 404, contentType: "application/json" },
+    )
+    const parsed = await parseHttpErrorFromResponse(response)
+    expect(parsed.message).toBe("Workflow not found")
+  })
+
+  it("parses JSON title and errors fallbacks", async () => {
+    const response = makeResponse(
+      JSON.stringify({
+        title: "Validation failed",
+        errors: ["Name is required"],
+      }),
+      { status: 400, contentType: "application/json" },
+    )
+    const parsed = await parseHttpErrorFromResponse(response)
+    expect(parsed.message).toBe("Validation failed")
+  })
+
+  it("falls back to the first errors entry when detail and message are absent", async () => {
+    const response = makeResponse(
+      JSON.stringify({ errors: ["Name is required"] }),
+      {
+        status: 400,
+        contentType: "application/json",
+      },
+    )
+    const parsed = await parseHttpErrorFromResponse(response)
+    expect(parsed.message).toBe("Name is required")
+  })
+
+  it("strips HTML from JSON detail strings", async () => {
+    const response = makeResponse(
+      JSON.stringify({ detail: "<b>Invalid</b> token" }),
+      { status: 400, contentType: "application/json" },
+    )
+    const parsed = await parseHttpErrorFromResponse(response)
+    expect(parsed.message).toBe("Invalid token")
   })
 
   it("strips HTML from non-JSON error pages", async () => {
