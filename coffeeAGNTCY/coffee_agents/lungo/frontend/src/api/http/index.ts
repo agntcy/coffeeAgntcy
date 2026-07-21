@@ -19,7 +19,6 @@ export {
 } from "./fetchNdjsonStream.ts"
 export {
   ndjsonStreamUserMessage,
-  asHttpError,
   type NdjsonStreamUserMessageVariant,
 } from "./ndjsonStreamUserMessage.ts"
 export {

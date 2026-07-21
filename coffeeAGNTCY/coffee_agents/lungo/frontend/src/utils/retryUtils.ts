@@ -69,12 +69,5 @@ function isRetryableError(error: unknown): boolean {
     return error.status >= 500 || error.status === 429
   }
 
-  if (err.isAxiosError) {
-    if (!err.response) return true
-    const response = err.response as { status?: number }
-    const status = response.status
-    return typeof status === "number" && (status >= 500 || status === 429)
-  }
-
   return false
 }

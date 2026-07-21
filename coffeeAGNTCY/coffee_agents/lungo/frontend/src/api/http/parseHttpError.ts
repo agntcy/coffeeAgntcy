@@ -43,25 +43,6 @@ function formatFastApiDetail(detail: unknown): string | undefined {
   return undefined
 }
 
-function getMessageFromUnknown(data: unknown): string {
-  if (typeof data === "string") {
-    return stripHtml(data)
-  }
-  if (data !== null && typeof data === "object") {
-    const obj = data as Record<string, unknown>
-    const detailMessage = formatFastApiDetail(obj.detail)
-    if (detailMessage) {
-      return detailMessage
-    }
-    const msg = obj.message ?? obj.detail
-    if (typeof msg === "string") {
-      return stripHtml(msg)
-    }
-    return "Request failed"
-  }
-  return "Request failed"
-}
-
 function getMessageFromJsonBody(body: unknown): string {
   if (typeof body === "string") {
     return stripHtml(body)
@@ -121,21 +102,6 @@ export function parseHttpError(
 
   if (isNetworkError(error)) {
     return new HttpError("Network error. Please check your connection.", {
-      endpointLabel: options?.endpointLabel,
-      cause: error,
-    })
-  }
-
-  if (
-    error !== null &&
-    typeof error === "object" &&
-    "response" in error &&
-    error.response !== null &&
-    typeof error.response === "object"
-  ) {
-    const res = error.response as { status?: number; data?: unknown }
-    return new HttpError(getMessageFromUnknown(res.data), {
-      status: res.status,
       endpointLabel: options?.endpointLabel,
       cause: error,
     })

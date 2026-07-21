@@ -47,36 +47,6 @@ describe("parseHttpError", () => {
     expect(parsed.cause).toBe(error)
   })
 
-  it("parses axios-shaped response errors", () => {
-    const parsed = parseHttpError({
-      response: {
-        status: 404,
-        data: { detail: "Workflow not found" },
-      },
-    })
-    expect(parsed.status).toBe(404)
-    expect(parsed.message).toBe("Workflow not found")
-  })
-
-  it("parses FastAPI validation arrays from axios-shaped errors", () => {
-    const parsed = parseHttpError({
-      response: {
-        status: 422,
-        data: {
-          detail: [
-            {
-              type: "missing",
-              loc: ["body", "name"],
-              msg: "Field required",
-            },
-          ],
-        },
-      },
-    })
-    expect(parsed.status).toBe(422)
-    expect(parsed.message).toBe("name: Field required")
-  })
-
   it("uses Error.message for generic errors", () => {
     const parsed = parseHttpError(new Error("Something broke"))
     expect(parsed.message).toBe("Something broke")

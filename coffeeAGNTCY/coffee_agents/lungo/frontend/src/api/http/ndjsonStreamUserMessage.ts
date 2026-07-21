@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  **/
 
-import { HttpError, isHttpError } from "./types.ts"
+import { isHttpError } from "./types.ts"
 
 export type NdjsonStreamUserMessageVariant = "default" | "short"
 
@@ -27,22 +27,4 @@ export function ndjsonStreamUserMessage(
   return variant === "short"
     ? "Sorry, something went wrong. Please try again."
     : "Sorry, something went wrong. Please try again later."
-}
-
-export function asHttpError(error: unknown, endpointLabel: string): HttpError {
-  if (error instanceof HttpError) {
-    return error.endpointLabel
-      ? error
-      : new HttpError(error.message, {
-          status: error.status,
-          endpointLabel,
-          cause: error.cause,
-        })
-  }
-
-  if (error instanceof Error) {
-    return new HttpError(error.message, { endpointLabel, cause: error })
-  }
-
-  return new HttpError(String(error), { endpointLabel, cause: error })
 }
