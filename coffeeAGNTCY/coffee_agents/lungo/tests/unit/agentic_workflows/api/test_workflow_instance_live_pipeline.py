@@ -4,7 +4,7 @@
 """End-to-end pipeline on a real uvicorn ``api.agentic_workflows.server:app``.
 
 Catalog → instantiate → list → GET state → SSE after threaded POST.
-Skip quick runs with: ``pytest -m "not e2e"``.
+Skip quick runs with: ``pytest -m "not live_server"``.
 
 Uses subprocess + ``httpx`` for finite routes and raw socket for SSE (see
 ``agentic_uvicorn_helpers``); do not use ``TestClient`` for the event stream.
@@ -34,7 +34,7 @@ from tests.unit.agentic_workflows.api.agentic_uvicorn_helpers import (
 )
 
 
-@pytest.mark.e2e
+@pytest.mark.live_server
 def test_agentic_workflows_catalog_instantiate_list_state_events_sse() -> None:
     assert_lungo_package_layout()
     port = free_tcp_port()

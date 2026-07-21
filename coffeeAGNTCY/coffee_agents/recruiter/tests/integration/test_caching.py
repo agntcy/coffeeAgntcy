@@ -13,6 +13,9 @@ import pytest
 from agent_recruiter.recruiter import RecruiterTeam
 
 
+pytestmark = pytest.mark.llm
+
+
 @pytest.fixture
 def recruiter_team():
     """Create a RecruiterTeam with caching enabled."""

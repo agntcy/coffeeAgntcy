@@ -107,6 +107,7 @@ def load_auction_prompt_cases():
 AUCTION_PROMPT_CASES = load_auction_prompt_cases()
 
 
+@pytest.mark.llm
 @pytest.mark.parametrize("transport_config", TRANSPORT_MATRIX, indirect=True)
 class TestAuctionFlows:
     @pytest.mark.agents(["brazil-farm"])

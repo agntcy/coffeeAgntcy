@@ -28,6 +28,9 @@ from agent_recruiter.common.logging import get_logger
 logger = get_logger(__name__)
 
 
+pytestmark = pytest.mark.llm
+
+
 @pytest.mark.asyncio
 async def test_recruiter_a2a_server(run_recruiter_a2a_server, publish_sample_agent_record):
     """Test the RecruiterAgent A2A server returns agent records in DataPart.
