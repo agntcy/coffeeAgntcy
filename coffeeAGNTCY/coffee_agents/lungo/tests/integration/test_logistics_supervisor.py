@@ -54,6 +54,7 @@ class TestLogisticsHealth:
         assert health_data.get("status") == "alive", "Logistics supervisor health check failed"
 
 
+@pytest.mark.llm
 @pytest.mark.parametrize("transport_config", TRANSPORT_MATRIX, indirect=True)
 class TestLogisticsSupervisorFlows:
     @pytest.mark.agents(["logistics-farm", "accountant", "shipper"])

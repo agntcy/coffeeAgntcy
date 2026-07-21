@@ -35,6 +35,25 @@ cp coffeeAGNTCY/coffee_agents/lungo/.env.example .env
 
 ## Running Tests
 
+### CI test tiers (markers)
+
+| Tier | Expression | Secrets | Docker |
+|------|------------|---------|--------|
+| **fast** | `-m "not llm and not docker"` | No | No |
+| **docker** | `-m "docker and not llm"` | No | Yes |
+| **llm** | `-m "llm"` | Yes | Usually |
+
+Integration tests under `tests/integration/` receive the `docker` marker automatically via `conftest.py`. Subprocess uvicorn/A2A tests use `live_server` (included in the fast tier unless they also carry `llm`).
+
+Local commands (from the lungo package root):
+
+```bash
+uv run pytest -m "not llm" -q                    # daily dev (fast + live_server)
+uv run pytest -m "not llm and not docker" -q     # fast tier only
+uv run pytest -m "docker and not llm" -q         # docker tier (needs Docker)
+uv run pytest -m "llm" -q                        # LLM tier (needs .env)
+```
+
 All Lungo tests (auction + logistics):
 
 ```bash

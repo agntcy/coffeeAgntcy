@@ -93,6 +93,7 @@ def load_prompt_cases() -> List[Dict[str, Any]]:
 
 PROMPT_CASES = load_prompt_cases()
 
+@pytest.mark.llm
 @pytest.mark.parametrize("transport_config", TRANSPORT_MATRIX, indirect=True)
 @pytest.mark.parametrize("prompt_case", PROMPT_CASES, ids=[c["id"] for c in PROMPT_CASES])
 class TestAuctionFlows:

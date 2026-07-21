@@ -59,6 +59,11 @@ filterwarnings = [
     # litellm's async logging coroutine is GC'd unawaited under the test event loop.
     "ignore:.*async_success_handler:pytest.PytestUnraisableExceptionWarning",
 ]
+markers = [
+    "live_server: subprocess uvicorn/A2A HTTP; in-process TestClient insufficient",
+    "docker: requires docker-compose session fixtures",
+    "llm: requires live LiteLLM/Azure credentials",
+]
 testpaths = ["tests"]
 
 [dependency-groups]

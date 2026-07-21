@@ -28,10 +28,14 @@ from tests.unit.agentic_workflows.api.agentic_uvicorn_helpers import (
 )
 
 
-pytestmark = pytest.mark.skipif(
-    not (os.getenv("LITELLM_PROXY_BASE_URL") and os.getenv("LITELLM_PROXY_API_KEY")),
-    reason="LITELLM_PROXY_BASE_URL / LITELLM_PROXY_API_KEY not configured",
-)
+pytestmark = [
+    pytest.mark.skipif(
+        not (os.getenv("LITELLM_PROXY_BASE_URL") and os.getenv("LITELLM_PROXY_API_KEY")),
+        reason="LITELLM_PROXY_BASE_URL / LITELLM_PROXY_API_KEY not configured",
+    ),
+    pytest.mark.live_server,
+    pytest.mark.llm,
+]
 
 
 def test_live_pattern_chat_streams_real_response() -> None:

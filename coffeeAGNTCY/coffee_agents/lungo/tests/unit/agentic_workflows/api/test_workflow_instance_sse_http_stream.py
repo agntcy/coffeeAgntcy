@@ -23,6 +23,7 @@ from urllib.parse import quote
 from uuid import UUID
 
 import httpx
+import pytest
 from schema.types import Event
 
 from tests.helpers.workflow_api_auth import workflow_api_auth_headers
@@ -37,6 +38,7 @@ from tests.unit.agentic_workflows.api.agentic_uvicorn_helpers import (
 )
 
 
+@pytest.mark.live_server
 def test_sse_stream_receives_event_after_post() -> None:
     assert_lungo_package_layout()
     port = free_tcp_port()

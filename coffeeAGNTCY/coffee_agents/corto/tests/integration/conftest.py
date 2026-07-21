@@ -253,3 +253,10 @@ def supervisor_client(transport_config, monkeypatch):
     app = exchange_main.app
     with TestClient(app) as client:
         yield client
+
+
+def pytest_collection_modifyitems(items):
+    for item in items:
+        path = str(item.fspath).replace("\\", "/")
+        if "/integration/" in path and item.get_closest_marker("docker") is None:
+            item.add_marker(pytest.mark.docker)

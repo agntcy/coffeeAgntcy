@@ -10,8 +10,9 @@ This directory contains CI/CD workflows for building images, packaging Helm char
 | [`docker-build-reusable.yaml`](.github/workflows/docker-build-reusable.yaml) | Reusable job: build and push a single Docker image | workflow_call |
 | [`helm-push.yaml`](.github/workflows/helm-push.yaml) | Lint, package, and (on push to main/tags) push Helm charts to GHCR (OCI) | push (main, tags), pull_request (paths filter), workflow_dispatch |
 | [`helm-package-reusable.yaml`](.github/workflows/helm-package-reusable.yaml) | Reusable job: lint, package, and push a single Helm chart | workflow_call |
-| [`test.yaml`](.github/workflows/test.yaml) | Orchestrate integration tests across projects | push (main, corto paths), pull_request, workflow_call, workflow_dispatch |
-| [`test-reusable.yaml`](.github/workflows/test-reusable.yaml) | Reusable job: run integration tests for a single project directory | workflow_call |
+| [`test.yaml`](.github/workflows/test.yaml) | Python test tiers (fast + integration) for corto, lungo, recruiter | push (main), pull_request, workflow_call, workflow_dispatch |
+| [`test-reusable.yaml`](.github/workflows/test-reusable.yaml) | Reusable job: run pytest for one project in a given tier | workflow_call |
+| [`test-subprojects-reusable.yaml`](.github/workflows/test-subprojects-reusable.yaml) | Path-filter job: which agent projects changed | workflow_call |
 | [`fe-ci.yaml`](.github/workflows/fe-ci.yaml) | Typecheck, ESLint, and Prettier for the Lungo frontend | push (main, frontend paths), pull_request (main, frontend paths) |
 | [`version-override-test.yaml`](.github/workflows/version-override-test.yaml) | Example invocation of reusable tests with dependency/image overrides | workflow_dispatch |
 | [`docs.yaml`](.github/workflows/docs.yaml) | Publish MkDocs site to GitHub Pages (gh-pages) | push (main, README.md path) |
@@ -70,24 +71,77 @@ Reusable workflow called by `helm-push.yaml` for each matrix entry. Accepts:
 | `package_name` | Package name for the chart (required) |
 | `push` | Whether to push to GHCR OCI registry (default: false) |
 
-## test
+## test (Python Tests)
 
-Orchestrates integration tests by calling `test-reusable.yaml` for each project (currently corto and lungo). Also exposed as a reusable workflow and accepts overrides for dependencies and Docker images.
+Runs marker-driven pytest tiers for each changed agent project. Check names in the PR UI: **`fast / corto`**, **`fast / lungo`**, **`fast / recruiter`**, **`integration / corto`**, etc.
+
+### Pytest markers
+
+| Marker | Meaning |
+|--------|---------|
+| *(none)* | Pure unit — mocks only |
+| `live_server` | Subprocess uvicorn/A2A HTTP |
+| `docker` | Requires docker-compose session (auto-applied under `tests/integration/`) |
+| `llm` | Requires live LiteLLM/Azure credentials |
+
+### CI tiers
+
+| Job | Pytest selection | Secrets | Docker |
+|-----|------------------|---------|--------|
+| **fast / *** | `-m "not llm and not docker"` | No | No |
+| **integration / *** (fork PR) | `-m "docker and not llm"` | No | Yes |
+| **integration / *** (same-repo) | `-m "llm or (docker and not llm)"` | Yes | Yes — single pytest session |
+
+Fork PRs skip LLM tests (no `.env` written). Same-repo branches run the full integration selection in one pytest invocation.
+
+Local commands:
+
+```bash
+uv run pytest -m "not llm and not docker" -q   # fast tier
+uv run pytest -m "docker and not llm" -q       # docker tier
+uv run pytest -m "llm" -q                     # LLM tier (needs .env)
+```
+
+### Branch protection
+
+Replace legacy required checks with the new tier job names:
+
+| Remove (legacy) | Add (required) |
+|-----------------|----------------|
+| `integration-tests-corto` | `fast / corto`, `integration / corto` |
+| `integration-tests-lungo` | `fast / lungo`, `integration / lungo` |
+| `integration-tests-recruiter` | `fast / recruiter`, `integration / recruiter` |
+
+Require **`fast / *`** and **`integration / *`** for agent path changes. Fork PRs can satisfy both without LLM secrets.
+
+### Concurrency
+
+**Fast** jobs cancel in-progress runs on new pushes (`cancel-in-progress: true`). **Integration** jobs are not cancelled mid-run.
+
+Fork detection is computed in `test.yaml` and passed to `test-reusable.yaml` as `fork_pr` (reusable workflows do not reliably inherit PR fork context).
+
+### workflow_call inputs
+
+| Input | Description |
+|-------|-------------|
+| `test_mode` | `all` (default), `fast`, `integration`, or `llm-only` |
+| `test_corto`, `test_lungo`, `test_recruiter` | Subproject toggles (workflow_call / dispatch only) |
+| `pip_overrides`, `pip_constraints`, `docker_overrides` | Dependency and image overrides |
 
 ## test-reusable
 
-Reusable job that runs `pytest` via `uv` for a single project directory. Exposes inputs for dependency and Docker image overrides.
-
-Inputs:
+Runs `pytest` via `uv` for a single project directory in **`fast`**, **`integration`**, or **`llm-only`** mode.
 
 | Input | Description |
 |-------|-------------|
 | `project_dir` | Path to the project directory to test (required) |
-| `pip_overrides` | PEP 508 specs (one per line) forced into the lock (e.g. `httpx==0.27.2`) |
-| `pip_constraints` | Constraint lines applied during resolution (e.g. `grpcio<1.65`) |
+| `test_mode` | `fast` \| `integration` \| `llm-only` (required) |
+| `fork_pr` | Set by `test.yaml` when the PR head repo is a fork; skips `.env` and LLM marker selection |
+| `pip_overrides` | PEP 508 specs (one per line) forced into the lock |
+| `pip_constraints` | Constraint lines applied during resolution |
 | `docker_overrides` | Lines `service=image[:tag]` to patch docker-compose service images |
 
-Example caller (see `version-override-test.yaml`):
+Example caller (see `version-override-test.yaml`; `test_mode` defaults to `all`):
 
 ```yaml
 jobs:
@@ -103,13 +157,15 @@ jobs:
         slim=ghcr.io/agntcy/slim:1.4.0
 ```
 
+Use `test_mode: llm-only` only when you intentionally want to skip fast and docker-only integration tests.
+
 ## fe-ci
 
 Runs frontend checks (TypeScript typecheck, ESLint, Prettier via `npm run check`) for the Lungo frontend. Only triggers when files under `coffeeAGNTCY/coffee_agents/lungo/frontend/` change.
 
 ## version-override-test
 
-Demonstrates how to pin or constrain dependencies and override container images when calling the reusable test workflow.
+Demonstrates how to pin or constrain dependencies and override container images when calling the reusable test workflow. Uses the default `test_mode: all` so fast, docker, and LLM tiers all run against the overridden images.
 
 ## docs
 

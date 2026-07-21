@@ -75,6 +75,9 @@ addopts = "--asyncio-mode=auto"
 filterwarnings = ["error"]
 markers = [
     "agents(names): marks tests that run for specific farms (e.g. @pytest.mark.farms([\"brazil\"]))",
+    "live_server: subprocess uvicorn/A2A HTTP; in-process TestClient insufficient",
+    "docker: requires docker-compose session fixtures",
+    "llm: requires live LiteLLM/Azure credentials",
 ]
 pythonpath = ["."]
 testpaths = ["tests"]
