@@ -151,7 +151,9 @@ export const useRecruiterStreamingStore = create<RecruiterStreamingStoreState>(
                 abortController: null,
               }))
               return "stop"
-            } else {
+            } else if (
+              event.event_type === RECRUITER_STREAM_EVENT_TYPE.STATUS_UPDATE
+            ) {
               set((state) => ({
                 events: [...state.events, event],
                 sessionId: parsedData.session_id || state.sessionId,

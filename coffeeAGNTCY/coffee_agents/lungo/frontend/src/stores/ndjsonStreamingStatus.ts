@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  *
  * Shared connection lifecycle for NDJSON agent-prompt stream stores
- * (auction / publish-subscribe-streaming and recruiter / a2a-http).
+ * (auction, recruiter, and group messaging patterns).
  **/
 
 export const NDJSON_STREAMING_STATUS = {

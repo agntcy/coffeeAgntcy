@@ -5,6 +5,10 @@
 
 import { create } from "zustand"
 import type { LogisticsStreamStep } from "./groupStreaming.types"
+import {
+  NDJSON_STREAMING_STATUS,
+  type NdjsonStreamingStatus,
+} from "./ndjsonStreamingStatus"
 import { fetchNdjsonStream, ndjsonStreamUserMessage } from "@/api/http"
 import { reportRequestError } from "@/errors/request"
 import type { HttpRequestTarget } from "@/urls"
@@ -39,10 +43,9 @@ const isValidLogisticsStreamStep = (
 }
 
 interface LogisticsStreamingState {
+  status: NdjsonStreamingStatus
   events: LogisticsStreamStep[]
   finalResponse: string | null
-  isStreaming: boolean
-  isComplete: boolean
   error: string | null
   currentOrderId: string | null
   executionKey: string | null
@@ -53,8 +56,6 @@ interface LogisticsStreamingActions {
   addEvent: (event: LogisticsStreamStep) => void
   setFinalResponse: (response: string) => void
   setError: (error: string) => void
-  setStreaming: (streaming: boolean) => void
-  setComplete: (complete: boolean) => void
   setCurrentOrderId: (orderId: string) => void
   setExecutionKey: (key: string) => void
   setSessionId: (id: string) => void
@@ -67,14 +68,21 @@ interface LogisticsStreamingActions {
 }
 
 const initialState: LogisticsStreamingState = {
+  status: NDJSON_STREAMING_STATUS.IDLE,
   events: [],
   finalResponse: null,
-  isStreaming: false,
-  isComplete: false,
   error: null,
   currentOrderId: null,
   executionKey: null,
   sessionId: null,
+}
+
+function promoteToStreaming(
+  status: NdjsonStreamingStatus,
+): NdjsonStreamingStatus {
+  return status === NDJSON_STREAMING_STATUS.CONNECTING
+    ? NDJSON_STREAMING_STATUS.STREAMING
+    : status
 }
 
 function handleGroupStreamPayload(
@@ -131,33 +139,22 @@ export const useGroupStreamingStore = create<
     set((state) => ({
       events: [...state.events, event],
       currentOrderId: event.order_id,
-      isComplete: event.state === "DELIVERED" ? true : state.isComplete,
-      isStreaming: event.state === "DELIVERED" ? false : state.isStreaming,
+      status:
+        event.state === "DELIVERED"
+          ? NDJSON_STREAMING_STATUS.COMPLETED
+          : promoteToStreaming(state.status),
     })),
 
   setFinalResponse: (response: string) =>
     set({
       finalResponse: response,
-      isComplete: true,
-      isStreaming: false,
+      status: NDJSON_STREAMING_STATUS.COMPLETED,
     }),
 
   setError: (error: string) =>
     set({
       error,
-      isComplete: true,
-      isStreaming: false,
-    }),
-
-  setStreaming: (streaming: boolean) =>
-    set({
-      isStreaming: streaming,
-    }),
-
-  setComplete: (complete: boolean) =>
-    set({
-      isComplete: complete,
-      isStreaming: false,
+      status: NDJSON_STREAMING_STATUS.ERROR,
     }),
 
   setCurrentOrderId: (orderId: string) =>
@@ -180,25 +177,16 @@ export const useGroupStreamingStore = create<
     workflowInstanceId?: string | null,
     streamRequest?: HttpRequestTarget,
   ) => {
-    const {
-      reset,
-      setStreaming,
-      addEvent,
-      setFinalResponse,
-      setComplete,
-      setError,
-      setSessionId,
-    } = useGroupStreamingStore.getState()
+    const { reset, addEvent, setFinalResponse, setError, setSessionId } =
+      useGroupStreamingStore.getState()
 
     if (!streamRequest?.url) {
       setError("Streaming request target is required")
-      setComplete(true)
-      setStreaming(false)
       return
     }
 
     reset()
-    setStreaming(true)
+    set({ status: NDJSON_STREAMING_STATUS.CONNECTING })
 
     const body: { prompt: string; workflow_instance_id?: string } = { prompt }
     if (workflowInstanceId) body.workflow_instance_id = workflowInstanceId
@@ -210,6 +198,9 @@ export const useGroupStreamingStore = create<
         endpointLabel: streamRequest.endpointLabel,
         body: JSON.stringify(body),
         splitMode: "json-objects",
+        onStreamStart: () => {
+          set({ status: NDJSON_STREAMING_STATUS.STREAMING })
+        },
         onLine: (parsed) =>
           handleGroupStreamPayload(parsed, {
             addEvent,
@@ -224,7 +215,12 @@ export const useGroupStreamingStore = create<
         },
       })
 
-      setComplete(true)
+      if (
+        useGroupStreamingStore.getState().status !==
+        NDJSON_STREAMING_STATUS.ERROR
+      ) {
+        set({ status: NDJSON_STREAMING_STATUS.COMPLETED })
+      }
     } catch (error) {
       const httpError = reportRequestError(streamRequest.endpointLabel, error)
       setError(ndjsonStreamUserMessage(httpError, "short"))
@@ -240,11 +236,8 @@ export const useGroupEvents = () =>
 export const useGroupFinalResponse = () =>
   useGroupStreamingStore((state) => state.finalResponse)
 
-export const useGroupIsStreaming = () =>
-  useGroupStreamingStore((state) => state.isStreaming)
-
-export const useGroupIsComplete = () =>
-  useGroupStreamingStore((state) => state.isComplete)
+export const useGroupStreamingStatus = () =>
+  useGroupStreamingStore((state) => state.status)
 
 export const useGroupError = () =>
   useGroupStreamingStore((state) => state.error)
@@ -263,8 +256,6 @@ export const useGroupStreamingActions = () =>
     addEvent: state.addEvent,
     setFinalResponse: state.setFinalResponse,
     setError: state.setError,
-    setStreaming: state.setStreaming,
-    setComplete: state.setComplete,
     setCurrentOrderId: state.setCurrentOrderId,
     setExecutionKey: state.setExecutionKey,
     setSessionId: state.setSessionId,

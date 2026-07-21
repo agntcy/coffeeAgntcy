@@ -64,26 +64,47 @@ export function useAppStreamingChatEffects(
 
   useEffect(() => {
     const transport = workflowChatTransport(selectedWorkflowSummary)
-    if (transport === "group_sse") {
-      if (streaming.groupIsComplete && !streaming.groupIsStreaming) {
-        if (streaming.groupFinalResponse) {
-          chat.setShowFinalResponse(true)
-          chat.handleApiResponse(streaming.groupFinalResponse, false)
-        } else if (streaming.groupError) {
-          const errorMsg = `Streaming error: ${streaming.groupError}`
-          chat.setShowFinalResponse(true)
-          chat.handleApiResponse(errorMsg, true)
-        }
-      }
+    if (transport !== "group_sse") return
+    if (!chat.isAgentLoading) return
+
+    if (streaming.groupStatus === NDJSON_STREAMING_STATUS.ERROR) {
+      chat.setIsAgentLoading(false)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps -- only run when group streaming state or workflow changes
   }, [
     selectedWorkflowSummary,
-    streaming.groupIsComplete,
-    streaming.groupIsStreaming,
+    streaming.groupStatus,
+    chat.isAgentLoading,
+    chat.setIsAgentLoading,
+  ])
+
+  useEffect(() => {
+    const transport = workflowChatTransport(selectedWorkflowSummary)
+    if (transport !== "group_sse") return
+
+    if (streaming.groupStatus === NDJSON_STREAMING_STATUS.COMPLETED) {
+      chat.setIsAgentLoading(false)
+
+      if (streaming.groupFinalResponse) {
+        chat.setShowFinalResponse(true)
+        chat.handleApiResponse(streaming.groupFinalResponse, false)
+      }
+    } else if (
+      streaming.groupStatus === NDJSON_STREAMING_STATUS.ERROR &&
+      streaming.groupError
+    ) {
+      chat.setIsAgentLoading(false)
+      chat.setShowFinalResponse(true)
+      chat.handleApiResponse(`Streaming error: ${streaming.groupError}`, true)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- only run when group streaming state or workflow changes
+  }, [
+    selectedWorkflowSummary,
+    streaming.groupStatus,
     streaming.groupFinalResponse,
     streaming.groupError,
     chat.handleApiResponse,
+    chat.setIsAgentLoading,
     chat.setShowFinalResponse,
   ])
 
