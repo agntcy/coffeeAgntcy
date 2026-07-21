@@ -13,6 +13,8 @@ import {
   Typography,
 } from "@open-ui-kit/core"
 import Close from "@mui/icons-material/Close"
+import { fetchJson } from "@/api/http"
+import { reportRequestError } from "@/errors/request"
 import {
   buildAboutRequest,
   getAgenticWorkflowsApiUrl,
@@ -45,17 +47,17 @@ const InfoModal: React.FC<InfoModalProps> = ({ isOpen, onClose }) => {
     if (!isOpen) return
     let cancelled = false
     const fetchInfo = async () => {
+      const request = buildAboutRequest()
       try {
         setError(null)
-        const res = await fetch(buildAboutRequest().url)
-        if (!res.ok) {
-          throw new Error(`HTTP ${res.status}: ${res.statusText}`)
-        }
-        const data = await res.json()
+        const data = await fetchJson<BuildInfo>(request.url, {
+          endpointLabel: request.endpointLabel,
+        })
         if (!cancelled) setInfo(data)
-      } catch {
+      } catch (err) {
         if (!cancelled) {
-          setError("Failed to load build info")
+          const httpError = reportRequestError(request.endpointLabel, err)
+          setError(httpError.message)
           setInfo(null)
         }
       }
