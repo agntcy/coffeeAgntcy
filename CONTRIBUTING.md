@@ -37,24 +37,25 @@ We expect new pull requests to include tests for any affected behavior, and, as
 we follow semantic versioning, we may reserve breaking changes until the next
 major version release.
 
-### CI test tiers
+### CI test suites
 
-Python agent projects (`corto`, `lungo`, `recruiter`) run two CI jobs per changed project:
-
-1. **fast** — `pytest -m "not llm and not docker"` (no secrets, no Docker)
-2. **integration** — Docker-backed tests without LLM on all PRs; LLM tests run on same-repo branches when secrets are available
-
-Fork PRs receive green **fast** and **integration** checks for the docker tier only. LLM tests are skipped on forks (no secret injection).
+Python agent projects (`corto`, `lungo`, `recruiter`) run one **no-secrets** CI job per changed project: **`tests / *`**. LLM tests under `tests/integration_llm/` are **local-only** (not run in CI) until project leadership re-enables them.
 
 Run locally before opening a PR:
 
 ```bash
-cd coffeeAGNTCY/coffee_agents/lungo && uv run pytest -m "not llm" -q
-cd coffeeAGNTCY/coffee_agents/corto && uv run pytest -m "not llm" -q
-cd coffeeAGNTCY/coffee_agents/recruiter && uv run pytest -m "not llm" -q
+cd coffeeAGNTCY/coffee_agents/lungo && uv run pytest tests/unit tests/live tests/integration -q
+cd coffeeAGNTCY/coffee_agents/corto && uv run pytest tests/unit tests/integration -q
+cd coffeeAGNTCY/coffee_agents/recruiter && uv run pytest tests/unit tests/integration -q
 ```
 
-See [`.github/workflows/README.md`](.github/workflows/README.md) for marker definitions, branch protection migration (legacy `integration-tests-*` → `fast / *` + `integration / *`), and concurrency behavior.
+LLM suite (needs `.env`, not CI):
+
+```bash
+cd coffeeAGNTCY/coffee_agents/lungo && uv run pytest tests/integration_llm -q
+```
+
+See [`.github/workflows/README.md`](.github/workflows/README.md) for directory layout, branch protection migration (legacy `integration-tests-*` → `tests / *`), and concurrency behavior.
 
 ## Other Ways to Contribute
 

@@ -465,9 +465,3 @@ def publish_sample_agent_record():
             print("Warning: dirctl not found, skipping cleanup")
             break
 
-
-def pytest_collection_modifyitems(items):
-    for item in items:
-        path = str(item.fspath).replace("\\", "/")
-        if "/integration/" in path and item.get_closest_marker("docker") is None:
-            item.add_marker(pytest.mark.docker)

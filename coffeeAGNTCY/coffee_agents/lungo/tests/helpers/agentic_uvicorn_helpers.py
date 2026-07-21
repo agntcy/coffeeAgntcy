@@ -1,7 +1,7 @@
 # Copyright AGNTCY Contributors (https://github.com/agntcy)
 # SPDX-License-Identifier: Apache-2.0
 
-"""Shared helpers for uvicorn subprocess + raw-socket SSE tests under ``api/``."""
+"""Shared helpers for uvicorn subprocess + raw-socket SSE live tests."""
 
 from __future__ import annotations
 
@@ -20,7 +20,7 @@ from tests.helpers.workflow_api_auth import (
     workflow_api_auth_headers,
 )
 
-LUNGO_ROOT = Path(__file__).resolve().parents[4]
+LUNGO_ROOT = Path(__file__).resolve().parents[2]
 
 
 def assert_lungo_package_layout() -> None:

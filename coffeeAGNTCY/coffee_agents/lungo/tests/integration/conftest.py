@@ -608,12 +608,5 @@ def logistics_accountant_client(transport_config, monkeypatch):
         _restore_modules(saved)
 
 
-def pytest_collection_modifyitems(items):
-    for item in items:
-        path = str(item.fspath).replace("\\", "/")
-        if "/integration/" in path and item.get_closest_marker("docker") is None:
-            item.add_marker(pytest.mark.docker)
-
-
 def pytest_sessionfinish(session, exitstatus) -> None:  # noqa: ARG001
     _shutdown_otel_sdk()

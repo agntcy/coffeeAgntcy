@@ -45,6 +45,7 @@ packages = ["src/agent_recruiter"]
 [tool.pytest.ini_options]
 addopts = "--asyncio-mode=auto"
 asyncio_default_fixture_loop_scope = "function"
+pythonpath = ["."]
 filterwarnings = [
     "error",
     # google-adk runners.py:1481 reads RunConfig.save_input_blobs_as_artifacts (deprecated).
@@ -58,11 +59,6 @@ filterwarnings = [
     "ignore:'HTTP_413_REQUEST_ENTITY_TOO_LARGE' is deprecated:DeprecationWarning",
     # litellm's async logging coroutine is GC'd unawaited under the test event loop.
     "ignore:.*async_success_handler:pytest.PytestUnraisableExceptionWarning",
-]
-markers = [
-    "live_server: subprocess uvicorn/A2A HTTP; in-process TestClient insufficient",
-    "docker: requires docker-compose session fixtures",
-    "llm: requires live LiteLLM/Azure credentials",
 ]
 testpaths = ["tests"]
 

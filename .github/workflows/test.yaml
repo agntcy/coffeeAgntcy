@@ -48,11 +48,6 @@ on:
         required: false
         type: string
         default: ""
-      test_mode:
-        description: 'Which tiers to run: all | fast | integration | llm-only'
-        required: false
-        type: string
-        default: "all"
       test_corto:
         description: 'Whether to test the Corto project.'
         required: false
@@ -85,11 +80,6 @@ on:
         required: false
         type: string
         default: ""
-      test_mode:
-        description: 'Which tiers to run: all | fast | integration | llm-only'
-        required: false
-        type: string
-        default: "all"
       test_corto:
         description: 'Whether to test the Corto project.'
         required: false
@@ -114,194 +104,80 @@ jobs:
       test_lungo: ${{ inputs.test_lungo }}
       test_recruiter: ${{ inputs.test_recruiter }}
 
-  fast-corto:
-    name: fast / corto
+  tests-corto:
+    name: tests / corto
     needs: subprojects-to-test
     concurrency:
-      group: python-tests-fast-corto-${{ github.workflow }}-${{ github.ref }}
+      group: python-tests-corto-${{ github.workflow }}-${{ github.ref }}
       cancel-in-progress: true
-    if: |
-      needs.subprojects-to-test.outputs.test_corto == 'true' &&
-      (github.event_name == 'push' || github.event_name == 'pull_request' ||
-      inputs.test_mode == 'all' || inputs.test_mode == 'fast')
+    if: needs.subprojects-to-test.outputs.test_corto == 'true'
     uses: ./.github/workflows/test-reusable.yaml
     with:
       project_dir: coffeeAGNTCY/coffee_agents/corto
-      test_mode: fast
+      test_paths: tests/unit tests/integration
       pip_overrides: ${{ inputs.pip_overrides }}
       pip_constraints: ${{ inputs.pip_constraints }}
       docker_overrides: ${{ inputs.docker_overrides }}
-      fork_pr: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository }}
-    secrets: inherit
 
-  fast-corto-path-skip:
-    name: fast / corto
+  tests-corto-path-skip:
+    name: tests / corto
     needs: subprojects-to-test
     if: |
       needs.subprojects-to-test.outputs.test_corto != 'true' &&
-      (github.event_name == 'push' || github.event_name == 'pull_request' ||
-      inputs.test_mode == 'all' || inputs.test_mode == 'fast')
+      (github.event_name == 'push' || github.event_name == 'pull_request')
     runs-on: ubuntu-latest
     steps:
       - name: No corto path changes
-        run: echo "fast / corto satisfied without running tests (no corto path changes)."
+        run: echo "tests / corto satisfied without running tests (no corto path changes)."
 
-  integration-corto:
-    name: integration / corto
+  tests-lungo:
+    name: tests / lungo
     needs: subprojects-to-test
     concurrency:
-      group: python-tests-integration-corto-${{ github.workflow }}-${{ github.ref }}
-      cancel-in-progress: false
-    if: |
-      needs.subprojects-to-test.outputs.test_corto == 'true' &&
-      (github.event_name == 'push' || github.event_name == 'pull_request' ||
-      inputs.test_mode == 'all' || inputs.test_mode == 'integration' || inputs.test_mode == 'llm-only')
-    uses: ./.github/workflows/test-reusable.yaml
-    with:
-      project_dir: coffeeAGNTCY/coffee_agents/corto
-      test_mode: ${{ inputs.test_mode == 'llm-only' && 'llm-only' || 'integration' }}
-      pip_overrides: ${{ inputs.pip_overrides }}
-      pip_constraints: ${{ inputs.pip_constraints }}
-      docker_overrides: ${{ inputs.docker_overrides }}
-      fork_pr: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository }}
-    secrets: inherit
-
-  integration-corto-path-skip:
-    name: integration / corto
-    needs: subprojects-to-test
-    if: |
-      needs.subprojects-to-test.outputs.test_corto != 'true' &&
-      (github.event_name == 'push' || github.event_name == 'pull_request' ||
-      inputs.test_mode == 'all' || inputs.test_mode == 'integration' || inputs.test_mode == 'llm-only')
-    runs-on: ubuntu-latest
-    steps:
-      - name: No corto path changes
-        run: echo "integration / corto satisfied without running tests (no corto path changes)."
-
-  fast-lungo:
-    name: fast / lungo
-    needs: subprojects-to-test
-    concurrency:
-      group: python-tests-fast-lungo-${{ github.workflow }}-${{ github.ref }}
+      group: python-tests-lungo-${{ github.workflow }}-${{ github.ref }}
       cancel-in-progress: true
-    if: |
-      needs.subprojects-to-test.outputs.test_lungo == 'true' &&
-      (github.event_name == 'push' || github.event_name == 'pull_request' ||
-      inputs.test_mode == 'all' || inputs.test_mode == 'fast')
+    if: needs.subprojects-to-test.outputs.test_lungo == 'true'
     uses: ./.github/workflows/test-reusable.yaml
     with:
       project_dir: coffeeAGNTCY/coffee_agents/lungo
-      test_mode: fast
+      test_paths: tests/unit tests/live tests/integration
       pip_overrides: ${{ inputs.pip_overrides }}
       pip_constraints: ${{ inputs.pip_constraints }}
       docker_overrides: ${{ inputs.docker_overrides }}
-      fork_pr: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository }}
-    secrets: inherit
 
-  fast-lungo-path-skip:
-    name: fast / lungo
+  tests-lungo-path-skip:
+    name: tests / lungo
     needs: subprojects-to-test
     if: |
       needs.subprojects-to-test.outputs.test_lungo != 'true' &&
-      (github.event_name == 'push' || github.event_name == 'pull_request' ||
-      inputs.test_mode == 'all' || inputs.test_mode == 'fast')
+      (github.event_name == 'push' || github.event_name == 'pull_request')
     runs-on: ubuntu-latest
     steps:
       - name: No lungo path changes
-        run: echo "fast / lungo satisfied without running tests (no lungo path changes)."
+        run: echo "tests / lungo satisfied without running tests (no lungo path changes)."
 
-  integration-lungo:
-    name: integration / lungo
+  tests-recruiter:
+    name: tests / recruiter
     needs: subprojects-to-test
     concurrency:
-      group: python-tests-integration-lungo-${{ github.workflow }}-${{ github.ref }}
-      cancel-in-progress: false
-    if: |
-      needs.subprojects-to-test.outputs.test_lungo == 'true' &&
-      (github.event_name == 'push' || github.event_name == 'pull_request' ||
-      inputs.test_mode == 'all' || inputs.test_mode == 'integration' || inputs.test_mode == 'llm-only')
-    uses: ./.github/workflows/test-reusable.yaml
-    with:
-      project_dir: coffeeAGNTCY/coffee_agents/lungo
-      test_mode: ${{ inputs.test_mode == 'llm-only' && 'llm-only' || 'integration' }}
-      pip_overrides: ${{ inputs.pip_overrides }}
-      pip_constraints: ${{ inputs.pip_constraints }}
-      docker_overrides: ${{ inputs.docker_overrides }}
-      fork_pr: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository }}
-    secrets: inherit
-
-  integration-lungo-path-skip:
-    name: integration / lungo
-    needs: subprojects-to-test
-    if: |
-      needs.subprojects-to-test.outputs.test_lungo != 'true' &&
-      (github.event_name == 'push' || github.event_name == 'pull_request' ||
-      inputs.test_mode == 'all' || inputs.test_mode == 'integration' || inputs.test_mode == 'llm-only')
-    runs-on: ubuntu-latest
-    steps:
-      - name: No lungo path changes
-        run: echo "integration / lungo satisfied without running tests (no lungo path changes)."
-
-  fast-recruiter:
-    name: fast / recruiter
-    needs: subprojects-to-test
-    concurrency:
-      group: python-tests-fast-recruiter-${{ github.workflow }}-${{ github.ref }}
+      group: python-tests-recruiter-${{ github.workflow }}-${{ github.ref }}
       cancel-in-progress: true
-    if: |
-      needs.subprojects-to-test.outputs.test_recruiter == 'true' &&
-      (github.event_name == 'push' || github.event_name == 'pull_request' ||
-      inputs.test_mode == 'all' || inputs.test_mode == 'fast')
+    if: needs.subprojects-to-test.outputs.test_recruiter == 'true'
     uses: ./.github/workflows/test-reusable.yaml
     with:
       project_dir: coffeeAGNTCY/coffee_agents/recruiter
-      test_mode: fast
+      test_paths: tests/unit tests/integration
       pip_overrides: ${{ inputs.pip_overrides }}
       pip_constraints: ${{ inputs.pip_constraints }}
       docker_overrides: ${{ inputs.docker_overrides }}
-      fork_pr: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository }}
-    secrets: inherit
 
-  fast-recruiter-path-skip:
-    name: fast / recruiter
+  tests-recruiter-path-skip:
+    name: tests / recruiter
     needs: subprojects-to-test
     if: |
       needs.subprojects-to-test.outputs.test_recruiter != 'true' &&
-      (github.event_name == 'push' || github.event_name == 'pull_request' ||
-      inputs.test_mode == 'all' || inputs.test_mode == 'fast')
+      (github.event_name == 'push' || github.event_name == 'pull_request')
     runs-on: ubuntu-latest
     steps:
       - name: No recruiter path changes
-        run: echo "fast / recruiter satisfied without running tests (no recruiter path changes)."
-
-  integration-recruiter:
-    name: integration / recruiter
-    needs: subprojects-to-test
-    concurrency:
-      group: python-tests-integration-recruiter-${{ github.workflow }}-${{ github.ref }}
-      cancel-in-progress: false
-    if: |
-      needs.subprojects-to-test.outputs.test_recruiter == 'true' &&
-      (github.event_name == 'push' || github.event_name == 'pull_request' ||
-      inputs.test_mode == 'all' || inputs.test_mode == 'integration' || inputs.test_mode == 'llm-only')
-    uses: ./.github/workflows/test-reusable.yaml
-    with:
-      project_dir: coffeeAGNTCY/coffee_agents/recruiter
-      test_mode: ${{ inputs.test_mode == 'llm-only' && 'llm-only' || 'integration' }}
-      pip_overrides: ${{ inputs.pip_overrides }}
-      pip_constraints: ${{ inputs.pip_constraints }}
-      docker_overrides: ${{ inputs.docker_overrides }}
-      fork_pr: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository }}
-    secrets: inherit
-
-  integration-recruiter-path-skip:
-    name: integration / recruiter
-    needs: subprojects-to-test
-    if: |
-      needs.subprojects-to-test.outputs.test_recruiter != 'true' &&
-      (github.event_name == 'push' || github.event_name == 'pull_request' ||
-      inputs.test_mode == 'all' || inputs.test_mode == 'integration' || inputs.test_mode == 'llm-only')
-    runs-on: ubuntu-latest
-    steps:
-      - name: No recruiter path changes
-        run: echo "integration / recruiter satisfied without running tests (no recruiter path changes)."
+        run: echo "tests / recruiter satisfied without running tests (no recruiter path changes)."
