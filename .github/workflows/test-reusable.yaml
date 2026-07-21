@@ -7,8 +7,8 @@ on:
         description: 'The directory of the project to test.'
         required: true
         type: string
-      test_mode:
-        description: 'fast | integration | llm-only'
+      test_paths:
+        description: 'Space-separated pytest paths (e.g. tests/unit tests/integration).'
         required: true
         type: string
       pip_overrides:
@@ -26,11 +26,6 @@ on:
         required: false
         type: string
         default: ""
-      fork_pr:
-        description: 'True when the caller PR originates from a fork (skip LLM secrets and tests).'
-        required: false
-        type: boolean
-        default: false
 
 permissions:
   contents: read
@@ -74,77 +69,14 @@ jobs:
       - name: Resolve and install
         run: uv sync --extra dev
 
-      - name: Run fast tests
-        if: ${{ inputs.test_mode == 'fast' }}
+      - name: Run tests
         run: |
           set +e
-          uv run pytest -m "not llm and not docker" --strict-markers -v --durations=0 --durations-min=1.0 -r ap
+          uv run pytest ${{ inputs.test_paths }} --strict-markers -v --durations=0 --durations-min=1.0 -r ap
           code=$?
           set -e
           if [[ $code -eq 5 ]]; then
-            echo "No fast-tier tests collected; treating as success."
-            exit 0
-          fi
-          exit $code
-
-      - name: Create CI env file
-        if: ${{ inputs.test_mode == 'integration' || inputs.test_mode == 'llm-only' }}
-        env:
-          LLM_MODEL: ${{ secrets.LLM_MODEL }}
-          AZURE_API_KEY: ${{ secrets.AZURE_API_KEY }}
-          AZURE_API_BASE: ${{ secrets.AZURE_API_BASE }}
-          AZURE_API_VERSION: ${{ secrets.AZURE_API_VERSION }}
-        run: |
-          if [[ "${{ inputs.fork_pr }}" == "true" ]]; then
-            echo "fork_pr=true: skipping .env creation (no LLM secrets on fork PRs)."
-            exit 0
-          fi
-          if [[ -z "$LLM_MODEL" ]]; then
-            echo "::error::LLM secrets missing for LLM test run"
-            exit 1
-          fi
-          {
-            echo "LLM_MODEL=${LLM_MODEL}"
-            echo "AZURE_API_KEY=${AZURE_API_KEY}"
-            echo "AZURE_API_BASE=${AZURE_API_BASE}"
-            echo "AZURE_API_VERSION=${AZURE_API_VERSION}"
-            echo "WORKFLOW_API_KEY=${WORKFLOW_API_KEY}"
-          } > .env
-
-      - name: Run integration tests
-        if: ${{ inputs.test_mode == 'integration' }}
-        run: |
-          set +e
-          if [[ "${{ inputs.fork_pr }}" == "true" ]]; then
-            marker_expr='docker and not llm'
-          else
-            marker_expr='llm or (docker and not llm)'
-          fi
-          echo "fork_pr=${{ inputs.fork_pr }} test_mode=${{ inputs.test_mode }} marker_expr=${marker_expr}"
-          uv run pytest -m "$marker_expr" --strict-markers -v --durations=0 --durations-min=1.0 -r ap
-          code=$?
-          set -e
-          if [[ $code -eq 5 ]]; then
-            echo "No integration-tier tests collected; treating as success."
-            exit 0
-          fi
-          exit $code
-
-      - name: Refuse LLM-only on fork PRs
-        if: ${{ inputs.test_mode == 'llm-only' && inputs.fork_pr == true }}
-        run: |
-          echo "::error::LLM-only tests cannot run on fork PRs (no secret injection)."
-          exit 1
-
-      - name: Run LLM-only tests
-        if: ${{ inputs.test_mode == 'llm-only' && inputs.fork_pr != true }}
-        run: |
-          set +e
-          uv run pytest -m "llm" --strict-markers -v --durations=0 --durations-min=1.0 -r ap
-          code=$?
-          set -e
-          if [[ $code -eq 5 ]]; then
-            echo "No LLM-tier tests collected; treating as success."
+            echo "No tests collected; treating as success."
             exit 0
           fi
           exit $code

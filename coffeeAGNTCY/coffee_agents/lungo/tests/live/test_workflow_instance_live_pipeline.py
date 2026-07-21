@@ -4,7 +4,6 @@
 """End-to-end pipeline on a real uvicorn ``api.agentic_workflows.server:app``.
 
 Catalog → instantiate → list → GET state → SSE after threaded POST.
-Skip quick runs with: ``pytest -m "not live_server"``.
 
 Uses subprocess + ``httpx`` for finite routes and raw socket for SSE (see
 ``agentic_uvicorn_helpers``); do not use ``TestClient`` for the event stream.
@@ -22,8 +21,7 @@ import httpx
 import pytest
 from schema.types import Event
 
-from tests.helpers.workflow_api_auth import workflow_api_auth_headers
-from tests.unit.agentic_workflows.api.agentic_uvicorn_helpers import (
+from tests.helpers.agentic_uvicorn_helpers import (
     assert_lungo_package_layout,
     first_sse_data_payload,
     free_tcp_port,
@@ -32,9 +30,9 @@ from tests.unit.agentic_workflows.api.agentic_uvicorn_helpers import (
     start_agentic_uvicorn,
     wait_health,
 )
+from tests.helpers.workflow_api_auth import workflow_api_auth_headers
 
 
-@pytest.mark.live_server
 def test_agentic_workflows_catalog_instantiate_list_state_events_sse() -> None:
     assert_lungo_package_layout()
     port = free_tcp_port()
@@ -54,7 +52,6 @@ def test_agentic_workflows_catalog_instantiate_list_state_events_sse() -> None:
             catalog = lr.json()
             if not catalog:
                 pytest.skip("No workflows in catalog (empty starting_workflows load)")
-            # Lexicographic first key — stable across runs (dict iteration order is not a contract).
             wf_name = min(catalog, key=str)
 
             dr = hc.get(f"/agentic-workflows/{wf_name}/")
@@ -84,7 +81,6 @@ def test_agentic_workflows_catalog_instantiate_list_state_events_sse() -> None:
 
         event_id = "event://550e8400-e29b-41d4-a716-4466554400e0"
         post_path = f"/agentic-workflows/{wf_name}/instances/{path_uuid}/events/"
-        # Raw HTTP request line must not contain unencoded spaces (httpx encodes paths for us).
         wf_path_seg = quote(wf_name, safe="")
         stream_path = (
             f"/agentic-workflows/{wf_path_seg}/instances/{path_uuid}/events/stream"
