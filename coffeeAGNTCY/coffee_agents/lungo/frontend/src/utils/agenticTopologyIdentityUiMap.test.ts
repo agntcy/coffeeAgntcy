@@ -6,7 +6,7 @@
 import { describe, expect, it } from "vitest"
 import type { TopologyNodeWire } from "@/api/agenticWorkflowsTypes"
 import { LUNGO_FRONTEND_URLS } from "@/urls"
-import type { CustomNodeData } from "@/components/MainArea/Graph/Elements/types"
+import { customNodeDataFixture } from "@/components/MainArea/Graph/Elements/customNodeData"
 import {
   applyBackendTopologyWireFields,
   applyDiscoveredAgentInlineUi,
@@ -79,12 +79,10 @@ describe("agenticTopologyIdentityUiMap", () => {
   })
 
   it("applyBackendTopologyWireFields applies enrichment and defaults", () => {
-    const base = {
-      icon: null,
+    const base = customNodeDataFixture({
       label: "Brazil",
       label_subtitle: "Coffee Farm",
-      handles: "all",
-    } as unknown as CustomNodeData
+    })
     const wire: TopologyNodeWire = {
       id: "node://1",
       agent_directory_cid:
@@ -105,12 +103,10 @@ describe("agenticTopologyIdentityUiMap", () => {
   })
 
   it("applyBackendTopologyWireFields defaults badge/policy to true when overrides absent", () => {
-    const base = {
-      icon: null,
+    const base = customNodeDataFixture({
       label: "Colombia",
       label_subtitle: "Coffee Farm",
-      handles: "all",
-    } as unknown as CustomNodeData
+    })
     const wire: TopologyNodeWire = {
       id: "node://1",
       identity_app_slug: "colombia-coffee-farm",
@@ -144,12 +140,10 @@ describe("agenticTopologyIdentityUiMap", () => {
 
   describe("enrichAgenticTopologyWellKnownUi", () => {
     it("enriches group node by type only", () => {
-      const data = {
-        icon: null,
+      const data = customNodeDataFixture({
         label: "Not",
         label_subtitle: "Logistics Group",
-        handles: "all",
-      } as unknown as CustomNodeData
+      })
       const wire: TopologyNodeWire = {
         id: "g1",
         type: "group",
@@ -163,12 +157,10 @@ describe("agenticTopologyIdentityUiMap", () => {
     })
 
     it("enriches directory node only for customNode + label", () => {
-      const data = {
-        icon: null,
+      const data = customNodeDataFixture({
         label: "AGNTCY Agent",
         label_subtitle: "Directory",
-        handles: "all",
-      } as unknown as CustomNodeData
+      })
       const wire: TopologyNodeWire = {
         id: "d1",
         type: "customNode",
@@ -181,12 +173,10 @@ describe("agenticTopologyIdentityUiMap", () => {
     })
 
     it("does not enrich directory labels on non-customNode types", () => {
-      const data = {
-        icon: null,
+      const data = customNodeDataFixture({
         label: "AGNTCY Agent",
         label_subtitle: "Directory",
-        handles: "all",
-      } as unknown as CustomNodeData
+      })
       const wire: TopologyNodeWire = {
         id: "d1",
         type: "group",
@@ -203,52 +193,42 @@ describe("agenticTopologyIdentityUiMap", () => {
     it.each([
       {
         caseName: "static discovery: Agentic Recruiter + subtitle",
-        data: {
-          icon: null,
+        data: customNodeDataFixture({
           label: "Agentic Recruiter",
           label_subtitle: "Discovery and delegation",
-          handles: "all",
-        } as unknown as CustomNodeData,
+        }),
         expected: "recruiter",
       },
       {
         caseName: "topology split: Agentic + Recruiter",
-        data: {
-          icon: null,
+        data: customNodeDataFixture({
           label: "Agentic",
           label_subtitle: "Recruiter",
-          handles: "all",
-        } as unknown as CustomNodeData,
+        }),
         expected: "recruiter",
       },
       {
         caseName: "logistics group labels",
-        data: {
-          icon: null,
+        data: customNodeDataFixture({
           label: "Logistics",
           label_subtitle: "Group",
-          handles: "all",
-        } as unknown as CustomNodeData,
+        }),
         expected: "logistics-supervisor-agent",
       },
       {
         caseName: "MCP weather labels (title + role)",
-        data: {
-          icon: null,
+        data: customNodeDataFixture({
           label: "Weather",
           label_subtitle: "MCP Server",
-          handles: "all",
-        } as unknown as CustomNodeData,
+        }),
         expected: "weather-mcp-server",
       },
       {
         caseName: "MCP payment labels (title + role)",
-        data: {
-          icon: null,
+        data: customNodeDataFixture({
           label: "Payment",
           label_subtitle: "MCP Server",
-          handles: "all",
-        } as unknown as CustomNodeData,
+        }),
         expected: "payment-mcp-server",
       },
     ])("$caseName", ({ data, expected }) => {
@@ -257,39 +237,36 @@ describe("agenticTopologyIdentityUiMap", () => {
 
     it("prefers directoryAgentSlug when set", () => {
       expect(
-        getOasfSlugFromNodeData({
-          icon: null,
-          label: "Wrong",
-          label_subtitle: "Labels",
-          handles: "all",
-          directoryAgentSlug: "recruiter",
-        } as unknown as CustomNodeData),
+        getOasfSlugFromNodeData(
+          customNodeDataFixture({
+            label: "Wrong",
+            label_subtitle: "Labels",
+            directoryAgentSlug: "recruiter",
+          }),
+        ),
       ).toBe("recruiter")
     })
   })
 
   describe("applyDiscoveredAgentInlineUi", () => {
-    const baseData: CustomNodeData = {
-      icon: null,
+    const baseData = customNodeDataFixture({
       label: "Brazil",
-      label_subtitle: "",
-      handles: "all",
-    }
+    })
 
     it("returns data unchanged when the wire has no inline OASF record", () => {
-      const out = applyDiscoveredAgentInlineUi(baseData, {
-        id: "n1",
-      } as TopologyNodeWire)
+      const wire: TopologyNodeWire = { id: "n1" }
+      const out = applyDiscoveredAgentInlineUi(baseData, wire)
       expect(out).toBe(baseData)
     })
 
     it("threads inline OASF record, cid, target handle and directory link", () => {
       const record = { name: "Brazil", url: "http://brazil:9000" }
-      const out = applyDiscoveredAgentInlineUi(baseData, {
+      const wire: TopologyNodeWire = {
         id: "n1",
         oasf_record: record,
         agent_cid: "cidB",
-      } as unknown as TopologyNodeWire)
+      }
+      const out = applyDiscoveredAgentInlineUi(baseData, wire)
       expect(out.oasfRecord).toEqual(record)
       expect(out.agentCid).toBe("cidB")
       expect(out.handles).toBe("target")
@@ -299,12 +276,13 @@ describe("agenticTopologyIdentityUiMap", () => {
     })
 
     it("keeps an existing directory link when already present", () => {
+      const wire: TopologyNodeWire = {
+        id: "n1",
+        oasf_record: { name: "Brazil" },
+      }
       const out = applyDiscoveredAgentInlineUi(
         { ...baseData, agentDirectoryLink: "https://example.com/x" },
-        {
-          id: "n1",
-          oasf_record: { name: "Brazil" },
-        } as unknown as TopologyNodeWire,
+        wire,
       )
       expect(out.agentDirectoryLink).toBe("https://example.com/x")
     })

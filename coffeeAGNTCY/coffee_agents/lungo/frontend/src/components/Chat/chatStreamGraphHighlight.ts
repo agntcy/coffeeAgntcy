@@ -12,6 +12,7 @@
 
 import type { Edge, Node } from "@xyflow/react"
 import type { GraphConfig } from "@/utils/graphConfigs"
+import { customNodeDataFromNode } from "@/components/MainArea/Graph/Elements/customNodeData"
 import type { CustomNodeData } from "@/components/MainArea/Graph/Elements/types"
 import { NODE_TYPES } from "@/utils/const"
 import {
@@ -50,7 +51,7 @@ function discoveredAgentNodeIdMap(
 ): Map<string, string> {
   const map = new Map<string, string>()
   for (const node of graphConfig?.nodes ?? []) {
-    const data = node.data as unknown as CustomNodeData | undefined
+    const data = customNodeDataFromNode(node)
     if (!data?.oasfRecord && !data?.agentCid) continue
     for (const key of discoveredAgentLookupKeys(data)) {
       if (!map.has(key)) map.set(key, node.id)
@@ -77,7 +78,7 @@ const AUTHOR_SLUG_ALIASES: Readonly<Record<string, string>> = {
 function nodeSlugKey(node: Node): string | null {
   if (node.type === NODE_TYPES.TRANSPORT) return "transport"
 
-  const data = node.data as unknown as CustomNodeData | undefined
+  const data = customNodeDataFromNode(node)
   const label = data?.label?.toLowerCase() ?? ""
   const label_subtitle = data?.label_subtitle?.toLowerCase() ?? ""
   const combined = `${label} ${label_subtitle}`.trim()

@@ -16,6 +16,7 @@ import {
   NODE_TYPES,
   VERIFICATION_STATUS,
 } from "@/utils/const"
+import { flowNodeDataRecord } from "@/components/MainArea/Graph/Elements/customNodeData"
 import type {
   CustomNodeData,
   ExtraHandle,
@@ -287,7 +288,7 @@ export function topologyWireToReactFlow(
         id: rfId,
         type: NODE_TYPES.TRANSPORT,
         position,
-        data: data as unknown as Record<string, unknown>,
+        data: flowNodeDataRecord(data),
         ...childProps,
       }
     }
@@ -335,7 +336,7 @@ export function topologyWireToReactFlow(
       id: rfId,
       type: NODE_TYPES.CUSTOM,
       position,
-      data: data as unknown as Record<string, unknown>,
+      data: flowNodeDataRecord(data),
       ...childProps,
     }
   })

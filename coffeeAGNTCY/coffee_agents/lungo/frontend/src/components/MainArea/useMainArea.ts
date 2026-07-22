@@ -9,6 +9,7 @@ import type { Node, Edge } from "@xyflow/react"
 import { PatternType } from "@/utils/patternUtils"
 import { useViewportAwareFitView } from "@/hooks/useViewportAwareFitView"
 import { useModalManager } from "@/hooks/useModalManager"
+import { customNodeDataFromNode } from "./Graph/Elements/customNodeData"
 import type { CustomNodeData } from "./Graph/Elements/types"
 import { useMainAreaGraphEffects } from "./useMainAreaGraphEffects"
 import { useWorkflowGraphFromAgenticApi } from "@/hooks/useWorkflowGraphFromAgenticApi"
@@ -143,15 +144,13 @@ export function useMainArea({
     if (pattern !== "a2a_http") return
     setNodes((prevNodes) => {
       const recruiterId = prevNodes.find((n) => {
-        const l1 = String(
-          (n.data as unknown as CustomNodeData | undefined)?.label ?? "",
-        )
+        const l1 = String(customNodeDataFromNode(n).label ?? "")
           .toLowerCase()
           .trim()
         return l1.includes("recruiter")
       })?.id
       return prevNodes.map((node) => {
-        const nodeData = node.data as unknown as CustomNodeData | undefined
+        const nodeData = customNodeDataFromNode(node)
         const shouldBeSelected =
           selectedAgentCid != null
             ? nodeData?.agentCid === selectedAgentCid

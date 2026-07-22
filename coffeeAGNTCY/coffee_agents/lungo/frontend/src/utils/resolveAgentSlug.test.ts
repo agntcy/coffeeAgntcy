@@ -4,17 +4,8 @@
  **/
 
 import { describe, expect, it } from "vitest"
-import type { CustomNodeData } from "@/components/MainArea/Graph/Elements/types"
+import { customNodeDataFixture as node } from "@/components/MainArea/Graph/Elements/customNodeData"
 import { resolveAgentSlug } from "@/utils/resolveAgentSlug"
-
-const node = (over: Partial<CustomNodeData>): CustomNodeData =>
-  ({
-    icon: null,
-    label: "",
-    label_subtitle: "",
-    handles: "all",
-    ...over,
-  }) as CustomNodeData
 
 describe("resolveAgentSlug", () => {
   it.each([
