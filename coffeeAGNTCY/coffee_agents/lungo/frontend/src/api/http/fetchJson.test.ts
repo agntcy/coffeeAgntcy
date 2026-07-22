@@ -49,6 +49,32 @@ describe("fetchJson", () => {
     })
   })
 
+  it("sends Content-Type application/json when a body is provided", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(JSON.stringify({ ok: true }), {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      }),
+    )
+    vi.stubGlobal("fetch", fetchMock)
+
+    await fetchJson("https://api.test/agent/prompt", {
+      method: "POST",
+      body: JSON.stringify({ prompt: "hello" }),
+    })
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      "https://api.test/agent/prompt",
+      expect.objectContaining({
+        method: "POST",
+        headers: expect.objectContaining({
+          Accept: "application/json",
+          "Content-Type": "application/json",
+        }),
+      }),
+    )
+  })
+
   it("maps abort errors to HttpError", async () => {
     vi.stubGlobal(
       "fetch",
