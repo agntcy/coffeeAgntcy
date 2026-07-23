@@ -28,7 +28,12 @@ vi.mock("./suggestedPromptsUtils", async (importOriginal) => {
 })
 
 vi.mock("@/errors/request", () => ({
-  reportRequestError: vi.fn(),
+  reportRequestError: vi.fn((endpointLabel: string, error: unknown) => {
+    if (error instanceof Error) {
+      return { message: error.message, endpointLabel, status: undefined }
+    }
+    return { message: String(error), endpointLabel, status: undefined }
+  }),
 }))
 
 import { reportRequestError } from "@/errors/request"
@@ -96,6 +101,7 @@ describe("useSuggestedPrompts", () => {
 
     await waitFor(() => {
       expect(result.current.isUnavailable).toBe(true)
+      expect(result.current.unavailableMessage).toBe("network down")
     })
 
     expect(result.current.categories).toEqual([])

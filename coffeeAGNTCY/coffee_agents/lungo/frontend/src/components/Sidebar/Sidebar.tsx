@@ -136,7 +136,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                 type="error"
                 hideClose
                 role="alert"
-                sx={{ mx: 2.5, my: 1 }}
+                sx={{ my: 1, width: "100%", textWrap: "wrap" }}
               >
                 {error}
               </Message>

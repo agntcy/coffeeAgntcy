@@ -8,7 +8,7 @@ import { ReactFlow, ReactFlowProvider } from "@xyflow/react"
 import "@xyflow/react/dist/style.css"
 import "./ReactFlow.css"
 import { ReactFlowThemeGlobalStyles } from "./ReactFlowThemeGlobalStyles"
-import { Box, EmptyState, GeneralSize } from "@open-ui-kit/core"
+import { Box } from "@open-ui-kit/core"
 import TransportNode from "./Graph/Elements/transportNode"
 import CustomEdge from "./Graph/Elements/CustomEdge"
 import BranchingEdge from "./Graph/Elements/BranchingEdge"
@@ -26,6 +26,10 @@ import {
   GRAPH_DEFAULT_VIEWPORT,
 } from "@/config/graphViewDefaults"
 import { getAppShellBackgroundColor } from "./mainAreaBackground"
+import {
+  GraphCanvasOverlayError,
+  GraphCanvasOverlayShell,
+} from "./GraphCanvasOverlay"
 import { LoadingSpinner } from "@/components/loading/LoadingSpinner"
 import { useMainArea, type MainAreaProps } from "./useMainArea"
 
@@ -111,30 +115,15 @@ const MainArea: React.FC<MainAreaProps> = (props) => {
         }}
       >
         {overlayError || showLoading ? (
-          <Box
-            sx={{
-              position: "absolute",
-              inset: 0,
-              zIndex: 10,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              pointerEvents: "none",
-            }}
+          <GraphCanvasOverlayShell
+            pointerEvents={overlayError ? "auto" : "none"}
           >
             {overlayError ? (
-              <EmptyState
-                variant="negative"
-                hideIllustration
-                size={GeneralSize.Small}
-                title="Workflow graph unavailable"
-                description={overlayError}
-                containerProps={{ role: "alert" }}
-              />
+              <GraphCanvasOverlayError message={overlayError} />
             ) : (
               <LoadingSpinner message="Loading workflow graph..." />
             )}
-          </Box>
+          </GraphCanvasOverlayShell>
         ) : null}
 
         <ReactFlow

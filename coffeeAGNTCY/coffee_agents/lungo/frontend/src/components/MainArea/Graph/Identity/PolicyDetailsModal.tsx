@@ -19,6 +19,8 @@ import { CustomNodeData } from "../Elements/types"
 import { fetchPolicyDetails } from "./IdentityApi"
 import { reportRequestError } from "@/errors/request"
 import { LoadingSpinner } from "@/components/loading"
+import { modalDialogContentSx } from "@/components/modalDialogContentSx"
+import { compactNegativeEmptyStateProps } from "@/components/compactNegativeEmptyState"
 import {
   graphModalLoadingOverlaySx,
   graphModalPreSx,
@@ -83,7 +85,7 @@ const PolicyDetailsModal: React.FC<PolicyDetailsModalProps> = ({
         </IconButton>
       </DialogTitle>
 
-      <DialogContent dividers>
+      <DialogContent dividers sx={modalDialogContentSx}>
         <LoadingErrorState
           loading={loading && !policyData}
           error={error !== null}
@@ -91,6 +93,7 @@ const PolicyDetailsModal: React.FC<PolicyDetailsModalProps> = ({
           skipEmptyCheck
           errorStateProps={{
             variant: "negative",
+            ...compactNegativeEmptyStateProps,
             title: "Failed to load policy details",
             description: error ?? "",
             actionTitle: "Retry",

@@ -97,6 +97,27 @@ const RecruiterStreamingFeed: React.FC<RecruiterStreamingFeedProps> = ({
     return null
   }
 
+  if (errorMessage && events.length === 0) {
+    return <FeedErrorMessage>{errorMessage}</FeedErrorMessage>
+  }
+
+  const showsStatusLine =
+    isComplete ||
+    (Boolean(prompt) && !apiError)
+  const showsSpinner =
+    Boolean(prompt) && !isComplete && !apiError && !errorMessage && events.length === 0
+  const showsEvents = isExpanded && events.length > 0
+  const showsCompleteFooter = isComplete && events.length > 1
+
+  if (
+    !showsStatusLine &&
+    !showsSpinner &&
+    !showsEvents &&
+    !showsCompleteFooter
+  ) {
+    return null
+  }
+
   const statusUpdates = events.filter(
     (e: RecruiterStreamingEvent) =>
       e.event_type === RECRUITER_STREAM_EVENT_TYPE.STATUS_UPDATE,
@@ -135,7 +156,7 @@ const RecruiterStreamingFeed: React.FC<RecruiterStreamingFeedProps> = ({
           </Stack>
         ) : null}
 
-        {prompt && !isComplete && !apiError && events.length === 0 ? (
+        {prompt && !isComplete && !apiError && !errorMessage && events.length === 0 ? (
           <FeedSpinnerRow mt={3} />
         ) : null}
 

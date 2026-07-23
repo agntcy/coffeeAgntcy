@@ -12,10 +12,9 @@ import type { SystemStyleObject } from "@mui/system"
 import {
   Box,
   Button,
-  EmptyState,
-  GeneralSize,
   Menu,
   MenuItem,
+  Message,
   Tooltip,
 } from "@open-ui-kit/core"
 import type { DropdownOption } from "@/types/dropdownOption"
@@ -90,7 +89,7 @@ const SuggestedPromptsDropdown: React.FC<SuggestedPromptsDropdownProps> = ({
   sx,
 }) => {
   const layout = useGraphCanvasLayout()
-  const { categories, isLoading, isUnavailable } =
+  const { categories, isLoading, isUnavailable, unavailableMessage } =
     useSuggestedPrompts(promptsRequest)
   const options = useMemo(
     () =>
@@ -188,14 +187,17 @@ const SuggestedPromptsDropdown: React.FC<SuggestedPromptsDropdownProps> = ({
         {...menuProps}
       >
         {isUnavailable ? (
-          <Box sx={{ p: 2, maxWidth: menuMaxWidth ?? 360 }}>
-            <EmptyState
-              variant="warning"
-              hideIllustration
-              size={GeneralSize.Small}
-              title="Prompts unavailable"
-              description="Suggested prompts could not be loaded. You can still type your own message."
-            />
+          <Box sx={{ p: 2, maxWidth: menuMaxWidth ?? 360, width: "100%" }}>
+            <Message
+              type="error"
+              hideClose
+              role="alert"
+              title="Request failed"
+              sx={{ width: "100%" }}
+            >
+              {unavailableMessage ??
+                "Suggested prompts could not be loaded. You can still type your own message."}
+            </Message>
           </Box>
         ) : (
           options.map((option, index) => (

@@ -18,6 +18,7 @@ interface UseSuggestedPromptsResult {
   categories: PromptCategory[]
   isLoading: boolean
   isUnavailable: boolean
+  unavailableMessage: string | null
 }
 
 function hasPrompts(categories: PromptCategory[]): boolean {
@@ -30,6 +31,9 @@ export function useSuggestedPrompts(
   const [categories, setCategories] = useState<PromptCategory[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [isUnavailable, setIsUnavailable] = useState(false)
+  const [unavailableMessage, setUnavailableMessage] = useState<string | null>(
+    null,
+  )
   const url = request?.url ?? null
   const endpointLabel = request?.endpointLabel ?? null
 
@@ -38,6 +42,7 @@ export function useSuggestedPrompts(
       setCategories([])
       setIsLoading(false)
       setIsUnavailable(false)
+      setUnavailableMessage(null)
       return
     }
 
@@ -47,8 +52,9 @@ export function useSuggestedPrompts(
 
     const markUnavailable = (error: unknown) => {
       if (cancelled) return
-      reportRequestError(endpointLabel, error)
+      const httpError = reportRequestError(endpointLabel, error)
       setCategories([])
+      setUnavailableMessage(httpError.message)
       setIsUnavailable(true)
       setIsLoading(false)
     }
@@ -61,6 +67,7 @@ export function useSuggestedPrompts(
       try {
         setIsLoading(true)
         setIsUnavailable(false)
+        setUnavailableMessage(null)
 
         const data = await fetchJson<SuggestedPromptsResponse>(url, {
           endpointLabel,
@@ -116,5 +123,10 @@ export function useSuggestedPrompts(
     }
   }, [url, endpointLabel])
 
-  return { categories, isLoading, isUnavailable }
+  return {
+    categories,
+    isLoading,
+    isUnavailable,
+    unavailableMessage,
+  }
 }

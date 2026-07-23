@@ -19,6 +19,8 @@ import { CustomNodeData } from "../Elements/types"
 import { fetchBadgeDetails } from "./IdentityApi"
 import { reportRequestError } from "@/errors/request"
 import { LoadingSpinner } from "@/components/loading"
+import { modalDialogContentSx } from "@/components/modalDialogContentSx"
+import { compactNegativeEmptyStateProps } from "@/components/compactNegativeEmptyState"
 import {
   graphModalLoadingOverlaySx,
   graphModalPreSx,
@@ -82,7 +84,7 @@ const BadgeDetailsModal: React.FC<BadgeDetailsModalProps> = ({
         </IconButton>
       </DialogTitle>
 
-      <DialogContent dividers>
+      <DialogContent dividers sx={modalDialogContentSx}>
         <LoadingErrorState
           loading={loading && !badgeData}
           error={error !== null}
@@ -90,6 +92,7 @@ const BadgeDetailsModal: React.FC<BadgeDetailsModalProps> = ({
           skipEmptyCheck
           errorStateProps={{
             variant: "negative",
+            ...compactNegativeEmptyStateProps,
             title: "Failed to load badge details",
             description: error ?? "",
             actionTitle: "Retry",

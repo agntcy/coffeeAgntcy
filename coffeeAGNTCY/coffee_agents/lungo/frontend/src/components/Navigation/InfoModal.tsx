@@ -13,6 +13,7 @@ import {
   Typography,
 } from "@open-ui-kit/core"
 import Close from "@mui/icons-material/Close"
+import { modalDialogContentSx } from "@/components/modalDialogContentSx"
 import { fetchJson } from "@/api/http"
 import { reportRequestError } from "@/errors/request"
 import {
@@ -83,7 +84,7 @@ const InfoModal: React.FC<InfoModalProps> = ({ isOpen, onClose }) => {
           <Close />
         </IconButton>
       </DialogTitle>
-      <DialogContent>
+      <DialogContent sx={modalDialogContentSx}>
         <Stack spacing={3}>
           <Stack spacing={2}>
             <Typography variant="h6">Build and Release Information</Typography>

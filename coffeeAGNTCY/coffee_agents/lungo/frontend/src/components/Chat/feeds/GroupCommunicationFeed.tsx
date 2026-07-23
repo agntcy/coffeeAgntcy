@@ -155,6 +155,27 @@ const GroupCommunicationFeed: React.FC<GroupCommunicationFeedProps> = ({
     return null
   }
 
+  if (errorMessage && events.length === 0) {
+    return <FeedErrorMessage>{errorMessage}</FeedErrorMessage>
+  }
+
+  const showsStatusLine =
+    (isComplete && Boolean(groupCurrentOrderId)) ||
+    (Boolean(prompt) && !apiError && isActive)
+  const showsSpinner =
+    Boolean(prompt) && isActive && !apiError && events.length === 0
+  const showsEvents = isExpanded && events.length > 0
+  const showsCompleteFooter = isComplete
+
+  if (
+    !showsStatusLine &&
+    !showsSpinner &&
+    !showsEvents &&
+    !showsCompleteFooter
+  ) {
+    return null
+  }
+
   return (
     <Stack
       direction="row"
@@ -183,7 +204,7 @@ const GroupCommunicationFeed: React.FC<GroupCommunicationFeedProps> = ({
           <FeedStatusLine showDots>Processing Request</FeedStatusLine>
         ) : null}
 
-        {prompt && isActive && !apiError && events.length === 0 ? (
+        {prompt && isActive && !apiError && !errorMessage && events.length === 0 ? (
           <FeedSpinnerRow mt={3} />
         ) : null}
 

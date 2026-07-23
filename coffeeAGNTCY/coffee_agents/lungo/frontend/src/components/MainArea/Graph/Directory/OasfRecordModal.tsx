@@ -22,6 +22,8 @@ import { fetchOasfRecord, OasfRecord } from "./DirectoryApi"
 import { CustomNodeData } from "../Elements/types"
 import { reportRequestError } from "@/errors/request"
 import { LoadingSpinner } from "@/components/loading"
+import { modalDialogContentSx } from "@/components/modalDialogContentSx"
+import { compactNegativeEmptyStateProps } from "@/components/compactNegativeEmptyState"
 import {
   graphModalFieldCardSx,
   graphModalLoadingOverlaySx,
@@ -120,7 +122,7 @@ const OasfRecordModal: React.FC<OasfRecordModalProps> = ({
         </IconButton>
       </DialogTitle>
 
-      <DialogContent dividers>
+      <DialogContent dividers sx={modalDialogContentSx}>
         {isDirectoryNode ? (
           <Stack sx={{ width: "100%", gap: 1.5 }}>
             <Stack sx={{ width: "100%", gap: 1.5 }}>
@@ -187,6 +189,7 @@ const OasfRecordModal: React.FC<OasfRecordModalProps> = ({
             skipEmptyCheck
             errorStateProps={{
               variant: "negative",
+              ...compactNegativeEmptyStateProps,
               title: "Failed to load OASF record",
               description: error ?? "",
               actionTitle: "Retry",

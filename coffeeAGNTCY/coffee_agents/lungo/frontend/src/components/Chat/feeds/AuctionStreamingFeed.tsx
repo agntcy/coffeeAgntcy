@@ -95,6 +95,24 @@ const AuctionStreamingFeed: React.FC<AuctionStreamingFeedProps> = ({
     return null
   }
 
+  if (errorMessage && events.length === 0) {
+    return <FeedErrorMessage>{errorMessage}</FeedErrorMessage>
+  }
+
+  const showsStatusLine =
+    isComplete || (Boolean(prompt) && !apiError)
+  const showsSpinner =
+    Boolean(prompt) &&
+    !isComplete &&
+    !apiError &&
+    !errorMessage &&
+    events.length === 0
+  const showsEvents = events.length > 0
+
+  if (!showsStatusLine && !showsSpinner && !showsEvents) {
+    return null
+  }
+
   return (
     <Stack
       direction="row"
@@ -122,10 +140,11 @@ const AuctionStreamingFeed: React.FC<AuctionStreamingFeedProps> = ({
           <FeedStatusLine showDots>Streaming</FeedStatusLine>
         ) : null}
 
-        {prompt && !isComplete && !apiError && events.length === 0 ? (
+        {prompt && !isComplete && !apiError && !errorMessage && events.length === 0 ? (
           <FeedSpinnerRow mt={3} />
         ) : null}
 
+        {events.length > 0 ? (
         <Stack
           spacing={3}
           sx={{ mt: 3, width: "100%", alignItems: "flex-start" }}
@@ -172,6 +191,7 @@ const AuctionStreamingFeed: React.FC<AuctionStreamingFeedProps> = ({
 
           {events.length > 0 && !isComplete ? <FeedSpinnerRow mt={0} /> : null}
         </Stack>
+        ) : null}
       </Stack>
     </Stack>
   )

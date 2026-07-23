@@ -62,6 +62,11 @@ const ChatAreaMessageThread: React.FC<ChatAreaMessageThreadProps> = ({
   onSenderHighlight,
 }) => {
   const hasApiError = apiErrorMessage != null
+  const hasAgentFinalResponse =
+    showFinalResponse &&
+    !hasApiError &&
+    (isAgentLoading || Boolean(agentResponse?.response?.trim())) &&
+    !isMinimized
 
   return (
     <Stack
@@ -86,7 +91,9 @@ const ChatAreaMessageThread: React.FC<ChatAreaMessageThreadProps> = ({
         </StatusMessage>
       ) : null}
 
-      {!isMinimized && <UserMessage content={currentUserMessage} />}
+      {!isMinimized && currentUserMessage.trim() ? (
+        <UserMessage content={currentUserMessage} />
+      ) : null}
 
       {showProgressTracker && (
         <Box sx={{ width: "100%", display: isMinimized ? "none" : "block" }}>
@@ -132,10 +139,7 @@ const ChatAreaMessageThread: React.FC<ChatAreaMessageThreadProps> = ({
         </Box>
       )}
 
-      {showFinalResponse &&
-        !hasApiError &&
-        (isAgentLoading || agentResponse) &&
-        !isMinimized && (
+      {hasAgentFinalResponse ? (
           <Message icon={<ChatAgentAvatar />}>
             {isAgentLoading ? (
               <>
@@ -153,7 +157,7 @@ const ChatAreaMessageThread: React.FC<ChatAreaMessageThreadProps> = ({
               </>
             )}
           </Message>
-        )}
+        ) : null}
     </Stack>
   )
 }
