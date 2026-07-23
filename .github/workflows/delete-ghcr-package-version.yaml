@@ -1,0 +1,75 @@
+name: Delete GHCR Package Version
+
+on:
+  workflow_dispatch:
+    inputs:
+      package_type:
+        description: "GitHub Packages type (ghcr.io uses container)"
+        type: choice
+        required: true
+        default: container
+        options: [container]
+      owner:
+        description: "Org or user that owns the package"
+        type: choice
+        required: true
+        default: agntcy
+        options: [agntcy]
+      repository:
+        description: "Repository that contains the package"
+        type: choice
+        required: true
+        default: coffee-agntcy
+        options: [coffee-agntcy]
+      package_name:
+        description: "Package path without ghcr.io/owner/repository (e.g. lungo-ui or helm/lungo-ui)"
+        type: string
+        required: true
+      version:
+        description: "Tag or version to delete (e.g. latest, 1.2.3, pr-42)"
+        type: string
+        required: true
+
+jobs:
+  delete:
+    runs-on: ubuntu-latest
+    permissions:
+      packages: write
+      contents: read
+    steps:
+      - name: Delete package version if it exists
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+
+          package_type=${{ inputs.package_type }}
+          owner=${{ inputs.owner }}
+          repository=${{ inputs.repository }}
+          package_name=${{ inputs.package_name }}
+          version=${{ inputs.version }}
+
+          if echo "${package_name}" | grep -q '^helm/'; then
+            repository="coffee_agntcy" # Note: Legacy naming uses underscore instead of hyphen.
+          fi
+
+          echo "Deleting package ${package_type} version: ghcr.io/${owner}/${repository}/${package_name}:${version}"
+
+          package_encoded=$(jq -nr --arg p "${repository}/${package_name}" '$p|@uri')
+          api_base="/orgs/${owner}/packages/${package_type}/${package_encoded}"
+
+          # Note: name below matches the digest for images/charts.
+          version_id=$(gh api "${api_base}/versions" --paginate \
+            --jq ".[] | select(
+              .name == \"${version}\" or
+              (.metadata.container.tags[]? == \"${version}\")
+            ) | .id" \
+            | head -n1)
+
+          if [[ -z "${version_id}" ]]; then
+            echo "Not found: ghcr.io/${owner}/${repository}/${package_name}:${version}"
+            exit 0
+          fi
+
+          gh api -X DELETE "${api_base}/versions/${version_id}"
+          echo "Deleted: ghcr.io/${owner}/${repository}/${package_name}:${version} (id ${version_id})"
