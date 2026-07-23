@@ -1,6 +1,8 @@
+/**
+ * Copyright AGNTCY Contributors (https://github.com/agntcy)
+ * SPDX-License-Identifier: Apache-2.0
+ **/
+
 import SuggestedPromptsDropdown from "./SuggestedPromptsDropdown"
-import { resolveSuggestedPromptsSource } from "./suggestedPromptsUtils"
 
-export { SuggestedPromptsDropdown, resolveSuggestedPromptsSource }
-
-export type { SuggestedPromptsSource } from "./suggestedPromptsUtils"
+export { SuggestedPromptsDropdown }

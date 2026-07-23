@@ -5,8 +5,8 @@
 
 import { describe, expect, it } from "vitest"
 import { NODE_TYPES } from "@/utils/const"
+import { customNodeDataFromNode } from "@/components/MainArea/Graph/Elements/customNodeData"
 import { topologyWireToReactFlow } from "@/utils/topologyToReactFlow"
-import type { CustomNodeData } from "@/components/MainArea/Graph/Elements/types"
 
 const SEED_RECRUITER = "node://4a000001-0001-4000-a001-000000000001"
 const ANCHOR = "node://6f1d2c3a-0000-4000-8000-000000000001"
@@ -61,7 +61,7 @@ describe("topologyWireToReactFlow discovery merge", () => {
 
   it("collapses the anchor onto the single seeded recruiter node", () => {
     const recruiters = nodes.filter(
-      (n) => (n.data as unknown as CustomNodeData)?.label === "Agentic",
+      (n) => customNodeDataFromNode(n).label === "Agentic",
     )
     expect(recruiters).toHaveLength(1)
     expect(recruiters[0]?.id).toBe(SEED_RECRUITER)
@@ -69,7 +69,7 @@ describe("topologyWireToReactFlow discovery merge", () => {
 
   it("renders the discovered node with inline OASF and a target handle", () => {
     const discovered = nodes.find((n) => n.id === DISCOVERED_SID)
-    const data = discovered?.data as unknown as CustomNodeData | undefined
+    const data = discovered ? customNodeDataFromNode(discovered) : undefined
     expect(discovered?.type).toBe(NODE_TYPES.CUSTOM)
     expect(data?.oasfRecord).toEqual(record)
     expect(data?.agentCid).toBe("cidB")

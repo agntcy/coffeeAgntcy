@@ -14,6 +14,7 @@ import CustomEdge from "./Graph/Elements/CustomEdge"
 import BranchingEdge from "./Graph/Elements/BranchingEdge"
 import CustomNode from "./Graph/Elements/CustomNode"
 import CustomControls from "./Graph/Elements/CustomControls"
+import { GraphTopologyLayoutSync } from "./Graph/GraphTopologyLayoutSync"
 import GraphDocumentationButton from "./Graph/Elements/GraphDocumentationButton"
 import { isPlaceholderWorkflow } from "@/components/Sidebar/sidebar.utils"
 import { getWorkflowDocumentationGithubUrl } from "@/urls"
@@ -67,12 +68,18 @@ const MainArea: React.FC<MainAreaProps> = (props) => {
     topologyApplied,
     agenticMode,
     agenticError,
+    layoutSyncGeneration,
+    layoutSyncNodeIds,
+    layoutSyncFitViewport,
+    handleLayoutSyncReady,
   } = useMainArea(props)
 
   const activeWorkflowSummary =
     selectedWorkflowSummary && !isPlaceholderWorkflow(selectedWorkflowSummary)
       ? selectedWorkflowSummary
       : undefined
+
+  const chatApiTarget = activeWorkflowSummary?.chat_api_target ?? null
 
   const overlayError = agenticError ?? workflowCatalogError ?? null
   const showLoading =
@@ -147,6 +154,12 @@ const MainArea: React.FC<MainAreaProps> = (props) => {
           elementsSelectable={nodesDraggable}
           elevateNodesOnSelect={false}
         >
+          <GraphTopologyLayoutSync
+            generation={layoutSyncGeneration}
+            nodeIds={layoutSyncNodeIds}
+            fitViewport={layoutSyncFitViewport}
+            onReady={handleLayoutSyncReady}
+          />
           <CustomControls
             isInteractive={nodesDraggable && nodesConnectable}
             onToggleInteractivity={() => {
@@ -172,6 +185,7 @@ const MainArea: React.FC<MainAreaProps> = (props) => {
           onClose={() => setOasfModalOpen(false)}
           nodeName={oasfModalData?.label || ""}
           nodeData={oasfModalData}
+          chatApiTarget={chatApiTarget}
         />
       </Box>
     </>

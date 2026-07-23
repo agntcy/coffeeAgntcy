@@ -9,6 +9,7 @@ import {
   fetchOasfRecord,
   getOasfSlugFromNodeData,
 } from "./Graph/Directory/DirectoryApi"
+import { customNodeDataFromNode } from "./Graph/Elements/customNodeData"
 import type { CustomNodeData } from "./Graph/Elements/types"
 import {
   extractA2aTransportsFromOasf,
@@ -18,7 +19,7 @@ import { NODE_TYPES } from "@/utils/const"
 
 function readNodeData(node: Node): CustomNodeData | null {
   if (node.type !== NODE_TYPES.CUSTOM) return null
-  const data = node.data as unknown as CustomNodeData | undefined
+  const data = customNodeDataFromNode(node)
   if (!data?.label?.trim()) return null
   return data
 }

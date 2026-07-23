@@ -19,7 +19,6 @@ import {
   getPromptsTriggerButtonProps,
   getPromptsTriggerTooltipProps,
   SUGGESTED_PROMPTS_LABEL,
-  type SuggestedPromptsSource,
 } from "./suggestedPromptsUtils"
 import { CustomDropdownListItemContent } from "./CustomDropdownListItemContent"
 import { useSuggestedPrompts } from "./useSuggestedPrompts"
@@ -71,20 +70,18 @@ function PromptMenuItem({
 }
 
 export interface SuggestedPromptsDropdownProps {
-  source: SuggestedPromptsSource
-  pattern?: string
+  promptsUrl: string | null | undefined
   onSelect: (query: string) => void
   sx?: SxProps<Theme>
 }
 
 const SuggestedPromptsDropdown: React.FC<SuggestedPromptsDropdownProps> = ({
-  source,
-  pattern,
+  promptsUrl,
   onSelect,
   sx,
 }) => {
   const layout = useGraphCanvasLayout()
-  const { categories, isLoading } = useSuggestedPrompts(source, pattern)
+  const { categories, isLoading } = useSuggestedPrompts(promptsUrl)
   const options = useMemo(
     () =>
       categoriesToMenuOptions(categories, (prompt, description) => (

@@ -6,7 +6,6 @@
 import { create } from "zustand"
 import type { AgentRecord } from "@/types/agent"
 import type { RecruiterStreamingEvent } from "./recruiterStreaming.types"
-import { getStreamingEndpointForPattern, PATTERNS } from "@/utils/patternUtils"
 import { isLocalDev, parseFetchError } from "@/utils/const.ts"
 import { logger } from "@/utils/logger"
 
@@ -43,6 +42,7 @@ interface RecruiterStreamingStoreState {
     prompt: string,
     workflowInstanceId?: string | null,
     sessionId?: string | null,
+    streamUrl?: string,
   ) => Promise<void>
   disconnect: () => void
   reset: () => void
@@ -70,6 +70,7 @@ export const useRecruiterStreamingStore = create<RecruiterStreamingStoreState>(
       prompt: string,
       workflowInstanceId?: string | null,
       sessionId?: string | null,
+      streamUrl?: string,
     ) => {
       const abortController = new AbortController()
       set({
@@ -86,10 +87,17 @@ export const useRecruiterStreamingStore = create<RecruiterStreamingStoreState>(
         selectedAgent: null,
       })
 
-      try {
-        const streamingUrl = getStreamingEndpointForPattern(PATTERNS.A2A_HTTP)
+      if (!streamUrl) {
+        set({
+          status: "error",
+          error: "Streaming URL is required",
+          abortController: null,
+        })
+        return
+      }
 
-        const response = await fetch(streamingUrl, {
+      try {
+        const response = await fetch(streamUrl, {
           method: "POST",
           credentials: isLocalDev ? "omit" : "include",
           headers: { "Content-Type": "application/json" },

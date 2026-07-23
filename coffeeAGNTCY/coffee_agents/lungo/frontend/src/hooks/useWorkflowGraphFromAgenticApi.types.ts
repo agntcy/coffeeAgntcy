@@ -22,7 +22,7 @@ export interface UseWorkflowGraphFromAgenticApiParams {
   setEdges: React.Dispatch<React.SetStateAction<Edge[]>>
   handleOpenIdentityModal: (nodeId: string, nodeData: CustomNodeData) => void
   handleOpenOasfModal: (nodeData: CustomNodeData) => void
-  onTopologyApplied?: () => void
+  onTopologyApplied?: (nodeIds: readonly string[]) => void
 }
 
 export interface UseWorkflowGraphFromAgenticApiResult {

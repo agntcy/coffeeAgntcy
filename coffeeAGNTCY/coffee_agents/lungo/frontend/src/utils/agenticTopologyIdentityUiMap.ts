@@ -2,23 +2,17 @@
  * Copyright AGNTCY Contributors (https://github.com/agntcy)
  * SPDX-License-Identifier: Apache-2.0
  *
- * -----------------------------------------------------------------------------
- * TEMPORARY: Agentic topology UI enrichment (identity, directory/OASF, GitHub)
- *
- * This map exists only until the backend supplies equivalent fields on workflow
- * topology or catalog API responses (directory URLs, badge flags, identity slugs).
- * `directoryAgentSlug` is derived from topology `agent_record_uri` (record basename).
- * Remove or replace remaining rows when that contract is available.
- * -----------------------------------------------------------------------------
+ * Agentic topology UI enrichment: wire fields from backend OASF annotations,
+ * GitHub from `agent_record_uri`, and label/type fallbacks for special nodes.
  */
 
 import { v5 as uuidv5 } from "uuid"
 import type { CustomNodeData } from "@/components/MainArea/Graph/Elements/types"
 import type { TopologyNodeWire } from "@/api/agenticWorkflowsTypes"
 import { HANDLE_TYPES, VERIFICATION_STATUS } from "@/utils/const"
-import { PATTERNS, type PatternType } from "@/utils/patternUtils"
 import { LUNGO_FRONTEND_URLS } from "@/urls"
 import { SecurityClass } from "@/utils/SecurityClass"
+import { resolveAgentSlug } from "@/utils/resolveAgentSlug"
 
 /** Matches Python `common.stable_agent_id`: uuid5(NAMESPACE_DNS, "agent.workflow.lungo") */
 export const STABLE_AGENT_ID_NAMESPACE = uuidv5(
@@ -32,128 +26,13 @@ export function stableAgentUuidForRecordName(
   return uuidv5(agentRecordTopLevelName.trim(), STABLE_AGENT_ID_NAMESPACE)
 }
 
-export interface AgenticTopologyIdentityUiRow {
-  /** OASF agent card JSON top-level `name` (must match backend record load). */
-  agentRecordName: string
-  identityAppsSlug?: string
-  hasBadgeDetails?: boolean
-  hasPolicyDetails?: boolean
-  agentDirectoryLink: string
-  /** Legacy composed URL from static graph (docs / test anchor). */
-  referenceGithubUrl: string
-  referenceGithubUrlStreaming?: string
-  /** When set, overrides default verified-from-topology for identity/badge parity. */
-  verificationStatus?: "verified" | "failed"
-}
-
 const GITHUB_AGNTCY_BROWSE_ROOT = LUNGO_FRONTEND_URLS.github.baseUrl.replace(
   /\/$/,
   "",
 )
 
-const RAW_IDENTITY_UI_ROWS: AgenticTopologyIdentityUiRow[] = [
-  {
-    agentRecordName: "Auction Supervisor agent",
-    identityAppsSlug: "auction-supervisor",
-    hasBadgeDetails: true,
-    hasPolicyDetails: true,
-    agentDirectoryLink: `${LUNGO_FRONTEND_URLS.agentDirectory.baseUrl}${LUNGO_FRONTEND_URLS.agentDirectory.agents.supervisorAuction}`,
-    referenceGithubUrl: `${LUNGO_FRONTEND_URLS.github.baseUrl}${LUNGO_FRONTEND_URLS.github.agents.supervisorAuction}`,
-    referenceGithubUrlStreaming: `${LUNGO_FRONTEND_URLS.github.baseUrl}${LUNGO_FRONTEND_URLS.github.agents.supervisorAuctionStreaming}`,
-  },
-  {
-    agentRecordName: "Brazil Coffee Farm",
-    hasBadgeDetails: false,
-    hasPolicyDetails: false,
-    agentDirectoryLink: `${LUNGO_FRONTEND_URLS.agentDirectory.baseUrl}${LUNGO_FRONTEND_URLS.agentDirectory.agents.brazilFarm}`,
-    referenceGithubUrl: `${LUNGO_FRONTEND_URLS.github.baseUrl}${LUNGO_FRONTEND_URLS.github.agents.brazilFarm}`,
-    referenceGithubUrlStreaming: `${LUNGO_FRONTEND_URLS.github.baseUrl}${LUNGO_FRONTEND_URLS.github.agents.brazilFarmStreaming}`,
-    verificationStatus: VERIFICATION_STATUS.FAILED,
-  },
-  {
-    agentRecordName: "Colombia Coffee Farm",
-    identityAppsSlug: "colombia-coffee-farm",
-    hasBadgeDetails: true,
-    hasPolicyDetails: true,
-    agentDirectoryLink: `${LUNGO_FRONTEND_URLS.agentDirectory.baseUrl}${LUNGO_FRONTEND_URLS.agentDirectory.agents.colombiaFarm}`,
-    referenceGithubUrl: `${LUNGO_FRONTEND_URLS.github.baseUrl}${LUNGO_FRONTEND_URLS.github.agents.colombiaFarm}`,
-    referenceGithubUrlStreaming: `${LUNGO_FRONTEND_URLS.github.baseUrl}${LUNGO_FRONTEND_URLS.github.agents.colombiaFarmStreaming}`,
-  },
-  {
-    agentRecordName: "Vietnam Coffee Farm",
-    identityAppsSlug: "vietnam-coffee-farm",
-    hasBadgeDetails: true,
-    hasPolicyDetails: false,
-    agentDirectoryLink: `${LUNGO_FRONTEND_URLS.agentDirectory.baseUrl}${LUNGO_FRONTEND_URLS.agentDirectory.agents.vietnamFarm}`,
-    referenceGithubUrl: `${LUNGO_FRONTEND_URLS.github.baseUrl}${LUNGO_FRONTEND_URLS.github.agents.vietnamFarm}`,
-    referenceGithubUrlStreaming: `${LUNGO_FRONTEND_URLS.github.baseUrl}${LUNGO_FRONTEND_URLS.github.agents.vietnamFarmStreaming}`,
-  },
-  {
-    agentRecordName: "Weather MCP Server",
-    agentDirectoryLink: `${LUNGO_FRONTEND_URLS.agentDirectory.baseUrl}${LUNGO_FRONTEND_URLS.agentDirectory.agents.weatherMcp}`,
-    referenceGithubUrl: `${LUNGO_FRONTEND_URLS.github.baseUrl}${LUNGO_FRONTEND_URLS.github.agents.weatherMcp}`,
-    verificationStatus: VERIFICATION_STATUS.FAILED,
-  },
-  {
-    agentRecordName: "Payment MCP Server",
-    identityAppsSlug: "payment-mcp-server",
-    hasBadgeDetails: true,
-    hasPolicyDetails: false,
-    agentDirectoryLink: LUNGO_FRONTEND_URLS.agentDirectory.baseUrl,
-    referenceGithubUrl: `${LUNGO_FRONTEND_URLS.github.baseUrl}${LUNGO_FRONTEND_URLS.github.agents.paymentMcp}`,
-  },
-  {
-    agentRecordName: "Logistics Supervisor agent",
-    hasBadgeDetails: false,
-    hasPolicyDetails: false,
-    agentDirectoryLink: LUNGO_FRONTEND_URLS.agentDirectory.baseUrl,
-    referenceGithubUrl: `${LUNGO_FRONTEND_URLS.github.baseUrl}${LUNGO_FRONTEND_URLS.github.agents.logisticSupervisor}`,
-  },
-  {
-    agentRecordName: "Tatooine Farm agent",
-    hasBadgeDetails: false,
-    hasPolicyDetails: false,
-    agentDirectoryLink: `${LUNGO_FRONTEND_URLS.agentDirectory.baseUrl}/`,
-    referenceGithubUrl: `${LUNGO_FRONTEND_URLS.github.baseUrl}${LUNGO_FRONTEND_URLS.github.agents.logisticFarm}`,
-  },
-  {
-    agentRecordName: "Shipping agent",
-    hasBadgeDetails: false,
-    hasPolicyDetails: false,
-    agentDirectoryLink: `${LUNGO_FRONTEND_URLS.agentDirectory.baseUrl}/`,
-    referenceGithubUrl: `${LUNGO_FRONTEND_URLS.github.baseUrl}${LUNGO_FRONTEND_URLS.github.agents.logisticShipper}`,
-  },
-  {
-    agentRecordName: "Accountant agent",
-    hasBadgeDetails: false,
-    hasPolicyDetails: false,
-    agentDirectoryLink: `${LUNGO_FRONTEND_URLS.agentDirectory.baseUrl}/`,
-    referenceGithubUrl: `${LUNGO_FRONTEND_URLS.github.baseUrl}${LUNGO_FRONTEND_URLS.github.agents.logisticAccountant}`,
-  },
-  {
-    agentRecordName: "Agentic Recruiter agent",
-    hasBadgeDetails: false,
-    hasPolicyDetails: false,
-    agentDirectoryLink: LUNGO_FRONTEND_URLS.agentDirectory.baseUrl,
-    referenceGithubUrl: `${LUNGO_FRONTEND_URLS.github.baseUrl}${LUNGO_FRONTEND_URLS.github.agents.recruiter}`,
-  },
-]
-
-function buildIdentityUiByStableAgentUuid(): Record<
-  string,
-  AgenticTopologyIdentityUiRow
-> {
-  const out: Record<string, AgenticTopologyIdentityUiRow> = {}
-  for (const row of RAW_IDENTITY_UI_ROWS) {
-    out[stableAgentUuidForRecordName(row.agentRecordName)] = row
-  }
-  return out
-}
-
-export const IDENTITY_UI_BY_STABLE_AGENT_UUID: Record<
-  string,
-  AgenticTopologyIdentityUiRow
-> = buildIdentityUiByStableAgentUuid()
+const wireHasOwn = (wire: TopologyNodeWire, key: string): boolean =>
+  Object.prototype.hasOwnProperty.call(wire, key)
 
 /** Strip `agent://` prefix if present. */
 export function parseStableAgentUuid(
@@ -219,10 +98,6 @@ export function isDirectoryLabel(label: string): boolean {
 }
 
 /**
- * Normalize catalog `agent_record_uri` relative paths to a repo path segment
- * under `coffeeAGNTCY/coffee_agents` (for GitHub blob URLs).
- */
-/**
  * Directory / OASF API slug: basename of the OASF record path without `.json`
  * (e.g. `.../brazil-coffee-farm.json` → `brazil-coffee-farm`).
  */
@@ -265,24 +140,6 @@ export function normalizeAgentRecordUriToRepoPath(
   if (u.startsWith("agents/")) return `lungo/${u}`
   if (u.startsWith("lungo/")) return u
   return null
-}
-
-export type IdentityUiGithubVariant =
-  | "publish_subscribe"
-  | "publish_subscribe_streaming"
-  | undefined
-
-/** Maps Lungo catalog pattern to GitHub display variant for stable-agent rows. */
-export function identityUiVariantForPattern(
-  p: PatternType,
-): IdentityUiGithubVariant | undefined {
-  if (p === PATTERNS.PUBLISH_SUBSCRIBE_STREAMING) {
-    return "publish_subscribe_streaming"
-  }
-  if (p === PATTERNS.PUBLISH_SUBSCRIBE) {
-    return "publish_subscribe"
-  }
-  return undefined
 }
 
 /**
@@ -401,74 +258,48 @@ export function applyDiscoveredAgentInlineUi(
 }
 
 /**
- * Merge map + resolved GitHub into agentic `CustomNodeData`. Does not set legacy `slug`
- * (use `identityAppsSlug` / `directoryAgentSlug` on node data).
+ * Map backend-enriched topology wire fields onto `CustomNodeData`.
+ * Does not re-parse OASF or agent URIs; those belong on the wire from the API.
  */
-export function mergeAgenticTopologyIdentityUi(
+export function applyBackendTopologyWireFields(
   data: CustomNodeData,
   wire: TopologyNodeWire,
-  options: {
-    validateUrls: boolean
-    identityUiVariant?: IdentityUiGithubVariant
-  },
+  options: { validateUrls: boolean },
 ): CustomNodeData {
-  const uuid = parseStableAgentUuid(stableAgentIdFromWire(wire))
-  if (!uuid) return data
-  const row = IDENTITY_UI_BY_STABLE_AGENT_UUID[uuid]
-  if (!row) return data
+  const merged: CustomNodeData = { ...data }
 
-  const ghFromUri = resolveGithubFromAgentRecordUri(
-    wire.agent_record_uri as string | undefined,
-    { validateUrls: options.validateUrls },
-  )
-  const githubStreaming =
-    options.identityUiVariant === "publish_subscribe_streaming" &&
-    row.referenceGithubUrlStreaming
-      ? row.referenceGithubUrlStreaming
-      : undefined
-  const githubResolved =
-    githubStreaming &&
-    (!options.validateUrls || SecurityClass.isSafeExternalUrl(githubStreaming))
-      ? githubStreaming
-      : (ghFromUri ?? data.githubLink)
-
-  const directoryAgentSlug =
-    data.directoryAgentSlug ??
-    directoryAgentSlugFromAgentRecordUri(
-      wire.agent_record_uri as string | undefined,
-    )
-
-  const merged: CustomNodeData = {
-    ...data,
-    identityAppsSlug: row.identityAppsSlug,
-    ...(directoryAgentSlug ? { directoryAgentSlug } : {}),
-    agentDirectoryLink: row.agentDirectoryLink,
-    hasBadgeDetails: row.hasBadgeDetails,
-    hasPolicyDetails: row.hasPolicyDetails,
-    githubLink: githubResolved,
+  const cid = wire.agent_directory_cid
+  if (typeof cid === "string" && cid.trim()) {
+    const path = cid.startsWith("/") ? cid : `/${cid}`
+    const link = `${LUNGO_FRONTEND_URLS.agentDirectory.baseUrl}${path}`
+    if (!options.validateUrls || SecurityClass.isSafeExternalUrl(link)) {
+      merged.agentDirectoryLink = link
+    }
   }
-  if (row.verificationStatus !== undefined) {
-    merged.verificationStatus = row.verificationStatus
+
+  const identitySlug = wire.identity_app_slug
+  if (typeof identitySlug === "string" && identitySlug.trim()) {
+    merged.identityAppsSlug = identitySlug.trim()
   }
+
+  if (wireHasOwn(wire, "has_badge_override")) {
+    merged.hasBadgeDetails = Boolean(wire.has_badge_override)
+  } else {
+    merged.hasBadgeDetails = true
+  }
+
+  if (wireHasOwn(wire, "has_policy_override")) {
+    merged.hasPolicyDetails = Boolean(wire.has_policy_override)
+  } else {
+    merged.hasPolicyDetails = true
+  }
+
+  const verification = wire.verification_status_override
+  if (verification === "verified" || verification === "failed") {
+    merged.verificationStatus = verification
+  }
+
   return merged
-}
-
-function mcpDirectorySlugFromLabels(
-  label: string | undefined,
-  label_subtitle: string | undefined,
-): string | null {
-  const pair = new Set(
-    [label, label_subtitle]
-      .filter(Boolean)
-      .map((part) => part!.trim().toLowerCase()),
-  )
-  if (pair.has("weather") && pair.has("mcp server")) {
-    return "weather-mcp-server"
-  }
-  if (pair.has("payment") && pair.has("mcp server")) {
-    return "payment-mcp-server"
-  }
-  return null
 }
 
 /**
@@ -479,69 +310,5 @@ function mcpDirectorySlugFromLabels(
 export function getOasfSlugFromNodeData(
   nodeData: CustomNodeData | null | undefined,
 ): string {
-  if (!nodeData) {
-    throw new Error("nodeData is required for slug resolution")
-  }
-  if (nodeData.directoryAgentSlug) {
-    return nodeData.directoryAgentSlug
-  }
-
-  if (nodeData.slug) {
-    return nodeData.slug
-  }
-
-  const label = nodeData.label?.toLowerCase()
-  const label_subtitle = nodeData.label_subtitle?.toLowerCase()
-  const labelsText = `${label ?? ""} ${label_subtitle ?? ""}`.trim()
-
-  const mcpSlug = mcpDirectorySlugFromLabels(label, label_subtitle)
-  if (mcpSlug) return mcpSlug
-
-  if (/\bagentic\b/.test(labelsText) && /\brecruiter\b/.test(labelsText)) {
-    return "recruiter"
-  }
-
-  if (labelsText === "logistics group") {
-    return "logistics-supervisor-agent"
-  }
-
-  if (label === "auction agent" || label_subtitle?.includes("buyer")) {
-    return "auction-supervisor-agent"
-  }
-
-  if (label === "auction" && label_subtitle?.includes("agent")) {
-    return "auction-supervisor-agent"
-  }
-
-  if (label === "colombia" && label_subtitle?.includes("coffee farm")) {
-    return "colombia-coffee-farm"
-  }
-
-  if (label === "vietnam" && label_subtitle?.includes("coffee farm")) {
-    return "vietnam-coffee-farm"
-  }
-
-  if (label === "brazil" && label_subtitle?.includes("coffee farm")) {
-    return "brazil-coffee-farm"
-  }
-
-  if (label === "buyer" || label_subtitle?.includes("logistics agent")) {
-    return "logistics-supervisor-agent"
-  }
-
-  if (label === "tatooine" && label_subtitle?.includes("coffee farm")) {
-    return "tatooine-farm-agent"
-  }
-
-  if (label === "shipper") {
-    return "shipping-agent"
-  }
-
-  if (label === "accountant") {
-    return "accountant-agent"
-  }
-
-  throw new Error(
-    `No valid slug mapping found for node: ${label} ${label_subtitle}`,
-  )
+  return resolveAgentSlug(nodeData, "oasf")
 }

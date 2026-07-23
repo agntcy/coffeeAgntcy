@@ -5,10 +5,8 @@
 
 import React, { useCallback } from "react"
 import { Box, List, Typography } from "@open-ui-kit/core"
-import {
-  mapWorkflowNameToSlug,
-  type WorkflowSummary,
-} from "@/utils/agenticWorkflowsApi"
+import { type WorkflowSummary } from "@/utils/agenticWorkflowsApi"
+import { patternTypeFromSummary } from "@/utils/workflow"
 import { openWorkflowDocumentationInNewTab } from "@/utils/workflowDocumentationGithub"
 import SidebarDropdown from "./SidebarDropdown"
 import SidebarItem from "./SidebarItem"
@@ -56,7 +54,7 @@ const CatalogTree: React.FC<CatalogTreeProps> = ({
       workflow: WorkflowNode,
     ): React.ReactNode => {
       const { summary, display } = workflow
-      const isUnmapped = mapWorkflowNameToSlug(summary.name) === null
+      const isUnmapped = patternTypeFromSummary(summary) === null
       const isSelected = selectedWorkflowSummary?.name === summary.name
 
       if (display === "slim_transport") {

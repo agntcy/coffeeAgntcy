@@ -6,10 +6,10 @@
 import { useEffect, useRef, useCallback, useState, useMemo } from "react"
 import { useNodesState, useEdgesState } from "@xyflow/react"
 import type { Node, Edge } from "@xyflow/react"
-import { PatternType, isStreamingPattern } from "@/utils/patternUtils"
+import { PatternType } from "@/utils/patternUtils"
 import { useViewportAwareFitView } from "@/hooks/useViewportAwareFitView"
 import { useModalManager } from "@/hooks/useModalManager"
-import { applyDynamicTransportLabels } from "@/utils/dynamicTransportLabels"
+import { customNodeDataFromNode } from "./Graph/Elements/customNodeData"
 import type { CustomNodeData } from "./Graph/Elements/types"
 import { useMainAreaGraphEffects } from "./useMainAreaGraphEffects"
 import { useWorkflowGraphFromAgenticApi } from "@/hooks/useWorkflowGraphFromAgenticApi"
@@ -57,6 +57,12 @@ export function useMainArea({
   const [nodesDraggable, setNodesDraggable] = useState(true)
   const [nodesConnectable, setNodesConnectable] = useState(true)
   const [topologyApplied, setTopologyApplied] = useState(false)
+  const [layoutSyncGeneration, setLayoutSyncGeneration] = useState(0)
+  const [layoutSyncNodeIds, setLayoutSyncNodeIds] = useState<readonly string[]>(
+    [],
+  )
+  const [layoutSyncFitViewport, setLayoutSyncFitViewport] = useState(false)
+  const hasInitialViewportFitRef = useRef(false)
 
   const {
     activeModal,
@@ -90,6 +96,17 @@ export function useMainArea({
     setOasfModalOpen(true)
   }, [])
 
+  const handleLayoutSyncReady = useCallback(() => {
+    hasInitialViewportFitRef.current = true
+    setTopologyApplied(true)
+  }, [])
+
+  const handleTopologyApplied = useCallback((nodeIds: readonly string[]) => {
+    setLayoutSyncNodeIds(nodeIds)
+    setLayoutSyncFitViewport(!hasInitialViewportFitRef.current)
+    setLayoutSyncGeneration((generation) => generation + 1)
+  }, [])
+
   const { agenticMode, agenticError } = useWorkflowGraphFromAgenticApi({
     pattern,
     selectedWorkflowSummary,
@@ -97,22 +114,15 @@ export function useMainArea({
     setEdges,
     handleOpenIdentityModal,
     handleOpenOasfModal,
-    onTopologyApplied: () => {
-      setTopologyApplied(true)
-      setTimeout(() => {
-        fitViewWithViewport()
-      }, 200)
-      void applyDynamicTransportLabels(
-        setNodes,
-        setEdges,
-        pattern,
-        isStreamingPattern(pattern),
-      )
-    },
+    onTopologyApplied: handleTopologyApplied,
   })
 
   useEffect(() => {
+    hasInitialViewportFitRef.current = false
     setTopologyApplied(false)
+    setLayoutSyncGeneration(0)
+    setLayoutSyncNodeIds([])
+    setLayoutSyncFitViewport(false)
   }, [selectedWorkflowSummary?.name, pattern])
 
   useEffect(() => {
@@ -134,15 +144,13 @@ export function useMainArea({
     if (pattern !== "a2a_http") return
     setNodes((prevNodes) => {
       const recruiterId = prevNodes.find((n) => {
-        const l1 = String(
-          (n.data as unknown as CustomNodeData | undefined)?.label ?? "",
-        )
+        const l1 = String(customNodeDataFromNode(n).label ?? "")
           .toLowerCase()
           .trim()
         return l1.includes("recruiter")
       })?.id
       return prevNodes.map((node) => {
-        const nodeData = node.data as unknown as CustomNodeData | undefined
+        const nodeData = customNodeDataFromNode(node)
         const shouldBeSelected =
           selectedAgentCid != null
             ? nodeData?.agentCid === selectedAgentCid
@@ -268,5 +276,9 @@ export function useMainArea({
     topologyApplied,
     agenticMode,
     agenticError,
+    layoutSyncGeneration,
+    layoutSyncNodeIds,
+    layoutSyncFitViewport,
+    handleLayoutSyncReady,
   }
 }

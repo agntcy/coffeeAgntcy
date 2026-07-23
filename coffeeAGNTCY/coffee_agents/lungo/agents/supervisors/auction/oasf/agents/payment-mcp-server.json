@@ -2,8 +2,8 @@
   "annotations": {
     "a2a.supports_authenticated_extended_card": "false",
     "lungo.hasBadgeOverride": "true",
-    "lungo.hasPolicyOverride": "false"
-    "lungo.identityAppSlug": "payment-mcp-server",
+    "lungo.hasPolicyOverride": "false",
+    "lungo.identityAppSlug": "payment-mcp-server"
   },
   "version": "1.0.0",
   "description": "An MCP server agent for payment operations (create payments and list transactions).",
