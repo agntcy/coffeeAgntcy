@@ -24,6 +24,22 @@ export type PushErrorInput = {
   source?: string
 }
 
+const MAX_ERROR_NOTIFICATIONS = 5
+
+function notificationDedupeKey(input: {
+  severity: ErrorNotificationSeverity
+  title: string
+  message: string
+  source?: string
+}): string {
+  return JSON.stringify({
+    severity: input.severity,
+    title: input.title,
+    message: input.message,
+    source: input.source ?? "",
+  })
+}
+
 type ErrorNotificationState = {
   notifications: ErrorNotification[]
   pushError: (input: PushErrorInput) => string
@@ -32,21 +48,48 @@ type ErrorNotificationState = {
 }
 
 export const useErrorNotificationStore = create<ErrorNotificationState>(
-  (set) => ({
+  (set, get) => ({
     notifications: [],
     pushError: (input) => {
+      const severity = input.severity ?? "error"
+      const key = notificationDedupeKey({
+        severity,
+        title: input.title,
+        message: input.message,
+        source: input.source,
+      })
+
+      const existing = get().notifications.find(
+        (notification) =>
+          notificationDedupeKey({
+            severity: notification.severity,
+            title: notification.title,
+            message: notification.message,
+            source: notification.source,
+          }) === key,
+      )
+      if (existing) {
+        return existing.id
+      }
+
       const id = input.id ?? uuidv4()
       const notification: ErrorNotification = {
         id,
-        severity: input.severity ?? "error",
+        severity,
         title: input.title,
         message: input.message,
         source: input.source,
       }
 
-      set((state) => ({
-        notifications: [...state.notifications, notification],
-      }))
+      set((state) => {
+        const next = [...state.notifications, notification]
+        return {
+          notifications:
+            next.length > MAX_ERROR_NOTIFICATIONS
+              ? next.slice(-MAX_ERROR_NOTIFICATIONS)
+              : next,
+        }
+      })
 
       return id
     },

@@ -57,4 +57,57 @@ describe("useErrorNotificationStore", () => {
 
     expect(useErrorNotificationStore.getState().notifications).toEqual([])
   })
+
+  it("does not queue duplicate notifications", () => {
+    const { pushError } = useErrorNotificationStore.getState()
+    const firstId = pushError({
+      title: "Request failed",
+      message: "Menu is unavailable",
+      source: "/api/catalog",
+    })
+    const secondId = pushError({
+      title: "Request failed",
+      message: "Menu is unavailable",
+      source: "/api/catalog",
+    })
+
+    expect(secondId).toBe(firstId)
+    expect(useErrorNotificationStore.getState().notifications).toHaveLength(1)
+  })
+
+  it("treats missing source the same as an empty source for dedupe", () => {
+    const { pushError } = useErrorNotificationStore.getState()
+    const firstId = pushError({
+      title: "Request failed",
+      message: "Menu is unavailable",
+    })
+    const secondId = pushError({
+      title: "Request failed",
+      message: "Menu is unavailable",
+      source: "",
+    })
+
+    expect(secondId).toBe(firstId)
+    expect(useErrorNotificationStore.getState().notifications).toHaveLength(1)
+  })
+
+  it("drops the oldest notification when the queue exceeds the cap", () => {
+    const { pushError } = useErrorNotificationStore.getState()
+
+    for (let index = 1; index <= 6; index += 1) {
+      pushError({ title: `Error ${index}`, message: `Message ${index}` })
+    }
+
+    const messages = useErrorNotificationStore
+      .getState()
+      .notifications.map((notification) => notification.message)
+
+    expect(messages).toEqual([
+      "Message 2",
+      "Message 3",
+      "Message 4",
+      "Message 5",
+      "Message 6",
+    ])
+  })
 })

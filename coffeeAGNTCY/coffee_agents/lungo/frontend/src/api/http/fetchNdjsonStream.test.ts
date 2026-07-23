@@ -93,4 +93,40 @@ describe("fetchNdjsonStream", () => {
       }),
     ).rejects.toBeInstanceOf(HttpError)
   })
+
+  it("cancels the response body reader when onLine returns stop", async () => {
+    const encoder = new TextEncoder()
+    let bodyCancelled = false
+    const body = new ReadableStream<Uint8Array>({
+      start(controller) {
+        controller.enqueue(encoder.encode('{"id":1}\n{"id":2}\n'))
+      },
+      cancel() {
+        bodyCancelled = true
+      },
+    })
+
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(
+        new Response(body, {
+          status: 200,
+          headers: { "content-type": "application/x-ndjson" },
+        }),
+      ),
+    )
+
+    const seen: unknown[] = []
+    await fetchNdjsonStream("https://api.test/stream", {
+      method: "POST",
+      endpointLabel: "/agent/prompt/stream",
+      onLine: (parsed) => {
+        seen.push(parsed)
+        return "stop"
+      },
+    })
+
+    expect(seen).toEqual([{ id: 1 }])
+    expect(bodyCancelled).toBe(true)
+  })
 })

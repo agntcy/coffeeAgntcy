@@ -127,6 +127,11 @@ export async function fetchNdjsonStream(
       consumeJsonObjectsFromBuffer(buffer, onLine, onParseError)
     }
   } finally {
+    try {
+      await reader.cancel()
+    } catch {
+      // Harmless when the stream already closed after a normal read-to-done.
+    }
     reader.releaseLock()
   }
 }
