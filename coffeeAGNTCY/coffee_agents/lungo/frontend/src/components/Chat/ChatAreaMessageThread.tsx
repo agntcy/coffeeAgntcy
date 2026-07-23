@@ -26,7 +26,6 @@ import GrafanaSessionLink from "./GrafanaSessionLink"
 
 export interface ChatAreaMessageThreadProps {
   currentUserMessage: string
-  isMinimized: boolean
   showProgressTracker: boolean
   showAuctionStreaming: boolean
   showRecruiterStreaming: boolean
@@ -45,7 +44,6 @@ export interface ChatAreaMessageThreadProps {
 
 const ChatAreaMessageThread: React.FC<ChatAreaMessageThreadProps> = ({
   currentUserMessage,
-  isMinimized,
   showProgressTracker,
   showAuctionStreaming,
   showRecruiterStreaming,
@@ -78,53 +76,47 @@ const ChatAreaMessageThread: React.FC<ChatAreaMessageThreadProps> = ({
       </Box>
     ) : null}
 
-    {!isMinimized && <UserMessage content={currentUserMessage} />}
+    <UserMessage content={currentUserMessage} />
 
     {showProgressTracker && (
-      <Box sx={{ width: "100%", display: isMinimized ? "none" : "block" }}>
-        <GroupCommunicationFeed
-          isVisible={!isMinimized && showProgressTracker}
-          onComplete={onStreamComplete}
-          onSenderHighlight={onSenderHighlight}
-          graphConfig={graphConfig}
-          prompt={currentUserMessage}
-          executionKey={executionKey}
-          apiError={apiError}
-          observabilitySessionId={observabilitySessionId}
-        />
-      </Box>
+      <GroupCommunicationFeed
+        isVisible={showProgressTracker}
+        onComplete={onStreamComplete}
+        onSenderHighlight={onSenderHighlight}
+        graphConfig={graphConfig}
+        prompt={currentUserMessage}
+        executionKey={executionKey}
+        apiError={apiError}
+        observabilitySessionId={observabilitySessionId}
+      />
     )}
 
     {showAuctionStreaming && (
-      <Box sx={{ width: "100%", display: isMinimized ? "none" : "block" }}>
-        <AuctionStreamingFeed
-          isVisible={!isMinimized && showAuctionStreaming}
-          prompt={currentUserMessage}
-          apiError={apiError}
-          auctionStreamingState={auctionState}
-          onSenderHighlight={onSenderHighlight}
-          graphConfig={graphConfig}
-          observabilitySessionId={observabilitySessionId}
-        />
-      </Box>
+      <AuctionStreamingFeed
+        isVisible={showAuctionStreaming}
+        prompt={currentUserMessage}
+        apiError={apiError}
+        auctionStreamingState={auctionState}
+        onSenderHighlight={onSenderHighlight}
+        graphConfig={graphConfig}
+        observabilitySessionId={observabilitySessionId}
+      />
     )}
 
     {showRecruiterStreaming && (
-      <Box sx={{ width: "100%", display: isMinimized ? "none" : "block" }}>
-        <RecruiterStreamingFeed
-          isVisible={!isMinimized && showRecruiterStreaming}
-          prompt={currentUserMessage}
-          apiError={apiError}
-          recruiterStreamingState={recruiterState}
-          onStreamComplete={onStreamComplete}
-          onSenderHighlight={onSenderHighlight}
-          graphConfig={graphConfig}
-          observabilitySessionId={observabilitySessionId}
-        />
-      </Box>
+      <RecruiterStreamingFeed
+        isVisible={showRecruiterStreaming}
+        prompt={currentUserMessage}
+        apiError={apiError}
+        recruiterStreamingState={recruiterState}
+        onStreamComplete={onStreamComplete}
+        onSenderHighlight={onSenderHighlight}
+        graphConfig={graphConfig}
+        observabilitySessionId={observabilitySessionId}
+      />
     )}
 
-    {showFinalResponse && (isAgentLoading || agentResponse) && !isMinimized && (
+    {showFinalResponse && (isAgentLoading || agentResponse) ? (
       <Message icon={<ChatAgentAvatar />}>
         {isAgentLoading ? (
           <>
@@ -142,7 +134,7 @@ const ChatAreaMessageThread: React.FC<ChatAreaMessageThreadProps> = ({
           </>
         )}
       </Message>
-    )}
+    ) : null}
   </Stack>
 )
 
