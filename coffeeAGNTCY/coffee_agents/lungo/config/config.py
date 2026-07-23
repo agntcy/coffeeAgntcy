@@ -46,6 +46,8 @@ OAUTH2_TOKEN_URL= os.getenv("OAUTH2_TOKEN_URL", "")
 OAUTH2_BASE_URL= os.getenv("OAUTH2_BASE_URL", "")
 OAUTH2_APPKEY= os.getenv("OAUTH2_APPKEY", "")
 
+SLIM_TRANSPORT_REQUEST_TIMEOUT = int(os.getenv("SLIM_TRANSPORT_REQUEST_TIMEOUT", "20"))
+
 LOGGING_LEVEL = os.getenv("LOGGING_LEVEL", "INFO").upper()
 
 ENSURE_STREAMING_LLM = os.getenv("ENSURE_STREAMING_LLM", "false").strip().lower() in ("true", "1", "yes")
