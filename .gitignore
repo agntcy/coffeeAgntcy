@@ -204,3 +204,8 @@ node_modules/
 
 # Frontend, UI, JS, TS, etc.
 **/*.tsbuildinfo
+
+# Any `.secrets` bind-mount dir under lungo: keep the directory tracked
+# (via .gitkeep) but never commit any real secret material placed inside.
+/coffeeAGNTCY/coffee_agents/lungo/**/.secrets/*
+!/coffeeAGNTCY/coffee_agents/lungo/**/.secrets/.gitkeep

@@ -1,0 +1,258 @@
+# IoC (Internet of Cognition) - CFN infrastructure for coffeeAGNTCY / Lungo.
+#
+# Adapted from https://github.com/outshift-open/ioc-cfn-mgmt-backend-svc (docker-compose.yml).
+# Pulled into lungo/docker-compose.yaml via the top-level `include:` directive, so it loads as
+# its own Compose project with THIS folder (lungo/ioc/) as its project directory. Relative
+# paths below (scripts/, .secrets/) resolve against lungo/ioc/.
+#
+# MAINTENANCE CONTRACT (keep this file easy to re-sync with upstream):
+#   This file mirrors the upstream docker-compose.yml as closely as possible so upstream
+#   changes map here 1:1. Only three deliberate, mechanical deviations are applied:
+#     1. Every interpolated variable is namespaced with an `IOC_` prefix, i.e. upstream
+#        `${FOO}` becomes `${IOC_FOO}`. Variables already prefixed upstream (IOC_KNOWLEDGE_DB*)
+#        are left as-is (never double-prefixed). Container-side variable names (the left-hand
+#        side, e.g. `LLM_MODEL=`) and all `:-` defaults are kept EXACTLY as upstream.
+#        The prefix keeps these vars from colliding with / leaking into Lungo services, which
+#        load the shared .env via `env_file`.
+#     2. `build:` blocks are dropped (no IoC source in this repo) — published images only.
+#     3. All services share a single `ioc` profile (per issue #700) instead of upstream's
+#        full-stack / mgmt-plane / data-plane profiles.
+#   When upstream updates, diff their docker-compose.yml and re-apply changes here following
+#   rule (1). The matching env vars live in lungo/.env(.example) under the IoC section.
+#
+# Start (from lungo/):  COMPOSE_PROFILES=ioc docker compose up   |   docker compose --profile ioc up
+#
+# NOTE: ioc-cfn-mgmt-plane-svc publishes host port 9000. Lungo's `observability` ClickHouse
+# was moved to host port 9100 (container port stays 9000) so `ioc` and `observability` can run
+# together.
+
+services:
+  # Backing database for the IoC Knowledge Memory service.
+  # Graph (AgensGraph) + pgvector + Postgres. Hosts both cfn_mgmt and cfn_cp databases.
+  # Host port 5456 -> container 5432 (avoids clashing with a local Postgres on 5432).
+  ioc-knowledge-memory-svc-db:
+    image: ghcr.io/outshift-open/ioc-knowledge-memory-svc-db:0.2.1
+    platform: ${IOC_DOCKER_DEFAULT_PLATFORM:-linux/arm64}
+    container_name: ioc-knowledge-memory-svc-db
+    profiles:
+      - ioc
+    environment:
+      POSTGRES_DB: ${IOC_KNOWLEDGE_DB:-ioc-knowledge-db}
+      POSTGRES_USER: ${IOC_KNOWLEDGE_DB_USER}
+      POSTGRES_PASSWORD: ${IOC_KNOWLEDGE_DB_PASSWORD}
+    ports:
+      - "${IOC_KNOWLEDGE_DB_PORT:-5456}:5432"
+    volumes:
+      - ioc_knowledge_db_data:/var/lib/postgresql/data
+      - ./scripts/init-multi-db.sh:/docker-entrypoint-initdb.d/init-multi-db.sh:ro
+    restart: unless-stopped
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -h localhost -p 5432 -U ${IOC_KNOWLEDGE_DB_USER} -d ${IOC_KNOWLEDGE_DB:-ioc-knowledge-db}",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  # Graph Database Viewer - AgensGraph UI (optional).
+  # Uncomment to browse the graph DB at http://localhost:5457.
+  # ioc-graph-db-viewer:
+  #   image: skaiworldwide/agviewer:latest
+  #   platform: ${IOC_DOCKER_DEFAULT_PLATFORM:-linux/arm64}
+  #   container_name: ioc-graph-db-viewer
+  #   profiles:
+  #     - ioc
+  #   ports:
+  #     - "5457:3000"
+  #   environment:
+  #     - DB_HOST=ioc-knowledge-memory-svc-db
+  #     - DB_PORT=5432
+  #     - DB_USER=${IOC_KNOWLEDGE_DB_USER}
+  #     - DB_PASSWORD=${IOC_KNOWLEDGE_DB_PASSWORD}
+  #     - DB_NAME=${IOC_KNOWLEDGE_DB:-ioc-knowledge-db}
+  #   restart: unless-stopped
+  #   depends_on:
+  #     ioc-knowledge-memory-svc-db:
+  #       condition: service_healthy
+
+  # Management Plane Backend - FastAPI backend for workspaces, users, CFN nodes.
+  # Upstream also has a `build:` block; dropped here (no IoC source in this repo).
+  ioc-cfn-mgmt-plane-svc:
+    image: ghcr.io/outshift-open/ioc-cfn-mgmt-plane-svc:v0.2.0
+    platform: ${IOC_DOCKER_DEFAULT_PLATFORM:-linux/arm64}
+    container_name: ioc-cfn-mgmt-plane-svc
+    profiles:
+      - ioc
+    ports:
+      - "9000:9000"
+    environment:
+      - SERVICE_NAME=ioc-cfn-mgmt-plane-svc
+      - APPLICATION_VERSION=dev
+      - LOG_LEVEL=${IOC_LOG_LEVEL:-INFO}
+      - ADMIN_USER_PASSWORD=${IOC_ADMIN_USER_PASSWORD}
+      - POSTGRES_HOST=ioc-knowledge-memory-svc-db
+      - POSTGRES_PORT=5432
+      - POSTGRES_DB=cfn_mgmt
+      - POSTGRES_USER=${IOC_KNOWLEDGE_DB_USER}
+      - POSTGRES_PASSWORD=${IOC_KNOWLEDGE_DB_PASSWORD}
+      - PORT=9000
+      - CFN_DEV_MODE=${IOC_CFN_DEV_MODE}
+      - CFN_SVC_URL=${IOC_CFN_SVC_URL:-http://ioc-cfn-svc:9002}
+    volumes:
+      - ./.secrets:/home/app/.secrets:ro
+    restart: unless-stopped
+    depends_on:
+      ioc-knowledge-memory-svc-db:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "curl",
+          "-f",
+          "http://ioc-cfn-mgmt-plane-svc:9000/api/internal/diagnostics/health",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Management Plane UI - Next.js frontend, http://localhost:9001.
+  ioc-cfn-mgmt-plane-ui:
+    image: ghcr.io/outshift-open/ioc-cfn-mgmt-plane-ui:v0.2.0
+    platform: ${IOC_DOCKER_DEFAULT_PLATFORM:-linux/arm64}
+    container_name: ioc-cfn-mgmt-plane-ui
+    profiles:
+      - ioc
+    ports:
+      - "9001:9001"
+    environment:
+      - NODE_ENV=production
+      - PORT=9001
+      - CFN_UI_API_BASE_URL=http://ioc-cfn-mgmt-plane-svc:9000
+      - NEXT_PUBLIC_CFN_UI_API_BASE_URL=http://localhost:9000
+      - NEXTAUTH_URL=${IOC_NEXTAUTH_URL:-http://localhost:9001}
+      - NEXTAUTH_SECRET=${IOC_NEXTAUTH_SECRET}
+    restart: unless-stopped
+    depends_on:
+      ioc-cfn-mgmt-plane-svc:
+        condition: service_healthy
+
+  # Knowledge Memory Service - Graph + Vector memory storage, http://localhost:9003.
+  ioc-knowledge-memory-svc:
+    image: ghcr.io/outshift-open/ioc-knowledge-memory-svc:v0.2.5
+    platform: ${IOC_DOCKER_DEFAULT_PLATFORM:-linux/arm64}
+    container_name: ioc-knowledge-memory-svc
+    profiles:
+      - ioc
+    ports:
+      - "9003:9003"
+    environment:
+      - SERVICE_NAME=ioc-knowledge-memory-svc
+      - APPLICATION_VERSION=dev
+      - LOG_LEVEL=${IOC_LOG_LEVEL:-INFO}
+      - MEMORY_PROVIDER_REGISTRATION_URL=http://ioc-cfn-mgmt-plane-svc:9000
+      - MEMORY_PROVIDER_ID=${IOC_MEMORY_PROVIDER_ID:-de54dacb-60ab-476a-9e83-64e09f867358}
+      - IOC_KNOWLEDGE_DB_HOST=ioc-knowledge-memory-svc-db
+      - IOC_KNOWLEDGE_DB=${IOC_KNOWLEDGE_DB:-ioc-knowledge-db}
+      - IOC_KNOWLEDGE_DB_USER=${IOC_KNOWLEDGE_DB_USER}
+      - IOC_KNOWLEDGE_DB_PASSWORD=${IOC_KNOWLEDGE_DB_PASSWORD}
+      - IOC_KNOWLEDGE_DB_PORT=5432
+      - EMBEDDING_VECTOR_SIZE=${IOC_EMBEDDING_VECTOR_SIZE:-384}
+    restart: unless-stopped
+    depends_on:
+      ioc-knowledge-memory-svc-db:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "curl",
+          "-f",
+          "http://localhost:9003/api/internal/diagnostics/health",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # CFN Service - Cognition Fabric Node. HTTP on 9002, MCP on host 9009 -> container 9001.
+  ioc-cfn-svc:
+    image: ghcr.io/outshift-open/ioc-cfn-svc:v0.2.1
+    platform: ${IOC_DOCKER_DEFAULT_PLATFORM:-linux/arm64}
+    container_name: ioc-cfn-svc
+    profiles:
+      - ioc
+    restart: unless-stopped
+    ports:
+      - "9002:9002"
+      - "9009:9001"
+    environment:
+      - LOG_LEVEL=${IOC_LOG_LEVEL:-INFO}
+      - MGMT_URL=${IOC_MGMT_URL:-http://ioc-cfn-mgmt-plane-svc:9000}
+      - CFN_NAME=${IOC_CFN_NAME:-cfn-new}
+      - CFN_IP=${IOC_CFN_IP:-Not Set}
+      - HEARTBEAT_INTERVAL_SECONDS=${IOC_HEARTBEAT_INTERVAL_SECONDS:-10}
+      - SERVICE_NAME=${IOC_SERVICE_NAME:-ioc-cfn-svc}
+      - DB_NAME=${IOC_DB_NAME:-cfn_cp}
+      # Upstream wires DB_USER/DB_PASSWORD from POSTGRES_USER/POSTGRES_PASSWORD, which must
+      # equal the IOC_KNOWLEDGE_DB_* creds the DB is created with. Mirrored 1:1 (prefixed).
+      - DB_USER=${IOC_POSTGRES_USER}
+      - DB_PASSWORD=${IOC_POSTGRES_PASSWORD}
+      - DB_HOST=ioc-knowledge-memory-svc-db
+      - DB_PORT=5432
+      - CALLBACK_URL=http://ioc-cfn-svc:9002
+      - KNOWLEDGE_MEMORY_SVC_URL=http://ioc-knowledge-memory-svc:9003
+      - LLM_PROVIDER=${IOC_LLM_PROVIDER:-azure-openai}
+      - COGNITION_ENGINE_SVC_URL=http://ioc-cfn-cognition-engines:9004
+      - MCP_PORT=9001
+    depends_on:
+      ioc-knowledge-memory-svc:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "curl",
+          "-f",
+          "http://localhost:9002/api/internal/diagnostics/health",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Cognition Engines - the cognitive services, http://localhost:9004.
+  ioc-cfn-cognition-engines:
+    image: ghcr.io/outshift-open/ioc-cfn-cognition-engines:v0.2.1
+    platform: ${IOC_DOCKER_DEFAULT_PLATFORM:-linux/arm64}
+    container_name: ioc-cfn-cognition-engines
+    profiles:
+      - ioc
+    ports:
+      - "9004:9004"
+    restart: unless-stopped
+    environment:
+      - LLM_BASE_URL=${IOC_LLM_BASE_URL}
+      - LLM_API_KEY=${IOC_LLM_API_KEY}
+      - LLM_MODEL=${IOC_LLM_MODEL}
+      - ENABLE_DEDUP=true
+      # CE lifecycle management - auto-registration and heartbeat.
+      - CFN_URL=http://ioc-cfn-svc:9002
+      - COGNITION_ENGINE_HOST=ioc-cfn-cognition-engines
+      - COGNITION_ENGINE_PORT=9004
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9004/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    depends_on:
+      ioc-cfn-svc:
+        condition: service_healthy
+
+volumes:
+  ioc_knowledge_db_data:

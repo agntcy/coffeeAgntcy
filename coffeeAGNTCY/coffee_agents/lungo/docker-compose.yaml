@@ -1,3 +1,9 @@
+# IoC (Internet of Cognition) CFN infrastructure, kept in its own file and pulled in here.
+# Its services all live in the `ioc` profile. Enable them by adding `ioc` to COMPOSE_PROFILES
+# (or `--profile ioc`). See ioc/compose.yaml and the IoC section of .env / .env.example.
+include:
+  - ioc/compose.yaml
+
 services:
   brazil-farm-server:
     build:
@@ -271,7 +277,10 @@ services:
     image: clickhouse/clickhouse-server
     container_name: lungo-clickhouse-server
     ports:
-      - "9000:9000"
+      # Host 9100 -> container 9000 (ClickHouse native TCP). Host side moved off 9000 to avoid
+      # clashing with the IoC management plane (ioc profile). In-cluster clients still use
+      # clickhouse-server:9000 over the Docker network, so only host access changed.
+      - "9100:9000"
       - "8123:8123"
     environment:
       CLICKHOUSE_USER: admin
