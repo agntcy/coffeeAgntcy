@@ -12,8 +12,7 @@ import type { EmptyStateProps } from "@open-ui-kit/core"
 
 const OUK_LARGE_NEGATIVE_ILLUSTRATION_PX = 224
 
-const compactNegativeEmptyStateIconPx =
-  OUK_LARGE_NEGATIVE_ILLUSTRATION_PX / 4
+const compactNegativeEmptyStateIconPx = OUK_LARGE_NEGATIVE_ILLUSTRATION_PX / 4
 
 export const compactNegativeEmptyStateProps: Pick<
   EmptyStateProps,

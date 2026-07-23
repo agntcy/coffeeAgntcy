@@ -204,7 +204,11 @@ const GroupCommunicationFeed: React.FC<GroupCommunicationFeedProps> = ({
           <FeedStatusLine showDots>Processing Request</FeedStatusLine>
         ) : null}
 
-        {prompt && isActive && !apiError && !errorMessage && events.length === 0 ? (
+        {prompt &&
+        isActive &&
+        !apiError &&
+        !errorMessage &&
+        events.length === 0 ? (
           <FeedSpinnerRow mt={3} />
         ) : null}
 

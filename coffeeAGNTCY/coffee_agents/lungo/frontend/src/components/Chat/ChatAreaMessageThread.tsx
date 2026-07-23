@@ -140,24 +140,24 @@ const ChatAreaMessageThread: React.FC<ChatAreaMessageThreadProps> = ({
       )}
 
       {hasAgentFinalResponse ? (
-          <Message icon={<ChatAgentAvatar />}>
-            {isAgentLoading ? (
-              <>
-                <Box component="span" sx={visuallyHiddenSx}>
-                  Agent is responding
-                </Box>
-                <LoadingDots />
-              </>
-            ) : (
-              <>
-                <ChatMarkdown content={agentResponse?.response ?? ""} />
-                {!isAgentLoading && (
-                  <GrafanaSessionLink sessionId={observabilitySessionId} />
-                )}
-              </>
-            )}
-          </Message>
-        ) : null}
+        <Message icon={<ChatAgentAvatar />}>
+          {isAgentLoading ? (
+            <>
+              <Box component="span" sx={visuallyHiddenSx}>
+                Agent is responding
+              </Box>
+              <LoadingDots />
+            </>
+          ) : (
+            <>
+              <ChatMarkdown content={agentResponse?.response ?? ""} />
+              {!isAgentLoading && (
+                <GrafanaSessionLink sessionId={observabilitySessionId} />
+              )}
+            </>
+          )}
+        </Message>
+      ) : null}
     </Stack>
   )
 }

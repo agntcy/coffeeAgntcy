@@ -99,8 +99,7 @@ const AuctionStreamingFeed: React.FC<AuctionStreamingFeedProps> = ({
     return <FeedErrorMessage>{errorMessage}</FeedErrorMessage>
   }
 
-  const showsStatusLine =
-    isComplete || (Boolean(prompt) && !apiError)
+  const showsStatusLine = isComplete || (Boolean(prompt) && !apiError)
   const showsSpinner =
     Boolean(prompt) &&
     !isComplete &&
@@ -140,57 +139,66 @@ const AuctionStreamingFeed: React.FC<AuctionStreamingFeedProps> = ({
           <FeedStatusLine showDots>Streaming</FeedStatusLine>
         ) : null}
 
-        {prompt && !isComplete && !apiError && !errorMessage && events.length === 0 ? (
+        {prompt &&
+        !isComplete &&
+        !apiError &&
+        !errorMessage &&
+        events.length === 0 ? (
           <FeedSpinnerRow mt={3} />
         ) : null}
 
         {events.length > 0 ? (
-        <Stack
-          spacing={3}
-          sx={{ mt: 3, width: "100%", alignItems: "flex-start" }}
-        >
-          {events.map((event, index) => {
-            const isLastEvent = isComplete && index === events.length - 1
-            const label = isLastEvent
-              ? "Final response:"
-              : `Response ${index + 1}:`
+          <Stack
+            spacing={3}
+            sx={{ mt: 3, width: "100%", alignItems: "flex-start" }}
+          >
+            {events.map((event, index) => {
+              const isLastEvent = isComplete && index === events.length - 1
+              const label = isLastEvent
+                ? "Final response:"
+                : `Response ${index + 1}:`
 
-            return (
-              <Stack
-                key={`auction-${index}`}
-                direction="row"
-                alignItems="flex-start"
-                spacing={0.5}
-                sx={{ width: "100%" }}
-              >
-                <Box sx={{ mt: 0.5, display: "flex", alignItems: "center" }}>
-                  <CheckCircleIcon sx={{ color: "success.main" }} aria-hidden />
-                </Box>
-                <Box sx={{ flex: 1, minWidth: 0 }}>
-                  <Typography
-                    variant="body1"
-                    component="div"
-                    sx={{
-                      overflowWrap: "break-word",
-                      wordBreak: "break-word",
-                    }}
-                  >
-                    <Typography component="span" variant="body1">
-                      {label}
-                    </Typography>{" "}
-                    {event.response}
-                  </Typography>
-                </Box>
-              </Stack>
-            )
-          })}
+              return (
+                <Stack
+                  key={`auction-${index}`}
+                  direction="row"
+                  alignItems="flex-start"
+                  spacing={0.5}
+                  sx={{ width: "100%" }}
+                >
+                  <Box sx={{ mt: 0.5, display: "flex", alignItems: "center" }}>
+                    <CheckCircleIcon
+                      sx={{ color: "success.main" }}
+                      aria-hidden
+                    />
+                  </Box>
+                  <Box sx={{ flex: 1, minWidth: 0 }}>
+                    <Typography
+                      variant="body1"
+                      component="div"
+                      sx={{
+                        overflowWrap: "break-word",
+                        wordBreak: "break-word",
+                      }}
+                    >
+                      <Typography component="span" variant="body1">
+                        {label}
+                      </Typography>{" "}
+                      {event.response}
+                    </Typography>
+                  </Box>
+                </Stack>
+              )
+            })}
 
-          {isComplete && events.length > 0 ? (
-            <GrafanaSessionLink sessionId={observabilitySessionId} />
-          ) : null}
+            {isComplete && events.length > 0 ? (
+              <GrafanaSessionLink sessionId={observabilitySessionId} />
+            ) : null}
 
-          {events.length > 0 && !isComplete ? <FeedSpinnerRow mt={0} /> : null}
-        </Stack>
+            {events.length > 0 && !isComplete ? (
+              <FeedSpinnerRow mt={0} />
+            ) : null}
+          </Stack>
         ) : null}
       </Stack>
     </Stack>
