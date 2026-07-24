@@ -130,12 +130,10 @@ const OasfRecordModal: React.FC<OasfRecordModalProps> = ({
             <Stack sx={{ width: "100%", gap: 1.5 }}>
               <Box sx={graphModalFieldCardSx}>
                 <Typography
-                  variant="caption"
-                  color="text.secondary"
+                  //variant="caption"
                   sx={{
                     textTransform: "uppercase",
                     letterSpacing: "0.06em",
-                    opacity: 0.9,
                   }}
                 >
                   Directory URL
@@ -155,24 +153,16 @@ const OasfRecordModal: React.FC<OasfRecordModalProps> = ({
                     {directoryServerUrl}
                   </Link>
                 ) : (
-                  <Typography
-                    variant="body2"
-                    color="text.secondary"
-                    sx={{ mt: 1, opacity: 0.9 }}
-                  >
-                    Unavailable
-                  </Typography>
+                  <Typography variant="body2">Unavailable</Typography>
                 )}
               </Box>
 
               <Box sx={graphModalFieldCardSx}>
                 <Typography
-                  variant="caption"
-                  color="text.secondary"
+                  //variant="caption"
                   sx={{
                     textTransform: "uppercase",
                     letterSpacing: "0.06em",
-                    opacity: 0.9,
                   }}
                 >
                   Directory Version
