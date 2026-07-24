@@ -200,9 +200,9 @@ Query parameter:
 
 A **topology** (`event_v1.json#/$defs/topology`) is an object with `nodes` and `edges` arrays. The *full* form (used for `starting_topology` and instance init) requires both arrays; the *partial* form (`#/$defs/partial_topology`, used for deltas) allows them to be omitted.
 
-**Node** (`#/$defs/regular_node`, required for a full node): `id` (`node://…`), `operation` (`create` | `read` | `update` | `delete`), `type` (e.g. `customNode`, `transportNode`, `group`), `label`, `size` (`{ width, height }`, relative layout sizing), and `layer_index`. `additionalProperties` is allowed (the starting catalog, for example, carries an extra `position: { x, y }`).
+**Node** (`#/$defs/base_node`, required for a full node): `id` (`node://…`), `operation` (`create` | `read` | `update` | `delete`), `type` (e.g. `customNode`, `transportNode`, `group`), `label`, `size` (`{ width, height }`, relative layout sizing), and `layer_index`. `additionalProperties` is allowed (the starting catalog, for example, carries an extra `position: { x, y }`).
 
-An **agent node** (`#/$defs/agent_node`) additionally carries `agent_record_uri` (required) and `stable_agent_id` (`agent://…`). Nodes without agent extension fields are plain regular nodes; the schema keeps the two mutually exclusive via `anyOf`/`not`.
+An **agent node** (`#/$defs/agent_node`) additionally carries `agent_record_uri` (required) and `stable_agent_id` (`agent://…`). Nodes without agent extension fields are plain base nodes; the schema keeps the two mutually exclusive via `anyOf`/`not`.
 
 #### Topology wire enrichment (GET workflow / instance only)
 
@@ -433,7 +433,7 @@ The single, validatable contract shared by senders (agents, LangGraph adapters),
 
 ### Why one schema
 
-A single schema represents **both** a full state snapshot (init / reset, when fully filled) **and** an event/delta (partial topology). Full variants (`node`, `edge`, `topology`, `regular_node`) require all fields; partial variants (`partial_node`, `partial_edge`, `partial_topology`, `partial_regular_node`) require only `id` + `operation` and allow the rest to be omitted. The `operation` field (`create` / `read` / `update` / `delete`) tells a consumer how to apply each node/edge against the current graph.
+A single schema represents **both** a full state snapshot (init / reset, when fully filled) **and** an event/delta (partial topology). Full variants (`node`, `edge`, `topology`, `base_node`) require all fields; partial variants (`partial_node`, `partial_edge`, `partial_topology`, `partial_base_node`) require only `id` + `operation` and allow the rest to be omitted. The `operation` field (`create` / `read` / `update` / `delete`) tells a consumer how to apply each node/edge against the current graph.
 
 ### Top-level shape
 
@@ -485,9 +485,9 @@ Key invariant: each property name under `workflow.instances` **must equal** the 
 | `size` | Relative layout size `{ width, height }` (defaults `1.0`). |
 | `metadata` | Required event metadata block. |
 | `correlation` | `{ id (required), message? }`, `additionalProperties: true`. |
-| `partial_regular_node` / `regular_node` | Sparse vs. full non-agent node. |
+| `partial_base_node` / `base_node` | Sparse vs. full non-agent node. |
 | `partial_agent_node` / `agent_node` | Node + agent extension (`agent_record_uri`, `stable_agent_id`). |
-| `partial_node` / `node` | A regular node **or** an agent node (mutually exclusive). |
+| `partial_node` / `node` | A base node **or** an agent node (mutually exclusive). |
 | `partial_edge` / `edge` | Sparse vs. full edge. |
 | `partial_topology` / `topology` | `{ nodes, edges }`; partial allows omission, full requires both. |
 | `workflow_instance` | `{ id (required), topology }`, `additionalProperties: true`. |
