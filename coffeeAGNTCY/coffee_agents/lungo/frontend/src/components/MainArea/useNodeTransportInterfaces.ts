@@ -14,6 +14,7 @@ import {
   type AgentTransport,
 } from "./Graph/Elements/transportMeta"
 import { NODE_TYPES } from "@/utils/const"
+import type { ChatApiTarget } from "@/utils/patternUtils"
 
 function readNodeData(node: Node): CustomNodeData | null {
   if (node.type !== NODE_TYPES.CUSTOM) return null
@@ -22,8 +23,17 @@ function readNodeData(node: Node): CustomNodeData | null {
   return data
 }
 
+function transportCacheKey(
+  pattern: string,
+  chatApiTarget: ChatApiTarget | null,
+  slug: string,
+): string {
+  return `${pattern}\0${chatApiTarget ?? "exchange"}\0${slug}`
+}
+
 export function useNodeTransportInterfaces(
   pattern: string,
+  chatApiTarget: ChatApiTarget | null,
   nodes: Node[],
   setNodes: Dispatch<SetStateAction<Node[]>>,
 ) {
@@ -31,11 +41,13 @@ export function useNodeTransportInterfaces(
   const transportCacheRef = useRef<Map<string, AgentTransport[]>>(new Map())
   const patternRef = useRef(pattern)
   patternRef.current = pattern
+  const chatApiTargetRef = useRef(chatApiTarget)
+  chatApiTargetRef.current = chatApiTarget
 
   useEffect(() => {
     inFlightKeysRef.current.clear()
     transportCacheRef.current.clear()
-  }, [pattern])
+  }, [pattern, chatApiTarget])
 
   useEffect(() => {
     const candidates = new Map<string, CustomNodeData>()
@@ -47,7 +59,7 @@ export function useNodeTransportInterfaces(
 
       try {
         const slug = getOasfSlugFromNodeData(data)
-        const key = `${pattern}\0${slug}`
+        const key = transportCacheKey(pattern, chatApiTarget, slug)
         if (transportCacheRef.current.has(key)) {
           hasCachedUpdates = true
           continue
@@ -68,8 +80,10 @@ export function useNodeTransportInterfaces(
 
           try {
             const slug = getOasfSlugFromNodeData(data)
-            const cached = transportCacheRef.current.get(`${pattern}\0${slug}`)
-            if (!cached) return node
+            const cached = transportCacheRef.current.get(
+              transportCacheKey(pattern, chatApiTarget, slug),
+            )
+            if (cached === undefined) return node
             return {
               ...node,
               data: {
@@ -87,16 +101,20 @@ export function useNodeTransportInterfaces(
     if (candidates.size === 0) return
 
     for (const [slug, nodeData] of candidates) {
-      const key = `${pattern}\0${slug}`
+      const key = transportCacheKey(pattern, chatApiTarget, slug)
       inFlightKeysRef.current.add(key)
 
-      void fetchOasfRecord(nodeData)
+      void fetchOasfRecord(nodeData, chatApiTarget)
         .then((record) => extractA2aTransportsFromOasf(record))
-        .catch(() => [])
+        .catch(() => [] as AgentTransport[])
         .then((transportInterfaces) => {
           inFlightKeysRef.current.delete(key)
-          if (patternRef.current !== pattern) return
-          if (transportInterfaces.length === 0) return
+          if (
+            patternRef.current !== pattern ||
+            chatApiTargetRef.current !== chatApiTarget
+          ) {
+            return
+          }
 
           transportCacheRef.current.set(key, transportInterfaces)
           setNodes((prevNodes) =>
@@ -121,5 +139,5 @@ export function useNodeTransportInterfaces(
           )
         })
     }
-  }, [pattern, nodes, setNodes])
+  }, [pattern, chatApiTarget, nodes, setNodes])
 }

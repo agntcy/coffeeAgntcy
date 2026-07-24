@@ -172,7 +172,12 @@ export function useMainArea({
     setOasfModalOpen,
   })
 
-  useNodeTransportInterfaces(pattern, nodes, setNodes)
+  useNodeTransportInterfaces(
+    pattern,
+    selectedWorkflowSummary?.chat_api_target ?? null,
+    nodes,
+    setNodes,
+  )
 
   const delay = (ms: number): Promise<void> =>
     new Promise((resolve) => setTimeout(resolve, ms))
