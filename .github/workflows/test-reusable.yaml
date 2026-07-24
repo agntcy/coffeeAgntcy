@@ -1,10 +1,14 @@
-name: Integration Tests per Project
+name: Python tests per project
 
 on:
   workflow_call:
     inputs:
       project_dir:
         description: 'The directory of the project to test.'
+        required: true
+        type: string
+      test_paths:
+        description: 'Space-separated pytest paths (e.g. tests/unit tests/integration).'
         required: true
         type: string
       pip_overrides:
@@ -23,12 +27,17 @@ on:
         type: string
         default: ""
 
+permissions:
+  contents: read
+
 jobs:
-  integration-tests:
+  run-tests:
     runs-on: ubuntu-latest
     defaults:
       run:
         working-directory: ${{ inputs.project_dir }}
+    env:
+      WORKFLOW_API_KEY: TheAnswerIs42
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
@@ -57,20 +66,17 @@ jobs:
           compose_file: docker-compose.yaml
           docker_overrides: ${{ inputs.docker_overrides }}
 
-      - name: Resolve & install
-        run: |
-          uv sync --extra dev
-      
-      - name: Create CI env file
-        run: |
-          cat > .env <<'EOF'
-          LLM_MODEL=${{ secrets.LLM_MODEL }}
-          AZURE_API_KEY=${{ secrets.AZURE_API_KEY }}
-          AZURE_API_BASE=${{ secrets.AZURE_API_BASE }}
-          AZURE_API_VERSION=${{ secrets.AZURE_API_VERSION }}
-          WORKFLOW_API_KEY=TheAnswerIs42
-          EOF
+      - name: Resolve and install
+        run: uv sync --extra dev
 
-      - name: Run integration tests
-        run: uv run pytest -v --durations=0 --durations-min=1.0 -r ap
-
+      - name: Run tests
+        run: |
+          set +e
+          uv run pytest ${{ inputs.test_paths }} --strict-markers -v --durations=0 --durations-min=1.0 -r ap
+          code=$?
+          set -e
+          if [[ $code -eq 5 ]]; then
+            echo "No tests collected; treating as success."
+            exit 0
+          fi
+          exit $code

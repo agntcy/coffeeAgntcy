@@ -10,8 +10,9 @@ This directory contains CI/CD workflows for building images, packaging Helm char
 | [`docker-build-reusable.yaml`](.github/workflows/docker-build-reusable.yaml) | Reusable job: build and push a single Docker image | workflow_call |
 | [`helm-push.yaml`](.github/workflows/helm-push.yaml) | Lint, package, and (on push to main/tags) push Helm charts to GHCR (OCI) | push (main, tags), pull_request (paths filter), workflow_dispatch |
 | [`helm-package-reusable.yaml`](.github/workflows/helm-package-reusable.yaml) | Reusable job: lint, package, and push a single Helm chart | workflow_call |
-| [`test.yaml`](.github/workflows/test.yaml) | Orchestrate integration tests across projects | push (main, corto paths), pull_request, workflow_call, workflow_dispatch |
-| [`test-reusable.yaml`](.github/workflows/test-reusable.yaml) | Reusable job: run integration tests for a single project directory | workflow_call |
+| [`test.yaml`](.github/workflows/test.yaml) | Directory-based no-secrets pytest for corto, lungo, recruiter | push (main), pull_request, workflow_call, workflow_dispatch |
+| [`test-reusable.yaml`](.github/workflows/test-reusable.yaml) | Reusable job: run pytest for one project directory and path set | workflow_call |
+| [`test-subprojects-reusable.yaml`](.github/workflows/test-subprojects-reusable.yaml) | Path-filter job: which agent projects changed | workflow_call |
 | [`fe-ci.yaml`](.github/workflows/fe-ci.yaml) | Typecheck, ESLint, and Prettier for the Lungo frontend | push (main, frontend paths), pull_request (main, frontend paths) |
 | [`version-override-test.yaml`](.github/workflows/version-override-test.yaml) | Example invocation of reusable tests with dependency/image overrides | workflow_dispatch |
 | [`docs.yaml`](.github/workflows/docs.yaml) | Publish MkDocs site to GitHub Pages (gh-pages) | push (main, README.md path) |
@@ -70,21 +71,79 @@ Reusable workflow called by `helm-push.yaml` for each matrix entry. Accepts:
 | `package_name` | Package name for the chart (required) |
 | `push` | Whether to push to GHCR OCI registry (default: false) |
 
-## test
+## test (Python Tests)
 
-Orchestrates integration tests by calling `test-reusable.yaml` for each project (currently corto and lungo). Also exposed as a reusable workflow and accepts overrides for dependencies and Docker images.
+Runs directory-based **no-secrets** pytest for each changed agent project. Check names in the PR UI: **`tests / corto`**, **`tests / lungo`**, **`tests / recruiter`**.
+
+LLM tests live under `tests/integration_llm/` and are **local-only** (not run in CI) until project leadership re-enables them.
+
+### Test directories
+
+| Directory | Meaning | CI |
+|-----------|---------|-----|
+| `tests/unit/` | Mocks only | Yes |
+| `tests/live/` | Subprocess uvicorn/A2A (lungo only) | Yes |
+| `tests/integration/` | Docker-compose session; no LLM | Yes |
+| `tests/integration_llm/` | Docker + LLM credentials | No (local manual) |
+
+### Per-project CI pytest paths
+
+| Project | `test_paths` |
+|---------|--------------|
+| corto | `tests/unit tests/integration` |
+| lungo | `tests/unit tests/live tests/integration` |
+| recruiter | `tests/unit tests/integration` |
+
+CI always passes explicit paths (never bare `pytest`, which would collect `integration_llm/` via `testpaths = ["tests"]`).
+
+The reusable job sets `WORKFLOW_API_KEY` for lungo live tests (not a repository secret).
+
+Local commands:
+
+```bash
+# CI-equivalent (no secrets)
+cd coffeeAGNTCY/coffee_agents/corto && uv run pytest tests/unit tests/integration -q
+cd coffeeAGNTCY/coffee_agents/lungo && uv run pytest tests/unit tests/live tests/integration -q
+cd coffeeAGNTCY/coffee_agents/recruiter && uv run pytest tests/unit tests/integration -q
+
+# LLM (local only, needs .env)
+cd coffeeAGNTCY/coffee_agents/lungo && uv run pytest tests/integration_llm -q
+```
+
+Do not run `pytest tests/` as a single full-suite invocation when both `integration/` and `integration_llm/` exist — session fixtures may load twice via `pytest_plugins`.
+
+### Branch protection
+
+| Remove (legacy) | Add (required on PRs) |
+|-----------------|----------------------|
+| `integration-tests-*` | `tests / *` |
+| `fast / *`, `integration / *` | `tests / *` |
+
+### Concurrency
+
+**`tests / *`** jobs cancel in-progress runs on new pushes (`cancel-in-progress: true`).
+
+### Re-enabling LLM CI (future)
+
+When policy allows, add a separate workflow job that runs `pytest tests/integration_llm` with secrets on trusted triggers. The directory layout is already in place.
+
+### workflow_call inputs
+
+| Input | Description |
+|-------|-------------|
+| `test_corto`, `test_lungo`, `test_recruiter` | Subproject toggles (workflow_call / dispatch only) |
+| `pip_overrides`, `pip_constraints`, `docker_overrides` | Dependency and image overrides |
 
 ## test-reusable
 
-Reusable job that runs `pytest` via `uv` for a single project directory. Exposes inputs for dependency and Docker image overrides.
-
-Inputs:
+Runs `pytest` via `uv` for a single project directory and explicit path list.
 
 | Input | Description |
 |-------|-------------|
 | `project_dir` | Path to the project directory to test (required) |
-| `pip_overrides` | PEP 508 specs (one per line) forced into the lock (e.g. `httpx==0.27.2`) |
-| `pip_constraints` | Constraint lines applied during resolution (e.g. `grpcio<1.65`) |
+| `test_paths` | Space-separated pytest paths, e.g. `tests/unit tests/integration` (required) |
+| `pip_overrides` | PEP 508 specs (one per line) forced into the lock |
+| `pip_constraints` | Constraint lines applied during resolution |
 | `docker_overrides` | Lines `service=image[:tag]` to patch docker-compose service images |
 
 Example caller (see `version-override-test.yaml`):
@@ -93,7 +152,6 @@ Example caller (see `version-override-test.yaml`):
 jobs:
   integration:
     uses: <org>/<repo>/.github/workflows/test.yaml@<ref>
-    secrets: inherit
     with:
       pip_overrides: |
         httpx==0.27.2
@@ -109,7 +167,7 @@ Runs frontend checks (TypeScript typecheck, ESLint, Prettier via `npm run check`
 
 ## version-override-test
 
-Demonstrates how to pin or constrain dependencies and override container images when calling the reusable test workflow.
+Demonstrates how to pin or constrain dependencies and override container images when calling the reusable test workflow. Runs the no-secrets directory suites only (no LLM tests in CI).
 
 ## docs
 

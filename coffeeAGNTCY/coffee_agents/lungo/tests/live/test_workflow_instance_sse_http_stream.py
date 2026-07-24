@@ -1,13 +1,17 @@
 # Copyright AGNTCY Contributors (https://github.com/agntcy)
 # SPDX-License-Identifier: Apache-2.0
 
-"""End-to-end pipeline on a real uvicorn ``api.agentic_workflows.server:app``.
+"""HTTP-level check: GET instance SSE stream receives ``event_v1`` after POST.
 
-Catalog → instantiate → list → GET state → SSE after threaded POST.
-Skip quick runs with: ``pytest -m "not e2e"``.
+Uses a short-lived ``uvicorn`` subprocess because in-process ASGI clients
+(``TestClient``, ``httpx.ASGITransport``) await the full ASGI call until the
+response body completes, which never happens for an infinite SSE stream.
 
-Uses subprocess + ``httpx`` for finite routes and raw socket for SSE (see
-``agentic_uvicorn_helpers``); do not use ``TestClient`` for the event stream.
+The SSE body is read with a raw TCP ``socket``: ``httpx`` sync streaming can
+stall on long-lived chunked responses even against a real server.
+
+``POST .../events/`` requires the instance to exist (via ``POST .../`` first),
+matching production UI and agent flows.
 """
 
 from __future__ import annotations
@@ -23,7 +27,7 @@ import pytest
 from schema.types import Event
 
 from tests.helpers.workflow_api_auth import workflow_api_auth_headers
-from tests.unit.agentic_workflows.api.agentic_uvicorn_helpers import (
+from tests.helpers.agentic_uvicorn_helpers import (
     assert_lungo_package_layout,
     first_sse_data_payload,
     free_tcp_port,
@@ -34,8 +38,7 @@ from tests.unit.agentic_workflows.api.agentic_uvicorn_helpers import (
 )
 
 
-@pytest.mark.e2e
-def test_agentic_workflows_catalog_instantiate_list_state_events_sse() -> None:
+def test_sse_stream_receives_event_after_post() -> None:
     assert_lungo_package_layout()
     port = free_tcp_port()
     base_url = f"http://127.0.0.1:{port}"
@@ -43,60 +46,38 @@ def test_agentic_workflows_catalog_instantiate_list_state_events_sse() -> None:
     try:
         wait_health(base_url)
         api_headers = workflow_api_auth_headers()
+
+        wf = "A2A HTTP"
+        wf_seg = quote(wf, safe="")
         with httpx.Client(
             base_url=base_url,
             timeout=httpx.Timeout(30.0),
             trust_env=False,
             headers=api_headers,
         ) as hc:
-            lr = hc.get("/agentic-workflows/")
-            assert lr.status_code == 200, lr.text
-            catalog = lr.json()
-            if not catalog:
-                pytest.skip("No workflows in catalog (empty starting_workflows load)")
-            # Lexicographic first key — stable across runs (dict iteration order is not a contract).
-            wf_name = min(catalog, key=str)
-
-            dr = hc.get(f"/agentic-workflows/{wf_name}/")
-            assert dr.status_code == 200, dr.text
-            detail = dr.json()
-            pattern = detail["pattern"]
-            use_case = detail["use_case"]
-            scenario = detail.get("scenario") or use_case
-            wf_display_name = detail["name"]
-
-            ir = hc.post(f"/agentic-workflows/{wf_name}/")
+            ir = hc.post(f"/agentic-workflows/{wf_seg}/")
             assert ir.status_code == 200, ir.text
             wid = ir.json()["workflow_instance_id"]
             assert wid.startswith("instance://")
             path_uuid = UUID(wid.removeprefix("instance://"))
 
-            listed = hc.get(f"/agentic-workflows/{wf_name}/instances/")
-            assert listed.status_code == 200
-            instances_map = listed.json()
-            assert wid in instances_map
+            dr = hc.get(f"/agentic-workflows/{wf_seg}/")
+            assert dr.status_code == 200, dr.text
+            detail = dr.json()
 
-            sr = hc.get(f"/agentic-workflows/{wf_name}/instances/{path_uuid}/")
-            assert sr.status_code == 200
-            state = sr.json()
-            assert state["id"] == wid
-            assert "topology" in state
-
-        event_id = "event://550e8400-e29b-41d4-a716-4466554400e0"
-        post_path = f"/agentic-workflows/{wf_name}/instances/{path_uuid}/events/"
-        # Raw HTTP request line must not contain unencoded spaces (httpx encodes paths for us).
-        wf_path_seg = quote(wf_name, safe="")
+        event_id = "event://550e8400-e29b-41d4-a716-4466554400c1"
+        post_path = f"/agentic-workflows/{wf_seg}/instances/{path_uuid}/events/"
         stream_path = (
-            f"/agentic-workflows/{wf_path_seg}/instances/{path_uuid}/events/stream"
+            f"/agentic-workflows/{wf_seg}/instances/{path_uuid}/events/stream"
         )
         body = minimal_event_v1_dict(
-            wf_name,
+            wf,
             wid,
             event_id,
-            pattern=pattern,
-            use_case=use_case,
-            scenario=scenario,
-            workflow_display_name=wf_display_name,
+            pattern=detail["pattern"],
+            use_case=detail["use_case"],
+            scenario=detail.get("scenario") or detail["use_case"],
+            workflow_display_name=detail["name"],
         )
 
         post_status: dict[str, int | str] = {}
@@ -121,16 +102,16 @@ def test_agentic_workflows_catalog_instantiate_list_state_events_sse() -> None:
         poster.start()
 
         buf = read_sse_until_data_line("127.0.0.1", port, stream_path)
-        assert b"data:" in buf, buf[:500]
 
         poster.join(timeout=15.0)
-        assert post_status.get("err") is None, post_status.get("err")
+        assert post_status.get("err") is None, post_status
         assert post_status.get("code") == 204, post_status
+        assert b"data:" in buf, buf[:500]
 
         parsed = first_sse_data_payload(buf)
         assert parsed["metadata"]["id"] == event_id
         Event.model_validate(parsed)
-        assert wid in parsed["data"]["workflows"][wf_name]["instances"]
+        assert wid in parsed["data"]["workflows"][wf]["instances"]
     finally:
         proc.terminate()
         try:

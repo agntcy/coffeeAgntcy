@@ -1,4 +1,5 @@
-name: Integration Tests
+name: Python Tests
+
 on:
   push:
     branches:
@@ -11,6 +12,10 @@ on:
       - '!coffeeAGNTCY/coffee_agents/*/docs/**'
       - '!coffeeAGNTCY/coffee_agents/corto/exchange/frontend/**'
       - '!coffeeAGNTCY/coffee_agents/lungo/frontend/**'
+      - '.github/workflows/test.yaml'
+      - '.github/workflows/test-reusable.yaml'
+      - '.github/workflows/test-subprojects-reusable.yaml'
+      - '.github/actions/check-paths-have-changes/**'
       - '.dockerignore'
   pull_request:
     paths:
@@ -23,6 +28,7 @@ on:
       - '!coffeeAGNTCY/coffee_agents/lungo/frontend/**'
       - '.github/workflows/test.yaml'
       - '.github/workflows/test-reusable.yaml'
+      - '.github/workflows/test-subprojects-reusable.yaml'
       - '.github/actions/check-paths-have-changes/**'
       - '.dockerignore'
   workflow_call:
@@ -90,138 +96,88 @@ on:
         type: boolean
         default: true
 
-env:
-  CORTO_DIR: coffeeAGNTCY/coffee_agents/corto
-  LUNGO_DIR: coffeeAGNTCY/coffee_agents/lungo
-  RECRUITER_DIR: coffeeAGNTCY/coffee_agents/recruiter
-
 jobs:
   subprojects-to-test:
+    uses: ./.github/workflows/test-subprojects-reusable.yaml
+    with:
+      test_corto: ${{ inputs.test_corto }}
+      test_lungo: ${{ inputs.test_lungo }}
+      test_recruiter: ${{ inputs.test_recruiter }}
+
+  tests-corto:
+    name: tests / corto
+    needs: subprojects-to-test
+    concurrency:
+      group: python-tests-corto-${{ github.workflow }}-${{ github.ref }}
+      cancel-in-progress: true
+    if: needs.subprojects-to-test.outputs.test_corto == 'true'
+    uses: ./.github/workflows/test-reusable.yaml
+    with:
+      project_dir: coffeeAGNTCY/coffee_agents/corto
+      test_paths: tests/unit tests/integration
+      pip_overrides: ${{ inputs.pip_overrides }}
+      pip_constraints: ${{ inputs.pip_constraints }}
+      docker_overrides: ${{ inputs.docker_overrides }}
+
+  tests-corto-path-skip:
+    name: tests / corto
+    needs: subprojects-to-test
+    if: |
+      needs.subprojects-to-test.outputs.test_corto != 'true' &&
+      (github.event_name == 'push' || github.event_name == 'pull_request')
     runs-on: ubuntu-latest
-    outputs:
-      test_corto: ${{ steps.choose-subprojects.outputs.test_corto }}
-      test_lungo: ${{ steps.choose-subprojects.outputs.test_lungo }}
-      test_recruiter: ${{ steps.choose-subprojects.outputs.test_recruiter }}
-    defaults:
-      run:
-        shell: bash
-    env:
-      WORKFLOW_FILES_LIST_JSON: '[".github/workflows/test.yaml", ".github/workflows/test-reusable.yaml", ".github/actions/check-paths-have-changes"]'
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v6
-        with:
-          fetch-depth: 0
+      - name: No corto path changes
+        run: echo "tests / corto satisfied without running tests (no corto path changes)."
 
-      - name: Log event info
-        run: |
-          echo "event_name=${{ github.event_name }}"
-          echo "ref=${{ github.ref }}"
-          echo "ref_name=${{ github.ref_name }}"
-
-      - name: Log call or dispatch inputs
-        if: ${{ github.event_name == 'workflow_call' || github.event_name == 'workflow_dispatch' }}
-        run: |
-          echo "pip_overrides=${{ inputs.pip_overrides }}"
-          echo "pip_constraints=${{ inputs.pip_constraints }}"
-          echo "docker_overrides=${{ inputs.docker_overrides }}"
-          echo "test_corto=${{ inputs.test_corto }}"
-          echo "test_lungo=${{ inputs.test_lungo }}"
-
-      - name: Prepare subproject paths JSON lists
-        if: ${{ github.event_name == 'pull_request' }}
-        id: prepare-path-lists
-        run: |
-          paths_json_corto=$(echo $WORKFLOW_FILES_LIST_JSON | jq -c -r --arg new_val "$CORTO_DIR" '[$new_val] + .')
-          echo "paths_json_corto=$paths_json_corto" | tee -a $GITHUB_OUTPUT
-          
-          paths_json_lungo=$(echo $WORKFLOW_FILES_LIST_JSON | jq -c -r --arg new_val "$LUNGO_DIR" '[$new_val] + .')
-          echo "paths_json_lungo=$paths_json_lungo" | tee -a $GITHUB_OUTPUT
-
-          paths_json_recruiter=$(echo $WORKFLOW_FILES_LIST_JSON | jq -c -r --arg new_val "$RECRUITER_DIR" '[$new_val] + .')
-          echo "paths_json_recruiter=$paths_json_recruiter" | tee -a $GITHUB_OUTPUT
-
-      - name: Check paths have changes for Corto
-        if: ${{ github.event_name == 'pull_request' }}
-        id: check-paths-corto
-        uses: ./.github/actions/check-paths-have-changes
-        with:
-          base_sha: ${{ github.event.pull_request.base.sha }}
-          head_sha: ${{ github.event.pull_request.head.sha }}
-          paths_json_list: ${{ steps.prepare-path-lists.outputs.paths_json_corto }}
-
-      - name: Check paths have changes for Lungo
-        if: ${{ github.event_name == 'pull_request' }}
-        id: check-paths-lungo
-        uses: ./.github/actions/check-paths-have-changes
-        with:
-          base_sha: ${{ github.event.pull_request.base.sha }}
-          head_sha: ${{ github.event.pull_request.head.sha }}
-          paths_json_list: ${{ steps.prepare-path-lists.outputs.paths_json_lungo }}
-
-      - name: Check paths have changes for Recruiter
-        if: ${{ github.event_name == 'pull_request' }}
-        id: check-paths-recruiter
-        uses: ./.github/actions/check-paths-have-changes
-        with:
-          base_sha: ${{ github.event.pull_request.base.sha }}
-          head_sha: ${{ github.event.pull_request.head.sha }}
-          paths_json_list: ${{ steps.prepare-path-lists.outputs.paths_json_recruiter }}
-
-      - name: Determine test choices for subprojects
-        id: choose-subprojects
-        run: |
-          test_corto=false
-          test_lungo=false
-          test_recruiter=false
-
-          if [[ "${{ github.event_name }}" == "push" ]]; then
-            test_corto=true
-            test_lungo=true
-            test_recruiter=true
-          elif [[ "${{ github.event_name }}" == "workflow_call" || "${{ github.event_name }}" == "workflow_dispatch" ]]; then
-            test_corto=${{ inputs.test_corto }}
-            test_lungo=${{ inputs.test_lungo }}
-            test_recruiter=${{ inputs.test_recruiter }}
-          elif [[ "${{ github.event_name }}" == "pull_request" ]]; then
-            test_corto=${{ steps.check-paths-corto.outputs.changed }}
-            test_lungo=${{ steps.check-paths-lungo.outputs.changed }}
-            test_recruiter=${{ steps.check-paths-recruiter.outputs.changed }}
-          fi
-
-          echo "test_corto=$test_corto" | tee -a $GITHUB_OUTPUT
-          echo "test_lungo=$test_lungo" | tee -a $GITHUB_OUTPUT
-          echo "test_recruiter=$test_recruiter" | tee -a $GITHUB_OUTPUT
-
-  integration-tests-corto:
+  tests-lungo:
+    name: tests / lungo
     needs: subprojects-to-test
-    if: ${{ needs.subprojects-to-test.outputs.test_corto == 'true' }}
+    concurrency:
+      group: python-tests-lungo-${{ github.workflow }}-${{ github.ref }}
+      cancel-in-progress: true
+    if: needs.subprojects-to-test.outputs.test_lungo == 'true'
     uses: ./.github/workflows/test-reusable.yaml
     with:
-      project_dir: coffeeAGNTCY/coffee_agents/corto # cannot access env context here
+      project_dir: coffeeAGNTCY/coffee_agents/lungo
+      test_paths: tests/unit tests/live tests/integration
       pip_overrides: ${{ inputs.pip_overrides }}
       pip_constraints: ${{ inputs.pip_constraints }}
       docker_overrides: ${{ inputs.docker_overrides }}
-    secrets: inherit
 
-  integration-tests-lungo:
+  tests-lungo-path-skip:
+    name: tests / lungo
     needs: subprojects-to-test
-    if: ${{ needs.subprojects-to-test.outputs.test_lungo == 'true' }}
+    if: |
+      needs.subprojects-to-test.outputs.test_lungo != 'true' &&
+      (github.event_name == 'push' || github.event_name == 'pull_request')
+    runs-on: ubuntu-latest
+    steps:
+      - name: No lungo path changes
+        run: echo "tests / lungo satisfied without running tests (no lungo path changes)."
+
+  tests-recruiter:
+    name: tests / recruiter
+    needs: subprojects-to-test
+    concurrency:
+      group: python-tests-recruiter-${{ github.workflow }}-${{ github.ref }}
+      cancel-in-progress: true
+    if: needs.subprojects-to-test.outputs.test_recruiter == 'true'
     uses: ./.github/workflows/test-reusable.yaml
     with:
-      project_dir: coffeeAGNTCY/coffee_agents/lungo # cannot access env context here
+      project_dir: coffeeAGNTCY/coffee_agents/recruiter
+      test_paths: tests/unit tests/integration
       pip_overrides: ${{ inputs.pip_overrides }}
       pip_constraints: ${{ inputs.pip_constraints }}
       docker_overrides: ${{ inputs.docker_overrides }}
-    secrets: inherit
 
-  integration-tests-recruiter:
+  tests-recruiter-path-skip:
+    name: tests / recruiter
     needs: subprojects-to-test
-    if: ${{ needs.subprojects-to-test.outputs.test_recruiter == 'true' }}
-    uses: ./.github/workflows/test-reusable.yaml
-    with:
-      project_dir: coffeeAGNTCY/coffee_agents/recruiter # cannot access env context here
-      pip_overrides: ${{ inputs.pip_overrides }}
-      pip_constraints: ${{ inputs.pip_constraints }}
-      docker_overrides: ${{ inputs.docker_overrides }}
-    secrets: inherit
+    if: |
+      needs.subprojects-to-test.outputs.test_recruiter != 'true' &&
+      (github.event_name == 'push' || github.event_name == 'pull_request')
+    runs-on: ubuntu-latest
+    steps:
+      - name: No recruiter path changes
+        run: echo "tests / recruiter satisfied without running tests (no recruiter path changes)."

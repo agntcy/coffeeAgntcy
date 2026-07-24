@@ -464,3 +464,4 @@ def publish_sample_agent_record():
         except FileNotFoundError:
             print("Warning: dirctl not found, skipping cleanup")
             break
+

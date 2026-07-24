@@ -3,7 +3,7 @@
 
 """Integration tests for response and tool caching.
 
-Run with: pytest tests/integration/test_caching.py -v
+Run with: pytest tests/integration_llm/test_caching.py -v
 """
 
 import asyncio
