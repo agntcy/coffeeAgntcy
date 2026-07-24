@@ -131,6 +131,15 @@ export function buildAgenticWorkflowsDocumentationRequest(
   )
 }
 
+export function buildAgenticWorkflowsPatternChatRequest(
+  patternName: string,
+): HttpRequestTarget {
+  return joinHttpRequest(
+    getAgenticWorkflowsApiUrl(),
+    LUNGO_FRONTEND_URLS.apiPaths.agenticWorkflowsPatternChat(patternName),
+  )
+}
+
 export function buildAgenticWorkflowsInstantiateRequest(
   workflowName: string,
   baseUrl?: string,

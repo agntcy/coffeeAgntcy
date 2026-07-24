@@ -16,7 +16,7 @@ import {
 import Close from "@mui/icons-material/Close"
 import { PolicyData } from "./types"
 import { CustomNodeData } from "../Elements/types"
-import { fetchPolicyDetails } from "./IdentityApi"
+import { fetchPolicyDetails, policyDetailsRequest } from "./IdentityApi"
 import { reportRequestError } from "@/errors/request"
 import { LoadingSpinner } from "@/components/loading"
 import { modalDialogContentSx } from "@/components/modalDialogContentSx"
@@ -47,13 +47,14 @@ const PolicyDetailsModal: React.FC<PolicyDetailsModalProps> = ({
   const fetchPolicyDetailsData = useCallback(async () => {
     setLoading(true)
     setError(null)
-
     try {
       const data = await fetchPolicyDetails(nodeData)
       setPolicyData(data)
-    } catch (err) {
-      // Modal boundary label; HTTP route is identityAppsPolicies — see urls.ts.
-      const httpError = reportRequestError("identity/policy-details", err)
+    } catch (error) {
+      const httpError = reportRequestError(
+        policyDetailsRequest(nodeData).endpointLabel,
+        error,
+      )
       setError(httpError.message)
     } finally {
       setLoading(false)

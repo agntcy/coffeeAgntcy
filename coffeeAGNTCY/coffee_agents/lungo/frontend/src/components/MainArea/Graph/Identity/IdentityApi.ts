@@ -10,6 +10,7 @@ import {
 import type { CustomNodeData } from "@/components/MainArea/Graph/Elements/types"
 import { fetchJson } from "@/api/http"
 import { buildIdentityBadgeRequest, buildIdentityPolicyRequest } from "@/urls"
+import type { HttpRequestTarget } from "@/urls"
 import { resolveAgentSlug } from "@/utils/resolveAgentSlug"
 import { logger } from "@/utils/logger"
 
@@ -20,12 +21,24 @@ const getSlugFromNodeData = (nodeData: CustomNodeData): string => {
   return resolveAgentSlug(nodeData, "identity")
 }
 
+/** Same target as {@link fetchBadgeDetails} — for `reportRequestError` in modal catch. */
+export function badgeDetailsRequest(
+  nodeData: CustomNodeData,
+): HttpRequestTarget {
+  return buildIdentityBadgeRequest(getSlugFromNodeData(nodeData))
+}
+
+/** Same target as {@link fetchPolicyDetails} — for `reportRequestError` in modal catch. */
+export function policyDetailsRequest(
+  nodeData: CustomNodeData,
+): HttpRequestTarget {
+  return buildIdentityPolicyRequest(getSlugFromNodeData(nodeData))
+}
+
 export const fetchBadgeDetails = async (
   nodeData: CustomNodeData,
 ): Promise<BadgeData> => {
-  const slug = getSlugFromNodeData(nodeData)
-  const request = buildIdentityBadgeRequest(slug)
-
+  const request = badgeDetailsRequest(nodeData)
   return fetchJson<BadgeData>(request.url, {
     endpointLabel: request.endpointLabel,
     timeoutMs: IDENTITY_REQUEST_TIMEOUT_MS,
@@ -38,9 +51,7 @@ export const fetchBadgeDetails = async (
 export const fetchPolicyDetails = async (
   nodeData: CustomNodeData,
 ): Promise<PolicyData> => {
-  const slug = getSlugFromNodeData(nodeData)
-  const request = buildIdentityPolicyRequest(slug)
-
+  const request = policyDetailsRequest(nodeData)
   return fetchJson<PolicyData>(request.url, {
     endpointLabel: request.endpointLabel,
     timeoutMs: IDENTITY_REQUEST_TIMEOUT_MS,

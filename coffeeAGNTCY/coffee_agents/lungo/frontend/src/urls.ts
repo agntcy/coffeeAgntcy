@@ -41,12 +41,6 @@ export function apiRoute(path: string, endpointLabel: string = path): ApiRoute {
  *   SSE reconnect exhaustion after repeated stream failures.
  * - `agentic-workflows/refetch-topology` — `useWorkflowGraphTopologySync.ts`
  *   Topology refetch exhaustion after debounced retries.
- * - `identity/badge-details` — `BadgeDetailsModal.tsx`
- *   Modal-level reporting; HTTP traffic uses `identityAppsBadge(slug)`.
- * - `identity/policy-details` — `PolicyDetailsModal.tsx`
- *   Modal-level reporting; HTTP traffic uses `identityAppsPolicies(slug)`.
- * - `directory/oasf-record` — `OasfRecordModal.tsx`
- *   Modal-level reporting; HTTP traffic uses `agentsOasf(slug)`.
  */
 
 /** Relative API paths appended to pattern-specific or agentic-workflows bases. */
@@ -71,6 +65,7 @@ export type LungoFrontendApiPaths = {
     instanceUuid: string,
   ) => ApiRoute
   readonly agenticWorkflowsDocumentation: (workflowName: string) => ApiRoute
+  readonly agenticWorkflowsPatternChat: (patternName: string) => ApiRoute
 }
 
 /** URLs, env-backed config, and static link catalogs for the Lungo frontend. */
@@ -151,6 +146,10 @@ export const LUNGO_FRONTEND_URLS = {
     agenticWorkflowsDocumentation: (workflowName: string): ApiRoute => {
       const path = encodeWorkflowPathSegment(workflowName)
       return apiRoute(`/agentic-workflows/${path}/documentation/`)
+    },
+    agenticWorkflowsPatternChat: (patternName: string): ApiRoute => {
+      const segment = encodeWorkflowPathSegment(patternName)
+      return apiRoute(`/patterns/${segment}/chat`)
     },
   } satisfies LungoFrontendApiPaths,
 
@@ -327,6 +326,7 @@ export {
   buildAgenticWorkflowsCatalogRequest,
   buildAgenticWorkflowsCatalogUrl,
   buildAgenticWorkflowsDocumentationRequest,
+  buildAgenticWorkflowsPatternChatRequest,
   buildAgenticWorkflowsInstantiateRequest,
   buildAgenticWorkflowsInstanceRequest,
   buildAgenticWorkflowsInstanceSseRequest,

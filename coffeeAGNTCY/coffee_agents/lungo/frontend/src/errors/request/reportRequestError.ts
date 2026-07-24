@@ -50,6 +50,9 @@ function buildLogPayload(
 /**
  * Log a failed HTTP request at feature boundaries.
  * Uses `logger` in dev and redacted `unsafeLogger` in production.
+ *
+ * Pass the same `endpointLabel` as the `HttpRequestTarget` used for the fetch
+ * (from `@/urls` builders or `apiPaths`).
  */
 export function reportRequestError(
   endpointLabel: string,
@@ -57,15 +60,16 @@ export function reportRequestError(
   context?: ReportRequestErrorContext,
 ): HttpError {
   const httpError = normalizeRequestError(endpointLabel, error)
+  const logLabel = httpError.endpointLabel ?? endpointLabel
   const log = env.dev ? logger : unsafeLogger
 
-  log.error(`API Error - ${endpointLabel}`, buildLogPayload(httpError, context))
+  log.error(`API Error - ${logLabel}`, buildLogPayload(httpError, context))
 
   if (context?.userMessage) {
     reportUiError({
       title: "Request failed",
       message: context.userMessage,
-      source: endpointLabel,
+      source: logLabel,
     })
   }
 

@@ -5,8 +5,9 @@
 
 import { useCallback, useEffect, useRef } from "react"
 import { fetchNdjsonStream, isHttpError } from "@/api/http"
-import { getAgenticWorkflowsApiUrl } from "@/urls"
 import { agenticWorkflowsAuthHeaders } from "@/api/agenticWorkflowsClient"
+import { reportRequestError } from "@/errors/request"
+import { buildAgenticWorkflowsPatternChatRequest } from "@/urls"
 
 export class PatternChatNotFoundError extends Error {
   constructor(patternName: string) {
@@ -107,20 +108,19 @@ export const usePatternChatAPI = (): UsePatternChatAPIReturn => {
       const controller = new AbortController()
       abortRef.current = controller
 
-      const url = `${getAgenticWorkflowsApiUrl()}/patterns/${encodeURIComponent(patternName)}/chat`
-      const endpointLabel = `/patterns/${patternName}/chat`
+      const chatRequest = buildAgenticWorkflowsPatternChatRequest(patternName)
       let sawDone = false
       let streamError: Error | null = null
 
       try {
-        await fetchNdjsonStream(url, {
+        await fetchNdjsonStream(chatRequest.url, {
           method: "POST",
           headers: {
             ...agenticWorkflowsAuthHeaders(),
           },
           body: JSON.stringify({ session_id: sessionId, message }),
           signal: controller.signal,
-          endpointLabel,
+          endpointLabel: chatRequest.endpointLabel,
           onLine: (rawFrame, line) => {
             if (streamError) return "stop"
 
@@ -145,22 +145,27 @@ export const usePatternChatAPI = (): UsePatternChatAPIReturn => {
         })
 
         if (streamError) {
+          reportRequestError(chatRequest.endpointLabel, streamError)
           onError(streamError)
           return
         }
 
         if (!sawDone) {
-          onError(
-            new PatternChatTransportError("Stream ended without a done frame"),
+          const err = new PatternChatTransportError(
+            "Stream ended without a done frame",
           )
+          reportRequestError(chatRequest.endpointLabel, err)
+          onError(err)
         }
       } catch (err) {
         if (err instanceof DOMException && err.name === "AbortError") return
         if (isHttpError(err) && err.status === 404) {
+          reportRequestError(chatRequest.endpointLabel, err)
           onError(new PatternChatNotFoundError(patternName))
           return
         }
         if (isHttpError(err)) {
+          reportRequestError(chatRequest.endpointLabel, err)
           onError(
             new PatternChatTransportError(
               `HTTP ${err.status ?? "?"} - ${err.message}`,
@@ -168,6 +173,7 @@ export const usePatternChatAPI = (): UsePatternChatAPIReturn => {
           )
           return
         }
+        reportRequestError(chatRequest.endpointLabel, err)
         onError(
           new PatternChatTransportError(
             err instanceof Error ? err.message : String(err),

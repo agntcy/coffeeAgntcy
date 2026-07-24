@@ -10,6 +10,8 @@ import {
   fetchWorkflowDocumentation,
   WorkflowDocumentationNotFoundError,
 } from "@/utils/agenticWorkflowsApi"
+import { reportRequestError } from "@/errors/request"
+import { buildAgenticWorkflowsDocumentationRequest } from "@/urls"
 
 export function useAppPatternReference() {
   const [selectedReferencePattern, setSelectedReferencePattern] = useState<
@@ -72,10 +74,15 @@ export function useAppPatternReference() {
             errorMessage: null,
           })
         } else {
+          const httpError = reportRequestError(
+            buildAgenticWorkflowsDocumentationRequest(selectedReferencePattern)
+              .endpointLabel,
+            err,
+          )
           setPatternDocState({
             status: "error",
             documentation: null,
-            errorMessage: err instanceof Error ? err.message : String(err),
+            errorMessage: httpError.message,
           })
         }
       })

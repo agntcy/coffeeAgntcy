@@ -18,7 +18,7 @@ import {
 import Close from "@mui/icons-material/Close"
 import { getDirectoryServerUrl, getDirectoryVersion } from "@/urls"
 import type { ChatApiTarget } from "@/utils/patternUtils"
-import { fetchOasfRecord, OasfRecord } from "./DirectoryApi"
+import { fetchOasfRecord, oasfRecordRequest, OasfRecord } from "./DirectoryApi"
 import { CustomNodeData } from "../Elements/types"
 import { reportRequestError } from "@/errors/request"
 import { LoadingSpinner } from "@/components/loading"
@@ -83,9 +83,11 @@ const OasfRecordModal: React.FC<OasfRecordModalProps> = ({
     try {
       const data = await fetchOasfRecord(nodeData, chatApiTarget)
       setRecord(data)
-    } catch (err) {
-      // Modal boundary label; HTTP route is agentsOasf — see urls.ts.
-      const httpError = reportRequestError("directory/oasf-record", err)
+    } catch (error) {
+      const httpError = reportRequestError(
+        oasfRecordRequest(nodeData, chatApiTarget).endpointLabel,
+        error,
+      )
       setError(httpError.message)
     } finally {
       setLoading(false)

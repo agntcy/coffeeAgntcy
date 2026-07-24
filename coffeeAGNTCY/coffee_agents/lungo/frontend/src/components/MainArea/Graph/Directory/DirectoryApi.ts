@@ -4,7 +4,7 @@
  **/
 
 import { fetchJson } from "@/api/http"
-import { buildAgentsOasfRequest } from "@/urls"
+import { buildAgentsOasfRequest, type HttpRequestTarget } from "@/urls"
 import { type ChatApiTarget } from "@/utils/patternUtils"
 import type { CustomNodeData } from "../Elements/types"
 import { getOasfSlugFromNodeData } from "@/utils/agenticTopologyIdentityUiMap"
@@ -34,6 +34,16 @@ function oasfCacheKey(target: ChatApiTarget, slug: string): string {
   return `${target}\0${slug}`
 }
 
+/** Same target as {@link fetchOasfRecord} — for `reportRequestError` in modal catch. */
+export function oasfRecordRequest(
+  nodeData: NodeDataForOasf,
+  chatApiTarget?: ChatApiTarget | null,
+): HttpRequestTarget {
+  const slug = getOasfSlugFromNodeData(nodeData)
+  const target: ChatApiTarget = chatApiTarget ?? "exchange"
+  return buildAgentsOasfRequest(slug, target)
+}
+
 export const fetchOasfRecord = async (
   nodeData: NodeDataForOasf,
   chatApiTarget?: ChatApiTarget | null,
@@ -42,16 +52,15 @@ export const fetchOasfRecord = async (
     return nodeData.oasfRecord
   }
 
-  const slug = getOasfSlugFromNodeData(nodeData)
   const target: ChatApiTarget = chatApiTarget ?? "exchange"
-
+  const slug = getOasfSlugFromNodeData(nodeData)
   const cacheKey = oasfCacheKey(target, slug)
   const cached = oasfFetchCache.get(cacheKey)
   if (cached) {
     return cached
   }
 
-  const request = buildAgentsOasfRequest(slug, target)
+  const request = oasfRecordRequest(nodeData, chatApiTarget)
   const record = await fetchJson<OasfRecord>(request.url, {
     endpointLabel: request.endpointLabel,
     timeoutMs: DIRECTORY_REQUEST_TIMEOUT_MS,

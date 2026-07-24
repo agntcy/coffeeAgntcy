@@ -16,7 +16,7 @@ import {
 import Close from "@mui/icons-material/Close"
 import { BadgeData } from "./types"
 import { CustomNodeData } from "../Elements/types"
-import { fetchBadgeDetails } from "./IdentityApi"
+import { badgeDetailsRequest, fetchBadgeDetails } from "./IdentityApi"
 import { reportRequestError } from "@/errors/request"
 import { LoadingSpinner } from "@/components/loading"
 import { modalDialogContentSx } from "@/components/modalDialogContentSx"
@@ -50,9 +50,11 @@ const BadgeDetailsModal: React.FC<BadgeDetailsModalProps> = ({
     try {
       const data = await fetchBadgeDetails(nodeData)
       setBadgeData(data)
-    } catch (err) {
-      // Modal boundary label; HTTP route is identityAppsBadge — see urls.ts.
-      const httpError = reportRequestError("identity/badge-details", err)
+    } catch (error) {
+      const httpError = reportRequestError(
+        badgeDetailsRequest(nodeData).endpointLabel,
+        error,
+      )
       setError(httpError.message)
     } finally {
       setLoading(false)

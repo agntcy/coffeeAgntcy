@@ -60,6 +60,22 @@ describe("reportRequestError", () => {
     )
   })
 
+  it("logs HttpError.endpointLabel when it differs from the passed label", () => {
+    const error = new HttpError("Not found", {
+      status: 404,
+      endpointLabel: "/identity-apps/shipping-agent/badge",
+    })
+
+    reportRequestError("/identity-apps/fallback/badge", error)
+
+    expect(mockLoggerError).toHaveBeenCalledWith(
+      "API Error - /identity-apps/shipping-agent/badge",
+      expect.objectContaining({
+        endpointLabel: "/identity-apps/shipping-agent/badge",
+      }),
+    )
+  })
+
   it("normalizes unknown errors to HttpError with endpointLabel metadata", () => {
     const result = reportRequestError(
       "/api/workflows",

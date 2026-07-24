@@ -3,7 +3,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { reportRequestError } from "@/errors/request"
 import {
   PatternChatNotFoundError,
   PatternChatTransportError,
@@ -53,7 +52,6 @@ export const streamPatternChat = async ({
         onSettled()
       },
       onError: (err) => {
-        reportRequestError("/patterns/{name}/chat", err)
         const msg =
           err instanceof PatternChatNotFoundError
             ? `No documentation chat available for "${patternName}" yet.`
