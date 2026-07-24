@@ -127,51 +127,51 @@ const OasfRecordModal: React.FC<OasfRecordModalProps> = ({
       <DialogContent dividers sx={modalDialogContentSx}>
         {isDirectoryNode ? (
           <Stack sx={{ width: "100%", gap: 1.5 }}>
-            <Stack sx={{ width: "100%", gap: 1.5 }}>
-              <Box sx={graphModalFieldCardSx}>
-                <Typography
-                  //variant="caption"
-                  sx={{
-                    textTransform: "uppercase",
-                    letterSpacing: "0.06em",
-                  }}
+            <Box sx={graphModalFieldCardSx}>
+              <Stack spacing={1}>
+                <Stack
+                  direction="row"
+                  justifyContent="space-between"
+                  alignItems="flex-start"
+                  gap={2}
                 >
-                  Directory URL
-                </Typography>
-                {directoryUrl ? (
-                  <Link
-                    href={directoryServerUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    sx={{
-                      mt: 1,
-                      display: "block",
-                      wordBreak: "break-all",
-                      typography: "body2",
-                    }}
-                  >
-                    {directoryServerUrl}
-                  </Link>
-                ) : (
-                  <Typography variant="body2">Unavailable</Typography>
-                )}
-              </Box>
+                  <Typography component="span" variant="body2">
+                    Directory URL:
+                  </Typography>
+                  {directoryUrl ? (
+                    <Link
+                      href={directoryServerUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      sx={{
+                        typography: "body2",
+                        wordBreak: "break-all",
+                        textAlign: "right",
+                      }}
+                    >
+                      {directoryServerUrl}
+                    </Link>
+                  ) : (
+                    <Typography component="span" variant="body2">
+                      Unavailable
+                    </Typography>
+                  )}
+                </Stack>
+              </Stack>
+            </Box>
 
-              <Box sx={graphModalFieldCardSx}>
-                <Typography
-                  //variant="caption"
-                  sx={{
-                    textTransform: "uppercase",
-                    letterSpacing: "0.06em",
-                  }}
-                >
-                  Directory Version
-                </Typography>
-                <Typography variant="body2" sx={{ mt: 1 }}>
-                  {directoryVersion || "Unavailable"}
-                </Typography>
-              </Box>
-            </Stack>
+            <Box sx={graphModalFieldCardSx}>
+              <Stack spacing={1}>
+                <Stack direction="row" justifyContent="space-between">
+                  <Typography component="span" variant="body2">
+                    Directory Version:
+                  </Typography>
+                  <Typography component="span" variant="body2">
+                    {directoryVersion || "Unavailable"}
+                  </Typography>
+                </Stack>
+              </Stack>
+            </Box>
           </Stack>
         ) : (
           <LoadingErrorState
