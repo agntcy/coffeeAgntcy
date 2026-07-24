@@ -22,7 +22,7 @@ import { CanvasMode } from "@/types/patternDoc"
 import { usePatternChatAPI } from "@/hooks/usePatternChatAPI"
 import { streamPatternChat } from "./streamPatternChat"
 
-/** Panel expanded/collapsed by the chat header minimize control. */
+/** Scrollable message thread region between header and composer. */
 export const CHAT_MESSAGE_PANEL_ID = "chat-message-panel"
 
 interface ChatAreaProps {
@@ -51,6 +51,8 @@ interface ChatAreaProps {
   canvasMode?: CanvasMode
   selectedReferencePattern?: string | null
   patternChatSessionId?: string | null
+  /** When false, the chat shell sizes to its composer content only. */
+  fillHeight?: boolean
 }
 
 const ChatArea: React.FC<ChatAreaProps> = ({
@@ -79,10 +81,10 @@ const ChatArea: React.FC<ChatAreaProps> = ({
   canvasMode,
   selectedReferencePattern,
   patternChatSessionId,
+  fillHeight = true,
 }) => {
   const [content, setContent] = useState<string>("")
   const [loading, setLoading] = useState<boolean>(false)
-  const [isMinimized, setIsMinimized] = useState<boolean>(false)
   const messagePanelRef = useRef<HTMLDivElement>(null)
   const threadContentRef = useRef<HTMLDivElement>(null)
   const { sendPatternMessage } = usePatternChatAPI()
@@ -90,29 +92,14 @@ const ChatArea: React.FC<ChatAreaProps> = ({
   useScrollPanelOnContentResize(
     messagePanelRef,
     threadContentRef,
-    Boolean(currentUserMessage) && !isMinimized,
+    Boolean(currentUserMessage),
   )
 
-  const handleMinimize = () => {
-    setIsMinimized(true)
-  }
-
-  const handleRestore = () => {
-    setIsMinimized(false)
-  }
-
   const handleSuggestedPromptSelect = (query: string) => {
-    if (isMinimized) {
-      setIsMinimized(false)
-    }
     setContent(query)
   }
 
   const processMessage = async (): Promise<void> => {
-    if (isMinimized) {
-      setIsMinimized(false)
-    }
-
     if (
       canvasMode === CanvasMode.PATTERN_DOC &&
       selectedReferencePattern &&
@@ -173,24 +160,22 @@ const ChatArea: React.FC<ChatAreaProps> = ({
         position: "relative",
         display: "flex",
         width: "100%",
-        height: "100%",
-        maxHeight: "100%",
+        height: fillHeight ? "100%" : "auto",
+        maxHeight: fillHeight ? "100%" : "none",
         minHeight: 0,
         flexDirection: "column",
         boxSizing: "border-box",
         overflow: "hidden",
-        borderTop: "1px solid",
-        borderColor: "divider",
         backgroundColor: (theme) => theme.palette.action.selected,
+        ...(!fillHeight
+          ? { borderTop: "1px solid", borderColor: "divider" }
+          : {}),
       }}
     >
       {currentUserMessage ? (
         <Box sx={{ flexShrink: 0, width: "100%" }}>
           <ChatHeader
-            onMinimize={isMinimized ? handleRestore : handleMinimize}
             onClearConversation={onClearConversation}
-            isMinimized={isMinimized}
-            messagePanelId={CHAT_MESSAGE_PANEL_ID}
             horizontalPadding={chatHorizontalPadding}
           />
         </Box>
@@ -201,12 +186,11 @@ const ChatArea: React.FC<ChatAreaProps> = ({
         id={CHAT_MESSAGE_PANEL_ID}
         role="region"
         aria-label="Chat messages"
-        aria-hidden={isMinimized ? true : undefined}
         sx={{
-          flex: "1 1 auto",
-          minHeight: 0,
+          flex: fillHeight ? "1 1 auto" : "0 0 auto",
+          minHeight: fillHeight ? 0 : undefined,
           width: "100%",
-          overflowY: "auto",
+          overflowY: fillHeight ? "auto" : "visible",
           overflowX: "hidden",
           // Reserve the scrollbar gutter on both edges so the centered thread
           // doesn't shift left when a scrollbar appears (keeps it aligned with
@@ -225,13 +209,12 @@ const ChatArea: React.FC<ChatAreaProps> = ({
             width: "100%",
             px: chatHorizontalPadding,
             py: currentUserMessage ? 1 : 0,
-            display: isMinimized ? "none" : "flex",
+            display: "flex",
           }}
         >
           {currentUserMessage ? (
             <ChatAreaMessageThread
               currentUserMessage={currentUserMessage}
-              isMinimized={isMinimized}
               showProgressTracker={showProgressTracker}
               showAuctionStreaming={showAuctionStreaming}
               showRecruiterStreaming={showRecruiterStreaming}

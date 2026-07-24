@@ -6,12 +6,27 @@
  **/
 
 import React, { useMemo, useRef } from "react"
-import { Group, Panel, useDefaultLayout } from "react-resizable-panels"
+import {
+  Group,
+  Panel,
+  useDefaultLayout,
+  usePanelRef,
+} from "react-resizable-panels"
 import { Box } from "@open-ui-kit/core"
 import { skipLinkSx } from "@/utils/a11ySx"
 import Navigation from "@/components/Navigation/Navigation"
 import CanvasSwitch from "@/components/MainArea/CanvasSwitch"
 import ChatArea from "@/components/Chat/ChatArea"
+import ChatPanelSeparator from "@/components/Chat/ChatPanelSeparator"
+import {
+  CHAT_MAX_SIZE,
+  CHAT_MIN_SIZE,
+  CHAT_PANEL_ID,
+  GRAPH_MIN_SIZE,
+  GRAPH_PANEL_ID,
+  MAIN_VERTICAL_GROUP_ID,
+} from "@/components/Chat/chatPanelLayout"
+import { useChatPanelContentSize } from "@/hooks/useChatPanelContentSize"
 import Sidebar from "@/components/Sidebar/Sidebar"
 import SidebarPanelSeparator from "@/components/Sidebar/SidebarPanelSeparator"
 import {
@@ -101,6 +116,69 @@ const RootPage: React.FC = () => {
     panelIds: [SIDEBAR_PANEL_ID, MAIN_PANEL_ID],
   })
 
+  const hasChatMessages = Boolean(currentUserMessage?.trim())
+  const chatPanelRef = usePanelRef()
+  const { fillHeight: chatPanelFillHeight } = useChatPanelContentSize({
+    enabled: hasChatMessages,
+    chatPanelRef,
+    chatContentRef: chatRef,
+  })
+
+  const {
+    defaultLayout: mainVerticalDefaultLayout,
+    onLayoutChanged: onMainVerticalLayoutChanged,
+  } = useDefaultLayout({
+    id: MAIN_VERTICAL_GROUP_ID,
+    panelIds: hasChatMessages
+      ? [GRAPH_PANEL_ID, CHAT_PANEL_ID]
+      : [GRAPH_PANEL_ID],
+  })
+
+  const chatAreaProps = {
+    isBottomLayout: true as const,
+    canvasMode,
+    selectedReferencePattern,
+    patternChatSessionId,
+    onPatternChatSuccess: () => setAiReplied(true),
+    suggestedPromptsUrl,
+    showProgressTracker:
+      canvasMode !== CanvasMode.PATTERN_DOC && showProgressTracker,
+    showAuctionStreaming:
+      canvasMode !== CanvasMode.PATTERN_DOC && showAuctionStreaming,
+    showRecruiterStreaming:
+      canvasMode !== CanvasMode.PATTERN_DOC && showRecruiterStreaming,
+    showFinalResponse,
+    onStreamComplete: handleStreamComplete,
+    onSenderHighlight: handleSenderHighlight,
+    graphConfig,
+    onSendPrompt: handleSendPrompt,
+    onUserInput: handleUserInput,
+    onApiResponse: handleApiResponse,
+    onClearConversation: handleClearConversation,
+    currentUserMessage,
+    agentResponse,
+    executionKey,
+    isAgentLoading,
+    apiError,
+    chatRef,
+    fillHeight: hasChatMessages ? chatPanelFillHeight : false,
+    auctionState: {
+      events,
+      status,
+      error,
+    },
+    recruiterState: {
+      events: recruiterEvents,
+      status: recruiterStatus,
+      error: recruiterError,
+      sessionId: recruiterSessionId,
+      finalMessage: recruiterFinalMessage,
+      agentRecords: recruiterAgentRecords,
+      evaluationResults: recruiterEvaluationResults,
+      selectedAgent: recruiterSelectedAgent,
+    },
+  }
+
   return (
     <Box
       sx={{
@@ -166,107 +244,107 @@ const RootPage: React.FC = () => {
             >
               <GraphCanvasLayoutContext.Provider value={graphCanvasLayout}>
                 <Box
-                  component="section"
-                  aria-label="Workflow graph"
-                  ref={graphSectionRef}
-                  sx={{
-                    position: "relative",
-                    flex: "1 1 50%",
-                    minHeight: "50%",
-                    minWidth: 0,
-                    overflow: "hidden",
-                  }}
-                >
-                  <CanvasSwitch
-                    canvasMode={canvasMode}
-                    selectedReferencePattern={selectedReferencePattern}
-                    patternDocState={patternDocState}
-                    pattern={selectedPattern}
-                    selectedWorkflowSummary={selectedWorkflowSummary}
-                    workflowCatalogLoading={workflowCatalogLoading}
-                    workflowCatalogError={workflowCatalogError}
-                    onLiveGraphConfig={setLiveGraphConfig}
-                    buttonClicked={buttonClicked}
-                    setButtonClicked={setButtonClicked}
-                    aiReplied={aiReplied}
-                    chatHeight={chatHeightValue}
-                    isExpanded={isExpanded}
-                    groupCommResponseReceived={groupCommResponseReceived}
-                    onNodeHighlight={handleNodeHighlightSetup}
-                    selectedAgentCid={
-                      typeof recruiterSelectedAgent?.cid === "string"
-                        ? recruiterSelectedAgent.cid
-                        : null
-                    }
-                  />
-                </Box>
-                <Box
-                  component="section"
-                  aria-label="Agent chat"
                   sx={{
                     display: "flex",
-                    width: "100%",
-                    flex: "0 1 auto",
-                    flexShrink: 0,
                     flexDirection: "column",
-                    alignItems: "center",
-                    justifyContent: "flex-start",
-                    gap: 0,
-                    p: 0,
-                    maxHeight: "50%",
-                    minWidth: 0,
+                    width: "100%",
+                    height: "100%",
+                    minHeight: 0,
                     overflow: "hidden",
                   }}
                 >
-                  <ChatArea
-                    isBottomLayout={true}
-                    canvasMode={canvasMode}
-                    selectedReferencePattern={selectedReferencePattern}
-                    patternChatSessionId={patternChatSessionId}
-                    onPatternChatSuccess={() => setAiReplied(true)}
-                    suggestedPromptsUrl={suggestedPromptsUrl}
-                    showProgressTracker={
-                      canvasMode !== CanvasMode.PATTERN_DOC &&
-                      showProgressTracker
-                    }
-                    showAuctionStreaming={
-                      canvasMode !== CanvasMode.PATTERN_DOC &&
-                      showAuctionStreaming
-                    }
-                    showRecruiterStreaming={
-                      canvasMode !== CanvasMode.PATTERN_DOC &&
-                      showRecruiterStreaming
-                    }
-                    showFinalResponse={showFinalResponse}
-                    onStreamComplete={handleStreamComplete}
-                    onSenderHighlight={handleSenderHighlight}
-                    graphConfig={graphConfig}
-                    onSendPrompt={handleSendPrompt}
-                    onUserInput={handleUserInput}
-                    onApiResponse={handleApiResponse}
-                    onClearConversation={handleClearConversation}
-                    currentUserMessage={currentUserMessage}
-                    agentResponse={agentResponse}
-                    executionKey={executionKey}
-                    isAgentLoading={isAgentLoading}
-                    apiError={apiError}
-                    chatRef={chatRef}
-                    auctionState={{
-                      events,
-                      status,
-                      error,
-                    }}
-                    recruiterState={{
-                      events: recruiterEvents,
-                      status: recruiterStatus,
-                      error: recruiterError,
-                      sessionId: recruiterSessionId,
-                      finalMessage: recruiterFinalMessage,
-                      agentRecords: recruiterAgentRecords,
-                      evaluationResults: recruiterEvaluationResults,
-                      selectedAgent: recruiterSelectedAgent,
-                    }}
-                  />
+                  <Group
+                    id={MAIN_VERTICAL_GROUP_ID}
+                    orientation="vertical"
+                    defaultLayout={mainVerticalDefaultLayout}
+                    onLayoutChanged={onMainVerticalLayoutChanged}
+                    style={{ flex: 1, minHeight: 0, width: "100%" }}
+                  >
+                    <Panel
+                      id={GRAPH_PANEL_ID}
+                      minSize={hasChatMessages ? GRAPH_MIN_SIZE : undefined}
+                      defaultSize={hasChatMessages ? undefined : "100%"}
+                    >
+                      <Box
+                        component="section"
+                        aria-label="Workflow graph"
+                        ref={graphSectionRef}
+                        sx={{
+                          position: "relative",
+                          width: "100%",
+                          height: "100%",
+                          minWidth: 0,
+                          minHeight: 0,
+                          overflow: "hidden",
+                        }}
+                      >
+                        <CanvasSwitch
+                          canvasMode={canvasMode}
+                          selectedReferencePattern={selectedReferencePattern}
+                          patternDocState={patternDocState}
+                          pattern={selectedPattern}
+                          selectedWorkflowSummary={selectedWorkflowSummary}
+                          workflowCatalogLoading={workflowCatalogLoading}
+                          workflowCatalogError={workflowCatalogError}
+                          onLiveGraphConfig={setLiveGraphConfig}
+                          buttonClicked={buttonClicked}
+                          setButtonClicked={setButtonClicked}
+                          aiReplied={aiReplied}
+                          chatHeight={chatHeightValue}
+                          isExpanded={isExpanded}
+                          groupCommResponseReceived={groupCommResponseReceived}
+                          onNodeHighlight={handleNodeHighlightSetup}
+                          selectedAgentCid={
+                            typeof recruiterSelectedAgent?.cid === "string"
+                              ? recruiterSelectedAgent.cid
+                              : null
+                          }
+                        />
+                      </Box>
+                    </Panel>
+                    {hasChatMessages ? (
+                      <>
+                        <ChatPanelSeparator />
+                        <Panel
+                          id={CHAT_PANEL_ID}
+                          panelRef={chatPanelRef}
+                          minSize={CHAT_MIN_SIZE}
+                          maxSize={CHAT_MAX_SIZE}
+                        >
+                          <Box
+                            component="section"
+                            aria-label="Agent chat"
+                            sx={{
+                              display: "flex",
+                              width: "100%",
+                              height: chatPanelFillHeight ? "100%" : "auto",
+                              minWidth: 0,
+                              minHeight: 0,
+                              flexDirection: "column",
+                              overflow: "hidden",
+                            }}
+                          >
+                            <ChatArea {...chatAreaProps} />
+                          </Box>
+                        </Panel>
+                      </>
+                    ) : null}
+                  </Group>
+                  {!hasChatMessages ? (
+                    <Box
+                      component="section"
+                      aria-label="Agent chat"
+                      sx={{
+                        display: "flex",
+                        width: "100%",
+                        flexShrink: 0,
+                        flexDirection: "column",
+                        overflow: "hidden",
+                      }}
+                    >
+                      <ChatArea {...chatAreaProps} />
+                    </Box>
+                  ) : null}
                 </Box>
               </GraphCanvasLayoutContext.Provider>
             </Box>
