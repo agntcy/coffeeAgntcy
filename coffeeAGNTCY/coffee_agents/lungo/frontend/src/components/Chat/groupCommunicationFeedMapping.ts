@@ -15,8 +15,8 @@ import type { GraphConfig } from "@/utils/graphConfigs"
  * Index signature satisfies @xyflow/react Node<T> constraint (T extends Record<string, unknown>).
  */
 export interface GroupCommNodeDataForMapping extends Record<string, unknown> {
-  label1?: string
-  label2?: string
+  label?: string
+  label_subtitle?: string
   agentName?: string
   farmName?: string
 }
@@ -31,13 +31,13 @@ export function buildSenderToNodeMap(
   graphConfig.nodes.forEach((node: Node<GroupCommNodeDataForMapping>) => {
     const data = node.data
     if (data) {
-      if (data.label1) {
-        map[data.label1] = node.id
-        map[data.label1.toLowerCase()] = node.id
+      if (data.label) {
+        map[data.label] = node.id
+        map[data.label.toLowerCase()] = node.id
       }
-      if (data.label2) {
-        map[data.label2] = node.id
-        map[data.label2.toLowerCase()] = node.id
+      if (data.label_subtitle) {
+        map[data.label_subtitle] = node.id
+        map[data.label_subtitle.toLowerCase()] = node.id
       }
       if (data.agentName) {
         map[data.agentName] = node.id
@@ -48,11 +48,11 @@ export function buildSenderToNodeMap(
         map[data.farmName.toLowerCase()] = node.id
       }
 
-      if (data.label1 === "Buyer") {
+      if (data.label === "Buyer") {
         map["Supervisor"] = node.id
         map["supervisor"] = node.id
       }
-      if (data.label1 === "Tatooine") {
+      if (data.label === "Tatooine") {
         map["Tatooine Farm"] = node.id
         map["tatooine farm"] = node.id
       }
@@ -70,7 +70,7 @@ export function getAllAgentNodeIds(
   return graphConfig.nodes
     .filter(
       (node: Node<GroupCommNodeDataForMapping>) =>
-        node.type === "customNode" && node.data?.label1 !== "Logistics Agent",
+        node.type === "customNode" && node.data?.label !== "Logistics Agent",
     )
     .map((node) => node.id)
 }

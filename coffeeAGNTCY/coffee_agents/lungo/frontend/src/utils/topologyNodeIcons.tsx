@@ -27,8 +27,8 @@ import supervisorIcon from "@/assets/supervisor.png"
 import farmAgentIcon from "@/assets/Grader-Agent.png"
 
 export interface TopologyNodeIconInput {
-  label1?: string
-  label2?: string
+  label?: string
+  label_subtitle?: string
   directoryAgentSlug?: string
 }
 
@@ -74,14 +74,14 @@ function iconKindFromSlug(slug: string): TopologyNodeIconKind | null {
 }
 
 function iconKindFromLabels(
-  label1: string,
-  label2: string,
+  label: string,
+  label_subtitle: string,
 ): TopologyNodeIconKind {
-  const combined = `${label1} ${label2}`.trim()
+  const combined = `${label} ${label_subtitle}`.trim()
 
-  if (label2 === "mcp server" || label1.endsWith("mcp server")) {
-    if (label1.includes("weather")) return TopologyNodeIconKind.WeatherMcp
-    if (label1.includes("payment")) return TopologyNodeIconKind.PaymentMcp
+  if (label_subtitle === "mcp server" || label.endsWith("mcp server")) {
+    if (label.includes("weather")) return TopologyNodeIconKind.WeatherMcp
+    if (label.includes("payment")) return TopologyNodeIconKind.PaymentMcp
     return TopologyNodeIconKind.Default
   }
 
@@ -89,20 +89,20 @@ function iconKindFromLabels(
     return TopologyNodeIconKind.Recruiter
   }
 
-  if (label1 === "directory" || isDirectoryLabel(combined)) {
+  if (label === "directory" || isDirectoryLabel(combined)) {
     return TopologyNodeIconKind.Directory
   }
 
-  if (label2.includes("coffee farm")) return TopologyNodeIconKind.Farm
-  if (label1 === "shipper") return TopologyNodeIconKind.Shipping
-  if (label1 === "accountant") return TopologyNodeIconKind.Accountant
+  if (label_subtitle.includes("coffee farm")) return TopologyNodeIconKind.Farm
+  if (label === "shipper") return TopologyNodeIconKind.Shipping
+  if (label === "accountant") return TopologyNodeIconKind.Accountant
 
   if (
-    label1 === "auction agent" ||
-    (label1 === "auction" && label2.includes("agent")) ||
-    label1 === "buyer" ||
-    label2.includes("buyer") ||
-    label2.includes("logistics agent") ||
+    label === "auction agent" ||
+    (label === "auction" && label_subtitle.includes("agent")) ||
+    label === "buyer" ||
+    label_subtitle.includes("buyer") ||
+    label_subtitle.includes("logistics agent") ||
     combined === "logistics group"
   ) {
     return TopologyNodeIconKind.Supervisor
@@ -119,7 +119,10 @@ export function topologyNodeIconKind(
     const bySlug = iconKindFromSlug(slug)
     if (bySlug) return bySlug
   }
-  return iconKindFromLabels(normalize(input.label1), normalize(input.label2))
+  return iconKindFromLabels(
+    normalize(input.label),
+    normalize(input.label_subtitle),
+  )
 }
 
 function brandedImg(src: string, alt: string): React.ReactNode {

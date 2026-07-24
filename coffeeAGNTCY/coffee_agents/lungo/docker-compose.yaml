@@ -1,8 +1,19 @@
+# IoC (Internet of Cognition) CFN infrastructure, kept in its own file and pulled in here.
+# Its services all live in the `ioc` profile. Enable them by adding `ioc` to COMPOSE_PROFILES
+# (or `--profile ioc`). See ioc/compose.yaml and the IoC section of .env / .env.example.
+include:
+  - ioc/compose.yaml
+
 services:
   brazil-farm-server:
     build:
       context: ../../..
-      dockerfile: coffeeAGNTCY/coffee_agents/lungo/docker/Dockerfile.brazil-farm
+      dockerfile: docker/Dockerfile.python-agent
+      args:
+        PROJECT_PATH: coffeeAGNTCY/coffee_agents/lungo
+        UV_CACHE_ID: lungo
+        APP_NAME: brazil-farm
+        AGENT_SCRIPT: agents/farms/brazil/farm_server.py
     image: ghcr.io/agntcy/coffee-agntcy/brazil-farm:latest
     container_name: brazil-farm-server
     env_file:
@@ -29,7 +40,12 @@ services:
   colombia-farm-server:
     build:
       context: ../../..
-      dockerfile: coffeeAGNTCY/coffee_agents/lungo/docker/Dockerfile.colombia-farm
+      dockerfile: docker/Dockerfile.python-agent
+      args:
+        PROJECT_PATH: coffeeAGNTCY/coffee_agents/lungo
+        UV_CACHE_ID: lungo
+        APP_NAME: colombia-farm
+        AGENT_SCRIPT: agents/farms/colombia/farm_server.py
     image: ghcr.io/agntcy/coffee-agntcy/colombia-farm:latest
     container_name: colombia-farm-server
     env_file:
@@ -58,7 +74,12 @@ services:
   vietnam-farm-server:
     build:
       context: ../../..
-      dockerfile: coffeeAGNTCY/coffee_agents/lungo/docker/Dockerfile.vietnam-farm
+      dockerfile: docker/Dockerfile.python-agent
+      args:
+        PROJECT_PATH: coffeeAGNTCY/coffee_agents/lungo
+        UV_CACHE_ID: lungo
+        APP_NAME: vietnam-farm
+        AGENT_SCRIPT: agents/farms/vietnam/farm_server.py
     image: ghcr.io/agntcy/coffee-agntcy/vietnam-farm:latest
     container_name: vietnam-farm-server
     env_file:
@@ -115,7 +136,12 @@ services:
   auction-supervisor:
     build:
       context: ../../..
-      dockerfile: coffeeAGNTCY/coffee_agents/lungo/docker/Dockerfile.auction-supervisor
+      dockerfile: docker/Dockerfile.python-agent
+      args:
+        PROJECT_PATH: coffeeAGNTCY/coffee_agents/lungo
+        UV_CACHE_ID: lungo
+        APP_NAME: lungo-auction-supervisor
+        AGENT_SCRIPT: agents/supervisors/auction/main.py
     image: ghcr.io/agntcy/coffee-agntcy/auction-supervisor:latest
     container_name: auction-supervisor
     volumes:
@@ -151,7 +177,12 @@ services:
   agentic-workflows-api:
     build:
       context: ../../..
-      dockerfile: coffeeAGNTCY/coffee_agents/lungo/docker/Dockerfile.agentic-workflows-api
+      dockerfile: docker/Dockerfile.python-agent
+      args:
+        PROJECT_PATH: coffeeAGNTCY/coffee_agents/lungo
+        UV_CACHE_ID: lungo
+        APP_NAME: agentic-workflows-api
+        AGENT_SCRIPT: -m api.agentic_workflows.server
     image: ghcr.io/agntcy/coffee-agntcy/agentic-workflows-api:latest
     container_name: agentic-workflows-api
     env_file:
@@ -169,7 +200,10 @@ services:
       - frontend
     build:
       context: ../../..
-      dockerfile: coffeeAGNTCY/coffee_agents/lungo/docker/Dockerfile.ui
+      dockerfile: docker/Dockerfile.ui
+      args:
+        PROJECT_PATH: coffeeAGNTCY/coffee_agents/lungo/frontend
+        NPM_CACHE_ID: lungo
     image: ghcr.io/agntcy/coffee-agntcy/lungo-ui:latest
     container_name: lungo-ui
     env_file:
@@ -186,7 +220,12 @@ services:
   weather-mcp-server:
     build:
       context: ../../..
-      dockerfile: coffeeAGNTCY/coffee_agents/lungo/docker/Dockerfile.weather-mcp
+      dockerfile: docker/Dockerfile.python-agent
+      args:
+        PROJECT_PATH: coffeeAGNTCY/coffee_agents/lungo
+        UV_CACHE_ID: lungo
+        APP_NAME: weather-mcp-server
+        AGENT_SCRIPT: agents/mcp_servers/weather_service.py
     image: ghcr.io/agntcy/coffee-agntcy/weather-mcp-server:latest
     container_name: weather-mcp-server
     environment:
@@ -207,7 +246,12 @@ services:
   payment-mcp-server:
     build:
       context: ../../..
-      dockerfile: coffeeAGNTCY/coffee_agents/lungo/docker/Dockerfile.payment-mcp
+      dockerfile: docker/Dockerfile.python-agent
+      args:
+        PROJECT_PATH: coffeeAGNTCY/coffee_agents/lungo
+        UV_CACHE_ID: lungo
+        APP_NAME: payment-mcp-server
+        AGENT_SCRIPT: agents/mcp_servers/payment_service.py
     image: ghcr.io/agntcy/coffee-agntcy/payment-mcp-server:latest
     container_name: payment-mcp-server
     ports:
@@ -233,7 +277,10 @@ services:
     image: clickhouse/clickhouse-server
     container_name: lungo-clickhouse-server
     ports:
-      - "9000:9000"
+      # Host 9100 -> container 9000 (ClickHouse native TCP). Host side moved off 9000 to avoid
+      # clashing with the IoC management plane (ioc profile). In-cluster clients still use
+      # clickhouse-server:9000 over the Docker network, so only host access changed.
+      - "9100:9000"
       - "8123:8123"
     environment:
       CLICKHOUSE_USER: admin
@@ -297,7 +344,12 @@ services:
   logistics-shipper:
     build:
       context: ../../..
-      dockerfile: coffeeAGNTCY/coffee_agents/lungo/docker/Dockerfile.logistics-shipper
+      dockerfile: docker/Dockerfile.python-agent
+      args:
+        PROJECT_PATH: coffeeAGNTCY/coffee_agents/lungo
+        UV_CACHE_ID: lungo
+        APP_NAME: logistics-shipper
+        AGENT_SCRIPT: agents/logistics/shipper/server.py
     image: ghcr.io/agntcy/coffee-agntcy/logistics-shipper:latest
     container_name: logistics-shipper
     environment:
@@ -322,7 +374,12 @@ services:
   logistics-accountant:
     build:
       context: ../../..
-      dockerfile: coffeeAGNTCY/coffee_agents/lungo/docker/Dockerfile.logistics-accountant
+      dockerfile: docker/Dockerfile.python-agent
+      args:
+        PROJECT_PATH: coffeeAGNTCY/coffee_agents/lungo
+        UV_CACHE_ID: lungo
+        APP_NAME: logistics-accountant
+        AGENT_SCRIPT: agents/logistics/accountant/server.py
     image: ghcr.io/agntcy/coffee-agntcy/logistics-accountant:latest
     container_name: logistics-accountant
     environment:
@@ -347,7 +404,12 @@ services:
   logistics-farm:
     build:
       context: ../../..
-      dockerfile: coffeeAGNTCY/coffee_agents/lungo/docker/Dockerfile.logistics-farm
+      dockerfile: docker/Dockerfile.python-agent
+      args:
+        PROJECT_PATH: coffeeAGNTCY/coffee_agents/lungo
+        UV_CACHE_ID: lungo
+        APP_NAME: logistics-farm
+        AGENT_SCRIPT: agents/logistics/farm/server.py
     image: ghcr.io/agntcy/coffee-agntcy/logistics-farm:latest
     container_name: logistics-farm
     environment:
@@ -372,7 +434,12 @@ services:
   logistics-helpdesk:
     build:
       context: ../../..
-      dockerfile: coffeeAGNTCY/coffee_agents/lungo/docker/Dockerfile.logistics-helpdesk
+      dockerfile: docker/Dockerfile.python-agent
+      args:
+        PROJECT_PATH: coffeeAGNTCY/coffee_agents/lungo
+        UV_CACHE_ID: lungo
+        APP_NAME: logistics-helpdesk
+        AGENT_SCRIPT: agents/logistics/helpdesk/server.py
     image: ghcr.io/agntcy/coffee-agntcy/logistics-helpdesk:latest
     container_name: logistics-helpdesk
     environment:
@@ -397,7 +464,12 @@ services:
   logistics-supervisor:
     build:
       context: ../../..
-      dockerfile: coffeeAGNTCY/coffee_agents/lungo/docker/Dockerfile.logistics-supervisor
+      dockerfile: docker/Dockerfile.python-agent
+      args:
+        PROJECT_PATH: coffeeAGNTCY/coffee_agents/lungo
+        UV_CACHE_ID: lungo
+        APP_NAME: logistics-supervisor
+        AGENT_SCRIPT: agents/supervisors/logistics/main.py
     image: ghcr.io/agntcy/coffee-agntcy/logistics-supervisor:latest
     container_name: logistics-supervisor
     env_file:
@@ -546,7 +618,13 @@ services:
   recruiter:
     build:
       context: ../../..
-      dockerfile: coffeeAGNTCY/coffee_agents/recruiter/Dockerfile
+      dockerfile: docker/Dockerfile.python-agent
+      target: agent-with-dirctl
+      args:
+        PROJECT_PATH: coffeeAGNTCY/coffee_agents/recruiter
+        UV_CACHE_ID: recruiter
+        AGENT_SCRIPT: src/agent_recruiter/server/server.py
+        APP_NAME: recruiter
     image: ghcr.io/agntcy/coffee-agntcy/recruiter:latest
     container_name: recruiter
     env_file:
@@ -575,7 +653,12 @@ services:
   recruiter-supervisor:
     build:
       context: ../../..
-      dockerfile: coffeeAGNTCY/coffee_agents/lungo/docker/Dockerfile.recruiter-supervisor
+      dockerfile: docker/Dockerfile.python-agent
+      args:
+        PROJECT_PATH: coffeeAGNTCY/coffee_agents/lungo
+        UV_CACHE_ID: lungo
+        APP_NAME: lungo-recruiter-supervisor
+        AGENT_SCRIPT: agents/supervisors/recruiter/main.py
     image: ghcr.io/agntcy/coffee-agntcy/recruiter-supervisor:latest
     container_name: recruiter-supervisor
     volumes:
@@ -596,6 +679,12 @@ services:
       - CORS_ALLOWED_ORIGINS=${CORS_ALLOWED_ORIGINS:-}
       - WORKFLOW_API_URL=http://agentic-workflows-api:9105
       - WORKFLOW_API_KEY=${WORKFLOW_API_KEY:?WORKFLOW_API_KEY must be set in .env}
+      # Discovered farm records advertise http://0.0.0.0:<port>; reach them via
+      # the host gateway and their host-published ports from inside the network.
+      - DISCOVERED_AGENT_HOST=${DISCOVERED_AGENT_HOST:-host.docker.internal}
+    extra_hosts:
+      # Make host.docker.internal resolvable on Linux (no-op on Docker Desktop).
+      - "host.docker.internal:host-gateway"
     ports:
       - "8882:8882"
     depends_on:

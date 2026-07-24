@@ -5,7 +5,7 @@
  * Resizable app-shell panel ids and size constraints (react-resizable-panels).
  **/
 
-export const APP_SHELL_PANEL_GROUP_ID = "lungo-app-shell"
+export const APP_SHELL_PANEL_GROUP_ID = "app-shell"
 
 export const SIDEBAR_PANEL_ID = "sidebar"
 export const MAIN_PANEL_ID = "main"

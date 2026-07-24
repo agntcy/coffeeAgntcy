@@ -38,7 +38,7 @@ from common.workflow_utils.inflight import (
 )
 from common.workflow_utils.workflow_catalog import lookup_workflow
 
-SCHEMA_VERSION = "1.0.0"
+SCHEMA_VERSION = "1.1.0"
 
 _DEFAULT_NODE_SIZE = Size(width=1.0, height=1.0)
 

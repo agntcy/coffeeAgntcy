@@ -23,7 +23,6 @@ import {
   SIDEBAR_MIN_SIZE,
   SIDEBAR_PANEL_ID,
 } from "@/components/Sidebar/sidebarPanelLayout"
-import { PATTERNS } from "@/utils/patternUtils"
 import { CanvasMode } from "@/types/patternDoc"
 import { useApp } from "@/useApp"
 import { GraphCanvasLayoutContext } from "@/contexts/graphCanvasLayout"
@@ -38,6 +37,7 @@ const RootPage: React.FC = () => {
     workflowCatalogLoading,
     workflowCatalogError,
     selectedWorkflowSummary,
+    suggestedPromptsUrl,
     chatHeightValue,
     isExpanded,
     chatRef,
@@ -55,7 +55,6 @@ const RootPage: React.FC = () => {
     showRecruiterStreaming,
     showFinalResponse,
     groupCommResponseReceived,
-    discoveryResponseEvent,
     handleUserInput,
     handleApiResponse,
     handleSendPrompt,
@@ -184,16 +183,16 @@ const RootPage: React.FC = () => {
                     patternDocState={patternDocState}
                     pattern={selectedPattern}
                     selectedWorkflowSummary={selectedWorkflowSummary}
+                    workflowCatalogLoading={workflowCatalogLoading}
+                    workflowCatalogError={workflowCatalogError}
                     onLiveGraphConfig={setLiveGraphConfig}
                     buttonClicked={buttonClicked}
                     setButtonClicked={setButtonClicked}
                     aiReplied={aiReplied}
-                    setAiReplied={setAiReplied}
                     chatHeight={chatHeightValue}
                     isExpanded={isExpanded}
                     groupCommResponseReceived={groupCommResponseReceived}
                     onNodeHighlight={handleNodeHighlightSetup}
-                    discoveryResponseEvent={discoveryResponseEvent}
                     selectedAgentCid={
                       typeof recruiterSelectedAgent?.cid === "string"
                         ? recruiterSelectedAgent.cid
@@ -225,20 +224,7 @@ const RootPage: React.FC = () => {
                     selectedReferencePattern={selectedReferencePattern}
                     patternChatSessionId={patternChatSessionId}
                     onPatternChatSuccess={() => setAiReplied(true)}
-                    showCoffeePrompts={
-                      canvasMode !== CanvasMode.PATTERN_DOC &&
-                      (selectedPattern === PATTERNS.PUBLISH_SUBSCRIBE ||
-                        selectedPattern ===
-                          PATTERNS.PUBLISH_SUBSCRIBE_STREAMING)
-                    }
-                    showLogisticsPrompts={
-                      canvasMode !== CanvasMode.PATTERN_DOC &&
-                      selectedPattern === PATTERNS.GROUP_MESSAGING
-                    }
-                    showDiscoveryPrompts={
-                      canvasMode !== CanvasMode.PATTERN_DOC &&
-                      selectedPattern === PATTERNS.A2A_HTTP
-                    }
+                    suggestedPromptsUrl={suggestedPromptsUrl}
                     showProgressTracker={
                       canvasMode !== CanvasMode.PATTERN_DOC &&
                       showProgressTracker
@@ -254,7 +240,6 @@ const RootPage: React.FC = () => {
                     showFinalResponse={showFinalResponse}
                     onStreamComplete={handleStreamComplete}
                     onSenderHighlight={handleSenderHighlight}
-                    pattern={selectedPattern}
                     graphConfig={graphConfig}
                     onSendPrompt={handleSendPrompt}
                     onUserInput={handleUserInput}

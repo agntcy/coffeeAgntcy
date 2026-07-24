@@ -5,9 +5,8 @@
 
 import type { Edge, Node } from "@xyflow/react"
 import { describe, expect, it } from "vitest"
-import { NODE_IDS, NODE_TYPES } from "@/utils/const"
+import { NODE_TYPES } from "@/utils/const"
 import { CUSTOM_NODE_WIDTH } from "@/utils/graphNodeDimensions"
-import { getGraphConfig } from "@/utils/graphConfigs"
 import {
   CUSTOM_NODE_X_GAP,
   TRANSPORT_NODE_WIDTH_BAR,
@@ -83,25 +82,25 @@ describe("layoutSlimTransportGraph (bar)", () => {
   it("spaces Brazil, Colombia, and Vietnam without overlap", () => {
     const nodes: Node[] = [
       {
-        id: NODE_IDS.TRANSPORT,
+        id: "transport",
         type: NODE_TYPES.TRANSPORT,
         position: { x: 229, y: 284 },
         data: { compact: false },
       },
       {
-        id: NODE_IDS.BRAZIL_FARM,
+        id: "brazil",
         type: NODE_TYPES.CUSTOM,
         position: { x: 232, y: 503.93 },
         data: {},
       },
       {
-        id: NODE_IDS.COLOMBIA_FARM,
+        id: "colombia",
         type: NODE_TYPES.CUSTOM,
         position: { x: 521, y: 505.38 },
         data: {},
       },
       {
-        id: NODE_IDS.VIETNAM_FARM,
+        id: "vietnam",
         type: NODE_TYPES.CUSTOM,
         position: { x: 832, y: 505.08 },
         data: {},
@@ -110,9 +109,9 @@ describe("layoutSlimTransportGraph (bar)", () => {
 
     const { nodes: laidOut } = layoutSlimTransportGraph(nodes, [])
     const byId = new Map(laidOut.map((node) => [node.id, node]))
-    const brazil = byId.get(NODE_IDS.BRAZIL_FARM)!
-    const colombia = byId.get(NODE_IDS.COLOMBIA_FARM)!
-    const vietnam = byId.get(NODE_IDS.VIETNAM_FARM)!
+    const brazil = byId.get("brazil")!
+    const colombia = byId.get("colombia")!
+    const vietnam = byId.get("vietnam")!
 
     expect(colombia.position.x - brazil.position.x).toBeCloseTo(
       CUSTOM_NODE_X_GAP,
@@ -214,13 +213,49 @@ describe("graphNodeDimensions", () => {
 
 describe("layoutSlimTransportGraph (compact group)", () => {
   it("centers transport and custom rows with equal group margins", () => {
-    const config = getGraphConfig("group_messaging")
-    const group = config.nodes.find((node) => node.type === NODE_TYPES.GROUP)!
-    const groupWidth = group.style?.width as number
-    const transport = config.nodes.find(
-      (node) => node.id === NODE_IDS.TRANSPORT,
-    )!
-    const customs = config.nodes.filter(
+    const groupId = "logistics-group"
+    const inputNodes: Node[] = [
+      {
+        id: groupId,
+        type: NODE_TYPES.GROUP,
+        position: { x: 0, y: 0 },
+        data: {},
+      },
+      {
+        id: "transport",
+        type: NODE_TYPES.TRANSPORT,
+        parentId: groupId,
+        position: { x: 100, y: 60 },
+        data: { compact: true },
+      },
+      {
+        id: "buyer",
+        type: NODE_TYPES.CUSTOM,
+        parentId: groupId,
+        position: { x: 100, y: 260 },
+        data: { label: "Buyer" },
+      },
+      {
+        id: "brazil",
+        type: NODE_TYPES.CUSTOM,
+        parentId: groupId,
+        position: { x: 60, y: 460 },
+        data: {},
+      },
+      {
+        id: "colombia",
+        type: NODE_TYPES.CUSTOM,
+        parentId: groupId,
+        position: { x: 360, y: 460 },
+        data: {},
+      },
+    ]
+
+    const { nodes: laidOut } = layoutSlimTransportGraph(inputNodes, [])
+    const group = laidOut.find((node) => node.type === NODE_TYPES.GROUP)!
+    const groupWidth = group.width as number
+    const transport = laidOut.find((node) => node.id === "transport")!
+    const customs = laidOut.filter(
       (node) => node.parentId === group.id && node.type === NODE_TYPES.CUSTOM,
     )
 

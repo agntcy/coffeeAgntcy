@@ -9,14 +9,8 @@ import React, { useCallback, useMemo, useState } from "react"
 import KeyboardArrowDown from "@mui/icons-material/KeyboardArrowDown"
 import type { SxProps, Theme } from "@mui/material/styles"
 import type { SystemStyleObject } from "@mui/system"
-import {
-  Box,
-  Button,
-  Menu,
-  MenuItem,
-  Tooltip,
-  type DropdownOption,
-} from "@open-ui-kit/core"
+import { Box, Button, Menu, MenuItem, Tooltip } from "@open-ui-kit/core"
+import type { DropdownOption } from "@/types/dropdownOption"
 import { useGraphCanvasLayout } from "@/contexts/graphCanvasLayout"
 import {
   computePromptsMenuMaxWidth,
@@ -25,7 +19,6 @@ import {
   getPromptsTriggerButtonProps,
   getPromptsTriggerTooltipProps,
   SUGGESTED_PROMPTS_LABEL,
-  type SuggestedPromptsSource,
 } from "./suggestedPromptsUtils"
 import { CustomDropdownListItemContent } from "./CustomDropdownListItemContent"
 import { useSuggestedPrompts } from "./useSuggestedPrompts"
@@ -77,20 +70,18 @@ function PromptMenuItem({
 }
 
 export interface SuggestedPromptsDropdownProps {
-  source: SuggestedPromptsSource
-  pattern?: string
+  promptsUrl: string | null | undefined
   onSelect: (query: string) => void
   sx?: SxProps<Theme>
 }
 
 const SuggestedPromptsDropdown: React.FC<SuggestedPromptsDropdownProps> = ({
-  source,
-  pattern,
+  promptsUrl,
   onSelect,
   sx,
 }) => {
   const layout = useGraphCanvasLayout()
-  const { categories, isLoading } = useSuggestedPrompts(source, pattern)
+  const { categories, isLoading } = useSuggestedPrompts(promptsUrl)
   const options = useMemo(
     () =>
       categoriesToMenuOptions(categories, (prompt, description) => (

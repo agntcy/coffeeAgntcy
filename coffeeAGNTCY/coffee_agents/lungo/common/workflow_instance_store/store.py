@@ -41,7 +41,13 @@ from schema.types.event import Workflow
 from schema.validation import validate_data_against_schema
 
 from common.workflow_instance_store.errors import WorkflowInstanceStoreClosedError
-from common.workflow_instance_store.merge import merge_event_data
+from common.workflow_instance_store.discovery_layout import (
+    enrich_discovery_node_layout,
+)
+from common.workflow_instance_store.merge import (
+    merge_event_data,
+    reconcile_event_node_identities,
+)
 from common.workflow_instance_store.notifier import NoOpNotifier, NotifierProtocol
 
 EVENT_SCHEMA = "event_v1"
@@ -138,9 +144,11 @@ class _MergeCoordinator:
             try:
                 touched = _touched_instance_ids(item)
                 with self._state_lock:
-                    self._state = merge_event_data(self._state, item)
+                    normalized = reconcile_event_node_identities(self._state, item)
+                    normalized = enrich_discovery_node_layout(self._state, normalized)
+                    self._state = merge_event_data(self._state, normalized)
                 if touched:
-                    self._on_merged(item, touched)
+                    self._on_merged(normalized, touched)
             except Exception:
                 logger.exception("WorkflowInstanceStateStore merge worker failed")
             finally:

@@ -5,51 +5,16 @@
 
 import type { ReactNode } from "react"
 import type { MenuProps } from "@mui/material/Menu"
-import type { ButtonProps } from "@mui/material/Button"
-import type { TooltipProps } from "@open-ui-kit/core"
-import type { DropdownOption } from "@open-ui-kit/core"
+import type { ButtonProps, TooltipProps } from "@open-ui-kit/core"
+import type { DropdownOption } from "@/types/dropdownOption"
 import type { GraphCanvasLayoutMetrics } from "@/contexts/graphCanvasLayout"
-import {
-  getDiscoveryAppApiUrl,
-  getExchangeAppApiUrl,
-  getLogisticsAppApiUrl,
-  joinBaseUrl,
-  LUNGO_FRONTEND_URLS,
-} from "@/urls"
 import type { PromptCategory } from "./PromptTypes"
-
-export type SuggestedPromptsSource = "coffee" | "logistics" | "discovery"
 
 export const SUGGESTED_PROMPTS_LABEL = "Suggested Prompts"
 
 const PROMPTS_MENU_ANCHOR_GAP_PX = 8
 const PROMPTS_MENU_VIEWPORT_MARGIN_PX = 16
 const MAX_RETRY_DELAY_MS = 5000
-
-export function getSuggestedPromptsUrl(
-  source: SuggestedPromptsSource,
-  pattern?: string,
-): string {
-  switch (source) {
-    case "coffee": {
-      const path =
-        pattern === "publish_subscribe_streaming"
-          ? LUNGO_FRONTEND_URLS.apiPaths.suggestedPromptsStreaming
-          : LUNGO_FRONTEND_URLS.apiPaths.suggestedPrompts
-      return joinBaseUrl(getExchangeAppApiUrl(), path)
-    }
-    case "logistics":
-      return joinBaseUrl(
-        getLogisticsAppApiUrl(),
-        LUNGO_FRONTEND_URLS.apiPaths.suggestedPrompts,
-      )
-    case "discovery":
-      return joinBaseUrl(
-        getDiscoveryAppApiUrl(),
-        LUNGO_FRONTEND_URLS.apiPaths.suggestedPrompts,
-      )
-  }
-}
 
 export function parsePromptCategories(data: unknown): PromptCategory[] {
   if (data === null || typeof data !== "object" || Array.isArray(data)) {
@@ -165,27 +130,6 @@ export function getPromptsTriggerTooltipProps(
   }
   if (optionCount === 0) {
     return { title: "No prompts available" }
-  }
-  return undefined
-}
-
-export function resolveSuggestedPromptsSource({
-  showCoffeePrompts,
-  showLogisticsPrompts,
-  showDiscoveryPrompts,
-}: {
-  showCoffeePrompts: boolean
-  showLogisticsPrompts: boolean
-  showDiscoveryPrompts: boolean
-}): SuggestedPromptsSource | undefined {
-  if (showCoffeePrompts) {
-    return "coffee"
-  }
-  if (showLogisticsPrompts) {
-    return "logistics"
-  }
-  if (showDiscoveryPrompts) {
-    return "discovery"
   }
   return undefined
 }

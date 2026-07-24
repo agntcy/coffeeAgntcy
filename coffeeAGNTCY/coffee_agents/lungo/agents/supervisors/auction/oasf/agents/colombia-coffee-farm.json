@@ -1,4 +1,9 @@
 {
+  "annotations": {
+    "a2a.supports_authenticated_extended_card": "false",
+    "lungo.agentDirectoryCid": "/baeareiaqub6mci5mnt3iqagxfodfmjym36nshdmjmnzofcdilp7374rwlm",
+    "lungo.identityAppSlug": "colombia-coffee-farm"
+  },
   "authors": [
     "agntcy/coffee-agntcy-maintainers"
   ],
@@ -47,7 +52,7 @@
           ],
           "description": "An AI agent that returns the yield of coffee beans in pounds for the Colombia farm.",
           "name": "Colombia Coffee Farm",
-          "preferredTransport": "slimrpc",
+          "preferredTransport": "slim",
           "protocolVersion": "0.3.0",
           "skills": [
             {

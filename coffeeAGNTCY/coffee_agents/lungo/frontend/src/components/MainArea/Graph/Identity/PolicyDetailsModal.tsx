@@ -8,9 +8,9 @@ import {
   Box,
   Button,
   IconButton,
-  Modal,
-  ModalContent,
-  ModalTitle,
+  Dialog,
+  DialogContent,
+  DialogTitle,
   Stack,
   Typography,
 } from "@open-ui-kit/core"
@@ -69,14 +69,14 @@ const PolicyDetailsModal: React.FC<PolicyDetailsModalProps> = ({
   }, [fetchPolicyDetailsData, isOpen, nodeName, nodeData])
 
   return (
-    <Modal
+    <Dialog
       open={isOpen}
       onClose={onClose}
       maxWidth="md"
       fullWidth
       scroll="paper"
     >
-      <ModalTitle sx={{ pr: 6, position: "relative" }}>
+      <DialogTitle sx={{ pr: 6, position: "relative" }}>
         {nodeName} Policy Details
         <IconButton
           onClick={onClose}
@@ -85,9 +85,9 @@ const PolicyDetailsModal: React.FC<PolicyDetailsModalProps> = ({
         >
           <Close />
         </IconButton>
-      </ModalTitle>
+      </DialogTitle>
 
-      <ModalContent dividers>
+      <DialogContent dividers>
         {loading && !policyData ? (
           <Stack
             sx={{
@@ -152,8 +152,8 @@ const PolicyDetailsModal: React.FC<PolicyDetailsModalProps> = ({
             <Typography color="text.primary">No data available</Typography>
           </Stack>
         )}
-      </ModalContent>
-    </Modal>
+      </DialogContent>
+    </Dialog>
   )
 }
 

@@ -14,6 +14,7 @@ import CustomEdge from "./Graph/Elements/CustomEdge"
 import BranchingEdge from "./Graph/Elements/BranchingEdge"
 import CustomNode from "./Graph/Elements/CustomNode"
 import CustomControls from "./Graph/Elements/CustomControls"
+import { GraphTopologyLayoutSync } from "./Graph/GraphTopologyLayoutSync"
 import GraphDocumentationButton from "./Graph/Elements/GraphDocumentationButton"
 import { isPlaceholderWorkflow } from "@/components/Sidebar/sidebar.utils"
 import { getWorkflowDocumentationGithubUrl } from "@/urls"
@@ -25,6 +26,8 @@ import {
   GRAPH_DEFAULT_VIEWPORT,
 } from "@/config/graphViewDefaults"
 import { getAppShellBackgroundColor } from "./mainAreaBackground"
+import { LoadingSpinner } from "@/components/loading/LoadingSpinner"
+import { Typography } from "@open-ui-kit/core"
 import { useMainArea, type MainAreaProps } from "./useMainArea"
 
 const proOptions = { hideAttribution: true }
@@ -40,7 +43,11 @@ const edgeTypes = {
 }
 
 const MainArea: React.FC<MainAreaProps> = (props) => {
-  const { selectedWorkflowSummary } = props
+  const {
+    selectedWorkflowSummary,
+    workflowCatalogLoading,
+    workflowCatalogError,
+  } = props
   const {
     nodes,
     edges,
@@ -58,12 +65,27 @@ const MainArea: React.FC<MainAreaProps> = (props) => {
     oasfModalData,
     onPaneClick,
     onNodeDrag,
+    topologyApplied,
+    agenticMode,
+    agenticError,
+    layoutSyncGeneration,
+    layoutSyncNodeIds,
+    layoutSyncFitViewport,
+    handleLayoutSyncReady,
   } = useMainArea(props)
 
   const activeWorkflowSummary =
     selectedWorkflowSummary && !isPlaceholderWorkflow(selectedWorkflowSummary)
       ? selectedWorkflowSummary
       : undefined
+
+  const chatApiTarget = activeWorkflowSummary?.chat_api_target ?? null
+
+  const overlayError = agenticError ?? workflowCatalogError ?? null
+  const showLoading =
+    !overlayError &&
+    !topologyApplied &&
+    (Boolean(workflowCatalogLoading) || agenticMode)
 
   const documentationUrl = activeWorkflowSummary
     ? getWorkflowDocumentationGithubUrl(activeWorkflowSummary.name)
@@ -76,6 +98,7 @@ const MainArea: React.FC<MainAreaProps> = (props) => {
       <Box
         sx={{
           order: 1,
+          position: "relative",
           display: "flex",
           width: "100%",
           height: "100%",
@@ -88,6 +111,31 @@ const MainArea: React.FC<MainAreaProps> = (props) => {
           bgcolor: (theme) => getAppShellBackgroundColor(theme),
         }}
       >
+        {overlayError || showLoading ? (
+          <Box
+            sx={{
+              position: "absolute",
+              inset: 0,
+              zIndex: 10,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              pointerEvents: "none",
+            }}
+          >
+            {overlayError ? (
+              <Typography
+                variant="body2"
+                sx={{ textAlign: "center", opacity: 0.7, maxWidth: 360, px: 2 }}
+              >
+                {overlayError}
+              </Typography>
+            ) : (
+              <LoadingSpinner message="Loading workflow graph..." />
+            )}
+          </Box>
+        ) : null}
+
         <ReactFlow
           nodes={nodes}
           edges={edges}
@@ -106,6 +154,12 @@ const MainArea: React.FC<MainAreaProps> = (props) => {
           elementsSelectable={nodesDraggable}
           elevateNodesOnSelect={false}
         >
+          <GraphTopologyLayoutSync
+            generation={layoutSyncGeneration}
+            nodeIds={layoutSyncNodeIds}
+            fitViewport={layoutSyncFitViewport}
+            onReady={handleLayoutSyncReady}
+          />
           <CustomControls
             isInteractive={nodesDraggable && nodesConnectable}
             onToggleInteractivity={() => {
@@ -129,8 +183,9 @@ const MainArea: React.FC<MainAreaProps> = (props) => {
         <OasfRecordModal
           isOpen={oasfModalOpen}
           onClose={() => setOasfModalOpen(false)}
-          nodeName={oasfModalData?.label1 || ""}
+          nodeName={oasfModalData?.label || ""}
           nodeData={oasfModalData}
+          chatApiTarget={chatApiTarget}
         />
       </Box>
     </>

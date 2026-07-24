@@ -13,7 +13,7 @@ from mcp.server.fastmcp import FastMCP
 import httpx
 from agntcy_app_sdk.factory import AgntcyFactory
 
-from agents.mcp_servers.utils import _mcp_transport, _mcp_endpoint
+from common.mcp_client import mcp_transport, mcp_endpoint
 from config.config import OTEL_SDK_DISABLED
 
 logger = logging.getLogger(__name__)
@@ -93,8 +93,8 @@ async def get_forecast(location: str) -> str:
 async def main():
     # serve the MCP server via a message bridge
     transport = factory.create_transport(
-        _mcp_transport,
-        endpoint=_mcp_endpoint,
+        mcp_transport,
+        endpoint=mcp_endpoint,
         shared_secret_identity=os.getenv("SLIM_SHARED_SECRET"),
         name="default/default/lungo_weather_service")
 

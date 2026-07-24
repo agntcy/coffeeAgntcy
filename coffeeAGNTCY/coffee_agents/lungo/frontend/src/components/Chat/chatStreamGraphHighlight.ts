@@ -5,13 +5,14 @@
  * Map chat stream authors / sequence steps to React Flow graph element ids.
  *
  * The backend owns the graph, so there are no authored NODE_IDS/EDGE_IDS to map
- * from. Stream authors resolve through a slug bridge (recruiter/directory slug
- * aliases, then live labels), and the streaming animation sequence is derived
- * straight from the live graph topology rather than translated from a static one.
+ * from. Stream authors resolve through recruiter/directory slug aliases, inline
+ * discovered-agent record keys (CID / record name / label), then live labels.
+ * The streaming animation sequence is derived from the live graph topology.
  */
 
 import type { Edge, Node } from "@xyflow/react"
 import type { GraphConfig } from "@/utils/graphConfigs"
+import { customNodeDataFromNode } from "@/components/MainArea/Graph/Elements/customNodeData"
 import type { CustomNodeData } from "@/components/MainArea/Graph/Elements/types"
 import { NODE_TYPES } from "@/utils/const"
 import {
@@ -22,6 +23,41 @@ import { buildSenderToNodeMap } from "./groupCommunicationFeedMapping"
 
 function normalizeAuthor(value: string): string {
   return value.trim().toLowerCase()
+}
+
+function discoveredAgentLookupKeys(
+  data: CustomNodeData | undefined,
+): readonly string[] {
+  if (!data) return []
+  const keys: string[] = []
+  if (typeof data.agentCid === "string" && data.agentCid.trim()) {
+    keys.push(normalizeAuthor(data.agentCid))
+  }
+  const record = data.oasfRecord
+  if (record && typeof record === "object") {
+    const name = record.name
+    if (typeof name === "string" && name.trim()) {
+      keys.push(normalizeAuthor(name))
+    }
+  }
+  if (typeof data.label === "string" && data.label.trim()) {
+    keys.push(normalizeAuthor(data.label))
+  }
+  return keys
+}
+
+function discoveredAgentNodeIdMap(
+  graphConfig: GraphConfig | undefined,
+): Map<string, string> {
+  const map = new Map<string, string>()
+  for (const node of graphConfig?.nodes ?? []) {
+    const data = customNodeDataFromNode(node)
+    if (!data?.oasfRecord && !data?.agentCid) continue
+    for (const key of discoveredAgentLookupKeys(data)) {
+      if (!map.has(key)) map.set(key, node.id)
+    }
+  }
+  return map
 }
 
 /** Known recruiter / directory stream authors mapped to a canonical node slug. */
@@ -35,19 +71,18 @@ const AUTHOR_SLUG_ALIASES: Readonly<Record<string, string>> = {
 }
 
 /**
- * Stable identity key shared by static-config and API-driven nodes. Transport and
- * group nodes resolve by type; directory has no OASF slug, so it is detected from
- * its labels; everything else defers to `getOasfSlugFromNodeData`.
+ * Stable identity key shared by static-config and API-driven nodes. Transport
+ * resolves by type; directory has no OASF slug, so it is detected from its
+ * labels; everything else defers to `getOasfSlugFromNodeData`.
  */
 function nodeSlugKey(node: Node): string | null {
   if (node.type === NODE_TYPES.TRANSPORT) return "transport"
-  if (node.type === NODE_TYPES.GROUP) return "logistics-group"
 
-  const data = node.data as unknown as CustomNodeData | undefined
-  const label1 = data?.label1?.toLowerCase() ?? ""
-  const label2 = data?.label2?.toLowerCase() ?? ""
-  const combined = `${label1} ${label2}`.trim()
-  if (label1 === "directory" || isDirectoryLabel(combined)) {
+  const data = customNodeDataFromNode(node)
+  const label = data?.label?.toLowerCase() ?? ""
+  const label_subtitle = data?.label_subtitle?.toLowerCase() ?? ""
+  const combined = `${label} ${label_subtitle}`.trim()
+  if (label === "directory" || isDirectoryLabel(combined)) {
     return "directory"
   }
 
@@ -86,6 +121,9 @@ export function resolveStreamAuthorToNodeId(
     if (bySlug) return bySlug
   }
 
+  const byDiscovered = discoveredAgentNodeIdMap(graphConfig).get(normalized)
+  if (byDiscovered) return byDiscovered
+
   const labelMap = buildSenderToNodeMap(graphConfig)
   return labelMap[author] ?? labelMap[normalized] ?? null
 }
@@ -104,6 +142,10 @@ export function animationSequenceStepIds(
  * root node(s) (no inbound edges, at least one outbound), then the edges fanning
  * out, then the next layer of nodes, and so on. Isolated nodes (e.g. the group
  * container) are skipped. No authored sequence or static config required.
+ *
+ * Re-entrant edges (fan-in / back-to-source, e.g. a farm replying to the
+ * transport) still pulse so no edge that the static sequence animated goes
+ * missing; each node is only scheduled once so the traversal still terminates.
  */
 export function deriveAnimationSequenceFromGraph(
   nodes: Node[],
@@ -128,6 +170,7 @@ export function deriveAnimationSequenceFromGraph(
 
   const steps: { ids: string[] }[] = [{ ids: [...roots] }]
   const visited = new Set<string>(roots)
+  const pulsedEdges = new Set<string>()
   let frontier = roots
 
   while (frontier.length > 0) {
@@ -135,9 +178,12 @@ export function deriveAnimationSequenceFromGraph(
     const nextNodes: string[] = []
     for (const nodeId of frontier) {
       for (const edge of outgoing.get(nodeId) ?? []) {
-        if (visited.has(edge.target)) continue
+        if (pulsedEdges.has(edge.id)) continue
+        pulsedEdges.add(edge.id)
         edgeIds.push(edge.id)
-        if (!nextNodes.includes(edge.target)) nextNodes.push(edge.target)
+        if (!visited.has(edge.target) && !nextNodes.includes(edge.target)) {
+          nextNodes.push(edge.target)
+        }
       }
     }
     for (const id of nextNodes) visited.add(id)

@@ -5,7 +5,7 @@
 ```mermaid
 graph TD
     Transport["Transport: SLIM"]
-    Buyer["Buyer Logistics Agent"]
+    Buyer["Logistics Agent (Buyer)"]
     Farm["Tatooine Coffee Farm Agent"]
     Shipper["Shipper Agent"]
     Accountant["Accountant Agent"]
@@ -102,7 +102,7 @@ under a customer deadline.
 attribution apply. It frames this episode as **alliance-style logistics**—partners and internal roles that may question
 each other **in the open** yet stay inside a trusted envelope.
 
-**Buyer Logistics Agent** connects into **Transport** as the voice of the **customer promise**. It carries dates,
+**Logistics Agent** (`label_subtitle`: **Buyer**) connects into **Transport** as the voice of the **customer promise**. It carries dates,
 splits, substitutions, and the definition of “done” so the thread always remembers **what success means** for the person
 waiting on the other end.
 

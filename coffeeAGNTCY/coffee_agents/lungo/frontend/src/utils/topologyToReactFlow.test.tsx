@@ -3,11 +3,12 @@
  * SPDX-License-Identifier: Apache-2.0
  **/
 
+/* eslint-disable max-lines -- cohesive test suite for topologyWireToReactFlow */
+
 import { describe, expect, it } from "vitest"
 import { NODE_TYPES, EDGE_TYPES, EDGE_LABELS } from "@/utils/const"
 import { topologyWireToReactFlow } from "@/utils/topologyToReactFlow"
 import { stableAgentUuidForRecordName } from "@/utils/agenticTopologyIdentityUiMap"
-
 function wireNode(id: string, type: string, label: string, layerIndex: number) {
   return { id, type, label, layer_index: layerIndex }
 }
@@ -160,7 +161,7 @@ describe("topologyWireToReactFlow", () => {
     },
   )
 
-  it("splits single label into label1 and label2", () => {
+  it("splits single label into label and label_subtitle", () => {
     const { nodes } = topologyWireToReactFlow(
       {
         nodes: [
@@ -175,12 +176,54 @@ describe("topologyWireToReactFlow", () => {
       },
       { validateUrls: false },
     )
-    const data = nodes[0]?.data as { label1?: string; label2?: string }
-    expect(data?.label1).toBe("Brazil")
-    expect(data?.label2).toBe("Farm Agent")
+    const data = nodes[0]?.data as { label?: string; label_subtitle?: string }
+    expect(data?.label).toBe("Brazil")
+    expect(data?.label_subtitle).toBe("Farm Agent")
   })
 
-  it("renders a group container with children parented and compact transport", () => {
+  it("honors a curated wire label_subtitle instead of splitting the label", () => {
+    const { nodes } = topologyWireToReactFlow(
+      {
+        nodes: [
+          {
+            id: "node://10101010-1010-4101-8101-101010101010",
+            type: "customNode",
+            label: "Auction Agent",
+            label_subtitle: "Buyer",
+            layer_index: 0,
+          },
+        ],
+        edges: [],
+      },
+      { validateUrls: false },
+    )
+    const data = nodes[0]?.data as { label?: string; label_subtitle?: string }
+    expect(data?.label).toBe("Auction Agent")
+    expect(data?.label_subtitle).toBe("Buyer")
+  })
+
+  it("falls back to splitting when wire label_subtitle is absent or blank", () => {
+    const { nodes } = topologyWireToReactFlow(
+      {
+        nodes: [
+          {
+            id: "node://10101010-1010-4101-8101-101010101010",
+            type: "customNode",
+            label: "Auction Agent",
+            label_subtitle: "   ",
+            layer_index: 0,
+          },
+        ],
+        edges: [],
+      },
+      { validateUrls: false },
+    )
+    const data = nodes[0]?.data as { label?: string; label_subtitle?: string }
+    expect(data?.label).toBe("Auction")
+    expect(data?.label_subtitle).toBe("Agent")
+  })
+
+  it("keeps a hidden group container with children parented and compact transport", () => {
     const groupId = "node://aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa"
     const { nodes } = topologyWireToReactFlow(
       {
@@ -209,7 +252,8 @@ describe("topologyWireToReactFlow", () => {
       (node) => node.type === "customNode" && node.parentId === groupId,
     )
     expect(group?.type).toBe("group")
-    expect(group?.style).toBeDefined()
+    expect(group?.hidden).toBe(true)
+    expect((group?.width ?? 0) > 0 && (group?.height ?? 0) > 0).toBe(true)
     expect(transport?.parentId).toBe(groupId)
     expect((transport?.data as { compact?: boolean })?.compact).toBe(true)
     expect(child).toBeDefined()
@@ -315,8 +359,12 @@ describe("topologyWireToReactFlow", () => {
       },
       { validateUrls: false },
     )
-    const data = nodes[0]?.data as { githubLink?: string }
+    const data = nodes[0]?.data as {
+      githubLink?: string
+      directoryAgentSlug?: string
+    }
     expect(data?.githubLink).toContain("auction-supervisor-agent.json")
+    expect(data?.directoryAgentSlug).toBe("auction-supervisor-agent")
   })
 
   it("merges stable-agent map when stable_agent_id uses RootModel-shaped object", () => {
@@ -336,13 +384,13 @@ describe("topologyWireToReactFlow", () => {
         ],
         edges: [],
       },
-      { validateUrls: false, identityUiVariant: "publish_subscribe" },
+      { validateUrls: false },
     )
     const data = nodes[0]?.data as { directoryAgentSlug?: string }
     expect(data?.directoryAgentSlug).toBe("brazil-coffee-farm")
   })
 
-  it("merges stable-agent map: Brazil farm gets directory slug, link, and resolved github", () => {
+  it("applies backend wire enrichment for Brazil farm", () => {
     const brazilUuid = stableAgentUuidForRecordName("Brazil Coffee Farm")
     const { nodes } = topologyWireToReactFlow(
       {
@@ -355,11 +403,16 @@ describe("topologyWireToReactFlow", () => {
             stable_agent_id: `agent://${brazilUuid}`,
             agent_record_uri:
               "../../agents/supervisors/auction/oasf/agents/brazil-coffee-farm.json",
+            agent_directory_cid:
+              "/baeareigpu5jgm3xrkouspfacgvq65i25cz63nnseqatu5davp35jenwlla",
+            has_badge_override: false,
+            has_policy_override: false,
+            verification_status_override: "failed",
           },
         ],
         edges: [],
       },
-      { validateUrls: false, identityUiVariant: "publish_subscribe" },
+      { validateUrls: false },
     )
     const data = nodes[0]?.data as {
       directoryAgentSlug?: string
@@ -367,34 +420,77 @@ describe("topologyWireToReactFlow", () => {
       githubLink?: string
       identityAppsSlug?: string
       verificationStatus?: string
+      hasBadgeDetails?: boolean
     }
     expect(data?.directoryAgentSlug).toBe("brazil-coffee-farm")
-    expect(data?.agentDirectoryLink).toBeDefined()
+    expect(data?.agentDirectoryLink).toContain(
+      "baeareigpu5jgm3xrkouspfacgvq65i25cz63nnseqatu5davp35jenwlla",
+    )
     expect(data?.githubLink).toContain("brazil-coffee-farm.json")
     expect(data?.identityAppsSlug).toBeUndefined()
     expect(data?.verificationStatus).toBe("failed")
+    expect(data?.hasBadgeDetails).toBe(false)
   })
 
-  it("merges streaming variant github when referenceGithubUrlStreaming is set", () => {
-    const brazilUuid = stableAgentUuidForRecordName("Brazil Coffee Farm")
+  it("renders transport label and github from message_transport wire field", () => {
     const { nodes } = topologyWireToReactFlow(
       {
         nodes: [
           {
-            id: "node://10101010-1010-4101-8101-101010101010",
-            type: "customNode",
-            label: "Brazil Coffee Farm Agent",
-            layer_index: 0,
-            stable_agent_id: `agent://${brazilUuid}`,
-            agent_record_uri:
-              "../../agents/supervisors/auction/oasf/agents/brazil-coffee-farm.json",
+            id: "node://transport",
+            type: "transportNode",
+            label: "Transport: SLIM",
+            message_transport: "SLIM",
           },
         ],
         edges: [],
       },
-      { validateUrls: false, identityUiVariant: "publish_subscribe_streaming" },
+      { validateUrls: false, isStreaming: true },
     )
-    const data = nodes[0]?.data as { githubLink?: string }
-    expect(data?.githubLink).toContain("#L193")
+    const data = nodes[0]?.data as { label?: string; githubLink?: string }
+    expect(data?.label).toBe("Transport: SLIM")
+    expect(data?.githubLink).toContain("slim")
   })
+
+  it.each([
+    {
+      caseName: "enriched seed label Transport: SLIM",
+      label: "Transport: SLIM",
+    },
+    {
+      caseName: "runtime middleware label slim",
+      label: "slim",
+    },
+    {
+      caseName: "seed catalog label Transport",
+      label: "Transport",
+    },
+  ])(
+    "collapses transport nodes onto one canonical rf id ($caseName)",
+    ({ label }) => {
+      const { nodes } = topologyWireToReactFlow(
+        {
+          nodes: [
+            {
+              id: "node://seed-transport",
+              type: "transportNode",
+              label: "Transport: SLIM",
+              layer_index: 1,
+            },
+            {
+              id: "node://runtime-transport",
+              type: "transportNode",
+              label,
+              layer_index: 1,
+            },
+          ],
+          edges: [],
+        },
+        { validateUrls: false },
+      )
+      const transportNodes = nodes.filter((n) => n.type === "transportNode")
+      expect(transportNodes).toHaveLength(1)
+      expect(transportNodes[0]?.id).toBe("transport://transport")
+    },
+  )
 })

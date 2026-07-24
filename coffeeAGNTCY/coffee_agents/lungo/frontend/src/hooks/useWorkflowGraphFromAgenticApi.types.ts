@@ -15,22 +15,6 @@ export const SSE_RECONNECT_BACKOFF_MS = 250
 /** Auto-clear messaging highlights if no newer event refreshes them. */
 export const MESSAGING_HIGHLIGHT_TTL_MS = 2_500
 
-export function mergeDiscoveryNodes(base: Node[], prev: Node[]): Node[] {
-  const overlay = prev.filter((n) => n.id.startsWith("discovery-"))
-  if (overlay.length === 0) return base
-  return [...base, ...overlay]
-}
-
-export function mergeDiscoveryEdges(base: Edge[], prev: Edge[]): Edge[] {
-  const overlay = prev.filter(
-    (e) =>
-      e.source.startsWith("discovery-") || e.target.startsWith("discovery-"),
-  )
-  if (overlay.length === 0) return base
-  const ids = new Set(base.map((e) => e.id))
-  return [...base, ...overlay.filter((e) => !ids.has(e.id))]
-}
-
 export interface UseWorkflowGraphFromAgenticApiParams {
   pattern: PatternType
   selectedWorkflowSummary: WorkflowSummary | null
@@ -38,7 +22,7 @@ export interface UseWorkflowGraphFromAgenticApiParams {
   setEdges: React.Dispatch<React.SetStateAction<Edge[]>>
   handleOpenIdentityModal: (nodeId: string, nodeData: CustomNodeData) => void
   handleOpenOasfModal: (nodeData: CustomNodeData) => void
-  onTopologyApplied?: () => void
+  onTopologyApplied?: (nodeIds: readonly string[]) => void
 }
 
 export interface UseWorkflowGraphFromAgenticApiResult {

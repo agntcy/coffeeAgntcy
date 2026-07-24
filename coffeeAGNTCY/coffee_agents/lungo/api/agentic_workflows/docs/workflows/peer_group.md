@@ -5,7 +5,7 @@
 ```mermaid
 graph TD
     Transport["Transport: SLIM"]
-    Buyer["Buyer Logistics Agent"]
+    Buyer["Logistics Agent (Buyer)"]
     Farm["Tatooine Coffee Farm Agent"]
     Shipper["Shipper Agent"]
     Accountant["Accountant Agent"]

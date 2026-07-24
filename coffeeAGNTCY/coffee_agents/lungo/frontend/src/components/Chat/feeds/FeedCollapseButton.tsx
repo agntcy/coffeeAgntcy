@@ -46,7 +46,6 @@ export function FeedCollapseButton({
   return (
     <ListItemButton
       component="button"
-      type="button"
       onClick={onToggle}
       aria-expanded={expanded}
       sx={mergedSx}

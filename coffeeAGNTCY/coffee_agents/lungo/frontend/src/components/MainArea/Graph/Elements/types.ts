@@ -9,11 +9,13 @@ export interface ExtraHandle {
 export interface CustomNodeData {
   onOpenOasfModal?: (nodeData: CustomNodeData) => void
   icon: React.ReactNode
-  label1: string
-  label2: string
+  label: string
+  label_subtitle: string
   active?: boolean
   selected?: boolean
   agentCid?: string
+  /** Inline agent record for runtime-discovered agents (skips directory fetch). */
+  oasfRecord?: Record<string, unknown>
   handles?: "all" | "target" | "source"
   extraHandles?: ExtraHandle[]
   verificationStatus?: "verified" | "failed" | "pending"

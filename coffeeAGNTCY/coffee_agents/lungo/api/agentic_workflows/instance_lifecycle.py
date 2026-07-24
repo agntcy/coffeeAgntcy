@@ -11,7 +11,7 @@ from uuid import uuid4
 from common.workflow_instance_store.interfaces import WorkflowInstanceDataStore
 from schema.types import Data, EventType, Workflow, WorkflowInstance
 
-_EVENT_V1_SCHEMA_VERSION = "1.0.0"
+_EVENT_V1_SCHEMA_VERSION = "1.1.0"
 _SEED_EVENT_SOURCE = "lungo.agentic_workflows.api"
 
 
@@ -62,6 +62,7 @@ def build_instantiate_seed_event(
                     "scenario": wf.scenario,
                     "starting_topology": wf.starting_topology.model_dump(
                         mode="json",
+                        exclude_none=True,
                     ),
                     "instances": {
                         instance_uri: {

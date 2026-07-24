@@ -7,8 +7,10 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
+from agents.supervisors.recruiter import dynamic_workflow_agent as dwa
 from agents.supervisors.recruiter.dynamic_workflow_agent import (
     DynamicWorkflowAgent,
+    _reachable_url,
 )
 from agents.supervisors.recruiter.models import (
     STATE_KEY_RECRUITED_AGENTS,
@@ -24,6 +26,65 @@ def _make_ctx(state: dict | None = None):
     ctx.invocation_id = "abcd1234-5678"
     ctx.session.events = []
     return ctx
+
+
+class TestReachableUrl:
+    @pytest.mark.parametrize(
+        "case, url, host, expected",
+        [
+            (
+                "rewrites 0.0.0.0 keeping port",
+                "http://0.0.0.0:9999",
+                "host.docker.internal",
+                "http://host.docker.internal:9999",
+            ),
+            (
+                "rewrites 0.0.0.0 to localhost for host run",
+                "http://0.0.0.0:9998",
+                "localhost",
+                "http://localhost:9998",
+            ),
+            (
+                "rewrites 127.0.0.1",
+                "http://127.0.0.1:9997/a2a",
+                "host.docker.internal",
+                "http://host.docker.internal:9997/a2a",
+            ),
+            (
+                "rewrites localhost",
+                "http://localhost:9999",
+                "host.docker.internal",
+                "http://host.docker.internal:9999",
+            ),
+            (
+                "leaves routable host untouched",
+                "http://brazil-farm-server:9999",
+                "host.docker.internal",
+                "http://brazil-farm-server:9999",
+            ),
+            (
+                "leaves non-http transport untouched",
+                "slim://0.0.0.0:46357",
+                "host.docker.internal",
+                "slim://0.0.0.0:46357",
+            ),
+            (
+                "handles missing port",
+                "http://0.0.0.0",
+                "host.docker.internal",
+                "http://host.docker.internal",
+            ),
+            (
+                "returns empty unchanged",
+                "",
+                "host.docker.internal",
+                "",
+            ),
+        ],
+    )
+    def test_reachable_url(self, case, url, host, expected):
+        with patch.object(dwa, "DISCOVERED_AGENT_HOST", host):
+            assert _reachable_url(url) == expected, case
 
 
 class TestDynamicWorkflowAgentConstruction:
@@ -93,3 +154,39 @@ class TestDynamicWorkflowAgentRun:
         # Should get an error about failing to parse
         assert len(events) == 1
         assert "Failed to parse" in events[0].content.parts[0].text
+
+    @pytest.mark.asyncio
+    async def test_delegation_transport_error_yields_error(self):
+        """Transport/client setup failures should yield a delegation error event."""
+        agent = DynamicWorkflowAgent(name="dw_test", description="test")
+        record = {
+            "name": "Farm Agent",
+            "url": "http://farm:9999",
+            "preferredTransport": "jsonrpc",
+            "description": "desc",
+            "version": "1.0.0",
+            "capabilities": {"streaming": False},
+            "defaultInputModes": ["text"],
+            "defaultOutputModes": ["text"],
+            "skills": [],
+        }
+        state = {
+            STATE_KEY_SELECTED_AGENT: "farm_cid",
+            STATE_KEY_RECRUITED_AGENTS: {"farm_cid": record},
+            STATE_KEY_TASK_MESSAGE: "Try this",
+        }
+        ctx = _make_ctx(state=state)
+
+        mock_factory = MagicMock()
+        mock_factory.create = AsyncMock(
+            side_effect=ValueError("no compatible transports found.")
+        )
+
+        events = []
+        with patch.object(dwa, "a2a_client_factory", mock_factory):
+            async for event in agent._run_async_impl(ctx):
+                events.append(event)
+
+        assert len(events) == 1
+        assert "Failed to delegate" in events[0].content.parts[0].text
+        assert "no compatible transports found" in events[0].content.parts[0].text

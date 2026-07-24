@@ -18,6 +18,8 @@ from uuid import uuid4
 import httpx
 from pydantic import ValidationError
 
+from api.agentic_workflows.agent_ui_enrichment import register_from_record
+from api.agentic_workflows.transport_ui_enrichment import init_transport_cache
 from common.stable_agent_id import stable_agent_uuid_for_name
 from schema.types import (
     AgentNode,
@@ -160,6 +162,7 @@ def set_starting_workflows() -> None:
         return
     with _INIT_LOCK:
         _STARTING_WORKFLOWS = _load_and_validate_starting_workflows_from_file(_STARTING_WORKFLOWS_FILE)
+        init_transport_cache()
         _INITIALIZED = True
 
 
@@ -177,6 +180,14 @@ def _load_and_validate_starting_workflows_from_file(target: Path) -> dict[str, W
         Mapping of workflow name to validated Workflow model.  Entries that
         fail Pydantic validation are logged and skipped so the server can
         still start with the remaining valid workflows.
+
+    Notes
+    -----
+    This function does **not** call ``init_transport_cache()``. Transport
+    enrichment facts are initialized only in ``set_starting_workflows()`` at
+    server startup. Tests that call this loader directly and assert transport
+    wire fields must use ``load_catalog_with_transport_cache()`` from
+    ``tests.unit.agentic_workflows.catalog_test_helpers``.
     """
     if target is None or not str(target).strip():
         raise ValueError("target path must not be empty")
@@ -215,9 +226,9 @@ def _load_and_validate_starting_workflows_from_file(target: Path) -> dict[str, W
                     # in the future these should become grounds for invalidating the workflow entirely.
                     try:
                         record = _load_agent_record_from_uri(node.agent_record_uri, base_path=target.parent)
-                        node.stable_agent_id = stable_agent_id_from_uuid(
-                            stable_agent_uuid_for_name(record["name"])
-                        )
+                        stable_uuid = stable_agent_uuid_for_name(record["name"])
+                        node.stable_agent_id = stable_agent_id_from_uuid(stable_uuid)
+                        register_from_record(str(stable_uuid), record)
                     # FileNotFoundError is a subclass of OSError.
                     except (FileNotFoundError, httpx.RequestError) as exc:
                         logger.warning("Failed to load agent record for node at index %d (id %s) in workflow at index %d (name %s) but will use the workflow anyhow: %s",

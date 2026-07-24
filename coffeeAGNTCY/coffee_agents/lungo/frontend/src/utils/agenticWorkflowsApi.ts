@@ -6,13 +6,10 @@
  * Today only the workflow-summary listing is consumed; patterns and use-cases
  * are derived client-side from the distinct values seen across summaries.
  *
- * Maps catalog `WorkflowSummary.name` to Lungo `PatternType` for chat/graph
- * routing until the API exposes an explicit slug aligned with stored workflow fields.
- *
- * Known limitation: `WORKFLOW_NAME_TO_PATTERN_SLUG` must stay aligned with backend
- * catalog display names; drift turns agentic graph mode off for a workflow with no
- * compile-time guard here. Replacing this map with an API-provided slug is deferred
- * until catalog/schema work lands and the API exposes that slug.
+ * Catalog `WorkflowSummary` carries `supports_sse`, `supports_streaming`, and
+ * `chat_api_target` for routing. `PatternType` is derived from those capability
+ * fields (no static workflow-name map), with a legacy fallback for catalog rows
+ * served before the capability fields existed.
  */
 
 import { agenticWorkflowsAuthHeaders } from "@/api/agenticWorkflowsClient"
@@ -21,7 +18,10 @@ import {
   getAgenticWorkflowsApiUrl,
   LUNGO_FRONTEND_URLS,
 } from "@/urls"
-import { PATTERNS, type PatternType } from "@/utils/patternUtils"
+import { type ChatApiTarget, type PatternType } from "@/utils/patternUtils"
+import { patternTypeFromSummary } from "@/utils/workflowCapabilities"
+
+export type { ChatApiTarget }
 
 /** One row of `GET /agentic-workflows/` (matches backend `WorkflowSummary`). */
 export interface WorkflowSummary {
@@ -29,6 +29,9 @@ export interface WorkflowSummary {
   pattern: string
   use_case: string
   scenario: string
+  supports_sse: boolean
+  supports_streaming: boolean
+  chat_api_target: ChatApiTarget | null
 }
 
 /** Log label / relative path for catalog requests (matches router mount). */
@@ -55,30 +58,48 @@ const sleep = (ms: number, signal: AbortSignal): Promise<void> =>
     signal.addEventListener("abort", onAbort, { once: true })
   })
 
-export const WORKFLOW_NAME_TO_PATTERN_SLUG: Readonly<
-  Record<string, PatternType>
-> = {
-  "Publish Subscribe": PATTERNS.PUBLISH_SUBSCRIBE,
-  "Publish Subscribe Streaming": PATTERNS.PUBLISH_SUBSCRIBE_STREAMING,
-  "Group Messaging": PATTERNS.GROUP_MESSAGING,
-  "A2A HTTP": PATTERNS.A2A_HTTP,
-}
-
-export const mapWorkflowNameToSlug = (name: string): PatternType | null =>
-  WORKFLOW_NAME_TO_PATTERN_SLUG[name] ?? null
-
 const isNonEmptyString = (value: unknown): value is string =>
   typeof value === "string" && value.length > 0
 
-const isWorkflowSummary = (value: unknown): value is WorkflowSummary => {
-  if (value === null || typeof value !== "object") return false
+const isChatApiTarget = (value: unknown): value is ChatApiTarget =>
+  value === "exchange" || value === "logistics" || value === "discovery"
+
+const parseChatApiTarget = (
+  obj: Record<string, unknown>,
+): ChatApiTarget | null => {
+  const target = obj.chat_api_target
+  return isChatApiTarget(target) ? target : null
+}
+
+/**
+ * Normalize one catalog row; returns null when required string fields are missing.
+ * Missing `supports_sse` / `supports_streaming` are treated as legacy (default false).
+ */
+const parseWorkflowSummaryRow = (value: unknown): WorkflowSummary | null => {
+  if (value === null || typeof value !== "object") return null
   const obj = value as Record<string, unknown>
-  return (
-    isNonEmptyString(obj.name) &&
-    isNonEmptyString(obj.pattern) &&
-    isNonEmptyString(obj.use_case) &&
-    isNonEmptyString(obj.scenario)
-  )
+  if (
+    !isNonEmptyString(obj.name) ||
+    !isNonEmptyString(obj.pattern) ||
+    !isNonEmptyString(obj.use_case) ||
+    !isNonEmptyString(obj.scenario)
+  ) {
+    return null
+  }
+  const name = obj.name
+  return {
+    name,
+    pattern: obj.pattern,
+    use_case: obj.use_case,
+    scenario: obj.scenario,
+    supports_sse:
+      typeof obj.supports_sse === "boolean" ? obj.supports_sse : false,
+    supports_streaming:
+      typeof obj.supports_streaming === "boolean"
+        ? obj.supports_streaming
+        : false,
+    chat_api_target: parseChatApiTarget(obj),
+  }
 }
 
 /**
@@ -117,9 +138,9 @@ export const fetchWorkflowSummaries = async (
   const raw = body as Record<string, unknown>
   const summaries: WorkflowSummary[] = []
   for (const key of Object.keys(raw)) {
-    const value = raw[key]
-    if (isWorkflowSummary(value)) {
-      summaries.push(value)
+    const row = parseWorkflowSummaryRow(raw[key])
+    if (row) {
+      summaries.push(row)
     }
   }
   return summaries
@@ -202,7 +223,7 @@ export const pickDefaultWorkflowSummaryForPattern = (
   rows: WorkflowSummary[],
   pattern: PatternType,
 ): WorkflowSummary | null => {
-  const matches = rows.filter((s) => mapWorkflowNameToSlug(s.name) === pattern)
+  const matches = rows.filter((s) => patternTypeFromSummary(s) === pattern)
   if (matches.length === 0) return null
   matches.sort((a, b) => {
     const byName = a.name.localeCompare(b.name)

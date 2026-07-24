@@ -620,6 +620,8 @@ Observability requires both the `observability` profile (either in `COMPOSE_PROF
      - **User/Password:** `admin` / `admin`
    - If already present, select the **ClickHouse** datasource (pre-configured in the Docker Compose setup).
 
+   > **Note:** `clickhouse-server:9000` is the in-cluster address (Docker service name + container port) used by Grafana and the otel-collector over the Compose network — leave this as-is. If you need to reach ClickHouse's native TCP port **from the host** (e.g. `clickhouse-client` on your machine), use **`localhost:9100`**. The host port was moved off `9000` to avoid clashing with the IoC management plane (`ioc` profile); the HTTP interface remains on `localhost:8123`.
+
    ![Screenshot: ClickHouse Datasource](images/grafana_clickhouse_datasource.png)
    ![Screenshot: ClickHouse Connection](images/grafana_clickhouse_connection.png)
 

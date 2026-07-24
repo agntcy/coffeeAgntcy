@@ -18,6 +18,8 @@
     identityApiServerUrl: "https://api.agent-identity.outshift.com"
     transportServerEndpoint: "http://corto-local-cluster-slim:46357"
     defaultMessageTransport: "SLIM"
+    slimServer: "corto-local-cluster-slim:46357"
+    natsServer: "corto-local-cluster-nats:4222"
   externalSecrets:
     secretStoreName: local-secret-store
     secretStoreKind: ClusterSecretStore
@@ -26,7 +28,12 @@
         remoteRef:
           key: my-local-secret
           property: AZURE_API_KEY
+      - secretKey: SLIM_SHARED_SECRET
+        remoteRef:
+          key: my-local-secret
+          property: SLIM_SHARED_SECRET
 {{- end }}
 
 localExternalSecret:
   azureApiKey: {{ env "AZURE_API_KEY" | quote }}
+  slimSharedSecret: {{ env "SLIM_SHARED_SECRET" | default "slim-shared-secret-REPLACE_WITH_RANDOM_32PLUS_CHARS" | quote }}

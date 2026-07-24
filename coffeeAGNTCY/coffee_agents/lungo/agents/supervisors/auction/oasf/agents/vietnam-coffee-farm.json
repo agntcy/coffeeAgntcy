@@ -1,4 +1,10 @@
 {
+  "annotations": {
+    "a2a.supports_authenticated_extended_card": "false",
+    "lungo.agentDirectoryCid": "/baeareiheas5bdad2wuurvpvqonuq4ry2u6vdzw4hikrnzssebchjojjr5m",
+    "lungo.hasPolicyOverride": "false",
+    "lungo.identityAppSlug": "vietnam-coffee-farm"
+  },
   "authors": [
     "agntcy/coffee-agntcy-maintainers"
   ],
@@ -51,7 +57,7 @@
           ],
           "description": "An AI agent that returns the yield of coffee beans in pounds for the Vietnam farm.",
           "name": "Vietnam Coffee Farm",
-          "preferredTransport": "slimrpc",
+          "preferredTransport": "slim",
           "protocolVersion": "0.3.0",
           "skills": [
             {

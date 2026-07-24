@@ -13,6 +13,7 @@ from api.agentic_workflows.router import create_agentic_workflows_router
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 from schema.types import Workflow
+from tests.unit.agentic_workflows.catalog_test_helpers import load_catalog_with_transport_cache
 
 _FAKE_WORKFLOWS: dict[str, Workflow] = {
     wf.name: wf
@@ -21,8 +22,11 @@ _FAKE_WORKFLOWS: dict[str, Workflow] = {
             {
                 "pattern": "publish_subscribe",
                 "use_case": "Purchasing",
-                "scenario": "Pub Sub Coffee scenario",
-                "name": "Pub Sub Coffee",
+                "scenario": "Publish Subscribe scenario",
+                "name": "Publish Subscribe",
+                "supports_sse": False,
+                "supports_streaming": False,
+                "chat_api_target": "exchange",
                 "starting_topology": {
                     "nodes": [
                         {
@@ -45,13 +49,16 @@ _FAKE_WORKFLOWS: dict[str, Workflow] = {
                 "use_case": "Order Fulfillment",
                 "scenario": "Group Logistics scenario",
                 "name": "Group Logistics",
+                "supports_sse": True,
+                "supports_streaming": False,
+                "chat_api_target": "logistics",
                 "starting_topology": {
                     "nodes": [
                         {
                             "id": "node://00000000-0000-4000-a000-000000000002",
                             "operation": "read",
-                            "type": "customNode",
-                            "label": "Agent B",
+                            "type": "group",
+                            "label": "Logistics Group",
                             "size": {"width": 1.0, "height": 1.0},
                             "layer_index": 0,
                         },
@@ -65,8 +72,11 @@ _FAKE_WORKFLOWS: dict[str, Workflow] = {
             {
                 "pattern": "publish_subscribe",
                 "use_case": "Order Fulfillment",
-                "scenario": "Pub Sub Orders scenario",
-                "name": "Pub Sub Orders",
+                "scenario": "Publish Subscribe Streaming scenario",
+                "name": "Publish Subscribe Streaming",
+                "supports_sse": False,
+                "supports_streaming": True,
+                "chat_api_target": "exchange",
                 "starting_topology": {
                     "nodes": [
                         {
@@ -86,7 +96,11 @@ _FAKE_WORKFLOWS: dict[str, Workflow] = {
     ]
 }
 
-_ALL_NAMES = {"Pub Sub Coffee", "Group Logistics", "Pub Sub Orders"}
+_ALL_NAMES = {
+    "Publish Subscribe",
+    "Group Logistics",
+    "Publish Subscribe Streaming",
+}
 
 _PATCH_TARGET = "api.agentic_workflows.router.get_workflows"
 
@@ -131,7 +145,7 @@ _LIST_CASES: tuple[ListCase, ...] = (
         inputs=ListInputs(params={"patterns": "publish_subscribe"}),
         outputs=ListOutputs(
             status=200,
-            expected_names={"Pub Sub Coffee", "Pub Sub Orders"},
+            expected_names={"Publish Subscribe", "Publish Subscribe Streaming"},
         ),
     ),
     ListCase(
@@ -139,7 +153,7 @@ _LIST_CASES: tuple[ListCase, ...] = (
         inputs=ListInputs(params={"use_cases": "Order Fulfillment"}),
         outputs=ListOutputs(
             status=200,
-            expected_names={"Group Logistics", "Pub Sub Orders"},
+            expected_names={"Group Logistics", "Publish Subscribe Streaming"},
         ),
     ),
     ListCase(
@@ -150,7 +164,9 @@ _LIST_CASES: tuple[ListCase, ...] = (
                 "use_cases": "Order Fulfillment",
             }
         ),
-        outputs=ListOutputs(status=200, expected_names={"Pub Sub Orders"}),
+        outputs=ListOutputs(
+            status=200, expected_names={"Publish Subscribe Streaming"}
+        ),
     ),
     ListCase(
         case_id="filter_no_match_returns_empty",
@@ -179,7 +195,25 @@ def test_list_agentic_workflows(case: ListCase, client: TestClient) -> None:
 
     for name, summary in data.items():
         assert summary["name"] == name
-        assert set(summary.keys()) == {"name", "pattern", "use_case", "scenario"}
+        assert set(summary.keys()) == {
+            "name",
+            "pattern",
+            "use_case",
+            "scenario",
+            "supports_sse",
+            "supports_streaming",
+            "chat_api_target",
+        }
+        assert isinstance(summary["supports_sse"], bool)
+        assert isinstance(summary["supports_streaming"], bool)
+        if name == "Group Logistics":
+            assert summary["supports_sse"] is True
+            assert summary["chat_api_target"] == "logistics"
+        elif name == "Publish Subscribe Streaming":
+            assert summary["supports_streaming"] is True
+            assert summary["chat_api_target"] == "exchange"
+        elif name == "Publish Subscribe":
+            assert summary["chat_api_target"] == "exchange"
 
 
 # ---------------------------------------------------------------------------
@@ -209,10 +243,10 @@ class DetailCase(NamedTuple):
 _DETAIL_CASES: tuple[DetailCase, ...] = (
     DetailCase(
         case_id="existing_workflow",
-        inputs=DetailInputs(workflow_name="Pub Sub Coffee", topology_only=None),
+        inputs=DetailInputs(workflow_name="Publish Subscribe", topology_only=None),
         outputs=DetailOutputs(
             status=200,
-            expected_name="Pub Sub Coffee",
+            expected_name="Publish Subscribe",
             expected_pattern="publish_subscribe",
             expected_use_case="Purchasing",
             instances_empty=True,
@@ -231,10 +265,10 @@ _DETAIL_CASES: tuple[DetailCase, ...] = (
     ),
     DetailCase(
         case_id="topology_only_true",
-        inputs=DetailInputs(workflow_name="Pub Sub Coffee", topology_only=True),
+        inputs=DetailInputs(workflow_name="Publish Subscribe", topology_only=True),
         outputs=DetailOutputs(
             status=200,
-            expected_name="Pub Sub Coffee",
+            expected_name="Publish Subscribe",
             expected_pattern="publish_subscribe",
             expected_use_case="Purchasing",
             instances_empty=True,
@@ -242,10 +276,10 @@ _DETAIL_CASES: tuple[DetailCase, ...] = (
     ),
     DetailCase(
         case_id="topology_only_false_same_as_default",
-        inputs=DetailInputs(workflow_name="Pub Sub Coffee", topology_only=False),
+        inputs=DetailInputs(workflow_name="Publish Subscribe", topology_only=False),
         outputs=DetailOutputs(
             status=200,
-            expected_name="Pub Sub Coffee",
+            expected_name="Publish Subscribe",
             expected_pattern="publish_subscribe",
             expected_use_case="Purchasing",
             instances_empty=True,
@@ -280,3 +314,73 @@ def test_get_agentic_workflow(case: DetailCase, client: TestClient) -> None:
 
     if case.outputs.instances_empty:
         assert data["instances"] == {}
+
+
+# ---------------------------------------------------------------------------
+# Topology enrichment (real catalog)
+# ---------------------------------------------------------------------------
+
+
+@pytest.fixture()
+def catalog_client(workflow_api_headers: dict[str, str]) -> TestClient:
+    catalog = load_catalog_with_transport_cache()
+    app = FastAPI(openapi_url=None, docs_url=None, redoc_url=None)
+    app.include_router(create_agentic_workflows_router())
+    with patch(_PATCH_TARGET, return_value=catalog):
+        with TestClient(app, headers=workflow_api_headers) as test_client:
+            yield test_client
+
+
+def _transport_nodes(topology: dict) -> list[dict]:
+    return [n for n in topology.get("nodes", []) if n.get("type") == "transportNode"]
+
+
+def _agent_nodes_with_stable_id(topology: dict) -> list[dict]:
+    return [n for n in topology.get("nodes", []) if n.get("stable_agent_id")]
+
+
+def test_get_group_messaging_topology_enriches_transport_node(
+    catalog_client: TestClient,
+) -> None:
+    resp = catalog_client.get(
+        "/agentic-workflows/Group Messaging/",
+        params={"topology_only": True},
+    )
+    assert resp.status_code == 200
+    transport_nodes = _transport_nodes(resp.json()["starting_topology"])
+    assert len(transport_nodes) == 1
+    node = transport_nodes[0]
+    assert node["message_transport"] == "SLIM"
+    assert node["label"] == "Transport: SLIM"
+
+
+def test_get_publish_subscribe_topology_enriches_transport_node(
+    catalog_client: TestClient,
+) -> None:
+    resp = catalog_client.get(
+        "/agentic-workflows/Publish Subscribe/",
+        params={"topology_only": True},
+    )
+    assert resp.status_code == 200
+    transport_nodes = _transport_nodes(resp.json()["starting_topology"])
+    assert len(transport_nodes) == 1
+    node = transport_nodes[0]
+    assert node["message_transport"] == "SLIM"
+    assert node["label"] == "Transport: SLIM"
+
+
+def test_get_publish_subscribe_topology_enriches_agent_wire_fields(
+    catalog_client: TestClient,
+) -> None:
+    resp = catalog_client.get(
+        "/agentic-workflows/Publish Subscribe/",
+        params={"topology_only": True},
+    )
+    assert resp.status_code == 200
+    agent_nodes = _agent_nodes_with_stable_id(resp.json()["starting_topology"])
+    assert agent_nodes
+    buyer = next(n for n in agent_nodes if n.get("label_subtitle") == "Buyer")
+    assert buyer.get("identity_app_slug") == "auction-supervisor"
+    assert buyer.get("agent_directory_cid") == (
+        "/baeareicltg46rvjhqxd6pn47z5du3rgxoynvct6poeknf5tyemsxygwdrq"
+    )

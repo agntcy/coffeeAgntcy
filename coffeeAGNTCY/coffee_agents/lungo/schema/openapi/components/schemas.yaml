@@ -81,7 +81,13 @@ components:
 
     WorkflowSummary:
       type: object
-      required: [name, pattern, use_case, scenario]
+      required:
+        - name
+        - pattern
+        - use_case
+        - scenario
+        - supports_sse
+        - supports_streaming
       additionalProperties: false
       properties:
         name:
@@ -96,6 +102,17 @@ components:
         scenario:
           type: string
           minLength: 1
+        supports_sse:
+          type: boolean
+        supports_streaming:
+          type: boolean
+        chat_api_target:
+          type: string
+          nullable: true
+          enum: [exchange, logistics, discovery]
+          description: >-
+            Which Lungo chat API base to use; null when the workflow is not
+            runnable in the UI.
 
     WorkflowSummaryMapResponse:
       type: object

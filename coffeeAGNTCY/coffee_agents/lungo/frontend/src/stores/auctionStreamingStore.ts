@@ -5,7 +5,6 @@
 
 import { create } from "zustand"
 import type { AuctionStreamingResponse } from "./auctionStreaming.types"
-import { getStreamingEndpointForPattern, PATTERNS } from "@/utils/patternUtils"
 import { isLocalDev, parseFetchError } from "@/utils/const.ts"
 import { logger } from "@/utils/logger"
 
@@ -25,7 +24,11 @@ interface StreamingState {
   prompt: string | null
   abortController: AbortController | null
   sessionId: string | null // <-- added
-  connect: (prompt: string, workflowInstanceId?: string | null) => Promise<void>
+  connect: (
+    prompt: string,
+    workflowInstanceId?: string | null,
+    streamUrl?: string,
+  ) => Promise<void>
   disconnect: () => void
   reset: () => void
 }
@@ -42,7 +45,11 @@ const initialState = {
 export const useAuctionStreamingStore = create<StreamingState>((set) => ({
   ...initialState,
 
-  connect: async (prompt: string, workflowInstanceId?: string | null) => {
+  connect: async (
+    prompt: string,
+    workflowInstanceId?: string | null,
+    streamUrl?: string,
+  ) => {
     const abortController = new AbortController()
     set({
       status: "connecting",
@@ -53,12 +60,17 @@ export const useAuctionStreamingStore = create<StreamingState>((set) => ({
       sessionId: null, // reset sessionId on new connect
     })
 
-    try {
-      const streamingUrl = getStreamingEndpointForPattern(
-        PATTERNS.PUBLISH_SUBSCRIBE_STREAMING,
-      )
+    if (!streamUrl) {
+      set({
+        status: "error",
+        error: "Streaming URL is required",
+        abortController: null,
+      })
+      return
+    }
 
-      const response = await fetch(streamingUrl, {
+    try {
+      const response = await fetch(streamUrl, {
         method: "POST",
         credentials: isLocalDev ? "omit" : "include",
         headers: { "Content-Type": "application/json" },

@@ -1,0 +1,4 @@
+# Keeps the .secrets directory so the ioc-cfn-mgmt-plane-svc bind mount
+# (./.secrets:/home/app/.secrets:ro) has a valid host path.
+# Do not commit real secrets here. The management service can also take a
+# MEMORY_PROVIDER_ENCRYPTION_KEY env var instead of a key file.

@@ -9,14 +9,15 @@ import {
   Button,
   IconButton,
   Link,
-  Modal,
-  ModalContent,
-  ModalTitle,
+  Dialog,
+  DialogContent,
+  DialogTitle,
   Stack,
   Typography,
 } from "@open-ui-kit/core"
 import Close from "@mui/icons-material/Close"
 import { getDirectoryServerUrl, getDirectoryVersion } from "@/urls"
+import type { ChatApiTarget } from "@/utils/patternUtils"
 import { fetchOasfRecord, OasfRecord } from "./DirectoryApi"
 import { CustomNodeData } from "../Elements/types"
 import { IdentityServiceError } from "../Identity/IdentityApi"
@@ -34,6 +35,7 @@ export interface OasfRecordModalProps {
   nodeName: string
   /** When null/undefined the modal skips fetch (see useEffect). */
   nodeData?: CustomNodeData | null
+  chatApiTarget?: ChatApiTarget | null
 }
 
 const OasfRecordModal: React.FC<OasfRecordModalProps> = ({
@@ -41,6 +43,7 @@ const OasfRecordModal: React.FC<OasfRecordModalProps> = ({
   onClose,
   nodeName,
   nodeData,
+  chatApiTarget = null,
 }) => {
   const directoryServerUrl = getDirectoryServerUrl()
   const directoryVersion = getDirectoryVersion()
@@ -50,11 +53,11 @@ const OasfRecordModal: React.FC<OasfRecordModalProps> = ({
 
   const combinedLabel = useMemo(
     () =>
-      [nodeData?.label1, nodeData?.label2]
+      [nodeData?.label, nodeData?.label_subtitle]
         .filter(Boolean)
         .join(" ")
         .toLowerCase(),
-    [nodeData?.label1, nodeData?.label2],
+    [nodeData?.label, nodeData?.label_subtitle],
   )
 
   const isDirectoryNode = useMemo(
@@ -76,7 +79,7 @@ const OasfRecordModal: React.FC<OasfRecordModalProps> = ({
     setLoading(true)
     setError(null)
     try {
-      const data = await fetchOasfRecord(nodeData)
+      const data = await fetchOasfRecord(nodeData, chatApiTarget)
       setRecord(data)
     } catch (err) {
       const apiError = err as IdentityServiceError
@@ -101,14 +104,14 @@ const OasfRecordModal: React.FC<OasfRecordModalProps> = ({
   )
 
   return (
-    <Modal
+    <Dialog
       open={isOpen}
       onClose={onClose}
       maxWidth="md"
       fullWidth
       scroll="paper"
     >
-      <ModalTitle sx={{ pr: 6, position: "relative" }}>
+      <DialogTitle sx={{ pr: 6, position: "relative" }}>
         Directory Information
         <IconButton
           onClick={onClose}
@@ -117,9 +120,9 @@ const OasfRecordModal: React.FC<OasfRecordModalProps> = ({
         >
           <Close />
         </IconButton>
-      </ModalTitle>
+      </DialogTitle>
 
-      <ModalContent dividers>
+      <DialogContent dividers>
         {isDirectoryNode ? (
           <Stack sx={{ width: "100%", gap: 1.5 }}>
             <Stack sx={{ width: "100%", gap: 1.5 }}>
@@ -250,8 +253,8 @@ const OasfRecordModal: React.FC<OasfRecordModalProps> = ({
             <Typography color="text.primary">No data available</Typography>
           </Stack>
         )}
-      </ModalContent>
-    </Modal>
+      </DialogContent>
+    </Dialog>
   )
 }
 

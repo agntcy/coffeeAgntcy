@@ -20,12 +20,24 @@ export interface TopologyNodeWire {
   operation?: string
   type?: string
   label?: string
+  /** Optional curated subtitle (event_v1 >= 1.1.0); split fallback when absent. */
+  label_subtitle?: string
   size?: TopologySize
   layer_index?: number
   /** Optional absolute layout hint; when present the renderer skips auto-layout for this node. */
   position?: TopologyPosition
   agent_record_uri?: string
   stable_agent_id?: string | { root: string }
+  /** Inline agent record (flat AgentCard dict) for runtime-discovered agents. */
+  oasf_record?: Record<string, unknown>
+  /** Directory content id (CID) for a discovered agent. */
+  agent_cid?: string
+  agent_directory_cid?: string
+  identity_app_slug?: string
+  has_badge_override?: boolean
+  has_policy_override?: boolean
+  verification_status_override?: "verified" | "failed"
+  message_transport?: string
   [key: string]: unknown
 }
 

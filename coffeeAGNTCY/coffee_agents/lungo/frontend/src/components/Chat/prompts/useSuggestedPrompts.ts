@@ -6,12 +6,7 @@
 import { useEffect, useState } from "react"
 import { logger } from "@/utils/logger"
 import type { PromptCategory } from "./PromptTypes"
-import {
-  getRetryDelayMs,
-  getSuggestedPromptsUrl,
-  parsePromptCategories,
-  type SuggestedPromptsSource,
-} from "./suggestedPromptsUtils"
+import { getRetryDelayMs, parsePromptCategories } from "./suggestedPromptsUtils"
 
 interface UseSuggestedPromptsResult {
   categories: PromptCategory[]
@@ -19,14 +14,19 @@ interface UseSuggestedPromptsResult {
 }
 
 export function useSuggestedPrompts(
-  source: SuggestedPromptsSource,
-  pattern?: string,
+  promptsUrl: string | null | undefined,
 ): UseSuggestedPromptsResult {
   const [categories, setCategories] = useState<PromptCategory[]>([])
   const [isLoading, setIsLoading] = useState(true)
-  const url = getSuggestedPromptsUrl(source, pattern)
+  const url = promptsUrl ?? null
 
   useEffect(() => {
+    if (!url) {
+      setCategories([])
+      setIsLoading(false)
+      return
+    }
+
     const controller = new AbortController()
     let retryTimeoutId: ReturnType<typeof setTimeout> | null = null
 
@@ -54,7 +54,7 @@ export function useSuggestedPrompts(
         }
       } catch (err: unknown) {
         if (err instanceof Error && err.name !== "AbortError") {
-          logger.warn(`Failed to load ${source} suggested prompts.`, err)
+          logger.warn("Failed to load suggested prompts.", err)
           retryTimeoutId = setTimeout(
             () => fetchPrompts(retryCount + 1),
             getRetryDelayMs(retryCount),
@@ -73,7 +73,7 @@ export function useSuggestedPrompts(
         clearTimeout(retryTimeoutId)
       }
     }
-  }, [source, url])
+  }, [url])
 
   return { categories, isLoading }
 }

@@ -33,10 +33,15 @@ nats:
 corto-exchange:
   config:
     corsAllowedOrigins: "http://localhost:3000,http://127.0.0.1:3000"
-    slimSharedSecret: "slim-shared-secret-REPLACE_WITH_RANDOM_32PLUS_CHARS"
 
 corto-ui:
   environment: local
-  config:
-    exchangeAppApiUrl: "http://localhost:30080"
-    slimSharedSecret: "slim-shared-secret-REPLACE_WITH_RANDOM_32PLUS_CHARS"
+  configs:
+    env:
+      data:
+        VITE_EXCHANGE_APP_API_URL: http://localhost:30080
+
+# Populated by helmfile / config-overrides.yaml.gotmpl for local dev; defaults avoid nil when templating alone.
+localExternalSecret:
+  azureApiKey: ""
+  slimSharedSecret: "slim-shared-secret-REPLACE_WITH_RANDOM_32PLUS_CHARS"
