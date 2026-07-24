@@ -7,7 +7,7 @@ import React from "react"
 import { useTheme, Box } from "@open-ui-kit/core"
 
 import AgentIcon from "@/assets/Coffee_Icon.svg"
-import { useAppThemeMode } from "@/hooks/useAppThemeMode"
+import { useAppThemeMode } from "@/hooks/useApp"
 
 export interface ChatAvatarCircleProps {
   children: React.ReactNode

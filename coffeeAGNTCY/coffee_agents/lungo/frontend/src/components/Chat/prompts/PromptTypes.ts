@@ -8,6 +8,18 @@ export interface Prompt {
   description: string
 }
 
+/** Single entry in a suggested-prompts category list (wire may omit fields). */
+export type SuggestedPromptsPromptWire = {
+  prompt?: string
+  description?: string
+}
+
+/** GET /suggested-prompts JSON body: category name → prompt entries. */
+export type SuggestedPromptsResponse = Record<
+  string,
+  SuggestedPromptsPromptWire[]
+>
+
 export interface PromptCategory {
   name: string
   prompts: Prompt[]

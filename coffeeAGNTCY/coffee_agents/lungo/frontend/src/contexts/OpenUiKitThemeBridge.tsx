@@ -10,7 +10,7 @@ import { ThemeProvider as OpenUiKitThemeProvider } from "@open-ui-kit/core"
 
 import { CompactTheme } from "@/contexts/CompactTheme"
 import { ThemeModePersistence } from "@/contexts/ThemeModePersistence"
-import { ThemeMode } from "@/hooks/useAppThemeMode"
+import { ThemeMode } from "@/hooks/useApp"
 import { readStoredIsDarkMode } from "@/utils/themeStorage"
 
 export function OpenUiKitThemeBridge({ children }: { children: ReactNode }) {

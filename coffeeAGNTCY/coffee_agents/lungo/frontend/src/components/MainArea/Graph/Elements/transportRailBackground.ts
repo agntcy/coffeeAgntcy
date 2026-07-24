@@ -13,13 +13,15 @@ export function normalizeTransportName(value: string | undefined): string {
 }
 
 export function getRailThemeColors(theme: Theme) {
+  const isDark = theme.palette.mode === "dark"
   const highlight = theme.palette.primary.main
   const highlightedText = theme.palette.primary.contrastText
-  const resting =
-    theme.palette.mode === "dark"
-      ? theme.palette.background.paper
-      : theme.palette.common.white
-  const restingText = theme.palette.text.primary
+  const resting = isDark
+    ? theme.palette.vars.interactiveSecondaryDefaultDefault
+    : theme.palette.common.white
+  const restingText = isDark
+    ? theme.palette.vars.baseTextInverse
+    : theme.palette.text.primary
   const separator = alpha(
     theme.palette.primary.main,
     theme.palette.mode === "dark" ? 0.7 : 0.55,

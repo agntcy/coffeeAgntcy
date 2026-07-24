@@ -125,8 +125,8 @@ class Logger {
     this.log("error", message, data)
   }
 
-  apiError(endpoint: string, error: unknown) {
-    this.error(`API Error - ${endpoint}`, {
+  apiError(endpointLabel: string, error: unknown) {
+    this.error(`API Error - ${endpointLabel}`, {
       error: error instanceof Error ? error.message : error,
       stack: error instanceof Error ? error.stack : undefined,
     })
@@ -160,8 +160,8 @@ class UnsafeLogger extends Logger {
     this.log("error", message, data)
   }
 
-  apiError(endpoint: string, error: unknown) {
-    this.log("error", `API Error - ${endpoint}`, {
+  apiError(endpointLabel: string, error: unknown) {
+    this.log("error", `API Error - ${endpointLabel}`, {
       error: error instanceof Error ? error.message : error,
       stack: error instanceof Error ? error.stack : undefined,
     })

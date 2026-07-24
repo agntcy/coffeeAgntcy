@@ -4,14 +4,15 @@
  **/
 
 import React, { useRef, useState, useEffect } from "react"
-import axios from "axios"
 import { v4 as uuid } from "uuid"
+import { fetchJson, isHttpError } from "@/api/http"
 import type { Message } from "@/components/Chat/types"
-import { isLocalDev, parseApiError, Role } from "@/utils/const"
+import { reportRequestError } from "@/errors/request"
+import { isLocalDev, Role } from "@/utils/const"
 import { withRetry, RETRY_CONFIG } from "@/utils/retryUtils"
 import type { WorkflowSummary } from "@/utils/agenticWorkflowsApi"
 import {
-  getAgentPromptUrlForWorkflow,
+  getAgentPromptRequestForWorkflow,
   shouldEnableRetriesForWorkflow,
 } from "@/utils/workflow"
 import { useActiveWorkflowInstanceStore } from "@/stores/activeWorkflowInstanceStore"
@@ -31,6 +32,21 @@ export const buildPromptRequestBody = (
     prompt,
     ...(workflowInstanceId ? { workflow_instance_id: workflowInstanceId } : {}),
   }
+}
+
+function rethrowAgentPromptError(error: unknown): never {
+  if (isHttpError(error)) {
+    if (
+      error.status !== undefined &&
+      error.status >= 400 &&
+      error.status < 500
+    ) {
+      throw new Error(`HTTP ${error.status} - ${error.message}`)
+    }
+    throw new Error(error.message)
+  }
+
+  throw error instanceof Error ? error : new Error(String(error))
 }
 
 interface UseAgentAPIReturn {
@@ -85,7 +101,7 @@ export const useAgentAPI = (): UseAgentAPIReturn => {
       throw new Error("Prompt cannot be empty")
     }
 
-    const promptUrl = getAgentPromptUrlForWorkflow(summary)
+    const promptRequest = getAgentPromptRequestForWorkflow(summary)
     setLoading(true)
 
     const controller = new AbortController()
@@ -93,31 +109,23 @@ export const useAgentAPI = (): UseAgentAPIReturn => {
     const myRequestId = requestIdRef.current + 1
     requestIdRef.current = myRequestId
 
-    const makeApiCall = async (): Promise<ApiResponse> => {
-      const response = await axios.post<ApiResponse>(
-        promptUrl,
-        buildPromptRequestBody(prompt),
-        {
-          signal: controller.signal,
-          withCredentials: !isLocalDev,
-        },
-      )
-
-      return response.data
-    }
+    const makeApiCall = async (): Promise<ApiResponse> =>
+      fetchJson<ApiResponse>(promptRequest.url, {
+        method: "POST",
+        body: JSON.stringify(buildPromptRequestBody(prompt)),
+        credentials: isLocalDev ? "omit" : "include",
+        signal: controller.signal,
+        endpointLabel: promptRequest.endpointLabel,
+      })
 
     try {
       if (shouldEnableRetriesForWorkflow(summary)) {
         return await withRetry(makeApiCall)
-      } else {
-        return await makeApiCall()
       }
+      return await makeApiCall()
     } catch (error) {
-      const { status, message } = parseApiError(error)
-      if (status && status >= 400 && status < 500) {
-        throw new Error(`HTTP ${status} - ${message}`)
-      }
-      throw new Error(message)
+      reportRequestError(promptRequest.endpointLabel, error)
+      rethrowAgentPromptError(error)
     } finally {
       if (requestIdRef.current === myRequestId) {
         setLoading(false)
@@ -142,7 +150,7 @@ export const useAgentAPI = (): UseAgentAPIReturn => {
   ): Promise<void> => {
     if (!prompt.trim()) return
 
-    const promptUrl = getAgentPromptUrlForWorkflow(summary)
+    const promptRequest = getAgentPromptRequestForWorkflow(summary)
     const controller = new AbortController()
     abortRef.current = controller
     const myRequestId = requestIdRef.current + 1
@@ -173,17 +181,14 @@ export const useAgentAPI = (): UseAgentAPIReturn => {
       callbacks.onStart()
     }
 
-    const makeApiCall = async (): Promise<ApiResponse> => {
-      const response = await axios.post<ApiResponse>(
-        promptUrl,
-        buildPromptRequestBody(prompt),
-        {
-          signal: controller.signal,
-          withCredentials: !isLocalDev,
-        },
-      )
-      return response.data
-    }
+    const makeApiCall = async (): Promise<ApiResponse> =>
+      fetchJson<ApiResponse>(promptRequest.url, {
+        method: "POST",
+        body: JSON.stringify(buildPromptRequestBody(prompt)),
+        credentials: isLocalDev ? "omit" : "include",
+        signal: controller.signal,
+        endpointLabel: promptRequest.endpointLabel,
+      })
 
     const onRetryAttempt = (attempt: number) => {
       const delay =
@@ -237,11 +242,19 @@ export const useAgentAPI = (): UseAgentAPIReturn => {
         callbacks.onSuccess(apiResponse)
       }
     } catch (error) {
-      const { status, message } = parseApiError(error)
-      const userMessage =
-        status && status >= 400 && status < 500
-          ? `HTTP ${status} - ${message}`
-          : message
+      reportRequestError(promptRequest.endpointLabel, error)
+
+      let userMessage: string
+      if (isHttpError(error)) {
+        userMessage =
+          error.status !== undefined &&
+          error.status >= 400 &&
+          error.status < 500
+            ? `HTTP ${error.status} - ${error.message}`
+            : error.message
+      } else {
+        userMessage = error instanceof Error ? error.message : String(error)
+      }
 
       if (requestIdRef.current === myRequestId) {
         setMessages((prevMessages: Message[]) => {
@@ -257,7 +270,9 @@ export const useAgentAPI = (): UseAgentAPIReturn => {
       }
 
       if (callbacks?.onError) {
-        callbacks.onError(error as Error)
+        callbacks.onError(
+          error instanceof Error ? error : new Error(userMessage),
+        )
       }
     } finally {
       if (requestIdRef.current === myRequestId) {

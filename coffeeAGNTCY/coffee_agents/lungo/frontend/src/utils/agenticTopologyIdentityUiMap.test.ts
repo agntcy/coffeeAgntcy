@@ -170,6 +170,8 @@ describe("agenticTopologyIdentityUiMap", () => {
         validateUrls: false,
       })
       expect(out.githubLink).toContain("github.com")
+      expect(out.hasBadgeDetails).toBe(false)
+      expect(out.hasPolicyDetails).toBe(false)
     })
 
     it("does not enrich directory labels on non-customNode types", () => {

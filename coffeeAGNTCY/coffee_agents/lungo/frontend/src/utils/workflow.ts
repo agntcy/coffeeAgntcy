@@ -19,9 +19,12 @@ export {
 } from "@/utils/workflowCapabilities"
 
 export {
+  getAgentPromptRequestForWorkflow,
+  getAgentPromptStreamRequestForWorkflow,
   getAgentPromptStreamUrlForWorkflow,
   getAgentPromptUrlForWorkflow,
   getApiBaseUrlForWorkflow,
+  getSuggestedPromptsRequestForWorkflow,
   getSuggestedPromptsUrlForWorkflow,
   shouldEnableRetriesForWorkflow,
 } from "@/utils/workflowChatRouting"

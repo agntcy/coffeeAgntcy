@@ -9,7 +9,7 @@ Every config lookup goes through `src/utils/env.ts`, then usually `src/urls.ts`:
 ```text
 1. window.__ENV__[key]     ← set by /env-config.js (runtime)
 2. import.meta.env[key]    ← baked by Vite at npm run build / dev
-3. LUNGO_FRONTEND_URLS.*Defaults in urls.ts  ← hardcoded localhost fallbacks
+3. LUNGO_FRONTEND_URLS.apiBaseDefaults in urls.ts  ← hardcoded localhost fallbacks
 ```
 
 `env.ts` implements steps 1–2:
@@ -21,7 +21,7 @@ runtimeEnv(key) ?? import.meta.env[key]
 `urls.ts` adds step 3 for URL helpers, e.g. `getGrafanaUrl()`:
 
 ```ts
-env.get("VITE_GRAFANA_URL") ?? urlDefaults.grafana
+env.get("VITE_GRAFANA_URL") ?? apiBaseDefaults.grafana
 ```
 
 App code should use `@/urls` helpers (or `env.get`) — not `import.meta.env` directly.

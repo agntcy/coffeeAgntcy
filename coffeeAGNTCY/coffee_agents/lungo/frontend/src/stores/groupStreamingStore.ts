@@ -5,7 +5,14 @@
 
 import { create } from "zustand"
 import type { LogisticsStreamStep } from "./groupStreaming.types"
-import { isLocalDev, parseFetchError } from "@/utils/const.ts"
+import {
+  NDJSON_STREAMING_STATUS,
+  type NdjsonStreamingStatus,
+} from "./ndjsonStreamingStatus"
+import { fetchNdjsonStream, ndjsonStreamUserMessage } from "@/api/http"
+import { reportRequestError } from "@/errors/request"
+import type { HttpRequestTarget } from "@/urls"
+import { isLocalDev } from "@/utils/const.ts"
 import { logger } from "@/utils/logger"
 
 const isValidLogisticsStreamStep = (
@@ -36,10 +43,9 @@ const isValidLogisticsStreamStep = (
 }
 
 interface LogisticsStreamingState {
+  status: NdjsonStreamingStatus
   events: LogisticsStreamStep[]
   finalResponse: string | null
-  isStreaming: boolean
-  isComplete: boolean
   error: string | null
   currentOrderId: string | null
   executionKey: string | null
@@ -50,28 +56,78 @@ interface LogisticsStreamingActions {
   addEvent: (event: LogisticsStreamStep) => void
   setFinalResponse: (response: string) => void
   setError: (error: string) => void
-  setStreaming: (streaming: boolean) => void
-  setComplete: (complete: boolean) => void
   setCurrentOrderId: (orderId: string) => void
   setExecutionKey: (key: string) => void
   setSessionId: (id: string) => void
   startStreaming: (
     prompt: string,
     workflowInstanceId?: string | null,
-    streamUrl?: string,
+    streamRequest?: HttpRequestTarget,
   ) => Promise<void>
   reset: () => void
 }
 
 const initialState: LogisticsStreamingState = {
+  status: NDJSON_STREAMING_STATUS.IDLE,
   events: [],
   finalResponse: null,
-  isStreaming: false,
-  isComplete: false,
   error: null,
   currentOrderId: null,
   executionKey: null,
   sessionId: null,
+}
+
+function promoteToStreaming(
+  status: NdjsonStreamingStatus,
+): NdjsonStreamingStatus {
+  return status === NDJSON_STREAMING_STATUS.CONNECTING
+    ? NDJSON_STREAMING_STATUS.STREAMING
+    : status
+}
+
+function handleGroupStreamPayload(
+  parsed: unknown,
+  actions: Pick<
+    LogisticsStreamingActions,
+    "addEvent" | "setFinalResponse" | "setSessionId"
+  >,
+): "stop" | void {
+  if (!parsed || typeof parsed !== "object") return
+
+  const record = parsed as Record<string, unknown>
+
+  if (typeof record.session_id === "string") {
+    actions.setSessionId(record.session_id)
+  }
+
+  if (typeof record.response !== "string") return
+
+  const response = record.response
+
+  if (response.startsWith("{'") || response.startsWith('{"')) {
+    try {
+      const jsonResponse = response
+        .replace(/'/g, '"')
+        .replace(/True/g, "true")
+        .replace(/False/g, "false")
+        .replace(/None/g, "null")
+
+      const eventObj = JSON.parse(jsonResponse)
+
+      if (isValidLogisticsStreamStep(eventObj)) {
+        actions.addEvent(eventObj)
+      }
+    } catch (dictParseError) {
+      logger.error("Error parsing dict string:", {
+        error: dictParseError,
+        string: response,
+      })
+    }
+    return
+  }
+
+  actions.setFinalResponse(response)
+  return "stop"
 }
 
 export const useGroupStreamingStore = create<
@@ -83,33 +139,22 @@ export const useGroupStreamingStore = create<
     set((state) => ({
       events: [...state.events, event],
       currentOrderId: event.order_id,
-      isComplete: event.state === "DELIVERED" ? true : state.isComplete,
-      isStreaming: event.state === "DELIVERED" ? false : state.isStreaming,
+      status:
+        event.state === "DELIVERED"
+          ? NDJSON_STREAMING_STATUS.COMPLETED
+          : promoteToStreaming(state.status),
     })),
 
   setFinalResponse: (response: string) =>
     set({
       finalResponse: response,
-      isComplete: true,
-      isStreaming: false,
+      status: NDJSON_STREAMING_STATUS.COMPLETED,
     }),
 
   setError: (error: string) =>
     set({
       error,
-      isComplete: true,
-      isStreaming: false,
-    }),
-
-  setStreaming: (streaming: boolean) =>
-    set({
-      isStreaming: streaming,
-    }),
-
-  setComplete: (complete: boolean) =>
-    set({
-      isComplete: complete,
-      isStreaming: false,
+      status: NDJSON_STREAMING_STATUS.ERROR,
     }),
 
   setCurrentOrderId: (orderId: string) =>
@@ -130,152 +175,55 @@ export const useGroupStreamingStore = create<
   startStreaming: async (
     prompt: string,
     workflowInstanceId?: string | null,
-    streamUrl?: string,
+    streamRequest?: HttpRequestTarget,
   ) => {
-    const {
-      reset,
-      setStreaming,
-      addEvent,
-      setFinalResponse,
-      setComplete,
-      setError,
-      setSessionId,
-    } = useGroupStreamingStore.getState()
+    const { reset, addEvent, setFinalResponse, setError, setSessionId } =
+      useGroupStreamingStore.getState()
 
-    if (!streamUrl) {
-      setError("Streaming URL is required")
-      setComplete(true)
-      setStreaming(false)
+    if (!streamRequest?.url) {
+      setError("Streaming request target is required")
       return
     }
 
     reset()
-    setStreaming(true)
+    set({ status: NDJSON_STREAMING_STATUS.CONNECTING })
+
+    const body: { prompt: string; workflow_instance_id?: string } = { prompt }
+    if (workflowInstanceId) body.workflow_instance_id = workflowInstanceId
 
     try {
-      const body: { prompt: string; workflow_instance_id?: string } = { prompt }
-      if (workflowInstanceId) body.workflow_instance_id = workflowInstanceId
-      const response = await fetch(streamUrl, {
+      await fetchNdjsonStream(streamRequest.url, {
         method: "POST",
         credentials: isLocalDev ? "omit" : "include",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        endpointLabel: streamRequest.endpointLabel,
         body: JSON.stringify(body),
+        splitMode: "json-objects",
+        onStreamStart: () => {
+          set({ status: NDJSON_STREAMING_STATUS.STREAMING })
+        },
+        onLine: (parsed) =>
+          handleGroupStreamPayload(parsed, {
+            addEvent,
+            setFinalResponse,
+            setSessionId,
+          }),
+        onParseError: (jsonStr, parseError) => {
+          logger.error("Error parsing JSON object:", {
+            error: parseError,
+            json: jsonStr,
+          })
+        },
       })
 
-      if (!response.ok) {
-        const { status, message } = await parseFetchError(response)
-
-        if (status >= 400 && status < 500) {
-          setError(`HTTP ${status} - ${message}`)
-          setComplete(true)
-          setStreaming(false)
-          return
-        }
-
-        setError("Sorry, something went wrong. Please try again later.")
-        setComplete(true)
-        setStreaming(false)
-        return
+      if (
+        useGroupStreamingStore.getState().status !==
+        NDJSON_STREAMING_STATUS.ERROR
+      ) {
+        set({ status: NDJSON_STREAMING_STATUS.COMPLETED })
       }
-
-      const reader = response.body?.getReader()
-      if (!reader) {
-        setError("No response body reader available")
-        setComplete(true)
-        setStreaming(false)
-        return
-      }
-
-      const decoder = new TextDecoder()
-      let buffer = ""
-
-      try {
-        while (true) {
-          const { done, value } = await reader.read()
-          if (done) break
-
-          buffer += decoder.decode(value, { stream: true })
-          let remaining = buffer
-
-          while (remaining.length > 0) {
-            let braceCount = 0
-            let jsonEnd = -1
-
-            for (let i = 0; i < remaining.length; i++) {
-              if (remaining[i] === "{") braceCount++
-              else if (remaining[i] === "}") {
-                braceCount--
-                if (braceCount === 0) {
-                  jsonEnd = i
-                  break
-                }
-              }
-            }
-
-            if (jsonEnd === -1) {
-              buffer = remaining
-              break
-            }
-
-            const jsonStr = remaining.substring(0, jsonEnd + 1)
-            remaining = remaining.substring(jsonEnd + 1)
-
-            try {
-              const parsed = JSON.parse(jsonStr)
-
-              // Store session_id if present
-              if (parsed.session_id && typeof parsed.session_id === "string") {
-                setSessionId(parsed.session_id)
-              }
-
-              if (parsed.response && typeof parsed.response === "string") {
-                if (
-                  parsed.response.startsWith("{'") ||
-                  parsed.response.startsWith('{"')
-                ) {
-                  try {
-                    const jsonResponse = parsed.response
-                      .replace(/'/g, '"')
-                      .replace(/True/g, "true")
-                      .replace(/False/g, "false")
-                      .replace(/None/g, "null")
-
-                    const eventObj = JSON.parse(jsonResponse)
-
-                    if (isValidLogisticsStreamStep(eventObj)) {
-                      addEvent(eventObj)
-                    }
-                  } catch (dictParseError) {
-                    logger.error("Error parsing dict string:", {
-                      error: dictParseError,
-                      string: parsed.response,
-                    })
-                  }
-                } else {
-                  setFinalResponse(parsed.response)
-                  return
-                }
-              }
-            } catch (parseError) {
-              logger.error("Error parsing JSON object:", {
-                error: parseError,
-                json: jsonStr,
-              })
-            }
-          }
-
-          buffer = remaining
-        }
-      } finally {
-        reader.releaseLock()
-      }
-
-      setComplete(true)
     } catch (error) {
-      logger.error("Streaming error:", error)
-      setError("Sorry, something went wrong. Please try again.")
+      const httpError = reportRequestError(streamRequest.endpointLabel, error)
+      setError(ndjsonStreamUserMessage(httpError, "short"))
     }
   },
 
@@ -288,11 +236,8 @@ export const useGroupEvents = () =>
 export const useGroupFinalResponse = () =>
   useGroupStreamingStore((state) => state.finalResponse)
 
-export const useGroupIsStreaming = () =>
-  useGroupStreamingStore((state) => state.isStreaming)
-
-export const useGroupIsComplete = () =>
-  useGroupStreamingStore((state) => state.isComplete)
+export const useGroupStreamingStatus = () =>
+  useGroupStreamingStore((state) => state.status)
 
 export const useGroupError = () =>
   useGroupStreamingStore((state) => state.error)
@@ -311,8 +256,6 @@ export const useGroupStreamingActions = () =>
     addEvent: state.addEvent,
     setFinalResponse: state.setFinalResponse,
     setError: state.setError,
-    setStreaming: state.setStreaming,
-    setComplete: state.setComplete,
     setCurrentOrderId: state.setCurrentOrderId,
     setExecutionKey: state.setExecutionKey,
     setSessionId: state.setSessionId,

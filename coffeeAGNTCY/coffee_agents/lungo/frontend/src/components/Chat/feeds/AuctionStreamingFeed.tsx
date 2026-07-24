@@ -9,10 +9,12 @@ import { Box, Stack, Typography } from "@open-ui-kit/core"
 
 import { ChatAgentAvatar } from "../ChatAvatarCircle"
 import type { AuctionStreamingState } from "@/stores/auctionStreaming.types"
+import { NDJSON_STREAMING_STATUS } from "@/stores/ndjsonStreamingStatus"
 import type { GraphConfig } from "@/utils/graphConfigs"
 import { animationSequenceStepIds } from "../chatStreamGraphHighlight"
 import { FeedSpinnerRow } from "../FeedSpinnerRow"
 import { FeedStatusLine } from "../FeedStatusLine"
+import { FeedErrorMessage } from "./FeedErrorMessage"
 import GrafanaSessionLink from "../GrafanaSessionLink"
 
 export interface AuctionStreamingFeedProps {
@@ -39,7 +41,8 @@ const AuctionStreamingFeed: React.FC<AuctionStreamingFeedProps> = ({
   apiError,
   observabilitySessionId,
 }) => {
-  const isComplete = auctionStreamingState?.status === "completed"
+  const isComplete =
+    auctionStreamingState?.status === NDJSON_STREAMING_STATUS.COMPLETED
   const lastProcessedStepRef = useRef<number | null>(null)
 
   useEffect(() => {
@@ -92,6 +95,23 @@ const AuctionStreamingFeed: React.FC<AuctionStreamingFeedProps> = ({
     return null
   }
 
+  if (errorMessage && events.length === 0) {
+    return <FeedErrorMessage>{errorMessage}</FeedErrorMessage>
+  }
+
+  const showsStatusLine = isComplete || (Boolean(prompt) && !apiError)
+  const showsSpinner =
+    Boolean(prompt) &&
+    !isComplete &&
+    !apiError &&
+    !errorMessage &&
+    events.length === 0
+  const showsEvents = events.length > 0
+
+  if (!showsStatusLine && !showsSpinner && !showsEvents) {
+    return null
+  }
+
   return (
     <Stack
       direction="row"
@@ -112,63 +132,74 @@ const AuctionStreamingFeed: React.FC<AuctionStreamingFeedProps> = ({
         }}
       >
         {errorMessage ? (
-          <FeedStatusLine>Connection error: {errorMessage}</FeedStatusLine>
+          <FeedErrorMessage>{errorMessage}</FeedErrorMessage>
         ) : isComplete ? (
           <FeedStatusLine>Streaming output:</FeedStatusLine>
         ) : prompt && !apiError ? (
           <FeedStatusLine showDots>Streaming</FeedStatusLine>
         ) : null}
 
-        {prompt && !isComplete && !apiError && events.length === 0 ? (
+        {prompt &&
+        !isComplete &&
+        !apiError &&
+        !errorMessage &&
+        events.length === 0 ? (
           <FeedSpinnerRow mt={3} />
         ) : null}
 
-        <Stack
-          spacing={3}
-          sx={{ mt: 3, width: "100%", alignItems: "flex-start" }}
-        >
-          {events.map((event, index) => {
-            const isLastEvent = isComplete && index === events.length - 1
-            const label = isLastEvent
-              ? "Final response:"
-              : `Response ${index + 1}:`
+        {events.length > 0 ? (
+          <Stack
+            spacing={3}
+            sx={{ mt: 3, width: "100%", alignItems: "flex-start" }}
+          >
+            {events.map((event, index) => {
+              const isLastEvent = isComplete && index === events.length - 1
+              const label = isLastEvent
+                ? "Final response:"
+                : `Response ${index + 1}:`
 
-            return (
-              <Stack
-                key={`auction-${index}`}
-                direction="row"
-                alignItems="flex-start"
-                spacing={0.5}
-                sx={{ width: "100%" }}
-              >
-                <Box sx={{ mt: 0.5, display: "flex", alignItems: "center" }}>
-                  <CheckCircleIcon sx={{ color: "success.main" }} aria-hidden />
-                </Box>
-                <Box sx={{ flex: 1, minWidth: 0 }}>
-                  <Typography
-                    variant="body1"
-                    component="div"
-                    sx={{
-                      overflowWrap: "break-word",
-                      wordBreak: "break-word",
-                    }}
-                  >
-                    <Typography component="span" variant="body1">
-                      {label}
-                    </Typography>{" "}
-                    {event.response}
-                  </Typography>
-                </Box>
-              </Stack>
-            )
-          })}
+              return (
+                <Stack
+                  key={`auction-${index}`}
+                  direction="row"
+                  alignItems="flex-start"
+                  spacing={0.5}
+                  sx={{ width: "100%" }}
+                >
+                  <Box sx={{ mt: 0.5, display: "flex", alignItems: "center" }}>
+                    <CheckCircleIcon
+                      sx={{ color: "success.main" }}
+                      aria-hidden
+                    />
+                  </Box>
+                  <Box sx={{ flex: 1, minWidth: 0 }}>
+                    <Typography
+                      variant="body1"
+                      component="div"
+                      sx={{
+                        overflowWrap: "break-word",
+                        wordBreak: "break-word",
+                      }}
+                    >
+                      <Typography component="span" variant="body1">
+                        {label}
+                      </Typography>{" "}
+                      {event.response}
+                    </Typography>
+                  </Box>
+                </Stack>
+              )
+            })}
 
-          {isComplete && events.length > 0 ? (
-            <GrafanaSessionLink sessionId={observabilitySessionId} />
-          ) : null}
+            {isComplete && events.length > 0 ? (
+              <GrafanaSessionLink sessionId={observabilitySessionId} />
+            ) : null}
 
-          {events.length > 0 && !isComplete ? <FeedSpinnerRow mt={0} /> : null}
-        </Stack>
+            {events.length > 0 && !isComplete ? (
+              <FeedSpinnerRow mt={0} />
+            ) : null}
+          </Stack>
+        ) : null}
       </Stack>
     </Stack>
   )

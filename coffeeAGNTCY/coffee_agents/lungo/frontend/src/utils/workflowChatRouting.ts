@@ -7,7 +7,11 @@
 
 import type { WorkflowSummary } from "@/utils/agenticWorkflowsApi"
 import { getApiUrlForChatTarget } from "@/utils/patternUtils"
-import { joinBaseUrl, LUNGO_FRONTEND_URLS } from "@/urls"
+import {
+  joinHttpRequest,
+  LUNGO_FRONTEND_URLS,
+  type HttpRequestTarget,
+} from "@/urls"
 import { isChatEnabledWorkflow } from "@/utils/workflowCapabilities"
 
 /** Base app URL for a catalog workflow; null/invalid summary → exchange. */
@@ -18,36 +22,55 @@ export function getApiBaseUrlForWorkflow(
 }
 
 /** Non-streaming POST .../agent/prompt */
-export function getAgentPromptUrlForWorkflow(
+export function getAgentPromptRequestForWorkflow(
   summary: WorkflowSummary | null | undefined,
-): string {
-  return joinBaseUrl(
+): HttpRequestTarget {
+  return joinHttpRequest(
     getApiBaseUrlForWorkflow(summary),
     LUNGO_FRONTEND_URLS.apiPaths.agentPrompt,
   )
 }
 
-/** Streaming POST .../agent/prompt/stream */
-export function getAgentPromptStreamUrlForWorkflow(
+export function getAgentPromptUrlForWorkflow(
   summary: WorkflowSummary | null | undefined,
 ): string {
-  return joinBaseUrl(
+  return getAgentPromptRequestForWorkflow(summary).url
+}
+
+/** Streaming POST .../agent/prompt/stream */
+export function getAgentPromptStreamRequestForWorkflow(
+  summary: WorkflowSummary | null | undefined,
+): HttpRequestTarget {
+  return joinHttpRequest(
     getApiBaseUrlForWorkflow(summary),
     LUNGO_FRONTEND_URLS.apiPaths.agentPromptStream,
   )
 }
 
-/** Suggested prompts path (streaming variant when workflow supports streaming). */
-export function getSuggestedPromptsUrlForWorkflow(
+export function getAgentPromptStreamUrlForWorkflow(
   summary: WorkflowSummary | null | undefined,
-): string | null {
+): string {
+  return getAgentPromptStreamRequestForWorkflow(summary).url
+}
+
+/** Suggested prompts fetch target (path varies when workflow supports streaming). */
+export function getSuggestedPromptsRequestForWorkflow(
+  summary: WorkflowSummary | null | undefined,
+): HttpRequestTarget | null {
   if (!isChatEnabledWorkflow(summary)) return null
   const base = getApiBaseUrlForWorkflow(summary)
-  const path =
+  const route =
     summary?.supports_streaming === true
       ? LUNGO_FRONTEND_URLS.apiPaths.suggestedPromptsStreaming
       : LUNGO_FRONTEND_URLS.apiPaths.suggestedPrompts
-  return joinBaseUrl(base, path)
+  return joinHttpRequest(base, route)
+}
+
+/** Suggested prompts URL (streaming variant when workflow supports streaming). */
+export function getSuggestedPromptsUrlForWorkflow(
+  summary: WorkflowSummary | null | undefined,
+): string | null {
+  return getSuggestedPromptsRequestForWorkflow(summary)?.url ?? null
 }
 
 /** Retries only for group SSE workflows. */

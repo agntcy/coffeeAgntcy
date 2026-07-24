@@ -13,9 +13,10 @@
  */
 
 import { agenticWorkflowsAuthHeaders } from "@/api/agenticWorkflowsClient"
+import { fetchJson, isHttpError } from "@/api/http"
 import {
-  buildAgenticWorkflowsCatalogUrl,
-  getAgenticWorkflowsApiUrl,
+  buildAgenticWorkflowsCatalogRequest,
+  buildAgenticWorkflowsDocumentationRequest,
   LUNGO_FRONTEND_URLS,
 } from "@/urls"
 import { type ChatApiTarget, type PatternType } from "@/utils/patternUtils"
@@ -23,7 +24,7 @@ import { patternTypeFromSummary } from "@/utils/workflowCapabilities"
 
 export type { ChatApiTarget }
 
-/** One row of `GET /agentic-workflows/` (matches backend `WorkflowSummary`). */
+/** Normalized catalog row used across the UI (legacy API rows get defaults applied). */
 export interface WorkflowSummary {
   name: string
   pattern: string
@@ -34,9 +35,32 @@ export interface WorkflowSummary {
   chat_api_target: ChatApiTarget | null
 }
 
-/** Log label / relative path for catalog requests (matches router mount). */
+/**
+ * JSON shape of one catalog map entry before `parseWorkflowSummaryRow`.
+ *
+ * OpenAPI `WorkflowSummary` requires `supports_sse` and `supports_streaming`, and
+ * `chat_api_target` must be a known enum value or null. Older catalog payloads may
+ * omit the capability fields or send an invalid `chat_api_target` string; we type
+ * that loose wire data here, then normalize into {@link WorkflowSummary} (same fields
+ * as the API model once defaults and enum parsing are applied). The UI uses only
+ * `WorkflowSummary`, not this type.
+ */
+export interface WorkflowSummaryWire {
+  name: string
+  pattern: string
+  use_case: string
+  scenario: string
+  supports_sse?: boolean
+  supports_streaming?: boolean
+  chat_api_target?: string | null
+}
+
+/** OpenAPI `WorkflowSummaryMapResponse` for `GET /agentic-workflows/`. */
+export type WorkflowSummaryMapResponse = Record<string, WorkflowSummaryWire>
+
+/** Log label for catalog requests (matches router mount). */
 export const AGENTIC_WORKFLOWS_CATALOG_LOG_PATH =
-  LUNGO_FRONTEND_URLS.apiPaths.agenticWorkflowsCatalog
+  LUNGO_FRONTEND_URLS.apiPaths.agenticWorkflowsCatalog.endpointLabel
 
 const CATALOG_FETCH_MAX_RETRIES = 2
 const CATALOG_FETCH_RETRY_DELAY_MS = 750
@@ -71,11 +95,18 @@ const parseChatApiTarget = (
   return isChatApiTarget(target) ? target : null
 }
 
+const isPlainObjectRecord = (
+  value: unknown,
+): value is Record<string, unknown> =>
+  value !== null && typeof value === "object" && !Array.isArray(value)
+
 /**
  * Normalize one catalog row; returns null when required string fields are missing.
  * Missing `supports_sse` / `supports_streaming` are treated as legacy (default false).
  */
-const parseWorkflowSummaryRow = (value: unknown): WorkflowSummary | null => {
+const parseWorkflowSummaryRow = (
+  value: WorkflowSummaryWire | unknown,
+): WorkflowSummary | null => {
   if (value === null || typeof value !== "object") return null
   const obj = value as Record<string, unknown>
   if (
@@ -114,31 +145,22 @@ const parseWorkflowSummaryRow = (value: unknown): WorkflowSummary | null => {
 export const fetchWorkflowSummaries = async (
   signal?: AbortSignal,
 ): Promise<WorkflowSummary[]> => {
-  const url = buildAgenticWorkflowsCatalogUrl()
-  const response = await fetch(url, {
+  const request = buildAgenticWorkflowsCatalogRequest()
+  const body = await fetchJson<WorkflowSummaryMapResponse>(request.url, {
     signal,
-    headers: {
-      Accept: "application/json",
-      ...agenticWorkflowsAuthHeaders(),
-    },
+    endpointLabel: request.endpointLabel,
+    headers: agenticWorkflowsAuthHeaders(),
   })
-  if (!response.ok) {
-    throw new Error(
-      `Failed to fetch agentic workflows: HTTP ${response.status} ${response.statusText}`,
-    )
-  }
 
-  const body: unknown = await response.json()
-  if (body === null || typeof body !== "object" || Array.isArray(body)) {
+  if (!isPlainObjectRecord(body)) {
     throw new Error(
       "Failed to fetch agentic workflows: unexpected response shape",
     )
   }
 
-  const raw = body as Record<string, unknown>
   const summaries: WorkflowSummary[] = []
-  for (const key of Object.keys(raw)) {
-    const row = parseWorkflowSummaryRow(raw[key])
+  for (const key of Object.keys(body)) {
+    const row = parseWorkflowSummaryRow(body[key])
     if (row) {
       summaries.push(row)
     }
@@ -180,43 +202,42 @@ export interface WorkflowDocumentation {
   full_markdown: string
 }
 
+const isWorkflowDocumentation = (
+  value: unknown,
+): value is WorkflowDocumentation => {
+  if (value === null || typeof value !== "object") return false
+  const obj = value as Record<string, unknown>
+  return (
+    isNonEmptyString(obj.workflow_name) &&
+    isNonEmptyString(obj.title) &&
+    isNonEmptyString(obj.full_markdown)
+  )
+}
+
 export const fetchWorkflowDocumentation = async (
   workflowName: string,
   signal?: AbortSignal,
 ): Promise<WorkflowDocumentation> => {
-  const url = `${getAgenticWorkflowsApiUrl()}/agentic-workflows/${encodeURIComponent(workflowName)}/documentation/`
-  const response = await fetch(url, {
-    signal,
-    headers: {
-      Accept: "application/json",
-      ...agenticWorkflowsAuthHeaders(),
-    },
-  })
+  const request = buildAgenticWorkflowsDocumentationRequest(workflowName)
 
-  if (response.status === 404) {
-    throw new WorkflowDocumentationNotFoundError(workflowName)
+  try {
+    const body = await fetchJson<unknown>(request.url, {
+      signal,
+      endpointLabel: request.endpointLabel,
+      headers: agenticWorkflowsAuthHeaders(),
+    })
+    if (!isWorkflowDocumentation(body)) {
+      throw new Error(
+        "Failed to fetch workflow documentation: unexpected response shape",
+      )
+    }
+    return body
+  } catch (error) {
+    if (isHttpError(error) && error.status === 404) {
+      throw new WorkflowDocumentationNotFoundError(workflowName)
+    }
+    throw error
   }
-  if (!response.ok) {
-    throw new Error(
-      `Failed to fetch workflow documentation: HTTP ${response.status} ${response.statusText}`,
-    )
-  }
-
-  const body: unknown = await response.json()
-  if (
-    body === null ||
-    typeof body !== "object" ||
-    !("workflow_name" in body) ||
-    !("title" in body) ||
-    !("full_markdown" in body)
-  ) {
-    throw new Error(
-      "Failed to fetch workflow documentation: unexpected response shape",
-    )
-  }
-
-  const doc = body as WorkflowDocumentation
-  return doc
 }
 
 export const pickDefaultWorkflowSummaryForPattern = (

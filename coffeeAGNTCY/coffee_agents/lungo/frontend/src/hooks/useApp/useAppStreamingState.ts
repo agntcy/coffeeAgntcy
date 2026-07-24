@@ -11,8 +11,7 @@ import {
   useStreamingSessionId,
 } from "@/stores/auctionStreamingStore"
 import {
-  useGroupIsStreaming,
-  useGroupIsComplete,
+  useGroupStreamingStatus,
   useGroupFinalResponse,
   useGroupError,
   useStartGroupStreaming,
@@ -40,8 +39,7 @@ export function useAppStreamingState() {
   const error = useStreamingError()
   const sessionId = useStreamingSessionId()
 
-  const groupIsStreaming = useGroupIsStreaming()
-  const groupIsComplete = useGroupIsComplete()
+  const groupStatus = useGroupStreamingStatus()
   const groupFinalResponse = useGroupFinalResponse()
   const groupError = useGroupError()
   const { reset: resetGroup } = useGroupStreamingActions()
@@ -66,8 +64,7 @@ export function useAppStreamingState() {
     events,
     error,
     sessionId,
-    groupIsStreaming,
-    groupIsComplete,
+    groupStatus,
     groupFinalResponse,
     groupError,
     resetGroup,

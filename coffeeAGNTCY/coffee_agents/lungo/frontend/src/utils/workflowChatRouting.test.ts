@@ -12,9 +12,12 @@ import {
 } from "@/urls"
 import type { WorkflowSummary } from "@/utils/agenticWorkflowsApi"
 import {
+  getAgentPromptRequestForWorkflow,
+  getAgentPromptStreamRequestForWorkflow,
   getAgentPromptStreamUrlForWorkflow,
   getAgentPromptUrlForWorkflow,
   getApiBaseUrlForWorkflow,
+  getSuggestedPromptsRequestForWorkflow,
   getSuggestedPromptsUrlForWorkflow,
   shouldEnableRetriesForWorkflow,
   workflowChatTransport,
@@ -105,14 +108,25 @@ describe("workflowChatRouting", () => {
     })
   })
 
-  it("builds agent prompt URLs on workflow base", () => {
+  it("builds agent prompt targets on workflow base", () => {
     const summary = makeSummary({ chat_api_target: "discovery" })
-    expect(getAgentPromptUrlForWorkflow(summary)).toBe(
-      `${getDiscoveryAppApiUrl()}${LUNGO_FRONTEND_URLS.apiPaths.agentPrompt}`,
+    const promptRequest = getAgentPromptRequestForWorkflow(summary)
+    expect(promptRequest.url).toBe(
+      `${getDiscoveryAppApiUrl()}${LUNGO_FRONTEND_URLS.apiPaths.agentPrompt.path}`,
     )
-    expect(getAgentPromptStreamUrlForWorkflow(summary)).toBe(
-      `${getDiscoveryAppApiUrl()}${LUNGO_FRONTEND_URLS.apiPaths.agentPromptStream}`,
+    expect(promptRequest.endpointLabel).toBe(
+      LUNGO_FRONTEND_URLS.apiPaths.agentPrompt.endpointLabel,
     )
+    expect(getAgentPromptUrlForWorkflow(summary)).toBe(promptRequest.url)
+
+    const streamRequest = getAgentPromptStreamRequestForWorkflow(summary)
+    expect(streamRequest.url).toBe(
+      `${getDiscoveryAppApiUrl()}${LUNGO_FRONTEND_URLS.apiPaths.agentPromptStream.path}`,
+    )
+    expect(streamRequest.endpointLabel).toBe(
+      LUNGO_FRONTEND_URLS.apiPaths.agentPromptStream.endpointLabel,
+    )
+    expect(getAgentPromptStreamUrlForWorkflow(summary)).toBe(streamRequest.url)
   })
 
   it("uses streaming suggested prompts path when supports_streaming", () => {
@@ -120,9 +134,14 @@ describe("workflowChatRouting", () => {
       chat_api_target: "exchange",
       supports_streaming: true,
     })
-    expect(getSuggestedPromptsUrlForWorkflow(summary)).toContain(
-      LUNGO_FRONTEND_URLS.apiPaths.suggestedPromptsStreaming,
+    const request = getSuggestedPromptsRequestForWorkflow(summary)
+    expect(request?.url).toContain(
+      LUNGO_FRONTEND_URLS.apiPaths.suggestedPromptsStreaming.path,
     )
+    expect(request?.endpointLabel).toBe(
+      LUNGO_FRONTEND_URLS.apiPaths.suggestedPromptsStreaming.endpointLabel,
+    )
+    expect(getSuggestedPromptsUrlForWorkflow(summary)).toBe(request?.url)
   })
 
   it("shouldEnableRetriesForWorkflow follows supports_sse", () => {

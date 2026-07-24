@@ -4,11 +4,12 @@
  **/
 
 import { describe, expect, it } from "vitest"
+import type { EventV1Wire } from "@/api/agenticWorkflowsTypes"
 import {
   parseSseDataLine,
   parseSseFrameLines,
   splitSseFrames,
-} from "@/api/agenticWorkflowsClient"
+} from "@/api/http/sseParsing"
 
 describe("agenticWorkflowsClient SSE parsing", () => {
   it.each([
@@ -58,7 +59,7 @@ describe("agenticWorkflowsClient SSE parsing", () => {
       ok: false,
     },
   ])("$caseName", ({ line, ok }) => {
-    const ev = parseSseDataLine(line)
+    const ev = parseSseDataLine<EventV1Wire>(line)
     expect(Boolean(ev)).toBe(ok)
   })
 
@@ -69,7 +70,7 @@ describe("agenticWorkflowsClient SSE parsing", () => {
       "data: {not-json}",
       "",
     ].join("\n")
-    const events = parseSseFrameLines(frame)
+    const events = parseSseFrameLines<EventV1Wire>(frame)
     expect(events.length).toBe(1)
     expect(events[0]?.metadata?.id).toBeDefined()
   })

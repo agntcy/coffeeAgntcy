@@ -9,12 +9,15 @@ import { Box, Stack, Typography } from "@open-ui-kit/core"
 import { ChatAgentAvatar } from "../ChatAvatarCircle"
 import { FeedSpinnerRow } from "../FeedSpinnerRow"
 import { FeedStatusLine } from "../FeedStatusLine"
+import { FeedErrorMessage } from "./FeedErrorMessage"
 import { FeedCollapseButton } from "./FeedCollapseButton"
 import GrafanaSessionLink from "../GrafanaSessionLink"
 import type {
   RecruiterStreamingFeedProps,
   RecruiterStreamingEvent,
 } from "@/stores/recruiterStreaming.types"
+import { NDJSON_STREAMING_STATUS } from "@/stores/ndjsonStreamingStatus"
+import { RECRUITER_STREAM_EVENT_TYPE } from "@/stores/recruiterStreamEventType"
 import { resolveStreamAuthorToNodeId } from "../chatStreamGraphHighlight"
 
 const RecruiterStreamingFeed: React.FC<RecruiterStreamingFeedProps> = ({
@@ -28,7 +31,8 @@ const RecruiterStreamingFeed: React.FC<RecruiterStreamingFeedProps> = ({
   apiError,
   observabilitySessionId,
 }) => {
-  const isComplete = recruiterStreamingState?.status === "completed"
+  const isComplete =
+    recruiterStreamingState?.status === NDJSON_STREAMING_STATUS.COMPLETED
   const [isExpanded, setIsExpanded] = useState(true)
   const hasAutoCollapsedRef = useRef(false)
   const lastProcessedEventRef = useRef<string | null>(null)
@@ -51,7 +55,8 @@ const RecruiterStreamingFeed: React.FC<RecruiterStreamingFeedProps> = ({
     if (!events.length || !onSenderHighlight) return
 
     const lastEvent = events[events.length - 1]
-    if (lastEvent.event_type !== "status_update") return
+    if (lastEvent.event_type !== RECRUITER_STREAM_EVENT_TYPE.STATUS_UPDATE)
+      return
 
     const eventKey = `${lastEvent.event_type}-${lastEvent.author ?? ""}-${lastEvent.message ?? ""}-${events.length}`
     if (lastProcessedEventRef.current === eventKey) return
@@ -92,8 +97,32 @@ const RecruiterStreamingFeed: React.FC<RecruiterStreamingFeedProps> = ({
     return null
   }
 
+  if (errorMessage && events.length === 0) {
+    return <FeedErrorMessage>{errorMessage}</FeedErrorMessage>
+  }
+
+  const showsStatusLine = isComplete || (Boolean(prompt) && !apiError)
+  const showsSpinner =
+    Boolean(prompt) &&
+    !isComplete &&
+    !apiError &&
+    !errorMessage &&
+    events.length === 0
+  const showsEvents = isExpanded && events.length > 0
+  const showsCompleteFooter = isComplete && events.length > 1
+
+  if (
+    !showsStatusLine &&
+    !showsSpinner &&
+    !showsEvents &&
+    !showsCompleteFooter
+  ) {
+    return null
+  }
+
   const statusUpdates = events.filter(
-    (e: RecruiterStreamingEvent) => e.event_type === "status_update",
+    (e: RecruiterStreamingEvent) =>
+      e.event_type === RECRUITER_STREAM_EVENT_TYPE.STATUS_UPDATE,
   )
 
   return (
@@ -116,7 +145,7 @@ const RecruiterStreamingFeed: React.FC<RecruiterStreamingFeedProps> = ({
         }}
       >
         {errorMessage ? (
-          <FeedStatusLine>Connection error: {errorMessage}</FeedStatusLine>
+          <FeedErrorMessage>{errorMessage}</FeedErrorMessage>
         ) : isComplete ? (
           <Stack direction="row" alignItems="center" flexWrap="wrap" gap={0.5}>
             <FeedStatusLine>{`Recruiter completed${events.length > 1 ? ":" : "."}`}</FeedStatusLine>
@@ -129,7 +158,11 @@ const RecruiterStreamingFeed: React.FC<RecruiterStreamingFeedProps> = ({
           </Stack>
         ) : null}
 
-        {prompt && !isComplete && !apiError && events.length === 0 ? (
+        {prompt &&
+        !isComplete &&
+        !apiError &&
+        !errorMessage &&
+        events.length === 0 ? (
           <FeedSpinnerRow mt={3} />
         ) : null}
 

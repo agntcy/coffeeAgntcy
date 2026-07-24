@@ -3,6 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  **/
 
+import type { NdjsonStreamingStatus } from "./ndjsonStreamingStatus"
+
 export interface LogisticsStreamStep {
   order_id: string
   sender: string
@@ -10,6 +12,16 @@ export interface LogisticsStreamStep {
   message: string
   timestamp: string
   state: string
+}
+
+export interface GroupStreamingState {
+  status: NdjsonStreamingStatus
+  events: LogisticsStreamStep[]
+  finalResponse: string | null
+  error: string | null
+  currentOrderId: string | null
+  executionKey: string | null
+  sessionId: string | null
 }
 
 export interface SSERetryState {
