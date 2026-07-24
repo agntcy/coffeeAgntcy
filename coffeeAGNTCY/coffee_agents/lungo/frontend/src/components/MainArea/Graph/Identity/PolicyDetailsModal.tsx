@@ -16,7 +16,10 @@ import {
 import Close from "@mui/icons-material/Close"
 import { PolicyData } from "./types"
 import { CustomNodeData } from "../Elements/types"
-import { fetchPolicyDetails, policyDetailsRequest } from "./IdentityApi"
+import {
+  fetchPolicyDetails,
+  policyDetailsEndpointLabelForReport,
+} from "./IdentityApi"
 import { reportRequestError } from "@/errors/request"
 import { LoadingSpinner } from "@/components/loading"
 import { modalDialogContentSx } from "@/components/modalDialogContentSx"
@@ -52,7 +55,7 @@ const PolicyDetailsModal: React.FC<PolicyDetailsModalProps> = ({
       setPolicyData(data)
     } catch (error) {
       const httpError = reportRequestError(
-        policyDetailsRequest(nodeData).endpointLabel,
+        policyDetailsEndpointLabelForReport(nodeData),
         error,
       )
       setError(httpError.message)

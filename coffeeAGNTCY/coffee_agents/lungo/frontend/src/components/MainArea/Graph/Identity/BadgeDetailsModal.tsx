@@ -16,7 +16,10 @@ import {
 import Close from "@mui/icons-material/Close"
 import { BadgeData } from "./types"
 import { CustomNodeData } from "../Elements/types"
-import { badgeDetailsRequest, fetchBadgeDetails } from "./IdentityApi"
+import {
+  badgeDetailsEndpointLabelForReport,
+  fetchBadgeDetails,
+} from "./IdentityApi"
 import { reportRequestError } from "@/errors/request"
 import { LoadingSpinner } from "@/components/loading"
 import { modalDialogContentSx } from "@/components/modalDialogContentSx"
@@ -52,7 +55,7 @@ const BadgeDetailsModal: React.FC<BadgeDetailsModalProps> = ({
       setBadgeData(data)
     } catch (error) {
       const httpError = reportRequestError(
-        badgeDetailsRequest(nodeData).endpointLabel,
+        badgeDetailsEndpointLabelForReport(nodeData),
         error,
       )
       setError(httpError.message)

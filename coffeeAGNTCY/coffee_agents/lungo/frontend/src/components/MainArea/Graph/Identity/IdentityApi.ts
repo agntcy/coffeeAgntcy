@@ -9,7 +9,11 @@ import {
 } from "@/components/MainArea/Graph/Identity/types"
 import type { CustomNodeData } from "@/components/MainArea/Graph/Elements/types"
 import { fetchJson } from "@/api/http"
-import { buildIdentityBadgeRequest, buildIdentityPolicyRequest } from "@/urls"
+import {
+  buildIdentityBadgeRequest,
+  buildIdentityPolicyRequest,
+  LUNGO_FRONTEND_URLS,
+} from "@/urls"
 import type { HttpRequestTarget } from "@/urls"
 import { resolveAgentSlug } from "@/utils/resolveAgentSlug"
 import { logger } from "@/utils/logger"
@@ -33,6 +37,30 @@ export function policyDetailsRequest(
   nodeData: CustomNodeData,
 ): HttpRequestTarget {
   return buildIdentityPolicyRequest(getSlugFromNodeData(nodeData))
+}
+
+/** For `reportRequestError` when slug resolution may have failed. */
+export function badgeDetailsEndpointLabelForReport(
+  nodeData: CustomNodeData,
+): string {
+  try {
+    return badgeDetailsRequest(nodeData).endpointLabel
+  } catch {
+    return LUNGO_FRONTEND_URLS.apiPaths.identityAppsBadge("unknown")
+      .endpointLabel
+  }
+}
+
+/** For `reportRequestError` when slug resolution may have failed. */
+export function policyDetailsEndpointLabelForReport(
+  nodeData: CustomNodeData,
+): string {
+  try {
+    return policyDetailsRequest(nodeData).endpointLabel
+  } catch {
+    return LUNGO_FRONTEND_URLS.apiPaths.identityAppsPolicies("unknown")
+      .endpointLabel
+  }
 }
 
 export const fetchBadgeDetails = async (
