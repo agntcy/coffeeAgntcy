@@ -26,7 +26,6 @@ import GrafanaSessionLink from "./GrafanaSessionLink"
 
 export interface ChatAreaMessageThreadProps {
   currentUserMessage: string
-  isMinimized: boolean
   showProgressTracker: boolean
   showAuctionStreaming: boolean
   showRecruiterStreaming: boolean
@@ -45,7 +44,6 @@ export interface ChatAreaMessageThreadProps {
 
 const ChatAreaMessageThread: React.FC<ChatAreaMessageThreadProps> = ({
   currentUserMessage,
-  isMinimized,
   showProgressTracker,
   showAuctionStreaming,
   showRecruiterStreaming,
@@ -65,8 +63,7 @@ const ChatAreaMessageThread: React.FC<ChatAreaMessageThreadProps> = ({
   const hasAgentFinalResponse =
     showFinalResponse &&
     !hasApiError &&
-    (isAgentLoading || Boolean(agentResponse?.response?.trim())) &&
-    !isMinimized
+    (isAgentLoading || Boolean(agentResponse?.response?.trim()))
 
   return (
     <Stack
@@ -91,53 +88,47 @@ const ChatAreaMessageThread: React.FC<ChatAreaMessageThreadProps> = ({
         </StatusMessage>
       ) : null}
 
-      {!isMinimized && currentUserMessage.trim() ? (
+      {currentUserMessage.trim() ? (
         <UserMessage content={currentUserMessage} />
       ) : null}
 
-      {showProgressTracker && (
-        <Box sx={{ width: "100%", display: isMinimized ? "none" : "block" }}>
-          <GroupCommunicationFeed
-            isVisible={!isMinimized && showProgressTracker}
-            onComplete={onStreamComplete}
-            onSenderHighlight={onSenderHighlight}
-            graphConfig={graphConfig}
-            prompt={currentUserMessage}
-            executionKey={executionKey}
-            apiError={hasApiError}
-            observabilitySessionId={observabilitySessionId}
-          />
-        </Box>
-      )}
+      {showProgressTracker ? (
+        <GroupCommunicationFeed
+          isVisible={showProgressTracker}
+          onComplete={onStreamComplete}
+          onSenderHighlight={onSenderHighlight}
+          graphConfig={graphConfig}
+          prompt={currentUserMessage}
+          executionKey={executionKey}
+          apiError={hasApiError}
+          observabilitySessionId={observabilitySessionId}
+        />
+      ) : null}
 
-      {showAuctionStreaming && (
-        <Box sx={{ width: "100%", display: isMinimized ? "none" : "block" }}>
-          <AuctionStreamingFeed
-            isVisible={!isMinimized && showAuctionStreaming}
-            prompt={currentUserMessage}
-            apiError={hasApiError}
-            auctionStreamingState={auctionState}
-            onSenderHighlight={onSenderHighlight}
-            graphConfig={graphConfig}
-            observabilitySessionId={observabilitySessionId}
-          />
-        </Box>
-      )}
+      {showAuctionStreaming ? (
+        <AuctionStreamingFeed
+          isVisible={showAuctionStreaming}
+          prompt={currentUserMessage}
+          apiError={hasApiError}
+          auctionStreamingState={auctionState}
+          onSenderHighlight={onSenderHighlight}
+          graphConfig={graphConfig}
+          observabilitySessionId={observabilitySessionId}
+        />
+      ) : null}
 
-      {showRecruiterStreaming && (
-        <Box sx={{ width: "100%", display: isMinimized ? "none" : "block" }}>
-          <RecruiterStreamingFeed
-            isVisible={!isMinimized && showRecruiterStreaming}
-            prompt={currentUserMessage}
-            apiError={hasApiError}
-            recruiterStreamingState={recruiterState}
-            onStreamComplete={onStreamComplete}
-            onSenderHighlight={onSenderHighlight}
-            graphConfig={graphConfig}
-            observabilitySessionId={observabilitySessionId}
-          />
-        </Box>
-      )}
+      {showRecruiterStreaming ? (
+        <RecruiterStreamingFeed
+          isVisible={showRecruiterStreaming}
+          prompt={currentUserMessage}
+          apiError={hasApiError}
+          recruiterStreamingState={recruiterState}
+          onStreamComplete={onStreamComplete}
+          onSenderHighlight={onSenderHighlight}
+          graphConfig={graphConfig}
+          observabilitySessionId={observabilitySessionId}
+        />
+      ) : null}
 
       {hasAgentFinalResponse ? (
         <Message icon={<ChatAgentAvatar />}>
