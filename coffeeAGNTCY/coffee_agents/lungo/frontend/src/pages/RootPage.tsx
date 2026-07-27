@@ -119,7 +119,9 @@ const RootPage: React.FC = () => {
   const hasChatMessages = Boolean(currentUserMessage?.trim())
   const chatPanelRef = usePanelRef()
   const { fillHeight: chatPanelFillHeight } = useChatPanelContentSize({
-    enabled: hasChatMessages,
+    enabled: true,
+    remeasureKey: hasChatMessages,
+    fillPanelHeight: hasChatMessages,
     chatPanelRef,
     chatContentRef: chatRef,
   })
@@ -129,9 +131,7 @@ const RootPage: React.FC = () => {
     onLayoutChanged: onMainVerticalLayoutChanged,
   } = useDefaultLayout({
     id: MAIN_VERTICAL_GROUP_ID,
-    panelIds: hasChatMessages
-      ? [GRAPH_PANEL_ID, CHAT_PANEL_ID]
-      : [GRAPH_PANEL_ID],
+    panelIds: [GRAPH_PANEL_ID, CHAT_PANEL_ID],
   })
 
   const chatAreaProps = {
@@ -315,49 +315,30 @@ const RootPage: React.FC = () => {
                         </ErrorBoundary>
                       </Box>
                     </Panel>
-                    {hasChatMessages ? (
-                      <>
-                        <ChatPanelSeparator />
-                        <Panel
-                          id={CHAT_PANEL_ID}
-                          panelRef={chatPanelRef}
-                          minSize={CHAT_MIN_SIZE}
-                          maxSize={CHAT_MAX_SIZE}
-                        >
-                          <Box
-                            component="section"
-                            aria-label="Agent chat"
-                            sx={{
-                              display: "flex",
-                              width: "100%",
-                              height: chatPanelFillHeight ? "100%" : "auto",
-                              minWidth: 0,
-                              minHeight: 0,
-                              flexDirection: "column",
-                              overflow: "hidden",
-                            }}
-                          >
-                            <ChatArea {...chatAreaProps} />
-                          </Box>
-                        </Panel>
-                      </>
-                    ) : null}
-                  </Group>
-                  {!hasChatMessages ? (
-                    <Box
-                      component="section"
-                      aria-label="Agent chat"
-                      sx={{
-                        display: "flex",
-                        width: "100%",
-                        flexShrink: 0,
-                        flexDirection: "column",
-                        overflow: "hidden",
-                      }}
+                    <ChatPanelSeparator disabled={!hasChatMessages} />
+                    <Panel
+                      id={CHAT_PANEL_ID}
+                      panelRef={chatPanelRef}
+                      minSize={hasChatMessages ? CHAT_MIN_SIZE : undefined}
+                      maxSize={CHAT_MAX_SIZE}
                     >
-                      <ChatArea {...chatAreaProps} />
-                    </Box>
-                  ) : null}
+                      <Box
+                        component="section"
+                        aria-label="Agent chat"
+                        sx={{
+                          display: "flex",
+                          width: "100%",
+                          height: chatPanelFillHeight ? "100%" : "auto",
+                          minWidth: 0,
+                          minHeight: 0,
+                          flexDirection: "column",
+                          overflow: "hidden",
+                        }}
+                      >
+                        <ChatArea {...chatAreaProps} />
+                      </Box>
+                    </Panel>
+                  </Group>
                 </Box>
               </GraphCanvasLayoutContext.Provider>
             </Box>

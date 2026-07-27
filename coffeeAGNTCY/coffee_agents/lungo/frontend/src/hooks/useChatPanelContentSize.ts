@@ -12,12 +12,21 @@ import { CHAT_PANEL_AUTO_SIZE_MAX_ATTEMPTS } from "@/components/Chat/chatPanelLa
 
 type UseChatPanelContentSizeOptions = {
   enabled: boolean
+  /** When this value changes, panel height is re-measured from chat content. */
+  remeasureKey?: unknown
+  /**
+   * When false (composer-only), measure intrinsic scroll height and do not
+   * stretch the chat shell to the panel (avoids feedback with persisted flex).
+   */
+  fillPanelHeight?: boolean
   chatPanelRef: RefObject<PanelImperativeHandle | null>
   chatContentRef: RefObject<HTMLElement | null>
 }
 
 export function useChatPanelContentSize({
   enabled,
+  remeasureKey,
+  fillPanelHeight = true,
   chatPanelRef,
   chatContentRef,
 }: UseChatPanelContentSizeOptions) {
@@ -29,9 +38,7 @@ export function useChatPanelContentSize({
       return
     }
 
-    if (contentSized) {
-      return
-    }
+    setContentSized(false)
 
     let cancelled = false
     let attempts = 0
@@ -47,7 +54,11 @@ export function useChatPanelContentSize({
         return
       }
 
-      const height = Math.ceil(chatContent.getBoundingClientRect().height)
+      const height = Math.ceil(
+        fillPanelHeight
+          ? chatContent.getBoundingClientRect().height
+          : chatContent.scrollHeight,
+      )
       if (height <= 0) {
         scheduleRetry()
         return
@@ -78,10 +89,10 @@ export function useChatPanelContentSize({
       cancelled = true
       window.cancelAnimationFrame(frameId)
     }
-  }, [chatContentRef, chatPanelRef, contentSized, enabled])
+  }, [chatContentRef, chatPanelRef, enabled, fillPanelHeight, remeasureKey])
 
   return {
     contentSized,
-    fillHeight: enabled && contentSized,
+    fillHeight: enabled && contentSized && fillPanelHeight,
   }
 }
