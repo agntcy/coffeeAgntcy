@@ -26,9 +26,9 @@ async def serve_multi_transport(agent_card, request_handler):
 
     Each advertised interface is started in its own session so a broker that
     is unavailable at startup (e.g. NATS) cannot abort the others. A startup
-    failure on the card's ``preferred_transport`` is fatal (the process exits
-    and Kubernetes restarts it); failures on any other transport are logged
-    and skipped so the agent still comes up on the transports that are healthy.
+    failure on the card's ``preferred_transport`` is fatal; failures on any other
+    transport are logged and skipped so the agent still comes up on the transports
+    that are healthy.
     """
     interfaces = agent_card.additional_interfaces or []
     if not interfaces:
