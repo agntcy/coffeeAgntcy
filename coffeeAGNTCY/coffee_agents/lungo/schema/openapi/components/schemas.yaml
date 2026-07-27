@@ -180,3 +180,102 @@ components:
         $ref: "#/components/schemas/InstanceId"
       additionalProperties:
         $ref: "#/components/schemas/WorkflowInstance"
+
+    RequestValidationErrorItem:
+      type: object
+      required: [loc, msg, type]
+      description: One FastAPI/Pydantic validation error (422 response body).
+      properties:
+        loc:
+          type: array
+          description: Location of the error (e.g. body, query, path segment, field name).
+          items:
+            oneOf:
+              - type: string
+              - type: integer
+        msg:
+          type: string
+        type:
+          type: string
+      additionalProperties: true
+
+    HttpError:
+      type: object
+      required: [detail]
+      description: >
+        Error body returned by FastAPI for HTTPException and request validation failures.
+        HTTPException uses a string detail; validation failures use an array of items.
+      properties:
+        detail:
+          oneOf:
+            - type: string
+              description: Typical application error message (4xx/5xx from HTTPException).
+            - type: array
+              items:
+                $ref: "#/components/schemas/RequestValidationErrorItem"
+              description: Request validation errors (422).
+
+  responses:
+    Unauthorized:
+      description: Missing, non-Bearer, or invalid Authorization token.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/HttpError"
+          examples:
+            unauthorized:
+              value:
+                detail: Unauthorized
+
+    UnprocessableEntity:
+      description: Path, query, or request body failed validation.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/HttpError"
+
+    BadRequest:
+      description: Invalid payload or event does not match the request path context.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/HttpError"
+
+    NotFound:
+      description: Unknown workflow, instance, pattern, or documentation resource.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/HttpError"
+
+    InternalServerError:
+      description: Server-side catalog inconsistency or invalid stored projection.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/HttpError"
+
+    ServiceUnavailable:
+      description: Workflow instance store is not configured or is closed.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/HttpError"
+
+    GatewayTimeout:
+      description: >
+        Work was accepted but did not finish in time (e.g. instantiate merge wait).
+        Do not blindly retry POST instantiate; each call creates a new instance.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/HttpError"
+
+  securitySchemes:
+    WorkflowApiKeyBearer:
+      type: http
+      scheme: bearer
+      bearerFormat: WORKFLOW_API_KEY
+      description: |
+        Bearer token must match the server's WORKFLOW_API_KEY environment variable.
+        The process refuses to start when WORKFLOW_API_KEY is unset (see api/agentic_workflows/auth.py).
