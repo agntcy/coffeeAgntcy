@@ -55,7 +55,14 @@ jobs:
           version: "3.18.3"
 
       - name: Helm lint
-        run: helm lint ${{ inputs.path }} --with-subcharts
+        # The --strict flag promotes lint warnings to failures.
+        run: helm lint ${{ inputs.path }} --with-subcharts --strict
+
+      - name: Helm template (render check)
+        # Fully render the chart to catch templating issues (nil dereferences,
+        # bad function calls, invalid rendered YAML) that `helm lint` alone
+        # does not surface.
+        run: helm template lint-check ${{ inputs.path }} > /dev/null
 
       - name: Package Helm Chart
         id: package
