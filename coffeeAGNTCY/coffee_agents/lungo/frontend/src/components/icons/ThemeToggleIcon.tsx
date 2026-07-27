@@ -4,7 +4,7 @@
  **/
 
 import React from "react"
-import { useAppThemeMode } from "@/hooks/useAppThemeMode"
+import { useAppThemeMode } from "@/hooks/useApp"
 import DarkMode from "@mui/icons-material/DarkMode"
 import LightMode from "@mui/icons-material/LightMode"
 

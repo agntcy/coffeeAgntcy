@@ -3,33 +3,29 @@
  * SPDX-License-Identifier: Apache-2.0
  **/
 
-import axios, { type AxiosInstance } from "axios"
+import { fetchJson, fetchSse, httpFetch } from "@/api/http"
 import type {
   EventV1Wire,
   InstantiateWorkflowResponseWire,
   WorkflowInstanceWire,
 } from "@/api/agenticWorkflowsTypes"
 import {
-  buildWorkflowInstanceSseUrl,
+  buildAgenticWorkflowsInstantiateRequest,
+  buildAgenticWorkflowsInstanceRequest,
+  buildAgenticWorkflowsInstanceSseRequest,
   getAgenticWorkflowsApiKey,
-  LUNGO_FRONTEND_URLS,
 } from "@/urls"
+
+export {
+  parseSseDataLine,
+  parseSseFrameLines,
+  splitSseFrames,
+} from "@/api/http/sseParsing"
 
 export function agenticWorkflowsAuthHeaders(): Record<string, string> {
   const key = getAgenticWorkflowsApiKey()
   if (!key) return {}
   return { Authorization: `Bearer ${key}` }
-}
-
-export function createClient(baseURL: string): AxiosInstance {
-  return axios.create({
-    baseURL: baseURL.replace(/\/$/, ""),
-    timeout: 60_000,
-    headers: {
-      Accept: "application/json",
-      ...agenticWorkflowsAuthHeaders(),
-    },
-  })
 }
 
 function normalizeInstanceId(raw: unknown): string {
@@ -46,13 +42,19 @@ function normalizeInstanceId(raw: unknown): string {
 }
 
 export async function instantiateWorkflow(
-  client: AxiosInstance,
+  baseUrl: string,
   workflowName: string,
 ): Promise<InstantiateWorkflowResponseWire> {
-  const { data } = await client.post<InstantiateWorkflowResponseWire>(
-    LUNGO_FRONTEND_URLS.apiPaths.agenticWorkflowsInstantiate(workflowName),
+  const request = buildAgenticWorkflowsInstantiateRequest(workflowName, baseUrl)
+  const data = await fetchJson<{ workflow_instance_id?: unknown }>(
+    request.url,
+    {
+      method: "POST",
+      endpointLabel: request.endpointLabel,
+      headers: agenticWorkflowsAuthHeaders(),
+    },
   )
-  const raw = (data as { workflow_instance_id?: unknown }).workflow_instance_id
+  const raw = data.workflow_instance_id
   if (raw == null) {
     throw new Error("Missing workflow_instance_id in instantiate response")
   }
@@ -62,32 +64,38 @@ export async function instantiateWorkflow(
 }
 
 export async function deleteWorkflowInstance(
-  client: AxiosInstance,
+  baseUrl: string,
   workflowName: string,
   instancePathUuid: string,
 ): Promise<void> {
-  await client.delete(
-    LUNGO_FRONTEND_URLS.apiPaths.agenticWorkflowsInstance(
-      workflowName,
-      instancePathUuid,
-    ),
+  const request = buildAgenticWorkflowsInstanceRequest(
+    workflowName,
+    instancePathUuid,
+    { baseUrl },
   )
+  await httpFetch(request.url, {
+    method: "DELETE",
+    endpointLabel: request.endpointLabel,
+    headers: agenticWorkflowsAuthHeaders(),
+  })
 }
 
 export async function getWorkflowInstanceState(
-  client: AxiosInstance,
+  baseUrl: string,
   workflowName: string,
   instancePathUuid: string,
   topologyOnly: boolean,
 ): Promise<WorkflowInstanceWire> {
-  const { data } = await client.get<WorkflowInstanceWire>(
-    LUNGO_FRONTEND_URLS.apiPaths.agenticWorkflowsInstance(
-      workflowName,
-      instancePathUuid,
-    ),
-    { params: topologyOnly ? { topology_only: true } : undefined },
+  const request = buildAgenticWorkflowsInstanceRequest(
+    workflowName,
+    instancePathUuid,
+    { baseUrl, topologyOnly },
   )
-  return data
+
+  return fetchJson<WorkflowInstanceWire>(request.url, {
+    endpointLabel: request.endpointLabel,
+    headers: agenticWorkflowsAuthHeaders(),
+  })
 }
 
 /** Parse `instance://uuid` into lowercase UUID string for path segments. */
@@ -97,43 +105,6 @@ export function instanceIdToPathUuid(instanceId: string): string {
     throw new Error(`Expected instance id to start with ${prefix}`)
   }
   return instanceId.slice(prefix.length)
-}
-
-export function parseSseDataLine(line: string): EventV1Wire | null {
-  const trimmed = line.trim()
-  if (!trimmed.startsWith("data:")) return null
-  const jsonPart = trimmed.slice(5).trim()
-  if (!jsonPart) return null
-  try {
-    return JSON.parse(jsonPart) as EventV1Wire
-  } catch {
-    return null
-  }
-}
-
-export function splitSseFrames(buffer: string): {
-  frames: string[]
-  remainder: string
-} {
-  const frames: string[] = []
-  let rest = buffer
-  let idx: number
-  while ((idx = rest.indexOf("\n\n")) !== -1) {
-    frames.push(rest.slice(0, idx))
-    rest = rest.slice(idx + 2)
-  }
-  return { frames, remainder: rest }
-}
-
-export function parseSseFrameLines(frame: string): EventV1Wire[] {
-  const events: EventV1Wire[] = []
-  const lines = frame.split("\n")
-  for (const line of lines) {
-    if (!line.length || line.startsWith(":")) continue
-    const ev = parseSseDataLine(line)
-    if (ev) events.push(ev)
-  }
-  return events
 }
 
 export function eventTouchesInstance(
@@ -160,53 +131,16 @@ export function subscribeWorkflowInstanceSse(
   onEvent: (event: EventV1Wire) => void,
   onError?: (err: unknown) => void,
 ): WorkflowInstanceSseClose {
-  const url = buildWorkflowInstanceSseUrl(
-    baseUrl,
+  const request = buildAgenticWorkflowsInstanceSseRequest(
     workflowName,
     instancePathUuid,
+    baseUrl,
   )
 
-  let aborted = false
-  let buffer = ""
-  const controller = new AbortController()
-
-  const run = async () => {
-    try {
-      const res = await fetch(url, {
-        headers: {
-          Accept: "text/event-stream",
-          ...agenticWorkflowsAuthHeaders(),
-        },
-        cache: "no-store",
-        signal: controller.signal,
-      })
-      if (!res.ok || !res.body) {
-        onError?.(new Error(`SSE HTTP ${res.status}`))
-        return
-      }
-      const reader = res.body.getReader()
-      const decoder = new TextDecoder()
-      while (!aborted) {
-        const { value, done } = await reader.read()
-        if (done) break
-        buffer += decoder.decode(value, { stream: true })
-        const { frames, remainder } = splitSseFrames(buffer)
-        buffer = remainder
-        for (const frame of frames) {
-          const events = parseSseFrameLines(frame)
-          for (const ev of events) onEvent(ev)
-        }
-      }
-    } catch (e) {
-      if (controller.signal.aborted) return
-      if (!aborted) onError?.(e)
-    }
-  }
-
-  void run()
-
-  return () => {
-    aborted = true
-    controller.abort()
-  }
+  return fetchSse<EventV1Wire>(request.url, {
+    endpointLabel: request.endpointLabel,
+    headers: agenticWorkflowsAuthHeaders(),
+    onEvent,
+    onError,
+  })
 }

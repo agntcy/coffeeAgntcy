@@ -3,13 +3,12 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { logger } from "@/utils/logger"
 import {
   PatternChatNotFoundError,
   PatternChatTransportError,
   type PatternChatCallbacks,
   type PatternChatRequest,
-} from "@/hooks/usePatternChatAPI"
+} from "@/hooks/chat"
 
 export interface StreamPatternChatParams {
   patternName: string
@@ -53,7 +52,6 @@ export const streamPatternChat = async ({
         onSettled()
       },
       onError: (err) => {
-        logger.apiError("/patterns/{name}/chat", err)
         const msg =
           err instanceof PatternChatNotFoundError
             ? `No documentation chat available for "${patternName}" yet.`

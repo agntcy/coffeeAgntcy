@@ -3,6 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  **/
 
+import { isHttpError } from "@/api/http"
+
 export const RETRY_CONFIG = {
   maxRetries: 3,
   baseDelay: 1000,
@@ -62,11 +64,9 @@ function isRetryableError(error: unknown): boolean {
     return true
   }
 
-  if (err.isAxiosError) {
-    if (!err.response) return true
-    const response = err.response as { status?: number }
-    const status = response.status
-    return typeof status === "number" && (status >= 500 || status === 429)
+  if (isHttpError(error)) {
+    if (error.status === undefined) return true
+    return error.status >= 500 || error.status === 429
   }
 
   return false

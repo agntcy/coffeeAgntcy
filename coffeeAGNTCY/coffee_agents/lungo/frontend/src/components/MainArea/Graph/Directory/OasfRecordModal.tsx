@@ -6,22 +6,24 @@
 import React, { useState, useEffect, useMemo } from "react"
 import {
   Box,
-  Button,
   IconButton,
   Link,
   Dialog,
   DialogContent,
   DialogTitle,
+  LoadingErrorState,
   Stack,
   Typography,
 } from "@open-ui-kit/core"
 import Close from "@mui/icons-material/Close"
 import { getDirectoryServerUrl, getDirectoryVersion } from "@/urls"
 import type { ChatApiTarget } from "@/utils/patternUtils"
-import { fetchOasfRecord, OasfRecord } from "./DirectoryApi"
+import { fetchOasfRecord, oasfRecordRequest, OasfRecord } from "./DirectoryApi"
 import { CustomNodeData } from "../Elements/types"
-import { IdentityServiceError } from "../Identity/IdentityApi"
+import { reportRequestError } from "@/errors/request"
 import { LoadingSpinner } from "@/components/loading"
+import { modalDialogContentSx } from "@/components/modalDialogContentSx"
+import { compactNegativeEmptyStateProps } from "@/components/compactNegativeEmptyState"
 import {
   graphModalFieldCardSx,
   graphModalLoadingOverlaySx,
@@ -81,12 +83,12 @@ const OasfRecordModal: React.FC<OasfRecordModalProps> = ({
     try {
       const data = await fetchOasfRecord(nodeData, chatApiTarget)
       setRecord(data)
-    } catch (err) {
-      const apiError = err as IdentityServiceError
-      setError(
-        apiError.message ||
-          "An unexpected error occurred while fetching OASF record.",
+    } catch (error) {
+      const httpError = reportRequestError(
+        oasfRecordRequest(nodeData, chatApiTarget).endpointLabel,
+        error,
       )
+      setError(httpError.message)
     } finally {
       setLoading(false)
     }
@@ -122,136 +124,97 @@ const OasfRecordModal: React.FC<OasfRecordModalProps> = ({
         </IconButton>
       </DialogTitle>
 
-      <DialogContent dividers>
+      <DialogContent dividers sx={modalDialogContentSx}>
         {isDirectoryNode ? (
           <Stack sx={{ width: "100%", gap: 1.5 }}>
-            <Stack sx={{ width: "100%", gap: 1.5 }}>
-              <Box sx={graphModalFieldCardSx}>
-                <Typography
-                  variant="caption"
-                  color="text.secondary"
-                  sx={{
-                    textTransform: "uppercase",
-                    letterSpacing: "0.06em",
-                    opacity: 0.9,
-                  }}
+            <Box sx={graphModalFieldCardSx}>
+              <Stack spacing={1}>
+                <Stack
+                  direction="row"
+                  justifyContent="space-between"
+                  alignItems="flex-start"
+                  gap={2}
                 >
-                  Directory URL
-                </Typography>
-                {directoryUrl ? (
-                  <Link
-                    href={directoryServerUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    sx={{
-                      mt: 1,
-                      display: "block",
-                      wordBreak: "break-all",
-                      typography: "body2",
-                    }}
-                  >
-                    {directoryServerUrl}
-                  </Link>
-                ) : (
-                  <Typography
-                    variant="body2"
-                    color="text.secondary"
-                    sx={{ mt: 1, opacity: 0.9 }}
-                  >
-                    Unavailable
+                  <Typography component="span" variant="body2">
+                    Directory URL:
                   </Typography>
-                )}
-              </Box>
+                  {directoryUrl ? (
+                    <Link
+                      href={directoryServerUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      sx={{
+                        typography: "body2",
+                        wordBreak: "break-all",
+                        textAlign: "right",
+                      }}
+                    >
+                      {directoryServerUrl}
+                    </Link>
+                  ) : (
+                    <Typography component="span" variant="body2">
+                      Unavailable
+                    </Typography>
+                  )}
+                </Stack>
+              </Stack>
+            </Box>
 
-              <Box sx={graphModalFieldCardSx}>
-                <Typography
-                  variant="caption"
-                  color="text.secondary"
-                  sx={{
-                    textTransform: "uppercase",
-                    letterSpacing: "0.06em",
-                    opacity: 0.9,
-                  }}
-                >
-                  Directory Version
-                </Typography>
-                <Typography variant="body2" sx={{ mt: 1 }}>
-                  {directoryVersion || "Unavailable"}
-                </Typography>
-              </Box>
-            </Stack>
-          </Stack>
-        ) : loading && !record ? (
-          <Stack
-            sx={{
-              width: "100%",
-              alignItems: "center",
-              justifyContent: "center",
-              py: 4,
-            }}
-          >
-            <LoadingSpinner compact />
-          </Stack>
-        ) : error ? (
-          <Stack
-            sx={{
-              width: "100%",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: 2,
-              py: 4,
-            }}
-          >
-            <Box sx={{ textAlign: "center" }}>
-              <Typography variant="body1" fontWeight="medium">
-                Failed to load OASF record
-              </Typography>
-              <Typography
-                variant="body2"
-                color="text.secondary"
-                sx={{ mt: 1, opacity: 0.9 }}
-              >
-                {error}
-              </Typography>
+            <Box sx={graphModalFieldCardSx}>
+              <Stack spacing={1}>
+                <Stack direction="row" justifyContent="space-between">
+                  <Typography component="span" variant="body2">
+                    Directory Version:
+                  </Typography>
+                  <Typography component="span" variant="body2">
+                    {directoryVersion || "Unavailable"}
+                  </Typography>
+                </Stack>
+              </Stack>
             </Box>
-            <Button
-              variant="outlined"
-              size="small"
-              onClick={fetchOasfRecordData}
-            >
-              Retry
-            </Button>
-          </Stack>
-        ) : record ? (
-          <Stack sx={graphModalScrollBodySx}>
-            <Typography
-              variant="subtitle1"
-              component="h3"
-              fontWeight="semibold"
-              sx={{ mb: 1.5 }}
-            >
-              {nodeName} OASF Record
-            </Typography>
-            <Box component="pre" sx={graphModalPreSx}>
-              {JSON.stringify(record, null, 2)}
-            </Box>
-            {loading && (
-              <Box sx={graphModalLoadingOverlaySx}>
-                <LoadingSpinner compact />
-              </Box>
-            )}
           </Stack>
         ) : (
-          <Stack
-            sx={{
-              width: "100%",
-              alignItems: "center",
-              justifyContent: "center",
-              py: 4,
+          <LoadingErrorState
+            loading={loading && !record}
+            error={error !== null}
+            data={error ? null : record}
+            skipEmptyCheck
+            errorStateProps={{
+              variant: "negative",
+              ...compactNegativeEmptyStateProps,
+              title: "Failed to load OASF record",
+              description: error ?? "",
+              actionTitle: "Retry",
+              actionCallback: () => {
+                void fetchOasfRecordData()
+              },
+            }}
+            emptyStateProps={{
+              variant: "info",
+              title: "No data available",
             }}
           >
-            <Typography color="text.primary">No data available</Typography>
-          </Stack>
+            {record ? (
+              <Stack sx={graphModalScrollBodySx}>
+                <Typography
+                  variant="subtitle1"
+                  component="h3"
+                  fontWeight="semibold"
+                  sx={{ mb: 1.5 }}
+                >
+                  {nodeName} OASF Record
+                </Typography>
+                <Box component="pre" sx={graphModalPreSx}>
+                  {JSON.stringify(record, null, 2)}
+                </Box>
+                {loading ? (
+                  <Box sx={graphModalLoadingOverlaySx}>
+                    <LoadingSpinner compact />
+                  </Box>
+                ) : null}
+              </Stack>
+            ) : null}
+          </LoadingErrorState>
         )}
       </DialogContent>
     </Dialog>

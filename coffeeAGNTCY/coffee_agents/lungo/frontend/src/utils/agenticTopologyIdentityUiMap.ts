@@ -211,6 +211,8 @@ export function enrichAgenticTopologyWellKnownUi(
       agentDirectoryLink:
         data.agentDirectoryLink ?? LUNGO_FRONTEND_URLS.agentDirectory.baseUrl,
       verificationStatus: VERIFICATION_STATUS.VERIFIED,
+      hasBadgeDetails: false,
+      hasPolicyDetails: false,
     }
   }
 

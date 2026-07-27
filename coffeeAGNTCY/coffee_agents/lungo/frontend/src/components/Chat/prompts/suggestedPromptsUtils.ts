@@ -4,11 +4,11 @@
  **/
 
 import type { ReactNode } from "react"
-import type { MenuProps } from "@mui/material/Menu"
+import type { MenuProps } from "@open-ui-kit/core"
 import type { ButtonProps, TooltipProps } from "@open-ui-kit/core"
 import type { DropdownOption } from "@/types/dropdownOption"
 import type { GraphCanvasLayoutMetrics } from "@/contexts/graphCanvasLayout"
-import type { PromptCategory } from "./PromptTypes"
+import type { PromptCategory, SuggestedPromptsResponse } from "./PromptTypes"
 
 export const SUGGESTED_PROMPTS_LABEL = "Suggested Prompts"
 
@@ -16,15 +16,25 @@ const PROMPTS_MENU_ANCHOR_GAP_PX = 8
 const PROMPTS_MENU_VIEWPORT_MARGIN_PX = 16
 const MAX_RETRY_DELAY_MS = 5000
 
-export function parsePromptCategories(data: unknown): PromptCategory[] {
+/** Max fetch attempts (initial try + retries) before surfacing failure in the UI. */
+export const MAX_SUGGESTED_PROMPTS_RETRIES = 3
+
+export function parsePromptCategories(
+  data: SuggestedPromptsResponse | unknown,
+): PromptCategory[] {
   if (data === null || typeof data !== "object" || Array.isArray(data)) {
     return []
   }
 
-  return Object.entries(data as Record<string, unknown>).map(
+  return Object.entries(data as SuggestedPromptsResponse).map(
     ([name, value]) => ({
       name,
-      prompts: Array.isArray(value) ? value : [],
+      prompts: Array.isArray(value)
+        ? value.map((entry) => ({
+            prompt: String(entry?.prompt ?? ""),
+            description: String(entry?.description ?? ""),
+          }))
+        : [],
     }),
   )
 }
@@ -100,17 +110,23 @@ export function getPromptsMenuProps(menuMaxWidth?: number): Partial<MenuProps> {
   }
 }
 
-function isInactive(isLoading: boolean, optionCount: number): boolean {
+function isInactive(
+  isLoading: boolean,
+  optionCount: number,
+  isUnavailable: boolean,
+): boolean {
+  if (isUnavailable) return false
   return isLoading || optionCount === 0
 }
 
 export function getPromptsTriggerButtonProps(
   isLoading: boolean,
   optionCount: number,
+  isUnavailable = false,
 ): ButtonProps {
   const base: ButtonProps = { size: "medium", variant: "primary" }
 
-  if (!isInactive(isLoading, optionCount)) {
+  if (!isInactive(isLoading, optionCount, isUnavailable)) {
     return base
   }
 
@@ -124,9 +140,13 @@ export function getPromptsTriggerButtonProps(
 export function getPromptsTriggerTooltipProps(
   isLoading: boolean,
   optionCount: number,
+  isUnavailable = false,
 ): Partial<TooltipProps> | undefined {
   if (isLoading) {
     return { title: "Loading prompts..." }
+  }
+  if (isUnavailable) {
+    return { title: "Suggested prompts could not be loaded" }
   }
   if (optionCount === 0) {
     return { title: "No prompts available" }

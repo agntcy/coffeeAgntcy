@@ -9,9 +9,17 @@ import React, {
   useLayoutEffect,
   useRef,
   useState,
+  type ComponentProps,
 } from "react"
-import { Box, IconButton, Menu, Tooltip } from "@open-ui-kit/core"
-import type { IconButtonProps, MenuProps } from "@mui/material"
+import {
+  Box,
+  IconButton,
+  Menu,
+  Tooltip,
+  type MenuProps,
+} from "@open-ui-kit/core"
+
+type IconButtonProps = ComponentProps<typeof IconButton>
 
 export type IconButtonDropdownTrigger = {
   /** Icon rendered inside the `IconButton`. */

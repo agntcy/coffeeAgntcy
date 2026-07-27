@@ -13,11 +13,13 @@ import {
   Typography,
 } from "@open-ui-kit/core"
 import Close from "@mui/icons-material/Close"
+import { modalDialogContentSx } from "@/components/modalDialogContentSx"
+import { fetchJson } from "@/api/http"
+import { reportRequestError } from "@/errors/request"
 import {
+  buildAboutRequest,
   getAgenticWorkflowsApiUrl,
   getExchangeAppApiUrl,
-  joinBaseUrl,
-  LUNGO_FRONTEND_URLS,
 } from "@/urls"
 
 interface InfoModalProps {
@@ -46,19 +48,17 @@ const InfoModal: React.FC<InfoModalProps> = ({ isOpen, onClose }) => {
     if (!isOpen) return
     let cancelled = false
     const fetchInfo = async () => {
+      const request = buildAboutRequest()
       try {
         setError(null)
-        const res = await fetch(
-          joinBaseUrl(EXCHANGE_APP_API_URL, LUNGO_FRONTEND_URLS.apiPaths.about),
-        )
-        if (!res.ok) {
-          throw new Error(`HTTP ${res.status}: ${res.statusText}`)
-        }
-        const data = await res.json()
+        const data = await fetchJson<BuildInfo>(request.url, {
+          endpointLabel: request.endpointLabel,
+        })
         if (!cancelled) setInfo(data)
-      } catch {
+      } catch (err) {
         if (!cancelled) {
-          setError("Failed to load build info")
+          const httpError = reportRequestError(request.endpointLabel, err)
+          setError(httpError.message)
           setInfo(null)
         }
       }
@@ -84,7 +84,7 @@ const InfoModal: React.FC<InfoModalProps> = ({ isOpen, onClose }) => {
           <Close />
         </IconButton>
       </DialogTitle>
-      <DialogContent>
+      <DialogContent sx={modalDialogContentSx}>
         <Stack spacing={3}>
           <Stack spacing={2}>
             <Typography variant="h6">Build and Release Information</Typography>

@@ -8,7 +8,7 @@
 
 import { type ReactNode, useEffect } from "react"
 
-import { useAppThemeMode, ThemeMode } from "@/hooks/useAppThemeMode"
+import { useAppThemeMode, ThemeMode } from "@/hooks/useApp"
 import { writeStoredThemeMode } from "@/utils/themeStorage"
 
 export function ThemeModePersistence({ children }: { children: ReactNode }) {

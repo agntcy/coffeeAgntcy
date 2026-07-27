@@ -9,6 +9,8 @@ import { Box, Button, InputField, Stack } from "@open-ui-kit/core"
 
 import { iconGlyphFillSx } from "@/utils/iconGlyphFill"
 
+import type { HttpRequestTarget } from "@/urls"
+
 import { SuggestedPromptsDropdown } from "./prompts"
 
 /** Matches OUK `Button` `size="medium"` with compact `body1` typography (7 + 20 + 7 = 34px). */
@@ -20,7 +22,7 @@ const promptsDropdownSx = {
 }
 
 interface ChatAreaComposerProps {
-  suggestedPromptsUrl?: string | null
+  suggestedPromptsRequest?: HttpRequestTarget | null
   onSuggestedPromptSelect: (query: string) => void
   content: string
   setContent: (value: string) => void
@@ -30,7 +32,7 @@ interface ChatAreaComposerProps {
 }
 
 const ChatAreaComposer: React.FC<ChatAreaComposerProps> = ({
-  suggestedPromptsUrl,
+  suggestedPromptsRequest,
   onSuggestedPromptSelect,
   content,
   setContent,
@@ -45,10 +47,10 @@ const ChatAreaComposer: React.FC<ChatAreaComposerProps> = ({
       spacing={2}
       sx={{ width: "100%" }}
     >
-      {suggestedPromptsUrl ? (
+      {suggestedPromptsRequest ? (
         <Box sx={promptsDropdownSx}>
           <SuggestedPromptsDropdown
-            promptsUrl={suggestedPromptsUrl}
+            promptsRequest={suggestedPromptsRequest}
             onSelect={onSuggestedPromptSelect}
             sx={(theme) => theme.typography.body1}
           />

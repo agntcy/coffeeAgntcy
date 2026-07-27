@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  **/
 
-import { useAppThemeMode } from "@/hooks/useAppThemeMode"
+import { useAppThemeMode } from "@/hooks/useApp"
 
 export interface ThemeIconMap {
   light: string

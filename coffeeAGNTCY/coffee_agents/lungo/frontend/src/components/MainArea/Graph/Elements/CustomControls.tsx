@@ -5,7 +5,7 @@
 
 import React, { useCallback } from "react"
 import { Controls, useReactFlow } from "@xyflow/react"
-import { applyDefaultGraphView } from "@/hooks/applyDefaultGraphView"
+import { applyDefaultGraphView } from "@/hooks/graph"
 import FitScreen from "@mui/icons-material/FitScreen"
 import Lock from "@mui/icons-material/Lock"
 import LockOpen from "@mui/icons-material/LockOpen"

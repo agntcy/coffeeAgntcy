@@ -6,7 +6,7 @@
  */
 
 import React from "react"
-import { Box, Stack, Typography } from "@open-ui-kit/core"
+import { Box, Message as StatusMessage, Stack } from "@open-ui-kit/core"
 import { ChatAgentAvatar } from "./ChatAvatarCircle"
 import { LoadingDots } from "@/components/loading"
 import Message from "./Message"
@@ -33,7 +33,7 @@ export interface ChatAreaMessageThreadProps {
   showFinalResponse: boolean
   isAgentLoading: boolean
   agentResponse?: ApiResponse
-  apiError: boolean
+  apiErrorMessage?: string | null
   graphConfig?: GraphConfig
   executionKey?: string
   auctionState?: AuctionStreamingState
@@ -52,7 +52,7 @@ const ChatAreaMessageThread: React.FC<ChatAreaMessageThreadProps> = ({
   showFinalResponse,
   isAgentLoading,
   agentResponse,
-  apiError,
+  apiErrorMessage,
   graphConfig,
   executionKey,
   auctionState,
@@ -60,90 +60,106 @@ const ChatAreaMessageThread: React.FC<ChatAreaMessageThreadProps> = ({
   observabilitySessionId,
   onStreamComplete,
   onSenderHighlight,
-}) => (
-  <Stack
-    component="section"
-    aria-label="Conversation"
-    aria-live="polite"
-    aria-relevant="additions text"
-    aria-atomic={false}
-    spacing={1.5}
-    sx={{ width: "100%", maxWidth: 1100, mx: "auto", mb: 2 }}
-  >
-    {apiError ? (
-      <Box role="alert" aria-live="assertive">
-        <Typography variant="body1" color="error">
-          The request failed. Check the workflow or try again.
-        </Typography>
-      </Box>
-    ) : null}
+}) => {
+  const hasApiError = apiErrorMessage != null
+  const hasAgentFinalResponse =
+    showFinalResponse &&
+    !hasApiError &&
+    (isAgentLoading || Boolean(agentResponse?.response?.trim())) &&
+    !isMinimized
 
-    {!isMinimized && <UserMessage content={currentUserMessage} />}
+  return (
+    <Stack
+      component="section"
+      aria-label="Conversation"
+      aria-live="polite"
+      aria-relevant="additions text"
+      aria-atomic={false}
+      spacing={1.5}
+      sx={{ width: "100%", maxWidth: 1100, mx: "auto", mb: 2 }}
+    >
+      {hasApiError ? (
+        <StatusMessage
+          type="error"
+          hideClose
+          role="alert"
+          aria-live="assertive"
+          title="The request failed"
+          sx={{ width: "100%" }}
+        >
+          {apiErrorMessage}
+        </StatusMessage>
+      ) : null}
 
-    {showProgressTracker && (
-      <Box sx={{ width: "100%", display: isMinimized ? "none" : "block" }}>
-        <GroupCommunicationFeed
-          isVisible={!isMinimized && showProgressTracker}
-          onComplete={onStreamComplete}
-          onSenderHighlight={onSenderHighlight}
-          graphConfig={graphConfig}
-          prompt={currentUserMessage}
-          executionKey={executionKey}
-          apiError={apiError}
-          observabilitySessionId={observabilitySessionId}
-        />
-      </Box>
-    )}
+      {!isMinimized && currentUserMessage.trim() ? (
+        <UserMessage content={currentUserMessage} />
+      ) : null}
 
-    {showAuctionStreaming && (
-      <Box sx={{ width: "100%", display: isMinimized ? "none" : "block" }}>
-        <AuctionStreamingFeed
-          isVisible={!isMinimized && showAuctionStreaming}
-          prompt={currentUserMessage}
-          apiError={apiError}
-          auctionStreamingState={auctionState}
-          onSenderHighlight={onSenderHighlight}
-          graphConfig={graphConfig}
-          observabilitySessionId={observabilitySessionId}
-        />
-      </Box>
-    )}
+      {showProgressTracker && (
+        <Box sx={{ width: "100%", display: isMinimized ? "none" : "block" }}>
+          <GroupCommunicationFeed
+            isVisible={!isMinimized && showProgressTracker}
+            onComplete={onStreamComplete}
+            onSenderHighlight={onSenderHighlight}
+            graphConfig={graphConfig}
+            prompt={currentUserMessage}
+            executionKey={executionKey}
+            apiError={hasApiError}
+            observabilitySessionId={observabilitySessionId}
+          />
+        </Box>
+      )}
 
-    {showRecruiterStreaming && (
-      <Box sx={{ width: "100%", display: isMinimized ? "none" : "block" }}>
-        <RecruiterStreamingFeed
-          isVisible={!isMinimized && showRecruiterStreaming}
-          prompt={currentUserMessage}
-          apiError={apiError}
-          recruiterStreamingState={recruiterState}
-          onStreamComplete={onStreamComplete}
-          onSenderHighlight={onSenderHighlight}
-          graphConfig={graphConfig}
-          observabilitySessionId={observabilitySessionId}
-        />
-      </Box>
-    )}
+      {showAuctionStreaming && (
+        <Box sx={{ width: "100%", display: isMinimized ? "none" : "block" }}>
+          <AuctionStreamingFeed
+            isVisible={!isMinimized && showAuctionStreaming}
+            prompt={currentUserMessage}
+            apiError={hasApiError}
+            auctionStreamingState={auctionState}
+            onSenderHighlight={onSenderHighlight}
+            graphConfig={graphConfig}
+            observabilitySessionId={observabilitySessionId}
+          />
+        </Box>
+      )}
 
-    {showFinalResponse && (isAgentLoading || agentResponse) && !isMinimized && (
-      <Message icon={<ChatAgentAvatar />}>
-        {isAgentLoading ? (
-          <>
-            <Box component="span" sx={visuallyHiddenSx}>
-              Agent is responding
-            </Box>
-            <LoadingDots />
-          </>
-        ) : (
-          <>
-            <ChatMarkdown content={agentResponse?.response ?? ""} />
-            {!isAgentLoading && (
-              <GrafanaSessionLink sessionId={observabilitySessionId} />
-            )}
-          </>
-        )}
-      </Message>
-    )}
-  </Stack>
-)
+      {showRecruiterStreaming && (
+        <Box sx={{ width: "100%", display: isMinimized ? "none" : "block" }}>
+          <RecruiterStreamingFeed
+            isVisible={!isMinimized && showRecruiterStreaming}
+            prompt={currentUserMessage}
+            apiError={hasApiError}
+            recruiterStreamingState={recruiterState}
+            onStreamComplete={onStreamComplete}
+            onSenderHighlight={onSenderHighlight}
+            graphConfig={graphConfig}
+            observabilitySessionId={observabilitySessionId}
+          />
+        </Box>
+      )}
+
+      {hasAgentFinalResponse ? (
+        <Message icon={<ChatAgentAvatar />}>
+          {isAgentLoading ? (
+            <>
+              <Box component="span" sx={visuallyHiddenSx}>
+                Agent is responding
+              </Box>
+              <LoadingDots />
+            </>
+          ) : (
+            <>
+              <ChatMarkdown content={agentResponse?.response ?? ""} />
+              {!isAgentLoading && (
+                <GrafanaSessionLink sessionId={observabilitySessionId} />
+              )}
+            </>
+          )}
+        </Message>
+      ) : null}
+    </Stack>
+  )
+}
 
 export default ChatAreaMessageThread

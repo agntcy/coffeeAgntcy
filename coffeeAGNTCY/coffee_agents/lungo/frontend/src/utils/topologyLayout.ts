@@ -7,7 +7,8 @@ import type { Edge, Node } from "@xyflow/react"
 import { NODE_TYPES } from "@/utils/const"
 import {
   CUSTOM_NODE_HEIGHT,
-  GROUP_CONTENT_PADDING,
+  GROUP_CONTENT_PADDING_X,
+  GROUP_CONTENT_PADDING_Y,
   TRANSPORT_NODE_WIDTH_BAR,
   TRANSPORT_NODE_WIDTH_COMPACT,
 } from "./graphNodeDimensions"
@@ -130,16 +131,17 @@ function layoutCompactGroup(nodes: Node[], transport: Node): Node[] {
   for (const ids of byLayer.values()) {
     contentWidth = Math.max(contentWidth, rowContentSpan(ids.length))
   }
-  const groupWidth = contentWidth + GROUP_CONTENT_PADDING * 2
+  const groupWidth = contentWidth + GROUP_CONTENT_PADDING_X * 2
 
   for (const ids of byLayer.values()) {
-    placeRowInContentArea(ids, positions, contentWidth, GROUP_CONTENT_PADDING)
+    placeRowInContentArea(ids, positions, contentWidth, GROUP_CONTENT_PADDING_X)
   }
 
   const transportPos = positions.get(transport.id)!
   positions.set(transport.id, {
     x:
-      GROUP_CONTENT_PADDING + (contentWidth - TRANSPORT_NODE_WIDTH_COMPACT) / 2,
+      GROUP_CONTENT_PADDING_X +
+      (contentWidth - TRANSPORT_NODE_WIDTH_COMPACT) / 2,
     y: transportPos.y,
   })
 
@@ -153,8 +155,8 @@ function layoutCompactGroup(nodes: Node[], transport: Node): Node[] {
     minY = Math.min(minY, pos.y)
     maxY = Math.max(maxY, pos.y + height)
   }
-  const shiftY = GROUP_CONTENT_PADDING - minY
-  const groupHeight = maxY - minY + GROUP_CONTENT_PADDING * 2
+  const shiftY = GROUP_CONTENT_PADDING_Y - minY
+  const groupHeight = maxY - minY + GROUP_CONTENT_PADDING_Y * 2
 
   for (const id of childIds) {
     const pos = positions.get(id)!

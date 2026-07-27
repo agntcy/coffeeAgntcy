@@ -1,12 +1,17 @@
 import type { AgentTransport } from "./transportMeta"
 
+export interface GraphNodeTransportRailData {
+  transportInterfaces?: AgentTransport[]
+  activeTransport?: string
+}
+
 export interface ExtraHandle {
   id: string
   type: "source" | "target"
   position: "top" | "bottom" | "left" | "right"
 }
 
-export interface CustomNodeData {
+export interface CustomNodeData extends GraphNodeTransportRailData {
   onOpenOasfModal?: (nodeData: CustomNodeData) => void
   icon: React.ReactNode
   label: string
@@ -22,8 +27,6 @@ export interface CustomNodeData {
   verificationBadge?: React.ReactNode
   githubLink?: string
   agentDirectoryLink?: string
-  transportInterfaces?: AgentTransport[]
-  activeTransport?: string
   /** Slug for `GET .../identity-apps/{slug}/...` (differs from directory OASF slug for some agents). */
   identityAppsSlug?: string
   /** Slug for `GET .../agents/{slug}/oasf` (AGNTCY Directory / OASF card). */

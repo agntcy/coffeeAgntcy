@@ -6,8 +6,7 @@
  */
 
 import React from "react"
-import { Box, Tooltip } from "@open-ui-kit/core"
-import type { TooltipProps } from "@mui/material"
+import { Box, Tooltip, type TooltipProps } from "@open-ui-kit/core"
 
 export interface GraphSideIconTooltipProps {
   title: string

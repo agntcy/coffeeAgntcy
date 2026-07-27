@@ -19,10 +19,12 @@ import {
   useGroupEvents,
   useGroupError,
   useGroupCurrentOrderId,
-  useGroupIsComplete,
+  useGroupStreamingStatus,
 } from "@/stores/groupStreamingStore"
+import { NDJSON_STREAMING_STATUS } from "@/stores/ndjsonStreamingStatus"
 import { FeedSpinnerRow } from "../FeedSpinnerRow"
 import { FeedStatusLine } from "../FeedStatusLine"
+import { FeedErrorMessage } from "./FeedErrorMessage"
 import { FeedCollapseButton } from "./FeedCollapseButton"
 import GrafanaSessionLink from "../GrafanaSessionLink"
 
@@ -51,7 +53,11 @@ const GroupCommunicationFeed: React.FC<GroupCommunicationFeedProps> = ({
   const groupEvents = useGroupEvents()
   const groupError = useGroupError()
   const groupCurrentOrderId = useGroupCurrentOrderId()
-  const storeIsComplete = useGroupIsComplete()
+  const groupStatus = useGroupStreamingStatus()
+  const isComplete = groupStatus === NDJSON_STREAMING_STATUS.COMPLETED
+  const isActive =
+    groupStatus === NDJSON_STREAMING_STATUS.CONNECTING ||
+    groupStatus === NDJSON_STREAMING_STATUS.STREAMING
 
   const [isExpanded, setIsExpanded] = useState(true)
 
@@ -149,6 +155,27 @@ const GroupCommunicationFeed: React.FC<GroupCommunicationFeedProps> = ({
     return null
   }
 
+  if (errorMessage && events.length === 0) {
+    return <FeedErrorMessage>{errorMessage}</FeedErrorMessage>
+  }
+
+  const showsStatusLine =
+    (isComplete && Boolean(groupCurrentOrderId)) ||
+    (Boolean(prompt) && !apiError && isActive)
+  const showsSpinner =
+    Boolean(prompt) && isActive && !apiError && events.length === 0
+  const showsEvents = isExpanded && events.length > 0
+  const showsCompleteFooter = isComplete
+
+  if (
+    !showsStatusLine &&
+    !showsSpinner &&
+    !showsEvents &&
+    !showsCompleteFooter
+  ) {
+    return null
+  }
+
   return (
     <Stack
       direction="row"
@@ -170,14 +197,18 @@ const GroupCommunicationFeed: React.FC<GroupCommunicationFeedProps> = ({
         }}
       >
         {errorMessage ? (
-          <FeedStatusLine>Connection error: {errorMessage}</FeedStatusLine>
-        ) : storeIsComplete && groupCurrentOrderId ? (
+          <FeedErrorMessage>{errorMessage}</FeedErrorMessage>
+        ) : isComplete && groupCurrentOrderId ? (
           <FeedStatusLine>Order {groupCurrentOrderId}</FeedStatusLine>
-        ) : prompt && !apiError ? (
+        ) : prompt && !apiError && isActive ? (
           <FeedStatusLine showDots>Processing Request</FeedStatusLine>
         ) : null}
 
-        {prompt && !storeIsComplete && !apiError && events.length === 0 ? (
+        {prompt &&
+        isActive &&
+        !apiError &&
+        !errorMessage &&
+        events.length === 0 ? (
           <FeedSpinnerRow mt={3} />
         ) : null}
 
@@ -233,13 +264,11 @@ const GroupCommunicationFeed: React.FC<GroupCommunicationFeedProps> = ({
               )
             })}
 
-            {events.length > 0 && !storeIsComplete ? (
-              <FeedSpinnerRow mt={0} />
-            ) : null}
+            {events.length > 0 && isActive ? <FeedSpinnerRow mt={0} /> : null}
           </Stack>
         )}
 
-        {storeIsComplete && (
+        {isComplete && (
           <>
             <GrafanaSessionLink sessionId={observabilitySessionId} />
             <FeedCollapseButton

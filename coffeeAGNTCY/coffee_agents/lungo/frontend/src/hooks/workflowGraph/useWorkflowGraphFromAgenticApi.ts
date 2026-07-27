@@ -5,6 +5,7 @@
 
 import { useCallback, useMemo, useRef, useState } from "react"
 import type { Node } from "@xyflow/react"
+import { reportRequestError } from "@/errors/request"
 import {
   deleteWorkflowInstance,
   eventTouchesInstance,
@@ -14,7 +15,6 @@ import type { EventV1Wire } from "@/api/agenticWorkflowsTypes"
 import { getAgenticWorkflowsApiUrl } from "@/urls"
 import { patternTypeFromSummary } from "@/utils/workflow"
 import { useActiveWorkflowInstanceStore } from "@/stores/activeWorkflowInstanceStore"
-import { logger } from "@/utils/logger"
 import {
   extractInstanceTopologyFromEvent,
   messagingHighlightIdsFromTopology,
@@ -106,6 +106,7 @@ export function useWorkflowGraphFromAgenticApi({
       setNodes,
       setEdges,
       restoreEdgeAnimation,
+      setAgenticError,
     })
 
   const clearSession = useCallback(() => {
@@ -115,17 +116,17 @@ export function useWorkflowGraphFromAgenticApi({
     if (s.debounceTimer) clearTimeout(s.debounceTimer)
     if (s.retryTimer) clearTimeout(s.retryTimer)
     if (s.sseReconnectTimer) clearTimeout(s.sseReconnectTimer)
-    const { client, workflowName, instanceId } = s
+    const { baseUrl, workflowName, instanceId } = s
     sessionRef.current = null
     try {
       const pathUuid = instanceIdToPathUuid(instanceId)
-      void deleteWorkflowInstance(client, workflowName, pathUuid).catch(
+      void deleteWorkflowInstance(baseUrl, workflowName, pathUuid).catch(
         (err) => {
-          logger.apiError("agentic-workflows/delete-instance", err)
+          reportRequestError("agentic-workflows/delete-instance", err)
         },
       )
     } catch (err) {
-      logger.apiError("agentic-workflows/teardown-invalid-instance-id", err)
+      reportRequestError("agentic-workflows/teardown-invalid-instance-id", err)
     }
     setWorkflowInstanceId(null)
     resetMessagingHighlightState()

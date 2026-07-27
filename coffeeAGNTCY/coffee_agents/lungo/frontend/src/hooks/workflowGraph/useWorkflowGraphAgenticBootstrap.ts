@@ -5,15 +5,15 @@
 
 import { useEffect } from "react"
 import type { RefObject } from "react"
+import { parseHttpError } from "@/api/http"
 import {
-  createClient,
   getWorkflowInstanceState,
   instanceIdToPathUuid,
   instantiateWorkflow,
   subscribeWorkflowInstanceSse,
 } from "@/api/agenticWorkflowsClient"
 import type { EventV1Wire, TopologyWire } from "@/api/agenticWorkflowsTypes"
-import { logger } from "@/utils/logger"
+import { reportRequestError } from "@/errors/request"
 import {
   SSE_RECONNECT_BACKOFF_MS,
   type WorkflowGraphAgenticSession,
@@ -57,20 +57,19 @@ export function useWorkflowGraphAgenticBootstrap({
 
     clearSession()
 
-    const client = createClient(baseUrl)
     let cancelled = false
 
     const run = async () => {
       setAgenticError(null)
       try {
         const { workflow_instance_id: instanceId } = await instantiateWorkflow(
-          client,
+          baseUrl,
           catalogWorkflowName,
         )
         if (cancelled) return
         const pathUuid = instanceIdToPathUuid(instanceId)
         const inst = await getWorkflowInstanceState(
-          client,
+          baseUrl,
           catalogWorkflowName,
           pathUuid,
           true,
@@ -80,7 +79,6 @@ export function useWorkflowGraphAgenticBootstrap({
 
         if (cancelled) return
         const session: WorkflowGraphAgenticSession = {
-          client,
           baseUrl,
           workflowName: catalogWorkflowName,
           instanceId,
@@ -115,10 +113,17 @@ export function useWorkflowGraphAgenticBootstrap({
               )
             },
             (err) => {
-              logger.apiError("agentic-workflows/sse", err)
               const cur = sessionRef.current
               if (!cur || cur.instanceId !== instanceId || cancelled) return
-              if (cur.sseReconnectAttempts >= 6) return
+              if (cur.sseReconnectAttempts >= 6) {
+                // Logical label for SSE reconnect exhaustion — see urls.ts.
+                const endpointLabel = "agentic-workflows/sse"
+                const userMessage =
+                  "Live workflow updates stopped. The graph may be outdated."
+                reportRequestError(endpointLabel, err, { userMessage })
+                setAgenticError(userMessage)
+                return
+              }
               cur.sseReconnectAttempts += 1
               const delayMs =
                 SSE_RECONNECT_BACKOFF_MS * cur.sseReconnectAttempts
@@ -150,9 +155,13 @@ export function useWorkflowGraphAgenticBootstrap({
         attachSse()
       } catch (e) {
         if (!cancelled) {
-          const msg = e instanceof Error ? e.message : String(e)
-          setAgenticError(msg)
-          logger.apiError("agentic-workflows/bootstrap", e)
+          // Logical label for the composite bootstrap flow; not an apiPath — see urls.ts.
+          const endpointLabel = "agentic-workflows/bootstrap"
+          const preview = parseHttpError(e, { endpointLabel })
+          const httpError = reportRequestError(endpointLabel, e, {
+            userMessage: preview.message,
+          })
+          setAgenticError(httpError.message)
         }
       }
     }

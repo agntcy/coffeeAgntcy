@@ -9,8 +9,16 @@ import React, { useCallback, useMemo, useState } from "react"
 import KeyboardArrowDown from "@mui/icons-material/KeyboardArrowDown"
 import type { SxProps, Theme } from "@mui/material/styles"
 import type { SystemStyleObject } from "@mui/system"
-import { Box, Button, Menu, MenuItem, Tooltip } from "@open-ui-kit/core"
+import {
+  Box,
+  Button,
+  Menu,
+  MenuItem,
+  Message,
+  Tooltip,
+} from "@open-ui-kit/core"
 import type { DropdownOption } from "@/types/dropdownOption"
+import type { HttpRequestTarget } from "@/urls"
 import { useGraphCanvasLayout } from "@/contexts/graphCanvasLayout"
 import {
   computePromptsMenuMaxWidth,
@@ -70,18 +78,19 @@ function PromptMenuItem({
 }
 
 export interface SuggestedPromptsDropdownProps {
-  promptsUrl: string | null | undefined
+  promptsRequest: HttpRequestTarget | null | undefined
   onSelect: (query: string) => void
   sx?: SxProps<Theme>
 }
 
 const SuggestedPromptsDropdown: React.FC<SuggestedPromptsDropdownProps> = ({
-  promptsUrl,
+  promptsRequest,
   onSelect,
   sx,
 }) => {
   const layout = useGraphCanvasLayout()
-  const { categories, isLoading } = useSuggestedPrompts(promptsUrl)
+  const { categories, isLoading, isUnavailable, unavailableMessage } =
+    useSuggestedPrompts(promptsRequest)
   const options = useMemo(
     () =>
       categoriesToMenuOptions(categories, (prompt, description) => (
@@ -110,11 +119,16 @@ const SuggestedPromptsDropdown: React.FC<SuggestedPromptsDropdownProps> = ({
     setAnchorEl(null)
   }, [])
 
-  const buttonProps = getPromptsTriggerButtonProps(isLoading, options.length)
-  const isInactive = isLoading || options.length === 0
+  const buttonProps = getPromptsTriggerButtonProps(
+    isLoading,
+    options.length,
+    isUnavailable,
+  )
+  const isInactive = !isUnavailable && (isLoading || options.length === 0)
   const buttonTooltipProps = getPromptsTriggerTooltipProps(
     isLoading,
     options.length,
+    isUnavailable,
   )
   const menuProps = useMemo(
     () => getPromptsMenuProps(menuMaxWidth),
@@ -172,15 +186,30 @@ const SuggestedPromptsDropdown: React.FC<SuggestedPromptsDropdownProps> = ({
         onClose={handleClose}
         {...menuProps}
       >
-        {options.map((option, index) => (
-          <PromptMenuItem
-            key={`${option.value}-${index}`}
-            itemKey={`${option.value}-${index}`}
-            option={option}
-            onSelect={onSelect}
-            onClose={handleClose}
-          />
-        ))}
+        {isUnavailable ? (
+          <Box sx={{ p: 2, maxWidth: menuMaxWidth ?? 360, width: "100%" }}>
+            <Message
+              type="error"
+              hideClose
+              role="alert"
+              title="Request failed"
+              sx={{ width: "100%" }}
+            >
+              {unavailableMessage ??
+                "Suggested prompts could not be loaded. You can still type your own message."}
+            </Message>
+          </Box>
+        ) : (
+          options.map((option, index) => (
+            <PromptMenuItem
+              key={`${option.value}-${index}`}
+              itemKey={`${option.value}-${index}`}
+              option={option}
+              onSelect={onSelect}
+              onClose={handleClose}
+            />
+          ))
+        )}
       </Menu>
     </>
   )

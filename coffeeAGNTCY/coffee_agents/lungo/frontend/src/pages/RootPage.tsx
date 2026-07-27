@@ -11,6 +11,7 @@ import { Box } from "@open-ui-kit/core"
 import { skipLinkSx } from "@/utils/a11ySx"
 import Navigation from "@/components/Navigation/Navigation"
 import CanvasSwitch from "@/components/MainArea/CanvasSwitch"
+import ErrorBoundary from "@/errors/ui/ErrorBoundary"
 import ChatArea from "@/components/Chat/ChatArea"
 import Sidebar from "@/components/Sidebar/Sidebar"
 import SidebarPanelSeparator from "@/components/Sidebar/SidebarPanelSeparator"
@@ -26,8 +27,7 @@ import {
 import { CanvasMode } from "@/types/patternDoc"
 import { useApp } from "@/useApp"
 import { GraphCanvasLayoutContext } from "@/contexts/graphCanvasLayout"
-import { useElementWidth } from "@/hooks/useElementWidth"
-import { useElementRect } from "@/hooks/useElementRect"
+import { useElementWidth, useElementRect } from "@/hooks/layout"
 
 const RootPage: React.FC = () => {
   const {
@@ -37,7 +37,7 @@ const RootPage: React.FC = () => {
     workflowCatalogLoading,
     workflowCatalogError,
     selectedWorkflowSummary,
-    suggestedPromptsUrl,
+    suggestedPromptsRequest,
     chatHeightValue,
     isExpanded,
     chatRef,
@@ -49,7 +49,7 @@ const RootPage: React.FC = () => {
     agentResponse,
     executionKey,
     isAgentLoading,
-    apiError,
+    apiErrorMessage,
     showProgressTracker,
     showAuctionStreaming,
     showRecruiterStreaming,
@@ -177,28 +177,39 @@ const RootPage: React.FC = () => {
                     overflow: "hidden",
                   }}
                 >
-                  <CanvasSwitch
-                    canvasMode={canvasMode}
-                    selectedReferencePattern={selectedReferencePattern}
-                    patternDocState={patternDocState}
-                    pattern={selectedPattern}
-                    selectedWorkflowSummary={selectedWorkflowSummary}
-                    workflowCatalogLoading={workflowCatalogLoading}
-                    workflowCatalogError={workflowCatalogError}
-                    onLiveGraphConfig={setLiveGraphConfig}
-                    buttonClicked={buttonClicked}
-                    setButtonClicked={setButtonClicked}
-                    aiReplied={aiReplied}
-                    chatHeight={chatHeightValue}
-                    isExpanded={isExpanded}
-                    groupCommResponseReceived={groupCommResponseReceived}
-                    onNodeHighlight={handleNodeHighlightSetup}
-                    selectedAgentCid={
-                      typeof recruiterSelectedAgent?.cid === "string"
-                        ? recruiterSelectedAgent.cid
-                        : null
-                    }
-                  />
+                  <ErrorBoundary
+                    source="WorkflowGraph"
+                    fallbackTitle="Graph unavailable"
+                    compact
+                    resetKeys={[
+                      selectedWorkflowSummary?.name,
+                      canvasMode,
+                      selectedReferencePattern,
+                    ]}
+                  >
+                    <CanvasSwitch
+                      canvasMode={canvasMode}
+                      selectedReferencePattern={selectedReferencePattern}
+                      patternDocState={patternDocState}
+                      pattern={selectedPattern}
+                      selectedWorkflowSummary={selectedWorkflowSummary}
+                      workflowCatalogLoading={workflowCatalogLoading}
+                      workflowCatalogError={workflowCatalogError}
+                      onLiveGraphConfig={setLiveGraphConfig}
+                      buttonClicked={buttonClicked}
+                      setButtonClicked={setButtonClicked}
+                      aiReplied={aiReplied}
+                      chatHeight={chatHeightValue}
+                      isExpanded={isExpanded}
+                      groupCommResponseReceived={groupCommResponseReceived}
+                      onNodeHighlight={handleNodeHighlightSetup}
+                      selectedAgentCid={
+                        typeof recruiterSelectedAgent?.cid === "string"
+                          ? recruiterSelectedAgent.cid
+                          : null
+                      }
+                    />
+                  </ErrorBoundary>
                 </Box>
                 <Box
                   component="section"
@@ -224,7 +235,7 @@ const RootPage: React.FC = () => {
                     selectedReferencePattern={selectedReferencePattern}
                     patternChatSessionId={patternChatSessionId}
                     onPatternChatSuccess={() => setAiReplied(true)}
-                    suggestedPromptsUrl={suggestedPromptsUrl}
+                    suggestedPromptsRequest={suggestedPromptsRequest}
                     showProgressTracker={
                       canvasMode !== CanvasMode.PATTERN_DOC &&
                       showProgressTracker
@@ -249,7 +260,7 @@ const RootPage: React.FC = () => {
                     agentResponse={agentResponse}
                     executionKey={executionKey}
                     isAgentLoading={isAgentLoading}
-                    apiError={apiError}
+                    apiErrorMessage={apiErrorMessage}
                     chatRef={chatRef}
                     auctionState={{
                       events,

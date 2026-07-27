@@ -7,18 +7,17 @@ import { useEffect, useRef, useCallback, useState, useMemo } from "react"
 import { useNodesState, useEdgesState } from "@xyflow/react"
 import type { Node, Edge } from "@xyflow/react"
 import { PatternType } from "@/utils/patternUtils"
-import { useViewportAwareFitView } from "@/hooks/useViewportAwareFitView"
-import { useModalManager } from "@/hooks/useModalManager"
+import { useViewportAwareFitView } from "@/hooks/graph"
+import { useModalManager } from "@/hooks/ui"
 import { customNodeDataFromNode } from "./Graph/Elements/customNodeData"
 import type { CustomNodeData } from "./Graph/Elements/types"
 import { useMainAreaGraphEffects } from "./useMainAreaGraphEffects"
-import { useWorkflowGraphFromAgenticApi } from "@/hooks/useWorkflowGraphFromAgenticApi"
+import { useWorkflowGraphFromAgenticApi } from "@/hooks/workflowGraph"
 import { useNodeTransportInterfaces } from "./useNodeTransportInterfaces"
 import type { WorkflowSummary } from "@/utils/agenticWorkflowsApi"
 import type { GraphConfig } from "@/utils/graphConfigs"
 import { graphConfigFromNodes } from "@/utils/graphConfigFromNodes"
 import { deriveAnimationSequenceFromGraph } from "@/components/Chat/chatStreamGraphHighlight"
-import { logger } from "@/utils/logger"
 
 export interface MainAreaProps {
   pattern: PatternType
@@ -125,11 +124,6 @@ export function useMainArea({
     setLayoutSyncFitViewport(false)
   }, [selectedWorkflowSummary?.name, pattern])
 
-  useEffect(() => {
-    if (!agenticError) return
-    logger.error("agentic-workflows/graph-session", { detail: agenticError })
-  }, [agenticError])
-
   const nodeAgentCidKey = useMemo(
     () =>
       nodes
@@ -178,7 +172,12 @@ export function useMainArea({
     setOasfModalOpen,
   })
 
-  useNodeTransportInterfaces(pattern, nodes, setNodes)
+  useNodeTransportInterfaces(
+    pattern,
+    selectedWorkflowSummary?.chat_api_target ?? null,
+    nodes,
+    setNodes,
+  )
 
   const delay = (ms: number): Promise<void> =>
     new Promise((resolve) => setTimeout(resolve, ms))

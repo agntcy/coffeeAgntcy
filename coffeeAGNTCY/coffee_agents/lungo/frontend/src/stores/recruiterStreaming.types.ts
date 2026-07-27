@@ -5,9 +5,11 @@
 
 import type { AgentRecord } from "@/types/agent"
 import type { GraphConfig } from "@/utils/graphConfigs"
+import type { NdjsonStreamingStatus } from "./ndjsonStreamingStatus"
+import type { RecruiterStreamEventType } from "./recruiterStreamEventType"
 
 export interface RecruiterStreamingEvent {
-  event_type: "status_update" | "completed" | "error"
+  event_type: RecruiterStreamEventType
   message: string | null
   state: "working" | "completed"
   author?: string
@@ -17,7 +19,7 @@ export interface RecruiterStreamingEvent {
 }
 
 export interface RecruiterStreamingState {
-  status: "idle" | "connecting" | "streaming" | "completed" | "error"
+  status: NdjsonStreamingStatus
   events: RecruiterStreamingEvent[]
   error: string | null
   sessionId: string | null

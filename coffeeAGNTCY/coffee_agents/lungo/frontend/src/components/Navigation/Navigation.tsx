@@ -8,7 +8,7 @@ import { Header, IconButton, Stack, Tooltip, Box } from "@open-ui-kit/core"
 import HelpOutline from "@mui/icons-material/HelpOutline"
 
 import coffeeAgntcyLogo from "@/assets/coffeeAGNTCY_logo.svg"
-import { useAppThemeMode } from "@/hooks/useAppThemeMode"
+import { useAppThemeMode } from "@/hooks/useApp"
 import ThemeToggleIcon from "../icons/ThemeToggleIcon"
 import InfoModal from "./InfoModal"
 import {

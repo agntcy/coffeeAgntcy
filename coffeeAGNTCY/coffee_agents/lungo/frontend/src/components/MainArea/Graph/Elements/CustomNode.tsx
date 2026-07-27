@@ -16,8 +16,7 @@ import {
 } from "@open-ui-kit/core"
 import agentDirectoryIconDark from "@/assets/Agent_directory.png"
 import agentDirectoryIconLight from "@/assets/Agent_Icon_light.png"
-import { useGithubIcon } from "@/hooks/useGithubIcon"
-import { useThemeIcon } from "@/hooks/useThemeIcon"
+import { useGithubIcon, useThemeIcon } from "@/hooks/ui"
 import { AssetPngIcon } from "@/components/AssetPngIcon"
 import { SecurityClass } from "@/utils/SecurityClass"
 import {
@@ -30,12 +29,17 @@ import { GraphSideIconTooltip } from "./GraphSideIconTooltip"
 import NodeIdentityDropdown from "../Identity/NodeIdentityDropdown"
 import {
   CUSTOM_NODE_HEIGHT,
-  CUSTOM_NODE_INNER_WIDTH,
   CUSTOM_NODE_WIDTH,
+  GRAPH_NODE_PADDING_Y,
 } from "@/utils/graphNodeDimensions"
 import { CustomNodeData, ExtraHandle } from "./types"
 import TransportRail from "./TransportRail"
 import { railBackgroundImage } from "./transportRailBackground"
+import {
+  customNodeInnerWidth,
+  graphNodePaddingX,
+  hasGraphNodeTransportRail,
+} from "./graphNodeTransportRailLayout"
 
 const POSITION_MAP: Record<ExtraHandle["position"], Position> = {
   top: Position.Top,
@@ -66,6 +70,9 @@ const CustomNode: React.FC<CustomNodeProps> = ({ id, data }) => {
     data.activeTransport,
     theme,
   )
+  const hasTransportRail = hasGraphNodeTransportRail(data.transportInterfaces)
+  const paddingX = graphNodePaddingX(data.transportInterfaces)
+  const innerWidth = customNodeInnerWidth(data.transportInterfaces)
 
   const handleAgentDirectoryClick = (e: React.MouseEvent) => {
     e.stopPropagation()
@@ -101,7 +108,8 @@ const CustomNode: React.FC<CustomNodeProps> = ({ id, data }) => {
           alignItems: "flex-start",
           justifyContent: "flex-start",
           gap: t.spacing(1),
-          p: 2,
+          px: paddingX,
+          py: GRAPH_NODE_PADDING_Y,
           boxSizing: "border-box",
           width: CUSTOM_NODE_WIDTH,
           height: CUSTOM_NODE_HEIGHT,
@@ -110,9 +118,9 @@ const CustomNode: React.FC<CustomNodeProps> = ({ id, data }) => {
           order: 0,
         })}
       >
-        {data.transportInterfaces && data.transportInterfaces.length > 0 && (
+        {hasTransportRail && (
           <TransportRail
-            transports={data.transportInterfaces}
+            transports={data.transportInterfaces!}
             expanded={nodeHovered}
             activeTransport={data.activeTransport}
           />
@@ -167,7 +175,7 @@ const CustomNode: React.FC<CustomNodeProps> = ({ id, data }) => {
               flexGrow: 0,
               flexShrink: 0,
               height: 16,
-              width: CUSTOM_NODE_INNER_WIDTH,
+              width: innerWidth,
               maxWidth: "100%",
               minWidth: 0,
               fontWeight: 300,

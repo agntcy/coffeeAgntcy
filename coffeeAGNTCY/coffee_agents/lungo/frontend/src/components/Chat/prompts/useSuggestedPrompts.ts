@@ -4,76 +4,129 @@
  **/
 
 import { useEffect, useState } from "react"
-import { logger } from "@/utils/logger"
-import type { PromptCategory } from "./PromptTypes"
-import { getRetryDelayMs, parsePromptCategories } from "./suggestedPromptsUtils"
+import { fetchJson, isHttpError } from "@/api/http"
+import { reportRequestError } from "@/errors/request"
+import type { HttpRequestTarget } from "@/urls"
+import type { PromptCategory, SuggestedPromptsResponse } from "./PromptTypes"
+import {
+  getRetryDelayMs,
+  MAX_SUGGESTED_PROMPTS_RETRIES,
+  parsePromptCategories,
+} from "./suggestedPromptsUtils"
 
 interface UseSuggestedPromptsResult {
   categories: PromptCategory[]
   isLoading: boolean
+  isUnavailable: boolean
+  unavailableMessage: string | null
+}
+
+function hasPrompts(categories: PromptCategory[]): boolean {
+  return categories.some((category) => category.prompts.length > 0)
 }
 
 export function useSuggestedPrompts(
-  promptsUrl: string | null | undefined,
+  request: HttpRequestTarget | null | undefined,
 ): UseSuggestedPromptsResult {
   const [categories, setCategories] = useState<PromptCategory[]>([])
   const [isLoading, setIsLoading] = useState(true)
-  const url = promptsUrl ?? null
+  const [isUnavailable, setIsUnavailable] = useState(false)
+  const [unavailableMessage, setUnavailableMessage] = useState<string | null>(
+    null,
+  )
+  const url = request?.url ?? null
+  const endpointLabel = request?.endpointLabel ?? null
 
   useEffect(() => {
-    if (!url) {
+    if (!url || !endpointLabel) {
       setCategories([])
       setIsLoading(false)
+      setIsUnavailable(false)
+      setUnavailableMessage(null)
       return
     }
 
     const controller = new AbortController()
     let retryTimeoutId: ReturnType<typeof setTimeout> | null = null
+    let cancelled = false
+
+    const markUnavailable = (error: unknown) => {
+      if (cancelled) return
+      const httpError = reportRequestError(endpointLabel, error)
+      setCategories([])
+      setUnavailableMessage(httpError.message)
+      setIsUnavailable(true)
+      setIsLoading(false)
+    }
+
+    const scheduleRetry = (retryCount: number, run: () => void) => {
+      retryTimeoutId = setTimeout(run, getRetryDelayMs(retryCount))
+    }
 
     const fetchPrompts = async (retryCount = 0) => {
       try {
         setIsLoading(true)
-        const res = await fetch(url, {
+        setIsUnavailable(false)
+        setUnavailableMessage(null)
+
+        const data = await fetchJson<SuggestedPromptsResponse>(url, {
+          endpointLabel,
           cache: "no-cache",
           signal: controller.signal,
         })
 
-        if (!res.ok) {
-          throw new Error(`HTTP ${res.status}`)
-        }
-
-        const data: unknown = await res.json()
         const nextCategories = parsePromptCategories(data)
-        setCategories(nextCategories)
 
-        if (nextCategories.every((category) => category.prompts.length === 0)) {
-          retryTimeoutId = setTimeout(
-            () => fetchPrompts(retryCount + 1),
-            getRetryDelayMs(retryCount),
-          )
+        if (!hasPrompts(nextCategories)) {
+          if (retryCount >= MAX_SUGGESTED_PROMPTS_RETRIES) {
+            markUnavailable(
+              new Error("Suggested prompts response contained no prompts"),
+            )
+            return
+          }
+          scheduleRetry(retryCount, () => {
+            void fetchPrompts(retryCount + 1)
+          })
+          return
         }
-      } catch (err: unknown) {
-        if (err instanceof Error && err.name !== "AbortError") {
-          logger.warn("Failed to load suggested prompts.", err)
-          retryTimeoutId = setTimeout(
-            () => fetchPrompts(retryCount + 1),
-            getRetryDelayMs(retryCount),
-          )
-        }
-      } finally {
+
+        setCategories(nextCategories)
         setIsLoading(false)
+      } catch (err: unknown) {
+        if (cancelled) return
+        if (isHttpError(err) && err.message === "Request was cancelled.") {
+          return
+        }
+        if (err instanceof DOMException && err.name === "AbortError") {
+          return
+        }
+
+        if (retryCount >= MAX_SUGGESTED_PROMPTS_RETRIES) {
+          markUnavailable(err)
+          return
+        }
+
+        scheduleRetry(retryCount, () => {
+          void fetchPrompts(retryCount + 1)
+        })
       }
     }
 
-    fetchPrompts()
+    void fetchPrompts()
 
     return () => {
+      cancelled = true
       controller.abort()
       if (retryTimeoutId) {
         clearTimeout(retryTimeoutId)
       }
     }
-  }, [url])
+  }, [url, endpointLabel])
 
-  return { categories, isLoading }
+  return {
+    categories,
+    isLoading,
+    isUnavailable,
+    unavailableMessage,
+  }
 }

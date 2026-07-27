@@ -26,8 +26,11 @@ import {
   GRAPH_DEFAULT_VIEWPORT,
 } from "@/config/graphViewDefaults"
 import { getAppShellBackgroundColor } from "./mainAreaBackground"
+import {
+  GraphCanvasOverlayError,
+  GraphCanvasOverlayShell,
+} from "./GraphCanvasOverlay"
 import { LoadingSpinner } from "@/components/loading/LoadingSpinner"
-import { Typography } from "@open-ui-kit/core"
 import { useMainArea, type MainAreaProps } from "./useMainArea"
 
 const proOptions = { hideAttribution: true }
@@ -112,28 +115,15 @@ const MainArea: React.FC<MainAreaProps> = (props) => {
         }}
       >
         {overlayError || showLoading ? (
-          <Box
-            sx={{
-              position: "absolute",
-              inset: 0,
-              zIndex: 10,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              pointerEvents: "none",
-            }}
+          <GraphCanvasOverlayShell
+            pointerEvents={overlayError ? "auto" : "none"}
           >
             {overlayError ? (
-              <Typography
-                variant="body2"
-                sx={{ textAlign: "center", opacity: 0.7, maxWidth: 360, px: 2 }}
-              >
-                {overlayError}
-              </Typography>
+              <GraphCanvasOverlayError message={overlayError} />
             ) : (
               <LoadingSpinner message="Loading workflow graph..." />
             )}
-          </Box>
+          </GraphCanvasOverlayShell>
         ) : null}
 
         <ReactFlow
