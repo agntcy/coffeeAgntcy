@@ -16,6 +16,7 @@ Usage:
 
 Checks the repository for forbidden substrings.
 Emits GitHub workflow error annotations on stdout.
+Hit counts are printed on stderr.
 
 Expects find_strings.bash TSV columns:
   file  line  pattern (U+XXXX)  content
@@ -72,48 +73,48 @@ if ((${#patterns[@]} == 0)); then
 	exit 2
 fi
 
-describe_needle_from_field() {
-	local pattern_field="$1"
-	local visual code
+print_summary() {
+	local pattern_field count
 
-	# find_strings emits: "— (U+2014)" or "foo (U+0066,U+006F,U+006F)"
-	if [[ "$pattern_field" =~ ^(.*)[[:space:]]+\((U\+[0-9A-F]+(,[U\+[0-9A-F]+)*)\)$ ]]; then
-		visual="${BASH_REMATCH[1]}"
-		code="${BASH_REMATCH[2]}"
-		printf '%s (%s)' "$visual" "$code"
-		return 0
+	if ((hit_count > 0)); then
+		echo "check_forbidden_strings: ${hit_count} violation(s) total" >&2
+		for pattern_field in "${pattern_fields_seen[@]}"; do
+			count="${pattern_hit_counts[$pattern_field]:-0}"
+			echo "  ${pattern_field}: ${count} hit(s)" >&2
+		done
+	else
+		echo "check_forbidden_strings: no violations" >&2
 	fi
-
-	printf '%s' "$pattern_field"
 }
 
-args=(--search-path "$search_path")
+args=(--search-path "$search_path" --no-summary)
 for dir in "${exclude_dirs[@]}"; do args+=(--exclude-dir "$dir"); done
 for glob in "${exclude_globs[@]}"; do args+=(--exclude-glob "$glob"); done
 for pattern in "${patterns[@]}"; do args+=(--pattern "$pattern"); done
 
 found=false
 hit_count=0
+declare -A pattern_hit_counts=()
+pattern_fields_seen=()
 
 while IFS=$'\t' read -r file line pattern_field content; do
 	[[ -z "$file" ]] && continue
+
 	found=true
 	hit_count=$((hit_count + 1))
-	needle_desc="$(describe_needle_from_field "$pattern_field")"
-	echo "::error file=${file},line=${line},title=${error_message}::Forbidden string ${needle_desc} at ${file}:${line}: ${content}"
+
+	if [[ -z "${pattern_hit_counts[$pattern_field]+x}" ]]; then
+		pattern_fields_seen+=("$pattern_field")
+	fi
+	pattern_hit_counts["$pattern_field"]=$((${pattern_hit_counts["$pattern_field"]:-0} + 1))
+
+	echo "::error file=${file},line=${line},title=${error_message}::Forbidden string ${pattern_field} at ${file}:${line}: ${content}"
 done < <("$FIND_STRINGS" "${args[@]}")
 
+print_summary
+
 if [[ "$found" != true ]]; then
-	[[ -n "${GITHUB_OUTPUT:-}" ]] && {
-		echo "found=false" >>"$GITHUB_OUTPUT"
-		echo "hit_count=0" >>"$GITHUB_OUTPUT"
-	}
 	exit 0
 fi
 
-echo "check_forbidden_strings: ${hit_count} violation(s)" >&2
-[[ -n "${GITHUB_OUTPUT:-}" ]] && {
-	echo "found=true" >>"$GITHUB_OUTPUT"
-	echo "hit_count=${hit_count}" >>"$GITHUB_OUTPUT"
-}
 exit 1

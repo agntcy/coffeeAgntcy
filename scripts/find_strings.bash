@@ -8,7 +8,8 @@ Usage:
         --pattern STRING [--pattern STRING ...] \
         [--search-path PATH] \
         [--exclude-dir DIR ...] \
-        [--exclude-glob GLOB ...]
+        [--exclude-glob GLOB ...] \
+        [--no-summary]
 
 Search recursively for one or more literal strings under PATH.
 
@@ -22,8 +23,15 @@ Outside a git repository:
 Output (stdout, one match per line; empty if none):
     <file>  TAB<line>  TAB<pattern> (U+XXXX)  TAB<line-content>
 
+Summary (stderr, unless --no-summary):
+    find_strings: N hit(s) total
+      --pattern X (U+XXXX): M hit(s)
+
 Default excludes (non-git fallback only, merged with --exclude-dir):
     .git, node_modules, dist, build, .venv, .pytest-logs
+
+Options:
+    --no-summary   suppress stderr hit-count summary (TSV still printed)
 
 Exit codes:
     0 = one or more matches
@@ -37,6 +45,7 @@ patterns=()
 exclude_dirs=()
 exclude_globs=()
 default_exclude_dirs=(.git node_modules dist build .venv .pytest-logs)
+show_summary=true
 
 while [[ $# -gt 0 ]]; do
 	case "$1" in
@@ -72,6 +81,10 @@ while [[ $# -gt 0 ]]; do
 		exclude_globs+=("$2")
 		shift 2
 		;;
+	--no-summary)
+		show_summary=false
+		shift
+		;;
 	-h | --help)
 		usage
 		exit 0
@@ -96,16 +109,19 @@ if [[ ! -e "$search_path" ]]; then
 fi
 
 declare -A pattern_unicode_cache=()
+
 warm_pattern_unicode_cache() {
 	local pattern char
 	local -a codes=()
+
 	for pattern in "${patterns[@]}"; do
 		[[ -n "${pattern_unicode_cache[$pattern]+x}" ]] && continue
+
 		if [[ ${#pattern} -eq 1 ]]; then
-			# Bash 5+: keyboard/literal char → code point
 			pattern_unicode_cache["$pattern"]="U+$(printf '%04X' $(( $(printf '%d' "'$pattern") )) )"
 			continue
 		fi
+
 		codes=()
 		while IFS= read -r -n1 char; do
 			[[ -z "$char" ]] && continue
@@ -115,6 +131,7 @@ warm_pattern_unicode_cache() {
 		pattern_unicode_cache["$pattern"]="${codes[*]}"
 	done
 }
+
 warm_pattern_unicode_cache
 
 grep_args=(-n -F)
@@ -125,12 +142,12 @@ for pattern in "${patterns[@]}"; do
 done
 
 scan_tracked_files() {
-	# Working-tree content for tracked files (includes unstaged edits).
 	git grep "${grep_args[@]}" -I -- "$search_path" || true
 }
 
 scan_untracked_files() {
 	local untracked=()
+
 	while IFS= read -r -d '' file; do
 		untracked+=("$file")
 	done < <(git ls-files --others --exclude-standard -z -- "$search_path")
@@ -175,7 +192,28 @@ run_scan() {
 	fi
 }
 
+print_summary() {
+	local pattern count
+
+	if [[ "$show_summary" != true ]]; then
+		return 0
+	fi
+
+	if ((hit_count > 0)); then
+		echo "find_strings: ${hit_count} hit(s) total" >&2
+		for pattern in "${patterns[@]}"; do
+			count="${pattern_hit_counts[$pattern]:-0}"
+			((count > 0)) || continue
+			echo "  --pattern ${pattern} (${pattern_unicode_cache[$pattern]}): ${count} hit(s)" >&2
+		done
+	else
+		echo "find_strings: no hits" >&2
+	fi
+}
+
 exit_code=1
+hit_count=0
+declare -A pattern_hit_counts=()
 
 while IFS= read -r hit; do
 	[[ -z "$hit" ]] && continue
@@ -185,14 +223,16 @@ while IFS= read -r hit; do
 	line="${rest%%:*}"
 	content="${rest#*:}"
 
-	# git grep / grep with multiple -e does not label which pattern matched.
 	for pattern in "${patterns[@]}"; do
 		if [[ "$content" == *"$pattern"* ]]; then
 			exit_code=0
+			hit_count=$((hit_count + 1))
+			pattern_hit_counts["$pattern"]=$((${pattern_hit_counts["$pattern"]:-0} + 1))
 			printf '%s\t%s\t%s (%s)\t%s\n' \
 				"$file" "$line" "$pattern" "${pattern_unicode_cache[$pattern]}" "$content"
 		fi
 	done
 done < <(run_scan 2>/dev/null || true)
 
+print_summary
 exit "$exit_code"
