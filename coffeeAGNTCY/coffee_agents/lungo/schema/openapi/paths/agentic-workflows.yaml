@@ -67,7 +67,7 @@ paths:
         "404":
           description: No reference material for the given pattern name.
         "422":
-          description: Request body failed validation.
+          $ref: ../components/schemas.yaml#/components/responses/UnprocessableEntity
 
   /use-cases/:
     get:
@@ -115,6 +115,8 @@ paths:
             application/json:
               schema:
                 $ref: ../components/schemas.yaml#/components/schemas/WorkflowSummaryMapResponse
+        "422":
+          $ref: ../components/schemas.yaml#/components/responses/UnprocessableEntity
 
   /agentic-workflows/{workflow_name}/:
     parameters:
@@ -145,6 +147,10 @@ paths:
             application/json:
               schema:
                 $ref: ../components/schemas.yaml#/components/schemas/Workflow
+        "404":
+          $ref: ../components/schemas.yaml#/components/responses/NotFound
+        "422":
+          $ref: ../components/schemas.yaml#/components/responses/UnprocessableEntity
     post:
       tags: [agentic-workflows]
       operationId: instantiateAgenticWorkflow
@@ -156,6 +162,18 @@ paths:
             application/json:
               schema:
                 $ref: ../components/schemas.yaml#/components/schemas/InstantiateWorkflowResponse
+        "400":
+          $ref: ../components/schemas.yaml#/components/responses/BadRequest
+        "404":
+          $ref: ../components/schemas.yaml#/components/responses/NotFound
+        "422":
+          $ref: ../components/schemas.yaml#/components/responses/UnprocessableEntity
+        "500":
+          $ref: ../components/schemas.yaml#/components/responses/InternalServerError
+        "503":
+          $ref: ../components/schemas.yaml#/components/responses/ServiceUnavailable
+        "504":
+          $ref: ../components/schemas.yaml#/components/responses/GatewayTimeout
 
   /agentic-workflows/{workflow_name}/documentation/:
     parameters:
@@ -183,6 +201,10 @@ paths:
                 $ref: ../components/schemas.yaml#/components/schemas/WorkflowDocumentationResponse
         "404":
           description: Unknown workflow name or no markdown file for that name
+        "422":
+          $ref: ../components/schemas.yaml#/components/responses/UnprocessableEntity
+        "503":
+          $ref: ../components/schemas.yaml#/components/responses/ServiceUnavailable
 
   /agentic-workflows/{workflow_name}/instances/:
     parameters:
@@ -203,6 +225,12 @@ paths:
             application/json:
               schema:
                 $ref: ../components/schemas.yaml#/components/schemas/WorkflowInstanceMapResponse
+        "404":
+          $ref: ../components/schemas.yaml#/components/responses/NotFound
+        "422":
+          $ref: ../components/schemas.yaml#/components/responses/UnprocessableEntity
+        "503":
+          $ref: ../components/schemas.yaml#/components/responses/ServiceUnavailable
 
   /agentic-workflows/{workflow_name}/instances/{workflow_instance_id}/:
     parameters:
@@ -235,6 +263,14 @@ paths:
             application/json:
               schema:
                 $ref: ../components/schemas.yaml#/components/schemas/WorkflowInstance
+        "404":
+          $ref: ../components/schemas.yaml#/components/responses/NotFound
+        "422":
+          $ref: ../components/schemas.yaml#/components/responses/UnprocessableEntity
+        "500":
+          $ref: ../components/schemas.yaml#/components/responses/InternalServerError
+        "503":
+          $ref: ../components/schemas.yaml#/components/responses/ServiceUnavailable
     delete:
       tags: [agentic-workflows]
       operationId: deleteWorkflowInstance
@@ -249,6 +285,10 @@ paths:
           description: No instance to delete (already removed or never existed)
         "404":
           description: Workflow not found
+        "422":
+          $ref: ../components/schemas.yaml#/components/responses/UnprocessableEntity
+        "503":
+          $ref: ../components/schemas.yaml#/components/responses/ServiceUnavailable
 
   /agentic-workflows/{workflow_name}/instances/{workflow_instance_id}/events/:
     parameters:
@@ -281,7 +321,13 @@ paths:
         "204":
           description: Event accepted
         "400":
-          description: Invalid event payload
+          $ref: ../components/schemas.yaml#/components/responses/BadRequest
+        "404":
+          $ref: ../components/schemas.yaml#/components/responses/NotFound
+        "422":
+          $ref: ../components/schemas.yaml#/components/responses/UnprocessableEntity
+        "503":
+          $ref: ../components/schemas.yaml#/components/responses/ServiceUnavailable
 
   /agentic-workflows/{workflow_name}/instances/{workflow_instance_id}/events/stream:
     parameters:
@@ -308,3 +354,9 @@ paths:
               schema:
                 type: string
                 description: Opaque SSE payload (event frames)
+        "404":
+          $ref: ../components/schemas.yaml#/components/responses/NotFound
+        "422":
+          $ref: ../components/schemas.yaml#/components/responses/UnprocessableEntity
+        "503":
+          $ref: ../components/schemas.yaml#/components/responses/ServiceUnavailable
