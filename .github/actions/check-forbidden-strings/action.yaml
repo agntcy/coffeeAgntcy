@@ -1,0 +1,60 @@
+name: Check forbidden strings
+description: Fail if any file under search_path contains forbidden substrings
+inputs:
+  strings_json:
+    description: JSON array of forbidden substrings
+    required: true
+  search_path:
+    description: Directory to search from (relative to repo root)
+    required: false
+    default: "."
+  exclude_dirs_json:
+    description: JSON array of directory names to skip (grep --exclude-dir)
+    required: false
+    default: '[".git","node_modules","dist","build",".venv"]'
+  exclude_globs_json:
+    description: JSON array of glob patterns to skip (grep --exclude)
+    required: false
+    default: '["*.png","*.jpg","*.jpeg","*.gif","*.webp","*.ico","*.woff","*.woff2","*.ttf","*.eot","*.pdf","*.zip","*.gz","*.jar","*.whl"]'
+  error_message:
+    description: Message shown when a match is found
+    required: false
+    default: "Forbidden string(s) found in repository"
+outputs:
+  found:
+    description: '"true" if any forbidden string was found, else "false"'
+    value: ${{ steps.check.outputs.found }}
+runs:
+  using: composite
+  steps:
+    - name: Validate inputs
+      shell: bash
+      run: |
+        jq --exit-status 'type == "array" and all(.[]; type == "string")' <<< '${{ inputs.strings_json }}'
+        jq --exit-status 'type == "array" and all(.[]; type == "string")' <<< '${{ inputs.exclude_dirs_json }}'
+        jq --exit-status 'type == "array" and all(.[]; type == "string")' <<< '${{ inputs.exclude_globs_json }}'
+
+    - name: Scan for forbidden strings
+      id: check
+      shell: bash
+      run: |
+        set -euo pipefail
+
+        args=(
+          --search-path '${{ inputs.search_path }}'
+          --error-message '${{ inputs.error_message }}'
+        )
+
+        while IFS= read -r dir; do
+          args+=(--exclude-dir "$dir")
+        done < <(jq -r '.[]' <<< '${{ inputs.exclude_dirs_json }}')
+
+        while IFS= read -r glob; do
+          args+=(--exclude-glob "$glob")
+        done < <(jq -r '.[]' <<< '${{ inputs.exclude_globs_json }}')
+
+        while IFS= read -r pattern; do
+          args+=(--pattern "$pattern")
+        done < <(jq -r '.[]' <<< '${{ inputs.strings_json }}')
+
+        "${{ github.workspace }}/scripts/check_forbidden_strings.bash" "${args[@]}"
