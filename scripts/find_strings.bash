@@ -20,7 +20,7 @@ Outside a git repository:
     - all files are searched with find + grep
 
 Output (stdout, one match per line; empty if none):
-    <file>	TAB<line>	TAB<pattern>	TAB<line-content>
+    <file>  TAB<line>  TAB<pattern> (U+XXXX)  TAB<line-content>
 
 Default excludes (non-git fallback only, merged with --exclude-dir):
     .git, node_modules, dist, build, .venv, .pytest-logs
@@ -95,6 +95,28 @@ if [[ ! -e "$search_path" ]]; then
 	exit 2
 fi
 
+declare -A pattern_unicode_cache=()
+warm_pattern_unicode_cache() {
+	local pattern char
+	local -a codes=()
+	for pattern in "${patterns[@]}"; do
+		[[ -n "${pattern_unicode_cache[$pattern]+x}" ]] && continue
+		if [[ ${#pattern} -eq 1 ]]; then
+			# Bash 5+: keyboard/literal char → code point
+			pattern_unicode_cache["$pattern"]="U+$(printf '%04X' $(( $(printf '%d' "'$pattern") )) )"
+			continue
+		fi
+		codes=()
+		while IFS= read -r -n1 char; do
+			[[ -z "$char" ]] && continue
+			codes+=("U+$(printf '%04X' $(( $(printf '%d' "'$char") )) )")
+		done <<<"$pattern"
+		local IFS=,
+		pattern_unicode_cache["$pattern"]="${codes[*]}"
+	done
+}
+warm_pattern_unicode_cache
+
 grep_args=(-n -F)
 file_grep_args=(-H -n -I -F)
 for pattern in "${patterns[@]}"; do
@@ -167,7 +189,8 @@ while IFS= read -r hit; do
 	for pattern in "${patterns[@]}"; do
 		if [[ "$content" == *"$pattern"* ]]; then
 			exit_code=0
-			printf '%s\t%s\t%s\t%s\n' "$file" "$line" "$pattern" "$content"
+			printf '%s\t%s\t%s (%s)\t%s\n' \
+				"$file" "$line" "$pattern" "${pattern_unicode_cache[$pattern]}" "$content"
 		fi
 	done
 done < <(run_scan 2>/dev/null || true)
