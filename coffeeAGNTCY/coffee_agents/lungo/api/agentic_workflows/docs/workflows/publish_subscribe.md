@@ -29,7 +29,7 @@ story—what to ask next, when to branch, how to merge or compare results, and w
 Cross-cutting orchestration stays with the coordinator so behavior stays **traceable**; workers stay small so they can
 be tested, replaced, or scaled independently.
 
-From the coordinator’s side, calls usually look like **client–server** steps: invoke a worker, wait for a structured or
+From the coordinator’s side, calls usually look like **client-server** steps: invoke a worker, wait for a structured or
 natural-language result, then decide the next step. Two shapes recur in many domains:
 
 - **Unicast** — ask **one** specialist (a single quote, a single compliance check).
@@ -37,7 +37,7 @@ natural-language result, then decide the next step. Two shapes recur in many dom
   aggregate, or choose** among their replies (inventory from every region, offers from every bidder, health checks on
   every replica).
 
-**Publish–subscribe messaging** is a complementary transport idea: senders **publish** to a **topic** or channel and
+**Publish-subscribe messaging** is a complementary transport idea: senders **publish** to a **topic** or channel and
 many receivers **subscribe**, so one publication can reach every interested party without the coordinator hand-crafting
 N private links. In practice the **orchestration graph** often stays supervisor-shaped while **fan-out** to many workers
 rides a bus that behaves like pub/sub—one logical “ask the market” step, many deliveries, one place to observe traffic.
@@ -107,7 +107,7 @@ scenario reads as **green coffee trading** in earnest.
 issues the next asks—**broadcast** when the story needs a market of parallel answers, **branch** when the story needs
 deeper facts from dedicated capabilities. It keeps **sequencing, policy, and aggregation** in one accountable place.
 
-**Transport** is the **fan-out hub** linking the auction agent to the farms. It realizes **publish–subscribe** behavior:
+**Transport** is the **fan-out hub** linking the auction agent to the farms. It realizes **publish-subscribe** behavior:
 publications from the coordinator reach **each subscribed farm agent** through one shared pattern, so one logical “ask
 the market” step reaches **Brazil**, **Colombia**, and **Vietnam** as coordinated parallel soundings rather than
 unrelated one-off exchanges.

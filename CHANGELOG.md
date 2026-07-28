@@ -431,7 +431,7 @@ Patch release: **runtime UI env injection** for Helm/KinD, **workflow-utils refa
 <details>
 <summary><strong>Supply chain</strong> — smaller, faster UI images</summary>
 
-- Lungo UI image ~**940 MB → ~540 MB**; no-cache build ~**55–65 s → ~30 s** locally ([#623](https://github.com/agntcy/coffeeAgntcy/pull/623)).
+- Lungo UI image ~**940 MB → ~540 MB**; no-cache build ~**55-65 s → ~30 s** locally ([#623](https://github.com/agntcy/coffeeAgntcy/pull/623)).
 </details>
 
 ### Dependencies

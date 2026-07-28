@@ -51,7 +51,10 @@ async def liveness_probe(request) -> JSONResponse:
         slim_config=SlimTransportConfig(
             endpoint=f"http://{SLIM_SERVER}",
             name="lungo/agents/shipper_agent",
-            shared_secret_identity=getenv("SLIM_SHARED_SECRET", "slim-shared-secret-REPLACE_WITH_RANDOM_32PLUS_CHARS"),
+            shared_secret_identity=getenv(
+                "SLIM_SHARED_SECRET",
+                "slim-shared-secret-REPLACE_WITH_RANDOM_32PLUS_CHARS",
+            ),
         ),
     )
 
@@ -60,26 +63,16 @@ async def liveness_probe(request) -> JSONResponse:
 
     try:
         # checks connectivity with the SLIM server and should succeed within the timeout if SLIM is alive
-        await asyncio.wait_for(
-            a2a_client_factory.create(FARM_AGENT_CARD),
-            timeout=30
-        )
+        await asyncio.wait_for(a2a_client_factory.create(FARM_AGENT_CARD), timeout=30)
         logger.info("Liveness probe succeeded: SLIM connectivity verified.")
         return JSONResponse({"status": "alive"})
     except asyncio.TimeoutError:
         return JSONResponse(
-            {
-                "error": "Timeout occurred while creating client."
-            },
-            status_code=500
+            {"error": "Timeout occurred while creating client."}, status_code=500
         )
     except Exception as e:
-        return JSONResponse(
-            {
-                "error": f"Error occurred: {str(e)}"
-            },
-            status_code=500
-        )
+        return JSONResponse({"error": f"Error occurred: {e!s}"}, status_code=500)
+
 
 def build_http_server(a2a_app: A2AStarletteApplication) -> FastAPI:
     cors_origins = get_cors_allowed_origins()
@@ -95,6 +88,7 @@ def build_http_server(a2a_app: A2AStarletteApplication) -> FastAPI:
     app_.router.routes.append(Route("/v1/health", liveness_probe, methods=["GET"]))
     return app_
 
+
 def create_app() -> FastAPI:
     request_handler = DefaultRequestHandler(
         agent_executor=ShipperAgentExecutor(),
@@ -107,8 +101,10 @@ def create_app() -> FastAPI:
 
     return build_http_server(server)
 
+
 # Expose module-level app for pytest fixture
 app = create_app()
+
 
 async def run_http_server(server):
     # Add the liveness route to the FastAPI app
@@ -132,8 +128,8 @@ async def serve_all_a2a_interfaces(
     Creates an AgntcyFactory application session and registers every transport
     interface declared in the card's ``additional_interfaces``, which include:
 
-    - **slim** – SLIM-based group messaging transport
-    - **slimrpc** – point-to-point transport for direct client-agent communication
+    - **slim** - SLIM-based group messaging transport
+    - **slimrpc** - point-to-point transport for direct client-agent communication
 
     The card's ``preferred_transport`` (slim) determines the primary ``url``
     advertised to callers.  The session runs without keep-alive so it can be
@@ -149,6 +145,7 @@ async def serve_all_a2a_interfaces(
     session = factory.create_app_session()
     await session.add_a2a_card(agent_card, request_handler).start(keep_alive=False)
     logger.info("Agent ready")
+
 
 async def main():
 
@@ -168,7 +165,7 @@ async def main():
     await asyncio.gather(*tasks)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     try:
         asyncio.run(main())
     except KeyboardInterrupt:

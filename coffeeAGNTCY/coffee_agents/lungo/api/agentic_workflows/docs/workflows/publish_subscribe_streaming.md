@@ -29,7 +29,7 @@ story—what to ask next, when to branch, how to merge or compare results, and w
 Cross-cutting orchestration stays with the coordinator so behavior stays **traceable**; workers stay small so they can
 be tested, replaced, or scaled independently.
 
-From the coordinator’s side, calls usually look like **client–server** steps: invoke a worker, wait for a structured or
+From the coordinator’s side, calls usually look like **client-server** steps: invoke a worker, wait for a structured or
 natural-language result, then decide the next step. Two shapes recur in many domains:
 
 - **Unicast** — ask **one** specialist (a single quote, a single compliance check).
@@ -37,7 +37,7 @@ natural-language result, then decide the next step. Two shapes recur in many dom
   aggregate, or choose** among their replies (inventory from every region, offers from every bidder, health checks on
   every replica).
 
-**Publish–subscribe messaging** is a complementary transport idea: senders **publish** to a **topic** or channel and
+**Publish-subscribe messaging** is a complementary transport idea: senders **publish** to a **topic** or channel and
 many receivers **subscribe**, so one publication can reach every interested party without the coordinator hand-crafting
 N private links. The **orchestration graph** often stays supervisor-shaped while **fan-out** to many workers rides a bus
 that behaves like pub/sub—one logical “ask the market” step, many deliveries, one place to observe traffic. That differs
@@ -119,7 +119,7 @@ with—all remain, but **streaming makes the pressure legible as motion**: ordin
 enough has arrived to **summarize, compare, or prompt again**, and keeps policy from being undermined by half-finished
 sentences.
 
-**Transport** remains the **fan-out hub** between the auction agent and the farms, still in a **publish–subscribe**
+**Transport** remains the **fan-out hub** between the auction agent and the farms, still in a **publish-subscribe**
 shape. Here it additionally carries **incremental payloads**—token streams or framed chunks—so each farm’s answer can
 grow while other farms are also streaming, preserving **parallel market soundings** with **live** texture.
 
@@ -135,5 +135,5 @@ they are assembled, so **outside counsel** accrues beside Colombian farm text in
 
 The auction agent supervises; transport **publishes** inquiries and **streams back** parallel farm voices; when the
 hypothesis locks on Colombia, **weather** and **payment** stream in as **specialist counsel**—the same coffee-buying arc
-as the classic publish–subscribe map, with **incremental disclosure** so the auction feels **alive** while authority and
+as the classic publish-subscribe map, with **incremental disclosure** so the auction feels **alive** while authority and
 comparability stay with the coordinator.

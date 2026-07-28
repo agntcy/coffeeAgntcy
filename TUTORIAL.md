@@ -316,7 +316,7 @@ Once containers are running, open:
 Each demo UI lets you send prompts to an agentic system. Predefined prompts are provided to help you start — but you can
 also type your own.
 
-#### 🏷️ Auction Demo (Supervisor–Worker Pattern)
+#### 🏷️ Auction Demo (Supervisor-Worker Pattern)
 
 On the frontend select the `Conversation: Purchasing / Agentic Patterns / Publish Subscribe / A2A NATS` menu item.
 

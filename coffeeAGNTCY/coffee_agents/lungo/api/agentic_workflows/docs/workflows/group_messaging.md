@@ -28,7 +28,7 @@ Typical ingredients:
 
 - A **shared conversation surface** (group, room, or thread) carries **visible messages** to everyone who belongs in
   that phase.
-- **Publish–subscribe** style delivery to that surface so updates behave like **coordination in the open**—subscribers
+- **Publish-subscribe** style delivery to that surface so updates behave like **coordination in the open**—subscribers
   see the same evolving story instead of a pile of private side-chats.
 - A **moderator** who can **phase** the discussion (for example from “facts on the ground” to “commitment” to
   “exception”) and intervene when the thread drifts or stalls.

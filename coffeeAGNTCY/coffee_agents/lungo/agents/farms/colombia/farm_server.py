@@ -14,10 +14,9 @@ from a2a.types import AgentCard
 from agents.farms.colombia.agent_executor import FarmAgentExecutor
 from agents.farms.colombia.card import AGENT_CARD
 from agntcy_app_sdk.factory import AgntcyFactory
-from dotenv import load_dotenv
-
 from common.workflow_utils.inflight import register_cleanup_span_processor
 from config.config import OTEL_SDK_DISABLED
+from dotenv import load_dotenv
 
 load_dotenv()
 
@@ -38,10 +37,10 @@ async def serve_all_a2a_interfaces(
     Creates an AgntcyFactory application session and registers every transport
     interface declared in the card's ``additional_interfaces``, which include:
 
-    - **slimrpc** – point-to-point transport for direct client-agent communication
-    - **slim** – SLIM-based group messaging and pub/sub transport
-    - **nats** – NATS-based pub/sub transport for broadcasting to multiple subscribers
-    - **jsonrpc** – JSON-RPC endpoint for direct client-agent communication over HTTP
+    - **slimrpc** - point-to-point transport for direct client-agent communication
+    - **slim** - SLIM-based group messaging and pub/sub transport
+    - **nats** - NATS-based pub/sub transport for broadcasting to multiple subscribers
+    - **jsonrpc** - JSON-RPC endpoint for direct client-agent communication over HTTP
 
     The card's ``preferred_transport`` determines the primary ``url`` advertised
     to callers.  The session is kept alive until the process is interrupted.
@@ -59,6 +58,7 @@ async def serve_all_a2a_interfaces(
     logger.info("Agent ready")
     await session.start_all_sessions(keep_alive=True)
 
+
 async def main():
     """Main entry point for multi-pattern, multi-transport serving."""
     request_handler = DefaultRequestHandler(
@@ -68,7 +68,8 @@ async def main():
 
     await serve_all_a2a_interfaces(request_handler, AGENT_CARD)
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     try:
         asyncio.run(main())
     except KeyboardInterrupt:

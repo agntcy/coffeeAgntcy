@@ -12,7 +12,7 @@ Every config lookup goes through `src/utils/env.ts`, then usually `src/urls.ts`:
 3. LUNGO_FRONTEND_URLS.apiBaseDefaults in urls.ts  ← hardcoded localhost fallbacks
 ```
 
-`env.ts` implements steps 1–2:
+`env.ts` implements steps 1-2:
 
 ```ts
 runtimeEnv(key) ?? import.meta.env[key]

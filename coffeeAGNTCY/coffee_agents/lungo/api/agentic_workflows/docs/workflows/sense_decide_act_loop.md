@@ -1,4 +1,4 @@
-# Sense–Decide–Act Loop
+# Sense-Decide-Act Loop
 
 ## Agent Interaction Diagram
 
@@ -19,7 +19,7 @@ graph TD
 
 ## Pattern
 
-The **sense–decide–act loop** runs **observe → act → re-evaluate** in cycles so plans update when the world moves—ports
+The **sense-decide-act loop** runs **observe → act → re-evaluate** in cycles so plans update when the world moves—ports
 stall, carriers roll bookings, quality signals shift—instead of treating the first guess as permanent truth.
 
 **Sensing** normalizes telemetry and messages into a common picture. **Deciding** picks the next small branch under

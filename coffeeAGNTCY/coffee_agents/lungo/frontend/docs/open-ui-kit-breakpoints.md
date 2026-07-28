@@ -27,8 +27,8 @@ We keep a **product-specific** pixel ladder (`xs` → `xxl` in `theme/common.tsx
 
 **Why:** This is a deliberate choice so **layout, density, and overlays behave correctly on viewports smaller than a typical iPad**—phones, small tablets, and narrow windows—**before** we treat the UI as “tablet / desktop.” In practice:
 
-- **`sm` at 600px** separates compact, touch-first patterns from wider layouts. It sits **below iPad portrait (~768px)**, so sub–iPad widths get the intended responsive treatment (e.g. collapsed chrome, full-width dialogs where we apply them) without waiting until Material’s shorter `md` band.
-- **`md` at 1024px** aligns with **small laptop / iPad landscape–class** widths as the first “comfortable product UI” step.
+- **`sm` at 600px** separates compact, touch-first patterns from wider layouts. It sits **below iPad portrait (~768px)**, so sub-iPad widths get the intended responsive treatment (e.g. collapsed chrome, full-width dialogs where we apply them) without waiting until Material’s shorter `md` band.
+- **`md` at 1024px** aligns with **small laptop / iPad landscape-class** widths as the first “comfortable product UI” step.
 - **`lg` / `xl` / `xxl`** continue the desktop scale (e.g. 1440 / 1920 / 2560) for large monitors and design-frame widths.
 
 Consumers should treat these values as **design-system contracts**, not as “whatever MUI ships by default.”
@@ -68,6 +68,6 @@ Use this table in reviews and Figma annotations. **Layout** breakpoints (`sm` = 
 
 ## Related documentation
 
-- [tailwind-to-open-ui-kit-migration.md](./tailwind-to-open-ui-kit-migration.md) — Lungo **Tailwind → Open UI Kit** process; use this file’s breakpoint table when translating responsive utilities to `sx`.  
-- [open-ui-kit-vs-mui-layout.md](./open-ui-kit-vs-mui-layout.md) — how MUI applies breakpoint keys vs default Material.  
+- [tailwind-to-open-ui-kit-migration.md](./tailwind-to-open-ui-kit-migration.md) — Lungo **Tailwind → Open UI Kit** process; use this file’s breakpoint table when translating responsive utilities to `sx`.
+- [open-ui-kit-vs-mui-layout.md](./open-ui-kit-vs-mui-layout.md) — how MUI applies breakpoint keys vs default Material.
 - [open-ui-kit-breakpoints-migration-plan.md](./open-ui-kit-breakpoints-migration-plan.md) — checklist when changing breakpoints in **Open UI Kit** source or auditing consumers.

@@ -406,7 +406,7 @@ A newline-delimited JSON (`application/x-ndjson`) stream for chatting with a pat
 ```
 
 - `session_id` — client-minted UUIDv4 wrapped as a `session://<uuid>` URI; the server holds conversation state in memory keyed by `(pattern_name, session_id)`.
-- `message` — the latest user turn (1–32768 chars).
+- `message` — the latest user turn (1-32768 chars).
 
 **Framing.** One JSON object per line:
 
