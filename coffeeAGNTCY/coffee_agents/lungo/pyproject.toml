@@ -75,9 +75,6 @@ url = "https://buf.build/gen/python"
 [tool.uv]
 exclude-newer = "28 days"
 
-[tool.poetry]
-package-mode = false
-
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
