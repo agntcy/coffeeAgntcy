@@ -9,7 +9,7 @@ on:
 
 jobs:
     forbidden-strings:
-        name: Forbidden strings (en dash)
+        name: Forbidden strings
         runs-on: ubuntu-latest
         steps:
             - name: Checkout
@@ -20,6 +20,6 @@ jobs:
               with:
                   strings_json: '[
                       "\u2013",
-                      "\u2014",
+                      "\u2014"
                       ]' # Note: en dash (U+2013), em dash (U+2014).
                   error_message: "Forbidden string found."
