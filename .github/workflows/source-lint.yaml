@@ -1,0 +1,24 @@
+name: Source lint
+
+on:
+    pull_request:
+        branches: [main]
+    push:
+        branches: [main]
+    workflow_dispatch:
+
+jobs:
+    forbidden-strings:
+        name: Forbidden strings (en dash)
+        runs-on: ubuntu-latest
+        steps:
+            - name: Checkout
+              uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # Note: 7.0.1.
+
+            - name: Check for forbidden strings
+              uses: ./.github/actions/check-forbidden-strings
+              with:
+                  strings_json: '[
+                      "\u2013",
+                      ]' # Note: en dash (U+2013)
+                  error_message: "Forbidden string found."
