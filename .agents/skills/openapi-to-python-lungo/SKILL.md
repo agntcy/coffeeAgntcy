@@ -29,7 +29,7 @@ The skill must remain **general** across tags: never hard-code endpoint names, s
 - `dtos.py` is **owned by this skill**. It is regenerated from scratch on every run; never preserve hand edits inside it. If a user needs to edit a DTO, they must edit the OpenAPI schema instead.
 - `router.py` is **co-owned**. The skill owns:
   - the module-level imports it adds for DTOs,
-  - the `create_<tag_snake>_router()` function signature and the presence of `tags=[<tag>]` on the `APIRouter(...)` construction (the skill ensures `tags=[<tag>]` is set, but it must **not** discard other constructor arguments — see below),
+  - the `create_<tag_snake>_router()` function signature and the presence of `tags=[<tag>]` on the `APIRouter(...)` construction (the skill ensures `tags=[<tag>]` is set, but it must **not** discard other constructor arguments - see below),
   - the route decorators (path, method, `response_model`, `status_code`, `summary`, etc.) and handler **signatures** (parameters, type annotations, return type).
 
   The user owns:
@@ -64,13 +64,13 @@ Track progress with this checklist:
 - [ ] 6. Run the tests and the linter
 ```
 
-### Step 1 — Identify affected tags
+### Step 1 - Identify affected tags
 
 Read `schema/openapi/openapi.yaml` and any files it `$ref`s under `schema/openapi/paths/` and `schema/openapi/components/`. List every tag that appears on at least one operation. For each tag, the target package is `api/<tag_snake>/` where `tag_snake` is the kebab-case tag with `-` replaced by `_`.
 
 If the spec references types from `schema/jsonschemas/` (and therefore from `schema/types/` Pydantic mirrors), prefer importing those Pydantic types into `dtos.py` rather than redeclaring them. See [reference.md](reference.md) for the mapping rules.
 
-### Step 2 — Resolve the OpenAPI spec
+### Step 2 - Resolve the OpenAPI spec
 
 Use `prance.ResolvingParser` to dereference `$ref`s before mapping. The resolved `paths` and `components.schemas` must drive generation; do not read the raw YAML directly to extract operations or schemas.
 
@@ -81,20 +81,20 @@ parser.parse()
 spec = parser.specification  # dict with resolved $refs
 ```
 
-### Step 3 — Regenerate `dtos.py`
+### Step 3 - Regenerate `dtos.py`
 
 Overwrite `api/<tag_snake>/dtos.py` from scratch using the rules in [reference.md § DTO mapping](reference.md). In summary:
 
 - One Pydantic class per `components/schemas.<Name>` referenced by an operation under this tag.
 - Object schema with `additionalProperties: false` → `class X(BaseModel): model_config = ConfigDict(extra="forbid")`.
-- Object schema acting as a map (`additionalProperties: <schema>`) → `class X(RootModel[dict[str, <value_t>]])`. The key type is **always** `str` (or whatever underlying JSON primitive is — usually `str`), even when `propertyNames` references a typed schema. JSON object keys are strings on the wire, and using a Pydantic `RootModel` subclass as a dict key is broken in practice (the default class is unhashable; `frozen=True` makes it hashable but `model_dump_json` then writes the model's Python repr as the JSON key, which violates the contract).
-- **Known exception — `propertyNames` is currently not enforced in `dtos.py`.** When `propertyNames` adds a constraint (pattern, format, `$ref`, etc.), the skill deliberately **does not** generate a `field_validator` that re-implements that constraint. The reason: doing so would duplicate logic that already lives in `schema/types/` (e.g. the `InstanceId` regex would have to be copied into every DTO map that keys on it, drifting on every change). Generated DTOs use a plain `dict[str, <value_t>]` and rely on the value type's own validation (the value typically references the typed key via a nested field, e.g. `WorkflowInstance.id: InstanceId`). This means `propertyNames` constraints are **not currently enforced at the DTO layer**; flag this in any output that mentions a `propertyNames` constraint and treat it as a known limitation to revisit (a single-source-of-truth helper, e.g. exposing pattern constants from `schema.types`, would let the skill enforce this without duplication). See [reference.md § Map responses with constrained keys](reference.md).
+- Object schema acting as a map (`additionalProperties: <schema>`) → `class X(RootModel[dict[str, <value_t>]])`. The key type is **always** `str` (or whatever underlying JSON primitive is - usually `str`), even when `propertyNames` references a typed schema. JSON object keys are strings on the wire, and using a Pydantic `RootModel` subclass as a dict key is broken in practice (the default class is unhashable; `frozen=True` makes it hashable but `model_dump_json` then writes the model's Python repr as the JSON key, which violates the contract).
+- **Known exception - `propertyNames` is currently not enforced in `dtos.py`.** When `propertyNames` adds a constraint (pattern, format, `$ref`, etc.), the skill deliberately **does not** generate a `field_validator` that re-implements that constraint. The reason: doing so would duplicate logic that already lives in `schema/types/` (e.g. the `InstanceId` regex would have to be copied into every DTO map that keys on it, drifting on every change). Generated DTOs use a plain `dict[str, <value_t>]` and rely on the value type's own validation (the value typically references the typed key via a nested field, e.g. `WorkflowInstance.id: InstanceId`). This means `propertyNames` constraints are **not currently enforced at the DTO layer**; flag this in any output that mentions a `propertyNames` constraint and treat it as a known limitation to revisit (a single-source-of-truth helper, e.g. exposing pattern constants from `schema.types`, would let the skill enforce this without duplication). See [reference.md § Map responses with constrained keys](reference.md).
 - Schemas that resolve to types already exported from `schema.types` (for example `InstanceId`, `WorkflowInstance`, `Event`, `Workflow`, `Topology`) must be **imported** from `schema.types`, not redefined.
 - Required fields are non-default annotations; optional fields default to `None`.
 - Use `Annotated[T, Field(min_length=..., pattern=..., ge=..., ...)]` for string/numeric constraints.
 - Always include the standard SPDX header at the top of the file.
 
-### Step 4 — Reconcile `router.py`
+### Step 4 - Reconcile `router.py`
 
 For each operation under this tag:
 
@@ -117,40 +117,40 @@ For each operation under this tag:
    - Update its decorator and signature in place to match the spec.
    - Preserve the handler **body** verbatim.
    - Preserve any decorator-unrelated import the user added.
-4. After processing all spec operations, look for handler functions inside `create_<tag_snake>_router()` that no longer correspond to any operation. Do not delete them silently — emit a warning of the form:
+4. After processing all spec operations, look for handler functions inside `create_<tag_snake>_router()` that no longer correspond to any operation. Do not delete them silently - emit a warning of the form:
 
    ```
    Stale handler: <function_name> is no longer in the OpenAPI spec for tag '<tag>'. Remove it manually if intentional.
    ```
 
 5. Make sure the `APIRouter` is constructed with `tags=["<tag>"]` and that `create_<tag_snake>_router()` returns it. **Preserve every other argument already passed to `APIRouter(...)`.** When regenerating an existing router, the OpenAPI document does not describe router-level construction options, so anything the user put on the constructor must survive untouched:
-   - `dependencies=[...]` — router-level dependencies (e.g. an auth gate). Keep the full list and the imports backing it. This rule is **general**: treat any value found in `dependencies=` the same way, regardless of which callable it wraps.
-   - `prefix=`, `responses=`, `default_response_class=`, `deprecated=`, and any other keyword arguments — keep them verbatim.
+   - `dependencies=[...]` - router-level dependencies (e.g. an auth gate). Keep the full list and the imports backing it. This rule is **general**: treat any value found in `dependencies=` the same way, regardless of which callable it wraps.
+   - `prefix=`, `responses=`, `default_response_class=`, `deprecated=`, and any other keyword arguments - keep them verbatim.
 
    Only add `tags=[<tag>]` if it is missing, and only reconcile `tags` itself; never drop, reorder, or rewrite the user's other constructor arguments. If you cannot safely merge `tags` while preserving an existing argument, stop and ask the user.
 
    ```python
    # If the existing code looks like this, keep `dependencies=` (and its import) on regen:
-   from api.<tag_snake>.auth import require_workflow_api_key  # example dependency — preserve whatever import is present
+   from api.<tag_snake>.auth import require_workflow_api_key  # example dependency - preserve whatever import is present
 
    router = APIRouter(
        tags=[_TAG],
-       dependencies=[Depends(require_workflow_api_key)],  # example only — preserve any dependencies found
+       dependencies=[Depends(require_workflow_api_key)],  # example only - preserve any dependencies found
    )
    ```
 
 See [reference.md § Router templates](reference.md) for concrete snippets.
 
-### Step 5 — Generate tests
+### Step 5 - Generate tests
 
 Ensure the directory `tests/unit/openapi/` exists. For each tag, generate (or refresh) two files. File names are not load-bearing; the convention below uses `<tag_snake>` and is recommended:
 
-- `tests/unit/openapi/test_<tag_snake>_openapi_spec.py` — validates the resolved OpenAPI document with `openapi_spec_validator`.
-- `tests/unit/openapi/test_<tag_snake>_openapi_routes_match_app.py` — builds a minimal FastAPI app via `create_<tag_snake>_router()` and asserts that the `(path, METHOD)` set from `app.openapi()` equals the set extracted from the resolved OpenAPI spec.
+- `tests/unit/openapi/test_<tag_snake>_openapi_spec.py` - validates the resolved OpenAPI document with `openapi_spec_validator`.
+- `tests/unit/openapi/test_<tag_snake>_openapi_routes_match_app.py` - builds a minimal FastAPI app via `create_<tag_snake>_router()` and asserts that the `(path, METHOD)` set from `app.openapi()` equals the set extracted from the resolved OpenAPI spec.
 
-Both tests resolve `schema/openapi/openapi.yaml` via `prance` and use the same `_HTTP_METHODS` filter shown in [reference.md § Test templates](reference.md). They must not assume any specific endpoint names — they compare full sets.
+Both tests resolve `schema/openapi/openapi.yaml` via `prance` and use the same `_HTTP_METHODS` filter shown in [reference.md § Test templates](reference.md). They must not assume any specific endpoint names - they compare full sets.
 
-### Step 6 — Run tests and linter
+### Step 6 - Run tests and linter
 
 Run from `coffeeAGNTCY/coffee_agents/lungo/`:
 
@@ -172,18 +172,18 @@ Use this when the user has hand-edited `router.py` or `dtos.py` and wants confir
 - [ ] 5. Run the OpenAPI and router tests
 ```
 
-### Step 1 — Resolve and validate the spec
+### Step 1 - Resolve and validate the spec
 
 Use `prance.ResolvingParser` plus `openapi_spec_validator.validate(...)`. A failure here means the spec itself is broken; report it and stop.
 
-### Step 2 — Path/method diff
+### Step 2 - Path/method diff
 
 Build the minimal FastAPI app exactly as in the generated `test_<tag_snake>_openapi_routes_match_app.py`, then compute the symmetric difference between the spec and app `(path, METHOD)` sets. Report:
 
-- `Only in spec: ...` — handlers missing from `router.py`.
-- `Only in app: ...` — extra handlers not in the spec (likely stale).
+- `Only in spec: ...` - handlers missing from `router.py`.
+- `Only in app: ...` - extra handlers not in the spec (likely stale).
 
-### Step 3 — Per-operation signature check
+### Step 3 - Per-operation signature check
 
 For every spec operation, confirm:
 
@@ -193,11 +193,11 @@ For every spec operation, confirm:
 
 Report mismatches with the operation id and a one-line diff.
 
-### Step 4 — DTO drift check
+### Step 4 - DTO drift check
 
 Run the regeneration logic from step 3 of the generate workflow against an in-memory buffer and diff it against the on-disk `dtos.py`. If they differ, the user has either edited `dtos.py` by hand or the spec changed without regeneration. Recommend re-running the generate workflow.
 
-### Step 5 — Run the tests
+### Step 5 - Run the tests
 
 Run the same tests as in the generate workflow. They are the authoritative validation.
 
@@ -211,4 +211,4 @@ Stop and ask the user before doing any of:
 
 ## Additional resources
 
-- [reference.md](reference.md) — OpenAPI → Pydantic mapping rules, router templates, and test templates with concrete snippets.
+- [reference.md](reference.md) - OpenAPI → Pydantic mapping rules, router templates, and test templates with concrete snippets.

@@ -14,7 +14,7 @@ export const COMPACT_SPACING_UNIT_PX = 6
 type SpacingFn = ((...args: number[]) => string) & { mui: true }
 
 /**
- * Must be a spacing factory when merging onto an existing theme — `spacing: 6`
+ * Must be a spacing factory when merging onto an existing theme - `spacing: 6`
  * deep-merges as a number and breaks `theme.spacing()` (e.g. MuiToolbar).
  */
 function createCompactSpacing(unitPx: number): SpacingFn {

@@ -2,7 +2,7 @@
  * Copyright AGNTCY Contributors (https://github.com/agntcy)
  * SPDX-License-Identifier: Apache-2.0
  *
- * Layout dimensions for graph nodes — must match CustomNode / TransportNode DOM.
+ * Layout dimensions for graph nodes - must match CustomNode / TransportNode DOM.
  */
 
 import type { Node } from "@xyflow/react"
@@ -25,7 +25,7 @@ export const CUSTOM_NODE_HORIZONTAL_PADDING_WITH_RAIL = 64
 /** Outer custom card width for layout and React Flow positioning. */
 export const CUSTOM_NODE_WIDTH = 230
 
-/** Inner text column at default padding — matches label widths in CustomNode. */
+/** Inner text column at default padding - matches label widths in CustomNode. */
 export const CUSTOM_NODE_INNER_WIDTH =
   CUSTOM_NODE_WIDTH - CUSTOM_NODE_HORIZONTAL_PADDING
 
@@ -33,17 +33,17 @@ export const CUSTOM_NODE_INNER_WIDTH =
 export const CUSTOM_NODE_INNER_WIDTH_WITH_RAIL =
   CUSTOM_NODE_WIDTH - CUSTOM_NODE_HORIZONTAL_PADDING_WITH_RAIL
 
-/** Outer custom card height — icon, labels, and vertical padding. */
+/** Outer custom card height - icon, labels, and vertical padding. */
 export const CUSTOM_NODE_HEIGHT = 120
 
 /** Horizontal gap between custom cards in the same row. */
 export const CUSTOM_NODE_X_GAP = 300
 
-/** Circular compact transport — keep in sync with transportNode.tsx. */
+/** Circular compact transport - keep in sync with transportNode.tsx. */
 export const TRANSPORT_NODE_WIDTH_COMPACT = 176
 export const TRANSPORT_NODE_HEIGHT_COMPACT = 176
 
-/** Bar transport — keep in sync with transportNode.tsx. */
+/** Bar transport - keep in sync with transportNode.tsx. */
 export const TRANSPORT_NODE_WIDTH_BAR = 1200
 export const TRANSPORT_NODE_HEIGHT_BAR = 52
 
@@ -56,7 +56,7 @@ export const GROUP_CONTENT_PADDING_Y = 48
 /** Buckets nearby Y values into the same layout row. */
 export const LAYER_Y_BUCKET = 80
 
-/** Card center X — side icons sit outside the card box. */
+/** Card center X - side icons sit outside the card box. */
 export function customNodeCardCenterX(position: { x: number }): number {
   return position.x + CUSTOM_NODE_WIDTH / 2
 }

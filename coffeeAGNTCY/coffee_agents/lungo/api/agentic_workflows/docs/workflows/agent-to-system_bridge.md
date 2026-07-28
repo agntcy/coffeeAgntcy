@@ -18,8 +18,8 @@ graph TD
 
 ## Pattern
 
-An **agent-to-system bridge** lets agents **invoke trusted external systems**—enterprise planning tools, emissions
-services, tariff or rate engines—as **first-class evidence** in a decision, instead of relying on prose memory or
+An **agent-to-system bridge** lets agents **invoke trusted external systems**-enterprise planning tools, emissions
+services, tariff or rate engines-as **first-class evidence** in a decision, instead of relying on prose memory or
 guessed numbers. The pattern treats integrations as part of the reasoning substrate: plans and arguments are expected to
 cite **fresh, normalized facts** from systems of record.
 
@@ -33,10 +33,10 @@ setting where “the model said so” is not acceptable without numbers the trea
 ## Use case
 
 **Coffee Agntcy** is a coffee company set in a familiar supply chain: **upstream**, it depends on **farms in different
-countries**, each with its own harvest rhythm, quality, and availability; **midstream**, it **buys and allocates** lots—
+countries**, each with its own harvest rhythm, quality, and availability; **midstream**, it **buys and allocates** lots-
 matching supply to commercial needs under real constraints; **downstream**, it must eventually **honor customer
 promises** through operations, logistics, and finance it does not always own end to end. The company sits **between**
-those worlds: much of the drama is ordinary commerce—contracts, risk, partners, and tools—rather than a single team
+those worlds: much of the drama is ordinary commerce-contracts, risk, partners, and tools-rather than a single team
 inside one building holding every fact.
 
 ---

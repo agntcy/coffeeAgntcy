@@ -139,7 +139,7 @@ class TestInFlightCleanupSpanProcessor:
         assert 0xAAA not in inflight_mod.in_flight
 
     def test_sibling_span_does_not_evict(self):
-        """A different span in the same trace must not drop the state — only
+        """A different span in the same trace must not drop the state - only
         the owning span does."""
         from common.workflow_utils import inflight as inflight_mod
         from common.workflow_utils.inflight import InFlightCleanupSpanProcessor
@@ -568,7 +568,7 @@ class TestBaggageCarrier:
         self, agent_card_factory, otel_span, patch_emit_events, captured_events,
     ):
         """The instance_id on the emitted event must be exactly the one
-        propagated via baggage — baggage is the single source of truth."""
+        propagated via baggage - baggage is the single source of truth."""
         from common.workflow_context_prop import (
             attach_workflow_context as attach_workflow_baggage,
             detach_workflow_context as detach_workflow_baggage,

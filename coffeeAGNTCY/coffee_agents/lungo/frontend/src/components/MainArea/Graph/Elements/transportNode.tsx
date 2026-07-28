@@ -21,7 +21,7 @@ interface TransportNodeProps {
   data: TransportNodeData
 }
 
-/** Circular compact transport node — keep handle geometry in sync with width/height. */
+/** Circular compact transport node - keep handle geometry in sync with width/height. */
 const CIRCULAR_TRANSPORT_NODE_SIZE = 176
 const CIRCULAR_NODE_CENTER = CIRCULAR_TRANSPORT_NODE_SIZE / 2
 const CIRCULAR_NODE_RADIUS = CIRCULAR_NODE_CENTER

@@ -318,7 +318,7 @@ async def handle_stream_prompt(request: PromptRequest, req: Request):
                         while True:
                             line = await merged_queue.get()
                             if line is None:
-                                # ADK producer finished — we're done
+                                # ADK producer finished - we're done
                                 break
                             yield json.dumps(line) + "\n"
                     finally:

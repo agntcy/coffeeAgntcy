@@ -26,4 +26,4 @@ docker build \
 
 ---
 
-Alternatively, use `docker compose up` from `coffeeAGNTCY/coffee_agents/recruiter/docker/` or `coffeeAGNTCY/coffee_agents/lungo/` — the `docker-compose.yaml` files already pass all required build args and set the correct target.
+Alternatively, use `docker compose up` from `coffeeAGNTCY/coffee_agents/recruiter/docker/` or `coffeeAGNTCY/coffee_agents/lungo/` - the `docker-compose.yaml` files already pass all required build args and set the correct target.

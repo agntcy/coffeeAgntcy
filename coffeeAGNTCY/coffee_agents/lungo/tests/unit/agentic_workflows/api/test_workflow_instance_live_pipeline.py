@@ -54,7 +54,7 @@ def test_agentic_workflows_catalog_instantiate_list_state_events_sse() -> None:
             catalog = lr.json()
             if not catalog:
                 pytest.skip("No workflows in catalog (empty starting_workflows load)")
-            # Lexicographic first key — stable across runs (dict iteration order is not a contract).
+            # Lexicographic first key - stable across runs (dict iteration order is not a contract).
             wf_name = min(catalog, key=str)
 
             dr = hc.get(f"/agentic-workflows/{wf_name}/")

@@ -20,7 +20,7 @@ def get_factory() -> AgntcyFactory:
 
 
 # All supported transport configs are declared here as data (endpoints, names).
-# No connections are established at import time — transport construction is
+# No connections are established at import time - transport construction is
 # deferred until A2AClientFactory.create(card) is called.  At that point
 # the factory negotiates which transport to use based on the card's
 # preferred_transport (set by the caller from a pattern lookup) and the

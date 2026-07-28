@@ -18,7 +18,7 @@ graph TD
 
 ## Pattern
 
-> **TODO** — full pattern-level write-up. This is a minimal stub so the pattern reference library has reachable
+> **TODO** - full pattern-level write-up. This is a minimal stub so the pattern reference library has reachable
 > reference material for the **Peer Group** pattern; a follow-up issue will replace this with the proper authored
 > doc.
 >
@@ -32,7 +32,7 @@ everything through a central orchestrator. Every participant can publish and sub
 group itself is the coordination surface.
 
 In CoffeeAGNTCY this pattern backs the **Group Messaging** workflow under the **Coffee Agntcy → Order Fulfillment**
-scenario — the diagram above is from that implementation and is included here as illustrative topology while the
+scenario - the diagram above is from that implementation and is included here as illustrative topology while the
 full pattern-level write-up is pending.
 
 See the per-workflow reference doc for the concrete implementation:

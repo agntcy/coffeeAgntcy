@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  *
  * OUK Large negative EmptyState illustrations render at 224px; use 56px (¼)
- * for graph/modal errors. Target the illustration with :first-child — :first-of-type
+ * for graph/modal errors. Target the illustration with :first-child - :first-of-type
  * matches the text stack div, not the svg icon.
  */
 

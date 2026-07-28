@@ -21,7 +21,7 @@ def get_factory() -> AgntcyFactory:
 
 
 # All supported transport configs are declared here as data (endpoints, names).
-# No connections are established at import time — transport construction is
+# No connections are established at import time - transport construction is
 # deferred until A2AClientFactory.create(card) is called.  At that point
 # the factory negotiates which transport to use based on the card's
 # preferred_transport.
@@ -42,7 +42,7 @@ a2a_client_factory = A2AClientFactory(config)
 # -- Farm registry --
 # Central registry mapping canonical farm slugs to their AgentCards.
 # All farm lookups in the auction supervisor go through this registry.
-# To add or remove a farm, modify the register() calls below — no other
+# To add or remove a farm, modify the register() calls below - no other
 # files in the auction supervisor need to change.
 
 class FarmRegistry:

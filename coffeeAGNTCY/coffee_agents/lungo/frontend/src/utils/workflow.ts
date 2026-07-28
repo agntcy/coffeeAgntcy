@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  *
  * Public workflow routing API: catalog capability derivation and chat backend URLs.
- * App code should import from this module only — not workflowCapabilities or
+ * App code should import from this module only - not workflowCapabilities or
  * workflowChatRouting directly.
  */
 

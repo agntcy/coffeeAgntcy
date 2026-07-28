@@ -2,7 +2,7 @@
  * Copyright AGNTCY Contributors (https://github.com/agntcy)
  * SPDX-License-Identifier: Apache-2.0
  *
- * Default root page at / — main app (sidebar + chat + graph).
+ * Default root page at / - main app (sidebar + chat + graph).
  **/
 
 import React, { useMemo, useRef } from "react"

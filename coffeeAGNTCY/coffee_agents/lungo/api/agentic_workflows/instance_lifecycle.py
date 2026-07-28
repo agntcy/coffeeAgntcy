@@ -128,7 +128,7 @@ def workflow_instance_from_store(
 
     Reads via :meth:`~WorkflowInstanceDataStore.get_instance_projection` (one
     locked slice: workflow metadata plus the single instance) then
-    :func:`workflow_instance_from_projection` — avoid :meth:`get_merged_data`
+    :func:`workflow_instance_from_projection` - avoid :meth:`get_merged_data`
     for this path so the handler does not deep-copy the full merged graph.
     """
     proj = store.get_instance_projection(workflow_key, instance_uri)

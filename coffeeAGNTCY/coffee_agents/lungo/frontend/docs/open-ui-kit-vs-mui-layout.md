@@ -14,7 +14,7 @@ Sources: `@open-ui-kit/core` v1.x (MUI-based), upstream theme in [outshift-open/
 |------|----------------------|--------|
 | **Mechanism** | Yes | Both use MUI `createTheme`, `sx`, `Stack`, `Grid`, `useMediaQuery`, `theme.spacing`. |
 | **Breakpoints** | **No** | Product scale is **`xs` → `xxl`** with kit-specific pixels (see [open-ui-kit-breakpoints.md](./open-ui-kit-breakpoints.md)). Default MUI uses different widths (e.g. `md: 900`, not `1024`). |
-| **`xs` / `sm` in `sx`** | **Must exist in `theme.breakpoints.values`** | Per [open-ui-kit-breakpoints.md](./open-ui-kit-breakpoints.md), `xs`/`sm`/`md`/… are part of the contract. If a fork omits keys, MUI will not emit normal `min-width` rules for missing names—extend the theme rather than assuming defaults. |
+| **`xs` / `sm` in `sx`** | **Must exist in `theme.breakpoints.values`** | Per [open-ui-kit-breakpoints.md](./open-ui-kit-breakpoints.md), `xs`/`sm`/`md`/… are part of the contract. If a fork omits keys, MUI will not emit normal `min-width` rules for missing names-extend the theme rather than assuming defaults. |
 | **Spacing (`theme.spacing`)** | **Mostly yes** | Kit theme typically does not replace MUI’s default spacing factory → default **8px per unit** unless you override. |
 | **Gaps (`Stack` / flex gap)** | Same mechanism | Numeric values go through the same spacing/breakpoint resolution as MUI. |
 | **Grid** | Same mechanism | Breakpoint props depend on **`theme.breakpoints`**. |
@@ -34,12 +34,12 @@ Sources: `@open-ui-kit/core` v1.x (MUI-based), upstream theme in [outshift-open/
 
 ### Open UI Kit (product contract)
 
-Full ladder — **authoritative table:** [open-ui-kit-breakpoints.md](./open-ui-kit-breakpoints.md) (`xs` 0, `sm` 600, `md` 1024, `lg` 1440, `xl` 1920, `xxl` 2560).
+Full ladder - **authoritative table:** [open-ui-kit-breakpoints.md](./open-ui-kit-breakpoints.md) (`xs` 0, `sm` 600, `md` 1024, `lg` 1440, `xl` 1920, `xxl` 2560).
 
 Implications:
 
 1. **`md` / `lg` / `xl` in this kit are not the same as default MUI** (e.g. kit `md` is **1024**, not 900; kit `lg` is **1440**, not 1200).
-2. **`sm` (600) is the step below `md` (1024)** — not the same as default MUI’s `md` (900) or default Tailwind’s `md` (768).
+2. **`sm` (600) is the step below `md` (1024)** - not the same as default MUI’s `md` (900) or default Tailwind’s `md` (768).
 3. Responsive objects like `{ xs: …, sm: …, md: … }` in `sx` require those keys to exist on **`theme.breakpoints.values`**; use the canonical table as the reference when auditing or merging themes.
 
 ---
@@ -60,7 +60,7 @@ MUI’s style pipeline treats a key as a breakpoint only if it appears in **`Obj
 ### `Stack` `spacing` / `gap`
 
 - Uses the **same MUI components** (re-exported from `@open-ui-kit/core`) and **same theme**.
-- Responsive `gap` / `spacing` follows **`theme.breakpoints`** — same caveat: need valid keys (`xs`, `sm`, …) if you use them.
+- Responsive `gap` / `spacing` follows **`theme.breakpoints`** - same caveat: need valid keys (`xs`, `sm`, …) if you use them.
 
 ### `Grid` / `Grid2`
 
@@ -122,14 +122,14 @@ If a consumer runs against a theme that **omits** keys from the canonical table,
 
 ## Related files in this repo
 
-- [open-ui-kit-breakpoints.md](./open-ui-kit-breakpoints.md) — canonical `theme.breakpoints.values`.
-- `src/contexts/OpenUiKitThemeBridge.tsx` — wraps `ThemeProvider` from `@open-ui-kit/core` with Lungo light/dark (`isDarkMode`).
+- [open-ui-kit-breakpoints.md](./open-ui-kit-breakpoints.md) - canonical `theme.breakpoints.values`.
+- `src/contexts/OpenUiKitThemeBridge.tsx` - wraps `ThemeProvider` from `@open-ui-kit/core` with Lungo light/dark (`isDarkMode`).
 
 ---
 
 ## References
 
-- [open-ui-kit-breakpoints.md](./open-ui-kit-breakpoints.md) — product breakpoint table.
-- [Material UI — Breakpoints](https://mui.com/material-ui/customization/breakpoints/)
+- [open-ui-kit-breakpoints.md](./open-ui-kit-breakpoints.md) - product breakpoint table.
+- [Material UI - Breakpoints](https://mui.com/material-ui/customization/breakpoints/)
 - [Open UI Kit repository](https://github.com/outshift-open/open-ui-kit)
-- MUI `@mui/system` — `createBreakpoints`, `handleBreakpoints` (responsive keys must exist in `theme.breakpoints.values`)
+- MUI `@mui/system` - `createBreakpoints`, `handleBreakpoints` (responsive keys must exist in `theme.breakpoints.values`)

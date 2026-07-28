@@ -332,7 +332,7 @@ async def test_aexit_targets_context_manager_not_session(emit_enabled):
     When __aenter__ yields a distinct session (as the real SDK client does),
     the wrapper must still exit the original context manager so its teardown
     runs. Exiting the yielded session instead skips that teardown and leaks
-    the SDK's background streams — the bug that hung CI.
+    the SDK's background streams - the bug that hung CI.
     """
     session = _DistinctSession(result="forecast")
     cm = _DistinctSessionClient(session)

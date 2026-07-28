@@ -34,12 +34,12 @@ export function apiRoute(path: string, endpointLabel: string = path): ApiRoute {
  * but names the user-facing workflow or surface for logs, HttpError metadata,
  * and `reportRequestError`.
  *
- * - `agentic-workflows/bootstrap` — `useWorkflowGraphAgenticBootstrap.ts`
+ * - `agentic-workflows/bootstrap` - `useWorkflowGraphAgenticBootstrap.ts`
  *   Covers instantiate + topology fetch + SSE attach in one catch; no single
  *   apiPath describes that composite flow.
- * - `agentic-workflows/sse` — `useWorkflowGraphAgenticBootstrap.ts`
+ * - `agentic-workflows/sse` - `useWorkflowGraphAgenticBootstrap.ts`
  *   SSE reconnect exhaustion after repeated stream failures.
- * - `agentic-workflows/refetch-topology` — `useWorkflowGraphTopologySync.ts`
+ * - `agentic-workflows/refetch-topology` - `useWorkflowGraphTopologySync.ts`
  *   Topology refetch exhaustion after debounced retries.
  */
 

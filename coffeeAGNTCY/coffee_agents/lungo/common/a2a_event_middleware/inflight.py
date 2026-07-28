@@ -1,7 +1,7 @@
 # Copyright AGNTCY Contributors (https://github.com/agntcy)
 # SPDX-License-Identifier: Apache-2.0
 
-"""Compatibility shim — canonical implementation in ``common.workflow_utils.inflight``."""
+"""Compatibility shim - canonical implementation in ``common.workflow_utils.inflight``."""
 
 from common.workflow_utils.inflight import (
 	InterceptionState,

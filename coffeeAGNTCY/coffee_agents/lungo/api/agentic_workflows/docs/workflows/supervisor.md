@@ -23,7 +23,7 @@ graph TD
 
 ## Pattern
 
-> **TODO** — full pattern-level write-up. This is a minimal stub so the pattern reference library has reachable
+> **TODO** - full pattern-level write-up. This is a minimal stub so the pattern reference library has reachable
 > reference material for the **Supervisor** pattern; a follow-up issue will replace this with the proper authored
 > doc.
 >
@@ -37,7 +37,7 @@ small set of **clear callees**. The supervisor turns a vague ask into a structur
 results, and produces a single coherent answer.
 
 In CoffeeAGNTCY this pattern backs the **Publish Subscribe** and **Publish Subscribe Streaming** workflows under the
-**Coffee Agntcy → Purchasing** scenario — the diagram above is from those implementations and is included here as
+**Coffee Agntcy → Purchasing** scenario - the diagram above is from those implementations and is included here as
 illustrative topology while the full pattern-level write-up is pending.
 
 See the per-workflow reference docs for the concrete implementations:

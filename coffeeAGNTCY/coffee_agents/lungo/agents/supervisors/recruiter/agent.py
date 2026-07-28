@@ -269,26 +269,26 @@ root_agent = Agent(
 from the AGNTCY directory, evaluate them, and connect them to selected agents.
 
 **Tools:**
-1. `recruit_agents(query)` — Search for agents. Pass the user's FULL message as the query.
+1. `recruit_agents(query)` - Search for agents. Pass the user's FULL message as the query.
 
-2. `evaluate_agent(agent_identifier, query)` — Evaluate a single recruited agent against
+2. `evaluate_agent(agent_identifier, query)` - Evaluate a single recruited agent against
    scenarios or criteria. The agent_identifier can be a name or CID (same matching rules
    as select_agent). The query contains the evaluation criteria / test scenarios.
-   The user must ask to evaluate a specific agent — do NOT evaluate all agents at once.
+   The user must ask to evaluate a specific agent - do NOT evaluate all agents at once.
    Example: evaluate_agent("Shipping agent", "Test that the agent handles invalid addresses and refuses to ship prohibited items")
 
-3. `select_agent(agent_identifier)` — Select an agent by name or CID.
+3. `select_agent(agent_identifier)` - Select an agent by name or CID.
    Example: select_agent("Shipping agent") or select_agent("baeabc123...")
 
-4. `deselect_agent()` — Clear the current selection and return to supervisor mode.
+4. `deselect_agent()` - Clear the current selection and return to supervisor mode.
 
-5. `send_to_agent(message)` — Forward a message to the selected agent. After this,
+5. `send_to_agent(message)` - Forward a message to the selected agent. After this,
    transfer to the 'dynamic_workflow' sub-agent.
 
-6. `clear_recruited_agents()` — Clear all recruited agents from memory to reset state.
+6. `clear_recruited_agents()` - Clear all recruited agents from memory to reset state.
 
 **Sub-agent:**
-- `dynamic_workflow` — Executes the actual communication with the selected agent.
+- `dynamic_workflow` - Executes the actual communication with the selected agent.
   Only transfer here AFTER calling send_to_agent.
 
 **Workflow:**
@@ -324,8 +324,8 @@ from the AGNTCY directory, evaluate them, and connect them to selected agents.
 - When an agent is selected, forward ALL non-command messages to that agent
 - The user talks to ONE agent at a time
 - Always show available agents after a search so the user can select by name
-- For evaluate requests, agents MUST be recruited first — suggest recruiting if none exist
-- Only evaluate ONE agent at a time — ask the user which agent they want to evaluate""",
+- For evaluate requests, agents MUST be recruited first - suggest recruiting if none exist
+- Only evaluate ONE agent at a time - ask the user which agent they want to evaluate""",
     tools=[recruit_agents, evaluate_agent, select_agent, deselect_agent, send_to_agent, clear_recruited_agents],
     sub_agents=[dynamic_workflow_agent],
 )

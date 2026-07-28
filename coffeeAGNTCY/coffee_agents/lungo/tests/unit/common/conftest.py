@@ -5,8 +5,8 @@
 
 Resets module-level state that the middleware keeps between calls:
 
-* ``common.workflow_utils.inflight.in_flight`` — the per-trace interaction state
-* ``common.workflow_utils.workflow_catalog._load_catalog`` — the
+* ``common.workflow_utils.inflight.in_flight`` - the per-trace interaction state
+* ``common.workflow_utils.workflow_catalog._load_catalog`` - the
   ``lru_cache`` around the JSON catalog loader
 
 Provides helpers for constructing minimal ``AgentCard`` stand-ins and a patched
@@ -270,7 +270,7 @@ def otel_span(monkeypatch):
 
 
 # ---------------------------------------------------------------------------
-# Module-path helper — keeps ``__init__.py``-less test dirs importable
+# Module-path helper - keeps ``__init__.py``-less test dirs importable
 # ---------------------------------------------------------------------------
 
 @pytest.fixture(scope="session", autouse=True)

@@ -116,7 +116,7 @@ export function useWorkflowGraphAgenticBootstrap({
               const cur = sessionRef.current
               if (!cur || cur.instanceId !== instanceId || cancelled) return
               if (cur.sseReconnectAttempts >= 6) {
-                // Logical label for SSE reconnect exhaustion — see urls.ts.
+                // Logical label for SSE reconnect exhaustion - see urls.ts.
                 const endpointLabel = "agentic-workflows/sse"
                 const userMessage =
                   "Live workflow updates stopped. The graph may be outdated."
@@ -155,7 +155,7 @@ export function useWorkflowGraphAgenticBootstrap({
         attachSse()
       } catch (e) {
         if (!cancelled) {
-          // Logical label for the composite bootstrap flow; not an apiPath — see urls.ts.
+          // Logical label for the composite bootstrap flow; not an apiPath - see urls.ts.
           const endpointLabel = "agentic-workflows/bootstrap"
           const preview = parseHttpError(e, { endpointLabel })
           const httpError = reportRequestError(endpointLabel, e, {

@@ -148,7 +148,7 @@ def create_agentic_workflows_router() -> APIRouter:
         response_class=RedirectResponse,
     )
     async def redirect_root_to_patterns() -> RedirectResponse:
-        """GET / — redirect to ``/patterns/`` (default route)."""
+        """GET / - redirect to ``/patterns/`` (default route)."""
         return RedirectResponse(url="/patterns/", status_code=307)
 
     @router.get(
@@ -157,7 +157,7 @@ def create_agentic_workflows_router() -> APIRouter:
         summary="List patterns",
     )
     async def list_patterns() -> PatternListResponse:
-        """GET /patterns/ — catalog of patterns."""
+        """GET /patterns/ - catalog of patterns."""
         return PatternListResponse(items=[Pattern(name=n) for n in PATTERNS])
 
     @router.post(
@@ -168,14 +168,14 @@ def create_agentic_workflows_router() -> APIRouter:
         name: Annotated[str, Path(min_length=1)],
         body: PatternChatRequest,
     ) -> StreamingResponse:
-        """POST /patterns/{name}/chat — NDJSON stream grounded in the pattern markdown.
+        """POST /patterns/{name}/chat - NDJSON stream grounded in the pattern markdown.
 
         Returns 404 when no reference markdown exists for ``name``. The wire
         protocol is ``application/x-ndjson``: one ``{"response": "..."}`` object
         per chunk, terminated by ``{"done": true}``; in-stream failures emit a
         single ``{"error": "..."}`` line and close the connection.
         """
-        # 404 early — before opening a stream — when the pattern has no doc.
+        # 404 early - before opening a stream - when the pattern has no doc.
         slug = workflow_name_to_documentation_slug(name)
         if load_parsed_workflow_documentation(slug) is None:
             raise HTTPException(
@@ -215,7 +215,7 @@ def create_agentic_workflows_router() -> APIRouter:
         summary="List use-cases",
     )
     async def list_use_cases() -> UseCaseListResponse:
-        """GET /use-cases/ — catalog of use-cases."""
+        """GET /use-cases/ - catalog of use-cases."""
         return UseCaseListResponse(items=[UseCase(name=n) for n in USE_CASES])
 
     @router.get(
@@ -227,7 +227,7 @@ def create_agentic_workflows_router() -> APIRouter:
         patterns: Annotated[list[str] | None, Query()] = None,
         use_cases: Annotated[list[str] | None, Query()] = None,
     ) -> WorkflowSummaryMapResponse:
-        """GET /agentic-workflows/ — map keyed by workflow name; optional filters."""
+        """GET /agentic-workflows/ - map keyed by workflow name; optional filters."""
         all_workflows = get_workflows()
 
         filtered = all_workflows.values()
@@ -263,7 +263,7 @@ def create_agentic_workflows_router() -> APIRouter:
         workflow_name: Annotated[str, Path(min_length=1)],
         topology_only: Annotated[bool, Query()] = False,
     ) -> Workflow:
-        """GET /agentic-workflows/{workflow_name}/ — definition + topology."""
+        """GET /agentic-workflows/{workflow_name}/ - definition + topology."""
         all_workflows = get_workflows()
         wf = all_workflows.get(workflow_name)
         if wf is None:
@@ -284,7 +284,7 @@ def create_agentic_workflows_router() -> APIRouter:
     async def get_workflow_documentation(
         workflow_name: Annotated[str, Path(min_length=1)],
     ) -> WorkflowDocumentationResponse:
-        """GET …/documentation/ — markdown from ``docs/workflows`` for this catalog name."""
+        """GET …/documentation/ - markdown from ``docs/workflows`` for this catalog name."""
         all_workflows = get_workflows()
         if all_workflows is None:
             raise HTTPException(
@@ -323,7 +323,7 @@ def create_agentic_workflows_router() -> APIRouter:
         request: Request,
         workflow_name: Annotated[str, Path(min_length=1)],
     ) -> InstantiateWorkflowResponse:
-        """POST /agentic-workflows/{workflow_name}/ — new instance id."""
+        """POST /agentic-workflows/{workflow_name}/ - new instance id."""
         all_workflows = get_workflows()
         wf = all_workflows.get(workflow_name)
         if wf is None:

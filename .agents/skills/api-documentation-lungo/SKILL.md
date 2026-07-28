@@ -14,11 +14,11 @@ The lungo project root is `coffeeAGNTCY/coffee_agents/lungo/`. Paths in the [Sou
 
 - Document: `coffeeAGNTCY/coffee_agents/lungo/docs/workflow-instance_api.md`.
 
-This document satisfies the interface-definition tickets it was first written for: [#447 — API endpoints](https://github.com/agntcy/coffeeAgntcy/issues/447) and [#446 — workflow-instance state JSON schema](https://github.com/agntcy/coffeeAgntcy/issues/446). Keep those links in the document's intro and schema section.
+This document satisfies the interface-definition tickets it was first written for: [#447 - API endpoints](https://github.com/agntcy/coffeeAgntcy/issues/447) and [#446 - workflow-instance state JSON schema](https://github.com/agntcy/coffeeAgntcy/issues/446). Keep those links in the document's intro and schema section.
 
 ## Source registry
 
-These are the authoritative inputs. Read them fresh on every run; do not trust the existing document to be current. Enumerate from the specs rather than hard-coding endpoint names or counts — the document must scale as the contracts grow.
+These are the authoritative inputs. Read them fresh on every run; do not trust the existing document to be current. Enumerate from the specs rather than hard-coding endpoint names or counts - the document must scale as the contracts grow.
 
 | Role | Path (relative to lungo root) | What to extract |
 |------|-------------------------------|-----------------|
@@ -39,24 +39,24 @@ These are the authoritative inputs. Read them fresh on every run; do not trust t
 
 Sibling skills generate the contracts this document describes; when contracts change they are usually the upstream cause and should run first:
 
-- `.agents/skills/openapi-to-python-lungo/SKILL.md` — OpenAPI ⇄ FastAPI router/DTOs.
-- `.agents/skills/jsonschema-to-pydantic-lungo/SKILL.md` — JSON Schema ⇄ Pydantic types.
+- `.agents/skills/openapi-to-python-lungo/SKILL.md` - OpenAPI ⇄ FastAPI router/DTOs.
+- `.agents/skills/jsonschema-to-pydantic-lungo/SKILL.md` - JSON Schema ⇄ Pydantic types.
 
 ## Document structure
 
 Keep the document organized in this order (the headings are stable so links and anchors don't churn). Re-derive the content of each from the [Source registry](#source-registry):
 
-1. **Title + intro** — one-paragraph scope; the #447/#446 satisfaction note.
-2. **Authoritative sources** — a table linking the in-repo specs (OpenAPI, `event_v1.json`, Pydantic mirror, router) plus the example payloads, and a status note about temporary catalog DTOs (#468).
-3. **Conventions** — identifier URI schemes table; path-UUID vs payload-URI rule; authentication; storage model; default port.
-4. **Endpoint summary** — one table row per endpoint (purpose, method & path, response type).
-5. **Catalog API** — `GET /patterns/`, `GET /use-cases/`, `GET /agentic-workflows/` (filters), `…/documentation/`, and a pointer to the NDJSON chat.
-6. **Workflow details & topology response shapes** — `GET …/{workflow_name}/` + `topology_only`; an explicit node/agent-node/edge field breakdown; an example topology projection from `starting_workflows.json`.
-7. **Workflow-instance lifecycle & state** — instantiate, list, get state, delete, each with status codes.
-8. **Internal event ingress** — `POST …/events/` (mark internal), validation checks, status codes.
-9. **Streaming formats** — SSE instance-event stream (framing, comment frame, filtering, backpressure) and the NDJSON pattern-chat stream.
-10. **Workflow-instance state JSON Schema (`event_v1`)** — link to the published schema; "why one schema" (full snapshot vs delta); top-level shape; `$defs` reference table; event types; worked examples.
-11. **Frontend integration checklist** — numbered end-to-end flow (selectors → list → starting graph → instantiate → SSE → reconcile → delete).
+1. **Title + intro** - one-paragraph scope; the #447/#446 satisfaction note.
+2. **Authoritative sources** - a table linking the in-repo specs (OpenAPI, `event_v1.json`, Pydantic mirror, router) plus the example payloads, and a status note about temporary catalog DTOs (#468).
+3. **Conventions** - identifier URI schemes table; path-UUID vs payload-URI rule; authentication; storage model; default port.
+4. **Endpoint summary** - one table row per endpoint (purpose, method & path, response type).
+5. **Catalog API** - `GET /patterns/`, `GET /use-cases/`, `GET /agentic-workflows/` (filters), `…/documentation/`, and a pointer to the NDJSON chat.
+6. **Workflow details & topology response shapes** - `GET …/{workflow_name}/` + `topology_only`; an explicit node/agent-node/edge field breakdown; an example topology projection from `starting_workflows.json`.
+7. **Workflow-instance lifecycle & state** - instantiate, list, get state, delete, each with status codes.
+8. **Internal event ingress** - `POST …/events/` (mark internal), validation checks, status codes.
+9. **Streaming formats** - SSE instance-event stream (framing, comment frame, filtering, backpressure) and the NDJSON pattern-chat stream.
+10. **Workflow-instance state JSON Schema (`event_v1`)** - link to the published schema; "why one schema" (full snapshot vs delta); top-level shape; `$defs` reference table; event types; worked examples.
+11. **Frontend integration checklist** - numbered end-to-end flow (selectors → list → starting graph → instantiate → SSE → reconcile → delete).
 
 ## Workflow
 
@@ -76,8 +76,8 @@ Copy this checklist and tick items as you go:
 ### Source-of-truth rules
 
 - **Derive, never invent.** Every endpoint, field, status code, and constraint must trace to a source file. If the spec and the router disagree, document the router's actual behavior and flag the drift to the user.
-- **Spec for shape, router for behavior.** OpenAPI/JSON Schema give request/response shapes; `router.py` is authoritative for things the spec omits — exact status codes (e.g. `504` on instantiate merge timeout, `202`/`204` idempotent delete), the SSE leading comment frame and `exclude_none` compaction, per-subscriber queue bounds/drop-oldest, and the NDJSON `{"response"}`/`{"done"}`/`{"error"}` frames.
-- **Derive the full status-code set from the code, not just the OpenAPI `responses`.** For each endpoint, trace every reachable `HTTPException` — in the handler body, in shared dependencies it uses (e.g. `_workflow_instance_store` → `503` when the store is unset), and in helper modules it calls (e.g. `instance_lifecycle.py` `ValueError` → `500`). The OpenAPI spec often documents only the happy-path and a subset of errors; the document must list the codes the code can actually return. For each code, state the **condition** that triggers it (and note when it reflects a server-side fault vs. client input).
+- **Spec for shape, router for behavior.** OpenAPI/JSON Schema give request/response shapes; `router.py` is authoritative for things the spec omits - exact status codes (e.g. `504` on instantiate merge timeout, `202`/`204` idempotent delete), the SSE leading comment frame and `exclude_none` compaction, per-subscriber queue bounds/drop-oldest, and the NDJSON `{"response"}`/`{"done"}`/`{"error"}` frames.
+- **Derive the full status-code set from the code, not just the OpenAPI `responses`.** For each endpoint, trace every reachable `HTTPException` - in the handler body, in shared dependencies it uses (e.g. `_workflow_instance_store` → `503` when the store is unset), and in helper modules it calls (e.g. `instance_lifecycle.py` `ValueError` → `500`). The OpenAPI spec often documents only the happy-path and a subset of errors; the document must list the codes the code can actually return. For each code, state the **condition** that triggers it (and note when it reflects a server-side fault vs. client input).
 - **Enumerate, don't count.** Build the endpoint summary and `$defs` table by listing what's in the specs so the document stays correct as endpoints/types are added.
 - **Real examples.** Pull patterns, use-cases, workflow summaries, and topology from `patterns.py`, `use_cases.py`, and `starting_workflows.json` so samples match what the API returns.
 
@@ -87,7 +87,7 @@ Copy this checklist and tick items as you go:
 - Link to source files with paths relative to `docs/` (`../schema/...`, `../api/...`). Link full example payloads rather than pasting them; excerpt only small, illustrative fragments.
 - Use fenced code blocks with a language tag (`json`, `jsonc`, `http`, `text`, `bash`) for samples; these are illustrative, not citations of repo lines.
 - Keep terminology consistent: "endpoint", "workflow instance", "topology", "event".
-- Present per-endpoint status codes as a markdown bullet list introduced by a `Status codes:` line (or an equivalent lead-in such as `Behavior and status codes:`), one code per item in the form `` - `<code>` — <condition>. `` — never as an inline semicolon- or comma-separated sentence. Keep this consistent across every endpoint that lists more than one code.
+- Present per-endpoint status codes as a markdown bullet list introduced by a `Status codes:` line (or an equivalent lead-in such as `Behavior and status codes:`), one code per item in the form `` - `<code>` - <condition>. `` - never as an inline semicolon- or comma-separated sentence. Keep this consistent across every endpoint that lists more than one code.
 
 ### Verification
 
@@ -107,8 +107,8 @@ Fix any `MISS` link before finishing, then check the document for linter/markdow
 This is a standing requirement, not a one-off. When a prompt or request references a **new ticket/issue, pull request, or file/folder** that changes the lungo API contracts or specifications:
 
 1. **Run upstream skills first if the contract files changed.** A reference that adds/renames endpoints or types usually means `schema/openapi/*` or `schema/jsonschemas/*` (and their Pydantic/router mirrors) should be regenerated via the sibling skills before documenting.
-2. **Update the document** — re-run the [Workflow](#workflow) so every affected section reflects the new contract. Add or update issue/PR links where they belong (intro for epics, schema section for schema tickets, the relevant endpoint/section otherwise).
-3. **Update this skill** — if a new authoritative file/folder is now part of the contract surface, add a row to the [Source registry](#source-registry); if a new endpoint family or document section is needed, extend [Document structure](#document-structure). Keep the frontmatter `description` trigger terms in sync with any newly referenced paths so discovery stays accurate. Do not record one-off ticket numbers in the registry — link them from the document instead, and only add durable file/folder sources here.
-4. **Keep the index in sync** — this skill is registered in the repository [`AGENTS.md`](../../../AGENTS.md) Skills table; update that entry if the skill's name or scope changes.
+2. **Update the document** - re-run the [Workflow](#workflow) so every affected section reflects the new contract. Add or update issue/PR links where they belong (intro for epics, schema section for schema tickets, the relevant endpoint/section otherwise).
+3. **Update this skill** - if a new authoritative file/folder is now part of the contract surface, add a row to the [Source registry](#source-registry); if a new endpoint family or document section is needed, extend [Document structure](#document-structure). Keep the frontmatter `description` trigger terms in sync with any newly referenced paths so discovery stays accurate. Do not record one-off ticket numbers in the registry - link them from the document instead, and only add durable file/folder sources here.
+4. **Keep the index in sync** - this skill is registered in the repository [`AGENTS.md`](../../../AGENTS.md) Skills table; update that entry if the skill's name or scope changes.
 
 Surface any contract inconsistency you find (spec vs router vs schema) to the user rather than silently papering over it in prose.

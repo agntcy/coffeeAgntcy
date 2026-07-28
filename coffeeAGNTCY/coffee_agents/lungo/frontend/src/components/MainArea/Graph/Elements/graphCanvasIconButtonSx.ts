@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  *
  * Ghost IconButtons for graph canvas chrome (zoom/fit/lock, documentation).
- * Separate from node side icon chips — no fill at rest or on interaction.
+ * Separate from node side icon chips - no fill at rest or on interaction.
  * Interactive states recolor glyphs via CSS filter (no outline / background).
  */
 
@@ -19,7 +19,7 @@ import { getControlIconColor } from "./graphNodeSurface"
  * Targets (OUK `zt` primary scale):
  * - Light hover/focus → `#187adc` (zt 300 / primary.main)
  * - Light active      → `#0063c2` (zt 400 / primary.dark)
- * - Dark hover/focus  → `#79b9ff` (zt 200 — brighter on dark canvas)
+ * - Dark hover/focus  → `#79b9ff` (zt 200 - brighter on dark canvas)
  * - Dark active       → `#187adc` (zt 300)
  */
 const GRAPH_CANVAS_ICON_FILTERS = {

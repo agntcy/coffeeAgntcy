@@ -24,7 +24,7 @@
 
 ## Lungo Demo Overview
 
-The **Lungo Demo** is a continuously evolving showcase of interoperable open-source agentic components. Its primary goal is to demonstrate how different components—from the **Agntcy** project and other open-source ecosystems—can work together seamlessly.
+The **Lungo Demo** is a continuously evolving showcase of interoperable open-source agentic components. Its primary goal is to demonstrate how different components-from the **Agntcy** project and other open-source ecosystems-can work together seamlessly.
 
 ### Overview
 
@@ -133,7 +133,7 @@ Before you begin, ensure the following tools are installed:
 
    **UI environment**
 
-   **`VITE_*`** for the web UI live only in **`frontend/.env`** (see **`frontend/.env.example`**) — used by **`npm run dev`** and when you run **`docker compose --profile frontend up --build`**. **`lungo/.env`** is for backends, LLM keys, and Compose profiles only.
+   **`VITE_*`** for the web UI live only in **`frontend/.env`** (see **`frontend/.env.example`**) - used by **`npm run dev`** and when you run **`docker compose --profile frontend up --build`**. **`lungo/.env`** is for backends, LLM keys, and Compose profiles only.
 
 **Configure LLM Model, Credentials and OTEL endpoint**
 
@@ -298,7 +298,7 @@ Compose reads **`COMPOSE_PROFILES`** in **`lungo/.env`** (see **`.env.example`**
 - **Frontend development (hot reload):** Remove **`frontend`** from **`COMPOSE_PROFILES`** in **`lungo/.env`** so Compose does not start the **`ui`** container (otherwise port **3000** is used twice). Run **`docker compose up --build`** from **`lungo/`**, then in **`frontend/`** run **`npm run dev`** with **`frontend/.env`** configured (**`VITE_*`**).
 - **UI only in Docker:** Keep **`frontend`** in **`COMPOSE_PROFILES`** (as in **`.env.example`**). Run **`docker compose up --build`** from **`lungo/`** only; the **`ui`** container needs **`frontend/.env`**.
 
-You can still enable the UI ad hoc without editing **`.env`** using **`docker compose --profile frontend up --build`** — see [Step 5](#step-5-access-the-ui).
+You can still enable the UI ad hoc without editing **`.env`** using **`docker compose --profile frontend up --build`** - see [Step 5](#step-5-access-the-ui).
 
 **Using Profiles**
 
@@ -336,7 +336,7 @@ If you started services with one or more profiles, run `docker compose down` wit
 The containerized UI uses **`frontend/.env`** only for **`VITE_*`** (see **`ui`** in **`docker-compose.yaml`**). Run **`cp frontend/.env.example frontend/.env`** before **`docker compose --profile frontend up --build`** if you have not already.
 
 Once running:
-- **UI (Vite):** `cd frontend && cp .env.example .env && npm run dev` → [http://localhost:3000](http://localhost:3000) — with Docker backends, omit **`frontend`** from **`COMPOSE_PROFILES`** (see **Web UI: `COMPOSE_PROFILES` vs local Vite** above).
+- **UI (Vite):** `cd frontend && cp .env.example .env && npm run dev` → [http://localhost:3000](http://localhost:3000) - with Docker backends, omit **`frontend`** from **`COMPOSE_PROFILES`** (see **Web UI: `COMPOSE_PROFILES` vs local Vite** above).
 - **UI (Docker):** include **`frontend`** in **`COMPOSE_PROFILES`** or use **`docker compose --profile frontend up --build`** → [http://localhost:3000/](http://localhost:3000/)
 - Access Grafana dashboard at: [http://localhost:3001/](http://localhost:3001/)
 
@@ -620,7 +620,7 @@ Observability requires both the `observability` profile (either in `COMPOSE_PROF
      - **User/Password:** `admin` / `admin`
    - If already present, select the **ClickHouse** datasource (pre-configured in the Docker Compose setup).
 
-   > **Note:** `clickhouse-server:9000` is the in-cluster address (Docker service name + container port) used by Grafana and the otel-collector over the Compose network — leave this as-is. If you need to reach ClickHouse's native TCP port **from the host** (e.g. `clickhouse-client` on your machine), use **`localhost:9100`**. The host port was moved off `9000` to avoid clashing with the IoC management plane (`ioc` profile); the HTTP interface remains on `localhost:8123`.
+   > **Note:** `clickhouse-server:9000` is the in-cluster address (Docker service name + container port) used by Grafana and the otel-collector over the Compose network - leave this as-is. If you need to reach ClickHouse's native TCP port **from the host** (e.g. `clickhouse-client` on your machine), use **`localhost:9100`**. The host port was moved off `9000` to avoid clashing with the IoC management plane (`ioc` profile); the HTTP interface remains on `localhost:8123`.
 
    ![Screenshot: ClickHouse Datasource](images/grafana_clickhouse_datasource.png)
    ![Screenshot: ClickHouse Connection](images/grafana_clickhouse_connection.png)

@@ -40,12 +40,12 @@ Replace every `CHANGE ME` value before using this outside local development.
 map here 1:1. Only **three** deliberate, mechanical deviations are applied:
 
 1. **`IOC_` prefix on every interpolated variable.** Upstream `${FOO}` becomes `${IOC_FOO}`.
-   Variables already prefixed upstream (`IOC_KNOWLEDGE_DB*`) are left as-is — never
+   Variables already prefixed upstream (`IOC_KNOWLEDGE_DB*`) are left as-is - never
    double-prefixed. **Container-side names (the `LLM_MODEL=` left-hand side) and all `:-`
    defaults are kept exactly as upstream.** The prefix namespaces these vars so they can live
-   in Lungo's shared `.env` without colliding with — or leaking into — Lungo's own services
+   in Lungo's shared `.env` without colliding with - or leaking into - Lungo's own services
    (which load `.env` via `env_file`).
-2. **`build:` blocks dropped** — no IoC source in this repo, so we use the published images only.
+2. **`build:` blocks dropped** - no IoC source in this repo, so we use the published images only.
 3. **Single `ioc` profile** (per issue #700) instead of upstream's `full-stack` /
    `mgmt-plane` / `data-plane` profiles.
 
@@ -55,7 +55,7 @@ The IoC section of `lungo/.env` and `lungo/.env.example` mirrors the upstream **
 (same section grouping and order) under one translation rule:
 
 - **Prefix every variable with `IOC_`** (names already prefixed upstream, `IOC_KNOWLEDGE_DB*`,
-  are kept as-is — never double-prefixed).
+  are kept as-is - never double-prefixed).
 - **Keep a var active (uncommented) only if `compose.yaml` actually interpolates it.** Every
   other upstream var is carried as a **commented `# not consumed: <reason>` entry** so the file
   stays a faithful, diffable mirror without changing runtime behavior. A var is "not consumed"
@@ -64,7 +64,7 @@ The IoC section of `lungo/.env` and `lungo/.env.example` mirrors the upstream **
   app-internal knob compose never passes (e.g. `DB_ECHO`, `DB_SSL_MODE`, `DEFAULT_PAGE_SIZE`).
 
 The mirror also works in reverse: a var that upstream references only in `docker-compose.yml`
-(not their `.env.example`) is still carried here — see the `IOC_LLM_PROVIDER` note below.
+(not their `.env.example`) is still carried here - see the `IOC_LLM_PROVIDER` note below.
 
 ### To re-sync with upstream
 
@@ -86,8 +86,8 @@ it is optional.
 
 ## Files
 
-- `compose.yaml` — the IoC services (`ioc` profile).
-- `scripts/init-multi-db.sh` — creates the `cfn_mgmt` and `cfn_cp` databases on first DB init.
-- `.secrets/` — bind-mounted read-only into `ioc-cfn-mgmt-plane-svc`. Keep empty (a `.gitkeep`
+- `compose.yaml` - the IoC services (`ioc` profile).
+- `scripts/init-multi-db.sh` - creates the `cfn_mgmt` and `cfn_cp` databases on first DB init.
+- `.secrets/` - bind-mounted read-only into `ioc-cfn-mgmt-plane-svc`. Keep empty (a `.gitkeep`
   holds the path); do not commit real secrets here. The management service can instead take a
   `MEMORY_PROVIDER_ENCRYPTION_KEY` env var.

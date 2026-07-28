@@ -48,4 +48,4 @@ docker build \
 
 ---
 
-Alternatively, use `docker compose up` from `coffeeAGNTCY/coffee_agents/corto/` — the `docker-compose.yaml` already passes all required build args.
+Alternatively, use `docker compose up` from `coffeeAGNTCY/coffee_agents/corto/` - the `docker-compose.yaml` already passes all required build args.

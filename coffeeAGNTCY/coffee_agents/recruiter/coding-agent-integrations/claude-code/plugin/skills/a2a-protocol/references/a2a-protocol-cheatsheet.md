@@ -8,11 +8,11 @@ Fetch the agent card first to confirm compatibility:
 ```bash
 curl -s <ENDPOINT_URL>/.well-known/agent-card.json
 ```
-Check `protocolVersion` — must be `"0.3.0"` or higher.
+Check `protocolVersion` - must be `"0.3.0"` or higher.
 
 ## a2a-send CLI Tool (Recommended)
 
-The `a2a-send` Go binary handles protocol details automatically — agent card discovery, JSON-RPC, streaming, and multi-turn. Prefer this over raw curl.
+The `a2a-send` Go binary handles protocol details automatically - agent card discovery, JSON-RPC, streaming, and multi-turn. Prefer this over raw curl.
 
 **Send a message (blocking):**
 ```bash
@@ -99,7 +99,7 @@ curl -s -X POST <ENDPOINT_URL> \
   }'
 ```
 
-**Stream a message (SSE — returns task lifecycle events):**
+**Stream a message (SSE - returns task lifecycle events):**
 ```bash
 MSG_ID=$(uuidgen | tr '[:upper:]' '[:lower:]')
 curl -s -N -X POST <ENDPOINT_URL> \
@@ -120,7 +120,7 @@ curl -s -N -X POST <ENDPOINT_URL> \
 
 ## Response Format
 
-**Synchronous (`message/send`) — direct message response:**
+**Synchronous (`message/send`) - direct message response:**
 ```json
 {
   "id": 1,
@@ -135,7 +135,7 @@ curl -s -N -X POST <ENDPOINT_URL> \
 }
 ```
 
-**Streaming (`message/stream`) — SSE events with task lifecycle:**
+**Streaming (`message/stream`) - SSE events with task lifecycle:**
 ```
 data: {"id":1,"jsonrpc":"2.0","result":{"kind":"task","id":"<task_id>","contextId":"<ctx>","status":{"state":"submitted"},...}}
 data: {"id":1,"jsonrpc":"2.0","result":{"kind":"message","messageId":"<uuid>","role":"agent","parts":[{"kind":"text","text":"response"}]}}

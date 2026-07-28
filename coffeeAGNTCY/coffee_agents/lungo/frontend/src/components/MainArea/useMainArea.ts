@@ -231,7 +231,7 @@ export function useMainArea({
   useEffect(() => {
     if (!onLiveGraphConfig) return
     const title = selectedWorkflowSummary
-      ? `${selectedWorkflowSummary.name} — ${selectedWorkflowSummary.scenario}`
+      ? `${selectedWorkflowSummary.name} - ${selectedWorkflowSummary.scenario}`
       : ""
     const animationSequence = deriveAnimationSequenceFromGraph(nodes, edges)
     onLiveGraphConfig(

@@ -51,13 +51,13 @@ A concrete, goal-oriented way an agentic system is used:
 - what outcome they want, and
 - the main flow of interaction.
 
-It describes what the system does in an agent-based setting—the capability or scenario.
+It describes what the system does in an agent-based setting-the capability or scenario.
 
 **In CoffeeAGNTCY we narrow that idea and tie it to architecture, an (agentic) use-case is a concrete, runnable
 implementation of a distinct capability (e.g. run an auction, fulfill a logistics order, recruit/evaluate agents, act as
 a sommelier).**
 
-Each **(agentic) use-case** is built on exactly one architectural **pattern** — it’s an implementation
+Each **(agentic) use-case** is built on exactly one architectural **pattern** - it’s an implementation
 of that pattern to achieve a concrete goal within a defined context.
 
 The following example (agentic) use-cases are existing in CoffeeAGNTCY:

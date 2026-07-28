@@ -43,7 +43,7 @@ Short paragraph highlighting the most important themes of the release.
 
 Order of emphasis:
 
-1. Semver **breaking** changes, configuration/setup/interface changes, and breaking behavior changes — **first**.
+1. Semver **breaking** changes, configuration/setup/interface changes, and breaking behavior changes - **first**.
 2. **Migration steps** when any of the above apply; include concrete examples (env vars, commands, config snippets).
 3. High-profile new features.
 
@@ -51,7 +51,7 @@ For each highlighted item in this section, use a closed HTML dropdown:
 
 ```html
 <details>
-<summary><strong>Short title</strong> — optional subtitle</summary>
+<summary><strong>Short title</strong> - optional subtitle</summary>
 
 - Concise bullets with links to PRs where relevant.
 </details>
@@ -75,7 +75,7 @@ List changes in the order they landed on the default branch:
 
 - One line per PR (preferred), or per direct commit when no PR exists.
 - Each item uses a **closed** HTML dropdown.
-- Closed summary line format: PR title, PR number, and author — e.g. `#601 — @author — short title`.
+- Closed summary line format: PR title, PR number, and author - e.g. `#601 - @author - short title`.
 - Open body: detailed but concise description of what was implemented.
 
 ### 6. Contributors
@@ -98,9 +98,9 @@ List changes in the order they landed on the default branch:
 
 Return **two** markdown fenced code blocks:
 
-1. **CHANGELOG entry** — full markdown for the new `## {current_version}` section, ready to paste into `CHANGELOG.md`
+1. **CHANGELOG entry** - full markdown for the new `## {current_version}` section, ready to paste into `CHANGELOG.md`
    below the `# Changelog` heading.
-2. **README Built With** — markdown for the `### Built With` bullet list, matching `README.md` style but with versions
+2. **README Built With** - markdown for the `### Built With` bullet list, matching `README.md` style but with versions
    from the lockfiles above.
 
 If the CHANGELOG entry contains inner markdown code blocks (migration examples), escape inner triple-backticks so the

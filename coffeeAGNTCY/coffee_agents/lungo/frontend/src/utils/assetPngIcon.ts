@@ -6,7 +6,7 @@
 import type { SxProps, Theme } from "@mui/material/styles"
 
 /**
- * MUI `SvgIcon` default size (`fontSize="medium"`) — `theme.typography.pxToRem(24)`.
+ * MUI `SvgIcon` default size (`fontSize="medium"`) - `theme.typography.pxToRem(24)`.
  * @see node_modules/@mui/material/esm/SvgIcon/SvgIcon.js
  */
 export const ASSET_PNG_ICON_SIZE_PX = 24
@@ -32,7 +32,7 @@ export function getGraphIconChipHoverBackground(theme: Theme): string {
 
 /**
  * Inverts monochrome PNG artwork to white in dark mode (`brightness(0) invert(1)`).
- * For dark glyphs on transparent backgrounds — not for full-color or theme-swapped PNGs.
+ * For dark glyphs on transparent backgrounds - not for full-color or theme-swapped PNGs.
  */
 export function assetPngIconMonochromeDarkFilterSx(): SxProps<Theme> {
   return (theme: Theme) =>
@@ -53,7 +53,7 @@ export function assetPngIconBareSx(...extra: SxProps<Theme>[]): SxProps<Theme> {
   ] as SxProps<Theme>
 }
 
-/** Full chip `sx` for PNG icons from `src/assets/` — always use via {@link AssetPngIcon}. */
+/** Full chip `sx` for PNG icons from `src/assets/` - always use via {@link AssetPngIcon}. */
 export function assetPngIconChipSx(...extra: SxProps<Theme>[]): SxProps<Theme> {
   return [
     (theme: Theme) => ({

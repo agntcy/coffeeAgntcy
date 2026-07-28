@@ -542,7 +542,7 @@ async def evaluate_agent(
                 summary_lines.append(f"    {s_icon} {scenario_text}")
         elif status == "error":
             error_msg = result.get("error", "Unknown error")
-            summary_lines.append(f"  ⚠️ Error — {error_msg}")
+            summary_lines.append(f"  ⚠️ Error - {error_msg}")
         else:
             summary_lines.append(f"  - {status}")
 

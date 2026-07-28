@@ -43,7 +43,7 @@ def _extract_from_dict(record: dict) -> AgentEvalConfig:
 
     if not url:
         raise ValueError(
-            f"Agent record for '{name}' is missing a 'url' field — "
+            f"Agent record for '{name}' is missing a 'url' field - "
             "cannot evaluate an agent without a reachable endpoint."
         )
 

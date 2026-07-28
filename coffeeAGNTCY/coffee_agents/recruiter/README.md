@@ -73,7 +73,7 @@ See [docs/llm_configuration.md](docs/llm_configuration.md) for more providers (A
 
 ### Agent Directory Service
 
-The recruiter agent searches for agents in AGNTCY's [Directory Service (dir)](https://github.com/agntcy/dir) — a
+The recruiter agent searches for agents in AGNTCY's [Directory Service (dir)](https://github.com/agntcy/dir) - a
 decentralized platform for publishing, discovering, and exchanging agent information across a peer-to-peer network. It
 enables agents to publish structured metadata describing their capabilities using OASF standards, with cryptographic
 mechanisms for data integrity and provenance tracking. See the [dir
@@ -225,7 +225,7 @@ uv run pytest tests/integration/test_agent_evaluator.py -v
 
 ## Claude Code Plugin
 
-The [`coding-agent-integrations/claude-code/`](./coding-agent-integrations/claude-code/) directory contains **agntcy-discover-connect** — a [Claude Code](https://docs.anthropic.com/en/docs/claude-code) plugin that brings the recruiter's agent discovery capabilities directly into the Claude Code CLI. Instead of running the recruiter as a standalone A2A service, this plugin lets you search the AGNTCY directory, preview candidates, and connect remote A2A agents as skills or sub-agents — all from within a Claude Code session.
+The [`coding-agent-integrations/claude-code/`](./coding-agent-integrations/claude-code/) directory contains **agntcy-discover-connect** - a [Claude Code](https://docs.anthropic.com/en/docs/claude-code) plugin that brings the recruiter's agent discovery capabilities directly into the Claude Code CLI. Instead of running the recruiter as a standalone A2A service, this plugin lets you search the AGNTCY directory, preview candidates, and connect remote A2A agents as skills or sub-agents - all from within a Claude Code session.
 
 ### Plugin Installation
 
@@ -269,8 +269,8 @@ The plugin can connect remote agents in two modes:
 
 | Mode | How it works | Invoke with | Pros |
 |------|-------------|-------------|------|
-| **Skill** (recommended) | Creates `.claude/skills/<name>/SKILL.md` — the parent model runs `a2a-send` directly | `/agent-name <message>` | Available immediately, no intermediary model to refuse requests |
-| **Sub-agent** | Creates `.claude/agents/<name>.md` — Claude Code spawns a separate model | Natural language: "Use the agent to..." | More autonomous, but may refuse to forward out-of-scope requests |
+| **Skill** (recommended) | Creates `.claude/skills/<name>/SKILL.md` - the parent model runs `a2a-send` directly | `/agent-name <message>` | Available immediately, no intermediary model to refuse requests |
+| **Sub-agent** | Creates `.claude/agents/<name>.md` - Claude Code spawns a separate model | Natural language: "Use the agent to..." | More autonomous, but may refuse to forward out-of-scope requests |
 
 > **Tip:** Start with skills. If a sub-agent refuses to forward requests the remote agent can handle, delete the sub-agent and re-run `/recruit` to create a skill instead.
 

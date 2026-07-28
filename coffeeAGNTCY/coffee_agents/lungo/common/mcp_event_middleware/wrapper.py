@@ -12,10 +12,10 @@ resolution, timing, sink lifecycle).
 Workflow identity for the farm-to-MCP hop is resolved once, at wrap time,
 in this order:
 
-1. OTel baggage (present and non-empty) — the identity the farm executor
+1. OTel baggage (present and non-empty) - the identity the farm executor
    re-establishes around ``agent.ainvoke`` from the supervisor metadata.
 2. Explicit ``workflow_name``/``instance_id`` passed by the call site.
-3. None — the original MCP client is returned unwrapped and no events are
+3. None - the original MCP client is returned unwrapped and no events are
    emitted, preserving the pre-instrumentation behavior.
 """
 

@@ -26,7 +26,7 @@ This reference agentic application demonstrates:
 
 ### Setups Included
 
-We currently provide two setups you can run to see how components from AGNTCY work together — one simple two-agent use
+We currently provide two setups you can run to see how components from AGNTCY work together - one simple two-agent use
 case and the other a more complex MAS:
 
 - **Corto**: A two-agent, ready-to-run setup that highlights core agent interactions using agent-to-agent (A2A)
@@ -88,7 +88,7 @@ For a common understanding, please see the [terminologies used](docs/TERMINOLOGY
 
 This is a developer-facing reference repo.
 
-If you're building agentic systems—or interested in shaping the future of distributed agents—we'd love your feedback,
+If you're building agentic systems-or interested in shaping the future of distributed agents-we'd love your feedback,
 contributions, or collaboration.
 
 Contributions are what make the open-source community such an amazing place to learn, inspire, and create.

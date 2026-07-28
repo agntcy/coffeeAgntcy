@@ -13,7 +13,7 @@ graph TB
     %% ============================================================
     %% A2A SERVER LAYER
     %% ============================================================
-    subgraph ServerLayer["⚡ A2A Server Layer — Port 8881"]
+    subgraph ServerLayer["⚡ A2A Server Layer - Port 8881"]
         direction TB
         A2AApp["A2AStarletteApplication<br/><i>Uvicorn HTTP + Transport</i>"]
         ReqHandler["DefaultRequestHandler<br/><i>+ InMemoryTaskStore</i>"]
@@ -30,7 +30,7 @@ graph TB
     %% ============================================================
     %% RECRUITER TEAM (CORE ORCHESTRATOR)
     %% ============================================================
-    subgraph RecruiterCore["🧠 RecruiterTeam — Core Orchestrator"]
+    subgraph RecruiterCore["🧠 RecruiterTeam - Core Orchestrator"]
         direction TB
         RootAgent["RecruiterAgent<br/><i>LlmAgent · Intent Router</i>"]
 
@@ -98,7 +98,7 @@ graph TB
         A2AEval --> InnerTools
     end
 
-    subgraph JudgeLLM["⚖️ Policy Evaluation — Judge LLM"]
+    subgraph JudgeLLM["⚖️ Policy Evaluation - Judge LLM"]
         direction TB
         PolicyEval["evaluate_policy()<br/><i>Conversation + Policy → Verdict</i>"]
 
@@ -124,7 +124,7 @@ graph TB
             DirCtl["dirctl MCP Server<br/><i>binary or docker mode</i>"]
         end
 
-        subgraph LLMProvider["LLM Provider — LiteLLM"]
+        subgraph LLMProvider["LLM Provider - LiteLLM"]
             LLMProxy["LiteLLM Unified Interface"]
             OpenAI["OpenAI"]
             Azure["Azure OpenAI"]
@@ -196,7 +196,7 @@ graph TB
     AgentExec -->|"read state"| SessionState
     EventQueue -->|"streaming events"| A2AClient
 
-    %% Styling — pastel fills with dark text for GitHub readability
+    %% Styling - pastel fills with dark text for GitHub readability
     classDef client fill:#BBDEFB,stroke:#1565C0,color:#0D47A1,stroke-width:2px
     classDef server fill:#C5CAE9,stroke:#283593,color:#1A237E,stroke-width:2px
     classDef agent fill:#C8E6C9,stroke:#2E7D32,color:#1B5E20,stroke-width:2px

@@ -115,7 +115,7 @@ class RemoteAgentConnections:
 
                 # Response is tuple[Task, Update] or Message
                 if isinstance(response, Message):
-                    # Direct message response — don't return immediately.
+                    # Direct message response - don't return immediately.
                     # Some agents send a Message followed by more streamed
                     # data; returning early causes the A2A SDK to raise
                     # "received a streamed Message … after first response".
