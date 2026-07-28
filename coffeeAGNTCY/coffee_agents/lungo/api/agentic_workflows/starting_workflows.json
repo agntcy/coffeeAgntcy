@@ -791,6 +791,18 @@
     "instances": {}
   },
   {
+    "name": "Shared Agent Memory",
+    "pattern": "Shared Agent Memory",
+    "pattern_category": "internet_of_cognition",
+    "use_case": "---",
+    "scenario": "---",
+    "starting_topology": {
+      "nodes": [],
+      "edges": []
+    },
+    "instances": {}
+  },
+  {
     "name": "Shared Knowledge Store",
     "pattern": "Shared Knowledge Store",
     "use_case": "---",
