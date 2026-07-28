@@ -9,6 +9,8 @@ Usage:
         [--search-path PATH] \
         [--exclude-dir DIR ...] \
         [--exclude-glob GLOB ...] \
+        [--replace-with TEXT] \
+        [--write] \
         [--no-summary]
 
 Search recursively for one or more literal strings under PATH.
@@ -31,7 +33,9 @@ Default excludes (non-git fallback only, merged with --exclude-dir):
     .git, node_modules, dist, build, .venv, .pytest-logs
 
 Options:
-    --no-summary   suppress stderr hit-count summary (TSV still printed)
+    --replace-with TEXT   replace matched pattern(s) in affected files
+    --write               apply edits (default: dry-run, files listed on stderr)
+    --no-summary          suppress stderr hit-count summary (TSV still printed)
 
 Exit codes:
     0 = one or more matches
@@ -46,6 +50,8 @@ exclude_dirs=()
 exclude_globs=()
 default_exclude_dirs=(.git node_modules dist build .venv .pytest-logs)
 show_summary=true
+fix_replacement=""
+fix_write=false
 
 while [[ $# -gt 0 ]]; do
 	case "$1" in
@@ -80,6 +86,18 @@ while [[ $# -gt 0 ]]; do
 		}
 		exclude_globs+=("$2")
 		shift 2
+		;;
+	--replace-with)
+		[[ $# -ge 2 ]] || {
+			usage >&2
+			exit 2
+		}
+		fix_replacement="$2"
+		shift 2
+		;;
+	--write)
+		fix_write=true
+		shift
 		;;
 	--no-summary)
 		show_summary=false
@@ -183,11 +201,11 @@ scan_with_find() {
 
 run_scan() {
 	if git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
-		echo "find_strings: git repo — tracked via git grep, untracked via grep" >&2
+		echo "find_strings: git repo - tracked via git grep, untracked via grep" >&2
 		scan_tracked_files
 		scan_untracked_files
 	else
-		echo "find_strings: not a git repo — using find + grep" >&2
+		echo "find_strings: not a git repo - using find + grep" >&2
 		scan_with_find
 	fi
 }
@@ -211,9 +229,37 @@ print_summary() {
 	fi
 }
 
+apply_replacements() {
+	local file pattern hex perl_script=""
+
+	[[ -n "$fix_replacement" ]] || return 0
+	((${#files_to_fix[@]} == 0)) && return 0
+
+	for pattern in "${patterns[@]}"; do
+		if [[ ${#pattern} -ne 1 ]]; then
+			echo "find_strings: --replace-with supports single-character --pattern only" >&2
+			exit 2
+		fi
+		hex="${pattern_unicode_cache[$pattern]#U+}"
+		perl_script+="s/\\x{${hex}}/\$ENV{FIX_REPL}/g; "
+	done
+
+	export FIX_REPL="$fix_replacement"
+
+	for file in "${!files_to_fix[@]}"; do
+		if [[ "$fix_write" == true ]]; then
+			perl -CSD -i -pe "$perl_script" -- "$file"
+			echo "find_strings: fixed ${file}" >&2
+		else
+			echo "find_strings: would fix ${file}" >&2
+		fi
+	done
+}
+
 exit_code=1
 hit_count=0
 declare -A pattern_hit_counts=()
+declare -A files_to_fix=()
 
 while IFS= read -r hit; do
 	[[ -z "$hit" ]] && continue
@@ -228,11 +274,13 @@ while IFS= read -r hit; do
 			exit_code=0
 			hit_count=$((hit_count + 1))
 			pattern_hit_counts["$pattern"]=$((${pattern_hit_counts["$pattern"]:-0} + 1))
+			files_to_fix["$file"]=1
 			printf '%s\t%s\t%s (%s)\t%s\n' \
 				"$file" "$line" "$pattern" "${pattern_unicode_cache[$pattern]}" "$content"
 		fi
 	done
 done < <(run_scan 2>/dev/null || true)
 
+apply_replacements
 print_summary
 exit "$exit_code"
