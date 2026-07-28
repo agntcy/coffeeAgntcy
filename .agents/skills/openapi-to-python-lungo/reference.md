@@ -355,6 +355,23 @@ def test_<tag_snake>_spec_paths_match_fastapi_router() -> None:
     )
 ```
 
+## Status-code drift test (agentic-workflows)
+
+Hand-maintained OpenAPI `responses` are not mirrored on FastAPI decorators. For the `agentic-workflows` tag, keep a YAML manifest of expected status codes per `operationId` and a pytest module that asserts every manifest code (except `401`, covered by global `security`) appears on the resolved operation's `responses`.
+
+Reference implementation (copy the structure for new tags; adjust manifest path and tag filter):
+
+- Manifest: `tests/unit/openapi/fixtures/agentic_workflows_expected_status_codes.yaml`
+- Test: `tests/unit/openapi/test_agentic_workflow_openapi_status_codes.py`
+
+The test should:
+
+1. Load the manifest and resolved spec via `prance.ResolvingParser`.
+2. Assert top-level `security` requires `WorkflowApiKeyBearer` (or the tag's global scheme) so `401` need not be duplicated on each operation.
+3. For each manifest entry, find the operation by `operationId`, collect declared response status keys, and assert `expected - {401} ⊆ declared`.
+
+Update the manifest and `schema/openapi/paths/<tag>.yaml` together when handlers change; see [api-documentation-lungo/SKILL.md](../api-documentation-lungo/SKILL.md) § OpenAPI status codes.
+
 ## Common pitfalls
 
 - `prance` may import `requests` and emit a `UserWarning`. Suppress it exactly as shown in the templates; the project's pytest config promotes warnings to errors.
