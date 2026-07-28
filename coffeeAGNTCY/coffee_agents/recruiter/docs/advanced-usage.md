@@ -62,7 +62,7 @@ async for response in client.send_message(message):
 Run the caching benchmark to measure tool cache performance:
 
 ```bash
-uv run python tests/integration/benchmark_caching.py
+uv run python tests/integration/general/benchmark_caching.py
 ```
 
 Example output:
@@ -118,7 +118,7 @@ export TOOL_CACHE_EXCLUDE=tool_a,tool_b
 ### Cache Tests
 
 ```bash
-uv run pytest tests/integration/test_caching.py -v
+uv run pytest tests/integration/llm/test_caching.py -v
 ```
 
 ## Agentic Evaluation

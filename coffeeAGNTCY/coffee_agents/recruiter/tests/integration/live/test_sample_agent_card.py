@@ -1,7 +1,7 @@
 # Copyright AGNTCY Contributors (https://github.com/agntcy)
 # SPDX-License-Identifier: Apache-2.0
 
-"""Docker-only integration tests for the agent_evaluator sample agent."""
+"""Live integration test: sample A2A agent card over subprocess HTTP."""
 
 import pytest
 

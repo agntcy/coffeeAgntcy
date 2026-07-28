@@ -1,6 +1,7 @@
 # Copyright AGNTCY Contributors (https://github.com/agntcy)
 # SPDX-License-Identifier: Apache-2.0
 
+import os
 import time
 from typing import Optional, Tuple
 import json
@@ -8,7 +9,8 @@ from typing import List
 import subprocess
 from pathlib import Path
 
-PROJECT_DIR = Path(__file__).resolve().parents[2] 
+# If you always run from the recruiter dir, set it once:
+PROJECT_DIR = Path(__file__).resolve().parents[3]  # .../coffee_agents/recruiter
 
 def _compose_cmd(files: List[str]) -> List[str]:
     """
@@ -24,13 +26,22 @@ def _compose_cmd(files: List[str]) -> List[str]:
             cmd += ["-f", str(compose_file)]
     return cmd
 
+def _compose_env():
+    """Env for docker compose subprocess: use current process env so test-set vars are used."""
+    return dict(os.environ)
+
+
 def _run(cmd: List[str]):
     """
     Execute a docker compose command from PROJECT_DIR to make calls location-agnostic.
+    Passes current process env so compose (and variable substitution) uses the same env as the test.
     """
+    compose_env = _compose_env()
     print(">", " ".join(cmd))
     try:
-        result = subprocess.run(cmd, check=True, cwd=PROJECT_DIR, capture_output=True, text=True)
+        result = subprocess.run(
+            cmd, check=True, cwd=PROJECT_DIR, capture_output=True, text=True, env=compose_env
+        )
         return result  # return result so callers (like up()) can inspect .stdout
     except subprocess.CalledProcessError as e:
         print(f"Command failed: {e}\n")
@@ -41,6 +52,7 @@ def _run(cmd: List[str]):
             _compose_cmd([f for f in cmd if f.endswith(('.yaml', '.yml'))]) + ["config"],
             check=False,
             cwd=PROJECT_DIR,
+            env=compose_env,
         )
 
         # 2. Attempt to show logs for the target service(s)
@@ -54,6 +66,7 @@ def _run(cmd: List[str]):
                     cmd[: cmd.index("compose") + 1] + ["logs", "--no-color", "--tail=200", svc],
                     check=False,
                     cwd=PROJECT_DIR,
+                    env=compose_env,
                 )
         except Exception as log_err:
             print(f"(could not get logs: {log_err})")
@@ -72,8 +85,20 @@ def up(files: List[str], services: List[str]):
 
 def down(files: List[str]):
     # 'down' ignores service list; it tears down the whole project
-    cmd = _compose_cmd(files) + ["down", "-v"]
+    cmd = _compose_cmd(files) + ["down", "-v", "--remove-orphans"]
     _run(cmd)
+
+
+def remove_container_if_exists(container_name: str) -> None:
+    """Force-remove a container by name if it exists. Use after down() to clear leftovers from other runs."""
+    res = subprocess.run(
+        ["docker", "rm", "-f", container_name],
+        capture_output=True,
+        text=True,
+        cwd=PROJECT_DIR,
+    )
+    if res.returncode == 0:
+        print(f"> Removed leftover container {container_name}")
 
 def _container_id(files: List[str], service: str) -> str:
     cmd = _compose_cmd(files) + ["ps", "-a", "-q", service]

@@ -39,20 +39,20 @@ major version release.
 
 ### CI test suites
 
-Python agent projects (`corto`, `lungo`, `recruiter`) run one **no-secrets** CI job per changed project: **`tests / *`**. LLM tests under `tests/integration_llm/` are **local-only** (not run in CI) until project leadership re-enables them.
+Python agent projects (`corto`, `lungo`, `recruiter`) run one **no-secrets** CI job per changed project: **`tests / *`**. LLM tests under `tests/integration/llm/` are **local-only** (not run in CI) until project leadership re-enables them.
 
 Run locally before opening a PR:
 
 ```bash
-cd coffeeAGNTCY/coffee_agents/lungo && uv run pytest tests/unit tests/live tests/integration -q
-cd coffeeAGNTCY/coffee_agents/corto && uv run pytest tests/unit tests/integration -q
-cd coffeeAGNTCY/coffee_agents/recruiter && uv run pytest tests/unit tests/integration -q
+cd coffeeAGNTCY/coffee_agents/lungo && uv run pytest tests/unit tests/integration/general tests/integration/live -q
+cd coffeeAGNTCY/coffee_agents/corto && uv run pytest tests/unit tests/integration/general -q
+cd coffeeAGNTCY/coffee_agents/recruiter && uv run pytest tests/unit tests/integration/general tests/integration/live -q
 ```
 
 LLM suite (needs `.env`, not CI):
 
 ```bash
-cd coffeeAGNTCY/coffee_agents/lungo && uv run pytest tests/integration_llm -q
+cd coffeeAGNTCY/coffee_agents/lungo && uv run pytest tests/integration/llm -q
 ```
 
 See [`.github/workflows/README.md`](.github/workflows/README.md) for directory layout, branch protection migration (legacy `integration-tests-*` → `tests / *`), and concurrency behavior.

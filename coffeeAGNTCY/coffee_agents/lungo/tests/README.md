@@ -4,9 +4,9 @@
 
 The suite validates:
 
-- Auction Supervisor flows (inventory, orders, invalid prompts) over SLIM and NATS — LLM cases in `integration_llm/`, docker-only checks in `integration/`.
-- Logistics Supervisor (farm, accountant, shipper, helpdesk) — health in `integration/`, prompt flows in `integration_llm/`.
-- Agentic Workflows API (unit), subprocess uvicorn/SSE live tests (`tests/live/`).
+- Auction Supervisor flows (inventory, orders, invalid prompts) over SLIM and NATS — LLM cases in `integration/llm/`, docker-only checks in `integration/general/`.
+- Logistics Supervisor (farm, accountant, shipper, helpdesk) — health in `integration/general/`, prompt flows in `integration/llm/`.
+- Agentic Workflows API (unit), subprocess uvicorn/SSE live tests (`integration/live/`).
 - Agent process orchestration, startup readiness gating, and HTTP supervisor APIs.
 
 ## Directory layout
@@ -14,21 +14,21 @@ The suite validates:
 | Directory | Purpose | CI |
 |-----------|---------|-----|
 | `tests/unit/` | Mocks only | Yes |
-| `tests/live/` | Subprocess uvicorn/A2A HTTP | Yes |
-| `tests/integration/` | Docker-compose session; no LLM | Yes |
-| `tests/integration_llm/` | Docker + LLM credentials | No (local manual) |
+| `tests/integration/general/` | Docker-compose session; no live webserver; no LLM | Yes |
+| `tests/integration/live/` | Subprocess uvicorn/A2A HTTP; no LLM | Yes |
+| `tests/integration/llm/` | Docker + LLM credentials | No (local manual) |
 
 Key files:
 
 - Session / infra fixtures: [`integration/conftest.py`](integration/conftest.py)
-- Docker Compose helpers: [`integration/docker_helpers.py`](integration/docker_helpers.py)
-- Subprocess runner: [`integration/process_helper.py`](integration/process_helper.py)
-- Auction docker-only tests: [`integration/test_auction.py`](integration/test_auction.py)
-- Auction LLM flows (parametrized SLIM + NATS): [`integration_llm/test_auction_flows.py`](integration_llm/test_auction_flows.py)
-- Logistics health (SLIM): [`integration/test_logistics_supervisor.py`](integration/test_logistics_supervisor.py)
-- Logistics LLM flows: [`integration_llm/test_logistics_supervisor_flows.py`](integration_llm/test_logistics_supervisor_flows.py)
+- Docker Compose helpers: [`integration/helpers/docker_helpers.py`](integration/helpers/docker_helpers.py)
+- Subprocess runner: [`integration/helpers/process_helper.py`](integration/helpers/process_helper.py)
+- Auction docker-only tests: [`integration/general/test_auction.py`](integration/general/test_auction.py)
+- Auction LLM flows (parametrized SLIM + NATS): [`integration/llm/test_auction_flows.py`](integration/llm/test_auction_flows.py)
+- Logistics health (SLIM): [`integration/general/test_logistics_supervisor.py`](integration/general/test_logistics_supervisor.py)
+- Logistics LLM flows: [`integration/llm/test_logistics_supervisor_flows.py`](integration/llm/test_logistics_supervisor_flows.py)
 - Uvicorn/SSE helpers: [`helpers/agentic_uvicorn_helpers.py`](helpers/agentic_uvicorn_helpers.py)
-- Live workflow-instance pipeline: [`live/test_workflow_instance_live_pipeline.py`](live/test_workflow_instance_live_pipeline.py)
+- Live workflow-instance pipeline: [`integration/live/test_workflow_instance_live_pipeline.py`](integration/live/test_workflow_instance_live_pipeline.py)
 
 ## Execution prerequisites
 
@@ -53,62 +53,62 @@ cp coffeeAGNTCY/coffee_agents/lungo/.env.example .env
 
 | Suite | Paths | CI | Secrets |
 |-------|-------|-----|---------|
-| **no-secrets** | `tests/unit`, `tests/live`, `tests/integration` | Yes | No (`WORKFLOW_API_KEY` env in CI for live tests) |
-| **LLM** | `tests/integration_llm` | No (local manual) | Yes (`.env`) |
+| **no-secrets** | `tests/unit`, `tests/integration/general`, `tests/integration/live` | Yes | No (`WORKFLOW_API_KEY` env in CI for live tests) |
+| **LLM** | `tests/integration/llm` | No (local manual) | Yes (`.env`) |
 
 From the lungo package root:
 
 ```bash
-uv run pytest tests/unit tests/live tests/integration -q   # CI-equivalent
-uv run pytest tests/integration_llm -q                       # LLM (needs .env)
+uv run pytest tests/unit tests/integration/general tests/integration/live -q   # CI-equivalent
+uv run pytest tests/integration/llm -q                                           # LLM (needs .env)
 ```
 
-LLM proxy chat smoke test: `tests/integration_llm/test_pattern_chat_proxy.py` (skipped unless `LITELLM_PROXY_*` env vars are set).
+LLM proxy chat smoke test: `tests/integration/llm/test_pattern_chat_proxy.py` (skipped unless `LITELLM_PROXY_*` env vars are set).
 
-Do not run bare `pytest` or `pytest tests/` when both `integration/` and `integration_llm/` exist — session fixtures may load twice via `pytest_plugins`.
+Do not run bare `pytest tests/integration` without explicit subpaths — that would collect `integration/llm/`.
 
 ### Targeted runs
 
 Docker-only auction tests:
 
 ```bash
-uv run pytest tests/integration/test_auction.py -q
+uv run pytest tests/integration/general/test_auction.py -q
 ```
 
 LLM auction flows (both transports):
 
 ```bash
-uv run pytest tests/integration_llm/test_auction_flows.py -q
+uv run pytest tests/integration/llm/test_auction_flows.py -q
 ```
 
 Single LLM auction case (Brazil inventory):
 
 ```bash
-uv run pytest tests/integration_llm/test_auction_flows.py::TestAuctionFlows::test_auction_brazil_inventory -q
+uv run pytest tests/integration/llm/test_auction_flows.py::TestAuctionFlows::test_auction_brazil_inventory -q
 ```
 
 Logistics docker health:
 
 ```bash
-uv run pytest tests/integration/test_logistics_supervisor.py -q
+uv run pytest tests/integration/general/test_logistics_supervisor.py -q
 ```
 
 Logistics agent roles:
 
 ```bash
-uv run pytest tests/integration/test_logistics_farm.py tests/integration/test_logistics_accountant.py tests/integration/test_logistics_shipper.py tests/integration/test_logistics_helpdesk.py -q
+uv run pytest tests/integration/general/test_logistics_farm.py tests/integration/general/test_logistics_accountant.py tests/integration/general/test_logistics_shipper.py tests/integration/general/test_logistics_helpdesk.py -q
 ```
 
 Live uvicorn/SSE:
 
 ```bash
-uv run pytest tests/live -q
+uv run pytest tests/integration/live -q
 ```
 
 Run only NATS parametrized LLM cases:
 
 ```bash
-uv run pytest tests/integration_llm/test_auction_flows.py -k NATS -q
+uv run pytest tests/integration/llm/test_auction_flows.py -k NATS -q
 ```
 
 ## Version overrides

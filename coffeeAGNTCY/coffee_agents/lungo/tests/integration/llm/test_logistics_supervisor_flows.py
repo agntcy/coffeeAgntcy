@@ -11,8 +11,8 @@ logger = logging.getLogger(__name__)
 
 
 def load_logistics_prompt_cases():
-    """Load logistics prompt cases from JSON in ``tests/integration/``."""
-    data_file = Path(__file__).resolve().parent.parent / "integration" / "logistics_prompt_cases.json"
+    """Load logistics prompt cases from JSON in ``tests/integration/general/``."""
+    data_file = Path(__file__).resolve().parent.parent / "general" / "logistics_prompt_cases.json"
     if not data_file.exists():
         raise FileNotFoundError(f"Prompt cases file not found: {data_file}")
     with data_file.open() as f:

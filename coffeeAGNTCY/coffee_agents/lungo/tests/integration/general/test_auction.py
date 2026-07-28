@@ -6,7 +6,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from agents.supervisors.auction.graph.a2a_retry import TransportTimeoutError
 
-from tests.integration._auction_helpers import TRANSPORT_MATRIX, response_has_inventory_amount
+from tests.integration.general._auction_helpers import TRANSPORT_MATRIX, response_has_inventory_amount
 
 
 @pytest.mark.parametrize(
@@ -24,7 +24,6 @@ def test_auction_suggested_prompts_streaming_matches_default(auction_supervisor_
     assert default_resp.json() == streaming_resp.json()
 
 
-@pytest.mark.no_pin_auction_shared
 @pytest.mark.parametrize(
     "transport_config",
     [TRANSPORT_MATRIX[0]],

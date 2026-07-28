@@ -9,15 +9,15 @@ Tests cover Exchange ↔ Farm behavior across message transports (SLIM, NATS): u
 | Directory | Purpose | CI |
 |-----------|---------|-----|
 | `tests/unit/` | Mocks only | Yes |
-| `tests/integration/` | Docker-compose session; no LLM | Yes |
-| `tests/integration_llm/` | Docker + LLM credentials | No (local manual) |
+| `tests/integration/general/` | Docker-compose session; no live webserver; no LLM | Yes |
+| `tests/integration/llm/` | Docker + LLM credentials | No (local manual) |
 
 Key files:
 
 - Session / infra fixtures: [`integration/conftest.py`](integration/conftest.py)
-- Docker Compose helpers: [`integration/docker_helpers.py`](integration/docker_helpers.py)
-- Subprocess runner: [`integration/process_helper.py`](integration/process_helper.py)
-- Sommelier (flavor profile) LLM tests: [`integration_llm/test_sommelier.py`](integration_llm/test_sommelier.py)
+- Docker Compose helpers: [`integration/helpers/docker_helpers.py`](integration/helpers/docker_helpers.py)
+- Subprocess runner: [`integration/helpers/process_helper.py`](integration/helpers/process_helper.py)
+- Sommelier (flavor profile) LLM tests: [`integration/llm/test_sommelier.py`](integration/llm/test_sommelier.py)
 
 ## Execution prerequisites
 
@@ -41,22 +41,22 @@ cp coffeeAGNTCY/coffee_agents/corto/.env.example .env
 CI-equivalent (no secrets):
 
 ```bash
-uv run pytest tests/unit tests/integration -q
+uv run pytest tests/unit tests/integration/general -q
 ```
 
 LLM suite (needs `.env`, not run in CI):
 
 ```bash
-uv run pytest tests/integration_llm -q
+uv run pytest tests/integration/llm -q
 ```
 
 Single sommelier case:
 
 ```bash
-uv run pytest tests/integration_llm/test_sommelier.py::TestAuctionFlows::test_sommelier -s
+uv run pytest tests/integration/llm/test_sommelier.py::TestAuctionFlows::test_sommelier -s
 ```
 
-Do not run bare `pytest` or `pytest tests/` when both `integration/` and `integration_llm/` exist — session fixtures may load twice via `pytest_plugins`.
+Do not run bare `pytest tests/integration` without explicit subpaths — that would collect `integration/llm/`.
 
 ## Version overrides
 
