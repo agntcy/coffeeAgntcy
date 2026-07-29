@@ -3,8 +3,8 @@
 
 import os
 
+import config.config
 from a2a.types import AgentCapabilities, AgentCard, AgentInterface, AgentSkill
-from config.config import NATS_SERVER, SLIM_SERVER
 
 PORT = os.getenv("FARM_AGENT_PORT", "9997")
 AGENT_ID = "vietnam_coffee_farm"
@@ -32,15 +32,17 @@ AGENT_CARD = AgentCard(
     skills=[AGENT_SKILL],
     supportsAuthenticatedExtendedCard=False,
     preferred_transport="slim",
-    url=f"slim://{SLIM_SERVER}/lungo/agents/{AGENT_ID}",
+    url=f"slim://{config.config.SLIM_SERVER}/lungo/agents/{AGENT_ID}",
     additional_interfaces=[
         # slim-based group messaging and pub/sub transport
         AgentInterface(
-            transport="slim", url=f"slim://{SLIM_SERVER}/lungo/agents/{AGENT_ID}"
+            transport="slim",
+            url=f"slim://{config.config.SLIM_SERVER}/lungo/agents/{AGENT_ID}",
         ),
         # nats-based pub/sub transport for broadcasting to multiple subscriber
         AgentInterface(
-            transport="nats", url=f"nats://{NATS_SERVER}/lungo/agents/{AGENT_ID}"
+            transport="nats",
+            url=f"nats://{config.config.NATS_SERVER}/lungo/agents/{AGENT_ID}",
         ),
         # jsonrpc endpoint for direct client-agent communication over http
         AgentInterface(transport="jsonrpc", url=f"http://0.0.0.0:{PORT}"),
