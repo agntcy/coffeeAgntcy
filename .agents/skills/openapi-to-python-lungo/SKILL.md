@@ -1,7 +1,7 @@
 ---
 name: openapi-to-python-lungo
 description: >-
-  Generates and validates Python FastAPI routers and DTOs from the OpenAPI schemas in coffeeAGNTCY/coffee_agents/lungo/schema/openapi for the lungo subproject. Hand-maintained OpenAPI operation `responses` and the status-code drift manifest under tests/unit/openapi/ are updated when router behavior changes (see sibling api-documentation-lungo skill). Use when adding, removing, renaming, or modifying endpoints in any lungo OpenAPI document; when generating or regenerating files under coffeeAGNTCY/coffee_agents/lungo/api/<tag>/ (router.py, dtos.py); when validating that hand-edited handlers or DTOs still match the OpenAPI spec; or when scaffolding the OpenAPI unit tests for a router.
+  Generates and validates Python FastAPI routers and DTOs from the OpenAPI schemas in coffeeAGNTCY/coffee_agents/lungo/schema/openapi for the lungo subproject. When contracts change, the sibling api-documentation-lungo skill updates hand-maintained OpenAPI operation `responses` and `docs/workflow-instance_api.md`. Use when adding, removing, renaming, or modifying endpoints in any lungo OpenAPI document; when generating or regenerating files under coffeeAGNTCY/coffee_agents/lungo/api/<tag>/ (router.py, dtos.py); when validating that hand-edited handlers or DTOs still match the OpenAPI spec; or when scaffolding the OpenAPI unit tests for a router.
 ---
 
 # OpenAPI → FastAPI Generator and Validator (lungo)
@@ -32,7 +32,7 @@ The skill must remain **general** across tags: never hard-code endpoint names, s
   - the `create_<tag_snake>_router()` function signature and the presence of `tags=[<tag>]` on the `APIRouter(...)` construction (the skill ensures `tags=[<tag>]` is set, but it must **not** discard other constructor arguments - see below),
   - the route decorators (path, method, `response_model`, `status_code`, `summary`, etc.) and handler **signatures** (parameters, type annotations, return type).
 
-  The skill does **not** generate or reconcile per-operation OpenAPI `responses` (4xx/5xx) on FastAPI decorators. Error responses live in `schema/openapi/paths/*.yaml` and shared `components/responses`; update those and `tests/unit/openapi/fixtures/*_expected_status_codes.yaml` when handlers gain or lose `HTTPException` statuses (see api-documentation-lungo skill).
+  The skill does **not** generate or reconcile per-operation OpenAPI `responses` on FastAPI decorators. Operation `responses` (success and error statuses) are hand-maintained in `schema/openapi/paths/*.yaml` and shared `components/responses` — the **published contract**. Update those first, then handlers and `docs/workflow-instance_api.md` via the [api-documentation-lungo](../api-documentation-lungo/SKILL.md) skill when endpoints, payload shapes, or HTTP statuses change.
 
   The user owns:
   - the **bodies** of existing handlers,
@@ -41,7 +41,7 @@ The skill must remain **general** across tags: never hard-code endpoint names, s
   - any other arguments already passed to the `APIRouter(...)` constructor (e.g. `dependencies=[...]`, `prefix=`, `responses=`, `default_response_class=`) and the imports backing them. These encode router-level behavior (most notably authentication/authorization) that is not derivable from the OpenAPI document, so the skill must preserve them verbatim rather than overwrite them.
 
   When regenerating an existing handler, preserve its body verbatim. When decorator metadata or the signature must change to match the spec, rewrite the decorator and signature, but keep the body.
-- The OpenAPI tests under `tests/unit/openapi/` are **owned by this skill**. Regenerate them when missing or stale; do not preserve hand edits inside them **except** the curated status manifest and the status-code drift test module, which are maintained per [api-documentation-lungo](../api-documentation-lungo/SKILL.md) when handler behavior changes.
+- The OpenAPI tests under `tests/unit/openapi/` are **owned by this skill**. Regenerate them when missing or stale; do not preserve hand edits inside them **except** `openapi_spec_helpers.py` and the status-code conformance test module, which assert the hand-maintained spec is complete and that `api/<tag_snake>/` implementation uses only declared status codes (see [reference.md § Status-code conformance](reference.md)).
 
 ## Workflow selector
 
@@ -63,7 +63,7 @@ Track progress with this checklist:
 - [ ] 3. Regenerate dtos.py from scratch
 - [ ] 4. Reconcile router.py (preserve handler bodies)
 - [ ] 5. Generate or refresh tests under tests/unit/openapi/
-- [ ] 6. If handlers changed reachable HTTP statuses, update path YAML + status manifest (api-documentation-lungo)
+- [ ] 6. If contracts changed, update path YAML and `workflow-instance_api.md` ([api-documentation-lungo](../api-documentation-lungo/SKILL.md)); ensure handlers use only OpenAPI-declared statuses
 - [ ] 7. Run the tests and the linter
 ```
 
@@ -153,12 +153,12 @@ Ensure the directory `tests/unit/openapi/` exists. For each tag, generate (or re
 
 For the **agentic-workflows** tag, also keep (do not regenerate from templates):
 
-- `tests/unit/openapi/fixtures/agentic_workflows_expected_status_codes.yaml` — curated expected status set per `operationId`.
-- `tests/unit/openapi/test_agentic_workflow_openapi_status_codes.py` — asserts manifest ⊆ declared OpenAPI responses and global `security` for `401`.
+- `tests/unit/openapi/openapi_spec_helpers.py` - load resolved spec; collect declared vs implemented status codes.
+- `tests/unit/openapi/test_agentic_workflow_openapi_status_codes.py` - global `security`, every operation declares `responses`, implementation statuses ⊆ OpenAPI.
 
-When adding a **new tag** with non-trivial error surfaces, add a matching manifest + drift test using the agentic-workflows pair as a pattern; see [reference.md § Status-code drift test](reference.md).
+When adding a **new tag** with non-trivial error surfaces, add matching helpers/tests using the agentic-workflows pair as a pattern; see [reference.md § Status-code conformance](reference.md).
 
-Both standard tests resolve `schema/openapi/openapi.yaml` via `prance` and use the same `_HTTP_METHODS` filter shown in [reference.md § Test templates](reference.md). They must not assume any specific endpoint names — they compare full sets.
+Both standard tests resolve `schema/openapi/openapi.yaml` via `prance` and use the same `_HTTP_METHODS` filter shown in [reference.md § Test templates](reference.md). They must not assume any specific endpoint names - they compare full sets.
 
 ### Step 6 - Run tests and linter
 
@@ -179,7 +179,7 @@ Use this when the user has hand-edited `router.py` or `dtos.py` and wants confir
 - [ ] 2. Diff (path, METHOD) sets: spec vs FastAPI app
 - [ ] 3. For each spec operation, confirm the handler signature matches
 - [ ] 4. Confirm dtos.py would be regenerated identically
-- [ ] 5. Run the OpenAPI and router tests (includes status-manifest drift for agentic-workflows)
+- [ ] 5. Run the OpenAPI and router tests (includes OpenAPI status conformance for agentic-workflows)
 ```
 
 ### Step 1 - Resolve and validate the spec

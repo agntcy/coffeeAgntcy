@@ -2,8 +2,6 @@
 
 Interface documentation for the Lungo **Agentic Workflows API**: the catalog (patterns, use-cases, workflows), workflow-instance lifecycle and state, the internal event ingress, and the Server-Sent Events (SSE) stream. It also documents the wire formats - the canonical `event_v1` JSON Schema, SSE framing, and the NDJSON pattern-chat stream - and the response shapes a frontend needs to render the use-case list and workflow topology without guessing.
 
-This document satisfies the interface-definition tickets [#447 - API endpoints](https://github.com/agntcy/coffeeAgntcy/issues/447) and [#446 - workflow-instance state JSON schema](https://github.com/agntcy/coffeeAgntcy/issues/446).
-
 ## Authoritative sources
 
 The contracts described here are **published in-repo**. This document is a guide; the machine-readable specs are the source of truth.
@@ -24,7 +22,7 @@ Examples of complete and partial messages live alongside the schema:
 - Partial delta: [`../schema/jsonschemas/examples/event_v1_partial.json`](../schema/jsonschemas/examples/event_v1_partial.json)
 - Empty workflows: [`../schema/jsonschemas/examples/event_v1_empty_workflows.json`](../schema/jsonschemas/examples/event_v1_empty_workflows.json)
 
-> **Status.** The catalog list DTOs (patterns, use-cases, workflow summaries) are temporary API-layer types defined in [`../api/agentic_workflows/dtos.py`](../api/agentic_workflows/dtos.py). They are being folded into the canonical JSON Schema (tracked in [#468](https://github.com/agntcy/coffeeAgntcy/issues/468)) so OpenAPI, JSON Schema, and Pydantic remain a single source of truth. The instance/state and event shapes (`Workflow`, `WorkflowInstance`, `Topology`, `Event`) are already canonical in `event_v1.json`.
+> **Status.** The catalog list DTOs (patterns, use-cases, workflow summaries) are temporary API-layer types defined in [`../api/agentic_workflows/dtos.py`](../api/agentic_workflows/dtos.py). They are being folded into the canonical JSON Schema so OpenAPI, JSON Schema, and Pydantic remain a single source of truth. The instance/state and event shapes (`Workflow`, `WorkflowInstance`, `Topology`, `Event`) are already canonical in `event_v1.json`.
 
 ## Conventions
 
@@ -56,7 +54,7 @@ A missing or mismatched token yields `401 Unauthorized` ([`../api/agentic_workfl
 
 ### Storage model
 
-State is held **in-memory**, keyed by `workflow_instance_id`, with **no persistence** (per #447). The state API and SSE endpoint read from the store; the internal `POST .../events/` ingress (the A2A / MCP middleware path) writes to the store and notifies SSE subscribers. The store surface is defined in [`../common/workflow_instance_store/interfaces.py`](../common/workflow_instance_store/interfaces.py).
+State is held **in-memory**, keyed by `workflow_instance_id`, with **no persistence**. The state API and SSE endpoint read from the store; the internal `POST .../events/` ingress (the A2A / MCP middleware path) writes to the store and notifies SSE subscribers. The store surface is defined in [`../common/workflow_instance_store/interfaces.py`](../common/workflow_instance_store/interfaces.py).
 
 ### Default port
 
@@ -80,7 +78,7 @@ The standalone service listens on `:9105` ([`../api/agentic_workflows/server.py`
 | **(internal)** Post state update event | `POST /agentic-workflows/{workflow_name}/instances/{workflow_instance_id}/events/` | `204` |
 | SSE stream of instance events | `GET /agentic-workflows/{workflow_name}/instances/{workflow_instance_id}/events/stream` | `text/event-stream` |
 
-The endpoint set mirrors the table in [#447](https://github.com/agntcy/coffeeAgntcy/issues/447); `documentation/` and `patterns/{name}/chat` are additional surfaces present in the implementation.
+Beyond the core instance lifecycle rows above, the implementation also exposes `GET /agentic-workflows/{workflow_name}/documentation/` and `POST /patterns/{name}/chat`.
 
 ---
 
@@ -429,7 +427,7 @@ Status codes:
 
 ## Workflow-instance state JSON Schema (`event_v1`)
 
-The single, validatable contract shared by senders (agents, LangGraph adapters), the A2A state middleware, the internal event ingress, and the SSE stream is published at [`../schema/jsonschemas/event_v1.json`](../schema/jsonschemas/event_v1.json) (JSON Schema draft 2020-12, `$id` `https://github.com/agntcy/coffeeAgntcy/schema/jsonschemas/event_v1.json`). This is the schema requested in [#446](https://github.com/agntcy/coffeeAgntcy/issues/446); it is referenced by OpenAPI (`components/schemas.yaml` maps `Event`, `Workflow`, `WorkflowInstance`, `Topology`, `PartialTopology`, `InstanceId` to it) and mirrored in Pydantic ([`../schema/types/event.py`](../schema/types/event.py)). Validation helpers live in [`../schema/validate.py`](../schema/validate.py).
+The single, validatable contract shared by senders (agents, LangGraph adapters), the A2A state middleware, the internal event ingress, and the SSE stream is published at [`../schema/jsonschemas/event_v1.json`](../schema/jsonschemas/event_v1.json) (JSON Schema draft 2020-12, `$id` `https://github.com/agntcy/coffeeAgntcy/schema/jsonschemas/event_v1.json`). It is referenced by OpenAPI (`components/schemas.yaml` maps `Event`, `Workflow`, `WorkflowInstance`, `Topology`, `PartialTopology`, `InstanceId` to it) and mirrored in Pydantic ([`../schema/types/event.py`](../schema/types/event.py)). Validation helpers live in [`../schema/validate.py`](../schema/validate.py).
 
 ### Why one schema
 

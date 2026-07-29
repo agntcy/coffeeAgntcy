@@ -355,22 +355,23 @@ def test_<tag_snake>_spec_paths_match_fastapi_router() -> None:
     )
 ```
 
-## Status-code drift test (agentic-workflows)
+## Status-code conformance (agentic-workflows)
 
-Hand-maintained OpenAPI `responses` are not mirrored on FastAPI decorators. For the `agentic-workflows` tag, keep a YAML manifest of expected status codes per `operationId` and a pytest module that asserts every manifest code (except `401`, covered by global `security`) appears on the resolved operation's `responses`.
+Hand-maintained OpenAPI `responses` in `schema/openapi/` are the published contract. FastAPI decorators may omit error `responses=`; do not mirror the spec into `app.openapi()` for drift checks.
 
-Reference implementation (copy the structure for new tags; adjust manifest path and tag filter):
+Reference implementation:
 
-- Manifest: `tests/unit/openapi/fixtures/agentic_workflows_expected_status_codes.yaml`
-- Test: `tests/unit/openapi/test_agentic_workflow_openapi_status_codes.py`
+- Helpers: `tests/unit/openapi/openapi_spec_helpers.py`
+- Tests: `tests/unit/openapi/test_agentic_workflow_openapi_status_codes.py`
 
-The test should:
+The tests should:
 
-1. Load the manifest and resolved spec via `prance.ResolvingParser`.
-2. Assert top-level `security` requires `WorkflowApiKeyBearer` (or the tag's global scheme) so `401` need not be duplicated on each operation.
-3. For each manifest entry, find the operation by `operationId`, collect declared response status keys, and assert `expected - {401} ⊆ declared`.
+1. Load the resolved spec via `prance.ResolvingParser`.
+2. Assert top-level `security` requires `WorkflowApiKeyBearer` so `401` is contractually declared globally.
+3. Assert every `operationId` declares at least one entry under `responses`.
+4. AST-scan `api/agentic_workflows/*.py` for literal `status_code=` values (`HTTPException`, `Response`, decorators) and assert each is in the union of declared OpenAPI response codes (plus `422` for FastAPI validation).
 
-Update the manifest and `schema/openapi/paths/<tag>.yaml` together when handlers change; see [api-documentation-lungo/SKILL.md](../api-documentation-lungo/SKILL.md) § OpenAPI status codes.
+When HTTP statuses change: update `schema/openapi/paths/<tag>.yaml` **first**, then handlers and `docs/workflow-instance_api.md` per [api-documentation-lungo/SKILL.md § OpenAPI status codes](../api-documentation-lungo/SKILL.md#openapi-status-codes).
 
 ## Common pitfalls
 
