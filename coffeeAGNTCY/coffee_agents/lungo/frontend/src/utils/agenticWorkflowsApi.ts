@@ -13,6 +13,7 @@
  */
 
 import { agenticWorkflowsAuthHeaders } from "@/api/agenticWorkflowsClient"
+import type { WorkflowSummaryMapResponse } from "@/api/agenticWorkflowsTypes"
 import { fetchJson, isHttpError } from "@/api/http"
 import {
   buildAgenticWorkflowsCatalogRequest,
@@ -55,30 +56,6 @@ export interface PatternCategoryDocumentation {
   title: string | null
   full_markdown: string
 }
-
-/**
- * JSON shape of one catalog map entry before `parseWorkflowSummaryRow`.
- *
- * OpenAPI `WorkflowSummary` requires `supports_sse` and `supports_streaming`, and
- * `chat_api_target` must be a known enum value or null. Older catalog payloads may
- * omit the capability fields or send an invalid `chat_api_target` string; we type
- * that loose wire data here, then normalize into {@link WorkflowSummary} (same fields
- * as the API model once defaults and enum parsing are applied). The UI uses only
- * `WorkflowSummary`, not this type.
- */
-export interface WorkflowSummaryWire {
-  name: string
-  pattern: string
-  pattern_category?: string
-  use_case: string
-  scenario: string
-  supports_sse?: boolean
-  supports_streaming?: boolean
-  chat_api_target?: string | null
-}
-
-/** OpenAPI `WorkflowSummaryMapResponse` for `GET /agentic-workflows/`. */
-export type WorkflowSummaryMapResponse = Record<string, WorkflowSummaryWire>
 
 /** Log label for catalog requests (matches router mount). */
 export const AGENTIC_WORKFLOWS_CATALOG_LOG_PATH =
@@ -130,9 +107,7 @@ const isPlainObjectRecord = (
  * Normalize one catalog row; returns null when required string fields are missing.
  * Missing `supports_sse` / `supports_streaming` are treated as legacy (default false).
  */
-const parseWorkflowSummaryRow = (
-  value: WorkflowSummaryWire | unknown,
-): WorkflowSummary | null => {
+const parseWorkflowSummaryRow = (value: unknown): WorkflowSummary | null => {
   if (value === null || typeof value !== "object") return null
   const obj = value as Record<string, unknown>
   if (

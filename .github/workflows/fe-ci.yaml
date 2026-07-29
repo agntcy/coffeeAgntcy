@@ -7,10 +7,14 @@ on:
     branches: [main]
     paths:
       - "coffeeAGNTCY/coffee_agents/lungo/frontend/**"
+      - "coffeeAGNTCY/coffee_agents/lungo/schema/openapi/**"
+      - "coffeeAGNTCY/coffee_agents/lungo/schema/jsonschemas/event_v1.json"
   push:
     branches: [main]
     paths:
       - "coffeeAGNTCY/coffee_agents/lungo/frontend/**"
+      - "coffeeAGNTCY/coffee_agents/lungo/schema/openapi/**"
+      - "coffeeAGNTCY/coffee_agents/lungo/schema/jsonschemas/event_v1.json"
 
 jobs:
   frontend-build:
@@ -31,6 +35,9 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
+
+      - name: Verify OpenAPI generated types
+        run: npm run check:api-types
 
       - name: Run frontend checks
         run: npm run check
