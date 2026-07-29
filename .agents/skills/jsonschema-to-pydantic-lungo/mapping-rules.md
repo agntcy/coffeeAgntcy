@@ -57,7 +57,7 @@ Do not emit a separate `@field_validator` that loops the keys checking the patte
 Schema:
 
 ```json
-"partial_regular_node": {
+"partial_base_node": {
   "type": "object",
   "required": ["id", "operation"],
   "properties": {
@@ -70,9 +70,9 @@ Schema:
   },
   "additionalProperties": true
 },
-"regular_node": {
+"base_node": {
   "allOf": [
-    { "$ref": "#/$defs/partial_regular_node" },
+    { "$ref": "#/$defs/partial_base_node" },
     {
       "type": "object",
       "required": ["id", "operation", "type", "label", "size", "layer_index"]
@@ -84,7 +84,7 @@ Schema:
 Emit two unrelated classes (no inheritance):
 
 ```python
-class PartialRegularNode(BaseModel):
+class PartialBaseNode(BaseModel):
     model_config = ConfigDict(extra="allow")
 
     id: NodeId
@@ -95,7 +95,7 @@ class PartialRegularNode(BaseModel):
     layer_index: float = 0
 
 
-class RegularNode(BaseModel):  # NOT (PartialRegularNode)
+class BaseNode(BaseModel):  # NOT (PartialBaseNode)
     model_config = ConfigDict(extra="allow")
 
     id: NodeId
@@ -106,7 +106,7 @@ class RegularNode(BaseModel):  # NOT (PartialRegularNode)
     layer_index: float
 ```
 
-Why no subclassing: `type: ... | None = None` from `PartialRegularNode` would leak into `RegularNode` and `RegularNode(id=..., operation=...)` would silently validate.
+Why no subclassing: `type: ... | None = None` from `PartialBaseNode` would leak into `BaseNode` and `BaseNode(id=..., operation=...)` would silently validate.
 
 ## §D — `anyOf` discriminated by sibling-key presence
 
@@ -129,13 +129,13 @@ Schema (the canonical lungo case for `partial_node` / `node`). The agent-flavour
 },
 "partial_agent_node": {
   "allOf": [
-    { "$ref": "#/$defs/partial_regular_node" },
+    { "$ref": "#/$defs/partial_base_node" },
     { "$ref": "#/$defs/partial_node_agent_extension" }
   ]
 },
 "agent_node": {
   "allOf": [
-    { "$ref": "#/$defs/regular_node" },
+    { "$ref": "#/$defs/base_node" },
     { "$ref": "#/$defs/node_agent_extension" }
   ]
 },
@@ -143,7 +143,7 @@ Schema (the canonical lungo case for `partial_node` / `node`). The agent-flavour
   "anyOf": [
     {
       "allOf": [
-        { "$ref": "#/$defs/partial_regular_node" },
+        { "$ref": "#/$defs/partial_base_node" },
         { "not": { "anyOf": [
           { "required": ["agent_record_uri"] },
           { "required": ["stable_agent_id"] }
@@ -153,44 +153,44 @@ Schema (the canonical lungo case for `partial_node` / `node`). The agent-flavour
     { "$ref": "#/$defs/partial_agent_node" }
   ]
 },
-"node": { /* same shape: regular branch + $ref agent_node */ },
+"node": { /* same shape: base branch + $ref agent_node */ },
 "topology_node_item": {
   "anyOf": [{ "$ref": "#/$defs/partial_node" }, { "$ref": "#/$defs/node" }]
 }
 ```
 
-Step 1 — emit the four leaf classes. Names come straight from the `$defs` keys (no merged-class invention — see [`SKILL.md`](SKILL.md)). The agent variants subclass their regular counterparts because the extension is purely *additive* fields (no required-vs-optional drift, unlike §C):
+Step 1 — emit the four leaf classes. Names come straight from the `$defs` keys (no merged-class invention — see [`SKILL.md`](SKILL.md)). The agent variants subclass their base counterparts because the extension is purely *additive* fields (no required-vs-optional drift, unlike §C):
 
 ```python
-class PartialAgentNode(PartialRegularNode):
+class PartialAgentNode(PartialBaseNode):
     agent_record_uri: Annotated[str, Field(min_length=1)]
     stable_agent_id: StableAgentId | None = None
 
 
-class AgentNode(RegularNode):
+class AgentNode(BaseNode):
     agent_record_uri: Annotated[str, Field(min_length=1)]
     stable_agent_id: StableAgentId
 ```
 
 `partial_node_agent_extension` and `node_agent_extension` are **not** emitted as standalone classes: they are only ever referenced inside the `allOf`s that build `partial_agent_node` / `agent_node`, so their fields appear directly on the agent classes.
 
-Step 2 — discriminator that mirrors **only** the sibling-key presence test that the regular branch's `not { anyOf: [...required...] }` clause is making:
+Step 2 — discriminator that mirrors **only** the sibling-key presence test that the base branch's `not { anyOf: [...required...] }` clause is making:
 
 ```python
-_REGULAR_TAG = "regular"
+_BASE_TAG = "base"
 _AGENT_TAG = "agent"
 
 
 def _node_kind_discriminator(value: Any) -> str | None:
     if isinstance(value, (AgentNode, PartialAgentNode)):
         return _AGENT_TAG
-    if isinstance(value, (RegularNode, PartialRegularNode)):
-        return _REGULAR_TAG
+    if isinstance(value, (BaseNode, PartialBaseNode)):
+        return _BASE_TAG
     if not isinstance(value, dict):
         return None
     if "agent_record_uri" in value or "stable_agent_id" in value:
         return _AGENT_TAG
-    return _REGULAR_TAG
+    return _BASE_TAG
 ```
 
 Step 3 — emit each `anyOf`-shaped `$def` as an `Annotated[Union[...], Discriminator(...)]`. Inside each tagged branch use a plain `Union[Full, Partial]` and let smart-union pick the right one based on field population:
@@ -198,7 +198,7 @@ Step 3 — emit each `anyOf`-shaped `$def` as an `Annotated[Union[...], Discrimi
 ```python
 TopologyNodeItem = Annotated[
     Union[
-        Annotated[Union[RegularNode, PartialRegularNode], Tag(_REGULAR_TAG)],
+        Annotated[Union[BaseNode, PartialBaseNode], Tag(_BASE_TAG)],
         Annotated[Union[AgentNode, PartialAgentNode], Tag(_AGENT_TAG)],
     ],
     Discriminator(_node_kind_discriminator),
@@ -206,7 +206,7 @@ TopologyNodeItem = Annotated[
 
 PartialNode = Annotated[
     Union[
-        Annotated[PartialRegularNode, Tag(_REGULAR_TAG)],
+        Annotated[PartialBaseNode, Tag(_BASE_TAG)],
         Annotated[PartialAgentNode, Tag(_AGENT_TAG)],
     ],
     Discriminator(_node_kind_discriminator),
@@ -214,7 +214,7 @@ PartialNode = Annotated[
 
 Node = Annotated[
     Union[
-        Annotated[RegularNode, Tag(_REGULAR_TAG)],
+        Annotated[BaseNode, Tag(_BASE_TAG)],
         Annotated[AgentNode, Tag(_AGENT_TAG)],
     ],
     Discriminator(_node_kind_discriminator),
@@ -225,8 +225,8 @@ Node = Annotated[
 
 | Input | Routes to | Outcome |
 |---|---|---|
-| All regular fields, no extension keys | `RegularNode` | OK |
-| Only `id`+`operation` | `PartialRegularNode` | OK |
+| All base fields, no extension keys | `BaseNode` | OK |
+| Only `id`+`operation` | `PartialBaseNode` | OK |
 | All fields + `agent_record_uri` + valid `stable_agent_id` | `AgentNode` | OK |
 | `agent_record_uri` only (partial) | `PartialAgentNode` | OK |
 | `stable_agent_id` only, no `agent_record_uri` | agent branch → `PartialAgentNode` | rejected: `agent_record_uri` is required |
@@ -236,10 +236,10 @@ The error messages come straight from each branch's own `Field` constraints — 
 
 ### Anti-pattern this replaces
 
-The earlier (incorrect) approach was an `@model_validator(mode="after")` on `PartialRegularNode` / `RegularNode` that walked `__pydantic_extra__` and raised if `agent_record_uri` or `stable_agent_id` had leaked through `extra="allow"`. That approach:
+The earlier (incorrect) approach was an `@model_validator(mode="after")` on `PartialBaseNode` / `BaseNode` that walked `__pydantic_extra__` and raised if `agent_record_uri` or `stable_agent_id` had leaked through `extra="allow"`. That approach:
 
 - Required a parallel `_AGENT_EXTENSION_FIELDS` allow-list.
 - Hid the schema's `pattern` / `min_length` errors behind a generic message.
-- Coupled `RegularNode` to knowledge of its sibling extension class.
+- Coupled `BaseNode` to knowledge of its sibling extension class.
 
 The discriminator solves all three problems at once: routing alone is sufficient because each variant's own field constraints handle the rest.

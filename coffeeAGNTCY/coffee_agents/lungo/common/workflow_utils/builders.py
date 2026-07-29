@@ -23,7 +23,7 @@ from schema.types import (
 	Operation,
 	PartialEdge,
 	PartialNode,
-	PartialRegularNode,
+	PartialBaseNode,
 	PartialTopology,
 	Size,
 	Topology,
@@ -67,7 +67,7 @@ def make_node(
 		node_extras["agent_record_uri"] = f"agent-card://{stable_agent_id.removeprefix('agent://')}"
 	if extras:
 		node_extras.update(extras)
-	return PartialRegularNode(
+	return PartialBaseNode(
 		id=NodeId(node_id),
 		operation=operation,
 		type=node_type,
