@@ -4,8 +4,8 @@
 
 The suite validates:
 
-- Auction Supervisor flows (inventory, orders, invalid prompts) over SLIM and NATS — LLM cases in `tests/integration/llm/`, docker-only checks in `tests/integration/general/`.
-- Logistics Supervisor (farm, accountant, shipper, helpdesk) — health in `tests/integration/general/`, prompt flows in `tests/integration/llm/`.
+- Auction Supervisor flows (inventory, orders, invalid prompts) over SLIM and NATS: LLM cases in `tests/integration/llm/`, docker-only checks in `tests/integration/general/`.
+- Logistics Supervisor (farm, accountant, shipper, helpdesk): health in `tests/integration/general/`, prompt flows in `tests/integration/llm/`.
 - Agentic Workflows API (unit), subprocess uvicorn/SSE live tests (`tests/integration/live/`).
 - Agent process orchestration, startup readiness gating, and HTTP supervisor APIs.
 
