@@ -39,8 +39,6 @@ def is_safe_workflow_documentation_slug(slug: str) -> bool:
 def workflow_name_to_documentation_slug(name: str) -> str:
     """Map catalog ``Workflow.name`` to markdown basename (without ``.md``)."""
     s = name.strip().lower()
-    for ch in ("\u2013", "\u2014", "\u2212"):  # en dash, em dash, minus sign
-        s = s.replace(ch, "_")
     s = s.replace(" ", "_")
     s = s.replace("(", "_").replace(")", "_")
     s = re.sub(r"_+", "_", s)
