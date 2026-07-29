@@ -1,6 +1,6 @@
 # Advanced Usage
 
-This document covers advanced features of the Agent Recruiter — benchmarking, caching, agentic evaluation internals, and development tooling.
+This document covers advanced features of the Agent Recruiter - benchmarking, caching, agentic evaluation internals, and development tooling.
 
 ## ADK Web Development
 

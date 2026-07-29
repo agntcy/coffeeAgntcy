@@ -161,7 +161,7 @@ def _shutdown_otel_sdk():
     """Flush and shutdown OTEL/ioa_observe in this process before the collector stops.
 
     Metrics export uses a background thread; shut it down while localhost:4318 is still up.
-    ioa_observe registers its own atexit flush — call this before ``docker compose down``.
+    ioa_observe registers its own atexit flush - call this before ``docker compose down``.
     """
     global _otel_shutdown_done
     if _otel_shutdown_done:

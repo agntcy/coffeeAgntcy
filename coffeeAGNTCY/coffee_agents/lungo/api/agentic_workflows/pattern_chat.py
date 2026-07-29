@@ -185,7 +185,7 @@ def _extract_text_chunks(event) -> list[str]:
     """Return the text payload(s) of a runner event, or [] for non-text events.
 
     Tool-call events (function_call) and tool-result events (function_response)
-    are filtered out — the FE-visible stream only carries the model's text.
+    are filtered out - the FE-visible stream only carries the model's text.
     """
     if event.get_function_calls() or event.get_function_responses():
         return []

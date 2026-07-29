@@ -14,7 +14,7 @@
 #        side, e.g. `LLM_MODEL=`) and all `:-` defaults are kept EXACTLY as upstream.
 #        The prefix keeps these vars from colliding with / leaking into Lungo services, which
 #        load the shared .env via `env_file`.
-#     2. `build:` blocks are dropped (no IoC source in this repo) — published images only.
+#     2. `build:` blocks are dropped (no IoC source in this repo) - published images only.
 #     3. All services share a single `ioc` profile (per issue #700) instead of upstream's
 #        full-stack / mgmt-plane / data-plane profiles.
 #   When upstream updates, diff their docker-compose.yml and re-apply changes here following

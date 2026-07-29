@@ -91,7 +91,7 @@ export function useWorkflowGraphTopologySync({
         const s = sessionRef.current
         if (!s || s.refetchSeq !== seq) return
         if (attempt >= 2) {
-          // Logical label for topology refetch exhaustion — see urls.ts.
+          // Logical label for topology refetch exhaustion - see urls.ts.
           const endpointLabel = "agentic-workflows/refetch-topology"
           const userMessage =
             "Could not refresh the workflow graph. It may be outdated."

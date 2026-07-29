@@ -28,10 +28,10 @@ organized, orchestrated, and communicate to fulfill a capability. It answers:
 
 A couple architectural (agentic design) patterns used throughout CoffeeAGNTCY:
 
-1. Point-to-point (agent-to-agent): Direct A2A client–server interaction. No central coordinator. One agent (client)
+1. Point-to-point (agent-to-agent): Direct A2A client-server interaction. No central coordinator. One agent (client)
    sends requests to another (server); no broadcast, no peer group or coordination. Example: Corto Sommelier/coffee
    grading.
-2. Supervisor–workers: One supervisor agent holds the agentic workflow (e.g. LangGraph), receives user input, and
+2. Supervisor-workers: One supervisor agent holds the agentic workflow (e.g. LangGraph), receives user input, and
    delegates to worker agents via A2A. Workers do not coordinate with each other; they respond to the supervisor.
    Supports broadcast (e.g. “inventory from all farms”) and unicast (e.g. “order at Colombia”). Example: Lungo
    auction/coffee purchase and Lungo recruiter/capability discovery.
@@ -51,13 +51,13 @@ A concrete, goal-oriented way an agentic system is used:
 - what outcome they want, and
 - the main flow of interaction.
 
-It describes what the system does in an agent-based setting—the capability or scenario.
+It describes what the system does in an agent-based setting-the capability or scenario.
 
 **In CoffeeAGNTCY we narrow that idea and tie it to architecture, an (agentic) use-case is a concrete, runnable
 implementation of a distinct capability (e.g. run an auction, fulfill a logistics order, recruit/evaluate agents, act as
 a sommelier).**
 
-Each **(agentic) use-case** is built on exactly one architectural **pattern** — it’s an implementation
+Each **(agentic) use-case** is built on exactly one architectural **pattern** - it’s an implementation
 of that pattern to achieve a concrete goal within a defined context.
 
 The following example (agentic) use-cases are existing in CoffeeAGNTCY:

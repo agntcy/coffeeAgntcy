@@ -1,7 +1,7 @@
 # Copyright AGNTCY Contributors (https://github.com/agntcy)
 # SPDX-License-Identifier: Apache-2.0
 
-# All path items for the Agentic Workflows API — single surface.
+# All path items for the Agentic Workflows API - single surface.
 
 paths:
   /:

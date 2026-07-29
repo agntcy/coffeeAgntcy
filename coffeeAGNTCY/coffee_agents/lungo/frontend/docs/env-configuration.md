@@ -1,4 +1,4 @@
-# Lungo frontend — environment configuration
+# Lungo frontend - environment configuration
 
 How `VITE_*` values are produced, loaded, and read in local dev, Docker, and Kubernetes.
 
@@ -12,7 +12,7 @@ Every config lookup goes through `src/utils/env.ts`, then usually `src/urls.ts`:
 3. LUNGO_FRONTEND_URLS.apiBaseDefaults in urls.ts  ← hardcoded localhost fallbacks
 ```
 
-`env.ts` implements steps 1–2:
+`env.ts` implements steps 1-2:
 
 ```ts
 runtimeEnv(key) ?? import.meta.env[key]
@@ -24,7 +24,7 @@ runtimeEnv(key) ?? import.meta.env[key]
 env.get("VITE_GRAFANA_URL") ?? apiBaseDefaults.grafana
 ```
 
-App code should use `@/urls` helpers (or `env.get`) — not `import.meta.env` directly.
+App code should use `@/urls` helpers (or `env.get`) - not `import.meta.env` directly.
 
 ---
 
@@ -152,8 +152,8 @@ configs:
 
 **Merge helper** (`templates/_helpers.tpl`):
 
-- `lungo-ui.mergedRuntimeEnv` — builds a JSON object from `configs.env.data`
-- `lungo-ui.envConfigJs` — emits `window.__ENV__ = <json>;`
+- `lungo-ui.mergedRuntimeEnv` - builds a JSON object from `configs.env.data`
+- `lungo-ui.envConfigJs` - emits `window.__ENV__ = <json>;`
 
 **Output:** ConfigMap `lungo-ui-env-configmap`, data key `env-config.js`
 

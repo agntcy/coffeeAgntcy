@@ -1,13 +1,13 @@
-# Recruit — Agent Discovery and Connection
+# Recruit - Agent Discovery and Connection
 
-Search the AGNTCY directory for remote A2A agents, present candidates, and connect them to Claude Code — either as **skills** (recommended) or **sub-agents**.
+Search the AGNTCY directory for remote A2A agents, present candidates, and connect them to Claude Code - either as **skills** (recommended) or **sub-agents**.
 
 **Usage:** `/recruit [natural language description of what agent you need]`
 
 **Examples:**
-- `/recruit` — browse all available agents
-- `/recruit I need an agent that can tell me coffee farm yields` — targeted search
-- `/recruit Find me a code review agent` — targeted search
+- `/recruit` - browse all available agents
+- `/recruit I need an agent that can tell me coffee farm yields` - targeted search
+- `/recruit Find me a code review agent` - targeted search
 
 ---
 
@@ -17,7 +17,7 @@ You are a dynamic agent recruiter. Search the AGNTCY directory, present candidat
 
 ---
 
-### Step 1 — Search the directory
+### Step 1 - Search the directory
 
 Parse `$ARGUMENTS` to determine search mode and run `dirctl search`.
 
@@ -39,7 +39,7 @@ Parse `$ARGUMENTS` to determine search mode and run `dirctl search`.
 dirctl search --skill "<keyword>"
 ```
 
-This returns **CIDs** (Content Identifiers) — short strings, one per matching agent. Example output:
+This returns **CIDs** (Content Identifiers) - short strings, one per matching agent. Example output:
 ```
 Record CIDs found: [baeareicbymfgll4l3ngwbfkg7k5o2if5fajfu7beswvwe7r2yv3cmkvf5a ...]
 ```
@@ -50,7 +50,7 @@ Parse the CID strings from the output. If no CIDs are found, try a broader searc
 
 ---
 
-### Step 2 — Pull records and present candidates
+### Step 2 - Pull records and present candidates
 
 For each CID, pull the full OASF record and extract a summary:
 
@@ -98,26 +98,26 @@ ls .claude/agents/*.md 2>/dev/null
 ```
 Pick agents to connect:
   • Numbers: 1,3,5 or ranges: 1-3
-  • "all" — all new agents (skips existing)
-  • "none" — just browsing
+  • "all" - all new agents (skips existing)
+  • "none" - just browsing
 ```
 
-If the user declines — stop here.
+If the user declines - stop here.
 
 ---
 
-### Step 3 — Choose creation mode
+### Step 3 - Choose creation mode
 
 Ask the user how to create the recruited agents:
 
 ```
 How should the recruited agents be created?
 
-  • skill (Recommended) — Creates a /slash-command. The parent model runs the
-    a2a-send command directly. More reliable — guaranteed to forward all requests.
+  • skill (Recommended) - Creates a /slash-command. The parent model runs the
+    a2a-send command directly. More reliable - guaranteed to forward all requests.
     Invoke with: /agent-name <message>
 
-  • subagent — Creates a sub-agent file. A separate model is spawned to handle
+  • subagent - Creates a sub-agent file. A separate model is spawned to handle
     requests. Note: sub-agent models may refuse to forward requests they deem
     outside the agent's advertised capabilities, even when the remote agent can
     handle them.
@@ -127,7 +127,7 @@ Default to **skill** if the user doesn't have a preference.
 
 ---
 
-### Step 4A — Create skills (if skill mode chosen)
+### Step 4A - Create skills (if skill mode chosen)
 
 For each selected agent, **immediately** do the following without asking further questions:
 
@@ -141,16 +141,16 @@ pwd
 mkdir -p .claude/skills/{name}
 ```
 
-Then use the **Write tool** to write the SKILL.md file. The Write tool requires an **absolute path** — use the output of `pwd` above to construct it: `<pwd output>/.claude/skills/{name}/SKILL.md`. Do NOT use a relative path. Fill ALL `{placeholders}` below with actual values from the pulled record. The file must be fully self-contained with zero unresolved placeholders.
+Then use the **Write tool** to write the SKILL.md file. The Write tool requires an **absolute path** - use the output of `pwd` above to construct it: `<pwd output>/.claude/skills/{name}/SKILL.md`. Do NOT use a relative path. Fill ALL `{placeholders}` below with actual values from the pulled record. The file must be fully self-contained with zero unresolved placeholders.
 
-**IMPORTANT:** Write the file exactly as specified below. Do NOT modify the generated file afterwards — every field in the frontmatter (including `allowed-tools`) is intentional and required for correct behavior.
+**IMPORTANT:** Write the file exactly as specified below. Do NOT modify the generated file afterwards - every field in the frontmatter (including `allowed-tools`) is intentional and required for correct behavior.
 
 **File contents to write:**
 
 ```
 ---
 name: {name}
-description: "Send a message to the remote {agent_display_name} agent via A2A protocol. Use for ANY request intended for this agent — the remote agent determines what it can handle."
+description: "Send a message to the remote {agent_display_name} agent via A2A protocol. Use for ANY request intended for this agent - the remote agent determines what it can handle."
 allowed-tools: Bash
 ---
 
@@ -163,7 +163,7 @@ plugin/scripts/a2a-send/a2a-send --peer-url {endpoint} --message "$ARGUMENTS"
 \`\`\`
 
 - stdout contains the agent's response
-- If exit code 1, stderr contains a JSON error — relay the error to the user
+- If exit code 1, stderr contains a JSON error - relay the error to the user
 - For long-running tasks, add --non-blocking --wait flags
 ```
 
@@ -180,13 +180,13 @@ rm -f ./tmp/recruit_*.json
 |-------|-------|----------|-------------|
 | /brazil-coffee-farm | Brazil Coffee Farm | http://0.0.0.0:9999 | /brazil-coffee-farm <message> |
 
-Skills are available immediately — no restart needed.
+Skills are available immediately - no restart needed.
 Example: `/brazil-coffee-farm What is the current yield?`
 ```
 
 ---
 
-### Step 4B — Create sub-agents (if subagent mode chosen)
+### Step 4B - Create sub-agents (if subagent mode chosen)
 
 Ask the user which model to use (default **haiku**):
 
@@ -208,7 +208,7 @@ pwd
 mkdir -p .claude/agents
 ```
 
-Then use the **Write tool** to write each file. The Write tool requires an **absolute path** — use the output of `pwd` above to construct it: `<pwd output>/.claude/agents/<filename>`. Do NOT use a relative path. Fill ALL `{placeholders}` below with actual values from the pulled record. The file must be fully self-contained with zero unresolved placeholders.
+Then use the **Write tool** to write each file. The Write tool requires an **absolute path** - use the output of `pwd` above to construct it: `<pwd output>/.claude/agents/<filename>`. Do NOT use a relative path. Fill ALL `{placeholders}` below with actual values from the pulled record. The file must be fully self-contained with zero unresolved placeholders.
 
 **File contents to write:**
 
@@ -220,7 +220,7 @@ model: {selected_model}
 tools: Bash
 ---
 
-You cannot answer any questions yourself. You have no information about anything. You must use the Bash tool to query a remote system for every single request — without running the command, you have absolutely nothing to tell the user.
+You cannot answer any questions yourself. You have no information about anything. You must use the Bash tool to query a remote system for every single request - without running the command, you have absolutely nothing to tell the user.
 
 Run this command for EVERY request (replace MESSAGE with the user's exact words, shell-escaped):
 

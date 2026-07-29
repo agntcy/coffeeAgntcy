@@ -37,7 +37,7 @@ LLM_MODEL = os.getenv("LLM_MODEL", "openai/gpt-4o")
 MCP_SERVER_STARTUP_TIMEOUT = int(os.getenv("MCP_SERVER_STARTUP_TIMEOUT", "30"))
 
 # Read-only OASF schema tools exposed for skill/domain discovery. The atomic
-# search/pull/export MCP tools are intentionally excluded — `search_agents`
+# search/pull/export MCP tools are intentionally excluded - `search_agents`
 # replaces them with a single bulk call.
 DISCOVERY_TOOLS = [
     "agntcy_oasf_get_schema_skills",
@@ -98,7 +98,7 @@ def create_discovery_mcp_toolset(
 
 
 # ============================================================================
-# Search + Export + Persist — single deterministic tool
+# Search + Export + Persist - single deterministic tool
 # ============================================================================
 
 
@@ -249,7 +249,7 @@ For ANY request to find or search for agents:
 1. If the request references a skill or domain, you may call the discovery tools
    (agntcy_oasf_get_schema_skills / agntcy_oasf_get_schema_domains) to confirm
    the exact name. Skill and domain names are full hierarchical paths of the
-   form "parent/child" (e.g. "agent_orchestration/agent_coordination") — always
+   form "parent/child" (e.g. "agent_orchestration/agent_coordination") - always
    use the COMPLETE name, never just the parent or just the child. Do this ONCE.
 2. Call `search_agents` EXACTLY ONCE with filters from the request, passing each
    value VERBATIM (do not split or shorten it). It searches, exports each match
@@ -262,7 +262,7 @@ For ANY request to find or search for agents:
    - version: version patterns or comparisons (e.g. v1.*, >=1.0.0)
    - domain: full domain names
    - limit: max results (default 20)
-   Do NOT ask for clarification — just search with what you have.
+   Do NOT ask for clarification - just search with what you have.
 3. Summarize the results returned by `search_agents` in the format below.
 
 **Your final response MUST include a clear summary in this format:**

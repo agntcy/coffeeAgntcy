@@ -82,7 +82,7 @@ class WorkflowInstanceMapResponse(RootModel[dict[str, WorkflowInstance]]):
     """Workflow instances keyed by InstanceId URI."""
 ```
 
-> **Known exception — flag in output.** `propertyNames` is **not enforced at the DTO layer**. Re-implementing the constraint here (for instance copying the `InstanceId` regex from `schema/types/event.py` into a `field_validator`) would duplicate logic that already lives in `schema/types/` and silently drift the next time the canonical type changes. The skill deliberately relies on the value type's own validation: a `WorkflowInstance` already validates its `id: InstanceId` field, so any caller that constructs a value with a mismatched key gets a runtime check on the nested id (and the cross-check that key equals nested id is, today, the responsibility of the value type itself — see `Workflow.instances` in `schema/types/event.py`). When generating or validating a DTO with a constrained `propertyNames`, mention this exception in the output and recommend revisiting it once `schema/types/` exposes its key patterns as importable constants (which would let the skill enforce the constraint without duplication).
+> **Known exception - flag in output.** `propertyNames` is **not enforced at the DTO layer**. Re-implementing the constraint here (for instance copying the `InstanceId` regex from `schema/types/event.py` into a `field_validator`) would duplicate logic that already lives in `schema/types/` and silently drift the next time the canonical type changes. The skill deliberately relies on the value type's own validation: a `WorkflowInstance` already validates its `id: InstanceId` field, so any caller that constructs a value with a mismatched key gets a runtime check on the nested id (and the cross-check that key equals nested id is, today, the responsibility of the value type itself - see `Workflow.instances` in `schema/types/event.py`). When generating or validating a DTO with a constrained `propertyNames`, mention this exception in the output and recommend revisiting it once `schema/types/` exposes its key patterns as importable constants (which would let the skill enforce the constraint without duplication).
 
 Why never `dict[InstanceId, V]` (or any other Pydantic `RootModel` subclass as the key):
 
@@ -153,12 +153,12 @@ def create_<tag_snake>_router() -> APIRouter:
 
 ### Preserving existing `APIRouter(...)` arguments
 
-`tags=[...]` is the only constructor argument the skill derives from the OpenAPI document. Everything else passed to `APIRouter(...)` in existing code is **user-owned router behavior** and must be carried over verbatim on regeneration — the spec cannot tell you it is there, so dropping it silently changes runtime behavior.
+`tags=[...]` is the only constructor argument the skill derives from the OpenAPI document. Everything else passed to `APIRouter(...)` in existing code is **user-owned router behavior** and must be carried over verbatim on regeneration - the spec cannot tell you it is there, so dropping it silently changes runtime behavior.
 
 The most important case is router-level `dependencies=`, commonly an authentication/authorization gate:
 
 ```python
-from api.<tag_snake>.auth import require_workflow_api_key  # whatever the existing import is — keep it
+from api.<tag_snake>.auth import require_workflow_api_key  # whatever the existing import is - keep it
 from fastapi import APIRouter, Depends
 
 
@@ -360,6 +360,6 @@ def test_<tag_snake>_spec_paths_match_fastapi_router() -> None:
 - `prance` may import `requests` and emit a `UserWarning`. Suppress it exactly as shown in the templates; the project's pytest config promotes warnings to errors.
 - Do not strip a trailing slash from a path. `/patterns/` and `/patterns` are different operations to FastAPI.
 - `additionalProperties: false` must always become `ConfigDict(extra="forbid")`; omitting it lets clients smuggle fields through and silently break the spec contract.
-- For map-style responses, use `RootModel[dict[K, V]]`, not a wrapper class with a single `root: dict[...]` field — the JSON shape differs.
+- For map-style responses, use `RootModel[dict[K, V]]`, not a wrapper class with a single `root: dict[...]` field - the JSON shape differs.
 - When the user added per-tag helpers (constants, helper functions) outside the `create_<tag_snake>_router` function, leave them alone and preserve their imports.
 - Never strip arguments off an existing `APIRouter(...)`. The skill only owns `tags=[...]`; `dependencies=[...]` (auth/authz gates and the like), `prefix=`, `responses=`, etc. are user-owned and must be preserved verbatim, including their imports. See [§ Preserving existing `APIRouter(...)` arguments](#preserving-existing-apirouter-arguments).

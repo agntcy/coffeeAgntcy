@@ -1,6 +1,6 @@
 # dirctl Search & Pull
 
-## Search — find agents (returns CIDs)
+## Search - find agents (returns CIDs)
 
 ```bash
 # Search by skill
@@ -24,7 +24,7 @@ Output: a list of CIDs (Content Identifiers), e.g.:
 Record CIDs found: [baeareicbymfgll4l3ngwbfkg7k5o2if5fajfu7beswvwe7r2yv3cmkvf5a ...]
 ```
 
-## Pull — fetch a full OASF record by CID
+## Pull - fetch a full OASF record by CID
 
 ```bash
 dirctl pull <CID> --output json

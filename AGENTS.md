@@ -4,9 +4,9 @@
 
 | Topic | File |
 |-------|------|
-| Release notes — version parameters | [.agents/prompts/release-notes/params.yaml](.agents/prompts/release-notes/params.yaml) |
-| Release notes — generation spec | [.agents/prompts/release-notes/PROMPT.md](.agents/prompts/release-notes/PROMPT.md) |
-| Release notes — style references | [.agents/prompts/release-notes/example.md](.agents/prompts/release-notes/example.md) |
+| Release notes - version parameters | [.agents/prompts/release-notes/params.yaml](.agents/prompts/release-notes/params.yaml) |
+| Release notes - generation spec | [.agents/prompts/release-notes/PROMPT.md](.agents/prompts/release-notes/PROMPT.md) |
+| Release notes - style references | [.agents/prompts/release-notes/example.md](.agents/prompts/release-notes/example.md) |
 
 ## Skills
 

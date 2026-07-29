@@ -13,7 +13,7 @@ servers:
   - url: /
 tags:
   - name: agentic-workflows
-    description: Single API surface — patterns, use-cases, workflows, instances, events.
+    description: Single API surface - patterns, use-cases, workflows, instances, events.
 paths:
   $ref: paths/agentic-workflows.yaml#/paths
 components:

@@ -133,4 +133,4 @@ docker build \
 
 ---
 
-Alternatively, use `docker compose up` from `coffeeAGNTCY/coffee_agents/lungo/` — the `docker-compose.yaml` already passes all required build args.
+Alternatively, use `docker compose up` from `coffeeAGNTCY/coffee_agents/lungo/` - the `docker-compose.yaml` already passes all required build args.

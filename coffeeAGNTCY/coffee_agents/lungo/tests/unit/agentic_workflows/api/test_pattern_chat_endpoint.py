@@ -268,7 +268,7 @@ def test_happy_path_streams_ndjson_then_done(client: TestClient) -> None:
         _text_event("Hel", partial=True),
         _text_event("lo ", partial=True),
         _text_event("world", partial=True),
-        _text_event("Hello world", partial=False),  # final summary — must be suppressed
+        _text_event("Hello world", partial=False),  # final summary - must be suppressed
     ]
     with _stub_runner_events(events):
         with client.stream(

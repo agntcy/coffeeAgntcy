@@ -17,7 +17,7 @@ export type ReportUiErrorInput = {
   source?: string
   /** React component stack from ErrorBoundary (logged only). */
   componentStack?: string
-  /** When false, log only — skip global Banner (e.g. full-page ErrorFallback). */
+  /** When false, log only - skip global Banner (e.g. full-page ErrorFallback). */
   notify?: boolean
 }
 

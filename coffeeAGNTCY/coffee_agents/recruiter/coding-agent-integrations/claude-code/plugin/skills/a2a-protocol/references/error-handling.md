@@ -9,7 +9,7 @@ All curl calls use `--connect-timeout 10 --max-time 30` (10s to connect, 30s tot
 - **Max retries:** 2 (3 total attempts)
 - **Backoff:** 3 seconds between retries
 - **Retryable:** curl exit 7 (connection refused), 28 (timeout), 56 (recv failure), HTTP 500-504, JSON-RPC -32603
-- **Non-retryable:** HTTP 404 (not found), 429 (rate limit — special: wait 5s, retry once), JSON-RPC -32601 (protocol mismatch), -32602 (bad params)
+- **Non-retryable:** HTTP 404 (not found), 429 (rate limit - special: wait 5s, retry once), JSON-RPC -32601 (protocol mismatch), -32602 (bad params)
 
 ## Structured Error Format
 

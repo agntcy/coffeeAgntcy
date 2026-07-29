@@ -28,14 +28,14 @@ Typical ingredients:
 
 - A **shared conversation surface** (group, room, or thread) carries **visible messages** to everyone who belongs in
   that phase.
-- **Publish–subscribe** style delivery to that surface so updates behave like **coordination in the open**—subscribers
+- **Publish-subscribe** style delivery to that surface so updates behave like **coordination in the open**-subscribers
   see the same evolving story instead of a pile of private side-chats.
 - A **moderator** who can **phase** the discussion (for example from “facts on the ground” to “commitment” to
   “exception”) and intervene when the thread drifts or stalls.
 
 **Secure group collaboration** layers **trust** on top of that shape: **authenticated membership**, **scoped messages**,
-and **attributable speech** so the room feels like **intra-alliance work**—partners coordinating pricing, capacity, or
-movement—rather than anonymous public posting. Security and transport together define **who may read**, **who may
+and **attributable speech** so the room feels like **intra-alliance work**-partners coordinating pricing, capacity, or
+movement-rather than anonymous public posting. Security and transport together define **who may read**, **who may
 write**, and **what may cross the boundary**, while the conversational pattern still allows **many-to-many** refinement
 inside that boundary.
 
@@ -47,17 +47,17 @@ regulated hand-offs between operations, carriers, and finance.
 ## Use case
 
 **Coffee Agntcy** is a coffee company set in a familiar supply chain: **upstream**, it depends on **farms in different
-countries**, each with its own harvest rhythm, quality, and availability; **midstream**, it **buys and allocates** lots—
+countries**, each with its own harvest rhythm, quality, and availability; **midstream**, it **buys and allocates** lots-
 matching supply to commercial needs under real constraints; **downstream**, it must eventually **honor customer
 promises** through operations, logistics, and finance it does not always own end to end. The company sits **between**
-those worlds: much of the drama is ordinary commerce—contracts, risk, partners, and tools—rather than a single team
+those worlds: much of the drama is ordinary commerce-contracts, risk, partners, and tools-rather than a single team
 inside one building holding every fact.
 
 ---
 
 ## Scenario
 
-**Order fulfillment** is the chapter where the company must **deliver on a promise that already left the sales desk**—
+**Order fulfillment** is the chapter where the company must **deliver on a promise that already left the sales desk**-
 coffee has a name, a quantity, a date, and a customer expectation. The scene is a **logistics war room**: functions that
 do not normally share one sentence still have to **align on facts** before freight and money move.
 
@@ -69,7 +69,7 @@ do not normally share one sentence still have to **align on facts** before freig
   visible thread** everyone can correct.
 - The **Tatooine estate (supply)** holds ground truth on what can leave the farm or hand-off point: lots, condition, and
   what “ready” really means on the ground.
-- The **shipper (movement)** holds carriage reality—bookings, dwell, weather at sea or road, and the cost of changing a
+- The **shipper (movement)** holds carriage reality-bookings, dwell, weather at sea or road, and the cost of changing a
   lane after optimism.
 - The **accountant (money)** holds invoice shape, payment timing, and whether the commercial story still matches margin
   after freight and fees land.
@@ -78,14 +78,14 @@ The lead’s work is to keep those voices **narrating one order**, not three inc
 
 **How the beat is built**
 
-1. **Open with the promise** — what was sold, to whom, by when, and where flexibility lives if the world disagrees.
-2. **Bring supply and movement into the same breath** — the estate speaks **availability and release**; the shipper
+1. **Open with the promise** - what was sold, to whom, by when, and where flexibility lives if the world disagrees.
+2. **Bring supply and movement into the same breath** - the estate speaks **availability and release**; the shipper
    answers **how it moves**; both feed one operational picture the group can see.
-3. **Let updates clear through one shared lane** — reversals and corrections stay **in the open thread** so nobody
+3. **Let updates clear through one shared lane** - reversals and corrections stay **in the open thread** so nobody
    optimizes against a truth others never saw.
-4. **Pull finance in as movement hardens** — the accountant tests whether the plan still **pays** and **posts** cleanly;
+4. **Pull finance in as movement hardens** - the accountant tests whether the plan still **pays** and **posts** cleanly;
   surprises surface **inside the room**, not only after the fact.
-5. **Close the beat** — ship as planned, re-cut the plan honestly, or stop the clock with a clear exception—leaving a
+5. **Close the beat** - ship as planned, re-cut the plan honestly, or stop the clock with a clear exception-leaving a
    **single story of stock, movement, and settlement** that could be read back to a buyer without embarrassment.
 
 **What gives the scene weight**
@@ -99,7 +99,7 @@ under a customer deadline.
 ## Workflow
 
 **Logistics Group** is the **bounded collaboration scope**: the secure group in which membership, visibility, and
-attribution apply. It frames this episode as **alliance-style logistics**—partners and internal roles that may question
+attribution apply. It frames this episode as **alliance-style logistics**-partners and internal roles that may question
 each other **in the open** yet stay inside a trusted envelope.
 
 **Logistics Agent** (`label_subtitle`: **Buyer**) connects into **Transport** as the voice of the **customer promise**. It carries dates,
@@ -114,14 +114,14 @@ as disconnected private messages.
 it reaches **Shipper Agent** and **Accountant Agent**, so **movement** and **money** each receive the **same evolving
 context** the room has been building: availability, intent to ship, and the commercial frame that finance must honor.
 
-**Shipper Agent** holds **carriage reality**—lanes, cutoffs, breakage, and the price of replanning—while staying tied to
+**Shipper Agent** holds **carriage reality**-lanes, cutoffs, breakage, and the price of replanning-while staying tied to
 the shared narrative the group has established.
 
-**Accountant Agent** holds **settlement reality**—what will invoice, when cash moves, and whether margin survives the
+**Accountant Agent** holds **settlement reality**-what will invoice, when cash moves, and whether margin survives the
 fees and choices already visible in the thread.
 
 **Flow in one breath**
 
 The **logistics group** names the trusted boundary; **buyer logistics** and **Tatooine** publish into **transport** so
 supply and promise reconcile in public; **shipper** and **accountant** consume that same stream to answer **how it
-moves** and **how it pays**—order fulfillment as **group messaging** where alignment is the product.
+moves** and **how it pays**-order fulfillment as **group messaging** where alignment is the product.

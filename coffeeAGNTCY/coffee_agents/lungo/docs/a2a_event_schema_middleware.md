@@ -7,23 +7,23 @@ and MCP tool calls.
 
 Shared, transport-agnostic pieces live in `common/workflow_utils/`:
 
-- `common/workflow_utils/builders.py` — `event_v1` metadata, nodes, edges, and full `Event` assembly.
-- `common/workflow_utils/mcp.py` — transient MCP tool-call topology builders + `emit_mcp_tool_call_event`.
-- `common/workflow_utils/event_sink.py` — `EventSink` and `WorkflowAPIEventSink` (HTTP POST to workflow API).
-- `common/workflow_utils/inflight.py` — trace-scoped in-flight state, runtime ID allocator, span-end cleanup.
-- `common/workflow_utils/workflow_catalog.py` — workflow name → pattern/use-case metadata (`lookup_workflow`).
-- `common/workflow_utils/__init__.py` — public exports for emitters (A2A, MCP, etc.).
+- `common/workflow_utils/builders.py` - `event_v1` metadata, nodes, edges, and full `Event` assembly.
+- `common/workflow_utils/mcp.py` - transient MCP tool-call topology builders + `emit_mcp_tool_call_event`.
+- `common/workflow_utils/event_sink.py` - `EventSink` and `WorkflowAPIEventSink` (HTTP POST to workflow API).
+- `common/workflow_utils/inflight.py` - trace-scoped in-flight state, runtime ID allocator, span-end cleanup.
+- `common/workflow_utils/workflow_catalog.py` - workflow name → pattern/use-case metadata (`lookup_workflow`).
+- `common/workflow_utils/__init__.py` - public exports for emitters (A2A, MCP, etc.).
 
 A2A-specific orchestration remains in `common/a2a_event_middleware/`:
 
-- `common/a2a_event_middleware/middleware.py` — `EventEmittingInterceptor`, `make_event_emitting_consumer`, A2A topology builders.
-- `common/a2a_event_middleware/__init__.py` — minimal public API: interceptor, consumer factory, cleanup registration.
-- `common/a2a_event_middleware/{event_sink,inflight,workflow_catalog}.py` — compatibility shims re-exporting from `workflow_utils`.
+- `common/a2a_event_middleware/middleware.py` - `EventEmittingInterceptor`, `make_event_emitting_consumer`, A2A topology builders.
+- `common/a2a_event_middleware/__init__.py` - minimal public API: interceptor, consumer factory, cleanup registration.
+- `common/a2a_event_middleware/{event_sink,inflight,workflow_catalog}.py` - compatibility shims re-exporting from `workflow_utils`.
 
 MCP-specific orchestration lives in `common/mcp_event_middleware/`:
 
-- `common/mcp_event_middleware/wrapper.py` — `EventEmittingMCPClient` and `wrap_mcp_client` (client-side `call_tool` instrumentation).
-- `common/mcp_event_middleware/__init__.py` — public API: wrapper class + factory.
+- `common/mcp_event_middleware/wrapper.py` - `EventEmittingMCPClient` and `wrap_mcp_client` (client-side `call_tool` instrumentation).
+- `common/mcp_event_middleware/__init__.py` - public API: wrapper class + factory.
 
 ## Purpose
 
@@ -124,7 +124,7 @@ supervisor's workflow instance:
 3. `wrap_mcp_client(...)` resolves identity once, in this order:
    1. **OTel baggage** if present and non-empty (the primary channel established in step 2).
    2. otherwise the **explicit** `workflow_name`/`instance_id` passed by the call site (threaded through graph state as an in-process fallback).
-   3. otherwise **None** — the client is returned unwrapped and no events are emitted (the tool call still runs).
+   3. otherwise **None** - the client is returned unwrapped and no events are emitted (the tool call still runs).
    In all cases the candidate must validate (workflow_name in the catalog, `instance_id` matching `instance://<uuid>`); an invalid candidate falls through to the next source.
 4. `register_cleanup_span_processor()` is registered on the farm (`farm_server.py`) for parity with the supervisor.
 

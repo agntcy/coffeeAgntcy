@@ -9,7 +9,7 @@ import type { Theme } from "@mui/material/styles"
 import type { SystemStyleObject } from "@mui/system"
 import { iconGlyphFillSx } from "@/utils/iconGlyphFill"
 
-/** Fixed light nav surface — not tied to active MUI color mode. */
+/** Fixed light nav surface - not tied to active MUI color mode. */
 export const LUNGO_NAV_HEADER_COLORS = {
   background: "#eff3fc",
   border: "#dbe0e5",

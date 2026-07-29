@@ -1,13 +1,13 @@
-# Lungo frontend — HTTP requests and error handling
+# Lungo frontend - HTTP requests and error handling
 
 How the app builds URLs, performs network calls, logs failures, and shows errors to users. Complements [env-configuration.md](./env-configuration.md) (where base URLs come from).
 
 ## Summary
 
-1. **Configuration** — `urls.ts` defines relative `apiPaths`, base URL helpers, and `HttpRequestTarget` (`url` + `endpointLabel`). Catalog chat routing uses `workflowChatRouting.ts` + `WorkflowSummary.chat_api_target`; other surfaces use builders in `httpRequestTargets.ts` or `agenticWorkflowsClient`.
-2. **Transport** — All browser HTTP goes through `httpFetch` → specialized helpers (`fetchJson`, `fetchNdjsonStream`, `fetchSse`). Failures become **`HttpError`** with optional `status` and **`endpointLabel`** (for logs and metadata).
-3. **Reporting** — Feature boundaries call **`reportRequestError`**: log (dev `logger` / prod redacted `unsafeLogger`), optionally push a global banner via **`userMessage`**. React render failures use **`reportUiError`** / **`ErrorBoundary`**.
-4. **Presentation** — Each feature maps the returned `HttpError.message` (or helpers like `ndjsonStreamUserMessage`) into local UI: chat bubbles, modal `LoadingErrorState`, suggested-prompts `unavailableMessage`, graph `setAgenticError`, zustand store `error`, etc. The browser DevTools network console still logs failed `fetch` independently.
+1. **Configuration** - `urls.ts` defines relative `apiPaths`, base URL helpers, and `HttpRequestTarget` (`url` + `endpointLabel`). Catalog chat routing uses `workflowChatRouting.ts` + `WorkflowSummary.chat_api_target`; other surfaces use builders in `httpRequestTargets.ts` or `agenticWorkflowsClient`.
+2. **Transport** - All browser HTTP goes through `httpFetch` → specialized helpers (`fetchJson`, `fetchNdjsonStream`, `fetchSse`). Failures become **`HttpError`** with optional `status` and **`endpointLabel`** (for logs and metadata).
+3. **Reporting** - Feature boundaries call **`reportRequestError`**: log (dev `logger` / prod redacted `unsafeLogger`), optionally push a global banner via **`userMessage`**. React render failures use **`reportUiError`** / **`ErrorBoundary`**.
+4. **Presentation** - Each feature maps the returned `HttpError.message` (or helpers like `ndjsonStreamUserMessage`) into local UI: chat bubbles, modal `LoadingErrorState`, suggested-prompts `unavailableMessage`, graph `setAgenticError`, zustand store `error`, etc. The browser DevTools network console still logs failed `fetch` independently.
 
 ---
 
@@ -79,7 +79,7 @@ Graph modals call `fetch*` without a request argument; on failure they use the m
 
 ---
 
-## Request pipeline — success and failure
+## Request pipeline - success and failure
 
 Every networked feature follows the same five beats. The transport layer always tags failures; the **feature boundary** (hook, store, modal) owns logging and UI.
 
@@ -133,7 +133,7 @@ sequenceDiagram
 
 ```mermaid
 flowchart TB
-  subgraph LANE_JSON["JSON — fetchJson"]
+  subgraph LANE_JSON["JSON - fetchJson"]
     direction TB
     J1["Agent prompt POST"]
     J2["Suggested prompts"]
@@ -141,14 +141,14 @@ flowchart TB
     J4["OASF / about / catalog REST"]
   end
 
-  subgraph LANE_NDJSON["Streaming body — fetchNdjsonStream"]
+  subgraph LANE_NDJSON["Streaming body - fetchNdjsonStream"]
     direction TB
     N1["Agent prompt stream"]
     N2["Group · auction · recruiter chat"]
     N3["Pattern reference chat"]
   end
 
-  subgraph LANE_SSE["Live events — fetchSse"]
+  subgraph LANE_SSE["Live events - fetchSse"]
     direction TB
     S1["Workflow instance SSE"]
   end
@@ -206,7 +206,7 @@ flowchart LR
 3. Call **`reportRequestError(request.endpointLabel, error)`** at the feature boundary; use the matching `*Request(...)` helper from the same API module as the fetch when reporting modal failures.
 4. Use a **logical `endpointLabel`** only for multi-step or non-fetch failures (bootstrap, SSE reconnect exhaustion).
 5. Map to UI with **`HttpError.message`** or shared helpers (`ndjsonStreamUserMessage`); use **`userMessage`** in `reportRequestError` when the graph or shell should show a global banner.
-6. Do not rely on the browser console alone — DevTools always logs failed network requests; app logging goes through **`reportRequestError`**.
+6. Do not rely on the browser console alone - DevTools always logs failed network requests; app logging goes through **`reportRequestError`**.
 
 ---
 

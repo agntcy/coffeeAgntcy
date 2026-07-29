@@ -27,7 +27,7 @@ from fastapi.testclient import TestClient
         ("Event Ledger (Episodic Memory)", "event_ledger_episodic_memory"),
         ("Coordinator + Worker Agents", "coordinator_+_worker_agents"),
         ("Resilience & Re-Routing", "resilience_&_re-routing"),
-        ("Sense–Decide–Act Loop", "sense_decide_act_loop"),
+        ("Sense-Decide-Act Loop", "sense-decide-act_loop"),
     ],
 )
 def test_workflow_name_to_documentation_slug(name: str, expected_slug: str) -> None:

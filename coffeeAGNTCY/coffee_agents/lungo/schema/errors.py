@@ -4,7 +4,7 @@
 """Package-specific schema errors.
 
 Callers (including ``schema.validate`` and application code) should catch these
-types—not ``jsonschema`` or raw ``json`` exceptions. Third-party errors are
+types-not ``jsonschema`` or raw ``json`` exceptions. Third-party errors are
 chained via ``raise ... from`` where applicable.
 """
 

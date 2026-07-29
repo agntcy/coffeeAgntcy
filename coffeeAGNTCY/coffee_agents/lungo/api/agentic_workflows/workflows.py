@@ -75,14 +75,14 @@ def _require_old_id_to_unique_label(
         label = _node_edge_remap_label(node)
         if not label:
             raise ValueError(
-                f"Starting workflow {workflow_name!r} (index {idx_wf}): fatal catalog error — "
+                f"Starting workflow {workflow_name!r} (index {idx_wf}): fatal catalog error - "
                 f"topology node at index {idx_nd} (id {old_id!r}) has no non-empty label; "
                 "labels are required to remap edges after runtime node ids are assigned."
             )
         if label in label_to_old_id:
             first_old = label_to_old_id[label]
             raise ValueError(
-                f"Starting workflow {workflow_name!r} (index {idx_wf}): fatal catalog error — "
+                f"Starting workflow {workflow_name!r} (index {idx_wf}): fatal catalog error - "
                 f"duplicate node label {label!r} (node ids {first_old!r} and {old_id!r})."
             )
         label_to_old_id[label] = old_id
@@ -106,13 +106,13 @@ def _remap_starting_topology_edge_endpoints(
                 lab = old_id_to_label.get(old)
                 if lab is None:
                     raise ValueError(
-                        f"Starting workflow {workflow_name!r} (index {idx_wf}): fatal catalog error — "
+                        f"Starting workflow {workflow_name!r} (index {idx_wf}): fatal catalog error - "
                         f"PartialEdge at index {idx_e} references unknown source node id {old!r}."
                     )
                 new = label_to_new_id.get(lab)
                 if new is None:
                     raise ValueError(
-                        f"Starting workflow {workflow_name!r} (index {idx_wf}): fatal catalog error — "
+                        f"Starting workflow {workflow_name!r} (index {idx_wf}): fatal catalog error - "
                         f"PartialEdge at index {idx_e} source label {lab!r} has no new node id."
                     )
                 edge.source = NodeId(new)
@@ -121,13 +121,13 @@ def _remap_starting_topology_edge_endpoints(
                 lab = old_id_to_label.get(old)
                 if lab is None:
                     raise ValueError(
-                        f"Starting workflow {workflow_name!r} (index {idx_wf}): fatal catalog error — "
+                        f"Starting workflow {workflow_name!r} (index {idx_wf}): fatal catalog error - "
                         f"PartialEdge at index {idx_e} references unknown target node id {old!r}."
                     )
                 new = label_to_new_id.get(lab)
                 if new is None:
                     raise ValueError(
-                        f"Starting workflow {workflow_name!r} (index {idx_wf}): fatal catalog error — "
+                        f"Starting workflow {workflow_name!r} (index {idx_wf}): fatal catalog error - "
                         f"PartialEdge at index {idx_e} target label {lab!r} has no new node id."
                     )
                 edge.target = NodeId(new)
@@ -138,13 +138,13 @@ def _remap_starting_topology_edge_endpoints(
                 lab = old_id_to_label.get(old)
                 if lab is None:
                     raise ValueError(
-                        f"Starting workflow {workflow_name!r} (index {idx_wf}): fatal catalog error — "
+                        f"Starting workflow {workflow_name!r} (index {idx_wf}): fatal catalog error - "
                         f"edge {edge.id!r} endpoint {end!r} references unknown node id {old!r}."
                     )
                 new = label_to_new_id.get(lab)
                 if new is None:
                     raise ValueError(
-                        f"Starting workflow {workflow_name!r} (index {idx_wf}): fatal catalog error — "
+                        f"Starting workflow {workflow_name!r} (index {idx_wf}): fatal catalog error - "
                         f"edge {edge.id!r} endpoint {end!r} label {lab!r} has no new node id."
                     )
                 setattr(edge, end, NodeId(new))

@@ -14,7 +14,7 @@ import {
 export interface AssetPngIconProps {
   src: string
   alt: string
-  /** When true, only size/object-fit — for use inside {@link graphSideIconButtonSx} chips. */
+  /** When true, only size/object-fit - for use inside {@link graphSideIconButtonSx} chips. */
   bare?: boolean
   /**
    * When true, applies `brightness(0) invert(1)` in dark mode for monochrome PNGs.

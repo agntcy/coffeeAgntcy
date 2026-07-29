@@ -71,7 +71,7 @@ class A2AEvaluatorAgent(BaseEvaluatorAgent):
             # construct a valid transport.
             if not card.url:
                 logger.warning(
-                    "Fetched agent card has empty 'url' — "
+                    "Fetched agent card has empty 'url' - "
                     "patching with evaluated_agent_address: %s",
                     self._evaluated_agent_address,
                 )

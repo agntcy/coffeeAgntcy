@@ -1,8 +1,8 @@
 # Agentic Workflow Instance API
 
-Interface documentation for the Lungo **Agentic Workflows API**: the catalog (patterns, use-cases, workflows), workflow-instance lifecycle and state, the internal event ingress, and the Server-Sent Events (SSE) stream. It also documents the wire formats — the canonical `event_v1` JSON Schema, SSE framing, and the NDJSON pattern-chat stream — and the response shapes a frontend needs to render the use-case list and workflow topology without guessing.
+Interface documentation for the Lungo **Agentic Workflows API**: the catalog (patterns, use-cases, workflows), workflow-instance lifecycle and state, the internal event ingress, and the Server-Sent Events (SSE) stream. It also documents the wire formats - the canonical `event_v1` JSON Schema, SSE framing, and the NDJSON pattern-chat stream - and the response shapes a frontend needs to render the use-case list and workflow topology without guessing.
 
-This document satisfies the interface-definition tickets [#447 — API endpoints](https://github.com/agntcy/coffeeAgntcy/issues/447) and [#446 — workflow-instance state JSON schema](https://github.com/agntcy/coffeeAgntcy/issues/446).
+This document satisfies the interface-definition tickets [#447 - API endpoints](https://github.com/agntcy/coffeeAgntcy/issues/447) and [#446 - workflow-instance state JSON schema](https://github.com/agntcy/coffeeAgntcy/issues/446).
 
 ## Authoritative sources
 
@@ -88,7 +88,7 @@ The endpoint set mirrors the table in [#447](https://github.com/agntcy/coffeeAgn
 
 The catalog lets a frontend discover what can be run and how to filter it. All catalog data is currently static ([`patterns.py`](../api/agentic_workflows/patterns.py), [`use_cases.py`](../api/agentic_workflows/use_cases.py), [`starting_workflows.json`](../api/agentic_workflows/starting_workflows.json)).
 
-### `GET /patterns/` — list patterns
+### `GET /patterns/` - list patterns
 
 Returns the architectural patterns available in the catalog.
 
@@ -102,7 +102,7 @@ Returns the architectural patterns available in the catalog.
 }
 ```
 
-### `GET /use-cases/` — list use-cases
+### `GET /use-cases/` - list use-cases
 
 Returns the business use-cases available in the catalog. This is the shape a frontend should bind a use-case selector to.
 
@@ -116,12 +116,12 @@ Returns the business use-cases available in the catalog. This is the shape a fro
 
 `UseCaseListResponse` is an object with a required `items` array; each item is an object with a required, non-empty `name` string and no additional properties (`UseCase` / `UseCaseListResponse` in [`components/schemas.yaml`](../schema/openapi/components/schemas.yaml)). The list-of-objects shape (rather than a bare array of strings) is intentional so each use-case can grow extra fields later without breaking clients.
 
-### `GET /agentic-workflows/` — list workflows
+### `GET /agentic-workflows/` - list workflows
 
 Returns the workflows in the catalog as a **map keyed by workflow name**. Optional repeated query parameters filter the result:
 
-- `patterns` — `[]string` (repeat the param: `?patterns=Supervisor&patterns=Recruiter`)
-- `use_cases` — `[]string` (`?use_cases=Coffee%20Agntcy`)
+- `patterns` - `[]string` (repeat the param: `?patterns=Supervisor&patterns=Recruiter`)
+- `use_cases` - `[]string` (`?use_cases=Coffee%20Agntcy`)
 
 Both filters are independent; when both are supplied a workflow must match a pattern **and** a use-case to be included.
 
@@ -156,7 +156,7 @@ Each value is a `WorkflowSummary`: `name`, `pattern`, `use_case`, and `scenario`
 
 **Source of truth:** runnable workflows declare `supports_sse`, `supports_streaming`, and `chat_api_target` in [`starting_workflows.json`](../api/agentic_workflows/starting_workflows.json). The list endpoint reads those fields from catalog metadata; it does not infer capabilities from workflow name or topology shape.
 
-### `GET /agentic-workflows/{workflow_name}/documentation/` — workflow docs
+### `GET /agentic-workflows/{workflow_name}/documentation/` - workflow docs
 
 Returns the reference markdown for a catalog workflow, both as a single blob and split into sections at `##` headings (for TOC / anchored rendering). Backed by files under [`../api/agentic_workflows/docs/workflows/`](../api/agentic_workflows/docs/workflows).
 
@@ -178,7 +178,7 @@ Returns the reference markdown for a catalog workflow, both as a single blob and
 
 Returns `404` for an unknown workflow name or when no markdown file maps to it.
 
-### `POST /patterns/{name}/chat` — chat with a pattern's docs (NDJSON)
+### `POST /patterns/{name}/chat` - chat with a pattern's docs (NDJSON)
 
 A retrieval-grounded chat over a pattern's reference markdown. See [NDJSON pattern-chat stream](#ndjson-pattern-chat-stream) for the wire format.
 
@@ -186,13 +186,13 @@ A retrieval-grounded chat over a pattern's reference markdown. See [NDJSON patte
 
 ## Workflow details & topology response shapes
 
-### `GET /agentic-workflows/{workflow_name}/` — workflow details
+### `GET /agentic-workflows/{workflow_name}/` - workflow details
 
 Returns the full `Workflow` object (`event_v1.json#/$defs/workflow`): catalog metadata, the predefined **`starting_topology`**, and the `instances` map. This is the shape a frontend renders to draw the **starting graph** before any instance is created.
 
 Query parameter:
 
-- `topology_only` (boolean, default `false`) — when `true`, the server returns a topology-focused projection (the `instances` map is emptied), so the client gets just the starting graph.
+- `topology_only` (boolean, default `false`) - when `true`, the server returns a topology-focused projection (the `instances` map is emptied), so the client gets just the starting graph.
 
 `Workflow` (required fields): `name`, `pattern`, `use_case`, `scenario`, `starting_topology`, `instances`. `additionalProperties` is allowed.
 
@@ -287,7 +287,7 @@ Returns `404` when `workflow_name` is not in the catalog.
 
 ## Workflow-instance lifecycle & state
 
-### `POST /agentic-workflows/{workflow_name}/` — instantiate
+### `POST /agentic-workflows/{workflow_name}/` - instantiate
 
 Creates a new empty instance of the workflow and registers it in the store. The corresponding starting topology is stored at the workflow level and seeded into the instance with a follow-up event. Responds with the instance id to track (as an `instance://…` URI).
 
@@ -297,14 +297,14 @@ Creates a new empty instance of the workflow and registers it in the store. The 
 
 Behavior and status codes:
 
-- `200` — instance created; body is `InstantiateWorkflowResponse`.
-- `404` — unknown `workflow_name`.
-- `400` — the seed event failed schema validation.
-- `500` — catalog inconsistency: the seed builder found the catalog `Workflow.name` did not match the resolved `workflow_name` (a server-side data-integrity fault, not client input).
-- `503` — store not configured / closed.
-- `504` — the event was accepted and queued but the in-memory merge did not finish in time. **Each `POST` creates a new instance**, so do not blindly retry; poll the instances list or `GET` the instance state first.
+- `200` - instance created; body is `InstantiateWorkflowResponse`.
+- `404` - unknown `workflow_name`.
+- `400` - the seed event failed schema validation.
+- `500` - catalog inconsistency: the seed builder found the catalog `Workflow.name` did not match the resolved `workflow_name` (a server-side data-integrity fault, not client input).
+- `503` - store not configured / closed.
+- `504` - the event was accepted and queued but the in-memory merge did not finish in time. **Each `POST` creates a new instance**, so do not blindly retry; poll the instances list or `GET` the instance state first.
 
-### `GET /agentic-workflows/{workflow_name}/instances/` — list instances
+### `GET /agentic-workflows/{workflow_name}/instances/` - list instances
 
 Returns the instances of a workflow as a **map keyed by `instance://…` id**; each value is a `WorkflowInstance`.
 
@@ -319,30 +319,30 @@ Returns the instances of a workflow as a **map keyed by `instance://…` id**; e
 
 Returns `404` when `workflow_name` is not in the catalog.
 
-### `GET /agentic-workflows/{workflow_name}/instances/{workflow_instance_id}/` — instance state
+### `GET /agentic-workflows/{workflow_name}/instances/{workflow_instance_id}/` - instance state
 
 Returns a single `WorkflowInstance` (`event_v1.json#/$defs/workflow_instance`): the current dynamic state of that instance. `WorkflowInstance` requires `id` (`instance://…`, identical to its key in the parent map) and `topology` (a `partial_topology` reflecting the live graph). `additionalProperties` is allowed for extra runtime state.
 
 Query parameter:
 
-- `topology_only` (boolean, default `false`) — when `true`, returns a topology-only projection of the instance.
+- `topology_only` (boolean, default `false`) - when `true`, returns a topology-only projection of the instance.
 
 `{workflow_instance_id}` is the **bare UUID** path segment; the response `id` field is the full `instance://<uuid>` URI.
 
 Status codes:
 
-- `200` — success.
-- `404` — the workflow or the instance is unknown.
-- `500` — the store returned a malformed instance projection (a server-side data-integrity fault).
-- `503` — the instance store is not configured.
+- `200` - success.
+- `404` - the workflow or the instance is unknown.
+- `500` - the store returned a malformed instance projection (a server-side data-integrity fault).
+- `503` - the instance store is not configured.
 
-### `DELETE /agentic-workflows/{workflow_name}/instances/{workflow_instance_id}/` — delete instance
+### `DELETE /agentic-workflows/{workflow_name}/instances/{workflow_instance_id}/` - delete instance
 
 Schedules removal from the in-memory store. **Idempotent**:
 
-- `202` — instance existed; deletion accepted (runs in the background).
-- `204` — nothing to delete (already removed or never existed).
-- `404` — unknown `workflow_name`.
+- `202` - instance existed; deletion accepted (runs in the background).
+- `204` - nothing to delete (already removed or never existed).
+- `404` - unknown `workflow_name`.
 
 ---
 
@@ -362,10 +362,10 @@ On success the event is enqueued, merged into the accumulated state, and fanned 
 
 Status codes:
 
-- `204` — event accepted.
-- `400` — payload does not match the path target, or failed schema validation.
-- `404` — unknown workflow or instance.
-- `503` — store closed.
+- `204` - event accepted.
+- `400` - payload does not match the path target, or failed schema validation.
+- `404` - unknown workflow or instance.
+- `503` - store closed.
 
 ---
 
@@ -388,7 +388,7 @@ data: {"metadata":{"timestamp":"2026-03-17T12:00:01Z","schema_version":"1.0.0","
 
 Each `data:` payload validates against `event_v1.json`. The stream only carries events whose `data.workflows[workflow_name].instances` includes the subscribed instance id; events for other instances are filtered out server-side.
 
-**Backpressure.** The per-subscriber queue is bounded (100 frames). When it fills past the high-water mark, the oldest frames are dropped first — clients should treat the stream as a best-effort change feed and reconcile against `GET …/instances/{id}/` if they detect a gap.
+**Backpressure.** The per-subscriber queue is bounded (100 frames). When it fills past the high-water mark, the oldest frames are dropped first - clients should treat the stream as a best-effort change feed and reconcile against `GET …/instances/{id}/` if they detect a gap.
 
 A frontend typically: `POST` to instantiate → render the `starting_topology` from `GET …/{workflow_name}/` → open the SSE stream → apply each event's `topology` delta (using `operation` per node/edge) to the rendered graph.
 
@@ -405,14 +405,14 @@ A newline-delimited JSON (`application/x-ndjson`) stream for chatting with a pat
 }
 ```
 
-- `session_id` — client-minted UUIDv4 wrapped as a `session://<uuid>` URI; the server holds conversation state in memory keyed by `(pattern_name, session_id)`.
-- `message` — the latest user turn (1–32768 chars).
+- `session_id` - client-minted UUIDv4 wrapped as a `session://<uuid>` URI; the server holds conversation state in memory keyed by `(pattern_name, session_id)`.
+- `message` - the latest user turn (1-32768 chars).
 
 **Framing.** One JSON object per line:
 
-- `{"response": "<chunk>"}` — a chunk of the answer (zero or more).
-- `{"done": true}` — terminates a successful stream.
-- `{"error": "<message>"}` — emitted instead if the stream fails mid-flight, then the connection closes.
+- `{"response": "<chunk>"}` - a chunk of the answer (zero or more).
+- `{"done": true}` - terminates a successful stream.
+- `{"error": "<message>"}` - emitted instead if the stream fails mid-flight, then the connection closes.
 
 ```text
 {"response": "The supervisor pattern "}
@@ -422,8 +422,8 @@ A newline-delimited JSON (`application/x-ndjson`) stream for chatting with a pat
 
 Status codes:
 
-- `404` — the pattern has no reference markdown (returned before opening the stream).
-- `422` — the request body failed validation.
+- `404` - the pattern has no reference markdown (returned before opening the stream).
+- `422` - the request body failed validation.
 
 ---
 
@@ -500,8 +500,8 @@ Key invariant: each property name under `workflow.instances` **must equal** the 
 
 ### Worked examples
 
-- **Full snapshot (init / reset)** — every node/edge fully populated: [`examples/event_v1_full.json`](../schema/jsonschemas/examples/event_v1_full.json).
-- **Partial delta (update)** — one node carrying `operation: "update"` and only the changed fields, empty `edges`: [`examples/event_v1_partial.json`](../schema/jsonschemas/examples/event_v1_partial.json).
-- **Empty workflows + extra `app_state`** — demonstrates root-level `additionalProperties`: [`examples/event_v1_empty_workflows.json`](../schema/jsonschemas/examples/event_v1_empty_workflows.json).
+- **Full snapshot (init / reset)** - every node/edge fully populated: [`examples/event_v1_full.json`](../schema/jsonschemas/examples/event_v1_full.json).
+- **Partial delta (update)** - one node carrying `operation: "update"` and only the changed fields, empty `edges`: [`examples/event_v1_partial.json`](../schema/jsonschemas/examples/event_v1_partial.json).
+- **Empty workflows + extra `app_state`** - demonstrates root-level `additionalProperties`: [`examples/event_v1_empty_workflows.json`](../schema/jsonschemas/examples/event_v1_empty_workflows.json).
 
 ---

@@ -34,7 +34,7 @@ function oasfCacheKey(target: ChatApiTarget, slug: string): string {
   return `${target}\0${slug}`
 }
 
-/** Same target as {@link fetchOasfRecord} — for `reportRequestError` in modal catch. */
+/** Same target as {@link fetchOasfRecord} - for `reportRequestError` in modal catch. */
 export function oasfRecordRequest(
   nodeData: NodeDataForOasf,
   chatApiTarget?: ChatApiTarget | null,

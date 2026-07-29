@@ -29,7 +29,7 @@ import (
 	"github.com/a2aproject/a2a-go/v2/a2acompat/a2av0"
 )
 
-const usage = `a2a-send — Send messages to A2A agents using the a2a-go SDK.
+const usage = `a2a-send - Send messages to A2A agents using the a2a-go SDK.
 
 Usage:
   a2a-send --peer-url <URL> --message <TEXT> [options]

@@ -121,7 +121,7 @@ NVIDIA_NIM_API_BASE=<your_nvidia_nim_endpoint_url>
 
 ---
 ### 2. Launch the Demo Stack
-All workshop services are containerized — start everything with one command:
+All workshop services are containerized - start everything with one command:
 
 ```bash
 docker compose up --build
@@ -140,7 +140,7 @@ Once containers are running, open:
 
 ### 3. Interact with the Demos
 
-Send prompts to the agentic system. Predefined prompts are provided to help you start — but you can also type your own.
+Send prompts to the agentic system. Predefined prompts are provided to help you start - but you can also type your own.
 
 #### Sommelier Demo (Agent to Agent Pattern)
 
@@ -292,7 +292,7 @@ NVIDIA_NIM_API_BASE=<your_nvidia_nim_endpoint_url>
 
 ### 2. Launch the Demo Stack
 
-All workshop services are containerized — start everything with one command:
+All workshop services are containerized - start everything with one command:
 
 ```bash
 docker compose up --build
@@ -313,10 +313,10 @@ Once containers are running, open:
 
 ### 3. Interact with the Demos
 
-Each demo UI lets you send prompts to an agentic system. Predefined prompts are provided to help you start — but you can
+Each demo UI lets you send prompts to an agentic system. Predefined prompts are provided to help you start - but you can
 also type your own.
 
-#### 🏷️ Auction Demo (Supervisor–Worker Pattern)
+#### 🏷️ Auction Demo (Supervisor-Worker Pattern)
 
 On the frontend select the `Conversation: Purchasing / Agentic Patterns / Publish Subscribe / A2A NATS` menu item.
 

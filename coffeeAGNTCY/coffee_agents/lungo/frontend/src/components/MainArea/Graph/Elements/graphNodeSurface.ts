@@ -22,7 +22,7 @@ export interface GraphNodeSurfaceFlags {
   selected?: boolean
 }
 
-/** OUK control icon fill (`#e8e9ea` in dark mode) — not `brandIconPrimaryDefault`. */
+/** OUK control icon fill (`#e8e9ea` in dark mode) - not `brandIconPrimaryDefault`. */
 export function getControlIconColor(theme: Theme): string {
   return theme.palette.vars.controlIconDefault
 }
@@ -89,7 +89,7 @@ export function graphNodeRootSurfaceSx(
     color: theme.palette.text.primary,
     outline: restingOutline,
     boxShadow: restingShadow,
-    // Do not animate border-color or outline — tweening between divider and
+    // Do not animate border-color or outline - tweening between divider and
     // primary reads as a flash; outline from "none" also flickers cross-browser.
     transition: theme.transitions.create(["background-color", "box-shadow"], {
       duration: theme.transitions.duration.shortest,
@@ -176,7 +176,7 @@ function graphIconButtonChipSx(theme: Theme): SystemStyleObject<Theme> {
 
 /**
  * Graph node side IconButtons (GitHub, directory, identity checkmark).
- * Chip layout only — glyph color stays OUK default (`brandIconPrimaryDefault`, blue in light mode).
+ * Chip layout only - glyph color stays OUK default (`brandIconPrimaryDefault`, blue in light mode).
  */
 export function graphSideIconButtonSx(theme: Theme): SystemStyleObject<Theme> {
   return graphIconButtonChipSx(theme)
@@ -188,7 +188,7 @@ export function graphSideIconButtonSxWithModal(
   return graphSideIconButtonSx(theme)
 }
 
-/** GitHub / similar auxiliary link on nodes — same chip as {@link graphSideIconButtonSx}. */
+/** GitHub / similar auxiliary link on nodes - same chip as {@link graphSideIconButtonSx}. */
 export function graphNodeAuxiliaryControlSurfaceSx(
   theme: Theme,
 ): SystemStyleObject<Theme> {
@@ -202,7 +202,7 @@ export function graphNodeAuxiliaryControlSurfaceSx(
 /** Fixed outer box for CustomNode / TransportNode side `button` and `a` icons. */
 export const GRAPH_NODE_SIDE_ICON_SIZE = "1.6rem"
 
-/** Inner glyph/image — fits inside {@link GRAPH_NODE_SIDE_ICON_SIZE} with 1px border. */
+/** Inner glyph/image - fits inside {@link GRAPH_NODE_SIDE_ICON_SIZE} with 1px border. */
 const GRAPH_NODE_SIDE_ICON_INNER_SIZE = "1.125rem"
 
 /** Shared compact side control surface (no `graphIconButtonChipSx` padding/content-box). */
