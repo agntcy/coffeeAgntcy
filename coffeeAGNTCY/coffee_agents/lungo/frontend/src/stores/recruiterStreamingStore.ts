@@ -5,17 +5,20 @@
 
 import { create } from "zustand"
 import type { AgentRecord } from "@/types/agent"
+import type { HttpRequestTarget } from "@/urls"
 import type { RecruiterStreamingEvent } from "./recruiterStreaming.types"
+import {
+  buildPromptStreamBody,
+  createAbortableNdjsonStreamingActions,
+  logNdjsonLineParseWarning,
+  NDJSON_STREAMING_CORE_INITIAL,
+  type NdjsonStreamingCoreState,
+} from "./createNdjsonStreamingStore"
 import {
   NDJSON_STREAMING_STATUS,
   type NdjsonStreamingStatus,
 } from "./ndjsonStreamingStatus"
 import { RECRUITER_STREAM_EVENT_TYPE } from "./recruiterStreamEventType"
-import { fetchNdjsonStream, ndjsonStreamUserMessage } from "@/api/http"
-import { reportRequestError } from "@/errors/request"
-import type { HttpRequestTarget } from "@/urls"
-import { isLocalDev } from "@/utils/const.ts"
-import { logger } from "@/utils/logger"
 
 const isValidRecruiterStreamingEvent = (
   data: unknown,
@@ -34,13 +37,8 @@ const isValidRecruiterStreamingEvent = (
   )
 }
 
-interface RecruiterStreamingStoreState {
-  status: NdjsonStreamingStatus
-  error: string | null
+interface RecruiterStreamingStoreState extends NdjsonStreamingCoreState {
   events: RecruiterStreamingEvent[]
-  prompt: string | null
-  abortController: AbortController | null
-  sessionId: string | null
   traceId: string | null
   finalMessage: string | null
   agentRecords: Record<string, AgentRecord> | null
@@ -56,13 +54,19 @@ interface RecruiterStreamingStoreState {
   reset: () => void
 }
 
-const initialState = {
-  status: NDJSON_STREAMING_STATUS.IDLE,
-  error: null,
+type RecruiterConnectArgs = {
+  prompt: string
+  workflowInstanceId?: string | null
+  sessionId?: string | null
+  streamRequest?: HttpRequestTarget
+}
+
+const initialState: Omit<
+  RecruiterStreamingStoreState,
+  "connect" | "disconnect" | "reset"
+> = {
+  ...NDJSON_STREAMING_CORE_INITIAL,
   events: [],
-  prompt: null,
-  abortController: null,
-  sessionId: null,
   traceId: null,
   finalMessage: null,
   agentRecords: null,
@@ -71,148 +75,100 @@ const initialState = {
 }
 
 export const useRecruiterStreamingStore = create<RecruiterStreamingStoreState>(
-  (set) => ({
-    ...initialState,
-
-    connect: async (
-      prompt: string,
-      workflowInstanceId?: string | null,
-      sessionId?: string | null,
-      streamRequest?: HttpRequestTarget,
-    ) => {
-      const abortController = new AbortController()
-
-      set({
+  (set, get) => {
+    const actions = createAbortableNdjsonStreamingActions<
+      RecruiterStreamingStoreState,
+      RecruiterConnectArgs
+    >({
+      get,
+      set,
+      initialState: initialState as RecruiterStreamingStoreState,
+      guardCompletedOnError: true,
+      buildConnectingPatch: (args, abortController) => ({
         status: NDJSON_STREAMING_STATUS.CONNECTING,
         error: null,
-        prompt,
+        prompt: args.prompt,
         events: [],
         abortController,
-        sessionId: sessionId ?? null,
+        sessionId: args.sessionId ?? null,
         traceId: null,
         finalMessage: null,
         agentRecords: null,
         evaluationResults: null,
         selectedAgent: null,
-      })
+      }),
+      buildRequestBody: (args) =>
+        buildPromptStreamBody(args.prompt, args.workflowInstanceId, {
+          ...(args.sessionId ? { session_id: args.sessionId } : {}),
+        }),
+      onLine: (parsedData, { set: setState }) => {
+        if (!isValidRecruiterStreamingEvent(parsedData)) return
 
-      if (!streamRequest?.url) {
-        set({
-          status: NDJSON_STREAMING_STATUS.ERROR,
-          error: "Streaming request target is required",
-          abortController: null,
-        })
-        return
-      }
+        const event = parsedData.response
 
-      try {
-        await fetchNdjsonStream(streamRequest.url, {
-          method: "POST",
-          credentials: isLocalDev ? "omit" : "include",
-          endpointLabel: streamRequest.endpointLabel,
-          body: JSON.stringify({
-            prompt,
-            ...(workflowInstanceId
-              ? { workflow_instance_id: workflowInstanceId }
-              : {}),
-            ...(sessionId ? { session_id: sessionId } : {}),
-          }),
-          signal: abortController.signal,
-          onStreamStart: () => {
-            set({ status: NDJSON_STREAMING_STATUS.STREAMING })
-          },
-          onLine: (parsedData) => {
-            if (!isValidRecruiterStreamingEvent(parsedData)) return
-
-            const event = parsedData.response
-
-            if (event.event_type === RECRUITER_STREAM_EVENT_TYPE.COMPLETED) {
-              set((state) => ({
-                events: [...state.events, event],
-                sessionId: parsedData.session_id || state.sessionId,
-                traceId: parsedData.trace_id || state.traceId,
-                finalMessage: event.message,
-                agentRecords:
-                  event.agent_records !== undefined
-                    ? event.agent_records
-                    : state.agentRecords,
-                evaluationResults:
-                  event.evaluation_results || state.evaluationResults,
-                selectedAgent:
-                  event.selected_agent !== undefined
-                    ? event.selected_agent
-                    : state.selectedAgent,
-              }))
-            } else if (event.event_type === RECRUITER_STREAM_EVENT_TYPE.ERROR) {
-              set((state) => ({
-                status: NDJSON_STREAMING_STATUS.ERROR,
-                error: event.message || "An error occurred during streaming",
-                events: [...state.events, event],
-                abortController: null,
-              }))
-              return "stop"
-            } else if (
-              event.event_type === RECRUITER_STREAM_EVENT_TYPE.STATUS_UPDATE
-            ) {
-              set((state) => ({
-                events: [...state.events, event],
-                sessionId: parsedData.session_id || state.sessionId,
-                traceId: parsedData.trace_id || state.traceId,
-                selectedAgent:
-                  event.selected_agent !== undefined
-                    ? event.selected_agent
-                    : state.selectedAgent,
-              }))
-            }
-          },
-          onParseError: (line, parseError) => {
-            logger.warn("Failed to parse NDJSON line:", {
-              line,
-              parseError,
-            })
-          },
-        })
-
-        if (
-          useRecruiterStreamingStore.getState().status !==
-          NDJSON_STREAMING_STATUS.ERROR
-        ) {
-          set({
-            status: NDJSON_STREAMING_STATUS.COMPLETED,
+        if (event.event_type === RECRUITER_STREAM_EVENT_TYPE.COMPLETED) {
+          setState((state) => ({
+            events: [...state.events, event],
+            sessionId: parsedData.session_id || state.sessionId,
+            traceId: parsedData.trace_id || state.traceId,
+            finalMessage: event.message,
+            agentRecords:
+              event.agent_records !== undefined
+                ? event.agent_records
+                : state.agentRecords,
+            evaluationResults:
+              event.evaluation_results || state.evaluationResults,
+            selectedAgent:
+              event.selected_agent !== undefined
+                ? event.selected_agent
+                : state.selectedAgent,
+          }))
+        } else if (event.event_type === RECRUITER_STREAM_EVENT_TYPE.ERROR) {
+          setState((state) => ({
+            status: NDJSON_STREAMING_STATUS.ERROR,
+            error: event.message || "An error occurred during streaming",
+            events: [...state.events, event],
             abortController: null,
-          })
+          }))
+          return "stop"
+        } else if (
+          event.event_type === RECRUITER_STREAM_EVENT_TYPE.STATUS_UPDATE
+        ) {
+          setState((state) => ({
+            events: [...state.events, event],
+            sessionId: parsedData.session_id || state.sessionId,
+            traceId: parsedData.trace_id || state.traceId,
+            selectedAgent:
+              event.selected_agent !== undefined
+                ? event.selected_agent
+                : state.selectedAgent,
+          }))
         }
-      } catch (error) {
-        if (abortController.signal.aborted) return
+      },
+      onParseError: logNdjsonLineParseWarning,
+    })
 
-        const httpError = reportRequestError(streamRequest.endpointLabel, error)
-        set({
-          status: NDJSON_STREAMING_STATUS.ERROR,
-          error: ndjsonStreamUserMessage(httpError, "short"),
-          abortController: null,
-        })
-      }
-    },
-
-    disconnect: () => {
-      const { abortController } = useRecruiterStreamingStore.getState()
-      if (abortController) {
-        abortController.abort()
-      }
-      set({ status: NDJSON_STREAMING_STATUS.IDLE, abortController: null })
-    },
-
-    reset: () => {
-      const { abortController } = useRecruiterStreamingStore.getState()
-      if (abortController) {
-        abortController.abort()
-      }
-      set(initialState)
-    },
-  }),
+    return {
+      ...initialState,
+      connect: (
+        prompt: string,
+        workflowInstanceId?: string | null,
+        sessionId?: string | null,
+        streamRequest?: HttpRequestTarget,
+      ) =>
+        actions.connect({
+          prompt,
+          workflowInstanceId,
+          sessionId,
+          streamRequest,
+        }),
+      disconnect: actions.disconnect,
+      reset: actions.reset,
+    }
+  },
 )
 
-export const useRecruiterStreamingStatus = () =>
+export const useRecruiterStreamingStatus = (): NdjsonStreamingStatus =>
   useRecruiterStreamingStore((state) => state.status)
 
 export const useRecruiterStreamingError = () =>
