@@ -195,18 +195,29 @@ To manually start the required Directory services:
 docker compose -f docker/docker-compose.yaml up -d postgres zot dir-api-server dir-mcp-server
 ```
 
+### Test directories
+
+| Directory | Purpose |
+|-----------|---------|
+| `tests/unit/` | Mocks only |
+| `tests/integration/general/` | Docker-compose session; no live webserver; no LLM |
+| `tests/integration/live/` | Subprocess HTTP against live A2A server; no LLM |
+| `tests/integration/llm/` | Docker + LLM credentials (needs `.env`) |
+| `tests/integration/helpers/` | Docker/process helpers (not collected as tests) |
+
 ### Run tests
 
-CI-equivalent (no LLM secrets; matches GitHub Actions `tests / recruiter`):
+From the recruiter package root:
+
+```bash
+uv run pytest -v
+```
+
+Run a subset by directory:
 
 ```bash
 uv run pytest tests/unit tests/integration/general tests/integration/live -v
-```
-
-LLM suite (needs `.env`; not run in CI):
-
-```bash
-uv run pytest tests/integration/llm -v
+uv run pytest tests/integration/llm -v   # needs LLM settings in .env
 ```
 
 ### Run integration tests (targeted)
@@ -221,15 +232,13 @@ uv run pytest tests/integration/llm/test_a2a.py -v
 uv run pytest tests/integration/live/test_sample_agent_card.py -v
 ```
 
-Do not run bare `pytest` or `pytest tests/integration` — that would collect `integration/llm/` (needs secrets).
-
 ### Test Descriptions
 
 | Test File | Description |
 |-----------|-------------|
-| `integration/llm/test_a2a.py` | A2A server integration tests (search, streaming, evaluation flow) |
-| `integration/llm/test_agent_evaluator_llm.py` | Agent evaluation scenario tests (LLM) |
-| `integration/live/test_sample_agent_card.py` | Sample agent card smoke test |
+| `tests/integration/llm/test_a2a.py` | A2A server integration tests (search, streaming, evaluation flow) |
+| `tests/integration/llm/test_agent_evaluator_llm.py` | Agent evaluation scenario tests (LLM) |
+| `tests/integration/live/test_sample_agent_card.py` | Sample agent card smoke test |
 
 ## Claude Code Plugin
 

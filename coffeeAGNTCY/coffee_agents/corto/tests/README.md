@@ -2,22 +2,23 @@
 
 ## Scope
 
-Tests cover Exchange ↔ Farm behavior across message transports (SLIM, NATS): unit tests with mocks, docker-backed integration tests, and LLM semantic validations (local only).
+Tests cover Exchange ↔ Farm behavior across message transports (SLIM, NATS): unit tests with mocks, docker-backed integration tests, and LLM semantic validations.
 
 ## Directory layout
 
-| Directory | Purpose | CI |
-|-----------|---------|-----|
-| `tests/unit/` | Mocks only | Yes |
-| `tests/integration/general/` | Docker-compose session; no live webserver; no LLM | Yes |
-| `tests/integration/llm/` | Docker + LLM credentials | No (local manual) |
+| Directory | Purpose |
+|-----------|---------|
+| `tests/unit/` | Mocks only |
+| `tests/integration/general/` | Docker-compose session; no live webserver; no LLM |
+| `tests/integration/llm/` | Docker + LLM credentials (needs `.env`) |
+| `tests/integration/helpers/` | Docker/process helpers (not collected as tests) |
 
 Key files:
 
-- Session / infra fixtures: [`integration/conftest.py`](integration/conftest.py)
-- Docker Compose helpers: [`integration/helpers/docker_helpers.py`](integration/helpers/docker_helpers.py)
-- Subprocess runner: [`integration/helpers/process_helper.py`](integration/helpers/process_helper.py)
-- Sommelier (flavor profile) LLM tests: [`integration/llm/test_sommelier.py`](integration/llm/test_sommelier.py)
+- Session / infra fixtures: [`tests/integration/conftest.py`](integration/conftest.py)
+- Docker Compose helpers: [`tests/integration/helpers/docker_helpers.py`](integration/helpers/docker_helpers.py)
+- Subprocess runner: [`tests/integration/helpers/process_helper.py`](integration/helpers/process_helper.py)
+- Sommelier (flavor profile) LLM tests: [`tests/integration/llm/test_sommelier.py`](integration/llm/test_sommelier.py)
 
 ## Execution prerequisites
 
@@ -38,16 +39,17 @@ cp coffeeAGNTCY/coffee_agents/corto/.env.example .env
 
 ## Running tests
 
-CI-equivalent (no secrets):
+From the corto package root:
+
+```bash
+uv run pytest -q
+```
+
+Run a subset by directory:
 
 ```bash
 uv run pytest tests/unit tests/integration/general -q
-```
-
-LLM suite (needs `.env`, not run in CI):
-
-```bash
-uv run pytest tests/integration/llm -q
+uv run pytest tests/integration/llm -q   # needs LLM settings in .env
 ```
 
 Single sommelier case:
@@ -55,8 +57,6 @@ Single sommelier case:
 ```bash
 uv run pytest tests/integration/llm/test_sommelier.py::TestAuctionFlows::test_sommelier -s
 ```
-
-Do not run bare `pytest tests/integration` without explicit subpaths — that would collect `integration/llm/`.
 
 ## Version overrides
 
