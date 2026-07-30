@@ -18,6 +18,8 @@ graph TD
 
 ## Pattern
 
+**Pattern category:** Orchestration & Control Flow
+
 **Coordinator and worker** arrangements **separate planning from execution**: one agent keeps the work breakdown,
 sequencing, and completion story while **specialists** perform **bounded slices** (warehouse, customs, carriers, or
 similar) without each owning the full saga end to end.

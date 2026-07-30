@@ -18,6 +18,8 @@ graph TD
 
 ## Pattern
 
+**Pattern category:** Discovery, Routing & Composition
+
 **Composable agent service** packages an agent like a **product**: discoverable in a catalog, **versioned interfaces**,
 declared expectations for reliability or latency-so procurement, operations, and reporting **reuse** the same capability
 instead of forking nearly identical copies that drift apart.

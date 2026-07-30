@@ -18,6 +18,8 @@ graph TD
 
 ## Pattern
 
+**Pattern category:** Internet of Cognition
+
 An **event ledger** (episodic memory for agents) appends a **faithful history of decisions**-prompts, tool calls, policy
 checks-so teams can **replay** timelines after failure and see **which step** introduced a bad assumption. It is not a
 marketing narrative; it is an ordered record suitable for audit and debugging.

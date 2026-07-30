@@ -18,6 +18,8 @@ graph TD
 
 ## Pattern
 
+**Pattern category:** Observability & Performance Accountability
+
 **End-to-end telemetry** traces **decisions and interactions across the whole chain**-from early inputs through
 fulfillment-so **correlation identifiers** stitch agent steps to real business objects and money movements. The point is
 continuity: an incident or dispute can be walked from origin to outcome without broken narrative.

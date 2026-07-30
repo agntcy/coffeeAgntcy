@@ -18,6 +18,8 @@ graph TD
 
 ## Pattern
 
+**Pattern category:** Discovery, Routing & Composition
+
 **Directory-based dispatch** chooses the **next specialist from intent and context** instead of hard-wiring a single
 static path. When signals, tags, or confidence shift, a different expert may be the right callee; the pattern makes that
 **explicit and explainable** rather than a hidden branch table.

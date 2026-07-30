@@ -22,6 +22,8 @@ graph TD
 
 ## Pattern
 
+**Pattern category:** Multi-Agent Communication & Collaboration
+
 **Decentralized consensus** aims to **reach agreement without a single permanent hub**: local agents exchange beliefs
 and evidence until a forecast, allocation, or similar outcome **converges** under explicit stopping rules. No one node
 is the eternal oracle; instead, the process is defined by **what may be published**, **how updates merge**, and **when

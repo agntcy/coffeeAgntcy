@@ -18,6 +18,8 @@ graph TD
 
 ## Pattern
 
+**Pattern category:** Optimization & Constraint Reasoning
+
 An **economic constraint agent** optimizes under **explicit budgets**-cost, time, carbon, or other currencies-so
 trade-offs are stated in the same units operations and finance already use. Decisions expose **Pareto fronts** (better
 on one axis, worse on another) instead of pretending a single fake optimum exists when objectives genuinely conflict.

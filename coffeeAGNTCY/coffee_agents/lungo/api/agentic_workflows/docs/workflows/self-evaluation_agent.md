@@ -18,6 +18,8 @@ graph TD
 
 ## Pattern
 
+**Pattern category:** Learning, Feedback & Self-Improvement
+
 A **self-evaluation** (reflection) pattern compares **past outcomes** to intent-forecasts versus arrivals, routing
 versus reality-and proposes **bounded improvements** to prompts, policies, or weights under **human governance**. The
 agent reads telemetry and business results, compares them to what was supposed to happen, and outputs **reviewable

@@ -18,6 +18,8 @@ graph TD
 
 ## Pattern
 
+**Pattern category:** Orchestration & Control Flow
+
 **Agent workflow chain** means breaking a **complex goal into ordered agent steps**, each enriching **shared state** so
 later specialists inherit constraints instead of rediscovering what earlier steps already established. The shared record
 might hold quality floors, commercial bands, diligence flags, or other structured facts that every hop must respect.

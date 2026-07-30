@@ -18,6 +18,8 @@ graph TD
 
 ## Pattern
 
+**Pattern category:** Discovery, Routing & Composition
+
 > **TODO** - full pattern-level write-up. This is a minimal stub so the pattern reference library has reachable
 > reference material for the **Recruiter** pattern; a follow-up issue will replace this with the proper authored
 > doc.

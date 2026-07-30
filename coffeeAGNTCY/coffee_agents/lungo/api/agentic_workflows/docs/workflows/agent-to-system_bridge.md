@@ -18,6 +18,8 @@ graph TD
 
 ## Pattern
 
+**Pattern category:** Integration & External Systems
+
 An **agent-to-system bridge** lets agents **invoke trusted external systems**-enterprise planning tools, emissions
 services, tariff or rate engines-as **first-class evidence** in a decision, instead of relying on prose memory or
 guessed numbers. The pattern treats integrations as part of the reasoning substrate: plans and arguments are expected to

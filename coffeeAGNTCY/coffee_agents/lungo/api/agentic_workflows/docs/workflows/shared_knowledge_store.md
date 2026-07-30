@@ -18,6 +18,8 @@ graph TD
 
 ## Pattern
 
+**Pattern category:** Internet of Cognition
+
 A **shared knowledge store** **persists knowledge across tasks and time**-yield history, supplier reliability, settled
 prices-so agents query **curated records** instead of re-scraping the world on every run. Long-lived facts live in one
 governed place with keys, versions, and provenance.
