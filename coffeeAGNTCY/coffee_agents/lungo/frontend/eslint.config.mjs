@@ -65,6 +65,20 @@ export default [
     },
   },
   {
+    files: ["src/**/*.{js,jsx,ts,tsx}"],
+    ignores: ["src/api/http/**"],
+    rules: {
+      "no-restricted-globals": [
+        "error",
+        {
+          name: "fetch",
+          message:
+            "Use @/api/http (httpFetch, fetchJson, fetchNdjsonStream, fetchSse) instead of raw fetch.",
+        },
+      ],
+    },
+  },
+  {
     files: ["**/*.{js,jsx,ts,tsx}"],
     ignores: ["**/logger.ts"],
     rules: {
