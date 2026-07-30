@@ -19,6 +19,11 @@ graph TD
 
 ## Pattern
 
+**References:**
+
+- [OODA loop](https://en.wikipedia.org/wiki/OODA_loop) (observe–orient–decide–act control cycle)
+- Antonio Gullí, *Agentic Design Patterns* (Springer, 2025), Ch. 11 — Goal Setting and Monitoring. [https://doi.org/10.1007/978-3-032-01402-3](https://doi.org/10.1007/978-3-032-01402-3)
+
 **Category:** Orchestration & Control Flow
 
 The **sense-decide-act loop** runs **observe → act → re-evaluate** in cycles so plans update when the world moves-ports

@@ -24,6 +24,11 @@ graph TD
 
 ## Pattern
 
+**References:**
+
+- [Blackboard / Shared Memory pattern](https://multi-agent.wiki/patterns/blackboard-shared-memory)
+- Antonio Gullí, *Agentic Design Patterns* (Springer, 2025), Ch. 8 — Memory Management. [https://doi.org/10.1007/978-3-032-01402-3](https://doi.org/10.1007/978-3-032-01402-3)
+
 **Category:** Internet of Cognition
 
 **Shared agent memory** gives multiple agents a **common place to read and write facts** about the work in progress-

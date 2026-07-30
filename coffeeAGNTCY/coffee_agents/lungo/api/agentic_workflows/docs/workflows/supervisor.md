@@ -23,6 +23,11 @@ graph TD
 
 ## Pattern
 
+**References:**
+
+- [LangChain multi-agent supervisor pattern](https://docs.langchain.com/oss/python/langchain/multi-agent/subagents-personal-assistant)
+- Antonio Gullí, *Agentic Design Patterns* (Springer, 2025), Ch. 7 — Multi-Agent Collaboration (Supervisor model). [https://doi.org/10.1007/978-3-032-01402-3](https://doi.org/10.1007/978-3-032-01402-3)
+
 **Category:** Orchestration & Control Flow
 
 > **TODO** - full pattern-level write-up. This is a minimal stub so the pattern reference library has reachable

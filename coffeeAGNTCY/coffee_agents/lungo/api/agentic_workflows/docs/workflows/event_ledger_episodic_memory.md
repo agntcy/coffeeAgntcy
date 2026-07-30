@@ -18,6 +18,11 @@ graph TD
 
 ## Pattern
 
+**References:**
+
+- [Event Sourcing](https://martinfowler.com/eaaDev/EventSourcing.html)
+- Antonio Gullí, *Agentic Design Patterns* (Springer, 2025), Ch. 8 — Memory Management (episodic/history). [https://doi.org/10.1007/978-3-032-01402-3](https://doi.org/10.1007/978-3-032-01402-3)
+
 **Category:** Internet of Cognition
 
 An **event ledger** (episodic memory for agents) appends a **faithful history of decisions**-prompts, tool calls, policy

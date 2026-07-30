@@ -21,6 +21,10 @@ graph TD
 
 ## Pattern
 
+**References:**
+
+- Antonio Gullí, *Agentic Design Patterns* (Springer, 2025), Ch. 8 — Memory Management (session and state). [https://doi.org/10.1007/978-3-032-01402-3](https://doi.org/10.1007/978-3-032-01402-3)
+
 **Category:** Internet of Cognition
 
 A **session context buffer** is a **temporary, shared scratchpad** for one negotiation or task-bids, floors, deadlines,

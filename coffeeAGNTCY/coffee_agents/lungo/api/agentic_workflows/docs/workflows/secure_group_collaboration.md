@@ -20,6 +20,11 @@ graph TD
 
 ## Pattern
 
+**References:**
+
+- [AGNTCY SLIM (Secure Low-Latency Interactive Messaging)](https://github.com/agntcy/slim)
+- Antonio Gullí, *Agentic Design Patterns* (Springer, 2025), Ch. 7 — Multi-Agent Collaboration and Ch. 18 — Guardrails/Safety Patterns. [https://doi.org/10.1007/978-3-032-01402-3](https://doi.org/10.1007/978-3-032-01402-3)
+
 **Category:** Multi-Agent Communication & Collaboration
 
 **Secure group collaboration** lets **several agents coordinate inside a trusted boundary**: authenticated membership,

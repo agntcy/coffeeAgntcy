@@ -18,6 +18,10 @@ graph TD
 
 ## Pattern
 
+**References:**
+
+- Antonio Gullí, *Agentic Design Patterns* (Springer, 2025), Ch. 16 — Resource-Aware Optimization. [https://doi.org/10.1007/978-3-032-01402-3](https://doi.org/10.1007/978-3-032-01402-3)
+
 **Category:** Optimization & Constraint Reasoning
 
 An **economic constraint agent** optimizes under **explicit budgets**-cost, time, carbon, or other currencies-so

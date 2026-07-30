@@ -17,6 +17,10 @@ graph TD
 
 ## Pattern
 
+**References:**
+
+- Antonio Gullí, *Agentic Design Patterns* (Springer, 2025), Ch. 4 — Reflection (Producer–Critic model) and Ch. 7 — Multi-Agent Collaboration (Critic–Reviewer). [https://doi.org/10.1007/978-3-032-01402-3](https://doi.org/10.1007/978-3-032-01402-3)
+
 **Category:** Governance, Policy & Human Oversight
 
 **Adversarial review** is a way to force a **challenger voice** before expensive commitments: risk against optimism,

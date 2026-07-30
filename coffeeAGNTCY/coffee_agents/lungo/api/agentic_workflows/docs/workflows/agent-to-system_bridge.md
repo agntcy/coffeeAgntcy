@@ -18,6 +18,11 @@ graph TD
 
 ## Pattern
 
+**References:**
+
+- [Model Context Protocol](https://modelcontextprotocol.io/)
+- Antonio Gullí, *Agentic Design Patterns* (Springer, 2025), Ch. 5 — Tool Use (Function Calling) and Ch. 10 — Model Context Protocol. [https://doi.org/10.1007/978-3-032-01402-3](https://doi.org/10.1007/978-3-032-01402-3)
+
 **Category:** Integration & External Systems
 
 An **agent-to-system bridge** lets agents **invoke trusted external systems**-enterprise planning tools, emissions

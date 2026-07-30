@@ -18,6 +18,11 @@ graph TD
 
 ## Pattern
 
+**References:**
+
+- [AGNTCY Directory (dir)](https://github.com/agntcy/dir)
+- Antonio Gullí, *Agentic Design Patterns* (Springer, 2025), Ch. 2 — Routing and Ch. 21 — Exploration and Discovery. [https://doi.org/10.1007/978-3-032-01402-3](https://doi.org/10.1007/978-3-032-01402-3)
+
 **Category:** Discovery, Routing & Composition
 
 > **TODO** - full pattern-level write-up. This is a minimal stub so the pattern reference library has reachable
