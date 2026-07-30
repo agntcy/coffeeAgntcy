@@ -19,7 +19,9 @@ const idleCategoryDocState: PatternDocState = {
   errorMessage: null,
 }
 
-export function useAppPatternCategoryDoc(selectedPatternCategory: string | null) {
+export function useAppPatternCategoryDoc(
+  selectedPatternCategory: string | null,
+) {
   const [categoryDocState, setCategoryDocState] =
     useState<PatternDocState>(idleCategoryDocState)
 

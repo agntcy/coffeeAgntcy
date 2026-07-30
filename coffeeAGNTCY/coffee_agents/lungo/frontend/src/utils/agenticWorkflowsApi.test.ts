@@ -236,9 +236,9 @@ describe("fetchPatternCategoryDocumentation", () => {
 
 describe("patternCategoryBodyMarkdown", () => {
   it("strips the leading H1 for sidebar display", () => {
-    expect(
-      patternCategoryBodyMarkdown("# Title\n\nParagraph."),
-    ).toBe("Paragraph.")
+    expect(patternCategoryBodyMarkdown("# Title\n\nParagraph.")).toBe(
+      "Paragraph.",
+    )
   })
 })
 

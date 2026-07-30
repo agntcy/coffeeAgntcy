@@ -239,10 +239,7 @@ const buildReferenceCategories = (
   order: Map<string, number>,
   categoryOrder: readonly string[],
 ): ReferenceCategoryNode[] => {
-  const byPattern = new Map<
-    string,
-    { category: string; orderIndex: number }
-  >()
+  const byPattern = new Map<string, { category: string; orderIndex: number }>()
 
   for (const row of placeholders) {
     const idx = order.get(row.name) ?? Number.POSITIVE_INFINITY
@@ -371,7 +368,10 @@ const addPatternExpandedKeys = (
 }
 
 export const buildInitialExpanded = (
-  layout: Pick<CatalogSidebarLayout, "implementedPatterns" | "referenceCategories">,
+  layout: Pick<
+    CatalogSidebarLayout,
+    "implementedPatterns" | "referenceCategories"
+  >,
 ): Set<string> => {
   const next = new Set<string>()
 
@@ -387,19 +387,4 @@ export const buildInitialExpanded = (
   }
 
   return next
-}
-
-export const groupScenariosByUseCase = (
-  scenarios: readonly UseCaseScenarioNode[],
-): Map<string, UseCaseScenarioNode[]> => {
-  const byUseCase = new Map<string, UseCaseScenarioNode[]>()
-  for (const ucs of scenarios) {
-    const list = byUseCase.get(ucs.useCase)
-    if (list === undefined) {
-      byUseCase.set(ucs.useCase, [ucs])
-    } else {
-      list.push(ucs)
-    }
-  }
-  return byUseCase
 }
