@@ -8,6 +8,8 @@ import { useChatAreaMeasurement } from "@/hooks/chat"
 import { useAgentAPI } from "@/hooks/agent"
 import {
   useAppChatState,
+  useAppPatternCategories,
+  useAppPatternCategoryDoc,
   useAppPatternReference,
   useAppPromptHandlers,
   useAppStreamingChatEffects,
@@ -48,15 +50,32 @@ export function useApp() {
     setSelectedWorkflowSummary,
   } = useAppWorkflowCatalog(selectedPattern)
 
+  const { patternCategories } = useAppPatternCategories()
+
+  const [selectedPatternCategory, setSelectedPatternCategory] = useState<
+    string | null
+  >(null)
+
+  const { categoryDocState } = useAppPatternCategoryDoc(selectedPatternCategory)
+
   const {
     selectedReferencePattern,
     setSelectedReferencePattern,
     patternChatSessionId,
     setPatternChatSessionId,
     patternDocState,
-    canvasMode,
     selectReferencePattern: selectReferencePatternBase,
   } = useAppPatternReference()
+
+  const canvasMode = useMemo(() => {
+    if (selectedReferencePattern !== null) {
+      return CanvasMode.PATTERN_DOC
+    }
+    if (selectedPatternCategory !== null) {
+      return CanvasMode.CATEGORY_DOC
+    }
+    return CanvasMode.WORKFLOW
+  }, [selectedPatternCategory, selectedReferencePattern])
 
   const chat = useAppChatState({ selectedWorkflowSummary, canvasMode })
   const { resetChatState } = chat
@@ -66,13 +85,27 @@ export function useApp() {
       selectReferencePatternBase(patternName)
       if (patternName !== null) {
         resetChatState()
+        setSelectedPatternCategory(null)
       }
     },
-    [selectReferencePatternBase, resetChatState],
+    [resetChatState, selectReferencePatternBase],
+  )
+
+  const selectPatternCategory = useCallback(
+    (categoryName: string) => {
+      setSelectedPatternCategory(categoryName)
+      setSelectedReferencePattern(null)
+    },
+    [setSelectedReferencePattern],
   )
 
   const suggestedPromptsRequest = useMemo(() => {
-    if (canvasMode === CanvasMode.PATTERN_DOC) return null
+    if (
+      canvasMode === CanvasMode.PATTERN_DOC ||
+      canvasMode === CanvasMode.CATEGORY_DOC
+    ) {
+      return null
+    }
     return getSuggestedPromptsRequestForWorkflow(selectedWorkflowSummary)
   }, [canvasMode, selectedWorkflowSummary])
 
@@ -116,6 +149,7 @@ export function useApp() {
       setSelectedWorkflowSummary(summary)
       setLiveGraphConfig(null)
       setSelectedReferencePattern(null)
+      setSelectedPatternCategory(null)
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps -- streaming/chat refs stable enough; full deps cause unnecessary runs
     [
@@ -148,6 +182,7 @@ export function useApp() {
     workflowCatalogSummaries,
     workflowCatalogLoading,
     workflowCatalogError,
+    patternCategories,
     selectedWorkflowSummary,
     suggestedPromptsRequest,
     chatHeightValue,
@@ -191,6 +226,9 @@ export function useApp() {
     setLiveGraphConfig,
     selectedReferencePattern,
     selectReferencePattern,
+    selectedPatternCategory,
+    selectPatternCategory,
+    categoryDocState,
     canvasMode,
     patternDocState,
     patternChatSessionId,

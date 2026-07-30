@@ -13,12 +13,16 @@ export interface CanvasSwitchProps extends MainAreaProps {
   canvasMode?: CanvasMode
   selectedReferencePattern?: string | null
   patternDocState?: PatternDocState
+  selectedPatternCategory?: string | null
+  categoryDocState?: PatternDocState
 }
 
 const CanvasSwitch: React.FC<CanvasSwitchProps> = ({
   canvasMode,
   selectedReferencePattern,
   patternDocState,
+  selectedPatternCategory,
+  categoryDocState,
   ...mainAreaProps
 }) => {
   if (
@@ -33,6 +37,21 @@ const CanvasSwitch: React.FC<CanvasSwitchProps> = ({
       />
     )
   }
+
+  if (
+    canvasMode === CanvasMode.CATEGORY_DOC &&
+    typeof selectedPatternCategory === "string" &&
+    categoryDocState !== undefined
+  ) {
+    return (
+      <PatternDocCanvas
+        selectedReferencePattern={selectedPatternCategory}
+        patternDocState={categoryDocState}
+        subtitle="Pattern Category"
+      />
+    )
+  }
+
   return <MainArea {...mainAreaProps} />
 }
 

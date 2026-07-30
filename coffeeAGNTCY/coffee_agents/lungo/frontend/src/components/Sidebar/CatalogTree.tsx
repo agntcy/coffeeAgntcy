@@ -12,12 +12,14 @@ import SidebarDropdown from "./SidebarDropdown"
 import SidebarItem from "./SidebarItem"
 import {
   makePatternKey,
+  makeReferenceCategoryKey,
   makeScenarioKey,
   makeWorkflowKey,
   A2A_SLIM_MENU_LABEL,
   REFERENCE_LIBRARY_KEY,
   type CatalogSidebarLayout,
   type PatternNode,
+  type ReferenceCategoryNode,
   type UseCaseScenarioNode,
   type WorkflowNode,
 } from "./sidebar.utils"
@@ -30,6 +32,7 @@ interface CatalogTreeProps {
   onSelectWorkflow: (summary: WorkflowSummary) => void
   selectedReferencePattern?: string | null
   onSelectReferencePattern?: (patternName: string) => void
+  onSelectPatternCategory?: (categoryName: string) => void
 }
 
 const CatalogTree: React.FC<CatalogTreeProps> = ({
@@ -40,12 +43,21 @@ const CatalogTree: React.FC<CatalogTreeProps> = ({
   onSelectWorkflow,
   selectedReferencePattern,
   onSelectReferencePattern,
+  onSelectPatternCategory,
 }) => {
-  const { implementedPatterns, referencePatternNames } = layout
+  const { implementedPatterns, referenceCategories } = layout
 
   const openDoc = useCallback((catalogName: string) => {
     openWorkflowDocumentationInNewTab(catalogName)
   }, [])
+
+  const toggleCategory = useCallback(
+    (categoryKey: string, categoryName: string) => {
+      toggleExpandableDropdown(categoryKey)
+      onSelectPatternCategory?.(categoryName)
+    },
+    [onSelectPatternCategory, toggleExpandableDropdown],
+  )
 
   const renderWorkflow = useCallback(
     (
@@ -131,7 +143,40 @@ const CatalogTree: React.FC<CatalogTreeProps> = ({
     )
   }
 
-  if (implementedPatterns.length === 0 && referencePatternNames.length === 0) {
+  const renderReferenceCategory = (
+    category: ReferenceCategoryNode,
+  ): React.ReactNode => {
+    const categoryKey = makeReferenceCategoryKey(category.name)
+
+    return (
+      <SidebarDropdown
+        key={categoryKey}
+        title={category.name}
+        isExpanded={expandedKeys.has(categoryKey)}
+        onToggle={() => toggleCategory(categoryKey, category.name)}
+      >
+        {category.patternNames.map((patternName) => (
+          <SidebarItem
+            key={patternName}
+            title={patternName}
+            isSelected={selectedReferencePattern === patternName}
+            onClick={
+              onSelectReferencePattern
+                ? () => onSelectReferencePattern(patternName)
+                : () => openDoc(patternName)
+            }
+          />
+        ))}
+      </SidebarDropdown>
+    )
+  }
+
+  const hasImplemented = implementedPatterns.length > 0
+  const hasReference = referenceCategories.some(
+    (category) => category.patternNames.length > 0,
+  )
+
+  if (!hasImplemented && !hasReference) {
     return (
       <Typography variant="body2" sx={{ px: 2.5, py: 1, opacity: 0.6 }}>
         No workflows available
@@ -139,8 +184,7 @@ const CatalogTree: React.FC<CatalogTreeProps> = ({
     )
   }
 
-  const showSeparator =
-    implementedPatterns.length > 0 && referencePatternNames.length > 0
+  const showSeparator = hasImplemented && hasReference
 
   return (
     <List component="div" disablePadding sx={{ width: "100%" }}>
@@ -159,24 +203,13 @@ const CatalogTree: React.FC<CatalogTreeProps> = ({
         />
       ) : null}
 
-      {referencePatternNames.length > 0 ? (
+      {hasReference ? (
         <SidebarDropdown
           title="Reference Library"
           isExpanded={expandedKeys.has(REFERENCE_LIBRARY_KEY)}
           onToggle={() => toggleExpandableDropdown(REFERENCE_LIBRARY_KEY)}
         >
-          {referencePatternNames.map((patternName) => (
-            <SidebarItem
-              key={patternName}
-              title={patternName}
-              isSelected={selectedReferencePattern === patternName}
-              onClick={
-                onSelectReferencePattern
-                  ? () => onSelectReferencePattern(patternName)
-                  : () => openDoc(patternName)
-              }
-            />
-          ))}
+          {referenceCategories.map(renderReferenceCategory)}
         </SidebarDropdown>
       ) : null}
     </List>

@@ -3,10 +3,14 @@
  * SPDX-License-Identifier: Apache-2.0
  *
  * Sidebar-local helpers: expand/collapse keys, initial expanded state, and
- * catalog row grouping for the LHS tree (pattern -> conversation -> workflow).
+ * catalog row grouping for the LHS tree (pattern -> conversation -> workflow;
+ * reference library adds category -> pattern).
  */
 
-import type { WorkflowSummary } from "@/utils/agenticWorkflowsApi"
+import type {
+  PatternCategory,
+  WorkflowSummary,
+} from "@/utils/agenticWorkflowsApi"
 
 /** Catalog workflow names that use a workflow header + A2A SLIM child row. */
 const WORKFLOWS_WITH_A2A_SLIM_TRANSPORT_LAYER: ReadonlySet<string> = new Set([
@@ -37,10 +41,14 @@ export interface PatternNode {
   useCaseScenarios: UseCaseScenarioNode[]
 }
 
+export interface ReferenceCategoryNode {
+  name: string
+  patternNames: string[]
+}
+
 export interface CatalogSidebarLayout {
   implementedPatterns: PatternNode[]
-  /** Unique pattern names for Reference Library, catalog order. */
-  referencePatternNames: string[]
+  referenceCategories: ReferenceCategoryNode[]
 }
 
 export const usesSlimTransportLayer = (workflowName: string): boolean =>
@@ -104,6 +112,55 @@ const minIndexForPattern = (
   }
   return m
 }
+
+const minIndexForPatternNames = (
+  patternNames: readonly string[],
+  order: Map<string, number>,
+): number => {
+  let m = Number.POSITIVE_INFINITY
+  for (const name of patternNames) {
+    const idx = order.get(name)
+    if (idx !== undefined && idx < m) {
+      m = idx
+    }
+  }
+  return m
+}
+
+const compareCategoryNames = (
+  a: string,
+  b: string,
+  categoryOrder: readonly string[],
+): number => {
+  const ia = categoryOrder.indexOf(a)
+  const ib = categoryOrder.indexOf(b)
+  const rankA = ia === -1 ? Number.POSITIVE_INFINITY : ia
+  const rankB = ib === -1 ? Number.POSITIVE_INFINITY : ib
+  if (rankA !== rankB) {
+    return rankA - rankB
+  }
+  return a.localeCompare(b)
+}
+
+const sortCategoryNames = (
+  names: Iterable<string>,
+  categoryOrder: readonly string[],
+  tieBreakIndex?: (name: string) => number,
+): string[] =>
+  [...names].sort((a, b) => {
+    const byOrder = compareCategoryNames(a, b, categoryOrder)
+    if (byOrder !== 0) {
+      return byOrder
+    }
+    if (tieBreakIndex) {
+      const ia = tieBreakIndex(a)
+      const ib = tieBreakIndex(b)
+      if (ia !== ib) {
+        return ia - ib
+      }
+    }
+    return a.localeCompare(b)
+  })
 
 const groupImplementedSummaries = (
   summaries: readonly WorkflowSummary[],
@@ -177,41 +234,78 @@ const groupImplementedSummaries = (
   })
 }
 
-const buildReferencePatternNames = (
+const buildReferenceCategories = (
   placeholders: readonly WorkflowSummary[],
   order: Map<string, number>,
-): string[] => {
-  const byPattern = new Map<string, number>()
+  categoryOrder: readonly string[],
+): ReferenceCategoryNode[] => {
+  const byPattern = new Map<
+    string,
+    { category: string; orderIndex: number }
+  >()
+
   for (const row of placeholders) {
     const idx = order.get(row.name) ?? Number.POSITIVE_INFINITY
     const prev = byPattern.get(row.pattern)
-    if (prev === undefined || idx < prev) {
-      byPattern.set(row.pattern, idx)
+    if (prev === undefined || idx < prev.orderIndex) {
+      byPattern.set(row.pattern, {
+        category: row.pattern_category,
+        orderIndex: idx,
+      })
     }
   }
-  return [...byPattern.keys()].sort((a, b) => {
-    const ia = byPattern.get(a) ?? Number.POSITIVE_INFINITY
-    const ib = byPattern.get(b) ?? Number.POSITIVE_INFINITY
-    if (ia !== ib) {
-      return ia - ib
-    }
-    return a.localeCompare(b)
-  })
+
+  const byCategory = new Map<
+    string,
+    Array<{ name: string; orderIndex: number }>
+  >()
+
+  for (const [patternName, { category, orderIndex }] of byPattern) {
+    const list = byCategory.get(category) ?? []
+    list.push({ name: patternName, orderIndex })
+    byCategory.set(category, list)
+  }
+
+  return sortCategoryNames(byCategory.keys(), categoryOrder, (categoryName) =>
+    minIndexForPatternNames(
+      (byCategory.get(categoryName) ?? []).map((entry) => entry.name),
+      order,
+    ),
+  ).map((categoryName) => ({
+    name: categoryName,
+    patternNames: [...(byCategory.get(categoryName) ?? [])]
+      .sort((a, b) =>
+        a.orderIndex !== b.orderIndex
+          ? a.orderIndex - b.orderIndex
+          : a.name.localeCompare(b.name),
+      )
+      .map((entry) => entry.name),
+  }))
 }
 
+export const patternCategoryOrderFromApi = (
+  categories: readonly PatternCategory[],
+): string[] => categories.map((category) => category.name)
+
 /**
- * Split catalog into implemented tree + Reference Library pattern names.
+ * Split catalog into implemented tree + Reference Library categories.
  */
 export const buildCatalogSidebarLayout = (
   summaries: readonly WorkflowSummary[],
+  categoryOrder: readonly string[] = [],
 ): CatalogSidebarLayout => {
   const order = catalogIndexByName(summaries)
   const implementedRows = summaries.filter((s) => !isPlaceholderWorkflow(s))
   const placeholderRows = summaries.filter(isPlaceholderWorkflow)
+  const patterns = groupImplementedSummaries(implementedRows)
 
   return {
-    implementedPatterns: groupImplementedSummaries(implementedRows),
-    referencePatternNames: buildReferencePatternNames(placeholderRows, order),
+    implementedPatterns: patterns,
+    referenceCategories: buildReferenceCategories(
+      placeholderRows,
+      order,
+      categoryOrder,
+    ),
   }
 }
 
@@ -220,12 +314,17 @@ export const buildCatalogSidebarLayout = (
  */
 export const groupWorkflowsByPatternUseCaseAndScenario = (
   summaries: readonly WorkflowSummary[],
-): PatternNode[] => buildCatalogSidebarLayout(summaries).implementedPatterns
+  categoryOrder: readonly string[] = [],
+): PatternNode[] =>
+  buildCatalogSidebarLayout(summaries, categoryOrder).implementedPatterns
 
 export const REFERENCE_LIBRARY_KEY = "reference-library"
 
 export const isPlaceholderWorkflow = (summary: WorkflowSummary): boolean =>
   summary.use_case === "---" && summary.scenario === "---"
+
+export const makeReferenceCategoryKey = (categoryName: string): string =>
+  `${REFERENCE_LIBRARY_KEY}|category:${categoryName}`
 
 export const makePatternKey = (patternName: string): string =>
   `pattern:${patternName}`
@@ -248,29 +347,45 @@ export const makeWorkflowKey = (
 ): string =>
   `pattern:${patternName}|usecase:${useCase}|scenario:${scenario}|workflow:${workflowName}`
 
-export const buildInitialExpanded = (
-  implementedPatterns: PatternNode[],
-): Set<string> => {
-  const next = new Set<string>()
-  for (const pattern of implementedPatterns) {
-    next.add(makePatternKey(pattern.name))
-    for (const ucs of pattern.useCaseScenarios) {
-      next.add(makeUseCaseKey(pattern.name, ucs.useCase))
-      next.add(makeScenarioKey(pattern.name, ucs.useCase, ucs.scenario))
-      for (const workflow of ucs.workflows) {
-        if (workflow.display === "slim_transport") {
-          next.add(
-            makeWorkflowKey(
-              pattern.name,
-              ucs.useCase,
-              ucs.scenario,
-              workflow.summary.name,
-            ),
-          )
-        }
+const addPatternExpandedKeys = (
+  next: Set<string>,
+  pattern: PatternNode,
+): void => {
+  next.add(makePatternKey(pattern.name))
+  for (const ucs of pattern.useCaseScenarios) {
+    next.add(makeUseCaseKey(pattern.name, ucs.useCase))
+    next.add(makeScenarioKey(pattern.name, ucs.useCase, ucs.scenario))
+    for (const workflow of ucs.workflows) {
+      if (workflow.display === "slim_transport") {
+        next.add(
+          makeWorkflowKey(
+            pattern.name,
+            ucs.useCase,
+            ucs.scenario,
+            workflow.summary.name,
+          ),
+        )
       }
     }
   }
+}
+
+export const buildInitialExpanded = (
+  layout: Pick<CatalogSidebarLayout, "implementedPatterns" | "referenceCategories">,
+): Set<string> => {
+  const next = new Set<string>()
+
+  for (const pattern of layout.implementedPatterns) {
+    addPatternExpandedKeys(next, pattern)
+  }
+
+  if (layout.referenceCategories.length > 0) {
+    next.add(REFERENCE_LIBRARY_KEY)
+    for (const category of layout.referenceCategories) {
+      next.add(makeReferenceCategoryKey(category.name))
+    }
+  }
+
   return next
 }
 

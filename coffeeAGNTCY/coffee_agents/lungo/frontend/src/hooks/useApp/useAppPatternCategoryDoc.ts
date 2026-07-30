@@ -5,6 +5,7 @@
 
 import { useEffect, useState } from "react"
 import { reportRequestError } from "@/errors/request"
+import { type PatternDocState } from "@/types/patternDoc"
 import { buildPatternCategoryDocumentationRequest } from "@/urls"
 import {
   fetchPatternCategoryDocumentation,
@@ -12,28 +13,28 @@ import {
   patternCategoryBodyMarkdown,
 } from "@/utils/agenticWorkflowsApi"
 
+const idleCategoryDocState: PatternDocState = {
+  status: "idle",
+  documentation: null,
+  errorMessage: null,
+}
+
 export function useAppPatternCategoryDoc(selectedPatternCategory: string | null) {
-  const [selectedCategoryMarkdown, setSelectedCategoryMarkdown] = useState<
-    string | null
-  >(null)
-  const [selectedCategoryDocLoading, setSelectedCategoryDocLoading] =
-    useState(false)
-  const [selectedCategoryDocError, setSelectedCategoryDocError] = useState<
-    string | null
-  >(null)
+  const [categoryDocState, setCategoryDocState] =
+    useState<PatternDocState>(idleCategoryDocState)
 
   useEffect(() => {
     if (selectedPatternCategory === null) {
-      setSelectedCategoryMarkdown(null)
-      setSelectedCategoryDocLoading(false)
-      setSelectedCategoryDocError(null)
+      setCategoryDocState(idleCategoryDocState)
       return
     }
 
     const controller = new AbortController()
-    setSelectedCategoryDocLoading(true)
-    setSelectedCategoryDocError(null)
-    setSelectedCategoryMarkdown(null)
+    setCategoryDocState({
+      status: "loading",
+      documentation: null,
+      errorMessage: null,
+    })
 
     fetchPatternCategoryDocumentation(
       selectedPatternCategory,
@@ -41,15 +42,25 @@ export function useAppPatternCategoryDoc(selectedPatternCategory: string | null)
     )
       .then((doc) => {
         if (controller.signal.aborted) return
-        setSelectedCategoryMarkdown(
-          patternCategoryBodyMarkdown(doc.full_markdown),
-        )
+        setCategoryDocState({
+          status: "ready",
+          documentation: {
+            workflow_name: doc.slug,
+            title: doc.title ?? doc.name,
+            pattern_category: doc.name,
+            full_markdown: patternCategoryBodyMarkdown(doc.full_markdown),
+          },
+          errorMessage: null,
+        })
       })
       .catch((err: unknown) => {
         if (err instanceof DOMException && err.name === "AbortError") return
         if (err instanceof PatternCategoryDocumentationNotFoundError) {
-          setSelectedCategoryMarkdown(null)
-          setSelectedCategoryDocError(null)
+          setCategoryDocState({
+            status: "not_found",
+            documentation: null,
+            errorMessage: null,
+          })
           return
         }
         const httpError = reportRequestError(
@@ -57,20 +68,15 @@ export function useAppPatternCategoryDoc(selectedPatternCategory: string | null)
             .endpointLabel,
           err,
         )
-        setSelectedCategoryDocError(httpError.message)
-      })
-      .finally(() => {
-        if (!controller.signal.aborted) {
-          setSelectedCategoryDocLoading(false)
-        }
+        setCategoryDocState({
+          status: "error",
+          documentation: null,
+          errorMessage: httpError.message,
+        })
       })
 
     return () => controller.abort()
   }, [selectedPatternCategory])
 
-  return {
-    selectedCategoryMarkdown,
-    selectedCategoryDocLoading,
-    selectedCategoryDocError,
-  }
+  return { categoryDocState }
 }

@@ -11,10 +11,11 @@ import type { PatternDocState } from "@/types/patternDoc"
 export interface PatternDocCanvasProps {
   selectedReferencePattern: string
   patternDocState: PatternDocState
+  subtitle?: string
 }
 
 const PatternDocCanvas: React.FC<PatternDocCanvasProps> = React.memo(
-  ({ selectedReferencePattern, patternDocState }) => {
+  ({ selectedReferencePattern, patternDocState, subtitle = "Reference Library" }) => {
     const overlayMessage = useMemo<string | null>(() => {
       switch (patternDocState.status) {
         case "loading":
@@ -89,7 +90,7 @@ const PatternDocCanvas: React.FC<PatternDocCanvasProps> = React.memo(
                   variant="caption"
                   sx={{ mt: 0.5, display: "block", opacity: 0.6 }}
                 >
-                  Reference Library
+                  {subtitle}
                 </Typography>
               </Box>
               <Box

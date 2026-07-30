@@ -18,32 +18,42 @@ import CatalogTree from "./CatalogTree"
 import {
   buildCatalogSidebarLayout,
   buildInitialExpanded,
+  patternCategoryOrderFromApi,
 } from "./sidebar.utils"
 
 interface SidebarProps {
   selectedWorkflowSummary: WorkflowSummary | null
   summaries: WorkflowSummary[] | null
+  patternCategories: readonly { name: string }[] | null
   isLoading: boolean
   error: string | null
   onSelectWorkflow: (summary: WorkflowSummary) => void
   selectedReferencePattern?: string | null
   onSelectReferencePattern?: (patternName: string) => void
+  onSelectPatternCategory?: (categoryName: string) => void
 }
 
 const Sidebar: React.FC<SidebarProps> = ({
   selectedWorkflowSummary,
   summaries,
+  patternCategories,
   isLoading,
   error,
   onSelectWorkflow,
   selectedReferencePattern,
   onSelectReferencePattern,
+  onSelectPatternCategory,
 }) => {
   const [expandedKeys, setExpandedKeys] = useState<Set<string>>(new Set())
 
+  const categoryOrder = useMemo(
+    () => patternCategoryOrderFromApi(patternCategories ?? []),
+    [patternCategories],
+  )
+
   const layout = useMemo(
-    () => buildCatalogSidebarLayout(summaries ?? []),
-    [summaries],
+    () => buildCatalogSidebarLayout(summaries ?? [], categoryOrder),
+    [summaries, categoryOrder],
   )
 
   const toggleExpandableDropdown = useCallback((key: string) => {
@@ -64,8 +74,8 @@ const Sidebar: React.FC<SidebarProps> = ({
     if (summaries === null) return
     if (catalogSummariesRef.current === summaries) return
     catalogSummariesRef.current = summaries
-    setExpandedKeys(buildInitialExpanded(layout.implementedPatterns))
-  }, [layout.implementedPatterns, summaries])
+    setExpandedKeys(buildInitialExpanded(layout))
+  }, [layout, summaries])
 
   return (
     <Box
@@ -151,6 +161,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                 onSelectWorkflow={onSelectWorkflow}
                 selectedReferencePattern={selectedReferencePattern}
                 onSelectReferencePattern={onSelectReferencePattern}
+                onSelectPatternCategory={onSelectPatternCategory}
               />
             ) : null}
           </Stack>
