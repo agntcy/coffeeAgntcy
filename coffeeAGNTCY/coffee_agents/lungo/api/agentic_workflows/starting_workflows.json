@@ -2,6 +2,7 @@
   {
     "name": "Publish Subscribe",
     "pattern": "Supervisor",
+    "pattern_category": "Orchestration & Control Flow",
     "use_case": "Coffee Agntcy",
     "scenario": "Purchasing",
     "supports_sse": false,
@@ -184,6 +185,7 @@
   {
     "name": "Publish Subscribe Streaming",
     "pattern": "Supervisor",
+    "pattern_category": "Orchestration & Control Flow",
     "use_case": "Coffee Agntcy",
     "scenario": "Purchasing",
     "supports_sse": false,
@@ -366,6 +368,7 @@
   {
     "name": "Group Messaging",
     "pattern": "Peer Group",
+    "pattern_category": "Multi-Agent Communication & Collaboration",
     "use_case": "Coffee Agntcy",
     "scenario": "Order Fulfillment",
     "supports_sse": true,
@@ -515,6 +518,7 @@
   {
     "name": "A2A HTTP",
     "pattern": "Recruiter",
+    "pattern_category": "Discovery, Routing & Composition",
     "use_case": "Coffee Agntcy",
     "scenario": "Capability Discovery",
     "supports_sse": false,
@@ -573,6 +577,7 @@
   {
     "name": "Adversarial Review Agents",
     "pattern": "Adversarial Review Agents",
+    "pattern_category": "Governance, Policy & Human Oversight",
     "use_case": "---",
     "scenario": "---",
     "starting_topology": {
@@ -584,6 +589,7 @@
   {
     "name": "Agent Workflow Chain",
     "pattern": "Agent Workflow Chain",
+    "pattern_category": "Orchestration & Control Flow",
     "use_case": "---",
     "scenario": "---",
     "starting_topology": {
@@ -595,6 +601,7 @@
   {
     "name": "Agent-to-System Bridge",
     "pattern": "Agent-to-System Bridge",
+    "pattern_category": "Integration & External Systems",
     "use_case": "---",
     "scenario": "---",
     "starting_topology": {
@@ -606,6 +613,7 @@
   {
     "name": "Approval Gate Agent",
     "pattern": "Approval Gate Agent",
+    "pattern_category": "Governance, Policy & Human Oversight",
     "use_case": "---",
     "scenario": "---",
     "starting_topology": {
@@ -617,6 +625,7 @@
   {
     "name": "Composable Agent Service",
     "pattern": "Composable Agent Service",
+    "pattern_category": "Discovery, Routing & Composition",
     "use_case": "---",
     "scenario": "---",
     "starting_topology": {
@@ -628,6 +637,7 @@
   {
     "name": "Coordinator + Worker Agents",
     "pattern": "Coordinator + Worker Agents",
+    "pattern_category": "Orchestration & Control Flow",
     "use_case": "---",
     "scenario": "---",
     "starting_topology": {
@@ -639,6 +649,7 @@
   {
     "name": "Decentralized Consensus Agents",
     "pattern": "Decentralized Consensus Agents",
+    "pattern_category": "Multi-Agent Communication & Collaboration",
     "use_case": "---",
     "scenario": "---",
     "starting_topology": {
@@ -650,6 +661,7 @@
   {
     "name": "Directory-Based Dispatch",
     "pattern": "Directory-Based Dispatch",
+    "pattern_category": "Discovery, Routing & Composition",
     "use_case": "---",
     "scenario": "---",
     "starting_topology": {
@@ -661,6 +673,7 @@
   {
     "name": "Economic Constraint Agent",
     "pattern": "Economic Constraint Agent",
+    "pattern_category": "Optimization & Constraint Reasoning",
     "use_case": "---",
     "scenario": "---",
     "starting_topology": {
@@ -672,6 +685,7 @@
   {
     "name": "End-to-End Telemetry",
     "pattern": "End-to-End Telemetry",
+    "pattern_category": "Observability & Performance Accountability",
     "use_case": "---",
     "scenario": "---",
     "starting_topology": {
@@ -683,6 +697,7 @@
   {
     "name": "Event Ledger (Episodic Memory)",
     "pattern": "Event Ledger (Episodic Memory)",
+    "pattern_category": "Internet of Cognition",
     "use_case": "---",
     "scenario": "---",
     "starting_topology": {
@@ -694,6 +709,7 @@
   {
     "name": "Feedback Loop",
     "pattern": "Feedback Loop",
+    "pattern_category": "Learning, Feedback & Self-Improvement",
     "use_case": "---",
     "scenario": "---",
     "starting_topology": {
@@ -705,6 +721,7 @@
   {
     "name": "Orchestrator Agent",
     "pattern": "Orchestrator Agent",
+    "pattern_category": "Orchestration & Control Flow",
     "use_case": "---",
     "scenario": "---",
     "starting_topology": {
@@ -716,6 +733,7 @@
   {
     "name": "Performance Scoring Agent",
     "pattern": "Performance Scoring Agent",
+    "pattern_category": "Observability & Performance Accountability",
     "use_case": "---",
     "scenario": "---",
     "starting_topology": {
@@ -727,6 +745,7 @@
   {
     "name": "Policy-Enforced Execution",
     "pattern": "Policy-Enforced Execution",
+    "pattern_category": "Governance, Policy & Human Oversight",
     "use_case": "---",
     "scenario": "---",
     "starting_topology": {
@@ -738,6 +757,7 @@
   {
     "name": "Resilience & Re-Routing",
     "pattern": "Resilience & Re-Routing",
+    "pattern_category": "Orchestration & Control Flow",
     "use_case": "---",
     "scenario": "---",
     "starting_topology": {
@@ -749,6 +769,7 @@
   {
     "name": "Secure Group Collaboration",
     "pattern": "Secure Group Collaboration",
+    "pattern_category": "Multi-Agent Communication & Collaboration",
     "use_case": "---",
     "scenario": "---",
     "starting_topology": {
@@ -760,6 +781,7 @@
   {
     "name": "Self-Evaluation Agent",
     "pattern": "Self-Evaluation Agent",
+    "pattern_category": "Learning, Feedback & Self-Improvement",
     "use_case": "---",
     "scenario": "---",
     "starting_topology": {
@@ -771,6 +793,7 @@
   {
     "name": "Sense-Decide-Act Loop",
     "pattern": "Sense-Decide-Act Loop",
+    "pattern_category": "Orchestration & Control Flow",
     "use_case": "---",
     "scenario": "---",
     "starting_topology": {
@@ -782,6 +805,7 @@
   {
     "name": "Session Context Buffer",
     "pattern": "Session Context Buffer",
+    "pattern_category": "Internet of Cognition",
     "use_case": "---",
     "scenario": "---",
     "starting_topology": {
@@ -793,7 +817,7 @@
   {
     "name": "Shared Agent Memory",
     "pattern": "Shared Agent Memory",
-    "pattern_category": "internet_of_cognition",
+    "pattern_category": "Internet of Cognition",
     "use_case": "---",
     "scenario": "---",
     "starting_topology": {
@@ -805,6 +829,7 @@
   {
     "name": "Shared Knowledge Store",
     "pattern": "Shared Knowledge Store",
+    "pattern_category": "Internet of Cognition",
     "use_case": "---",
     "scenario": "---",
     "starting_topology": {
