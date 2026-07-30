@@ -50,7 +50,6 @@ export type LungoFrontendApiPaths = {
   readonly suggestedPromptsStreaming: ApiRoute
   readonly agentPrompt: ApiRoute
   readonly agentPromptStream: ApiRoute
-  readonly transportConfig: ApiRoute
   readonly agenticWorkflowsCatalog: ApiRoute
   readonly patternCategories: ApiRoute
   readonly patternCategoryDocumentation: (categoryName: string) => ApiRoute
@@ -118,7 +117,6 @@ export const LUNGO_FRONTEND_URLS = {
     suggestedPromptsStreaming: apiRoute("/suggested-prompts?pattern=streaming"),
     agentPrompt: apiRoute("/agent/prompt"),
     agentPromptStream: apiRoute("/agent/prompt/stream"),
-    transportConfig: apiRoute("/transport/config"),
     agenticWorkflowsCatalog: apiRoute("/agentic-workflows/"),
     patternCategories: apiRoute("/pattern-categories/"),
     patternCategoryDocumentation: (categoryName: string): ApiRoute => {
@@ -344,7 +342,6 @@ export {
   buildIdentityBadgeRequest,
   buildIdentityPolicyRequest,
   buildSuggestedPromptsRequest,
-  buildTransportConfigRequest,
   buildWorkflowInstanceSseUrl,
   type SuggestedPromptsSource,
 } from "./httpRequestTargets.ts"

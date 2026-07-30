@@ -55,15 +55,6 @@ export function buildGroupAgentPromptStreamRequest(): HttpRequestTarget {
   )
 }
 
-export function buildTransportConfigRequest(
-  pattern?: string,
-): HttpRequestTarget {
-  return joinHttpRequest(
-    getApiBaseForPattern(pattern),
-    LUNGO_FRONTEND_URLS.apiPaths.transportConfig,
-  )
-}
-
 export function buildIdentityBadgeRequest(slug: string): HttpRequestTarget {
   return joinHttpRequest(
     getExchangeAppApiUrl(),
