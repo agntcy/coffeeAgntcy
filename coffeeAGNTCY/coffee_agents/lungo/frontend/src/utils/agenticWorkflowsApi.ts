@@ -18,6 +18,7 @@ import {
   buildAgenticWorkflowsCatalogRequest,
   buildAgenticWorkflowsDocumentationRequest,
   buildPatternCategoriesRequest,
+  buildPatternCategoryDocumentationRequest,
   LUNGO_FRONTEND_URLS,
 } from "@/urls"
 import { type ChatApiTarget, type PatternType } from "@/utils/patternUtils"
@@ -45,6 +46,14 @@ export interface PatternCategory {
 /** OpenAPI `PatternCategoryListResponse` for `GET /pattern-categories/`. */
 export interface PatternCategoryListResponse {
   items: PatternCategory[]
+}
+
+/** OpenAPI `PatternCategoryDocumentationResponse`. */
+export interface PatternCategoryDocumentation {
+  slug: string
+  name: string
+  title: string | null
+  full_markdown: string
 }
 
 /**
@@ -204,6 +213,22 @@ export const fetchWorkflowSummariesWithRetry = async (
   throw lastError
 }
 
+export class PatternCategoryDocumentationNotFoundError extends Error {
+  constructor(categoryName: string) {
+    super(`Pattern category documentation not found for: ${categoryName}`)
+    this.name = "PatternCategoryDocumentationNotFoundError"
+  }
+}
+
+/** Markdown body below the leading H1 (for compact sidebar rendering). */
+export const patternCategoryBodyMarkdown = (fullMarkdown: string): string => {
+  const lines = fullMarkdown.split("\n")
+  if (lines[0]?.startsWith("# ")) {
+    return lines.slice(1).join("\n").trim()
+  }
+  return fullMarkdown.trim()
+}
+
 export class WorkflowDocumentationNotFoundError extends Error {
   constructor(workflowName: string) {
     super(`Workflow documentation not found for: ${workflowName}`)
@@ -253,6 +278,52 @@ export const fetchPatternCategories = async (
       typeof item === "object" &&
       isNonEmptyString((item as PatternCategory).name),
   )
+}
+
+const isPatternCategoryDocumentation = (
+  value: unknown,
+): value is PatternCategoryDocumentation => {
+  if (value === null || typeof value !== "object") return false
+  const obj = value as Record<string, unknown>
+  return (
+    isNonEmptyString(obj.slug) &&
+    isNonEmptyString(obj.name) &&
+    isNonEmptyString(obj.full_markdown) &&
+    (obj.title === null ||
+      obj.title === undefined ||
+      isNonEmptyString(obj.title))
+  )
+}
+
+export const fetchPatternCategoryDocumentation = async (
+  categoryName: string,
+  signal?: AbortSignal,
+): Promise<PatternCategoryDocumentation> => {
+  const request = buildPatternCategoryDocumentationRequest(categoryName)
+
+  try {
+    const body = await fetchJson<unknown>(request.url, {
+      signal,
+      endpointLabel: request.endpointLabel,
+      headers: agenticWorkflowsAuthHeaders(),
+    })
+    if (!isPatternCategoryDocumentation(body)) {
+      throw new Error(
+        "Failed to fetch pattern category documentation: unexpected response shape",
+      )
+    }
+    return {
+      slug: body.slug,
+      name: body.name,
+      title: body.title ?? null,
+      full_markdown: body.full_markdown,
+    }
+  } catch (error) {
+    if (isHttpError(error) && error.status === 404) {
+      throw new PatternCategoryDocumentationNotFoundError(categoryName)
+    }
+    throw error
+  }
 }
 
 export const fetchWorkflowDocumentation = async (

@@ -7,8 +7,11 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import { HttpError } from "@/api/http"
 import { PATTERNS, type PatternType } from "@/utils/patternUtils"
 import {
+  fetchPatternCategoryDocumentation,
   fetchWorkflowDocumentation,
   fetchWorkflowSummaries,
+  PatternCategoryDocumentationNotFoundError,
+  patternCategoryBodyMarkdown,
   WorkflowDocumentationNotFoundError,
   type WorkflowSummary,
 } from "@/utils/agenticWorkflowsApi"
@@ -182,6 +185,60 @@ describe("fetchWorkflowSummaries", () => {
   ])("$caseName", async ({ body, init }) => {
     stubFetch(body, init)
     await expect(fetchWorkflowSummaries()).rejects.toThrow()
+  })
+})
+
+describe("fetchPatternCategoryDocumentation", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
+  const stubFetch = (
+    body: unknown,
+    init: { ok?: boolean; status?: number } = {},
+  ): void => {
+    const { ok = true, status = 200 } = init
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => ({
+        ok,
+        status,
+        statusText: ok ? "OK" : "Not Found",
+        json: async () => body,
+      })),
+    )
+  }
+
+  it("returns parsed category documentation on 200", async () => {
+    stubFetch({
+      slug: "orchestration_and_control_flow",
+      name: "Orchestration & Control Flow",
+      title: "Orchestration & Control Flow",
+      full_markdown: "# Orchestration & Control Flow\n\nBody.",
+    })
+
+    const doc = await fetchPatternCategoryDocumentation(
+      "Orchestration & Control Flow",
+    )
+
+    expect(doc.slug).toBe("orchestration_and_control_flow")
+    expect(doc.full_markdown).toBe("# Orchestration & Control Flow\n\nBody.")
+  })
+
+  it("throws PatternCategoryDocumentationNotFoundError on 404", async () => {
+    stubFetch({}, { ok: false, status: 404 })
+
+    await expect(
+      fetchPatternCategoryDocumentation("Unknown"),
+    ).rejects.toBeInstanceOf(PatternCategoryDocumentationNotFoundError)
+  })
+})
+
+describe("patternCategoryBodyMarkdown", () => {
+  it("strips the leading H1 for sidebar display", () => {
+    expect(
+      patternCategoryBodyMarkdown("# Title\n\nParagraph."),
+    ).toBe("Paragraph.")
   })
 })
 
