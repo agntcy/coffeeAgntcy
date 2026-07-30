@@ -8,7 +8,7 @@ on:
         required: true
         type: string
       test_paths:
-        description: 'Space-separated pytest paths (e.g. tests/unit tests/integration/general tests/integration/live).'
+        description: 'Space-separated pytest directory arguments and flags, e.g. tests/unit tests/integration tests/integration/live --ignore=tests/integration/llm --ignore=tests/integration/live'
         required: true
         type: string
       pip_overrides:

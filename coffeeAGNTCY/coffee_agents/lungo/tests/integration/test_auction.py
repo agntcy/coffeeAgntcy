@@ -6,7 +6,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from agents.supervisors.auction.graph.a2a_retry import TransportTimeoutError
 
-from tests.integration.general._auction_helpers import TRANSPORT_MATRIX, response_has_inventory_amount
+from tests.integration._auction_helpers import TRANSPORT_MATRIX, response_has_inventory_amount
 
 
 @pytest.mark.parametrize(

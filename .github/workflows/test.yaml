@@ -114,7 +114,7 @@ jobs:
     uses: ./.github/workflows/test-reusable.yaml
     with:
       project_dir: coffeeAGNTCY/coffee_agents/corto
-      test_paths: tests/unit tests/integration/general
+      test_paths: tests/unit tests/integration --ignore=tests/integration/llm
       pip_overrides: ${{ inputs.pip_overrides }}
       pip_constraints: ${{ inputs.pip_constraints }}
       docker_overrides: ${{ inputs.docker_overrides }}
@@ -140,7 +140,7 @@ jobs:
     uses: ./.github/workflows/test-reusable.yaml
     with:
       project_dir: coffeeAGNTCY/coffee_agents/lungo
-      test_paths: tests/unit tests/integration/general tests/integration/live
+      test_paths: tests/unit tests/integration tests/integration/live --ignore=tests/integration/llm --ignore=tests/integration/live
       pip_overrides: ${{ inputs.pip_overrides }}
       pip_constraints: ${{ inputs.pip_constraints }}
       docker_overrides: ${{ inputs.docker_overrides }}
@@ -166,7 +166,7 @@ jobs:
     uses: ./.github/workflows/test-reusable.yaml
     with:
       project_dir: coffeeAGNTCY/coffee_agents/recruiter
-      test_paths: tests/unit tests/integration/general tests/integration/live
+      test_paths: tests/unit tests/integration tests/integration/live --ignore=tests/integration/llm --ignore=tests/integration/live
       pip_overrides: ${{ inputs.pip_overrides }}
       pip_constraints: ${{ inputs.pip_constraints }}
       docker_overrides: ${{ inputs.docker_overrides }}

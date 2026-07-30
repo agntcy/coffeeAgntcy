@@ -6,7 +6,7 @@ import logging
 
 import pytest
 
-from tests.integration.general._auction_helpers import (
+from tests.integration._auction_helpers import (
     AUCTION_PROMPT_CASES,
     TRANSPORT_MATRIX,
     response_has_inventory_amount,

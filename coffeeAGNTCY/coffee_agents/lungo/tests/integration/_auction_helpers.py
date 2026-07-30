@@ -76,7 +76,7 @@ def get_semantic_similarity(text1, text2):
 
 
 def load_auction_prompt_cases():
-    """Load auction prompt cases from JSON in ``tests/integration/general/``."""
+    """Load auction prompt cases from JSON in ``tests/integration/``."""
     data_file = Path(__file__).resolve().parent / "auction_prompt_cases.json"
     if not data_file.exists():
         raise FileNotFoundError(f"Prompt cases file not found: {data_file}")

@@ -200,7 +200,7 @@ docker compose -f docker/docker-compose.yaml up -d postgres zot dir-api-server d
 | Directory | Purpose |
 |-----------|---------|
 | `tests/unit/` | Mocks only |
-| `tests/integration/general/` | Docker-compose session; no live webserver; no LLM |
+| `tests/integration/` | Docker-compose session; no live webserver; no LLM |
 | `tests/integration/live/` | Subprocess HTTP against live A2A server; no LLM |
 | `tests/integration/llm/` | Docker + LLM credentials (needs `.env`) |
 | `tests/integration/helpers/` | Docker/process helpers (not collected as tests) |
@@ -216,7 +216,7 @@ uv run pytest -v
 Run a subset by directory:
 
 ```bash
-uv run pytest tests/unit tests/integration/general tests/integration/live -v
+uv run pytest tests/unit tests/integration tests/integration/live --ignore=tests/integration/llm --ignore=tests/integration/live -v
 uv run pytest tests/integration/llm -v   # needs LLM settings in .env
 ```
 

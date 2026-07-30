@@ -62,7 +62,7 @@ async for response in client.send_message(message):
 Run the caching benchmark to measure tool cache performance:
 
 ```bash
-uv run python tests/integration/general/benchmark_caching.py
+uv run python tests/integration/benchmark_caching.py
 ```
 
 Example output:

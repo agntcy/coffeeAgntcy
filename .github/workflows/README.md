@@ -93,7 +93,7 @@ Runs `pytest` via `uv` for a single project directory and explicit path list.
 | Input | Description |
 |-------|-------------|
 | `project_dir` | Path to the project directory to test (required) |
-| `test_paths` | Space-separated pytest directory arguments, e.g. `tests/unit tests/integration/general tests/integration/live` (required) |
+| `test_paths` | Space-separated pytest directory arguments and flags, e.g. `tests/unit tests/integration tests/integration/live --ignore=tests/integration/llm --ignore=tests/integration/live` (required) |
 | `pip_overrides` | PEP 508 specs (one per line) forced into the lock |
 | `pip_constraints` | Constraint lines applied during resolution |
 | `docker_overrides` | Lines `service=image[:tag]` to patch docker-compose service images |

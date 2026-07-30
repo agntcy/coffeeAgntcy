@@ -9,7 +9,7 @@ Tests cover Exchange ↔ Farm behavior across message transports (SLIM, NATS): u
 | Directory | Purpose |
 |-----------|---------|
 | `tests/unit/` | Mocks only |
-| `tests/integration/general/` | Docker-compose session; no live webserver; no LLM |
+| `tests/integration/` | Docker-compose session; no live webserver; no LLM |
 | `tests/integration/llm/` | Docker + LLM credentials (needs `.env`) |
 | `tests/integration/helpers/` | Docker/process helpers (not collected as tests) |
 
@@ -48,7 +48,7 @@ uv run pytest -q
 Run a subset by directory:
 
 ```bash
-uv run pytest tests/unit tests/integration/general -q
+uv run pytest tests/unit tests/integration --ignore=tests/integration/llm -q
 uv run pytest tests/integration/llm -q   # needs LLM settings in .env
 ```
 
