@@ -18,12 +18,12 @@ graph TD
 
 ## Pattern
 
-**Pattern category:** Governance, Policy & Human Oversight
+**Category:** Governance, Policy & Human Oversight
 
 An **approval gate** pauses automated flow when **stakes exceed autonomy**: bulk purchases, novel counterparties, or
 exceptions that would be painful if executed quietly. The pattern packages **what** is proposed, **why** it is
-justified, which **policy** applies, and what **changed** since the last checkpoint, then waits for **non-repudiable
-human approval** before irreversible side effects continue.
+justified, which **policy** applies, and what **changed** since the last checkpoint, then waits for **attributable,
+auditable human approval** before irreversible side effects continue.
 
 The gate is not distrust of automation per se; it is **accountability mapping**. Packaging and wait states are
 first-class so approvers see enough context to say yes or no without reverse-engineering a dozen prior steps. That

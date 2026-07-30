@@ -18,7 +18,7 @@ graph TD
 
 ## Pattern
 
-**Pattern category:** Discovery, Routing & Composition
+**Category:** Discovery, Routing & Composition
 
 **Recruiter-style discovery** is a general pattern for **on-demand selection** in an ecosystem of many possible
 **agents, services, or tools**: one **recruiter** (or selector) turns a vague ask into **structured lookup**,

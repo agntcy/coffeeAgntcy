@@ -19,7 +19,7 @@ graph TD
 
 ## Pattern
 
-**Pattern category:** Orchestration & Control Flow
+**Category:** Orchestration & Control Flow
 
 The **sense-decide-act loop** runs **observe → act → re-evaluate** in cycles so plans update when the world moves-ports
 stall, carriers roll bookings, quality signals shift-instead of treating the first guess as permanent truth.

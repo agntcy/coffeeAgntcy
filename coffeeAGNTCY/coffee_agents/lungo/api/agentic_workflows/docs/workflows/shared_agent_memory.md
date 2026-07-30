@@ -24,7 +24,7 @@ graph TD
 
 ## Pattern
 
-**Pattern category:** Internet of Cognition
+**Category:** Internet of Cognition
 
 **Shared agent memory** gives multiple agents a **common place to read and write facts** about the work in progress-
 task state, commitments, open questions, partial results-so they **build on each other's contributions** instead of

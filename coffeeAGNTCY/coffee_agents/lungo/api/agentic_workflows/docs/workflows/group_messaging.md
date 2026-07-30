@@ -18,7 +18,7 @@ graph TD
 
 ## Pattern
 
-**Pattern category:** Multi-Agent Communication & Collaboration
+**Category:** Multi-Agent Communication & Collaboration
 
 **Group messaging and coordination** is a general arrangement when **several specialists** must **see the same
 conversation**, **answer one another**, and still have **one accountable place** that keeps order, permissions, and

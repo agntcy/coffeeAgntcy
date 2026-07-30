@@ -20,7 +20,7 @@ graph TD
 
 ## Pattern
 
-**Pattern category:** Multi-Agent Communication & Collaboration
+**Category:** Multi-Agent Communication & Collaboration
 
 **Secure group collaboration** lets **several agents coordinate inside a trusted boundary**: authenticated membership,
 scoped messages, and attributable speech, so pricing and allocation feel like **intra-alliance work**, not an open

@@ -18,7 +18,7 @@ graph TD
 
 ## Pattern
 
-**Pattern category:** Observability & Performance Accountability
+**Category:** Observability & Performance Accountability
 
 **End-to-end telemetry** traces **decisions and interactions across the whole chain**-from early inputs through
 fulfillment-so **correlation identifiers** stitch agent steps to real business objects and money movements. The point is

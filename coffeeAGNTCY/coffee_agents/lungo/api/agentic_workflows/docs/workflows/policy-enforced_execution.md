@@ -18,7 +18,7 @@ graph TD
 
 ## Pattern
 
-**Pattern category:** Governance, Policy & Human Oversight
+**Category:** Governance, Policy & Human Oversight
 
 **Policy-enforced execution** **blocks or conditions actions** against explicit **trust and ethics rules**-labor,
 sanctions, sustainability, or whatever the company publishes as non-negotiable-so automated enthusiasm never overrides

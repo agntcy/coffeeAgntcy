@@ -20,7 +20,7 @@ graph TD
 
 ## Pattern
 
-**Pattern category:** Orchestration & Control Flow
+**Category:** Orchestration & Control Flow
 
 **Resilience and re-routing** recovers from failure by **switching agents or paths**: discover alternates, compensate
 partial work, and keep customer promises from collapsing because one carrier or one integration had a bad day. Recovery

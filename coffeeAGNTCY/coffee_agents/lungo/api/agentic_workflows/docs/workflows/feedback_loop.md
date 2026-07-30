@@ -19,7 +19,7 @@ graph TD
 
 ## Pattern
 
-**Pattern category:** Learning, Feedback & Self-Improvement
+**Category:** Learning, Feedback & Self-Improvement
 
 A **feedback loop** folds **human or system feedback**-scores, disputes, delivery outcomes-back into **routing and
 selection policy** so the next cycle behaves less like amnesia. Learning is explicit: feedback carries **attribution**

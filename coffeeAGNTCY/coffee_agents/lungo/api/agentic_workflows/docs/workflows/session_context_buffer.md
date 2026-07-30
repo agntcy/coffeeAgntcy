@@ -21,7 +21,7 @@ graph TD
 
 ## Pattern
 
-**Pattern category:** Internet of Cognition
+**Category:** Internet of Cognition
 
 A **session context buffer** is a **temporary, shared scratchpad** for one negotiation or task-bids, floors, deadlines,
 last counters-without polluting long-term catalogs or treating ephemeral chatter as permanent truth. It answers: what is

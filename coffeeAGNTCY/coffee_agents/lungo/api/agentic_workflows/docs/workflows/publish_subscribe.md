@@ -23,7 +23,7 @@ graph TD
 
 ## Pattern
 
-**Pattern category:** Orchestration & Control Flow
+**Category:** Orchestration & Control Flow
 
 **Supervisor and workers** is a general arrangement for multi-agent work: **one coordinator** owns the end-to-end
 story-what to ask next, when to branch, how to merge or compare results, and where policy and retries live-while

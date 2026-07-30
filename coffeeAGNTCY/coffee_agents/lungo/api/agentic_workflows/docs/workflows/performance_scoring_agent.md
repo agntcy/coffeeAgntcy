@@ -18,7 +18,7 @@ graph TD
 
 ## Pattern
 
-**Pattern category:** Observability & Performance Accountability
+**Category:** Observability & Performance Accountability
 
 A **performance scoring agent** measures how well agentic runs meet **declared KPIs**-cost, time, carbon, quality, or
 whatever leadership actually names-so improvement budgets go to what **measurably** works, not to whoever tells the

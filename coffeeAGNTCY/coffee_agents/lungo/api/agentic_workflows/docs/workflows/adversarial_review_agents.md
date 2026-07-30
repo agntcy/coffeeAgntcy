@@ -17,7 +17,7 @@ graph TD
 
 ## Pattern
 
-**Pattern category:** Governance, Policy & Human Oversight
+**Category:** Governance, Policy & Human Oversight
 
 **Adversarial review** is a way to force a **challenger voice** before expensive commitments: risk against optimism,
 policy against shortcuts, so decisions survive contact with someone whose role is to **disagree constructively**. The
