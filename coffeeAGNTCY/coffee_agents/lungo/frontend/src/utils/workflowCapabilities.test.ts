@@ -17,6 +17,7 @@ import {
 const makeSummary = (over: Partial<WorkflowSummary>): WorkflowSummary => ({
   name: "Workflow",
   pattern: "publish_subscribe",
+  pattern_category: "Orchestration & Control Flow",
   use_case: "use",
   scenario: "scenario",
   supports_sse: false,

@@ -52,6 +52,7 @@ export type LungoFrontendApiPaths = {
   readonly agentPromptStream: ApiRoute
   readonly transportConfig: ApiRoute
   readonly agenticWorkflowsCatalog: ApiRoute
+  readonly patternCategories: ApiRoute
   readonly identityAppsBadge: (slug: string) => ApiRoute
   readonly identityAppsPolicies: (slug: string) => ApiRoute
   readonly agentsOasf: (slug: string) => ApiRoute
@@ -118,6 +119,7 @@ export const LUNGO_FRONTEND_URLS = {
     agentPromptStream: apiRoute("/agent/prompt/stream"),
     transportConfig: apiRoute("/transport/config"),
     agenticWorkflowsCatalog: apiRoute("/agentic-workflows/"),
+    patternCategories: apiRoute("/pattern-categories/"),
     identityAppsBadge: (slug: string): ApiRoute =>
       apiRoute(`/identity-apps/${slug}/badge`),
     identityAppsPolicies: (slug: string): ApiRoute =>
@@ -325,6 +327,7 @@ export {
   buildAgentPromptStreamRequest,
   buildAgenticWorkflowsCatalogRequest,
   buildAgenticWorkflowsCatalogUrl,
+  buildPatternCategoriesRequest,
   buildAgenticWorkflowsDocumentationRequest,
   buildAgenticWorkflowsPatternChatRequest,
   buildAgenticWorkflowsInstantiateRequest,

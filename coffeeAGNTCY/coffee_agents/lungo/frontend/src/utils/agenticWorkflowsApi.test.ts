@@ -19,6 +19,7 @@ const originalFetch = globalThis.fetch
 const makeSummary = (over: Partial<WorkflowSummary>): WorkflowSummary => ({
   name: "Workflow",
   pattern: "publish_subscribe",
+  pattern_category: "Orchestration & Control Flow",
   use_case: "use",
   scenario: "scenario",
   supports_sse: false,
@@ -108,6 +109,7 @@ describe("fetchWorkflowSummaries", () => {
       Streaming: {
         name: "Streaming",
         pattern: "publish_subscribe_streaming",
+        pattern_category: "Orchestration & Control Flow",
         use_case: "use",
         scenario: "scenario",
         supports_sse: false,
@@ -124,15 +126,11 @@ describe("fetchWorkflowSummaries", () => {
 
     const summaries = await fetchWorkflowSummaries()
 
-    expect(summaries.map((s) => s.name)).toEqual(["Streaming", "Legacy"])
+    expect(summaries.map((s) => s.name)).toEqual(["Streaming"])
     expect(summaries[0]).toMatchObject({
       supports_streaming: true,
       chat_api_target: "exchange",
-    })
-    expect(summaries[1]).toMatchObject({
-      supports_sse: false,
-      supports_streaming: false,
-      chat_api_target: null,
+      pattern_category: "Orchestration & Control Flow",
     })
   })
 
@@ -141,6 +139,7 @@ describe("fetchWorkflowSummaries", () => {
       Good: {
         name: "Good",
         pattern: "publish_subscribe",
+        pattern_category: "Orchestration & Control Flow",
         use_case: "use",
         scenario: "scenario",
       },
@@ -157,6 +156,7 @@ describe("fetchWorkflowSummaries", () => {
       Weird: {
         name: "Weird",
         pattern: "publish_subscribe",
+        pattern_category: "Orchestration & Control Flow",
         use_case: "use",
         scenario: "scenario",
         chat_api_target: "nonsense",
