@@ -56,6 +56,24 @@ def _anchor_from_heading(heading: str, used: set[str]) -> str:
     return anchor
 
 
+def parse_pattern_category_from_section_body(body: str) -> str | None:
+    """Extract ``**Category:**`` from a Pattern section body."""
+    match = re.search(r"^\*\*Category:\*\*\s*(.+)$", body, re.MULTILINE)
+    if not match:
+        return None
+    return match.group(1).strip() or None
+
+
+def pattern_category_from_parsed_documentation(
+    parsed: ParsedWorkflowDocumentation,
+) -> str | None:
+    """Return the category line from the Pattern section when present."""
+    for _anchor, heading, body in parsed.sections:
+        if heading == "Pattern":
+            return parse_pattern_category_from_section_body(body)
+    return None
+
+
 def parse_workflow_documentation_markdown(
     markdown_text: str, *, slug: str
 ) -> ParsedWorkflowDocumentation:

@@ -15,9 +15,13 @@ from collections.abc import AsyncIterator
 from typing import Annotated
 from uuid import UUID, uuid4
 
+from api.agentic_workflows.auth import require_workflow_api_key
+from api.agentic_workflows.catalog_types import chat_api_target_from_workflow
 from api.agentic_workflows.dtos import (
     InstantiateWorkflowResponse,
     Pattern,
+    PatternCategory,
+    PatternCategoryListResponse,
     PatternChatRequest,
     PatternListResponse,
     UseCase,
@@ -28,24 +32,27 @@ from api.agentic_workflows.dtos import (
     WorkflowSummary,
     WorkflowSummaryMapResponse,
 )
-from api.agentic_workflows.auth import require_workflow_api_key
 from api.agentic_workflows.instance_lifecycle import (
     build_instantiate_seed_event,
     delete_workflow_instance_from_store,
     instances_map_for_workflow,
     workflow_instance_from_store,
 )
-from api.agentic_workflows.patterns import PATTERNS
+from api.agentic_workflows.pattern_categories import PATTERN_CATEGORIES
 from api.agentic_workflows.pattern_chat import stream_one_turn
-from api.agentic_workflows.use_cases import USE_CASES
+from api.agentic_workflows.patterns import PATTERNS
 from api.agentic_workflows.topology_enrichment import (
     enrich_workflow_instance_topology,
     enrich_workflow_topology,
 )
-from api.agentic_workflows.catalog_types import chat_api_target_from_workflow
-from api.agentic_workflows.workflow_capabilities import derive_workflow_capabilities
+from api.agentic_workflows.use_cases import USE_CASES
+from api.agentic_workflows.workflow_capabilities import (
+    derive_workflow_catalog_summary_fields,
+    pattern_category_from_workflow,
+)
 from api.agentic_workflows.workflow_documentation import (
     load_parsed_workflow_documentation,
+    pattern_category_from_parsed_documentation,
     workflow_name_to_documentation_slug,
 )
 from api.agentic_workflows.workflows import get_workflows
@@ -219,6 +226,17 @@ def create_agentic_workflows_router() -> APIRouter:
         return UseCaseListResponse(items=[UseCase(name=n) for n in USE_CASES])
 
     @router.get(
+        "/pattern-categories/",
+        response_model=PatternCategoryListResponse,
+        summary="List pattern categories",
+    )
+    async def list_pattern_categories() -> PatternCategoryListResponse:
+        """GET /pattern-categories/ — catalog of agentic design pattern categories."""
+        return PatternCategoryListResponse(
+            items=[PatternCategory(name=n) for n in PATTERN_CATEGORIES]
+        )
+
+    @router.get(
         "/agentic-workflows/",
         response_model=WorkflowSummaryMapResponse,
         summary="List workflows",
@@ -226,6 +244,7 @@ def create_agentic_workflows_router() -> APIRouter:
     async def list_agentic_workflows(
         patterns: Annotated[list[str] | None, Query()] = None,
         use_cases: Annotated[list[str] | None, Query()] = None,
+        pattern_categories: Annotated[list[str] | None, Query()] = None,
     ) -> WorkflowSummaryMapResponse:
         """GET /agentic-workflows/ - map keyed by workflow name; optional filters."""
         all_workflows = get_workflows()
@@ -237,15 +256,21 @@ def create_agentic_workflows_router() -> APIRouter:
         if use_cases:
             uc_set = set(use_cases)
             filtered = [w for w in filtered if w.use_case in uc_set]
+        if pattern_categories:
+            category_set = set(pattern_categories)
+            filtered = [
+                w for w in filtered if pattern_category_from_workflow(w) in category_set
+            ]
 
         summary_map = {}
         for w in filtered:
-            supports_sse, supports_streaming, chat_api_target = (
-                derive_workflow_capabilities(w)
+            pattern_category, supports_sse, supports_streaming, chat_api_target = (
+                derive_workflow_catalog_summary_fields(w)
             )
             summary_map[w.name] = WorkflowSummary(
                 name=w.name,
                 pattern=w.pattern,
+                pattern_category=pattern_category,
                 use_case=w.use_case,
                 scenario=w.scenario,
                 supports_sse=supports_sse,
@@ -307,6 +332,7 @@ def create_agentic_workflows_router() -> APIRouter:
             slug=parsed.slug,
             workflow_name=workflow_name,
             title=parsed.title,
+            pattern_category=pattern_category_from_parsed_documentation(parsed),
             sections=[
                 WorkflowDocumentationSection(anchor=a, heading=h, body_markdown=b)
                 for a, h, b in parsed.sections
