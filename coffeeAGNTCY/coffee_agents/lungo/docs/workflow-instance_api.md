@@ -71,6 +71,7 @@ The standalone service listens on `:9105` ([`../api/agentic_workflows/server.py`
 | Chat with a pattern's docs | `POST /patterns/{name}/chat` | NDJSON stream |
 | List use-cases | `GET /use-cases/` | `UseCaseListResponse` |
 | List pattern categories | `GET /pattern-categories/` | `PatternCategoryListResponse` |
+| Pattern category documentation | `GET /pattern-categories/{category_name}/documentation/` | `PatternCategoryDocumentationResponse` |
 | List workflows (filterable) | `GET /agentic-workflows/` | `WorkflowSummaryMapResponse` |
 | Workflow details / starting topology | `GET /agentic-workflows/{workflow_name}/` | `Workflow` |
 | Workflow documentation (markdown) | `GET /agentic-workflows/{workflow_name}/documentation/` | `WorkflowDocumentationResponse` |
@@ -127,6 +128,19 @@ Returns the agentic design pattern categories available in the catalog (display 
     { "name": "Internet of Cognition" },
     { "name": "Orchestration & Control Flow" }
   ]
+}
+```
+
+### `GET /pattern-categories/{category_name}/documentation/` — category markdown
+
+Returns the full markdown source for a category reference doc (from [`docs/categories/`](../api/agentic_workflows/docs/categories/)). The path segment is the category **display name** (URL-encoded when it contains spaces or `&`).
+
+```json
+{
+  "slug": "orchestration_and_control_flow",
+  "name": "Orchestration & Control Flow",
+  "title": "Orchestration & Control Flow",
+  "full_markdown": "# Orchestration & Control Flow\n\nHow work is structured…"
 }
 ```
 

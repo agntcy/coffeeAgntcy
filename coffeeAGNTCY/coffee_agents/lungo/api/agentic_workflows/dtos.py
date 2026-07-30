@@ -55,6 +55,33 @@ class PatternCategoryListResponse(BaseModel):
     items: list[PatternCategory]
 
 
+class PatternCategoryDocumentationResponse(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    slug: Annotated[
+        str,
+        Field(
+            min_length=1,
+            description="Basename slug for docs/categories/{slug}.md.",
+        ),
+    ]
+    name: Annotated[
+        str,
+        Field(
+            min_length=1,
+            description="Display name of the category (H1 in the markdown file).",
+        ),
+    ]
+    title: Annotated[
+        str | None,
+        Field(description="Leading H1 from the markdown file, if present."),
+    ] = None
+    full_markdown: Annotated[
+        str,
+        Field(description="Full markdown source for the category reference doc."),
+    ]
+
+
 class WorkflowSummary(BaseModel):
     model_config = ConfigDict(extra="forbid")
 

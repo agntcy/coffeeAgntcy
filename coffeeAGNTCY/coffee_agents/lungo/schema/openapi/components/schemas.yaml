@@ -89,6 +89,27 @@ components:
           minLength: 1
           description: Display name of an agentic design pattern category.
 
+    PatternCategoryDocumentationResponse:
+      type: object
+      required: [slug, name, full_markdown]
+      additionalProperties: false
+      properties:
+        slug:
+          type: string
+          minLength: 1
+          description: Basename slug for docs/categories/{slug}.md.
+        name:
+          type: string
+          minLength: 1
+          description: Display name of the category (H1 in the markdown file).
+        title:
+          type: string
+          nullable: true
+          description: Leading H1 from the markdown file, if present.
+        full_markdown:
+          type: string
+          description: Full markdown source for the category reference doc.
+
     PatternCategoryListResponse:
       type: object
       required: [items]

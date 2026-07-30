@@ -9,6 +9,9 @@ from unittest.mock import patch
 
 import pytest
 from api.agentic_workflows.pattern_categories import PATTERN_CATEGORIES
+from api.agentic_workflows.pattern_category_documentation import (
+    load_pattern_category_documentation,
+)
 from api.agentic_workflows.router import create_agentic_workflows_router
 from api.agentic_workflows.workflow_capabilities import (
     derive_workflow_catalog_summary_fields,
@@ -75,6 +78,15 @@ def test_publish_subscribe_documentation_pattern_category() -> None:
     )
 
 
+def test_load_pattern_category_documentation() -> None:
+    parsed = load_pattern_category_documentation("Orchestration & Control Flow")
+    assert parsed is not None
+    assert parsed.slug == "orchestration_and_control_flow"
+    assert parsed.title == "Orchestration & Control Flow"
+    assert parsed.full_markdown.startswith("# Orchestration & Control Flow")
+    assert "coordinator at the centre" in parsed.full_markdown
+
+
 @pytest.fixture()
 def categories_client(workflow_api_headers: dict[str, str]) -> TestClient:
     app = FastAPI(openapi_url=None, docs_url=None, redoc_url=None)
@@ -97,3 +109,26 @@ def test_list_pattern_categories(categories_client: TestClient) -> None:
     names = [item["name"] for item in data["items"]]
     assert names == PATTERN_CATEGORIES
     assert set(names) == set(PATTERN_CATEGORIES)
+    for item in data["items"]:
+        assert set(item.keys()) == {"name"}
+
+
+def test_get_pattern_category_documentation(categories_client: TestClient) -> None:
+    category_name = "Orchestration & Control Flow"
+    resp = categories_client.get(
+        f"/pattern-categories/{category_name}/documentation/"
+    )
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["name"] == category_name
+    assert data["slug"] == "orchestration_and_control_flow"
+    assert data["title"] == category_name
+    assert data["full_markdown"].startswith(f"# {category_name}")
+    assert "coordinator at the centre" in data["full_markdown"]
+
+
+def test_get_pattern_category_documentation_not_found(
+    categories_client: TestClient,
+) -> None:
+    resp = categories_client.get("/pattern-categories/Unknown Category/documentation/")
+    assert resp.status_code == 404

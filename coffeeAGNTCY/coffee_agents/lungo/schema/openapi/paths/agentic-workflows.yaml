@@ -95,6 +95,28 @@ paths:
               schema:
                 $ref: ../components/schemas.yaml#/components/schemas/PatternCategoryListResponse
 
+  /pattern-categories/{category_name}/documentation/:
+    get:
+      tags: [agentic-workflows]
+      operationId: getPatternCategoryDocumentation
+      summary: Get pattern category documentation (markdown)
+      parameters:
+        - name: category_name
+          in: path
+          required: true
+          schema:
+            type: string
+            minLength: 1
+      responses:
+        "200":
+          description: Category reference markdown
+          content:
+            application/json:
+              schema:
+                $ref: ../components/schemas.yaml#/components/schemas/PatternCategoryDocumentationResponse
+        "404":
+          description: Category documentation not found
+
   /agentic-workflows/:
     get:
       tags: [agentic-workflows]

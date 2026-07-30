@@ -21,6 +21,7 @@ from api.agentic_workflows.dtos import (
     InstantiateWorkflowResponse,
     Pattern,
     PatternCategory,
+    PatternCategoryDocumentationResponse,
     PatternCategoryListResponse,
     PatternChatRequest,
     PatternListResponse,
@@ -38,7 +39,10 @@ from api.agentic_workflows.instance_lifecycle import (
     instances_map_for_workflow,
     workflow_instance_from_store,
 )
-from api.agentic_workflows.pattern_categories import PATTERN_CATEGORIES
+from api.agentic_workflows.pattern_categories import PATTERN_CATEGORY_RECORDS
+from api.agentic_workflows.pattern_category_documentation import (
+    load_pattern_category_documentation,
+)
 from api.agentic_workflows.pattern_chat import stream_one_turn
 from api.agentic_workflows.patterns import PATTERNS
 from api.agentic_workflows.topology_enrichment import (
@@ -233,7 +237,29 @@ def create_agentic_workflows_router() -> APIRouter:
     async def list_pattern_categories() -> PatternCategoryListResponse:
         """GET /pattern-categories/ — catalog of agentic design pattern categories."""
         return PatternCategoryListResponse(
-            items=[PatternCategory(name=n) for n in PATTERN_CATEGORIES]
+            items=[PatternCategory(name=record.name) for record in PATTERN_CATEGORY_RECORDS]
+        )
+
+    @router.get(
+        "/pattern-categories/{category_name}/documentation/",
+        response_model=PatternCategoryDocumentationResponse,
+        summary="Get pattern category documentation (markdown)",
+    )
+    async def get_pattern_category_documentation(
+        category_name: Annotated[str, Path(min_length=1)],
+    ) -> PatternCategoryDocumentationResponse:
+        """GET …/documentation/ — markdown from ``docs/categories`` for this category name."""
+        parsed = load_pattern_category_documentation(category_name)
+        if parsed is None:
+            raise HTTPException(
+                status_code=404,
+                detail=f"Pattern category documentation not found for: {category_name}",
+            )
+        return PatternCategoryDocumentationResponse(
+            slug=parsed.slug,
+            name=parsed.name,
+            title=parsed.title,
+            full_markdown=parsed.full_markdown,
         )
 
     @router.get(
