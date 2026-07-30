@@ -20,7 +20,7 @@ graph TD
 
 **References:**
 
-- Antonio Gullí, *Agentic Design Patterns* (Springer, 2025), Ch. 13 — Human-in-the-Loop. [https://doi.org/10.1007/978-3-032-01402-3](https://doi.org/10.1007/978-3-032-01402-3)
+- Antonio Gullí, *Agentic Design Patterns* (Springer, 2025), Ch. 13 - Human-in-the-Loop. [https://doi.org/10.1007/978-3-032-01402-3](https://doi.org/10.1007/978-3-032-01402-3)
 
 **Category:** Governance, Policy & Human Oversight
 

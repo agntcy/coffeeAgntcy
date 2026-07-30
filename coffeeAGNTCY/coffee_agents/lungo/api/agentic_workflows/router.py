@@ -235,7 +235,7 @@ def create_agentic_workflows_router() -> APIRouter:
         summary="List pattern categories",
     )
     async def list_pattern_categories() -> PatternCategoryListResponse:
-        """GET /pattern-categories/ — catalog of agentic design pattern categories."""
+        """GET /pattern-categories/ - catalog of agentic design pattern categories."""
         return PatternCategoryListResponse(
             items=[PatternCategory(name=record.name) for record in PATTERN_CATEGORY_RECORDS]
         )
@@ -248,7 +248,7 @@ def create_agentic_workflows_router() -> APIRouter:
     async def get_pattern_category_documentation(
         category_name: Annotated[str, Path(min_length=1)],
     ) -> PatternCategoryDocumentationResponse:
-        """GET …/documentation/ — markdown from ``docs/categories`` for this category name."""
+        """GET …/documentation/ - markdown from ``docs/categories`` for this category name."""
         parsed = load_pattern_category_documentation(category_name)
         if parsed is None:
             raise HTTPException(

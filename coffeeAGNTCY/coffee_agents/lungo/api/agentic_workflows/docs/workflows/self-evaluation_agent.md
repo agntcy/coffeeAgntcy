@@ -20,7 +20,7 @@ graph TD
 
 **References:**
 
-- Antonio Gullí, *Agentic Design Patterns* (Springer, 2025), Ch. 4 — Reflection and Ch. 9 — Learning and Adaptation. [https://doi.org/10.1007/978-3-032-01402-3](https://doi.org/10.1007/978-3-032-01402-3)
+- Antonio Gullí, *Agentic Design Patterns* (Springer, 2025), Ch. 4 - Reflection and Ch. 9 - Learning and Adaptation. [https://doi.org/10.1007/978-3-032-01402-3](https://doi.org/10.1007/978-3-032-01402-3)
 
 **Category:** Learning, Feedback & Self-Improvement
 

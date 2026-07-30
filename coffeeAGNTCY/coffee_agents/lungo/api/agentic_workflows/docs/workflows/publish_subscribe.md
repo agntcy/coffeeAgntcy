@@ -25,7 +25,7 @@ graph TD
 
 **References:**
 
-- Antonio Gullí, *Agentic Design Patterns* (Springer, 2025), Ch. 7 — Multi-Agent Collaboration (Supervisor model) and Ch. 3 — Parallelization (fan-out to workers). [https://doi.org/10.1007/978-3-032-01402-3](https://doi.org/10.1007/978-3-032-01402-3)
+- Antonio Gullí, *Agentic Design Patterns* (Springer, 2025), Ch. 7 - Multi-Agent Collaboration (Supervisor model) and Ch. 3 - Parallelization (fan-out to workers). [https://doi.org/10.1007/978-3-032-01402-3](https://doi.org/10.1007/978-3-032-01402-3)
 
 **Category:** Orchestration & Control Flow
 

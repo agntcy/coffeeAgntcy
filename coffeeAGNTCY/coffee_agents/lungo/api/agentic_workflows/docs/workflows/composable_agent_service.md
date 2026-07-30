@@ -21,7 +21,7 @@ graph TD
 **References:**
 
 - [Model Context Protocol](https://modelcontextprotocol.io/)
-- Antonio Gullí, *Agentic Design Patterns* (Springer, 2025), Ch. 10 — Model Context Protocol (composable capabilities). [https://doi.org/10.1007/978-3-032-01402-3](https://doi.org/10.1007/978-3-032-01402-3)
+- Antonio Gullí, *Agentic Design Patterns* (Springer, 2025), Ch. 10 - Model Context Protocol (composable capabilities). [https://doi.org/10.1007/978-3-032-01402-3](https://doi.org/10.1007/978-3-032-01402-3)
 
 **Category:** Discovery, Routing & Composition
 

@@ -118,7 +118,7 @@ Returns the business use-cases available in the catalog. This is the shape a fro
 
 `UseCaseListResponse` is an object with a required `items` array; each item is an object with a required, non-empty `name` string and no additional properties (`UseCase` / `UseCaseListResponse` in [`components/schemas.yaml`](../schema/openapi/components/schemas.yaml)). The list-of-objects shape (rather than a bare array of strings) is intentional so each use-case can grow extra fields later without breaking clients.
 
-### `GET /pattern-categories/` — list pattern categories
+### `GET /pattern-categories/` - list pattern categories
 
 Returns the agentic design pattern categories available in the catalog (display names from [`docs/categories/`](../api/agentic_workflows/docs/categories/)).
 
@@ -131,7 +131,7 @@ Returns the agentic design pattern categories available in the catalog (display 
 }
 ```
 
-### `GET /pattern-categories/{category_name}/documentation/` — category markdown
+### `GET /pattern-categories/{category_name}/documentation/` - category markdown
 
 Returns the full markdown source for a category reference doc (from [`docs/categories/`](../api/agentic_workflows/docs/categories/)). The path segment is the category **display name** (URL-encoded when it contains spaces or `&`).
 
@@ -150,7 +150,7 @@ Returns the workflows in the catalog as a **map keyed by workflow name**. Option
 
 - `patterns` - `[]string` (repeat the param: `?patterns=Supervisor&patterns=Recruiter`)
 - `use_cases` - `[]string` (`?use_cases=Coffee%20Agntcy`)
-- `pattern_categories` — `[]string` (`?pattern_categories=Orchestration%20%26%20Control%20Flow`)
+- `pattern_categories` - `[]string` (`?pattern_categories=Orchestration%20%26%20Control%20Flow`)
 
 All filters are independent; when multiple are supplied a workflow must match every supplied filter to be included.
 

@@ -26,7 +26,7 @@ graph TD
 **References:**
 
 - [LangChain multi-agent supervisor pattern](https://docs.langchain.com/oss/python/langchain/multi-agent/subagents-personal-assistant)
-- Antonio Gullí, *Agentic Design Patterns* (Springer, 2025), Ch. 7 — Multi-Agent Collaboration (Supervisor model). [https://doi.org/10.1007/978-3-032-01402-3](https://doi.org/10.1007/978-3-032-01402-3)
+- Antonio Gullí, *Agentic Design Patterns* (Springer, 2025), Ch. 7 - Multi-Agent Collaboration (Supervisor model). [https://doi.org/10.1007/978-3-032-01402-3](https://doi.org/10.1007/978-3-032-01402-3)
 
 **Category:** Orchestration & Control Flow
 

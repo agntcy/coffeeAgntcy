@@ -10,5 +10,5 @@ Consensus Agents** exchange beliefs until a forecast or allocation converges und
 
 **Patterns:** Peer Group, Secure Group Collaboration, Decentralized Consensus Agents
 
-**Not to be confused with Orchestration & Control Flow** — collaboration patterns define *how peers interact in the
+**Not to be confused with Orchestration & Control Flow** - collaboration patterns define *how peers interact in the
 open*. Orchestration patterns define *who owns the saga, sequencing, and recovery*.

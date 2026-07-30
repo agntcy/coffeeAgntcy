@@ -21,7 +21,7 @@ graph TD
 **References:**
 
 - [Agent2Agent (A2A) Protocol specification](https://a2a-protocol.org/latest/specification/)
-- Antonio Gullí, *Agentic Design Patterns* (Springer, 2025), Ch. 7 — Multi-Agent Collaboration (Network model) and Ch. 15 — Inter-Agent Communication (A2A). [https://doi.org/10.1007/978-3-032-01402-3](https://doi.org/10.1007/978-3-032-01402-3)
+- Antonio Gullí, *Agentic Design Patterns* (Springer, 2025), Ch. 7 - Multi-Agent Collaboration (Network model) and Ch. 15 - Inter-Agent Communication (A2A). [https://doi.org/10.1007/978-3-032-01402-3](https://doi.org/10.1007/978-3-032-01402-3)
 
 **Category:** Multi-Agent Communication & Collaboration
 

@@ -6,8 +6,8 @@ approve, reject, or defer.
 
 **Patterns:** Feedback Loop, Self-Evaluation Agent
 
-**Builds on Observability & Performance Accountability** — telemetry and KPI scores supply the evidence; learning
+**Builds on Observability & Performance Accountability** - telemetry and KPI scores supply the evidence; learning
 patterns decide what may change and under which gates.
 
-**Not to be confused with Discovery, Routing & Composition** — feedback may *update* routing weights over time, but
+**Not to be confused with Discovery, Routing & Composition** - feedback may *update* routing weights over time, but
 discovery patterns perform the lookup and selection at request time.
