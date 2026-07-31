@@ -241,6 +241,19 @@ export interface components {
             /** @description Latest user turn. Server holds the rest of the conversation. */
             message: string;
         };
+        /** @description One FastAPI/Pydantic validation error (422 response body). */
+        RequestValidationErrorItem: {
+            /** @description Location of the error (e.g. body, query, path segment, field name). */
+            loc: (string | number)[];
+            msg: string;
+            type: string;
+        } & {
+            [key: string]: unknown;
+        };
+        /** @description Error body returned by FastAPI for HTTPException and request validation failures. HTTPException uses a string detail; validation failures use an array of items. */
+        HttpError: {
+            detail: string | components["schemas"]["RequestValidationErrorItem"][];
+        };
         UseCase: {
             name: string;
         };
@@ -581,7 +594,62 @@ export interface components {
             };
         };
     };
-    responses: never;
+    responses: {
+        /** @description Path, query, or request body failed validation. */
+        UnprocessableEntity: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["HttpError"];
+            };
+        };
+        /** @description Unknown workflow, instance, pattern, or documentation resource. */
+        NotFound: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["HttpError"];
+            };
+        };
+        /** @description Invalid payload or event does not match the request path context. */
+        BadRequest: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["HttpError"];
+            };
+        };
+        /** @description Server-side catalog inconsistency or invalid stored projection. */
+        InternalServerError: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["HttpError"];
+            };
+        };
+        /** @description Workflow instance store is not configured or is closed. */
+        ServiceUnavailable: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["HttpError"];
+            };
+        };
+        /** @description Work was accepted but did not finish in time (e.g. instantiate merge wait). Do not blindly retry POST instantiate; each call creates a new instance. */
+        GatewayTimeout: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["HttpError"];
+            };
+        };
+    };
     parameters: never;
     requestBodies: never;
     headers: never;
@@ -659,13 +727,7 @@ export interface operations {
                 };
                 content?: never;
             };
-            /** @description Request body failed validation. */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
+            422: components["responses"]["UnprocessableEntity"];
         };
     };
     listUseCases: {
@@ -711,6 +773,7 @@ export interface operations {
                     "application/json": components["schemas"]["WorkflowSummaryMapResponse"];
                 };
             };
+            422: components["responses"]["UnprocessableEntity"];
         };
     };
     getAgenticWorkflow: {
@@ -736,6 +799,8 @@ export interface operations {
                     "application/json": components["schemas"]["workflow"];
                 };
             };
+            404: components["responses"]["NotFound"];
+            422: components["responses"]["UnprocessableEntity"];
         };
     };
     instantiateAgenticWorkflow: {
@@ -759,6 +824,12 @@ export interface operations {
                     "application/json": components["schemas"]["InstantiateWorkflowResponse"];
                 };
             };
+            400: components["responses"]["BadRequest"];
+            404: components["responses"]["NotFound"];
+            422: components["responses"]["UnprocessableEntity"];
+            500: components["responses"]["InternalServerError"];
+            503: components["responses"]["ServiceUnavailable"];
+            504: components["responses"]["GatewayTimeout"];
         };
     };
     getWorkflowDocumentation: {
@@ -789,6 +860,8 @@ export interface operations {
                 };
                 content?: never;
             };
+            422: components["responses"]["UnprocessableEntity"];
+            503: components["responses"]["ServiceUnavailable"];
         };
     };
     listWorkflowInstances: {
@@ -811,6 +884,9 @@ export interface operations {
                     "application/json": components["schemas"]["WorkflowInstanceMapResponse"];
                 };
             };
+            404: components["responses"]["NotFound"];
+            422: components["responses"]["UnprocessableEntity"];
+            503: components["responses"]["ServiceUnavailable"];
         };
     };
     getWorkflowInstanceState: {
@@ -836,6 +912,10 @@ export interface operations {
                     "application/json": components["schemas"]["workflow_instance"];
                 };
             };
+            404: components["responses"]["NotFound"];
+            422: components["responses"]["UnprocessableEntity"];
+            500: components["responses"]["InternalServerError"];
+            503: components["responses"]["ServiceUnavailable"];
         };
     };
     deleteWorkflowInstance: {
@@ -871,6 +951,8 @@ export interface operations {
                 };
                 content?: never;
             };
+            422: components["responses"]["UnprocessableEntity"];
+            503: components["responses"]["ServiceUnavailable"];
         };
     };
     postWorkflowInstanceEvent: {
@@ -896,13 +978,10 @@ export interface operations {
                 };
                 content?: never;
             };
-            /** @description Invalid event payload */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
+            400: components["responses"]["BadRequest"];
+            404: components["responses"]["NotFound"];
+            422: components["responses"]["UnprocessableEntity"];
+            503: components["responses"]["ServiceUnavailable"];
         };
     };
     streamWorkflowInstanceEvents: {
@@ -926,6 +1005,9 @@ export interface operations {
                     "text/event-stream": string;
                 };
             };
+            404: components["responses"]["NotFound"];
+            422: components["responses"]["UnprocessableEntity"];
+            503: components["responses"]["ServiceUnavailable"];
         };
     };
 }
