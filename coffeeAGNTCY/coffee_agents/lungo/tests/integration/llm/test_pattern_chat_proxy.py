@@ -1,7 +1,7 @@
 # Copyright AGNTCY Contributors (https://github.com/agntcy)
 # SPDX-License-Identifier: Apache-2.0
 
-"""Live smoke test for POST /patterns/{name}/chat against a real LLM proxy.
+"""Smoke test for POST /patterns/{name}/chat against a real LiteLLM proxy.
 
 Spins a short-lived uvicorn subprocess (TestClient buffers streaming responses
 and breaks ADK's async LiteLLM client), then issues a real request against the
@@ -19,13 +19,14 @@ from urllib.parse import quote
 
 import httpx
 import pytest
-from tests.helpers.workflow_api_auth import workflow_api_auth_headers
-from tests.unit.agentic_workflows.api.agentic_uvicorn_helpers import (
+
+from tests.helpers.agentic_uvicorn_helpers import (
     assert_lungo_package_layout,
     free_tcp_port,
     start_agentic_uvicorn,
     wait_health,
 )
+from tests.helpers.workflow_api_auth import workflow_api_auth_headers
 
 
 pytestmark = pytest.mark.skipif(
@@ -34,7 +35,7 @@ pytestmark = pytest.mark.skipif(
 )
 
 
-def test_live_pattern_chat_streams_real_response() -> None:
+def test_pattern_chat_proxy_streams_real_response() -> None:
     assert_lungo_package_layout()
     port = free_tcp_port()
     base_url = f"http://127.0.0.1:{port}"

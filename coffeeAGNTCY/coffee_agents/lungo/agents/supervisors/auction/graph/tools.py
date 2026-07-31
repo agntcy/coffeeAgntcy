@@ -246,12 +246,11 @@ async def get_farm_yield_inventory(prompt: str, farm: str) -> str:
         raise A2AAgentError(f"Farm '{farm}' not recognized. Available farms "
                              f"are: {', '.join(farm_registry.slugs())}.")
 
-    card.preferred_transport = DEFAULT_MESSAGE_TRANSPORT.lower()
-
     client = None
     try:
         try:
             card = copy.deepcopy(card)
+            card.preferred_transport = DEFAULT_MESSAGE_TRANSPORT.lower()
 
             # create a client with event middleware to capture tool calls and responses for tracing in the UI
             client = await a2a_client_factory.create(
@@ -536,6 +535,7 @@ async def create_order(farm: str, quantity: int, price: float) -> str:
     try:
         try:
             card = copy.deepcopy(card)  # avoid mutating the singleton card
+            card.preferred_transport = DEFAULT_MESSAGE_TRANSPORT.lower()
 
             client = await a2a_client_factory.create(
                 card, interceptors=[_event_interceptor], consumers=[_event_consumer],

@@ -11,7 +11,7 @@ import subprocess
 from pathlib import Path
 
 # If you always run from the lungo dir, set it once:
-PROJECT_DIR = Path(__file__).resolve().parents[2]  # .../coffee_agents/lungo
+PROJECT_DIR = Path(__file__).resolve().parents[3]  # .../coffee_agents/lungo
 
 def _compose_cmd(files: List[str]) -> List[str]:
     """

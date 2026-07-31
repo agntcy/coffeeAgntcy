@@ -118,7 +118,7 @@ export TOOL_CACHE_EXCLUDE=tool_a,tool_b
 ### Cache Tests
 
 ```bash
-uv run pytest tests/integration/test_caching.py -v
+uv run pytest tests/integration/llm/test_caching.py -v
 ```
 
 ## Agentic Evaluation

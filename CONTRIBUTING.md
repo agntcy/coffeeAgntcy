@@ -37,6 +37,8 @@ We expect new pull requests to include tests for any affected behavior, and, as
 we follow semantic versioning, we may reserve breaking changes until the next
 major version release.
 
+Each agent project documents its test layout and commands in `tests/README.md` under `coffeeAGNTCY/coffee_agents/{corto,lungo,recruiter}/`.
+
 ## Other Ways to Contribute
 
 We welcome anyone that wants to contribute to `coffeeAgntcy` to triage and

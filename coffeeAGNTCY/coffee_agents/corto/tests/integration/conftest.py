@@ -12,8 +12,8 @@ from pathlib import Path
 
 import pytest
 from fastapi.testclient import TestClient
-from tests.integration.docker_helpers import down, up
-from tests.integration.process_helper import ProcessRunner
+from tests.integration.helpers.docker_helpers import down, up
+from tests.integration.helpers.process_helper import ProcessRunner
 
 AGENTS = {
     "farm": {

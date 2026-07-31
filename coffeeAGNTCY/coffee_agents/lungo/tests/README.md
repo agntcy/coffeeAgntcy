@@ -3,20 +3,35 @@
 ## Scope
 
 The suite validates:
-- Auction Supervisor flows (inventory queries per farm, aggregated inventory, order creation success / failure paths, invalid prompt handling) over multiple message transports (SLIM, NATS).
-- Logistics Supervisor flow (multi‑agent fulfillment: logistics-farm + accountant + shipper) currently over SLIM transport.
+
+- Auction Supervisor flows (inventory, orders, invalid prompts) over SLIM and NATS: LLM cases in `tests/integration/llm/`, docker-only checks in `tests/integration/`.
+- Logistics Supervisor (farm, accountant, shipper, helpdesk): health in `tests/integration/`, prompt flows in `tests/integration/llm/`.
+- Agentic Workflows API (unit), subprocess uvicorn/SSE live tests (`tests/integration/live/`).
 - Agent process orchestration, startup readiness gating, and HTTP supervisor APIs.
-- Cross‑transport parity for auction flows (see TRANSPORT_MATRIX in [`test_auction.py`](coffeeAGNTCY/coffee_agents/lungo/tests/integration/test_auction.py:1)).
 
-## Directory Layout
+## Directory layout
 
-- Session / infra orchestration fixtures & agent/client fixtures: [`conftest.py`](coffeeAGNTCY/coffee_agents/lungo/tests/integration/conftest.py:1)
-- Docker Compose lifecycle helpers (bring up transport and observability components): [`docker_helpers.py`](coffeeAGNTCY/coffee_agents/lungo/tests/integration/docker_helpers.py:1)
-- Lightweight subprocess runner used for agent processes: [`process_helper.py`](coffeeAGNTCY/coffee_agents/lungo/tests/integration/process_helper.py:1)
-- Auction supervisor integration tests (parametrized SLIM + NATS): [`test_auction.py`](coffeeAGNTCY/coffee_agents/lungo/tests/integration/test_auction.py:1)
-- Logistics (order fulfillment) integration test (currently SLIM only): [`test_logistics.py`](coffeeAGNTCY/coffee_agents/lungo/tests/integration/test_logistics.py:1)
+| Directory | Purpose |
+|-----------|---------|
+| `tests/unit/` | Mocks only |
+| `tests/integration/` | Docker-compose session; no live webserver; no LLM |
+| `tests/integration/live/` | Subprocess uvicorn/A2A HTTP; no LLM |
+| `tests/integration/llm/` | Docker + LLM credentials (needs `.env`) |
+| `tests/integration/helpers/` | Docker/process helpers (not collected as tests) |
 
-## Execution Prerequisites
+Key files:
+
+- Session / infra fixtures: [`tests/integration/conftest.py`](integration/conftest.py)
+- Docker Compose helpers: [`tests/integration/helpers/docker_helpers.py`](integration/helpers/docker_helpers.py)
+- Subprocess runner: [`tests/integration/helpers/process_helper.py`](integration/helpers/process_helper.py)
+- Auction docker-only tests: [`tests/integration/test_auction.py`](integration/test_auction.py)
+- Auction LLM flows (parametrized SLIM + NATS): [`tests/integration/llm/test_auction_flows.py`](integration/llm/test_auction_flows.py)
+- Logistics health (SLIM): [`tests/integration/test_logistics_supervisor.py`](integration/test_logistics_supervisor.py)
+- Logistics LLM flows: [`tests/integration/llm/test_logistics_supervisor_flows.py`](integration/llm/test_logistics_supervisor_flows.py)
+- Uvicorn/SSE helpers: [`tests/helpers/agentic_uvicorn_helpers.py`](helpers/agentic_uvicorn_helpers.py)
+- Live workflow-instance pipeline: [`tests/integration/live/test_workflow_instance_live_pipeline.py`](integration/live/test_workflow_instance_live_pipeline.py)
+
+## Execution prerequisites
 
 1. Install dependencies (lungo package root):
 
@@ -24,56 +39,87 @@ The suite validates:
 uv sync --extra dev
 ```
 
-2. Configure environment:
+2. For LLM tests only, configure environment:
 
 ```bash
 cp coffeeAGNTCY/coffee_agents/lungo/.env.example .env
 # Set LLM settings required by agents
 ```
 
-3. Ensure Docker runtime is available
+3. Integration and LLM suites require Docker.
 
-## Running Tests
+## Running tests
 
-All Lungo tests (auction + logistics):
-
-```bash
-uv run pytest -s
-```
-
-Auction tests only:
+From the lungo package root:
 
 ```bash
-uv run pytest integration/test_auction.py -s
+uv run pytest -q
 ```
 
-Logistics test only:
+Run a subset by directory:
 
 ```bash
-uv run pytest integration/test_logistics.py -s
+uv run pytest tests --ignore=tests/integration/llm -q
+uv run pytest tests/integration/llm -q   # needs LLM settings in .env
 ```
 
-Single auction test (Brazil inventory over both transports):
+LLM proxy chat smoke test: `tests/integration/llm/test_pattern_chat_proxy.py` (skipped unless `LITELLM_PROXY_*` env vars are set).
+
+### Targeted runs
+
+Docker-only auction tests:
 
 ```bash
-uv run pytest integration/test_auction.py::TestAuctionFlows::test_auction_brazil_inventory -s
+uv run pytest tests/integration/test_auction.py -q
 ```
 
-Run only NATS parametrized cases:
+LLM auction flows (both transports):
 
 ```bash
-uv run pytest -k NATS integration/test_auction.py -s
+uv run pytest tests/integration/llm/test_auction_flows.py -q
 ```
 
-## Version Overrides
+Single LLM auction case (Brazil inventory):
+
+```bash
+uv run pytest tests/integration/llm/test_auction_flows.py::TestAuctionFlows::test_auction_brazil_inventory -q
+```
+
+Logistics docker health:
+
+```bash
+uv run pytest tests/integration/test_logistics_supervisor.py -q
+```
+
+Logistics agent roles:
+
+```bash
+uv run pytest tests/integration/test_logistics_farm.py tests/integration/test_logistics_accountant.py tests/integration/test_logistics_shipper.py tests/integration/test_logistics_helpdesk.py -q
+```
+
+Live uvicorn/SSE:
+
+```bash
+uv run pytest tests/integration/live -q
+```
+
+Run only NATS parametrized LLM cases:
+
+```bash
+uv run pytest tests/integration/llm/test_auction_flows.py -k NATS -q
+```
+
+## Version overrides
+
 CoffeeAGNTCY serves as a reference environment for multiple integrated components. To support continuous compatibility testing and faster integration validation, we've added functionality that allows remote triggering of CI pipelines with version overrides.
 
-The reusable integration test workflow [`test.yaml`](.github/workflows/test.yaml:1) accepts three optional multiline inputs to test new dependency or container image versions **without changing the repo**:
+The reusable test workflow [`test.yaml`](../../../../.github/workflows/test.yaml) accepts three optional multiline inputs to test new dependency or container image versions **without changing the repo**:
+
 - `pip_overrides` (exact PEP 508 specs, one per line)
 - `pip_constraints` (constraint lines)
 - `docker_overrides` (service=image[:tag] mappings applied to the demo docker-compose)
 
-An example caller is provided in [`version-override-test.yaml`](.github/workflows/version-override-test.yaml:1). Trigger it (Workflow Dispatch) or via UI.
+An example caller is provided in [`version-override-test.yaml`](../../../../.github/workflows/version-override-test.yaml). Trigger it (Workflow Dispatch) or via UI.
 
 Minimal invocation pattern:
 
@@ -84,12 +130,11 @@ on:
 jobs:
   integration:
     uses: agntcy/coffeeAgntcy/.github/workflows/test.yaml@integration-hook
-    secrets: inherit
     with:
       pip_overrides: |
         httpx==0.27.2
       pip_constraints: |
-        grpcio&lt;1.65
+        grpcio<1.65
       docker_overrides: |
         slim=ghcr.io/agntcy/slim:1.4.0
 ```

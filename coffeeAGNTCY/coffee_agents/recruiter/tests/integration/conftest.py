@@ -18,7 +18,7 @@ import httpx
 import pytest
 from dotenv import load_dotenv
 
-from tests.integration.docker_helpers import down, remove_container_if_exists, up
+from tests.integration.helpers.docker_helpers import down, remove_container_if_exists, up
 
 load_dotenv()
 
@@ -464,3 +464,4 @@ def publish_sample_agent_record():
         except FileNotFoundError:
             print("Warning: dirctl not found, skipping cleanup")
             break
+

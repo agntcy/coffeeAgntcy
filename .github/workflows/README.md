@@ -10,8 +10,9 @@ This directory contains CI/CD workflows for building images, packaging Helm char
 | [`docker-build-reusable.yaml`](.github/workflows/docker-build-reusable.yaml) | Reusable job: build and push a single Docker image | workflow_call |
 | [`helm-push.yaml`](.github/workflows/helm-push.yaml) | Lint, package, and (on push to main/tags) push Helm charts to GHCR (OCI) | push (main, tags), pull_request (paths filter), workflow_dispatch |
 | [`helm-package-reusable.yaml`](.github/workflows/helm-package-reusable.yaml) | Reusable job: lint, package, and push a single Helm chart | workflow_call |
-| [`test.yaml`](.github/workflows/test.yaml) | Orchestrate integration tests across projects | push (main, corto paths), pull_request, workflow_call, workflow_dispatch |
-| [`test-reusable.yaml`](.github/workflows/test-reusable.yaml) | Reusable job: run integration tests for a single project directory | workflow_call |
+| [`test.yaml`](.github/workflows/test.yaml) | Run pytest for corto, lungo, recruiter | push (main), pull_request, workflow_call, workflow_dispatch |
+| [`test-reusable.yaml`](.github/workflows/test-reusable.yaml) | Reusable job: run pytest for one project directory and path set | workflow_call |
+| [`test-subprojects-reusable.yaml`](.github/workflows/test-subprojects-reusable.yaml) | Path-filter job: which agent projects changed | workflow_call |
 | [`fe-ci.yaml`](.github/workflows/fe-ci.yaml) | Typecheck, ESLint, and Prettier for the Lungo frontend | push (main, frontend paths), pull_request (main, frontend paths) |
 | [`version-override-test.yaml`](.github/workflows/version-override-test.yaml) | Example invocation of reusable tests with dependency/image overrides | workflow_dispatch |
 | [`docs.yaml`](.github/workflows/docs.yaml) | Publish MkDocs site to GitHub Pages (gh-pages) | push (main, README.md path) |
@@ -70,21 +71,31 @@ Reusable workflow called by `helm-push.yaml` for each matrix entry. Accepts:
 | `package_name` | Package name for the chart (required) |
 | `push` | Whether to push to GHCR OCI registry (default: false) |
 
-## test
+## test (Python Tests)
 
-Orchestrates integration tests by calling `test-reusable.yaml` for each project (currently corto and lungo). Also exposed as a reusable workflow and accepts overrides for dependencies and Docker images.
+Orchestrates pytest for each changed agent project (`corto`, `lungo`, `recruiter`) via `test-reusable.yaml`. Also exposed as a reusable workflow with optional dependency and Docker image overrides.
+
+### Concurrency
+
+**`tests / *`** jobs cancel in-progress runs on new pushes (`cancel-in-progress: true`).
+
+### workflow_call inputs
+
+| Input | Description |
+|-------|-------------|
+| `test_corto`, `test_lungo`, `test_recruiter` | Subproject toggles (workflow_call / dispatch only) |
+| `pip_overrides`, `pip_constraints`, `docker_overrides` | Dependency and image overrides |
 
 ## test-reusable
 
-Reusable job that runs `pytest` via `uv` for a single project directory. Exposes inputs for dependency and Docker image overrides.
-
-Inputs:
+Runs `pytest` via `uv` for a single project directory and explicit path list.
 
 | Input | Description |
 |-------|-------------|
 | `project_dir` | Path to the project directory to test (required) |
-| `pip_overrides` | PEP 508 specs (one per line) forced into the lock (e.g. `httpx==0.27.2`) |
-| `pip_constraints` | Constraint lines applied during resolution (e.g. `grpcio<1.65`) |
+| `test_paths` | Space-separated pytest directory arguments and flags, e.g. `tests --ignore=tests/integration/llm` (required) |
+| `pip_overrides` | PEP 508 specs (one per line) forced into the lock |
+| `pip_constraints` | Constraint lines applied during resolution |
 | `docker_overrides` | Lines `service=image[:tag]` to patch docker-compose service images |
 
 Example caller (see `version-override-test.yaml`):
@@ -93,7 +104,6 @@ Example caller (see `version-override-test.yaml`):
 jobs:
   integration:
     uses: <org>/<repo>/.github/workflows/test.yaml@<ref>
-    secrets: inherit
     with:
       pip_overrides: |
         httpx==0.27.2

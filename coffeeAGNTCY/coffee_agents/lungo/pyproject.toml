@@ -29,6 +29,7 @@ dependencies = [
     "langchain-litellm==0.3.5",
     "llama-index-llms-litellm==0.6.3",
     "llama-index-core==0.14.9",
+    "griffe<2",  # banks/llama-index import griffe 1.x API; 2.x is a meta-package without it
     "litellm==1.81.1",
     "google-adk==1.24.0",
     "slima2a==0.3.0",
@@ -89,7 +90,6 @@ filterwarnings = [
 ]
 markers = [
     "agents(names): marks tests that run for specific farms (e.g. @pytest.mark.farms([\"brazil\"]))",
-    "e2e: subprocess HTTP against a live app (e.g. uvicorn + SSE); skip with -m \"not e2e\"",
     "no_pin_auction_shared: do not keep agents.supervisors.auction.graph.shared across this test",
 ]
 pythonpath = ["."]
