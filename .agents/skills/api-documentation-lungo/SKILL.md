@@ -13,7 +13,7 @@ The lungo project root is `coffeeAGNTCY/coffee_agents/lungo/`. Paths in the [Sou
 ## Output
 
 - Document: `coffeeAGNTCY/coffee_agents/lungo/docs/workflow-instance_api.md`.
-- OpenAPI (when paths, shapes, or response statuses change): `schema/openapi/paths/agentic-workflows.yaml` — per-operation `responses` and descriptions; reuse `components/responses` in `schema/openapi/components/schemas.yaml`.
+- OpenAPI (when paths, shapes, or response statuses change): `schema/openapi/paths/agentic-workflows.yaml` - per-operation `responses` and descriptions; reuse `components/responses` in `schema/openapi/components/schemas.yaml`.
 
 The human guide and OpenAPI path items must stay aligned. Derive everything from the [Source registry](#source-registry). Reconcile the human doc using [Document structure](#document-structure) whenever the API surface changes. When HTTP statuses change, follow [OpenAPI status codes](#openapi-status-codes) **before** updating handlers.
 
@@ -80,7 +80,7 @@ Copy this checklist and tick items as you go:
 
 - **OpenAPI first.** Paths, request/response shapes, and declared HTTP status codes live in `schema/openapi/`. Change the spec first, then handlers, human doc, and generated types (frontend `npm run generate:api-types`, Python via openapi-to-python-lungo).
 - **Derive, never invent.** Every endpoint, field, and status code in the human doc must trace to OpenAPI (plus global `401` from `security`) or `event_v1.json`.
-- **Router implements the contract.** If handlers return a status OpenAPI does not declare, **add it to OpenAPI** or **change the handler** — do not document undeclared codes only in markdown.
+- **Router implements the contract.** If handlers return a status OpenAPI does not declare, **add it to OpenAPI** or **change the handler** - do not document undeclared codes only in markdown.
 - **Trigger conditions from code.** For each status listed in OpenAPI, use `router.py` and helpers to describe *when* it is returned. Streaming details (SSE comment frame, NDJSON frames, backpressure) remain implementation notes where OpenAPI only declares `200`.
 - **Enumerate, don't count.** Build the endpoint summary and `$defs` table by listing what's in the specs.
 - **Real examples.** Pull patterns, use-cases, workflow summaries, and topology from catalog data files.
@@ -91,20 +91,20 @@ Copy this checklist and tick items as you go:
 - Link to source files with paths relative to `docs/` (`../schema/...`, `../api/...`). Link full example payloads rather than pasting them; excerpt only small, illustrative fragments.
 - Use fenced code blocks with a language tag (`json`, `jsonc`, `http`, `text`, `bash`) for samples; these are illustrative, not citations of repo lines.
 - Keep terminology consistent: "endpoint", "workflow instance", "topology", "event".
-- Present per-endpoint status codes as a markdown bullet list introduced by a `Status codes:` line (or an equivalent lead-in such as `Behavior and status codes:`), one code per item in the form `` - `<code>` - <condition>. `` — never as an inline semicolon- or comma-separated sentence. Derive the code list from OpenAPI `responses` (+ global `401` where auth applies).
+- Present per-endpoint status codes as a markdown bullet list introduced by a `Status codes:` line (or an equivalent lead-in such as `Behavior and status codes:`), one code per item in the form `` - `<code>` - <condition>. `` - never as an inline semicolon- or comma-separated sentence. Derive the code list from OpenAPI `responses` (+ global `401` where auth applies).
 
 ### OpenAPI status codes
 
 When an operation needs a new or changed HTTP status:
 
-1. **Update path items** — in `schema/openapi/paths/agentic-workflows.yaml`, add or adjust the status under that operation's `responses`:
-   - **`401`** — do **not** repeat on every operation; rely on global `security` in `schema/openapi/openapi.yaml` (`WorkflowApiKeyBearer`).
-   - **`422`** — on every operation with path/query/body validation, `$ref: ../components/schemas.yaml#/components/responses/UnprocessableEntity` (body uses full FastAPI validation JSON via `HttpError` + `RequestValidationErrorItem`).
-   - **Other errors** — prefer `$ref` to shared `components/responses` (`BadRequest`, `NotFound`, `InternalServerError`, `ServiceUnavailable`, `GatewayTimeout`). Keep endpoint-specific `description` text when the generic component text is too vague.
-2. **Update handlers** — raise or return only statuses now declared in OpenAPI.
-3. **Update the human doc** — status bullets and conditions aligned with the spec.
-4. **Regenerate consumers** — run openapi-to-python-lungo if shapes changed; run `npm run generate:api-types` in the lungo frontend when applicable.
-5. **Same change set** — OpenAPI, handlers, and markdown should land together in one PR.
+1. **Update path items** - in `schema/openapi/paths/agentic-workflows.yaml`, add or adjust the status under that operation's `responses`:
+   - **`401`** - do **not** repeat on every operation; rely on global `security` in `schema/openapi/openapi.yaml` (`WorkflowApiKeyBearer`).
+   - **`422`** - on every operation with path/query/body validation, `$ref: ../components/schemas.yaml#/components/responses/UnprocessableEntity` (body uses full FastAPI validation JSON via `HttpError` + `RequestValidationErrorItem`).
+   - **Other errors** - prefer `$ref` to shared `components/responses` (`BadRequest`, `NotFound`, `InternalServerError`, `ServiceUnavailable`, `GatewayTimeout`). Keep endpoint-specific `description` text when the generic component text is too vague.
+2. **Update handlers** - raise or return only statuses now declared in OpenAPI.
+3. **Update the human doc** - status bullets and conditions aligned with the spec.
+4. **Regenerate consumers** - run openapi-to-python-lungo if shapes changed; run `npm run generate:api-types` in the lungo frontend when applicable.
+5. **Same change set** - OpenAPI, handlers, and markdown should land together in one PR.
 
 Do **not** add error `responses=` on FastAPI decorators unless the user explicitly asks; the hand-maintained YAML remains the published contract.
 
@@ -134,9 +134,9 @@ Fix any OpenAPI validation, route-parity, or implementation-status drift failure
 This is a standing requirement, not a one-off. When a prompt or request references a **new pull request or file/folder** that changes the lungo API contracts or specifications:
 
 1. **Run upstream skills first if the contract files changed.** A reference that adds/renames endpoints or types usually means `schema/openapi/*` or `schema/jsonschemas/*` (and their Pydantic/router mirrors) should be regenerated via the sibling skills before documenting.
-2. **Update OpenAPI first** — if behavior or status codes change, follow [OpenAPI status codes](#openapi-status-codes); do not document new errors only in markdown.
-3. **Update the document** — re-run the [Workflow](#workflow) so every affected section reflects the new contract.
-4. **Update this skill** — if a new authoritative file/folder is now part of the contract surface, add a row to the [Source registry](#source-registry); if a new endpoint family or document section is needed, extend [Document structure](#document-structure). Keep the frontmatter `description` trigger terms in sync with any newly referenced paths.
-5. **Keep the index in sync** — this skill is registered in the repository [`AGENTS.md`](../../../AGENTS.md) Skills table; update that entry if the skill's name or scope changes.
+2. **Update OpenAPI first** - if behavior or status codes change, follow [OpenAPI status codes](#openapi-status-codes); do not document new errors only in markdown.
+3. **Update the document** - re-run the [Workflow](#workflow) so every affected section reflects the new contract.
+4. **Update this skill** - if a new authoritative file/folder is now part of the contract surface, add a row to the [Source registry](#source-registry); if a new endpoint family or document section is needed, extend [Document structure](#document-structure). Keep the frontmatter `description` trigger terms in sync with any newly referenced paths.
+5. **Keep the index in sync** - this skill is registered in the repository [`AGENTS.md`](../../../AGENTS.md) Skills table; update that entry if the skill's name or scope changes.
 
 Surface any contract inconsistency you find (spec vs router vs schema) to the user rather than silently papering over it in prose.

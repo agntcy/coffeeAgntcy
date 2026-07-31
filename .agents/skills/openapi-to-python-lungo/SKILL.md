@@ -32,7 +32,7 @@ The skill must remain **general** across tags: never hard-code endpoint names, s
   - the `create_<tag_snake>_router()` function signature and the presence of `tags=[<tag>]` on the `APIRouter(...)` construction (the skill ensures `tags=[<tag>]` is set, but it must **not** discard other constructor arguments - see below),
   - the route decorators (path, method, `response_model`, `status_code`, `summary`, etc.) and handler **signatures** (parameters, type annotations, return type).
 
-  The skill does **not** generate or reconcile per-operation OpenAPI `responses` on FastAPI decorators. Operation `responses` (success and error statuses) are hand-maintained in `schema/openapi/paths/*.yaml` and shared `components/responses` — the **published contract**. Update those first, then handlers and `docs/workflow-instance_api.md` via the [api-documentation-lungo](../api-documentation-lungo/SKILL.md) skill when endpoints, payload shapes, or HTTP statuses change.
+  The skill does **not** generate or reconcile per-operation OpenAPI `responses` on FastAPI decorators. Operation `responses` (success and error statuses) are hand-maintained in `schema/openapi/paths/*.yaml` and shared `components/responses` - the **published contract**. Update those first, then handlers and `docs/workflow-instance_api.md` via the [api-documentation-lungo](../api-documentation-lungo/SKILL.md) skill when endpoints, payload shapes, or HTTP statuses change.
 
   The user owns:
   - the **bodies** of existing handlers,
