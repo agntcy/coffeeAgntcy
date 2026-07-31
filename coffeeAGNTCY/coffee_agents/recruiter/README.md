@@ -216,7 +216,7 @@ uv run pytest -v
 Run a subset by directory:
 
 ```bash
-uv run pytest tests/unit tests/integration tests/integration/live --ignore=tests/integration/llm --ignore=tests/integration/live -v
+uv run pytest tests --ignore=tests/integration/llm -v
 uv run pytest tests/integration/llm -v   # needs LLM settings in .env
 ```
 
