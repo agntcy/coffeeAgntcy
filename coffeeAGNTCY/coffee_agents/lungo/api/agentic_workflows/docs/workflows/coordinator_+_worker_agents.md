@@ -18,6 +18,9 @@ graph TD
 
 ## Pattern
 
+**Origin:** **Planner–Executor**, as described in Antonio Gulli's
+[*Agentic Design Patterns*](https://www.google.com/books/edition/Agentic_Design_Patterns/5Z6TEQAAQBAJ).
+
 **Coordinator and worker** arrangements **separate planning from execution**: one agent keeps the work breakdown,
 sequencing, and completion story while **specialists** perform **bounded slices** (warehouse, customs, carriers, or
 similar) without each owning the full saga end to end.

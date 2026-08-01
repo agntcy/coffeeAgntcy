@@ -19,6 +19,9 @@ graph TD
 
 ## Pattern
 
+**Origin:** **ReAct**, as described in Antonio Gulli's
+[*Agentic Design Patterns*](https://www.google.com/books/edition/Agentic_Design_Patterns/5Z6TEQAAQBAJ).
+
 The **sense-decide-act loop** runs **observe → act → re-evaluate** in cycles so plans update when the world moves-ports
 stall, carriers roll bookings, quality signals shift-instead of treating the first guess as permanent truth.
 

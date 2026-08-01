@@ -18,6 +18,9 @@ graph TD
 
 ## Pattern
 
+**Origin:** CoffeeAGNTCY workflow introduced in [PR #570](https://github.com/agntcy/coffeeAgntcy/pull/570) and conceptually based on **Routing**
+for agent discovery from Antonio Gulli's [*Agentic Design Patterns*](https://www.google.com/books/edition/Agentic_Design_Patterns/5Z6TEQAAQBAJ).
+
 **Recruiter-style discovery** is a general pattern for **on-demand selection** in an ecosystem of many possible
 **agents, services, or tools**: one **recruiter** (or selector) turns a vague ask into **structured lookup**,
 **ranking**, and a **small, explainable answer**-who exists, what they offer, whether they are eligible-then hands

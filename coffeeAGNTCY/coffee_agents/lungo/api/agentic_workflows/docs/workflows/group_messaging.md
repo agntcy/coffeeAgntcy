@@ -18,6 +18,9 @@ graph TD
 
 ## Pattern
 
+**Origin:** CoffeeAGNTCY workflow introduced in [PR #570](https://github.com/agntcy/coffeeAgntcy/pull/570) and conceptually based on
+**Multi-Agent Collaboration** from Antonio Gulli's [*Agentic Design Patterns*](https://www.google.com/books/edition/Agentic_Design_Patterns/5Z6TEQAAQBAJ).
+
 **Group messaging and coordination** is a general arrangement when **several specialists** must **see the same
 conversation**, **answer one another**, and still have **one accountable place** that keeps order, permissions, and
 progress toward a shared goal. A **supervisor or moderator** opens a **shared channel**; **members** join as first-class

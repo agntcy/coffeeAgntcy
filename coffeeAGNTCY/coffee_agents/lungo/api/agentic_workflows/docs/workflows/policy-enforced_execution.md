@@ -18,6 +18,9 @@ graph TD
 
 ## Pattern
 
+**Origin:** **Guardrails**, as described in Antonio Gulli's
+[*Agentic Design Patterns*](https://www.google.com/books/edition/Agentic_Design_Patterns/5Z6TEQAAQBAJ).
+
 **Policy-enforced execution** **blocks or conditions actions** against explicit **trust and ethics rules**-labor,
 sanctions, sustainability, or whatever the company publishes as non-negotiable-so automated enthusiasm never overrides
 what the firm refuses to sign. “The model wanted to” is not a policy exception.

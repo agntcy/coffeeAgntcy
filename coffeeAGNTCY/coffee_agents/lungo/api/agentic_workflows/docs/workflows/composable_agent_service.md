@@ -18,6 +18,9 @@ graph TD
 
 ## Pattern
 
+**Origin:** **Agent as a Service**, as described in Antonio Gulli's
+[*Agentic Design Patterns*](https://www.google.com/books/edition/Agentic_Design_Patterns/5Z6TEQAAQBAJ).
+
 **Composable agent service** packages an agent like a **product**: discoverable in a catalog, **versioned interfaces**,
 declared expectations for reliability or latency-so procurement, operations, and reporting **reuse** the same capability
 instead of forking nearly identical copies that drift apart.

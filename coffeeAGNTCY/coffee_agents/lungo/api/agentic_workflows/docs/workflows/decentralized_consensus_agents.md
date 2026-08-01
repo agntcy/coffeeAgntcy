@@ -22,6 +22,9 @@ graph TD
 
 ## Pattern
 
+**Origin:** **Swarm**, as described in Antonio Gulli's
+[*Agentic Design Patterns*](https://www.google.com/books/edition/Agentic_Design_Patterns/5Z6TEQAAQBAJ).
+
 **Decentralized consensus** aims to **reach agreement without a single permanent hub**: local agents exchange beliefs
 and evidence until a forecast, allocation, or similar outcome **converges** under explicit stopping rules. No one node
 is the eternal oracle; instead, the process is defined by **what may be published**, **how updates merge**, and **when

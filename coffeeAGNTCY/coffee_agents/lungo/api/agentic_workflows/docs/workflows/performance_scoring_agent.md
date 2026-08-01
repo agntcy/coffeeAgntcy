@@ -18,6 +18,9 @@ graph TD
 
 ## Pattern
 
+**Origin:** **Evaluation Agent**, as described in Antonio Gulli's
+[*Agentic Design Patterns*](https://www.google.com/books/edition/Agentic_Design_Patterns/5Z6TEQAAQBAJ).
+
 A **performance scoring agent** measures how well agentic runs meet **declared KPIs**-cost, time, carbon, quality, or
 whatever leadership actually names-so improvement budgets go to what **measurably** works, not to whoever tells the
 prettiest story. Scores are tied to **transparent formulas** and comparable inputs.

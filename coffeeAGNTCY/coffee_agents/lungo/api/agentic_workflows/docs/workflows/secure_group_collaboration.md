@@ -20,6 +20,9 @@ graph TD
 
 ## Pattern
 
+**Origin:** **Multi-Agent Collaboration**, as described in Antonio Gulli's
+[*Agentic Design Patterns*](https://www.google.com/books/edition/Agentic_Design_Patterns/5Z6TEQAAQBAJ).
+
 **Secure group collaboration** lets **several agents coordinate inside a trusted boundary**: authenticated membership,
 scoped messages, and attributable speech, so pricing and allocation feel like **intra-alliance work**, not an open
 public forum. Security and transport define **who may read**, **who may write**, and **what may cross the boundary**.

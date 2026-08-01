@@ -23,6 +23,9 @@ graph TD
 
 ## Pattern
 
+**Origin:** CoffeeAGNTCY pattern abstraction introduced in [commit `4892cdc4`](https://github.com/agntcy/coffeeAgntcy/commit/4892cdc451ae1be3ae405bb31324cb1f61b94637) and conceptually based on
+**Supervisor / Manager** from Antonio Gulli's [*Agentic Design Patterns*](https://www.google.com/books/edition/Agentic_Design_Patterns/5Z6TEQAAQBAJ).
+
 > **TODO** - full pattern-level write-up. This is a minimal stub so the pattern reference library has reachable
 > reference material for the **Supervisor** pattern; a follow-up issue will replace this with the proper authored
 > doc.

@@ -18,6 +18,9 @@ graph TD
 
 ## Pattern
 
+**Origin:** **Routing**, as described in Antonio Gulli's
+[*Agentic Design Patterns*](https://www.google.com/books/edition/Agentic_Design_Patterns/5Z6TEQAAQBAJ).
+
 **Directory-based dispatch** chooses the **next specialist from intent and context** instead of hard-wiring a single
 static path. When signals, tags, or confidence shift, a different expert may be the right callee; the pattern makes that
 **explicit and explainable** rather than a hidden branch table.

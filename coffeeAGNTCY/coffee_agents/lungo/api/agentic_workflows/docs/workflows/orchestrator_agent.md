@@ -18,6 +18,9 @@ graph TD
 
 ## Pattern
 
+**Origin:** **Supervisor / Manager**, as described in Antonio Gulli's
+[*Agentic Design Patterns*](https://www.google.com/books/edition/Agentic_Design_Patterns/5Z6TEQAAQBAJ).
+
 A **top-level orchestrator** coordinates, monitors, and governs **many workflows at once**: it resolves conflicts,
 watches health, and keeps **global policy** from dissolving into regional habit. It does not replace every local
 specialist; it provides a **single place** that sees parallel subgraphs (regions, lanes, product lines), merges status,

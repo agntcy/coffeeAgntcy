@@ -17,6 +17,9 @@ graph TD
 
 ## Pattern
 
+**Origin:** **Debate / Critic**, as described in Antonio Gulli's
+[*Agentic Design Patterns*](https://www.google.com/books/edition/Agentic_Design_Patterns/5Z6TEQAAQBAJ).
+
 **Adversarial review** is a way to force a **challenger voice** before expensive commitments: risk against optimism,
 policy against shortcuts, so decisions survive contact with someone whose role is to **disagree constructively**. The
 goal is not to stall forever, but to ensure assumptions and evidence are stress-tested while the trade space is still

@@ -24,6 +24,9 @@ graph TD
 
 ## Pattern
 
+**Origin:** CoffeeAGNTCY pattern introduced in [PR #711](https://github.com/agntcy/coffeeAgntcy/pull/711) and adapted from the **blackboard model**;
+see H. Penny Nii's [*The Blackboard Model of Problem Solving and the Evolution of Blackboard Architectures*](https://doi.org/10.1609/aimag.v7i2.537).
+
 **Shared agent memory** gives multiple agents a **common place to read and write facts** about the work in progress-
 task state, commitments, open questions, partial results-so they **build on each other's contributions** instead of
 re-asking the same questions or re-sending the same data in every message.

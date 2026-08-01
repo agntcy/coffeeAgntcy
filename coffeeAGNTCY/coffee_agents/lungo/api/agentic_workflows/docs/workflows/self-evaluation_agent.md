@@ -18,6 +18,9 @@ graph TD
 
 ## Pattern
 
+**Origin:** **Reflection**, as described in Antonio Gulli's
+[*Agentic Design Patterns*](https://www.google.com/books/edition/Agentic_Design_Patterns/5Z6TEQAAQBAJ).
+
 A **self-evaluation** (reflection) pattern compares **past outcomes** to intent-forecasts versus arrivals, routing
 versus reality-and proposes **bounded improvements** to prompts, policies, or weights under **human governance**. The
 agent reads telemetry and business results, compares them to what was supposed to happen, and outputs **reviewable

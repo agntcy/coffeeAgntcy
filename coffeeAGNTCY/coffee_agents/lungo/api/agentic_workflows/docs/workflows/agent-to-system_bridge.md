@@ -18,6 +18,9 @@ graph TD
 
 ## Pattern
 
+**Origin:** **Tool Use**, as described in Antonio Gulli's
+[*Agentic Design Patterns*](https://www.google.com/books/edition/Agentic_Design_Patterns/5Z6TEQAAQBAJ).
+
 An **agent-to-system bridge** lets agents **invoke trusted external systems**-enterprise planning tools, emissions
 services, tariff or rate engines-as **first-class evidence** in a decision, instead of relying on prose memory or
 guessed numbers. The pattern treats integrations as part of the reasoning substrate: plans and arguments are expected to

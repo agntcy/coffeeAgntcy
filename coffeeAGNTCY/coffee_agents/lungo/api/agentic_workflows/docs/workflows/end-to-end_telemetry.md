@@ -18,6 +18,9 @@ graph TD
 
 ## Pattern
 
+**Origin:** **Logging & Observability**, as described in Antonio Gulli's
+[*Agentic Design Patterns*](https://www.google.com/books/edition/Agentic_Design_Patterns/5Z6TEQAAQBAJ).
+
 **End-to-end telemetry** traces **decisions and interactions across the whole chain**-from early inputs through
 fulfillment-so **correlation identifiers** stitch agent steps to real business objects and money movements. The point is
 continuity: an incident or dispute can be walked from origin to outcome without broken narrative.

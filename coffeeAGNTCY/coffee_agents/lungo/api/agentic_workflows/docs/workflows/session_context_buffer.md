@@ -21,6 +21,9 @@ graph TD
 
 ## Pattern
 
+**Origin:** **Short-Term Memory**, as described in Antonio Gulli's
+[*Agentic Design Patterns*](https://www.google.com/books/edition/Agentic_Design_Patterns/5Z6TEQAAQBAJ).
+
 A **session context buffer** is a **temporary, shared scratchpad** for one negotiation or task-bids, floors, deadlines,
 last counters-without polluting long-term catalogs or treating ephemeral chatter as permanent truth. It answers: what is
 the **current** state of this deal for everyone who is allowed in the room?

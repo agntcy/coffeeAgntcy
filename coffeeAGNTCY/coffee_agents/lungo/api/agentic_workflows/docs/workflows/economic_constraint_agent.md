@@ -18,6 +18,9 @@ graph TD
 
 ## Pattern
 
+**Origin:** **Cost-Aware Agent**, as described in Antonio Gulli's
+[*Agentic Design Patterns*](https://www.google.com/books/edition/Agentic_Design_Patterns/5Z6TEQAAQBAJ).
+
 An **economic constraint agent** optimizes under **explicit budgets**-cost, time, carbon, or other currencies-so
 trade-offs are stated in the same units operations and finance already use. Decisions expose **Pareto fronts** (better
 on one axis, worse on another) instead of pretending a single fake optimum exists when objectives genuinely conflict.

@@ -23,6 +23,9 @@ graph TD
 
 ## Pattern
 
+**Origin:** CoffeeAGNTCY streaming workflow introduced in [PR #570](https://github.com/agntcy/coffeeAgntcy/pull/570) and conceptually based on
+**Supervisor / Manager** from Antonio Gulli's [*Agentic Design Patterns*](https://www.google.com/books/edition/Agentic_Design_Patterns/5Z6TEQAAQBAJ).
+
 **Supervisor and workers** is a general arrangement for multi-agent work: **one coordinator** owns the end-to-end
 story-what to ask next, when to branch, how to merge or compare results, and where policy and retries live-while
 **specialist agents** each do a **bounded slice** (one region, one data source, one tool) and return answers upward.

@@ -18,6 +18,9 @@ graph TD
 
 ## Pattern
 
+**Origin:** **Human-in-the-Loop**, as described in Antonio Gulli's
+[*Agentic Design Patterns*](https://www.google.com/books/edition/Agentic_Design_Patterns/5Z6TEQAAQBAJ).
+
 An **approval gate** pauses automated flow when **stakes exceed autonomy**: bulk purchases, novel counterparties, or
 exceptions that would be painful if executed quietly. The pattern packages **what** is proposed, **why** it is
 justified, which **policy** applies, and what **changed** since the last checkpoint, then waits for **non-repudiable
