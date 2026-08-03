@@ -4,7 +4,7 @@
  **/
 
 import { useEffect, useState } from "react"
-import { isHttpError } from "@/api/http"
+import { isRequestCancelledError } from "@/api/http"
 import { reportRequestError } from "@/errors/request"
 import {
   fetchPatternCategories,
@@ -28,8 +28,7 @@ export function useAppPatternCategories() {
         setPatternCategories(items)
       })
       .catch((err: unknown) => {
-        if (err instanceof DOMException && err.name === "AbortError") return
-        if (isHttpError(err) && err.message === "Request was cancelled.") return
+        if (isRequestCancelledError(err)) return
         const httpError = reportRequestError(PATTERN_CATEGORIES_LOG_PATH, err)
         setPatternCategoriesError(httpError.message)
       })

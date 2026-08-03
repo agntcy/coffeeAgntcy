@@ -4,6 +4,7 @@
  **/
 
 import { useEffect, useState } from "react"
+import { isRequestCancelledError } from "@/api/http"
 import { reportRequestError } from "@/errors/request"
 import { type PatternDocState } from "@/types/patternDoc"
 import { buildPatternCategoryDocumentationRequest } from "@/urls"
@@ -56,7 +57,7 @@ export function useAppPatternCategoryDoc(
         })
       })
       .catch((err: unknown) => {
-        if (err instanceof DOMException && err.name === "AbortError") return
+        if (isRequestCancelledError(err)) return
         if (err instanceof PatternCategoryDocumentationNotFoundError) {
           setCategoryDocState({
             status: "not_found",

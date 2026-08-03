@@ -4,7 +4,7 @@
  **/
 
 import { useEffect, useState } from "react"
-import { fetchJson, isHttpError } from "@/api/http"
+import { fetchJson, isRequestCancelledError } from "@/api/http"
 import { reportRequestError } from "@/errors/request"
 import type { HttpRequestTarget } from "@/urls"
 import type { PromptCategory, SuggestedPromptsResponse } from "./PromptTypes"
@@ -94,10 +94,7 @@ export function useSuggestedPrompts(
         setIsLoading(false)
       } catch (err: unknown) {
         if (cancelled) return
-        if (isHttpError(err) && err.message === "Request was cancelled.") {
-          return
-        }
-        if (err instanceof DOMException && err.name === "AbortError") {
+        if (isRequestCancelledError(err)) {
           return
         }
 
