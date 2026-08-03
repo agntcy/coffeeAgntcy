@@ -17,7 +17,6 @@ import {
   useAppWorkflowCatalog,
 } from "@/hooks/useApp"
 import { type GraphConfig } from "@/utils/graphConfigs"
-import { PATTERNS, PatternType } from "@/utils/patternUtils"
 import type { WorkflowSummary } from "@/utils/agenticWorkflowsApi"
 import { useActiveWorkflowInstanceStore } from "@/stores/activeWorkflowInstanceStore"
 import { CanvasMode } from "@/types/patternDoc"
@@ -35,9 +34,6 @@ export function useApp() {
     (s) => s.workflowInstanceId,
   )
 
-  const [selectedPattern, setSelectedPattern] = useState<PatternType>(
-    PATTERNS.GROUP_MESSAGING,
-  )
   const [liveGraphConfig, setLiveGraphConfig] = useState<GraphConfig | null>(
     null,
   )
@@ -48,7 +44,7 @@ export function useApp() {
     workflowCatalogError,
     selectedWorkflowSummary,
     setSelectedWorkflowSummary,
-  } = useAppWorkflowCatalog(selectedPattern)
+  } = useAppWorkflowCatalog()
 
   const { patternCategories } = useAppPatternCategories()
 
@@ -145,7 +141,6 @@ export function useApp() {
       chat.setCurrentUserMessage("")
       chat.setButtonClicked(false)
       chat.setAiReplied(false)
-      setSelectedPattern(slug)
       setSelectedWorkflowSummary(summary)
       setLiveGraphConfig(null)
       setSelectedReferencePattern(null)
@@ -177,7 +172,6 @@ export function useApp() {
   )
 
   return {
-    selectedPattern,
     selectWorkflowFromCatalog,
     workflowCatalogSummaries,
     workflowCatalogLoading,

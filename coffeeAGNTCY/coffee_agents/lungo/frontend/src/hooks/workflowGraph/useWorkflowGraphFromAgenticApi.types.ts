@@ -5,7 +5,6 @@
 
 import type { Edge, Node } from "@xyflow/react"
 import type { CustomNodeData } from "@/components/MainArea/Graph/Elements/types"
-import type { PatternType } from "@/utils/patternUtils"
 import type { WorkflowSummary } from "@/utils/agenticWorkflowsApi"
 
 export const REFETCH_DEBOUNCE_MS = 80
@@ -15,7 +14,6 @@ export const SSE_RECONNECT_BACKOFF_MS = 250
 export const MESSAGING_HIGHLIGHT_TTL_MS = 2_500
 
 export interface UseWorkflowGraphFromAgenticApiParams {
-  pattern: PatternType
   selectedWorkflowSummary: WorkflowSummary | null
   setNodes: React.Dispatch<React.SetStateAction<Node[]>>
   setEdges: React.Dispatch<React.SetStateAction<Edge[]>>

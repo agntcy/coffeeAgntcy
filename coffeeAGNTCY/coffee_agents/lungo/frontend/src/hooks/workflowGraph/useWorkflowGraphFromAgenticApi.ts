@@ -35,7 +35,6 @@ export type {
 } from "./useWorkflowGraphFromAgenticApi.types"
 
 export function useWorkflowGraphFromAgenticApi({
-  pattern,
   selectedWorkflowSummary,
   setNodes,
   setEdges,
@@ -51,7 +50,7 @@ export function useWorkflowGraphFromAgenticApi({
   const agenticMode = Boolean(
     selectedWorkflowSummary &&
     workflowName &&
-    patternTypeFromSummary(selectedWorkflowSummary) === pattern,
+    patternTypeFromSummary(selectedWorkflowSummary) !== null,
   )
 
   const [agenticError, setAgenticError] = useState<string | null>(null)
@@ -62,9 +61,6 @@ export function useWorkflowGraphFromAgenticApi({
     (s) => s.setWorkflowInstanceId,
   )
   const sessionRef = useRef<WorkflowGraphAgenticSession | null>(null)
-
-  const patternRef = useRef(pattern)
-  patternRef.current = pattern
 
   const isStreamingRef = useRef(
     selectedWorkflowSummary?.supports_streaming === true,

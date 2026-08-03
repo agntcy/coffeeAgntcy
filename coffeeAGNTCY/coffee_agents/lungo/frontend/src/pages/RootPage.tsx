@@ -46,7 +46,6 @@ import { useElementWidth, useElementRect } from "@/hooks/layout"
 
 const RootPage: React.FC = () => {
   const {
-    selectedPattern,
     selectWorkflowFromCatalog,
     workflowCatalogSummaries,
     workflowCatalogLoading,
@@ -301,7 +300,6 @@ const RootPage: React.FC = () => {
                             patternDocState={patternDocState}
                             selectedPatternCategory={selectedPatternCategory}
                             categoryDocState={categoryDocState}
-                            pattern={selectedPattern}
                             selectedWorkflowSummary={selectedWorkflowSummary}
                             workflowCatalogLoading={workflowCatalogLoading}
                             workflowCatalogError={workflowCatalogError}
