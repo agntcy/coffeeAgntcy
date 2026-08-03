@@ -1,7 +1,7 @@
 ---
 name: openapi-to-python-lungo
 description: >-
-  Generates and validates Python FastAPI routers and DTOs from the OpenAPI schemas in coffeeAGNTCY/coffee_agents/lungo/schema/openapi for the lungo subproject. When contracts change, the sibling api-documentation-lungo skill updates hand-maintained OpenAPI operation `responses` and `docs/workflow-instance_api.md`. Use when adding, removing, renaming, or modifying endpoints in any lungo OpenAPI document; when generating or regenerating files under coffeeAGNTCY/coffee_agents/lungo/api/<tag>/ (router.py, dtos.py); when validating that hand-edited handlers or DTOs still match the OpenAPI spec; or when scaffolding the OpenAPI unit tests for a router.
+  Generates and validates Python FastAPI routers and DTOs from the OpenAPI schemas in coffeeAGNTCY/coffee_agents/lungo/schema/openapi for the lungo subproject. When contracts change, the sibling agentic-workflows-api-documentation-lungo skill updates OpenAPI operation responses and docs/workflow-instance_api.md; this skill aligns handlers and DTOs with the spec. Use when adding, removing, renaming, or modifying endpoints in any lungo OpenAPI document; when generating or regenerating files under coffeeAGNTCY/coffee_agents/lungo/api/<tag>/ (router.py, dtos.py); when validating that hand-edited handlers or DTOs still match the OpenAPI spec; or when scaffolding the OpenAPI unit tests for a router.
 ---
 
 # OpenAPI → FastAPI Generator and Validator (lungo)
@@ -32,7 +32,7 @@ The skill must remain **general** across tags: never hard-code endpoint names, s
   - the `create_<tag_snake>_router()` function signature and the presence of `tags=[<tag>]` on the `APIRouter(...)` construction (the skill ensures `tags=[<tag>]` is set, but it must **not** discard other constructor arguments - see below),
   - the route decorators (path, method, `response_model`, `status_code`, `summary`, etc.) and handler **signatures** (parameters, type annotations, return type).
 
-  The skill does **not** generate or reconcile per-operation OpenAPI `responses` on FastAPI decorators. Operation `responses` (success and error statuses) are hand-maintained in `schema/openapi/paths/*.yaml` and shared `components/responses` - the **published contract**. Update those first, then handlers and `docs/workflow-instance_api.md` via the [api-documentation-lungo](../api-documentation-lungo/SKILL.md) skill when endpoints, payload shapes, or HTTP statuses change.
+  The skill does **not** generate or reconcile per-operation OpenAPI `responses` on FastAPI decorators. Operation `responses` (success and error statuses) live in `schema/openapi/paths/*.yaml` and shared `components/responses` - the **published contract** (source of truth under `schema/openapi/`, not generated from code). Update OpenAPI and `docs/workflow-instance_api.md` via [agentic-workflows-api-documentation-lungo](../agentic-workflows-api-documentation-lungo/SKILL.md) first, then use this skill to align handlers when endpoints, payload shapes, or HTTP statuses change.
 
   The user owns:
   - the **bodies** of existing handlers,
@@ -63,7 +63,7 @@ Track progress with this checklist:
 - [ ] 3. Regenerate dtos.py from scratch
 - [ ] 4. Reconcile router.py (preserve handler bodies)
 - [ ] 5. Generate or refresh tests under tests/unit/openapi/
-- [ ] 6. If contracts changed, update path YAML and `workflow-instance_api.md` ([api-documentation-lungo](../api-documentation-lungo/SKILL.md)); ensure handlers use only OpenAPI-declared statuses
+- [ ] 6. If contracts changed, ensure OpenAPI and `workflow-instance_api.md` are updated ([agentic-workflows-api-documentation-lungo](../agentic-workflows-api-documentation-lungo/SKILL.md)); align handlers to use only OpenAPI-declared statuses
 - [ ] 7. Run the tests and the linter
 ```
 

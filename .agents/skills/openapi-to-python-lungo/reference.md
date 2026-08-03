@@ -371,7 +371,7 @@ The tests should:
 3. Assert every `operationId` declares at least one entry under `responses`.
 4. AST-scan `api/agentic_workflows/*.py` for literal `status_code=` values (`HTTPException`, `Response`, decorators) and assert each is in the union of declared OpenAPI response codes (plus `422` for FastAPI validation).
 
-When HTTP statuses change: update `schema/openapi/paths/<tag>.yaml` **first**, then handlers and `docs/workflow-instance_api.md` per [api-documentation-lungo/SKILL.md § OpenAPI status codes](../api-documentation-lungo/SKILL.md#openapi-status-codes).
+When HTTP statuses change: update `schema/openapi/paths/<tag>.yaml` and `docs/workflow-instance_api.md` per [agentic-workflows-api-documentation-lungo/SKILL.md § OpenAPI status codes](../agentic-workflows-api-documentation-lungo/SKILL.md#openapi-status-codes), then align handlers with this skill.
 
 ## Common pitfalls
 
