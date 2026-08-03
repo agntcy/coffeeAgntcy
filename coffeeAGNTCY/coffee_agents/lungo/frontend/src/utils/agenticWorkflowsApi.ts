@@ -84,6 +84,10 @@ export type WorkflowSummaryMapResponse = Record<string, WorkflowSummaryWire>
 export const AGENTIC_WORKFLOWS_CATALOG_LOG_PATH =
   LUNGO_FRONTEND_URLS.apiPaths.agenticWorkflowsCatalog.endpointLabel
 
+/** Log label for pattern category list requests (matches router mount). */
+export const PATTERN_CATEGORIES_LOG_PATH =
+  LUNGO_FRONTEND_URLS.apiPaths.patternCategories.endpointLabel
+
 const CATALOG_FETCH_MAX_RETRIES = 2
 const CATALOG_FETCH_RETRY_DELAY_MS = 750
 

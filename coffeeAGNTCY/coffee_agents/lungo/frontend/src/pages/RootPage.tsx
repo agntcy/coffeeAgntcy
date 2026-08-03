@@ -51,6 +51,7 @@ const RootPage: React.FC = () => {
     workflowCatalogLoading,
     workflowCatalogError,
     patternCategories,
+    patternCategoriesError,
     selectedWorkflowSummary,
     suggestedPromptsRequest,
     chatHeightValue,
@@ -222,6 +223,7 @@ const RootPage: React.FC = () => {
               selectedWorkflowSummary={selectedWorkflowSummary}
               summaries={workflowCatalogSummaries}
               patternCategories={patternCategories}
+              patternCategoriesError={patternCategoriesError}
               isLoading={workflowCatalogLoading}
               error={workflowCatalogError}
               onSelectWorkflow={selectWorkflowFromCatalog}

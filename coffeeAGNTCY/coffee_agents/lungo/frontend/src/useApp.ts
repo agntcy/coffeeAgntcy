@@ -46,7 +46,8 @@ export function useApp() {
     setSelectedWorkflowSummary,
   } = useAppWorkflowCatalog()
 
-  const { patternCategories } = useAppPatternCategories()
+  const { patternCategories, patternCategoriesError } =
+    useAppPatternCategories()
 
   const [selectedPatternCategory, setSelectedPatternCategory] = useState<
     string | null
@@ -177,6 +178,7 @@ export function useApp() {
     workflowCatalogLoading,
     workflowCatalogError,
     patternCategories,
+    patternCategoriesError,
     selectedWorkflowSummary,
     suggestedPromptsRequest,
     chatHeightValue,

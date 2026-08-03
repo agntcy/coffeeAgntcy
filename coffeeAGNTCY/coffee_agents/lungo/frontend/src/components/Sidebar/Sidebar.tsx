@@ -25,6 +25,7 @@ interface SidebarProps {
   selectedWorkflowSummary: WorkflowSummary | null
   summaries: WorkflowSummary[] | null
   patternCategories: readonly { name: string }[] | null
+  patternCategoriesError: string | null
   isLoading: boolean
   error: string | null
   onSelectWorkflow: (summary: WorkflowSummary) => void
@@ -37,6 +38,7 @@ const Sidebar: React.FC<SidebarProps> = ({
   selectedWorkflowSummary,
   summaries,
   patternCategories,
+  patternCategoriesError,
   isLoading,
   error,
   onSelectWorkflow,
@@ -141,16 +143,21 @@ const Sidebar: React.FC<SidebarProps> = ({
               </Stack>
             ) : null}
 
-            {!isLoading && error !== null ? (
-              <Message
-                type="error"
-                hideClose
-                role="alert"
-                sx={{ my: 1, width: "100%", textWrap: "wrap" }}
-              >
-                {error}
-              </Message>
-            ) : null}
+            {!isLoading
+              ? [error, error === null ? patternCategoriesError : null]
+                  .filter((message): message is string => message !== null)
+                  .map((message) => (
+                    <Message
+                      key={message}
+                      type="error"
+                      hideClose
+                      role="alert"
+                      sx={{ my: 1, width: "100%", textWrap: "wrap" }}
+                    >
+                      {message}
+                    </Message>
+                  ))
+              : null}
 
             {!isLoading && error === null ? (
               <CatalogTree
