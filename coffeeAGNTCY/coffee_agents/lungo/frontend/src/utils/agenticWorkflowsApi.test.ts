@@ -7,6 +7,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import { HttpError } from "@/api/http"
 import { PATTERNS, type PatternType } from "@/utils/patternUtils"
 import {
+  fetchPatternCategories,
   fetchPatternCategoryDocumentation,
   fetchWorkflowDocumentation,
   fetchWorkflowSummaries,
@@ -185,6 +186,68 @@ describe("fetchWorkflowSummaries", () => {
   ])("$caseName", async ({ body, init }) => {
     stubFetch(body, init)
     await expect(fetchWorkflowSummaries()).rejects.toThrow()
+  })
+})
+
+describe("fetchPatternCategories", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
+  const stubFetch = (
+    body: unknown,
+    init: { ok?: boolean; status?: number; statusText?: string } = {},
+  ): void => {
+    const { ok = true, status = 200, statusText = "OK" } = init
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => ({
+        ok,
+        status,
+        statusText,
+        json: async () => body,
+      })),
+    )
+  }
+
+  it("returns parsed category names and filters invalid items", async () => {
+    stubFetch({
+      items: [
+        { name: "Orchestration & Control Flow" },
+        { name: "Multi-Agent Collaboration" },
+        { name: "" },
+        { name: null },
+        {},
+      ],
+    })
+
+    const categories = await fetchPatternCategories()
+
+    expect(categories).toEqual([
+      { name: "Orchestration & Control Flow" },
+      { name: "Multi-Agent Collaboration" },
+    ])
+  })
+
+  it.each([
+    {
+      caseName: "non-ok response throws",
+      body: {},
+      init: { ok: false, status: 500, statusText: "Server Error" },
+    },
+    {
+      caseName: "missing items array throws",
+      body: {},
+      init: {},
+    },
+    {
+      caseName: "non-array items throws",
+      body: { items: null },
+      init: {},
+    },
+  ])("$caseName", async ({ body, init }) => {
+    stubFetch(body, init)
+    await expect(fetchPatternCategories()).rejects.toThrow()
   })
 })
 
