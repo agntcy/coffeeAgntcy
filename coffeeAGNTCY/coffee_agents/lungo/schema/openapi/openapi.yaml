@@ -9,6 +9,8 @@ info:
     Agentic workflows catalog, instance lifecycle, internal event ingress, and SSE.
     Path parameters for instance-scoped routes use a bare UUID (WorkflowInstancePathId); JSON payloads
     and response fields use full InstanceId URIs (instance://...) per schema/jsonschemas/event_v1.json.
+
+    All routes require `Authorization: Bearer <WORKFLOW_API_KEY>` unless noted otherwise in a future revision.
 servers:
   - url: /
 tags:
@@ -16,5 +18,7 @@ tags:
     description: Single API surface - patterns, use-cases, workflows, instances, events.
 paths:
   $ref: paths/agentic-workflows.yaml#/paths
+security:
+  - WorkflowApiKeyBearer: []
 components:
   $ref: components/schemas.yaml#/components

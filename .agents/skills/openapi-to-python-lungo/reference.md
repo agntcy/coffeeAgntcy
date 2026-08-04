@@ -355,6 +355,24 @@ def test_<tag_snake>_spec_paths_match_fastapi_router() -> None:
     )
 ```
 
+## Status-code conformance (agentic-workflows)
+
+Hand-maintained OpenAPI `responses` in `schema/openapi/` are the published contract. FastAPI decorators may omit error `responses=`; do not mirror the spec into `app.openapi()` for drift checks.
+
+Reference implementation:
+
+- Helpers: `tests/unit/openapi/openapi_spec_helpers.py`
+- Tests: `tests/unit/openapi/test_agentic_workflow_openapi_status_codes.py`
+
+The tests should:
+
+1. Load the resolved spec via `prance.ResolvingParser`.
+2. Assert top-level `security` requires `WorkflowApiKeyBearer` so `401` is contractually declared globally.
+3. Assert every `operationId` declares at least one entry under `responses`.
+4. AST-scan `api/agentic_workflows/*.py` for literal `status_code=` values (`HTTPException`, `Response`, decorators) and assert each is in the union of declared OpenAPI response codes (plus `422` for FastAPI validation).
+
+When HTTP statuses change: update `schema/openapi/paths/<tag>.yaml` and `docs/workflow-instance_api.md` per [agentic-workflows-api-documentation-lungo/SKILL.md § OpenAPI status codes](../agentic-workflows-api-documentation-lungo/SKILL.md#openapi-status-codes), then align handlers with this skill.
+
 ## Common pitfalls
 
 - `prance` may import `requests` and emit a `UserWarning`. Suppress it exactly as shown in the templates; the project's pytest config promotes warnings to errors.
