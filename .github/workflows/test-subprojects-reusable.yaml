@@ -116,7 +116,7 @@ jobs:
             test_corto=true
             test_lungo=true
             test_recruiter=true
-          elif [[ "${{ github.event_name }}" == "workflow_call" || "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+          elif [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
             test_corto=${{ inputs.test_corto }}
             test_lungo=${{ inputs.test_lungo }}
             test_recruiter=${{ inputs.test_recruiter }}
