@@ -4,12 +4,15 @@
  **/
 
 import { create } from "zustand"
-import { fetchNdjsonStream, ndjsonStreamUserMessage } from "@/api/http"
-import { reportRequestError } from "@/errors/request"
 import type { HttpRequestTarget } from "@/urls"
-import { isLocalDev } from "@/utils/const.ts"
 import { logger } from "@/utils/logger"
 import type { AuctionStreamingResponse } from "./auctionStreaming.types"
+import {
+  buildPromptStreamBody,
+  createAbortableNdjsonStreamingActions,
+  NDJSON_STREAMING_CORE_INITIAL,
+  type NdjsonStreamingCoreState,
+} from "./createNdjsonStreamingStore"
 import {
   NDJSON_STREAMING_STATUS,
   type NdjsonStreamingStatus,
@@ -24,13 +27,8 @@ const isValidAuctionStreamingResponse = (
   return typeof response === "string" && response.trim() !== ""
 }
 
-interface StreamingState {
-  status: NdjsonStreamingStatus
-  error: string | null
+interface StreamingState extends NdjsonStreamingCoreState {
   events: AuctionStreamingResponse[]
-  prompt: string | null
-  abortController: AbortController | null
-  sessionId: string | null
   connect: (
     prompt: string,
     workflowInstanceId?: string | null,
@@ -40,108 +38,59 @@ interface StreamingState {
   reset: () => void
 }
 
-const initialState = {
-  status: NDJSON_STREAMING_STATUS.IDLE,
-  error: null,
+const initialState: Omit<StreamingState, "connect" | "disconnect" | "reset"> = {
+  ...NDJSON_STREAMING_CORE_INITIAL,
   events: [],
-  prompt: null,
-  abortController: null,
-  sessionId: null,
 }
 
-export const useAuctionStreamingStore = create<StreamingState>((set) => ({
-  ...initialState,
-
-  connect: async (
-    prompt: string,
-    workflowInstanceId?: string | null,
-    streamRequest?: HttpRequestTarget,
-  ) => {
-    const abortController = new AbortController()
-
-    set({
+export const useAuctionStreamingStore = create<StreamingState>((set, get) => {
+  const actions = createAbortableNdjsonStreamingActions<
+    StreamingState,
+    {
+      prompt: string
+      workflowInstanceId?: string | null
+      streamRequest?: HttpRequestTarget
+    }
+  >({
+    get,
+    set,
+    initialState: initialState as StreamingState,
+    buildConnectingPatch: (args, abortController) => ({
       status: NDJSON_STREAMING_STATUS.CONNECTING,
       error: null,
-      prompt,
+      prompt: args.prompt,
       events: [],
       abortController,
       sessionId: null,
-    })
+    }),
+    buildRequestBody: (args) =>
+      buildPromptStreamBody(args.prompt, args.workflowInstanceId),
+    onLine: (parsedData, { set: setState }) => {
+      if (isValidAuctionStreamingResponse(parsedData)) {
+        setState((state) => ({
+          events: [...state.events, parsedData],
+          sessionId: parsedData.session_id || state.sessionId,
+        }))
+      }
+    },
+    onParseError: (line, parseError) => {
+      logger.warn("Failed to parse NDJSON line:", { line, parseError })
+    },
+  })
 
-    if (!streamRequest?.url) {
-      set({
-        status: NDJSON_STREAMING_STATUS.ERROR,
-        error: "Streaming request target is required",
-        abortController: null,
-      })
-      return
-    }
+  return {
+    ...initialState,
+    connect: (
+      prompt: string,
+      workflowInstanceId?: string | null,
+      streamRequest?: HttpRequestTarget,
+    ) => actions.connect({ prompt, workflowInstanceId, streamRequest }),
+    disconnect: actions.disconnect,
+    reset: actions.reset,
+  }
+})
 
-    try {
-      await fetchNdjsonStream(streamRequest.url, {
-        method: "POST",
-        credentials: isLocalDev ? "omit" : "include",
-        endpointLabel: streamRequest.endpointLabel,
-        body: JSON.stringify({
-          prompt,
-          ...(workflowInstanceId
-            ? { workflow_instance_id: workflowInstanceId }
-            : {}),
-        }),
-        signal: abortController.signal,
-        onStreamStart: () => {
-          set({ status: NDJSON_STREAMING_STATUS.STREAMING })
-        },
-        onLine: (parsedData) => {
-          if (isValidAuctionStreamingResponse(parsedData)) {
-            set((state) => ({
-              events: [...state.events, parsedData],
-              sessionId: parsedData.session_id || state.sessionId,
-            }))
-          }
-        },
-        onParseError: (line, parseError) => {
-          logger.warn("Failed to parse NDJSON line:", {
-            line,
-            parseError,
-          })
-        },
-      })
-
-      set({
-        status: NDJSON_STREAMING_STATUS.COMPLETED,
-        abortController: null,
-      })
-    } catch (error) {
-      if (abortController.signal.aborted) return
-
-      const httpError = reportRequestError(streamRequest.endpointLabel, error)
-      set({
-        status: NDJSON_STREAMING_STATUS.ERROR,
-        error: ndjsonStreamUserMessage(httpError, "short"),
-        abortController: null,
-      })
-    }
-  },
-
-  disconnect: () => {
-    const { abortController } = useAuctionStreamingStore.getState()
-    if (abortController) {
-      abortController.abort()
-    }
-    set({ status: NDJSON_STREAMING_STATUS.IDLE, abortController: null })
-  },
-
-  reset: () => {
-    const { abortController } = useAuctionStreamingStore.getState()
-    if (abortController) {
-      abortController.abort()
-    }
-    set(initialState)
-  },
-}))
-
-export const useStreamingStatus = () =>
+export const useStreamingStatus = (): NdjsonStreamingStatus =>
   useAuctionStreamingStore((state) => state.status)
 
 export const useStreamingError = () =>

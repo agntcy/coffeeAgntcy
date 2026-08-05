@@ -4,16 +4,17 @@
  **/
 
 import { create } from "zustand"
+import type { HttpRequestTarget } from "@/urls"
+import { logger } from "@/utils/logger"
 import type { LogisticsStreamStep } from "./groupStreaming.types"
+import {
+  buildPromptStreamBody,
+  runNdjsonStreamingSession,
+} from "./createNdjsonStreamingStore"
 import {
   NDJSON_STREAMING_STATUS,
   type NdjsonStreamingStatus,
 } from "./ndjsonStreamingStatus"
-import { fetchNdjsonStream, ndjsonStreamUserMessage } from "@/api/http"
-import { reportRequestError } from "@/errors/request"
-import type { HttpRequestTarget } from "@/urls"
-import { isLocalDev } from "@/utils/const.ts"
-import { logger } from "@/utils/logger"
 
 const isValidLogisticsStreamStep = (
   data: unknown,
@@ -132,7 +133,7 @@ function handleGroupStreamPayload(
 
 export const useGroupStreamingStore = create<
   LogisticsStreamingState & LogisticsStreamingActions
->((set) => ({
+>((set, get) => ({
   ...initialState,
 
   addEvent: (event: LogisticsStreamStep) =>
@@ -177,54 +178,37 @@ export const useGroupStreamingStore = create<
     workflowInstanceId?: string | null,
     streamRequest?: HttpRequestTarget,
   ) => {
-    const { reset, addEvent, setFinalResponse, setError, setSessionId } =
-      useGroupStreamingStore.getState()
-
-    if (!streamRequest?.url) {
-      setError("Streaming request target is required")
-      return
-    }
+    const { reset, addEvent, setFinalResponse, setError, setSessionId } = get()
 
     reset()
     set({ status: NDJSON_STREAMING_STATUS.CONNECTING })
 
-    const body: { prompt: string; workflow_instance_id?: string } = { prompt }
-    if (workflowInstanceId) body.workflow_instance_id = workflowInstanceId
-
-    try {
-      await fetchNdjsonStream(streamRequest.url, {
-        method: "POST",
-        credentials: isLocalDev ? "omit" : "include",
-        endpointLabel: streamRequest.endpointLabel,
-        body: JSON.stringify(body),
-        splitMode: "json-objects",
-        onStreamStart: () => {
-          set({ status: NDJSON_STREAMING_STATUS.STREAMING })
-        },
-        onLine: (parsed) =>
-          handleGroupStreamPayload(parsed, {
-            addEvent,
-            setFinalResponse,
-            setSessionId,
-          }),
-        onParseError: (jsonStr, parseError) => {
-          logger.error("Error parsing JSON object:", {
-            error: parseError,
-            json: jsonStr,
-          })
-        },
-      })
-
-      if (
-        useGroupStreamingStore.getState().status !==
-        NDJSON_STREAMING_STATUS.ERROR
-      ) {
+    await runNdjsonStreamingSession({
+      streamRequest,
+      onMissingTarget: () => setError("Streaming request target is required"),
+      buildBody: () => buildPromptStreamBody(prompt, workflowInstanceId),
+      splitMode: "json-objects",
+      onStreamStart: () => {
+        set({ status: NDJSON_STREAMING_STATUS.STREAMING })
+      },
+      onLine: (parsed) =>
+        handleGroupStreamPayload(parsed, {
+          addEvent,
+          setFinalResponse,
+          setSessionId,
+        }),
+      onParseError: (jsonStr, parseError) => {
+        logger.error("Error parsing JSON object:", {
+          error: parseError,
+          json: jsonStr,
+        })
+      },
+      isErrorStatus: () => get().status === NDJSON_STREAMING_STATUS.ERROR,
+      onCompleted: () => {
         set({ status: NDJSON_STREAMING_STATUS.COMPLETED })
-      }
-    } catch (error) {
-      const httpError = reportRequestError(streamRequest.endpointLabel, error)
-      setError(ndjsonStreamUserMessage(httpError, "short"))
-    }
+      },
+      onFailed: (message) => setError(message),
+    })
   },
 
   reset: () => set(initialState),

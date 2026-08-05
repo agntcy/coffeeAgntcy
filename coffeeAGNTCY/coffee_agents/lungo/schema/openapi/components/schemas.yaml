@@ -251,21 +251,26 @@ components:
           type: string
       additionalProperties: true
 
-    HttpError:
+    ApplicationError:
       type: object
       required: [detail]
       description: >
-        Error body returned by FastAPI for HTTPException and request validation failures.
-        HTTPException uses a string detail; validation failures use an array of items.
+        Error body for FastAPI HTTPException responses (4xx/5xx except request validation).
       properties:
         detail:
-          oneOf:
-            - type: string
-              description: Typical application error message (4xx/5xx from HTTPException).
-            - type: array
-              items:
-                $ref: "#/components/schemas/RequestValidationErrorItem"
-              description: Request validation errors (422).
+          type: string
+          description: Application error message from the handler.
+
+    ValidationError:
+      type: object
+      required: [detail]
+      description: Request validation failure body (422 only).
+      properties:
+        detail:
+          type: array
+          items:
+            $ref: "#/components/schemas/RequestValidationErrorItem"
+          description: Pydantic/FastAPI validation errors.
 
   responses:
     Unauthorized:
@@ -273,7 +278,7 @@ components:
       content:
         application/json:
           schema:
-            $ref: "#/components/schemas/HttpError"
+            $ref: "#/components/schemas/ApplicationError"
           examples:
             unauthorized:
               value:
@@ -284,35 +289,35 @@ components:
       content:
         application/json:
           schema:
-            $ref: "#/components/schemas/HttpError"
+            $ref: "#/components/schemas/ValidationError"
 
     BadRequest:
       description: Invalid payload or event does not match the request path context.
       content:
         application/json:
           schema:
-            $ref: "#/components/schemas/HttpError"
+            $ref: "#/components/schemas/ApplicationError"
 
     NotFound:
       description: Unknown workflow, instance, pattern, or documentation resource.
       content:
         application/json:
           schema:
-            $ref: "#/components/schemas/HttpError"
+            $ref: "#/components/schemas/ApplicationError"
 
     InternalServerError:
       description: Server-side catalog inconsistency or invalid stored projection.
       content:
         application/json:
           schema:
-            $ref: "#/components/schemas/HttpError"
+            $ref: "#/components/schemas/ApplicationError"
 
     ServiceUnavailable:
       description: Workflow instance store is not configured or is closed.
       content:
         application/json:
           schema:
-            $ref: "#/components/schemas/HttpError"
+            $ref: "#/components/schemas/ApplicationError"
 
     GatewayTimeout:
       description: >
@@ -321,7 +326,7 @@ components:
       content:
         application/json:
           schema:
-            $ref: "#/components/schemas/HttpError"
+            $ref: "#/components/schemas/ApplicationError"
 
   securitySchemes:
     WorkflowApiKeyBearer:

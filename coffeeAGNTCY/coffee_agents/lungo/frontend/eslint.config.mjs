@@ -9,7 +9,7 @@ import prettier from "eslint-plugin-prettier"
 import prettierConfig from "eslint-config-prettier"
 
 export default [
-  { ignores: ["dist", "node_modules"] },
+  { ignores: ["dist", "node_modules", "src/api/generated/**"] },
   ...tseslint.configs.recommended,
   {
     files: ["**/*.{js,jsx,ts,tsx}"],
@@ -62,6 +62,20 @@ export default [
     rules: {
       "@typescript-eslint/no-require-imports": "off",
       "no-console": "off",
+    },
+  },
+  {
+    files: ["src/**/*.{js,jsx,ts,tsx}"],
+    ignores: ["src/api/http/**"],
+    rules: {
+      "no-restricted-globals": [
+        "error",
+        {
+          name: "fetch",
+          message:
+            "Use @/api/http (httpFetch, fetchJson, fetchNdjsonStream, fetchSse) instead of raw fetch.",
+        },
+      ],
     },
   },
   {

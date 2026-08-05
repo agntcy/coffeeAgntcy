@@ -93,8 +93,9 @@ When an operation needs a new or changed HTTP status:
 
 1. **Update OpenAPI** - under `schema/openapi/`, add or adjust `responses` on the operation (discover path items and shared `components/responses` by reading the tree):
    - **`401`** - rely on global `security` on the OpenAPI root document; do not repeat on every operation unless the spec already does
-   - **`422`** - on operations with path/query/body validation, reference the shared unprocessable-entity response component
-   - **Other errors** - prefer `$ref` to shared error response components; keep operation-specific `description` when generic text is too vague
+   - **`422`** - reference `UnprocessableEntity` (`ValidationError` body: `{ detail: [...] }`)
+   - **Other errors** - `$ref` shared `components/responses` by status: `400` → `BadRequest`, `404` → `NotFound`, `500` → `InternalServerError`, `503` → `ServiceUnavailable`, `504` → `GatewayTimeout` (`ApplicationError` body: `{ detail: string }`). Do not use inline description-only error responses for those codes.
+   - **Body schemas** - `ApplicationError` vs `ValidationError` live under `components/schemas/` in `schema/openapi/`; response components point at the matching schema.
 2. **Update the human doc** - status bullets and conditions aligned with the spec
 3. **Align implementation** - ask the user to run openapi-to-python-lungo so handlers use only declared statuses
 4. **Regenerate consumers** - `npm run generate:api-types` in the lungo frontend when applicable; Python via openapi-to-python-lungo when shapes changed

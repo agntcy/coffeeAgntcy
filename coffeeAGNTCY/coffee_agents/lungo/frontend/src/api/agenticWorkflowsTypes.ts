@@ -2,35 +2,49 @@
  * Copyright AGNTCY Contributors (https://github.com/agntcy)
  * SPDX-License-Identifier: Apache-2.0
  *
- * Minimal TypeScript shapes for Agentic Workflows API + event_v1 payloads.
+ * Agentic Workflows API types from OpenAPI (`schema/openapi/openapi.yaml`).
+ * Regenerate: `npm run generate:api-types` in `frontend/`.
+ * See `docs/openapi-typescript.md`.
  **/
 
-export interface TopologySize {
-  width?: number
-  height?: number
-}
+import type { components } from "@/api/generated/agenticWorkflows.openapi"
 
-export interface TopologyPosition {
+type Schemas = components["schemas"]
+
+/** OpenAPI component schemas (generated). */
+export type AgenticWorkflowsSchemas = Schemas
+
+export type WorkflowSummarySchema = Schemas["WorkflowSummary"]
+export type WorkflowSummaryMapResponse = Schemas["WorkflowSummaryMapResponse"]
+export type InstantiateWorkflowResponseWire =
+  Schemas["InstantiateWorkflowResponse"]
+export type WorkflowDocumentationResponse =
+  Schemas["WorkflowDocumentationResponse"]
+
+export type TopologySize = Schemas["size"]
+
+/** Layout hint applied by the UI; not part of the canonical event_v1 schema. */
+export type TopologyPosition = {
   x: number
   y: number
 }
 
+/**
+ * Topology node at runtime (SSE / instance JSON). Aligns with event_v1 partial/full
+ * nodes but stays permissive: updates often omit `operation` / `layer_index`.
+ */
 export interface TopologyNodeWire {
   id: string
   operation?: string
   type?: string
   label?: string
-  /** Optional curated subtitle (event_v1 >= 1.1.0); split fallback when absent. */
   label_subtitle?: string
   size?: TopologySize
   layer_index?: number
-  /** Optional absolute layout hint; when present the renderer skips auto-layout for this node. */
   position?: TopologyPosition
   agent_record_uri?: string
   stable_agent_id?: string | { root: string }
-  /** Inline agent record (flat AgentCard dict) for runtime-discovered agents. */
   oasf_record?: Record<string, unknown>
-  /** Directory content id (CID) for a discovered agent. */
   agent_cid?: string
   agent_directory_cid?: string
   identity_app_slug?: string
@@ -57,30 +71,7 @@ export interface TopologyWire {
   edges?: TopologyEdgeWire[]
 }
 
-export interface WorkflowInstanceWire {
-  id: string
-  topology?: TopologyWire
-  [key: string]: unknown
-}
+export type WorkflowInstanceWire = Schemas["workflow_instance"]
 
-export interface EventV1Wire {
-  metadata?: {
-    id?: string
-    type?: string
-    [key: string]: unknown
-  }
-  data?: {
-    workflows?: Record<
-      string,
-      {
-        instances?: Record<string, WorkflowInstanceWire>
-        [key: string]: unknown
-      }
-    >
-    [key: string]: unknown
-  }
-}
-
-export interface InstantiateWorkflowResponseWire {
-  workflow_instance_id: string
-}
+/** SSE / internal event payloads (`event_v1` JSON Schema). */
+export type EventV1Wire = Schemas["event_v1"]

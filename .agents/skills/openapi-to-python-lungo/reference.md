@@ -370,6 +370,7 @@ The tests should:
 2. Assert top-level `security` requires `WorkflowApiKeyBearer` so `401` is contractually declared globally.
 3. Assert every `operationId` declares at least one entry under `responses`.
 4. AST-scan `api/agentic_workflows/*.py` for literal `status_code=` values (`HTTPException`, `Response`, decorators) and assert each is in the union of declared OpenAPI response codes (plus `422` for FastAPI validation).
+5. Lint unresolved path items: for each operation status in `ERROR_STATUS_TO_RESPONSE_COMPONENT` (`openapi_spec_helpers.py`), the response must `$ref` the matching `components/responses` name (e.g. `"404"` → `NotFound`, `"422"` → `UnprocessableEntity`). Error bodies use `ApplicationError` (string `detail`) or `ValidationError` (422 array `detail`), not a shared `HttpError` oneOf.
 
 When HTTP statuses change: update `schema/openapi/paths/<tag>.yaml` and `docs/workflow-instance_api.md` per [agentic-workflows-api-documentation-lungo/SKILL.md § OpenAPI status codes](../agentic-workflows-api-documentation-lungo/SKILL.md#openapi-status-codes), then align handlers with this skill.
 

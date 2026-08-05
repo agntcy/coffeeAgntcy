@@ -10,6 +10,7 @@ import pytest
 from tests.unit.openapi.openapi_spec_helpers import (
     agentic_workflows_implementation_modules,
     all_declared_status_codes,
+    collect_error_response_ref_violations,
     collect_implemented_http_status_codes,
     load_resolved_agentic_workflows_spec,
     status_codes_by_operation_id,
@@ -63,4 +64,13 @@ def test_agentic_workflows_implementation_status_codes_declared_in_openapi() -> 
         "Implementation uses HTTP status codes not declared in OpenAPI "
         f"(schema/openapi/): {undeclared}. "
         f"Declared union: {sorted(declared_with_validation)}"
+    )
+
+
+@pytest.mark.filterwarnings("ignore::UserWarning:requests")
+def test_agentic_workflows_openapi_error_responses_match_status_convention() -> None:
+    """Declared error statuses must $ref the matching components/responses name."""
+    violations = collect_error_response_ref_violations()
+    assert not violations, "OpenAPI error response $ref mismatches:\n" + "\n".join(
+        violations
     )
