@@ -41,7 +41,7 @@ The skill must remain **general** across tags: never hard-code endpoint names, s
   - any other arguments already passed to the `APIRouter(...)` constructor (e.g. `dependencies=[...]`, `prefix=`, `responses=`, `default_response_class=`) and the imports backing them. These encode router-level behavior (most notably authentication/authorization) that is not derivable from the OpenAPI document, so the skill must preserve them verbatim rather than overwrite them.
 
   When regenerating an existing handler, preserve its body verbatim. When decorator metadata or the signature must change to match the spec, rewrite the decorator and signature, but keep the body.
-- The OpenAPI tests under `tests/unit/openapi/` are **owned by this skill**. Regenerate them when missing or stale; do not preserve hand edits inside them **except** `openapi_spec_helpers.py` and the status-code conformance test module, which assert the hand-maintained spec is complete and that `api/<tag_snake>/` implementation uses only declared status codes (see [reference.md § Status-code conformance](reference.md)).
+- The OpenAPI tests under `tests/unit/openapi/` are **owned by this skill**. Regenerate them when missing or stale; do not preserve hand edits inside them **except** `openapi_spec_helpers.py` and the status-code conformance test module, which assert the hand-maintained spec is complete and that `api/<tag_snake>/` implementation uses only declared status codes (see [reference.md § Status-code conformance](reference.md)). Error bodies in `schema/openapi/components/schemas.yaml` are split as **`ApplicationError`** (string `detail`) and **`ValidationError`** (422 array `detail`); shared `components/responses` must `$ref` the name that matches the HTTP status (enforced by `collect_error_response_ref_violations()` in the same test module).
 
 ## Workflow selector
 
@@ -154,7 +154,7 @@ Ensure the directory `tests/unit/openapi/` exists. For each tag, generate (or re
 For the **agentic-workflows** tag, also keep (do not regenerate from templates):
 
 - `tests/unit/openapi/openapi_spec_helpers.py` - load resolved spec; collect declared vs implemented status codes.
-- `tests/unit/openapi/test_agentic_workflow_openapi_status_codes.py` - global `security`, every operation declares `responses`, implementation statuses ⊆ OpenAPI.
+- `tests/unit/openapi/test_agentic_workflow_openapi_status_codes.py` - global `security`, every operation declares `responses`, implementation statuses ⊆ OpenAPI, and error status codes `$ref` the matching `components/responses` name (`404` → `NotFound`, `422` → `UnprocessableEntity`, etc.; see `ERROR_STATUS_TO_RESPONSE_COMPONENT` in helpers).
 
 When adding a **new tag** with non-trivial error surfaces, add matching helpers/tests using the agentic-workflows pair as a pattern; see [reference.md § Status-code conformance](reference.md).
 
