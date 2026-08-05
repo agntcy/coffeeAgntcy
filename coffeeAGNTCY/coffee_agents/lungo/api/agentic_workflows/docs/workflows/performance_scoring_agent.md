@@ -18,6 +18,12 @@ graph TD
 
 ## Pattern
 
+**References:**
+
+- Antonio Gullí, *Agentic Design Patterns* (Springer, 2025), Ch. 11 - Goal Setting and Monitoring and Ch. 19 - Evaluation and Monitoring. [https://doi.org/10.1007/978-3-032-01402-3](https://doi.org/10.1007/978-3-032-01402-3)
+
+**Category:** Observability & Performance Accountability
+
 A **performance scoring agent** measures how well agentic runs meet **declared KPIs**-cost, time, carbon, quality, or
 whatever leadership actually names-so improvement budgets go to what **measurably** works, not to whoever tells the
 prettiest story. Scores are tied to **transparent formulas** and comparable inputs.

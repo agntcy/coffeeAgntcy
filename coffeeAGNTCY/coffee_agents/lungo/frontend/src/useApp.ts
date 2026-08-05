@@ -8,6 +8,8 @@ import { useChatAreaMeasurement } from "@/hooks/chat"
 import { useAgentAPI } from "@/hooks/agent"
 import {
   useAppChatState,
+  useAppPatternCategories,
+  useAppPatternCategoryDoc,
   useAppPatternReference,
   useAppPromptHandlers,
   useAppStreamingChatEffects,
@@ -15,7 +17,6 @@ import {
   useAppWorkflowCatalog,
 } from "@/hooks/useApp"
 import { type GraphConfig } from "@/utils/graphConfigs"
-import { PATTERNS, PatternType } from "@/utils/patternUtils"
 import type { WorkflowSummary } from "@/utils/agenticWorkflowsApi"
 import { useActiveWorkflowInstanceStore } from "@/stores/activeWorkflowInstanceStore"
 import { CanvasMode } from "@/types/patternDoc"
@@ -33,9 +34,6 @@ export function useApp() {
     (s) => s.workflowInstanceId,
   )
 
-  const [selectedPattern, setSelectedPattern] = useState<PatternType>(
-    PATTERNS.GROUP_MESSAGING,
-  )
   const [liveGraphConfig, setLiveGraphConfig] = useState<GraphConfig | null>(
     null,
   )
@@ -46,7 +44,16 @@ export function useApp() {
     workflowCatalogError,
     selectedWorkflowSummary,
     setSelectedWorkflowSummary,
-  } = useAppWorkflowCatalog(selectedPattern)
+  } = useAppWorkflowCatalog()
+
+  const { patternCategories, patternCategoriesError } =
+    useAppPatternCategories()
+
+  const [selectedPatternCategory, setSelectedPatternCategory] = useState<
+    string | null
+  >(null)
+
+  const { categoryDocState } = useAppPatternCategoryDoc(selectedPatternCategory)
 
   const {
     selectedReferencePattern,
@@ -54,9 +61,18 @@ export function useApp() {
     patternChatSessionId,
     setPatternChatSessionId,
     patternDocState,
-    canvasMode,
     selectReferencePattern: selectReferencePatternBase,
   } = useAppPatternReference()
+
+  const canvasMode = useMemo(() => {
+    if (selectedReferencePattern !== null) {
+      return CanvasMode.PATTERN_DOC
+    }
+    if (selectedPatternCategory !== null) {
+      return CanvasMode.CATEGORY_DOC
+    }
+    return CanvasMode.WORKFLOW
+  }, [selectedPatternCategory, selectedReferencePattern])
 
   const chat = useAppChatState({ selectedWorkflowSummary, canvasMode })
   const { resetChatState } = chat
@@ -66,13 +82,27 @@ export function useApp() {
       selectReferencePatternBase(patternName)
       if (patternName !== null) {
         resetChatState()
+        setSelectedPatternCategory(null)
       }
     },
-    [selectReferencePatternBase, resetChatState],
+    [resetChatState, selectReferencePatternBase],
+  )
+
+  const selectPatternCategory = useCallback(
+    (categoryName: string) => {
+      setSelectedPatternCategory(categoryName)
+      setSelectedReferencePattern(null)
+    },
+    [setSelectedReferencePattern],
   )
 
   const suggestedPromptsRequest = useMemo(() => {
-    if (canvasMode === CanvasMode.PATTERN_DOC) return null
+    if (
+      canvasMode === CanvasMode.PATTERN_DOC ||
+      canvasMode === CanvasMode.CATEGORY_DOC
+    ) {
+      return null
+    }
     return getSuggestedPromptsRequestForWorkflow(selectedWorkflowSummary)
   }, [canvasMode, selectedWorkflowSummary])
 
@@ -112,10 +142,10 @@ export function useApp() {
       chat.setCurrentUserMessage("")
       chat.setButtonClicked(false)
       chat.setAiReplied(false)
-      setSelectedPattern(slug)
       setSelectedWorkflowSummary(summary)
       setLiveGraphConfig(null)
       setSelectedReferencePattern(null)
+      setSelectedPatternCategory(null)
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps -- streaming/chat refs stable enough; full deps cause unnecessary runs
     [
@@ -143,11 +173,12 @@ export function useApp() {
   )
 
   return {
-    selectedPattern,
     selectWorkflowFromCatalog,
     workflowCatalogSummaries,
     workflowCatalogLoading,
     workflowCatalogError,
+    patternCategories,
+    patternCategoriesError,
     selectedWorkflowSummary,
     suggestedPromptsRequest,
     chatHeightValue,
@@ -191,6 +222,9 @@ export function useApp() {
     setLiveGraphConfig,
     selectedReferencePattern,
     selectReferencePattern,
+    selectedPatternCategory,
+    selectPatternCategory,
+    categoryDocState,
     canvasMode,
     patternDocState,
     patternChatSessionId,

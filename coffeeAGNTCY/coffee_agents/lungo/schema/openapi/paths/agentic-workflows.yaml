@@ -82,6 +82,41 @@ paths:
               schema:
                 $ref: ../components/schemas.yaml#/components/schemas/UseCaseListResponse
 
+  /pattern-categories/:
+    get:
+      tags: [agentic-workflows]
+      operationId: listPatternCategories
+      summary: List pattern categories
+      responses:
+        "200":
+          description: List of agentic design pattern categories
+          content:
+            application/json:
+              schema:
+                $ref: ../components/schemas.yaml#/components/schemas/PatternCategoryListResponse
+
+  /pattern-categories/{category_name}/documentation/:
+    get:
+      tags: [agentic-workflows]
+      operationId: getPatternCategoryDocumentation
+      summary: Get pattern category documentation (markdown)
+      parameters:
+        - name: category_name
+          in: path
+          required: true
+          schema:
+            type: string
+            minLength: 1
+      responses:
+        "200":
+          description: Category reference markdown
+          content:
+            application/json:
+              schema:
+                $ref: ../components/schemas.yaml#/components/schemas/PatternCategoryDocumentationResponse
+        "404":
+          description: Category documentation not found
+
   /agentic-workflows/:
     get:
       tags: [agentic-workflows]
@@ -108,6 +143,16 @@ paths:
           style: form
           explode: true
           description: Filter by use-case names
+        - name: pattern_categories
+          in: query
+          required: false
+          schema:
+            type: array
+            items:
+              type: string
+          style: form
+          explode: true
+          description: Filter by pattern category display names
       responses:
         "200":
           description: Available workflows for the optional filters, keyed by workflow name

@@ -18,32 +18,44 @@ import CatalogTree from "./CatalogTree"
 import {
   buildCatalogSidebarLayout,
   buildInitialExpanded,
+  patternCategoryOrderFromApi,
 } from "./sidebar.utils"
 
 interface SidebarProps {
   selectedWorkflowSummary: WorkflowSummary | null
   summaries: WorkflowSummary[] | null
+  patternCategories: readonly { name: string }[] | null
+  patternCategoriesError: string | null
   isLoading: boolean
   error: string | null
   onSelectWorkflow: (summary: WorkflowSummary) => void
   selectedReferencePattern?: string | null
   onSelectReferencePattern?: (patternName: string) => void
+  onSelectPatternCategory?: (categoryName: string) => void
 }
 
 const Sidebar: React.FC<SidebarProps> = ({
   selectedWorkflowSummary,
   summaries,
+  patternCategories,
+  patternCategoriesError,
   isLoading,
   error,
   onSelectWorkflow,
   selectedReferencePattern,
   onSelectReferencePattern,
+  onSelectPatternCategory,
 }) => {
   const [expandedKeys, setExpandedKeys] = useState<Set<string>>(new Set())
 
+  const categoryOrder = useMemo(
+    () => patternCategoryOrderFromApi(patternCategories ?? []),
+    [patternCategories],
+  )
+
   const layout = useMemo(
-    () => buildCatalogSidebarLayout(summaries ?? []),
-    [summaries],
+    () => buildCatalogSidebarLayout(summaries ?? [], categoryOrder),
+    [summaries, categoryOrder],
   )
 
   const toggleExpandableDropdown = useCallback((key: string) => {
@@ -64,8 +76,8 @@ const Sidebar: React.FC<SidebarProps> = ({
     if (summaries === null) return
     if (catalogSummariesRef.current === summaries) return
     catalogSummariesRef.current = summaries
-    setExpandedKeys(buildInitialExpanded(layout.implementedPatterns))
-  }, [layout.implementedPatterns, summaries])
+    setExpandedKeys(buildInitialExpanded(layout))
+  }, [layout, summaries])
 
   return (
     <Box
@@ -131,16 +143,21 @@ const Sidebar: React.FC<SidebarProps> = ({
               </Stack>
             ) : null}
 
-            {!isLoading && error !== null ? (
-              <Message
-                type="error"
-                hideClose
-                role="alert"
-                sx={{ my: 1, width: "100%", textWrap: "wrap" }}
-              >
-                {error}
-              </Message>
-            ) : null}
+            {!isLoading
+              ? [error, error === null ? patternCategoriesError : null]
+                  .filter((message): message is string => message !== null)
+                  .map((message) => (
+                    <Message
+                      key={message}
+                      type="error"
+                      hideClose
+                      role="alert"
+                      sx={{ my: 1, width: "100%", textWrap: "wrap" }}
+                    >
+                      {message}
+                    </Message>
+                  ))
+              : null}
 
             {!isLoading && error === null ? (
               <CatalogTree
@@ -151,6 +168,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                 onSelectWorkflow={onSelectWorkflow}
                 selectedReferencePattern={selectedReferencePattern}
                 onSelectReferencePattern={onSelectReferencePattern}
+                onSelectPatternCategory={onSelectPatternCategory}
               />
             ) : null}
           </Stack>

@@ -18,6 +18,13 @@ graph TD
 
 ## Pattern
 
+**References:**
+
+- [AGNTCY Directory (dir)](https://github.com/agntcy/dir)
+- Antonio Gullí, *Agentic Design Patterns* (Springer, 2025), Ch. 2 - Routing and Ch. 21 - Exploration and Discovery. [https://doi.org/10.1007/978-3-032-01402-3](https://doi.org/10.1007/978-3-032-01402-3)
+
+**Category:** Discovery, Routing & Composition
+
 **Directory-based dispatch** chooses the **next specialist from intent and context** instead of hard-wiring a single
 static path. When signals, tags, or confidence shift, a different expert may be the right callee; the pattern makes that
 **explicit and explainable** rather than a hidden branch table.

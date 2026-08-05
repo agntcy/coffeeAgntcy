@@ -18,6 +18,12 @@ graph TD
 
 ## Pattern
 
+**References:**
+
+- Antonio Gullí, *Agentic Design Patterns* (Springer, 2025), Ch. 1 - Prompt Chaining (pipeline pattern). [https://doi.org/10.1007/978-3-032-01402-3](https://doi.org/10.1007/978-3-032-01402-3)
+
+**Category:** Orchestration & Control Flow
+
 **Agent workflow chain** means breaking a **complex goal into ordered agent steps**, each enriching **shared state** so
 later specialists inherit constraints instead of rediscovering what earlier steps already established. The shared record
 might hold quality floors, commercial bands, diligence flags, or other structured facts that every hop must respect.

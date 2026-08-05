@@ -43,11 +43,57 @@ class UseCaseListResponse(BaseModel):
     items: list[UseCase]
 
 
+class PatternCategory(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    name: Annotated[str, Field(min_length=1)]
+
+
+class PatternCategoryListResponse(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    items: list[PatternCategory]
+
+
+class PatternCategoryDocumentationResponse(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    slug: Annotated[
+        str,
+        Field(
+            min_length=1,
+            description="Basename slug for docs/categories/{slug}.md.",
+        ),
+    ]
+    name: Annotated[
+        str,
+        Field(
+            min_length=1,
+            description="Display name of the category (H1 in the markdown file).",
+        ),
+    ]
+    title: Annotated[
+        str | None,
+        Field(description="Leading H1 from the markdown file, if present."),
+    ] = None
+    full_markdown: Annotated[
+        str,
+        Field(description="Full markdown source for the category reference doc."),
+    ]
+
+
 class WorkflowSummary(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     name: Annotated[str, Field(min_length=1)]
     pattern: Annotated[str, Field(min_length=1)]
+    pattern_category: Annotated[
+        str,
+        Field(
+            min_length=1,
+            description='Agentic design pattern category (e.g. "Orchestration & Control Flow").',
+        ),
+    ]
     use_case: Annotated[str, Field(min_length=1)]
     scenario: Annotated[str, Field(min_length=1, description="brief extra qualifier for the use-case")]
     supports_sse: bool
@@ -143,6 +189,15 @@ class WorkflowDocumentationResponse(BaseModel):
     title: Annotated[
         str | None,
         Field(description="Leading H1 from the markdown file, if present."),
+    ] = None
+    pattern_category: Annotated[
+        str | None,
+        Field(
+            description=(
+                "Category from the Pattern section (**Category:** line) when present "
+                "in the workflow markdown."
+            ),
+        ),
     ] = None
     sections: list[WorkflowDocumentationSection]
     full_markdown: Annotated[

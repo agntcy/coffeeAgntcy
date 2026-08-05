@@ -18,6 +18,12 @@ graph TD
 
 ## Pattern
 
+**References:**
+
+- Antonio Gullí, *Agentic Design Patterns* (Springer, 2025), Ch. 18 - Guardrails/Safety Patterns. [https://doi.org/10.1007/978-3-032-01402-3](https://doi.org/10.1007/978-3-032-01402-3)
+
+**Category:** Governance, Policy & Human Oversight
+
 **Policy-enforced execution** **blocks or conditions actions** against explicit **trust and ethics rules**-labor,
 sanctions, sustainability, or whatever the company publishes as non-negotiable-so automated enthusiasm never overrides
 what the firm refuses to sign. “The model wanted to” is not a policy exception.

@@ -23,6 +23,12 @@ graph TD
 
 ## Pattern
 
+**References:**
+
+- Antonio Gullí, *Agentic Design Patterns* (Springer, 2025), Ch. 7 - Multi-Agent Collaboration (Supervisor model) and Ch. 3 - Parallelization and Ch. 15 - Inter-Agent Communication (A2A). [https://doi.org/10.1007/978-3-032-01402-3](https://doi.org/10.1007/978-3-032-01402-3)
+
+**Category:** Orchestration & Control Flow
+
 **Supervisor and workers** is a general arrangement for multi-agent work: **one coordinator** owns the end-to-end
 story-what to ask next, when to branch, how to merge or compare results, and where policy and retries live-while
 **specialist agents** each do a **bounded slice** (one region, one data source, one tool) and return answers upward.

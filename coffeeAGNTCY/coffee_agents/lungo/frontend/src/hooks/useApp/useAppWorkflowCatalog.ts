@@ -11,10 +11,9 @@ import {
   pickDefaultWorkflowSummaryForPattern,
   type WorkflowSummary,
 } from "@/utils/agenticWorkflowsApi"
-import { patternTypeFromSummary } from "@/utils/workflow"
-import type { PatternType } from "@/utils/patternUtils"
+import { PATTERNS } from "@/utils/patternUtils"
 
-export function useAppWorkflowCatalog(selectedPattern: PatternType) {
+export function useAppWorkflowCatalog() {
   const [workflowCatalogSummaries, setWorkflowCatalogSummaries] = useState<
     WorkflowSummary[] | null
   >(null)
@@ -54,16 +53,16 @@ export function useAppWorkflowCatalog(selectedPattern: PatternType) {
     setSelectedWorkflowSummary((prev) => {
       if (prev) {
         const still = workflowCatalogSummaries.find((s) => s.name === prev.name)
-        if (still && patternTypeFromSummary(still) === selectedPattern) {
+        if (still) {
           return still
         }
       }
       return pickDefaultWorkflowSummaryForPattern(
         workflowCatalogSummaries,
-        selectedPattern,
+        PATTERNS.GROUP_MESSAGING,
       )
     })
-  }, [workflowCatalogSummaries, selectedPattern])
+  }, [workflowCatalogSummaries])
 
   return {
     workflowCatalogSummaries,

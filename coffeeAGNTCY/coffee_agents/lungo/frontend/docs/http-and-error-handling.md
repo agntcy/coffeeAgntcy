@@ -69,6 +69,8 @@ Graph modals call `fetch*` without a request argument; on failure they use the m
 | Main chat (NDJSON stream) | `groupStreamingStore` / `auctionStreamingStore` / `recruiterStreamingStore` | `reportRequestError(streamRequest.endpointLabel, …)` in store `catch` | Store `error` + `ndjsonStreamUserMessage`; chat UI reads store |
 | Suggested prompts menu | `useSuggestedPrompts` → `fetchJson` | `reportRequestError(endpointLabel, …)` on exhaustion | `unavailableMessage` + `SuggestedPromptsDropdown` |
 | Pattern doc + pattern chat | `useAppPatternReference` / `usePatternChatAPI` | Explicit label from `buildAgenticWorkflowsDocumentationRequest` / pattern chat request | Pattern canvas error state; pattern chat callbacks |
+| Pattern categories (sidebar) | `useAppPatternCategories` → `fetchPatternCategories` | `reportRequestError(PATTERN_CATEGORIES_LOG_PATH, …)`; skips `isRequestCancelledError` | `patternCategoriesError` + Sidebar `Message` |
+| Pattern category doc | `useAppPatternCategoryDoc` → `fetchPatternCategoryDocumentation` | `buildPatternCategoryDocumentationRequest(…).endpointLabel`; skips `isRequestCancelledError` | `categoryDocState.errorMessage` + `PatternDocCanvas` |
 | Workflow catalog | `useAppWorkflowCatalog` | Explicit catalog label | Catalog empty / error UI |
 | Agentic graph bootstrap | `useWorkflowGraphAgenticBootstrap` | `agentic-workflows/bootstrap`, `agentic-workflows/sse` + optional `userMessage` | `setAgenticError` on graph |
 | Topology refetch | `useWorkflowGraphTopologySync` | `agentic-workflows/refetch-topology` + `userMessage` | Graph stale / error messaging |

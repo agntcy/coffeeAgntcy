@@ -24,6 +24,7 @@ _FAKE_WORKFLOWS: dict[str, Workflow] = {
                 "use_case": "Purchasing",
                 "scenario": "Publish Subscribe scenario",
                 "name": "Publish Subscribe",
+                "pattern_category": "Orchestration & Control Flow",
                 "supports_sse": False,
                 "supports_streaming": False,
                 "chat_api_target": "exchange",
@@ -49,6 +50,7 @@ _FAKE_WORKFLOWS: dict[str, Workflow] = {
                 "use_case": "Order Fulfillment",
                 "scenario": "Group Logistics scenario",
                 "name": "Group Logistics",
+                "pattern_category": "Multi-Agent Communication & Collaboration",
                 "supports_sse": True,
                 "supports_streaming": False,
                 "chat_api_target": "logistics",
@@ -74,6 +76,7 @@ _FAKE_WORKFLOWS: dict[str, Workflow] = {
                 "use_case": "Order Fulfillment",
                 "scenario": "Publish Subscribe Streaming scenario",
                 "name": "Publish Subscribe Streaming",
+                "pattern_category": "Orchestration & Control Flow",
                 "supports_sse": False,
                 "supports_streaming": True,
                 "chat_api_target": "exchange",
@@ -180,6 +183,18 @@ _LIST_CASES: tuple[ListCase, ...] = (
         ),
         outputs=ListOutputs(status=200, expected_names=_ALL_NAMES),
     ),
+    ListCase(
+        case_id="filter_single_pattern_category",
+        inputs=ListInputs(
+            params={"pattern_categories": "Multi-Agent Communication & Collaboration"}
+        ),
+        outputs=ListOutputs(status=200, expected_names={"Group Logistics"}),
+    ),
+    ListCase(
+        case_id="filter_pattern_category_no_match_returns_empty",
+        inputs=ListInputs(params={"pattern_categories": "Internet of Cognition"}),
+        outputs=ListOutputs(status=200, expected_names=set()),
+    ),
 )
 
 
@@ -198,6 +213,7 @@ def test_list_agentic_workflows(case: ListCase, client: TestClient) -> None:
         assert set(summary.keys()) == {
             "name",
             "pattern",
+            "pattern_category",
             "use_case",
             "scenario",
             "supports_sse",

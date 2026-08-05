@@ -19,6 +19,12 @@ graph TD
 
 ## Pattern
 
+**References:**
+
+- Antonio Gullí, *Agentic Design Patterns* (Springer, 2025), Ch. 9 - Learning and Adaptation. [https://doi.org/10.1007/978-3-032-01402-3](https://doi.org/10.1007/978-3-032-01402-3)
+
+**Category:** Learning, Feedback & Self-Improvement
+
 A **feedback loop** folds **human or system feedback**-scores, disputes, delivery outcomes-back into **routing and
 selection policy** so the next cycle behaves less like amnesia. Learning is explicit: feedback carries **attribution**
 (which supplier, which lane, which agent version), aggregates into features or parameters, and passes through **gates**

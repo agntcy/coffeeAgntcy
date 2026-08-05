@@ -122,6 +122,22 @@ export function buildAgenticWorkflowsCatalogRequest(): HttpRequestTarget {
   )
 }
 
+export function buildPatternCategoriesRequest(): HttpRequestTarget {
+  return joinHttpRequest(
+    getAgenticWorkflowsApiUrl(),
+    LUNGO_FRONTEND_URLS.apiPaths.patternCategories,
+  )
+}
+
+export function buildPatternCategoryDocumentationRequest(
+  categoryName: string,
+): HttpRequestTarget {
+  return joinHttpRequest(
+    getAgenticWorkflowsApiUrl(),
+    LUNGO_FRONTEND_URLS.apiPaths.patternCategoryDocumentation(categoryName),
+  )
+}
+
 export function buildAgenticWorkflowsDocumentationRequest(
   workflowName: string,
 ): HttpRequestTarget {

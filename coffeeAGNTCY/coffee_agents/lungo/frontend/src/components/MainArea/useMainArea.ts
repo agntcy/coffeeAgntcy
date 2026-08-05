@@ -6,7 +6,6 @@
 import { useEffect, useRef, useCallback, useState, useMemo } from "react"
 import { useNodesState, useEdgesState } from "@xyflow/react"
 import type { Node, Edge } from "@xyflow/react"
-import { PatternType } from "@/utils/patternUtils"
 import { useViewportAwareFitView } from "@/hooks/graph"
 import { useModalManager } from "@/hooks/ui"
 import { customNodeDataFromNode } from "./Graph/Elements/customNodeData"
@@ -18,9 +17,9 @@ import type { WorkflowSummary } from "@/utils/agenticWorkflowsApi"
 import type { GraphConfig } from "@/utils/graphConfigs"
 import { graphConfigFromNodes } from "@/utils/graphConfigFromNodes"
 import { deriveAnimationSequenceFromGraph } from "@/components/Chat/chatStreamGraphHighlight"
+import { patternTypeFromSummary } from "@/utils/workflow"
 
 export interface MainAreaProps {
-  pattern: PatternType
   selectedWorkflowSummary: WorkflowSummary | null
   workflowCatalogLoading?: boolean
   workflowCatalogError?: string | null
@@ -40,7 +39,6 @@ const DELAY_DURATION = 500
 const HIGHLIGHT = { ON: true, OFF: false } as const
 
 export function useMainArea({
-  pattern,
   selectedWorkflowSummary,
   buttonClicked,
   setButtonClicked,
@@ -51,6 +49,14 @@ export function useMainArea({
   selectedAgentCid,
   onLiveGraphConfig,
 }: MainAreaProps) {
+  const pattern = useMemo(
+    () =>
+      selectedWorkflowSummary
+        ? patternTypeFromSummary(selectedWorkflowSummary)
+        : null,
+    [selectedWorkflowSummary],
+  )
+
   const fitViewWithViewport = useViewportAwareFitView()
 
   const [nodesDraggable, setNodesDraggable] = useState(true)
@@ -107,7 +113,6 @@ export function useMainArea({
   }, [])
 
   const { agenticMode, agenticError } = useWorkflowGraphFromAgenticApi({
-    pattern,
     selectedWorkflowSummary,
     setNodes,
     setEdges,
@@ -156,7 +161,7 @@ export function useMainArea({
   }, [pattern, selectedAgentCid, nodeAgentCidKey, setNodes])
 
   useMainAreaGraphEffects({
-    pattern,
+    pattern: pattern ?? "",
     setNodes,
     handleOpenIdentityModal,
     handleOpenOasfModal,
@@ -173,7 +178,7 @@ export function useMainArea({
   })
 
   useNodeTransportInterfaces(
-    pattern,
+    pattern ?? "",
     selectedWorkflowSummary?.chat_api_target ?? null,
     nodes,
     setNodes,

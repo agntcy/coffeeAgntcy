@@ -18,6 +18,13 @@ graph TD
 
 ## Pattern
 
+**References:**
+
+- [Agent2Agent (A2A) Protocol specification](https://a2a-protocol.org/latest/specification/)
+- Antonio Gullí, *Agentic Design Patterns* (Springer, 2025), Ch. 7 - Multi-Agent Collaboration (Network model) and Ch. 15 - Inter-Agent Communication (A2A). [https://doi.org/10.1007/978-3-032-01402-3](https://doi.org/10.1007/978-3-032-01402-3)
+
+**Category:** Multi-Agent Communication & Collaboration
+
 **Group messaging and coordination** is a general arrangement when **several specialists** must **see the same
 conversation**, **answer one another**, and still have **one accountable place** that keeps order, permissions, and
 progress toward a shared goal. A **supervisor or moderator** opens a **shared channel**; **members** join as first-class

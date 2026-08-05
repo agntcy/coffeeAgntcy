@@ -7,6 +7,8 @@ export { HttpError, isHttpError, type HttpErrorOptions } from "./types.ts"
 export {
   parseHttpError,
   parseHttpErrorFromResponse,
+  isRequestCancelledError,
+  REQUEST_CANCELLED_MESSAGE,
   type ParseHttpErrorOptions,
 } from "./parseHttpError.ts"
 export { stripHtml } from "./stripHtml.ts"

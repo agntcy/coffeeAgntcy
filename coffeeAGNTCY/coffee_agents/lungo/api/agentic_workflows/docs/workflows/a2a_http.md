@@ -18,6 +18,12 @@ graph TD
 
 ## Pattern
 
+**References:**
+
+- Antonio Gullí, *Agentic Design Patterns* (Springer, 2025), Ch. 15 - Inter-Agent Communication (A2A). [https://doi.org/10.1007/978-3-032-01402-3](https://doi.org/10.1007/978-3-032-01402-3)
+
+**Category:** Discovery, Routing & Composition
+
 **Recruiter-style discovery** is a general pattern for **on-demand selection** in an ecosystem of many possible
 **agents, services, or tools**: one **recruiter** (or selector) turns a vague ask into **structured lookup**,
 **ranking**, and a **small, explainable answer**-who exists, what they offer, whether they are eligible-then hands

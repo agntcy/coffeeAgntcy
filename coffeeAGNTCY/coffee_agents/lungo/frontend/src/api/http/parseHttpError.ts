@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  **/
 
-import { HttpError } from "./types.ts"
+import { HttpError, isHttpError } from "./types.ts"
 import { stripHtml } from "./stripHtml.ts"
 
 export type ParseHttpErrorOptions = {
@@ -11,6 +11,9 @@ export type ParseHttpErrorOptions = {
 }
 
 const DEFAULT_MESSAGE = "Sorry, something went wrong. Please try again later."
+
+/** User-facing message for aborted fetches (DOMException or wrapped HttpError). */
+export const REQUEST_CANCELLED_MESSAGE = "Request was cancelled."
 
 function formatFastApiDetail(detail: unknown): string | undefined {
   if (typeof detail === "string") {
@@ -81,6 +84,14 @@ function isAbortError(error: unknown): boolean {
   )
 }
 
+/** True when a fetch was aborted (raw AbortError or httpClient cancellation HttpError). */
+export function isRequestCancelledError(error: unknown): boolean {
+  if (isAbortError(error)) {
+    return true
+  }
+  return isHttpError(error) && error.message === REQUEST_CANCELLED_MESSAGE
+}
+
 function isNetworkError(error: unknown): boolean {
   return error instanceof TypeError
 }
@@ -94,7 +105,7 @@ export function parseHttpError(
   }
 
   if (isAbortError(error)) {
-    return new HttpError("Request was cancelled.", {
+    return new HttpError(REQUEST_CANCELLED_MESSAGE, {
       endpointLabel: options?.endpointLabel,
       cause: error,
     })

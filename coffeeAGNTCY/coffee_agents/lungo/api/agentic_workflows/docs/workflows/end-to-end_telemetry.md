@@ -18,6 +18,13 @@ graph TD
 
 ## Pattern
 
+**References:**
+
+- [OpenTelemetry traces](https://opentelemetry.io/docs/concepts/signals/traces/)
+- Antonio Gullí, *Agentic Design Patterns* (Springer, 2025), Ch. 19 - Evaluation and Monitoring. [https://doi.org/10.1007/978-3-032-01402-3](https://doi.org/10.1007/978-3-032-01402-3)
+
+**Category:** Observability & Performance Accountability
+
 **End-to-end telemetry** traces **decisions and interactions across the whole chain**-from early inputs through
 fulfillment-so **correlation identifiers** stitch agent steps to real business objects and money movements. The point is
 continuity: an incident or dispute can be walked from origin to outcome without broken narrative.

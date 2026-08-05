@@ -18,6 +18,12 @@ graph TD
 
 ## Pattern
 
+**References:**
+
+- Antonio Gullí, *Agentic Design Patterns* (Springer, 2025), Ch. 8 - Memory Management (long-term memory) and Ch. 14 - Knowledge Retrieval (RAG). [https://doi.org/10.1007/978-3-032-01402-3](https://doi.org/10.1007/978-3-032-01402-3)
+
+**Category:** Internet of Cognition
+
 A **shared knowledge store** **persists knowledge across tasks and time**-yield history, supplier reliability, settled
 prices-so agents query **curated records** instead of re-scraping the world on every run. Long-lived facts live in one
 governed place with keys, versions, and provenance.

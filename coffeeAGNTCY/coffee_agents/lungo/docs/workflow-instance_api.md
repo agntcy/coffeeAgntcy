@@ -68,6 +68,8 @@ The standalone service listens on `:9105` ([`../api/agentic_workflows/server.py`
 | List patterns | `GET /patterns/` | `PatternListResponse` |
 | Chat with a pattern's docs | `POST /patterns/{name}/chat` | NDJSON stream |
 | List use-cases | `GET /use-cases/` | `UseCaseListResponse` |
+| List pattern categories | `GET /pattern-categories/` | `PatternCategoryListResponse` |
+| Pattern category documentation | `GET /pattern-categories/{category_name}/documentation/` | `PatternCategoryDocumentationResponse` |
 | List workflows (filterable) | `GET /agentic-workflows/` | `WorkflowSummaryMapResponse` |
 | Workflow details / starting topology | `GET /agentic-workflows/{workflow_name}/` | `Workflow` |
 | Workflow documentation (markdown) | `GET /agentic-workflows/{workflow_name}/documentation/` | `WorkflowDocumentationResponse` |
@@ -114,14 +116,41 @@ Returns the business use-cases available in the catalog. This is the shape a fro
 
 `UseCaseListResponse` is an object with a required `items` array; each item is an object with a required, non-empty `name` string and no additional properties (`UseCase` / `UseCaseListResponse` in [`components/schemas.yaml`](../schema/openapi/components/schemas.yaml)). The list-of-objects shape (rather than a bare array of strings) is intentional so each use-case can grow extra fields later without breaking clients.
 
+### `GET /pattern-categories/` - list pattern categories
+
+Returns the agentic design pattern categories available in the catalog (display names from [`docs/categories/`](../api/agentic_workflows/docs/categories/)).
+
+```json
+{
+  "items": [
+    { "name": "Internet of Cognition" },
+    { "name": "Orchestration & Control Flow" }
+  ]
+}
+```
+
+### `GET /pattern-categories/{category_name}/documentation/` - category markdown
+
+Returns the full markdown source for a category reference doc (from [`docs/categories/`](../api/agentic_workflows/docs/categories/)). The path segment is the category **display name** (URL-encoded when it contains spaces or `&`).
+
+```json
+{
+  "slug": "orchestration_and_control_flow",
+  "name": "Orchestration & Control Flow",
+  "title": "Orchestration & Control Flow",
+  "full_markdown": "# Orchestration & Control Flow\n\nHow work is structured…"
+}
+```
+
 ### `GET /agentic-workflows/` - list workflows
 
 Returns the workflows in the catalog as a **map keyed by workflow name**. Optional repeated query parameters filter the result:
 
 - `patterns` - `[]string` (repeat the param: `?patterns=Supervisor&patterns=Recruiter`)
 - `use_cases` - `[]string` (`?use_cases=Coffee%20Agntcy`)
+- `pattern_categories` - `[]string` (`?pattern_categories=Orchestration%20%26%20Control%20Flow`)
 
-Both filters are independent; when both are supplied a workflow must match a pattern **and** a use-case to be included.
+All filters are independent; when multiple are supplied a workflow must match every supplied filter to be included.
 
 ```http
 GET /agentic-workflows/?patterns=Supervisor&use_cases=Coffee%20Agntcy
@@ -132,6 +161,7 @@ GET /agentic-workflows/?patterns=Supervisor&use_cases=Coffee%20Agntcy
   "Publish Subscribe": {
     "name": "Publish Subscribe",
     "pattern": "Supervisor",
+    "pattern_category": "Orchestration & Control Flow",
     "use_case": "Coffee Agntcy",
     "scenario": "Purchasing",
     "supports_sse": false,
@@ -141,6 +171,7 @@ GET /agentic-workflows/?patterns=Supervisor&use_cases=Coffee%20Agntcy
   "Publish Subscribe Streaming": {
     "name": "Publish Subscribe Streaming",
     "pattern": "Supervisor",
+    "pattern_category": "Orchestration & Control Flow",
     "use_case": "Coffee Agntcy",
     "scenario": "Purchasing",
     "supports_sse": false,
@@ -150,9 +181,9 @@ GET /agentic-workflows/?patterns=Supervisor&use_cases=Coffee%20Agntcy
 }
 ```
 
-Each value is a `WorkflowSummary`: `name`, `pattern`, `use_case`, and `scenario` (a brief extra qualifier for the use-case), plus UI capability fields `supports_sse`, `supports_streaming`, and `chat_api_target` (`exchange`, `logistics`, or `discovery`; `null` when the workflow is not runnable in the Lungo UI). The map key always equals `WorkflowSummary.name`.
+Each value is a `WorkflowSummary`: `name`, `pattern`, `pattern_category`, `use_case`, and `scenario` (a brief extra qualifier for the use-case), plus UI capability fields `supports_sse`, `supports_streaming`, and `chat_api_target` (`exchange`, `logistics`, or `discovery`; `null` when the workflow is not runnable in the Lungo UI). The map key always equals `WorkflowSummary.name`.
 
-**Source of truth:** runnable workflows declare `supports_sse`, `supports_streaming`, and `chat_api_target` in [`starting_workflows.json`](../api/agentic_workflows/starting_workflows.json). The list endpoint reads those fields from catalog metadata; it does not infer capabilities from workflow name or topology shape.
+**Source of truth:** catalog rows declare `pattern_category`, `supports_sse`, `supports_streaming`, and `chat_api_target` in [`starting_workflows.json`](../api/agentic_workflows/starting_workflows.json). The list endpoint reads those fields from catalog metadata; it does not infer capabilities from workflow name or topology shape.
 
 ### `GET /agentic-workflows/{workflow_name}/documentation/` - workflow docs
 
@@ -163,6 +194,7 @@ Returns the reference markdown for a catalog workflow, both as a single blob and
   "slug": "publish_subscribe",
   "workflow_name": "Publish Subscribe",
   "title": "Publish Subscribe",
+  "pattern_category": "Orchestration & Control Flow",
   "sections": [
     {
       "anchor": "overview",

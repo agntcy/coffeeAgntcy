@@ -18,6 +18,12 @@ graph TD
 
 ## Pattern
 
+**References:**
+
+- Antonio Gullí, *Agentic Design Patterns* (Springer, 2025), Ch. 4 - Reflection and Ch. 9 - Learning and Adaptation. [https://doi.org/10.1007/978-3-032-01402-3](https://doi.org/10.1007/978-3-032-01402-3)
+
+**Category:** Learning, Feedback & Self-Improvement
+
 A **self-evaluation** (reflection) pattern compares **past outcomes** to intent-forecasts versus arrivals, routing
 versus reality-and proposes **bounded improvements** to prompts, policies, or weights under **human governance**. The
 agent reads telemetry and business results, compares them to what was supposed to happen, and outputs **reviewable

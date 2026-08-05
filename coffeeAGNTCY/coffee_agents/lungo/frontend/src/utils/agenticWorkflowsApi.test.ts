@@ -7,8 +7,12 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import { HttpError } from "@/api/http"
 import { PATTERNS, type PatternType } from "@/utils/patternUtils"
 import {
+  fetchPatternCategories,
+  fetchPatternCategoryDocumentation,
   fetchWorkflowDocumentation,
   fetchWorkflowSummaries,
+  PatternCategoryDocumentationNotFoundError,
+  patternCategoryBodyMarkdown,
   WorkflowDocumentationNotFoundError,
   type WorkflowSummary,
 } from "@/utils/agenticWorkflowsApi"
@@ -19,6 +23,7 @@ const originalFetch = globalThis.fetch
 const makeSummary = (over: Partial<WorkflowSummary>): WorkflowSummary => ({
   name: "Workflow",
   pattern: "publish_subscribe",
+  pattern_category: "Orchestration & Control Flow",
   use_case: "use",
   scenario: "scenario",
   supports_sse: false,
@@ -108,6 +113,7 @@ describe("fetchWorkflowSummaries", () => {
       Streaming: {
         name: "Streaming",
         pattern: "publish_subscribe_streaming",
+        pattern_category: "Orchestration & Control Flow",
         use_case: "use",
         scenario: "scenario",
         supports_sse: false,
@@ -124,15 +130,11 @@ describe("fetchWorkflowSummaries", () => {
 
     const summaries = await fetchWorkflowSummaries()
 
-    expect(summaries.map((s) => s.name)).toEqual(["Streaming", "Legacy"])
+    expect(summaries.map((s) => s.name)).toEqual(["Streaming"])
     expect(summaries[0]).toMatchObject({
       supports_streaming: true,
       chat_api_target: "exchange",
-    })
-    expect(summaries[1]).toMatchObject({
-      supports_sse: false,
-      supports_streaming: false,
-      chat_api_target: null,
+      pattern_category: "Orchestration & Control Flow",
     })
   })
 
@@ -141,6 +143,7 @@ describe("fetchWorkflowSummaries", () => {
       Good: {
         name: "Good",
         pattern: "publish_subscribe",
+        pattern_category: "Orchestration & Control Flow",
         use_case: "use",
         scenario: "scenario",
       },
@@ -157,6 +160,7 @@ describe("fetchWorkflowSummaries", () => {
       Weird: {
         name: "Weird",
         pattern: "publish_subscribe",
+        pattern_category: "Orchestration & Control Flow",
         use_case: "use",
         scenario: "scenario",
         chat_api_target: "nonsense",
@@ -182,6 +186,122 @@ describe("fetchWorkflowSummaries", () => {
   ])("$caseName", async ({ body, init }) => {
     stubFetch(body, init)
     await expect(fetchWorkflowSummaries()).rejects.toThrow()
+  })
+})
+
+describe("fetchPatternCategories", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
+  const stubFetch = (
+    body: unknown,
+    init: { ok?: boolean; status?: number; statusText?: string } = {},
+  ): void => {
+    const { ok = true, status = 200, statusText = "OK" } = init
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => ({
+        ok,
+        status,
+        statusText,
+        json: async () => body,
+      })),
+    )
+  }
+
+  it("returns parsed category names and filters invalid items", async () => {
+    stubFetch({
+      items: [
+        { name: "Orchestration & Control Flow" },
+        { name: "Multi-Agent Collaboration" },
+        { name: "" },
+        { name: null },
+        {},
+      ],
+    })
+
+    const categories = await fetchPatternCategories()
+
+    expect(categories).toEqual([
+      { name: "Orchestration & Control Flow" },
+      { name: "Multi-Agent Collaboration" },
+    ])
+  })
+
+  it.each([
+    {
+      caseName: "non-ok response throws",
+      body: {},
+      init: { ok: false, status: 500, statusText: "Server Error" },
+    },
+    {
+      caseName: "missing items array throws",
+      body: {},
+      init: {},
+    },
+    {
+      caseName: "non-array items throws",
+      body: { items: null },
+      init: {},
+    },
+  ])("$caseName", async ({ body, init }) => {
+    stubFetch(body, init)
+    await expect(fetchPatternCategories()).rejects.toThrow()
+  })
+})
+
+describe("fetchPatternCategoryDocumentation", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
+  const stubFetch = (
+    body: unknown,
+    init: { ok?: boolean; status?: number } = {},
+  ): void => {
+    const { ok = true, status = 200 } = init
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => ({
+        ok,
+        status,
+        statusText: ok ? "OK" : "Not Found",
+        json: async () => body,
+      })),
+    )
+  }
+
+  it("returns parsed category documentation on 200", async () => {
+    stubFetch({
+      slug: "orchestration_and_control_flow",
+      name: "Orchestration & Control Flow",
+      title: "Orchestration & Control Flow",
+      full_markdown: "# Orchestration & Control Flow\n\nBody.",
+    })
+
+    const doc = await fetchPatternCategoryDocumentation(
+      "Orchestration & Control Flow",
+    )
+
+    expect(doc.slug).toBe("orchestration_and_control_flow")
+    expect(doc.full_markdown).toBe("# Orchestration & Control Flow\n\nBody.")
+  })
+
+  it("throws PatternCategoryDocumentationNotFoundError on 404", async () => {
+    stubFetch({}, { ok: false, status: 404 })
+
+    await expect(
+      fetchPatternCategoryDocumentation("Unknown"),
+    ).rejects.toBeInstanceOf(PatternCategoryDocumentationNotFoundError)
+  })
+})
+
+describe("patternCategoryBodyMarkdown", () => {
+  it("strips the leading H1 for sidebar display", () => {
+    expect(patternCategoryBodyMarkdown("# Title\n\nParagraph.")).toBe(
+      "Paragraph.",
+    )
   })
 })
 

@@ -58,6 +58,7 @@ def test_get_workflow_documentation_200(doc_client: TestClient) -> None:
     data = r.json()
     assert data["workflow_name"] == name
     assert data["slug"] == "publish_subscribe"
+    assert data["pattern_category"] == "Orchestration & Control Flow"
     assert any(s["heading"] == "Pattern" for s in data["sections"])
     assert len(data["full_markdown"]) > 0
 

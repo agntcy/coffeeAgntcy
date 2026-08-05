@@ -7,8 +7,10 @@ import { describe, expect, it } from "vitest"
 import {
   HttpError,
   isHttpError,
+  isRequestCancelledError,
   parseHttpError,
   parseHttpErrorFromResponse,
+  REQUEST_CANCELLED_MESSAGE,
 } from "@/api/http"
 
 function makeResponse(
@@ -36,7 +38,7 @@ describe("parseHttpError", () => {
   it("maps abort errors to a cancellation message", () => {
     const error = new DOMException("The operation was aborted.", "AbortError")
     const parsed = parseHttpError(error)
-    expect(parsed.message).toBe("Request was cancelled.")
+    expect(parsed.message).toBe(REQUEST_CANCELLED_MESSAGE)
     expect(parsed.cause).toBe(error)
   })
 
@@ -68,7 +70,7 @@ describe("parseHttpError", () => {
 
   it("maps plain AbortError-shaped objects to cancellation", () => {
     const parsed = parseHttpError({ name: "AbortError", message: "aborted" })
-    expect(parsed.message).toBe("Request was cancelled.")
+    expect(parsed.message).toBe(REQUEST_CANCELLED_MESSAGE)
   })
 
   it("strips HTML from generic Error messages", () => {
@@ -190,6 +192,36 @@ describe("parseHttpErrorFromResponse", () => {
       endpointLabel: "/api/catalog",
     })
     expect(parsed.endpointLabel).toBe("/api/catalog")
+  })
+})
+
+describe("isRequestCancelledError", () => {
+  it("returns true for DOMException AbortError", () => {
+    expect(
+      isRequestCancelledError(
+        new DOMException("The operation was aborted.", "AbortError"),
+      ),
+    ).toBe(true)
+  })
+
+  it("returns true for AbortError-shaped objects", () => {
+    expect(
+      isRequestCancelledError({ name: "AbortError", message: "aborted" }),
+    ).toBe(true)
+  })
+
+  it("returns true for wrapped cancellation HttpError", () => {
+    expect(
+      isRequestCancelledError(new HttpError(REQUEST_CANCELLED_MESSAGE)),
+    ).toBe(true)
+  })
+
+  it("returns false for other HttpError messages", () => {
+    expect(isRequestCancelledError(new HttpError("Network error"))).toBe(false)
+  })
+
+  it("returns false for generic errors", () => {
+    expect(isRequestCancelledError(new Error("boom"))).toBe(false)
   })
 })
 

@@ -20,6 +20,12 @@ graph TD
 
 ## Pattern
 
+**References:**
+
+- Antonio Gullí, *Agentic Design Patterns* (Springer, 2025), Ch. 12 - Exception Handling and Recovery. [https://doi.org/10.1007/978-3-032-01402-3](https://doi.org/10.1007/978-3-032-01402-3)
+
+**Category:** Orchestration & Control Flow
+
 **Resilience and re-routing** recovers from failure by **switching agents or paths**: discover alternates, compensate
 partial work, and keep customer promises from collapsing because one carrier or one integration had a bad day. Recovery
 is **designed**, not heroic improvisation.

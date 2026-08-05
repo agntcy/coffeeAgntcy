@@ -12,6 +12,7 @@ import type { WorkflowDocumentation } from "@/utils/agenticWorkflowsApi"
 export enum CanvasMode {
   WORKFLOW = "workflow",
   PATTERN_DOC = "pattern_doc",
+  CATEGORY_DOC = "category_doc",
 }
 
 export type PatternDocStatus =

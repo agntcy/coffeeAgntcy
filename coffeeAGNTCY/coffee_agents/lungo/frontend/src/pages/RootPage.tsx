@@ -46,11 +46,12 @@ import { useElementWidth, useElementRect } from "@/hooks/layout"
 
 const RootPage: React.FC = () => {
   const {
-    selectedPattern,
     selectWorkflowFromCatalog,
     workflowCatalogSummaries,
     workflowCatalogLoading,
     workflowCatalogError,
+    patternCategories,
+    patternCategoriesError,
     selectedWorkflowSummary,
     suggestedPromptsRequest,
     chatHeightValue,
@@ -92,6 +93,9 @@ const RootPage: React.FC = () => {
     setLiveGraphConfig,
     selectedReferencePattern,
     selectReferencePattern,
+    selectedPatternCategory,
+    selectPatternCategory,
+    categoryDocState,
     canvasMode,
     patternDocState,
     patternChatSessionId,
@@ -142,11 +146,11 @@ const RootPage: React.FC = () => {
     onPatternChatSuccess: () => setAiReplied(true),
     suggestedPromptsRequest,
     showProgressTracker:
-      canvasMode !== CanvasMode.PATTERN_DOC && showProgressTracker,
+      canvasMode === CanvasMode.WORKFLOW && showProgressTracker,
     showAuctionStreaming:
-      canvasMode !== CanvasMode.PATTERN_DOC && showAuctionStreaming,
+      canvasMode === CanvasMode.WORKFLOW && showAuctionStreaming,
     showRecruiterStreaming:
-      canvasMode !== CanvasMode.PATTERN_DOC && showRecruiterStreaming,
+      canvasMode === CanvasMode.WORKFLOW && showRecruiterStreaming,
     showFinalResponse,
     onStreamComplete: handleStreamComplete,
     onSenderHighlight: handleSenderHighlight,
@@ -218,11 +222,14 @@ const RootPage: React.FC = () => {
             <Sidebar
               selectedWorkflowSummary={selectedWorkflowSummary}
               summaries={workflowCatalogSummaries}
+              patternCategories={patternCategories}
+              patternCategoriesError={patternCategoriesError}
               isLoading={workflowCatalogLoading}
               error={workflowCatalogError}
               onSelectWorkflow={selectWorkflowFromCatalog}
               selectedReferencePattern={selectedReferencePattern}
               onSelectReferencePattern={selectReferencePattern}
+              onSelectPatternCategory={selectPatternCategory}
             />
           </Panel>
           <SidebarPanelSeparator />
@@ -286,13 +293,15 @@ const RootPage: React.FC = () => {
                             selectedWorkflowSummary?.name,
                             canvasMode,
                             selectedReferencePattern,
+                            selectedPatternCategory,
                           ]}
                         >
                           <CanvasSwitch
                             canvasMode={canvasMode}
                             selectedReferencePattern={selectedReferencePattern}
                             patternDocState={patternDocState}
-                            pattern={selectedPattern}
+                            selectedPatternCategory={selectedPatternCategory}
+                            categoryDocState={categoryDocState}
                             selectedWorkflowSummary={selectedWorkflowSummary}
                             workflowCatalogLoading={workflowCatalogLoading}
                             workflowCatalogError={workflowCatalogError}

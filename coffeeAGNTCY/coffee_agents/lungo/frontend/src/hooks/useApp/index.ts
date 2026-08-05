@@ -6,6 +6,8 @@
 export { useAppChatState, type UseAppChatStateParams } from "./useAppChatState"
 export { useAppStreamingState } from "./useAppStreamingState"
 export { useAppWorkflowCatalog } from "./useAppWorkflowCatalog"
+export { useAppPatternCategories } from "./useAppPatternCategories"
+export { useAppPatternCategoryDoc } from "./useAppPatternCategoryDoc"
 export { useAppPatternReference } from "./useAppPatternReference"
 export { useAppStreamingChatEffects } from "./useAppStreamingChatEffects"
 export { useAppPromptHandlers } from "./useAppPromptHandlers"

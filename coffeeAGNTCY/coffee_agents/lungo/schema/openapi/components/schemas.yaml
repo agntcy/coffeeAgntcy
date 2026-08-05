@@ -79,11 +79,53 @@ components:
           items:
             $ref: "#/components/schemas/UseCase"
 
+    PatternCategory:
+      type: object
+      required: [name]
+      additionalProperties: false
+      properties:
+        name:
+          type: string
+          minLength: 1
+          description: Display name of an agentic design pattern category.
+
+    PatternCategoryDocumentationResponse:
+      type: object
+      required: [slug, name, full_markdown]
+      additionalProperties: false
+      properties:
+        slug:
+          type: string
+          minLength: 1
+          description: Basename slug for docs/categories/{slug}.md.
+        name:
+          type: string
+          minLength: 1
+          description: Display name of the category (H1 in the markdown file).
+        title:
+          type: string
+          nullable: true
+          description: Leading H1 from the markdown file, if present.
+        full_markdown:
+          type: string
+          description: Full markdown source for the category reference doc.
+
+    PatternCategoryListResponse:
+      type: object
+      required: [items]
+      additionalProperties: false
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/PatternCategory"
+
     WorkflowSummary:
       type: object
       required:
         - name
         - pattern
+        - pattern_category
         - use_case
         - scenario
         - supports_sse
@@ -96,6 +138,10 @@ components:
         pattern:
           type: string
           minLength: 1
+        pattern_category:
+          type: string
+          minLength: 1
+          description: Agentic design pattern category (e.g. "Orchestration & Control Flow").
         use_case:
           type: string
           minLength: 1
@@ -157,6 +203,12 @@ components:
           type: string
           nullable: true
           description: Document H1 title when present.
+        pattern_category:
+          type: string
+          nullable: true
+          description: >-
+            Category from the Pattern section (**Category:** line) when present
+            in the workflow markdown.
         sections:
           type: array
           items:
