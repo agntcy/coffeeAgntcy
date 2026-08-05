@@ -65,7 +65,7 @@ paths:
               schema:
                 type: string
         "404":
-          description: No reference material for the given pattern name.
+          $ref: ../components/schemas.yaml#/components/responses/NotFound
         "422":
           $ref: ../components/schemas.yaml#/components/responses/UnprocessableEntity
 
@@ -245,7 +245,7 @@ paths:
               schema:
                 $ref: ../components/schemas.yaml#/components/schemas/WorkflowDocumentationResponse
         "404":
-          description: Unknown workflow name or no markdown file for that name
+          $ref: ../components/schemas.yaml#/components/responses/NotFound
         "422":
           $ref: ../components/schemas.yaml#/components/responses/UnprocessableEntity
         "503":
@@ -329,7 +329,7 @@ paths:
         "204":
           description: No instance to delete (already removed or never existed)
         "404":
-          description: Workflow not found
+          $ref: ../components/schemas.yaml#/components/responses/NotFound
         "422":
           $ref: ../components/schemas.yaml#/components/responses/UnprocessableEntity
         "503":
