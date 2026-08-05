@@ -78,6 +78,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/pattern-categories/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List pattern categories */
+        get: operations["listPatternCategories"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/pattern-categories/{category_name}/documentation/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get pattern category documentation (markdown) */
+        get: operations["getPatternCategoryDocumentation"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/agentic-workflows/": {
         parameters: {
             query?: never;
@@ -266,9 +300,28 @@ export interface components {
         UseCaseListResponse: {
             items: components["schemas"]["UseCase"][];
         };
+        PatternCategory: {
+            /** @description Display name of an agentic design pattern category. */
+            name: string;
+        };
+        PatternCategoryListResponse: {
+            items: components["schemas"]["PatternCategory"][];
+        };
+        PatternCategoryDocumentationResponse: {
+            /** @description Basename slug for docs/categories/{slug}.md. */
+            slug: string;
+            /** @description Display name of the category (H1 in the markdown file). */
+            name: string;
+            /** @description Leading H1 from the markdown file, if present. */
+            title?: string | null;
+            /** @description Full markdown source for the category reference doc. */
+            full_markdown: string;
+        };
         WorkflowSummary: {
             name: string;
             pattern: string;
+            /** @description Agentic design pattern category (e.g. "Orchestration & Control Flow"). */
+            pattern_category: string;
             use_case: string;
             scenario: string;
             supports_sse: boolean;
@@ -400,6 +453,8 @@ export interface components {
             workflow_name: string;
             /** @description Document H1 title when present. */
             title?: string | null;
+            /** @description Category from the Pattern section (**Category:** line) when present in the workflow markdown. */
+            pattern_category?: string | null;
             sections: components["schemas"]["WorkflowDocumentationSection"][];
             /** @description Complete markdown file contents. */
             full_markdown: string;
@@ -750,6 +805,55 @@ export interface operations {
             };
         };
     };
+    listPatternCategories: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description List of agentic design pattern categories */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PatternCategoryListResponse"];
+                };
+            };
+        };
+    };
+    getPatternCategoryDocumentation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                category_name: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Category reference markdown */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PatternCategoryDocumentationResponse"];
+                };
+            };
+            /** @description Category documentation not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     listAgenticWorkflows: {
         parameters: {
             query?: {
@@ -757,6 +861,8 @@ export interface operations {
                 patterns?: string[];
                 /** @description Filter by use-case names */
                 use_cases?: string[];
+                /** @description Filter by pattern category display names */
+                pattern_categories?: string[];
             };
             header?: never;
             path?: never;
