@@ -52,6 +52,17 @@ Authorization: Bearer <WORKFLOW_API_KEY>
 
 A missing or mismatched token yields `401 Unauthorized` ([`../api/agentic_workflows/auth.py`](../api/agentic_workflows/auth.py)). The server refuses to start unless `WORKFLOW_API_KEY` is configured.
 
+### Error response bodies
+
+JSON error responses use two shapes in [`../schema/openapi/components/schemas.yaml`](../schema/openapi/components/schemas.yaml):
+
+| Schema | HTTP statuses | Body |
+| --- | --- | --- |
+| `ApplicationError` | `401`, `400`, `404`, `500`, `503`, `504`, and other handler errors | `{ "detail": "<string>" }` |
+| `ValidationError` | `422` only | `{ "detail": [ { "loc", "msg", "type", … } ] }` |
+
+Named `components/responses` (`NotFound`, `UnprocessableEntity`, …) reference the matching schema. The numeric status on each operation is authoritative; response component names document intent.
+
 ### Storage model
 
 State is held **in-memory**, keyed by `workflow_instance_id`, with **no persistence**. The state API and SSE endpoint read from the store; the internal `POST .../events/` ingress (the A2A / MCP middleware path) writes to the store and notifies SSE subscribers. The store surface is defined in [`../common/workflow_instance_store/interfaces.py`](../common/workflow_instance_store/interfaces.py).

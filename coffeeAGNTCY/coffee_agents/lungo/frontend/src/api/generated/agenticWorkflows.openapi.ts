@@ -241,6 +241,11 @@ export interface components {
             /** @description Latest user turn. Server holds the rest of the conversation. */
             message: string;
         };
+        /** @description Error body for FastAPI HTTPException responses (4xx/5xx except request validation). */
+        ApplicationError: {
+            /** @description Application error message from the handler. */
+            detail: string;
+        };
         /** @description One FastAPI/Pydantic validation error (422 response body). */
         RequestValidationErrorItem: {
             /** @description Location of the error (e.g. body, query, path segment, field name). */
@@ -250,9 +255,10 @@ export interface components {
         } & {
             [key: string]: unknown;
         };
-        /** @description Error body returned by FastAPI for HTTPException and request validation failures. HTTPException uses a string detail; validation failures use an array of items. */
-        HttpError: {
-            detail: string | components["schemas"]["RequestValidationErrorItem"][];
+        /** @description Request validation failure body (422 only). */
+        ValidationError: {
+            /** @description Pydantic/FastAPI validation errors. */
+            detail: components["schemas"]["RequestValidationErrorItem"][];
         };
         UseCase: {
             name: string;
@@ -595,22 +601,22 @@ export interface components {
         };
     };
     responses: {
-        /** @description Path, query, or request body failed validation. */
-        UnprocessableEntity: {
-            headers: {
-                [name: string]: unknown;
-            };
-            content: {
-                "application/json": components["schemas"]["HttpError"];
-            };
-        };
         /** @description Unknown workflow, instance, pattern, or documentation resource. */
         NotFound: {
             headers: {
                 [name: string]: unknown;
             };
             content: {
-                "application/json": components["schemas"]["HttpError"];
+                "application/json": components["schemas"]["ApplicationError"];
+            };
+        };
+        /** @description Path, query, or request body failed validation. */
+        UnprocessableEntity: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["ValidationError"];
             };
         };
         /** @description Invalid payload or event does not match the request path context. */
@@ -619,7 +625,7 @@ export interface components {
                 [name: string]: unknown;
             };
             content: {
-                "application/json": components["schemas"]["HttpError"];
+                "application/json": components["schemas"]["ApplicationError"];
             };
         };
         /** @description Server-side catalog inconsistency or invalid stored projection. */
@@ -628,7 +634,7 @@ export interface components {
                 [name: string]: unknown;
             };
             content: {
-                "application/json": components["schemas"]["HttpError"];
+                "application/json": components["schemas"]["ApplicationError"];
             };
         };
         /** @description Workflow instance store is not configured or is closed. */
@@ -637,7 +643,7 @@ export interface components {
                 [name: string]: unknown;
             };
             content: {
-                "application/json": components["schemas"]["HttpError"];
+                "application/json": components["schemas"]["ApplicationError"];
             };
         };
         /** @description Work was accepted but did not finish in time (e.g. instantiate merge wait). Do not blindly retry POST instantiate; each call creates a new instance. */
@@ -646,7 +652,7 @@ export interface components {
                 [name: string]: unknown;
             };
             content: {
-                "application/json": components["schemas"]["HttpError"];
+                "application/json": components["schemas"]["ApplicationError"];
             };
         };
     };
@@ -720,13 +726,7 @@ export interface operations {
                     "application/x-ndjson": string;
                 };
             };
-            /** @description No reference material for the given pattern name. */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
+            404: components["responses"]["NotFound"];
             422: components["responses"]["UnprocessableEntity"];
         };
     };
@@ -853,13 +853,7 @@ export interface operations {
                     "application/json": components["schemas"]["WorkflowDocumentationResponse"];
                 };
             };
-            /** @description Unknown workflow name or no markdown file for that name */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
+            404: components["responses"]["NotFound"];
             422: components["responses"]["UnprocessableEntity"];
             503: components["responses"]["ServiceUnavailable"];
         };
@@ -944,13 +938,7 @@ export interface operations {
                 };
                 content?: never;
             };
-            /** @description Workflow not found */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
+            404: components["responses"]["NotFound"];
             422: components["responses"]["UnprocessableEntity"];
             503: components["responses"]["ServiceUnavailable"];
         };
