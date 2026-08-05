@@ -4,7 +4,7 @@
  **/
 
 import { useEffect, useState } from "react"
-import { fetchJson, isRequestCancelledError } from "@/api/http"
+import { fetchJson } from "@/api/http"
 import { reportRequestError } from "@/errors/request"
 import type { HttpRequestTarget } from "@/urls"
 import type { PromptCategory, SuggestedPromptsResponse } from "./PromptTypes"
@@ -94,9 +94,6 @@ export function useSuggestedPrompts(
         setIsLoading(false)
       } catch (err: unknown) {
         if (cancelled) return
-        if (isRequestCancelledError(err)) {
-          return
-        }
 
         if (retryCount >= MAX_SUGGESTED_PROMPTS_RETRIES) {
           markUnavailable(err)
