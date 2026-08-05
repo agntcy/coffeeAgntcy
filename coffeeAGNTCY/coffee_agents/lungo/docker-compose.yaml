@@ -17,7 +17,8 @@ services:
     image: ghcr.io/agntcy/coffee-agntcy/brazil-farm:latest
     container_name: brazil-farm-server
     env_file:
-      - .env
+      - path: .env
+        required: false
     environment:
       - TZ=UTC
       - FARM_AGENT_HOST=brazil-farm-server
@@ -49,7 +50,8 @@ services:
     image: ghcr.io/agntcy/coffee-agntcy/colombia-farm:latest
     container_name: colombia-farm-server
     env_file:
-      - .env
+      - path: .env
+        required: false
     environment:
       - TZ=UTC
       - FARM_AGENT_HOST=colombia-farm-server
@@ -83,7 +85,8 @@ services:
     image: ghcr.io/agntcy/coffee-agntcy/vietnam-farm:latest
     container_name: vietnam-farm-server
     env_file:
-      - .env
+      - path: .env
+        required: false
     environment:
       - TZ=UTC
       - FARM_AGENT_HOST=vietnam-farm-server
@@ -148,7 +151,8 @@ services:
       # Mount local git metadata so /build/info can derive latest tag/date in dev
       - ../../../.git:/app/.git:ro
     env_file:
-      - .env
+      - path: .env
+        required: false
     environment:
       - TZ=UTC
       - FARM_AGENT_HOST=farm-server
@@ -186,7 +190,8 @@ services:
     image: ghcr.io/agntcy/coffee-agntcy/agentic-workflows-api:latest
     container_name: agentic-workflows-api
     env_file:
-      - .env
+      - path: .env
+        required: false
     environment:
       - TZ=UTC
       - PORT=9105
@@ -207,7 +212,8 @@ services:
     image: ghcr.io/agntcy/coffee-agntcy/lungo-ui:latest
     container_name: lungo-ui
     env_file:
-      - frontend/.env
+      - path: .env
+        required: true
     environment:
       - TZ=UTC
       - VITE_AGENTIC_WORKFLOWS_API_KEY=${WORKFLOW_API_KEY:?WORKFLOW_API_KEY must be set in .env}
@@ -317,7 +323,8 @@ services:
     volumes:
       - ./config/docker/otel/:/etc/otel
     env_file:
-      - .env
+      - path: .env
+        required: false
     command: ["--config", "/etc/otel/otel-collector-config.yaml"]
 
   grafana:
@@ -473,7 +480,8 @@ services:
     image: ghcr.io/agntcy/coffee-agntcy/logistics-supervisor:latest
     container_name: logistics-supervisor
     env_file:
-      - .env
+      - path: .env
+        required: false
     environment:
       - TZ=UTC
       - DEFAULT_MESSAGE_TRANSPORT=SLIM # Do not change. SLIM is required for group conversation.
@@ -541,7 +549,8 @@ services:
     image: ghcr.io/agntcy/dir-apiserver:v1.0.0
     container_name: dir-api-server
     env_file:
-      - ./config/docker/dir/apiserver.env
+      - path: ./config/docker/dir/apiserver.env
+        required: true
     ports:
       - 8888:8888
     depends_on:
@@ -628,7 +637,8 @@ services:
     image: ghcr.io/agntcy/coffee-agntcy/recruiter:latest
     container_name: recruiter
     env_file:
-      - .env
+      - path: .env
+        required: false
     depends_on:
       dir-api-server:
         condition: service_started
@@ -665,7 +675,8 @@ services:
       # Mount local git metadata so /build/info can derive latest tag/date in dev
       - ../../../.git:/app/.git:ro
     env_file:
-      - .env
+      - path: .env
+        required: false
     environment:
       - TZ=UTC
       - RECRUITER_AGENT_URL=http://recruiter:8881

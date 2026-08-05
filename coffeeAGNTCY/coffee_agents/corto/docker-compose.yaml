@@ -11,7 +11,8 @@ services:
     image: ghcr.io/agntcy/coffee-agntcy/corto-farm:latest
     container_name: farm-server
     env_file:
-      - .env
+      - path: .env
+        required: false
     environment:
       - FARM_AGENT_HOST=farm-server
       - FARM_AGENT_PORT=9999
@@ -59,7 +60,8 @@ services:
     image: ghcr.io/agntcy/coffee-agntcy/corto-exchange:latest
     container_name: exchange-server-corto
     env_file:
-      - .env
+      - path: .env
+        required: false
     environment:
       - FARM_AGENT_HOST=farm-server
       - FARM_AGENT_PORT=9999
