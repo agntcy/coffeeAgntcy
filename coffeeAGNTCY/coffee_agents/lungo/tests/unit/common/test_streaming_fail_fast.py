@@ -60,18 +60,14 @@ def _restore_modules(saved):
 def test_supervisor_raises_when_llm_does_not_support_streaming(monkeypatch, real_workflow_catalog, import_module, expected_agent_name):
   """With ENSURE_STREAMING_LLM=true, supervisor startup fails when get_model_info says no streaming."""
   _ensure_root_on_path()
-  import config.config as config_mod
-  saved_ensure = getattr(config_mod, "ENSURE_STREAMING_LLM", False)
-  saved_llm_model = getattr(config_mod, "LLM_MODEL", "")
-
   prefix = import_module.rsplit(".", 1)[0]
-  prefixes = [prefix, "common"]
+  prefixes = [prefix, "common", "config.config"]
   saved_modules = _save_modules(prefixes)
   try:
     with patch("litellm.get_model_info", return_value={"supports_native_streaming": False}) as mock_get_model_info:
       _purge_modules(prefixes)
-      monkeypatch.setattr(config_mod, "ENSURE_STREAMING_LLM", True)
-      monkeypatch.setattr(config_mod, "LLM_MODEL", "openai/gpt-4o-mini")
+      monkeypatch.setenv("ENSURE_STREAMING_LLM", "true")
+      monkeypatch.setenv("LLM_MODEL", "openai/gpt-4o-mini")
       try:
         importlib.import_module(import_module)
       except Exception as e:
@@ -84,8 +80,6 @@ def test_supervisor_raises_when_llm_does_not_support_streaming(monkeypatch, real
         return
     pytest.fail("Expected StreamingNotSupportedError")
   finally:
-    monkeypatch.setattr(config_mod, "ENSURE_STREAMING_LLM", saved_ensure)
-    monkeypatch.setattr(config_mod, "LLM_MODEL", saved_llm_model)
     _purge_modules(prefixes)
     _restore_modules(saved_modules)
 
