@@ -115,7 +115,7 @@ paths:
               schema:
                 $ref: ../components/schemas.yaml#/components/schemas/PatternCategoryDocumentationResponse
         "404":
-          description: Category documentation not found
+          $ref: ../components/schemas.yaml#/components/responses/NotFound
 
   /agentic-workflows/:
     get:

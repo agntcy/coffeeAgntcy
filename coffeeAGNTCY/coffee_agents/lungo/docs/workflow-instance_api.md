@@ -153,6 +153,8 @@ Returns the full markdown source for a category reference doc (from [`docs/categ
 }
 ```
 
+Returns `404` (`ApplicationError` body) for an unknown category display name or when no markdown file maps to it.
+
 ### `GET /agentic-workflows/` - list workflows
 
 Returns the workflows in the catalog as a **map keyed by workflow name**. Optional repeated query parameters filter the result:

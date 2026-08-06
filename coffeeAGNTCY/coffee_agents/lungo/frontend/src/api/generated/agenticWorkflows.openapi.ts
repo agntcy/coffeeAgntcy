@@ -845,13 +845,7 @@ export interface operations {
                     "application/json": components["schemas"]["PatternCategoryDocumentationResponse"];
                 };
             };
-            /** @description Category documentation not found */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
+            404: components["responses"]["NotFound"];
         };
     };
     listAgenticWorkflows: {
