@@ -176,6 +176,7 @@ jobs:
           git_branch=${{ github.ref_name }}
 
           if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            push=false
             image_tag=pr-${{ github.event.pull_request.number }}
             git_branch=${{ github.head_ref }}
           elif [[ "${{ github.event_name }}" == "push" && "${{ github.ref }}" == "refs/heads/main" ]]; then
@@ -198,8 +199,75 @@ jobs:
           echo "image_tag=$image_tag" | tee -a $GITHUB_OUTPUT
           echo "git_branch=$git_branch" | tee -a $GITHUB_OUTPUT
 
-  docker-build-corto:
+  check-push-target-existence:
     needs: [subprojects-to-build, compute-build-parameters]
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash
+    permissions:
+      packages: read
+      contents: read
+    steps:
+      - name: Check if push target exists
+        run: |
+          build_corto=${{ needs.subprojects-to-build.outputs.build_corto }}
+          build_lungo=${{ needs.subprojects-to-build.outputs.build_lungo }}
+          build_recruiter=${{ needs.subprojects-to-build.outputs.build_recruiter }}
+          push=${{ needs.compute-build-parameters.outputs.push }}
+          image_tag=${{ needs.compute-build-parameters.outputs.image_tag }}
+
+          floating_tags=("latest")
+          if printf '%s\n' "${floating_tags[@]}" | grep -Fxq "$image_tag"; then
+            echo "Warning: The 'latest' tag is a floating tag so it will be ignored."
+            exit 0
+          fi
+
+          existing_images=()
+          for project in corto lungo recruiter; do
+            build=build_$project
+
+            if [[ "${!build}" == "true" ]] && [[ "${push}" == "true" ]] && [[ "${image_tag}" != "" ]]; then
+              if [[ "${project}" == "corto" ]]; then
+                images=(corto-ui corto-exchange corto-farm)
+              elif [[ "${project}" == "lungo" ]]; then
+                images=(lungo-ui auction-supervisor agentic-workflows-api brazil-farm colombia-farm vietnam-farm weather-mcp-server payment-mcp-server logistics-shipper logistics-accountant logistics-farm logistics-supervisor logistics-helpdesk recruiter-supervisor)
+              elif [[ "${project}" == "recruiter" ]]; then
+                images=(recruiter)
+              fi
+
+              for image in "${images[@]}"; do
+                image_path="agntcy/coffee-agntcy/${image}"
+
+                token=$(curl -fsSL -u "${{ github.actor }}:${{ github.token }}" \
+                  "https://ghcr.io/token?service=ghcr.io&scope=repository:${image_path}:pull" \
+                  | jq -r .token)
+
+                http_code=$(curl -s -o /dev/null -w "%{http_code}" \
+                  -H "Authorization: Bearer ${token}" \
+                  -H "Accept: application/vnd.oci.image.index.v1+json" \
+                  "https://ghcr.io/v2/${image_path}/manifests/${image_tag}")
+
+                if [[ "$http_code" == "200" ]]; then
+                  echo "Error: Image $image_path:${image_tag} already exists"
+                  existing_images+=("$image_path:${image_tag}")
+                fi
+              done
+            fi
+          done
+
+          if [[ "${#existing_images[@]}" -gt 0 ]]; then
+            echo "Error: The following images already exist:"
+            for image in "${existing_images[@]}"; do
+              echo "- $image"
+            done
+            echo "Cancelling build and push. Change the tag or use the 'Delete GHCR Package Version' workflow to delete the existing images before retrying."
+
+            exit 1
+          fi
+
+  docker-build-corto:
+    needs: [subprojects-to-build, compute-build-parameters, check-push-target-existence]
     if: ${{ needs.subprojects-to-build.outputs.build_corto == 'true' }}
 
     strategy:
@@ -241,7 +309,7 @@ jobs:
       git_branch: ${{ needs.compute-build-parameters.outputs.git_branch }}
 
   docker-build-lungo:
-    needs: [subprojects-to-build, compute-build-parameters]
+    needs: [subprojects-to-build, compute-build-parameters, check-push-target-existence]
     if: ${{ needs.subprojects-to-build.outputs.build_lungo == 'true' }}
 
     strategy:
@@ -360,7 +428,7 @@ jobs:
       git_branch: ${{ needs.compute-build-parameters.outputs.git_branch }}
 
   docker-build-recruiter:
-    needs: [subprojects-to-build, compute-build-parameters]
+    needs: [subprojects-to-build, compute-build-parameters, check-push-target-existence]
     if: ${{ needs.subprojects-to-build.outputs.build_recruiter == 'true' }}
 
     strategy:
