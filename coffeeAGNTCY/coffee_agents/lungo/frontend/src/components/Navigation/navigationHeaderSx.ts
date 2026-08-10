@@ -5,19 +5,26 @@
  * Top title bar uses light-theme chrome in both app color modes (see corto exchange nav).
  */
 
-import type { Theme } from "@mui/material/styles"
+import { alpha, type Theme } from "@mui/material/styles"
 import type { SystemStyleObject } from "@mui/system"
+import { lightVars } from "@open-ui-kit/core"
+
 import { iconGlyphFillSx } from "@/utils/iconGlyphFill"
 
-/** Fixed light nav surface - not tied to active MUI color mode. */
-export const LUNGO_NAV_HEADER_COLORS = {
-  background: "#eff3fc",
-  border: "#dbe0e5",
-  icon: "#1d69cc",
-} as const
+/**
+ * Fixed light nav surface - not tied to active MUI color mode.
+ * Uses OUK light semantic tokens (same values as theme.palette.vars in light mode).
+ */
+export function getLungoNavHeaderColors(theme: Theme) {
+  return {
+    background: lightVars.baseBackgroundStrong,
+    border: theme.palette.grey[300],
+    icon: lightVars.brandIconPrimaryDefault,
+  } as const
+}
 
-export function navigationHeaderSx(): SystemStyleObject<Theme> {
-  const { background, border } = LUNGO_NAV_HEADER_COLORS
+export function navigationHeaderSx(theme: Theme): SystemStyleObject<Theme> {
+  const { background, border } = getLungoNavHeaderColors(theme)
 
   return {
     bgcolor: `${background} !important`,
@@ -26,12 +33,17 @@ export function navigationHeaderSx(): SystemStyleObject<Theme> {
   }
 }
 
-export function navigationHeaderIconButtonSx(): SystemStyleObject<Theme> {
+export function navigationHeaderIconButtonSx(
+  theme: Theme,
+): SystemStyleObject<Theme> {
+  const { icon } = getLungoNavHeaderColors(theme)
+  const iconHoverFill = alpha(icon, 0.08)
+
   return {
-    ...iconGlyphFillSx(LUNGO_NAV_HEADER_COLORS.icon, { important: true }),
+    ...iconGlyphFillSx(icon, { important: true }),
     "&:hover": {
-      bgcolor: "rgba(29, 105, 204, 0.08)",
-      backgroundColor: "rgba(29, 105, 204, 0.08)",
+      bgcolor: iconHoverFill,
+      backgroundColor: iconHoverFill,
     },
   }
 }

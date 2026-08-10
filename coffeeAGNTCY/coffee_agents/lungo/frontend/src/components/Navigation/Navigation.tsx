@@ -34,7 +34,7 @@ const Navigation: React.FC = () => {
     <>
       <Header
         position="static"
-        sx={navigationHeaderSx()}
+        sx={(theme) => navigationHeaderSx(theme)}
         logo={
           <Box
             component="img"
@@ -53,7 +53,7 @@ const Navigation: React.FC = () => {
               <IconButton
                 aria-label={themeToggleLabel}
                 onClick={toggleTheme}
-                sx={navigationHeaderIconButtonSx()}
+                sx={(theme) => navigationHeaderIconButtonSx(theme)}
               >
                 <ThemeToggleIcon />
               </IconButton>
@@ -62,7 +62,7 @@ const Navigation: React.FC = () => {
               <IconButton
                 aria-label="Help"
                 onClick={handleHelpClick}
-                sx={navigationHeaderIconButtonSx()}
+                sx={(theme) => navigationHeaderIconButtonSx(theme)}
               >
                 <HelpOutline />
               </IconButton>
