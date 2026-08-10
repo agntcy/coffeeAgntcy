@@ -93,8 +93,8 @@ def setup_transports():
     _startup_nats()
 
 def setup_observability():
-    _startup_otel_collector()
     _startup_clickhouse()
+    _startup_otel_collector()
     _startup_grafana()
 
 def setup_identity():

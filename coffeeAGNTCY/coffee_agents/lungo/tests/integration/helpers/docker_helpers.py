@@ -138,7 +138,7 @@ def _container_id(files: List[str], service: str) -> str:
     if res.returncode == 0 and cid:
         return cid
 
-    print(f"\nFailed to find container ID for service '{service}\n")
+    print(f"\nFailed to find container ID for service '{service}'\n")
     ps_out = subprocess.run(
         _compose_cmd(files) + ["ps", "--format", "table"],
         capture_output=True, text=True, cwd=PROJECT_DIR

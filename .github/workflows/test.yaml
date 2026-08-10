@@ -100,9 +100,14 @@ jobs:
   subprojects-to-test:
     uses: ./.github/workflows/test-subprojects-reusable.yaml
     with:
-      test_corto: ${{ inputs.test_corto }}
-      test_lungo: ${{ inputs.test_lungo }}
-      test_recruiter: ${{ inputs.test_recruiter }}
+      # `inputs` only exists for workflow_call / workflow_dispatch; on push and
+      # pull_request it is empty, so these render to '' (invalid for the boolean
+      # inputs). `|| false` coerces them to a valid boolean. The reusable workflow
+      # ignores these values on push/pull_request anyway (it branches on
+      # github.event_name), so `false` here only ever applies to dispatch/call.
+      test_corto: ${{ inputs.test_corto || false }}
+      test_lungo: ${{ inputs.test_lungo || false }}
+      test_recruiter: ${{ inputs.test_recruiter || false }}
 
   tests-corto:
     name: tests / corto

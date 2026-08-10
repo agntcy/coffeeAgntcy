@@ -2,7 +2,8 @@ services:
   dir-api-server:
     image: ghcr.io/agntcy/dir-apiserver:v1.0.0
     env_file:
-      - ./configs/dir/apiserver.env
+      - path: ./configs/dir/apiserver.env
+        required: true
     ports:
       - 8888:8888
     depends_on:
@@ -88,7 +89,8 @@ services:
     ports:
       - "8881:8881"
     env_file:
-      - ../.env
+      - path: ../.env
+        required: false
     environment:
       - ENABLE_HTTP=true
       - MCP_CONNECTION_MODE=binary
