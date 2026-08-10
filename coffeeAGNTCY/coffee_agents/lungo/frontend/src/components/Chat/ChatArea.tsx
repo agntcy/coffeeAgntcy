@@ -6,6 +6,7 @@
 import React, { useRef, useState } from "react"
 
 import { useScrollPanelOnContentResize } from "@/utils/chatScroll"
+import { transparentScrollbarSx } from "@/utils/transparentScrollbarSx"
 
 import { useObservabilitySessionId, usePatternChatAPI } from "@/hooks/chat"
 import { Box, Stack } from "@open-ui-kit/core"
@@ -186,20 +187,22 @@ const ChatArea: React.FC<ChatAreaProps> = ({
         id={CHAT_MESSAGE_PANEL_ID}
         role="region"
         aria-label="Chat messages"
-        sx={{
+        sx={(theme) => ({
           flex: fillHeight ? "1 1 auto" : "0 0 auto",
           minHeight: fillHeight ? 0 : undefined,
           width: "100%",
           overflowY: "auto",
           overflowX: "hidden",
+          backgroundColor: theme.palette.action.selected,
           // Reserve the scrollbar gutter on both edges so the centered thread
           // doesn't shift left when a scrollbar appears (keeps it aligned with
           // the composer below).
           scrollbarGutter: "stable both-edges",
+          ...transparentScrollbarSx(theme),
           ...(currentUserMessage
             ? { borderTop: "1px solid", borderColor: "divider" }
             : { display: "none" }),
-        }}
+        })}
       >
         <Stack
           ref={threadContentRef}
