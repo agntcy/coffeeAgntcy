@@ -341,7 +341,7 @@ const RootPage: React.FC = () => {
                           minWidth: 0,
                           minHeight: 0,
                           flexDirection: "column",
-                          overflow: "hidden",
+                          overflow: "auto",
                         }}
                       >
                         <ChatArea {...chatAreaProps} />
