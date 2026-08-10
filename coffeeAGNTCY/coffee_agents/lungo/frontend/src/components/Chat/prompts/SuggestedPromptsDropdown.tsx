@@ -30,6 +30,7 @@ import {
 } from "./suggestedPromptsUtils"
 import { CustomDropdownListItemContent } from "./CustomDropdownListItemContent"
 import { useSuggestedPrompts } from "./useSuggestedPrompts"
+import { getDisabledRowOpacity } from "@/utils/a11ySx"
 
 interface PromptMenuItemProps {
   option: DropdownOption<string>
@@ -149,7 +150,12 @@ const SuggestedPromptsDropdown: React.FC<SuggestedPromptsDropdownProps> = ({
         ) as SystemStyleObject<Theme>
         return {
           ...resolvedCallerSx,
-          ...(isInactive ? { opacity: 0.5, pointerEvents: "none" } : {}),
+          ...(isInactive
+            ? {
+                opacity: getDisabledRowOpacity(theme),
+                pointerEvents: "none",
+              }
+            : {}),
         }
       }}
       endIcon={

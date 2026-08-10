@@ -7,6 +7,11 @@
 
 import type { SxProps, Theme } from "@mui/material/styles"
 
+/** Inactive/disabled row fade; 0.6 in light mode meets UI contrast (B9). */
+export function getDisabledRowOpacity(theme: Theme): number {
+  return theme.palette.mode === "light" ? 0.6 : 0.5
+}
+
 /** Hide visually; keep available to screen readers and associated controls. */
 export const visuallyHiddenSx: SxProps<Theme> = {
   position: "absolute",
