@@ -1,5 +1,412 @@
 # Changelog
 
+## 0.3.0 (2026-08-10)
+
+Synapsis milestone (Internet of Cognition alignment): the Lungo UI graph is now **fully backend-driven** - all static topology maps are gone and the graph renders from live API topology and workflow events. Ships an **Internet of Cognition (IoC) CFN Compose stack**, **Corto parity** work (dynamic frontend env, unified Dockerfiles, transport env alignment), a **shared MCP client library**, **resilient transport startup**, pattern reference library expansion, UI hardening, and a frontend security/dependency audit.
+
+### Summary
+
+**Breaking / migration (read first)**
+
+<details>
+<summary><strong>Transport configuration</strong> - Corto aligned with Lungo; only the default transport is required</summary>
+
+- **Corto** now uses the same transport variables as Lungo: **`DEFAULT_MESSAGE_TRANSPORT`**, **`SLIM_SERVER`**, **`NATS_SERVER`**, and **`SLIM_SHARED_SECRET`** (SLIM is the default) ([#702](https://github.com/agntcy/coffeeAgntcy/pull/702)). The Corto **`.env.example`** now sets these active instead of commented-out.
+- Only the **default** transport must be fully configured; non-preferred transports are now **skippable** and no longer crash startup if their setup fails ([#720](https://github.com/agntcy/coffeeAgntcy/pull/720) for Lungo, [#717](https://github.com/agntcy/coffeeAgntcy/pull/717) for Corto).
+- Transport env vars are now **lazy-loaded** so late/overridden values are honored ([#727](https://github.com/agntcy/coffeeAgntcy/pull/727)).
+- Refresh **`corto/.env`** from **`.env.example`** on upgrade:
+
+  ```sh
+  cp coffeeAGNTCY/coffee_agents/corto/.env.example coffeeAGNTCY/coffee_agents/corto/.env
+  ```
+
+</details>
+
+<details>
+<summary><strong>IoC (Internet of Cognition) CFN stack</strong> - new <code>ioc</code> Compose profile; ClickHouse host port moved</summary>
+
+- New **`ioc`** Compose profile brings up the IoC CFN management stack from **`lungo/ioc/compose.yaml`** ([#713](https://github.com/agntcy/coffeeAgntcy/pull/713)).
+- To run the IoC and observability stacks together, Lungo's observability **ClickHouse host port moved `9000` → `9100`** (the IoC mgmt plane uses host port **`9000`**).
+- Adds an **`IOC_*`** env block to **`lungo/.env.example`** (mirrors the upstream CFN backend, prefixed with `IOC_`). Replace every **`CHANGE ME`** value before use.
+- Refresh **`lungo/.env`** and opt in via the profile:
+
+  ```sh
+  cp coffeeAGNTCY/coffee_agents/lungo/.env.example coffeeAGNTCY/coffee_agents/lungo/.env
+  # then add "ioc" to COMPOSE_PROFILES, or:
+  docker compose --profile ioc up --build
+  ```
+
+</details>
+
+<details>
+<summary><strong>Open UI Kit v2</strong> - <code>@open-ui-kit/core</code> <code>^1.6.0 → ^2.2.3</code></summary>
+
+- Major Open UI Kit upgrade with migration fixes; MUI bumped to **`^7.3.4`** and **`@mui/system`** added ([#690](https://github.com/agntcy/coffeeAgntcy/pull/690)).
+- Run **`npm ci`** in **`lungo/frontend`** after pull.
+</details>
+
+<details>
+<summary><strong>Helm chart bumps</strong> - <code>lungo-ui@0.1.6</code>, <code>corto-local-cluster@0.3.1</code></summary>
+
+- **`lungo-ui`** **0.1.5 → 0.1.6** (envFrom template fix, [#688](https://github.com/agntcy/coffeeAgntcy/pull/688)).
+- Corto charts: **`corto-local-cluster`** **0.3.0 → 0.3.1**, **`corto-exchange`** and **`corto-farm`** **0.2.0 → 0.2.1**, **`corto-ui`** **0.1.0 → 0.1.1**.
+- Run **`helm dependency update`** under the relevant umbrella before upgrading.
+</details>
+
+**Migration steps**
+
+1. **Env templates:** refresh from examples (Corto transport vars and Lungo `IOC_*` block changed):
+
+  ```sh
+  cp coffeeAGNTCY/coffee_agents/lungo/.env.example coffeeAGNTCY/coffee_agents/lungo/.env
+  cp coffeeAGNTCY/coffee_agents/corto/.env.example coffeeAGNTCY/coffee_agents/corto/.env
+  ```
+
+2. **Frontend:** re-sync after the Open UI Kit v2 upgrade:
+
+  ```sh
+  cd coffeeAGNTCY/coffee_agents/lungo/frontend
+  npm ci
+  ```
+
+3. **Observability + IoC:** if you enable the **`ioc`** profile, note ClickHouse moved to host **`9100`**; the IoC mgmt plane owns **`9000`**.
+
+4. **Helm / KinD:** **`helm dependency update`**, then upgrade to **`lungo-ui@0.1.6`** / **`corto-local-cluster@0.3.1`** and the other Helm chart updates in this release.
+
+**Highlights**
+
+<details>
+<summary><strong>Backend-driven dynamic graph</strong> - render from live topology, no static maps</summary>
+
+- The Lungo UI graph renders entirely from **live API topology** and workflow events; the static id map and leftover static graphs are removed ([#656](https://github.com/agntcy/coffeeAgntcy/pull/656), [#657](https://github.com/agntcy/coffeeAgntcy/pull/657), [#658](https://github.com/agntcy/coffeeAgntcy/pull/658), [#661](https://github.com/agntcy/coffeeAgntcy/pull/661), [#663](https://github.com/agntcy/coffeeAgntcy/pull/663), [#698](https://github.com/agntcy/coffeeAgntcy/pull/698), [#650](https://github.com/agntcy/coffeeAgntcy/pull/650)).
+- Renderer parity for **groups, MCP, and A2A** nodes; centralized node-label predicates, icon resolver, and chat-stream highlight bridging.
+- Curated node subtitles land with **`event_v1` 1.1.0** ([#663](https://github.com/agntcy/coffeeAgntcy/pull/663)).
+</details>
+
+<details>
+<summary><strong>Backend workflow capabilities & enrichment</strong> - drive topology from real capabilities</summary>
+
+- Backend exposes and enriches **workflow capabilities**, letting the UI wire all node/topology data from real backend state ([#703](https://github.com/agntcy/coffeeAgntcy/pull/703), [#704](https://github.com/agntcy/coffeeAgntcy/pull/704), [#650](https://github.com/agntcy/coffeeAgntcy/pull/650)).
+- Directory agent URL is **derived dynamically** instead of hardcoded ([#586](https://github.com/agntcy/coffeeAgntcy/pull/586)).
+</details>
+
+<details>
+<summary><strong>Common MCP client library</strong> - shared client used by Colombia</summary>
+
+- Introduces a reusable MCP client library and adopts it in the Colombia farm path ([#699](https://github.com/agntcy/coffeeAgntcy/pull/699)).
+</details>
+
+<details>
+<summary><strong>Corto parity</strong> - dynamic frontend env and unified Dockerfiles</summary>
+
+- Ports Lungo's runtime **`window.__ENV__`** dynamic-env solution to the Corto UI ([#693](https://github.com/agntcy/coffeeAgntcy/pull/693)); **`corto-ui@0.1.1`**.
+- Unifies Dockerfiles across **Corto, Lungo, and Recruiter** ([#696](https://github.com/agntcy/coffeeAgntcy/pull/696)).
+</details>
+
+<details>
+<summary><strong>Pattern reference library</strong> - LHS categorization, extra sources, shared-memory pattern</summary>
+
+- Left-hand-side pattern reference library is **categorized** and gains additional reference sources ([#729](https://github.com/agntcy/coffeeAgntcy/pull/729), issue [#709](https://github.com/agntcy/coffeeAgntcy/issues/709)).
+- Adds a **shared agent memory** pattern to the docs ([#711](https://github.com/agntcy/coffeeAgntcy/pull/711)).
+</details>
+
+<details>
+<summary><strong>UI hardening</strong> - centralized error handling and resizable chat panel</summary>
+
+- Centralized frontend error handling via error boundaries ([#712](https://github.com/agntcy/coffeeAgntcy/pull/712)).
+- Vertically resizable agent chat panel ([#715](https://github.com/agntcy/coffeeAgntcy/pull/715)).
+</details>
+
+<details>
+<summary><strong>Frontend security audit</strong> - "undici" CVE-2026-13697 and high-severity dependency remediation</summary>
+
+- Bumps **`undici` 7.25.0 → 7.29.0** for **CVE-2026-13697** and audits/pins other high-severity transitive deps via **`overrides`** ([#736](https://github.com/agntcy/coffeeAgntcy/pull/736)).
+</details>
+
+<details>
+<summary><strong>CI</strong> - tiered tests, Helm render checks, docs-aware triggers</summary>
+
+- Splits CI tests into separate tiers ([#707](https://github.com/agntcy/coffeeAgntcy/pull/707)); adds a **`helm template`** render step and **`--strict`** helm lint ([#718](https://github.com/agntcy/coffeeAgntcy/pull/718)).
+- Skips Docker build / pytest on docs-only changes ([#681](https://github.com/agntcy/coffeeAgntcy/pull/681)); triggers Python tests on PRs and push events ([#733](https://github.com/agntcy/coffeeAgntcy/pull/733)).
+</details>
+
+### Dependencies
+
+**Helm charts**
+
+| Chart | 0.2.1 | 0.3.0 |
+| --- | --- | --- |
+| `lungo-ui` | 0.1.5 | **0.1.6** |
+| `corto-local-cluster` | 0.3.0 | **0.3.1** |
+| `corto-exchange` | 0.2.0 | **0.2.1** |
+| `corto-farm` | 0.2.0 | **0.2.1** |
+| `corto-ui` | 0.1.0 | **0.1.1** |
+
+**Lungo frontend** (`lungo/frontend/package-lock.json`):
+
+| Package | 0.2.1 | 0.3.0 |
+| --- | --- | --- |
+| `@open-ui-kit/core` | ^1.6.0 | **^2.2.3** |
+| `@mui/material`, `@mui/icons-material` | ^7.0.1 | **^7.3.4** |
+| `@mui/system` | - | **^7.3.4** |
+| `react-router-dom` | ^7.13.1 | **^7.18.2** |
+| `undici` | 7.25.0 | **7.29.0** (CVE-2026-13697) |
+| `dompurify` | ^3.3.2 | **3.4.12** (pinned) |
+| `vite` | ^6.4.1 | **^6.4.3** |
+
+- Adds **`react-error-boundary@^6.1.2`**, **`zustand@^4.5.7`**, dev **`openapi-typescript@^7.10.1`** and **`@testing-library/dom@^10.4.1`**; removes **`axios`** and **`@reactflow/node-resizer`**.
+- Adds **`overrides`** for **`form-data@^4.0.6`**, **`undici@^7.29.0`**, and **`brace-expansion`**.
+
+**Lungo backend** (`lungo/uv.lock`): adds **`griffe`** (constraint **`<2`**, resolved **1.15.0**). Core AGNTCY pins unchanged: `agntcy-app-sdk` 0.5.5, `a2a-sdk` 0.3.20, `slim-bindings` 1.4.0, `mcp` 1.27.1, `langgraph` 1.2.2, `ioa-observe-sdk` 1.0.41, `agntcy-identity-service-sdk` 0.0.7, `agntcy-dir` 1.0.0.
+
+No changes to **`corto/uv.lock`**, **`recruiter/uv.lock`**, or **`corto/exchange/frontend/package-lock.json`** since 0.2.1.
+
+### Built With
+
+(Versions from `coffeeAGNTCY/coffee_agents/lungo/uv.lock` and `lungo/frontend/package-lock.json`.)
+
+- [AGNTCY App SDK](https://github.com/agntcy/app-sdk) = v0.5.5
+- [SLIM](https://github.com/agntcy/slim) = v1.4.0
+- [NATS](https://github.com/nats-io/nats-server) = latest
+- [A2A](https://github.com/a2aproject/a2a-python) = v0.3.20
+- [MCP](https://github.com/modelcontextprotocol/python-sdk) = v1.27.1
+- [LangGraph](https://github.com/langchain-ai/langgraph) = v1.2.2
+- [Observe SDK](https://github.com/agntcy/observe) = 1.0.41
+- [AGNTCY Identity Service SDK](https://github.com/agntcy/identity-service) = 0.0.7
+- [AGNTCY Directory](https://github.com/agntcy/dir) = v1.0.0
+
+### Changeset
+
+<details>
+<summary><a href="https://github.com/agntcy/coffeeAgntcy/pull/656">#656</a> - @delthazor - (feat-redraw) prepare icon and node data resolver for dynamic graphs</summary>
+
+- Adds icon/label resolvers and node data preparation to feed backend-driven topology rendering.
+</details>
+
+<details>
+<summary><a href="https://github.com/agntcy/coffeeAgntcy/pull/657">#657</a> - @delthazor - (feat-redraw) MVP for dynamic graph rendering with feature parity</summary>
+
+- Renders the React Flow graph from live API topology and drops the static id-map path; renderer parity for groups, MCP, and A2A; bridges chat-stream highlights to the live graph.
+</details>
+
+<details>
+<summary><a href="https://github.com/agntcy/coffeeAgntcy/pull/681">#681</a> - @mihaialexandrescu - chore: don't run docker build or python tests on docs folder changes</summary>
+
+- Scopes Docker build and pytest CI so docs-only changes skip them.
+</details>
+
+<details>
+<summary><a href="https://github.com/agntcy/coffeeAgntcy/pull/688">#688</a> - @pregnor - fix(lungo,helm,ui): fix chart envfrom again</summary>
+
+- Further fix to the **`lungo-ui`** deployment template **`envFrom`** ordering; bumps **`lungo-ui`** **0.1.5 → 0.1.6**.
+</details>
+
+<details>
+<summary><a href="https://github.com/agntcy/coffeeAgntcy/pull/658">#658</a> - @delthazor - (feat-redraw) group node handling and cleanup</summary>
+
+- Adds group-node handling and recruiter ecosystem integration to the dynamic graph; general cleanup.
+</details>
+
+<details>
+<summary><a href="https://github.com/agntcy/coffeeAgntcy/pull/680">#680</a> - @mihaialexandrescu - chore(lungo): document API contracts and specs</summary>
+
+- Documents the workflow-instance API contract and OpenAPI specs as the source of truth.
+</details>
+
+<details>
+<summary><a href="https://github.com/agntcy/coffeeAgntcy/pull/661">#661</a> - @delthazor - (feat-redraw) update animation handling</summary>
+
+- Refines live-event-driven node animation on the dynamic graph.
+</details>
+
+<details>
+<summary><a href="https://github.com/agntcy/coffeeAgntcy/pull/692">#692</a> - @mihaialexandrescu - chore(lungo): update OASF preferredTransport for farms to slim</summary>
+
+- Updates farm OASF records' **`preferredTransport`** from `slimprc` to `slim` to match the A2A agent cards.
+</details>
+
+<details>
+<summary><a href="https://github.com/agntcy/coffeeAgntcy/pull/663">#663</a> - @delthazor - (feat-redraw) add curated label2 node subtitles (event_v1 1.1.0)</summary>
+
+- Adds curated node subtitles and bumps the event schema to **`event_v1` 1.1.0**.
+</details>
+
+<details>
+<summary><a href="https://github.com/agntcy/coffeeAgntcy/pull/693">#693</a> - @mihaialexandrescu - feat(corto): port Lungo FE dynamic env solution to Corto</summary>
+
+- Ports runtime **`window.__ENV__`** env injection to the Corto UI; bumps **`corto-ui@0.1.1`**.
+</details>
+
+<details>
+<summary><a href="https://github.com/agntcy/coffeeAgntcy/pull/697">#697</a> - @arpad-csepi - docs(ci): update GitHub workflows readme</summary>
+
+- Updates the CI workflows documentation.
+</details>
+
+<details>
+<summary><a href="https://github.com/agntcy/coffeeAgntcy/pull/696">#696</a> - @arpad-csepi - refactor(corto,lungo,recruiter): unify docker files</summary>
+
+- Unifies and de-duplicates Dockerfiles across Corto, Lungo, and Recruiter.
+</details>
+
+<details>
+<summary><a href="https://github.com/agntcy/coffeeAgntcy/pull/698">#698</a> - @delthazor - remove leftover static graphs</summary>
+
+- Removes remaining static graph modules now superseded by live topology rendering.
+</details>
+
+<details>
+<summary><a href="https://github.com/agntcy/coffeeAgntcy/pull/586">#586</a> - @delthazor - derive directory agent url dynamically</summary>
+
+- Resolves the Directory agent URL dynamically instead of using a hardcoded value.
+</details>
+
+<details>
+<summary><a href="https://github.com/agntcy/coffeeAgntcy/pull/702">#702</a> - @mihaialexandrescu - fix(corto): align Corto transport env vars with Lungo</summary>
+
+- Corto adopts **`DEFAULT_MESSAGE_TRANSPORT`**, **`SLIM_SERVER`**, **`NATS_SERVER`**, **`SLIM_SHARED_SECRET`**; **`.env.example`** activates the SLIM defaults.
+</details>
+
+<details>
+<summary><a href="https://github.com/agntcy/coffeeAgntcy/pull/699">#699</a> - @mihaialexandrescu - feat: common MCP client lib + use in Colombia</summary>
+
+- Adds a shared MCP client library and uses it in the Colombia farm MCP path.
+</details>
+
+<details>
+<summary><a href="https://github.com/agntcy/coffeeAgntcy/pull/703">#703</a> - @delthazor - introduce backend workflow capabilities</summary>
+
+- Exposes workflow capability metadata from the backend for the UI to consume.
+</details>
+
+<details>
+<summary><a href="https://github.com/agntcy/coffeeAgntcy/pull/690">#690</a> - @misi-bp - chore(OUK): upgrade version, fix migration issues</summary>
+
+- Upgrades **`@open-ui-kit/core` ^1.6.0 → ^2.2.3** and MUI to **`^7.3.4`** (adds **`@mui/system`**); resolves migration issues.
+</details>
+
+<details>
+<summary><a href="https://github.com/agntcy/coffeeAgntcy/pull/704">#704</a> - @delthazor - backend enrichment</summary>
+
+- Enriches backend topology/capability responses that drive the dynamic graph.
+</details>
+
+<details>
+<summary><a href="https://github.com/agntcy/coffeeAgntcy/commit/6d2df475">6d2df475</a> - @jparello - Update README.md (direct commit)</summary>
+
+- Removes specific dates from the README milestone/release list.
+</details>
+
+<details>
+<summary><a href="https://github.com/agntcy/coffeeAgntcy/pull/650">#650</a> - @delthazor - eliminate remaining static mappings by wiring in all backend capabilities</summary>
+
+- Removes the last static topology mappings; the graph is now fully backend-driven.
+</details>
+
+<details>
+<summary><a href="https://github.com/agntcy/coffeeAgntcy/pull/713">#713</a> - @mihaialexandrescu - feat: add IoC CFN docker-compose and .env.example updates</summary>
+
+- Adds the **`ioc`** Compose profile (**`lungo/ioc/compose.yaml`**) and an **`IOC_*`** env block; moves observability ClickHouse host port **9000 → 9100** so both stacks can run together.
+</details>
+
+<details>
+<summary><a href="https://github.com/agntcy/coffeeAgntcy/pull/712">#712</a> - @misi-bp - feat(Lungo-UI): centralized error handling</summary>
+
+- Adds centralized frontend error handling (error boundaries) via **`react-error-boundary`**.
+</details>
+
+<details>
+<summary><a href="https://github.com/agntcy/coffeeAgntcy/pull/711">#711</a> - @pregnor - docs: add shared agent memory pattern</summary>
+
+- Documents a shared agent memory pattern in the pattern reference library.
+</details>
+
+<details>
+<summary><a href="https://github.com/agntcy/coffeeAgntcy/pull/715">#715</a> - @misi-bp - feat(lungo): add vertically resizable agent chat panel</summary>
+
+- Makes the agent chat panel vertically resizable.
+</details>
+
+<details>
+<summary><a href="https://github.com/agntcy/coffeeAgntcy/pull/718">#718</a> - @mihaialexandrescu - feat(ci): add helm template render step and --strict helm lint flag</summary>
+
+- Adds a **`helm template`** render CI step and enables **`--strict`** helm lint.
+</details>
+
+<details>
+<summary><a href="https://github.com/agntcy/coffeeAgntcy/pull/717">#717</a> - @mihaialexandrescu - feat(Corto): do not panic on non-preferred transport setup failure</summary>
+
+- Corto tolerates non-preferred transport setup failures instead of crashing at startup.
+</details>
+
+<details>
+<summary><a href="https://github.com/agntcy/coffeeAgntcy/pull/722">#722</a> - @pregnor - chore: poetry config/ignore, unused</summary>
+
+- Removes unused Poetry config and ignore entries.
+</details>
+
+<details>
+<summary><a href="https://github.com/agntcy/coffeeAgntcy/pull/727">#727</a> - @pregnor - fix(corto,lungo): fix transport env var lazy load</summary>
+
+- Lazy-loads transport env vars so late/overridden values are honored.
+</details>
+
+<details>
+<summary><a href="https://github.com/agntcy/coffeeAgntcy/pull/723">#723</a> - @pregnor - style: fix dashes</summary>
+
+- Normalizes dash characters across docs/config.
+</details>
+
+<details>
+<summary><a href="https://github.com/agntcy/coffeeAgntcy/pull/720">#720</a> - @mihaialexandrescu - feat(lungo): default transport required, others skippable</summary>
+
+- Only the default transport must be configured; non-preferred transports no longer crash startup on setup failure.
+</details>
+
+<details>
+<summary><a href="https://github.com/agntcy/coffeeAgntcy/pull/707">#707</a> - @delthazor - split CI tests into separate tiers</summary>
+
+- Splits the test suite into tiers for faster, more targeted CI runs.
+</details>
+
+<details>
+<summary><a href="https://github.com/agntcy/coffeeAgntcy/pull/726">#726</a> - @misi-bp - openapi spec status codes (#694)</summary>
+
+- Aligns OpenAPI operation response status codes; adds frontend API type generation (**`openapi-typescript`**).
+</details>
+
+<details>
+<summary><a href="https://github.com/agntcy/coffeeAgntcy/pull/729">#729</a> - @pregnor - feat(lungo): categorize LHS pattern ref lib + add pattern ref sources (#709)</summary>
+
+- Categorizes the left-hand-side pattern reference library and adds new reference sources.
+</details>
+
+<details>
+<summary><a href="https://github.com/agntcy/coffeeAgntcy/pull/728">#728</a> - @misi-bp - hygiene (#685)</summary>
+
+- Frontend hygiene/cleanup pass.
+</details>
+
+<details>
+<summary><a href="https://github.com/agntcy/coffeeAgntcy/pull/736">#736</a> - @misi-bp - fix(frontend): bump undici to 7.29.0 for CVE-2026-13697 & audit high-severity deps</summary>
+
+- Upgrades **`undici` 7.25.0 → 7.29.0** (CVE-2026-13697) and pins high-severity transitive deps via **`overrides`** (`form-data`, `brace-expansion`).
+</details>
+
+<details>
+<summary><a href="https://github.com/agntcy/coffeeAgntcy/pull/733">#733</a> - @mihaialexandrescu - fix: trigger python tests on PRs and push events</summary>
+
+- Ensures the Python test workflow runs on both pull requests and pushes.
+</details>
+
+### Contributors
+
+**Returning contributors** - thank you for coming back:
+
+- [@arpad-csepi](https://github.com/arpad-csepi)
+
+---
+
 ## 0.2.1 (2026-07-01)
 
 Patch release: **Helm hardening for agentic-workflows-api and lungo-ui**, **Grafana observability deep-links** across chat patterns, and a **Colombia payment MCP** client fix.
