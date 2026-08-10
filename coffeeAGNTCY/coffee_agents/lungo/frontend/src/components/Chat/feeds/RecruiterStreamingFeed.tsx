@@ -8,6 +8,7 @@ import CheckCircleIcon from "@mui/icons-material/CheckCircle"
 import { Box, Stack, Typography } from "@open-ui-kit/core"
 import { ChatAgentAvatar } from "../ChatAvatarCircle"
 import { FeedSpinnerRow } from "../FeedSpinnerRow"
+import { successIconColorSx } from "@/utils/successIconColor"
 import { FeedStatusLine } from "../FeedStatusLine"
 import { FeedErrorMessage } from "./FeedErrorMessage"
 import { FeedCollapseButton } from "./FeedCollapseButton"
@@ -182,7 +183,7 @@ const RecruiterStreamingFeed: React.FC<RecruiterStreamingFeedProps> = ({
                 >
                   <Box sx={{ mt: 0.5, display: "flex", alignItems: "center" }}>
                     <CheckCircleIcon
-                      sx={{ color: "success.main" }}
+                      sx={(theme) => successIconColorSx(theme)}
                       aria-hidden
                     />
                   </Box>

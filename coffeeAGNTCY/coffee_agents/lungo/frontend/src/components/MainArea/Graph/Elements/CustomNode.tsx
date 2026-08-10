@@ -19,6 +19,7 @@ import agentDirectoryIconLight from "@/assets/Agent_Icon_light.png"
 import { useGithubIcon, useThemeIcon } from "@/hooks/ui"
 import { AssetPngIcon } from "@/components/AssetPngIcon"
 import { SecurityClass } from "@/utils/SecurityClass"
+import { getSuccessIconColor } from "@/utils/successIconColor"
 import {
   getGraphNodeHandleStyle,
   graphNodeRootSurfaceSx,
@@ -158,7 +159,7 @@ const CustomNode: React.FC<CustomNodeProps> = ({ id, data }) => {
                 flexShrink: 0,
                 flexGrow: 0,
                 order: 1,
-                color: "success.main",
+                color: getSuccessIconColor(theme),
               }}
             />
           )}
