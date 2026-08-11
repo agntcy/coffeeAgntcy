@@ -4,6 +4,9 @@
  *
  * Compact density layer merged onto the OUK theme (see CompactTheme).
  * Body scale shifts one OUK tier down (body1: 16px → 14px); spacing unit: 6px.
+ *
+ * Minimum tiers (B2 / #618): caption & button ≥12px, overline ≥10px — sub-12px
+ * body copy fails contrast more often on marginal OUK tokens.
  */
 
 import type { ThemeOptions } from "@mui/material/styles"
@@ -42,9 +45,9 @@ export const compactThemeOptions: ThemeOptions = {
     subtitle2: { fontSize: "12px", lineHeight: "16px" },
     headingSubSection: { fontSize: "14px", lineHeight: "20px" },
 
-    caption: { fontSize: "11px", lineHeight: "15px" },
-    captionMedium: { fontSize: "11px", lineHeight: "15px" },
-    captionSemibold: { fontSize: "11px", lineHeight: "15px" },
+    caption: { fontSize: "12px", lineHeight: "16px" },
+    captionMedium: { fontSize: "12px", lineHeight: "16px" },
+    captionSemibold: { fontSize: "12px", lineHeight: "16px" },
 
     h6: { fontSize: "18px", lineHeight: "25px" },
     h5: { fontSize: "21px", lineHeight: "28px" },
@@ -53,8 +56,8 @@ export const compactThemeOptions: ThemeOptions = {
     h2: { fontSize: "42px", lineHeight: "46px" },
     h1: { fontSize: "52px", lineHeight: "56px" },
 
-    button: { fontSize: "11px", lineHeight: "15px" },
-    overline: { fontSize: "9px", lineHeight: "14px" },
+    button: { fontSize: "12px", lineHeight: "16px" },
+    overline: { fontSize: "10px", lineHeight: "14px" },
   },
 
   components: {
