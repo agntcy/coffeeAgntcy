@@ -5,7 +5,7 @@
  * Compact density layer merged onto the OUK theme (see CompactTheme).
  * Body scale shifts one OUK tier down (body1: 16px → 14px); spacing unit: 6px.
  *
- * Minimum tiers (B2 / #618): caption & button ≥12px, overline ≥10px — sub-12px
+ * Minimum tiers (B2 / #618): caption & button ≥12px, overline ≥10px; sub-12px
  * body copy fails contrast more often on marginal OUK tokens.
  */
 
