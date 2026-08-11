@@ -12,9 +12,7 @@ import type { SystemStyleObject } from "@mui/system"
 
 /** ≥3:1 on white (UI component AA). Dark mode keeps success.main (~5.9:1 on paper). */
 export function getSuccessIconColor(theme: Theme): string {
-  return theme.palette.mode === "light"
-    ? green800
-    : theme.palette.success.main
+  return theme.palette.mode === "light" ? green800 : theme.palette.success.main
 }
 
 export function successIconColorSx(theme: Theme): SystemStyleObject<Theme> {
