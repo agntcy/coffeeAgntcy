@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  *
  * Success icon fill on paper surfaces. OUK success.main (green500) is ~2.52:1 on
- * white; use green800 in light mode until upstream A2 is fixed (see contrast-audit.md).
+ * white; use green800 in light mode until OUK upstream is fixed.
  */
 
 import { green800 } from "@open-ui-kit/core"
