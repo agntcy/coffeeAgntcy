@@ -25,14 +25,14 @@ const getSlugFromNodeData = (nodeData: CustomNodeData): string => {
   return resolveAgentSlug(nodeData, "identity")
 }
 
-/** Same target as {@link fetchBadgeDetails} - for `reportRequestError` in modal catch. */
+/** Same target as {@link fetchBadgeDetails} - for `reportRequestError` in dialog catch. */
 export function badgeDetailsRequest(
   nodeData: CustomNodeData,
 ): HttpRequestTarget {
   return buildIdentityBadgeRequest(getSlugFromNodeData(nodeData))
 }
 
-/** Same target as {@link fetchPolicyDetails} - for `reportRequestError` in modal catch. */
+/** Same target as {@link fetchPolicyDetails} - for `reportRequestError` in dialog catch. */
 export function policyDetailsRequest(
   nodeData: CustomNodeData,
 ): HttpRequestTarget {

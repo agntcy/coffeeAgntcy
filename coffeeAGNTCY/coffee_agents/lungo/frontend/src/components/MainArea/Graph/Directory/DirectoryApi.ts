@@ -11,7 +11,7 @@ import { getOasfSlugFromNodeData } from "@/utils/agenticTopologyIdentityUiMap"
 
 const DIRECTORY_REQUEST_TIMEOUT_MS = 10_000
 
-/** OASF record from directory API; URL fields used for link in modal. */
+/** OASF record from directory API; URL fields used for link in dialog. */
 export interface OasfRecord {
   /** Directory URL (snake_case from API). */
   directory_url?: string
@@ -34,7 +34,7 @@ function oasfCacheKey(target: ChatApiTarget, slug: string): string {
   return `${target}\0${slug}`
 }
 
-/** Same target as {@link fetchOasfRecord} - for `reportRequestError` in modal catch. */
+/** Same target as {@link fetchOasfRecord} - for `reportRequestError` in dialog catch. */
 export function oasfRecordRequest(
   nodeData: NodeDataForOasf,
   chatApiTarget?: ChatApiTarget | null,
