@@ -44,7 +44,7 @@ export const NodeIdentityDropdown: React.FC<NodeIdentityDropdownProps> = ({
           open={Boolean(data.isIdentityDropdownOpen)}
           onOpenChange={(next) => {
             if (next) {
-              data.onOpenIdentityModal?.(nodeId, data)
+              data.onOpenIdentityDialog?.(nodeId, data)
             } else {
               data.onCloseIdentityDropdown?.()
             }

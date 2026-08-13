@@ -187,7 +187,7 @@ export function graphSideIconButtonSx(theme: Theme): SystemStyleObject<Theme> {
   return graphIconButtonChipSx(theme)
 }
 
-export function graphSideIconButtonSxWithModal(
+export function graphSideIconButtonSxWithDialog(
   theme: Theme,
 ): SystemStyleObject<Theme> {
   return graphSideIconButtonSx(theme)

@@ -12,7 +12,7 @@ export interface ExtraHandle {
 }
 
 export interface CustomNodeData extends GraphNodeTransportRailData {
-  onOpenOasfModal?: (nodeData: CustomNodeData) => void
+  onOpenOasfDialog?: (nodeData: CustomNodeData) => void
   icon: React.ReactNode
   label: string
   label_subtitle: string
@@ -34,12 +34,12 @@ export interface CustomNodeData extends GraphNodeTransportRailData {
   /** Legacy combined slug; prefer `identityAppsSlug` / `directoryAgentSlug` when set. */
   slug?: string
   farmName?: string
-  isModalOpen?: boolean
+  isDialogOpen?: boolean
   /** True when this node's identity dropdown is open. */
   isIdentityDropdownOpen?: boolean
   hasBadgeDetails?: boolean
   hasPolicyDetails?: boolean
-  onOpenIdentityModal?: (nodeId: string, nodeData: CustomNodeData) => void
+  onOpenIdentityDialog?: (nodeId: string, nodeData: CustomNodeData) => void
   onCloseIdentityDropdown?: () => void
   onShowBadgeDetails?: () => void
   onShowPolicyDetails?: () => void

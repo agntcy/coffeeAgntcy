@@ -4,63 +4,63 @@
  **/
 
 import { useState, useCallback } from "react"
-import type { ModalType, ModalState, ModalNodeData } from "@/types/modal"
+import type { DialogType, DialogState, DialogNodeData } from "@/types/dialog"
 import type { CustomNodeData } from "@/components/MainArea/Graph/Elements/types"
 
-export type { ModalType, ModalState, ModalNodeData } from "@/types/modal"
+export type { DialogType, DialogState, DialogNodeData } from "@/types/dialog"
 
-export interface ModalActions {
-  handleOpenIdentityModal: (nodeId: string, nodeData: CustomNodeData) => void
-  handleCloseModals: () => void
+export interface DialogActions {
+  handleOpenIdentityDialog: (nodeId: string, nodeData: CustomNodeData) => void
+  handleCloseDialogs: () => void
   handleShowBadgeDetails: () => void
   handleShowPolicyDetails: () => void
   handlePaneClick: () => void
 }
 
-export interface UseModalManagerReturn extends ModalState, ModalActions {
+export interface UseDialogManagerReturn extends DialogState, DialogActions {
   activeNodeId: string | null
 }
 
-export const useModalManager = (): UseModalManagerReturn => {
-  const [activeModal, setActiveModal] = useState<ModalType>(null)
+export const useDialogManager = (): UseDialogManagerReturn => {
+  const [activeDialog, setActiveDialog] = useState<DialogType>(null)
   const [activeNodeId, setActiveNodeId] = useState<string | null>(null)
-  const [activeNodeData, setActiveNodeData] = useState<ModalNodeData>(null)
+  const [activeNodeData, setActiveNodeData] = useState<DialogNodeData>(null)
 
-  const handleOpenIdentityModal = useCallback(
+  const handleOpenIdentityDialog = useCallback(
     (nodeId: string, nodeData: CustomNodeData) => {
       setActiveNodeId(nodeId)
       setActiveNodeData({ ...nodeData })
-      setActiveModal("identity")
+      setActiveDialog("identity")
     },
     [],
   )
 
-  const handleCloseModals = useCallback(() => {
-    setActiveModal(null)
+  const handleCloseDialogs = useCallback(() => {
+    setActiveDialog(null)
     setActiveNodeId(null)
     setActiveNodeData(null)
   }, [])
 
   const handleShowBadgeDetails = useCallback(() => {
-    setActiveModal("badge")
+    setActiveDialog("badge")
   }, [])
 
   const handleShowPolicyDetails = useCallback(() => {
-    setActiveModal("policy")
+    setActiveDialog("policy")
   }, [])
 
   const handlePaneClick = useCallback(() => {
-    if (activeModal) {
-      handleCloseModals()
+    if (activeDialog) {
+      handleCloseDialogs()
     }
-  }, [activeModal, handleCloseModals])
+  }, [activeDialog, handleCloseDialogs])
 
   return {
-    activeModal,
+    activeDialog,
     activeNodeId,
     activeNodeData,
-    handleOpenIdentityModal,
-    handleCloseModals,
+    handleOpenIdentityDialog,
+    handleCloseDialogs,
     handleShowBadgeDetails,
     handleShowPolicyDetails,
     handlePaneClick,

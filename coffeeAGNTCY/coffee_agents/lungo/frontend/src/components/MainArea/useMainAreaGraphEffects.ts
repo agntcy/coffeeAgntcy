@@ -5,48 +5,48 @@
 
 import React, { useEffect } from "react"
 import type { Node } from "@xyflow/react"
-import type { ModalType } from "@/types/modal"
+import type { DialogType } from "@/types/dialog"
 import type { CustomNodeData } from "./Graph/Elements/types"
 
-function withNodeModalHandlers(
+function withNodeDialogHandlers(
   node: Node,
   {
-    activeModal,
+    activeDialog,
     activeNodeId,
-    handleOpenIdentityModal,
-    handleOpenOasfModal,
-    handleCloseModals,
+    handleOpenIdentityDialog,
+    handleOpenOasfDialog,
+    handleCloseDialogs,
     handleShowBadgeDetails,
     handleShowPolicyDetails,
   }: {
-    activeModal: ModalType
+    activeDialog: DialogType
     activeNodeId: string | null
-    handleOpenIdentityModal: (nodeId: string, nodeData: CustomNodeData) => void
-    handleOpenOasfModal: (nodeData: CustomNodeData) => void
-    handleCloseModals: () => void
+    handleOpenIdentityDialog: (nodeId: string, nodeData: CustomNodeData) => void
+    handleOpenOasfDialog: (nodeData: CustomNodeData) => void
+    handleCloseDialogs: () => void
     handleShowBadgeDetails: () => void
     handleShowPolicyDetails: () => void
   },
 ): Record<string, unknown> {
   return {
     ...node.data,
-    onOpenIdentityModal: handleOpenIdentityModal,
-    onOpenOasfModal: handleOpenOasfModal,
+    onOpenIdentityDialog: handleOpenIdentityDialog,
+    onOpenOasfDialog: handleOpenOasfDialog,
     isIdentityDropdownOpen:
-      activeModal === "identity" && activeNodeId === node.id,
-    onCloseIdentityDropdown: handleCloseModals,
+      activeDialog === "identity" && activeNodeId === node.id,
+    onCloseIdentityDropdown: handleCloseDialogs,
     onShowBadgeDetails: handleShowBadgeDetails,
     onShowPolicyDetails: handleShowPolicyDetails,
-    isModalOpen: Boolean(activeModal && activeNodeId === node.id),
+    isDialogOpen: Boolean(activeDialog && activeNodeId === node.id),
   }
 }
 
 export interface UseMainAreaGraphEffectsParams {
   pattern: string
   setNodes: React.Dispatch<React.SetStateAction<Node[]>>
-  handleOpenIdentityModal: (nodeId: string, nodeData: CustomNodeData) => void
-  handleOpenOasfModal: (nodeData: CustomNodeData) => void
-  activeModal: ModalType
+  handleOpenIdentityDialog: (nodeId: string, nodeData: CustomNodeData) => void
+  handleOpenOasfDialog: (nodeData: CustomNodeData) => void
+  activeDialog: DialogType
   activeNodeId: string | null
   handleShowBadgeDetails: () => void
   handleShowPolicyDetails: () => void
@@ -57,17 +57,17 @@ export interface UseMainAreaGraphEffectsParams {
   chatHeight: number
   isExpanded: boolean
   animationLockRef: React.MutableRefObject<boolean>
-  handleCloseModals: () => void
-  setOasfModalOpen: (open: boolean) => void
+  handleCloseDialogs: () => void
+  setOasfDialogOpen: (open: boolean) => void
 }
 
-/** Runs effects that inject modal handlers onto live nodes and fit the viewport. */
+/** Runs effects that inject dialog handlers onto live nodes and fit the viewport. */
 export function useMainAreaGraphEffects({
   pattern,
   setNodes,
-  handleOpenIdentityModal,
-  handleOpenOasfModal,
-  activeModal,
+  handleOpenIdentityDialog,
+  handleOpenOasfDialog,
+  activeDialog,
   activeNodeId,
   handleShowBadgeDetails,
   handleShowPolicyDetails,
@@ -75,40 +75,40 @@ export function useMainAreaGraphEffects({
   chatHeight,
   isExpanded,
   animationLockRef,
-  handleCloseModals,
-  setOasfModalOpen,
+  handleCloseDialogs,
+  setOasfDialogOpen,
 }: UseMainAreaGraphEffectsParams) {
   useEffect(() => {
     animationLockRef.current = false
   }, [pattern, animationLockRef])
 
   useEffect(() => {
-    handleCloseModals()
-    setOasfModalOpen(false)
-  }, [pattern, handleCloseModals, setOasfModalOpen])
+    handleCloseDialogs()
+    setOasfDialogOpen(false)
+  }, [pattern, handleCloseDialogs, setOasfDialogOpen])
 
   useEffect(() => {
     setNodes((nodes) =>
       nodes.map((node) => ({
         ...node,
-        data: withNodeModalHandlers(node, {
-          activeModal,
+        data: withNodeDialogHandlers(node, {
+          activeDialog,
           activeNodeId,
-          handleOpenIdentityModal,
-          handleOpenOasfModal,
-          handleCloseModals,
+          handleOpenIdentityDialog,
+          handleOpenOasfDialog,
+          handleCloseDialogs,
           handleShowBadgeDetails,
           handleShowPolicyDetails,
         }),
       })),
     )
   }, [
-    handleOpenIdentityModal,
-    handleOpenOasfModal,
-    handleCloseModals,
+    handleOpenIdentityDialog,
+    handleOpenOasfDialog,
+    handleCloseDialogs,
     handleShowBadgeDetails,
     handleShowPolicyDetails,
-    activeModal,
+    activeDialog,
     activeNodeId,
     setNodes,
   ])

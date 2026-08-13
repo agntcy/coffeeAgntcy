@@ -4,33 +4,33 @@
  **/
 
 import React from "react"
-import BadgeDetailsModal from "./Graph/Identity/BadgeDetailsModal"
-import PolicyDetailsModal from "./Graph/Identity/PolicyDetailsModal"
-import type { ModalType, ModalNodeData } from "@/types/modal"
+import BadgeDetailsDialog from "./Graph/Identity/BadgeDetailsDialog"
+import PolicyDetailsDialog from "./Graph/Identity/PolicyDetailsDialog"
+import type { DialogType, DialogNodeData } from "@/types/dialog"
 import type { CustomNodeData } from "./Graph/Elements/types"
 
-interface ModalContainerProps {
-  activeModal: ModalType
-  activeNodeData: ModalNodeData
+interface DialogContainerProps {
+  activeDialog: DialogType
+  activeNodeData: DialogNodeData
   onClose: () => void
 }
 
-const ModalContainer: React.FC<ModalContainerProps> = ({
-  activeModal,
+const DialogContainer: React.FC<DialogContainerProps> = ({
+  activeDialog,
   activeNodeData,
   onClose,
 }) => {
   return (
     <>
-      <BadgeDetailsModal
-        isOpen={activeModal === "badge"}
+      <BadgeDetailsDialog
+        isOpen={activeDialog === "badge"}
         onClose={onClose}
         nodeName={activeNodeData?.label || ""}
         nodeData={(activeNodeData ?? undefined) as CustomNodeData}
       />
 
-      <PolicyDetailsModal
-        isOpen={activeModal === "policy"}
+      <PolicyDetailsDialog
+        isOpen={activeDialog === "policy"}
         onClose={onClose}
         nodeData={(activeNodeData ?? undefined) as CustomNodeData}
         nodeName={activeNodeData?.label || ""}
@@ -39,4 +39,4 @@ const ModalContainer: React.FC<ModalContainerProps> = ({
   )
 }
 
-export default ModalContainer
+export default DialogContainer

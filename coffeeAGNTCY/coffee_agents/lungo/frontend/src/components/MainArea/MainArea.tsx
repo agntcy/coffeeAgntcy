@@ -18,8 +18,8 @@ import { GraphTopologyLayoutSync } from "./Graph/GraphTopologyLayoutSync"
 import GraphDocumentationButton from "./Graph/Elements/GraphDocumentationButton"
 import { isPlaceholderWorkflow } from "@/components/Sidebar/sidebar.utils"
 import { getWorkflowDocumentationGithubUrl } from "@/urls"
-import ModalContainer from "./ModalContainer"
-import OasfRecordModal from "./Graph/Directory/OasfRecordModal"
+import DialogContainer from "./DialogContainer"
+import OasfRecordDialog from "./Graph/Directory/OasfRecordDialog"
 import {
   GRAPH_MAX_ZOOM,
   GRAPH_MIN_ZOOM,
@@ -60,12 +60,12 @@ const MainArea: React.FC<MainAreaProps> = (props) => {
     setNodesDraggable,
     nodesConnectable,
     setNodesConnectable,
-    activeModal,
+    activeDialog,
     activeNodeData,
-    handleCloseModals,
-    oasfModalOpen,
-    setOasfModalOpen,
-    oasfModalData,
+    handleCloseDialogs,
+    oasfDialogOpen,
+    setOasfDialogOpen,
+    oasfDialogData,
     onPaneClick,
     onNodeDrag,
     topologyApplied,
@@ -164,17 +164,17 @@ const MainArea: React.FC<MainAreaProps> = (props) => {
           />
         </ReactFlow>
 
-        <ModalContainer
-          activeModal={activeModal}
+        <DialogContainer
+          activeDialog={activeDialog}
           activeNodeData={activeNodeData}
-          onClose={handleCloseModals}
+          onClose={handleCloseDialogs}
         />
 
-        <OasfRecordModal
-          isOpen={oasfModalOpen}
-          onClose={() => setOasfModalOpen(false)}
-          nodeName={oasfModalData?.label || ""}
-          nodeData={oasfModalData}
+        <OasfRecordDialog
+          isOpen={oasfDialogOpen}
+          onClose={() => setOasfDialogOpen(false)}
+          nodeName={oasfDialogData?.label || ""}
+          nodeData={oasfDialogData}
           chatApiTarget={chatApiTarget}
         />
       </Box>
