@@ -7,12 +7,19 @@ import tsparser from "@typescript-eslint/parser"
 import tsplugin from "@typescript-eslint/eslint-plugin"
 import prettier from "eslint-plugin-prettier"
 import prettierConfig from "eslint-config-prettier"
+import noForbiddenDashes from "./eslint-rules/no-forbidden-dashes.mjs"
+
+const localRulesPlugin = {
+  rules: {
+    "no-forbidden-dashes": noForbiddenDashes,
+  },
+}
 
 export default [
   { ignores: ["dist", "node_modules", "src/api/generated/**"] },
   ...tseslint.configs.recommended,
   {
-    files: ["**/*.{js,jsx,ts,tsx}"],
+    files: ["**/*.{js,jsx,ts,tsx,mjs}"],
     languageOptions: {
       ecmaVersion: "latest",
       globals: {
@@ -30,12 +37,14 @@ export default [
       "react-refresh": reactRefresh,
       "@typescript-eslint": tsplugin,
       prettier: prettier,
+      local: localRulesPlugin,
     },
     rules: {
       ...js.configs.recommended.rules,
       ...reactHooks.configs.recommended.rules,
       ...prettierConfig.rules,
       "prettier/prettier": "error",
+      "local/no-forbidden-dashes": "error",
 
       "react-refresh/only-export-components": [
         "warn",
@@ -45,9 +54,7 @@ export default [
       "no-dupe-keys": "error",
       "no-console": ["warn", { allow: ["warn", "error"] }],
       "no-unused-vars": "off",
-      "@typescript-eslint/no-unused-vars": [
-        "error",
-      ],
+      "@typescript-eslint/no-unused-vars": ["error"],
       "max-lines": ["warn", { max: 400 }],
     },
   },
@@ -79,7 +86,7 @@ export default [
     },
   },
   {
-    files: ["**/*.{js,jsx,ts,tsx}"],
+    files: ["**/*.{js,jsx,ts,tsx,mjs}"],
     ignores: ["**/logger.ts"],
     rules: {
       "no-restricted-syntax": [

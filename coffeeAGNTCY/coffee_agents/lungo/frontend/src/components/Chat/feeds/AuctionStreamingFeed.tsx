@@ -13,6 +13,7 @@ import { NDJSON_STREAMING_STATUS } from "@/stores/ndjsonStreamingStatus"
 import type { GraphConfig } from "@/utils/graphConfigs"
 import { animationSequenceStepIds } from "../chatStreamGraphHighlight"
 import { FeedSpinnerRow } from "../FeedSpinnerRow"
+import { successIconColorSx } from "@/utils/successIconColor"
 import { FeedStatusLine } from "../FeedStatusLine"
 import { FeedErrorMessage } from "./FeedErrorMessage"
 import GrafanaSessionLink from "../GrafanaSessionLink"
@@ -168,7 +169,7 @@ const AuctionStreamingFeed: React.FC<AuctionStreamingFeedProps> = ({
                 >
                   <Box sx={{ mt: 0.5, display: "flex", alignItems: "center" }}>
                     <CheckCircleIcon
-                      sx={{ color: "success.main" }}
+                      sx={(theme) => successIconColorSx(theme)}
                       aria-hidden
                     />
                   </Box>

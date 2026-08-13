@@ -42,6 +42,10 @@ export const ChatAvatarCircle: React.FC<ChatAvatarCircleProps> = ({
 
 export const ChatAgentAvatar: React.FC = () => {
   const theme = useTheme()
+  const { isDarkMode } = useAppThemeMode()
+  const iconMaskColor = isDarkMode
+    ? theme.palette.grey[50]
+    : theme.palette.common.white
 
   return (
     <ChatAvatarCircle>
@@ -52,7 +56,7 @@ export const ChatAgentAvatar: React.FC = () => {
           width: 22,
           height: 22,
           flexShrink: 0,
-          bgcolor: theme.palette.grey[50],
+          bgcolor: iconMaskColor,
           maskImage: `url(${AgentIcon})`,
           maskSize: "contain",
           maskRepeat: "no-repeat",

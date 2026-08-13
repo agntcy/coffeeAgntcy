@@ -10,7 +10,10 @@
 import type { Theme } from "@mui/material/styles"
 import type { SystemStyleObject } from "@mui/system"
 import { getAssetPngIconSize } from "@/utils/assetPngIcon"
-import { getControlIconColor } from "./graphNodeSurface"
+import {
+  getControlIconColor,
+  getControlIconDisabledColor,
+} from "./graphNodeSurface"
 
 /**
  * Recolor single-color SvgIcons via filter. Each chain starts with `brightness(0)` so
@@ -37,6 +40,9 @@ const GRAPH_CANVAS_ICON_FILTERS = {
   },
 } as const
 
+/** Glyph fade for disabled canvas icons (see `&.Mui-disabled` below). */
+const GRAPH_CANVAS_DISABLED_GLYPH_OPACITY = 0.6
+
 function getCanvasIconFilters(theme: Theme) {
   return theme.palette.mode === "dark"
     ? GRAPH_CANVAS_ICON_FILTERS.dark
@@ -54,6 +60,21 @@ function canvasIconRestingGlyphSx(theme: Theme): SystemStyleObject<Theme> {
     },
     "& .MuiSvgIcon-root path, & .MuiSvgIcon-root svg": {
       fill: restingIconColor,
+    },
+  }
+}
+
+function canvasIconDisabledGlyphSx(theme: Theme): SystemStyleObject<Theme> {
+  const disabledIconColor = getControlIconDisabledColor(theme)
+
+  return {
+    color: disabledIconColor,
+    "& .MuiSvgIcon-root": {
+      color: disabledIconColor,
+      fill: disabledIconColor,
+    },
+    "& .MuiSvgIcon-root path, & .MuiSvgIcon-root svg": {
+      fill: disabledIconColor,
     },
   }
 }
@@ -117,8 +138,13 @@ export function graphCanvasIconButtonSx(
     "&.Mui-disabled": {
       bgcolor: "transparent",
       backgroundColor: "transparent",
-      opacity: 0.45,
+      // Override MUI's default ~0.38 button fade; we mute via medium icon color + glyph opacity.
+      opacity: 1,
+      ...canvasIconDisabledGlyphSx(theme),
       ...canvasIconFilterSx("none"),
+      "& .MuiSvgIcon-root": {
+        opacity: GRAPH_CANVAS_DISABLED_GLYPH_OPACITY,
+      },
     },
   }
 }

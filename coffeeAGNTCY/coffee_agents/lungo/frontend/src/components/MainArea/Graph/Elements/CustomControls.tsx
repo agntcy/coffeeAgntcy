@@ -32,7 +32,7 @@ const TooltipControlButton: React.FC<{
       component="span"
       sx={{
         display: "inline-flex",
-        ...(disabled ? { pointerEvents: "none", opacity: 0.5 } : {}),
+        ...(disabled ? { pointerEvents: "none" } : {}),
       }}
     >
       <IconButton

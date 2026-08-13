@@ -105,8 +105,7 @@ const TransportRail: React.FC<{
                 <Typography
                   component="span"
                   sx={{
-                    fontSize: 10,
-                    lineHeight: "14px",
+                    ...theme.typography.caption,
                     fontWeight: 700,
                     textTransform: "uppercase",
                   }}
@@ -116,10 +115,8 @@ const TransportRail: React.FC<{
                 <Typography
                   component="span"
                   sx={{
-                    fontSize: 9,
-                    lineHeight: "13px",
+                    ...theme.typography.caption,
                     fontWeight: 500,
-                    opacity: isHighlighted ? 0.82 : 0.72,
                   }}
                 >
                   {meta.label}
@@ -131,10 +128,9 @@ const TransportRail: React.FC<{
                       px: 0.5,
                       py: 0.125,
                       borderRadius: 0.5,
-                      bgcolor: alpha(railColors.highlightedText, 0.22),
+                      bgcolor: alpha(theme.palette.common.black, 0.2),
                       color: railColors.highlightedText,
-                      fontSize: 8,
-                      lineHeight: "10px",
+                      ...theme.typography.overline,
                       fontWeight: 700,
                       textTransform: "uppercase",
                     }}

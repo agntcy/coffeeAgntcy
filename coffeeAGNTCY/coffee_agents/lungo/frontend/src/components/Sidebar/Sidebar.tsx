@@ -14,6 +14,7 @@ import {
 } from "@open-ui-kit/core"
 import type { WorkflowSummary } from "@/utils/agenticWorkflowsApi"
 import { getAppShellBackgroundColor } from "../MainArea/mainAreaBackground"
+import { transparentScrollbarSx } from "@/utils/transparentScrollbarSx"
 import CatalogTree from "./CatalogTree"
 import {
   buildCatalogSidebarLayout,
@@ -100,7 +101,7 @@ const Sidebar: React.FC<SidebarProps> = ({
       }}
     >
       <List
-        sx={{
+        sx={(theme) => ({
           display: "flex",
           flexDirection: "column",
           gap: 3,
@@ -111,19 +112,21 @@ const Sidebar: React.FC<SidebarProps> = ({
           width: "100%",
           minHeight: 0,
           flex: 1,
-        }}
+          ...transparentScrollbarSx(theme),
+        })}
       >
         <Box
           component="nav"
           aria-label="Agentic patterns catalog"
-          sx={{
+          sx={(theme) => ({
             width: "100%",
             minWidth: 0,
             alignSelf: "stretch",
             flex: 1,
             minHeight: 0,
             overflow: "auto",
-          }}
+            ...transparentScrollbarSx(theme),
+          })}
         >
           <Stack direction="column" sx={{ width: "100%" }}>
             <Typography variant="h6">Agentic Patterns</Typography>

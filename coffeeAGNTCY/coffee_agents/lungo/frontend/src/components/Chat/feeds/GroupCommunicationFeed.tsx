@@ -23,6 +23,7 @@ import {
 } from "@/stores/groupStreamingStore"
 import { NDJSON_STREAMING_STATUS } from "@/stores/ndjsonStreamingStatus"
 import { FeedSpinnerRow } from "../FeedSpinnerRow"
+import { successIconColorSx } from "@/utils/successIconColor"
 import { FeedStatusLine } from "../FeedStatusLine"
 import { FeedErrorMessage } from "./FeedErrorMessage"
 import { FeedCollapseButton } from "./FeedCollapseButton"
@@ -228,7 +229,7 @@ const GroupCommunicationFeed: React.FC<GroupCommunicationFeedProps> = ({
                 >
                   <Box sx={{ mt: 0.5, display: "flex", alignItems: "center" }}>
                     <CheckCircleIcon
-                      sx={{ color: "success.main" }}
+                      sx={(theme) => successIconColorSx(theme)}
                       aria-hidden
                     />
                   </Box>

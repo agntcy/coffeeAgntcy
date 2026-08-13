@@ -28,8 +28,9 @@ const StyledSeparator = styled(Separator, {
   resizeEnabled?: boolean
 }>(({ theme, orientation, resizeEnabled = true }) => {
   const isLight = theme.palette.mode === "light"
-  const restingOpacity = isLight ? 0.18 : 0.22
-  const hoverOpacity = isLight ? 0.32 : 0.38
+  // B7: raise from 0.18/0.22 so the handle meets ≥3:1 UI contrast on paper.
+  const restingOpacity = isLight ? 0.35 : 0.4
+  const hoverOpacity = isLight ? 0.48 : 0.52
   const isHorizontalGroup = orientation === "horizontal"
 
   return {

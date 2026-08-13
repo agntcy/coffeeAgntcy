@@ -8,6 +8,7 @@ import SendIcon from "@mui/icons-material/Send"
 import { Box, Button, InputField, Stack } from "@open-ui-kit/core"
 
 import { iconGlyphFillSx } from "@/utils/iconGlyphFill"
+import { composerPrimaryButtonSx } from "@/utils/composerPrimaryButtonSx"
 
 import type { HttpRequestTarget } from "@/urls"
 
@@ -52,7 +53,10 @@ const ChatAreaComposer: React.FC<ChatAreaComposerProps> = ({
           <SuggestedPromptsDropdown
             promptsRequest={suggestedPromptsRequest}
             onSelect={onSuggestedPromptSelect}
-            sx={(theme) => theme.typography.body1}
+            sx={(theme) => ({
+              ...theme.typography.body1,
+              ...composerPrimaryButtonSx(theme),
+            })}
           />
         </Box>
       ) : null}
@@ -99,6 +103,7 @@ const ChatAreaComposer: React.FC<ChatAreaComposerProps> = ({
           flexShrink: 0,
           alignSelf: { xs: "stretch", sm: "flex-end" },
           ...theme.typography.body1,
+          ...composerPrimaryButtonSx(theme),
           "& .MuiButton-endIcon": iconGlyphFillSx(
             theme.palette.vars.baseTextInverse,
             { important: true },

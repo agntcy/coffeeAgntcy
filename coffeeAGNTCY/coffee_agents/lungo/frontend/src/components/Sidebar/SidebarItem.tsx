@@ -11,6 +11,7 @@ import {
   sidebarItemMarginTop,
   sidebarListItemSx,
 } from "./sidebarSx"
+import { getDisabledRowOpacity } from "@/utils/a11ySx"
 
 interface SidebarItemProps {
   title: string
@@ -51,7 +52,7 @@ const SidebarItem: React.FC<SidebarItemProps> = ({
           justifyContent: "flex-start",
           borderRadius: sidebarBorderRadius(theme),
           textWrap: "auto",
-          ...(disabled && { opacity: 0.5 }),
+          ...(disabled && { opacity: getDisabledRowOpacity(theme) }),
           ...(isRowDisabled && { pointerEvents: "none" }),
         })}
       >

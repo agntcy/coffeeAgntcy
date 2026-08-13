@@ -27,6 +27,11 @@ export function getControlIconColor(theme: Theme): string {
   return theme.palette.vars.controlIconDefault
 }
 
+/** Muted disabled glyph on graph canvas; paired with glyph opacity in graphCanvasIconButtonSx. */
+export function getControlIconDisabledColor(theme: Theme): string {
+  return theme.palette.vars.controlIconMedium
+}
+
 export interface GraphNodeRootSurfaceOptions {
   /** Defaults to theme.shape.borderRadius (typically 4px). */
   borderRadius?: string | number

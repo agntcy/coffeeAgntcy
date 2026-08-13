@@ -330,6 +330,7 @@ const RootPage: React.FC = () => {
                       panelRef={chatPanelRef}
                       minSize={hasChatMessages ? CHAT_MIN_SIZE : undefined}
                       maxSize={CHAT_MAX_SIZE}
+                      style={{ overflow: "hidden" }}
                     >
                       <Box
                         component="section"
