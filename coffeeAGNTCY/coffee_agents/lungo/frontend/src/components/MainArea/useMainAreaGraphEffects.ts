@@ -50,12 +50,6 @@ export interface UseMainAreaGraphEffectsParams {
   activeNodeId: string | null
   handleShowBadgeDetails: () => void
   handleShowPolicyDetails: () => void
-  fitViewWithViewport: (opts: {
-    chatHeight: number
-    isExpanded: boolean
-  }) => void
-  chatHeight: number
-  isExpanded: boolean
   animationLockRef: React.MutableRefObject<boolean>
   handleCloseDialogs: () => void
   setOasfDialogOpen: (open: boolean) => void
@@ -71,9 +65,6 @@ export function useMainAreaGraphEffects({
   activeNodeId,
   handleShowBadgeDetails,
   handleShowPolicyDetails,
-  fitViewWithViewport,
-  chatHeight,
-  isExpanded,
   animationLockRef,
   handleCloseDialogs,
   setOasfDialogOpen,
@@ -112,8 +103,4 @@ export function useMainAreaGraphEffects({
     activeNodeId,
     setNodes,
   ])
-
-  useEffect(() => {
-    fitViewWithViewport({ chatHeight, isExpanded })
-  }, [chatHeight, isExpanded, fitViewWithViewport])
 }

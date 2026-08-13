@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  *
  * Shared dialog contract: graph identity (dropdown) + badge/policy (OUK `Dialog`).
- * Used by: useDialogManager (state + actions), DialogContainer, and graph UI components.
+ * Used by: useDialogManager (state + actions), GraphNodeDetailDialogs, and graph UI components.
  **/
 
 import type { CustomNodeData } from "@/components/MainArea/Graph/Elements/types"

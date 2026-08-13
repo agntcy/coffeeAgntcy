@@ -26,8 +26,6 @@ export interface MainAreaProps {
   buttonClicked: boolean
   setButtonClicked: (clicked: boolean) => void
   aiReplied: boolean
-  chatHeight?: number
-  isExpanded?: boolean
   groupCommResponseReceived?: boolean
   onNodeHighlight?: (highlightFunction: (nodeId: string) => void) => void
   selectedAgentCid?: string | null
@@ -43,8 +41,6 @@ export function useMainArea({
   buttonClicked,
   setButtonClicked,
   aiReplied,
-  chatHeight = 0,
-  isExpanded = false,
   onNodeHighlight,
   selectedAgentCid,
   onLiveGraphConfig,
@@ -169,9 +165,6 @@ export function useMainArea({
     activeNodeId,
     handleShowBadgeDetails,
     handleShowPolicyDetails,
-    fitViewWithViewport,
-    chatHeight,
-    isExpanded,
     animationLockRef: animationLock,
     handleCloseDialogs,
     setOasfDialogOpen,
@@ -284,5 +277,6 @@ export function useMainArea({
     layoutSyncNodeIds,
     layoutSyncFitViewport,
     handleLayoutSyncReady,
+    fitViewWithViewport,
   }
 }

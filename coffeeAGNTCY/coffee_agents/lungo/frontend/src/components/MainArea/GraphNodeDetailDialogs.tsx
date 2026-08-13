@@ -1,7 +1,10 @@
 /**
  * Copyright AGNTCY Contributors (https://github.com/agntcy)
  * SPDX-License-Identifier: Apache-2.0
- **/
+ *
+ * Mounts graph node detail dialogs driven by useDialogManager (badge, policy).
+ * Identity UI is a node dropdown; OASF/directory is mounted separately in MainArea.
+ */
 
 import React from "react"
 import BadgeDetailsDialog from "./Graph/Identity/BadgeDetailsDialog"
@@ -9,13 +12,13 @@ import PolicyDetailsDialog from "./Graph/Identity/PolicyDetailsDialog"
 import type { DialogType, DialogNodeData } from "@/types/dialog"
 import type { CustomNodeData } from "./Graph/Elements/types"
 
-interface DialogContainerProps {
+interface GraphNodeDetailDialogsProps {
   activeDialog: DialogType
   activeNodeData: DialogNodeData
   onClose: () => void
 }
 
-const DialogContainer: React.FC<DialogContainerProps> = ({
+const GraphNodeDetailDialogs: React.FC<GraphNodeDetailDialogsProps> = ({
   activeDialog,
   activeNodeData,
   onClose,
@@ -39,4 +42,4 @@ const DialogContainer: React.FC<DialogContainerProps> = ({
   )
 }
 
-export default DialogContainer
+export default GraphNodeDetailDialogs
