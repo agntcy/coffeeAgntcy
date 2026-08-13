@@ -188,7 +188,7 @@ const RootPage: React.FC = () => {
       sx={{
         display: "flex",
         height: "100vh",
-        width: "100vw",
+        width: "100%",
         flexDirection: "column",
         overflow: "hidden",
         position: "relative",
