@@ -4,4 +4,7 @@
  **/
 
 export { useElementWidth } from "./useElementWidth"
+export { useElementSize } from "./useElementSize"
+export type { ElementSize } from "./useElementSize"
 export { useElementRect } from "./useElementRect"
+export { useIsBelowSmBreakpoint } from "./useIsBelowSmBreakpoint"

@@ -5,3 +5,4 @@
 
 export { applyDefaultGraphView } from "./applyDefaultGraphView"
 export { useViewportAwareFitView } from "./useViewportAwareFitView"
+export { useGraphCanvasFitViewOnResize } from "./useGraphCanvasFitViewOnResize"

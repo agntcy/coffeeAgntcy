@@ -42,7 +42,11 @@ import {
 import { CanvasMode } from "@/types/patternDoc"
 import { useApp } from "@/useApp"
 import { GraphCanvasLayoutContext } from "@/contexts/graphCanvasLayout"
-import { useElementWidth, useElementRect } from "@/hooks/layout"
+import {
+  useElementWidth,
+  useElementRect,
+  useIsBelowSmBreakpoint,
+} from "@/hooks/layout"
 
 const RootPage: React.FC = () => {
   const {
@@ -54,8 +58,6 @@ const RootPage: React.FC = () => {
     patternCategoriesError,
     selectedWorkflowSummary,
     suggestedPromptsRequest,
-    chatHeightValue,
-    isExpanded,
     chatRef,
     aiReplied,
     setAiReplied,
@@ -101,6 +103,37 @@ const RootPage: React.FC = () => {
     patternChatSessionId,
   } = useApp()
 
+  const isCompactShell = useIsBelowSmBreakpoint()
+
+  const catalogSidebarProps = useMemo(
+    () => ({
+      selectedWorkflowSummary,
+      summaries: workflowCatalogSummaries,
+      patternCategories,
+      patternCategoriesError,
+      isLoading: workflowCatalogLoading,
+      error: workflowCatalogError,
+      onSelectWorkflow: selectWorkflowFromCatalog,
+      selectedReferencePattern,
+      onSelectReferencePattern: selectReferencePattern,
+      selectedPatternCategory,
+      onSelectPatternCategory: selectPatternCategory,
+    }),
+    [
+      selectedWorkflowSummary,
+      workflowCatalogSummaries,
+      patternCategories,
+      patternCategoriesError,
+      workflowCatalogLoading,
+      workflowCatalogError,
+      selectWorkflowFromCatalog,
+      selectedReferencePattern,
+      selectReferencePattern,
+      selectedPatternCategory,
+      selectPatternCategory,
+    ],
+  )
+
   const graphSectionRef = useRef<HTMLElement>(null)
   const mainContentRef = useRef<HTMLElement>(null)
   const graphCanvasWidth = useElementWidth(graphSectionRef)
@@ -115,9 +148,15 @@ const RootPage: React.FC = () => {
     [graphCanvasWidth, mainContentRect?.left, mainContentRect?.width],
   )
 
+  const appShellPanelIds = useMemo(
+    () =>
+      isCompactShell ? [MAIN_PANEL_ID] : [SIDEBAR_PANEL_ID, MAIN_PANEL_ID],
+    [isCompactShell],
+  )
+
   const { defaultLayout, onLayoutChanged } = useDefaultLayout({
     id: APP_SHELL_PANEL_GROUP_ID,
-    panelIds: [SIDEBAR_PANEL_ID, MAIN_PANEL_ID],
+    panelIds: appShellPanelIds,
   })
 
   const hasChatMessages = Boolean(currentUserMessage?.trim())
@@ -197,7 +236,9 @@ const RootPage: React.FC = () => {
       <Box component="a" href="#main-content" sx={skipLinkSx}>
         Skip to main content
       </Box>
-      <Navigation />
+      <Navigation
+        catalogSidebarProps={isCompactShell ? catalogSidebarProps : undefined}
+      />
       <Box
         sx={{
           flex: 1,
@@ -213,27 +254,20 @@ const RootPage: React.FC = () => {
           onLayoutChanged={onLayoutChanged}
           style={{ height: "100%", width: "100%" }}
         >
-          <Panel
-            id={SIDEBAR_PANEL_ID}
-            defaultSize={SIDEBAR_DEFAULT_SIZE}
-            minSize={SIDEBAR_MIN_SIZE}
-            maxSize={SIDEBAR_MAX_SIZE}
-          >
-            <Sidebar
-              selectedWorkflowSummary={selectedWorkflowSummary}
-              summaries={workflowCatalogSummaries}
-              patternCategories={patternCategories}
-              patternCategoriesError={patternCategoriesError}
-              isLoading={workflowCatalogLoading}
-              error={workflowCatalogError}
-              onSelectWorkflow={selectWorkflowFromCatalog}
-              selectedReferencePattern={selectedReferencePattern}
-              onSelectReferencePattern={selectReferencePattern}
-              onSelectPatternCategory={selectPatternCategory}
-            />
-          </Panel>
-          <SidebarPanelSeparator />
-          <Panel id={MAIN_PANEL_ID} minSize={MAIN_MIN_SIZE}>
+          {!isCompactShell ? (
+            <>
+              <Panel
+                id={SIDEBAR_PANEL_ID}
+                defaultSize={SIDEBAR_DEFAULT_SIZE}
+                minSize={SIDEBAR_MIN_SIZE}
+                maxSize={SIDEBAR_MAX_SIZE}
+              >
+                <Sidebar {...catalogSidebarProps} />
+              </Panel>
+              <SidebarPanelSeparator />
+            </>
+          ) : null}
+          <Panel id={MAIN_PANEL_ID} minSize={MAIN_MIN_SIZE} defaultSize="100%">
             <Box
               component="main"
               id="main-content"
@@ -309,8 +343,6 @@ const RootPage: React.FC = () => {
                             buttonClicked={buttonClicked}
                             setButtonClicked={setButtonClicked}
                             aiReplied={aiReplied}
-                            chatHeight={chatHeightValue}
-                            isExpanded={isExpanded}
                             groupCommResponseReceived={
                               groupCommResponseReceived
                             }
@@ -338,9 +370,11 @@ const RootPage: React.FC = () => {
                         sx={{
                           display: "flex",
                           width: "100%",
-                          height: chatPanelFillHeight ? "100%" : "auto",
+                          height: chatPanelFillHeight ? "100%" : "fit-content",
                           minWidth: 0,
-                          minHeight: 0,
+                          minHeight: chatPanelFillHeight ? 0 : "fit-content",
+                          flex: hasChatMessages ? undefined : "0 0 auto",
+                          alignSelf: hasChatMessages ? undefined : "flex-start",
                           flexDirection: "column",
                           overflow: "hidden",
                         }}
