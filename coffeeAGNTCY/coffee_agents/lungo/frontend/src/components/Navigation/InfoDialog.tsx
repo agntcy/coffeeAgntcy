@@ -106,6 +106,7 @@ const InfoDialog: React.FC<InfoDialogProps> = ({ isOpen, onClose }) => {
     <Dialog
       open={isOpen}
       onClose={onClose}
+      maxWidth="sm"
       title="About"
       titleProps={{ id: "info-dialog-title" }}
       aria-labelledby="info-dialog-title"
