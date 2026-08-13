@@ -72,6 +72,12 @@ promises** through operations, logistics, and finance it does not always own end
 those worlds: much of the drama is ordinary commerce-contracts, risk, partners, and tools-rather than a single team
 inside one building holding every fact.
 
+Time-pressed purchasing at Coffee Agntcy cares not only what each origin answers but when and in what shape the
+answer arrives. The **streaming** variant lets farm replies and specialist counsel reach the desk incrementally
+while the auction agent still gates what becomes official, so hesitation or bad news is visible before the desk
+commits. The classic workflow delivers a market of finished answers; this one delivers the market while it is
+still moving.
+
 ---
 
 ## Scenario

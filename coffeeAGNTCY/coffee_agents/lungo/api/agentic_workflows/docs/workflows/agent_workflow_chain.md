@@ -45,6 +45,12 @@ promises** through operations, logistics, and finance it does not always own end
 those worlds: much of the drama is ordinary commerce-contracts, risk, partners, and tools-rather than a single team
 inside one building holding every fact.
 
+Procurement at Coffee Agntcy decomposes into ordered specialties, and each stage is only as defensible as the
+record the previous one leaves behind. The **agent workflow chain** makes that record explicit: every specialist
+reads the same evolving procurement state and records its contribution under a schema every later step can rely
+on. Accountability follows the chain, because who established each fact remains visible when a commitment is
+later questioned.
+
 ---
 
 ## Scenario

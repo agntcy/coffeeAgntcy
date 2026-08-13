@@ -44,6 +44,12 @@ promises** through operations, logistics, and finance it does not always own end
 those worlds: much of the drama is ordinary commerce-contracts, risk, partners, and tools-rather than a single team
 inside one building holding every fact.
 
+Regional flows at Coffee Agntcy run in parallel against inventory and commitments that are ultimately shared, so
+each local decision can be sensible while the sum is impossible. The **orchestrator agent** sits at that seam: it
+watches several workflows at once, arbitrates competing claims under global policy, and escalates when precedence
+rules run out. A supervisor owns a single workflow's story; the orchestrator owns the space between workflows,
+where conflicts live.
+
 ---
 
 ## Scenario

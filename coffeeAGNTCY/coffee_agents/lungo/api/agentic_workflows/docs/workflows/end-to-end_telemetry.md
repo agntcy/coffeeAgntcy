@@ -44,6 +44,11 @@ promises** through operations, logistics, and finance it does not always own end
 those worlds: much of the drama is ordinary commerce-contracts, risk, partners, and tools-rather than a single team
 inside one building holding every fact.
 
+A single lot passes through agents answering to different parts of Coffee Agntcy, and supply, buying, movement,
+and settlement each emit their own account of events. **End-to-end telemetry** correlates those accounts into one
+trace anchored to real business objects, so an incident or customer dispute is investigated across ownership
+boundaries instead of reassembled from partial logs.
+
 ---
 
 ## Scenario

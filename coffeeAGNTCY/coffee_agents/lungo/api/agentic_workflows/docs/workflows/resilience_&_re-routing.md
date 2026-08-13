@@ -45,6 +45,12 @@ promises** through operations, logistics, and finance it does not always own end
 those worlds: much of the drama is ordinary commerce-contracts, risk, partners, and tools-rather than a single team
 inside one building holding every fact.
 
+Delivery promises at Coffee Agntcy are made to customers, not to carriers, so a partner failure must not become
+the customer's problem by default. **Resilience and re-routing** treats recovery as designed behavior: a monitor
+classifies the fault, the certified logistics directory yields a qualified replacement, and the coordinator
+updates the promise honestly instead of quietly absorbing the slip. Dispatch patterns choose the first
+specialist; this pattern keeps the flow coherent when the chosen one fails.
+
 ---
 
 ## Scenario

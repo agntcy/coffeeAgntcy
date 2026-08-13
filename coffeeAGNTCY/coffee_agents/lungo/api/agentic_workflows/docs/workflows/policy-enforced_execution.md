@@ -43,6 +43,12 @@ promises** through operations, logistics, and finance it does not always own end
 those worlds: much of the drama is ordinary commerce-contracts, risk, partners, and tools-rather than a single team
 inside one building holding every fact.
 
+Published sourcing standards only mean something at Coffee Agntcy if its automation cannot route around them.
+**Policy-enforced execution** wires those non-negotiables into the contracting path itself: enforcement checks
+identity-attributed supplier facts and returns explainable allow or deny decisions before any agreement forms. An
+approval gate asks a human to weigh a hard case; this pattern uniformly settles the cases the company has already
+decided, with denials that cite the rule instead of failing silently.
+
 ---
 
 ## Scenario

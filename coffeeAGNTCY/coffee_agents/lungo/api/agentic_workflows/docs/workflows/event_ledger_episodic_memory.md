@@ -44,6 +44,12 @@ promises** through operations, logistics, and finance it does not always own end
 those worlds: much of the drama is ordinary commerce-contracts, risk, partners, and tools-rather than a single team
 inside one building holding every fact.
 
+When automation makes a bad call at Coffee Agntcy, the expensive question is not whether something failed but
+which earlier decision made failure inevitable. The **event ledger** keeps an ordered, replayable account of what
+agents decided, checked, and invoked, tied to the lots and orders the business recognizes. Telemetry tells
+operators how the system ran; this episodic record lets a reviewer walk the reasoning itself, step by step, after
+the fact.
+
 ---
 
 ## Scenario

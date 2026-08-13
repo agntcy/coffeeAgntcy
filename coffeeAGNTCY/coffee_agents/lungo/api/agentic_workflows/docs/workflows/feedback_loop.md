@@ -44,6 +44,12 @@ promises** through operations, logistics, and finance it does not always own end
 those worlds: much of the drama is ordinary commerce-contracts, risk, partners, and tools-rather than a single team
 inside one building holding every fact.
 
+Supplier relationships at Coffee Agntcy are repeat business, which makes them exactly the place where measured
+history should matter. The **feedback loop** converts delivery outcomes and satisfaction signals into attributed
+performance data that adjusts selection weights in the directory, so each sourcing cycle starts from evidence
+rather than habit. Scoring patterns measure and evaluation patterns recommend; this is the pattern through which
+results actually reshape future selection.
+
 ---
 
 ## Scenario

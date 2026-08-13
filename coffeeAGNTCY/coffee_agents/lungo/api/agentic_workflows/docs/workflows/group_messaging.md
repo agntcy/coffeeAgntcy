@@ -60,6 +60,12 @@ promises** through operations, logistics, and finance it does not always own end
 those worlds: much of the drama is ordinary commerce-contracts, risk, partners, and tools-rather than a single team
 inside one building holding every fact.
 
+Fulfillment failures at Coffee Agntcy tend to start quietly, when supply, movement, and money keep separate views
+of an order until their assumptions conflict. **Group messaging** commits the company to a single shared
+conversation per order, where the farm, shipper, and accountant read and amend the same evolving facts. Unlike a
+coordinator that privately tasks workers, the shared channel keeps each function's decisions tied to one visible
+order state.
+
 ---
 
 ## Scenario

@@ -43,6 +43,12 @@ promises** through operations, logistics, and finance it does not always own end
 those worlds: much of the drama is ordinary commerce-contracts, risk, partners, and tools-rather than a single team
 inside one building holding every fact.
 
+Sourcing at Coffee Agntcy runs on assumptions about harvests and suppliers that deserve to be confronted with
+recorded results. The **self-evaluation agent** institutionalizes that reckoning: it compares intent against
+outcomes and drafts bounded, reviewable changes to prompts and policies that a person can approve, reject, or
+defer. Where the feedback loop tunes selection weights inside preset gates, this pattern questions the settings
+themselves, and nothing changes until someone accountable signs off.
+
 ---
 
 ## Scenario

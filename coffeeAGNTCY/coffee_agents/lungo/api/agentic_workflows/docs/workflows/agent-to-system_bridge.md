@@ -46,6 +46,12 @@ promises** through operations, logistics, and finance it does not always own end
 those worlds: much of the drama is ordinary commerce-contracts, risk, partners, and tools-rather than a single team
 inside one building holding every fact.
 
+Much of what Coffee Agntcy must know lives in systems it does not own: emissions services, finance backends, and
+similar records sit outside any agent's head. The **agent-to-system bridge** is the company's rule that arguments
+about routes and spend cite those systems directly, through adapters that normalize responses into shapes
+downstream agents can consume. It keeps the line between a recognized number and a confident guess visible
+wherever reasoning crosses into money or compliance.
+
 ---
 
 ## Scenario
