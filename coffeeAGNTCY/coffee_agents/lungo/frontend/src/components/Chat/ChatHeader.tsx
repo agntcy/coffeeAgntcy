@@ -5,26 +5,9 @@
 
 import React from "react"
 import DeleteOutline from "@mui/icons-material/DeleteOutline"
-import type { Theme } from "@mui/material/styles"
 import { Box, IconButton, Tooltip } from "@open-ui-kit/core"
 
-import { iconGlyphFillSx } from "@/utils/iconGlyphFill"
-
-function chatHeaderIconButtonSx(theme: Theme) {
-  return {
-    width: 32,
-    height: 32,
-    minWidth: 32,
-    padding: "6px",
-    borderRadius: theme.shape.borderRadius,
-    background: "none",
-    backgroundColor: "transparent",
-    boxShadow: "none",
-    ...iconGlyphFillSx(theme.palette.vars.controlIconDefault, {
-      important: true,
-    }),
-  }
-}
+import { chatHeaderIconButtonSx } from "./chatHeaderIconButtonSx"
 
 interface ChatHeaderProps {
   onClearConversation?: () => void
