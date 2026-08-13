@@ -10,23 +10,23 @@ import HelpOutline from "@mui/icons-material/HelpOutline"
 import coffeeAgntcyLogo from "@/assets/coffeeAGNTCY_logo.svg"
 import { useAppThemeMode } from "@/hooks/useApp"
 import ThemeToggleIcon from "../icons/ThemeToggleIcon"
-import InfoModal from "./InfoModal"
+import InfoDialog from "./InfoDialog"
 import {
   navigationHeaderIconButtonSx,
   navigationHeaderSx,
 } from "./navigationHeaderSx"
 
 const Navigation: React.FC = () => {
-  const [isModalOpen, setIsModalOpen] = useState(false)
+  const [isDialogOpen, setIsDialogOpen] = useState(false)
   const { isDarkMode, toggleTheme } = useAppThemeMode()
 
   const handleHelpClick = useCallback(() => {
-    setIsModalOpen(true)
-  }, [setIsModalOpen])
+    setIsDialogOpen(true)
+  }, [setIsDialogOpen])
 
-  const handleCloseModal = useCallback(() => {
-    setIsModalOpen(false)
-  }, [setIsModalOpen])
+  const handleCloseDialog = useCallback(() => {
+    setIsDialogOpen(false)
+  }, [setIsDialogOpen])
 
   const themeToggleLabel = `Switch to ${isDarkMode ? "light" : "dark"} mode`
 
@@ -71,7 +71,7 @@ const Navigation: React.FC = () => {
         }
       />
 
-      <InfoModal isOpen={isModalOpen} onClose={handleCloseModal} />
+      <InfoDialog isOpen={isDialogOpen} onClose={handleCloseDialog} />
     </>
   )
 }
