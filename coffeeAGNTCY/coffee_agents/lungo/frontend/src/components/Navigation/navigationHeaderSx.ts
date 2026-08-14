@@ -23,6 +23,9 @@ export function getLungoNavHeaderColors(theme: Theme) {
   } as const
 }
 
+/** OUK `Header` fixed height (`getHeaderStyles`). */
+export const LUNGO_NAV_HEADER_HEIGHT_PX = 56
+
 export function navigationHeaderSx(theme: Theme): SystemStyleObject<Theme> {
   const { background, border } = getLungoNavHeaderColors(theme)
 
