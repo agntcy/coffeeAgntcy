@@ -4,14 +4,7 @@
  **/
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
-import {
-  Box,
-  List,
-  Message,
-  Spinner,
-  Stack,
-  Typography,
-} from "@open-ui-kit/core"
+import { Box, Message, Spinner, Stack, Typography } from "@open-ui-kit/core"
 import type { WorkflowSummary } from "@/utils/agenticWorkflowsApi"
 import { getAppShellBackgroundColor } from "../MainArea/mainAreaBackground"
 import { transparentScrollbarSx } from "@/utils/transparentScrollbarSx"
@@ -32,7 +25,12 @@ interface SidebarProps {
   onSelectWorkflow: (summary: WorkflowSummary) => void
   selectedReferencePattern?: string | null
   onSelectReferencePattern?: (patternName: string) => void
+  selectedPatternCategory?: string | null
   onSelectPatternCategory?: (categoryName: string) => void
+  /** When true, omit outer panel padding (e.g. inside OUK SideDrawer). */
+  embeddedInDrawer?: boolean
+  /** When false, hide the "Agentic Patterns" heading (drawer supplies its own title). */
+  showHeading?: boolean
 }
 
 const Sidebar: React.FC<SidebarProps> = ({
@@ -45,7 +43,10 @@ const Sidebar: React.FC<SidebarProps> = ({
   onSelectWorkflow,
   selectedReferencePattern,
   onSelectReferencePattern,
+  selectedPatternCategory,
   onSelectPatternCategory,
+  embeddedInDrawer = false,
+  showHeading = true,
 }) => {
   const [expandedKeys, setExpandedKeys] = useState<Set<string>>(new Set())
 
@@ -90,95 +91,87 @@ const Sidebar: React.FC<SidebarProps> = ({
         flexDirection: "column",
         boxSizing: "border-box",
         width: "100%",
-        height: "100%",
+        height: embeddedInDrawer ? "auto" : "100%",
         minWidth: 0,
         minHeight: 0,
-        overflowX: "hidden",
-        whiteSpace: "nowrap",
-        backgroundColor: (theme) => getAppShellBackgroundColor(theme),
-        p: 3,
-        pr: 0,
+        overflow: "hidden",
+        backgroundColor: (theme) =>
+          embeddedInDrawer ? "transparent" : getAppShellBackgroundColor(theme),
+        p: embeddedInDrawer ? 0 : 3,
+        pr: embeddedInDrawer ? 0 : 0,
       }}
     >
-      <List
+      {showHeading ? (
+        <Typography variant="h6" sx={{ flexShrink: 0, mb: 2 }}>
+          Agentic Patterns
+        </Typography>
+      ) : null}
+      <Box
+        component="nav"
+        aria-label="Agentic patterns catalog"
         sx={(theme) => ({
-          display: "flex",
-          flexDirection: "column",
-          gap: 3,
-          alignItems: "baseline",
-          overflowY: "auto",
-          p: 0,
-          pr: 3,
           width: "100%",
+          minWidth: 0,
+          flex: embeddedInDrawer ? "0 1 auto" : 1,
           minHeight: 0,
-          flex: 1,
+          overflowY: embeddedInDrawer ? "visible" : "auto",
+          overflowX: "hidden",
+          pr: embeddedInDrawer ? 0 : 3,
           ...transparentScrollbarSx(theme),
         })}
       >
-        <Box
-          component="nav"
-          aria-label="Agentic patterns catalog"
-          sx={(theme) => ({
-            width: "100%",
-            minWidth: 0,
-            alignSelf: "stretch",
-            flex: 1,
-            minHeight: 0,
-            overflow: "auto",
-            ...transparentScrollbarSx(theme),
-          })}
-        >
-          <Stack direction="column" sx={{ width: "100%" }}>
-            <Typography variant="h6">Agentic Patterns</Typography>
-            {isLoading ? (
-              <Stack
-                direction="row"
-                alignItems="center"
-                spacing={1.5}
-                role="status"
-                aria-label="Loading workflows"
-                sx={{ px: 2.5, py: 1 }}
-              >
-                <Spinner size={16} thickness={4} />
-                <Typography variant="body2" sx={{ opacity: 0.6 }}>
-                  Loading workflows...
-                </Typography>
-              </Stack>
-            ) : null}
+        <Stack direction="column" sx={{ width: "100%", gap: 3 }}>
+          {isLoading ? (
+            <Stack
+              direction="row"
+              alignItems="center"
+              spacing={1.5}
+              role="status"
+              aria-label="Loading workflows"
+              sx={{ px: 2.5, py: 1 }}
+            >
+              <Spinner size={16} thickness={4} />
+              <Typography variant="body2" sx={{ opacity: 0.6 }}>
+                Loading workflows...
+              </Typography>
+            </Stack>
+          ) : null}
 
-            {!isLoading
-              ? [error, error === null ? patternCategoriesError : null]
-                  .filter((message): message is string => message !== null)
-                  .map((message) => (
-                    <Message
-                      key={message}
-                      type="error"
-                      hideClose
-                      role="alert"
-                      sx={{ my: 1, width: "100%", textWrap: "wrap" }}
-                    >
-                      {message}
-                    </Message>
-                  ))
-              : null}
+          {!isLoading
+            ? [error, error === null ? patternCategoriesError : null]
+                .filter((message): message is string => message !== null)
+                .map((message) => (
+                  <Message
+                    key={message}
+                    type="error"
+                    hideClose
+                    role="alert"
+                    sx={{ my: 1, width: "100%", textWrap: "wrap" }}
+                  >
+                    {message}
+                  </Message>
+                ))
+            : null}
 
-            {!isLoading && error === null ? (
-              <CatalogTree
-                layout={layout}
-                expandedKeys={expandedKeys}
-                toggleExpandableDropdown={toggleExpandableDropdown}
-                selectedWorkflowSummary={selectedWorkflowSummary}
-                onSelectWorkflow={onSelectWorkflow}
-                selectedReferencePattern={selectedReferencePattern}
-                onSelectReferencePattern={onSelectReferencePattern}
-                onSelectPatternCategory={onSelectPatternCategory}
-              />
-            ) : null}
-          </Stack>
-        </Box>
-      </List>
+          {!isLoading && error === null ? (
+            <CatalogTree
+              layout={layout}
+              expandedKeys={expandedKeys}
+              toggleExpandableDropdown={toggleExpandableDropdown}
+              selectedWorkflowSummary={selectedWorkflowSummary}
+              onSelectWorkflow={onSelectWorkflow}
+              selectedReferencePattern={selectedReferencePattern}
+              onSelectReferencePattern={onSelectReferencePattern}
+              selectedPatternCategory={selectedPatternCategory}
+              onSelectPatternCategory={onSelectPatternCategory}
+              separateReferenceCategoryNavigation={embeddedInDrawer}
+            />
+          ) : null}
+        </Stack>
+      </Box>
     </Box>
   )
 }
 
+export type { SidebarProps }
 export default Sidebar
