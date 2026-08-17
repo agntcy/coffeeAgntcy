@@ -356,7 +356,9 @@ const RootPage: React.FC = () => {
                         </ErrorBoundary>
                       </Box>
                     </Panel>
-                    <ChatPanelSeparator disabled={!hasChatMessages} />
+                    {!isCompactShell ? (
+                      <ChatPanelSeparator disabled={!hasChatMessages} />
+                    ) : null}
                     <Panel
                       id={CHAT_PANEL_ID}
                       panelRef={chatPanelRef}
