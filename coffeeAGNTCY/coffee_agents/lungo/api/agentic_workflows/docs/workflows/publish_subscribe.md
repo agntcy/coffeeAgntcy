@@ -65,11 +65,11 @@ promises** through operations, logistics, and finance it does not always own end
 those worlds: much of the drama is ordinary commerce-contracts, risk, partners, and tools-rather than a single team
 inside one building holding every fact.
 
-Green coffee buying rewards the desk that hears the whole market before committing, and Coffee Agntcy's origins
-answer on their own terms and timetables. This workflow keeps buying authority with one supervisor while
-**publish-subscribe** transport turns a single inquiry into simultaneous deliveries to every subscribed farm
-agent. The business result is breadth with comparability: offers return through one observable channel as answers
-to the same question, and one accountable agent decides what happens next.
+Coffee Agntcy often needs one business question or update to reach several independent parties at the same time without
+creating a private connection to each one. **Publish-subscribe** provides that shared delivery mechanism: a publisher
+addresses a topic, every interested agent receives the same event, and orchestration remains responsible for
+interpreting the replies. The participant set can grow or change without rewriting the business step that initiated the
+exchange.
 
 ---
 

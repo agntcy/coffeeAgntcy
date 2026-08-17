@@ -67,11 +67,10 @@ promises** through operations, logistics, and finance it does not always own end
 those worlds: much of the drama is ordinary commerce-contracts, risk, partners, and tools-rather than a single team
 inside one building holding every fact.
 
-Sometimes the capability Coffee Agntcy needs next is not one it already runs: a new agent, service, or interface
-has to be found and vetted before it can carry supply-chain work. This workflow separates that selection moment
-from execution, with the **Agentic Recruiter** turning registered facts from the **AGNTCY Agent Directory** into a
-ranked, explainable shortlist before anything is delegated. What the business keeps is a defensible record of why
-a candidate earned trust.
+Coffee Agntcy cannot assume that every future operating need will be handled by a fixed roster of agents. **A2A HTTP**
+gives a selector a common way to inspect candidate services before entrusting any of them with work, while keeping
+selection separate from execution. New integrations therefore stay replaceable and governable rather than becoming
+hard-coded dependencies.
 
 ---
 

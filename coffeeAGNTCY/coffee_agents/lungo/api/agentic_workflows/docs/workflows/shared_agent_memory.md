@@ -80,11 +80,10 @@ promises** through operations, logistics, and finance it does not always own end
 those worlds: much of the drama is ordinary commerce-contracts, risk, partners, and tools-rather than a single team
 inside one building holding every fact.
 
-An order crossing Coffee Agntcy's fulfillment chain accumulates facts that every later leg depends on, yet no
-message should have to carry all of them forever. **Shared agent memory** separates the two jobs the conversation
-was doing: transport keeps carrying dialogue between the logistics peers, while settled facts are retained once
-and recalled by whichever agent needs them, including one that restarted or joined late. The current truth about
-an order stops living only in the transcript.
+Coffee Agntcy's multi-agent work creates operational facts that remain relevant beyond the message that introduced them.
+**Shared agent memory** gives participants a common working state while transport continues to carry dialogue, so
+coordination depends on what the group now knows rather than on who still holds a particular transcript. The memory
+stays scoped to the current activity, distinct from the company's long-lived knowledge records.
 
 ---
 
