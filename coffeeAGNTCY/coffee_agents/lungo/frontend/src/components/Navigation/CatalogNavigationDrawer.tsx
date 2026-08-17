@@ -10,9 +10,7 @@ import { Box, Typography } from "@open-ui-kit/core"
 
 import Sidebar, { type SidebarProps } from "@/components/Sidebar/Sidebar"
 import { getAppShellBackgroundColor } from "@/components/MainArea/mainAreaBackground"
-import {
-  LUNGO_NAV_HEADER_HEIGHT_PX,
-} from "./navigationHeaderSx"
+import { LUNGO_NAV_HEADER_HEIGHT_PX } from "./navigationHeaderSx"
 
 /** Matches panel root id for `aria-controls` on the nav menu trigger. */
 export const CATALOG_NAV_DRAWER_ID = "catalog-navigation-drawer"

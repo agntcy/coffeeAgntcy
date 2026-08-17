@@ -43,34 +43,103 @@ export function useChatPanelContentSize({
     let cancelled = false
     let attempts = 0
     let frameId = 0
+    let contentResizeObserver: ResizeObserver | null = null
+    let lastAppliedHeight = -1
 
-    const tryResizeToContent = () => {
-      if (cancelled) return
+    const measureContentHeight = (chatContent: HTMLElement) => {
+      if (fillPanelHeight) {
+        return Math.ceil(chatContent.getBoundingClientRect().height)
+      }
+
+      const composerRegion = chatContent.querySelector(
+        "[data-chat-composer-region]",
+      )
+      if (composerRegion instanceof HTMLElement) {
+        const chatStyles = getComputedStyle(chatContent)
+        const borderTop = parseFloat(chatStyles.borderTopWidth) || 0
+        const borderBottom = parseFloat(chatStyles.borderBottomWidth) || 0
+        return Math.ceil(
+          borderTop +
+            composerRegion.offsetTop +
+            composerRegion.offsetHeight +
+            borderBottom,
+        )
+      }
+
+      return Math.ceil(
+        Math.max(
+          chatContent.scrollHeight,
+          chatContent.offsetHeight,
+          chatContent.getBoundingClientRect().height,
+        ),
+      )
+    }
+
+    const resizePanelToContent = (): boolean => {
+      if (cancelled) return false
 
       const chatPanel = chatPanelRef.current
       const chatContent = chatContentRef.current
       if (!chatPanel || !chatContent) {
-        scheduleRetry()
-        return
+        return false
       }
 
-      const height = Math.ceil(
-        fillPanelHeight
-          ? chatContent.getBoundingClientRect().height
-          : chatContent.scrollHeight,
-      )
+      const height = measureContentHeight(chatContent)
       if (height <= 0) {
-        scheduleRetry()
-        return
+        return false
+      }
+
+      if (height === lastAppliedHeight) {
+        if (!cancelled) {
+          setContentSized(true)
+        }
+        return true
       }
 
       try {
         chatPanel.resize(`${height}px`)
+        lastAppliedHeight = height
         if (!cancelled) {
           setContentSized(true)
         }
+        return true
       } catch {
+        return false
+      }
+    }
+
+    const observeContentHeight = (chatContent: HTMLElement) => {
+      if (fillPanelHeight || contentResizeObserver) {
+        return
+      }
+
+      const composerRegion = chatContent.querySelector(
+        "[data-chat-composer-region]",
+      )
+      if (!(composerRegion instanceof HTMLElement)) {
+        return
+      }
+
+      contentResizeObserver = new ResizeObserver(() => {
+        if (cancelled) return
+        frameId = window.requestAnimationFrame(() => {
+          resizePanelToContent()
+        })
+      })
+      contentResizeObserver.observe(composerRegion)
+    }
+
+    const tryResizeToContent = () => {
+      if (cancelled) return
+
+      const chatContent = chatContentRef.current
+      if (!resizePanelToContent()) {
         scheduleRetry()
+        return
+      }
+
+      if (chatContent) {
+        observeContentHeight(chatContent)
       }
     }
 
@@ -88,6 +157,7 @@ export function useChatPanelContentSize({
     return () => {
       cancelled = true
       window.cancelAnimationFrame(frameId)
+      contentResizeObserver?.disconnect()
     }
   }, [chatContentRef, chatPanelRef, enabled, fillPanelHeight, remeasureKey])
 
