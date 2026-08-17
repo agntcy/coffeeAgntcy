@@ -141,8 +141,8 @@ supervisor's workflow instance:
    In all cases the candidate must validate (workflow_name in the catalog, `instance_id` matching `instance://<uuid>`); an invalid candidate falls through to the next source.
 4. `register_cleanup_span_processor()` is registered on the farm (`farm_server.py`) for parity with the supervisor.
 
-Call sites pass `target_stable_agent_id=stable_agent_id_for_name("<OASF name>")` —
-for example `"Weather MCP Server"` or `"Payment MCP Server"` — not the transport
+Call sites pass `target_stable_agent_id=stable_agent_id_for_name("<OASF name>")`,
+for example `"Weather MCP Server"` or `"Payment MCP Server"`, not the transport
 topic string.
 
 ## Design Notes

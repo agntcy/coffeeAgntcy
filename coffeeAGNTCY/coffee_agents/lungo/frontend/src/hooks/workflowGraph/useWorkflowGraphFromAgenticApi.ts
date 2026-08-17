@@ -142,9 +142,7 @@ export function useWorkflowGraphFromAgenticApi({
       )
       const ids = messagingHighlightIdsFromTopology(partial)
       const hasAny =
-        ids.nodeIds.size > 0 ||
-        ids.edgeIds.size > 0 ||
-        ids.edgePairs.size > 0
+        ids.nodeIds.size > 0 || ids.edgeIds.size > 0 || ids.edgePairs.size > 0
       if (hasAny) {
         lastMessagingHighlightRef.current = {
           nodeIds: new Set(ids.nodeIds),
