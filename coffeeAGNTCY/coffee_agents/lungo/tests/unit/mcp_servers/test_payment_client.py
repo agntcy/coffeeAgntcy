@@ -17,6 +17,7 @@ from unittest.mock import patch
 import pytest
 from agents.exceptions import AuthError
 from agents.mcp_servers import utils
+from common.stable_agent_id import stable_agent_id_for_name
 
 _AGENT_ID = "Colombia Coffee Farm"
 _SOURCE = "colombia_coffee_farm"
@@ -61,6 +62,9 @@ async def test_delegates_to_call_mcp_tool_with_payment_args(identity_auth_on):
     assert result == expected
     assert captured["topic"] == "lungo_payment_service"
     assert captured["tool_name"] == "create_payment"
+    assert captured["target_stable_agent_id"] == stable_agent_id_for_name(
+        "Payment MCP Server"
+    )
     assert captured["agent_id"] == _AGENT_ID
     assert captured["source"] == _SOURCE
     assert captured["workflow_name"] == "Test Workflow Alpha"
