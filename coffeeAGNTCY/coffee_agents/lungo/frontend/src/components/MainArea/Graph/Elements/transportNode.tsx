@@ -15,6 +15,7 @@ import {
   graphNodeSideIconLinkSx,
   graphNodeRootSurfaceSx,
 } from "./graphNodeSurface"
+import { graphNarrowPaneLabelSx } from "./graphLabelWrapSx"
 import { TransportNodeData } from "./types"
 
 interface TransportNodeProps {
@@ -90,19 +91,24 @@ const TransportNode: React.FC<TransportNodeProps> = ({ data }) => {
         component="div"
         variant="h6"
         sx={() => ({
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          whiteSpace: "nowrap",
           textAlign: "center",
+          ...graphNarrowPaneLabelSx,
           ...(isCircular && !data.githubLink ? { mb: 1 } : {}),
-          ...(!isCircular
+          ...(isCircular
             ? {
-                minHeight: 20,
-                width: 94,
-                minWidth: 0,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                maxWidth: CIRCULAR_TRANSPORT_NODE_SIZE - 32,
               }
-            : {}),
+            : {
+                flex: 1,
+                minHeight: 20,
+                overflow: "hidden",
+                display: "-webkit-box",
+                WebkitLineClamp: 2,
+                WebkitBoxOrient: "vertical",
+              }),
         })}
       >
         {data.label}

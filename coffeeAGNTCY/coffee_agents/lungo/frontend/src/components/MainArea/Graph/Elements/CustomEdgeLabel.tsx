@@ -7,6 +7,8 @@ import React from "react"
 import { EdgeLabelRenderer } from "@xyflow/react"
 import { Box } from "@open-ui-kit/core"
 
+import { graphNarrowPaneLabelSx } from "./graphLabelWrapSx"
+
 interface CustomEdgeLabelProps {
   x: number
   y: number
@@ -36,25 +38,24 @@ const CustomEdgeLabel: React.FC<CustomEdgeLabelProps> = ({
           top: y,
           zIndex: 9999,
           transform: "translate(-50%, -50%)",
-          height: 20,
+          minHeight: 20,
           px: 0.75,
           py: 0.25,
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
           gap: isLongLabel ? 0.75 : 0.5,
+          ...graphNarrowPaneLabelSx,
           minWidth: isLongLabel ? 80 : 34,
-          maxWidth: isLongLabel ? 120 : 34,
+          maxWidth: isLongLabel ? 120 : 80,
           borderRadius: (theme) => theme.shape.borderRadius,
           typography: "caption",
           fontWeight: 400,
           lineHeight: "16px",
+          textAlign: "center",
           bgcolor: active ? "primary.main" : "background.paper",
           color: active ? "primary.contrastText" : "text.primary",
           boxShadow: 0,
-          whiteSpace: "nowrap",
-          overflow: "hidden",
-          textOverflow: "ellipsis",
         }}
       >
         {label ?? ""}
