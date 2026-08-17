@@ -14,6 +14,7 @@ import { Box, Stack } from "@open-ui-kit/core"
 import ChatAreaComposer from "./ChatAreaComposer"
 import ChatAreaMessageThread from "./ChatAreaMessageThread"
 import ChatHeader from "./ChatHeader"
+import { mainAreaContentHorizontalPadding } from "@/components/MainArea/mainAreaContentPadding"
 
 import type { GraphConfig } from "@/utils/graphConfigs"
 import type { AuctionStreamingState } from "@/stores/auctionStreaming.types"
@@ -152,8 +153,6 @@ const ChatArea: React.FC<ChatAreaProps> = ({
     return null
   }
 
-  const chatHorizontalPadding = { xs: 2, sm: 4, md: 8, lg: 15 }
-
   return (
     <Box
       ref={chatRef}
@@ -180,7 +179,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
           <Box sx={{ flexShrink: 0, width: "100%" }}>
             <ChatHeader
               onClearConversation={onClearConversation}
-              horizontalPadding={chatHorizontalPadding}
+              horizontalPadding={mainAreaContentHorizontalPadding}
             />
           </Box>
           <Box
@@ -209,7 +208,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
               spacing={1}
               sx={{
                 width: "100%",
-                px: chatHorizontalPadding,
+                px: mainAreaContentHorizontalPadding,
                 py: 1,
                 display: "flex",
               }}
@@ -243,7 +242,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
         sx={{
           flexShrink: 0,
           width: "100%",
-          px: chatHorizontalPadding,
+          px: mainAreaContentHorizontalPadding,
           py: currentUserMessage ? 1 : 2,
           borderTop: currentUserMessage ? "1px solid" : "none",
           borderColor: "divider",

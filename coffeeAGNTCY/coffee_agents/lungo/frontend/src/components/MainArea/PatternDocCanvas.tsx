@@ -6,6 +6,11 @@
 import React, { useMemo } from "react"
 import { Box, Typography } from "@open-ui-kit/core"
 import PatternDocMarkdown from "@/components/PatternDoc/PatternDocMarkdown"
+import {
+  mainAreaContentHorizontalPadding,
+  mainAreaContentOuterVerticalPadding,
+  mainAreaContentVerticalPadding,
+} from "@/components/MainArea/mainAreaContentPadding"
 import type { PatternDocState } from "@/types/patternDoc"
 
 export interface PatternDocCanvasProps {
@@ -58,8 +63,8 @@ const PatternDocCanvas: React.FC<PatternDocCanvasProps> = React.memo(
               justifyContent: "center",
               width: "100%",
               height: "100%",
-              px: 2,
-              py: 1.5,
+              px: mainAreaContentHorizontalPadding,
+              py: mainAreaContentOuterVerticalPadding,
               overflow: "hidden",
             }}
           >
@@ -83,8 +88,8 @@ const PatternDocCanvas: React.FC<PatternDocCanvasProps> = React.memo(
                   flexShrink: 0,
                   borderBottom: 1,
                   borderColor: "divider",
-                  px: 3,
-                  py: 2,
+                  px: mainAreaContentHorizontalPadding,
+                  py: mainAreaContentVerticalPadding,
                 }}
               >
                 <Typography variant="h6">
@@ -103,8 +108,8 @@ const PatternDocCanvas: React.FC<PatternDocCanvasProps> = React.memo(
                   flex: 1,
                   minHeight: 0,
                   overflowY: "auto",
-                  px: 3,
-                  py: 2,
+                  px: mainAreaContentHorizontalPadding,
+                  py: mainAreaContentVerticalPadding,
                 }}
               >
                 <PatternDocMarkdown
@@ -123,7 +128,7 @@ const PatternDocCanvas: React.FC<PatternDocCanvasProps> = React.memo(
               justifyContent: "center",
               width: "100%",
               height: "100%",
-              px: 3,
+              px: mainAreaContentHorizontalPadding,
               textAlign: "center",
             }}
           >
