@@ -909,122 +909,122 @@ WEATHER_SID = stable_agent_id_for_name("Weather MCP Server")
 
 
 def _publish_subscribe_starting_topology() -> dict:
-	return {
-		"nodes": [
-			{
-				"id": COLOMBIA_NODE,
-				"operation": "read",
-				"type": "customNode",
-				"label": "Colombia Coffee Farm Agent",
-				"size": {"width": 1, "height": 1},
-				"layer_index": 2,
-				"stable_agent_id": COLOMBIA_SID,
-				"agent_record_uri": "agent-card://colombia",
-			},
-			{
-				"id": WEATHER_NODE,
-				"operation": "read",
-				"type": "customNode",
-				"label": "Weather MCP Server",
-				"size": {"width": 1, "height": 1},
-				"layer_index": 3,
-				"stable_agent_id": WEATHER_SID,
-				"agent_record_uri": "agent-card://weather",
-			},
-		],
-		"edges": [
-			{
-				"id": CATALOG_EDGE,
-				"operation": "read",
-				"type": "branching",
-				"source": COLOMBIA_NODE,
-				"target": WEATHER_NODE,
-				"bidirectional": False,
-				"weight": 1.0,
-			},
-		],
-	}
+    return {
+        "nodes": [
+            {
+                "id": COLOMBIA_NODE,
+                "operation": "read",
+                "type": "customNode",
+                "label": "Colombia Coffee Farm Agent",
+                "size": {"width": 1, "height": 1},
+                "layer_index": 2,
+                "stable_agent_id": COLOMBIA_SID,
+                "agent_record_uri": "agent-card://colombia",
+            },
+            {
+                "id": WEATHER_NODE,
+                "operation": "read",
+                "type": "customNode",
+                "label": "Weather MCP Server",
+                "size": {"width": 1, "height": 1},
+                "layer_index": 3,
+                "stable_agent_id": WEATHER_SID,
+                "agent_record_uri": "agent-card://weather",
+            },
+        ],
+        "edges": [
+            {
+                "id": CATALOG_EDGE,
+                "operation": "read",
+                "type": "branching",
+                "source": COLOMBIA_NODE,
+                "target": WEATHER_NODE,
+                "bidirectional": False,
+                "weight": 1.0,
+            },
+        ],
+    }
 
 
 def _state_publish_subscribe_seed() -> Data:
-	return Data.model_validate(
-		{
-			"workflows": {
-				"w": {
-					"name": "n",
-					"pattern": "p",
-					"use_case": "u",
-					"scenario": "s",
-					"starting_topology": _publish_subscribe_starting_topology(),
-					"instances": {
-						INST: {
-							"id": INST,
-							"topology": {"nodes": [], "edges": []},
-						}
-					},
-				}
-			}
-		}
-	)
+    return Data.model_validate(
+        {
+            "workflows": {
+                "w": {
+                    "name": "n",
+                    "pattern": "p",
+                    "use_case": "u",
+                    "scenario": "s",
+                    "starting_topology": _publish_subscribe_starting_topology(),
+                    "instances": {
+                        INST: {
+                            "id": INST,
+                            "topology": {"nodes": [], "edges": []},
+                        }
+                    },
+                }
+            }
+        }
+    )
 
 
 def _mcp_edge_event(*, mcp_in_flight: bool) -> Event:
-	return _evt(
-		{
-			"workflows": {
-				"w": {
-					"name": "n",
-					"pattern": "p",
-					"use_case": "u",
-					"scenario": "s",
-					"starting_topology": {"nodes": [], "edges": []},
-					"instances": {
-						INST: {
-							"id": INST,
-							"topology": {
-								"nodes": [],
-								"edges": [
-									{
-										"id": PLACEHOLDER_EDGE,
-										"operation": "update",
-										"source_stable_agent_id": COLOMBIA_SID,
-										"target_stable_agent_id": WEATHER_SID,
-										"mcp_in_flight": mcp_in_flight,
-										"tool_name": "get_forecast",
-										"mcp_server": "lungo_weather_service",
-									}
-								],
-							},
-						}
-					},
-				}
-			}
-		}
-	)
+    return _evt(
+        {
+            "workflows": {
+                "w": {
+                    "name": "n",
+                    "pattern": "p",
+                    "use_case": "u",
+                    "scenario": "s",
+                    "starting_topology": {"nodes": [], "edges": []},
+                    "instances": {
+                        INST: {
+                            "id": INST,
+                            "topology": {
+                                "nodes": [],
+                                "edges": [
+                                    {
+                                        "id": PLACEHOLDER_EDGE,
+                                        "operation": "update",
+                                        "source_stable_agent_id": COLOMBIA_SID,
+                                        "target_stable_agent_id": WEATHER_SID,
+                                        "mcp_in_flight": mcp_in_flight,
+                                        "tool_name": "get_forecast",
+                                        "mcp_server": "lungo_weather_service",
+                                    }
+                                ],
+                            },
+                        }
+                    },
+                }
+            }
+        }
+    )
 
 
 def test_reconcile_mcp_edge_resolves_catalog_edge_id():
-	state = _state_publish_subscribe_seed()
-	normalized = reconcile_event_mcp_edges(state, _mcp_edge_event(mcp_in_flight=True))
-	edge = normalized.data.workflows["w"].instances[INST].topology.edges[0]
-	assert edge.id.root == CATALOG_EDGE
-	assert edge.source.root == COLOMBIA_NODE
-	assert edge.target.root == WEATHER_NODE
-	assert edge.operation.value == "update"
-	assert edge.mcp_in_flight is True
+    state = _state_publish_subscribe_seed()
+    normalized = reconcile_event_mcp_edges(state, _mcp_edge_event(mcp_in_flight=True))
+    edge = normalized.data.workflows["w"].instances[INST].topology.edges[0]
+    assert edge.id.root == CATALOG_EDGE
+    assert edge.source.root == COLOMBIA_NODE
+    assert edge.target.root == WEATHER_NODE
+    assert edge.operation.value == "update"
+    assert edge.mcp_in_flight is True
 
 
 def test_reconcile_then_merge_mcp_edge_keeps_single_catalog_edge():
-	state = _state_publish_subscribe_seed()
-	start = reconcile_event_mcp_edges(state, _mcp_edge_event(mcp_in_flight=True))
-	out = merge_event_data(state, start)
-	end = reconcile_event_mcp_edges(out, _mcp_edge_event(mcp_in_flight=False))
-	out = merge_event_data(out, end)
-	topo = _dump(out)["workflows"]["w"]["instances"][INST]["topology"]
-	assert len(topo["edges"]) == 1
-	assert topo["edges"][0]["id"] == CATALOG_EDGE
-	assert topo["edges"][0]["source"] == COLOMBIA_NODE
-	assert topo["edges"][0]["target"] == WEATHER_NODE
-	assert topo["edges"][0]["mcp_in_flight"] is False
-	assert topo["edges"][0]["tool_name"] == "get_forecast"
-	assert len(topo["nodes"]) == 2
+    state = _state_publish_subscribe_seed()
+    start = reconcile_event_mcp_edges(state, _mcp_edge_event(mcp_in_flight=True))
+    out = merge_event_data(state, start)
+    end = reconcile_event_mcp_edges(out, _mcp_edge_event(mcp_in_flight=False))
+    out = merge_event_data(out, end)
+    topo = _dump(out)["workflows"]["w"]["instances"][INST]["topology"]
+    assert len(topo["edges"]) == 1
+    assert topo["edges"][0]["id"] == CATALOG_EDGE
+    assert topo["edges"][0]["source"] == COLOMBIA_NODE
+    assert topo["edges"][0]["target"] == WEATHER_NODE
+    assert topo["edges"][0]["mcp_in_flight"] is False
+    assert topo["edges"][0]["tool_name"] == "get_forecast"
+    assert len(topo["nodes"]) == 2
