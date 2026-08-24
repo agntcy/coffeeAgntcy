@@ -356,7 +356,7 @@ docker compose up slim nats clickhouse-server otel-collector grafana
 
 **Step 2: Run the Weather MCP Server**
 
-Start the MCP server, which uses the Nominatim API to convert location names into latitude and longitude coordinates, and then fetches weather data from the Open-Meteo API using those coordinates:
+Start the MCP server, which fetches weather data from the Open-Meteo API using fixed coordinates for Colombia (lat 4.0999170, lon -72.9088133):
 
 _Local Python Run:_
 

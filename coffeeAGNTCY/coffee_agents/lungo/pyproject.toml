@@ -91,6 +91,8 @@ filterwarnings = [
 markers = [
     "agents(names): marks tests that run for specific farms (e.g. @pytest.mark.farms([\"brazil\"]))",
     "no_pin_auction_shared: do not keep agents.supervisors.auction.graph.shared across this test",
+    "open_meteo_stub(mode): set Open-Meteo stub mode (success|error) before weather-mcp subprocess starts",
+    "use_weather_fallback(value): set USE_WEATHER_FALLBACK for colombia-farm subprocess (true|false)",
 ]
 pythonpath = ["."]
 testpaths = ["tests"]

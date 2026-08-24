@@ -51,6 +51,8 @@ LOGGING_LEVEL = os.getenv("LOGGING_LEVEL", "INFO").upper()
 ENSURE_STREAMING_LLM = os.getenv("ENSURE_STREAMING_LLM", "false").strip().lower() in ("true", "1", "yes")
 HOT_RELOAD_MODE = os.getenv("HOT_RELOAD_MODE", "false").strip().lower() in ("true", "1", "yes")
 
+USE_WEATHER_FALLBACK = os.getenv("USE_WEATHER_FALLBACK", "false").strip().lower() in ("true", "1", "yes")
+
 # This is for demo purposes only. In production, use secure methods to manage API keys.
 IDENTITY_API_KEY = os.getenv("IDENTITY_API_KEY", "487>t:7:Ke5N[kZ[dOmDg2]0RQx))6k}bjARRN+afG3806h(4j6j[}]F5O)f[6PD")
 IDENTITY_API_SERVER_URL = os.getenv("IDENTITY_API_SERVER_URL", "https://api.agent-identity.outshift.com")

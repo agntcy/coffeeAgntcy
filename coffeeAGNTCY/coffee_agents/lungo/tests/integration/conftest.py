@@ -30,6 +30,7 @@ from tests.integration.helpers.docker_helpers import (
     up,
     wait_for_tcp_port,
 )
+from tests.integration.helpers.open_meteo_stub import OpenMeteoStubServer
 from tests.integration.helpers.process_helper import ProcessRunner
 
 LUNGO_DIR = Path(__file__).resolve().parents[2]
@@ -344,10 +345,22 @@ def _derive_name_from_spec(spec: dict) -> str:
         return Path(parts[0]).name
     return "agent"
 
+# ---------------- Open-Meteo stub (integration tests) ----------------
+
+@pytest.fixture(scope="session")
+def open_meteo_stub():
+    server = OpenMeteoStubServer()
+    server.start()
+    try:
+        yield server
+    finally:
+        server.stop()
+
+
 # ---------------- generic agent fixture ----------------
 
 @pytest.fixture(scope="function")
-def agents_up(request, transport_config):
+def agents_up(request, transport_config, open_meteo_stub):
     """
     Start one or more registered agents via @pytest.mark.agents([...]).
 
@@ -367,6 +380,11 @@ def agents_up(request, transport_config):
     m = request.node.get_closest_marker("agents")
     agent_names = (m.args[0] if m and m.args else m.kwargs.get("names", [])) if m else []
 
+    stub_marker = request.node.get_closest_marker("open_meteo_stub")
+    stub_mode = stub_marker.args[0] if stub_marker and stub_marker.args else "success"
+    previous_stub_mode = open_meteo_stub.get_mode()
+    open_meteo_stub.set_mode(stub_mode)
+
     runners: list[ProcessRunner] = []
 
     for name in agent_names:
@@ -376,6 +394,15 @@ def agents_up(request, transport_config):
 
         env = _base_env()
         env.update(transport_config or {})
+
+        if name == "weather-mcp":
+            env["OPEN_METEO_BASE"] = open_meteo_stub.forecast_base_url()
+        if name == "colombia-farm":
+            fallback_marker = request.node.get_closest_marker("use_weather_fallback")
+            if fallback_marker and fallback_marker.args:
+                env["USE_WEATHER_FALLBACK"] = str(fallback_marker.args[0]).lower()
+            else:
+                env["USE_WEATHER_FALLBACK"] = os.environ.get("USE_WEATHER_FALLBACK", "false")
 
         print(f"\n--- Starting {name} ---")
         runner = ProcessRunner(
@@ -402,6 +429,7 @@ def agents_up(request, transport_config):
     try:
         yield
     finally:
+        open_meteo_stub.set_mode(previous_stub_mode)
         for r in runners:
             print(f"--- Stopping {r.name} ---")
             r.stop()
