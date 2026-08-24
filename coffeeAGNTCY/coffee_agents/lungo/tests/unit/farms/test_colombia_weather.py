@@ -13,6 +13,8 @@ from langchain_core.runnables import Runnable
 
 from agents.farms.colombia import agent as colombia_agent_module
 from agents.farms.colombia.agent import (
+    COLOMBIA_LATITUDE,
+    COLOMBIA_LONGITUDE,
     FALLBACK_WEATHER_FORECAST,
     FarmAgent,
     _is_valid_weather_forecast,
@@ -54,9 +56,15 @@ async def test_get_weather_forecast_valid_mcp_response(farm_agent):
         "call_mcp_tool",
         new_callable=AsyncMock,
         return_value=VALID_FORECAST,
-    ):
+    ) as mock_call:
         result = await farm_agent._get_weather_forecast({"messages": []})
 
+    mock_call.assert_awaited_once()
+    call_kwargs = mock_call.await_args.kwargs
+    assert call_kwargs["arguments"] == {
+        "latitude": COLOMBIA_LATITUDE,
+        "longitude": COLOMBIA_LONGITUDE,
+    }
     assert result["weather_forecast_success"] is True
     assert result["weather_forecast"] == VALID_FORECAST
 
@@ -67,7 +75,7 @@ async def test_get_weather_forecast_invalid_mcp_response(farm_agent):
         colombia_agent_module,
         "call_mcp_tool",
         new_callable=AsyncMock,
-        return_value="Could not determine coordinates for location: colombia",
+        return_value="not a valid forecast",
     ):
         result = await farm_agent._get_weather_forecast({"messages": []})
 

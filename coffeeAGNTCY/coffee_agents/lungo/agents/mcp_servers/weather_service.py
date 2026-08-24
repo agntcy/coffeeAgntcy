@@ -25,11 +25,15 @@ OPEN_METEO_BASE = os.getenv(
     "https://api.open-meteo.com/v1/forecast",
 )
 
-COLOMBIA_LAT = 4.0999170
-COLOMBIA_LON = -72.9088133
-
 # Create the MCP server
 mcp = FastMCP()
+
+
+def _validate_coordinates(latitude: float, longitude: float) -> None:
+    if not -90 <= latitude <= 90:
+        raise ValueError(f"Invalid latitude: {latitude!r} (must be between -90 and 90)")
+    if not -180 <= longitude <= 180:
+        raise ValueError(f"Invalid longitude: {longitude!r} (must be between -180 and 180)")
 
 
 async def make_request(
@@ -55,25 +59,33 @@ async def make_request(
 
 
 @mcp.tool()
-async def get_forecast(location: str) -> str:
-    logging.info("Getting weather forecast for location: %s", location)
-    normalized = location.strip().lower()
-    if normalized != "colombia":
-        raise ValueError(f"Unsupported location: {location!r}")
+async def get_forecast(latitude: float, longitude: float) -> str:
+    _validate_coordinates(latitude, longitude)
+    logging.info(
+        "Getting weather forecast for coordinates: latitude=%s longitude=%s",
+        latitude,
+        longitude,
+    )
 
     async with httpx.AsyncClient() as client:
         params = {
-            "latitude": str(COLOMBIA_LAT),
-            "longitude": str(COLOMBIA_LON),
+            "latitude": str(latitude),
+            "longitude": str(longitude),
             "current_weather": "true",
             "windspeed_unit": "ms",
         }
 
         data = await make_request(client, OPEN_METEO_BASE, {}, params=params)
         if not data or "current_weather" not in data:
-            logging.error("Failed to retrieve weather data for %s", location)
+            logging.error(
+                "Failed to retrieve weather data for latitude=%s longitude=%s",
+                latitude,
+                longitude,
+            )
             logging.error("Response data: %s", data)
-            raise RuntimeError(f"Failed to retrieve weather data for {location}")
+            raise RuntimeError(
+                f"Failed to retrieve weather data for latitude={latitude}, longitude={longitude}"
+            )
 
         cw = data["current_weather"]
         return (

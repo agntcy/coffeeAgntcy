@@ -46,7 +46,7 @@
             "tools": [
               {
                 "name": "get_forecast",
-                "description": "Returns a short current-weather summary for Colombia using fixed coordinates and Open-Meteo."
+                "description": "Returns a short current-weather summary for the given latitude and longitude via Open-Meteo."
               }
             ]
           }

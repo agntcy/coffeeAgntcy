@@ -34,6 +34,9 @@ from config.config import USE_WEATHER_FALLBACK
 
 logger = logging.getLogger("lungo.colombia_farm_agent.agent")
 
+COLOMBIA_LATITUDE = 4.0999170
+COLOMBIA_LONGITUDE = -72.9088133
+
 FALLBACK_WEATHER_FORECAST = (
     "Temperature: 25.0°C\n"
     "Wind speed: 0 m/s\n"
@@ -133,18 +136,11 @@ class FarmAgent:
 
     async def _get_weather_forecast(self, state: GraphState) -> dict:
         """
-        Calls the "get_forecast" tool on the "lungo_weather_service" MCP server for a
-        fixed location ("colombia") through the shared ``call_mcp_tool`` helper, which
-        owns the agntcy-app-sdk client contract and result normalization (including
-        streamed responses). Returns the forecast wrapped in an AIMessage under the
-        "weather_forecast" key.
-
-        If the MCP tool call fails, it logs the error and returns an error message
-        similarly wrapped.
+        Calls the ``get_forecast`` tool on the ``lungo_weather_service`` MCP server
+        using this farm's coordinates through ``call_mcp_tool``.
 
         Returns:
-            dict: ``weather_forecast_success`` plus a single AIMessage holding the
-                forecast string, or an error message if the call fails.
+            dict: ``weather_forecast_success`` and ``weather_forecast`` (plain string).
         """
         try:
             forecast = await call_mcp_tool(
@@ -152,7 +148,10 @@ class FarmAgent:
                 tool_name="get_forecast",
                 # OASF name in weather-mcp-server.json (not the transport topic).
                 target_stable_agent_id=stable_agent_id_for_name("Weather MCP Server"),
-                arguments={"location": "colombia"},
+                arguments={
+                    "latitude": COLOMBIA_LATITUDE,
+                    "longitude": COLOMBIA_LONGITUDE,
+                },
                 agent_id=AGENT_CARD.name,
                 source=AGENT_ID,
                 workflow_name=state.get("workflow_name"),
