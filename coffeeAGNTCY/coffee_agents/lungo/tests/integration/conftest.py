@@ -360,7 +360,7 @@ def open_meteo_stub():
 # ---------------- generic agent fixture ----------------
 
 @pytest.fixture(scope="function")
-def agents_up(request, transport_config, open_meteo_stub):
+def agents_up(request, transport_config):
     """
     Start one or more registered agents via @pytest.mark.agents([...]).
 
@@ -380,10 +380,14 @@ def agents_up(request, transport_config, open_meteo_stub):
     m = request.node.get_closest_marker("agents")
     agent_names = (m.args[0] if m and m.args else m.kwargs.get("names", [])) if m else []
 
-    stub_marker = request.node.get_closest_marker("open_meteo_stub")
-    stub_mode = stub_marker.args[0] if stub_marker and stub_marker.args else "success"
-    previous_stub_mode = open_meteo_stub.get_mode()
-    open_meteo_stub.set_mode(stub_mode)
+    open_meteo_stub = None
+    previous_stub_mode = None
+    if "weather-mcp" in agent_names:
+        open_meteo_stub = request.getfixturevalue("open_meteo_stub")
+        stub_marker = request.node.get_closest_marker("open_meteo_stub")
+        stub_mode = stub_marker.args[0] if stub_marker and stub_marker.args else "success"
+        previous_stub_mode = open_meteo_stub.get_mode()
+        open_meteo_stub.set_mode(stub_mode)
 
     runners: list[ProcessRunner] = []
 
@@ -429,7 +433,8 @@ def agents_up(request, transport_config, open_meteo_stub):
     try:
         yield
     finally:
-        open_meteo_stub.set_mode(previous_stub_mode)
+        if open_meteo_stub is not None and previous_stub_mode is not None:
+            open_meteo_stub.set_mode(previous_stub_mode)
         for r in runners:
             print(f"--- Stopping {r.name} ---")
             r.stop()

@@ -34,7 +34,6 @@ VALID_FORECAST = (
         ("valid_forecast", VALID_FORECAST, True),
         ("empty", "", False),
         ("whitespace", "   ", False),
-        ("error_sentinel_coordinates", "Could not determine coordinates for location: x", False),
         ("error_sentinel_unavailable", "Weather Forecast MCP Server was Unavailable", False),
         ("error_sentinel_no_content", "No content returned from tool.", False),
         ("missing_temperature", "Wind speed: 2.0 m/s", False),

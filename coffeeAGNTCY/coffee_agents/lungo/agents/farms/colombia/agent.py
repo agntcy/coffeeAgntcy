@@ -46,7 +46,6 @@ FALLBACK_WEATHER_FORECAST = (
 
 _WEATHER_ERROR_SENTINELS = (
     "no content returned from tool.",
-    "could not determine coordinates",
     "weather forecast mcp server was unavailable",
 )
 
