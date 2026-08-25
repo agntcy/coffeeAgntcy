@@ -45,6 +45,9 @@ class _FakeRoutingLLM(Runnable):
     def invoke(self, input, config=None, **kwargs):
         if isinstance(input, dict) and "tool_result" in input:
             return AIMessage(content=str(input["tool_result"]))
+        text = str(input)
+        if _COLOMBIA_WEATHER_UNAVAILABLE in text:
+            return AIMessage(content=_COLOMBIA_WEATHER_UNAVAILABLE)
         return AIMessage(content=self._route)
 
     async def ainvoke(self, input, config=None, **kwargs):
