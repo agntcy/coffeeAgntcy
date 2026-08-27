@@ -1,21 +1,21 @@
 # Copyright AGNTCY Contributors (https://github.com/agntcy)
 # SPDX-License-Identifier: Apache-2.0
 
-"""Unit tests for ``common.workflow_utils.mcp`` (MCP tool-call builders)."""
+"""Unit tests for ``common.workflow_utils.mcp`` (MCP edge builders)."""
 
 from __future__ import annotations
 
 import pytest
 from schema.types import Operation
 
-from common.workflow_utils.inflight import RuntimeIdAllocator
+from common.stable_agent_id import stable_agent_id_for_name
 from common.workflow_utils.mcp import (
-    MCP_TOOL_NODE_TYPE,
-    build_mcp_tool_topology,
-    emit_mcp_tool_call_event,
+    build_mcp_edge_topology,
+    emit_mcp_edge_event,
 )
 
 _AGENT_ID = "Colombia Coffee Farm"
+_TARGET_SID = stable_agent_id_for_name("Weather MCP Server")
 _TOOL = "get_forecast"
 _SERVER = "lungo_weather_service"
 
@@ -33,136 +33,48 @@ class _CapturingSink:
         return None
 
 
-def _agent_node(topology):
-    for node in topology.nodes:
-        if getattr(node, "type", None) != MCP_TOOL_NODE_TYPE:
-            return node
-    return None
-
-
-def _tool_node(topology):
-    for node in topology.nodes:
-        if getattr(node, "type", None) == MCP_TOOL_NODE_TYPE:
-            return node
-    return None
-
-
-async def test_build_mcp_tool_topology_create():
-    """CREATE builds an agent node, a tool node, and a connecting edge."""
-    allocator = RuntimeIdAllocator()
-    topology = await build_mcp_tool_topology(
-        _AGENT_ID,
-        _TOOL,
-        _SERVER,
-        operation=Operation.CREATE,
-        allocator=allocator,
-        call_key="call-1",
-        layer_index=0,
-    )
-
-    assert len(topology.nodes) == 2
-    assert len(topology.edges) == 1
-
-    agent_node = _agent_node(topology)
-    tool_node = _tool_node(topology)
-    assert agent_node.label == _AGENT_ID
-    assert getattr(agent_node, "stable_agent_id", None) is not None
-    assert tool_node.operation == Operation.CREATE
-    assert tool_node.label == _TOOL
-    assert tool_node.tool_name == _TOOL
-    assert tool_node.mcp_server == _SERVER
-
-    edge = topology.edges[0]
-    assert edge.operation == Operation.CREATE
-    assert edge.source.root == agent_node.id.root
-    assert edge.target.root == tool_node.id.root
-
-
 @pytest.mark.parametrize(
-    "case,duration_ms,error,expect_extras",
+    "case,mcp_in_flight",
     [
-        ("with_metrics", 12.5, "boom", True),
-        ("without_metrics", None, None, False),
+        ("start", True),
+        ("end", False),
     ],
 )
-async def test_build_mcp_tool_topology_delete(case, duration_ms, error, expect_extras):
-    """DELETE removes the tool node/edge, attaching metrics only when present."""
-    allocator = RuntimeIdAllocator()
-    topology = await build_mcp_tool_topology(
+def test_build_mcp_edge_topology(case, mcp_in_flight):
+    """Edge-only topology carries stable ids and mcp_in_flight flag."""
+    topology = build_mcp_edge_topology(
         _AGENT_ID,
         _TOOL,
         _SERVER,
-        operation=Operation.DELETE,
-        allocator=allocator,
-        call_key="call-1",
-        duration_ms=duration_ms,
-        error=error,
+        _TARGET_SID,
+        mcp_in_flight=mcp_in_flight,
     )
 
-    assert len(topology.nodes) == 1
+    assert topology.nodes == []
     assert len(topology.edges) == 1
 
-    tool_node = _tool_node(topology)
-    assert tool_node.operation == Operation.DELETE
-    assert topology.edges[0].operation == Operation.DELETE
-
-    if expect_extras:
-        assert tool_node.duration_ms == duration_ms
-        assert tool_node.error == error
-    else:
-        assert getattr(tool_node, "duration_ms", None) is None
-        assert getattr(tool_node, "error", None) is None
+    edge = topology.edges[0]
+    assert edge.operation == Operation.UPDATE
+    assert edge.source_stable_agent_id == stable_agent_id_for_name(_AGENT_ID)
+    assert edge.target_stable_agent_id == _TARGET_SID
+    assert edge.tool_name == _TOOL
+    assert edge.mcp_server == _SERVER
+    assert edge.mcp_in_flight is mcp_in_flight
+    assert edge.id.root.startswith("edge://")
 
 
-async def test_build_mcp_tool_topology_delete_removes_agent_node():
-    """delete_agent_node also tears down the invoking-agent node on the last call."""
-    allocator = RuntimeIdAllocator()
-    topology = await build_mcp_tool_topology(
-        _AGENT_ID,
-        _TOOL,
-        _SERVER,
-        operation=Operation.DELETE,
-        allocator=allocator,
-        call_key="call-1",
-        delete_agent_node=True,
-    )
-
-    assert len(topology.nodes) == 2
-    agent_node = _agent_node(topology)
-    assert agent_node is not None
-    assert agent_node.operation == Operation.DELETE
-    assert agent_node.label == _AGENT_ID
-    assert _tool_node(topology).operation == Operation.DELETE
-
-
-async def test_create_and_delete_share_tool_node_id():
-    """A shared allocator + call_key yields a stable tool node id across events."""
-    allocator = RuntimeIdAllocator()
-    create = await build_mcp_tool_topology(
-        _AGENT_ID, _TOOL, _SERVER,
-        operation=Operation.CREATE, allocator=allocator, call_key="call-1",
-    )
-    delete = await build_mcp_tool_topology(
-        _AGENT_ID, _TOOL, _SERVER,
-        operation=Operation.DELETE, allocator=allocator, call_key="call-1",
-    )
-    assert _tool_node(create).id.root == _tool_node(delete).id.root
-
-
-async def test_emit_mcp_tool_call_event_posts_to_sink():
-    """emit_mcp_tool_call_event builds an event and delivers it to the sink."""
+async def test_emit_mcp_edge_event_posts_to_sink():
+    """emit_mcp_edge_event builds an event and delivers it to the sink."""
     sink = _CapturingSink()
-    allocator = RuntimeIdAllocator()
 
-    event = await emit_mcp_tool_call_event(
+    event = await emit_mcp_edge_event(
         sink=sink,
         source="colombia_coffee_farm",
         agent_id=_AGENT_ID,
         tool_name=_TOOL,
         mcp_server=_SERVER,
-        operation=Operation.CREATE,
-        allocator=allocator,
-        call_key="call-1",
+        target_stable_agent_id=_TARGET_SID,
+        mcp_in_flight=True,
         correlation_id="correlation://00000000-0000-4000-8000-000000000004",
         workflow_name="Test Workflow Alpha",
         instance_id="instance://00000000-0000-4000-8000-000000000003",
@@ -172,3 +84,6 @@ async def test_emit_mcp_tool_call_event_posts_to_sink():
     assert sink.events[0] is event
     assert "Test Workflow Alpha" in event.data.workflows
     assert _TOOL in event.metadata.correlation.message
+    assert event.data.workflows["Test Workflow Alpha"].instances[
+        "instance://00000000-0000-4000-8000-000000000003"
+    ].topology.edges[0].mcp_in_flight is True

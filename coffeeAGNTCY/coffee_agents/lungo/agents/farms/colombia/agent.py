@@ -28,6 +28,7 @@ from agents.farms.colombia.card import AGENT_CARD, AGENT_ID
 from agents.mcp_servers.utils import invoke_payment_mcp_tool
 from common.llm import get_llm
 from common.mcp_client import call_mcp_tool
+from common.stable_agent_id import stable_agent_id_for_name
 
 logger = logging.getLogger("lungo.colombia_farm_agent.agent")
 
@@ -123,6 +124,8 @@ class FarmAgent:
             forecast = await call_mcp_tool(
                 topic="lungo_weather_service",
                 tool_name="get_forecast",
+                # OASF name in weather-mcp-server.json (not the transport topic).
+                target_stable_agent_id=stable_agent_id_for_name("Weather MCP Server"),
                 arguments={"location": "colombia"},
                 agent_id=AGENT_CARD.name,
                 source=AGENT_ID,

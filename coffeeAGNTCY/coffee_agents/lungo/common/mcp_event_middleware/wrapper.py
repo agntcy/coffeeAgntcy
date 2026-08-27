@@ -3,11 +3,10 @@
 
 """Client-side MCP middleware for emitting workflow topology events.
 
-Wraps an MCP client so each ``call_tool`` invocation emits a transient
-topology node: CREATE when the call starts and DELETE when it ends (success
-or error, including streamed responses). Pure event builders live in
-``common.workflow_utils.mcp``; this module owns the orchestration (identity
-resolution, timing, sink lifecycle).
+Wraps an MCP client so each ``call_tool`` invocation emits UPDATE events on
+the catalog edge between the invoking agent and the target MCP server node.
+Pure event builders live in ``common.workflow_utils.mcp``; this module owns
+the orchestration (identity resolution, timing, sink lifecycle).
 
 Workflow identity for the farm-to-MCP hop is resolved once, at wrap time,
 in this order:
@@ -23,22 +22,19 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass
-from time import monotonic
 from typing import Any, AsyncIterator
-from uuid import uuid4
 
 from pydantic import ValidationError
 
 from common.workflow_utils.event_sink import WorkflowAPIEventSink
 from common.workflow_utils.inflight import (
-	RuntimeIdAllocator,
 	read_trace_context,
 	resolve_correlation_id,
 )
-from common.workflow_utils.mcp import emit_mcp_tool_call_event
+from common.workflow_utils.mcp import emit_mcp_edge_event
 from common.workflow_utils.workflow_catalog import lookup_workflow
 from config.config import EMIT_WORKFLOW_EVENTS
-from schema.types import InstanceId, Operation
+from schema.types import InstanceId
 
 logger = logging.getLogger("lungo.common.event_middleware")
 
@@ -149,9 +145,9 @@ class EventEmittingMCPClient:
 		*,
 		agent_id: str,
 		mcp_server: str,
+		target_stable_agent_id: str,
 		source: str,
 		identity: _ResolvedIdentity,
-		layer_index: int = 0,
 	) -> None:
 		# ``_cm`` is the async context manager handed to us; ``_session`` is the
 		# object that exposes call_tool/list_tools. They are the same until
@@ -162,13 +158,9 @@ class EventEmittingMCPClient:
 		self._session = client
 		self._agent_id = agent_id
 		self._mcp_server = mcp_server
+		self._target_stable_agent_id = target_stable_agent_id
 		self._source = source
 		self._identity = identity
-		self._layer_index = layer_index
-		self._allocator = RuntimeIdAllocator()
-		# Active call_tool count: the invoking-agent node is created on the
-		# first in-flight call and deleted when the last one ends.
-		self._inflight = 0
 		self._event_sink = WorkflowAPIEventSink()
 
 	async def __aenter__(self) -> "EventEmittingMCPClient":
@@ -203,92 +195,56 @@ class EventEmittingMCPClient:
 	async def _emit(
 		self,
 		*,
-		operation: Operation,
 		tool_name: str,
-		call_key: str,
+		mcp_in_flight: bool,
 		correlation_id: str,
-		duration_ms: float | None = None,
-		error: str | None = None,
-		delete_agent_node: bool = False,
 	) -> None:
 		"""Best-effort emission; never propagates failures to the tool call."""
 		try:
-			await emit_mcp_tool_call_event(
+			await emit_mcp_edge_event(
 				sink=self._event_sink,
 				source=self._source,
 				agent_id=self._agent_id,
 				tool_name=tool_name,
 				mcp_server=self._mcp_server,
-				operation=operation,
-				allocator=self._allocator,
-				call_key=call_key,
+				target_stable_agent_id=self._target_stable_agent_id,
+				mcp_in_flight=mcp_in_flight,
 				correlation_id=correlation_id,
 				workflow_name=self._identity.workflow_name,
 				instance_id=self._identity.instance_id,
 				trace_id=self._identity.trace_id,
 				span_id=self._identity.span_id,
-				layer_index=self._layer_index,
-				duration_ms=duration_ms,
-				error=error,
-				delete_agent_node=delete_agent_node,
 			)
 		except Exception as exc:
 			logger.warning(
-				"EventEmittingMCPClient [%s]: failed to emit %s event for tool "
-				"%s: %s",
+				"EventEmittingMCPClient [%s]: failed to emit mcp_in_flight=%s "
+				"event for tool %s: %s",
 				self._source,
-				operation,
+				mcp_in_flight,
 				tool_name,
 				exc,
 			)
 
-	async def _emit_end(
-		self,
-		*,
-		tool_name: str,
-		call_key: str,
-		correlation_id: str,
-		start: float,
-		error: str | None = None,
-	) -> None:
-		"""Emit the DELETE event, removing the agent node on the last call."""
-		self._inflight -= 1
-		await self._emit(
-			operation=Operation.DELETE,
-			tool_name=tool_name,
-			call_key=call_key,
-			correlation_id=correlation_id,
-			duration_ms=(monotonic() - start) * 1000.0,
-			error=error,
-			delete_agent_node=self._inflight <= 0,
-		)
-
 	async def call_tool(self, *args: Any, **kwargs: Any) -> Any:
-		"""Invoke the underlying tool, emitting CREATE/DELETE topology events."""
+		"""Invoke the underlying tool, emitting start/end edge UPDATE events."""
 		tool_name = self._extract_tool_name(args, kwargs)
 		correlation_id = resolve_correlation_id(
 			ctx_state={}, trace_id=self._identity.trace_id,
 		)
-		call_key = f"mcp-tool-{self._agent_id}-{tool_name}-{uuid4()}"
 
-		self._inflight += 1
 		await self._emit(
-			operation=Operation.CREATE,
 			tool_name=tool_name,
-			call_key=call_key,
+			mcp_in_flight=True,
 			correlation_id=correlation_id,
 		)
 
-		start = monotonic()
 		try:
 			result = await self._session.call_tool(*args, **kwargs)
-		except Exception as exc:
-			await self._emit_end(
+		except Exception:
+			await self._emit(
 				tool_name=tool_name,
-				call_key=call_key,
+				mcp_in_flight=False,
 				correlation_id=correlation_id,
-				start=start,
-				error=str(exc),
 			)
 			raise
 
@@ -296,16 +252,13 @@ class EventEmittingMCPClient:
 			return self._instrument_stream(
 				result,
 				tool_name=tool_name,
-				call_key=call_key,
 				correlation_id=correlation_id,
-				start=start,
 			)
 
-		await self._emit_end(
+		await self._emit(
 			tool_name=tool_name,
-			call_key=call_key,
+			mcp_in_flight=False,
 			correlation_id=correlation_id,
-			start=start,
 		)
 		return result
 
@@ -314,25 +267,17 @@ class EventEmittingMCPClient:
 		source_iter: AsyncIterator[Any],
 		*,
 		tool_name: str,
-		call_key: str,
 		correlation_id: str,
-		start: float,
 	) -> AsyncIterator[Any]:
-		"""Forward streamed chunks, emitting DELETE on completion or error."""
-		error: str | None = None
+		"""Forward streamed chunks, emitting end on completion or error."""
 		try:
 			async for chunk in source_iter:
 				yield chunk
-		except Exception as exc:
-			error = str(exc)
-			raise
 		finally:
-			await self._emit_end(
+			await self._emit(
 				tool_name=tool_name,
-				call_key=call_key,
+				mcp_in_flight=False,
 				correlation_id=correlation_id,
-				start=start,
-				error=error,
 			)
 
 
@@ -341,10 +286,10 @@ def wrap_mcp_client(
 	*,
 	agent_id: str,
 	mcp_server: str,
+	target_stable_agent_id: str,
 	source: str,
 	workflow_name: str | None = None,
 	instance_id: str | None = None,
-	layer_index: int = 0,
 ) -> Any:
 	"""Wrap an MCP client for event emission, or return it unwrapped.
 
@@ -373,7 +318,7 @@ def wrap_mcp_client(
 		client,
 		agent_id=agent_id,
 		mcp_server=mcp_server,
+		target_stable_agent_id=target_stable_agent_id,
 		source=source,
 		identity=identity,
-		layer_index=layer_index,
 	)

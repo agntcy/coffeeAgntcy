@@ -39,9 +39,12 @@ already deep-copied.
 from __future__ import annotations
 
 import copy
+import logging
 from typing import Any
 
-from schema.types import Data, Event, NodeId, Operation, Workflow
+from schema.types import Data, EdgeId, Event, NodeId, Operation, Workflow
+
+logger = logging.getLogger(__name__)
 
 
 def _topology_lists_insertion_order(by_id: dict[str, dict]) -> list[dict]:
@@ -268,6 +271,132 @@ def _existing_stable_agent_id_index(
         if sid is not None:
             index.setdefault(sid, node.id.root)
     return index
+
+
+def _topology_nodes_for_instance(
+    state_wf: Workflow | None,
+    instance_id: str,
+) -> list:
+    """Return nodes for one instance, falling back to ``starting_topology``."""
+    if state_wf is None:
+        return []
+    inst = state_wf.instances.get(instance_id)
+    if inst is not None and inst.topology is not None and inst.topology.nodes:
+        return inst.topology.nodes
+    if (
+        state_wf.starting_topology is not None and state_wf.starting_topology.nodes
+    ):
+        return state_wf.starting_topology.nodes
+    return []
+
+
+def _topology_edges_for_instance(
+    state_wf: Workflow | None,
+    instance_id: str,
+) -> list:
+    """Return edges for one instance, falling back to ``starting_topology``."""
+    if state_wf is None:
+        return []
+    inst = state_wf.instances.get(instance_id)
+    if inst is not None and inst.topology is not None and inst.topology.edges:
+        return inst.topology.edges
+    if (
+        state_wf.starting_topology is not None and state_wf.starting_topology.edges
+    ):
+        return state_wf.starting_topology.edges
+    return []
+
+
+def _edge_stable_agent_id_pair(edge: Any) -> tuple[str, str] | None:
+    """Read ``(source_stable_agent_id, target_stable_agent_id)`` from an edge."""
+    src = getattr(edge, "source_stable_agent_id", None)
+    tgt = getattr(edge, "target_stable_agent_id", None)
+    if isinstance(src, str) and isinstance(tgt, str) and src and tgt:
+        return src, tgt
+    return None
+
+
+def _existing_stable_edge_index(
+    state_wf: Workflow | None,
+    instance_id: str,
+) -> dict[tuple[str, str], str]:
+    """Map ``(source_sid, target_sid)`` -> existing edge id for one instance."""
+    nodes = _topology_nodes_for_instance(state_wf, instance_id)
+    edges = _topology_edges_for_instance(state_wf, instance_id)
+    id_to_sid: dict[str, str] = {}
+    for node in nodes:
+        sid = _node_stable_agent_id(node)
+        if sid is not None:
+            id_to_sid[node.id.root] = sid
+    index: dict[tuple[str, str], str] = {}
+    for edge in edges:
+        if edge.source is None or edge.target is None:
+            continue
+        src_sid = id_to_sid.get(edge.source.root)
+        tgt_sid = id_to_sid.get(edge.target.root)
+        if src_sid is not None and tgt_sid is not None:
+            index.setdefault((src_sid, tgt_sid), edge.id.root)
+    return index
+
+
+def reconcile_event_mcp_edges(state: Data, event: Event) -> Event:
+    """Resolve MCP edge identity server-side before merging.
+
+    Incoming edges carrying ``source_stable_agent_id`` and
+    ``target_stable_agent_id`` are rewritten to the live catalog edge id
+    and endpoint node ids. Unresolvable edges are dropped.
+
+    Returns a new :class:`Event`; the input is never mutated.
+    """
+    result = event.model_copy(deep=True)
+    for wf_name, wf in result.data.workflows.items():
+        state_wf = state.workflows.get(wf_name)
+        for instance_id, inst in wf.instances.items():
+            topology = inst.topology
+            if topology is None or not topology.edges:
+                continue
+            node_index = _existing_stable_agent_id_index(state_wf, instance_id)
+            edge_index = _existing_stable_edge_index(state_wf, instance_id)
+            if not edge_index:
+                continue
+            kept_edges: list = []
+            for edge in topology.edges:
+                sid_pair = _edge_stable_agent_id_pair(edge)
+                if sid_pair is None:
+                    kept_edges.append(edge)
+                    continue
+                existing_edge_id = edge_index.get(sid_pair)
+                if existing_edge_id is None:
+                    logger.warning(
+                        "reconcile_event_mcp_edges: no catalog edge for "
+                        "stable pair %s -> %s in workflow %r instance %r; "
+                        "dropping edge item",
+                        sid_pair[0],
+                        sid_pair[1],
+                        wf_name,
+                        instance_id,
+                    )
+                    continue
+                src_nid = node_index.get(sid_pair[0])
+                tgt_nid = node_index.get(sid_pair[1])
+                if src_nid is None or tgt_nid is None:
+                    logger.warning(
+                        "reconcile_event_mcp_edges: missing node ids for "
+                        "stable pair %s -> %s in workflow %r instance %r; "
+                        "dropping edge item",
+                        sid_pair[0],
+                        sid_pair[1],
+                        wf_name,
+                        instance_id,
+                    )
+                    continue
+                edge.id = EdgeId(root=existing_edge_id)
+                edge.source = NodeId(root=src_nid)
+                edge.target = NodeId(root=tgt_nid)
+                edge.operation = Operation.UPDATE
+                kept_edges.append(edge)
+            topology.edges = kept_edges
+    return result
 
 
 def reconcile_event_node_identities(state: Data, event: Event) -> Event:

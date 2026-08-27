@@ -8,7 +8,7 @@ and MCP tool calls.
 Shared, transport-agnostic pieces live in `common/workflow_utils/`:
 
 - `common/workflow_utils/builders.py` - `event_v1` metadata, nodes, edges, and full `Event` assembly.
-- `common/workflow_utils/mcp.py` - transient MCP tool-call topology builders + `emit_mcp_tool_call_event`.
+- `common/workflow_utils/mcp.py` - MCP edge topology builders + `emit_mcp_edge_event`.
 - `common/workflow_utils/event_sink.py` - `EventSink` and `WorkflowAPIEventSink` (HTTP POST to workflow API).
 - `common/workflow_utils/inflight.py` - trace-scoped in-flight state, runtime ID allocator, span-end cleanup.
 - `common/workflow_utils/workflow_catalog.py` - workflow name → pattern/use-case metadata (`lookup_workflow`).
@@ -96,23 +96,36 @@ Both events are correlated by OTel `trace_id` and a shared in-flight state map.
 
 ## MCP Tool-Call Events
 
-MCP tool calls are modeled as **transient** topology nodes rather than the
-persistent caller/transport/remote nodes used for A2A.
+MCP tool calls are modeled as **edge UPDATE** events on existing catalog edges
+between the invoking agent and the target MCP server node (no transient nodes).
 
 - **`EventEmittingMCPClient` / `wrap_mcp_client(...)`**
-  - `wrap_mcp_client(...)` resolves identity once (see below) and returns either an `EventEmittingMCPClient` or, when no identity resolves (or `EMIT_WORKFLOW_EVENTS` is false), the **original client unwrapped** so the tool call behaves exactly as before.
-  - The wrapper keeps the original async context manager (`_cm`) and the object it yields (`_session`) separate: `__aexit__` always closes `_cm` so the SDK client's teardown (cancelling its anyio task group, closing streams) runs, while `call_tool`/`list_tools` and other attributes delegate to `_session`. Exiting the yielded session instead leaks those streams and hangs the event loop.
-  - Intercepts `call_tool` (positional `name` or `name=` keyword), emitting one event when the call starts and one when it ends.
+  - `wrap_mcp_client(...)` requires `target_stable_agent_id` (derived from the
+    target MCP server OASF record `name`) in addition to the transport `topic`.
+  - Resolves workflow identity once (see below) and returns either an
+    `EventEmittingMCPClient` or, when no identity resolves (or
+    `EMIT_WORKFLOW_EVENTS` is false), the **original client unwrapped**.
+  - The wrapper keeps the original async context manager (`_cm`) and the object
+    it yields (`_session`) separate: `__aexit__` always closes `_cm` so the SDK
+    client's teardown runs, while `call_tool`/`list_tools` delegate to
+    `_session`.
+  - Intercepts `call_tool`, emitting one edge event when the call starts and
+    one when it ends.
   - Best-effort: emission failures are logged, never raised to the tool caller.
 
 ### Lifecycle
 
-1. **Start** → `Operation.CREATE`: emits the invoking-agent node (carrying `stable_agent_id` so it merges with the A2A agent node), a transient `mcp_tool_call` node (extras `tool_name`, `mcp_server`), and the connecting edge.
-2. **End** → `Operation.DELETE`: removes the `mcp_tool_call` node and edge, attaching `duration_ms` and (on failure) `error`. The wrapper refcounts in-flight calls and, when the last one ends, the DELETE also removes the invoking-agent node so it does not linger in the instance snapshot (the frontend still renders the agent via the A2A node, which shares the same `stable_agent_id`).
-   - For non-streaming results, DELETE is emitted as soon as `call_tool` returns.
-   - For streamed (async-iterable) results, the wrapper returns a proxy iterator and emits DELETE only when iteration completes or raises.
+1. **Start** → `Operation.UPDATE` on a placeholder edge carrying
+   `source_stable_agent_id`, `target_stable_agent_id`, and `mcp_in_flight=true`.
+2. **End** → same edge with `mcp_in_flight=false`.
+   - For non-streaming results, end is emitted when `call_tool` returns.
+   - For streamed (async-iterable) results, end is emitted when iteration
+     completes or raises.
 
-The CREATE and DELETE of one call share a `node://`/`edge://` id (same per-instance `RuntimeIdAllocator` + per-call `call_key`), so the frontend can add and later remove the same transient node.
+The workflow API runs `reconcile_event_mcp_edges` before merge: it looks up the
+live catalog `edge://` id and endpoint `node://` ids from the instance (or
+`starting_topology`) using the stable-id pair, then applies the UPDATE on that
+edge. The frontend animates the existing branching edge via SSE highlight.
 
 ### Workflow Identity Propagation (supervisor → farm)
 
@@ -127,6 +140,10 @@ supervisor's workflow instance:
    3. otherwise **None** - the client is returned unwrapped and no events are emitted (the tool call still runs).
    In all cases the candidate must validate (workflow_name in the catalog, `instance_id` matching `instance://<uuid>`); an invalid candidate falls through to the next source.
 4. `register_cleanup_span_processor()` is registered on the farm (`farm_server.py`) for parity with the supervisor.
+
+Call sites pass `target_stable_agent_id=stable_agent_id_for_name("<OASF name>")`,
+for example `"Weather MCP Server"` or `"Payment MCP Server"`, not the transport
+topic string.
 
 ## Design Notes
 

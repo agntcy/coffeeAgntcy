@@ -76,6 +76,15 @@ function collectMessagingHighlightIds(
 
   for (const edge of topology.edges ?? []) {
     if (hasText(edge.id)) edgeIds.add(edge.id)
+
+    const sourceStable = (edge as { source_stable_agent_id?: string })
+      .source_stable_agent_id
+    const targetStable = (edge as { target_stable_agent_id?: string })
+      .target_stable_agent_id
+    if (hasText(sourceStable) && hasText(targetStable)) {
+      edgePairs.add(edgePairId(sourceStable, targetStable))
+    }
+
     if (!hasText(edge.source) || !hasText(edge.target)) continue
 
     const source = wireIdToRenderedId.get(edge.source) ?? edge.source

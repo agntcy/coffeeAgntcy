@@ -46,6 +46,7 @@ from common.workflow_instance_store.discovery_layout import (
 )
 from common.workflow_instance_store.merge import (
     merge_event_data,
+    reconcile_event_mcp_edges,
     reconcile_event_node_identities,
 )
 from common.workflow_instance_store.notifier import NoOpNotifier, NotifierProtocol
@@ -145,6 +146,7 @@ class _MergeCoordinator:
                 touched = _touched_instance_ids(item)
                 with self._state_lock:
                     normalized = reconcile_event_node_identities(self._state, item)
+                    normalized = reconcile_event_mcp_edges(self._state, normalized)
                     normalized = enrich_discovery_node_layout(self._state, normalized)
                     self._state = merge_event_data(self._state, normalized)
                 if touched:

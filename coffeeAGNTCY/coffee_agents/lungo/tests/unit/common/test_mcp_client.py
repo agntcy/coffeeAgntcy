@@ -86,6 +86,7 @@ async def _run(captured, session, **overrides):
     kwargs = dict(
         topic="lungo_weather_service",
         tool_name="get_forecast",
+        target_stable_agent_id="agent://00000000-0000-4000-8000-000000000099",
         arguments={"location": "colombia"},
         agent_id="Colombia Coffee Farm",
         source="colombia_coffee_farm",

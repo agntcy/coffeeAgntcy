@@ -80,6 +80,7 @@ async def call_mcp_tool(
 	*,
 	topic: str,
 	tool_name: str,
+	target_stable_agent_id: str,
 	arguments: dict[str, Any] | None = None,
 	agent_id: str,
 	source: str,
@@ -102,6 +103,8 @@ async def call_mcp_tool(
 			(e.g. ``"lungo_weather_service"``). Also used as the ``mcp_server``
 			label for workflow topology events.
 		tool_name: Name of the tool to invoke.
+		target_stable_agent_id: Stable ``agent://`` id of the catalog MCP
+			server node (derived from the OASF record ``name`` field).
 		arguments: Tool arguments; defaults to ``{}``.
 		agent_id: Human-readable agent name for event emission.
 		source: Stable source id for event emission / correlation.
@@ -146,6 +149,7 @@ async def call_mcp_tool(
 		client,
 		agent_id=agent_id,
 		mcp_server=topic,
+		target_stable_agent_id=target_stable_agent_id,
 		source=source,
 		workflow_name=workflow_name,
 		instance_id=instance_id,

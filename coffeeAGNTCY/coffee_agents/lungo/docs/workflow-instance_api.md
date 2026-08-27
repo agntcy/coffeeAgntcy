@@ -326,6 +326,8 @@ Returns `404` when `workflow_name` is not in the catalog.
 
 > **Note on node ids.** At startup the catalog loader assigns fresh runtime `node://`/`edge://` ids and derives `stable_agent_id` (a UUID5 of the agent record `name`) for agent nodes. Treat ids returned by the API as the live values; do not assume they match the static JSON file verbatim.
 
+> **MCP edge events.** MCP middleware emits edge-only partials keyed by `(source_stable_agent_id, target_stable_agent_id)`. Before merge, `reconcile_event_mcp_edges` resolves them to the live catalog edge id and endpoint node ids from the instance topology (or `starting_topology` when the instance graph is still empty).
+
 ---
 
 ## Workflow-instance lifecycle & state

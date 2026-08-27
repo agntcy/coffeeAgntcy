@@ -13,6 +13,7 @@ from common.workflow_instance_store.discovery_layout import enrich_discovery_nod
 from common.workflow_instance_store.merge import (
     merge_event_data,
     merge_topology_delta,
+    reconcile_event_mcp_edges,
     reconcile_event_node_identities,
 )
 from common.workflow_instance_store.notifier import NoOpNotifier, NotifierProtocol
@@ -30,5 +31,6 @@ __all__ = [
     "enrich_discovery_node_layout",
     "merge_event_data",
     "merge_topology_delta",
+    "reconcile_event_mcp_edges",
     "reconcile_event_node_identities",
 ]

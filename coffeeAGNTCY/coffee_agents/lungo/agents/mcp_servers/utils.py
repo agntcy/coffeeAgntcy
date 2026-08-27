@@ -6,6 +6,7 @@ from typing import Literal
 
 from agents.exceptions import AuthError
 from common.mcp_client import call_mcp_tool
+from common.stable_agent_id import stable_agent_id_for_name
 
 
 async def invoke_payment_mcp_tool(
@@ -24,6 +25,8 @@ async def invoke_payment_mcp_tool(
     return await call_mcp_tool(
       topic="lungo_payment_service",
       tool_name=tool_name,
+      # OASF name in payment-mcp-server.json (not the transport topic).
+      target_stable_agent_id=stable_agent_id_for_name("Payment MCP Server"),
       agent_id=agent_id,
       source=source,
       workflow_name=workflow_name,

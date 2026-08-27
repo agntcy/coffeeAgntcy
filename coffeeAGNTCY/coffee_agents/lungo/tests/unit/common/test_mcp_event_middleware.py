@@ -10,13 +10,14 @@ from schema.types import Operation
 
 from common.mcp_event_middleware import wrap_mcp_client
 from common.mcp_event_middleware import wrapper as wrapper_mod
+from common.stable_agent_id import stable_agent_id_for_name
 from common.workflow_context_prop import (
     attach_workflow_context,
     detach_workflow_context,
 )
-from common.workflow_utils.mcp import MCP_TOOL_NODE_TYPE
 
 _AGENT_ID = "Colombia Coffee Farm"
+_TARGET_SID = stable_agent_id_for_name("Weather MCP Server")
 _SERVER = "lungo_weather_service"
 _SOURCE = "colombia_coffee_farm"
 _WORKFLOW_NAME = "Test Workflow Alpha"
@@ -83,25 +84,6 @@ class _FakeMCPClient:
         return ["t1", "t2"]
 
 
-class _StreamThenValueClient:
-    """Returns a stream on the first call, a plain value on later calls.
-
-    Lets a streamed call stay in flight (DELETE deferred until iteration)
-    while a second call completes, to exercise the agent-node refcount.
-    """
-
-    def __init__(self, stream, value) -> None:
-        self.stream = stream
-        self.value = value
-        self.calls = 0
-
-    async def call_tool(self, *args, **kwargs):
-        self.calls += 1
-        if self.calls == 1:
-            return _aiter(self.stream)
-        return self.value
-
-
 class _DistinctSession:
     """Session object yielded by a context manager (exposes call_tool)."""
 
@@ -115,20 +97,12 @@ class _DistinctSession:
         return self.result
 
     async def __aexit__(self, *exc_info):
-        # If the wrapper wrongly exits the session instead of the context
-        # manager, this flips True and the CM teardown never runs (the bug
-        # that left SDK streams open and hung CI).
         self.session_exited = True
         return False
 
 
 class _DistinctSessionClient:
-    """Context manager whose __aenter__ yields a *distinct* session object.
-
-    Mirrors the agntcy SDK MCP client: the object exposing call_tool differs
-    from the context manager, and only the context manager's __aexit__ runs
-    the teardown.
-    """
+    """Context manager whose __aenter__ yields a distinct session object."""
 
     def __init__(self, session: _DistinctSession) -> None:
         self._session = session
@@ -156,23 +130,10 @@ def _instance(event):
     return next(iter(workflow.instances.values()))
 
 
-def _node_operations(event):
-    return [node.operation for node in _instance(event).topology.nodes]
-
-
-def _mcp_node(event):
-    for node in _instance(event).topology.nodes:
-        if getattr(node, "type", None) == MCP_TOOL_NODE_TYPE:
-            return node
-    return None
-
-
-def _deleted_agent_node(event):
-    for node in _instance(event).topology.nodes:
-        is_agent = getattr(node, "type", None) != MCP_TOOL_NODE_TYPE
-        if is_agent and node.operation == Operation.DELETE:
-            return node
-    return None
+def _edge(event):
+    topology = _instance(event).topology
+    assert topology.edges
+    return topology.edges[0]
 
 
 def _wrap(client):
@@ -180,6 +141,7 @@ def _wrap(client):
         client,
         agent_id=_AGENT_ID,
         mcp_server=_SERVER,
+        target_stable_agent_id=_TARGET_SID,
         source=_SOURCE,
     )
 
@@ -191,8 +153,8 @@ def _wrap(client):
         ("name_kwarg", (), {"name": "get_forecast"}),
     ],
 )
-async def test_call_tool_emits_create_then_delete(case, args, kwargs, emit_enabled):
-    """Both call styles forward unchanged and emit CREATE then DELETE."""
+async def test_call_tool_emits_start_then_end(case, args, kwargs, emit_enabled):
+    """Both call styles emit edge UPDATE start then end events."""
     fake = _FakeMCPClient(result="forecast")
     wrapped = _wrap(fake)
 
@@ -203,20 +165,24 @@ async def test_call_tool_emits_create_then_delete(case, args, kwargs, emit_enabl
 
     events = wrapped._event_sink.events
     assert len(events) == 2
-    assert Operation.CREATE in _node_operations(events[0])
 
-    create_node = _mcp_node(events[0])
-    assert create_node.tool_name == "get_forecast"
-    assert create_node.mcp_server == _SERVER
+    start_edge = _edge(events[0])
+    assert start_edge.operation == Operation.UPDATE
+    assert start_edge.mcp_in_flight is True
+    assert start_edge.tool_name == "get_forecast"
+    assert start_edge.mcp_server == _SERVER
+    assert start_edge.source_stable_agent_id == stable_agent_id_for_name(_AGENT_ID)
+    assert start_edge.target_stable_agent_id == _TARGET_SID
 
-    delete_node = _mcp_node(events[1])
-    assert delete_node.operation == Operation.DELETE
-    assert getattr(delete_node, "duration_ms", None) is not None
-    assert getattr(delete_node, "error", None) is None
+    end_edge = _edge(events[1])
+    assert end_edge.operation == Operation.UPDATE
+    assert end_edge.mcp_in_flight is False
+    assert _instance(events[0]).topology.nodes == []
+    assert _instance(events[1]).topology.nodes == []
 
 
-async def test_call_tool_error_emits_delete_and_reraises(emit_enabled):
-    """A failing tool call still emits DELETE (with error) and re-raises."""
+async def test_call_tool_error_emits_end_and_reraises(emit_enabled):
+    """A failing tool call still emits end and re-raises."""
     fake = _FakeMCPClient(error=RuntimeError("boom"))
     wrapped = _wrap(fake)
 
@@ -225,33 +191,27 @@ async def test_call_tool_error_emits_delete_and_reraises(emit_enabled):
 
     events = wrapped._event_sink.events
     assert len(events) == 2
-    delete_node = _mcp_node(events[1])
-    assert delete_node.operation == Operation.DELETE
-    assert delete_node.error == "boom"
-    assert getattr(delete_node, "duration_ms", None) is not None
+    assert _edge(events[1]).mcp_in_flight is False
 
 
-async def test_call_tool_streaming_delete_after_iteration(emit_enabled):
-    """Streamed results emit CREATE up front and DELETE only after iteration."""
+async def test_call_tool_streaming_end_after_iteration(emit_enabled):
+    """Streamed results emit start up front and end only after iteration."""
     fake = _FakeMCPClient(stream=["a", "b", "c"])
     wrapped = _wrap(fake)
 
     stream = await wrapped.call_tool(name="get_forecast")
     events = wrapped._event_sink.events
     assert len(events) == 1
-    assert Operation.CREATE in _node_operations(events[0])
+    assert _edge(events[0]).mcp_in_flight is True
 
     chunks = [chunk async for chunk in stream]
     assert chunks == ["a", "b", "c"]
     assert len(events) == 2
-
-    delete_node = _mcp_node(events[1])
-    assert delete_node.operation == Operation.DELETE
-    assert getattr(delete_node, "error", None) is None
+    assert _edge(events[1]).mcp_in_flight is False
 
 
-async def test_call_tool_streaming_error_emits_delete_with_error(emit_enabled):
-    """Errors raised during streaming surface a DELETE carrying the error."""
+async def test_call_tool_streaming_error_emits_end(emit_enabled):
+    """Errors raised during streaming still emit end."""
     fake = _FakeMCPClient(stream=["a"], stream_error=RuntimeError("midstream"))
     wrapped = _wrap(fake)
 
@@ -263,42 +223,7 @@ async def test_call_tool_streaming_error_emits_delete_with_error(emit_enabled):
 
     events = wrapped._event_sink.events
     assert len(events) == 2
-    delete_node = _mcp_node(events[1])
-    assert delete_node.operation == Operation.DELETE
-    assert delete_node.error == "midstream"
-
-
-async def test_single_call_delete_removes_agent_node(emit_enabled):
-    """A lone call drops the in-flight count to zero, so DELETE removes the agent node."""
-    fake = _FakeMCPClient(result="forecast")
-    wrapped = _wrap(fake)
-
-    await wrapped.call_tool("get_forecast")
-
-    delete_event = wrapped._event_sink.events[1]
-    assert _deleted_agent_node(delete_event) is not None
-
-
-async def test_agent_node_deleted_only_after_last_inflight_call(emit_enabled):
-    """With overlapping calls the agent node is removed only when the last ends."""
-    fake = _StreamThenValueClient(["x", "y"], "done")
-    wrapped = _wrap(fake)
-
-    stream = await wrapped.call_tool("streamer")
-    plain = await wrapped.call_tool("quick")
-    assert plain == "done"
-
-    # The quick call ends while the stream is still open: no agent-node delete.
-    quick_delete = wrapped._event_sink.events[-1]
-    assert _mcp_node(quick_delete).operation == Operation.DELETE
-    assert _deleted_agent_node(quick_delete) is None
-
-    chunks = [chunk async for chunk in stream]
-    assert chunks == ["x", "y"]
-
-    # Stream completion is the last in-flight call: agent node is now removed.
-    final_delete = wrapped._event_sink.events[-1]
-    assert _deleted_agent_node(final_delete) is not None
+    assert _edge(events[1]).mcp_in_flight is False
 
 
 async def test_list_tools_passthrough(emit_enabled):
@@ -327,13 +252,7 @@ async def test_async_context_manager_delegation(emit_enabled):
 
 
 async def test_aexit_targets_context_manager_not_session(emit_enabled):
-    """Regression: __aexit__ must close the context manager, not the session.
-
-    When __aenter__ yields a distinct session (as the real SDK client does),
-    the wrapper must still exit the original context manager so its teardown
-    runs. Exiting the yielded session instead skips that teardown and leaks
-    the SDK's background streams - the bug that hung CI.
-    """
+    """Regression: __aexit__ must close the context manager, not the session."""
     session = _DistinctSession(result="forecast")
     cm = _DistinctSessionClient(session)
 
@@ -380,6 +299,7 @@ async def test_explicit_identity_used_when_baggage_absent(emit_enabled, no_defau
         fake,
         agent_id=_AGENT_ID,
         mcp_server=_SERVER,
+        target_stable_agent_id=_TARGET_SID,
         source=_SOURCE,
         workflow_name=_WORKFLOW_NAME,
         instance_id=_INSTANCE_ID,
@@ -404,6 +324,7 @@ async def test_explicit_fallback_when_baggage_unknown(emit_enabled, no_default_b
             fake,
             agent_id=_AGENT_ID,
             mcp_server=_SERVER,
+            target_stable_agent_id=_TARGET_SID,
             source=_SOURCE,
             workflow_name=_WORKFLOW_NAME,
             instance_id=_INSTANCE_ID,
