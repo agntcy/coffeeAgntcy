@@ -14,7 +14,7 @@ from agents.farms.colombia.agent import (
     COLOMBIA_LONGITUDE,
     _is_valid_weather_forecast,
 )
-from common.mcp_client import call_mcp_tool
+from common.stable_agent_id import stable_agent_id_for_name
 from tests.integration._auction_helpers import TRANSPORT_MATRIX
 
 logger = logging.getLogger(__name__)
@@ -28,6 +28,7 @@ _WEATHER_MCP_ARGS = {
     },
     "agent_id": "Colombia Coffee Farm",
     "source": "colombia_coffee_farm",
+    "target_stable_agent_id": stable_agent_id_for_name("Weather MCP Server"),
     "message_timeout": 45,
     "list_tools_first": True,
     "extract_text": True,
@@ -44,6 +45,7 @@ _WEATHER_MCP_ARGS = {
 @pytest.mark.usefixtures("agents_up")
 async def test_weather_mcp_open_meteo_stub_error_is_not_valid_forecast(
     transport_config,
+    loopback_mcp_client,
 ):
     """Weather MCP subprocess with failing Open-Meteo stub must not return forecast text."""
     logger.info(
@@ -51,7 +53,7 @@ async def test_weather_mcp_open_meteo_stub_error_is_not_valid_forecast(
         transport_config,
     )
     try:
-        result = await call_mcp_tool(**_WEATHER_MCP_ARGS)
+        result = await loopback_mcp_client(**_WEATHER_MCP_ARGS)
     except Exception:
         return
 
@@ -69,13 +71,14 @@ async def test_weather_mcp_open_meteo_stub_error_is_not_valid_forecast(
 @pytest.mark.usefixtures("agents_up")
 async def test_weather_mcp_open_meteo_stub_success_returns_forecast(
     transport_config,
+    loopback_mcp_client,
 ):
     """Weather MCP subprocess with success stub returns parseable forecast text."""
     logger.info(
         "\n---Test: weather-mcp Open-Meteo stub success (%s)---",
         transport_config,
     )
-    result = await call_mcp_tool(**_WEATHER_MCP_ARGS)
+    result = await loopback_mcp_client(**_WEATHER_MCP_ARGS)
 
     assert _is_valid_weather_forecast(result), f"Expected valid forecast text, got: {result!r}"
     assert "22.0" in result

@@ -620,5 +620,31 @@ def logistics_accountant_client(transport_config, monkeypatch):
         _restore_modules(saved)
 
 
+@pytest.fixture
+def loopback_mcp_client(transport_config, monkeypatch):
+    """Reload MCP client so host-side call_mcp_tool uses loopback transport env.
+
+    Agent subprocesses get loopback SLIM/NATS from ``_base_env()`` in
+    ``agents_up``; without this fixture the pytest process keeps import-time
+    ``mcp_endpoint`` (often ``http://slim:46357`` from compose ``.env``).
+    """
+    for k, v in _base_env().items():
+        monkeypatch.setenv(k, str(v))
+    for k, v in transport_config.items():
+        monkeypatch.setenv(k, v)
+
+    prefixes = ["common.mcp_client", "config.config"]
+    saved = _save_modules(prefixes)
+    try:
+        _purge_modules(prefixes)
+
+        import common.mcp_client.client as mcp_client_mod
+
+        yield mcp_client_mod.call_mcp_tool
+    finally:
+        _purge_modules(prefixes)
+        _restore_modules(saved)
+
+
 def pytest_sessionfinish(session, exitstatus) -> None:  # noqa: ARG001
     _shutdown_otel_sdk()
