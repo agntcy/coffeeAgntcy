@@ -43,6 +43,12 @@ promises** through operations, logistics, and finance it does not always own end
 those worlds: much of the drama is ordinary commerce-contracts, risk, partners, and tools-rather than a single team
 inside one building holding every fact.
 
+Automated sourcing at Coffee Agntcy has to justify itself in the units leadership already budgets: cost, time,
+carbon, and quality. The **performance scoring agent** joins run telemetry with recorded business outcomes and
+publishes KPI scores under transparent formulas, giving the company a comparable record of how its agentic runs
+perform across cycles. Telemetry explains how a run unfolded and business outcomes show what it achieved; scoring
+turns those inputs into comparable numbers the firm can defend.
+
 ---
 
 ## Scenario

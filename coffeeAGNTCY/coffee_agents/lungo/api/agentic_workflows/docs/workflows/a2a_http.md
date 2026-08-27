@@ -67,6 +67,11 @@ promises** through operations, logistics, and finance it does not always own end
 those worlds: much of the drama is ordinary commerce-contracts, risk, partners, and tools-rather than a single team
 inside one building holding every fact.
 
+Coffee Agntcy cannot assume that every future operating need will be handled by a fixed roster of agents. **A2A HTTP**
+gives a selector a common way to inspect candidate services before entrusting any of them with work, while keeping
+selection separate from execution. New integrations therefore stay replaceable and governable rather than becoming
+hard-coded dependencies.
+
 ---
 
 ## Scenario

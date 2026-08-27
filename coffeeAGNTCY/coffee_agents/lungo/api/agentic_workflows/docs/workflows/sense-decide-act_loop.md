@@ -44,6 +44,12 @@ promises** through operations, logistics, and finance it does not always own end
 those worlds: much of the drama is ordinary commerce-contracts, risk, partners, and tools-rather than a single team
 inside one building holding every fact.
 
+Coffee moves through conditions that change faster than plans survive: carrier schedules slip, ports stall, and
+quality signals change. The **sense-decide-act loop** makes revision Coffee Agntcy's normal operating
+mode, with fresh signals continuously normalized into one situation picture and each cycle committing only the
+next small action under policy. Re-routing recovers after a declared failure; this loop treats every plan as
+provisional before anything has failed at all.
+
 ---
 
 ## Scenario

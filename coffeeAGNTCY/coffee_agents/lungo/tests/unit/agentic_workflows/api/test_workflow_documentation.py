@@ -3,12 +3,14 @@
 
 from __future__ import annotations
 
+import re
 from urllib.parse import quote
 
 import pytest
 from api.agentic_workflows.router import create_agentic_workflows_router
 from api.agentic_workflows.workflow_documentation import (
     load_parsed_workflow_documentation,
+    workflow_documentation_dir,
     workflow_name_to_documentation_slug,
 )
 from api.agentic_workflows.workflows import set_starting_workflows
@@ -39,6 +41,62 @@ def test_load_parsed_real_file_has_pattern_section() -> None:
     assert parsed is not None
     headings = [h for _, h, _ in parsed.sections]
     assert "Pattern" in headings
+
+
+def test_use_case_has_common_context_plus_unique_pattern_paragraph() -> None:
+    seen: dict[str, str] = {}
+
+    for path in sorted(workflow_documentation_dir().glob("*.md")):
+        parsed = load_parsed_workflow_documentation(path.stem)
+        assert parsed is not None, path.name
+
+        pattern_body = next(
+            (body for _, heading, body in parsed.sections if heading == "Pattern"),
+            "",
+        )
+        is_stub = "> **TODO** - full pattern-level write-up." in pattern_body
+
+        use_case_bodies = [
+            body
+            for _, heading, body in parsed.sections
+            if heading == "Use case"
+        ]
+
+        if is_stub:
+            assert not use_case_bodies, (
+                f"{path.name}: explicit stub unexpectedly has a Use case section"
+            )
+            continue
+
+        assert len(use_case_bodies) == 1, (
+            f"{path.name}: expected exactly one Use case section"
+        )
+
+        body = re.sub(r"\n+---\s*$", "", use_case_bodies[0].strip())
+        paragraphs = [
+            paragraph.strip()
+            for paragraph in re.split(r"\n\s*\n", body)
+            if paragraph.strip()
+        ]
+
+        assert len(paragraphs) == 2, (
+            f"{path.name}: expected common context plus one "
+            "pattern-specific paragraph"
+        )
+
+        common, specific = paragraphs
+        assert common.startswith(
+            "**Coffee Agntcy** is a coffee company"
+        ), path.name
+
+        specific = " ".join(specific.split())
+        assert specific, f"{path.name}: empty pattern-specific paragraph"
+        assert specific not in seen, (
+            f"{path.name} duplicates {seen[specific]}"
+        )
+        seen[specific] = path.name
+
+    assert seen
 
 
 @pytest.fixture()

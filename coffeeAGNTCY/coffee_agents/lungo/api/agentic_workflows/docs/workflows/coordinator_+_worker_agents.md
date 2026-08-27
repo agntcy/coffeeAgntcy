@@ -43,6 +43,12 @@ promises** through operations, logistics, and finance it does not always own end
 those worlds: much of the drama is ordinary commerce-contracts, risk, partners, and tools-rather than a single team
 inside one building holding every fact.
 
+An order already sold commits Coffee Agntcy to work it can only partly perform itself: goods must leave a
+warehouse, clear a border, travel with a carrier, and settle financially. The **coordinator and worker** split
+gives that job one owner of progress, with the coordinator assigning bounded tasks and reconciling structured
+results while specialists execute their slice. The company keeps a definitive answer to where an order stands
+without any single worker owning the whole story.
+
 ---
 
 ## Scenario

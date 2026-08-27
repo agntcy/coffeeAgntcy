@@ -47,6 +47,12 @@ promises** through operations, logistics, and finance it does not always own end
 those worlds: much of the drama is ordinary commerce-contracts, risk, partners, and tools-rather than a single team
 inside one building holding every fact.
 
+Deals in motion generate state Coffee Agntcy needs every participant to share but nobody wants preserved: floors,
+counters, and constraints that hold only until the next message. The **session context buffer** scopes that
+volatile state to a single negotiation, with ownership and time-to-live keeping it authoritative while the deal
+lives and disposable once it closes. Longer-lived memory patterns hold what the company knows; this buffer holds
+only where one deal currently stands.
+
 ---
 
 ## Scenario

@@ -44,6 +44,12 @@ promises** through operations, logistics, and finance it does not always own end
 those worlds: much of the drama is ordinary commerce-contracts, risk, partners, and tools-rather than a single team
 inside one building holding every fact.
 
+Certain purchases commit Coffee Agntcy at a scale where the company wants a person, not a model, answerable for
+the outcome. The **approval gate** marks where automated buying ends: the proposal, the governing policy, and
+what changed since the last checkpoint arrive packaged for a human whose yes or no is recorded and attributable.
+Policy enforcement applies rules the firm has already written; the gate covers decisions that still deserve
+judgment.
+
 ---
 
 ## Scenario

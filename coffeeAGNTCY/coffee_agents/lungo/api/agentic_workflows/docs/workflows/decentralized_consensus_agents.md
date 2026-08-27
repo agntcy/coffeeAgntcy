@@ -49,6 +49,12 @@ promises** through operations, logistics, and finance it does not always own end
 those worlds: much of the drama is ordinary commerce-contracts, risk, partners, and tools-rather than a single team
 inside one building holding every fact.
 
+No single desk at Coffee Agntcy sees demand whole; each region reads its own market, and a central override would
+only replace several partial views with another one. **Decentralized consensus** lets the regional agents
+exchange belief updates directly, with merge semantics and stopping rules supplying the discipline a permanent
+hub would otherwise impose. The business requirement is termination: the exchange must land on a workable plan
+rather than an open-ended debate.
+
 ---
 
 ## Scenario

@@ -44,6 +44,12 @@ promises** through operations, logistics, and finance it does not always own end
 those worlds: much of the drama is ordinary commerce-contracts, risk, partners, and tools-rather than a single team
 inside one building holding every fact.
 
+Operational questions rarely arrive at Coffee Agntcy labeled with the discipline they belong to; the same signal
+can be a weather matter one day and a freight matter the next. **Directory-based dispatch** resolves that
+ambiguity at request time: a router reads registered skills and trust metadata and records why the chosen
+specialist was defensible. Where recruiter-style discovery shops for new capability, dispatch routes live
+questions across specialists the company already trusts.
+
 ---
 
 ## Scenario

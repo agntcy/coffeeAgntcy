@@ -44,6 +44,12 @@ promises** through operations, logistics, and finance it does not always own end
 those worlds: much of the drama is ordinary commerce-contracts, risk, partners, and tools-rather than a single team
 inside one building holding every fact.
 
+Several parts of Coffee Agntcy need the same expertise from different angles: procurement, logistics, and
+reporting each ask emissions questions in their own context. A **composable agent service** answers all of them
+from one owned, versioned implementation registered in the catalog, with consumers declaring the interface ranges
+they depend on. The business gains a single accountable source for a shared capability, and when an answer is
+disputed, one version to trace instead of forks to reconcile.
+
 ---
 
 ## Scenario

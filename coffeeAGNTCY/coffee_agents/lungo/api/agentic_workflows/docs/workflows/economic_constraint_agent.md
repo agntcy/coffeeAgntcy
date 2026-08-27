@@ -43,6 +43,12 @@ promises** through operations, logistics, and finance it does not always own end
 those worlds: much of the drama is ordinary commerce-contracts, risk, partners, and tools-rather than a single team
 inside one building holding every fact.
 
+Routing choices at Coffee Agntcy spend several currencies at once: money, delivery days, and carbon. The
+**economic constraint agent** holds those budgets in versioned models that planning consults before committing,
+so a plan that wins on one axis states plainly what it costs on the others. Governance patterns declare what the
+company refuses to do; this pattern quantifies what it is willing to trade, in units finance and operations
+already use.
+
 ---
 
 ## Scenario

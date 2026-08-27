@@ -80,6 +80,11 @@ promises** through operations, logistics, and finance it does not always own end
 those worlds: much of the drama is ordinary commerce-contracts, risk, partners, and tools-rather than a single team
 inside one building holding every fact.
 
+Coffee Agntcy's multi-agent work creates operational facts that remain relevant beyond the message that introduced them.
+**Shared agent memory** gives participants a common working state while transport continues to carry dialogue, so
+coordination depends on what the group now knows rather than on who still holds a particular transcript. The memory
+stays scoped to the current activity, distinct from the company's long-lived knowledge records.
+
 ---
 
 ## Scenario

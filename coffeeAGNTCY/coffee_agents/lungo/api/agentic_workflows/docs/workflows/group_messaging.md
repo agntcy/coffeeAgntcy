@@ -60,6 +60,11 @@ promises** through operations, logistics, and finance it does not always own end
 those worlds: much of the drama is ordinary commerce-contracts, risk, partners, and tools-rather than a single team
 inside one building holding every fact.
 
+Coffee Agntcy's work regularly crosses functional boundaries where several participants must challenge, correct, and
+extend the same evolving picture rather than report separately to a hub. **Group messaging** gives them one shared
+conversational surface, so questions, clarifications, and hand-offs remain visible to the whole group while a moderator
+keeps the discussion moving. The value is collective context, not a central agent privately relaying each update.
+
 ---
 
 ## Scenario

@@ -65,6 +65,12 @@ promises** through operations, logistics, and finance it does not always own end
 those worlds: much of the drama is ordinary commerce-contracts, risk, partners, and tools-rather than a single team
 inside one building holding every fact.
 
+Coffee Agntcy often needs one business question or update to reach several independent parties at the same time without
+creating a private connection to each one. **Publish-subscribe** provides that shared delivery mechanism: a publisher
+addresses a topic, every interested agent receives the same event, and orchestration remains responsible for
+interpreting the replies. The participant set can grow or change without rewriting the business step that initiated the
+exchange.
+
 ---
 
 ## Scenario

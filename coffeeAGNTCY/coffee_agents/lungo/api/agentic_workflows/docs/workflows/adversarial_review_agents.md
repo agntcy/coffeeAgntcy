@@ -44,6 +44,12 @@ promises** through operations, logistics, and finance it does not always own end
 those worlds: much of the drama is ordinary commerce-contracts, risk, partners, and tools-rather than a single team
 inside one building holding every fact.
 
+Coffee Agntcy takes market positions that outlive any single harvest, and a buying case assembled only by its
+advocates tends to flatter itself. **Adversarial review** builds a dissenting voice into the company: proposals
+face structured objections from a risk reviewer, with policy consulted and a human approver reachable when stakes
+outgrow the agents. Unlike an approval gate, the value is the argument itself, forcing evidence to improve while
+commitments are still reversible.
+
 ---
 
 ## Scenario

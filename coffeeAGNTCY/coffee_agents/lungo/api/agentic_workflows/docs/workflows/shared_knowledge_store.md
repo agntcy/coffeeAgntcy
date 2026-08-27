@@ -43,6 +43,12 @@ promises** through operations, logistics, and finance it does not always own end
 those worlds: much of the drama is ordinary commerce-contracts, risk, partners, and tools-rather than a single team
 inside one building holding every fact.
 
+Contracting at Coffee Agntcy is a bet that history informs the next season, and history only helps if the company
+actually keeps it. The **shared knowledge store** turns accumulated experience with origins and partners into
+governed records, with keys, versions, and provenance any agent can cite. Unlike working memory scoped to a live
+task or deal, this store is the institutional layer: what the firm has learned across seasons, curated and
+auditable rather than merely remembered.
+
 ---
 
 ## Scenario
