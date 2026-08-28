@@ -15,6 +15,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import logging
+import re
 
 from langgraph.graph import MessagesState
 from langchain_core.messages import AIMessage
@@ -29,8 +30,35 @@ from agents.mcp_servers.utils import invoke_payment_mcp_tool
 from common.llm import get_llm
 from common.mcp_client import call_mcp_tool
 from common.stable_agent_id import stable_agent_id_for_name
+from config.config import USE_WEATHER_FALLBACK
 
 logger = logging.getLogger("lungo.colombia_farm_agent.agent")
+
+COLOMBIA_LATITUDE = 4.0999170
+COLOMBIA_LONGITUDE = -72.9088133
+
+FALLBACK_WEATHER_FORECAST = (
+    "Temperature: 25.0°C\n"
+    "Wind speed: 0 m/s\n"
+    "Wind direction: 0°\n"
+    "Conditions: sunny"
+)
+
+_WEATHER_ERROR_SENTINELS = (
+    "no content returned from tool.",
+    "weather forecast mcp server was unavailable",
+)
+
+_TEMPERATURE_PATTERN = re.compile(r"Temperature:\s*[\d.]+\s*°C", re.IGNORECASE)
+
+
+def _is_valid_weather_forecast(text: str) -> bool:
+    if not text or not text.strip():
+        return False
+    lowered = text.strip().lower()
+    if any(sentinel in lowered for sentinel in _WEATHER_ERROR_SENTINELS):
+        return False
+    return bool(_TEMPERATURE_PATTERN.search(text))
 
 # --- 1. Define Node Names as Constants ---
 class NodeStates:
@@ -107,18 +135,11 @@ class FarmAgent:
 
     async def _get_weather_forecast(self, state: GraphState) -> dict:
         """
-        Calls the "get_forecast" tool on the "lungo_weather_service" MCP server for a
-        fixed location ("colombia") through the shared ``call_mcp_tool`` helper, which
-        owns the agntcy-app-sdk client contract and result normalization (including
-        streamed responses). Returns the forecast wrapped in an AIMessage under the
-        "weather_forecast" key.
-
-        If the MCP tool call fails, it logs the error and returns an error message
-        similarly wrapped.
+        Calls the ``get_forecast`` tool on the ``lungo_weather_service`` MCP server
+        using this farm's coordinates through ``call_mcp_tool``.
 
         Returns:
-            dict: ``weather_forecast_success`` plus a single AIMessage holding the
-                forecast string, or an error message if the call fails.
+            dict: ``weather_forecast_success`` and ``weather_forecast`` (plain string).
         """
         try:
             forecast = await call_mcp_tool(
@@ -126,7 +147,10 @@ class FarmAgent:
                 tool_name="get_forecast",
                 # OASF name in weather-mcp-server.json (not the transport topic).
                 target_stable_agent_id=stable_agent_id_for_name("Weather MCP Server"),
-                arguments={"location": "colombia"},
+                arguments={
+                    "latitude": COLOMBIA_LATITUDE,
+                    "longitude": COLOMBIA_LONGITUDE,
+                },
                 agent_id=AGENT_CARD.name,
                 source=AGENT_ID,
                 workflow_name=state.get("workflow_name"),
@@ -136,25 +160,42 @@ class FarmAgent:
                 extract_text=True,
             )
             logger.info(f"Weather forecast result: {forecast}")
-            return {"weather_forecast_success": True, "weather_forecast": [AIMessage(forecast)]}
+            if _is_valid_weather_forecast(forecast):
+                return {
+                    "weather_forecast_success": True,
+                    "weather_forecast": forecast,
+                }
+            logger.warning("Weather MCP returned invalid forecast text: %r", forecast)
+            return {
+                "weather_forecast_success": False,
+                "weather_forecast": "",
+            }
         except Exception as e:
             logger.error(f"Error during MCP tool call: {e}")
-            return {"weather_forecast_success": False, "weather_forecast": [AIMessage("Weather Forecast MCP Server was Unavailable")]}
+            return {
+                "weather_forecast_success": False,
+                "weather_forecast": "",
+            }
 
     async def _inventory_node(self, state: GraphState) -> dict:
         """
         Handles inventory-related queries using an LLM to formulate responses.
         """
         if not state["weather_forecast_success"]:
-            err_msg = "Cannot estimate yield because Weather Forecast MCP Server was Unavailable."
-            logger.warning(err_msg)
-            return {"messages": [AIMessage(err_msg)]}
+            if USE_WEATHER_FALLBACK:
+                weather_forecast = FALLBACK_WEATHER_FORECAST
+                logger.warning("Weather unavailable; using static fallback forecast")
+            else:
+                err_msg = "Cannot estimate yield because Weather Forecast MCP Server was Unavailable."
+                logger.warning(err_msg)
+                return {"messages": [AIMessage(err_msg)]}
+        else:
+            weather_forecast = state.get("weather_forecast", "")
 
         if not self.inventory_llm:
             self.inventory_llm = get_llm()
 
         user_message = state["messages"][-1] if state.get("messages") else ""
-        weather_forecast = state.get("weather_forecast", "")
 
         prompt = PromptTemplate(
             template="""You are a helpful Colombian coffee farm manager.

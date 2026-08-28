@@ -81,13 +81,16 @@ def _passthrough_wrap():
         yield
 
 
+_WEATHER_ARGS = {"latitude": 4.0, "longitude": -72.0}
+
+
 async def _run(captured, session, **overrides):
     factory = _fake_factory(captured, session)
     kwargs = dict(
         topic="lungo_weather_service",
         tool_name="get_forecast",
         target_stable_agent_id="agent://00000000-0000-4000-8000-000000000099",
-        arguments={"location": "colombia"},
+        arguments=_WEATHER_ARGS,
         agent_id="Colombia Coffee Farm",
         source="colombia_coffee_farm",
         factory=factory,
@@ -106,7 +109,7 @@ async def test_uses_keyword_create_client_and_call_tool():
     assert captured["transport"] == "transport-sentinel"
     assert captured["extra_kwargs"] == {}
     # call_tool must be invoked as name=/arguments= (the consolidated contract).
-    assert session.call_args == ("get_forecast", {"location": "colombia"})
+    assert session.call_args == ("get_forecast", _WEATHER_ARGS)
     # Raw result returned when extract_text is not set.
     assert result is session._tool_result
 
@@ -160,7 +163,7 @@ async def test_list_tools_first_lists_before_calling():
     await _run(captured, session, list_tools_first=True)
 
     assert session.list_tools_calls == 1
-    assert session.call_args == ("get_forecast", {"location": "colombia"})
+    assert session.call_args == ("get_forecast", _WEATHER_ARGS)
 
 
 async def test_extract_text_returns_content_text():

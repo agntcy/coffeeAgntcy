@@ -16,3 +16,4 @@ data:
   IDENTITY_AUTH_ENABLED: "{{ .Values.config.identityAuthEnabled }}"
   IDENTITY_SERVICE_API_KEY: "{{ .Values.config.identityServiceApiKey }}"
   MCP_PAYMENT_SERVICE_URL : "{{ .Values.config.mcpPaymentServiceUrl }}"
+  USE_WEATHER_FALLBACK: "{{ .Values.config.useWeatherFallback }}"
