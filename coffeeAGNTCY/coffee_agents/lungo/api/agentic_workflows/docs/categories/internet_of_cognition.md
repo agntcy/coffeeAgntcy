@@ -4,7 +4,8 @@ Shared cognitive substrate - memory, knowledge, and episodic state that agents r
 point-to-point messages. Patterns here give multiple agents a common place to retain facts, query curated records, or
 replay what happened during a run.
 
-**Patterns:** Shared Agent Memory, Shared Knowledge Store, Session Context Buffer, Event Ledger (Episodic Memory)
+**Patterns:** Shared Agent Memory, Shared Knowledge Store, Session Context Buffer, Event Ledger (Episodic Memory),
+Mediated Semantic Alignment, Team Formation via Polling, Shared Intent Registry
 
 **Not to be confused with Observability & Performance Accountability** - that category records *how the system ran*
 (correlated spans, KPI scores). Internet of Cognition holds *what agents know and can query*: working task state,

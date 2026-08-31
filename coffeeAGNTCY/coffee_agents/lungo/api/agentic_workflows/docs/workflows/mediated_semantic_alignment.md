@@ -17,6 +17,15 @@ graph TD
 
 ## Pattern
 
+**References:**
+
+- Outshift IoC L9 alignment mechanisms (SAO — Stochastic Alternating Offers); see
+  [outshift-open/ioc-protocols-models](https://github.com/outshift-open/ioc-protocols-models) (SAB / CIP subprotocols).
+- Antonio Gullí, *Agentic Design Patterns* (Springer, 2025), Ch. 7 - Multi-Agent Collaboration (Debate and Consensus).
+  [https://doi.org/10.1007/978-3-032-01402-3](https://doi.org/10.1007/978-3-032-01402-3)
+
+**Category:** Internet of Cognition
+
 **Mediated semantic alignment** gets independent agents to agree on **what terms mean** before they act on them. A
 central **Semantic Alignment Agent**, built on the **SAO (Stochastic Alternating Offers)** mechanism, runs
 **IntentDiscovery** and **OptionsGeneration** to turn a plain-language goal into a shared **agenda**: a set of
@@ -35,6 +44,16 @@ rest are **responders** and react to the standing offer. The loop continues unti
 option per issue plus coherence and alignment scores. The pattern transfers wherever independent parties must reconcile
 vocabulary before committing: cross-vendor procurement, standards negotiation, service-level agreements, or any setting
 where "we agreed" must mean the same thing to everyone who signed.
+
+This pattern is **not** the same as:
+
+- **Shared Intent Registry** - publishes a *canonical* goal and constraints for subscribers; mediated alignment
+  *negotiates* meaning round-by-round until parties converge.
+- **Shared Agent Memory** - holds operational facts (`order_id`, `PAYMENT_COMPLETE`); alignment produces an **agenda**
+  and **agreement artifact**, not general task state.
+- **Session Context Buffer** - ephemeral bids and counters for one deal; alignment is about **shared vocabulary** on
+  issues and options, not scratchpad fields alone.
+- **Decentralized Consensus Agents** - peer debate without a dedicated alignment engine and structured offer/score loop.
 
 ---
 

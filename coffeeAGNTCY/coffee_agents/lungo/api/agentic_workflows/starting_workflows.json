@@ -837,5 +837,41 @@
       "edges": []
     },
     "instances": {}
+  },
+  {
+    "name": "Mediated Semantic Alignment",
+    "pattern": "Mediated Semantic Alignment",
+    "pattern_category": "Internet of Cognition",
+    "use_case": "---",
+    "scenario": "---",
+    "starting_topology": {
+      "nodes": [],
+      "edges": []
+    },
+    "instances": {}
+  },
+  {
+    "name": "Team Formation via Polling",
+    "pattern": "Team Formation via Polling",
+    "pattern_category": "Internet of Cognition",
+    "use_case": "---",
+    "scenario": "---",
+    "starting_topology": {
+      "nodes": [],
+      "edges": []
+    },
+    "instances": {}
+  },
+  {
+    "name": "Shared Intent Registry",
+    "pattern": "Shared Intent Registry",
+    "pattern_category": "Internet of Cognition",
+    "use_case": "---",
+    "scenario": "---",
+    "starting_topology": {
+      "nodes": [],
+      "edges": []
+    },
+    "instances": {}
   }
 ]
