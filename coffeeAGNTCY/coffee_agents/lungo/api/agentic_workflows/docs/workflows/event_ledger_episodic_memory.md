@@ -51,4 +51,8 @@ inside one building holding every fact.
 When a **shipment fails**, operations wants the same story the machines already told, **end to end**-not a loose
 summary.
 
+---
+
+## Workflow
+
 A **Workflow** section will describe how this pattern is realized once a concrete layout exists.

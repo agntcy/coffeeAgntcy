@@ -51,4 +51,8 @@ inside one building holding every fact.
 **High-risk bulk purchases** earn an executive line-not because automation is weak, but because accountability still has
 a name attached.
 
+---
+
+## Workflow
+
 A **Workflow** section will describe how this pattern is realized once a concrete layout exists.

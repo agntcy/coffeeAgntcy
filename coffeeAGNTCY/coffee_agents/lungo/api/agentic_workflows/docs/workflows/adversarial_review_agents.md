@@ -8,7 +8,6 @@ graph TD
     Critic["Risk Review Agent"]
     Policy["Policy Agent"]
     Approver["Human Approver"]
-
     Buyer <-->|"Proposal + Evidence"| Critic
     Critic <-->|"Policy Check"| Policy
     Critic -->|"Structured Objections"| Buyer
@@ -50,5 +49,9 @@ inside one building holding every fact.
 
 The company’s **risk** function should examine **long-term pricing** recommendations before the firm locks a curve that
 cannot be unwound.
+
+---
+
+## Workflow
 
 A **Workflow** section will describe how this pattern is realized once a concrete layout exists.

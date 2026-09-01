@@ -50,4 +50,8 @@ inside one building holding every fact.
 
 The promise is the **lifecycle of a coffee bean**: if you cannot see it end to end, you cannot improve it-or defend it.
 
+---
+
+## Workflow
+
 A **Workflow** section will describe how this pattern is realized once a concrete layout exists.

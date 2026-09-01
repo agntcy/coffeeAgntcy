@@ -51,4 +51,8 @@ inside one building holding every fact.
 The **carbon accounting** agent should exist **once** and be reused across every place that touches emissions-not three
 nearly identical copies.
 
+---
+
+## Workflow
+
 A **Workflow** section will describe how this pattern is realized once a concrete layout exists.

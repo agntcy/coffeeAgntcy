@@ -49,4 +49,8 @@ inside one building holding every fact.
 
 **Procurement cycles** should be judged on the **triple** leadership claims to care about.
 
+---
+
+## Workflow
+
 A **Workflow** section will describe how this pattern is realized once a concrete layout exists.

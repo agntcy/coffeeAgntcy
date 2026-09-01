@@ -53,4 +53,8 @@ inside one building holding every fact.
 A **carbon accounting** voice can refuse to endorse a route until **emissions services and finance systems** return
 figures the treasury will recognize; the next reasoning step can then argue from facts, not approximation.
 
+---
+
+## Workflow
+
 A **Workflow** section will describe how this pattern is realized once a concrete layout exists.

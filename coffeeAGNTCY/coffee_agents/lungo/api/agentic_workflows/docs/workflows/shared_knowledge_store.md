@@ -50,4 +50,8 @@ inside one building holding every fact.
 Planners lean on **multi-year yield, pricing, and partner behavior** when contracts get serious; the store is what keeps
 those arguments grounded.
 
+---
+
+## Workflow
+
 A **Workflow** section will describe how this pattern is realized once a concrete layout exists.

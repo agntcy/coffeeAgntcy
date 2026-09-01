@@ -50,4 +50,8 @@ inside one building holding every fact.
 The company will not **contract** with partners that violate the policies it publishes; automation must inherit that
 spine.
 
+---
+
+## Workflow
+
 A **Workflow** section will describe how this pattern is realized once a concrete layout exists.

@@ -52,4 +52,8 @@ inside one building holding every fact.
 
 **Farm, coop, exporter, and finance** need that room when numbers move money.
 
+---
+
+## Workflow
+
 A **Workflow** section will describe how this pattern is realized once a concrete layout exists.

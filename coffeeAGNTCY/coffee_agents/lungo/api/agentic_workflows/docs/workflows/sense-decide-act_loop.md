@@ -51,4 +51,8 @@ inside one building holding every fact.
 During a **port strike**, the firm keeps rerouting and **re-scoring delivery risk** until there is either a credible
 promise or an honest exception-not a single frozen plan.
 
+---
+
+## Workflow
+
 A **Workflow** section will describe how this pattern is realized once a concrete layout exists.

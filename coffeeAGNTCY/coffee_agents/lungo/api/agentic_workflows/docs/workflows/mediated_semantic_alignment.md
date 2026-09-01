@@ -19,7 +19,7 @@ graph TD
 
 **References:**
 
-- Outshift IoC L9 alignment mechanisms (SAO — Stochastic Alternating Offers); see
+- Outshift IoC L9 alignment mechanisms (SAO - Stochastic Alternating Offers); see
   [outshift-open/ioc-protocols-models](https://github.com/outshift-open/ioc-protocols-models) (SAB / CIP subprotocols).
 - Antonio Gullí, *Agentic Design Patterns* (Springer, 2025), Ch. 7 - Multi-Agent Collaboration (Debate and Consensus).
   [https://doi.org/10.1007/978-3-032-01402-3](https://doi.org/10.1007/978-3-032-01402-3)

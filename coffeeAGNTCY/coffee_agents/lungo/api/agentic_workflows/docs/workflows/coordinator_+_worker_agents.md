@@ -50,4 +50,8 @@ inside one building holding every fact.
 **Order fulfillment** fits naturally: someone must **orchestrate** releases, filings, and bookings while each function
 still speaks its own operational language.
 
+---
+
+## Workflow
+
 A **Workflow** section will describe how this pattern is realized once a concrete layout exists.

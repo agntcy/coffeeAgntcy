@@ -38,7 +38,7 @@ graph TD
 **Team formation via polling** assembles a **task-scoped coalition** of agents when the right participants are not
 known upfront. A coordinator publishes a **poll**: required **roles**, **capabilities**, **constraints** (region,
 currency, SLA), and a **deadline**. Candidate agents **accept or decline** with optional terms; the poll engine
-closes with a **roster**—who is on the team for *this* task—and **bindings** (handles, endpoints, commitment window).
+closes with a **roster** - who is on the team for *this* task - and **bindings** (handles, endpoints, commitment window).
 
 The cognitive artifact is not message traffic but the **formed team record**: a queryable structure every participant
 and downstream agent can read ("Who is the shipper for order X?", "Is finance in the coalition yet?"). That record

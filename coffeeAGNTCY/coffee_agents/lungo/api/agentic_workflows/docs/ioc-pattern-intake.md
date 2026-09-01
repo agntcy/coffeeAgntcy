@@ -1,4 +1,4 @@
-# Internet of Cognition — pattern intake & gap matrix
+# Internet of Cognition - pattern intake & gap matrix
 
 Living reference for proposing and authoring IoC patterns in Lungo. Updated when the catalog grows.
 
@@ -6,7 +6,7 @@ Living reference for proposing and authoring IoC patterns in Lungo. Updated when
 
 ## Category scope (Internet of Cognition)
 
-**In scope:** queryable cognitive substrate — working task state, governed reference data, session scratchpads,
+**In scope:** queryable cognitive substrate - working task state, governed reference data, session scratchpads,
 ordered decision history, shared intent, alignment artifacts, and team context that agents read/write beyond
 point-to-point messages.
 
@@ -37,10 +37,10 @@ point-to-point messages.
 
 | L9 / Outshift concept | Lungo coverage (before this intake) | Gap |
 |-----------------------|-------------------------------------|-----|
-| **SIEP** — semantic information exchange | Partial (Shared Agent Memory, Knowledge Store) | Structured semantic payloads beyond facts |
-| **CIP** — cognition interoperability | Partial (Session hierarchy in L9 specs) | Session/episodic cognition model in catalog |
-| **SAB** — semantic alignment broadcast | **Missing** | Shared intent / constraint broadcast |
-| **TFP** — team formation via polling | **Missing** | Dynamic coalition assembly |
+| **SIEP** - semantic information exchange | Partial (Shared Agent Memory, Knowledge Store) | Structured semantic payloads beyond facts |
+| **CIP** - cognition interoperability | Partial (Session hierarchy in L9 specs) | Session/episodic cognition model in catalog |
+| **SAB** - semantic alignment broadcast | **Missing** | Shared intent / constraint broadcast |
+| **TFP** - team formation via polling | **Missing** | Dynamic coalition assembly |
 | **SAO / alignment engines** | Draft doc only (`mediated_semantic_alignment.md`) | Not catalogued; no category marker |
 | **CFN retain/recall** | Described in Shared Agent Memory | Other patterns lack CFN hook notes |
 
@@ -58,13 +58,13 @@ point-to-point messages.
 
 ## Intake checklist (use for every candidate)
 
-- [ ] **Category fit** — queryable cognitive state for agent decisions?
-- [ ] **Multi-agent** — requires shared substrate or 2+ parties?
-- [ ] **Distinct** — "not the same as" section names all overlapping IoC patterns?
-- [ ] **Documentable** — mermaid diagram + Coffee Agntcy use case + scenario + workflow?
-- [ ] **References** — Gullí chapter, multi-agent.wiki, Outshift/L9, or Fowler where applicable?
-- [ ] **Catalog** — entry in `starting_workflows.json` with `pattern_category: Internet of Cognition`?
-- [ ] **Category doc** — listed in `docs/categories/internet_of_cognition.md`?
+- [ ] **Category fit** - queryable cognitive state for agent decisions?
+- [ ] **Multi-agent** - requires shared substrate or 2+ parties?
+- [ ] **Distinct** - "not the same as" section names all overlapping IoC patterns?
+- [ ] **Documentable** - mermaid diagram + Coffee Agntcy use case + scenario + workflow?
+- [ ] **References** - Gullí chapter, multi-agent.wiki, Outshift/L9, or Fowler where applicable?
+- [ ] **Catalog** - entry in `starting_workflows.json` with `pattern_category: Internet of Cognition`?
+- [ ] **Category doc** - listed in `docs/categories/internet_of_cognition.md`?
 
 ---
 
@@ -79,7 +79,7 @@ point-to-point messages.
 
 ---
 
-## Backlog (not implemented — evaluate later)
+## Backlog (not implemented - evaluate later)
 
 | Candidate | Why deferred |
 |-----------|--------------|
@@ -93,7 +93,7 @@ point-to-point messages.
 ## External sources (mining order)
 
 1. In-repo `docs/workflows/*.md` and `docs/categories/*.md`
-2. [outshift-open/ioc-protocols-models](https://github.com/outshift-open/ioc-protocols-models) — SIEP, CIP, SAB, TFP
-3. Gullí, *Agentic Design Patterns* (2025) — especially Ch. 8, 14, 7
-4. [multi-agent.wiki](https://multi-agent.wiki) — blackboard, coordination
-5. `lungo/ioc/README.md` — CFN implementation hooks
+2. [outshift-open/ioc-protocols-models](https://github.com/outshift-open/ioc-protocols-models) - SIEP, CIP, SAB, TFP
+3. Gullí, *Agentic Design Patterns* (2025) - especially Ch. 8, 14, 7
+4. [multi-agent.wiki](https://multi-agent.wiki) - blackboard, coordination
+5. `lungo/ioc/README.md` - CFN implementation hooks

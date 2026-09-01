@@ -50,4 +50,8 @@ inside one building holding every fact.
 The **seasonal review** is the human-readable beat: did sourcing predictions earn their keep, and what should next
 season do differently?
 
+---
+
+## Workflow
+
 A **Workflow** section will describe how this pattern is realized once a concrete layout exists.

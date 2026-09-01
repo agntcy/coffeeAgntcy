@@ -49,4 +49,8 @@ inside one building holding every fact.
 
 When **carbon budgets** bind, the firm can choose **greener shipping** with clear eyes on **days and dollars**.
 
+---
+
+## Workflow
+
 A **Workflow** section will describe how this pattern is realized once a concrete layout exists.

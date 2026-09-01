@@ -52,4 +52,8 @@ inside one building holding every fact.
 When a **carrier fails**, the firm engages the **next certified logistics** option without pretending the first plan
 never existed.
 
+---
+
+## Workflow
+
 A **Workflow** section will describe how this pattern is realized once a concrete layout exists.

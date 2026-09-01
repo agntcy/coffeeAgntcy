@@ -56,4 +56,8 @@ inside one building holding every fact.
 The **regional demand** picture is the table vignette: many partial views still have to add up to **one number the firm
 can execute**.
 
+---
+
+## Workflow
+
 A **Workflow** section will describe how this pattern is realized once a concrete layout exists.

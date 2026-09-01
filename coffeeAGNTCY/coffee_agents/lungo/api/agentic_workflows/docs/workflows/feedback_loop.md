@@ -50,4 +50,8 @@ inside one building holding every fact.
 
 **Buyer satisfaction** should nudge **who gets the next call**, not decorate a slide nobody reads.
 
+---
+
+## Workflow
+
 A **Workflow** section will describe how this pattern is realized once a concrete layout exists.

@@ -51,4 +51,8 @@ inside one building holding every fact.
 When a **shipment anomaly** appears, the thread might need **weather**, **soil**, or **logistics** emphasis depending on
 what the signals imply; the roster can grow without redeploying one giant fixed switch.
 
+---
+
+## Workflow
+
 A **Workflow** section will describe how this pattern is realized once a concrete layout exists.

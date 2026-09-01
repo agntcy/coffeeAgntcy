@@ -52,4 +52,8 @@ inside one building holding every fact.
 The familiar picture is **procurement**: **farm data**, then **quality**, then **pricing**, then **commitment**-each hop
 adds something the firm can show a buyer, a grower, or finance without embarrassment.
 
+---
+
+## Workflow
+
 A **Workflow** section will describe how this pattern is realized once a concrete layout exists.

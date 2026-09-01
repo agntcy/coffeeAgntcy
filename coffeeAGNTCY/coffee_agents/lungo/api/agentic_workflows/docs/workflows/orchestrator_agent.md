@@ -50,4 +50,8 @@ inside one building holding every fact.
 
 The **global operations** voice is who notices when two regions promise the same bags to two customers.
 
+---
+
+## Workflow
+
 A **Workflow** section will describe how this pattern is realized once a concrete layout exists.

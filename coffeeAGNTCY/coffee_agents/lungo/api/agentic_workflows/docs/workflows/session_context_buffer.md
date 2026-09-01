@@ -53,4 +53,8 @@ inside one building holding every fact.
 
 Live **origin negotiation** needs everyone to see the same “where we are now” until the handshake or walk-away moment.
 
+---
+
+## Workflow
+
 A **Workflow** section will describe how this pattern is realized once a concrete layout exists.
