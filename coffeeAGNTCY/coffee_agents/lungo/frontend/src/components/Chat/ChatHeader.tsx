@@ -12,9 +12,11 @@ import { iconGlyphFillSx } from "@/utils/iconGlyphFill"
 
 function chatHeaderIconButtonSx(theme: Theme) {
   return {
-    width: 32,
-    height: 32,
-    minWidth: 32,
+    // Use the issue's recommended 44x44 touch target while keeping the icon
+    // at its existing visual size.
+    width: 44,
+    height: 44,
+    minWidth: 44,
     padding: "6px",
     borderRadius: theme.shape.borderRadius,
     background: "none",
