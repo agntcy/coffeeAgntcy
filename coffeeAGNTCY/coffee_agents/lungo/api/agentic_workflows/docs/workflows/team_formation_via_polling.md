@@ -72,6 +72,11 @@ promises** through operations, logistics, and finance it does not always own end
 those worlds: much of the drama is ordinary commerce-contracts, risk, partners, and tools-rather than a single team
 inside one building holding every fact.
 
+When Coffee Agntcy needs a short-lived coalition for a harvest window or a tender, the roster is not a standing
+org chart. **Team formation via polling** asks capable agents to declare availability and lets the initiator pick
+a task-scoped group from those replies. Directory dispatch finds a known specialist; this pattern first discovers
+who can join, then binds that set for the work at hand.
+
 ---
 
 ## Scenario

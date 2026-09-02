@@ -71,6 +71,11 @@ promises** through operations, logistics, and finance it does not always own end
 those worlds: much of the drama is ordinary commerce-contracts, risk, partners, and tools-rather than a single team
 inside one building holding every fact.
 
+A live deal at Coffee Agntcy can spawn many agents, each inferring the goal from whatever fragment of chat it last
+saw. The **shared intent registry** publishes one current objective that any participant can read, so later work
+aligns to the declared intent rather than to a private reconstruction of the conversation. Session buffers hold
+transient deal state; this registry holds the goal those agents are supposed to be serving.
+
 ---
 
 ## Scenario

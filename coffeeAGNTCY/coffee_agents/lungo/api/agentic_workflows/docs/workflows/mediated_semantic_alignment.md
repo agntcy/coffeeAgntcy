@@ -66,6 +66,12 @@ promises** through operations, logistics, and finance it does not always own end
 those worlds: much of the drama is ordinary commerce, contracts, risk, partners, and tools, rather than a single team
 inside one building holding every fact.
 
+Commercial terms at Coffee Agntcy bind independent parties whose vocabulary carries unstated assumptions, and a
+deal signed over ambiguous words is a dispute deferred. **Mediated semantic alignment** supplies a neutral
+mechanism for settling meaning first: the engine structures issues and options while each participant weighs
+offers against private economics and reveals only its chosen position. Consensus patterns converge on a number;
+this pattern first establishes what any agreed number is actually about.
+
 ---
 
 ## Scenario
