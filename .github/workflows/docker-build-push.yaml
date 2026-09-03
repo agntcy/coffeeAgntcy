@@ -49,6 +49,8 @@ env:
   LUNGO_DIR: coffeeAGNTCY/coffee_agents/lungo
   RECRUITER_DIR: coffeeAGNTCY/coffee_agents/recruiter
 
+permissions: read-all
+
 jobs:
   subprojects-to-build:
     runs-on: ubuntu-latest
@@ -169,6 +171,10 @@ jobs:
 
       - name: Compute build parameters
         id: build_params
+        env:
+          # Untrusted input (attacker-controlled on fork PRs): must not be interpolated
+          # directly into the script, or a crafted branch name could inject shell commands.
+          HEAD_REF: ${{ github.head_ref }}
         run: |
           # default values
           push=false
@@ -177,7 +183,7 @@ jobs:
 
           if [[ "${{ github.event_name }}" == "pull_request" ]]; then
             image_tag=pr-${{ github.event.pull_request.number }}
-            git_branch=${{ github.head_ref }}
+            git_branch="$HEAD_REF"
           elif [[ "${{ github.event_name }}" == "push" && "${{ github.ref }}" == "refs/heads/main" ]]; then
             push=true
             image_tag=latest

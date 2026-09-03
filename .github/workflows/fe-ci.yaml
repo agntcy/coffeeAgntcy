@@ -16,6 +16,8 @@ on:
       - "coffeeAGNTCY/coffee_agents/lungo/schema/openapi/**"
       - "coffeeAGNTCY/coffee_agents/lungo/schema/jsonschemas/event_v1.json"
 
+permissions: read-all
+
 jobs:
   frontend-build:
     runs-on: ubuntu-latest

@@ -36,6 +36,8 @@ env:
   LUNGO_DIR: coffeeAGNTCY/coffee_agents/lungo
   HELM_SUBDIR: deployment/helm
 
+permissions: read-all
+
 jobs:
   subprojects-to-build:
     runs-on: ubuntu-latest

@@ -17,6 +17,8 @@ on:
         type: boolean
         default: false
 
+permissions: read-all
+
 jobs:
   helm-package-and-push:
     runs-on: ubuntu-latest

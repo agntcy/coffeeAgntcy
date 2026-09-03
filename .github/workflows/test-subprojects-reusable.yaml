@@ -34,6 +34,8 @@ env:
   LUNGO_DIR: coffeeAGNTCY/coffee_agents/lungo
   RECRUITER_DIR: coffeeAGNTCY/coffee_agents/recruiter
 
+permissions: read-all
+
 jobs:
   subprojects:
     runs-on: ubuntu-latest
