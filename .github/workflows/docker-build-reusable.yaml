@@ -40,7 +40,9 @@ on:
         type: string
         default: ''
 
-permissions: read-all
+permissions:
+  contents: read
+  packages: write
 
 jobs:
   docker-build-and-push:

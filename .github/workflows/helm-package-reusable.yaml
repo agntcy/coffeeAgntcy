@@ -17,7 +17,9 @@ on:
         type: boolean
         default: false
 
-permissions: read-all
+permissions:
+  contents: read
+  packages: write
 
 jobs:
   helm-package-and-push:
