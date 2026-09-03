@@ -5,7 +5,7 @@
 ```mermaid
 graph TD
     Orchestrator["Orchestrator"]
-    Aligner["Semantic Alignment Agent (SAO)"]
+    Aligner["Semantic Alignment Agent"]
     PartyA["Participant Agent A"]
     PartyB["Participant Agent B"]
 
@@ -19,24 +19,21 @@ graph TD
 
 **References:**
 
-- Outshift IoC L9 alignment mechanisms (SAO - Stochastic Alternating Offers); see
-  [outshift-open/ioc-protocols-models](https://github.com/outshift-open/ioc-protocols-models) (SAB / CIP subprotocols).
 - Antonio Gullí, *Agentic Design Patterns* (Springer, 2025), Ch. 7 - Multi-Agent Collaboration (Debate and Consensus).
   [https://doi.org/10.1007/978-3-032-01402-3](https://doi.org/10.1007/978-3-032-01402-3)
 
 **Category:** Internet of Cognition
 
 **Mediated semantic alignment** gets independent agents to agree on **what terms mean** before they act on them. A
-central **Semantic Alignment Agent**, built on the **SAO (Stochastic Alternating Offers)** mechanism, runs
-**IntentDiscovery** and **OptionsGeneration** to turn a plain-language goal into a shared **agenda**: a set of
-**issues**, each carrying a set of **options**. It then evaluates each round's **decisions** and detects **agreement**,
-but it never calls the participating agents itself.
+central **Semantic Alignment Agent** runs a mediated alternating-offers loop: it turns a plain-language goal into a
+shared **agenda** (a set of **issues**, each with a set of **options**), then evaluates each round's **decisions** and
+detects **agreement**, but it never calls the participating agents itself.
 
-The distinguishing move is **caller mediation**. An **orchestrator** drives the engine's `start` then `decide` round
-loop and bridges the engine to the participants over A2A. Each round the engine emits one message per participant; the
-orchestrator dispatches each to the right agent, collects every reply, and posts them back together. Because the engine
-only ever sees structured **offers**, each participant keeps its own reasoning **private**: an agent decides `accept`,
-`reject`, or `counter_offer` on its own terms and reveals only the chosen option, never the logic behind it.
+The distinguishing move is **caller mediation**. An **orchestrator** opens the session, drives each round, and bridges
+the engine to the participants over A2A. Each round the engine emits one message per participant; the orchestrator
+dispatches each to the right agent, collects every reply, and posts them back together. Because the engine only ever
+sees structured **offers**, each participant keeps its own reasoning **private**: an agent decides `accept`, `reject`,
+or `counter_offer` on its own terms and reveals only the chosen option, never the logic behind it.
 
 Roles alternate by round. One participant is the **proposer** and must put terms on the table via `counter_offer`; the
 rest are **responders** and react to the standing offer. The loop continues until the session reaches a terminal state,
@@ -89,10 +86,9 @@ rather than over words that only look alike.
 **Orchestrator** is the **caller** that owns the loop. It registers the participating agents as a multi-agentic system,
 opens the session, and is the only component that ever talks to the agents. The engine stays a pure evaluator behind it.
 
-**Semantic Alignment Agent** is the **SAO engine**. On `start` it runs **IntentDiscovery** and **OptionsGeneration** to
-build the **agenda**, the issues to settle and the options available on each. On every `decide` it scores the round's
-replies, advances the standing offer, and reports whether the session is still **ongoing** or has reached a terminal
-state.
+**Semantic Alignment Agent** is the alignment engine. When the session opens it builds the **agenda**, the issues to
+settle and the options available on each. On every round it scores the replies, advances the standing offer, and
+reports whether the session is still **ongoing** or has reached a terminal state.
 
 **Participant Agent A** and **Participant Agent B** are the **independent parties**. Each round the engine casts one as
 **proposer** (must `counter_offer`) and the rest as **responders** (`accept`, `reject`, or `counter_offer`), and the
@@ -101,11 +97,11 @@ option.
 
 **Flow in one breath**
 
-1. The orchestrator calls `start` with the goal text and a step budget; the engine returns the agenda and the first
+1. The orchestrator opens the session with the goal text and a step budget; the engine returns the agenda and the first
    round's messages.
 2. The orchestrator dispatches each message to its agent over A2A and collects every reply.
-3. The orchestrator posts the replies back with `decide`; the engine evaluates the round and returns either the next
-   round's messages or a terminal status.
+3. The orchestrator posts the replies back; the engine evaluates the round and returns either the next round's messages
+   or a terminal status.
 4. Steps 2 and 3 repeat until the session is **agreed**, **broken**, or **timeout**. On agreement the engine returns the
    final chosen option per issue with coherence and alignment scores, negotiation over shared meaning, mediated end to
    end by the caller.

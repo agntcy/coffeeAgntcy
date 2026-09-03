@@ -148,10 +148,9 @@ gate facts for the order.
 **Accountant Agent** **retains** `PAYMENT_COMPLETE` once so downstream agents read settlement from memory, not
 from re-parsed message history.
 
-**Shared Agent Memory** is scoped to the **multi-agent system + order id**. In an IoC deployment it can be backed
-by **CFN** (`retain` / `recall` or `create_shared_memories` / `query_shared_memories`), optionally fed by
-**Observe SDK** traces and **A2A** instrumentation. Other implementations may use a blackboard, database, or graph
-store-the pattern is the same: **messages for dialogue, memory for facts**.
+**Shared Agent Memory** is scoped to the **multi-agent system + order id**. It can be backed by a blackboard,
+database, or graph store-the pattern is the same: **messages for dialogue, memory for facts**.
+Optionally, traces and A2A instrumentation can feed the same retain/recall surface.
 
 **Flow in one breath**
 

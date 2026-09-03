@@ -22,9 +22,7 @@ graph TD
 
 **References:**
 
-- Outshift IoC L9 **SAB (Semantic Alignment Broadcast)**;
-  [outshift-open/ioc-protocols-models](https://github.com/outshift-open/ioc-protocols-models).
-- Antonio Gullí, *Agentic Design Patterns* (Springer, 2025), Ch. 11 - Goal Setting and Monitoring.
+- Antonio Gullí, _Agentic Design Patterns_ (Springer, 2025), Ch. 11 - Goal Setting and Monitoring.
   [https://doi.org/10.1007/978-3-032-01402-3](https://doi.org/10.1007/978-3-032-01402-3)
 
 **Category:** Internet of Cognition
@@ -33,7 +31,7 @@ A **shared intent registry** holds the **canonical statement of what the multi-a
 goal text, success criteria, **hard constraints**, and **versioned amendments**-so every agent queries the **same
 intent snapshot** instead of inferring purpose from chat fragments.
 
-Where alignment *negotiates* terms round-by-round (see Mediated Semantic Alignment), the registry **broadcasts** the
+Where alignment _negotiates_ terms round-by-round (see Mediated Semantic Alignment), the registry **broadcasts** the
 current authoritative intent to all subscribers. Agents **subscribe** to changes, **acknowledge** receipt, and optionally
 **challenge** when local reasoning detects conflict-before acting on stale or divergent goals.
 
@@ -55,7 +53,7 @@ This pattern is **not** the same as:
   per run**, versioned and retirable.
 - **Session Context Buffer** - ephemeral negotiation scratchpad; intent registry is **authoritative** until superseded.
 - **Policy-Enforced Execution** - enforcement happens at action time; the registry is the **shared cognitive source**
-  agents read when deciding *what* to optimize for.
+  agents read when deciding _what_ to optimize for.
 
 The pattern transfers wherever **goal drift** is costly: fulfillment chains, regulated workflows, human-delegated
 objectives, or any MAS where "what we are doing" must stay **one query away** for every agent.
@@ -104,9 +102,7 @@ agents touch the order; each message thread only shows a slice of the ask.
 **Intent Publisher** (typically the lead or supervisor agent) creates the first intent record when a task opens and
 **supersedes** it when the user or policy changes the ask. Only this role (or a governance delegate) may publish.
 
-**Shared Intent Registry** stores versioned records, serves snapshots, and notifies subscribers. In IoC deployments this
-can align with L9 SAB broadcast semantics or CFN knowledge/memory APIs scoped to `intent` objects; other
-implementations use a document store or graph node type.
+**Shared Intent Registry** stores versioned records, serves snapshots, and notifies subscribers.
 
 **Participant agents** query or subscribe before planning steps; optional **ack** confirms they acted on `vN`.
 

@@ -6,7 +6,7 @@
 graph TD
     Coordinator["Task Coordinator"]
     Registry["Agent Directory / Capability Catalog"]
-    Poll["Team Formation Poll (TFP)"]
+    Poll["Team Formation Poll"]
     A["Farm Agent (candidate)"]
     B["Shipper Agent (candidate)"]
     C["Accountant Agent (candidate)"]
@@ -28,8 +28,6 @@ graph TD
 
 **References:**
 
-- Outshift IoC L9 **TFP (Team Formation via Polling)**;
-  [outshift-open/ioc-protocols-models](https://github.com/outshift-open/ioc-protocols-models).
 - Antonio Gullí, *Agentic Design Patterns* (Springer, 2025), Ch. 7 - Multi-Agent Collaboration (Hierarchical model) and
   Ch. 21 - Exploration and Discovery. [https://doi.org/10.1007/978-3-032-01402-3](https://doi.org/10.1007/978-3-032-01402-3)
 
@@ -54,7 +52,7 @@ Typical ingredients:
 This pattern is **not** the same as:
 
 - **Directory-Based Dispatch** - one-shot routing to a known agent; team formation **builds a set** over time.
-- **Recruiter** - evaluates and ranks agents for capability fit; TFP is **explicit join/decline** with a published roster.
+- **Recruiter** - evaluates and ranks agents for capability fit; this pattern is **explicit join/decline** with a published roster.
 - **Shared Agent Memory** - stores operational facts during execution; the team record is **who is allowed in the room**.
 - **Shared Intent Registry** - holds goal and constraints; team formation holds **membership and role bindings**.
 
@@ -103,12 +101,11 @@ lanes.
 ## Workflow
 
 **Task Coordinator** (e.g. Logistics Agent Buyer) opens the poll when a user prompt requires multi-party fulfillment,
-writes the poll spec, and monitors quorum. On close it **retains** the roster to shared memory or CFN and opens the
+writes the poll spec, and monitors quorum. On close it **retains** the roster to shared memory and opens the
 group channel with only accepted members.
 
-**Team Formation Poll (TFP engine)** maintains poll state, enforces deadlines, validates role fills, and emits the
-**Formed Task Team** record. In an IoC deployment this can align with L9 TFP message shapes; other implementations
-use a workflow table or directory callbacks.
+**Team Formation Poll** maintains poll state, enforces deadlines, validates role fills, and emits the
+**Formed Task Team** record. A workflow table, directory callbacks, or similar store can back the same poll lifecycle.
 
 **Candidate agents** respond with `accept` / `decline` and optional terms (earliest ship date, fee cap). They read the
 final roster before joining transport rooms.
