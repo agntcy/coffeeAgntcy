@@ -2,7 +2,7 @@
  * Copyright AGNTCY Contributors (https://github.com/agntcy)
  * SPDX-License-Identifier: Apache-2.0
  *
- * `@container chat` inline-size query — matches layout `sm` (600px min-width).
+ * `@container chat` inline-size query - matches layout `sm` (600px min-width).
  */
 
 /** Max width for stacked composer layout inside the `chat` container (width strictly below 600px). */

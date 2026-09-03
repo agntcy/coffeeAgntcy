@@ -2,7 +2,7 @@
  * Copyright AGNTCY Contributors (https://github.com/agntcy)
  * SPDX-License-Identifier: Apache-2.0
  *
- * Compact graph control bar chrome — same surface as the graph canvas.
+ * Compact graph control bar chrome - same surface as the graph canvas.
  */
 
 import type { SxProps, Theme } from "@mui/material/styles"

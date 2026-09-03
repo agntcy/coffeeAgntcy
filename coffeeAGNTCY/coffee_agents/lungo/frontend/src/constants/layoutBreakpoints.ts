@@ -2,7 +2,7 @@
  * Copyright AGNTCY Contributors (https://github.com/agntcy)
  * SPDX-License-Identifier: Apache-2.0
  *
- * Shared layout breakpoint tokens — see docs/open-ui-kit-breakpoints.md.
+ * Shared layout breakpoint tokens - see docs/open-ui-kit-breakpoints.md.
  */
 
 /** OUK `theme.breakpoints.values.sm` (min-width); compact shell below this width. */
