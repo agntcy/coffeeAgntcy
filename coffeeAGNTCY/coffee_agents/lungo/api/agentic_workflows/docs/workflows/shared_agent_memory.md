@@ -26,8 +26,9 @@ graph TD
 
 **References:**
 
+- **Source:** CoffeeAGNTCY pattern library (this document).
 - [Blackboard / Shared Memory pattern](https://multi-agent.wiki/patterns/blackboard-shared-memory)
-- Antonio Gullí, *Agentic Design Patterns* (Springer, 2025), Ch. 8 - Memory Management. [https://doi.org/10.1007/978-3-032-01402-3](https://doi.org/10.1007/978-3-032-01402-3)
+- **Inspired by:** Antonio Gullí, *Agentic Design Patterns* (Springer, 2025), Ch. 8 - Memory Management. [https://doi.org/10.1007/978-3-032-01402-3](https://doi.org/10.1007/978-3-032-01402-3)
 
 **Category:** Internet of Cognition
 
@@ -153,10 +154,9 @@ gate facts for the order.
 **Accountant Agent** **retains** `PAYMENT_COMPLETE` once so downstream agents read settlement from memory, not
 from re-parsed message history.
 
-**Shared Agent Memory** is scoped to the **multi-agent system + order id**. In an IoC deployment it can be backed
-by **CFN** (`retain` / `recall` or `create_shared_memories` / `query_shared_memories`), optionally fed by
-**Observe SDK** traces and **A2A** instrumentation. Other implementations may use a blackboard, database, or graph
-store-the pattern is the same: **messages for dialogue, memory for facts**.
+**Shared Agent Memory** is scoped to the **multi-agent system + order id**. It can be backed by a blackboard,
+database, or graph store-the pattern is the same: **messages for dialogue, memory for facts**.
+Optionally, traces and A2A instrumentation can feed the same retain/recall surface.
 
 **Flow in one breath**
 

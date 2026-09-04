@@ -8,7 +8,6 @@ graph TD
     Critic["Risk Review Agent"]
     Policy["Policy Agent"]
     Approver["Human Approver"]
-
     Buyer <-->|"Proposal + Evidence"| Critic
     Critic <-->|"Policy Check"| Policy
     Critic -->|"Structured Objections"| Buyer
@@ -19,7 +18,7 @@ graph TD
 
 **References:**
 
-- Antonio Gullí, *Agentic Design Patterns* (Springer, 2025), Ch. 4 - Reflection (Producer-Critic model) and Ch. 7 - Multi-Agent Collaboration (Critic-Reviewer). [https://doi.org/10.1007/978-3-032-01402-3](https://doi.org/10.1007/978-3-032-01402-3)
+- **Inspired by:** Antonio Gullí, *Agentic Design Patterns* (Springer, 2025), Ch. 4 - Reflection (Producer-Critic model) and Ch. 7 - Multi-Agent Collaboration (Critic-Reviewer). [https://doi.org/10.1007/978-3-032-01402-3](https://doi.org/10.1007/978-3-032-01402-3)
 
 **Category:** Governance, Policy & Human Oversight
 
@@ -56,5 +55,9 @@ commitments are still reversible.
 
 The company’s **risk** function should examine **long-term pricing** recommendations before the firm locks a curve that
 cannot be unwound.
+
+---
+
+## Workflow
 
 A **Workflow** section will describe how this pattern is realized once a concrete layout exists.

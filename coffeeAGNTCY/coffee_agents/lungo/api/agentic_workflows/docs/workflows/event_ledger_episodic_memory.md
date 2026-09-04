@@ -20,8 +20,9 @@ graph TD
 
 **References:**
 
+- **Source:** CoffeeAGNTCY pattern library (this document).
 - [Event Sourcing](https://martinfowler.com/eaaDev/EventSourcing.html)
-- Antonio Gullí, *Agentic Design Patterns* (Springer, 2025), Ch. 8 - Memory Management (episodic/history). [https://doi.org/10.1007/978-3-032-01402-3](https://doi.org/10.1007/978-3-032-01402-3)
+- **Inspired by:** Antonio Gullí, *Agentic Design Patterns* (Springer, 2025), Ch. 8 - Memory Management (episodic/history). [https://doi.org/10.1007/978-3-032-01402-3](https://doi.org/10.1007/978-3-032-01402-3)
 
 **Category:** Internet of Cognition
 
@@ -56,5 +57,9 @@ the fact.
 
 When a **shipment fails**, operations wants the same story the machines already told, **end to end**-not a loose
 summary.
+
+---
+
+## Workflow
 
 A **Workflow** section will describe how this pattern is realized once a concrete layout exists.

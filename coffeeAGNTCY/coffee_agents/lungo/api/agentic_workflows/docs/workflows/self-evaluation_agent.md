@@ -20,7 +20,7 @@ graph TD
 
 **References:**
 
-- Antonio Gullí, *Agentic Design Patterns* (Springer, 2025), Ch. 4 - Reflection and Ch. 9 - Learning and Adaptation. [https://doi.org/10.1007/978-3-032-01402-3](https://doi.org/10.1007/978-3-032-01402-3)
+- **Inspired by:** Antonio Gullí, *Agentic Design Patterns* (Springer, 2025), Ch. 4 - Reflection and Ch. 9 - Learning and Adaptation. [https://doi.org/10.1007/978-3-032-01402-3](https://doi.org/10.1007/978-3-032-01402-3)
 
 **Category:** Learning, Feedback & Self-Improvement
 
@@ -55,5 +55,9 @@ themselves, and nothing changes until someone accountable signs off.
 
 The **seasonal review** is the human-readable beat: did sourcing predictions earn their keep, and what should next
 season do differently?
+
+---
+
+## Workflow
 
 A **Workflow** section will describe how this pattern is realized once a concrete layout exists.

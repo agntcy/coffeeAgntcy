@@ -21,7 +21,7 @@ graph TD
 **References:**
 
 - [OpenTelemetry traces](https://opentelemetry.io/docs/concepts/signals/traces/)
-- Antonio Gullí, *Agentic Design Patterns* (Springer, 2025), Ch. 19 - Evaluation and Monitoring. [https://doi.org/10.1007/978-3-032-01402-3](https://doi.org/10.1007/978-3-032-01402-3)
+- **Inspired by:** Antonio Gullí, *Agentic Design Patterns* (Springer, 2025), Ch. 19 - Evaluation and Monitoring. [https://doi.org/10.1007/978-3-032-01402-3](https://doi.org/10.1007/978-3-032-01402-3)
 
 **Category:** Observability & Performance Accountability
 
@@ -54,5 +54,9 @@ boundaries instead of reassembled from partial logs.
 ## Scenario
 
 The promise is the **lifecycle of a coffee bean**: if you cannot see it end to end, you cannot improve it-or defend it.
+
+---
+
+## Workflow
 
 A **Workflow** section will describe how this pattern is realized once a concrete layout exists.

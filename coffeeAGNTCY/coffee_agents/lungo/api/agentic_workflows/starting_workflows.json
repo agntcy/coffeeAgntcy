@@ -719,6 +719,18 @@
     "instances": {}
   },
   {
+    "name": "Mediated Semantic Alignment",
+    "pattern": "Mediated Semantic Alignment",
+    "pattern_category": "Internet of Cognition",
+    "use_case": "---",
+    "scenario": "---",
+    "starting_topology": {
+      "nodes": [],
+      "edges": []
+    },
+    "instances": {}
+  },
+  {
     "name": "Orchestrator Agent",
     "pattern": "Orchestrator Agent",
     "pattern_category": "Orchestration & Control Flow",
@@ -827,8 +839,32 @@
     "instances": {}
   },
   {
+    "name": "Shared Intent Registry",
+    "pattern": "Shared Intent Registry",
+    "pattern_category": "Internet of Cognition",
+    "use_case": "---",
+    "scenario": "---",
+    "starting_topology": {
+      "nodes": [],
+      "edges": []
+    },
+    "instances": {}
+  },
+  {
     "name": "Shared Knowledge Store",
     "pattern": "Shared Knowledge Store",
+    "pattern_category": "Internet of Cognition",
+    "use_case": "---",
+    "scenario": "---",
+    "starting_topology": {
+      "nodes": [],
+      "edges": []
+    },
+    "instances": {}
+  },
+  {
+    "name": "Team Formation via Polling",
+    "pattern": "Team Formation via Polling",
     "pattern_category": "Internet of Cognition",
     "use_case": "---",
     "scenario": "---",

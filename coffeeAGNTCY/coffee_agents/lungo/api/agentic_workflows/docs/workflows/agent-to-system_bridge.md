@@ -21,7 +21,7 @@ graph TD
 **References:**
 
 - [Model Context Protocol](https://modelcontextprotocol.io/)
-- Antonio Gullí, *Agentic Design Patterns* (Springer, 2025), Ch. 5 - Tool Use (Function Calling) and Ch. 10 - Model Context Protocol. [https://doi.org/10.1007/978-3-032-01402-3](https://doi.org/10.1007/978-3-032-01402-3)
+- **Inspired by:** Antonio Gullí, *Agentic Design Patterns* (Springer, 2025), Ch. 5 - Tool Use (Function Calling) and Ch. 10 - Model Context Protocol. [https://doi.org/10.1007/978-3-032-01402-3](https://doi.org/10.1007/978-3-032-01402-3)
 
 **Category:** Integration & External Systems
 
@@ -58,5 +58,9 @@ wherever reasoning crosses into money or compliance.
 
 A **carbon accounting** voice can refuse to endorse a route until **emissions services and finance systems** return
 figures the treasury will recognize; the next reasoning step can then argue from facts, not approximation.
+
+---
+
+## Workflow
 
 A **Workflow** section will describe how this pattern is realized once a concrete layout exists.

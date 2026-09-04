@@ -22,7 +22,7 @@ graph TD
 
 **References:**
 
-- Antonio Gullí, *Agentic Design Patterns* (Springer, 2025), Ch. 12 - Exception Handling and Recovery. [https://doi.org/10.1007/978-3-032-01402-3](https://doi.org/10.1007/978-3-032-01402-3)
+- **Inspired by:** Antonio Gullí, *Agentic Design Patterns* (Springer, 2025), Ch. 12 - Exception Handling and Recovery. [https://doi.org/10.1007/978-3-032-01402-3](https://doi.org/10.1007/978-3-032-01402-3)
 
 **Category:** Orchestration & Control Flow
 
@@ -57,5 +57,9 @@ specialist; this pattern keeps the flow coherent when the chosen one fails.
 
 When a **carrier fails**, the firm engages the **next certified logistics** option without pretending the first plan
 never existed.
+
+---
+
+## Workflow
 
 A **Workflow** section will describe how this pattern is realized once a concrete layout exists.

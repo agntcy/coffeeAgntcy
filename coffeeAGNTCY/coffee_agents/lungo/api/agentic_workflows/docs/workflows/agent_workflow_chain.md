@@ -20,7 +20,7 @@ graph TD
 
 **References:**
 
-- Antonio Gullí, *Agentic Design Patterns* (Springer, 2025), Ch. 1 - Prompt Chaining (pipeline pattern). [https://doi.org/10.1007/978-3-032-01402-3](https://doi.org/10.1007/978-3-032-01402-3)
+- **Inspired by:** Antonio Gullí, *Agentic Design Patterns* (Springer, 2025), Ch. 1 - Prompt Chaining (pipeline pattern). [https://doi.org/10.1007/978-3-032-01402-3](https://doi.org/10.1007/978-3-032-01402-3)
 
 **Category:** Orchestration & Control Flow
 
@@ -57,5 +57,9 @@ later questioned.
 
 The familiar picture is **procurement**: **farm data**, then **quality**, then **pricing**, then **commitment**-each hop
 adds something the firm can show a buyer, a grower, or finance without embarrassment.
+
+---
+
+## Workflow
 
 A **Workflow** section will describe how this pattern is realized once a concrete layout exists.
