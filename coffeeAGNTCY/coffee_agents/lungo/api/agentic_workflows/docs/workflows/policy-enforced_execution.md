@@ -20,7 +20,7 @@ graph TD
 
 **References:**
 
-- Antonio Gullí, *Agentic Design Patterns* (Springer, 2025), Ch. 18 - Guardrails/Safety Patterns. [https://doi.org/10.1007/978-3-032-01402-3](https://doi.org/10.1007/978-3-032-01402-3)
+- **Inspired by:** Antonio Gullí, *Agentic Design Patterns* (Springer, 2025), Ch. 18 - Guardrails/Safety Patterns. [https://doi.org/10.1007/978-3-032-01402-3](https://doi.org/10.1007/978-3-032-01402-3)
 
 **Category:** Governance, Policy & Human Oversight
 

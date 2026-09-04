@@ -22,8 +22,8 @@ graph TD
 
 **References:**
 
-- Antonio Gullí, _Agentic Design Patterns_ (Springer, 2025), Ch. 11 - Goal Setting and Monitoring.
-  [https://doi.org/10.1007/978-3-032-01402-3](https://doi.org/10.1007/978-3-032-01402-3)
+- **Source:** CoffeeAGNTCY pattern library (this document).
+- **Inspired by:** Antonio Gullí, *Agentic Design Patterns* (Springer, 2025), Ch. 11 - Goal Setting and Monitoring. [https://doi.org/10.1007/978-3-032-01402-3](https://doi.org/10.1007/978-3-032-01402-3)
 
 **Category:** Internet of Cognition
 
