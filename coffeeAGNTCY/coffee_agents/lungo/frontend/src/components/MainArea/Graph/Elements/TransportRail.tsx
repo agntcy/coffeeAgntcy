@@ -12,7 +12,6 @@ import {
   normalizeTransportName,
 } from "./transportRailBackground"
 import { transportMetaFor, type AgentTransport } from "./transportMeta"
-import { graphNarrowPaneLabelSx } from "./graphLabelWrapSx"
 
 const TransportRail: React.FC<{
   transports: AgentTransport[]
@@ -81,14 +80,12 @@ const TransportRail: React.FC<{
               <Box
                 sx={{
                   display: "flex",
-                  flexWrap: "wrap",
                   alignItems: "center",
                   gap: 0.5,
-                  maxWidth: 200,
                   minHeight: 22,
                   px: 1,
                   py: 0.25,
-                  ...graphNarrowPaneLabelSx,
+                  whiteSpace: "nowrap",
                   bgcolor: isHighlighted
                     ? railColors.highlight
                     : railColors.resting,
