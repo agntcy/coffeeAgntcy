@@ -7,7 +7,7 @@
  */
 
 import { useEffect, useRef } from "react"
-import type { ElementSize } from "@/hooks/layout/useElementSize"
+import type { ElementSize } from "@/hooks/layout/elementSize"
 
 const DEFAULT_DEBOUNCE_MS = 150
 
@@ -20,13 +20,22 @@ export function useGraphCanvasFitViewOnResize(
   const fitViewRef = useRef(fitView)
   fitViewRef.current = fitView
   const debounceTimeoutRef = useRef<number | null>(null)
+  const wasEnabledRef = useRef(enabled)
 
   useEffect(() => {
+    const enabledJustTurnedOn = enabled && !wasEnabledRef.current
+    wasEnabledRef.current = enabled
+
     if (!enabled || containerSize === undefined) {
       return
     }
 
     if (containerSize.width <= 0 || containerSize.height <= 0) {
+      return
+    }
+
+    // GraphTopologyLayoutSync already fits when topology is first applied.
+    if (enabledJustTurnedOn) {
       return
     }
 
