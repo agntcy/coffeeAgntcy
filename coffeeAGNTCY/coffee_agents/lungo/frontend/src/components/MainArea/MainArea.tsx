@@ -9,8 +9,6 @@ import "@xyflow/react/dist/style.css"
 import "./ReactFlow.css"
 import { ReactFlowThemeGlobalStyles } from "./ReactFlowThemeGlobalStyles"
 import { Box } from "@open-ui-kit/core"
-import { useTheme } from "@mui/material/styles"
-import useMediaQuery from "@mui/material/useMediaQuery"
 import { isLayoutWidthBelowSm } from "@/constants/layoutBreakpoints"
 import { useGraphCanvasLayout } from "@/contexts/graphCanvasLayout"
 import TransportNode from "./Graph/Elements/transportNode"
@@ -37,7 +35,11 @@ import {
 } from "./GraphCanvasOverlay"
 import { LoadingSpinner } from "@/components/loading/LoadingSpinner"
 import { useGraphCanvasFitViewOnResize } from "@/hooks/graph"
-import { useElementSize } from "@/hooks/layout"
+import {
+  useElementHeight,
+  useIsBelowSmBreakpoint,
+  type ElementSize,
+} from "@/hooks/layout"
 import { useMainArea, type MainAreaProps } from "./useMainArea"
 
 const proOptions = { hideAttribution: true }
@@ -53,9 +55,8 @@ const edgeTypes = {
 }
 
 const MainArea: React.FC<MainAreaProps> = (props) => {
-  const theme = useTheme()
   const { graphCanvasWidth } = useGraphCanvasLayout()
-  const isViewportBelowSm = useMediaQuery(theme.breakpoints.down("sm"))
+  const isViewportBelowSm = useIsBelowSmBreakpoint()
   const useCompactGraphControls = useMemo(() => {
     if (graphCanvasWidth !== undefined && graphCanvasWidth > 0) {
       return isLayoutWidthBelowSm(graphCanvasWidth)
@@ -96,7 +97,18 @@ const MainArea: React.FC<MainAreaProps> = (props) => {
   } = useMainArea(props)
 
   const graphCanvasRef = useRef<HTMLDivElement>(null)
-  const graphCanvasSize = useElementSize(graphCanvasRef)
+  const graphCanvasHeight = useElementHeight(graphCanvasRef)
+  const graphCanvasSize = useMemo((): ElementSize | undefined => {
+    if (
+      graphCanvasWidth === undefined ||
+      graphCanvasWidth <= 0 ||
+      graphCanvasHeight === undefined ||
+      graphCanvasHeight <= 0
+    ) {
+      return undefined
+    }
+    return { width: graphCanvasWidth, height: graphCanvasHeight }
+  }, [graphCanvasWidth, graphCanvasHeight])
   useGraphCanvasFitViewOnResize(
     graphCanvasSize,
     fitViewWithViewport,
