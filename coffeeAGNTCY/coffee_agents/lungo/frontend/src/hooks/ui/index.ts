@@ -3,6 +3,6 @@
  * SPDX-License-Identifier: Apache-2.0
  **/
 
-export { useModalManager } from "./useModalManager"
+export { useDialogManager } from "./useDialogManager"
 export { useGithubIcon } from "./useGithubIcon"
 export { useThemeIcon } from "./useThemeIcon"

@@ -7,7 +7,7 @@ import { useEffect, useRef, useCallback, useState, useMemo } from "react"
 import { useNodesState, useEdgesState } from "@xyflow/react"
 import type { Node, Edge } from "@xyflow/react"
 import { useViewportAwareFitView } from "@/hooks/graph"
-import { useModalManager } from "@/hooks/ui"
+import { useDialogManager } from "@/hooks/ui"
 import { customNodeDataFromNode } from "./Graph/Elements/customNodeData"
 import type { CustomNodeData } from "./Graph/Elements/types"
 import { useMainAreaGraphEffects } from "./useMainAreaGraphEffects"
@@ -26,8 +26,6 @@ export interface MainAreaProps {
   buttonClicked: boolean
   setButtonClicked: (clicked: boolean) => void
   aiReplied: boolean
-  chatHeight?: number
-  isExpanded?: boolean
   groupCommResponseReceived?: boolean
   onNodeHighlight?: (highlightFunction: (nodeId: string) => void) => void
   selectedAgentCid?: string | null
@@ -43,8 +41,6 @@ export function useMainArea({
   buttonClicked,
   setButtonClicked,
   aiReplied,
-  chatHeight = 0,
-  isExpanded = false,
   onNodeHighlight,
   selectedAgentCid,
   onLiveGraphConfig,
@@ -70,17 +66,17 @@ export function useMainArea({
   const hasInitialViewportFitRef = useRef(false)
 
   const {
-    activeModal,
+    activeDialog,
     activeNodeId,
     activeNodeData,
-    handleOpenIdentityModal,
-    handleCloseModals,
+    handleOpenIdentityDialog,
+    handleCloseDialogs,
     handleShowBadgeDetails,
     handleShowPolicyDetails,
-    handlePaneClick: modalPaneClick,
-  } = useModalManager()
-  const [oasfModalOpen, setOasfModalOpen] = useState(false)
-  const [oasfModalData, setOasfModalData] = useState<CustomNodeData | null>(
+    handlePaneClick: dialogPaneClick,
+  } = useDialogManager()
+  const [oasfDialogOpen, setOasfDialogOpen] = useState(false)
+  const [oasfDialogData, setOasfDialogData] = useState<CustomNodeData | null>(
     null,
   )
 
@@ -96,9 +92,9 @@ export function useMainArea({
     edgesRef.current = edges
   }, [nodes, edges])
 
-  const handleOpenOasfModal = useCallback((nodeData: CustomNodeData) => {
-    setOasfModalData(nodeData)
-    setOasfModalOpen(true)
+  const handleOpenOasfDialog = useCallback((nodeData: CustomNodeData) => {
+    setOasfDialogData(nodeData)
+    setOasfDialogOpen(true)
   }, [])
 
   const handleLayoutSyncReady = useCallback(() => {
@@ -116,8 +112,8 @@ export function useMainArea({
     selectedWorkflowSummary,
     setNodes,
     setEdges,
-    handleOpenIdentityModal,
-    handleOpenOasfModal,
+    handleOpenIdentityDialog,
+    handleOpenOasfDialog,
     onTopologyApplied: handleTopologyApplied,
   })
 
@@ -163,18 +159,15 @@ export function useMainArea({
   useMainAreaGraphEffects({
     pattern: pattern ?? "",
     setNodes,
-    handleOpenIdentityModal,
-    handleOpenOasfModal,
-    activeModal,
+    handleOpenIdentityDialog,
+    handleOpenOasfDialog,
+    activeDialog,
     activeNodeId,
     handleShowBadgeDetails,
     handleShowPolicyDetails,
-    fitViewWithViewport,
-    chatHeight,
-    isExpanded,
     animationLockRef: animationLock,
-    handleCloseModals,
-    setOasfModalOpen,
+    handleCloseDialogs,
+    setOasfDialogOpen,
   })
 
   useNodeTransportInterfaces(
@@ -257,7 +250,7 @@ export function useMainArea({
     if (onNodeHighlight) onNodeHighlight(highlightNode)
   }, [onNodeHighlight, highlightNode])
 
-  const onPaneClick = modalPaneClick
+  const onPaneClick = dialogPaneClick
   const onNodeDrag = useCallback(() => {}, [])
 
   return {
@@ -269,12 +262,12 @@ export function useMainArea({
     setNodesDraggable,
     nodesConnectable,
     setNodesConnectable,
-    activeModal,
+    activeDialog,
     activeNodeData,
-    handleCloseModals,
-    oasfModalOpen,
-    setOasfModalOpen,
-    oasfModalData,
+    handleCloseDialogs,
+    oasfDialogOpen,
+    setOasfDialogOpen,
+    oasfDialogData,
     onPaneClick,
     onNodeDrag,
     topologyApplied,
@@ -284,5 +277,6 @@ export function useMainArea({
     layoutSyncNodeIds,
     layoutSyncFitViewport,
     handleLayoutSyncReady,
+    fitViewWithViewport,
   }
 }

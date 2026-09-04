@@ -14,6 +14,7 @@ import { Box, Stack } from "@open-ui-kit/core"
 import ChatAreaComposer from "./ChatAreaComposer"
 import ChatAreaMessageThread from "./ChatAreaMessageThread"
 import ChatHeader from "./ChatHeader"
+import { mainAreaContentHorizontalPadding } from "@/components/MainArea/mainAreaContentPadding"
 
 import type { GraphConfig } from "@/utils/graphConfigs"
 import type { AuctionStreamingState } from "@/stores/auctionStreaming.types"
@@ -152,18 +153,18 @@ const ChatArea: React.FC<ChatAreaProps> = ({
     return null
   }
 
-  const chatHorizontalPadding = { xs: 2, sm: 4, md: 8, lg: 15 }
-
   return (
     <Box
       ref={chatRef}
       sx={{
+        containerType: "inline-size",
+        containerName: "chat",
         position: "relative",
         display: "flex",
         width: "100%",
-        height: fillHeight ? "100%" : "auto",
+        height: fillHeight ? "100%" : "fit-content",
         maxHeight: fillHeight ? "100%" : "none",
-        minHeight: 0,
+        minHeight: fillHeight ? 0 : "fit-content",
         flexDirection: "column",
         boxSizing: "border-box",
         overflow: "hidden",
@@ -174,79 +175,83 @@ const ChatArea: React.FC<ChatAreaProps> = ({
       }}
     >
       {currentUserMessage ? (
-        <Box sx={{ flexShrink: 0, width: "100%" }}>
-          <ChatHeader
-            onClearConversation={onClearConversation}
-            horizontalPadding={chatHorizontalPadding}
-          />
-        </Box>
+        <>
+          <Box sx={{ flexShrink: 0, width: "100%" }}>
+            <ChatHeader
+              onClearConversation={onClearConversation}
+              horizontalPadding={mainAreaContentHorizontalPadding}
+            />
+          </Box>
+          <Box
+            ref={messagePanelRef}
+            id={CHAT_MESSAGE_PANEL_ID}
+            role="region"
+            aria-label="Chat messages"
+            sx={(theme) => ({
+              flex: fillHeight ? "1 1 auto" : "0 0 auto",
+              minHeight: fillHeight ? 0 : undefined,
+              width: "100%",
+              overflowY: "auto",
+              overflowX: "hidden",
+              // Reserve the scrollbar gutter on both edges so the centered thread
+              // doesn't shift left when a scrollbar appears (keeps it aligned with
+              // the composer below).
+              scrollbarGutter: "stable both-edges",
+              borderTop: "1px solid",
+              borderColor: "divider",
+              ...transparentScrollbarSx(theme),
+            })}
+          >
+            <Stack
+              ref={threadContentRef}
+              alignItems="center"
+              spacing={1}
+              sx={{
+                width: "100%",
+                px: mainAreaContentHorizontalPadding,
+                py: 1,
+                display: "flex",
+              }}
+            >
+              <ChatAreaMessageThread
+                currentUserMessage={currentUserMessage}
+                showProgressTracker={showProgressTracker}
+                showAuctionStreaming={showAuctionStreaming}
+                showRecruiterStreaming={showRecruiterStreaming}
+                showFinalResponse={showFinalResponse}
+                isAgentLoading={!!isAgentLoading}
+                agentResponse={agentResponse}
+                apiErrorMessage={apiErrorMessage}
+                graphConfig={graphConfig}
+                executionKey={executionKey}
+                auctionState={auctionState}
+                recruiterState={recruiterState}
+                observabilitySessionId={observabilitySessionId}
+                onStreamComplete={onStreamComplete}
+                onSenderHighlight={onSenderHighlight}
+              />
+            </Stack>
+          </Box>
+        </>
       ) : null}
 
-      <Box
-        ref={messagePanelRef}
-        id={CHAT_MESSAGE_PANEL_ID}
-        role="region"
-        aria-label="Chat messages"
-        sx={(theme) => ({
-          flex: fillHeight ? "1 1 auto" : "0 0 auto",
-          minHeight: fillHeight ? 0 : undefined,
-          width: "100%",
-          overflowY: "auto",
-          overflowX: "hidden",
-          backgroundColor: theme.palette.action.selected,
-          // Reserve the scrollbar gutter on both edges so the centered thread
-          // doesn't shift left when a scrollbar appears (keeps it aligned with
-          // the composer below).
-          scrollbarGutter: "stable both-edges",
-          ...transparentScrollbarSx(theme),
-          ...(currentUserMessage
-            ? { borderTop: "1px solid", borderColor: "divider" }
-            : { display: "none" }),
-        })}
-      >
-        <Stack
-          ref={threadContentRef}
-          alignItems="center"
-          spacing={1}
-          sx={{
-            width: "100%",
-            px: chatHorizontalPadding,
-            py: currentUserMessage ? 1 : 0,
-            display: "flex",
-          }}
-        >
-          {currentUserMessage ? (
-            <ChatAreaMessageThread
-              currentUserMessage={currentUserMessage}
-              showProgressTracker={showProgressTracker}
-              showAuctionStreaming={showAuctionStreaming}
-              showRecruiterStreaming={showRecruiterStreaming}
-              showFinalResponse={showFinalResponse}
-              isAgentLoading={!!isAgentLoading}
-              agentResponse={agentResponse}
-              apiErrorMessage={apiErrorMessage}
-              graphConfig={graphConfig}
-              executionKey={executionKey}
-              auctionState={auctionState}
-              recruiterState={recruiterState}
-              observabilitySessionId={observabilitySessionId}
-              onStreamComplete={onStreamComplete}
-              onSenderHighlight={onSenderHighlight}
-            />
-          ) : null}
-        </Stack>
-      </Box>
-
       <Stack
+        data-chat-composer-region
         alignItems="space-between"
         spacing={1}
         sx={{
           flexShrink: 0,
           width: "100%",
-          px: chatHorizontalPadding,
+          px: mainAreaContentHorizontalPadding,
           py: currentUserMessage ? 1 : 2,
           borderTop: currentUserMessage ? "1px solid" : "none",
           borderColor: "divider",
+          ...(!fillHeight
+            ? {
+                height: "fit-content",
+                minHeight: "fit-content",
+              }
+            : {}),
         }}
       >
         <ChatAreaComposer

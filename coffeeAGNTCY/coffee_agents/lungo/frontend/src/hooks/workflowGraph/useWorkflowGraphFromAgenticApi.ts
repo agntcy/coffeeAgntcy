@@ -38,8 +38,8 @@ export function useWorkflowGraphFromAgenticApi({
   selectedWorkflowSummary,
   setNodes,
   setEdges,
-  handleOpenIdentityModal,
-  handleOpenOasfModal,
+  handleOpenIdentityDialog,
+  handleOpenOasfDialog,
   onTopologyApplied,
 }: UseWorkflowGraphFromAgenticApiParams): UseWorkflowGraphFromAgenticApiResult {
   const baseUrl = useMemo(
@@ -67,11 +67,11 @@ export function useWorkflowGraphFromAgenticApi({
   )
   isStreamingRef.current = selectedWorkflowSummary?.supports_streaming === true
 
-  const identityRef = useRef(handleOpenIdentityModal)
-  const oasfRef = useRef(handleOpenOasfModal)
+  const identityRef = useRef(handleOpenIdentityDialog)
+  const oasfRef = useRef(handleOpenOasfDialog)
   const onAppliedRef = useRef(onTopologyApplied)
-  identityRef.current = handleOpenIdentityModal
-  oasfRef.current = handleOpenOasfModal
+  identityRef.current = handleOpenIdentityDialog
+  oasfRef.current = handleOpenOasfDialog
   onAppliedRef.current = onTopologyApplied
 
   const attachHandlers = useCallback((node: Node): Node => {
@@ -79,9 +79,9 @@ export function useWorkflowGraphFromAgenticApi({
       ...node,
       data: {
         ...node.data,
-        onOpenIdentityModal: identityRef.current,
-        onOpenOasfModal: oasfRef.current,
-        isModalOpen: false,
+        onOpenIdentityDialog: identityRef.current,
+        onOpenOasfDialog: oasfRef.current,
+        isDialogOpen: false,
       },
     }
   }, [])

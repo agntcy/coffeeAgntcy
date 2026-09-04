@@ -22,7 +22,7 @@ export interface LoadingSpinnerProps {
   message?: string
   size?: SpinnerProps["size"] | SpinnerSizeCategory
   thickness?: number
-  /** No padding; use in modals and other tight layouts */
+  /** No padding; use in dialogs and other tight layouts */
   compact?: boolean
 }
 

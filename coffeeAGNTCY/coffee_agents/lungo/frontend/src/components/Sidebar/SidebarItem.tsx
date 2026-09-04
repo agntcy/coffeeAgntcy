@@ -10,6 +10,7 @@ import {
   sidebarItemButtonSx,
   sidebarItemMarginTop,
   sidebarListItemSx,
+  sidebarRowTitleSx,
 } from "./sidebarSx"
 import { getDisabledRowOpacity } from "@/utils/a11ySx"
 
@@ -51,12 +52,12 @@ const SidebarItem: React.FC<SidebarItemProps> = ({
           minWidth: 0,
           justifyContent: "flex-start",
           borderRadius: sidebarBorderRadius(theme),
-          textWrap: "auto",
+          textWrap: "wrap",
           ...(disabled && { opacity: getDisabledRowOpacity(theme) }),
           ...(isRowDisabled && { pointerEvents: "none" }),
         })}
       >
-        <Typography component="span" variant="body1">
+        <Typography component="span" variant="body1" sx={sidebarRowTitleSx}>
           {title}
         </Typography>
       </ListItemButton>

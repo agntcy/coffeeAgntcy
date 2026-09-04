@@ -3,8 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  **/
 
-import { useCallback, useMemo, useState } from "react"
-import { useChatAreaMeasurement } from "@/hooks/chat"
+import { useCallback, useMemo, useRef, useState } from "react"
 import { useAgentAPI } from "@/hooks/agent"
 import {
   useAppChatState,
@@ -158,14 +157,7 @@ export function useApp() {
     ],
   )
 
-  const {
-    height: chatHeight,
-    isExpanded,
-    chatRef,
-  } = useChatAreaMeasurement({ debounceMs: 100 })
-
-  const chatHeightValue =
-    chat.currentUserMessage || chat.agentResponse ? chatHeight : 76
+  const chatRef = useRef<HTMLDivElement>(null)
 
   const graphConfig = useMemo(
     () => liveGraphConfig ?? undefined,
@@ -181,8 +173,6 @@ export function useApp() {
     patternCategoriesError,
     selectedWorkflowSummary,
     suggestedPromptsRequest,
-    chatHeightValue,
-    isExpanded,
     chatRef,
     messages: chat.messages,
     setMessages: chat.setMessages,

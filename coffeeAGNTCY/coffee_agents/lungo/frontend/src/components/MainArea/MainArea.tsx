@@ -3,23 +3,26 @@
  * SPDX-License-Identifier: Apache-2.0
  **/
 
-import React from "react"
+import React, { useMemo, useRef } from "react"
 import { ReactFlow, ReactFlowProvider } from "@xyflow/react"
 import "@xyflow/react/dist/style.css"
 import "./ReactFlow.css"
 import { ReactFlowThemeGlobalStyles } from "./ReactFlowThemeGlobalStyles"
 import { Box } from "@open-ui-kit/core"
+import { isLayoutWidthBelowSm } from "@/constants/layoutBreakpoints"
+import { useGraphCanvasLayout } from "@/contexts/graphCanvasLayout"
 import TransportNode from "./Graph/Elements/transportNode"
 import CustomEdge from "./Graph/Elements/CustomEdge"
 import BranchingEdge from "./Graph/Elements/BranchingEdge"
 import CustomNode from "./Graph/Elements/CustomNode"
 import CustomControls from "./Graph/Elements/CustomControls"
+import CustomControlsBar from "./Graph/Elements/CustomControlsBar"
 import { GraphTopologyLayoutSync } from "./Graph/GraphTopologyLayoutSync"
 import GraphDocumentationButton from "./Graph/Elements/GraphDocumentationButton"
 import { isPlaceholderWorkflow } from "@/components/Sidebar/sidebar.utils"
 import { getWorkflowDocumentationGithubUrl } from "@/urls"
-import ModalContainer from "./ModalContainer"
-import OasfRecordModal from "./Graph/Directory/OasfRecordModal"
+import GraphNodeDetailDialogs from "./GraphNodeDetailDialogs"
+import OasfRecordDialog from "./Graph/Directory/OasfRecordDialog"
 import {
   GRAPH_MAX_ZOOM,
   GRAPH_MIN_ZOOM,
@@ -31,6 +34,12 @@ import {
   GraphCanvasOverlayShell,
 } from "./GraphCanvasOverlay"
 import { LoadingSpinner } from "@/components/loading/LoadingSpinner"
+import { useGraphCanvasFitViewOnResize } from "@/hooks/graph"
+import {
+  useElementHeight,
+  useIsBelowSmBreakpoint,
+  type ElementSize,
+} from "@/hooks/layout"
 import { useMainArea, type MainAreaProps } from "./useMainArea"
 
 const proOptions = { hideAttribution: true }
@@ -46,6 +55,15 @@ const edgeTypes = {
 }
 
 const MainArea: React.FC<MainAreaProps> = (props) => {
+  const { graphCanvasWidth } = useGraphCanvasLayout()
+  const isViewportBelowSm = useIsBelowSmBreakpoint()
+  const useCompactGraphControls = useMemo(() => {
+    if (graphCanvasWidth !== undefined && graphCanvasWidth > 0) {
+      return isLayoutWidthBelowSm(graphCanvasWidth)
+    }
+    return isViewportBelowSm
+  }, [graphCanvasWidth, isViewportBelowSm])
+
   const {
     selectedWorkflowSummary,
     workflowCatalogLoading,
@@ -60,12 +78,12 @@ const MainArea: React.FC<MainAreaProps> = (props) => {
     setNodesDraggable,
     nodesConnectable,
     setNodesConnectable,
-    activeModal,
+    activeDialog,
     activeNodeData,
-    handleCloseModals,
-    oasfModalOpen,
-    setOasfModalOpen,
-    oasfModalData,
+    handleCloseDialogs,
+    oasfDialogOpen,
+    setOasfDialogOpen,
+    oasfDialogData,
     onPaneClick,
     onNodeDrag,
     topologyApplied,
@@ -75,7 +93,27 @@ const MainArea: React.FC<MainAreaProps> = (props) => {
     layoutSyncNodeIds,
     layoutSyncFitViewport,
     handleLayoutSyncReady,
+    fitViewWithViewport,
   } = useMainArea(props)
+
+  const graphCanvasRef = useRef<HTMLDivElement>(null)
+  const graphCanvasHeight = useElementHeight(graphCanvasRef)
+  const graphCanvasSize = useMemo((): ElementSize | undefined => {
+    if (
+      graphCanvasWidth === undefined ||
+      graphCanvasWidth <= 0 ||
+      graphCanvasHeight === undefined ||
+      graphCanvasHeight <= 0
+    ) {
+      return undefined
+    }
+    return { width: graphCanvasWidth, height: graphCanvasHeight }
+  }, [graphCanvasWidth, graphCanvasHeight])
+  useGraphCanvasFitViewOnResize(
+    graphCanvasSize,
+    fitViewWithViewport,
+    topologyApplied,
+  )
 
   const activeWorkflowSummary =
     selectedWorkflowSummary && !isPlaceholderWorkflow(selectedWorkflowSummary)
@@ -94,6 +132,13 @@ const MainArea: React.FC<MainAreaProps> = (props) => {
     ? getWorkflowDocumentationGithubUrl(activeWorkflowSummary.name)
     : undefined
   const documentationLabel = activeWorkflowSummary?.name
+
+  const graphInteractivityEnabled = nodesDraggable && nodesConnectable
+  const handleToggleGraphInteractivity = () => {
+    const next = !graphInteractivityEnabled
+    setNodesDraggable(next)
+    setNodesConnectable(next)
+  }
 
   return (
     <>
@@ -126,55 +171,87 @@ const MainArea: React.FC<MainAreaProps> = (props) => {
           </GraphCanvasOverlayShell>
         ) : null}
 
-        <ReactFlow
-          nodes={nodes}
-          edges={edges}
-          nodeTypes={nodeTypes}
-          edgeTypes={edgeTypes}
-          onNodesChange={onNodesChange}
-          onEdgesChange={onEdgesChange}
-          onNodeDrag={onNodeDrag}
-          onPaneClick={onPaneClick}
-          proOptions={proOptions}
-          defaultViewport={GRAPH_DEFAULT_VIEWPORT}
-          minZoom={GRAPH_MIN_ZOOM}
-          maxZoom={GRAPH_MAX_ZOOM}
-          nodesDraggable={nodesDraggable}
-          nodesConnectable={nodesConnectable}
-          elementsSelectable={nodesDraggable}
-          elevateNodesOnSelect={false}
+        <Box
+          sx={{
+            position: "relative",
+            display: "grid",
+            flex: 1,
+            alignSelf: "stretch",
+            width: "100%",
+            minHeight: 0,
+            minWidth: 0,
+            overflow: "hidden",
+            gridTemplateRows: useCompactGraphControls
+              ? "minmax(0, 1fr) auto"
+              : "minmax(0, 1fr)",
+          }}
         >
-          <GraphTopologyLayoutSync
-            generation={layoutSyncGeneration}
-            nodeIds={layoutSyncNodeIds}
-            fitViewport={layoutSyncFitViewport}
-            onReady={handleLayoutSyncReady}
-          />
-          <CustomControls
-            isInteractive={nodesDraggable && nodesConnectable}
-            onToggleInteractivity={() => {
-              const next = !(nodesDraggable && nodesConnectable)
-              setNodesDraggable(next)
-              setNodesConnectable(next)
+          <Box
+            ref={graphCanvasRef}
+            sx={{
+              position: "relative",
+              minHeight: 0,
+              minWidth: 0,
+              width: "100%",
+              height: "100%",
             }}
-          />
-          <GraphDocumentationButton
-            documentationUrl={documentationUrl}
-            documentationLabel={documentationLabel}
-          />
-        </ReactFlow>
+          >
+            <ReactFlow
+              nodes={nodes}
+              edges={edges}
+              nodeTypes={nodeTypes}
+              edgeTypes={edgeTypes}
+              onNodesChange={onNodesChange}
+              onEdgesChange={onEdgesChange}
+              onNodeDrag={onNodeDrag}
+              onPaneClick={onPaneClick}
+              proOptions={proOptions}
+              defaultViewport={GRAPH_DEFAULT_VIEWPORT}
+              minZoom={GRAPH_MIN_ZOOM}
+              maxZoom={GRAPH_MAX_ZOOM}
+              nodesDraggable={nodesDraggable}
+              nodesConnectable={nodesConnectable}
+              elementsSelectable={nodesDraggable}
+              elevateNodesOnSelect={false}
+              style={{ width: "100%", height: "100%" }}
+            >
+              <GraphTopologyLayoutSync
+                generation={layoutSyncGeneration}
+                nodeIds={layoutSyncNodeIds}
+                fitViewport={layoutSyncFitViewport}
+                onReady={handleLayoutSyncReady}
+              />
+              {!useCompactGraphControls ? (
+                <CustomControls
+                  isInteractive={graphInteractivityEnabled}
+                  onToggleInteractivity={handleToggleGraphInteractivity}
+                />
+              ) : null}
+              <GraphDocumentationButton
+                documentationUrl={documentationUrl}
+                documentationLabel={documentationLabel}
+              />
+            </ReactFlow>
+          </Box>
+          {useCompactGraphControls ? (
+            <CustomControlsBar
+              isInteractive={graphInteractivityEnabled}
+              onToggleInteractivity={handleToggleGraphInteractivity}
+            />
+          ) : null}
+        </Box>
 
-        <ModalContainer
-          activeModal={activeModal}
+        <GraphNodeDetailDialogs
+          activeDialog={activeDialog}
           activeNodeData={activeNodeData}
-          onClose={handleCloseModals}
+          onClose={handleCloseDialogs}
         />
 
-        <OasfRecordModal
-          isOpen={oasfModalOpen}
-          onClose={() => setOasfModalOpen(false)}
-          nodeName={oasfModalData?.label || ""}
-          nodeData={oasfModalData}
+        <OasfRecordDialog
+          isOpen={oasfDialogOpen}
+          onClose={() => setOasfDialogOpen(false)}
+          nodeName={oasfDialogData?.label || ""}
+          nodeData={oasfDialogData}
           chatApiTarget={chatApiTarget}
         />
       </Box>

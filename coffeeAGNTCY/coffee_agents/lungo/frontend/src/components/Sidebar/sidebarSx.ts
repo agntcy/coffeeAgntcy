@@ -106,3 +106,11 @@ export const sidebarListItemSx = () => ({
 /** Left padding per nesting level in an expanded `SidebarDropdown` panel (`theme.spacing(2)` → 12px). */
 export const sidebarDropdownPanelPaddingLeft = (theme: Theme) =>
   theme.spacing(3)
+
+/** Multi-line catalog labels (sidebar scrolls; no ellipsis truncation). */
+export const sidebarRowTitleSx = {
+  minWidth: 0,
+  whiteSpace: "normal",
+  overflowWrap: "anywhere",
+  wordBreak: "break-word",
+} as const

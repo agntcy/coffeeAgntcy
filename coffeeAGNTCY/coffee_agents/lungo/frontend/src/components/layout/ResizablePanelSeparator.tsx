@@ -9,7 +9,10 @@ import React from "react"
 import { Separator } from "react-resizable-panels"
 import { alpha, styled } from "@mui/material/styles"
 
-import { RESIZABLE_PANEL_SEPARATOR_SIZE_PX } from "./resizablePanelLayout"
+import {
+  RESIZABLE_PANEL_SEPARATOR_SIZE_PX,
+  RESIZABLE_PANEL_SEPARATOR_TOUCH_PADDING_PX,
+} from "./resizablePanelLayout"
 
 export type ResizablePanelGroupOrientation = "horizontal" | "vertical"
 
@@ -33,13 +36,32 @@ const StyledSeparator = styled(Separator, {
   const hoverOpacity = isLight ? 0.48 : 0.52
   const isHorizontalGroup = orientation === "horizontal"
 
+  const touchPaddingPx = RESIZABLE_PANEL_SEPARATOR_TOUCH_PADDING_PX
+
   return {
     flexShrink: 0,
+    position: "relative",
+    zIndex: 1,
+    boxSizing: "content-box",
     ...(isHorizontalGroup
-      ? { width: RESIZABLE_PANEL_SEPARATOR_SIZE_PX }
-      : { height: RESIZABLE_PANEL_SEPARATOR_SIZE_PX }),
-    margin: 0,
-    padding: 0,
+      ? {
+          width: RESIZABLE_PANEL_SEPARATOR_SIZE_PX,
+          paddingLeft: touchPaddingPx,
+          marginTop: 0,
+          marginRight: 0,
+          marginBottom: 0,
+          marginLeft: -touchPaddingPx,
+          backgroundClip: "content-box",
+        }
+      : {
+          height: RESIZABLE_PANEL_SEPARATOR_SIZE_PX,
+          paddingTop: touchPaddingPx,
+          marginTop: -touchPaddingPx,
+          marginRight: 0,
+          marginBottom: 0,
+          marginLeft: 0,
+          backgroundClip: "content-box",
+        }),
     border: 0,
     backgroundColor: alpha(theme.palette.text.primary, restingOpacity),
     cursor: resizeEnabled
@@ -52,6 +74,7 @@ const StyledSeparator = styled(Separator, {
       duration: theme.transitions.duration.shortest,
     }),
     "&:hover": {
+      backgroundClip: "border-box",
       backgroundColor: alpha(
         theme.palette.text.primary,
         resizeEnabled ? hoverOpacity : restingOpacity,

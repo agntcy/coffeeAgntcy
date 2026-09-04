@@ -12,6 +12,10 @@ import { composerPrimaryButtonSx } from "@/utils/composerPrimaryButtonSx"
 
 import type { HttpRequestTarget } from "@/urls"
 
+import {
+  chatComposerNarrowContainerQuery,
+  CHAT_COMPOSER_STACKED_GAP_PX,
+} from "./chatComposerLayout"
 import { SuggestedPromptsDropdown } from "./prompts"
 
 /** Matches OUK `Button` `size="medium"` with compact `body1` typography (7 + 20 + 7 = 34px). */
@@ -19,7 +23,10 @@ const COMPOSER_CONTROL_HEIGHT_PX = 34
 
 const promptsDropdownSx = {
   flexShrink: 0,
-  alignSelf: { xs: "stretch" as const, sm: "flex-end" as const },
+  alignSelf: "flex-end" as const,
+  [chatComposerNarrowContainerQuery]: {
+    alignSelf: "stretch",
+  },
 }
 
 interface ChatAreaComposerProps {
@@ -43,10 +50,20 @@ const ChatAreaComposer: React.FC<ChatAreaComposerProps> = ({
 }) => {
   return (
     <Stack
-      direction={{ xs: "column", sm: "row" }}
-      alignItems={{ xs: "stretch", sm: "space-between" }}
+      direction="row"
+      alignItems="center"
       spacing={2}
-      sx={{ width: "100%" }}
+      sx={{
+        width: "100%",
+        [chatComposerNarrowContainerQuery]: {
+          flexDirection: "column",
+          alignItems: "stretch",
+          gap: `${CHAT_COMPOSER_STACKED_GAP_PX}px`,
+          "& > :not(style) ~ :not(style)": {
+            margin: 0,
+          },
+        },
+      }}
     >
       {suggestedPromptsRequest ? (
         <Box sx={promptsDropdownSx}>
@@ -101,7 +118,10 @@ const ChatAreaComposer: React.FC<ChatAreaComposerProps> = ({
         endIcon={<SendIcon />}
         sx={(theme) => ({
           flexShrink: 0,
-          alignSelf: { xs: "stretch", sm: "flex-end" },
+          alignSelf: "flex-end",
+          [chatComposerNarrowContainerQuery]: {
+            alignSelf: "stretch",
+          },
           ...theme.typography.body1,
           ...composerPrimaryButtonSx(theme),
           "& .MuiButton-endIcon": iconGlyphFillSx(

@@ -78,8 +78,8 @@ const CustomNode: React.FC<CustomNodeProps> = ({ id, data }) => {
   const handleAgentDirectoryClick = (e: React.MouseEvent) => {
     e.stopPropagation()
     e.preventDefault()
-    if (nodeRef.current && typeof data.onOpenOasfModal === "function") {
-      data.onOpenOasfModal(data)
+    if (nodeRef.current && typeof data.onOpenOasfDialog === "function") {
+      data.onOpenOasfDialog(data)
     }
   }
 

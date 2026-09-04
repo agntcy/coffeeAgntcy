@@ -9,7 +9,7 @@
 import { alpha } from "@mui/material/styles"
 import type { SxProps, Theme } from "@mui/material/styles"
 
-export const graphModalScrollBodySx: SxProps<Theme> = {
+export const graphDialogScrollBodySx: SxProps<Theme> = {
   position: "relative",
   display: "flex",
   maxHeight: "min(40vh, 320px)",
@@ -20,7 +20,7 @@ export const graphModalScrollBodySx: SxProps<Theme> = {
   overflowY: "auto",
 }
 
-export const graphModalPreSx: SxProps<Theme> = {
+export const graphDialogPreSx: SxProps<Theme> = {
   overflow: "auto",
   whiteSpace: "pre-wrap",
   wordBreak: "break-word",
@@ -34,7 +34,7 @@ export const graphModalPreSx: SxProps<Theme> = {
   color: "text.primary",
 }
 
-export const graphModalLoadingOverlaySx: SxProps<Theme> = {
+export const graphDialogLoadingOverlaySx: SxProps<Theme> = {
   position: "absolute",
   inset: 0,
   display: "flex",
@@ -44,7 +44,7 @@ export const graphModalLoadingOverlaySx: SxProps<Theme> = {
   backdropFilter: "blur(8px)",
 }
 
-export const graphModalFieldCardSx: SxProps<Theme> = {
+export const graphDialogFieldCardSx: SxProps<Theme> = {
   borderRadius: 1,
   border: "1px solid",
   borderColor: "divider",

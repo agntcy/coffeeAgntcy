@@ -32,7 +32,10 @@ interface CatalogTreeProps {
   onSelectWorkflow: (summary: WorkflowSummary) => void
   selectedReferencePattern?: string | null
   onSelectReferencePattern?: (patternName: string) => void
+  selectedPatternCategory?: string | null
   onSelectPatternCategory?: (categoryName: string) => void
+  /** When true (narrow catalog drawer), category title and expand chevron are separate controls. */
+  separateReferenceCategoryNavigation?: boolean
 }
 
 const CatalogTree: React.FC<CatalogTreeProps> = ({
@@ -43,7 +46,9 @@ const CatalogTree: React.FC<CatalogTreeProps> = ({
   onSelectWorkflow,
   selectedReferencePattern,
   onSelectReferencePattern,
+  selectedPatternCategory,
   onSelectPatternCategory,
+  separateReferenceCategoryNavigation = false,
 }) => {
   const { implementedPatterns, referenceCategories } = layout
 
@@ -51,7 +56,7 @@ const CatalogTree: React.FC<CatalogTreeProps> = ({
     openWorkflowDocumentationInNewTab(catalogName)
   }, [])
 
-  const toggleCategory = useCallback(
+  const selectAndToggleCategory = useCallback(
     (categoryKey: string, categoryName: string) => {
       toggleExpandableDropdown(categoryKey)
       onSelectPatternCategory?.(categoryName)
@@ -153,7 +158,21 @@ const CatalogTree: React.FC<CatalogTreeProps> = ({
         key={categoryKey}
         title={category.name}
         isExpanded={expandedKeys.has(categoryKey)}
-        onToggle={() => toggleCategory(categoryKey, category.name)}
+        onToggle={
+          separateReferenceCategoryNavigation
+            ? () => toggleExpandableDropdown(categoryKey)
+            : () => selectAndToggleCategory(categoryKey, category.name)
+        }
+        onTitleClick={
+          separateReferenceCategoryNavigation && onSelectPatternCategory
+            ? () => onSelectPatternCategory(category.name)
+            : undefined
+        }
+        isTitleSelected={
+          separateReferenceCategoryNavigation
+            ? selectedPatternCategory === category.name
+            : false
+        }
       >
         {category.patternNames.map((patternName) => (
           <SidebarItem
