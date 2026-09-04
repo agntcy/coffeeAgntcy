@@ -5,7 +5,7 @@
 
 import React, { type CSSProperties } from "react"
 import { Handle, Position } from "@xyflow/react"
-import { Box, Typography, useTheme } from "@open-ui-kit/core"
+import { Box, Tooltip, Typography, useTheme } from "@open-ui-kit/core"
 import { GraphSideIconTooltip } from "./GraphSideIconTooltip"
 import { useGithubIcon } from "@/hooks/ui"
 import { AssetPngIcon } from "@/components/AssetPngIcon"
@@ -15,7 +15,6 @@ import {
   graphNodeSideIconLinkSx,
   graphNodeRootSurfaceSx,
 } from "./graphNodeSurface"
-import { graphNarrowPaneLabelSx } from "./graphLabelWrapSx"
 import { TransportNodeData } from "./types"
 
 interface TransportNodeProps {
@@ -87,32 +86,27 @@ const TransportNode: React.FC<TransportNodeProps> = ({ data }) => {
         height: isCircular ? CIRCULAR_TRANSPORT_NODE_SIZE : 52,
       })}
     >
-      <Typography
-        component="div"
-        variant="h6"
-        sx={() => ({
-          textAlign: "center",
-          ...graphNarrowPaneLabelSx,
-          ...(isCircular && !data.githubLink ? { mb: 1 } : {}),
-          ...(isCircular
-            ? {
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                maxWidth: CIRCULAR_TRANSPORT_NODE_SIZE - 32,
-              }
-            : {
-                flex: 1,
-                minHeight: 20,
-                overflow: "hidden",
-                display: "-webkit-box",
-                WebkitLineClamp: 2,
-                WebkitBoxOrient: "vertical",
-              }),
-        })}
-      >
-        {data.label}
-      </Typography>
+      <Tooltip title={data.label} arrow>
+        <Typography
+          variant="h6"
+          component="div"
+          noWrap
+          sx={{
+            textAlign: "center",
+            minWidth: 0,
+            ...(isCircular
+              ? {
+                  maxWidth: CIRCULAR_TRANSPORT_NODE_SIZE - 32,
+                  ...(data.githubLink ? {} : { mb: 1 }),
+                }
+              : {
+                  flex: 1,
+                }),
+          }}
+        >
+          {data.label}
+        </Typography>
+      </Tooltip>
 
       {data.githubLink && SecurityClass.isSafeExternalUrl(data.githubLink) && (
         <GraphSideIconTooltip title="Open repository on GitHub">
