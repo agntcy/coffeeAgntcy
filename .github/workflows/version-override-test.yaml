@@ -2,6 +2,8 @@ name: Version Override Test
 on:
   workflow_dispatch: {}
 
+permissions: read-all
+
 jobs:
   integration:
     uses: agntcy/coffeeAgntcy/.github/workflows/test.yaml@integration-hook
