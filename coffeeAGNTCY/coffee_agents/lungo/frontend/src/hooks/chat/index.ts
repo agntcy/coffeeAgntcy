@@ -3,7 +3,6 @@
  * SPDX-License-Identifier: Apache-2.0
  **/
 
-export { useChatAreaMeasurement } from "./useChatAreaMeasurement"
 export { useObservabilitySessionId } from "./useObservabilitySessionId"
 export {
   PatternChatNotFoundError,
