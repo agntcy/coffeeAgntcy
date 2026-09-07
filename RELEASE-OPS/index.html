@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="light">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        
+        
+        
+        <link rel="shortcut icon" href="../img/favicon.ico">
+        <title>Release Operations - CoffeeAgntcy Documentation</title>
+        <link href="../css/bootstrap.min.css" rel="stylesheet">
+        <link href="../css/fontawesome.min.css" rel="stylesheet">
+        <link href="../css/brands.min.css" rel="stylesheet">
+        <link href="../css/solid.min.css" rel="stylesheet">
+        <link href="../css/v4-font-face.min.css" rel="stylesheet">
+        <link href="../css/base.css" rel="stylesheet">
+        <link id="hljs-light" rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css" >
+        <link id="hljs-dark" rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github-dark.min.css" disabled>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+        <script>hljs.highlightAll();</script> 
+    </head>
+
+    <body>
+        <div class="navbar fixed-top navbar-expand-lg navbar-dark bg-primary">
+            <div class="container">
+                <a class="navbar-brand" href="..">CoffeeAgntcy Documentation</a>
+                <!-- Expander button -->
+                <button type="button" class="navbar-toggler" data-bs-toggle="collapse" data-bs-target="#navbar-collapse" aria-controls="navbar-collapse" aria-expanded="false" aria-label="Toggle navigation">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+
+                <!-- Expanded navigation -->
+                <div id="navbar-collapse" class="navbar-collapse collapse">
+                        <!-- Main navigation -->
+                        <ul class="nav navbar-nav">
+                            <li class="nav-item">
+                                <a href=".." class="nav-link">Home</a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="../CONTRIBUTING/" class="nav-link">Contributing</a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="../CHANGELOG/" class="nav-link">Changelog</a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="../CODE_OF_CONDUCT/" class="nav-link">Code of Conduct</a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="../SECURITY/" class="nav-link">Security</a>
+                            </li>
+                        </ul>
+
+                    <ul class="nav navbar-nav ms-md-auto">
+                        <li class="nav-item">
+                            <a href="#" class="nav-link" data-bs-toggle="modal" data-bs-target="#mkdocs_search_modal">
+                                <i class="fa fa-search"></i> Search
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="container">
+            <div class="row">
+                    <div class="col-md-3"><div class="navbar-expand-md bs-sidebar hidden-print affix" role="complementary">
+    <div class="navbar-header">
+        <button type="button" class="navbar-toggler collapsed" data-bs-toggle="collapse" data-bs-target="#toc-collapse" title="Table of Contents">
+            <span class="fa fa-angle-down"></span>
+        </button>
+    </div>
+
+    
+    <div id="toc-collapse" class="navbar-collapse collapse card bg-body-tertiary">
+        <ul class="nav flex-column">
+            
+            <li class="nav-item" data-bs-level="1"><a href="#release-operations" class="nav-link">Release Operations</a>
+              <ul class="nav flex-column">
+            <li class="nav-item" data-bs-level="2"><a href="#step-0-verify-the-helm-chart-version-bump-rule-was-followed" class="nav-link">Step 0 - Verify the Helm chart version-bump rule was followed</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-bs-level="2"><a href="#step-1-finish-the-github-milestone" class="nav-link">Step 1 - Finish the GitHub Milestone</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-bs-level="2"><a href="#step-2-generate-release-notes-update-readme-changelog-and-pr-them" class="nav-link">Step 2 - Generate release notes, update README + CHANGELOG, and PR them</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-bs-level="2"><a href="#step-3-create-the-annotated-signed-tag-on-main" class="nav-link">Step 3 - Create the annotated, signed tag on main</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-bs-level="2"><a href="#030-2026-08-10" class="nav-link">0.3.0 (2026-08-10)</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-bs-level="2"><a href="#step-4-push-the-tag" class="nav-link">Step 4 - Push the tag</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-bs-level="2"><a href="#step-5-wait-for-ci" class="nav-link">Step 5 - Wait for CI</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-bs-level="2"><a href="#step-6-create-the-public-github-release-from-the-tag" class="nav-link">Step 6 - Create the public GitHub Release from the tag</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-bs-level="2"><a href="#step-7-update-private-deployments" class="nav-link">Step 7 - Update private deployments</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+              </ul>
+            </li>
+        </ul>
+    </div>
+</div></div>
+                    <div class="col-md-9" role="main">
+
+<h1 id="release-operations">Release Operations</h1>
+<p>This document describes the end-to-end steps for cutting a <strong>version release</strong> of <a href="https://github.com/agntcy/coffeeAgntcy/">coffeeAgntcy</a> on GitHub.</p>
+<p>It is intentionally <strong>not</strong> specific to any single release version. Anything that would not always be true is shown as an <strong>example</strong> and uses placeholders such as <code>&lt;version&gt;</code>, <code>&lt;tag&gt;</code>, and <code>&lt;milestone&gt;</code>. Replace placeholders with the real values for the release you are cutting.</p>
+<p>Placeholders used throughout:</p>
+<table>
+<thead>
+<tr>
+<th>Placeholder</th>
+<th>Meaning</th>
+<th>Example</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>&lt;version&gt;</code></td>
+<td>The semver version being released</td>
+<td><code>0.3.0</code></td>
+</tr>
+<tr>
+<td><code>&lt;tag&gt;</code></td>
+<td>The git tag for the release (this repo tags <strong>without</strong> a <code>v</code> prefix)</td>
+<td><code>0.3.0</code></td>
+</tr>
+<tr>
+<td><code>&lt;milestone&gt;</code></td>
+<td>The GitHub Milestone associated with the release</td>
+<td><code>Synapsis</code></td>
+</tr>
+<tr>
+<td><code>&lt;email&gt;</code></td>
+<td>Your sign-off email</td>
+<td><code>you@cisco.com</code></td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p>Convention note: existing release tags in this repo are plain semver (<code>0.2.0</code>, <code>0.2.1</code>, <code>0.3.0</code>), i.e. <strong>no</strong> <code>v</code> prefix. <code>*-dev*</code> tags are throwaway/dev tags and are <strong>not</strong> release tags. Match whatever the existing release tags use.</p>
+</blockquote>
+<hr />
+<h2 id="step-0-verify-the-helm-chart-version-bump-rule-was-followed">Step 0 - Verify the Helm chart version-bump rule was followed</h2>
+<p>Before anything else, confirm everyone honored the rule that <strong>any change to a Helm chart's contents must be accompanied by a version bump in that chart's <code>Chart.yaml</code></strong>. If the latest chart contents are not covered by a chart-version bump, the release tag would ship un-versioned chart changes.</p>
+<p><strong>1. Check <code>main</code> against the last real/release tag</strong> (ignore <code>*-dev*</code> tags):</p>
+<pre><code class="language-sh"># Latest release tag (excludes &quot;-dev&quot; tags); adjust the grep to your tag scheme.
+git fetch --tags
+LAST_RELEASE_TAG=$(git tag --list --sort=-creatordate | grep -Ev '\-dev' | head -n1)
+echo &quot;Last release tag: ${LAST_RELEASE_TAG}&quot;
+
+# What changed under the Helm chart trees since that tag?
+git diff --name-only &quot;${LAST_RELEASE_TAG}&quot;..main -- coffeeAGNTCY/coffee_agents/lungo/deployment/helm coffeeAGNTCY/coffee_agents/corto/deployment/helm
+</code></pre>
+<p><strong>2. Confirm each changed chart bumped its <code>Chart.yaml</code>.</strong> The Helm chart directories live under two umbrellas:</p>
+<ul>
+<li><code>coffeeAGNTCY/coffee_agents/lungo/deployment/helm/&lt;chart&gt;/</code></li>
+<li><code>coffeeAGNTCY/coffee_agents/corto/deployment/helm/&lt;chart&gt;/</code></li>
+</ul>
+<p>For <strong>each</strong> chart directory that changed, find the last PR that merged a change to the chart's contents and confirm that PR (or a later one) also bumped the <code>version:</code> field in that chart's <code>Chart.yaml</code>.</p>
+<pre><code class="language-sh"># For a given chart dir, review recent history of its contents vs. its Chart.yaml.
+CHART_DIR=&quot;coffeeAGNTCY/coffee_agents/lungo/deployment/helm/ui&quot;   # example chart
+
+# The list of commits resulting from the next two commands should, ideally, be identical.
+git log --oneline &quot;${LAST_RELEASE_TAG}&quot;..main -- &quot;${CHART_DIR}&quot;
+git log --oneline &quot;${LAST_RELEASE_TAG}&quot;..main -- &quot;${CHART_DIR}/Chart.yaml&quot;
+
+# Ultimately, we only really need for the most recent commit that updated the contents of a chart to also have updated its Chart.yaml.
+# Compare the newest commit touching the chart body against the newest commit that bumped its version line.
+# If the body change is newer than (not an ancestor of) the version bump, the chart needs a bump.
+git log -1 --oneline &quot;${LAST_RELEASE_TAG}&quot;..main -- &quot;${CHART_DIR}&quot; &quot;:(exclude)${CHART_DIR}/Chart.yaml&quot;   # newest body change
+git log -1 --oneline &quot;${LAST_RELEASE_TAG}&quot;..main -G'^\s*version:' -- &quot;${CHART_DIR}/Chart.yaml&quot;           # newest version bump
+
+# The following snippet automates that verdict for the chart: capture both commits, then test ancestry.
+BODY=$(git log -1 --format=%H &quot;${LAST_RELEASE_TAG}&quot;..main -- &quot;${CHART_DIR}&quot; &quot;:(exclude)${CHART_DIR}/Chart.yaml&quot;)
+BUMP=$(git log -1 --format=%H &quot;${LAST_RELEASE_TAG}&quot;..main -G'^\s*version:' -- &quot;${CHART_DIR}/Chart.yaml&quot;)
+{ [ -z &quot;${BODY}&quot; ] || { [ -n &quot;${BUMP}&quot; ] &amp;&amp; git merge-base --is-ancestor &quot;${BODY}&quot; &quot;${BUMP}&quot;; }; } \
+  &amp;&amp; echo &quot;OK: ${CHART_DIR}&quot; || echo &quot;NEEDS BUMP: ${CHART_DIR}&quot;
+</code></pre>
+<p>A <code>Chart.yaml</code> looks like this (the <code>version:</code> line is the chart version to bump):</p>
+<pre><code class="language-yaml">apiVersion: v1
+appVersion: &quot;0.0.9&quot;
+description: A Helm chart for Lungo UI
+name: lungo-ui
+version: 0.1.6      # &lt;-- must increase when the chart's contents change
+</code></pre>
+<p><strong>3. If a chart's contents changed without a <code>version</code> bump, fix it now:</strong></p>
+<ul>
+<li>Open a small <strong>version-bump PR</strong> that increments the chart's <code>version:</code> in <code>Chart.yaml</code> (and any umbrella <code>Chart.yaml</code> dependency pin that references it).</li>
+<li>Get it <strong>merged into <code>main</code></strong> so that the latest chart contents are captured by a chart version before the release tag is created.</li>
+</ul>
+<hr />
+<h2 id="step-1-finish-the-github-milestone">Step 1 - Finish the GitHub Milestone</h2>
+<p>Do this when all subtickets for the release are done.</p>
+<ol>
+<li>
+<p>Navigate to the milestones list: <a href="https://github.com/agntcy/coffeeAgntcy/milestones">https://github.com/agntcy/coffeeAgntcy/milestones</a></p>
+</li>
+<li>
+<p>From the repository page, this is <strong>Issues → Milestones</strong> in the left sidebar.</p>
+</li>
+<li>
+<p>Open the release's milestone <code>&lt;milestone&gt;</code> (if one exists).</p>
+</li>
+<li>
+<p>Verify <strong>all issues/PRs in the milestone are complete</strong>. If any are not:</p>
+</li>
+<li>
+<p><strong>Complete</strong> them, or</p>
+</li>
+<li>
+<p><strong>Move</strong> the unfinished ones to the next release's milestone.</p>
+</li>
+<li>
+<p>Click <strong>Close milestone</strong>.</p>
+</li>
+<li>
+<p>Rename the milestone to its <strong>canonical name only</strong> and set the <strong>release date</strong> to the current date.</p>
+</li>
+<li>
+<p>Usually the rename means removing the <code>(current release)</code> trailer</p>
+<ul>
+<li>Example: rename <code>Synapsis (current release)</code> → <code>Synapsis</code>.</li>
+</ul>
+</li>
+<li>
+<p>Click <strong>Save</strong>.</p>
+</li>
+<li>
+<p>Go back to the milestones list and click <strong>New milestone</strong> to create the <strong>next</strong> current milestone by canonical name and current designation. <strong>Include the <code>(current release)</code> trailer.</strong></p>
+</li>
+<li>
+<p>Example: create <code>Cerebro (current release)</code>.</p>
+</li>
+<li>
+<p>Move the <strong>next release</strong> milestone's issues over into the new <code>(current release)</code> milestone. If the issue list spans <strong>multiple pages</strong>, repeat this move for <strong>each page</strong>.</p>
+</li>
+</ol>
+<hr />
+<h2 id="step-2-generate-release-notes-update-readme-changelog-and-pr-them">Step 2 - Generate release notes, update README + CHANGELOG, and PR them</h2>
+<p>The <a href="../.agents/skills/generate-release-notes/SKILL.md"><code>generate-release-notes</code></a> skill does the heavy lifting.</p>
+<p><strong>1. Update the version inputs</strong> in <a href="../.agents/prompts/release-notes/params.yaml"><code>.agents/prompts/release-notes/params.yaml</code></a> so <code>previous_version</code> and <code>current_version</code> describe this release:</p>
+<pre><code class="language-yaml"># Edit before each release-notes run.
+previous_version: &quot;&lt;previous_version&gt;&quot;
+current_version: &quot;&lt;version&gt;&quot;
+repo_url: &quot;https://github.com/agntcy/coffeeAgntcy&quot;
+github_repo: &quot;agntcy/coffeeAgntcy&quot;
+</code></pre>
+<p>For example, when going from the <code>0.2.1</code> release to the <code>0.3.0</code> release, roll the values forward:</p>
+<pre><code class="language-yaml"># Before (used for the previous run):
+previous_version: &quot;0.2.0&quot;
+current_version: &quot;0.2.1&quot;
+
+# After (this release):
+previous_version: &quot;0.2.1&quot;
+current_version: &quot;0.3.0&quot;
+</code></pre>
+<p><strong>2. Run the <code>generate-release-notes</code> skill.</strong> It reads <code>params.yaml</code>, collects merged PRs since <code>previous_version</code>, reads the dependency lockfiles, and produces the release note text.</p>
+<p><strong>3. Proof-read</strong> the CHANGELOG entry for accuracy (versions, PR links, migration steps).</p>
+<p><strong>4. Apply the generated output to the repo:</strong></p>
+<ul>
+<li>Update the <strong><code>### Built With</code></strong> section of <a href="../README.md"><code>README.md</code></a> with the versions from the generated notes.</li>
+<li>Add a new <a href="../CHANGELOG.md"><code>CHANGELOG.md</code></a> entry at the top (below the <code># Changelog</code> heading), and add a <code>---</code> horizontal-rule separator at the <strong>end</strong> of the entry.</li>
+</ul>
+<p><strong>5. Put these updates into a PR</strong> and get it <strong>merged</strong> into <code>main</code>.</p>
+<blockquote>
+<p>Keep the CHANGELOG entry text handy - you will reuse it verbatim as the tag annotation in Step 3 and the GitHub Release body in Step 6.</p>
+</blockquote>
+<hr />
+<h2 id="step-3-create-the-annotated-signed-tag-on-main">Step 3 - Create the annotated, signed tag on <code>main</code></h2>
+<p>Make sure your local <code>main</code> is up to date with the merged Step 2 PR, then create <strong>one</strong> tag. Use the <strong>milestone name</strong> as the tag if this is a milestone release; otherwise use <code>&lt;version&gt;</code>.</p>
+<pre><code class="language-sh">git checkout main
+git pull --ff-only
+
+git tag -a --cleanup whitespace --sign --trailer &quot;Signed-off-by: &lt;Your Name&gt; &lt;&lt;email&gt;&gt;&quot; &lt;tag&gt;
+</code></pre>
+<p>For the tag <strong>annotation</strong> (equivalent to a commit message), paste the <strong>release note</strong> generated in Step 2.</p>
+<blockquote>
+<p>Important: remove the leading <code>##</code> markdown heading prefix from the <strong>first line</strong> of the annotation. For example, change the annotation's first line:</p>
+<p>```text</p>
+<h2 id="030-2026-08-10">0.3.0 (2026-08-10)</h2>
+<p>```</p>
+<p>to:</p>
+<p><code>text
+0.3.0 (2026-08-10)</code></p>
+</blockquote>
+<hr />
+<h2 id="step-4-push-the-tag">Step 4 - Push the tag</h2>
+<p>One command:</p>
+<pre><code class="language-sh">git push origin &lt;tag&gt;   # example tag: 0.3.0
+</code></pre>
+<hr />
+<h2 id="step-5-wait-for-ci">Step 5 - Wait for CI</h2>
+<p>Watch the GitHub Actions run triggered by the pushed tag until everything finishes: <a href="https://github.com/agntcy/coffeeAgntcy/actions">https://github.com/agntcy/coffeeAgntcy/actions</a></p>
+<ul>
+<li>On <strong>transient</strong> failures (flaky network, registry hiccups, timeouts), <strong>re-run</strong> the failed jobs via <strong>Re-run jobs → Re-run failed jobs</strong> on the workflow run page.</li>
+<li>Only proceed once the release workflows are green.</li>
+</ul>
+<hr />
+<h2 id="step-6-create-the-public-github-release-from-the-tag">Step 6 - Create the public GitHub Release from the tag</h2>
+<p>Publish a release using the <strong>same release note</strong> from Step 2.</p>
+<ol>
+<li>
+<p>Go to the tags page: <a href="https://github.com/agntcy/coffeeAgntcy/tags">https://github.com/agntcy/coffeeAgntcy/tags</a></p>
+</li>
+<li>
+<p>Click on the <strong>newly pushed tag</strong> <code>&lt;tag&gt;</code>.</p>
+</li>
+<li>
+<p>On the resulting tag page, click the <strong>"Create release from tag"</strong> button in the <strong>top-right</strong>.</p>
+</li>
+<li>
+<p>Set the release title and paste the release note as the release body, then click <strong>Publish release</strong>.</p>
+</li>
+<li>
+<p>The <strong>release tile</strong> (do NOT confuse it with the <code>##</code> heading in the release note body!) should follow this format: <code>&lt;tag&gt; - &lt;Milestone&gt; (&lt;YYYY-MM-DD&gt;)</code></p>
+</li>
+<li>For example: <code>0.3.0 - Synapsis (2026-08-10)</code></li>
+</ol>
+<hr />
+<h2 id="step-7-update-private-deployments">Step 7 - Update private deployments</h2>
+<p>Update container images and Helm charts versions in your private deployment environments to use the ones referenced by the tag.</p>
+<ul>
+<li>Container images will likely use the same tag name as the release.</li>
+<li>Helm chart versions need to be updated according to the <code>version:</code> field value found in each chart's <code>Chart.yaml</code> file in the tagged version of the repository.</li>
+</ul></div>
+            </div>
+        </div>
+
+        <footer class="col-md-12">
+            <hr>
+            <p>Documentation built with <a href="https://www.mkdocs.org/">MkDocs</a>.</p>
+        </footer>
+        <script src="../js/bootstrap.bundle.min.js"></script>
+        <script>
+            var base_url = "..",
+                shortcuts = {"help": 191, "next": 78, "previous": 80, "search": 83};
+        </script>
+        <script src="../js/base.js"></script>
+        <script src="../search/main.js"></script>
+
+        <div class="modal" id="mkdocs_search_modal" tabindex="-1" role="dialog" aria-labelledby="searchModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title" id="searchModalLabel">Search</h4>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>From here you can search these documents. Enter your search terms below.</p>
+                <form>
+                    <div class="form-group">
+                        <input type="search" class="form-control" placeholder="Search..." id="mkdocs-search-query" title="Type search term here">
+                    </div>
+                </form>
+                <div id="mkdocs-search-results" data-no-results-text="No results found"></div>
+            </div>
+            <div class="modal-footer">
+            </div>
+        </div>
+    </div>
+</div><div class="modal" id="mkdocs_keyboard_modal" tabindex="-1" role="dialog" aria-labelledby="keyboardModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title" id="keyboardModalLabel">Keyboard Shortcuts</h4>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th style="width: 20%;">Keys</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td class="help shortcut"><kbd>?</kbd></td>
+                    <td>Open this help</td>
+                  </tr>
+                  <tr>
+                    <td class="next shortcut"><kbd>n</kbd></td>
+                    <td>Next page</td>
+                  </tr>
+                  <tr>
+                    <td class="prev shortcut"><kbd>p</kbd></td>
+                    <td>Previous page</td>
+                  </tr>
+                  <tr>
+                    <td class="search shortcut"><kbd>s</kbd></td>
+                    <td>Search</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="modal-footer">
+            </div>
+        </div>
+    </div>
+</div>
+
+    </body>
+</html>
