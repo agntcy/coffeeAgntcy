@@ -1,6 +1,6 @@
 ![Screenshot](assets/coffee_agntcy.png)
 
-[![Release](https://img.shields.io/github/v/release/agntcy/repo-template?display_name=tag)](CHANGELOG.md)
+[![Release](https://img.shields.io/github/v/release/agntcy/coffeeAgntcy?display_name=tag)](CHANGELOG.md)
 [![Contributor-Covenant](https://img.shields.io/badge/Contributor%20Covenant-2.1-fbab2c.svg)](CODE_OF_CONDUCT.md)
 [![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/agntcy/coffeeAgntcy/badge)](https://securityscorecards.dev/viewer/?uri=github.com/agntcy/coffeeAgntcy)
 
