@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 # dirctl (only fetched when referenced by agent-with-dirctl)
-FROM ghcr.io/agntcy/dir-ctl:v1.5.0 AS dirctl
+FROM ghcr.io/agntcy/dir-ctl:v1.5.0@sha256:87b9db2b013f80efe514928b8fb10a0dbb0caee77d0d8a82079bf952e3fb0613 AS dirctl
 
 # common base
 # SLIM v0.7+ requires debian trixie distribution

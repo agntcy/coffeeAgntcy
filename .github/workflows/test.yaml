@@ -96,6 +96,8 @@ on:
         type: boolean
         default: true
 
+permissions: read-all
+
 jobs:
   subprojects-to-test:
     uses: ./.github/workflows/test-subprojects-reusable.yaml
