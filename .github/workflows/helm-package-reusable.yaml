@@ -24,6 +24,7 @@ permissions:
 jobs:
   helm-package-and-push:
     runs-on: ubuntu-latest
+    timeout-minutes: 90
 
     permissions:
       packages: write

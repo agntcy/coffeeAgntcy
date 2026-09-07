@@ -47,6 +47,7 @@ permissions:
 jobs:
   docker-build-and-push:
     runs-on: ubuntu-latest
+    timeout-minutes: 90
 
     permissions:
       contents: read
