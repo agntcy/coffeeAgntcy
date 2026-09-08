@@ -86,14 +86,14 @@ jobs:
         if: ${{ github.event_name == 'pull_request' }}
         id: prepare-path-lists
         run: |
-          paths_json_corto=$(echo $WORKFLOW_FILES_LIST_JSON | jq -c -r --arg new_val "$CORTO_DIR" '[$new_val] + .')
-          echo "paths_json_corto=$paths_json_corto" | tee -a $GITHUB_OUTPUT
+          paths_json_corto=$(echo "$WORKFLOW_FILES_LIST_JSON" | jq -c -r --arg new_val "$CORTO_DIR" '[$new_val] + .')
+          echo "paths_json_corto=$paths_json_corto" | tee -a "$GITHUB_OUTPUT"
 
-          paths_json_lungo=$(echo $WORKFLOW_FILES_LIST_JSON | jq -c -r --arg new_val "$LUNGO_DIR" '[$new_val] + .')
-          echo "paths_json_lungo=$paths_json_lungo" | tee -a $GITHUB_OUTPUT
+          paths_json_lungo=$(echo "$WORKFLOW_FILES_LIST_JSON" | jq -c -r --arg new_val "$LUNGO_DIR" '[$new_val] + .')
+          echo "paths_json_lungo=$paths_json_lungo" | tee -a "$GITHUB_OUTPUT"
 
-          paths_json_recruiter=$(echo $WORKFLOW_FILES_LIST_JSON | jq -c -r --arg new_val "$RECRUITER_DIR" '[$new_val] + .')
-          echo "paths_json_recruiter=$paths_json_recruiter" | tee -a $GITHUB_OUTPUT
+          paths_json_recruiter=$(echo "$WORKFLOW_FILES_LIST_JSON" | jq -c -r --arg new_val "$RECRUITER_DIR" '[$new_val] + .')
+          echo "paths_json_recruiter=$paths_json_recruiter" | tee -a "$GITHUB_OUTPUT"
 
       - name: Check paths have changes for Corto
         if: ${{ github.event_name == 'pull_request' }}
@@ -143,9 +143,9 @@ jobs:
             build_recruiter=${{ steps.check-paths-recruiter.outputs.changed }}
           fi
 
-          echo "build_corto=$build_corto" | tee -a $GITHUB_OUTPUT
-          echo "build_lungo=$build_lungo" | tee -a $GITHUB_OUTPUT
-          echo "build_recruiter=$build_recruiter" | tee -a $GITHUB_OUTPUT
+          echo "build_corto=$build_corto" | tee -a "$GITHUB_OUTPUT"
+          echo "build_lungo=$build_lungo" | tee -a "$GITHUB_OUTPUT"
+          echo "build_recruiter=$build_recruiter" | tee -a "$GITHUB_OUTPUT"
 
   compute-build-parameters:
     runs-on: ubuntu-latest
@@ -175,22 +175,24 @@ jobs:
           # Untrusted input (attacker-controlled on fork PRs): must not be interpolated
           # directly into the script, or a crafted branch name could inject shell commands.
           HEAD_REF: ${{ github.head_ref }}
+          EVENT_NAME: ${{ github.event_name }}
+          REF: ${{ github.ref }}
         run: |
           # default values
           push=false
           image_tag=unknown
           git_branch=${{ github.ref_name }}
 
-          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+          if [[ "$EVENT_NAME" == "pull_request" ]]; then
             image_tag=pr-${{ github.event.pull_request.number }}
             git_branch="$HEAD_REF"
-          elif [[ "${{ github.event_name }}" == "push" && "${{ github.ref }}" == "refs/heads/main" ]]; then
+          elif [[ "$EVENT_NAME" == "push" && "$REF" == "refs/heads/main" ]]; then
             push=true
             image_tag=latest
-          elif [[ "${{ github.event_name }}" == "push" && "${{ github.ref }}" == refs/tags/* ]]; then
+          elif [[ "$EVENT_NAME" == "push" && "$REF" == refs/tags/* ]]; then
             push=true
             image_tag=${{ github.ref_name }}
-          elif [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+          elif [[ "$EVENT_NAME" == "workflow_dispatch" ]]; then
             push=${{ inputs.push }}
             if [[ "${{ inputs.image_tag }}" != "" ]]; then
               image_tag=${{ inputs.image_tag }}
@@ -200,9 +202,9 @@ jobs:
             fi
           fi
 
-          echo "push=$push" | tee -a $GITHUB_OUTPUT
-          echo "image_tag=$image_tag" | tee -a $GITHUB_OUTPUT
-          echo "git_branch=$git_branch" | tee -a $GITHUB_OUTPUT
+          echo "push=$push" | tee -a "$GITHUB_OUTPUT"
+          echo "image_tag=$image_tag" | tee -a "$GITHUB_OUTPUT"
+          echo "git_branch=$git_branch" | tee -a "$GITHUB_OUTPUT"
 
   docker-build-corto:
     needs: [subprojects-to-build, compute-build-parameters]
@@ -213,11 +215,13 @@ jobs:
         image:
           - name: corto-ui
             dockerfile: docker/Dockerfile.ui
+            target: ""
             extra_build_args: |
               PROJECT_PATH=coffeeAGNTCY/coffee_agents/corto/exchange/frontend
               NPM_CACHE_ID=corto
           - name: corto-exchange
             dockerfile: docker/Dockerfile.python-agent
+            target: ""
             extra_build_args: |
               PROJECT_PATH=coffeeAGNTCY/coffee_agents/corto
               UV_CACHE_ID=corto
@@ -225,6 +229,7 @@ jobs:
               AGENT_SCRIPT=exchange/main.py
           - name: corto-farm
             dockerfile: docker/Dockerfile.python-agent
+            target: ""
             extra_build_args: |
               PROJECT_PATH=coffeeAGNTCY/coffee_agents/corto
               UV_CACHE_ID=corto
@@ -255,11 +260,13 @@ jobs:
         image:
           - name: lungo-ui
             dockerfile: docker/Dockerfile.ui
+            target: ""
             extra_build_args: |
               PROJECT_PATH=coffeeAGNTCY/coffee_agents/lungo/frontend
               NPM_CACHE_ID=lungo
           - name: auction-supervisor
             dockerfile: docker/Dockerfile.python-agent
+            target: ""
             extra_build_args: |
               PROJECT_PATH=coffeeAGNTCY/coffee_agents/lungo
               UV_CACHE_ID=lungo
@@ -267,6 +274,7 @@ jobs:
               AGENT_SCRIPT=agents/supervisors/auction/main.py
           - name: agentic-workflows-api
             dockerfile: docker/Dockerfile.python-agent
+            target: ""
             extra_build_args: |
               PROJECT_PATH=coffeeAGNTCY/coffee_agents/lungo
               UV_CACHE_ID=lungo
@@ -274,6 +282,7 @@ jobs:
               AGENT_SCRIPT=-m api.agentic_workflows.server
           - name: brazil-farm
             dockerfile: docker/Dockerfile.python-agent
+            target: ""
             extra_build_args: |
               PROJECT_PATH=coffeeAGNTCY/coffee_agents/lungo
               UV_CACHE_ID=lungo
@@ -281,6 +290,7 @@ jobs:
               AGENT_SCRIPT=agents/farms/brazil/farm_server.py
           - name: colombia-farm
             dockerfile: docker/Dockerfile.python-agent
+            target: ""
             extra_build_args: |
               PROJECT_PATH=coffeeAGNTCY/coffee_agents/lungo
               UV_CACHE_ID=lungo
@@ -288,6 +298,7 @@ jobs:
               AGENT_SCRIPT=agents/farms/colombia/farm_server.py
           - name: vietnam-farm
             dockerfile: docker/Dockerfile.python-agent
+            target: ""
             extra_build_args: |
               PROJECT_PATH=coffeeAGNTCY/coffee_agents/lungo
               UV_CACHE_ID=lungo
@@ -295,6 +306,7 @@ jobs:
               AGENT_SCRIPT=agents/farms/vietnam/farm_server.py
           - name: weather-mcp-server
             dockerfile: docker/Dockerfile.python-agent
+            target: ""
             extra_build_args: |
               PROJECT_PATH=coffeeAGNTCY/coffee_agents/lungo
               UV_CACHE_ID=lungo
@@ -302,6 +314,7 @@ jobs:
               AGENT_SCRIPT=agents/mcp_servers/weather_service.py
           - name: payment-mcp-server
             dockerfile: docker/Dockerfile.python-agent
+            target: ""
             extra_build_args: |
               PROJECT_PATH=coffeeAGNTCY/coffee_agents/lungo
               UV_CACHE_ID=lungo
@@ -309,6 +322,7 @@ jobs:
               AGENT_SCRIPT=agents/mcp_servers/payment_service.py
           - name: logistics-shipper
             dockerfile: docker/Dockerfile.python-agent
+            target: ""
             extra_build_args: |
               PROJECT_PATH=coffeeAGNTCY/coffee_agents/lungo
               UV_CACHE_ID=lungo
@@ -316,6 +330,7 @@ jobs:
               AGENT_SCRIPT=agents/logistics/shipper/server.py
           - name: logistics-accountant
             dockerfile: docker/Dockerfile.python-agent
+            target: ""
             extra_build_args: |
               PROJECT_PATH=coffeeAGNTCY/coffee_agents/lungo
               UV_CACHE_ID=lungo
@@ -323,6 +338,7 @@ jobs:
               AGENT_SCRIPT=agents/logistics/accountant/server.py
           - name: logistics-farm
             dockerfile: docker/Dockerfile.python-agent
+            target: ""
             extra_build_args: |
               PROJECT_PATH=coffeeAGNTCY/coffee_agents/lungo
               UV_CACHE_ID=lungo
@@ -330,6 +346,7 @@ jobs:
               AGENT_SCRIPT=agents/logistics/farm/server.py
           - name: logistics-supervisor
             dockerfile: docker/Dockerfile.python-agent
+            target: ""
             extra_build_args: |
               PROJECT_PATH=coffeeAGNTCY/coffee_agents/lungo
               UV_CACHE_ID=lungo
@@ -337,6 +354,7 @@ jobs:
               AGENT_SCRIPT=agents/supervisors/logistics/main.py
           - name: logistics-helpdesk
             dockerfile: docker/Dockerfile.python-agent
+            target: ""
             extra_build_args: |
               PROJECT_PATH=coffeeAGNTCY/coffee_agents/lungo
               UV_CACHE_ID=lungo
@@ -344,6 +362,7 @@ jobs:
               AGENT_SCRIPT=agents/logistics/helpdesk/server.py
           - name: recruiter-supervisor
             dockerfile: docker/Dockerfile.python-agent
+            target: ""
             extra_build_args: |
               PROJECT_PATH=coffeeAGNTCY/coffee_agents/lungo
               UV_CACHE_ID=lungo

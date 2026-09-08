@@ -71,14 +71,14 @@ jobs:
         if: ${{ github.event_name == 'pull_request' }}
         id: prepare-path-lists
         run: |
-          paths_json_corto=$(echo $WORKFLOW_FILES_LIST_JSON | jq -c -r --arg new_val "$CORTO_DIR" '[$new_val] + .')
-          echo "paths_json_corto=$paths_json_corto" | tee -a $GITHUB_OUTPUT
+          paths_json_corto=$(echo "$WORKFLOW_FILES_LIST_JSON" | jq -c -r --arg new_val "$CORTO_DIR" '[$new_val] + .')
+          echo "paths_json_corto=$paths_json_corto" | tee -a "$GITHUB_OUTPUT"
 
-          paths_json_lungo=$(echo $WORKFLOW_FILES_LIST_JSON | jq -c -r --arg new_val "$LUNGO_DIR" '[$new_val] + .')
-          echo "paths_json_lungo=$paths_json_lungo" | tee -a $GITHUB_OUTPUT
+          paths_json_lungo=$(echo "$WORKFLOW_FILES_LIST_JSON" | jq -c -r --arg new_val "$LUNGO_DIR" '[$new_val] + .')
+          echo "paths_json_lungo=$paths_json_lungo" | tee -a "$GITHUB_OUTPUT"
 
-          paths_json_recruiter=$(echo $WORKFLOW_FILES_LIST_JSON | jq -c -r --arg new_val "$RECRUITER_DIR" '[$new_val] + .')
-          echo "paths_json_recruiter=$paths_json_recruiter" | tee -a $GITHUB_OUTPUT
+          paths_json_recruiter=$(echo "$WORKFLOW_FILES_LIST_JSON" | jq -c -r --arg new_val "$RECRUITER_DIR" '[$new_val] + .')
+          echo "paths_json_recruiter=$paths_json_recruiter" | tee -a "$GITHUB_OUTPUT"
 
       - name: Check paths have changes for Corto
         if: ${{ github.event_name == 'pull_request' }}
@@ -128,6 +128,6 @@ jobs:
             test_recruiter=${{ steps.check-paths-recruiter.outputs.changed }}
           fi
 
-          echo "test_corto=$test_corto" | tee -a $GITHUB_OUTPUT
-          echo "test_lungo=$test_lungo" | tee -a $GITHUB_OUTPUT
-          echo "test_recruiter=$test_recruiter" | tee -a $GITHUB_OUTPUT
+          echo "test_corto=$test_corto" | tee -a "$GITHUB_OUTPUT"
+          echo "test_lungo=$test_lungo" | tee -a "$GITHUB_OUTPUT"
+          echo "test_recruiter=$test_recruiter" | tee -a "$GITHUB_OUTPUT"

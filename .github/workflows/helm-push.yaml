@@ -72,11 +72,11 @@ jobs:
         if: ${{ github.event_name == 'pull_request' }}
         id: prepare-path-lists
         run: |
-          paths_json_corto=$(echo $WORKFLOW_FILES_LIST_JSON | jq -c -r --arg new_val "$CORTO_DIR/$HELM_SUBDIR" '[$new_val] + .')
-          echo "paths_json_corto=$paths_json_corto" | tee -a $GITHUB_OUTPUT
-          
-          paths_json_lungo=$(echo $WORKFLOW_FILES_LIST_JSON | jq -c -r --arg new_val "$LUNGO_DIR/$HELM_SUBDIR" '[$new_val] + .')
-          echo "paths_json_lungo=$paths_json_lungo" | tee -a $GITHUB_OUTPUT
+          paths_json_corto=$(echo "$WORKFLOW_FILES_LIST_JSON" | jq -c -r --arg new_val "$CORTO_DIR/$HELM_SUBDIR" '[$new_val] + .')
+          echo "paths_json_corto=$paths_json_corto" | tee -a "$GITHUB_OUTPUT"
+
+          paths_json_lungo=$(echo "$WORKFLOW_FILES_LIST_JSON" | jq -c -r --arg new_val "$LUNGO_DIR/$HELM_SUBDIR" '[$new_val] + .')
+          echo "paths_json_lungo=$paths_json_lungo" | tee -a "$GITHUB_OUTPUT"
 
       - name: Check paths have changes for Corto
         if: ${{ github.event_name == 'pull_request' }}
@@ -113,8 +113,8 @@ jobs:
             build_lungo=${{ steps.check-paths-lungo.outputs.changed }}
           fi
 
-          echo "build_corto=$build_corto" | tee -a $GITHUB_OUTPUT
-          echo "build_lungo=$build_lungo" | tee -a $GITHUB_OUTPUT
+          echo "build_corto=$build_corto" | tee -a "$GITHUB_OUTPUT"
+          echo "build_lungo=$build_lungo" | tee -a "$GITHUB_OUTPUT"
 
   helm-package-corto:
     needs: subprojects-to-build

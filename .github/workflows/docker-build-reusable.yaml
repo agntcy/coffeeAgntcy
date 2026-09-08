@@ -47,6 +47,7 @@ permissions:
 jobs:
   docker-build-and-push:
     runs-on: ubuntu-latest
+    timeout-minutes: 90
 
     permissions:
       contents: read
@@ -74,9 +75,9 @@ jobs:
       - name: Generate metadata
         id: metadata
         run: |
-          echo "date=$(date -u +'%Y-%m-%dT%H:%M:%SZ')" | tee -a $GITHUB_OUTPUT
-          echo "date_formatted=$(date -u +'%Y-%m-%d')" | tee -a $GITHUB_OUTPUT
-          echo "short_sha=${GITHUB_SHA:0:7}" | tee -a $GITHUB_OUTPUT
+          echo "date=$(date -u +'%Y-%m-%dT%H:%M:%SZ')" | tee -a "$GITHUB_OUTPUT"
+          echo "date_formatted=$(date -u +'%Y-%m-%d')" | tee -a "$GITHUB_OUTPUT"
+          echo "short_sha=${GITHUB_SHA:0:7}" | tee -a "$GITHUB_OUTPUT"
 
       - name: Log in to GitHub Container Registry
         if: inputs.push == true

@@ -1,0 +1,175 @@
+name: CI Gate
+
+# Single required status check for the repo.
+#
+# - Validates every workflow file under .github/workflows/ (schema, syntax,
+#   structure) via actionlint, on every run - no manual list to keep in sync.
+# - Waits for every sibling workflow run triggered on the same commit to reach
+#   a terminal state, by polling the Actions runs API (not the checks API -
+#   that one silently omits startup_failure runs), then reports on all of them,
+#   including ones that failed at startup, were skipped, or never completed.
+# - Never short-circuits: validation and the wait/report step both run
+#   regardless of each other's outcome, and the pass/fail decision is made
+#   once everything has been collected.
+
+on:
+  pull_request: {}
+  push:
+    branches: [main]
+    tags: ["*"]
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+  actions: read
+
+env:
+  SETTLE_DELAY_SECONDS: 60
+  POLL_INTERVAL_SECONDS: 60
+  OVERALL_TIMEOUT_SECONDS: 6000 # 100 minutes
+  CONSECUTIVE_CLEAN_POLLS_REQUIRED: 2
+
+jobs:
+  ci-gate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 105
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+
+      - name: Validate all workflow files (schema, syntax, structure)
+        id: validate
+        continue-on-error: true
+        uses: reviewdog/action-actionlint@d290e336d5a743810aef4404f757dc862276d2ae # v1.73.4
+        with:
+          reporter: local
+          fail_level: error
+          filter_mode: nofilter
+
+      - name: Wait for sibling workflow runs on this commit
+        id: wait
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -uo pipefail
+
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            head_sha="${{ github.event.pull_request.head.sha }}"
+          else
+            head_sha="${{ github.sha }}"
+          fi
+
+          self_run_id="${{ github.run_id }}"
+          start_time=$(date +%s)
+          clean_polls=0
+          settled=false
+          last_good_runs_json='[]'
+
+          echo "Waiting ${SETTLE_DELAY_SECONDS}s for sibling runs to be scheduled..."
+          sleep "$SETTLE_DELAY_SECONDS"
+
+          while true; do
+            if fetched=$(gh api "repos/${{ github.repository }}/actions/runs?head_sha=${head_sha}&per_page=100" \
+              --paginate --jq '.workflow_runs[]' | jq -s '.'); then
+              last_good_runs_json="$fetched"
+
+              pending=$(jq --argjson self "$self_run_id" \
+                '[.[] | select(.id != $self) | select(.status != "completed")] | length' <<<"$last_good_runs_json")
+
+              if [[ "$pending" -eq 0 ]]; then
+                clean_polls=$((clean_polls + 1))
+              else
+                clean_polls=0
+              fi
+              echo "pending=$pending clean_polls=$clean_polls"
+
+              if [[ "$clean_polls" -ge "$CONSECUTIVE_CLEAN_POLLS_REQUIRED" ]]; then
+                settled=true
+                break
+              fi
+            else
+              echo "::warning::failed to list workflow runs from the GitHub API this poll; will retry"
+              clean_polls=0
+            fi
+
+            elapsed=$(($(date +%s) - start_time))
+            if [[ "$elapsed" -ge "$OVERALL_TIMEOUT_SECONDS" ]]; then
+              settled=false
+              break
+            fi
+
+            sleep "$POLL_INTERVAL_SECONDS"
+          done
+
+          echo "$last_good_runs_json" >runs.json
+          echo "settled=$settled" | tee -a "$GITHUB_OUTPUT"
+
+      - name: Summarize and decide
+        if: always()
+        run: |
+          set -uo pipefail
+
+          validate_outcome="${{ steps.validate.outcome }}"
+          settled="${{ steps.wait.outputs.settled }}"
+          self_run_id="${{ github.run_id }}"
+          overall_pass=true
+
+          {
+            echo "## CI Gate summary"
+            echo
+            echo "| Check | Status | Result |"
+            echo "|---|---|---|"
+          } >>"$GITHUB_STEP_SUMMARY"
+
+          if [[ "$validate_outcome" == "success" ]]; then
+            echo "| Validate workflow files (actionlint) | success | :white_check_mark: pass |" >>"$GITHUB_STEP_SUMMARY"
+          else
+            echo "| Validate workflow files (actionlint) | $validate_outcome | :x: fail |" >>"$GITHUB_STEP_SUMMARY"
+            overall_pass=false
+          fi
+
+          run_count=$(jq --argjson self "$self_run_id" '[.[] | select(.id != $self)] | length' runs.json)
+
+          if [[ "$run_count" -eq 0 ]]; then
+            echo "| _(no sibling workflow runs found for this commit)_ | | |" >>"$GITHUB_STEP_SUMMARY"
+          else
+            while IFS=$'\t' read -r name status conclusion url; do
+              if [[ "$status" != "completed" ]]; then
+                display="did-not-complete ($status)"
+                result_pass=false
+              else
+                display="$conclusion"
+                case "$conclusion" in
+                success | skipped) result_pass=true ;;
+                *) result_pass=false ;;
+                esac
+              fi
+
+              if [[ "$result_pass" == "true" ]]; then
+                icon=":white_check_mark: pass"
+              else
+                icon=":x: fail"
+                overall_pass=false
+              fi
+
+              echo "| [$name]($url) | $display | $icon |" >>"$GITHUB_STEP_SUMMARY"
+            done < <(jq -r --argjson self "$self_run_id" '
+              .[] | select(.id != $self) |
+              [.name, .status, (.conclusion // "null"), .html_url] | @tsv
+            ' runs.json)
+          fi
+
+          if [[ "$settled" != "true" ]]; then
+            echo >>"$GITHUB_STEP_SUMMARY"
+            echo ":warning: hit the overall ${OVERALL_TIMEOUT_SECONDS}s wait timeout before every sibling run reached a terminal status - anything still pending above is treated as a failure." >>"$GITHUB_STEP_SUMMARY"
+            overall_pass=false
+          fi
+
+          cat "$GITHUB_STEP_SUMMARY"
+
+          if [[ "$overall_pass" != "true" ]]; then
+            exit 1
+          fi

@@ -24,6 +24,7 @@ permissions:
 jobs:
   helm-package-and-push:
     runs-on: ubuntu-latest
+    timeout-minutes: 90
 
     permissions:
       packages: write
@@ -72,8 +73,8 @@ jobs:
         id: package
         run: |
           CHART_VERSION=$(grep '^version:' ${{ inputs.path }}/Chart.yaml | awk '{print $2}')
-          helm package ${{ inputs.path }} --dependency-update --version $CHART_VERSION
-          echo "chart_version=$CHART_VERSION" | tee -a $GITHUB_OUTPUT
+          helm package ${{ inputs.path }} --dependency-update --version "$CHART_VERSION"
+          echo "chart_version=$CHART_VERSION" | tee -a "$GITHUB_OUTPUT"
 
       - name: Push Helm Chart
         if: inputs.push == true
