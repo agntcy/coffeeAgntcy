@@ -23,7 +23,7 @@ graph TD
 **References:**
 
 - [AGNTCY SLIM (Secure Low-Latency Interactive Messaging)](https://github.com/agntcy/slim)
-- Antonio Gullí, *Agentic Design Patterns* (Springer, 2025), Ch. 7 - Multi-Agent Collaboration and Ch. 18 - Guardrails/Safety Patterns. [https://doi.org/10.1007/978-3-032-01402-3](https://doi.org/10.1007/978-3-032-01402-3)
+- **Inspired by:** Antonio Gullí, *Agentic Design Patterns* (Springer, 2025), Ch. 7 - Multi-Agent Collaboration and Ch. 18 - Guardrails/Safety Patterns. [https://doi.org/10.1007/978-3-032-01402-3](https://doi.org/10.1007/978-3-032-01402-3)
 
 **Category:** Multi-Agent Communication & Collaboration
 
@@ -57,5 +57,9 @@ this pattern determines who belongs inside it and what their words commit them t
 ## Scenario
 
 **Farm, coop, exporter, and finance** need that room when numbers move money.
+
+---
+
+## Workflow
 
 A **Workflow** section will describe how this pattern is realized once a concrete layout exists.

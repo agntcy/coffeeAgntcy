@@ -21,7 +21,7 @@ graph TD
 **References:**
 
 - [AGNTCY Directory (dir)](https://github.com/agntcy/dir)
-- Antonio Gullí, *Agentic Design Patterns* (Springer, 2025), Ch. 2 - Routing and Ch. 21 - Exploration and Discovery. [https://doi.org/10.1007/978-3-032-01402-3](https://doi.org/10.1007/978-3-032-01402-3)
+- **Inspired by:** Antonio Gullí, *Agentic Design Patterns* (Springer, 2025), Ch. 2 - Routing and Ch. 21 - Exploration and Discovery. [https://doi.org/10.1007/978-3-032-01402-3](https://doi.org/10.1007/978-3-032-01402-3)
 
 **Category:** Discovery, Routing & Composition
 
@@ -56,5 +56,9 @@ questions across specialists the company already trusts.
 
 When a **shipment anomaly** appears, the thread might need **weather**, **soil**, or **logistics** emphasis depending on
 what the signals imply; the roster can grow without redeploying one giant fixed switch.
+
+---
+
+## Workflow
 
 A **Workflow** section will describe how this pattern is realized once a concrete layout exists.

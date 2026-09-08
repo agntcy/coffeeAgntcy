@@ -24,7 +24,7 @@ graph TD
 
 **References:**
 
-- Antonio Gullí, *Agentic Design Patterns* (Springer, 2025), Ch. 7 - Multi-Agent Collaboration (Debate and Consensus). [https://doi.org/10.1007/978-3-032-01402-3](https://doi.org/10.1007/978-3-032-01402-3)
+- **Inspired by:** Antonio Gullí, *Agentic Design Patterns* (Springer, 2025), Ch. 7 - Multi-Agent Collaboration (Debate and Consensus). [https://doi.org/10.1007/978-3-032-01402-3](https://doi.org/10.1007/978-3-032-01402-3)
 
 **Category:** Multi-Agent Communication & Collaboration
 
@@ -61,5 +61,9 @@ rather than an open-ended debate.
 
 The **regional demand** picture is the table vignette: many partial views still have to add up to **one number the firm
 can execute**.
+
+---
+
+## Workflow
 
 A **Workflow** section will describe how this pattern is realized once a concrete layout exists.

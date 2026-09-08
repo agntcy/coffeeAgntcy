@@ -20,7 +20,7 @@ graph TD
 
 **References:**
 
-- Antonio Gullí, *Agentic Design Patterns* (Springer, 2025), Ch. 7 - Multi-Agent Collaboration (Hierarchical model). [https://doi.org/10.1007/978-3-032-01402-3](https://doi.org/10.1007/978-3-032-01402-3)
+- **Inspired by:** Antonio Gullí, *Agentic Design Patterns* (Springer, 2025), Ch. 7 - Multi-Agent Collaboration (Hierarchical model). [https://doi.org/10.1007/978-3-032-01402-3](https://doi.org/10.1007/978-3-032-01402-3)
 
 **Category:** Orchestration & Control Flow
 
@@ -55,5 +55,9 @@ without any single worker owning the whole story.
 
 **Order fulfillment** fits naturally: someone must **orchestrate** releases, filings, and bookings while each function
 still speaks its own operational language.
+
+---
+
+## Workflow
 
 A **Workflow** section will describe how this pattern is realized once a concrete layout exists.

@@ -22,7 +22,7 @@ graph TD
 **References:**
 
 - [OODA loop](https://en.wikipedia.org/wiki/OODA_loop) (observe-orient-decide-act control cycle)
-- Antonio Gullí, *Agentic Design Patterns* (Springer, 2025), Ch. 11 - Goal Setting and Monitoring. [https://doi.org/10.1007/978-3-032-01402-3](https://doi.org/10.1007/978-3-032-01402-3)
+- **Inspired by:** Antonio Gullí, *Agentic Design Patterns* (Springer, 2025), Ch. 11 - Goal Setting and Monitoring. [https://doi.org/10.1007/978-3-032-01402-3](https://doi.org/10.1007/978-3-032-01402-3)
 
 **Category:** Orchestration & Control Flow
 
@@ -56,5 +56,9 @@ provisional before anything has failed at all.
 
 During a **port strike**, the firm keeps rerouting and **re-scoring delivery risk** until there is either a credible
 promise or an honest exception-not a single frozen plan.
+
+---
+
+## Workflow
 
 A **Workflow** section will describe how this pattern is realized once a concrete layout exists.

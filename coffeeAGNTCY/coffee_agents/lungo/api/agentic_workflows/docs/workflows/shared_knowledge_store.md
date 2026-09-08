@@ -20,7 +20,8 @@ graph TD
 
 **References:**
 
-- Antonio Gullí, *Agentic Design Patterns* (Springer, 2025), Ch. 8 - Memory Management (long-term memory) and Ch. 14 - Knowledge Retrieval (RAG). [https://doi.org/10.1007/978-3-032-01402-3](https://doi.org/10.1007/978-3-032-01402-3)
+- **Source:** CoffeeAGNTCY pattern library (this document).
+- **Inspired by:** Antonio Gullí, *Agentic Design Patterns* (Springer, 2025), Ch. 8 - Memory Management (long-term memory) and Ch. 14 - Knowledge Retrieval (RAG). [https://doi.org/10.1007/978-3-032-01402-3](https://doi.org/10.1007/978-3-032-01402-3)
 
 **Category:** Internet of Cognition
 
@@ -55,5 +56,9 @@ auditable rather than merely remembered.
 
 Planners lean on **multi-year yield, pricing, and partner behavior** when contracts get serious; the store is what keeps
 those arguments grounded.
+
+---
+
+## Workflow
 
 A **Workflow** section will describe how this pattern is realized once a concrete layout exists.
