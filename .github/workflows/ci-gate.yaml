@@ -124,26 +124,24 @@ jobs:
           self_run_id="${{ github.run_id }}"
           overall_pass=true
 
-          declare -a rows=("Check"$'\t'"Status"$'\t'"Result")
+          declare -a rows=("Check"$'\t'"Status"$'\t'"Conclusion"$'\t'"Result")
 
           if [[ "$validate_outcome" == "success" ]]; then
-            rows+=("Validate workflow files (actionlint)"$'\t'"success"$'\t'":white_check_mark: pass")
+            rows+=("Validate workflow files (actionlint)"$'\t'"completed"$'\t'"success"$'\t'":white_check_mark: pass")
           else
-            rows+=("Validate workflow files (actionlint)"$'\t'"$validate_outcome"$'\t'":x: fail")
+            rows+=("Validate workflow files (actionlint)"$'\t'"completed"$'\t'"$validate_outcome"$'\t'":x: fail")
             overall_pass=false
           fi
 
           run_count=$(jq --argjson self "$self_run_id" '[.[] | select(.id != $self)] | length' runs.json)
 
           if [[ "$run_count" -eq 0 ]]; then
-            rows+=("_(no sibling workflow runs found for this commit)_"$'\t'""$'\t'"")
+            rows+=("_(no sibling workflow runs found for this commit)_"$'\t'""$'\t'""$'\t'"")
           else
             while IFS=$'\t' read -r name status conclusion url; do
               if [[ "$status" != "completed" ]]; then
-                display="did-not-complete ($status)"
                 result_pass=false
               else
-                display="$conclusion"
                 case "$conclusion" in
                 success | skipped) result_pass=true ;;
                 *) result_pass=false ;;
@@ -157,10 +155,10 @@ jobs:
                 overall_pass=false
               fi
 
-              rows+=("[$name]($url)"$'\t'"$display"$'\t'"$icon")
+              rows+=("[$name]($url)"$'\t'"$status"$'\t'"$conclusion"$'\t'"$icon")
             done < <(jq -r --argjson self "$self_run_id" '
               .[] | select(.id != $self) |
-              [.name, .status, (.conclusion // "null"), .html_url] | @tsv
+              [.name, .status, (.conclusion // "-"), .html_url] | @tsv
             ' runs.json)
           fi
 
@@ -170,11 +168,13 @@ jobs:
           col1_width=0
           col2_width=0
           col3_width=0
+          col4_width=0
           for row in "${rows[@]}"; do
-            IFS=$'\t' read -r c1 c2 c3 <<<"$row"
+            IFS=$'\t' read -r c1 c2 c3 c4 <<<"$row"
             ((${#c1} > col1_width)) && col1_width=${#c1}
             ((${#c2} > col2_width)) && col2_width=${#c2}
             ((${#c3} > col3_width)) && col3_width=${#c3}
+            ((${#c4} > col4_width)) && col4_width=${#c4}
           done
 
           {
@@ -183,14 +183,15 @@ jobs:
 
             header=true
             for row in "${rows[@]}"; do
-              IFS=$'\t' read -r c1 c2 c3 <<<"$row"
-              printf '| %-*s | %-*s | %-*s |\n' "$col1_width" "$c1" "$col2_width" "$c2" "$col3_width" "$c3"
+              IFS=$'\t' read -r c1 c2 c3 c4 <<<"$row"
+              printf '| %-*s | %-*s | %-*s | %-*s |\n' "$col1_width" "$c1" "$col2_width" "$c2" "$col3_width" "$c3" "$col4_width" "$c4"
 
               if $header; then
-                printf '|%s|%s|%s|\n' \
+                printf '|%s|%s|%s|%s|\n' \
                   "$(printf '%*s' $((col1_width + 2)) '' | tr ' ' '-')" \
                   "$(printf '%*s' $((col2_width + 2)) '' | tr ' ' '-')" \
-                  "$(printf '%*s' $((col3_width + 2)) '' | tr ' ' '-')"
+                  "$(printf '%*s' $((col3_width + 2)) '' | tr ' ' '-')" \
+                  "$(printf '%*s' $((col4_width + 2)) '' | tr ' ' '-')"
                 header=false
               fi
             done
