@@ -76,15 +76,22 @@ jobs:
               --paginate --jq '.workflow_runs[]' | jq -s '.'); then
               last_good_runs_json="$fetched"
 
-              pending=$(jq --argjson self "$self_run_id" \
-                '[.[] | select(.id != $self) | select(.status != "completed")] | length' <<<"$last_good_runs_json")
+              IFS=$'\t' read -r pending pending_names <<<"$(jq -r --argjson self "$self_run_id" '
+                [.[] | select(.id != $self) | select(.status != "completed")] as $p
+                | [($p | length), ($p | map("\(.name) (\(.status))") | join("; "))] | @tsv
+              ' <<<"$last_good_runs_json")"
 
               if [[ "$pending" -eq 0 ]]; then
                 clean_polls=$((clean_polls + 1))
               else
                 clean_polls=0
               fi
-              echo "pending=$pending clean_polls=$clean_polls"
+
+              if [[ "$pending" -gt 0 ]]; then
+                echo "pending=$pending clean_polls=$clean_polls - waiting on: $pending_names"
+              else
+                echo "pending=$pending clean_polls=$clean_polls"
+              fi
 
               if [[ "$clean_polls" -ge "$CONSECUTIVE_CLEAN_POLLS_REQUIRED" ]]; then
                 settled=true
