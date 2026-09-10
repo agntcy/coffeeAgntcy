@@ -4,9 +4,8 @@
  **/
 
 import React from "react"
-import { IconButton, Stack, Typography } from "@open-ui-kit/core"
+import { IconButton, Icons, Stack, Typography } from "@open-ui-kit/core"
 import { GraphSideIconTooltip } from "@/components/MainArea/Graph/Elements/GraphSideIconTooltip"
-import Visibility from "@mui/icons-material/Visibility"
 import { IdentityDetailsDropdownContentProps } from "./types"
 import { useGithubIcon } from "@/hooks/ui"
 import { AssetPngIcon } from "@/components/AssetPngIcon"
@@ -77,7 +76,7 @@ const IdentityDetailsDropdownContent: React.FC<
               aria-label="View badge details"
               sx={(t) => graphSideIconButtonSx(t)}
             >
-              <Visibility />
+              <Icons.Visibility />
             </IconButton>
           </GraphSideIconTooltip>
         </Stack>
@@ -98,7 +97,7 @@ const IdentityDetailsDropdownContent: React.FC<
               aria-label="View policy details"
               sx={(t) => graphSideIconButtonSx(t)}
             >
-              <Visibility />
+              <Icons.Visibility />
             </IconButton>
           </GraphSideIconTooltip>
         </Stack>

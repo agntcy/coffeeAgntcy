@@ -4,8 +4,7 @@
  **/
 
 import React from "react"
-import Person from "@mui/icons-material/Person"
-import { useTheme } from "@open-ui-kit/core"
+import { Icons, useTheme } from "@open-ui-kit/core"
 
 import { iconGlyphFillSx } from "@/utils/iconGlyphFill"
 
@@ -24,7 +23,9 @@ const UserMessage: React.FC<UserMessageProps> = ({ content }) => {
     <Message
       icon={
         <ChatAvatarCircle>
-          <Person sx={iconGlyphFillSx(avatarIconColor, { important: true })} />
+          <Icons.PersonOutline
+            sx={iconGlyphFillSx(avatarIconColor, { important: true })}
+          />
         </ChatAvatarCircle>
       }
     >

@@ -4,8 +4,7 @@
  **/
 
 import React from "react"
-import DeleteOutline from "@mui/icons-material/DeleteOutline"
-import { Box, IconButton, Tooltip } from "@open-ui-kit/core"
+import { Box, IconButton, Icons, Tooltip } from "@open-ui-kit/core"
 
 import { chatHeaderIconButtonSx } from "./chatHeaderIconButtonSx"
 import {
@@ -36,11 +35,12 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({
       {onClearConversation ? (
         <Tooltip title="Clear conversation">
           <IconButton
+            size="small"
             onClick={onClearConversation}
             aria-label="Clear conversation"
             sx={chatHeaderIconButtonSx}
           >
-            <DeleteOutline />
+            <Icons.Delete />
           </IconButton>
         </Tooltip>
       ) : null}

@@ -6,12 +6,12 @@
  */
 
 import React, { useCallback, useMemo, useState } from "react"
-import KeyboardArrowDown from "@mui/icons-material/KeyboardArrowDown"
 import type { SxProps, Theme } from "@mui/material/styles"
 import type { SystemStyleObject } from "@mui/system"
 import {
   Box,
   Button,
+  Icons,
   Menu,
   MenuItem,
   Message,
@@ -159,7 +159,7 @@ const SuggestedPromptsDropdown: React.FC<SuggestedPromptsDropdownProps> = ({
         }
       }}
       endIcon={
-        <KeyboardArrowDown
+        <Icons.KeyboardArrowDown
           aria-hidden
           sx={{
             transition: (theme) =>

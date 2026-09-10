@@ -6,8 +6,7 @@
  */
 
 import React from "react"
-import AssignmentTurnedIn from "@mui/icons-material/AssignmentTurnedIn"
-import { Box } from "@open-ui-kit/core"
+import { Box, Icons } from "@open-ui-kit/core"
 import { IconButtonDropdown } from "@/components/IconButtonDropdown"
 import { GraphSideIconTooltip } from "@/components/MainArea/Graph/Elements/GraphSideIconTooltip"
 import { graphNodeSideIconControlSx } from "@/components/MainArea/Graph/Elements/graphNodeSurface"
@@ -50,7 +49,7 @@ export const NodeIdentityDropdown: React.FC<NodeIdentityDropdownProps> = ({
             }
           }}
           trigger={{
-            icon: <AssignmentTurnedIn />,
+            icon: <Icons.Verified />,
             iconButtonProps: {
               sx: (t) => graphNodeSideIconControlSx(t),
             },

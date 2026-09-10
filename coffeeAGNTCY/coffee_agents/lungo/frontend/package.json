@@ -28,7 +28,7 @@
     "@mui/icons-material": "^7.3.4",
     "@mui/material": "^7.3.4",
     "@mui/system": "^7.3.4",
-    "@open-ui-kit/core": "^2.2.3",
+    "@open-ui-kit/core": "^3.0.0",
     "@xyflow/react": "^12.6.4",
     "dompurify": "3.4.12",
     "mermaid": "^11.15.0",

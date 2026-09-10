@@ -7,9 +7,7 @@
  **/
 
 import React from "react"
-import ExpandLess from "@mui/icons-material/ExpandLess"
-import ExpandMore from "@mui/icons-material/ExpandMore"
-import { Box, ListItemButton, Typography } from "@open-ui-kit/core"
+import { Box, Icons, ListItemButton, Typography } from "@open-ui-kit/core"
 import type { SxProps, Theme } from "@mui/material/styles"
 
 export interface FeedCollapseButtonProps {
@@ -59,7 +57,7 @@ export function FeedCollapseButton({
           alignItems: "center",
         }}
       >
-        {expanded ? <ExpandLess /> : <ExpandMore />}
+        {expanded ? <Icons.KeyboardArrowUp /> : <Icons.KeyboardArrowDown />}
       </Box>
       <Typography
         variant="body1"

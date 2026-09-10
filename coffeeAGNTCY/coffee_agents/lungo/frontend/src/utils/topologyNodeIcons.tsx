@@ -17,7 +17,7 @@ import React from "react"
 import Air from "@mui/icons-material/Air"
 import Calculate from "@mui/icons-material/Calculate"
 import LocalShipping from "@mui/icons-material/LocalShipping"
-import SmartToy from "@mui/icons-material/SmartToy"
+import { Icons } from "@open-ui-kit/core"
 import { GraphDiscoveryAssetImg } from "@/utils/GraphDiscoveryAssetImg"
 import {
   isDirectoryLabel,
@@ -144,12 +144,12 @@ export function resolveTopologyNodeIcon(
     case TopologyNodeIconKind.WeatherMcp:
       return <Air aria-hidden />
     case TopologyNodeIconKind.PaymentMcp:
-      return <Calculate aria-hidden />
+      return <Icons.Payments aria-hidden />
     case TopologyNodeIconKind.Shipping:
       return <LocalShipping aria-hidden />
     case TopologyNodeIconKind.Accountant:
       return <Calculate aria-hidden />
     default:
-      return <SmartToy aria-hidden />
+      return <Icons.Agent aria-hidden />
   }
 }

@@ -5,10 +5,10 @@
 
 import React, { useRef, useState } from "react"
 import { Handle, Position } from "@xyflow/react"
-import CheckCircle from "@mui/icons-material/CheckCircle"
 import {
   Box,
   IconButton,
+  Icons,
   Stack,
   Tooltip,
   Typography,
@@ -153,7 +153,7 @@ const CustomNode: React.FC<CustomNodeProps> = ({ id, data }) => {
             </Typography>
           </Tooltip>
           {data.verificationStatus === "verified" && (
-            <CheckCircle
+            <Icons.CheckCircle
               aria-label="Verified"
               sx={{
                 flexShrink: 0,

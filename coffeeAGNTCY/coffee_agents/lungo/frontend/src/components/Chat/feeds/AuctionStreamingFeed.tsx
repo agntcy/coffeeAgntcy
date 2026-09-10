@@ -4,8 +4,7 @@
  **/
 
 import React, { useEffect, useRef } from "react"
-import CheckCircleIcon from "@mui/icons-material/CheckCircle"
-import { Box, Stack, Typography } from "@open-ui-kit/core"
+import { Box, Icons, Stack, Typography } from "@open-ui-kit/core"
 
 import { ChatAgentAvatar } from "../ChatAvatarCircle"
 import type { AuctionStreamingState } from "@/stores/auctionStreaming.types"
@@ -168,7 +167,7 @@ const AuctionStreamingFeed: React.FC<AuctionStreamingFeedProps> = ({
                   sx={{ width: "100%" }}
                 >
                   <Box sx={{ mt: 0.5, display: "flex", alignItems: "center" }}>
-                    <CheckCircleIcon
+                    <Icons.CheckCircle
                       sx={(theme) => successIconColorSx(theme)}
                       aria-hidden
                     />

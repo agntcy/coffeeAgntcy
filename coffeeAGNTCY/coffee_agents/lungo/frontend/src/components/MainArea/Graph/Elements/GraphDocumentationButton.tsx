@@ -4,8 +4,7 @@
  **/
 
 import React, { useCallback } from "react"
-import DescriptionOutlinedIcon from "@mui/icons-material/DescriptionOutlined"
-import { Box, IconButton, Tooltip } from "@open-ui-kit/core"
+import { Box, IconButton, Icons, Tooltip } from "@open-ui-kit/core"
 import { graphCanvasIconButtonSx } from "./graphCanvasIconButtonSx"
 
 interface GraphDocumentationButtonProps {
@@ -51,7 +50,7 @@ const GraphDocumentationButton: React.FC<GraphDocumentationButtonProps> = ({
             onClick={handleClick}
             sx={(t) => graphCanvasIconButtonSx(t)}
           >
-            <DescriptionOutlinedIcon />
+            <Icons.Documentation />
           </IconButton>
         </Box>
       </Tooltip>
