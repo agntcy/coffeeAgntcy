@@ -159,7 +159,7 @@ Schema (the canonical lungo case for `partial_node` / `node`). The agent-flavour
 }
 ```
 
-Step 1 — emit the four leaf classes. Names come straight from the `$defs` keys (no merged-class invention — see [`SKILL.md`](SKILL.md)). The agent variants subclass their base counterparts because the extension is purely *additive* fields (no required-vs-optional drift, unlike §C):
+Step 1 - emit the four leaf classes. Names come straight from the `$defs` keys (no merged-class invention, see [`SKILL.md`](SKILL.md)). The agent variants subclass their base counterparts because the extension is purely *additive* fields (no required-vs-optional drift, unlike §C):
 
 ```python
 class PartialAgentNode(PartialBaseNode):
@@ -174,7 +174,7 @@ class AgentNode(BaseNode):
 
 `partial_node_agent_extension` and `node_agent_extension` are **not** emitted as standalone classes: they are only ever referenced inside the `allOf`s that build `partial_agent_node` / `agent_node`, so their fields appear directly on the agent classes.
 
-Step 2 — discriminator that mirrors **only** the sibling-key presence test that the base branch's `not { anyOf: [...required...] }` clause is making:
+Step 2 - discriminator that mirrors **only** the sibling-key presence test that the base branch's `not { anyOf: [...required...] }` clause is making:
 
 ```python
 _BASE_TAG = "base"

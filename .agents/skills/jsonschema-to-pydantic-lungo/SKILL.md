@@ -272,7 +272,7 @@ If a consumer fails because of a rename you introduced (e.g. it imported the old
 - ❌ Putting field-count or per-field validity checks inside a `Discriminator` callable. The discriminator answers exactly one question: which schema `anyOf` branch.
 - ❌ Adding `@field_validator` for a constraint that fits in `Annotated[..., Field(...)]`.
 - ❌ Inventing class names (`AgentId` for `stable_agent_id`, `Node` for `base_node`). Names come straight from `$defs` keys.
-- ❌ Hand-editing a small portion of the generated file in response to a test failure or a request for a tweak. Re-emit the whole file end-to-end via the skill instead — partial patches drift from the rules over time.
+- ❌ Hand-editing a small portion of the generated file in response to a test failure or a request for a tweak. Re-emit the whole file end-to-end via the skill instead - partial patches drift from the rules over time.
 
 ## Reference
 
