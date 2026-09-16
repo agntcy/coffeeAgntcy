@@ -194,6 +194,29 @@ services:
     ports:
       - "9105:9105"
 
+  ioc-mock-store:
+    build:
+      context: ../../..
+      dockerfile: docker/Dockerfile.python-agent
+      args:
+        PROJECT_PATH: coffeeAGNTCY/coffee_agents/lungo
+        UV_CACHE_ID: lungo
+        APP_NAME: ioc-mock-store
+        AGENT_SCRIPT: common/ioc_mocks/server.py
+    image: ghcr.io/agntcy/coffee-agntcy/ioc-mock-store:latest
+    container_name: ioc-mock-store
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      - TZ=UTC
+      - PORT=9116
+      - CORS_ALLOWED_ORIGINS=${CORS_ALLOWED_ORIGINS:-}
+    ports:
+      - "9116:9116"
+    profiles:
+      - ioc-mock
+
   ui:
     profiles:
       - frontend

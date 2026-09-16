@@ -17,6 +17,28 @@ WORKFLOW_API_KEY = os.getenv("WORKFLOW_API_KEY", "TheAnswerIs42")
 
 EMIT_WORKFLOW_EVENTS = os.getenv("EMIT_WORKFLOW_EVENTS", "true").strip().lower() in ("true", "1", "yes")
 
+IOC_MOCK_STORE_URL = os.getenv("IOC_MOCK_STORE_URL", "http://localhost:9116")
+MOCK_SHARED_MEMORY = os.getenv("MOCK_SHARED_MEMORY", "false").strip().lower() in (
+    "true",
+    "1",
+    "yes",
+)
+MOCK_INTENT_REGISTRY = os.getenv("MOCK_INTENT_REGISTRY", "false").strip().lower() in (
+    "true",
+    "1",
+    "yes",
+)
+MOCK_TEAM_POLL = os.getenv("MOCK_TEAM_POLL", "false").strip().lower() in (
+    "true",
+    "1",
+    "yes",
+)
+MOCK_ALIGNMENT = os.getenv("MOCK_ALIGNMENT", "false").strip().lower() in (
+    "true",
+    "1",
+    "yes",
+)
+
 SLIM_SERVER = os.getenv("SLIM_SERVER", "localhost:46357")
 
 NATS_SERVER = os.getenv("NATS_SERVER", "localhost:4222")
