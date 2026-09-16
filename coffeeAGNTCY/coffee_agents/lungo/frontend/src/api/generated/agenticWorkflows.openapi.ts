@@ -350,8 +350,8 @@ export interface components {
             /** @default 1 */
             height: number;
         };
-        /** @description Sparse regular node data (mainly for updates). Used in topology definitions. */
-        partial_regular_node: {
+        /** @description Sparse base node data (mainly for updates). Used in topology definitions. */
+        partial_base_node: {
             id: components["schemas"]["node_id"];
             operation: components["schemas"]["operation"];
             type?: string;
@@ -371,16 +371,16 @@ export interface components {
             agent_record_uri: string;
             stable_agent_id?: components["schemas"]["stable_agent_id"];
         };
-        /** @description Sparse agent node data (mainly for updates): a partial_regular_node combined with a partial_node_agent_extension. */
-        partial_agent_node: components["schemas"]["partial_regular_node"] & components["schemas"]["partial_node_agent_extension"];
-        /** @description Sparse node data: either a partial_regular_node alone (without any agent extension fields), or a partial_agent_node. */
-        partial_node: (components["schemas"]["partial_regular_node"] & unknown) | components["schemas"]["partial_agent_node"];
-        regular_node: components["schemas"]["partial_regular_node"] & Record<string, never>;
+        /** @description Sparse agent node data (mainly for updates): a partial_base_node combined with a partial_node_agent_extension. */
+        partial_agent_node: components["schemas"]["partial_base_node"] & components["schemas"]["partial_node_agent_extension"];
+        /** @description Sparse node data: either a partial_base_node alone (without any agent extension fields), or a partial_agent_node. */
+        partial_node: (components["schemas"]["partial_base_node"] & unknown) | components["schemas"]["partial_agent_node"];
+        base_node: components["schemas"]["partial_base_node"] & Record<string, never>;
         node_agent_extension: components["schemas"]["partial_node_agent_extension"] & Record<string, never>;
-        /** @description Full agent node data (mainly for init/reset): a regular_node combined with a node_agent_extension. */
-        agent_node: components["schemas"]["regular_node"] & components["schemas"]["node_agent_extension"];
-        /** @description Full node data: either a regular_node alone (without any agent extension fields), or an agent_node. */
-        node: (components["schemas"]["regular_node"] & unknown) | components["schemas"]["agent_node"];
+        /** @description Full agent node data (mainly for init/reset): a base_node combined with a node_agent_extension. */
+        agent_node: components["schemas"]["base_node"] & components["schemas"]["node_agent_extension"];
+        /** @description Full node data: either a base_node alone (without any agent extension fields), or an agent_node. */
+        node: (components["schemas"]["base_node"] & unknown) | components["schemas"]["agent_node"];
         topology_node_item: components["schemas"]["partial_node"] | components["schemas"]["node"];
         /** @description Graph edge id. Used in topology definitions. */
         edge_id: string;
@@ -541,8 +541,8 @@ export interface components {
                     /** @default 1 */
                     height: number;
                 };
-                /** @description Sparse regular node data (mainly for updates). Used in topology definitions. */
-                partial_regular_node: {
+                /** @description Sparse base node data (mainly for updates). Used in topology definitions. */
+                partial_base_node: {
                     id: components["schemas"]["node_id"];
                     operation: components["schemas"]["operation"];
                     type?: string;
@@ -555,21 +555,21 @@ export interface components {
                 } & {
                     [key: string]: unknown;
                 };
-                regular_node: components["schemas"]["partial_regular_node"] & Record<string, never>;
+                base_node: components["schemas"]["partial_base_node"] & Record<string, never>;
                 /** @description Sparse agent extension fields for a node. agent_record_uri is required; stable_agent_id is optional. */
                 partial_node_agent_extension: {
                     agent_record_uri: string;
                     stable_agent_id?: components["schemas"]["stable_agent_id"];
                 };
                 node_agent_extension: components["schemas"]["partial_node_agent_extension"] & Record<string, never>;
-                /** @description Sparse agent node data (mainly for updates): a partial_regular_node combined with a partial_node_agent_extension. */
-                partial_agent_node: components["schemas"]["partial_regular_node"] & components["schemas"]["partial_node_agent_extension"];
-                /** @description Full agent node data (mainly for init/reset): a regular_node combined with a node_agent_extension. */
-                agent_node: components["schemas"]["regular_node"] & components["schemas"]["node_agent_extension"];
-                /** @description Sparse node data: either a partial_regular_node alone (without any agent extension fields), or a partial_agent_node. */
-                partial_node: (components["schemas"]["partial_regular_node"] & unknown) | components["schemas"]["partial_agent_node"];
-                /** @description Full node data: either a regular_node alone (without any agent extension fields), or an agent_node. */
-                node: (components["schemas"]["regular_node"] & unknown) | components["schemas"]["agent_node"];
+                /** @description Sparse agent node data (mainly for updates): a partial_base_node combined with a partial_node_agent_extension. */
+                partial_agent_node: components["schemas"]["partial_base_node"] & components["schemas"]["partial_node_agent_extension"];
+                /** @description Full agent node data (mainly for init/reset): a base_node combined with a node_agent_extension. */
+                agent_node: components["schemas"]["base_node"] & components["schemas"]["node_agent_extension"];
+                /** @description Sparse node data: either a partial_base_node alone (without any agent extension fields), or a partial_agent_node. */
+                partial_node: (components["schemas"]["partial_base_node"] & unknown) | components["schemas"]["partial_agent_node"];
+                /** @description Full node data: either a base_node alone (without any agent extension fields), or an agent_node. */
+                node: (components["schemas"]["base_node"] & unknown) | components["schemas"]["agent_node"];
                 topology_node_item: components["schemas"]["partial_node"] | components["schemas"]["node"];
                 /** @description Sparse edge data (mainly for updates). Used in topology definitions. */
                 partial_edge: {
