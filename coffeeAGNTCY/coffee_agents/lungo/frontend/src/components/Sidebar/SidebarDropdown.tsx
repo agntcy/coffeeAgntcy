@@ -56,14 +56,7 @@ const SidebarDropdown: React.FC<SidebarDropdownProps> = ({
     onTitleClick?.()
   }
 
-  const chevron = (
-    <Icons.KeyboardArrowUp
-      sx={{
-        transition: "transform 150ms ease",
-        transform: isExpanded ? "rotate(0deg)" : "rotate(180deg)",
-      }}
-    />
-  )
+  const chevron = isExpanded ? <Icons.TriangleUp /> : <Icons.TriangleDown />
 
   const titleTypography = (
     <Typography

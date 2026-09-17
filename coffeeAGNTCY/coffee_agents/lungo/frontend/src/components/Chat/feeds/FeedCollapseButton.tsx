@@ -57,7 +57,7 @@ export function FeedCollapseButton({
           alignItems: "center",
         }}
       >
-        {expanded ? <Icons.KeyboardArrowUp /> : <Icons.KeyboardArrowDown />}
+        {expanded ? <Icons.TriangleUp /> : <Icons.TriangleDown />}
       </Box>
       <Typography
         variant="body1"

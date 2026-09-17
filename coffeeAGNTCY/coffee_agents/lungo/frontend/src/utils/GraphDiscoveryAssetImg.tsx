@@ -15,11 +15,6 @@ export function GraphDiscoveryAssetImg({
   invertInDarkMode?: boolean
 }) {
   return (
-    <AssetPngIcon
-      bare
-      src={src}
-      alt={alt}
-      invertInDarkMode={invertInDarkMode}
-    />
+    <AssetPngIcon src={src} alt={alt} invertInDarkMode={invertInDarkMode} />
   )
 }

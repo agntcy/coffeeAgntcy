@@ -52,22 +52,3 @@ export function assetPngIconBareSx(...extra: SxProps<Theme>[]): SxProps<Theme> {
     ...extra,
   ] as SxProps<Theme>
 }
-
-/** Full chip `sx` for PNG icons from `src/assets/` - always use via {@link AssetPngIcon}. */
-export function assetPngIconChipSx(...extra: SxProps<Theme>[]): SxProps<Theme> {
-  return [
-    (theme: Theme) => ({
-      width: getAssetPngIconSize(theme),
-      height: getAssetPngIconSize(theme),
-      bgcolor: getAssetPngIconBackground(theme),
-      border: "1px solid",
-      borderColor: theme.palette.divider,
-      borderRadius: theme.shape.borderRadius,
-      objectFit: "contain",
-      display: "block",
-      flexShrink: 0,
-      boxSizing: "border-box",
-    }),
-    ...extra,
-  ] as SxProps<Theme>
-}
