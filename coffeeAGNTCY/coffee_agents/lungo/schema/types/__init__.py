@@ -15,6 +15,7 @@ not ``null``).
 
 from schema.types.event import (
     AgentNode,
+    BaseNode,
     Correlation,
     CorrelationId,
     Data,
@@ -28,11 +29,10 @@ from schema.types.event import (
     NodeId,
     Operation,
     PartialAgentNode,
+    PartialBaseNode,
     PartialEdge,
     PartialNode,
-    PartialRegularNode,
     PartialTopology,
-    RegularNode,
     Size,
     StableAgentId,
     Topology,
@@ -51,6 +51,7 @@ from schema.types.event_type import EventType
 
 __all__ = [
     "AgentNode",
+    "BaseNode",
     "Correlation",
     "CorrelationId",
     "Data",
@@ -65,11 +66,10 @@ __all__ = [
     "NodeId",
     "Operation",
     "PartialAgentNode",
+    "PartialBaseNode",
     "PartialEdge",
     "PartialNode",
-    "PartialRegularNode",
     "PartialTopology",
-    "RegularNode",
     "Size",
     "StableAgentId",
     "Topology",
