@@ -183,8 +183,7 @@ function graphIconButtonChipSx(theme: Theme): SystemStyleObject<Theme> {
 /**
  * Graph node side IconButtons (GitHub, directory, identity).
  * Light mode keeps OUK IconButton blue (`brandIconPrimaryDefault`).
- * Dark mode paints CustomNode side glyphs white instead of brand/link blue.
- * Transport GitHub (`<a>`) keeps `primary.main` (lilac / deep blue).
+ * Dark mode paints side glyphs white instead of brand blue.
  */
 export function graphSideIconButtonSx(theme: Theme): SystemStyleObject<Theme> {
   return graphIconButtonChipSx(theme)
@@ -214,7 +213,7 @@ export const GRAPH_NODE_SIDE_ICON_SIZE = "1.6rem"
 const GRAPH_NODE_SIDE_ICON_INNER_SIZE = "1.125rem"
 
 /**
- * Dark mode CustomNode side chips: do not use OUK IconButton
+ * Dark mode node side chips: do not use OUK IconButton
  * `brandIconPrimaryDefault`. Paint glyphs white instead.
  */
 function graphNodeSideIconDarkModeGlyphSx(
@@ -230,27 +229,6 @@ function graphNodeSideIconDarkModeGlyphSx(
     ...iconGlyphFillSx(white, { important: true }),
     "&, &:hover, &:focus, &:visited, &:active": {
       color: white,
-    },
-  }
-}
-
-/**
- * Dark mode TransportNode GitHub `<a>`: restore OUK link `primary.main`
- * (lilac / deep blue), not the white CustomNode side-glyph override.
- */
-function graphNodeSideIconLinkDarkModeGlyphSx(
-  theme: Theme,
-): SystemStyleObject<Theme> {
-  if (theme.palette.mode !== "dark") {
-    return {}
-  }
-
-  const lilac = theme.palette.primary.main
-
-  return {
-    ...iconGlyphFillSx(lilac, { important: true }),
-    "&, &:hover, &:focus, &:visited, &:active": {
-      color: lilac,
     },
   }
 }
@@ -300,7 +278,7 @@ function graphNodeSideIconControlBaseSx(
   }
 }
 
-/** CustomNode side `IconButton` (`button` / `a`). */
+/** CustomNode / TransportNode side `IconButton` (`button` / `a`). */
 export function graphNodeSideIconControlSx(
   theme: Theme,
 ): SystemStyleObject<Theme> {
@@ -312,7 +290,8 @@ export function graphNodeSideIconControlSx(
 
 /**
  * OASF / AGNTCY Directory side control: circular chip.
- * Glyph is a currentColor SvgIcon (same paint path as GitHub / identity).
+ * Artwork is `agent_directory_a.svg` as an `img`, same as other SVGs
+ * (header logo, Grafana). Dark mode inverts the monochrome mark to white.
  */
 export function graphNodeDirectoryIconControlSx(
   theme: Theme,
@@ -321,18 +300,11 @@ export function graphNodeDirectoryIconControlSx(
     ...graphNodeSideIconControlBaseSx(theme),
     ...graphNodeSideIconDarkModeGlyphSx(theme),
     borderRadius: "50%",
-  }
-}
-
-/** TransportNode side `a` link control. */
-export function graphNodeSideIconLinkSx(
-  theme: Theme,
-): SystemStyleObject<Theme> {
-  return {
-    ...graphNodeSideIconControlBaseSx(theme),
-    ...graphNodeSideIconLinkDarkModeGlyphSx(theme),
-    textDecoration: "none",
-    cursor: "pointer",
+    "&& img": {
+      ...(theme.palette.mode === "dark"
+        ? { filter: "brightness(0) invert(1)" }
+        : {}),
+    },
   }
 }
 

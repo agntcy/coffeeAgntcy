@@ -49,7 +49,7 @@ export const NodeIdentityDropdown: React.FC<NodeIdentityDropdownProps> = ({
             }
           }}
           trigger={{
-            icon: <Icons.Verified />,
+            icon: <Icons.Assign />,
             iconButtonProps: {
               sx: (t) => graphNodeSideIconControlSx(t),
             },

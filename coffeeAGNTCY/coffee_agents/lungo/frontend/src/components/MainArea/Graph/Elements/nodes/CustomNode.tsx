@@ -16,13 +16,13 @@ import {
 } from "@open-ui-kit/core"
 import { SecurityClass } from "@/utils/SecurityClass"
 import { getSuccessIconColor } from "@/utils/successIconColor"
+import agentDirectoryA from "@/assets/agent_directory_a.svg"
 import {
   getGraphNodeHandleStyle,
   graphNodeDirectoryIconControlSx,
   graphNodeRootSurfaceSx,
   graphNodeSideIconControlSx,
 } from "./graphNodeSurface"
-import { DirectoryAIcon } from "./DirectoryAIcon"
 import { GraphIconChip } from "./GraphIconChip"
 import { GraphSideIconTooltip } from "./GraphSideIconTooltip"
 import NodeIdentityDropdown from "../../Identity/NodeIdentityDropdown"
@@ -214,7 +214,11 @@ const CustomNode: React.FC<CustomNodeProps> = ({ id, data }) => {
                 onClick={handleAgentDirectoryClick}
                 sx={(t) => graphNodeDirectoryIconControlSx(t)}
               >
-                <DirectoryAIcon />
+                <Box
+                  component="img"
+                  src={agentDirectoryA}
+                  alt="AGNTCY Directory"
+                />
               </IconButton>
             </GraphSideIconTooltip>
           )}
