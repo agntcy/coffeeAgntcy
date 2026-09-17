@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  **/
 
-import { Icons, ThemeProvider } from "@open-ui-kit/core"
+import { ThemeProvider } from "@open-ui-kit/core"
 import { fireEvent, render, screen } from "@testing-library/react"
 import type { ComponentProps } from "react"
 import { describe, expect, it, vi } from "vitest"
@@ -25,21 +25,12 @@ describe("ChatHeader", () => {
     ).not.toBeInTheDocument()
   })
 
-  it("renders a compact clear button with tooltip, aria-label, and OUK delete icon", async () => {
+  it("renders a clear button with tooltip and aria-label", async () => {
     const onClearConversation = vi.fn()
-    const { container: deleteIconContainer } = render(
-      <ThemeProvider>
-        <Icons.Delete />
-      </ThemeProvider>,
-    )
-    const expectedGlyph = deleteIconContainer.querySelector("svg")?.innerHTML
 
     renderHeader({ onClearConversation })
 
     const button = screen.getByRole("button", { name: "Clear conversation" })
-    expect(button).toHaveClass("MuiIconButton-sizeSmall")
-    expect(button.querySelector("svg")?.innerHTML).toBe(expectedGlyph)
-
     fireEvent.mouseOver(button)
     expect(
       await screen.findByRole("tooltip", { name: "Clear conversation" }),

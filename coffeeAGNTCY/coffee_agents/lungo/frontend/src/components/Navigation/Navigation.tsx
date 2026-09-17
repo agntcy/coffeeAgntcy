@@ -146,7 +146,7 @@ const Navigation: React.FC<NavigationProps> = ({ catalogSidebarProps }) => {
                 onClick={handleHelpClick}
                 sx={(theme) => navigationHeaderIconButtonSx(theme)}
               >
-                <Icons.Help />
+                <Icons.QuestionCircleOutline />
               </IconButton>
             </Tooltip>
           </Stack>

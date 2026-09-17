@@ -167,7 +167,7 @@ const AuctionStreamingFeed: React.FC<AuctionStreamingFeedProps> = ({
                   sx={{ width: "100%" }}
                 >
                   <Box sx={{ mt: 0.5, display: "flex", alignItems: "center" }}>
-                    <Icons.CheckCircle
+                    <Icons.CheckCircleFilled
                       sx={(theme) => successIconColorSx(theme)}
                       aria-hidden
                     />

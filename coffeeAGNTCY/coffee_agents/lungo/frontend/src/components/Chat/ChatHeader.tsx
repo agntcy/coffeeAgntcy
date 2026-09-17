@@ -35,7 +35,6 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({
       {onClearConversation ? (
         <Tooltip title="Clear conversation">
           <IconButton
-            size="small"
             onClick={onClearConversation}
             aria-label="Clear conversation"
             sx={chatHeaderIconButtonSx}

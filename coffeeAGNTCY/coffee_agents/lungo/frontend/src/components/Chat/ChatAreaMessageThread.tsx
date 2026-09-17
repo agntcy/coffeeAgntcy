@@ -6,7 +6,7 @@
  */
 
 import React from "react"
-import { Box, Message as StatusMessage, Stack } from "@open-ui-kit/core"
+import { Box, Banner, Stack } from "@open-ui-kit/core"
 import { ChatAgentAvatar } from "./ChatAvatarCircle"
 import { LoadingDots } from "@/components/loading"
 import Message from "./Message"
@@ -76,16 +76,19 @@ const ChatAreaMessageThread: React.FC<ChatAreaMessageThreadProps> = ({
       sx={{ width: "100%", maxWidth: 1100, mx: "auto", mb: 2 }}
     >
       {hasApiError ? (
-        <StatusMessage
-          type="error"
-          hideClose
+        <Banner
+          status="negative"
           role="alert"
           aria-live="assertive"
-          title="The request failed"
           sx={{ width: "100%" }}
-        >
-          {apiErrorMessage}
-        </StatusMessage>
+          text={
+            <>
+              <strong>The request failed</strong>
+              <br />
+              {apiErrorMessage}
+            </>
+          }
+        />
       ) : null}
 
       {currentUserMessage.trim() ? (
