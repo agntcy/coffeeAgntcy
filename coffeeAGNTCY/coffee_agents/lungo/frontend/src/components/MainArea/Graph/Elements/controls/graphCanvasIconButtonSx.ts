@@ -91,8 +91,8 @@ function canvasIconFilterSx(filter: string): SystemStyleObject<Theme> {
 export function graphCanvasIconButtonSx(
   theme: Theme,
 ): SystemStyleObject<Theme> {
-  const iconButtonSize = theme.spacing(3)
   const iconSize = getAssetPngIconSize(theme)
+  const iconButtonSize = iconSize
   const iconFilters = getCanvasIconFilters(theme)
   const iconFilterTransition = theme.transitions.create(["filter"], {
     duration: theme.transitions.duration.shortest,
