@@ -16,12 +16,12 @@ import {
   NODE_TYPES,
   VERIFICATION_STATUS,
 } from "@/utils/const"
-import { flowNodeDataRecord } from "@/components/MainArea/Graph/Elements/customNodeData"
+import { flowNodeDataRecord } from "@/components/MainArea/Graph/Elements/nodes/customNodeData"
 import type {
   CustomNodeData,
   ExtraHandle,
   TransportNodeData,
-} from "@/components/MainArea/Graph/Elements/types"
+} from "@/components/MainArea/Graph/Elements/nodes/types"
 import {
   layoutPositionsByLayer,
   layoutSlimTransportGraph,

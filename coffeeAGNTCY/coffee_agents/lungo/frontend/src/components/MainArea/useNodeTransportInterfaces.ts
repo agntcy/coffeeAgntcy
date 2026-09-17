@@ -7,12 +7,12 @@ import { useEffect, useRef, type Dispatch, type SetStateAction } from "react"
 import type { Node } from "@xyflow/react"
 import { fetchOasfRecord } from "./Graph/Directory/DirectoryApi"
 import { getOasfSlugFromNodeData } from "@/utils/agenticTopologyIdentityUiMap"
-import { customNodeDataFromNode } from "./Graph/Elements/customNodeData"
-import type { CustomNodeData } from "./Graph/Elements/types"
+import { customNodeDataFromNode } from "./Graph/Elements/nodes/customNodeData"
+import type { CustomNodeData } from "./Graph/Elements/nodes/types"
 import {
   extractA2aTransportsFromOasf,
   type AgentTransport,
-} from "./Graph/Elements/transportMeta"
+} from "./Graph/Elements/transport/transportMeta"
 import { NODE_TYPES } from "@/utils/const"
 import type { ChatApiTarget } from "@/utils/patternUtils"
 

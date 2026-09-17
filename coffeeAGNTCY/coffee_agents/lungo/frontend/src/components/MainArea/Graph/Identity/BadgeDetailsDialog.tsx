@@ -4,7 +4,7 @@
  **/
 
 import React from "react"
-import { CustomNodeData } from "../Elements/types"
+import { CustomNodeData } from "../Elements/nodes/types"
 import {
   badgeDetailsEndpointLabelForReport,
   fetchBadgeDetails,

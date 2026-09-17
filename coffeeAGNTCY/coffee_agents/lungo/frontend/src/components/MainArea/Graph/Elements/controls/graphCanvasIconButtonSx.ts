@@ -13,7 +13,7 @@ import { getAssetPngIconSize } from "@/utils/assetPngIcon"
 import {
   getControlIconColor,
   getControlIconDisabledColor,
-} from "./graphNodeSurface"
+} from "../nodes/graphNodeSurface"
 
 /**
  * Recolor single-color SvgIcons via filter. Each chain starts with `brightness(0)` so

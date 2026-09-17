@@ -7,8 +7,8 @@ import React from "react"
 import { getBezierPath, BaseEdge, Position } from "@xyflow/react"
 import { useTheme } from "@open-ui-kit/core"
 import CustomEdgeLabel from "./CustomEdgeLabel"
-import { getGraphEdgeColor } from "./graphNodeSurface"
-import { CustomEdgeData } from "./types"
+import { getGraphEdgeColor } from "../nodes/graphNodeSurface"
+import { CustomEdgeData } from "../nodes/types"
 
 interface CustomEdgeProps {
   id: string

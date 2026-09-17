@@ -5,7 +5,7 @@
  * Resolve agent API slugs from node data (wire-first fields, then label heuristics).
  */
 
-import type { CustomNodeData } from "@/components/MainArea/Graph/Elements/types"
+import type { CustomNodeData } from "@/components/MainArea/Graph/Elements/nodes/types"
 
 export type AgentSlugPurpose = "oasf" | "identity"
 

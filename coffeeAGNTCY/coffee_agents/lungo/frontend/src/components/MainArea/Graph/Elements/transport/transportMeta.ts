@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  **/
 
-import type { OasfRecord } from "../Directory/DirectoryApi"
+import type { OasfRecord } from "../../Directory/DirectoryApi"
 
 export type KnownTransportName = "slimrpc" | "slim" | "nats" | "jsonrpc"
 

@@ -4,7 +4,7 @@
  **/
 
 import { describe, expect, it } from "vitest"
-import type { OasfRecord } from "../Directory/DirectoryApi"
+import type { OasfRecord } from "../../Directory/DirectoryApi"
 import { extractA2aTransportsFromOasf, transportMetaFor } from "./transportMeta"
 
 describe("transportMeta", () => {

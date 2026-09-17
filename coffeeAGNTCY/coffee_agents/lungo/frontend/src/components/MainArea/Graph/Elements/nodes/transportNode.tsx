@@ -5,10 +5,8 @@
 
 import React, { type CSSProperties } from "react"
 import { Handle, Position } from "@xyflow/react"
-import { Box, Tooltip, Typography, useTheme } from "@open-ui-kit/core"
+import { Box, Icons, Tooltip, Typography, useTheme } from "@open-ui-kit/core"
 import { GraphSideIconTooltip } from "./GraphSideIconTooltip"
-import { useGithubIcon } from "@/hooks/ui"
-import { AssetPngIcon } from "@/components/AssetPngIcon"
 import { SecurityClass } from "@/utils/SecurityClass"
 import {
   getGraphNodeHandleStyle,
@@ -60,8 +58,6 @@ function circularDiagonalHandlePosition(
 
 const TransportNode: React.FC<TransportNodeProps> = ({ data }) => {
   const theme = useTheme()
-  const githubIconSrc = useGithubIcon()
-
   const isCircular = data.compact
   const handleStyle: CSSProperties = getGraphNodeHandleStyle(theme)
 
@@ -129,7 +125,7 @@ const TransportNode: React.FC<TransportNodeProps> = ({ data }) => {
                   }),
             })}
           >
-            <AssetPngIcon bare src={githubIconSrc} alt="GitHub" />
+            <Icons.Github />
           </Box>
         </GraphSideIconTooltip>
       )}

@@ -7,7 +7,7 @@
  */
 
 import { v5 as uuidv5 } from "uuid"
-import type { CustomNodeData } from "@/components/MainArea/Graph/Elements/types"
+import type { CustomNodeData } from "@/components/MainArea/Graph/Elements/nodes/types"
 import type { TopologyNodeWire } from "@/api/agenticWorkflowsTypes"
 import { HANDLE_TYPES, VERIFICATION_STATUS } from "@/utils/const"
 import { LUNGO_FRONTEND_URLS } from "@/urls"

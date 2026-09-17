@@ -6,7 +6,7 @@
 import React, { useEffect } from "react"
 import type { Node } from "@xyflow/react"
 import type { DialogType } from "@/types/dialog"
-import type { CustomNodeData } from "./Graph/Elements/types"
+import type { CustomNodeData } from "./Graph/Elements/nodes/types"
 
 function withNodeDialogHandlers(
   node: Node,

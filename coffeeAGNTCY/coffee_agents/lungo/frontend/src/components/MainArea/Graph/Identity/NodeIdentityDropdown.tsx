@@ -8,9 +8,9 @@
 import React from "react"
 import { Box, Icons } from "@open-ui-kit/core"
 import { IconButtonDropdown } from "@/components/IconButtonDropdown"
-import { GraphSideIconTooltip } from "@/components/MainArea/Graph/Elements/GraphSideIconTooltip"
-import { graphNodeSideIconControlSx } from "@/components/MainArea/Graph/Elements/graphNodeSurface"
-import type { CustomNodeData } from "@/components/MainArea/Graph/Elements/types"
+import { GraphSideIconTooltip } from "@/components/MainArea/Graph/Elements/nodes/GraphSideIconTooltip"
+import { graphNodeSideIconControlSx } from "@/components/MainArea/Graph/Elements/nodes/graphNodeSurface"
+import type { CustomNodeData } from "@/components/MainArea/Graph/Elements/nodes/types"
 import IdentityDetailsDropdownContent from "./IdentityDetailsDropdownContent"
 
 export interface NodeIdentityDropdownProps {

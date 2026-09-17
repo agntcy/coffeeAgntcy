@@ -1,4 +1,4 @@
-import type { AgentTransport } from "./transportMeta"
+import type { AgentTransport } from "../transport/transportMeta"
 
 export interface GraphNodeTransportRailData {
   transportInterfaces?: AgentTransport[]

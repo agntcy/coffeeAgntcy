@@ -6,7 +6,7 @@
 import { describe, expect, it } from "vitest"
 import type { TopologyNodeWire } from "@/api/agenticWorkflowsTypes"
 import { LUNGO_FRONTEND_URLS } from "@/urls"
-import { customNodeDataFixture } from "@/components/MainArea/Graph/Elements/customNodeData"
+import { customNodeDataFixture } from "@/components/MainArea/Graph/Elements/nodes/customNodeData"
 import {
   applyBackendTopologyWireFields,
   applyDiscoveredAgentInlineUi,

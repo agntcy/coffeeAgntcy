@@ -12,8 +12,8 @@
 
 import type { Edge, Node } from "@xyflow/react"
 import type { GraphConfig } from "@/utils/graphConfigs"
-import { customNodeDataFromNode } from "@/components/MainArea/Graph/Elements/customNodeData"
-import type { CustomNodeData } from "@/components/MainArea/Graph/Elements/types"
+import { customNodeDataFromNode } from "@/components/MainArea/Graph/Elements/nodes/customNodeData"
+import type { CustomNodeData } from "@/components/MainArea/Graph/Elements/nodes/types"
 import { NODE_TYPES } from "@/utils/const"
 import {
   getOasfSlugFromNodeData,

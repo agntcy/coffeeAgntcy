@@ -15,6 +15,7 @@ import {
   getAssetPngIconSize,
   getGraphIconChipHoverBackground,
 } from "@/utils/assetPngIcon"
+import { iconGlyphFillSx } from "@/utils/iconGlyphFill"
 
 /** Workflow highlight (`data.active`) and chat selection (`data.selected`) are independent. */
 export interface GraphNodeSurfaceFlags {
@@ -180,8 +181,10 @@ function graphIconButtonChipSx(theme: Theme): SystemStyleObject<Theme> {
 }
 
 /**
- * Graph node side IconButtons (GitHub, directory, identity checkmark).
- * Chip layout only - glyph color stays OUK default (`brandIconPrimaryDefault`, blue in light mode).
+ * Graph node side IconButtons (GitHub, directory, identity).
+ * Light mode keeps OUK IconButton blue (`brandIconPrimaryDefault`).
+ * Dark mode paints CustomNode side glyphs white instead of brand/link blue.
+ * Transport GitHub (`<a>`) keeps `primary.main` (lilac / deep blue).
  */
 export function graphSideIconButtonSx(theme: Theme): SystemStyleObject<Theme> {
   return graphIconButtonChipSx(theme)
@@ -209,6 +212,48 @@ export const GRAPH_NODE_SIDE_ICON_SIZE = "1.6rem"
 
 /** Inner glyph/image - fits inside {@link GRAPH_NODE_SIDE_ICON_SIZE} with 1px border. */
 const GRAPH_NODE_SIDE_ICON_INNER_SIZE = "1.125rem"
+
+/**
+ * Dark mode CustomNode side chips: do not use OUK IconButton
+ * `brandIconPrimaryDefault`. Paint glyphs white instead.
+ */
+function graphNodeSideIconDarkModeGlyphSx(
+  theme: Theme,
+): SystemStyleObject<Theme> {
+  if (theme.palette.mode !== "dark") {
+    return {}
+  }
+
+  const white = theme.palette.common.white
+
+  return {
+    ...iconGlyphFillSx(white, { important: true }),
+    "&, &:hover, &:focus, &:visited, &:active": {
+      color: white,
+    },
+  }
+}
+
+/**
+ * Dark mode TransportNode GitHub `<a>`: restore OUK link `primary.main`
+ * (lilac / deep blue), not the white CustomNode side-glyph override.
+ */
+function graphNodeSideIconLinkDarkModeGlyphSx(
+  theme: Theme,
+): SystemStyleObject<Theme> {
+  if (theme.palette.mode !== "dark") {
+    return {}
+  }
+
+  const lilac = theme.palette.primary.main
+
+  return {
+    ...iconGlyphFillSx(lilac, { important: true }),
+    "&, &:hover, &:focus, &:visited, &:active": {
+      color: lilac,
+    },
+  }
+}
 
 /** Shared compact side control surface (no `graphIconButtonChipSx` padding/content-box). */
 function graphNodeSideIconControlBaseSx(
@@ -259,7 +304,24 @@ function graphNodeSideIconControlBaseSx(
 export function graphNodeSideIconControlSx(
   theme: Theme,
 ): SystemStyleObject<Theme> {
-  return graphNodeSideIconControlBaseSx(theme)
+  return {
+    ...graphNodeSideIconControlBaseSx(theme),
+    ...graphNodeSideIconDarkModeGlyphSx(theme),
+  }
+}
+
+/**
+ * OASF / AGNTCY Directory side control: circular chip.
+ * Glyph is a currentColor SvgIcon (same paint path as GitHub / identity).
+ */
+export function graphNodeDirectoryIconControlSx(
+  theme: Theme,
+): SystemStyleObject<Theme> {
+  return {
+    ...graphNodeSideIconControlBaseSx(theme),
+    ...graphNodeSideIconDarkModeGlyphSx(theme),
+    borderRadius: "50%",
+  }
 }
 
 /** TransportNode side `a` link control. */
@@ -268,6 +330,7 @@ export function graphNodeSideIconLinkSx(
 ): SystemStyleObject<Theme> {
   return {
     ...graphNodeSideIconControlBaseSx(theme),
+    ...graphNodeSideIconLinkDarkModeGlyphSx(theme),
     textDecoration: "none",
     cursor: "pointer",
   }

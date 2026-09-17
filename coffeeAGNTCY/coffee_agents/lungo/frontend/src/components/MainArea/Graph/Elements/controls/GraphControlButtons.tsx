@@ -8,7 +8,6 @@
 import React, { useCallback } from "react"
 import { useReactFlow } from "@xyflow/react"
 import { applyDefaultGraphView } from "@/hooks/graph"
-import FitScreen from "@mui/icons-material/FitScreen"
 import ZoomIn from "@mui/icons-material/ZoomIn"
 import ZoomOut from "@mui/icons-material/ZoomOut"
 import type { SxProps, Theme } from "@mui/material/styles"
@@ -118,7 +117,7 @@ const GraphControlButtons: React.FC<GraphControlButtonsProps> = ({
         buttonVariant={buttonVariant}
         onClick={handleFitView}
       >
-        <FitScreen />
+        <Icons.Screenshot />
       </GraphControlTooltipButton>
       <GraphControlTooltipButton
         title={lockLabel}

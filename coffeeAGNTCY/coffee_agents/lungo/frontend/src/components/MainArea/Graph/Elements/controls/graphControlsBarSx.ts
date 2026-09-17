@@ -6,8 +6,8 @@
  */
 
 import type { SxProps, Theme } from "@mui/material/styles"
-import { mainAreaContentHorizontalPadding } from "../../mainAreaContentPadding"
-import { getAppShellBackgroundColor } from "../../mainAreaBackground"
+import { mainAreaContentHorizontalPadding } from "../../../mainAreaContentPadding"
+import { getAppShellBackgroundColor } from "../../../mainAreaBackground"
 
 export const graphControlsBarSx: SxProps<Theme> = {
   display: "flex",
