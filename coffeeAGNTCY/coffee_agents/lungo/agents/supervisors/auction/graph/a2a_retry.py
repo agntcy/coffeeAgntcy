@@ -38,7 +38,11 @@ class RemoteAgentNoResponseError(Exception):
 
 
 def _is_timeout_error(exc: BaseException, slim_error_class: type | None = _SENTINEL) -> bool:
-    """True iff the exception is SlimError.SessionError or AttributeError with SlimError.SessionError in chain (SDK wrap)."""
+    """True iff the exception is a TimeoutError (including the one common/slim_request_timeout.py
+    raises for a lapsed SLIM deadline), SlimError.SessionError, or AttributeError with
+    SlimError.SessionError in chain (SDK wrap)."""
+    if isinstance(exc, TimeoutError):
+        return True
     if slim_error_class is _SENTINEL:
         SlimError = _get_slim_error()
     else:
@@ -64,8 +68,11 @@ def _is_no_payload_error(exc: BaseException) -> bool:
     return isinstance(exc, AttributeError) and getattr(exc, "name", None) == "payload"
 
 
-_A2A_MAX_ATTEMPTS = 5
-_A2A_BACKOFF_BASE = 3
+# Sized against SLIM_REQUEST_TIMEOUT_SECONDS: three attempts plus 1s and 2s of backoff
+# keep the worst case near a minute, which is what the caller waited for before the
+# per-attempt deadline was raised from the SDK's 6s.
+_A2A_MAX_ATTEMPTS = 3
+_A2A_BACKOFF_BASE = 2
 
 logger = logging.getLogger(__name__)
 
@@ -73,8 +80,7 @@ logger = logging.getLogger(__name__)
 async def send_a2a_with_retry(client, message, context: ClientCallContext | None = None):
     """
     Send message to A2A client. On timeout or no response, retry
-    up to 4 times (5 attempts total) with exponential backoff (base 3, delays 1s, 3s,
-    9s, 27s).
+    up to 2 times (3 attempts total) with exponential backoff (base 2, delays 1s, 2s).
 
     The A2A SDK (>=0.3.x) client.send_message() returns an AsyncIterator.
     This function collects all events from the stream and returns them as a list.
