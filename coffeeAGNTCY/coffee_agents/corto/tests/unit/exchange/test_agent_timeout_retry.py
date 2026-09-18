@@ -111,7 +111,7 @@ _A2A_SCENARIOS = [
         "timeout_then_timeout",
         None,
         TransportTimeoutError,
-        5,
+        3,
         True,
         id="timeout_then_timeout",
     ),
@@ -187,13 +187,8 @@ async def test_a2a_send_message_scenarios(
 
         assert mock_client.send_message.call_count == expected_call_count
         if scenario_id == "timeout_then_timeout":
-            assert mock_sleep.await_count == 4
-            assert [mock_sleep.await_args_list[i][0][0] for i in range(4)] == [
-                1,
-                3,
-                9,
-                27,
-            ]
+            assert mock_sleep.await_count == 2
+            assert [mock_sleep.await_args_list[i][0][0] for i in range(2)] == [1, 2]
         elif scenario_id == "timeout_then_success":
             assert mock_sleep.await_count == 1
             assert mock_sleep.await_args[0][0] == 1

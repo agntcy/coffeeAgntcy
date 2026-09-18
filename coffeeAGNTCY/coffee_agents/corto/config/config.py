@@ -14,6 +14,10 @@ TRANSPORT_SERVER_ENDPOINT = os.getenv(
 SLIM_SERVER = os.getenv("SLIM_SERVER", "localhost:46357")
 NATS_SERVER = os.getenv("NATS_SERVER", "localhost:4222")
 
+# Deadline (seconds) for a single SLIM request/reply exchange. The app SDK defaults
+# to 6s, which expires before an LLM-backed agent can answer.
+SLIM_REQUEST_TIMEOUT_SECONDS = int(os.getenv("SLIM_REQUEST_TIMEOUT_SECONDS", "20"))
+
 if os.getenv("SLIM_SHARED_SECRET") is None:
     os.environ["SLIM_SHARED_SECRET"] = (
         "slim-shared-secret-REPLACE_WITH_RANDOM_32PLUS_CHARS"
