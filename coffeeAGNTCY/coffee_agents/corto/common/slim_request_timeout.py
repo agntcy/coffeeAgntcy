@@ -1,7 +1,8 @@
 # Copyright AGNTCY Contributors (https://github.com/agntcy)
 # SPDX-License-Identifier: Apache-2.0
 
-"""Widen the deadline the app SDK applies to SLIM request/reply exchanges."""
+"""Widen the deadline the app SDK applies to SLIM request/reply exchanges, and
+report it when it expires."""
 
 from __future__ import annotations
 
@@ -23,6 +24,11 @@ def apply_slim_request_timeout(timeout_seconds: int) -> None:
     ``SLIMTransport.request()`` and its A2A client never forwards one, so
     ``SlimTransportConfig`` offers no way to raise it. Replacing the method is the
     only hook available; drop this module once the SDK takes the value as config.
+
+    The same SDK method logs the expiry and returns ``None``, so callers only find
+    out through an ``AttributeError`` on the missing payload, which reads as a
+    malformed reply rather than a deadline. The override raises ``TimeoutError``
+    instead so the retry paths can tell the two apart.
 
     Callers that pass their own ``timeout`` are left untouched, and the override
     is skipped altogether if a future SDK stops accepting the argument.
@@ -49,7 +55,11 @@ def apply_slim_request_timeout(timeout_seconds: int) -> None:
     async def request(self, recipient, message, *args, **kwargs):
         if not args:
             kwargs.setdefault("timeout", timeout_seconds)
-        return await original(self, recipient, message, *args, **kwargs)
+        deadline = args[0] if args else kwargs["timeout"]
+        reply = await original(self, recipient, message, *args, **kwargs)
+        if reply is None:
+            raise TimeoutError(f"No SLIM reply from {recipient} within {deadline}s.")
+        return reply
 
     setattr(request, _APPLIED_TIMEOUT, timeout_seconds)
     SLIMTransport.request = request

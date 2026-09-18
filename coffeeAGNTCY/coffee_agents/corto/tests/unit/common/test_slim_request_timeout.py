@@ -47,6 +47,31 @@ async def test_caller_supplied_timeout_wins(recorded_calls, call_style):
     assert recorded_calls == [5]
 
 
+@pytest.mark.parametrize(
+    ("call_style", "expected_deadline"),
+    [("default", 20), ("keyword", 5), ("positional", 5)],
+)
+async def test_swallowed_timeout_is_raised(monkeypatch, call_style, expected_deadline):
+    """The SDK returns None once the deadline lapses; callers must see a TimeoutError."""
+
+    async def request(self, recipient, message, timeout: int = 6, **kwargs):
+        return None
+
+    monkeypatch.setattr(SLIMTransport, "request", request, raising=True)
+    apply_slim_request_timeout(20)
+
+    with pytest.raises(TimeoutError) as excinfo:
+        if call_style == "keyword":
+            await SLIMTransport.request(None, "farm", "message", timeout=5)
+        elif call_style == "positional":
+            await SLIMTransport.request(None, "farm", "message", 5)
+        else:
+            await SLIMTransport.request(None, "farm", "message")
+
+    expected = f"No SLIM reply from farm within {expected_deadline}s."
+    assert str(excinfo.value) == expected
+
+
 async def test_reapplying_does_not_stack_wrappers(recorded_calls):
     apply_slim_request_timeout(20)
     wrapped_once = SLIMTransport.request

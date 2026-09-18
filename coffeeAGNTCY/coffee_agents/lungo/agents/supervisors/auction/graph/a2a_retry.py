@@ -38,7 +38,11 @@ class RemoteAgentNoResponseError(Exception):
 
 
 def _is_timeout_error(exc: BaseException, slim_error_class: type | None = _SENTINEL) -> bool:
-    """True iff the exception is SlimError.SessionError or AttributeError with SlimError.SessionError in chain (SDK wrap)."""
+    """True iff the exception is a TimeoutError (including the one common/slim_request_timeout.py
+    raises for a lapsed SLIM deadline), SlimError.SessionError, or AttributeError with
+    SlimError.SessionError in chain (SDK wrap)."""
+    if isinstance(exc, TimeoutError):
+        return True
     if slim_error_class is _SENTINEL:
         SlimError = _get_slim_error()
     else:
