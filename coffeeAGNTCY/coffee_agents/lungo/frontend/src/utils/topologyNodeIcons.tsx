@@ -133,7 +133,7 @@ export function resolveTopologyNodeIcon(
 ): React.ReactNode {
   switch (topologyNodeIconKind(input)) {
     case TopologyNodeIconKind.Supervisor:
-      return <Icons.InadequateAuthenticationAuthorization aria-hidden />
+      return <Icons.ImageSearch aria-hidden />
     case TopologyNodeIconKind.Recruiter:
       return <Icons.Groups aria-hidden />
     case TopologyNodeIconKind.Directory:
