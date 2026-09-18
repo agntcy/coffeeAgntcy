@@ -5,7 +5,7 @@
 
 import { useState, useCallback } from "react"
 import type { DialogType, DialogState, DialogNodeData } from "@/types/dialog"
-import type { CustomNodeData } from "@/components/MainArea/Graph/Elements/types"
+import type { CustomNodeData } from "@/components/MainArea/Graph/Elements/nodes/types"
 
 export type { DialogType, DialogState, DialogNodeData } from "@/types/dialog"
 

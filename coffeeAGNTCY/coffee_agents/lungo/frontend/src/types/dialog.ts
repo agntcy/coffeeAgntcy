@@ -6,7 +6,7 @@
  * Used by: useDialogManager (state + actions), GraphNodeDetailDialogs, and graph UI components.
  **/
 
-import type { CustomNodeData } from "@/components/MainArea/Graph/Elements/types"
+import type { CustomNodeData } from "@/components/MainArea/Graph/Elements/nodes/types"
 
 /** Dialog id: which dialog is open, or null when closed. */
 export type DialogType = "identity" | "badge" | "policy" | null

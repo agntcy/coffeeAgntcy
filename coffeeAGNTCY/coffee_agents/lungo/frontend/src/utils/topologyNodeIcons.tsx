@@ -17,13 +17,12 @@ import React from "react"
 import Air from "@mui/icons-material/Air"
 import Calculate from "@mui/icons-material/Calculate"
 import LocalShipping from "@mui/icons-material/LocalShipping"
-import SmartToy from "@mui/icons-material/SmartToy"
+import { Icons } from "@open-ui-kit/core"
 import { GraphDiscoveryAssetImg } from "@/utils/GraphDiscoveryAssetImg"
 import {
   isDirectoryLabel,
   isRecruiterLabel,
 } from "@/utils/agenticTopologyIdentityUiMap"
-import supervisorIcon from "@/assets/supervisor.png"
 import farmAgentIcon from "@/assets/Grader-Agent.png"
 
 export interface TopologyNodeIconInput {
@@ -134,22 +133,22 @@ export function resolveTopologyNodeIcon(
 ): React.ReactNode {
   switch (topologyNodeIconKind(input)) {
     case TopologyNodeIconKind.Supervisor:
-      return brandedImg(supervisorIcon, "Supervisor Icon")
+      return <Icons.ImageSearch aria-hidden />
     case TopologyNodeIconKind.Recruiter:
-      return brandedImg(supervisorIcon, "Recruiter Icon")
+      return <Icons.Groups aria-hidden />
     case TopologyNodeIconKind.Directory:
-      return brandedImg(supervisorIcon, "Directory Icon")
+      return <Icons.FolderOpen aria-hidden />
     case TopologyNodeIconKind.Farm:
       return brandedImg(farmAgentIcon, "Farm Agent Icon")
     case TopologyNodeIconKind.WeatherMcp:
       return <Air aria-hidden />
     case TopologyNodeIconKind.PaymentMcp:
-      return <Calculate aria-hidden />
+      return <Icons.Payments aria-hidden />
     case TopologyNodeIconKind.Shipping:
       return <LocalShipping aria-hidden />
     case TopologyNodeIconKind.Accountant:
       return <Calculate aria-hidden />
     default:
-      return <SmartToy aria-hidden />
+      return <Icons.Agent aria-hidden />
   }
 }

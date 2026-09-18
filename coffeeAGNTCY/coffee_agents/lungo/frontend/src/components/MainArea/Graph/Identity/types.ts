@@ -1,4 +1,4 @@
-import type { CustomNodeData } from "../Elements/types"
+import type { CustomNodeData } from "../Elements/nodes/types"
 
 export interface PolicyData {
   policies: Array<{

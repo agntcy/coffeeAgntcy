@@ -10,7 +10,7 @@ import type { GraphConfig } from "@/utils/graphConfigs"
  * Minimal node data shape used for sender→node mapping and agent node filtering.
  * GraphConfig.nodes is heterogeneous (CustomNodeData | TransportNodeData | group data);
  * we only read these optional fields, which exist on custom nodes and are absent on
- * transport/group nodes. See @/components/MainArea/Graph/Elements/types (CustomNodeData)
+ * transport/group nodes. See @/components/MainArea/Graph/Elements/nodes/types (CustomNodeData)
  * for the full custom-node shape.
  * Index signature satisfies @xyflow/react Node<T> constraint (T extends Record<string, unknown>).
  */

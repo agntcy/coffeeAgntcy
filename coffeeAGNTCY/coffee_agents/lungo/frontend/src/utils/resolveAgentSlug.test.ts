@@ -4,7 +4,7 @@
  **/
 
 import { describe, expect, it } from "vitest"
-import { customNodeDataFixture as node } from "@/components/MainArea/Graph/Elements/customNodeData"
+import { customNodeDataFixture as node } from "@/components/MainArea/Graph/Elements/nodes/customNodeData"
 import { resolveAgentSlug } from "@/utils/resolveAgentSlug"
 
 describe("resolveAgentSlug", () => {

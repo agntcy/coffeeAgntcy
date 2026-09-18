@@ -4,9 +4,14 @@
  **/
 
 import React, { useCallback, useEffect, useMemo, useState } from "react"
-import MenuIcon from "@mui/icons-material/Menu"
-import HelpOutline from "@mui/icons-material/HelpOutline"
-import { Header, IconButton, Stack, Tooltip, Box } from "@open-ui-kit/core"
+import {
+  Header,
+  IconButton,
+  Icons,
+  Stack,
+  Tooltip,
+  Box,
+} from "@open-ui-kit/core"
 
 import coffeeAgntcyLogo from "@/assets/coffeeAGNTCY_logo.svg"
 import { useAppThemeMode } from "@/hooks/useApp"
@@ -107,7 +112,7 @@ const Navigation: React.FC<NavigationProps> = ({ catalogSidebarProps }) => {
                     onClick={handleToggleCatalogMenu}
                     sx={(theme) => navigationHeaderIconButtonSx(theme)}
                   >
-                    <MenuIcon />
+                    <Icons.Menu />
                   </IconButton>
                 </Box>
               </Tooltip>
@@ -141,7 +146,7 @@ const Navigation: React.FC<NavigationProps> = ({ catalogSidebarProps }) => {
                 onClick={handleHelpClick}
                 sx={(theme) => navigationHeaderIconButtonSx(theme)}
               >
-                <HelpOutline />
+                <Icons.QuestionCircleOutline />
               </IconButton>
             </Tooltip>
           </Stack>

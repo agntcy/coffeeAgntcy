@@ -10,7 +10,7 @@ import React from "react"
 import BadgeDetailsDialog from "./Graph/Identity/BadgeDetailsDialog"
 import PolicyDetailsDialog from "./Graph/Identity/PolicyDetailsDialog"
 import type { DialogType, DialogNodeData } from "@/types/dialog"
-import type { CustomNodeData } from "./Graph/Elements/types"
+import type { CustomNodeData } from "./Graph/Elements/nodes/types"
 
 interface GraphNodeDetailDialogsProps {
   activeDialog: DialogType

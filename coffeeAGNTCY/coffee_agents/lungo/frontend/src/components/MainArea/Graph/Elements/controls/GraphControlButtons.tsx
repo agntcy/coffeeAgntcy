@@ -8,13 +8,10 @@
 import React, { useCallback } from "react"
 import { useReactFlow } from "@xyflow/react"
 import { applyDefaultGraphView } from "@/hooks/graph"
-import FitScreen from "@mui/icons-material/FitScreen"
-import Lock from "@mui/icons-material/Lock"
-import LockOpen from "@mui/icons-material/LockOpen"
 import ZoomIn from "@mui/icons-material/ZoomIn"
 import ZoomOut from "@mui/icons-material/ZoomOut"
 import type { SxProps, Theme } from "@mui/material/styles"
-import { Box, IconButton, Stack, Tooltip } from "@open-ui-kit/core"
+import { Box, IconButton, Icons, Stack, Tooltip } from "@open-ui-kit/core"
 import { chatHeaderIconButtonSx } from "@/components/Chat/chatHeaderIconButtonSx"
 import { graphCanvasIconButtonSx } from "./graphCanvasIconButtonSx"
 
@@ -120,7 +117,7 @@ const GraphControlButtons: React.FC<GraphControlButtonsProps> = ({
         buttonVariant={buttonVariant}
         onClick={handleFitView}
       >
-        <FitScreen />
+        <Icons.Screenshot />
       </GraphControlTooltipButton>
       <GraphControlTooltipButton
         title={lockLabel}
@@ -129,7 +126,7 @@ const GraphControlButtons: React.FC<GraphControlButtonsProps> = ({
         buttonVariant={buttonVariant}
         onClick={() => onToggleInteractivity?.()}
       >
-        {isInteractive ? <LockOpen /> : <Lock />}
+        {isInteractive ? <Icons.LockOff /> : <Icons.Lock />}
       </GraphControlTooltipButton>
     </Stack>
   )

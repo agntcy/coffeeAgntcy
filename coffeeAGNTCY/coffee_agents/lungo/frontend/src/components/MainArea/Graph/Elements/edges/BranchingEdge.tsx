@@ -7,8 +7,8 @@ import React from "react"
 import { Position, getBezierPath, useStore, Node } from "@xyflow/react"
 import { useTheme } from "@open-ui-kit/core"
 import CustomEdgeLabel from "./CustomEdgeLabel"
-import { getGraphEdgeColor } from "./graphNodeSurface"
-import { BranchingEdgeData } from "./types"
+import { getGraphEdgeColor } from "../nodes/graphNodeSurface"
+import { BranchingEdgeData } from "../nodes/types"
 
 interface BranchingEdgeProps {
   id: string

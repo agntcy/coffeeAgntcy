@@ -13,7 +13,7 @@ import { getAssetPngIconSize } from "@/utils/assetPngIcon"
 import {
   getControlIconColor,
   getControlIconDisabledColor,
-} from "./graphNodeSurface"
+} from "../nodes/graphNodeSurface"
 
 /**
  * Recolor single-color SvgIcons via filter. Each chain starts with `brightness(0)` so
@@ -91,8 +91,8 @@ function canvasIconFilterSx(filter: string): SystemStyleObject<Theme> {
 export function graphCanvasIconButtonSx(
   theme: Theme,
 ): SystemStyleObject<Theme> {
-  const iconButtonSize = theme.spacing(3)
   const iconSize = getAssetPngIconSize(theme)
+  const iconButtonSize = iconSize
   const iconFilters = getCanvasIconFilters(theme)
   const iconFilterTransition = theme.transitions.create(["filter"], {
     duration: theme.transitions.duration.shortest,

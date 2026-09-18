@@ -8,7 +8,7 @@
 import React, { useState, useEffect, useCallback } from "react"
 import { Box, LoadingErrorState, Stack } from "@open-ui-kit/core"
 import Dialog from "@/components/dialog/Dialog"
-import { CustomNodeData } from "../Elements/types"
+import { CustomNodeData } from "../Elements/nodes/types"
 import { reportRequestError } from "@/errors/request"
 import { LoadingSpinner } from "@/components/loading"
 import { compactNegativeEmptyStateProps } from "@/components/compactNegativeEmptyState"

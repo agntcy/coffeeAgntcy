@@ -4,7 +4,7 @@
  **/
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
-import { Box, Message, Spinner, Stack, Typography } from "@open-ui-kit/core"
+import { Box, Banner, Spinner, Stack, Typography } from "@open-ui-kit/core"
 import type { WorkflowSummary } from "@/utils/agenticWorkflowsApi"
 import { getAppShellBackgroundColor } from "../MainArea/mainAreaBackground"
 import { transparentScrollbarSx } from "@/utils/transparentScrollbarSx"
@@ -141,15 +141,13 @@ const Sidebar: React.FC<SidebarProps> = ({
             ? [error, error === null ? patternCategoriesError : null]
                 .filter((message): message is string => message !== null)
                 .map((message) => (
-                  <Message
+                  <Banner
                     key={message}
-                    type="error"
-                    hideClose
+                    status="negative"
                     role="alert"
-                    sx={{ my: 1, width: "100%", textWrap: "wrap" }}
-                  >
-                    {message}
-                  </Message>
+                    sx={{ my: 1, width: "100%" }}
+                    text={message}
+                  />
                 ))
             : null}
 

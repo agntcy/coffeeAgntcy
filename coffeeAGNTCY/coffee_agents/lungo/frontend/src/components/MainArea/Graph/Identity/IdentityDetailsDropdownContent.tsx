@@ -4,21 +4,16 @@
  **/
 
 import React from "react"
-import { IconButton, Stack, Typography } from "@open-ui-kit/core"
-import { GraphSideIconTooltip } from "@/components/MainArea/Graph/Elements/GraphSideIconTooltip"
-import Visibility from "@mui/icons-material/Visibility"
+import { IconButton, Icons, Stack, Typography } from "@open-ui-kit/core"
+import { GraphSideIconTooltip } from "@/components/MainArea/Graph/Elements/nodes/GraphSideIconTooltip"
 import { IdentityDetailsDropdownContentProps } from "./types"
-import { useGithubIcon } from "@/hooks/ui"
-import { AssetPngIcon } from "@/components/AssetPngIcon"
 import { LUNGO_FRONTEND_URLS } from "@/urls"
 import { SecurityClass } from "@/utils/SecurityClass"
-import { graphSideIconButtonSx } from "@/components/MainArea/Graph/Elements/graphNodeSurface"
+import { graphSideIconButtonSx } from "@/components/MainArea/Graph/Elements/nodes/graphNodeSurface"
 
 const IdentityDetailsDropdownContent: React.FC<
   IdentityDetailsDropdownContentProps
 > = ({ onShowBadgeDetails, onShowPolicyDetails, nodeData }) => {
-  const githubIconSrc = useGithubIcon()
-
   const getIdentityGithubUrl = () => {
     if (!nodeData) return null
 
@@ -77,7 +72,7 @@ const IdentityDetailsDropdownContent: React.FC<
               aria-label="View badge details"
               sx={(t) => graphSideIconButtonSx(t)}
             >
-              <Visibility />
+              <Icons.Visibility />
             </IconButton>
           </GraphSideIconTooltip>
         </Stack>
@@ -98,7 +93,7 @@ const IdentityDetailsDropdownContent: React.FC<
               aria-label="View policy details"
               sx={(t) => graphSideIconButtonSx(t)}
             >
-              <Visibility />
+              <Icons.Visibility />
             </IconButton>
           </GraphSideIconTooltip>
         </Stack>
@@ -126,7 +121,7 @@ const IdentityDetailsDropdownContent: React.FC<
                 aria-label="Open source code on GitHub"
                 sx={(t) => graphSideIconButtonSx(t)}
               >
-                <AssetPngIcon bare src={githubIconSrc} alt="Source code" />
+                <Icons.Github />
               </IconButton>
             </GraphSideIconTooltip>
           </Stack>

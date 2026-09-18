@@ -6,12 +6,11 @@
  */
 
 import React from "react"
-import AssignmentTurnedIn from "@mui/icons-material/AssignmentTurnedIn"
-import { Box } from "@open-ui-kit/core"
+import { Box, Icons } from "@open-ui-kit/core"
 import { IconButtonDropdown } from "@/components/IconButtonDropdown"
-import { GraphSideIconTooltip } from "@/components/MainArea/Graph/Elements/GraphSideIconTooltip"
-import { graphNodeSideIconControlSx } from "@/components/MainArea/Graph/Elements/graphNodeSurface"
-import type { CustomNodeData } from "@/components/MainArea/Graph/Elements/types"
+import { GraphSideIconTooltip } from "@/components/MainArea/Graph/Elements/nodes/GraphSideIconTooltip"
+import { graphNodeSideIconControlSx } from "@/components/MainArea/Graph/Elements/nodes/graphNodeSurface"
+import type { CustomNodeData } from "@/components/MainArea/Graph/Elements/nodes/types"
 import IdentityDetailsDropdownContent from "./IdentityDetailsDropdownContent"
 
 export interface NodeIdentityDropdownProps {
@@ -50,7 +49,7 @@ export const NodeIdentityDropdown: React.FC<NodeIdentityDropdownProps> = ({
             }
           }}
           trigger={{
-            icon: <AssignmentTurnedIn />,
+            icon: <Icons.Assign />,
             iconButtonProps: {
               sx: (t) => graphNodeSideIconControlSx(t),
             },

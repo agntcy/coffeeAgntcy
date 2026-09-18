@@ -7,7 +7,7 @@ import {
   BadgeData,
   PolicyData,
 } from "@/components/MainArea/Graph/Identity/types"
-import type { CustomNodeData } from "@/components/MainArea/Graph/Elements/types"
+import type { CustomNodeData } from "@/components/MainArea/Graph/Elements/nodes/types"
 import { fetchJson } from "@/api/http"
 import {
   buildIdentityBadgeRequest,

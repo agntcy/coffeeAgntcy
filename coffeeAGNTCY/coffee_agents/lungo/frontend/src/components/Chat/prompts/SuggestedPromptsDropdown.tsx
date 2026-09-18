@@ -6,15 +6,15 @@
  */
 
 import React, { useCallback, useMemo, useState } from "react"
-import KeyboardArrowDown from "@mui/icons-material/KeyboardArrowDown"
 import type { SxProps, Theme } from "@mui/material/styles"
 import type { SystemStyleObject } from "@mui/system"
 import {
+  Banner,
   Box,
   Button,
+  Icons,
   Menu,
   MenuItem,
-  Message,
   Tooltip,
 } from "@open-ui-kit/core"
 import type { DropdownOption } from "@/types/dropdownOption"
@@ -159,7 +159,7 @@ const SuggestedPromptsDropdown: React.FC<SuggestedPromptsDropdownProps> = ({
         }
       }}
       endIcon={
-        <KeyboardArrowDown
+        <Icons.KeyboardArrowDown
           aria-hidden
           sx={{
             transition: (theme) =>
@@ -194,16 +194,20 @@ const SuggestedPromptsDropdown: React.FC<SuggestedPromptsDropdownProps> = ({
       >
         {isUnavailable ? (
           <Box sx={{ p: 2, maxWidth: menuMaxWidth ?? 360, width: "100%" }}>
-            <Message
-              type="error"
-              hideClose
+            <Banner
+              status="negative"
               role="alert"
-              title="Request failed"
+              showCloseButton={false}
               sx={{ width: "100%" }}
-            >
-              {unavailableMessage ??
-                "Suggested prompts could not be loaded. You can still type your own message."}
-            </Message>
+              text={
+                <>
+                  <strong>Request failed</strong>
+                  <br />
+                  {unavailableMessage ??
+                    "Suggested prompts could not be loaded. You can still type your own message."}
+                </>
+              }
+            />
           </Box>
         ) : (
           options.map((option, index) => (

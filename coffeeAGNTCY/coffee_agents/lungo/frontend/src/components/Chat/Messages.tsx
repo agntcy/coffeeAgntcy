@@ -4,9 +4,7 @@
  **/
 
 import React, { useEffect, useRef, useState } from "react"
-import Person from "@mui/icons-material/Person"
-import SmartToy from "@mui/icons-material/SmartToy"
-import { Box } from "@open-ui-kit/core"
+import { Box, Icons } from "@open-ui-kit/core"
 import type { Message as MessageType } from "./types"
 import Message from "./Message"
 
@@ -56,7 +54,7 @@ const Messages: React.FC<MessagesProps> = ({ messages }) => {
           <Message
             key={msg.id}
             highlighted={isAssistant}
-            icon={isAssistant ? <SmartToy /> : <Person />}
+            icon={isAssistant ? <Icons.Agent /> : <Icons.PersonOutline />}
           >
             {msg.animate ? (
               <SlowText speed={20} text={msg.content} />

@@ -11,7 +11,7 @@ import {
   GRAPH_NODE_PADDING_X,
   GRAPH_NODE_PADDING_X_WITH_RAIL,
 } from "@/utils/graphNodeDimensions"
-import type { AgentTransport } from "./transportMeta"
+import type { AgentTransport } from "../transport/transportMeta"
 
 export function hasGraphNodeTransportRail(
   transportInterfaces?: AgentTransport[],

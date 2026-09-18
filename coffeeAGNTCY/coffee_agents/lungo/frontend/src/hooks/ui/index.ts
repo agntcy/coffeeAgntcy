@@ -4,5 +4,3 @@
  **/
 
 export { useDialogManager } from "./useDialogManager"
-export { useGithubIcon } from "./useGithubIcon"
-export { useThemeIcon } from "./useThemeIcon"

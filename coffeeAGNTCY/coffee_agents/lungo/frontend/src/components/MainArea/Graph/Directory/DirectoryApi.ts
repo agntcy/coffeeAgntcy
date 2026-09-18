@@ -6,7 +6,7 @@
 import { fetchJson } from "@/api/http"
 import { buildAgentsOasfRequest, type HttpRequestTarget } from "@/urls"
 import { type ChatApiTarget } from "@/utils/patternUtils"
-import type { CustomNodeData } from "../Elements/types"
+import type { CustomNodeData } from "../Elements/nodes/types"
 import { getOasfSlugFromNodeData } from "@/utils/agenticTopologyIdentityUiMap"
 
 const DIRECTORY_REQUEST_TIMEOUT_MS = 10_000

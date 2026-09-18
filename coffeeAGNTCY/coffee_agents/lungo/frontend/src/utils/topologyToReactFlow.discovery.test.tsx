@@ -5,7 +5,7 @@
 
 import { describe, expect, it } from "vitest"
 import { NODE_TYPES } from "@/utils/const"
-import { customNodeDataFromNode } from "@/components/MainArea/Graph/Elements/customNodeData"
+import { customNodeDataFromNode } from "@/components/MainArea/Graph/Elements/nodes/customNodeData"
 import { topologyWireToReactFlow } from "@/utils/topologyToReactFlow"
 
 const SEED_RECRUITER = "node://4a000001-0001-4000-a001-000000000001"

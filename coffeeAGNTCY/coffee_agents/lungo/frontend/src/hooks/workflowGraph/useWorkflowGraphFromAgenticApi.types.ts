@@ -4,7 +4,7 @@
  **/
 
 import type { Edge, Node } from "@xyflow/react"
-import type { CustomNodeData } from "@/components/MainArea/Graph/Elements/types"
+import type { CustomNodeData } from "@/components/MainArea/Graph/Elements/nodes/types"
 import type { WorkflowSummary } from "@/utils/agenticWorkflowsApi"
 
 export const REFETCH_DEBOUNCE_MS = 80

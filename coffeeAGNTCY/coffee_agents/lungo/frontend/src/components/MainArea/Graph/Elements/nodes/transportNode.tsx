@@ -5,15 +5,20 @@
 
 import React, { type CSSProperties } from "react"
 import { Handle, Position } from "@xyflow/react"
-import { Box, Tooltip, Typography, useTheme } from "@open-ui-kit/core"
+import {
+  Box,
+  IconButton,
+  Icons,
+  Tooltip,
+  Typography,
+  useTheme,
+} from "@open-ui-kit/core"
 import { GraphSideIconTooltip } from "./GraphSideIconTooltip"
-import { useGithubIcon } from "@/hooks/ui"
-import { AssetPngIcon } from "@/components/AssetPngIcon"
 import { SecurityClass } from "@/utils/SecurityClass"
 import {
   getGraphNodeHandleStyle,
-  graphNodeSideIconLinkSx,
   graphNodeRootSurfaceSx,
+  graphNodeSideIconControlSx,
 } from "./graphNodeSurface"
 import { TransportNodeData } from "./types"
 
@@ -60,8 +65,6 @@ function circularDiagonalHandlePosition(
 
 const TransportNode: React.FC<TransportNodeProps> = ({ data }) => {
   const theme = useTheme()
-  const githubIconSrc = useGithubIcon()
-
   const isCircular = data.compact
   const handleStyle: CSSProperties = getGraphNodeHandleStyle(theme)
 
@@ -110,14 +113,14 @@ const TransportNode: React.FC<TransportNodeProps> = ({ data }) => {
 
       {data.githubLink && SecurityClass.isSafeExternalUrl(data.githubLink) && (
         <GraphSideIconTooltip title="Open repository on GitHub">
-          <Box
+          <IconButton
             component="a"
             href={data.githubLink}
             target="_blank"
             rel="noopener noreferrer"
             aria-label="Open GitHub repository"
             sx={(t) => ({
-              ...graphNodeSideIconLinkSx(t),
+              ...graphNodeSideIconControlSx(t),
               ...(isCircular
                 ? { mt: 0.5 }
                 : {
@@ -129,8 +132,8 @@ const TransportNode: React.FC<TransportNodeProps> = ({ data }) => {
                   }),
             })}
           >
-            <AssetPngIcon bare src={githubIconSrc} alt="GitHub" />
-          </Box>
+            <Icons.Github />
+          </IconButton>
         </GraphSideIconTooltip>
       )}
 

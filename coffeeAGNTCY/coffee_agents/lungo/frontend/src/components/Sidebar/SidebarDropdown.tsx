@@ -7,12 +7,12 @@ import React from "react"
 import {
   Box,
   IconButton,
+  Icons,
   List,
   ListItem,
   ListItemButton,
   Typography,
 } from "@open-ui-kit/core"
-import ExpandLess from "@mui/icons-material/ExpandLess"
 import {
   sidebarBorderRadius,
   sidebarDropdownPanelPaddingLeft,
@@ -56,14 +56,7 @@ const SidebarDropdown: React.FC<SidebarDropdownProps> = ({
     onTitleClick?.()
   }
 
-  const chevron = (
-    <ExpandLess
-      sx={{
-        transition: "transform 150ms ease",
-        transform: isExpanded ? "rotate(0deg)" : "rotate(180deg)",
-      }}
-    />
-  )
+  const chevron = isExpanded ? <Icons.TriangleUp /> : <Icons.TriangleDown />
 
   const titleTypography = (
     <Typography

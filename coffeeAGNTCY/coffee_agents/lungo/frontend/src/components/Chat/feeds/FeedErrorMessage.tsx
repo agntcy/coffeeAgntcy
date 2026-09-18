@@ -4,23 +4,26 @@
  **/
 
 import type { ReactNode } from "react"
-import { Message } from "@open-ui-kit/core"
+import { Banner } from "@open-ui-kit/core"
 
 export interface FeedErrorMessageProps {
   children: ReactNode
 }
 
-/** Inline streaming feed error using OUK Message (connection / stream failures). */
+/** Inline streaming feed error (connection / stream failures). */
 export function FeedErrorMessage({ children }: FeedErrorMessageProps) {
   return (
-    <Message
-      type="error"
-      hideClose
+    <Banner
+      status="negative"
       role="alert"
-      title="Connection error"
       sx={{ width: "100%" }}
-    >
-      {children}
-    </Message>
+      text={
+        <>
+          <strong>Connection error</strong>
+          <br />
+          {children}
+        </>
+      }
+    />
   )
 }

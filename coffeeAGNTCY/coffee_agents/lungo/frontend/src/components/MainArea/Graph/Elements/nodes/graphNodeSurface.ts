@@ -15,6 +15,7 @@ import {
   getAssetPngIconSize,
   getGraphIconChipHoverBackground,
 } from "@/utils/assetPngIcon"
+import { iconGlyphFillSx } from "@/utils/iconGlyphFill"
 
 /** Workflow highlight (`data.active`) and chat selection (`data.selected`) are independent. */
 export interface GraphNodeSurfaceFlags {
@@ -180,8 +181,9 @@ function graphIconButtonChipSx(theme: Theme): SystemStyleObject<Theme> {
 }
 
 /**
- * Graph node side IconButtons (GitHub, directory, identity checkmark).
- * Chip layout only - glyph color stays OUK default (`brandIconPrimaryDefault`, blue in light mode).
+ * Graph node side IconButtons (GitHub, directory, identity).
+ * Light mode keeps OUK IconButton blue (`brandIconPrimaryDefault`).
+ * Dark mode paints side glyphs white instead of brand blue.
  */
 export function graphSideIconButtonSx(theme: Theme): SystemStyleObject<Theme> {
   return graphIconButtonChipSx(theme)
@@ -209,6 +211,27 @@ export const GRAPH_NODE_SIDE_ICON_SIZE = "1.6rem"
 
 /** Inner glyph/image - fits inside {@link GRAPH_NODE_SIDE_ICON_SIZE} with 1px border. */
 const GRAPH_NODE_SIDE_ICON_INNER_SIZE = "1.125rem"
+
+/**
+ * Dark mode node side chips: do not use OUK IconButton
+ * `brandIconPrimaryDefault`. Paint glyphs white instead.
+ */
+function graphNodeSideIconDarkModeGlyphSx(
+  theme: Theme,
+): SystemStyleObject<Theme> {
+  if (theme.palette.mode !== "dark") {
+    return {}
+  }
+
+  const white = theme.palette.common.white
+
+  return {
+    ...iconGlyphFillSx(white, { important: true }),
+    "&, &:hover, &:focus, &:visited, &:active": {
+      color: white,
+    },
+  }
+}
 
 /** Shared compact side control surface (no `graphIconButtonChipSx` padding/content-box). */
 function graphNodeSideIconControlBaseSx(
@@ -255,21 +278,33 @@ function graphNodeSideIconControlBaseSx(
   }
 }
 
-/** CustomNode side `IconButton` (`button` / `a`). */
+/** CustomNode / TransportNode side `IconButton` (`button` / `a`). */
 export function graphNodeSideIconControlSx(
-  theme: Theme,
-): SystemStyleObject<Theme> {
-  return graphNodeSideIconControlBaseSx(theme)
-}
-
-/** TransportNode side `a` link control. */
-export function graphNodeSideIconLinkSx(
   theme: Theme,
 ): SystemStyleObject<Theme> {
   return {
     ...graphNodeSideIconControlBaseSx(theme),
-    textDecoration: "none",
-    cursor: "pointer",
+    ...graphNodeSideIconDarkModeGlyphSx(theme),
+  }
+}
+
+/**
+ * OASF / AGNTCY Directory side control: circular chip.
+ * Artwork is `agent_directory_a.svg` as an `img`, same as other SVGs
+ * (header logo, Grafana). Dark mode inverts the monochrome mark to white.
+ */
+export function graphNodeDirectoryIconControlSx(
+  theme: Theme,
+): SystemStyleObject<Theme> {
+  return {
+    ...graphNodeSideIconControlBaseSx(theme),
+    ...graphNodeSideIconDarkModeGlyphSx(theme),
+    borderRadius: "50%",
+    "&& img": {
+      ...(theme.palette.mode === "dark"
+        ? { filter: "brightness(0) invert(1)" }
+        : {}),
+    },
   }
 }
 

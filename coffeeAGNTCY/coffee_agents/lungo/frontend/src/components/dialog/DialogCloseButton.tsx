@@ -6,8 +6,7 @@
  */
 
 import React from "react"
-import Close from "@mui/icons-material/Close"
-import { IconButton } from "@open-ui-kit/core"
+import { IconButton, Icons } from "@open-ui-kit/core"
 import { dialogCloseIconButtonSx } from "@/components/dialog/dialogTitleSx"
 
 interface DialogCloseButtonProps {
@@ -16,7 +15,7 @@ interface DialogCloseButtonProps {
 
 const DialogCloseButton: React.FC<DialogCloseButtonProps> = ({ onClose }) => (
   <IconButton onClick={onClose} aria-label="Close" sx={dialogCloseIconButtonSx}>
-    <Close />
+    <Icons.Close />
   </IconButton>
 )
 

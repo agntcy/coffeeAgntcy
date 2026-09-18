@@ -7,15 +7,12 @@ import { Box } from "@open-ui-kit/core"
 import type { SxProps, Theme } from "@mui/material/styles"
 import {
   assetPngIconBareSx,
-  assetPngIconChipSx,
   assetPngIconMonochromeDarkFilterSx,
 } from "@/utils/assetPngIcon"
 
 export interface AssetPngIconProps {
   src: string
   alt: string
-  /** When true, only size/object-fit - for use inside {@link graphSideIconButtonSx} chips. */
-  bare?: boolean
   /**
    * When true, applies `brightness(0) invert(1)` in dark mode for monochrome PNGs.
    * Do not use with theme-swapped or full-color assets.
@@ -25,14 +22,13 @@ export interface AssetPngIconProps {
 }
 
 /**
- * Required wrapper for PNG images imported from `src/assets/`.
- * Sizes icons to match default MUI `SvgIcon` (`fontSize="medium"`, 24px) and applies
- * theme-aware background, border, and radius (same as graph MUI/SVG icon chips).
+ * Required wrapper for PNG/SVG images imported from `src/assets/`.
+ * Sizes icons to match default MUI `SvgIcon` (`fontSize="medium"`, 24px).
+ * Use inside a chip/button that already supplies border and background.
  */
 export function AssetPngIcon({
   src,
   alt,
-  bare = false,
   invertInDarkMode = false,
   sx,
 }: AssetPngIconProps) {
@@ -44,9 +40,12 @@ export function AssetPngIcon({
     sxLayers.push(sx)
   }
 
-  const resolvedSx = bare
-    ? assetPngIconBareSx(...sxLayers)
-    : assetPngIconChipSx(...sxLayers)
-
-  return <Box component="img" src={src} alt={alt} sx={resolvedSx} />
+  return (
+    <Box
+      component="img"
+      src={src}
+      alt={alt}
+      sx={assetPngIconBareSx(...sxLayers)}
+    />
+  )
 }

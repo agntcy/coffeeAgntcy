@@ -5,37 +5,35 @@
 
 import React, { useRef, useState } from "react"
 import { Handle, Position } from "@xyflow/react"
-import CheckCircle from "@mui/icons-material/CheckCircle"
 import {
   Box,
   IconButton,
+  Icons,
   Stack,
   Tooltip,
   Typography,
   useTheme,
 } from "@open-ui-kit/core"
-import agentDirectoryIconDark from "@/assets/Agent_directory.png"
-import agentDirectoryIconLight from "@/assets/Agent_Icon_light.png"
-import { useGithubIcon, useThemeIcon } from "@/hooks/ui"
-import { AssetPngIcon } from "@/components/AssetPngIcon"
 import { SecurityClass } from "@/utils/SecurityClass"
 import { getSuccessIconColor } from "@/utils/successIconColor"
+import agentDirectoryA from "@/assets/agent_directory_a.svg"
 import {
   getGraphNodeHandleStyle,
+  graphNodeDirectoryIconControlSx,
   graphNodeRootSurfaceSx,
   graphNodeSideIconControlSx,
 } from "./graphNodeSurface"
 import { GraphIconChip } from "./GraphIconChip"
 import { GraphSideIconTooltip } from "./GraphSideIconTooltip"
-import NodeIdentityDropdown from "../Identity/NodeIdentityDropdown"
+import NodeIdentityDropdown from "../../Identity/NodeIdentityDropdown"
 import {
   CUSTOM_NODE_HEIGHT,
   CUSTOM_NODE_WIDTH,
   GRAPH_NODE_PADDING_Y,
 } from "@/utils/graphNodeDimensions"
 import { CustomNodeData, ExtraHandle } from "./types"
-import TransportRail from "./TransportRail"
-import { railBackgroundImage } from "./transportRailBackground"
+import TransportRail from "../transport/TransportRail"
+import { railBackgroundImage } from "../transport/transportRailBackground"
 import {
   customNodeInnerWidth,
   graphNodePaddingX,
@@ -58,13 +56,6 @@ const CustomNode: React.FC<CustomNodeProps> = ({ id, data }) => {
   const nodeRef = useRef<HTMLDivElement>(null)
   const [nodeHovered, setNodeHovered] = useState(false)
   const theme = useTheme()
-
-  const githubIconSrc = useGithubIcon()
-  const agentDirectoryIcon = useThemeIcon({
-    light: agentDirectoryIconLight,
-    dark: agentDirectoryIconDark,
-  })
-
   const handleStyle = getGraphNodeHandleStyle(theme)
   const railGradient = railBackgroundImage(
     data.transportInterfaces,
@@ -153,7 +144,7 @@ const CustomNode: React.FC<CustomNodeProps> = ({ id, data }) => {
             </Typography>
           </Tooltip>
           {data.verificationStatus === "verified" && (
-            <CheckCircle
+            <Icons.CheckCircleFilled
               aria-label="Verified"
               sx={{
                 flexShrink: 0,
@@ -211,7 +202,7 @@ const CustomNode: React.FC<CustomNodeProps> = ({ id, data }) => {
                   aria-label="Open GitHub repository"
                   sx={(t) => graphNodeSideIconControlSx(t)}
                 >
-                  <AssetPngIcon bare src={githubIconSrc} alt="GitHub" />
+                  <Icons.Github />
                 </IconButton>
               </GraphSideIconTooltip>
             )}
@@ -221,11 +212,11 @@ const CustomNode: React.FC<CustomNodeProps> = ({ id, data }) => {
                 type="button"
                 aria-label="Open AGNTCY Directory"
                 onClick={handleAgentDirectoryClick}
-                sx={(t) => graphNodeSideIconControlSx(t)}
+                sx={(t) => graphNodeDirectoryIconControlSx(t)}
               >
-                <AssetPngIcon
-                  bare
-                  src={agentDirectoryIcon}
+                <Box
+                  component="img"
+                  src={agentDirectoryA}
                   alt="AGNTCY Directory"
                 />
               </IconButton>

@@ -4,8 +4,7 @@
  **/
 
 import React from "react"
-import SendIcon from "@mui/icons-material/Send"
-import { Box, Button, InputField, Stack } from "@open-ui-kit/core"
+import { Box, Button, Icons, InputField, Stack } from "@open-ui-kit/core"
 
 import { iconGlyphFillSx } from "@/utils/iconGlyphFill"
 import { composerPrimaryButtonSx } from "@/utils/composerPrimaryButtonSx"
@@ -115,7 +114,7 @@ const ChatAreaComposer: React.FC<ChatAreaComposerProps> = ({
         variant="primary"
         disabled={loading || !content.trim()}
         onClick={() => onSend()}
-        endIcon={<SendIcon />}
+        endIcon={<Icons.Send />}
         sx={(theme) => ({
           flexShrink: 0,
           alignSelf: "flex-end",
