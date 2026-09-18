@@ -13,6 +13,7 @@ from agntcy_app_sdk.semantic.a2a import (
     NatsTransportConfig,
     SlimTransportConfig,
 )
+from common.slim_request_timeout import apply_slim_request_timeout
 
 
 def build_a2a_client_config(
@@ -29,6 +30,10 @@ def build_a2a_client_config(
     slim_shared_secret = os.getenv("SLIM_SHARED_SECRET")
     if not slim_shared_secret:
         raise ValueError("SLIM_SHARED_SECRET environment variable must be set")
+
+    # The per-request deadline is not part of SlimTransportConfig, so it has to be
+    # applied to the transport class before the factory builds one from this config.
+    apply_slim_request_timeout(config.config.SLIM_REQUEST_TIMEOUT_SECONDS)
 
     slim_config = SlimTransportConfig(
         endpoint=f"http://{config.config.SLIM_SERVER}",

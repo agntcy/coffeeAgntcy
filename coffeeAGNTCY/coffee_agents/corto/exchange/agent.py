@@ -54,8 +54,11 @@ system_prompt = (
     "If relevant, call the a2a_client_send_message with the prompt. Otherwise, respond with 'I'm sorry, I cannot assist with that request. Please ask about coffee flavor or taste.'"
 )
 
-_A2A_MAX_ATTEMPTS = 5
-_A2A_BACKOFF_BASE = 3
+# Sized against SLIM_REQUEST_TIMEOUT_SECONDS: three attempts plus 1s and 2s of backoff
+# keep the worst case near a minute, which is what the caller waited for before the
+# per-attempt deadline was raised from the SDK's 6s.
+_A2A_MAX_ATTEMPTS = 3
+_A2A_BACKOFF_BASE = 2
 
 
 def _build_message(prompt: str) -> Message:

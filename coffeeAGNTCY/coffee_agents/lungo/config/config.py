@@ -34,6 +34,10 @@ DISCOVERED_AGENT_HOST = os.getenv("DISCOVERED_AGENT_HOST", "localhost")
 # short for LLM-backed agents that take several seconds to respond.
 A2A_CLIENT_TIMEOUT_SECONDS = float(os.getenv("A2A_CLIENT_TIMEOUT_SECONDS", "30"))
 
+# Deadline (seconds) for a single SLIM request/reply exchange. The app SDK defaults
+# to 6s, which expires before an LLM-backed agent can answer.
+SLIM_REQUEST_TIMEOUT_SECONDS = int(os.getenv("SLIM_REQUEST_TIMEOUT_SECONDS", "20"))
+
 if os.getenv("SLIM_SHARED_SECRET") is None:
     # set a default value for development/testing
     os.environ["SLIM_SHARED_SECRET"] = "slim-shared-secret-REPLACE_WITH_RANDOM_32PLUS_CHARS"
