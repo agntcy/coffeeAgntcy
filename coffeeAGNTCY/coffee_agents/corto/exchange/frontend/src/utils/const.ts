@@ -24,7 +24,7 @@ export const parseApiError = (error: any): ApiErrorInfo => {
       message:
         typeof data === "string"
           ? data
-          : data?.detail || data?.message || "Request failed",
+          : data?.message || "Request failed",
     }
   }
 
