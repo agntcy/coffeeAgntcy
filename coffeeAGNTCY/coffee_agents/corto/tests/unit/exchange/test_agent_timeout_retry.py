@@ -63,6 +63,21 @@ def _side_effect_for(scenario_id: str):
             ]
         )
         return lambda *a, **kw: next(calls)
+    if scenario_id == "slim_deadline_then_success":
+        # What common/slim_request_timeout.py raises once the SDK gives up on a reply.
+        calls = iter(
+            [
+                _raising_async_iter(
+                    TimeoutError("No SLIM reply from farm within 20s.")
+                ),
+                _async_iter([_make_success_response("recovered")]),
+            ]
+        )
+        return lambda *a, **kw: next(calls)
+    if scenario_id == "slim_deadline_exhausted":
+        return lambda *a, **kw: _raising_async_iter(
+            TimeoutError("No SLIM reply from farm within 20s.")
+        )
     if scenario_id == "non_timeout_no_retry":
         return lambda *a, **kw: _raising_async_iter(ValueError("bad request"))
     if scenario_id == "success_first_attempt":
@@ -83,6 +98,8 @@ def _timeout_error_exception(scenario_id: str):
         e = AttributeError("missing payload")
         e.__context__ = SlimError.SessionError("receive timeout")
         return e
+    if scenario_id == "slim_deadline":
+        return TimeoutError("No SLIM reply from farm within 20s.")
     if scenario_id == "plain_value_error":
         return ValueError("bad")
     raise ValueError(f"Unknown scenario_id: {scenario_id}")
@@ -114,6 +131,22 @@ _A2A_SCENARIOS = [
         3,
         True,
         id="timeout_then_timeout",
+    ),
+    pytest.param(
+        "slim_deadline_then_success",
+        "recovered",
+        None,
+        2,
+        False,
+        id="slim_deadline_then_success",
+    ),
+    pytest.param(
+        "slim_deadline_exhausted",
+        None,
+        TransportTimeoutError,
+        3,
+        True,
+        id="slim_deadline_exhausted",
     ),
     pytest.param(
         "timeout_then_non_timeout",
@@ -186,17 +219,21 @@ async def test_a2a_send_message_scenarios(
             assert result == expected_result
 
         assert mock_client.send_message.call_count == expected_call_count
-        if scenario_id == "timeout_then_timeout":
+        if scenario_id in ("timeout_then_timeout", "slim_deadline_exhausted"):
             assert mock_sleep.await_count == 2
             assert [mock_sleep.await_args_list[i][0][0] for i in range(2)] == [1, 2]
-        elif scenario_id == "timeout_then_success":
+        elif scenario_id in ("timeout_then_success", "slim_deadline_then_success"):
             assert mock_sleep.await_count == 1
             assert mock_sleep.await_args[0][0] == 1
 
 
 @pytest.mark.parametrize(
     "scenario_id,expected",
-    [("session_error_in_context", True), ("plain_value_error", False)],
+    [
+        ("session_error_in_context", True),
+        ("slim_deadline", True),
+        ("plain_value_error", False),
+    ],
 )
 def test_is_timeout_error(scenario_id, expected):
     assert _is_timeout_error(_timeout_error_exception(scenario_id)) is expected

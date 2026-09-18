@@ -65,6 +65,15 @@ def _side_effect_for(scenario_id: str):
             _raising_async_iter(ConnectionError("connection refused")),
         ])
         return lambda *a, **kw: next(calls)
+    if scenario_id == "slim_deadline_then_success":
+        # What common/slim_request_timeout.py raises once the SDK gives up on a reply.
+        calls = iter([
+            _raising_async_iter(TimeoutError("No SLIM reply from farm within 20s.")),
+            _async_iter([_make_event("recovered")]),
+        ])
+        return lambda *a, **kw: next(calls)
+    if scenario_id == "slim_deadline_exhausted":
+        return lambda *a, **kw: _raising_async_iter(TimeoutError("No SLIM reply from farm within 20s."))
     if scenario_id == "non_timeout_no_retry":
         return lambda *a, **kw: _raising_async_iter(ValueError("bad request"))
     if scenario_id == "success_first_attempt":
@@ -101,6 +110,8 @@ def _timeout_error_exception(scenario_id: str):
         e = AttributeError("missing payload")
         e.__context__ = SlimError.SessionError("receive timeout")
         return e
+    if scenario_id == "slim_deadline":
+        return TimeoutError("No SLIM reply from farm within 20s.")
     if scenario_id == "plain_value_error":
         return ValueError("bad")
     raise ValueError(f"Unknown scenario_id: {scenario_id}")
@@ -139,6 +150,22 @@ _A2A_SCENARIOS = [
         3,
         True,
         id="timeout_then_timeout",
+    ),
+    pytest.param(
+        "slim_deadline_then_success",
+        "recovered",
+        None,
+        2,
+        False,
+        id="slim_deadline_then_success",
+    ),
+    pytest.param(
+        "slim_deadline_exhausted",
+        None,
+        TransportTimeoutError,
+        3,
+        True,
+        id="slim_deadline_exhausted",
     ),
     pytest.param(
         "timeout_then_non_timeout",
@@ -242,6 +269,7 @@ def test_send_a2a_with_retry_scenarios(
     "scenario_id,expected",
     [
         ("session_error_in_context", True),
+        ("slim_deadline", True),
         ("plain_value_error", False),
     ],
 )
