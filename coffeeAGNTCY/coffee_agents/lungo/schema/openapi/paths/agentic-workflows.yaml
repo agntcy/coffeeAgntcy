@@ -26,10 +26,6 @@ paths:
       tags: [agentic-workflows]
       operationId: listPatterns
       summary: List patterns
-      description: >
-        Full pattern reference library ordered by display name. Implemented patterns
-        (implemented: true) also appear in the workflow catalog through
-        GET /agentic-workflows/; reference-only patterns do not.
       responses:
         "200":
           description: List of patterns
@@ -37,36 +33,6 @@ paths:
             application/json:
               schema:
                 $ref: ../components/schemas.yaml#/components/schemas/PatternListResponse
-
-  /patterns/{name}/documentation/:
-    parameters:
-      - name: name
-        in: path
-        required: true
-        schema:
-          type: string
-          minLength: 1
-        description: >
-          Canonical pattern name (matches Pattern.name). A legacy normalized
-          basename slug is also accepted for backward compatibility.
-    get:
-      tags: [agentic-workflows]
-      operationId: getPatternDocumentation
-      summary: Get pattern documentation (markdown)
-      description: >
-        Returns markdown from docs/patterns for this pattern name. The server maps the
-        name to a basename slug through the pattern registry to find the .md file.
-      responses:
-        "200":
-          description: Pattern reference markdown
-          content:
-            application/json:
-              schema:
-                $ref: ../components/schemas.yaml#/components/schemas/PatternDocumentationResponse
-        "404":
-          $ref: ../components/schemas.yaml#/components/responses/NotFound
-        "422":
-          $ref: ../components/schemas.yaml#/components/responses/UnprocessableEntity
 
   /patterns/{name}/chat:
     post:
@@ -85,9 +51,6 @@ paths:
           schema:
             type: string
             minLength: 1
-          description: >
-            Canonical pattern name (matches Pattern.name). A legacy normalized
-            basename slug is also accepted for backward compatibility.
       requestBody:
         required: true
         content:

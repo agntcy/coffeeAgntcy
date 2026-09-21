@@ -51,8 +51,6 @@ export type LungoFrontendApiPaths = {
   readonly agentPrompt: ApiRoute
   readonly agentPromptStream: ApiRoute
   readonly agenticWorkflowsCatalog: ApiRoute
-  readonly patterns: ApiRoute
-  readonly patternDocumentation: (patternName: string) => ApiRoute
   readonly patternCategories: ApiRoute
   readonly patternCategoryDocumentation: (categoryName: string) => ApiRoute
   readonly identityAppsBadge: (slug: string) => ApiRoute
@@ -120,11 +118,6 @@ export const LUNGO_FRONTEND_URLS = {
     agentPrompt: apiRoute("/agent/prompt"),
     agentPromptStream: apiRoute("/agent/prompt/stream"),
     agenticWorkflowsCatalog: apiRoute("/agentic-workflows/"),
-    patterns: apiRoute("/patterns/"),
-    patternDocumentation: (patternName: string): ApiRoute => {
-      const path = encodeWorkflowPathSegment(patternName)
-      return apiRoute(`/patterns/${path}/documentation/`)
-    },
     patternCategories: apiRoute("/pattern-categories/"),
     patternCategoryDocumentation: (categoryName: string): ApiRoute => {
       const path = encodeWorkflowPathSegment(categoryName)
@@ -169,8 +162,6 @@ export const LUNGO_FRONTEND_URLS = {
     githubRepoBlobRoot: "https://github.com/agntcy/coffeeAgntcy/blob",
     docsWorkflowsPath:
       "coffeeAGNTCY/coffee_agents/lungo/api/agentic_workflows/docs/workflows",
-    docsPatternsPath:
-      "coffeeAGNTCY/coffee_agents/lungo/api/agentic_workflows/docs/patterns",
   } as const,
 
   github: {
@@ -324,26 +315,13 @@ export function workflowNameToDocumentationSlug(name: string): string {
   return s.replace(/^_|_$/g, "")
 }
 
-function getDocumentationGithubUrl(name: string, docsPath: string): string {
-  const branch = getAgenticWorkflowsDocsGithubBranch()
-  const slug = workflowNameToDocumentationSlug(name)
-  const branchSegment = encodeURIComponent(branch)
-  const { githubRepoBlobRoot } = LUNGO_FRONTEND_URLS.workflowDocumentation
-  return `${githubRepoBlobRoot}/${branchSegment}/${docsPath}/${slug}.md`
-}
-
 export function getWorkflowDocumentationGithubUrl(catalogName: string): string {
-  return getDocumentationGithubUrl(
-    catalogName,
-    LUNGO_FRONTEND_URLS.workflowDocumentation.docsWorkflowsPath,
-  )
-}
-
-export function getPatternDocumentationGithubUrl(patternName: string): string {
-  return getDocumentationGithubUrl(
-    patternName,
-    LUNGO_FRONTEND_URLS.workflowDocumentation.docsPatternsPath,
-  )
+  const branch = getAgenticWorkflowsDocsGithubBranch()
+  const slug = workflowNameToDocumentationSlug(catalogName)
+  const branchSegment = encodeURIComponent(branch)
+  const { githubRepoBlobRoot, docsWorkflowsPath } =
+    LUNGO_FRONTEND_URLS.workflowDocumentation
+  return `${githubRepoBlobRoot}/${branchSegment}/${docsWorkflowsPath}/${slug}.md`
 }
 
 export {
@@ -352,8 +330,6 @@ export {
   buildAgentPromptStreamRequest,
   buildAgenticWorkflowsCatalogRequest,
   buildAgenticWorkflowsCatalogUrl,
-  buildPatternsRequest,
-  buildPatternDocumentationRequest,
   buildPatternCategoriesRequest,
   buildPatternCategoryDocumentationRequest,
   buildAgenticWorkflowsDocumentationRequest,

@@ -77,7 +77,6 @@ The standalone service listens on `:9105` ([`../api/agentic_workflows/server.py`
 | --- | --- | --- |
 | Redirect root to catalog | `GET /` | `307` → `/patterns/` |
 | List patterns | `GET /patterns/` | `PatternListResponse` |
-| Pattern documentation (markdown) | `GET /patterns/{name}/documentation/` | `PatternDocumentationResponse` |
 | Chat with a pattern's docs | `POST /patterns/{name}/chat` | NDJSON stream |
 | List use-cases | `GET /use-cases/` | `UseCaseListResponse` |
 | List pattern categories | `GET /pattern-categories/` | `PatternCategoryListResponse` |
@@ -92,7 +91,7 @@ The standalone service listens on `:9105` ([`../api/agentic_workflows/server.py`
 | **(internal)** Post state update event | `POST /agentic-workflows/{workflow_name}/instances/{workflow_instance_id}/events/` | `204` |
 | SSE stream of instance events | `GET /agentic-workflows/{workflow_name}/instances/{workflow_instance_id}/events/stream` | `text/event-stream` |
 
-Beyond the core instance lifecycle rows above, the implementation also exposes `GET /agentic-workflows/{workflow_name}/documentation/`, `GET /patterns/{name}/documentation/`, and `POST /patterns/{name}/chat`.
+Beyond the core instance lifecycle rows above, the implementation also exposes `GET /agentic-workflows/{workflow_name}/documentation/` and `POST /patterns/{name}/chat`.
 
 ---
 
@@ -100,56 +99,19 @@ Beyond the core instance lifecycle rows above, the implementation also exposes `
 
 The catalog lets a frontend discover what can be run and how to filter it. All catalog data is currently static ([`patterns.py`](../api/agentic_workflows/patterns.py), [`use_cases.py`](../api/agentic_workflows/use_cases.py), [`starting_workflows.json`](../api/agentic_workflows/starting_workflows.json)).
 
-### Patterns vs workflows
-
-Two distinct resources, and it is worth being precise about which is which:
-
-- A **pattern** is an architectural design pattern. The pattern reference library is the full set, and every pattern is backed by a reference doc under [`docs/patterns/`](../api/agentic_workflows/docs/patterns). Patterns are served by `GET /patterns/` and addressed by display name.
-- A **workflow** is a concrete, runnable realization of a pattern in the Coffee Agntcy demo, with a starting topology and a chat API target. Workflows are served by `GET /agentic-workflows/` and documented under [`docs/workflows/`](../api/agentic_workflows/docs/workflows).
-
-The two are related by `WorkflowSummary.pattern`, which names the pattern a workflow realizes. A pattern is **implemented** when at least one workflow names it; `Pattern.implemented` carries that fact so a client does not have to join the two lists itself. Reference-only patterns simply have no workflow pointing at them, and they do **not** appear in the workflow catalog.
-
 ### `GET /patterns/` - list patterns
 
-Returns the full pattern reference library, ordered by display name. Categories come from the `**Category:**` line in each pattern's reference doc and match the values served by `GET /pattern-categories/`.
+Returns the architectural patterns available in the catalog.
 
 ```json
 {
   "items": [
-    {
-      "name": "Adversarial Review Agents",
-      "pattern_category": "Governance, Policy & Human Oversight",
-      "implemented": false
-    },
-    {
-      "name": "Supervisor",
-      "pattern_category": "Orchestration & Control Flow",
-      "implemented": true
-    }
+    { "name": "Supervisor" },
+    { "name": "Peer Group" },
+    { "name": "Recruiter" }
   ]
 }
 ```
-
-### `GET /patterns/{name}/documentation/` - pattern markdown
-
-Returns the full markdown source for a pattern reference doc (from [`docs/patterns/`](../api/agentic_workflows/docs/patterns)). The canonical path segment is the pattern **display name** (URL-encoded when it contains spaces or `&`). For compatibility with the earlier pattern-chat lookup, a normalized basename slug such as `feedback_loop` is also accepted. Both forms resolve through the pattern registry, so caller input never becomes a filesystem path and an unknown identifier is simply a miss.
-
-```json
-{
-  "slug": "supervisor",
-  "name": "Supervisor",
-  "title": "Supervisor",
-  "pattern_category": "Orchestration & Control Flow",
-  "implemented": true,
-  "full_markdown": "# Supervisor\n\n## Agent Interaction Diagram\n…"
-}
-```
-
-Status codes:
-
-- `200` - pattern reference markdown.
-- `404` - unknown pattern display name, or no markdown file maps to it.
-- `422` - empty path segment.
 
 ### `GET /use-cases/` - list use-cases
 
@@ -236,8 +198,6 @@ Each value is a `WorkflowSummary`: `name`, `pattern`, `pattern_category`, `use_c
 
 **Source of truth:** catalog rows declare `pattern_category`, `supports_sse`, `supports_streaming`, and `chat_api_target` in [`starting_workflows.json`](../api/agentic_workflows/starting_workflows.json). The list endpoint reads those fields from catalog metadata; it does not infer capabilities from workflow name or topology shape.
 
-Every row in this catalog is a runnable workflow with a real starting topology. Reference-only patterns are **not** represented here; use `GET /patterns/` for the reference library.
-
 ### `GET /agentic-workflows/{workflow_name}/documentation/` - workflow docs
 
 Returns the reference markdown for a catalog workflow, both as a single blob and split into sections at `##` headings (for TOC / anchored rendering). Backed by files under [`../api/agentic_workflows/docs/workflows/`](../api/agentic_workflows/docs/workflows).
@@ -263,7 +223,7 @@ Returns `404` for an unknown workflow name or when no markdown file maps to it.
 
 ### `POST /patterns/{name}/chat` - chat with a pattern's docs (NDJSON)
 
-A retrieval-grounded chat over a pattern's reference markdown, resolved through the same pattern registry as `GET /patterns/{name}/documentation/`. See [NDJSON pattern-chat stream](#ndjson-pattern-chat-stream) for the wire format.
+A retrieval-grounded chat over a pattern's reference markdown. See [NDJSON pattern-chat stream](#ndjson-pattern-chat-stream) for the wire format.
 
 ---
 

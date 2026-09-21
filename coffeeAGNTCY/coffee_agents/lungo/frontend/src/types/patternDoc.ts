@@ -7,6 +7,8 @@
  * them without forming a cycle.
  */
 
+import type { WorkflowDocumentation } from "@/utils/agenticWorkflowsApi"
+
 export enum CanvasMode {
   WORKFLOW = "workflow",
   PATTERN_DOC = "pattern_doc",
@@ -20,16 +22,8 @@ export type PatternDocStatus =
   | "not_found"
   | "error"
 
-/** Markdown payload rendered by the doc canvas, for a pattern or a category. */
-export interface ReferenceDocumentation {
-  name: string
-  title: string
-  pattern_category: string | null
-  full_markdown: string
-}
-
 export interface PatternDocState {
   status: PatternDocStatus
-  documentation: ReferenceDocumentation | null
+  documentation: WorkflowDocumentation | null
   errorMessage: string | null
 }

@@ -20,90 +20,15 @@ from api.agentic_workflows.catalog_types import ChatApiTarget
 
 
 class Pattern(BaseModel):
-    """One architectural pattern in the reference library.
-
-    The library is the full set: implemented patterns (at least one runnable
-    workflow in the workflow catalog) and reference-only patterns are both
-    listed, distinguished by ``implemented``.
-    """
-
     model_config = ConfigDict(extra="forbid")
 
-    name: Annotated[
-        str,
-        Field(
-            min_length=1,
-            description="Display name of the pattern (H1 in docs/patterns/{slug}.md).",
-        ),
-    ]
-    pattern_category: Annotated[
-        str,
-        Field(
-            min_length=1,
-            description='Agentic design pattern category (e.g. "Orchestration & Control Flow").',
-        ),
-    ]
-    implemented: Annotated[
-        bool,
-        Field(
-            description=(
-                "True when the workflow catalog exposes at least one runnable "
-                "workflow whose pattern equals this name, false for "
-                "reference-only patterns."
-            ),
-        ),
-    ]
+    name: Annotated[str, Field(min_length=1)]
 
 
 class PatternListResponse(BaseModel):
-    """Patterns ordered by display name."""
-
     model_config = ConfigDict(extra="forbid")
 
     items: list[Pattern]
-
-
-class PatternDocumentationResponse(BaseModel):
-    model_config = ConfigDict(extra="forbid")
-
-    slug: Annotated[
-        str,
-        Field(
-            min_length=1,
-            description="Basename slug for docs/patterns/{slug}.md.",
-        ),
-    ]
-    name: Annotated[
-        str,
-        Field(
-            min_length=1,
-            description="Display name of the pattern (same as Pattern.name).",
-        ),
-    ]
-    title: Annotated[
-        str | None,
-        Field(description="Leading H1 from the markdown file, if present."),
-    ] = None
-    pattern_category: Annotated[
-        str,
-        Field(
-            min_length=1,
-            description="Agentic design pattern category for this pattern.",
-        ),
-    ]
-    implemented: Annotated[
-        bool,
-        Field(
-            description=(
-                "Same flag as Pattern.implemented, so a doc view can render "
-                "without a second call."
-            ),
-        ),
-    ]
-    full_markdown: Annotated[
-        str,
-        Field(description="Full markdown source for the pattern reference doc."),
-    ]
 
 
 class UseCase(BaseModel):

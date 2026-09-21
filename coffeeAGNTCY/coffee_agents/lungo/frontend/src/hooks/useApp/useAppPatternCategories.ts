@@ -10,7 +10,7 @@ import {
   fetchPatternCategories,
   PATTERN_CATEGORIES_LOG_PATH,
   type PatternCategory,
-} from "@/utils/patternLibraryApi"
+} from "@/utils/agenticWorkflowsApi"
 
 export function useAppPatternCategories() {
   const [patternCategories, setPatternCategories] = useState<

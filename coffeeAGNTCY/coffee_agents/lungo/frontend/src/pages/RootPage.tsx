@@ -29,7 +29,6 @@ import {
 } from "@/components/Chat/chatPanelLayout"
 import { useChatPanelContentSize } from "@/hooks/useChatPanelContentSize"
 import Sidebar from "@/components/Sidebar/Sidebar"
-import { useCatalogSidebarProps } from "@/components/Sidebar/useCatalogSidebarProps"
 import SidebarPanelSeparator from "@/components/Sidebar/SidebarPanelSeparator"
 import {
   APP_SHELL_PANEL_GROUP_ID,
@@ -50,10 +49,13 @@ import {
 } from "@/hooks/layout"
 
 const RootPage: React.FC = () => {
-  const app = useApp()
   const {
+    selectWorkflowFromCatalog,
+    workflowCatalogSummaries,
     workflowCatalogLoading,
     workflowCatalogError,
+    patternCategories,
+    patternCategoriesError,
     selectedWorkflowSummary,
     suggestedPromptsRequest,
     chatRef,
@@ -92,16 +94,45 @@ const RootPage: React.FC = () => {
     recruiterSelectedAgent,
     setLiveGraphConfig,
     selectedReferencePattern,
+    selectReferencePattern,
     selectedPatternCategory,
+    selectPatternCategory,
     categoryDocState,
     canvasMode,
     patternDocState,
     patternChatSessionId,
-  } = app
+  } = useApp()
 
   const isCompactShell = useIsBelowSmBreakpoint()
 
-  const catalogSidebarProps = useCatalogSidebarProps(app)
+  const catalogSidebarProps = useMemo(
+    () => ({
+      selectedWorkflowSummary,
+      summaries: workflowCatalogSummaries,
+      patternCategories,
+      patternCategoriesError,
+      isLoading: workflowCatalogLoading,
+      error: workflowCatalogError,
+      onSelectWorkflow: selectWorkflowFromCatalog,
+      selectedReferencePattern,
+      onSelectReferencePattern: selectReferencePattern,
+      selectedPatternCategory,
+      onSelectPatternCategory: selectPatternCategory,
+    }),
+    [
+      selectedWorkflowSummary,
+      workflowCatalogSummaries,
+      patternCategories,
+      patternCategoriesError,
+      workflowCatalogLoading,
+      workflowCatalogError,
+      selectWorkflowFromCatalog,
+      selectedReferencePattern,
+      selectReferencePattern,
+      selectedPatternCategory,
+      selectPatternCategory,
+    ],
+  )
 
   const graphSectionRef = useRef<HTMLElement>(null)
   const mainContentRef = useRef<HTMLElement>(null)

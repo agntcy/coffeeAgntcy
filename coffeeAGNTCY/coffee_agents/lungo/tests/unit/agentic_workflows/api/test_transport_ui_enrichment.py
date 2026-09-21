@@ -64,7 +64,7 @@ _TRANSPORT_CASES: tuple[TransportCase, ...] = (
         expected_label="Transport",
     ),
     TransportCase(
-        case_id="no_chat_api_target",
+        case_id="placeholder",
         chat_api_target=None,
         expected_message_transport=None,
         expected_label="Transport",

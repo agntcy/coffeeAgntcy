@@ -3,13 +3,22 @@
  * SPDX-License-Identifier: Apache-2.0
  **/
 
-import { afterEach, describe, expect, it, vi } from "vitest"
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
+import { HttpError } from "@/api/http"
 import { PATTERNS, type PatternType } from "@/utils/patternUtils"
 import {
+  fetchPatternCategories,
+  fetchPatternCategoryDocumentation,
+  fetchWorkflowDocumentation,
   fetchWorkflowSummaries,
+  PatternCategoryDocumentationNotFoundError,
+  patternCategoryBodyMarkdown,
+  WorkflowDocumentationNotFoundError,
   type WorkflowSummary,
 } from "@/utils/agenticWorkflowsApi"
 import { patternTypeFromSummary } from "@/utils/workflow"
+
+const originalFetch = globalThis.fetch
 
 const makeSummary = (over: Partial<WorkflowSummary>): WorkflowSummary => ({
   name: "Workflow",
@@ -177,5 +186,210 @@ describe("fetchWorkflowSummaries", () => {
   ])("$caseName", async ({ body, init }) => {
     stubFetch(body, init)
     await expect(fetchWorkflowSummaries()).rejects.toThrow()
+  })
+})
+
+describe("fetchPatternCategories", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
+  const stubFetch = (
+    body: unknown,
+    init: { ok?: boolean; status?: number; statusText?: string } = {},
+  ): void => {
+    const { ok = true, status = 200, statusText = "OK" } = init
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => ({
+        ok,
+        status,
+        statusText,
+        json: async () => body,
+      })),
+    )
+  }
+
+  it("returns parsed category names and filters invalid items", async () => {
+    stubFetch({
+      items: [
+        { name: "Orchestration & Control Flow" },
+        { name: "Multi-Agent Collaboration" },
+        { name: "" },
+        { name: null },
+        {},
+      ],
+    })
+
+    const categories = await fetchPatternCategories()
+
+    expect(categories).toEqual([
+      { name: "Orchestration & Control Flow" },
+      { name: "Multi-Agent Collaboration" },
+    ])
+  })
+
+  it.each([
+    {
+      caseName: "non-ok response throws",
+      body: {},
+      init: { ok: false, status: 500, statusText: "Server Error" },
+    },
+    {
+      caseName: "missing items array throws",
+      body: {},
+      init: {},
+    },
+    {
+      caseName: "non-array items throws",
+      body: { items: null },
+      init: {},
+    },
+  ])("$caseName", async ({ body, init }) => {
+    stubFetch(body, init)
+    await expect(fetchPatternCategories()).rejects.toThrow()
+  })
+})
+
+describe("fetchPatternCategoryDocumentation", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
+  const stubFetch = (
+    body: unknown,
+    init: { ok?: boolean; status?: number } = {},
+  ): void => {
+    const { ok = true, status = 200 } = init
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => ({
+        ok,
+        status,
+        statusText: ok ? "OK" : "Not Found",
+        json: async () => body,
+      })),
+    )
+  }
+
+  it("returns parsed category documentation on 200", async () => {
+    stubFetch({
+      slug: "orchestration_and_control_flow",
+      name: "Orchestration & Control Flow",
+      title: "Orchestration & Control Flow",
+      full_markdown: "# Orchestration & Control Flow\n\nBody.",
+    })
+
+    const doc = await fetchPatternCategoryDocumentation(
+      "Orchestration & Control Flow",
+    )
+
+    expect(doc.slug).toBe("orchestration_and_control_flow")
+    expect(doc.full_markdown).toBe("# Orchestration & Control Flow\n\nBody.")
+  })
+
+  it("throws PatternCategoryDocumentationNotFoundError on 404", async () => {
+    stubFetch({}, { ok: false, status: 404 })
+
+    await expect(
+      fetchPatternCategoryDocumentation("Unknown"),
+    ).rejects.toBeInstanceOf(PatternCategoryDocumentationNotFoundError)
+  })
+})
+
+describe("patternCategoryBodyMarkdown", () => {
+  it("strips the leading H1 for sidebar display", () => {
+    expect(patternCategoryBodyMarkdown("# Title\n\nParagraph.")).toBe(
+      "Paragraph.",
+    )
+  })
+})
+
+describe("fetchWorkflowDocumentation", () => {
+  beforeEach(() => {
+    vi.stubEnv("VITE_AGENTIC_WORKFLOWS_API_URL", "http://test-host:1234")
+  })
+
+  afterEach(() => {
+    globalThis.fetch = originalFetch
+    vi.restoreAllMocks()
+  })
+
+  const mockFetch = (status: number, body: unknown) => {
+    const fn = vi.fn(
+      async () =>
+        new Response(JSON.stringify(body), {
+          status,
+          headers: { "Content-Type": "application/json" },
+        }),
+    )
+    globalThis.fetch = fn as unknown as typeof fetch
+    return fn
+  }
+
+  it("returns parsed documentation on 200", async () => {
+    mockFetch(200, {
+      slug: "feedback_loop",
+      workflow_name: "Feedback Loop",
+      title: "Feedback Loop",
+      sections: [],
+      full_markdown: "# Feedback Loop\n\nBody.",
+    })
+
+    const doc = await fetchWorkflowDocumentation("Feedback Loop")
+    expect(doc.workflow_name).toBe("Feedback Loop")
+    expect(doc.title).toBe("Feedback Loop")
+    expect(doc.full_markdown).toBe("# Feedback Loop\n\nBody.")
+  })
+
+  it("URL-encodes the pattern name (spaces become %20)", async () => {
+    const fn = mockFetch(200, {
+      slug: "feedback_loop",
+      workflow_name: "Feedback Loop",
+      title: "Feedback Loop",
+      sections: [],
+      full_markdown: "body",
+    })
+
+    await fetchWorkflowDocumentation("Feedback Loop")
+    const firstCall = fn.mock.calls[0] as unknown as [string]
+    expect(firstCall[0]).toContain(
+      "/agentic-workflows/Feedback%20Loop/documentation/",
+    )
+  })
+
+  it("throws WorkflowDocumentationNotFoundError on 404", async () => {
+    mockFetch(404, { detail: "Workflow documentation not found for: MadeUp" })
+
+    await expect(fetchWorkflowDocumentation("MadeUp")).rejects.toBeInstanceOf(
+      WorkflowDocumentationNotFoundError,
+    )
+  })
+
+  it("throws HttpError (not NotFound) on 401 Unauthorized", async () => {
+    mockFetch(401, { detail: "Unauthorized" })
+
+    const err = await fetchWorkflowDocumentation("Anything").catch((e) => e)
+    expect(err).toBeInstanceOf(HttpError)
+    expect(err).not.toBeInstanceOf(WorkflowDocumentationNotFoundError)
+    expect((err as HttpError).status).toBe(401)
+    expect((err as HttpError).message).toBe("Unauthorized")
+  })
+
+  it("throws HttpError on other non-OK responses", async () => {
+    mockFetch(500, { detail: "Server error" })
+
+    await expect(fetchWorkflowDocumentation("Anything")).rejects.toMatchObject({
+      status: 500,
+      message: "Server error",
+    })
+  })
+
+  it("throws on unexpected response shape", async () => {
+    mockFetch(200, { unexpected: "shape" })
+
+    await expect(fetchWorkflowDocumentation("Anything")).rejects.toThrow(
+      /unexpected response shape/,
+    )
   })
 })

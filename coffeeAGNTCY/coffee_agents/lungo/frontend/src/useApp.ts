@@ -10,7 +10,6 @@ import {
   useAppPatternCategories,
   useAppPatternCategoryDoc,
   useAppPatternReference,
-  useAppPatterns,
   useAppPromptHandlers,
   useAppStreamingChatEffects,
   useAppStreamingState,
@@ -45,8 +44,6 @@ export function useApp() {
     selectedWorkflowSummary,
     setSelectedWorkflowSummary,
   } = useAppWorkflowCatalog()
-
-  const { patterns, patternsLoading, patternsError } = useAppPatterns()
 
   const { patternCategories, patternCategoriesError } =
     useAppPatternCategories()
@@ -172,9 +169,6 @@ export function useApp() {
     workflowCatalogSummaries,
     workflowCatalogLoading,
     workflowCatalogError,
-    patterns,
-    patternsLoading,
-    patternsError,
     patternCategories,
     patternCategoriesError,
     selectedWorkflowSummary,

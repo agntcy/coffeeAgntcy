@@ -25,7 +25,10 @@ from google.adk.sessions import InMemorySessionService
 from google.adk.tools.tool_context import ToolContext
 from google.genai import types
 
-from api.agentic_workflows.pattern_documentation import load_pattern_documentation
+from api.agentic_workflows.workflow_documentation import (
+    load_parsed_workflow_documentation,
+    workflow_name_to_documentation_slug,
+)
 from config.config import LLM_MODEL
 
 
@@ -165,7 +168,8 @@ async def _ensure_session(pattern_name: str, fe_session_id: str) -> None:
     ):
         return
 
-    parsed = load_pattern_documentation(pattern_name)
+    slug = workflow_name_to_documentation_slug(pattern_name)
+    parsed = load_parsed_workflow_documentation(slug)
     if parsed is None:
         raise PatternReferenceNotFound(pattern_name)
 
@@ -175,7 +179,7 @@ async def _ensure_session(pattern_name: str, fe_session_id: str) -> None:
         session_id=sid,
         state={
             STATE_KEY_MARKDOWN: parsed.full_markdown,
-            STATE_KEY_PATTERN_NAME: parsed.name,
+            STATE_KEY_PATTERN_NAME: pattern_name,
         },
     )
 

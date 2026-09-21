@@ -243,24 +243,6 @@ def test_first_post_creates_session_and_seeds_markdown(client: TestClient) -> No
     )
 
 
-def test_pattern_chat_accepts_legacy_slug(client: TestClient) -> None:
-    events = [_text_event("hello", partial=False)]
-    with _stub_runner_events(events):
-        resp = client.post(
-            "/patterns/feedback_loop/chat",
-            json={
-                "session_id": "session://00000000-0000-4000-a000-000000000099",
-                "message": "hi",
-            },
-        )
-
-    assert resp.status_code == 200
-    assert _ndjson_lines(resp.iter_lines()) == [
-        {"response": "hello"},
-        {"done": True},
-    ]
-
-
 def test_second_post_reuses_session(client: TestClient) -> None:
     """Second POST with the same session_id doesn't re-seed state."""
     import asyncio

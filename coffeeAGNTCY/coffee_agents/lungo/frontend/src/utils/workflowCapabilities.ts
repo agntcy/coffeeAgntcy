@@ -5,6 +5,7 @@
  * Single source of truth for catalog WorkflowSummary capability precedence.
  */
 
+import { isPlaceholderWorkflow } from "@/components/Sidebar/sidebar.utils"
 import type { WorkflowSummary } from "@/utils/agenticWorkflowsApi"
 import { PATTERNS, type PatternType } from "@/utils/patternUtils"
 
@@ -84,7 +85,7 @@ export function workflowChatTransport(
 export function isChatEnabledWorkflow(
   summary: WorkflowSummary | null | undefined,
 ): boolean {
-  if (!summary) return false
+  if (!summary || isPlaceholderWorkflow(summary)) return false
   return deriveWorkflowCapabilities(summary) !== null
 }
 

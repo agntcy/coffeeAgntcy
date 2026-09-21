@@ -6,12 +6,10 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { Box, Banner, Spinner, Stack, Typography } from "@open-ui-kit/core"
 import type { WorkflowSummary } from "@/utils/agenticWorkflowsApi"
-import type { Pattern } from "@/utils/patternLibraryApi"
 import { getAppShellBackgroundColor } from "../MainArea/mainAreaBackground"
 import { transparentScrollbarSx } from "@/utils/transparentScrollbarSx"
 import CatalogTree from "./CatalogTree"
 import {
-  addNewlyAvailableExpandedKeys,
   buildCatalogSidebarLayout,
   buildInitialExpanded,
   patternCategoryOrderFromApi,
@@ -20,9 +18,6 @@ import {
 interface SidebarProps {
   selectedWorkflowSummary: WorkflowSummary | null
   summaries: WorkflowSummary[] | null
-  patterns: readonly Pattern[] | null
-  patternsLoading: boolean
-  patternsError: string | null
   patternCategories: readonly { name: string }[] | null
   patternCategoriesError: string | null
   isLoading: boolean
@@ -41,9 +36,6 @@ interface SidebarProps {
 const Sidebar: React.FC<SidebarProps> = ({
   selectedWorkflowSummary,
   summaries,
-  patterns,
-  patternsLoading,
-  patternsError,
   patternCategories,
   patternCategoriesError,
   isLoading,
@@ -64,9 +56,8 @@ const Sidebar: React.FC<SidebarProps> = ({
   )
 
   const layout = useMemo(
-    () =>
-      buildCatalogSidebarLayout(summaries ?? [], patterns ?? [], categoryOrder),
-    [summaries, patterns, categoryOrder],
+    () => buildCatalogSidebarLayout(summaries ?? [], categoryOrder),
+    [summaries, categoryOrder],
   )
 
   const toggleExpandableDropdown = useCallback((key: string) => {
@@ -81,33 +72,14 @@ const Sidebar: React.FC<SidebarProps> = ({
     })
   }, [])
 
-  const previousDefaultExpandedKeysRef = useRef<ReadonlySet<string>>(new Set())
+  const catalogSummariesRef = useRef<WorkflowSummary[] | null>(null)
 
   useEffect(() => {
-    const nextDefaults = buildInitialExpanded(layout)
-    const previousDefaults = previousDefaultExpandedKeysRef.current
-    previousDefaultExpandedKeysRef.current = nextDefaults
-    setExpandedKeys((current) =>
-      addNewlyAvailableExpandedKeys(current, previousDefaults, nextDefaults),
-    )
-  }, [layout])
-
-  const loadingMessage =
-    isLoading && patternsLoading
-      ? "Loading workflows and patterns..."
-      : isLoading
-        ? "Loading workflows..."
-        : patternsLoading
-          ? "Loading pattern reference library..."
-          : null
-  const hasCatalogData =
-    layout.implementedPatterns.length > 0 ||
-    layout.referenceCategories.some(
-      (category) => category.patternNames.length > 0,
-    )
-  const showCatalog =
-    hasCatalogData ||
-    (!isLoading && !patternsLoading && error === null && patternsError === null)
+    if (summaries === null) return
+    if (catalogSummariesRef.current === summaries) return
+    catalogSummariesRef.current = summaries
+    setExpandedKeys(buildInitialExpanded(layout))
+  }, [layout, summaries])
 
   return (
     <Box
@@ -149,7 +121,7 @@ const Sidebar: React.FC<SidebarProps> = ({
         })}
       >
         <Stack direction="column" sx={{ width: "100%", gap: 3 }}>
-          {loadingMessage ? (
+          {isLoading ? (
             <Stack
               direction="row"
               alignItems="center"
@@ -160,24 +132,26 @@ const Sidebar: React.FC<SidebarProps> = ({
             >
               <Spinner size={16} thickness={4} />
               <Typography variant="body2" sx={{ opacity: 0.6 }}>
-                {loadingMessage}
+                Loading workflows...
               </Typography>
             </Stack>
           ) : null}
 
-          {[error, patternsError, patternCategoriesError]
-            .filter((message): message is string => message !== null)
-            .map((message, index) => (
-              <Banner
-                key={`${index}:${message}`}
-                status="negative"
-                role="alert"
-                sx={{ my: 1, width: "100%" }}
-                text={message}
-              />
-            ))}
+          {!isLoading
+            ? [error, error === null ? patternCategoriesError : null]
+                .filter((message): message is string => message !== null)
+                .map((message) => (
+                  <Banner
+                    key={message}
+                    status="negative"
+                    role="alert"
+                    sx={{ my: 1, width: "100%" }}
+                    text={message}
+                  />
+                ))
+            : null}
 
-          {showCatalog ? (
+          {!isLoading && error === null ? (
             <CatalogTree
               layout={layout}
               expandedKeys={expandedKeys}

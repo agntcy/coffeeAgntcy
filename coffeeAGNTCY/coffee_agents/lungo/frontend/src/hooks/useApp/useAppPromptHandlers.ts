@@ -6,6 +6,7 @@
 import { useCallback, useEffect, useRef, useState } from "react"
 import { v4 as uuid } from "uuid"
 import type { useAppChatState, useAppStreamingState } from "@/hooks/useApp"
+import { isPlaceholderWorkflow } from "@/components/Sidebar/sidebar.utils"
 import type { useAgentAPI } from "@/hooks/agent"
 import type { WorkflowSummary } from "@/utils/agenticWorkflowsApi"
 import {
@@ -52,6 +53,7 @@ export function useAppPromptHandlers({
       const transport = workflowChatTransport(selectedWorkflowSummary)
       if (
         !selectedWorkflowSummary ||
+        isPlaceholderWorkflow(selectedWorkflowSummary) ||
         !isChatEnabledWorkflow(selectedWorkflowSummary) ||
         transport === null
       ) {

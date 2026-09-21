@@ -139,7 +139,7 @@ fewer repeated payloads, and stable answers across agents and restarts.
 
 ## Workflow
 
-**Logistics Group** is the collaboration boundary from [Group Messaging](../workflows/group_messaging.md)-the same peer
+**Logistics Group** is the collaboration boundary from [Group Messaging](./group_messaging.md)-the same peer
 group on SLIM. This pattern adds **Shared Agent Memory** beside **Transport**, not instead of it.
 
 **Logistics Agent (Buyer)** receives the user prompt, opens the group chat, and **retains** the commercial promise

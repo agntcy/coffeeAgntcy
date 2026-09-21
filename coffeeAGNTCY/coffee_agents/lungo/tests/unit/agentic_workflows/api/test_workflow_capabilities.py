@@ -119,11 +119,11 @@ _CAP_CASES: tuple[CapCase, ...] = (
         chat_api_target="discovery",
     ),
     CapCase(
-        case_id="no_capability_metadata",
+        case_id="placeholder",
         workflow={
-            "name": "Legacy Catalog Row",
+            "name": "Orchestrator Agent",
             "pattern": "Supervisor",
-            "use_case": "Purchasing",
+            "use_case": "---",
             "scenario": "x",
             "starting_topology": {"nodes": [], "edges": []},
             "instances": {},
@@ -164,12 +164,12 @@ def test_derive_workflow_capabilities_starting_workflows_catalog(
     assert target == chat_api_target
 
 
-def test_starting_workflows_catalog_holds_only_runnable_workflows() -> None:
-    """Reference-library patterns live in the pattern registry, not the catalog."""
+def test_derive_workflow_capabilities_placeholder_in_starting_workflows_catalog() -> None:
     catalog = _load_and_validate_starting_workflows_from_file(_STARTING_WORKFLOWS_JSON)
+    wf = catalog.get("Orchestrator Agent")
+    assert wf is not None
 
-    assert set(catalog) == {name for name, *_ in _RUNNABLE_CATALOG_EXPECTATIONS}
-    for wf in catalog.values():
-        _, _, target = derive_workflow_capabilities(wf)
-        assert target is not None, f"{wf.name!r} has no chat_api_target"
-        assert wf.starting_topology.nodes, f"{wf.name!r} has an empty topology"
+    sse, streaming, target = derive_workflow_capabilities(wf)
+    assert sse is False
+    assert streaming is False
+    assert target is None

@@ -12,7 +12,7 @@ import {
   fetchPatternCategoryDocumentation,
   PatternCategoryDocumentationNotFoundError,
   patternCategoryBodyMarkdown,
-} from "@/utils/patternLibraryApi"
+} from "@/utils/agenticWorkflowsApi"
 
 const idleCategoryDocState: PatternDocState = {
   status: "idle",
@@ -48,7 +48,7 @@ export function useAppPatternCategoryDoc(
         setCategoryDocState({
           status: "ready",
           documentation: {
-            name: doc.name,
+            workflow_name: doc.slug,
             title: doc.title ?? doc.name,
             pattern_category: doc.name,
             full_markdown: patternCategoryBodyMarkdown(doc.full_markdown),
