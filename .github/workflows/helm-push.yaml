@@ -252,7 +252,7 @@ jobs:
     with:
       path: ${{ matrix.chart.path }}
       package_name: ${{ matrix.chart.package_name }}
-      push: ${{ github.event_name == 'push' || ( github.event_name == 'workflow_dispatch' && inputs.push ) }}
+      push: ${{ needs.subprojects-to-build.outputs.push == 'true' }}
 
 
   helm-package-lungo:
@@ -271,4 +271,4 @@ jobs:
     with:
       path: ${{ matrix.chart.path }}
       package_name: ${{ matrix.chart.package_name }}
-      push: ${{ github.event_name == 'push' || ( github.event_name == 'workflow_dispatch' && inputs.push )}}
+      push: ${{ needs.subprojects-to-build.outputs.push == 'true' }}
