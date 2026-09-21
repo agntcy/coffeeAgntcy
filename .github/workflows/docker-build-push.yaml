@@ -269,7 +269,7 @@ jobs:
             for image in "${existing_images[@]}"; do
               echo "- $image"
             done
-            echo "Cancelling build and push. Change the tag or use the 'Delete GHCR Package Version' workflow to delete the existing images before retrying."
+            echo "Cancelling build and push. Change the tag or manually delete the existing images from GHCR before retrying."
 
             exit 1
           fi

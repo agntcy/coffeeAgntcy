@@ -231,7 +231,7 @@ jobs:
             for chart in "${existing_charts[@]}"; do
               echo "- $chart"
             done
-            echo "Cancelling package and push. Change the version or use the 'Delete GHCR Package Version' workflow to delete the existing chart versions before retrying."
+            echo "Cancelling package and push. Change the version or manually delete the existing chart versions from GHCR before retrying."
 
             exit 1
           fi
