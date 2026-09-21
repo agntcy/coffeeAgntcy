@@ -1,0 +1,49 @@
+{
+  "metadata": {
+    "timestamp": "2026-03-17T12:00:01Z",
+    "schema_version": "1.2.0",
+    "correlation": {
+      "id": "correlation://550e8400-e29b-41d4-a716-446655440001"
+    },
+    "id": "event://550e8400-e29b-41d4-a716-446655440002",
+    "type": "StateProgressUpdate",
+    "source": "colombia_farm",
+    "trace_id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "span_id": "bbbbbbbbbbbbbbbb"
+  },
+  "data": {
+    "workflows": {
+      "Publish Subscribe": {
+        "name": "Publish Subscribe",
+        "pattern": "Supervisor",
+        "use_case": "Coffee Agntcy",
+        "scenario": "Purchasing",
+        "starting_topology": {
+          "nodes": [],
+          "edges": []
+        },
+        "instances": {
+          "instance://550e8400-e29b-41d4-a716-446655440003": {
+            "id": "instance://550e8400-e29b-41d4-a716-446655440003",
+            "topology": {
+              "nodes": [],
+              "edges": [
+                {
+                  "id": "edge://550e8400-e29b-41d4-a716-446655440020",
+                  "operation": "update",
+                  "mcp": {
+                    "tool_name": "get_forecast",
+                    "mcp_server": "lungo_weather_service",
+                    "mcp_in_flight": true,
+                    "source_stable_agent_id": "agent://550e8400-e29b-41d4-a716-446655440030",
+                    "target_stable_agent_id": "agent://550e8400-e29b-41d4-a716-446655440031"
+                  }
+                }
+              ]
+            }
+          }
+        }
+      }
+    }
+  }
+}

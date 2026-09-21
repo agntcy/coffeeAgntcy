@@ -425,7 +425,7 @@ class TestEmitDiscoveryTopology:
         assert "Brazil" in labels and "Colombia" in labels
         # The anchor carries the seeded recruiter's stable_agent_id so the
         # backend merge layer reconciles it onto the real recruiter node.
-        assert topology.nodes[0].stable_agent_id == stable_agent_id_for_name(
+        assert topology.nodes[0].stable_agent_id.root == stable_agent_id_for_name(
             "Agentic Recruiter agent"
         )
         # One edge per discovered agent, all sourced from the anchor node.

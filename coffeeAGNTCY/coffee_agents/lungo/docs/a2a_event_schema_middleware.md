@@ -115,9 +115,9 @@ between the invoking agent and the target MCP server node (no transient nodes).
 
 ### Lifecycle
 
-1. **Start** → `Operation.UPDATE` on a placeholder edge carrying
+1. **Start** → `Operation.UPDATE` on a placeholder edge whose `mcp` group carries
    `source_stable_agent_id`, `target_stable_agent_id`, and `mcp_in_flight=true`.
-2. **End** → same edge with `mcp_in_flight=false`.
+2. **End** → same edge with `mcp.mcp_in_flight=false`.
    - For non-streaming results, end is emitted when `call_tool` returns.
    - For streamed (async-iterable) results, end is emitted when iteration
      completes or raises.

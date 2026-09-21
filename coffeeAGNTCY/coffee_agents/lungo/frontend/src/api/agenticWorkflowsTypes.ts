@@ -55,6 +55,14 @@ export interface TopologyNodeWire {
   [key: string]: unknown
 }
 
+export interface TopologyEdgeMcpWire {
+  tool_name?: string
+  mcp_server?: string
+  mcp_in_flight?: boolean
+  source_stable_agent_id?: string
+  target_stable_agent_id?: string
+}
+
 export interface TopologyEdgeWire {
   id: string
   operation?: string
@@ -63,6 +71,9 @@ export interface TopologyEdgeWire {
   target?: string
   bidirectional?: boolean
   weight?: number
+  mcp?: TopologyEdgeMcpWire
+  source_stable_agent_id?: string
+  target_stable_agent_id?: string
   [key: string]: unknown
 }
 

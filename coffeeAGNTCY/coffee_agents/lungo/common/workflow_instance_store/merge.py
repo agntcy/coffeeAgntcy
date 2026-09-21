@@ -42,7 +42,28 @@ import copy
 import logging
 from typing import Any
 
-from schema.types import Data, EdgeId, Event, NodeId, Operation, Workflow
+from schema.types import (
+    Data,
+    EdgeId,
+    Event,
+    Mcp,
+    NodeId,
+    Operation,
+    StableAgentId,
+    Workflow,
+)
+
+_MCP_COMPAT_FIELDS = (
+    "tool_name",
+    "mcp_server",
+    "mcp_in_flight",
+    "source_stable_agent_id",
+    "target_stable_agent_id",
+)
+_MCP_SID_FIELDS = (
+    "source_stable_agent_id",
+    "target_stable_agent_id",
+)
 
 logger = logging.getLogger(__name__)
 
@@ -81,13 +102,17 @@ def _apply_one_topology_item(bucket: dict[str, dict], raw: dict) -> dict[str, di
     match op:
         case Operation.CREATE:
             out = _clone_topology_bucket(bucket)
-            out[eid] = copy.deepcopy(raw)
+            stored = copy.deepcopy(raw)
+            _mirror_mcp_compat_from_incoming(stored, raw)
+            out[eid] = stored
             return out
         case Operation.READ:
             if eid in bucket:
                 return bucket
             out = _clone_topology_bucket(bucket)
-            out[eid] = copy.deepcopy(raw)
+            stored = copy.deepcopy(raw)
+            _mirror_mcp_compat_from_incoming(stored, raw)
+            out[eid] = stored
             return out
         case Operation.UPDATE:
             if eid not in bucket:
@@ -100,6 +125,7 @@ def _apply_one_topology_item(bucket: dict[str, dict], raw: dict) -> dict[str, di
                     target[key] = {**target[key], **val}
                 else:
                     target[key] = copy.deepcopy(val)
+            _mirror_mcp_compat_from_incoming(target, raw)
             out = {}
             for k, v in bucket.items():
                 out[k] = target if k == eid else copy.deepcopy(v)
@@ -301,11 +327,97 @@ def _topology_edges_for_instance(
     return []
 
 
+def _id_text(value: Any) -> str | None:
+    if isinstance(value, str) and value:
+        return value
+    root = getattr(value, "root", None)
+    if isinstance(root, str) and root:
+        return root
+    return None
+
+
+def _edge_mcp_field(edge: Any, field_name: str) -> Any:
+    """Prefer ``edge.mcp.<field>`` (1.2.0); fall back to flat extras."""
+    if isinstance(edge, dict):
+        mcp = edge.get("mcp")
+        if isinstance(mcp, dict):
+            grouped = mcp.get(field_name)
+            if grouped is not None:
+                return grouped
+        return edge.get(field_name)
+    mcp = getattr(edge, "mcp", None)
+    if mcp is not None:
+        grouped = getattr(mcp, field_name, None)
+        if grouped is not None:
+            return grouped
+        if isinstance(mcp, dict) and field_name in mcp:
+            return mcp[field_name]
+    return getattr(edge, field_name, None)
+
+
+def _incoming_mcp_overlay(edge: Any) -> dict[str, Any] | None:
+    """Last-write MCP values from this incoming edge (grouped preferred per field)."""
+    overlay: dict[str, Any] = {}
+    for name in _MCP_COMPAT_FIELDS:
+        value = _edge_mcp_field(edge, name)
+        if value is None:
+            continue
+        if name in _MCP_SID_FIELDS:
+            text = _id_text(value)
+            if text is None:
+                continue
+            overlay[name] = text
+            continue
+        overlay[name] = value
+    if not overlay:
+        return None
+    return overlay
+
+
+def _copy_mcp_compat_shapes(edge: Any, overlay: dict[str, Any]) -> None:
+    # Compatibility between event_v1 1.1.0 flat extras and 1.2.0 grouped mcp:
+    # the last write is copied onto both shapes so they always exist and agree.
+    if isinstance(edge, dict):
+        grouped = edge.get("mcp")
+        if not isinstance(grouped, dict):
+            grouped = {}
+            edge["mcp"] = grouped
+        for name, value in overlay.items():
+            grouped[name] = value
+            edge[name] = value
+        return
+    grouped = getattr(edge, "mcp", None)
+    if grouped is None or isinstance(grouped, dict):
+        grouped = Mcp.model_validate(grouped or {})
+        edge.mcp = grouped
+    for name, value in overlay.items():
+        if name in _MCP_SID_FIELDS:
+            setattr(grouped, name, StableAgentId(value))
+            setattr(edge, name, value)
+            continue
+        setattr(grouped, name, value)
+        setattr(edge, name, value)
+
+
+def _mirror_mcp_compat_from_incoming(target: dict, incoming: dict) -> None:
+    overlay = _incoming_mcp_overlay(incoming)
+    if overlay is None:
+        return
+    _copy_mcp_compat_shapes(target, overlay)
+
+
+def _mirror_mcp_compat_shapes(edge: Any) -> None:
+    overlay = _incoming_mcp_overlay(edge)
+    if overlay is None:
+        return
+    _copy_mcp_compat_shapes(edge, overlay)
+
+
 def _edge_stable_agent_id_pair(edge: Any) -> tuple[str, str] | None:
     """Read ``(source_stable_agent_id, target_stable_agent_id)`` from an edge."""
-    src = getattr(edge, "source_stable_agent_id", None)
-    tgt = getattr(edge, "target_stable_agent_id", None)
-    if isinstance(src, str) and isinstance(tgt, str) and src and tgt:
+    src = _id_text(_edge_mcp_field(edge, "source_stable_agent_id"))
+    tgt = _id_text(_edge_mcp_field(edge, "target_stable_agent_id"))
+    if src is not None and tgt is not None:
         return src, tgt
     return None
 
@@ -337,8 +449,9 @@ def reconcile_event_mcp_edges(state: Data, event: Event) -> Event:
     """Resolve MCP edge identity server-side before merging.
 
     Incoming edges carrying ``source_stable_agent_id`` and
-    ``target_stable_agent_id`` are rewritten to the live catalog edge id
-    and endpoint node ids. Unresolvable edges are dropped.
+    ``target_stable_agent_id`` (on ``edge.mcp`` or as flat extras) are
+    rewritten to the live catalog edge id and endpoint node ids.
+    Unresolvable edges are dropped.
 
     Returns a new :class:`Event`; the input is never mutated.
     """
@@ -352,11 +465,14 @@ def reconcile_event_mcp_edges(state: Data, event: Event) -> Event:
             node_index = _existing_stable_agent_id_index(state_wf, instance_id)
             edge_index = _existing_stable_edge_index(state_wf, instance_id)
             if not edge_index:
+                for edge in topology.edges:
+                    _mirror_mcp_compat_shapes(edge)
                 continue
             kept_edges: list = []
             for edge in topology.edges:
                 sid_pair = _edge_stable_agent_id_pair(edge)
                 if sid_pair is None:
+                    _mirror_mcp_compat_shapes(edge)
                     kept_edges.append(edge)
                     continue
                 existing_edge_id = edge_index.get(sid_pair)
@@ -388,6 +504,7 @@ def reconcile_event_mcp_edges(state: Data, event: Event) -> Event:
                 edge.source = NodeId(root=src_nid)
                 edge.target = NodeId(root=tgt_nid)
                 edge.operation = Operation.UPDATE
+                _mirror_mcp_compat_shapes(edge)
                 kept_edges.append(edge)
             topology.edges = kept_edges
     return result

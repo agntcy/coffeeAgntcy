@@ -336,6 +336,16 @@ export interface components {
         WorkflowSummaryMapResponse: {
             [key: string]: components["schemas"]["WorkflowSummary"];
         };
+        /** @description Workflow identity fields shared by catalog lookup and event payloads (flat on the wire). */
+        workflow_metadata: {
+            name: string;
+            pattern: string;
+            use_case: string;
+            /** @description brief extra qualifier for the use-case */
+            scenario: string;
+        } & {
+            [key: string]: unknown;
+        };
         /** @description Graph node id. Used in topology definitions. */
         node_id: string;
         /**
@@ -384,6 +394,16 @@ export interface components {
         topology_node_item: components["schemas"]["partial_node"] | components["schemas"]["node"];
         /** @description Graph edge id. Used in topology definitions. */
         edge_id: string;
+        /** @description Optional MCP tool-call fields on an edge (added in 1.2.0). Presence of a non-empty object marks an MCP tool-call edge; catalog edges omit it. */
+        mcp: {
+            tool_name?: string;
+            mcp_server?: string;
+            mcp_in_flight?: boolean;
+            source_stable_agent_id?: components["schemas"]["stable_agent_id"];
+            target_stable_agent_id?: components["schemas"]["stable_agent_id"];
+        } & {
+            [key: string]: unknown;
+        };
         /** @description Sparse edge data (mainly for updates). Used in topology definitions. */
         partial_edge: {
             id: components["schemas"]["edge_id"];
@@ -395,6 +415,7 @@ export interface components {
             bidirectional: boolean;
             /** @default 1 */
             weight: number;
+            mcp?: components["schemas"]["mcp"];
         } & {
             [key: string]: unknown;
         };
@@ -421,12 +442,7 @@ export interface components {
             [key: string]: unknown;
         };
         /** @description Workflow data, describing common configuration for a specific workflow, and keep track of instances of that workflow. */
-        workflow: {
-            name: string;
-            pattern: string;
-            use_case: string;
-            /** @description brief extra qualifier for the use-case */
-            scenario: string;
+        workflow: components["schemas"]["workflow_metadata"] & ({
             starting_topology: components["schemas"]["topology"];
             /** @description Maps instance id string to instance payload; each property name must match workflow_instance.id exactly (instance://...). */
             instances: {
@@ -434,7 +450,7 @@ export interface components {
             };
         } & {
             [key: string]: unknown;
-        };
+        });
         InstantiateWorkflowResponse: {
             workflow_instance_id: components["schemas"]["instance_id"];
         };
@@ -498,6 +514,10 @@ export interface components {
             type: components["schemas"]["event_type"];
             /** @description Producer identifier (e.g. agent or adapter name). */
             source: string;
+            /** @description Optional OpenTelemetry trace id as 32 hex characters (added in 1.2.0). */
+            trace_id?: string;
+            /** @description Optional OpenTelemetry span id as 16 hex characters (added in 1.2.0). */
+            span_id?: string;
         } & {
             [key: string]: unknown;
         };
@@ -571,6 +591,16 @@ export interface components {
                 /** @description Full node data: either a base_node alone (without any agent extension fields), or an agent_node. */
                 node: (components["schemas"]["base_node"] & unknown) | components["schemas"]["agent_node"];
                 topology_node_item: components["schemas"]["partial_node"] | components["schemas"]["node"];
+                /** @description Optional MCP tool-call fields on an edge (added in 1.2.0). Presence of a non-empty object marks an MCP tool-call edge; catalog edges omit it. */
+                mcp: {
+                    tool_name?: string;
+                    mcp_server?: string;
+                    mcp_in_flight?: boolean;
+                    source_stable_agent_id?: components["schemas"]["stable_agent_id"];
+                    target_stable_agent_id?: components["schemas"]["stable_agent_id"];
+                } & {
+                    [key: string]: unknown;
+                };
                 /** @description Sparse edge data (mainly for updates). Used in topology definitions. */
                 partial_edge: {
                     id: components["schemas"]["edge_id"];
@@ -582,6 +612,7 @@ export interface components {
                     bidirectional: boolean;
                     /** @default 1 */
                     weight: number;
+                    mcp?: components["schemas"]["mcp"];
                 } & {
                     [key: string]: unknown;
                 };
@@ -619,6 +650,10 @@ export interface components {
                     type: components["schemas"]["event_type"];
                     /** @description Producer identifier (e.g. agent or adapter name). */
                     source: string;
+                    /** @description Optional OpenTelemetry trace id as 32 hex characters (added in 1.2.0). */
+                    trace_id?: string;
+                    /** @description Optional OpenTelemetry span id as 16 hex characters (added in 1.2.0). */
+                    span_id?: string;
                 } & {
                     [key: string]: unknown;
                 };
@@ -629,13 +664,18 @@ export interface components {
                 } & {
                     [key: string]: unknown;
                 };
-                /** @description Workflow data, describing common configuration for a specific workflow, and keep track of instances of that workflow. */
-                workflow: {
+                /** @description Workflow identity fields shared by catalog lookup and event payloads (flat on the wire). */
+                workflow_metadata: {
                     name: string;
                     pattern: string;
                     use_case: string;
                     /** @description brief extra qualifier for the use-case */
                     scenario: string;
+                } & {
+                    [key: string]: unknown;
+                };
+                /** @description Workflow data, describing common configuration for a specific workflow, and keep track of instances of that workflow. */
+                workflow: components["schemas"]["workflow_metadata"] & ({
                     starting_topology: components["schemas"]["topology"];
                     /** @description Maps instance id string to instance payload; each property name must match workflow_instance.id exactly (instance://...). */
                     instances: {
@@ -643,7 +683,7 @@ export interface components {
                     };
                 } & {
                     [key: string]: unknown;
-                };
+                });
                 /** @description Payload data object, containing workflow configurations and the targeted instances. */
                 data: {
                     workflows: {

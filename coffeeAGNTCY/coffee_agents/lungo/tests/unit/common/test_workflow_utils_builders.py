@@ -6,9 +6,16 @@
 from __future__ import annotations
 
 import pytest
-from schema.types import EventType, Operation, PartialTopology
+from schema.types import (
+    EventType,
+    Operation,
+    PartialAgentNode,
+    PartialBaseNode,
+    PartialTopology,
+)
 
 from common.workflow_utils.builders import (
+    SCHEMA_VERSION,
     build_event,
     build_metadata,
     make_edge,
@@ -37,11 +44,11 @@ def test_make_node_stable_agent_fields(case, stable_agent_id, expect_stable_fiel
     )
     assert node.label == "Test Agent"
     if expect_stable_fields:
-        assert node.stable_agent_id == stable_agent_id
-        assert (
-            node.agent_record_uri == "agent-card://00000000-0000-4000-8000-000000000099"
-        )
+        assert isinstance(node, PartialAgentNode)
+        assert node.stable_agent_id.root == stable_agent_id
+        assert node.agent_record_uri == "agent-card://00000000-0000-4000-8000-000000000099"
     else:
+        assert isinstance(node, PartialBaseNode)
         assert getattr(node, "stable_agent_id", None) is None
 
 
@@ -62,6 +69,7 @@ def test_build_metadata_otel_fields(case, trace_id, span_id, expect_trace, expec
         trace_id=trace_id,
         span_id=span_id,
     )
+    assert meta.schema_version == SCHEMA_VERSION
     if expect_trace:
         assert getattr(meta, "trace_id", None) == f"{trace_id:032x}"
     else:
@@ -79,7 +87,7 @@ def test_build_event_happy_path():
 
     event = build_event(
         source="test_source",
-        workflow_name="Test Workflow Alpha",
+        identity=metadata,
         instance_id="instance://00000000-0000-4000-8000-000000000003",
         topology=PartialTopology(nodes=[], edges=[]),
         correlation_id="correlation://00000000-0000-4000-8000-000000000004",
@@ -120,13 +128,16 @@ async def test_make_edge_create_vs_update(
     assert ("bidirectional" in dump) is expect_bidirectional_in_dump
 
 
-def test_build_event_unknown_workflow_raises():
-    """build_event raises when workflow_name is absent from the catalog."""
-    with pytest.raises(RuntimeError, match="intercept\\(\\) should have rejected"):
-        build_event(
-            source="test_source",
-            workflow_name="Nonexistent Workflow",
-            instance_id="instance://00000000-0000-4000-8000-000000000003",
-            topology=PartialTopology(nodes=[], edges=[]),
-            correlation_id="correlation://00000000-0000-4000-8000-000000000004",
-        )
+def test_build_event_writes_identity_name():
+    """build_event keys the workflow map with identity.name."""
+    metadata = lookup_workflow("Test Workflow Alpha")
+    assert metadata is not None
+    event = build_event(
+        source="test_source",
+        identity=metadata,
+        instance_id="instance://00000000-0000-4000-8000-000000000003",
+        topology=PartialTopology(nodes=[], edges=[]),
+        correlation_id="correlation://00000000-0000-4000-8000-000000000004",
+    )
+    assert metadata.name in event.data.workflows
+    assert event.metadata.schema_version == SCHEMA_VERSION

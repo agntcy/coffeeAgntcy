@@ -172,7 +172,8 @@ async def _emit_discovery_topology(agent_records: dict[str, dict]) -> None:
     wf_ctx = read_workflow_context()
     workflow_name = wf_ctx.workflow_name
     instance_id = wf_ctx.instance_id
-    if not workflow_name or lookup_workflow(workflow_name) is None:
+    identity = lookup_workflow(workflow_name)
+    if not workflow_name or identity is None:
         logger.debug(
             "recruit discovery: no/unknown workflow_name=%r; skipping topology emit",
             workflow_name,
@@ -233,7 +234,7 @@ async def _emit_discovery_topology(agent_records: dict[str, dict]) -> None:
     try:
         event = build_event(
             source="recruiter_supervisor",
-            workflow_name=workflow_name,
+            identity=identity,
             instance_id=instance_id,
             topology=topology,
             correlation_id=correlation_id,

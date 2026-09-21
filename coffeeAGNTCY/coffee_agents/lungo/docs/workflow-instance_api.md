@@ -21,6 +21,7 @@ Examples of complete and partial messages live alongside the schema:
 - Full snapshot: [`../schema/jsonschemas/examples/event_v1_full.json`](../schema/jsonschemas/examples/event_v1_full.json)
 - Partial delta: [`../schema/jsonschemas/examples/event_v1_partial.json`](../schema/jsonschemas/examples/event_v1_partial.json)
 - Empty workflows: [`../schema/jsonschemas/examples/event_v1_empty_workflows.json`](../schema/jsonschemas/examples/event_v1_empty_workflows.json)
+- Additive 1.2.0 (OTel ids + grouped MCP edge): [`../schema/jsonschemas/examples/event_v1_1_2_0.json`](../schema/jsonschemas/examples/event_v1_1_2_0.json)
 
 > **Status.** The catalog list DTOs (patterns, use-cases, workflow summaries) are temporary API-layer types defined in [`../api/agentic_workflows/dtos.py`](../api/agentic_workflows/dtos.py). They are being folded into the canonical JSON Schema so OpenAPI, JSON Schema, and Pydantic remain a single source of truth. The instance/state and event shapes (`Workflow`, `WorkflowInstance`, `Topology`, `Event`) are already canonical in `event_v1.json`.
 
@@ -326,7 +327,7 @@ Returns `404` when `workflow_name` is not in the catalog.
 
 > **Note on node ids.** At startup the catalog loader assigns fresh runtime `node://`/`edge://` ids and derives `stable_agent_id` (a UUID5 of the agent record `name`) for agent nodes. Treat ids returned by the API as the live values; do not assume they match the static JSON file verbatim.
 
-> **MCP edge events.** MCP middleware emits edge-only partials keyed by `(source_stable_agent_id, target_stable_agent_id)`. Before merge, `reconcile_event_mcp_edges` resolves them to the live catalog edge id and endpoint node ids from the instance topology (or `starting_topology` when the instance graph is still empty).
+> **MCP edge events.** MCP middleware emits edge-only partials with a grouped optional `mcp` object (`tool_name`, `mcp_server`, `mcp_in_flight`, `source_stable_agent_id`, `target_stable_agent_id`; added in payload `schema_version` 1.2.0). Flat extras of the same names remain readable for one release. Before merge, `reconcile_event_mcp_edges` resolves them to the live catalog edge id and endpoint node ids from the instance topology (or `starting_topology` when the instance graph is still empty).
 
 ---
 
@@ -488,14 +489,16 @@ An `Event` is `{ metadata, data }` (both required, `additionalProperties: false`
 {
   "metadata": {                       // syntactic + semantic metadata (all required)
     "timestamp": "RFC3339 date-time",
-    "schema_version": "1.0.0",        // semantic version of this contract
+    "schema_version": "1.2.0",        // semantic version of this contract (1.0.0 / 1.1.0 still valid)
     "correlation": {                  // ties events from one user action / request
       "id": "correlation://<uuid>",   // required
       "message": "optional string"    // additionalProperties allowed
     },
     "id": "event://<uuid>",           // unique event id
     "type": "StateProgressUpdate",    // see event_type_v1.json (extendable enum)
-    "source": "auction_supervisor"    // producer identifier
+    "source": "auction_supervisor",   // producer identifier
+    "trace_id": "32 hex chars",       // optional OpenTelemetry trace id (1.2.0)
+    "span_id": "16 hex chars"         // optional OpenTelemetry span id (1.2.0)
     // additionalProperties allowed
   },
   "data": {                           // business data (partial_state)
@@ -528,14 +531,16 @@ Key invariant: each property name under `workflow.instances` **must equal** the 
 | `event_id`, `correlation_id`, `instance_id`, `node_id`, `edge_id`, `stable_agent_id` | URI-pattern id strings (see [Identifiers](#identifiers)). |
 | `operation` | Entity op: `create` \| `read` \| `update` \| `delete`. |
 | `size` | Relative layout size `{ width, height }` (defaults `1.0`). |
-| `metadata` | Required event metadata block. |
+| `metadata` | Required event metadata block; optional `trace_id` / `span_id` (1.2.0). |
 | `correlation` | `{ id (required), message? }`, `additionalProperties: true`. |
 | `partial_base_node` / `base_node` | Sparse vs. full non-agent node. |
 | `partial_agent_node` / `agent_node` | Node + agent extension (`agent_record_uri`, `stable_agent_id`). |
 | `partial_node` / `node` | A base node **or** an agent node (mutually exclusive). |
-| `partial_edge` / `edge` | Sparse vs. full edge. |
+| `mcp` | Optional grouped MCP tool-call fields on an edge (1.2.0). |
+| `partial_edge` / `edge` | Sparse vs. full edge; optional `mcp`. |
 | `partial_topology` / `topology` | `{ nodes, edges }`; partial allows omission, full requires both. |
 | `workflow_instance` | `{ id (required), topology }`, `additionalProperties: true`. |
+| `workflow_metadata` | Identity fields `name`, `pattern`, `use_case`, `scenario` (composed into `workflow`). |
 | `workflow` | Catalog metadata + `starting_topology` + `instances`. |
 | `data` | `{ workflows (required) }`, `additionalProperties: true`. |
 
@@ -548,5 +553,6 @@ Key invariant: each property name under `workflow.instances` **must equal** the 
 - **Full snapshot (init / reset)** - every node/edge fully populated: [`examples/event_v1_full.json`](../schema/jsonschemas/examples/event_v1_full.json).
 - **Partial delta (update)** - one node carrying `operation: "update"` and only the changed fields, empty `edges`: [`examples/event_v1_partial.json`](../schema/jsonschemas/examples/event_v1_partial.json).
 - **Empty workflows + extra `app_state`** - demonstrates root-level `additionalProperties`: [`examples/event_v1_empty_workflows.json`](../schema/jsonschemas/examples/event_v1_empty_workflows.json).
+- **1.2.0 additive fields** - optional metadata `trace_id`/`span_id` and grouped `edge.mcp`: [`examples/event_v1_1_2_0.json`](../schema/jsonschemas/examples/event_v1_1_2_0.json).
 
 ---

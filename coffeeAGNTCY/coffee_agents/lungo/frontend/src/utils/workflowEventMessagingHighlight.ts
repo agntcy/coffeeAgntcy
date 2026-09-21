@@ -5,6 +5,7 @@
 
 import type {
   EventV1Wire,
+  TopologyEdgeWire,
   TopologyNodeWire,
   TopologyWire,
 } from "@/api/agenticWorkflowsTypes"
@@ -39,6 +40,17 @@ function hasText(value: unknown): value is string {
  */
 function edgePairId(source: string, target: string): string {
   return `${source}->${target}`
+}
+
+function edgeStableAgentId(
+  edge: TopologyEdgeWire,
+  key: "source_stable_agent_id" | "target_stable_agent_id",
+): unknown {
+  const grouped = edge.mcp
+  if (grouped && typeof grouped === "object" && grouped[key] != null) {
+    return grouped[key]
+  }
+  return edge[key]
 }
 
 function emptyMessagingHighlightIds(): MessagingHighlightIds {
@@ -77,10 +89,8 @@ function collectMessagingHighlightIds(
   for (const edge of topology.edges ?? []) {
     if (hasText(edge.id)) edgeIds.add(edge.id)
 
-    const sourceStable = (edge as { source_stable_agent_id?: string })
-      .source_stable_agent_id
-    const targetStable = (edge as { target_stable_agent_id?: string })
-      .target_stable_agent_id
+    const sourceStable = edgeStableAgentId(edge, "source_stable_agent_id")
+    const targetStable = edgeStableAgentId(edge, "target_stable_agent_id")
     if (hasText(sourceStable) && hasText(targetStable)) {
       edgePairs.add(edgePairId(sourceStable, targetStable))
     }

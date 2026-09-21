@@ -21,11 +21,13 @@ from schema.types import (
     Metadata,
     NodeId,
     Operation,
+    PartialAgentNode,
+    PartialBaseNode,
     PartialEdge,
     PartialNode,
-    PartialBaseNode,
     PartialTopology,
     Size,
+    StableAgentId,
     Topology,
     Workflow,
     WorkflowInstance,
@@ -36,9 +38,9 @@ from common.workflow_utils.inflight import (
     format_span_id,
     format_trace_id,
 )
-from common.workflow_utils.workflow_catalog import lookup_workflow
+from common.workflow_utils.workflow_catalog import WorkflowMetadata
 
-SCHEMA_VERSION = "1.1.0"
+SCHEMA_VERSION = "1.2.0"
 
 _DEFAULT_NODE_SIZE = Size(width=1.0, height=1.0)
 
@@ -60,23 +62,33 @@ def make_node(
     extras: Mapping[str, Any] | None = None,
 ) -> PartialNode:
     """Create a PartialNode with standard defaults."""
-    node_extras: dict[str, Any] = {}
+    extra_kwargs: dict[str, Any] = dict(extras) if extras else {}
+    resolved_stable = extra_kwargs.pop("stable_agent_id", None)
     if stable_agent_id is not None:
-        node_extras["stable_agent_id"] = stable_agent_id
-        # Schema requires agent_record_uri on any node with stable_agent_id.
-        node_extras["agent_record_uri"] = (
-            f"agent-card://{stable_agent_id.removeprefix('agent://')}"
-        )
-    if extras:
-        node_extras.update(extras)
-    return PartialBaseNode(
+        resolved_stable = stable_agent_id
+    agent_record_uri = extra_kwargs.pop("agent_record_uri", None)
+    size_kwargs: dict[str, Any] = {}
+    if include_size:
+        size_kwargs["size"] = _DEFAULT_NODE_SIZE
+    base_kwargs: dict[str, Any] = dict(
         id=NodeId(node_id),
         operation=operation,
         type=node_type,
         label=label,
         layer_index=layer_index,
-        **(dict(size=_DEFAULT_NODE_SIZE) if include_size else {}),
-        **node_extras,
+        **size_kwargs,
+        **extra_kwargs,
+    )
+    if resolved_stable is None and agent_record_uri is None:
+        return PartialBaseNode(**base_kwargs)
+    if agent_record_uri is None:
+        agent_record_uri = (
+            f"agent-card://{str(resolved_stable).removeprefix('agent://')}"
+        )
+    return PartialAgentNode(
+        **base_kwargs,
+        agent_record_uri=agent_record_uri,
+        stable_agent_id=StableAgentId(resolved_stable) if resolved_stable else None,
     )
 
 
@@ -109,11 +121,6 @@ def build_metadata(
     trace_id: int | None = None,
     span_id: int | None = None,
 ) -> Metadata:
-    extras: dict[str, Any] = {}
-    if trace_id is not None:
-        extras["trace_id"] = format_trace_id(trace_id)
-    if span_id is not None:
-        extras["span_id"] = format_span_id(span_id)
     return Metadata(
         timestamp=datetime.now(timezone.utc),
         schema_version=SCHEMA_VERSION,
@@ -124,14 +131,15 @@ def build_metadata(
             id=CorrelationId(correlation_id),
             message=correlation_message,
         ),
-        **extras,
+        trace_id=format_trace_id(trace_id) if trace_id is not None else None,
+        span_id=format_span_id(span_id) if span_id is not None else None,
     )
 
 
 def build_event(
     *,
     source: str,
-    workflow_name: str,
+    identity: WorkflowMetadata,
     instance_id: str,
     topology: PartialTopology,
     correlation_id: str,
@@ -142,15 +150,9 @@ def build_event(
 ) -> Event:
     """Build an Event for one workflow-instance topology update.
 
-    Looks up descriptive metadata (pattern + use_case) from the catalog at
-    emission time so callers only need to carry the workflow name.
+    Copies identity fields from ``WorkflowMetadata`` onto the still-flat
+    ``Workflow`` wire object.
     """
-    metadata = lookup_workflow(workflow_name)
-    if metadata is None:
-        raise RuntimeError(
-            f"build_event: workflow_name {workflow_name!r} not in catalog; "
-            "intercept() should have rejected this earlier."
-        )
     return Event(
         metadata=build_metadata(
             source=source,
@@ -162,11 +164,11 @@ def build_event(
         ),
         data=Data(
             workflows={
-                metadata.workflow_name: Workflow(
-                    pattern=metadata.pattern or metadata.workflow_name,
-                    use_case=metadata.use_case,
-                    scenario=metadata.scenario,
-                    name=metadata.workflow_name,
+                identity.name: Workflow(
+                    pattern=identity.pattern or identity.name,
+                    use_case=identity.use_case,
+                    scenario=identity.scenario,
+                    name=identity.name,
                     starting_topology=init_starting_topology(),
                     instances={
                         instance_id: WorkflowInstance(

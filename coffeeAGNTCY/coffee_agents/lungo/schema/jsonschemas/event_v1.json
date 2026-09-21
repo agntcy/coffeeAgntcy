@@ -158,6 +158,18 @@
     "topology_node_item": {
       "anyOf": [{ "$ref": "#/$defs/partial_node" }, { "$ref": "#/$defs/node" }]
     },
+    "mcp": {
+      "type": "object",
+      "description": "Optional MCP tool-call fields on an edge (added in 1.2.0). Presence of a non-empty object marks an MCP tool-call edge; catalog edges omit it.",
+      "properties": {
+        "tool_name": { "type": "string", "minLength": 1 },
+        "mcp_server": { "type": "string", "minLength": 1 },
+        "mcp_in_flight": { "type": "boolean" },
+        "source_stable_agent_id": { "$ref": "#/$defs/stable_agent_id" },
+        "target_stable_agent_id": { "$ref": "#/$defs/stable_agent_id" }
+      },
+      "additionalProperties": true
+    },
     "partial_edge": {
       "type": "object",
       "description": "Sparse edge data (mainly for updates). Used in topology definitions.",
@@ -169,7 +181,8 @@
         "source": { "$ref": "#/$defs/node_id" },
         "target": { "$ref": "#/$defs/node_id" },
         "bidirectional": { "type": "boolean", "default": false },
-        "weight": { "type": "number", "default": 1.0 }
+        "weight": { "type": "number", "default": 1.0 },
+        "mcp": { "$ref": "#/$defs/mcp" }
       },
       "additionalProperties": true
     },
@@ -263,6 +276,16 @@
           "type": "string",
           "minLength": 1,
           "description": "Producer identifier (e.g. agent or adapter name)."
+        },
+        "trace_id": {
+          "type": "string",
+          "pattern": "^[0-9a-fA-F]{32}$",
+          "description": "Optional OpenTelemetry trace id as 32 hex characters (added in 1.2.0)."
+        },
+        "span_id": {
+          "type": "string",
+          "pattern": "^[0-9a-fA-F]{16}$",
+          "description": "Optional OpenTelemetry span id as 16 hex characters (added in 1.2.0)."
         }
       },
       "additionalProperties": true
@@ -277,24 +300,37 @@
       },
       "additionalProperties": true
     },
-    "workflow": {
+    "workflow_metadata": {
       "type": "object",
-      "description": "Workflow data, describing common configuration for a specific workflow, and keep track of instances of that workflow.",
-      "required": ["name", "pattern", "use_case", "scenario", "starting_topology", "instances"],
+      "description": "Workflow identity fields shared by catalog lookup and event payloads (flat on the wire).",
+      "required": ["name", "pattern", "use_case", "scenario"],
       "properties": {
         "name": { "type": "string", "minLength": 1 },
         "pattern": { "type": "string", "minLength": 1 },
         "use_case": { "type": "string", "minLength": 1 },
-        "scenario": { "type": "string", "minLength": 1, "description": "brief extra qualifier for the use-case" },
-        "starting_topology": { "$ref": "#/$defs/topology" },
-        "instances": {
-          "type": "object",
-          "description": "Maps instance id string to instance payload; each property name must match workflow_instance.id exactly (instance://...).",
-          "propertyNames": { "$ref": "#/$defs/instance_id" },
-          "additionalProperties": { "$ref": "#/$defs/workflow_instance" }
-        }
+        "scenario": { "type": "string", "minLength": 1, "description": "brief extra qualifier for the use-case" }
       },
       "additionalProperties": true
+    },
+    "workflow": {
+      "description": "Workflow data, describing common configuration for a specific workflow, and keep track of instances of that workflow.",
+      "allOf": [
+        { "$ref": "#/$defs/workflow_metadata" },
+        {
+          "type": "object",
+          "required": ["starting_topology", "instances"],
+          "properties": {
+            "starting_topology": { "$ref": "#/$defs/topology" },
+            "instances": {
+              "type": "object",
+              "description": "Maps instance id string to instance payload; each property name must match workflow_instance.id exactly (instance://...).",
+              "propertyNames": { "$ref": "#/$defs/instance_id" },
+              "additionalProperties": { "$ref": "#/$defs/workflow_instance" }
+            }
+          },
+          "additionalProperties": true
+        }
+      ]
     },
     "data": {
       "type": "object",
