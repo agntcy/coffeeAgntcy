@@ -1,7 +1,7 @@
 # https://editorconfig.org
 root = true
 
-# Python: PEP 8 — 4 spaces, never tabs (issue #747).
+# Python: PEP 8 - 4 spaces, never tabs (issue #747).
 [*.py]
 indent_style = space
 indent_size = 4
