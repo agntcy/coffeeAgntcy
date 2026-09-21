@@ -743,6 +743,18 @@
     "instances": {}
   },
   {
+    "name": "Peer Group",
+    "pattern": "Peer Group",
+    "pattern_category": "Multi-Agent Communication & Collaboration",
+    "use_case": "---",
+    "scenario": "---",
+    "starting_topology": {
+      "nodes": [],
+      "edges": []
+    },
+    "instances": {}
+  },
+  {
     "name": "Performance Scoring Agent",
     "pattern": "Performance Scoring Agent",
     "pattern_category": "Observability & Performance Accountability",
@@ -758,6 +770,18 @@
     "name": "Policy-Enforced Execution",
     "pattern": "Policy-Enforced Execution",
     "pattern_category": "Governance, Policy & Human Oversight",
+    "use_case": "---",
+    "scenario": "---",
+    "starting_topology": {
+      "nodes": [],
+      "edges": []
+    },
+    "instances": {}
+  },
+  {
+    "name": "Recruiter",
+    "pattern": "Recruiter",
+    "pattern_category": "Discovery, Routing & Composition",
     "use_case": "---",
     "scenario": "---",
     "starting_topology": {
@@ -854,6 +878,18 @@
     "name": "Shared Knowledge Store",
     "pattern": "Shared Knowledge Store",
     "pattern_category": "Internet of Cognition",
+    "use_case": "---",
+    "scenario": "---",
+    "starting_topology": {
+      "nodes": [],
+      "edges": []
+    },
+    "instances": {}
+  },
+  {
+    "name": "Supervisor",
+    "pattern": "Supervisor",
+    "pattern_category": "Orchestration & Control Flow",
     "use_case": "---",
     "scenario": "---",
     "starting_topology": {

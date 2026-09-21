@@ -7,6 +7,7 @@ import re
 from urllib.parse import quote
 
 import pytest
+from api.agentic_workflows.patterns import PATTERNS
 from api.agentic_workflows.router import create_agentic_workflows_router
 from api.agentic_workflows.workflow_documentation import (
     load_parsed_workflow_documentation,
@@ -111,6 +112,20 @@ def test_get_workflow_documentation_200(doc_client: TestClient) -> None:
     assert data["slug"] == "publish_subscribe"
     assert data["pattern_category"] == "Orchestration & Control Flow"
     assert any(s["heading"] == "Pattern" for s in data["sections"])
+    assert len(data["full_markdown"]) > 0
+
+
+@pytest.mark.parametrize("pattern_name", list(PATTERNS))
+def test_get_documentation_for_implemented_pattern(
+    doc_client: TestClient, pattern_name: str
+) -> None:
+    """Reference Library entries for implemented patterns serve their pattern doc."""
+    r = doc_client.get(
+        f"/agentic-workflows/{quote(pattern_name, safe='')}/documentation/",
+    )
+    assert r.status_code == 200
+    data = r.json()
+    assert data["workflow_name"] == pattern_name
     assert len(data["full_markdown"]) > 0
 
 
