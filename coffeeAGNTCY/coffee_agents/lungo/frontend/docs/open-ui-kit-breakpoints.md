@@ -68,6 +68,4 @@ Use this table in reviews and Figma annotations. **Layout** breakpoints (`sm` = 
 
 ## Related documentation
 
-- [tailwind-to-open-ui-kit-migration.md](./tailwind-to-open-ui-kit-migration.md) - Lungo **Tailwind → Open UI Kit** process; use this file’s breakpoint table when translating responsive utilities to `sx`.
 - [open-ui-kit-vs-mui-layout.md](./open-ui-kit-vs-mui-layout.md) - how MUI applies breakpoint keys vs default Material.
-- [open-ui-kit-breakpoints-migration-plan.md](./open-ui-kit-breakpoints-migration-plan.md) - checklist when changing breakpoints in **Open UI Kit** source or auditing consumers.

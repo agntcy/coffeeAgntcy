@@ -260,4 +260,4 @@ The A2A evaluator resolves the remote agent's card via `A2ACardResolver`, create
 
 ## License
 
-Apache-2.0 - See [LICENSE](../LICENSE) for details.
+Apache-2.0 - See [LICENSE](../../../../LICENSE) for details.
