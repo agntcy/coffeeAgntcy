@@ -35,6 +35,33 @@ env:
   CORTO_DIR: coffeeAGNTCY/coffee_agents/corto
   LUNGO_DIR: coffeeAGNTCY/coffee_agents/lungo
   HELM_SUBDIR: deployment/helm
+  # Single source of truth for the chart list, shared by the matrices below and by
+  # the change-detection and version-guard logic in subprojects-to-build /
+  # check-push-target-existence.
+  CORTO_CHARTS_JSON: >-
+    [
+      {"package_name": "corto-ui", "path": "coffeeAGNTCY/coffee_agents/corto/deployment/helm/corto-ui"},
+      {"package_name": "corto-exchange", "path": "coffeeAGNTCY/coffee_agents/corto/deployment/helm/exchange"},
+      {"package_name": "corto-farm", "path": "coffeeAGNTCY/coffee_agents/corto/deployment/helm/farm"}
+    ]
+  LUNGO_CHARTS_JSON: >-
+    [
+      {"package_name": "lungo-ui", "path": "coffeeAGNTCY/coffee_agents/lungo/deployment/helm/ui"},
+      {"package_name": "auction-supervisor", "path": "coffeeAGNTCY/coffee_agents/lungo/deployment/helm/auction-supervisor"},
+      {"package_name": "agentic-workflows-api", "path": "coffeeAGNTCY/coffee_agents/lungo/deployment/helm/agentic-workflows-api"},
+      {"package_name": "brazil-farm", "path": "coffeeAGNTCY/coffee_agents/lungo/deployment/helm/brazil-farm"},
+      {"package_name": "colombia-farm", "path": "coffeeAGNTCY/coffee_agents/lungo/deployment/helm/colombia-farm"},
+      {"package_name": "vietnam-farm", "path": "coffeeAGNTCY/coffee_agents/lungo/deployment/helm/vietnam-farm"},
+      {"package_name": "weather-mcp-server", "path": "coffeeAGNTCY/coffee_agents/lungo/deployment/helm/weather-mcp-server"},
+      {"package_name": "payment-mcp-server", "path": "coffeeAGNTCY/coffee_agents/lungo/deployment/helm/payment-mcp-server"},
+      {"package_name": "logistics-supervisor", "path": "coffeeAGNTCY/coffee_agents/lungo/deployment/helm/logistics-supervisor"},
+      {"package_name": "logistics-shipper", "path": "coffeeAGNTCY/coffee_agents/lungo/deployment/helm/logistics-shipper"},
+      {"package_name": "logistics-accountant", "path": "coffeeAGNTCY/coffee_agents/lungo/deployment/helm/logistics-accountant"},
+      {"package_name": "logistics-farm", "path": "coffeeAGNTCY/coffee_agents/lungo/deployment/helm/logistics-farm"},
+      {"package_name": "logistics-helpdesk", "path": "coffeeAGNTCY/coffee_agents/lungo/deployment/helm/logistics-helpdesk"},
+      {"package_name": "recruiter", "path": "coffeeAGNTCY/coffee_agents/lungo/deployment/helm/recruiter"},
+      {"package_name": "recruiter-supervisor", "path": "coffeeAGNTCY/coffee_agents/lungo/deployment/helm/recruiter-supervisor"}
+    ]
 
 permissions: read-all
 
@@ -45,6 +72,8 @@ jobs:
       push: ${{ steps.choose-subprojects.outputs.push }}
       build_corto: ${{ steps.choose-subprojects.outputs.build_corto }}
       build_lungo: ${{ steps.choose-subprojects.outputs.build_lungo }}
+      corto_charts: ${{ steps.choose-subprojects.outputs.corto_charts }}
+      lungo_charts: ${{ steps.choose-subprojects.outputs.lungo_charts }}
     defaults:
       run:
         shell: bash
@@ -126,6 +155,30 @@ jobs:
           echo "build_corto=$build_corto" | tee -a "$GITHUB_OUTPUT"
           echo "build_lungo=$build_lungo" | tee -a "$GITHUB_OUTPUT"
 
+          # Repackaging a chart with no content change still produces a different
+          # tgz (embedded timestamps), which would silently overwrite the existing,
+          # supposedly-immutable version. So on a push to main, drop charts with no
+          # actual diff from the matrix before packaging even starts. Other events
+          # never push (see above), so there is no overpush risk to guard there and
+          # the full chart list is kept as-is.
+          only_changed() {
+            local charts_json="$1"
+            if [[ "$push" != "true" ]]; then
+              jq -c '.' <<< "$charts_json"
+              return
+            fi
+
+            jq -c '.[]' <<< "$charts_json" | while IFS= read -r chart; do
+              path=$(jq -r '.path' <<< "$chart")
+              if ! git diff --name-only --exit-code "${{ github.event.before }}" "${{ github.sha }}" -- "${path}/" > /dev/null; then
+                echo "$chart"
+              fi
+            done | jq -c -s '.'
+          }
+
+          echo "corto_charts=$(only_changed "$CORTO_CHARTS_JSON")" | tee -a "$GITHUB_OUTPUT"
+          echo "lungo_charts=$(only_changed "$LUNGO_CHARTS_JSON")" | tee -a "$GITHUB_OUTPUT"
+
   check-push-target-existence:
     needs: [subprojects-to-build]
     runs-on: ubuntu-latest
@@ -144,39 +197,23 @@ jobs:
           push=${{ needs.subprojects-to-build.outputs.push }}
           build_corto=${{ needs.subprojects-to-build.outputs.build_corto }}
           build_lungo=${{ needs.subprojects-to-build.outputs.build_lungo }}
+          corto_charts='${{ needs.subprojects-to-build.outputs.corto_charts }}'
+          lungo_charts='${{ needs.subprojects-to-build.outputs.lungo_charts }}'
 
           existing_charts=()
           for project in corto lungo; do
             build=build_$project
+            charts_var=${project}_charts
 
             if [[ "${!build}" == "true" ]] && [[ "${push}" == "true" ]]; then
-              if [[ "${project}" == "corto" ]]; then
-                charts=(corto-ui corto-exchange corto-farm)
-              elif [[ "${project}" == "lungo" ]]; then
-                charts=(lungo-ui auction-supervisor agentic-workflows-api brazil-farm colombia-farm vietnam-farm weather-mcp-server payment-mcp-server logistics-shipper logistics-accountant logistics-farm logistics-supervisor logistics-helpdesk recruiter recruiter-supervisor)
-              fi
+              # Note: corto_charts/lungo_charts are already filtered to changed
+              # charts only when push is true, so every entry here is checked.
+              while IFS= read -r chart; do
+                package_name=$(jq -r '.package_name' <<< "$chart")
+                chart_directory=$(jq -r '.path' <<< "$chart")
+                chart_path="coffee_agntcy%2Fhelm%2F${package_name}"
 
-              for chart in "${charts[@]}"; do
-                chart_path="coffee_agntcy%2Fhelm%2F${chart}"
-
-                directory="${chart}"
-                if [[ "${chart}" == "lungo-ui" ]]; then
-                  directory="ui"
-                fi
-                chart_directory="coffeeAGNTCY/coffee_agents/${project}/deployment/helm/${directory}"
-
-                base="${{ github.event.before }}"
-                head="${{ github.sha }}"
-                if [[ "${{ github.event_name }}" == "pull_request" ]]; then
-                  base="${{ github.event.pull_request.base.sha }}"
-                  head="${{ github.event.pull_request.head.sha }}"
-                fi
-
-                if git diff --name-only --exit-code "$base" "$head" -- "${chart_directory}/"; then
-                  continue # Note: If the chart directory has no changes, skip checking for existing chart versions.
-                fi
-
-                chart_version=$(grep '^version:' ${chart_directory}/Chart.yaml | awk '{print $2}')
+                chart_version=$(grep '^version:' "${chart_directory}/Chart.yaml" | awk '{print $2}')
 
                 version_id=$(gh api "/orgs/agntcy/packages/container/${chart_path}/versions" \
                   --jq '.[] | select(.metadata.container.tags[]? == "'${chart_version}'") | .id' \
@@ -185,7 +222,7 @@ jobs:
                 if [[ -n "${version_id}" ]]; then
                   existing_charts+=("ghcr.io/agntcy/${chart_path}:${chart_version}")
                 fi
-              done
+              done < <(jq -c '.[]' <<< "${!charts_var}")
             fi
           done
 
@@ -201,17 +238,11 @@ jobs:
 
   helm-package-corto:
     needs: [subprojects-to-build, check-push-target-existence]
-    if: ${{ needs.subprojects-to-build.outputs.build_corto == 'true' }}
+    if: ${{ needs.subprojects-to-build.outputs.build_corto == 'true' && needs.subprojects-to-build.outputs.corto_charts != '[]' }}
 
     strategy:
       matrix:
-        chart:
-          - path: coffeeAGNTCY/coffee_agents/corto/deployment/helm/corto-ui
-            package_name: corto-ui
-          - path: coffeeAGNTCY/coffee_agents/corto/deployment/helm/exchange
-            package_name: corto-exchange
-          - path: coffeeAGNTCY/coffee_agents/corto/deployment/helm/farm
-            package_name: corto-farm
+        chart: ${{ fromJson(needs.subprojects-to-build.outputs.corto_charts) }}
 
     permissions: # permissions can only be maintained or reduced (not elevated) throughout a chain of workflows
       packages: write
@@ -226,56 +257,11 @@ jobs:
 
   helm-package-lungo:
     needs: [subprojects-to-build, check-push-target-existence]
-    if: ${{ needs.subprojects-to-build.outputs.build_lungo == 'true' }}
+    if: ${{ needs.subprojects-to-build.outputs.build_lungo == 'true' && needs.subprojects-to-build.outputs.lungo_charts != '[]' }}
 
     strategy:
       matrix:
-        chart:
-          - name: lungo-ui
-            path: coffeeAGNTCY/coffee_agents/lungo/deployment/helm/ui
-            package_name: lungo-ui
-          - name: auction-supervisor
-            path: coffeeAGNTCY/coffee_agents/lungo/deployment/helm/auction-supervisor
-            package_name: auction-supervisor
-          - name: agentic-workflows-api
-            path: coffeeAGNTCY/coffee_agents/lungo/deployment/helm/agentic-workflows-api
-            package_name: agentic-workflows-api
-          - name: brazil-farm
-            path: coffeeAGNTCY/coffee_agents/lungo/deployment/helm/brazil-farm
-            package_name: brazil-farm
-          - name: colombia-farm
-            path: coffeeAGNTCY/coffee_agents/lungo/deployment/helm/colombia-farm
-            package_name: colombia-farm
-          - name: vietnam-farm
-            path: coffeeAGNTCY/coffee_agents/lungo/deployment/helm/vietnam-farm
-            package_name: vietnam-farm
-          - name: weather-mcp-server
-            path: coffeeAGNTCY/coffee_agents/lungo/deployment/helm/weather-mcp-server
-            package_name: weather-mcp-server
-          - name: payment-mcp-server
-            path: coffeeAGNTCY/coffee_agents/lungo/deployment/helm/payment-mcp-server
-            package_name: payment-mcp-server
-          - name: logistics-supervisor
-            path: coffeeAGNTCY/coffee_agents/lungo/deployment/helm/logistics-supervisor
-            package_name: logistics-supervisor
-          - name: logistics-shipper
-            path: coffeeAGNTCY/coffee_agents/lungo/deployment/helm/logistics-shipper
-            package_name: logistics-shipper
-          - name: logistics-accountant
-            path: coffeeAGNTCY/coffee_agents/lungo/deployment/helm/logistics-accountant
-            package_name: logistics-accountant
-          - name: logistics-farm
-            path: coffeeAGNTCY/coffee_agents/lungo/deployment/helm/logistics-farm
-            package_name: logistics-farm
-          - name: logistics-helpdesk
-            path: coffeeAGNTCY/coffee_agents/lungo/deployment/helm/logistics-helpdesk
-            package_name: logistics-helpdesk
-          - name: recruiter
-            path: coffeeAGNTCY/coffee_agents/lungo/deployment/helm/recruiter
-            package_name: recruiter
-          - name: recruiter-supervisor
-            path: coffeeAGNTCY/coffee_agents/lungo/deployment/helm/recruiter-supervisor
-            package_name: recruiter-supervisor
+        chart: ${{ fromJson(needs.subprojects-to-build.outputs.lungo_charts) }}
 
     permissions: # permissions can only be maintained or reduced (not elevated) throughout a chain of workflows
       packages: write
