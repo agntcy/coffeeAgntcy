@@ -4,7 +4,8 @@ description: >-
   Every GitHub Actions workflow must declare explicit permissions scoped to
   only what its steps actually need - never write-all, never left
   undeclared, scoped per-job once jobs' needs differ. Apply whenever adding
-  or editing a workflow file.
+  or editing a workflow file. Checked by
+  scripts/check_workflow_permissions.bash (not yet wired into CI).
 ---
 
 # Workflow least privilege
@@ -48,9 +49,10 @@ a single well-known API.
 
 ## How to apply
 
-- There is no automated check for this yet, so review it by hand whenever a
-  workflow file is added or edited: read every step, list the scopes they
-  actually touch, and compare that against the declared `permissions:`
-  block.
+- After adding or editing any `.github/workflows/*.yaml` file, run
+  [scripts/check_workflow_permissions.bash](../../scripts/check_workflow_permissions.bash)
+  - it flags `write-all` grants and jobs left with no declared permissions
+    at all. It doesn't judge whether a *granted* scope is actually needed;
+    that part still takes reading the steps by hand.
 - When a new job needs a scope no existing job has, add it to that job
   alone rather than widening a shared workflow-level block.

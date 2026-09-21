@@ -7,7 +7,8 @@ description: >-
   commit SHA, an image digest) instead, with the version it corresponds to
   kept nearby. Apply whenever adding or editing such a reference. State a
   `# pin-exempt: <reason>` comment for any case that genuinely can't be
-  pinned.
+  pinned. Checked by scripts/check_pinned_references.bash (not yet wired
+  into CI).
 ---
 
 # Pinned external references
@@ -73,8 +74,14 @@ archaeology.
   `git/refs/tags/<tag>` - for an annotated tag `.object.sha` is the tag
   object's SHA, not the commit's.) To find an image digest for a tag:
   `docker buildx imagetools inspect <image>:<tag>`.
-- There is no automated check for this yet, so apply it by judgment on every
-  new or edited reference.
+- After adding or editing a `uses:` line in `.github/workflows/`, a `FROM`
+  instruction in a Dockerfile, or an `image:` field in a compose file, run
+  [scripts/check_pinned_references.bash](../../scripts/check_pinned_references.bash)
+  - it scans all three surfaces and reports any unpinned or comment-missing
+    reference by file and line. Not yet wired into CI.
+- Anywhere else this principle applies but that script doesn't (yet) scan
+  for it, apply it by judgment - and extend the script to cover the new
+  surface rather than leaving it as a silent gap.
 - Use `# pin-exempt: <reason>` sparingly and only with a real reason - it's
   a stated exception for when pinning isn't possible, not a shortcut for
   skipping the lookup.
