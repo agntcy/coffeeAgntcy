@@ -31,8 +31,34 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** List patterns */
+        /**
+         * List patterns
+         * @description Full pattern reference library ordered by display name. Implemented patterns (implemented: true) also appear in the workflow catalog through GET /agentic-workflows/; reference-only patterns do not.
+         */
         get: operations["listPatterns"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/patterns/{name}/documentation/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Canonical pattern name (matches Pattern.name). A legacy normalized basename slug is also accepted for backward compatibility. */
+                name: string;
+            };
+            cookie?: never;
+        };
+        /**
+         * Get pattern documentation (markdown)
+         * @description Returns markdown from docs/patterns for this pattern name. The server maps the name to a basename slug through the pattern registry to find the .md file.
+         */
+        get: operations["getPatternDocumentation"];
         put?: never;
         post?: never;
         delete?: never;
@@ -263,17 +289,32 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /** @description One architectural pattern in the reference library. The library is the full set: implemented patterns (at least one runnable workflow in the workflow catalog) and reference-only patterns are both listed, distinguished by the implemented flag. */
         Pattern: {
+            /** @description Display name of the pattern (H1 in docs/patterns/{slug}.md). */
             name: string;
+            /** @description Agentic design pattern category (e.g. "Orchestration & Control Flow"). */
+            pattern_category: string;
+            /** @description True when the workflow catalog exposes at least one runnable workflow whose pattern equals this name, false for reference-only patterns. */
+            implemented: boolean;
         };
+        /** @description Patterns ordered by display name. */
         PatternListResponse: {
             items: components["schemas"]["Pattern"][];
         };
-        PatternChatRequest: {
-            /** @description Client-minted opaque conversation id, a UUIDv4 wrapped as a session URI (e.g. session://<uuid>). */
-            session_id: string;
-            /** @description Latest user turn. Server holds the rest of the conversation. */
-            message: string;
+        PatternDocumentationResponse: {
+            /** @description Basename slug for docs/patterns/{slug}.md. */
+            slug: string;
+            /** @description Display name of the pattern (same as Pattern.name). */
+            name: string;
+            /** @description Leading H1 from the markdown file, if present. */
+            title?: string | null;
+            /** @description Agentic design pattern category for this pattern. */
+            pattern_category: string;
+            /** @description Same flag as Pattern.implemented, so a doc view can render without a second call. */
+            implemented: boolean;
+            /** @description Full markdown source for the pattern reference doc. */
+            full_markdown: string;
         };
         /** @description Error body for FastAPI HTTPException responses (4xx/5xx except request validation). */
         ApplicationError: {
@@ -293,6 +334,12 @@ export interface components {
         ValidationError: {
             /** @description Pydantic/FastAPI validation errors. */
             detail: components["schemas"]["RequestValidationErrorItem"][];
+        };
+        PatternChatRequest: {
+            /** @description Client-minted opaque conversation id, a UUIDv4 wrapped as a session URI (e.g. session://<uuid>). */
+            session_id: string;
+            /** @description Latest user turn. Server holds the rest of the conversation. */
+            message: string;
         };
         UseCase: {
             name: string;
@@ -757,11 +804,37 @@ export interface operations {
             };
         };
     };
+    getPatternDocumentation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Canonical pattern name (matches Pattern.name). A legacy normalized basename slug is also accepted for backward compatibility. */
+                name: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Pattern reference markdown */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PatternDocumentationResponse"];
+                };
+            };
+            404: components["responses"]["NotFound"];
+            422: components["responses"]["UnprocessableEntity"];
+        };
+    };
     patternChat: {
         parameters: {
             query?: never;
             header?: never;
             path: {
+                /** @description Canonical pattern name (matches Pattern.name). A legacy normalized basename slug is also accepted for backward compatibility. */
                 name: string;
             };
             cookie?: never;

@@ -19,7 +19,6 @@ import CustomControls from "./Graph/Elements/controls/CustomControls"
 import CustomControlsBar from "./Graph/Elements/controls/CustomControlsBar"
 import { GraphTopologyLayoutSync } from "./Graph/GraphTopologyLayoutSync"
 import GraphDocumentationButton from "./Graph/Elements/controls/GraphDocumentationButton"
-import { isPlaceholderWorkflow } from "@/components/Sidebar/sidebar.utils"
 import { getWorkflowDocumentationGithubUrl } from "@/urls"
 import GraphNodeDetailDialogs from "./GraphNodeDetailDialogs"
 import OasfRecordDialog from "./Graph/Directory/OasfRecordDialog"
@@ -115,10 +114,7 @@ const MainArea: React.FC<MainAreaProps> = (props) => {
     topologyApplied,
   )
 
-  const activeWorkflowSummary =
-    selectedWorkflowSummary && !isPlaceholderWorkflow(selectedWorkflowSummary)
-      ? selectedWorkflowSummary
-      : undefined
+  const activeWorkflowSummary = selectedWorkflowSummary ?? undefined
 
   const chatApiTarget = activeWorkflowSummary?.chat_api_target ?? null
 

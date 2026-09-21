@@ -5,12 +5,14 @@
  * Sidebar-local helpers: expand/collapse keys, initial expanded state, and
  * catalog row grouping for the LHS tree (pattern -> conversation -> workflow;
  * reference library adds category -> pattern).
+ *
+ * The two sections come from two different endpoints: the implemented tree from
+ * the workflow catalog, the Reference Library from the pattern registry. The
+ * library is the full set, so an implemented pattern appears in both.
  */
 
-import type {
-  PatternCategory,
-  WorkflowSummary,
-} from "@/utils/agenticWorkflowsApi"
+import type { WorkflowSummary } from "@/utils/agenticWorkflowsApi"
+import type { Pattern, PatternCategory } from "@/utils/patternLibraryApi"
 
 /** Catalog workflow names that use a workflow header + A2A SLIM child row. */
 const WORKFLOWS_WITH_A2A_SLIM_TRANSPORT_LAYER: ReadonlySet<string> = new Set([
@@ -234,49 +236,27 @@ const groupImplementedSummaries = (
   })
 }
 
+/** Group the pattern reference library by category, preserving API order. */
 const buildReferenceCategories = (
-  placeholders: readonly WorkflowSummary[],
-  order: Map<string, number>,
+  patterns: readonly Pattern[],
   categoryOrder: readonly string[],
 ): ReferenceCategoryNode[] => {
-  const byPattern = new Map<string, { category: string; orderIndex: number }>()
+  const order = new Map<string, number>()
+  const byCategory = new Map<string, string[]>()
 
-  for (const row of placeholders) {
-    const idx = order.get(row.name) ?? Number.POSITIVE_INFINITY
-    const prev = byPattern.get(row.pattern)
-    if (prev === undefined || idx < prev.orderIndex) {
-      byPattern.set(row.pattern, {
-        category: row.pattern_category,
-        orderIndex: idx,
-      })
-    }
-  }
-
-  const byCategory = new Map<
-    string,
-    Array<{ name: string; orderIndex: number }>
-  >()
-
-  for (const [patternName, { category, orderIndex }] of byPattern) {
-    const list = byCategory.get(category) ?? []
-    list.push({ name: patternName, orderIndex })
-    byCategory.set(category, list)
-  }
+  patterns.forEach((pattern, index) => {
+    if (order.has(pattern.name)) return
+    order.set(pattern.name, index)
+    const list = byCategory.get(pattern.pattern_category) ?? []
+    list.push(pattern.name)
+    byCategory.set(pattern.pattern_category, list)
+  })
 
   return sortCategoryNames(byCategory.keys(), categoryOrder, (categoryName) =>
-    minIndexForPatternNames(
-      (byCategory.get(categoryName) ?? []).map((entry) => entry.name),
-      order,
-    ),
+    minIndexForPatternNames(byCategory.get(categoryName) ?? [], order),
   ).map((categoryName) => ({
     name: categoryName,
-    patternNames: [...(byCategory.get(categoryName) ?? [])]
-      .sort((a, b) =>
-        a.orderIndex !== b.orderIndex
-          ? a.orderIndex - b.orderIndex
-          : a.name.localeCompare(b.name),
-      )
-      .map((entry) => entry.name),
+    patternNames: byCategory.get(categoryName) ?? [],
   }))
 }
 
@@ -285,40 +265,19 @@ export const patternCategoryOrderFromApi = (
 ): string[] => categories.map((category) => category.name)
 
 /**
- * Split catalog into implemented tree + Reference Library categories.
+ * Build the implemented tree from the workflow catalog and the Reference
+ * Library from the pattern registry.
  */
 export const buildCatalogSidebarLayout = (
   summaries: readonly WorkflowSummary[],
+  patterns: readonly Pattern[] = [],
   categoryOrder: readonly string[] = [],
-): CatalogSidebarLayout => {
-  const order = catalogIndexByName(summaries)
-  const implementedRows = summaries.filter((s) => !isPlaceholderWorkflow(s))
-  const placeholderRows = summaries.filter(isPlaceholderWorkflow)
-  const patterns = groupImplementedSummaries(implementedRows)
-
-  return {
-    implementedPatterns: patterns,
-    referenceCategories: buildReferenceCategories(
-      placeholderRows,
-      order,
-      categoryOrder,
-    ),
-  }
-}
-
-/**
- * Group non-placeholder workflows only (implemented section).
- */
-export const groupWorkflowsByPatternUseCaseAndScenario = (
-  summaries: readonly WorkflowSummary[],
-  categoryOrder: readonly string[] = [],
-): PatternNode[] =>
-  buildCatalogSidebarLayout(summaries, categoryOrder).implementedPatterns
+): CatalogSidebarLayout => ({
+  implementedPatterns: groupImplementedSummaries(summaries),
+  referenceCategories: buildReferenceCategories(patterns, categoryOrder),
+})
 
 export const REFERENCE_LIBRARY_KEY = "reference-library"
-
-export const isPlaceholderWorkflow = (summary: WorkflowSummary): boolean =>
-  summary.use_case === "---" && summary.scenario === "---"
 
 export const makeReferenceCategoryKey = (categoryName: string): string =>
   `${REFERENCE_LIBRARY_KEY}|category:${categoryName}`
@@ -386,5 +345,23 @@ export const buildInitialExpanded = (
     }
   }
 
+  return next
+}
+
+/**
+ * Add defaults introduced by newly loaded catalog data without reopening keys
+ * the user already collapsed.
+ */
+export const addNewlyAvailableExpandedKeys = (
+  expandedKeys: ReadonlySet<string>,
+  previousDefaults: ReadonlySet<string>,
+  nextDefaults: ReadonlySet<string>,
+): Set<string> => {
+  const next = new Set(expandedKeys)
+  for (const key of nextDefaults) {
+    if (!previousDefaults.has(key)) {
+      next.add(key)
+    }
+  }
   return next
 }

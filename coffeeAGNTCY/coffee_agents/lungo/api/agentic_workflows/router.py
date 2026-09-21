@@ -24,6 +24,7 @@ from api.agentic_workflows.dtos import (
     PatternCategoryDocumentationResponse,
     PatternCategoryListResponse,
     PatternChatRequest,
+    PatternDocumentationResponse,
     PatternListResponse,
     UseCase,
     UseCaseListResponse,
@@ -44,7 +45,11 @@ from api.agentic_workflows.pattern_category_documentation import (
     load_pattern_category_documentation,
 )
 from api.agentic_workflows.pattern_chat import stream_one_turn
-from api.agentic_workflows.patterns import PATTERNS
+from api.agentic_workflows.pattern_documentation import load_pattern_documentation
+from api.agentic_workflows.patterns import (
+    PATTERN_RECORDS,
+    implemented_pattern_names,
+)
 from api.agentic_workflows.topology_enrichment import (
     enrich_workflow_instance_topology,
     enrich_workflow_topology,
@@ -171,8 +176,43 @@ def create_agentic_workflows_router() -> APIRouter:
         summary="List patterns",
     )
     async def list_patterns() -> PatternListResponse:
-        """GET /patterns/ - catalog of patterns."""
-        return PatternListResponse(items=[Pattern(name=n) for n in PATTERNS])
+        """GET /patterns/ - the full pattern reference library."""
+        implemented = implemented_pattern_names(get_workflows() or {})
+        return PatternListResponse(
+            items=[
+                Pattern(
+                    name=record.name,
+                    pattern_category=record.pattern_category,
+                    implemented=record.name in implemented,
+                )
+                for record in PATTERN_RECORDS
+            ]
+        )
+
+    @router.get(
+        "/patterns/{name}/documentation/",
+        response_model=PatternDocumentationResponse,
+        summary="Get pattern documentation (markdown)",
+    )
+    async def get_pattern_documentation(
+        name: Annotated[str, Path(min_length=1)],
+    ) -> PatternDocumentationResponse:
+        """GET /patterns/{name}/documentation/ - markdown from ``docs/patterns``."""
+        parsed = load_pattern_documentation(name)
+        if parsed is None:
+            raise HTTPException(
+                status_code=404,
+                detail=f"Pattern documentation not found for: {name}",
+            )
+        implemented = implemented_pattern_names(get_workflows() or {})
+        return PatternDocumentationResponse(
+            slug=parsed.slug,
+            name=parsed.name,
+            title=parsed.title,
+            pattern_category=parsed.pattern_category,
+            implemented=parsed.name in implemented,
+            full_markdown=parsed.full_markdown,
+        )
 
     @router.post(
         "/patterns/{name}/chat",
@@ -190,8 +230,7 @@ def create_agentic_workflows_router() -> APIRouter:
         single ``{"error": "..."}`` line and close the connection.
         """
         # 404 early - before opening a stream - when the pattern has no doc.
-        slug = workflow_name_to_documentation_slug(name)
-        if load_parsed_workflow_documentation(slug) is None:
+        if load_pattern_documentation(name) is None:
             raise HTTPException(
                 status_code=404,
                 detail=f"No reference material for pattern: {name}",

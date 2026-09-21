@@ -7,7 +7,7 @@ import React, { useCallback } from "react"
 import { Box, List, Typography } from "@open-ui-kit/core"
 import { type WorkflowSummary } from "@/utils/agenticWorkflowsApi"
 import { patternTypeFromSummary } from "@/utils/workflow"
-import { openWorkflowDocumentationInNewTab } from "@/utils/workflowDocumentationGithub"
+import { openPatternDocumentationInNewTab } from "@/utils/patternDocumentationGithub"
 import SidebarDropdown from "./SidebarDropdown"
 import SidebarItem from "./SidebarItem"
 import {
@@ -52,8 +52,8 @@ const CatalogTree: React.FC<CatalogTreeProps> = ({
 }) => {
   const { implementedPatterns, referenceCategories } = layout
 
-  const openDoc = useCallback((catalogName: string) => {
-    openWorkflowDocumentationInNewTab(catalogName)
+  const openDoc = useCallback((patternName: string) => {
+    openPatternDocumentationInNewTab(patternName)
   }, [])
 
   const selectAndToggleCategory = useCallback(
@@ -198,7 +198,7 @@ const CatalogTree: React.FC<CatalogTreeProps> = ({
   if (!hasImplemented && !hasReference) {
     return (
       <Typography variant="body2" sx={{ px: 2.5, py: 1, opacity: 0.6 }}>
-        No workflows available
+        No workflows or patterns available
       </Typography>
     )
   }

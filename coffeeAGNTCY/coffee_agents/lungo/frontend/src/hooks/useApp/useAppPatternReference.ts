@@ -7,11 +7,11 @@ import { useCallback, useEffect, useMemo, useState } from "react"
 import { v4 as uuid } from "uuid"
 import { CanvasMode, type PatternDocState } from "@/types/patternDoc"
 import {
-  fetchWorkflowDocumentation,
-  WorkflowDocumentationNotFoundError,
-} from "@/utils/agenticWorkflowsApi"
+  fetchPatternDocumentation,
+  PatternDocumentationNotFoundError,
+} from "@/utils/patternLibraryApi"
 import { reportRequestError } from "@/errors/request"
-import { buildAgenticWorkflowsDocumentationRequest } from "@/urls"
+import { buildPatternDocumentationRequest } from "@/urls"
 
 export function useAppPatternReference() {
   const [selectedReferencePattern, setSelectedReferencePattern] = useState<
@@ -56,18 +56,23 @@ export function useAppPatternReference() {
       documentation: null,
       errorMessage: null,
     })
-    fetchWorkflowDocumentation(selectedReferencePattern, controller.signal)
+    fetchPatternDocumentation(selectedReferencePattern, controller.signal)
       .then((doc) => {
         if (controller.signal.aborted) return
         setPatternDocState({
           status: "ready",
-          documentation: doc,
+          documentation: {
+            name: doc.name,
+            title: doc.title,
+            pattern_category: doc.pattern_category,
+            full_markdown: doc.full_markdown,
+          },
           errorMessage: null,
         })
       })
       .catch((err: unknown) => {
         if (err instanceof DOMException && err.name === "AbortError") return
-        if (err instanceof WorkflowDocumentationNotFoundError) {
+        if (err instanceof PatternDocumentationNotFoundError) {
           setPatternDocState({
             status: "not_found",
             documentation: null,
@@ -75,7 +80,7 @@ export function useAppPatternReference() {
           })
         } else {
           const httpError = reportRequestError(
-            buildAgenticWorkflowsDocumentationRequest(selectedReferencePattern)
+            buildPatternDocumentationRequest(selectedReferencePattern)
               .endpointLabel,
             err,
           )
