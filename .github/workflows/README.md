@@ -7,9 +7,9 @@ This directory contains CI/CD workflows for building images, packaging Helm char
 | Workflow | Purpose | Triggers |
 |----------|---------|----------|
 | [`ci-gate.yaml`](.github/workflows/ci-gate.yaml) | Required status check: lints every workflow file (actionlint) and waits for/reports on every sibling workflow run on the same commit, including startup failures | pull_request, push (main, tags), workflow_dispatch |
-| [`docker-build-push.yaml`](.github/workflows/docker-build-push.yaml) | Build multi-arch Docker images for all agents and optionally push to GHCR | push (main, tags), pull_request (paths filter), workflow_dispatch |
+| [`docker-build-push.yaml`](.github/workflows/docker-build-push.yaml) | Build multi-arch Docker images for all agents and optionally push to GHCR, guarded against overwriting an existing tag | push (main, tags), pull_request (paths filter), workflow_dispatch |
 | [`docker-build-reusable.yaml`](.github/workflows/docker-build-reusable.yaml) | Reusable job: build and push a single Docker image | workflow_call |
-| [`helm-push.yaml`](.github/workflows/helm-push.yaml) | Lint, package, and (on push to main/tags) push Helm charts to GHCR (OCI) | push (main, tags), pull_request (paths filter), workflow_dispatch |
+| [`helm-push.yaml`](.github/workflows/helm-push.yaml) | Lint, package, and (on push to main only) push changed Helm charts to GHCR (OCI), guarded against overwriting an existing chart version | push (main, tags), pull_request (paths filter), workflow_dispatch |
 | [`helm-package-reusable.yaml`](.github/workflows/helm-package-reusable.yaml) | Reusable job: lint, package, and push a single Helm chart | workflow_call |
 | [`test.yaml`](.github/workflows/test.yaml) | Run pytest for corto, lungo, recruiter | push (main), pull_request, workflow_call, workflow_dispatch |
 | [`test-reusable.yaml`](.github/workflows/test-reusable.yaml) | Reusable job: run pytest for one project directory and path set | workflow_call |
@@ -30,7 +30,14 @@ For this to actually gate merges, `CI Gate` needs to be added as a `required_sta
 
 ## docker-build-push
 
-Matrix builds all defined images (see matrix.image array). PRs build (no push) with tag `pr-<PR_NUMBER>`. Pushes to main publish `:latest`. Git tags publish the tag as image tag.
+Matrix builds all defined images (see matrix.image array). The push target depends on the triggering event:
+
+- `pull_request`: build only, no push (tag `pr-<PR_NUMBER>`).
+- push to `main`: push, tag `latest`.
+- push of a git tag: push, tag = the git tag name.
+- `workflow_dispatch`: push only if the `push` input is set; tag = the `image_tag` input, or an auto-generated `dispatch_<sha>_run-<run_number>` tag if left blank.
+
+Before any of the above pushes, `check-push-target-existence` looks up whether an image with that exact tag already exists in GHCR and fails the workflow if so, so a push never silently overwrites a previously published tag. The floating `latest` tag is exempt from this check by design. If you need to retry after a bad push (e.g. a tag reused by mistake), manually delete the conflicting version from GHCR first.
 
 Key build args (`BUILD_VERSION`, `BUILD_DATE`, `GIT_COMMIT_SHORT`, etc.) and OCI labels supply provenance. Update the matrix to add/remove images:
 
@@ -62,14 +69,17 @@ The job has `timeout-minutes: 90` - historically, hung builds here ran to GitHub
 
 ## helm-push
 
-Packages each chart listed under matrix.chart. On push to main or a tag, charts are pushed to `ghcr.io/<org>/coffee_agntcy/helm` as OCI artifacts; PRs only lint and package.
+Packages each chart listed in `CORTO_CHARTS_JSON`/`LUNGO_CHARTS_JSON` (the workflow's `env:` block) - the single source of truth for chart paths and package names, shared by the matrices and by the guard logic below. Charts are pushed to `ghcr.io/<org>/coffee_agntcy/helm` as OCI artifacts **only** on a push to `main`; a git tag push never pushes charts (Helm charts are not tied to git tags - see [`docs/RELEASE-OPS.md`](../../docs/RELEASE-OPS.md)), and PRs only lint and package.
 
-To add a chart:
+Two guards run before any chart is pushed on a push to `main`:
 
-```yaml
-- name: my-service
-  path: coffeeAGNTCY/coffee_agents/.../deployment/helm/my-service
-  package_name: my-service
+- **Unchanged charts are dropped from the matrix before packaging starts.** Repackaging a chart whose directory has no content changes since the previous commit on `main` still produces a different `.tgz` (timestamps are baked into the archive), which would otherwise silently overwrite an existing, supposedly-immutable published version.
+- **`check-push-target-existence`** looks up whether the chart's `Chart.yaml` `version:` already exists as a published tag in GHCR and fails the workflow if so. This is what enforces the rule that any chart content change must come with a version bump (see `docs/RELEASE-OPS.md`, Step 0). If you need to retry after a bad push, manually delete the conflicting version from GHCR first.
+
+To add a chart, add an entry to both `CORTO_CHARTS_JSON`/`LUNGO_CHARTS_JSON` in `helm-push.yaml`'s `env:` block:
+
+```json
+{"package_name": "my-service", "path": "coffeeAGNTCY/coffee_agents/.../deployment/helm/my-service"}
 ```
 
 Chart version is taken from `Chart.yaml` (`version` field). Bump that value to publish a new artifact.
