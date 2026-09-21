@@ -51,6 +51,8 @@ strategy:
 
 Ensure the Dockerfile path is correct and the name is unique under `ghcr.io/<org>/coffee-agntcy/`.
 
+Also add the new image's name to the matching `{CORTO,LUNGO,RECRUITER}_IMAGES_JSON` list in the workflow's `env:` block - `check-push-target-existence` reads image names from there, separately from the matrix above, and won't guard an image it doesn't list.
+
 ## docker-build-reusable
 
 Reusable workflow called by `docker-build-push.yaml` for each matrix entry. Accepts:

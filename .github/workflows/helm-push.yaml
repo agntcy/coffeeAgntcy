@@ -31,6 +31,16 @@ on:
         type: boolean
         default: true
 
+# check-push-target-existence and the actual push are separate jobs with no
+# atomicity between them - two concurrent runs on the same ref could both
+# pass the existence check before either has pushed. Queueing (not
+# cancelling) runs per ref closes that race for pushes/dispatches landing
+# close together on the same branch or tag. PRs never push, so it's safe
+# (and faster) to cancel a superseded PR run instead of queueing behind it.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 env:
   CORTO_DIR: coffeeAGNTCY/coffee_agents/corto
   LUNGO_DIR: coffeeAGNTCY/coffee_agents/lungo
@@ -170,7 +180,21 @@ jobs:
 
             jq -c '.[]' <<< "$charts_json" | while IFS= read -r chart; do
               path=$(jq -r '.path' <<< "$chart")
-              if ! git diff --name-only --exit-code "${{ github.event.before }}" "${{ github.sha }}" -- "${path}/" > /dev/null; then
+
+              # --exit-code makes git diff report "0 = no diff" / "1 = diff
+              # found" / ">1 = actual git error" (e.g. an unreachable base
+              # after a force-push). Distinguish them instead of collapsing
+              # a real error into a silent "diff found".
+              if git diff --name-only --exit-code "${{ github.event.before }}" "${{ github.sha }}" -- "${path}/" > /dev/null; then
+                diff_status=0
+              else
+                diff_status=$?
+              fi
+
+              if [[ "$diff_status" -eq 1 ]]; then
+                echo "$chart"
+              elif [[ "$diff_status" -gt 1 ]]; then
+                echo "::warning::git diff exited $diff_status (expected 0 or 1) for '${path}' - treating it as changed to be safe" >&2
                 echo "$chart"
               fi
             done | jq -c -s '.'
@@ -181,6 +205,7 @@ jobs:
 
   check-push-target-existence:
     needs: [subprojects-to-build]
+    if: ${{ needs.subprojects-to-build.outputs.push == 'true' }}
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -190,9 +215,11 @@ jobs:
       contents: read
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
 
       - name: Check Helm integrity
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           push=${{ needs.subprojects-to-build.outputs.push }}
           build_corto=${{ needs.subprojects-to-build.outputs.build_corto }}
@@ -212,15 +239,29 @@ jobs:
                 package_name=$(jq -r '.package_name' <<< "$chart")
                 chart_directory=$(jq -r '.path' <<< "$chart")
                 chart_path="coffee_agntcy%2Fhelm%2F${package_name}"
+                chart_display_path="coffee_agntcy/helm/${package_name}"
 
                 chart_version=$(grep '^version:' "${chart_directory}/Chart.yaml" | awk '{print $2}')
 
-                version_id=$(gh api "/orgs/agntcy/packages/container/${chart_path}/versions" \
-                  --jq '.[] | select(.metadata.container.tags[]? == "'${chart_version}'") | .id' \
-                  | head -n1)
+                # A chart pushed for the first time has no GHCR package yet,
+                # which 404s here - that's "no conflict", not an error, so it
+                # must not be treated the same as a real API failure (auth,
+                # rate limit, etc.), which should still fail loud. --paginate
+                # matches ci-gate.yaml's own gh api call: a chart with more
+                # published versions than fit on one page would otherwise
+                # only have its first page checked here.
+                if version_id_lines=$(gh api --paginate "/orgs/agntcy/packages/container/${chart_path}/versions" \
+                  --jq '.[] | select(.metadata.container.tags[]? == "'"${chart_version}"'") | .id' 2>&1); then
+                  version_id=$(head -n1 <<< "$version_id_lines")
+                elif grep -q "HTTP 404" <<< "$version_id_lines"; then
+                  version_id=""
+                else
+                  echo "$version_id_lines" >&2
+                  exit 1
+                fi
 
                 if [[ -n "${version_id}" ]]; then
-                  existing_charts+=("ghcr.io/agntcy/${chart_path}:${chart_version}")
+                  existing_charts+=("ghcr.io/agntcy/${chart_display_path}:${chart_version}")
                 fi
               done < <(jq -c '.[]' <<< "${!charts_var}")
             fi
@@ -238,7 +279,11 @@ jobs:
 
   helm-package-corto:
     needs: [subprojects-to-build, check-push-target-existence]
-    if: ${{ needs.subprojects-to-build.outputs.build_corto == 'true' && needs.subprojects-to-build.outputs.corto_charts != '[]' }}
+    # check-push-target-existence is skipped (not failed) whenever push isn't
+    # true (PR, tag push, non-pushing dispatch) - !cancelled() && !failure()
+    # tolerates that skip while still respecting an actual guard failure
+    # (an existing chart version), which must block this job.
+    if: ${{ !cancelled() && !failure() && needs.subprojects-to-build.outputs.build_corto == 'true' && needs.subprojects-to-build.outputs.corto_charts != '[]' }}
 
     strategy:
       matrix:
@@ -257,7 +302,9 @@ jobs:
 
   helm-package-lungo:
     needs: [subprojects-to-build, check-push-target-existence]
-    if: ${{ needs.subprojects-to-build.outputs.build_lungo == 'true' && needs.subprojects-to-build.outputs.lungo_charts != '[]' }}
+    # See the same-named condition on helm-package-corto above for why
+    # !cancelled() && !failure() is needed here.
+    if: ${{ !cancelled() && !failure() && needs.subprojects-to-build.outputs.build_lungo == 'true' && needs.subprojects-to-build.outputs.lungo_charts != '[]' }}
 
     strategy:
       matrix:
