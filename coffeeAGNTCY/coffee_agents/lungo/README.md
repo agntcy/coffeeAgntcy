@@ -40,12 +40,12 @@ The current demo models a **supervisor agent ecosystem**, where:
 
 All agents are implemented as **directed LangGraphs** with **Agent-to-Agent (A2A)** integration. The user interface communicates with the Supervisor’s API to submit prompts. These prompts are processed through the LangGraph and routed via an A2A client to the appropriate Farm’s A2A server.
 
-The underlying A2A transport is configurable, but the demo intentionally uses two different defaults:
+The underlying A2A transport is configurable, but the two flows differ in how strictly that transport is enforced:
 
-- The **Auction** flow defaults to **NATS** for farm broadcast and unicast traffic.
-- The **Logistics** flow is **SLIM-only** because it relies on group chat primitives.
+- The **Auction** flow defaults to **SLIM** (`DEFAULT_MESSAGE_TRANSPORT=SLIM` in `.env.example`) for farm broadcast and unicast traffic, but can be switched to **NATS** by setting that same variable, since every farm card also advertises a `nats` interface.
+- The **Logistics** flow is **SLIM-only**: its supervisor's A2A client factory is built with `include_nats=False`, and every logistics service's `DEFAULT_MESSAGE_TRANSPORT` is hardcoded to `SLIM` in `docker-compose.yaml` because it relies on group chat primitives.
 
-One notable component is the **Colombia Farm**, which functions as an **MCP client**. It communicates with the weather MCP service over the same configurable transport used by the farm runtime; in the default Docker Compose setup that path also uses **NATS**.
+One notable component is the **Colombia Farm**, which functions as an **MCP client**. It communicates with the weather MCP service over the same configurable transport used by the farm runtime, defaulting to **SLIM** like the rest of the auction flow.
 
 ### Architecture At A Glance
 
@@ -58,40 +58,37 @@ flowchart LR
     UI[Frontend]
     API[Auction Supervisor API]
     GRAPH[Auction LangGraph]
-    SDK[App SDK transport bridge]
-    NATS[NATS broker]
-    BCAST[farm_broadcast topic]
+    SDK[App SDK A2A client factory]
+    SLIM[SLIM gateway]
     BRAZIL[Brazil farm]
     COLOMBIA[Colombia farm]
     VIETNAM[Vietnam farm]
-    WXSVC[lungo_weather_service topic]
     WEATHER[Weather MCP service]
 
     UI --> API
     API --> GRAPH
     GRAPH --> SDK
-    SDK -->|broadcast or unicast A2A| NATS
-    NATS --> BCAST
-    BCAST --> BRAZIL
-    BCAST --> COLOMBIA
-    BCAST --> VIETNAM
-    COLOMBIA -->|MCP tool call| NATS
-    NATS --> WXSVC
-    WXSVC --> WEATHER
+    SDK -->|unicast: one farm card| SLIM
+    SDK -->|broadcast: recipients=all farm cards| SLIM
+    SLIM --> BRAZIL
+    SLIM --> COLOMBIA
+    SLIM --> VIETNAM
+    COLOMBIA -->|MCP tool call over lungo_weather_service| SLIM
+    SLIM --> WEATHER
 ```
 
 The auction supervisor decides whether a prompt should:
 
-- call one farm directly over its personal A2A topic,
-- broadcast to all farms over `farm_broadcast`, or
+- call one farm directly through its `AgentCard` (unicast), or
+- broadcast to all farms by recipient list, or
 - create an order with a single verified farm.
 
-Each farm server listens on two channels:
+There is no separate broadcast topic. Every call goes through the same shared `a2a_client_factory` (`agents/supervisors/auction/graph/shared.py`), built once with `build_a2a_client_config(namespace="lungo", group="agents", agent_name="auction_supervisor", include_nats=True)`:
 
-- a private topic from `A2AProtocol.create_agent_topic(AGENT_CARD)` for direct requests,
-- the shared `FARM_BROADCAST_TOPIC` for inventory fan-out.
+- Unicast tools (`get_farm_yield_inventory`, `create_order`, `get_order_details`) deep-copy the target farm's card, set `card.preferred_transport = DEFAULT_MESSAGE_TRANSPORT.lower()`, and call `a2a_client_factory.create(card, ...)`.
+- Broadcast tools (`get_all_farms_yield_inventory`, `get_all_farms_yield_inventory_streaming`) build a `recipients` list from every card in the farm registry (`agents/farms/{brazil,colombia,vietnam}/card.py`) via `get_agent_identifier(...)`, then call `client.broadcast_message(request, recipients=recipients, context=ctx)` or `broadcast_message_streaming(...)`.
 
-This dual registration happens in each farm `farm_server.py` through two App SDK app containers. The Colombia farm also creates an MCP client for the `lungo_weather_service` topic, which follows the same configured transport as the auction services.
+Each farm server (`farm_server.py`) serves every transport advertised on its own `AgentCard.additional_interfaces` (`slim`, `nats`, `jsonrpc`) via `serve_all_a2a_interfaces`, one App SDK session per interface, rather than registering on a private topic plus a shared broadcast topic. The Colombia farm also creates an MCP client for the `lungo_weather_service` topic, which follows the same configured transport as the auction services.
 
 #### Logistics Group Chat Topology
 
@@ -161,24 +158,25 @@ Lungo uses the same A2A protocol surface across its demos, but the transport wir
 
 For the auction flow:
 
-- `agents/supervisors/auction/graph/tools.py` creates one transport instance with the configured `DEFAULT_MESSAGE_TRANSPORT` and `TRANSPORT_SERVER_ENDPOINT`.
-- Unicast calls use `create_client("A2A", agent_topic=<farm-topic>, ...)`.
-- Broadcast calls use `broadcast_message(...)` or `broadcast_message_streaming(...)` with `broadcast_topic=FARM_BROADCAST_TOPIC`.
-- The default Docker setup sets `DEFAULT_MESSAGE_TRANSPORT=${DEFAULT_MESSAGE_TRANSPORT:-NATS}` for the auction-side services.
+- `agents/supervisors/auction/graph/shared.py` builds one process-wide `A2AClientFactory` via `build_a2a_client_config(namespace="lungo", group="agents", agent_name="auction_supervisor", include_nats=True)`, so both SLIM and NATS transport configs are available to it.
+- `agents/supervisors/auction/graph/tools.py` sets `card.preferred_transport = DEFAULT_MESSAGE_TRANSPORT.lower()` on a copy of the target farm card(s) before calling `a2a_client_factory.create(card, ...)`; the factory negotiates the actual connection from that preference plus the transports the farm's card advertises.
+- Unicast calls create a client for one farm's card. Broadcast calls (`get_all_farms_yield_inventory[_streaming]`) instead pass `recipients=[...]` (built from every registered farm card) to `client.broadcast_message(...)` / `broadcast_message_streaming(...)` — there is no dedicated broadcast topic or `FARM_BROADCAST_TOPIC` constant in the current code.
+- `docker-compose.yaml` passes `DEFAULT_MESSAGE_TRANSPORT=${DEFAULT_MESSAGE_TRANSPORT}` through with no fallback of its own; the actual default comes from `.env.example` (`DEFAULT_MESSAGE_TRANSPORT=SLIM`, with `DEFAULT_MESSAGE_TRANSPORT=NATS` left commented out as the documented way to switch) and from `config/config.py`'s `os.getenv("DEFAULT_MESSAGE_TRANSPORT", "SLIM")` fallback. So auction defaults to **SLIM**, not NATS.
 
 For the logistics flow:
 
-- `agents/supervisors/logistics/graph/tools.py` requires `DEFAULT_MESSAGE_TRANSPORT == "SLIM"`.
-- The supervisor creates a client using the shipper topic as the routable handshake, then starts a shared session with `start_groupchat(...)` or `start_streaming_groupchat(...)`.
+- `agents/supervisors/logistics/graph/shared.py` builds its `A2AClientFactory` with `include_nats=False`, so NATS is never even configured for this flow — SLIM-only is structural, not a runtime check in `tools.py`.
+- `docker-compose.yaml` additionally hardcodes `DEFAULT_MESSAGE_TRANSPORT=SLIM` (with a "Do not change" comment) on all five logistics services.
+- The supervisor creates a client against the shipper's card (`a2a_client_factory.create(SHIPPER_CARD, ...)`), then starts a shared conversation with `client.start_groupchat(...)` or `start_streaming_groupchat(...)`, passing a fresh `group_channel=f"{uuid4()}"` and a `recipients` list built from the shipper, Tatooine farm, and accountant cards (plus the helpdesk card when `EXPERIMENTAL_FEATURE=true`).
 - Each logistics agent server registers itself on SLIM with an App SDK app session so it can join and respond on the shared conversation channel.
 
 For the recruiter flow:
 
-- `agents/supervisors/recruiter/recruiter_client.py` uses the A2A client directly against `RECRUITER_AGENT_CARD.url`.
-- That supervisor-to-recruiter hop is URL-based A2A rather than App SDK topic routing.
+- `agents/supervisors/recruiter/recruiter_client.py` builds a plain `a2a.client.ClientFactory` (from the `a2a-sdk` package, not the AGNTCY App SDK) and calls `.create(RECRUITER_AGENT_CARD)` directly against `RECRUITER_AGENT_CARD.url` (`RECRUITER_AGENT_URL`, default `http://localhost:8881`).
+- That supervisor-to-recruiter hop is plain HTTP-based A2A rather than App SDK transport/topic routing.
 - After agent selection, the dynamic workflow forwards the user task to the chosen remote A2A endpoint advertised by the recruited agent.
 
-In other words, the LangGraph or ADK nodes decide *when* to talk, A2A defines *what* the messages look like, the App SDK decides *how* messages move across NATS or SLIM for auction and logistics, and the recruiter path uses direct A2A HTTP to discovered agents.
+In other words, the LangGraph or ADK nodes decide *when* to talk, A2A defines *what* the messages look like, the App SDK's `A2AClientFactory` and farm `AgentCard`s decide *how* messages move across SLIM (or NATS, if selected) for auction and logistics, and the recruiter path uses direct A2A-over-HTTP to discovered agents.
 
 ## Running Lungo Locally
 
