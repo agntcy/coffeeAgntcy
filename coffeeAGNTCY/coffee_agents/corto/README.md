@@ -66,7 +66,7 @@ The runtime path is intentionally small:
 3. The Exchange asks its `A2AClientFactory` for a client bound to the farm's `AgentCard`; the factory picks the transport named in `card.preferred_transport` (`slim` by default).
 4. The farm server advertises every transport it supports on its `AgentCard.additional_interfaces` and serves each one from its own App SDK session, then hands execution to the farm executor, whose LangGraph node (`farm/agent.py`) calls the same configured LLM to generate the flavor profile.
 
-This keeps the business logic transport-agnostic: the Exchange and Farm code still speak A2A, while the `AgentCard` and the App SDK client/session objects handle how those messages are moved. The LLM provider itself is a separate axis of configuration (`common/llm.py`'s `get_llm()`), independent of the A2A transport — see [Setup Instructions](#setup-instructions) for the supported providers (OpenAI, Azure OpenAI, GROQ, NVIDIA NIM, LiteLLM proxy, or a custom OAuth2 endpoint).
+This keeps the business logic transport-agnostic: the Exchange and Farm code still speak A2A, while the `AgentCard` and the App SDK client/session objects handle how those messages are moved. The LLM provider itself is a separate axis of configuration (`common/llm.py`'s `get_llm()`), independent of the A2A transport - see [Setup Instructions](#setup-instructions) for the supported providers (OpenAI, Azure OpenAI, GROQ, NVIDIA NIM, LiteLLM proxy, or a custom OAuth2 endpoint).
 
 ## Transport, Topics, and A2A Setup
 
