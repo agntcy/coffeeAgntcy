@@ -38,7 +38,7 @@ The current demo models a **supervisor agent ecosystem**, where:
 - The **Supervisor Agent** acts as a _Coffee Exchange_, responsible for managing inventory and fulfilling orders.
 - The **Worker Agents** represent _Coffee Farms_, which supply the inventory and provide order information.
 
-All agents are implemented as **directed LangGraphs** with **Agent-to-Agent (A2A)** integration. The user interface communicates with the Supervisor’s API to submit prompts. These prompts are processed through the LangGraph and routed via an A2A client to the appropriate Farm’s A2A server.
+All agents speak **Agent-to-Agent (A2A)** integration regardless of the framework they're built with internally — the Supervisor and the Colombia farm are **directed LangGraphs**, the Brazil farm is a **LlamaIndex** `FunctionAgent` workflow, and the Vietnam farm is a **Google ADK** agent tree. The user interface communicates with the Supervisor's API to submit prompts. These prompts are processed through the Supervisor's LangGraph and routed via an A2A client to the appropriate Farm's A2A server, whatever that farm's internal framework is.
 
 The underlying A2A transport is configurable, but the two flows differ in how strictly that transport is enforced:
 
@@ -103,7 +103,7 @@ The Colombia farm is the only one wired to external MCP services, both reached o
 - `lungo_weather_service` — fetched during inventory handling to forecast yield (`common/mcp_client.py`'s `call_mcp_tool`).
 - `lungo_payment_service` — invoked during order handling only, via `invoke_payment_mcp_tool` (`agents/mcp_servers/utils.py`) calling `create_payment` and `list_transactions`.
 
-The auction LangGraph and each farm's LangGraph also call an LLM through `common/llm.py`'s `get_llm()` (LiteLLM under `LLM_MODEL`) to route intent, generate replies, and answer inventory/order queries — this is a separate axis of configuration from the A2A transport.
+The auction supervisor's LangGraph calls an LLM through `common/llm.py`'s `get_llm()` (LiteLLM under `LLM_MODEL`) to route intent and generate replies. Each farm reaches an LLM the same way in spirit but through a different framework binding: Colombia is itself a LangGraph using that same `get_llm()`; Brazil is a LlamaIndex `FunctionAgent` workflow calling `llama_index.llms.litellm.LiteLLM` directly; Vietnam is a Google ADK agent tree calling `google.adk.models.lite_llm.LiteLlm` directly. All three still resolve to the same `LLM_MODEL`-configured LiteLLM backend — this is a separate axis of configuration from the A2A transport.
 
 #### Logistics Group Chat Topology
 
@@ -179,7 +179,7 @@ The recruiter supervisor uses a different pattern from the transport-bridged auc
 
 Lungo uses the same A2A protocol surface across its demos, but the transport wiring differs by flow.
 
-Every agent card in Lungo builds its SLIM URL from the same pattern: `slim://{SLIM_SERVER}/lungo/agents/{AGENT_ID}`, where `AGENT_ID` is the card's own slug — `brazil_coffee_farm`, `colombia_coffee_farm`, `vietnam_coffee_farm` for the farms, and `tatooine_farm_agent`, `shipping-agent`, `accountant-agent`, `logistics_helpdesk_agent` for the logistics agents. This is defined per-agent in each `card.py` (see `agents/farms/{brazil,colombia,vietnam}/card.py` and `agents/logistics/{farm,shipper,accountant,helpdesk}/card.py`) rather than through a shared topic-naming helper. Farm cards additionally advertise a NATS interface at the equivalent `nats://{NATS_SERVER}/lungo/agents/{AGENT_ID}`; logistics agent cards advertise `slim` only, matching the SLIM-only enforcement described below. The two MCP services used by the Colombia farm follow a similar but distinct pattern: `lungo_weather_service` and `lungo_payment_service`, registered with the full PyName `default/default/lungo_{weather,payment}_service` in `agents/mcp_servers/{weather,payment}_service.py`.
+Every agent card in Lungo builds its SLIM URL from the same pattern: `slim://{SLIM_SERVER}/lungo/agents/{AGENT_ID}`, where `AGENT_ID` is the card's own slug — `brazil_coffee_farm`, `colombia_coffee_farm`, `vietnam_coffee_farm` for the farms, and `tatooine_farm_agent`, `shipping-agent`, `accountant-agent`, `logistics_helpdesk_agent` for the logistics agents. This is defined per-agent in each `card.py` (see `agents/farms/{brazil,colombia,vietnam}/card.py` and `agents/logistics/{farm,shipper,accountant,helpdesk}/card.py`) rather than through a shared topic-naming helper. Farm cards additionally advertise a NATS interface at the equivalent `nats://{NATS_SERVER}/lungo/agents/{AGENT_ID}`; logistics agent cards advertise `slim` only, matching the SLIM-only enforcement described below. The two MCP services used by the Colombia farm follow a similar but distinct pattern: `lungo_weather_service` and `lungo_payment_service`, registered with the full routable `name` `default/default/lungo_{weather,payment}_service` in `agents/mcp_servers/{weather,payment}_service.py`.
 
 For the auction flow:
 

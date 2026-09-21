@@ -42,7 +42,7 @@ The user interface forwards all prompts to the exchange’s API, which are then 
 flowchart LR
     UI[React UI]
     API[Exchange FastAPI API]
-    EX[Exchange agent and LangGraph]
+    EX[Exchange agent]
     SDK[AGNTCY App SDK A2A client factory]
     SLIM[SLIM gateway]
     FARM_CARD[Farm AgentCard: slim, jsonrpc, nats]
@@ -53,7 +53,7 @@ flowchart LR
     API --> EX
     EX -->|A2A client call| SDK
     SDK -->|card.preferred_transport=slim| SLIM
-    SLIM -->|routable PyName| FARM_CARD
+    SLIM -->|routable name| FARM_CARD
     FARM_CARD --> FARM
     EX -->|decide relevance / compose reply| LLM
     FARM -->|estimate flavor profile| LLM
@@ -64,7 +64,7 @@ The runtime path is intentionally small:
 1. The UI sends a prompt to the Exchange API.
 2. The Exchange agent calls an LLM (via LiteLLM, configured by `LLM_MODEL`) to decide whether the prompt is about coffee flavor and, if so, calls the farm over A2A.
 3. The Exchange asks its `A2AClientFactory` for a client bound to the farm's `AgentCard`; the factory picks the transport named in `card.preferred_transport` (`slim` by default).
-4. The farm server advertises every transport it supports on its `AgentCard.additional_interfaces` and serves each one from its own App SDK session, then hands execution to the farm executor, which calls the same configured LLM to generate the flavor profile.
+4. The farm server advertises every transport it supports on its `AgentCard.additional_interfaces` and serves each one from its own App SDK session, then hands execution to the farm executor, whose LangGraph node (`farm/agent.py`) calls the same configured LLM to generate the flavor profile.
 
 This keeps the business logic transport-agnostic: the Exchange and Farm code still speak A2A, while the `AgentCard` and the App SDK client/session objects handle how those messages are moved. The LLM provider itself is a separate axis of configuration (`common/llm.py`'s `get_llm()`), independent of the A2A transport — see [Setup Instructions](#setup-instructions) for the supported providers (OpenAI, Azure OpenAI, GROQ, NVIDIA NIM, LiteLLM proxy, or a custom OAuth2 endpoint).
 
@@ -80,7 +80,7 @@ The topic wiring lives on the farm's `AgentCard` in `farm/card.py`, not behind a
 
 - `SLIM_TOPIC = f"default/default/{AGENT_ID}"` (`AGENT_ID = "flavor-profile-farm-agent"`) is used to build the `slim://` and `nats://` URLs in `additional_interfaces`, and `preferred_transport="slim"` marks SLIM as the primary transport.
 - `exchange/agent.py` imports that same `AGENT_CARD` directly (`from farm.card import AGENT_CARD as farm_agent_card`) rather than deriving the topic separately.
-- The Exchange's own `SlimTransportConfig` is given a routable PyName (`common/a2a_transport_config.py`: `name=f"{namespace}/{group}/{agent_name}"`, e.g. `default/default/exchange`) because SLIM requires one for request-reply delivery.
+- The Exchange's own `SlimTransportConfig` is given a routable `name` in `org/namespace/local_name` form (`common/a2a_transport_config.py`: `name=f"{namespace}/{group}/{agent_name}"`, e.g. `default/default/exchange`) because SLIM requires one for request-reply delivery.
 
 There are two deployment modes, selected by `farm/farm_server.py`'s `main()`:
 
