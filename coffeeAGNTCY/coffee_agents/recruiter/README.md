@@ -179,10 +179,10 @@ This starts:
 
 | Service | Port | Description |
 |---------|------|-------------|
-| recruiter-agent | 8881 | A2A server endpoint |
 | dir-api-server | 8888 | Directory gRPC API |
-| zot | 5555 | OCI registry (host maps to container 5000) |
 | postgres | (internal) | PostgreSQL; not exposed in compose by default |
+| recruiter-agent | 8881 | A2A server endpoint |
+| zot | 5555 | OCI registry (host maps to container 5000) |
 
 ## Testing
 

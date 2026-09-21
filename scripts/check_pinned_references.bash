@@ -18,12 +18,19 @@
 # npm git dependency, ...), extend this script rather than leaving it
 # uncovered - see .agents/rules/pinned-external-references.md.
 #
+# Images under OWN_IMAGE_PREFIX are this repo's own published artifacts
+# (see .github/workflows/docker-build-reusable.yaml's tag format), not
+# third-party references, so `:latest` there is normal dev-compose usage,
+# not a gap this check should flag.
+#
 # Usage: scripts/check_pinned_references.bash
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 cd "$REPO_ROOT"
+
+OWN_IMAGE_PREFIX="ghcr.io/agntcy/coffee-agntcy/"
 
 failed=0
 
@@ -139,6 +146,8 @@ for file in "${dockerfiles[@]}"; do
         continue
       fi
 
+      case "$ref" in "$OWN_IMAGE_PREFIX"*) continue ;; esac
+
       exempt_rc=0
       check_exempt "$file" "$line_num" "$trailing" || exempt_rc=$?
       case "$exempt_rc" in
@@ -175,6 +184,8 @@ for file in "${compose_files[@]}"; do
     if [[ "$line" =~ ^[[:space:]]*image:[[:space:]]*[\"\']?([^[:space:]\"\']+)[\"\']?(.*)$ ]]; then
       ref="${BASH_REMATCH[1]}"
       trailing="${BASH_REMATCH[2]}"
+
+      case "$ref" in "$OWN_IMAGE_PREFIX"*) continue ;; esac
 
       exempt_rc=0
       check_exempt "$file" "$line_num" "$trailing" || exempt_rc=$?

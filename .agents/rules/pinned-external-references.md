@@ -54,6 +54,13 @@ than leaving it floating silently:
 `pin-exempt` is a judgment call for a human to make and justify at the
 point the reference is added - not something to reach for by default.
 
+This rule is scoped to *third-party* references. Images this repo
+publishes itself (`ghcr.io/agntcy/coffee-agntcy/*`, per
+`.github/workflows/docker-build-reusable.yaml`'s tag format) aren't
+third-party, so a dev `docker-compose.yaml` using `:latest` on one of them
+to track its own newest build is normal usage, not a gap -
+`check_pinned_references.bash` skips that prefix accordingly.
+
 ## Why
 
 A tag, branch, or "latest" is a floating pointer - whoever controls the
