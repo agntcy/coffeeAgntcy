@@ -65,6 +65,7 @@ dev = [
     "openapi-spec-validator>=0.8.4",
     "prance>=25.4.8.0",
     "pyyaml>=6.0.3",
+    "ruff>=0.14.0,<0.15",
 ]
 
 [tool.hatch.metadata]
@@ -96,3 +97,18 @@ markers = [
 ]
 pythonpath = ["."]
 testpaths = ["tests"]
+
+[tool.ruff]
+indent-width = 4
+target-version = "py313"
+
+[tool.ruff.format]
+indent-style = "space"
+
+[tool.ruff.lint]
+# Indentation only (issue #747). Broader Ruff rules can land in a later PR.
+# W191/E101 ban tabs and mixed indent; E111/E114/E117 enforce the 4-space width.
+# E111/E114/E117 are preview-only, so preview is scoped to the linter here and
+# does not affect `ruff format` output.
+preview = true
+select = ["W191", "E101", "E111", "E114", "E117"]
