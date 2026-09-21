@@ -88,7 +88,10 @@ WORKFLOW_INSTANCE_SSE_QUEUE_MAXSIZE = 100
 WORKFLOW_INSTANCE_SSE_QUEUE_HIGH_WATER_RATIO = 0.9
 WORKFLOW_INSTANCE_SSE_QUEUE_HIGH_WATER = max(
     1,
-    int(WORKFLOW_INSTANCE_SSE_QUEUE_MAXSIZE * WORKFLOW_INSTANCE_SSE_QUEUE_HIGH_WATER_RATIO),
+    int(
+        WORKFLOW_INSTANCE_SSE_QUEUE_MAXSIZE
+        * WORKFLOW_INSTANCE_SSE_QUEUE_HIGH_WATER_RATIO
+    ),
 )
 
 INSTANTIATE_MERGE_WAIT_TIMEOUT_DETAIL = (
@@ -237,7 +240,9 @@ def create_agentic_workflows_router() -> APIRouter:
     async def list_pattern_categories() -> PatternCategoryListResponse:
         """GET /pattern-categories/ - catalog of agentic design pattern categories."""
         return PatternCategoryListResponse(
-            items=[PatternCategory(name=record.name) for record in PATTERN_CATEGORY_RECORDS]
+            items=[
+                PatternCategory(name=record.name) for record in PATTERN_CATEGORY_RECORDS
+            ]
         )
 
     @router.get(

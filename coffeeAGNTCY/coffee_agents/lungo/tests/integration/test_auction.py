@@ -10,7 +10,10 @@ from agents.supervisors.auction.graph.a2a_retry import TransportTimeoutError
 from langchain_core.messages import AIMessage
 from langchain_core.runnables import Runnable
 
-from tests.integration._auction_helpers import TRANSPORT_MATRIX, response_has_inventory_amount
+from tests.integration._auction_helpers import (
+    TRANSPORT_MATRIX,
+    response_has_inventory_amount,
+)
 
 _COLOMBIA_WEATHER_UNAVAILABLE = (
     "Cannot estimate yield because Weather Forecast MCP Server was Unavailable."
@@ -98,18 +101,22 @@ def test_auction_a2a_timeout_returns_user_visible_error(auction_supervisor_clien
     The fake routes to the single-farm branch and ends the reflection loop, so the test exercises only
     the transport-error handling it is meant to cover, with no real LLM.
     """
-    with patch(
-        "agents.supervisors.auction.graph.graph.get_llm",
-        return_value=_FakeRoutingLLM("inventory_single_farm"),
-    ), patch(
-        "agents.supervisors.auction.graph.tools.a2a_client_factory.create",
-        new_callable=AsyncMock,
-        return_value=MagicMock(),
-    ), patch(
-        "agents.supervisors.auction.graph.tools.send_a2a_with_retry",
-        new_callable=AsyncMock,
-        side_effect=TransportTimeoutError("timeout", cause=None),
-    ) as mock_send_a2a:
+    with (
+        patch(
+            "agents.supervisors.auction.graph.graph.get_llm",
+            return_value=_FakeRoutingLLM("inventory_single_farm"),
+        ),
+        patch(
+            "agents.supervisors.auction.graph.tools.a2a_client_factory.create",
+            new_callable=AsyncMock,
+            return_value=MagicMock(),
+        ),
+        patch(
+            "agents.supervisors.auction.graph.tools.send_a2a_with_retry",
+            new_callable=AsyncMock,
+            side_effect=TransportTimeoutError("timeout", cause=None),
+        ) as mock_send_a2a,
+    ):
         resp = auction_supervisor_client.post(
             "/agent/prompt",
             json={"prompt": "What is the inventory of coffee in Brazil?"},
@@ -118,8 +125,13 @@ def test_auction_a2a_timeout_returns_user_visible_error(auction_supervisor_clien
     assert resp.status_code == 200
     data = resp.json()
     assert "response" in data
-    assert not response_has_inventory_amount(data["response"]), "Expected error response, not inventory success"
-    assert data["response"] == "I encountered an issue retrieving information from the Brazil farm. Please try again later."
+    assert not response_has_inventory_amount(data["response"]), (
+        "Expected error response, not inventory success"
+    )
+    assert (
+        data["response"]
+        == "I encountered an issue retrieving information from the Brazil farm. Please try again later."
+    )
 
 
 @pytest.mark.parametrize(
@@ -135,17 +147,21 @@ def test_auction_colombia_weather_unavailable_response_has_no_inventory(
     Stubs auction supervisor LLM and A2A so no real LLM or farm subprocess is required (CI-safe).
     Unit tests in ``test_colombia_weather.py`` cover Colombia farm policy in isolation.
     """
-    with patch(
-        "agents.supervisors.auction.graph.graph.get_llm",
-        return_value=_FakeRoutingLLM("inventory_single_farm"),
-    ), patch(
-        "agents.supervisors.auction.graph.tools.a2a_client_factory.create",
-        new_callable=AsyncMock,
-        return_value=MagicMock(),
-    ), patch(
-        "agents.supervisors.auction.graph.tools.send_a2a_with_retry",
-        new_callable=AsyncMock,
-        return_value=[_agent_message(_COLOMBIA_WEATHER_UNAVAILABLE)],
+    with (
+        patch(
+            "agents.supervisors.auction.graph.graph.get_llm",
+            return_value=_FakeRoutingLLM("inventory_single_farm"),
+        ),
+        patch(
+            "agents.supervisors.auction.graph.tools.a2a_client_factory.create",
+            new_callable=AsyncMock,
+            return_value=MagicMock(),
+        ),
+        patch(
+            "agents.supervisors.auction.graph.tools.send_a2a_with_retry",
+            new_callable=AsyncMock,
+            return_value=[_agent_message(_COLOMBIA_WEATHER_UNAVAILABLE)],
+        ),
     ):
         resp = auction_supervisor_client.post(
             "/agent/prompt",

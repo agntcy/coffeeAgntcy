@@ -24,8 +24,12 @@ class TestAuctionFlows:
         [c for c in AUCTION_PROMPT_CASES if c["id"] == "brazil_inventory"],
         ids=["brazil_inventory"],
     )
-    def test_auction_brazil_inventory(self, auction_supervisor_client, transport_config, prompt_case):
-        logger.info(f"\n---Test: test_auction_brazil_inventory ({prompt_case['id']}) with transport {transport_config}---")
+    def test_auction_brazil_inventory(
+        self, auction_supervisor_client, transport_config, prompt_case
+    ):
+        logger.info(
+            f"\n---Test: test_auction_brazil_inventory ({prompt_case['id']}) with transport {transport_config}---"
+        )
         resp = auction_supervisor_client.post(
             "/agent/prompt",
             json={"prompt": prompt_case["prompt"]},
@@ -45,8 +49,12 @@ class TestAuctionFlows:
         [c for c in AUCTION_PROMPT_CASES if c["id"] == "colombia_inventory"],
         ids=["colombia_inventory"],
     )
-    def test_auction_colombia_inventory(self, auction_supervisor_client, transport_config, prompt_case):
-        logger.info(f"\n---Test: test_auction_colombia_inventory ({prompt_case['id']}) with transport {transport_config}---")
+    def test_auction_colombia_inventory(
+        self, auction_supervisor_client, transport_config, prompt_case
+    ):
+        logger.info(
+            f"\n---Test: test_auction_colombia_inventory ({prompt_case['id']}) with transport {transport_config}---"
+        )
         resp = auction_supervisor_client.post(
             "/agent/prompt",
             json={"prompt": prompt_case["prompt"]},
@@ -66,8 +74,12 @@ class TestAuctionFlows:
         [c for c in AUCTION_PROMPT_CASES if c["id"] == "vietnam_inventory"],
         ids=["vietnam_inventory"],
     )
-    def test_auction_vietnam_inventory(self, auction_supervisor_client, transport_config, prompt_case):
-        logger.info(f"\n---Test: test_auction_vietnam_inventory ({prompt_case['id']}) with transport {transport_config}---")
+    def test_auction_vietnam_inventory(
+        self, auction_supervisor_client, transport_config, prompt_case
+    ):
+        logger.info(
+            f"\n---Test: test_auction_vietnam_inventory ({prompt_case['id']}) with transport {transport_config}---"
+        )
         resp = auction_supervisor_client.post(
             "/agent/prompt",
             json={"prompt": prompt_case["prompt"]},
@@ -87,8 +99,12 @@ class TestAuctionFlows:
         [c for c in AUCTION_PROMPT_CASES if c["id"] == "all_farms_yield"],
         ids=["all_farms_yield"],
     )
-    def test_auction_all_farms_inventory(self, auction_supervisor_client, transport_config, prompt_case):
-        logger.info(f"\n---Test: test_auction_all_farms_inventory ({prompt_case['id']}) with transport {transport_config}---")
+    def test_auction_all_farms_inventory(
+        self, auction_supervisor_client, transport_config, prompt_case
+    ):
+        logger.info(
+            f"\n---Test: test_auction_all_farms_inventory ({prompt_case['id']}) with transport {transport_config}---"
+        )
         resp = auction_supervisor_client.post(
             "/agent/prompt",
             json={"prompt": prompt_case["prompt"]},
@@ -108,8 +124,12 @@ class TestAuctionFlows:
         [c for c in AUCTION_PROMPT_CASES if c["id"] == "brazil_create_order"],
         ids=["brazil_create_order"],
     )
-    def test_auction_create_order_brazil(self, auction_supervisor_client, transport_config, prompt_case):
-        logger.info(f"\n---Test: test_auction_create_order_brazil ({prompt_case['id']}) with transport {transport_config}---")
+    def test_auction_create_order_brazil(
+        self, auction_supervisor_client, transport_config, prompt_case
+    ):
+        logger.info(
+            f"\n---Test: test_auction_create_order_brazil ({prompt_case['id']}) with transport {transport_config}---"
+        )
         resp = auction_supervisor_client.post(
             "/agent/prompt",
             json={"prompt": prompt_case["prompt"]},

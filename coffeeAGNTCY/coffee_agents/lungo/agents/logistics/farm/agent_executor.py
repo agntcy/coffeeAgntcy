@@ -16,7 +16,8 @@ from a2a.types import (
     Role,
     Part,
     TextPart,
-    Task)
+    Task,
+)
 
 from a2a.utils import (
     new_task,
@@ -26,6 +27,7 @@ from agents.logistics.farm.agent import FarmAgent
 from agents.logistics.farm.card import AGENT_CARD
 
 logger = logging.getLogger("lungo.logistic_farm_agent.agent_executor")
+
 
 class FarmAgentExecutor(AgentExecutor):
     def __init__(self):
@@ -38,7 +40,7 @@ class FarmAgentExecutor(AgentExecutor):
             logger.error("Invalid request parameters: %s", context)
             return JSONRPCResponse(error=ContentTypeNotSupportedError())
         return None
-    
+
     async def execute(
         self,
         context: RequestContext,
@@ -69,7 +71,7 @@ class FarmAgentExecutor(AgentExecutor):
         if validation_error:
             await event_queue.enqueue_event(validation_error)
             return
-        
+
         prompt = context.get_user_input()
         task = context.current_task
         if not task:
@@ -78,7 +80,7 @@ class FarmAgentExecutor(AgentExecutor):
 
         try:
             output = await self.agent.ainvoke(prompt)
-        
+
             message = Message(
                 message_id=str(uuid4()),
                 role=Role.agent,
@@ -88,11 +90,13 @@ class FarmAgentExecutor(AgentExecutor):
 
             logger.debug("agent output message: %s", message)
 
-            await event_queue.enqueue_event(message)            
+            await event_queue.enqueue_event(message)
         except Exception as e:
-            logger.error(f'An error occurred while streaming the yield estimate response: {e}')
+            logger.error(
+                f"An error occurred while streaming the yield estimate response: {e}"
+            )
             raise ServerError(error=InternalError()) from e
-        
+
     async def cancel(
         self, request: RequestContext, event_queue: EventQueue
     ) -> Task | None:

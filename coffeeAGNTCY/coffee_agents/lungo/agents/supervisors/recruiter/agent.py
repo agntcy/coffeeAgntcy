@@ -67,6 +67,7 @@ else:
 # Tools
 # ---------------------------------------------------------------------------
 
+
 def _find_agent_by_name_or_cid(
     identifier: str, recruited: dict[str, dict]
 ) -> tuple[str | None, dict | None]:
@@ -95,6 +96,7 @@ def _find_agent_by_name_or_cid(
 
     return None, None
 
+
 async def clear_recruited_agents(tool_context: ToolContext) -> str:
     """Clear all recruited agents from session state.
 
@@ -111,9 +113,8 @@ async def clear_recruited_agents(tool_context: ToolContext) -> str:
     tool_context.state[STATE_KEY_RECRUITED_AGENTS] = {}
     return "✓ Cleared all recruited agents from memory. You can start a new search now."
 
-async def select_agent(
-    agent_identifier: str, tool_context: ToolContext
-) -> str:
+
+async def select_agent(agent_identifier: str, tool_context: ToolContext) -> str:
     """Select a recruited agent by name or CID for conversation.
 
     Call this after recruit_agents has found suitable agents. Once selected,
@@ -200,9 +201,7 @@ async def deselect_agent(tool_context: ToolContext) -> str:
         return "No agent was selected. You are in supervisor mode."
 
 
-async def send_to_agent(
-    message: str, tool_context: ToolContext
-) -> str:
+async def send_to_agent(message: str, tool_context: ToolContext) -> str:
     """Send a message to the currently selected agent.
 
     This tool forwards your message to the selected agent for processing.
@@ -215,7 +214,9 @@ async def send_to_agent(
     Returns:
         Instruction to transfer to the dynamic_workflow sub-agent.
     """
-    logger.info("[tool:send_to_agent] Called with message=%r", message[:100] if message else "")
+    logger.info(
+        "[tool:send_to_agent] Called with message=%r", message[:100] if message else ""
+    )
 
     selected_cid = tool_context.state.get(STATE_KEY_SELECTED_AGENT)
 
@@ -326,7 +327,14 @@ from the AGNTCY directory, evaluate them, and connect them to selected agents.
 - Always show available agents after a search so the user can select by name
 - For evaluate requests, agents MUST be recruited first - suggest recruiting if none exist
 - Only evaluate ONE agent at a time - ask the user which agent they want to evaluate""",
-    tools=[recruit_agents, evaluate_agent, select_agent, deselect_agent, send_to_agent, clear_recruited_agents],
+    tools=[
+        recruit_agents,
+        evaluate_agent,
+        select_agent,
+        deselect_agent,
+        send_to_agent,
+        clear_recruited_agents,
+    ],
     sub_agents=[dynamic_workflow_agent],
 )
 
@@ -479,9 +487,7 @@ async def call_agent(
     # wins over the per-agent fallback below.
     existing = read_workflow_context()
     resolved_instance_id = (
-        existing.instance_id
-        or workflow_instance_id
-        or f"instance://{uuid4()}"
+        existing.instance_id or workflow_instance_id or f"instance://{uuid4()}"
     )
     resolved_workflow_name = existing.workflow_name or _WORKFLOW_NAME
     logger.debug(
@@ -558,9 +564,7 @@ async def stream_agent(
     # wins over the per-agent fallback below.
     existing = read_workflow_context()
     resolved_instance_id = (
-        existing.instance_id
-        or workflow_instance_id
-        or f"instance://{uuid4()}"
+        existing.instance_id or workflow_instance_id or f"instance://{uuid4()}"
     )
     resolved_workflow_name = existing.workflow_name or _WORKFLOW_NAME
     logger.debug(

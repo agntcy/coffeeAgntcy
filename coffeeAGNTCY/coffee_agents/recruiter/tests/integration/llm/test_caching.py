@@ -99,7 +99,9 @@ class TestToolCaching:
                     miss_penalty_second += dt
             return cached
 
-        monkeypatch.setattr(plugin, "before_tool_callback", wrapped_before_tool_callback)
+        monkeypatch.setattr(
+            plugin, "before_tool_callback", wrapped_before_tool_callback
+        )
 
         # First request: miss-heavy path with deterministic miss penalty.
         start_time = time.perf_counter()
@@ -109,7 +111,9 @@ class TestToolCaching:
         tool_hits1 = stats1["tool_cache"]["hits"] if stats1["tool_cache"] else 0
         tool_misses1 = stats1["tool_cache"]["misses"] if stats1["tool_cache"] else 0
 
-        print(f"\nFirst request time: {first_request_time:.3f}s (cache misses: {tool_misses1})")
+        print(
+            f"\nFirst request time: {first_request_time:.3f}s (cache misses: {tool_misses1})"
+        )
 
         phase = "second"
         # Second request: hit-heavy path should avoid most miss penalty.
@@ -120,21 +124,27 @@ class TestToolCaching:
         tool_hits2 = stats2["tool_cache"]["hits"] if stats2["tool_cache"] else 0
         tool_misses2 = stats2["tool_cache"]["misses"] if stats2["tool_cache"] else 0
 
-        print(f"Second request time: {second_request_time:.3f}s (cache hits: {tool_hits2})")
+        print(
+            f"Second request time: {second_request_time:.3f}s (cache hits: {tool_hits2})"
+        )
         print(
             f"Miss-path CPU time: first={miss_penalty_first:.3f}s, second={miss_penalty_second:.3f}s"
         )
 
         # Assert cache semantics and structural behavior.
         assert tool_misses1 > 0, "Expected at least one cache miss on first request"
-        assert tool_hits2 > tool_hits1, "Expected additional cache hits on second request"
+        assert tool_hits2 > tool_hits1, (
+            "Expected additional cache hits on second request"
+        )
         assert tool_misses2 >= tool_misses1, "Miss counter should be monotonic"
         assert work_calls > 0, "Expected deterministic overhead to run on misses"
         assert work_calls == tool_misses2, (
             "Expected miss-only overhead to run once per cache miss callback"
         )
 
-        assert miss_penalty_first > 0.05, "Expected measurable miss-path work on first request"
+        assert miss_penalty_first > 0.05, (
+            "Expected measurable miss-path work on first request"
+        )
 
         new_misses = tool_misses2 - tool_misses1
         # Same prompt usually reuses many tools; cache should add fewer misses than the first cold run.
@@ -179,14 +189,20 @@ class TestCacheStatistics:
         await recruiter_team.invoke(message, user_id, session_id)
 
         stats_before = recruiter_team.get_cache_stats()
-        tool_size_before = stats_before["tool_cache"]["cache_size"] if stats_before["tool_cache"] else 0
+        tool_size_before = (
+            stats_before["tool_cache"]["cache_size"]
+            if stats_before["tool_cache"]
+            else 0
+        )
 
         # Clear cache
         cleared = recruiter_team.clear_cache()
         print(f"\nCleared: {cleared}")
 
         stats_after = recruiter_team.get_cache_stats()
-        tool_size_after = stats_after["tool_cache"]["cache_size"] if stats_after["tool_cache"] else 0
+        tool_size_after = (
+            stats_after["tool_cache"]["cache_size"] if stats_after["tool_cache"] else 0
+        )
 
         assert tool_size_after == 0, "Tool cache should be empty after clearing"
         if tool_size_before > 0:
@@ -208,6 +224,7 @@ class TestCacheConfiguration:
 
             # Need to reload config
             from agent_recruiter.plugins.cache_config import load_cache_config
+
             config = load_cache_config()
 
             assert not config.tool_cache_enabled
@@ -228,6 +245,7 @@ class TestCacheConfiguration:
             os.environ["CACHE_MODE"] = "tool"
 
             from agent_recruiter.plugins.cache_config import load_cache_config
+
             config = load_cache_config()
 
             assert config.tool_cache_enabled
@@ -247,6 +265,7 @@ class TestCacheConfiguration:
             os.environ["TOOL_CACHE_EXCLUDE"] = "tool_a,tool_b,tool_c"
 
             from agent_recruiter.plugins.cache_config import load_cache_config
+
             config = load_cache_config()
 
             assert "tool_a" in config.tool.excluded_tools

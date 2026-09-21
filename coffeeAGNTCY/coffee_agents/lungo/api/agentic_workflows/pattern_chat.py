@@ -160,9 +160,12 @@ def _session_key(pattern_name: str, fe_session_id: str) -> str:
 async def _ensure_session(pattern_name: str, fe_session_id: str) -> None:
     """Create the ADK session and seed the pattern markdown if it doesn't exist."""
     sid = _session_key(pattern_name, fe_session_id)
-    if await _session_service.get_session(
-        app_name=APP_NAME, user_id=DEFAULT_USER_ID, session_id=sid
-    ) is not None:
+    if (
+        await _session_service.get_session(
+            app_name=APP_NAME, user_id=DEFAULT_USER_ID, session_id=sid
+        )
+        is not None
+    ):
         return
 
     slug = workflow_name_to_documentation_slug(pattern_name)
@@ -203,8 +206,7 @@ async def _sweep_expired_sessions() -> None:
     """Drop sessions idle past SESSION_TTL_SECONDS; cap evictions per call."""
     now = _clock()
     expired = [
-        sid for sid, last in _last_used.items()
-        if now - last > SESSION_TTL_SECONDS
+        sid for sid, last in _last_used.items() if now - last > SESSION_TTL_SECONDS
     ][:MAX_EVICTIONS_PER_CALL]
     for sid in expired:
         await _session_service.delete_session(

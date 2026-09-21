@@ -17,7 +17,7 @@ AGENT_SKILL = AgentSkill(
         "Did the Brazil order clear CUSTOMS_CLEARANCE and get marked PAYMENT_COMPLETE?",
         "Is any payment still pending after CUSTOMS_CLEARANCE?",
         "Mark the 50 lb Colombia order as PAYMENT_COMPLETE if customs is cleared.",
-    ]
+    ],
 )
 
 AGENT_CARD = AgentCard(

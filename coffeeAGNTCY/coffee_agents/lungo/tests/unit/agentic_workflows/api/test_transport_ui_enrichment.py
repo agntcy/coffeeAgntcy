@@ -13,7 +13,9 @@ from api.agentic_workflows.transport_ui_enrichment import (
     clear_transport_cache,
     enrich_topology_transport,
 )
-from tests.unit.agentic_workflows.catalog_test_helpers import init_transport_cache_for_tests
+from tests.unit.agentic_workflows.catalog_test_helpers import (
+    init_transport_cache_for_tests,
+)
 
 _TRANSPORT_NODE = {
     "id": "node://00000000-0000-4000-a000-000000000099",
@@ -70,7 +72,9 @@ _TRANSPORT_CASES: tuple[TransportCase, ...] = (
 )
 
 
-@pytest.mark.parametrize("case", [pytest.param(c, id=c.case_id) for c in _TRANSPORT_CASES])
+@pytest.mark.parametrize(
+    "case", [pytest.param(c, id=c.case_id) for c in _TRANSPORT_CASES]
+)
 def test_enrich_topology_transport(case: TransportCase) -> None:
     topology = enrich_topology_transport(
         {"nodes": [_TRANSPORT_NODE], "edges": []},

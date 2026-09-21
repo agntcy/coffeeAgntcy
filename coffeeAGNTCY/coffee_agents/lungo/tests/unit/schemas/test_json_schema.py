@@ -202,11 +202,15 @@ def test_validate_all_json_schema_definitions_detects_failures(
     assert case.expected_in_error in str(failures[0])
 
 
-def test_validate_all_json_schema_definitions_empty_dir_returns_empty(json_schema_specs_dir: Path):
+def test_validate_all_json_schema_definitions_empty_dir_returns_empty(
+    json_schema_specs_dir: Path,
+):
     assert validate_all_json_schema_definitions() == []
 
 
-def test_validate_all_json_schema_definitions_multiple_failures(json_schema_specs_dir: Path):
+def test_validate_all_json_schema_definitions_multiple_failures(
+    json_schema_specs_dir: Path,
+):
     (json_schema_specs_dir / "a.json").write_text('{"type": "nope"}')
     (json_schema_specs_dir / "b.json").write_text("not json at all")
     failures = validate_all_json_schema_definitions()
@@ -340,7 +344,9 @@ def test_validate_json_instance_unresolvable_ref_maps_to_schema_validation_error
         '"properties": {"x": {"$ref": "https://example.invalid/unresolvable.json"}},'
         '"required": ["x"]}'
     )
-    (json_schema_specs_dir / "bad_ref.json").write_text(bad_ref_schema, encoding="utf-8")
+    (json_schema_specs_dir / "bad_ref.json").write_text(
+        bad_ref_schema, encoding="utf-8"
+    )
     with pytest.raises(SchemaValidationError) as exc_info:
         validate_json_instance({"x": 1}, "bad_ref")
     msg = str(exc_info.value).lower()
@@ -444,7 +450,9 @@ def test_load_and_parse_instance_json(
         ),
     ],
 )
-def test_json_schema_packaged_backend_delegates(monkeypatch, method_name, args, expected_calls):
+def test_json_schema_packaged_backend_delegates(
+    monkeypatch, method_name, args, expected_calls
+):
     recorded: list[tuple[str, tuple]] = []
 
     def record(name):
@@ -501,7 +509,9 @@ def test_json_schema_packaged_backend_parse_delegates(monkeypatch, tmp_path: Pat
     assert backend.parse_instance_text("{}")["from"] == "text"
 
 
-def test_json_schema_packaged_backend_owns_schema_true_false(json_schema_specs_dir: Path):
+def test_json_schema_packaged_backend_owns_schema_true_false(
+    json_schema_specs_dir: Path,
+):
     backend = JsonSchemaPackagedBackend()
     assert backend.owns_schema("nope_not_a_schema") is False
     (json_schema_specs_dir / "only.json").write_text(_MINIMAL_OBJECT_SCHEMA)

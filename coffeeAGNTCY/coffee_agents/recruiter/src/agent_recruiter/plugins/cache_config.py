@@ -24,6 +24,7 @@ logger = get_logger("plugins.cache_config")
 
 class CacheMode(Enum):
     """Cache mode options."""
+
     NONE = "none"
     TOOL = "tool"
 
@@ -31,6 +32,7 @@ class CacheMode(Enum):
 @dataclass
 class ToolCacheConfig:
     """Configuration for tool-level caching."""
+
     enabled: bool
     ttl_seconds: int
     max_entries: int
@@ -40,6 +42,7 @@ class ToolCacheConfig:
 @dataclass
 class CacheConfig:
     """Combined cache configuration."""
+
     mode: CacheMode
     tool: ToolCacheConfig
 

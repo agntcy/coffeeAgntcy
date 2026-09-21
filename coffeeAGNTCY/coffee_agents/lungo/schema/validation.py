@@ -53,5 +53,5 @@ def validate_string_against_schema(text: str, schema_name: str) -> None:
 
 def get_schema(schema_name: str) -> dict:
     """Return the packaged schema definition as a dict.
-       Raises SchemaNotFoundError if unknown; backend-specific errors (e.g. SchemaDefinitionError, AmbiguousSchemaNameError) may apply."""
+    Raises SchemaNotFoundError if unknown; backend-specific errors (e.g. SchemaDefinitionError, AmbiguousSchemaNameError) may apply."""
     return _backend_for_schema(schema_name).get_schema(schema_name)

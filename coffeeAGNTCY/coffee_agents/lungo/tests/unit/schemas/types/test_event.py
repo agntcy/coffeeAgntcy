@@ -263,7 +263,9 @@ def test_event_payload_schema_and_model(case: EventCase) -> None:
             Event.model_validate(data)
         return
 
-    assert case.inputs.mutate is None, "valid round-trip cases must not carry a mutation"
+    assert case.inputs.mutate is None, (
+        "valid round-trip cases must not carry a mutation"
+    )
     assert out.model_exc is None
     validate_data_against_schema(data, _KNOWN)
     event = Event.model_validate(data)
@@ -286,7 +288,7 @@ def test_optional_label2_round_trips() -> None:
     validate_data_against_schema(dumped, _KNOWN)
     Event.model_validate(dumped)
 
-    dumped_node = (
-        dumped["data"]["workflows"]["recruiter"]["starting_topology"]["nodes"][0]
-    )
+    dumped_node = dumped["data"]["workflows"]["recruiter"]["starting_topology"][
+        "nodes"
+    ][0]
     assert dumped_node["label_subtitle"] == "Buyer"

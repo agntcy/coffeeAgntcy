@@ -39,6 +39,35 @@ major version release.
 
 Each agent project documents its test layout and commands in `tests/README.md` under `coffeeAGNTCY/coffee_agents/{corto,lungo,recruiter}/`.
 
+### Linting and code style
+
+This section is the home for the lint and style rules that apply to
+`coffeeAgntcy`. Each rule below states what the code must look like, which CI
+workflow enforces it, and how to run the same check locally before opening a
+pull request. Further rules will be added here as they are adopted.
+
+#### Python indentation
+
+Python sources use **4 spaces per indent level, never tabs** (PEP 8). Both
+halves of that rule are enforced: `W191` and `E101` reject tabs and mixed
+tabs/spaces, and `E111`, `E114`, and `E117` reject any indent that is not a
+multiple of four. A file indented consistently with 2 spaces fails.
+
+The `Python lint` workflow runs `ruff check` for `corto`, `lungo`, and
+`recruiter` on every pull request; it lints only and never reformats. Locally,
+after `uv sync --extra dev` in a backend package, run `uv run ruff check .`.
+To apply the formatter, run `uv run ruff format .` -- Ruff-aware editors pick
+the same settings up from `[tool.ruff.format]` in that package's
+`pyproject.toml`. Editors that honor EditorConfig apply 4-space Python indent
+from the repo-root `.editorconfig` on new edits.
+
+#### ASCII hyphens only
+
+Do not use en dash (U+2013) or em dash (U+2014) anywhere in the repository
+(including comments, markdown, and EditorConfig). Use ASCII `-` or `--`.
+The `Source lint` workflow (`source-lint.yaml`) fails the pull request if
+either character appears. This is not covered by Ruff or EditorConfig.
+
 ## Other Ways to Contribute
 
 We welcome anyone that wants to contribute to `coffeeAgntcy` to triage and

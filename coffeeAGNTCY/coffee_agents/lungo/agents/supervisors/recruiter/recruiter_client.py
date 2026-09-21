@@ -73,6 +73,7 @@ def _is_valid_instance_id(value: str) -> bool:
         return False
     return True
 
+
 # ---------------------------------------------------------------------------
 # Side-channel queue for streaming A2A events to main.py
 # ---------------------------------------------------------------------------
@@ -106,11 +107,19 @@ def _parse_dict_values(data: dict) -> dict[str, dict]:
                 if isinstance(parsed, dict):
                     result[key] = parsed
                 else:
-                    logger.warning("Value for key %s parsed to %s, not dict; skipping", key, type(parsed).__name__)
+                    logger.warning(
+                        "Value for key %s parsed to %s, not dict; skipping",
+                        key,
+                        type(parsed).__name__,
+                    )
             except (json.JSONDecodeError, TypeError):
                 logger.warning("Value for key %s is not valid JSON; skipping", key)
         else:
-            logger.warning("Unexpected value type %s for key %s; skipping", type(value).__name__, key)
+            logger.warning(
+                "Unexpected value type %s for key %s; skipping",
+                type(value).__name__,
+                key,
+            )
     return result
 
 
@@ -246,9 +255,7 @@ async def _emit_discovery_topology(agent_records: dict[str, dict]) -> None:
     )
 
 
-async def _forward_status_update(
-    update: TaskStatusUpdateEvent, tool_name: str
-) -> None:
+async def _forward_status_update(update: TaskStatusUpdateEvent, tool_name: str) -> None:
     """Forward one intermediate A2A status update onto the side-channel queue.
 
     Shared by recruit_agents and evaluate_agent: each non-final text status part
@@ -379,6 +386,7 @@ async def recruit_agents(query: str, tool_context: ToolContext) -> str:
     logger.info("[tool:recruit_agents] Result: %s", result)
     return result
 
+
 async def evaluate_agent(
     agent_identifier: str, query: str, tool_context: ToolContext
 ) -> str:
@@ -408,9 +416,7 @@ async def evaluate_agent(
     )
 
     # --- 1. Resolve the single agent from session state --------------------
-    recruited: dict[str, dict] = tool_context.state.get(
-        STATE_KEY_RECRUITED_AGENTS, {}
-    )
+    recruited: dict[str, dict] = tool_context.state.get(STATE_KEY_RECRUITED_AGENTS, {})
     if not recruited:
         return (
             "No agents have been recruited yet. "
@@ -521,9 +527,7 @@ async def evaluate_agent(
         logger.info("[tool:evaluate_agent] Result: %s", summary)
         return summary
 
-    summary_lines = [
-        response_data.text or f"Evaluation results for **{agent_name}**:"
-    ]
+    summary_lines = [response_data.text or f"Evaluation results for **{agent_name}**:"]
     for agent_id, result in response_data.evaluation_results.items():
         if agent_id.startswith("_"):  # skip meta-keys like _summary
             continue

@@ -6,6 +6,7 @@ import logging
 
 from config.config import LOGGING_LEVEL
 
+
 def setup_logging():
     logging.basicConfig(
         level=LOGGING_LEVEL,

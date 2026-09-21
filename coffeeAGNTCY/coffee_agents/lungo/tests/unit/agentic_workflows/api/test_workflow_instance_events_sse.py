@@ -138,7 +138,9 @@ def test_post_workflow_instance_event_wrong_workflow_returns_400(
     uid = UUID("550e8400-e29b-41d4-a716-446655440020")
     iuri = instance_id_from_uuid(uid).root
     _seed_instance_in_store(store, "path_wf", iuri)
-    body = _event_dict("only_in_body", iuri, "event://550e8400-e29b-41d4-a716-446655440021")
+    body = _event_dict(
+        "only_in_body", iuri, "event://550e8400-e29b-41d4-a716-446655440021"
+    )
     r = client.post(
         "/agentic-workflows/path_wf/instances/{}/events/".format(uid),
         json=body,
@@ -210,13 +212,9 @@ def test_enqueue_workflow_instance_sse_queue_chunk_drops_oldest_at_high_water() 
     high_water = _sse_high_water(maxsize)
     q: asyncio.Queue[str] = asyncio.Queue(maxsize=maxsize)
     for i in range(high_water):
-        enqueue_workflow_instance_sse_queue_chunk(
-            q, str(i), high_water=high_water
-        )
+        enqueue_workflow_instance_sse_queue_chunk(q, str(i), high_water=high_water)
     assert q.qsize() == high_water
-    enqueue_workflow_instance_sse_queue_chunk(
-        q, "newest", high_water=high_water
-    )
+    enqueue_workflow_instance_sse_queue_chunk(q, "newest", high_water=high_water)
     assert q.qsize() == high_water
     drained = [q.get_nowait() for _ in range(high_water)]
     assert "0" not in drained

@@ -11,10 +11,10 @@ from pathlib import Path
 import subprocess
 from typing import Optional
 
-try:  
-    import tomllib  
-except Exception:  
-    tomllib = None 
+try:
+    import tomllib
+except Exception:
+    tomllib = None
 
 logger = logging.getLogger(__name__)
 
@@ -31,52 +31,52 @@ def _extract_name_and_version(spec: str):
     """Extract base package name and version constraint from a dependency spec.
     Returns tuple (base_name, op, version) where op is one of '==', '>=', or '' if unspecified.
     """
-    base = spec.split(';', 1)[0].strip()
-    base = base.split('[', 1)[0].strip()
-    
+    base = spec.split(";", 1)[0].strip()
+    base = base.split("[", 1)[0].strip()
+
     match = re.search(r"(==|>=)\s*([^;\s]+)", base)
     if match:
         op, ver = match.group(1), match.group(2)
         name = base.split(op)[0].strip()
         return name, op, ver
-    
+
     return base, "", ""
 
 
 def get_dependencies():
     """Get dependency versions from pyproject.toml and docker-compose.yaml"""
     dependencies = {}
-    
+
     try:
         # Parse pyproject.toml for Python dependencies
         pyproject_path = Path(__file__).parent.parent / "pyproject.toml"
         if pyproject_path.exists() and tomllib is not None:
-            with open(pyproject_path, 'rb') as f:
+            with open(pyproject_path, "rb") as f:
                 data = tomllib.load(f)
-            
-            for dep in data.get('project', {}).get('dependencies', []):
+
+            for dep in data.get("project", {}).get("dependencies", []):
                 name, op, ver = _extract_name_and_version(dep)
                 display = DISPLAY_NAMES.get(name)
                 if display:
-                    if op == '==':
+                    if op == "==":
                         dependencies[display] = f"v{ver}"
-                    elif op == '>=':
+                    elif op == ">=":
                         dependencies[display] = f">= v{ver}"
                     else:
                         dependencies[display] = "unknown"
-        
+
         # Get SLIM version from docker-compose.yaml
         compose_path = Path(__file__).parent.parent / "docker-compose.yaml"
         if compose_path.exists():
-            with open(compose_path, 'r') as f:
+            with open(compose_path, "r") as f:
                 content = f.read()
-                match = re.search(r'ghcr\.io/agntcy/slim:(\d+\.\d+\.\d+)', content)
+                match = re.search(r"ghcr\.io/agntcy/slim:(\d+\.\d+\.\d+)", content)
                 if match:
-                    dependencies['SLIM'] = f"v{match.group(1)}"
-        
+                    dependencies["SLIM"] = f"v{match.group(1)}"
+
     except Exception as e:
         logger.error(f"Error parsing dependencies: {e}")
-    
+
     return dependencies
 
 
@@ -105,23 +105,26 @@ def get_latest_tag_and_date(start: Optional[Path] = None) -> Optional[dict]:
                 args, cwd=git_root, text=True, stderr=subprocess.DEVNULL
             ).strip()
 
-        out = _run([
-            "git", "for-each-ref",
-            "--sort=-creatordate",
-            "--format=%(refname:short)\t%(creatordate:iso8601)\t%(creatordate:unix)",
-            "refs/tags",
-        ])
-        
+        out = _run(
+            [
+                "git",
+                "for-each-ref",
+                "--sort=-creatordate",
+                "--format=%(refname:short)\t%(creatordate:iso8601)\t%(creatordate:unix)",
+                "refs/tags",
+            ]
+        )
+
         if not out:
             return None
-            
+
         line = out.splitlines()[0]
         parts = line.split("\t")
         if len(parts) < 3:
             return None
-            
+
         return {"tag": parts[0], "created_iso": parts[1], "created_unix": parts[2]}
-        
+
     except Exception as e:
         logger.debug(f"Git fallback failed: {e}")
         return None
@@ -132,30 +135,34 @@ def _format_build_date(build_date: str) -> str:
     if build_date == "unknown":
         return build_date
 
-    if ' ' in build_date:
-        date_part = build_date.split(' ')[0]
-        if re.match(r'^\d{4}-\d{2}-\d{2}$', date_part):
+    if " " in build_date:
+        date_part = build_date.split(" ")[0]
+        if re.match(r"^\d{4}-\d{2}-\d{2}$", date_part):
             return date_part
-    
-    if 'T' in build_date:
-        date_part = build_date.split('T')[0]
-        if re.match(r'^\d{4}-\d{2}-\d{2}$', date_part):
+
+    if "T" in build_date:
+        date_part = build_date.split("T")[0]
+        if re.match(r"^\d{4}-\d{2}-\d{2}$", date_part):
             return date_part
-    
-    if re.match(r'^\d{4}-\d{2}-\d{2}$', build_date):
+
+    if re.match(r"^\d{4}-\d{2}-\d{2}$", build_date):
         return build_date
-    
+
     return build_date
 
 
-def get_version_info(properties_file_path: Path, app_name: str = "corto-exchange", service_name: str = "corto-exchange") -> dict:
+def get_version_info(
+    properties_file_path: Path,
+    app_name: str = "corto-exchange",
+    service_name: str = "corto-exchange",
+) -> dict:
     """Get complete version information for the application.
-    
+
     Args:
         properties_file_path: Path to the about.properties file
         app_name: Default app name to use as fallback
         service_name: Default service name to use as fallback
-        
+
     Returns:
         Dictionary containing app, service, version, build_date, build_timestamp, image, and dependencies
     """
@@ -166,7 +173,7 @@ def get_version_info(properties_file_path: Path, app_name: str = "corto-exchange
             with open(properties_file_path, "r") as f:
                 config_string = "[DEFAULT]\n" + f.read()
             config.read_string(config_string)
-            
+
             props = dict(config["DEFAULT"])
 
             app_name_final = props.get("app.name", app_name)
@@ -177,7 +184,9 @@ def get_version_info(properties_file_path: Path, app_name: str = "corto-exchange
             image_name = props.get("image.name", "unknown")
             image_tag = props.get("image.tag", "unknown")
             image = (
-                f"{image_name}:{image_tag}" if image_name != "unknown" and image_tag != "unknown" else image_name
+                f"{image_name}:{image_tag}"
+                if image_name != "unknown" and image_tag != "unknown"
+                else image_name
             )
 
             # Fill in any missing values with git fallback
@@ -209,7 +218,9 @@ def get_version_info(properties_file_path: Path, app_name: str = "corto-exchange
                 "app": app_name,
                 "service": service_name,
                 "version": git_info.get("tag", "unknown"),
-                "build_date": _format_build_date(git_info.get("created_iso", "unknown")),
+                "build_date": _format_build_date(
+                    git_info.get("created_iso", "unknown")
+                ),
                 "build_timestamp": git_info.get("created_unix", "unknown"),
                 "image": "unknown",
                 "dependencies": get_dependencies(),

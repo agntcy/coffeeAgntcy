@@ -16,7 +16,7 @@ AGENT_SKILL = AgentSkill(
         "What is the status of my order?",
         "Can you help me with a logistics issue?",
         "I need assistance with my delivery.",
-    ]
+    ],
 )
 
 AGENT_CARD = AgentCard(

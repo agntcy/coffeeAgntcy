@@ -4,6 +4,7 @@
 Pytest fixtures using the simple ProcessRunner.
 Replace prior xprocess usage with these.
 """
+
 import os
 import re
 import sys
@@ -88,39 +89,50 @@ def orchestrate_session_services():
     _shutdown_otel_sdk()
     down(files)
 
+
 def setup_transports():
     _startup_slim()
     _startup_nats()
+
 
 def setup_observability():
     _startup_clickhouse()
     _startup_otel_collector()
     _startup_grafana()
 
+
 def setup_identity():
     pass
+
 
 def _startup_slim():
     up(files, ["slim"])
 
+
 def _startup_nats():
     up(files, ["nats"])
+
 
 def _startup_grafana():
     up(files, ["grafana"])
 
+
 def _startup_clickhouse():
     up(files, ["clickhouse-server"])
+
 
 def _startup_otel_collector():
     up(files, ["otel-collector"])
     time.sleep(10)
 
+
 # ---------------- per-test config ----------------
+
 
 @pytest.fixture(scope="function")
 def transport_config(request):
     return dict(getattr(request, "param", {}) or {})
+
 
 @pytest.fixture(scope="function")
 def agent_specs(request):
@@ -136,6 +148,7 @@ def agent_specs(request):
         return []
     specs = m.args[0] if m.args else m.kwargs.get("specs", [])
     return [_normalize_agent_spec(s) for s in specs]
+
 
 def _normalize_agent_spec(spec):
     """
@@ -162,6 +175,7 @@ def _normalize_agent_spec(spec):
 
     raise TypeError(f"Agent spec must be dict or module string, got: {type(spec)}")
 
+
 def _derive_name_from_spec(spec: dict) -> str:
     if "name" in spec and spec["name"]:
         return spec["name"]
@@ -178,7 +192,9 @@ def _derive_name_from_spec(spec: dict) -> str:
         return Path(parts[0]).name
     return "agent"
 
+
 # ---------------- generic agent fixture ----------------
+
 
 @pytest.fixture(scope="function")
 def agents_up(request, transport_config):
@@ -189,7 +205,9 @@ def agents_up(request, transport_config):
         def test_things(agents_up): ...
     """
     m = request.node.get_closest_marker("agents")
-    agent_names = (m.args[0] if m and m.args else m.kwargs.get("names", [])) if m else []
+    agent_names = (
+        (m.args[0] if m and m.args else m.kwargs.get("names", [])) if m else []
+    )
 
     runners: list[ProcessRunner] = []
 
@@ -231,7 +249,9 @@ def agents_up(request, transport_config):
             print(f"--- Stopping {r.name} ---")
             r.stop()
 
+
 # ---------------- client ----------------
+
 
 @pytest.fixture
 def supervisor_client(transport_config, monkeypatch):
@@ -240,14 +260,17 @@ def supervisor_client(transport_config, monkeypatch):
     for k, v in transport_config.items():
         monkeypatch.setenv(k, v)
 
-    _purge_modules([
-        "exchange",
-        "config.config",
-    ])
+    _purge_modules(
+        [
+            "exchange",
+            "config.config",
+        ]
+    )
 
     import importlib
 
     import exchange.main as exchange_main
+
     importlib.reload(exchange_main)
 
     app = exchange_main.app

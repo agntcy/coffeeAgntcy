@@ -38,10 +38,7 @@ COLOMBIA_LATITUDE = 4.0999170
 COLOMBIA_LONGITUDE = -72.9088133
 
 FALLBACK_WEATHER_FORECAST = (
-    "Temperature: 25.0°C\n"
-    "Wind speed: 0 m/s\n"
-    "Wind direction: 0°\n"
-    "Conditions: sunny"
+    "Temperature: 25.0°C\nWind speed: 0 m/s\nWind direction: 0°\nConditions: sunny"
 )
 
 _WEATHER_ERROR_SENTINELS = (
@@ -60,6 +57,7 @@ def _is_valid_weather_forecast(text: str) -> bool:
         return False
     return bool(_TEMPERATURE_PATTERN.search(text))
 
+
 # --- 1. Define Node Names as Constants ---
 class NodeStates:
     SUPERVISOR = "supervisor"
@@ -68,11 +66,13 @@ class NodeStates:
     GENERAL_RESPONSE = "general_response_node"
     WEATHER_FORECAST = "weather_forecast_node"
 
+
 # --- 2. Define the Graph State ---
 class GraphState(MessagesState):
     """
     Represents the state of our graph, passed between nodes.
     """
+
     next_node: str
     weather_forecast_success: bool
     weather_forecast: str
@@ -80,6 +80,7 @@ class GraphState(MessagesState):
     # fallback for MCP event emission when OTel baggage is unavailable.
     workflow_name: str | None
     workflow_instance_id: str | None
+
 
 # --- 3. Implement the LangGraph Application Class ---
 @agent(name="colombia_farm_agent")
@@ -116,22 +117,30 @@ class FarmAgent:
 
             User message: {user_message}
             """,
-            input_variables=["user_message"]
+            input_variables=["user_message"],
         )
 
         chain = prompt | self.supervisor_llm
         response = chain.invoke({"user_message": state["messages"]})
         intent = response.content.strip().lower()
 
-        logger.info(f"Supervisor intent determined: {intent}")  # Log the intent for debugging
+        logger.info(
+            f"Supervisor intent determined: {intent}"
+        )  # Log the intent for debugging
 
         if "inventory" in intent:
             # return {"next_node": NodeStates.INVENTORY, "messages": state["messages"]}
-            return {"next_node": NodeStates.WEATHER_FORECAST, "messages": state["messages"]}
+            return {
+                "next_node": NodeStates.WEATHER_FORECAST,
+                "messages": state["messages"],
+            }
         elif "orders" in intent:
             return {"next_node": NodeStates.ORDERS, "messages": state["messages"]}
         else:
-            return {"next_node": NodeStates.GENERAL_RESPONSE, "messages": state["messages"]}
+            return {
+                "next_node": NodeStates.GENERAL_RESPONSE,
+                "messages": state["messages"],
+            }
 
     async def _get_weather_forecast(self, state: GraphState) -> dict:
         """
@@ -207,14 +216,16 @@ class FarmAgent:
                 Weather forecast: {weather_forecast}
                 User question: {user_message}
                 """,
-            input_variables=["user_message", "weather_forecast"]
+            input_variables=["user_message", "weather_forecast"],
         )
         chain = prompt | self.inventory_llm
 
-        llm_response = chain.invoke({
-            "user_message": user_message,
-            "weather_forecast": weather_forecast,
-        }).content
+        llm_response = chain.invoke(
+            {
+                "user_message": user_message,
+                "weather_forecast": weather_forecast,
+            }
+        ).content
 
         logger.info(f"Inventory response generated: {llm_response}")
 
@@ -237,14 +248,20 @@ class FarmAgent:
         # Call MCP tools before processing the order
         try:
             payment_result = await invoke_payment_mcp_tool(
-                "create_payment", agent_id=AGENT_CARD.name, source=AGENT_ID,
-                workflow_name=workflow_name, instance_id=workflow_instance_id,
+                "create_payment",
+                agent_id=AGENT_CARD.name,
+                source=AGENT_ID,
+                workflow_name=workflow_name,
+                instance_id=workflow_instance_id,
             )
             logger.info(f"Payment result: {payment_result}")
 
             transactions_details = await invoke_payment_mcp_tool(
-                "list_transactions", agent_id=AGENT_CARD.name, source=AGENT_ID,
-                workflow_name=workflow_name, instance_id=workflow_instance_id,
+                "list_transactions",
+                agent_id=AGENT_CARD.name,
+                source=AGENT_ID,
+                workflow_name=workflow_name,
+                instance_id=workflow_instance_id,
             )
             logger.info(f"Transactions details: {transactions_details}")
 
@@ -253,12 +270,16 @@ class FarmAgent:
 
         except Exception as e:
             logger.error(f"Error during MCP tool calls: {e}")
-            return {"messages": [AIMessage("Failed to process order due to MCP tool errors.")]}
+            return {
+                "messages": [
+                    AIMessage("Failed to process order due to MCP tool errors.")
+                ]
+            }
 
         # Simulate data retrieval - in a real app, this would be a database/API call
         mock_order_data = {
             "12345": {"status": "processing", "estimated_delivery": "2 business days"},
-            "67890": {"status": "shipped", "tracking_number": "ABCDEF123"}
+            "67890": {"status": "shipped", "tracking_number": "ABCDEF123"},
         }
 
         logger.info(f"Mock order data: {mock_order_data}")
@@ -271,14 +292,18 @@ class FarmAgent:
             Order Data: {order_data}
             User question: {user_message}
             """,
-            input_variables=["user_message", "order_data"]
+            input_variables=["user_message", "order_data"],
         )
         chain = prompt | self.orders_llm
 
-        llm_response = chain.invoke({
-            "user_message": user_message,
-            "order_data": str(mock_order_data) # Pass data as string for LLM context
-        }).content
+        llm_response = chain.invoke(
+            {
+                "user_message": user_message,
+                "order_data": str(
+                    mock_order_data
+                ),  # Pass data as string for LLM context
+            }
+        ).content
 
         return {"messages": [AIMessage(llm_response)]}
 
@@ -366,4 +391,6 @@ class FarmAgent:
                 return message.content.strip()
 
         # If no valid AIMessage found, return the last message as a fallback
-        return messages[-1].content.strip() if messages else "No valid response generated."
+        return (
+            messages[-1].content.strip() if messages else "No valid response generated."
+        )

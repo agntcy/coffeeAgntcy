@@ -134,7 +134,8 @@ def test_update_merges_fields_not_full_replace():
     )
     out = merge_event_data(base, ev2)
     node = {
-        n["id"]: n for n in _dump(out)["workflows"]["w"]["instances"][INST]["topology"]["nodes"]
+        n["id"]: n
+        for n in _dump(out)["workflows"]["w"]["instances"][INST]["topology"]["nodes"]
     }[NODE_A]
     assert node["label"] == "L2"
     assert node["type"] == "t"
@@ -204,7 +205,8 @@ def test_read_does_not_overwrite_existing_node():
     )
     out2 = merge_event_data(out1, ev2)
     node = {
-        n["id"]: n for n in _dump(out2)["workflows"]["w"]["instances"][INST]["topology"]["nodes"]
+        n["id"]: n
+        for n in _dump(out2)["workflows"]["w"]["instances"][INST]["topology"]["nodes"]
     }[NODE_A]
     assert node["type"] == "t1"
     assert node["label"] == "a"

@@ -12,7 +12,11 @@ import pytest
 from schema import json_schema as json_schema_mod
 from schema import validation as validation_mod
 from schema.definition_backend import DefinitionBackend
-from schema.errors import AmbiguousSchemaNameError, SchemaDefinitionError, SchemaNotFoundError
+from schema.errors import (
+    AmbiguousSchemaNameError,
+    SchemaDefinitionError,
+    SchemaNotFoundError,
+)
 from schema.json_schema import get_schema as json_get_schema
 from schema.validation import (
     get_schema,
@@ -75,13 +79,20 @@ def _unknown_file(specs_dir: Path) -> None:
     "invoke",
     [
         pytest.param(lambda _: validate_definition(_UNKNOWN), id="definition"),
-        pytest.param(lambda _: validate_data_against_schema({}, _UNKNOWN), id="data_against_schema"),
+        pytest.param(
+            lambda _: validate_data_against_schema({}, _UNKNOWN),
+            id="data_against_schema",
+        ),
         pytest.param(lambda _: get_schema(_UNKNOWN), id="get_schema"),
-        pytest.param(lambda _: validate_string_against_schema(_VALID_JSON, _UNKNOWN), id="string"),
+        pytest.param(
+            lambda _: validate_string_against_schema(_VALID_JSON, _UNKNOWN), id="string"
+        ),
         pytest.param(lambda d: _unknown_file(d), id="file"),
     ],
 )
-def test_unknown_schema_when_specs_empty(json_schema_specs_dir: Path, invoke: Callable[[Path], None]):
+def test_unknown_schema_when_specs_empty(
+    json_schema_specs_dir: Path, invoke: Callable[[Path], None]
+):
     with pytest.raises(SchemaNotFoundError, match="Unknown schema"):
         invoke(json_schema_specs_dir)
 
@@ -90,7 +101,9 @@ def test_validate_all_definitions_integration_packaged_ok():
     assert validate_all_definitions() == []
 
 
-def test_validate_all_definitions_concatenates_backends(monkeypatch: pytest.MonkeyPatch):
+def test_validate_all_definitions_concatenates_backends(
+    monkeypatch: pytest.MonkeyPatch,
+):
     e1 = SchemaDefinitionError("one", path=Path("a.json"))
     e2 = SchemaDefinitionError("two", path=Path("b.json"))
     b1 = MagicMock(spec=DefinitionBackend)

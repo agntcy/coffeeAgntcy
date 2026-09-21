@@ -18,6 +18,7 @@ from farm.agent import FarmAgent
 
 logger = logging.getLogger("corto.farm_agent.a2a_executor")
 
+
 class FarmAgentExecutor(AgentExecutor):
     """
     This class extends the base `AgentExecutor` and executes requests on behalf of the Farm
@@ -28,6 +29,7 @@ class FarmAgentExecutor(AgentExecutor):
     flavor generation, and publishes appropriate events (e.g., messages) to the event queue.
 
     """
+
     def __init__(self):
         self.agent = FarmAgent()
 

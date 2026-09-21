@@ -37,8 +37,8 @@ def extract_order_id(text: str) -> str:
 
 
 def parse_order_event_line(
-        line: str,
-        timestamp: Optional[datetime] = None,
+    line: str,
+    timestamp: Optional[datetime] = None,
 ) -> Optional[OrderEvent]:
     """
     Parse a logistic status line of the form:
@@ -101,7 +101,11 @@ class HelpdeskAgent:
             event = parse_order_event_line(prompt)
             if event:
                 await self.store.append(event.order_id, event)
-                logger.debug("Updated event list for %s: %s", event.order_id, await self.store.get(event.order_id))
+                logger.debug(
+                    "Updated event list for %s: %s",
+                    event.order_id,
+                    await self.store.get(event.order_id),
+                )
 
         return f"{AGENT_CARD.name} IDLE"
 
@@ -118,9 +122,9 @@ class HelpdeskAgentExecutor(AgentExecutor):
         self.agent_card = AGENT_CARD.model_dump(mode="json", exclude_none=True)
 
     async def execute(
-            self,
-            context: RequestContext,
-            event_queue: EventQueue,
+        self,
+        context: RequestContext,
+        event_queue: EventQueue,
     ) -> None:
         """
         Execute a single agent invocation and enqueue textual result.
@@ -129,9 +133,9 @@ class HelpdeskAgentExecutor(AgentExecutor):
         await event_queue.enqueue_event(new_agent_text_message(result))
 
     async def cancel(
-            self,
-            request: RequestContext,
-            event_queue: EventQueue,
+        self,
+        request: RequestContext,
+        event_queue: EventQueue,
     ) -> Task | None:
         """
         Cancel is not supported for this simple agent.

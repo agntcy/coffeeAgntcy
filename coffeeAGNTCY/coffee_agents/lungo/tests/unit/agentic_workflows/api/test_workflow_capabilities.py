@@ -9,7 +9,9 @@ from typing import NamedTuple
 
 import pytest
 from api.agentic_workflows.workflow_capabilities import derive_workflow_capabilities
-from api.agentic_workflows.workflows import _load_and_validate_starting_workflows_from_file
+from api.agentic_workflows.workflows import (
+    _load_and_validate_starting_workflows_from_file,
+)
 from schema.types import Workflow
 from tests.unit.agentic_workflows.catalog_test_helpers import STARTING_WORKFLOWS_JSON
 
@@ -144,10 +146,7 @@ def test_derive_workflow_capabilities(case: CapCase) -> None:
 
 @pytest.mark.parametrize(
     ("workflow_name", "supports_sse", "supports_streaming", "chat_api_target"),
-    [
-        pytest.param(*row, id=row[0])
-        for row in _RUNNABLE_CATALOG_EXPECTATIONS
-    ],
+    [pytest.param(*row, id=row[0]) for row in _RUNNABLE_CATALOG_EXPECTATIONS],
 )
 def test_derive_workflow_capabilities_starting_workflows_catalog(
     workflow_name: str,
@@ -165,7 +164,9 @@ def test_derive_workflow_capabilities_starting_workflows_catalog(
     assert target == chat_api_target
 
 
-def test_derive_workflow_capabilities_placeholder_in_starting_workflows_catalog() -> None:
+def test_derive_workflow_capabilities_placeholder_in_starting_workflows_catalog() -> (
+    None
+):
     catalog = _load_and_validate_starting_workflows_from_file(_STARTING_WORKFLOWS_JSON)
     wf = catalog.get("Orchestrator Agent")
     assert wf is not None

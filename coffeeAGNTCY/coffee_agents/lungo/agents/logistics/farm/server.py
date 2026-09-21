@@ -150,7 +150,6 @@ async def serve_all_a2a_interfaces(
 
 
 async def main():
-
     request_handler = DefaultRequestHandler(
         agent_executor=FarmAgentExecutor(),
         task_store=InMemoryTaskStore(),

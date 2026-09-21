@@ -51,7 +51,9 @@ async def _aiter_then_raise(items, exc):
 class _FakeMCPClient:
     """Duck-typed MCP client used to drive the wrapper."""
 
-    def __init__(self, *, result="ok", stream=None, stream_error=None, error=None) -> None:
+    def __init__(
+        self, *, result="ok", stream=None, stream_error=None, error=None
+    ) -> None:
         self.result = result
         self.stream = stream
         self.stream_error = stream_error
@@ -122,7 +124,9 @@ class _DistinctSessionClient:
 def emit_enabled(monkeypatch):
     """Enable emission and route the sink to an in-memory capturer."""
     monkeypatch.setattr(wrapper_mod, "EMIT_WORKFLOW_EVENTS", True, raising=False)
-    monkeypatch.setattr(wrapper_mod, "WorkflowAPIEventSink", _CapturingSink, raising=True)
+    monkeypatch.setattr(
+        wrapper_mod, "WorkflowAPIEventSink", _CapturingSink, raising=True
+    )
 
 
 def _instance(event):
@@ -280,7 +284,9 @@ async def test_emit_disabled_returns_unwrapped(monkeypatch):
     assert fake.calls == [(("get_forecast",), {})]
 
 
-async def test_missing_workflow_context_returns_unwrapped(emit_enabled, no_default_baggage):
+async def test_missing_workflow_context_returns_unwrapped(
+    emit_enabled, no_default_baggage
+):
     """Absent workflow identity returns the unwrapped client (no events)."""
     fake = _FakeMCPClient(result="ok")
     wrapped = _wrap(fake)
@@ -292,7 +298,9 @@ async def test_missing_workflow_context_returns_unwrapped(emit_enabled, no_defau
     assert fake.calls == [(("get_forecast",), {})]
 
 
-async def test_explicit_identity_used_when_baggage_absent(emit_enabled, no_default_baggage):
+async def test_explicit_identity_used_when_baggage_absent(
+    emit_enabled, no_default_baggage
+):
     """With no baggage, explicit workflow_name/instance_id resolve identity."""
     fake = _FakeMCPClient(result="forecast")
     wrapped = wrap_mcp_client(

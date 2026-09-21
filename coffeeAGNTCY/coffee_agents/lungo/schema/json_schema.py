@@ -2,13 +2,13 @@
 # SPDX-License-Identifier: Apache-2.0
 
 """
-JSON Schema file loading and validation functions. 
+JSON Schema file loading and validation functions.
 Maps library errors to ``schema.errors``.
 
 This module is the JSON specific implementation of the validation layer.
 It also implements its own version of ``DefinitionBackend`` interface for JSON Schemas.
 
-DO NOT import this module directly, use ``schema.validation`` instead, 
+DO NOT import this module directly, use ``schema.validation`` instead,
 which imports and wraps it properly.
 (Unless imported for unit tests or integration tests specifically targeting JSON mechanics.)
 """
@@ -120,7 +120,9 @@ def get_schema(schema_name: str) -> dict:
         with open(path, encoding="utf-8") as f:
             return json.load(f)
     except json.JSONDecodeError as e:
-        raise errors.SchemaDefinitionError(f"Invalid JSON in schema file: {e}", path=path) from e
+        raise errors.SchemaDefinitionError(
+            f"Invalid JSON in schema file: {e}", path=path
+        ) from e
 
 
 def load_json_instance_file(path: Path) -> dict:

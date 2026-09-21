@@ -80,5 +80,7 @@ async def test_weather_mcp_open_meteo_stub_success_returns_forecast(
     )
     result = await loopback_mcp_client(**_WEATHER_MCP_ARGS)
 
-    assert _is_valid_weather_forecast(result), f"Expected valid forecast text, got: {result!r}"
+    assert _is_valid_weather_forecast(result), (
+        f"Expected valid forecast text, got: {result!r}"
+    )
     assert "22.0" in result

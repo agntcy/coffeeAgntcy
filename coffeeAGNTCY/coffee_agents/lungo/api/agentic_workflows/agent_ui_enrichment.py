@@ -68,7 +68,9 @@ def _enrichment_from_annotations(
         verification_status = verification.strip().lower()
 
     return AgentUiEnrichment(
-        agent_directory_cid=cid.strip() if isinstance(cid, str) and cid.strip() else None,
+        agent_directory_cid=cid.strip()
+        if isinstance(cid, str) and cid.strip()
+        else None,
         identity_app_slug=(
             identity.strip() if isinstance(identity, str) and identity.strip() else None
         ),

@@ -8,7 +8,9 @@ from __future__ import annotations
 from pathlib import Path
 
 from api.agentic_workflows.transport_ui_enrichment import init_transport_cache
-from api.agentic_workflows.workflows import _load_and_validate_starting_workflows_from_file
+from api.agentic_workflows.workflows import (
+    _load_and_validate_starting_workflows_from_file,
+)
 from schema.types import Workflow
 
 _LUNGO_ROOT = Path(__file__).resolve().parents[3]
@@ -25,7 +27,9 @@ def load_validated_starting_workflows_catalog(
     This mirrors the catalog load performed at server startup but does not mutate
     the global ``_STARTING_WORKFLOWS`` cache.
     """
-    return _load_and_validate_starting_workflows_from_file(target or STARTING_WORKFLOWS_JSON)
+    return _load_and_validate_starting_workflows_from_file(
+        target or STARTING_WORKFLOWS_JSON
+    )
 
 
 def init_transport_cache_for_tests() -> None:

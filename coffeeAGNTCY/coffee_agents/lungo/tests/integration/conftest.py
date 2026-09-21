@@ -5,6 +5,7 @@
 Pytest fixtures using the simple ProcessRunner.
 Replace prior xprocess usage with these.
 """
+
 import atexit
 import os
 from urllib.parse import urlparse
@@ -74,12 +75,13 @@ AGENTS = {
     "helpdesk": {
         "cmd": ["python", "-m", "agents.logistics.helpdesk.server", "--no-reload"],
         "ready_pattern": r"Agent ready",
-    }
+    },
 }
 
 _ACTIVE_RUNNERS = []
 
 # ---------------- utils ----------------
+
 
 def _base_env():
     # Use test env: SDK on so spans are recording (avoids NonRecordingSpan.attributes error).
@@ -92,7 +94,9 @@ def _base_env():
         "PYTHONPATH": str(LUNGO_DIR),
         "FARM_BROADCAST_TOPIC": "farm_broadcast",
         "OTEL_SDK_DISABLED": os.environ.get("OTEL_SDK_DISABLED", "false"),
-        "OTLP_HTTP_ENDPOINT": os.environ.get("OTLP_HTTP_ENDPOINT", "http://127.0.0.1:4318"),
+        "OTLP_HTTP_ENDPOINT": os.environ.get(
+            "OTLP_HTTP_ENDPOINT", "http://127.0.0.1:4318"
+        ),
         "PYTHONUNBUFFERED": "1",
         "PYTHONFAULTHANDLER": "1",
         "TRANSPORT_SERVER_ENDPOINT": os.environ.get(
@@ -102,12 +106,16 @@ def _base_env():
         "NATS_SERVER": "127.0.0.1:4222",
     }
 
+
 def _purge_modules(prefixes, keep=None):
     keep = set(keep or [])
-    to_delete = [m for m in list(sys.modules)
-                 if any(m == p or m.startswith(p + ".") for p in prefixes)
-                 and m not in keep
-                 and not any(m.startswith(k + ".") for k in keep)]
+    to_delete = [
+        m
+        for m in list(sys.modules)
+        if any(m == p or m.startswith(p + ".") for p in prefixes)
+        and m not in keep
+        and not any(m.startswith(k + ".") for k in keep)
+    ]
     for m in to_delete:
         sys.modules.pop(m, None)
 
@@ -143,6 +151,7 @@ def _wait_ready(client, path, timeout_s=30.0, poll_s=0.5):
         time.sleep(poll_s)
     raise RuntimeError(f"Ready check {path} did not return 200 within {timeout_s}s")
 
+
 # ---------------- session infra ----------------
 # docker_helpers passes env=os.environ to compose so infra containers use the same env as the test (e.g. OTEL_SDK_DISABLED).
 files = ["docker-compose.yaml"]
@@ -158,7 +167,9 @@ def _teardown_session_docker():
     if _session_docker_torn_down:
         return
     _session_docker_torn_down = True
-    print("--- Tearing down session Docker (slim, nats, otel-collector, clickhouse, grafana) ---")
+    print(
+        "--- Tearing down session Docker (slim, nats, otel-collector, clickhouse, grafana) ---"
+    )
     down(files)
 
 
@@ -186,7 +197,9 @@ def _shutdown_otel_sdk():
         try:
             from ioa_observe.sdk.tracing.tracing import TracerWrapper
 
-            if getattr(TracerWrapper, "endpoint", None) and hasattr(TracerWrapper, "instance"):
+            if getattr(TracerWrapper, "endpoint", None) and hasattr(
+                TracerWrapper, "instance"
+            ):
                 TracerWrapper.instance.flush()
         except Exception:  # noqa: BLE001
             pass
@@ -228,29 +241,37 @@ def orchestrate_session_services():
         pass
     # Docker teardown runs from atexit after all OTEL/ioa_observe atexit hooks finish.
 
+
 def setup_transports():
     _startup_slim()
     _startup_nats()
+
 
 def setup_observability():
     _startup_clickhouse()
     _startup_otel_collector()
     _startup_grafana()
 
+
 def setup_identity():
     pass
+
 
 def _startup_slim():
     up(files, ["slim"])
 
+
 def _startup_nats():
     up(files, ["nats"])
+
 
 def _startup_grafana():
     up(files, ["grafana"])
 
+
 def _startup_clickhouse():
     up(files, ["clickhouse-server"])
+
 
 def _otlp_host_port() -> tuple[str, int]:
     parsed = urlparse(os.environ.get("OTLP_HTTP_ENDPOINT", "http://127.0.0.1:4318"))
@@ -285,9 +306,11 @@ def _drop_supervisor_modules_imported_at_collection():
 
 # ---------------- per-test config ----------------
 
+
 @pytest.fixture(scope="function")
 def transport_config(request):
     return dict(getattr(request, "param", {}) or {})
+
 
 @pytest.fixture(scope="function")
 def agent_specs(request):
@@ -303,6 +326,7 @@ def agent_specs(request):
         return []
     specs = m.args[0] if m.args else m.kwargs.get("specs", [])
     return [_normalize_agent_spec(s) for s in specs]
+
 
 def _normalize_agent_spec(spec):
     """
@@ -329,6 +353,7 @@ def _normalize_agent_spec(spec):
 
     raise TypeError(f"Agent spec must be dict or module string, got: {type(spec)}")
 
+
 def _derive_name_from_spec(spec: dict) -> str:
     if "name" in spec and spec["name"]:
         return spec["name"]
@@ -345,7 +370,9 @@ def _derive_name_from_spec(spec: dict) -> str:
         return Path(parts[0]).name
     return "agent"
 
+
 # ---------------- Open-Meteo stub (integration tests) ----------------
+
 
 @pytest.fixture(scope="session")
 def open_meteo_stub():
@@ -358,6 +385,7 @@ def open_meteo_stub():
 
 
 # ---------------- generic agent fixture ----------------
+
 
 @pytest.fixture(scope="function")
 def agents_up(request, transport_config):
@@ -378,14 +406,18 @@ def agents_up(request, transport_config):
         def test_things(agents_up): ...
     """
     m = request.node.get_closest_marker("agents")
-    agent_names = (m.args[0] if m and m.args else m.kwargs.get("names", [])) if m else []
+    agent_names = (
+        (m.args[0] if m and m.args else m.kwargs.get("names", [])) if m else []
+    )
 
     open_meteo_stub = None
     previous_stub_mode = None
     if "weather-mcp" in agent_names:
         open_meteo_stub = request.getfixturevalue("open_meteo_stub")
         stub_marker = request.node.get_closest_marker("open_meteo_stub")
-        stub_mode = stub_marker.args[0] if stub_marker and stub_marker.args else "success"
+        stub_mode = (
+            stub_marker.args[0] if stub_marker and stub_marker.args else "success"
+        )
         previous_stub_mode = open_meteo_stub.get_mode()
         open_meteo_stub.set_mode(stub_mode)
 
@@ -406,7 +438,9 @@ def agents_up(request, transport_config):
             if fallback_marker and fallback_marker.args:
                 env["USE_WEATHER_FALLBACK"] = str(fallback_marker.args[0]).lower()
             else:
-                env["USE_WEATHER_FALLBACK"] = os.environ.get("USE_WEATHER_FALLBACK", "false")
+                env["USE_WEATHER_FALLBACK"] = os.environ.get(
+                    "USE_WEATHER_FALLBACK", "false"
+                )
 
         print(f"\n--- Starting {name} ---")
         runner = ProcessRunner(
@@ -439,7 +473,9 @@ def agents_up(request, transport_config):
             print(f"--- Stopping {r.name} ---")
             r.stop()
 
+
 # ---------------- http client ----------------
+
 
 @pytest.fixture
 def auction_supervisor_client(transport_config, monkeypatch):
@@ -609,9 +645,11 @@ def logistics_accountant_client(transport_config, monkeypatch):
         import importlib
 
         import agents.logistics.accountant.server as accountant_server
+
         importlib.reload(accountant_server)
 
         from fastapi.testclient import TestClient
+
         app = accountant_server.app
         with TestClient(app) as client:
             yield client

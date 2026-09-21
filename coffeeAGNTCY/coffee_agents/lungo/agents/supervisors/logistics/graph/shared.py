@@ -9,13 +9,17 @@ from common.a2a_transport_config import build_a2a_client_config
 
 _factory: Optional[AgntcyFactory] = None
 
+
 def set_factory(factory: AgntcyFactory):
     global _factory
     _factory = factory
 
+
 def get_factory() -> AgntcyFactory:
     if _factory is None:
-        return AgntcyFactory("lungo.logistics_supervisor", enable_tracing=not OTEL_SDK_DISABLED)
+        return AgntcyFactory(
+            "lungo.logistics_supervisor", enable_tracing=not OTEL_SDK_DISABLED
+        )
     return _factory
 
 

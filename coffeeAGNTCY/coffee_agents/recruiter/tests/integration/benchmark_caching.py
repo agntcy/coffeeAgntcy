@@ -32,7 +32,7 @@ async def run_benchmark():
     stats = team.get_cache_stats()
     print(f"Cache Mode: {stats['mode']}")
     print(f"Tool Cache Enabled: {stats['tool_cache'] is not None}")
-    if stats['tool_cache']:
+    if stats["tool_cache"]:
         print(f"TTL: {stats['tool_cache'].get('ttl', 'N/A')}s")
         print(f"Max Entries: {stats['tool_cache'].get('max_entries', 'N/A')}")
     print()
@@ -49,12 +49,16 @@ async def run_benchmark():
     print("-" * 70)
 
     for i in range(3):
-        session_id = f"benchmark_session_{i+1}"
+        session_id = f"benchmark_session_{i + 1}"
 
         # Clear stats tracking for this run
         stats_before = team.get_cache_stats()
-        hits_before = stats_before["tool_cache"]["hits"] if stats_before["tool_cache"] else 0
-        misses_before = stats_before["tool_cache"]["misses"] if stats_before["tool_cache"] else 0
+        hits_before = (
+            stats_before["tool_cache"]["hits"] if stats_before["tool_cache"] else 0
+        )
+        misses_before = (
+            stats_before["tool_cache"]["misses"] if stats_before["tool_cache"] else 0
+        )
 
         # Time the request
         start = time.perf_counter()
@@ -63,22 +67,28 @@ async def run_benchmark():
 
         # Get stats after
         stats_after = team.get_cache_stats()
-        hits_after = stats_after["tool_cache"]["hits"] if stats_after["tool_cache"] else 0
-        misses_after = stats_after["tool_cache"]["misses"] if stats_after["tool_cache"] else 0
+        hits_after = (
+            stats_after["tool_cache"]["hits"] if stats_after["tool_cache"] else 0
+        )
+        misses_after = (
+            stats_after["tool_cache"]["misses"] if stats_after["tool_cache"] else 0
+        )
 
         # Calculate delta
         new_hits = hits_after - hits_before
         new_misses = misses_after - misses_before
 
-        results.append({
-            "run": i + 1,
-            "session": session_id,
-            "time": elapsed,
-            "cache_hits": new_hits,
-            "cache_misses": new_misses,
-        })
+        results.append(
+            {
+                "run": i + 1,
+                "session": session_id,
+                "time": elapsed,
+                "cache_hits": new_hits,
+                "cache_misses": new_misses,
+            }
+        )
 
-        print(f"Run {i+1}: {elapsed:.3f}s | Hits: {new_hits} | Misses: {new_misses}")
+        print(f"Run {i + 1}: {elapsed:.3f}s | Hits: {new_hits} | Misses: {new_misses}")
 
     print()
 
@@ -106,9 +116,9 @@ async def run_benchmark():
 
     # Warm cache performance
     if cached_runs:
-        avg_cached_time = sum(r['time'] for r in cached_runs) / len(cached_runs)
-        total_hits = sum(r['cache_hits'] for r in cached_runs)
-        total_misses = sum(r['cache_misses'] for r in cached_runs)
+        avg_cached_time = sum(r["time"] for r in cached_runs) / len(cached_runs)
+        total_hits = sum(r["cache_hits"] for r in cached_runs)
+        total_misses = sum(r["cache_misses"] for r in cached_runs)
 
         print(f"{'Warm Cache (Runs 2-3):':<35}")
         print(f"  {'Avg Latency':<33} {avg_cached_time:>12.3f}s")
@@ -117,9 +127,13 @@ async def run_benchmark():
         print()
 
         # Performance improvement
-        latency_reduction = first_run['time'] - avg_cached_time
-        latency_reduction_pct = (latency_reduction / first_run['time']) * 100 if first_run['time'] > 0 else 0
-        speedup = first_run['time'] / avg_cached_time if avg_cached_time > 0 else 0
+        latency_reduction = first_run["time"] - avg_cached_time
+        latency_reduction_pct = (
+            (latency_reduction / first_run["time"]) * 100
+            if first_run["time"] > 0
+            else 0
+        )
+        speedup = first_run["time"] / avg_cached_time if avg_cached_time > 0 else 0
 
         print(f"{'Performance Improvement:':<35}")
         print(f"  {'Latency Reduction':<33} {latency_reduction:>12.3f}s")
@@ -145,7 +159,9 @@ async def run_benchmark():
     print()
 
     if cached_runs and latency_reduction_pct > 0:
-        print(f"Tool caching reduced latency by {latency_reduction_pct:.1f}% ({latency_reduction:.2f}s)")
+        print(
+            f"Tool caching reduced latency by {latency_reduction_pct:.1f}% ({latency_reduction:.2f}s)"
+        )
         print(f"achieving a {speedup:.2f}x speedup on repeated similar queries.")
         print()
         print("How it works:")

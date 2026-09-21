@@ -31,89 +31,100 @@ logger.info("CORS allow_origins: %s", _cors_origins)
 
 app = FastAPI()
 app.add_middleware(
-  CORSMiddleware,
-  allow_origins=_cors_origins,
-  allow_credentials=True,
-  allow_methods=["*"],
-  allow_headers=["*"],
+    CORSMiddleware,
+    allow_origins=_cors_origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 exchange_agent = ExchangeAgent()
 
+
 class PromptRequest(BaseModel):
-  prompt: str
+    prompt: str
+
 
 @app.post("/agent/prompt")
 async def handle_prompt(request: PromptRequest):
-  """
-  Processes a user prompt by routing it through the ExchangeGraph.
+    """
+    Processes a user prompt by routing it through the ExchangeGraph.
 
-  Args:
-      request (PromptRequest): Contains the input prompt as a string.
+    Args:
+        request (PromptRequest): Contains the input prompt as a string.
 
-  Returns:
-      dict: A dictionary containing the agent's response.
+    Returns:
+        dict: A dictionary containing the agent's response.
 
-  Raises:
-      HTTPException: 400 for invalid input, 504 for gateway timeout (remote agent did not respond in time),
-      502 for bad gateway (remote agent returned no response / invalid payload), 500 for other server-side errors.
-  """
-  try:
-    with session_start() as session_id:
-      # Process the prompt using the exchange graph
-      result = await exchange_agent.execute_agent_with_llm(request.prompt)
-      logger.info(f"Final result from exchange agent: {result}")
-      return {"response": result, "session_id": session_id["executionID"]}
-  except ValueError as ve:
-    logger.exception(f"ValueError occurred: {str(ve)}")
-    raise HTTPException(status_code=400, detail=str(ve))
-  except TransportTimeoutError as e:
-    logger.exception("Transport timeout: %s", e)
-    detail = "Remote agent did not respond in time (SLIM receive timeout)."
-    if e.__cause__ is not None:
-      detail = f"{detail} Cause: {e.__cause__}"
-    raise HTTPException(status_code=504, detail=detail)
-  except RemoteAgentNoResponseError as e:
-    logger.exception("Remote agent returned no response: %s", e)
-    detail = "Remote agent returned no response (missing or invalid payload)."
-    if e.__cause__ is not None:
-      detail = f"{detail} Cause: {e.__cause__}"
-    raise HTTPException(status_code=502, detail=detail)
-  except Exception as e:
-    logger.exception(f"An error occurred: {str(e)}")
-    raise HTTPException(status_code=500, detail=f"Operation failed: {str(e)}")
+    Raises:
+        HTTPException: 400 for invalid input, 504 for gateway timeout (remote agent did not respond in time),
+        502 for bad gateway (remote agent returned no response / invalid payload), 500 for other server-side errors.
+    """
+    try:
+        with session_start() as session_id:
+            # Process the prompt using the exchange graph
+            result = await exchange_agent.execute_agent_with_llm(request.prompt)
+            logger.info(f"Final result from exchange agent: {result}")
+            return {"response": result, "session_id": session_id["executionID"]}
+    except ValueError as ve:
+        logger.exception(f"ValueError occurred: {str(ve)}")
+        raise HTTPException(status_code=400, detail=str(ve))
+    except TransportTimeoutError as e:
+        logger.exception("Transport timeout: %s", e)
+        detail = "Remote agent did not respond in time (SLIM receive timeout)."
+        if e.__cause__ is not None:
+            detail = f"{detail} Cause: {e.__cause__}"
+        raise HTTPException(status_code=504, detail=detail)
+    except RemoteAgentNoResponseError as e:
+        logger.exception("Remote agent returned no response: %s", e)
+        detail = "Remote agent returned no response (missing or invalid payload)."
+        if e.__cause__ is not None:
+            detail = f"{detail} Cause: {e.__cause__}"
+        raise HTTPException(status_code=502, detail=detail)
+    except Exception as e:
+        logger.exception(f"An error occurred: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Operation failed: {str(e)}")
+
 
 @app.get("/health")
 async def health_check():
     return {"status": "ok"}
 
+
 @app.get("/about")
 async def version_info():
-  """Return minimal build info sourced from about.properties."""
-  props_path = Path(__file__).parent.parent / "about.properties"
-  return get_version_info(props_path)
+    """Return minimal build info sourced from about.properties."""
+    props_path = Path(__file__).parent.parent / "about.properties"
+    return get_version_info(props_path)
+
 
 @app.get("/suggested-prompts")
 async def get_prompts():
-  """
-  Returns a list of suggested prompts as a JSON array.
+    """
+    Returns a list of suggested prompts as a JSON array.
 
-  Returns:
-      list: A list of suggested prompt strings loaded from suggested_prompts.json.
-  """
-  prompts_path = Path(__file__).parent / "suggested_prompts.json"
-  try:
-    raw = prompts_path.read_text(encoding="utf-8")
-    return json.loads(raw)
-  except FileNotFoundError as fnf:
-    logger.exception(f"suggested_prompts.json not found at {prompts_path}")
-    raise HTTPException(status_code=404, detail="suggested_prompts.json not found") from fnf
-  except json.JSONDecodeError as jde:
-    logger.exception("Invalid JSON in suggested_prompts.json")
-    raise HTTPException(status_code=500, detail="Invalid JSON in suggested_prompts.json") from jde
-  except Exception as e:
-    logger.exception(f"Failed to load suggested prompts: {str(e)}")
-    raise HTTPException(status_code=500, detail=f"Failed to load prompts: {str(e)}") from e
+    Returns:
+        list: A list of suggested prompt strings loaded from suggested_prompts.json.
+    """
+    prompts_path = Path(__file__).parent / "suggested_prompts.json"
+    try:
+        raw = prompts_path.read_text(encoding="utf-8")
+        return json.loads(raw)
+    except FileNotFoundError as fnf:
+        logger.exception(f"suggested_prompts.json not found at {prompts_path}")
+        raise HTTPException(
+            status_code=404, detail="suggested_prompts.json not found"
+        ) from fnf
+    except json.JSONDecodeError as jde:
+        logger.exception("Invalid JSON in suggested_prompts.json")
+        raise HTTPException(
+            status_code=500, detail="Invalid JSON in suggested_prompts.json"
+        ) from jde
+    except Exception as e:
+        logger.exception(f"Failed to load suggested prompts: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Failed to load prompts: {str(e)}"
+        ) from e
 
 
 @app.get("/agents/{slug}/oasf")
@@ -145,4 +156,4 @@ async def get_agent_oasf(slug: str):
 
 # Run the FastAPI server using uvicorn
 if __name__ == "__main__":
-  uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
+    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)

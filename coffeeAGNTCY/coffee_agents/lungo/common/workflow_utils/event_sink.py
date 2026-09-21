@@ -67,7 +67,7 @@ class WorkflowAPIEventSink(EventSink):
 
         instance_uuid = instance_id
         if instance_uuid.startswith(self._INSTANCE_ID_PREFIX):
-            instance_uuid = instance_uuid[len(self._INSTANCE_ID_PREFIX):]
+            instance_uuid = instance_uuid[len(self._INSTANCE_ID_PREFIX) :]
 
         url = (
             f"{self._base_url}/agentic-workflows/{quote(workflow_name, safe='')}"

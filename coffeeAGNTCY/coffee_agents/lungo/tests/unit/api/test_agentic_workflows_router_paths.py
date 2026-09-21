@@ -117,9 +117,7 @@ _ROUTE_CASES: tuple[RouteCase, ...] = (
 )
 
 
-@pytest.mark.parametrize(
-    "case", [pytest.param(c, id=c.case_id) for c in _ROUTE_CASES]
-)
+@pytest.mark.parametrize("case", [pytest.param(c, id=c.case_id) for c in _ROUTE_CASES])
 def test_instance_scoped_routes(case: RouteCase, client: TestClient) -> None:
     if case.method == "GET":
         resp = client.get(case.path)

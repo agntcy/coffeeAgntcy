@@ -49,8 +49,7 @@ class _FakeBuilder:
 
     async def start(self, *, keep_alive: bool = False):
         advertised = {
-            normalize_transport(i.transport)
-            for i in self._card.additional_interfaces
+            normalize_transport(i.transport) for i in self._card.additional_interfaces
         }
         served = advertised - self._skips
         assert len(served) == 1, f"expected exactly one served transport, got {served}"

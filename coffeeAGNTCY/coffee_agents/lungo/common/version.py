@@ -14,9 +14,9 @@ import subprocess
 from pathlib import Path
 from typing import Optional
 
-try:  
-    import tomllib  
-except Exception:  
+try:
+    import tomllib
+except Exception:
     tomllib = None
 
 logger = logging.getLogger(__name__)
@@ -36,85 +36,91 @@ def _extract_name_and_version(spec: str):
     """Extract base package name and version constraint from a dependency spec.
     Returns tuple (base_name, op, version) where op is one of '==', '>=', or '' if unspecified.
     """
-    base = spec.split(';', 1)[0].strip()
-    
+    base = spec.split(";", 1)[0].strip()
+
     match = re.search(r"(==|>=)\s*([^;\s]+)", base)
     if match:
         op, ver = match.group(1), match.group(2)
         name_part = base.split(op)[0].strip()
-        name = name_part.split('[', 1)[0].strip()
+        name = name_part.split("[", 1)[0].strip()
         return name, op, ver
-    
-    name = base.split('[', 1)[0].strip()
+
+    name = base.split("[", 1)[0].strip()
     return name, "", ""
 
 
 def get_dependencies():
     """Get dependency versions from pyproject.toml and docker-compose.yaml"""
     dependencies = {}
-    
+
     try:
         # Parse pyproject.toml for Python dependencies
         pyproject_path = Path(__file__).parent.parent / "pyproject.toml"
         if pyproject_path.exists() and tomllib is not None:
-            with open(pyproject_path, 'rb') as f:
+            with open(pyproject_path, "rb") as f:
                 data = tomllib.load(f)
-            
-            for dep in data.get('project', {}).get('dependencies', []):
+
+            for dep in data.get("project", {}).get("dependencies", []):
                 name, op, ver = _extract_name_and_version(dep)
                 display = DISPLAY_NAMES.get(name)
                 if display:
-                    if op == '==' or op == '>=':
+                    if op == "==" or op == ">=":
                         dependencies[display] = f"v{ver}"
                     else:
                         dependencies[display] = "unknown"
-        
+
         # Get SLIM version from docker-compose.yaml
         compose_path = Path(__file__).parent.parent / "docker-compose.yaml"
         if compose_path.exists():
-            with open(compose_path, 'r') as f:
+            with open(compose_path, "r") as f:
                 content = f.read()
-                match = re.search(r'ghcr\.io/agntcy/slim:(\d+\.\d+\.\d+)', content)
+                match = re.search(r"ghcr\.io/agntcy/slim:(\d+\.\d+\.\d+)", content)
                 if match:
-                    dependencies['SLIM'] = f"v{match.group(1)}"
-                
+                    dependencies["SLIM"] = f"v{match.group(1)}"
+
                 # Get NATS version at runtime if using 'latest' tag
-                nats_match = re.search(r'image:\s*nats:(\S+)', content)
+                nats_match = re.search(r"image:\s*nats:(\S+)", content)
                 if nats_match:
                     nats_tag = nats_match.group(1)
-                    if nats_tag == 'latest':
+                    if nats_tag == "latest":
                         try:
-                            nats_host = 'nats' 
-                            if 'TRANSPORT_SERVER_ENDPOINT' in os.environ:
-                                endpoint = os.environ['TRANSPORT_SERVER_ENDPOINT']
-                                if 'nats://' in endpoint:
-                                    host_part = endpoint.split('://')[1].split(':')[0]
+                            nats_host = "nats"
+                            if "TRANSPORT_SERVER_ENDPOINT" in os.environ:
+                                endpoint = os.environ["TRANSPORT_SERVER_ENDPOINT"]
+                                if "nats://" in endpoint:
+                                    host_part = endpoint.split("://")[1].split(":")[0]
                                     if host_part:
                                         nats_host = host_part
-                            
-                            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+
+                            with socket.socket(
+                                socket.AF_INET, socket.SOCK_STREAM
+                            ) as sock:
                                 sock.settimeout(2)
                                 sock.connect((nats_host, 4222))
-                                data = sock.recv(1024).decode('utf-8')
-                                
-                            if 'INFO ' in data:
-                                info_line = data.split('INFO ')[1].split('\r\n')[0]
+                                data = sock.recv(1024).decode("utf-8")
+
+                            if "INFO " in data:
+                                info_line = data.split("INFO ")[1].split("\r\n")[0]
                                 info = json.loads(info_line)
-                                version = info.get('version', '')
-                                if version and re.match(r'^\d+\.\d+\.\d+', str(version)):
-                                    dependencies['NATS'] = f"v{version}"
+                                version = info.get("version", "")
+                                if version and re.match(
+                                    r"^\d+\.\d+\.\d+", str(version)
+                                ):
+                                    dependencies["NATS"] = f"v{version}"
                                 else:
-                                    dependencies['NATS'] = nats_tag
+                                    dependencies["NATS"] = nats_tag
                             else:
-                                dependencies['NATS'] = nats_tag
+                                dependencies["NATS"] = nats_tag
                         except Exception:
-                            dependencies['NATS'] = nats_tag
+                            dependencies["NATS"] = nats_tag
                     else:
-                        dependencies['NATS'] = f"v{nats_tag}" if not nats_tag.startswith('v') else nats_tag
-        
+                        dependencies["NATS"] = (
+                            f"v{nats_tag}" if not nats_tag.startswith("v") else nats_tag
+                        )
+
     except Exception as e:
         logger.error(f"Error parsing dependencies: {e}")
-    
+
     return dependencies
 
 
@@ -142,7 +148,9 @@ def get_latest_tag_and_date(start: Optional[Path] = None) -> Optional[dict]:
         try:
             git_root.resolve().relative_to(expected_root)
         except ValueError:
-            logger.warning(f"Git root {git_root} is outside expected path {expected_root}")
+            logger.warning(
+                f"Git root {git_root} is outside expected path {expected_root}"
+            )
             return None
 
         def _run(args: list[str]) -> str:
@@ -150,23 +158,26 @@ def get_latest_tag_and_date(start: Optional[Path] = None) -> Optional[dict]:
                 args, cwd=git_root, text=True, stderr=subprocess.DEVNULL
             ).strip()
 
-        out = _run([
-            "git", "for-each-ref",
-            "--sort=-creatordate",
-            "--format=%(refname:short)\t%(creatordate:iso8601)\t%(creatordate:unix)",
-            "refs/tags",
-        ])
-        
+        out = _run(
+            [
+                "git",
+                "for-each-ref",
+                "--sort=-creatordate",
+                "--format=%(refname:short)\t%(creatordate:iso8601)\t%(creatordate:unix)",
+                "refs/tags",
+            ]
+        )
+
         if not out:
             return None
-            
+
         line = out.splitlines()[0]
         parts = line.split("\t")
         if len(parts) < 3:
             return None
-            
+
         return {"tag": parts[0], "created_iso": parts[1], "created_unix": parts[2]}
-        
+
     except Exception as e:
         logger.debug(f"Git fallback failed: {e}")
         return None
@@ -177,28 +188,32 @@ def _format_build_date(build_date: str) -> str:
     if build_date == "unknown":
         return build_date
 
-    if ' ' in build_date:
-        date_part = build_date.split(' ')[0]
-        if re.match(r'^\d{4}-\d{2}-\d{2}$', date_part):
+    if " " in build_date:
+        date_part = build_date.split(" ")[0]
+        if re.match(r"^\d{4}-\d{2}-\d{2}$", date_part):
             return date_part
-    
-    if 'T' in build_date:
-        date_part = build_date.split('T')[0]
-        if re.match(r'^\d{4}-\d{2}-\d{2}$', date_part):
+
+    if "T" in build_date:
+        date_part = build_date.split("T")[0]
+        if re.match(r"^\d{4}-\d{2}-\d{2}$", date_part):
             return date_part
-    
-    if re.match(r'^\d{4}-\d{2}-\d{2}$', build_date):
+
+    if re.match(r"^\d{4}-\d{2}-\d{2}$", build_date):
         return build_date
-    
+
     return build_date
 
 
-def get_version_info(properties_file_path: Path, app_name: str = "lungo-exchange", service_name: str = "lungo-exchange") -> dict:
+def get_version_info(
+    properties_file_path: Path,
+    app_name: str = "lungo-exchange",
+    service_name: str = "lungo-exchange",
+) -> dict:
     """Get complete version information for the application.
-    
+
     Args:
         properties_file_path: Path to the about.properties file
-        
+
     Returns:
         Dictionary containing app, service, version, build_date, build_timestamp, image, and dependencies
     """
@@ -207,7 +222,9 @@ def get_version_info(properties_file_path: Path, app_name: str = "lungo-exchange
         try:
             properties_file_path.resolve().relative_to(expected_root)
         except ValueError:
-            logger.warning(f"Properties file {properties_file_path} is outside expected path {expected_root}")
+            logger.warning(
+                f"Properties file {properties_file_path} is outside expected path {expected_root}"
+            )
             properties_file_path = expected_root / "about.properties"
 
         # Try to read from about.properties first
@@ -216,7 +233,7 @@ def get_version_info(properties_file_path: Path, app_name: str = "lungo-exchange
             with open(properties_file_path, "r") as f:
                 config_string = "[DEFAULT]\n" + f.read()
             config.read_string(config_string)
-            
+
             props = dict(config["DEFAULT"])
 
             app_name_final = props.get("app.name", app_name)
@@ -227,7 +244,9 @@ def get_version_info(properties_file_path: Path, app_name: str = "lungo-exchange
             image_name = props.get("image.name", "unknown")
             image_tag = props.get("image.tag", "unknown")
             image = (
-                f"{image_name}:{image_tag}" if image_name != "unknown" and image_tag != "unknown" else image_name
+                f"{image_name}:{image_tag}"
+                if image_name != "unknown" and image_tag != "unknown"
+                else image_name
             )
 
             # Fill in any missing values with git fallback
@@ -259,7 +278,9 @@ def get_version_info(properties_file_path: Path, app_name: str = "lungo-exchange
                 "app": app_name,
                 "service": service_name,
                 "version": git_info.get("tag", "unknown"),
-                "build_date": _format_build_date(git_info.get("created_iso", "unknown")),
+                "build_date": _format_build_date(
+                    git_info.get("created_iso", "unknown")
+                ),
                 "build_timestamp": git_info.get("created_unix", "unknown"),
                 "image": "unknown",
                 "dependencies": get_dependencies(),

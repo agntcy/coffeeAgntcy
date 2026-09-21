@@ -18,11 +18,17 @@ from sentence_transformers import SentenceTransformer, util
 
 TRANSPORT_MATRIX = [
     pytest.param(
-        {"DEFAULT_MESSAGE_TRANSPORT": "SLIM", "TRANSPORT_SERVER_ENDPOINT": "http://127.0.0.1:46357"},
+        {
+            "DEFAULT_MESSAGE_TRANSPORT": "SLIM",
+            "TRANSPORT_SERVER_ENDPOINT": "http://127.0.0.1:46357",
+        },
         id="SLIM",
     ),
     pytest.param(
-        {"DEFAULT_MESSAGE_TRANSPORT": "NATS", "TRANSPORT_SERVER_ENDPOINT": "nats://127.0.0.1:4222"},
+        {
+            "DEFAULT_MESSAGE_TRANSPORT": "NATS",
+            "TRANSPORT_SERVER_ENDPOINT": "nats://127.0.0.1:4222",
+        },
         id="NATS",
     ),
 ]
@@ -92,7 +98,9 @@ def load_auction_prompt_cases():
         if missing:
             raise ValueError(f"Prompt case missing keys {missing}: {case}")
         if not case["reference_responses"]:
-            raise ValueError(f"Prompt case '{case['id']}' has empty reference_responses")
+            raise ValueError(
+                f"Prompt case '{case['id']}' has empty reference_responses"
+            )
 
     return cases
 

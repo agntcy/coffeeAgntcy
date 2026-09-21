@@ -194,9 +194,7 @@ def _merge_workflow(
                     base_topo = copy.deepcopy(st)
             inst_out["topology"] = merge_topology_delta(
                 base_topo,
-                inst_in["topology"]
-                if isinstance(inst_in["topology"], dict)
-                else {},
+                inst_in["topology"] if isinstance(inst_in["topology"], dict) else {},
             )
         for k, v in inst_in.items():
             if k in ("id", "topology"):
@@ -214,7 +212,9 @@ def merge_event_data(existing: Data | None, event: Event) -> Data:
     workflows_in = data_in.workflows
 
     existing_dict = (
-        existing.model_dump(mode="python") if existing is not None else {"workflows": {}}
+        existing.model_dump(mode="python")
+        if existing is not None
+        else {"workflows": {}}
     )
     out = copy.deepcopy(existing_dict) if existing_dict else {}
     if "workflows" not in out:
@@ -261,9 +261,7 @@ def _existing_stable_agent_id_index(
     inst = state_wf.instances.get(instance_id)
     if inst is not None and inst.topology is not None and inst.topology.nodes:
         nodes = inst.topology.nodes
-    elif (
-        state_wf.starting_topology is not None and state_wf.starting_topology.nodes
-    ):
+    elif state_wf.starting_topology is not None and state_wf.starting_topology.nodes:
         nodes = state_wf.starting_topology.nodes
     index: dict[str, str] = {}
     for node in nodes:
@@ -283,9 +281,7 @@ def _topology_nodes_for_instance(
     inst = state_wf.instances.get(instance_id)
     if inst is not None and inst.topology is not None and inst.topology.nodes:
         return inst.topology.nodes
-    if (
-        state_wf.starting_topology is not None and state_wf.starting_topology.nodes
-    ):
+    if state_wf.starting_topology is not None and state_wf.starting_topology.nodes:
         return state_wf.starting_topology.nodes
     return []
 
@@ -300,9 +296,7 @@ def _topology_edges_for_instance(
     inst = state_wf.instances.get(instance_id)
     if inst is not None and inst.topology is not None and inst.topology.edges:
         return inst.topology.edges
-    if (
-        state_wf.starting_topology is not None and state_wf.starting_topology.edges
-    ):
+    if state_wf.starting_topology is not None and state_wf.starting_topology.edges:
         return state_wf.starting_topology.edges
     return []
 

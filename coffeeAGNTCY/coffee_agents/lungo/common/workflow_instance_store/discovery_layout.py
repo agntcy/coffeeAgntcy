@@ -71,10 +71,7 @@ def _topology_nodes_for_instance(
     inst = state_wf.instances.get(instance_id)
     if inst is not None and inst.topology is not None and inst.topology.nodes:
         return inst.topology.nodes
-    if (
-        state_wf.starting_topology is not None
-        and state_wf.starting_topology.nodes
-    ):
+    if state_wf.starting_topology is not None and state_wf.starting_topology.nodes:
         return state_wf.starting_topology.nodes
     return []
 
@@ -156,11 +153,7 @@ def _occupied_positions(
     *,
     exclude_ids: set[str],
 ) -> list[tuple[float, float]]:
-    return [
-        (x, y)
-        for node_id, x, y in batch_occupied
-        if node_id not in exclude_ids
-    ]
+    return [(x, y) for node_id, x, y in batch_occupied if node_id not in exclude_ids]
 
 
 def enrich_discovery_node_layout(state: Data, event: Event) -> Event:
@@ -178,9 +171,7 @@ def enrich_discovery_node_layout(state: Data, event: Event) -> Event:
                 continue
 
             state_nodes = _topology_nodes_for_instance(state_wf, instance_id)
-            node_by_id = {
-                nid: node for node in state_nodes if (nid := _node_id(node))
-            }
+            node_by_id = {nid: node for node in state_nodes if (nid := _node_id(node))}
 
             batch_occupied: list[tuple[str, float, float]] = []
             for node in state_nodes:
@@ -201,9 +192,7 @@ def enrich_discovery_node_layout(state: Data, event: Event) -> Event:
                     target_to_source[target_root] = source_root
 
             discovered = [
-                node
-                for node in topology.nodes
-                if _is_discovered_create(node)
+                node for node in topology.nodes if _is_discovered_create(node)
             ]
             discovered.sort(
                 key=lambda n: (

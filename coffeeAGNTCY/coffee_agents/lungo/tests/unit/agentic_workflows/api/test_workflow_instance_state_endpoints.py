@@ -24,7 +24,9 @@ from common.workflow_instance_store import WorkflowInstanceStateStore
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 from schema.types import Data, Event, Workflow, instance_id_from_uuid
-from tests.unit.agentic_workflows.catalog_test_helpers import load_catalog_with_transport_cache
+from tests.unit.agentic_workflows.catalog_test_helpers import (
+    load_catalog_with_transport_cache,
+)
 
 _PATCH_GET_WORKFLOWS = "api.agentic_workflows.router.get_workflows"
 
@@ -452,9 +454,7 @@ def test_get_instance_enriches_group_messaging_transport_node(
     wf_name = "Group Messaging"
     post = catalog_store_client.post(f"/agentic-workflows/{wf_name}/")
     assert post.status_code == 200, post.text
-    path_uuid = UUID(
-        post.json()["workflow_instance_id"].removeprefix("instance://")
-    )
+    path_uuid = UUID(post.json()["workflow_instance_id"].removeprefix("instance://"))
 
     got = catalog_store_client.get(
         f"/agentic-workflows/{wf_name}/instances/{path_uuid}/"

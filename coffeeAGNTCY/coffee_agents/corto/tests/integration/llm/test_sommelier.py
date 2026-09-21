@@ -5,6 +5,7 @@
 Unverified SSL is used only as a fallback when the first model load fails with
 SSL: CERTIFICATE_VERIFY_FAILED / unable to get local issuer certificate (e.g. macOS).
 """
+
 import json
 import logging
 import ssl
@@ -63,11 +64,13 @@ def _load_sommelier_model():
 
 model = _load_sommelier_model()
 
+
 def get_semantic_similarity(text1, text2, model):
     embeddings1 = model.encode(text1, convert_to_tensor=True)
     embeddings2 = model.encode(text2, convert_to_tensor=True)
     cosine_score = util.cos_sim(embeddings1, embeddings2)
     return cosine_score.item()
+
 
 def load_prompt_cases() -> List[Dict[str, Any]]:
     data_file = Path(__file__).parent / "prompt_cases.json"
@@ -90,19 +93,22 @@ def load_prompt_cases() -> List[Dict[str, Any]]:
     return cases
 
 
-
 PROMPT_CASES = load_prompt_cases()
 
+
 @pytest.mark.parametrize("transport_config", TRANSPORT_MATRIX, indirect=True)
-@pytest.mark.parametrize("prompt_case", PROMPT_CASES, ids=[c["id"] for c in PROMPT_CASES])
+@pytest.mark.parametrize(
+    "prompt_case", PROMPT_CASES, ids=[c["id"] for c in PROMPT_CASES]
+)
 class TestAuctionFlows:
     @pytest.mark.agents(["farm"])
     @pytest.mark.usefixtures("agents_up")
     def test_sommelier(self, supervisor_client, transport_config, prompt_case):
-        logger.info(f"\n---Test: test_sommelier with {prompt_case['id']} and transport {transport_config}---")
+        logger.info(
+            f"\n---Test: test_sommelier with {prompt_case['id']} and transport {transport_config}---"
+        )
         resp = supervisor_client.post(
-            "/agent/prompt",
-            json={"prompt": prompt_case["prompt"]}
+            "/agent/prompt", json={"prompt": prompt_case["prompt"]}
         )
         assert resp.status_code == 200
         data = resp.json()

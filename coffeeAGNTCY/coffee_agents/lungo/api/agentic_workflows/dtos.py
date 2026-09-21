@@ -95,7 +95,9 @@ class WorkflowSummary(BaseModel):
         ),
     ]
     use_case: Annotated[str, Field(min_length=1)]
-    scenario: Annotated[str, Field(min_length=1, description="brief extra qualifier for the use-case")]
+    scenario: Annotated[
+        str, Field(min_length=1, description="brief extra qualifier for the use-case")
+    ]
     supports_sse: bool
     supports_streaming: bool
     chat_api_target: Annotated[
@@ -121,6 +123,7 @@ class InstantiateWorkflowResponse(BaseModel):
 
 class WorkflowInstanceMapResponse(RootModel[dict[str, WorkflowInstance]]):
     """Instances keyed by ``InstanceId`` string (see OpenAPI ``WorkflowInstanceMapResponse``)."""
+
 
 class WorkflowDocumentationSection(BaseModel):
     model_config = ConfigDict(extra="forbid")

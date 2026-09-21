@@ -33,7 +33,9 @@ async def test_get_forecast_invalid_coordinates_raises(
 
 @pytest.mark.asyncio
 async def test_get_forecast_open_meteo_failure_raises():
-    with patch.object(weather_service, "make_request", new_callable=AsyncMock, return_value=None):
+    with patch.object(
+        weather_service, "make_request", new_callable=AsyncMock, return_value=None
+    ):
         with pytest.raises(RuntimeError, match="Failed to retrieve weather data"):
             await weather_service.get_forecast(_TEST_LATITUDE, _TEST_LONGITUDE)
 

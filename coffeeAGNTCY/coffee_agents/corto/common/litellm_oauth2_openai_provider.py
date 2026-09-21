@@ -11,6 +11,7 @@ from litellm.utils import ModelResponse
 
 logger = logging.getLogger(__name__)
 
+
 class RefreshOAuth2OpenAIProvider(CustomLLM):
     """
     LiteLLM custom provider that:
@@ -18,6 +19,7 @@ class RefreshOAuth2OpenAIProvider(CustomLLM):
       - sends chat completions to OpenAI-compatible proxy
       - returns a LiteLLM ModelResponse
     """
+
     def __init__(
         self,
         client_id: str,
@@ -37,7 +39,6 @@ class RefreshOAuth2OpenAIProvider(CustomLLM):
         if appkey:
             self.appkey = appkey
 
-
     # ---------- LiteLLM required methods ----------
 
     def completion(
@@ -50,7 +51,9 @@ class RefreshOAuth2OpenAIProvider(CustomLLM):
         """
         Called by litellm.completion() / ChatLiteLLM. Must return a ModelResponse.
         """
-        logger.info(f"completion called with model={model}, messages={messages}, kwargs={kwargs}")
+        logger.info(
+            f"completion called with model={model}, messages={messages}, kwargs={kwargs}"
+        )
 
         token = self._get_token()
         url = self.base_url
@@ -72,7 +75,7 @@ class RefreshOAuth2OpenAIProvider(CustomLLM):
             if k == "tool_choice" and v == "any":
                 v = "auto"
             payload[k] = v
-        
+
         # ---------- NON-STREAM ----------
         if not stream:
             resp = requests.post(url, headers=headers, json=payload, timeout=60)
@@ -88,15 +91,15 @@ class RefreshOAuth2OpenAIProvider(CustomLLM):
             mr.usage = data.get("usage", {})
             mr._hidden_params = {}  # optional
             return mr
-    
+
         # ---------- STREAM ----------
         return self._stream(
-                url=url,
-                model=model,
-                headers=headers,
-                payload=payload,
-            )
-       
+            url=url,
+            model=model,
+            headers=headers,
+            payload=payload,
+        )
+
     async def acompletion(
         self,
         model: str,
@@ -108,7 +111,9 @@ class RefreshOAuth2OpenAIProvider(CustomLLM):
         Called by litellm.acompletion(). If stream=True, returns an async iterator
         yielding ModelResponse chunks. Otherwise returns a single ModelResponse.
         """
-        logger.info(f"acompletion called with model={model}, messages={messages}, kwargs={kwargs}")
+        logger.info(
+            f"acompletion called with model={model}, messages={messages}, kwargs={kwargs}"
+        )
         token = self._get_token()
 
         url = self.base_url
@@ -157,11 +162,11 @@ class RefreshOAuth2OpenAIProvider(CustomLLM):
         )
 
     def _stream(
-            self,
-            url: str,
-            model: str,
-            headers: Dict[str, str],
-            payload: Dict[str, Any],
+        self,
+        url: str,
+        model: str,
+        headers: Dict[str, str],
+        payload: Dict[str, Any],
     ):
         yielded_text = False
         with requests.post(url, headers=headers, json=payload, stream=True) as r:
@@ -170,11 +175,11 @@ class RefreshOAuth2OpenAIProvider(CustomLLM):
             for line in r.iter_lines(decode_unicode=True):
                 if not line or line.startswith(":"):
                     continue
-                
+
                 yielded_text = True
 
                 if line.startswith("data:"):
-                    data_str = line[len("data:"):].strip()
+                    data_str = line[len("data:") :].strip()
                 else:
                     data_str = line.strip()
 
@@ -212,21 +217,23 @@ class RefreshOAuth2OpenAIProvider(CustomLLM):
                 mr._hidden_params = {}  # optional
                 yield mr
         if not yielded_text:
-            raise ValueError("No generations found in stream (only metadata/usage, no text).")   
-        
+            raise ValueError(
+                "No generations found in stream (only metadata/usage, no text)."
+            )
+
     async def _astream(
-    self,
-    url: str,
-    model: str,
-    headers: Dict[str, str],
-    payload: Dict[str, Any],
+        self,
+        url: str,
+        model: str,
+        headers: Dict[str, str],
+        payload: Dict[str, Any],
     ) -> AsyncIterator[ModelResponse]:
         """
         Async SSE stream reader yielding LiteLLM ModelResponse chunks.
         """
         yielded_text = False
         timeout = aiohttp.ClientTimeout(total=60)
-        
+
         async with aiohttp.ClientSession(timeout=timeout) as session:
             async with session.post(url, headers=headers, json=payload) as r:
                 r.raise_for_status()
@@ -245,13 +252,15 @@ class RefreshOAuth2OpenAIProvider(CustomLLM):
                             continue
 
                         if line.startswith("data:"):
-                            data_str = line[len("data:"):].strip()
+                            data_str = line[len("data:") :].strip()
                         else:
                             data_str = line
 
                         if data_str == "[DONE]":
                             if not yielded_text:
-                                raise ValueError("No generations found in stream (only metadata/usage, no text).")
+                                raise ValueError(
+                                    "No generations found in stream (only metadata/usage, no text)."
+                                )
                             return
 
                         try:
@@ -282,8 +291,9 @@ class RefreshOAuth2OpenAIProvider(CustomLLM):
                         yield mr
 
         if not yielded_text:
-            raise ValueError("No generations found in stream (only metadata/usage, no text).")
-
+            raise ValueError(
+                "No generations found in stream (only metadata/usage, no text)."
+            )
 
     def _get_token(self) -> str:
         now = time.time()
@@ -297,7 +307,9 @@ class RefreshOAuth2OpenAIProvider(CustomLLM):
             "Content-Type": "application/x-www-form-urlencoded",
         }
         payload = {"grant_type": "client_credentials"}
-        r = requests.post(self.token_url, headers=headers, data=payload, auth=auth, timeout=30)
+        r = requests.post(
+            self.token_url, headers=headers, data=payload, auth=auth, timeout=30
+        )
         r.raise_for_status()
         token_data = r.json()
         access_token = token_data["access_token"]

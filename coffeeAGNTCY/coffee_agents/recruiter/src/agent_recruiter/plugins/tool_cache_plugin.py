@@ -40,7 +40,7 @@ class ToolCachePlugin(BasePlugin):
         ttl_seconds: int = 600,
         max_entries: int = 500,
         excluded_tools: Optional[Set[str]] = None,
-        enabled: bool = True
+        enabled: bool = True,
     ):
         """Initialize the tool cache plugin.
 
@@ -102,7 +102,8 @@ class ToolCachePlugin(BasePlugin):
         """
         now = time.time()
         expired_keys = [
-            k for k, (_, timestamp) in self._cache.items()
+            k
+            for k, (_, timestamp) in self._cache.items()
             if now - timestamp >= self._ttl
         ]
         for key in expired_keys:
@@ -120,11 +121,7 @@ class ToolCachePlugin(BasePlugin):
             logger.debug(f"LRU evicted tool cache entry: {evicted_key[:16]}...")
 
     async def before_tool_callback(
-        self,
-        *,
-        tool: BaseTool,
-        tool_args: dict[str, Any],
-        tool_context: ToolContext
+        self, *, tool: BaseTool, tool_args: dict[str, Any], tool_context: ToolContext
     ) -> Optional[dict]:
         """Check cache before executing a tool.
 
@@ -142,7 +139,7 @@ class ToolCachePlugin(BasePlugin):
         if not self._enabled:
             return None
 
-        tool_name = tool.name if hasattr(tool, 'name') else str(tool)
+        tool_name = tool.name if hasattr(tool, "name") else str(tool)
 
         # Check if this tool should be cached
         if not self._should_cache_tool(tool_name):
@@ -185,7 +182,7 @@ class ToolCachePlugin(BasePlugin):
         tool: BaseTool,
         tool_args: dict[str, Any],
         tool_context: ToolContext,
-        result: dict
+        result: dict,
     ) -> Optional[dict]:
         """Store the tool result in cache after successful execution.
 
@@ -201,7 +198,7 @@ class ToolCachePlugin(BasePlugin):
         if not self._enabled:
             return None
 
-        tool_name = tool.name if hasattr(tool, 'name') else str(tool)
+        tool_name = tool.name if hasattr(tool, "name") else str(tool)
 
         # Check if this tool should be cached
         if not self._should_cache_tool(tool_name):
@@ -242,7 +239,9 @@ class ToolCachePlugin(BasePlugin):
             "cache_size": len(self._cache),
             "max_entries": self._max_entries,
             "ttl_seconds": self._ttl,
-            "excluded_tools": list(self._excluded_tools) if self._excluded_tools else [],
+            "excluded_tools": list(self._excluded_tools)
+            if self._excluded_tools
+            else [],
             "enabled": self._enabled,
         }
 

@@ -74,7 +74,11 @@ def test_event_v1_valid_instances(source: str):
     "payload,match_substr",
     [
         pytest.param(
-            {"metadata": _VALID_MINIMAL["metadata"], "data": _VALID_MINIMAL["data"], "extra": 1},
+            {
+                "metadata": _VALID_MINIMAL["metadata"],
+                "data": _VALID_MINIMAL["data"],
+                "extra": 1,
+            },
             "additional",
             id="root_extra_property",
         ),

@@ -7,9 +7,15 @@ from langchain_core.messages import AIMessage
 from langgraph.graph import MessagesState
 from langgraph.graph import StateGraph, END
 from ioa_observe.sdk.decorators import agent, graph
-from common.logistics_states import LogisticsStatus, extract_status, build_transition_message, ensure_order_id
+from common.logistics_states import (
+    LogisticsStatus,
+    extract_status,
+    build_transition_message,
+    ensure_order_id,
+)
 
 logger = logging.getLogger("lungo.farm_agent.agent")
+
 
 # --- 1. Define Node Names as Constants ---
 class NodeStates:
@@ -21,10 +27,12 @@ class GraphState(MessagesState):
     """
     Represents the state of our graph, passed between nodes.
     """
+
     pass
 
 
 # --- 3. Implement the Shipper Agent Class ---
+
 
 @agent(name="farm_agent")
 class FarmAgent:
@@ -61,7 +69,11 @@ class FarmAgent:
             )
             return {"messages": [AIMessage(msg)]}
 
-        return {"messages": [AIMessage("Logistic Farm remains IDLE. No further action required.")]}
+        return {
+            "messages": [
+                AIMessage("Logistic Farm remains IDLE. No further action required.")
+            ]
+        }
 
     # --- Graph Building Method ---
 

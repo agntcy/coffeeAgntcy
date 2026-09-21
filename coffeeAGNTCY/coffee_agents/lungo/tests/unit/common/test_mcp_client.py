@@ -54,7 +54,9 @@ def _fake_factory(captured, session):
         captured["transport_kwargs"] = kwargs
         return "transport-sentinel"
 
-    async def create_client(*, topic=None, transport=None, message_timeout=_UNSET, **extra):
+    async def create_client(
+        *, topic=None, transport=None, message_timeout=_UNSET, **extra
+    ):
         captured["topic"] = topic
         captured["transport"] = transport
         captured["message_timeout"] = message_timeout

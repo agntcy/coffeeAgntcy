@@ -84,6 +84,10 @@ async def test_emit_mcp_edge_event_posts_to_sink():
     assert sink.events[0] is event
     assert "Test Workflow Alpha" in event.data.workflows
     assert _TOOL in event.metadata.correlation.message
-    assert event.data.workflows["Test Workflow Alpha"].instances[
-        "instance://00000000-0000-4000-8000-000000000003"
-    ].topology.edges[0].mcp_in_flight is True
+    assert (
+        event.data.workflows["Test Workflow Alpha"]
+        .instances["instance://00000000-0000-4000-8000-000000000003"]
+        .topology.edges[0]
+        .mcp_in_flight
+        is True
+    )

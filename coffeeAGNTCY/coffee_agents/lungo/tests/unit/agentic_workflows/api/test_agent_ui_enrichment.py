@@ -93,7 +93,9 @@ def test_enrich_topology_dict_from_annotations(case: EnrichCase) -> None:
         assert node["has_badge_override"] is False
 
 
-def test_register_from_record_logs_invalid_bool_override(caplog: pytest.LogCaptureFixture) -> None:
+def test_register_from_record_logs_invalid_bool_override(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
     caplog.set_level(logging.WARNING)
     register_from_record(
         "00000000-0000-4000-a000-000000000099",

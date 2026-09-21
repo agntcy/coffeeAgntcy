@@ -4,11 +4,11 @@
 """Client-side MCP middleware for workflow topology event emission."""
 
 from common.mcp_event_middleware.wrapper import (
-	EventEmittingMCPClient,
-	wrap_mcp_client,
+    EventEmittingMCPClient,
+    wrap_mcp_client,
 )
 
 __all__ = [
-	"EventEmittingMCPClient",
-	"wrap_mcp_client",
+    "EventEmittingMCPClient",
+    "wrap_mcp_client",
 ]

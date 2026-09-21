@@ -19,6 +19,7 @@ def _purge_modules(prefixes):
     for m in to_delete:
         sys.modules.pop(m, None)
 
+
 @pytest.fixture()
 def recruiter_agent(monkeypatch):
     monkeypatch.setenv("LLM_MODEL", "openai/gpt-4o-mini")
@@ -40,10 +41,12 @@ def recruiter_client(monkeypatch):
     monkeypatch.setenv("LLM_MODEL", "openai/gpt-4o-mini")
     monkeypatch.setenv("RECRUITER_AGENT_URL", "http://localhost:8881")
 
-    _purge_modules([
-        "agents.supervisors.recruiter",
-        "config.config",
-    ])
+    _purge_modules(
+        [
+            "agents.supervisors.recruiter",
+            "config.config",
+        ]
+    )
 
     import agents.supervisors.recruiter.agent as recruiter_agent
     import agents.supervisors.recruiter.main as recruiter_main

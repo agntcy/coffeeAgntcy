@@ -54,9 +54,7 @@ _CASES: tuple[Case, ...] = (
 )
 
 
-@pytest.mark.parametrize(
-    "case", [pytest.param(c, id=c.case_id) for c in _CASES]
-)
+@pytest.mark.parametrize("case", [pytest.param(c, id=c.case_id) for c in _CASES])
 def test_use_cases_endpoint(case: Case, client: TestClient) -> None:
     resp = client.get(case.inputs.path)
     assert resp.status_code == case.outputs.status

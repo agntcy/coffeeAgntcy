@@ -107,7 +107,9 @@ def test_empty_workflows_merges_extra_data_without_notifier_calls() -> None:
             "metadata": {
                 "timestamp": "2026-01-02T00:00:00Z",
                 "schema_version": "1.0.0",
-                "correlation": {"id": "correlation://550e8400-e29b-41d4-a716-446655440099"},
+                "correlation": {
+                    "id": "correlation://550e8400-e29b-41d4-a716-446655440099"
+                },
                 "id": "event://550e8400-e29b-41d4-a716-446655440088",
                 "type": "StateProgressUpdate",
                 "source": "test",
@@ -135,7 +137,9 @@ def test_notifier_fanout_two_instances():
             "metadata": {
                 "timestamp": "2026-01-01T00:00:00Z",
                 "schema_version": "1.0.0",
-                "correlation": {"id": "correlation://550e8400-e29b-41d4-a716-446655440001"},
+                "correlation": {
+                    "id": "correlation://550e8400-e29b-41d4-a716-446655440001"
+                },
                 "id": "event://550e8400-e29b-41d4-a716-446655440002",
                 "type": "StateProgressUpdate",
                 "source": "test",
@@ -380,7 +384,9 @@ async def test_concurrent_submit_serializes_merges():
             "metadata": {
                 "timestamp": "2026-01-01T00:00:00Z",
                 "schema_version": "1.0.0",
-                "correlation": {"id": "correlation://550e8400-e29b-41d4-a716-446655440001"},
+                "correlation": {
+                    "id": "correlation://550e8400-e29b-41d4-a716-446655440001"
+                },
                 "id": "event://550e8400-e29b-41d4-a716-4466554400a0",
                 "type": "StateProgressUpdate",
                 "source": "test",
@@ -422,7 +428,9 @@ async def test_concurrent_submit_serializes_merges():
                 "metadata": {
                     "timestamp": "2026-01-01T00:00:00Z",
                     "schema_version": "1.0.0",
-                    "correlation": {"id": "correlation://550e8400-e29b-41d4-a716-446655440001"},
+                    "correlation": {
+                        "id": "correlation://550e8400-e29b-41d4-a716-446655440001"
+                    },
                     "id": event_id,
                     "type": "StateProgressUpdate",
                     "source": "test",
@@ -476,7 +484,9 @@ def test_concurrent_sync_submits_fifo_merge_order():
             "metadata": {
                 "timestamp": "2026-01-01T00:00:00Z",
                 "schema_version": "1.0.0",
-                "correlation": {"id": "correlation://550e8400-e29b-41d4-a716-446655440001"},
+                "correlation": {
+                    "id": "correlation://550e8400-e29b-41d4-a716-446655440001"
+                },
                 "id": "event://550e8400-e29b-41d4-a716-4466554400c0",
                 "type": "StateProgressUpdate",
                 "source": "test",
@@ -521,7 +531,9 @@ def test_concurrent_sync_submits_fifo_merge_order():
                 "metadata": {
                     "timestamp": "2026-01-01T00:00:00Z",
                     "schema_version": "1.0.0",
-                    "correlation": {"id": "correlation://550e8400-e29b-41d4-a716-446655440001"},
+                    "correlation": {
+                        "id": "correlation://550e8400-e29b-41d4-a716-446655440001"
+                    },
                     "id": eid,
                     "type": "StateProgressUpdate",
                     "source": "test",
@@ -565,9 +577,9 @@ def test_concurrent_sync_submits_fifo_merge_order():
         t1.join(timeout=10.0)
         t2.join(timeout=10.0)
         store.wait_merge_idle()
-        final_label = store.get_merged_data().model_dump(mode="python")["workflows"]["w"][
-            "instances"
-        ][_INSTANCE_KEY]["topology"]["nodes"][0]["label"]
+        final_label = store.get_merged_data().model_dump(mode="python")["workflows"][
+            "w"
+        ]["instances"][_INSTANCE_KEY]["topology"]["nodes"][0]["label"]
         assert final_label in ("t1", "t2")
     finally:
         store.close()
@@ -603,7 +615,9 @@ def test_slow_notifier_does_not_block_merge():
             "metadata": {
                 "timestamp": "2026-01-01T00:00:01Z",
                 "schema_version": "1.0.0",
-                "correlation": {"id": "correlation://550e8400-e29b-41d4-a716-446655440001"},
+                "correlation": {
+                    "id": "correlation://550e8400-e29b-41d4-a716-446655440001"
+                },
                 "id": "event://550e8400-e29b-41d4-a716-4466554400b1",
                 "type": "StateProgressUpdate",
                 "source": "test",
@@ -636,7 +650,9 @@ def test_slow_notifier_does_not_block_merge():
         store.submit_event_sync(ev2)
         store.wait_merge_idle()
         assert (
-            store.get_merged_data().model_dump(mode="python")["workflows"]["w"]["pattern"]
+            store.get_merged_data().model_dump(mode="python")["workflows"]["w"][
+                "pattern"
+            ]
             == "p2"
         )
         hold.set()

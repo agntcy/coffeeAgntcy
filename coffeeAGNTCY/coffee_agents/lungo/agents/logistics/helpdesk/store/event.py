@@ -6,9 +6,9 @@ from pydantic import BaseModel
 
 
 class OrderEvent(BaseModel):
-  order_id: str
-  sender: str
-  receiver: str
-  message: str
-  state: str
-  timestamp: datetime = datetime.now(timezone.utc)
+    order_id: str
+    sender: str
+    receiver: str
+    message: str
+    state: str
+    timestamp: datetime = datetime.now(timezone.utc)

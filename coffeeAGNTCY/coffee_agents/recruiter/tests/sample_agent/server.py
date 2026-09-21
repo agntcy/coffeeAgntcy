@@ -36,5 +36,6 @@ a2a_app = to_a2a(root_agent, port=PORT, agent_card=AGENT_CARD)
 
 if __name__ == "__main__":
     import uvicorn
+
     print(f"Starting TestAgent A2A server on port {PORT}")
     uvicorn.run(a2a_app, host="0.0.0.0", port=PORT)
