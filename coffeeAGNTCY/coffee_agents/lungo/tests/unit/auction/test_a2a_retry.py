@@ -280,14 +280,9 @@ def test_send_a2a_with_retry_scenarios(
             assert len(result) > 0
             assert result[0]._text == expected_result
         assert mock_client.send_message.call_count == expected_call_count
-        if expected_call_count == 5:
-            assert mock_sleep.await_count == 4
-            assert [mock_sleep.await_args_list[i][0][0] for i in range(4)] == [
-                1,
-                3,
-                9,
-                27,
-            ]
+        if expected_call_count == 3:
+            assert mock_sleep.await_count == 2
+            assert [mock_sleep.await_args_list[i][0][0] for i in range(2)] == [1, 2]
         elif expected_call_count == 2 and expected_exception is None:
             assert mock_sleep.await_count == 1
             assert mock_sleep.await_args[0][0] == 1
