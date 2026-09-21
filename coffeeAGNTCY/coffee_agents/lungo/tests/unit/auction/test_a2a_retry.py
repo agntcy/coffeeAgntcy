@@ -65,6 +65,15 @@ def _side_effect_for(scenario_id: str):
             _raising_async_iter(ConnectionError("connection refused")),
         ])
         return lambda *a, **kw: next(calls)
+    if scenario_id == "slim_deadline_then_success":
+        # What common/slim_request_timeout.py raises once the SDK gives up on a reply.
+        calls = iter([
+            _raising_async_iter(TimeoutError("No SLIM reply from farm within 20s.")),
+            _async_iter([_make_event("recovered")]),
+        ])
+        return lambda *a, **kw: next(calls)
+    if scenario_id == "slim_deadline_exhausted":
+        return lambda *a, **kw: _raising_async_iter(TimeoutError("No SLIM reply from farm within 20s."))
     if scenario_id == "non_timeout_no_retry":
         return lambda *a, **kw: _raising_async_iter(ValueError("bad request"))
     if scenario_id == "success_first_attempt":
@@ -101,6 +110,8 @@ def _timeout_error_exception(scenario_id: str):
         e = AttributeError("missing payload")
         e.__context__ = SlimError.SessionError("receive timeout")
         return e
+    if scenario_id == "slim_deadline":
+        return TimeoutError("No SLIM reply from farm within 20s.")
     if scenario_id == "plain_value_error":
         return ValueError("bad")
     raise ValueError(f"Unknown scenario_id: {scenario_id}")
@@ -136,9 +147,25 @@ _A2A_SCENARIOS = [
         "timeout_then_timeout",
         None,
         TransportTimeoutError,
-        5,
+        3,
         True,
         id="timeout_then_timeout",
+    ),
+    pytest.param(
+        "slim_deadline_then_success",
+        "recovered",
+        None,
+        2,
+        False,
+        id="slim_deadline_then_success",
+    ),
+    pytest.param(
+        "slim_deadline_exhausted",
+        None,
+        TransportTimeoutError,
+        3,
+        True,
+        id="slim_deadline_exhausted",
     ),
     pytest.param(
         "timeout_then_non_timeout",
@@ -168,7 +195,7 @@ _A2A_SCENARIOS = [
         "no_payload_error",
         None,
         RemoteAgentNoResponseError,
-        5,
+        3,
         True,
         id="no_payload_error",
     ),
@@ -176,7 +203,7 @@ _A2A_SCENARIOS = [
         "none_response",
         None,
         RemoteAgentNoResponseError,
-        5,
+        3,
         False,
         id="none_response",
     ),
@@ -230,9 +257,9 @@ def test_send_a2a_with_retry_scenarios(
             assert len(result) > 0
             assert result[0]._text == expected_result
         assert mock_client.send_message.call_count == expected_call_count
-        if expected_call_count == 5:
-            assert mock_sleep.await_count == 4
-            assert [mock_sleep.await_args_list[i][0][0] for i in range(4)] == [1, 3, 9, 27]
+        if expected_call_count == 3:
+            assert mock_sleep.await_count == 2
+            assert [mock_sleep.await_args_list[i][0][0] for i in range(2)] == [1, 2]
         elif expected_call_count == 2 and expected_exception is None:
             assert mock_sleep.await_count == 1
             assert mock_sleep.await_args[0][0] == 1
@@ -242,6 +269,7 @@ def test_send_a2a_with_retry_scenarios(
     "scenario_id,expected",
     [
         ("session_error_in_context", True),
+        ("slim_deadline", True),
         ("plain_value_error", False),
     ],
 )
