@@ -61,8 +61,7 @@ class _FakeBuilder:
 
     async def start(self, *, keep_alive: bool = False):
         advertised = {
-            normalize_transport(i.transport)
-            for i in self._card.additional_interfaces
+            normalize_transport(i.transport) for i in self._card.additional_interfaces
         }
         served = advertised - self._skips
         assert len(served) == 1, f"expected exactly one served transport, got {served}"
@@ -145,7 +144,9 @@ async def test_preferred_transport_failure_is_fatal(patch_factory, module_name):
 async def test_all_transports_failing_raises(patch_factory, module_name):
     # Preferred is not advertised, so nothing is "required"; but if every
     # transport fails to start the agent still cannot serve -> raise.
-    module, _fake = patch_factory(module_name, {"slimpatterns", "natspatterns", "jsonrpc"})
+    module, _fake = patch_factory(
+        module_name, {"slimpatterns", "natspatterns", "jsonrpc"}
+    )
     card = _make_card(preferred="unknown-transport")
 
     with pytest.raises(RuntimeError, match="No transport interfaces could be started"):

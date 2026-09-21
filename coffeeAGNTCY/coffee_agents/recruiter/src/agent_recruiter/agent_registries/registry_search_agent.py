@@ -52,16 +52,24 @@ def _dirctl_path() -> str:
     """Return the dirctl binary path, raising if it is not on PATH."""
     path = shutil.which("dirctl")
     if not path:
-        raise RuntimeError("dirctl binary not found in PATH. Install dirctl to use the directory.")
+        raise RuntimeError(
+            "dirctl binary not found in PATH. Install dirctl to use the directory."
+        )
     return path
 
 
 def _dirctl_env() -> dict[str, str]:
     """Directory client settings passed to every dirctl invocation."""
     return {
-        "DIRECTORY_CLIENT_SERVER_ADDRESS": os.getenv("DIRECTORY_CLIENT_SERVER_ADDRESS", "localhost:8888"),
-        "DIRECTORY_CLIENT_TLS_SKIP_VERIFY": os.getenv("DIRECTORY_CLIENT_TLS_SKIP_VERIFY", "true"),
-        "OASF_API_VALIDATION_SCHEMA_URL": os.getenv("OASF_API_VALIDATION_SCHEMA_URL", "https://schema.oasf.outshift.com"),
+        "DIRECTORY_CLIENT_SERVER_ADDRESS": os.getenv(
+            "DIRECTORY_CLIENT_SERVER_ADDRESS", "localhost:8888"
+        ),
+        "DIRECTORY_CLIENT_TLS_SKIP_VERIFY": os.getenv(
+            "DIRECTORY_CLIENT_TLS_SKIP_VERIFY", "true"
+        ),
+        "OASF_API_VALIDATION_SCHEMA_URL": os.getenv(
+            "OASF_API_VALIDATION_SCHEMA_URL", "https://schema.oasf.outshift.com"
+        ),
     }
 
 
@@ -118,7 +126,9 @@ async def _run_dirctl(args: list[str], timeout: float = 30.0) -> str:
         global_flags.append("--tls-skip-verify")
 
     proc = await asyncio.create_subprocess_exec(
-        _dirctl_path(), *args, *global_flags,
+        _dirctl_path(),
+        *args,
+        *global_flags,
         stdout=asyncio.subprocess.PIPE,
         stderr=asyncio.subprocess.PIPE,
         env={**os.environ, **env},
@@ -198,7 +208,16 @@ async def search_agents(
     export_dir = tempfile.mkdtemp(prefix="agntcy_a2a_")
     try:
         await _run_dirctl(
-            ["export", "--output-dir", export_dir, "--format", "a2a", *filters, "--limit", str(limit)]
+            [
+                "export",
+                "--output-dir",
+                export_dir,
+                "--format",
+                "a2a",
+                *filters,
+                "--limit",
+                str(limit),
+            ]
         )
         for path in sorted(Path(export_dir).glob("*.json")):
             try:
@@ -213,7 +232,11 @@ async def search_agents(
                     "id": key,
                     "name": card.get("name", "Unknown"),
                     "description": card.get("description", ""),
-                    "skills": [s.get("name") for s in card.get("skills") or [] if isinstance(s, dict)],
+                    "skills": [
+                        s.get("name")
+                        for s in card.get("skills") or []
+                        if isinstance(s, dict)
+                    ],
                 }
             )
     finally:
@@ -229,7 +252,9 @@ async def search_agents(
         }
 
     tool_context.state["found_agent_records"] = records
-    logger.info(f"Stored {len(found)} agent record(s) in session state in one batch (total: {len(records)})")
+    logger.info(
+        f"Stored {len(found)} agent record(s) in session state in one batch (total: {len(records)})"
+    )
 
     return {
         "status": "success",

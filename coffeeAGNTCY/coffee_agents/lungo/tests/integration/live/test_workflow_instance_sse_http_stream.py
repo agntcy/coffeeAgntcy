@@ -67,9 +67,7 @@ def test_sse_stream_receives_event_after_post() -> None:
 
         event_id = "event://550e8400-e29b-41d4-a716-4466554400c1"
         post_path = f"/agentic-workflows/{wf_seg}/instances/{path_uuid}/events/"
-        stream_path = (
-            f"/agentic-workflows/{wf_seg}/instances/{path_uuid}/events/stream"
-        )
+        stream_path = f"/agentic-workflows/{wf_seg}/instances/{path_uuid}/events/stream"
         body = minimal_event_v1_dict(
             wf,
             wid,

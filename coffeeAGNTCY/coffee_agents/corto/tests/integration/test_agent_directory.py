@@ -1,13 +1,16 @@
 # Copyright AGNTCY Contributors (https://github.com/agntcy)
 # SPDX-License-Identifier: Apache-2.0
 """Integration tests for GET /agents/{slug}/oasf (static OASF files)."""
+
 import pytest
 
 
 REQUIRED_OASF_KEYS = {"name", "schema_version", "description"}
 
 
-@pytest.mark.parametrize("slug", ["exchange-supervisor-agent", "flavor-profile-farm-agent"])
+@pytest.mark.parametrize(
+    "slug", ["exchange-supervisor-agent", "flavor-profile-farm-agent"]
+)
 def test_get_agent_oasf_returns_200_and_valid_json(supervisor_client, slug):
     """GET /agents/{slug}/oasf returns 200 and valid OASF JSON from static files."""
     response = supervisor_client.get(f"/agents/{slug}/oasf")

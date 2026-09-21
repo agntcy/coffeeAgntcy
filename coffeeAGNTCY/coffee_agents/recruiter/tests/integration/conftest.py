@@ -18,7 +18,11 @@ import httpx
 import pytest
 from dotenv import load_dotenv
 
-from tests.integration.helpers.docker_helpers import down, remove_container_if_exists, up
+from tests.integration.helpers.docker_helpers import (
+    down,
+    remove_container_if_exists,
+    up,
+)
 
 load_dotenv()
 
@@ -168,6 +172,7 @@ def _teardown_session_docker():
 
 atexit.register(_teardown_session_docker)
 
+
 def _wait_http_ready(
     url: str,
     *,
@@ -193,6 +198,7 @@ def _wait_http_ready(
         f"(last: {last_err})"
     )
 
+
 @pytest.fixture(scope="session", autouse=True)
 def orchestrate_session_services():
     """
@@ -209,17 +215,23 @@ def orchestrate_session_services():
     yield
     _teardown_session_docker()
 
+
 def setup_directory_services():
     _startup_postgres()
     _startup_zot()
     # Same idea as Docker Compose Zot healthcheck: GET /readyz
-    _wait_http_ready(ZOT_REGISTRY_READYZ_URL, timeout_s=30.0, poll_s=5.0, accept_status=(200,))
+    _wait_http_ready(
+        ZOT_REGISTRY_READYZ_URL, timeout_s=30.0, poll_s=5.0, accept_status=(200,)
+    )
 
     _startup_dir_api_server()
     # dir-api-server does not expose an HTTP endpoint but rather a gRPC one at 8888.
     # In newer versions of dir-apiserver they do the health check with grpc-health-probe but in apiserver v1.0.0 that was not bundled in the image.
     # For dir-apiserver, this is a fix that will come in v1.1.0.
-    time.sleep(30) # give dir-api-server time to start up; TODO: long-term we should use a more robust wait mechanism.
+    time.sleep(
+        30
+    )  # give dir-api-server time to start up; TODO: long-term we should use a more robust wait mechanism.
+
 
 def _startup_postgres():
     up(files, ["postgres"])
@@ -233,8 +245,8 @@ def _startup_dir_api_server():
     up(files, ["dir-api-server"])
 
 
-
 # ---------------- A2A server related fixtures ----------------
+
 
 def wait_for_server(url: str, timeout: float = 30.0, interval: float = 0.5) -> bool:
     """Wait for a server to become available by polling its agent card endpoint.
@@ -377,23 +389,22 @@ def sample_agent_card_json():
     import json
 
     def _create(port: int = 3210):
-        return json.dumps({
-            "name": "TestAgent",
-            "description": "A simple test agent for integration testing with basic tools.",
-            "url": f"http://localhost:{port}",
-            "version": "1.0.0",
-            "provider": {
-                "organization": "Test Org",
-                "url": "http://testorg.example.com"
-            },
-            "defaultInputModes": ["text/plain"],
-            "defaultOutputModes": ["text/plain"],
-            "capabilities": {
-                "streaming": True,
-                "pushNotifications": False
-            },
-            "skills": []
-        })
+        return json.dumps(
+            {
+                "name": "TestAgent",
+                "description": "A simple test agent for integration testing with basic tools.",
+                "url": f"http://localhost:{port}",
+                "version": "1.0.0",
+                "provider": {
+                    "organization": "Test Org",
+                    "url": "http://testorg.example.com",
+                },
+                "defaultInputModes": ["text/plain"],
+                "defaultOutputModes": ["text/plain"],
+                "capabilities": {"streaming": True, "pushNotifications": False},
+                "skills": [],
+            }
+        )
 
     return _create
 
@@ -415,7 +426,9 @@ def publish_sample_agent_record():
     """
     published_cids = []
 
-    def _publish(record_path: str = "tests/sample_agent/sample_agent_record.json") -> str:
+    def _publish(
+        record_path: str = "tests/sample_agent/sample_agent_record.json",
+    ) -> str:
         """Push a record to the directory and return its CID."""
         # Run dirctl push
         result = subprocess.run(
@@ -435,9 +448,7 @@ def publish_sample_agent_record():
         output = result.stdout + result.stderr
         cid_match = re.search(r"CID:\s*(\S+)", output)
         if not cid_match:
-            raise RuntimeError(
-                f"Could not parse CID from dirctl output: {output}"
-            )
+            raise RuntimeError(f"Could not parse CID from dirctl output: {output}")
 
         cid = cid_match.group(1)
         published_cids.append(cid)
@@ -464,4 +475,3 @@ def publish_sample_agent_record():
         except FileNotFoundError:
             print("Warning: dirctl not found, skipping cleanup")
             break
-

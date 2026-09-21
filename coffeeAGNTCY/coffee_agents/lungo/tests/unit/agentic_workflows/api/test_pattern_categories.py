@@ -115,9 +115,7 @@ def test_list_pattern_categories(categories_client: TestClient) -> None:
 
 def test_get_pattern_category_documentation(categories_client: TestClient) -> None:
     category_name = "Orchestration & Control Flow"
-    resp = categories_client.get(
-        f"/pattern-categories/{category_name}/documentation/"
-    )
+    resp = categories_client.get(f"/pattern-categories/{category_name}/documentation/")
     assert resp.status_code == 200
     data = resp.json()
     assert data["name"] == category_name

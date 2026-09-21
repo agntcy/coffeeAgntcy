@@ -77,7 +77,11 @@ class LogisticGraph:
 
         # Conditional entry point based on use_streaming flag
         def route_entry(state: GraphState):
-            return NodeStates.ORDERS_STREAMING if state.get("use_streaming", False) else NodeStates.ORDERS
+            return (
+                NodeStates.ORDERS_STREAMING
+                if state.get("use_streaming", False)
+                else NodeStates.ORDERS
+            )
 
         workflow.set_conditional_entry_point(
             route_entry,
@@ -92,7 +96,6 @@ class LogisticGraph:
 
         return workflow.compile()
 
-
     async def _orders_node(self, state: GraphState) -> dict:
         """
         Handles orders-related queries by directly calling the create_order function.
@@ -101,7 +104,9 @@ class LogisticGraph:
             self.orders_llm = get_llm()
 
         # Get latest HumanMessage
-        user_msg = next((m for m in reversed(state["messages"]) if m.type == "human"), None)
+        user_msg = next(
+            (m for m in reversed(state["messages"]) if m.type == "human"), None
+        )
         if not user_msg:
             return {"messages": [AIMessage(content="No user message found.")]}
 
@@ -113,11 +118,17 @@ class LogisticGraph:
             farm: str = Field(description="The farm name (e.g., tatooine)")
             quantity: int = Field(description="The number of units to order")
             price: float = Field(description="The price per unit")
-            has_all_params: bool = Field(description="Whether all required parameters were found in the user's request")
-            missing_params: str = Field(description="Comma-separated list of missing parameters, if any")
+            has_all_params: bool = Field(
+                description="Whether all required parameters were found in the user's request"
+            )
+            missing_params: str = Field(
+                description="Comma-separated list of missing parameters, if any"
+            )
 
         # Create structured output LLM (streaming=False required for structured output)
-        extraction_llm = get_llm(streaming=False).with_structured_output(OrderParams, strict=True)
+        extraction_llm = get_llm(streaming=False).with_structured_output(
+            OrderParams, strict=True
+        )
 
         sys_msg = SystemMessage(
             content="""You are an orders broker for a global coffee exchange company.
@@ -138,7 +149,9 @@ class LogisticGraph:
         try:
             # Extract parameters using structured output
             params = await extraction_llm.ainvoke([sys_msg, user_msg])
-            logger.info(f"Extracted params: farm={params.farm}, quantity={params.quantity}, price={params.price}, has_all={params.has_all_params}")
+            logger.info(
+                f"Extracted params: farm={params.farm}, quantity={params.quantity}, price={params.price}, has_all={params.has_all_params}"
+            )
 
             # Check if all parameters are present
             if not params.has_all_params:
@@ -151,7 +164,9 @@ class LogisticGraph:
                 }
 
             # Call the function directly
-            tool_result = await create_order(farm=params.farm, quantity=params.quantity, price=params.price)
+            tool_result = await create_order(
+                farm=params.farm, quantity=params.quantity, price=params.price
+            )
 
             # Check for errors in the result
             if (
@@ -227,7 +242,9 @@ class LogisticGraph:
                   - Final formatted delivery message string (at completion)
         """
         # Extract the latest user message from the conversation history
-        user_msg = next((m for m in reversed(state["messages"]) if m.type == "human"), None)
+        user_msg = next(
+            (m for m in reversed(state["messages"]) if m.type == "human"), None
+        )
         if not user_msg:
             yield {"messages": [AIMessage(content="No user message found.")]}
             return
@@ -239,11 +256,17 @@ class LogisticGraph:
             farm: str = Field(description="The farm name (e.g., tatooine)")
             quantity: int = Field(description="The number of units to order")
             price: float = Field(description="The price per unit")
-            has_all_params: bool = Field(description="Whether all required parameters were found in the user's request")
-            missing_params: str = Field(description="Comma-separated list of missing parameters, if any")
+            has_all_params: bool = Field(
+                description="Whether all required parameters were found in the user's request"
+            )
+            missing_params: str = Field(
+                description="Comma-separated list of missing parameters, if any"
+            )
 
         # Create structured output LLM (streaming=False required for structured output)
-        extraction_llm = get_llm(streaming=False).with_structured_output(OrderParams, strict=True)
+        extraction_llm = get_llm(streaming=False).with_structured_output(
+            OrderParams, strict=True
+        )
 
         sys_msg = SystemMessage(
             content="""You are an orders broker for a global coffee exchange company.
@@ -264,7 +287,9 @@ class LogisticGraph:
         try:
             # Extract parameters using structured output
             params = await extraction_llm.ainvoke([sys_msg, user_msg])
-            logger.info(f"Extracted params: farm={params.farm}, quantity={params.quantity}, price={params.price}, has_all={params.has_all_params}")
+            logger.info(
+                f"Extracted params: farm={params.farm}, quantity={params.quantity}, price={params.price}, has_all={params.has_all_params}"
+            )
 
             # Check if all parameters are present
             if not params.has_all_params:
@@ -356,21 +381,21 @@ class LogisticGraph:
         with workflow_context_scope(
             workflow_name=existing.workflow_name or _WORKFLOW_NAME,
             workflow_instance_id=(
-                existing.instance_id or workflow_instance_id or f"instance://{uuid.uuid4()}"
+                existing.instance_id
+                or workflow_instance_id
+                or f"instance://{uuid.uuid4()}"
             ),
         ):
             try:
                 logger.debug(f"Received prompt: {prompt}")
                 if not isinstance(prompt, str) or not prompt.strip():
                     raise ValueError("Prompt must be a non-empty string.")
-                result = await self.graph.ainvoke({
-                    "messages": [
+                result = await self.graph.ainvoke(
                     {
-                        "role": "user",
-                        "content": prompt
-                    }
-                    ],
-                }, {"configurable": {"thread_id": uuid.uuid4()}})
+                        "messages": [{"role": "user", "content": prompt}],
+                    },
+                    {"configurable": {"thread_id": uuid.uuid4()}},
+                )
 
                 messages = result.get("messages", [])
                 if not messages:
@@ -379,7 +404,9 @@ class LogisticGraph:
                 # Find the last AIMessage with non-empty content
                 for message in reversed(messages):
                     if isinstance(message, AIMessage) and message.content.strip():
-                        logger.debug(f"Valid AIMessage found: {message.content.strip()}")
+                        logger.debug(
+                            f"Valid AIMessage found: {message.content.strip()}"
+                        )
                         return message.content.strip()
 
                 raise RuntimeError("No valid AIMessage found in the graph response.")
@@ -390,7 +417,9 @@ class LogisticGraph:
                 logger.error(f"Error in serve method: {e}")
                 raise Exception(str(e))
 
-    async def streaming_serve(self, prompt: str, *, workflow_instance_id: str | None = None):
+    async def streaming_serve(
+        self, prompt: str, *, workflow_instance_id: str | None = None
+    ):
         """
         Streams real-time order processing events using LangGraph's astream_events API.
 
@@ -432,7 +461,9 @@ class LogisticGraph:
         token = attach_workflow_context(
             workflow_name=existing.workflow_name or _WORKFLOW_NAME,
             workflow_instance_id=(
-                existing.instance_id or workflow_instance_id or f"instance://{uuid.uuid4()}"
+                existing.instance_id
+                or workflow_instance_id
+                or f"instance://{uuid.uuid4()}"
             ),
         )
         try:
@@ -446,13 +477,8 @@ class LogisticGraph:
             # The state follows the MessageGraph pattern with a messages list
             # Set use_streaming flag to route to streaming node
             state = {
-                "messages": [
-                    {
-                        "role": "user",
-                        "content": prompt
-                    }
-                ],
-                "use_streaming": True
+                "messages": [{"role": "user", "content": prompt}],
+                "use_streaming": True,
             }
 
             # Track seen content to prevent duplicate yields when nodes produce the same output
@@ -462,8 +488,9 @@ class LogisticGraph:
             # This provides fine-grained control over streaming, emitting events for:
             # - Node starts/ends (on_chain_start, on_chain_end)
             # - Intermediate outputs (on_chain_stream)
-            async for event in self.graph.astream_events(state, {"configurable": {"thread_id": uuid.uuid4()}},
-                                                         version="v2"):
+            async for event in self.graph.astream_events(
+                state, {"configurable": {"thread_id": uuid.uuid4()}}, version="v2"
+            ):
                 logger.debug(f"Event: {event}")
 
                 # Filter for "on_chain_stream" events which contain intermediate node outputs
@@ -480,7 +507,9 @@ class LogisticGraph:
 
                         # Check if this chunk contains messages (the primary output type)
                         if "messages" in chunk and chunk["messages"]:
-                            logger.info(f"Streaming chunk from node '{node_name}': {chunk}")
+                            logger.info(
+                                f"Streaming chunk from node '{node_name}': {chunk}"
+                            )
 
                             # Process and yield all messages from this chunk
                             for message in chunk["messages"]:
@@ -491,12 +520,16 @@ class LogisticGraph:
 
                                     # Deduplicate: Skip if we've already yielded this exact content
                                     if content in seen_contents:
-                                        logger.info(f"Skipping duplicate content from '{node_name}': {content}")
+                                        logger.info(
+                                            f"Skipping duplicate content from '{node_name}': {content}"
+                                        )
                                         continue
 
                                     # Mark this content as seen and yield it to the caller
                                     seen_contents.add(content)
-                                    logger.info(f"Yielding message from '{node_name}': {content}")
+                                    logger.info(
+                                        f"Yielding message from '{node_name}': {content}"
+                                    )
                                     yield message.content
 
         except ValueError as ve:

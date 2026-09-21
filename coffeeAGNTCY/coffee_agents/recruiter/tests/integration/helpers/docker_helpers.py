@@ -12,6 +12,7 @@ from pathlib import Path
 # If you always run from the recruiter dir, set it once:
 PROJECT_DIR = Path(__file__).resolve().parents[3]  # .../coffee_agents/recruiter
 
+
 def _compose_cmd(files: List[str]) -> List[str]:
     """
     Build a docker compose command ensuring:
@@ -25,6 +26,7 @@ def _compose_cmd(files: List[str]) -> List[str]:
             compose_file = (PROJECT_DIR / f.strip()).resolve()
             cmd += ["-f", str(compose_file)]
     return cmd
+
 
 def _compose_env():
     """Env for docker compose subprocess: use current process env so test-set vars are used."""
@@ -40,7 +42,12 @@ def _run(cmd: List[str]):
     print(">", " ".join(cmd))
     try:
         result = subprocess.run(
-            cmd, check=True, cwd=PROJECT_DIR, capture_output=True, text=True, env=compose_env
+            cmd,
+            check=True,
+            cwd=PROJECT_DIR,
+            capture_output=True,
+            text=True,
+            env=compose_env,
         )
         return result  # return result so callers (like up()) can inspect .stdout
     except subprocess.CalledProcessError as e:
@@ -49,7 +56,8 @@ def _run(cmd: List[str]):
         # 1. Show resolved compose config dynamically using the same file set
         print("\n--- docker compose config ---")
         subprocess.run(
-            _compose_cmd([f for f in cmd if f.endswith(('.yaml', '.yml'))]) + ["config"],
+            _compose_cmd([f for f in cmd if f.endswith((".yaml", ".yml"))])
+            + ["config"],
             check=False,
             cwd=PROJECT_DIR,
             env=compose_env,
@@ -58,12 +66,18 @@ def _run(cmd: List[str]):
         # 2. Attempt to show logs for the target service(s)
         try:
             # Extract service name (ignore flags and docker/compose keywords)
-            services = [a for a in cmd if not a.startswith("-") and a not in ("docker", "compose", "up", "down", "build")]
+            services = [
+                a
+                for a in cmd
+                if not a.startswith("-")
+                and a not in ("docker", "compose", "up", "down", "build")
+            ]
             if services:
                 svc = services[-1]
                 print(f"\n--- Logs for service '{svc}' ---")
                 subprocess.run(
-                    cmd[: cmd.index("compose") + 1] + ["logs", "--no-color", "--tail=200", svc],
+                    cmd[: cmd.index("compose") + 1]
+                    + ["logs", "--no-color", "--tail=200", svc],
                     check=False,
                     cwd=PROJECT_DIR,
                     env=compose_env,
@@ -72,6 +86,7 @@ def _run(cmd: List[str]):
             print(f"(could not get logs: {log_err})")
 
         raise
+
 
 def up(files: List[str], services: List[str]):
     preview = _run(_compose_cmd(files) + ["config", "--images"]).stdout
@@ -82,6 +97,7 @@ def up(files: List[str], services: List[str]):
     time.sleep(0.5)
     for svc in services:
         wait_for_service(files, svc)
+
 
 def down(files: List[str]):
     # 'down' ignores service list; it tears down the whole project
@@ -100,6 +116,7 @@ def remove_container_if_exists(container_name: str) -> None:
     if res.returncode == 0:
         print(f"> Removed leftover container {container_name}")
 
+
 def _container_id(files: List[str], service: str) -> str:
     cmd = _compose_cmd(files) + ["ps", "-a", "-q", service]
     res = subprocess.run(cmd, capture_output=True, text=True, cwd=PROJECT_DIR)
@@ -111,23 +128,25 @@ def _container_id(files: List[str], service: str) -> str:
     print(f"\nFailed to find container ID for service '{service}\n")
     ps_out = subprocess.run(
         _compose_cmd(files) + ["ps", "--format", "table"],
-        capture_output=True, text=True, cwd=PROJECT_DIR
+        capture_output=True,
+        text=True,
+        cwd=PROJECT_DIR,
     )
     print("docker compose ps output:")
     print(ps_out.stdout or ps_out.stderr or "<no output>")
-    raise RuntimeError(
-        f"No container id found for service '{service}'."
-    )
+    raise RuntimeError(f"No container id found for service '{service}'.")
+
 
 def _inspect_state_health(container_id: str) -> Tuple[str, Optional[str]]:
     # Return (state, health) where state in {"created","running","exited","restarting","removing","dead"}
     # and health in {"healthy","unhealthy","starting", None}
     res = subprocess.run(
-        ["docker", "inspect", container_id],
-        capture_output=True, text=True
+        ["docker", "inspect", container_id], capture_output=True, text=True
     )
     if res.returncode != 0:
-        raise RuntimeError(f"`docker inspect` failed for {container_id}: {res.stderr.strip()}")
+        raise RuntimeError(
+            f"`docker inspect` failed for {container_id}: {res.stderr.strip()}"
+        )
     data = json.loads(res.stdout)[0]
     state = data.get("State", {})
     status = state.get("Status")  # docker's running/exited/etc
@@ -136,11 +155,14 @@ def _inspect_state_health(container_id: str) -> Tuple[str, Optional[str]]:
         health = state["Health"].get("Status")  # healthy/unhealthy/starting
     return status, health
 
+
 def _compose_logs(files: List[str], service: str, tail: int = 200):
     try:
         res = subprocess.run(
             _compose_cmd(files) + ["logs", "--no-color", f"--tail={tail}", service],
-            capture_output=True, text=True, cwd=PROJECT_DIR
+            capture_output=True,
+            text=True,
+            cwd=PROJECT_DIR,
         )
         out = (res.stdout or "") + (("\n" + res.stderr) if res.stderr else "")
         if out.strip():
@@ -149,7 +171,9 @@ def _compose_logs(files: List[str], service: str, tail: int = 200):
         pass
 
 
-def wait_for_service(files: List[str], service: str, timeout: float = 30.0, poll: float = 0.5):
+def wait_for_service(
+    files: List[str], service: str, timeout: float = 30.0, poll: float = 0.5
+):
     """
     Wait until the service container is running, and if it has a healthcheck, until it is healthy.
     If the container exits or on timeout, raises RuntimeError
@@ -167,13 +191,21 @@ def wait_for_service(files: List[str], service: str, timeout: float = 30.0, poll
             _compose_logs(files, service)
             # Fallback to docker logs for very-early crashes
             try:
-                res = subprocess.run(["docker", "logs", "--tail", "200", cid], capture_output=True, text=True)
-                log_out = (res.stdout or "") + (("\n" + res.stderr) if res.stderr else "")
+                res = subprocess.run(
+                    ["docker", "logs", "--tail", "200", cid],
+                    capture_output=True,
+                    text=True,
+                )
+                log_out = (res.stdout or "") + (
+                    ("\n" + res.stderr) if res.stderr else ""
+                )
                 if log_out.strip():
                     print(log_out.strip())
             except Exception:
                 pass
-            raise RuntimeError(f"Service '{service}' exited before becoming ready (state={state}, health={health}).")
+            raise RuntimeError(
+                f"Service '{service}' exited before becoming ready (state={state}, health={health})."
+            )
 
         # Success conditions
         if health:  # healthcheck present
@@ -194,4 +226,6 @@ def wait_for_service(files: List[str], service: str, timeout: float = 30.0, poll
 
     print(f"Timed out waiting for {service}. Dumping logs:")
     _compose_logs(files, service)
-    raise RuntimeError(f"Service {service} did not become ready (state={last_state}, health={last_health}).")
+    raise RuntimeError(
+        f"Service {service} did not become ready (state={last_state}, health={last_health})."
+    )

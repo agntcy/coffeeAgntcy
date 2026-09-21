@@ -7,6 +7,7 @@ from pydantic import BaseModel, Field
 from enum import Enum
 from a2a.types import AgentCard
 
+
 class AgentProtocol(str, Enum):
     """The protocol used by the candidate agent."""
 
@@ -30,7 +31,7 @@ class Candidate(BaseModel):
     """
 
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-    name: str                
+    name: str
     source_registry_url: str
     agent_protocol: AgentProtocol
     agent_card: CardType
@@ -55,24 +56,26 @@ class CandidatePool(BaseModel):
     """
     Represents a pool of candidate agents with ID-based mapping to interviews.
     """
-    
+
     candidates: Dict[str, Candidate] = Field(default_factory=dict)
     interviews: Dict[str, Interview] = Field(default_factory=dict)
     ranks: Dict[str, float] = Field(default_factory=dict)
-    
-    def add_candidate_with_interview(self, candidate: Candidate, interview: Interview) -> str:
+
+    def add_candidate_with_interview(
+        self, candidate: Candidate, interview: Interview
+    ) -> str:
         """Add a candidate and their interview to the pool.
-        
+
         Args:
             candidate: The candidate to add
             interview: The interview for the candidate
-        
+
         Returns:
             The candidate ID
         """
         if interview.candidate_id != candidate.id:
             raise ValueError("Interview candidate_id must match candidate id")
-        
+
         self.candidates[candidate.id] = candidate
         self.interviews[candidate.id] = interview
         return candidate.id

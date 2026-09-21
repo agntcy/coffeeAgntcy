@@ -15,6 +15,7 @@ from a2a.types import (
     Artifact,
 )
 
+
 class GenericTaskUpdateCallback:
     def __init__(self) -> None:
         self._task_id_to_task: dict[str, Task] = {}

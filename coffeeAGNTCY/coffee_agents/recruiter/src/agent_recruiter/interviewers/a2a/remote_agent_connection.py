@@ -34,7 +34,9 @@ from a2a.types import (
 )
 from loguru import logger
 
-from agent_recruiter.interviewers.a2a.generic_task_callback import GenericTaskUpdateCallback
+from agent_recruiter.interviewers.a2a.generic_task_callback import (
+    GenericTaskUpdateCallback,
+)
 
 JSON_RPC_ERROR_TYPES: TypeAlias = (
     JSONRPCError

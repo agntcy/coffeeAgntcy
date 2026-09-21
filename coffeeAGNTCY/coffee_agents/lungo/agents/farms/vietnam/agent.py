@@ -133,9 +133,7 @@ session_service = InMemorySessionService()
 
 # Single runner for the root agent - ADK handles sub-agent delegation automatically
 root_runner = Runner(
-    agent=root_agent,
-    app_name="vietnam_farm",
-    session_service=session_service
+    agent=root_agent, app_name="vietnam_farm", session_service=session_service
 )
 
 
@@ -144,16 +142,16 @@ root_runner = Runner(
 # ============================================================================
 
 
-async def call_agent_async(query: str, runner: Runner, user_id: str, session_id: str) -> str:
+async def call_agent_async(
+    query: str, runner: Runner, user_id: str, session_id: str
+) -> str:
     """Send a query to an agent runner and return the final response text."""
-    content = types.Content(role='user', parts=[types.Part(text=query)])
+    content = types.Content(role="user", parts=[types.Part(text=query)])
 
     final_response_text = "Agent did not produce a final response."
 
     async for event in runner.run_async(
-            user_id=user_id,
-            session_id=session_id,
-            new_message=content
+        user_id=user_id, session_id=session_id, new_message=content
     ):
         if event.is_final_response():
             if event.content and event.content.parts:
@@ -165,9 +163,13 @@ async def call_agent_async(query: str, runner: Runner, user_id: str, session_id:
 
 async def get_or_create_session(app_name: str, user_id: str, session_id: str):
     """Retrieve an existing session or create a new one if it doesn't exist."""
-    session = await session_service.get_session(app_name=app_name, user_id=user_id, session_id=session_id)
+    session = await session_service.get_session(
+        app_name=app_name, user_id=user_id, session_id=session_id
+    )
     if session is None:
-        session = await session_service.create_session(app_name=app_name, user_id=user_id, session_id=session_id)
+        session = await session_service.create_session(
+            app_name=app_name, user_id=user_id, session_id=session_id
+        )
     return session
 
 
@@ -185,7 +187,9 @@ async def run_vietnam_agent(query: str) -> str:
     session_id = "main_session"
 
     # Initialize session for the root agent
-    await get_or_create_session(app_name="vietnam_farm", user_id=user_id, session_id=session_id)
+    await get_or_create_session(
+        app_name="vietnam_farm", user_id=user_id, session_id=session_id
+    )
 
     logger.info(f"User Query: {query}")
 

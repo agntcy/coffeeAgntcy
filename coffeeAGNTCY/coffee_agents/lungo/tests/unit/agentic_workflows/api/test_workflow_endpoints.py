@@ -13,7 +13,9 @@ from api.agentic_workflows.router import create_agentic_workflows_router
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 from schema.types import Workflow
-from tests.unit.agentic_workflows.catalog_test_helpers import load_catalog_with_transport_cache
+from tests.unit.agentic_workflows.catalog_test_helpers import (
+    load_catalog_with_transport_cache,
+)
 
 _FAKE_WORKFLOWS: dict[str, Workflow] = {
     wf.name: wf
@@ -167,9 +169,7 @@ _LIST_CASES: tuple[ListCase, ...] = (
                 "use_cases": "Order Fulfillment",
             }
         ),
-        outputs=ListOutputs(
-            status=200, expected_names={"Publish Subscribe Streaming"}
-        ),
+        outputs=ListOutputs(status=200, expected_names={"Publish Subscribe Streaming"}),
     ),
     ListCase(
         case_id="filter_no_match_returns_empty",
@@ -198,9 +198,7 @@ _LIST_CASES: tuple[ListCase, ...] = (
 )
 
 
-@pytest.mark.parametrize(
-    "case", [pytest.param(c, id=c.case_id) for c in _LIST_CASES]
-)
+@pytest.mark.parametrize("case", [pytest.param(c, id=c.case_id) for c in _LIST_CASES])
 def test_list_agentic_workflows(case: ListCase, client: TestClient) -> None:
     resp = client.get("/agentic-workflows/", params=case.inputs.params)
     assert resp.status_code == case.outputs.status
@@ -304,17 +302,13 @@ _DETAIL_CASES: tuple[DetailCase, ...] = (
 )
 
 
-@pytest.mark.parametrize(
-    "case", [pytest.param(c, id=c.case_id) for c in _DETAIL_CASES]
-)
+@pytest.mark.parametrize("case", [pytest.param(c, id=c.case_id) for c in _DETAIL_CASES])
 def test_get_agentic_workflow(case: DetailCase, client: TestClient) -> None:
     params = {}
     if case.inputs.topology_only is not None:
         params["topology_only"] = case.inputs.topology_only
 
-    resp = client.get(
-        f"/agentic-workflows/{case.inputs.workflow_name}/", params=params
-    )
+    resp = client.get(f"/agentic-workflows/{case.inputs.workflow_name}/", params=params)
     assert resp.status_code == case.outputs.status
 
     if case.outputs.status != 200:

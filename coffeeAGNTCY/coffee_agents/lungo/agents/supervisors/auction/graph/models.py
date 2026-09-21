@@ -7,28 +7,30 @@ from agents.supervisors.auction.graph.shared import farm_registry
 
 FarmLiteral = Literal[tuple(farm_registry.slugs())]
 
+
 class InventoryArgs(BaseModel):
     """Arguments for the create_order tool."""
+
     prompt: str = Field(
         ...,
-        description="The prompt to use for the broadcast. Must be a non-empty string."
+        description="The prompt to use for the broadcast. Must be a non-empty string.",
     )
-    farm : FarmLiteral = Field(
+    farm: FarmLiteral = Field(
         ...,
-        description="The name of the farm. Must be one of 'brazil', 'colombia', or 'vietnam'."
+        description="The name of the farm. Must be one of 'brazil', 'colombia', or 'vietnam'.",
     )
+
 
 class CreateOrderArgs(BaseModel):
     """Arguments for the create_order tool."""
+
     farm: FarmLiteral = Field(
         ...,
-        description="The name of the farm. Must be one of 'brazil', 'colombia', or 'vietnam'."
+        description="The name of the farm. Must be one of 'brazil', 'colombia', or 'vietnam'.",
     )
     quantity: int = Field(
-        ...,
-        description="The quantity of the order. Must be a positive integer."
+        ..., description="The quantity of the order. Must be a positive integer."
     )
     price: float = Field(
-        ...,
-        description="The price of the order. Must be a positive float."
+        ..., description="The price of the order. Must be a positive float."
     )

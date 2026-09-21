@@ -7,7 +7,7 @@ from .inflight import register_cleanup_span_processor
 from .middleware import EventEmittingInterceptor, make_event_emitting_consumer
 
 __all__ = [
-	"EventEmittingInterceptor",
-	"make_event_emitting_consumer",
-	"register_cleanup_span_processor",
+    "EventEmittingInterceptor",
+    "make_event_emitting_consumer",
+    "register_cleanup_span_processor",
 ]

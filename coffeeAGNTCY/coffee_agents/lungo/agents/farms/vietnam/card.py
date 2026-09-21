@@ -19,7 +19,7 @@ AGENT_SKILL = AgentSkill(
         "How much coffee does the Vietnam farm produce?",
         "What is the yield of the Vietnam coffee farm in pounds?",
         "How many pounds of coffee does the Vietnam farm produce?",
-    ]
+    ],
 )
 
 AGENT_CARD = AgentCard(

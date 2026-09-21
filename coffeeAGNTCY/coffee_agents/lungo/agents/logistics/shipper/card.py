@@ -19,7 +19,7 @@ AGENT_SKILL = AgentSkill(
         "Mark the Colombia 50 lb order as DELIVERED if payment is complete.",
         "What is the current shipping status of my last coffee order?",
         "Has the order been delivered following PAYMENT_COMPLETE?",
-    ]
+    ],
 )
 
 AGENT_CARD = AgentCard(

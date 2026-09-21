@@ -22,6 +22,7 @@ def client(recruiter_client):
         time.sleep(0.1)
     yield recruiter_client
 
+
 @contextmanager
 def mock_trace_session(execution_id: str):
     mock_cm = MagicMock()
@@ -32,6 +33,7 @@ def mock_trace_session(execution_id: str):
         return_value=mock_cm,
     ):
         yield
+
 
 # ---------------------------------------------------------------------------
 # Health endpoints

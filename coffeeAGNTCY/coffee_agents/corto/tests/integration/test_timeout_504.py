@@ -28,4 +28,3 @@ def test_timeout_returns_504(supervisor_client, transport_config):
     detail = data["detail"]
     assert isinstance(detail, str)
     assert "timeout" in detail.lower() or "did not respond" in detail.lower()
-

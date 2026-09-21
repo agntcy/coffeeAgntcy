@@ -10,13 +10,17 @@ from common.a2a_transport_config import build_a2a_client_config
 
 _factory: Optional[AgntcyFactory] = None
 
+
 def set_factory(factory: AgntcyFactory):
     global _factory
     _factory = factory
 
+
 def get_factory() -> AgntcyFactory:
     if _factory is None:
-        return AgntcyFactory("lungo.auction_supervisor", enable_tracing=not OTEL_SDK_DISABLED)
+        return AgntcyFactory(
+            "lungo.auction_supervisor", enable_tracing=not OTEL_SDK_DISABLED
+        )
     return _factory
 
 
@@ -44,6 +48,7 @@ a2a_client_factory = A2AClientFactory(config)
 # All farm lookups in the auction supervisor go through this registry.
 # To add or remove a farm, modify the register() calls below - no other
 # files in the auction supervisor need to change.
+
 
 class FarmRegistry:
     """

@@ -133,7 +133,9 @@ def collect_error_response_ref_violations(
         for method, operation in path_item.items():
             if method.lower() not in _HTTP_METHODS or not isinstance(operation, dict):
                 continue
-            operation_id = str(operation.get("operationId") or f"{method.upper()} {path}")
+            operation_id = str(
+                operation.get("operationId") or f"{method.upper()} {path}"
+            )
             responses = operation.get("responses")
             if not isinstance(responses, dict):
                 continue

@@ -17,23 +17,25 @@ from agent_recruiter.interviewers.models import AgentEvalConfig
 from rogue_sdk.types import Protocol, Transport
 
 
-SAMPLE_AGENT_CARD_JSON = json.dumps({
-    "name": "Test Agent",
-    "description": "A test agent for evaluation",
-    "url": "http://localhost:3000",
-    "version": "1.0.0",
-    "provider": {
-        "organization": "Test Org",
-        "url": "http://testorg.example.com",
-    },
-    "defaultInputModes": ["text"],
-    "defaultOutputModes": ["text"],
-    "capabilities": {
-        "streaming": False,
-        "pushNotifications": False,
-    },
-    "skills": [],
-})
+SAMPLE_AGENT_CARD_JSON = json.dumps(
+    {
+        "name": "Test Agent",
+        "description": "A test agent for evaluation",
+        "url": "http://localhost:3000",
+        "version": "1.0.0",
+        "provider": {
+            "organization": "Test Org",
+            "url": "http://testorg.example.com",
+        },
+        "defaultInputModes": ["text"],
+        "defaultOutputModes": ["text"],
+        "capabilities": {
+            "streaming": False,
+            "pushNotifications": False,
+        },
+        "skills": [],
+    }
+)
 
 
 @pytest.fixture
@@ -43,7 +45,9 @@ def sample_agent_card() -> AgentCard:
         description="A test agent for evaluation",
         url="http://localhost:3000",
         version="1.0.0",
-        provider=AgentProvider(organization="Test Org", url="http://testorg.example.com"),
+        provider=AgentProvider(
+            organization="Test Org", url="http://testorg.example.com"
+        ),
         defaultInputModes=["text"],
         defaultOutputModes=["text"],
         capabilities={"streaming": False, "pushNotifications": False},
@@ -61,23 +65,25 @@ def mock_tool_context():
 @pytest.fixture
 def sample_agent_card_json():
     def _create(port: int = 3210):
-        return json.dumps({
-            "name": "TestAgent",
-            "description": "A simple test agent for integration testing with basic tools.",
-            "url": f"http://localhost:{port}",
-            "version": "1.0.0",
-            "provider": {
-                "organization": "Test Org",
-                "url": "http://testorg.example.com",
-            },
-            "defaultInputModes": ["text/plain"],
-            "defaultOutputModes": ["text/plain"],
-            "capabilities": {
-                "streaming": True,
-                "pushNotifications": False,
-            },
-            "skills": [],
-        })
+        return json.dumps(
+            {
+                "name": "TestAgent",
+                "description": "A simple test agent for integration testing with basic tools.",
+                "url": f"http://localhost:{port}",
+                "version": "1.0.0",
+                "provider": {
+                    "organization": "Test Org",
+                    "url": "http://testorg.example.com",
+                },
+                "defaultInputModes": ["text/plain"],
+                "defaultOutputModes": ["text/plain"],
+                "capabilities": {
+                    "streaming": True,
+                    "pushNotifications": False,
+                },
+                "skills": [],
+            }
+        )
 
     return _create
 
@@ -120,7 +126,9 @@ class TestEvaluateAgentsToolErrorHandling:
         assert result["results"] == []
 
     @pytest.mark.asyncio
-    async def test_error_handling_no_criteria(self, mock_tool_context, sample_agent_card_json):
+    async def test_error_handling_no_criteria(
+        self, mock_tool_context, sample_agent_card_json
+    ):
         mock_tool_context.state = {
             "found_agent_records": {
                 "agent1": sample_agent_card_json(),
@@ -136,10 +144,12 @@ class TestEvaluateAgentsToolErrorHandling:
 
     @pytest.mark.asyncio
     async def test_error_handling_invalid_agent_url(self, mock_tool_context):
-        bad_agent_record = json.dumps({
-            "name": "Bad Agent",
-            "description": "Agent with no URL",
-        })
+        bad_agent_record = json.dumps(
+            {
+                "name": "Bad Agent",
+                "description": "Agent with no URL",
+            }
+        )
 
         mock_tool_context.state = {
             "found_agent_records": {

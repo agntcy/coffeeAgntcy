@@ -154,9 +154,7 @@ def _extract_scenarios_with_llm(user_input: str) -> List[Dict[str, str]]:
     try:
         response = completion(
             model=LLM_MODEL,
-            messages=[
-                {"role": "user", "content": prompt}
-            ],
+            messages=[{"role": "user", "content": prompt}],
             temperature=0,  # Deterministic for extraction
         )
 
@@ -179,8 +177,7 @@ def _extract_scenarios_with_llm(user_input: str) -> List[Dict[str, str]]:
 
 
 async def parse_scenarios_from_input_tool(
-    user_input: str,
-    tool_context: ToolContext
+    user_input: str, tool_context: ToolContext
 ) -> Dict[str, Any]:
     """Tool for parsing evaluation scenarios from user input and setting them in state.
 
@@ -206,12 +203,14 @@ async def parse_scenarios_from_input_tool(
 
     # If criteria already exists and is non-empty, use it
     if existing_criteria:
-        logger.info(f"✅ Found {len(existing_criteria)} existing evaluation criteria in state")
+        logger.info(
+            f"✅ Found {len(existing_criteria)} existing evaluation criteria in state"
+        )
         return {
             "status": "scenarios_already_set",
             "scenarios": existing_criteria,
             "message": f"Using {len(existing_criteria)} existing evaluation criteria from state.",
-            "needs_more_info": False
+            "needs_more_info": False,
         }
 
     # Try to parse scenarios from user input using LLM
@@ -220,12 +219,14 @@ async def parse_scenarios_from_input_tool(
     if parsed_scenarios:
         # Set the parsed scenarios in state
         state["evaluation_criteria"] = parsed_scenarios
-        logger.info(f"✅ Parsed and set {len(parsed_scenarios)} scenarios from user input")
+        logger.info(
+            f"✅ Parsed and set {len(parsed_scenarios)} scenarios from user input"
+        )
         return {
             "status": "success",
             "scenarios": parsed_scenarios,
             "message": f"Successfully parsed {len(parsed_scenarios)} evaluation scenario(s) from input.",
-            "needs_more_info": False
+            "needs_more_info": False,
         }
 
     # No scenarios found - need more info
@@ -243,13 +244,12 @@ async def parse_scenarios_from_input_tool(
             "  Expected outcome: Agent politely redirects or declines\n"
             "- When user provides personal data, then agent should not store it"
         ),
-        "needs_more_info": True
+        "needs_more_info": True,
     }
 
 
 async def set_evaluation_criteria_tool(
-    scenarios: List[Dict[str, str]],
-    tool_context: ToolContext
+    scenarios: List[Dict[str, str]], tool_context: ToolContext
 ) -> Dict[str, Any]:
     """Tool for explicitly setting evaluation criteria in state.
 
@@ -279,16 +279,19 @@ async def set_evaluation_criteria_tool(
             logger.warning(f"Skipping scenario at index {i}: missing scenario text")
             continue
 
-        validated_scenarios.append({
-            "scenario": scenario_text,
-            "expected_outcome": expected_outcome or "Agent should handle appropriately"
-        })
+        validated_scenarios.append(
+            {
+                "scenario": scenario_text,
+                "expected_outcome": expected_outcome
+                or "Agent should handle appropriately",
+            }
+        )
 
     if not validated_scenarios:
         return {
             "status": "error",
             "message": "No valid scenarios provided. Each scenario must have at least a 'scenario' field.",
-            "scenarios_set": 0
+            "scenarios_set": 0,
         }
 
     # Set in state
@@ -299,13 +302,14 @@ async def set_evaluation_criteria_tool(
         "status": "success",
         "message": f"Successfully set {len(validated_scenarios)} evaluation criteria.",
         "scenarios_set": len(validated_scenarios),
-        "scenarios": validated_scenarios
+        "scenarios": validated_scenarios,
     }
 
 
 # ============================================================================
 # Agent Record Parsing
 # ============================================================================
+
 
 def _detect_protocol(raw_json: Union[str, dict]) -> Protocol:
     """Detect the protocol type from an agent record.
@@ -339,7 +343,9 @@ def _detect_protocol(raw_json: Union[str, dict]) -> Protocol:
     return Protocol.A2A
 
 
-def extract_agent_info(raw_json: Union[str, dict], protocol: Protocol = None) -> AgentEvalConfig:
+def extract_agent_info(
+    raw_json: Union[str, dict], protocol: Protocol = None
+) -> AgentEvalConfig:
     """Extract agent configuration from a raw agent record.
 
     Uses protocol-specific parsers to extract agent information.
@@ -403,14 +409,14 @@ async def evaluate_agents_tool(tool_context: ToolContext) -> Dict[str, Any]:
         return {
             "status": "error",
             "message": "No agent records found. Run registry search first.",
-            "results": []
+            "results": [],
         }
 
     if not eval_criteria_raw:
         return {
             "status": "error",
             "message": "No evaluation criteria provided.",
-            "results": []
+            "results": [],
         }
 
     # Convert evaluation criteria to Scenarios
@@ -419,7 +425,7 @@ async def evaluate_agents_tool(tool_context: ToolContext) -> Dict[str, Any]:
         scenario = Scenario(
             scenario_type=ScenarioType.POLICY,
             scenario=criterion.get("scenario", ""),
-            expected_outcome=criterion.get("expected_outcome")
+            expected_outcome=criterion.get("expected_outcome"),
         )
         scenarios.append(scenario)
 
@@ -476,7 +482,7 @@ async def evaluate_agents_tool(tool_context: ToolContext) -> Dict[str, Any]:
                     app_name=f"evaluator_{agent_id}",
                     user_id=user_id,
                     session_id=session_id,
-                    state={}
+                    state={},
                 )
 
                 # Run the evaluator agent
@@ -485,7 +491,7 @@ async def evaluate_agents_tool(tool_context: ToolContext) -> Dict[str, Any]:
                 async for event in temp_runner.run_async(
                     user_id=user_id,
                     session_id=session_id,
-                    new_message=start_message  # Trigger evaluation
+                    new_message=start_message,  # Trigger evaluation
                 ):
                     # Process events (agent runs scenarios automatically)
                     pass
@@ -498,17 +504,23 @@ async def evaluate_agents_tool(tool_context: ToolContext) -> Dict[str, Any]:
                     "agent_name": agent_config.agent_name,
                     "agent_url": agent_config.evaluated_agent_url,
                     "status": "evaluated",
-                    "passed": all(r.passed for r in results.results) if results.results else False,
+                    "passed": all(r.passed for r in results.results)
+                    if results.results
+                    else False,
                     "results": [
                         {
                             "scenario": r.scenario.scenario,
                             "expected_outcome": r.scenario.expected_outcome,
                             "passed": r.passed,
-                            "conversations": len(r.conversations) if r.conversations else 0
+                            "conversations": len(r.conversations)
+                            if r.conversations
+                            else 0,
                         }
                         for r in results.results
-                    ] if results.results else [],
-                    "summary": f"{sum(1 for r in results.results if r.passed)}/{len(results.results)} scenarios passed"
+                    ]
+                    if results.results
+                    else [],
+                    "summary": f"{sum(1 for r in results.results if r.passed)}/{len(results.results)} scenarios passed",
                 }
 
                 all_results.append(agent_result)
@@ -517,18 +529,13 @@ async def evaluate_agents_tool(tool_context: ToolContext) -> Dict[str, Any]:
                 state["evaluation_results"][agent_id] = agent_result
 
                 logger.info(
-                    f"✅ Completed evaluation for {agent_id}: "
-                    f"{agent_result['summary']}"
+                    f"✅ Completed evaluation for {agent_id}: {agent_result['summary']}"
                 )
 
         except Exception as e:
             logger.exception(f"❌ Failed to evaluate agent {agent_id}")
 
-            error_result = {
-                "agent_id": agent_id,
-                "status": "error",
-                "error": str(e)
-            }
+            error_result = {"agent_id": agent_id, "status": "error", "error": str(e)}
             all_results.append(error_result)
 
             # Write error result to state
@@ -543,7 +550,7 @@ async def evaluate_agents_tool(tool_context: ToolContext) -> Dict[str, Any]:
         "results": all_results,
         "successful_count": successful,
         "failed_count": failed,
-        "summary": f"Evaluated {successful}/{len(agent_records)} agents successfully"
+        "summary": f"Evaluated {successful}/{len(agent_records)} agents successfully",
     }
 
     # Also store the overall summary in state
@@ -557,6 +564,7 @@ async def evaluate_agents_tool(tool_context: ToolContext) -> Dict[str, Any]:
 # ============================================================================
 # Streaming Evaluation
 # ============================================================================
+
 
 async def evaluate_agents_streaming(
     agent_records: Dict[str, str],
@@ -589,17 +597,11 @@ async def evaluate_agents_streaming(
 
     # Validate inputs
     if not agent_records:
-        yield {
-            "type": "evaluation_error",
-            "error": "No agent records provided"
-        }
+        yield {"type": "evaluation_error", "error": "No agent records provided"}
         return
 
     if not evaluation_criteria:
-        yield {
-            "type": "evaluation_error",
-            "error": "No evaluation criteria provided"
-        }
+        yield {"type": "evaluation_error", "error": "No evaluation criteria provided"}
         return
 
     # Convert evaluation criteria to Scenarios
@@ -608,7 +610,7 @@ async def evaluate_agents_streaming(
         scenario = Scenario(
             scenario_type=ScenarioType.POLICY,
             scenario=criterion.get("scenario", ""),
-            expected_outcome=criterion.get("expected_outcome")
+            expected_outcome=criterion.get("expected_outcome"),
         )
         scenarios.append(scenario)
 
@@ -623,7 +625,7 @@ async def evaluate_agents_streaming(
         "scenarios": [
             {"scenario": s.scenario, "expected_outcome": s.expected_outcome}
             for s in scenarios
-        ]
+        ],
     }
 
     all_results = []
@@ -673,7 +675,7 @@ async def evaluate_agents_streaming(
                     app_name=f"evaluator_{agent_id}",
                     user_id=user_id,
                     session_id=session_id,
-                    state={}
+                    state={},
                 )
 
                 # Stream evaluation events
@@ -701,16 +703,22 @@ async def evaluate_agents_streaming(
                 result_summary = {
                     "agent_id": agent_id,
                     "status": "evaluated",
-                    "passed": all(r.passed for r in results.results) if results.results else False,
+                    "passed": all(r.passed for r in results.results)
+                    if results.results
+                    else False,
                     "results": [
                         {
                             "scenario": r.scenario.scenario,
                             "passed": r.passed,
-                            "conversations": len(r.conversations) if r.conversations else 0
+                            "conversations": len(r.conversations)
+                            if r.conversations
+                            else 0,
                         }
                         for r in results.results
-                    ] if results.results else [],
-                    "summary": f"{sum(1 for r in results.results if r.passed)}/{len(results.results)} scenarios passed"
+                    ]
+                    if results.results
+                    else [],
+                    "summary": f"{sum(1 for r in results.results if r.passed)}/{len(results.results)} scenarios passed",
                 }
 
                 all_results.append(result_summary)
@@ -720,17 +728,13 @@ async def evaluate_agents_streaming(
                     "agent_id": agent_id,
                     "agent_index": agent_idx + 1,
                     "total_agents": len(agent_records),
-                    **result_summary
+                    **result_summary,
                 }
 
         except Exception as e:
             logger.exception(f"❌ Failed to evaluate agent {agent_id}")
 
-            error_result = {
-                "agent_id": agent_id,
-                "status": "error",
-                "error": str(e)
-            }
+            error_result = {"agent_id": agent_id, "status": "error", "error": str(e)}
             all_results.append(error_result)
 
             yield {
@@ -738,7 +742,7 @@ async def evaluate_agents_streaming(
                 "agent_id": agent_id,
                 "agent_index": agent_idx + 1,
                 "total_agents": len(agent_records),
-                "error": str(e)
+                "error": str(e),
             }
 
     # Final summary
@@ -751,7 +755,7 @@ async def evaluate_agents_streaming(
         "results": all_results,
         "successful_count": successful,
         "failed_count": failed,
-        "summary": f"Evaluated {successful}/{len(agent_records)} agents successfully"
+        "summary": f"Evaluated {successful}/{len(agent_records)} agents successfully",
     }
 
 
@@ -769,17 +773,21 @@ def _extract_event_content(event: AdkEvent) -> Optional[Dict[str, Any]]:
     if event.content and event.content.parts:
         texts = []
         for part in event.content.parts:
-            if hasattr(part, 'text') and part.text:
+            if hasattr(part, "text") and part.text:
                 texts.append(part.text)
-            elif hasattr(part, 'function_call') and part.function_call:
+            elif hasattr(part, "function_call") and part.function_call:
                 content["function_call"] = {
                     "name": part.function_call.name,
-                    "args": part.function_call.args if hasattr(part.function_call, 'args') else None
+                    "args": part.function_call.args
+                    if hasattr(part.function_call, "args")
+                    else None,
                 }
-            elif hasattr(part, 'function_response') and part.function_response:
+            elif hasattr(part, "function_response") and part.function_response:
                 content["function_response"] = {
                     "name": part.function_response.name,
-                    "response": str(part.function_response.response)[:200] if hasattr(part.function_response, 'response') else None
+                    "response": str(part.function_response.response)[:200]
+                    if hasattr(part.function_response, "response")
+                    else None,
                 }
 
         if texts:
@@ -801,6 +809,6 @@ def create_evaluation_agent() -> Agent:
         name="agent_evaluator",
         instruction=AGENT_INSTRUCTION,
         description="Agent for evaluating candidate agents based on user-defined scenarios.",
-        tools=[parse_scenarios_tool, set_criteria_tool, eval_tool]
+        tools=[parse_scenarios_tool, set_criteria_tool, eval_tool],
     )
     return agent

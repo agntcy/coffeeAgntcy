@@ -139,7 +139,9 @@ class TestAgentRecordFromRecord:
         ],
         ids=lambda case: case,
     )
-    def test_to_agent_card_from_record(self, case, record, expected_url, expected_transport):
+    def test_to_agent_card_from_record(
+        self, case, record, expected_url, expected_transport
+    ):
         card = AgentRecord.from_record("cid-1", record).to_agent_card()
 
         assert isinstance(card, AgentCard)

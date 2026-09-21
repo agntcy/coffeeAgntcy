@@ -18,6 +18,7 @@ from common.logistics_states import (
 
 logger = logging.getLogger("lungo.accountant_agent.agent")
 
+
 # --- 1. Define Node Names as Constants ---
 class NodeStates:
     ACCOUNTANT = "accountant"
@@ -28,6 +29,7 @@ class GraphState(MessagesState):
     """
     Represents the state of our graph, passed between nodes.
     """
+
     pass
 
 
@@ -72,7 +74,11 @@ class AccountantAgent:
             )
             return {"messages": [AIMessage(msg)]}
 
-        return {"messages": [AIMessage("Accountant remains IDLE. No further action required.")]}
+        return {
+            "messages": [
+                AIMessage("Accountant remains IDLE. No further action required.")
+            ]
+        }
 
     # --- Graph Building Method ---
     @graph(name="accountant_graph")

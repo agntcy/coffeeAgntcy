@@ -12,6 +12,7 @@ def _get_slim_error():
     if _SLIM_ERROR is None:
         try:
             from slim_bindings import SlimError
+
             _SLIM_ERROR = SlimError
         except ImportError:
             pass
@@ -20,6 +21,7 @@ def _get_slim_error():
 
 class TransportTimeoutError(Exception):
     """Wraps the cause when the last attempt failed with a timeout (e.g. SLIM receive timeout)."""
+
     def __init__(self, message: str, cause: BaseException | None = None):
         super().__init__(message)
         self.__cause__ = cause
@@ -27,17 +29,16 @@ class TransportTimeoutError(Exception):
 
 class RemoteAgentNoResponseError(Exception):
     """Wraps the cause when the remote returns no usable response (missing or invalid payload)."""
+
     def __init__(self, message: str, cause: BaseException | None = None):
         super().__init__(message)
         self.__cause__ = cause
 
 
-def _is_timeout_error(exc: BaseException, slim_error_class: type | None = _SENTINEL) -> bool:
-    """True iff the exception is a TimeoutError (including the one common/slim_request_timeout.py
-    raises for a lapsed SLIM deadline), SlimError.SessionError, or AttributeError with
-    SlimError.SessionError in chain (SDK wrap)."""
-    if isinstance(exc, TimeoutError):
-        return True
+def _is_timeout_error(
+    exc: BaseException, slim_error_class: type | None = _SENTINEL
+) -> bool:
+    """True iff the exception is SlimError.SessionError or AttributeError with SlimError.SessionError in chain (SDK wrap)."""
     if slim_error_class is _SENTINEL:
         SlimError = _get_slim_error()
     else:
@@ -54,11 +55,12 @@ def _is_timeout_error(exc: BaseException, slim_error_class: type | None = _SENTI
         seen.add(id(current))
         if isinstance(current, SlimError.SessionError):
             return True
-        current = getattr(current, "__cause__", None) or getattr(current, "__context__", None)
+        current = getattr(current, "__cause__", None) or getattr(
+            current, "__context__", None
+        )
     return False
 
 
 def _is_no_payload_error(exc: BaseException) -> bool:
     """True iff the exception is an AttributeError for missing 'payload' (e.g. access on None)."""
     return isinstance(exc, AttributeError) and getattr(exc, "name", None) == "payload"
-

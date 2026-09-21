@@ -62,7 +62,9 @@ class ProcessRunner:
             start_new_session=True,  # so we can kill the whole process group
         )
 
-        self._thread = threading.Thread(target=self._pump, name=f"{self.name}-logger", daemon=True)
+        self._thread = threading.Thread(
+            target=self._pump, name=f"{self.name}-logger", daemon=True
+        )
         self._thread.start()
         return self
 

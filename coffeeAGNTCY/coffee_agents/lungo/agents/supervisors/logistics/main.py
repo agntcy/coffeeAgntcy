@@ -28,16 +28,20 @@ logger = logging.getLogger("lungo.logistics.supervisor.main")
 load_dotenv()
 
 # Initialize the shared agntcy factory (tracing from OTEL_SDK_DISABLED)
-shared.set_factory(AgntcyFactory("lungo.logistics_supervisor", enable_tracing=not OTEL_SDK_DISABLED))
+shared.set_factory(
+    AgntcyFactory("lungo.logistics_supervisor", enable_tracing=not OTEL_SDK_DISABLED)
+)
 require_streaming_capability("logistics_supervisor", LLM_MODEL)
 
 if not OTEL_SDK_DISABLED:
     from common.a2a_event_middleware.inflight import register_cleanup_span_processor
+
     register_cleanup_span_processor()
 
 
 def _build_graph_sync():
     from agents.supervisors.logistics.graph.graph import LogisticGraph
+
     return LogisticGraph()
 
 
@@ -66,65 +70,74 @@ app = FastAPI(lifespan=lifespan)
 _cors_origins = get_cors_allowed_origins()
 logger.info("CORS allow_origins: %s", _cors_origins)
 app.add_middleware(
-  CORSMiddleware,
-  allow_origins=_cors_origins,
-  allow_credentials=True,
-  allow_methods=["*"],
-  allow_headers=["*"],
+    CORSMiddleware,
+    allow_origins=_cors_origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
+
 class PromptRequest(BaseModel):
-  prompt: str
-  workflow_instance_id: str | None = None
+    prompt: str
+    workflow_instance_id: str | None = None
+
 
 @app.post("/agent/prompt")
 async def handle_prompt(request: PromptRequest, req: Request):
-  logistic_graph = getattr(req.app.state, "logistic_graph", None)
-  if logistic_graph is None:
-    raise HTTPException(status_code=503, detail="Service initializing")
-  try:
-    with session_start() as session_id:
-      timeout_val = int(os.getenv("LOGISTIC_TIMEOUT", "200"))
-      result = await asyncio.wait_for(
-        logistic_graph.serve(request.prompt, workflow_instance_id=request.workflow_instance_id),
-        timeout=timeout_val
-      )
-      logger.info(f"Final result from LangGraph: {result}")
-      return {"response": result, "session_id": session_id["executionID"]}
-  except asyncio.TimeoutError:
-    logger.error("Request timed out after %s seconds", timeout_val)
-    raise HTTPException(status_code=504, detail=f"Request timed out after {timeout_val} seconds")
-  except ValueError as ve:
-    raise HTTPException(status_code=400, detail=str(ve))
-  except Exception as e:
-    raise HTTPException(status_code=500, detail=f"Operation failed: {str(e)}")
+    logistic_graph = getattr(req.app.state, "logistic_graph", None)
+    if logistic_graph is None:
+        raise HTTPException(status_code=503, detail="Service initializing")
+    try:
+        with session_start() as session_id:
+            timeout_val = int(os.getenv("LOGISTIC_TIMEOUT", "200"))
+            result = await asyncio.wait_for(
+                logistic_graph.serve(
+                    request.prompt, workflow_instance_id=request.workflow_instance_id
+                ),
+                timeout=timeout_val,
+            )
+            logger.info(f"Final result from LangGraph: {result}")
+            return {"response": result, "session_id": session_id["executionID"]}
+    except asyncio.TimeoutError:
+        logger.error("Request timed out after %s seconds", timeout_val)
+        raise HTTPException(
+            status_code=504, detail=f"Request timed out after {timeout_val} seconds"
+        )
+    except ValueError as ve:
+        raise HTTPException(status_code=400, detail=str(ve))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Operation failed: {str(e)}")
+
 
 @app.get("/health")
 async def health_check():
-  return {"status": "ok"}
+    return {"status": "ok"}
+
 
 @app.get("/v1/health")
 async def connectivity_health(req: Request):
-  """
-  Deep liveness: creates an A2A client for the downstream Shipper agent,
-  which establishes a SLIM transport session.  If the handshake succeeds
-  within the timeout, the SLIM broker is considered reachable.
-  """
-  if getattr(req.app.state, "logistic_graph", None) is None:
-    raise HTTPException(status_code=503, detail="Service initializing")
-  try:
-    from agents.supervisors.logistics.graph.shared import a2a_client_factory
+    """
+    Deep liveness: creates an A2A client for the downstream Shipper agent,
+    which establishes a SLIM transport session.  If the handshake succeeds
+    within the timeout, the SLIM broker is considered reachable.
+    """
+    if getattr(req.app.state, "logistic_graph", None) is None:
+        raise HTTPException(status_code=503, detail="Service initializing")
+    try:
+        from agents.supervisors.logistics.graph.shared import a2a_client_factory
 
-    await asyncio.wait_for(
-      a2a_client_factory.create(AGENT_CARD),
-      timeout=30,
-    )
-    logger.info("Liveness probe succeeded: SLIM connectivity verified.")
-    return {"status": "alive"}
-  except asyncio.TimeoutError:
-    raise HTTPException(status_code=500, detail="Timeout creating A2A client")
-  except Exception as e:
-    raise HTTPException(status_code=500, detail=f"Health check failed: {str(e)}")
+        await asyncio.wait_for(
+            a2a_client_factory.create(AGENT_CARD),
+            timeout=30,
+        )
+        logger.info("Liveness probe succeeded: SLIM connectivity verified.")
+        return {"status": "alive"}
+    except asyncio.TimeoutError:
+        raise HTTPException(status_code=500, detail="Timeout creating A2A client")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Health check failed: {str(e)}")
+
 
 @app.get("/transport/config")
 async def get_config():
@@ -165,72 +178,93 @@ async def handle_stream_prompt(request: PromptRequest, req: Request):
     if logistic_graph is None:
         raise HTTPException(status_code=503, detail="Service initializing")
     try:
-        with session_start() as session_id:  # Start a new tracing session for observability
+        with (
+            session_start() as session_id
+        ):  # Start a new tracing session for observability
 
-          async def stream_generator():
-              try:
-                  async for chunk in logistic_graph.streaming_serve(request.prompt, workflow_instance_id=request.workflow_instance_id):
-                      yield json.dumps({"response": chunk, "session_id": session_id["executionID"]}) + "\n"
-              except Exception as e:
-                  logger.error(f"Error in stream: {e}")
-                  yield json.dumps({"response": f"Error: {str(e)}"}) + "\n"
+            async def stream_generator():
+                try:
+                    async for chunk in logistic_graph.streaming_serve(
+                        request.prompt,
+                        workflow_instance_id=request.workflow_instance_id,
+                    ):
+                        yield (
+                            json.dumps(
+                                {
+                                    "response": chunk,
+                                    "session_id": session_id["executionID"],
+                                }
+                            )
+                            + "\n"
+                        )
+                except Exception as e:
+                    logger.error(f"Error in stream: {e}")
+                    yield json.dumps({"response": f"Error: {str(e)}"}) + "\n"
 
-          return StreamingResponse(
-              stream_generator(),
-              media_type="application/x-ndjson",
-              headers={
-                  "Cache-Control": "no-cache",
-                  "Connection": "keep-alive",
-              }
-          )
+            return StreamingResponse(
+                stream_generator(),
+                media_type="application/x-ndjson",
+                headers={
+                    "Cache-Control": "no-cache",
+                    "Connection": "keep-alive",
+                },
+            )
     except ValueError as ve:
         raise HTTPException(status_code=400, detail=str(ve))
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Operation failed: {str(e)}")
 
+
 @app.get("/suggested-prompts")
 async def get_prompts(pattern: str = "default"):
-  """
-  Fetch suggested prompts based on the specified pattern.
+    """
+    Fetch suggested prompts based on the specified pattern.
 
-  Parameters:
-      pattern (str): The type of prompts to fetch.
-                     Use "default" for all prompts or "streaming" for streaming-specific prompts.
+    Parameters:
+        pattern (str): The type of prompts to fetch.
+                       Use "default" for all prompts or "streaming" for streaming-specific prompts.
 
-  Returns:
-      dict: A dictionary containing lists of prompts for "buyer" and "purchaser".
+    Returns:
+        dict: A dictionary containing lists of prompts for "buyer" and "purchaser".
 
-  Raises:
-      HTTPException:
-          - 500 if the JSON file is invalid or an unexpected error occurs.
-  """
-  try:
-    prompts_path = Path(__file__).resolve().parent / "suggested_prompts.json"
-    raw = prompts_path.read_text(encoding="utf-8")
-    data = json.loads(raw)
+    Raises:
+        HTTPException:
+            - 500 if the JSON file is invalid or an unexpected error occurs.
+    """
+    try:
+        prompts_path = Path(__file__).resolve().parent / "suggested_prompts.json"
+        raw = prompts_path.read_text(encoding="utf-8")
+        data = json.loads(raw)
 
-    return {"logistics": data.get("logistics_prompts", [])}
+        return {"logistics": data.get("logistics_prompts", [])}
 
-  except Exception as e:
-    logger.error(f"Unexpected error while reading prompts: {str(e)}")
-    raise HTTPException(status_code=500, detail="An unexpected error occurred while reading prompts.")
+    except Exception as e:
+        logger.error(f"Unexpected error while reading prompts: {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail="An unexpected error occurred while reading prompts.",
+        )
+
 
 @app.get("/agents/{slug}/oasf")
 async def get_agent_oasf(slug: str):
-  """
-  Returns the OASF JSON for the specified agent slug from the static files.
-  """
-  oasf_path = Path(__file__).resolve().parent / "oasf" / "agents" / f"{slug}.json"
-  if not oasf_path.exists():
-    raise HTTPException(status_code=404, detail="OASF record not found")
-  try:
-    with oasf_path.open("r", encoding="utf-8") as f:
-      data = json.load(f)
-    return JSONResponse(content=data)
-  except Exception as e:
-    logger.error(f"Failed to read OASF file for slug '{slug}': {e}")
-    raise HTTPException(status_code=500, detail="An unexpected error occurred while retrieving the agent information. Please try again later.")
+    """
+    Returns the OASF JSON for the specified agent slug from the static files.
+    """
+    oasf_path = Path(__file__).resolve().parent / "oasf" / "agents" / f"{slug}.json"
+    if not oasf_path.exists():
+        raise HTTPException(status_code=404, detail="OASF record not found")
+    try:
+        with oasf_path.open("r", encoding="utf-8") as f:
+            data = json.load(f)
+        return JSONResponse(content=data)
+    except Exception as e:
+        logger.error(f"Failed to read OASF file for slug '{slug}': {e}")
+        raise HTTPException(
+            status_code=500,
+            detail="An unexpected error occurred while retrieving the agent information. Please try again later.",
+        )
 
 
 if __name__ == "__main__":
-  uvicorn.run("main:app", host="0.0.0.0", port=9090, reload=HOT_RELOAD_MODE)
+    uvicorn.run("main:app", host="0.0.0.0", port=9090, reload=HOT_RELOAD_MODE)

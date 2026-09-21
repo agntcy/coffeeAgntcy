@@ -38,6 +38,7 @@ class TestParseDictValues:
     def test_json_string_values(self, recruiter_client_mod):
         """Recruiter service may return JSON strings instead of dicts."""
         import json
+
         data = {
             "cid1": json.dumps({"name": "Agent A", "url": "http://a:9000"}),
             "cid2": json.dumps({"name": "Agent B", "url": "http://b:9000"}),
@@ -48,6 +49,7 @@ class TestParseDictValues:
 
     def test_mixed_dict_and_string_values(self, recruiter_client_mod):
         import json
+
         data = {
             "cid1": {"name": "Agent A"},
             "cid2": json.dumps({"name": "Agent B"}),
@@ -63,6 +65,7 @@ class TestParseDictValues:
 
     def test_non_dict_json_skipped(self, recruiter_client_mod):
         import json
+
         data = {"cid1": json.dumps(["a", "list"])}
         result = recruiter_client_mod._parse_dict_values(data)
         assert "cid1" not in result
@@ -186,11 +189,12 @@ class TestRecruitAgents:
         tool_context = MagicMock()
         tool_context.state = {}
 
-        with patch(
-            "agents.supervisors.recruiter.recruiter_client.httpx.AsyncClient"
-        ), patch(
-            "agents.supervisors.recruiter.recruiter_client.ClientFactory",
-            return_value=mock_factory,
+        with (
+            patch("agents.supervisors.recruiter.recruiter_client.httpx.AsyncClient"),
+            patch(
+                "agents.supervisors.recruiter.recruiter_client.ClientFactory",
+                return_value=mock_factory,
+            ),
         ):
             result = await recruiter_client_mod.recruit_agents(
                 "find accounting agents", tool_context
@@ -240,11 +244,12 @@ class TestRecruitAgents:
             STATE_KEY_EVALUATION_RESULTS: {},
         }
 
-        with patch(
-            "agents.supervisors.recruiter.recruiter_client.httpx.AsyncClient"
-        ), patch(
-            "agents.supervisors.recruiter.recruiter_client.ClientFactory",
-            return_value=mock_factory,
+        with (
+            patch("agents.supervisors.recruiter.recruiter_client.httpx.AsyncClient"),
+            patch(
+                "agents.supervisors.recruiter.recruiter_client.ClientFactory",
+                return_value=mock_factory,
+            ),
         ):
             await recruiter_client_mod.recruit_agents("find more", tool_context)
 
@@ -279,11 +284,12 @@ class TestRecruitAgents:
         tool_context = MagicMock()
         tool_context.state = {}
 
-        with patch(
-            "agents.supervisors.recruiter.recruiter_client.httpx.AsyncClient"
-        ), patch(
-            "agents.supervisors.recruiter.recruiter_client.ClientFactory",
-            return_value=mock_factory,
+        with (
+            patch("agents.supervisors.recruiter.recruiter_client.httpx.AsyncClient"),
+            patch(
+                "agents.supervisors.recruiter.recruiter_client.ClientFactory",
+                return_value=mock_factory,
+            ),
         ):
             result = await recruiter_client_mod.recruit_agents("find xyz", tool_context)
 
@@ -336,11 +342,12 @@ class TestRecruitAgents:
         tool_context = MagicMock()
         tool_context.state = {}
 
-        with patch(
-            "agents.supervisors.recruiter.recruiter_client.httpx.AsyncClient"
-        ), patch(
-            "agents.supervisors.recruiter.recruiter_client.ClientFactory",
-            return_value=mock_factory,
+        with (
+            patch("agents.supervisors.recruiter.recruiter_client.httpx.AsyncClient"),
+            patch(
+                "agents.supervisors.recruiter.recruiter_client.ClientFactory",
+                return_value=mock_factory,
+            ),
         ):
             result = await recruiter_client_mod.recruit_agents(
                 "find task agents", tool_context
@@ -402,9 +409,13 @@ class TestEmitDiscoveryTopology:
             instance_id=_VALID_INSTANCE,
             workflow_name="recruiter_pattern",
         )
-        with ctx_patches[0], ctx_patches[1], ctx_patches[2], patch.object(
-            recruiter_client_mod, "build_event", build_event_mock
-        ), patch.object(recruiter_client_mod, "_discovery_event_sink", sink):
+        with (
+            ctx_patches[0],
+            ctx_patches[1],
+            ctx_patches[2],
+            patch.object(recruiter_client_mod, "build_event", build_event_mock),
+            patch.object(recruiter_client_mod, "_discovery_event_sink", sink),
+        ):
             await recruiter_client_mod._emit_discovery_topology(records)
 
         sink.emit.assert_awaited_once()
@@ -439,10 +450,14 @@ class TestEmitDiscoveryTopology:
                 instance_id=_VALID_INSTANCE,
                 workflow_name="recruiter_pattern",
             )
-            with ctx_patches[0], ctx_patches[1], ctx_patches[2], patch.object(
-                recruiter_client_mod, "build_event", build_mock
-            ), patch.object(
-                recruiter_client_mod, "_discovery_event_sink", AsyncMock()
+            with (
+                ctx_patches[0],
+                ctx_patches[1],
+                ctx_patches[2],
+                patch.object(recruiter_client_mod, "build_event", build_mock),
+                patch.object(
+                    recruiter_client_mod, "_discovery_event_sink", AsyncMock()
+                ),
             ):
                 await recruiter_client_mod._emit_discovery_topology(records)
 
@@ -502,9 +517,13 @@ class TestEmitDiscoveryTopology:
             workflow_name=workflow_name,
             workflow_known=workflow_known,
         )
-        with ctx_patches[0], ctx_patches[1], ctx_patches[2], patch.object(
-            recruiter_client_mod, "build_event", build_event_mock
-        ), patch.object(recruiter_client_mod, "_discovery_event_sink", sink):
+        with (
+            ctx_patches[0],
+            ctx_patches[1],
+            ctx_patches[2],
+            patch.object(recruiter_client_mod, "build_event", build_event_mock),
+            patch.object(recruiter_client_mod, "_discovery_event_sink", sink),
+        ):
             await recruiter_client_mod._emit_discovery_topology(records)
 
         sink.emit.assert_not_awaited()
@@ -518,8 +537,11 @@ class TestEmitDiscoveryTopology:
             instance_id=_VALID_INSTANCE,
             workflow_name="recruiter_pattern",
         )
-        with ctx_patches[0], ctx_patches[1], ctx_patches[2], patch.object(
-            recruiter_client_mod, "_discovery_event_sink", None
+        with (
+            ctx_patches[0],
+            ctx_patches[1],
+            ctx_patches[2],
+            patch.object(recruiter_client_mod, "_discovery_event_sink", None),
         ):
             await recruiter_client_mod._emit_discovery_topology(
                 {"cidB": {"name": "Brazil"}}

@@ -1,8 +1,7 @@
 # Copyright AGNTCY Contributors (https://github.com/agntcy)
 # SPDX-License-Identifier: Apache-2.0
 
-"""A2A send_message retry with exponential backoff and timeout/no-payload error classification.
-"""
+"""A2A send_message retry with exponential backoff and timeout/no-payload error classification."""
 
 import asyncio
 import logging
@@ -17,6 +16,7 @@ def _get_slim_error():
     if _SLIM_ERROR is None:
         try:
             from slim_bindings import SlimError
+
             _SLIM_ERROR = SlimError
         except ImportError:
             pass
@@ -25,6 +25,7 @@ def _get_slim_error():
 
 class TransportTimeoutError(Exception):
     """Wraps the cause when the last attempt failed with a timeout (e.g. SLIM receive timeout)."""
+
     def __init__(self, message: str, cause: BaseException | None = None):
         super().__init__(message)
         self.__cause__ = cause
@@ -32,17 +33,16 @@ class TransportTimeoutError(Exception):
 
 class RemoteAgentNoResponseError(Exception):
     """Wraps the cause when the remote returns no usable response (missing or invalid payload)."""
+
     def __init__(self, message: str, cause: BaseException | None = None):
         super().__init__(message)
         self.__cause__ = cause
 
 
-def _is_timeout_error(exc: BaseException, slim_error_class: type | None = _SENTINEL) -> bool:
-    """True iff the exception is a TimeoutError (including the one common/slim_request_timeout.py
-    raises for a lapsed SLIM deadline), SlimError.SessionError, or AttributeError with
-    SlimError.SessionError in chain (SDK wrap)."""
-    if isinstance(exc, TimeoutError):
-        return True
+def _is_timeout_error(
+    exc: BaseException, slim_error_class: type | None = _SENTINEL
+) -> bool:
+    """True iff the exception is SlimError.SessionError or AttributeError with SlimError.SessionError in chain (SDK wrap)."""
     if slim_error_class is _SENTINEL:
         SlimError = _get_slim_error()
     else:
@@ -59,7 +59,9 @@ def _is_timeout_error(exc: BaseException, slim_error_class: type | None = _SENTI
         seen.add(id(current))
         if isinstance(current, SlimError.SessionError):
             return True
-        current = getattr(current, "__cause__", None) or getattr(current, "__context__", None)
+        current = getattr(current, "__cause__", None) or getattr(
+            current, "__context__", None
+        )
     return False
 
 
@@ -77,7 +79,9 @@ _A2A_BACKOFF_BASE = 2
 logger = logging.getLogger(__name__)
 
 
-async def send_a2a_with_retry(client, message, context: ClientCallContext | None = None):
+async def send_a2a_with_retry(
+    client, message, context: ClientCallContext | None = None
+):
     """
     Send message to A2A client. On timeout or no response, retry
     up to 2 times (3 attempts total) with exponential backoff (base 2, delays 1s, 2s).
@@ -95,7 +99,7 @@ async def send_a2a_with_retry(client, message, context: ClientCallContext | None
                 return events
 
             if attempt < _A2A_MAX_ATTEMPTS - 1:
-                delay = _A2A_BACKOFF_BASE ** attempt
+                delay = _A2A_BACKOFF_BASE**attempt
                 logger.warning(
                     "A2A request had no response, retrying (attempt %s/%s) after %ss.",
                     attempt + 2,
@@ -113,7 +117,7 @@ async def send_a2a_with_retry(client, message, context: ClientCallContext | None
         except Exception as e:
             if _is_timeout_error(e):
                 if attempt < _A2A_MAX_ATTEMPTS - 1:
-                    delay = _A2A_BACKOFF_BASE ** attempt
+                    delay = _A2A_BACKOFF_BASE**attempt
                     logger.warning(
                         "A2A request timed out, retrying (attempt %s/%s) after %ss.",
                         attempt + 2,
@@ -128,7 +132,7 @@ async def send_a2a_with_retry(client, message, context: ClientCallContext | None
                 ) from e
             if _is_no_payload_error(e):
                 if attempt < _A2A_MAX_ATTEMPTS - 1:
-                    delay = _A2A_BACKOFF_BASE ** attempt
+                    delay = _A2A_BACKOFF_BASE**attempt
                     logger.warning(
                         "A2A request had no response, retrying (attempt %s/%s) after %ss.",
                         attempt + 2,
@@ -143,4 +147,3 @@ async def send_a2a_with_retry(client, message, context: ClientCallContext | None
                 ) from e
             logger.error("A2A send_message failed: %s", e)
             raise
-

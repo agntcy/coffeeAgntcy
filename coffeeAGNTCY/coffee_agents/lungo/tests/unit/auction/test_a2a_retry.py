@@ -48,32 +48,46 @@ def _side_effect_for(scenario_id: str):
     if scenario_id == "timeout_then_success":
         if SlimError is None:
             pytest.skip("slim_bindings required for timeout scenarios")
-        calls = iter([
-            _raising_async_iter(SlimError.SessionError("receive timeout waiting for message")),
-            _async_iter([_make_event("recovered")]),
-        ])
+        calls = iter(
+            [
+                _raising_async_iter(
+                    SlimError.SessionError("receive timeout waiting for message")
+                ),
+                _async_iter([_make_event("recovered")]),
+            ]
+        )
         return lambda *a, **kw: next(calls)
     if scenario_id == "timeout_then_timeout":
         if SlimError is None:
             pytest.skip("slim_bindings required for timeout scenarios")
-        return lambda *a, **kw: _raising_async_iter(SlimError.SessionError("receive timeout"))
+        return lambda *a, **kw: _raising_async_iter(
+            SlimError.SessionError("receive timeout")
+        )
     if scenario_id == "timeout_then_non_timeout":
         if SlimError is None:
             pytest.skip("slim_bindings required for timeout scenarios")
-        calls = iter([
-            _raising_async_iter(SlimError.SessionError("receive timeout")),
-            _raising_async_iter(ConnectionError("connection refused")),
-        ])
+        calls = iter(
+            [
+                _raising_async_iter(SlimError.SessionError("receive timeout")),
+                _raising_async_iter(ConnectionError("connection refused")),
+            ]
+        )
         return lambda *a, **kw: next(calls)
     if scenario_id == "slim_deadline_then_success":
         # What common/slim_request_timeout.py raises once the SDK gives up on a reply.
-        calls = iter([
-            _raising_async_iter(TimeoutError("No SLIM reply from farm within 20s.")),
-            _async_iter([_make_event("recovered")]),
-        ])
+        calls = iter(
+            [
+                _raising_async_iter(
+                    TimeoutError("No SLIM reply from farm within 20s.")
+                ),
+                _async_iter([_make_event("recovered")]),
+            ]
+        )
         return lambda *a, **kw: next(calls)
     if scenario_id == "slim_deadline_exhausted":
-        return lambda *a, **kw: _raising_async_iter(TimeoutError("No SLIM reply from farm within 20s."))
+        return lambda *a, **kw: _raising_async_iter(
+            TimeoutError("No SLIM reply from farm within 20s.")
+        )
     if scenario_id == "non_timeout_no_retry":
         return lambda *a, **kw: _raising_async_iter(ValueError("bad request"))
     if scenario_id == "success_first_attempt":
@@ -87,16 +101,20 @@ def _side_effect_for(scenario_id: str):
     if scenario_id == "no_payload_then_success":
         err = AttributeError("'NoneType' object has no attribute 'payload'")
         err.name = "payload"
-        calls = iter([
-            _raising_async_iter(err),
-            _async_iter([_make_event("recovered")]),
-        ])
+        calls = iter(
+            [
+                _raising_async_iter(err),
+                _async_iter([_make_event("recovered")]),
+            ]
+        )
         return lambda *a, **kw: next(calls)
     if scenario_id == "none_then_success":
-        calls = iter([
-            _empty_async_iter(),
-            _async_iter([_make_event("ok")]),
-        ])
+        calls = iter(
+            [
+                _empty_async_iter(),
+                _async_iter([_make_event("ok")]),
+            ]
+        )
         return lambda *a, **kw: next(calls)
     raise ValueError(f"Unknown scenario_id: {scenario_id}")
 
@@ -130,7 +148,9 @@ def _no_payload_exception(scenario_id: str):
 @pytest.fixture
 def mock_client():
     client = MagicMock()
-    client.send_message = MagicMock()  # will be replaced per-scenario with a callable returning async iter
+    client.send_message = (
+        MagicMock()
+    )  # will be replaced per-scenario with a callable returning async iter
     return client
 
 
@@ -239,7 +259,10 @@ def test_send_a2a_with_retry_scenarios(
     check_cause,
 ):
     message = MagicMock()
-    with patch("agents.supervisors.auction.graph.a2a_retry.asyncio.sleep", new_callable=AsyncMock) as mock_sleep:
+    with patch(
+        "agents.supervisors.auction.graph.a2a_retry.asyncio.sleep",
+        new_callable=AsyncMock,
+    ) as mock_sleep:
         mock_client.send_message = MagicMock(side_effect=_side_effect_for(scenario_id))
 
         async def run():
@@ -257,9 +280,14 @@ def test_send_a2a_with_retry_scenarios(
             assert len(result) > 0
             assert result[0]._text == expected_result
         assert mock_client.send_message.call_count == expected_call_count
-        if expected_call_count == 3:
-            assert mock_sleep.await_count == 2
-            assert [mock_sleep.await_args_list[i][0][0] for i in range(2)] == [1, 2]
+        if expected_call_count == 5:
+            assert mock_sleep.await_count == 4
+            assert [mock_sleep.await_args_list[i][0][0] for i in range(4)] == [
+                1,
+                3,
+                9,
+                27,
+            ]
         elif expected_call_count == 2 and expected_exception is None:
             assert mock_sleep.await_count == 1
             assert mock_sleep.await_args[0][0] == 1
@@ -288,4 +316,3 @@ def test_is_timeout_error(scenario_id, expected):
 def test_is_no_payload_error(scenario_id, expected):
     exc = _no_payload_exception(scenario_id)
     assert _is_no_payload_error(exc) is expected
-

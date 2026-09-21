@@ -15,7 +15,8 @@ from a2a.types import (
     Role,
     Part,
     TextPart,
-    Task)
+    Task,
+)
 from a2a.utils import (
     new_task,
 )
@@ -40,9 +41,9 @@ class AccountantAgentExecutor(AgentExecutor):
         return None
 
     async def execute(
-            self,
-            context: RequestContext,
-            event_queue: EventQueue,
+        self,
+        context: RequestContext,
+        event_queue: EventQueue,
     ) -> None:
         """
         Execute the agent's logic for a given request context.
@@ -87,11 +88,13 @@ class AccountantAgentExecutor(AgentExecutor):
 
             await event_queue.enqueue_event(message)
         except Exception as e:
-            logger.error(f'An error occurred while streaming the payment confirmation response: {e}')
+            logger.error(
+                f"An error occurred while streaming the payment confirmation response: {e}"
+            )
             raise ServerError(error=InternalError()) from e
 
     async def cancel(
-            self, request: RequestContext, event_queue: EventQueue
+        self, request: RequestContext, event_queue: EventQueue
     ) -> Task | None:
         """Cancel this agent's execution for the given request context."""
         raise ServerError(error=UnsupportedOperationError())

@@ -8,7 +8,10 @@ from __future__ import annotations
 from typing import Any
 
 from api.agentic_workflows.agent_ui_enrichment import enrich_topology_dict
-from api.agentic_workflows.catalog_types import ChatApiTarget, chat_api_target_from_workflow
+from api.agentic_workflows.catalog_types import (
+    ChatApiTarget,
+    chat_api_target_from_workflow,
+)
 from api.agentic_workflows.transport_ui_enrichment import enrich_topology_transport
 from schema.types import Workflow, WorkflowInstance
 

@@ -29,6 +29,7 @@ import pytest
 # State-reset fixtures
 # ---------------------------------------------------------------------------
 
+
 @pytest.fixture(autouse=True)
 def _reset_in_flight() -> Iterator[None]:
     """Clear the middleware's per-trace in-flight state around every test."""
@@ -60,7 +61,9 @@ def _reset_workflow_catalog_cache() -> Iterator[None]:
 
 
 @pytest.fixture(autouse=True)
-def _test_workflows_catalog(request, tmp_path_factory, monkeypatch) -> Iterator[Path | None]:
+def _test_workflows_catalog(
+    request, tmp_path_factory, monkeypatch
+) -> Iterator[Path | None]:
     """Point the workflow registry at a fixed Alpha/Beta catalog for tests
     in this directory by default. Tests that need to import a real
     supervisor module (which registers production workflow names) opt out
@@ -142,6 +145,7 @@ def _default_workflow_baggage(request) -> Iterator[None]:
 # Config-flag helper
 # ---------------------------------------------------------------------------
 
+
 @pytest.fixture
 def patch_emit_events(monkeypatch):
     """Return a setter that toggles ``EMIT_WORKFLOW_EVENTS`` on the middleware
@@ -151,6 +155,7 @@ def patch_emit_events(monkeypatch):
 
     def _set(enabled: bool) -> None:
         from common.a2a_event_middleware import middleware as mw
+
         monkeypatch.setattr(mw, "EMIT_WORKFLOW_EVENTS", enabled, raising=False)
 
     return _set
@@ -160,12 +165,14 @@ def patch_emit_events(monkeypatch):
 # AgentCard stand-in
 # ---------------------------------------------------------------------------
 
+
 @dataclass
 class _FakeAgentCard:
     """Minimal duck-typed ``AgentCard`` for interceptor/consumer tests.
 
     Only the attributes read by the middleware are populated.
     """
+
     name: str
     preferred_transport: str | None = "JSONRPC"
 
@@ -188,6 +195,7 @@ def agent_card_factory():
 # ---------------------------------------------------------------------------
 # OTel span-context patching
 # ---------------------------------------------------------------------------
+
 
 @dataclass
 class _FakeSpanContext:
@@ -272,6 +280,7 @@ def otel_span(monkeypatch):
 # ---------------------------------------------------------------------------
 # Module-path helper - keeps ``__init__.py``-less test dirs importable
 # ---------------------------------------------------------------------------
+
 
 @pytest.fixture(scope="session", autouse=True)
 def _ensure_lungo_on_path() -> None:

@@ -38,7 +38,9 @@ class TestSampleAgentIntegration:
                         "message": {
                             "messageId": "msg-001",
                             "role": "user",
-                            "parts": [{"kind": "text", "text": "Hello, what can you do?"}],
+                            "parts": [
+                                {"kind": "text", "text": "Hello, what can you do?"}
+                            ],
                         },
                     },
                 },
@@ -130,7 +132,9 @@ class TestEvaluationIntegration:
             new_message=user_message,
         ):
             events.append(event)
-            print(f"📥 Event: {event.type if hasattr(event, 'type') else type(event).__name__}")
+            print(
+                f"📥 Event: {event.type if hasattr(event, 'type') else type(event).__name__}"
+            )
 
         print(f"✅ Evaluation completed with {len(events)} events")
 
@@ -181,7 +185,9 @@ class TestEvaluationIntegration:
         print(f"   Status: {result['status']}")
         print(f"   Summary: {result['summary']}")
 
-        assert result["status"] in ["success", "partial"], f"Expected success/partial but got {result['status']}"
+        assert result["status"] in ["success", "partial"], (
+            f"Expected success/partial but got {result['status']}"
+        )
         assert len(result["results"]) == 1, "Should have evaluated 1 agent"
 
         agent_result = result["results"][0]
@@ -233,7 +239,9 @@ class TestEvaluationIntegration:
             ],
         }
 
-        print(f"\n🚀 Testing {len(mock_tool_context.state['evaluation_criteria'])} scenarios...")
+        print(
+            f"\n🚀 Testing {len(mock_tool_context.state['evaluation_criteria'])} scenarios..."
+        )
         result = await evaluate_agents_tool(mock_tool_context)
 
         print(f"\n📊 Results: {result['summary']}")
@@ -249,6 +257,8 @@ class TestEvaluationIntegration:
             assert len(agent_result["results"]) == 3, "Should have 3 scenario results"
 
             for i, scenario_result in enumerate(agent_result["results"], 1):
-                print(f"   {i}. {scenario_result['scenario'][:50]}... - Passed: {scenario_result['passed']}")
+                print(
+                    f"   {i}. {scenario_result['scenario'][:50]}... - Passed: {scenario_result['passed']}"
+                )
 
         print("\n✅ Test passed!")

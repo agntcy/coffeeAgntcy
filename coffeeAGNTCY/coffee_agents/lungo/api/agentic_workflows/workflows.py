@@ -161,12 +161,16 @@ def set_starting_workflows() -> None:
     if _INITIALIZED:
         return
     with _INIT_LOCK:
-        _STARTING_WORKFLOWS = _load_and_validate_starting_workflows_from_file(_STARTING_WORKFLOWS_FILE)
+        _STARTING_WORKFLOWS = _load_and_validate_starting_workflows_from_file(
+            _STARTING_WORKFLOWS_FILE
+        )
         init_transport_cache()
         _INITIALIZED = True
 
 
-def _load_and_validate_starting_workflows_from_file(target: Path) -> dict[str, Workflow]:
+def _load_and_validate_starting_workflows_from_file(
+    target: Path,
+) -> dict[str, Workflow]:
     """Load a starting-workflows JSON file and validate each entry.
 
     Parameters
@@ -220,22 +224,38 @@ def _load_and_validate_starting_workflows_from_file(target: Path) -> dict[str, W
 
             # Only agent nodes carry an agent_record_uri; attempt to load and validate the record,
             # and derive a stable agent id (uuid5) from the record's ``name`` field.
-            for idx_nd, node in enumerate[TopologyNodeItem](validated_entry_initial.starting_topology.nodes):
+            for idx_nd, node in enumerate[TopologyNodeItem](
+                validated_entry_initial.starting_topology.nodes
+            ):
                 if isinstance(node, (AgentNode, PartialAgentNode)):
                     # If the agent record cannot be loaded or is invalid we keep the workflow but leave stable_agent_id unset;
                     # in the future these should become grounds for invalidating the workflow entirely.
                     try:
-                        record = _load_agent_record_from_uri(node.agent_record_uri, base_path=target.parent)
+                        record = _load_agent_record_from_uri(
+                            node.agent_record_uri, base_path=target.parent
+                        )
                         stable_uuid = stable_agent_uuid_for_name(record["name"])
                         node.stable_agent_id = stable_agent_id_from_uuid(stable_uuid)
                         register_from_record(str(stable_uuid), record)
                     # FileNotFoundError is a subclass of OSError.
                     except (FileNotFoundError, httpx.RequestError) as exc:
-                        logger.warning("Failed to load agent record for node at index %d (id %s) in workflow at index %d (name %s) but will use the workflow anyhow: %s",
-                                       idx_nd, node.id, idx_wf, validated_entry_initial.name, exc)
+                        logger.warning(
+                            "Failed to load agent record for node at index %d (id %s) in workflow at index %d (name %s) but will use the workflow anyhow: %s",
+                            idx_nd,
+                            node.id,
+                            idx_wf,
+                            validated_entry_initial.name,
+                            exc,
+                        )
                     except ValueError as exc:
-                        logger.warning("Agent record validation failed for node at index %d (id %s) in workflow at index %d (name %s) but will use the workflow anyhow: %s",
-                                       idx_nd, node.id, idx_wf, validated_entry_initial.name, exc)
+                        logger.warning(
+                            "Agent record validation failed for node at index %d (id %s) in workflow at index %d (name %s) but will use the workflow anyhow: %s",
+                            idx_nd,
+                            node.id,
+                            idx_wf,
+                            validated_entry_initial.name,
+                            exc,
+                        )
 
                 # Set the runtime/instance node id. This is not the same as the stable agent id.
                 old_node_id = node.id.root
@@ -253,21 +273,41 @@ def _load_and_validate_starting_workflows_from_file(target: Path) -> dict[str, W
 
             for edge in validated_entry_initial.starting_topology.edges:
                 edge.id = edge_id_from_uuid(uuid4())
-            
+
             # Validate the workflow again to ensure that modifications made are valid.
             # Note that model_validate() returns a new instance of the model.
-            validated_workflow = Workflow.model_validate(validated_entry_initial.model_dump())
+            validated_workflow = Workflow.model_validate(
+                validated_entry_initial.model_dump()
+            )
 
             if validated_workflow.name in validated_workflows:
-                logger.warning("Duplicate workflow name %r at index %d; overwriting previous entry", validated_workflow.name, idx_wf)
+                logger.warning(
+                    "Duplicate workflow name %r at index %d; overwriting previous entry",
+                    validated_workflow.name,
+                    idx_wf,
+                )
 
             validated_workflows[validated_workflow.name] = validated_workflow
 
         except ValidationError as exc:
-            name = entry.get("name", "<unknown>") if isinstance(entry, dict) else "<unknown>"
-            logger.warning("Skipping workflow at index %d (%s): validation failed:\n%s", idx_wf, name, exc)
+            name = (
+                entry.get("name", "<unknown>")
+                if isinstance(entry, dict)
+                else "<unknown>"
+            )
+            logger.warning(
+                "Skipping workflow at index %d (%s): validation failed:\n%s",
+                idx_wf,
+                name,
+                exc,
+            )
 
-    logger.info("Loaded %d of %d workflow(s) from %s", len(validated_workflows), len(data), target)
+    logger.info(
+        "Loaded %d of %d workflow(s) from %s",
+        len(validated_workflows),
+        len(data),
+        target,
+    )
     return validated_workflows
 
 
@@ -300,7 +340,9 @@ def _load_agent_record_from_uri(uri: str, base_path: Path | None = None) -> dict
             data = json.load(fh)
 
     if not isinstance(data, dict) or not data.get("name"):
-        raise ValueError(f"Agent record JSON at {uri!r} must be an object with a 'name' field")
+        raise ValueError(
+            f"Agent record JSON at {uri!r} must be an object with a 'name' field"
+        )
 
     return data
 

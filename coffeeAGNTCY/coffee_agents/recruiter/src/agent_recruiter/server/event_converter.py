@@ -92,9 +92,7 @@ def convert_adk_to_a2a_events(
                     role=Role.agent,
                     parts=[
                         Part(
-                            root=TextPart(
-                                text=f"Escalating from {adk_event.author}..."
-                            )
+                            root=TextPart(text=f"Escalating from {adk_event.author}...")
                         )
                     ],
                     metadata={
@@ -121,9 +119,7 @@ def convert_adk_to_a2a_events(
                     message=Message(
                         message_id=str(uuid4()),
                         role=Role.agent,
-                        parts=[
-                            Part(root=TextPart(text=f"Calling tool: {fc.name}"))
-                        ],
+                        parts=[Part(root=TextPart(text=f"Calling tool: {fc.name}"))],
                         metadata={
                             "event_type": "tool_call",
                             "tool_name": fc.name,
@@ -148,9 +144,7 @@ def convert_adk_to_a2a_events(
                     message=Message(
                         message_id=str(uuid4()),
                         role=Role.agent,
-                        parts=[
-                            Part(root=TextPart(text=f"Tool {fr.name} completed"))
-                        ],
+                        parts=[Part(root=TextPart(text=f"Tool {fr.name} completed"))],
                         metadata={
                             "event_type": "tool_response",
                             "tool_name": fr.name,

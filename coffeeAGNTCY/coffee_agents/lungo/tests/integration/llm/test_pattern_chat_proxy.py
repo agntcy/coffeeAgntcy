@@ -63,7 +63,9 @@ def test_pattern_chat_proxy_streams_real_response() -> None:
         errors = [line for line in lines if "error" in line]
         assert not errors, f"unexpected error line(s): {errors}"
         assert response_chunks, "expected at least one response chunk"
-        assert lines[-1] == {"done": True}, f"stream should end with done; got {lines[-1]}"
+        assert lines[-1] == {"done": True}, (
+            f"stream should end with done; got {lines[-1]}"
+        )
         full = "".join(response_chunks).strip()
         assert len(full) > 20, f"response unexpectedly short: {full!r}"
     finally:

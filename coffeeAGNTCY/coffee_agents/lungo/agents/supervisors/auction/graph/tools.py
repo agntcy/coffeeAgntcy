@@ -103,6 +103,7 @@ _event_consumer = make_event_emitting_consumer(caller_card=AUCTION_SUPERVISOR_CA
 
 class A2AAgentError(ToolException):
     """Custom exception for errors related to A2A agent communication or status."""
+
     pass
 
 
@@ -121,7 +122,11 @@ def _extract_text_from_events(events: list) -> str | None:
                     result_text = part_root.text.strip()
         elif isinstance(response, tuple):
             task_update, _event = response
-            if hasattr(task_update, "status") and task_update.status and task_update.status.message:
+            if (
+                hasattr(task_update, "status")
+                and task_update.status
+                and task_update.status.message
+            ):
                 for part in task_update.status.message.parts:
                     part_root = part.root
                     if hasattr(part_root, "text"):
@@ -130,47 +135,51 @@ def _extract_text_from_events(events: list) -> str | None:
 
 
 def tools_or_next(tools_node: str, end_node: str = "__end__"):
-  """
-  Returns a conditional function for LangGraph to determine the next node
-  based on whether the last message contains tool calls.
+    """
+    Returns a conditional function for LangGraph to determine the next node
+    based on whether the last message contains tool calls.
 
-  If the message includes tool calls, the workflow proceeds to the `tools_node`.
-  If the message is a ToolMessage or has no tool calls, the workflow proceeds to `end_node`.
+    If the message includes tool calls, the workflow proceeds to the `tools_node`.
+    If the message is a ToolMessage or has no tool calls, the workflow proceeds to `end_node`.
 
-  Args:
-    tools_node (str): The name of the node to route to if tool calls are detected.
-    end_node (str, optional): The fallback node if no tool calls are found. Defaults to '__end__'.
+    Args:
+      tools_node (str): The name of the node to route to if tool calls are detected.
+      end_node (str, optional): The fallback node if no tool calls are found. Defaults to '__end__'.
 
-  Returns:
-    Callable: A function compatible with LangGraph conditional edge handling.
-  """
+    Returns:
+      Callable: A function compatible with LangGraph conditional edge handling.
+    """
 
-  def custom_tools_condition_fn(
-    state: Union[list[AnyMessage], dict[str, Any], BaseModel],
-    messages_key: str = "messages",
-  ) -> Literal[tools_node, end_node]: # type: ignore
+    def custom_tools_condition_fn(
+        state: Union[list[AnyMessage], dict[str, Any], BaseModel],
+        messages_key: str = "messages",
+    ) -> Literal[tools_node, end_node]:  # type: ignore
+        if isinstance(state, list):
+            ai_message = state[-1]
+        elif isinstance(state, dict) and (messages := state.get(messages_key, [])):
+            ai_message = messages[-1]
+        elif messages := getattr(state, messages_key, []):
+            ai_message = messages[-1]
+        else:
+            raise ValueError(f"No messages found in input state to tool_edge: {state}")
 
-    if isinstance(state, list):
-      ai_message = state[-1]
-    elif isinstance(state, dict) and (messages := state.get(messages_key, [])):
-      ai_message = messages[-1]
-    elif messages := getattr(state, messages_key, []):
-      ai_message = messages[-1]
-    else:
-      raise ValueError(f"No messages found in input state to tool_edge: {state}")
+        if isinstance(ai_message, ToolMessage):
+            logger.debug(
+                "Last message is a ToolMessage, returning end_node: %s", end_node
+            )
+            return end_node
 
-    if isinstance(ai_message, ToolMessage):
-        logger.debug("Last message is a ToolMessage, returning end_node: %s", end_node)
+        if hasattr(ai_message, "tool_calls") and len(ai_message.tool_calls) > 0:
+            logger.debug(
+                "Last message has tool calls, returning tools_node: %s", tools_node
+            )
+            return tools_node
+
+        logger.debug("Last message has no tool calls, returning end_node: %s", end_node)
         return end_node
 
-    if hasattr(ai_message, "tool_calls") and len(ai_message.tool_calls) > 0:
-      logger.debug("Last message has tool calls, returning tools_node: %s", tools_node)
-      return tools_node
+    return custom_tools_condition_fn
 
-    logger.debug("Last message has no tool calls, returning end_node: %s", end_node)
-    return end_node
-
-  return custom_tools_condition_fn
 
 def get_farm_card(farm: str) -> AgentCard | None:
     """
@@ -186,9 +195,11 @@ def get_farm_card(farm: str) -> AgentCard | None:
     if card is None:
         logger.error(
             "Unknown farm slug: '%s'. Registered farms: %s",
-            farm, farm_registry.slugs(),
+            farm,
+            farm_registry.slugs(),
         )
     return card
+
 
 def verify_farm_identity(identity_service: IdentityService, farm_name: str):
     """
@@ -204,13 +215,15 @@ def verify_farm_identity(identity_service: IdentityService, farm_name: str):
     """
     try:
         all_apps = identity_service.get_all_apps()
-        matched_app = next((app for app in all_apps.apps if app.name.lower() == farm_name.lower()), None)
+        matched_app = next(
+            (app for app in all_apps.apps if app.name.lower() == farm_name.lower()),
+            None,
+        )
 
         if not matched_app:
             err_msg = "No matching identity app service found, this farm does not have identity service enabled."
             logger.error(err_msg)
             raise A2AAgentError(err_msg)
-
 
         badge = identity_service.get_badge_for_app(matched_app.id)
         success = identity_service.verify_badges(badge)
@@ -220,7 +233,8 @@ def verify_farm_identity(identity_service: IdentityService, farm_name: str):
 
         logger.info(f"Verification successful for farm '{farm_name}'.")
     except Exception as e:
-        raise A2AAgentError(e) # Re-raise as our custom exception
+        raise A2AAgentError(e)  # Re-raise as our custom exception
+
 
 async def get_farm_yield_inventory(prompt: str, farm: str) -> str:
     """
@@ -237,14 +251,20 @@ async def get_farm_yield_inventory(prompt: str, farm: str) -> str:
         A2AAgentError: If there's an issue with farm identification, communication, or the farm agent returns an error.
         ValueError: For invalid input arguments.
     """
-    logger.info("entering get_farm_yield_inventory tool with prompt: %s, farm: %s", prompt, farm)
+    logger.info(
+        "entering get_farm_yield_inventory tool with prompt: %s, farm: %s", prompt, farm
+    )
     if not farm:
-        raise ValueError("No farm was provided. Please provide a farm to get the yield from.")
+        raise ValueError(
+            "No farm was provided. Please provide a farm to get the yield from."
+        )
 
     card = get_farm_card(farm)
     if card is None:
-        raise A2AAgentError(f"Farm '{farm}' not recognized. Available farms "
-                             f"are: {', '.join(farm_registry.slugs())}.")
+        raise A2AAgentError(
+            f"Farm '{farm}' not recognized. Available farms "
+            f"are: {', '.join(farm_registry.slugs())}."
+        )
 
     client = None
     try:
@@ -254,7 +274,9 @@ async def get_farm_yield_inventory(prompt: str, farm: str) -> str:
 
             # create a client with event middleware to capture tool calls and responses for tracing in the UI
             client = await a2a_client_factory.create(
-                card, interceptors=[_event_interceptor], consumers=[_event_consumer],
+                card,
+                interceptors=[_event_interceptor],
+                consumers=[_event_consumer],
             )
 
             message = Message(
@@ -273,15 +295,26 @@ async def get_farm_yield_inventory(prompt: str, farm: str) -> str:
                 return result_text
             raise A2AAgentError(f"Farm '{farm}' returned no text content.")
         except (TransportTimeoutError, RemoteAgentNoResponseError) as e:
-            msg = "timed out" if isinstance(e, TransportTimeoutError) else "returned no response"
+            msg = (
+                "timed out"
+                if isinstance(e, TransportTimeoutError)
+                else "returned no response"
+            )
             logger.error(f"Failed to communicate with farm '{farm}': {msg}")
-            raise A2AAgentError(f"Failed to communicate with farm '{farm}': {msg}.") from e
-        except Exception as e:  # Catch any underlying communication or client creation errors
+            raise A2AAgentError(
+                f"Failed to communicate with farm '{farm}': {msg}."
+            ) from e
+        except (
+            Exception
+        ) as e:  # Catch any underlying communication or client creation errors
             logger.error(f"Failed to communicate with farm '{farm}': {e}")
-            raise A2AAgentError(f"Failed to communicate with farm '{farm}'. Details: {e}")
+            raise A2AAgentError(
+                f"Failed to communicate with farm '{farm}'. Details: {e}"
+            )
     finally:
         if client is not None:
             await _dispose_a2a_client(client)
+
 
 # node utility for streaming
 async def get_all_farms_yield_inventory(prompt: str) -> str:
@@ -305,34 +338,42 @@ async def get_all_farms_yield_inventory(prompt: str) -> str:
                 parts=[Part(TextPart(text=prompt))],
                 metadata=_workflow_message_metadata(),
             ),
-        )
+        ),
     )
 
     # create a list of recipients to include in the broadcast
-    recipients = [
-        get_agent_identifier(get_farm_card(farm)) for farm in farm_registry
-    ]
+    recipients = [get_agent_identifier(get_farm_card(farm)) for farm in farm_registry]
 
     client = None
     try:
         try:
             # pick any card to initialize the client, will use the recipient list to route to the correct farms
-            card = copy.deepcopy(farm_registry.cards()[0])  # avoid mutating the singleton card
+            card = copy.deepcopy(
+                farm_registry.cards()[0]
+            )  # avoid mutating the singleton card
 
             # override preferred transport to ensure we use the intended publish-subscribe transport for broadcasts
             card.preferred_transport = DEFAULT_MESSAGE_TRANSPORT.lower()
 
             client = await a2a_client_factory.create(
-                card, interceptors=[_event_interceptor], consumers=[_event_consumer],
+                card,
+                interceptors=[_event_interceptor],
+                consumers=[_event_consumer],
             )
 
             # set call context for the broadcast (workflow identity comes from baggage)
-            ctx = ClientCallContext(state={
-                "broadcast_agent_cards": [get_farm_card(farm) for farm in farm_registry],
-            })
+            ctx = ClientCallContext(
+                state={
+                    "broadcast_agent_cards": [
+                        get_farm_card(farm) for farm in farm_registry
+                    ],
+                }
+            )
 
             # create a broadcast message and collect responses
-            responses = await client.broadcast_message(request, recipients=recipients, context=ctx)
+            responses = await client.broadcast_message(
+                request, recipients=recipients, context=ctx
+            )
 
             logger.info(f"got {len(responses)} responses back from farms")
 
@@ -357,12 +398,15 @@ async def get_all_farms_yield_inventory(prompt: str) -> str:
 
             logger.info(f"Farm yields: {farm_yields}")
             return farm_yields.strip()
-        except Exception as e:  # Catch any underlying communication or client creation errors
+        except (
+            Exception
+        ) as e:  # Catch any underlying communication or client creation errors
             logger.error(f"Failed to communicate with all farms during broadcast: {e}")
             raise A2AAgentError(f"Failed to communicate with all farms. Details: {e}")
     finally:
         if client is not None:
             await _dispose_a2a_client(client)
+
 
 # node utility for streaming
 async def get_all_farms_yield_inventory_streaming(prompt: str):
@@ -375,7 +419,9 @@ async def get_all_farms_yield_inventory_streaming(prompt: str):
     Yields:
         str: Yield information from each farm as it becomes available.
     """
-    logger.info("entering get_all_farms_yield_inventory_streaming tool with prompt: %s", prompt)
+    logger.info(
+        "entering get_all_farms_yield_inventory_streaming tool with prompt: %s", prompt
+    )
 
     request = SendMessageRequest(
         id=str(uuid4()),
@@ -386,31 +432,39 @@ async def get_all_farms_yield_inventory_streaming(prompt: str):
                 parts=[Part(TextPart(text=prompt))],
                 metadata=_workflow_message_metadata(),
             ),
-        )
+        ),
     )
 
     # create a list of recipients to include in the broadcast
-    recipients = [
-        get_agent_identifier(get_farm_card(farm)) for farm in farm_registry
-    ]
+    recipients = [get_agent_identifier(get_farm_card(farm)) for farm in farm_registry]
 
     client = None
     try:
         try:
-            logger.info(f"Broadcasting to {len(recipients)} farms: {', '.join(recipients)}")
+            logger.info(
+                f"Broadcasting to {len(recipients)} farms: {', '.join(recipients)}"
+            )
 
-            card = copy.deepcopy(farm_registry.cards()[0])  # avoid mutating the singleton card
+            card = copy.deepcopy(
+                farm_registry.cards()[0]
+            )  # avoid mutating the singleton card
 
             # override preferred transport to ensure we use the intended publish-subscribe transport for broadcasts
             card.preferred_transport = DEFAULT_MESSAGE_TRANSPORT.lower()
 
             client = await a2a_client_factory.create(
-                card, interceptors=[_event_interceptor], consumers=[_event_consumer],
+                card,
+                interceptors=[_event_interceptor],
+                consumers=[_event_consumer],
             )
 
-            ctx = ClientCallContext(state={
-                "broadcast_agent_cards": [get_farm_card(farm) for farm in farm_registry],
-            })
+            ctx = ClientCallContext(
+                state={
+                    "broadcast_agent_cards": [
+                        get_farm_card(farm) for farm in farm_registry
+                    ],
+                }
+            )
 
             # Get the async generator for streaming responses. Workflow identity
             # is propagated via OTel context attached in ``graph.py``.
@@ -468,12 +522,12 @@ async def get_all_farms_yield_inventory_streaming(prompt: str):
                         f"farms responded. Missing: {missing_list}",
                     )
 
-                    response = (
-                        f"No response from {missing_list}. These farms may be unavailable or slow to respond."
-                    )
+                    response = f"No response from {missing_list}. These farms may be unavailable or slow to respond."
                     if len(errors) != 0:
                         readable_errors = "\n".join(errors)
-                        response += f" Errors encountered from farms:\n{readable_errors}\n"
+                        response += (
+                            f" Errors encountered from farms:\n{readable_errors}\n"
+                        )
 
                     yield response
 
@@ -490,6 +544,7 @@ async def get_all_farms_yield_inventory_streaming(prompt: str):
     finally:
         if client is not None:
             await _dispose_a2a_client(client)
+
 
 @tool(args_schema=CreateOrderArgs)
 @ioa_tool_decorator(name="create_order")
@@ -517,19 +572,27 @@ async def create_order(farm: str, quantity: int, price: float) -> str:
         raise ValueError("Price and quantity must be greater than zero.")
 
     if not farm:
-        raise ValueError("No farm was provided, please provide a farm to create an order.")
+        raise ValueError(
+            "No farm was provided, please provide a farm to create an order."
+        )
 
     card = get_farm_card(farm)
     if card is None:
-        raise ValueError(f"Farm '{farm}' not recognized. Available farms are: {', '.join(farm_registry.slugs())}.")
+        raise ValueError(
+            f"Farm '{farm}' not recognized. Available farms are: {', '.join(farm_registry.slugs())}."
+        )
 
     logger.info(f"Using farm card: {card.name} for order creation")
-    identity_service = IdentityServiceImpl(api_key=IDENTITY_API_KEY, base_url=IDENTITY_API_SERVER_URL)
+    identity_service = IdentityServiceImpl(
+        api_key=IDENTITY_API_KEY, base_url=IDENTITY_API_SERVER_URL
+    )
     try:
         verify_farm_identity(identity_service, card.name)
     except Exception as e:
         # log the error and re-raise the exception
-        raise A2AAgentError(f"Identity verification failed for farm '{farm}'. Details: {e}")
+        raise A2AAgentError(
+            f"Identity verification failed for farm '{farm}'. Details: {e}"
+        )
 
     client = None
     try:
@@ -538,13 +601,21 @@ async def create_order(farm: str, quantity: int, price: float) -> str:
             card.preferred_transport = DEFAULT_MESSAGE_TRANSPORT.lower()
 
             client = await a2a_client_factory.create(
-                card, interceptors=[_event_interceptor], consumers=[_event_consumer],
+                card,
+                interceptors=[_event_interceptor],
+                consumers=[_event_consumer],
             )
 
             message = Message(
                 messageId=str(uuid4()),
                 role=Role.user,
-                parts=[Part(TextPart(text=f"Create an order with price {price} and quantity {quantity}"))],
+                parts=[
+                    Part(
+                        TextPart(
+                            text=f"Create an order with price {price} and quantity {quantity}"
+                        )
+                    )
+                ],
             )
 
             ctx = ClientCallContext()
@@ -554,17 +625,34 @@ async def create_order(farm: str, quantity: int, price: float) -> str:
 
             if result_text:
                 return result_text
-            raise A2AAgentError(f"Farm '{farm}' returned no text content for order creation.")
+            raise A2AAgentError(
+                f"Farm '{farm}' returned no text content for order creation."
+            )
         except (TransportTimeoutError, RemoteAgentNoResponseError) as e:
-            msg = "timed out" if isinstance(e, TransportTimeoutError) else "returned no response"
-            logger.error(f"Failed to communicate with order agent for farm '{farm}': {msg}")
-            raise A2AAgentError(f"Failed to communicate with order agent for farm '{farm}': {msg}.") from e
-        except Exception as e:  # Catch any underlying communication or client creation errors
-            logger.error(f"Failed to communicate with order agent for farm '{farm}': {e}")
-            raise A2AAgentError(f"Failed to communicate with order agent for farm '{farm}'. Details: {e}")
+            msg = (
+                "timed out"
+                if isinstance(e, TransportTimeoutError)
+                else "returned no response"
+            )
+            logger.error(
+                f"Failed to communicate with order agent for farm '{farm}': {msg}"
+            )
+            raise A2AAgentError(
+                f"Failed to communicate with order agent for farm '{farm}': {msg}."
+            ) from e
+        except (
+            Exception
+        ) as e:  # Catch any underlying communication or client creation errors
+            logger.error(
+                f"Failed to communicate with order agent for farm '{farm}': {e}"
+            )
+            raise A2AAgentError(
+                f"Failed to communicate with order agent for farm '{farm}'. Details: {e}"
+            )
     finally:
         if client is not None:
             await _dispose_a2a_client(client)
+
 
 @tool
 @ioa_tool_decorator(name="get_order_details")
@@ -590,12 +678,16 @@ async def get_order_details(order_id: str) -> str:
     try:
         try:
             # pick any card to initialize the client
-            card = copy.deepcopy(farm_registry.cards()[0])  # avoid mutating the singleton card
+            card = copy.deepcopy(
+                farm_registry.cards()[0]
+            )  # avoid mutating the singleton card
             # override preferred transport to ensure direct communication for order creation
             card.preferred_transport = InterfaceTransport.SLIM
 
             client = await a2a_client_factory.create(
-                card, interceptors=[_event_interceptor], consumers=[_event_consumer],
+                card,
+                interceptors=[_event_interceptor],
+                consumers=[_event_consumer],
             )
 
             message = Message(
@@ -611,15 +703,27 @@ async def get_order_details(order_id: str) -> str:
 
             if result_text:
                 return result_text
-            raise A2AAgentError(f"Order agent returned no text content for order ID '{order_id}'.")
+            raise A2AAgentError(
+                f"Order agent returned no text content for order ID '{order_id}'."
+            )
         except (TransportTimeoutError, RemoteAgentNoResponseError) as e:
-            msg = "timed out" if isinstance(e, TransportTimeoutError) else "returned no response"
-            logger.error(f"Failed to communicate with order agent for order ID '{order_id}': {msg}")
+            msg = (
+                "timed out"
+                if isinstance(e, TransportTimeoutError)
+                else "returned no response"
+            )
+            logger.error(
+                f"Failed to communicate with order agent for order ID '{order_id}': {msg}"
+            )
             raise A2AAgentError(
                 f"Failed to communicate with order agent for order ID '{order_id}': {msg}.",
             ) from e
-        except Exception as e:  # Catch any underlying communication or client creation errors
-            logger.error(f"Failed to communicate with order agent for order ID '{order_id}': {e}")
+        except (
+            Exception
+        ) as e:  # Catch any underlying communication or client creation errors
+            logger.error(
+                f"Failed to communicate with order agent for order ID '{order_id}': {e}"
+            )
             raise A2AAgentError(
                 f"Failed to communicate with order agent for order ID '{order_id}'. Details: {e}",
             )

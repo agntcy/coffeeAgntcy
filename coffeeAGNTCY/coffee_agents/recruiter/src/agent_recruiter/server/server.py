@@ -36,7 +36,7 @@ async def main():
     await session.start_all_sessions(keep_alive=True)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     logger.info("Starting RecruiterAgent server...")
     try:
         asyncio.run(main())

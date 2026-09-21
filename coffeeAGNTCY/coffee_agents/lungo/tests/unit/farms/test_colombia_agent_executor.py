@@ -21,10 +21,12 @@ def _context(metadata):
     [
         (
             "both_present",
-            _context({
-                "workflow_name": "Auction",
-                "workflow_instance_id": "instance://abc",
-            }),
+            _context(
+                {
+                    "workflow_name": "Auction",
+                    "workflow_instance_id": "instance://abc",
+                }
+            ),
             ("Auction", "instance://abc"),
         ),
         ("name_only", _context({"workflow_name": "Auction"}), ("Auction", None)),

@@ -23,6 +23,7 @@ from a2a.types import Task, TaskState, TaskStatus
 # Local helpers
 # ---------------------------------------------------------------------------
 
+
 def _task(metadata: dict | None = None, state: TaskState = TaskState.completed) -> Task:
     return Task(
         context_id="ctx",
@@ -86,6 +87,7 @@ def captured_events(monkeypatch):
 # Runtime ID allocator
 # ---------------------------------------------------------------------------
 
+
 class TestRuntimeIdAllocator:
     async def test_distinct_allocators_yield_distinct_ids(self):
         """Distinct allocators should not share node IDs for the same key."""
@@ -99,6 +101,7 @@ class TestRuntimeIdAllocator:
 # ---------------------------------------------------------------------------
 # Cleanup span processor
 # ---------------------------------------------------------------------------
+
 
 class TestInFlightCleanupSpanProcessor:
     def _seed_state(self, trace_id: int, owner_span_id: int):
@@ -152,7 +155,11 @@ class TestInFlightCleanupSpanProcessor:
         assert 0xAAA in inflight_mod.in_flight
 
     async def test_owner_span_round_trip_via_interceptor(
-        self, agent_card_factory, otel_span, patch_emit_events, captured_events,
+        self,
+        agent_card_factory,
+        otel_span,
+        patch_emit_events,
+        captured_events,
     ):
         """State ownership should be tied to parent span, not child interceptor span."""
         from common.workflow_utils import inflight as inflight_mod
@@ -178,7 +185,11 @@ class TestInFlightCleanupSpanProcessor:
             parent_span_id=parent_span_id,
         ):
             await interceptor.intercept(
-                "send_message", {}, {}, agent_card=remote, context=ctx,
+                "send_message",
+                {},
+                {},
+                agent_card=remote,
+                context=ctx,
             )
 
         assert trace_id in inflight_mod.in_flight
@@ -188,19 +199,27 @@ class TestInFlightCleanupSpanProcessor:
         processor = InFlightCleanupSpanProcessor()
 
         child_ctx = SimpleNamespace(
-            trace_id=trace_id, span_id=interceptor_span_id,
+            trace_id=trace_id,
+            span_id=interceptor_span_id,
         )
-        processor.on_end(SimpleNamespace(
-            name="interceptor", get_span_context=lambda: child_ctx,
-        ))
+        processor.on_end(
+            SimpleNamespace(
+                name="interceptor",
+                get_span_context=lambda: child_ctx,
+            )
+        )
         assert trace_id in inflight_mod.in_flight
 
         parent_ctx = SimpleNamespace(
-            trace_id=trace_id, span_id=parent_span_id,
+            trace_id=trace_id,
+            span_id=parent_span_id,
         )
-        processor.on_end(SimpleNamespace(
-            name="tool", get_span_context=lambda: parent_ctx,
-        ))
+        processor.on_end(
+            SimpleNamespace(
+                name="tool",
+                get_span_context=lambda: parent_ctx,
+            )
+        )
         assert trace_id not in inflight_mod.in_flight
 
 
@@ -211,7 +230,9 @@ class TestRegisterCleanupSpanProcessor:
         provider = MagicMock()
         del provider._lungo_cleanup_registered  # ensure missing
         monkeypatch.setattr(
-            inflight_mod._otel_trace, "get_tracer_provider", lambda: provider,
+            inflight_mod._otel_trace,
+            "get_tracer_provider",
+            lambda: provider,
         )
 
         inflight_mod.register_cleanup_span_processor()
@@ -220,13 +241,17 @@ class TestRegisterCleanupSpanProcessor:
         assert provider.add_span_processor.call_count == 1
 
     def test_graceful_when_provider_has_no_add_span_processor(
-        self, monkeypatch, caplog,
+        self,
+        monkeypatch,
+        caplog,
     ):
         from common.workflow_utils import inflight as inflight_mod
 
         provider = SimpleNamespace()
         monkeypatch.setattr(
-            inflight_mod._otel_trace, "get_tracer_provider", lambda: provider,
+            inflight_mod._otel_trace,
+            "get_tracer_provider",
+            lambda: provider,
         )
 
         with caplog.at_level(logging.WARNING, logger=inflight_mod.logger.name):
@@ -243,9 +268,14 @@ class TestRegisterCleanupSpanProcessor:
 # EventEmittingInterceptor
 # ---------------------------------------------------------------------------
 
+
 class TestEventEmittingInterceptor:
     def _build(
-        self, *, patch_emit_events, caller="Auction Agent", flag=True,
+        self,
+        *,
+        patch_emit_events,
+        caller="Auction Agent",
+        flag=True,
     ):
         from common.a2a_event_middleware.middleware import EventEmittingInterceptor
 
@@ -257,7 +287,11 @@ class TestEventEmittingInterceptor:
         )
 
     async def test_emits_create_event_with_trace_derived_ids(
-        self, agent_card_factory, otel_span, patch_emit_events, captured_events,
+        self,
+        agent_card_factory,
+        otel_span,
+        patch_emit_events,
+        captured_events,
     ):
         """Same active trace should produce stable correlation and instance IDs."""
         interceptor = self._build(patch_emit_events=patch_emit_events)
@@ -267,10 +301,18 @@ class TestEventEmittingInterceptor:
 
         with otel_span(trace_id=0xDEADBEEF, span_id=0x1234, parent_span_id=0x9999):
             await interceptor.intercept(
-                "send_message", {}, {}, agent_card=remote, context=ctx,
+                "send_message",
+                {},
+                {},
+                agent_card=remote,
+                context=ctx,
             )
             await interceptor.intercept(
-                "send_message", {}, {}, agent_card=remote, context=ctx,
+                "send_message",
+                {},
+                {},
+                agent_card=remote,
+                context=ctx,
             )
 
         assert len(captured_events) == 2
@@ -280,7 +322,11 @@ class TestEventEmittingInterceptor:
         assert cid_1 == "correlation://00000000-0000-0000-0000-0000deadbeef"
 
     async def test_reentry_preserves_allocator_node_ids(
-        self, agent_card_factory, otel_span, patch_emit_events, captured_events,
+        self,
+        agent_card_factory,
+        otel_span,
+        patch_emit_events,
+        captured_events,
     ):
         """Retries in one trace should keep node IDs stable via allocator reuse."""
         interceptor = self._build(patch_emit_events=patch_emit_events)
@@ -290,10 +336,18 @@ class TestEventEmittingInterceptor:
 
         with otel_span(trace_id=0xAAA, span_id=0xBBB, parent_span_id=0xCCC):
             await interceptor.intercept(
-                "send_message", {}, {}, agent_card=remote, context=ctx,
+                "send_message",
+                {},
+                {},
+                agent_card=remote,
+                context=ctx,
             )
             await interceptor.intercept(
-                "send_message", {}, {}, agent_card=remote, context=ctx,
+                "send_message",
+                {},
+                {},
+                agent_card=remote,
+                context=ctx,
             )
 
         assert sorted(_node_ids(captured_events[0])) == sorted(
@@ -301,7 +355,11 @@ class TestEventEmittingInterceptor:
         )
 
     async def test_broadcast_fan_out_includes_every_remote(
-        self, agent_card_factory, otel_span, patch_emit_events, captured_events,
+        self,
+        agent_card_factory,
+        otel_span,
+        patch_emit_events,
+        captured_events,
     ):
         interceptor = self._build(patch_emit_events=patch_emit_events)
 
@@ -311,14 +369,20 @@ class TestEventEmittingInterceptor:
             agent_card_factory("Colombia Farm"),
             agent_card_factory("Vietnam Farm"),
         ]
-        ctx = ClientCallContext(state={
-            "tool": "get_all_farms_yield_inventory",
-            "broadcast_agent_cards": cards,
-        })
+        ctx = ClientCallContext(
+            state={
+                "tool": "get_all_farms_yield_inventory",
+                "broadcast_agent_cards": cards,
+            }
+        )
 
         with otel_span(trace_id=0x1, span_id=0x2, parent_span_id=0x3):
             await interceptor.intercept(
-                "send_message", {}, {}, agent_card=primary, context=ctx,
+                "send_message",
+                {},
+                {},
+                agent_card=primary,
+                context=ctx,
             )
 
         [event] = captured_events
@@ -328,7 +392,11 @@ class TestEventEmittingInterceptor:
         assert {"Brazil Farm", "Colombia Farm", "Vietnam Farm"} <= node_labels
 
     async def test_outbound_topology_uses_create_operation(
-        self, agent_card_factory, otel_span, patch_emit_events, captured_events,
+        self,
+        agent_card_factory,
+        otel_span,
+        patch_emit_events,
+        captured_events,
     ):
         """Outbound topology should emit ``Operation.CREATE`` on all nodes/edges."""
         from schema.types import Operation
@@ -339,7 +407,11 @@ class TestEventEmittingInterceptor:
 
         with otel_span(trace_id=0x1, span_id=0x2, parent_span_id=0x3):
             await interceptor.intercept(
-                "send_message", {}, {}, agent_card=remote, context=ctx,
+                "send_message",
+                {},
+                {},
+                agent_card=remote,
+                context=ctx,
             )
 
         [event] = captured_events
@@ -350,23 +422,35 @@ class TestEventEmittingInterceptor:
         assert all(e.operation == Operation.CREATE for e in instance.topology.edges)
 
     async def test_flag_disabled_skips_sink(
-        self, agent_card_factory, otel_span, patch_emit_events, captured_events,
+        self,
+        agent_card_factory,
+        otel_span,
+        patch_emit_events,
+        captured_events,
     ):
         interceptor = self._build(
-            patch_emit_events=patch_emit_events, flag=False,
+            patch_emit_events=patch_emit_events,
+            flag=False,
         )
         remote = agent_card_factory("Brazil Farm")
         ctx = ClientCallContext(state={"tool": "get_farm_yield_inventory"})
 
         with otel_span(trace_id=0x1, span_id=0x2):
             await interceptor.intercept(
-                "send_message", {}, {}, agent_card=remote, context=ctx,
+                "send_message",
+                {},
+                {},
+                agent_card=remote,
+                context=ctx,
             )
 
         assert captured_events == []
 
     async def test_missing_agent_card_is_noop(
-        self, otel_span, patch_emit_events, captured_events,
+        self,
+        otel_span,
+        patch_emit_events,
+        captured_events,
     ):
         """Missing ``agent_card`` should be a safe no-op pass-through."""
         interceptor = self._build(patch_emit_events=patch_emit_events)
@@ -374,8 +458,11 @@ class TestEventEmittingInterceptor:
         payload, http_kwargs = {}, {}
         with otel_span(trace_id=0x1, span_id=0x2):
             out_payload, out_kwargs = await interceptor.intercept(
-                "send_message", payload, http_kwargs,
-                agent_card=None, context=None,
+                "send_message",
+                payload,
+                http_kwargs,
+                agent_card=None,
+                context=None,
             )
 
         assert out_payload is payload
@@ -383,7 +470,11 @@ class TestEventEmittingInterceptor:
         assert captured_events == []
 
     async def test_edge_only_delegation_emits_anchors_without_transport(
-        self, agent_card_factory, otel_span, patch_emit_events, captured_events,
+        self,
+        agent_card_factory,
+        otel_span,
+        patch_emit_events,
+        captured_events,
     ):
         """Recruiter delegation should anchor onto existing nodes, not add transport."""
         from common.stable_agent_id import stable_agent_id_for_name
@@ -403,7 +494,11 @@ class TestEventEmittingInterceptor:
 
         with otel_span(trace_id=0x1, span_id=0x2, parent_span_id=0x3):
             await interceptor.intercept(
-                "send_message", {}, {}, agent_card=remote, context=ctx,
+                "send_message",
+                {},
+                {},
+                agent_card=remote,
+                context=ctx,
             )
 
         [event] = captured_events
@@ -420,6 +515,7 @@ class TestEventEmittingInterceptor:
 # ---------------------------------------------------------------------------
 # make_event_emitting_consumer
 # ---------------------------------------------------------------------------
+
 
 class TestEventEmittingConsumer:
     def _build_pair(self, *, patch_emit_events):
@@ -440,7 +536,11 @@ class TestEventEmittingConsumer:
         return interceptor, consumer
 
     async def test_reuses_interceptor_state_via_in_flight(
-        self, agent_card_factory, otel_span, patch_emit_events, captured_events,
+        self,
+        agent_card_factory,
+        otel_span,
+        patch_emit_events,
+        captured_events,
     ):
         """Consumer should reuse interceptor state and keep correlation ID."""
         interceptor, consumer = self._build_pair(
@@ -452,7 +552,11 @@ class TestEventEmittingConsumer:
 
         with otel_span(trace_id=0xFEED, span_id=0xBEEF, parent_span_id=0xCAFE):
             await interceptor.intercept(
-                "send_message", {}, {}, agent_card=remote, context=ctx,
+                "send_message",
+                {},
+                {},
+                agent_card=remote,
+                context=ctx,
             )
             await consumer(
                 _client_event(_task(metadata={"name": "Brazil Farm"})),
@@ -461,12 +565,14 @@ class TestEventEmittingConsumer:
 
         assert len(captured_events) == 2
         outbound, inbound = captured_events
-        assert (
-            outbound.metadata.correlation.id == inbound.metadata.correlation.id
-        )
+        assert outbound.metadata.correlation.id == inbound.metadata.correlation.id
 
     async def test_drops_event_when_no_state_and_no_default(
-        self, agent_card_factory, otel_span, patch_emit_events, captured_events,
+        self,
+        agent_card_factory,
+        otel_span,
+        patch_emit_events,
+        captured_events,
     ):
         """Without in-flight state, consumer should drop the event."""
         _interceptor, consumer = self._build_pair(
@@ -483,7 +589,11 @@ class TestEventEmittingConsumer:
         assert captured_events == []
 
     async def test_extracts_remote_agent_id_from_task_metadata(
-        self, agent_card_factory, otel_span, patch_emit_events, captured_events,
+        self,
+        agent_card_factory,
+        otel_span,
+        patch_emit_events,
+        captured_events,
     ):
         """Consumer should prefer ``Task.metadata['name']`` over card name."""
         interceptor, consumer = self._build_pair(
@@ -495,7 +605,11 @@ class TestEventEmittingConsumer:
 
         with otel_span(trace_id=0x11, span_id=0x22, parent_span_id=0x33):
             await interceptor.intercept(
-                "send_message", {}, {}, agent_card=card, context=ctx,
+                "send_message",
+                {},
+                {},
+                agent_card=card,
+                context=ctx,
             )
             await consumer(
                 _client_event(_task(metadata={"name": "Colombia Farm"})),
@@ -517,6 +631,7 @@ class TestEventEmittingConsumer:
 # Baggage carrier (workflow_instance_id from Workflow API)
 # ---------------------------------------------------------------------------
 
+
 class TestBaggageCarrier:
     """Cover the OTel baggage path that lets the API-minted workflow
     instance id flow supervisor → tool → A2A interceptor.
@@ -532,7 +647,8 @@ class TestBaggageCarrier:
 
         with pytest.raises(ValueError):
             attach_workflow_baggage(
-                workflow_instance_id=None, workflow_name=None,
+                workflow_instance_id=None,
+                workflow_name=None,
             )
 
     def test_read_trace_context_surfaces_baggage(self, otel_span):
@@ -545,7 +661,8 @@ class TestBaggageCarrier:
         iid = "instance://550e8400-e29b-41d4-a716-446655440000"
         wf = "InstTestWf"
         token = attach_workflow_baggage(
-            workflow_instance_id=iid, workflow_name=wf,
+            workflow_instance_id=iid,
+            workflow_name=wf,
         )
         try:
             with otel_span(trace_id=0xABC, span_id=0xDEF, parent_span_id=0xCAFE):
@@ -556,7 +673,9 @@ class TestBaggageCarrier:
         assert tc.workflow.instance_id == iid
         assert tc.workflow.workflow_name == wf
 
-    def test_read_trace_context_no_baggage_returns_none(self, no_default_baggage, otel_span):
+    def test_read_trace_context_no_baggage_returns_none(
+        self, no_default_baggage, otel_span
+    ):
         from common.workflow_utils.inflight import read_trace_context
 
         with otel_span(trace_id=0x1, span_id=0x2):
@@ -565,7 +684,11 @@ class TestBaggageCarrier:
         assert tc.workflow.workflow_name is None
 
     async def test_interceptor_emits_baggage_instance_id(
-        self, agent_card_factory, otel_span, patch_emit_events, captured_events,
+        self,
+        agent_card_factory,
+        otel_span,
+        patch_emit_events,
+        captured_events,
     ):
         """The instance_id on the emitted event must be exactly the one
         propagated via baggage - baggage is the single source of truth."""
@@ -584,12 +707,15 @@ class TestBaggageCarrier:
 
         iid = "instance://11111111-2222-4333-8444-555555555555"
         token = attach_workflow_baggage(
-            workflow_instance_id=iid, workflow_name=None,
+            workflow_instance_id=iid,
+            workflow_name=None,
         )
         try:
             with otel_span(trace_id=0xFEED, span_id=0xBEEF, parent_span_id=0xCAFE):
                 await interceptor.intercept(
-                    "send_message", {}, {},
+                    "send_message",
+                    {},
+                    {},
                     agent_card=agent_card_factory("Brazil Farm"),
                     context=ClientCallContext(state={"tool": "t"}),
                 )
@@ -600,7 +726,12 @@ class TestBaggageCarrier:
         assert _first_instance_id(event) == iid
 
     async def test_interceptor_skips_when_baggage_instance_id_invalid(
-        self, agent_card_factory, otel_span, patch_emit_events, captured_events, caplog,
+        self,
+        agent_card_factory,
+        otel_span,
+        patch_emit_events,
+        captured_events,
+        caplog,
     ):
         from common.workflow_context_prop import (
             attach_workflow_context as attach_workflow_baggage,
@@ -621,10 +752,14 @@ class TestBaggageCarrier:
             workflow_name="Test Workflow Alpha",
         )
         try:
-            with caplog.at_level(logging.WARNING, logger="lungo.common.event_middleware"):
+            with caplog.at_level(
+                logging.WARNING, logger="lungo.common.event_middleware"
+            ):
                 with otel_span(trace_id=0xAA, span_id=0xBB, parent_span_id=0xCC):
                     await interceptor.intercept(
-                        "send_message", {}, {},
+                        "send_message",
+                        {},
+                        {},
                         agent_card=agent_card_factory("Brazil Farm"),
                         context=ClientCallContext(state={"tool": "t"}),
                     )
@@ -638,7 +773,12 @@ class TestBaggageCarrier:
         )
 
     async def test_workflow_name_baggage_unknown_skips_emission(
-        self, agent_card_factory, otel_span, patch_emit_events, captured_events, caplog,
+        self,
+        agent_card_factory,
+        otel_span,
+        patch_emit_events,
+        captured_events,
+        caplog,
     ):
         from common.workflow_context_prop import (
             attach_workflow_context as attach_workflow_baggage,
@@ -654,13 +794,18 @@ class TestBaggageCarrier:
         )
 
         token = attach_workflow_baggage(
-            workflow_instance_id=None, workflow_name="Some Other Workflow",
+            workflow_instance_id=None,
+            workflow_name="Some Other Workflow",
         )
         try:
-            with caplog.at_level(logging.WARNING, logger="lungo.common.event_middleware"):
+            with caplog.at_level(
+                logging.WARNING, logger="lungo.common.event_middleware"
+            ):
                 with otel_span(trace_id=0x9, span_id=0x10, parent_span_id=0x11):
                     await interceptor.intercept(
-                        "send_message", {}, {},
+                        "send_message",
+                        {},
+                        {},
                         agent_card=agent_card_factory("Brazil Farm"),
                         context=ClientCallContext(state={"tool": "t"}),
                     )
@@ -674,7 +819,10 @@ class TestBaggageCarrier:
         )
 
     async def test_baggage_workflow_name_selects_emitted_workflow(
-        self, agent_card_factory, otel_span, patch_emit_events,
+        self,
+        agent_card_factory,
+        otel_span,
+        patch_emit_events,
         captured_events,
     ):
         """The emitted event's workflow key matches the baggage workflow_name."""
@@ -692,12 +840,15 @@ class TestBaggageCarrier:
         )
 
         token = attach_workflow_baggage(
-            workflow_instance_id=None, workflow_name="Test Workflow Beta",
+            workflow_instance_id=None,
+            workflow_name="Test Workflow Beta",
         )
         try:
             with otel_span(trace_id=0x55, span_id=0x66, parent_span_id=0x77):
                 await interceptor.intercept(
-                    "send_message", {}, {},
+                    "send_message",
+                    {},
+                    {},
                     agent_card=agent_card_factory("Brazil Farm"),
                     context=ClientCallContext(state={"tool": "t"}),
                 )

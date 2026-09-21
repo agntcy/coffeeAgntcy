@@ -4,7 +4,7 @@
 """
 Evaluator Agent Factory.
 
-Creates the appropriate evaluator agent based on protocol. 
+Creates the appropriate evaluator agent based on protocol.
 """
 
 from typing import Callable, Optional
@@ -15,8 +15,9 @@ from agent_recruiter.interviewers.base_evaluator_agent import BaseEvaluatorAgent
 
 _PROTOCOL_TO_AGENT_CLASS = {
     Protocol.A2A: A2AEvaluatorAgent,
-    #Protocol.MCP: MCPEvaluatorAgent,
+    # Protocol.MCP: MCPEvaluatorAgent,
 }
+
 
 def get_evaluator_agent(
     protocol: Protocol,

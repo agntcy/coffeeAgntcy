@@ -257,67 +257,68 @@ async def create_order_streaming(farm: str, quantity: int, price: float):
             status_code=500, detail="Internal server error: failed to process order"
         )
 
+
 def _summarize_a2a_responses(responses: Sequence[Any]) -> str:
-  """
-  Summarize A2A SendMessageResponse objects into a single status line.
+    """
+    Summarize A2A SendMessageResponse objects into a single status line.
 
-  Rules:
-    - Skip messages containing 'idle' (case-insensitive).
-    - Aggregate non-final statuses per agent in first-seen order.
-    - Each 'delivered' (case-insensitive whole word) status becomes its own segment.
-    - Preserve chronological order for first agent appearance and delivered segments.
-    - Append '(final)' if any delivered status was observed.
-  """
-  agent_first_order: list[str] = []
-  agent_statuses: dict[str, list[str]] = {}
-  delivered_segments: list[str] = []
-  delivered_seen = False
+    Rules:
+      - Skip messages containing 'idle' (case-insensitive).
+      - Aggregate non-final statuses per agent in first-seen order.
+      - Each 'delivered' (case-insensitive whole word) status becomes its own segment.
+      - Preserve chronological order for first agent appearance and delivered segments.
+      - Append '(final)' if any delivered status was observed.
+    """
+    agent_first_order: list[str] = []
+    agent_statuses: dict[str, list[str]] = {}
+    delivered_segments: list[str] = []
+    delivered_seen = False
 
-  for response in responses:
-    try:
-      msg = response.root.result  # Underlying message object
-      name = (msg.metadata or {}).get("name", "Unknown")
-      parts = msg.parts or []
-      text = next(
-        (
-          getattr(getattr(p, "root", p), "text", "").strip()
-          for p in parts
-          if getattr(getattr(p, "root", p), "text", "").strip()
-        ),
-        "",
-      )
-      if not text or "idle" in text.lower():
-        continue
+    for response in responses:
+        try:
+            msg = response.root.result  # Underlying message object
+            name = (msg.metadata or {}).get("name", "Unknown")
+            parts = msg.parts or []
+            text = next(
+                (
+                    getattr(getattr(p, "root", p), "text", "").strip()
+                    for p in parts
+                    if getattr(getattr(p, "root", p), "text", "").strip()
+                ),
+                "",
+            )
+            if not text or "idle" in text.lower():
+                continue
 
-      if re.search(r"\bdelivered\b", text, re.IGNORECASE):
-        delivered_seen = True
-        delivered_segments.append(f"{name}: {text}")
-        continue
+            if re.search(r"\bdelivered\b", text, re.IGNORECASE):
+                delivered_seen = True
+                delivered_segments.append(f"{name}: {text}")
+                continue
 
-      if name not in agent_statuses:
-        agent_statuses[name] = []
-        agent_first_order.append(name)
+            if name not in agent_statuses:
+                agent_statuses[name] = []
+                agent_first_order.append(name)
 
-      if not agent_statuses[name] or agent_statuses[name][-1] != text:
-        agent_statuses[name].append(text)
-    except Exception:  # noqa: BLE001
-      # Skip malformed entries silently
-      continue
+            if not agent_statuses[name] or agent_statuses[name][-1] != text:
+                agent_statuses[name].append(text)
+        except Exception:  # noqa: BLE001
+            # Skip malformed entries silently
+            continue
 
-  if not agent_first_order and not delivered_segments:
-    return "No non-idle status updates received."
+    if not agent_first_order and not delivered_segments:
+        return "No non-idle status updates received."
 
-  segments: list[str] = [
-    f"{agent}: {', '.join(agent_statuses[agent])}"
-    for agent in agent_first_order
-    if agent_statuses[agent]
-  ]
-  segments.extend(delivered_segments)
+    segments: list[str] = [
+        f"{agent}: {', '.join(agent_statuses[agent])}"
+        for agent in agent_first_order
+        if agent_statuses[agent]
+    ]
+    segments.extend(delivered_segments)
 
-  summary = "Order status updates: " + " | ".join(segments)
-  if delivered_seen:
-    summary += " (final)"
-  return summary
+    summary = "Order status updates: " + " | ".join(segments)
+    if delivered_seen:
+        summary += " (final)"
+    return summary
 
 
 def _parse_order_event(response: Any) -> Optional[Dict[str, str]]:

@@ -79,13 +79,17 @@ class RecruiterAgentExecutor(AgentExecutor):
                 root = part.root
                 if isinstance(root, DataPart) and root.metadata:
                     meta_type = root.metadata.get("type")
-                    if meta_type == "found_agent_records" and isinstance(root.data, dict):
+                    if meta_type == "found_agent_records" and isinstance(
+                        root.data, dict
+                    ):
                         initial_state_overrides["found_agent_records"] = root.data
                         logger.info(
                             "[agent_executor] Extracted %d found_agent_records from incoming DataPart",
                             len(root.data),
                         )
-                    elif meta_type == "evaluation_criteria" and isinstance(root.data, list):
+                    elif meta_type == "evaluation_criteria" and isinstance(
+                        root.data, list
+                    ):
                         initial_state_overrides["evaluation_criteria"] = root.data
                         logger.info(
                             "[agent_executor] Extracted %d evaluation_criteria from incoming DataPart",
@@ -111,7 +115,9 @@ class RecruiterAgentExecutor(AgentExecutor):
         if context.message and context.message.metadata:
             user_id = context.message.metadata.get("user_id", "anonymous")
 
-        logger.info(f"[agent_executor] Processing: user_id={user_id}, session_id={session_id}")
+        logger.info(
+            f"[agent_executor] Processing: user_id={user_id}, session_id={session_id}"
+        )
 
         try:
             t0 = time.time()
@@ -131,7 +137,9 @@ class RecruiterAgentExecutor(AgentExecutor):
 
             # Stream events from the ADK runner
             async for adk_event in self.agent.stream(
-                prompt, user_id, session_id,
+                prompt,
+                user_id,
+                session_id,
                 initial_state_overrides=initial_state_overrides or None,
             ):
                 event_count += 1

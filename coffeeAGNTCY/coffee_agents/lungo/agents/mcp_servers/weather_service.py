@@ -33,7 +33,9 @@ def _validate_coordinates(latitude: float, longitude: float) -> None:
     if not -90 <= latitude <= 90:
         raise ValueError(f"Invalid latitude: {latitude!r} (must be between -90 and 90)")
     if not -180 <= longitude <= 180:
-        raise ValueError(f"Invalid longitude: {longitude!r} (must be between -180 and 180)")
+        raise ValueError(
+            f"Invalid longitude: {longitude!r} (must be between -180 and 180)"
+        )
 
 
 async def make_request(
@@ -101,18 +103,18 @@ async def main():
         mcp_transport,
         endpoint=mcp_endpoint,
         shared_secret_identity=os.getenv("SLIM_SHARED_SECRET"),
-        name="default/default/lungo_weather_service")
+        name="default/default/lungo_weather_service",
+    )
 
     app_session = factory.create_app_session()
-    app_session \
-        .add(mcp._mcp_server) \
-        .with_transport(transport) \
-        .with_topic("lungo_weather_service") \
-        .with_session_id("default_session").build()
+    app_session.add(mcp._mcp_server).with_transport(transport).with_topic(
+        "lungo_weather_service"
+    ).with_session_id("default_session").build()
 
     await app_session.start_all_sessions(keep_alive=False)
     logger.info("Agent ready")
     await app_session.start_all_sessions(keep_alive=True)
+
 
 if __name__ == "__main__":
     logging.info("Starting weather service...")

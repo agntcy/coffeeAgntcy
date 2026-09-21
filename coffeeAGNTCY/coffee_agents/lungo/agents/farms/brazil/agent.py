@@ -39,6 +39,7 @@ IntentType = Literal["inventory", "orders", "general"]
 
 # --- 2. Tool Functions ---
 
+
 @tool(name="inventory_tool")
 def handle_inventory_tool(user_message: str) -> str:
     """Handle inventory-related queries and provide yield estimates."""
@@ -79,7 +80,9 @@ def handle_orders_tool(user_message: str) -> str:
     logger.info(f"Orders response generated: {text}")
     return text
 
+
 # --- 3. Intent Classification ---
+
 
 def classify_intent(user_message: str) -> IntentType:
     prompt = (
@@ -104,9 +107,11 @@ def classify_intent(user_message: str) -> IntentType:
         return "orders"
     return "general"
 
+
 # --- 4. Routing Function ---
 
 # Routes to appropriate FunctionAgent based on intent classification
+
 
 async def run_brazil_farm_routing(user_message: str) -> str:
     """Route to appropriate FunctionAgent based on intent with lazy initialization."""
@@ -115,7 +120,7 @@ async def run_brazil_farm_routing(user_message: str) -> str:
         inventory_agent = FunctionAgent(
             tools=[handle_inventory_tool],
             llm=llm,
-            system_prompt="Return only the exact output from the tool. Do not add any additional text or explanation."
+            system_prompt="Return only the exact output from the tool. Do not add any additional text or explanation.",
         )
         response = await inventory_agent.run(user_message)
         return str(response)
@@ -123,7 +128,7 @@ async def run_brazil_farm_routing(user_message: str) -> str:
         orders_agent = FunctionAgent(
             tools=[handle_orders_tool],
             llm=llm,
-            system_prompt="Return only the exact output from the tool. Do not add any additional text or explanation."
+            system_prompt="Return only the exact output from the tool. Do not add any additional text or explanation.",
         )
         response = await orders_agent.run(user_message)
         return str(response)
@@ -133,10 +138,12 @@ async def run_brazil_farm_routing(user_message: str) -> str:
             "Could you please rephrase your request?"
         )
 
+
 # --- 5. Public Agent Class ---
 
 # Main agent interface that handles intent classification and routing
 # LlamaIndex agent workflow examples: https://developers.llamaindex.ai/python/examples/agent/agent_workflow_basic/
+
 
 @agent(name="brazil_farm_agent")
 class FarmAgent:
@@ -149,7 +156,9 @@ class FarmAgent:
             raise RuntimeError("No valid response generated.")
         return result.strip()
 
+
 # --- 6. Example Usage ---
+
 
 async def main():
     agent = FarmAgent()
@@ -164,7 +173,7 @@ async def main():
         final_state = await agent.llama_index_invoke(msg)
         print(f"Agent: {final_state}")
 
-    print("\n" + "="*50 + "\n")
+    print("\n" + "=" * 50 + "\n")
 
     messages = [
         "Can you order me 100 lbs of coffee?",
@@ -175,7 +184,7 @@ async def main():
         final_state = await agent.llama_index_invoke(msg)
         print(f"Agent: {final_state}")
 
-    print("\n" + "="*50 + "\n")
+    print("\n" + "=" * 50 + "\n")
 
     messages = [
         "Tell me a joke.",
@@ -186,6 +195,8 @@ async def main():
         final_state = await agent.llama_index_invoke(msg)
         print(f"Agent: {final_state}")
 
+
 if __name__ == "__main__":
     import asyncio
+
     asyncio.run(main())

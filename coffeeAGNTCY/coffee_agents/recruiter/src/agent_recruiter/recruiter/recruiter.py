@@ -36,6 +36,7 @@ configure_llm()
 
 session_service = InMemorySessionService()
 
+
 async def get_or_create_session(
     app_name: str,
     user_id: str,
@@ -56,9 +57,13 @@ async def get_or_create_session(
             already has them.
     """
 
-    session = await session_service.get_session(app_name=app_name, user_id=user_id, session_id=session_id)
+    session = await session_service.get_session(
+        app_name=app_name, user_id=user_id, session_id=session_id
+    )
     if session is not None:
-        logger.info(f"✅ Retrieved existing session '{session_id}' for user '{user_id}'.")
+        logger.info(
+            f"✅ Retrieved existing session '{session_id}' for user '{user_id}'."
+        )
         # Apply overrides to an existing session so that the downstream
         # sub-agents see the caller-provided data.
         if state_overrides:
@@ -69,13 +74,13 @@ async def get_or_create_session(
                 f"{list(state_overrides.keys())}"
             )
         return session
-    
+
     # Define initial state data
     initial_state = {
         "user_preference_agent_registry": "AGNTCY Directory Service",
         "found_agent_records": {},  # Initialize empty dict for agent records from searches
         "evaluation_criteria": [],  # Initialize empty list for evaluation criteria
-        "evaluation_results": {}   # Initialize empty dict for evaluation results
+        "evaluation_results": {},  # Initialize empty dict for evaluation results
     }
 
     # Merge caller-provided overrides into initial state
@@ -87,21 +92,22 @@ async def get_or_create_session(
         )
 
     session_stateful = await session_service.create_session(
-        app_name=app_name, # Use the consistent app name
+        app_name=app_name,  # Use the consistent app name
         user_id=user_id,
         session_id=session_id,
-        state=initial_state # <<< Initialize state during creation
+        state=initial_state,  # <<< Initialize state during creation
     )
 
     logger.info(f"✅ Session '{session_id}' created for user '{user_id}'.")
 
     # Verify the initial state was set correctly
-    retrieved_session = await session_service.get_session(app_name=app_name,
-            user_id=user_id,
-            session_id = session_id)
-    
+    retrieved_session = await session_service.get_session(
+        app_name=app_name, user_id=user_id, session_id=session_id
+    )
+
     assert retrieved_session is not None, "Session retrieval failed."
     return session_stateful
+
 
 # ============================================================================
 # Agent Execution Functions
@@ -119,6 +125,7 @@ How to handle requests:
 - For anything else: respond appropriately or state you cannot handle it
 """
 
+
 def create_recruiter_agent(sub_agents) -> Agent:
     """Create and configure the Recruiter Agent."""
 
@@ -133,6 +140,7 @@ def create_recruiter_agent(sub_agents) -> Agent:
     )
 
     return root_agent
+
 
 class RecruiterTeam:
     """Multi-agent team for agent recruitment with configurable caching.
@@ -152,7 +160,7 @@ class RecruiterTeam:
     def __init__(
         self,
         app_name: str = "agent_recruiter",
-        cache_config: Optional[CacheConfig] = None
+        cache_config: Optional[CacheConfig] = None,
     ):
         """Create necessary agents and runner.
 
@@ -169,7 +177,7 @@ class RecruiterTeam:
         # ================================================================
         # Phase 1: Initialize Specialized Sub-Agents
         # ================================================================
-        
+
         # create a registry search agent which can search, pull, and filter agents
         registry_search_agent = create_registry_search_agent()
 
@@ -194,13 +202,15 @@ class RecruiterTeam:
 
         if self._cache_config.tool_cache_enabled:
             # Use configured excluded tools or default set
-            excluded_tools = self._cache_config.tool.excluded_tools or DEFAULT_EXCLUDED_TOOLS
+            excluded_tools = (
+                self._cache_config.tool.excluded_tools or DEFAULT_EXCLUDED_TOOLS
+            )
 
             self._tool_cache_plugin = ToolCachePlugin(
                 ttl_seconds=self._cache_config.tool.ttl_seconds,
                 max_entries=self._cache_config.tool.max_entries,
                 excluded_tools=excluded_tools,
-                enabled=True
+                enabled=True,
             )
             plugins.append(self._tool_cache_plugin)
             logger.info(
@@ -229,7 +239,9 @@ class RecruiterTeam:
         """Get the root recruiter agent."""
         return self.root_agent
 
-    async def get_found_agent_records(self, user_id: str, session_id: str) -> dict[str, dict]:
+    async def get_found_agent_records(
+        self, user_id: str, session_id: str
+    ) -> dict[str, dict]:
         """Retrieve agent records stored in session state by the registry search agent.
 
         Args:
@@ -240,12 +252,12 @@ class RecruiterTeam:
             Dict of agent records keyed by CID, or empty dict if none found
         """
         session = await session_service.get_session(
-            app_name=self.app_name,
-            user_id=user_id,
-            session_id=session_id
+            app_name=self.app_name, user_id=user_id, session_id=session_id
         )
         if session is None:
-            logger.warning(f"[get_found_agent_records] Session '{session_id}' not found for user '{user_id}'")
+            logger.warning(
+                f"[get_found_agent_records] Session '{session_id}' not found for user '{user_id}'"
+            )
             return {}
 
         records = session.state.get("found_agent_records", {})
@@ -254,7 +266,9 @@ class RecruiterTeam:
         )
         return records
 
-    async def get_evaluation_results(self, user_id: str, session_id: str) -> dict[str, dict]:
+    async def get_evaluation_results(
+        self, user_id: str, session_id: str
+    ) -> dict[str, dict]:
         """Retrieve evaluation results stored in session state by the agent evaluator.
 
         Args:
@@ -266,9 +280,7 @@ class RecruiterTeam:
             Also includes a "_summary" key with overall evaluation summary.
         """
         session = await session_service.get_session(
-            app_name=self.app_name,
-            user_id=user_id,
-            session_id=session_id
+            app_name=self.app_name, user_id=user_id, session_id=session_id
         )
         if session is None:
             logger.warning(f"Session '{session_id}' not found for user '{user_id}'")
@@ -287,9 +299,7 @@ class RecruiterTeam:
             True if cleared successfully, False if session not found
         """
         session = await session_service.get_session(
-            app_name=self.app_name,
-            user_id=user_id,
-            session_id=session_id
+            app_name=self.app_name, user_id=user_id, session_id=session_id
         )
         if session is None:
             logger.warning(f"Session '{session_id}' not found for user '{user_id}'")
@@ -298,7 +308,6 @@ class RecruiterTeam:
         session.state["evaluation_results"] = {}
         logger.info(f"Cleared evaluation results for session '{session_id}'")
         return True
-
 
     async def invoke(self, user_message: str, user_id: str, session_id: str) -> dict:
         """Process a user message and return the agent response with any found records.
@@ -309,9 +318,13 @@ class RecruiterTeam:
                 - found_agent_records: Dict of agent records found during the session
                 - evaluation_results: Dict of evaluation results from the session
         """
-        await get_or_create_session(app_name=self.app_name, user_id=user_id, session_id=session_id)
+        await get_or_create_session(
+            app_name=self.app_name, user_id=user_id, session_id=session_id
+        )
 
-        response = await call_agent_async(user_message, self.runner, user_id, session_id)
+        response = await call_agent_async(
+            user_message, self.runner, user_id, session_id
+        )
 
         if not response.strip():
             raise RuntimeError("No valid response generated.")
@@ -359,14 +372,13 @@ class RecruiterTeam:
             state_overrides=initial_state_overrides,
         )
 
-        content = types.Content(
-            role='user',
-            parts=[types.Part(text=user_message)]
-        )
+        content = types.Content(role="user", parts=[types.Part(text=user_message)])
 
         run_config = RunConfig(streaming_mode=StreamingMode.SSE)
 
-        logger.debug(f"Starting streaming execution: user_id={user_id}, session_id={session_id}")
+        logger.debug(
+            f"Starting streaming execution: user_id={user_id}, session_id={session_id}"
+        )
 
         async with aclosing(
             self.runner.run_async(
@@ -377,7 +389,9 @@ class RecruiterTeam:
             )
         ) as event_stream:
             async for event in event_stream:
-                logger.debug(f"Streaming event: author={event.author}, partial={event.partial}")
+                logger.debug(
+                    f"Streaming event: author={event.author}, partial={event.partial}"
+                )
                 yield event
 
     def get_cache_stats(self) -> dict:
@@ -389,8 +403,7 @@ class RecruiterTeam:
         return {
             "mode": self._cache_config.mode.value,
             "tool_cache": (
-                self._tool_cache_plugin.get_stats()
-                if self._tool_cache_plugin else None
+                self._tool_cache_plugin.get_stats() if self._tool_cache_plugin else None
             ),
         }
 
@@ -412,8 +425,7 @@ class RecruiterTeam:
         """
         return {
             "tool_cache_cleared": (
-                self._tool_cache_plugin.clear()
-                if self._tool_cache_plugin else 0
+                self._tool_cache_plugin.clear() if self._tool_cache_plugin else 0
             ),
         }
 

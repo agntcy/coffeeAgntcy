@@ -15,7 +15,11 @@ if OTEL_SDK_DISABLED:
 WORKFLOW_API_URL = os.getenv("WORKFLOW_API_URL", "http://localhost:9105")
 WORKFLOW_API_KEY = os.getenv("WORKFLOW_API_KEY", "TheAnswerIs42")
 
-EMIT_WORKFLOW_EVENTS = os.getenv("EMIT_WORKFLOW_EVENTS", "true").strip().lower() in ("true", "1", "yes")
+EMIT_WORKFLOW_EVENTS = os.getenv("EMIT_WORKFLOW_EVENTS", "true").strip().lower() in (
+    "true",
+    "1",
+    "yes",
+)
 
 SLIM_SERVER = os.getenv("SLIM_SERVER", "localhost:46357")
 
@@ -40,23 +44,42 @@ SLIM_REQUEST_TIMEOUT_SECONDS = int(os.getenv("SLIM_REQUEST_TIMEOUT_SECONDS", "20
 
 if os.getenv("SLIM_SHARED_SECRET") is None:
     # set a default value for development/testing
-    os.environ["SLIM_SHARED_SECRET"] = "slim-shared-secret-REPLACE_WITH_RANDOM_32PLUS_CHARS"
+    os.environ["SLIM_SHARED_SECRET"] = (
+        "slim-shared-secret-REPLACE_WITH_RANDOM_32PLUS_CHARS"
+    )
 
 LLM_MODEL = os.getenv("LLM_MODEL", "")
 ## Oauth2 OpenAI Provider
-OAUTH2_CLIENT_ID= os.getenv("OAUTH2_CLIENT_ID", "")
-OAUTH2_CLIENT_SECRET= os.getenv("OAUTH2_CLIENT_SECRET", "")
-OAUTH2_TOKEN_URL= os.getenv("OAUTH2_TOKEN_URL", "")
-OAUTH2_BASE_URL= os.getenv("OAUTH2_BASE_URL", "")
-OAUTH2_APPKEY= os.getenv("OAUTH2_APPKEY", "")
+OAUTH2_CLIENT_ID = os.getenv("OAUTH2_CLIENT_ID", "")
+OAUTH2_CLIENT_SECRET = os.getenv("OAUTH2_CLIENT_SECRET", "")
+OAUTH2_TOKEN_URL = os.getenv("OAUTH2_TOKEN_URL", "")
+OAUTH2_BASE_URL = os.getenv("OAUTH2_BASE_URL", "")
+OAUTH2_APPKEY = os.getenv("OAUTH2_APPKEY", "")
 
 LOGGING_LEVEL = os.getenv("LOGGING_LEVEL", "INFO").upper()
 
-ENSURE_STREAMING_LLM = os.getenv("ENSURE_STREAMING_LLM", "false").strip().lower() in ("true", "1", "yes")
-HOT_RELOAD_MODE = os.getenv("HOT_RELOAD_MODE", "false").strip().lower() in ("true", "1", "yes")
+ENSURE_STREAMING_LLM = os.getenv("ENSURE_STREAMING_LLM", "false").strip().lower() in (
+    "true",
+    "1",
+    "yes",
+)
+HOT_RELOAD_MODE = os.getenv("HOT_RELOAD_MODE", "false").strip().lower() in (
+    "true",
+    "1",
+    "yes",
+)
 
-USE_WEATHER_FALLBACK = os.getenv("USE_WEATHER_FALLBACK", "false").strip().lower() in ("true", "1", "yes")
+USE_WEATHER_FALLBACK = os.getenv("USE_WEATHER_FALLBACK", "false").strip().lower() in (
+    "true",
+    "1",
+    "yes",
+)
 
 # This is for demo purposes only. In production, use secure methods to manage API keys.
-IDENTITY_API_KEY = os.getenv("IDENTITY_API_KEY", "487>t:7:Ke5N[kZ[dOmDg2]0RQx))6k}bjARRN+afG3806h(4j6j[}]F5O)f[6PD")
-IDENTITY_API_SERVER_URL = os.getenv("IDENTITY_API_SERVER_URL", "https://api.agent-identity.outshift.com")
+IDENTITY_API_KEY = os.getenv(
+    "IDENTITY_API_KEY",
+    "487>t:7:Ke5N[kZ[dOmDg2]0RQx))6k}bjARRN+afG3806h(4j6j[}]F5O)f[6PD",
+)
+IDENTITY_API_SERVER_URL = os.getenv(
+    "IDENTITY_API_SERVER_URL", "https://api.agent-identity.outshift.com"
+)

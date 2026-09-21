@@ -23,11 +23,11 @@ Naming convention is ``{schema_stem}_{example_purpose}.json``, e.g.: ``event_v1_
 
 Validation
 ----------
-The package exposes ``schema.validation`` and corresponding ``schema.errors`` 
+The package exposes ``schema.validation`` and corresponding ``schema.errors``
 for various validation purposes.
-The main purpose of the validation is to validate the structure of 
-a data package (payload instance) against a specific schema, 
-but it also exposes functions to validate schema definitions, 
+The main purpose of the validation is to validate the structure of
+a data package (payload instance) against a specific schema,
+but it also exposes functions to validate schema definitions,
 that are useful when creating new schemas or new versions of existing schemas.
 
 Example for validating an event payload against the v1 schema:

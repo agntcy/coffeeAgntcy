@@ -16,13 +16,15 @@ from a2a.types import (
     Role,
     Part,
     TextPart,
-    Task)
+    Task,
+)
 
 from agents.farms.colombia.agent import FarmAgent
 from agents.farms.colombia.card import AGENT_CARD
 from common.workflow_context_prop import workflow_context_scope
 
 logger = logging.getLogger("longo.colombia_farm_agent.agent_executor")
+
 
 class FarmAgentExecutor(AgentExecutor):
     def __init__(self):
@@ -37,7 +39,9 @@ class FarmAgentExecutor(AgentExecutor):
         return None
 
     @staticmethod
-    def _read_workflow_identity(context: RequestContext) -> tuple[str | None, str | None]:
+    def _read_workflow_identity(
+        context: RequestContext,
+    ) -> tuple[str | None, str | None]:
         """Extract workflow identity propagated in the A2A message metadata.
 
         The supervisor stamps workflow_name/workflow_instance_id so MCP
@@ -82,7 +86,7 @@ class FarmAgentExecutor(AgentExecutor):
         if validation_error:
             await event_queue.enqueue_event(validation_error)
             return
-        
+
         prompt = context.get_user_input()
 
         workflow_name, workflow_instance_id = self._read_workflow_identity(context)
@@ -113,11 +117,13 @@ class FarmAgentExecutor(AgentExecutor):
 
             logger.info("agent output message: %s", message)
 
-            await event_queue.enqueue_event(message)              
+            await event_queue.enqueue_event(message)
         except Exception as e:
-            logger.error(f'An error occurred while streaming the yield estimate response: {e}')
+            logger.error(
+                f"An error occurred while streaming the yield estimate response: {e}"
+            )
             raise ServerError(error=InternalError()) from e
-        
+
     async def cancel(
         self, request: RequestContext, event_queue: EventQueue
     ) -> Task | None:

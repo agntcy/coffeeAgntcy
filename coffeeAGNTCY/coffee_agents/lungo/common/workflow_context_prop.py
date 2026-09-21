@@ -73,11 +73,15 @@ def attach_workflow_context(
     ctx = _otel_context.get_current()
     if workflow_instance_id:
         ctx = _otel_baggage.set_baggage(
-            _WORKFLOW_INSTANCE_ID_CONTEXT_KEY, workflow_instance_id, context=ctx,
+            _WORKFLOW_INSTANCE_ID_CONTEXT_KEY,
+            workflow_instance_id,
+            context=ctx,
         )
     if workflow_name:
         ctx = _otel_baggage.set_baggage(
-            _WORKFLOW_NAME_CONTEXT_KEY, workflow_name, context=ctx,
+            _WORKFLOW_NAME_CONTEXT_KEY,
+            workflow_name,
+            context=ctx,
         )
     return _otel_context.attach(ctx)
 

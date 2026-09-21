@@ -75,7 +75,9 @@ def _reachable_url(url: str) -> str:
         return url
     if parts.hostname not in _UNROUTABLE_ADVERTISED_HOSTS:
         return url
-    netloc = f"{DISCOVERED_AGENT_HOST}:{parts.port}" if parts.port else DISCOVERED_AGENT_HOST
+    netloc = (
+        f"{DISCOVERED_AGENT_HOST}:{parts.port}" if parts.port else DISCOVERED_AGENT_HOST
+    )
     return urlunsplit((parts.scheme, netloc, parts.path, parts.query, parts.fragment))
 
 
@@ -164,9 +166,9 @@ class DynamicWorkflowAgent(BaseAgent):
         self, ctx: InvocationContext
     ) -> AsyncGenerator[Event, None]:
         selected_cid: str | None = ctx.session.state.get(STATE_KEY_SELECTED_AGENT)
-        recruited: dict[str, dict] = ctx.session.state.get(
-            STATE_KEY_RECRUITED_AGENTS, {}
-        ) or {}
+        recruited: dict[str, dict] = (
+            ctx.session.state.get(STATE_KEY_RECRUITED_AGENTS, {}) or {}
+        )
         task_message: str = ctx.session.state.get(STATE_KEY_TASK_MESSAGE, "") or ""
 
         logger.info(
@@ -176,7 +178,9 @@ class DynamicWorkflowAgent(BaseAgent):
         )
 
         if not selected_cid:
-            logger.warning("[agent:dynamic_workflow] No agent CIDs selected for delegation.")
+            logger.warning(
+                "[agent:dynamic_workflow] No agent CIDs selected for delegation."
+            )
             yield Event(
                 author=self.name,
                 invocation_id=ctx.invocation_id,
@@ -288,9 +292,7 @@ class DynamicWorkflowAgent(BaseAgent):
                     role="model",
                     parts=[
                         types.Part(
-                            text=(
-                                f"Failed to delegate to agent '{record.name}': {e}"
-                            )
+                            text=(f"Failed to delegate to agent '{record.name}': {e}")
                         )
                     ],
                 ),

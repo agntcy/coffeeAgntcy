@@ -57,9 +57,7 @@ def test_use_case_has_common_context_plus_unique_pattern_paragraph() -> None:
         is_stub = "> **TODO** - full pattern-level write-up." in pattern_body
 
         use_case_bodies = [
-            body
-            for _, heading, body in parsed.sections
-            if heading == "Use case"
+            body for _, heading, body in parsed.sections if heading == "Use case"
         ]
 
         if is_stub:
@@ -80,20 +78,15 @@ def test_use_case_has_common_context_plus_unique_pattern_paragraph() -> None:
         ]
 
         assert len(paragraphs) == 2, (
-            f"{path.name}: expected common context plus one "
-            "pattern-specific paragraph"
+            f"{path.name}: expected common context plus one pattern-specific paragraph"
         )
 
         common, specific = paragraphs
-        assert common.startswith(
-            "**Coffee Agntcy** is a coffee company"
-        ), path.name
+        assert common.startswith("**Coffee Agntcy** is a coffee company"), path.name
 
         specific = " ".join(specific.split())
         assert specific, f"{path.name}: empty pattern-specific paragraph"
-        assert specific not in seen, (
-            f"{path.name} duplicates {seen[specific]}"
-        )
+        assert specific not in seen, f"{path.name} duplicates {seen[specific]}"
         seen[specific] = path.name
 
     assert seen

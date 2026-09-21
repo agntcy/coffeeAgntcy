@@ -179,9 +179,7 @@ class _DispatchHub:
     ) -> None:
         self._state_lock = state_lock
         self._notifier = notifier
-        self._subscribers: dict[str, list[Callable[[Event], None]]] = defaultdict(
-            list
-        )
+        self._subscribers: dict[str, list[Callable[[Event], None]]] = defaultdict(list)
         self._dispatch_queue: queue.SimpleQueue[object] = queue.SimpleQueue()
         self._dispatch_cv = threading.Condition()
         self._outstanding_dispatches = 0
@@ -234,9 +232,7 @@ class _DispatchHub:
                     self._dispatch_cv.wait()
                 else:
                     remaining = end - time.monotonic()
-                    if remaining <= 0 or not self._dispatch_cv.wait(
-                        timeout=remaining
-                    ):
+                    if remaining <= 0 or not self._dispatch_cv.wait(timeout=remaining):
                         msg = "Timed out waiting for dispatch queue to drain"
                         raise TimeoutError(msg)
 
