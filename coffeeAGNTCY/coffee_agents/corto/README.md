@@ -47,6 +47,7 @@ flowchart LR
     SLIM[SLIM gateway]
     FARM_CARD[Farm AgentCard: slim, jsonrpc, nats]
     FARM[Farm executor and flavor graph]
+    LLM[LLM provider via LiteLLM]
 
     UI --> API
     API --> EX
@@ -54,16 +55,18 @@ flowchart LR
     SDK -->|card.preferred_transport=slim| SLIM
     SLIM -->|routable PyName| FARM_CARD
     FARM_CARD --> FARM
+    EX -->|decide relevance / compose reply| LLM
+    FARM -->|estimate flavor profile| LLM
 ```
 
 The runtime path is intentionally small:
 
 1. The UI sends a prompt to the Exchange API.
-2. The Exchange agent decides whether the prompt is about coffee flavor and, if so, calls the farm over A2A.
+2. The Exchange agent calls an LLM (via LiteLLM, configured by `LLM_MODEL`) to decide whether the prompt is about coffee flavor and, if so, calls the farm over A2A.
 3. The Exchange asks its `A2AClientFactory` for a client bound to the farm's `AgentCard`; the factory picks the transport named in `card.preferred_transport` (`slim` by default).
-4. The farm server advertises every transport it supports on its `AgentCard.additional_interfaces` and serves each one from its own App SDK session, then hands execution to the farm executor.
+4. The farm server advertises every transport it supports on its `AgentCard.additional_interfaces` and serves each one from its own App SDK session, then hands execution to the farm executor, which calls the same configured LLM to generate the flavor profile.
 
-This keeps the business logic transport-agnostic: the Exchange and Farm code still speak A2A, while the `AgentCard` and the App SDK client/session objects handle how those messages are moved.
+This keeps the business logic transport-agnostic: the Exchange and Farm code still speak A2A, while the `AgentCard` and the App SDK client/session objects handle how those messages are moved. The LLM provider itself is a separate axis of configuration (`common/llm.py`'s `get_llm()`), independent of the A2A transport — see [Setup Instructions](#setup-instructions) for the supported providers (OpenAI, Azure OpenAI, GROQ, NVIDIA NIM, LiteLLM proxy, or a custom OAuth2 endpoint).
 
 ## Transport, Topics, and A2A Setup
 

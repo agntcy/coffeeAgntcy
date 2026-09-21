@@ -64,6 +64,8 @@ flowchart LR
     COLOMBIA[Colombia farm]
     VIETNAM[Vietnam farm]
     WEATHER[Weather MCP service]
+    PAYMENT[Payment MCP service]
+    LLM[LLM provider via LiteLLM]
 
     UI --> API
     API --> GRAPH
@@ -75,6 +77,12 @@ flowchart LR
     SLIM --> VIETNAM
     COLOMBIA -->|MCP tool call over lungo_weather_service| SLIM
     SLIM --> WEATHER
+    COLOMBIA -->|MCP tool call over lungo_payment_service, orders only| SLIM
+    SLIM --> PAYMENT
+    GRAPH -->|intent routing / replies| LLM
+    BRAZIL --> LLM
+    COLOMBIA --> LLM
+    VIETNAM --> LLM
 ```
 
 The auction supervisor decides whether a prompt should:
@@ -88,7 +96,14 @@ There is no separate broadcast topic. Every call goes through the same shared `a
 - Unicast tools (`get_farm_yield_inventory`, `create_order`, `get_order_details`) deep-copy the target farm's card, set `card.preferred_transport = DEFAULT_MESSAGE_TRANSPORT.lower()`, and call `a2a_client_factory.create(card, ...)`.
 - Broadcast tools (`get_all_farms_yield_inventory`, `get_all_farms_yield_inventory_streaming`) build a `recipients` list from every card in the farm registry (`agents/farms/{brazil,colombia,vietnam}/card.py`) via `get_agent_identifier(...)`, then call `client.broadcast_message(request, recipients=recipients, context=ctx)` or `broadcast_message_streaming(...)`.
 
-Each farm server (`farm_server.py`) serves every transport advertised on its own `AgentCard.additional_interfaces` (`slim`, `nats`, `jsonrpc`) via `serve_all_a2a_interfaces`, one App SDK session per interface, rather than registering on a private topic plus a shared broadcast topic. The Colombia farm also creates an MCP client for the `lungo_weather_service` topic, which follows the same configured transport as the auction services.
+Each farm server (`farm_server.py`) serves every transport advertised on its own `AgentCard.additional_interfaces` (`slim`, `nats`, `jsonrpc`) via `serve_all_a2a_interfaces`, one App SDK session per interface, rather than registering on a private topic plus a shared broadcast topic.
+
+The Colombia farm is the only one wired to external MCP services, both reached over the same configured transport as the auction services:
+
+- `lungo_weather_service` — fetched during inventory handling to forecast yield (`common/mcp_client.py`'s `call_mcp_tool`).
+- `lungo_payment_service` — invoked during order handling only, via `invoke_payment_mcp_tool` (`agents/mcp_servers/utils.py`) calling `create_payment` and `list_transactions`.
+
+The auction LangGraph and each farm's LangGraph also call an LLM through `common/llm.py`'s `get_llm()` (LiteLLM under `LLM_MODEL`) to route intent, generate replies, and answer inventory/order queries — this is a separate axis of configuration from the A2A transport.
 
 #### Logistics Group Chat Topology
 
@@ -104,6 +119,7 @@ flowchart LR
     SHIPPER[Shipper]
     ACCOUNTANT[Accountant]
     HELPDESK[Helpdesk optional]
+    LLM[LLM provider via LiteLLM]
 
     UI --> API
     API --> GRAPH
@@ -114,7 +130,10 @@ flowchart LR
     GROUP --> SHIPPER
     GROUP --> ACCOUNTANT
     GROUP --> HELPDESK
+    GRAPH -->|intent routing before dispatch| LLM
 ```
+
+Only the supervisor's LangGraph calls an LLM (via `get_llm()`, same as the auction flow); the Farm, Shipper, Accountant, and Helpdesk agents advance the conversation by matching on the fixed status keywords below rather than generating text with a model.
 
 The logistics supervisor seeds the workflow with `RECEIVED_ORDER`, then the agents advance the order through the shared conversation:
 
@@ -137,6 +156,7 @@ flowchart LR
     DIR[dir-api-server]
     ZOT[zot registry]
     TARGET[Selected remote agent]
+    LLM[LLM provider via LiteLLM]
 
     UI --> API
     API --> ADK
@@ -144,7 +164,10 @@ flowchart LR
     RECRUITER -->|directory search| DIR
     DIR --> ZOT
     ADK -->|delegated A2A call| TARGET
+    ADK -->|agent selection / delegation reasoning| LLM
 ```
+
+The ADK runner's own `LlmAgent` is configured with `LiteLlm(model=LLM_MODEL)` (`agents/supervisors/recruiter/agent.py`), the same `LLM_MODEL`-driven LiteLLM integration used by the auction and logistics flows. The separate `Recruiter Agent A2A service` (built from `coffeeAGNTCY/coffee_agents/recruiter`, outside the `lungo/` tree) is treated as an opaque remote A2A peer here, the same way `Selected remote agent` is.
 
 The recruiter supervisor uses a different pattern from the transport-bridged auction and logistics flows:
 
@@ -155,6 +178,8 @@ The recruiter supervisor uses a different pattern from the transport-bridged auc
 ### Transport, Topics, and App SDK Integration
 
 Lungo uses the same A2A protocol surface across its demos, but the transport wiring differs by flow.
+
+Every agent card in Lungo builds its SLIM URL from the same pattern: `slim://{SLIM_SERVER}/lungo/agents/{AGENT_ID}`, where `AGENT_ID` is the card's own slug — `brazil_coffee_farm`, `colombia_coffee_farm`, `vietnam_coffee_farm` for the farms, and `tatooine_farm_agent`, `shipping-agent`, `accountant-agent`, `logistics_helpdesk_agent` for the logistics agents. This is defined per-agent in each `card.py` (see `agents/farms/{brazil,colombia,vietnam}/card.py` and `agents/logistics/{farm,shipper,accountant,helpdesk}/card.py`) rather than through a shared topic-naming helper. Farm cards additionally advertise a NATS interface at the equivalent `nats://{NATS_SERVER}/lungo/agents/{AGENT_ID}`; logistics agent cards advertise `slim` only, matching the SLIM-only enforcement described below. The two MCP services used by the Colombia farm follow a similar but distinct pattern: `lungo_weather_service` and `lungo_payment_service`, registered with the full PyName `default/default/lungo_{weather,payment}_service` in `agents/mcp_servers/{weather,payment}_service.py`.
 
 For the auction flow:
 
