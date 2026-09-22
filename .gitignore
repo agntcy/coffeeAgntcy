@@ -197,3 +197,7 @@ node_modules/
 
 # Frontend, UI, JS, TS, etc.
 **/*.tsbuildinfo
+
+# MCP, local configuration.
+.mcp.json
+
