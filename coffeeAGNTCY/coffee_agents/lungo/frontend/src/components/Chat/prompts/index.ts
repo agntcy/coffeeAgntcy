@@ -4,5 +4,7 @@
  **/
 
 import SuggestedPromptsDropdown from "./SuggestedPromptsDropdown"
+import { useSuggestedPrompts } from "./useSuggestedPrompts"
 
-export { SuggestedPromptsDropdown }
+export { SuggestedPromptsDropdown, useSuggestedPrompts }
+export type { UseSuggestedPromptsResult } from "./useSuggestedPrompts"

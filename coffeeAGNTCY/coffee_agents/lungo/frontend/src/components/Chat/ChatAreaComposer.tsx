@@ -15,7 +15,7 @@ import {
   chatComposerNarrowContainerQuery,
   CHAT_COMPOSER_STACKED_GAP_PX,
 } from "./chatComposerLayout"
-import { SuggestedPromptsDropdown } from "./prompts"
+import { SuggestedPromptsDropdown, useSuggestedPrompts } from "./prompts"
 
 /** Matches OUK `Button` `size="medium"` with compact `body1` typography (7 + 20 + 7 = 34px). */
 const COMPOSER_CONTROL_HEIGHT_PX = 34
@@ -34,6 +34,8 @@ interface ChatAreaComposerProps {
   content: string
   setContent: (value: string) => void
   loading: boolean
+  /** Chat endpoint for the current selection is down, so nothing can be sent. */
+  endpointUnavailable?: boolean
   onSend: () => void
   onKeyDown: (e: React.KeyboardEvent<HTMLInputElement>) => void
 }
@@ -44,9 +46,17 @@ const ChatAreaComposer: React.FC<ChatAreaComposerProps> = ({
   content,
   setContent,
   loading,
+  endpointUnavailable = false,
   onSend,
   onKeyDown,
 }) => {
+  const prompts = useSuggestedPrompts(suggestedPromptsRequest)
+  const unavailable = endpointUnavailable || prompts.isUnavailable
+  const controlsDisabled = loading || unavailable
+  // When the prompts endpoint itself is the failure, the trigger stays
+  // clickable so its menu can show why.
+  const promptsTriggerDisabled = controlsDisabled && !prompts.isUnavailable
+
   return (
     <Stack
       direction="row"
@@ -67,7 +77,8 @@ const ChatAreaComposer: React.FC<ChatAreaComposerProps> = ({
       {suggestedPromptsRequest ? (
         <Box sx={promptsDropdownSx}>
           <SuggestedPromptsDropdown
-            promptsRequest={suggestedPromptsRequest}
+            prompts={prompts}
+            disabled={promptsTriggerDisabled}
             onSelect={onSuggestedPromptSelect}
             sx={(theme) => ({
               ...theme.typography.body1,
@@ -86,7 +97,7 @@ const ChatAreaComposer: React.FC<ChatAreaComposerProps> = ({
           setContent(e.target.value)
         }
         onKeyDown={onKeyDown}
-        disabled={loading}
+        disabled={controlsDisabled}
         slotProps={{
           htmlInput: {
             "aria-label": "Message to agents",
@@ -112,7 +123,7 @@ const ChatAreaComposer: React.FC<ChatAreaComposerProps> = ({
         size="medium"
         type="button"
         variant="primary"
-        disabled={loading || !content.trim()}
+        disabled={controlsDisabled || !content.trim()}
         onClick={() => onSend()}
         endIcon={<Icons.Send />}
         sx={(theme) => ({

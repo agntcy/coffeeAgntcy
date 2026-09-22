@@ -14,7 +14,7 @@ import {
   parsePromptCategories,
 } from "./suggestedPromptsUtils"
 
-interface UseSuggestedPromptsResult {
+export interface UseSuggestedPromptsResult {
   categories: PromptCategory[]
   isLoading: boolean
   isUnavailable: boolean
