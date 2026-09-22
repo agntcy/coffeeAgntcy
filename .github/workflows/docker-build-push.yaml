@@ -44,10 +44,29 @@ on:
         type: string
         default: ""
 
+# check-push-target-existence and the actual push are separate jobs with no
+# atomicity between them - two concurrent runs on the same ref could both
+# pass the existence check before either has pushed. Queueing (not
+# cancelling) runs per ref closes that race for pushes/dispatches landing
+# close together on the same branch or tag. PRs never push, so it's safe
+# (and faster) to cancel a superseded PR run instead of queueing behind it.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 env:
   CORTO_DIR: coffeeAGNTCY/coffee_agents/corto
   LUNGO_DIR: coffeeAGNTCY/coffee_agents/lungo
   RECRUITER_DIR: coffeeAGNTCY/coffee_agents/recruiter
+  # Image names only, used by check-push-target-existence to know what to
+  # look up in GHCR. Keep each list in sync with the "name" fields of the
+  # matching strategy.matrix.image entries further down (docker-build-corto/
+  # docker-build-lungo/docker-build-recruiter) - those also carry the
+  # dockerfile/target/build-args needed to actually build each image, so
+  # they aren't collapsed into these lists too.
+  CORTO_IMAGES_JSON: '["corto-ui","corto-exchange","corto-farm"]'
+  LUNGO_IMAGES_JSON: '["lungo-ui","auction-supervisor","agentic-workflows-api","brazil-farm","colombia-farm","vietnam-farm","weather-mcp-server","payment-mcp-server","logistics-shipper","logistics-accountant","logistics-farm","logistics-supervisor","logistics-helpdesk","recruiter-supervisor"]'
+  RECRUITER_IMAGES_JSON: '["recruiter"]'
 
 permissions: read-all
 
@@ -184,6 +203,7 @@ jobs:
           git_branch=${{ github.ref_name }}
 
           if [[ "$EVENT_NAME" == "pull_request" ]]; then
+            push=false
             image_tag=pr-${{ github.event.pull_request.number }}
             git_branch="$HEAD_REF"
           elif [[ "$EVENT_NAME" == "push" && "$REF" == "refs/heads/main" ]]; then
@@ -206,9 +226,89 @@ jobs:
           echo "image_tag=$image_tag" | tee -a "$GITHUB_OUTPUT"
           echo "git_branch=$git_branch" | tee -a "$GITHUB_OUTPUT"
 
-  docker-build-corto:
+  check-push-target-existence:
     needs: [subprojects-to-build, compute-build-parameters]
-    if: ${{ needs.subprojects-to-build.outputs.build_corto == 'true' }}
+    if: ${{ needs.compute-build-parameters.outputs.push == 'true' }}
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash
+    permissions:
+      packages: read
+      contents: read
+    steps:
+      - name: Check if push target exists
+        run: |
+          build_corto=${{ needs.subprojects-to-build.outputs.build_corto }}
+          build_lungo=${{ needs.subprojects-to-build.outputs.build_lungo }}
+          build_recruiter=${{ needs.subprojects-to-build.outputs.build_recruiter }}
+          push=${{ needs.compute-build-parameters.outputs.push }}
+          image_tag=${{ needs.compute-build-parameters.outputs.image_tag }}
+
+          floating_tags=("latest")
+          if printf '%s\n' "${floating_tags[@]}" | grep -Fxq "$image_tag"; then
+            echo "Warning: The 'latest' tag is a floating tag so it will be ignored."
+            exit 0
+          fi
+
+          existing_images=()
+          for project in corto lungo recruiter; do
+            build=build_$project
+            images_var=${project^^}_IMAGES_JSON
+
+            if [[ "${!build}" == "true" ]] && [[ "${push}" == "true" ]] && [[ "${image_tag}" != "" ]]; then
+              while IFS= read -r image; do
+                image_path="agntcy/coffee-agntcy/${image}"
+
+                token=$(curl -fsSL -u "${{ github.actor }}:${{ github.token }}" \
+                  "https://ghcr.io/token?service=ghcr.io&scope=repository:${image_path}:pull" \
+                  | jq -r .token)
+
+                # Accept every manifest media type a push could plausibly use
+                # (multi-arch or single-arch, OCI or the older Docker schema)
+                # so a tag isn't missed here just because it was pushed under
+                # a different one than we happen to expect.
+                http_code=$(curl -s -o /dev/null -w "%{http_code}" \
+                  -H "Authorization: Bearer ${token}" \
+                  -H "Accept: application/vnd.oci.image.index.v1+json, application/vnd.oci.image.manifest.v1+json, application/vnd.docker.distribution.manifest.list.v2+json, application/vnd.docker.distribution.manifest.v2+json" \
+                  "https://ghcr.io/v2/${image_path}/manifests/${image_tag}")
+
+                # A real 404 means the tag doesn't exist yet - safe to push.
+                # Anything else (401/403/429/5xx, or "000" for a network
+                # failure) is not a confirmed absence and must not be treated
+                # as one, or a transient error would silently let a push
+                # through unchecked.
+                if [[ "$http_code" == "200" ]]; then
+                  echo "Error: Image $image_path:${image_tag} already exists"
+                  existing_images+=("$image_path:${image_tag}")
+                elif [[ "$http_code" != "404" ]]; then
+                  echo "Error: unexpected HTTP $http_code checking $image_path:${image_tag} in GHCR" >&2
+                  exit 1
+                fi
+              done < <(jq -r '.[]' <<< "${!images_var}")
+            fi
+          done
+
+          if [[ "${#existing_images[@]}" -gt 0 ]]; then
+            echo "Error: The following images already exist:"
+            for image in "${existing_images[@]}"; do
+              echo "- $image"
+            done
+            echo "Cancelling build and push. Change the tag or manually delete the existing images from GHCR before retrying."
+
+            exit 1
+          fi
+
+  docker-build-corto:
+    # If you add/rename/remove an image below, also update CORTO_IMAGES_JSON
+    # in env: above - check-push-target-existence reads image names from
+    # there and won't know about an image it doesn't list.
+    needs: [subprojects-to-build, compute-build-parameters, check-push-target-existence]
+    # check-push-target-existence is skipped (not failed) whenever push isn't
+    # true (PR, non-pushing dispatch) - !cancelled() && !failure() tolerates
+    # that skip while still respecting an actual guard failure (an existing
+    # image tag), which must block this job.
+    if: ${{ !cancelled() && !failure() && needs.subprojects-to-build.outputs.build_corto == 'true' }}
 
     strategy:
       matrix:
@@ -252,8 +352,12 @@ jobs:
       git_branch: ${{ needs.compute-build-parameters.outputs.git_branch }}
 
   docker-build-lungo:
-    needs: [subprojects-to-build, compute-build-parameters]
-    if: ${{ needs.subprojects-to-build.outputs.build_lungo == 'true' }}
+    # Keep LUNGO_IMAGES_JSON in env: above in sync with the image names
+    # below - see the same-named comment on docker-build-corto.
+    needs: [subprojects-to-build, compute-build-parameters, check-push-target-existence]
+    # See the same-named condition on docker-build-corto above for why
+    # !cancelled() && !failure() is needed here.
+    if: ${{ !cancelled() && !failure() && needs.subprojects-to-build.outputs.build_lungo == 'true' }}
 
     strategy:
       matrix:
@@ -385,8 +489,12 @@ jobs:
       git_branch: ${{ needs.compute-build-parameters.outputs.git_branch }}
 
   docker-build-recruiter:
-    needs: [subprojects-to-build, compute-build-parameters]
-    if: ${{ needs.subprojects-to-build.outputs.build_recruiter == 'true' }}
+    # Keep RECRUITER_IMAGES_JSON in env: above in sync with the image names
+    # below - see the same-named comment on docker-build-corto.
+    needs: [subprojects-to-build, compute-build-parameters, check-push-target-existence]
+    # See the same-named condition on docker-build-corto above for why
+    # !cancelled() && !failure() is needed here.
+    if: ${{ !cancelled() && !failure() && needs.subprojects-to-build.outputs.build_recruiter == 'true' }}
 
     strategy:
       matrix:

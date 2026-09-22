@@ -31,10 +31,47 @@ on:
         type: boolean
         default: true
 
+# check-push-target-existence and the actual push are separate jobs with no
+# atomicity between them - two concurrent runs on the same ref could both
+# pass the existence check before either has pushed. Queueing (not
+# cancelling) runs per ref closes that race for pushes/dispatches landing
+# close together on the same branch or tag. PRs never push, so it's safe
+# (and faster) to cancel a superseded PR run instead of queueing behind it.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 env:
   CORTO_DIR: coffeeAGNTCY/coffee_agents/corto
   LUNGO_DIR: coffeeAGNTCY/coffee_agents/lungo
   HELM_SUBDIR: deployment/helm
+  # Single source of truth for the chart list, shared by the matrices below and by
+  # the change-detection and version-guard logic in subprojects-to-build /
+  # check-push-target-existence.
+  CORTO_CHARTS_JSON: >-
+    [
+      {"package_name": "corto-ui", "path": "coffeeAGNTCY/coffee_agents/corto/deployment/helm/corto-ui"},
+      {"package_name": "corto-exchange", "path": "coffeeAGNTCY/coffee_agents/corto/deployment/helm/exchange"},
+      {"package_name": "corto-farm", "path": "coffeeAGNTCY/coffee_agents/corto/deployment/helm/farm"}
+    ]
+  LUNGO_CHARTS_JSON: >-
+    [
+      {"package_name": "lungo-ui", "path": "coffeeAGNTCY/coffee_agents/lungo/deployment/helm/ui"},
+      {"package_name": "auction-supervisor", "path": "coffeeAGNTCY/coffee_agents/lungo/deployment/helm/auction-supervisor"},
+      {"package_name": "agentic-workflows-api", "path": "coffeeAGNTCY/coffee_agents/lungo/deployment/helm/agentic-workflows-api"},
+      {"package_name": "brazil-farm", "path": "coffeeAGNTCY/coffee_agents/lungo/deployment/helm/brazil-farm"},
+      {"package_name": "colombia-farm", "path": "coffeeAGNTCY/coffee_agents/lungo/deployment/helm/colombia-farm"},
+      {"package_name": "vietnam-farm", "path": "coffeeAGNTCY/coffee_agents/lungo/deployment/helm/vietnam-farm"},
+      {"package_name": "weather-mcp-server", "path": "coffeeAGNTCY/coffee_agents/lungo/deployment/helm/weather-mcp-server"},
+      {"package_name": "payment-mcp-server", "path": "coffeeAGNTCY/coffee_agents/lungo/deployment/helm/payment-mcp-server"},
+      {"package_name": "logistics-supervisor", "path": "coffeeAGNTCY/coffee_agents/lungo/deployment/helm/logistics-supervisor"},
+      {"package_name": "logistics-shipper", "path": "coffeeAGNTCY/coffee_agents/lungo/deployment/helm/logistics-shipper"},
+      {"package_name": "logistics-accountant", "path": "coffeeAGNTCY/coffee_agents/lungo/deployment/helm/logistics-accountant"},
+      {"package_name": "logistics-farm", "path": "coffeeAGNTCY/coffee_agents/lungo/deployment/helm/logistics-farm"},
+      {"package_name": "logistics-helpdesk", "path": "coffeeAGNTCY/coffee_agents/lungo/deployment/helm/logistics-helpdesk"},
+      {"package_name": "recruiter", "path": "coffeeAGNTCY/coffee_agents/lungo/deployment/helm/recruiter"},
+      {"package_name": "recruiter-supervisor", "path": "coffeeAGNTCY/coffee_agents/lungo/deployment/helm/recruiter-supervisor"}
+    ]
 
 permissions: read-all
 
@@ -42,8 +79,11 @@ jobs:
   subprojects-to-build:
     runs-on: ubuntu-latest
     outputs:
+      push: ${{ steps.choose-subprojects.outputs.push }}
       build_corto: ${{ steps.choose-subprojects.outputs.build_corto }}
       build_lungo: ${{ steps.choose-subprojects.outputs.build_lungo }}
+      corto_charts: ${{ steps.choose-subprojects.outputs.corto_charts }}
+      lungo_charts: ${{ steps.choose-subprojects.outputs.lungo_charts }}
     defaults:
       run:
         shell: bash
@@ -103,32 +143,151 @@ jobs:
           build_lungo=false
 
           if [[ "${{ github.event_name }}" == "push" ]]; then
+            if [[ "${{ github.ref_name }}" == "main" ]]; then
+              push=true
+            else
+              push=false
+            fi
+
             build_corto=true
             build_lungo=true
           elif [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            push=${{ inputs.push }}
             build_corto=${{ inputs.build_corto }}
             build_lungo=${{ inputs.build_lungo }}
           elif [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            push=false
             build_corto=${{ steps.check-paths-corto.outputs.changed }}
             build_lungo=${{ steps.check-paths-lungo.outputs.changed }}
           fi
 
+          echo "push=$push" | tee -a "$GITHUB_OUTPUT"
           echo "build_corto=$build_corto" | tee -a "$GITHUB_OUTPUT"
           echo "build_lungo=$build_lungo" | tee -a "$GITHUB_OUTPUT"
 
+          # Repackaging a chart with no content change still produces a different
+          # tgz (embedded timestamps), which would silently overwrite the existing,
+          # supposedly-immutable version. So on a push to main, drop charts with no
+          # actual diff from the matrix before packaging even starts. Other events
+          # never push (see above), so there is no overpush risk to guard there and
+          # the full chart list is kept as-is.
+          only_changed() {
+            local charts_json="$1"
+            if [[ "$push" != "true" ]]; then
+              jq -c '.' <<< "$charts_json"
+              return
+            fi
+
+            jq -c '.[]' <<< "$charts_json" | while IFS= read -r chart; do
+              path=$(jq -r '.path' <<< "$chart")
+
+              # --exit-code makes git diff report "0 = no diff" / "1 = diff
+              # found" / ">1 = actual git error" (e.g. an unreachable base
+              # after a force-push). Distinguish them instead of collapsing
+              # a real error into a silent "diff found".
+              if git diff --name-only --exit-code "${{ github.event.before }}" "${{ github.sha }}" -- "${path}/" > /dev/null; then
+                diff_status=0
+              else
+                diff_status=$?
+              fi
+
+              if [[ "$diff_status" -eq 1 ]]; then
+                echo "$chart"
+              elif [[ "$diff_status" -gt 1 ]]; then
+                echo "::warning::git diff exited $diff_status (expected 0 or 1) for '${path}' - treating it as changed to be safe" >&2
+                echo "$chart"
+              fi
+            done | jq -c -s '.'
+          }
+
+          echo "corto_charts=$(only_changed "$CORTO_CHARTS_JSON")" | tee -a "$GITHUB_OUTPUT"
+          echo "lungo_charts=$(only_changed "$LUNGO_CHARTS_JSON")" | tee -a "$GITHUB_OUTPUT"
+
+  check-push-target-existence:
+    needs: [subprojects-to-build]
+    if: ${{ needs.subprojects-to-build.outputs.push == 'true' }}
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash
+    permissions:
+      packages: read
+      contents: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+
+      - name: Check Helm integrity
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          push=${{ needs.subprojects-to-build.outputs.push }}
+          build_corto=${{ needs.subprojects-to-build.outputs.build_corto }}
+          build_lungo=${{ needs.subprojects-to-build.outputs.build_lungo }}
+          corto_charts='${{ needs.subprojects-to-build.outputs.corto_charts }}'
+          lungo_charts='${{ needs.subprojects-to-build.outputs.lungo_charts }}'
+
+          existing_charts=()
+          for project in corto lungo; do
+            build=build_$project
+            charts_var=${project}_charts
+
+            if [[ "${!build}" == "true" ]] && [[ "${push}" == "true" ]]; then
+              # Note: corto_charts/lungo_charts are already filtered to changed
+              # charts only when push is true, so every entry here is checked.
+              while IFS= read -r chart; do
+                package_name=$(jq -r '.package_name' <<< "$chart")
+                chart_directory=$(jq -r '.path' <<< "$chart")
+                chart_path="coffee_agntcy%2Fhelm%2F${package_name}"
+                chart_display_path="coffee_agntcy/helm/${package_name}"
+
+                chart_version=$(grep '^version:' "${chart_directory}/Chart.yaml" | awk '{print $2}')
+
+                # A chart pushed for the first time has no GHCR package yet,
+                # which 404s here - that's "no conflict", not an error, so it
+                # must not be treated the same as a real API failure (auth,
+                # rate limit, etc.), which should still fail loud. --paginate
+                # matches ci-gate.yaml's own gh api call: a chart with more
+                # published versions than fit on one page would otherwise
+                # only have its first page checked here.
+                if version_id_lines=$(gh api --paginate "/orgs/agntcy/packages/container/${chart_path}/versions" \
+                  --jq '.[] | select(.metadata.container.tags[]? == "'"${chart_version}"'") | .id' 2>&1); then
+                  version_id=$(head -n1 <<< "$version_id_lines")
+                elif grep -q "HTTP 404" <<< "$version_id_lines"; then
+                  version_id=""
+                else
+                  echo "$version_id_lines" >&2
+                  exit 1
+                fi
+
+                if [[ -n "${version_id}" ]]; then
+                  existing_charts+=("ghcr.io/agntcy/${chart_display_path}:${chart_version}")
+                fi
+              done < <(jq -c '.[]' <<< "${!charts_var}")
+            fi
+          done
+
+          if [[ "${#existing_charts[@]}" -gt 0 ]]; then
+            echo "Error: The following chart versions already exist:"
+            for chart in "${existing_charts[@]}"; do
+              echo "- $chart"
+            done
+            echo "Cancelling package and push. Change the version or manually delete the existing chart versions from GHCR before retrying."
+
+            exit 1
+          fi
+
   helm-package-corto:
-    needs: subprojects-to-build
-    if: ${{ needs.subprojects-to-build.outputs.build_corto == 'true' }}
+    needs: [subprojects-to-build, check-push-target-existence]
+    # check-push-target-existence is skipped (not failed) whenever push isn't
+    # true (PR, tag push, non-pushing dispatch) - !cancelled() && !failure()
+    # tolerates that skip while still respecting an actual guard failure
+    # (an existing chart version), which must block this job.
+    if: ${{ !cancelled() && !failure() && needs.subprojects-to-build.outputs.build_corto == 'true' && needs.subprojects-to-build.outputs.corto_charts != '[]' }}
 
     strategy:
       matrix:
-        chart:
-          - path: coffeeAGNTCY/coffee_agents/corto/deployment/helm/corto-ui
-            package_name: corto-ui
-          - path: coffeeAGNTCY/coffee_agents/corto/deployment/helm/exchange
-            package_name: corto-exchange
-          - path: coffeeAGNTCY/coffee_agents/corto/deployment/helm/farm
-            package_name: corto-farm
+        chart: ${{ fromJson(needs.subprojects-to-build.outputs.corto_charts) }}
 
     permissions: # permissions can only be maintained or reduced (not elevated) throughout a chain of workflows
       packages: write
@@ -138,61 +297,18 @@ jobs:
     with:
       path: ${{ matrix.chart.path }}
       package_name: ${{ matrix.chart.package_name }}
-      push: ${{ github.event_name == 'push' || ( github.event_name == 'workflow_dispatch' && inputs.push ) }}
+      push: ${{ needs.subprojects-to-build.outputs.push == 'true' }}
 
 
   helm-package-lungo:
-    needs: subprojects-to-build
-    if: ${{ needs.subprojects-to-build.outputs.build_lungo == 'true' }}
+    needs: [subprojects-to-build, check-push-target-existence]
+    # See the same-named condition on helm-package-corto above for why
+    # !cancelled() && !failure() is needed here.
+    if: ${{ !cancelled() && !failure() && needs.subprojects-to-build.outputs.build_lungo == 'true' && needs.subprojects-to-build.outputs.lungo_charts != '[]' }}
 
     strategy:
       matrix:
-        chart:
-          - name: lungo-ui
-            path: coffeeAGNTCY/coffee_agents/lungo/deployment/helm/ui
-            package_name: lungo-ui
-          - name: auction-supervisor
-            path: coffeeAGNTCY/coffee_agents/lungo/deployment/helm/auction-supervisor
-            package_name: auction-supervisor
-          - name: agentic-workflows-api
-            path: coffeeAGNTCY/coffee_agents/lungo/deployment/helm/agentic-workflows-api
-            package_name: agentic-workflows-api
-          - name: brazil-farm
-            path: coffeeAGNTCY/coffee_agents/lungo/deployment/helm/brazil-farm
-            package_name: brazil-farm
-          - name: colombia-farm
-            path: coffeeAGNTCY/coffee_agents/lungo/deployment/helm/colombia-farm
-            package_name: colombia-farm
-          - name: vietnam-farm
-            path: coffeeAGNTCY/coffee_agents/lungo/deployment/helm/vietnam-farm
-            package_name: vietnam-farm
-          - name: weather-mcp-server
-            path: coffeeAGNTCY/coffee_agents/lungo/deployment/helm/weather-mcp-server
-            package_name: weather-mcp-server
-          - name: payment-mcp-server
-            path: coffeeAGNTCY/coffee_agents/lungo/deployment/helm/payment-mcp-server
-            package_name: payment-mcp-server
-          - name: logistics-supervisor
-            path: coffeeAGNTCY/coffee_agents/lungo/deployment/helm/logistics-supervisor
-            package_name: logistics-supervisor
-          - name: logistics-shipper
-            path: coffeeAGNTCY/coffee_agents/lungo/deployment/helm/logistics-shipper
-            package_name: logistics-shipper
-          - name: logistics-accountant
-            path: coffeeAGNTCY/coffee_agents/lungo/deployment/helm/logistics-accountant
-            package_name: logistics-accountant
-          - name: logistics-farm
-            path: coffeeAGNTCY/coffee_agents/lungo/deployment/helm/logistics-farm
-            package_name: logistics-farm
-          - name: logistics-helpdesk
-            path: coffeeAGNTCY/coffee_agents/lungo/deployment/helm/logistics-helpdesk
-            package_name: logistics-helpdesk
-          - name: recruiter
-            path: coffeeAGNTCY/coffee_agents/lungo/deployment/helm/recruiter
-            package_name: recruiter
-          - name: recruiter-supervisor
-            path: coffeeAGNTCY/coffee_agents/lungo/deployment/helm/recruiter-supervisor
-            package_name: recruiter-supervisor
+        chart: ${{ fromJson(needs.subprojects-to-build.outputs.lungo_charts) }}
 
     permissions: # permissions can only be maintained or reduced (not elevated) throughout a chain of workflows
       packages: write
@@ -202,4 +318,4 @@ jobs:
     with:
       path: ${{ matrix.chart.path }}
       package_name: ${{ matrix.chart.package_name }}
-      push: ${{ github.event_name == 'push' || ( github.event_name == 'workflow_dispatch' && inputs.push )}}
+      push: ${{ needs.subprojects-to-build.outputs.push == 'true' }}
