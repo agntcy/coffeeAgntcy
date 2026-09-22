@@ -1,6 +1,11 @@
 <!-- TOC -->
   * [Lungo Demo Overview](#lungo-demo-overview)
     * [Overview](#overview)
+    * [Architecture At A Glance](#architecture-at-a-glance)
+      * [Auction Topology](#auction-topology)
+      * [Logistics Group Chat Topology](#logistics-group-chat-topology)
+      * [Recruiter Discovery and Delegation Topology](#recruiter-discovery-and-delegation-topology)
+    * [Transport, Topics, and App SDK Integration](#transport-topics-and-app-sdk-integration)
   * [Running Lungo Locally](#running-lungo-locally)
     * [Prerequisites](#prerequisites)
     * [Setup Instructions](#setup-instructions)
@@ -33,11 +38,170 @@ The current demo models a **supervisor agent ecosystem**, where:
 - The **Supervisor Agent** acts as a _Coffee Exchange_, responsible for managing inventory and fulfilling orders.
 - The **Worker Agents** represent _Coffee Farms_, which supply the inventory and provide order information.
 
-All agents are implemented as **directed LangGraphs** with **Agent-to-Agent (A2A)** integration. The user interface communicates with the Supervisor’s API to submit prompts. These prompts are processed through the LangGraph and routed via an A2A client to the appropriate Farm’s A2A server.
+All agents speak **Agent-to-Agent (A2A)** integration regardless of the framework they're built with internally - the Supervisor and the Colombia farm are **directed LangGraphs**, the Brazil farm is a **LlamaIndex** `FunctionAgent` workflow, and the Vietnam farm is a **Google ADK** agent tree. The user interface communicates with the Supervisor's API to submit prompts. These prompts are processed through the Supervisor's LangGraph and routed via an A2A client to the appropriate Farm's A2A server, whatever that farm's internal framework is.
 
-The underlying A2A transport is configurable. By default, it uses **SLIM**, supporting both broadcast and unicast messaging depending on the context and data requirements.
+The underlying A2A transport is configurable, but the two flows differ in how strictly that transport is enforced:
 
-One notable component is the **Colombia Farm**, which functions as an **MCP client**. It communicates with an MCP server (over SLIM) to retrieve real-time weather data used to calculate coffee yield.
+- The **Auction** flow defaults to **SLIM** (`DEFAULT_MESSAGE_TRANSPORT=SLIM` in `.env.example`) for farm broadcast and unicast traffic, but can be switched to **NATS** by setting that same variable, since every farm card also advertises a `nats` interface.
+- The **Logistics** flow is **SLIM-only**: its supervisor's A2A client factory is built with `include_nats=False`, and every logistics service's `DEFAULT_MESSAGE_TRANSPORT` is hardcoded to `SLIM` in `docker-compose.yaml` because it relies on group chat primitives.
+
+One notable component is the **Colombia Farm**, which functions as an **MCP client**. It communicates with the weather MCP service over the same configurable transport used by the farm runtime, defaulting to **SLIM** like the rest of the auction flow.
+
+### Architecture At A Glance
+
+Lungo contains three distinct communication patterns in one reference app.
+
+#### Auction Topology
+
+```mermaid
+flowchart LR
+    UI[Frontend]
+    API[Auction Supervisor API]
+    GRAPH[Auction LangGraph]
+    SDK[App SDK A2A client factory]
+    SLIM[SLIM gateway]
+    BRAZIL[Brazil farm]
+    COLOMBIA[Colombia farm]
+    VIETNAM[Vietnam farm]
+    WEATHER[Weather MCP service]
+    PAYMENT[Payment MCP service]
+    LLM[LLM provider via LiteLLM]
+
+    UI --> API
+    API --> GRAPH
+    GRAPH --> SDK
+    SDK -->|unicast: one farm card| SLIM
+    SDK -->|broadcast: recipients=all farm cards| SLIM
+    SLIM --> BRAZIL
+    SLIM --> COLOMBIA
+    SLIM --> VIETNAM
+    COLOMBIA -->|MCP tool call over lungo_weather_service| SLIM
+    SLIM --> WEATHER
+    COLOMBIA -->|MCP tool call over lungo_payment_service, orders only| SLIM
+    SLIM --> PAYMENT
+    GRAPH -->|intent routing / replies| LLM
+    BRAZIL --> LLM
+    COLOMBIA --> LLM
+    VIETNAM --> LLM
+```
+
+The auction supervisor decides whether a prompt should:
+
+- call one farm directly through its `AgentCard` (unicast), or
+- broadcast to all farms by recipient list, or
+- create an order with a single verified farm.
+
+There is no separate broadcast topic. Every call goes through the same shared `a2a_client_factory` (`agents/supervisors/auction/graph/shared.py`), built once with `build_a2a_client_config(namespace="lungo", group="agents", agent_name="auction_supervisor", include_nats=True)`:
+
+- Unicast tools (`get_farm_yield_inventory`, `create_order`, `get_order_details`) deep-copy the target farm's card, set `card.preferred_transport = DEFAULT_MESSAGE_TRANSPORT.lower()`, and call `a2a_client_factory.create(card, ...)`.
+- Broadcast tools (`get_all_farms_yield_inventory`, `get_all_farms_yield_inventory_streaming`) build a `recipients` list from every card in the farm registry (`agents/farms/{brazil,colombia,vietnam}/card.py`) via `get_agent_identifier(...)`, then call `client.broadcast_message(request, recipients=recipients, context=ctx)` or `broadcast_message_streaming(...)`.
+
+Each farm server (`farm_server.py`) serves every transport advertised on its own `AgentCard.additional_interfaces` (`slim`, `nats`, `jsonrpc`) via `serve_all_a2a_interfaces`, one App SDK session per interface, rather than registering on a private topic plus a shared broadcast topic.
+
+The Colombia farm is the only one wired to external MCP services, both reached over the same configured transport as the auction services:
+
+- `lungo_weather_service` - fetched during inventory handling to forecast yield (`common/mcp_client.py`'s `call_mcp_tool`).
+- `lungo_payment_service` - invoked during order handling only, via `invoke_payment_mcp_tool` (`agents/mcp_servers/utils.py`) calling `create_payment` and `list_transactions`.
+
+The auction supervisor's LangGraph calls an LLM through `common/llm.py`'s `get_llm()` (LiteLLM under `LLM_MODEL`) to route intent and generate replies. Each farm reaches an LLM the same way in spirit but through a different framework binding: Colombia is itself a LangGraph using that same `get_llm()`; Brazil is a LlamaIndex `FunctionAgent` workflow calling `llama_index.llms.litellm.LiteLLM` directly; Vietnam is a Google ADK agent tree calling `google.adk.models.lite_llm.LiteLlm` directly. All three still resolve to the same `LLM_MODEL`-configured LiteLLM backend - this is a separate axis of configuration from the A2A transport.
+
+#### Logistics Group Chat Topology
+
+```mermaid
+flowchart LR
+    UI[Frontend]
+    API[Logistics Supervisor API]
+    GRAPH[Logistics LangGraph]
+    SDK[App SDK transport bridge]
+    SLIM[SLIM gateway]
+    GROUP[Dynamic group channel]
+    FARM[Tatooine farm]
+    SHIPPER[Shipper]
+    ACCOUNTANT[Accountant]
+    HELPDESK[Helpdesk optional]
+    LLM[LLM provider via LiteLLM]
+
+    UI --> API
+    API --> GRAPH
+    GRAPH --> SDK
+    SDK --> SLIM
+    SLIM --> GROUP
+    GROUP --> FARM
+    GROUP --> SHIPPER
+    GROUP --> ACCOUNTANT
+    GROUP --> HELPDESK
+    GRAPH -->|intent routing before dispatch| LLM
+```
+
+Only the supervisor's LangGraph calls an LLM (via `get_llm()`, same as the auction flow); the Farm, Shipper, Accountant, and Helpdesk agents advance the conversation by matching on the fixed status keywords below rather than generating text with a model.
+
+The logistics supervisor seeds the workflow with `RECEIVED_ORDER`, then the agents advance the order through the shared conversation:
+
+1. Supervisor -> `RECEIVED_ORDER`
+2. Farm -> `HANDOVER_TO_SHIPPER`
+3. Shipper -> `CUSTOMS_CLEARANCE`
+4. Accountant -> `PAYMENT_COMPLETE`
+5. Shipper -> `DELIVERED`
+
+That workflow is documented in more detail in [Group Conversation Docs](./docs/group_conversation.md).
+
+#### Recruiter Discovery and Delegation Topology
+
+```mermaid
+flowchart LR
+    UI[Frontend]
+    API[Recruiter Supervisor API]
+    ADK[Recruiter Supervisor ADK runner]
+    RECRUITER[Recruiter Agent A2A service]
+    DIR[dir-api-server]
+    ZOT[zot registry]
+    TARGET[Selected remote agent]
+    LLM[LLM provider via LiteLLM]
+
+    UI --> API
+    API --> ADK
+    ADK -->|A2A HTTP| RECRUITER
+    RECRUITER -->|directory search| DIR
+    DIR --> ZOT
+    ADK -->|delegated A2A call| TARGET
+    ADK -->|agent selection / delegation reasoning| LLM
+```
+
+The ADK runner's own `LlmAgent` is configured with `LiteLlm(model=LLM_MODEL)` (`agents/supervisors/recruiter/agent.py`), the same `LLM_MODEL`-driven LiteLLM integration used by the auction and logistics flows. The separate `Recruiter Agent A2A service` (built from `coffeeAGNTCY/coffee_agents/recruiter`, outside the `lungo/` tree) is treated as an opaque remote A2A peer here, the same way `Selected remote agent` is.
+
+The recruiter supervisor uses a different pattern from the transport-bridged auction and logistics flows:
+
+- it talks to the recruiter service over a URL-based A2A client rather than App SDK topic routing,
+- the recruiter service queries the AGNTCY directory and returns agent cards plus evaluation results,
+- once a user selects an agent, the supervisor forwards subsequent prompts directly to that advertised A2A endpoint.
+
+### Transport, Topics, and App SDK Integration
+
+Lungo uses the same A2A protocol surface across its demos, but the transport wiring differs by flow.
+
+Every agent card in Lungo builds its SLIM URL from the same pattern: `slim://{SLIM_SERVER}/lungo/agents/{AGENT_ID}`, where `AGENT_ID` is the card's own slug - `brazil_coffee_farm`, `colombia_coffee_farm`, `vietnam_coffee_farm` for the farms, and `tatooine_farm_agent`, `shipping-agent`, `accountant-agent`, `logistics_helpdesk_agent` for the logistics agents. This is defined per-agent in each `card.py` (see `agents/farms/{brazil,colombia,vietnam}/card.py` and `agents/logistics/{farm,shipper,accountant,helpdesk}/card.py`) rather than through a shared topic-naming helper. Farm cards additionally advertise a NATS interface at the equivalent `nats://{NATS_SERVER}/lungo/agents/{AGENT_ID}`; logistics agent cards advertise `slim` only, matching the SLIM-only enforcement described below. The two MCP services used by the Colombia farm follow a similar but distinct pattern: `lungo_weather_service` and `lungo_payment_service`, registered with the full routable `name` `default/default/lungo_{weather,payment}_service` in `agents/mcp_servers/{weather,payment}_service.py`.
+
+For the auction flow:
+
+- `agents/supervisors/auction/graph/shared.py` builds one process-wide `A2AClientFactory` via `build_a2a_client_config(namespace="lungo", group="agents", agent_name="auction_supervisor", include_nats=True)`, so both SLIM and NATS transport configs are available to it.
+- `agents/supervisors/auction/graph/tools.py` sets `card.preferred_transport = DEFAULT_MESSAGE_TRANSPORT.lower()` on a copy of the target farm card(s) before calling `a2a_client_factory.create(card, ...)`; the factory negotiates the actual connection from that preference plus the transports the farm's card advertises.
+- Unicast calls create a client for one farm's card. Broadcast calls (`get_all_farms_yield_inventory[_streaming]`) instead pass `recipients=[...]` (built from every registered farm card) to `client.broadcast_message(...)` / `broadcast_message_streaming(...)` - there is no dedicated broadcast topic or `FARM_BROADCAST_TOPIC` constant in the current code.
+- `docker-compose.yaml` passes `DEFAULT_MESSAGE_TRANSPORT=${DEFAULT_MESSAGE_TRANSPORT}` through with no fallback of its own; the actual default comes from `.env.example` (`DEFAULT_MESSAGE_TRANSPORT=SLIM`, with `DEFAULT_MESSAGE_TRANSPORT=NATS` left commented out as the documented way to switch) and from `config/config.py`'s `os.getenv("DEFAULT_MESSAGE_TRANSPORT", "SLIM")` fallback. So auction defaults to **SLIM**, not NATS.
+
+For the logistics flow:
+
+- `agents/supervisors/logistics/graph/shared.py` builds its `A2AClientFactory` with `include_nats=False`, so NATS is never even configured for this flow - SLIM-only is structural, not a runtime check in `tools.py`.
+- `docker-compose.yaml` additionally hardcodes `DEFAULT_MESSAGE_TRANSPORT=SLIM` (with a "Do not change" comment) on all five logistics services.
+- The supervisor creates a client against the shipper's card (`a2a_client_factory.create(SHIPPER_CARD, ...)`), then starts a shared conversation with `client.start_groupchat(...)` or `start_streaming_groupchat(...)`, passing a fresh `group_channel=f"{uuid4()}"` and a `recipients` list built from the shipper, Tatooine farm, and accountant cards (plus the helpdesk card when `EXPERIMENTAL_FEATURE=true`).
+- Each logistics agent server registers itself on SLIM with an App SDK app session so it can join and respond on the shared conversation channel.
+
+For the recruiter flow:
+
+- `agents/supervisors/recruiter/recruiter_client.py` builds a plain `a2a.client.ClientFactory` (from the `a2a-sdk` package, not the AGNTCY App SDK) and calls `.create(RECRUITER_AGENT_CARD)` directly against `RECRUITER_AGENT_CARD.url` (`RECRUITER_AGENT_URL`, default `http://localhost:8881`).
+- That supervisor-to-recruiter hop is plain HTTP-based A2A rather than App SDK transport/topic routing.
+- After agent selection, the dynamic workflow forwards the user task to the chosen remote A2A endpoint advertised by the recruited agent.
+
+In other words, the LangGraph or ADK nodes decide *when* to talk, A2A defines *what* the messages look like, the App SDK's `A2AClientFactory` and farm `AgentCard`s decide *how* messages move across SLIM (or NATS, if selected) for auction and logistics, and the recruiter path uses direct A2A-over-HTTP to discovered agents.
 
 ## Running Lungo Locally
 

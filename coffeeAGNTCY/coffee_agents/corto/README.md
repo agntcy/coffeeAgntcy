@@ -2,6 +2,9 @@
 <!-- TOC -->
 * [Corto Exchange, Farm Server, UI](#corto-exchange-farm-server-ui)
   * [Overview](#overview)
+  * [Architecture At A Glance](#architecture-at-a-glance)
+  * [Transport, Topics, and A2A Setup](#transport-topics-and-a2a-setup)
+  * [Where App SDK Fits](#where-app-sdk-fits)
   * [Running Corto Locally](#running-corto-locally)
     * [Prerequisites](#prerequisites)
     * [Setup Instructions](#setup-instructions)
@@ -33,6 +36,64 @@ The Farm Agent serves as a backend flavor profile generator, processing incoming
 
 The user interface forwards all prompts to the exchange’s API, which are then given to an A2A client. This A2A client connects to the farm’s A2A server. The underlying A2A transport layer is fully configurable. By default, the system uses AGNTCY's SLIM. 
 
+## Architecture At A Glance
+
+```mermaid
+flowchart LR
+    UI[React UI]
+    API[Exchange FastAPI API]
+    EX[Exchange agent]
+    SDK[AGNTCY App SDK A2A client factory]
+    SLIM[SLIM gateway]
+    FARM_CARD[Farm AgentCard: slim, jsonrpc, nats]
+    FARM[Farm executor and flavor graph]
+    LLM[LLM provider via LiteLLM]
+
+    UI --> API
+    API --> EX
+    EX -->|A2A client call| SDK
+    SDK -->|card.preferred_transport=slim| SLIM
+    SLIM -->|routable name| FARM_CARD
+    FARM_CARD --> FARM
+    EX -->|decide relevance / compose reply| LLM
+    FARM -->|estimate flavor profile| LLM
+```
+
+The runtime path is intentionally small:
+
+1. The UI sends a prompt to the Exchange API.
+2. The Exchange agent calls an LLM (via LiteLLM, configured by `LLM_MODEL`) to decide whether the prompt is about coffee flavor and, if so, calls the farm over A2A.
+3. The Exchange asks its `A2AClientFactory` for a client bound to the farm's `AgentCard`; the factory picks the transport named in `card.preferred_transport` (`slim` by default).
+4. The farm server advertises every transport it supports on its `AgentCard.additional_interfaces` and serves each one from its own App SDK session, then hands execution to the farm executor, whose LangGraph node (`farm/agent.py`) calls the same configured LLM to generate the flavor profile.
+
+This keeps the business logic transport-agnostic: the Exchange and Farm code still speak A2A, while the `AgentCard` and the App SDK client/session objects handle how those messages are moved. The LLM provider itself is a separate axis of configuration (`common/llm.py`'s `get_llm()`), independent of the A2A transport - see [Setup Instructions](#setup-instructions) for the supported providers (OpenAI, Azure OpenAI, GROQ, NVIDIA NIM, LiteLLM proxy, or a custom OAuth2 endpoint).
+
+## Transport, Topics, and A2A Setup
+
+Corto uses one point-to-point A2A route between the Exchange client and the Farm server.
+
+- `exchange/agent.py` builds a single `A2AClientFactory` at import time (via `build_a2a_client_config(namespace="default", group="default", agent_name="exchange")` in `common/a2a_transport_config.py`), then calls `a2a_client_factory.create(farm_agent_card)` per request.
+- `farm/farm_server.py` registers one App SDK session per transport advertised on the farm's `AgentCard`, so it can be reached over any of them without changing its request handler.
+- With the default Docker setup, both sides use `SLIM` and connect to `http://slim:46357`.
+
+The topic wiring lives on the farm's `AgentCard` in `farm/card.py`, not behind a shared protocol helper:
+
+- `SLIM_TOPIC = f"default/default/{AGENT_ID}"` (`AGENT_ID = "flavor-profile-farm-agent"`) is used to build the `slim://` and `nats://` URLs in `additional_interfaces`, and `preferred_transport="slim"` marks SLIM as the primary transport.
+- `exchange/agent.py` imports that same `AGENT_CARD` directly (`from farm.card import AGENT_CARD as farm_agent_card`) rather than deriving the topic separately.
+- The Exchange's own `SlimTransportConfig` is given a routable `name` in `org/namespace/local_name` form (`common/a2a_transport_config.py`: `name=f"{namespace}/{group}/{agent_name}"`, e.g. `default/default/exchange`) because SLIM requires one for request-reply delivery.
+
+There are two deployment modes, selected by `farm/farm_server.py`'s `main()`:
+
+- `DEFAULT_MESSAGE_TRANSPORT=A2A`: the farm is served directly over local HTTP via `A2AStarletteApplication`, bypassing the App SDK entirely.
+- Any other value (`SLIM` by default): `serve_multi_transport()` starts one App SDK session per interface in `AGENT_CARD.additional_interfaces` (`slim`, `jsonrpc`, `nats`). A startup failure on the card's `preferred_transport` is fatal; failures on the other transports are logged and skipped so the farm still comes up on whatever is healthy.
+
+## Where App SDK Fits
+
+The App SDK is the glue layer between the A2A protocol objects and the underlying transport:
+
+- `exchange/agent.py` uses `A2AClientFactory.create(farm_agent_card)` (from `agntcy_app_sdk.semantic.a2a.client.factory`) to get an A2A client bound to whichever transport the farm's card prefers, and sends the prompt through it.
+- `farm/farm_server.py` uses `AgntcyFactory("corto.farm_agent", enable_tracing=True)` to open one `create_app_session()` per advertised interface, wiring each session to the same request handler with `session.add_a2a_card(agent_card, request_handler).with_factory(factory)`.
+- The result is that Corto can preserve the same A2A interaction model while adding or swapping transports by editing the `AgentCard`, instead of rewriting the Exchange or Farm logic.
 
 ## Running Corto Locally
 
