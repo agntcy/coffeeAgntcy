@@ -59,7 +59,7 @@ dev = [
 ]
 
 [tool.uv]
-exclude-newer = "28 days"
+exclude-newer = "14 days"
 
 [build-system]
 requires = ["hatchling"]
