@@ -279,13 +279,11 @@
         },
         "trace_id": {
           "type": "string",
-          "pattern": "^[0-9a-fA-F]{32}$",
-          "description": "Optional OpenTelemetry trace id as 32 hex characters (added in 1.2.0)."
+          "description": "Optional OpenTelemetry trace id (added in 1.2.0). Wire format is an unconstrained string for 1.x compatibility; Lungo emitters use 32 hex characters."
         },
         "span_id": {
           "type": "string",
-          "pattern": "^[0-9a-fA-F]{16}$",
-          "description": "Optional OpenTelemetry span id as 16 hex characters (added in 1.2.0)."
+          "description": "Optional OpenTelemetry span id (added in 1.2.0). Wire format is an unconstrained string for 1.x compatibility; Lungo emitters use 16 hex characters."
         }
       },
       "additionalProperties": true

@@ -5,6 +5,7 @@
 
 from __future__ import annotations
 
+import logging
 from datetime import datetime, timezone
 from typing import Any, Mapping
 from uuid import uuid4
@@ -40,9 +41,52 @@ from common.workflow_utils.inflight import (
 )
 from common.workflow_utils.workflow_catalog import WorkflowMetadata
 
-SCHEMA_VERSION = "1.2.0"
+EVENT_SCHEMA_VERSION = "1.2.0"
 
 _DEFAULT_NODE_SIZE = Size(width=1.0, height=1.0)
+_MAKE_NODE_RESERVED_EXTRAS = (
+    "id",
+    "operation",
+    "type",
+    "label",
+    "layer_index",
+    "size",
+)
+
+logger = logging.getLogger(__name__)
+
+
+def _warn_dropped_make_node_extra(key: str) -> None:
+    logger.warning(
+        "make_node: extras key %r dropped; explicit arguments take precedence",
+        key,
+    )
+
+
+def _resolve_make_node_stable_agent_id(
+    extra_kwargs: dict[str, Any],
+    stable_agent_id: str | None,
+) -> str | None:
+    extras_stable = extra_kwargs.pop("stable_agent_id", None)
+    if stable_agent_id is None:
+        return extras_stable
+    if extras_stable is not None:
+        _warn_dropped_make_node_extra("stable_agent_id")
+    return stable_agent_id
+
+
+def _drop_reserved_make_node_extras(
+    extra_kwargs: dict[str, Any],
+    *,
+    include_size: bool,
+) -> None:
+    for key in _MAKE_NODE_RESERVED_EXTRAS:
+        if key == "size" and not include_size:
+            continue
+        if key not in extra_kwargs:
+            continue
+        extra_kwargs.pop(key)
+        _warn_dropped_make_node_extra(key)
 
 
 def init_starting_topology() -> Topology:
@@ -61,11 +105,17 @@ def make_node(
     stable_agent_id: str | None = None,
     extras: Mapping[str, Any] | None = None,
 ) -> PartialNode:
-    """Create a PartialNode with standard defaults."""
+    """Create a PartialNode with standard defaults.
+
+    Explicit keyword arguments take precedence over the same keys in
+    ``extras``. Callers pass identity and layout through those keywords;
+    overlapping extras keys are dropped with a warning.
+    """
     extra_kwargs: dict[str, Any] = dict(extras) if extras else {}
-    resolved_stable = extra_kwargs.pop("stable_agent_id", None)
-    if stable_agent_id is not None:
-        resolved_stable = stable_agent_id
+    resolved_stable = _resolve_make_node_stable_agent_id(
+        extra_kwargs, stable_agent_id
+    )
+    _drop_reserved_make_node_extras(extra_kwargs, include_size=include_size)
     agent_record_uri = extra_kwargs.pop("agent_record_uri", None)
     size_kwargs: dict[str, Any] = {}
     if include_size:
@@ -123,7 +173,7 @@ def build_metadata(
 ) -> Metadata:
     return Metadata(
         timestamp=datetime.now(timezone.utc),
-        schema_version=SCHEMA_VERSION,
+        schema_version=EVENT_SCHEMA_VERSION,
         id=EventId(f"event://{uuid4()}"),
         type=event_type,
         source=source,

@@ -15,7 +15,7 @@ from api.agentic_workflows.instance_lifecycle import (
     instances_map_for_workflow,
     workflow_instance_from_projection,
 )
-from common.workflow_utils.builders import SCHEMA_VERSION
+from common.workflow_utils.builders import EVENT_SCHEMA_VERSION
 from api.agentic_workflows.router import (
     INSTANTIATE_MERGE_WAIT_TIMEOUT_DETAIL,
     WORKFLOW_INSTANCE_STORE_ATTR,
@@ -148,7 +148,7 @@ def test_build_instantiate_seed_event_validates_as_event_and_merges() -> None:
     iuri = instance_id_from_uuid(uuid4()).root
     raw = build_instantiate_seed_event(wf, "InstTestWf", iuri)
     ev = Event.model_validate(raw)
-    assert ev.metadata.schema_version == SCHEMA_VERSION
+    assert ev.metadata.schema_version == EVENT_SCHEMA_VERSION
     assert ev.metadata.id.root.startswith("event://")
     assert ev.metadata.correlation.id.root.startswith("correlation://")
     assert ev.data.workflows["InstTestWf"].instances[iuri].id.root == iuri

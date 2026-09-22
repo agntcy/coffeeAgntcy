@@ -514,9 +514,9 @@ export interface components {
             type: components["schemas"]["event_type"];
             /** @description Producer identifier (e.g. agent or adapter name). */
             source: string;
-            /** @description Optional OpenTelemetry trace id as 32 hex characters (added in 1.2.0). */
+            /** @description Optional OpenTelemetry trace id (added in 1.2.0). Wire format is an unconstrained string for 1.x compatibility; Lungo emitters use 32 hex characters. */
             trace_id?: string;
-            /** @description Optional OpenTelemetry span id as 16 hex characters (added in 1.2.0). */
+            /** @description Optional OpenTelemetry span id (added in 1.2.0). Wire format is an unconstrained string for 1.x compatibility; Lungo emitters use 16 hex characters. */
             span_id?: string;
         } & {
             [key: string]: unknown;
@@ -650,9 +650,9 @@ export interface components {
                     type: components["schemas"]["event_type"];
                     /** @description Producer identifier (e.g. agent or adapter name). */
                     source: string;
-                    /** @description Optional OpenTelemetry trace id as 32 hex characters (added in 1.2.0). */
+                    /** @description Optional OpenTelemetry trace id (added in 1.2.0). Wire format is an unconstrained string for 1.x compatibility; Lungo emitters use 32 hex characters. */
                     trace_id?: string;
-                    /** @description Optional OpenTelemetry span id as 16 hex characters (added in 1.2.0). */
+                    /** @description Optional OpenTelemetry span id (added in 1.2.0). Wire format is an unconstrained string for 1.x compatibility; Lungo emitters use 16 hex characters. */
                     span_id?: string;
                 } & {
                     [key: string]: unknown;

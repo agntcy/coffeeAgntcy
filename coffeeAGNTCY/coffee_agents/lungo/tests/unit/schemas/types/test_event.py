@@ -95,7 +95,7 @@ def _mutate_edge_id_invalid_pattern(d: dict) -> None:
     _starting_edge(d)["id"] = "edge://not-a-uuid"
 
 
-def _mutate_node_label2_empty_string(d: dict) -> None:
+def _mutate_node_label_subtitle_empty_string(d: dict) -> None:
     _starting_node(d)["label_subtitle"] = ""
 
 
@@ -107,14 +107,6 @@ def _mutate_instance_map_key_invalid_pattern(d: dict) -> None:
     wf = d["data"]["workflows"]["recruiter"]
     inst = next(iter(wf["instances"].values()))
     wf["instances"] = {"not-an-instance-id": inst}
-
-
-def _mutate_metadata_trace_id_invalid_pattern(d: dict) -> None:
-    d["metadata"]["trace_id"] = "not-a-trace-id"
-
-
-def _mutate_metadata_span_id_invalid_pattern(d: dict) -> None:
-    d["metadata"]["span_id"] = "short"
 
 
 def _mutate_mcp_source_stable_agent_id_invalid_pattern(d: dict) -> None:
@@ -156,7 +148,7 @@ _EVENT_CASES: tuple[EventCase, ...] = (
     ),
     EventCase(
         case_id="v1_2_0_example_round_trip",
-        inputs=EventInputs(example_filename="event_v1_1_2_0.json"),
+        inputs=EventInputs(example_filename="event_v1_2_0.json"),
         outputs=EventOutputs(),
     ),
     EventCase(
@@ -208,22 +200,6 @@ _EVENT_CASES: tuple[EventCase, ...] = (
         outputs=_INVALID,
     ),
     EventCase(
-        case_id="metadata_trace_id_invalid_pattern",
-        inputs=EventInputs(
-            example_filename="event_v1_1_2_0.json",
-            mutate=_mutate_metadata_trace_id_invalid_pattern,
-        ),
-        outputs=_INVALID,
-    ),
-    EventCase(
-        case_id="metadata_span_id_invalid_pattern",
-        inputs=EventInputs(
-            example_filename="event_v1_1_2_0.json",
-            mutate=_mutate_metadata_span_id_invalid_pattern,
-        ),
-        outputs=_INVALID,
-    ),
-    EventCase(
         case_id="node_id_invalid_pattern",
         inputs=EventInputs(
             example_filename="event_v1_partial.json",
@@ -258,16 +234,16 @@ _EVENT_CASES: tuple[EventCase, ...] = (
     EventCase(
         case_id="mcp_source_stable_agent_id_invalid_pattern",
         inputs=EventInputs(
-            example_filename="event_v1_1_2_0.json",
+            example_filename="event_v1_2_0.json",
             mutate=_mutate_mcp_source_stable_agent_id_invalid_pattern,
         ),
         outputs=_INVALID,
     ),
     EventCase(
-        case_id="node_label2_empty_string",
+        case_id="node_label_subtitle_empty_string",
         inputs=EventInputs(
             example_filename="event_v1_partial.json",
-            mutate=_mutate_node_label2_empty_string,
+            mutate=_mutate_node_label_subtitle_empty_string,
         ),
         outputs=_INVALID,
     ),

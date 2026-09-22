@@ -31,8 +31,8 @@ The class hierarchy mirrors the ``$defs`` of the source schema:
   allOf-only ``$defs``).
 * Optional ``$defs.mcp`` is a named ``$def``, so ``Mcp`` is emitted;
   ``mcp`` stays optional on both ``PartialEdge`` and ``Edge``.
-* Optional ``trace_id`` / ``span_id`` on ``$defs.metadata`` are patterned
-  hex strings (32 / 16).
+* Optional ``trace_id`` / ``span_id`` on ``$defs.metadata`` are unconstrained
+  strings (1.x wire compatibility; Lungo emitters still write OTel hex).
 """
 
 from __future__ import annotations
@@ -68,8 +68,6 @@ _INSTANCE_ID_REGEX = rf"^instance://{_UUID_REGEX}$"
 _NODE_ID_REGEX = rf"^node://{_UUID_REGEX}$"
 _STABLE_AGENT_ID_REGEX = rf"^agent://{_UUID_REGEX}$"
 _EDGE_ID_REGEX = rf"^edge://{_UUID_REGEX}$"
-_TRACE_ID_REGEX = r"^[0-9a-fA-F]{32}$"
-_SPAN_ID_REGEX = r"^[0-9a-fA-F]{16}$"
 
 
 class EventId(RootModel[str]):
@@ -467,9 +465,10 @@ class Metadata(BaseModel):
         str | None,
         Field(
             default=None,
-            pattern=_TRACE_ID_REGEX,
             description=(
-                "Optional OpenTelemetry trace id as 32 hex characters (added in 1.2.0)."
+                "Optional OpenTelemetry trace id (added in 1.2.0). Wire format "
+                "is an unconstrained string for 1.x compatibility; Lungo "
+                "emitters use 32 hex characters."
             ),
         ),
     ]
@@ -477,9 +476,10 @@ class Metadata(BaseModel):
         str | None,
         Field(
             default=None,
-            pattern=_SPAN_ID_REGEX,
             description=(
-                "Optional OpenTelemetry span id as 16 hex characters (added in 1.2.0)."
+                "Optional OpenTelemetry span id (added in 1.2.0). Wire format "
+                "is an unconstrained string for 1.x compatibility; Lungo "
+                "emitters use 16 hex characters."
             ),
         ),
     ]

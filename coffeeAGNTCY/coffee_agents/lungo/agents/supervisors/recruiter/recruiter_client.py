@@ -231,22 +231,16 @@ async def _emit_discovery_topology(agent_records: dict[str, dict]) -> None:
         if trace_ctx.trace_id is not None
         else f"correlation://{uuid4()}"
     )
-    try:
-        event = build_event(
-            source="recruiter_supervisor",
-            identity=identity,
-            instance_id=instance_id,
-            topology=topology,
-            correlation_id=correlation_id,
-            correlation_message=f"discovered {len(agent_records)} agent(s)",
-            trace_id=trace_ctx.trace_id,
-            span_id=trace_ctx.span_id,
-        )
-    except RuntimeError:
-        logger.warning(
-            "recruit discovery: build_event failed for workflow=%r", workflow_name
-        )
-        return
+    event = build_event(
+        source="recruiter_supervisor",
+        identity=identity,
+        instance_id=instance_id,
+        topology=topology,
+        correlation_id=correlation_id,
+        correlation_message=f"discovered {len(agent_records)} agent(s)",
+        trace_id=trace_ctx.trace_id,
+        span_id=trace_ctx.span_id,
+    )
 
     await _discovery_event_sink.emit(event)
     logger.info(

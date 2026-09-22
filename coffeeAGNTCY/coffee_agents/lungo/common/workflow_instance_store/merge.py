@@ -89,6 +89,17 @@ def _clone_topology_bucket(bucket: dict[str, dict]) -> dict[str, dict]:
     return {k: copy.deepcopy(v) for k, v in bucket.items()}
 
 
+def _store_new_topology_item(
+    bucket: dict[str, dict], eid: str, raw: dict
+) -> dict[str, dict]:
+    """Copy *raw* into a new bucket and mirror MCP compat fields onto it."""
+    out = _clone_topology_bucket(bucket)
+    stored = copy.deepcopy(raw)
+    _mirror_mcp_compat_from_incoming(stored, raw)
+    out[eid] = stored
+    return out
+
+
 def _apply_one_topology_item(bucket: dict[str, dict], raw: dict) -> dict[str, dict]:
     """Return a new id→entity map after one node/edge item; *bucket* is not mutated."""
     op_raw = raw.get("operation")
@@ -101,19 +112,11 @@ def _apply_one_topology_item(bucket: dict[str, dict], raw: dict) -> dict[str, di
         return bucket
     match op:
         case Operation.CREATE:
-            out = _clone_topology_bucket(bucket)
-            stored = copy.deepcopy(raw)
-            _mirror_mcp_compat_from_incoming(stored, raw)
-            out[eid] = stored
-            return out
+            return _store_new_topology_item(bucket, eid, raw)
         case Operation.READ:
             if eid in bucket:
                 return bucket
-            out = _clone_topology_bucket(bucket)
-            stored = copy.deepcopy(raw)
-            _mirror_mcp_compat_from_incoming(stored, raw)
-            out[eid] = stored
-            return out
+            return _store_new_topology_item(bucket, eid, raw)
         case Operation.UPDATE:
             if eid not in bucket:
                 return bucket
@@ -260,15 +263,18 @@ def merge_event_data(existing: Data | None, event: Event) -> Data:
     return Data.model_validate(out)
 
 
+def _id_text(value: Any) -> str | None:
+    if isinstance(value, str) and value:
+        return value
+    root = getattr(value, "root", None)
+    if isinstance(root, str) and root:
+        return root
+    return None
+
+
 def _node_stable_agent_id(node: Any) -> str | None:
     """Return a node's ``stable_agent_id`` string, or ``None`` when absent."""
-    sid = getattr(node, "stable_agent_id", None)
-    if sid is None:
-        return None
-    root = getattr(sid, "root", None)
-    if isinstance(root, str):
-        return root
-    return sid if isinstance(sid, str) else None
+    return _id_text(getattr(node, "stable_agent_id", None))
 
 
 def _existing_stable_agent_id_index(
@@ -325,15 +331,6 @@ def _topology_edges_for_instance(
     if state_wf.starting_topology is not None and state_wf.starting_topology.edges:
         return state_wf.starting_topology.edges
     return []
-
-
-def _id_text(value: Any) -> str | None:
-    if isinstance(value, str) and value:
-        return value
-    root = getattr(value, "root", None)
-    if isinstance(root, str) and root:
-        return root
-    return None
 
 
 def _edge_mcp_field(edge: Any, field_name: str) -> Any:

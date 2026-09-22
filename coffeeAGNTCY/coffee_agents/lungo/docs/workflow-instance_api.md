@@ -21,7 +21,7 @@ Examples of complete and partial messages live alongside the schema:
 - Full snapshot: [`../schema/jsonschemas/examples/event_v1_full.json`](../schema/jsonschemas/examples/event_v1_full.json)
 - Partial delta: [`../schema/jsonschemas/examples/event_v1_partial.json`](../schema/jsonschemas/examples/event_v1_partial.json)
 - Empty workflows: [`../schema/jsonschemas/examples/event_v1_empty_workflows.json`](../schema/jsonschemas/examples/event_v1_empty_workflows.json)
-- Additive 1.2.0 (OTel ids + grouped MCP edge): [`../schema/jsonschemas/examples/event_v1_1_2_0.json`](../schema/jsonschemas/examples/event_v1_1_2_0.json)
+- Additive 1.2.0 (OTel ids + grouped MCP edge): [`../schema/jsonschemas/examples/event_v1_2_0.json`](../schema/jsonschemas/examples/event_v1_2_0.json)
 
 > **Status.** The catalog list DTOs (patterns, use-cases, workflow summaries) are temporary API-layer types defined in [`../api/agentic_workflows/dtos.py`](../api/agentic_workflows/dtos.py). They are being folded into the canonical JSON Schema so OpenAPI, JSON Schema, and Pydantic remain a single source of truth. The instance/state and event shapes (`Workflow`, `WorkflowInstance`, `Topology`, `Event`) are already canonical in `event_v1.json`.
 
@@ -497,8 +497,8 @@ An `Event` is `{ metadata, data }` (both required, `additionalProperties: false`
     "id": "event://<uuid>",           // unique event id
     "type": "StateProgressUpdate",    // see event_type_v1.json (extendable enum)
     "source": "auction_supervisor",   // producer identifier
-    "trace_id": "32 hex chars",       // optional OpenTelemetry trace id (1.2.0)
-    "span_id": "16 hex chars"         // optional OpenTelemetry span id (1.2.0)
+    "trace_id": "any string",         // optional OpenTelemetry trace id (1.2.0); emitters write 32 hex
+    "span_id": "any string"           // optional OpenTelemetry span id (1.2.0); emitters write 16 hex
     // additionalProperties allowed
   },
   "data": {                           // business data (partial_state)
@@ -553,6 +553,6 @@ Key invariant: each property name under `workflow.instances` **must equal** the 
 - **Full snapshot (init / reset)** - every node/edge fully populated: [`examples/event_v1_full.json`](../schema/jsonschemas/examples/event_v1_full.json).
 - **Partial delta (update)** - one node carrying `operation: "update"` and only the changed fields, empty `edges`: [`examples/event_v1_partial.json`](../schema/jsonschemas/examples/event_v1_partial.json).
 - **Empty workflows + extra `app_state`** - demonstrates root-level `additionalProperties`: [`examples/event_v1_empty_workflows.json`](../schema/jsonschemas/examples/event_v1_empty_workflows.json).
-- **1.2.0 additive fields** - optional metadata `trace_id`/`span_id` and grouped `edge.mcp`: [`examples/event_v1_1_2_0.json`](../schema/jsonschemas/examples/event_v1_1_2_0.json).
+- **1.2.0 additive fields** - optional metadata `trace_id`/`span_id` and grouped `edge.mcp`: [`examples/event_v1_2_0.json`](../schema/jsonschemas/examples/event_v1_2_0.json).
 
 ---

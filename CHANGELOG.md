@@ -81,7 +81,7 @@ Synapsis milestone (Internet of Cognition alignment): the Lungo UI graph is now 
 - The Lungo UI graph renders entirely from **live API topology** and workflow events; the static id map and leftover static graphs are removed ([#656](https://github.com/agntcy/coffeeAgntcy/pull/656), [#657](https://github.com/agntcy/coffeeAgntcy/pull/657), [#658](https://github.com/agntcy/coffeeAgntcy/pull/658), [#661](https://github.com/agntcy/coffeeAgntcy/pull/661), [#663](https://github.com/agntcy/coffeeAgntcy/pull/663), [#698](https://github.com/agntcy/coffeeAgntcy/pull/698), [#650](https://github.com/agntcy/coffeeAgntcy/pull/650)).
 - Renderer parity for **groups, MCP, and A2A** nodes; centralized node-label predicates, icon resolver, and chat-stream highlight bridging.
 - Curated node subtitles land with **`event_v1` 1.1.0** ([#663](https://github.com/agntcy/coffeeAgntcy/pull/663)).
-- **`event_v1` 1.2.0** names optional OpenTelemetry `trace_id`/`span_id` on event metadata and a grouped optional `mcp` object on edges ([#546](https://github.com/agntcy/coffeeAgntcy/issues/546)). 1.0.0 / 1.1.0 payloads remain valid.
+- **`event_v1` 1.2.0** names optional OpenTelemetry `trace_id`/`span_id` on event metadata and a grouped optional `mcp` object on edges ([#546](https://github.com/agntcy/coffeeAgntcy/issues/546)). Those id fields are unconstrained strings on the wire (1.x compat); Lungo emitters still write OTel hex. 1.0.0 / 1.1.0 payloads remain valid.
 </details>
 
 <details>

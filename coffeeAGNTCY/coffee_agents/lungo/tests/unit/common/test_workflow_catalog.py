@@ -8,6 +8,7 @@ Covers HTTP catalog loading and the ``lookup_workflow`` lookup.
 
 from __future__ import annotations
 
+import logging
 from typing import Any
 
 import pytest
@@ -100,8 +101,14 @@ class TestLookupWorkflow:
         wc.lookup_workflow("missing")
         assert calls["count"] == 1
 
-    def test_failed_get_is_retried_on_next_lookup(self, monkeypatch):
+    def test_failed_get_is_retried_after_negative_cache_expires(
+        self, monkeypatch, caplog
+    ):
         calls = {"count": 0}
+        clock = {"now": 1000.0}
+
+        def monotonic():
+            return clock["now"]
 
         def fetch_fail_then_ok():
             calls["count"] += 1
@@ -118,17 +125,42 @@ class TestLookupWorkflow:
                 ]
             )
 
+        monkeypatch.setattr(wc.time, "monotonic", monotonic)
         monkeypatch.setattr(wc, "_fetch_catalog_payload", fetch_fail_then_ok)
         wc._clear_catalog_cache()
+        caplog.set_level(logging.ERROR, logger=wc.logger.name)
         assert wc.lookup_workflow("Test Workflow Alpha") is None
+        first_errors = [
+            record
+            for record in caplog.records
+            if record.levelno >= logging.ERROR
+            and "next lookups will wait" in record.getMessage()
+        ]
+        assert len(first_errors) == 1
+        assert wc.lookup_workflow("Test Workflow Alpha") is None
+        assert calls["count"] == 1
+        wait_errors = [
+            record
+            for record in caplog.records
+            if record.levelno >= logging.ERROR
+            and "next lookups will wait" in record.getMessage()
+        ]
+        assert len(wait_errors) == 1
+        clock["now"] += wc._NEGATIVE_CACHE_SECONDS
         recovered = wc.lookup_workflow("Test Workflow Alpha")
         assert recovered is not None
         assert recovered.name == "Test Workflow Alpha"
         wc.lookup_workflow("Test Workflow Alpha")
         assert calls["count"] == 2
 
-    def test_empty_parsed_catalog_is_retried(self, monkeypatch):
+    def test_empty_parsed_catalog_is_retried_after_negative_cache_expires(
+        self, monkeypatch
+    ):
         calls = {"count": 0}
+        clock = {"now": 1000.0}
+
+        def monotonic():
+            return clock["now"]
 
         def fetch_empty_then_ok():
             calls["count"] += 1
@@ -145,9 +177,13 @@ class TestLookupWorkflow:
                 ]
             )
 
+        monkeypatch.setattr(wc.time, "monotonic", monotonic)
         monkeypatch.setattr(wc, "_fetch_catalog_payload", fetch_empty_then_ok)
         wc._clear_catalog_cache()
         assert wc.lookup_workflow("Test Workflow Alpha") is None
+        assert wc.lookup_workflow("Test Workflow Alpha") is None
+        assert calls["count"] == 1
+        clock["now"] += wc._NEGATIVE_CACHE_SECONDS
         recovered = wc.lookup_workflow("Test Workflow Alpha")
         assert recovered is not None
         assert calls["count"] == 2
@@ -164,7 +200,6 @@ class TestWorkflowCatalogShim:
 
     def test_clear_catalog_cache_is_shim_alias(self):
         assert shim_wc._clear_catalog_cache is wc._clear_catalog_cache
-        assert shim_wc._load_catalog.cache_clear is wc._clear_catalog_cache
 
 
 class TestInflightShim:
