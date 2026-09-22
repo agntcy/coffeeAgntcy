@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Added
+
+- **event_v1 1.2.1** documents semantic node `type` values (`agent`, `mcp`, `directory`, `group`, `transport`) without tightening JSON Schema acceptance. This repo now emits those values from the catalog, A2A middleware, and recruiter; leftover `customNode` / `transportNode` remain valid ([#545](https://github.com/agntcy/coffeeAgntcy/issues/545)).
+
 ## 0.3.0 (2026-08-10)
 
 Synapsis milestone (Internet of Cognition alignment): the Lungo UI graph is now **fully backend-driven** - all static topology maps are gone and the graph renders from live API topology and workflow events. Ships an **Internet of Cognition (IoC) CFN Compose stack**, **Corto parity** work (dynamic frontend env, unified Dockerfiles, transport env alignment), a **shared MCP client library**, **resilient transport startup**, pattern reference library expansion, UI hardening, and a frontend security/dependency audit.

@@ -493,4 +493,131 @@ describe("topologyWireToReactFlow", () => {
       expect(transportNodes[0]?.id).toBe("transport://transport")
     },
   )
+
+  it.each([
+    {
+      caseName: "agent displays as customNode",
+      type: "agent",
+      label: "Auction Agent",
+      expectDisplayType: NODE_TYPES.CUSTOM,
+      expectNodeType: "agent",
+    },
+    {
+      caseName: "mcp displays as customNode with mcp nodeType",
+      type: "mcp",
+      label: "Weather Service",
+      expectDisplayType: NODE_TYPES.CUSTOM,
+      expectNodeType: "mcp",
+    },
+    {
+      caseName: "directory displays as customNode with directory nodeType",
+      type: "directory",
+      label: "Directory",
+      expectDisplayType: NODE_TYPES.CUSTOM,
+      expectNodeType: "directory",
+    },
+    {
+      caseName: "transport displays as transportNode",
+      type: "transport",
+      label: "Transport",
+      expectDisplayType: NODE_TYPES.TRANSPORT,
+      expectNodeType: "transport",
+    },
+    {
+      caseName: "legacy transportNode canonicalizes to transport",
+      type: "transportNode",
+      label: "Transport",
+      expectDisplayType: NODE_TYPES.TRANSPORT,
+      expectNodeType: "transport",
+    },
+    {
+      caseName: "legacy customNode stays customNode",
+      type: "customNode",
+      label: "Auction Agent",
+      expectDisplayType: NODE_TYPES.CUSTOM,
+      expectNodeType: "customNode",
+    },
+    {
+      caseName: "group stays group",
+      type: "group",
+      label: "Logistics Group",
+      expectDisplayType: NODE_TYPES.GROUP,
+      expectNodeType: "group",
+    },
+  ])(
+    "maps event type to display type ($caseName)",
+    ({ type, label, expectDisplayType, expectNodeType }) => {
+      const { nodes } = topologyWireToReactFlow(
+        {
+          nodes: [
+            wireNode(
+              "node://aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+              type,
+              label,
+              0,
+            ),
+          ],
+          edges: [],
+        },
+        { validateUrls: false },
+      )
+      expect(nodes[0]?.type).toBe(expectDisplayType)
+      expect((nodes[0]?.data as { nodeType?: string })?.nodeType).toBe(
+        expectNodeType,
+      )
+    },
+  )
+
+  it("labels edges into type=mcp nodes as MCP without MCP Server in the label", () => {
+    const colombiaId = "node://10101010-1010-4101-8101-101010101010"
+    const weatherId = "node://20202020-2020-4202-8202-202020202020"
+    const { edges } = topologyWireToReactFlow(
+      {
+        nodes: [
+          wireNode(colombiaId, "agent", "Colombia Coffee Farm Agent", 0),
+          wireNode(weatherId, "mcp", "Weather Service", 1),
+        ],
+        edges: [
+          {
+            id: "edge://30303030-3030-4303-8303-303030303030",
+            type: "branching",
+            source: colombiaId,
+            target: weatherId,
+          },
+        ],
+      },
+      { validateUrls: false },
+    )
+    expect((edges[0]?.data as { label?: string })?.label).toBe(EDGE_LABELS.MCP)
+  })
+
+  it("adds directory handles from type=directory without directory-shaped label", () => {
+    const recruiterId = "node://40404040-4040-4404-8404-404040404040"
+    const directoryId = "node://50505050-5050-4505-8505-505050505050"
+    const { nodes, edges } = topologyWireToReactFlow(
+      {
+        nodes: [
+          wireNode(recruiterId, "agent", "Agentic Recruiter", 0),
+          wireNode(directoryId, "directory", "Directory", 1),
+        ],
+        edges: [
+          {
+            id: "edge://60606060-6060-4606-8606-606060606060",
+            type: "custom",
+            source: directoryId,
+            target: recruiterId,
+          },
+        ],
+      },
+      { validateUrls: false },
+    )
+    const directory = nodes.find((node) => node.id === directoryId)
+    const directoryHandles = (directory?.data as { extraHandles?: unknown[] })
+      ?.extraHandles
+    expect(directoryHandles).toHaveLength(1)
+    expect(edges[0]?.sourceHandle).toBe("source-left")
+    expect((edges[0]?.data as { label?: string })?.label).toBe(
+      EDGE_LABELS.MCP_WITH_STDIO,
+    )
+  })
 })

@@ -23,12 +23,14 @@ import {
   isDirectoryLabel,
   isRecruiterLabel,
 } from "@/utils/agenticTopologyIdentityUiMap"
+import { isDirectoryType, isMcpType } from "@/utils/const"
 import farmAgentIcon from "@/assets/Grader-Agent.png"
 
 export interface TopologyNodeIconInput {
   label?: string
   label_subtitle?: string
   directoryAgentSlug?: string
+  nodeType?: string
 }
 
 export enum TopologyNodeIconKind {
@@ -113,6 +115,15 @@ function iconKindFromLabels(
 export function topologyNodeIconKind(
   input: TopologyNodeIconInput,
 ): TopologyNodeIconKind {
+  if (isDirectoryType(input.nodeType)) {
+    return TopologyNodeIconKind.Directory
+  }
+  if (isMcpType(input.nodeType)) {
+    const label = normalize(input.label)
+    if (label.includes("weather")) return TopologyNodeIconKind.WeatherMcp
+    if (label.includes("payment")) return TopologyNodeIconKind.PaymentMcp
+    return TopologyNodeIconKind.Default
+  }
   const slug = normalize(input.directoryAgentSlug)
   if (slug) {
     const bySlug = iconKindFromSlug(slug)

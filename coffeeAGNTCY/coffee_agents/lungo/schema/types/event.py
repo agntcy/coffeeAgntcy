@@ -21,10 +21,12 @@ The class hierarchy mirrors the ``$defs`` of the source schema:
   ``partial_node_agent_extension`` / ``node_agent_extension`` composition only
   *adds* fields (Rule D step 1).
 * ``$defs.partial_node`` / ``$defs.node`` are sibling-key-discriminated
-  ``anyOf`` unions (Rule D): a callable Pydantic ``Discriminator`` mirrors the
-  schema's ``not { required: [...] }`` test and routes inputs to the
-  ``base`` or ``agent`` branch; smart-union picks ``Full`` over ``Partial``
-  inside each branch.
+  ``anyOf`` unions (Rule D). This repo's discriminator also applies a
+  Pydantic-only type-first exception: ``type`` in ``{agent, mcp}`` routes
+  to the agent branch, ``type`` in ``{transport, transportNode, group,
+  directory}`` routes to the base branch, and leftover / omitted /
+  unknown ``type`` values fall back to the presence test. Smart-union
+  picks ``Full`` over ``Partial`` inside each branch.
 * ``$defs.workflow_metadata`` is composed into ``$defs.workflow`` via
   ``allOf`` only, so its fields are declared on ``Workflow`` and no
   standalone ``WorkflowMetadata`` class is emitted (skill naming for
@@ -52,6 +54,7 @@ from pydantic import (
     model_validator,
 )
 
+from schema.node_types import AGENT_EXTENSION_TYPES, BASE_NODE_TYPES
 from schema.types.event_type import EventType
 
 
@@ -278,11 +281,11 @@ class AgentNode(BaseNode):
 
 
 # ``$defs.partial_node`` and ``$defs.node`` are ``anyOf`` choices between a
-# *base* shape and an *agent_node* shape, distinguished by the presence of
-# ``agent_record_uri`` / ``stable_agent_id``. We mirror exactly that single
-# decision with a callable Pydantic discriminator and let smart union handle
-# the *full vs. partial* sub-choice (which is a pure more-required-fields
-# question) inside each branch.
+# *base* shape and an *agent_node* shape. This repo adds a Pydantic-only
+# type-first exception on ``agent`` / ``mcp`` (not encoded in JSON Schema).
+# Leftover and unknown ``type`` values fall back to the presence of
+# ``agent_record_uri`` / ``stable_agent_id``. Smart union handles the
+# *full vs. partial* sub-choice inside each branch.
 
 _BASE_TAG = "base"
 _AGENT_TAG = "agent"
@@ -291,9 +294,10 @@ _AGENT_TAG = "agent"
 def _node_kind_discriminator(value: Any) -> str | None:
     """Route to the *base* or *agent* node branch.
 
-    Returns ``"agent"`` when the input carries any
-    ``$defs.partial_node_agent_extension`` key (``agent_record_uri`` or
-    ``stable_agent_id``); otherwise ``"base"``.
+    ``type`` in ``AGENT_EXTENSION_TYPES`` (``agent``, ``mcp``) selects the
+    agent branch; ``type`` in ``BASE_NODE_TYPES`` selects the base branch.
+    Otherwise presence of ``agent_record_uri`` or ``stable_agent_id``
+    selects the agent branch.
     """
     if isinstance(value, (AgentNode, PartialAgentNode)):
         return _AGENT_TAG
@@ -301,6 +305,13 @@ def _node_kind_discriminator(value: Any) -> str | None:
         return _BASE_TAG
     if not isinstance(value, dict):
         return None
+    node_type = value.get("type")
+    if not isinstance(node_type, str):
+        node_type = None
+    if node_type in AGENT_EXTENSION_TYPES:
+        return _AGENT_TAG
+    if node_type in BASE_NODE_TYPES:
+        return _BASE_TAG
     if "agent_record_uri" in value or "stable_agent_id" in value:
         return _AGENT_TAG
     return _BASE_TAG

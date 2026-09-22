@@ -14,7 +14,7 @@ import type { Edge, Node } from "@xyflow/react"
 import type { GraphConfig } from "@/utils/graphConfigs"
 import { customNodeDataFromNode } from "@/components/MainArea/Graph/Elements/nodes/customNodeData"
 import type { CustomNodeData } from "@/components/MainArea/Graph/Elements/nodes/types"
-import { NODE_TYPES } from "@/utils/const"
+import { NODE_TYPES, isDirectoryType } from "@/utils/const"
 import {
   getOasfSlugFromNodeData,
   isDirectoryLabel,
@@ -79,6 +79,7 @@ function nodeSlugKey(node: Node): string | null {
   if (node.type === NODE_TYPES.TRANSPORT) return "transport"
 
   const data = customNodeDataFromNode(node)
+  if (isDirectoryType(data?.nodeType)) return "directory"
   const label = data?.label?.toLowerCase() ?? ""
   const label_subtitle = data?.label_subtitle?.toLowerCase() ?? ""
   const combined = `${label} ${label_subtitle}`.trim()

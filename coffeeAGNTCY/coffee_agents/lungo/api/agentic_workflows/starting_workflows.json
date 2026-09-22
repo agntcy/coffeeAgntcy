@@ -13,7 +13,7 @@
         {
           "id": "node://1a000001-0001-4000-a001-000000000001",
           "operation": "read",
-          "type": "customNode",
+          "type": "agent",
           "label": "Auction Agent",
           "label_subtitle": "Buyer",
           "size": {
@@ -30,7 +30,7 @@
         {
           "id": "node://1a000001-0001-4000-a001-000000000002",
           "operation": "read",
-          "type": "transportNode",
+          "type": "transport",
           "label": "Transport",
           "size": {
             "width": 1.0,
@@ -45,7 +45,7 @@
         {
           "id": "node://1a000001-0001-4000-a001-000000000003",
           "operation": "read",
-          "type": "customNode",
+          "type": "agent",
           "label": "Brazil Coffee Farm Agent",
           "size": {
             "width": 1.0,
@@ -61,7 +61,7 @@
         {
           "id": "node://1a000001-0001-4000-a001-000000000004",
           "operation": "read",
-          "type": "customNode",
+          "type": "agent",
           "label": "Colombia Coffee Farm Agent",
           "size": {
             "width": 1.0,
@@ -77,7 +77,7 @@
         {
           "id": "node://1a000001-0001-4000-a001-000000000005",
           "operation": "read",
-          "type": "customNode",
+          "type": "agent",
           "label": "Vietnam Coffee Farm Agent",
           "size": {
             "width": 1.0,
@@ -93,7 +93,7 @@
         {
           "id": "node://1a000001-0001-4000-a001-000000000006",
           "operation": "read",
-          "type": "customNode",
+          "type": "mcp",
           "label": "Weather MCP Server",
           "size": {
             "width": 1.0,
@@ -109,7 +109,7 @@
         {
           "id": "node://1a000001-0001-4000-a001-000000000007",
           "operation": "read",
-          "type": "customNode",
+          "type": "mcp",
           "label": "Payment MCP Server",
           "size": {
             "width": 1.0,
@@ -196,7 +196,7 @@
         {
           "id": "node://2a000001-0001-4000-a001-000000000001",
           "operation": "read",
-          "type": "customNode",
+          "type": "agent",
           "label": "Auction Agent",
           "label_subtitle": "Buyer",
           "size": {
@@ -213,7 +213,7 @@
         {
           "id": "node://2a000001-0001-4000-a001-000000000002",
           "operation": "read",
-          "type": "transportNode",
+          "type": "transport",
           "label": "Transport",
           "size": {
             "width": 1.0,
@@ -228,7 +228,7 @@
         {
           "id": "node://2a000001-0001-4000-a001-000000000003",
           "operation": "read",
-          "type": "customNode",
+          "type": "agent",
           "label": "Brazil Coffee Farm Agent",
           "size": {
             "width": 1.0,
@@ -244,7 +244,7 @@
         {
           "id": "node://2a000001-0001-4000-a001-000000000004",
           "operation": "read",
-          "type": "customNode",
+          "type": "agent",
           "label": "Colombia Coffee Farm Agent",
           "size": {
             "width": 1.0,
@@ -260,7 +260,7 @@
         {
           "id": "node://2a000001-0001-4000-a001-000000000005",
           "operation": "read",
-          "type": "customNode",
+          "type": "agent",
           "label": "Vietnam Coffee Farm Agent",
           "size": {
             "width": 1.0,
@@ -276,7 +276,7 @@
         {
           "id": "node://2a000001-0001-4000-a001-000000000006",
           "operation": "read",
-          "type": "customNode",
+          "type": "mcp",
           "label": "Weather MCP Server",
           "size": {
             "width": 1.0,
@@ -292,7 +292,7 @@
         {
           "id": "node://2a000001-0001-4000-a001-000000000007",
           "operation": "read",
-          "type": "customNode",
+          "type": "mcp",
           "label": "Payment MCP Server",
           "size": {
             "width": 1.0,
@@ -394,7 +394,7 @@
         {
           "id": "node://3a000001-0001-4000-a001-000000000002",
           "operation": "read",
-          "type": "customNode",
+          "type": "agent",
           "label": "Logistics Agent",
           "label_subtitle": "Buyer",
           "size": {
@@ -411,7 +411,7 @@
         {
           "id": "node://3a000001-0001-4000-a001-000000000003",
           "operation": "read",
-          "type": "transportNode",
+          "type": "transport",
           "label": "Transport",
           "size": {
             "width": 1.0,
@@ -426,7 +426,7 @@
         {
           "id": "node://3a000001-0001-4000-a001-000000000004",
           "operation": "read",
-          "type": "customNode",
+          "type": "agent",
           "label": "Tatooine Coffee Farm Agent",
           "size": {
             "width": 1.0,
@@ -442,7 +442,7 @@
         {
           "id": "node://3a000001-0001-4000-a001-000000000005",
           "operation": "read",
-          "type": "customNode",
+          "type": "agent",
           "label": "Shipper",
           "label_subtitle": "Shipper Agent",
           "size": {
@@ -459,7 +459,7 @@
         {
           "id": "node://3a000001-0001-4000-a001-000000000006",
           "operation": "read",
-          "type": "customNode",
+          "type": "agent",
           "label": "Accountant",
           "label_subtitle": "Accountant Agent",
           "size": {
@@ -529,7 +529,7 @@
         {
           "id": "node://4a000001-0001-4000-a001-000000000001",
           "operation": "read",
-          "type": "customNode",
+          "type": "agent",
           "label": "Agentic Recruiter",
           "label_subtitle": "Discovery and delegation",
           "size": {
@@ -546,7 +546,7 @@
         {
           "id": "node://4a000001-0001-4000-a001-000000000002",
           "operation": "read",
-          "type": "customNode",
+          "type": "directory",
           "label": "Directory",
           "label_subtitle": "AGNTCY Agent Directory",
           "size": {

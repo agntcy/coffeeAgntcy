@@ -465,7 +465,7 @@ def test_get_instance_enriches_group_messaging_transport_node(
     transport_nodes = [
         node
         for node in got.json()["topology"]["nodes"]
-        if node.get("type") == "transportNode"
+        if node.get("type") in {"transport", "transportNode"}
     ]
     assert len(transport_nodes) == 1
     node = transport_nodes[0]

@@ -56,7 +56,7 @@ def _recruiter_seed_node(*, with_position: bool = True) -> dict:
     node = {
         "id": RECRUITER_RUNTIME_ID,
         "operation": "create",
-        "type": "customNode",
+        "type": "agent",
         "label": "Agentic Recruiter",
         "size": {"width": 1, "height": 1},
         "layer_index": 0,
@@ -72,7 +72,7 @@ def _directory_seed_node() -> dict:
     return {
         "id": "node://550e8400-e29b-41d4-a716-446655440099",
         "operation": "create",
-        "type": "customNode",
+        "type": "directory",
         "label": "AGNTCY Agent Directory",
         "size": {"width": 1, "height": 1},
         "layer_index": 1,
@@ -90,7 +90,7 @@ def _discovered_node(
     return {
         "id": node_id,
         "operation": "create",
-        "type": "customNode",
+        "type": "agent",
         "label": label,
         "size": {"width": 1, "height": 1},
         "layer_index": 1,
@@ -108,7 +108,7 @@ def _discovery_topology_event(
     anchor = {
         "id": ANCHOR_ID,
         "operation": "create",
-        "type": "customNode",
+        "type": "agent",
         "label": "Agentic Recruiter",
         "size": {"width": 1, "height": 1},
         "layer_index": 0,

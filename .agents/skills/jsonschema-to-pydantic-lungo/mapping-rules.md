@@ -174,9 +174,11 @@ class AgentNode(BaseNode):
 
 `partial_node_agent_extension` and `node_agent_extension` are **not** emitted as standalone classes: they are only ever referenced inside the `allOf`s that build `partial_agent_node` / `agent_node`, so their fields appear directly on the agent classes.
 
-Step 2 - discriminator that mirrors **only** the sibling-key presence test that the base branch's `not { anyOf: [...required...] }` clause is making:
+Step 2 - discriminator that mirrors the schema's presence `anyOf`, plus a 1.2.1 Pydantic-only type-first exception on `agent` / `mcp` (the JSON Schema does **not** encode that; leftover payloads stay schema-valid). Import the frozensets from `schema.node_types`; do not duplicate the string literals. Already-constructed model instances keep the same tags as today. `customNode`, omitted `type`, and unknown strings take the presence fallback:
 
 ```python
+from schema.node_types import AGENT_EXTENSION_TYPES, BASE_NODE_TYPES
+
 _BASE_TAG = "base"
 _AGENT_TAG = "agent"
 
@@ -188,6 +190,13 @@ def _node_kind_discriminator(value: Any) -> str | None:
         return _BASE_TAG
     if not isinstance(value, dict):
         return None
+    node_type = value.get("type")
+    if not isinstance(node_type, str):
+        node_type = None
+    if node_type in AGENT_EXTENSION_TYPES:
+        return _AGENT_TAG
+    if node_type in BASE_NODE_TYPES:
+        return _BASE_TAG
     if "agent_record_uri" in value or "stable_agent_id" in value:
         return _AGENT_TAG
     return _BASE_TAG
@@ -231,6 +240,11 @@ Node = Annotated[
 | `agent_record_uri` only (partial) | `PartialAgentNode` | OK |
 | `stable_agent_id` only, no `agent_record_uri` | agent branch → `PartialAgentNode` | rejected: `agent_record_uri` is required |
 | Bogus `stable_agent_id` prefix (e.g. `"blabla://..."`) with `agent_record_uri` | `AgentNode` | rejected: `String should match pattern '^agent://...'` |
+| `type=agent` or `mcp` + valid extension | `AgentNode` | OK |
+| `type=agent` or `mcp` without `agent_record_uri` | agent branch | JSON Schema OK (presence fallback); Pydantic rejects |
+| `type=customNode` + extension | `AgentNode` | OK (legacy) |
+| `type=customNode` without extension | `BaseNode` | OK (legacy directory) |
+| `type=directory` / `group` / `transport` / `transportNode` without extension | `BaseNode` | OK |
 
 The error messages come straight from each branch's own `Field` constraints - no custom "agent fields not allowed" message anywhere.
 

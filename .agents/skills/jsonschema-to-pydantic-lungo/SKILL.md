@@ -150,6 +150,15 @@ class Thing(BaseModel):  # NOT (PartialThing) - fields are required here
 
 When the `anyOf` branches differ by *which keys are present* (typically one branch has `not { anyOf: [{ required: [k1] }, { required: [k2] }, ...] }` and another `allOf`s in a sibling extension `$def` that requires those keys), encode the choice with a callable `pydantic.Discriminator` whose **only** job is to mirror that sibling-key presence test. Leave any *full vs. partial* sub-choice to Pydantic's smart union inside each branch.
 
+**Type-first exception (event_v1 1.2.1, Pydantic only):** the JSON Schema `anyOf` stays presence-only so leftover `type=agent`/`mcp` without extension keys remain schema-valid. This repo's discriminator consults `type` **before** the presence test. Import the frozensets from `schema.node_types` (`AGENT_EXTENSION_TYPES`, `BASE_NODE_TYPES`); do not duplicate the string literals. Emitters re-export the same names from `common.workflow_utils.node_types`. Routing:
+
+- `type` in `{agent, mcp}` → tag `agent` (even if extension keys are absent; the branch constraints then fail).
+- `type` in `{transport, transportNode, group, directory}` → tag `base`.
+- Else (`customNode`, omitted `type`, unknown) → existing presence test (`agent_record_uri` / `stable_agent_id`).
+- Already-constructed model instances → same tags as today (`AgentNode` / `PartialAgentNode` → `agent`; `BaseNode` / `PartialBaseNode` → `base`).
+
+The discriminator still only routes. No field-count checks, no `__pydantic_extra__` police.
+
 ```python
 def _kind_discriminator(value: Any) -> str | None:
     if isinstance(value, (FullExt, PartialExt)):

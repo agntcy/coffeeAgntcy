@@ -15,6 +15,12 @@ import {
   HANDLE_TYPES,
   NODE_TYPES,
   VERIFICATION_STATUS,
+  canonicalizeNodeType,
+  isDirectoryType,
+  isGroupType,
+  isMcpType,
+  isTransportType,
+  nodeTypeToDisplayType,
 } from "@/utils/const"
 import { flowNodeDataRecord } from "@/components/MainArea/Graph/Elements/nodes/customNodeData"
 import type {
@@ -90,11 +96,18 @@ export function extractStableAgentId(n: TopologyNodeWire): string {
 const GROUP_DEFAULT_WIDTH = 900
 const GROUP_DEFAULT_HEIGHT = 650
 
-function a2aExtraHandlesForLabel(label: string): ExtraHandle[] | undefined {
+function canonicalTypeOf(n: TopologyNodeWire): string | undefined {
+  return canonicalizeNodeType(typeof n.type === "string" ? n.type : undefined)
+}
+
+function a2aExtraHandlesForNode(
+  label: string,
+  nodeType: string | undefined,
+): ExtraHandle[] | undefined {
   if (isRecruiterLabel(label)) {
     return [{ id: "target-right", type: "target", position: "right" }]
   }
-  if (isDirectoryLabel(label)) {
+  if (isDirectoryType(nodeType) || isDirectoryLabel(label)) {
     return [{ id: "source-left", type: "source", position: "left" }]
   }
   return undefined
@@ -111,7 +124,7 @@ function messageTransportFromNodes(
   nodes: TopologyNodeWire[],
 ): string | undefined {
   for (const n of nodes) {
-    if (n.type !== NODE_TYPES.TRANSPORT) continue
+    if (!isTransportType(canonicalTypeOf(n))) continue
     const value = n.message_transport
     if (typeof value === "string" && value.trim()) return value.trim()
   }
@@ -132,8 +145,7 @@ export function topologyWireToReactFlow(
   const dedupKeyFor = (n: TopologyNodeWire): string => {
     const sid = extractStableAgentId(n)
     if (sid) return `sid::${sid}`
-    const typeKey =
-      n.type === NODE_TYPES.TRANSPORT ? NODE_TYPES.TRANSPORT : NODE_TYPES.CUSTOM
+    const typeKey = nodeTypeToDisplayType(canonicalTypeOf(n))
     const labelKey =
       typeKey === NODE_TYPES.TRANSPORT
         ? normalizedTransportKey(n.label)
@@ -160,10 +172,10 @@ export function topologyWireToReactFlow(
         const prevLabel = typeof prev.label === "string" ? prev.label : ""
         const nextLabel = typeof n.label === "string" ? n.label : ""
         const prevIsConcreteTransport =
-          prev.type === NODE_TYPES.TRANSPORT &&
+          isTransportType(canonicalTypeOf(prev)) &&
           CONCRETE_TRANSPORTS.has(prevLabel.trim().toLowerCase())
         const nextIsConcreteTransport =
-          n.type === NODE_TYPES.TRANSPORT &&
+          isTransportType(canonicalTypeOf(n)) &&
           CONCRETE_TRANSPORTS.has(nextLabel.trim().toLowerCase())
         if (nextIsConcreteTransport) {
           prev.label = nextLabel
@@ -194,7 +206,7 @@ export function topologyWireToReactFlow(
   const rfIdOf = (n: TopologyNodeWire): string => {
     const sid = extractStableAgentId(n)
     if (sid) return sid
-    if (n.type === NODE_TYPES.TRANSPORT) {
+    if (isTransportType(canonicalTypeOf(n))) {
       return transportCanonicalRfId(n.label)
     }
     return n.id
@@ -232,37 +244,42 @@ export function topologyWireToReactFlow(
   // A single group node turns the workflow into a contained graph: members
   // become children (parentId/extent) and the transport renders compact.
   const groupRfIds = dedupedNodesIn
-    .filter((n) => n.type === NODE_TYPES.GROUP)
+    .filter((n) => isGroupType(canonicalTypeOf(n)))
     .map(rfIdOf)
   const groupRfId = groupRfIds.length === 1 ? groupRfIds[0] : null
   const messageTransport = messageTransportFromNodes(dedupedNodesIn)
 
   const labelByRfId = new Map<string, string>()
+  const nodeTypeByRfId = new Map<string, string | undefined>()
   for (const n of dedupedNodesIn) {
-    labelByRfId.set(rfIdOf(n), typeof n.label === "string" ? n.label : "")
+    const rfId = rfIdOf(n)
+    labelByRfId.set(rfId, typeof n.label === "string" ? n.label : "")
+    nodeTypeByRfId.set(rfId, canonicalTypeOf(n))
   }
 
   const nodes: Node[] = dedupedNodesIn.map((n): Node => {
     const rfId = rfIdOf(n)
     const position = positions.get(rfId) ?? { x: 0, y: 0 }
     const labelStr = labelByRfId.get(rfId) ?? ""
+    const nodeType = canonicalTypeOf(n)
+    const displayType = nodeTypeToDisplayType(nodeType)
     const gh = resolveGithubFromAgentRecordUri(
       n.agent_record_uri as string | undefined,
       { validateUrls },
     )
 
-    if (n.type === NODE_TYPES.GROUP) {
+    if (isGroupType(nodeType)) {
       // The group is never drawn; it only exists so children can anchor to it
       // via parentId/extent. width/height must live on the node (not style) so
       // extent clamping still resolves the box while the node stays hidden.
       return {
         id: rfId,
-        type: NODE_TYPES.GROUP,
+        type: displayType,
         position,
         hidden: true,
         width: GROUP_DEFAULT_WIDTH,
         height: GROUP_DEFAULT_HEIGHT,
-        data: {},
+        data: { nodeType },
       }
     }
 
@@ -270,7 +287,7 @@ export function topologyWireToReactFlow(
       ? { parentId: groupRfId, extent: "parent" as const }
       : {}
 
-    if (n.type === NODE_TYPES.TRANSPORT) {
+    if (isTransportType(nodeType)) {
       const transportName =
         typeof n.message_transport === "string"
           ? n.message_transport
@@ -280,13 +297,14 @@ export function topologyWireToReactFlow(
           ? transportGithubLink(transportName, isStreaming)
           : gh
       const data: TransportNodeData = {
+        nodeType,
         label: labelStr || "Transport",
         githubLink: transportGithub,
         compact: groupRfId != null,
       }
       return {
         id: rfId,
-        type: NODE_TYPES.TRANSPORT,
+        type: displayType,
         position,
         data: flowNodeDataRecord(data),
         ...childProps,
@@ -306,7 +324,12 @@ export function topologyWireToReactFlow(
       n.agent_record_uri as string | undefined,
     )
     let data: CustomNodeData = {
-      icon: resolveTopologyNodeIcon({ label, label_subtitle }),
+      nodeType,
+      icon: resolveTopologyNodeIcon({
+        label,
+        label_subtitle,
+        nodeType,
+      }),
       label,
       label_subtitle,
       handles: HANDLE_TYPES.ALL,
@@ -324,17 +347,18 @@ export function topologyWireToReactFlow(
           label: data.label,
           label_subtitle: data.label_subtitle,
           directoryAgentSlug: data.directoryAgentSlug,
+          nodeType: data.nodeType,
         }),
       }
     }
-    const extraHandles = a2aExtraHandlesForLabel(labelStr)
+    const extraHandles = a2aExtraHandlesForNode(labelStr, nodeType)
     if (extraHandles) {
       data = { ...data, extraHandles }
     }
 
     return {
       id: rfId,
-      type: NODE_TYPES.CUSTOM,
+      type: displayType,
       position,
       data: flowNodeDataRecord(data),
       ...childProps,
@@ -359,11 +383,16 @@ export function topologyWireToReactFlow(
     let label: string = EDGE_LABELS.A2A
     let sourceHandle: string | undefined
     let targetHandle: string | undefined
-    if (isMcpServerLabel(targetLabel)) {
+    const targetType = nodeTypeByRfId.get(target)
+    const sourceType = nodeTypeByRfId.get(source)
+    if (isMcpType(targetType) || isMcpServerLabel(targetLabel)) {
       label = messageTransport
         ? `${EDGE_LABELS.MCP}${messageTransport}`
         : EDGE_LABELS.MCP
-    } else if (isDirectoryLabel(sourceLabel) && isRecruiterLabel(targetLabel)) {
+    } else if (
+      (isDirectoryType(sourceType) || isDirectoryLabel(sourceLabel)) &&
+      isRecruiterLabel(targetLabel)
+    ) {
       label = EDGE_LABELS.MCP_WITH_STDIO
       sourceHandle = "source-left"
       targetHandle = "target-right"

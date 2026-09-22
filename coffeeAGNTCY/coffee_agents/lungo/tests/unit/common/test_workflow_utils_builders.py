@@ -8,6 +8,7 @@ from __future__ import annotations
 import logging
 
 import pytest
+from pydantic import ValidationError
 from schema.types import (
     EventType,
     Operation,
@@ -23,35 +24,85 @@ from common.workflow_utils.builders import (
     make_edge,
     make_node,
 )
+from common.workflow_utils.node_types import AGENT, CUSTOM_NODE, MCP
 from common.workflow_utils.inflight import RuntimeIdAllocator
 from common.workflow_utils.workflow_catalog import lookup_workflow
 
 
+def test_schema_version_is_1_2_1():
+    assert EVENT_SCHEMA_VERSION == "1.2.1"
+
+
 @pytest.mark.parametrize(
-    "case,stable_agent_id,expect_stable_fields",
+    "case,stable_agent_id,expect_stable_fields,node_type,extras",
     [
-        ("without_stable_agent_id", None, False),
-        ("with_stable_agent_id", "agent://00000000-0000-4000-8000-000000000099", True),
+        ("legacy_custom_node_without_extension", None, False, CUSTOM_NODE, None),
+        (
+            "legacy_custom_node_with_stable_agent_id",
+            "agent://00000000-0000-4000-8000-000000000099",
+            True,
+            CUSTOM_NODE,
+            None,
+        ),
+        (
+            "type_agent_with_uri",
+            None,
+            False,
+            AGENT,
+            {"agent_record_uri": "agent-card://auction"},
+        ),
+        (
+            "type_mcp_with_uri",
+            None,
+            False,
+            MCP,
+            {"agent_record_uri": "agent-card://weather-mcp"},
+        ),
     ],
 )
-def test_make_node_stable_agent_fields(case, stable_agent_id, expect_stable_fields):
+def test_make_node_stable_agent_fields(
+    case, stable_agent_id, expect_stable_fields, node_type, extras
+):
     """make_node optionally attaches stable_agent_id and agent_record_uri."""
     node = make_node(
         "node://00000000-0000-4000-8000-000000000001",
         operation=Operation.CREATE,
-        node_type="customNode",
+        node_type=node_type,
         label="Test Agent",
         layer_index=0,
         stable_agent_id=stable_agent_id,
+        extras=extras,
     )
     assert node.label == "Test Agent"
-    if expect_stable_fields:
+    if extras and extras.get("agent_record_uri"):
+        assert isinstance(node, PartialAgentNode)
+        assert node.agent_record_uri == extras["agent_record_uri"]
+        assert getattr(node, "stable_agent_id", None) is None
+    elif expect_stable_fields:
         assert isinstance(node, PartialAgentNode)
         assert node.stable_agent_id.root == stable_agent_id
         assert node.agent_record_uri == "agent-card://00000000-0000-4000-8000-000000000099"
     else:
         assert isinstance(node, PartialBaseNode)
         assert getattr(node, "stable_agent_id", None) is None
+
+
+@pytest.mark.parametrize(
+    "case,node_type",
+    [
+        ("type_agent_without_extension", AGENT),
+        ("type_mcp_without_extension", MCP),
+    ],
+)
+def test_make_node_agent_extension_type_without_fields_raises(case, node_type):
+    with pytest.raises(ValidationError):
+        make_node(
+            "node://00000000-0000-4000-8000-000000000001",
+            operation=Operation.CREATE,
+            node_type=node_type,
+            label="Test Agent",
+            layer_index=0,
+        )
 
 
 @pytest.mark.parametrize(

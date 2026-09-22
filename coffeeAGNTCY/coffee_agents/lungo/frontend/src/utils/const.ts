@@ -28,6 +28,58 @@ export const NODE_TYPES = {
   GROUP: "group",
 } as const
 
+/** Event `type` values. Must match Python `schema.node_types`. */
+export const NODE_TYPE = {
+  AGENT: "agent",
+  MCP: "mcp",
+  DIRECTORY: "directory",
+  GROUP: "group",
+  TRANSPORT: "transport",
+  CUSTOM_NODE: "customNode",
+  TRANSPORT_NODE: "transportNode",
+} as const
+
+export type KnownNodeType = (typeof NODE_TYPE)[keyof typeof NODE_TYPE]
+
+export function canonicalizeNodeType(
+  raw: string | undefined,
+): string | undefined {
+  if (raw === NODE_TYPE.TRANSPORT_NODE) {
+    return NODE_TYPE.TRANSPORT
+  }
+  return raw
+}
+
+export function isTransportType(type: string | undefined): boolean {
+  return type === NODE_TYPE.TRANSPORT
+}
+
+export function isGroupType(type: string | undefined): boolean {
+  return type === NODE_TYPE.GROUP
+}
+
+export function isAgentType(type: string | undefined): boolean {
+  return type === NODE_TYPE.AGENT
+}
+
+export function isMcpType(type: string | undefined): boolean {
+  return type === NODE_TYPE.MCP
+}
+
+export function isDirectoryType(type: string | undefined): boolean {
+  return type === NODE_TYPE.DIRECTORY
+}
+
+export function nodeTypeToDisplayType(type: string | undefined): NodeTypeType {
+  if (isTransportType(type)) {
+    return NODE_TYPES.TRANSPORT
+  }
+  if (isGroupType(type)) {
+    return NODE_TYPES.GROUP
+  }
+  return NODE_TYPES.CUSTOM
+}
+
 export const EDGE_TYPES = {
   CUSTOM: "custom",
   BRANCHING: "branching",

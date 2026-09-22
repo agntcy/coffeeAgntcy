@@ -17,14 +17,15 @@ from tests.unit.agentic_workflows.catalog_test_helpers import (
     init_transport_cache_for_tests,
 )
 
-_TRANSPORT_NODE = {
-    "id": "node://00000000-0000-4000-a000-000000000099",
-    "operation": "read",
-    "type": "transportNode",
-    "label": "Transport",
-    "size": {"width": 1.0, "height": 1.0},
-    "layer_index": 2,
-}
+def _transport_node(node_type: str) -> dict:
+    return {
+        "id": "node://00000000-0000-4000-a000-000000000099",
+        "operation": "read",
+        "type": node_type,
+        "label": "Transport",
+        "size": {"width": 1.0, "height": 1.0},
+        "layer_index": 2,
+    }
 
 
 class TransportCase(NamedTuple):
@@ -32,6 +33,7 @@ class TransportCase(NamedTuple):
     chat_api_target: str | None
     expected_message_transport: str | None
     expected_label: str
+    node_type: str = "transport"
 
 
 @pytest.fixture(autouse=True)
@@ -69,6 +71,13 @@ _TRANSPORT_CASES: tuple[TransportCase, ...] = (
         expected_message_transport=None,
         expected_label="Transport",
     ),
+    TransportCase(
+        case_id="legacy_transport_node_type",
+        chat_api_target="exchange",
+        expected_message_transport="SLIM",
+        expected_label="Transport: SLIM",
+        node_type="transportNode",
+    ),
 )
 
 
@@ -77,7 +86,7 @@ _TRANSPORT_CASES: tuple[TransportCase, ...] = (
 )
 def test_enrich_topology_transport(case: TransportCase) -> None:
     topology = enrich_topology_transport(
-        {"nodes": [_TRANSPORT_NODE], "edges": []},
+        {"nodes": [_transport_node(case.node_type)], "edges": []},
         chat_api_target=case.chat_api_target,  # type: ignore[arg-type]
     )
     node = topology["nodes"][0]

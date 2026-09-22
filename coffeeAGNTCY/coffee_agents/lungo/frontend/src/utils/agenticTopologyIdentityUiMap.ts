@@ -9,7 +9,13 @@
 import { v5 as uuidv5 } from "uuid"
 import type { CustomNodeData } from "@/components/MainArea/Graph/Elements/nodes/types"
 import type { TopologyNodeWire } from "@/api/agenticWorkflowsTypes"
-import { HANDLE_TYPES, VERIFICATION_STATUS } from "@/utils/const"
+import {
+  HANDLE_TYPES,
+  VERIFICATION_STATUS,
+  canonicalizeNodeType,
+  isDirectoryType,
+  isGroupType,
+} from "@/utils/const"
 import { LUNGO_FRONTEND_URLS } from "@/urls"
 import { SecurityClass } from "@/utils/SecurityClass"
 import { resolveAgentSlug } from "@/utils/resolveAgentSlug"
@@ -172,7 +178,9 @@ export function enrichAgenticTopologyWellKnownUi(
   wire: TopologyNodeWire,
   options: { validateUrls: boolean },
 ): CustomNodeData {
-  const typeLower = typeof wire.type === "string" ? wire.type.toLowerCase() : ""
+  const nodeType = canonicalizeNodeType(
+    data.nodeType ?? (typeof wire.type === "string" ? wire.type : undefined),
+  )
   const combined = [data.label, data.label_subtitle]
     .filter(Boolean)
     .join(" ")
@@ -186,7 +194,7 @@ export function enrichAgenticTopologyWellKnownUi(
     return undefined
   }
 
-  if (typeLower === "group" || combinedLower === "logistics group") {
+  if (isGroupType(nodeType) || combinedLower === "logistics group") {
     const transportUrl = `${LUNGO_FRONTEND_URLS.github.appSdkBaseUrl}${LUNGO_FRONTEND_URLS.github.transports.group}`
     return {
       ...data,
@@ -199,11 +207,7 @@ export function enrichAgenticTopologyWellKnownUi(
     }
   }
 
-  const isAgntcyDirectory =
-    combinedLower.includes("agntcy") &&
-    combinedLower.includes("agent directory")
-
-  if (isAgntcyDirectory) {
+  if (isDirectoryType(nodeType) || isDirectoryLabel(combined)) {
     const dirGh = LUNGO_FRONTEND_URLS.agentDirectory.github
     return {
       ...data,
