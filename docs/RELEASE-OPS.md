@@ -6,12 +6,12 @@ It is intentionally **not** specific to any single release version. Anything tha
 
 Placeholders used throughout:
 
-| Placeholder    | Meaning                                                           | Example              |
-| -------------- | ----------------------------------------------------------------- | -------------------- |
-| `<version>`    | The semver version being released                                 | `0.3.0`              |
-| `<tag>`        | The git tag for the release (this repo tags **without** a `v` prefix) | `0.3.0`          |
-| `<milestone>`  | The GitHub Milestone associated with the release                  | `Synapsis`           |
-| `<email>`      | Your sign-off email                                               | `you@cisco.com`      |
+| Placeholder    | Meaning                                                               | Example              |
+| -------------- | --------------------------------------------------------------------- | -------------------- |
+| `<email>`      | Your sign-off email                                                   | `you@cisco.com`      |
+| `<milestone>`  | The GitHub Milestone associated with the release                      | `Synapsis`           |
+| `<tag>`        | The git tag for the release (this repo tags **without** a `v` prefix) | `0.3.0`              |
+| `<version>`    | The semver version being released                                     | `0.3.0`              |
 
 > Convention note: existing release tags in this repo are plain semver (`0.2.0`, `0.2.1`, `0.3.0`), i.e. **no** `v` prefix. `*-dev*` tags are throwaway/dev tags and are **not** release tags. Match whatever the existing release tags use.
 

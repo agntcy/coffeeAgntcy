@@ -127,17 +127,17 @@ The evaluation system uses LLM-driven evaluator agents to test candidate agents 
 
 ```
 src/agent_recruiter/interviewers/
-├── agent_evaluator.py          # Top-level evaluation orchestration and ADK tools
-├── base_evaluator_agent.py     # Abstract evaluator with LLM-driven testing loop
-├── evaluator_agent_factory.py  # Protocol-based evaluator creation
-├── models.py                   # AgentEvalConfig, PolicyEvaluationResult
-├── policy_evaluation.py        # Judge LLM for policy compliance
-├── a2a/                        # A2A protocol implementation
-│   ├── a2a_evaluator_agent.py  # A2A-specific evaluator
-│   ├── record_parser.py        # A2A AgentCard parsing
-│   ├── remote_agent_connection.py  # A2A client wrapper
-│   └── generic_task_callback.py    # Streaming task event aggregation
-└── mcp/                        # MCP protocol (placeholder)
+├── agent_evaluator.py             # Top-level evaluation orchestration and ADK tools
+├── base_evaluator_agent.py        # Abstract evaluator with LLM-driven testing loop
+├── evaluator_agent_factory.py     # Protocol-based evaluator creation
+├── models.py                      # AgentEvalConfig, PolicyEvaluationResult
+├── policy_evaluation.py           # Judge LLM for policy compliance
+├── a2a/                           # A2A protocol implementation
+│   ├── a2a_evaluator_agent.py     # A2A-specific evaluator
+│   ├── record_parser.py           # A2A AgentCard parsing
+│   ├── remote_agent_connection.py # A2A client wrapper
+│   └── generic_task_callback.py   # Streaming task event aggregation
+└── mcp/                           # MCP protocol (placeholder)
     └── record_parser.py
 ```
 
@@ -260,4 +260,4 @@ The A2A evaluator resolves the remote agent's card via `A2ACardResolver`, create
 
 ## License
 
-Apache-2.0 - See [LICENSE](../LICENSE) for details.
+Apache-2.0 - See [LICENSE](../../../../LICENSE) for details.

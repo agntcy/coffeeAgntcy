@@ -6,17 +6,20 @@ This directory contains CI/CD workflows for building images, packaging Helm char
 
 | Workflow | Purpose | Triggers |
 |----------|---------|----------|
-| [`ci-gate.yaml`](.github/workflows/ci-gate.yaml) | Required status check: lints every workflow file (actionlint) and waits for/reports on every sibling workflow run on the same commit, including startup failures | pull_request, push (main, tags), workflow_dispatch |
-| [`docker-build-push.yaml`](.github/workflows/docker-build-push.yaml) | Build multi-arch Docker images for all agents and optionally push to GHCR, guarded against overwriting an existing tag | push (main, tags), pull_request (paths filter), workflow_dispatch |
-| [`docker-build-reusable.yaml`](.github/workflows/docker-build-reusable.yaml) | Reusable job: build and push a single Docker image | workflow_call |
-| [`helm-push.yaml`](.github/workflows/helm-push.yaml) | Lint, package, and (on push to main only) push changed Helm charts to GHCR (OCI), guarded against overwriting an existing chart version | push (main, tags), pull_request (paths filter), workflow_dispatch |
-| [`helm-package-reusable.yaml`](.github/workflows/helm-package-reusable.yaml) | Reusable job: lint, package, and push a single Helm chart | workflow_call |
-| [`test.yaml`](.github/workflows/test.yaml) | Run pytest for corto, lungo, recruiter | push (main), pull_request, workflow_call, workflow_dispatch |
-| [`test-reusable.yaml`](.github/workflows/test-reusable.yaml) | Reusable job: run pytest for one project directory and path set | workflow_call |
-| [`test-subprojects-reusable.yaml`](.github/workflows/test-subprojects-reusable.yaml) | Path-filter job: which agent projects changed | workflow_call |
-| [`fe-ci.yaml`](.github/workflows/fe-ci.yaml) | Typecheck, ESLint, and Prettier for the Lungo frontend | push (main, frontend paths), pull_request (main, frontend paths) |
-| [`version-override-test.yaml`](.github/workflows/version-override-test.yaml) | Example invocation of reusable tests with dependency/image overrides | workflow_dispatch |
-| [`docs.yaml`](.github/workflows/docs.yaml) | Publish MkDocs site to GitHub Pages (gh-pages) | push (main, README.md path) |
+| [`ci-gate.yaml`](ci-gate.yaml) | Required status check: lints every workflow file (actionlint) and waits for/reports on every sibling workflow run on the same commit, including startup failures | pull_request, push (main, tags), workflow_dispatch |
+| [`docker-build-push.yaml`](docker-build-push.yaml) | Build multi-arch Docker images for all agents and optionally push to GHCR, guarded against overwriting an existing tag | push (main, tags), pull_request (paths filter), workflow_dispatch |
+| [`docker-build-reusable.yaml`](docker-build-reusable.yaml) | Reusable job: build and push a single Docker image | workflow_call |
+| [`docs.yaml`](docs.yaml) | Publish MkDocs site to GitHub Pages (gh-pages) | push (main, README.md path) |
+| [`fe-ci.yaml`](fe-ci.yaml) | Typecheck, ESLint, and Prettier for the Lungo frontend | push (main, frontend paths), pull_request (main, frontend paths) |
+| [`helm-package-reusable.yaml`](helm-package-reusable.yaml) | Reusable job: lint, package, and push a single Helm chart | workflow_call |
+| [`helm-push.yaml`](helm-push.yaml) | Lint, package, and (on push to main only) push changed Helm charts to GHCR (OCI), guarded against overwriting an existing chart version | push (main, tags), pull_request (paths filter), workflow_dispatch |
+| [`python-lint.yaml`](python-lint.yaml) | Run `ruff check` (lint only, never reformats) for corto, lungo, recruiter | pull_request (paths filter), push (main, paths filter), workflow_dispatch |
+| [`scorecard.yaml`](scorecard.yaml) | OpenSSF Scorecard security analysis, uploads SARIF to code scanning | push (main), pull_request, schedule (weekly), workflow_dispatch |
+| [`source-lint.yaml`](source-lint.yaml) | Forbidden strings check: fails the pull request if an en dash or em dash appears anywhere in the repo | pull_request, push (main), workflow_dispatch |
+| [`test-reusable.yaml`](test-reusable.yaml) | Reusable job: run pytest for one project directory and path set | workflow_call |
+| [`test-subprojects-reusable.yaml`](test-subprojects-reusable.yaml) | Path-filter job: which agent projects changed | workflow_call |
+| [`test.yaml`](test.yaml) | Run pytest for corto, lungo, recruiter | push (main), pull_request, workflow_call, workflow_dispatch |
+| [`version-override-test.yaml`](version-override-test.yaml) | Example invocation of reusable tests with dependency/image overrides | workflow_dispatch |
 
 ## ci-gate
 

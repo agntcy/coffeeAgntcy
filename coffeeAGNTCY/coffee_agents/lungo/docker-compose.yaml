@@ -103,7 +103,7 @@ services:
     profiles:
       - farms
   nats:
-    image: nats:latest
+    image: nats:latest@sha256:cd3fcd4ecdda44e3a66728a5334af0a959bc3979b32810e033d1c547241cd0f4
     container_name: lungo-nats
     ports:
       - "4222:4222"
@@ -114,7 +114,7 @@ services:
     # Dependents use condition: service_started.
 
   slim:
-    image: ghcr.io/agntcy/slim:1.4.0
+    image: ghcr.io/agntcy/slim:1.4.0@sha256:7a7531cb81f1e24682f08364713da06a158411df3e90b687acf8d5836da5a78e
     container_name: lungo-slim
     ports:
       - "46357:46357"
@@ -274,7 +274,7 @@ services:
       - farms
 
   clickhouse-server:
-    image: clickhouse/clickhouse-server
+    image: clickhouse/clickhouse-server:latest@sha256:a73b5c0fb6f88e02357aead0906ad53882b07e4d202327489798844ba745e64d
     container_name: lungo-clickhouse-server
     ports:
       - "9000:9000"
@@ -304,7 +304,7 @@ services:
       - observability
 
   otel-collector:
-    image: otel/opentelemetry-collector-contrib:latest
+    image: otel/opentelemetry-collector-contrib:latest@sha256:fd328de2552466ad78385e1b1289c3f2402b1c45f265b252aab1955b42845ac1
     container_name: lungo-otel-collector
     restart: unless-stopped
     ports:
@@ -319,7 +319,7 @@ services:
     command: ["--config", "/etc/otel/otel-collector-config.yaml"]
 
   grafana:
-    image: grafana/grafana
+    image: grafana/grafana:latest@sha256:ac461fb352abc50da10a51c7d02462e9c05488f11f53f14b3ad79a8145f638a0
     container_name: grafana-lungo
     ports:
       - "3001:3000"
@@ -494,7 +494,7 @@ services:
       - logistics
 
   mce-api-layer:
-    image: ghcr.io/agntcy/obs-api:0.1.1
+    image: ghcr.io/agntcy/obs-api:0.1.1@sha256:808423d41c2ef08e116cc41da694bc4adf648c07b23be530e70a691d82653300
     container_name: lungo-mce-api-layer
     ports:
       - "8080:8080"
@@ -521,7 +521,7 @@ services:
       - observability
 
   metrics-computation-engine:
-    image: ghcr.io/agntcy/mce:1.2.1
+    image: ghcr.io/agntcy/mce:1.2.1@sha256:50eb5aefd937715bd67b32800c946f46eb8d122171bf51acf5f0906651ab73d2
     container_name: lungo-metrics-computation-engine
     ports:
       - "8001:8000"
@@ -537,7 +537,7 @@ services:
       - observability
 
   dir-api-server:
-    image: ghcr.io/agntcy/dir-apiserver:v1.0.0
+    image: ghcr.io/agntcy/dir-apiserver:v1.0.0@sha256:94ed80c0a6531c1cca5842457aa442e3fd441de95067cde8750442ce0a4d90dc
     container_name: dir-api-server
     env_file:
       - path: ./config/docker/dir/apiserver.env
@@ -566,7 +566,7 @@ services:
       - recruiter
 
   dir-mcp-server:
-    image: ghcr.io/agntcy/dir-ctl:v1.0.0
+    image: ghcr.io/agntcy/dir-ctl:v1.0.0@sha256:46bccabf156643ff58308d71c4a58d74d38cf5f4d847e128eb93bb21e367b7a0
     container_name: dir-mcp-server
     stdin_open: true
     tty: true
@@ -582,7 +582,7 @@ services:
       - recruiter
 
   postgres:
-    image: docker.io/library/postgres:16.6-bookworm
+    image: docker.io/library/postgres:16.6-bookworm@sha256:557fea37a744d5f4c8faab304b0a90858b53ab119735a88c131fd19dab802f36
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
@@ -602,7 +602,7 @@ services:
       - recruiter
 
   zot:
-    image: ghcr.io/project-zot/zot:v2.1.15
+    image: ghcr.io/project-zot/zot:v2.1.15@sha256:376cb38a335bab89571af306eff481547212746aff11828043c22f32637fe17b
     ports:
       - 5555:5000
     deploy:

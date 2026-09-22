@@ -1,6 +1,6 @@
 services:
   dir-api-server:
-    image: ghcr.io/agntcy/dir-apiserver:v1.0.0
+    image: ghcr.io/agntcy/dir-apiserver:v1.0.0@sha256:94ed80c0a6531c1cca5842457aa442e3fd441de95067cde8750442ce0a4d90dc
     env_file:
       - path: ./configs/dir/apiserver.env
         required: true
@@ -26,7 +26,7 @@ services:
     # Until then dependents should use condition: service_started so they start once this container is running.
 
   dir-mcp-server:
-    image: ghcr.io/agntcy/dir-ctl:v1.0.0
+    image: ghcr.io/agntcy/dir-ctl:v1.0.0@sha256:46bccabf156643ff58308d71c4a58d74d38cf5f4d847e128eb93bb21e367b7a0
     container_name: dir-mcp-server
     stdin_open: true
     tty: true
@@ -40,7 +40,7 @@ services:
         condition: service_started
 
   postgres:
-    image: docker.io/library/postgres:16.6-bookworm
+    image: docker.io/library/postgres:16.6-bookworm@sha256:557fea37a744d5f4c8faab304b0a90858b53ab119735a88c131fd19dab802f36
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
@@ -58,7 +58,7 @@ services:
         condition: on-failure
 
   zot:
-    image: ghcr.io/project-zot/zot:v2.1.15
+    image: ghcr.io/project-zot/zot:v2.1.15@sha256:376cb38a335bab89571af306eff481547212746aff11828043c22f32637fe17b
     ports:
       - 5555:5000
     deploy:

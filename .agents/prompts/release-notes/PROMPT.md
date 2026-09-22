@@ -6,10 +6,10 @@ Read `.agents/prompts/release-notes/params.yaml` and use:
 
 |       Field        |                 Meaning                 |
 | ------------------ | --------------------------------------- |
-| `previous_version` | Tag/version of the last release         |
 | `current_version`  | Version you are writing notes for       |
-| `repo_url`         | GitHub repository URL                   |
 | `github_repo`      | `owner/name` for links and `gh` queries |
+| `previous_version` | Tag/version of the last release         |
+| `repo_url`         | GitHub repository URL                   |
 
 ## Task
 

@@ -470,8 +470,8 @@ The docker-compose file is organized into profiles for running specific subsets 
 
 | Profile | Services |
 |---------|----------|
-| `frontend` | **ui** (port 3000; env: **`frontend/.env`** only for **`VITE_*`**) |
 | `farms` | brazil-farm-server, colombia-farm-server, vietnam-farm-server, auction-supervisor, weather-mcp-server, payment-mcp-server |
+| `frontend` | **ui** (port 3000; env: **`frontend/.env`** only for **`VITE_*`**) |
 | `logistics` | slim, logistics-shipper, logistics-accountant, logistics-farm, logistics-helpdesk, logistics-supervisor |
 | `recruiter` | recruiter, recruiter-supervisor, postgres, dir-api-server, dir-mcp-server, zot |
 
