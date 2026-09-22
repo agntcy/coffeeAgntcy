@@ -164,9 +164,7 @@ def test_derive_workflow_capabilities_starting_workflows_catalog(
     assert target == chat_api_target
 
 
-def test_derive_workflow_capabilities_placeholder_in_starting_workflows_catalog() -> (
-    None
-):
+def test_derive_workflow_capabilities_placeholder_in_starting_workflows_catalog() -> None:
     catalog = _load_and_validate_starting_workflows_from_file(_STARTING_WORKFLOWS_JSON)
     wf = catalog.get("Orchestrator Agent")
     assert wf is not None

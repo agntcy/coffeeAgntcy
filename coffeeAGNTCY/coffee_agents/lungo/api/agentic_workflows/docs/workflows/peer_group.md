@@ -28,10 +28,9 @@ graph TD
 > reference material for the **Peer Group** pattern; a follow-up issue will replace this with the proper authored
 > doc.
 >
-> **Status: API-only.** This doc is served via `POST /patterns/{name}/chat` for the implemented
-> **Peer Group** pattern, but implemented patterns are not yet shown in the Reference Library sidebar
-> (which currently lists only unimplemented placeholder patterns). Wiring implemented patterns into the
-> Reference Library is tracked as a follow-up.
+> **Status: implemented.** The **Peer Group** pattern is listed in the Reference Library under
+> **Multi-Agent Communication & Collaboration** and also appears above it with its runnable workflows.
+> This doc backs both the sidebar preview and `POST /patterns/{name}/chat`.
 
 The **Peer Group** pattern wires several agents into a **flat, group-addressable conversation** rather than routing
 everything through a central orchestrator. Every participant can publish and subscribe on the shared channel; the

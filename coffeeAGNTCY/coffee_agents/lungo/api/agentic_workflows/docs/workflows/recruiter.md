@@ -29,10 +29,9 @@ graph TD
 > reference material for the **Recruiter** pattern; a follow-up issue will replace this with the proper authored
 > doc.
 >
-> **Status: API-only.** This doc is served via `POST /patterns/{name}/chat` for the implemented
-> **Recruiter** pattern, but implemented patterns are not yet shown in the Reference Library sidebar
-> (which currently lists only unimplemented placeholder patterns). Wiring implemented patterns into the
-> Reference Library is tracked as a follow-up.
+> **Status: implemented.** The **Recruiter** pattern is listed in the Reference Library under
+> **Discovery, Routing & Composition** and also appears above it with its runnable workflows.
+> This doc backs both the sidebar preview and `POST /patterns/{name}/chat`.
 
 The **Recruiter** pattern handles **on-demand selection** in an ecosystem of many possible agents, services, or
 tools. A single recruiter parses intent, queries a **directory or registry**, optionally **probes** candidates with

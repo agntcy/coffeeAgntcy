@@ -34,10 +34,9 @@ graph TD
 > reference material for the **Supervisor** pattern; a follow-up issue will replace this with the proper authored
 > doc.
 >
-> **Status: API-only.** This doc is served via `POST /patterns/{name}/chat` for the implemented
-> **Supervisor** pattern, but implemented patterns are not yet shown in the Reference Library sidebar
-> (which currently lists only unimplemented placeholder patterns). Wiring implemented patterns into the
-> Reference Library is tracked as a follow-up.
+> **Status: implemented.** The **Supervisor** pattern is listed in the Reference Library under
+> **Orchestration & Control Flow** and also appears above it with its runnable workflows.
+> This doc backs both the sidebar preview and `POST /patterns/{name}/chat`.
 
 The **Supervisor** pattern places **one orchestrating agent** at the centre of a workflow and routes work out to a
 small set of **clear callees**. The supervisor turns a vague ask into a structured plan, delegates per-step, collects

@@ -10,8 +10,17 @@ from typing import NamedTuple
 import pytest
 from api.agentic_workflows.patterns import PATTERNS
 from api.agentic_workflows.router import create_agentic_workflows_router
+from api.agentic_workflows.workflow_capabilities import pattern_category_from_workflow
+from api.agentic_workflows.workflow_documentation import (
+    load_parsed_workflow_documentation,
+    pattern_category_from_parsed_documentation,
+    workflow_name_to_documentation_slug,
+)
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
+from tests.unit.agentic_workflows.catalog_test_helpers import (
+    load_validated_starting_workflows_catalog,
+)
 
 
 @pytest.fixture()
@@ -75,7 +84,9 @@ _CASES: tuple[Case, ...] = (
 )
 
 
-@pytest.mark.parametrize("case", [pytest.param(c, id=c.case_id) for c in _CASES])
+@pytest.mark.parametrize(
+    "case", [pytest.param(c, id=c.case_id) for c in _CASES]
+)
 def test_patterns_endpoint(case: Case, client: TestClient) -> None:
     resp = client.get(
         case.inputs.path,
@@ -98,3 +109,43 @@ def test_patterns_endpoint(case: Case, client: TestClient) -> None:
 
     names = [p["name"] for p in data["items"]]
     assert names == case.outputs.expected_names
+
+
+# ---------------------------------------------------------------------------
+# Reference Library coverage of implemented patterns
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize("pattern_name", list(PATTERNS))
+def test_implemented_pattern_has_reference_library_entry(pattern_name: str) -> None:
+    """Implemented patterns are surfaced in the Reference Library too.
+
+    The Reference Library is built from catalog rows marked with ``"---"``, so
+    every implemented pattern needs such a row for the sidebar to reach its
+    reference material.
+    """
+    catalog = load_validated_starting_workflows_catalog()
+
+    row = catalog.get(pattern_name)
+    assert row is not None, f"{pattern_name!r} has no Reference Library catalog row"
+    assert row.pattern == pattern_name
+    assert (row.use_case, row.scenario) == ("---", "---")
+    assert not row.starting_topology.nodes
+
+    slug = workflow_name_to_documentation_slug(pattern_name)
+    parsed = load_parsed_workflow_documentation(slug)
+    assert parsed is not None
+
+    # pattern_category decides which Reference Library category the sidebar files
+    # the entry under, so it has to agree with the pattern doc and with the
+    # runnable workflows of the same pattern.
+    documented_category = pattern_category_from_parsed_documentation(parsed)
+    assert documented_category is not None, f"{slug}.md declares no category"
+    assert pattern_category_from_workflow(row) == documented_category
+
+    runnable_categories = {
+        pattern_category_from_workflow(wf)
+        for wf in catalog.values()
+        if wf.pattern == pattern_name and (wf.use_case, wf.scenario) != ("---", "---")
+    }
+    assert runnable_categories == {documented_category}
