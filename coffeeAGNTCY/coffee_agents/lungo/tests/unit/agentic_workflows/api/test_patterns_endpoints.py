@@ -10,8 +10,10 @@ from typing import NamedTuple
 import pytest
 from api.agentic_workflows.patterns import PATTERNS
 from api.agentic_workflows.router import create_agentic_workflows_router
+from api.agentic_workflows.workflow_capabilities import pattern_category_from_workflow
 from api.agentic_workflows.workflow_documentation import (
     load_parsed_workflow_documentation,
+    pattern_category_from_parsed_documentation,
     workflow_name_to_documentation_slug,
 )
 from fastapi import FastAPI
@@ -131,4 +133,19 @@ def test_implemented_pattern_has_reference_library_entry(pattern_name: str) -> N
     assert not row.starting_topology.nodes
 
     slug = workflow_name_to_documentation_slug(pattern_name)
-    assert load_parsed_workflow_documentation(slug) is not None
+    parsed = load_parsed_workflow_documentation(slug)
+    assert parsed is not None
+
+    # pattern_category decides which Reference Library category the sidebar files
+    # the entry under, so it has to agree with the pattern doc and with the
+    # runnable workflows of the same pattern.
+    documented_category = pattern_category_from_parsed_documentation(parsed)
+    assert documented_category is not None, f"{slug}.md declares no category"
+    assert pattern_category_from_workflow(row) == documented_category
+
+    runnable_categories = {
+        pattern_category_from_workflow(wf)
+        for wf in catalog.values()
+        if wf.pattern == pattern_name and (wf.use_case, wf.scenario) != ("---", "---")
+    }
+    assert runnable_categories == {documented_category}
