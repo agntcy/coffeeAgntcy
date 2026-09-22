@@ -5,7 +5,7 @@
 
 import React, { useEffect, useId, useRef, useState } from "react"
 import mermaid from "mermaid"
-import { useTheme } from "@open-ui-kit/core"
+import { Box, Typography, useTheme } from "@open-ui-kit/core"
 import { logger } from "@/utils/logger"
 
 interface MermaidBlockProps {
@@ -45,7 +45,12 @@ const MermaidBlock: React.FC<MermaidBlockProps> = ({ chart }) => {
             // Opaque: mermaid drops the alpha of a translucent value and
             // repaints it at 50%, which leaves labels on a mid-gray plate.
             edgeLabelBackground: palette.primary.main,
-            fontSize: "16px",
+            // Subgraph frames: mermaid otherwise falls back to its own
+            // near-black title and a derived border unrelated to the palette.
+            titleColor: palette.text.primary,
+            clusterBorder: palette.divider,
+            fontFamily: theme.typography.fontFamily,
+            fontSize: String(theme.typography.body2.fontSize),
           },
           // Edge labels sit on `edgeLabelBackground`, the node labels on
           // `primaryColor`, but mermaid colors both from `textColor`. Repaint
@@ -85,35 +90,40 @@ const MermaidBlock: React.FC<MermaidBlockProps> = ({ chart }) => {
 
   if (error) {
     return (
-      <pre
-        style={{
+      <Box
+        component="pre"
+        sx={{
           overflowX: "auto",
-          borderRadius: 4,
-          padding: 12,
-          fontSize: "0.75rem",
+          m: 0,
+          p: 1.5,
+          borderRadius: 1,
+          bgcolor: "action.hover",
+          fontSize: (theme) => theme.typography.caption.fontSize,
         }}
         data-testid="mermaid-fallback"
       >
         <code>{chart}</code>
-      </pre>
+      </Box>
     )
   }
 
   if (!svg) {
     return (
-      <div
-        style={{
+      <Box
+        sx={{
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          padding: 16,
-          fontSize: "0.875rem",
-          opacity: 0.6,
+          p: 2,
         }}
         data-testid="mermaid-loading"
       >
-        Rendering diagram…
-      </div>
+        {/* Muted via opacity, matching PatternDocCanvas: the light theme maps
+            `text.secondary` to a near-white gray that is unreadable on paper. */}
+        <Typography variant="body2" sx={{ opacity: 0.6 }}>
+          Rendering diagram…
+        </Typography>
+      </Box>
     )
   }
 
