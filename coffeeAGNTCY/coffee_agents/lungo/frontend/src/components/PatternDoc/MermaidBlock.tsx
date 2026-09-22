@@ -42,8 +42,23 @@ const MermaidBlock: React.FC<MermaidBlockProps> = ({ chart }) => {
             tertiaryColor: palette.background.default,
             lineColor: palette.primary.main,
             textColor: palette.text.primary,
+            // Opaque: mermaid drops the alpha of a translucent value and
+            // repaints it at 50%, which leaves labels on a mid-gray plate.
+            edgeLabelBackground: palette.primary.main,
             fontSize: "16px",
           },
+          // Edge labels sit on `edgeLabelBackground`, the node labels on
+          // `primaryColor`, but mermaid colors both from `textColor`. Repaint
+          // only the edge labels for the filled chip they actually sit on.
+          themeCSS: `
+            .edgeLabel, .edgeLabel p, .edgeLabel span {
+              color: ${palette.primary.contrastText};
+              fill: ${palette.primary.contrastText};
+            }
+            .edgeLabel p {
+              padding: ${theme.spacing(0.25, 0.75)};
+            }
+          `,
           flowchart: {
             curve: "basis",
             padding: 20,
