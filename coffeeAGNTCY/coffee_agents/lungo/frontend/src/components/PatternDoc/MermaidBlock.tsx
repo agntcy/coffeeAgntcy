@@ -12,6 +12,16 @@ interface MermaidBlockProps {
   chart: string
 }
 
+/**
+ * Max label widths before text wraps. Narrow labels keep the diagram narrow,
+ * which matters because mermaid scales an oversized diagram (text included)
+ * down to the panel width. Edge labels get more room than node labels: they
+ * are short enough to stay on one line, and wrapping them reads poorly on
+ * their filled chip.
+ */
+const NODE_LABEL_WRAP_WIDTH_PX = 110
+const EDGE_LABEL_WRAP_WIDTH_PX = 160
+
 const MermaidBlock: React.FC<MermaidBlockProps> = ({ chart }) => {
   const rawId = useId()
   const svgId = `mermaid-${rawId.replace(/[^a-zA-Z0-9_-]/g, "-")}`
@@ -50,7 +60,9 @@ const MermaidBlock: React.FC<MermaidBlockProps> = ({ chart }) => {
             titleColor: palette.text.primary,
             clusterBorder: palette.divider,
             fontFamily: theme.typography.fontFamily,
-            fontSize: String(theme.typography.body2.fontSize),
+            // Sets both node and edge labels. Mermaid scales wide diagrams
+            // down to the panel width, so start from the larger body size.
+            fontSize: String(theme.typography.body1.fontSize),
           },
           // Edge labels sit on `edgeLabelBackground`, the node labels on
           // `primaryColor`, but mermaid colors both from `textColor`. Repaint
@@ -59,16 +71,23 @@ const MermaidBlock: React.FC<MermaidBlockProps> = ({ chart }) => {
             .edgeLabel, .edgeLabel p, .edgeLabel span {
               color: ${palette.primary.contrastText};
               fill: ${palette.primary.contrastText};
+              /* The flowchart wrappingWidth below covers node labels only. */
+              white-space: normal !important;
+              max-width: ${EDGE_LABEL_WRAP_WIDTH_PX}px;
+              overflow-wrap: break-word;
             }
             .edgeLabel p {
               padding: ${theme.spacing(0.25, 0.75)};
             }
           `,
           flowchart: {
-            curve: "basis",
+            // Not "basis": its spline ignores the layout points, so mermaid
+            // places edge labels off their reserved slots and they collide.
+            curve: "natural",
             padding: 20,
             nodeSpacing: 50,
             rankSpacing: 60,
+            wrappingWidth: NODE_LABEL_WRAP_WIDTH_PX,
           },
         })
         const result = await mermaid.render(svgId, chart)
