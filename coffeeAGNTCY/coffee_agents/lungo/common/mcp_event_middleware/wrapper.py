@@ -32,7 +32,7 @@ from common.workflow_utils.inflight import (
     resolve_correlation_id,
 )
 from common.workflow_utils.mcp import emit_mcp_edge_event
-from common.workflow_utils.workflow_catalog import lookup_workflow
+from common.workflow_utils.workflow_catalog import WorkflowMetadata, lookup_workflow
 from config.config import EMIT_WORKFLOW_EVENTS
 from schema.types import InstanceId
 
@@ -52,7 +52,7 @@ def _is_valid_instance_id(instance_id: str) -> bool:
 class _ResolvedIdentity:
     """Workflow identity resolved for a wrapped MCP client."""
 
-    workflow_name: str
+    catalog: WorkflowMetadata
     instance_id: str
     trace_id: int | None
     span_id: int | None
@@ -76,7 +76,7 @@ def _identity_from(
     if not instance_id or not _is_valid_instance_id(instance_id):
         return None
     return _ResolvedIdentity(
-        workflow_name=metadata.workflow_name,
+        catalog=metadata,
         instance_id=instance_id,
         trace_id=trace_id,
         span_id=span_id,
@@ -210,7 +210,7 @@ class EventEmittingMCPClient:
                 target_stable_agent_id=self._target_stable_agent_id,
                 mcp_in_flight=mcp_in_flight,
                 correlation_id=correlation_id,
-                workflow_name=self._identity.workflow_name,
+                identity=self._identity.catalog,
                 instance_id=self._identity.instance_id,
                 trace_id=self._identity.trace_id,
                 span_id=self._identity.span_id,
@@ -229,8 +229,7 @@ class EventEmittingMCPClient:
         """Invoke the underlying tool, emitting start/end edge UPDATE events."""
         tool_name = self._extract_tool_name(args, kwargs)
         correlation_id = resolve_correlation_id(
-            ctx_state={},
-            trace_id=self._identity.trace_id,
+            ctx_state={}, trace_id=self._identity.trace_id,
         )
 
         await self._emit(

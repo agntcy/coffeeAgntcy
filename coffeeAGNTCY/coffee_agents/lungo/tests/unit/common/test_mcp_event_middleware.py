@@ -140,6 +140,11 @@ def _edge(event):
     return topology.edges[0]
 
 
+def _mcp(edge):
+    assert edge.mcp is not None
+    return edge.mcp
+
+
 def _wrap(client):
     return wrap_mcp_client(
         client,
@@ -171,16 +176,17 @@ async def test_call_tool_emits_start_then_end(case, args, kwargs, emit_enabled):
     assert len(events) == 2
 
     start_edge = _edge(events[0])
+    start_mcp = _mcp(start_edge)
     assert start_edge.operation == Operation.UPDATE
-    assert start_edge.mcp_in_flight is True
-    assert start_edge.tool_name == "get_forecast"
-    assert start_edge.mcp_server == _SERVER
-    assert start_edge.source_stable_agent_id == stable_agent_id_for_name(_AGENT_ID)
-    assert start_edge.target_stable_agent_id == _TARGET_SID
+    assert start_mcp.mcp_in_flight is True
+    assert start_mcp.tool_name == "get_forecast"
+    assert start_mcp.mcp_server == _SERVER
+    assert start_mcp.source_stable_agent_id.root == stable_agent_id_for_name(_AGENT_ID)
+    assert start_mcp.target_stable_agent_id.root == _TARGET_SID
 
     end_edge = _edge(events[1])
     assert end_edge.operation == Operation.UPDATE
-    assert end_edge.mcp_in_flight is False
+    assert _mcp(end_edge).mcp_in_flight is False
     assert _instance(events[0]).topology.nodes == []
     assert _instance(events[1]).topology.nodes == []
 
@@ -195,7 +201,7 @@ async def test_call_tool_error_emits_end_and_reraises(emit_enabled):
 
     events = wrapped._event_sink.events
     assert len(events) == 2
-    assert _edge(events[1]).mcp_in_flight is False
+    assert _mcp(_edge(events[1])).mcp_in_flight is False
 
 
 async def test_call_tool_streaming_end_after_iteration(emit_enabled):
@@ -206,12 +212,12 @@ async def test_call_tool_streaming_end_after_iteration(emit_enabled):
     stream = await wrapped.call_tool(name="get_forecast")
     events = wrapped._event_sink.events
     assert len(events) == 1
-    assert _edge(events[0]).mcp_in_flight is True
+    assert _mcp(_edge(events[0])).mcp_in_flight is True
 
     chunks = [chunk async for chunk in stream]
     assert chunks == ["a", "b", "c"]
     assert len(events) == 2
-    assert _edge(events[1]).mcp_in_flight is False
+    assert _mcp(_edge(events[1])).mcp_in_flight is False
 
 
 async def test_call_tool_streaming_error_emits_end(emit_enabled):
@@ -227,7 +233,7 @@ async def test_call_tool_streaming_error_emits_end(emit_enabled):
 
     events = wrapped._event_sink.events
     assert len(events) == 2
-    assert _edge(events[1]).mcp_in_flight is False
+    assert _mcp(_edge(events[1])).mcp_in_flight is False
 
 
 async def test_list_tools_passthrough(emit_enabled):

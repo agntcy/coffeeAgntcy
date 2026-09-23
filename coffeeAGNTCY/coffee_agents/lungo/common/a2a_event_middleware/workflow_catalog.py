@@ -5,8 +5,14 @@
 
 from common.workflow_utils.workflow_catalog import (
     WorkflowMetadata,
+    _clear_catalog_cache,
     _load_catalog,
     lookup_workflow,
 )
 
-__all__ = ["WorkflowMetadata", "lookup_workflow", "_load_catalog"]
+__all__ = [
+    "WorkflowMetadata",
+    "lookup_workflow",
+    "_load_catalog",
+    "_clear_catalog_cache",
+]

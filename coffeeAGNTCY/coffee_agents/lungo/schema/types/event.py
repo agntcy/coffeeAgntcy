@@ -25,9 +25,14 @@ The class hierarchy mirrors the ``$defs`` of the source schema:
   schema's ``not { required: [...] }`` test and routes inputs to the
   ``base`` or ``agent`` branch; smart-union picks ``Full`` over ``Partial``
   inside each branch.
-* Cross-field constraints not expressible in JSON Schema (e.g.
-  ``workflow.instances`` map keys must equal the nested ``id``) are encoded as
-  Pydantic validators below.
+* ``$defs.workflow_metadata`` is composed into ``$defs.workflow`` via
+  ``allOf`` only, so its fields are declared on ``Workflow`` and no
+  standalone ``WorkflowMetadata`` class is emitted (skill naming for
+  allOf-only ``$defs``).
+* Optional ``$defs.mcp`` is a named ``$def``, so ``Mcp`` is emitted;
+  ``mcp`` stays optional on both ``PartialEdge`` and ``Edge``.
+* Optional ``trace_id`` / ``span_id`` on ``$defs.metadata`` are unconstrained
+  strings (1.x wire compatibility; Lungo emitters still write OTel hex).
 """
 
 from __future__ import annotations
@@ -332,8 +337,21 @@ Node = Annotated[
 
 
 # ---------------------------------------------------------------------------
-# Edge hierarchy (``$defs.partial_edge`` / ``edge`` / ``topology_edge_item``)
+# Edge hierarchy (``$defs.mcp`` / ``partial_edge`` / ``edge`` / ``topology_edge_item``)
 # ---------------------------------------------------------------------------
+
+
+class Mcp(BaseModel):
+    """Generated from ``$defs.mcp``: optional MCP tool-call fields on an edge
+    (added in 1.2.0)."""
+
+    model_config = ConfigDict(extra="allow")
+
+    tool_name: Annotated[str, Field(min_length=1)] | None = None
+    mcp_server: Annotated[str, Field(min_length=1)] | None = None
+    mcp_in_flight: bool | None = None
+    source_stable_agent_id: StableAgentId | None = None
+    target_stable_agent_id: StableAgentId | None = None
 
 
 class PartialEdge(BaseModel):
@@ -349,12 +367,13 @@ class PartialEdge(BaseModel):
     target: NodeId | None = None
     bidirectional: bool = False
     weight: float = 1.0
+    mcp: Mcp | None = None
 
 
 class Edge(BaseModel):
     """Generated from ``$defs.edge``: full edge data (mainly for init/reset);
-    all fields required. Standalone class (not a subclass of
-    ``PartialEdge``)."""
+    all listed fields required. Standalone class (not a subclass of
+    ``PartialEdge``). ``mcp`` remains optional."""
 
     model_config = ConfigDict(extra="allow")
 
@@ -365,6 +384,7 @@ class Edge(BaseModel):
     target: NodeId
     bidirectional: bool
     weight: float
+    mcp: Mcp | None = None
 
 
 # Generated from ``$defs.topology_edge_item`` (anyOf).
@@ -439,6 +459,28 @@ class Metadata(BaseModel):
         Field(
             min_length=1,
             description="Producer identifier (e.g. agent or adapter name).",
+        ),
+    ]
+    trace_id: Annotated[
+        str | None,
+        Field(
+            default=None,
+            description=(
+                "Optional OpenTelemetry trace id (added in 1.2.0). Wire format "
+                "is an unconstrained string for 1.x compatibility; Lungo "
+                "emitters use 32 hex characters."
+            ),
+        ),
+    ]
+    span_id: Annotated[
+        str | None,
+        Field(
+            default=None,
+            description=(
+                "Optional OpenTelemetry span id (added in 1.2.0). Wire format "
+                "is an unconstrained string for 1.x compatibility; Lungo "
+                "emitters use 16 hex characters."
+            ),
         ),
     ]
 

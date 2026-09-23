@@ -16,6 +16,7 @@ from schema.types import (
     EdgeId,
     Event,
     EventType,
+    Mcp,
     Operation,
     PartialEdge,
     PartialTopology,
@@ -24,6 +25,7 @@ from schema.types import (
 from common.stable_agent_id import stable_agent_id_for_name
 from common.workflow_utils.builders import build_event
 from common.workflow_utils.event_sink import EventSink
+from common.workflow_utils.workflow_catalog import WorkflowMetadata
 
 
 def build_mcp_edge_topology(
@@ -47,11 +49,13 @@ def build_mcp_edge_topology(
             PartialEdge(
                 id=EdgeId(f"edge://{uuid4()}"),
                 operation=Operation.UPDATE,
-                source_stable_agent_id=source_stable_agent_id,
-                target_stable_agent_id=target_stable_agent_id,
-                tool_name=tool_name,
-                mcp_server=mcp_server,
-                mcp_in_flight=mcp_in_flight,
+                mcp=Mcp(
+                    source_stable_agent_id=source_stable_agent_id,
+                    target_stable_agent_id=target_stable_agent_id,
+                    tool_name=tool_name,
+                    mcp_server=mcp_server,
+                    mcp_in_flight=mcp_in_flight,
+                ),
             ),
         ],
     )
@@ -72,7 +76,7 @@ async def emit_mcp_edge_event(
     target_stable_agent_id: str,
     mcp_in_flight: bool,
     correlation_id: str,
-    workflow_name: str,
+    identity: WorkflowMetadata,
     instance_id: str,
     trace_id: int | None = None,
     span_id: int | None = None,
@@ -87,7 +91,7 @@ async def emit_mcp_edge_event(
     )
     event = build_event(
         source=source,
-        workflow_name=workflow_name,
+        identity=identity,
         instance_id=instance_id,
         topology=topology,
         correlation_id=correlation_id,

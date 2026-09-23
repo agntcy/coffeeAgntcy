@@ -93,6 +93,7 @@ Both events are correlated by OTel `trace_id` and a shared in-flight state map.
 - If `EMIT_WORKFLOW_EVENTS` is false: sink is disabled, no emission occurs.
 - If OTel context is missing: middleware still emits outbound, but inbound correlation may be lost.
 - If sink POST fails: error is logged, exception is not raised to caller.
+- Catalog lookup (`GET /agentic-workflows/`) is fail-soft: a down or empty catalog is logged at **error** and emission is skipped; the agent request continues. A successful catalog is process-cached. A failed GET is reused for a short window (no retry, no extra error); after that window the next lookup retries. The GET itself is a blocking `httpx.Client` call (shared by sync MCP wrap and async A2A middleware).
 
 ## MCP Tool-Call Events
 
@@ -115,9 +116,9 @@ between the invoking agent and the target MCP server node (no transient nodes).
 
 ### Lifecycle
 
-1. **Start** → `Operation.UPDATE` on a placeholder edge carrying
+1. **Start** → `Operation.UPDATE` on a placeholder edge whose `mcp` group carries
    `source_stable_agent_id`, `target_stable_agent_id`, and `mcp_in_flight=true`.
-2. **End** → same edge with `mcp_in_flight=false`.
+2. **End** → same edge with `mcp.mcp_in_flight=false`.
    - For non-streaming results, end is emitted when `call_tool` returns.
    - For streamed (async-iterable) results, end is emitted when iteration
      completes or raises.

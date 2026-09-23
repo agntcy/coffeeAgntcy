@@ -55,6 +55,9 @@ export interface TopologyNodeWire {
   [key: string]: unknown
 }
 
+/** Generated `$defs.mcp`; stays aligned with `event_v1` via `generate:api-types`. */
+export type TopologyEdgeMcpWire = Schemas["mcp"]
+
 export interface TopologyEdgeWire {
   id: string
   operation?: string
@@ -63,6 +66,9 @@ export interface TopologyEdgeWire {
   target?: string
   bidirectional?: boolean
   weight?: number
+  mcp?: TopologyEdgeMcpWire
+  source_stable_agent_id?: string
+  target_stable_agent_id?: string
   [key: string]: unknown
 }
 

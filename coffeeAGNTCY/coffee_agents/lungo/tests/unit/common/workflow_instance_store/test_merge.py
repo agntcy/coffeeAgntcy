@@ -970,7 +970,22 @@ def _state_publish_subscribe_seed() -> Data:
     )
 
 
-def _mcp_edge_event(*, mcp_in_flight: bool) -> Event:
+def _mcp_edge_event(*, mcp_in_flight: bool, grouped: bool = False) -> Event:
+    edge: dict = {
+        "id": PLACEHOLDER_EDGE,
+        "operation": "update",
+    }
+    mcp_fields = {
+        "source_stable_agent_id": COLOMBIA_SID,
+        "target_stable_agent_id": WEATHER_SID,
+        "mcp_in_flight": mcp_in_flight,
+        "tool_name": "get_forecast",
+        "mcp_server": "lungo_weather_service",
+    }
+    if grouped:
+        edge["mcp"] = mcp_fields
+    else:
+        edge.update(mcp_fields)
     return _evt(
         {
             "workflows": {
@@ -985,17 +1000,7 @@ def _mcp_edge_event(*, mcp_in_flight: bool) -> Event:
                             "id": INST,
                             "topology": {
                                 "nodes": [],
-                                "edges": [
-                                    {
-                                        "id": PLACEHOLDER_EDGE,
-                                        "operation": "update",
-                                        "source_stable_agent_id": COLOMBIA_SID,
-                                        "target_stable_agent_id": WEATHER_SID,
-                                        "mcp_in_flight": mcp_in_flight,
-                                        "tool_name": "get_forecast",
-                                        "mcp_server": "lungo_weather_service",
-                                    }
-                                ],
+                                "edges": [edge],
                             },
                         }
                     },
@@ -1005,28 +1010,193 @@ def _mcp_edge_event(*, mcp_in_flight: bool) -> Event:
     )
 
 
-def test_reconcile_mcp_edge_resolves_catalog_edge_id():
+def _dumped_mcp_in_flight(edge_dump: dict) -> bool | None:
+    mcp = edge_dump.get("mcp")
+    if isinstance(mcp, dict) and "mcp_in_flight" in mcp:
+        return mcp["mcp_in_flight"]
+    return edge_dump.get("mcp_in_flight")
+
+
+def _dumped_mcp_tool_name(edge_dump: dict) -> str | None:
+    mcp = edge_dump.get("mcp")
+    if isinstance(mcp, dict) and "tool_name" in mcp:
+        return mcp["tool_name"]
+    return edge_dump.get("tool_name")
+
+
+def _model_mcp_in_flight(edge) -> bool | None:
+    mcp = getattr(edge, "mcp", None)
+    if mcp is not None and getattr(mcp, "mcp_in_flight", None) is not None:
+        return mcp.mcp_in_flight
+    return getattr(edge, "mcp_in_flight", None)
+
+
+def _assert_model_mcp_shapes_agree(edge, *, mcp_in_flight: bool) -> None:
+    mcp = getattr(edge, "mcp", None)
+    assert mcp is not None
+    assert mcp.mcp_in_flight is mcp_in_flight
+    assert mcp.tool_name == "get_forecast"
+    assert mcp.mcp_server == "lungo_weather_service"
+    assert _id_text_or_value(mcp.source_stable_agent_id) == COLOMBIA_SID
+    assert _id_text_or_value(mcp.target_stable_agent_id) == WEATHER_SID
+    assert getattr(edge, "mcp_in_flight") is mcp_in_flight
+    assert getattr(edge, "tool_name") == "get_forecast"
+    assert getattr(edge, "mcp_server") == "lungo_weather_service"
+    assert getattr(edge, "source_stable_agent_id") == COLOMBIA_SID
+    assert getattr(edge, "target_stable_agent_id") == WEATHER_SID
+
+
+def _id_text_or_value(value) -> str | None:
+    if isinstance(value, str):
+        return value
+    root = getattr(value, "root", None)
+    if isinstance(root, str):
+        return root
+    return None
+
+
+def _assert_dumped_mcp_shapes_agree(
+    edge_dump: dict,
+    *,
+    mcp_in_flight: bool,
+) -> None:
+    mcp = edge_dump.get("mcp")
+    assert isinstance(mcp, dict)
+    assert mcp["mcp_in_flight"] is mcp_in_flight
+    assert mcp["tool_name"] == "get_forecast"
+    assert mcp["mcp_server"] == "lungo_weather_service"
+    assert mcp["source_stable_agent_id"] == COLOMBIA_SID
+    assert mcp["target_stable_agent_id"] == WEATHER_SID
+    assert edge_dump["mcp_in_flight"] is mcp_in_flight
+    assert edge_dump["tool_name"] == "get_forecast"
+    assert edge_dump["mcp_server"] == "lungo_weather_service"
+    assert edge_dump["source_stable_agent_id"] == COLOMBIA_SID
+    assert edge_dump["target_stable_agent_id"] == WEATHER_SID
+
+
+@pytest.mark.parametrize(
+    "case,grouped",
+    [
+        ("flat_extras", False),
+        ("grouped_mcp", True),
+    ],
+)
+def test_reconcile_mcp_edge_resolves_catalog_edge_id(case, grouped):
     state = _state_publish_subscribe_seed()
-    normalized = reconcile_event_mcp_edges(state, _mcp_edge_event(mcp_in_flight=True))
+    normalized = reconcile_event_mcp_edges(
+        state, _mcp_edge_event(mcp_in_flight=True, grouped=grouped)
+    )
     edge = normalized.data.workflows["w"].instances[INST].topology.edges[0]
     assert edge.id.root == CATALOG_EDGE
     assert edge.source.root == COLOMBIA_NODE
     assert edge.target.root == WEATHER_NODE
     assert edge.operation.value == "update"
-    assert edge.mcp_in_flight is True
+    assert _model_mcp_in_flight(edge) is True
+    _assert_model_mcp_shapes_agree(edge, mcp_in_flight=True)
 
 
-def test_reconcile_then_merge_mcp_edge_keeps_single_catalog_edge():
+@pytest.mark.parametrize(
+    "case,grouped",
+    [
+        ("flat_extras", False),
+        ("grouped_mcp", True),
+    ],
+)
+def test_reconcile_then_merge_mcp_edge_keeps_single_catalog_edge(case, grouped):
     state = _state_publish_subscribe_seed()
-    start = reconcile_event_mcp_edges(state, _mcp_edge_event(mcp_in_flight=True))
+    start = reconcile_event_mcp_edges(
+        state, _mcp_edge_event(mcp_in_flight=True, grouped=grouped)
+    )
     out = merge_event_data(state, start)
-    end = reconcile_event_mcp_edges(out, _mcp_edge_event(mcp_in_flight=False))
+    end = reconcile_event_mcp_edges(
+        out, _mcp_edge_event(mcp_in_flight=False, grouped=grouped)
+    )
     out = merge_event_data(out, end)
     topo = _dump(out)["workflows"]["w"]["instances"][INST]["topology"]
     assert len(topo["edges"]) == 1
     assert topo["edges"][0]["id"] == CATALOG_EDGE
     assert topo["edges"][0]["source"] == COLOMBIA_NODE
     assert topo["edges"][0]["target"] == WEATHER_NODE
-    assert topo["edges"][0]["mcp_in_flight"] is False
-    assert topo["edges"][0]["tool_name"] == "get_forecast"
+    assert _dumped_mcp_in_flight(topo["edges"][0]) is False
+    assert _dumped_mcp_tool_name(topo["edges"][0]) == "get_forecast"
+    _assert_dumped_mcp_shapes_agree(topo["edges"][0], mcp_in_flight=False)
     assert len(topo["nodes"]) == 2
+
+
+@pytest.mark.parametrize(
+    "case,start_grouped,end_grouped",
+    [
+        ("grouped_then_flat", True, False),
+        ("flat_then_grouped", False, True),
+        ("grouped_then_grouped", True, True),
+        ("flat_then_flat", False, False),
+    ],
+)
+def test_mcp_last_write_is_mirrored_to_both_shapes(
+    case, start_grouped, end_grouped
+):
+    state = _state_publish_subscribe_seed()
+    start = reconcile_event_mcp_edges(
+        state,
+        _mcp_edge_event(mcp_in_flight=True, grouped=start_grouped),
+    )
+    out = merge_event_data(state, start)
+    end = reconcile_event_mcp_edges(
+        out,
+        _mcp_edge_event(mcp_in_flight=False, grouped=end_grouped),
+    )
+    out = merge_event_data(out, end)
+    topo = _dump(out)["workflows"]["w"]["instances"][INST]["topology"]
+    assert len(topo["edges"]) == 1
+    _assert_dumped_mcp_shapes_agree(topo["edges"][0], mcp_in_flight=False)
+
+
+def _catalog_edge_payload(*, grouped: bool, mcp_in_flight: bool) -> dict:
+    mcp_fields = {
+        "source_stable_agent_id": COLOMBIA_SID,
+        "target_stable_agent_id": WEATHER_SID,
+        "mcp_in_flight": mcp_in_flight,
+        "tool_name": "get_forecast",
+        "mcp_server": "lungo_weather_service",
+    }
+    edge: dict = {
+        "id": CATALOG_EDGE,
+        "operation": "update",
+        "type": "branching",
+        "source": COLOMBIA_NODE,
+        "target": WEATHER_NODE,
+        "bidirectional": False,
+        "weight": 1.0,
+    }
+    if grouped:
+        edge["mcp"] = mcp_fields
+    else:
+        edge.update(mcp_fields)
+    return edge
+
+
+@pytest.mark.parametrize(
+    "case,start_grouped,end_grouped",
+    [
+        ("grouped_then_flat", True, False),
+        ("flat_then_grouped", False, True),
+    ],
+)
+def test_merge_topology_delta_mirrors_mcp_last_write(
+    case, start_grouped, end_grouped
+):
+    existing = {
+        "nodes": [],
+        "edges": [
+            _catalog_edge_payload(grouped=start_grouped, mcp_in_flight=True)
+        ],
+    }
+    delta = {
+        "nodes": [],
+        "edges": [
+            _catalog_edge_payload(grouped=end_grouped, mcp_in_flight=False)
+        ],
+    }
+    out = merge_topology_delta(existing, delta)
+    assert len(out["edges"]) == 1
+    _assert_dumped_mcp_shapes_agree(out["edges"][0], mcp_in_flight=False)

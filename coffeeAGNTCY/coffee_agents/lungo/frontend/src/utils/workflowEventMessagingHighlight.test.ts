@@ -46,7 +46,28 @@ describe("workflowEventMessagingHighlight", () => {
     expect(highlighted[0]?.animated).toBe(true)
   })
 
-  it("indexes stable agent id pairs from edge wire fields", () => {
+  it("indexes stable agent id pairs from grouped edge.mcp", () => {
+    const sourceSid = "agent://colombia-farm-stable"
+    const targetSid = "agent://weather-mcp-stable"
+    const ids = messagingHighlightIdsFromTopology({
+      nodes: [],
+      edges: [
+        {
+          id: "edge://catalog-mcp",
+          source: "node://colombia-wire",
+          target: "node://weather-wire",
+          mcp: {
+            source_stable_agent_id: sourceSid,
+            target_stable_agent_id: targetSid,
+          },
+        },
+      ],
+    })
+
+    expect(ids.edgePairs.has(`${sourceSid}->${targetSid}`)).toBe(true)
+  })
+
+  it("indexes stable agent id pairs from flat edge extras", () => {
     const sourceSid = "agent://colombia-farm-stable"
     const targetSid = "agent://weather-mcp-stable"
     const ids = messagingHighlightIdsFromTopology({

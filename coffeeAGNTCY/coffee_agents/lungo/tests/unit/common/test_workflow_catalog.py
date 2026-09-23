@@ -3,12 +3,13 @@
 
 """Unit tests for ``common.workflow_utils.workflow_catalog``.
 
-Covers JSON catalog loading and the ``lookup_workflow`` lookup.
+Covers HTTP catalog loading and the ``lookup_workflow`` lookup.
 """
 
 from __future__ import annotations
 
-import json
+import logging
+from typing import Any
 
 import pytest
 from common.a2a_event_middleware import event_sink as shim_es
@@ -19,17 +20,15 @@ from common.workflow_utils import inflight as inflight
 from common.workflow_utils import workflow_catalog as wc
 
 
-class TestLookupWorkflow:
-    """The autouse ``_test_workflows_catalog`` fixture in conftest already
-    points ``LUNGO_WORKFLOWS_JSON`` at an Alpha/Beta catalog, so happy-path
-    tests don't need extra setup. Tests that exercise loader edge cases
-    write their own catalog and clear the lru_cache.
-    """
+def _payload_from_entries(entries: list[dict[str, Any]]) -> dict[str, Any]:
+    return {entry["name"]: entry for entry in entries}
 
+
+class TestLookupWorkflow:
     def test_returns_metadata_for_known_name(self):
         wf = wc.lookup_workflow("Test Workflow Alpha")
         assert wf is not None
-        assert wf.workflow_name == "Test Workflow Alpha"
+        assert wf.name == "Test Workflow Alpha"
         assert wf.pattern == "Supervisor"
         assert wf.use_case == "Unit Test"
         assert wf.scenario == "Alpha Scenario"
@@ -41,39 +40,153 @@ class TestLookupWorkflow:
         assert wc.lookup_workflow(None) is None
         assert wc.lookup_workflow("") is None
 
-    def test_empty_catalog_raises(self, tmp_path, monkeypatch):
-        path = tmp_path / "empty.json"
-        path.write_text("[]")
-        monkeypatch.setenv("LUNGO_WORKFLOWS_JSON", str(path))
-        wc._load_catalog.cache_clear()
-        with pytest.raises(RuntimeError):
-            wc.lookup_workflow("anything")
+    def test_get_failure_returns_none(self, monkeypatch):
+        def fetch_none():
+            return None
 
-    def test_malformed_entries_skipped_not_fatal(self, tmp_path, monkeypatch):
-        """Mixed catalogs should load valid entries and skip invalid ones."""
-        path = tmp_path / "partial.json"
-        path.write_text(
-            json.dumps(
-                [
-                    "not an object",
-                    {"name": "missing pattern"},
-                    {
-                        "name": "Good Workflow",
-                        "pattern": "Supervisor",
-                        "use_case": "Unit Test",
-                        "scenario": "Good Scenario",
-                    },
-                ]
-            )
-        )
-        monkeypatch.setenv("LUNGO_WORKFLOWS_JSON", str(path))
-        wc._load_catalog.cache_clear()
+        monkeypatch.setattr(wc, "_fetch_catalog_payload", fetch_none)
+        wc._clear_catalog_cache()
+        assert wc.lookup_workflow("Test Workflow Alpha") is None
+
+    def test_empty_catalog_returns_none(self, monkeypatch):
+        def fetch_empty():
+            return {}
+
+        monkeypatch.setattr(wc, "_fetch_catalog_payload", fetch_empty)
+        wc._clear_catalog_cache()
+        assert wc.lookup_workflow("anything") is None
+
+    def test_malformed_entries_skipped_not_fatal(self, monkeypatch):
+        def fetch_partial():
+            return {
+                "bad": "not an object",
+                "missing pattern": {"name": "missing pattern"},
+                "Good Workflow": {
+                    "name": "Good Workflow",
+                    "pattern": "Supervisor",
+                    "use_case": "Unit Test",
+                    "scenario": "Good Scenario",
+                },
+            }
+
+        monkeypatch.setattr(wc, "_fetch_catalog_payload", fetch_partial)
+        wc._clear_catalog_cache()
         good = wc.lookup_workflow("Good Workflow")
         assert good is not None
         assert good.pattern == "Supervisor"
         assert good.use_case == "Unit Test"
         assert good.scenario == "Good Scenario"
         assert wc.lookup_workflow("missing pattern") is None
+
+    def test_catalog_fetched_once_for_many_lookups(self, monkeypatch):
+        calls = {"count": 0}
+
+        def fetch_once():
+            calls["count"] += 1
+            return _payload_from_entries(
+                [
+                    {
+                        "name": "Test Workflow Alpha",
+                        "pattern": "Supervisor",
+                        "use_case": "Unit Test",
+                        "scenario": "Alpha Scenario",
+                    }
+                ]
+            )
+
+        monkeypatch.setattr(wc, "_fetch_catalog_payload", fetch_once)
+        wc._clear_catalog_cache()
+        wc.lookup_workflow("Test Workflow Alpha")
+        wc.lookup_workflow("Test Workflow Alpha")
+        wc.lookup_workflow("missing")
+        assert calls["count"] == 1
+
+    def test_failed_get_is_retried_after_negative_cache_expires(
+        self, monkeypatch, caplog
+    ):
+        calls = {"count": 0}
+        clock = {"now": 1000.0}
+
+        def monotonic():
+            return clock["now"]
+
+        def fetch_fail_then_ok():
+            calls["count"] += 1
+            if calls["count"] == 1:
+                return None
+            return _payload_from_entries(
+                [
+                    {
+                        "name": "Test Workflow Alpha",
+                        "pattern": "Supervisor",
+                        "use_case": "Unit Test",
+                        "scenario": "Alpha Scenario",
+                    }
+                ]
+            )
+
+        monkeypatch.setattr(wc.time, "monotonic", monotonic)
+        monkeypatch.setattr(wc, "_fetch_catalog_payload", fetch_fail_then_ok)
+        wc._clear_catalog_cache()
+        caplog.set_level(logging.ERROR, logger=wc.logger.name)
+        assert wc.lookup_workflow("Test Workflow Alpha") is None
+        first_errors = [
+            record
+            for record in caplog.records
+            if record.levelno >= logging.ERROR
+            and "next lookups will wait" in record.getMessage()
+        ]
+        assert len(first_errors) == 1
+        assert wc.lookup_workflow("Test Workflow Alpha") is None
+        assert calls["count"] == 1
+        wait_errors = [
+            record
+            for record in caplog.records
+            if record.levelno >= logging.ERROR
+            and "next lookups will wait" in record.getMessage()
+        ]
+        assert len(wait_errors) == 1
+        clock["now"] += wc._NEGATIVE_CACHE_SECONDS
+        recovered = wc.lookup_workflow("Test Workflow Alpha")
+        assert recovered is not None
+        assert recovered.name == "Test Workflow Alpha"
+        wc.lookup_workflow("Test Workflow Alpha")
+        assert calls["count"] == 2
+
+    def test_empty_parsed_catalog_is_retried_after_negative_cache_expires(
+        self, monkeypatch
+    ):
+        calls = {"count": 0}
+        clock = {"now": 1000.0}
+
+        def monotonic():
+            return clock["now"]
+
+        def fetch_empty_then_ok():
+            calls["count"] += 1
+            if calls["count"] == 1:
+                return {}
+            return _payload_from_entries(
+                [
+                    {
+                        "name": "Test Workflow Alpha",
+                        "pattern": "Supervisor",
+                        "use_case": "Unit Test",
+                        "scenario": "Alpha Scenario",
+                    }
+                ]
+            )
+
+        monkeypatch.setattr(wc.time, "monotonic", monotonic)
+        monkeypatch.setattr(wc, "_fetch_catalog_payload", fetch_empty_then_ok)
+        wc._clear_catalog_cache()
+        assert wc.lookup_workflow("Test Workflow Alpha") is None
+        assert wc.lookup_workflow("Test Workflow Alpha") is None
+        assert calls["count"] == 1
+        clock["now"] += wc._NEGATIVE_CACHE_SECONDS
+        recovered = wc.lookup_workflow("Test Workflow Alpha")
+        assert recovered is not None
+        assert calls["count"] == 2
 
 
 class TestWorkflowCatalogShim:
@@ -84,6 +197,9 @@ class TestWorkflowCatalogShim:
 
     def test_load_catalog_is_shim_alias(self):
         assert shim_wc._load_catalog is wc._load_catalog
+
+    def test_clear_catalog_cache_is_shim_alias(self):
+        assert shim_wc._clear_catalog_cache is wc._clear_catalog_cache
 
 
 class TestInflightShim:

@@ -8,10 +8,10 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from uuid import uuid4
 
+from common.workflow_utils.builders import EVENT_SCHEMA_VERSION
 from common.workflow_instance_store.interfaces import WorkflowInstanceDataStore
 from schema.types import Data, EventType, Workflow, WorkflowInstance
 
-_EVENT_V1_SCHEMA_VERSION = "1.1.0"
 _SEED_EVENT_SOURCE = "lungo.agentic_workflows.api"
 
 
@@ -47,7 +47,7 @@ def build_instantiate_seed_event(
     return {
         "metadata": {
             "timestamp": _metadata_timestamp_rfc3339_utc(),
-            "schema_version": _EVENT_V1_SCHEMA_VERSION,
+            "schema_version": EVENT_SCHEMA_VERSION,
             "correlation": {"id": _new_correlation_id()},
             "id": _new_event_id(),
             "type": EventType.STATE_PROGRESS_UPDATE.value,

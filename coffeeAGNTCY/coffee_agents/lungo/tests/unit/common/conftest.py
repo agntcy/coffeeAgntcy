@@ -6,8 +6,8 @@
 Resets module-level state that the middleware keeps between calls:
 
 * ``common.workflow_utils.inflight.in_flight`` - the per-trace interaction state
-* ``common.workflow_utils.workflow_catalog._load_catalog`` - the
-  ``lru_cache`` around the JSON catalog loader
+* ``common.workflow_utils.workflow_catalog._cached_catalog`` - the
+  process cache of a successful catalog GET
 
 Provides helpers for constructing minimal ``AgentCard`` stand-ins and a patched
 OTel span context without needing a real tracer.
@@ -16,7 +16,6 @@ OTel span context without needing a real tracer.
 from __future__ import annotations
 
 import contextlib
-import json
 import sys
 from dataclasses import dataclass
 from pathlib import Path
@@ -25,10 +24,20 @@ from unittest.mock import MagicMock
 
 import pytest
 
-# ---------------------------------------------------------------------------
-# State-reset fixtures
-# ---------------------------------------------------------------------------
-
+_TEST_CATALOG_PAYLOAD = {
+    "Test Workflow Alpha": {
+        "name": "Test Workflow Alpha",
+        "pattern": "Supervisor",
+        "use_case": "Unit Test",
+        "scenario": "Alpha Scenario",
+    },
+    "Test Workflow Beta": {
+        "name": "Test Workflow Beta",
+        "pattern": "Group-chat",
+        "use_case": "Unit Test",
+        "scenario": "Beta Scenario",
+    },
+}
 
 @pytest.fixture(autouse=True)
 def _reset_in_flight() -> Iterator[None]:
@@ -47,53 +56,38 @@ def _reset_in_flight() -> Iterator[None]:
 
 @pytest.fixture(autouse=True)
 def _reset_workflow_catalog_cache() -> Iterator[None]:
-    """Invalidate the ``lru_cache`` wrapping the catalog loader."""
+    """Drop the successful-GET catalog cache around every test."""
     try:
         from common.workflow_utils import workflow_catalog as wr
     except Exception:
         yield
         return
-    wr._load_catalog.cache_clear()
+    wr._clear_catalog_cache()
     try:
         yield
     finally:
-        wr._load_catalog.cache_clear()
+        wr._clear_catalog_cache()
 
 
 @pytest.fixture(autouse=True)
-def _test_workflows_catalog(
-    request, tmp_path_factory, monkeypatch
-) -> Iterator[Path | None]:
-    """Point the workflow registry at a fixed Alpha/Beta catalog for tests
-    in this directory by default. Tests that need to import a real
-    supervisor module (which registers production workflow names) opt out
-    by requesting the ``real_workflow_catalog`` fixture.
+def _test_workflows_catalog(request, monkeypatch) -> Iterator[None]:
+    """Point catalog lookup at a fixed Alpha/Beta GET payload.
+
+    Tests that need a different catalog monkeypatch
+    ``_fetch_catalog_payload`` themselves after this fixture.
     """
     if "real_workflow_catalog" in request.fixturenames:
-        yield None
+        yield
         return
 
-    path = tmp_path_factory.mktemp("wf_catalog") / "starting_workflows.json"
-    path.write_text(
-        json.dumps(
-            [
-                {
-                    "name": "Test Workflow Alpha",
-                    "pattern": "Supervisor",
-                    "use_case": "Unit Test",
-                    "scenario": "Alpha Scenario",
-                },
-                {
-                    "name": "Test Workflow Beta",
-                    "pattern": "Group-chat",
-                    "use_case": "Unit Test",
-                    "scenario": "Beta Scenario",
-                },
-            ]
-        )
+    def fetch_test_catalog():
+        return dict(_TEST_CATALOG_PAYLOAD)
+
+    monkeypatch.setattr(
+        "common.workflow_utils.workflow_catalog._fetch_catalog_payload",
+        fetch_test_catalog,
     )
-    monkeypatch.setenv("LUNGO_WORKFLOWS_JSON", str(path))
-    yield path
+    yield
 
 
 @pytest.fixture
@@ -145,7 +139,6 @@ def _default_workflow_baggage(request) -> Iterator[None]:
 # Config-flag helper
 # ---------------------------------------------------------------------------
 
-
 @pytest.fixture
 def patch_emit_events(monkeypatch):
     """Return a setter that toggles ``EMIT_WORKFLOW_EVENTS`` on the middleware
@@ -155,7 +148,6 @@ def patch_emit_events(monkeypatch):
 
     def _set(enabled: bool) -> None:
         from common.a2a_event_middleware import middleware as mw
-
         monkeypatch.setattr(mw, "EMIT_WORKFLOW_EVENTS", enabled, raising=False)
 
     return _set
@@ -165,14 +157,12 @@ def patch_emit_events(monkeypatch):
 # AgentCard stand-in
 # ---------------------------------------------------------------------------
 
-
 @dataclass
 class _FakeAgentCard:
     """Minimal duck-typed ``AgentCard`` for interceptor/consumer tests.
 
     Only the attributes read by the middleware are populated.
     """
-
     name: str
     preferred_transport: str | None = "JSONRPC"
 
@@ -195,7 +185,6 @@ def agent_card_factory():
 # ---------------------------------------------------------------------------
 # OTel span-context patching
 # ---------------------------------------------------------------------------
-
 
 @dataclass
 class _FakeSpanContext:
@@ -280,7 +269,6 @@ def otel_span(monkeypatch):
 # ---------------------------------------------------------------------------
 # Module-path helper - keeps ``__init__.py``-less test dirs importable
 # ---------------------------------------------------------------------------
-
 
 @pytest.fixture(scope="session", autouse=True)
 def _ensure_lungo_on_path() -> None:

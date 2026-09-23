@@ -47,11 +47,88 @@ class EventCase(NamedTuple):
     outputs: EventOutputs
 
 
+def _starting_node(d: dict) -> dict:
+    return d["data"]["workflows"]["recruiter"]["starting_topology"]["nodes"][0]
+
+
+def _starting_edge(d: dict) -> dict:
+    return d["data"]["workflows"]["recruiter"]["starting_topology"]["edges"][0]
+
+
+def _mutate_root_extra_property(d: dict) -> None:
+    d["extra"] = 1
+
+
+def _mutate_missing_required_metadata(d: dict) -> None:
+    d.pop("metadata")
+
+
+def _mutate_missing_required_data(d: dict) -> None:
+    d.pop("data")
+
+
+def _mutate_metadata_id_invalid_pattern(d: dict) -> None:
+    d["metadata"]["id"] = "not-a-valid-event-id"
+
+
+def _mutate_metadata_correlation_id_invalid_pattern(d: dict) -> None:
+    d["metadata"]["correlation"]["id"] = "550e8400-e29b-41d4-a716-446655440001"
+
+
+def _mutate_metadata_type_unknown_member(d: dict) -> None:
+    d["metadata"]["type"] = "BrandNewEmitterEvent"
+
+
+def _mutate_node_id_invalid_pattern(d: dict) -> None:
+    _starting_node(d)["id"] = "node://not-a-uuid"
+
+
+def _mutate_node_stable_agent_id_invalid_pattern(d: dict) -> None:
+    _starting_node(d)["stable_agent_id"] = "agent://not-a-uuid"
+
+
+def _mutate_node_operation_unknown_member(d: dict) -> None:
+    _starting_node(d)["operation"] = "frobnicate"
+
+
+def _mutate_edge_id_invalid_pattern(d: dict) -> None:
+    _starting_edge(d)["id"] = "edge://not-a-uuid"
+
+
+def _mutate_node_label_subtitle_empty_string(d: dict) -> None:
+    _starting_node(d)["label_subtitle"] = ""
+
+
+def _mutate_size_extra_property(d: dict) -> None:
+    _starting_node(d)["size"] = {"width": 1.0, "height": 1.0, "depth": 1.0}
+
+
 def _mutate_instance_map_key_invalid_pattern(d: dict) -> None:
     wf = d["data"]["workflows"]["recruiter"]
     inst = next(iter(wf["instances"].values()))
     wf["instances"] = {"not-an-instance-id": inst}
 
+
+def _mutate_mcp_source_stable_agent_id_invalid_pattern(d: dict) -> None:
+    edge = d["data"]["workflows"]["Publish Subscribe"]["instances"][_INSTANCE_KEY][
+        "topology"
+    ]["edges"][0]
+    edge["mcp"]["source_stable_agent_id"] = "agent://not-a-uuid"
+
+
+def _mutate_instances_map_key_mismatch_with_nested_id(d: dict) -> None:
+    next(iter(d["data"]["workflows"].values()))["instances"] = {
+        "instance://00000000-0000-4000-8000-000000000001": {
+            "id": _INSTANCE_KEY,
+            "topology": {},
+        }
+    }
+
+
+_INVALID = EventOutputs(
+    schema_exc=SchemaValidationError,
+    model_exc=ValidationError,
+)
 
 _EVENT_CASES: tuple[EventCase, ...] = (
     EventCase(
@@ -70,150 +147,113 @@ _EVENT_CASES: tuple[EventCase, ...] = (
         outputs=EventOutputs(),
     ),
     EventCase(
+        case_id="v1_2_0_example_round_trip",
+        inputs=EventInputs(example_filename="event_v1_2_0.json"),
+        outputs=EventOutputs(),
+    ),
+    EventCase(
         case_id="root_extra_property",
         inputs=EventInputs(
             example_filename="event_v1_partial.json",
-            mutate=lambda d: d.update({"extra": 1}),
+            mutate=_mutate_root_extra_property,
         ),
-        outputs=EventOutputs(
-            schema_exc=SchemaValidationError,
-            model_exc=ValidationError,
-        ),
+        outputs=_INVALID,
     ),
     EventCase(
         case_id="missing_required_metadata",
         inputs=EventInputs(
             example_filename="event_v1_partial.json",
-            mutate=lambda d: d.pop("metadata"),
+            mutate=_mutate_missing_required_metadata,
         ),
-        outputs=EventOutputs(
-            schema_exc=SchemaValidationError,
-            model_exc=ValidationError,
-        ),
+        outputs=_INVALID,
     ),
     EventCase(
         case_id="missing_required_data",
         inputs=EventInputs(
             example_filename="event_v1_partial.json",
-            mutate=lambda d: d.pop("data"),
+            mutate=_mutate_missing_required_data,
         ),
-        outputs=EventOutputs(
-            schema_exc=SchemaValidationError,
-            model_exc=ValidationError,
-        ),
+        outputs=_INVALID,
     ),
     EventCase(
         case_id="metadata_id_invalid_pattern",
         inputs=EventInputs(
             example_filename="event_v1_partial.json",
-            mutate=lambda d: d["metadata"].update({"id": "not-a-valid-event-id"}),
+            mutate=_mutate_metadata_id_invalid_pattern,
         ),
-        outputs=EventOutputs(
-            schema_exc=SchemaValidationError,
-            model_exc=ValidationError,
-        ),
+        outputs=_INVALID,
     ),
     EventCase(
         case_id="metadata_correlation_id_invalid_pattern",
         inputs=EventInputs(
             example_filename="event_v1_partial.json",
-            mutate=lambda d: d["metadata"]["correlation"].update(
-                {"id": "550e8400-e29b-41d4-a716-446655440001"},
-            ),
+            mutate=_mutate_metadata_correlation_id_invalid_pattern,
         ),
-        outputs=EventOutputs(
-            schema_exc=SchemaValidationError,
-            model_exc=ValidationError,
-        ),
+        outputs=_INVALID,
     ),
     EventCase(
         case_id="metadata_type_unknown_member",
         inputs=EventInputs(
             example_filename="event_v1_partial.json",
-            mutate=lambda d: d["metadata"].update({"type": "BrandNewEmitterEvent"}),
+            mutate=_mutate_metadata_type_unknown_member,
         ),
-        outputs=EventOutputs(
-            schema_exc=SchemaValidationError,
-            model_exc=ValidationError,
-        ),
+        outputs=_INVALID,
     ),
     EventCase(
         case_id="node_id_invalid_pattern",
         inputs=EventInputs(
             example_filename="event_v1_partial.json",
-            mutate=lambda d: (
-                d["data"]["workflows"]["recruiter"]["starting_topology"]["nodes"][0]
-            ).update({"id": "node://not-a-uuid"}),
+            mutate=_mutate_node_id_invalid_pattern,
         ),
-        outputs=EventOutputs(
-            schema_exc=SchemaValidationError,
-            model_exc=ValidationError,
-        ),
+        outputs=_INVALID,
     ),
     EventCase(
         case_id="node_stable_agent_id_invalid_pattern",
         inputs=EventInputs(
             example_filename="event_v1_partial.json",
-            mutate=lambda d: (
-                d["data"]["workflows"]["recruiter"]["starting_topology"]["nodes"][0]
-            ).update({"stable_agent_id": "agent://not-a-uuid"}),
+            mutate=_mutate_node_stable_agent_id_invalid_pattern,
         ),
-        outputs=EventOutputs(
-            schema_exc=SchemaValidationError,
-            model_exc=ValidationError,
-        ),
+        outputs=_INVALID,
     ),
     EventCase(
         case_id="node_operation_unknown_member",
         inputs=EventInputs(
             example_filename="event_v1_partial.json",
-            mutate=lambda d: (
-                d["data"]["workflows"]["recruiter"]["starting_topology"]["nodes"][0]
-            ).update({"operation": "frobnicate"}),
+            mutate=_mutate_node_operation_unknown_member,
         ),
-        outputs=EventOutputs(
-            schema_exc=SchemaValidationError,
-            model_exc=ValidationError,
-        ),
+        outputs=_INVALID,
     ),
     EventCase(
         case_id="edge_id_invalid_pattern",
         inputs=EventInputs(
             example_filename="event_v1_partial.json",
-            mutate=lambda d: (
-                d["data"]["workflows"]["recruiter"]["starting_topology"]["edges"][0]
-            ).update({"id": "edge://not-a-uuid"}),
+            mutate=_mutate_edge_id_invalid_pattern,
         ),
-        outputs=EventOutputs(
-            schema_exc=SchemaValidationError,
-            model_exc=ValidationError,
-        ),
+        outputs=_INVALID,
     ),
     EventCase(
-        case_id="node_label2_empty_string",
+        case_id="mcp_source_stable_agent_id_invalid_pattern",
+        inputs=EventInputs(
+            example_filename="event_v1_2_0.json",
+            mutate=_mutate_mcp_source_stable_agent_id_invalid_pattern,
+        ),
+        outputs=_INVALID,
+    ),
+    EventCase(
+        case_id="node_label_subtitle_empty_string",
         inputs=EventInputs(
             example_filename="event_v1_partial.json",
-            mutate=lambda d: (
-                d["data"]["workflows"]["recruiter"]["starting_topology"]["nodes"][0]
-            ).update({"label_subtitle": ""}),
+            mutate=_mutate_node_label_subtitle_empty_string,
         ),
-        outputs=EventOutputs(
-            schema_exc=SchemaValidationError,
-            model_exc=ValidationError,
-        ),
+        outputs=_INVALID,
     ),
     EventCase(
         case_id="size_extra_property",
         inputs=EventInputs(
             example_filename="event_v1_partial.json",
-            mutate=lambda d: (
-                d["data"]["workflows"]["recruiter"]["starting_topology"]["nodes"][0]
-            ).update({"size": {"width": 1.0, "height": 1.0, "depth": 1.0}}),
+            mutate=_mutate_size_extra_property,
         ),
-        outputs=EventOutputs(
-            schema_exc=SchemaValidationError,
-            model_exc=ValidationError,
-        ),
+        outputs=_INVALID,
     ),
     EventCase(
         case_id="instance_map_key_invalid_pattern",
@@ -221,28 +261,15 @@ _EVENT_CASES: tuple[EventCase, ...] = (
             example_filename="event_v1_partial.json",
             mutate=_mutate_instance_map_key_invalid_pattern,
         ),
-        outputs=EventOutputs(
-            schema_exc=SchemaValidationError,
-            model_exc=ValidationError,
-        ),
+        outputs=_INVALID,
     ),
     EventCase(
         case_id="instances_map_key_mismatch_with_nested_id",
         inputs=EventInputs(
             example_filename="event_v1_partial.json",
-            mutate=lambda d: next(iter(d["data"]["workflows"].values())).update(
-                instances={
-                    "instance://00000000-0000-4000-8000-000000000001": {
-                        "id": _INSTANCE_KEY,
-                        "topology": {},
-                    },
-                },
-            ),
+            mutate=_mutate_instances_map_key_mismatch_with_nested_id,
         ),
-        outputs=EventOutputs(
-            schema_exc=SchemaValidationError,
-            model_exc=ValidationError,
-        ),
+        outputs=_INVALID,
     ),
 )
 
@@ -263,9 +290,7 @@ def test_event_payload_schema_and_model(case: EventCase) -> None:
             Event.model_validate(data)
         return
 
-    assert case.inputs.mutate is None, (
-        "valid round-trip cases must not carry a mutation"
-    )
+    assert case.inputs.mutate is None, "valid round-trip cases must not carry a mutation"
     assert out.model_exc is None
     validate_data_against_schema(data, _KNOWN)
     event = Event.model_validate(data)
@@ -274,7 +299,6 @@ def test_event_payload_schema_and_model(case: EventCase) -> None:
     Event.model_validate(dumped)
     assert isinstance(dumped["metadata"]["timestamp"], str)
     assert event.metadata.timestamp.tzinfo is not None
-
 
 def test_optional_label2_round_trips() -> None:
     data = load_json_instance_file(_EXAMPLES / "event_v1_partial.json")

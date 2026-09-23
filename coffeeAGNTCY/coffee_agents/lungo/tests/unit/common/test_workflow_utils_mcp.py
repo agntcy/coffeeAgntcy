@@ -13,6 +13,7 @@ from common.workflow_utils.mcp import (
     build_mcp_edge_topology,
     emit_mcp_edge_event,
 )
+from common.workflow_utils.workflow_catalog import lookup_workflow
 
 _AGENT_ID = "Colombia Coffee Farm"
 _TARGET_SID = stable_agent_id_for_name("Weather MCP Server")
@@ -55,11 +56,13 @@ def test_build_mcp_edge_topology(case, mcp_in_flight):
 
     edge = topology.edges[0]
     assert edge.operation == Operation.UPDATE
-    assert edge.source_stable_agent_id == stable_agent_id_for_name(_AGENT_ID)
-    assert edge.target_stable_agent_id == _TARGET_SID
-    assert edge.tool_name == _TOOL
-    assert edge.mcp_server == _SERVER
-    assert edge.mcp_in_flight is mcp_in_flight
+    mcp = edge.mcp
+    assert mcp is not None
+    assert mcp.source_stable_agent_id.root == stable_agent_id_for_name(_AGENT_ID)
+    assert mcp.target_stable_agent_id.root == _TARGET_SID
+    assert mcp.tool_name == _TOOL
+    assert mcp.mcp_server == _SERVER
+    assert mcp.mcp_in_flight is mcp_in_flight
     assert edge.id.root.startswith("edge://")
 
 
@@ -67,6 +70,8 @@ async def test_emit_mcp_edge_event_posts_to_sink():
     """emit_mcp_edge_event builds an event and delivers it to the sink."""
     sink = _CapturingSink()
 
+    identity = lookup_workflow("Test Workflow Alpha")
+    assert identity is not None
     event = await emit_mcp_edge_event(
         sink=sink,
         source="colombia_coffee_farm",
@@ -76,7 +81,7 @@ async def test_emit_mcp_edge_event_posts_to_sink():
         target_stable_agent_id=_TARGET_SID,
         mcp_in_flight=True,
         correlation_id="correlation://00000000-0000-4000-8000-000000000004",
-        workflow_name="Test Workflow Alpha",
+        identity=identity,
         instance_id="instance://00000000-0000-4000-8000-000000000003",
     )
 
@@ -84,10 +89,6 @@ async def test_emit_mcp_edge_event_posts_to_sink():
     assert sink.events[0] is event
     assert "Test Workflow Alpha" in event.data.workflows
     assert _TOOL in event.metadata.correlation.message
-    assert (
-        event.data.workflows["Test Workflow Alpha"]
-        .instances["instance://00000000-0000-4000-8000-000000000003"]
-        .topology.edges[0]
-        .mcp_in_flight
-        is True
-    )
+    assert event.data.workflows["Test Workflow Alpha"].instances[
+        "instance://00000000-0000-4000-8000-000000000003"
+    ].topology.edges[0].mcp.mcp_in_flight is True

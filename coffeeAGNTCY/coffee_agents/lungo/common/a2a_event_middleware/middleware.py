@@ -396,7 +396,7 @@ class EventEmittingInterceptor(ClientCallInterceptor):
             )
             return request_payload, http_kwargs
 
-        workflow_name = metadata.workflow_name
+        workflow_name = metadata.name
         instance_id = propagated_instance_id
         logger.debug(
             "workflow_name=%s pattern=%s use_case=%s scenario=%s tool=%s",
@@ -469,7 +469,7 @@ class EventEmittingInterceptor(ClientCallInterceptor):
 
         event = build_event(
             source=self._source,
-            workflow_name=workflow_name,
+            identity=metadata,
             instance_id=instance_id,
             topology=topology,
             correlation_id=correlation_id,
@@ -591,6 +591,16 @@ def make_event_emitting_consumer(
             return
         correlation_id, instance_id, workflow_name, allocator = consumer_state
 
+        identity = lookup_workflow(workflow_name)
+        if identity is None:
+            logger.warning(
+                "event_emitting_consumer [%s]: no catalog match for workflow_name=%r; "
+                "skipping event emission.",
+                _source,
+                workflow_name,
+            )
+            return
+
         response_status: TaskState | None = None
         task_obj = _extract_task_from_client_event(event)
         if task_obj and task_obj.status and task_obj.status.state:
@@ -609,7 +619,7 @@ def make_event_emitting_consumer(
 
         event_obj = build_event(
             source=_source,
-            workflow_name=workflow_name,
+            identity=identity,
             instance_id=instance_id,
             topology=topology,
             correlation_id=correlation_id,
