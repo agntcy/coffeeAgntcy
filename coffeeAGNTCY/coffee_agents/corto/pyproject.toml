@@ -17,7 +17,7 @@ dependencies = [
     "langchain-litellm==0.3.5",
     "langgraph>=0.4.1",
     "langgraph-supervisor>=0.0.26",
-    "litellm==1.82.1",
+    "litellm==1.84.0",
     "pydantic>=2.11.4",
     "python-dotenv>=1.1.0",
     "requests",
@@ -27,7 +27,6 @@ dependencies = [
     "agntcy-app-sdk==0.5.5",
     "slim-bindings==1.4.0",
     "slima2a==0.3.0",
-    "litellm[proxy]==1.82.1",
     "azure-core==1.38.0",
     # Vulnerability fix for requests
     "langchain-core>=1.2.5",
@@ -42,7 +41,7 @@ dependencies = [
     "cryptography>=44.0.1",
     "grpcio==1.78.0",
     "grpcio-tools==1.78.0",
-    "protobuf==6.32.1",
+    "protobuf==6.33.5",
 ]
 
 [project.optional-dependencies]
