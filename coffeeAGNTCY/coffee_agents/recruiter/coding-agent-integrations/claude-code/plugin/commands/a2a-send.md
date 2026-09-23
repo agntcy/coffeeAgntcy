@@ -14,6 +14,16 @@ Send a message directly to a known A2A agent endpoint. Uses the `a2a-send` Go CL
 
 You are an A2A protocol client. Parse `$ARGUMENTS` to extract the endpoint URL and the message, then use the `a2a-send` binary to communicate with the remote agent.
 
+### Step 0 - Ensure the binary is built
+
+The binary is not checked into the repo (it's platform-specific) and must be built locally on first use. Check whether `plugin/scripts/a2a-send/a2a-send` exists; if not, build it:
+
+```bash
+cd plugin/scripts/a2a-send && go build -o a2a-send . && cd -
+```
+
+This requires a Go toolchain (1.24+) on the machine running the command. If `go build` fails because Go isn't installed, tell the user to install Go and stop.
+
 ### Step 1 - Parse arguments
 
 Extract from `$ARGUMENTS`:

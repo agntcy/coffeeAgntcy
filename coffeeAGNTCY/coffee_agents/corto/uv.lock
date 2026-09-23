@@ -3,8 +3,8 @@ revision = 3
 requires-python = "==3.13.*"
 
 [options]
-exclude-newer = "2026-08-21T13:20:49.416306Z"
-exclude-newer-span = "P28D"
+exclude-newer = "0001-01-01T00:00:00Z" # This has no effect and is included for backwards compatibility when using relative exclude-newer values.
+exclude-newer-span = "P14D"
 
 [[package]]
 name = "a2a-sdk"

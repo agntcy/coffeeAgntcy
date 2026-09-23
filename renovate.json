@@ -1,0 +1,148 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:recommended",
+    "helpers:pinGitHubActionDigestsToSemver",
+    ":semanticCommitTypeAll(chore)"
+  ],
+  "configMigration": true,
+  "enabled": true,
+  "minimumReleaseAge": "14 days",
+  "schedule": [
+    "before 8am on Monday"
+  ],
+  "prCreation": "not-pending",
+  "enabledManagers": [
+    "dockerfile",
+    "docker-compose",
+    "github-actions",
+    "gomod",
+    "helmv3",
+    "npm",
+    "pep621"
+  ],
+  "labels": [
+    "dependencies"
+  ],
+  "osvVulnerabilityAlerts": true,
+  "lockFileMaintenance": {
+    "enabled": true
+  },
+  "packageRules": [
+    {
+      "matchCategories": [
+        "golang"
+      ],
+      "addLabels": [
+        "go"
+      ],
+      "description": [
+        "Add go label to PRs which bumps go dependencies."
+      ]
+    },
+    {
+      "groupName": "Go patches",
+      "groupSlug": "go-patches",
+      "matchDatasources": [
+        "go"
+      ],
+      "matchUpdateTypes": [
+        "patch"
+      ],
+      "description": [
+        "Group Go dependency patch updates in single PR."
+      ]
+    },
+    {
+      "groupName": "Github Actions",
+      "groupSlug": "github-actions",
+      "matchManagers": [
+        "github-actions"
+      ],
+      "addLabels": [
+        "ci"
+      ],
+      "description": [
+        "Add ci label to PRs which are related to Github Actions.",
+        "Group CI dependency updates in single PR."
+      ]
+    },
+    {
+      "groupName": "Docker",
+      "groupSlug": "docker",
+      "matchManagers": [
+        "dockerfile",
+        "docker-compose"
+      ],
+      "addLabels": [
+        "docker"
+      ],
+      "description": [
+        "Group Dockerfile and docker-compose dependency updates in single PR."
+      ]
+    },
+    {
+      "groupName": "Helm",
+      "groupSlug": "helm",
+      "matchManagers": [
+        "helmv3"
+      ],
+      "addLabels": [
+        "helm"
+      ],
+      "description": [
+        "Group Helm chart dependency updates in single PR."
+      ]
+    },
+    {
+      "groupName": "Frontend",
+      "groupSlug": "frontend",
+      "matchManagers": [
+        "npm"
+      ],
+      "description": [
+        "Group frontend (npm) dependency updates in single PR."
+      ]
+    },
+    {
+      "groupName": "Python",
+      "groupSlug": "python",
+      "matchManagers": [
+        "pep621"
+      ],
+      "description": [
+        "Group Python (uv/pep621) dependency updates in single PR."
+      ]
+    },
+    {
+      "matchJsonata": [
+        "$exists(vulnerabilityFixVersion) or isVulnerabilityAlert = true"
+      ],
+      "enabled": true,
+      "description": [
+        "Always allow vulnerability/security fixes, even when other rules disable specific dependencies."
+      ]
+    }
+  ],
+  "postUpdateOptions": [
+    "gomodTidy",
+    "gomodUpdateImportPaths"
+  ],
+  "prConcurrentLimit": 20,
+  "prHourlyLimit": 10,
+  "printConfig": true,
+  "rebaseWhen": "behind-base-branch",
+  "reviewersFromCodeOwners": true,
+  "semanticCommits": "enabled",
+  "timezone": "Etc/UTC",
+  "vulnerabilityAlerts": {
+    "enabled": true,
+    "labels": [
+      "security"
+    ],
+    "minimumReleaseAge": null,
+    "schedule": [
+      "at any time"
+    ]
+  }
+}

@@ -38,7 +38,7 @@ build-backend = "hatchling.build"
 url = "https://buf.build/gen/python"
 
 [tool.uv]
-exclude-newer = "28 days"
+exclude-newer = "14 days"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/agent_recruiter"]

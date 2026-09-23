@@ -75,7 +75,7 @@ allow-direct-references = true
 url = "https://buf.build/gen/python"
 
 [tool.uv]
-exclude-newer = "28 days"
+exclude-newer = "14 days"
 
 [build-system]
 requires = ["hatchling"]
