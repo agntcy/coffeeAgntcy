@@ -259,7 +259,7 @@ Documented `type` values (1.2.1):
 | `customNode` | leftover | Presence of `agent_record_uri` / `stable_agent_id` still selects the agent shape. |
 | `transportNode` | leftover | Alias of `transport`. |
 
-JSON Schema does **not** require the agent extension when `type` is `agent` or `mcp` (those strings were already valid open tags). This repo's emitters write the extension on those nodes, and its Pydantic discriminator routes `type=agent`/`mcp` to the agent shape. `directory` / `group` / `transport` do not use the extension. 1.0.0–1.2.0 payloads that still emit `customNode` / `transportNode` remain valid.
+JSON Schema does **not** require the agent extension when `type` is `agent` or `mcp` (those strings were already valid open tags). This repo's emitters write the extension on those nodes, and its Pydantic discriminator routes `type=agent`/`mcp` to the agent shape. `directory` / `group` / `transport` do not use the extension. 1.0.0-1.2.0 payloads that still emit `customNode` / `transportNode` remain valid.
 
 An **agent node** (`#/$defs/agent_node`) additionally carries `agent_record_uri` (required) and `stable_agent_id` (`agent://…`). Nodes without agent extension fields are plain base nodes; the schema keeps the two mutually exclusive via `anyOf`/`not` on key presence, not on the `type` string.
 

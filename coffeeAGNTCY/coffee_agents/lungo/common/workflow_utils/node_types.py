@@ -6,25 +6,25 @@
 from __future__ import annotations
 
 from schema.node_types import (
-	AGENT,
-	AGENT_EXTENSION_TYPES,
-	BASE_NODE_TYPES,
-	CUSTOM_NODE,
-	DIRECTORY,
-	GROUP,
-	MCP,
-	TRANSPORT,
-	TRANSPORT_NODE,
+    AGENT,
+    AGENT_EXTENSION_TYPES,
+    BASE_NODE_TYPES,
+    CUSTOM_NODE,
+    DIRECTORY,
+    GROUP,
+    MCP,
+    TRANSPORT,
+    TRANSPORT_NODE,
 )
 
 __all__ = [
-	"AGENT",
-	"AGENT_EXTENSION_TYPES",
-	"BASE_NODE_TYPES",
-	"CUSTOM_NODE",
-	"DIRECTORY",
-	"GROUP",
-	"MCP",
-	"TRANSPORT",
-	"TRANSPORT_NODE",
+    "AGENT",
+    "AGENT_EXTENSION_TYPES",
+    "BASE_NODE_TYPES",
+    "CUSTOM_NODE",
+    "DIRECTORY",
+    "GROUP",
+    "MCP",
+    "TRANSPORT",
+    "TRANSPORT_NODE",
 ]
