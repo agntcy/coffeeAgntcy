@@ -18,7 +18,6 @@ import {
   Tooltip,
 } from "@open-ui-kit/core"
 import type { DropdownOption } from "@/types/dropdownOption"
-import type { HttpRequestTarget } from "@/urls"
 import { useGraphCanvasLayout } from "@/contexts/graphCanvasLayout"
 import {
   computePromptsMenuMaxWidth,
@@ -26,10 +25,11 @@ import {
   getPromptsMenuProps,
   getPromptsTriggerButtonProps,
   getPromptsTriggerTooltipProps,
+  isPromptsTriggerInactive,
   SUGGESTED_PROMPTS_LABEL,
 } from "./suggestedPromptsUtils"
 import { CustomDropdownListItemContent } from "./CustomDropdownListItemContent"
-import { useSuggestedPrompts } from "./useSuggestedPrompts"
+import type { UseSuggestedPromptsResult } from "./useSuggestedPrompts"
 import { getDisabledRowOpacity } from "@/utils/a11ySx"
 
 interface PromptMenuItemProps {
@@ -79,19 +79,21 @@ function PromptMenuItem({
 }
 
 export interface SuggestedPromptsDropdownProps {
-  promptsRequest: HttpRequestTarget | null | undefined
+  prompts: UseSuggestedPromptsResult
   onSelect: (query: string) => void
+  /** Keeps the trigger in step with the rest of the composer controls. */
+  disabled?: boolean
   sx?: SxProps<Theme>
 }
 
 const SuggestedPromptsDropdown: React.FC<SuggestedPromptsDropdownProps> = ({
-  promptsRequest,
+  prompts,
   onSelect,
+  disabled = false,
   sx,
 }) => {
   const layout = useGraphCanvasLayout()
-  const { categories, isLoading, isUnavailable, unavailableMessage } =
-    useSuggestedPrompts(promptsRequest)
+  const { categories, isLoading, isUnavailable, unavailableMessage } = prompts
   const options = useMemo(
     () =>
       categoriesToMenuOptions(categories, (prompt, description) => (
@@ -124,8 +126,14 @@ const SuggestedPromptsDropdown: React.FC<SuggestedPromptsDropdownProps> = ({
     isLoading,
     options.length,
     isUnavailable,
+    disabled,
   )
-  const isInactive = !isUnavailable && (isLoading || options.length === 0)
+  const isInactive = isPromptsTriggerInactive(
+    isLoading,
+    options.length,
+    isUnavailable,
+    disabled,
+  )
   const buttonTooltipProps = getPromptsTriggerTooltipProps(
     isLoading,
     options.length,

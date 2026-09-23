@@ -184,6 +184,8 @@ const RootPage: React.FC = () => {
     patternChatSessionId,
     onPatternChatSuccess: () => setAiReplied(true),
     suggestedPromptsRequest,
+    endpointUnavailable:
+      canvasMode === CanvasMode.WORKFLOW && workflowCatalogError !== null,
     showProgressTracker:
       canvasMode === CanvasMode.WORKFLOW && showProgressTracker,
     showAuctionStreaming:

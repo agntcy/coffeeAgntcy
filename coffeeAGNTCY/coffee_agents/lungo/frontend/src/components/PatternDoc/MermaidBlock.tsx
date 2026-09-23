@@ -5,12 +5,22 @@
 
 import React, { useEffect, useId, useRef, useState } from "react"
 import mermaid from "mermaid"
-import { useTheme } from "@open-ui-kit/core"
+import { Box, Typography, useTheme } from "@open-ui-kit/core"
 import { logger } from "@/utils/logger"
 
 interface MermaidBlockProps {
   chart: string
 }
+
+/**
+ * Max label widths before text wraps. Narrow labels keep the diagram narrow,
+ * which matters because mermaid scales an oversized diagram (text included)
+ * down to the panel width. Edge labels get more room than node labels: they
+ * are short enough to stay on one line, and wrapping them reads poorly on
+ * their filled chip.
+ */
+const NODE_LABEL_WRAP_WIDTH_PX = 110
+const EDGE_LABEL_WRAP_WIDTH_PX = 160
 
 const MermaidBlock: React.FC<MermaidBlockProps> = ({ chart }) => {
   const rawId = useId()
@@ -42,13 +52,42 @@ const MermaidBlock: React.FC<MermaidBlockProps> = ({ chart }) => {
             tertiaryColor: palette.background.default,
             lineColor: palette.primary.main,
             textColor: palette.text.primary,
-            fontSize: "16px",
+            // Opaque: mermaid drops the alpha of a translucent value and
+            // repaints it at 50%, which leaves labels on a mid-gray plate.
+            edgeLabelBackground: palette.primary.main,
+            // Subgraph frames: mermaid otherwise falls back to its own
+            // near-black title and a derived border unrelated to the palette.
+            titleColor: palette.text.primary,
+            clusterBorder: palette.divider,
+            fontFamily: theme.typography.fontFamily,
+            // Sets both node and edge labels. Mermaid scales wide diagrams
+            // down to the panel width, so start from the larger body size.
+            fontSize: String(theme.typography.body1.fontSize),
           },
+          // Edge labels sit on `edgeLabelBackground`, the node labels on
+          // `primaryColor`, but mermaid colors both from `textColor`. Repaint
+          // only the edge labels for the filled chip they actually sit on.
+          themeCSS: `
+            .edgeLabel, .edgeLabel p, .edgeLabel span {
+              color: ${palette.primary.contrastText};
+              fill: ${palette.primary.contrastText};
+              /* The flowchart wrappingWidth below covers node labels only. */
+              white-space: normal !important;
+              max-width: ${EDGE_LABEL_WRAP_WIDTH_PX}px;
+              overflow-wrap: break-word;
+            }
+            .edgeLabel p {
+              padding: ${theme.spacing(0.25, 0.75)};
+            }
+          `,
           flowchart: {
-            curve: "basis",
+            // Not "basis": its spline ignores the layout points, so mermaid
+            // places edge labels off their reserved slots and they collide.
+            curve: "natural",
             padding: 20,
             nodeSpacing: 50,
             rankSpacing: 60,
+            wrappingWidth: NODE_LABEL_WRAP_WIDTH_PX,
           },
         })
         const result = await mermaid.render(svgId, chart)
@@ -70,35 +109,40 @@ const MermaidBlock: React.FC<MermaidBlockProps> = ({ chart }) => {
 
   if (error) {
     return (
-      <pre
-        style={{
+      <Box
+        component="pre"
+        sx={{
           overflowX: "auto",
-          borderRadius: 4,
-          padding: 12,
-          fontSize: "0.75rem",
+          m: 0,
+          p: 1.5,
+          borderRadius: 1,
+          bgcolor: "action.hover",
+          fontSize: (theme) => theme.typography.caption.fontSize,
         }}
         data-testid="mermaid-fallback"
       >
         <code>{chart}</code>
-      </pre>
+      </Box>
     )
   }
 
   if (!svg) {
     return (
-      <div
-        style={{
+      <Box
+        sx={{
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          padding: 16,
-          fontSize: "0.875rem",
-          opacity: 0.6,
+          p: 2,
         }}
         data-testid="mermaid-loading"
       >
-        Rendering diagram…
-      </div>
+        {/* Muted via opacity, matching PatternDocCanvas: the light theme maps
+            `text.secondary` to a near-white gray that is unreadable on paper. */}
+        <Typography variant="body2" sx={{ opacity: 0.6 }}>
+          Rendering diagram…
+        </Typography>
+      </Box>
     )
   }
 

@@ -110,11 +110,17 @@ export function getPromptsMenuProps(menuMaxWidth?: number): Partial<MenuProps> {
   }
 }
 
-function isInactive(
+/**
+ * The trigger stays interactive while unavailable so the menu can explain the
+ * failure, unless the composer disables it outright.
+ */
+export function isPromptsTriggerInactive(
   isLoading: boolean,
   optionCount: number,
   isUnavailable: boolean,
+  disabled = false,
 ): boolean {
+  if (disabled) return true
   if (isUnavailable) return false
   return isLoading || optionCount === 0
 }
@@ -123,10 +129,13 @@ export function getPromptsTriggerButtonProps(
   isLoading: boolean,
   optionCount: number,
   isUnavailable = false,
+  disabled = false,
 ): ButtonProps {
   const base: ButtonProps = { size: "medium", variant: "primary" }
 
-  if (!isInactive(isLoading, optionCount, isUnavailable)) {
+  if (
+    !isPromptsTriggerInactive(isLoading, optionCount, isUnavailable, disabled)
+  ) {
     return base
   }
 

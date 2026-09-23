@@ -30,6 +30,8 @@ export const CHAT_MESSAGE_PANEL_ID = "chat-message-panel"
 interface ChatAreaProps {
   isBottomLayout: boolean
   suggestedPromptsRequest?: HttpRequestTarget | null
+  /** Disables the whole composer when the chat endpoint is unreachable. */
+  endpointUnavailable?: boolean
   showProgressTracker?: boolean
   showAuctionStreaming?: boolean
   showRecruiterStreaming?: boolean
@@ -60,6 +62,7 @@ interface ChatAreaProps {
 const ChatArea: React.FC<ChatAreaProps> = ({
   isBottomLayout,
   suggestedPromptsRequest = null,
+  endpointUnavailable = false,
   showProgressTracker = false,
   showAuctionStreaming = false,
   showRecruiterStreaming = false,
@@ -260,6 +263,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
           content={content}
           setContent={setContent}
           loading={loading}
+          endpointUnavailable={endpointUnavailable}
           onSend={() => void processMessage()}
           onKeyDown={handleKeyDown}
         />
