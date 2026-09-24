@@ -1,0 +1,14 @@
+version: "3"
+
+tasks:
+  helm:check-versions:
+    desc: >-
+      Check that every Helm chart changed since a base ref had its
+      Chart.yaml version bumped (see .agents/rules/helm-chart-version-bump.md).
+    summary: |
+      Usage:   task helm:check-versions -- <base-ref> [<end-ref>]
+      Example: task helm:check-versions -- 0.3.0
+      <end-ref> defaults to HEAD. See scripts/check_helm_chart_versions.bash
+      for what counts as a missing bump.
+    cmds:
+      - scripts/check_helm_chart_versions.bash {{.CLI_ARGS}}

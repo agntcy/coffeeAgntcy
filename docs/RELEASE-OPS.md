@@ -19,7 +19,17 @@ Placeholders used throughout:
 
 ## Step 0 - Verify the Helm chart version-bump rule was followed
 
-Before anything else, confirm everyone honored the rule that **any change to a Helm chart's contents must be accompanied by a version bump in that chart's `Chart.yaml`**. If the latest chart contents are not covered by a chart-version bump, the release tag would ship un-versioned chart changes.
+Before anything else, confirm everyone honored the rule that **any change to a Helm chart's contents must be accompanied by a version bump in that chart's `Chart.yaml`**. If the latest chart contents are not covered by a chart-version bump, the release tag would ship un-versioned chart changes. This rule is also formalized as [`.agents/rules/helm-chart-version-bump.md`](../.agents/rules/helm-chart-version-bump.md), and enforced on every push to `main` and every pull request by the `helm-chart-versions` job in [`.github/workflows/source-lint.yaml`](../.github/workflows/source-lint.yaml) - so by the time you cut a release, this step should normally come back clean.
+
+**Fastest path:** run [`task`](https://taskfile.dev) `helm:check-versions` against the last release tag - it applies the same per-chart ancestry check as steps 1-2 below, across every chart in the repo in one pass (also usable via the `checking-helm-chart-version-bumps` skill; wraps [`scripts/check_helm_chart_versions.bash`](../scripts/check_helm_chart_versions.bash) - see [`Taskfile.yaml`](../Taskfile.yaml)):
+
+```sh
+git fetch --tags
+LAST_RELEASE_TAG=$(git tag --list --sort=-creatordate | grep -Ev '\-dev' | head -n1)
+task helm:check-versions -- "${LAST_RELEASE_TAG}" main
+```
+
+Anything it flags needs step 3 below. The manual steps that follow spell out the same logic per chart, for reference or when investigating a single chart by hand.
 
 **1. Check `main` against the last real/release tag** (ignore `*-dev*` tags):
 
