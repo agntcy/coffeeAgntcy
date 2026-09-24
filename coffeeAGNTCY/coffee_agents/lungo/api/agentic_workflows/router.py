@@ -75,6 +75,7 @@ from fastapi import (
     Response,
 )
 from fastapi.responses import RedirectResponse, StreamingResponse
+from pydantic import ValidationError
 from schema import errors as schema_errors
 from schema.types import Event, Workflow, WorkflowInstance, instance_id_from_uuid
 
@@ -400,7 +401,10 @@ def create_agentic_workflows_router() -> APIRouter:
         store = _workflow_instance_store(request)
         try:
             await store.submit_event(payload)
-        except schema_errors.SchemaValidationError as exc:
+        except (
+            schema_errors.SchemaValidationError,
+            ValidationError,
+        ) as exc:
             raise HTTPException(
                 status_code=400,
                 detail="Event failed schema validation",
@@ -587,7 +591,10 @@ def create_agentic_workflows_router() -> APIRouter:
         payload = event.model_dump(mode="json", exclude_none=True)
         try:
             await store.submit_event(payload)
-        except schema_errors.SchemaValidationError as exc:
+        except (
+            schema_errors.SchemaValidationError,
+            ValidationError,
+        ) as exc:
             raise HTTPException(
                 status_code=400,
                 detail="Event failed schema validation",

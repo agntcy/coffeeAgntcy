@@ -135,6 +135,32 @@ describe("topologyNodeIconKind", () => {
       input: {},
       expected: TopologyNodeIconKind.Default,
     },
+    {
+      caseName: "mcp type uses weather slug when label is relabeled",
+      input: {
+        nodeType: "mcp",
+        directoryAgentSlug: "weather-mcp-server",
+        label: "Climate",
+      },
+      expected: TopologyNodeIconKind.WeatherMcp,
+    },
+    {
+      caseName: "mcp type uses payment slug when label is relabeled",
+      input: {
+        nodeType: "mcp",
+        directoryAgentSlug: "payment-mcp-server",
+        label: "Billing",
+      },
+      expected: TopologyNodeIconKind.PaymentMcp,
+    },
+    {
+      caseName: "mcp type falls back to weather label without slug",
+      input: {
+        nodeType: "mcp",
+        label: "Weather",
+      },
+      expected: TopologyNodeIconKind.WeatherMcp,
+    },
   ])("$caseName", ({ input, expected }) => {
     expect(topologyNodeIconKind(input)).toBe(expected)
   })

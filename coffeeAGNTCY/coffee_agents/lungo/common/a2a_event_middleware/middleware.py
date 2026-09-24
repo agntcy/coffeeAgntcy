@@ -21,6 +21,7 @@ from pydantic import ValidationError
 
 from common.stable_agent_id import stable_agent_id_for_name as _stable_agent_id
 from common.workflow_utils.builders import build_event, make_edge, make_node
+from common.workflow_utils.node_types import AGENT, TRANSPORT
 from common.workflow_utils.event_sink import WorkflowAPIEventSink
 from common.workflow_utils.inflight import (
     RuntimeIdAllocator,
@@ -141,7 +142,7 @@ async def _outbound_topology(
         make_node(
             caller_node,
             operation=Operation.CREATE,
-            node_type="customNode",
+            node_type=AGENT,
             label=caller_agent_id,
             layer_index=layer_index,
             stable_agent_id=_stable_agent_id(caller_agent_id),
@@ -149,7 +150,7 @@ async def _outbound_topology(
         make_node(
             transport_node,
             operation=Operation.CREATE,
-            node_type="transportNode",
+            node_type=TRANSPORT,
             label=transport_label,
             layer_index=layer_index + 1,
         ),
@@ -169,7 +170,7 @@ async def _outbound_topology(
             make_node(
                 remote_node,
                 operation=Operation.CREATE,
-                node_type="customNode",
+                node_type=AGENT,
                 label=agent_id,
                 layer_index=layer_index + 2,
                 stable_agent_id=_stable_agent_id(agent_id),
@@ -205,7 +206,7 @@ async def _delegation_edge_topology(
         make_node(
             anchor_id,
             operation=Operation.CREATE,
-            node_type="customNode",
+            node_type=AGENT,
             label=anchor_label,
             layer_index=layer_index,
             stable_agent_id=anchor_stable_agent_id,
@@ -218,7 +219,7 @@ async def _delegation_edge_topology(
             make_node(
                 remote_anchor_id,
                 operation=Operation.CREATE,
-                node_type="customNode",
+                node_type=AGENT,
                 label=agent_id,
                 layer_index=layer_index + 1,
                 stable_agent_id=_stable_agent_id(agent_id),
@@ -255,7 +256,7 @@ async def _inbound_topology(
             make_node(
                 remote_node,
                 operation=Operation.UPDATE,
-                node_type="customNode",
+                node_type=AGENT,
                 label=remote_agent_id,
                 layer_index=layer_index + 2,
                 include_size=False,
@@ -264,7 +265,7 @@ async def _inbound_topology(
             make_node(
                 transport_node,
                 operation=Operation.UPDATE,
-                node_type="transportNode",
+                node_type=TRANSPORT,
                 label=transport_label,
                 layer_index=layer_index + 1,
                 include_size=False,
@@ -272,7 +273,7 @@ async def _inbound_topology(
             make_node(
                 caller_node,
                 operation=Operation.UPDATE,
-                node_type="customNode",
+                node_type=AGENT,
                 label=caller_agent_id,
                 layer_index=layer_index,
                 include_size=False,
@@ -457,7 +458,7 @@ class EventEmittingInterceptor(ClientCallInterceptor):
                     make_node(
                         caller_node,
                         operation=Operation.CREATE,
-                        node_type="customNode",
+                        node_type=AGENT,
                         label=self._caller_agent_id,
                         layer_index=self._agent_call_graph_layer,
                         stable_agent_id=_stable_agent_id(self._caller_agent_id),

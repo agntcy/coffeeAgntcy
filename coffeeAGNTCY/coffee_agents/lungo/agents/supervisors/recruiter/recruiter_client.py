@@ -36,6 +36,7 @@ from agents.supervisors.recruiter.recruiter_service_card import (
 from common.stable_agent_id import stable_agent_id_for_name
 from common.workflow_context_prop import read_workflow_context
 from common.workflow_utils.builders import build_event, make_node
+from common.workflow_utils.node_types import AGENT
 from common.workflow_utils.event_sink import WorkflowAPIEventSink
 from common.workflow_utils.inflight import read_trace_context
 from common.workflow_utils.workflow_catalog import lookup_workflow
@@ -192,7 +193,7 @@ async def _emit_discovery_topology(agent_records: dict[str, dict]) -> None:
         make_node(
             anchor_id,
             operation=Operation.CREATE,
-            node_type="customNode",
+            node_type=AGENT,
             label=_RECRUITER_ANCHOR_LABEL,
             layer_index=0,
             stable_agent_id=stable_agent_id_for_name(_RECRUITER_ANCHOR_RECORD_NAME),
@@ -206,7 +207,7 @@ async def _emit_discovery_topology(agent_records: dict[str, dict]) -> None:
             make_node(
                 node_id,
                 operation=Operation.CREATE,
-                node_type="customNode",
+                node_type=AGENT,
                 label=name,
                 layer_index=1,
                 stable_agent_id=stable_agent_id_for_name(name),

@@ -353,6 +353,8 @@ export interface components {
          * @enum {string}
          */
         operation: "create" | "read" | "update" | "delete";
+        /** @description Node type tag. Documented values: agent, mcp, directory, group, transport (semantic); customNode, transportNode (legacy). Open string so unknown values remain valid. */
+        node_type: string;
         /** @description Relative layout size vs other nodes. Used in topology drawing and layout algorithms. */
         size: {
             /** @default 1 */
@@ -364,7 +366,7 @@ export interface components {
         partial_base_node: {
             id: components["schemas"]["node_id"];
             operation: components["schemas"]["operation"];
-            type?: string;
+            type?: components["schemas"]["node_type"];
             label?: string;
             /** @description Optional curated subtitle (second display line). Consumers fall back to splitting label when absent (added in 1.1.0). */
             label_subtitle?: string;
@@ -561,11 +563,13 @@ export interface components {
                     /** @default 1 */
                     height: number;
                 };
+                /** @description Node type tag. Documented values: agent, mcp, directory, group, transport (semantic); customNode, transportNode (legacy). Open string so unknown values remain valid. */
+                node_type: string;
                 /** @description Sparse base node data (mainly for updates). Used in topology definitions. */
                 partial_base_node: {
                     id: components["schemas"]["node_id"];
                     operation: components["schemas"]["operation"];
-                    type?: string;
+                    type?: components["schemas"]["node_type"];
                     label?: string;
                     /** @description Optional curated subtitle (second display line). Consumers fall back to splitting label when absent (added in 1.1.0). */
                     label_subtitle?: string;

@@ -14,6 +14,7 @@ import {
   extractStableAgentId,
   transportCanonicalRfId,
 } from "@/utils/topologyToReactFlow"
+import { canonicalizeNodeType, isTransportType } from "@/utils/const"
 
 export interface MessagingHighlightIds {
   nodeIds: ReadonlySet<string>
@@ -25,8 +26,6 @@ export interface MessagingHighlightIds {
 }
 
 type NodeIdResolver = (node: TopologyNodeWire) => string | null
-
-const TRANSPORT_NODE_TYPE = "transportNode"
 
 /**
  * Guard for wire fields that must be non-empty before they can identify graph items.
@@ -61,7 +60,7 @@ function emptyMessagingHighlightIds(): MessagingHighlightIds {
 function resolveDynamicNodeId(node: TopologyNodeWire): string | null {
   const stableAgentId = extractStableAgentId(node)
   if (stableAgentId) return stableAgentId
-  if (node.type === TRANSPORT_NODE_TYPE)
+  if (isTransportType(canonicalizeNodeType(node.type)))
     return transportCanonicalRfId(node.label)
   return hasText(node.id) ? node.id : null
 }

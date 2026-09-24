@@ -6,10 +6,11 @@
 from __future__ import annotations
 
 from typing import NamedTuple
-from unittest.mock import patch
+from unittest.mock import AsyncMock, patch
 from uuid import UUID, uuid4
 
 import pytest
+from pydantic import ValidationError
 from api.agentic_workflows.instance_lifecycle import (
     build_instantiate_seed_event,
     instances_map_for_workflow,
@@ -173,6 +174,22 @@ def test_build_instantiate_seed_event_validates_as_event_and_merges() -> None:
 def test_instances_map_for_workflow_missing_block() -> None:
     data = Data(workflows={})
     assert instances_map_for_workflow(data, "InstTestWf") == {}
+
+
+def test_instantiate_pydantic_validation_error_returns_400(
+    client: TestClient,
+    app_with_store: FastAPI,
+) -> None:
+    store = getattr(app_with_store.state, WORKFLOW_INSTANCE_STORE_ATTR)
+    error = ValidationError.from_exception_data("Event", [])
+    with patch.object(
+        store,
+        "submit_event",
+        new=AsyncMock(side_effect=error),
+    ):
+        r = client.post("/agentic-workflows/InstTestWf/")
+    assert r.status_code == 400
+    assert r.json()["detail"] == "Event failed schema validation"
 
 
 def test_instantiate_without_store_returns_503(
@@ -465,7 +482,7 @@ def test_get_instance_enriches_group_messaging_transport_node(
     transport_nodes = [
         node
         for node in got.json()["topology"]["nodes"]
-        if node.get("type") == "transportNode"
+        if node.get("type") in {"transport", "transportNode"}
     ]
     assert len(transport_nodes) == 1
     node = transport_nodes[0]

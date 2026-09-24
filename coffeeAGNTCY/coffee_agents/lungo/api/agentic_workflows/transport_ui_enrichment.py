@@ -8,7 +8,10 @@ from __future__ import annotations
 from typing import Any
 
 from api.agentic_workflows.catalog_types import ChatApiTarget
+from common.workflow_utils.node_types import TRANSPORT, TRANSPORT_NODE
 from config.config import DEFAULT_MESSAGE_TRANSPORT
+
+_TRANSPORT_TYPES = frozenset({TRANSPORT, TRANSPORT_NODE})
 
 _TRANSPORT_BY_TARGET: dict[ChatApiTarget, str] = {}
 
@@ -38,9 +41,9 @@ def _transport_node_type(node: dict[str, Any]) -> bool:
     if node_type is None:
         return False
     if isinstance(node_type, str):
-        return node_type == "transportNode"
+        return node_type in _TRANSPORT_TYPES
     if hasattr(node_type, "root"):
-        return node_type.root == "transportNode"
+        return node_type.root in _TRANSPORT_TYPES
     return False
 
 

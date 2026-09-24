@@ -156,7 +156,7 @@ describe("agenticTopologyIdentityUiMap", () => {
       expect(out.githubLink).toContain("transport")
     })
 
-    it("enriches directory node only for customNode + label", () => {
+    it("enriches leftover customNode directory via label fallback", () => {
       const data = customNodeDataFixture({
         label: "AGNTCY Agent",
         label_subtitle: "Directory",
@@ -165,6 +165,25 @@ describe("agenticTopologyIdentityUiMap", () => {
         id: "d1",
         type: "customNode",
         label: "AGNTCY Agent Directory",
+      }
+      const out = enrichAgenticTopologyWellKnownUi(data, wire, {
+        validateUrls: false,
+      })
+      expect(out.githubLink).toContain("github.com")
+      expect(out.hasBadgeDetails).toBe(false)
+      expect(out.hasPolicyDetails).toBe(false)
+    })
+
+    it("enriches type=directory without directory-shaped labels", () => {
+      const data = customNodeDataFixture({
+        label: "Directory",
+        label_subtitle: "",
+        nodeType: "directory",
+      })
+      const wire: TopologyNodeWire = {
+        id: "d1",
+        type: "directory",
+        label: "Directory",
       }
       const out = enrichAgenticTopologyWellKnownUi(data, wire, {
         validateUrls: false,

@@ -39,9 +39,13 @@ from common.workflow_utils.inflight import (
     format_span_id,
     format_trace_id,
 )
+from common.workflow_utils.node_types import (
+    AGENT_EXTENSION_TYPES,
+    BASE_NODE_TYPES,
+)
 from common.workflow_utils.workflow_catalog import WorkflowMetadata
 
-EVENT_SCHEMA_VERSION = "1.2.0"
+EVENT_SCHEMA_VERSION = "1.2.1"
 
 _DEFAULT_NODE_SIZE = Size(width=1.0, height=1.0)
 _MAKE_NODE_RESERVED_EXTRAS = (
@@ -112,9 +116,7 @@ def make_node(
     overlapping extras keys are dropped with a warning.
     """
     extra_kwargs: dict[str, Any] = dict(extras) if extras else {}
-    resolved_stable = _resolve_make_node_stable_agent_id(
-        extra_kwargs, stable_agent_id
-    )
+    resolved_stable = _resolve_make_node_stable_agent_id(extra_kwargs, stable_agent_id)
     _drop_reserved_make_node_extras(extra_kwargs, include_size=include_size)
     agent_record_uri = extra_kwargs.pop("agent_record_uri", None)
     size_kwargs: dict[str, Any] = {}
@@ -129,12 +131,18 @@ def make_node(
         **size_kwargs,
         **extra_kwargs,
     )
-    if resolved_stable is None and agent_record_uri is None:
-        return PartialBaseNode(**base_kwargs)
-    if agent_record_uri is None:
+    if agent_record_uri is None and resolved_stable is not None:
         agent_record_uri = (
             f"agent-card://{str(resolved_stable).removeprefix('agent://')}"
         )
+    if node_type in BASE_NODE_TYPES:
+        return PartialBaseNode(**base_kwargs)
+    if (
+        node_type not in AGENT_EXTENSION_TYPES
+        and resolved_stable is None
+        and agent_record_uri is None
+    ):
+        return PartialBaseNode(**base_kwargs)
     return PartialAgentNode(
         **base_kwargs,
         agent_record_uri=agent_record_uri,

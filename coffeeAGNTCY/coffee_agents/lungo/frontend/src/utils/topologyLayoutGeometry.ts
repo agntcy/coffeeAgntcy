@@ -4,7 +4,7 @@
  **/
 
 import type { Node } from "@xyflow/react"
-import { NODE_TYPES } from "@/utils/const"
+import { DISPLAY_NODE_TYPES } from "@/utils/const"
 import {
   CUSTOM_NODE_WIDTH,
   CUSTOM_NODE_X_GAP,
@@ -101,7 +101,7 @@ export function applyPositions(
 }
 
 export function findTransport(nodes: Node[]): Node | undefined {
-  return nodes.find((node) => node.type === NODE_TYPES.TRANSPORT)
+  return nodes.find((node) => node.type === DISPLAY_NODE_TYPES.TRANSPORT)
 }
 
 export function isCompactTransport(transport: Node): boolean {

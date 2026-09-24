@@ -12,6 +12,8 @@ export interface ExtraHandle {
 }
 
 export interface CustomNodeData extends GraphNodeTransportRailData {
+  /** Canonical event node type after `canonicalizeNodeType`. */
+  nodeType?: string
   onOpenOasfDialog?: (nodeData: CustomNodeData) => void
   icon: React.ReactNode
   label: string
@@ -46,6 +48,8 @@ export interface CustomNodeData extends GraphNodeTransportRailData {
 }
 
 export interface TransportNodeData {
+  /** Canonical event node type after `canonicalizeNodeType`. */
+  nodeType?: string
   label: string
   active?: boolean
   githubLink?: string

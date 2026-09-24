@@ -22,6 +22,7 @@ Examples of complete and partial messages live alongside the schema:
 - Partial delta: [`../schema/jsonschemas/examples/event_v1_partial.json`](../schema/jsonschemas/examples/event_v1_partial.json)
 - Empty workflows: [`../schema/jsonschemas/examples/event_v1_empty_workflows.json`](../schema/jsonschemas/examples/event_v1_empty_workflows.json)
 - Additive 1.2.0 (OTel ids + grouped MCP edge): [`../schema/jsonschemas/examples/event_v1_2_0.json`](../schema/jsonschemas/examples/event_v1_2_0.json)
+- Patch 1.2.1 (documented semantic node `type` values): [`../schema/jsonschemas/examples/event_v1_1_2_1.json`](../schema/jsonschemas/examples/event_v1_1_2_1.json)
 
 > **Status.** The catalog list DTOs (patterns, use-cases, workflow summaries) are temporary API-layer types defined in [`../api/agentic_workflows/dtos.py`](../api/agentic_workflows/dtos.py). They are being folded into the canonical JSON Schema so OpenAPI, JSON Schema, and Pydantic remain a single source of truth. The instance/state and event shapes (`Workflow`, `WorkflowInstance`, `Topology`, `Event`) are already canonical in `event_v1.json`.
 
@@ -244,9 +245,23 @@ Query parameter:
 
 A **topology** (`event_v1.json#/$defs/topology`) is an object with `nodes` and `edges` arrays. The *full* form (used for `starting_topology` and instance init) requires both arrays; the *partial* form (`#/$defs/partial_topology`, used for deltas) allows them to be omitted.
 
-**Node** (`#/$defs/base_node`, required for a full node): `id` (`node://…`), `operation` (`create` | `read` | `update` | `delete`), `type` (e.g. `customNode`, `transportNode`, `group`), `label`, `size` (`{ width, height }`, relative layout sizing), and `layer_index`. `additionalProperties` is allowed (the starting catalog, for example, carries an extra `position: { x, y }`).
+**Node** (`#/$defs/base_node`, required for a full node): `id` (`node://…`), `operation` (`create` | `read` | `update` | `delete`), `type` (open string, `$defs.node_type`), `label`, `size` (`{ width, height }`, relative layout sizing), and `layer_index`. `additionalProperties` is allowed (the starting catalog, for example, carries an extra `position: { x, y }`).
 
-An **agent node** (`#/$defs/agent_node`) additionally carries `agent_record_uri` (required) and `stable_agent_id` (`agent://…`). Nodes without agent extension fields are plain base nodes; the schema keeps the two mutually exclusive via `anyOf`/`not`.
+Documented `type` values (1.2.1):
+
+| `type` | Shape | Notes |
+| --- | --- | --- |
+| `agent` | this repo: agent extension | Catalog agents, A2A/recruiter/discovery agents. Schema still accepts this tag without the extension. |
+| `mcp` | this repo: agent extension | Same shape as `agent` (OASF record + `agent_record_uri`). Distinct from edge `$defs.mcp`. Schema still accepts this tag without the extension. |
+| `directory` | base (no extension) | Directory card. |
+| `group` | base | Group container. |
+| `transport` | base | Message-transport node. |
+| `customNode` | leftover | Presence of `agent_record_uri` / `stable_agent_id` still selects the agent shape. |
+| `transportNode` | leftover | Alias of `transport`. |
+
+JSON Schema does **not** require the agent extension when `type` is `agent` or `mcp` (those strings were already valid open tags). This repo's emitters write the extension on those nodes, and its Pydantic discriminator routes `type=agent`/`mcp` to the agent shape. `directory` / `group` / `transport` do not use the extension. 1.0.0-1.2.0 payloads that still emit `customNode` / `transportNode` remain valid.
+
+An **agent node** (`#/$defs/agent_node`) additionally carries `agent_record_uri` (required) and `stable_agent_id` (`agent://…`). Nodes without agent extension fields are plain base nodes; the schema keeps the two mutually exclusive via `anyOf`/`not` on key presence, not on the `type` string.
 
 #### Topology wire enrichment (GET workflow / instance only)
 
@@ -262,7 +277,7 @@ An **agent node** (`#/$defs/agent_node`) additionally carries `agent_record_uri`
 | `has_policy_override` | `lungo.hasPolicyOverride` |
 | `verification_status_override` | `lungo.verificationStatusOverride` |
 
-**Transport nodes** (`type: transportNode`) when catalog `chat_api_target` is `exchange` or `logistics`:
+**Transport nodes** (`type: transport` or leftover `transportNode`) when catalog `chat_api_target` is `exchange` or `logistics`:
 
 | Wire field | Example | Notes |
 |------------|---------|-------|
@@ -290,7 +305,7 @@ Example topology projection (`?topology_only=true`):
       {
         "id": "node://4a000001-0001-4000-a001-000000000001",
         "operation": "read",
-        "type": "customNode",
+        "type": "agent",
         "label": "Agentic Recruiter",
         "size": { "width": 1.0, "height": 1.0 },
         "layer_index": 0,
@@ -300,8 +315,8 @@ Example topology projection (`?topology_only=true`):
       {
         "id": "node://4a000001-0001-4000-a001-000000000002",
         "operation": "read",
-        "type": "customNode",
-        "label": "AGNTCY Agent Directory",
+        "type": "directory",
+        "label": "Directory",
         "size": { "width": 1.0, "height": 1.0 },
         "layer_index": 1,
         "position": { "x": 800, "y": 100 }
@@ -489,7 +504,7 @@ An `Event` is `{ metadata, data }` (both required, `additionalProperties: false`
 {
   "metadata": {                       // syntactic + semantic metadata (all required)
     "timestamp": "RFC3339 date-time",
-    "schema_version": "1.2.0",        // semantic version of this contract (1.0.0 / 1.1.0 still valid)
+    "schema_version": "1.2.1",        // semantic version of this contract (1.0.0 / 1.1.0 / 1.2.0 still valid)
     "correlation": {                  // ties events from one user action / request
       "id": "correlation://<uuid>",   // required
       "message": "optional string"    // additionalProperties allowed
@@ -535,8 +550,9 @@ Key invariant: each property name under `workflow.instances` **must equal** the 
 | `correlation` | `{ id (required), message? }`, `additionalProperties: true`. |
 | `partial_base_node` / `base_node` | Sparse vs. full non-agent node. |
 | `partial_agent_node` / `agent_node` | Node + agent extension (`agent_record_uri`, `stable_agent_id`). |
-| `partial_node` / `node` | A base node **or** an agent node (mutually exclusive). |
-| `mcp` | Optional grouped MCP tool-call fields on an edge (1.2.0). |
+| `node_type` | Open string tag (1.2.1). Documented values: `agent`, `mcp`, `directory`, `group`, `transport`, leftover `customNode` / `transportNode`. |
+| `partial_node` / `node` | A base node **or** an agent node (mutually exclusive by key presence). |
+| `mcp` | Optional grouped MCP tool-call fields on an **edge** (1.2.0). Distinct from node `type` `"mcp"`. |
 | `partial_edge` / `edge` | Sparse vs. full edge; optional `mcp`. |
 | `partial_topology` / `topology` | `{ nodes, edges }`; partial allows omission, full requires both. |
 | `workflow_instance` | `{ id (required), topology }`, `additionalProperties: true`. |
@@ -554,5 +570,6 @@ Key invariant: each property name under `workflow.instances` **must equal** the 
 - **Partial delta (update)** - one node carrying `operation: "update"` and only the changed fields, empty `edges`: [`examples/event_v1_partial.json`](../schema/jsonschemas/examples/event_v1_partial.json).
 - **Empty workflows + extra `app_state`** - demonstrates root-level `additionalProperties`: [`examples/event_v1_empty_workflows.json`](../schema/jsonschemas/examples/event_v1_empty_workflows.json).
 - **1.2.0 additive fields** - optional metadata `trace_id`/`span_id` and grouped `edge.mcp`: [`examples/event_v1_2_0.json`](../schema/jsonschemas/examples/event_v1_2_0.json).
+- **1.2.1 documented node types** - `agent` / `mcp` / `directory` / `group` / `transport` (leftover `customNode` / `transportNode` still valid): [`examples/event_v1_1_2_1.json`](../schema/jsonschemas/examples/event_v1_1_2_1.json).
 
 ---

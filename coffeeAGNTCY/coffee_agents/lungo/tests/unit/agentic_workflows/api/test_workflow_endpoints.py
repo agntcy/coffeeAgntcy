@@ -342,7 +342,11 @@ def catalog_client(workflow_api_headers: dict[str, str]) -> TestClient:
 
 
 def _transport_nodes(topology: dict) -> list[dict]:
-    return [n for n in topology.get("nodes", []) if n.get("type") == "transportNode"]
+    return [
+        n
+        for n in topology.get("nodes", [])
+        if n.get("type") in {"transport", "transportNode"}
+    ]
 
 
 def _agent_nodes_with_stable_id(topology: dict) -> list[dict]:

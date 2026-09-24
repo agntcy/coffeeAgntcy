@@ -13,11 +13,11 @@ import {
   extractA2aTransportsFromOasf,
   type AgentTransport,
 } from "./Graph/Elements/transport/transportMeta"
-import { NODE_TYPES } from "@/utils/const"
+import { DISPLAY_NODE_TYPES } from "@/utils/const"
 import type { ChatApiTarget } from "@/utils/patternUtils"
 
 function readNodeData(node: Node): CustomNodeData | null {
-  if (node.type !== NODE_TYPES.CUSTOM) return null
+  if (node.type !== DISPLAY_NODE_TYPES.CUSTOM) return null
   const data = customNodeDataFromNode(node)
   if (!data?.label?.trim()) return null
   return data

@@ -4,7 +4,7 @@
  **/
 
 import type { Edge, Node } from "@xyflow/react"
-import { NODE_TYPES } from "@/utils/const"
+import { DISPLAY_NODE_TYPES } from "@/utils/const"
 import {
   CUSTOM_NODE_HEIGHT,
   GROUP_CONTENT_PADDING_X,
@@ -78,7 +78,7 @@ export function layoutPositionsByLayer(
 function layoutBarGraph(nodes: Node[], transport: Node): Node[] {
   const positions = positionsFromNodes(nodes)
   const customIds = nodes
-    .filter((node) => node.type !== NODE_TYPES.TRANSPORT)
+    .filter((node) => node.type !== DISPLAY_NODE_TYPES.TRANSPORT)
     .map((node) => node.id)
   const byLayer = groupIdsByLayer(customIds, (id) =>
     bucketNodeLayerY(positions.get(id)!.y),
@@ -110,13 +110,13 @@ export function centerCustomNodesOnTransport(
 }
 
 function layoutCompactGroup(nodes: Node[], transport: Node): Node[] {
-  const group = nodes.find((node) => node.type === NODE_TYPES.GROUP)
+  const group = nodes.find((node) => node.type === DISPLAY_NODE_TYPES.GROUP)
   if (!group || transport.parentId !== group.id) return nodes
 
   const customChildren = nodes.filter(
     (node) =>
       node.parentId === group.id &&
-      node.type === NODE_TYPES.CUSTOM &&
+      node.type === DISPLAY_NODE_TYPES.CUSTOM &&
       node.id !== transport.id,
   )
   if (customChildren.length === 0) return nodes

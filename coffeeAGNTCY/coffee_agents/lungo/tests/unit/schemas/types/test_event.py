@@ -125,6 +125,23 @@ def _mutate_instances_map_key_mismatch_with_nested_id(d: dict) -> None:
     }
 
 
+def _mutate_type_agent_without_agent_record_uri(d: dict) -> None:
+    node = _starting_node(d)
+    node.pop("agent_record_uri", None)
+    node.pop("stable_agent_id", None)
+
+
+def _mutate_type_mcp_without_agent_record_uri(d: dict) -> None:
+    node = d["data"]["workflows"]["recruiter"]["starting_topology"]["nodes"][1]
+    node.pop("agent_record_uri", None)
+    node.pop("stable_agent_id", None)
+
+
+def _mutate_type_agent_stable_agent_id_only(d: dict) -> None:
+    node = _starting_node(d)
+    node.pop("agent_record_uri", None)
+
+
 _INVALID = EventOutputs(
     schema_exc=SchemaValidationError,
     model_exc=ValidationError,
@@ -149,6 +166,11 @@ _EVENT_CASES: tuple[EventCase, ...] = (
     EventCase(
         case_id="v1_2_0_example_round_trip",
         inputs=EventInputs(example_filename="event_v1_2_0.json"),
+        outputs=EventOutputs(),
+    ),
+    EventCase(
+        case_id="v1_2_1_example_round_trip",
+        inputs=EventInputs(example_filename="event_v1_1_2_1.json"),
         outputs=EventOutputs(),
     ),
     EventCase(
@@ -271,6 +293,34 @@ _EVENT_CASES: tuple[EventCase, ...] = (
         ),
         outputs=_INVALID,
     ),
+    EventCase(
+        case_id="type_agent_stable_agent_id_only",
+        inputs=EventInputs(
+            example_filename="event_v1_1_2_1.json",
+            mutate=_mutate_type_agent_stable_agent_id_only,
+        ),
+        outputs=_INVALID,
+    ),
+)
+
+
+_PYDANTIC_ONLY_CASES: tuple[EventCase, ...] = (
+    EventCase(
+        case_id="type_agent_without_agent_record_uri",
+        inputs=EventInputs(
+            example_filename="event_v1_1_2_1.json",
+            mutate=_mutate_type_agent_without_agent_record_uri,
+        ),
+        outputs=EventOutputs(schema_exc=None, model_exc=ValidationError),
+    ),
+    EventCase(
+        case_id="type_mcp_without_agent_record_uri",
+        inputs=EventInputs(
+            example_filename="event_v1_1_2_1.json",
+            mutate=_mutate_type_mcp_without_agent_record_uri,
+        ),
+        outputs=EventOutputs(schema_exc=None, model_exc=ValidationError),
+    ),
 )
 
 
@@ -316,3 +366,19 @@ def test_optional_label2_round_trips() -> None:
         "nodes"
     ][0]
     assert dumped_node["label_subtitle"] == "Buyer"
+
+
+@pytest.mark.parametrize(
+    "case", [pytest.param(c, id=c.case_id) for c in _PYDANTIC_ONLY_CASES]
+)
+def test_event_type_first_pydantic_only(case: EventCase) -> None:
+    """``type=agent``/``mcp`` without extension stays schema-valid; this repo's Pydantic rejects it."""
+    data = load_json_instance_file(_EXAMPLES / case.inputs.example_filename)
+    assert case.inputs.mutate is not None
+    data = deepcopy(data)
+    case.inputs.mutate(data)
+    assert case.outputs.schema_exc is None
+    assert case.outputs.model_exc is not None
+    validate_data_against_schema(data, _KNOWN)
+    with pytest.raises(case.outputs.model_exc):
+        Event.model_validate(data)

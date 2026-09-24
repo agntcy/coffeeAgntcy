@@ -1,0 +1,92 @@
+{
+  "metadata": {
+    "timestamp": "2026-03-17T12:00:02Z",
+    "schema_version": "1.2.1",
+    "correlation": {
+      "id": "correlation://6ba7b820-9dad-11d1-80b4-00c04fd430c8",
+      "message": "semantic node types"
+    },
+    "id": "event://6ba7b821-9dad-11d1-80b4-00c04fd430c8",
+    "type": "StateProgressUpdate",
+    "source": "auction_supervisor"
+  },
+  "data": {
+    "workflows": {
+      "recruiter": {
+        "name": "Recruiter",
+        "pattern": "recruiter_pattern",
+        "use_case": "hiring",
+        "scenario": "agent recruitment",
+        "starting_topology": {
+          "nodes": [
+            {
+              "id": "node://6ba7b822-9dad-11d1-80b4-00c04fd430c8",
+              "operation": "read",
+              "type": "agent",
+              "label": "Auction Agent",
+              "size": { "width": 1.0, "height": 1.0 },
+              "layer_index": 0,
+              "agent_record_uri": "../../agents/supervisors/auction/oasf/agents/auction-supervisor-agent.json",
+              "stable_agent_id": "agent://470de4a0-a6bc-5e1b-82dd-e41de2af3f85"
+            },
+            {
+              "id": "node://6ba7b823-9dad-11d1-80b4-00c04fd430c8",
+              "operation": "read",
+              "type": "mcp",
+              "label": "Weather MCP Server",
+              "size": { "width": 1.0, "height": 1.0 },
+              "layer_index": 1,
+              "agent_record_uri": "../../agents/supervisors/auction/oasf/agents/weather-mcp-server.json",
+              "stable_agent_id": "agent://aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee"
+            },
+            {
+              "id": "node://6ba7b824-9dad-11d1-80b4-00c04fd430c8",
+              "operation": "read",
+              "type": "directory",
+              "label": "Directory",
+              "size": { "width": 1.0, "height": 1.0 },
+              "layer_index": 2
+            },
+            {
+              "id": "node://6ba7b825-9dad-11d1-80b4-00c04fd430c8",
+              "operation": "read",
+              "type": "group",
+              "label": "Logistics Group",
+              "size": { "width": 1.0, "height": 1.0 },
+              "layer_index": 3
+            },
+            {
+              "id": "node://6ba7b826-9dad-11d1-80b4-00c04fd430c8",
+              "operation": "read",
+              "type": "transport",
+              "label": "Transport",
+              "size": { "width": 1.0, "height": 1.0 },
+              "layer_index": 4
+            }
+          ],
+          "edges": []
+        },
+        "instances": {
+          "instance://6ba7b827-9dad-11d1-80b4-00c04fd430c8": {
+            "id": "instance://6ba7b827-9dad-11d1-80b4-00c04fd430c8",
+            "topology": {
+              "nodes": [
+                {
+                  "id": "node://6ba7b822-9dad-11d1-80b4-00c04fd430c8",
+                  "operation": "read",
+                  "type": "agent",
+                  "label": "Auction Agent",
+                  "size": { "width": 1.0, "height": 1.0 },
+                  "layer_index": 0,
+                  "agent_record_uri": "../../agents/supervisors/auction/oasf/agents/auction-supervisor-agent.json",
+                  "stable_agent_id": "agent://470de4a0-a6bc-5e1b-82dd-e41de2af3f85"
+                }
+              ],
+              "edges": []
+            }
+          }
+        }
+      }
+    }
+  }
+}
