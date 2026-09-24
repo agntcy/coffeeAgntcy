@@ -39,7 +39,7 @@ major version release.
 
 Each agent project documents its test layout and commands in `tests/README.md` under `coffeeAGNTCY/coffee_agents/{corto,lungo,recruiter}/`.
 
-If your PR changes a Helm chart's contents (anything under a chart's `deployment/helm/<chart>/` directory), bump that chart's `version:` field in its `Chart.yaml`. Helm charts aren't tagged in git - the `Chart.yaml` version is the only thing that identifies a published chart, so an unbumped version on changed content will be rejected: `helm-push.yaml`'s CI guard fails the workflow if a chart is pushed under a version that already exists in GHCR. See [`docs/RELEASE-OPS.md`](docs/RELEASE-OPS.md) for how this is audited before each release.
+If your PR changes a Helm chart's contents (anything under a chart's `deployment/helm/<chart>/` directory), bump that chart's `version:` field in its `Chart.yaml`. Helm charts aren't tagged in git - the `Chart.yaml` version is the only thing that identifies a published chart, so an unbumped version on changed content will be rejected: `helm-push.yaml`'s CI guard fails the workflow if a chart is pushed under a version that already exists in GHCR, and `source-lint.yaml`'s `helm-chart-versions` job fails the pull request outright. Run `task helm:check-versions -- <previous-release-tag>` ([Task](https://taskfile.dev)) to check this yourself before opening the PR. See [`docs/RELEASE-OPS.md`](docs/RELEASE-OPS.md) for how this is audited before each release.
 
 ### Linting and code style
 
