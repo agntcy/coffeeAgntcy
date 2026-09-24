@@ -252,11 +252,14 @@ describe("layoutSlimTransportGraph (compact group)", () => {
     ]
 
     const { nodes: laidOut } = layoutSlimTransportGraph(inputNodes, [])
-    const group = laidOut.find((node) => node.type === DISPLAY_NODE_TYPES.GROUP)!
+    const group = laidOut.find(
+      (node) => node.type === DISPLAY_NODE_TYPES.GROUP,
+    )!
     const groupWidth = group.width as number
     const transport = laidOut.find((node) => node.id === "transport")!
     const customs = laidOut.filter(
-      (node) => node.parentId === group.id && node.type === DISPLAY_NODE_TYPES.CUSTOM,
+      (node) =>
+        node.parentId === group.id && node.type === DISPLAY_NODE_TYPES.CUSTOM,
     )
 
     expect(transport.position.x).toBeCloseTo(
