@@ -30,12 +30,13 @@ for the underlying rule.
 
 ```
 - [ ] 1. Pick a base ref: the last release tag (git tag --list --sort=-creatordate
-        | grep -Ev '\-dev' | head -n1), or whatever ref the user names
-        (e.g. "since 0.3.0")
+        | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' | head -n1), or whatever ref the
+        user names (e.g. "since 0.3.0")
 - [ ] 2. Run: task helm:check-versions -- <base-ref>
 - [ ] 3. For each flagged chart, read what changed: git diff <base-ref> -- <chart-dir>
-- [ ] 4. Judge whether the diff is substantive - a pure comment/whitespace-only
-        diff doesn't need a bump; note it and move on
+- [ ] 4. Every flagged chart needs a bump - the `helm-chart-versions` CI job
+        is a merge gate with no trivial-diff exception, so even a pure
+        comment/whitespace-only diff still needs (at least) a patch bump
 - [ ] 5. Pick the bump level per ordinary semver:
         - patch: backward-compatible fix, internal tweak
         - minor: new value/template/feature, still backward compatible
@@ -60,7 +61,9 @@ for the underlying rule.
   call.
 - The script can only tell "contents changed, version didn't" from git
   history - it can't tell a real feature addition from a typo fix in a
-  comment. Apply judgment (step 4) before deciding a diff warrants a bump.
+  comment. Because the CI job enforces this as a merge gate with no
+  trivial-diff exception, apply judgment (step 5) only to size the bump,
+  never to skip it.
 - When running this as part of `docs/RELEASE-OPS.md` Step 0, use the last
   release tag as `<base-ref>` and `main` as the (default) end ref, and open
   a version-bump PR per that document's Step 0.3 for anything flagged.

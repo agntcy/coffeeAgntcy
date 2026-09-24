@@ -42,6 +42,6 @@ jobs:
 
             - name: Check Helm chart version bumps
               run: |
-                  LAST_RELEASE_TAG=$(git tag --list --sort=-creatordate | grep -Ev '\-dev' | head -n1)
+                  LAST_RELEASE_TAG=$(git tag --list --sort=-creatordate | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' | head -n1)
                   echo "Comparing against last release tag: ${LAST_RELEASE_TAG}"
                   task helm:check-versions -- "${LAST_RELEASE_TAG}"

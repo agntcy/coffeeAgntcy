@@ -11,17 +11,18 @@
 #
 # For each Chart.yaml found in the repo that also existed at <base-ref>,
 # this compares (within <base-ref>..<end-ref>):
-#   - BODY: the newest commit touching the chart's contents (excluding its
-#     own Chart.yaml)
-#   - BUMP: the newest commit that changed the `version:` line in that
-#     chart's Chart.yaml
+#   - BODY: the newest commit touching the chart's contents (including its
+#     own Chart.yaml, since appVersion/dependencies/etc. there count too)
+#   - BUMP: the newest commit that changed the chart's own top-level
+#     `version:` line in that chart's Chart.yaml
 # and flags the chart if BODY exists and is not an ancestor of BUMP (i.e.
 # the body changed after, or without, a version bump).
 #
 # This only detects that a bump is missing - it doesn't judge whether the
-# bump should be patch/minor/major, or whether a diff is trivial enough
-# (e.g. comment-only) to not need one. That judgment belongs to whoever
-# fixes the flagged chart - see the checking-helm-chart-version-bumps skill.
+# bump should be patch/minor/major. Every flagged chart needs a bump,
+# however trivial the diff (this is a CI merge gate with no trivial-diff
+# exception) - see the checking-helm-chart-version-bumps skill for picking
+# the bump level.
 #
 # Usage: scripts/check_helm_chart_versions.bash <base-ref> [<end-ref>]
 #   <base-ref>: the previous release tag (or any earlier ref) to compare from
@@ -57,8 +58,8 @@ while IFS= read -r -d '' chart_file; do
     continue # chart didn't exist at base ref - nothing to compare
   fi
 
-  body="$(git log -1 --format=%H "${BASE_REF}..${END_REF}" -- "$chart_dir" ":(exclude)$chart_file")"
-  bump="$(git log -1 --format=%H "${BASE_REF}..${END_REF}" -G'^\s*version:' -- "$chart_file")"
+  body="$(git log -1 --format=%H "${BASE_REF}..${END_REF}" -- "$chart_dir")"
+  bump="$(git log -1 --format=%H "${BASE_REF}..${END_REF}" -G'^version:' -- "$chart_file")"
 
   if [[ -z "$body" ]]; then
     continue # chart's contents didn't change

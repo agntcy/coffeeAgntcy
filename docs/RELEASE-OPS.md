@@ -25,7 +25,7 @@ Before anything else, confirm everyone honored the rule that **any change to a H
 
 ```sh
 git fetch --tags
-LAST_RELEASE_TAG=$(git tag --list --sort=-creatordate | grep -Ev '\-dev' | head -n1)
+LAST_RELEASE_TAG=$(git tag --list --sort=-creatordate | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' | head -n1)
 task helm:check-versions -- "${LAST_RELEASE_TAG}" main
 ```
 
@@ -34,9 +34,9 @@ Anything it flags needs step 3 below. The manual steps that follow spell out the
 **1. Check `main` against the last real/release tag** (ignore `*-dev*` tags):
 
 ```sh
-# Latest release tag (excludes "-dev" tags); adjust the grep to your tag scheme.
+# Latest release tag (plain semver, no "v" prefix, no "-dev" suffix); adjust to your tag scheme.
 git fetch --tags
-LAST_RELEASE_TAG=$(git tag --list --sort=-creatordate | grep -Ev '\-dev' | head -n1)
+LAST_RELEASE_TAG=$(git tag --list --sort=-creatordate | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' | head -n1)
 echo "Last release tag: ${LAST_RELEASE_TAG}"
 
 # What changed under the Helm chart trees since that tag?
@@ -58,15 +58,15 @@ CHART_DIR="coffeeAGNTCY/coffee_agents/lungo/deployment/helm/ui"   # example char
 git log --oneline "${LAST_RELEASE_TAG}"..main -- "${CHART_DIR}"
 git log --oneline "${LAST_RELEASE_TAG}"..main -- "${CHART_DIR}/Chart.yaml"
 
-# Ultimately, we only really need for the most recent commit that updated the contents of a chart to also have updated its Chart.yaml.
-# Compare the newest commit touching the chart body against the newest commit that bumped its version line.
+# Ultimately, we only really need for the most recent commit that updated the contents of a chart (Chart.yaml included) to also have updated its version line.
+# Compare the newest commit touching the chart (including its own Chart.yaml) against the newest commit that bumped its version line.
 # If the body change is newer than (not an ancestor of) the version bump, the chart needs a bump.
-git log -1 --oneline "${LAST_RELEASE_TAG}"..main -- "${CHART_DIR}" ":(exclude)${CHART_DIR}/Chart.yaml"   # newest body change
-git log -1 --oneline "${LAST_RELEASE_TAG}"..main -G'^\s*version:' -- "${CHART_DIR}/Chart.yaml"           # newest version bump
+git log -1 --oneline "${LAST_RELEASE_TAG}"..main -- "${CHART_DIR}"                              # newest body change
+git log -1 --oneline "${LAST_RELEASE_TAG}"..main -G'^version:' -- "${CHART_DIR}/Chart.yaml"     # newest version bump
 
 # The following snippet automates that verdict for the chart: capture both commits, then test ancestry.
-BODY=$(git log -1 --format=%H "${LAST_RELEASE_TAG}"..main -- "${CHART_DIR}" ":(exclude)${CHART_DIR}/Chart.yaml")
-BUMP=$(git log -1 --format=%H "${LAST_RELEASE_TAG}"..main -G'^\s*version:' -- "${CHART_DIR}/Chart.yaml")
+BODY=$(git log -1 --format=%H "${LAST_RELEASE_TAG}"..main -- "${CHART_DIR}")
+BUMP=$(git log -1 --format=%H "${LAST_RELEASE_TAG}"..main -G'^version:' -- "${CHART_DIR}/Chart.yaml")
 { [ -z "${BODY}" ] || { [ -n "${BUMP}" ] && git merge-base --is-ancestor "${BODY}" "${BUMP}"; }; } \
   && echo "OK: ${CHART_DIR}" || echo "NEEDS BUMP: ${CHART_DIR}"
 ```

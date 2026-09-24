@@ -20,10 +20,10 @@
 
 ## Rules
 
-Conventions to apply proactively, not on request. `no-em-en-dashes` is
-enforced in CI; `helm-chart-version-bump`, `pinned-external-references`, and
-`workflow-least-privilege` have a check script but aren't wired into CI yet;
-the rest rely on being applied by judgment.
+Conventions to apply proactively, not on request. `no-em-en-dashes` and
+`helm-chart-version-bump` are enforced in CI; `pinned-external-references`
+and `workflow-least-privilege` have a check script but aren't wired into CI
+yet; the rest rely on being applied by judgment.
 
 | Topic | File |
 |-------|------|
