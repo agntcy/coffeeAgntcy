@@ -20,7 +20,9 @@ import (
 	"flag"
 	"fmt"
 	"net/http"
+	"net/url"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/a2aproject/a2a-go/v2/a2a"
@@ -122,8 +124,6 @@ func run(cfg config) error {
 		return runWithEndpoints(ctx, cfg)
 	}
 
-	printAgentInfo(card)
-
 	if len(card.SupportedInterfaces) == 0 {
 		// The agent card had no usable interfaces (common when v0.3 cards
 		// have "url": "" or the field is missing). Default to v0.3 JSON-RPC
@@ -138,12 +138,32 @@ func run(cfg config) error {
 		debug("No supported interfaces listed, defaulting to v0.3 JSON-RPC at %s", cfg.peerURL)
 	}
 
-	// Also patch any interfaces that have an empty URL to use the peer URL.
+	// Also patch interface URLs and canonicalize the transport protocol
+	// casing:
+	//   - Empty URLs are filled in with the peer URL.
+	//   - Non-empty http(s) URLs get their scheme+host replaced with the
+	//     peer URL's. Agents commonly self-report an internal/container
+	//     hostname (e.g. "http://farm-server:9999/" from inside a Docker
+	//     Compose network) that is correct for other containers but
+	//     unreachable from wherever this CLI is actually running; the
+	//     address the caller dialed to reach the agent is trusted over
+	//     whatever the agent claims about itself. Non-HTTP transports
+	//     (slim://, nats://, ...) are left untouched.
+	//   - TransportProtocol is typed as a plain string and some agent
+	//     cards (e.g. AGNTCY's Python SDK) advertise known transports in
+	//     lowercase ("jsonrpc" instead of "JSONRPC"), which otherwise
+	//     never matches the registered transport keys below since
+	//     selection is case-sensitive.
 	for _, iface := range card.SupportedInterfaces {
 		if iface.URL == "" {
 			iface.URL = cfg.peerURL
+		} else {
+			iface.URL = rewriteToPeerHost(iface.URL, cfg.peerURL)
 		}
+		iface.ProtocolBinding = canonicalTransport(iface.ProtocolBinding)
 	}
+
+	printAgentInfo(card)
 
 	// Create client from discovered card.
 	// Register both v1.0 and v0.3 transports so the SDK can negotiate
@@ -203,6 +223,43 @@ func discoverCard(ctx context.Context, peerURL string) (*a2a.AgentCard, error) {
 		CardParser: a2av0.NewAgentCardParser(),
 	}
 	return resolver.Resolve(ctx, peerURL)
+}
+
+// rewriteToPeerHost replaces ifaceURL's scheme and host with peerURL's,
+// keeping ifaceURL's path/query/fragment. If either URL fails to parse or
+// ifaceURL isn't http(s), ifaceURL is returned unchanged.
+func rewriteToPeerHost(ifaceURL, peerURL string) string {
+	iu, err := url.Parse(ifaceURL)
+	if err != nil || (iu.Scheme != "http" && iu.Scheme != "https") {
+		return ifaceURL
+	}
+	pu, err := url.Parse(peerURL)
+	if err != nil || (pu.Scheme != "http" && pu.Scheme != "https") {
+		return ifaceURL
+	}
+	if iu.Host == pu.Host {
+		return ifaceURL
+	}
+	iu.Scheme = pu.Scheme
+	iu.Host = pu.Host
+	return iu.String()
+}
+
+// canonicalTransport maps a case-insensitive match of a well-known transport
+// protocol to its canonical a2a.TransportProtocol value. Unknown/custom
+// transports (e.g. "slim", "nats") are returned unchanged, since this SDK
+// only ever registers client factories for the well-known ones anyway.
+func canonicalTransport(protocol a2a.TransportProtocol) a2a.TransportProtocol {
+	switch strings.ToUpper(string(protocol)) {
+	case string(a2a.TransportProtocolJSONRPC):
+		return a2a.TransportProtocolJSONRPC
+	case string(a2a.TransportProtocolGRPC):
+		return a2a.TransportProtocolGRPC
+	case string(a2a.TransportProtocolHTTPJSON):
+		return a2a.TransportProtocolHTTPJSON
+	default:
+		return protocol
+	}
 }
 
 func printAgentInfo(card *a2a.AgentCard) {
