@@ -2,9 +2,322 @@
 
 ## Unreleased
 
-### Added
+.
 
-- **event_v1 1.2.1** documents semantic node `type` values (`agent`, `mcp`, `directory`, `group`, `transport`) without tightening JSON Schema acceptance. This repo now emits those values from the catalog, A2A middleware, and recruiter; leftover `customNode` / `transportNode` remain valid ([#545](https://github.com/agntcy/coffeeAgntcy/issues/545)).
+## 0.4.0 (2026-09-24)
+
+Housekeeping and stability release: reverts the **IoC CFN stack** shipped in 0.3.0 pending a clearer roadmap, migrates the Lungo frontend to **Open UI Kit 3.1**, cleans up **dummy MCP graph nodes** and **Weather MCP test flakiness**, adds three new **Internet of Cognition reference patterns** plus pattern-library docs expansion, standardizes **Python formatting** (4-space indent + ruff), and closes **~35 dependency vulnerabilities** across every backend and frontend package.
+
+### Summary
+
+**Breaking / migration (read first)**
+
+<details>
+<summary><strong>IoC CFN stack removed</strong> - reverts the <code>ioc</code> Compose profile shipped in 0.3.0</summary>
+
+- Reverts [#713](https://github.com/agntcy/coffeeAgntcy/pull/713) (the IoC CFN management stack) while the roadmap firms up ([#740](https://github.com/agntcy/coffeeAgntcy/pull/740)). **`lungo/ioc/compose.yaml`**, the **`ioc`** Compose profile, and the **`IOC_*`** env block are all gone.
+- Lungo observability **ClickHouse host port moves back `9100` → `9000`** now that it no longer needs to coexist with the IoC mgmt plane.
+- If you adopted the `ioc` profile in 0.3.0: drop `ioc` from `COMPOSE_PROFILES`, remove any `IOC_*` overrides, and point local tooling back at ClickHouse host port `9000`.
+</details>
+
+**Migration steps**
+
+1. **Env templates:** refresh from examples (IoC block removed from Lungo; both gained an optional SLIM timeout):
+
+   ```sh
+   cp coffeeAGNTCY/coffee_agents/lungo/.env.example coffeeAGNTCY/coffee_agents/lungo/.env
+   cp coffeeAGNTCY/coffee_agents/corto/.env.example coffeeAGNTCY/coffee_agents/corto/.env
+   ```
+
+2. **SLIM timeout (optional):** both **`lungo/.env`** and **`corto/.env`** now support **`SLIM_REQUEST_TIMEOUT_SECONDS`** (default `20`) for the SLIM request/reply deadline; raise it for slower/loaded LLM providers ([#768](https://github.com/agntcy/coffeeAgntcy/pull/768)).
+3. **Weather fallback (optional):** Lungo's Colombia farm supports **`USE_WEATHER_FALLBACK=false`** (default) to control whether a Weather MCP failure hard-fails or falls back to static weather/inventory estimates ([#748](https://github.com/agntcy/coffeeAgntcy/pull/748)).
+4. **Frontend:** re-sync after the Open UI Kit 3.1 bump:
+
+   ```sh
+   cd coffeeAGNTCY/coffee_agents/lungo/frontend
+   npm ci
+   ```
+
+**Highlights**
+
+<details>
+<summary><strong>Open UI Kit 3.1</strong> - Clear conversation control, icon catalog migration</summary>
+
+- Completes the chat header **Clear conversation** control (#423) and migrates the whole Lungo frontend to **Open UI Kit 3.1**, unblocked by the upstream icon set; `Message` → `Banner`, ~20 MUI icon imports replaced with OUK equivalents ([#767](https://github.com/agntcy/coffeeAgntcy/pull/767)).
+</details>
+
+<details>
+<summary><strong>Dynamic graph cleanup</strong> - dummy MCP nodes eliminated</summary>
+
+- Removes invisible dummy tool-call/farm-response nodes that MCP calls generated purely to drive animations; a targeted edge-based animation now resolves stable agent ids directly ([#745](https://github.com/agntcy/coffeeAgntcy/pull/745), fixes [#649](https://github.com/agntcy/coffeeAgntcy/issues/649)).
+</details>
+
+<details>
+<summary><strong>Weather MCP flakiness fix</strong> - stubbed third-party API, stricter error semantics</summary>
+
+- Removes third-party location-coord lookup, stubs the open-meteo API for tests, and makes Weather MCP raise on any error response instead of returning a false "success" ([#748](https://github.com/agntcy/coffeeAgntcy/pull/748), fixes [#373](https://github.com/agntcy/coffeeAgntcy/issues/373)).
+</details>
+
+<details>
+<summary><strong>SLIM timeout & error surfacing</strong> - default timeout, fewer retries, real backend errors in the UI</summary>
+
+- Adds a configurable default SLIM request timeout, reduces retry count, and surfaces real backend errors in the frontend instead of generic failures; brings two long-stale community PRs up to date ([#768](https://github.com/agntcy/coffeeAgntcy/pull/768), fixes [#519](https://github.com/agntcy/coffeeAgntcy/issues/519), [#518](https://github.com/agntcy/coffeeAgntcy/issues/518)).
+</details>
+
+<details>
+<summary><strong>New IoC reference patterns & library expansion</strong> - Mediated Semantic Alignment, Team Formation via Polling, Shared Intent Registry</summary>
+
+- Adds three new Internet of Cognition reference patterns with full write-ups and placeholder catalog entries ([#750](https://github.com/agntcy/coffeeAgntcy/pull/750), fixes [#746](https://github.com/agntcy/coffeeAgntcy/issues/746)); standalone Mediated Semantic Alignment doc ([#706](https://github.com/agntcy/coffeeAgntcy/pull/706)).
+- Surfaces Peer Group, Recruiter, and Supervisor pattern docs in the Reference Library with frontend/backend coverage for dual-listed patterns ([#781](https://github.com/agntcy/coffeeAgntcy/pull/781)).
+- Adds pattern-specific Coffee Agntcy use-case context to every completed pattern doc, with a regression test enforcing one unique use-case paragraph per pattern ([#743](https://github.com/agntcy/coffeeAgntcy/pull/743), fixes [#725](https://github.com/agntcy/coffeeAgntcy/issues/725)).
+</details>
+
+<details>
+<summary><strong>Event schema refinements</strong> - node <code>type</code> utilization, common fields promoted into schema</summary>
+
+- **`event_v1` 1.2.1** documents semantic node `type` values (`agent`, `mcp`, `directory`, `group`, `transport`) without tightening JSON Schema acceptance; the catalog, A2A middleware, and recruiter now emit those values, with legacy `customNode`/`transportNode` still valid ([#789](https://github.com/agntcy/coffeeAgntcy/pull/789), fixes [#545](https://github.com/agntcy/coffeeAgntcy/issues/545)).
+- Promotes several ad hoc emitter fields into formally typed schema structures, with matching Python type and doc updates ([#773](https://github.com/agntcy/coffeeAgntcy/pull/773), fixes [#546](https://github.com/agntcy/coffeeAgntcy/issues/546)).
+</details>
+
+<details>
+<summary><strong>Frontend polish</strong> - contrast fixes, responsivity, diagram and composer correctness</summary>
+
+- Contrast, typography, and interaction fixes across the transport rail, compact theme, graph canvas, and chat avatar ([#738](https://github.com/agntcy/coffeeAgntcy/pull/738), fixes [#618](https://github.com/agntcy/coffeeAgntcy/issues/618)).
+- Phone-to-desktop responsivity: compact app shell below `sm`, a catalog navigation drawer, and wrapping fixes for long labels ([#744](https://github.com/agntcy/coffeeAgntcy/pull/744), fixes [#419](https://github.com/agntcy/coffeeAgntcy/issues/419)).
+- Fixes unreadable Mermaid pattern-diagram edge labels and disables the chat composer (not just shows a warning) when the active endpoint is down ([#784](https://github.com/agntcy/coffeeAgntcy/pull/784)).
+</details>
+
+<details>
+<summary><strong>Python code style standardization</strong> - 4-space indent, ruff, CI enforcement</summary>
+
+- Converts remaining tab-indented Python to 4-space (PEP 8) across corto, lungo, and recruiter, applies `ruff format`, and fails CI on tabs/mixed indent ([#776](https://github.com/agntcy/coffeeAgntcy/pull/776), fixes [#747](https://github.com/agntcy/coffeeAgntcy/issues/747)).
+</details>
+
+<details>
+<summary><strong>Contributor tooling & docs</strong> - per-project pyright, architecture READMEs, agent rules/skills, release runbook</summary>
+
+- Per-project `pyrightconfig.json` for corto, lungo, and recruiter so each sub-project's imports resolve against its own venv ([#749](https://github.com/agntcy/coffeeAgntcy/pull/749)).
+- Architecture-overview docs (block diagrams, SLIM topic naming, A2A/App SDK usage) added to Corto and Lungo READMEs ([#772](https://github.com/agntcy/coffeeAgntcy/pull/772), fixes [#77](https://github.com/agntcy/coffeeAgntcy/issues/77)).
+- New agent-facing rules/skills framework indexed from `AGENTS.md`, with mechanical enforcement scripts for pinned references and workflow least-privilege ([#778](https://github.com/agntcy/coffeeAgntcy/pull/778)).
+- Documents the release process in `docs/RELEASE-OPS.md` ([#739](https://github.com/agntcy/coffeeAgntcy/pull/739)).
+</details>
+
+<details>
+<summary><strong>CI & supply-chain hardening</strong> - CI Gate, OpenSSF Scorecard, overpush guard, dependency vulnerability sweep</summary>
+
+- New `CI Gate` workflow lints GitHub Actions files and rolls up all CI results into one required check ([#753](https://github.com/agntcy/coffeeAgntcy/pull/753)); adds pending-workflow tracking and a tabular summary ([#755](https://github.com/agntcy/coffeeAgntcy/pull/755)).
+- Adds an OpenSSF Scorecard workflow and badge ([#752](https://github.com/agntcy/coffeeAgntcy/pull/752), resolves [#751](https://github.com/agntcy/coffeeAgntcy/issues/751)); pins `mkdocs-material`, tightens GHA token permissions, and removes a checked-in binary for further Scorecard findings ([#787](https://github.com/agntcy/coffeeAgntcy/pull/787)).
+- Adds a manual workflow to delete stale `ghcr.io` package versions and guards against overpushing existing Helm chart/image versions ([#641](https://github.com/agntcy/coffeeAgntcy/pull/641)).
+- Bumps ~35 vulnerable transitive Python packages (`cryptography`, `aiohttp`, `pillow`, `mcp`, `anyio`, `pypdf`, `langchain*`, `pyjwt`, `python-multipart`, etc.) across corto, lungo, and recruiter `uv.lock`, plus the `a2a-send` Go module; addresses the Scorecard `Vulnerabilities` finding and open Dependabot alerts ([#790](https://github.com/agntcy/coffeeAgntcy/pull/790)).
+</details>
+
+### Dependencies
+
+List only what changed since **0.3.0**; no Helm chart versions changed this release.
+
+**Lungo backend** (`lungo/uv.lock`): `mcp` **1.27.1 → 1.30.0**, `langgraph` **1.2.2 → 1.2.11**; security-driven transitive bumps include `cryptography` **48.0.0 → 50.0.1**, `aiohttp` **3.13.5 → 3.14.3**, `anthropic` **0.104.1 → 0.125.0**, `pillow` **12.2.0 → 12.3.0**, `pypdf` **6.12.2 → 6.18.0**, `pyjwt` **2.12.1 → 2.13.0**, `spiffe`/`spiffe-tls` **0.2.9/0.3.2 → 0.3.1/0.4.0**; adds `ruff`, `truststore`, `google-cloud-dataplex`, `httpcore2`, `httpx2`. Core AGNTCY pins unchanged: `agntcy-app-sdk` 0.5.5, `a2a-sdk` 0.3.20, `slim-bindings` 1.4.0, `ioa-observe-sdk` 1.0.41, `agntcy-identity-service-sdk` 0.0.7, `agntcy-dir` 1.0.0.
+
+**Corto backend** (`corto/uv.lock`): all dependencies switched from floor (`>=`) constraints to exact pins ([#790](https://github.com/agntcy/coffeeAgntcy/pull/790)); this resolves a few packages to older exact versions than the previous floor-resolved set (e.g. `fastapi` 0.128.0 → **0.124.4**, `uvicorn` 0.41.0 → **0.33.0**). Drops the unused `litellm[proxy]` extra, removing ~15 proxy-only transitive packages (`boto3`, `botocore`, `redis`, `rq`, `gunicorn`, `azure-identity`, `azure-storage-blob`, `msal`, `polars`, etc.) with no effect on the app's own LiteLLM-proxy client usage. `cryptography` **46.0.4 → 50.0.1**, `openai` **2.16.0 → 2.54.0**, `langgraph` **1.0.7 → 1.2.11**, `mcp` **1.26.0 → 1.30.0**.
+
+**Recruiter** (`recruiter/uv.lock`): `mcp` **1.27.1 → 1.30.0**, `langgraph` **1.2.1 → 1.2.11**; same security-driven bumps as Lungo (`cryptography`, `aiohttp`, `anthropic`, `pillow`, `pyjwt`, `spiffe`/`spiffe-tls`, etc.); adds `ruff`, `truststore`, `httpcore2`, `httpx2`, `defusedxml`.
+
+**Lungo frontend** (`lungo/frontend/package-lock.json`): `@open-ui-kit/core` **^2.2.3 → 3.1.0**, `@mui/material`/`@mui/icons-material`/`@mui/system` **^7.3.4 → 7.3.11**, `@xyflow/react` **^12.6.4 → 12.10.0**, `mermaid` **^11.15.0 → 11.16.1**, `react`/`react-dom` **^19.1.0 → 19.2.3**, `dompurify` **3.4.12 → 3.4.15**. All dependency ranges switched from `^` to exact pins.
+
+**Corto exchange frontend** (`corto/exchange/frontend/package-lock.json`): `axios` **1.13.5 → 1.20.0**, `@xyflow/react` **^12.6.4 → 12.8.2**, `react`/`react-dom` **^19.1.0 → 19.1.1**. All dependency ranges switched from `^` to exact pins.
+
+### Built With
+
+(Versions from `coffeeAGNTCY/coffee_agents/lungo/uv.lock` and `lungo/frontend/package-lock.json`.)
+
+- [AGNTCY App SDK](https://github.com/agntcy/app-sdk) = v0.5.5
+- [SLIM](https://github.com/agntcy/slim) = v1.4.0
+- [NATS](https://github.com/nats-io/nats-server) = latest
+- [A2A](https://github.com/a2aproject/a2a-python) = v0.3.20
+- [MCP](https://github.com/modelcontextprotocol/python-sdk) = v1.30.0
+- [LangGraph](https://github.com/langchain-ai/langgraph) = v1.2.11
+- [Observe SDK](https://github.com/agntcy/observe) = 1.0.41
+- [AGNTCY Identity Service SDK](https://github.com/agntcy/identity-service) = 0.0.7
+- [AGNTCY Directory](https://github.com/agntcy/dir) = v1.0.0
+
+### Changeset
+
+<details>
+<summary><a href="https://github.com/agntcy/coffeeAgntcy/pull/706">#706</a> - @codyhartsook - docs: add Mediated Semantic Alignment reference pattern</summary>
+
+- New `docs/workflows/mediated_semantic_alignment.md` covering the caller-mediated alignment loop (Semantic Alignment Agent + orchestrator, alternating proposer/responder roles).
+</details>
+
+<details>
+<summary><a href="https://github.com/agntcy/coffeeAgntcy/pull/739">#739</a> - @mihaialexandrescu - feat: add docs/RELEASE-OPS.md file</summary>
+
+- Documents the release process, including a verbose-by-design Helm bump pre-check.
+</details>
+
+<details>
+<summary><a href="https://github.com/agntcy/coffeeAgntcy/pull/740">#740</a> - @mihaialexandrescu - revert: IoC CFN docker-compose and .env.example updates</summary>
+
+- Reverts the 0.3.0 IoC CFN integration (#713) pending a clearer roadmap; removes the `ioc` Compose profile, `IOC_*` env block, and moves ClickHouse's host port back to 9000.
+</details>
+
+<details>
+<summary><a href="https://github.com/agntcy/coffeeAgntcy/pull/738">#738</a> - @misi-bp - fix(lungo-frontend): contrast fixes</summary>
+
+- Improves color contrast, typography minimums, scrollbar presentation, and layout in the transport rail, compact theme, graph canvas, navigation header, and chat avatar.
+</details>
+
+<details>
+<summary><a href="https://github.com/agntcy/coffeeAgntcy/pull/745">#745</a> - @delthazor - Eliminate dummy nodes from mcp calls</summary>
+
+- Removes invisible dummy tool-call/farm-response nodes used only to drive graph animation; introduces a targeted edge-based animation using existing stable agent ids instead.
+</details>
+
+<details>
+<summary><a href="https://github.com/agntcy/coffeeAgntcy/pull/743">#743</a> - @dlanov - docs(lungo): add pattern-specific use cases</summary>
+
+- Adds a pattern-specific use-case paragraph to each completed pattern doc, connecting the abstract pattern description to its concrete scenario; adds a regression test enforcing uniqueness and presence per pattern.
+</details>
+
+<details>
+<summary><a href="https://github.com/agntcy/coffeeAgntcy/pull/748">#748</a> - @delthazor - Fix test flakiness with Weather MCP improvements</summary>
+
+- Removes third-party coordinate lookup, stubs the open-meteo API for tests, and makes Weather MCP raise instead of returning false success on error; adds a config flag to choose fail-hard vs. static-fallback behavior.
+</details>
+
+<details>
+<summary><a href="https://github.com/agntcy/coffeeAgntcy/pull/749">#749</a> - @pregnor - chore: add pyright LSP config</summary>
+
+- Adds per-project `pyrightconfig.json` to corto, lungo, and recruiter so each resolves imports against its own venv.
+</details>
+
+<details>
+<summary><a href="https://github.com/agntcy/coffeeAgntcy/pull/744">#744</a> - @misi-bp - feat(UI): Responsivity upgrades</summary>
+
+- Adds a compact app shell and catalog navigation drawer below the `sm` breakpoint, wraps long sidebar/graph labels in narrow panes, and adds a shared Dialog shell for Help and graph-detail dialogs.
+</details>
+
+<details>
+<summary><a href="https://github.com/agntcy/coffeeAgntcy/pull/752">#752</a> - @pregnor - chore: add scorecard support</summary>
+
+- Adds an OpenSSF Scorecard workflow and README badge, plus assorted low-hanging Scorecard fixes.
+</details>
+
+<details>
+<summary><a href="https://github.com/agntcy/coffeeAgntcy/pull/754">#754</a> - @pregnor - docs(README): fix release badge</summary>
+
+- Fixes the README release badge, which still pointed at the template repo name.
+</details>
+
+<details>
+<summary><a href="https://github.com/agntcy/coffeeAgntcy/pull/750">#750</a> - @misi-bp - feature: add 3 new IoC pattern</summary>
+
+- Adds Mediated Semantic Alignment, Team Formation via Polling, and Shared Intent Registry as new IoC reference patterns with full docs and placeholder `starting_workflows.json` catalog entries.
+</details>
+
+<details>
+<summary><a href="https://github.com/agntcy/coffeeAgntcy/pull/753">#753</a> - @pregnor - ci: + ci-gate summary workflow</summary>
+
+- Adds a `CI Gate` workflow that lints GitHub Actions files (`actionlint`) and rolls up all CI results into a single required status check.
+</details>
+
+<details>
+<summary><a href="https://github.com/agntcy/coffeeAgntcy/pull/755">#755</a> - @pregnor - ci(gha,ci-gate): improve logging</summary>
+
+- Adds pending workflow names to the polling log and formats the CI Gate summary as a markdown table.
+</details>
+
+<details>
+<summary><a href="https://github.com/agntcy/coffeeAgntcy/pull/765">#765</a> - @mihaialexandrescu - chore(lungo): rename regular node schema types to base</summary>
+
+- Brings an older community PR ([#691](https://github.com/agntcy/coffeeAgntcy/pull/691) by [@godququ5-code](https://github.com/godququ5-code)) up to date on current `main`, resolving conflicts and regenerating frontend types; renames "regular" node schema types to "base".
+</details>
+
+<details>
+<summary><a href="https://github.com/agntcy/coffeeAgntcy/pull/767">#767</a> - @misi-bp - feat(lungo-frontend): migrate to Open UI Kit 3.1 icons and restructure graph Elements</summary>
+
+- Completes the chat header Clear conversation control (#423); migrates the whole Lungo frontend to Open UI Kit 3.1 (`Message` → `Banner`, ~20 icon call-sites moved from MUI to OUK).
+</details>
+
+<details>
+<summary><a href="https://github.com/agntcy/coffeeAgntcy/pull/768">#768</a> - @mihaialexandrescu - feat(corto,lungo): default SLIM timeout, reduce retry count, surface real backend errors in frontend</summary>
+
+- Brings two stale community PRs up to date ([#579](https://github.com/agntcy/coffeeAgntcy/pull/579) by [@mairp](https://github.com/mairp), [#520](https://github.com/agntcy/coffeeAgntcy/pull/520) by @atripathy86); adds a configurable default SLIM request timeout, reduces retry count, and surfaces real backend errors in the frontend.
+</details>
+
+<details>
+<summary><a href="https://github.com/agntcy/coffeeAgntcy/pull/776">#776</a> - @misi-bp - 747/python indentation</summary>
+
+- Standardizes Python indentation to 4 spaces across corto, lungo, and recruiter; applies `ruff format`; fails CI on tabs or mixed indentation.
+</details>
+
+<details>
+<summary><a href="https://github.com/agntcy/coffeeAgntcy/pull/772">#772</a> - @pregnor - docs(corto,lungo): update arch details</summary>
+
+- Adds architecture-overview docs (block diagrams, SLIM topic naming, A2A/App SDK usage) to the Corto and Lungo READMEs, superseding the stale, DCO-failing #496.
+</details>
+
+<details>
+<summary><a href="https://github.com/agntcy/coffeeAgntcy/pull/641">#641</a> - @pregnor - ci(gha,docker,helm): add version guard.</summary>
+
+- Adds a manual workflow to delete stale `ghcr.io` package versions and guards CI against overpushing existing Helm chart/image versions.
+</details>
+
+<details>
+<summary><a href="https://github.com/agntcy/coffeeAgntcy/pull/781">#781</a> - @mihaialexandrescu - feat(lungo): add implemented patterns to reference library</summary>
+
+- Surfaces Peer Group, Recruiter, and Supervisor pattern docs in the Reference Library with frontend/backend coverage for dual-listed patterns; no new API endpoints.
+</details>
+
+<details>
+<summary><a href="https://github.com/agntcy/coffeeAgntcy/pull/778">#778</a> - @pregnor - chore: add skills</summary>
+
+- Introduces an agent-facing rules/skills framework indexed from `AGENTS.md`, with mechanical enforcement scripts for pinned references and workflow least-privilege.
+</details>
+
+<details>
+<summary><a href="https://github.com/agntcy/coffeeAgntcy/pull/783">#783</a> - @pregnor - chore(git): ignore MCP config</summary>
+
+- Adds `.mcp.json` to `.gitignore` so local MCP server configuration isn't accidentally committed.
+</details>
+
+<details>
+<summary><a href="https://github.com/agntcy/coffeeAgntcy/pull/787">#787</a> - @pregnor - chore(#785): improve scorecard</summary>
+
+- Pins `mkdocs-material`, tightens redundant `packages: write` token permissions in two reusable workflows, and removes a checked-in `a2a-send` binary for further Scorecard findings.
+</details>
+
+<details>
+<summary><a href="https://github.com/agntcy/coffeeAgntcy/pull/784">#784</a> - @misi-bp - fix(lungo-frontend): readable pattern diagrams and endpoint-aware chat composer</summary>
+
+- Fixes Mermaid pattern-diagram edge labels losing readability from stripped alpha; unifies the chat composer's disabled state so it can't be used while the active endpoint is down.
+</details>
+
+<details>
+<summary><a href="https://github.com/agntcy/coffeeAgntcy/pull/773">#773</a> - @delthazor - Move several intermediate types into schema</summary>
+
+- Promotes several ad hoc emitter fields into formally typed schema structures, with matching Python type, test, and doc updates.
+</details>
+
+<details>
+<summary><a href="https://github.com/agntcy/coffeeAgntcy/pull/789">#789</a> - @delthazor - Utilize node type in schema</summary>
+
+- Makes the event schema's node `type` field authoritative for node classification instead of inferring it from the presence/absence of other fields; legacy fields kept for backward compatibility.
+</details>
+
+<details>
+<summary><a href="https://github.com/agntcy/coffeeAgntcy/pull/790">#790</a> - @pregnor - chore(#629,deps): update & pin deps</summary>
+
+- Bumps ~35 vulnerable transitive Python packages across corto, lungo, recruiter, and the `a2a-send` Go module; raises `cryptography` to 50.0.1 everywhere (with a matching `spiffe`/`spiffe-tls` bump); switches all dependency constraints from floors to exact pins.
+</details>
+
+### Contributors
+
+**First-time contributors** - thank you and welcome:
+
+- [@dlanov](https://github.com/dlanov)
+- [@mairp](https://github.com/mairp)
+- [@godququ5-code](https://github.com/godququ5-code)
+
+---
 
 ## 0.3.0 (2026-08-10)
 
