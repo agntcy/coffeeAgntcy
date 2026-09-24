@@ -19,46 +19,23 @@ Placeholders used throughout:
 
 ## Step 0 - Verify the Helm chart version-bump rule was followed
 
-Before anything else, confirm everyone honored the rule that **any change to a Helm chart's contents must be accompanied by a version bump in that chart's `Chart.yaml`**. If the latest chart contents are not covered by a chart-version bump, the release tag would ship un-versioned chart changes.
+Before anything else, confirm everyone honored the rule that **any change to a Helm chart's contents must be accompanied by a version bump in that chart's `Chart.yaml`**. If the latest chart contents are not covered by a chart-version bump, the release tag would ship un-versioned chart changes. This rule is also formalized as [`.agents/rules/quality/helm-chart-version-bump.md`](../.agents/rules/quality/helm-chart-version-bump.md), and enforced on every push to `main` and every pull request by the `helm:check-versions` check, part of `task check:all` in [`.github/workflows/checks.yaml`](../.github/workflows/checks.yaml) - so by the time you cut a release, this step should normally come back clean.
 
-**1. Check `main` against the last real/release tag** (ignore `*-dev*` tags):
+Run [`task`](https://taskfile.dev) `helm:check-versions` (also usable via the `checking-helm-chart-version-bumps` skill; wraps [`scripts/checks/check_helm_chart_versions.bash`](../scripts/checks/check_helm_chart_versions.bash) - see [`Taskfile.yaml`](../Taskfile.yaml)). It takes no arguments - it checks every chart's *entire* history, not just what changed since the last release tag, so there's no release tag to look up first:
 
 ```sh
-# Latest release tag (excludes "-dev" tags); adjust the grep to your tag scheme.
-git fetch --tags
-LAST_RELEASE_TAG=$(git tag --list --sort=-creatordate | grep -Ev '\-dev' | head -n1)
-echo "Last release tag: ${LAST_RELEASE_TAG}"
-
-# What changed under the Helm chart trees since that tag?
-git diff --name-only "${LAST_RELEASE_TAG}"..main -- coffeeAGNTCY/coffee_agents/lungo/deployment/helm coffeeAGNTCY/coffee_agents/corto/deployment/helm
+task helm:check-versions
 ```
 
-**2. Confirm each changed chart bumped its `Chart.yaml`.** The Helm chart directories live under two umbrellas:
-
-- `coffeeAGNTCY/coffee_agents/lungo/deployment/helm/<chart>/`
-- `coffeeAGNTCY/coffee_agents/corto/deployment/helm/<chart>/`
-
-For **each** chart directory that changed, find the last PR that merged a change to the chart's contents and confirm that PR (or a later one) also bumped the `version:` field in that chart's `Chart.yaml`.
+Anything it flags needs the fix below. To investigate a single flagged chart by hand:
 
 ```sh
-# For a given chart dir, review recent history of its contents vs. its Chart.yaml.
 CHART_DIR="coffeeAGNTCY/coffee_agents/lungo/deployment/helm/ui"   # example chart
 
-# The list of commits resulting from the next two commands should, ideally, be identical.
-git log --oneline "${LAST_RELEASE_TAG}"..main -- "${CHART_DIR}"
-git log --oneline "${LAST_RELEASE_TAG}"..main -- "${CHART_DIR}/Chart.yaml"
-
-# Ultimately, we only really need for the most recent commit that updated the contents of a chart to also have updated its Chart.yaml.
-# Compare the newest commit touching the chart body against the newest commit that bumped its version line.
-# If the body change is newer than (not an ancestor of) the version bump, the chart needs a bump.
-git log -1 --oneline "${LAST_RELEASE_TAG}"..main -- "${CHART_DIR}" ":(exclude)${CHART_DIR}/Chart.yaml"   # newest body change
-git log -1 --oneline "${LAST_RELEASE_TAG}"..main -G'^\s*version:' -- "${CHART_DIR}/Chart.yaml"           # newest version bump
-
-# The following snippet automates that verdict for the chart: capture both commits, then test ancestry.
-BODY=$(git log -1 --format=%H "${LAST_RELEASE_TAG}"..main -- "${CHART_DIR}" ":(exclude)${CHART_DIR}/Chart.yaml")
-BUMP=$(git log -1 --format=%H "${LAST_RELEASE_TAG}"..main -G'^\s*version:' -- "${CHART_DIR}/Chart.yaml")
-{ [ -z "${BODY}" ] || { [ -n "${BUMP}" ] && git merge-base --is-ancestor "${BODY}" "${BUMP}"; }; } \
-  && echo "OK: ${CHART_DIR}" || echo "NEEDS BUMP: ${CHART_DIR}"
+# Compare the newest commit touching the chart (including its own Chart.yaml)
+# against the newest commit that bumped its top-level version line.
+git log --oneline -- "${CHART_DIR}"
+git log --oneline -G'^version:' -- "${CHART_DIR}/Chart.yaml"
 ```
 
 A `Chart.yaml` looks like this (the `version:` line is the chart version to bump):
@@ -71,7 +48,7 @@ name: lungo-ui
 version: 0.1.6      # <-- must increase when the chart's contents change
 ```
 
-**3. If a chart's contents changed without a `version` bump, fix it now:**
+**If a chart's contents changed without a `version` bump, fix it now:**
 
 - Open a small **version-bump PR** that increments the chart's `version:` in `Chart.yaml` (and any umbrella `Chart.yaml` dependency pin that references it).
 - Get it **merged into `main`** so that the latest chart contents are captured by a chart version before the release tag is created.
