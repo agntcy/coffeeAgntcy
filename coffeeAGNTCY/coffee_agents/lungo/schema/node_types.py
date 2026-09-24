@@ -3,7 +3,7 @@
 
 """Shared event_v1 node ``type`` strings (semantic + leftover).
 
-Keep these identical to the frontend ``NODE_TYPE`` values in
+Keep these identical to the frontend ``EVENT_NODE_TYPE`` values in
 ``frontend/src/utils/const.ts`` (locked by ``tests/unit/schemas/test_node_types.py``).
 Imported by generated ``schema.types.event`` (must stay free of
 ``schema.types`` / ``common.workflow_utils`` imports).

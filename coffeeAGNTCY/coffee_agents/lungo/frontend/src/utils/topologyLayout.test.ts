@@ -5,7 +5,7 @@
 
 import type { Edge, Node } from "@xyflow/react"
 import { describe, expect, it } from "vitest"
-import { NODE_TYPES } from "@/utils/const"
+import { DISPLAY_NODE_TYPES } from "@/utils/const"
 import { CUSTOM_NODE_WIDTH } from "@/utils/graphNodeDimensions"
 import {
   CUSTOM_NODE_X_GAP,
@@ -83,25 +83,25 @@ describe("layoutSlimTransportGraph (bar)", () => {
     const nodes: Node[] = [
       {
         id: "transport",
-        type: NODE_TYPES.TRANSPORT,
+        type: DISPLAY_NODE_TYPES.TRANSPORT,
         position: { x: 229, y: 284 },
         data: { compact: false },
       },
       {
         id: "brazil",
-        type: NODE_TYPES.CUSTOM,
+        type: DISPLAY_NODE_TYPES.CUSTOM,
         position: { x: 232, y: 503.93 },
         data: {},
       },
       {
         id: "colombia",
-        type: NODE_TYPES.CUSTOM,
+        type: DISPLAY_NODE_TYPES.CUSTOM,
         position: { x: 521, y: 505.38 },
         data: {},
       },
       {
         id: "vietnam",
-        type: NODE_TYPES.CUSTOM,
+        type: DISPLAY_NODE_TYPES.CUSTOM,
         position: { x: 832, y: 505.08 },
         data: {},
       },
@@ -137,31 +137,31 @@ describe("optimizeBarTransportEdgeHandles", () => {
   const nodes: Node[] = [
     {
       id: auctionId,
-      type: NODE_TYPES.CUSTOM,
+      type: DISPLAY_NODE_TYPES.CUSTOM,
       position: { x: 500, y: 50 },
       data: {},
     },
     {
       id: transportId,
-      type: NODE_TYPES.TRANSPORT,
+      type: DISPLAY_NODE_TYPES.TRANSPORT,
       position: { x: 100, y: 200 },
       data: { compact: false },
     },
     {
       id: brazilId,
-      type: NODE_TYPES.CUSTOM,
+      type: DISPLAY_NODE_TYPES.CUSTOM,
       position: { x: 150, y: 400 },
       data: {},
     },
     {
       id: colombiaId,
-      type: NODE_TYPES.CUSTOM,
+      type: DISPLAY_NODE_TYPES.CUSTOM,
       position: { x: 500, y: 400 },
       data: {},
     },
     {
       id: vietnamId,
-      type: NODE_TYPES.CUSTOM,
+      type: DISPLAY_NODE_TYPES.CUSTOM,
       position: { x: 850, y: 400 },
       data: {},
     },
@@ -217,34 +217,34 @@ describe("layoutSlimTransportGraph (compact group)", () => {
     const inputNodes: Node[] = [
       {
         id: groupId,
-        type: NODE_TYPES.GROUP,
+        type: DISPLAY_NODE_TYPES.GROUP,
         position: { x: 0, y: 0 },
         data: {},
       },
       {
         id: "transport",
-        type: NODE_TYPES.TRANSPORT,
+        type: DISPLAY_NODE_TYPES.TRANSPORT,
         parentId: groupId,
         position: { x: 100, y: 60 },
         data: { compact: true },
       },
       {
         id: "buyer",
-        type: NODE_TYPES.CUSTOM,
+        type: DISPLAY_NODE_TYPES.CUSTOM,
         parentId: groupId,
         position: { x: 100, y: 260 },
         data: { label: "Buyer" },
       },
       {
         id: "brazil",
-        type: NODE_TYPES.CUSTOM,
+        type: DISPLAY_NODE_TYPES.CUSTOM,
         parentId: groupId,
         position: { x: 60, y: 460 },
         data: {},
       },
       {
         id: "colombia",
-        type: NODE_TYPES.CUSTOM,
+        type: DISPLAY_NODE_TYPES.CUSTOM,
         parentId: groupId,
         position: { x: 360, y: 460 },
         data: {},
@@ -252,11 +252,11 @@ describe("layoutSlimTransportGraph (compact group)", () => {
     ]
 
     const { nodes: laidOut } = layoutSlimTransportGraph(inputNodes, [])
-    const group = laidOut.find((node) => node.type === NODE_TYPES.GROUP)!
+    const group = laidOut.find((node) => node.type === DISPLAY_NODE_TYPES.GROUP)!
     const groupWidth = group.width as number
     const transport = laidOut.find((node) => node.id === "transport")!
     const customs = laidOut.filter(
-      (node) => node.parentId === group.id && node.type === NODE_TYPES.CUSTOM,
+      (node) => node.parentId === group.id && node.type === DISPLAY_NODE_TYPES.CUSTOM,
     )
 
     expect(transport.position.x).toBeCloseTo(

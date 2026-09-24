@@ -4,7 +4,7 @@
  **/
 
 import { describe, expect, it } from "vitest"
-import { NODE_TYPES } from "@/utils/const"
+import { DISPLAY_NODE_TYPES } from "@/utils/const"
 import { customNodeDataFromNode } from "@/components/MainArea/Graph/Elements/nodes/customNodeData"
 import { topologyWireToReactFlow } from "@/utils/topologyToReactFlow"
 
@@ -70,7 +70,7 @@ describe("topologyWireToReactFlow discovery merge", () => {
   it("renders the discovered node with inline OASF and a target handle", () => {
     const discovered = nodes.find((n) => n.id === DISCOVERED_SID)
     const data = discovered ? customNodeDataFromNode(discovered) : undefined
-    expect(discovered?.type).toBe(NODE_TYPES.CUSTOM)
+    expect(discovered?.type).toBe(DISPLAY_NODE_TYPES.CUSTOM)
     expect(data?.oasfRecord).toEqual(record)
     expect(data?.agentCid).toBe("cidB")
     expect(data?.handles).toBe("target")

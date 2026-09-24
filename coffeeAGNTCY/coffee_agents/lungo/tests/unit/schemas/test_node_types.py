@@ -1,7 +1,7 @@
 # Copyright AGNTCY Contributors (https://github.com/agntcy)
 # SPDX-License-Identifier: Apache-2.0
 
-"""Python ``schema.node_types`` must match frontend ``NODE_TYPE`` string values."""
+"""Python ``schema.node_types`` must match frontend ``EVENT_NODE_TYPE`` string values."""
 
 from __future__ import annotations
 
@@ -18,7 +18,7 @@ _LUNGO_ROOT = Path(__file__).resolve().parents[3]
 _CONST_TS = _LUNGO_ROOT / "frontend" / "src" / "utils" / "const.ts"
 
 _NODE_TYPE_BLOCK = re.compile(
-    r"export const NODE_TYPE = \{(?P<body>[^}]+)\}",
+    r"export const EVENT_NODE_TYPE = \{(?P<body>[^}]+)\}",
     re.MULTILINE,
 )
 _NODE_TYPE_ENTRY = re.compile(r'(?P<key>\w+):\s*"(?P<value>[^"]+)"')
@@ -27,7 +27,7 @@ _NODE_TYPE_ENTRY = re.compile(r'(?P<key>\w+):\s*"(?P<value>[^"]+)"')
 def frontend_node_type_values() -> dict[str, str]:
     text = _CONST_TS.read_text(encoding="utf-8")
     match = _NODE_TYPE_BLOCK.search(text)
-    assert match is not None, f"NODE_TYPE block missing in {_CONST_TS}"
+    assert match is not None, f"EVENT_NODE_TYPE block missing in {_CONST_TS}"
     values: dict[str, str] = {}
     for entry in _NODE_TYPE_ENTRY.finditer(match.group("body")):
         values[entry.group("key")] = entry.group("value")

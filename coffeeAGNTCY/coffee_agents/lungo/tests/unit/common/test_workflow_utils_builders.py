@@ -24,7 +24,14 @@ from common.workflow_utils.builders import (
     make_edge,
     make_node,
 )
-from common.workflow_utils.node_types import AGENT, CUSTOM_NODE, MCP
+from common.workflow_utils.node_types import (
+    AGENT,
+    CUSTOM_NODE,
+    DIRECTORY,
+    GROUP,
+    MCP,
+    TRANSPORT,
+)
 from common.workflow_utils.inflight import RuntimeIdAllocator
 from common.workflow_utils.workflow_catalog import lookup_workflow
 
@@ -81,7 +88,9 @@ def test_make_node_stable_agent_fields(
     elif expect_stable_fields:
         assert isinstance(node, PartialAgentNode)
         assert node.stable_agent_id.root == stable_agent_id
-        assert node.agent_record_uri == "agent-card://00000000-0000-4000-8000-000000000099"
+        assert (
+            node.agent_record_uri == "agent-card://00000000-0000-4000-8000-000000000099"
+        )
     else:
         assert isinstance(node, PartialBaseNode)
         assert getattr(node, "stable_agent_id", None) is None
@@ -103,6 +112,46 @@ def test_make_node_agent_extension_type_without_fields_raises(case, node_type):
             label="Test Agent",
             layer_index=0,
         )
+
+
+@pytest.mark.parametrize(
+    "case,node_type,extras,stable_agent_id",
+    [
+        (
+            "directory_with_uri_stays_base",
+            DIRECTORY,
+            {"agent_record_uri": "agent-card://directory"},
+            None,
+        ),
+        (
+            "transport_with_stable_id_stays_base",
+            TRANSPORT,
+            None,
+            "agent://00000000-0000-4000-8000-000000000099",
+        ),
+        (
+            "group_with_uri_stays_base",
+            GROUP,
+            {"agent_record_uri": "agent-card://group"},
+            None,
+        ),
+    ],
+)
+def test_make_node_base_type_ignores_agent_fields(
+    case, node_type, extras, stable_agent_id
+):
+    node = make_node(
+        "node://00000000-0000-4000-8000-000000000001",
+        operation=Operation.CREATE,
+        node_type=node_type,
+        label="Base Typed Node",
+        layer_index=0,
+        stable_agent_id=stable_agent_id,
+        extras=extras,
+    )
+    assert isinstance(node, PartialBaseNode)
+    assert getattr(node, "agent_record_uri", None) is None
+    assert getattr(node, "stable_agent_id", None) is None
 
 
 @pytest.mark.parametrize(

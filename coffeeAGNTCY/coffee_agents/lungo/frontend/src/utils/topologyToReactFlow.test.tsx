@@ -6,7 +6,7 @@
 /* eslint-disable max-lines -- cohesive test suite for topologyWireToReactFlow */
 
 import { describe, expect, it } from "vitest"
-import { NODE_TYPES, EDGE_TYPES, EDGE_LABELS } from "@/utils/const"
+import { DISPLAY_NODE_TYPES, EDGE_TYPES, EDGE_LABELS } from "@/utils/const"
 import { topologyWireToReactFlow } from "@/utils/topologyToReactFlow"
 import { stableAgentUuidForRecordName } from "@/utils/agenticTopologyIdentityUiMap"
 function wireNode(id: string, type: string, label: string, layerIndex: number) {
@@ -49,8 +49,8 @@ describe("topologyWireToReactFlow", () => {
       },
       expectNodeCount: 2,
       expectEdgeCount: 1,
-      firstNodeType: NODE_TYPES.CUSTOM,
-      transportNodeType: NODE_TYPES.TRANSPORT,
+      firstNodeType: DISPLAY_NODE_TYPES.CUSTOM,
+      transportNodeType: DISPLAY_NODE_TYPES.TRANSPORT,
     },
     {
       caseName: "empty edges array",
@@ -68,7 +68,7 @@ describe("topologyWireToReactFlow", () => {
       },
       expectNodeCount: 1,
       expectEdgeCount: 0,
-      firstNodeType: NODE_TYPES.CUSTOM,
+      firstNodeType: DISPLAY_NODE_TYPES.CUSTOM,
       transportNodeType: null,
     },
     {
@@ -100,7 +100,7 @@ describe("topologyWireToReactFlow", () => {
       },
       expectNodeCount: 2,
       expectEdgeCount: 1,
-      firstNodeType: NODE_TYPES.CUSTOM,
+      firstNodeType: DISPLAY_NODE_TYPES.CUSTOM,
       transportNodeType: null,
       edgeType: EDGE_TYPES.BRANCHING,
     },
@@ -132,7 +132,7 @@ describe("topologyWireToReactFlow", () => {
       },
       expectNodeCount: 2,
       expectEdgeCount: 1,
-      firstNodeType: NODE_TYPES.CUSTOM,
+      firstNodeType: DISPLAY_NODE_TYPES.CUSTOM,
       transportNodeType: null,
       edgeType: EDGE_TYPES.CUSTOM,
     },
@@ -499,49 +499,49 @@ describe("topologyWireToReactFlow", () => {
       caseName: "agent displays as customNode",
       type: "agent",
       label: "Auction Agent",
-      expectDisplayType: NODE_TYPES.CUSTOM,
+      expectDisplayType: DISPLAY_NODE_TYPES.CUSTOM,
       expectNodeType: "agent",
     },
     {
       caseName: "mcp displays as customNode with mcp nodeType",
       type: "mcp",
       label: "Weather Service",
-      expectDisplayType: NODE_TYPES.CUSTOM,
+      expectDisplayType: DISPLAY_NODE_TYPES.CUSTOM,
       expectNodeType: "mcp",
     },
     {
       caseName: "directory displays as customNode with directory nodeType",
       type: "directory",
       label: "Directory",
-      expectDisplayType: NODE_TYPES.CUSTOM,
+      expectDisplayType: DISPLAY_NODE_TYPES.CUSTOM,
       expectNodeType: "directory",
     },
     {
       caseName: "transport displays as transportNode",
       type: "transport",
       label: "Transport",
-      expectDisplayType: NODE_TYPES.TRANSPORT,
+      expectDisplayType: DISPLAY_NODE_TYPES.TRANSPORT,
       expectNodeType: "transport",
     },
     {
       caseName: "legacy transportNode canonicalizes to transport",
       type: "transportNode",
       label: "Transport",
-      expectDisplayType: NODE_TYPES.TRANSPORT,
+      expectDisplayType: DISPLAY_NODE_TYPES.TRANSPORT,
       expectNodeType: "transport",
     },
     {
       caseName: "legacy customNode stays customNode",
       type: "customNode",
       label: "Auction Agent",
-      expectDisplayType: NODE_TYPES.CUSTOM,
+      expectDisplayType: DISPLAY_NODE_TYPES.CUSTOM,
       expectNodeType: "customNode",
     },
     {
       caseName: "group stays group",
       type: "group",
       label: "Logistics Group",
-      expectDisplayType: NODE_TYPES.GROUP,
+      expectDisplayType: DISPLAY_NODE_TYPES.GROUP,
       expectNodeType: "group",
     },
   ])(

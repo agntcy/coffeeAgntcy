@@ -49,6 +49,18 @@ function normalize(value: string | undefined): string {
   return typeof value === "string" ? value.trim().toLowerCase() : ""
 }
 
+function iconKindFromWeatherOrPayment(
+  text: string,
+): TopologyNodeIconKind | null {
+  if (text.includes("weather")) {
+    return TopologyNodeIconKind.WeatherMcp
+  }
+  if (text.includes("payment")) {
+    return TopologyNodeIconKind.PaymentMcp
+  }
+  return null
+}
+
 function iconKindFromSlug(slug: string): TopologyNodeIconKind | null {
   if (slug.includes(TopologyNodeIconKind.Supervisor)) {
     return TopologyNodeIconKind.Supervisor
@@ -59,11 +71,9 @@ function iconKindFromSlug(slug: string): TopologyNodeIconKind | null {
   if (slug.includes(TopologyNodeIconKind.Farm)) {
     return TopologyNodeIconKind.Farm
   }
-  if (slug.includes("weather")) {
-    return TopologyNodeIconKind.WeatherMcp
-  }
-  if (slug.includes("payment")) {
-    return TopologyNodeIconKind.PaymentMcp
+  const weatherOrPayment = iconKindFromWeatherOrPayment(slug)
+  if (weatherOrPayment) {
+    return weatherOrPayment
   }
   if (slug.includes(TopologyNodeIconKind.Shipping)) {
     return TopologyNodeIconKind.Shipping
@@ -81,8 +91,8 @@ function iconKindFromLabels(
   const combined = `${label} ${label_subtitle}`.trim()
 
   if (label_subtitle === "mcp server" || label.endsWith("mcp server")) {
-    if (label.includes("weather")) return TopologyNodeIconKind.WeatherMcp
-    if (label.includes("payment")) return TopologyNodeIconKind.PaymentMcp
+    const branded = iconKindFromWeatherOrPayment(label)
+    if (branded) return branded
     return TopologyNodeIconKind.Default
   }
 
@@ -119,9 +129,12 @@ export function topologyNodeIconKind(
     return TopologyNodeIconKind.Directory
   }
   if (isMcpType(input.nodeType)) {
-    const label = normalize(input.label)
-    if (label.includes("weather")) return TopologyNodeIconKind.WeatherMcp
-    if (label.includes("payment")) return TopologyNodeIconKind.PaymentMcp
+    const fromSlug = iconKindFromWeatherOrPayment(
+      normalize(input.directoryAgentSlug),
+    )
+    if (fromSlug) return fromSlug
+    const fromLabel = iconKindFromWeatherOrPayment(normalize(input.label))
+    if (fromLabel) return fromLabel
     return TopologyNodeIconKind.Default
   }
   const slug = normalize(input.directoryAgentSlug)
