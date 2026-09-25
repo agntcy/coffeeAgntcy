@@ -90,6 +90,7 @@ the places to check against.
   [`.agents/rules/file-tree-comment-alignment.md`](file-tree-comment-alignment.md),
   [`.agents/rules/keep-docs-consistent.md`](keep-docs-consistent.md),
   [`.agents/rules/organize-large-collections.md`](organize-large-collections.md),
+  [`.agents/rules/plan-with-openspec.md`](plan-with-openspec.md),
   [`.agents/rules/pre-finalize-checks.md`](pre-finalize-checks.md),
   [`.agents/rules/self-review-after-change.md`](self-review-after-change.md)),
   are legitimate rule-only exceptions - they say so explicitly, rather than

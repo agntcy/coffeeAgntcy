@@ -1,19 +1,20 @@
 #!/usr/bin/env bash
-# Bootstraps this repo's shell/CI-lint toolchain into .tools/bin/, entirely
-# local to the repo: never touches the user's global PATH, shell profile, or
-# home directory.
+# Bootstraps this repo's toolchain into .tools/, entirely local to the
+# repo: never touches the user's global PATH, shell profile, or home
+# directory.
 #
 # Deliberately a plain script, not a Taskfile task: `task` itself may not
 # exist yet on a fresh clone, so bootstrapping it *through* the Taskfile
-# would be circular. Both local devs and CI (see the `shell-lint` job in
-# .github/workflows/source-lint.yaml) run the exact same two commands:
+# would be circular. Both local devs and CI (see checks.yaml and
+# ci-gate.yaml) run the exact same two commands:
 #   ./scripts/setup.sh
-#   source scripts/env.sh   # put .tools/bin on PATH for this shell session
+#   source scripts/env.sh   # put .tools/bin and .tools/node/bin on PATH for this shell session
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 BIN_DIR="$REPO_ROOT/.tools/bin"
+NODE_DIR="$REPO_ROOT/.tools/node"
 
 # shellcheck source=scripts/lib/versions.sh
 source "$SCRIPT_DIR/lib/versions.sh"
@@ -84,5 +85,41 @@ else
     echo "shfmt: installed ($("$BIN_DIR/shfmt" --version))"
 fi
 
+# node ships as a whole bin/+lib/ tree (npm/npx are symlinks resolved
+# relative to a sibling lib/node_modules/npm/, not a single relocatable
+# binary like every other tool above) -- so it gets its own .tools/node/
+# directory instead of joining the flat .tools/bin/, and scripts/env.sh puts
+# .tools/node/bin on PATH alongside .tools/bin. It exists solely to run
+# openspec below.
+ARCH_NODE="$(detect_arch_node)"
+
+if [ -x "$NODE_DIR/bin/node" ] && version_matches "$("$NODE_DIR/bin/node" --version)" "$NODE_VERSION"; then
+    echo "node: already installed ($("$NODE_DIR/bin/node" --version))"
+else
+    echo "node: installing $NODE_VERSION into $NODE_DIR ..."
+    TMP_DIR="$(mktemp -d)"
+    FETCH "https://nodejs.org/dist/v${NODE_VERSION}/node-v${NODE_VERSION}-${OS}-${ARCH_NODE}.tar.gz" >"$TMP_DIR/node.tar.gz"
+    tar -xzf "$TMP_DIR/node.tar.gz" -C "$TMP_DIR"
+    rm -rf "$NODE_DIR"
+    mv "$TMP_DIR/node-v${NODE_VERSION}-${OS}-${ARCH_NODE}" "$NODE_DIR"
+    rm -rf "$TMP_DIR"
+    echo "node: installed ($("$NODE_DIR/bin/node" --version))"
+fi
+
+# Put the freshly bootstrapped node/npm on PATH for the rest of this script:
+# openspec's own shim below has a `#!/usr/bin/env node` shebang, and npm
+# itself may shell out to `node` by name -- neither can rely on a `node`
+# that's only ever added to PATH later by scripts/env.sh in the user's own
+# shell.
+export PATH="$NODE_DIR/bin:$PATH"
+
+if [ -x "$BIN_DIR/openspec" ] && version_matches "$("$BIN_DIR/openspec" --version)" "$OPENSPEC_VERSION"; then
+    echo "openspec: already installed ($("$BIN_DIR/openspec" --version))"
+else
+    echo "openspec: installing $OPENSPEC_VERSION into $BIN_DIR ..."
+    "$NODE_DIR/bin/npm" install --global --prefix "$REPO_ROOT/.tools" "@fission-ai/openspec@${OPENSPEC_VERSION}"
+    echo "openspec: installed ($("$BIN_DIR/openspec" --version))"
+fi
+
 echo
-echo "Setup complete. Run 'source scripts/env.sh' to put .tools/bin on PATH, then 'task shell:lint'."
+echo "Setup complete. Run 'source scripts/env.sh' to put .tools/bin and .tools/node/bin on PATH, then 'task shell:lint'."
