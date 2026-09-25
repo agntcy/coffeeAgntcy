@@ -195,6 +195,9 @@ node_modules/
 # Local tool binaries
 **/bin/**
 
+# Repo-local toolchain installed by scripts/setup.sh (see scripts/env.sh).
+.tools/
+
 # Frontend, UI, JS, TS, etc.
 **/*.tsbuildinfo
 
