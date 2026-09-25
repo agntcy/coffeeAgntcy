@@ -1,0 +1,42 @@
+name: Checks
+
+# Consolidates what used to be two separate workflows (forbidden strings,
+# shell lint) into one job: bootstrap the repo-local toolchain once, then
+# run every check in parallel via `task check:all` (scripts/check_all.bash
+# backgrounds each check and waits) instead of each check re-bootstrapping
+# on its own runner.
+#
+# `task check:all` also re-runs actionlint (the workflows:lint check) as
+# one of its parallel checks, which duplicates ci-gate.yaml's own
+# "Validate" step. That's intentional and cheap: it keeps `task check:all`
+# meaning the exact same complete set of checks everywhere (locally, an
+# agent's pre-finalize pass, and here) instead of a different subset
+# depending on who's calling it.
+
+on:
+    pull_request:
+        branches: [main]
+    push:
+        branches: [main]
+    workflow_dispatch:
+
+# Every check here is local (checkout + task check:all); none of them call
+# the GitHub API, so contents: read (for checkout) is the full requirement.
+permissions:
+    contents: read
+
+jobs:
+    checks:
+        name: Checks
+        runs-on: ubuntu-latest
+        steps:
+            - name: Checkout
+              uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+            - name: Bootstrap repo-local tooling
+              run: ./scripts/setup.sh
+
+            - name: Run every check in parallel
+              run: |
+                  source scripts/env.sh
+                  task check:all

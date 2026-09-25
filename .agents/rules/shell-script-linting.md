@@ -4,8 +4,8 @@ description: >-
   Every shell script in this repo (`.sh`/`.bash`) must pass shellcheck
   (static analysis) and shfmt (formatting, `-i 4 -ci`) before being
   considered finished. Apply whenever writing or editing a shell script.
-  Checked by `task shell:lint` (scripts/lint_shell.bash), which also runs as
-  the `shell-lint` job in .github/workflows/source-lint.yaml.
+  Checked by `task shell:lint` (scripts/lint_shell.bash), which also runs
+  as part of `task check:all` in .github/workflows/checks.yaml.
 ---
 
 # Shell script linting
@@ -46,10 +46,14 @@ other languages in this repo.
   shfmt diff it reports.
 - `task shell:fmt` rewrites files in place with shfmt; still run `task
   shell:lint` afterward, since shfmt doesn't fix shellcheck findings.
-- Install locally: `brew install shellcheck shfmt` (macOS) or your
-  distro's packages; both are also required by CI.
-- The `shell-lint` job in
-  [.github/workflows/source-lint.yaml](../../.github/workflows/source-lint.yaml)
-  runs the same check on every push to `main` and every pull request - a
-  red job means some script in the diff needs fixing before merging.
+- Install locally: `task setup` (or `./scripts/setup.sh`) bootstraps
+  shellcheck and shfmt, pinned to the versions in
+  [scripts/lib/versions.sh](../../scripts/lib/versions.sh), into
+  `.tools/bin/` - no global install needed. Run `source scripts/env.sh` to
+  put them on `PATH`. `task shell:lint`/`shell:fmt` fall back to a
+  PATH-installed shellcheck/shfmt if `.tools/bin/` is empty.
+- CI enforces this on every push/PR: `task check:all` in
+  [.github/workflows/checks.yaml](../../.github/workflows/checks.yaml)
+  runs `shell:lint` alongside every other standing check - a red job means
+  some script in the diff needs fixing before merging.
 - See the `linting-shell-scripts` skill for the full workflow.

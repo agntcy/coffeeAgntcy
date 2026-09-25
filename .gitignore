@@ -201,3 +201,7 @@ node_modules/
 # MCP, local configuration.
 .mcp.json
 
+# Repo-local pinned-version shell libs (not a Python lib/ build dir - the
+# generic 'lib/' rule above would otherwise also match this).
+!scripts/lib/
+

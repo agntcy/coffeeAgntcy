@@ -239,8 +239,11 @@ jobs:
     steps:
       - name: Check if push target exists
         run: |
+          # shellcheck disable=SC2034 # read via the indirect build_$project expansion below
           build_corto=${{ needs.subprojects-to-build.outputs.build_corto }}
+          # shellcheck disable=SC2034
           build_lungo=${{ needs.subprojects-to-build.outputs.build_lungo }}
+          # shellcheck disable=SC2034
           build_recruiter=${{ needs.subprojects-to-build.outputs.build_recruiter }}
           push=${{ needs.compute-build-parameters.outputs.push }}
           image_tag=${{ needs.compute-build-parameters.outputs.image_tag }}

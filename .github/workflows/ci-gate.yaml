@@ -40,14 +40,15 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
 
+      - name: Bootstrap repo-local tooling
+        run: ./scripts/setup.sh
+
       - name: Validate all workflow files (schema, syntax, structure)
         id: validate
         continue-on-error: true
-        uses: reviewdog/action-actionlint@d290e336d5a743810aef4404f757dc862276d2ae # v1.73.4
-        with:
-          reporter: local
-          fail_level: error
-          filter_mode: nofilter
+        run: |
+          source scripts/env.sh
+          task workflows:lint
 
       - name: Wait for sibling workflow runs on this commit
         id: wait

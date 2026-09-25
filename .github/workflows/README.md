@@ -6,6 +6,7 @@ This directory contains CI/CD workflows for building images, packaging Helm char
 
 | Workflow | Purpose | Triggers |
 |----------|---------|----------|
+| [`checks.yaml`](checks.yaml) | Runs every standing repo check in parallel after one toolchain bootstrap: dash/hyphen check, shell script lint+format, workflow file lint, workflow permission scoping, pinned external references (`task check:all`) | pull_request (main), push (main), workflow_dispatch |
 | [`ci-gate.yaml`](ci-gate.yaml) | Required status check: lints every workflow file (actionlint) and waits for/reports on every sibling workflow run on the same commit, including startup failures | pull_request, push (main, tags), workflow_dispatch |
 | [`docker-build-push.yaml`](docker-build-push.yaml) | Build multi-arch Docker images for all agents and optionally push to GHCR, guarded against overwriting an existing tag | push (main, tags), pull_request (paths filter), workflow_dispatch |
 | [`docker-build-reusable.yaml`](docker-build-reusable.yaml) | Reusable job: build and push a single Docker image | workflow_call |
@@ -15,17 +16,22 @@ This directory contains CI/CD workflows for building images, packaging Helm char
 | [`helm-push.yaml`](helm-push.yaml) | Lint, package, and (on push to main only) push changed Helm charts to GHCR (OCI), guarded against overwriting an existing chart version | push (main, tags), pull_request (paths filter), workflow_dispatch |
 | [`python-lint.yaml`](python-lint.yaml) | Run `ruff check` (lint only, never reformats) for corto, lungo, recruiter | pull_request (paths filter), push (main, paths filter), workflow_dispatch |
 | [`scorecard.yaml`](scorecard.yaml) | OpenSSF Scorecard security analysis, uploads SARIF to code scanning | push (main), pull_request, schedule (weekly), workflow_dispatch |
-| [`source-lint.yaml`](source-lint.yaml) | Forbidden strings check (fails if an en dash or em dash appears anywhere in the repo) and shell lint check (fails if any `.sh`/`.bash` file fails shellcheck or shfmt) | pull_request, push (main), workflow_dispatch |
 | [`test-reusable.yaml`](test-reusable.yaml) | Reusable job: run pytest for one project directory and path set | workflow_call |
 | [`test-subprojects-reusable.yaml`](test-subprojects-reusable.yaml) | Path-filter job: which agent projects changed | workflow_call |
 | [`test.yaml`](test.yaml) | Run pytest for corto, lungo, recruiter | push (main), pull_request, workflow_call, workflow_dispatch |
 | [`version-override-test.yaml`](version-override-test.yaml) | Example invocation of reusable tests with dependency/image overrides | workflow_dispatch |
 
+## checks
+
+Bootstraps the repo-local toolchain once (`./scripts/setup.sh`), then runs `task check:all` (`scripts/check_all.bash`), which runs every standing check in parallel - `dashes:check`, `shell:lint`, `workflows:lint`, `workflows:check-permissions`, `pins:check` - always running all of them regardless of earlier failures, then fails the job if any did. Each check's own task can be run individually (`task dashes:check`, `task shell:lint`, etc.) for a faster local loop while working on one thing.
+
+`task check:all` re-running `workflows:lint` duplicates `ci-gate.yaml`'s own "Validate" step - intentional, since it keeps `task check:all` the same complete set of checks everywhere rather than a subset that depends on who's calling it.
+
 ## ci-gate
 
 Single required status check for the repo, self-contained in one file with no manual list of other workflows to maintain:
 
-1. **Validate** - runs `actionlint` (via `reviewdog/action-actionlint`) against every file under `.github/workflows/` on the checked-out commit, catching schema/syntax/structure issues and shellcheck findings in `run:` scripts. Always runs to completion (`continue-on-error: true`) so it never short-circuits step 2.
+1. **Validate** - runs `actionlint` (via the repo-local toolchain bootstrapped by `scripts/setup.sh`, `task workflows:lint`) against every file under `.github/workflows/` on the checked-out commit, catching schema/syntax/structure issues and shellcheck findings in `run:` scripts. Always runs to completion (`continue-on-error: true`) so it never short-circuits step 2.
 2. **Wait** - since there's no native way for one workflow to block another from starting, this polls `GET /actions/runs?head_sha=...` (the runs API, not the checks API - the checks API silently omits `startup_failure` runs) every minute, after an initial one-minute settle delay, until nothing else for that commit is left `queued`/`in_progress` for two consecutive polls, or 100 minutes elapse.
 3. **Summarize** - always runs regardless of steps 1-2's outcome, writes a table to the job summary (validation result + every sibling run's name/conclusion/link, including anything still pending at timeout), and only then decides pass/fail: `success`/`skipped` count as pass, everything else (`failure`, `startup_failure`, `cancelled`, `timed_out`, `neutral`, or still-pending-at-timeout) counts as fail.
 
