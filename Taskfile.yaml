@@ -1,17 +1,70 @@
 version: "3"
 
 tasks:
-  shell:lint:
+  check:all:
     desc: >-
-      Lint and format-check every shell script in the repo with shellcheck
-      and shfmt (see .agents/rules/shell-script-linting.md).
+      Run every standing check in this repo in parallel (dashes, shell
+      lint, workflow lint, workflow permissions, pinned references), never
+      failing fast (see .agents/rules/repo-operation-pipeline.md).
     summary: |
-      Usage:   task shell:lint
-      Example: task shell:lint
-      Reports shellcheck findings and shfmt formatting diffs without
-      changing any file. See scripts/lint_shell.bash.
+      Usage:   task check:all
+      Example: task check:all
+      Runs dashes:check, shell:lint, workflows:lint,
+      workflows:check-permissions, and pins:check together and reports a
+      pass/fail table. What the "Checks" CI workflow runs after a single
+      tooling bootstrap. See scripts/check_all.bash.
     cmds:
-      - scripts/lint_shell.bash
+      - scripts/check_all.bash
+
+  dashes:check:
+    desc: >-
+      Check the repo for en dash (U+2013) or em dash (U+2014)
+      (see .agents/rules/no-em-en-dashes.md).
+    summary: |
+      Usage:   task dashes:check
+      Example: task dashes:check
+      Reports every hit without changing any file. See
+      scripts/check_dashes.bash.
+    cmds:
+      - scripts/check_dashes.bash
+
+  dashes:fix:
+    desc: >-
+      Replace every en dash (U+2013) or em dash (U+2014) in the repo with a
+      plain hyphen (see .agents/rules/no-em-en-dashes.md).
+    summary: |
+      Usage:   task dashes:fix
+      Example: task dashes:fix
+      Rewrites files in place. See scripts/fix_dashes.bash.
+    cmds:
+      - scripts/fix_dashes.bash
+
+  pins:check:
+    desc: >-
+      Check that every third-party action/reusable-workflow/image
+      reference is pinned to an immutable SHA/digest
+      (see .agents/rules/pinned-external-references.md).
+    summary: |
+      Usage:   task pins:check
+      Example: task pins:check
+      Scans .github/workflows/*.y*ml uses: lines, Dockerfile FROM
+      instructions, and compose image: fields. See
+      scripts/check_pinned_references.bash.
+    cmds:
+      - scripts/check_pinned_references.bash
+
+  setup:
+    desc: >-
+      Install/update the repo-local shell/CI-lint toolchain (task,
+      actionlint, shellcheck, shfmt) to the pinned versions in
+      scripts/lib/versions.sh.
+    summary: |
+      Usage:   task setup
+      Example: task setup && source scripts/env.sh
+      Installs into .tools/bin/ (gitignored), never touching the global
+      PATH or shell profile. See scripts/setup.sh.
+    cmds:
+      - ./scripts/setup.sh
 
   shell:fmt:
     desc: >-
@@ -24,3 +77,41 @@ tasks:
       confirm shellcheck is clean too. See scripts/lint_shell.bash.
     cmds:
       - scripts/lint_shell.bash --fix
+
+  shell:lint:
+    desc: >-
+      Lint and format-check every shell script in the repo with shellcheck
+      and shfmt (see .agents/rules/shell-script-linting.md).
+    summary: |
+      Usage:   task shell:lint
+      Example: task shell:lint
+      Reports shellcheck findings and shfmt formatting diffs without
+      changing any file. See scripts/lint_shell.bash.
+    cmds:
+      - scripts/lint_shell.bash
+
+  workflows:check-permissions:
+    desc: >-
+      Verify every GitHub Actions workflow file declares explicit,
+      least-privilege permissions, never write-all
+      (see .agents/rules/workflow-least-privilege.md).
+    summary: |
+      Usage:   task workflows:check-permissions
+      Example: task workflows:check-permissions
+      Flags write-all grants and jobs left with no declared permissions.
+      See scripts/check_workflow_permissions.bash.
+    cmds:
+      - scripts/check_workflow_permissions.bash
+
+  workflows:lint:
+    desc: >-
+      Lint every GitHub Actions workflow file under .github/workflows/ with
+      actionlint.
+    summary: |
+      Usage:   task workflows:lint
+      Example: task workflows:lint
+      Exact same command ci-gate.yaml's "Validate" step runs in CI; run
+      this locally/as an agent before opening a PR. See
+      scripts/lint_workflows.bash.
+    cmds:
+      - scripts/lint_workflows.bash

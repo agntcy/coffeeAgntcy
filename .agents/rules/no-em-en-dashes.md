@@ -3,8 +3,9 @@ name: no-em-en-dashes
 description: >-
   Never use an em dash (Unicode U+2014) or en dash (U+2013) anywhere in this
   repo - prose, code comments, commit messages, generated output. Always use
-  a plain ASCII hyphen (-) instead. Enforced by the "Forbidden strings" job
-  in .github/workflows/source-lint.yaml.
+  a plain ASCII hyphen (-) instead. Checked by `task dashes:check`
+  (scripts/check_dashes.bash), which also runs as part of `task check:all`
+  in .github/workflows/checks.yaml.
 ---
 
 # No em dashes or en dashes
@@ -36,13 +37,12 @@ exact-string search and producing invisible inconsistency across files.
 
 - Before finalizing any text you write in this repo, scan it for U+2014 and
   U+2013 and replace both with a plain hyphen.
-- To check the whole repo (bash's `$'\uXXXX'` form takes a Unicode code
-  point, not a literal character, so this file never has to show one):
-  `scripts/check_forbidden_strings.bash --pattern $'\u2014' --pattern $'\u2013'`.
-  To fix violations in place instead of by hand:
-  `scripts/find_strings.bash --pattern $'\u2014' --pattern $'\u2013' --replace-with '-' --write`.
-- CI enforces this on every push/PR: the "Forbidden strings" job in
-  [.github/workflows/source-lint.yaml](../../.github/workflows/source-lint.yaml)
-  runs the same check via the
-  [check-forbidden-strings](../../.github/actions/check-forbidden-strings/action.yaml)
-  composite action.
+- To check the whole repo: `task dashes:check` (wraps
+  [scripts/check_dashes.bash](../../scripts/check_dashes.bash), see
+  [Taskfile.yaml](../../Taskfile.yaml)). To fix violations in place instead
+  of by hand: `task dashes:fix` (wraps
+  [scripts/fix_dashes.bash](../../scripts/fix_dashes.bash)).
+- CI enforces this on every push/PR: `task check:all` in
+  [.github/workflows/checks.yaml](../../.github/workflows/checks.yaml)
+  runs `dashes:check` alongside every other standing check.
+- See the `checking-dashes` skill for the full workflow.

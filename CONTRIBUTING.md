@@ -68,18 +68,33 @@ from the repo-root `.editorconfig` on new edits.
 Do not use en dash (U+2013) or em dash (U+2014) anywhere in the repository
 (including comments, markdown, and EditorConfig). Use ASCII `-` or `--`.
 See [`.agents/rules/no-em-en-dashes.md`](/.agents/rules/no-em-en-dashes.md)
-for the full rule. The `Source lint` workflow (`source-lint.yaml`) fails the
-pull request if either character appears. This is not covered by Ruff or
-EditorConfig.
+for the full rule. Run `task dashes:check` locally (`task dashes:fix` to
+auto-fix); the `Checks` workflow (`checks.yaml`) fails the pull request if
+either character appears. This is not covered by Ruff or EditorConfig.
 
 #### Shell scripts
 
 Every `.sh`/`.bash` file must pass shellcheck and shfmt (`-i 4 -ci`). See
 [`.agents/rules/shell-script-linting.md`](/.agents/rules/shell-script-linting.md)
-for the full rule. Run [`task`](https://taskfile.dev) `shell:lint` locally
-before opening a PR (`task shell:fmt` to auto-fix formatting); the `Source
-lint` workflow's `shell-lint` job runs the same check on every pull
-request.
+for the full rule. Run `task setup && source scripts/env.sh` once to
+bootstrap a repo-local, pinned-version shellcheck/shfmt/actionlint into
+`.tools/bin/` (no global install needed - see `scripts/setup.sh`), then
+[`task`](https://taskfile.dev) `shell:lint` locally before opening a PR
+(`task shell:fmt` to auto-fix formatting); the `Checks` workflow runs the
+same check (along with every other standing check, via `task check:all`)
+on every pull request.
+
+#### Pinned external references and workflow permissions
+
+Every third-party GitHub Action/reusable-workflow/image reference must be
+pinned to an immutable SHA/digest (`task pins:check`), and every workflow
+file must declare explicit, least-privilege permissions, never `write-all`
+(`task workflows:check-permissions`). See
+[`.agents/rules/pinned-external-references.md`](/.agents/rules/pinned-external-references.md)
+and
+[`.agents/rules/workflow-least-privilege.md`](/.agents/rules/workflow-least-privilege.md)
+for the full rules. Both run as part of `task check:all` and the `Checks`
+workflow.
 
 ## Other Ways to Contribute
 

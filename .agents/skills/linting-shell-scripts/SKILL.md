@@ -14,28 +14,31 @@ description: >-
 Runs `task shell:lint` (defined in [Taskfile.yaml](../../../Taskfile.yaml),
 wrapping [scripts/lint_shell.bash](../../../scripts/lint_shell.bash)) to
 check every shell script in the repo with shellcheck and shfmt, then fixes
-whatever it reports. This is the same entry point the `shell-lint` CI job
-uses. See
+whatever it reports. This is the same check `task check:all` runs as part
+of [checks.yaml](../../../.github/workflows/checks.yaml). See
 [.agents/rules/shell-script-linting.md](../../rules/shell-script-linting.md)
 for the underlying rule.
 
 ## Workflow
 
 ```
-- [ ] 1. Run: task shell:lint
-- [ ] 2. For each shellcheck finding, fix the underlying issue (don't
+- [ ] 1. If shellcheck/shfmt aren't already available, run: task setup &&
+        source scripts/env.sh (bootstraps both into .tools/bin/, pinned to
+        scripts/lib/versions.sh - no global install needed)
+- [ ] 2. Run: task shell:lint
+- [ ] 3. For each shellcheck finding, fix the underlying issue (don't
         silence with a directive unless the flagged pattern is
         intentional - then use `# shellcheck disable=SCxxxx` with a
         comment on why, next to the line it applies to)
-- [ ] 3. For shfmt diffs, run: task shell:fmt (rewrites in place), or fix
+- [ ] 4. For shfmt diffs, run: task shell:fmt (rewrites in place), or fix
         by hand if only a couple of files changed
-- [ ] 4. Re-run task shell:lint to confirm it's clean
+- [ ] 5. Re-run task shell:lint to confirm it's clean
 ```
 
 ## Notes
 
 - `task shell:fmt` only fixes formatting - it never touches a shellcheck
-  finding, so step 2 still needs doing even after running it.
+  finding, so step 3 still needs doing even after running it.
 - shfmt is pinned to `-i 4 -ci` (4-space indent, indented switch-case
   bodies) for this repo - don't reach for a different width or tab
   indentation even if a script predates the convention.

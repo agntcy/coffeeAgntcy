@@ -206,3 +206,7 @@ todo.local.md
 
 # Local tools for the repository.
 .tools/**
+
+# Repo-local pinned-version shell libs (not a Python lib/ build dir - the
+# generic 'lib/' rule above would otherwise also match this).
+!scripts/lib/
