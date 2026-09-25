@@ -72,6 +72,15 @@ for the full rule. The `Source lint` workflow (`source-lint.yaml`) fails the
 pull request if either character appears. This is not covered by Ruff or
 EditorConfig.
 
+#### Shell scripts
+
+Every `.sh`/`.bash` file must pass shellcheck and shfmt (`-i 4 -ci`). See
+[`.agents/rules/shell-script-linting.md`](/.agents/rules/shell-script-linting.md)
+for the full rule. Run [`task`](https://taskfile.dev) `shell:lint` locally
+before opening a PR (`task shell:fmt` to auto-fix formatting); the `Source
+lint` workflow's `shell-lint` job runs the same check on every pull
+request.
+
 ## Other Ways to Contribute
 
 We welcome anyone that wants to contribute to `coffeeAgntcy` to triage and

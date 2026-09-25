@@ -15,14 +15,15 @@
 | Agentic Workflows API documentation (lungo) | [.agents/skills/agentic-workflows-api-documentation-lungo/SKILL.md](.agents/skills/agentic-workflows-api-documentation-lungo/SKILL.md) - `workflow-instance_api.md`; OpenAPI under `schema/openapi/` as HTTP contract (SSOT, not generated from code) |
 | Generate release notes | [.agents/skills/generate-release-notes/SKILL.md](.agents/skills/generate-release-notes/SKILL.md) |
 | JSON Schema → Pydantic (lungo) | [.agents/skills/jsonschema-to-pydantic-lungo/SKILL.md](.agents/skills/jsonschema-to-pydantic-lungo/SKILL.md) |
+| Linting shell scripts | [.agents/skills/linting-shell-scripts/SKILL.md](.agents/skills/linting-shell-scripts/SKILL.md) |
 | OpenAPI → Python (lungo) | [.agents/skills/openapi-to-python-lungo/SKILL.md](.agents/skills/openapi-to-python-lungo/SKILL.md) - routers/DTOs; OpenAPI unit tests |
 
 ## Rules
 
-Conventions to apply proactively, not on request. `no-em-en-dashes` is
-enforced in CI; `pinned-external-references` and `workflow-least-privilege`
-have a check script but aren't wired into CI yet; the rest rely on being
-applied by judgment.
+Conventions to apply proactively, not on request. `no-em-en-dashes` and
+`shell-script-linting` are enforced in CI; `pinned-external-references` and
+`workflow-least-privilege` have a check script but aren't wired into CI
+yet; the rest rely on being applied by judgment.
 
 | Topic | File |
 |-------|------|
@@ -33,6 +34,7 @@ applied by judgment.
 | Organize large collections | [.agents/rules/organize-large-collections.md](.agents/rules/organize-large-collections.md) |
 | Pinned external references | [.agents/rules/pinned-external-references.md](.agents/rules/pinned-external-references.md) |
 | Self-review after a change | [.agents/rules/self-review-after-change.md](.agents/rules/self-review-after-change.md) |
+| Shell script linting | [.agents/rules/shell-script-linting.md](.agents/rules/shell-script-linting.md) |
 | Workflow least privilege | [.agents/rules/workflow-least-privilege.md](.agents/rules/workflow-least-privilege.md) |
 
 ## Repository references

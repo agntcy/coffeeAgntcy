@@ -1,0 +1,26 @@
+version: "3"
+
+tasks:
+  shell:lint:
+    desc: >-
+      Lint and format-check every shell script in the repo with shellcheck
+      and shfmt (see .agents/rules/shell-script-linting.md).
+    summary: |
+      Usage:   task shell:lint
+      Example: task shell:lint
+      Reports shellcheck findings and shfmt formatting diffs without
+      changing any file. See scripts/lint_shell.bash.
+    cmds:
+      - scripts/lint_shell.bash
+
+  shell:fmt:
+    desc: >-
+      Reformat every shell script in the repo in place with shfmt
+      (see .agents/rules/shell-script-linting.md).
+    summary: |
+      Usage:   task shell:fmt
+      Example: task shell:fmt
+      Rewrites files in place with shfmt; run task shell:lint afterward to
+      confirm shellcheck is clean too. See scripts/lint_shell.bash.
+    cmds:
+      - scripts/lint_shell.bash --fix
