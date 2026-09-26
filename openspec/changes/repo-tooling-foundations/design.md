@@ -38,9 +38,6 @@ change also fixes.
   `proposal.md` - Why (e.g. their `pins:check`/`workflows:check-permissions`
   scripts differ from ours in minor ways not affecting behavior this spec
   covers; not audited line-by-line here).
-- Changing `checks.yaml`'s intentional duplication of `workflows:lint`
-  with `ci-gate.yaml`'s own Validate step - already a deliberate decision
-  (see `checks.yaml`'s own header comment), unrelated to this change.
 
 ## Decisions
 
@@ -86,11 +83,39 @@ CI Gate run (excluded from *waiting on*, but not yet excluded from
 *judging*) would be counted as a failing sibling and fail the summary
 outright.
 
-**The extraction changes only the Wait and Summarize steps; Validate
-stays as a direct `task workflows:lint` call inline in the workflow.**
-Validate is already a single `task` invocation with no bash logic of its
-own to extract - there is nothing there that benefits from a script
-file the way ~160 lines of polling/table-building logic does.
+**CI Gate's own Validate step is removed entirely, not merely
+extracted - `checks.yaml` becomes the sole owner of workflow-file
+validation, with its triggers broadened to match CI Gate's own.**
+Reviewing why CI Gate ran `task workflows:lint` directly at all (rather
+than only via `checks.yaml`) surfaced the real reason: `checks.yaml`'s
+triggers were narrower (`pull_request: branches: [main]` only) than CI
+Gate's (`pull_request: {}`, any branch, plus tag pushes) - dropping CI
+Gate's own call without fixing that gap would have silently skipped
+validation on an off-`main` PR or a tag push. The fix addresses the gap
+directly instead of preserving the duplication around it: `checks.yaml`
+now triggers on the exact same event set as `ci-gate.yaml`, which makes
+`checks.yaml` unconditionally one of CI Gate's sibling runs, on every
+commit CI Gate itself ever runs on. With that guarantee in place, CI
+Gate genuinely doesn't need to run any check of its own - it becomes a
+pure collector: checkout, wait, summarize, nothing else. Alternative
+considered (the original resolution before this review): keep both,
+document the duplication as load-bearing; superseded because the actual
+fix (align the triggers) is no harder than documenting around the gap,
+and leaves CI Gate simpler besides.
+
+**CI Gate invokes `scripts/ci-gate/wait-for-sibling-runs.sh` and
+`scripts/ci-gate/summarize-ci-gate.sh` directly, not via `task`, and no
+longer bootstraps the toolchain at all.** With the Validate step gone,
+nothing in CI Gate's job needs `shellcheck`/`shfmt`/`actionlint`/`node`/
+`openspec` - only `bash`, `jq`, and `gh`, all already on a GitHub-hosted
+runner. Running `./scripts/setup.sh` just to get the `task` binary onto
+`PATH`, in order to run two scripts that need none of what it installs,
+would be paying the full ~331MB eager-install cost (see
+`repo-operation-governance`'s proposal.md) for zero benefit in this one
+job. `task ci-gate:wait`/`task ci-gate:summarize` remain the documented
+local/agent entry points to the same scripts, per
+`.agents/rules/repo-operation-pipeline.md`; CI Gate itself just calls
+the scripts underneath them directly.
 
 ## Risks / Trade-offs
 
@@ -105,14 +130,25 @@ file the way ~160 lines of polling/table-building logic does.
   a bad approach before the diff exists) doesn't apply retroactively for
   most of this change; the value here is purely making the *next* change
   to this surface go through the normal propose -> spec -> implement
-  flow instead of starting from nothing. Not something to fix, just worth
-  naming so this change isn't mistaken for having caught a design issue
-  before the fact when it mostly didn't need to.
+  flow instead of starting from nothing. This is exactly what happened
+  with the Validate-step redesign above: reviewing the already-documented
+  "kept as-is" duplication out loud surfaced that it was actually a gap
+  worth closing, not a decision worth keeping - caught by writing it down
+  and discussing it, one step later than ideal but still before either
+  spec was archived.
+- [Broadening `checks.yaml`'s triggers increases CI minutes] -> it now
+  runs on every pull request (any target branch) and every tag push, not
+  only PRs/pushes targeting `main`. Not mitigated: this is the direct
+  cost of closing the coverage gap, and is small next to the risk it
+  replaces (workflow-file changes going unvalidated on non-`main` PRs).
 
 ## Migration Plan
 
-`ci-gate.yaml`'s Wait/Summarize steps are replaced with `task` calls in
-the same commit as the two new scripts and Taskfile tasks - no phased
+`ci-gate.yaml`'s Wait/Summarize steps call
+`scripts/ci-gate/wait-for-sibling-runs.sh`/`summarize-ci-gate.sh`
+directly (no `task`, no toolchain bootstrap); its Validate step is
+removed; `checks.yaml`'s triggers are broadened to match - all in the
+same commit as the two new scripts and Taskfile tasks. No phased
 rollout; the next push/PR after merge exercises the new path directly.
 Rollback is a plain `git revert`. No other file changes behavior, so
 there is nothing else to migrate.

@@ -126,12 +126,14 @@ pass/fail for each. It SHALL exit non-zero if any of them failed.
 
 ### Requirement: CI runs every check after a single toolchain bootstrap
 The `Checks` GitHub Actions workflow (`checks.yaml`) SHALL trigger on
-every pull request targeting `main`, every push to `main`, and manual
-`workflow_dispatch`. It SHALL bootstrap the toolchain once
-(`./scripts/setup.sh`) and then run `task check:all`, rather than each
-check bootstrapping its own runner.
+every pull request (regardless of target branch), every push to `main`,
+every push of a tag, and manual `workflow_dispatch` - the same event set
+as `ci-gate.yaml` (see the `ci-gate` capability's own requirement on
+this), so it is always among the sibling runs CI Gate collects. It
+SHALL bootstrap the toolchain once (`./scripts/setup.sh`) and then run
+`task check:all`, rather than each check bootstrapping its own runner.
 
-#### Scenario: A pull request is opened against main
-- **WHEN** a pull request targeting `main` is opened or updated
+#### Scenario: A pull request is opened against any branch
+- **WHEN** a pull request is opened or updated, against any branch
 - **THEN** the `Checks` workflow runs, bootstrapping the toolchain once
   and then running every check in `task check:all`
