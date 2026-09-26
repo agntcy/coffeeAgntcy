@@ -25,15 +25,13 @@ change also fixes.
   cannot be exercised outside CI at all.
 
 **Non-Goals:**
-- Reorganizing `.agents/rules/`/`.agents/skills/` into the reference
-  repo's nested category subdirectories
-  (`.agents/rules/{always-apply,formatting,meta,quality}/`,
-  `.agents/skills/{repo-tooling,quality-checks}/`). This repo deliberately
-  kept both flat and grouped `AGENTS.md`'s index into labeled sections
-  instead, when `openspec` was added and the Skills/Rules tables first
-  grew past a flat list's scannability - a decision already made, not
-  revisited here. Reconsider only if the flat layout itself becomes hard
-  to scan, per `.agents/rules/organize-large-collections.md`.
+- ~~Reorganizing `.agents/rules/`/`.agents/skills/` into the reference
+  repo's nested category subdirectories~~ - **superseded**: the flat
+  layout did eventually become hard to scan, the exact condition this
+  Non-Goal named as the reason to reconsider, and `scripts/` was
+  separately deferred to the same effort. See the `repo-tree-reorganization`
+  change, which carried this out using the reference repo's own category
+  names named here.
 - Porting any other reference-repo divergence not identified in
   `proposal.md` - Why (e.g. their `pins:check`/`workflows:check-permissions`
   scripts differ from ours in minor ways not affecting behavior this spec
@@ -114,7 +112,7 @@ would be paying the full ~331MB eager-install cost (see
 `repo-operation-governance`'s proposal.md) for zero benefit in this one
 job. `task ci-gate:wait`/`task ci-gate:summarize` remain the documented
 local/agent entry points to the same scripts, per
-`.agents/rules/repo-operation-pipeline.md`; CI Gate itself just calls
+`.agents/rules/meta/repo-operation-pipeline.md`; CI Gate itself just calls
 the scripts underneath them directly.
 
 ## Risks / Trade-offs

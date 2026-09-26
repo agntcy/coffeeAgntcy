@@ -2,7 +2,7 @@
 
 ## Why
 
-`.agents/rules/repo-operation-pipeline.md` (the five-layer script/task/
+`.agents/rules/meta/repo-operation-pipeline.md` (the five-layer script/task/
 skill/CI/rule pattern) and the skills/rules built to support it
 (`add-repo-operation`, `manage-repo-tooling`, `setup-repo-tooling`,
 `pinned-tool-versions`, `pre-finalize-checks`) exist only as prose and
@@ -37,9 +37,9 @@ Two other questionable choices came up while reviewing this area:
 
 ## What Changes
 
-- **Document, no behavior change**: `.agents/rules/repo-operation-pipeline.md`
-  itself, `.agents/rules/pinned-tool-versions.md`,
-  `.agents/rules/pre-finalize-checks.md`, and the
+- **Document, no behavior change**: `.agents/rules/meta/repo-operation-pipeline.md`
+  itself, `.agents/rules/meta/pinned-tool-versions.md`,
+  `.agents/rules/always-apply/pre-finalize-checks.md`, and the
   `add-repo-operation`/`manage-repo-tooling`/`setup-repo-tooling` skills.
 - **Document, no behavior change**: the eager-toolchain-install decision
   above - already true today, now written down as a deliberate decision
@@ -71,7 +71,7 @@ Two other questionable choices came up while reviewing this area:
 ### Modified Capabilities
 
 _None - `repo-tooling-foundations` has not been archived yet (per
-`.agents/rules/plan-with-openspec.md`, archiving happens after a
+`.agents/rules/process/plan-with-openspec.md`, archiving happens after a
 change's PR merges; nothing here has merged), so there is no main spec
 under `openspec/specs/` yet to target with a delta. This capability is
 additive against an empty `openspec/specs/` tree, same as
@@ -79,10 +79,10 @@ additive against an empty `openspec/specs/` tree, same as
 
 ## Impact
 
-- `scripts/check_pipeline_exceptions.bash` (new): the self-audit script.
+- `scripts/checks/check_pipeline_exceptions.bash` (new): the self-audit script.
 - `Taskfile.yaml`: new `pipeline:check-exceptions` task.
-- `.agents/skills/auditing-pipeline-exceptions/SKILL.md` (new).
-- `scripts/check_all.bash`: adds the new check to the parallel list, so
+- `.agents/skills/quality-checks/auditing-pipeline-exceptions/SKILL.md` (new).
+- `scripts/checks/check_all.bash`: adds the new check to the parallel list, so
   `task check:all` and `checks.yaml` pick it up.
 - `AGENTS.md`: indexes the new skill and (if a new rule file is added
   for this specific check rather than folding into

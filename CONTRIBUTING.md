@@ -51,7 +51,7 @@ plan it with [OpenSpec](https://openspec.dev) before writing any code:
 
 1. **Set up tooling once**, if you haven't: `task setup` installs
    `openspec` alongside the rest of this repo's local toolchain (see
-   [`.agents/skills/setup-repo-tooling/SKILL.md`](.agents/skills/setup-repo-tooling/SKILL.md)).
+   [`.agents/skills/repo-tooling/setup-repo-tooling/SKILL.md`](.agents/skills/repo-tooling/setup-repo-tooling/SKILL.md)).
 2. **Propose it:** `openspec propose` - describe what you want to build;
    it generates a proposal, design, spec delta, and tasks list under
    `openspec/changes/<name>/`. Get that plan right before implementing -
@@ -68,7 +68,7 @@ This is an added planning step before code, not a different approval
 process - everything above still applies once the PR is open. If you're an
 agent, the generated `.agents/skills/openspec-*` skills (indexed in
 [AGENTS.md](AGENTS.md)) are the entry point, not these CLI commands
-directly. See [`.agents/rules/plan-with-openspec.md`](.agents/rules/plan-with-openspec.md)
+directly. See [`.agents/rules/process/plan-with-openspec.md`](.agents/rules/process/plan-with-openspec.md)
 for the full rule.
 
 ### Linting and code style
@@ -97,7 +97,7 @@ from the repo-root `.editorconfig` on new edits.
 
 Do not use en dash (U+2013) or em dash (U+2014) anywhere in the repository
 (including comments, markdown, and EditorConfig). Use ASCII `-` or `--`.
-See [`.agents/rules/no-em-en-dashes.md`](/.agents/rules/no-em-en-dashes.md)
+See [`.agents/rules/always-apply/no-em-en-dashes.md`](/.agents/rules/always-apply/no-em-en-dashes.md)
 for the full rule. Run `task dashes:check` locally (`task dashes:fix` to
 auto-fix); the `Checks` workflow (`checks.yaml`) fails the pull request if
 either character appears. This is not covered by Ruff or EditorConfig.
@@ -105,7 +105,7 @@ either character appears. This is not covered by Ruff or EditorConfig.
 #### Shell scripts
 
 Every `.sh`/`.bash` file must pass shellcheck and shfmt (`-i 4 -ci`). See
-[`.agents/rules/shell-script-linting.md`](/.agents/rules/shell-script-linting.md)
+[`.agents/rules/quality/shell-script-linting.md`](/.agents/rules/quality/shell-script-linting.md)
 for the full rule. Run `task setup && source scripts/env.sh` once to
 bootstrap a repo-local, pinned-version shellcheck/shfmt/actionlint into
 `.tools/bin/` (no global install needed - see `scripts/setup.sh`), then
@@ -120,9 +120,9 @@ Every third-party GitHub Action/reusable-workflow/image reference must be
 pinned to an immutable SHA/digest (`task pins:check`), and every workflow
 file must declare explicit, least-privilege permissions, never `write-all`
 (`task workflows:check-permissions`). See
-[`.agents/rules/pinned-external-references.md`](/.agents/rules/pinned-external-references.md)
+[`.agents/rules/quality/pinned-external-references.md`](/.agents/rules/quality/pinned-external-references.md)
 and
-[`.agents/rules/workflow-least-privilege.md`](/.agents/rules/workflow-least-privilege.md)
+[`.agents/rules/quality/workflow-least-privilege.md`](/.agents/rules/quality/workflow-least-privilege.md)
 for the full rules. Both run as part of `task check:all` and the `Checks`
 workflow.
 
