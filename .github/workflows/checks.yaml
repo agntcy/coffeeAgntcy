@@ -6,18 +6,20 @@ name: Checks
 # backgrounds each check and waits) instead of each check re-bootstrapping
 # on its own runner.
 #
-# `task check:all` also re-runs actionlint (the workflows:lint check) as
-# one of its parallel checks, which duplicates ci-gate.yaml's own
-# "Validate" step. That's intentional and cheap: it keeps `task check:all`
-# meaning the exact same complete set of checks everywhere (locally, an
-# agent's pre-finalize pass, and here) instead of a different subset
-# depending on who's calling it.
+# This is the sole owner of the actual checks (including workflow-file
+# validation) - ci-gate.yaml runs no check of its own, only waits for and
+# summarizes sibling runs. The trigger set below is kept identical to
+# ci-gate.yaml's own, so this workflow is unconditionally one of the
+# sibling runs ci-gate.yaml collects on every commit ci-gate.yaml itself
+# runs on - if these triggers ever narrow relative to ci-gate.yaml's, a
+# workflow-file change could go unvalidated on whatever ci-gate.yaml still
+# covers that this doesn't.
 
 on:
-    pull_request:
-        branches: [main]
+    pull_request: {}
     push:
         branches: [main]
+        tags: ["*"]
     workflow_dispatch:
 
 # Every check here is local (checkout + task check:all); none of them call

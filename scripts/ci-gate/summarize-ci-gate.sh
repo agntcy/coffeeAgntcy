@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
-# Combines the workflows:lint (actionlint) outcome and
-# wait-for-sibling-runs.sh's ./runs.json into a job-summary table, and
-# decides overall pass/fail.
+# Combines wait-for-sibling-runs.sh's ./runs.json into a job-summary table,
+# and decides overall pass/fail. CI Gate runs no check of its own (see
+# .agents/rules/repo-operation-pipeline.md and the ci-gate spec capability)
+# - this is purely a summary of sibling runs.
 #
-# Reads: VALIDATE_OUTCOME ("success"/"failure", from the calling workflow
-# step's outcome), SETTLED ("true"/"false", from wait-for-sibling-runs.sh's
-# output), GITHUB_RUN_ID (set automatically inside a real Actions run), and
+# Reads: SETTLED ("true"/"false", from wait-for-sibling-runs.sh's output),
+# GITHUB_RUN_ID (set automatically inside a real Actions run), and
 # RUNS_FILE (defaults to ./runs.json, written by wait-for-sibling-runs.sh
 # in the same job). Writes to $GITHUB_STEP_SUMMARY if set, else stdout.
 #
@@ -18,7 +18,6 @@
 # would fail this job on a run this script has no business waiting on.
 set -uo pipefail
 
-: "${VALIDATE_OUTCOME:?VALIDATE_OUTCOME must be set (e.g. success/failure)}"
 : "${SETTLED:?SETTLED must be set (true/false, from wait-for-sibling-runs.sh)}"
 : "${GITHUB_RUN_ID:?GITHUB_RUN_ID must be set (the id of this run)}"
 : "${RUNS_FILE:=runs.json}"
@@ -30,13 +29,6 @@ self_run_id="$GITHUB_RUN_ID"
 overall_pass=true
 
 declare -a rows=("Check"$'\t'"Status"$'\t'"Conclusion"$'\t'"Result")
-
-if [[ "$VALIDATE_OUTCOME" == "success" ]]; then
-    rows+=("Validate workflow files (actionlint)"$'\t'"completed"$'\t'"success"$'\t'":white_check_mark: pass")
-else
-    rows+=("Validate workflow files (actionlint)"$'\t'"completed"$'\t'"$VALIDATE_OUTCOME"$'\t'":x: fail")
-    overall_pass=false
-fi
 
 # Resolve our own workflow_id from runs.json (the self run is always
 # included, since it shares the commit the wait step queried) so a sibling
