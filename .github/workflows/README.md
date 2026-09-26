@@ -23,7 +23,7 @@ This directory contains CI/CD workflows for building images, packaging Helm char
 
 ## checks
 
-Bootstraps the repo-local toolchain once (`./scripts/setup.sh`), then runs `task check:all` (`scripts/check_all.bash`), which runs every standing check in parallel - `dashes:check`, `shell:lint`, `workflows:lint`, `workflows:check-permissions`, `pins:check` - always running all of them regardless of earlier failures, then fails the job if any did. Each check's own task can be run individually (`task dashes:check`, `task shell:lint`, etc.) for a faster local loop while working on one thing.
+Bootstraps the repo-local toolchain once (`./scripts/setup.sh`), then runs `task check:all` (`scripts/checks/check_all.bash`), which runs every standing check in parallel - `dashes:check`, `shell:lint`, `workflows:lint`, `workflows:check-permissions`, `pins:check` - always running all of them regardless of earlier failures, then fails the job if any did. Each check's own task can be run individually (`task dashes:check`, `task shell:lint`, etc.) for a faster local loop while working on one thing.
 
 `checks.yaml`'s triggers are kept identical to `ci-gate.yaml`'s own, so it is unconditionally one of the sibling runs CI Gate collects on every commit CI Gate itself runs on - see `ci-gate` below.
 
