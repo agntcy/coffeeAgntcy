@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Replaces every en dash (U+2013) or em dash (U+2014) in the repo with a
-# plain ASCII hyphen - see .agents/rules/no-em-en-dashes.md.
+# plain ASCII hyphen - see .agents/rules/always-apply/no-em-en-dashes.md.
 set -uo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"

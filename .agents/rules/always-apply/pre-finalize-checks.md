@@ -19,7 +19,9 @@ or opening a PR - run whichever of these apply to what changed:
 | `.github/workflows/**` | `task workflows:lint` and `task workflows:check-permissions` |
 | A `uses:`/`FROM`/`image:` reference (workflow, Dockerfile, compose file) | `task pins:check` |
 | Any prose you wrote (docs, comments, this list included) | `task dashes:check` - see `.agents/rules/always-apply/no-em-en-dashes.md` |
-| Unsure, or several of the above | `task check:all` (runs all five, never fails fast, reports which passed/failed) |
+| A new or changed `.agents/skills/*/SKILL.md`, or `repo-operation-pipeline.md`'s "Known exceptions" list | `task pipeline:check-exceptions` |
+| A moved, renamed, or removed file, or an edited markdown link | `task links:check` |
+| Unsure, or several of the above | `task check:all` (runs all seven, never fails fast, reports which passed/failed) |
 
 This is deliberately **not** a pre-push git hook - nothing in this repo
 installs one, and none should be added without the user asking for it. It's
@@ -42,12 +44,14 @@ anyone else sees it.
   for that judgment-level review, which this rule complements rather than
   replaces.
 - A failing check means fix the change, not the check - see
-  `.agents/skills/quality-checks/linting-shell-scripts/SKILL.md`,
-  `.agents/skills/quality-checks/linting-github-workflows/SKILL.md`,
+  `.agents/skills/quality-checks/auditing-pipeline-exceptions/SKILL.md`,
+  `.agents/skills/quality-checks/checking-dashes/SKILL.md`,
+  `.agents/skills/quality-checks/checking-markdown-links/SKILL.md`,
   `.agents/skills/quality-checks/checking-pinned-references/SKILL.md`,
-  `.agents/skills/quality-checks/checking-workflow-permissions/SKILL.md`, and
-  `.agents/skills/quality-checks/checking-dashes/SKILL.md` for how to read
-  and fix specific failures.
+  `.agents/skills/quality-checks/checking-workflow-permissions/SKILL.md`,
+  `.agents/skills/quality-checks/linting-github-workflows/SKILL.md`, and
+  `.agents/skills/quality-checks/linting-shell-scripts/SKILL.md` for how to
+  read and fix specific failures.
 - If a check doesn't apply (e.g. a pure-documentation change that doesn't
   touch `scripts/` or `.github/workflows/` and adds no third-party
   reference), skip it - don't run `task check:all` reflexively when a more

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Checks the whole repo for en dash (U+2013) or em dash (U+2014) - see
-# .agents/rules/no-em-en-dashes.md. Thin wrapper pinning the patterns this
+# .agents/rules/always-apply/no-em-en-dashes.md. Thin wrapper pinning the patterns this
 # repo forbids, so the dashes:check task, task check:all, and CI all check
 # the exact same two characters.
 set -euo pipefail

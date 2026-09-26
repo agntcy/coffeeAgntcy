@@ -16,7 +16,7 @@ Produces and maintains a single human-facing reference document for the lungo **
 
 The lungo project root is `coffeeAGNTCY/coffee_agents/lungo/`. The output document lives at `docs/workflow-instance_api.md` and links to in-repo specs with paths relative to `docs/` (e.g. `../schema/...`).
 
-**Scope:** This skill updates OpenAPI under `schema/openapi/` and `workflow-instance_api.md` only. Python routers/DTOs: [openapi-to-python-lungo](../../openapi-to-python-lungo/SKILL.md). Pydantic types from JSON Schema: [jsonschema-to-pydantic-lungo](../../jsonschema-to-pydantic-lungo/SKILL.md). For trigger-condition prose or streaming behavior OpenAPI omits, read implementation only as needed via openapi-to-python-lungo's scope - do not treat Python files as contract sources.
+**Scope:** This skill updates OpenAPI under `schema/openapi/` and `workflow-instance_api.md` only. Python routers/DTOs: [openapi-to-python-lungo](../openapi-to-python-lungo/SKILL.md). Pydantic types from JSON Schema: [jsonschema-to-pydantic-lungo](../jsonschema-to-pydantic-lungo/SKILL.md). For trigger-condition prose or streaming behavior OpenAPI omits, read implementation only as needed via openapi-to-python-lungo's scope - do not treat Python files as contract sources.
 
 ## Output
 
@@ -37,8 +37,8 @@ Enumerate endpoints, fields, and status codes from the specs - do not hard-code 
 
 Sibling skills run after contract edits (as the user directs):
 
-- [openapi-to-python-lungo](../../openapi-to-python-lungo/SKILL.md) - align FastAPI routers/DTOs and read handler behavior
-- [jsonschema-to-pydantic-lungo](../../jsonschema-to-pydantic-lungo/SKILL.md) - regenerate Pydantic mirrors
+- [openapi-to-python-lungo](../openapi-to-python-lungo/SKILL.md) - align FastAPI routers/DTOs and read handler behavior
+- [jsonschema-to-pydantic-lungo](../jsonschema-to-pydantic-lungo/SKILL.md) - regenerate Pydantic mirrors
 
 ## Document structure
 

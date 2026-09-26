@@ -113,15 +113,18 @@ pin-exempt: <reason>` comment.
 
 ### Requirement: Every standing check runs together, in parallel, without failing fast
 `task check:all` SHALL run `dashes:check`, `shell:lint`,
-`workflows:lint`, `workflows:check-permissions`, and `pins:check` in
-parallel, SHALL run every one of them to completion regardless of any
-other's outcome, and SHALL end its output with a summary line reporting
-pass/fail for each. It SHALL exit non-zero if any of them failed.
+`workflows:lint`, `workflows:check-permissions`, `pins:check`, and any
+further check added to `scripts/checks/check_all.bash`'s parallel list
+(e.g. `pipeline:check-exceptions`, added by the sibling
+`repo-operation-governance` change) in parallel, SHALL run every one of
+them to completion regardless of any other's outcome, and SHALL end its
+output with a summary line reporting pass/fail for each. It SHALL exit
+non-zero if any of them failed.
 
 #### Scenario: One check fails, others pass
-- **WHEN** `task check:all` is run and exactly one of the five checks
-  would fail on its own
-- **THEN** all five still run to completion, the summary reports each
+- **WHEN** `task check:all` is run and exactly one of its checks would
+  fail on its own
+- **THEN** all of them still run to completion, the summary reports each
   one's own pass/fail, and the overall command exits non-zero
 
 ### Requirement: CI runs every check after a single toolchain bootstrap

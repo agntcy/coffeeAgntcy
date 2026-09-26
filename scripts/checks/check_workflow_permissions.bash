@@ -10,7 +10,7 @@
 #      (which depend on repo/org settings this file can't see).
 #
 # This only checks the policy (scopes actually granted); it doesn't validate
-# workflow schema/syntax - see .agents/rules/workflow-least-privilege.md.
+# workflow schema/syntax - see .agents/rules/quality/workflow-least-privilege.md.
 #
 # Usage: scripts/check_workflow_permissions.bash
 set -uo pipefail
@@ -89,7 +89,7 @@ done
 
 if [ "$failed" -ne 0 ]; then
     echo
-    echo "Add an explicit permissions: block scoped to only what's needed (never write-all) - see .agents/rules/workflow-least-privilege.md."
+    echo "Add an explicit permissions: block scoped to only what's needed (never write-all) - see .agents/rules/quality/workflow-least-privilege.md."
     exit 1
 fi
 

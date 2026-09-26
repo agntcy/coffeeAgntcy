@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Lints and format-checks every shell script in the repo with shellcheck and
-# shfmt (see .agents/rules/shell-script-linting.md and the shell:lint /
+# shfmt (see .agents/rules/quality/shell-script-linting.md and the shell:lint /
 # shell:fmt tasks in Taskfile.yaml).
 #
 # Prefers the repo-local toolchain installed by scripts/setup.sh into

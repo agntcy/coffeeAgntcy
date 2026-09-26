@@ -16,7 +16,7 @@
 # version comment, as long as it states a reason. When a new kind of
 # floating reference shows up in this repo (a Terraform module source, an
 # npm git dependency, ...), extend this script rather than leaving it
-# uncovered - see .agents/rules/pinned-external-references.md.
+# uncovered - see .agents/rules/quality/pinned-external-references.md.
 #
 # Images under OWN_IMAGE_PREFIX are this repo's own published artifacts
 # (see .github/workflows/docker-build-reusable.yaml's tag format), not
