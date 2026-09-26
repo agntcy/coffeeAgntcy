@@ -52,7 +52,7 @@ named explicitly, not left as a silent gap.
 #### Scenario: A new check is added
 - **WHEN** a new standing check is added to this repo
 - **THEN** it has a script, a Taskfile task wrapping only that script, a
-  skill, CI enforcement (via `scripts/check_all.bash`'s parallel list,
+  skill, CI enforcement (via `scripts/checks/check_all.bash`'s parallel list,
   or its own workflow only if its execution model genuinely differs),
   and a rule documenting it - unless it falls under a named exception
 

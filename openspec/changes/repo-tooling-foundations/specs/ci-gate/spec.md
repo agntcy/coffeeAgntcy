@@ -58,7 +58,7 @@ scripts need only `bash`, `jq`, and an authenticated `gh`, all already
 present on a GitHub-hosted runner. `task ci-gate:wait`/`task
 ci-gate:summarize` remain available as the same scripts' Taskfile
 entry points for local/agent use, per
-`.agents/rules/repo-operation-pipeline.md`; CI Gate itself just doesn't
+`.agents/rules/meta/repo-operation-pipeline.md`; CI Gate itself just doesn't
 need to go through `task` to reach them.
 
 #### Scenario: CI Gate runs

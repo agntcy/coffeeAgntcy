@@ -111,7 +111,7 @@ Do this when all subtickets for the release are done.
 
 ## Step 2 - Generate release notes, update README + CHANGELOG, and PR them
 
-The [`generate-release-notes`](../.agents/skills/generate-release-notes/SKILL.md) skill does the heavy lifting.
+The [`generate-release-notes`](../.agents/skills/repo-tooling/generate-release-notes/SKILL.md) skill does the heavy lifting.
 
 **1. Update the version inputs** in [`.agents/prompts/release-notes/params.yaml`](../.agents/prompts/release-notes/params.yaml) so `previous_version` and `current_version` describe this release:
 

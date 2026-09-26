@@ -27,13 +27,13 @@ documented exception.
 ### Requirement: The exception list is audited, not just asserted
 Every rule listed as a "purely manual/visual convention" exception (no
 script/task/skill/CI layer at all) SHALL have no skill under
-`.agents/skills/` referencing it by filename. `task
+`.agents/skills/*/*/SKILL.md` referencing it by filename. `task
 pipeline:check-exceptions` SHALL check this for every rule in that list
 and fail, naming the rule, if one now has such a skill.
 
 #### Scenario: An exception-listed rule gains a skill without being promoted
 - **WHEN** a rule listed as a rule-only exception has a skill under
-  `.agents/skills/` that references it by filename
+  `.agents/skills/*/*/SKILL.md` that references it by filename
 - **THEN** `task pipeline:check-exceptions` fails and names that rule
 
 #### Scenario: Every exception-listed rule still has no skill
@@ -55,7 +55,7 @@ oversight.
 ### Requirement: Adding a new operation follows a documented checklist
 The `add-repo-operation` skill SHALL guide adding a script, then a
 Taskfile task wrapping only that script, then a skill, then CI
-enforcement (added to `scripts/check_all.bash`'s parallel list unless
+enforcement (added to `scripts/checks/check_all.bash`'s parallel list unless
 the operation's execution model genuinely differs), then a rule
 cross-linking the other four - in that dependency order.
 
@@ -90,7 +90,7 @@ No tool's version SHALL be hardcoded anywhere in this repo other than
   stating a version number of its own
 
 ### Requirement: Pre-finalize checks map what changed to what to run
-`.agents/rules/pre-finalize-checks.md` SHALL state, for each kind of
+`.agents/rules/always-apply/pre-finalize-checks.md` SHALL state, for each kind of
 change (a script, a workflow file, a third-party reference, any prose),
 which `task` command to run before treating that change as finished,
 plus a catch-all (`task check:all`) for an unsure or multi-kind change.

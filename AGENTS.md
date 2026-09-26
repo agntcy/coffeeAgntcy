@@ -11,35 +11,35 @@
 ## Skills
 
 Grouped by concern - a new skill joins whichever group it fits, or starts a
-new one (see `.agents/rules/organize-large-collections.md`).
+new one (see `.agents/rules/formatting/organize-large-collections.md`).
 
 ### Domain (lungo)
 
 | Topic | File |
 |-------|------|
-| Agentic Workflows API documentation (lungo) | [.agents/skills/agentic-workflows-api-documentation-lungo/SKILL.md](.agents/skills/agentic-workflows-api-documentation-lungo/SKILL.md) - `workflow-instance_api.md`; OpenAPI under `schema/openapi/` as HTTP contract (SSOT, not generated from code) |
-| JSON Schema → Pydantic (lungo) | [.agents/skills/jsonschema-to-pydantic-lungo/SKILL.md](.agents/skills/jsonschema-to-pydantic-lungo/SKILL.md) |
-| OpenAPI → Python (lungo) | [.agents/skills/openapi-to-python-lungo/SKILL.md](.agents/skills/openapi-to-python-lungo/SKILL.md) - routers/DTOs; OpenAPI unit tests |
+| Agentic Workflows API documentation (lungo) | [.agents/skills/domain-lungo/agentic-workflows-api-documentation-lungo/SKILL.md](.agents/skills/domain-lungo/agentic-workflows-api-documentation-lungo/SKILL.md) - `workflow-instance_api.md`; OpenAPI under `schema/openapi/` as HTTP contract (SSOT, not generated from code) |
+| JSON Schema → Pydantic (lungo) | [.agents/skills/domain-lungo/jsonschema-to-pydantic-lungo/SKILL.md](.agents/skills/domain-lungo/jsonschema-to-pydantic-lungo/SKILL.md) |
+| OpenAPI → Python (lungo) | [.agents/skills/domain-lungo/openapi-to-python-lungo/SKILL.md](.agents/skills/domain-lungo/openapi-to-python-lungo/SKILL.md) - routers/DTOs; OpenAPI unit tests |
 
 ### Repo tooling
 
 | Topic | File |
 |-------|------|
-| Add a repository operation | [.agents/skills/add-repo-operation/SKILL.md](.agents/skills/add-repo-operation/SKILL.md) |
-| Generate release notes | [.agents/skills/generate-release-notes/SKILL.md](.agents/skills/generate-release-notes/SKILL.md) |
-| Manage repo tooling | [.agents/skills/manage-repo-tooling/SKILL.md](.agents/skills/manage-repo-tooling/SKILL.md) |
-| Set up repo tooling | [.agents/skills/setup-repo-tooling/SKILL.md](.agents/skills/setup-repo-tooling/SKILL.md) |
+| Add a repository operation | [.agents/skills/repo-tooling/add-repo-operation/SKILL.md](.agents/skills/repo-tooling/add-repo-operation/SKILL.md) |
+| Generate release notes | [.agents/skills/repo-tooling/generate-release-notes/SKILL.md](.agents/skills/repo-tooling/generate-release-notes/SKILL.md) |
+| Manage repo tooling | [.agents/skills/repo-tooling/manage-repo-tooling/SKILL.md](.agents/skills/repo-tooling/manage-repo-tooling/SKILL.md) |
+| Set up repo tooling | [.agents/skills/repo-tooling/setup-repo-tooling/SKILL.md](.agents/skills/repo-tooling/setup-repo-tooling/SKILL.md) |
 
 ### Quality checks
 
 | Topic | File |
 |-------|------|
-| Auditing pipeline exceptions | [.agents/skills/auditing-pipeline-exceptions/SKILL.md](.agents/skills/auditing-pipeline-exceptions/SKILL.md) |
-| Checking dashes | [.agents/skills/checking-dashes/SKILL.md](.agents/skills/checking-dashes/SKILL.md) |
-| Checking pinned references | [.agents/skills/checking-pinned-references/SKILL.md](.agents/skills/checking-pinned-references/SKILL.md) |
-| Checking workflow permissions | [.agents/skills/checking-workflow-permissions/SKILL.md](.agents/skills/checking-workflow-permissions/SKILL.md) |
-| Linting GitHub workflows | [.agents/skills/linting-github-workflows/SKILL.md](.agents/skills/linting-github-workflows/SKILL.md) |
-| Linting shell scripts | [.agents/skills/linting-shell-scripts/SKILL.md](.agents/skills/linting-shell-scripts/SKILL.md) |
+| Auditing pipeline exceptions | [.agents/skills/quality-checks/auditing-pipeline-exceptions/SKILL.md](.agents/skills/quality-checks/auditing-pipeline-exceptions/SKILL.md) |
+| Checking dashes | [.agents/skills/quality-checks/checking-dashes/SKILL.md](.agents/skills/quality-checks/checking-dashes/SKILL.md) |
+| Checking pinned references | [.agents/skills/quality-checks/checking-pinned-references/SKILL.md](.agents/skills/quality-checks/checking-pinned-references/SKILL.md) |
+| Checking workflow permissions | [.agents/skills/quality-checks/checking-workflow-permissions/SKILL.md](.agents/skills/quality-checks/checking-workflow-permissions/SKILL.md) |
+| Linting GitHub workflows | [.agents/skills/quality-checks/linting-github-workflows/SKILL.md](.agents/skills/quality-checks/linting-github-workflows/SKILL.md) |
+| Linting shell scripts | [.agents/skills/quality-checks/linting-shell-scripts/SKILL.md](.agents/skills/quality-checks/linting-shell-scripts/SKILL.md) |
 
 ### OpenSpec workflow
 
@@ -67,40 +67,40 @@ CI; the rest rely on being applied by judgment.
 
 | Topic | File |
 |-------|------|
-| Pinned tool versions | [.agents/rules/pinned-tool-versions.md](.agents/rules/pinned-tool-versions.md) |
-| Repository operation pipeline | [.agents/rules/repo-operation-pipeline.md](.agents/rules/repo-operation-pipeline.md) |
+| Pinned tool versions | [.agents/rules/meta/pinned-tool-versions.md](.agents/rules/meta/pinned-tool-versions.md) |
+| Repository operation pipeline | [.agents/rules/meta/repo-operation-pipeline.md](.agents/rules/meta/repo-operation-pipeline.md) |
 
 ### Process
 
 | Topic | File |
 |-------|------|
-| Plan with OpenSpec | [.agents/rules/plan-with-openspec.md](.agents/rules/plan-with-openspec.md) |
+| Plan with OpenSpec | [.agents/rules/process/plan-with-openspec.md](.agents/rules/process/plan-with-openspec.md) |
 
 ### Always apply
 
 | Topic | File |
 |-------|------|
-| Keep docs consistent | [.agents/rules/keep-docs-consistent.md](.agents/rules/keep-docs-consistent.md) |
-| No em dashes or en dashes | [.agents/rules/no-em-en-dashes.md](.agents/rules/no-em-en-dashes.md) |
-| Pre-finalize checks | [.agents/rules/pre-finalize-checks.md](.agents/rules/pre-finalize-checks.md) |
-| Self-review after a change | [.agents/rules/self-review-after-change.md](.agents/rules/self-review-after-change.md) |
+| Keep docs consistent | [.agents/rules/always-apply/keep-docs-consistent.md](.agents/rules/always-apply/keep-docs-consistent.md) |
+| No em dashes or en dashes | [.agents/rules/always-apply/no-em-en-dashes.md](.agents/rules/always-apply/no-em-en-dashes.md) |
+| Pre-finalize checks | [.agents/rules/always-apply/pre-finalize-checks.md](.agents/rules/always-apply/pre-finalize-checks.md) |
+| Self-review after a change | [.agents/rules/always-apply/self-review-after-change.md](.agents/rules/always-apply/self-review-after-change.md) |
 
 ### Code/content quality
 
 | Topic | File |
 |-------|------|
-| Pinned external references | [.agents/rules/pinned-external-references.md](.agents/rules/pinned-external-references.md) |
-| Shell script linting | [.agents/rules/shell-script-linting.md](.agents/rules/shell-script-linting.md) |
-| Workflow file linting | [.agents/rules/workflow-file-linting.md](.agents/rules/workflow-file-linting.md) |
-| Workflow least privilege | [.agents/rules/workflow-least-privilege.md](.agents/rules/workflow-least-privilege.md) |
+| Pinned external references | [.agents/rules/quality/pinned-external-references.md](.agents/rules/quality/pinned-external-references.md) |
+| Shell script linting | [.agents/rules/quality/shell-script-linting.md](.agents/rules/quality/shell-script-linting.md) |
+| Workflow file linting | [.agents/rules/quality/workflow-file-linting.md](.agents/rules/quality/workflow-file-linting.md) |
+| Workflow least privilege | [.agents/rules/quality/workflow-least-privilege.md](.agents/rules/quality/workflow-least-privilege.md) |
 
 ### Formatting & organization conventions
 
 | Topic | File |
 |-------|------|
-| Alphabetize entity lists | [.agents/rules/alphabetize-entity-lists.md](.agents/rules/alphabetize-entity-lists.md) |
-| File-tree comment alignment | [.agents/rules/file-tree-comment-alignment.md](.agents/rules/file-tree-comment-alignment.md) |
-| Organize large collections | [.agents/rules/organize-large-collections.md](.agents/rules/organize-large-collections.md) |
+| Alphabetize entity lists | [.agents/rules/formatting/alphabetize-entity-lists.md](.agents/rules/formatting/alphabetize-entity-lists.md) |
+| File-tree comment alignment | [.agents/rules/formatting/file-tree-comment-alignment.md](.agents/rules/formatting/file-tree-comment-alignment.md) |
+| Organize large collections | [.agents/rules/formatting/organize-large-collections.md](.agents/rules/formatting/organize-large-collections.md) |
 
 ## Repository references
 
