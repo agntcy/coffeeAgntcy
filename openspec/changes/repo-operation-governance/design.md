@@ -65,11 +65,28 @@ section it must stay in sync with is the same pattern
 accepts "hardcoded list, comment says where its source of truth is"
 over "parse the prose" elsewhere.
 
-**Drift signal is "a skill's `SKILL.md` mentions the rule's filename",
-reusing the cross-linking convention every skill already follows.** No
-new convention needed - every skill already names its underlying rule by
-filename in prose (grep-able), so checking for that reference is
-checking the same thing a human reviewer would look for.
+**Drift signal is "a skill's `SKILL.md` has a markdown link ending in
+the rule's filename (`...<rule>.md)`) within a couple of lines before
+the phrase 'underlying rule'", not just the filename appearing near that
+phrase.** Went through two tightenings while actually building the
+check, both caught by running it against the real repo before trusting
+it: `add-repo-operation` already mentions `alphabetize-entity-lists.md`
+and `pre-finalize-checks.md` in passing (telling agents to also apply
+those rules while adding an operation) without being "the skill for"
+either, so a bare "filename anywhere near the phrase" signal flagged
+both as false positives immediately. Requiring the phrase within a fixed
+line window of the filename wasn't enough either: this capability's own
+`auditing-pipeline-exceptions` skill has to *explain* the mechanism,
+which means using the trigger phrase and example rule names close
+together in ordinary prose - exactly the false positive it exists to
+avoid, on itself. What actually distinguishes a real cross-link is the
+closing `)` of a markdown link: every genuine "underlying rule" skill
+writes `[.agents/rules/<rule>.md](path/<rule>.md)` immediately before
+the phrase, while prose that merely discusses a rule (in backticks, or a
+bare filename) never produces that exact shape. Requiring it is what
+finally caught the same thing a human reviewer would look for (whose
+skill is this rule's own cross-link, not who else mentions it) without
+tripping on this change's own documentation.
 
 ## Risks / Trade-offs
 

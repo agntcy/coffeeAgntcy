@@ -15,8 +15,8 @@ Runs `task workflows:lint` (defined in
 [Taskfile.yaml](../../../Taskfile.yaml), wrapping
 [scripts/lint_workflows.bash](../../../scripts/lint_workflows.bash)) to
 check every file under `.github/workflows/` with actionlint, then fixes
-whatever it reports. This is the exact command the "Validate" step in
-[ci-gate.yaml](../../../.github/workflows/ci-gate.yaml) runs in CI. See
+whatever it reports. This is the exact command `task check:all` runs as
+part of [checks.yaml](../../../.github/workflows/checks.yaml) in CI. See
 [.agents/rules/workflow-file-linting.md](../../rules/workflow-file-linting.md)
 for the underlying rule.
 
