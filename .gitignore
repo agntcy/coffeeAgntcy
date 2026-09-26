@@ -195,9 +195,16 @@ node_modules/
 # Local tool binaries
 **/bin/**
 
+# Repo-local toolchain installed by scripts/setup.sh (see scripts/env.sh).
+.tools/
+
 # Frontend, UI, JS, TS, etc.
 **/*.tsbuildinfo
 
 # MCP, local configuration.
 .mcp.json
+
+# Repo-local pinned-version shell libs (not a Python lib/ build dir - the
+# generic 'lib/' rule above would otherwise also match this).
+!scripts/lib/
 

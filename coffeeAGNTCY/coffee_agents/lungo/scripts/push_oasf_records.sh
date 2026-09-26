@@ -79,7 +79,7 @@ echo ""
 # Step 1: Check if dirctl is installed
 echo -e "${YELLOW}[1/3] Checking if dirctl is installed...${NC}"
 
-if ! command -v dirctl &> /dev/null; then
+if ! command -v dirctl &>/dev/null; then
     echo -e "${RED}ERROR: dirctl is not installed.${NC}"
     echo ""
     echo "Please install dirctl using one of the following methods:"
@@ -116,7 +116,7 @@ for OASF_DIR in "${OASF_DIRS[@]}"; do
         continue
     fi
 
-    RELATIVE_DIR="${OASF_DIR#$LUNGO_DIR/}"
+    RELATIVE_DIR="${OASF_DIR#"$LUNGO_DIR"/}"
     echo -e "${BLUE}Processing directory: ${RELATIVE_DIR}${NC}"
     echo ""
 

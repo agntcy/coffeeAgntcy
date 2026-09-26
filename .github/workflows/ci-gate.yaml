@@ -1,16 +1,25 @@
 name: CI Gate
 
-# Single required status check for the repo.
+# Single required status check for the repo - a pure collector with no
+# check logic of its own (see .agents/rules/repo-operation-pipeline.md and
+# the ci-gate spec capability). The actual checks run in checks.yaml
+# (task check:all), whose triggers are kept identical to this workflow's
+# own so it is always among the sibling runs collected below. The
+# Wait/Summarize logic lives in scripts/ci-gate/ - see
+# scripts/ci-gate/wait-for-sibling-runs.sh and
+# scripts/ci-gate/summarize-ci-gate.sh for the full behavior. Both scripts
+# need only bash/jq/gh, all already on a GitHub-hosted runner, so this
+# workflow never bootstraps this repo's pinned toolchain.
 #
-# - Validates every workflow file under .github/workflows/ (schema, syntax,
-#   structure) via actionlint, on every run - no manual list to keep in sync.
 # - Waits for every sibling workflow run triggered on the same commit to reach
 #   a terminal state, by polling the Actions runs API (not the checks API -
 #   that one silently omits startup_failure runs), then reports on all of them,
 #   including ones that failed at startup, were skipped, or never completed.
-# - Never short-circuits: validation and the wait/report step both run
-#   regardless of each other's outcome, and the pass/fail decision is made
-#   once everything has been collected.
+#   Never waits on a run of CI Gate itself (filtered by workflow_id, not just
+#   run id), so two CI Gate runs sharing a commit (e.g. a non-squash merge)
+#   never deadlock waiting on each other.
+# - The summarize step always runs regardless of the wait step's outcome, and
+#   the pass/fail decision is made once every sibling run has been collected.
 
 on:
   pull_request: {}
@@ -40,171 +49,21 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
 
-      - name: Validate all workflow files (schema, syntax, structure)
-        id: validate
-        continue-on-error: true
-        uses: reviewdog/action-actionlint@d290e336d5a743810aef4404f757dc862276d2ae # v1.73.4
-        with:
-          reporter: local
-          fail_level: error
-          filter_mode: nofilter
-
       - name: Wait for sibling workflow runs on this commit
         id: wait
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          set -uo pipefail
-
           if [[ "${{ github.event_name }}" == "pull_request" ]]; then
-            head_sha="${{ github.event.pull_request.head.sha }}"
+            export HEAD_SHA="${{ github.event.pull_request.head.sha }}"
           else
-            head_sha="${{ github.sha }}"
+            export HEAD_SHA="${{ github.sha }}"
           fi
 
-          self_run_id="${{ github.run_id }}"
-          start_time=$(date +%s)
-          clean_polls=0
-          settled=false
-          last_good_runs_json='[]'
-
-          echo "Waiting ${SETTLE_DELAY_SECONDS}s for sibling runs to be scheduled..."
-          sleep "$SETTLE_DELAY_SECONDS"
-
-          while true; do
-            if fetched=$(gh api "repos/${{ github.repository }}/actions/runs?head_sha=${head_sha}&per_page=100" \
-              --paginate --jq '.workflow_runs[]' | jq -s '.'); then
-              last_good_runs_json="$fetched"
-
-              IFS=$'\t' read -r pending pending_names <<<"$(jq -r --argjson self "$self_run_id" '
-                [.[] | select(.id != $self) | select(.status != "completed")] as $p
-                | [($p | length), ($p | map("\(.name) (\(.status))") | join("; "))] | @tsv
-              ' <<<"$last_good_runs_json")"
-
-              if [[ "$pending" -eq 0 ]]; then
-                clean_polls=$((clean_polls + 1))
-              else
-                clean_polls=0
-              fi
-
-              if [[ "$pending" -gt 0 ]]; then
-                echo "pending=$pending clean_polls=$clean_polls - waiting on: $pending_names"
-              else
-                echo "pending=$pending clean_polls=$clean_polls"
-              fi
-
-              if [[ "$clean_polls" -ge "$CONSECUTIVE_CLEAN_POLLS_REQUIRED" ]]; then
-                settled=true
-                break
-              fi
-            else
-              echo "::warning::failed to list workflow runs from the GitHub API this poll; will retry"
-              clean_polls=0
-            fi
-
-            elapsed=$(($(date +%s) - start_time))
-            if [[ "$elapsed" -ge "$OVERALL_TIMEOUT_SECONDS" ]]; then
-              settled=false
-              break
-            fi
-
-            sleep "$POLL_INTERVAL_SECONDS"
-          done
-
-          echo "$last_good_runs_json" >runs.json
-          echo "settled=$settled" | tee -a "$GITHUB_OUTPUT"
+          ./scripts/ci-gate/wait-for-sibling-runs.sh
 
       - name: Summarize and decide
         if: always()
-        run: |
-          set -uo pipefail
-
-          validate_outcome="${{ steps.validate.outcome }}"
-          settled="${{ steps.wait.outputs.settled }}"
-          self_run_id="${{ github.run_id }}"
-          overall_pass=true
-
-          declare -a rows=("Check"$'\t'"Status"$'\t'"Conclusion"$'\t'"Result")
-
-          if [[ "$validate_outcome" == "success" ]]; then
-            rows+=("Validate workflow files (actionlint)"$'\t'"completed"$'\t'"success"$'\t'":white_check_mark: pass")
-          else
-            rows+=("Validate workflow files (actionlint)"$'\t'"completed"$'\t'"$validate_outcome"$'\t'":x: fail")
-            overall_pass=false
-          fi
-
-          run_count=$(jq --argjson self "$self_run_id" '[.[] | select(.id != $self)] | length' runs.json)
-
-          if [[ "$run_count" -eq 0 ]]; then
-            rows+=("_(no sibling workflow runs found for this commit)_"$'\t'""$'\t'""$'\t'"")
-          else
-            while IFS=$'\t' read -r name status conclusion url; do
-              if [[ "$status" != "completed" ]]; then
-                result_pass=false
-              else
-                case "$conclusion" in
-                success | skipped) result_pass=true ;;
-                *) result_pass=false ;;
-                esac
-              fi
-
-              if [[ "$result_pass" == "true" ]]; then
-                icon=":white_check_mark: pass"
-              else
-                icon=":x: fail"
-                overall_pass=false
-              fi
-
-              rows+=("[$name]($url)"$'\t'"$status"$'\t'"$conclusion"$'\t'"$icon")
-            done < <(jq -r --argjson self "$self_run_id" '
-              .[] | select(.id != $self) |
-              [.name, .status, (.conclusion // "-"), .html_url] | @tsv
-            ' runs.json)
-          fi
-
-          # Pad every column to its widest cell so the raw markdown source -
-          # as seen in plain-text logs, which don't render tables - lines up
-          # too, not just the rendered version in the job summary UI.
-          col1_width=0
-          col2_width=0
-          col3_width=0
-          col4_width=0
-          for row in "${rows[@]}"; do
-            IFS=$'\t' read -r c1 c2 c3 c4 <<<"$row"
-            ((${#c1} > col1_width)) && col1_width=${#c1}
-            ((${#c2} > col2_width)) && col2_width=${#c2}
-            ((${#c3} > col3_width)) && col3_width=${#c3}
-            ((${#c4} > col4_width)) && col4_width=${#c4}
-          done
-
-          {
-            echo "## CI Gate summary"
-            echo
-
-            header=true
-            for row in "${rows[@]}"; do
-              IFS=$'\t' read -r c1 c2 c3 c4 <<<"$row"
-              printf '| %-*s | %-*s | %-*s | %-*s |\n' "$col1_width" "$c1" "$col2_width" "$c2" "$col3_width" "$c3" "$col4_width" "$c4"
-
-              if $header; then
-                printf '|%s|%s|%s|%s|\n' \
-                  "$(printf '%*s' $((col1_width + 2)) '' | tr ' ' '-')" \
-                  "$(printf '%*s' $((col2_width + 2)) '' | tr ' ' '-')" \
-                  "$(printf '%*s' $((col3_width + 2)) '' | tr ' ' '-')" \
-                  "$(printf '%*s' $((col4_width + 2)) '' | tr ' ' '-')"
-                header=false
-              fi
-            done
-          } >>"$GITHUB_STEP_SUMMARY"
-
-          if [[ "$settled" != "true" ]]; then
-            echo >>"$GITHUB_STEP_SUMMARY"
-            echo ":warning: hit the overall ${OVERALL_TIMEOUT_SECONDS}s wait timeout before every sibling run reached a terminal status - anything still pending above is treated as a failure." >>"$GITHUB_STEP_SUMMARY"
-            overall_pass=false
-          fi
-
-          cat "$GITHUB_STEP_SUMMARY"
-
-          if [[ "$overall_pass" != "true" ]]; then
-            exit 1
-          fi
+        env:
+          SETTLED: ${{ steps.wait.outputs.settled }}
+        run: ./scripts/ci-gate/summarize-ci-gate.sh

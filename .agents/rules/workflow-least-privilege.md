@@ -4,8 +4,9 @@ description: >-
   Every GitHub Actions workflow must declare explicit permissions scoped to
   only what its steps actually need - never write-all, never left
   undeclared, scoped per-job once jobs' needs differ. Apply whenever adding
-  or editing a workflow file. Checked by
-  scripts/check_workflow_permissions.bash (not yet wired into CI).
+  or editing a workflow file. Checked by `task workflows:check-permissions`
+  (scripts/check_workflow_permissions.bash), which also runs as part of
+  `task check:all` in .github/workflows/checks.yaml.
 ---
 
 # Workflow least privilege
@@ -49,10 +50,16 @@ a single well-known API.
 
 ## How to apply
 
-- After adding or editing any `.github/workflows/*.yaml` file, run
-  [scripts/check_workflow_permissions.bash](../../scripts/check_workflow_permissions.bash)
-  - it flags `write-all` grants and jobs left with no declared permissions
-    at all. It doesn't judge whether a *granted* scope is actually needed;
-    that part still takes reading the steps by hand.
+- After adding or editing any `.github/workflows/*.yaml` file, run `task
+  workflows:check-permissions` (wraps
+  [scripts/check_workflow_permissions.bash](../../scripts/check_workflow_permissions.bash),
+  see [Taskfile.yaml](../../Taskfile.yaml)) - it flags `write-all` grants
+  and jobs left with no declared permissions at all. It doesn't judge
+  whether a *granted* scope is actually needed; that part still takes
+  reading the steps by hand.
+- CI enforces this on every push/PR: `task check:all` in
+  [.github/workflows/checks.yaml](../../.github/workflows/checks.yaml)
+  runs `workflows:check-permissions` alongside every other standing check.
 - When a new job needs a scope no existing job has, add it to that job
   alone rather than widening a shared workflow-level block.
+- See the `checking-workflow-permissions` skill for the full workflow.

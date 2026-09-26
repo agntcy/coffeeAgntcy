@@ -1,0 +1,159 @@
+version: "3"
+
+tasks:
+  check:all:
+    desc: >-
+      Run every standing check in this repo in parallel (dashes, shell
+      lint, workflow lint, workflow permissions, pinned references), never
+      failing fast (see .agents/rules/repo-operation-pipeline.md).
+    summary: |
+      Usage:   task check:all
+      Example: task check:all
+      Runs dashes:check, shell:lint, workflows:lint,
+      workflows:check-permissions, and pins:check together and reports a
+      pass/fail table. What the "Checks" CI workflow runs after a single
+      tooling bootstrap. See scripts/check_all.bash.
+    cmds:
+      - scripts/check_all.bash
+
+  ci-gate:summarize:
+    desc: >-
+      Build the CI Gate job-summary table from wait-for-sibling-runs.sh's
+      runs.json and decide overall pass/fail. CI Gate runs no check of
+      its own - this only summarizes sibling runs.
+    summary: |
+      Usage:   SETTLED=... GITHUB_RUN_ID=... task ci-gate:summarize
+      Example: SETTLED=true GITHUB_RUN_ID=123 task ci-gate:summarize
+      CI-only orchestration: reads SETTLED/GITHUB_RUN_ID/RUNS_FILE from
+      the environment, writes to $GITHUB_STEP_SUMMARY when set (else
+      stdout). See scripts/ci-gate/summarize-ci-gate.sh.
+    cmds:
+      - scripts/ci-gate/summarize-ci-gate.sh
+
+  ci-gate:wait:
+    desc: >-
+      Poll the GitHub Actions runs API until every sibling workflow run
+      on the same commit reaches a terminal state, or a timeout elapses.
+    summary: |
+      Usage:   GITHUB_REPOSITORY=... GITHUB_RUN_ID=... HEAD_SHA=... task ci-gate:wait
+      Example: GITHUB_REPOSITORY=owner/repo GITHUB_RUN_ID=123 HEAD_SHA=abc123 task ci-gate:wait
+      CI-only orchestration: needs an authenticated `gh`. Never waits on a
+      run of CI Gate itself, only other workflows' runs. See
+      scripts/ci-gate/wait-for-sibling-runs.sh.
+    cmds:
+      - scripts/ci-gate/wait-for-sibling-runs.sh
+
+  dashes:check:
+    desc: >-
+      Check the repo for en dash (U+2013) or em dash (U+2014)
+      (see .agents/rules/no-em-en-dashes.md).
+    summary: |
+      Usage:   task dashes:check
+      Example: task dashes:check
+      Reports every hit without changing any file. See
+      scripts/check_dashes.bash.
+    cmds:
+      - scripts/check_dashes.bash
+
+  dashes:fix:
+    desc: >-
+      Replace every en dash (U+2013) or em dash (U+2014) in the repo with a
+      plain hyphen (see .agents/rules/no-em-en-dashes.md).
+    summary: |
+      Usage:   task dashes:fix
+      Example: task dashes:fix
+      Rewrites files in place. See scripts/fix_dashes.bash.
+    cmds:
+      - scripts/fix_dashes.bash
+
+  pins:check:
+    desc: >-
+      Check that every third-party action/reusable-workflow/image
+      reference is pinned to an immutable SHA/digest
+      (see .agents/rules/pinned-external-references.md).
+    summary: |
+      Usage:   task pins:check
+      Example: task pins:check
+      Scans .github/workflows/*.y*ml uses: lines, Dockerfile FROM
+      instructions, and compose image: fields. See
+      scripts/check_pinned_references.bash.
+    cmds:
+      - scripts/check_pinned_references.bash
+
+  pipeline:check-exceptions:
+    desc: >-
+      Audit repo-operation-pipeline.md's "Known exceptions" list: fail if
+      a rule listed there as needing no script/task/skill/CI layer has
+      since grown a skill of its own without being promoted out of it
+      (see .agents/rules/repo-operation-pipeline.md).
+    summary: |
+      Usage:   task pipeline:check-exceptions
+      Example: task pipeline:check-exceptions
+      Checks .agents/skills/*/SKILL.md for a rule-only exception being
+      named as an "underlying rule". See
+      scripts/check_pipeline_exceptions.bash.
+    cmds:
+      - scripts/check_pipeline_exceptions.bash
+
+  setup:
+    desc: >-
+      Install/update the repo-local shell/CI-lint toolchain (task,
+      actionlint, shellcheck, shfmt) to the pinned versions in
+      scripts/lib/versions.sh.
+    summary: |
+      Usage:   task setup
+      Example: task setup && source scripts/env.sh
+      Installs into .tools/bin/ (gitignored), never touching the global
+      PATH or shell profile. See scripts/setup.sh.
+    cmds:
+      - ./scripts/setup.sh
+
+  shell:fmt:
+    desc: >-
+      Reformat every shell script in the repo in place with shfmt
+      (see .agents/rules/shell-script-linting.md).
+    summary: |
+      Usage:   task shell:fmt
+      Example: task shell:fmt
+      Rewrites files in place with shfmt; run task shell:lint afterward to
+      confirm shellcheck is clean too. See scripts/lint_shell.bash.
+    cmds:
+      - scripts/lint_shell.bash --fix
+
+  shell:lint:
+    desc: >-
+      Lint and format-check every shell script in the repo with shellcheck
+      and shfmt (see .agents/rules/shell-script-linting.md).
+    summary: |
+      Usage:   task shell:lint
+      Example: task shell:lint
+      Reports shellcheck findings and shfmt formatting diffs without
+      changing any file. See scripts/lint_shell.bash.
+    cmds:
+      - scripts/lint_shell.bash
+
+  workflows:check-permissions:
+    desc: >-
+      Verify every GitHub Actions workflow file declares explicit,
+      least-privilege permissions, never write-all
+      (see .agents/rules/workflow-least-privilege.md).
+    summary: |
+      Usage:   task workflows:check-permissions
+      Example: task workflows:check-permissions
+      Flags write-all grants and jobs left with no declared permissions.
+      See scripts/check_workflow_permissions.bash.
+    cmds:
+      - scripts/check_workflow_permissions.bash
+
+  workflows:lint:
+    desc: >-
+      Lint every GitHub Actions workflow file under .github/workflows/ with
+      actionlint.
+    summary: |
+      Usage:   task workflows:lint
+      Example: task workflows:lint
+      Exact same command runs as part of task check:all in checks.yaml;
+      run this locally/as an agent before opening a PR. See
+      scripts/lint_workflows.bash.
+    cmds:
+      - scripts/lint_workflows.bash

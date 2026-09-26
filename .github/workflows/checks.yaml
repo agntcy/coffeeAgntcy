@@ -1,0 +1,44 @@
+name: Checks
+
+# Consolidates what used to be two separate workflows (forbidden strings,
+# shell lint) into one job: bootstrap the repo-local toolchain once, then
+# run every check in parallel via `task check:all` (scripts/check_all.bash
+# backgrounds each check and waits) instead of each check re-bootstrapping
+# on its own runner.
+#
+# This is the sole owner of the actual checks (including workflow-file
+# validation) - ci-gate.yaml runs no check of its own, only waits for and
+# summarizes sibling runs. The trigger set below is kept identical to
+# ci-gate.yaml's own, so this workflow is unconditionally one of the
+# sibling runs ci-gate.yaml collects on every commit ci-gate.yaml itself
+# runs on - if these triggers ever narrow relative to ci-gate.yaml's, a
+# workflow-file change could go unvalidated on whatever ci-gate.yaml still
+# covers that this doesn't.
+
+on:
+    pull_request: {}
+    push:
+        branches: [main]
+        tags: ["*"]
+    workflow_dispatch:
+
+# Every check here is local (checkout + task check:all); none of them call
+# the GitHub API, so contents: read (for checkout) is the full requirement.
+permissions:
+    contents: read
+
+jobs:
+    checks:
+        name: Checks
+        runs-on: ubuntu-latest
+        steps:
+            - name: Checkout
+              uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+            - name: Bootstrap repo-local tooling
+              run: ./scripts/setup.sh
+
+            - name: Run every check in parallel
+              run: |
+                  source scripts/env.sh
+                  task check:all

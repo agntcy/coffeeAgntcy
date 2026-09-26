@@ -222,9 +222,13 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           push=${{ needs.subprojects-to-build.outputs.push }}
+          # shellcheck disable=SC2034 # read via the indirect build_$project expansion below
           build_corto=${{ needs.subprojects-to-build.outputs.build_corto }}
+          # shellcheck disable=SC2034
           build_lungo=${{ needs.subprojects-to-build.outputs.build_lungo }}
+          # shellcheck disable=SC2034 # read via the indirect ${project}_charts expansion below
           corto_charts='${{ needs.subprojects-to-build.outputs.corto_charts }}'
+          # shellcheck disable=SC2034
           lungo_charts='${{ needs.subprojects-to-build.outputs.lungo_charts }}'
 
           existing_charts=()
