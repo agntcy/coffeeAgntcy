@@ -5,8 +5,8 @@ description: >-
   syntax, structure, and shellcheck findings in `run:` scripts) before
   being considered finished. Apply whenever writing or editing a workflow
   file. Checked by `task workflows:lint` (scripts/lint_workflows.bash),
-  which is also the exact command the "Validate" step in
-  .github/workflows/ci-gate.yaml runs.
+  which runs as part of `task check:all` in .github/workflows/checks.yaml
+  on every push and pull request.
 ---
 
 # Workflow file linting
@@ -47,10 +47,13 @@ live run.
   [scripts/lib/versions.sh](../../scripts/lib/versions.sh), into
   `.tools/bin/` - no global install needed. Run `source scripts/env.sh` to
   put it on `PATH`.
-- The "Validate" step in
-  [`.github/workflows/ci-gate.yaml`](../../.github/workflows/ci-gate.yaml)
+- `task check:all` in
+  [`.github/workflows/checks.yaml`](../../.github/workflows/checks.yaml)
   runs this exact command on every push and pull request - a failing
-  validation there means some workflow file in the diff needs fixing
-  before merging (see that workflow's own "Wait"/"Summarize" steps for how
-  the overall gate decision is made).
+  check there means some workflow file in the diff needs fixing before
+  merging.
+  [`ci-gate.yaml`](../../.github/workflows/ci-gate.yaml) runs no check of
+  its own; it waits for `checks.yaml` (among other sibling runs) and
+  folds its result into the required-status-check decision (see that
+  workflow's own "Wait"/"Summarize" steps).
 - See the `linting-github-workflows` skill for the full workflow.

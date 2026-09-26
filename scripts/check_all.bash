@@ -35,6 +35,7 @@ start_check "shell:lint" "$SCRIPT_DIR/lint_shell.bash"
 start_check "workflows:lint" "$SCRIPT_DIR/lint_workflows.bash"
 start_check "workflows:check-permissions" "$SCRIPT_DIR/check_workflow_permissions.bash"
 start_check "pins:check" "$SCRIPT_DIR/check_pinned_references.bash"
+start_check "pipeline:check-exceptions" "$SCRIPT_DIR/check_pipeline_exceptions.bash"
 
 for pid in "${pids[@]}"; do
     wait "$pid" 2>/dev/null || true

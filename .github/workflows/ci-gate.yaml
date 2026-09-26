@@ -1,13 +1,16 @@
 name: CI Gate
 
-# Single required status check for the repo. The Wait/Summarize logic lives
-# in scripts/ci-gate/ (wired through the Taskfile) rather than inline here,
-# following .agents/rules/repo-operation-pipeline.md like every other check
-# in this repo - see scripts/ci-gate/wait-for-sibling-runs.sh and
-# scripts/ci-gate/summarize-ci-gate.sh for the full behavior.
+# Single required status check for the repo - a pure collector with no
+# check logic of its own (see .agents/rules/repo-operation-pipeline.md and
+# the ci-gate spec capability). The actual checks run in checks.yaml
+# (task check:all), whose triggers are kept identical to this workflow's
+# own so it is always among the sibling runs collected below. The
+# Wait/Summarize logic lives in scripts/ci-gate/ - see
+# scripts/ci-gate/wait-for-sibling-runs.sh and
+# scripts/ci-gate/summarize-ci-gate.sh for the full behavior. Both scripts
+# need only bash/jq/gh, all already on a GitHub-hosted runner, so this
+# workflow never bootstraps this repo's pinned toolchain.
 #
-# - Validates every workflow file under .github/workflows/ (schema, syntax,
-#   structure) via actionlint, on every run - no manual list to keep in sync.
 # - Waits for every sibling workflow run triggered on the same commit to reach
 #   a terminal state, by polling the Actions runs API (not the checks API -
 #   that one silently omits startup_failure runs), then reports on all of them,
@@ -15,9 +18,8 @@ name: CI Gate
 #   Never waits on a run of CI Gate itself (filtered by workflow_id, not just
 #   run id), so two CI Gate runs sharing a commit (e.g. a non-squash merge)
 #   never deadlock waiting on each other.
-# - Never short-circuits: validation and the wait/report step both run
-#   regardless of each other's outcome, and the pass/fail decision is made
-#   once everything has been collected.
+# - The summarize step always runs regardless of the wait step's outcome, and
+#   the pass/fail decision is made once every sibling run has been collected.
 
 on:
   pull_request: {}
@@ -47,16 +49,6 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
 
-      - name: Bootstrap repo-local tooling
-        run: ./scripts/setup.sh
-
-      - name: Validate all workflow files (schema, syntax, structure)
-        id: validate
-        continue-on-error: true
-        run: |
-          source scripts/env.sh
-          task workflows:lint
-
       - name: Wait for sibling workflow runs on this commit
         id: wait
         env:
@@ -68,14 +60,10 @@ jobs:
             export HEAD_SHA="${{ github.sha }}"
           fi
 
-          source scripts/env.sh
-          task ci-gate:wait
+          ./scripts/ci-gate/wait-for-sibling-runs.sh
 
       - name: Summarize and decide
         if: always()
         env:
-          VALIDATE_OUTCOME: ${{ steps.validate.outcome }}
           SETTLED: ${{ steps.wait.outputs.settled }}
-        run: |
-          source scripts/env.sh
-          task ci-gate:summarize
+        run: ./scripts/ci-gate/summarize-ci-gate.sh

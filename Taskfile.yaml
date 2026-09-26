@@ -18,14 +18,15 @@ tasks:
 
   ci-gate:summarize:
     desc: >-
-      Build the CI Gate job-summary table and decide overall pass/fail
-      from a validate outcome and wait-for-sibling-runs.sh's runs.json.
+      Build the CI Gate job-summary table from wait-for-sibling-runs.sh's
+      runs.json and decide overall pass/fail. CI Gate runs no check of
+      its own - this only summarizes sibling runs.
     summary: |
-      Usage:   VALIDATE_OUTCOME=... SETTLED=... GITHUB_RUN_ID=... task ci-gate:summarize
-      Example: VALIDATE_OUTCOME=success SETTLED=true GITHUB_RUN_ID=123 task ci-gate:summarize
-      CI-only orchestration: reads VALIDATE_OUTCOME/SETTLED/GITHUB_RUN_ID/
-      RUNS_FILE from the environment, writes to $GITHUB_STEP_SUMMARY when
-      set (else stdout). See scripts/ci-gate/summarize-ci-gate.sh.
+      Usage:   SETTLED=... GITHUB_RUN_ID=... task ci-gate:summarize
+      Example: SETTLED=true GITHUB_RUN_ID=123 task ci-gate:summarize
+      CI-only orchestration: reads SETTLED/GITHUB_RUN_ID/RUNS_FILE from
+      the environment, writes to $GITHUB_STEP_SUMMARY when set (else
+      stdout). See scripts/ci-gate/summarize-ci-gate.sh.
     cmds:
       - scripts/ci-gate/summarize-ci-gate.sh
 
@@ -78,6 +79,21 @@ tasks:
       scripts/check_pinned_references.bash.
     cmds:
       - scripts/check_pinned_references.bash
+
+  pipeline:check-exceptions:
+    desc: >-
+      Audit repo-operation-pipeline.md's "Known exceptions" list: fail if
+      a rule listed there as needing no script/task/skill/CI layer has
+      since grown a skill of its own without being promoted out of it
+      (see .agents/rules/repo-operation-pipeline.md).
+    summary: |
+      Usage:   task pipeline:check-exceptions
+      Example: task pipeline:check-exceptions
+      Checks .agents/skills/*/SKILL.md for a rule-only exception being
+      named as an "underlying rule". See
+      scripts/check_pipeline_exceptions.bash.
+    cmds:
+      - scripts/check_pipeline_exceptions.bash
 
   setup:
     desc: >-
@@ -136,8 +152,8 @@ tasks:
     summary: |
       Usage:   task workflows:lint
       Example: task workflows:lint
-      Exact same command ci-gate.yaml's "Validate" step runs in CI; run
-      this locally/as an agent before opening a PR. See
+      Exact same command runs as part of task check:all in checks.yaml;
+      run this locally/as an agent before opening a PR. See
       scripts/lint_workflows.bash.
     cmds:
       - scripts/lint_workflows.bash

@@ -6,8 +6,8 @@ This directory contains CI/CD workflows for building images, packaging Helm char
 
 | Workflow | Purpose | Triggers |
 |----------|---------|----------|
-| [`checks.yaml`](checks.yaml) | Runs every standing repo check in parallel after one toolchain bootstrap: dash/hyphen check, shell script lint+format, workflow file lint, workflow permission scoping, pinned external references (`task check:all`) | pull_request (main), push (main), workflow_dispatch |
-| [`ci-gate.yaml`](ci-gate.yaml) | Required status check: lints every workflow file (actionlint) and waits for/reports on every sibling workflow run on the same commit, including startup failures | pull_request, push (main, tags), workflow_dispatch |
+| [`checks.yaml`](checks.yaml) | Runs every standing repo check in parallel after one toolchain bootstrap: dash/hyphen check, shell script lint+format, workflow file lint, workflow permission scoping, pinned external references (`task check:all`) | pull_request, push (main, tags), workflow_dispatch |
+| [`ci-gate.yaml`](ci-gate.yaml) | Required status check: a pure collector with no check of its own - waits for/reports on every sibling workflow run on the same commit (including `checks.yaml`), including startup failures | pull_request, push (main, tags), workflow_dispatch |
 | [`docker-build-push.yaml`](docker-build-push.yaml) | Build multi-arch Docker images for all agents and optionally push to GHCR, guarded against overwriting an existing tag | push (main, tags), pull_request (paths filter), workflow_dispatch |
 | [`docker-build-reusable.yaml`](docker-build-reusable.yaml) | Reusable job: build and push a single Docker image | workflow_call |
 | [`docs.yaml`](docs.yaml) | Publish MkDocs site to GitHub Pages (gh-pages) | push (main, README.md path) |
@@ -25,15 +25,14 @@ This directory contains CI/CD workflows for building images, packaging Helm char
 
 Bootstraps the repo-local toolchain once (`./scripts/setup.sh`), then runs `task check:all` (`scripts/check_all.bash`), which runs every standing check in parallel - `dashes:check`, `shell:lint`, `workflows:lint`, `workflows:check-permissions`, `pins:check` - always running all of them regardless of earlier failures, then fails the job if any did. Each check's own task can be run individually (`task dashes:check`, `task shell:lint`, etc.) for a faster local loop while working on one thing.
 
-`task check:all` re-running `workflows:lint` duplicates `ci-gate.yaml`'s own "Validate" step - intentional, since it keeps `task check:all` the same complete set of checks everywhere rather than a subset that depends on who's calling it.
+`checks.yaml`'s triggers are kept identical to `ci-gate.yaml`'s own, so it is unconditionally one of the sibling runs CI Gate collects on every commit CI Gate itself runs on - see `ci-gate` below.
 
 ## ci-gate
 
-Single required status check for the repo, self-contained in one file with no manual list of other workflows to maintain:
+Single required status check for the repo, self-contained in one file with no manual list of other workflows to maintain, and no check logic of its own - the actual checks run in `checks.yaml`:
 
-1. **Validate** - runs `actionlint` (via the repo-local toolchain bootstrapped by `scripts/setup.sh`, `task workflows:lint`) against every file under `.github/workflows/` on the checked-out commit, catching schema/syntax/structure issues and shellcheck findings in `run:` scripts. Always runs to completion (`continue-on-error: true`) so it never short-circuits step 2.
-2. **Wait** - since there's no native way for one workflow to block another from starting, this polls `GET /actions/runs?head_sha=...` (the runs API, not the checks API - the checks API silently omits `startup_failure` runs) every minute, after an initial one-minute settle delay, until nothing else for that commit is left `queued`/`in_progress` for two consecutive polls, or 100 minutes elapse.
-3. **Summarize** - always runs regardless of steps 1-2's outcome, writes a table to the job summary (validation result + every sibling run's name/conclusion/link, including anything still pending at timeout), and only then decides pass/fail: `success`/`skipped` count as pass, everything else (`failure`, `startup_failure`, `cancelled`, `timed_out`, `neutral`, or still-pending-at-timeout) counts as fail.
+1. **Wait** (`scripts/ci-gate/wait-for-sibling-runs.sh`, called directly - no toolchain bootstrap, it needs only `bash`/`jq`/`gh`, already on the runner) - since there's no native way for one workflow to block another from starting, this polls `GET /actions/runs?head_sha=...` (the runs API, not the checks API - the checks API silently omits `startup_failure` runs) every minute, after an initial one-minute settle delay, until nothing else for that commit is left `queued`/`in_progress` for two consecutive polls, or 100 minutes elapse. Never waits on a run of CI Gate itself (filtered by `workflow_id`, not just run id), so two CI Gate runs sharing a commit never deadlock waiting on each other.
+2. **Summarize** (`scripts/ci-gate/summarize-ci-gate.sh`) - always runs regardless of step 1's outcome, writes a table to the job summary (every sibling run's name/conclusion/link, including anything still pending at timeout), and only then decides pass/fail: `success`/`skipped` count as pass, everything else (`failure`, `startup_failure`, `cancelled`, `timed_out`, `neutral`, or still-pending-at-timeout) counts as fail.
 
 For this to actually gate merges, `CI Gate` needs to be added as a `required_status_checks` context in the branch ruleset (currently managed in `agntcy/org-admin`'s `safe-settings/repos/coffeeAgntcy.yml`, which as of this writing has no `required_status_checks` rule at all).
 

@@ -23,21 +23,21 @@ order, each calling the one before it:
    what a human runs by hand.
 3. **Skill** (`.agents/skills/<name>/SKILL.md`) - points an agent at the
    task, not the underlying script; this is what an agent invokes.
-4. **CI enforcement** - the same task runs on every push/PR. For most
-   checks this means adding it to
+4. **CI enforcement** - the same task runs on every push/PR. For every
+   check, including one specifically about workflow files, this means
+   adding it to
    [`scripts/check_all.bash`](../../scripts/check_all.bash)'s parallel
    list, so `task check:all` in
    [`.github/workflows/checks.yaml`](../../.github/workflows/checks.yaml)
-   picks it up with no other file needing to change; a check specifically
-   about workflow files also folds into
-   [`ci-gate.yaml`](../../.github/workflows/ci-gate.yaml)'s "Validate"
-   step, since that's already the one place every workflow file gets
-   checked as the required status check. Only give a check its own
-   workflow file if it has a genuinely different execution model (see
-   "Known exceptions" below). Applies to checks/invariants (something
-   that should always hold); it doesn't apply to a purely generative,
-   one-shot action, which has nothing standing left to check once it's
-   run.
+   picks it up with no other file needing to change.
+   [`ci-gate.yaml`](../../.github/workflows/ci-gate.yaml) runs no check
+   of its own - it only waits for and summarizes sibling runs (including
+   `checks.yaml`), so it never needs a new check folded into it. Only
+   give a check its own workflow file if it has a genuinely different
+   execution model (see "Known exceptions" below). Applies to
+   checks/invariants (something that should always hold); it doesn't
+   apply to a purely generative, one-shot action, which has nothing
+   standing left to check once it's run.
 5. **Rule** (`.agents/rules/<name>.md`) - documents the convention or
    expectation itself, and cross-links the other four layers. Indexed from
    `AGENTS.md`.
@@ -94,7 +94,12 @@ the places to check against.
   [`.agents/rules/pre-finalize-checks.md`](pre-finalize-checks.md),
   [`.agents/rules/self-review-after-change.md`](self-review-after-change.md)),
   are legitimate rule-only exceptions - they say so explicitly, rather than
-  silently lacking a script/task/skill/CI layer.
+  silently lacking a script/task/skill/CI layer. This list is itself
+  audited: `task pipeline:check-exceptions`
+  ([`scripts/check_pipeline_exceptions.bash`](../../scripts/check_pipeline_exceptions.bash),
+  see the `auditing-pipeline-exceptions` skill) fails, naming the rule,
+  if any of them has since gained a skill of its own without being
+  promoted out of this list.
 - **CI-only orchestration steps** with no meaningful local invocation (the
   "Wait" and "Summarize" steps in
   [`ci-gate.yaml`](../../.github/workflows/ci-gate.yaml)) don't need a

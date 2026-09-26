@@ -35,7 +35,7 @@ it has every layer:
 - [ ] 1. Write the script under scripts/ as scripts/<name>.bash (or scripts/lib/ for a shared helper) - resolve any tool it needs via .tools/bin first, falling back to PATH (see lint_shell.bash's resolve_tool for the pattern).
 - [ ] 2. Add a Taskfile task that wraps it and nothing else.
 - [ ] 3. Add a skill under .agents/skills/<name>/SKILL.md that points an agent at the task, not the script.
-- [ ] 4. If it's a check/invariant (not a one-shot generative action): add it to scripts/check_all.bash's parallel list, so `task check:all` and the "Checks" CI workflow both pick it up with no other file needing to change - or fold it into ci-gate.yaml's "Validate" step if it's specifically a workflow-file check. Only give it its own workflow file if it has a genuinely different execution model (see "Known exceptions" in the rule) - ci-gate.yaml waits on any such new workflow automatically, no manual list to update there either.
+- [ ] 4. If it's a check/invariant (not a one-shot generative action): add it to scripts/check_all.bash's parallel list, so `task check:all` and the "Checks" CI workflow both pick it up with no other file needing to change - this applies to a workflow-file check too, since ci-gate.yaml runs no check of its own (only waits for and summarizes sibling runs, checks.yaml included). Only give it its own workflow file if it has a genuinely different execution model (see "Known exceptions" in the rule) - ci-gate.yaml waits on any such new workflow automatically, no manual list to update there either.
 - [ ] 5. Add a rule under .agents/rules/<name>.md documenting the convention and cross-linking the other four layers, then index both the skill and the rule in AGENTS.md's tables (alphabetized - see .agents/rules/alphabetize-entity-lists.md).
 - [ ] 6. Add a row to .agents/rules/pre-finalize-checks.md if it's a check.
 ```
@@ -47,7 +47,7 @@ it has every layer:
 - [ ] 2. Run task shell:lint if you added or changed a script.
 - [ ] 3. Run task workflows:lint if you added or changed a workflow file.
 - [ ] 4. Run task check:all to confirm it runs alongside everything else without breaking the parallel run.
-- [ ] 5. If it landed in checks.yaml or ci-gate.yaml, actionlint the changed workflow file and confirm the job's bootstrap + task invocation actually runs clean locally first.
+- [ ] 5. If it landed in checks.yaml, actionlint the changed workflow file and confirm the job's bootstrap + task invocation actually runs clean locally first.
 ```
 
 ## Rules
