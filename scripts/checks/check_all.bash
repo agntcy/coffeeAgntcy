@@ -1,10 +1,11 @@
 #!/usr/bin/env bash
 # Runs every standing check in this repo - dash/hyphen check, shell script
-# lint+format, workflow file lint, workflow permission scoping, and pinned
-# external references - in parallel, always running all of them regardless
-# of earlier failures, then fails if any did. Each check's output is
-# captured to its own log file (so concurrent output never interleaves),
-# printed in a fixed order, followed by a result table.
+# lint+format, workflow file lint, workflow permission scoping, markdown
+# link integrity, pinned external references, and the repo-operation-
+# pipeline exceptions audit - in parallel, always running all of them
+# regardless of earlier failures, then fails if any did. Each check's
+# output is captured to its own log file (so concurrent output never
+# interleaves), printed in a fixed order, followed by a result table.
 #
 # This is what task check:all runs, and what the "Checks" CI workflow runs
 # after a single tooling bootstrap, instead of each check re-bootstrapping
@@ -35,6 +36,7 @@ start_check "dashes:check" "$SCRIPT_DIR/check_dashes.bash"
 start_check "shell:lint" "$LINT_DIR/lint_shell.bash"
 start_check "workflows:lint" "$LINT_DIR/lint_workflows.bash"
 start_check "workflows:check-permissions" "$SCRIPT_DIR/check_workflow_permissions.bash"
+start_check "links:check" "$SCRIPT_DIR/check_markdown_links.bash"
 start_check "pins:check" "$SCRIPT_DIR/check_pinned_references.bash"
 start_check "pipeline:check-exceptions" "$SCRIPT_DIR/check_pipeline_exceptions.bash"
 

@@ -6,8 +6,12 @@ See `proposal.md` for the motivation - this is applying the already-standing
 `organize-large-collections` rule to three flat trees that have grown past
 scannable size, plus a previously-deferred `scripts/` grouping the user asked
 for earlier in this effort. The target category names for `.agents/rules/`
-and `.agents/skills/` are not new - they're exactly `AGENTS.md`'s existing
-table section headers:
+and `.agents/skills/` are not new - they're derived from `AGENTS.md`'s
+existing table section headers (three of five rule categories and both
+skill categories below are exact matches; `quality`/`formatting` are
+shortened from "Code/content quality"/"Formatting & organization
+conventions" for the reason given below, and `AGENTS.md`'s own headers
+are left as the friendlier prose they already were, not renamed to match):
 
 - Rules: `meta/`, `process/`, `always-apply/`, `quality/`,
   `formatting/`

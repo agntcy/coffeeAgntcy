@@ -2,7 +2,7 @@
 
 ## Why
 
-`.agents/rules/` (15 files) and `.agents/skills/` (13 hand-authored
+`.agents/rules/` (14 files) and `.agents/skills/` (13 hand-authored
 directories, plus 6 CLI-generated `openspec-*` ones) are already flat
 directories that `AGENTS.md`'s own tables group into named sections for
 scannability. `.agents/rules/formatting/organize-large-collections.md` already
@@ -11,7 +11,7 @@ into subdirectories by concern once either grows past a size where a flat
 listing stops being scannable ... reusing whatever section names
 `AGENTS.md`'s tables already grouped things under." Both have passed that
 point - this proposal is applying that already-standing rule to the file
-system, not inventing a new convention. `scripts/` (14 top-level files,
+system, not inventing a new convention. `scripts/` (12 top-level files,
 plus the `ci-gate/`/`lib/` subdirectories already carved out this way)
 gets the same treatment, using the grouping the user separately asked for
 earlier and deferred to this effort (mirroring the "one collective

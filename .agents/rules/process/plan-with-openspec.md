@@ -63,5 +63,5 @@ than living only in a PR description.
 - After `openspec init` or `openspec update` regenerates the
   `openspec-*` skill files under `.agents/skills/`, run `task dashes:fix`
   before committing - the CLI's own generated prose isn't written against
-  this repo's [`no-em-en-dashes`](no-em-en-dashes.md) rule and can
+  this repo's [`no-em-en-dashes`](../always-apply/no-em-en-dashes.md) rule and can
   reintroduce an em dash or en dash.

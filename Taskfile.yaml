@@ -4,15 +4,17 @@ tasks:
   check:all:
     desc: >-
       Run every standing check in this repo in parallel (dashes, shell
-      lint, workflow lint, workflow permissions, pinned references), never
-      failing fast (see .agents/rules/meta/repo-operation-pipeline.md).
+      lint, workflow lint, workflow permissions, markdown links, pinned
+      references, pipeline exceptions), never failing fast
+      (see .agents/rules/meta/repo-operation-pipeline.md).
     summary: |
       Usage:   task check:all
       Example: task check:all
       Runs dashes:check, shell:lint, workflows:lint,
-      workflows:check-permissions, and pins:check together and reports a
-      pass/fail table. What the "Checks" CI workflow runs after a single
-      tooling bootstrap. See scripts/checks/check_all.bash.
+      workflows:check-permissions, links:check, pins:check, and
+      pipeline:check-exceptions together and reports a pass/fail table.
+      What the "Checks" CI workflow runs after a single tooling
+      bootstrap. See scripts/checks/check_all.bash.
     cmds:
       - scripts/checks/check_all.bash
 
@@ -65,6 +67,19 @@ tasks:
       Rewrites files in place. See scripts/checks/fix_dashes.bash.
     cmds:
       - scripts/checks/fix_dashes.bash
+
+  links:check:
+    desc: >-
+      Check that every relative markdown link in every git-tracked *.md
+      file resolves to a file that actually exists
+      (see .agents/rules/quality/markdown-link-integrity.md).
+    summary: |
+      Usage:   task links:check
+      Example: task links:check
+      Reports every dangling link by file:line without changing any
+      file. See scripts/checks/check_markdown_links.bash.
+    cmds:
+      - scripts/checks/check_markdown_links.bash
 
   pins:check:
     desc: >-
