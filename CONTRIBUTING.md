@@ -138,6 +138,15 @@ and
 for the full rules. Both run as part of `task check:all` and the `Checks`
 workflow.
 
+#### Markdown links
+
+Every relative link in a markdown file must resolve to a file that
+actually exists (`task links:check`) - check this after moving, renaming,
+or removing any file. See
+[`.agents/rules/quality/markdown-link-integrity.md`](/.agents/rules/quality/markdown-link-integrity.md)
+for the full rule. Runs as part of `task check:all` and the `Checks`
+workflow.
+
 ## Other Ways to Contribute
 
 We welcome anyone that wants to contribute to `coffeeAgntcy` to triage and

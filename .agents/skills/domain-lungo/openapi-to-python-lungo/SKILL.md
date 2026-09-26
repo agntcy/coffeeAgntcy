@@ -32,7 +32,7 @@ The skill must remain **general** across tags: never hard-code endpoint names, s
   - the `create_<tag_snake>_router()` function signature and the presence of `tags=[<tag>]` on the `APIRouter(...)` construction (the skill ensures `tags=[<tag>]` is set, but it must **not** discard other constructor arguments - see below),
   - the route decorators (path, method, `response_model`, `status_code`, `summary`, etc.) and handler **signatures** (parameters, type annotations, return type).
 
-  The skill does **not** generate or reconcile per-operation OpenAPI `responses` on FastAPI decorators. Operation `responses` (success and error statuses) live in `schema/openapi/paths/*.yaml` and shared `components/responses` - the **published contract** (source of truth under `schema/openapi/`, not generated from code). Update OpenAPI and `docs/workflow-instance_api.md` via [agentic-workflows-api-documentation-lungo](../../agentic-workflows-api-documentation-lungo/SKILL.md) first, then use this skill to align handlers when endpoints, payload shapes, or HTTP statuses change.
+  The skill does **not** generate or reconcile per-operation OpenAPI `responses` on FastAPI decorators. Operation `responses` (success and error statuses) live in `schema/openapi/paths/*.yaml` and shared `components/responses` - the **published contract** (source of truth under `schema/openapi/`, not generated from code). Update OpenAPI and `docs/workflow-instance_api.md` via [agentic-workflows-api-documentation-lungo](../agentic-workflows-api-documentation-lungo/SKILL.md) first, then use this skill to align handlers when endpoints, payload shapes, or HTTP statuses change.
 
   The user owns:
   - the **bodies** of existing handlers,
@@ -63,7 +63,7 @@ Track progress with this checklist:
 - [ ] 3. Regenerate dtos.py from scratch
 - [ ] 4. Reconcile router.py (preserve handler bodies)
 - [ ] 5. Generate or refresh tests under tests/unit/openapi/
-- [ ] 6. If contracts changed, ensure OpenAPI and `workflow-instance_api.md` are updated ([agentic-workflows-api-documentation-lungo](../../agentic-workflows-api-documentation-lungo/SKILL.md)); align handlers to use only OpenAPI-declared statuses
+- [ ] 6. If contracts changed, ensure OpenAPI and `workflow-instance_api.md` are updated ([agentic-workflows-api-documentation-lungo](../agentic-workflows-api-documentation-lungo/SKILL.md)); align handlers to use only OpenAPI-declared statuses
 - [ ] 7. Run the tests and the linter
 ```
 
