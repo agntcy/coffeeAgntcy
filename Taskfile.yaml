@@ -16,6 +16,32 @@ tasks:
     cmds:
       - scripts/check_all.bash
 
+  ci-gate:summarize:
+    desc: >-
+      Build the CI Gate job-summary table and decide overall pass/fail
+      from a validate outcome and wait-for-sibling-runs.sh's runs.json.
+    summary: |
+      Usage:   VALIDATE_OUTCOME=... SETTLED=... GITHUB_RUN_ID=... task ci-gate:summarize
+      Example: VALIDATE_OUTCOME=success SETTLED=true GITHUB_RUN_ID=123 task ci-gate:summarize
+      CI-only orchestration: reads VALIDATE_OUTCOME/SETTLED/GITHUB_RUN_ID/
+      RUNS_FILE from the environment, writes to $GITHUB_STEP_SUMMARY when
+      set (else stdout). See scripts/ci-gate/summarize-ci-gate.sh.
+    cmds:
+      - scripts/ci-gate/summarize-ci-gate.sh
+
+  ci-gate:wait:
+    desc: >-
+      Poll the GitHub Actions runs API until every sibling workflow run
+      on the same commit reaches a terminal state, or a timeout elapses.
+    summary: |
+      Usage:   GITHUB_REPOSITORY=... GITHUB_RUN_ID=... HEAD_SHA=... task ci-gate:wait
+      Example: GITHUB_REPOSITORY=owner/repo GITHUB_RUN_ID=123 HEAD_SHA=abc123 task ci-gate:wait
+      CI-only orchestration: needs an authenticated `gh`. Never waits on a
+      run of CI Gate itself, only other workflows' runs. See
+      scripts/ci-gate/wait-for-sibling-runs.sh.
+    cmds:
+      - scripts/ci-gate/wait-for-sibling-runs.sh
+
   dashes:check:
     desc: >-
       Check the repo for en dash (U+2013) or em dash (U+2014)
