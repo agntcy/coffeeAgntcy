@@ -7,5 +7,6 @@ TASK_VERSION="v3.53.1"
 ACTIONLINT_VERSION="1.7.12"
 SHELLCHECK_VERSION="0.11.0"
 SHFMT_VERSION="3.14.1"
+BATS_VERSION="1.13.0" # bats-core git tag, installed from its own source tarball - not the npm "bats" package version
 NODE_VERSION="24.21.0"
 OPENSPEC_VERSION="1.13.2"

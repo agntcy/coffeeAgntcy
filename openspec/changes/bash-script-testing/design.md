@@ -52,15 +52,26 @@ explicitly defers.
 
 ## Decisions
 
-**`bats-core`, installed via the official `bats` npm package, not a
-git-cloned tarball or a shell/Python test framework.** This repo already
-bootstraps a pinned Node.js solely to install `openspec` the same way;
-reusing that exact `npm install --global --prefix .tools bats@<version>`
-recipe means zero new install *shape* to build (`setup.sh` gains one more
-block that looks like every other npm-installed tool it already has), and
-`bats` (not a fork or a bespoke bats-core packaging) is the framework's own
-official npm distribution, actively maintained by the bats-core team
-itself.
+**`bats-core`, installed from its own GitHub source tarball, not the
+`bats` npm package or a shell/Python test framework.** The npm package was
+this design's first draft, reasoning that reusing `openspec`'s exact `npm
+install --global --prefix .tools` recipe meant zero new install *shape* to
+build. Revisited once the question came up directly: is Node actually
+necessary here? Checking confirmed `bats-core` has no Node dependency at
+all - the npm package is a pure convenience wrapper - while `@fission-ai/openspec`
+genuinely is a Node application (real `dependencies` in its own
+`package.json`: `commander`, `inquirer`, `zod`, ...; no compiled/standalone
+release asset on GitHub either). So Node stays, but only for `openspec`;
+routing `bats` through npm/Node too was an unforced, unnecessary coupling
+- a Node bootstrap failure would have broken `bats` as a side effect, for
+a tool that has nothing to do with Node. `bats-core`'s own tagged source
+tarball ships an `install.sh <prefix> [libdir]` that creates
+`<prefix>/{bin,libexec/bats-core,lib/bats-core}` - verified locally
+(downloaded v1.13.0, ran `install.sh` into a throwaway prefix, confirmed
+`bin/bats --version` works from that relocated path). Like `node`, this
+means `bats` gets its own `.tools/bats/` directory rather than joining the
+flat `.tools/bin/`, since it isn't a single relocatable binary either -
+see the Migration Plan below.
 
 **No `bats-support`/`bats-assert` plugin.** Both are popular companion
 libraries for nicer assertion messages, but adding either means either a
@@ -131,17 +142,21 @@ logic path by path.
   the two reference examples' usage patterns without touching every future
   test file's syntax, since they only ever call `mock_command`, never a
   library-specific API.
-- [`bats` (the npm wrapper) drifts from upstream `bats-core` releases] ->
-  same trust model this repo already extends to `@fission-ai/openspec`
-  (also an npm-distributed CLI); revisit only if a version gap actually
-  causes a problem.
+- [GitHub's auto-generated source tarball for a tag changes shape or
+  disappears] -> same trust model this repo already extends to every
+  other tarball-installed tool (`actionlint`, `shellcheck`, `shfmt`,
+  `task`); `bats-core` tags aren't going to stop having one, since it's
+  the standard GitHub archive URL, not a custom release asset.
 
 ## Migration Plan
 
 Add `BATS_VERSION` to `scripts/lib/versions.sh` and an install block to
-`scripts/setup.sh`; write `scripts/lib/testing.sh`; write the two
-reference example test files; write the coverage-audit script with today's
-full script inventory as its allow-list; add `tests:bash`/`tests:coverage`
-Taskfile tasks; wire both into `scripts/checks/check_all.bash`; add the
-skill and rule; index both in `AGENTS.md`. Purely additive - no existing
-script changes. Rollback is a plain `git revert`.
+`scripts/setup.sh` (tarball + `install.sh` into `.tools/bats/`, not npm);
+add `.tools/bats/bin` to `scripts/env.sh`'s `PATH`; write
+`scripts/lib/testing.sh`; write the two reference example test files;
+write the coverage-audit script with today's full script inventory as its
+allow-list; add `tests:bash`/`tests:coverage` Taskfile tasks; wire both
+into `scripts/checks/check_all.bash`; add the skill and rule; index both
+in `AGENTS.md`. Purely additive - no existing script's behavior changes
+(the `bats` install path is new, not a change to an existing tool).
+Rollback is a plain `git revert`.

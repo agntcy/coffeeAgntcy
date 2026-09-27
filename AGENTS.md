@@ -41,6 +41,7 @@ new one (see `.agents/rules/formatting/organize-large-collections.md`).
 | Checking workflow permissions | [.agents/skills/quality-checks/checking-workflow-permissions/SKILL.md](.agents/skills/quality-checks/checking-workflow-permissions/SKILL.md) |
 | Linting GitHub workflows | [.agents/skills/quality-checks/linting-github-workflows/SKILL.md](.agents/skills/quality-checks/linting-github-workflows/SKILL.md) |
 | Linting shell scripts | [.agents/skills/quality-checks/linting-shell-scripts/SKILL.md](.agents/skills/quality-checks/linting-shell-scripts/SKILL.md) |
+| Testing bash scripts | [.agents/skills/quality-checks/testing-bash-scripts/SKILL.md](.agents/skills/quality-checks/testing-bash-scripts/SKILL.md) |
 
 ### OpenSpec workflow
 
@@ -59,8 +60,8 @@ regenerates these) - not hand-authored like the skills above. See the
 
 ## Rules
 
-Grouped by concern, same reasoning as Skills above. `markdown-link-integrity`,
-`no-em-en-dashes`, `pinned-external-references`,
+Grouped by concern, same reasoning as Skills above. `bash-script-testing`,
+`markdown-link-integrity`, `no-em-en-dashes`, `pinned-external-references`,
 `shell-script-linting`, `workflow-file-linting`, and
 `workflow-least-privilege` are enforced in CI; the rest rely on being
 applied by judgment.
@@ -91,6 +92,7 @@ applied by judgment.
 
 | Topic | File |
 |-------|------|
+| Bash script testing | [.agents/rules/quality/bash-script-testing.md](.agents/rules/quality/bash-script-testing.md) |
 | Markdown link integrity | [.agents/rules/quality/markdown-link-integrity.md](.agents/rules/quality/markdown-link-integrity.md) |
 | Pinned external references | [.agents/rules/quality/pinned-external-references.md](.agents/rules/quality/pinned-external-references.md) |
 | Shell script linting | [.agents/rules/quality/shell-script-linting.md](.agents/rules/quality/shell-script-linting.md) |
