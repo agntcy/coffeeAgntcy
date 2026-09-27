@@ -185,3 +185,24 @@ under `nounset`): that same `/bin/bash` also lacks `mapfile` entirely
 (introduced in bash 4.0), which every `check_*.bash` script already
 depends on - a repo-wide pre-existing bash-3.2 incompatibility, not
 something this change introduced or fixes.
+
+**Follow-up (CI failure on the GitHub-hosted Ubuntu runner, not caught
+locally on macOS):** `scripts/lib/tests/fetch.bats` simulated "curl/wget/
+sudo/apt-get/id absent" by restricting `PATH` to `$MOCK_BIN_DIR:/bin`,
+reasoning (stated in its own comment at the time) that those tools "never
+live in bare /bin" on macOS. That's true on macOS, where `/bin` is a
+small, separate directory - but false on Debian/Ubuntu's merged-usr
+layout, where `/bin` is a symlink to `/usr/bin`, so the real tools stayed
+reachable and 6 tests failed on CI while passing locally. Fixed by adding
+`mock_isolate_path` to `scripts/lib/testing.sh`: instead of guessing a
+system directory believed not to contain a tool, it symlinks (not
+copies - a `cp` of a macOS system binary elsewhere gets killed by
+code-signing enforcement on exec, while a symlink still resolves to, and
+passes signature verification against, the original file) each
+explicitly-named tool into the mock bin directory from the *original*
+PATH, then restricts PATH to *only* that directory - portable by
+construction, since it never depends on which real directory happens to
+contain what. Also removed `mock_command`'s own dependency on external
+`cat` (rewritten with `echo` instead, both bash builtins), since a test
+isolating PATH down to just what it explicitly names would otherwise also
+need to keep `cat` reachable purely for `mock_command`'s own sake.

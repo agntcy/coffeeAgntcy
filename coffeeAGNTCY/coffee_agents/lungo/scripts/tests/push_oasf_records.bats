@@ -15,6 +15,12 @@
 # command it depends on) is mocked per test via mock_command; `jq` is
 # left real, as this repo's other tests already do for system utilities
 # that aren't the thing under test.
+#
+# The "dirctl not installed" test needs dirctl genuinely absent, so it
+# uses mock_isolate_path (see scripts/lib/testing.sh) rather than
+# guessing system directories that happen not to contain it. Only
+# `dirname` is needed before the script's dirctl check (its shebang is
+# the absolute /bin/bash, and the rest up to that point is builtins).
 
 load '../../../../../scripts/lib/testing.sh'
 
@@ -99,7 +105,8 @@ esac
 }
 
 @test "dirctl not installed: prints install instructions and exits 1" {
-    PATH="$MOCK_BIN_DIR:/bin:/usr/bin" run "$FIXTURE_ROOT/scripts/push_oasf_records.sh"
+    mock_isolate_path dirname
+    run "$FIXTURE_ROOT/scripts/push_oasf_records.sh"
     [ "$status" -eq 1 ]
     [[ "$output" == *"dirctl is not installed"* ]]
     [[ "$output" == *"brew install dirctl"* ]]
