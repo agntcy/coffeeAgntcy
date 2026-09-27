@@ -18,10 +18,14 @@ follow-up effort, per the user's own framing of this change.
 
 ## What Changes
 
-- **Pin a bash test framework**: `bats-core` (via the official `bats` npm
-  package, installed the same way `openspec` already is - `npm install
-  --global --prefix .tools`), so `task setup` bootstraps it alongside every
-  other pinned tool, with zero global install.
+- **Pin a bash test framework**: `bats-core`, installed straight from its
+  own GitHub source tarball (like `actionlint`/`shellcheck`/`shfmt`/`task`
+  already are) into its own `.tools/bats/` directory (like `node`, since
+  its `install.sh` always creates a bin/+libexec/+lib/ tree, not a single
+  relocatable binary) - deliberately not through npm/Node, since it's a
+  pure bash tool with no actual Node dependency of its own. `task setup`
+  bootstraps it alongside every other pinned tool, with zero global
+  install.
 - **A shared mocking helper** (`scripts/lib/testing.sh`) any `.bats` file
   can `load`, providing a `mock_command` function that stubs an external
   binary (e.g. `gh`, `uname`) via a temp directory prepended to `PATH` for

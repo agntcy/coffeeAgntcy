@@ -7,18 +7,20 @@
 # exist yet on a fresh clone, so bootstrapping it *through* the Taskfile
 # would be circular. Local devs run:
 #   ./scripts/setup.sh
-#   source scripts/env.sh   # put .tools/bin and .tools/node/bin on PATH for this shell session
+#   source scripts/env.sh   # put .tools/bin, .tools/node/bin, and .tools/bats/bin on PATH for this shell session
 #
 # CI (see checks.yaml and ci-gate.yaml) passes --lint-only: neither
 # required workflow runs openspec, so CI skips the node/openspec install
 # and only bootstraps the lint binaries (task, actionlint, shellcheck,
-# shfmt).
+# shfmt) plus bats (needed by the bash test suite, which does run under
+# --lint-only).
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 BIN_DIR="$REPO_ROOT/.tools/bin"
 NODE_DIR="$REPO_ROOT/.tools/node"
+BATS_DIR="$REPO_ROOT/.tools/bats"
 
 LINT_ONLY=0
 if [[ "${1:-}" == "--lint-only" ]]; then
@@ -98,6 +100,31 @@ else
     echo "shfmt: installed ($("$BIN_DIR/shfmt" --version))"
 fi
 
+# bats-core ships as a bin/+libexec/+lib/ tree, not a single relocatable
+# binary (its own install.sh always creates all three under whatever
+# prefix it's given) - so like node below, it gets its own .tools/bats/
+# directory instead of joining the flat .tools/bin/, and scripts/env.sh
+# puts .tools/bats/bin on PATH alongside it. Installed straight from its
+# own GitHub source tarball, deliberately not through npm/node: it's a
+# pure bash tool with no actual Node dependency, and the only reason it
+# would otherwise need node bootstrapped first is npm being a convenient
+# but unnecessary distribution channel for it. Installed unconditionally
+# (not gated behind --lint-only): the bash test suite it runs is one of
+# the standing checks in check_all.bash, which CI's --lint-only bootstrap
+# still needs to pass.
+if [ -x "$BATS_DIR/bin/bats" ] && version_matches "$("$BATS_DIR/bin/bats" --version | awk '{print $2}')" "$BATS_VERSION"; then
+    echo "bats: already installed ($("$BATS_DIR/bin/bats" --version))"
+else
+    echo "bats: installing $BATS_VERSION into $BATS_DIR ..."
+    TMP_DIR="$(mktemp -d)"
+    FETCH "https://github.com/bats-core/bats-core/archive/refs/tags/v${BATS_VERSION}.tar.gz" >"$TMP_DIR/bats-core.tar.gz"
+    tar -xzf "$TMP_DIR/bats-core.tar.gz" -C "$TMP_DIR"
+    rm -rf "$BATS_DIR"
+    "$TMP_DIR/bats-core-${BATS_VERSION}/install.sh" "$BATS_DIR"
+    rm -rf "$TMP_DIR"
+    echo "bats: installed ($("$BATS_DIR/bin/bats" --version))"
+fi
+
 if [ "$LINT_ONLY" -eq 0 ]; then
     # node ships as a whole bin/+lib/ tree (npm/npx are symlinks resolved
     # relative to a sibling lib/node_modules/npm/, not a single relocatable
@@ -159,4 +186,4 @@ else
 fi
 
 echo
-echo "Setup complete. Run 'source scripts/env.sh' to put .tools/bin and .tools/node/bin on PATH, then 'task shell:lint'."
+echo "Setup complete. Run 'source scripts/env.sh' to put .tools/bin, .tools/node/bin, and .tools/bats/bin on PATH, then 'task shell:lint'."

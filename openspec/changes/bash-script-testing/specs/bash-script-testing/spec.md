@@ -10,10 +10,11 @@ on the scripts that predate the rule.
 ## ADDED Requirements
 
 ### Requirement: bats is bootstrapped by the pinned toolchain
-`task setup` (`scripts/setup.sh`) SHALL install `bats` (the official
-`bats-core` npm distribution) into the repo-local toolchain, pinned in
+`task setup` (`scripts/setup.sh`) SHALL install `bats-core` from its own
+GitHub source tarball into the repo-local toolchain, pinned in
 `scripts/lib/versions.sh`, the same way every other pinned tool is
-installed - no global install, reinstalled on any pin mismatch.
+installed - no global install, no Node dependency, reinstalled on any pin
+mismatch.
 
 #### Scenario: A fresh clone runs task setup
 - **WHEN** `task setup` is run on a machine with no `.tools/` directory
