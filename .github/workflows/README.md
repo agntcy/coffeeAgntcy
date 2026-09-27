@@ -6,7 +6,7 @@ This directory contains CI/CD workflows for building images, packaging Helm char
 
 | Workflow | Purpose | Triggers |
 |----------|---------|----------|
-| [`checks.yaml`](checks.yaml) | Runs every standing repo check in parallel after one toolchain bootstrap: dash/hyphen check, shell script lint+format, workflow file lint, workflow permission scoping, markdown link integrity, pinned external references, repo-operation-pipeline exceptions audit (`task check:all`) | pull_request, push (main, tags), workflow_dispatch |
+| [`checks.yaml`](checks.yaml) | Runs every standing repo check in parallel after one toolchain bootstrap: dash/hyphen check, shell script lint+format, workflow file lint, workflow permission scoping, markdown link integrity, pinned external references, repo-operation-pipeline exceptions audit, bash test suite, bash test coverage (`task check:all`) | pull_request, push (main, tags), workflow_dispatch |
 | [`ci-gate.yaml`](ci-gate.yaml) | Required status check: a pure collector with no check of its own - waits for/reports on every sibling workflow run on the same commit (including `checks.yaml`), including startup failures | pull_request, push (main, tags), workflow_dispatch |
 | [`docker-build-push.yaml`](docker-build-push.yaml) | Build multi-arch Docker images for all agents and optionally push to GHCR, guarded against overwriting an existing tag | push (main, tags), pull_request (paths filter), workflow_dispatch |
 | [`docker-build-reusable.yaml`](docker-build-reusable.yaml) | Reusable job: build and push a single Docker image | workflow_call |
@@ -23,7 +23,7 @@ This directory contains CI/CD workflows for building images, packaging Helm char
 
 ## checks
 
-Bootstraps the repo-local toolchain once (`./scripts/setup.sh`), then runs `task check:all` (`scripts/checks/check_all.bash`), which runs every standing check in parallel - `dashes:check`, `shell:lint`, `workflows:lint`, `workflows:check-permissions`, `links:check`, `pins:check`, `pipeline:check-exceptions` - always running all of them regardless of earlier failures, then fails the job if any did. Each check's own task can be run individually (`task dashes:check`, `task shell:lint`, etc.) for a faster local loop while working on one thing.
+Bootstraps the repo-local toolchain once (`./scripts/setup.sh`), then runs `task check:all` (`scripts/checks/check_all.bash`), which runs every standing check in parallel - `dashes:check`, `shell:lint`, `workflows:lint`, `workflows:check-permissions`, `links:check`, `pins:check`, `pipeline:check-exceptions`, `tests:bash`, `tests:coverage` - always running all of them regardless of earlier failures, then fails the job if any did. Each check's own task can be run individually (`task dashes:check`, `task shell:lint`, etc.) for a faster local loop while working on one thing.
 
 `checks.yaml`'s triggers are kept identical to `ci-gate.yaml`'s own, so it is unconditionally one of the sibling runs CI Gate collects on every commit CI Gate itself runs on - see `ci-gate` below.
 

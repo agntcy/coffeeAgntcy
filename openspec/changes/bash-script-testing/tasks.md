@@ -3,10 +3,11 @@
 ## 1. Pin and bootstrap bats
 
 - [x] 1.1 Add `BATS_VERSION` to `scripts/lib/versions.sh`
-- [x] 1.2 Add an install block to `scripts/setup.sh` mirroring `openspec`'s
-      exact recipe (`npm install --global --prefix .tools bats@<pin>`),
-      including the same installed-version-matches-pin skip check every
-      other tool already has
+- [x] 1.2 Add an install block to `scripts/setup.sh` that fetches
+      `bats-core`'s own GitHub source tarball and runs its `install.sh`
+      into a new `.tools/bats/` directory (not npm/node), including the
+      same installed-version-matches-pin skip check every other tool
+      already has; add `.tools/bats/bin` to `scripts/env.sh`'s `PATH`
 - [x] 1.3 Run `task setup` from a machine state with `.tools/` moved aside;
       confirm `bats --version` matches the pin afterward
 
