@@ -120,10 +120,9 @@ A new bash script anywhere in the repository needs tests: a shared `*/lib/*.sh`-
 helper gets unit tests (`task tests:bash`), and an executable script gets
 a mocked end-to-end test with any external command it depends on stubbed.
 See [`.agents/rules/quality/bash-script-testing.md`](/.agents/rules/quality/bash-script-testing.md)
-for the full rule - it doesn't require retrofitting tests onto a script
-that already existed before this rule. `task tests:coverage` flags a
-script with neither a test nor an explicit grandfather-list entry. Both
-run as part of `task check:all` and the `Checks` workflow.
+for the full rule. `task tests:coverage` flags any script with no test -
+no exceptions. Both run as part of `task check:all` and the `Checks`
+workflow.
 
 #### Pinned external references and workflow permissions
 

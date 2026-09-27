@@ -2,10 +2,9 @@
 
 ## Purpose
 
-Requires new bash scripts in this repo to ship with unit and/or mocked
-end-to-end tests, provides the pinned framework and shared mocking helper
-that make that practical, and enforces it going forward without failing
-on the scripts that predate the rule.
+Requires every bash script in this repo, no exceptions, to have unit
+and/or mocked end-to-end tests, and provides the pinned framework and
+shared mocking helper that make that practical.
 
 ## ADDED Requirements
 
@@ -59,23 +58,20 @@ repo or API state.
   is exercised and asserted on, with no real network call, API token, or
   dependency on the host machine's own state
 
-### Requirement: A coverage audit enforces tests going forward without failing on pre-existing scripts
-A check SHALL fail when a bash script anywhere in the repository lacks a corresponding
-test file, unless that script's path is listed in a hardcoded, in-source
-allow-list of scripts that predate this requirement. The check SHALL pass
-today, since every currently-existing script is listed in that allow-list
-at the time this requirement takes effect.
+### Requirement: A coverage audit enforces tests for every bash script, with no exceptions
+A check SHALL fail when any bash script anywhere in the repository lacks
+a corresponding test file. There is no allow-list or exceptions
+mechanism - every script needs a test, full stop.
 
-#### Scenario: A new script ships with no test and is not in the allow-list
-- **WHEN** a new bash script is added anywhere in the repository with no corresponding test
-  file, and its path is not in the coverage audit's allow-list
+#### Scenario: A script ships with no test
+- **WHEN** a bash script exists anywhere in the repository with no
+  corresponding test file
 - **THEN** the audit fails, naming that script's path
 
-#### Scenario: A pre-existing, allow-listed script still has no test
-- **WHEN** the coverage audit runs against a script whose path is in its
-  allow-list and which still has no test file
-- **THEN** the audit passes - that gap is tracked, not enforced, until the
-  script is either given a test or promoted out of the allow-list
+#### Scenario: Every script has a test
+- **WHEN** the coverage audit runs and every bash script in the
+  repository has a corresponding test file
+- **THEN** the audit passes
 
 ### Requirement: The coverage audit and test suite run as part of every standing check
 `task tests:bash` (runs the test suite) and `task tests:coverage` (runs

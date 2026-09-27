@@ -42,7 +42,8 @@ for the underlying rule.
 - [ ] 6. Run: task tests:bash (or `bats path/to/the.bats` directly while
         iterating, for a faster loop).
 - [ ] 7. Run: task tests:coverage - confirms the new script is no longer
-        flagged as untested.
+        flagged as untested. There's no exceptions list: every script,
+        with no exceptions, needs one.
 ```
 
 ## Notes
@@ -70,8 +71,12 @@ for the underlying rule.
   OS/arch branch) and
   [scripts/ci-gate/tests/wait-for-sibling-runs.bats](../../../../scripts/ci-gate/tests/wait-for-sibling-runs.bats)
   for a worked mocked end-to-end example (mocking `gh`).
-- If `task tests:coverage` flags a script that genuinely predates this
-  rule, that's the deferred backfill's own punch list, not a bug - see
-  `check_bash_test_coverage.bash`'s `NOT_YET_TESTED` array. Don't silently
-  add a new script to that list just to make the audit pass; it's only
-  for scripts that existed before the rule did.
+- If `task tests:coverage` flags a script, write it a test - there's no
+  exceptions list to add it to instead.
+- For a test that needs a real command to be genuinely absent (not just
+  hopefully-shadowed by pointing `PATH` at a directory guessed not to
+  contain it - that guess can fail across OSes, e.g. Debian/Ubuntu's
+  merged-usr layout makes bare `/bin` reach everything `/usr/bin` has),
+  use `mock_isolate_path <tool> ...` (also in `scripts/lib/testing.sh`):
+  it symlinks each named tool from the real `PATH` into the mock bin
+  directory, then restricts `PATH` to *only* that directory.
