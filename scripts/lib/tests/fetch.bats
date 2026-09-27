@@ -6,15 +6,16 @@
 # regardless of what's actually installed on the machine running these
 # tests.
 #
-# The tricky part: this dev machine has real curl, wget, brew and sudo on
-# PATH, so "curl is absent" (or "sudo is absent") can't be simulated by
-# mock_command alone (its stubs only add to PATH, they can't hide a real
-# binary elsewhere on PATH). For branches that need one of those absent,
-# tests instead set PATH to just MOCK_BIN_DIR plus /bin (empirically,
-# real curl/wget/brew/sudo/id all live under /usr/bin or /opt/homebrew,
-# never bare /bin, while /bin still has the cat/chmod/bash mock_command
-# and stub shebangs need) - see the tests below for exactly which
-# commands each one mocks.
+# The tricky part: real curl/wget/sudo/apt-get/id are on PATH wherever
+# these tests run, so "curl is absent" (or "sudo is absent") can't be
+# simulated by mock_command alone (its stubs only add to PATH, they
+# can't hide a real binary elsewhere on PATH). For branches that need one
+# of those genuinely absent, tests use mock_isolate_path (see
+# scripts/lib/testing.sh) rather than guessing a system directory that
+# happens not to contain it - a guess like that doesn't port across OSes
+# (Debian/Ubuntu's merged-usr layout makes bare /bin reach everything
+# /usr/bin has, including curl/wget/sudo/apt-get/id, unlike macOS's
+# separate, minimal /bin).
 
 load '../testing.sh'
 load '../fetch.sh'
@@ -40,7 +41,7 @@ teardown() {
 }
 
 @test "ensure_fetcher: curl absent, wget present defines FETCH via wget -qO-" {
-    PATH="$MOCK_BIN_DIR:/bin"
+    mock_isolate_path bash chmod
     mock_command wget 'echo "wget called with: $*"'
 
     local status=0
@@ -53,7 +54,7 @@ teardown() {
 }
 
 @test "ensure_fetcher: neither curl nor wget, one package manager found installs curl with it" {
-    PATH="$MOCK_BIN_DIR:/bin"
+    mock_isolate_path bash chmod
     mock_command id 'echo 1000'
     mock_command apt-get "printf '#!/usr/bin/env bash\necho apt-get-curl \"\$*\"\n' > '$MOCK_BIN_DIR/curl'
 chmod +x '$MOCK_BIN_DIR/curl'"
@@ -72,7 +73,7 @@ chmod +x '$MOCK_BIN_DIR/curl'"
 }
 
 @test "ensure_fetcher: multiple package managers found, non-interactive picks the first without prompting" {
-    PATH="$MOCK_BIN_DIR:/bin"
+    mock_isolate_path bash chmod
     mock_command id 'echo 1000'
     mock_command apt-get "printf '#!/usr/bin/env bash\necho apt-get-curl \"\$*\"\n' > '$MOCK_BIN_DIR/curl'
 chmod +x '$MOCK_BIN_DIR/curl'"
@@ -94,7 +95,7 @@ chmod +x '$MOCK_BIN_DIR/curl'"
 }
 
 @test "ensure_fetcher: no package manager found prints manual instructions and fails" {
-    PATH="$MOCK_BIN_DIR:/bin"
+    mock_isolate_path bash chmod
 
     run ensure_fetcher
     [ "$status" -eq 1 ]
@@ -104,7 +105,7 @@ chmod +x '$MOCK_BIN_DIR/curl'"
 }
 
 @test "ensure_fetcher: install succeeding but curl still missing falls back to manual instructions" {
-    PATH="$MOCK_BIN_DIR:/bin"
+    mock_isolate_path bash chmod
     mock_command id 'echo 1000'
     mock_command apt-get 'exit 0'
 
@@ -123,7 +124,7 @@ chmod +x '$MOCK_BIN_DIR/curl'"
 }
 
 @test "_install_curl_with: apt-get dispatches to apt-get update then install" {
-    PATH="$MOCK_BIN_DIR:/bin"
+    mock_isolate_path bash chmod
     mock_command id 'echo 1000'
     mock_command apt-get 'echo "apt-get called with: $*"'
 
