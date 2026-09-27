@@ -164,14 +164,14 @@ tasks:
 
   tests:coverage:
     desc: >-
-      Check that every script under scripts/ has a corresponding bats
-      test, unless it's listed as predating this rule
+      Check that every bash script anywhere in the repository has a
+      corresponding bats test
       (see .agents/rules/quality/bash-script-testing.md).
     summary: |
       Usage:   task tests:coverage
       Example: task tests:coverage
-      Fails, naming the script, if a new (non-grandfathered) script has
-      no test. See scripts/checks/check_bash_test_coverage.bash.
+      Fails, naming the script, if any script has no test. See
+      scripts/checks/check_bash_test_coverage.bash.
     cmds:
       - scripts/checks/check_bash_test_coverage.bash
 

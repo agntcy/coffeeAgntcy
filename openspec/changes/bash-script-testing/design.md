@@ -105,18 +105,20 @@ concern) and keeps a `.bats` file's relative `load` path to
 (`scripts/<category>/tests/*.bats` is always exactly two levels above
 `scripts/`).
 
-**The coverage audit is a hardcoded "not-yet-tested" allow-list that
-shrinks over time, not a hard "every script needs tests today" gate.**
-Identical shape to `check_pipeline_exceptions.bash`'s own "Known
-exceptions" list: a bash array in the script, a comment pointing at where
-to keep it in sync, and a failure that names anything found outside it.
-Here the array starts as literally every script that exists before this
-change (the deferred backfill's own punch list), and the audit fails the
-moment a *new* script shows up without a test and without being added to
-that list - so the gap is visible and shrinks one line at a time as the
-follow-up work happens, rather than either (a) silently allowing untested
-scripts forever, or (b) failing CI today for a decision the user already
-made ("fix the gaps later").
+**The coverage audit was a hardcoded "not-yet-tested" allow-list during
+the backfill, removed once it emptied out - it is not a permanent
+mechanism.** While the backfill was in progress, its shape mirrored
+`check_pipeline_exceptions.bash`'s own "Known exceptions" list: a bash
+array in the script, a comment pointing at where to keep it in sync, and
+a failure that named anything found outside it - so the remaining gap was
+visible and shrank one line at a time rather than either silently
+allowing untested scripts forever, or failing CI immediately for a
+decision the user had made on purpose ("fix the gaps later"). Once every
+script had a real test, the user asked for the allow-list itself to be
+removed entirely rather than kept empty as a mechanism future scripts
+could quietly be added to - the check is now a flat "every script needs a
+test, no exceptions" gate, with no array, no override variable, and no
+per-script escape hatch at all.
 
 **Unit tests only apply to `scripts/lib/*.sh`, not to functions inside an
 executable check script.** Several check scripts do define a helper
@@ -136,9 +138,10 @@ logic path by path.
 ## Risks / Trade-offs
 
 - [The "not-yet-tested" allow-list is forgotten and never shrinks] ->
-  did not materialize: the backfill happened immediately as a follow-up
-  (see Migration Plan), not on an indefinite timeline. The mitigation
-  reasoning stands regardless, for whatever ends up on the list next.
+  did not materialize, and no longer can: the backfill happened
+  immediately as a follow-up (see Migration Plan), and the allow-list
+  mechanism itself was then removed entirely rather than kept around
+  empty - there's nothing left to forget.
 - [A hand-rolled `mock_command` helper has some rough edge a real mocking
   library would have already solved] -> low stakes: it's a few lines
   behind its own unit test (see Migration Plan), and can be replaced by
@@ -206,3 +209,17 @@ contain what. Also removed `mock_command`'s own dependency on external
 `cat` (rewritten with `echo` instead, both bash builtins), since a test
 isolating PATH down to just what it explicitly names would otherwise also
 need to keep `cat` reachable purely for `mock_command`'s own sake.
+
+**Follow-up (removing the allow-list mechanism entirely, on explicit
+request):** with the backfill complete and `NOT_YET_TESTED` empty,
+keeping the mechanism around (even empty) would have meant a future
+script could quietly be added to it instead of getting a real test - the
+user asked to close that door rather than leave it available. Removed
+`NOT_YET_TESTED`, `NOT_YET_TESTED_EXTRA`, and `is_grandfathered` from
+`check_bash_test_coverage.bash` entirely; the check is now unconditional:
+any script without a test fails, full stop. Updated its own test
+(dropped the "explicitly grandfathered" case, kept the "has a test" and
+"fails when it doesn't" cases) and every doc that described the allow-list
+as a live mechanism (the rule, the skill, `CONTRIBUTING.md`,
+`Taskfile.yaml`) to describe it only as something the backfill used
+temporarily, not something that still exists.

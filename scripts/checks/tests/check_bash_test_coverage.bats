@@ -1,8 +1,8 @@
 #!/usr/bin/env bats
 # Mocked end-to-end test for check_bash_test_coverage.bash: points it at a
 # throwaway fixture tree (via SCAN_DIR) instead of the real repo, so it
-# can be exercised against every branch (tested, grandfathered,
-# neither) without depending on this repo's own current script inventory.
+# can be exercised against both branches (tested, untested) without
+# depending on this repo's own current script inventory.
 
 SCRIPT="$BATS_TEST_DIRNAME/../check_bash_test_coverage.bash"
 
@@ -20,15 +20,7 @@ setup() {
     [[ "$output" == *"OK:"* ]]
 }
 
-@test "passes when an untested script is explicitly grandfathered" {
-    touch "$FIXTURE_DIR/checks/legacy.bash"
-
-    SCAN_DIR="$FIXTURE_DIR" NOT_YET_TESTED_EXTRA="$FIXTURE_DIR/checks/legacy.bash" run "$SCRIPT"
-    [ "$status" -eq 0 ]
-    [[ "$output" == *"OK:"* ]]
-}
-
-@test "fails, naming the script, when an untested script is not grandfathered" {
+@test "fails, naming the script, when a script has no test" {
     touch "$FIXTURE_DIR/checks/new_and_untested.bash"
 
     SCAN_DIR="$FIXTURE_DIR" run "$SCRIPT"

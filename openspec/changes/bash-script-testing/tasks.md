@@ -93,3 +93,37 @@
       `NOT_YET_TESTED` entirely; harden
       `check_bash_test_coverage.bash`'s now-empty array for `set -u` under
       bash <4.4 (`"${arr[@]:-}"`, not a bare `"${arr[@]}"`)
+
+## 8. Fix a real CI failure (Ubuntu runner, not caught locally on macOS)
+
+- [x] 8.1 Root-cause `scripts/lib/tests/fetch.bats`'s 6 CI failures: its
+      "curl/wget/sudo/apt-get/id absent" simulation restricted `PATH` to
+      `$MOCK_BIN_DIR:/bin`, assuming those tools "never live in bare
+      /bin" - true on macOS, false on Debian/Ubuntu's merged-usr layout
+      (`/bin` is a symlink to `/usr/bin`), so the real tools stayed
+      reachable on the GitHub-hosted runner
+- [x] 8.2 Add `mock_isolate_path` to `scripts/lib/testing.sh`: symlinks
+      (not copies - a `cp` of a macOS system binary elsewhere gets killed
+      by code-signing enforcement on exec) each named tool from the
+      original `PATH` into the mock bin directory, then restricts `PATH`
+      to only that directory; update `fetch.bats`'s 6 affected tests to
+      use it instead of the `/bin`-guessing technique
+- [x] 8.3 Remove `mock_command`'s own hidden dependency on external `cat`
+      (rewritten with `echo`, both bash builtins), since a test isolating
+      `PATH` that tightly would otherwise need to keep `cat` reachable
+      purely for `mock_command`'s own sake
+- [x] 8.4 Confirm all 153 tests pass locally and `task check:all` passes;
+      real CI confirmation pending the next push
+
+## 9. Remove the allow-list mechanism entirely (on explicit request)
+
+- [x] 9.1 Remove `NOT_YET_TESTED`, `NOT_YET_TESTED_EXTRA`, and
+      `is_grandfathered` from `check_bash_test_coverage.bash` - the check
+      is now unconditional, no exceptions mechanism at all
+- [x] 9.2 Update its own test (`check_bash_test_coverage.bats`): drop the
+      "explicitly grandfathered" case, keep "has a test" (passes) and
+      "fails when it doesn't" (including "reports every failing script")
+- [x] 9.3 Update every doc that described the allow-list as a live
+      mechanism to describe it only as something the backfill used
+      temporarily: the rule, the skill, `CONTRIBUTING.md`, `Taskfile.yaml`
+- [x] 9.4 Confirm `task check:all` passes clean with the simplified check

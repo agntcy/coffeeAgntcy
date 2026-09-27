@@ -50,14 +50,18 @@ follow-up effort, per the user's own framing of this change.
     end-to-end test of `scripts/ci-gate/wait-for-sibling-runs.sh`,
     mocking `gh` to return canned Actions-API JSON and overriding its
     timing env vars to run in real seconds instead of real minutes.
-- **A coverage audit, not a hard "every script must have tests today"
-  gate**: a new check (mirroring `check_pipeline_exceptions.bash`'s own
-  "hardcoded exception list, audited" shape) fails only when a script
-  *outside* a hardcoded "not yet tested" list lacks a corresponding test
-  file - so every script that predates this rule is explicitly, visibly
-  grandfathered (the punch list for the deferred follow-up), while any
-  *new* script from now on is caught immediately if it ships without
-  tests.
+- **A coverage audit**: a new check fails when any bash script anywhere
+  in the repository lacks a corresponding test file. ~~Initially a hard
+  "every script must have tests today" gate would have failed
+  immediately for the ~17 scripts that predated this rule~~, so it
+  launched instead as a hardcoded "not yet tested" allow-list (mirroring
+  `check_pipeline_exceptions.bash`'s own "hardcoded exception list,
+  audited" shape) that only failed on a script *outside* the list. The
+  backfill (see design.md's Migration Plan) gave every one of those
+  scripts a real test immediately afterward, and the allow-list mechanism
+  itself was then removed on explicit request rather than kept around
+  empty - the check is now unconditional, with no exceptions mechanism at
+  all.
 - **Full five-layer pipeline**: `task tests:bash` (run the suite) and
   `task tests:coverage` (run the audit) added to `check_all.bash`'s
   parallel list; a `testing-bash-scripts` skill; a `bash-script-testing`
