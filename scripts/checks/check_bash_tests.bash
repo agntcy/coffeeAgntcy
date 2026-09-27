@@ -1,8 +1,12 @@
 #!/usr/bin/env bash
-# Runs every bats test under scripts/ (see
+# Runs every bats test anywhere in the repository (see
 # .agents/rules/quality/bash-script-testing.md) and fails if any of them
-# do. Thin wrapper around `bats --recursive`, resolving bats from the
-# repo-local toolchain first so this also works before `source
+# do. Discovers every tests/ directory repo-wide (the same set
+# check_bash_test_coverage.bash's SCAN_DIR=. covers) rather than
+# hardcoding scripts/, so a test added under any other subproject (e.g.
+# coffeeAGNTCY/coffee_agents/lungo/scripts/tests/) is actually run here,
+# not just required to exist by the coverage audit. Resolves bats from
+# the repo-local toolchain first so this also works before `source
 # scripts/env.sh` has been run, the same way lint_shell.bash/
 # lint_workflows.bash already resolve shellcheck/shfmt/actionlint.
 set -uo pipefail
@@ -33,4 +37,13 @@ resolve_tool() {
 
 BATS_BIN="$(resolve_tool bats)"
 
-exec "$BATS_BIN" --recursive scripts/
+mapfile -t test_dirs < <(find . \
+    \( -path "*/node_modules" -o -path "*/.venv" -o -path "*/.git" -o -path "*/.tools" \) -prune -o \
+    -type d -name tests -print | sort)
+
+if [[ ${#test_dirs[@]} -eq 0 ]]; then
+    echo "no tests/ directories found"
+    exit 0
+fi
+
+exec "$BATS_BIN" --recursive "${test_dirs[@]}"

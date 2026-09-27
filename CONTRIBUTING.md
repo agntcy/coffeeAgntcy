@@ -116,7 +116,7 @@ on every pull request.
 
 #### Bash script tests
 
-A new script under `scripts/` needs tests: a shared `scripts/lib/*.sh`
+A new bash script anywhere in the repository needs tests: a shared `*/lib/*.sh`-style
 helper gets unit tests (`task tests:bash`), and an executable script gets
 a mocked end-to-end test with any external command it depends on stubbed.
 See [`.agents/rules/quality/bash-script-testing.md`](/.agents/rules/quality/bash-script-testing.md)
