@@ -1,0 +1,42 @@
+#!/usr/bin/env bats
+# Unit tests for scripts/lib/versions.sh: asserts every pinned *_VERSION
+# variable it defines is set, non-empty, and looks like a real version
+# string, so a future typo (missing quotes, empty value, stray text)
+# fails loudly instead of silently breaking whatever installs against it.
+
+load '../versions.sh'
+
+@test "TASK_VERSION is set and looks like a version string" {
+    [ -n "$TASK_VERSION" ]
+    [[ "$TASK_VERSION" =~ ^v?[0-9]+\.[0-9]+\.[0-9]+$ ]]
+}
+
+@test "ACTIONLINT_VERSION is set and looks like a version string" {
+    [ -n "$ACTIONLINT_VERSION" ]
+    [[ "$ACTIONLINT_VERSION" =~ ^v?[0-9]+\.[0-9]+\.[0-9]+$ ]]
+}
+
+@test "SHELLCHECK_VERSION is set and looks like a version string" {
+    [ -n "$SHELLCHECK_VERSION" ]
+    [[ "$SHELLCHECK_VERSION" =~ ^v?[0-9]+\.[0-9]+\.[0-9]+$ ]]
+}
+
+@test "SHFMT_VERSION is set and looks like a version string" {
+    [ -n "$SHFMT_VERSION" ]
+    [[ "$SHFMT_VERSION" =~ ^v?[0-9]+\.[0-9]+\.[0-9]+$ ]]
+}
+
+@test "BATS_VERSION is set and looks like a version string" {
+    [ -n "$BATS_VERSION" ]
+    [[ "$BATS_VERSION" =~ ^v?[0-9]+\.[0-9]+\.[0-9]+$ ]]
+}
+
+@test "NODE_VERSION is set and looks like a version string" {
+    [ -n "$NODE_VERSION" ]
+    [[ "$NODE_VERSION" =~ ^v?[0-9]+\.[0-9]+\.[0-9]+$ ]]
+}
+
+@test "OPENSPEC_VERSION is set and looks like a version string" {
+    [ -n "$OPENSPEC_VERSION" ]
+    [[ "$OPENSPEC_VERSION" =~ ^v?[0-9]+\.[0-9]+\.[0-9]+$ ]]
+}

@@ -61,3 +61,35 @@
 - [x] 6.1 Run `task check:all`, `task tests:bash`, `task tests:coverage`,
       `task shell:lint`, and `task links:check`; confirm all pass clean
 - [x] 6.2 Run `openspec validate "bash-script-testing" --strict`
+
+## 7. Broaden scope to the whole repository and backfill every pre-existing script
+
+- [x] 7.1 Broaden `check_bash_test_coverage.bash`'s `SCAN_DIR` default
+      from `scripts` to `.` (the whole repo, excluding `.git`/`.tools`/
+      `node_modules`/`.venv`); broaden the rule/skill/`CONTRIBUTING.md`
+      wording from "under `scripts/`" to "anywhere in the repository"
+- [x] 7.2 Add `coffeeAGNTCY/coffee_agents/lungo/scripts/push_oasf_records.sh`
+      (the one script found outside `scripts/`) to `NOT_YET_TESTED`,
+      documenting why it's deliberately still deferred (a separate,
+      already-planned refactor on a stashed branch)
+- [x] 7.3 Write a real test for every one of the ~16 pre-existing scripts
+      under `scripts/`: `scripts/lib/{fetch,versions}.sh`, `scripts/env.sh`,
+      `scripts/setup.sh`, `scripts/checks/{check_all,check_dashes,
+      check_forbidden_strings,check_markdown_links,
+      check_pinned_references,check_pipeline_exceptions,
+      check_workflow_permissions,find_strings,fix_dashes}.bash`,
+      `scripts/ci-gate/summarize-ci-gate.sh`,
+      `scripts/lint/{lint_shell,lint_workflows}.bash` - promoting each out
+      of `NOT_YET_TESTED` as its test landed, until only the one
+      deliberately-deferred entry from 7.2 remained
+- [x] 7.4 Confirm `task check:all` (all 9 checks, 135 bash tests) passes
+      clean with the fully-populated suite
+- [x] 7.5 On explicit request, test
+      `coffeeAGNTCY/coffee_agents/lungo/scripts/push_oasf_records.sh` for
+      its current shape too (16 tests: argument parsing, server-address
+      resolution precedence, the dirctl-not-installed path, a missing
+      OASF directory, already-exists vs. push/pull/publish paths and
+      their individual failure modes, and a multi-file summary), emptying
+      `NOT_YET_TESTED` entirely; harden
+      `check_bash_test_coverage.bash`'s now-empty array for `set -u` under
+      bash <4.4 (`"${arr[@]:-}"`, not a bare `"${arr[@]}"`)

@@ -35,18 +35,18 @@ the caller's environment.
   `PATH` is restored to its prior state once the test ends
 
 ### Requirement: A shared library's functions are unit-testable
-Any file under `scripts/lib/*.sh` SHALL be safely `source`-able by a test
+Any lib/*.sh-style shared helper file anywhere in the repository SHALL be safely `source`-able by a test
 without triggering a side effect, since these files are already never
 executed directly - only `source`d by another script.
 
 #### Scenario: A library file is sourced for its functions alone
-- **WHEN** a `.bats` file sources a `scripts/lib/*.sh` file and calls one
+- **WHEN** a `.bats` file sources a lib/*.sh-style shared helper file and calls one
   of its functions directly, with no other script invoking it
 - **THEN** only that function's own logic runs - no side effect from
   anywhere else in the file
 
 ### Requirement: An executable script gets a mocked end-to-end test
-Any script under `scripts/` that is invoked as its own process (via a
+Any script anywhere in the repository that is invoked as its own process (via a
 Taskfile task, `check_all.bash`, or a workflow file) SHALL be testable end
 to end by running it as a subprocess with any external command it
 depends on mocked via `mock_command`, and fixture input in place of real
@@ -60,14 +60,14 @@ repo or API state.
   dependency on the host machine's own state
 
 ### Requirement: A coverage audit enforces tests going forward without failing on pre-existing scripts
-A check SHALL fail when a script under `scripts/` lacks a corresponding
+A check SHALL fail when a bash script anywhere in the repository lacks a corresponding
 test file, unless that script's path is listed in a hardcoded, in-source
 allow-list of scripts that predate this requirement. The check SHALL pass
 today, since every currently-existing script is listed in that allow-list
 at the time this requirement takes effect.
 
 #### Scenario: A new script ships with no test and is not in the allow-list
-- **WHEN** a new file is added under `scripts/` with no corresponding test
+- **WHEN** a new bash script is added anywhere in the repository with no corresponding test
   file, and its path is not in the coverage audit's allow-list
 - **THEN** the audit fails, naming that script's path
 

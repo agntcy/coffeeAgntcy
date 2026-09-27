@@ -1,17 +1,18 @@
 ---
 name: testing-bash-scripts
 description: >-
-  Writes unit tests (for scripts/lib/*.sh helpers) or mocked end-to-end
+  Writes unit tests (for lib/*.sh-style helpers) or mocked end-to-end
   tests (for executable scripts) using bats, and runs task
-  tests:bash/tests:coverage. Use whenever adding a new script under
-  scripts/, or when asked to test, mock, or audit test coverage for one.
+  tests:bash/tests:coverage. Use whenever adding a new bash script
+  anywhere in the repository, or when asked to test, mock, or audit test
+  coverage for one.
 ---
 
 # Testing bash scripts
 
 ## What this skill does
 
-Writes a `.bats` test for a new script under `scripts/`, using `bats`
+Writes a `.bats` test for a new bash script anywhere in the repository, using `bats`
 (bootstrapped by `task setup`) and this repo's shared mocking helper
 ([scripts/lib/testing.sh](../../../../scripts/lib/testing.sh)), then runs
 [`task tests:bash`](../../../../Taskfile.yaml) (the whole suite) and
@@ -24,7 +25,7 @@ for the underlying rule.
 ## Workflow
 
 ```
-- [ ] 1. Decide which shape applies: a shared helper under scripts/lib/*.sh
+- [ ] 1. Decide which shape applies: a shared helper under a lib/*.sh-style directory
         gets unit tests (source it, call its functions directly); an
         executable script anywhere else gets a mocked end-to-end test
         (run it as a subprocess with `run`).
