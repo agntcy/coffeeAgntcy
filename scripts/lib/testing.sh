@@ -51,9 +51,42 @@ mock_teardown() {
 mock_command() {
     local name="$1" body="$2"
     : "${MOCK_BIN_DIR:?mock_command requires mock_setup to run first}"
-    cat >"$MOCK_BIN_DIR/$name" <<EOF
-#!/usr/bin/env bash
-$body
-EOF
+    # Built from bash builtins only (echo, not a heredoc piped through
+    # external `cat`) so a test using mock_isolate_path to make some
+    # other real command genuinely absent doesn't also have to keep
+    # `cat` reachable just for mock_command's own sake.
+    {
+        echo "#!/usr/bin/env bash"
+        echo "$body"
+    } >"$MOCK_BIN_DIR/$name"
     chmod +x "$MOCK_BIN_DIR/$name"
+}
+
+# For a test that needs a real command to be genuinely absent (not just
+# hopefully-shadowed by pointing PATH at a system directory guessed not to
+# contain it) - symlinks each named tool, resolved via `command -v`
+# against the original pre-mock_setup PATH, into the mock bin directory,
+# then restricts PATH to *only* that directory. A symlink, not a copy:
+# macOS's own system binaries are code-signed to their exact path, so a
+# `cp` elsewhere gets killed (SIGKILL) on exec, while a symlink still
+# resolves to - and passes signature verification against - the
+# original file. Guessing a "safe" system directory instead (e.g. bare
+# /bin) doesn't port across OSes either: Debian/Ubuntu's merged-usr
+# layout makes /bin a symlink to /usr/bin, so a tool believed "never in
+# /bin" on macOS (curl, wget, sudo, apt-get, id all live under /usr/bin
+# or /opt/homebrew there) turns out to be reachable via /bin on Linux
+# too. Call after mock_setup and before any mock_command calls the test
+# also needs (harmless either order, since this only ever adds files to
+# the same MOCK_BIN_DIR, never removes any).
+mock_isolate_path() {
+    local tool real_path
+    : "${MOCK_BIN_DIR:?mock_isolate_path requires mock_setup to run first}"
+    for tool in "$@"; do
+        real_path="$(PATH="$MOCK_ORIGINAL_PATH" command -v "$tool")" || {
+            echo "mock_isolate_path: '$tool' not found on the original PATH" >&2
+            return 1
+        }
+        ln -s "$real_path" "$MOCK_BIN_DIR/$tool"
+    done
+    PATH="$MOCK_BIN_DIR"
 }
