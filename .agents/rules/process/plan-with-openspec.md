@@ -65,3 +65,7 @@ than living only in a PR description.
   before committing - the CLI's own generated prose isn't written against
   this repo's [`no-em-en-dashes`](../always-apply/no-em-en-dashes.md) rule and can
   reintroduce an em dash or en dash.
+- Once a change clears this rule's threshold,
+  [`development-iteration-loop`](development-iteration-loop.md) governs
+  the ideate/design/implement sequencing around it - review after every
+  step with loop-back, and documentation notes tracked from the start.
