@@ -43,6 +43,12 @@ new one (see `.agents/rules/formatting/organize-large-collections.md`).
 | Linting shell scripts | [.agents/skills/quality-checks/linting-shell-scripts/SKILL.md](.agents/skills/quality-checks/linting-shell-scripts/SKILL.md) |
 | Testing bash scripts | [.agents/skills/quality-checks/testing-bash-scripts/SKILL.md](.agents/skills/quality-checks/testing-bash-scripts/SKILL.md) |
 
+### Process
+
+| Topic | File |
+|-------|------|
+| Running a development iteration | [.agents/skills/process/running-a-development-iteration/SKILL.md](.agents/skills/process/running-a-development-iteration/SKILL.md) |
+
 ### OpenSpec workflow
 
 Generated and kept in sync by the `openspec` CLI itself (`openspec update`
@@ -77,6 +83,7 @@ applied by judgment.
 
 | Topic | File |
 |-------|------|
+| Development iteration loop | [.agents/rules/process/development-iteration-loop.md](.agents/rules/process/development-iteration-loop.md) |
 | Plan with OpenSpec | [.agents/rules/process/plan-with-openspec.md](.agents/rules/process/plan-with-openspec.md) |
 
 ### Always apply
