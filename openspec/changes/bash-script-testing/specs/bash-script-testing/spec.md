@@ -1,0 +1,88 @@
+# Spec Delta
+
+## Purpose
+
+Requires new bash scripts in this repo to ship with unit and/or mocked
+end-to-end tests, provides the pinned framework and shared mocking helper
+that make that practical, and enforces it going forward without failing
+on the scripts that predate the rule.
+
+## ADDED Requirements
+
+### Requirement: bats is bootstrapped by the pinned toolchain
+`task setup` (`scripts/setup.sh`) SHALL install `bats` (the official
+`bats-core` npm distribution) into the repo-local toolchain, pinned in
+`scripts/lib/versions.sh`, the same way every other pinned tool is
+installed - no global install, reinstalled on any pin mismatch.
+
+#### Scenario: A fresh clone runs task setup
+- **WHEN** `task setup` is run on a machine with no `.tools/` directory
+- **THEN** a `bats` binary matching the pinned version is available on
+  `PATH` after `source scripts/env.sh`
+
+### Requirement: A shared mocking helper is available to any test
+`scripts/lib/testing.sh` SHALL provide a `mock_command` function that,
+for the duration of one test, makes an executable stub take priority over
+any real binary of the same name on `PATH`, without permanently altering
+the caller's environment.
+
+#### Scenario: A test mocks an external command
+- **WHEN** a `.bats` file loads `scripts/lib/testing.sh` and calls
+  `mock_command` for a command name, then runs code that invokes that
+  command name
+- **THEN** the stub runs instead of any real binary of that name, and
+  `PATH` is restored to its prior state once the test ends
+
+### Requirement: A shared library's functions are unit-testable
+Any file under `scripts/lib/*.sh` SHALL be safely `source`-able by a test
+without triggering a side effect, since these files are already never
+executed directly - only `source`d by another script.
+
+#### Scenario: A library file is sourced for its functions alone
+- **WHEN** a `.bats` file sources a `scripts/lib/*.sh` file and calls one
+  of its functions directly, with no other script invoking it
+- **THEN** only that function's own logic runs - no side effect from
+  anywhere else in the file
+
+### Requirement: An executable script gets a mocked end-to-end test
+Any script under `scripts/` that is invoked as its own process (via a
+Taskfile task, `check_all.bash`, or a workflow file) SHALL be testable end
+to end by running it as a subprocess with any external command it
+depends on mocked via `mock_command`, and fixture input in place of real
+repo or API state.
+
+#### Scenario: A script's happy path is exercised without real external state
+- **WHEN** a `.bats` file mocks every external command a script invokes,
+  supplies fixture input, and runs the script as a subprocess
+- **THEN** the script's own logic (parsing, branching, output, exit code)
+  is exercised and asserted on, with no real network call, API token, or
+  dependency on the host machine's own state
+
+### Requirement: A coverage audit enforces tests going forward without failing on pre-existing scripts
+A check SHALL fail when a script under `scripts/` lacks a corresponding
+test file, unless that script's path is listed in a hardcoded, in-source
+allow-list of scripts that predate this requirement. The check SHALL pass
+today, since every currently-existing script is listed in that allow-list
+at the time this requirement takes effect.
+
+#### Scenario: A new script ships with no test and is not in the allow-list
+- **WHEN** a new file is added under `scripts/` with no corresponding test
+  file, and its path is not in the coverage audit's allow-list
+- **THEN** the audit fails, naming that script's path
+
+#### Scenario: A pre-existing, allow-listed script still has no test
+- **WHEN** the coverage audit runs against a script whose path is in its
+  allow-list and which still has no test file
+- **THEN** the audit passes - that gap is tracked, not enforced, until the
+  script is either given a test or promoted out of the allow-list
+
+### Requirement: The coverage audit and test suite run as part of every standing check
+`task tests:bash` (runs the test suite) and `task tests:coverage` (runs
+the coverage audit) SHALL both run as part of `task check:all`, in
+parallel with every other standing check, the same as any check added to
+`scripts/checks/check_all.bash`'s parallel list.
+
+#### Scenario: task check:all is run
+- **WHEN** `task check:all` is run
+- **THEN** its summary table includes a pass/fail line for `tests:bash`
+  and for `tests:coverage`
