@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
 # Audits .agents/rules/quality/bash-script-testing.md's requirement that
-# every bash script has a test: for each script under scripts/ (excluding
-# the tests/ directories themselves), confirms a corresponding
-# tests/<name>.bats file exists, unless that script's path is listed
-# below as predating the rule.
+# every bash script in this repository has a test: for each *.bash/*.sh
+# file anywhere in the repo (excluding the tests/ directories
+# themselves, and the usual vendored/tooling directories), confirms a
+# corresponding tests/<name>.bats file exists, unless that script's path
+# is listed below as predating the rule.
 #
 # A script's expected test lives at <its-own-dir>/tests/<basename
 # without .bash/.sh>.bats - e.g. scripts/checks/check_dashes.bash's test
@@ -18,42 +19,31 @@
 # same kind of lie repo-operation-pipeline.md's own exceptions list
 # would be if left unpromoted).
 #
-# SCAN_DIR (default "scripts") and NOT_YET_TESTED_EXTRA (default empty, a
-# space-separated list of extra grandfathered paths) are overridable so
-# this script's own test can point it at a fixture tree with its own
-# fixture-specific grandfather list, instead of scanning the real repo
-# against the real one below.
+# SCAN_DIR (default ".", i.e. the whole repo) and NOT_YET_TESTED_EXTRA
+# (default empty, a space-separated list of extra grandfathered paths)
+# are overridable so this script's own test can point it at a fixture
+# tree with its own fixture-specific grandfather list, instead of
+# scanning the real repo against the real one below.
 set -uo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 cd "$REPO_ROOT" || exit 2
 
-: "${SCAN_DIR:=scripts}"
+: "${SCAN_DIR:=.}"
 : "${NOT_YET_TESTED_EXTRA:=}"
 
-NOT_YET_TESTED=(
-    scripts/checks/check_all.bash
-    scripts/checks/check_dashes.bash
-    scripts/checks/check_forbidden_strings.bash
-    scripts/checks/check_markdown_links.bash
-    scripts/checks/check_pinned_references.bash
-    scripts/checks/check_pipeline_exceptions.bash
-    scripts/checks/check_workflow_permissions.bash
-    scripts/checks/find_strings.bash
-    scripts/checks/fix_dashes.bash
-    scripts/ci-gate/summarize-ci-gate.sh
-    scripts/env.sh
-    scripts/lib/fetch.sh
-    scripts/lib/versions.sh
-    scripts/lint/lint_shell.bash
-    scripts/lint/lint_workflows.bash
-    scripts/setup.sh
-)
+NOT_YET_TESTED=()
 
 is_grandfathered() {
     local script="$1" entry
-    for entry in "${NOT_YET_TESTED[@]}" $NOT_YET_TESTED_EXTRA; do
+    # "${NOT_YET_TESTED[@]:-}" (not a bare "${NOT_YET_TESTED[@]}") because
+    # this array is legitimately empty right now (everything's tested) -
+    # macOS's system /bin/bash (still 3.2) treats expanding an empty
+    # array under `set -u` as an unbound-variable error, unlike every
+    # bash >=4.4. The ":-" fallback yields one harmless empty-string
+    # entry instead, which never matches a real script path below.
+    for entry in "${NOT_YET_TESTED[@]:-}" $NOT_YET_TESTED_EXTRA; do
         [[ "$entry" == "$script" ]] && return 0
     done
     return 1
@@ -62,9 +52,12 @@ is_grandfathered() {
 failed=0
 checked=0
 
-mapfile -t found_scripts < <(find "$SCAN_DIR" -type f \( -name "*.bash" -o -name "*.sh" \) -not -path "*/tests/*" | sort)
+mapfile -t found_scripts < <(find "$SCAN_DIR" \
+    \( -path "*/node_modules" -o -path "*/.venv" -o -path "*/.git" -o -path "*/.tools" \) -prune -o \
+    -type f \( -name "*.bash" -o -name "*.sh" \) -not -path "*/tests/*" -print | sort)
 
-for script in "${found_scripts[@]}"; do
+for raw_script in "${found_scripts[@]}"; do
+    script="${raw_script#./}"
     checked=$((checked + 1))
     dir="$(dirname "$script")"
     base="$(basename "$script")"

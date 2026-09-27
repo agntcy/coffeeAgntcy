@@ -35,9 +35,13 @@ explicitly defers.
   none of them are touched by this change.
 
 **Non-Goals:**
-- Retrofitting tests onto any of the ~20 pre-existing scripts - explicitly
-  deferred, tracked as the coverage audit's own hardcoded gap list (see
-  Decisions).
+- ~~Retrofitting tests onto any of the ~20 pre-existing scripts~~ -
+  **done as an immediate follow-up, not deferred indefinitely**: every
+  script that existed anywhere in the repository when this rule was
+  introduced now has a real test (151 tests total), including
+  `coffeeAGNTCY/coffee_agents/lungo/scripts/push_oasf_records.sh` - the
+  `NOT_YET_TESTED` allow-list is empty. What stays a non-goal is
+  automating *quality* judgment about any given test - see below.
 - Enforcing test *quality* ("thorough") by automation - not machine
   checkable, same as this repo already accepts for `pin-exempt`'s
   "genuine reason" or a rule's own judgment-call exceptions. Covered by
@@ -132,10 +136,9 @@ logic path by path.
 ## Risks / Trade-offs
 
 - [The "not-yet-tested" allow-list is forgotten and never shrinks] ->
-  acceptable for this change: the list existing and being enforced (a new
-  script can't join it silently) is strictly better than no list, and
-  shrinking it is explicitly the user's own planned follow-up, not
-  something this change can force by itself.
+  did not materialize: the backfill happened immediately as a follow-up
+  (see Migration Plan), not on an indefinite timeline. The mitigation
+  reasoning stands regardless, for whatever ends up on the list next.
 - [A hand-rolled `mock_command` helper has some rough edge a real mocking
   library would have already solved] -> low stakes: it's a few lines
   behind its own unit test (see Migration Plan), and can be replaced by
@@ -160,3 +163,25 @@ into `scripts/checks/check_all.bash`; add the skill and rule; index both
 in `AGENTS.md`. Purely additive - no existing script's behavior changes
 (the `bats` install path is new, not a change to an existing tool).
 Rollback is a plain `git revert`.
+
+**Follow-up (same change, done immediately rather than deferred):**
+broadened the rule and `check_bash_test_coverage.bash`'s scan from
+`scripts/` to the whole repository (finding exactly one other script,
+`coffeeAGNTCY/coffee_agents/lungo/scripts/push_oasf_records.sh`); wrote a
+real test for every one of the ~16 scripts under `scripts/` that predated
+the rule. That script was initially grandfathered instead, on the
+reasoning that it's the subject of its own separate, already-planned
+refactor on a stashed branch and testing its current shape would be
+wasted effort - revisited on the user's explicit request and tested for
+its current shape anyway (16 tests, using the same fixture-copy technique
+as the other executable scripts, with `dirctl` mocked), emptying
+`NOT_YET_TESTED` entirely. No bugs were found in any of the 17 scripts
+under test - every test confirmed existing behavior rather than catching
+a regression. One unrelated, pre-existing finding surfaced while
+hardening `check_bash_test_coverage.bash` for an empty `NOT_YET_TESTED`
+array (a `set -u`-safe `"${arr[@]:-}"` fix, needed since macOS's system
+`/bin/bash` is still 3.2 and errors on expanding a genuinely empty array
+under `nounset`): that same `/bin/bash` also lacks `mapfile` entirely
+(introduced in bash 4.0), which every `check_*.bash` script already
+depends on - a repo-wide pre-existing bash-3.2 incompatibility, not
+something this change introduced or fixes.

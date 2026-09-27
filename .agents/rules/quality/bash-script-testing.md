@@ -1,21 +1,22 @@
 ---
 name: bash-script-testing
 description: >-
-  Every new bash script under scripts/ needs tests: a shared helper under
-  scripts/lib/*.sh gets unit tests for its functions (loaded via source),
-  and an executable script gets a mocked end-to-end test that runs it as
-  a subprocess with any external command it depends on stubbed. Checked
-  by `task tests:coverage` (scripts/checks/check_bash_test_coverage.bash),
-  which also runs as part of `task check:all` in
-  .github/workflows/checks.yaml. Does not retroactively require tests on
-  scripts that predate this rule - see its own allow-list.
+  Every new bash script anywhere in this repository needs tests: a
+  shared helper under a lib/*.sh-style directory gets unit tests for its
+  functions (loaded via source), and an executable script gets a mocked
+  end-to-end test that runs it as a subprocess with any external command
+  it depends on stubbed. Checked by `task tests:coverage`
+  (scripts/checks/check_bash_test_coverage.bash), which also runs as
+  part of `task check:all` in .github/workflows/checks.yaml. Does not
+  retroactively require tests on scripts that predate this rule - see
+  its own allow-list.
 ---
 
 # Bash script testing
 
 ## Rule
 
-Every new bash script added under `scripts/` needs tests, using `bats`
+Every new bash script added anywhere in this repository needs tests, using `bats`
 (`bats-core`, the same framework already pinned in
 `scripts/lib/versions.sh` and bootstrapped by `task setup`):
 
@@ -24,7 +25,7 @@ Every new bash script added under `scripts/` needs tests, using `bats`
   sources it and calls its functions directly, mocking any external
   command those functions call (`uname`, etc.) via
   `scripts/lib/testing.sh`'s `mock_command`.
-- An executable script anywhere else under `scripts/` gets a **mocked
+- An executable script anywhere else in the repository gets a **mocked
   end-to-end test**: a `.bats` file runs it as a real subprocess (`run
   path/to/script.bash ...`), with every external command it shells out
   to (`gh`, `docker`, `git`, ...) mocked the same way, and fixture input
@@ -37,9 +38,13 @@ A script's test lives at `<its-own-directory>/tests/<name>.bats` -
 
 This does **not** retroactively require tests on any script that existed
 before this rule was introduced - `scripts/checks/check_bash_test_coverage.bash`
-carries its own hardcoded allow-list of exactly those scripts, the same
-shape as `repo-operation-pipeline.md`'s own "Known exceptions" list, and
-only fails when a script *outside* that list lacks a test.
+carries its own hardcoded allow-list for exactly that purpose (currently
+empty: every script in the repository has a test, including
+`coffeeAGNTCY/coffee_agents/lungo/scripts/push_oasf_records.sh`, tested
+for its current shape even though it's also the subject of its own
+separate, already-planned refactor), the same shape as
+`repo-operation-pipeline.md`'s own "Known exceptions" list, and only
+fails when a script *outside* that list lacks a test.
 
 ## Why
 
@@ -63,7 +68,7 @@ script first.
   `scripts/lib/tests/<name>.bats` alongside it, sourcing it directly and
   testing each function's real behavior, including its error paths - not
   just its happy path.
-- Writing a new executable script anywhere under `scripts/`: write
+- Writing a new executable script anywhere in the repository: write
   `<its-directory>/tests/<name>.bats`, running it with `run` and mocking
   every external command it depends on - a passing test that secretly
   hit a real network call or a real installed tool isn't a mocked
