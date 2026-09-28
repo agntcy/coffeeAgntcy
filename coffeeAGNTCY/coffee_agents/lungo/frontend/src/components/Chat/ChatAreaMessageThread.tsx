@@ -75,22 +75,6 @@ const ChatAreaMessageThread: React.FC<ChatAreaMessageThreadProps> = ({
       spacing={1.5}
       sx={{ width: "100%", maxWidth: 1100, mx: "auto", mb: 2 }}
     >
-      {hasApiError ? (
-        <Banner
-          status="negative"
-          role="alert"
-          aria-live="assertive"
-          sx={{ width: "100%" }}
-          text={
-            <>
-              <strong>The request failed</strong>
-              <br />
-              {apiErrorMessage}
-            </>
-          }
-        />
-      ) : null}
-
       {currentUserMessage.trim() ? (
         <UserMessage content={currentUserMessage} />
       ) : null}
@@ -151,6 +135,22 @@ const ChatAreaMessageThread: React.FC<ChatAreaMessageThreadProps> = ({
             </>
           )}
         </Message>
+      ) : null}
+
+      {hasApiError ? (
+        <Banner
+          status="negative"
+          role="alert"
+          aria-live="assertive"
+          sx={{ width: "100%" }}
+          text={
+            <>
+              <strong>The request failed</strong>
+              <br />
+              {apiErrorMessage}
+            </>
+          }
+        />
       ) : null}
     </Stack>
   )
