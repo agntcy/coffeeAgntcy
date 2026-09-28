@@ -201,3 +201,8 @@ node_modules/
 # MCP, local configuration.
 .mcp.json
 
+# Local todo list.
+todo.local.md
+
+# Local tools for the repository.
+.tools/**
