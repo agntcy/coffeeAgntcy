@@ -17,8 +17,7 @@ import {
 import type { HttpRequestTarget } from "@/urls"
 import { resolveAgentSlug } from "@/utils/resolveAgentSlug"
 import { logger } from "@/utils/logger"
-
-const IDENTITY_REQUEST_TIMEOUT_MS = 10_000
+import { CONTROL_PLANE_REQUEST_TIMEOUT_MS } from "@/config/requestRetryPolicy"
 
 const getSlugFromNodeData = (nodeData: CustomNodeData): string => {
   logger.debug("getSlugFromNodeData", nodeData)
@@ -69,7 +68,7 @@ export const fetchBadgeDetails = async (
   const request = badgeDetailsRequest(nodeData)
   return fetchJson<BadgeData>(request.url, {
     endpointLabel: request.endpointLabel,
-    timeoutMs: IDENTITY_REQUEST_TIMEOUT_MS,
+    timeoutMs: CONTROL_PLANE_REQUEST_TIMEOUT_MS,
     headers: {
       "Content-Type": "application/json",
     },
@@ -82,7 +81,7 @@ export const fetchPolicyDetails = async (
   const request = policyDetailsRequest(nodeData)
   return fetchJson<PolicyData>(request.url, {
     endpointLabel: request.endpointLabel,
-    timeoutMs: IDENTITY_REQUEST_TIMEOUT_MS,
+    timeoutMs: CONTROL_PLANE_REQUEST_TIMEOUT_MS,
     headers: {
       "Content-Type": "application/json",
     },

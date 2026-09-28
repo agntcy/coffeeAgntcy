@@ -13,9 +13,11 @@ import type { TopologyWire } from "@/api/agenticWorkflowsTypes"
 import { reportRequestError } from "@/errors/request"
 import { topologyWireToReactFlow } from "@/utils/topologyToReactFlow"
 import {
-  REFETCH_DEBOUNCE_MS,
-  type WorkflowGraphAgenticSession,
-} from "./useWorkflowGraphFromAgenticApi.types"
+  TOPOLOGY_REFETCH_DEBOUNCE_MS,
+  TOPOLOGY_REFETCH_MAX_RETRIES,
+  TOPOLOGY_REFETCH_RETRY_DELAYS_MS,
+} from "@/config/requestRetryPolicy"
+import { type WorkflowGraphAgenticSession } from "./useWorkflowGraphFromAgenticApi.types"
 
 interface UseWorkflowGraphTopologySyncParams {
   isStreamingRef: React.RefObject<boolean>
@@ -93,7 +95,7 @@ export function useWorkflowGraphTopologySync({
       } catch (e) {
         const s = sessionRef.current
         if (!s || s.refetchSeq !== seq) return
-        if (attempt >= 2) {
+        if (attempt >= TOPOLOGY_REFETCH_MAX_RETRIES) {
           // Logical label for topology refetch exhaustion - see urls.ts.
           const endpointLabel = "agentic-workflows/refetch-topology"
           const userMessage =
@@ -102,7 +104,11 @@ export function useWorkflowGraphTopologySync({
           setAgenticError(userMessage)
           return
         }
-        const backoffMs = attempt === 0 ? 200 : 500
+        const backoffMs =
+          TOPOLOGY_REFETCH_RETRY_DELAYS_MS[attempt] ??
+          TOPOLOGY_REFETCH_RETRY_DELAYS_MS[
+            TOPOLOGY_REFETCH_RETRY_DELAYS_MS.length - 1
+          ]
         if (s.retryTimer) clearTimeout(s.retryTimer)
         s.retryTimer = setTimeout(() => {
           const current = sessionRef.current
@@ -133,7 +139,7 @@ export function useWorkflowGraphTopologySync({
       if (!latest || latest.refetchSeq !== seq) return
       latest.debounceTimer = null
       void refetchAndApplyTopologyRef.current(seq, 0)
-    }, REFETCH_DEBOUNCE_MS)
+    }, TOPOLOGY_REFETCH_DEBOUNCE_MS)
   }, [sessionRef])
 
   const scheduleTopologyRefetchRef = useRef(scheduleTopologyRefetch)

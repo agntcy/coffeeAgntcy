@@ -3,12 +3,47 @@
  * SPDX-License-Identifier: Apache-2.0
  **/
 
-import { isHttpError } from "@/api/http"
+import { isHttpError, isRequestCancelledError } from "@/api/http"
+import { CHAT_RETRY_CONFIG } from "@/config/requestRetryPolicy"
 
-export const RETRY_CONFIG = {
-  maxRetries: 3,
-  baseDelay: 1000,
-  backoffMultiplier: 2,
+/**
+ * Wait `ms`, rejecting with an AbortError as soon as `signal` aborts so a
+ * backoff never outlives the request it belongs to.
+ */
+export const sleepMs = (ms: number, signal?: AbortSignal): Promise<void> =>
+  new Promise((resolve, reject) => {
+    if (signal?.aborted) {
+      reject(new DOMException("Aborted", "AbortError"))
+      return
+    }
+    const timer = setTimeout(() => {
+      signal?.removeEventListener("abort", onAbort)
+      resolve()
+    }, ms)
+    const onAbort = () => {
+      clearTimeout(timer)
+      reject(new DOMException("Aborted", "AbortError"))
+    }
+    signal?.addEventListener("abort", onAbort, { once: true })
+  })
+
+/**
+ * Transport-level failure: the response never arrived, so no status is known
+ * (connection refused, DNS, TLS). Cancellations are excluded - both a client
+ * timeout and our own teardown surface as aborts, and only the caller knows
+ * which one it is looking at.
+ */
+export function isTransportFailureError(error: unknown): boolean {
+  if (isRequestCancelledError(error)) return false
+  return isHttpError(error) && error.status === undefined
+}
+
+/** True when `error` is an `HttpError` carrying one of `statuses`. */
+export function hasRetryableStatus(
+  error: unknown,
+  statuses: readonly number[],
+): boolean {
+  return isHttpError(error) && statuses.includes(error.status ?? -1)
 }
 
 export const withRetry = async <T>(
@@ -17,13 +52,17 @@ export const withRetry = async <T>(
 ): Promise<T> => {
   let lastError: Error
 
-  for (let attempt = 1; attempt <= RETRY_CONFIG.maxRetries + 1; attempt++) {
+  for (
+    let attempt = 1;
+    attempt <= CHAT_RETRY_CONFIG.maxRetries + 1;
+    attempt++
+  ) {
     try {
       return await operation()
     } catch (error) {
       lastError = error as Error
 
-      if (attempt > RETRY_CONFIG.maxRetries) {
+      if (attempt > CHAT_RETRY_CONFIG.maxRetries) {
         throw lastError
       }
 
@@ -36,9 +75,9 @@ export const withRetry = async <T>(
       }
 
       const delay =
-        RETRY_CONFIG.baseDelay *
-        Math.pow(RETRY_CONFIG.backoffMultiplier, attempt - 1)
-      await new Promise((resolve) => setTimeout(resolve, delay))
+        CHAT_RETRY_CONFIG.baseDelay *
+        Math.pow(CHAT_RETRY_CONFIG.backoffMultiplier, attempt - 1)
+      await sleepMs(delay)
     }
   }
 
@@ -52,7 +91,8 @@ const RETRYABLE_CODES = [
   "ECONNRESET",
 ] as const
 
-function isRetryableError(error: unknown): boolean {
+/** Worth another attempt: 5xx, 429, transport codes, or no status at all. */
+export function isRetryableError(error: unknown): boolean {
   if (typeof error !== "object" || error === null) return false
 
   const err = error as Record<string, unknown>

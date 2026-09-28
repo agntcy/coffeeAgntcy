@@ -16,6 +16,12 @@ import { agenticWorkflowsAuthHeaders } from "@/api/agenticWorkflowsClient"
 import type { WorkflowSummaryMapResponse } from "@/api/agenticWorkflowsTypes"
 import { fetchJson, isHttpError } from "@/api/http"
 import {
+  CONTROL_PLANE_REQUEST_TIMEOUT_MS,
+  WORKFLOW_CATALOG_MAX_RETRIES,
+  WORKFLOW_CATALOG_RETRY_DELAY_MS,
+} from "@/config/requestRetryPolicy"
+import { sleepMs } from "@/utils/retryUtils"
+import {
   buildAgenticWorkflowsCatalogRequest,
   buildAgenticWorkflowsDocumentationRequest,
   buildPatternCategoriesRequest,
@@ -64,26 +70,6 @@ export const AGENTIC_WORKFLOWS_CATALOG_LOG_PATH =
 /** Log label for pattern category list requests (matches router mount). */
 export const PATTERN_CATEGORIES_LOG_PATH =
   LUNGO_FRONTEND_URLS.apiPaths.patternCategories.endpointLabel
-
-const CATALOG_FETCH_MAX_RETRIES = 2
-const CATALOG_FETCH_RETRY_DELAY_MS = 750
-
-const sleep = (ms: number, signal: AbortSignal): Promise<void> =>
-  new Promise((resolve, reject) => {
-    if (signal.aborted) {
-      reject(new DOMException("Aborted", "AbortError"))
-      return
-    }
-    const timer = setTimeout(() => {
-      signal.removeEventListener("abort", onAbort)
-      resolve()
-    }, ms)
-    const onAbort = () => {
-      clearTimeout(timer)
-      reject(new DOMException("Aborted", "AbortError"))
-    }
-    signal.addEventListener("abort", onAbort, { once: true })
-  })
 
 const isNonEmptyString = (value: unknown): value is string =>
   typeof value === "string" && value.length > 0
@@ -152,6 +138,7 @@ export const fetchWorkflowSummaries = async (
   const body = await fetchJson<WorkflowSummaryMapResponse>(request.url, {
     signal,
     endpointLabel: request.endpointLabel,
+    timeoutMs: CONTROL_PLANE_REQUEST_TIMEOUT_MS,
     headers: agenticWorkflowsAuthHeaders(),
   })
 
@@ -178,14 +165,14 @@ export const fetchWorkflowSummariesWithRetry = async (
   signal: AbortSignal,
 ): Promise<WorkflowSummary[]> => {
   let lastError: unknown
-  for (let attempt = 0; attempt <= CATALOG_FETCH_MAX_RETRIES; attempt += 1) {
+  for (let attempt = 0; attempt <= WORKFLOW_CATALOG_MAX_RETRIES; attempt += 1) {
     try {
       return await fetchWorkflowSummaries(signal)
     } catch (err) {
       if (err instanceof DOMException && err.name === "AbortError") throw err
       lastError = err
-      if (attempt < CATALOG_FETCH_MAX_RETRIES) {
-        await sleep(CATALOG_FETCH_RETRY_DELAY_MS, signal)
+      if (attempt < WORKFLOW_CATALOG_MAX_RETRIES) {
+        await sleepMs(WORKFLOW_CATALOG_RETRY_DELAY_MS, signal)
       }
     }
   }
@@ -244,6 +231,7 @@ export const fetchPatternCategories = async (
   const body = await fetchJson<PatternCategoryListResponse>(request.url, {
     signal,
     endpointLabel: request.endpointLabel,
+    timeoutMs: CONTROL_PLANE_REQUEST_TIMEOUT_MS,
     headers: agenticWorkflowsAuthHeaders(),
   })
   if (!body || !Array.isArray(body.items)) {

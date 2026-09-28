@@ -8,16 +8,16 @@ import type { MenuProps } from "@open-ui-kit/core"
 import type { ButtonProps, TooltipProps } from "@open-ui-kit/core"
 import type { DropdownOption } from "@/types/dropdownOption"
 import type { GraphCanvasLayoutMetrics } from "@/contexts/graphCanvasLayout"
+import {
+  SUGGESTED_PROMPTS_RETRY_BASE_DELAY_MS,
+  SUGGESTED_PROMPTS_RETRY_MAX_DELAY_MS,
+} from "@/config/requestRetryPolicy"
 import type { PromptCategory, SuggestedPromptsResponse } from "./PromptTypes"
 
 export const SUGGESTED_PROMPTS_LABEL = "Suggested Prompts"
 
 const PROMPTS_MENU_ANCHOR_GAP_PX = 8
 const PROMPTS_MENU_VIEWPORT_MARGIN_PX = 16
-const MAX_RETRY_DELAY_MS = 5000
-
-/** Max fetch attempts (initial try + retries) before surfacing failure in the UI. */
-export const MAX_SUGGESTED_PROMPTS_RETRIES = 3
 
 export function parsePromptCategories(
   data: SuggestedPromptsResponse | unknown,
@@ -40,7 +40,10 @@ export function parsePromptCategories(
 }
 
 export function getRetryDelayMs(retryCount: number): number {
-  return Math.min(5000 * 2 ** retryCount, MAX_RETRY_DELAY_MS)
+  return Math.min(
+    SUGGESTED_PROMPTS_RETRY_BASE_DELAY_MS * 2 ** retryCount,
+    SUGGESTED_PROMPTS_RETRY_MAX_DELAY_MS,
+  )
 }
 
 export function categoriesToMenuOptions(

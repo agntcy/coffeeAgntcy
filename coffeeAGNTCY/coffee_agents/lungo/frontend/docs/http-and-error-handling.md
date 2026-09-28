@@ -209,6 +209,28 @@ flowchart LR
 4. Use a **logical `endpointLabel`** only for multi-step or non-fetch failures (bootstrap, SSE reconnect exhaustion).
 5. Map to UI with **`HttpError.message`** or shared helpers (`ndjsonStreamUserMessage`); use **`userMessage`** in `reportRequestError` when the graph or shell should show a global banner.
 6. Do not rely on the browser console alone - DevTools always logs failed network requests; app logging goes through **`reportRequestError`**.
+7. Take retry counts, backoff delays, and timeouts from **`src/config/requestRetryPolicy.ts`**; do not inline numbers at the call site.
+
+---
+
+## Retry budgets and timeouts
+
+All values live in **`src/config/requestRetryPolicy.ts`** with the rationale for each. They are intentionally not uniform: requests that block the UI retry briefly, background refreshes stay quiet, and stream reconnects retry longest.
+
+| Flow | Attempts | Backoff | Timeout |
+|------|----------|---------|---------|
+| Workflow catalog | 3 | 750ms flat | 10s |
+| Graph bootstrap - `POST` instantiate | 3 | 500ms, 1.5s | 10s |
+| Graph bootstrap - `GET` instance state | 3 | 500ms, 1.5s | 10s |
+| Topology refetch | 3 | 200ms, 500ms | 10s |
+| SSE reconnect | 6 per outage | 250ms x attempt | n/a |
+| Chat prompt (`withRetry`) | 4 | 1s, 2s, 4s | 60s default |
+| Suggested prompts | 4 | 5s flat | 60s default |
+
+Two rules matter more than the numbers:
+
+- **Never retry a 4xx.** `isRetryableError` in `src/utils/retryUtils.ts` is the shared classifier: 5xx, 429, and transport failures only. A 404 or 400 answers identically on every attempt, so retrying just delays the message.
+- **`POST /agentic-workflows/{name}/` is not idempotent.** Each call mints a new instance uuid, and a client that retries a request the server received leaks an instance it cannot delete, because the id was in the response it never saw. Only `502`/`503` and transport failures are replayed; a `504` means the seed event is already queued and must not be re-POSTed. The two bootstrap steps therefore retry in separate scopes (`workflowGraphBootstrapRequests.ts`) rather than as a pair.
 
 ---
 
@@ -217,6 +239,8 @@ flowchart LR
 | Path | Purpose |
 |------|---------|
 | `src/urls.ts` | Paths, bases, `joinHttpRequest`, logical label docs |
+| `src/config/requestRetryPolicy.ts` | Retry budgets, backoff delays, request timeouts |
+| `src/utils/retryUtils.ts` | `withRetry`, `sleepMs`, shared error classifiers |
 | `src/httpRequestTargets.ts` | Non-catalog request builders |
 | `src/utils/workflowChatRouting.ts` | Catalog chat targets |
 | `src/api/http/` | `httpFetch`, `fetchJson`, `fetchNdjsonStream`, `fetchSse`, `parseHttpError` |
