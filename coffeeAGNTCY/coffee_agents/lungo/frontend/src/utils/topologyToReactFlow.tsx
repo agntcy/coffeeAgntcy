@@ -5,20 +5,16 @@
 
 import type { Edge, Node } from "@xyflow/react"
 import type {
-  TopologyEdgeWire,
   TopologyNodeWire,
   TopologyWire,
 } from "@/api/agenticWorkflowsTypes"
 import {
   DISPLAY_NODE_TYPES,
-  EDGE_LABELS,
-  EDGE_TYPES,
   HANDLE_TYPES,
   VERIFICATION_STATUS,
   canonicalizeNodeType,
   isDirectoryType,
   isGroupType,
-  isMcpType,
   isTransportType,
   nodeTypeToDisplayType,
 } from "@/utils/const"
@@ -38,13 +34,13 @@ import {
   directoryAgentSlugFromAgentRecordUri,
   enrichAgenticTopologyWellKnownUi,
   isDirectoryLabel,
-  isMcpServerLabel,
   isRecruiterLabel,
   resolveGithubFromAgentRecordUri,
   splitTopologyNodeLabel,
 } from "@/utils/agenticTopologyIdentityUiMap"
 import { resolveTopologyNodeIcon } from "@/utils/topologyNodeIcons"
 import { transportGithubLink } from "@/utils/transportGithub"
+import { topologyWireEdgesToReactFlow } from "@/utils/topologyEdges"
 
 // Transport label -> canonical synonym. Seed emits "transport"; runtime emits
 // "slim"/"nats"/"jsonrpc" for the same logical transport. Distinct logical
@@ -383,57 +379,13 @@ export function topologyWireToReactFlow(
     }
   })
 
-  const seenEdgePairs = new Set<string>()
-  const edges: Edge[] = []
-  for (const raw of edgesIn) {
-    const e = raw as TopologyEdgeWire
-    const source = rfIdFor(canonical(e.source))
-    const target = rfIdFor(canonical(e.target))
-    if (!source || !target) continue
-    const pairKey = `${source}->${target}`
-    if (seenEdgePairs.has(pairKey)) continue
-    seenEdgePairs.add(pairKey)
-    const edgeType =
-      e.type === EDGE_TYPES.BRANCHING ? EDGE_TYPES.BRANCHING : EDGE_TYPES.CUSTOM
-    const sourceLabel = labelByRfId.get(source) ?? ""
-    const targetLabel = labelByRfId.get(target) ?? ""
-
-    let label: string = EDGE_LABELS.A2A
-    let sourceHandle: string | undefined
-    let targetHandle: string | undefined
-    const targetType = nodeTypeByRfId.get(target)
-    const sourceType = nodeTypeByRfId.get(source)
-    if (isMcpType(targetType) || isMcpServerLabel(targetLabel)) {
-      label = messageTransport
-        ? `${EDGE_LABELS.MCP}${messageTransport}`
-        : EDGE_LABELS.MCP
-    } else if (
-      (isDirectoryType(sourceType) || isDirectoryLabel(sourceLabel)) &&
-      isRecruiterLabel(targetLabel)
-    ) {
-      label = EDGE_LABELS.MCP_WITH_STDIO
-      sourceHandle = "source-left"
-      targetHandle = "target-right"
-    }
-
-    const base: Edge = {
-      id: e.id,
-      source,
-      target,
-      type: edgeType,
-      data: { label },
-    }
-    if (sourceHandle) base.sourceHandle = sourceHandle
-    if (targetHandle) base.targetHandle = targetHandle
-    const branches = (e as { branches?: string[] }).branches
-    if (edgeType === EDGE_TYPES.BRANCHING && Array.isArray(branches)) {
-      base.data = {
-        ...base.data,
-        branches,
-      }
-    }
-    edges.push(base)
-  }
+  const edges = topologyWireEdgesToReactFlow(edgesIn, {
+    canonical,
+    rfIdFor,
+    labelByRfId,
+    nodeTypeByRfId,
+    messageTransport,
+  })
 
   return layoutSlimTransportGraph(nodes, edges)
 }
