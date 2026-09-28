@@ -10,7 +10,6 @@ import {
   IconButton,
   Icons,
   Stack,
-  Tooltip,
   Typography,
   useTheme,
 } from "@open-ui-kit/core"
@@ -133,16 +132,14 @@ const CustomNode: React.FC<CustomNodeProps> = ({ id, data }) => {
             zIndex: 1,
           }}
         >
-          <Tooltip title={data.label} arrow>
-            <Typography
-              variant="h6"
-              component="span"
-              noWrap
-              sx={{ flex: "1 1 auto", minWidth: 0 }}
-            >
-              {data.label}
-            </Typography>
-          </Tooltip>
+          <Typography
+            variant="h6"
+            component="span"
+            noWrap
+            sx={{ flex: "1 1 auto", minWidth: 0 }}
+          >
+            {data.label}
+          </Typography>
           {data.verificationStatus === "verified" && (
             <Icons.CheckCircleFilled
               aria-label="Verified"
@@ -156,29 +153,27 @@ const CustomNode: React.FC<CustomNodeProps> = ({ id, data }) => {
           )}
         </Box>
 
-        <Tooltip title={data.label_subtitle} arrow>
-          <Typography
-            variant="caption"
-            component="div"
-            noWrap
-            sx={{
-              order: 1,
-              alignSelf: "stretch",
-              flexGrow: 0,
-              flexShrink: 0,
-              height: 16,
-              width: innerWidth,
-              maxWidth: "100%",
-              minWidth: 0,
-              fontWeight: 300,
-              lineHeight: "16px",
-              position: "relative",
-              zIndex: 1,
-            }}
-          >
-            {data.label_subtitle}
-          </Typography>
-        </Tooltip>
+        <Typography
+          variant="caption"
+          component="div"
+          noWrap
+          sx={{
+            order: 1,
+            alignSelf: "stretch",
+            flexGrow: 0,
+            flexShrink: 0,
+            height: 16,
+            width: innerWidth,
+            maxWidth: "100%",
+            minWidth: 0,
+            fontWeight: 300,
+            lineHeight: "16px",
+            position: "relative",
+            zIndex: 1,
+          }}
+        >
+          {data.label_subtitle}
+        </Typography>
 
         <Stack
           direction="column"

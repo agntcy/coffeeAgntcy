@@ -5,14 +5,7 @@
 
 import React, { type CSSProperties } from "react"
 import { Handle, Position } from "@xyflow/react"
-import {
-  Box,
-  IconButton,
-  Icons,
-  Tooltip,
-  Typography,
-  useTheme,
-} from "@open-ui-kit/core"
+import { Box, IconButton, Icons, Typography, useTheme } from "@open-ui-kit/core"
 import { GraphSideIconTooltip } from "./GraphSideIconTooltip"
 import { SecurityClass } from "@/utils/SecurityClass"
 import {
@@ -89,27 +82,25 @@ const TransportNode: React.FC<TransportNodeProps> = ({ data }) => {
         height: isCircular ? CIRCULAR_TRANSPORT_NODE_SIZE : 52,
       })}
     >
-      <Tooltip title={data.label} arrow>
-        <Typography
-          variant="h6"
-          component="div"
-          noWrap
-          sx={{
-            textAlign: "center",
-            minWidth: 0,
-            ...(isCircular
-              ? {
-                  maxWidth: CIRCULAR_TRANSPORT_NODE_SIZE - 32,
-                  ...(data.githubLink ? {} : { mb: 1 }),
-                }
-              : {
-                  flex: 1,
-                }),
-          }}
-        >
-          {data.label}
-        </Typography>
-      </Tooltip>
+      <Typography
+        variant="h6"
+        component="div"
+        noWrap
+        sx={{
+          textAlign: "center",
+          minWidth: 0,
+          ...(isCircular
+            ? {
+                maxWidth: CIRCULAR_TRANSPORT_NODE_SIZE - 32,
+                ...(data.githubLink ? {} : { mb: 1 }),
+              }
+            : {
+                flex: 1,
+              }),
+        }}
+      >
+        {data.label}
+      </Typography>
 
       {data.githubLink && SecurityClass.isSafeExternalUrl(data.githubLink) && (
         <GraphSideIconTooltip title="Open repository on GitHub">
