@@ -54,6 +54,8 @@ export function useWorkflowGraphTopologySync({
       )
       setNodes(withHandlers)
       setEdges(mappedEdges)
+      // A freshly applied topology means the background requests recovered.
+      setAgenticError(null)
       onAppliedRef.current?.(withHandlers.map((node) => node.id))
       queueMicrotask(() => {
         restoreEdgeAnimation()
@@ -64,6 +66,7 @@ export function useWorkflowGraphTopologySync({
       isStreamingRef,
       onAppliedRef,
       restoreEdgeAnimation,
+      setAgenticError,
       setEdges,
       setNodes,
     ],

@@ -106,6 +106,12 @@ export function useWorkflowGraphAgenticBootstrap({
             s.workflowName,
             s.pathUuid,
             (ev: EventV1Wire) => {
+              const live = sessionRef.current
+              if (live && live.instanceId === instanceId) {
+                // Reconnect budget is per outage, not cumulative for the session.
+                live.sseReconnectAttempts = 0
+              }
+              setAgenticError(null)
               handleWorkflowInstanceSseEventRef.current(
                 ev,
                 catalogWorkflowName,
