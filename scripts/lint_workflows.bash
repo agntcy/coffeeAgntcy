@@ -33,4 +33,15 @@ resolve_tool() {
 
 ACTIONLINT_BIN="$(resolve_tool actionlint)"
 
-"$ACTIONLINT_BIN" -color
+# actionlint shells out to shellcheck for run: blocks and otherwise just
+# searches PATH for it; pointing it at the repo-local pinned binary when
+# present means a direct `task workflows:lint` still uses the pinned
+# version even without 'source scripts/env.sh' first (env.sh is what put it
+# on PATH), instead of silently falling back to whatever shellcheck (or
+# none) is already on PATH.
+SHELLCHECK_LOCAL="$REPO_ROOT/.tools/bin/shellcheck"
+if [[ -x "$SHELLCHECK_LOCAL" ]]; then
+    "$ACTIONLINT_BIN" -color -shellcheck "$SHELLCHECK_LOCAL"
+else
+    "$ACTIONLINT_BIN" -color
+fi

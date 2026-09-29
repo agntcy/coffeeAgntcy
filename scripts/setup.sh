@@ -5,16 +5,25 @@
 #
 # Deliberately a plain script, not a Taskfile task: `task` itself may not
 # exist yet on a fresh clone, so bootstrapping it *through* the Taskfile
-# would be circular. Both local devs and CI (see checks.yaml and
-# ci-gate.yaml) run the exact same two commands:
+# would be circular. Local devs run:
 #   ./scripts/setup.sh
 #   source scripts/env.sh   # put .tools/bin and .tools/node/bin on PATH for this shell session
+#
+# CI (see checks.yaml and ci-gate.yaml) passes --lint-only: neither
+# required workflow runs openspec, so CI skips the node/openspec install
+# and only bootstraps the lint binaries (task, actionlint, shellcheck,
+# shfmt).
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 BIN_DIR="$REPO_ROOT/.tools/bin"
 NODE_DIR="$REPO_ROOT/.tools/node"
+
+LINT_ONLY=0
+if [[ "${1:-}" == "--lint-only" ]]; then
+    LINT_ONLY=1
+fi
 
 # shellcheck source=scripts/lib/versions.sh
 source "$SCRIPT_DIR/lib/versions.sh"
@@ -40,17 +49,21 @@ version_matches() {
     [ "${1#v}" = "${2#v}" ]
 }
 
+OS="$(detect_os)"
+ARCH_GNU="$(detect_arch_gnu)"
+ARCH_SC="$(detect_arch_shellcheck)"
+
 if [ -x "$BIN_DIR/task" ] && version_matches "$("$BIN_DIR/task" --version)" "$TASK_VERSION"; then
     echo "task: already installed ($("$BIN_DIR/task" --version))"
 else
     echo "task: installing $TASK_VERSION into $BIN_DIR ..."
-    FETCH "https://taskfile.dev/install.sh" | sh -s -- -b "$BIN_DIR" "$TASK_VERSION"
+    TMP_DIR="$(mktemp -d)"
+    FETCH "https://github.com/go-task/task/releases/download/${TASK_VERSION}/task_${OS}_${ARCH_GNU}.tar.gz" >"$TMP_DIR/task.tar.gz"
+    tar -xzf "$TMP_DIR/task.tar.gz" -C "$TMP_DIR" task
+    install "$TMP_DIR/task" "$BIN_DIR/task"
+    rm -rf "$TMP_DIR"
     echo "task: installed ($("$BIN_DIR/task" --version))"
 fi
-
-OS="$(detect_os)"
-ARCH_GNU="$(detect_arch_gnu)"
-ARCH_SC="$(detect_arch_shellcheck)"
 
 if [ -x "$BIN_DIR/actionlint" ] && version_matches "$("$BIN_DIR/actionlint" -version | head -n 1)" "$ACTIONLINT_VERSION"; then
     echo "actionlint: already installed ($("$BIN_DIR/actionlint" -version | head -n 1))"
@@ -85,40 +98,50 @@ else
     echo "shfmt: installed ($("$BIN_DIR/shfmt" --version))"
 fi
 
-# node ships as a whole bin/+lib/ tree (npm/npx are symlinks resolved
-# relative to a sibling lib/node_modules/npm/, not a single relocatable
-# binary like every other tool above) -- so it gets its own .tools/node/
-# directory instead of joining the flat .tools/bin/, and scripts/env.sh puts
-# .tools/node/bin on PATH alongside .tools/bin. It exists solely to run
-# openspec below.
-ARCH_NODE="$(detect_arch_node)"
+if [ "$LINT_ONLY" -eq 0 ]; then
+    # node ships as a whole bin/+lib/ tree (npm/npx are symlinks resolved
+    # relative to a sibling lib/node_modules/npm/, not a single relocatable
+    # binary like every other tool above) -- so it gets its own .tools/node/
+    # directory instead of joining the flat .tools/bin/, and scripts/env.sh puts
+    # .tools/node/bin on PATH alongside .tools/bin. It exists solely to run
+    # openspec below.
+    ARCH_NODE="$(detect_arch_node)"
 
-if [ -x "$NODE_DIR/bin/node" ] && version_matches "$("$NODE_DIR/bin/node" --version)" "$NODE_VERSION"; then
-    echo "node: already installed ($("$NODE_DIR/bin/node" --version))"
+    if [ -x "$NODE_DIR/bin/node" ] && version_matches "$("$NODE_DIR/bin/node" --version)" "$NODE_VERSION"; then
+        echo "node: already installed ($("$NODE_DIR/bin/node" --version))"
+    else
+        echo "node: installing $NODE_VERSION into $NODE_DIR ..."
+        TMP_DIR="$(mktemp -d)"
+        FETCH "https://nodejs.org/dist/v${NODE_VERSION}/node-v${NODE_VERSION}-${OS}-${ARCH_NODE}.tar.gz" >"$TMP_DIR/node.tar.gz"
+        tar -xzf "$TMP_DIR/node.tar.gz" -C "$TMP_DIR"
+        rm -rf "$NODE_DIR"
+        mv "$TMP_DIR/node-v${NODE_VERSION}-${OS}-${ARCH_NODE}" "$NODE_DIR"
+        rm -rf "$TMP_DIR"
+        echo "node: installed ($("$NODE_DIR/bin/node" --version))"
+    fi
+
+    # Put the freshly bootstrapped node/npm on PATH for the rest of this script:
+    # openspec's own shim below has a `#!/usr/bin/env node` shebang, and npm
+    # itself may shell out to `node` by name -- neither can rely on a `node`
+    # that's only ever added to PATH later by scripts/env.sh in the user's own
+    # shell.
+    export PATH="$NODE_DIR/bin:$PATH"
+
+    if [ -x "$BIN_DIR/openspec" ] && version_matches "$("$BIN_DIR/openspec" --version)" "$OPENSPEC_VERSION"; then
+        echo "openspec: already installed ($("$BIN_DIR/openspec" --version))"
+    else
+        echo "openspec: installing $OPENSPEC_VERSION into $BIN_DIR ..."
+        # --userconfig/--cache keep npm entirely inside .tools/: without them
+        # npm still reads $HOME/.npmrc and writes its cache under $HOME,
+        # despite --prefix pointing at .tools.
+        "$NODE_DIR/bin/npm" install --global --prefix "$REPO_ROOT/.tools" \
+            --userconfig="$REPO_ROOT/.tools/.npmrc" \
+            --cache="$REPO_ROOT/.tools/.npm-cache" \
+            "@fission-ai/openspec@${OPENSPEC_VERSION}"
+        echo "openspec: installed ($("$BIN_DIR/openspec" --version))"
+    fi
 else
-    echo "node: installing $NODE_VERSION into $NODE_DIR ..."
-    TMP_DIR="$(mktemp -d)"
-    FETCH "https://nodejs.org/dist/v${NODE_VERSION}/node-v${NODE_VERSION}-${OS}-${ARCH_NODE}.tar.gz" >"$TMP_DIR/node.tar.gz"
-    tar -xzf "$TMP_DIR/node.tar.gz" -C "$TMP_DIR"
-    rm -rf "$NODE_DIR"
-    mv "$TMP_DIR/node-v${NODE_VERSION}-${OS}-${ARCH_NODE}" "$NODE_DIR"
-    rm -rf "$TMP_DIR"
-    echo "node: installed ($("$NODE_DIR/bin/node" --version))"
-fi
-
-# Put the freshly bootstrapped node/npm on PATH for the rest of this script:
-# openspec's own shim below has a `#!/usr/bin/env node` shebang, and npm
-# itself may shell out to `node` by name -- neither can rely on a `node`
-# that's only ever added to PATH later by scripts/env.sh in the user's own
-# shell.
-export PATH="$NODE_DIR/bin:$PATH"
-
-if [ -x "$BIN_DIR/openspec" ] && version_matches "$("$BIN_DIR/openspec" --version)" "$OPENSPEC_VERSION"; then
-    echo "openspec: already installed ($("$BIN_DIR/openspec" --version))"
-else
-    echo "openspec: installing $OPENSPEC_VERSION into $BIN_DIR ..."
-    "$NODE_DIR/bin/npm" install --global --prefix "$REPO_ROOT/.tools" "@fission-ai/openspec@${OPENSPEC_VERSION}"
-    echo "openspec: installed ($("$BIN_DIR/openspec" --version))"
+    echo "node/openspec: skipped (--lint-only)"
 fi
 
 echo

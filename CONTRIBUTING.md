@@ -49,9 +49,14 @@ For anything bigger (a new tool/script/CI check, a schema or repo-wide
 convention change, or anything else that spans more than a small diff),
 plan it with [OpenSpec](https://openspec.dev) before writing any code:
 
-1. **Set up tooling once**, if you haven't: `task setup` installs
-   `openspec` alongside the rest of this repo's local toolchain (see
+1. **Set up tooling once**, if you haven't: `./scripts/setup.sh && source
+   scripts/env.sh` installs `openspec` alongside the rest of this repo's
+   local toolchain (see
    [`.agents/skills/setup-repo-tooling/SKILL.md`](.agents/skills/setup-repo-tooling/SKILL.md)).
+   `task` isn't on `PATH` until this has run at least once on a fresh
+   clone, so this is the one place this repo asks for the plain script
+   instead of a `task` command - `task setup` works too, but only once
+   `task` is already available some other way.
 2. **Propose it:** `openspec propose` - describe what you want to build;
    it generates a proposal, design, spec delta, and tasks list under
    `openspec/changes/<name>/`. Get that plan right before implementing -
@@ -106,13 +111,20 @@ either character appears. This is not covered by Ruff or EditorConfig.
 
 Every `.sh`/`.bash` file must pass shellcheck and shfmt (`-i 4 -ci`). See
 [`.agents/rules/shell-script-linting.md`](/.agents/rules/shell-script-linting.md)
-for the full rule. Run `task setup && source scripts/env.sh` once to
-bootstrap a repo-local, pinned-version shellcheck/shfmt/actionlint into
-`.tools/bin/` (no global install needed - see `scripts/setup.sh`), then
-[`task`](https://taskfile.dev) `shell:lint` locally before opening a PR
-(`task shell:fmt` to auto-fix formatting); the `Checks` workflow runs the
-same check (along with every other standing check, via `task check:all`)
-on every pull request.
+for the full rule. Run `./scripts/setup.sh && source scripts/env.sh` once
+to bootstrap a repo-local, pinned-version shellcheck/shfmt/actionlint into
+`.tools/bin/` (no global install needed - `task` itself isn't on `PATH`
+until this has run, so use the plain script rather than `task setup` on a
+fresh clone; see `scripts/setup.sh`), then [`task`](https://taskfile.dev)
+`shell:lint` locally before opening a PR (`task shell:fmt` to auto-fix
+formatting); the `Checks` workflow runs the same check (along with every
+other standing check, via `task check:all`) on every pull request.
+
+`scripts/lint_shell.bash` (like `scripts/find_strings.bash` and
+`scripts/check_pinned_references.bash`) uses Bash 4 features (`mapfile`,
+associative arrays). Stock macOS ships Bash 3.2; macOS contributors need a
+newer Bash on `PATH` (e.g. `brew install bash`) to run these scripts
+directly.
 
 #### Pinned external references and workflow permissions
 

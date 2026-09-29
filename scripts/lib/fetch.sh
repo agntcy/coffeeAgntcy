@@ -102,11 +102,12 @@ ensure_fetcher() {
                 fi
                 ;;
         esac
-    elif [ "${#candidates[@]}" -gt 1 ]; then
-        # Non-interactive (e.g. CI) with more than one candidate: just take the
-        # first rather than blocking on a prompt nobody can answer.
-        chosen="${candidates[0]}"
     fi
+    # Non-interactive with more than one candidate falls through with
+    # $chosen unset: fail closed with manual instructions below, rather than
+    # silently picking one and running a possibly-sudo install nobody agreed
+    # to (and GitHub-hosted runners already ship curl, so CI never reaches
+    # this branch anyway).
 
     if [ -n "$chosen" ]; then
         echo "Installing curl via: $chosen" >&2
