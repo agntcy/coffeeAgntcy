@@ -18,6 +18,7 @@ NC='\033[0m' # No Color
 TOTAL_RECORDS=0
 ALREADY_EXISTS=0
 PUSHED=0
+REPAIRED=0
 FAILED=0
 
 # Get the script's directory and navigate to the lungo base
@@ -152,11 +153,37 @@ for OASF_DIR in "${OASF_DIRS[@]}"; do
             SEARCH_RESULT=""
         fi
 
+        # A search hit only proves the index knows the CID. The record content
+        # lives in the OCI registry, which can be lost independently (e.g. zot
+        # recreated without its volume), so pull before trusting the hit -
+        # otherwise this script reports success while every lookup 404s.
+        RECORD_IS_PULLABLE=false
+        REPAIRING=false
+
         if [[ -n "$SEARCH_RESULT" && "$SEARCH_RESULT" != "[]" ]]; then
-            echo -e "    ${GREEN}✓ Already exists in directory (CID: ${SEARCH_RESULT:0:20}...)${NC}"
-            ((++ALREADY_EXISTS))
-        else
-            echo -e "    ${YELLOW}→ Not found in directory, pushing...${NC}"
+            EXISTING_CID=$(printf '%s' "$SEARCH_RESULT" | head -n 1 | xargs)
+
+            set +e
+            run_dirctl pull "$EXISTING_CID" --output json >/dev/null 2>&1
+            EXISTING_PULL_EXIT=$?
+            set -e
+
+            if [[ $EXISTING_PULL_EXIT -eq 0 ]]; then
+                echo -e "    ${GREEN}✓ Already exists in directory (CID: ${EXISTING_CID:0:20}...)${NC}"
+                ((++ALREADY_EXISTS))
+                RECORD_IS_PULLABLE=true
+            else
+                echo -e "    ${YELLOW}⚠ Indexed but content is missing (CID: ${EXISTING_CID:0:20}...)${NC}"
+                REPAIRING=true
+            fi
+        fi
+
+        if [[ "$RECORD_IS_PULLABLE" == false ]]; then
+            if [[ "$REPAIRING" == true ]]; then
+                echo -e "    ${YELLOW}→ Re-pushing to restore content...${NC}"
+            else
+                echo -e "    ${YELLOW}→ Not found in directory, pushing...${NC}"
+            fi
 
             # Push the JSON file to the directory (disable errexit: failing push must not exit before we capture output)
             set +e
@@ -179,7 +206,11 @@ for OASF_DIR in "${OASF_DIRS[@]}"; do
                     ((++FAILED))
                 else
                     if run_dirctl routing publish "$PUSH_CID" --output json >/dev/null; then
-                        ((++PUSHED))
+                        if [[ "$REPAIRING" == true ]]; then
+                            ((++REPAIRED))
+                        else
+                            ((++PUSHED))
+                        fi
                     else
                         echo -e "    ${YELLOW}⚠ routing publish failed for CID${NC}"
                         ((++FAILED))
@@ -206,6 +237,7 @@ echo -e "${BLUE}========================================${NC}"
 echo -e "  Total OASF records found:  ${TOTAL_RECORDS}"
 echo -e "  ${GREEN}Already in directory:        ${ALREADY_EXISTS}${NC}"
 echo -e "  ${GREEN}Successfully pushed:         ${PUSHED}${NC}"
+echo -e "  ${GREEN}Repaired (content restored): ${REPAIRED}${NC}"
 if [[ $FAILED -gt 0 ]]; then
     echo -e "  ${RED}Failed:                      ${FAILED}${NC}"
 else
