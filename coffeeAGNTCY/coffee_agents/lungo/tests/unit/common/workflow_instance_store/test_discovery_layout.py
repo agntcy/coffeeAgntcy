@@ -5,12 +5,14 @@
 
 from __future__ import annotations
 
+import logging
 from typing import Callable, NamedTuple
 
 import pytest
 
 from schema.types import Data, Event
 
+from common.workflow_instance_store import discovery_layout
 from common.workflow_instance_store.discovery_layout import (
     _DISCOVERY_LAYOUT_COLUMNS_PER_SIDE,
     enrich_discovery_node_layout,
@@ -369,11 +371,12 @@ def test_agents_found_by_a_later_prompt_extend_the_same_row():
     assert row_ys == {BELOW_SLOT["y"]}
 
 
-def test_enrich_drops_to_the_next_row_when_the_first_row_is_full():
+def _first_row_blockers() -> list[dict]:
+    """Nodes occupying every slot in the row directly below the anchor."""
     columns = range(
         -_DISCOVERY_LAYOUT_COLUMNS_PER_SIDE, _DISCOVERY_LAYOUT_COLUMNS_PER_SIDE + 1
     )
-    row_blockers = [
+    return [
         {
             "id": f"node://550e8400-e29b-41d4-a716-4466554402{index:02d}",
             "operation": "create",
@@ -385,8 +388,11 @@ def test_enrich_drops_to_the_next_row_when_the_first_row_is_full():
         }
         for index, column in enumerate(columns)
     ]
+
+
+def test_enrich_drops_to_the_next_row_when_the_first_row_is_full():
     state = merge_event_data(
-        None, _evt(_wf_with_nodes([_recruiter_seed_node(), *row_blockers]))
+        None, _evt(_wf_with_nodes([_recruiter_seed_node(), *_first_row_blockers()]))
     )
     enriched = _normalize_discovery(state, _discovery_event())
     assert _discovered_position(enriched) == NEXT_ROW_SLOT
@@ -422,6 +428,21 @@ def test_row_width_is_capped_so_a_large_result_set_wraps():
 
     assert ys.count(BELOW_SLOT["y"]) == per_row
     assert ys.count(NEXT_ROW_SLOT["y"]) == 1
+
+
+def test_enrich_warns_and_skips_when_every_slot_is_taken(monkeypatch, caplog):
+    """An unplaceable node stays unpositioned, but it says so instead of vanishing."""
+    monkeypatch.setattr(discovery_layout, "_DISCOVERY_LAYOUT_MAX_ROWS", 1)
+    state = merge_event_data(
+        None, _evt(_wf_with_nodes([_recruiter_seed_node(), *_first_row_blockers()]))
+    )
+
+    with caplog.at_level(logging.WARNING, logger=discovery_layout.__name__):
+        enriched = _normalize_discovery(state, _discovery_event())
+
+    assert _discovered_position(enriched) is None
+    assert "exhausted all 5 slots" in caplog.text
+    assert DISCOVERED_ID in caplog.text
 
 
 def test_enrich_with_directory_in_state_still_places_below_recruiter():

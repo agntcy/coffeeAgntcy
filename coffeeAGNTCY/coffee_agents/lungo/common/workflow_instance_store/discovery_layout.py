@@ -15,10 +15,13 @@ auto-layout applies.
 
 from __future__ import annotations
 
+import logging
 from collections.abc import Iterator
 from typing import Any
 
 from schema.types import Data, Event, Operation, Workflow
+
+logger = logging.getLogger(__name__)
 
 _DISCOVERY_LAYOUT_X_OFFSET = 285
 _DISCOVERY_LAYOUT_Y_OFFSET = 185
@@ -227,6 +230,18 @@ def enrich_discovery_node_layout(state: Data, event: Event) -> Event:
                 occupied = _occupied_positions(batch_occupied, exclude_ids=exclude_ids)
                 slot = _find_free_slot(anchor_pos[0], anchor_pos[1], occupied)
                 if slot is None:
+                    # The node stays unpositioned and falls to frontend
+                    # auto-layout, which cannot see the siblings placed here and
+                    # may overlap them. Rare enough to leave as is, loud enough
+                    # to explain a node that lands in the wrong place.
+                    logger.warning(
+                        "Discovery layout exhausted all %d slots under anchor %s; "
+                        "leaving node %s unpositioned for frontend auto-layout.",
+                        _DISCOVERY_LAYOUT_MAX_ROWS
+                        * (2 * _DISCOVERY_LAYOUT_COLUMNS_PER_SIDE + 1),
+                        anchor_id,
+                        node_id,
+                    )
                     continue
 
                 cx, cy = slot
