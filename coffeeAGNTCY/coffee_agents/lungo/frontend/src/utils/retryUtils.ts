@@ -4,7 +4,10 @@
  **/
 
 import { isHttpError, isRequestCancelledError } from "@/api/http"
-import { CHAT_RETRY_CONFIG } from "@/config/requestRetryPolicy"
+import {
+  CHAT_RETRY_CONFIG,
+  CHAT_RETRY_DELAYS_MS,
+} from "@/config/requestRetryPolicy"
 
 /**
  * Wait `ms`, rejecting with an AbortError as soon as `signal` aborts so a
@@ -46,46 +49,60 @@ export function hasRetryableStatus(
   return isHttpError(error) && statuses.includes(error.status ?? -1)
 }
 
-export const withRetry = async <T>(
-  operation: () => Promise<T>,
-  onRetry?: (attempt: number) => void,
-  signal?: AbortSignal,
-): Promise<T> => {
-  let lastError: Error
+export interface RetryPolicy {
+  /** Retries after the first try, so the operation runs `maxRetries + 1` times. */
+  maxRetries: number
+  /** Backoff per retry. The last entry repeats if retries outnumber delays. */
+  delaysMs: readonly number[]
+  isRetryable: (error: unknown) => boolean
+  /** Called before each backoff with the 1-based retry number. */
+  onRetry?: (attempt: number) => void
+  /**
+   * Aborting ends the loop. A cancellation and a client timeout surface in the
+   * same shape, so the caller's signal is the only thing that tells them apart.
+   */
+  signal?: AbortSignal
+}
 
-  for (
-    let attempt = 1;
-    attempt <= CHAT_RETRY_CONFIG.maxRetries + 1;
-    attempt++
-  ) {
+/**
+ * The one retry loop. Budgets, backoff, and the retryable-error rule are all
+ * caller-supplied, because they differ per feature - see
+ * `@/config/requestRetryPolicy`.
+ */
+export async function withRetryPolicy<T>(
+  operation: () => Promise<T>,
+  { maxRetries, delaysMs, isRetryable, onRetry, signal }: RetryPolicy,
+): Promise<T> {
+  for (let attempt = 0; attempt <= maxRetries; attempt += 1) {
     try {
       return await operation()
     } catch (error) {
-      lastError = error as Error
-
-      if (attempt > CHAT_RETRY_CONFIG.maxRetries) {
-        throw lastError
+      const isFinalAttempt = attempt === maxRetries
+      if (isFinalAttempt || signal?.aborted || !isRetryable(error)) {
+        throw error
       }
-
-      // A cancellation and a client timeout reach here in the same shape, so
-      // the caller's own signal is the only thing that tells them apart.
-      if (signal?.aborted || !isRetryableError(error)) {
-        throw lastError
-      }
-
-      if (onRetry) {
-        onRetry(attempt)
-      }
-
-      const delay =
-        CHAT_RETRY_CONFIG.baseDelay *
-        Math.pow(CHAT_RETRY_CONFIG.backoffMultiplier, attempt - 1)
-      await sleepMs(delay, signal)
+      onRetry?.(attempt + 1)
+      await sleepMs(delaysMs[attempt] ?? delaysMs[delaysMs.length - 1], signal)
     }
   }
 
-  throw lastError!
+  // Unreachable: the loop runs at least once and every path returns or throws.
+  throw new Error("withRetryPolicy exhausted without a result")
 }
+
+/** Chat prompts: exponential backoff on the shared retryable-error rule. */
+export const withRetry = <T>(
+  operation: () => Promise<T>,
+  onRetry?: (attempt: number) => void,
+  signal?: AbortSignal,
+): Promise<T> =>
+  withRetryPolicy(operation, {
+    maxRetries: CHAT_RETRY_CONFIG.maxRetries,
+    delaysMs: CHAT_RETRY_DELAYS_MS,
+    isRetryable: isRetryableError,
+    onRetry,
+    signal,
+  })
 
 const RETRYABLE_CODES = [
   "ECONNREFUSED",

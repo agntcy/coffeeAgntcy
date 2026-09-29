@@ -19,10 +19,17 @@ vi.mock("@/api/agenticWorkflowsClient", () => ({
     getWorkflowInstanceState(...args),
 }))
 
-// Retry backoff is irrelevant to the decisions under test; skip the waiting.
-vi.mock("@/utils/retryUtils", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("@/utils/retryUtils")>()
-  return { ...actual, sleepMs: vi.fn(async () => {}) }
+// Retry backoff is irrelevant to the decisions under test. Zero the delays
+// rather than stubbing `sleepMs`: the loop now sits in the same module as the
+// sleep it calls, so mocking the export no longer intercepts it.
+vi.mock("@/config/requestRetryPolicy", async (importOriginal) => {
+  const actual =
+    await importOriginal<typeof import("@/config/requestRetryPolicy")>()
+  return {
+    ...actual,
+    WORKFLOW_INSTANTIATE_RETRY_DELAYS_MS: [0, 0],
+    WORKFLOW_INSTANCE_STATE_RETRY_DELAYS_MS: [0, 0],
+  }
 })
 
 const { getWorkflowInstanceTopologyWithRetry, instantiateWorkflowWithRetry } =

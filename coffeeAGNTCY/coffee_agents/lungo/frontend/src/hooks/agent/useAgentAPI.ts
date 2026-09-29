@@ -10,7 +10,10 @@ import type { Message } from "@/components/Chat/types"
 import { reportRequestError } from "@/errors/request"
 import { isLocalDev, Role } from "@/utils/const"
 import { withRetry } from "@/utils/retryUtils"
-import { CHAT_RETRY_CONFIG } from "@/config/requestRetryPolicy"
+import {
+  CHAT_RETRY_CONFIG,
+  CHAT_RETRY_DELAYS_MS,
+} from "@/config/requestRetryPolicy"
 import type { WorkflowSummary } from "@/utils/agenticWorkflowsApi"
 import {
   getAgentPromptRequestForWorkflow,
@@ -192,9 +195,10 @@ export const useAgentAPI = (): UseAgentAPIReturn => {
       })
 
     const onRetryAttempt = (attempt: number) => {
+      // Same list the retry loop backs off on, so the countdown cannot drift.
       const delay =
-        CHAT_RETRY_CONFIG.baseDelay *
-        Math.pow(CHAT_RETRY_CONFIG.backoffMultiplier, attempt - 1)
+        CHAT_RETRY_DELAYS_MS[attempt - 1] ??
+        CHAT_RETRY_DELAYS_MS[CHAT_RETRY_DELAYS_MS.length - 1]
       const nextRetryAt = Date.now() + delay
 
       setMessages((prevMessages: Message[]) => {

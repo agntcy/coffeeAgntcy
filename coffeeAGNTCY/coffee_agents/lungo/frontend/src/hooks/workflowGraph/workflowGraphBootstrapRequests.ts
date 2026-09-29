@@ -29,38 +29,8 @@ import {
   hasRetryableStatus,
   isRetryableError,
   isTransportFailureError,
-  sleepMs,
+  withRetryPolicy,
 } from "@/utils/retryUtils"
-
-type RequestRetryOptions = {
-  maxRetries: number
-  delaysMs: readonly number[]
-  isRetryable: (error: unknown) => boolean
-  signal?: AbortSignal
-}
-
-async function withRequestRetry<T>(
-  operation: () => Promise<T>,
-  { maxRetries, delaysMs, isRetryable, signal }: RequestRetryOptions,
-): Promise<T> {
-  let lastError: unknown
-
-  for (let attempt = 0; attempt <= maxRetries; attempt += 1) {
-    try {
-      return await operation()
-    } catch (error) {
-      lastError = error
-      const isFinalAttempt = attempt === maxRetries
-      if (isFinalAttempt || signal?.aborted || !isRetryable(error)) {
-        throw error
-      }
-      const delayMs = delaysMs[attempt] ?? delaysMs[delaysMs.length - 1]
-      await sleepMs(delayMs, signal)
-    }
-  }
-
-  throw lastError
-}
 
 /**
  * Step 1: create the workflow instance.
@@ -76,7 +46,7 @@ export function instantiateWorkflowWithRetry(
   workflowName: string,
   signal?: AbortSignal,
 ): Promise<InstantiateWorkflowResponseWire> {
-  return withRequestRetry(
+  return withRetryPolicy(
     () => instantiateWorkflow(baseUrl, workflowName, signal),
     {
       maxRetries: WORKFLOW_INSTANTIATE_MAX_RETRIES,
@@ -99,7 +69,7 @@ export function getWorkflowInstanceTopologyWithRetry(
   instancePathUuid: string,
   signal?: AbortSignal,
 ): Promise<WorkflowInstanceWire> {
-  return withRequestRetry(
+  return withRetryPolicy(
     () =>
       getWorkflowInstanceState(
         baseUrl,
