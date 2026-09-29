@@ -6,16 +6,16 @@
 import React, { useEffect, useRef } from "react"
 import { Box, Icons, Stack, Typography } from "@open-ui-kit/core"
 
-import { ChatAgentAvatar } from "../ChatAvatarCircle"
+import { ChatAgentAvatar } from "../shared"
 import type { AuctionStreamingState } from "@/stores/auctionStreaming.types"
 import { NDJSON_STREAMING_STATUS } from "@/stores/ndjsonStreamingStatus"
 import type { GraphConfig } from "@/utils/graphConfigs"
-import { animationSequenceStepIds } from "../chatStreamGraphHighlight"
-import { FeedSpinnerRow } from "../FeedSpinnerRow"
+import { animationSequenceStepIds } from "../streaming"
+import { FeedSpinnerRow } from "./FeedSpinnerRow"
 import { successIconColorSx } from "@/utils/successIconColor"
-import { FeedStatusLine } from "../FeedStatusLine"
+import { FeedStatusLine } from "./FeedStatusLine"
 import { FeedErrorMessage } from "./FeedErrorMessage"
-import GrafanaSessionLink from "../GrafanaSessionLink"
+import { GrafanaSessionLink } from "../shared"
 
 export interface AuctionStreamingFeedProps {
   isVisible: boolean

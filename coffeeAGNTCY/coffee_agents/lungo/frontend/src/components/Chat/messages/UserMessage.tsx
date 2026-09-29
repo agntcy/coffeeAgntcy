@@ -8,7 +8,7 @@ import { Icons, useTheme } from "@open-ui-kit/core"
 
 import { iconGlyphFillSx } from "@/utils/iconGlyphFill"
 
-import { ChatAvatarCircle } from "./ChatAvatarCircle"
+import { ChatAvatarCircle } from "../shared"
 import Message from "./Message"
 
 interface UserMessageProps {

@@ -18,15 +18,15 @@ import Navigation from "@/components/Navigation/Navigation"
 import CanvasSwitch from "@/components/MainArea/CanvasSwitch"
 import ErrorBoundary from "@/errors/ui/ErrorBoundary"
 import ChatArea from "@/components/Chat/ChatArea"
-import ChatPanelSeparator from "@/components/Chat/ChatPanelSeparator"
 import {
   CHAT_MAX_SIZE,
   CHAT_MIN_SIZE,
   CHAT_PANEL_ID,
+  ChatPanelSeparator,
   GRAPH_MIN_SIZE,
   GRAPH_PANEL_ID,
   MAIN_VERTICAL_GROUP_ID,
-} from "@/components/Chat/chatPanelLayout"
+} from "@/components/Chat/panel"
 import { useChatPanelContentSize } from "@/hooks/useChatPanelContentSize"
 import Sidebar from "@/components/Sidebar/Sidebar"
 import SidebarPanelSeparator from "@/components/Sidebar/SidebarPanelSeparator"

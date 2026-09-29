@@ -6,12 +6,12 @@
 import React, { useState, useEffect, useCallback, useRef } from "react"
 import { Box, Icons, Stack, Typography } from "@open-ui-kit/core"
 
-import { ChatAgentAvatar } from "../ChatAvatarCircle"
+import { ChatAgentAvatar } from "../shared"
 import {
   buildSenderToNodeMap,
   formatAgentName,
   getAllAgentNodeIds,
-} from "../groupCommunicationFeedMapping"
+} from "./groupCommunicationFeedMapping"
 import type { GraphConfig } from "@/utils/graphConfigs"
 import type { LogisticsStreamStep } from "@/stores/groupStreaming.types"
 import {
@@ -21,12 +21,12 @@ import {
   useGroupStreamingStatus,
 } from "@/stores/groupStreamingStore"
 import { NDJSON_STREAMING_STATUS } from "@/stores/ndjsonStreamingStatus"
-import { FeedSpinnerRow } from "../FeedSpinnerRow"
+import { FeedSpinnerRow } from "./FeedSpinnerRow"
 import { successIconColorSx } from "@/utils/successIconColor"
-import { FeedStatusLine } from "../FeedStatusLine"
+import { FeedStatusLine } from "./FeedStatusLine"
 import { FeedErrorMessage } from "./FeedErrorMessage"
 import { FeedCollapseButton } from "./FeedCollapseButton"
-import GrafanaSessionLink from "../GrafanaSessionLink"
+import { GrafanaSessionLink } from "../shared"
 
 export interface GroupCommunicationFeedProps {
   isVisible: boolean

@@ -11,9 +11,9 @@ import { transparentScrollbarSx } from "@/utils/transparentScrollbarSx"
 import { useObservabilitySessionId, usePatternChatAPI } from "@/hooks/chat"
 import { Box, Stack } from "@open-ui-kit/core"
 
-import ChatAreaComposer from "./ChatAreaComposer"
-import ChatAreaMessageThread from "./ChatAreaMessageThread"
-import ChatHeader from "./ChatHeader"
+import { ChatAreaComposer } from "./composer"
+import { ChatAreaMessageThread } from "./messages"
+import { ChatHeader } from "./header"
 import { mainAreaContentHorizontalPadding } from "@/components/MainArea/mainAreaContentPadding"
 
 import type { GraphConfig } from "@/utils/graphConfigs"
@@ -22,7 +22,7 @@ import type { RecruiterStreamingState } from "@/stores/recruiterStreaming.types"
 import type { ApiResponse } from "@/types/api"
 import type { HttpRequestTarget } from "@/urls"
 import { CanvasMode } from "@/types/patternDoc"
-import { streamPatternChat } from "./streamPatternChat"
+import { streamPatternChat } from "./streaming"
 
 /** Scrollable message thread region between header and composer. */
 export const CHAT_MESSAGE_PANEL_ID = "chat-message-panel"

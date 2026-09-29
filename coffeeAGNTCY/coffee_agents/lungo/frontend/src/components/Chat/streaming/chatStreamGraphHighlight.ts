@@ -19,7 +19,7 @@ import {
   getOasfSlugFromNodeData,
   isDirectoryLabel,
 } from "@/utils/agenticTopologyIdentityUiMap"
-import { buildSenderToNodeMap } from "./groupCommunicationFeedMapping"
+import { buildSenderToNodeMap } from "../feeds/groupCommunicationFeedMapping"
 
 function normalizeAuthor(value: string): string {
   return value.trim().toLowerCase()

@@ -7,7 +7,7 @@
 
 import React from "react"
 import { Box, Banner, Stack } from "@open-ui-kit/core"
-import { ChatAgentAvatar } from "./ChatAvatarCircle"
+import { ChatAgentAvatar } from "../shared"
 import { LoadingDots } from "@/components/loading"
 import Message from "./Message"
 import ChatMarkdown from "./ChatMarkdown"
@@ -16,13 +16,13 @@ import {
   GroupCommunicationFeed,
   AuctionStreamingFeed,
   RecruiterStreamingFeed,
-} from "./feeds"
+} from "../feeds"
 import type { GraphConfig } from "@/utils/graphConfigs"
 import type { AuctionStreamingState } from "@/stores/auctionStreaming.types"
 import type { RecruiterStreamingState } from "@/stores/recruiterStreaming.types"
 import type { ApiResponse } from "@/types/api"
 import { visuallyHiddenSx } from "@/utils/a11ySx"
-import GrafanaSessionLink from "./GrafanaSessionLink"
+import { GrafanaSessionLink } from "../shared"
 
 export interface ChatAreaMessageThreadProps {
   currentUserMessage: string

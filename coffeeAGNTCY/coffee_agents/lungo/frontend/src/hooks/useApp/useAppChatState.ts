@@ -4,7 +4,7 @@
  **/
 
 import { useState, useEffect, useCallback } from "react"
-import { LOCAL_STORAGE_KEY } from "@/components/Chat/Messages"
+import { LOCAL_STORAGE_KEY } from "@/components/Chat/messages"
 import type { Message } from "@/components/Chat/types"
 import type { ApiResponse } from "@/types/api"
 import { CanvasMode } from "@/types/patternDoc"

@@ -12,7 +12,7 @@ import ZoomIn from "@mui/icons-material/ZoomIn"
 import ZoomOut from "@mui/icons-material/ZoomOut"
 import type { SxProps, Theme } from "@mui/material/styles"
 import { Box, IconButton, Icons, Stack, Tooltip } from "@open-ui-kit/core"
-import { chatHeaderIconButtonSx } from "@/components/Chat/chatHeaderIconButtonSx"
+import { chatHeaderIconButtonSx } from "@/components/Chat/header"
 import { graphCanvasIconButtonSx } from "./graphCanvasIconButtonSx"
 
 export type GraphControlButtonVariant = "canvas" | "bar"

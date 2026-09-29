@@ -15,7 +15,7 @@ import {
   chatComposerNarrowContainerQuery,
   CHAT_COMPOSER_STACKED_GAP_PX,
 } from "./chatComposerLayout"
-import { SuggestedPromptsDropdown, useSuggestedPrompts } from "./prompts"
+import { SuggestedPromptsDropdown, useSuggestedPrompts } from "../prompts"
 
 /** Matches OUK `Button` `size="medium"` with compact `body1` typography (7 + 20 + 7 = 34px). */
 const COMPOSER_CONTROL_HEIGHT_PX = 34
