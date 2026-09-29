@@ -6,9 +6,11 @@
 Runs after :func:`reconcile_event_node_identities` and before
 :func:`merge_event_data`. When the anchor node has a defined ``position``,
 discovered agents (inline ``oasf_record`` agent dict on create) receive a
-non-overlapping slot
-using backend-only offset constants. When the anchor lacks ``position``, nodes
-are left unchanged so the frontend auto-layout applies.
+non-overlapping slot in a row beneath the anchor, using backend-only offset
+constants. Slots are never reused or reshuffled, so agents found by a later
+prompt extend the existing row instead of moving the ones already on screen.
+When the anchor lacks ``position``, nodes are left unchanged so the frontend
+auto-layout applies.
 """
 
 from __future__ import annotations
@@ -20,7 +22,10 @@ from schema.types import Data, Event, Operation, Workflow
 
 _DISCOVERY_LAYOUT_X_OFFSET = 285
 _DISCOVERY_LAYOUT_Y_OFFSET = 185
-_DISCOVERY_LAYOUT_MAX_RING = 20
+_DISCOVERY_LAYOUT_MAX_ROWS = 20
+# Counted per side, so a row holds 2 * N + 1 = 5 agents. Wider rows force the
+# canvas to zoom out past the point where node labels are legible.
+_DISCOVERY_LAYOUT_COLUMNS_PER_SIDE = 2
 
 
 def _node_id(node: Any) -> str | None:
@@ -118,17 +123,19 @@ def _candidate_slots(
     anchor_x: float,
     anchor_y: float,
 ) -> Iterator[tuple[float, float]]:
-    for ring in range(1, _DISCOVERY_LAYOUT_MAX_RING + 1):
-        x_step = _DISCOVERY_LAYOUT_X_OFFSET * ring
-        y_step = _DISCOVERY_LAYOUT_Y_OFFSET * ring
-        yield (anchor_x, anchor_y + y_step)
-        yield (anchor_x + x_step, anchor_y)
-        yield (anchor_x - x_step, anchor_y)
-        yield (anchor_x, anchor_y - y_step)
-        yield (anchor_x + x_step, anchor_y + y_step)
-        yield (anchor_x - x_step, anchor_y + y_step)
-        yield (anchor_x + x_step, anchor_y - y_step)
-        yield (anchor_x - x_step, anchor_y - y_step)
+    """Fill each row below the anchor, outward from its center, before dropping down.
+
+    Discovered agents hang off the anchor's bottom handle, so a slot beside or
+    above the anchor would draw an edge that leaves the bottom and doubles back.
+    Widening the row keeps siblings on one line under their anchor.
+    """
+    for row in range(1, _DISCOVERY_LAYOUT_MAX_ROWS + 1):
+        y = anchor_y + _DISCOVERY_LAYOUT_Y_OFFSET * row
+        yield (anchor_x, y)
+        for column in range(1, _DISCOVERY_LAYOUT_COLUMNS_PER_SIDE + 1):
+            x_step = _DISCOVERY_LAYOUT_X_OFFSET * column
+            yield (anchor_x + x_step, y)
+            yield (anchor_x - x_step, y)
 
 
 def _find_free_slot(
