@@ -5,7 +5,14 @@
 
 import React, { type CSSProperties } from "react"
 import { Handle, Position } from "@xyflow/react"
-import { Box, IconButton, Icons, Typography, useTheme } from "@open-ui-kit/core"
+import {
+  Box,
+  IconButton,
+  Icons,
+  OverflowTooltip,
+  Typography,
+  useTheme,
+} from "@open-ui-kit/core"
 import { GraphSideIconTooltip } from "./GraphSideIconTooltip"
 import { SecurityClass } from "@/utils/SecurityClass"
 import {
@@ -82,10 +89,7 @@ const TransportNode: React.FC<TransportNodeProps> = ({ data }) => {
         height: isCircular ? CIRCULAR_TRANSPORT_NODE_SIZE : 52,
       })}
     >
-      <Typography
-        variant="h6"
-        component="div"
-        noWrap
+      <Box
         sx={{
           textAlign: "center",
           minWidth: 0,
@@ -99,8 +103,12 @@ const TransportNode: React.FC<TransportNodeProps> = ({ data }) => {
               }),
         }}
       >
-        {data.label}
-      </Typography>
+        <OverflowTooltip value={data.label}>
+          <Typography variant="h6" component="span">
+            {data.label}
+          </Typography>
+        </OverflowTooltip>
+      </Box>
 
       {data.githubLink && SecurityClass.isSafeExternalUrl(data.githubLink) && (
         <GraphSideIconTooltip title="Open repository on GitHub">

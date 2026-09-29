@@ -9,6 +9,7 @@ import {
   Box,
   IconButton,
   Icons,
+  OverflowTooltip,
   Stack,
   Typography,
   useTheme,
@@ -132,14 +133,15 @@ const CustomNode: React.FC<CustomNodeProps> = ({ id, data }) => {
             zIndex: 1,
           }}
         >
-          <Typography
-            variant="h6"
-            component="span"
-            noWrap
-            sx={{ flex: "1 1 auto", minWidth: 0 }}
-          >
-            {data.label}
-          </Typography>
+          {/* `minWidth: 0` has to sit on the flex child, and `OverflowTooltip`
+              renders its own unstyleable wrapper, so the Box carries it. */}
+          <Box sx={{ flex: "1 1 auto", minWidth: 0 }}>
+            <OverflowTooltip value={data.label}>
+              <Typography variant="h6" component="span">
+                {data.label}
+              </Typography>
+            </OverflowTooltip>
+          </Box>
           {data.verificationStatus === "verified" && (
             <Icons.CheckCircleFilled
               aria-label="Verified"
@@ -153,10 +155,7 @@ const CustomNode: React.FC<CustomNodeProps> = ({ id, data }) => {
           )}
         </Box>
 
-        <Typography
-          variant="caption"
-          component="div"
-          noWrap
+        <Box
           sx={{
             order: 1,
             alignSelf: "stretch",
@@ -166,14 +165,20 @@ const CustomNode: React.FC<CustomNodeProps> = ({ id, data }) => {
             width: innerWidth,
             maxWidth: "100%",
             minWidth: 0,
-            fontWeight: 300,
-            lineHeight: "16px",
             position: "relative",
             zIndex: 1,
           }}
         >
-          {data.label_subtitle}
-        </Typography>
+          <OverflowTooltip value={data.label_subtitle}>
+            <Typography
+              variant="caption"
+              component="span"
+              sx={{ fontWeight: 300, lineHeight: "16px" }}
+            >
+              {data.label_subtitle}
+            </Typography>
+          </OverflowTooltip>
+        </Box>
 
         <Stack
           direction="column"
