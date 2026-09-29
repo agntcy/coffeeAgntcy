@@ -44,5 +44,5 @@ jobs:
 
       - name: Deploy
         run: |
-          pip install mkdocs-material==9.7.7
+          pip install --require-hashes -r .github/workflows/docs-requirements.txt
           mkdocs gh-deploy --force

@@ -12,14 +12,14 @@ dependencies = [
     "fastapi==0.136.3",
     "httpx==0.28.1",
     "langchain-anthropic==1.7.1",
-    "langchain-google-genai==4.2.3",
-    "langchain-openai==0.3.34",
+    "langchain-google-genai==4.4.0",
+    "langchain-openai==1.3.4",
     "langgraph==1.2.11",
     "langgraph-supervisor==0.0.31",
     "pydantic==2.13.4",
     "python-dotenv==1.2.2",
     "requests==2.34.2",
-    "starlette==0.52.1",
+    "starlette==1.6.0",
     "uvicorn==0.48.0",
     "mcp[cli]==1.30.0",
     "ioa-observe-sdk==1.0.41",
@@ -31,7 +31,7 @@ dependencies = [
     "llama-index-core==0.14.9",
     "griffe==1.15.0",  # banks/llama-index import griffe 1.x API; 2.x is a meta-package without it
     "litellm==1.84.0",
-    "google-adk==1.28.1",
+    "google-adk==2.8.0",
     "slima2a==0.3.0",
     "slim-bindings==1.4.0",
     "agntcy-app-sdk==0.5.5",
@@ -53,19 +53,23 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = [
-    "pytest==7.4.4",
-    "pytest-asyncio==0.23.8",
+    "pytest==9.1.1",
+    "pytest-asyncio==1.4.0",
     "pytest-cov==4.1.0",
     "typing-extensions==4.15.0",
     "openai==2.38.0",
     "coloredlogs==15.0.1",
-    "langchain-openai==0.3.34",
+    "langchain-openai==1.3.4",
     "sentence-transformers==5.5.1",
     "agntcy-dir==1.0.0",
     "openapi-spec-validator==0.9.0",
     "prance==25.4.8.0",
     "pyyaml==6.0.3",
     "ruff==0.14.14",
+    # starlette>=1.0's TestClient prefers httpx2 over httpx and otherwise raises a
+    # deprecation warning (promoted to error by filterwarnings=["error"] below).
+    # Not a runtime dependency of the app itself, only needed for tests.
+    "httpx2==2.12.0",
 ]
 
 [tool.hatch.metadata]
@@ -76,6 +80,11 @@ url = "https://buf.build/gen/python"
 
 [tool.uv]
 exclude-newer = "14 days"
+constraint-dependencies = [
+    "torch>=2.13.0",
+    "httpcore2>=2.10.0",
+    "httpx2>=2.12.0",
+]
 
 [build-system]
 requires = ["hatchling"]
@@ -88,6 +97,13 @@ packages = ["farm", "exchange", "schema", "api"]
 addopts = "--asyncio-mode=auto"
 filterwarnings = [
     "error",
+    # google-adk 2.8.0's own llm_agent_config.py still subclasses the deprecated BaseAgentConfig
+    # internally (config is now loaded via reflection instead). Triggered merely by importing
+    # google.adk.agents.Agent. The warning is emitted by a warnings.deprecated()-decorated
+    # __init_subclass__ hook, whose reported source is the frozen `abc` module rather than
+    # google.adk itself, so the module component is intentionally omitted here.
+    # Remove when ADK stops subclassing it.
+    "ignore:BaseAgentConfig is deprecated:DeprecationWarning",
 ]
 markers = [
     "agents(names): marks tests that run for specific farms (e.g. @pytest.mark.farms([\"brazil\"]))",

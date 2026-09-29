@@ -5,6 +5,7 @@ import asyncio
 import json
 import logging
 import os
+import re
 from contextlib import asynccontextmanager
 from pathlib import Path
 
@@ -81,6 +82,9 @@ app.add_middleware(
 class PromptRequest(BaseModel):
     prompt: str
     workflow_instance_id: str | None = None
+
+
+_SLUG_RE = re.compile(r"^[A-Za-z0-9_-]+$")
 
 
 @app.post("/agent/prompt")
@@ -198,8 +202,8 @@ async def handle_stream_prompt(request: PromptRequest, req: Request):
                             + "\n"
                         )
                 except Exception as e:
-                    logger.error(f"Error in stream: {e}")
-                    yield json.dumps({"response": f"Error: {str(e)}"}) + "\n"
+                    logger.exception("Error in stream: %s", e)
+                    yield json.dumps({"response": "Error: an internal error occurred while processing the request."}) + "\n"
 
             return StreamingResponse(
                 stream_generator(),
@@ -251,6 +255,8 @@ async def get_agent_oasf(slug: str):
     """
     Returns the OASF JSON for the specified agent slug from the static files.
     """
+    if not _SLUG_RE.fullmatch(slug):
+        raise HTTPException(status_code=404, detail="OASF record not found")
     oasf_path = Path(__file__).resolve().parent / "oasf" / "agents" / f"{slug}.json"
     if not oasf_path.exists():
         raise HTTPException(status_code=404, detail="OASF record not found")

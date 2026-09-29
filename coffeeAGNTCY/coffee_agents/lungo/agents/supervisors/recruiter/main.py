@@ -6,6 +6,7 @@ import config.logging_config  # noqa: F401 - runs setup on import; must be first
 import asyncio
 import json
 import logging
+import re
 from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Optional
@@ -88,6 +89,9 @@ class PromptRequest(BaseModel):
     prompt: str
     session_id: Optional[str] = None
     workflow_instance_id: Optional[str] = None
+
+
+_SLUG_RE = re.compile(r"^[A-Za-z0-9_-]+$")
 
 
 @app.post("/agent/prompt")
@@ -422,6 +426,8 @@ async def get_prompts(pattern: str = "default"):
 @app.get("/agents/{slug}/oasf")
 async def get_agent_oasf(slug: str):
     """Returns the OASF JSON for the specified agent slug from the static files."""
+    if not _SLUG_RE.fullmatch(slug):
+        raise HTTPException(status_code=404, detail="OASF record not found")
     oasf_path = Path(__file__).resolve().parent / "oasf" / "agents" / f"{slug}.json"
     if not oasf_path.exists():
         raise HTTPException(status_code=404, detail="OASF record not found")
