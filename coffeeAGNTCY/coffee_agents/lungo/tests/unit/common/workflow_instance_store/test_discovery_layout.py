@@ -445,6 +445,24 @@ def test_enrich_warns_and_skips_when_every_slot_is_taken(monkeypatch, caplog):
     assert DISCOVERED_ID in caplog.text
 
 
+def test_first_incoming_edge_wins_when_a_node_has_several_anchors():
+    """Anchor resolution is a lookup now; it must still pick the earliest edge."""
+    directory = _directory_seed_node()
+    state = merge_event_data(
+        None, _evt(_wf_with_nodes([_recruiter_seed_node(), directory]))
+    )
+    second_edge = {
+        **_discovery_edge(DISCOVERY_EDGE_ID_2, DISCOVERED_ID),
+        "source": directory["id"],
+    }
+    event = _discovery_topology_event(
+        [_discovered_node(DISCOVERED_ID, DISCOVERED_SID)],
+        [_discovery_edge(DISCOVERY_EDGE_ID, DISCOVERED_ID), second_edge],
+    )
+
+    assert _discovered_position(_normalize_discovery(state, event)) == BELOW_SLOT
+
+
 def test_enrich_with_directory_in_state_still_places_below_recruiter():
     state = merge_event_data(
         None,

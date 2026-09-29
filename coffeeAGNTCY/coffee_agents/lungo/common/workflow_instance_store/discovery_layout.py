@@ -94,21 +94,6 @@ def _is_discovered_create(node: Any) -> bool:
     return isinstance(record, dict)
 
 
-def _anchor_id_for_target(edges: list | None, target_id: str) -> str | None:
-    if not edges:
-        return None
-    for edge in edges:
-        target = getattr(edge, "target", None)
-        source = getattr(edge, "source", None)
-        if target is None or source is None:
-            continue
-        target_root = getattr(target, "root", target)
-        source_root = getattr(source, "root", source)
-        if target_root == target_id and isinstance(source_root, str):
-            return source_root
-    return None
-
-
 def _slot_is_free(
     cx: float,
     cy: float,
@@ -190,6 +175,8 @@ def enrich_discovery_node_layout(state: Data, event: Event) -> Event:
                 if nid is not None and pos is not None:
                     batch_occupied.append((nid, pos[0], pos[1]))
 
+            # First edge wins, so a node with several incoming edges keeps the
+            # anchor it had before this was a lookup instead of a scan.
             target_to_source: dict[str, str] = {}
             for edge in topology.edges or []:
                 target = getattr(edge, "target", None)
@@ -199,7 +186,7 @@ def enrich_discovery_node_layout(state: Data, event: Event) -> Event:
                 target_root = getattr(target, "root", target)
                 source_root = getattr(source, "root", source)
                 if isinstance(target_root, str) and isinstance(source_root, str):
-                    target_to_source[target_root] = source_root
+                    target_to_source.setdefault(target_root, source_root)
 
             discovered = [
                 node for node in topology.nodes if _is_discovered_create(node)
@@ -216,7 +203,7 @@ def enrich_discovery_node_layout(state: Data, event: Event) -> Event:
                 node_id = _node_id(node)
                 if node_id is None:
                     continue
-                anchor_id = _anchor_id_for_target(topology.edges, node_id)
+                anchor_id = target_to_source.get(node_id)
                 if anchor_id is None:
                     continue
                 anchor_node = node_by_id.get(anchor_id)
