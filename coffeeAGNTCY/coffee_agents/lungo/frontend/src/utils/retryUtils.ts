@@ -49,6 +49,7 @@ export function hasRetryableStatus(
 export const withRetry = async <T>(
   operation: () => Promise<T>,
   onRetry?: (attempt: number) => void,
+  signal?: AbortSignal,
 ): Promise<T> => {
   let lastError: Error
 
@@ -66,7 +67,9 @@ export const withRetry = async <T>(
         throw lastError
       }
 
-      if (!isRetryableError(error)) {
+      // A cancellation and a client timeout reach here in the same shape, so
+      // the caller's own signal is the only thing that tells them apart.
+      if (signal?.aborted || !isRetryableError(error)) {
         throw lastError
       }
 
@@ -77,7 +80,7 @@ export const withRetry = async <T>(
       const delay =
         CHAT_RETRY_CONFIG.baseDelay *
         Math.pow(CHAT_RETRY_CONFIG.backoffMultiplier, attempt - 1)
-      await sleepMs(delay)
+      await sleepMs(delay, signal)
     }
   }
 

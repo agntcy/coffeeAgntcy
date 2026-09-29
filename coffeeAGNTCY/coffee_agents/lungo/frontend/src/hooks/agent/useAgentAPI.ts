@@ -121,7 +121,7 @@ export const useAgentAPI = (): UseAgentAPIReturn => {
 
     try {
       if (shouldEnableRetriesForWorkflow(summary)) {
-        return await withRetry(makeApiCall)
+        return await withRetry(makeApiCall, undefined, controller.signal)
       }
       return await makeApiCall()
     } catch (error) {
@@ -221,7 +221,11 @@ export const useAgentAPI = (): UseAgentAPIReturn => {
       let apiResponse: ApiResponse
 
       if (shouldEnableRetriesForWorkflow(summary)) {
-        apiResponse = await withRetry(makeApiCall, onRetryAttempt)
+        apiResponse = await withRetry(
+          makeApiCall,
+          onRetryAttempt,
+          controller.signal,
+        )
       } else {
         apiResponse = await makeApiCall()
       }
