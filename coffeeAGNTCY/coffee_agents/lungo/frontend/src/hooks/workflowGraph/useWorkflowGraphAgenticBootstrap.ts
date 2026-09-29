@@ -115,10 +115,11 @@ export function useWorkflowGraphAgenticBootstrap({
             s.pathUuid,
             (ev: EventV1Wire) => {
               const live = sessionRef.current
-              if (live && live.instanceId === instanceId) {
-                // Reconnect budget is per outage, not cumulative for the session.
-                live.sseReconnectAttempts = 0
-              }
+              // A frame parsed before the previous stream closed must not clear
+              // the banner or repaint the graph for the session that replaced it.
+              if (!live || live.instanceId !== instanceId || cancelled) return
+              // Reconnect budget is per outage, not cumulative for the session.
+              live.sseReconnectAttempts = 0
               setAgenticError(null)
               handleWorkflowInstanceSseEventRef.current(
                 ev,
