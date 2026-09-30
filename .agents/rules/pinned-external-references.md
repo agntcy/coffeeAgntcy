@@ -7,8 +7,9 @@ description: >-
   commit SHA, an image digest) instead, with the version it corresponds to
   kept nearby. Apply whenever adding or editing such a reference. State a
   `# pin-exempt: <reason>` comment for any case that genuinely can't be
-  pinned. Checked by scripts/check_pinned_references.bash (not yet wired
-  into CI).
+  pinned. Checked by `task pins:check` (scripts/check_pinned_references.bash),
+  which also runs as part of `task check:all` in
+  .github/workflows/checks.yaml.
 ---
 
 # Pinned external references
@@ -83,12 +84,17 @@ archaeology.
   `docker buildx imagetools inspect <image>:<tag>`.
 - After adding or editing a `uses:` line in `.github/workflows/`, a `FROM`
   instruction in a Dockerfile, or an `image:` field in a compose file, run
-  [scripts/check_pinned_references.bash](../../scripts/check_pinned_references.bash)
-  - it scans all three surfaces and reports any unpinned or comment-missing
-    reference by file and line. Not yet wired into CI.
+  `task pins:check` (wraps
+  [scripts/check_pinned_references.bash](../../scripts/check_pinned_references.bash),
+  see [Taskfile.yaml](../../Taskfile.yaml)) - it scans all three surfaces
+  and reports any unpinned or comment-missing reference by file and line.
+- CI enforces this on every push/PR: `task check:all` in
+  [.github/workflows/checks.yaml](../../.github/workflows/checks.yaml)
+  runs `pins:check` alongside every other standing check.
 - Anywhere else this principle applies but that script doesn't (yet) scan
   for it, apply it by judgment - and extend the script to cover the new
   surface rather than leaving it as a silent gap.
 - Use `# pin-exempt: <reason>` sparingly and only with a real reason - it's
   a stated exception for when pinning isn't possible, not a shortcut for
   skipping the lookup.
+- See the `checking-pinned-references` skill for the full workflow.

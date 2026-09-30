@@ -39,16 +39,16 @@ failed=0
 # comment is present but empty; returns 0 (exempt, nothing more to check)
 # if present with a reason; returns 2 if no such comment is present at all.
 check_exempt() {
-  local file="$1" line_num="$2" trailing="$3"
-  if [[ "$trailing" =~ \#[[:space:]]*pin-exempt:[[:space:]]*(.*)$ ]]; then
-    local reason="${BASH_REMATCH[1]}"
-    if [[ -z "${reason// /}" ]]; then
-      echo "$file:$line_num: 'pin-exempt' comment must state a reason, e.g. '# pin-exempt: <why this can't be pinned>'"
-      return 1
+    local file="$1" line_num="$2" trailing="$3"
+    if [[ "$trailing" =~ \#[[:space:]]*pin-exempt:[[:space:]]*(.*)$ ]]; then
+        local reason="${BASH_REMATCH[1]}"
+        if [[ -z "${reason// /}" ]]; then
+            echo "$file:$line_num: 'pin-exempt' comment must state a reason, e.g. '# pin-exempt: <why this can't be pinned>'"
+            return 1
+        fi
+        return 0
     fi
-    return 0
-  fi
-  return 2
+    return 2
 }
 
 # --- .github/workflows/*.y*ml: `uses:` references -------------------------
@@ -58,66 +58,66 @@ workflow_files=(.github/workflows/*.yaml .github/workflows/*.yml)
 shopt -u nullglob
 
 for file in "${workflow_files[@]}"; do
-  mapfile -t lines <"$file"
-  line_num=0
-  for line in "${lines[@]}"; do
-    line_num=$((line_num + 1))
+    mapfile -t lines <"$file"
+    line_num=0
+    for line in "${lines[@]}"; do
+        line_num=$((line_num + 1))
 
-    case "$line" in
-      *"uses:"*"./"*) continue ;; # local action/reusable workflow, nothing to pin
-    esac
+        case "$line" in
+            *"uses:"*"./"*) continue ;; # local action/reusable workflow, nothing to pin
+        esac
 
-    if [[ "$line" =~ uses:[[:space:]]*docker://([^[:space:]]+)(.*)$ ]]; then
-      ref="${BASH_REMATCH[1]}"
-      trailing="${BASH_REMATCH[2]}"
-      exempt_rc=0
-      check_exempt "$file" "$line_num" "$trailing" || exempt_rc=$?
-      case "$exempt_rc" in
-        0) continue ;;
-        1)
-          failed=1
-          continue
-          ;;
-      esac
+        if [[ "$line" =~ uses:[[:space:]]*docker://([^[:space:]]+)(.*)$ ]]; then
+            ref="${BASH_REMATCH[1]}"
+            trailing="${BASH_REMATCH[2]}"
+            exempt_rc=0
+            check_exempt "$file" "$line_num" "$trailing" || exempt_rc=$?
+            case "$exempt_rc" in
+                0) continue ;;
+                1)
+                    failed=1
+                    continue
+                    ;;
+            esac
 
-      if [[ ! "$ref" =~ @sha256:[0-9a-f]{64}$ ]]; then
-        echo "$file:$line_num: '$ref' is not pinned to an image digest - pin with '@sha256:<64-hex-digest>' (or add '# pin-exempt: <reason>')"
-        failed=1
-        continue
-      fi
-      if [[ ! "$ref" =~ :[^/@[:space:]]+@sha256: ]] && [[ ! "$trailing" =~ \#[[:space:]]*v?[0-9] ]]; then
-        echo "$file:$line_num: digest-pinned but has no tag embedded and no version comment nearby (e.g. '# 3.19')"
-        failed=1
-      fi
-      continue
-    fi
+            if [[ ! "$ref" =~ @sha256:[0-9a-f]{64}$ ]]; then
+                echo "$file:$line_num: '$ref' is not pinned to an image digest - pin with '@sha256:<64-hex-digest>' (or add '# pin-exempt: <reason>')"
+                failed=1
+                continue
+            fi
+            if [[ ! "$ref" =~ :[^/@[:space:]]+@sha256: ]] && [[ ! "$trailing" =~ \#[[:space:]]*v?[0-9] ]]; then
+                echo "$file:$line_num: digest-pinned but has no tag embedded and no version comment nearby (e.g. '# 3.19')"
+                failed=1
+            fi
+            continue
+        fi
 
-    if [[ "$line" =~ uses:[[:space:]]*([A-Za-z0-9_.-]+/[A-Za-z0-9_./-]+)@([^[:space:]]+)(.*)$ ]]; then
-      ref="${BASH_REMATCH[2]}"
-      trailing="${BASH_REMATCH[3]}"
+        if [[ "$line" =~ uses:[[:space:]]*([A-Za-z0-9_.-]+/[A-Za-z0-9_./-]+)@([^[:space:]]+)(.*)$ ]]; then
+            ref="${BASH_REMATCH[2]}"
+            trailing="${BASH_REMATCH[3]}"
 
-      exempt_rc=0
-      check_exempt "$file" "$line_num" "$trailing" || exempt_rc=$?
-      case "$exempt_rc" in
-        0) continue ;;
-        1)
-          failed=1
-          continue
-          ;;
-      esac
+            exempt_rc=0
+            check_exempt "$file" "$line_num" "$trailing" || exempt_rc=$?
+            case "$exempt_rc" in
+                0) continue ;;
+                1)
+                    failed=1
+                    continue
+                    ;;
+            esac
 
-      if [[ ! "$ref" =~ ^[0-9a-f]{40}$ ]]; then
-        echo "$file:$line_num: '$ref' is not a full commit SHA - pin to a 40-character hex commit SHA, not a tag or branch (or add '# pin-exempt: <reason>' if it genuinely can't be)"
-        failed=1
-        continue
-      fi
+            if [[ ! "$ref" =~ ^[0-9a-f]{40}$ ]]; then
+                echo "$file:$line_num: '$ref' is not a full commit SHA - pin to a 40-character hex commit SHA, not a tag or branch (or add '# pin-exempt: <reason>' if it genuinely can't be)"
+                failed=1
+                continue
+            fi
 
-      if [[ ! "$trailing" =~ \#[[:space:]]*v?[0-9] ]]; then
-        echo "$file:$line_num: SHA-pinned but missing a version comment nearby (e.g. '# v4.4.0')"
-        failed=1
-      fi
-    fi
-  done
+            if [[ ! "$trailing" =~ \#[[:space:]]*v?[0-9] ]]; then
+                echo "$file:$line_num: SHA-pinned but missing a version comment nearby (e.g. '# v4.4.0')"
+                failed=1
+            fi
+        fi
+    done
 done
 
 # --- Dockerfiles: `FROM` instructions --------------------------------------
@@ -125,50 +125,50 @@ done
 mapfile -t dockerfiles < <(find . -type f \( -name "Dockerfile" -o -name "Dockerfile.*" -o -name "*.Dockerfile" \) -not -path "*/.git/*")
 
 for file in "${dockerfiles[@]}"; do
-  stage_names=()
-  mapfile -t lines <"$file"
-  line_num=0
-  for line in "${lines[@]}"; do
-    line_num=$((line_num + 1))
+    stage_names=()
+    mapfile -t lines <"$file"
+    line_num=0
+    for line in "${lines[@]}"; do
+        line_num=$((line_num + 1))
 
-    if [[ "$line" =~ ^[[:space:]]*[Ff][Rr][Oo][Mm][[:space:]]+(--platform=[^[:space:]]+[[:space:]]+)?([^[:space:]]+)([[:space:]]+[Aa][Ss][[:space:]]+([^[:space:]]+))?(.*)$ ]]; then
-      ref="${BASH_REMATCH[2]}"
-      stage_name="${BASH_REMATCH[4]}"
-      trailing="${BASH_REMATCH[5]}"
+        if [[ "$line" =~ ^[[:space:]]*[Ff][Rr][Oo][Mm][[:space:]]+(--platform=[^[:space:]]+[[:space:]]+)?([^[:space:]]+)([[:space:]]+[Aa][Ss][[:space:]]+([^[:space:]]+))?(.*)$ ]]; then
+            ref="${BASH_REMATCH[2]}"
+            stage_name="${BASH_REMATCH[4]}"
+            trailing="${BASH_REMATCH[5]}"
 
-      is_prior_stage=0
-      for s in "${stage_names[@]}"; do
-        [[ "$s" == "$ref" ]] && is_prior_stage=1 && break
-      done
-      [ -n "$stage_name" ] && stage_names+=("$stage_name")
+            is_prior_stage=0
+            for s in "${stage_names[@]}"; do
+                [[ "$s" == "$ref" ]] && is_prior_stage=1 && break
+            done
+            [ -n "$stage_name" ] && stage_names+=("$stage_name")
 
-      if [ "$is_prior_stage" -eq 1 ] || [ "$ref" = "scratch" ]; then
-        continue
-      fi
+            if [ "$is_prior_stage" -eq 1 ] || [ "$ref" = "scratch" ]; then
+                continue
+            fi
 
-      case "$ref" in "$OWN_IMAGE_PREFIX"*) continue ;; esac
+            case "$ref" in "$OWN_IMAGE_PREFIX"*) continue ;; esac
 
-      exempt_rc=0
-      check_exempt "$file" "$line_num" "$trailing" || exempt_rc=$?
-      case "$exempt_rc" in
-        0) continue ;;
-        1)
-          failed=1
-          continue
-          ;;
-      esac
+            exempt_rc=0
+            check_exempt "$file" "$line_num" "$trailing" || exempt_rc=$?
+            case "$exempt_rc" in
+                0) continue ;;
+                1)
+                    failed=1
+                    continue
+                    ;;
+            esac
 
-      if [[ ! "$ref" =~ @sha256:[0-9a-f]{64}$ ]]; then
-        echo "$file:$line_num: '$ref' is not pinned to an image digest - pin with '@sha256:<64-hex-digest>' (or add '# pin-exempt: <reason>')"
-        failed=1
-        continue
-      fi
-      if [[ ! "$ref" =~ :[^/@[:space:]]+@sha256: ]] && [[ ! "$trailing" =~ \#[[:space:]]*v?[0-9] ]]; then
-        echo "$file:$line_num: digest-pinned but has no tag embedded and no version comment nearby (e.g. '# 20.11.0')"
-        failed=1
-      fi
-    fi
-  done
+            if [[ ! "$ref" =~ @sha256:[0-9a-f]{64}$ ]]; then
+                echo "$file:$line_num: '$ref' is not pinned to an image digest - pin with '@sha256:<64-hex-digest>' (or add '# pin-exempt: <reason>')"
+                failed=1
+                continue
+            fi
+            if [[ ! "$ref" =~ :[^/@[:space:]]+@sha256: ]] && [[ ! "$trailing" =~ \#[[:space:]]*v?[0-9] ]]; then
+                echo "$file:$line_num: digest-pinned but has no tag embedded and no version comment nearby (e.g. '# 20.11.0')"
+                failed=1
+            fi
+        fi
+    done
 done
 
 # --- docker-compose/compose files: `image:` fields -------------------------
@@ -176,41 +176,41 @@ done
 mapfile -t compose_files < <(find . -type f \( -name "docker-compose*.yml" -o -name "docker-compose*.yaml" -o -name "compose.yml" -o -name "compose.yaml" \) -not -path "*/.git/*")
 
 for file in "${compose_files[@]}"; do
-  mapfile -t lines <"$file"
-  line_num=0
-  for line in "${lines[@]}"; do
-    line_num=$((line_num + 1))
+    mapfile -t lines <"$file"
+    line_num=0
+    for line in "${lines[@]}"; do
+        line_num=$((line_num + 1))
 
-    if [[ "$line" =~ ^[[:space:]]*image:[[:space:]]*[\"\']?([^[:space:]\"\']+)[\"\']?(.*)$ ]]; then
-      ref="${BASH_REMATCH[1]}"
-      trailing="${BASH_REMATCH[2]}"
+        if [[ "$line" =~ ^[[:space:]]*image:[[:space:]]*[\"\']?([^[:space:]\"\']+)[\"\']?(.*)$ ]]; then
+            ref="${BASH_REMATCH[1]}"
+            trailing="${BASH_REMATCH[2]}"
 
-      case "$ref" in "$OWN_IMAGE_PREFIX"*) continue ;; esac
+            case "$ref" in "$OWN_IMAGE_PREFIX"*) continue ;; esac
 
-      exempt_rc=0
-      check_exempt "$file" "$line_num" "$trailing" || exempt_rc=$?
-      case "$exempt_rc" in
-        0) continue ;;
-        1)
-          failed=1
-          continue
-          ;;
-      esac
+            exempt_rc=0
+            check_exempt "$file" "$line_num" "$trailing" || exempt_rc=$?
+            case "$exempt_rc" in
+                0) continue ;;
+                1)
+                    failed=1
+                    continue
+                    ;;
+            esac
 
-      if [[ ! "$ref" =~ @sha256:[0-9a-f]{64}$ ]]; then
-        echo "$file:$line_num: '$ref' is not pinned to an image digest - pin with '@sha256:<64-hex-digest>' (or add '# pin-exempt: <reason>')"
-        failed=1
-        continue
-      fi
-      if [[ ! "$ref" =~ :[^/@[:space:]]+@sha256: ]] && [[ ! "$trailing" =~ \#[[:space:]]*v?[0-9] ]]; then
-        echo "$file:$line_num: digest-pinned but has no tag embedded and no version comment nearby (e.g. '# 1.27.3')"
-        failed=1
-      fi
-    fi
-  done
+            if [[ ! "$ref" =~ @sha256:[0-9a-f]{64}$ ]]; then
+                echo "$file:$line_num: '$ref' is not pinned to an image digest - pin with '@sha256:<64-hex-digest>' (or add '# pin-exempt: <reason>')"
+                failed=1
+                continue
+            fi
+            if [[ ! "$ref" =~ :[^/@[:space:]]+@sha256: ]] && [[ ! "$trailing" =~ \#[[:space:]]*v?[0-9] ]]; then
+                echo "$file:$line_num: digest-pinned but has no tag embedded and no version comment nearby (e.g. '# 1.27.3')"
+                failed=1
+            fi
+        fi
+    done
 done
 
 if [ "$failed" -ne 0 ]; then
-  exit 1
+    exit 1
 fi
 echo "All action, reusable-workflow, and image references are pinned (digest/SHA, with a version kept nearby)."
