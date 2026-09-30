@@ -227,8 +227,10 @@ All values live in **`src/config/requestRetryPolicy.ts`** with the rationale for
 | Chat prompt (`withRetry`) | 4 | 1s, 2s, 4s | 60s default |
 | Suggested prompts | 4 | 5s flat | 60s default |
 
-Two rules matter more than the numbers:
+Three rules matter more than the numbers:
 
+- **Stop retrying when the caller cancels.** Retry loops take the caller's `AbortSignal` and end as soon as it aborts, between attempts and during backoff. A cancel and a client timeout both surface as a status-less `HttpError`, so the error shape cannot tell them apart. The caller's signal can: a timeout only aborts `httpFetch`'s private controller, so it still retries.
+- **The graph error banner is cleared only by a successfully applied topology.** An SSE frame proves the stream is alive, not that the topology `GET` works, so it resets the reconnect budget but leaves the banner alone.
 - **Never retry a 4xx.** `isRetryableError` in `src/utils/retryUtils.ts` is the shared classifier: 5xx, 429, and transport failures only. A 404 or 400 answers identically on every attempt, so retrying just delays the message.
 - **`POST /agentic-workflows/{name}/` is not idempotent.** Each call mints a new instance uuid, and a client that retries a request the server received leaks an instance it cannot delete, because the id was in the response it never saw. Only `502`/`503` and transport failures are replayed; a `504` means the seed event is already queued and must not be re-POSTed. The two bootstrap steps therefore retry in separate scopes (`workflowGraphBootstrapRequests.ts`) rather than as a pair.
 
@@ -240,7 +242,7 @@ Two rules matter more than the numbers:
 |------|---------|
 | `src/urls.ts` | Paths, bases, `joinHttpRequest`, logical label docs |
 | `src/config/requestRetryPolicy.ts` | Retry budgets, backoff delays, request timeouts |
-| `src/utils/retryUtils.ts` | `withRetry`, `sleepMs`, shared error classifiers |
+| `src/utils/retryUtils.ts` | `withRetryPolicy` (the one retry loop), `withRetry` (chat policy), `sleepMs`, shared error classifiers |
 | `src/httpRequestTargets.ts` | Non-catalog request builders |
 | `src/utils/workflowChatRouting.ts` | Catalog chat targets |
 | `src/api/http/` | `httpFetch`, `fetchJson`, `fetchNdjsonStream`, `fetchSse`, `parseHttpError` |
