@@ -15,13 +15,13 @@ or opening a PR - run whichever of these apply to what changed:
 
 | If the change touches... | Run |
 |---|---|
-| `scripts/**` (including `scripts/lib/`) | `task shell:lint` |
+| `scripts/**` (including `scripts/lib/`) | `task shell:lint`, `task tests:bash`, and `task tests:coverage` |
 | `.github/workflows/**` | `task workflows:lint` and `task workflows:check-permissions` |
 | A `uses:`/`FROM`/`image:` reference (workflow, Dockerfile, compose file) | `task pins:check` |
 | Any prose you wrote (docs, comments, this list included) | `task dashes:check` - see `.agents/rules/always-apply/no-em-en-dashes.md` |
 | A new or changed `.agents/skills/*/SKILL.md`, or `repo-operation-pipeline.md`'s "Known exceptions" list | `task pipeline:check-exceptions` |
 | A moved, renamed, or removed file, or an edited markdown link | `task links:check` |
-| Unsure, or several of the above | `task check:all` (runs all seven, never fails fast, reports which passed/failed) |
+| Unsure, or several of the above | `task check:all` (runs all nine, never fails fast, reports which passed/failed) |
 
 This is deliberately **not** a pre-push git hook - nothing in this repo
 installs one, and none should be added without the user asking for it. It's
@@ -49,8 +49,9 @@ anyone else sees it.
   `.agents/skills/quality-checks/checking-markdown-links/SKILL.md`,
   `.agents/skills/quality-checks/checking-pinned-references/SKILL.md`,
   `.agents/skills/quality-checks/checking-workflow-permissions/SKILL.md`,
-  `.agents/skills/quality-checks/linting-github-workflows/SKILL.md`, and
-  `.agents/skills/quality-checks/linting-shell-scripts/SKILL.md` for how to
+  `.agents/skills/quality-checks/linting-github-workflows/SKILL.md`,
+  `.agents/skills/quality-checks/linting-shell-scripts/SKILL.md`, and
+  `.agents/skills/quality-checks/testing-bash-scripts/SKILL.md` for how to
   read and fix specific failures.
 - If a check doesn't apply (e.g. a pure-documentation change that doesn't
   touch `scripts/` or `.github/workflows/` and adds no third-party

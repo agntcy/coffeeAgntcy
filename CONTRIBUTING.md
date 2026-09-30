@@ -126,6 +126,16 @@ other standing check, via `task check:all`) on every pull request.
 contributors need a newer Bash on `PATH` (e.g. `brew install bash`) to run
 these scripts directly.
 
+#### Bash script tests
+
+A new bash script anywhere in the repository needs tests: a shared `*/lib/*.sh`-style
+helper gets unit tests (`task tests:bash`), and an executable script gets
+a mocked end-to-end test with any external command it depends on stubbed.
+See [`.agents/rules/quality/bash-script-testing.md`](/.agents/rules/quality/bash-script-testing.md)
+for the full rule. `task tests:coverage` flags any script with no test -
+no exceptions. Both run as part of `task check:all` and the `Checks`
+workflow.
+
 #### Pinned external references and workflow permissions
 
 Every third-party GitHub Action/reusable-workflow/image reference must be
