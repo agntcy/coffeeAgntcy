@@ -5,7 +5,7 @@
 See `proposal.md` - Why for the trigger-scope and eager-install findings,
 and for why this is additive against an empty `openspec/specs/` tree
 rather than a delta against `repo-tooling-foundations` (not yet
-archived). `.agents/rules/repo-operation-pipeline.md`'s "Known
+archived). `.agents/rules/meta/repo-operation-pipeline.md`'s "Known
 exceptions" section currently lists, under "purely manual/visual
 conventions" with no script/task/skill/CI layer at all:
 `alphabetize-entity-lists`, `file-tree-comment-alignment`,
@@ -60,7 +60,7 @@ rule's markdown.** Extracting rule names from
 inline links) is fragile against reformatting that doesn't change
 meaning. A hardcoded bash array with a comment pointing at the rule
 section it must stay in sync with is the same pattern
-`scripts/check_all.bash` already uses for its own check list, and
+`scripts/checks/check_all.bash` already uses for its own check list, and
 `scripts/lib/versions.sh` for pinned tool versions - this repo already
 accepts "hardcoded list, comment says where its source of truth is"
 over "parse the prose" elsewhere.
@@ -108,5 +108,5 @@ tripping on this change's own documentation.
 
 Purely additive: one new script, one new task, one new skill, one
 cross-link edit to an existing rule, one line added to
-`scripts/check_all.bash`'s list. No existing file's behavior changes.
+`scripts/checks/check_all.bash`'s list. No existing file's behavior changes.
 Rollback is a plain `git revert`.

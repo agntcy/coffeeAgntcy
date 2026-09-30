@@ -6,11 +6,11 @@
 
 ## 2. Implement the exceptions-list self-audit
 
-- [x] 2.1 Write `scripts/check_pipeline_exceptions.bash`: a hardcoded array of the "purely manual/visual conventions" exception list (with a comment pointing at `repo-operation-pipeline.md`'s section to keep it in sync with), checking `.agents/skills/*/SKILL.md` for a reference to each rule's filename and failing (naming the rule) if found; verify it passes clean against the repo as it stands today, then verify it correctly fails by temporarily adding a fake reference to an exception-listed rule's filename into one skill file and confirming the failure names that rule, before reverting the temporary change
+- [x] 2.1 Write `scripts/checks/check_pipeline_exceptions.bash`: a hardcoded array of the "purely manual/visual conventions" exception list (with a comment pointing at `repo-operation-pipeline.md`'s section to keep it in sync with), checking `.agents/skills/*/SKILL.md` for a reference to each rule's filename and failing (naming the rule) if found; verify it passes clean against the repo as it stands today, then verify it correctly fails by temporarily adding a fake reference to an exception-listed rule's filename into one skill file and confirming the failure names that rule, before reverting the temporary change
 - [x] 2.2 Add a `pipeline:check-exceptions` Taskfile task wrapping the script; verify `task --list` shows it and it runs the script unmodified
-- [x] 2.3 Add `.agents/skills/auditing-pipeline-exceptions/SKILL.md`, matching the shape of this repo's existing `checking-*` skills (what it does, workflow, notes); verify it cross-links the task and the rule
+- [x] 2.3 Add `.agents/skills/quality-checks/auditing-pipeline-exceptions/SKILL.md`, matching the shape of this repo's existing `checking-*` skills (what it does, workflow, notes); verify it cross-links the task and the rule
 - [x] 2.4 Cross-link the new script/task/skill from within `repo-operation-pipeline.md`'s existing "Known exceptions" section (no new rule file - see `design.md`); update `AGENTS.md`'s Skills table to index the new skill; verify every link resolves
-- [x] 2.5 Add `pipeline:check-exceptions` to `scripts/check_all.bash`'s parallel list; verify `task check:all` picks it up and still passes
+- [x] 2.5 Add `pipeline:check-exceptions` to `scripts/checks/check_all.bash`'s parallel list; verify `task check:all` picks it up and still passes
 
 ## 3. Verification
 

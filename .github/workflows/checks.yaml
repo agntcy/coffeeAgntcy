@@ -2,7 +2,7 @@ name: Checks
 
 # Consolidates what used to be two separate workflows (forbidden strings,
 # shell lint) into one job: bootstrap the repo-local toolchain once, then
-# run every check in parallel via `task check:all` (scripts/check_all.bash
+# run every check in parallel via `task check:all` (scripts/checks/check_all.bash
 # backgrounds each check and waits) instead of each check re-bootstrapping
 # on its own runner.
 #
