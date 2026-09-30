@@ -17,6 +17,17 @@
 # Gate never waits on itself, no matter how many of its own runs share a
 # commit.
 #
+# Also collapses each remaining workflow id down to its single
+# highest-run_number run before writing runs.json: GitHub can deliver two
+# near-simultaneous pull_request events for the same HEAD_SHA, spawning a
+# full duplicate set of sibling runs. Workflows with a cancel-in-progress
+# concurrency group scoped by ref (not run id) - e.g. the per-project jobs
+# in test.yaml, or docker-build-push.yaml's workflow-level group - then
+# cancel the earlier duplicate once the later one's job starts. Without
+# collapsing, that superseded run's "cancelled" conclusion would fail the
+# gate even though the newer run of the identical workflow, for the
+# identical commit, completed successfully.
+#
 # Reads GITHUB_REPOSITORY, GITHUB_RUN_ID (both set automatically inside a
 # real Actions run), HEAD_SHA (set by the calling workflow step), and needs
 # an authenticated `gh` (GH_TOKEN, also preinstalled on Actions runners).
@@ -88,6 +99,8 @@ while true; do
 
     sleep "$POLL_INTERVAL_SECONDS"
 done
+
+last_good_runs_json=$(jq '[group_by(.workflow_id)[] | max_by(.run_number)]' <<<"$last_good_runs_json")
 
 echo "$last_good_runs_json" >runs.json
 echo "settled=$settled" | tee -a "${GITHUB_OUTPUT:-/dev/stdout}"
