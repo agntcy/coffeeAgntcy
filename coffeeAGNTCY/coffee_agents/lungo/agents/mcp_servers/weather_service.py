@@ -29,6 +29,11 @@ OPEN_METEO_BASE = os.getenv(
 mcp = FastMCP()
 
 
+def _approx_coordinate(value: float) -> float:
+    """Round a coordinate for logging so exact user locations aren't recorded in clear text."""
+    return round(value, 1)
+
+
 def _validate_coordinates(latitude: float, longitude: float) -> None:
     if not -90 <= latitude <= 90:
         raise ValueError(f"Invalid latitude: {latitude!r} (must be between -90 and 90)")
@@ -51,10 +56,10 @@ async def make_request(
         return resp.json()
     except Exception as e:
         logger.error(
-            "Request error at %s with params %s and headers %s: %s",
+            "Request error at %s with params %s and header names %s: %s",
             url,
             params,
-            headers,
+            sorted(headers.keys()),
             e,
         )
         return None
@@ -65,8 +70,8 @@ async def get_forecast(latitude: float, longitude: float) -> str:
     _validate_coordinates(latitude, longitude)
     logging.info(
         "Getting weather forecast for coordinates: latitude=%s longitude=%s",
-        latitude,
-        longitude,
+        _approx_coordinate(latitude),
+        _approx_coordinate(longitude),
     )
 
     async with httpx.AsyncClient() as client:
@@ -81,8 +86,8 @@ async def get_forecast(latitude: float, longitude: float) -> str:
         if not data or "current_weather" not in data:
             logging.error(
                 "Failed to retrieve weather data for latitude=%s longitude=%s",
-                latitude,
-                longitude,
+                _approx_coordinate(latitude),
+                _approx_coordinate(longitude),
             )
             logging.error("Response data: %s", data)
             raise RuntimeError(
