@@ -108,7 +108,7 @@ beforeEach(() => {
 })
 
 describe("useWorkflowGraphAgenticBootstrap SSE frames", () => {
-  it("clears the banner, resets the reconnect budget and forwards a live frame", async () => {
+  it("resets the reconnect budget and forwards a live frame without touching the banner", async () => {
     const { sessionRef, setAgenticError, handleSseEvent } = setup("Alpha")
     await waitFor(() => expect(subscriptions).toHaveLength(1))
     sessionRef.current!.sseReconnectAttempts = 4
@@ -117,7 +117,10 @@ describe("useWorkflowGraphAgenticBootstrap SSE frames", () => {
     subscriptionFor("Alpha").onEvent(FRAME)
 
     expect(sessionRef.current!.sseReconnectAttempts).toBe(0)
-    expect(setAgenticError).toHaveBeenCalledWith(null)
+    // A frame only schedules a refetch. The banner is cleared by
+    // `applyInstanceTopology` once a topology is actually applied, so a frame
+    // must not hide a "Could not refresh" banner before the refetch succeeds.
+    expect(setAgenticError).not.toHaveBeenCalled()
     expect(handleSseEvent).toHaveBeenCalledWith(
       FRAME,
       "Alpha",
@@ -170,8 +173,9 @@ describe("useWorkflowGraphAgenticBootstrap SSE frames", () => {
     expect(handleSseEvent).not.toHaveBeenCalled()
   })
 
-  it("keeps the 'updates stopped' banner when a stale stream delivers a late frame", async () => {
-    const { rerender, sessionRef, setAgenticError } = setup("Alpha")
+  it("keeps the 'updates stopped' banner and ignores a late frame from a stale stream", async () => {
+    const { rerender, sessionRef, setAgenticError, handleSseEvent } =
+      setup("Alpha")
     await waitFor(() => expect(subscriptions).toHaveLength(1))
     const staleOnEvent = subscriptionFor("Alpha").onEvent
 
@@ -189,5 +193,7 @@ describe("useWorkflowGraphAgenticBootstrap SSE frames", () => {
     expect(setAgenticError).toHaveBeenLastCalledWith(
       "Live workflow updates stopped. The graph may be outdated.",
     )
+    expect(handleSseEvent).not.toHaveBeenCalled()
+    expect(sessionRef.current!.sseReconnectAttempts).toBe(6)
   })
 })

@@ -120,7 +120,9 @@ export function useWorkflowGraphAgenticBootstrap({
               if (!live || live.instanceId !== instanceId || cancelled) return
               // Reconnect budget is per outage, not cumulative for the session.
               live.sseReconnectAttempts = 0
-              setAgenticError(null)
+              // Deliberately no banner reset here: a frame only schedules a
+              // refetch. `applyInstanceTopology` clears the error once a
+              // topology is actually applied.
               handleWorkflowInstanceSseEventRef.current(
                 ev,
                 catalogWorkflowName,
