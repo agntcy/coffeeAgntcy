@@ -55,13 +55,7 @@ async def make_request(
         resp.raise_for_status()
         return resp.json()
     except Exception as e:
-        logger.error(
-            "Request error at %s with params %s and header names %s: %s",
-            url,
-            params,
-            sorted(headers.keys()),
-            e,
-        )
+        logger.error("Request error at %s: %s", url, e)
         return None
 
 

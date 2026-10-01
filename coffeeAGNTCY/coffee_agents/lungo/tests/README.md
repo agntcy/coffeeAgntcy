@@ -119,8 +119,6 @@ The reusable test workflow [`test.yaml`](../../../../.github/workflows/test.yaml
 - `pip_constraints` (constraint lines)
 - `docker_overrides` (service=image[:tag] mappings applied to the demo docker-compose)
 
-An example caller is provided in [`version-override-test.yaml`](../../../../.github/workflows/version-override-test.yaml). Trigger it (Workflow Dispatch) or via UI.
-
 Minimal invocation pattern:
 
 ```yaml
@@ -129,7 +127,7 @@ on:
   workflow_dispatch: {}
 jobs:
   integration:
-    uses: agntcy/coffeeAgntcy/.github/workflows/test.yaml@integration-hook
+    uses: agntcy/coffeeAgntcy/.github/workflows/test.yaml@<ref>
     with:
       pip_overrides: |
         httpx==0.27.2

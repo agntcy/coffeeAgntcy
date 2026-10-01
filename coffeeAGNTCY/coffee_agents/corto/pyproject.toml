@@ -30,7 +30,7 @@ dependencies = [
     "azure-core==1.38.0",
     # Vulnerability fix for requests
     "langchain-core==1.6.2",
-    "urllib3==2.7.0",
+    "urllib3==2.8.0",
     "aiohttp==3.14.3",
     "pyasn1==0.6.4",
     "pypdf==6.18.0",
@@ -53,7 +53,7 @@ dev = [
     "openai==2.54.0",
     "coloredlogs==15.0.1",
     "langchain-openai==1.6.2",
-    "sentence-transformers==5.2.2",
+    "sentence-transformers==5.7.0",
     "ruff==0.14.14",
 ]
 
@@ -63,6 +63,14 @@ constraint-dependencies = [
     "torch>=2.13.0",
     "transformers>=5.10.0",
 ]
+# spiffe==0.3.1 (latest) caps pyjwt[crypto]<2.14, which blocks several PyJWT
+# CVE fixes (notably CVE-2026-102268, a critical asymmetric-key confusion
+# bypass). Forced past that cap; see tests/unit/common/test_spiffe_jwt_compat.py
+# for the compatibility contract this relies on.
+override-dependencies = ["pyjwt[crypto]==2.15.1"]
+
+[tool.uv.exclude-newer-package]
+pyjwt = "2026-10-01T00:00:00Z"
 
 [build-system]
 requires = ["hatchling"]

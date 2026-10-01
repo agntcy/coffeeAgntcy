@@ -42,6 +42,14 @@ exclude-newer = "14 days"
 constraint-dependencies = [
     "starlette>=1.3.1",
 ]
+# spiffe==0.3.1 (latest) caps pyjwt[crypto]<2.14, which blocks several PyJWT
+# CVE fixes (notably CVE-2026-102268, a critical asymmetric-key confusion
+# bypass). Forced past that cap; see tests/unit/test_spiffe_jwt_compat.py for
+# the compatibility contract this relies on.
+override-dependencies = ["pyjwt[crypto]==2.15.1"]
+
+[tool.uv.exclude-newer-package]
+pyjwt = "2026-10-01T00:00:00Z"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/agent_recruiter"]

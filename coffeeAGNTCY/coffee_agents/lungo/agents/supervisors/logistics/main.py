@@ -84,7 +84,10 @@ class PromptRequest(BaseModel):
     workflow_instance_id: str | None = None
 
 
-_SLUG_RE = re.compile(r"^[A-Za-z0-9_-]+$")
+# Rejects malformed input early (dots included: real directory-sourced slugs
+# can contain them, e.g. versioned names). Traversal is actually prevented by
+# the containment check in get_agent_oasf below, not by this character set.
+_SLUG_RE = re.compile(r"^[A-Za-z0-9_.-]+$")
 
 
 @app.post("/agent/prompt")
@@ -257,11 +260,12 @@ async def get_agent_oasf(slug: str):
     """
     if not _SLUG_RE.fullmatch(slug):
         raise HTTPException(status_code=404, detail="OASF record not found")
-    oasf_path = Path(__file__).resolve().parent / "oasf" / "agents" / f"{slug}.json"
-    if not oasf_path.exists():
+    oasf_dir = os.path.realpath(os.path.join(os.path.dirname(__file__), "oasf", "agents"))
+    oasf_path = os.path.realpath(os.path.join(oasf_dir, f"{slug}.json"))
+    if not oasf_path.startswith(oasf_dir + os.sep) or not os.path.exists(oasf_path):
         raise HTTPException(status_code=404, detail="OASF record not found")
     try:
-        with oasf_path.open("r", encoding="utf-8") as f:
+        with open(oasf_path, "r", encoding="utf-8") as f:
             data = json.load(f)
         return JSONResponse(content=data)
     except Exception as e:

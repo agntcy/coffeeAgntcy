@@ -32,9 +32,53 @@ RECRUITER_DIR = Path(__file__).resolve().parents[2]
 ZOT_REGISTRY_READYZ_URL = "http://127.0.0.1:5555/readyz"
 
 # ---------------- Ensure DIRCTL is available ----------------
+# Bumping this alone is not enough to roll out a newer minimum: a dirctl
+# already on a dev's PATH, or already cached at LOCAL_DIRCTL from a previous
+# run, is only accepted if `_meets_minimum_version` (below) confirms it is at
+# least this new - see `_dirctl_version`/`_meets_minimum_version`/`ensure_dirctl`.
 DIRCTL_VERSION = "v1.5.0"
 BIN_DIR = RECRUITER_DIR / "bin"
 LOCAL_DIRCTL = BIN_DIR / "dirctl"
+
+
+def _parse_version(text: str) -> tuple[int, ...] | None:
+    """Extract a dotted (major, minor, patch) version from `dirctl version` output.
+
+    Handles both observed formats ("Application Version: v1.5.0" and a
+    trailing bare "v1.5.0 (<short-sha>)" line).
+    """
+    match = re.search(r"v?(\d+)\.(\d+)\.(\d+)", text)
+    if not match:
+        return None
+    return tuple(int(part) for part in match.groups())
+
+
+_MIN_DIRCTL_VERSION = _parse_version(DIRCTL_VERSION)
+
+
+def _dirctl_version(path: str) -> tuple[int, ...] | None:
+    """Return the parsed version of the dirctl binary at `path`, or None if
+    it can't be run or its output can't be parsed."""
+    try:
+        result = subprocess.run(
+            [path, "version"], capture_output=True, text=True, timeout=10
+        )
+    except (OSError, subprocess.TimeoutExpired):
+        return None
+    return _parse_version(result.stdout + result.stderr)
+
+
+def _meets_minimum_version(path: str) -> bool:
+    """True only if `path` is a dirctl whose version is >= DIRCTL_VERSION.
+
+    An unparseable or unreachable binary is treated as not meeting the
+    minimum (never trusted by default) rather than silently accepted - this
+    is what let a stale dirctl already on PATH mask the "absent in v1.0.0"
+    bug that DIRCTL_VERSION was bumped to fix (see git history for
+    "bump bundled dirctl ... for export support").
+    """
+    version = _dirctl_version(path)
+    return version is not None and version >= _MIN_DIRCTL_VERSION
 
 
 def _dirctl_download_suffix() -> str:
@@ -98,7 +142,13 @@ def _download_dirctl(dest: Path) -> None:
 
 @pytest.fixture(scope="session", autouse=True)
 def ensure_dirctl():
-    """Ensure dirctl is available: use PATH, else reuse `recruiter/bin/dirctl`, else download.
+    """Ensure a dirctl at least as new as DIRCTL_VERSION is available.
+
+    Prefers whatever is already on PATH, but only if it actually meets that
+    version; otherwise reuses `recruiter/bin/dirctl` if that meets it, else
+    (re)downloads the pinned release. A dirctl that's merely present but too
+    old (or whose version can't be determined) is never silently trusted -
+    see `_meets_minimum_version`.
 
     Prepends recruiter/bin to PATH when using the downloaded binary so subprocess calls to `dirctl` work.
     """
@@ -106,10 +156,13 @@ def ensure_dirctl():
     os.environ.setdefault("DIRECTORY_CLIENT_SERVER_ADDRESS", "localhost:8888")
     os.environ.setdefault("DIRECTORY_CLIENT_TLS_SKIP_VERIFY", "true")
 
-    if _find_executable_on_path("dirctl"):
+    on_path = _find_executable_on_path("dirctl")
+    if on_path and _meets_minimum_version(on_path):
         return
 
-    if not _path_is_executable(LOCAL_DIRCTL):
+    if not (
+        _path_is_executable(LOCAL_DIRCTL) and _meets_minimum_version(str(LOCAL_DIRCTL))
+    ):
         _download_dirctl(LOCAL_DIRCTL)
 
     os.environ["PATH"] = f"{BIN_DIR}{os.pathsep}{os.environ.get('PATH', '')}"
