@@ -55,12 +55,7 @@ async def make_request(
         resp.raise_for_status()
         return resp.json()
     except Exception as e:
-        logger.error(
-            "Request error at %s with params %s: %s",
-            url,
-            params,
-            e,
-        )
+        logger.error("Request error at %s: %s", url, e)
         return None
 
 

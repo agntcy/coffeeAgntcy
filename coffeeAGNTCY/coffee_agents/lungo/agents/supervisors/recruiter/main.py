@@ -6,6 +6,7 @@ import config.logging_config  # noqa: F401 - runs setup on import; must be first
 import asyncio
 import json
 import logging
+import os
 import re
 from contextlib import asynccontextmanager
 from pathlib import Path
@@ -91,7 +92,10 @@ class PromptRequest(BaseModel):
     workflow_instance_id: Optional[str] = None
 
 
-_SLUG_RE = re.compile(r"^[A-Za-z0-9_-]+$")
+# Rejects malformed input early (dots included: real directory-sourced slugs
+# can contain them, e.g. versioned names). Traversal is actually prevented by
+# the containment check in get_agent_oasf below, not by this character set.
+_SLUG_RE = re.compile(r"^[A-Za-z0-9_.-]+$")
 
 
 @app.post("/agent/prompt")
@@ -428,12 +432,12 @@ async def get_agent_oasf(slug: str):
     """Returns the OASF JSON for the specified agent slug from the static files."""
     if not _SLUG_RE.fullmatch(slug):
         raise HTTPException(status_code=404, detail="OASF record not found")
-    oasf_dir = (Path(__file__).resolve().parent / "oasf" / "agents").resolve()
-    oasf_path = (oasf_dir / f"{slug}.json").resolve()
-    if not oasf_path.is_relative_to(oasf_dir) or not oasf_path.exists():
+    oasf_dir = os.path.realpath(os.path.join(os.path.dirname(__file__), "oasf", "agents"))
+    oasf_path = os.path.realpath(os.path.join(oasf_dir, f"{slug}.json"))
+    if not oasf_path.startswith(oasf_dir + os.sep) or not os.path.exists(oasf_path):
         raise HTTPException(status_code=404, detail="OASF record not found")
     try:
-        with oasf_path.open("r", encoding="utf-8") as f:
+        with open(oasf_path, "r", encoding="utf-8") as f:
             data = json.load(f)
         return JSONResponse(content=data)
     except Exception as e:
