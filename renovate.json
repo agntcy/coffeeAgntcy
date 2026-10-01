@@ -13,6 +13,7 @@
   ],
   "prCreation": "not-pending",
   "enabledManagers": [
+    "custom.regex",
     "dockerfile",
     "docker-compose",
     "github-actions",
@@ -20,6 +21,20 @@
     "helmv3",
     "npm",
     "pep621"
+  ],
+  "customManagers": [
+    {
+      "customType": "regex",
+      "description": [
+        "Track the tool versions pinned in scripts/lib/versions.sh (see scripts/setup.sh), via a `# renovate: datasource=... depName=...` comment above each *_VERSION line."
+      ],
+      "managerFilePatterns": [
+        "/^scripts/lib/versions\\.sh$/"
+      ],
+      "matchStrings": [
+        "# renovate: datasource=(?<datasource>\\S+) depName=(?<depName>\\S+)(?: versioning=(?<versioning>\\S+))?(?: extractVersion=(?<extractVersion>\\S+))?\\s*\\n\\s*[A-Z_]+_VERSION=\"(?<currentValue>[^\"]+)\""
+      ]
+    }
   ],
   "labels": [
     "dependencies"
@@ -102,6 +117,19 @@
       ],
       "description": [
         "Group frontend (npm) dependency updates in single PR."
+      ]
+    },
+    {
+      "groupName": "Toolchain",
+      "groupSlug": "toolchain",
+      "matchManagers": [
+        "custom.regex"
+      ],
+      "addLabels": [
+        "toolchain"
+      ],
+      "description": [
+        "Group updates to the pinned tool versions in scripts/lib/versions.sh in a single PR."
       ]
     },
     {
