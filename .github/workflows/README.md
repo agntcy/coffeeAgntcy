@@ -19,7 +19,6 @@ This directory contains CI/CD workflows for building images, packaging Helm char
 | [`test-reusable.yaml`](test-reusable.yaml) | Reusable job: run pytest for one project directory and path set | workflow_call |
 | [`test-subprojects-reusable.yaml`](test-subprojects-reusable.yaml) | Path-filter job: which agent projects changed | workflow_call |
 | [`test.yaml`](test.yaml) | Run pytest for corto, lungo, recruiter | push (main), pull_request, workflow_call, workflow_dispatch |
-| [`version-override-test.yaml`](version-override-test.yaml) | Example invocation of reusable tests with dependency/image overrides | workflow_dispatch |
 
 ## checks
 
@@ -133,7 +132,7 @@ Runs `pytest` via `uv` for a single project directory and explicit path list.
 | `pip_constraints` | Constraint lines applied during resolution |
 | `docker_overrides` | Lines `service=image[:tag]` to patch docker-compose service images |
 
-Example caller (see `version-override-test.yaml`):
+Example caller:
 
 ```yaml
 jobs:
@@ -151,10 +150,6 @@ jobs:
 ## fe-ci
 
 Runs frontend checks (TypeScript typecheck, ESLint, Prettier via `npm run check`) for the Lungo frontend. Only triggers when files under `coffeeAGNTCY/coffee_agents/lungo/frontend/` change.
-
-## version-override-test
-
-Demonstrates how to pin or constrain dependencies and override container images when calling the reusable test workflow.
 
 ## docs
 
