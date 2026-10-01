@@ -45,17 +45,6 @@
   },
   "packageRules": [
     {
-      "matchCategories": [
-        "golang"
-      ],
-      "addLabels": [
-        "go"
-      ],
-      "description": [
-        "Add go label to PRs which bumps go dependencies."
-      ]
-    },
-    {
       "groupName": "Go patches",
       "groupSlug": "go-patches",
       "matchDatasources": [
@@ -74,11 +63,7 @@
       "matchManagers": [
         "github-actions"
       ],
-      "addLabels": [
-        "ci"
-      ],
       "description": [
-        "Add ci label to PRs which are related to Github Actions.",
         "Group CI dependency updates in single PR."
       ]
     },
@@ -89,9 +74,6 @@
         "dockerfile",
         "docker-compose"
       ],
-      "addLabels": [
-        "docker"
-      ],
       "description": [
         "Group Dockerfile and docker-compose dependency updates in single PR."
       ]
@@ -101,9 +83,6 @@
       "groupSlug": "helm",
       "matchManagers": [
         "helmv3"
-      ],
-      "addLabels": [
-        "helm"
       ],
       "description": [
         "Group Helm chart dependency updates in single PR."
@@ -124,9 +103,6 @@
       "groupSlug": "toolchain",
       "matchManagers": [
         "custom.regex"
-      ],
-      "addLabels": [
-        "toolchain"
       ],
       "description": [
         "Group updates to the pinned tool versions in scripts/lib/versions.sh in a single PR."
@@ -165,9 +141,6 @@
   "timezone": "Etc/UTC",
   "vulnerabilityAlerts": {
     "enabled": true,
-    "labels": [
-      "security"
-    ],
     "minimumReleaseAge": null,
     "schedule": [
       "at any time"
