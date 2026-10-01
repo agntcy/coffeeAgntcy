@@ -7,9 +7,9 @@
 # whatever's already on PATH so this still works without running setup.sh
 # first.
 #
-# This is the exact command ci-gate.yaml's "Validate" step runs in CI, so
-# running it locally/as an agent before opening a PR catches the same
-# findings ahead of time.
+# This is the exact command that runs as part of `task check:all` in
+# checks.yaml, so running it locally/as an agent before opening a PR
+# catches the same findings ahead of time.
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"

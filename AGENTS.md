@@ -34,6 +34,7 @@ new one (see `.agents/rules/organize-large-collections.md`).
 
 | Topic | File |
 |-------|------|
+| Auditing pipeline exceptions | [.agents/skills/auditing-pipeline-exceptions/SKILL.md](.agents/skills/auditing-pipeline-exceptions/SKILL.md) |
 | Checking dashes | [.agents/skills/checking-dashes/SKILL.md](.agents/skills/checking-dashes/SKILL.md) |
 | Checking pinned references | [.agents/skills/checking-pinned-references/SKILL.md](.agents/skills/checking-pinned-references/SKILL.md) |
 | Checking workflow permissions | [.agents/skills/checking-workflow-permissions/SKILL.md](.agents/skills/checking-workflow-permissions/SKILL.md) |
