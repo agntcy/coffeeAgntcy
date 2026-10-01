@@ -74,20 +74,20 @@
   "overrides": {
     "form-data": "4.0.6",
     "undici": "7.29.1",
-    "brace-expansion": "5.0.9",
+    "brace-expansion": "5.0.12",
     "eslint": {
       "minimatch": {
-        "brace-expansion": "1.1.18"
+        "brace-expansion": "1.1.21"
       }
     },
     "@eslint/config-array": {
       "minimatch": {
-        "brace-expansion": "1.1.18"
+        "brace-expansion": "1.1.21"
       }
     },
     "@eslint/eslintrc": {
       "minimatch": {
-        "brace-expansion": "1.1.18"
+        "brace-expansion": "1.1.21"
       }
     }
   },

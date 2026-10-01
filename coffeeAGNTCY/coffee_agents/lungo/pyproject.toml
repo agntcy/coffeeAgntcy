@@ -38,7 +38,7 @@ dependencies = [
     "azure-core==1.38.0",
     # Vulnerability fix for requests
     "langchain-core==1.6.2",
-    "urllib3==2.7.0",
+    "urllib3==2.8.0",
     "aiohttp==3.14.3",
     "pyasn1==0.6.4",
     "pypdf==6.18.0",
