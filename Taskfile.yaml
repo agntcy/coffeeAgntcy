@@ -66,12 +66,12 @@ tasks:
     cmds:
       - scripts/fix_dashes.bash
 
-  deps:renovate:sync:
+  renovate:sync:
     desc: >-
       Run renovate to sync dependency update PRs for this repo.
     summary: |
-      Usage:   task deps:renovate:sync
-      Example: task deps:renovate:sync
+      Usage:   task renovate:sync
+      Example: task renovate:sync
       Runs the repo-local renovate binary (installed into .tools/bin by
       scripts/setup.sh at the version pinned in scripts/lib/versions.sh).
       Behavior is driven entirely by renovate.json and the RENOVATE_*/

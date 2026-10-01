@@ -28,9 +28,6 @@ jobs:
           # Make sure the value of GITHUB_TOKEN will not be persisted in repo's config
           persist-credentials: false
 
-      - name: Install Task
-        uses: go-task/setup-task@a00fbb05ce67b35648be3c78cbc9fd85354c757e # v2.2.0
-
       - name: Set up Go
         uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
         with:
@@ -38,13 +35,17 @@ jobs:
           cache: true
           cache-dependency-path: "**/*.sum"
 
-      - name: Setup Node
-        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
-        with:
-          node-version: "24.x"
+      # TODO: Move uv setup to setup.sh
+      - name: Set up uv
+        uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78 # v7.6.0
+
+      - name: Bootstrap repo-local tooling
+        run: ./scripts/setup.sh
 
       - name: Run Renovate
-        run: task deps:renovate:sync
+        run: |
+          source scripts/env.sh
+          task renovate:sync
         env:
           ## Discovery
           RENOVATE_AUTODISCOVER: "true"
