@@ -53,7 +53,7 @@ dev = [
     "openai==2.54.0",
     "coloredlogs==15.0.1",
     "langchain-openai==1.6.2",
-    "sentence-transformers==5.2.2",
+    "sentence-transformers==5.7.0",
     "ruff==0.14.14",
 ]
 
