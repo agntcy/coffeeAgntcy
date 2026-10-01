@@ -66,6 +66,20 @@ tasks:
     cmds:
       - scripts/fix_dashes.bash
 
+  deps:renovate:sync:
+    desc: >-
+      Run renovate to sync dependency update PRs for this repo.
+    summary: |
+      Usage:   task deps:renovate:sync
+      Example: task deps:renovate:sync
+      Runs the repo-local renovate binary (installed into .tools/bin by
+      scripts/setup.sh at the version pinned in scripts/lib/versions.sh).
+      Behavior is driven entirely by renovate.json and the RENOVATE_*/
+      GITHUB_COM_TOKEN env vars set by the caller - see
+      .github/workflows/dependencies.yaml, the only caller today.
+    cmds:
+      - renovate
+
   pins:check:
     desc: >-
       Check that every third-party action/reusable-workflow/image
@@ -98,15 +112,15 @@ tasks:
   setup:
     desc: >-
       Install/update the repo-local toolchain (task, actionlint,
-      shellcheck, shfmt, node, openspec) to the pinned versions in
-      scripts/lib/versions.sh.
+      shellcheck, shfmt, node, openspec, renovate) to the pinned versions
+      in scripts/lib/versions.sh.
     summary: |
       Usage:   task setup
       Example: task setup && source scripts/env.sh
       Installs into .tools/bin/ and .tools/node/ (gitignored), never
       touching the global PATH, shell profile, or home directory. CI uses
-      './scripts/setup.sh --lint-only' instead, which skips node/openspec.
-      See scripts/setup.sh.
+      './scripts/setup.sh --lint-only' instead, which skips
+      node/openspec/renovate. See scripts/setup.sh.
     cmds:
       - ./scripts/setup.sh
 
