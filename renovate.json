@@ -45,6 +45,14 @@
   },
   "packageRules": [
     {
+      "matchCategories": [
+        "golang"
+      ],
+      "description": [
+        "Add go label to PRs which bumps go dependencies."
+      ]
+    },
+    {
       "groupName": "Go patches",
       "groupSlug": "go-patches",
       "matchDatasources": [
