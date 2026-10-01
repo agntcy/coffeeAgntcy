@@ -5,20 +5,20 @@
 
 import React, { useState, useEffect, useCallback, useRef } from "react"
 import { Box, Icons, Stack, Typography } from "@open-ui-kit/core"
-import { ChatAgentAvatar } from "../ChatAvatarCircle"
-import { FeedSpinnerRow } from "../FeedSpinnerRow"
+import { ChatAgentAvatar } from "../shared"
+import { FeedSpinnerRow } from "./FeedSpinnerRow"
 import { successIconColorSx } from "@/utils/successIconColor"
-import { FeedStatusLine } from "../FeedStatusLine"
+import { FeedStatusLine } from "./FeedStatusLine"
 import { FeedErrorMessage } from "./FeedErrorMessage"
 import { FeedCollapseButton } from "./FeedCollapseButton"
-import GrafanaSessionLink from "../GrafanaSessionLink"
+import { GrafanaSessionLink } from "../shared"
 import type {
   RecruiterStreamingFeedProps,
   RecruiterStreamingEvent,
 } from "@/stores/recruiterStreaming.types"
 import { NDJSON_STREAMING_STATUS } from "@/stores/ndjsonStreamingStatus"
 import { RECRUITER_STREAM_EVENT_TYPE } from "@/stores/recruiterStreamEventType"
-import { resolveStreamAuthorToNodeId } from "../chatStreamGraphHighlight"
+import { resolveStreamAuthorToNodeId } from "../streaming"
 
 const RecruiterStreamingFeed: React.FC<RecruiterStreamingFeedProps> = ({
   isVisible,

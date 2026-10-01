@@ -9,7 +9,7 @@ import {
   Box,
   IconButton,
   Icons,
-  Tooltip,
+  OverflowTooltip,
   Typography,
   useTheme,
 } from "@open-ui-kit/core"
@@ -89,27 +89,26 @@ const TransportNode: React.FC<TransportNodeProps> = ({ data }) => {
         height: isCircular ? CIRCULAR_TRANSPORT_NODE_SIZE : 52,
       })}
     >
-      <Tooltip title={data.label} arrow>
-        <Typography
-          variant="h6"
-          component="div"
-          noWrap
-          sx={{
-            textAlign: "center",
-            minWidth: 0,
-            ...(isCircular
-              ? {
-                  maxWidth: CIRCULAR_TRANSPORT_NODE_SIZE - 32,
-                  ...(data.githubLink ? {} : { mb: 1 }),
-                }
-              : {
-                  flex: 1,
-                }),
-          }}
-        >
-          {data.label}
-        </Typography>
-      </Tooltip>
+      <Box
+        sx={{
+          textAlign: "center",
+          minWidth: 0,
+          ...(isCircular
+            ? {
+                maxWidth: CIRCULAR_TRANSPORT_NODE_SIZE - 32,
+                ...(data.githubLink ? {} : { mb: 1 }),
+              }
+            : {
+                flex: 1,
+              }),
+        }}
+      >
+        <OverflowTooltip value={data.label}>
+          <Typography variant="h6" component="span">
+            {data.label}
+          </Typography>
+        </OverflowTooltip>
+      </Box>
 
       {data.githubLink && SecurityClass.isSafeExternalUrl(data.githubLink) && (
         <GraphSideIconTooltip title="Open repository on GitHub">

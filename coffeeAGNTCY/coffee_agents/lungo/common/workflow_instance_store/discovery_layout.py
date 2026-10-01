@@ -6,21 +6,29 @@
 Runs after :func:`reconcile_event_node_identities` and before
 :func:`merge_event_data`. When the anchor node has a defined ``position``,
 discovered agents (inline ``oasf_record`` agent dict on create) receive a
-non-overlapping slot
-using backend-only offset constants. When the anchor lacks ``position``, nodes
-are left unchanged so the frontend auto-layout applies.
+non-overlapping slot in a row beneath the anchor, using backend-only offset
+constants. Slots are never reused or reshuffled, so agents found by a later
+prompt extend the existing row instead of moving the ones already on screen.
+When the anchor lacks ``position``, nodes are left unchanged so the frontend
+auto-layout applies.
 """
 
 from __future__ import annotations
 
+import logging
 from collections.abc import Iterator
 from typing import Any
 
 from schema.types import Data, Event, Operation, Workflow
 
+logger = logging.getLogger(__name__)
+
 _DISCOVERY_LAYOUT_X_OFFSET = 285
 _DISCOVERY_LAYOUT_Y_OFFSET = 185
-_DISCOVERY_LAYOUT_MAX_RING = 20
+_DISCOVERY_LAYOUT_MAX_ROWS = 20
+# Counted per side, so a row holds 2 * N + 1 = 5 agents. Wider rows force the
+# canvas to zoom out past the point where node labels are legible.
+_DISCOVERY_LAYOUT_COLUMNS_PER_SIDE = 2
 
 
 def _node_id(node: Any) -> str | None:
@@ -86,21 +94,6 @@ def _is_discovered_create(node: Any) -> bool:
     return isinstance(record, dict)
 
 
-def _anchor_id_for_target(edges: list | None, target_id: str) -> str | None:
-    if not edges:
-        return None
-    for edge in edges:
-        target = getattr(edge, "target", None)
-        source = getattr(edge, "source", None)
-        if target is None or source is None:
-            continue
-        target_root = getattr(target, "root", target)
-        source_root = getattr(source, "root", source)
-        if target_root == target_id and isinstance(source_root, str):
-            return source_root
-    return None
-
-
 def _slot_is_free(
     cx: float,
     cy: float,
@@ -118,17 +111,19 @@ def _candidate_slots(
     anchor_x: float,
     anchor_y: float,
 ) -> Iterator[tuple[float, float]]:
-    for ring in range(1, _DISCOVERY_LAYOUT_MAX_RING + 1):
-        x_step = _DISCOVERY_LAYOUT_X_OFFSET * ring
-        y_step = _DISCOVERY_LAYOUT_Y_OFFSET * ring
-        yield (anchor_x, anchor_y + y_step)
-        yield (anchor_x + x_step, anchor_y)
-        yield (anchor_x - x_step, anchor_y)
-        yield (anchor_x, anchor_y - y_step)
-        yield (anchor_x + x_step, anchor_y + y_step)
-        yield (anchor_x - x_step, anchor_y + y_step)
-        yield (anchor_x + x_step, anchor_y - y_step)
-        yield (anchor_x - x_step, anchor_y - y_step)
+    """Fill each row below the anchor, outward from its center, before dropping down.
+
+    Discovered agents hang off the anchor's bottom handle, so a slot beside or
+    above the anchor would draw an edge that leaves the bottom and doubles back.
+    Widening the row keeps siblings on one line under their anchor.
+    """
+    for row in range(1, _DISCOVERY_LAYOUT_MAX_ROWS + 1):
+        y = anchor_y + _DISCOVERY_LAYOUT_Y_OFFSET * row
+        yield (anchor_x, y)
+        for column in range(1, _DISCOVERY_LAYOUT_COLUMNS_PER_SIDE + 1):
+            x_step = _DISCOVERY_LAYOUT_X_OFFSET * column
+            yield (anchor_x + x_step, y)
+            yield (anchor_x - x_step, y)
 
 
 def _find_free_slot(
@@ -180,6 +175,8 @@ def enrich_discovery_node_layout(state: Data, event: Event) -> Event:
                 if nid is not None and pos is not None:
                     batch_occupied.append((nid, pos[0], pos[1]))
 
+            # First edge wins, so a node with several incoming edges keeps the
+            # anchor it had before this was a lookup instead of a scan.
             target_to_source: dict[str, str] = {}
             for edge in topology.edges or []:
                 target = getattr(edge, "target", None)
@@ -189,7 +186,7 @@ def enrich_discovery_node_layout(state: Data, event: Event) -> Event:
                 target_root = getattr(target, "root", target)
                 source_root = getattr(source, "root", source)
                 if isinstance(target_root, str) and isinstance(source_root, str):
-                    target_to_source[target_root] = source_root
+                    target_to_source.setdefault(target_root, source_root)
 
             discovered = [
                 node for node in topology.nodes if _is_discovered_create(node)
@@ -206,7 +203,7 @@ def enrich_discovery_node_layout(state: Data, event: Event) -> Event:
                 node_id = _node_id(node)
                 if node_id is None:
                     continue
-                anchor_id = _anchor_id_for_target(topology.edges, node_id)
+                anchor_id = target_to_source.get(node_id)
                 if anchor_id is None:
                     continue
                 anchor_node = node_by_id.get(anchor_id)
@@ -220,6 +217,18 @@ def enrich_discovery_node_layout(state: Data, event: Event) -> Event:
                 occupied = _occupied_positions(batch_occupied, exclude_ids=exclude_ids)
                 slot = _find_free_slot(anchor_pos[0], anchor_pos[1], occupied)
                 if slot is None:
+                    # The node stays unpositioned and falls to frontend
+                    # auto-layout, which cannot see the siblings placed here and
+                    # may overlap them. Rare enough to leave as is, loud enough
+                    # to explain a node that lands in the wrong place.
+                    logger.warning(
+                        "Discovery layout exhausted all %d slots under anchor %s; "
+                        "leaving node %s unpositioned for frontend auto-layout.",
+                        _DISCOVERY_LAYOUT_MAX_ROWS
+                        * (2 * _DISCOVERY_LAYOUT_COLUMNS_PER_SIDE + 1),
+                        anchor_id,
+                        node_id,
+                    )
                     continue
 
                 cx, cy = slot

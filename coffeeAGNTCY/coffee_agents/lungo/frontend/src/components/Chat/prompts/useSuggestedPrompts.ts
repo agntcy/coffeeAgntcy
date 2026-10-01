@@ -7,12 +7,9 @@ import { useEffect, useState } from "react"
 import { fetchJson } from "@/api/http"
 import { reportRequestError } from "@/errors/request"
 import type { HttpRequestTarget } from "@/urls"
+import { SUGGESTED_PROMPTS_MAX_RETRIES } from "@/config/requestRetryPolicy"
 import type { PromptCategory, SuggestedPromptsResponse } from "./PromptTypes"
-import {
-  getRetryDelayMs,
-  MAX_SUGGESTED_PROMPTS_RETRIES,
-  parsePromptCategories,
-} from "./suggestedPromptsUtils"
+import { getRetryDelayMs, parsePromptCategories } from "./suggestedPromptsUtils"
 
 export interface UseSuggestedPromptsResult {
   categories: PromptCategory[]
@@ -78,7 +75,7 @@ export function useSuggestedPrompts(
         const nextCategories = parsePromptCategories(data)
 
         if (!hasPrompts(nextCategories)) {
-          if (retryCount >= MAX_SUGGESTED_PROMPTS_RETRIES) {
+          if (retryCount >= SUGGESTED_PROMPTS_MAX_RETRIES) {
             markUnavailable(
               new Error("Suggested prompts response contained no prompts"),
             )
@@ -95,7 +92,7 @@ export function useSuggestedPrompts(
       } catch (err: unknown) {
         if (cancelled) return
 
-        if (retryCount >= MAX_SUGGESTED_PROMPTS_RETRIES) {
+        if (retryCount >= SUGGESTED_PROMPTS_MAX_RETRIES) {
           markUnavailable(err)
           return
         }

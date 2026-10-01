@@ -8,7 +8,7 @@ import { renderHook, waitFor } from "@testing-library/react"
 import { fetchJson } from "@/api/http"
 import { LUNGO_FRONTEND_URLS } from "@/urls"
 import { useSuggestedPrompts } from "./useSuggestedPrompts"
-import { MAX_SUGGESTED_PROMPTS_RETRIES } from "./suggestedPromptsUtils"
+import { SUGGESTED_PROMPTS_MAX_RETRIES } from "@/config/requestRetryPolicy"
 
 vi.mock("@/api/http", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@/api/http")>()
@@ -106,7 +106,7 @@ describe("useSuggestedPrompts", () => {
 
     expect(result.current.categories).toEqual([])
     expect(result.current.isLoading).toBe(false)
-    expect(fetchJson).toHaveBeenCalledTimes(MAX_SUGGESTED_PROMPTS_RETRIES + 1)
+    expect(fetchJson).toHaveBeenCalledTimes(SUGGESTED_PROMPTS_MAX_RETRIES + 1)
     expect(reportRequestError).toHaveBeenCalledTimes(1)
     expect(reportRequestError).toHaveBeenCalledWith(
       logisticsPromptsRequest.endpointLabel,

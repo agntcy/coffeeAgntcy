@@ -7,9 +7,6 @@ import type { Edge, Node } from "@xyflow/react"
 import type { CustomNodeData } from "@/components/MainArea/Graph/Elements/nodes/types"
 import type { WorkflowSummary } from "@/utils/agenticWorkflowsApi"
 
-export const REFETCH_DEBOUNCE_MS = 80
-/** Linear SSE reconnect delay: attempt N waits N × this value (ms). */
-export const SSE_RECONNECT_BACKOFF_MS = 250
 /** Auto-clear messaging highlights if no newer event refreshes them. */
 export const MESSAGING_HIGHLIGHT_TTL_MS = 2_500
 

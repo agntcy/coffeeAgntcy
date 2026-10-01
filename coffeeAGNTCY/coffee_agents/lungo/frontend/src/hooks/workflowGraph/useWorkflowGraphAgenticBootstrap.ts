@@ -7,17 +7,20 @@ import { useEffect } from "react"
 import type { RefObject } from "react"
 import { parseHttpError } from "@/api/http"
 import {
-  getWorkflowInstanceState,
   instanceIdToPathUuid,
-  instantiateWorkflow,
   subscribeWorkflowInstanceSse,
 } from "@/api/agenticWorkflowsClient"
 import type { EventV1Wire, TopologyWire } from "@/api/agenticWorkflowsTypes"
 import { reportRequestError } from "@/errors/request"
 import {
   SSE_RECONNECT_BACKOFF_MS,
-  type WorkflowGraphAgenticSession,
-} from "./useWorkflowGraphFromAgenticApi.types"
+  SSE_RECONNECT_MAX_ATTEMPTS,
+} from "@/config/requestRetryPolicy"
+import {
+  getWorkflowInstanceTopologyWithRetry,
+  instantiateWorkflowWithRetry,
+} from "./workflowGraphBootstrapRequests"
+import { type WorkflowGraphAgenticSession } from "./useWorkflowGraphFromAgenticApi.types"
 
 interface UseWorkflowGraphAgenticBootstrapParams {
   agenticMode: boolean
@@ -58,21 +61,26 @@ export function useWorkflowGraphAgenticBootstrap({
     clearSession()
 
     let cancelled = false
+    // Aborts in-flight bootstrap requests and any pending retry backoff when the
+    // selected workflow changes.
+    const abortController = new AbortController()
 
     const run = async () => {
       setAgenticError(null)
       try {
-        const { workflow_instance_id: instanceId } = await instantiateWorkflow(
-          baseUrl,
-          catalogWorkflowName,
-        )
+        const { workflow_instance_id: instanceId } =
+          await instantiateWorkflowWithRetry(
+            baseUrl,
+            catalogWorkflowName,
+            abortController.signal,
+          )
         if (cancelled) return
         const pathUuid = instanceIdToPathUuid(instanceId)
-        const inst = await getWorkflowInstanceState(
+        const inst = await getWorkflowInstanceTopologyWithRetry(
           baseUrl,
           catalogWorkflowName,
           pathUuid,
-          true,
+          abortController.signal,
         )
         if (cancelled) return
         applyInstanceTopologyRef.current(inst.topology)
@@ -106,6 +114,15 @@ export function useWorkflowGraphAgenticBootstrap({
             s.workflowName,
             s.pathUuid,
             (ev: EventV1Wire) => {
+              const live = sessionRef.current
+              // A frame parsed before the previous stream closed must not clear
+              // the banner or repaint the graph for the session that replaced it.
+              if (!live || live.instanceId !== instanceId || cancelled) return
+              // Reconnect budget is per outage, not cumulative for the session.
+              live.sseReconnectAttempts = 0
+              // Deliberately no banner reset here: a frame only schedules a
+              // refetch. `applyInstanceTopology` clears the error once a
+              // topology is actually applied.
               handleWorkflowInstanceSseEventRef.current(
                 ev,
                 catalogWorkflowName,
@@ -115,7 +132,7 @@ export function useWorkflowGraphAgenticBootstrap({
             (err) => {
               const cur = sessionRef.current
               if (!cur || cur.instanceId !== instanceId || cancelled) return
-              if (cur.sseReconnectAttempts >= 6) {
+              if (cur.sseReconnectAttempts >= SSE_RECONNECT_MAX_ATTEMPTS) {
                 // Logical label for SSE reconnect exhaustion - see urls.ts.
                 const endpointLabel = "agentic-workflows/sse"
                 const userMessage =
@@ -154,6 +171,8 @@ export function useWorkflowGraphAgenticBootstrap({
         if (cancelled) return
         attachSse()
       } catch (e) {
+        // `cancelled` already covers teardown aborts. A client timeout reports the
+        // same cancellation shape, so it must not be filtered out here.
         if (!cancelled) {
           // Logical label for the composite bootstrap flow; not an apiPath - see urls.ts.
           const endpointLabel = "agentic-workflows/bootstrap"
@@ -170,6 +189,7 @@ export function useWorkflowGraphAgenticBootstrap({
 
     return () => {
       cancelled = true
+      abortController.abort()
       clearSession()
     }
   }, [

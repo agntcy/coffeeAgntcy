@@ -5,7 +5,7 @@
 
 import React, { useEffect, useRef, useState } from "react"
 import { Box, Icons } from "@open-ui-kit/core"
-import type { Message as MessageType } from "./types"
+import type { Message as MessageType } from "../types"
 import Message from "./Message"
 
 interface SlowTextProps {

@@ -4,6 +4,7 @@
  **/
 
 import { fetchJson, fetchSse, httpFetch } from "@/api/http"
+import { CONTROL_PLANE_REQUEST_TIMEOUT_MS } from "@/config/requestRetryPolicy"
 import type {
   EventV1Wire,
   InstantiateWorkflowResponseWire,
@@ -44,6 +45,7 @@ function normalizeInstanceId(raw: unknown): string {
 export async function instantiateWorkflow(
   baseUrl: string,
   workflowName: string,
+  signal?: AbortSignal,
 ): Promise<InstantiateWorkflowResponseWire> {
   const request = buildAgenticWorkflowsInstantiateRequest(workflowName, baseUrl)
   const data = await fetchJson<{ workflow_instance_id?: unknown }>(
@@ -51,6 +53,8 @@ export async function instantiateWorkflow(
     {
       method: "POST",
       endpointLabel: request.endpointLabel,
+      timeoutMs: CONTROL_PLANE_REQUEST_TIMEOUT_MS,
+      signal,
       headers: agenticWorkflowsAuthHeaders(),
     },
   )
@@ -76,6 +80,7 @@ export async function deleteWorkflowInstance(
   await httpFetch(request.url, {
     method: "DELETE",
     endpointLabel: request.endpointLabel,
+    timeoutMs: CONTROL_PLANE_REQUEST_TIMEOUT_MS,
     headers: agenticWorkflowsAuthHeaders(),
   })
 }
@@ -85,6 +90,7 @@ export async function getWorkflowInstanceState(
   workflowName: string,
   instancePathUuid: string,
   topologyOnly: boolean,
+  signal?: AbortSignal,
 ): Promise<WorkflowInstanceWire> {
   const request = buildAgenticWorkflowsInstanceRequest(
     workflowName,
@@ -94,6 +100,8 @@ export async function getWorkflowInstanceState(
 
   return fetchJson<WorkflowInstanceWire>(request.url, {
     endpointLabel: request.endpointLabel,
+    timeoutMs: CONTROL_PLANE_REQUEST_TIMEOUT_MS,
+    signal,
     headers: agenticWorkflowsAuthHeaders(),
   })
 }

@@ -9,7 +9,11 @@ import { fetchJson, isHttpError } from "@/api/http"
 import type { Message } from "@/components/Chat/types"
 import { reportRequestError } from "@/errors/request"
 import { isLocalDev, Role } from "@/utils/const"
-import { withRetry, RETRY_CONFIG } from "@/utils/retryUtils"
+import { withRetry } from "@/utils/retryUtils"
+import {
+  CHAT_RETRY_CONFIG,
+  CHAT_RETRY_DELAYS_MS,
+} from "@/config/requestRetryPolicy"
 import type { WorkflowSummary } from "@/utils/agenticWorkflowsApi"
 import {
   getAgentPromptRequestForWorkflow,
@@ -120,7 +124,7 @@ export const useAgentAPI = (): UseAgentAPIReturn => {
 
     try {
       if (shouldEnableRetriesForWorkflow(summary)) {
-        return await withRetry(makeApiCall)
+        return await withRetry(makeApiCall, undefined, controller.signal)
       }
       return await makeApiCall()
     } catch (error) {
@@ -191,16 +195,17 @@ export const useAgentAPI = (): UseAgentAPIReturn => {
       })
 
     const onRetryAttempt = (attempt: number) => {
+      // Same list the retry loop backs off on, so the countdown cannot drift.
       const delay =
-        RETRY_CONFIG.baseDelay *
-        Math.pow(RETRY_CONFIG.backoffMultiplier, attempt - 1)
+        CHAT_RETRY_DELAYS_MS[attempt - 1] ??
+        CHAT_RETRY_DELAYS_MS[CHAT_RETRY_DELAYS_MS.length - 1]
       const nextRetryAt = Date.now() + delay
 
       setMessages((prevMessages: Message[]) => {
         const updatedMessages = [...prevMessages]
         updatedMessages[updatedMessages.length - 1] = {
           role: "assistant",
-          content: `Retrying... (${attempt}/${RETRY_CONFIG.maxRetries})`,
+          content: `Retrying... (${attempt}/${CHAT_RETRY_CONFIG.maxRetries})`,
           id: uuid(),
           animate: true,
         }
@@ -220,7 +225,11 @@ export const useAgentAPI = (): UseAgentAPIReturn => {
       let apiResponse: ApiResponse
 
       if (shouldEnableRetriesForWorkflow(summary)) {
-        apiResponse = await withRetry(makeApiCall, onRetryAttempt)
+        apiResponse = await withRetry(
+          makeApiCall,
+          onRetryAttempt,
+          controller.signal,
+        )
       } else {
         apiResponse = await makeApiCall()
       }

@@ -16,7 +16,7 @@ import { useNodeTransportInterfaces } from "./useNodeTransportInterfaces"
 import type { WorkflowSummary } from "@/utils/agenticWorkflowsApi"
 import type { GraphConfig } from "@/utils/graphConfigs"
 import { graphConfigFromNodes } from "@/utils/graphConfigFromNodes"
-import { deriveAnimationSequenceFromGraph } from "@/components/Chat/chatStreamGraphHighlight"
+import { deriveAnimationSequenceFromGraph } from "@/components/Chat/streaming"
 import { patternTypeFromSummary } from "@/utils/workflow"
 
 export interface MainAreaProps {

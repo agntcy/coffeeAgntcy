@@ -9,7 +9,7 @@ import type { ComponentProps } from "react"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 
 import ChatAreaComposer from "./ChatAreaComposer"
-import type { UseSuggestedPromptsResult } from "./prompts"
+import type { UseSuggestedPromptsResult } from "../prompts"
 
 const promptsState = vi.hoisted(() => ({
   current: {
@@ -22,7 +22,7 @@ const promptsState = vi.hoisted(() => ({
   } as UseSuggestedPromptsResult,
 }))
 
-vi.mock("./prompts/useSuggestedPrompts", () => ({
+vi.mock("../prompts/useSuggestedPrompts", () => ({
   useSuggestedPrompts: () => promptsState.current,
 }))
 

@@ -8,8 +8,7 @@ import { buildAgentsOasfRequest, type HttpRequestTarget } from "@/urls"
 import { type ChatApiTarget } from "@/utils/patternUtils"
 import type { CustomNodeData } from "../Elements/nodes/types"
 import { getOasfSlugFromNodeData } from "@/utils/agenticTopologyIdentityUiMap"
-
-const DIRECTORY_REQUEST_TIMEOUT_MS = 10_000
+import { CONTROL_PLANE_REQUEST_TIMEOUT_MS } from "@/config/requestRetryPolicy"
 
 /** OASF record from directory API; URL fields used for link in dialog. */
 export interface OasfRecord {
@@ -63,7 +62,7 @@ export const fetchOasfRecord = async (
   const request = oasfRecordRequest(nodeData, chatApiTarget)
   const record = await fetchJson<OasfRecord>(request.url, {
     endpointLabel: request.endpointLabel,
-    timeoutMs: DIRECTORY_REQUEST_TIMEOUT_MS,
+    timeoutMs: CONTROL_PLANE_REQUEST_TIMEOUT_MS,
     headers: {
       "Content-Type": "application/json",
     },

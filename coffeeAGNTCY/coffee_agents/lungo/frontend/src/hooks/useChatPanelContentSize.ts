@@ -8,7 +8,7 @@
 
 import { useLayoutEffect, useState, type RefObject } from "react"
 import type { PanelImperativeHandle } from "react-resizable-panels"
-import { CHAT_PANEL_AUTO_SIZE_MAX_ATTEMPTS } from "@/components/Chat/chatPanelLayout"
+import { CHAT_PANEL_AUTO_SIZE_MAX_ATTEMPTS } from "@/components/Chat/panel"
 
 const COMPOSER_RESIZE_DEBOUNCE_MS = 150
 
