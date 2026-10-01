@@ -30,7 +30,7 @@
     "@mui/system": "7.3.11",
     "@open-ui-kit/core": "3.1.0",
     "@xyflow/react": "12.10.0",
-    "dompurify": "3.4.15",
+    "dompurify": "3.4.16",
     "mermaid": "11.16.1",
     "react": "19.2.3",
     "react-dom": "19.2.3",
