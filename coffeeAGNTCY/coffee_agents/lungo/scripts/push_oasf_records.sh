@@ -61,6 +61,13 @@ run_dirctl() {
     dirctl --server-addr "$SERVER_ADDR" "$@"
 }
 
+# Succeeds only for a bare CIDv1 (base32, e.g. baeareib...). Guards against
+# dirctl output that merely looks like a CID, such as the "[baeareib...]" slice
+# printed by `search --output raw` in Directory v1.0.0, or stderr noise.
+is_cid() {
+    [[ "$1" =~ ^b[a-z2-7]{20,}$ ]]
+}
+
 log_directory_target() {
     echo -e "${BLUE}Directory target: ${SERVER_ADDR} (source: ${SERVER_ADDR_SOURCE})${NC}"
     echo ""
@@ -144,7 +151,9 @@ for OASF_DIR in "${OASF_DIRS[@]}"; do
         echo -e "    Agent name: \"${AGENT_NAME}\""
 
         set +e
-        SEARCH_RESULT=$(run_dirctl search --name "$AGENT_NAME" --output raw)
+        # Use --output json: `--output raw` is a Go slice in Directory v1.0.0
+        # ("[<cid>]") but a bare CID in newer releases. JSON is a stable array.
+        SEARCH_RESULT=$(run_dirctl search --name "$AGENT_NAME" --output json)
         SEARCH_EXIT=$?
         set -e
 
@@ -160,11 +169,23 @@ for OASF_DIR in "${OASF_DIRS[@]}"; do
         RECORD_IS_PULLABLE=false
         REPAIRING=false
 
-        if [[ -n "$SEARCH_RESULT" && "$SEARCH_RESULT" != "[]" ]]; then
-            EXISTING_CID=$(printf '%s' "$SEARCH_RESULT" | head -n 1 | xargs)
+        # First hit of the JSON array; empty when there are no matches or the
+        # output is not a JSON array.
+        EXISTING_CID=""
+        if [[ -n "$SEARCH_RESULT" ]]; then
+            EXISTING_CID=$(printf '%s' "$SEARCH_RESULT" | jq -r '.[0] // empty' 2>/dev/null || true)
+        fi
 
+        if [[ -n "$EXISTING_CID" ]] && ! is_cid "$EXISTING_CID"; then
+            echo -e "    ${YELLOW}⚠ Unexpected search result (not a CID): ${EXISTING_CID}, treating as not found${NC}"
+            EXISTING_CID=""
+        fi
+
+        if [[ -n "$EXISTING_CID" ]]; then
+            # Keep stderr (stdout is discarded) so a bad CID, an unreachable
+            # server and a genuinely missing blob can be told apart.
             set +e
-            run_dirctl pull "$EXISTING_CID" --output json >/dev/null 2>&1
+            EXISTING_PULL_ERR=$(run_dirctl pull "$EXISTING_CID" --output json 2>&1 >/dev/null)
             EXISTING_PULL_EXIT=$?
             set -e
 
@@ -174,6 +195,7 @@ for OASF_DIR in "${OASF_DIRS[@]}"; do
                 RECORD_IS_PULLABLE=true
             else
                 echo -e "    ${YELLOW}⚠ Indexed but content is missing (CID: ${EXISTING_CID:0:20}...)${NC}"
+                echo -e "    ${YELLOW}  pull error (exit ${EXISTING_PULL_EXIT}): ${EXISTING_PULL_ERR}${NC}"
                 REPAIRING=true
             fi
         fi
@@ -193,7 +215,7 @@ for OASF_DIR in "${OASF_DIRS[@]}"; do
 
             PUSH_CID=$(printf '%s' "$PUSH_RAW" | xargs)
 
-            if [[ $PUSH_EXIT_CODE -eq 0 && -n "$PUSH_CID" ]]; then
+            if [[ $PUSH_EXIT_CODE -eq 0 ]] && is_cid "$PUSH_CID"; then
                 echo -e "    ${GREEN}✓ Successfully pushed (CID: ${PUSH_CID:0:20}...)${NC}"
 
                 set +e
@@ -217,7 +239,9 @@ for OASF_DIR in "${OASF_DIRS[@]}"; do
                     fi
                 fi
             else
-                if [[ -n "$PUSH_RAW" ]]; then
+                if [[ $PUSH_EXIT_CODE -eq 0 ]]; then
+                    echo -e "    ${RED}✗ Push succeeded but output is not a CID: ${PUSH_RAW}${NC}"
+                elif [[ -n "$PUSH_RAW" ]]; then
                     echo -e "    ${RED}✗ Failed to push: ${PUSH_RAW}${NC}"
                 else
                     echo -e "    ${RED}✗ Failed to push${NC}"
