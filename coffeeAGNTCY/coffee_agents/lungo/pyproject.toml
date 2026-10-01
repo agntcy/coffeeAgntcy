@@ -92,7 +92,7 @@ constraint-dependencies = [
 override-dependencies = ["pyjwt[crypto]==2.15.1"]
 
 [tool.uv.exclude-newer-package]
-pyjwt = "2026-10-01"
+pyjwt = "2026-10-01T00:00:00Z"
 
 [build-system]
 requires = ["hatchling"]

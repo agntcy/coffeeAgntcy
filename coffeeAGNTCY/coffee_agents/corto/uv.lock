@@ -7,7 +7,7 @@ exclude-newer = "0001-01-01T00:00:00Z" # This has no effect and is included for 
 exclude-newer-span = "P14D"
 
 [options.exclude-newer-package]
-pyjwt = "2026-10-01T22:00:00Z"
+pyjwt = "2026-10-01T00:00:00Z"
 
 [manifest]
 constraints = [
