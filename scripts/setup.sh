@@ -140,8 +140,22 @@ if [ "$LINT_ONLY" -eq 0 ]; then
             "@fission-ai/openspec@${OPENSPEC_VERSION}"
         echo "openspec: installed ($("$BIN_DIR/openspec" --version))"
     fi
+
+    if [ -x "$BIN_DIR/renovate" ] && version_matches "$("$BIN_DIR/renovate" --version)" "$RENOVATE_VERSION"; then
+        echo "renovate: already installed ($("$BIN_DIR/renovate" --version))"
+    else
+        echo "renovate: installing $RENOVATE_VERSION into $BIN_DIR ..."
+        # --userconfig/--cache keep npm entirely inside .tools/: without them
+        # npm still reads $HOME/.npmrc and writes its cache under $HOME,
+        # despite --prefix pointing at .tools.
+        "$NODE_DIR/bin/npm" install --global --prefix "$REPO_ROOT/.tools" \
+            --userconfig="$REPO_ROOT/.tools/.npmrc" \
+            --cache="$REPO_ROOT/.tools/.npm-cache" \
+            "renovate@${RENOVATE_VERSION}"
+        echo "renovate: installed ($("$BIN_DIR/renovate" --version))"
+    fi
 else
-    echo "node/openspec: skipped (--lint-only)"
+    echo "node/openspec/renovate: skipped (--lint-only)"
 fi
 
 echo
