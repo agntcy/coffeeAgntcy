@@ -17,7 +17,7 @@ dependencies = [
     "langchain-litellm==0.3.5",
     "langgraph==1.2.11",
     "langgraph-supervisor==0.0.31",
-    "litellm==1.84.0",
+    "litellm==1.88.6",
     "pydantic==2.12.5",
     "python-dotenv==1.2.3",
     "requests==2.34.2",

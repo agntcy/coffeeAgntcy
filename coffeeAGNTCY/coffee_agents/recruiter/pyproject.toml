@@ -10,7 +10,7 @@ dependencies = [
     "loguru==0.7.3",
     "pydantic==2.13.4",
     "python-dotenv==1.2.2",
-    "litellm==1.84.0",
+    "litellm==1.88.6",
     "langchain-litellm==0.3.5",
     "langchain-anthropic==1.7.1",
     "langchain-google-genai==4.4.0",
