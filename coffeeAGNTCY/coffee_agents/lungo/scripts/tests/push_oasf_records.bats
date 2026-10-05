@@ -125,7 +125,8 @@ esac
     write_json_agent "$AUCTION_DIR" "auctioneer.json" "auctioneer-agent"
     mock_command dirctl '
 case "$3" in
-    search) echo "[{\"cid\":\"existing\"}]" ;;
+    search) echo "[\"bexistingcidvalueplaceholder\"]" ;;
+    pull) exit 0 ;;
     *) echo "mock dirctl: unexpected call: $*" >&2; exit 1 ;;
 esac
 '
@@ -141,7 +142,7 @@ esac
     mock_command dirctl '
 case "$3" in
     search) echo "[]" ;;
-    push) echo "cid-abc123" ;;
+    push) echo "bnewpushedcidvalueplaceholder" ;;
     pull) exit 0 ;;
     routing) exit 0 ;;
     *) echo "mock dirctl: unexpected call: $*" >&2; exit 1 ;;
@@ -150,7 +151,7 @@ esac
     run "$FIXTURE_ROOT/scripts/push_oasf_records.sh"
     [ "$status" -eq 0 ]
     [[ "$output" == *"Not found in directory, pushing"* ]]
-    [[ "$output" == *"Successfully pushed (CID: cid-abc123"* ]]
+    [[ "$output" == *"Successfully pushed (CID: bnewpushedcidvalue"* ]]
     [[ "$output" == *"Successfully pushed:         1"* ]]
     [[ "$output" == *"Failed:                      0"* ]]
 }
@@ -160,7 +161,7 @@ esac
     mock_command dirctl '
 case "$3" in
     search) echo "search exploded" >&2; exit 7 ;;
-    push) echo "cid-abc123" ;;
+    push) echo "bnewpushedcidvalueplaceholder" ;;
     pull) exit 0 ;;
     routing) exit 0 ;;
     *) echo "mock dirctl: unexpected call: $*" >&2; exit 1 ;;
@@ -202,7 +203,7 @@ esac
     mock_command dirctl '
 case "$3" in
     search) echo "[]" ;;
-    push) echo "cid-abc123" ;;
+    push) echo "bnewpushedcidvalueplaceholder" ;;
     pull) exit 3 ;;
     *) echo "mock dirctl: unexpected call: $*" >&2; exit 1 ;;
 esac
@@ -218,7 +219,7 @@ esac
     mock_command dirctl '
 case "$3" in
     search) echo "[]" ;;
-    push) echo "cid-abc123" ;;
+    push) echo "bnewpushedcidvalueplaceholder" ;;
     pull) exit 0 ;;
     routing) exit 5 ;;
     *) echo "mock dirctl: unexpected call: $*" >&2; exit 1 ;;
@@ -238,11 +239,11 @@ esac
 case "$3" in
     search)
         case "$*" in
-            *existing-agent*) echo "[{\"cid\":\"existing\"}]" ;;
+            *existing-agent*) echo "[\"bexistingcidvalueplaceholder\"]" ;;
             *) echo "[]" ;;
         esac
         ;;
-    push) echo "cid-new123" ;;
+    push) echo "bnewpushedcidvalueplaceholder" ;;
     pull) exit 0 ;;
     routing) exit 0 ;;
     *) echo "mock dirctl: unexpected call: $*" >&2; exit 1 ;;
