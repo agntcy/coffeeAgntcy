@@ -22,7 +22,7 @@ deadlock.
 - **Document, no behavior change**: the repo-local toolchain bootstrap
   (`scripts/setup.sh`, `scripts/lib/*`, `scripts/env.sh`,
   `task setup`), the five-layer operation pipeline pattern itself
-  (`.agents/rules/repo-operation-pipeline.md`), and every check built on
+  (`.agents/rules/meta/repo-operation-pipeline.md`), and every check built on
   it (`dashes`, `shell:lint`/`shell:fmt`, `workflows:lint`,
   `workflows:check-permissions`, `pins:check`), plus `task check:all` and
   the `checks.yaml` workflow that runs it in CI.

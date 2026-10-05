@@ -1,7 +1,7 @@
 name: CI Gate
 
 # Single required status check for the repo - a pure collector with no
-# check logic of its own (see .agents/rules/repo-operation-pipeline.md and
+# check logic of its own (see .agents/rules/meta/repo-operation-pipeline.md and
 # the ci-gate spec capability). The actual checks run in checks.yaml
 # (task check:all), whose triggers are kept identical to this workflow's
 # own so it is always among the sibling runs collected below. The

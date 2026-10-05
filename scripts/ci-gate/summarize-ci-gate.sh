@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Combines wait-for-sibling-runs.sh's ./runs.json into a job-summary table,
 # and decides overall pass/fail. CI Gate runs no check of its own (see
-# .agents/rules/repo-operation-pipeline.md and the ci-gate spec capability)
+# .agents/rules/meta/repo-operation-pipeline.md and the ci-gate spec capability)
 # - this is purely a summary of sibling runs.
 #
 # Reads: SETTLED ("true"/"false", from wait-for-sibling-runs.sh's output),

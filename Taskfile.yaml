@@ -4,17 +4,19 @@ tasks:
   check:all:
     desc: >-
       Run every standing check in this repo in parallel (dashes, shell
-      lint, workflow lint, workflow permissions, pinned references), never
-      failing fast (see .agents/rules/repo-operation-pipeline.md).
+      lint, workflow lint, workflow permissions, markdown links, pinned
+      references, pipeline exceptions), never failing fast
+      (see .agents/rules/meta/repo-operation-pipeline.md).
     summary: |
       Usage:   task check:all
       Example: task check:all
       Runs dashes:check, shell:lint, workflows:lint,
-      workflows:check-permissions, and pins:check together and reports a
-      pass/fail table. What the "Checks" CI workflow runs after a single
-      tooling bootstrap. See scripts/check_all.bash.
+      workflows:check-permissions, links:check, pins:check, and
+      pipeline:check-exceptions together and reports a pass/fail table.
+      What the "Checks" CI workflow runs after a single tooling
+      bootstrap. See scripts/checks/check_all.bash.
     cmds:
-      - scripts/check_all.bash
+      - scripts/checks/check_all.bash
 
   ci-gate:summarize:
     desc: >-
@@ -46,25 +48,38 @@ tasks:
   dashes:check:
     desc: >-
       Check the repo for en dash (U+2013) or em dash (U+2014)
-      (see .agents/rules/no-em-en-dashes.md).
+      (see .agents/rules/always-apply/no-em-en-dashes.md).
     summary: |
       Usage:   task dashes:check
       Example: task dashes:check
       Reports every hit without changing any file. See
-      scripts/check_dashes.bash.
+      scripts/checks/check_dashes.bash.
     cmds:
-      - scripts/check_dashes.bash
+      - scripts/checks/check_dashes.bash
 
   dashes:fix:
     desc: >-
       Replace every en dash (U+2013) or em dash (U+2014) in the repo with a
-      plain hyphen (see .agents/rules/no-em-en-dashes.md).
+      plain hyphen (see .agents/rules/always-apply/no-em-en-dashes.md).
     summary: |
       Usage:   task dashes:fix
       Example: task dashes:fix
-      Rewrites files in place. See scripts/fix_dashes.bash.
+      Rewrites files in place. See scripts/checks/fix_dashes.bash.
     cmds:
-      - scripts/fix_dashes.bash
+      - scripts/checks/fix_dashes.bash
+
+  links:check:
+    desc: >-
+      Check that every relative markdown link in every git-tracked *.md
+      file resolves to a file that actually exists
+      (see .agents/rules/quality/markdown-link-integrity.md).
+    summary: |
+      Usage:   task links:check
+      Example: task links:check
+      Reports every dangling link by file:line without changing any
+      file. See scripts/checks/check_markdown_links.bash.
+    cmds:
+      - scripts/checks/check_markdown_links.bash
 
   renovate:sync:
     desc: >-
@@ -84,30 +99,30 @@ tasks:
     desc: >-
       Check that every third-party action/reusable-workflow/image
       reference is pinned to an immutable SHA/digest
-      (see .agents/rules/pinned-external-references.md).
+      (see .agents/rules/quality/pinned-external-references.md).
     summary: |
       Usage:   task pins:check
       Example: task pins:check
       Scans .github/workflows/*.y*ml uses: lines, Dockerfile FROM
       instructions, and compose image: fields. See
-      scripts/check_pinned_references.bash.
+      scripts/checks/check_pinned_references.bash.
     cmds:
-      - scripts/check_pinned_references.bash
+      - scripts/checks/check_pinned_references.bash
 
   pipeline:check-exceptions:
     desc: >-
       Audit repo-operation-pipeline.md's "Known exceptions" list: fail if
       a rule listed there as needing no script/task/skill/CI layer has
       since grown a skill of its own without being promoted out of it
-      (see .agents/rules/repo-operation-pipeline.md).
+      (see .agents/rules/meta/repo-operation-pipeline.md).
     summary: |
       Usage:   task pipeline:check-exceptions
       Example: task pipeline:check-exceptions
-      Checks .agents/skills/*/SKILL.md for a rule-only exception being
+      Checks .agents/skills/*/*/SKILL.md for a rule-only exception being
       named as an "underlying rule". See
-      scripts/check_pipeline_exceptions.bash.
+      scripts/checks/check_pipeline_exceptions.bash.
     cmds:
-      - scripts/check_pipeline_exceptions.bash
+      - scripts/checks/check_pipeline_exceptions.bash
 
   setup:
     desc: >-
@@ -127,39 +142,39 @@ tasks:
   shell:fmt:
     desc: >-
       Reformat every shell script in the repo in place with shfmt
-      (see .agents/rules/shell-script-linting.md).
+      (see .agents/rules/quality/shell-script-linting.md).
     summary: |
       Usage:   task shell:fmt
       Example: task shell:fmt
       Rewrites files in place with shfmt; run task shell:lint afterward to
-      confirm shellcheck is clean too. See scripts/lint_shell.bash.
+      confirm shellcheck is clean too. See scripts/lint/lint_shell.bash.
     cmds:
-      - scripts/lint_shell.bash --fix
+      - scripts/lint/lint_shell.bash --fix
 
   shell:lint:
     desc: >-
       Lint and format-check every shell script in the repo with shellcheck
-      and shfmt (see .agents/rules/shell-script-linting.md).
+      and shfmt (see .agents/rules/quality/shell-script-linting.md).
     summary: |
       Usage:   task shell:lint
       Example: task shell:lint
       Reports shellcheck findings and shfmt formatting diffs without
-      changing any file. See scripts/lint_shell.bash.
+      changing any file. See scripts/lint/lint_shell.bash.
     cmds:
-      - scripts/lint_shell.bash
+      - scripts/lint/lint_shell.bash
 
   workflows:check-permissions:
     desc: >-
       Verify every GitHub Actions workflow file declares explicit,
       least-privilege permissions, never write-all
-      (see .agents/rules/workflow-least-privilege.md).
+      (see .agents/rules/quality/workflow-least-privilege.md).
     summary: |
       Usage:   task workflows:check-permissions
       Example: task workflows:check-permissions
       Flags write-all grants and jobs left with no declared permissions.
-      See scripts/check_workflow_permissions.bash.
+      See scripts/checks/check_workflow_permissions.bash.
     cmds:
-      - scripts/check_workflow_permissions.bash
+      - scripts/checks/check_workflow_permissions.bash
 
   workflows:lint:
     desc: >-
@@ -170,6 +185,6 @@ tasks:
       Example: task workflows:lint
       Exact same command runs as part of task check:all in checks.yaml;
       run this locally/as an agent before opening a PR. See
-      scripts/lint_workflows.bash.
+      scripts/lint/lint_workflows.bash.
     cmds:
-      - scripts/lint_workflows.bash
+      - scripts/lint/lint_workflows.bash
