@@ -36,6 +36,8 @@ Target: 0.5.0 - 2026-10-27
 - Agent rules, skills and repo scripts moved into category
   subdirectories under `.agents/rules/`, `.agents/skills/` and `scripts/`
   (#799).
+- OpenSpec changes are archived into `openspec/specs/` as the last step
+  of their own PR, instead of after it merges.
 - SLIM upgraded to 2.0 (planned).
 - A2A upgraded to 1.0 (planned).
 - AGNTCY Directory upgraded to its latest version (planned).
