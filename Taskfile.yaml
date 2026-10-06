@@ -5,16 +5,16 @@ tasks:
     desc: >-
       Run every standing check in this repo in parallel (dashes, shell
       lint, workflow lint, workflow permissions, markdown links, pinned
-      references, pipeline exceptions), never failing fast
-      (see .agents/rules/meta/repo-operation-pipeline.md).
+      references, pipeline exceptions, bash tests, bash test coverage),
+      never failing fast (see .agents/rules/meta/repo-operation-pipeline.md).
     summary: |
       Usage:   task check:all
       Example: task check:all
       Runs dashes:check, shell:lint, workflows:lint,
-      workflows:check-permissions, links:check, pins:check, and
-      pipeline:check-exceptions together and reports a pass/fail table.
-      What the "Checks" CI workflow runs after a single tooling
-      bootstrap. See scripts/checks/check_all.bash.
+      workflows:check-permissions, links:check, pins:check,
+      pipeline:check-exceptions, tests:bash, and tests:coverage together
+      and reports a pass/fail table. What the "Checks" CI workflow runs
+      after a single tooling bootstrap. See scripts/checks/check_all.bash.
     cmds:
       - scripts/checks/check_all.bash
 
@@ -162,6 +162,32 @@ tasks:
       changing any file. See scripts/lint/lint_shell.bash.
     cmds:
       - scripts/lint/lint_shell.bash
+
+  tests:bash:
+    desc: >-
+      Run every bats test under scripts/ (unit tests for scripts/lib/*.sh
+      helpers, mocked end-to-end tests for executable scripts)
+      (see .agents/rules/quality/bash-script-testing.md).
+    summary: |
+      Usage:   task tests:bash
+      Example: task tests:bash
+      Wraps `bats --recursive scripts/`. See
+      scripts/checks/check_bash_tests.bash.
+    cmds:
+      - scripts/checks/check_bash_tests.bash
+
+  tests:coverage:
+    desc: >-
+      Check that every bash script anywhere in the repository has a
+      corresponding bats test
+      (see .agents/rules/quality/bash-script-testing.md).
+    summary: |
+      Usage:   task tests:coverage
+      Example: task tests:coverage
+      Fails, naming the script, if any script has no test. See
+      scripts/checks/check_bash_test_coverage.bash.
+    cmds:
+      - scripts/checks/check_bash_test_coverage.bash
 
   workflows:check-permissions:
     desc: >-
