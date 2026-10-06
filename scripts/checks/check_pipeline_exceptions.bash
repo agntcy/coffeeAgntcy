@@ -41,6 +41,7 @@ cd "$REPO_ROOT" || exit 2
 RULE_ONLY_EXCEPTIONS=(
     alphabetize-entity-lists
     file-tree-comment-alignment
+    keep-changelog-current
     keep-docs-consistent
     organize-large-collections
     plan-with-openspec

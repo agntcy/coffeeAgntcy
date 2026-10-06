@@ -88,6 +88,7 @@ the places to check against.
   reliably automated without false positives (e.g.
   [`.agents/rules/formatting/alphabetize-entity-lists.md`](../formatting/alphabetize-entity-lists.md),
   [`.agents/rules/formatting/file-tree-comment-alignment.md`](../formatting/file-tree-comment-alignment.md),
+  [`.agents/rules/always-apply/keep-changelog-current.md`](../always-apply/keep-changelog-current.md),
   [`.agents/rules/always-apply/keep-docs-consistent.md`](../always-apply/keep-docs-consistent.md),
   [`.agents/rules/formatting/organize-large-collections.md`](../formatting/organize-large-collections.md),
   [`.agents/rules/process/plan-with-openspec.md`](../process/plan-with-openspec.md),

@@ -17,6 +17,8 @@ state, and update it in the same change - don't leave it for later:
 
 - `README.md` and `TUTORIAL.md`
 - `CONTRIBUTING.md`, `MAINTAINERS.md`, `SECURITY.md`, and `CHANGELOG.md`
+  (its `Unreleased` section, for a user-visible change - see
+  `keep-changelog-current.md`)
 - `AGENTS.md` (the Prompts, Skills, Rules, and Repository references tables)
 - `.agents/rules/*/*.md` and `.agents/skills/*/SKILL.md` (`openspec-*`) or
   `.agents/skills/*/*/SKILL.md` (every other skill)

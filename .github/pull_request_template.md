@@ -12,6 +12,10 @@ much longer to review, or result in it not being reviewed at all.
 
 Link the primary issue in the PR description using `#` (e.g. `Fixes #123`). This enables two‑way linking.
 
+## Changelog
+
+If this changes what a user of coffeeAgntcy sees, add its entry under `## Unreleased` in `CHANGELOG.md` and say so here; otherwise say why it isn't needed. See the "Releases" section of the contributing guidelines.
+
 ## Type of Change
 
 - [ ] Bugfix
@@ -27,6 +31,7 @@ Link the primary issue in the PR description using `#` (e.g. `Fixes #123`). This
 - [ ] Existing issues have been referenced (where applicable)
 - [ ] I have verified this change is not present in other open pull requests
 - [ ] Functionality is documented
+- [ ] `CHANGELOG.md`'s `Unreleased` section is updated (where applicable)
 - [ ] All code style checks pass
 - [ ] New code contribution is covered by automated tests
 - [ ] All new and existing tests pass
