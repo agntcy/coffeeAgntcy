@@ -4,6 +4,203 @@
 
 .
 
+## 0.4.1 (2026-10-07)
+
+Patch release: **security findings remediation** (CodeQL path-injection and logging fixes, ~dozens of dependency CVE bumps), **Lungo frontend graph and error-handling fixes**, **persistent Directory record storage**, three **communication patterns removed** from the reference library, and a large round of **repo tooling** (Renovate, bash testing, CI Gate fixes).
+
+### Summary
+
+**Breaking / migration (read first)**
+
+<details>
+<summary><strong>Communication patterns removed</strong> - three communication patterns are dropped from the reference library</summary>
+
+- Removes the **Mediated Semantic Alignment**, **Shared Intent Registry**, and **Team Formation via Polling** workflow docs and their entries in `starting_workflows.json`; the Internet of Cognition category doc is updated to match ([#819](https://github.com/agntcy/coffeeAgntcy/pull/819)).
+- If you linked to or started these workflows by id, remove those references.
+</details>
+
+<details>
+<summary><strong>Directory <code>zot</code> storage is now persistent</strong> - new <code>zot-storage</code> volume</summary>
+
+- Lungo's `docker-compose.yaml` gains a named **`zot-storage`** volume mounted at `/var/lib/registry`, so Directory record content survives container recreation ([#808](https://github.com/agntcy/coffeeAgntcy/pull/808), fixes [#807](https://github.com/agntcy/coffeeAgntcy/issues/807)).
+- **Wipe `zot-storage` in lockstep with the Postgres volume** that holds the Directory search index, otherwise the two can drift apart.
+</details>
+
+**Migration steps**
+
+1. **Directory volumes:** if you reset the Directory search index (Postgres volume), also remove `zot-storage`.
+2. **Re-push records (optional):** `push_oasf_records.sh` now pulls each existing CID and re-pushes it if the content is missing (new "Repaired" counter), so re-running it heals records indexed before this release.
+3. **Backend / frontend:** re-sync after the dependency bumps:
+
+   ```sh
+   cd coffeeAGNTCY/coffee_agents/lungo && uv sync
+   cd frontend && npm ci
+   ```
+
+**Highlights**
+
+<details>
+<summary><strong>Security findings remediation</strong> - CodeQL fixes and dependency CVE sweep</summary>
+
+- Fixes path injection in the `/agents/{slug}/oasf` endpoints (auction, logistics, recruiter supervisors) with slug validation plus a resolved-path containment check; slugs may contain `A-Z a-z 0-9 _ . -` ([#809](https://github.com/agntcy/coffeeAgntcy/pull/809), [#812](https://github.com/agntcy/coffeeAgntcy/pull/812)).
+- Stops logging request headers and params in the Weather service error path, and returns a generic error to clients (real exception logged server-side) in logistics/auction streaming handlers ([#809](https://github.com/agntcy/coffeeAgntcy/pull/809), [#812](https://github.com/agntcy/coffeeAgntcy/pull/812)).
+- Bumps `urllib3`, `PyJWT`, `sentence-transformers`, `DOMPurify`, `brace-expansion`, `litellm`, `pypdf`, and more across all Python and npm packages plus the `a2a-send` Go module ([#809](https://github.com/agntcy/coffeeAgntcy/pull/809), [#812](https://github.com/agntcy/coffeeAgntcy/pull/812), [#816](https://github.com/agntcy/coffeeAgntcy/pull/816), fixes [#815](https://github.com/agntcy/coffeeAgntcy/issues/815)).
+</details>
+
+<details>
+<summary><strong>Lungo frontend reliability</strong> - graph no longer stuck on "Workflow graph unavailable", better node layout</summary>
+
+- The graph error layer now clears once data is applied successfully, and bootstrap/chat retries use centralized budgets and timeouts; retries stop once a request is cancelled and superseded SSE frames are ignored.
+- Request errors appear at the bottom of the chat thread; truncated node labels use the Open UI Kit `OverflowTooltip`.
+- Recruiter sub-nodes are laid out in new rows (max 5 per row), with a warning when the discovery layout runs out of slots ([#804](https://github.com/agntcy/coffeeAgntcy/pull/804), fixes [#802](https://github.com/agntcy/coffeeAgntcy/issues/802)).
+</details>
+
+<details>
+<summary><strong>Test and CI stability</strong> - flaky event-loop warning and CI Gate deadlock fixed</summary>
+
+- Fixes a flaky `ResourceWarning` failure caused by unclosed pytest-asyncio placeholder event loops in Lungo tests ([#796](https://github.com/agntcy/coffeeAgntcy/pull/796)).
+- Fixes a CI Gate deadlock when two runs share one commit (tag on the tip of `main`) ([#794](https://github.com/agntcy/coffeeAgntcy/pull/794)), and stops superseded cancelled duplicate runs from failing the gate ([#809](https://github.com/agntcy/coffeeAgntcy/pull/809)).
+</details>
+
+<details>
+<summary><strong>Repo tooling and agent workflow</strong> - pinned toolchain, Renovate, bash tests, OpenSpec</summary>
+
+- Repo-local pinned toolchain (`task setup`, `task check:all`), OpenSpec adoption, and the script -> task -> skill -> CI -> rule operation pipeline with a self-audit of pipeline exceptions ([#797](https://github.com/agntcy/coffeeAgntcy/pull/797), [#798](https://github.com/agntcy/coffeeAgntcy/pull/798)).
+- Rules, skills, and scripts reorganized into category folders, plus a markdown link integrity check ([#799](https://github.com/agntcy/coffeeAgntcy/pull/799)).
+- `bats-core` bash testing convention with coverage audit; all existing bash scripts backfilled with tests ([#800](https://github.com/agntcy/coffeeAgntcy/pull/800)).
+- Five-step development iteration loop rule and skill ([#801](https://github.com/agntcy/coffeeAgntcy/pull/801)).
+- Renovate workflow and setup commands, also managing `versions.sh` tool versions ([#811](https://github.com/agntcy/coffeeAgntcy/pull/811)).
+</details>
+
+### Dependencies
+
+List only what changed since **0.4.0**. Core AGNTCY pins (`agntcy-app-sdk` 0.5.5, `a2a-sdk` 0.3.20, `slim-bindings` 1.4.0, `mcp` 1.30.0, `langgraph` 1.2.11, `ioa-observe-sdk` 1.0.41, `agntcy-identity-service-sdk` 0.0.7, `agntcy-dir` 1.0.0) are unchanged.
+
+**Lungo backend** (`lungo/uv.lock`): `litellm` **1.84.0 → 1.88.6**, `pypdf` **6.18.0 → 6.19.0**, `pyjwt` **2.13.0 → 2.15.1**, `urllib3` **2.7.0 → 2.8.0**, `starlette` **0.52.1 → 1.6.0**, `google-adk` **1.28.1 → 2.8.0**, `google-genai` **1.75.0 → 2.22.0**, `langchain-openai` **0.3.34 → 1.3.4**, `langchain-google-genai` **4.2.3 → 4.4.0**, `sentence-transformers` **5.5.1 → 5.7.0**, `torch` **2.10.0 → 2.14.0**, `opentelemetry-*` **1.38.0 → 1.42.1**, `pytest` **7.4.4 → 9.1.1**, `pytest-asyncio` **0.23.8 → 1.4.0**; drops the Google Cloud client libraries previously pulled in by `google-adk` (`google-cloud-*`, `google-api-python-client`, `pyarrow`, etc.) and moves the CUDA wheels from 12.x to 13.x.
+
+**Corto backend** (`corto/uv.lock`): `litellm` **1.84.0 → 1.88.6**, `pypdf` **6.18.0 → 6.19.0**, `pyjwt` **2.13.0 → 2.15.1**, `urllib3` **2.7.0 → 2.8.0**, `anthropic` **0.125.0 → 1.5.0**, `fastapi` **0.124.4 → 0.141.1**, `starlette` **0.50.0 → 1.6.0**, `langchain-openai` **0.3.34 → 1.6.2**, `llama-index` **0.14.13 → 0.14.24**, `sentence-transformers` **5.2.2 → 5.7.0**, `torch` **2.10.0 → 2.14.0**, `transformers` **5.3.0 → 5.17.0**, `opentelemetry-*` **1.39.1 → 1.44.0**, `websockets` **15.0.1 → 16.1.1**, `rich` **13.9.4 → 15.0.0**, `pytest` **7.4.4 → 9.1.1**, `pytest-asyncio` **0.23.8 → 1.4.0**; removes unused `llama-cloud*`, `llama-parse`, `pandas`, and `beautifulsoup4` transitive packages.
+
+**Recruiter** (`recruiter/uv.lock`): `litellm` **1.84.0 → 1.88.6**, `pyjwt` **2.13.0 → 2.15.1**, `urllib3` **2.7.0 → 2.8.0**, `starlette` **0.52.1 → 1.6.0**, `google-adk` **2.1.0 → 2.8.0**, `google-genai` **1.75.0 → 2.22.0**, `langchain-google-genai` **4.2.3 → 4.4.0**; drops `truststore`, `httpcore2`, `httpx2`.
+
+**Lungo frontend** (`lungo/frontend/package-lock.json`): `dompurify` **3.4.15 → 3.4.16**, `brace-expansion` **1.1.18 → 1.1.21**, `undici` **7.29.0 → 7.29.1**.
+
+**Corto exchange frontend** (`corto/exchange/frontend/package-lock.json`): `brace-expansion` **2.1.4 → 1.1.21**.
+
+**`a2a-send` Go module** (`claude-code/plugin/scripts/a2a-send/go.mod`): security-driven bumps ([#809](https://github.com/agntcy/coffeeAgntcy/pull/809)).
+
+### Built With
+
+(Versions from `coffeeAGNTCY/coffee_agents/lungo/uv.lock` and `lungo/frontend/package-lock.json`; unchanged since 0.4.0.)
+
+- [AGNTCY App SDK](https://github.com/agntcy/app-sdk) = v0.5.5
+- [SLIM](https://github.com/agntcy/slim) = v1.4.0
+- [NATS](https://github.com/nats-io/nats-server) = latest
+- [A2A](https://github.com/a2aproject/a2a-python) = v0.3.20
+- [MCP](https://github.com/modelcontextprotocol/python-sdk) = v1.30.0
+- [LangGraph](https://github.com/langchain-ai/langgraph) = v1.2.11
+- [Observe SDK](https://github.com/agntcy/observe) = 1.0.41
+- [AGNTCY Identity Service SDK](https://github.com/agntcy/identity-service) = 0.0.7
+- [AGNTCY Directory](https://github.com/agntcy/dir) = v1.0.0
+
+### Changeset
+
+<details>
+<summary><a href="https://github.com/agntcy/coffeeAgntcy/pull/794">#794</a> - @pregnor - ci(ci-gate): fix deadlock on same hash</summary>
+
+- Excludes every run sharing CI Gate's `workflow_id` from the sibling list, so two CI Gate runs on the same commit no longer wait on each other until the timeout; wait logic docs updated.
+</details>
+
+<details>
+<summary><a href="https://github.com/agntcy/coffeeAgntcy/pull/796">#796</a> - @pregnor - test(lungo,ci): fix event loop close error</summary>
+
+- Closes dangling pytest-asyncio placeholder event loops in `conftest.py`, removing a flaky `ResourceWarning` that could fail unrelated tests.
+</details>
+
+<details>
+<summary><a href="https://github.com/agntcy/coffeeAgntcy/pull/803">#803</a> - @pregnor - chore(git): ignore local tools & todo</summary>
+
+- Ignores the local `.tools` directory and `todo.local.md`.
+</details>
+
+<details>
+<summary><a href="https://github.com/agntcy/coffeeAgntcy/pull/797">#797</a> - @pregnor - chore: repo tooling foundations</summary>
+
+- Adds the pinned repo-local toolchain (`task setup`, `task check:all`), shell/workflow linters, OpenSpec, and the `ci-gate.yaml` required check, documented as OpenSpec capabilities. No application behavior changed.
+</details>
+
+<details>
+<summary><a href="https://github.com/agntcy/coffeeAgntcy/pull/809">#809</a> - @pregnor - chore: fix findings</summary>
+
+- Remediates CodeQL, Dependabot, Scorecard, and LFX Insights findings: slug validation for OASF endpoints, safer Weather service logging, generic client errors in streaming handlers, pinned pip install in `docs.yaml`, and dependency updates across Python, Go, and npm.
+- CI Gate now collapses duplicate runs per workflow so a superseded cancelled run does not fail the gate.
+</details>
+
+<details>
+<summary><a href="https://github.com/agntcy/coffeeAgntcy/pull/804">#804</a> - @misi-bp - fix(frontend): new nodes positions & error message positions</summary>
+
+- Clears the graph error layer on recovery, centralizes retry budgets and timeouts, moves request errors to the bottom of the chat, lays out recruiter sub-nodes in rows of up to 5, uses `OverflowTooltip` for truncated labels, and warns when discovery layout runs out of slots. Fixes #802.
+</details>
+
+<details>
+<summary><a href="https://github.com/agntcy/coffeeAgntcy/pull/798">#798</a> - @pregnor - chore: repo operation governance</summary>
+
+- Documents the script -> task -> skill -> CI -> rule operation pipeline as an OpenSpec capability and adds a self-audit check so listed pipeline exceptions cannot silently grow a skill.
+</details>
+
+<details>
+<summary><a href="https://github.com/agntcy/coffeeAgntcy/pull/808">#808</a> - @misi-bp - fix: push script, persist records in zot</summary>
+
+- Adds a persistent `zot-storage` volume and makes `push_oasf_records.sh` verify and repair records whose content is missing, parsing `dirctl search` output as JSON. Fixes #807.
+</details>
+
+<details>
+<summary><a href="https://github.com/agntcy/coffeeAgntcy/pull/812">#812</a> - @pregnor - chore: fix findings v3</summary>
+
+- Adds resolved-path containment checks (and broadens the slug regex to allow dots) for the OASF endpoints, stops logging request params/headers in the Weather service, and bumps `urllib3`, `PyJWT`, `DOMPurify`, `brace-expansion`, and `sentence-transformers`; removes an obsolete example workflow and adds recruiter `dirctl` enforcement tests.
+</details>
+
+<details>
+<summary><a href="https://github.com/agntcy/coffeeAgntcy/pull/811">#811</a> - @arpad-csepi - ci(renovate): add renovate workflow and setup commands</summary>
+
+- Adds a scheduled Renovate workflow (via `scripts/setup.sh` and `task renovate:sync`), a custom regex so Renovate also manages `versions.sh` tool versions, and a `dependencies`-only PR label.
+</details>
+
+<details>
+<summary><a href="https://github.com/agntcy/coffeeAgntcy/pull/799">#799</a> - @pregnor - chore: repo tree reorganization</summary>
+
+- Moves agent rules, skills, and scripts into category subdirectories matching the `AGENTS.md` groupings and adds a markdown link integrity check. Path changes only.
+</details>
+
+<details>
+<summary><a href="https://github.com/agntcy/coffeeAgntcy/pull/816">#816</a> - @pregnor - chore(dep): bump litellm, pypdf</summary>
+
+- Bumps `litellm` 1.84.0 -> 1.88.6 and `pypdf` 6.18.0 -> 6.19.0 in corto, lungo, and recruiter. Resolves #815.
+</details>
+
+<details>
+<summary><a href="https://github.com/agntcy/coffeeAgntcy/pull/800">#800</a> - @pregnor - test(bash): bash script testing convention</summary>
+
+- Introduces pinned `bats-core`, a shared `mock_command` helper, and a coverage audit with no exceptions list; backfills tests for all 22 bash scripts.
+</details>
+
+<details>
+<summary><a href="https://github.com/agntcy/coffeeAgntcy/pull/801">#801</a> - @pregnor - chore: development iteration loop</summary>
+
+- Adds a rule and skill defining the ideate, design, implement, review, document loop for substantial changes.
+</details>
+
+<details>
+<summary><a href="https://github.com/agntcy/coffeeAgntcy/pull/819">#819</a> - @mihaialexandrescu - chore: remove some communication patterns</summary>
+
+- Removes the Mediated Semantic Alignment, Shared Intent Registry, and Team Formation via Polling workflow docs and starting workflows; edits the 0.4.0 changelog section accordingly.
+</details>
+
+### Contributors
+
+**Returning contributors** - thank you for coming back:
+
+- [@arpad-csepi](https://github.com/arpad-csepi)
+
 ## 0.4.0 (2026-09-24)
 
 Housekeeping and stability release: reverts the **IoC CFN stack** shipped in 0.3.0 pending a clearer roadmap, migrates the Lungo frontend to **Open UI Kit 3.1**, cleans up **dummy MCP graph nodes** and **Weather MCP test flakiness**, expands the **pattern-library docs**, standardizes **Python formatting** (4-space indent + ruff), and closes **~35 dependency vulnerabilities** across every backend and frontend package.
