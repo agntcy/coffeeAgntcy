@@ -71,3 +71,7 @@ change never opened.
   resolves.
 - If something looks inconsistent or incomplete during this review, fix it
   as part of the same change - don't leave it for a future pass.
+- For a substantial change following
+  [`development-iteration-loop`](../process/development-iteration-loop.md),
+  this review runs after every step of that loop, not only once at the
+  end - a failure at any step loops back to fix it before continuing.

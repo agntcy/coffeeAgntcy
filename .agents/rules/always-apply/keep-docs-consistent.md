@@ -44,3 +44,8 @@ default until someone discovers otherwise.
 - If a change removes or renames something, confirm nothing still points at
   the old name: a markdown link, a task name in prose, an enum value quoted
   in a sentence, a file-tree diagram entry.
+- For a substantial change following
+  [`development-iteration-loop`](../process/development-iteration-loop.md),
+  track what will need updating here starting at that loop's ideate step,
+  so this final sweep reconciles accumulated notes instead of
+  reconstructing them from scratch.
