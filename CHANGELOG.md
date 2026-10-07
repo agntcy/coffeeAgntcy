@@ -6,7 +6,7 @@
 
 ## 0.4.0 (2026-09-24)
 
-Housekeeping and stability release: reverts the **IoC CFN stack** shipped in 0.3.0 pending a clearer roadmap, migrates the Lungo frontend to **Open UI Kit 3.1**, cleans up **dummy MCP graph nodes** and **Weather MCP test flakiness**, adds three new **Internet of Cognition reference patterns** plus pattern-library docs expansion, standardizes **Python formatting** (4-space indent + ruff), and closes **~35 dependency vulnerabilities** across every backend and frontend package.
+Housekeeping and stability release: reverts the **IoC CFN stack** shipped in 0.3.0 pending a clearer roadmap, migrates the Lungo frontend to **Open UI Kit 3.1**, cleans up **dummy MCP graph nodes** and **Weather MCP test flakiness**, expands the **pattern-library docs**, standardizes **Python formatting** (4-space indent + ruff), and closes **~35 dependency vulnerabilities** across every backend and frontend package.
 
 ### Summary
 
@@ -65,9 +65,8 @@ Housekeeping and stability release: reverts the **IoC CFN stack** shipped in 0.3
 </details>
 
 <details>
-<summary><strong>New IoC reference patterns & library expansion</strong> - Mediated Semantic Alignment, Team Formation via Polling, Shared Intent Registry</summary>
+<summary><strong>Pattern library expansion</strong> - Peer Group, Recruiter, and Supervisor docs; per-pattern use cases</summary>
 
-- Adds three new Internet of Cognition reference patterns with full write-ups and placeholder catalog entries ([#750](https://github.com/agntcy/coffeeAgntcy/pull/750), fixes [#746](https://github.com/agntcy/coffeeAgntcy/issues/746)); standalone Mediated Semantic Alignment doc ([#706](https://github.com/agntcy/coffeeAgntcy/pull/706)).
 - Surfaces Peer Group, Recruiter, and Supervisor pattern docs in the Reference Library with frontend/backend coverage for dual-listed patterns ([#781](https://github.com/agntcy/coffeeAgntcy/pull/781)).
 - Adds pattern-specific Coffee Agntcy use-case context to every completed pattern doc, with a regression test enforcing one unique use-case paragraph per pattern ([#743](https://github.com/agntcy/coffeeAgntcy/pull/743), fixes [#725](https://github.com/agntcy/coffeeAgntcy/issues/725)).
 </details>
@@ -142,12 +141,6 @@ List only what changed since **0.3.0**; no Helm chart versions changed this rele
 ### Changeset
 
 <details>
-<summary><a href="https://github.com/agntcy/coffeeAgntcy/pull/706">#706</a> - @codyhartsook - docs: add Mediated Semantic Alignment reference pattern</summary>
-
-- New `docs/workflows/mediated_semantic_alignment.md` covering the caller-mediated alignment loop (Semantic Alignment Agent + orchestrator, alternating proposer/responder roles).
-</details>
-
-<details>
 <summary><a href="https://github.com/agntcy/coffeeAgntcy/pull/739">#739</a> - @mihaialexandrescu - feat: add docs/RELEASE-OPS.md file</summary>
 
 - Documents the release process, including a verbose-by-design Helm bump pre-check.
@@ -205,12 +198,6 @@ List only what changed since **0.3.0**; no Helm chart versions changed this rele
 <summary><a href="https://github.com/agntcy/coffeeAgntcy/pull/754">#754</a> - @pregnor - docs(README): fix release badge</summary>
 
 - Fixes the README release badge, which still pointed at the template repo name.
-</details>
-
-<details>
-<summary><a href="https://github.com/agntcy/coffeeAgntcy/pull/750">#750</a> - @misi-bp - feature: add 3 new IoC pattern</summary>
-
-- Adds Mediated Semantic Alignment, Team Formation via Polling, and Shared Intent Registry as new IoC reference patterns with full docs and placeholder `starting_workflows.json` catalog entries.
 </details>
 
 <details>
