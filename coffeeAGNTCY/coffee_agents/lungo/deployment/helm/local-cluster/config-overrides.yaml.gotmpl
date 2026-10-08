@@ -28,9 +28,18 @@
   "natsServer" "lungo-local-cluster-nats:4222"
 ) -}}
 
+{{- /* Agentic Workflows API: only for agents that may call it (supervisors, colombia-farm) */ -}}
+{{- $workflowApi := dict "config" (dict
+  "workflowApiUrl" "http://agentic-workflows-api:9105"
+  "workflowApiKey" (env "WORKFLOW_API_KEY" | default "TheAnswerIs42")
+) -}}
+
 {{- /* Auction targets: merge shared + NATS into one config block */ -}}
 {{- range $name := $auctionTargets }}
 {{- $cfg := merge (deepCopy $shared.config) (deepCopy $nats.config) }}
+{{- if eq $name "colombia-farm" }}
+{{- $cfg = merge $cfg (deepCopy $workflowApi.config) }}
+{{- end }}
 {{ $name }}:
   config:
 {{- toYaml $cfg | nindent 4 }}
@@ -72,7 +81,7 @@
 auction-supervisor:
   environment: local
   config:
-{{- toYaml (merge (deepCopy $shared.config) (deepCopy $nats.config)) | nindent 4 }}
+{{- toYaml (merge (deepCopy $shared.config) (deepCopy $nats.config) (deepCopy $workflowApi.config)) | nindent 4 }}
   externalSecrets:
     secretStoreName: local-secret-store
     secretStoreKind: ClusterSecretStore
@@ -89,7 +98,7 @@ auction-supervisor:
 logistics-supervisor:
   environment: local
   config:
-{{- toYaml (merge (deepCopy $shared.config) (deepCopy $slim.config)) | nindent 4 }}
+{{- toYaml (merge (deepCopy $shared.config) (deepCopy $slim.config) (deepCopy $workflowApi.config)) | nindent 4 }}
   externalSecrets:
     secretStoreName: local-secret-store
     secretStoreKind: ClusterSecretStore
@@ -131,7 +140,7 @@ agentic-workflows-api:
 recruiter-supervisor:
   environment: local
   config:
-{{- toYaml (merge (deepCopy $shared.config) (deepCopy $nats.config)) | nindent 4 }}
+{{- toYaml (merge (deepCopy $shared.config) (deepCopy $nats.config) (deepCopy $workflowApi.config)) | nindent 4 }}
     recruiterAgentUrl: "http://recruiter:8881"
   externalSecrets:
     secretStoreName: local-secret-store

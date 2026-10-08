@@ -13,6 +13,12 @@ data:
   SLIM_SERVER: "{{ .Values.config.slimServer }}"
   NATS_SERVER: "{{ .Values.config.natsServer }}"
   OTLP_HTTP_ENDPOINT: "{{ .Values.config.otlpHttpEndpoint }}"
+  {{- if .Values.config.workflowApiUrl }}
+  WORKFLOW_API_URL: {{ .Values.config.workflowApiUrl | quote }}
+  {{- end }}
+  {{- if .Values.config.workflowApiKey }}
+  WORKFLOW_API_KEY: {{ .Values.config.workflowApiKey | quote }}
+  {{- end }}
   IDENTITY_API_SERVER_URL: "{{ .Values.config.identityApiServerUrl }}"
   IDENTITY_API_KEY: "{{ .Values.config.identityApiKey }}"
   IDENTITY_AUTH_ENABLED: "{{ .Values.config.identityAuthEnabled }}"
