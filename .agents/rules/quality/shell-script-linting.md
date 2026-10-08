@@ -56,8 +56,8 @@ other languages in this repo.
   [.github/workflows/checks.yaml](../../../.github/workflows/checks.yaml)
   runs `shell:lint` alongside every other standing check - a red job means
   some script in the diff needs fixing before merging.
-- `scripts/lint_shell.bash` (like `scripts/find_strings.bash` and
-  `scripts/check_pinned_references.bash`) uses Bash 4 features (`mapfile`,
+- `scripts/lint/lint_shell.bash` (like `scripts/checks/find_strings.bash` and
+  `scripts/checks/check_pinned_references.bash`) uses Bash 4 features (`mapfile`,
   associative arrays). Stock macOS ships Bash 3.2, so macOS contributors
   need a newer Bash on `PATH` (e.g. `brew install bash`) to run these
   scripts directly.

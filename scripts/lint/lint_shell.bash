@@ -12,7 +12,7 @@
 # indented (-i 4 -ci). Matches the existing style of
 # coffeeAGNTCY/coffee_agents/lungo/scripts/push_oasf_records.sh.
 #
-# Usage: scripts/lint_shell.bash [--fix]
+# Usage: scripts/lint/lint_shell.bash [--fix]
 #   --fix: rewrite files in place with shfmt instead of reporting diffs
 set -euo pipefail
 

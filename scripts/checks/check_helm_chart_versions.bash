@@ -31,7 +31,7 @@
 # draft kept an optional [<end-ref>] for auditing an older ref; dropped
 # since nothing calls it that way and a knob nothing exercises is a knob
 # nobody's tested. See design.md under
-# openspec/changes/helm-chart-version-guard/ if that's ever needed.
+# openspec/changes/archive/2026-10-08-helm-chart-version-guard/ if that's ever needed.
 #
 # This only detects that a bump is missing - it doesn't judge whether the
 # bump should be patch/minor/major. Every flagged chart needs a bump,

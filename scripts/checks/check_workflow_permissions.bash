@@ -12,7 +12,7 @@
 # This only checks the policy (scopes actually granted); it doesn't validate
 # workflow schema/syntax - see .agents/rules/quality/workflow-least-privilege.md.
 #
-# Usage: scripts/check_workflow_permissions.bash
+# Usage: scripts/checks/check_workflow_permissions.bash
 set -uo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
