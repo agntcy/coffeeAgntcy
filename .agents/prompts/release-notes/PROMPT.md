@@ -63,11 +63,11 @@ List only dependencies whose versions **changed** since `previous_version`. Do n
 
 Derive versions from lockfiles and manifests, including as applicable:
 
-- `coffeeAGNTCY/coffee_agents/lungo/uv.lock`
-- `coffeeAGNTCY/coffee_agents/corto/uv.lock`
-- `coffeeAGNTCY/coffee_agents/recruiter/uv.lock`
-- `coffeeAGNTCY/coffee_agents/lungo/frontend/package-lock.json`
 - `coffeeAGNTCY/coffee_agents/corto/exchange/frontend/package-lock.json`
+- `coffeeAGNTCY/coffee_agents/corto/uv.lock`
+- `coffeeAGNTCY/coffee_agents/lungo/frontend/package-lock.json`
+- `coffeeAGNTCY/coffee_agents/lungo/uv.lock`
+- `coffeeAGNTCY/coffee_agents/recruiter/uv.lock`
 
 ### 5. Changeset (chronological)
 

@@ -13,9 +13,9 @@ disable-model-invocation: true
 
 | File | Purpose |
 |------|---------|
+| [.agents/prompts/release-notes/example.md](../../../prompts/release-notes/example.md) | Pointers to gold-standard examples |
 | [.agents/prompts/release-notes/params.yaml](../../../prompts/release-notes/params.yaml) | `previous_version`, `current_version`, repo identifiers |
 | [.agents/prompts/release-notes/PROMPT.md](../../../prompts/release-notes/PROMPT.md) | Full generation spec |
-| [.agents/prompts/release-notes/example.md](../../../prompts/release-notes/example.md) | Pointers to gold-standard examples |
 
 ## Workflow
 
