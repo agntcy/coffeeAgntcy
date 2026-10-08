@@ -11,7 +11,6 @@
   "schedule": [
     "before 8am on Monday"
   ],
-  "prCreation": "not-pending",
   "enabledManagers": [
     "custom.regex",
     "dockerfile",
@@ -40,9 +39,6 @@
     "dependencies"
   ],
   "osvVulnerabilityAlerts": true,
-  "lockFileMaintenance": {
-    "enabled": true
-  },
   "packageRules": [
     {
       "matchCategories": [
