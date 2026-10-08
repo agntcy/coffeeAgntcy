@@ -112,20 +112,6 @@ tasks:
     cmds:
       - scripts/checks/check_uv_locks.bash
 
-  renovate:sync:
-    desc: >-
-      Run renovate to sync dependency update PRs for this repo.
-    summary: |
-      Usage:   task renovate:sync
-      Example: task renovate:sync
-      Runs the repo-local renovate binary (installed into .tools/bin by
-      scripts/setup.sh at the version pinned in scripts/lib/versions.sh).
-      Behavior is driven entirely by renovate.json and the RENOVATE_*/
-      GITHUB_COM_TOKEN env vars set by the caller - see
-      .github/workflows/dependencies.yaml, the only caller today.
-    cmds:
-      - renovate
-
   pins:check:
     desc: >-
       Check that every third-party action/reusable-workflow/image
@@ -154,6 +140,21 @@ tasks:
       scripts/checks/check_pipeline_exceptions.bash.
     cmds:
       - scripts/checks/check_pipeline_exceptions.bash
+
+  renovate:sync:
+    desc: >-
+      Run renovate to sync dependency update PRs for this repo.
+    summary: |
+      Usage:   task renovate:sync
+      Example: task renovate:sync
+      Runs the repo-local renovate binary (installed into .tools/bin by
+      scripts/setup.sh at the version pinned in scripts/lib/versions.sh).
+      Behavior is driven entirely by renovate.json and the RENOVATE_*/
+      GITHUB_COM_TOKEN env vars set by the caller - see
+      .github/workflows/renovate.yaml, the only caller today. See
+      scripts/renovate/sync_renovate.bash.
+    cmds:
+      - scripts/renovate/sync_renovate.bash
 
   setup:
     desc: >-
