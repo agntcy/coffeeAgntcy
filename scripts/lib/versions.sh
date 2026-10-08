@@ -19,3 +19,5 @@ NODE_VERSION="24.21.0"
 OPENSPEC_VERSION="1.13.2"
 # renovate: datasource=npm depName=renovate
 RENOVATE_VERSION="44.127.1"
+# renovate: datasource=github-releases depName=astral-sh/uv
+UV_VERSION="0.12.23"

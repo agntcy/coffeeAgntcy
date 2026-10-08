@@ -94,3 +94,27 @@ teardown() {
     [ "$status" -eq 0 ]
     [ "$output" = "arm64" ]
 }
+
+@test "detect_triple_uv: maps each supported OS/arch pair to uv's target triple" {
+    mock_command uname 'case "$1" in -s) echo Darwin ;; -m) echo arm64 ;; esac'
+    run detect_triple_uv
+    [ "$status" -eq 0 ]
+    [ "$output" = "aarch64-apple-darwin" ]
+
+    mock_command uname 'case "$1" in -s) echo Linux ;; -m) echo x86_64 ;; esac'
+    run detect_triple_uv
+    [ "$status" -eq 0 ]
+    [ "$output" = "x86_64-unknown-linux-gnu" ]
+}
+
+@test "detect_triple_uv: an unsupported arch or OS fails with an error" {
+    mock_command uname 'case "$1" in -s) echo Linux ;; -m) echo riscv64 ;; esac'
+    run detect_triple_uv
+    [ "$status" -ne 0 ]
+    [[ "$output" == *"unsupported architecture 'riscv64'"* ]]
+
+    mock_command uname 'case "$1" in -s) echo Plan9 ;; -m) echo x86_64 ;; esac'
+    run detect_triple_uv
+    [ "$status" -ne 0 ]
+    [[ "$output" == *"unsupported OS 'Plan9'"* ]]
+}

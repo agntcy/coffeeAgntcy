@@ -2,12 +2,12 @@
 # Runs every standing check in this repo - dash/hyphen check, shell script
 # lint+format, workflow file lint, workflow permission scoping, markdown
 # link integrity, pinned external references, the Helm chart version-bump
-# check, the repo-operation-pipeline exceptions audit, the bash test
-# suite, and the bash test coverage audit - in parallel, always running
-# all of them regardless of earlier failures, then fails if any did. Each
-# check's output is captured to its own log file (so concurrent output
-# never interleaves), printed in a fixed order, followed by a result
-# table.
+# check, the repo-operation-pipeline exceptions audit, uv.lock sync,
+# the bash test suite, and the bash test coverage audit - in parallel,
+# always running all of them regardless of earlier failures, then fails
+# if any did. Each check's output is captured to its own log file (so
+# concurrent output never interleaves), printed in a fixed order,
+# followed by a result table.
 #
 # This is what task check:all runs, and what the "Checks" CI workflow runs
 # after a single tooling bootstrap, instead of each check re-bootstrapping
@@ -42,6 +42,7 @@ start_check "links:check" "$SCRIPT_DIR/check_markdown_links.bash"
 start_check "pins:check" "$SCRIPT_DIR/check_pinned_references.bash"
 start_check "helm:check-versions" "$SCRIPT_DIR/check_helm_chart_versions.bash"
 start_check "pipeline:check-exceptions" "$SCRIPT_DIR/check_pipeline_exceptions.bash"
+start_check "locks:check" "$SCRIPT_DIR/check_uv_locks.bash"
 start_check "tests:bash" "$SCRIPT_DIR/check_bash_tests.bash"
 start_check "tests:coverage" "$SCRIPT_DIR/check_bash_test_coverage.bash"
 

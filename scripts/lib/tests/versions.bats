@@ -40,3 +40,8 @@ load '../versions.sh'
     [ -n "$OPENSPEC_VERSION" ]
     [[ "$OPENSPEC_VERSION" =~ ^v?[0-9]+\.[0-9]+\.[0-9]+$ ]]
 }
+
+@test "UV_VERSION is set and looks like a version string" {
+    [ -n "$UV_VERSION" ]
+    [[ "$UV_VERSION" =~ ^v?[0-9]+\.[0-9]+\.[0-9]+$ ]]
+}

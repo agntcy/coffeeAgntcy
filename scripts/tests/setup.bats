@@ -69,12 +69,20 @@ build_fixture_assets() {
     printf '#!/usr/bin/env bash\necho "v%s"\n' "$SHFMT_VERSION" >"$ASSETS/shfmt"
     chmod +x "$ASSETS/shfmt"
 
+    # uv: tar.gz containing uv-<triple>/uv, the triple computed by the same
+    # platform.sh setup.sh uses.
+    # shellcheck disable=SC1091
+    source "$REAL_SCRIPTS_DIR/lib/platform.sh"
+    uv_dirname="uv-$(detect_triple_uv)"
+    mkdir -p "$ASSETS/uv-src/$uv_dirname"
+    printf '#!/usr/bin/env bash\necho "uv %s (fixture)"\n' "$UV_VERSION" >"$ASSETS/uv-src/$uv_dirname/uv"
+    chmod +x "$ASSETS/uv-src/$uv_dirname/uv"
+    tar -czf "$ASSETS/uv.tar.gz" -C "$ASSETS/uv-src" "$uv_dirname"
+
     # node: tar.gz containing node-vVERSION-OS-ARCH/bin/{node,npm} - the
     # directory name must match exactly what setup.sh itself computes at
     # runtime (real OS/arch, via the same platform.sh this test also
     # copies into the fixture), since it `mv`s that exact path.
-    # shellcheck disable=SC1091
-    source "$REAL_SCRIPTS_DIR/lib/platform.sh"
     node_dirname="node-v${NODE_VERSION}-$(detect_os)-$(detect_arch_node)"
     mkdir -p "$ASSETS/node-src/$node_dirname/bin"
     printf '#!/usr/bin/env bash\necho "v%s"\n' "$NODE_VERSION" >"$ASSETS/node-src/$node_dirname/bin/node"
@@ -130,6 +138,7 @@ case \"\$url\" in
     *actionlint*) cat '$ASSETS/actionlint.tar.gz' ;;
     *shellcheck*) cat '$ASSETS/shellcheck.tar.gz' ;;
     *mvdan/sh*) cat '$ASSETS/shfmt' ;;
+    *astral-sh/uv*) cat '$ASSETS/uv.tar.gz' ;;
     *bats-core*) cat '$ASSETS/bats-core.tar.gz' ;;
     *nodejs.org*) cat '$ASSETS/node.tar.gz' ;;
     *) echo \"mock curl: unexpected URL: \$url\" >&2; exit 1 ;;
@@ -162,6 +171,10 @@ seed_all_installed_except() {
     [[ "$skip" == *" shfmt "* ]] || {
         printf '#!/usr/bin/env bash\necho "v%s"\n' "$SHFMT_VERSION" >"$bin/shfmt"
         chmod +x "$bin/shfmt"
+    }
+    [[ "$skip" == *" uv "* ]] || {
+        printf '#!/usr/bin/env bash\necho "uv %s (fixture)"\n' "$UV_VERSION" >"$bin/uv"
+        chmod +x "$bin/uv"
     }
     [[ "$skip" == *" bats "* ]] || {
         mkdir -p "$bats_dir/bin"
@@ -197,6 +210,9 @@ seed_all_installed_except() {
     [ -x "$FIXTURE_ROOT/.tools/bin/shfmt" ]
     [ "$("$FIXTURE_ROOT/.tools/bin/shfmt" --version)" = "v$SHFMT_VERSION" ]
 
+    [ -x "$FIXTURE_ROOT/.tools/bin/uv" ]
+    [[ "$("$FIXTURE_ROOT/.tools/bin/uv" --version)" == "uv $UV_VERSION"* ]]
+
     [ -x "$FIXTURE_ROOT/.tools/bats/bin/bats" ]
     [ "$("$FIXTURE_ROOT/.tools/bats/bin/bats" --version)" = "Bats $BATS_VERSION" ]
 
@@ -220,6 +236,7 @@ seed_all_installed_except() {
     [[ "$output" == *"actionlint: already installed"* ]]
     [[ "$output" == *"shellcheck: already installed"* ]]
     [[ "$output" == *"shfmt: already installed"* ]]
+    [[ "$output" == *"uv: already installed"* ]]
     [[ "$output" == *"bats: already installed"* ]]
     [[ "$output" == *"node: already installed"* ]]
     [[ "$output" == *"openspec: already installed"* ]]

@@ -41,6 +41,7 @@ write_all_passing_fakes() {
     write_fake "$FIXTURE_REPO/scripts/checks/check_pinned_references.bash" "fake pins output" 0
     write_fake "$FIXTURE_REPO/scripts/checks/check_helm_chart_versions.bash" "fake helm output" 0
     write_fake "$FIXTURE_REPO/scripts/checks/check_pipeline_exceptions.bash" "fake pipeline output" 0
+    write_fake "$FIXTURE_REPO/scripts/checks/check_uv_locks.bash" "fake locks output" 0
     write_fake "$FIXTURE_REPO/scripts/checks/check_bash_tests.bash" "fake bash tests output" 0
     write_fake "$FIXTURE_REPO/scripts/checks/check_bash_test_coverage.bash" "fake coverage output" 0
 }
@@ -59,6 +60,7 @@ write_all_passing_fakes() {
     [[ "$output" == *"PASS: pins:check"* ]]
     [[ "$output" == *"PASS: helm:check-versions"* ]]
     [[ "$output" == *"PASS: pipeline:check-exceptions"* ]]
+    [[ "$output" == *"PASS: locks:check"* ]]
     [[ "$output" == *"PASS: tests:bash"* ]]
     [[ "$output" == *"PASS: tests:coverage"* ]]
 }
@@ -90,6 +92,7 @@ write_all_passing_fakes() {
     [[ "$output" == *"PASS: pins:check"* ]]
     [[ "$output" == *"PASS: helm:check-versions"* ]]
     [[ "$output" == *"PASS: pipeline:check-exceptions"* ]]
+    [[ "$output" == *"PASS: locks:check"* ]]
     [[ "$output" == *"PASS: tests:bash"* ]]
     [[ "$output" == *"PASS: tests:coverage"* ]]
     [[ "$output" != *"All checks passed."* ]]
@@ -108,7 +111,7 @@ write_all_passing_fakes() {
     [[ "$output" == *"FAIL: tests:coverage (exit 1)"* ]]
 
     # The checks that didn't fail still ran to completion and still
-    # show PASS - all ten checks are accounted for regardless of how
+    # show PASS - all eleven checks are accounted for regardless of how
     # many of their siblings failed.
     [[ "$output" == *"PASS: shell:lint"* ]]
     [[ "$output" == *"PASS: workflows:lint"* ]]
@@ -116,6 +119,7 @@ write_all_passing_fakes() {
     [[ "$output" == *"PASS: links:check"* ]]
     [[ "$output" == *"PASS: helm:check-versions"* ]]
     [[ "$output" == *"PASS: pipeline:check-exceptions"* ]]
+    [[ "$output" == *"PASS: locks:check"* ]]
     [[ "$output" == *"PASS: tests:bash"* ]]
     [[ "$output" != *"All checks passed."* ]]
 }
