@@ -29,9 +29,9 @@ The A2A server returns messages with multiple parts:
 
 | Part | Type | Description |
 |------|------|-------------|
-| `TextPart` | `text/plain` | Human-readable summary of the results |
-| `DataPart` | `found_agent_records` | Agent records from search (keyed by CID) |
 | `DataPart` | `evaluation_results` | Evaluation results (when evaluation is performed) |
+| `DataPart` | `found_agent_records` | Agent records from search (keyed by CID) |
+| `TextPart` | `text/plain` | Human-readable summary of the results |
 
 **Parsing Response Parts:**
 
@@ -208,6 +208,8 @@ The inner evaluator agent has three tools available during its run:
 | `_send_message_to_evaluated_agent` | Sends a message to the candidate agent and records the response |
 | `_log_evaluation` | Records pass/fail judgment for a scenario, triggering the judge LLM |
 
+<!-- alphabetize-exempt: tools are listed in the order the evaluator calls them -->
+
 ADK callbacks (`_before_tool_callback`, `_after_tool_callback`, `_before_model_callback`, `_after_model_callback`) provide debug logging and optional streaming updates via `_chat_update_callback`.
 
 ### Policy Evaluation
@@ -241,6 +243,8 @@ For long-running evaluations, `evaluate_agents_streaming()` yields progress even
 | `agent_completed` | Agent evaluation finished with results |
 | `agent_error` | Evaluation failed for an agent |
 | `evaluation_completed` | All agents evaluated, final summary |
+
+<!-- alphabetize-exempt: events are listed in the order they are emitted during an evaluation -->
 
 ```python
 async for event in evaluate_agents_streaming(agent_records, criteria, callback):

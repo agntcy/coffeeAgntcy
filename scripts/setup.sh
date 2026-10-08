@@ -9,6 +9,10 @@
 #   ./scripts/setup.sh
 #   source scripts/env.sh   # put .tools/bin, .tools/node/bin, and .tools/bats/bin on PATH for this shell session
 #
+# Tools install in dependency order (node before the npm-installed
+# openspec and renovate), not alphabetically; the pins in
+# scripts/lib/versions.sh are the alphabetical list.
+#
 # CI (see checks.yaml and ci-gate.yaml) passes --lint-only: neither
 # required workflow runs openspec or renovate, so CI skips the
 # node/openspec/renovate install and only bootstraps the lint binaries

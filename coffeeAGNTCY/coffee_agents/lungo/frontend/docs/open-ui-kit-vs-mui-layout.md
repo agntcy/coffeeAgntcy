@@ -20,6 +20,8 @@ Sources: `@open-ui-kit/core` v1.x (MUI-based), upstream theme in [outshift-open/
 | **Grid** | Same mechanism | Breakpoint props depend on **`theme.breakpoints`**. |
 | **Typography / palette / shadows / `components`** | **No** | Kit-specific tokens and overrides; does not change spacing math but changes component defaults (padding, radius inside `Button`, etc.). |
 
+<!-- alphabetize-exempt: summary rows follow the order the sections below discuss them -->
+
 ---
 
 ## Breakpoints in detail

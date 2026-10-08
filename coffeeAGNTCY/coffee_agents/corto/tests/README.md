@@ -13,6 +13,8 @@ Tests cover Exchange ↔ Farm behavior across message transports (SLIM, NATS): u
 | `tests/integration/llm/` | Docker + LLM credentials (needs `.env`) |
 | `tests/integration/helpers/` | Docker/process helpers (not collected as tests) |
 
+<!-- alphabetize-exempt: directories follow the test-tree hierarchy (parent before children) -->
+
 Key files:
 
 - Session / infra fixtures: [`tests/integration/conftest.py`](integration/conftest.py)

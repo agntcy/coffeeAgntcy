@@ -17,6 +17,8 @@ This document summarizes responsive and layout-related behavior of Open UI Kit.
 | `xl` | `1920` | Extra-wide desktop |
 | `xxl` | `2560` | Ultra-wide |
 
+<!-- alphabetize-exempt: breakpoints run smallest to largest; the order is the content -->
+
 Ordered keys (ascending width): `xs`, `sm`, `md`, `lg`, `xl`, `xxl`.
 
 ---
@@ -61,6 +63,8 @@ Use this table in reviews and Figma annotations. **Layout** breakpoints (`sm` = 
 | `md`           |              **600** | `breakpointValues.sm` | Preset says “md”, pixel width is **sm** token |
 | `lg`           |             **1024** | `breakpointValues.md` | Preset “lg” → **md** token                    |
 | `xl`           |             **1440** | `breakpointValues.lg` | Preset “xl” → **lg** token                    |
+
+<!-- alphabetize-exempt: breakpoints run smallest to largest; the order is the content -->
 
 **UX / docs (approach 3):** In Storybook and design specs, refer to these as **M (content)**, **L (content)**, **XL (content)** with a footnote listing the underlying `maxWidth` prop for engineers.
 

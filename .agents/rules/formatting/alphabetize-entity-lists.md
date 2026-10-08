@@ -67,8 +67,45 @@ Use more than one of these when it helps; use at least one.
 ## Decided exceptions
 
 Judgment calls already made, so they aren't re-litigated or accidentally
-"fixed" later. None recorded yet - add an entry here (or an inline note at
-the point of use) the first time exception 2 is invoked.
+"fixed" later. In markdown, each kept table also carries an
+`<!-- alphabetize-exempt: <reason> -->` comment right after it (invisible
+when rendered); an entry here covers the same decision for readers who
+start from this rule.
+
+- **Sequence is the content** - tables whose rows run in an order readers
+  follow, so sorting would destroy it:
+  - Breakpoint tables (smallest to largest) in
+    `lungo/frontend/docs/open-ui-kit-breakpoints.md`.
+  - Test-directory tables (parent before children) in the corto, lungo and
+    recruiter test docs/READMEs.
+  - The state-transition table in `lungo/docs/group_conversation.md`.
+  - The endpoint summary in `lungo/docs/workflow-instance_api.md`.
+  - The request-area and retry-flow tables in
+    `lungo/frontend/docs/http-and-error-handling.md`.
+  - The model table in the recruiter `recruit.md` command (cheapest to most
+    capable).
+  - The exit-code table in the recruiter `a2a-send.md` command.
+  - The example-prompt table in `lungo/README.md`.
+  - The event-type table in `recruiter/docs/advanced-usage.md` (emission
+    order).
+  - The pipeline-layers table in the `add-repo-operation` skill.
+  - The services table in `lungo/docs/group_conversation.md` (supervisor
+    first, then agents in workflow order).
+  - The evaluator-tools table in `recruiter/docs/advanced-usage.md` (call
+    order).
+  - The concept-to-artifact table in the `openapi-to-python-lungo` skill
+    (tag down to spec entry point).
+  - The executive-summary table in
+    `lungo/frontend/docs/open-ui-kit-vs-mui-layout.md` (same order as the
+    sections it summarizes).
+- **Execution order in code** - `scripts/setup.sh`'s install blocks
+  (node before the npm-installed openspec and renovate; the pins in
+  `scripts/lib/versions.sh` are alphabetical) and `scripts/checks/check_all.bash`'s
+  `start_check` list (matches the order the report prints, and the
+  order in the `check:all` task description).
+- **Fields in a conventional order** - the input tables of the reusable
+  workflows in `.github/workflows/README.md` (required inputs first, then
+  optional ones).
 
 ## Why
 

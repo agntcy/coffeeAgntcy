@@ -196,6 +196,8 @@ Ask the user which model to use (default **haiku**):
 | **sonnet** | Complex multi-turn, reasoning-heavy agents |
 | **opus** | Deep analysis or long context |
 
+<!-- alphabetize-exempt: models run from cheapest to most capable, with the recommended one first -->
+
 Then for each selected agent, **immediately** do the following without asking further questions:
 
 **4B-a. Generate filename:** Lowercase the agent name, replace spaces/special chars with hyphens, append `.md`. Example: "Brazil Coffee Farm" → `brazil-coffee-farm.md`
