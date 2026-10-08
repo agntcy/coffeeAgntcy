@@ -1,8 +1,70 @@
 # Changelog
 
+Each version ships as part of a monthly named release, shown on the
+`Release:` line under its heading. `Unreleased` lists what the next
+version contains so far, and entries marked `(planned)` describe work that
+is not merged yet. See [CONTRIBUTING.md](CONTRIBUTING.md#releases) for how
+to keep this file current and how a version is cut.
+
 ## Unreleased
 
-.
+Target: 0.5.0 - 2026-10-27
+
+### Added
+
+- Monthly named releases: a fixed release cadence, the `Unreleased`
+  section in this changelog, and the release process in
+  [CONTRIBUTING.md](CONTRIBUTING.md#releases).
+- A repo-local, pinned contributor toolchain: `task setup` installs it
+  with no global installs, and `task check:all` runs every standing check
+  that CI runs (#797).
+- [OpenSpec](https://openspec.dev) planning for substantial changes,
+  documented in [CONTRIBUTING.md](CONTRIBUTING.md#planning-a-feature-or-substantial-change)
+  (#797).
+- `task pipeline:check-exceptions`, auditing the documented exceptions to
+  the repo's tooling pipeline (#798).
+- `task links:check`, failing on any relative markdown link that doesn't
+  resolve (#799).
+- Tests for every bash script in the repo, run by `task tests:bash`, with
+  `task tests:coverage` failing on any script without one (#800).
+- Renovate keeps the pinned contributor tools up to date, alongside the
+  other dependencies (#811).
+- Agent skills for interacting with the reference patterns (planned).
+
+### Changed
+
+- Agent rules, skills and repo scripts moved into category
+  subdirectories under `.agents/rules/`, `.agents/skills/` and `scripts/`
+  (#799).
+- OpenSpec changes are archived into `openspec/specs/` as the last step
+  of their own PR, instead of after it merges.
+- SLIM upgraded to 2.0 (planned).
+- A2A upgraded to 1.0 (planned).
+- AGNTCY Directory upgraded to its latest version (planned).
+- Google ADK migrated to 2.x (planned).
+
+### Fixed
+
+- The Lungo workflow graph no longer stays stuck behind "Workflow graph
+  unavailable" after a transient failure, and new graph nodes and chat
+  error messages are placed correctly (#804).
+- Lungo's directory records survive a `zot` container restart, through a
+  new `zot-storage` volume in `docker-compose.yaml`, and
+  `push_oasf_records.sh` re-pushes records whose content is missing
+  instead of reporting them as present (#808).
+- The recruiter supervisor's Helm chart no longer falls back to
+  `localhost` for the workflow API on a cluster (planned).
+
+### Security
+
+- The `/agents/{slug}/oasf` endpoints of the auction, logistics and
+  recruiter supervisors reject slugs that would leave the records
+  directory; the weather service logs only rounded coordinates and no
+  request headers, and streaming handlers no longer return stack traces
+  to clients (#809, #812).
+- Vulnerable dependencies bumped across the Python backends and the
+  frontends, including `urllib3`, `DOMPurify`, `sentence-transformers`,
+  `litellm` and `pypdf` (#809, #812, #816).
 
 ## 0.4.1 (2026-10-07)
 

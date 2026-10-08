@@ -22,11 +22,12 @@ disable-model-invocation: true
 ```
 - [ ] 1. Read params.yaml - confirm versions with the user if missing or stale
 - [ ] 2. Read PROMPT.md - follow it verbatim for structure and output rules
-- [ ] 3. Read CHANGELOG.md - previous release section + example section from example.md
+- [ ] 3. Read CHANGELOG.md - the `## Unreleased` section (what the version contains), previous release section + example section from example.md
 - [ ] 4. Collect changes since previous_version (PRs on default branch; direct commits only when no PR)
 - [ ] 5. Read dependency lockfiles listed in PROMPT.md
 - [ ] 6. Read README.md Built With section for formatting reference
-- [ ] 7. Output two markdown code blocks - do not edit files unless asked
+- [ ] 7. Confirm the milestone code name and month for the `Release:` line, and flag any mismatch between merged PRs and `Unreleased`
+- [ ] 8. Output two markdown code blocks - do not edit files unless asked
 ```
 
 ## Discovery commands

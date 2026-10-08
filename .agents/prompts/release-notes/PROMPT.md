@@ -19,21 +19,30 @@ Generate release notes for `repo_url` covering changes **since** `previous_versi
 - Base the diff on merges to the default branch since the `previous_version` tag.
 - Use the previous release as a style reference: git tag `previous_version`, and the matching section in repository root
   `CHANGELOG.md`.
+- Treat the `## Unreleased` section of `CHANGELOG.md` as the authoritative list of what `current_version` contains:
+  every entry there without a `(planned)` marker must be covered, and no entry still marked `(planned)` may be. If the
+  merged PRs and `Unreleased` disagree, flag the mismatch to the user instead of silently diverging. See
+  `CONTRIBUTING.md`'s "Releases" section.
 - Prefer **PR-level** granularity; do not enumerate individual commits except when a change landed on the default branch
   **without** an associated PR.
 - Be concise and practical.
 
 ## Output structure
 
-Produce a new `CHANGELOG.md` entry for `current_version` with this structure:
+Produce a new `CHANGELOG.md` entry for `current_version`, replacing the `## Unreleased` section, with this structure:
 
 ### 1. Title line
 
 ```markdown
 ## {current_version} ({YYYY-MM-DD})
+
+Release: {Milestone} ({Month YYYY})
 ```
 
-Use today's date unless the user specifies another.
+The date is the version's cut date: the day the release PR is planned to merge. `{Milestone}` is the code name of the
+`(current release)` GitHub milestone, and `{Month YYYY}` the month of the named release the version ships in: the
+first month whose freeze (the three days before its last day) starts after the cut date. Use today's date and the
+current milestone unless the user specifies otherwise.
 
 ### 2. One-line release blurb
 
@@ -90,6 +99,7 @@ List changes in the order they landed on the default branch:
 |          Purpose          |                              Path                               |
 | ------------------------- | --------------------------------------------------------------- |
 | Style / structure example | `CHANGELOG.md` (see `.agents/prompts/release-notes/example.md`) |
+| Version contents          | `CHANGELOG.md` - the `## Unreleased` section                    |
 | README dependency format  | `README.md` → `### Built With`                                  |
 
 ## Output format (response to the user)
@@ -99,7 +109,9 @@ List changes in the order they landed on the default branch:
 Return **two** markdown fenced code blocks:
 
 1. **CHANGELOG entry** - full markdown for the new `## {current_version}` section, ready to paste into `CHANGELOG.md`
-   below the `# Changelog` heading.
+   in place of the `## Unreleased` section. If any `Unreleased` entry is still marked `(planned)`, list those entries
+   after the code block: they move into a fresh `## Unreleased` section above the new entry (see
+   `docs/RELEASE-OPS.md`, Step 2).
 2. **README Built With** - markdown for the `### Built With` bullet list, matching `README.md` style but with versions
    from the lockfiles above.
 

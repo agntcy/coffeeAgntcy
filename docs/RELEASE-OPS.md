@@ -2,6 +2,8 @@
 
 This document describes the end-to-end steps for cutting a **version release** of [coffeeAgntcy](https://github.com/agntcy/coffeeAgntcy/) on GitHub.
 
+Releases follow the monthly cadence described in [CONTRIBUTING.md's "Releases" section](../CONTRIBUTING.md#releases): each version ships as part of a named monthly release, cut on the last day of the month, and a version is only part of that month's release if it is **merged and tagged before the month's freeze** (the three days before the last day of the month). Plan the steps below so that Step 3 is done no later than the last day before the freeze; for the October 2026 release, that is 2026-10-27 (freeze 2026-10-28 to 2026-10-30, cut day 2026-10-31).
+
 It is intentionally **not** specific to any single release version. Anything that would not always be true is shown as an **example** and uses placeholders such as `<version>`, `<tag>`, and `<milestone>`. Replace placeholders with the real values for the release you are cutting.
 
 Placeholders used throughout:
@@ -9,7 +11,8 @@ Placeholders used throughout:
 | Placeholder    | Meaning                                                               | Example              |
 | -------------- | --------------------------------------------------------------------- | -------------------- |
 | `<email>`      | Your sign-off email                                                   | `you@cisco.com`      |
-| `<milestone>`  | The GitHub Milestone associated with the release                      | `Synapsis`           |
+| `<milestone>`  | The GitHub Milestone associated with the release (its code name)      | `Synapsis`           |
+| `<month>`      | The month of the named release the version ships in                   | `August 2026`        |
 | `<tag>`        | The git tag for the release (this repo tags **without** a `v` prefix) | `0.3.0`              |
 | `<version>`    | The semver version being released                                     | `0.3.0`              |
 
@@ -95,7 +98,7 @@ Do this when all subtickets for the release are done.
 
 4. Click **Close milestone**.
 
-5. Rename the milestone to its **canonical name only** and set the **release date** to the current date.
+5. Rename the milestone to its **canonical name only** and set the **release date** to the current date (the version's cut date, on or before the last day before the freeze).
    - Usually the rename means removing the `(current release)` trailer
       - Example: rename `Synapsis (current release)` → `Synapsis`.
 
@@ -104,8 +107,11 @@ Do this when all subtickets for the release are done.
 7. Go back to the milestones list and click **New milestone** to create the **next** current milestone by canonical name and current designation. **Include the `(current release)` trailer.**
 
    - Example: create `Cerebro (current release)`.
+   - Set its **due date** to the last day before the **next** month's freeze: four days before that month's last day. For example, the December 2026 release is cut on 2026-12-31, its freeze is 2026-12-28 to 2026-12-30, so its milestone is due 2026-12-27.
 
 8. Move the **next release** milestone's issues over into the new `(current release)` milestone. If the issue list spans **multiple pages**, repeat this move for **each page**.
+
+> If the milestone can't be finished, and the version merged and tagged, before the freeze starts, don't close it: move its due date to the last day before the next month's freeze, move the `Target:` date in `CHANGELOG.md`'s `## Unreleased` section to match, and stop here. The milestone, code name included, rolls into the next month's release.
 
 ---
 
@@ -135,14 +141,17 @@ previous_version: "0.2.1"
 current_version: "0.3.0"
 ```
 
-**2. Run the `generate-release-notes` skill.** It reads `params.yaml`, collects merged PRs since `previous_version`, reads the dependency lockfiles, and produces the release note text.
+**2. Run the `generate-release-notes` skill.** It reads `params.yaml`, treats the `## Unreleased` section of `CHANGELOG.md` as the authoritative list of what the version contains, collects merged PRs since `previous_version`, reads the dependency lockfiles, and produces the release note text, headed by the version, its cut date and a `Release: <milestone> (<month>)` line. Its cut date is the day you plan to merge the Step 2 PR.
 
-**3. Proof-read** the CHANGELOG entry for accuracy (versions, PR links, migration steps).
+**3. Proof-read** the CHANGELOG entry for accuracy (versions, PR links, migration steps), and check it against `## Unreleased`: anything listed there as merged must appear, and anything still marked `(planned)` must not.
 
 **4. Apply the generated output to the repo:**
 
 - Update the **`### Built With`** section of [`README.md`](../README.md) with the versions from the generated notes.
-- Add a new [`CHANGELOG.md`](../CHANGELOG.md) entry at the top (below the `# Changelog` heading), and add a `---` horizontal-rule separator at the **end** of the entry.
+- Update the **releases table** in [`README.md`](../README.md#releases): fill in this release's version and date, and add a row for the new `(current release)` milestone from Step 1.
+- In [`CHANGELOG.md`](../CHANGELOG.md), replace the `## Unreleased` section with the new entry, and add a `---` horizontal-rule separator at the **end** of the entry.
+- Above the new entry, open a fresh `## Unreleased` section with the next `Target: <next version> - <YYYY-MM-DD>` line (by default the next milestone's due date), and move every entry still marked `(planned)` into it, under the same headings.
+- If the merge slips to another day, update the entry's date (and, if it slips into the freeze, see the note at the end of Step 1).
 
 **5. Put these updates into a PR** and get it **merged** into `main`.
 
@@ -163,16 +172,20 @@ git tag -a --cleanup whitespace --sign --trailer "Signed-off-by: <Your Name> <<e
 
 For the tag **annotation** (equivalent to a commit message), paste the **release note** generated in Step 2.
 
-> Important: remove the leading `##` markdown heading prefix from the **first line** of the annotation. For example, change the annotation's first line:
+> Important: remove the leading `##` markdown heading prefix from the **first line** of the annotation, and keep the `Release:` line below it. For example, change the annotation's first lines:
 >
 > ```text
 > ## 0.3.0 (2026-08-10)
+>
+> Release: Synapsis (August 2026)
 > ```
 >
 > to:
 >
 > ```text
 > 0.3.0 (2026-08-10)
+>
+> Release: Synapsis (August 2026)
 > ```
 
 ---
@@ -210,6 +223,7 @@ Publish a release using the **same release note** from Step 2.
 
    - The **release tile** (do NOT confuse it with the `##` heading in the release note body!) should follow this format: `<tag> - <Milestone> (<YYYY-MM-DD>)`
    - For example: `0.3.0 - Synapsis (2026-08-10)`
+   - This applies to every version, patch versions included: `<Milestone>` is the named release on the entry's `Release:` line.
 
 ---
 

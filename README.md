@@ -75,13 +75,26 @@ For a common understanding, please see the [terminologies used](docs/TERMINOLOGY
 
 ---
 
-### [Milestones](https://github.com/agntcy/coffeeAgntcy/milestones)
+### Releases
 
-|                            Milestone                            | Version (intended) |                    Focus Area                    | Release Date (intended) |
-| :-------------------------------------------------------------: | :----------------: | :----------------------------------------------: | :---------------------: |
-| [Heartbeat](https://github.com/agntcy/coffeeAgntcy/milestone/1) |       0.1.0        | Backend live events & Frontend dynamic animation |       (May)             |
-|   [Fiber](https://github.com/agntcy/coffeeAgntcy/milestone/3)   |      (0.2.0)       |    Breadth of patterns, Recruit & Collaborate    |       (June)            |
-| [Synapsis](https://github.com/agntcy/coffeeAgntcy/milestone/4)  |      (0.3.0)       |         Internet of Cognition alignment          |       (July)            |
+coffeeAgntcy ships a named release every month, carrying the code name of
+its [milestone](https://github.com/agntcy/coffeeAgntcy/milestones).
+[CHANGELOG.md](CHANGELOG.md) lists what each version contains and what the
+next one is planned to contain; see
+[CONTRIBUTING.md](CONTRIBUTING.md#releases) for the cadence and how
+versions are cut. Releases are listed oldest first, since their order is
+the point; values in parentheses are planned.
+
+|                             Release                              |     Month      | Version |                    Focus Area                    |     Date     |
+| :--------------------------------------------------------------: | :------------: | :-----: | :----------------------------------------------: | :----------: |
+| [Heartbeat](https://github.com/agntcy/coffeeAgntcy/milestone/1)  |    May 2026    |  0.1.0  | Backend live events & Frontend dynamic animation |  2026-05-19  |
+|   [Fiber](https://github.com/agntcy/coffeeAgntcy/milestone/3)    |   June 2026    |  0.2.0  |    Breadth of patterns, Recruit & Collaborate    |  2026-06-25  |
+|  [Synapsis](https://github.com/agntcy/coffeeAgntcy/milestone/4)  |  August 2026   |  0.3.0  |         Internet of Cognition alignment          |  2026-08-10  |
+|  [Cerebro](https://github.com/agntcy/coffeeAgntcy/milestone/7)   | September 2026 |  0.4.0  |  Housekeeping, stability and dependency hygiene  |  2026-09-24  |
+|   [Nexus](https://github.com/agntcy/coffeeAgntcy/milestone/8)    |  October 2026  | (0.5.0) |    Contributor tooling and dependency upgrades    | (2026-10-27) |
+
+Releases before Nexus predate the monthly cadence; the patch versions
+0.1.1, 0.1.2 and 0.2.1 shipped between them, outside a named release.
 
 ---
 

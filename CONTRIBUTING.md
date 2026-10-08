@@ -35,7 +35,11 @@ if the change was already implemented but not yet released.
 
 We expect new pull requests to include tests for any affected behavior, and, as
 we follow semantic versioning, we may reserve breaking changes until the next
-major version release.
+major version release (see [Releases](#releases)).
+
+If your PR changes what a user of coffeeAgntcy sees, add its entry under
+`## Unreleased` in [CHANGELOG.md](CHANGELOG.md) in the same PR (see
+[Releases](#releases)).
 
 Each agent project documents its test layout and commands in `tests/README.md` under `coffeeAGNTCY/coffee_agents/{corto,lungo,recruiter}/`.
 
@@ -62,12 +66,15 @@ plan it with [OpenSpec](https://openspec.dev) before writing any code:
    `openspec/changes/<name>/`. Get that plan right before implementing -
    this is the point to catch a bad approach cheaply, not after the diff
    exists.
-3. **Implement it:** `openspec apply`, or work through `tasks.md` by hand,
-   then follow the rest of this repo's normal flow (`task check:all`, the
-   linting sections below) before opening the PR.
-4. **Archive it** once the PR merges: `openspec archive` moves the
-   change's rationale and final spec delta into `openspec/specs/`, so it
-   stays discoverable after the PR itself is buried in history.
+3. **Implement it:** `openspec apply`, or work through `tasks.md` by hand.
+4. **Archive it** as the last implementation step, in the same PR:
+   `openspec archive` moves the change's rationale and final spec delta
+   into `openspec/specs/`, so the spec is in place the moment the change
+   merges and stays discoverable after the PR itself is buried in history.
+   If review changes the implementation afterwards, update the archived
+   change and the main spec in the same PR. Then follow the rest of this
+   repo's normal flow (`task check:all`, the linting sections below)
+   before opening the PR.
 
 This is an added planning step before code, not a different approval
 process - everything above still applies once the PR is open. If you're an
@@ -156,6 +163,62 @@ or removing any file. See
 [`.agents/rules/quality/markdown-link-integrity.md`](/.agents/rules/quality/markdown-link-integrity.md)
 for the full rule. Runs as part of `task check:all` and the `Checks`
 workflow.
+
+## Releases
+
+coffeeAgntcy ships one release a month. Each monthly release is a named
+release: it carries the code name of its [GitHub
+milestone](https://github.com/agntcy/coffeeAgntcy/milestones), written
+together with its month, such as "Nexus (October 2026)". The
+[README's releases table](README.md#releases) lists every named release
+with its version and date.
+
+- **Cadence.** A monthly release is cut on the last day of its month (its
+  cut day). The three days before cut day are the freeze: a version that
+  is merged and tagged before the freeze starts ships in that month's
+  release, and anything later rolls into the next one. A milestone's due
+  date is the last day before its month's freeze.
+- **Versioning.** The repo uses [Semantic
+  Versioning](https://semver.org/spec/v2.0.0.html) and tags each version
+  with its plain version number, without a `v` prefix (`0.4.0`). A new
+  version is cut only when there is a change to ship, never just because
+  a month has passed: a month with nothing to ship has no new version,
+  and its milestone, code name included, moves to the next month. While
+  the version is `0.x`, a breaking change to a configuration, an
+  environment variable, a Compose file, a Helm chart or an API bumps the
+  minor version.
+- **Keeping `Unreleased` current.** The `## Unreleased` section at the
+  top of [CHANGELOG.md](CHANGELOG.md) starts with a `Target: <version> -
+  <date>` line, giving the next version and its planned cut date. The
+  version ships in the first monthly release whose freeze starts after
+  that date, so a date inside a freeze already means the next month.
+  Below the `Target:` line, the section lists what the version will
+  contain, under [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
+  headings (`Added`, `Changed`, `Deprecated`, `Removed`, `Fixed`,
+  `Security`):
+  - Any PR that changes what a user of coffeeAgntcy sees adds its entry
+    in the same PR, with the PR's number (`#123`). That covers an
+    application feature or behavior, its UI, its configuration,
+    environment variables, Compose files, Helm charts or images, the
+    pattern library or event schema, and a documented task or
+    contribution process. An internal CI fix, a test fix or a refactor
+    with no visible effect can be left out.
+  - Work that is planned but not merged yet gets an entry ending in
+    `(planned)`, so readers don't look for something that isn't there.
+    The PR that does the work updates that entry, adds its number and
+    removes the marker; if the work is dropped, its entry is removed.
+- **Cutting a version.** A maintainer opens the release PR early enough
+  for it to merge, and the version to be tagged, before the freeze
+  starts. In that PR, `## Unreleased` is replaced by the version's
+  detailed section, headed `## <version> (<YYYY-MM-DD>)` with a
+  `Release: <Code name> (<Month YYYY>)` line below it, and any entry
+  still marked `(planned)` moves into a fresh `## Unreleased` section
+  above it with the next `Target:` line. The date is the version's cut
+  date, the day the release PR merges. If the version can't be merged
+  and tagged before the freeze, `Unreleased` stays as it is and its
+  `Target:` date and the milestone's due date move to the next month.
+  [`docs/RELEASE-OPS.md`](docs/RELEASE-OPS.md) has the step-by-step
+  runbook.
 
 ## Other Ways to Contribute
 

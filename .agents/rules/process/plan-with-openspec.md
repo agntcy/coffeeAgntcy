@@ -5,7 +5,8 @@ description: >-
   script, or CI check; a schema or repo-wide convention change; anything
   spanning more than a small, self-contained diff), propose it with
   `openspec propose` and get the plan right before implementing. Archive it
-  with `openspec archive` after the PR merges. A small, self-contained
+  with `openspec archive` as the last implementation step, in the same PR,
+  before it merges. A small, self-contained
   change keeps the normal PR flow instead. Apply when starting work that
   doesn't fit that flow.
 ---
@@ -19,10 +20,12 @@ tool/script/CI check, a schema or repo-wide convention change, or anything
 that spans more than a small, self-contained diff - run `openspec propose`
 and get the resulting proposal, design, spec delta, and tasks list right
 before writing any code. Implement against that plan (`openspec apply`, or
-by hand following its `tasks.md`), then run the normal `task check:all` /
-PR flow. Once the PR merges, run `openspec archive` so the change's
-rationale and final spec delta land in `openspec/specs/` as the durable
-record, instead of being buried in a merged PR's diff.
+by hand following its `tasks.md`). Once every task is done, run
+`openspec archive` as the last implementation step, in the same PR, so the
+change's rationale and final spec delta land in `openspec/specs/` as the
+durable record the moment the change merges, instead of being buried in a
+merged PR's diff or waiting on a follow-up PR. Then run the normal `task
+check:all` / PR flow.
 
 A routine, self-contained change (a bug fix, a small doc update, a single
 new script that doesn't ripple elsewhere) keeps the normal PR flow -
@@ -43,6 +46,10 @@ than living only in a PR description.
 
 ## How to apply
 
+- If review on the PR changes the implementation after archiving, update
+  the archived change under `openspec/changes/archive/` and the main spec
+  under `openspec/specs/` together in the same PR, so they still agree
+  with what merges.
 - If unsure whether something counts as "substantial," err on proposing -
   an unused `openspec/changes/<name>/` costs little; a substantial change
   with no written plan costs a lot more to review or unwind.

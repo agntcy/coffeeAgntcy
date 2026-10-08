@@ -90,6 +90,7 @@ applied by judgment.
 
 | Topic | File |
 |-------|------|
+| Keep changelog current | [.agents/rules/always-apply/keep-changelog-current.md](.agents/rules/always-apply/keep-changelog-current.md) |
 | Keep docs consistent | [.agents/rules/always-apply/keep-docs-consistent.md](.agents/rules/always-apply/keep-docs-consistent.md) |
 | No em dashes or en dashes | [.agents/rules/always-apply/no-em-en-dashes.md](.agents/rules/always-apply/no-em-en-dashes.md) |
 | Pre-finalize checks | [.agents/rules/always-apply/pre-finalize-checks.md](.agents/rules/always-apply/pre-finalize-checks.md) |
