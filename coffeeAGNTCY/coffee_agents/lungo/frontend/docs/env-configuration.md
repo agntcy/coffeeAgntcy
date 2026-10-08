@@ -32,12 +32,14 @@ App code should use `@/urls` helpers (or `env.get`) - not `import.meta.env` dire
 
 | File / artifact | Role |
 |-----------------|------|
-| `deployment/helm/ui/values.yaml` → `configs.env.data` | Kubernetes runtime source for `env-config.js`. |
 | `frontend/.env` | Developer-local values (gitignored). Used by Vite in dev and at **image build** time. |
 | `frontend/.env.example` | Committed template; documents all `VITE_*` keys. |
-| `frontend/index.html` | Loads `/env-config.js` **before** the React bundle so `window.__ENV__` exists early. |
 | `frontend/public/env-config.js` | Static stub copied to `dist/env-config.js` on build. Sets `window.__ENV__ = {}` until overridden. |
+| `frontend/index.html` | Loads `/env-config.js` **before** the React bundle so `window.__ENV__` exists early. |
+| `deployment/helm/ui/values.yaml` → `configs.env.data` | Kubernetes runtime source for `env-config.js`. |
 | Helm templates | Generate ConfigMap + mount over `/app/dist/env-config.js` in the UI pod. |
+
+<!-- alphabetize-exempt: the files follow the config path: local env, template, stub, index.html, Helm values, Helm templates -->
 
 ---
 

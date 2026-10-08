@@ -95,6 +95,13 @@ start from this rule.
     order).
   - The concept-to-artifact table in the `openapi-to-python-lungo` skill
     (tag down to spec entry point).
+  - The file/artifact table in
+    `lungo/frontend/docs/env-configuration.md` (config path, local env to
+    Helm templates).
+  - The layer table in `lungo/frontend/docs/http-and-error-handling.md`
+    (URL source of truth down to the API client).
+  - The naming-derivations table in the `openapi-to-python-lungo`
+    `reference.md` (tag down to schema names).
   - The executive-summary table in
     `lungo/frontend/docs/open-ui-kit-vs-mui-layout.md` (same order as the
     sections it summarizes).

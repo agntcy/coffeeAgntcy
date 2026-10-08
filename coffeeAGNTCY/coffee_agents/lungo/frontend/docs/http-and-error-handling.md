@@ -15,11 +15,13 @@ How the app builds URLs, performs network calls, logs failures, and shows errors
 
 | Layer | Role |
 |--------|------|
-| `agenticWorkflowsClient.ts` | Instantiate instance, topology, delete, **SSE subscribe** on agentic-workflows API base |
-| `HttpRequestTarget` | `{ url, endpointLabel }` passed into fetch options and stored on streaming stores |
-| `httpRequestTargets.ts` | **Legacy / fixed-base** builders (about, identity badge/policy, OASF, pattern-based transport, agentic pattern chat, documentation paths) |
 | `urls.ts` | Single source for paths, `joinBaseUrl`, `joinHttpRequest`, `LUNGO_FRONTEND_URLS.apiPaths`, exchange / logistics / discovery / agentic-workflows bases |
+| `HttpRequestTarget` | `{ url, endpointLabel }` passed into fetch options and stored on streaming stores |
 | `workflowChatRouting.ts` | **Catalog chat**: agent prompt, prompt stream, suggested prompts from `WorkflowSummary` (`chat_api_target`, `supports_streaming`) |
+| `httpRequestTargets.ts` | **Legacy / fixed-base** builders (about, identity badge/policy, OASF, pattern-based transport, agentic pattern chat, documentation paths) |
+| `agenticWorkflowsClient.ts` | Instantiate instance, topology, delete, **SSE subscribe** on agentic-workflows API base |
+
+<!-- alphabetize-exempt: layers run from the URL source of truth down to the API client, the order the request travels -->
 
 `endpointLabel` is usually the relative path (e.g. `/agent/prompt`, `/identity-apps/{slug}/badge`). Composite flows use **logical labels** documented in `urls.ts` (e.g. `agentic-workflows/bootstrap`, `agentic-workflows/sse`) when no single `apiPath` describes the operation.
 

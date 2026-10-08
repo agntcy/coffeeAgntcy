@@ -15,10 +15,12 @@ Every generated `.py` file starts with:
 
 | OpenAPI | Python |
 |---------|--------|
-| `operationId: getWorkflowInstanceState` | Handler `get_workflow_instance_state` |
-| `operationId: listPatterns` | Handler `list_patterns` |
-| Schema name `WorkflowSummaryMapResponse` | Class `WorkflowSummaryMapResponse` (kept verbatim) |
 | Tag `agentic-workflows` | Package `api/agentic_workflows/`, function `create_agentic_workflows_router` |
+| `operationId: listPatterns` | Handler `list_patterns` |
+| `operationId: getWorkflowInstanceState` | Handler `get_workflow_instance_state` |
+| Schema name `WorkflowSummaryMapResponse` | Class `WorkflowSummaryMapResponse` (kept verbatim) |
+
+<!-- alphabetize-exempt: examples run from the tag down to schema names, mirroring the generated layout -->
 
 Convert `operationId` from camelCase to snake_case for the handler name; keep schema names exactly as the OpenAPI uses them.
 
