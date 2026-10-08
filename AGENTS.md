@@ -71,8 +71,8 @@ regenerates these) - not hand-authored like the skills above. See the
 Grouped by concern, same reasoning as Skills above. `bash-script-testing`,
 `helm-chart-version-bump`, `markdown-link-integrity`, `no-em-en-dashes`,
 `pinned-external-references`, `shell-script-linting`, `uv-lock-sync`,
-`workflow-file-linting`, and `workflow-least-privilege`are enforced
-in CI; the rest rely on being applied by judgment.
+`workflow-file-linting`, and `workflow-least-privilege` are enforced in
+CI; the rest rely on being applied by judgment.
 
 ### Meta (how this repo builds its own tooling)
 

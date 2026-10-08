@@ -5,17 +5,18 @@ tasks:
     desc: >-
       Run every standing check in this repo in parallel (dashes, shell
       lint, workflow lint, workflow permissions, markdown links, pinned
-      references, Helm chart version bumps, pipeline exceptions, uv.lock sync, bash tests,
-      bash test coverage), never failing fast
+      references, Helm chart version bumps, pipeline exceptions, uv.lock
+      sync, bash tests, bash test coverage), never failing fast
       (see .agents/rules/meta/repo-operation-pipeline.md).
     summary: |
       Usage:   task check:all
       Example: task check:all
       Runs dashes:check, shell:lint, workflows:lint,
       workflows:check-permissions, links:check, pins:check,
-      helm:check-versions, pipeline:check-exceptions, locks:check, tests:bash, and
-      tests:coverage together and reports a pass/fail table. What the "Checks" CI workflow runs
-      after a single tooling bootstrap. See scripts/checks/check_all.bash.
+      helm:check-versions, pipeline:check-exceptions, locks:check,
+      tests:bash, and tests:coverage together and reports a pass/fail
+      table. What the "Checks" CI workflow runs after a single tooling
+      bootstrap. See scripts/checks/check_all.bash.
     cmds:
       - scripts/checks/check_all.bash
 
@@ -97,20 +98,6 @@ tasks:
     cmds:
       - scripts/checks/check_markdown_links.bash
 
-  renovate:sync:
-    desc: >-
-      Run renovate to sync dependency update PRs for this repo.
-    summary: |
-      Usage:   task renovate:sync
-      Example: task renovate:sync
-      Runs the repo-local renovate binary (installed into .tools/bin by
-      scripts/setup.sh at the version pinned in scripts/lib/versions.sh).
-      Behavior is driven entirely by renovate.json and the RENOVATE_*/
-      GITHUB_COM_TOKEN env vars set by the caller - see
-      .github/workflows/dependencies.yaml, the only caller today.
-    cmds:
-      - renovate
-
   locks:check:
     desc: >-
       Check that every pyproject.toml has a sibling uv.lock that is in sync
@@ -124,6 +111,20 @@ tasks:
       named directory. See scripts/checks/check_uv_locks.bash.
     cmds:
       - scripts/checks/check_uv_locks.bash
+
+  renovate:sync:
+    desc: >-
+      Run renovate to sync dependency update PRs for this repo.
+    summary: |
+      Usage:   task renovate:sync
+      Example: task renovate:sync
+      Runs the repo-local renovate binary (installed into .tools/bin by
+      scripts/setup.sh at the version pinned in scripts/lib/versions.sh).
+      Behavior is driven entirely by renovate.json and the RENOVATE_*/
+      GITHUB_COM_TOKEN env vars set by the caller - see
+      .github/workflows/dependencies.yaml, the only caller today.
+    cmds:
+      - renovate
 
   pins:check:
     desc: >-
@@ -157,8 +158,8 @@ tasks:
   setup:
     desc: >-
       Install/update the repo-local toolchain (task, actionlint,
-      shellcheck, shfmt, bats, uv, node, openspec, renovate) to the pinned versions
-      in scripts/lib/versions.sh.
+      shellcheck, shfmt, bats, uv, node, openspec, renovate) to the pinned
+      versions in scripts/lib/versions.sh.
     summary: |
       Usage:   task setup
       Example: task setup && source scripts/env.sh

@@ -111,7 +111,7 @@ write_all_passing_fakes() {
     [[ "$output" == *"FAIL: tests:coverage (exit 1)"* ]]
 
     # The checks that didn't fail still ran to completion and still
-    # show PASS - all ten checks are accounted for regardless of how
+    # show PASS - all eleven checks are accounted for regardless of how
     # many of their siblings failed.
     [[ "$output" == *"PASS: shell:lint"* ]]
     [[ "$output" == *"PASS: workflows:lint"* ]]

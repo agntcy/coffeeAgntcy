@@ -2,10 +2,10 @@
 name: setup-repo-tooling
 description: >-
   Bootstraps this repo's toolchain (task, actionlint, shellcheck, shfmt,
-  node, openspec) into repo-local .tools/bin and .tools/node/bin
+  bats, uv, node, openspec) into repo-local .tools/bin and .tools/node/bin
   directories and puts both on PATH for the session. Use before running any
   other task in this repo, or whenever `task`, `actionlint`, `shellcheck`,
-  `shfmt`, `node`, `npm`, or `openspec` are reported as not found.
+  `shfmt`, `bats`, `uv`, `node`, `npm`, or `openspec` are reported as not found.
 ---
 
 # Set up repo tooling
@@ -14,8 +14,9 @@ description: >-
 
 Before doing anything else in this repo, or when a command fails with
 `task: command not found` / `actionlint: command not found` / `shellcheck:
-command not found` / `shfmt: command not found` / `node: command not
-found` / `npm: command not found` / `openspec: command not found`.
+command not found` / `shfmt: command not found` / `uv: command not
+found` / `node: command not found` / `npm: command not found` /
+`openspec: command not found`.
 
 This skill is the one deliberate exception to the script -> Taskfile task
 -> skill hierarchy described in
@@ -27,10 +28,10 @@ because `task` itself doesn't exist yet on a fresh clone - bootstrapping it
 ## What it does
 
 `scripts/setup.sh` installs `task`, `actionlint`, `shellcheck`, `shfmt`,
-`bats`, `uv`, `node`, and `openspec` into `.tools/` - inside this repo only, never the
-user's global PATH, shell profile, or home directory - and is safe to
-re-run any time (it's a no-op if everything is already present at its
-pinned version, per
+`bats`, `uv`, `node`, and `openspec` into `.tools/` - inside this repo
+only, never the user's global PATH, shell profile, or home directory - and
+is safe to re-run any time (it's a no-op if everything is already
+present at its pinned version, per
 [`.agents/rules/meta/pinned-tool-versions.md`](../../../rules/meta/pinned-tool-versions.md)).
 If neither `curl` nor `wget` is present, it installs `curl` itself via
 whatever OS package manager is already on the machine (or prints manual
@@ -59,7 +60,7 @@ entry point runs the identical idempotent script.
 
 ## Rules
 
-- Never hand-install `task`/`actionlint`/`shellcheck`/`shfmt`/`node` some
+- Never hand-install `task`/`actionlint`/`shellcheck`/`shfmt`/`bats`/`uv`/`node` some
   other way (Homebrew, apt, nvm, a differently pinned curl command) -
   always go through `scripts/setup.sh` so the version pinned in
   [`scripts/lib/versions.sh`](../../../../scripts/lib/versions.sh) is what

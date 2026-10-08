@@ -157,6 +157,16 @@ or removing any file. See
 for the full rule. Runs as part of `task check:all` and the `Checks`
 workflow.
 
+#### uv lockfiles
+
+Every `pyproject.toml` must have a sibling `uv.lock` that is in sync with it
+(`task locks:check`): after changing a Python dependency, run `uv lock` in
+that project's directory and commit the updated `uv.lock` in the same pull
+request. See
+[`.agents/rules/quality/uv-lock-sync.md`](/.agents/rules/quality/uv-lock-sync.md)
+for the full rule. Runs as part of `task check:all` and the `Checks`
+workflow.
+
 ## Other Ways to Contribute
 
 We welcome anyone that wants to contribute to `coffeeAgntcy` to triage and

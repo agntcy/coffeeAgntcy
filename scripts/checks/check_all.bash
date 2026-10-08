@@ -2,12 +2,12 @@
 # Runs every standing check in this repo - dash/hyphen check, shell script
 # lint+format, workflow file lint, workflow permission scoping, markdown
 # link integrity, pinned external references, the Helm chart version-bump
-# check, the repo-operation-pipeline exceptions audit, uv.lock sync, 
+# check, the repo-operation-pipeline exceptions audit, uv.lock sync,
 # the bash test suite, and the bash test coverage audit - in parallel,
-# always running all of them regardless of earlier
-# failures, then fails if any did. Each check's output is captured to its
-# own log file (so concurrent output never interleaves), printed in a
-# fixed order, followed by a result table.
+# always running all of them regardless of earlier failures, then fails
+# if any did. Each check's output is captured to its own log file (so
+# concurrent output never interleaves), printed in a fixed order,
+# followed by a result table.
 #
 # This is what task check:all runs, and what the "Checks" CI workflow runs
 # after a single tooling bootstrap, instead of each check re-bootstrapping

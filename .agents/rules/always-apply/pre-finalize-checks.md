@@ -23,7 +23,7 @@ or opening a PR - run whichever of these apply to what changed:
 | A new or changed `.agents/skills/*/SKILL.md`, or `repo-operation-pipeline.md`'s "Known exceptions" list | `task pipeline:check-exceptions` |
 | A `pyproject.toml` dependency or `uv.lock` | `task locks:check` |
 | A moved, renamed, or removed file, or an edited markdown link | `task links:check` |
-| Unsure, or several of the above | `task check:all` (runs all ten, never fails fast, reports which passed/failed) |
+| Unsure, or several of the above | `task check:all` (runs all eleven, never fails fast, reports which passed/failed) |
 
 This is deliberately **not** a pre-push git hook - nothing in this repo
 installs one, and none should be added without the user asking for it. It's
