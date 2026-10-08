@@ -10,10 +10,11 @@
 #   source scripts/env.sh   # put .tools/bin, .tools/node/bin, and .tools/bats/bin on PATH for this shell session
 #
 # CI (see checks.yaml and ci-gate.yaml) passes --lint-only: neither
-# required workflow runs openspec, so CI skips the node/openspec install
-# and only bootstraps the lint binaries (task, actionlint, shellcheck,
-# shfmt) plus bats (needed by the bash test suite, which does run under
-# --lint-only) and uv (needed by the uv.lock sync check).
+# required workflow runs openspec or renovate, so CI skips the
+# node/openspec/renovate install and only bootstraps the lint binaries
+# (task, actionlint, shellcheck, shfmt) plus bats (needed by the bash test
+# suite, which does run under --lint-only) and uv (needed by the uv.lock
+# sync check).
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"

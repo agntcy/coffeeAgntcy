@@ -163,10 +163,10 @@ tasks:
     summary: |
       Usage:   task setup
       Example: task setup && source scripts/env.sh
-      Installs into .tools/bin/ and .tools/node/ (gitignored), never
+      Installs into .tools/bin/, .tools/bats/ and .tools/node/ (gitignored), never
       touching the global PATH, shell profile, or home directory. CI uses
       './scripts/setup.sh --lint-only' instead, which skips
-      node/openspec/renovate. See scripts/setup.sh.
+      node/openspec/renovate (bats is still installed). See scripts/setup.sh.
     cmds:
       - ./scripts/setup.sh
 
