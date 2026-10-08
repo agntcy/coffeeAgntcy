@@ -30,7 +30,7 @@ what's already pinned.
 ## Introducing a new tool
 
 ```
-- [ ] 1. Add <TOOL>_VERSION to scripts/lib/versions.sh.
+- [ ] 1. Add <TOOL>_VERSION, with its `# renovate:` annotation line above it, to scripts/lib/versions.sh in alphabetical position (the install blocks in scripts/setup.sh stay in dependency order instead).
 - [ ] 2. Add an install block to scripts/setup.sh, matching the shape of however the tool distributes itself: an official install script piped to sh (like task), a static binary release fetched via FETCH + scripts/lib/platform.sh's OS/arch detection (like actionlint/shellcheck/shfmt), or an npm package installed via the bootstrapped Node's npm --prefix .tools (like openspec - see how node/openspec are wired for the shape of a tool that needs its own runtime first). Guard it the same way every existing block is guarded - see the pinned-tool-versions rule.
 - [ ] 3. Wire whatever new script/task actually needs the tool - see the add-repo-operation skill if this is for a brand-new operation.
 - [ ] 4. Update every place the toolchain is named: CONTRIBUTING.md, AGENTS.md, .agents/skills/repo-tooling/setup-repo-tooling/SKILL.md's tool list, Taskfile.yaml's setup task description.

@@ -34,6 +34,7 @@ start_check() {
     pids+=("$!")
 }
 
+# Listed in the order the report prints, not alphabetically.
 start_check "dashes:check" "$SCRIPT_DIR/check_dashes.bash"
 start_check "shell:lint" "$LINT_DIR/lint_shell.bash"
 start_check "workflows:lint" "$LINT_DIR/lint_workflows.bash"

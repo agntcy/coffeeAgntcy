@@ -8,13 +8,13 @@ The contracts described here are **published in-repo**. This document is a guide
 
 | Contract | File |
 | --- | --- |
+| Event-type enum JSON Schema | [`../schema/jsonschemas/event_type_v1.json`](../schema/jsonschemas/event_type_v1.json) |
+| FastAPI router (implementation) | [`../api/agentic_workflows/router.py`](../api/agentic_workflows/router.py) |
 | OpenAPI 3.1 spec (root) | [`../schema/openapi/openapi.yaml`](../schema/openapi/openapi.yaml) |
 | OpenAPI path items | [`../schema/openapi/paths/agentic-workflows.yaml`](../schema/openapi/paths/agentic-workflows.yaml) |
 | OpenAPI shared schemas | [`../schema/openapi/components/schemas.yaml`](../schema/openapi/components/schemas.yaml) |
-| **Workflow-instance state JSON Schema** (`event_v1`) | [`../schema/jsonschemas/event_v1.json`](../schema/jsonschemas/event_v1.json) |
-| Event-type enum JSON Schema | [`../schema/jsonschemas/event_type_v1.json`](../schema/jsonschemas/event_type_v1.json) |
 | Pydantic mirror of the schema | [`../schema/types/event.py`](../schema/types/event.py) |
-| FastAPI router (implementation) | [`../api/agentic_workflows/router.py`](../api/agentic_workflows/router.py) |
+| **Workflow-instance state JSON Schema** (`event_v1`) | [`../schema/jsonschemas/event_v1.json`](../schema/jsonschemas/event_v1.json) |
 
 Examples of complete and partial messages live alongside the schema:
 
@@ -34,13 +34,13 @@ All identifiers are opaque URI strings with a scheme prefix wrapping a UUID. The
 
 | Kind | Scheme | Example |
 | --- | --- | --- |
-| Event | `event://` | `event://6ba7b811-9dad-11d1-80b4-00c04fd430c8` |
-| Correlation | `correlation://` | `correlation://6ba7b810-9dad-11d1-80b4-00c04fd430c8` |
-| Workflow instance | `instance://` | `instance://6ba7b817-9dad-11d1-80b4-00c04fd430c8` |
-| Graph node | `node://` | `node://6ba7b812-9dad-11d1-80b4-00c04fd430c8` |
-| Graph edge | `edge://` | `edge://6ba7b815-9dad-11d1-80b4-00c04fd430c8` |
-| Stable agent id | `agent://` | `agent://470de4a0-a6bc-5e1b-82dd-e41de2af3f85` |
 | Chat session | `session://` | `session://550e8400-e29b-41d4-a716-446655440000` |
+| Correlation | `correlation://` | `correlation://6ba7b810-9dad-11d1-80b4-00c04fd430c8` |
+| Event | `event://` | `event://6ba7b811-9dad-11d1-80b4-00c04fd430c8` |
+| Graph edge | `edge://` | `edge://6ba7b815-9dad-11d1-80b4-00c04fd430c8` |
+| Graph node | `node://` | `node://6ba7b812-9dad-11d1-80b4-00c04fd430c8` |
+| Stable agent id | `agent://` | `agent://470de4a0-a6bc-5e1b-82dd-e41de2af3f85` |
+| Workflow instance | `instance://` | `instance://6ba7b817-9dad-11d1-80b4-00c04fd430c8` |
 
 **Path vs. payload identifiers.** Instance-scoped routes take a **bare UUID** in the URL path (`WorkflowInstancePathId`, e.g. `/agentic-workflows/Publish%20Subscribe/instances/6ba7b817-9dad-11d1-80b4-00c04fd430c8/`). JSON payloads and response fields always use the full `instance://<uuid>` URI (`InstanceId`). The server converts between the two.
 
@@ -92,6 +92,8 @@ The standalone service listens on `:9105` ([`../api/agentic_workflows/server.py`
 | Delete instance | `DELETE /agentic-workflows/{workflow_name}/instances/{workflow_instance_id}/` | `202` / `204` |
 | **(internal)** Post state update event | `POST /agentic-workflows/{workflow_name}/instances/{workflow_instance_id}/events/` | `204` |
 | SSE stream of instance events | `GET /agentic-workflows/{workflow_name}/instances/{workflow_instance_id}/events/stream` | `text/event-stream` |
+
+<!-- alphabetize-exempt: endpoints follow the API flow (catalog, list, instantiate, state, delete, stream), not alphabetical order -->
 
 Beyond the core instance lifecycle rows above, the implementation also exposes `GET /agentic-workflows/{workflow_name}/documentation/` and `POST /patterns/{name}/chat`.
 
@@ -252,11 +254,11 @@ Documented `type` values (1.2.1):
 | `type` | Shape | Notes |
 | --- | --- | --- |
 | `agent` | this repo: agent extension | Catalog agents, A2A/recruiter/discovery agents. Schema still accepts this tag without the extension. |
-| `mcp` | this repo: agent extension | Same shape as `agent` (OASF record + `agent_record_uri`). Distinct from edge `$defs.mcp`. Schema still accepts this tag without the extension. |
+| `customNode` | leftover | Presence of `agent_record_uri` / `stable_agent_id` still selects the agent shape. |
 | `directory` | base (no extension) | Directory card. |
 | `group` | base | Group container. |
+| `mcp` | this repo: agent extension | Same shape as `agent` (OASF record + `agent_record_uri`). Distinct from edge `$defs.mcp`. Schema still accepts this tag without the extension. |
 | `transport` | base | Message-transport node. |
-| `customNode` | leftover | Presence of `agent_record_uri` / `stable_agent_id` still selects the agent shape. |
 | `transportNode` | leftover | Alias of `transport`. |
 
 JSON Schema does **not** require the agent extension when `type` is `agent` or `mcp` (those strings were already valid open tags). This repo's emitters write the extension on those nodes, and its Pydantic discriminator routes `type=agent`/`mcp` to the agent shape. `directory` / `group` / `transport` do not use the extension. 1.0.0-1.2.0 payloads that still emit `customNode` / `transportNode` remain valid.
@@ -272,9 +274,9 @@ An **agent node** (`#/$defs/agent_node`) additionally carries `agent_record_uri`
 | Wire field | OASF annotation |
 |------------|-----------------|
 | `agent_directory_cid` | `lungo.agentDirectoryCid` |
-| `identity_app_slug` | `lungo.identityAppSlug` |
 | `has_badge_override` | `lungo.hasBadgeOverride` (`"true"` / `"false"`) |
 | `has_policy_override` | `lungo.hasPolicyOverride` |
+| `identity_app_slug` | `lungo.identityAppSlug` |
 | `verification_status_override` | `lungo.verificationStatusOverride` |
 
 **Transport nodes** (`type: transport` or leftover `transportNode`) when catalog `chat_api_target` is `exchange` or `logistics`:

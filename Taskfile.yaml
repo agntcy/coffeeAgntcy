@@ -112,20 +112,6 @@ tasks:
     cmds:
       - scripts/checks/check_uv_locks.bash
 
-  renovate:sync:
-    desc: >-
-      Run renovate to sync dependency update PRs for this repo.
-    summary: |
-      Usage:   task renovate:sync
-      Example: task renovate:sync
-      Runs the repo-local renovate binary (installed into .tools/bin by
-      scripts/setup.sh at the version pinned in scripts/lib/versions.sh).
-      Behavior is driven entirely by renovate.json and the RENOVATE_*/
-      GITHUB_COM_TOKEN env vars set by the caller - see
-      .github/workflows/dependencies.yaml, the only caller today.
-    cmds:
-      - renovate
-
   pins:check:
     desc: >-
       Check that every third-party action/reusable-workflow/image
@@ -155,6 +141,21 @@ tasks:
     cmds:
       - scripts/checks/check_pipeline_exceptions.bash
 
+  renovate:sync:
+    desc: >-
+      Run renovate to sync dependency update PRs for this repo.
+    summary: |
+      Usage:   task renovate:sync
+      Example: task renovate:sync
+      Runs the repo-local renovate binary (installed into .tools/bin by
+      scripts/setup.sh at the version pinned in scripts/lib/versions.sh).
+      Behavior is driven entirely by renovate.json and the RENOVATE_*/
+      GITHUB_COM_TOKEN env vars set by the caller - see
+      .github/workflows/renovate.yaml, the only caller today. See
+      scripts/renovate/sync_renovate.bash.
+    cmds:
+      - scripts/renovate/sync_renovate.bash
+
   setup:
     desc: >-
       Install/update the repo-local toolchain (task, actionlint,
@@ -163,10 +164,10 @@ tasks:
     summary: |
       Usage:   task setup
       Example: task setup && source scripts/env.sh
-      Installs into .tools/bin/ and .tools/node/ (gitignored), never
+      Installs into .tools/bin/, .tools/bats/ and .tools/node/ (gitignored), never
       touching the global PATH, shell profile, or home directory. CI uses
       './scripts/setup.sh --lint-only' instead, which skips
-      node/openspec/renovate. See scripts/setup.sh.
+      node/openspec/renovate (bats is still installed). See scripts/setup.sh.
     cmds:
       - ./scripts/setup.sh
 

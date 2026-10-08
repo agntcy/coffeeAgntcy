@@ -13,6 +13,8 @@ This document explains how to run the logistics multi-agent conversation locally
 | Accountant Agent    | `agents/logistics/accountant/server.py` | Confirms payment (`PAYMENT_COMPLETE`)                           |
 | Tatooine Farm Agent | `agents/logistics/farm/server.py`       | Moves order to `HANDOVER_TO_SHIPPER` after `RECEIVED_ORDER`     |
 
+<!-- alphabetize-exempt: rows list the supervisor first, then the agents in the order they act in the workflow -->
+
 ---
 
 ## 2. Order Lifecycle
@@ -34,6 +36,8 @@ Sequence (agent → state produced):
 | `HANDOVER_TO_SHIPPER` | `CUSTOMS_CLEARANCE`   | Shipper Agent     |
 | `CUSTOMS_CLEARANCE`   | `PAYMENT_COMPLETE`    | Accountant Agent  |
 | `PAYMENT_COMPLETE`    | `DELIVERED`           | Shipper Agent     |
+
+<!-- alphabetize-exempt: rows follow the conversation lifecycle, in the order the states occur -->
 
 ### Flow (ASCII)
 

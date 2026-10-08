@@ -165,8 +165,8 @@ You can implement a farm with different frameworks, as long as it produces the s
 When adding a new farm, you can copy an existing farm directory as a starting point and adjust:
 - `agent.py`
 - `agent_executor.py`
-- `farm_server.py`
 - `card.py`
+- `farm_server.py`
 
 ### Adding Tracing Support
 

@@ -2,10 +2,11 @@
 name: setup-repo-tooling
 description: >-
   Bootstraps this repo's toolchain (task, actionlint, shellcheck, shfmt,
-  bats, uv, node, openspec) into repo-local .tools/bin and .tools/node/bin
-  directories and puts both on PATH for the session. Use before running any
-  other task in this repo, or whenever `task`, `actionlint`, `shellcheck`,
-  `shfmt`, `bats`, `uv`, `node`, `npm`, or `openspec` are reported as not found.
+  bats, uv, node, openspec, renovate) into repo-local .tools/bin,
+  .tools/bats/bin and .tools/node/bin directories and puts them on PATH
+  for the session. Use before running any other task in this repo, or
+  whenever `task`, `actionlint`, `shellcheck`, `shfmt`, `bats`, `uv`,
+  `node`, `npm`, `openspec`, or `renovate` are reported as not found.
 ---
 
 # Set up repo tooling
@@ -14,9 +15,10 @@ description: >-
 
 Before doing anything else in this repo, or when a command fails with
 `task: command not found` / `actionlint: command not found` / `shellcheck:
-command not found` / `shfmt: command not found` / `uv: command not
-found` / `node: command not found` / `npm: command not found` /
-`openspec: command not found`.
+command not found` / `shfmt: command not found` / `bats: command not
+found` / `uv: command not found` / `node: command not found` / `npm:
+command not found` / `openspec: command not found` / `renovate: command
+not found`.
 
 This skill is the one deliberate exception to the script -> Taskfile task
 -> skill hierarchy described in
@@ -28,29 +30,31 @@ because `task` itself doesn't exist yet on a fresh clone - bootstrapping it
 ## What it does
 
 `scripts/setup.sh` installs `task`, `actionlint`, `shellcheck`, `shfmt`,
-`bats`, `uv`, `node`, and `openspec` into `.tools/` - inside this repo
-only, never the user's global PATH, shell profile, or home directory - and
-is safe to re-run any time (it's a no-op if everything is already
-present at its pinned version, per
+`bats`, `uv`, `node`, `openspec`, and `renovate` into `.tools/` - inside this repo only, never the
+user's global PATH, shell profile, or home directory - and is safe to
+re-run any time (it's a no-op if everything is already present at its
+pinned version, per
 [`.agents/rules/meta/pinned-tool-versions.md`](../../../rules/meta/pinned-tool-versions.md)).
 If neither `curl` nor `wget` is present, it installs `curl` itself via
 whatever OS package manager is already on the machine (or prints manual
 instructions if it can't).
 
-`openspec` (`@fission-ai/openspec`) ships as an npm package rather than a
-standalone binary, so `setup.sh` bootstraps its own pinned Node.js first
-and installs `openspec` with that Node's `npm`. Node lands in
+`openspec` (`@fission-ai/openspec`) and `renovate` ship as npm packages
+rather than standalone binaries, so `setup.sh` bootstraps its own pinned
+Node.js first and installs both with that Node's `npm`. Node lands in
 `.tools/node/` rather than the flat `.tools/bin/`, because its `npm`/`npx`
 are symlinks resolved relative to a sibling `lib/node_modules/npm/` and
 can't be moved independently of that directory the way every other tool's
 single relocatable binary can - `scripts/env.sh` puts both `.tools/bin`
-and `.tools/node/bin` on PATH to cover it.
+and `.tools/node/bin` on PATH to cover it. `bats` likewise ships as a
+`bin/` + `libexec/` + `lib/` tree, so it lands in `.tools/bats/`, whose
+`bin/` `scripts/env.sh` also puts on PATH.
 
 ## Steps
 
 ```
 - [ ] 1. Run: ./scripts/setup.sh
-- [ ] 2. Run: source scripts/env.sh   (puts .tools/bin and .tools/node/bin on PATH for this shell)
+- [ ] 2. Run: source scripts/env.sh   (puts .tools/bin, .tools/node/bin and .tools/bats/bin on PATH for this shell)
 - [ ] 3. Confirm: task --list         (should print every task with no errors)
 ```
 

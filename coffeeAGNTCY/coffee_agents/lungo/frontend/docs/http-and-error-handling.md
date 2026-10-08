@@ -21,6 +21,8 @@ How the app builds URLs, performs network calls, logs failures, and shows errors
 | `httpRequestTargets.ts` | **Legacy / fixed-base** builders (about, identity badge/policy, OASF, pattern-based transport, agentic pattern chat, documentation paths) |
 | `agenticWorkflowsClient.ts` | Instantiate instance, topology, delete, **SSE subscribe** on agentic-workflows API base |
 
+<!-- alphabetize-exempt: layers run from the URL source of truth down to the API client, the order the request travels -->
+
 `endpointLabel` is usually the relative path (e.g. `/agent/prompt`, `/identity-apps/{slug}/badge`). Composite flows use **logical labels** documented in `urls.ts` (e.g. `agentic-workflows/bootstrap`, `agentic-workflows/sse`) when no single `apiPath` describes the operation.
 
 ---
@@ -78,6 +80,8 @@ Graph modals call `fetch*` without a request argument; on failure they use the m
 | Identity / OASF modals | `IdentityApi` / `DirectoryApi` → `fetchJson` | `reportRequestError(*Request(...).endpointLabel, …)` in modal `catch` | Modal `LoadingErrorState` |
 | About (Info modal) | inline `fetchJson` | `reportRequestError(request.endpointLabel, …)` | Modal error text |
 | React tree | `ErrorBoundary` | `reportUiError` | Full-page / inline fallback |
+
+<!-- alphabetize-exempt: rows follow the order a user meets each request area in the app -->
 
 ---
 
@@ -226,6 +230,8 @@ All values live in **`src/config/requestRetryPolicy.ts`** with the rationale for
 | SSE reconnect | 6 per outage | 250ms x attempt | n/a |
 | Chat prompt (`withRetry`) | 4 | 1s, 2s, 4s | 60s default |
 | Suggested prompts | 4 | 5s flat | 60s default |
+
+<!-- alphabetize-exempt: rows follow the order a user meets each flow in the app -->
 
 Three rules matter more than the numbers:
 

@@ -205,6 +205,8 @@ docker compose -f docker/docker-compose.yaml up -d postgres zot dir-api-server d
 | `tests/integration/llm/` | Docker + LLM credentials (needs `.env`) |
 | `tests/integration/helpers/` | Docker/process helpers (not collected as tests) |
 
+<!-- alphabetize-exempt: directories follow the test-tree hierarchy (parent before children) -->
+
 ### Run tests
 
 From the recruiter package root:
@@ -236,9 +238,9 @@ uv run pytest tests/integration/live/test_sample_agent_card.py -v
 
 | Test File | Description |
 |-----------|-------------|
+| `tests/integration/live/test_sample_agent_card.py` | Sample agent card smoke test |
 | `tests/integration/llm/test_a2a.py` | A2A server integration tests (search, streaming, evaluation flow) |
 | `tests/integration/llm/test_agent_evaluator_llm.py` | Agent evaluation scenario tests (LLM) |
-| `tests/integration/live/test_sample_agent_card.py` | Sample agent card smoke test |
 
 ## Claude Code Plugin
 

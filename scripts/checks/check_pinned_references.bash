@@ -23,7 +23,7 @@
 # third-party references, so `:latest` there is normal dev-compose usage,
 # not a gap this check should flag.
 #
-# Usage: scripts/check_pinned_references.bash
+# Usage: scripts/checks/check_pinned_references.bash
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"

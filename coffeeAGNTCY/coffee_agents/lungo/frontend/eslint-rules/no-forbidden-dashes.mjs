@@ -3,7 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  *
  * Forbid en dash (U+2013) and em dash (U+2014) in source text.
- * Aligns with repo CI: .github/workflows/source-lint.yaml (check-forbidden-strings).
+ * Aligns with repo CI: `task dashes:check` (scripts/checks/check_dashes.bash),
+ * run by .github/workflows/checks.yaml.
  * Use ASCII hyphen-minus (-) or rephrase (e.g. semicolon, comma).
  */
 
@@ -17,7 +18,7 @@ export default {
     },
     messages: {
       forbidden:
-        "Forbidden {{name}} ({{code}}). Use ASCII hyphen (-) or rephrase; see repo source-lint forbidden-strings check.",
+        "Forbidden {{name}} ({{code}}). Use ASCII hyphen (-) or rephrase; see the repo dashes:check task.",
     },
     schema: [],
   },

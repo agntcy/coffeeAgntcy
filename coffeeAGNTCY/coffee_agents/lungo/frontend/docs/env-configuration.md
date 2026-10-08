@@ -39,6 +39,8 @@ App code should use `@/urls` helpers (or `env.get`) - not `import.meta.env` dire
 | `deployment/helm/ui/values.yaml` → `configs.env.data` | Kubernetes runtime source for `env-config.js`. |
 | Helm templates | Generate ConfigMap + mount over `/app/dist/env-config.js` in the UI pod. |
 
+<!-- alphabetize-exempt: the files follow the config path: local env, template, stub, index.html, Helm values, Helm templates -->
+
 ---
 
 ## Timeline: `npm run dev` (local Vite)
@@ -167,15 +169,15 @@ Defined in `frontend/.env.example` and mirrored in Helm `values.yaml`:
 
 | Key | Purpose |
 |-----|---------|
-| `VITE_EXCHANGE_APP_API_URL` | Coffee / auction API |
-| `VITE_LOGISTICS_APP_API_URL` | Group messaging / logistics API |
-| `VITE_DISCOVERY_APP_API_URL` | A2A / discovery API |
-| `VITE_AGENTIC_WORKFLOWS_API_URL` | Workflow catalog & graph API |
 | `VITE_AGENTIC_WORKFLOWS_API_KEY` | Workflows API auth |
-| `VITE_GRAFANA_URL` | Grafana dashboard links |
+| `VITE_AGENTIC_WORKFLOWS_API_URL` | Workflow catalog & graph API |
+| `VITE_AGENTIC_WORKFLOWS_DOCS_GITHUB_BRANCH` | Workflow docs links |
 | `VITE_DIRECTORY_SERVER_URL` | Agent directory |
 | `VITE_DIRECTORY_VERSION` | Directory API version |
-| `VITE_AGENTIC_WORKFLOWS_DOCS_GITHUB_BRANCH` | Workflow docs links |
+| `VITE_DISCOVERY_APP_API_URL` | A2A / discovery API |
+| `VITE_EXCHANGE_APP_API_URL` | Coffee / auction API |
+| `VITE_GRAFANA_URL` | Grafana dashboard links |
+| `VITE_LOGISTICS_APP_API_URL` | Group messaging / logistics API |
 
 TypeScript declarations: `src/vite-env.d.ts`.
 

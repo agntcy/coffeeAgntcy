@@ -72,7 +72,7 @@ For detailed information, see these reference files in the `references/` directo
 
 | File | Contents |
 |------|----------|
-| `oasf-structure.md` | OASF record fields, Agent Card fields, HTTP endpoint resolution |
 | `a2a-protocol-cheatsheet.md` | Protocol version detection, method tables, curl templates, response formats |
-| `error-handling.md` | Timeouts, retry policy, structured error format |
 | `dirctl-search.md` | dirctl search and pull command examples |
+| `error-handling.md` | Timeouts, retry policy, structured error format |
+| `oasf-structure.md` | OASF record fields, Agent Card fields, HTTP endpoint resolution |

@@ -629,6 +629,8 @@ _Example prompts:_
 | Check inventory across farms        | Show me the total inventory across all farms.                    |
 | Order Request                       | I need 50 lb of coffee beans from Colombia for 0.50 cents per lb |
 
+<!-- alphabetize-exempt: example prompts run from simple queries to the order request, a deliberate progression -->
+
 **Step 5: Access the UI**
 
 Once backend services are running, start the frontend **locally** (recommended):

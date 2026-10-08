@@ -9,11 +9,16 @@
 #   ./scripts/setup.sh
 #   source scripts/env.sh   # put .tools/bin, .tools/node/bin, and .tools/bats/bin on PATH for this shell session
 #
+# Tools install in dependency order (node before the npm-installed
+# openspec and renovate), not alphabetically; the pins in
+# scripts/lib/versions.sh are the alphabetical list.
+#
 # CI (see checks.yaml and ci-gate.yaml) passes --lint-only: neither
-# required workflow runs openspec, so CI skips the node/openspec install
-# and only bootstraps the lint binaries (task, actionlint, shellcheck,
-# shfmt) plus bats (needed by the bash test suite, which does run under
-# --lint-only) and uv (needed by the uv.lock sync check).
+# required workflow runs openspec or renovate, so CI skips the
+# node/openspec/renovate install and only bootstraps the lint binaries
+# (task, actionlint, shellcheck, shfmt) plus bats (needed by the bash test
+# suite, which does run under --lint-only) and uv (needed by the uv.lock
+# sync check).
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -147,7 +152,7 @@ if [ "$LINT_ONLY" -eq 0 ]; then
     # binary like every other tool above) -- so it gets its own .tools/node/
     # directory instead of joining the flat .tools/bin/, and scripts/env.sh puts
     # .tools/node/bin on PATH alongside .tools/bin. It exists solely to run
-    # openspec below.
+    # the npm-installed openspec and renovate below.
     ARCH_NODE="$(detect_arch_node)"
 
     if [ -x "$NODE_DIR/bin/node" ] && version_matches "$("$NODE_DIR/bin/node" --version)" "$NODE_VERSION"; then

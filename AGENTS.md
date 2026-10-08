@@ -4,9 +4,9 @@
 
 | Topic | File |
 |-------|------|
-| Release notes - version parameters | [.agents/prompts/release-notes/params.yaml](.agents/prompts/release-notes/params.yaml) |
 | Release notes - generation spec | [.agents/prompts/release-notes/PROMPT.md](.agents/prompts/release-notes/PROMPT.md) |
 | Release notes - style references | [.agents/prompts/release-notes/example.md](.agents/prompts/release-notes/example.md) |
+| Release notes - version parameters | [.agents/prompts/release-notes/params.yaml](.agents/prompts/release-notes/params.yaml) |
 
 ## Skills
 
@@ -29,6 +29,7 @@ new one (see `.agents/rules/formatting/organize-large-collections.md`).
 | Generate release notes | [.agents/skills/repo-tooling/generate-release-notes/SKILL.md](.agents/skills/repo-tooling/generate-release-notes/SKILL.md) |
 | Manage repo tooling | [.agents/skills/repo-tooling/manage-repo-tooling/SKILL.md](.agents/skills/repo-tooling/manage-repo-tooling/SKILL.md) |
 | Set up repo tooling | [.agents/skills/repo-tooling/setup-repo-tooling/SKILL.md](.agents/skills/repo-tooling/setup-repo-tooling/SKILL.md) |
+| Sync Renovate | [.agents/skills/repo-tooling/sync-renovate/SKILL.md](.agents/skills/repo-tooling/sync-renovate/SKILL.md) - `task renovate:sync`; run by the Renovate workflow |
 
 ### Quality checks
 

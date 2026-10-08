@@ -82,6 +82,8 @@ The binary handles retries internally and outputs structured errors on failure. 
 | 1 (timeout) | Agent didn't respond in time | Try `--non-blocking --wait` for long tasks. |
 | 1 (protocol error) | JSON-RPC or A2A protocol error | Check the error message in stderr. |
 
+<!-- alphabetize-exempt: rows are ordered by exit code -->
+
 ### Step 5 - Summary
 
 After the interaction is complete, show a clean summary:

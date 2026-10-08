@@ -440,6 +440,6 @@ In this workshop, you:
 
 ### References
 - [AGNTCY App SDK](https://github.com/agntcy/app-sdk)
-- [AGNTCY SLIM](https://github.com/agntcy/slim)
-- [AGNTCY Observe](https://github.com/agntcy/observe)
 - [AGNTCY Identity Service](https://github.com/agntcy/identity-service)
+- [AGNTCY Observe](https://github.com/agntcy/observe)
+- [AGNTCY SLIM](https://github.com/agntcy/slim)

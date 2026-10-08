@@ -17,11 +17,11 @@ Any operation added to this repo - a validation, a check, a piece of build
 automation - should be implemented through the same five layers, in this
 order, each calling the one before it:
 
-1. **Script** (`scripts/<name>.bash`, or `scripts/lib/*.sh` for a shared
+1. **Script** (`scripts/<category>/<name>.bash`, or `scripts/lib/*.sh` for a shared
    helper sourced by other scripts) - the actual implementation.
 2. **Taskfile task** (`Taskfile.yaml`) - wraps exactly one script; this is
    what a human runs by hand.
-3. **Skill** (`.agents/skills/<name>/SKILL.md`) - points an agent at the
+3. **Skill** (`.agents/skills/<category>/<name>/SKILL.md`) - points an agent at the
    task, not the underlying script; this is what an agent invokes.
 4. **CI enforcement** - the same task runs on every push/PR. For every
    check, including one specifically about workflow files, this means
@@ -38,7 +38,7 @@ order, each calling the one before it:
    checks/invariants (something that should always hold); it doesn't
    apply to a purely generative, one-shot action, which has nothing
    standing left to check once it's run.
-5. **Rule** (`.agents/rules/<name>.md`) - documents the convention or
+5. **Rule** (`.agents/rules/<category>/<name>.md`) - documents the convention or
    expectation itself, and cross-links the other four layers. Indexed from
    `AGENTS.md`.
 
@@ -115,6 +115,13 @@ the places to check against.
   [`.agents/rules/meta/pinned-tool-versions.md`](pinned-tool-versions.md)) don't
   need a CI workflow, for the reason given in layer 4 above; they still
   get script, task, and skill layers.
+- **Scheduled generative operations** (`task renovate:sync`, run on a
+  timer by [`renovate.yaml`](../../../.github/workflows/renovate.yaml))
+  get script, task, and skill layers plus their own scheduled workflow -
+  a different execution model, since it acts on the remote repo on a
+  schedule rather than checking an invariant on every push/PR. They have
+  no `task check:all` entry and no separate rule; the `sync-renovate`
+  skill and `renovate.json` are their documentation.
 - **A genuinely different execution model** still warrants its own
   workflow file instead of joining an existing job -
   [`ci-gate.yaml`](../../../.github/workflows/ci-gate.yaml) is the example: it

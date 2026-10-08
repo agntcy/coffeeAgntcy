@@ -22,6 +22,8 @@ The skill follows one consistent layout per OpenAPI **tag**. The tag is the disc
 | Per-tag router function | `create_<tag_snake>_router() -> APIRouter` |
 | OpenAPI entry point | `schema/openapi/openapi.yaml` (may `$ref` `paths/<tag>.yaml` and `components/schemas.yaml`) |
 
+<!-- alphabetize-exempt: rows run from the tag down to the spec entry point, mirroring the generated layout -->
+
 The skill must remain **general** across tags: never hard-code endpoint names, schemas, or counts. Only the layout and naming rules above are fixed.
 
 ## File ownership

@@ -29,6 +29,8 @@ it has every layer:
 | CI enforcement | One of the parallel checks in `scripts/checks/check_all.bash`, run via `task check:all` in `.github/workflows/checks.yaml` |
 | Rule | `.agents/rules/quality/shell-script-linting.md` |
 
+<!-- alphabetize-exempt: layers are the pipeline in execution order (script, task, skill, CI, rule) -->
+
 ## Steps
 
 ```

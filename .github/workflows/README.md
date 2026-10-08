@@ -73,6 +73,9 @@ Reusable workflow called by `docker-build-push.yaml` for each matrix entry. Acce
 | `push` | Whether to push to GHCR (default: false) |
 | `platforms` | Target platforms (default: linux/amd64,linux/arm64) |
 | `extra_build_args` | Additional newline-separated KEY=value build args (optional) |
+| `target` | Target build stage for multi-stage builds; empty builds the last stage (optional) |
+
+<!-- alphabetize-exempt: reusable-workflow inputs list required inputs first, then optional ones, not alphabetical -->
 
 The job has `timeout-minutes: 90` - historically, hung builds here ran to GitHub's default 6-hour job ceiling before being force-cancelled; 90 minutes gives comfortable headroom over the longest legitimate run (~28 min) while failing fast on a genuine hang.
 
@@ -103,6 +106,8 @@ Reusable workflow called by `helm-push.yaml` for each matrix entry. Accepts:
 | `package_name` | Package name for the chart (required) |
 | `push` | Whether to push to GHCR OCI registry (default: false) |
 
+<!-- alphabetize-exempt: reusable-workflow inputs list required inputs first, then optional ones, not alphabetical -->
+
 The job has `timeout-minutes: 90`, for the same reason as `docker-build-reusable` (longest legitimate run here is ~53 min).
 
 ## test (Python Tests)
@@ -120,6 +125,8 @@ Orchestrates pytest for each changed agent project (`corto`, `lungo`, `recruiter
 | `test_corto`, `test_lungo`, `test_recruiter` | Subproject toggles (workflow_call / dispatch only) |
 | `pip_overrides`, `pip_constraints`, `docker_overrides` | Dependency and image overrides |
 
+<!-- alphabetize-exempt: reusable-workflow inputs list required inputs first, then optional ones, not alphabetical -->
+
 ## test-reusable
 
 Runs `pytest` via `uv` for a single project directory and explicit path list.
@@ -131,6 +138,8 @@ Runs `pytest` via `uv` for a single project directory and explicit path list.
 | `pip_overrides` | PEP 508 specs (one per line) forced into the lock |
 | `pip_constraints` | Constraint lines applied during resolution |
 | `docker_overrides` | Lines `service=image[:tag]` to patch docker-compose service images |
+
+<!-- alphabetize-exempt: reusable-workflow inputs list required inputs first, then optional ones, not alphabetical -->
 
 Example caller:
 

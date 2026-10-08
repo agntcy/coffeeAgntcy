@@ -20,6 +20,8 @@ Every generated `.py` file starts with:
 | `operationId: getWorkflowInstanceState` | Handler `get_workflow_instance_state` |
 | Schema name `WorkflowSummaryMapResponse` | Class `WorkflowSummaryMapResponse` (kept verbatim) |
 
+<!-- alphabetize-exempt: examples run from the tag down to schema names, mirroring the generated layout -->
+
 Convert `operationId` from camelCase to snake_case for the handler name; keep schema names exactly as the OpenAPI uses them.
 
 ## DTO mapping
@@ -106,13 +108,13 @@ class Foo(BaseModel):
 
 | OpenAPI | Pydantic `Field` |
 |---------|------------------|
+| `enum: [...]` | `Literal[...]` or a `StrEnum` subclass |
+| `exclusiveMinimum` / `exclusiveMaximum` | `gt=`, `lt=` |
+| `format: date-time` | `datetime.datetime` |
+| `format: uuid` | `uuid.UUID` (Python type) |
+| `minimum` / `maximum` | `ge=`, `le=` |
 | `minLength` / `maxLength` | `min_length=`, `max_length=` |
 | `pattern` | `pattern=` |
-| `minimum` / `maximum` | `ge=`, `le=` |
-| `exclusiveMinimum` / `exclusiveMaximum` | `gt=`, `lt=` |
-| `format: uuid` | `uuid.UUID` (Python type) |
-| `format: date-time` | `datetime.datetime` |
-| `enum: [...]` | `Literal[...]` or a `StrEnum` subclass |
 
 ### Imports
 
