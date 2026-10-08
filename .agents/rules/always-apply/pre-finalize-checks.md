@@ -21,6 +21,7 @@ or opening a PR - run whichever of these apply to what changed:
 | A file inside a Helm chart directory (`deployment/helm/<chart>/`) | `task helm:check-versions` - see `.agents/rules/quality/helm-chart-version-bump.md` |
 | Any prose you wrote (docs, comments, this list included) | `task dashes:check` - see `.agents/rules/always-apply/no-em-en-dashes.md` |
 | A new or changed `.agents/skills/*/SKILL.md`, or `repo-operation-pipeline.md`'s "Known exceptions" list | `task pipeline:check-exceptions` |
+| A `pyproject.toml` dependency or `uv.lock` | `task locks:check` |
 | A moved, renamed, or removed file, or an edited markdown link | `task links:check` |
 | Unsure, or several of the above | `task check:all` (runs all ten, never fails fast, reports which passed/failed) |
 
@@ -50,6 +51,7 @@ anyone else sees it.
   `.agents/skills/quality-checks/checking-helm-chart-version-bumps/SKILL.md`,
   `.agents/skills/quality-checks/checking-markdown-links/SKILL.md`,
   `.agents/skills/quality-checks/checking-pinned-references/SKILL.md`,
+  `.agents/skills/quality-checks/checking-uv-locks/SKILL.md`,
   `.agents/skills/quality-checks/checking-workflow-permissions/SKILL.md`,
   `.agents/skills/quality-checks/linting-github-workflows/SKILL.md`,
   `.agents/skills/quality-checks/linting-shell-scripts/SKILL.md`, and

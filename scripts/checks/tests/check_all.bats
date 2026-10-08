@@ -41,6 +41,7 @@ write_all_passing_fakes() {
     write_fake "$FIXTURE_REPO/scripts/checks/check_pinned_references.bash" "fake pins output" 0
     write_fake "$FIXTURE_REPO/scripts/checks/check_helm_chart_versions.bash" "fake helm output" 0
     write_fake "$FIXTURE_REPO/scripts/checks/check_pipeline_exceptions.bash" "fake pipeline output" 0
+    write_fake "$FIXTURE_REPO/scripts/checks/check_uv_locks.bash" "fake locks output" 0
     write_fake "$FIXTURE_REPO/scripts/checks/check_bash_tests.bash" "fake bash tests output" 0
     write_fake "$FIXTURE_REPO/scripts/checks/check_bash_test_coverage.bash" "fake coverage output" 0
 }
@@ -59,6 +60,7 @@ write_all_passing_fakes() {
     [[ "$output" == *"PASS: pins:check"* ]]
     [[ "$output" == *"PASS: helm:check-versions"* ]]
     [[ "$output" == *"PASS: pipeline:check-exceptions"* ]]
+    [[ "$output" == *"PASS: locks:check"* ]]
     [[ "$output" == *"PASS: tests:bash"* ]]
     [[ "$output" == *"PASS: tests:coverage"* ]]
 }
@@ -90,6 +92,7 @@ write_all_passing_fakes() {
     [[ "$output" == *"PASS: pins:check"* ]]
     [[ "$output" == *"PASS: helm:check-versions"* ]]
     [[ "$output" == *"PASS: pipeline:check-exceptions"* ]]
+    [[ "$output" == *"PASS: locks:check"* ]]
     [[ "$output" == *"PASS: tests:bash"* ]]
     [[ "$output" == *"PASS: tests:coverage"* ]]
     [[ "$output" != *"All checks passed."* ]]
@@ -116,6 +119,7 @@ write_all_passing_fakes() {
     [[ "$output" == *"PASS: links:check"* ]]
     [[ "$output" == *"PASS: helm:check-versions"* ]]
     [[ "$output" == *"PASS: pipeline:check-exceptions"* ]]
+    [[ "$output" == *"PASS: locks:check"* ]]
     [[ "$output" == *"PASS: tests:bash"* ]]
     [[ "$output" != *"All checks passed."* ]]
 }

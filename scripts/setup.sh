@@ -13,7 +13,7 @@
 # required workflow runs openspec, so CI skips the node/openspec install
 # and only bootstraps the lint binaries (task, actionlint, shellcheck,
 # shfmt) plus bats (needed by the bash test suite, which does run under
-# --lint-only).
+# --lint-only) and uv (needed by the uv.lock sync check).
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -98,6 +98,22 @@ else
     FETCH "https://github.com/mvdan/sh/releases/download/v${SHFMT_VERSION}/shfmt_v${SHFMT_VERSION}_${OS}_${ARCH_GNU}" >"$BIN_DIR/shfmt"
     chmod +x "$BIN_DIR/shfmt"
     echo "shfmt: installed ($("$BIN_DIR/shfmt" --version))"
+fi
+
+# uv ships as a tar.gz holding uv-<triple>/uv (plus uvx). Installed
+# unconditionally (not gated behind --lint-only): `uv lock --check`, run by
+# check_uv_locks.bash, is one of the standing checks in check_all.bash.
+if [ -x "$BIN_DIR/uv" ] && version_matches "$("$BIN_DIR/uv" --version | awk '{print $2}')" "$UV_VERSION"; then
+    echo "uv: already installed ($("$BIN_DIR/uv" --version))"
+else
+    echo "uv: installing $UV_VERSION into $BIN_DIR ..."
+    TRIPLE_UV="$(detect_triple_uv)"
+    TMP_DIR="$(mktemp -d)"
+    FETCH "https://github.com/astral-sh/uv/releases/download/${UV_VERSION}/uv-${TRIPLE_UV}.tar.gz" >"$TMP_DIR/uv.tar.gz"
+    tar -xzf "$TMP_DIR/uv.tar.gz" -C "$TMP_DIR"
+    install "$TMP_DIR/uv-${TRIPLE_UV}/uv" "$BIN_DIR/uv"
+    rm -rf "$TMP_DIR"
+    echo "uv: installed ($("$BIN_DIR/uv" --version))"
 fi
 
 # bats-core ships as a bin/+libexec/+lib/ tree, not a single relocatable

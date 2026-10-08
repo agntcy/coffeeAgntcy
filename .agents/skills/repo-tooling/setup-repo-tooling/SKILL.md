@@ -27,7 +27,7 @@ because `task` itself doesn't exist yet on a fresh clone - bootstrapping it
 ## What it does
 
 `scripts/setup.sh` installs `task`, `actionlint`, `shellcheck`, `shfmt`,
-`node`, and `openspec` into `.tools/` - inside this repo only, never the
+`bats`, `uv`, `node`, and `openspec` into `.tools/` - inside this repo only, never the
 user's global PATH, shell profile, or home directory - and is safe to
 re-run any time (it's a no-op if everything is already present at its
 pinned version, per

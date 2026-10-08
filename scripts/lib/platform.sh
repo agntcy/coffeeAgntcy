@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # OS/arch detection shared by scripts/setup.sh's static-binary installs
-# (actionlint, shellcheck, shfmt, node -- task ships its own installer with
+# (actionlint, shellcheck, shfmt, node, uv -- task ships its own installer with
 # its own detection).
 
 detect_os() {
@@ -48,4 +48,27 @@ detect_arch_node() {
             return 1
             ;;
     esac
+}
+
+# Rust target triple, as used by uv release assets
+# (uv-<triple>.tar.gz, e.g. aarch64-apple-darwin, x86_64-unknown-linux-gnu).
+detect_triple_uv() {
+    local arch os
+    case "$(uname -m)" in
+        x86_64 | amd64) arch=x86_64 ;;
+        arm64 | aarch64) arch=aarch64 ;;
+        *)
+            echo "error: unsupported architecture '$(uname -m)'" >&2
+            return 1
+            ;;
+    esac
+    case "$(uname -s)" in
+        Darwin) os=apple-darwin ;;
+        Linux) os=unknown-linux-gnu ;;
+        *)
+            echo "error: unsupported OS '$(uname -s)'" >&2
+            return 1
+            ;;
+    esac
+    echo "${arch}-${os}"
 }
