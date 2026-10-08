@@ -36,6 +36,19 @@ the narrowest level that still covers every job:
   an existing example of a narrowly scoped block (`contents: read`,
   `actions: read`).
 
+## Accepted baseline: `read-all`
+
+Eight workflows currently declare `permissions: read-all` at workflow
+level (some widen per job where a job needs more): `docker-build-push`,
+`docs`, `fe-ci`, `helm-push`, `python-lint`, `scorecard`, `test`, and
+`test-subprojects-reusable`. This is a deliberate, accepted baseline for
+now - read-only across every scope can't modify anything, and narrowing
+each workflow to named scopes hasn't been done yet. It isn't the target:
+a new workflow should still name only the scopes it uses, and an existing
+one that's edited anyway should be narrowed when its steps are clear
+enough to do so. `task workflows:check-permissions` doesn't flag
+`read-all`, matching this stance.
+
 ## Why
 
 A workflow's `GITHUB_TOKEN` is scoped to the whole repository by default
