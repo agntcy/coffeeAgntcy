@@ -152,7 +152,7 @@ if [ "$LINT_ONLY" -eq 0 ]; then
     # binary like every other tool above) -- so it gets its own .tools/node/
     # directory instead of joining the flat .tools/bin/, and scripts/env.sh puts
     # .tools/node/bin on PATH alongside .tools/bin. It exists solely to run
-    # openspec below.
+    # the npm-installed openspec and renovate below.
     ARCH_NODE="$(detect_arch_node)"
 
     if [ -x "$NODE_DIR/bin/node" ] && version_matches "$("$NODE_DIR/bin/node" --version)" "$NODE_VERSION"; then

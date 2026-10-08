@@ -29,9 +29,10 @@ entirely by [renovate.json](../../../../renovate.json) and the
 `RENOVATE_*` / `GITHUB_COM_TOKEN` environment variables the caller sets;
 neither the task nor the script adds any configuration of its own.
 
-This is a purely generative, one-shot action, not a standing check, so it
-has no CI check layer and isn't part of `task check:all` - see the
-"Known exceptions" in
+This is a generative action, not a standing check, so it isn't part of
+`task check:all`; the `Renovate` workflow runs it on a schedule instead,
+and it has no separate rule. See "Scheduled generative operations" in the
+"Known exceptions" of
 [`.agents/rules/meta/repo-operation-pipeline.md`](../../../rules/meta/repo-operation-pipeline.md).
 
 ## Workflow

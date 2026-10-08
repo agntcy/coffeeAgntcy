@@ -115,6 +115,13 @@ the places to check against.
   [`.agents/rules/meta/pinned-tool-versions.md`](pinned-tool-versions.md)) don't
   need a CI workflow, for the reason given in layer 4 above; they still
   get script, task, and skill layers.
+- **Scheduled generative operations** (`task renovate:sync`, run on a
+  timer by [`renovate.yaml`](../../../.github/workflows/renovate.yaml))
+  get script, task, and skill layers plus their own scheduled workflow -
+  a different execution model, since it acts on the remote repo on a
+  schedule rather than checking an invariant on every push/PR. They have
+  no `task check:all` entry and no separate rule; the `sync-renovate`
+  skill and `renovate.json` are their documentation.
 - **A genuinely different execution model** still warrants its own
   workflow file instead of joining an existing job -
   [`ci-gate.yaml`](../../../.github/workflows/ci-gate.yaml) is the example: it
