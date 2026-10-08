@@ -5,16 +5,18 @@ tasks:
     desc: >-
       Run every standing check in this repo in parallel (dashes, shell
       lint, workflow lint, workflow permissions, markdown links, pinned
-      references, pipeline exceptions, bash tests, bash test coverage),
-      never failing fast (see .agents/rules/meta/repo-operation-pipeline.md).
+      references, Helm chart version bumps, pipeline exceptions, bash
+      tests, bash test coverage), never failing fast
+      (see .agents/rules/meta/repo-operation-pipeline.md).
     summary: |
       Usage:   task check:all
       Example: task check:all
       Runs dashes:check, shell:lint, workflows:lint,
       workflows:check-permissions, links:check, pins:check,
-      pipeline:check-exceptions, tests:bash, and tests:coverage together
-      and reports a pass/fail table. What the "Checks" CI workflow runs
-      after a single tooling bootstrap. See scripts/checks/check_all.bash.
+      helm:check-versions, pipeline:check-exceptions, tests:bash, and
+      tests:coverage together and reports a pass/fail table. What the
+      "Checks" CI workflow runs after a single tooling bootstrap. See
+      scripts/checks/check_all.bash.
     cmds:
       - scripts/checks/check_all.bash
 
@@ -67,6 +69,21 @@ tasks:
       Rewrites files in place. See scripts/checks/fix_dashes.bash.
     cmds:
       - scripts/checks/fix_dashes.bash
+
+  helm:check-versions:
+    desc: >-
+      Check that every Helm chart's version reflects its own latest
+      content change, across its whole history
+      (see .agents/rules/quality/helm-chart-version-bump.md).
+    summary: |
+      Usage:   task helm:check-versions
+      Example: task helm:check-versions
+      Takes no arguments - always checks every chart as of HEAD, not
+      scoped to any release tag. What task check:all and the "Checks" CI
+      workflow run. See scripts/checks/check_helm_chart_versions.bash for
+      what counts as a missing bump.
+    cmds:
+      - scripts/checks/check_helm_chart_versions.bash
 
   links:check:
     desc: >-

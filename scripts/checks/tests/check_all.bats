@@ -39,6 +39,7 @@ write_all_passing_fakes() {
     write_fake "$FIXTURE_REPO/scripts/checks/check_workflow_permissions.bash" "fake permissions output" 0
     write_fake "$FIXTURE_REPO/scripts/checks/check_markdown_links.bash" "fake links output" 0
     write_fake "$FIXTURE_REPO/scripts/checks/check_pinned_references.bash" "fake pins output" 0
+    write_fake "$FIXTURE_REPO/scripts/checks/check_helm_chart_versions.bash" "fake helm output" 0
     write_fake "$FIXTURE_REPO/scripts/checks/check_pipeline_exceptions.bash" "fake pipeline output" 0
     write_fake "$FIXTURE_REPO/scripts/checks/check_bash_tests.bash" "fake bash tests output" 0
     write_fake "$FIXTURE_REPO/scripts/checks/check_bash_test_coverage.bash" "fake coverage output" 0
@@ -56,6 +57,7 @@ write_all_passing_fakes() {
     [[ "$output" == *"PASS: workflows:check-permissions"* ]]
     [[ "$output" == *"PASS: links:check"* ]]
     [[ "$output" == *"PASS: pins:check"* ]]
+    [[ "$output" == *"PASS: helm:check-versions"* ]]
     [[ "$output" == *"PASS: pipeline:check-exceptions"* ]]
     [[ "$output" == *"PASS: tests:bash"* ]]
     [[ "$output" == *"PASS: tests:coverage"* ]]
@@ -86,6 +88,7 @@ write_all_passing_fakes() {
     [[ "$output" == *"PASS: workflows:lint"* ]]
     [[ "$output" == *"PASS: workflows:check-permissions"* ]]
     [[ "$output" == *"PASS: pins:check"* ]]
+    [[ "$output" == *"PASS: helm:check-versions"* ]]
     [[ "$output" == *"PASS: pipeline:check-exceptions"* ]]
     [[ "$output" == *"PASS: tests:bash"* ]]
     [[ "$output" == *"PASS: tests:coverage"* ]]
@@ -105,12 +108,13 @@ write_all_passing_fakes() {
     [[ "$output" == *"FAIL: tests:coverage (exit 1)"* ]]
 
     # The checks that didn't fail still ran to completion and still
-    # show PASS - all nine checks are accounted for regardless of how
+    # show PASS - all ten checks are accounted for regardless of how
     # many of their siblings failed.
     [[ "$output" == *"PASS: shell:lint"* ]]
     [[ "$output" == *"PASS: workflows:lint"* ]]
     [[ "$output" == *"PASS: workflows:check-permissions"* ]]
     [[ "$output" == *"PASS: links:check"* ]]
+    [[ "$output" == *"PASS: helm:check-versions"* ]]
     [[ "$output" == *"PASS: pipeline:check-exceptions"* ]]
     [[ "$output" == *"PASS: tests:bash"* ]]
     [[ "$output" != *"All checks passed."* ]]
