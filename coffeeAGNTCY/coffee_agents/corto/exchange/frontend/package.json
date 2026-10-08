@@ -34,12 +34,11 @@
     "uuid": "11.1.1"
   },
   "devDependencies": {
-    "@playwright/test": "1.58.2",
     "@eslint/js": "9.32.0",
+    "@playwright/test": "1.58.2",
     "@types/node": "24.1.0",
     "@types/react": "19.1.9",
     "@types/react-dom": "19.1.7",
-    "@types/uuid": "10.0.0",
     "@typescript-eslint/eslint-plugin": "8.40.0",
     "@typescript-eslint/parser": "8.40.0",
     "@vitejs/plugin-react": "4.7.0",
