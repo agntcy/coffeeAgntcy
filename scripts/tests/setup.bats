@@ -23,13 +23,15 @@ setup() {
     ASSETS="$BATS_TEST_TMPDIR/assets"
     CURL_LOG="$BATS_TEST_TMPDIR/curl.log"
     mkdir -p "$FIXTURE_ROOT/scripts/lib" "$ASSETS"
+    cp -R "$REAL_SCRIPTS_DIR/lib/npm-tools" "$FIXTURE_ROOT/scripts/lib/npm-tools"
     : >"$CURL_LOG"
 
     cp "$REAL_SCRIPTS_DIR/setup.sh" "$FIXTURE_ROOT/scripts/setup.sh"
-    cp "$REAL_SCRIPTS_DIR/lib/versions.sh" "$REAL_SCRIPTS_DIR/lib/fetch.sh" "$REAL_SCRIPTS_DIR/lib/platform.sh" "$FIXTURE_ROOT/scripts/lib/"
+    cp "$REAL_SCRIPTS_DIR/lib/versions.sh" "$REAL_SCRIPTS_DIR/lib/fetch.sh" "$REAL_SCRIPTS_DIR/lib/platform.sh" "$REAL_SCRIPTS_DIR/lib/assets.sh" "$REAL_SCRIPTS_DIR/lib/npm_tools.sh" "$FIXTURE_ROOT/scripts/lib/"
     chmod +x "$FIXTURE_ROOT/scripts/setup.sh"
 
     build_fixture_assets
+    write_fixture_checksums
     install_curl_mock
 }
 
@@ -89,21 +91,26 @@ build_fixture_assets() {
     chmod +x "$ASSETS/node-src/$node_dirname/bin/node"
     # setup.sh calls "$NODE_DIR/bin/npm" by its full path (not "npm"
     # resolved via PATH), so this fake npm - not a mock_command stub - is
-    # the one that actually runs for the openspec install step below. It
-    # simulates npm's real side effect (dropping an executable at
-    # --prefix/bin/openspec) rather than actually installing anything.
+    # the one that actually runs for the openspec/renovate install step
+    # below. It simulates `npm ci --prefix <dir>`'s real side effect
+    # (executables under <dir>/node_modules/.bin/) rather than actually
+    # installing anything, and fails any subcommand other than `ci` or
+    # without --ignore-scripts.
     cat >"$ASSETS/node-src/$node_dirname/bin/npm" <<EOF
 #!/usr/bin/env bash
 echo "\$*" >> "$BATS_TEST_TMPDIR/npm.log"
+[ "\$1" = "ci" ] || { echo "fake npm: unexpected subcommand \$1" >&2; exit 1; }
+[[ " \$* " == *" --ignore-scripts "* ]] || { echo "fake npm: missing --ignore-scripts" >&2; exit 1; }
 prefix=""
 prev=""
 for arg in "\$@"; do
     [ "\$prev" = "--prefix" ] && prefix="\$arg"
     prev="\$arg"
 done
-mkdir -p "\$prefix/bin"
-printf '#!/usr/bin/env bash\necho "$OPENSPEC_VERSION"\n' > "\$prefix/bin/openspec"
-chmod +x "\$prefix/bin/openspec"
+mkdir -p "\$prefix/node_modules/.bin"
+printf '#!/usr/bin/env bash\necho "$OPENSPEC_VERSION"\n' > "\$prefix/node_modules/.bin/openspec"
+printf '#!/usr/bin/env bash\necho "$RENOVATE_VERSION"\n' > "\$prefix/node_modules/.bin/renovate"
+chmod +x "\$prefix/node_modules/.bin/openspec" "\$prefix/node_modules/.bin/renovate"
 EOF
     chmod +x "$ASSETS/node-src/$node_dirname/bin/npm"
     tar -czf "$ASSETS/node.tar.gz" -C "$ASSETS/node-src" "$node_dirname"
@@ -121,6 +128,30 @@ chmod +x "\$prefix/bin/bats"
 EOF
     chmod +x "$ASSETS/bats-src/bats-core-${BATS_VERSION}/install.sh"
     tar -czf "$ASSETS/bats-core.tar.gz" -C "$ASSETS/bats-src" "bats-core-${BATS_VERSION}"
+}
+
+# Writes the fixture tree's own scripts/lib/checksums.txt, pinning the
+# SHA-256 of each fixture asset above under the exact URL setup.sh will
+# request on this machine (via the same assets.sh), so setup.sh's checksum
+# verification passes against real hashes of the fixtures.
+write_fixture_checksums() {
+    # shellcheck disable=SC1091
+    source "$REAL_SCRIPTS_DIR/lib/assets.sh"
+    # shellcheck disable=SC1091
+    source "$REAL_SCRIPTS_DIR/lib/fetch.sh"
+    local os arch
+    os="$(detect_os)"
+    arch="$(detect_arch_gnu)"
+    local file tool
+    : >"$FIXTURE_ROOT/scripts/lib/checksums.txt"
+    for tool in actionlint bats node shellcheck shfmt task uv; do
+        case "$tool" in
+            bats) file="$ASSETS/bats-core.tar.gz" ;;
+            shfmt) file="$ASSETS/shfmt" ;;
+            *) file="$ASSETS/$tool.tar.gz" ;;
+        esac
+        echo "$(sha256_of "$file")  $(asset_url "$tool" "$os" "$arch")" >>"$FIXTURE_ROOT/scripts/lib/checksums.txt"
+    done
 }
 
 # Mocks curl (fetch.sh's FETCH prefers curl when present, and this dev
@@ -189,8 +220,11 @@ seed_all_installed_except() {
         chmod +x "$node_dir/bin/npm"
     }
     [[ "$skip" == *" openspec "* ]] || {
+        mkdir -p "$FIXTURE_ROOT/.tools/npm"
+        cp "$FIXTURE_ROOT/scripts/lib/npm-tools/package-lock.json" "$FIXTURE_ROOT/.tools/npm/"
         printf '#!/usr/bin/env bash\necho "%s"\n' "$OPENSPEC_VERSION" >"$bin/openspec"
-        chmod +x "$bin/openspec"
+        printf '#!/usr/bin/env bash\necho "%s"\n' "$RENOVATE_VERSION" >"$bin/renovate"
+        chmod +x "$bin/openspec" "$bin/renovate"
     }
 }
 
@@ -224,7 +258,11 @@ seed_all_installed_except() {
 
     grep -q "go-task/task" "$CURL_LOG"
     grep -q "nodejs.org" "$CURL_LOG"
-    grep -q -- "--prefix $FIXTURE_ROOT/.tools" "$BATS_TEST_TMPDIR/npm.log"
+    [ -x "$FIXTURE_ROOT/.tools/bin/renovate" ]
+    [ "$("$FIXTURE_ROOT/.tools/bin/renovate" --version)" = "$RENOVATE_VERSION" ]
+    [ -s "$FIXTURE_ROOT/.tools/npm/package-lock.json" ]
+
+    grep -q -- "^ci --prefix $FIXTURE_ROOT/.tools/npm " "$BATS_TEST_TMPDIR/npm.log"
 }
 
 @test "already installed at the pinned version: skips every fetch" {
@@ -240,6 +278,7 @@ seed_all_installed_except() {
     [[ "$output" == *"bats: already installed"* ]]
     [[ "$output" == *"node: already installed"* ]]
     [[ "$output" == *"openspec: already installed"* ]]
+    [[ "$output" == *"renovate: already installed"* ]]
 
     [ ! -s "$CURL_LOG" ]
     [ ! -f "$BATS_TEST_TMPDIR/npm.log" ]
@@ -260,4 +299,56 @@ seed_all_installed_except() {
     [[ "$output" == *"task: already installed"* ]]
     [[ "$output" == *"actionlint: already installed"* ]]
     [ ! -f "$BATS_TEST_TMPDIR/npm.log" ]
+}
+
+@test "a downloaded archive whose checksum does not match the pin is rejected" {
+    seed_all_installed_except shfmt
+    # Serve something other than what checksums.txt pinned for shfmt.
+    printf 'tampered\n' >"$ASSETS/shfmt"
+
+    run "$FIXTURE_ROOT/scripts/setup.sh"
+    [ "$status" -ne 0 ]
+
+    [[ "$output" == *"checksum mismatch"* ]]
+    [ ! -e "$FIXTURE_ROOT/.tools/bin/shfmt" ]
+}
+
+@test "a tool whose download URL has no pinned checksum is rejected before any fetch" {
+    seed_all_installed_except task
+    grep -v "go-task/task" "$FIXTURE_ROOT/scripts/lib/checksums.txt" >"$BATS_TEST_TMPDIR/trimmed"
+    mv "$BATS_TEST_TMPDIR/trimmed" "$FIXTURE_ROOT/scripts/lib/checksums.txt"
+
+    run "$FIXTURE_ROOT/scripts/setup.sh"
+    [ "$status" -ne 0 ]
+
+    [[ "$output" == *"no pinned checksum"* ]]
+    [ ! -s "$CURL_LOG" ]
+}
+
+@test "a lockfile change with unchanged tool versions reinstalls the npm tools" {
+    # node is left unseeded so the fixture's fake npm (which really creates
+    # the npm tools) is the one setup.sh runs, not the "npm should not run" stub.
+    seed_all_installed_except node
+    # Same openspec/renovate versions, different installed lockfile.
+    echo '{"stale": true}' >"$FIXTURE_ROOT/.tools/npm/package-lock.json"
+
+    run "$FIXTURE_ROOT/scripts/setup.sh"
+    [ "$status" -eq 0 ]
+
+    [[ "$output" == *"openspec/renovate: installing"* ]]
+    cmp "$FIXTURE_ROOT/scripts/lib/npm-tools/package-lock.json" "$FIXTURE_ROOT/.tools/npm/package-lock.json"
+    [[ "$output" == *"task: already installed"* ]]
+}
+
+@test "a stale npm tool version reinstalls the npm tools" {
+    # node is left unseeded so the fixture's fake npm (which really creates
+    # the npm tools) is the one setup.sh runs, not the "npm should not run" stub.
+    seed_all_installed_except node
+    printf '#!/usr/bin/env bash\necho "0.0.1"\n' >"$FIXTURE_ROOT/.tools/bin/renovate"
+
+    run "$FIXTURE_ROOT/scripts/setup.sh"
+    [ "$status" -eq 0 ]
+
+    [[ "$output" == *"openspec/renovate: installing"* ]]
+    [ "$("$FIXTURE_ROOT/.tools/bin/renovate" --version)" = "$RENOVATE_VERSION" ]
 }

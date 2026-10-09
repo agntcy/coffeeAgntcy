@@ -149,7 +149,8 @@ tasks:
       Example: task renovate:sync
       Runs the repo-local renovate binary (installed into .tools/bin by
       scripts/setup.sh at the version pinned in scripts/lib/versions.sh).
-      Behavior is driven entirely by renovate.json and the RENOVATE_*/
+      Behavior is driven entirely by renovate.json (including the
+      checksum-refreshing post-upgrade task) and the RENOVATE_*/
       GITHUB_COM_TOKEN env vars set by the caller - see
       .github/workflows/renovate.yaml, the only caller today. See
       scripts/renovate/sync_renovate.bash.
@@ -164,10 +165,12 @@ tasks:
     summary: |
       Usage:   task setup
       Example: task setup && source scripts/env.sh
-      Installs into .tools/bin/, .tools/bats/ and .tools/node/ (gitignored), never
+      Installs into .tools/bin/, .tools/bats/, .tools/node/ and .tools/npm/ (gitignored), never
       touching the global PATH, shell profile, or home directory. CI uses
       './scripts/setup.sh --lint-only' instead, which skips
-      node/openspec/renovate (bats is still installed). See scripts/setup.sh.
+      node/openspec/renovate (bats is still installed). Every downloaded
+      archive is verified against the SHA-256 pinned in
+      scripts/lib/checksums.txt. See scripts/setup.sh.
     cmds:
       - ./scripts/setup.sh
 
@@ -220,6 +223,50 @@ tasks:
       scripts/checks/check_bash_test_coverage.bash.
     cmds:
       - scripts/checks/check_bash_test_coverage.bash
+
+  tools:checksums:
+    desc: >-
+      Regenerate scripts/lib/checksums.txt: the pinned SHA-256 of every tool
+      archive scripts/setup.sh downloads, for every supported platform.
+    summary: |
+      Usage:   task tools:checksums
+      Example: task tools:checksums
+      Run after bumping or adding a pin in scripts/lib/versions.sh;
+      setup.sh refuses any archive whose URL has no matching line.
+      Downloads every archive (a few hundred MB), so it takes a while.
+      Review the diff against upstream's published checksums. See
+      scripts/tools/update_checksums.bash.
+    cmds:
+      - scripts/tools/update_checksums.bash
+
+  tools:npm-lock:
+    desc: >-
+      Regenerate scripts/lib/npm-tools/package-lock.json for the openspec
+      and renovate versions pinned in scripts/lib/versions.sh.
+    summary: |
+      Usage:   task tools:npm-lock
+      Example: task tools:npm-lock
+      Run after bumping OPENSPEC_VERSION or RENOVATE_VERSION; setup.sh
+      (npm ci) rejects a lockfile that no longer matches. Uses the
+      repo-local npm and never runs package install scripts. Review the
+      lockfile diff. See scripts/tools/update_npm_lock.bash.
+    cmds:
+      - scripts/tools/update_npm_lock.bash
+
+  tools:versions:
+    desc: >-
+      Print the version and pinned hash of every tool this repo pins (the
+      single source is scripts/lib/versions.sh).
+    summary: |
+      Usage:   task tools:versions
+      Example: task tools:versions
+      Read-only: prints a "<tool>  <version>  <hash>" table of the pins,
+      not of what is currently installed in .tools/. The hash is the
+      pinned SHA-256 of this machine's archive (scripts/lib/checksums.txt),
+      or the lockfile's integrity hash for openspec/renovate. To change one, see the
+      manage-repo-tooling skill. See scripts/tools/print_versions.bash.
+    cmds:
+      - scripts/tools/print_versions.bash
 
   workflows:check-permissions:
     desc: >-

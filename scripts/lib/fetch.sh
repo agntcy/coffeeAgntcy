@@ -121,3 +121,56 @@ ensure_fetcher() {
     _print_manual_curl_instructions
     return 1
 }
+
+# sha256_of <file>: prints the file's SHA-256 hex digest, using whichever of
+# sha256sum (Linux) or shasum (macOS) exists.
+sha256_of() {
+    if command -v sha256sum >/dev/null 2>&1; then
+        sha256sum "$1" | awk '{print $1}'
+    elif command -v shasum >/dev/null 2>&1; then
+        shasum -a 256 "$1" | awk '{print $1}'
+    else
+        echo "error: neither sha256sum nor shasum found" >&2
+        return 1
+    fi
+}
+
+# FETCH_VERIFIED <url>: like FETCH, but streams the URL to stdout only if
+# its SHA-256 matches the one pinned for that exact URL in
+# $CHECKSUMS_FILE (default: checksums.txt next to this file; lines are
+# "<sha256>  <url>"). Fails closed: a URL with no pinned checksum, or a
+# mismatch, prints an error to stderr and emits nothing. A version bump
+# changes the URL, so it needs a refreshed checksums.txt
+# (task tools:checksums) before setup will install it.
+FETCH_VERIFIED() {
+    local url="$1"
+    local file="${CHECKSUMS_FILE:-$(dirname "${BASH_SOURCE[0]}")/checksums.txt}"
+    local expected actual tmp
+    if [ -z "$url" ]; then
+        echo "error: FETCH_VERIFIED called without a URL" >&2
+        return 1
+    fi
+    expected="$(awk -v u="$url" '$2 == u {print $1}' "$file" 2>/dev/null | head -n 1)"
+    if [ -z "$expected" ]; then
+        echo "error: no pinned checksum for $url in $file (run: task tools:checksums)" >&2
+        return 1
+    fi
+    tmp="$(mktemp)"
+    if ! FETCH "$url" >"$tmp"; then
+        rm -f "$tmp"
+        return 1
+    fi
+    actual="$(sha256_of "$tmp")" || {
+        rm -f "$tmp"
+        return 1
+    }
+    if [ "$actual" != "$expected" ]; then
+        echo "error: checksum mismatch for $url" >&2
+        echo "  expected: $expected" >&2
+        echo "  actual:   $actual" >&2
+        rm -f "$tmp"
+        return 1
+    fi
+    cat "$tmp"
+    rm -f "$tmp"
+}
