@@ -67,20 +67,6 @@ teardown() {
     [[ "$output" == *"unsupported architecture 'riscv64'"* ]]
 }
 
-@test "detect_arch_shellcheck: x86_64/amd64 map to x86_64" {
-    mock_command uname 'echo amd64'
-    run detect_arch_shellcheck
-    [ "$status" -eq 0 ]
-    [ "$output" = "x86_64" ]
-}
-
-@test "detect_arch_shellcheck: arm64/aarch64 map to aarch64" {
-    mock_command uname 'echo arm64'
-    run detect_arch_shellcheck
-    [ "$status" -eq 0 ]
-    [ "$output" = "aarch64" ]
-}
-
 @test "detect_arch_node: x86_64/amd64 map to x64" {
     mock_command uname 'echo x86_64'
     run detect_arch_node

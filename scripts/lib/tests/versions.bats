@@ -36,12 +36,26 @@ load '../versions.sh'
     [[ "$NODE_VERSION" =~ ^v?[0-9]+\.[0-9]+\.[0-9]+$ ]]
 }
 
+@test "UV_VERSION is set and looks like a version string" {
+    [ -n "$UV_VERSION" ]
+    [[ "$UV_VERSION" =~ ^v?[0-9]+\.[0-9]+\.[0-9]+$ ]]
+}
+
 @test "OPENSPEC_VERSION is set and looks like a version string" {
     [ -n "$OPENSPEC_VERSION" ]
     [[ "$OPENSPEC_VERSION" =~ ^v?[0-9]+\.[0-9]+\.[0-9]+$ ]]
 }
 
-@test "UV_VERSION is set and looks like a version string" {
-    [ -n "$UV_VERSION" ]
-    [[ "$UV_VERSION" =~ ^v?[0-9]+\.[0-9]+\.[0-9]+$ ]]
+@test "RENOVATE_VERSION is set and looks like a version string" {
+    [ -n "$RENOVATE_VERSION" ]
+    [[ "$RENOVATE_VERSION" =~ ^v?[0-9]+\.[0-9]+\.[0-9]+$ ]]
+}
+
+@test "committed npm lockfile was generated for the pinned openspec and renovate versions" {
+    local lock="$BATS_TEST_DIRNAME/../npm-tools/package-lock.json"
+    [ -s "$lock" ]
+    # The lockfile's root entry records the dependencies it was generated
+    # for; `npm ci` fails on a mismatch, this fails earlier and by name.
+    grep -qF "\"@fission-ai/openspec\": \"$OPENSPEC_VERSION\"" "$lock"
+    grep -qF "\"renovate\": \"$RENOVATE_VERSION\"" "$lock"
 }

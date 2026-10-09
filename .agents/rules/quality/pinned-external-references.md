@@ -14,6 +14,9 @@ description: >-
 
 # Pinned external references
 
+(Tools this repo downloads into `.tools/` are pinned by SHA-256 instead -
+see [`pinned-tool-versions`](../meta/pinned-tool-versions.md).)
+
 ## Rule
 
 Any reference this repo makes to third-party code or images by a mutable,
