@@ -24,6 +24,9 @@ config:
   natsServer: ""
   slimSharedSecret: "" # SLIM_SHARED_SECRET: set here to create {app}-transport-secret (overrides ES when both are used). Leave empty to take SLIM_SHARED_SECRET only from externalSecrets / vault
   otlpHttpEndpoint: ""
+  # Agentic Workflows API (WORKFLOW_API_URL / WORKFLOW_API_KEY). Rendered only when set.
+  workflowApiUrl: ""
+  workflowApiKey: ""
   # Identity configuration
   identityApiServerUrl: "" # Identity API endpoint
   identityServiceApiKey: ""

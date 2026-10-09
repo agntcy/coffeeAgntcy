@@ -2,7 +2,7 @@
 
 ## Unreleased
 
-.
+- **Helm:** the `auction-supervisor`, `logistics-supervisor`, `recruiter-supervisor` and `colombia-farm` charts (0.2.0) gain `config.workflowApiUrl` and `config.workflowApiKey`, rendered into the ConfigMap as `WORKFLOW_API_URL` / `WORKFLOW_API_KEY` when set. Without them a Helm-deployed agent falls back to `http://localhost:9105` and logs `Workflow catalog GET failed (ConnectError: [Errno 111] Connection refused)`. `lungo-local-cluster` (0.6.0) sets both for these agents (key from the `WORKFLOW_API_KEY` env var, default `TheAnswerIs42`).
 
 ## 0.4.1 (2026-10-07)
 
