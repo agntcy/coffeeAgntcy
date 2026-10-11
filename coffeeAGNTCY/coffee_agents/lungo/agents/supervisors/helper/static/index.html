@@ -187,14 +187,23 @@
   .legend .l-fight::before { width: 16px; height: 0; border-top: 2.5px dashed var(--danger); border-radius: 0; vertical-align: 3px; }
   .card-diagram { border: 1px solid var(--line); border-radius: 16px; padding: 10px 8px 10px; margin-top: 4px; }
 
-  .contacts label { display: block; font-size: 14px; font-weight: 600; margin: 10px 0 4px; }
-  .contacts input { width: 100%; font: inherit; padding: 11px 14px; border: 1px solid var(--line); border-radius: 12px;
-    background: var(--soft); color: var(--ink); }
-  .contacts input:focus { outline: none; border-color: var(--brand); background: var(--bg); }
-  .save-row { display: flex; align-items: center; gap: 12px; margin-top: 12px; }
-  .save { border: 0; border-radius: 999px; background: var(--brand); color: var(--brand-ink); font-size: 15px; font-weight: 700; padding: 8px 20px; }
-  #contacts-status { font-size: 14px; font-weight: 600; }
-  #contacts-status.ok { color: var(--safe); } #contacts-status.bad { color: var(--danger); }
+  .contact { padding: 12px 0; border-bottom: 1px solid var(--line); }
+  .contact:last-child { border-bottom: 0; }
+  .contacts label, .contact .label { display: block; font-size: 14px; font-weight: 600; margin-bottom: 6px; }
+  .locked { display: flex; align-items: center; gap: 10px; padding: 11px 14px; border-radius: 12px; background: var(--soft);
+    overflow-wrap: anywhere; }
+  .locked svg { width: 18px; height: 18px; color: var(--muted); flex: none; }
+  .locked .unset { color: var(--muted); font-style: italic; }
+  .contacts input { width: 100%; font: inherit; padding: 11px 14px; border: 1px solid var(--brand); border-radius: 12px;
+    background: var(--bg); color: var(--ink); }
+  .contacts input:focus { outline: 2px solid var(--brand); outline-offset: 1px; }
+  .save-row { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 12px; margin-top: 10px; }
+  .save, .change, .cancel { border-radius: 999px; font-size: 15px; font-weight: 700; padding: 7px 18px; }
+  .save { border: 0; background: var(--brand); color: var(--brand-ink); }
+  .change, .cancel { border: 1px solid var(--line); background: var(--bg); color: var(--brand); }
+  .change:hover, .cancel:hover { background: var(--soft); }
+  .contact-status { font-size: 14px; font-weight: 600; }
+  .contact-status.ok { color: var(--safe); } .contact-status.bad { color: var(--danger); }
 </style>
 </head>
 <body>
@@ -242,16 +251,7 @@
       <div class="page-title" data-i18n="familyTitle">Family</div>
       <p class="page-sub" data-i18n="familySub">When the helpers disagree or something looks risky, Ger asks you instead of guessing.</p>
       <div class="section" data-i18n="contactsTitle">Family contacts</div>
-      <form id="form-contacts" class="contacts">
-        <label for="contact-primary" data-i18n="contactPrimary">Family member email</label>
-        <input type="email" id="contact-primary" autocomplete="email" required placeholder="name@example.com">
-        <label for="contact-secondary" data-i18n="contactSecondary">Secondary contact email (optional)</label>
-        <input type="email" id="contact-secondary" autocomplete="email" placeholder="name@example.com">
-        <div class="save-row">
-          <button class="save" type="submit" data-i18n="saveContacts">Save</button>
-          <span id="contacts-status" role="status"></span>
-        </div>
-      </form>
+      <div id="contacts" class="contacts"></div>
       <div class="section" data-i18n="latest">Latest check</div>
       <div id="decision"></div>
       <div class="section" data-i18n="alertsTitle">Alerts</div>
@@ -331,7 +331,9 @@ const STRINGS = {
     latest: "Latest check", alertsTitle: "Alerts",
     contactsTitle: "Family contacts", contactPrimary: "Family member email",
     contactSecondary: "Secondary contact email (optional)", saveContacts: "Save",
-    saved: "Saved", badEmail: "Please check the email addresses.",
+    saved: "Saved", badEmail: "Please check the email address.",
+    change: "Change", add: "Add", cancel: "Cancel", notSet: "Not added yet",
+    needPrimary: "Add the family member email first.",
     username: "Username", password: "Password", loginBtn: "Log in", logout: "Log out",
     wrongLogin: "Wrong username or password.", demoHint: "Demo account: grandma / demo123",
   },
@@ -352,6 +354,8 @@ const STRINGS = {
     contactsTitle: "Гэр бүлийн холбоо барих", contactPrimary: "Гэр бүлийн гишүүний имэйл",
     contactSecondary: "Нэмэлт холбоо барих имэйл (заавал биш)", saveContacts: "Хадгалах",
     saved: "Хадгалсан", badEmail: "Имэйл хаягаа шалгана уу.",
+    change: "Өөрчлөх", add: "Нэмэх", cancel: "Болих", notSet: "Оруулаагүй байна",
+    needPrimary: "Эхлээд гэр бүлийн гишүүний имэйлийг нэмнэ үү.",
     username: "Хэрэглэгчийн нэр", password: "Нууц үг", loginBtn: "Нэвтрэх", logout: "Гарах",
     wrongLogin: "Нэр эсвэл нууц үг буруу байна.", demoHint: "Демо бүртгэл: grandma / demo123",
   },
@@ -377,7 +381,7 @@ function setLang(next) {
   $("lang-en").setAttribute("aria-pressed", lang === "en");
   $("lang-mn").setAttribute("aria-pressed", lang === "mn");
   if (view === "explain" || view === "reply") { renderThread(view); $("input").placeholder = t(view === "explain" ? "placeholderExplain" : "placeholderReply"); }
-  if (view === "family") renderFamily();
+  if (view === "family") { renderFamily(); renderContacts(); }
 }
 
 // Views: "login", "explain", "reply", "family".
@@ -399,7 +403,7 @@ function setView(next) {
     autosize();
     renderThread(next);
   }
-  if (next === "family") { loadContacts(); $("contacts-status").textContent = ""; renderFamily(); seenAlerts = alertCount; updateBadge(); $("screen").scrollTop = 0; }
+  if (next === "family") { loadContacts(); renderFamily(); seenAlerts = alertCount; updateBadge(); $("screen").scrollTop = 0; }
 }
 
 // ---- "How Ger decided": every helper's opinion, and where they disagreed ----
@@ -648,14 +652,60 @@ async function refreshAlerts() {
   } catch {}
 }
 
+// Family contacts: each email is shown locked; "Change" opens just that one for editing.
+let contacts = { primary: "", secondary: "" };
+let editing = null, draft = "", notice = null;  // notice: {key, ok, text}
+const lockIcon = `<svg class="i" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>`;
+
+function renderContacts() {
+  $("contacts").innerHTML = ["primary", "secondary"].map((key) => {
+    const label = t(key === "primary" ? "contactPrimary" : "contactSecondary");
+    const status = notice && notice.key === key
+      ? `<span class="contact-status ${notice.ok ? "ok" : "bad"}" role="status">${esc(notice.text)}</span>` : "";
+    if (editing === key) return `<form class="contact" id="contact-form">
+      <label for="contact-input">${label}</label>
+      <input type="email" id="contact-input" autocomplete="email" placeholder="name@example.com" value="${esc(draft)}">
+      <div class="save-row"><button class="save" type="submit">${t("saveContacts")}</button>
+        <button class="cancel" type="button" id="contact-cancel">${t("cancel")}</button>${status}</div></form>`;
+    const value = contacts[key] ? esc(contacts[key]) : `<span class="unset">${t("notSet")}</span>`;
+    return `<div class="contact"><div class="label">${label}</div>
+      <div class="locked">${lockIcon}<span>${value}</span></div>
+      <div class="save-row"><button class="change" type="button" data-change="${key}">${t(contacts[key] ? "change" : "add")}</button>${status}</div></div>`;
+  }).join("");
+  $("contacts").querySelectorAll("[data-change]").forEach((b) => b.onclick = () => {
+    editing = b.dataset.change; draft = contacts[editing]; notice = null;
+    renderContacts(); $("contact-input").focus();
+  });
+  if (!editing) return;
+  $("contact-input").oninput = (e) => { draft = e.target.value; };
+  $("contact-cancel").onclick = () => { editing = null; notice = null; renderContacts(); };
+  $("contact-form").onsubmit = saveContact;
+}
+
+async function saveContact(e) {
+  e.preventDefault();
+  const key = editing;
+  const next = { ...contacts, [key]: draft.trim() };
+  if (key === "secondary" && !contacts.primary) {
+    notice = { key, ok: false, text: t("needPrimary") };
+    return renderContacts();
+  }
+  const res = await fetch(`${API}/family/contacts`, {
+    method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(next),
+  });
+  if (res.status === 401) return setView("login");
+  if (!res.ok) notice = { key, ok: false, text: t("badEmail") };
+  else { contacts = await res.json(); editing = null; notice = { key, ok: true, text: t("saved") }; }
+  renderContacts();
+}
+
 async function loadContacts() {
+  editing = null; notice = null;
   try {
     const res = await fetch(`${API}/family/contacts`);
-    if (!res.ok) return;
-    const c = await res.json();
-    $("contact-primary").value = c.primary;
-    $("contact-secondary").value = c.secondary;
+    if (res.ok) contacts = await res.json();
   } catch {}
+  renderContacts();
 }
 
 async function renderFamily() {
@@ -690,17 +740,6 @@ $("form-login").onsubmit = async (e) => {
   $("login-password").value = "";
   setView("explain");
   refreshAlerts();
-};
-$("form-contacts").onsubmit = async (e) => {
-  e.preventDefault();
-  const res = await fetch(`${API}/family/contacts`, {
-    method: "PUT", headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ primary: $("contact-primary").value, secondary: $("contact-secondary").value }),
-  });
-  if (res.status === 401) return setView("login");
-  const status = $("contacts-status");
-  status.textContent = t(res.ok ? "saved" : "badEmail");
-  status.className = res.ok ? "ok" : "bad";
 };
 $("logout").onclick = async () => {
   await fetch(`${API}/logout`, { method: "POST" });
