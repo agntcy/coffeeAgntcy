@@ -7,6 +7,12 @@ from agents.supervisors.auction.graph.a2a_retry import (
     RemoteAgentNoResponseError,
     TransportTimeoutError,
 )
+from agents.supervisors.auction.graph.evaluation import (
+    approved_order_preamble,
+    blocked_order_message,
+    gather_evaluations,
+    recommendation_message,
+)
 from agents.supervisors.auction.graph.shared import farm_registry
 from agents.supervisors.auction.graph.tools import (
     create_order,
@@ -131,8 +137,11 @@ class NodeStates:
     INVENTORY_SINGLE_FARM = "inventory_single_farm"
     INVENTORY_ALL_FARMS = "inventory_all_farms"
 
+    EVALUATE_ORDER = "evaluate_order"
     ORDERS = "orders_broker"
     ORDERS_TOOLS = "orders_tools"
+
+    RECOMMEND = "recommend_farm"
 
     REFLECTION = "reflection"
     GENERAL_INFO = "general"
@@ -145,6 +154,8 @@ class GraphState(MessagesState):
 
     next_node: str
     full_response: str = ""
+    # Set once the evaluators approve an order; shown above the confirmation.
+    order_preamble: str
 
 
 @agent(name="exchange_agent")
@@ -171,6 +182,13 @@ class ExchangeGraph:
         orders_agent
             - initiate orders with a specific farm and retrieve order status
 
+        evaluate_order_agent
+            - ask the quality and sustainability agents to grade the farms before
+              an order, and block it if the farm crosses a red line
+
+        recommend_agent
+            - ask every evaluator which farm it backs and lay out the disagreement
+
         reflection_agent
             - determine if the user's request has been satisfied or if further action is needed
 
@@ -195,10 +213,12 @@ class ExchangeGraph:
         workflow.add_node(
             NodeStates.INVENTORY_ALL_FARMS, self._inventory_all_farms_node
         )
+        workflow.add_node(NodeStates.EVALUATE_ORDER, self._evaluate_order_node)
         workflow.add_node(NodeStates.ORDERS, self._orders_node)
         workflow.add_node(
             NodeStates.ORDERS_TOOLS, ToolNode([create_order, get_order_details])
         )
+        workflow.add_node(NodeStates.RECOMMEND, self._recommend_node)
         workflow.add_node(NodeStates.REFLECTION, self._reflection_node)
         workflow.add_node(NodeStates.GENERAL_INFO, self._general_response_node)
 
@@ -213,10 +233,19 @@ class ExchangeGraph:
             {
                 NodeStates.INVENTORY_SINGLE_FARM: NodeStates.INVENTORY_SINGLE_FARM,
                 NodeStates.INVENTORY_ALL_FARMS: NodeStates.INVENTORY_ALL_FARMS,
-                NodeStates.ORDERS: NodeStates.ORDERS,
+                NodeStates.EVALUATE_ORDER: NodeStates.EVALUATE_ORDER,
+                NodeStates.RECOMMEND: NodeStates.RECOMMEND,
                 NodeStates.GENERAL_INFO: NodeStates.GENERAL_INFO,
             },
         )
+
+        # Orders only reach the broker if the evaluators let them through.
+        workflow.add_conditional_edges(
+            NodeStates.EVALUATE_ORDER,
+            lambda state: state["next_node"],
+            {NodeStates.ORDERS: NodeStates.ORDERS, END: END},
+        )
+        workflow.add_edge(NodeStates.RECOMMEND, END)
 
         workflow.add_edge(NodeStates.INVENTORY_SINGLE_FARM, NodeStates.REFLECTION)
         workflow.add_edge(NodeStates.INVENTORY_ALL_FARMS, NodeStates.REFLECTION)
@@ -243,6 +272,7 @@ class ExchangeGraph:
         prompt = PromptTemplate(
             template=f"""You are a global coffee exchange agent connecting users to coffee farms: {farm_list}.
             Based on the user's message, determine the appropriate action:
+            - Respond with 'recommend' if the user asks which farm to buy from, which farm is best, or to compare farms
             - Respond with 'orders' if the message includes:
                 * Quantity specifications (e.g., "50 lb", "100 kg")
                 * Price or cost information (e.g., "for $X", "at Y cents per lb")
@@ -262,7 +292,9 @@ class ExchangeGraph:
 
         logger.info(f"Supervisor decided: {intent}")
 
-        if "inventory_single_farm" in intent:
+        if "recommend" in intent:
+            return {"next_node": NodeStates.RECOMMEND, "messages": user_message}
+        elif "inventory_single_farm" in intent:
             return {
                 "next_node": NodeStates.INVENTORY_SINGLE_FARM,
                 "messages": user_message,
@@ -273,7 +305,7 @@ class ExchangeGraph:
                 "messages": user_message,
             }
         elif "orders" in intent:
-            return {"next_node": NodeStates.ORDERS, "messages": user_message}
+            return {"next_node": NodeStates.EVALUATE_ORDER, "messages": user_message}
         else:
             return {"next_node": NodeStates.GENERAL_INFO, "messages": user_message}
 
@@ -522,6 +554,46 @@ class ExchangeGraph:
                 "messages": [AIMessage(content=error_message, additional_kwargs=all_kw)]
             }
 
+    async def _evaluate_order_node(self, state: GraphState) -> dict:
+        """
+        Gets second opinions before an order: blocks it if the farm crosses
+        any evaluator's red line, otherwise lets it through to the broker.
+        """
+        if state.get("order_preamble"):
+            # Already approved earlier in this run (reflection looped back).
+            return {"next_node": NodeStates.ORDERS}
+
+        user_msg = next(
+            (m for m in reversed(state["messages"]) if m.type == "human"), None
+        )
+        content_lower = (user_msg.content if user_msg else "").lower()
+        farm = _first_matching_term(content_lower, _KNOWN_FARMS)
+        if not farm:
+            # No farm named yet; the broker will ask which one.
+            return {"next_node": NodeStates.ORDERS}
+
+        evals = await gather_evaluations()
+        if evals.red_line_failures(farm):
+            logger.info("Order for %s blocked by evaluators", farm)
+            return {
+                "next_node": END,
+                "messages": [AIMessage(content=blocked_order_message(evals, farm))],
+            }
+
+        logger.info("Order for %s approved by evaluators", farm)
+        return {
+            "next_node": NodeStates.ORDERS,
+            "order_preamble": approved_order_preamble(evals, farm),
+        }
+
+    async def _recommend_node(self, state: GraphState) -> dict:
+        """Asks every evaluator which farm it backs and lays out the disagreement."""
+        evals = await gather_evaluations()
+        return {
+            "next_node": END,
+            "messages": [AIMessage(content=recommendation_message(evals))],
+        }
+
     async def _orders_node(self, state: GraphState) -> dict:
         """
         Handles orders-related queries using an LLM to formulate responses,
@@ -668,6 +740,16 @@ class ExchangeGraph:
                 additional_kwargs=order_kw,
             )
         # --- End Safety Net ---
+
+        preamble = state.get("order_preamble")
+        if preamble and not llm_response.tool_calls and llm_response.content:
+            llm_response = AIMessage(
+                content=f"{preamble}\n\n{llm_response.content}",
+                name=llm_response.name,
+                id=llm_response.id,
+                response_metadata=llm_response.response_metadata,
+                additional_kwargs=llm_response.additional_kwargs,
+            )
 
         return {"messages": [llm_response]}
 
