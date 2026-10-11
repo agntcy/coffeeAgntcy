@@ -6,6 +6,7 @@
 import config.logging_config  # noqa: F401 - runs setup on import; must be first
 
 import logging
+import re
 import secrets
 from pathlib import Path
 
@@ -126,6 +127,33 @@ async def reply(req: TextRequest) -> dict:
 async def family_alerts() -> list[dict]:
     """Everything that was not plainly safe, newest first."""
     return pipeline.FAMILY_ALERTS
+
+
+# Family contact emails, in memory like the sessions. Demo only: nothing is
+# emailed to them yet.
+_EMAIL = re.compile(r"[^@\s]+@[^@\s]+\.[^@\s]+")
+_family_contacts = {"primary": "", "secondary": ""}
+
+
+class FamilyContacts(BaseModel):
+    primary: str
+    secondary: str = ""
+
+
+@app.get("/family/contacts", dependencies=[Depends(require_login)])
+async def get_family_contacts() -> dict:
+    return _family_contacts
+
+
+@app.put("/family/contacts", dependencies=[Depends(require_login)])
+async def set_family_contacts(req: FamilyContacts) -> dict:
+    primary, secondary = req.primary.strip(), req.secondary.strip()
+    if not _EMAIL.fullmatch(primary):
+        raise HTTPException(status_code=400, detail="family email is not valid")
+    if secondary and not _EMAIL.fullmatch(secondary):
+        raise HTTPException(status_code=400, detail="secondary email is not valid")
+    _family_contacts.update(primary=primary, secondary=secondary)
+    return _family_contacts
 
 
 @app.get("/health")

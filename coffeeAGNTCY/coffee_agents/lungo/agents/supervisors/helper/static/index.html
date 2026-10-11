@@ -186,6 +186,15 @@
   .legend .l-bad::before { background: var(--danger); } .legend .l-down::before { background: #9a9a9a; }
   .legend .l-fight::before { width: 16px; height: 0; border-top: 2.5px dashed var(--danger); border-radius: 0; vertical-align: 3px; }
   .card-diagram { border: 1px solid var(--line); border-radius: 16px; padding: 10px 8px 10px; margin-top: 4px; }
+
+  .contacts label { display: block; font-size: 14px; font-weight: 600; margin: 10px 0 4px; }
+  .contacts input { width: 100%; font: inherit; padding: 11px 14px; border: 1px solid var(--line); border-radius: 12px;
+    background: var(--soft); color: var(--ink); }
+  .contacts input:focus { outline: none; border-color: var(--brand); background: var(--bg); }
+  .save-row { display: flex; align-items: center; gap: 12px; margin-top: 12px; }
+  .save { border: 0; border-radius: 999px; background: var(--brand); color: var(--brand-ink); font-size: 15px; font-weight: 700; padding: 8px 20px; }
+  #contacts-status { font-size: 14px; font-weight: 600; }
+  #contacts-status.ok { color: var(--safe); } #contacts-status.bad { color: var(--danger); }
 </style>
 </head>
 <body>
@@ -232,6 +241,17 @@
     <section id="family" class="hidden"><div class="col">
       <div class="page-title" data-i18n="familyTitle">Family</div>
       <p class="page-sub" data-i18n="familySub">When the helpers disagree or something looks risky, Ger asks you instead of guessing.</p>
+      <div class="section" data-i18n="contactsTitle">Family contacts</div>
+      <form id="form-contacts" class="contacts">
+        <label for="contact-primary" data-i18n="contactPrimary">Family member email</label>
+        <input type="email" id="contact-primary" autocomplete="email" required placeholder="name@example.com">
+        <label for="contact-secondary" data-i18n="contactSecondary">Secondary contact email (optional)</label>
+        <input type="email" id="contact-secondary" autocomplete="email" placeholder="name@example.com">
+        <div class="save-row">
+          <button class="save" type="submit" data-i18n="saveContacts">Save</button>
+          <span id="contacts-status" role="status"></span>
+        </div>
+      </form>
       <div class="section" data-i18n="latest">Latest check</div>
       <div id="decision"></div>
       <div class="section" data-i18n="alertsTitle">Alerts</div>
@@ -309,6 +329,9 @@ const STRINGS = {
     navCheck: "Check", navReply: "Reply", navFamily: "Family",
     familyTitle: "Family", familySub: "When the helpers disagree or something looks risky, Ger asks you instead of guessing.",
     latest: "Latest check", alertsTitle: "Alerts",
+    contactsTitle: "Family contacts", contactPrimary: "Family member email",
+    contactSecondary: "Secondary contact email (optional)", saveContacts: "Save",
+    saved: "Saved", badEmail: "Please check the email addresses.",
     username: "Username", password: "Password", loginBtn: "Log in", logout: "Log out",
     wrongLogin: "Wrong username or password.", demoHint: "Demo account: grandma / demo123",
   },
@@ -326,6 +349,9 @@ const STRINGS = {
     navCheck: "Шалгах", navReply: "Хариу", navFamily: "Гэр бүл",
     familyTitle: "Гэр бүл", familySub: "Туслахууд санал зөрөх эсвэл эрсдэлтэй үед Ger таамаглахын оронд гэр бүлээсээ асууна.",
     latest: "Сүүлийн шалгалт", alertsTitle: "Анхааруулга",
+    contactsTitle: "Гэр бүлийн холбоо барих", contactPrimary: "Гэр бүлийн гишүүний имэйл",
+    contactSecondary: "Нэмэлт холбоо барих имэйл (заавал биш)", saveContacts: "Хадгалах",
+    saved: "Хадгалсан", badEmail: "Имэйл хаягаа шалгана уу.",
     username: "Хэрэглэгчийн нэр", password: "Нууц үг", loginBtn: "Нэвтрэх", logout: "Гарах",
     wrongLogin: "Нэр эсвэл нууц үг буруу байна.", demoHint: "Демо бүртгэл: grandma / demo123",
   },
@@ -373,7 +399,7 @@ function setView(next) {
     autosize();
     renderThread(next);
   }
-  if (next === "family") { renderFamily(); seenAlerts = alertCount; updateBadge(); $("screen").scrollTop = 0; }
+  if (next === "family") { loadContacts(); $("contacts-status").textContent = ""; renderFamily(); seenAlerts = alertCount; updateBadge(); $("screen").scrollTop = 0; }
 }
 
 // ---- "How Ger decided": every helper's opinion, and where they disagreed ----
@@ -622,6 +648,16 @@ async function refreshAlerts() {
   } catch {}
 }
 
+async function loadContacts() {
+  try {
+    const res = await fetch(`${API}/family/contacts`);
+    if (!res.ok) return;
+    const c = await res.json();
+    $("contact-primary").value = c.primary;
+    $("contact-secondary").value = c.secondary;
+  } catch {}
+}
+
 async function renderFamily() {
   $("decision").innerHTML = renderDecision();
   try {
@@ -654,6 +690,17 @@ $("form-login").onsubmit = async (e) => {
   $("login-password").value = "";
   setView("explain");
   refreshAlerts();
+};
+$("form-contacts").onsubmit = async (e) => {
+  e.preventDefault();
+  const res = await fetch(`${API}/family/contacts`, {
+    method: "PUT", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ primary: $("contact-primary").value, secondary: $("contact-secondary").value }),
+  });
+  if (res.status === 401) return setView("login");
+  const status = $("contacts-status");
+  status.textContent = t(res.ok ? "saved" : "badEmail");
+  status.className = res.ok ? "ok" : "bad";
 };
 $("logout").onclick = async () => {
   await fetch(`${API}/logout`, { method: "POST" });
