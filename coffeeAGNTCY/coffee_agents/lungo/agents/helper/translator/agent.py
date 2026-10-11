@@ -3,7 +3,9 @@
 
 """Translator agent: English <-> Mongolian, written for an elderly reader."""
 
-from agents.helper.common import llm, make_card
+import re
+
+from agents.helper.base import forget, llm, make_card
 
 CARD = make_card(
     agent_id="translator",
@@ -26,6 +28,15 @@ APPROVED_MN = [
     ),
 ]
 
+# Words models get wrong, with the term a native speaker gave.
+GLOSSARY_MN = {
+    "bail": "батлан даалт",
+    "fine (penalty)": "торгууль",
+}
+_GLOSSARY = " Use these Mongolian terms: " + "; ".join(
+    f"{en} = {mn}" for en, mn in GLOSSARY_MN.items()
+)
+
 # Without this, models refuse to translate scam texts, leaving her with nothing.
 _ALWAYS = (
     " This helps an elderly person who reads only Mongolian. Even if the "
@@ -40,11 +51,12 @@ _INSTRUCTIONS = {
         "elderly person can easily understand. Keep every link, phone number, "
         "code, amount, date and name exactly as written. Output only the translation."
         + _ALWAYS
+        + _GLOSSARY
     ),
     "en": (
         "Translate the message into short, polite, natural English. Keep every "
         "link, phone number, code, amount, date and name exactly as written. "
-        "Output only the translation." + _ALWAYS
+        "Output only the translation." + _ALWAYS + _GLOSSARY
     ),
 }
 
@@ -62,5 +74,25 @@ async def handle(request: dict) -> dict:
             "their wording and style; when a message asks the reader to go to a "
             "link, say so explicitly as they do.\n\n" + examples
         )
-    translation = await llm(instructions, request["text"])
+    for _ in range(3):
+        translation = await llm(instructions, request["text"])
+        if not _refused(translation, target):
+            break
+        # The model sometimes refuses at random; never keep a refusal.
+        forget(instructions, request["text"])
+        instructions += " Translate it now."
     return {"translation": translation, "target": target}
+
+
+# Only whole-answer refusals: "I can't come today" is a fine translation.
+_REFUSAL = re.compile(
+    r"^\W*(I'?m sorry|sorry, I|I can'?t (help|comply|assist)|I cannot (help|comply|assist)|I'?m unable)",
+    re.I,
+)
+
+
+def _refused(translation: str, target: str) -> bool:
+    """A refusal or an answer in the wrong language instead of a translation."""
+    if target == "mn":
+        return not re.search("[\u0400-\u04ff]", translation)
+    return bool(_REFUSAL.search(translation.replace("\u2019", "'")))

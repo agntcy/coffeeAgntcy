@@ -10,7 +10,7 @@ both are returned so a disagreement between them is visible.
 
 import re
 
-from agents.helper.common import llm, make_card
+from agents.helper.base import llm, make_card
 
 CARD = make_card(
     agent_id="scam_checker",
@@ -135,4 +135,27 @@ async def handle(request: dict) -> dict:
         "rule_verdict": by_rules,
         "llm_verdict": by_llm,
         "reason": judgement.get("reason", ""),
+    }
+
+
+async def think(ballot: dict) -> dict:
+    """Council turn: a scam found by the rules is firm; otherwise it can be argued."""
+    from agents.helper import council
+
+    if "scam_checker" in ballot["positions"]:
+        mine = ballot["positions"]["scam_checker"]
+        if mine["firm"] or not council.disagrees(ballot, "scam_checker"):
+            return council.keep(ballot, "scam_checker")
+        return await council.reconsider(
+            "scam_checker", "scam checker (you look for signs of fraud)", ballot
+        )
+    found = ballot["case"].get("scam") or await handle({"text": ballot["case"]["text"]})
+    position = {"SAFE": council.SAFE, "SUSPICIOUS": council.ASK}.get(
+        found["verdict"], council.DANGER
+    )
+    flags = ", ".join(found["red_flags"]) or "no red flags"
+    return {
+        "position": position,
+        "reason": f"Red flags: {flags}. {found['reason']}".strip(),
+        "firm": found["rule_verdict"] == "SCAM",
     }

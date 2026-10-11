@@ -8,7 +8,7 @@ the two can genuinely disagree (e.g. the advisor says "update your address
 at the link" while the scam checker says the link is a scam).
 """
 
-from agents.helper.common import llm, make_card
+from agents.helper.base import llm, make_card
 
 CARD = make_card(
     agent_id="advisor",
@@ -44,4 +44,26 @@ async def handle(request: dict) -> dict:
         "action": result.get("action", ""),
         "topic": topic if topic in TOPICS else "general",
         "follows_link": bool(result.get("follows_link")),
+    }
+
+
+async def think(ballot: dict) -> dict:
+    """Council turn: starts from its own advice and can be talked out of it."""
+    from agents.helper import council
+
+    if "advisor" in ballot["positions"]:
+        if not council.disagrees(ballot, "advisor"):
+            return council.keep(ballot, "advisor")
+        return await council.reconsider(
+            "advisor",
+            "advisor (you want her to be able to act on her messages)",
+            ballot,
+        )
+    advice = ballot["case"].get("advice") or await handle(
+        {"text": ballot["case"]["text"]}
+    )
+    return {
+        "position": council.SAFE,
+        "reason": f"My advice: {advice['action']}",
+        "firm": False,
     }

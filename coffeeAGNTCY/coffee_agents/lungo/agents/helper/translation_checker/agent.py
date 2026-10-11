@@ -11,7 +11,7 @@ repeatable; only the overall meaning is judged by the LLM.
 
 import re
 
-from agents.helper.common import llm, make_card
+from agents.helper.base import llm, make_card
 
 CARD = make_card(
     agent_id="translation_checker",
@@ -30,7 +30,8 @@ _LANG = {"en": "English", "mn": "Mongolian (Cyrillic)"}
 # Family words models tend to mix up (e.g. reading "эмээ" as "Mom").
 _FAMILY_TERMS = (
     "Family words: эмээ = grandma, өвөө = grandpa, ээж = mom, аав = dad, "
-    "ач/зээ = grandchild, хүү = son, охин = daughter."
+    "ач/зээ = grandchild, хүү = son, охин = daughter. "
+    "Legal words: батлан даалт = bail, торгууль = fine."
 )
 
 # Links, emails, and anything containing a digit (amounts, codes, dates, phones).
@@ -95,3 +96,44 @@ async def handle(request: dict) -> dict:
         "back_translation": back,
         "differences": differences.strip(),
     }
+
+
+async def think(ballot: dict) -> dict:
+    """Council turn: firm when the translation is wrong; defers on safety.
+
+    Its field is the translation, so on whether the message itself is safe
+    it sides with the most cautious of the others.
+    """
+    from agents.helper import council
+
+    check = ballot["case"].get("check")
+    if "translation_checker" not in ballot["positions"]:
+        if not check:
+            return {
+                "position": council.ASK,
+                "reason": "There is no checked Mongolian translation, so she cannot read it safely.",
+                "firm": True,
+            }
+        if check["verdict"] == "DRIFT":
+            # If she cannot trust the Mongolian, no safety argument fixes that.
+            return {
+                "position": council.ASK,
+                "reason": f"The Mongolian may say something else: {check['differences']}",
+                "firm": True,
+            }
+        return {
+            "position": council.SAFE,
+            "reason": "The Mongolian says the same as the original.",
+            "firm": False,
+        }
+    mine = ballot["positions"]["translation_checker"]
+    strictest = council.cautious(
+        *(p["position"] for p in council.others(ballot, "translation_checker").values())
+    )
+    if council.POSITIONS.index(strictest) > council.POSITIONS.index(mine["position"]):
+        return {
+            "position": strictest,
+            "reason": f"The translation is my field; on safety I side with the most cautious agent ({strictest}).",
+            "firm": False,
+        }
+    return council.keep(ballot, "translation_checker")

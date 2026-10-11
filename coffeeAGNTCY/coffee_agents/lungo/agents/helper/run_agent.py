@@ -9,7 +9,7 @@ import asyncio
 import importlib
 import sys
 
-from agents.helper.common import serve
+from agents.helper.base import serve
 from dotenv import load_dotenv
 
 AGENTS = ("translator", "translation_checker", "scam_checker", "advisor")
@@ -21,6 +21,6 @@ if __name__ == "__main__":
         sys.exit(f"usage: run_agent.py {{{'|'.join(AGENTS)}}}")
     module = importlib.import_module(f"agents.helper.{name}.agent")
     try:
-        asyncio.run(serve(module.CARD, module.handle))
+        asyncio.run(serve(module.CARD, module.handle, getattr(module, "think", None)))
     except KeyboardInterrupt:
         pass
