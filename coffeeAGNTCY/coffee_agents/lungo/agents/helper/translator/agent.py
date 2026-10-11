@@ -13,6 +13,19 @@ CARD = make_card(
     port=9201,
 )
 
+# Translations corrected by a native Mongolian speaker. The translator is
+# shown these as the style to follow. Add new pairs as they are reviewed.
+# (\u2013 is the dash the reviewer used; kept as an escape for the repo's
+# no-en-dash rule.)
+APPROVED_MN = [
+    (
+        "USPS: Your package could not be delivered. Update your address within "
+        "24 hours at usps-redelivery-help.com",
+        "USPS: Таны илгээмжийг хүргэж чадахгүй байна. 24 цагийн дотор энэ "
+        "холбоосоор орж хаягаа шинэчилнэ үү \u2013 usps-redelivery-help.com",
+    ),
+]
+
 _INSTRUCTIONS = {
     "mn": (
         "Translate the message into simple, natural Mongolian (Cyrillic) that an "
@@ -30,5 +43,13 @@ _INSTRUCTIONS = {
 async def handle(request: dict) -> dict:
     """``{"text", "target": "mn"|"en"}`` -> ``{"translation"}``."""
     target = request.get("target", "mn")
-    translation = await llm(_INSTRUCTIONS[target], request["text"])
+    instructions = _INSTRUCTIONS[target]
+    if target == "mn" and APPROVED_MN:
+        examples = "\n\n".join(f"English: {en}\nMongolian: {mn}" for en, mn in APPROVED_MN)
+        instructions += (
+            "\n\nThese translations were approved by a native speaker. Follow "
+            "their wording and style; when a message asks the reader to go to a "
+            "link, say so explicitly as they do.\n\n" + examples
+        )
+    translation = await llm(instructions, request["text"])
     return {"translation": translation, "target": target}

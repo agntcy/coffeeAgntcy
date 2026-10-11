@@ -31,12 +31,54 @@ _RED_FLAGS = {
 }
 
 
+# Brands scammers pretend to be, and their real domains. A message that names
+# one of these but links somewhere else is impersonating it.
+OFFICIAL_DOMAINS = {
+    "usps": ("usps.com",),
+    "fedex": ("fedex.com",),
+    "ups": ("ups.com",),
+    "amazon": ("amazon.com",),
+    "fastrak": ("bayareafastrak.org",),
+    "irs": ("irs.gov",),
+    "paypal": ("paypal.com",),
+    "apple": ("apple.com",),
+    "netflix": ("netflix.com",),
+    "chase": ("chase.com",),
+    "wells fargo": ("wellsfargo.com",),
+    "bank of america": ("bankofamerica.com",),
+    "social security": ("ssa.gov",),
+    "medicare": ("medicare.gov",),
+}
+
+_DOMAIN = re.compile(r"\b((?:[\w-]+\.)+[a-z]{2,6})\b", re.I)
+
+
+def impersonated_brand(text: str) -> str | None:
+    """The brand a message claims to be from while linking to another site."""
+    lowered = text.lower()
+    domains = [d.lower() for d in _DOMAIN.findall(text)]
+    if not domains:
+        return None
+    for brand, official in OFFICIAL_DOMAINS.items():
+        if not re.search(rf"\b{brand}\b", lowered):
+            continue
+        for domain in domains:
+            if not any(domain == o or domain.endswith("." + o) for o in official):
+                return brand
+    return None
+
+
 def red_flags(text: str) -> list[str]:
-    return [name for name, pattern in _RED_FLAGS.items() if re.search(pattern, text, re.I)]
+    flags = [name for name, pattern in _RED_FLAGS.items() if re.search(pattern, text, re.I)]
+    if impersonated_brand(text):
+        flags.append("fake company link")
+    return flags
 
 
 def rule_verdict(flags: list[str]) -> str:
     """A link plus pressure to pay or share details is the classic pattern."""
+    if "fake company link" in flags:
+        return "SCAM"
     pressure = {"urgency", "payment", "personal info", "prize"} & set(flags)
     if "link" in flags and pressure:
         return "SCAM" if len(pressure) >= 2 else "SUSPICIOUS"
