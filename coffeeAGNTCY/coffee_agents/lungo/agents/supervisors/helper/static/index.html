@@ -3,147 +3,174 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#1d4f7c">
+<meta name="theme-color" content="#ffffff">
 <title>Ger</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48'%3E%3Cpath d='M4 25 Q24 4 44 25 Z' fill='%231d4f7c'/%3E%3Crect x='8' y='25' width='32' height='15' rx='2' fill='%23f1e6d2'/%3E%3Crect x='20' y='29' width='8' height='11' rx='1' fill='%23c4272f'/%3E%3C/svg%3E">
 <style>
   :root {
-    --bg: #ece6dc; --phone: #faf7f2; --card: #ffffff; --ink: #1d1b18; --muted: #6b655c; --line: #e6dfd3;
-    --brand: #1d4f7c; --brand-soft: #e3ecf5; --brand-ink: #ffffff; --accent: #c4272f;
-    --safe: #1f7a3f; --safe-bg: #e3f3e8; --check: #8a5a00; --check-bg: #fff2d1;
-    --danger: #a3221b; --danger-bg: #fde4e1;
-    --shadow: 0 1px 2px rgba(0,0,0,.05), 0 4px 14px rgba(0,0,0,.06);
+    --bg: #ffffff; --ink: #050505; --muted: #65676b; --line: #e4e6eb; --soft: #f0f2f5;
+    --brand: #1d4f7c; --brand-ink: #ffffff; --accent: #c4272f;
+    --safe: #1a7f3c; --safe-bg: #e7f5ec; --check: #946200; --check-bg: #fff4d9;
+    --danger: #c0251c; --danger-bg: #fdeceb;
   }
   * { box-sizing: border-box; }
   html, body { height: 100%; }
   body { margin: 0; background: var(--bg); color: var(--ink);
-    font: 19px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; -webkit-font-smoothing: antialiased; }
+    font: 17px/1.4 -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    -webkit-font-smoothing: antialiased; }
   button { font: inherit; color: inherit; cursor: pointer; }
   .hidden { display: none !important; }
+  svg.i { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
 
-  /* The app is a phone: full screen on a phone, a phone-sized frame on a laptop. */
-  .phone { position: relative; display: flex; flex-direction: column; height: 100dvh;
-    max-width: 440px; margin: 0 auto; background: var(--phone); overflow: hidden; }
-  @media (min-width: 600px) {
-    body { padding: 24px 0; }
-    .phone { height: min(900px, calc(100dvh - 48px)); border-radius: 36px;
-      box-shadow: 0 0 0 10px #1d1b18, 0 30px 60px rgba(0,0,0,.25); }
-  }
+  .app { display: flex; flex-direction: column; height: 100dvh; }
+  .col { width: 100%; max-width: 760px; margin: 0 auto; }
 
   /* Top bar */
-  .appbar { display: flex; align-items: center; gap: 10px; padding: 14px 16px 10px;
-    padding-top: max(14px, env(safe-area-inset-top)); }
-  .brand { display: flex; align-items: center; gap: 8px; font-weight: 800; font-size: 24px; letter-spacing: -.01em; }
-  .brand svg { width: 34px; height: 34px; }
-  .appbar .spacer { flex: 1; }
-  .lang { display: flex; background: var(--line); border-radius: 999px; padding: 3px; }
-  .lang button { border: 0; background: none; font-size: 14px; font-weight: 700; padding: 5px 11px; border-radius: 999px; color: var(--muted); }
-  .lang button[aria-pressed="true"] { background: var(--card); color: var(--ink); box-shadow: var(--shadow); }
-  .icon-btn { border: 0; background: none; font-size: 14px; color: var(--muted); padding: 6px 4px; }
+  .appbar { border-bottom: 1px solid var(--line); background: var(--bg); padding-top: env(safe-area-inset-top); }
+  .appbar .col { display: flex; align-items: center; gap: 10px; padding: 10px 16px; }
+  .who { display: flex; align-items: center; gap: 10px; }
+  .avatar { width: 40px; height: 40px; border-radius: 50%; background: var(--soft); display: grid; place-items: center; flex: none; }
+  .avatar svg { width: 28px; height: 28px; }
+  .avatar.sm { width: 28px; height: 28px; } .avatar.sm svg { width: 20px; height: 20px; }
+  .who .name { font-weight: 700; font-size: 17px; line-height: 1.2; }
+  .who .status { font-size: 13px; color: var(--muted); display: flex; align-items: center; gap: 5px; }
+  .who .status::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: #31a24c; }
+  .spacer { flex: 1; }
+  .lang { display: flex; background: var(--soft); border-radius: 999px; padding: 3px; }
+  .lang button { border: 0; background: none; font-size: 13px; font-weight: 700; padding: 5px 10px; border-radius: 999px; color: var(--muted); }
+  .lang button[aria-pressed="true"] { background: var(--bg); color: var(--ink); box-shadow: 0 1px 2px rgba(0,0,0,.12); }
+  .icon-btn { border: 0; background: none; color: var(--brand); padding: 6px; border-radius: 50%; display: grid; place-items: center; }
+  .icon-btn:hover { background: var(--soft); }
 
-  /* Scrolling content */
-  .screen { flex: 1; overflow-y: auto; padding: 4px 16px 24px; -webkit-overflow-scrolling: touch; }
-  .screen h2 { font-size: 27px; line-height: 1.2; margin: 6px 0 4px; letter-spacing: -.01em; }
-  .sub { color: var(--muted); font-size: 17px; margin: 0 0 14px; }
+  /* Scrolling area */
+  .screen { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+  .screen .col { padding: 16px 16px 12px; }
 
-  textarea, .field input { width: 100%; font: inherit; font-size: 21px; padding: 14px; border: 2px solid var(--line);
-    border-radius: 18px; background: var(--card); color: var(--ink); }
-  textarea { min-height: 140px; resize: none; }
-  textarea:focus, .field input:focus { outline: none; border-color: var(--brand); }
-  .go { width: 100%; margin-top: 12px; font-size: 23px; font-weight: 700; padding: 17px; border: 0;
-    border-radius: 18px; background: var(--brand); color: var(--brand-ink); box-shadow: var(--shadow); }
-  .go:active { transform: scale(.99); }
-  .go:disabled { opacity: .7; cursor: wait; }
+  /* Chat */
+  .thread { display: flex; flex-direction: column; gap: 4px; }
+  .day { text-align: center; color: var(--muted); font-size: 12px; margin: 6px 0 10px; }
+  .row { display: flex; align-items: flex-end; gap: 8px; margin-top: 10px; }
+  .row.me { justify-content: flex-end; }
+  .row .avatar { margin-bottom: 2px; }
+  .bubble { max-width: min(78%, 520px); padding: 9px 13px; border-radius: 20px; white-space: pre-wrap; overflow-wrap: anywhere; }
+  .ger .bubble { background: var(--soft); border-bottom-left-radius: 6px; }
+  .me .bubble { background: var(--brand); color: var(--brand-ink); border-bottom-right-radius: 6px; }
+  .me .bubble.forward { background: var(--bg); color: var(--ink); border: 1px solid var(--line); }
+  .fwd { font-size: 12px; color: var(--muted); margin: 0 4px 3px 0; text-align: right; }
+  .me .stack { display: flex; flex-direction: column; align-items: flex-end; max-width: min(78%, 520px); }
+  .me .stack .bubble { max-width: 100%; }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0 0 36px; }
+  .chips button { border: 1px solid var(--line); background: var(--bg); color: var(--brand); font-size: 14px; font-weight: 600;
+    padding: 6px 12px; border-radius: 999px; }
+  .chips button:hover { background: var(--soft); }
 
-  /* Demo examples: tucked away behind one small button */
-  .try { display: block; margin: 14px auto 0; border: 1px dashed var(--muted); background: none;
-    color: var(--muted); font-size: 15px; padding: 6px 14px; border-radius: 999px; }
-  .examples { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; margin-top: 10px; }
-  .examples button { font-size: 15px; padding: 7px 12px; border-radius: 999px; border: 1px solid var(--line); background: var(--card); }
+  /* Ger's answer card */
+  .answer { max-width: min(85%, 560px); border-radius: 20px; border-bottom-left-radius: 6px; overflow: hidden;
+    border: 1px solid var(--line); background: var(--bg); }
+  .answer .top { display: flex; gap: 10px; align-items: center; padding: 12px 14px; font-weight: 700; font-size: 18px; }
+  .answer .top .dot { width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; flex: none; color: #fff; }
+  .answer .top .dot svg { width: 18px; height: 18px; stroke-width: 2.4; }
+  .answer.safe .top { background: var(--safe-bg); color: var(--safe); } .answer.safe .dot { background: var(--safe); }
+  .answer.check_with_family .top { background: var(--check-bg); color: var(--check); } .answer.check_with_family .dot { background: var(--check); }
+  .answer.danger .top { background: var(--danger-bg); color: var(--danger); } .answer.danger .dot { background: var(--danger); }
+  .answer .part { padding: 10px 14px; border-top: 1px solid var(--line); }
+  .answer .label { font-size: 12px; font-weight: 600; color: var(--muted); margin-bottom: 2px; }
+  .answer .text { white-space: pre-wrap; overflow-wrap: anywhere; }
+  .answer .text.strong { font-weight: 600; }
+  .answer .text.secondary { color: var(--muted); font-size: 15px; margin-top: 4px; }
+  .answer .copy { margin-top: 8px; border: 0; background: var(--soft); color: var(--brand); font-weight: 600; font-size: 14px;
+    padding: 6px 12px; border-radius: 999px; }
 
-  /* Result card */
-  .result { margin-top: 18px; border-radius: 22px; padding: 18px; background: var(--card); box-shadow: var(--shadow);
-    border-top: 8px solid var(--line); animation: rise .25s ease-out; }
-  .result.safe { border-top-color: var(--safe); }
-  .result.check_with_family { border-top-color: var(--check); }
-  .result.danger { border-top-color: var(--danger); }
-  .verdict { display: flex; align-items: center; gap: 12px; margin-bottom: 6px; }
-  .verdict .big { font-size: 44px; line-height: 1; }
-  .verdict p { margin: 0; font-size: 25px; font-weight: 800; line-height: 1.25; }
-  .safe .verdict p { color: var(--safe); } .check_with_family .verdict p { color: var(--check); }
-  .danger .verdict p { color: var(--danger); }
-  .block { margin-top: 14px; padding: 14px; border-radius: 16px; background: var(--phone); }
-  .block.todo.safe-bg { background: var(--safe-bg); } .block.todo.check-bg { background: var(--check-bg); }
-  .block.todo.danger-bg { background: var(--danger-bg); }
-  .label { font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); margin-bottom: 4px; }
-  .text { font-size: 21px; white-space: pre-wrap; overflow-wrap: anywhere; }
-  .text.secondary { font-size: 16px; color: var(--muted); margin-top: 8px; }
-  .copy { margin-top: 10px; font-size: 18px; font-weight: 600; padding: 10px 16px; border-radius: 14px;
-    border: 2px solid var(--brand); background: var(--card); color: var(--brand); }
+  /* Typing indicator */
+  .typing { display: flex; align-items: center; gap: 8px; }
+  .dots { display: inline-flex; gap: 3px; }
+  .dots span { width: 7px; height: 7px; border-radius: 50%; background: var(--muted); animation: blink 1.2s infinite; }
+  .dots span:nth-child(2) { animation-delay: .2s; } .dots span:nth-child(3) { animation-delay: .4s; }
+  .typing small { color: var(--muted); font-size: 13px; }
+  @keyframes blink { 0%, 60%, 100% { opacity: .25; } 30% { opacity: 1; } }
+  .row, .answer { animation: rise .2s ease-out; }
+  @keyframes rise { from { opacity: 0; transform: translateY(4px); } }
 
-  /* While the agents work */
-  .working { margin-top: 18px; padding: 18px; border-radius: 22px; background: var(--card); box-shadow: var(--shadow); text-align: center; }
-  .working p { margin: 0 0 12px; font-weight: 600; }
-  .chips { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; }
-  .chip { font-size: 14px; padding: 5px 10px; border-radius: 999px; background: var(--brand-soft); color: var(--brand);
-    animation: pulse 1.2s ease-in-out infinite; }
-  .chip:nth-child(2) { animation-delay: .15s; } .chip:nth-child(3) { animation-delay: .3s; } .chip:nth-child(4) { animation-delay: .45s; }
-  @keyframes pulse { 50% { opacity: .35; } }
-  @keyframes rise { from { opacity: 0; transform: translateY(6px); } }
+  /* Composer */
+  .composer { border-top: 1px solid var(--line); background: var(--bg); }
+  .composer .col { display: flex; align-items: flex-end; gap: 8px; padding: 8px 12px; }
+  .composer textarea { flex: 1; font: inherit; font-size: 17px; line-height: 1.35; padding: 9px 14px; border: 0; border-radius: 20px;
+    background: var(--soft); color: var(--ink); resize: none; max-height: 140px; min-height: 40px; }
+  .composer textarea:focus { outline: none; }
+  .send { width: 40px; height: 40px; border: 0; border-radius: 50%; background: none; color: var(--brand); display: grid; place-items: center; flex: none; }
+  .send svg { width: 26px; height: 26px; fill: currentColor; stroke: none; }
+  .send:disabled { color: var(--line); cursor: default; }
+
+  /* Bottom tabs */
+  .tabbar { border-top: 1px solid var(--line); background: var(--bg); padding-bottom: env(safe-area-inset-bottom); }
+  .tabbar .col { display: grid; grid-template-columns: repeat(3, 1fr); }
+  .tabbar button { position: relative; border: 0; background: none; padding: 8px 4px 9px; font-size: 12px; font-weight: 600;
+    color: var(--muted); display: flex; flex-direction: column; align-items: center; gap: 3px; }
+  .tabbar button[aria-current="page"] { color: var(--brand); }
+  .tabbar button[aria-current="page"] svg.i { stroke-width: 2.2; }
+  .badge { position: absolute; top: 3px; left: calc(50% + 6px); min-width: 18px; height: 18px; padding: 0 5px; border-radius: 999px;
+    background: var(--accent); color: #fff; font-size: 11px; font-weight: 800; line-height: 18px; border: 2px solid var(--bg); box-sizing: content-box; }
 
   /* Login */
-  .login { display: flex; flex-direction: column; min-height: 100%; justify-content: center; padding: 10px 6px 30px; }
-  .login .logo { width: 96px; height: 96px; margin: 0 auto 6px; display: block; }
-  .login h1 { text-align: center; font-size: 44px; margin: 0; letter-spacing: -.02em; }
-  .login .tagline { text-align: center; color: var(--muted); margin: 2px 0 26px; }
-  .field { margin-bottom: 12px; }
-  .field label { display: block; font-weight: 600; margin-bottom: 6px; font-size: 18px; }
-  .login .hint { text-align: center; color: var(--muted); font-size: 15px; margin-top: 16px; }
-  .login .error { color: var(--danger); font-weight: 600; text-align: center; margin: 10px 0 0; }
+  .login { max-width: 380px; margin: 0 auto; padding: 8vh 20px 30px; }
+  .login .logo { width: 84px; height: 84px; margin: 0 auto 10px; display: block; }
+  .login h1 { text-align: center; font-size: 34px; margin: 0; letter-spacing: -.02em; }
+  .login .tagline { text-align: center; color: var(--muted); margin: 4px 0 28px; }
+  .login input { width: 100%; font: inherit; padding: 13px 14px; border: 1px solid var(--line); border-radius: 12px;
+    background: var(--soft); margin-bottom: 10px; color: var(--ink); }
+  .login input:focus { outline: none; border-color: var(--brand); background: var(--bg); }
+  .login label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+  .primary { width: 100%; margin-top: 6px; font-size: 17px; font-weight: 700; padding: 13px; border: 0; border-radius: 12px;
+    background: var(--brand); color: var(--brand-ink); }
+  .login .hint { text-align: center; color: var(--muted); font-size: 14px; margin-top: 18px; }
+  .login .error { color: var(--danger); font-weight: 600; text-align: center; margin: 12px 0 0; font-size: 15px; }
 
   /* Family */
-  .card { background: var(--card); border-radius: 20px; padding: 16px; box-shadow: var(--shadow); margin-bottom: 12px; }
-  .card .msg { font-size: 17px; margin: 6px 0 0; overflow-wrap: anywhere; }
-  .section { font-size: 15px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); margin: 20px 4px 8px; }
-  .pill { display: inline-block; font-size: 12px; font-weight: 800; padding: 3px 9px; border-radius: 999px; letter-spacing: .02em; }
+  .page-title { font-size: 26px; font-weight: 800; margin: 2px 0 2px; letter-spacing: -.01em; }
+  .page-sub { color: var(--muted); font-size: 15px; margin: 0 0 6px; }
+  .section { font-size: 13px; font-weight: 700; color: var(--muted); margin: 22px 0 6px; text-transform: uppercase; letter-spacing: .04em; }
+  .item { display: flex; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--line); }
+  .item:last-child { border-bottom: 0; }
+  .item .mark { width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; flex: none; color: #fff; }
+  .item .mark svg { width: 20px; height: 20px; stroke-width: 2.4; }
+  .mark.safe { background: var(--safe); } .mark.check_with_family { background: var(--check); } .mark.danger { background: var(--danger); }
+  .item .body { flex: 1; min-width: 0; }
+  .item .head { display: flex; gap: 8px; align-items: baseline; }
+  .item .head b { font-size: 16px; }
+  .item .head .time { margin-left: auto; color: var(--muted); font-size: 13px; flex: none; }
+  .item .msg { color: var(--muted); font-size: 15px; overflow-wrap: anywhere; margin-top: 1px; }
+  .note { margin-top: 8px; padding: 10px 12px; border-radius: 12px; font-size: 14px; }
+  .note.disagree { background: var(--check-bg); } .note.agree { background: var(--safe-bg); color: var(--safe); font-weight: 600; }
+  .note b { display: block; margin-bottom: 2px; }
+  ul.plain { margin: 2px 0 0; padding-left: 18px; }
+  details { margin-top: 6px; font-size: 14px; }
+  summary { cursor: pointer; font-weight: 600; color: var(--brand); }
+  .agent { padding: 8px 0 0; overflow-wrap: anywhere; }
+  .agent b { display: flex; gap: 6px; align-items: center; }
+  .pill { display: inline-block; font-size: 11px; font-weight: 800; padding: 2px 7px; border-radius: 999px; letter-spacing: .02em; }
   .pill.safe, .pill.OK, .pill.SAFE { background: var(--safe-bg); color: var(--safe); }
   .pill.check_with_family, .pill.SUSPICIOUS, .pill.DRIFT, .pill.MINOR { background: var(--check-bg); color: var(--check); }
   .pill.danger, .pill.SCAM, .pill.DOWN { background: var(--danger-bg); color: var(--danger); }
-  .meta { color: var(--muted); font-size: 13px; margin-left: 6px; }
-  .disagree { margin-top: 12px; padding: 12px; border-radius: 14px; background: var(--check-bg); font-size: 16px; }
-  .disagree b { display: block; margin-bottom: 4px; }
-  .agree { margin-top: 12px; font-size: 16px; color: var(--safe); font-weight: 600; }
-  ul.plain { margin: 4px 0 0; padding-left: 18px; font-size: 15px; }
-  details { margin-top: 10px; }
-  summary { cursor: pointer; font-weight: 600; color: var(--brand); font-size: 16px; }
-  .agent { border-top: 1px solid var(--line); padding: 10px 0 2px; font-size: 15px; overflow-wrap: anywhere; }
-  .agent:first-of-type { border-top: 0; }
-  .agent b { display: flex; align-items: center; gap: 6px; font-size: 16px; margin-bottom: 2px; }
-  .empty { text-align: center; color: var(--muted); padding: 26px 10px; }
-  .empty .big { font-size: 40px; display: block; }
-
-  /* Bottom tab bar */
-  .tabbar { display: grid; grid-template-columns: repeat(3, 1fr); border-top: 1px solid var(--line); background: var(--card);
-    padding-bottom: env(safe-area-inset-bottom); }
-  .tabbar button { position: relative; border: 0; background: none; padding: 9px 4px 11px; font-size: 13px; font-weight: 600;
-    color: var(--muted); display: flex; flex-direction: column; align-items: center; gap: 2px; }
-  .tabbar .ico { font-size: 25px; line-height: 1.1; filter: grayscale(1); opacity: .7; }
-  .tabbar button[aria-current="page"] { color: var(--brand); }
-  .tabbar button[aria-current="page"] .ico { filter: none; opacity: 1; }
-  .badge { position: absolute; top: 5px; left: calc(50% + 8px); min-width: 20px; height: 20px; padding: 0 6px; border-radius: 999px;
-    background: var(--accent); color: #fff; font-size: 12px; font-weight: 800; line-height: 20px; }
+  .empty { color: var(--muted); padding: 18px 0; font-size: 15px; }
 </style>
 </head>
 <body>
-<div class="phone">
+<div class="app">
   <header class="appbar">
-    <div class="brand app-only hidden"><svg viewBox="0 0 48 48" aria-hidden="true"><use href="#ger"/></svg>Ger</div>
-    <div class="spacer"></div>
-    <div class="lang">
-      <button id="lang-en" aria-pressed="true" title="Interface in English">EN</button>
-      <button id="lang-mn" aria-pressed="false" title="Монгол хэлээр">МН</button>
+    <div class="col">
+      <div class="who app-only hidden">
+        <div class="avatar"><svg viewBox="0 0 48 48" aria-hidden="true"><use href="#ger"/></svg></div>
+        <div><div class="name">Ger</div><div class="status" data-i18n="online">Your family's helper</div></div>
+      </div>
+      <div class="spacer"></div>
+      <div class="lang">
+        <button id="lang-en" aria-pressed="true" title="Interface in English">EN</button>
+        <button id="lang-mn" aria-pressed="false" title="Монгол хэлээр">МН</button>
+      </div>
+      <button id="logout" class="icon-btn app-only hidden" title="Log out" aria-label="Log out">
+        <svg class="i" viewBox="0 0 24 24"><path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3M10 17l5-5-5-5M15 12H4"/></svg>
+      </button>
     </div>
-    <button id="logout" class="icon-btn app-only hidden" data-i18n="logout">Log out</button>
   </header>
 
   <main class="screen" id="screen">
@@ -153,69 +180,47 @@
       <h1>Ger</h1>
       <p class="tagline" data-i18n="tagline">Help from home, in your language</p>
       <form id="form-login">
-        <div class="field">
-          <label for="login-username" data-i18n="username">Username</label>
-          <input type="text" id="login-username" autocomplete="username" autocapitalize="none" required>
-        </div>
-        <div class="field">
-          <label for="login-password" data-i18n="password">Password</label>
-          <input type="password" id="login-password" autocomplete="current-password" required>
-        </div>
-        <button class="go" type="submit" data-i18n="loginBtn">Log in</button>
+        <label for="login-username" data-i18n="username">Username</label>
+        <input type="text" id="login-username" autocomplete="username" autocapitalize="none" required data-i18n-placeholder="username">
+        <label for="login-password" data-i18n="password">Password</label>
+        <input type="password" id="login-password" autocomplete="current-password" required data-i18n-placeholder="password">
+        <button class="primary" type="submit" data-i18n="loginBtn">Log in</button>
         <p id="login-error" class="error hidden" role="alert" data-i18n="wrongLogin">Wrong username or password.</p>
       </form>
       <p class="hint" data-i18n="demoHint">Demo account: grandma / demo123</p>
     </section>
 
-    <!-- Grandma: check a message she received -->
-    <section id="explain" class="hidden">
-      <h2 data-i18n="explainTitle">Got a message?</h2>
-      <p class="sub" data-i18n="explainSub">Paste it here. We'll tell you what it says and if it's safe.</p>
-      <form id="form-explain">
-        <textarea id="explain-text" required data-i18n-placeholder="explainPlaceholder"></textarea>
-        <button class="go" type="submit" data-i18n="check">🔍 Check</button>
-      </form>
-    </section>
+    <!-- Chats with Ger: one for messages she got, one for replies she writes -->
+    <section id="explain" class="hidden"><div class="col"><div class="thread" id="thread-explain"></div></div></section>
+    <section id="reply" class="hidden"><div class="col"><div class="thread" id="thread-reply"></div></div></section>
 
-    <!-- Grandma: write a reply in Mongolian -->
-    <section id="reply" class="hidden">
-      <h2 data-i18n="replyTitle">Write a reply</h2>
-      <p class="sub" data-i18n="replySub">Write in Mongolian. We'll turn it into English and double-check it.</p>
-      <form id="form-reply">
-        <textarea id="reply-text" required></textarea>
-        <button class="go" type="submit" data-i18n="translate">🔁 Translate</button>
-      </form>
-    </section>
-
-    <div id="examples-wrap" class="hidden">
-      <button class="try" id="try" data-i18n="tryExample">✨ Try an example</button>
-      <div class="examples hidden" id="examples">
-        <button data-mode="explain" data-text="USPS: Your package could not be delivered. Update your address within 24 hours at usps-redelivery-help.com">📦 USPS scam</button>
-        <button data-mode="explain" data-text="Hi grandma it&#39;s me, I lost my phone so this is my new number. I&#39;m in trouble and need money for bail. Please send $2000 in gift cards and don&#39;t tell mom.">👦 Grandkid scam</button>
-        <button data-mode="explain" data-text="CVS Pharmacy: Your prescription is ready for pickup at 123 Main St. Reply STOP to opt out.">💊 Pharmacy</button>
-        <button data-mode="explain" data-text="Hi, please leave the package at the side gate, code 4512. Don't ring the bell, baby is sleeping. Thanks!">🚪 Customer note</button>
-        <button data-mode="reply" data-text="Сайн байна уу, таны илгээмжийг хажуугийн хаалганы дэргэд тавьчихлаа. Баярлалаа!">💬 Her reply</button>
-      </div>
-    </div>
-
-    <div id="result" aria-live="polite"></div>
-
-    <!-- Family: alerts, and how the agents decided -->
-    <section id="family" class="hidden">
-      <h2 data-i18n="familyTitle">Family</h2>
-      <p class="sub" data-i18n="familySub">When the helpers disagree or something looks risky, Ger asks you instead of guessing.</p>
+    <!-- Family: alerts, and how the helpers decided -->
+    <section id="family" class="hidden"><div class="col">
+      <div class="page-title" data-i18n="familyTitle">Family</div>
+      <p class="page-sub" data-i18n="familySub">When the helpers disagree or something looks risky, Ger asks you instead of guessing.</p>
       <div class="section" data-i18n="latest">Latest check</div>
       <div id="decision"></div>
       <div class="section" data-i18n="alertsTitle">Alerts</div>
       <div id="alerts"></div>
-    </section>
+    </div></section>
   </main>
 
+  <form class="composer app-only hidden" id="composer">
+    <div class="col">
+      <textarea id="input" rows="1" required></textarea>
+      <button class="send" id="send" type="submit" aria-label="Send" disabled>
+        <svg viewBox="0 0 24 24"><path d="M3.4 20.4 21 12 3.4 3.6l.02 6.53L15 12 3.42 13.87z"/></svg>
+      </button>
+    </div>
+  </form>
+
   <nav class="tabbar app-only hidden" aria-label="Main">
-    <button id="nav-explain"><span class="ico">📩</span><span data-i18n="navCheck">Check</span></button>
-    <button id="nav-reply"><span class="ico">✍️</span><span data-i18n="navReply">Reply</span></button>
-    <button id="nav-family"><span class="ico">👨‍👩‍👧</span><span data-i18n="navFamily">Family</span>
-      <span class="badge hidden" id="badge"></span></button>
+    <div class="col">
+      <button id="nav-explain"><svg class="i" viewBox="0 0 24 24"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/><path d="M9 12h.01M12 12h.01M15 12h.01"/></svg><span data-i18n="navCheck">Check</span></button>
+      <button id="nav-reply"><svg class="i" viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg><span data-i18n="navReply">Reply</span></button>
+      <button id="nav-family"><svg class="i" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.2"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6"/><circle cx="17" cy="9" r="2.5"/><path d="M16 14.2c2.8.4 5 2.8 5 5.8"/></svg><span data-i18n="navFamily">Family</span>
+        <span class="badge hidden" id="badge"></span></button>
+    </div>
   </nav>
 </div>
 
@@ -223,33 +228,50 @@
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
   <symbol id="ger" viewBox="0 0 48 48">
     <path d="M4 25 Q24 4 44 25 Z" fill="#1d4f7c"/>
-    <circle cx="24" cy="12" r="2.6" fill="#f1e6d2"/>
+    <circle cx="24" cy="13" r="2.4" fill="#f1e6d2"/>
     <rect x="8" y="25" width="32" height="15" rx="2" fill="#f1e6d2" stroke="#1d4f7c" stroke-width="1.5"/>
     <path d="M8 30 H40" stroke="#c4272f" stroke-width="1.5"/>
     <rect x="20" y="29" width="8" height="11" rx="1" fill="#c4272f"/>
   </symbol>
+  <symbol id="ic-safe" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></symbol>
+  <symbol id="ic-check_with_family" viewBox="0 0 24 24"><path d="M12 7v6M12 17h.01"/></symbol>
+  <symbol id="ic-danger" viewBox="0 0 24 24"><path d="M7 7l10 10M17 7 7 17"/></symbol>
 </svg>
 
 <script>
 const API = "";  // same origin as the helper API
-let last = null;
 let lang = "en";  // interface language; grandma uses "mn"
 let view = "login";
-let seenAlerts = 0;
-let alertCount = 0;
+let last = null;  // latest result, for the family screen
+let seenAlerts = 0, alertCount = 0;
+// Each chat is a list of turns: {who: "me"|"ger", kind, text|data}.
+const threads = { explain: [], reply: [] };
+const busy = { explain: false, reply: false };
+const drafts = { explain: "", reply: "" };
+
+const EXAMPLES = {
+  explain: [
+    ["USPS scam", "USPS: Your package could not be delivered. Update your address within 24 hours at usps-redelivery-help.com"],
+    ["Grandkid scam", "Hi grandma it's me, I lost my phone so this is my new number. I'm in trouble and need money for bail. Please send $2000 in gift cards and don't tell mom."],
+    ["Pharmacy", "CVS Pharmacy: Your prescription is ready for pickup at 123 Main St. Reply STOP to opt out."],
+    ["Customer note", "Hi, please leave the package at the side gate, code 4512. Don't ring the bell, baby is sleeping. Thanks!"],
+  ],
+  reply: [
+    ["Delivery reply", "Сайн байна уу, таны илгээмжийг хажуугийн хаалганы дэргэд тавьчихлаа. Баярлалаа!"],
+  ],
+};
 
 const STRINGS = {
   en: {
-    tagline: "Help from home, in your language",
-    explainTitle: "Got a message?", explainSub: "Paste it here. We'll tell you what it says and if it's safe.",
-    explainPlaceholder: "Paste the English message...",
-    replyTitle: "Write a reply", replySub: "Write in Mongolian. We'll turn it into English and double-check it.",
-    check: "🔍 Check", translate: "🔁 Translate", wait: "⏳ Checking...",
-    working: "Ger's helpers are checking...",
-    inMongolian: "What it says (Mongolian)", whatToDo: "What to do",
-    english: "English", copy: "📋 Copy", copied: "✅ Copied",
+    tagline: "Help from home, in your language", online: "Your family's helper",
+    helloExplain: "Hi! Paste any message you got. I'll tell you what it says, if it's safe, and what to do.",
+    helloReply: "Write your reply in Mongolian. I'll turn it into English and double-check it before you send it.",
+    placeholderExplain: "Paste a message...", placeholderReply: "Write in Mongolian...",
+    forwarded: "Message you got", working: "Translator, scam checker and advisor are checking",
+    workingReply: "Translating and double-checking",
+    inMongolian: "In Mongolian", whatToDo: "What to do",
+    english: "In English", copy: "Copy", copied: "Copied",
     error: "Something went wrong. Please try again.",
-    tryExample: "✨ Try an example",
     navCheck: "Check", navReply: "Reply", navFamily: "Family",
     familyTitle: "Family", familySub: "When the helpers disagree or something looks risky, Ger asks you instead of guessing.",
     latest: "Latest check", alertsTitle: "Alerts",
@@ -258,16 +280,15 @@ const STRINGS = {
   },
   mn: {
     // Pending native-speaker review (all strings in this block).
-    tagline: "Гэрээсээ тусламж, өөрийн хэлээр",
-    explainTitle: "Мессеж ирсэн үү?", explainSub: "Энд хуулж тавина уу. Юу гэж бичсэн, аюулгүй эсэхийг хэлж өгнө.",
-    explainPlaceholder: "Англи мессежээ энд тавина уу...",
-    replyTitle: "Хариу бичих", replySub: "Монголоор бичнэ үү. Бид англи руу орчуулж, шалгаж өгнө.",
-    check: "🔍 Шалгах", translate: "🔁 Орчуулах", wait: "⏳ Шалгаж байна...",
-    working: "Туслахууд шалгаж байна...",
-    inMongolian: "Мессеж монголоор", whatToDo: "Юу хийх вэ",
-    english: "English", copy: "📋 Хуулах", copied: "✅ Хуулсан",
+    tagline: "Гэрээсээ тусламж, өөрийн хэлээр", online: "Гэр бүлийн тань туслах",
+    helloExplain: "Сайн байна уу! Ирсэн мессежээ энд хуулж тавина уу. Юу гэж бичсэн, аюулгүй эсэх, юу хийхийг хэлж өгнө.",
+    helloReply: "Хариугаа монголоор бичнэ үү. Би англи руу орчуулж, илгээхийн өмнө шалгаж өгнө.",
+    placeholderExplain: "Мессежээ тавина уу...", placeholderReply: "Монголоор бичнэ үү...",
+    forwarded: "Танд ирсэн мессеж", working: "Орчуулагч, залилан шалгагч, зөвлөх шалгаж байна",
+    workingReply: "Орчуулж, шалгаж байна",
+    inMongolian: "Монголоор", whatToDo: "Юу хийх вэ",
+    english: "Англиар", copy: "Хуулах", copied: "Хуулсан",
     error: "Алдаа гарлаа. Дахин оролдоно уу.",
-    tryExample: "✨ Жишээ үзэх",
     navCheck: "Шалгах", navReply: "Хариу", navFamily: "Гэр бүл",
     familyTitle: "Гэр бүл", familySub: "Туслахууд санал зөрөх эсвэл эрсдэлтэй үед Ger таамаглахын оронд гэр бүлээсээ асууна.",
     latest: "Сүүлийн шалгалт", alertsTitle: "Анхааруулга",
@@ -279,14 +300,14 @@ const t = (key) => STRINGS[lang][key];
 const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) =>
   ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const icon = (status) => `<svg class="i" viewBox="0 0 24 24"><use href="#ic-${status}"/></svg>`;
+const gerAvatar = `<div class="avatar sm"><svg viewBox="0 0 48 48"><use href="#ger"/></svg></div>`;
 
 const AGENT_NAMES = {
-  translator: "🌐 Translator", translation_checker: "🔁 Translation checker",
-  scam_checker: "🛡️ Scam checker", advisor: "🧭 Advisor",
+  translator: "Translator", translation_checker: "Translation checker",
+  scam_checker: "Scam checker", advisor: "Advisor",
 };
-const STATUS_TEXT = { safe: "SAFE", check_with_family: "ASK FAMILY", danger: "DANGER" };
-const STATUS_ICON = { safe: "✅", check_with_family: "⚠️", danger: "🛑" };
-const STATUS_BG = { safe: "safe-bg", check_with_family: "check-bg", danger: "danger-bg" };
+const STATUS_TEXT = { safe: "Safe", check_with_family: "Ask family", danger: "Danger" };
 
 function setLang(next) {
   lang = next;
@@ -295,115 +316,145 @@ function setLang(next) {
   document.querySelectorAll("[data-i18n-placeholder]").forEach((el) => { el.placeholder = t(el.dataset.i18nPlaceholder); });
   $("lang-en").setAttribute("aria-pressed", lang === "en");
   $("lang-mn").setAttribute("aria-pressed", lang === "mn");
-  if (last && last.mode === view) showResult(last.mode, last.data);
+  if (view === "explain" || view === "reply") { renderThread(view); $("input").placeholder = t(view === "explain" ? "placeholderExplain" : "placeholderReply"); }
+  if (view === "family") renderFamily();
 }
 
 // Views: "login", "explain", "reply", "family".
 function setView(next) {
+  if (view === "explain" || view === "reply") drafts[view] = $("input").value;
   view = next;
   const loggedIn = next !== "login";
+  const chat = next === "explain" || next === "reply";
   document.querySelectorAll(".app-only").forEach((el) => el.classList.toggle("hidden", !loggedIn));
+  $("composer").classList.toggle("hidden", !chat);
   for (const id of ["login", "explain", "reply", "family"]) $(id).classList.toggle("hidden", id !== next);
   for (const id of ["explain", "reply", "family"]) {
     if (id === next) $(`nav-${id}`).setAttribute("aria-current", "page");
     else $(`nav-${id}`).removeAttribute("aria-current");
   }
-  const grandma = next === "explain" || next === "reply";
-  $("examples-wrap").classList.toggle("hidden", !grandma);
-  document.querySelectorAll("#examples button").forEach((b) => b.classList.toggle("hidden", b.dataset.mode !== next));
-  // Show the last result only on the screen it belongs to.
-  if (last && last.mode === next) showResult(last.mode, last.data); else $("result").innerHTML = "";
-  if (next === "family") { renderFamily(); seenAlerts = alertCount; updateBadge(); }
-  $("screen").scrollTop = 0;
+  if (chat) {
+    $("input").value = drafts[next];
+    $("input").placeholder = t(next === "explain" ? "placeholderExplain" : "placeholderReply");
+    autosize();
+    renderThread(next);
+  }
+  if (next === "family") { renderFamily(); seenAlerts = alertCount; updateBadge(); $("screen").scrollTop = 0; }
 }
 
-async function send(mode, text, button) {
-  if (!text) return;
-  button.disabled = true;
-  button.textContent = t("wait");
-  const names = mode === "explain"
-    ? ["🌐 Translator", "🛡️ Scam checker", "🧭 Advisor", "🔁 Checker"] : ["🌐 Translator", "🔁 Checker"];
-  $("result").innerHTML = `<div class="working"><p>${t("working")}</p>
-    <div class="chips">${names.map((n) => `<span class="chip">${n}</span>`).join("")}</div></div>`;
+function answerCard(mode, d) {
+  const g = d.grandma;
+  const en = lang === "en";
+  // The fixed headlines start with their own emoji; the card has its own icon.
+  const headline = (en ? g.headline_en : g.headline).replace(/^\S+\s/, "");
+  let parts = "";
+  if (mode === "explain") {
+    const advice = en ? g.advice_en : g.advice;
+    if (advice) parts += `<div class="part"><div class="label">${t("whatToDo")}</div>
+      <div class="text strong">${esc(advice)}</div>
+      ${en && g.advice ? `<div class="text secondary">${esc(g.advice)}</div>` : ""}</div>`;
+    if (g.translation) parts += `<div class="part"><div class="label">${t("inMongolian")}</div>
+      <div class="text">${esc(g.translation)}</div></div>`;
+  } else if (d.english) {
+    parts += `<div class="part"><div class="label">${t("english")}</div>
+      <div class="text">${esc(d.english)}</div>
+      <button class="copy" type="button" data-copy="${esc(d.english)}">${t("copy")}</button></div>`;
+  }
+  return `<div class="answer ${d.status}">
+    <div class="top"><span class="dot">${icon(d.status)}</span>${esc(headline)}</div>${parts}</div>`;
+}
+
+function renderThread(mode) {
+  const hello = t(mode === "explain" ? "helloExplain" : "helloReply");
+  let html = `<div class="row ger">${gerAvatar}<div class="bubble">${esc(hello)}</div></div>`;
+  if (!threads[mode].length) {
+    html += `<div class="chips">${EXAMPLES[mode].map(([name], i) =>
+      `<button type="button" data-example="${i}">${esc(name)}</button>`).join("")}</div>`;
+  }
+  for (const turn of threads[mode]) {
+    if (turn.who === "me" && mode === "explain") html += `<div class="row me"><div class="stack">
+      <div class="fwd">↪ ${t("forwarded")}</div><div class="bubble forward">${esc(turn.text)}</div></div></div>`;
+    else if (turn.who === "me") html += `<div class="row me"><div class="bubble">${esc(turn.text)}</div></div>`;
+    else if (turn.kind === "typing") html += `<div class="row ger">${gerAvatar}<div class="bubble typing">
+      <span class="dots"><span></span><span></span><span></span></span>
+      <small>${t(mode === "explain" ? "working" : "workingReply")}</small></div></div>`;
+    else if (turn.kind === "error") html += `<div class="row ger">${gerAvatar}<div class="bubble">${t("error")}</div></div>`;
+    else html += `<div class="row ger">${gerAvatar}${answerCard(mode, turn.data)}</div>`;
+  }
+  const el = $(`thread-${mode}`);
+  el.innerHTML = html;
+  el.querySelectorAll("[data-example]").forEach((b) => b.onclick = () => {
+    $("input").value = EXAMPLES[mode][b.dataset.example][1];
+    autosize(); $("input").focus();
+  });
+  el.querySelectorAll("[data-copy]").forEach((b) => b.onclick = async () => {
+    try { await navigator.clipboard.writeText(b.dataset.copy); b.textContent = t("copied"); } catch {}
+  });
+  requestAnimationFrame(() => { $("screen").scrollTop = $("screen").scrollHeight; });
+}
+
+async function send(mode, text) {
+  if (!text || busy[mode]) return;
+  busy[mode] = true;
+  threads[mode].push({ who: "me", text });
+  const typing = { who: "ger", kind: "typing" };
+  threads[mode].push(typing);
+  if (view === mode) renderThread(mode);
+  let reply;
   try {
     const res = await fetch(`${API}/${mode}`, {
       method: "POST", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ text }),
     });
-    if (res.status === 401) return setView("login");
+    if (res.status === 401) { threads[mode].splice(-2); busy[mode] = false; return setView("login"); }
     if (!res.ok) throw new Error(res.status);
     const data = await res.json();
     last = { mode, text, data };
-    if (view === mode) showResult(mode, data);
+    reply = { who: "ger", kind: "answer", data };
     refreshAlerts();
   } catch (e) {
-    $("result").innerHTML = `<div class="result check_with_family"><div class="verdict">
-      <span class="big">⚠️</span><p>${t("error")}</p></div></div>`;
-  } finally {
-    button.disabled = false;
-    button.textContent = t(mode === "explain" ? "check" : "translate");
+    reply = { who: "ger", kind: "error" };
   }
+  threads[mode][threads[mode].indexOf(typing)] = reply;
+  busy[mode] = false;
+  if (view === mode) renderThread(mode);
 }
 
-function showResult(mode, d) {
-  const g = d.grandma;
-  const en = lang === "en";
-  // The fixed headlines start with their own emoji; show it big, separately.
-  const headline = (en ? g.headline_en : g.headline).replace(/^\S+\s/, "");
-  let body = "";
-  if (mode === "explain") {
-    const advice = en ? g.advice_en : g.advice;
-    body = `
-      ${advice ? `<div class="block todo ${STATUS_BG[d.status]}"><div class="label">${t("whatToDo")}</div>
-        <div class="text"><b>${esc(advice)}</b></div>
-        ${en && g.advice ? `<div class="text secondary">${esc(g.advice)}</div>` : ""}</div>` : ""}
-      ${g.translation ? `<div class="block"><div class="label">${t("inMongolian")}</div>
-        <div class="text">${esc(g.translation)}</div></div>` : ""}`;
-  } else if (d.english) {
-    body = `<div class="block"><div class="label">${t("english")}</div>
-      <div class="text">${esc(d.english)}</div>
-      <button class="copy" id="copy">${t("copy")}</button></div>`;
-  }
-  $("result").innerHTML = `<div class="result ${d.status}">
-    <div class="verdict"><span class="big">${STATUS_ICON[d.status]}</span><p>${esc(headline)}</p></div>${body}</div>`;
-  const copy = $("copy");
-  if (copy) copy.onclick = async () => {
-    try { await navigator.clipboard.writeText(d.english); copy.textContent = t("copied"); } catch {}
-  };
+function autosize() {
+  const el = $("input");
+  el.style.height = "auto";
+  el.style.height = `${Math.min(el.scrollHeight, 140)}px`;
+  $("send").disabled = !el.value.trim();
 }
 
 function agentRow(key, o) {
   if (!o) return "";
   const name = AGENT_NAMES[key] || key;
   if (o.error) return `<div class="agent"><b>${name} <span class="pill DOWN">DOWN</span></b>${esc(o.error)}</div>`;
-  let body = "";
-  if (key === "scam_checker") body = `<b>${name} <span class="pill ${o.verdict}">${o.verdict}</span></b>
-      Rules: ${esc(o.rule_verdict)} · AI: ${esc(o.llm_verdict)}<br>
-      Red flags: ${esc(o.red_flags.join(", ") || "none")}<br>${esc(o.reason)}`;
-  else if (key === "translation_checker") body = `<b>${name} <span class="pill ${o.verdict}">${o.verdict}</span></b>
-      <i>Back-translation:</i> ${esc(o.back_translation)}${o.differences ? `<br>${esc(o.differences)}` : ""}`;
-  else if (key === "advisor") body = `<b>${name}</b>${esc(o.summary)}<br><i>Suggests:</i> ${esc(o.action)}`;
-  else if (key === "translator") body = `<b>${name}</b>${esc(o.translation)}`;
-  return `<div class="agent">${body}</div>`;
+  if (key === "scam_checker") return `<div class="agent"><b>${name} <span class="pill ${o.verdict}">${o.verdict}</span></b>
+      Rules: ${esc(o.rule_verdict)} · AI: ${esc(o.llm_verdict)} · Red flags: ${esc(o.red_flags.join(", ") || "none")}<br>${esc(o.reason)}</div>`;
+  if (key === "translation_checker") return `<div class="agent"><b>${name} <span class="pill ${o.verdict}">${o.verdict}</span></b>
+      <i>Back-translation:</i> ${esc(o.back_translation)}${o.differences ? `<br>${esc(o.differences)}` : ""}</div>`;
+  if (key === "advisor") return `<div class="agent"><b>${name}</b>${esc(o.summary)}<br><i>Suggests:</i> ${esc(o.action)}</div>`;
+  return `<div class="agent"><b>${name}</b>${esc(o.translation)}</div>`;
 }
 
 function renderDecision() {
-  if (!last) return `<div class="card empty"><span class="big">📭</span>Nothing checked yet.</div>`;
+  if (!last) return `<div class="empty">Nothing checked yet.</div>`;
   const d = last.data, f = d.family;
-  return `<div class="card">
-    <span class="pill ${d.status}">${STATUS_ICON[d.status]} ${STATUS_TEXT[d.status]}</span>
-    <span class="meta">${last.mode === "explain" ? "message received" : "her reply"}</span>
-    <p class="msg">${esc(last.text)}</p>
-    ${d.english ? `<p class="msg"><b>English:</b> ${esc(d.english)}</p>` : ""}
+  return `<div class="item"><div class="mark ${d.status}">${icon(d.status)}</div><div class="body">
+    <div class="head"><b>${STATUS_TEXT[d.status]}</b><span class="pill ${d.status}">${last.mode === "explain" ? "message she got" : "her reply"}</span></div>
+    <div class="msg">${esc(last.text)}</div>
+    ${d.english ? `<div class="msg"><b>English:</b> ${esc(d.english)}</div>` : ""}
     ${f.disagreements.length
-      ? `<div class="disagree"><b>⚖️ The helpers disagreed</b><ul class="plain">
+      ? `<div class="note disagree"><b>The helpers disagreed</b><ul class="plain">
           ${f.disagreements.map((x) => `<li>${esc(x)}</li>`).join("")}</ul></div>`
-      : `<div class="agree">🤝 All helpers agreed.</div>`}
+      : `<div class="note agree">All helpers agreed.</div>`}
     ${f.reasons.length ? `<details><summary>Why this outcome</summary><ul class="plain">
       ${f.reasons.map((x) => `<li>${esc(x)}</li>`).join("")}</ul></details>` : ""}
     <details><summary>What each helper said</summary>
       ${Object.entries(d.agents).map(([k, o]) => agentRow(k, o)).join("")}</details>
-  </div>`;
+  </div></div>`;
 }
 
 async function fetchAlerts() {
@@ -436,15 +487,16 @@ async function renderFamily() {
     alertCount = seenAlerts = alerts.length;
     updateBadge();
     $("alerts").innerHTML = alerts.length ? alerts.map((a) => `
-      <div class="card"><span class="pill ${a.status}">${STATUS_ICON[a.status]} ${STATUS_TEXT[a.status]}</span>
-        <span class="meta">${esc(new Date(a.time).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }))}
-          · ${a.kind === "reply" ? "her reply" : "message received"}</span>
-        <p class="msg">${esc(a.message)}</p>
+      <div class="item"><div class="mark ${a.status}">${icon(a.status)}</div><div class="body">
+        <div class="head"><b>${STATUS_TEXT[a.status]}</b>
+          <span class="pill ${a.status}">${a.kind === "reply" ? "her reply" : "message she got"}</span>
+          <span class="time">${esc(new Date(a.time).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }))}</span></div>
+        <div class="msg">${esc(a.message)}</div>
         <details><summary>Why</summary><ul class="plain">
-          ${[...a.reasons, ...a.disagreements].map((r) => `<li>${esc(r)}</li>`).join("")}</ul></details></div>`).join("")
-      : `<div class="card empty"><span class="big">🌿</span>No alerts. All quiet.</div>`;
+          ${[...a.reasons, ...a.disagreements].map((r) => `<li>${esc(r)}</li>`).join("")}</ul></details></div></div>`).join("")
+      : `<div class="empty">No alerts. All quiet.</div>`;
   } catch {
-    $("alerts").innerHTML = `<div class="card empty">Could not load alerts.</div>`;
+    $("alerts").innerHTML = `<div class="empty">Could not load alerts.</div>`;
   }
 }
 
@@ -463,6 +515,8 @@ $("form-login").onsubmit = async (e) => {
 $("logout").onclick = async () => {
   await fetch(`${API}/logout`, { method: "POST" });
   last = null;
+  threads.explain = []; threads.reply = [];
+  drafts.explain = drafts.reply = "";
   setView("login");
 };
 
@@ -471,16 +525,18 @@ $("lang-mn").onclick = () => setLang("mn");
 $("nav-explain").onclick = () => setView("explain");
 $("nav-reply").onclick = () => setView("reply");
 $("nav-family").onclick = () => setView("family");
-$("form-explain").onsubmit = (e) => { e.preventDefault();
-  send("explain", $("explain-text").value.trim(), $("form-explain").querySelector("button")); };
-$("form-reply").onsubmit = (e) => { e.preventDefault();
-  send("reply", $("reply-text").value.trim(), $("form-reply").querySelector("button")); };
-$("try").onclick = () => $("examples").classList.toggle("hidden");
-document.querySelectorAll("#examples button").forEach((b) => b.onclick = () => {
-  $(`${b.dataset.mode}-text`).value = b.dataset.text;
-  $("examples").classList.add("hidden");
-  $("result").innerHTML = "";
-});
+$("input").oninput = autosize;
+$("input").onkeydown = (e) => {
+  // Enter sends (like Messenger); Shift+Enter adds a new line.
+  if (e.key === "Enter" && !e.shiftKey && !e.isComposing) { e.preventDefault(); $("composer").requestSubmit(); }
+};
+$("composer").onsubmit = (e) => {
+  e.preventDefault();
+  const text = $("input").value.trim();
+  if (!text) return;
+  $("input").value = ""; drafts[view] = ""; autosize();
+  send(view, text);
+};
 
 // Keep the family badge fresh while the app is open.
 setInterval(() => { if (view !== "login") refreshAlerts(); }, 15000);
