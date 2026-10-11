@@ -186,6 +186,16 @@
   .legend .l-bad::before { background: var(--danger); } .legend .l-down::before { background: #9a9a9a; }
   .legend .l-fight::before { width: 16px; height: 0; border-top: 2.5px dashed var(--danger); border-radius: 0; vertical-align: 3px; }
   .card-diagram { border: 1px solid var(--line); border-radius: 16px; padding: 10px 8px 10px; margin-top: 4px; }
+  .diagram .t-lap { font-size: 11px; font-weight: 700; fill: var(--muted); }
+  .diagram .t-head { font-size: 12px; font-weight: 700; fill: var(--ink); }
+  .diagram .changed { stroke: var(--brand); stroke-width: 2; fill: none; }
+  .diagram .changed-label { font-size: 10px; font-weight: 700; fill: var(--brand); }
+  .diagram .t-base { font-size: 11px; fill: var(--muted); }
+  .says { margin: 8px 4px 0; padding: 0; list-style: none; font-size: 13px; }
+  .says li { padding: 5px 0; border-top: 1px solid var(--line); }
+  .says li:first-child { border-top: 0; }
+  .says .agent-name { font-weight: 700; }
+  .says .moved { color: var(--brand); font-weight: 700; }
 </style>
 </head>
 <body>
@@ -470,6 +480,64 @@ function diagram(mode, d, text) {
       <span class="l-bad">scam / wrong</span><span class="l-down">down</span><span class="l-fight">disagreement</span></div>`;
 }
 
+const POS_CLS = { SAFE: "n-safe", ASK_FAMILY: "n-warn", DANGER: "n-bad" };
+const POS_TEXT = { SAFE: "Safe", ASK_FAMILY: "Ask family", DANGER: "Danger" };
+
+// The safety council: one row per lap, one column per agent, who changed their mind.
+function councilDiagram(d) {
+  const c = d.council, turns = c.transcript;
+  const ring = c.ring;
+  const laps = Math.max(1, ...turns.map((t) => t.lap));
+  const W = 400, colX = (i) => 112 + i * 108, bw = 92, bh = 34, y0 = 34, rowH = 56;
+  const rowY = (lap) => y0 + (lap - 1) * rowH;
+  const at = {};
+  for (const t of turns) at[`${t.agent}:${t.lap}`] = t;
+  let svg = "";
+  ring.forEach((a, i) => {
+    svg += `<text class="t-head" x="${colX(i)}" y="18" text-anchor="middle">${AGENT_SHORT[a]}</text>`;
+  });
+  for (let lap = 1; lap <= laps; lap++) {
+    svg += `<text class="t-lap" x="8" y="${rowY(lap) + bh / 2 + 4}">LAP ${lap}</text>`;
+    ring.forEach((a, i) => {
+      const t = at[`${a}:${lap}`];
+      if (!t) return;
+      const x = colX(i) - bw / 2, y = rowY(lap);
+      if (t.unreachable) {
+        svg += `<g class="node n-down" style="animation-delay:${lap * 200 + i * 80}ms"><rect x="${x}" y="${y}" width="${bw}" height="${bh}" rx="10"/>
+          <text class="t-say" x="${colX(i)}" y="${y + 21}" text-anchor="middle">✕ Down</text></g>`;
+        return;
+      }
+      svg += `<g class="node ${POS_CLS[t.position]}" style="animation-delay:${lap * 200 + i * 80}ms">
+        <rect x="${x}" y="${y}" width="${bw}" height="${bh}" rx="10"/>
+        <text class="t-say" x="${colX(i)}" y="${y + 21}" text-anchor="middle">${POS_TEXT[t.position]}${t.firm ? " · firm" : ""}</text></g>`;
+      if (t.changed_from) {
+        const yTop = rowY(lap - 1) + bh;
+        svg += `<path class="changed" d="M${colX(i)},${yTop + 2} L${colX(i)},${y - 3}" marker-end="url(#chg)"/>
+          <text class="changed-label" x="${colX(i) + 6}" y="${(yTop + y) / 2 + 4}">changed</text>`;
+      }
+    });
+  }
+  const o = c.outcome, fy = rowY(laps) + bh + 22, fh = 40;
+  const how = { consensus: "everyone agreed" }[o.how] || o.how;
+  svg += `<g class="node decide ${POS_CLS[o.decision]}" style="animation-delay:${laps * 200 + 300}ms">
+    <rect x="${W / 2 - 150}" y="${fy}" width="300" height="${fh}" rx="12"/>
+    <text class="t-name" x="${W / 2}" y="${fy + 17}" text-anchor="middle">Council: ${POS_TEXT[o.decision].toUpperCase()}</text>
+    <text class="t-small" x="${W / 2}" y="${fy + 32}" text-anchor="middle">${esc(how)}, lap ${o.lap} · no supervisor decided</text></g>`;
+  const base = d.baseline ? STATUS_TEXT[d.baseline.status] : null;
+  if (base) svg += `<text class="t-base" x="${W / 2}" y="${fy + fh + 18}" text-anchor="middle">Baseline (fixed rules) would say: ${base}</text>`;
+  const H = fy + fh + (base ? 26 : 8);
+  const said = turns.filter((t) => !t.unreachable && (t.lap === 1 || t.changed_from)).map((t) => `
+    <li><span class="agent-name">${AGENT_SHORT[t.agent]}</span> ${t.changed_from
+      ? `<span class="moved">changed ${POS_TEXT[t.changed_from]} to ${POS_TEXT[t.position]}:</span>`
+      : `(${POS_TEXT[t.position]}):`} ${esc(t.reason)}</li>`).join("");
+  return `<svg class="diagram" viewBox="0 0 ${W} ${H}" role="img" aria-label="How the safety council negotiated">
+      <defs><marker id="chg" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+        <path d="M0 0L10 5L0 10z" fill="var(--brand)"/></marker></defs>${svg}</svg>
+    <div class="legend"><span class="l-safe">safe</span><span class="l-warn">ask family</span>
+      <span class="l-bad">danger</span><span class="l-down">down</span></div>
+    <ul class="says">${said}</ul>`;
+}
+
 const AGENT_SHORT = {
   translator: "Translator", translation_checker: "Checker", scam_checker: "Scam check", advisor: "Advisor",
 };
@@ -494,7 +562,7 @@ function answerCard(mode, d, turnIndex, open) {
   }
   parts += `<div class="part"><button class="how" type="button" data-how="${turnIndex}">
     ${open ? "Hide" : "How Ger decided"}</button>
-    ${open ? diagram(mode, d, threads[mode][turnIndex].text) : ""}</div>`;
+    ${open ? (d.council ? councilDiagram(d) : diagram(mode, d, threads[mode][turnIndex].text)) : ""}</div>`;
   return `<div class="answer ${d.status}">
     <div class="top"><span class="dot">${icon(d.status)}</span>${esc(headline)}</div>${parts}</div>`;
 }
@@ -588,6 +656,7 @@ function renderDecision() {
     <div class="head"><b>${STATUS_TEXT[d.status]}</b><span class="pill ${d.status}">${last.mode === "explain" ? "message she got" : "her reply"}</span></div>
     <div class="msg">${esc(last.text)}</div>
     ${d.english ? `<div class="msg"><b>English:</b> ${esc(d.english)}</div>` : ""}
+    ${d.council ? `<div class="card-diagram">${councilDiagram(d)}</div>` : ""}
     <div class="card-diagram">${diagram(last.mode, d, last.text)}</div>
     ${f.disagreements.length
       ? `<div class="note disagree"><b>The helpers disagreed</b><ul class="plain">
