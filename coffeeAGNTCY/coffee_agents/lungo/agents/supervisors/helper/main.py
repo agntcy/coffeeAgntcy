@@ -6,13 +6,14 @@
 import config.logging_config  # noqa: F401 - runs setup on import; must be first
 
 import logging
+import secrets
 from pathlib import Path
 
 import uvicorn
 from agntcy_app_sdk.factory import AgntcyFactory
 from config.config import OTEL_SDK_DISABLED
 from dotenv import load_dotenv
-from fastapi import FastAPI, HTTPException
+from fastapi import Cookie, Depends, FastAPI, HTTPException, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from ioa_observe.sdk.tracing import session_start
@@ -35,6 +36,52 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+# Demo login: one built-in account, shown as a hint on the login screen.
+# It only puts the demo behind a login screen; it is not real security.
+DEMO_USERNAME = "grandma"
+DEMO_PASSWORD = "demo123"
+SESSION_COOKIE = "helper_demo_session"
+# Logged-in sessions, in memory: restarting the server logs everyone out.
+_sessions: set[str] = set()
+
+
+class LoginRequest(BaseModel):
+    username: str
+    password: str
+
+
+def require_login(
+    session: str | None = Cookie(default=None, alias=SESSION_COOKIE),
+) -> None:
+    if session not in _sessions:
+        raise HTTPException(status_code=401, detail="not logged in")
+
+
+@app.post("/login")
+async def login(req: LoginRequest, response: Response) -> dict:
+    if req.username.strip().lower() != DEMO_USERNAME or req.password != DEMO_PASSWORD:
+        raise HTTPException(status_code=401, detail="wrong username or password")
+    token = secrets.token_urlsafe(16)
+    _sessions.add(token)
+    response.set_cookie(SESSION_COOKIE, token, httponly=True, samesite="lax")
+    return {"username": DEMO_USERNAME}
+
+
+@app.post("/logout")
+async def logout(
+    response: Response,
+    session: str | None = Cookie(default=None, alias=SESSION_COOKIE),
+) -> dict:
+    _sessions.discard(session)
+    response.delete_cookie(SESSION_COOKIE)
+    return {"status": "logged out"}
+
+
+@app.get("/me", dependencies=[Depends(require_login)])
+async def me() -> dict:
+    return {"username": DEMO_USERNAME}
 
 
 class TextRequest(BaseModel):
@@ -63,19 +110,19 @@ async def _traced(kind: str, text: str, run) -> dict:
     return result
 
 
-@app.post("/explain")
+@app.post("/explain", dependencies=[Depends(require_login)])
 async def explain(req: TextRequest) -> dict:
     """An English message she received: translate, check for scams, advise."""
     return await _traced("explain", _require_text(req), pipeline.explain)
 
 
-@app.post("/reply")
+@app.post("/reply", dependencies=[Depends(require_login)])
 async def reply(req: TextRequest) -> dict:
     """Her Mongolian reply, translated to English and double-checked."""
     return await _traced("reply", _require_text(req), pipeline.reply)
 
 
-@app.get("/family/alerts")
+@app.get("/family/alerts", dependencies=[Depends(require_login)])
 async def family_alerts() -> list[dict]:
     """Everything that was not plainly safe, newest first."""
     return pipeline.FAMILY_ALERTS
