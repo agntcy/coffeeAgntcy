@@ -152,6 +152,40 @@
   .pill.check_with_family, .pill.SUSPICIOUS, .pill.DRIFT, .pill.MINOR { background: var(--check-bg); color: var(--check); }
   .pill.danger, .pill.SCAM, .pill.DOWN { background: var(--danger-bg); color: var(--danger); }
   .empty { color: var(--muted); padding: 18px 0; font-size: 15px; }
+
+  /* "How Ger decided": the agents and where they disagreed */
+  .how { margin-top: 8px; border: 0; background: var(--soft); color: var(--brand); font-weight: 600; font-size: 14px;
+    padding: 6px 12px; border-radius: 999px; }
+  .diagram { width: 100%; max-width: 520px; display: block; margin: 4px auto 0; font-family: inherit; }
+  .diagram .node rect { stroke-width: 1.5; }
+  .diagram .n-safe rect { fill: var(--safe-bg); stroke: var(--safe); }
+  .diagram .n-warn rect { fill: var(--check-bg); stroke: var(--check); }
+  .diagram .n-bad rect { fill: var(--danger-bg); stroke: var(--danger); }
+  .diagram .n-info rect { fill: var(--soft); stroke: #bcc0c4; }
+  .diagram .n-down rect { fill: #f5f5f5; stroke: #9a9a9a; stroke-dasharray: 4 3; }
+  .diagram .n-msg rect { fill: var(--bg); stroke: var(--line); }
+  .diagram .t-name { font-size: 12px; font-weight: 700; fill: var(--ink); }
+  .diagram .t-say { font-size: 11px; font-weight: 600; }
+  .diagram .t-small { font-size: 10px; fill: var(--muted); }
+  .diagram .n-safe .t-say { fill: var(--safe); } .diagram .n-warn .t-say { fill: var(--check); }
+  .diagram .n-bad .t-say { fill: var(--danger); } .diagram .n-info .t-say, .diagram .n-down .t-say { fill: var(--muted); }
+  .diagram .edge { stroke: #c9ccd1; stroke-width: 1.5; fill: none; }
+  .diagram .edge.down { stroke-dasharray: 3 4; }
+  .diagram .fight { stroke: var(--danger); stroke-width: 2.5; fill: none; stroke-dasharray: 6 4; animation: march 1s linear infinite; }
+  .diagram .fight.minor { stroke: var(--check); stroke-width: 1.8; animation: none; }
+  .diagram .fight-label rect { fill: var(--danger); } .diagram .fight-label.minor rect { fill: var(--check); }
+  .diagram .fight-label text { fill: #fff; font-size: 10px; font-weight: 800; letter-spacing: .03em; }
+  .diagram .decide rect { stroke-width: 2.5; }
+  .diagram .decide .t-name { font-size: 14px; }
+  .diagram .node, .diagram .edge { animation: pop .35s ease-out backwards; }
+  @keyframes march { to { stroke-dashoffset: -20; } }
+  @keyframes pop { from { opacity: 0; } }
+  .legend { display: flex; flex-wrap: wrap; gap: 4px 14px; justify-content: center; font-size: 12px; color: var(--muted); margin-top: 6px; }
+  .legend span::before { content: ""; display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 5px; vertical-align: -1px; }
+  .legend .l-safe::before { background: var(--safe); } .legend .l-warn::before { background: var(--check); }
+  .legend .l-bad::before { background: var(--danger); } .legend .l-down::before { background: #9a9a9a; }
+  .legend .l-fight::before { width: 16px; height: 0; border-top: 2.5px dashed var(--danger); border-radius: 0; vertical-align: 3px; }
+  .card-diagram { border: 1px solid var(--line); border-radius: 16px; padding: 10px 8px 10px; margin-top: 4px; }
 </style>
 </head>
 <body>
@@ -342,7 +376,105 @@ function setView(next) {
   if (next === "family") { renderFamily(); seenAlerts = alertCount; updateBadge(); $("screen").scrollTop = 0; }
 }
 
-function answerCard(mode, d) {
+// ---- "How Ger decided": every helper's opinion, and where they disagreed ----
+const ORDER = ["translator", "translation_checker", "scam_checker", "advisor"];
+
+function opinion(key, o) {
+  if (o.error) return { cls: "n-down", say: "✕ Down", small: "no answer" };
+  if (key === "translator") return { cls: "n-info", say: "Translated", small: "" };
+  if (key === "translation_checker") return {
+    OK: { cls: "n-safe", say: "Same meaning", small: "back-translated" },
+    MINOR: { cls: "n-info", say: "Minor wording", small: "not escalated" },
+    DRIFT: { cls: "n-bad", say: "Meaning changed", small: "back-translated" },
+  }[o.verdict];
+  if (key === "scam_checker") {
+    const small = o.rule_verdict !== o.llm_verdict
+      ? `rules ${o.rule_verdict.toLowerCase()} · AI ${o.llm_verdict.toLowerCase()}`
+      : (o.red_flags.slice(0, 2).join(", ") || "no red flags");
+    return { SAFE: { cls: "n-safe", say: "Safe", small }, SUSPICIOUS: { cls: "n-warn", say: "Suspicious", small },
+      SCAM: { cls: "n-bad", say: "Scam!", small } }[o.verdict];
+  }
+  if (key === "advisor") return o.follows_link
+    ? { cls: "n-warn", say: "Use the link", small: o.topic || "" }
+    : { cls: "n-info", say: "Gave advice", small: o.topic || "" };
+  return { cls: "n-info", say: "", small: "" };
+}
+
+// Pairs of helpers that contradicted each other: [a, b, "major"|"minor"].
+function fights(a) {
+  const out = [];
+  const tc = a.translation_checker, scam = a.scam_checker, adv = a.advisor;
+  if (tc && !tc.error && tc.verdict === "DRIFT") out.push(["translator", "translation_checker", "major"]);
+  if (tc && !tc.error && tc.verdict === "MINOR") out.push(["translator", "translation_checker", "minor"]);
+  if (scam && adv && !scam.error && !adv.error && adv.follows_link && scam.verdict !== "SAFE")
+    out.push(["scam_checker", "advisor", "major"]);
+  return out;
+}
+
+function decisionRule(mode, d) {
+  const f = d.family;
+  const down = Object.values(d.agents).some((o) => o && o.error);
+  if (d.status === "danger") return "Scam is a red line";
+  if (d.status === "safe") return mode === "explain" ? "All helpers agree" : "Translation checked";
+  if (down) return "A helper is down, so ask family";
+  if (mode === "reply" || !f.safety_concern) return "Translation unsure, so ask family";
+  return "Helpers disagree, so ask family";
+}
+
+function diagram(mode, d, text) {
+  const keys = ORDER.filter((k) => d.agents[k]);
+  const W = 400, nw = 86, nh = 58, ay = 84, dy = 216, dw = 200, dh = 50;
+  const cx = (i) => (W / keys.length) * (i + 0.5);
+  const at = Object.fromEntries(keys.map((k, i) => [k, cx(i)]));
+  const statusCls = { safe: "n-safe", check_with_family: "n-warn", danger: "n-bad" }[d.status];
+  const snippet = text.length > 46 ? `${text.slice(0, 44)}...` : text;
+  let svg = "";
+  // Edges: message to each helper, each helper to Ger's decision.
+  keys.forEach((k, i) => {
+    const down = d.agents[k].error ? " down" : "";
+    svg += `<path class="edge${down}" style="animation-delay:${i * 80}ms" d="M${W / 2},44 C${W / 2},64 ${at[k]},60 ${at[k]},${ay}"/>`;
+    svg += `<path class="edge${down}" style="animation-delay:${300 + i * 80}ms" d="M${at[k]},${ay + nh} C${at[k]},${dy - 24} ${W / 2},${dy - 30} ${W / 2},${dy}"/>`;
+  });
+  // The message.
+  svg += `<g class="node n-msg"><rect x="${W / 2 - 150}" y="6" width="300" height="38" rx="12"/>
+    <text class="t-small" x="${W / 2}" y="21" text-anchor="middle">${mode === "explain" ? "Message she got" : "Her reply"}</text>
+    <text class="t-name" x="${W / 2}" y="36" text-anchor="middle">${esc(snippet)}</text></g>`;
+  // The helpers.
+  keys.forEach((k, i) => {
+    const o = opinion(k, d.agents[k]);
+    const x = at[k] - nw / 2;
+    svg += `<g class="node ${o.cls}" style="animation-delay:${150 + i * 80}ms">
+      <rect x="${x}" y="${ay}" width="${nw}" height="${nh}" rx="12"/>
+      <text class="t-name" x="${at[k]}" y="${ay + 17}" text-anchor="middle">${AGENT_SHORT[k]}</text>
+      <text class="t-say" x="${at[k]}" y="${ay + 34}" text-anchor="middle">${esc(o.say)}</text>
+      <text class="t-small" x="${at[k]}" y="${ay + 49}" text-anchor="middle">${esc(o.small.length > 18 ? o.small.slice(0, 17) + "." : o.small)}</text></g>`;
+  });
+  // Disagreements: a marching red line under the two helpers, with a label.
+  for (const [a, b, level] of fights(d.agents)) {
+    if (at[a] === undefined || at[b] === undefined) continue;
+    const x1 = Math.min(at[a], at[b]) + 18, x2 = Math.max(at[a], at[b]) - 18, mid = (x1 + x2) / 2, y = ay + nh;
+    const label = level === "major" ? "DISAGREE" : "MINOR";
+    const lw = level === "major" ? 66 : 46;
+    svg += `<path class="fight ${level}" d="M${x1},${y} Q${mid},${y + 44} ${x2},${y}"/>
+      <g class="fight-label ${level}"><rect x="${mid - lw / 2}" y="${y + 13}" width="${lw}" height="18" rx="9"/>
+      <text x="${mid}" y="${y + 25.5}" text-anchor="middle">${label}</text></g>`;
+  }
+  // Ger's decision.
+  svg += `<g class="node decide ${statusCls}" style="animation-delay:600ms">
+    <rect x="${W / 2 - dw / 2}" y="${dy}" width="${dw}" height="${dh}" rx="14"/>
+    <text class="t-name" x="${W / 2}" y="${dy + 21}" text-anchor="middle">Ger: ${STATUS_TEXT[d.status].toUpperCase()}</text>
+    <text class="t-small" x="${W / 2}" y="${dy + 38}" text-anchor="middle">${esc(decisionRule(mode, d))}</text></g>`;
+  return `<svg class="diagram" viewBox="0 0 ${W} ${dy + dh + 6}" role="img"
+      aria-label="How Ger decided: each helper's opinion and where they disagreed">${svg}</svg>
+    <div class="legend"><span class="l-safe">safe / agrees</span><span class="l-warn">unsure</span>
+      <span class="l-bad">scam / wrong</span><span class="l-down">down</span><span class="l-fight">disagreement</span></div>`;
+}
+
+const AGENT_SHORT = {
+  translator: "Translator", translation_checker: "Checker", scam_checker: "Scam check", advisor: "Advisor",
+};
+
+function answerCard(mode, d, turnIndex, open) {
   const g = d.grandma;
   const en = lang === "en";
   // The fixed headlines start with their own emoji; the card has its own icon.
@@ -360,18 +492,21 @@ function answerCard(mode, d) {
       <div class="text">${esc(d.english)}</div>
       <button class="copy" type="button" data-copy="${esc(d.english)}">${t("copy")}</button></div>`;
   }
+  parts += `<div class="part"><button class="how" type="button" data-how="${turnIndex}">
+    ${open ? "Hide" : "How Ger decided"}</button>
+    ${open ? diagram(mode, d, threads[mode][turnIndex].text) : ""}</div>`;
   return `<div class="answer ${d.status}">
     <div class="top"><span class="dot">${icon(d.status)}</span>${esc(headline)}</div>${parts}</div>`;
 }
 
-function renderThread(mode) {
+function renderThread(mode, toBottom = true) {
   const hello = t(mode === "explain" ? "helloExplain" : "helloReply");
   let html = `<div class="row ger">${gerAvatar}<div class="bubble">${esc(hello)}</div></div>`;
   if (!threads[mode].length) {
     html += `<div class="chips">${EXAMPLES[mode].map(([name], i) =>
       `<button type="button" data-example="${i}">${esc(name)}</button>`).join("")}</div>`;
   }
-  for (const turn of threads[mode]) {
+  threads[mode].forEach((turn, i) => {
     if (turn.who === "me" && mode === "explain") html += `<div class="row me"><div class="stack">
       <div class="fwd">↪ ${t("forwarded")}</div><div class="bubble forward">${esc(turn.text)}</div></div></div>`;
     else if (turn.who === "me") html += `<div class="row me"><div class="bubble">${esc(turn.text)}</div></div>`;
@@ -379,18 +514,25 @@ function renderThread(mode) {
       <span class="dots"><span></span><span></span><span></span></span>
       <small>${t(mode === "explain" ? "working" : "workingReply")}</small></div></div>`;
     else if (turn.kind === "error") html += `<div class="row ger">${gerAvatar}<div class="bubble">${t("error")}</div></div>`;
-    else html += `<div class="row ger">${gerAvatar}${answerCard(mode, turn.data)}</div>`;
-  }
+    else html += `<div class="row ger">${gerAvatar}${answerCard(mode, turn.data, i, turn.open)}</div>`;
+  });
   const el = $(`thread-${mode}`);
   el.innerHTML = html;
   el.querySelectorAll("[data-example]").forEach((b) => b.onclick = () => {
     $("input").value = EXAMPLES[mode][b.dataset.example][1];
     autosize(); $("input").focus();
   });
+  el.querySelectorAll("[data-how]").forEach((b) => b.onclick = () => {
+    const turn = threads[mode][b.dataset.how];
+    turn.open = !turn.open;
+    const y = $("screen").scrollTop;
+    renderThread(mode, false);
+    $("screen").scrollTop = y;
+  });
   el.querySelectorAll("[data-copy]").forEach((b) => b.onclick = async () => {
     try { await navigator.clipboard.writeText(b.dataset.copy); b.textContent = t("copied"); } catch {}
   });
-  requestAnimationFrame(() => { $("screen").scrollTop = $("screen").scrollHeight; });
+  if (toBottom) requestAnimationFrame(() => { $("screen").scrollTop = $("screen").scrollHeight; });
 }
 
 async function send(mode, text) {
@@ -410,7 +552,7 @@ async function send(mode, text) {
     if (!res.ok) throw new Error(res.status);
     const data = await res.json();
     last = { mode, text, data };
-    reply = { who: "ger", kind: "answer", data };
+    reply = { who: "ger", kind: "answer", data, text };
     refreshAlerts();
   } catch (e) {
     reply = { who: "ger", kind: "error" };
@@ -446,6 +588,7 @@ function renderDecision() {
     <div class="head"><b>${STATUS_TEXT[d.status]}</b><span class="pill ${d.status}">${last.mode === "explain" ? "message she got" : "her reply"}</span></div>
     <div class="msg">${esc(last.text)}</div>
     ${d.english ? `<div class="msg"><b>English:</b> ${esc(d.english)}</div>` : ""}
+    <div class="card-diagram">${diagram(last.mode, d, last.text)}</div>
     ${f.disagreements.length
       ? `<div class="note disagree"><b>The helpers disagreed</b><ul class="plain">
           ${f.disagreements.map((x) => `<li>${esc(x)}</li>`).join("")}</ul></div>`
