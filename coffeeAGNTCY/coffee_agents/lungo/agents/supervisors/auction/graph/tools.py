@@ -316,45 +316,6 @@ async def get_farm_yield_inventory(prompt: str, farm: str) -> str:
             await _dispose_a2a_client(client)
 
 
-async def ask_evaluator(card: AgentCard, prompt: str) -> str:
-    """Send ``prompt`` to an evaluator agent (quality, sustainability) over A2A.
-
-    Uses the same transport and event middleware as the farm calls so the
-    exchange shows up in traces and the UI the same way.
-
-    Raises:
-        A2AAgentError: If the evaluator is unreachable or returns no text.
-    """
-    client = None
-    try:
-        card = copy.deepcopy(card)
-        card.preferred_transport = DEFAULT_MESSAGE_TRANSPORT.lower()
-        client = await a2a_client_factory.create(
-            card,
-            interceptors=[_event_interceptor],
-            consumers=[_event_consumer],
-        )
-        message = Message(
-            messageId=str(uuid4()),
-            role=Role.user,
-            parts=[Part(TextPart(text=prompt))],
-            metadata=_workflow_message_metadata(),
-        )
-        events = await send_a2a_with_retry(client, message, context=ClientCallContext())
-        result_text = _extract_text_from_events(events)
-        if result_text:
-            return result_text
-        raise A2AAgentError(f"{card.name} returned no text content.")
-    except A2AAgentError:
-        raise
-    except Exception as e:
-        logger.error(f"Failed to communicate with {card.name}: {e}")
-        raise A2AAgentError(f"Failed to communicate with {card.name}.") from e
-    finally:
-        if client is not None:
-            await _dispose_a2a_client(client)
-
-
 # node utility for streaming
 async def get_all_farms_yield_inventory(prompt: str) -> str:
     """
