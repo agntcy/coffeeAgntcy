@@ -1,11 +1,19 @@
 # Copyright AGNTCY Contributors (https://github.com/agntcy)
 # SPDX-License-Identifier: Apache-2.0
 
-"""How Grandma Helper decides what to tell her.
+"""How Ger decides what to tell her.
 
-Several agents look at the same message independently. The supervisor does
-not ask an LLM who is right; it applies fixed rules (below) so the same
-message always gets the same verdict:
+Several agents look at the same message independently. Then the decision
+is made one of two ways (``HELPER_DECISION``):
+
+- ``council`` (default, level 3): the scam checker, advisor and translation
+  checker negotiate among themselves over SLIM and settle on a verdict;
+  the supervisor only starts the council and reads its outcome. See
+  ``agents/helper/council.py``.
+- ``rules`` (the baseline): the supervisor applies the fixed rules below.
+
+Both are always computed so they can be compared; the rules verdict is
+returned as ``baseline``. The fixed rules:
 
 - Red line: a message the scam checker rates SCAM is "danger", whatever
   any other agent says. She is told not to click, pay or reply.
@@ -24,16 +32,22 @@ Anything that is not plainly safe raises an alert for the family.
 
 import asyncio
 import logging
+import os
 from dataclasses import asdict, dataclass, field
 from datetime import datetime, timezone
 
+from agents.helper import council
 from agents.helper.advisor.agent import CARD as ADVISOR
 from agents.helper.scam_checker.agent import CARD as SCAM_CHECKER
 from agents.helper.translation_checker.agent import CARD as TRANSLATION_CHECKER
 from agents.helper.translator.agent import CARD as TRANSLATOR
-from agents.supervisors.helper.agents_client import AgentUnavailable, call_agent
+from agents.helper.client import AgentUnavailable, call_agent
 
 logger = logging.getLogger("helper.supervisor.pipeline")
+
+DECISION = os.getenv("HELPER_DECISION", "council").lower()
+# The whole council (every turn, every agent) must finish within this.
+COUNCIL_SECONDS = float(os.getenv("HELPER_COUNCIL_SECONDS", "90"))
 
 SAFE, CHECK, DANGER = "safe", "check_with_family", "danger"
 _RANK = [SAFE, CHECK, DANGER]
@@ -148,6 +162,131 @@ async def explain(text: str) -> dict:
         else asyncio.sleep(0),
     )
 
+    verdict = _rules_verdict(scam, advice, translation, check)
+    baseline = asdict(verdict)
+    council_result = None
+    if DECISION == "council":
+        council_result = await _run_council(
+            text, translation_mn, scam, advice, check, opinions
+        )
+        verdict = _council_verdict(council_result, translation, check)
+
+    # What she sees, in Mongolian (and the same in English).
+    headline, headline_en = HEADLINE_MN[verdict.status], HEADLINE_EN[verdict.status]
+    action_mn = (advice_mn or {}).get("translation", "")
+    action_en = advice_en
+    if verdict.status == DANGER:
+        action_mn, action_en = DANGER_ACTION_MN, DANGER_ACTION_EN
+    elif verdict.status == CHECK and verdict.safety_concern:
+        action_mn, action_en = CHECK_ACTION_MN, CHECK_ACTION_EN
+    elif verdict.status == CHECK:
+        headline = TRANSLATION_UNSURE_HEADLINE_MN
+        headline_en = TRANSLATION_UNSURE_HEADLINE_EN
+        action_mn = f"{action_mn}\n{TRANSLATION_UNSURE_NOTE_MN}".strip()
+        action_en = f"{action_en}\n{TRANSLATION_UNSURE_NOTE_EN}".strip()
+
+    if verdict.status != SAFE:
+        _alert_family("message", text, verdict)
+
+    return {
+        "status": verdict.status,
+        "decided_by": DECISION,
+        "grandma": {
+            "headline": headline,
+            "translation": translation_mn,
+            "advice": action_mn,
+            "headline_en": headline_en,
+            "advice_en": action_en,
+        },
+        "family": asdict(verdict),
+        "council": council_result,
+        "baseline": baseline,
+        "agents": opinions,
+    }
+
+
+_COUNCIL_STATUS = {council.SAFE: SAFE, council.ASK: CHECK, council.DANGER: DANGER}
+
+
+async def _run_council(text, translation_mn, scam, advice, check, opinions) -> dict:
+    """Hand the case to the first agent of the ring; the agents do the rest."""
+    ballot = council.new_ballot(
+        {
+            "text": text,
+            "translation": translation_mn,
+            "scam": scam,
+            "advice": advice,
+            "check": check,
+        },
+        COUNCIL_SECONDS,
+    )
+    # Start with the first ring member that is up (round 1 found out who is).
+    for agent_id, card in (
+        ("scam_checker", SCAM_CHECKER),
+        ("advisor", ADVISOR),
+        ("translation_checker", TRANSLATION_CHECKER),
+    ):
+        if "error" in opinions.get(agent_id, {}):
+            ballot["unreachable"].append(agent_id)
+            ballot["transcript"].append(
+                {"lap": 1, "agent": agent_id, "unreachable": True}
+            )
+            continue
+        try:
+            return await call_agent(card, {"ballot": ballot}, deadline=COUNCIL_SECONDS)
+        except AgentUnavailable as e:
+            logger.warning("Council could not start with %s: %s", agent_id, e)
+            ballot["unreachable"].append(agent_id)
+            ballot["transcript"].append(
+                {"lap": 1, "agent": agent_id, "unreachable": True}
+            )
+    ballot["outcome"] = {
+        "decision": council.ASK,
+        "how": "too few agents reachable to agree",
+        "lap": 1,
+    }
+    return ballot
+
+
+def _council_verdict(result: dict, translation, check) -> Verdict:
+    """Turn the council's outcome into what she and the family see."""
+    outcome = result["outcome"]
+    verdict = Verdict(status=_COUNCIL_STATUS[outcome["decision"]])
+    verdict.reasons.append(
+        f"Council decided {outcome['decision']} by {outcome['how']} "
+        f"(lap {outcome['lap']})."
+    )
+    for turn in result["transcript"]:
+        if turn.get("unreachable"):
+            verdict.reasons.append(f"{turn['agent']} could not be reached.")
+        elif turn.get("changed_from"):
+            verdict.disagreements.append(
+                f"{turn['agent']} changed its mind, {turn['changed_from']} to "
+                f"{turn['position']}: {turn['reason']}"
+            )
+    final = result["positions"]
+    start = {}
+    for turn in result["transcript"]:
+        if not turn.get("unreachable"):
+            start.setdefault(turn["agent"], turn["position"])
+    if len(set(start.values())) > 1:
+        verdict.disagreements.insert(
+            0,
+            "Started split: " + ", ".join(f"{a} {p}" for a, p in start.items()) + ".",
+        )
+    # "Ask family" only about the wording, when the safety agents were fine.
+    safety_ok = all(
+        final.get(a, {}).get("position") == council.SAFE
+        for a in ("scam_checker", "advisor")
+    )
+    verdict.safety_concern = verdict.status != SAFE and not (
+        safety_ok and translation is not None
+    )
+    return verdict
+
+
+def _rules_verdict(scam, advice, translation, check) -> Verdict:
+    """The baseline: fixed rules applied by the supervisor."""
     verdict = Verdict()
 
     # Red line: scams.
@@ -194,36 +333,7 @@ async def explain(text: str) -> dict:
 
     if advice is None:
         verdict.raise_to(CHECK, "The advisor is down.")
-
-    # What she sees, in Mongolian (and the same in English).
-    headline, headline_en = HEADLINE_MN[verdict.status], HEADLINE_EN[verdict.status]
-    action_mn = (advice_mn or {}).get("translation", "")
-    action_en = advice_en
-    if verdict.status == DANGER:
-        action_mn, action_en = DANGER_ACTION_MN, DANGER_ACTION_EN
-    elif verdict.status == CHECK and verdict.safety_concern:
-        action_mn, action_en = CHECK_ACTION_MN, CHECK_ACTION_EN
-    elif verdict.status == CHECK:
-        headline = TRANSLATION_UNSURE_HEADLINE_MN
-        headline_en = TRANSLATION_UNSURE_HEADLINE_EN
-        action_mn = f"{action_mn}\n{TRANSLATION_UNSURE_NOTE_MN}".strip()
-        action_en = f"{action_en}\n{TRANSLATION_UNSURE_NOTE_EN}".strip()
-
-    if verdict.status != SAFE:
-        _alert_family("message", text, verdict)
-
-    return {
-        "status": verdict.status,
-        "grandma": {
-            "headline": headline,
-            "translation": translation_mn,
-            "advice": action_mn,
-            "headline_en": headline_en,
-            "advice_en": action_en,
-        },
-        "family": asdict(verdict),
-        "agents": opinions,
-    }
+    return verdict
 
 
 async def reply(text_mn: str) -> dict:

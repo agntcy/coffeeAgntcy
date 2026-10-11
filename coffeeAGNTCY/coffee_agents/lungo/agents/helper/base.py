@@ -39,9 +39,11 @@ from agntcy_app_sdk.semantic.a2a.transport_types import normalize_transport
 from config.config import LLM_MODEL, OTEL_SDK_DISABLED
 from opentelemetry import trace
 
-logger = logging.getLogger("helper.common")
+logger = logging.getLogger("helper.base")
 
 Handler = Callable[[dict], Awaitable[dict]]
+# A council member's turn: reads the ballot, returns its position.
+Think = Callable[[dict], Awaitable[dict]]
 
 tracer = trace.get_tracer("helper.agents")
 
@@ -85,11 +87,17 @@ def make_card(
 
 
 class JsonAgentExecutor(AgentExecutor):
-    """Runs ``handler`` on the JSON object in the request and replies with JSON."""
+    """Runs ``handler`` on the JSON object in the request and replies with JSON.
 
-    def __init__(self, card: AgentCard, handler: Handler):
+    Two requests are handled here for every agent: ``{"ping": true}`` (a
+    liveness check from a peer) and ``{"ballot": ...}`` (this agent's turn
+    in the safety council, for agents that take part in it).
+    """
+
+    def __init__(self, card: AgentCard, handler: Handler, think: Think | None = None):
         self.card = card
         self.handler = handler
+        self.think = think
 
     async def execute(self, context: RequestContext, event_queue: EventQueue) -> None:
         text = context.get_user_input()
@@ -100,15 +108,32 @@ class JsonAgentExecutor(AgentExecutor):
             request = {"text": text}
         # One span per request, holding what the agent was asked and what it
         # answered, so each agent's opinion is visible in the trace.
-        with tracer.start_as_current_span(f"{self.card.skills[0].id}.handle") as span:
+        agent_id = self.card.skills[0].id
+        kind = "council" if "ballot" in request else "handle"
+        if request.get("ping"):
+            result = {"pong": agent_id}
+            await self._reply(event_queue, result)
+            return
+        with tracer.start_as_current_span(f"{agent_id}.{kind}") as span:
             span.set_attribute("helper.input", text)
             try:
-                result = await self.handler(request)
+                if kind == "council":
+                    if self.think is None:
+                        raise ValueError(f"{agent_id} is not on the council")
+                    # Imported here: the council imports the agent modules.
+                    from agents.helper import council
+
+                    result = await council.step(agent_id, request["ballot"], self.think)
+                else:
+                    result = await self.handler(request)
             except Exception as e:
                 logger.exception("%s failed", self.card.name)
                 span.record_exception(e)
                 raise ServerError(error=InternalError()) from e
             span.set_attribute("helper.output", json.dumps(result, ensure_ascii=False))
+        await self._reply(event_queue, result)
+
+    async def _reply(self, event_queue: EventQueue, result: dict) -> None:
         await event_queue.enqueue_event(
             Message(
                 message_id=str(uuid4()),
@@ -124,7 +149,7 @@ class JsonAgentExecutor(AgentExecutor):
         raise ServerError(error=UnsupportedOperationError())
 
 
-async def serve(card: AgentCard, handler: Handler) -> None:
+async def serve(card: AgentCard, handler: Handler, think: Think | None = None) -> None:
     """Serve the agent on every transport in its card until interrupted.
 
     Same approach as the Lungo agents: each transport runs in its own session,
@@ -134,7 +159,7 @@ async def serve(card: AgentCard, handler: Handler) -> None:
         f"helper.{card.skills[0].id}", enable_tracing=not OTEL_SDK_DISABLED
     )
     request_handler = DefaultRequestHandler(
-        agent_executor=JsonAgentExecutor(card, handler),
+        agent_executor=JsonAgentExecutor(card, handler, think),
         task_store=InMemoryTaskStore(),
     )
     preferred = normalize_transport(card.preferred_transport or "")
@@ -171,6 +196,11 @@ MODEL = os.getenv("HELPER_LLM_MODEL") or LLM_MODEL
 # cost no rate limit, and always get the same answer.
 _CACHE: dict[tuple[str, str, bool], str] = {}
 _CACHE_SIZE = 256
+
+
+def forget(system: str, user: str, *, as_json: bool = False) -> None:
+    """Drop a cached answer (e.g. one that turned out to be unusable)."""
+    _CACHE.pop((system, user, as_json), None)
 
 
 async def llm(system: str, user: str, *, as_json: bool = False) -> str | dict:
