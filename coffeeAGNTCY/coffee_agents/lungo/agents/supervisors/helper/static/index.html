@@ -1,0 +1,252 @@
+<!doctype html>
+<html lang="mn">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Grandma Helper</title>
+<style>
+  :root {
+    --bg: #f6f3ee; --card: #ffffff; --ink: #1d1b18; --muted: #6b655c; --line: #e3ddd3;
+    --brand: #2f5d8a; --brand-ink: #ffffff;
+    --safe: #1f7a3f; --safe-bg: #e5f4ea; --check: #8a5a00; --check-bg: #fff3d6;
+    --danger: #a3221b; --danger-bg: #fde6e4;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink);
+    font: 20px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  header { display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    padding: 16px 20px; background: var(--card); border-bottom: 1px solid var(--line); }
+  header h1 { margin: 0; font-size: 26px; }
+  .switch button { font: inherit; font-size: 16px; padding: 8px 14px; border: 1px solid var(--line);
+    background: var(--bg); color: var(--ink); border-radius: 999px; cursor: pointer; }
+  .switch button[aria-pressed="true"] { background: var(--brand); color: var(--brand-ink); border-color: var(--brand); }
+  main { max-width: 760px; margin: 0 auto; padding: 20px 16px 60px; }
+  .tabs { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 18px; }
+  .tabs button { font: inherit; font-size: 22px; font-weight: 600; padding: 16px; border-radius: 16px;
+    border: 2px solid var(--line); background: var(--card); color: var(--ink); cursor: pointer; }
+  .tabs button[aria-selected="true"] { border-color: var(--brand); color: var(--brand); }
+  label.big { display: block; font-size: 24px; font-weight: 600; margin: 4px 0 10px; }
+  textarea { width: 100%; min-height: 150px; font: inherit; font-size: 22px; padding: 14px;
+    border: 2px solid var(--line); border-radius: 14px; background: var(--card); color: var(--ink); resize: vertical; }
+  textarea:focus { outline: 3px solid var(--brand); outline-offset: 1px; }
+  .go { width: 100%; margin-top: 14px; font: inherit; font-size: 28px; font-weight: 700; padding: 18px;
+    border: 0; border-radius: 16px; background: var(--brand); color: var(--brand-ink); cursor: pointer; }
+  .go:disabled { opacity: .6; cursor: wait; }
+  .result { margin-top: 22px; border-radius: 18px; padding: 20px; border: 3px solid var(--line); background: var(--card); }
+  .result.safe { border-color: var(--safe); background: var(--safe-bg); }
+  .result.check_with_family { border-color: var(--check); background: var(--check-bg); }
+  .result.danger { border-color: var(--danger); background: var(--danger-bg); }
+  .headline { font-size: 30px; font-weight: 800; margin: 0 0 12px; line-height: 1.3; }
+  .safe .headline { color: var(--safe); } .check_with_family .headline { color: var(--check); }
+  .danger .headline { color: var(--danger); }
+  .section-title { font-size: 16px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); margin: 14px 0 4px; }
+  .text { font-size: 24px; white-space: pre-wrap; overflow-wrap: anywhere; }
+  .copy { margin-top: 10px; font: inherit; font-size: 20px; padding: 10px 16px; border-radius: 12px;
+    border: 2px solid var(--ink); background: var(--card); color: var(--ink); cursor: pointer; }
+  .examples { margin-top: 26px; font-size: 16px; color: var(--muted); }
+  .examples button { font: inherit; font-size: 15px; margin: 4px 6px 0 0; padding: 6px 10px; border-radius: 10px;
+    border: 1px solid var(--line); background: var(--card); color: var(--ink); cursor: pointer; }
+  .hidden { display: none !important; }
+  /* Family view */
+  .family { font-size: 17px; }
+  .family h2 { font-size: 22px; margin: 26px 0 10px; }
+  .agents { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; }
+  .agent { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 12px; }
+  .agent b { display: block; margin-bottom: 4px; }
+  .agent.down { border-color: var(--danger); }
+  .pill { display: inline-block; font-size: 13px; font-weight: 700; padding: 2px 8px; border-radius: 999px; }
+  .pill.safe, .pill.OK, .pill.SAFE { background: var(--safe-bg); color: var(--safe); }
+  .pill.check_with_family, .pill.SUSPICIOUS, .pill.DRIFT { background: var(--check-bg); color: var(--check); }
+  .pill.danger, .pill.SCAM, .pill.DOWN { background: var(--danger-bg); color: var(--danger); }
+  ul.plain { margin: 6px 0 0; padding-left: 20px; }
+  .alert { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 12px; margin-bottom: 10px; }
+  .alert .meta { color: var(--muted); font-size: 14px; }
+  .empty { color: var(--muted); }
+  @media (max-width: 520px) { body { font-size: 18px; } .headline { font-size: 26px; } .text { font-size: 21px; } }
+</style>
+</head>
+<body>
+<header>
+  <h1 id="title">🤝 Миний туслах</h1>
+  <div class="switch" role="group" aria-label="View">
+    <button id="view-grandma" aria-pressed="true">👵 Эмээ</button>
+    <button id="view-family" aria-pressed="false">👨‍👩‍👧 Family</button>
+  </div>
+</header>
+
+<main>
+  <!-- Grandma's view: Mongolian, big, one thing at a time -->
+  <section id="grandma">
+    <div class="tabs" role="tablist">
+      <button id="tab-explain" role="tab" aria-selected="true">📩 Мессеж ойлгох</button>
+      <button id="tab-reply" role="tab" aria-selected="false">✍️ Хариу бичих</button>
+    </div>
+
+    <form id="form-explain">
+      <label class="big" for="explain-text">Англи мессежээ энд хуулж тавина уу</label>
+      <textarea id="explain-text" required></textarea>
+      <button class="go" type="submit">🔍 Шалгах</button>
+    </form>
+
+    <form id="form-reply" class="hidden">
+      <label class="big" for="reply-text">Хариугаа монголоор бичнэ үү</label>
+      <textarea id="reply-text" required></textarea>
+      <button class="go" type="submit">🔁 Англи руу орчуулах</button>
+    </form>
+
+    <div id="result" class="result hidden" aria-live="polite"></div>
+
+    <div class="examples">
+      Demo examples:
+      <button data-mode="explain" data-text="USPS: Your package could not be delivered. Update your address within 24 hours at usps-redelivery-help.com">USPS scam</button>
+      <button data-mode="explain" data-text="CVS Pharmacy: Your prescription is ready for pickup at 123 Main St. Reply STOP to opt out.">Pharmacy</button>
+      <button data-mode="explain" data-text="Hi, please leave the package at the side gate, code 4512. Don't ring the bell, baby is sleeping. Thanks!">Customer note</button>
+      <button data-mode="reply" data-text="Сайн байна уу, таны илгээмжийг хажуугийн хаалганы дэргэд тавьчихлаа. Баярлалаа!">Her reply</button>
+    </div>
+  </section>
+
+  <!-- Family view: English, shows how the agents decided -->
+  <section id="family" class="family hidden">
+    <h2>How the agents decided (last message)</h2>
+    <div id="decision"><p class="empty">Nothing checked yet. Use grandma's screen first.</p></div>
+
+    <h2>Alerts for family</h2>
+    <div id="alerts"><p class="empty">No alerts.</p></div>
+  </section>
+</main>
+
+<script>
+const API = "";  // same origin as the helper API
+let last = null;
+
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) =>
+  ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+
+const AGENT_NAMES = {
+  translator: "🌐 Translator", translation_checker: "🔁 Translation checker",
+  scam_checker: "🛡️ Scam checker", advisor: "🧭 Advisor",
+};
+const STATUS_TEXT = { safe: "SAFE", check_with_family: "CHECK WITH FAMILY", danger: "DANGER" };
+
+function setView(view) {
+  $("grandma").classList.toggle("hidden", view !== "grandma");
+  $("family").classList.toggle("hidden", view !== "family");
+  $("view-grandma").setAttribute("aria-pressed", view === "grandma");
+  $("view-family").setAttribute("aria-pressed", view === "family");
+  if (view === "family") renderFamily();
+}
+
+function setTab(mode) {
+  $("form-explain").classList.toggle("hidden", mode !== "explain");
+  $("form-reply").classList.toggle("hidden", mode !== "reply");
+  $("tab-explain").setAttribute("aria-selected", mode === "explain");
+  $("tab-reply").setAttribute("aria-selected", mode === "reply");
+  $("result").classList.add("hidden");
+}
+
+async function send(mode, text, button) {
+  const box = $("result");
+  button.disabled = true;
+  const label = button.textContent;
+  button.textContent = "⏳ Түр хүлээнэ үү...";
+  try {
+    const res = await fetch(`${API}/${mode}`, {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ text }),
+    });
+    if (!res.ok) throw new Error(res.status);
+    const data = await res.json();
+    last = { mode, text, data };
+    showResult(mode, data);
+  } catch (e) {
+    box.className = "result check_with_family";
+    box.innerHTML = `<p class="headline">⚠️ Алдаа гарлаа. Дахин оролдоно уу.</p>`;
+  } finally {
+    button.disabled = false;
+    button.textContent = label;
+  }
+}
+
+function showResult(mode, d) {
+  const box = $("result");
+  box.className = `result ${d.status}`;
+  if (mode === "explain") {
+    box.innerHTML = `
+      <p class="headline">${esc(d.grandma.headline)}</p>
+      ${d.grandma.translation ? `<div class="section-title">Мессеж монголоор</div>
+        <div class="text">${esc(d.grandma.translation)}</div>` : ""}
+      ${d.grandma.advice ? `<div class="section-title">Юу хийх вэ</div>
+        <div class="text"><b>${esc(d.grandma.advice)}</b></div>` : ""}`;
+  } else {
+    box.innerHTML = `
+      <p class="headline">${esc(d.grandma.headline)}</p>
+      ${d.english ? `<div class="section-title">English</div>
+        <div class="text" id="english">${esc(d.english)}</div>
+        <button class="copy" id="copy">📋 Хуулах</button>` : ""}`;
+    const copy = $("copy");
+    if (copy) copy.onclick = async () => {
+      try { await navigator.clipboard.writeText(d.english); copy.textContent = "✅ Хуулсан"; } catch {}
+    };
+  }
+}
+
+function agentCard(key, o) {
+  if (!o) return "";
+  if (o.error) return `<div class="agent down"><b>${AGENT_NAMES[key] || key}</b>
+    <span class="pill DOWN">DOWN</span><div>${esc(o.error)}</div></div>`;
+  let body = "";
+  if (key === "scam_checker") body = `<span class="pill ${o.verdict}">${o.verdict}</span>
+      <div>Rules: ${esc(o.rule_verdict)} · AI: ${esc(o.llm_verdict)}</div>
+      <div>Red flags: ${esc(o.red_flags.join(", ") || "none")}</div><div>${esc(o.reason)}</div>`;
+  else if (key === "translation_checker") body = `<span class="pill ${o.verdict}">${o.verdict}</span>
+      <div><i>Back-translation:</i> ${esc(o.back_translation)}</div>
+      ${o.differences ? `<div>${esc(o.differences)}</div>` : ""}`;
+  else if (key === "advisor") body = `<div>${esc(o.summary)}</div>
+      <div><i>Suggests:</i> ${esc(o.action)}</div><div>Topic: ${esc(o.topic)}</div>`;
+  else if (key === "translator") body = `<div>${esc(o.translation)}</div>`;
+  return `<div class="agent"><b>${AGENT_NAMES[key] || key}</b>${body}</div>`;
+}
+
+async function renderFamily() {
+  const decision = $("decision");
+  if (last) {
+    const d = last.data, f = d.family;
+    decision.innerHTML = `
+      <p><b>Message:</b> ${esc(last.text)}</p>
+      <p><b>Outcome:</b> <span class="pill ${d.status}">${STATUS_TEXT[d.status]}</span>
+        ${d.english ? ` · English sent: “${esc(d.english)}”` : ""}</p>
+      <div class="agents">${Object.entries(d.agents).map(([k, o]) => agentCard(k, o)).join("")}</div>
+      ${f.disagreements.length ? `<p><b>⚖️ Disagreements</b></p><ul class="plain">
+        ${f.disagreements.map((x) => `<li>${esc(x)}</li>`).join("")}</ul>` : "<p>🤝 All agents agreed.</p>"}
+      ${f.reasons.length ? `<p><b>Why this outcome</b></p><ul class="plain">
+        ${f.reasons.map((x) => `<li>${esc(x)}</li>`).join("")}</ul>` : ""}`;
+  }
+  try {
+    const alerts = await (await fetch(`${API}/family/alerts`)).json();
+    $("alerts").innerHTML = alerts.length ? alerts.map((a) => `
+      <div class="alert"><span class="pill ${a.status}">${STATUS_TEXT[a.status]}</span>
+        <span class="meta"> ${esc(new Date(a.time).toLocaleString())} · ${a.kind}</span>
+        <div>${esc(a.message)}</div>
+        <ul class="plain">${a.reasons.map((r) => `<li>${esc(r)}</li>`).join("")}</ul></div>`).join("")
+      : `<p class="empty">No alerts.</p>`;
+  } catch {
+    $("alerts").innerHTML = `<p class="empty">Could not load alerts.</p>`;
+  }
+}
+
+$("view-grandma").onclick = () => setView("grandma");
+$("view-family").onclick = () => setView("family");
+$("tab-explain").onclick = () => setTab("explain");
+$("tab-reply").onclick = () => setTab("reply");
+$("form-explain").onsubmit = (e) => { e.preventDefault();
+  send("explain", $("explain-text").value.trim(), e.submitter || $("form-explain").querySelector("button")); };
+$("form-reply").onsubmit = (e) => { e.preventDefault();
+  send("reply", $("reply-text").value.trim(), e.submitter || $("form-reply").querySelector("button")); };
+document.querySelectorAll(".examples button").forEach((b) => b.onclick = () => {
+  setTab(b.dataset.mode);
+  $(`${b.dataset.mode}-text`).value = b.dataset.text;
+});
+</script>
+</body>
+</html>

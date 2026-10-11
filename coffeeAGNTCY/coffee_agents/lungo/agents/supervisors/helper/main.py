@@ -6,6 +6,7 @@
 import config.logging_config  # noqa: F401 - runs setup on import; must be first
 
 import logging
+from pathlib import Path
 
 import uvicorn
 from agntcy_app_sdk.factory import AgntcyFactory
@@ -13,6 +14,7 @@ from config.config import OTEL_SDK_DISABLED
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
 from pydantic import BaseModel
 
 from agents.supervisors.helper import pipeline
@@ -64,6 +66,12 @@ async def family_alerts() -> list[dict]:
 @app.get("/health")
 async def health() -> dict:
     return {"status": "ok"}
+
+
+@app.get("/", include_in_schema=False)
+async def index() -> FileResponse:
+    """The app itself: grandma's screen and the family screen."""
+    return FileResponse(Path(__file__).with_name("static") / "index.html")
 
 
 if __name__ == "__main__":
