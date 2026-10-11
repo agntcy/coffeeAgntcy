@@ -68,7 +68,26 @@ def _active(ballot: dict) -> list[str]:
 
 
 def settle(ballot: dict, me: str) -> dict | None:
-    """The shared rule every agent applies after its turn."""
+    """The shared rule every agent applies after its turn.
+
+    Without the scam checker nobody checked for a scam, so the council can
+    never call the message safe.
+    """
+    outcome = _settle(ballot, me)
+    if (
+        outcome
+        and outcome["decision"] == SAFE
+        and "scam_checker" in ballot["unreachable"]
+    ):
+        return {
+            "decision": ASK,
+            "how": "scam checker unreachable, so safety was not checked",
+            "lap": outcome["lap"],
+        }
+    return outcome
+
+
+def _settle(ballot: dict, me: str) -> dict | None:
     active = _active(ballot)
     positions = {a: ballot["positions"][a] for a in active if a in ballot["positions"]}
     if len(active) < 2:

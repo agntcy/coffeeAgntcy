@@ -27,7 +27,9 @@ returned as ``baseline``. The fixed rules:
 the translation is in doubt, she still gets the advice, with a warning
 that the wording may be off.
 
-Anything that is not plainly safe raises an alert for the family.
+Only "check with family" raises an alert for the family: that is when Ger
+needs a person. A clear scam is already handled (she is told not to click,
+pay or reply), so it does not bother the family.
 """
 
 import asyncio
@@ -59,10 +61,7 @@ HEADLINE_MN = {
     DANGER: "🛑 Энэ бол залилан байж магадгүй!",
 }
 # Wording approved by a native speaker.
-DANGER_ACTION_MN = (
-    "Холбоос дээр бүү дар, мөнгө бүү төл, хариу бүү бич. "
-    "Таны гэр бүлд бас анхаарууллаа."
-)
+DANGER_ACTION_MN = "Холбоос дээр бүү дар, мөнгө бүү төл, хариу бүү бич."
 CHECK_ACTION_MN = "Юу ч бүү хий. Гэр бүлдээ мэдэгдсэн, тэд тусална."
 TRANSLATION_UNSURE_HEADLINE_MN = "⚠️ Орчуулга бүрэн зөв биш байж магадгүй."
 TRANSLATION_UNSURE_NOTE_MN = "Гэр бүлдээ мэдэгдсэн, тэд шалгаж өгнө."
@@ -77,9 +76,7 @@ HEADLINE_EN = {
     CHECK: "⚠️ Not sure. Ask your family.",
     DANGER: "🛑 This may be a scam!",
 }
-DANGER_ACTION_EN = (
-    "Don't click the link, don't pay, don't reply. Your family has been alerted too."
-)
+DANGER_ACTION_EN = "Don't click the link, don't pay, don't reply."
 CHECK_ACTION_EN = "Don't do anything yet. Your family was notified and will help."
 TRANSLATION_UNSURE_HEADLINE_EN = "⚠️ The translation may not be fully correct."
 TRANSLATION_UNSURE_NOTE_EN = "Your family was notified and will check it."
@@ -185,7 +182,7 @@ async def explain(text: str) -> dict:
         action_mn = f"{action_mn}\n{TRANSLATION_UNSURE_NOTE_MN}".strip()
         action_en = f"{action_en}\n{TRANSLATION_UNSURE_NOTE_EN}".strip()
 
-    if verdict.status != SAFE:
+    if verdict.status == CHECK:
         _alert_family("message", text, verdict)
 
     return {
