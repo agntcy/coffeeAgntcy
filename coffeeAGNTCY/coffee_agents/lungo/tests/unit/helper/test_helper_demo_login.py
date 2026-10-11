@@ -40,3 +40,26 @@ def test_login_then_logout():
 
     client.post("/logout")
     assert client.get("/me").status_code == 401
+
+
+def test_family_contacts():
+    client = TestClient(app)
+    assert client.get("/family/contacts").status_code == 401
+    _login(client)
+
+    bad = client.put("/family/contacts", json={"primary": "not-an-email"})
+    assert bad.status_code == 400
+    bad = client.put(
+        "/family/contacts", json={"primary": "a@b.com", "secondary": "nope"}
+    )
+    assert bad.status_code == 400
+
+    res = client.put(
+        "/family/contacts", json={"primary": " son@example.com ", "secondary": ""}
+    )
+    assert res.json() == {"primary": "son@example.com", "secondary": ""}
+    client.put(
+        "/family/contacts",
+        json={"primary": "son@example.com", "secondary": "aunt@example.com"},
+    )
+    assert client.get("/family/contacts").json()["secondary"] == "aunt@example.com"
