@@ -69,7 +69,9 @@ def impersonated_brand(text: str) -> str | None:
 
 
 def red_flags(text: str) -> list[str]:
-    flags = [name for name, pattern in _RED_FLAGS.items() if re.search(pattern, text, re.I)]
+    flags = [
+        name for name, pattern in _RED_FLAGS.items() if re.search(pattern, text, re.I)
+    ]
     if impersonated_brand(text):
         flags.append("fake company link")
     return flags

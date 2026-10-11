@@ -81,7 +81,9 @@ async def call_agent(card: AgentCard, payload: dict) -> dict:
     try:
         return await asyncio.wait_for(_call(card, payload), AGENT_DEADLINE_SECONDS)
     except TimeoutError as e:
-        logger.warning("%s did not answer within %ss", card.name, AGENT_DEADLINE_SECONDS)
+        logger.warning(
+            "%s did not answer within %ss", card.name, AGENT_DEADLINE_SECONDS
+        )
         raise AgentUnavailable(f"{card.name} did not answer in time") from e
     except AgentUnavailable:
         raise

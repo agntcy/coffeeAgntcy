@@ -109,7 +109,9 @@ class JsonAgentExecutor(AgentExecutor):
             )
         )
 
-    async def cancel(self, request: RequestContext, event_queue: EventQueue) -> Task | None:
+    async def cancel(
+        self, request: RequestContext, event_queue: EventQueue
+    ) -> Task | None:
         raise ServerError(error=UnsupportedOperationError())
 
 
@@ -146,6 +148,8 @@ async def serve(card: AgentCard, handler: Handler) -> None:
         started.append(session)
         logger.info("Serving %s on %s", interface.transport, interface.url)
 
+    if not started:
+        raise RuntimeError(f"{card.name}: no transport could be started")
     logger.info("%s ready", card.name)
     await started[0].start_all_sessions(keep_alive=True)
 

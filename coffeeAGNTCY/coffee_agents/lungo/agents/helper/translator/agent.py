@@ -45,7 +45,9 @@ async def handle(request: dict) -> dict:
     target = request.get("target", "mn")
     instructions = _INSTRUCTIONS[target]
     if target == "mn" and APPROVED_MN:
-        examples = "\n\n".join(f"English: {en}\nMongolian: {mn}" for en, mn in APPROVED_MN)
+        examples = "\n\n".join(
+            f"English: {en}\nMongolian: {mn}" for en, mn in APPROVED_MN
+        )
         instructions += (
             "\n\nThese translations were approved by a native speaker. Follow "
             "their wording and style; when a message asks the reader to go to a "

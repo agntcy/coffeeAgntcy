@@ -52,8 +52,25 @@ DANGER_ACTION_MN = (
 CHECK_ACTION_MN = "Юу ч бүү хий. Гэр бүлдээ мэдэгдсэн, тэд тусална."
 TRANSLATION_UNSURE_HEADLINE_MN = "⚠️ Орчуулга бүрэн зөв биш байж магадгүй."
 TRANSLATION_UNSURE_NOTE_MN = "Гэр бүлдээ мэдэгдсэн, тэд шалгаж өгнө."
-REPLY_UNSURE_MN = "⚠️ Англи орчуулга буруу байж магадгүй. Илгээхээсээ өмнө гэр бүлээсээ асуугаарай."
+REPLY_UNSURE_MN = (
+    "⚠️ Англи орчуулга буруу байж магадгүй. Илгээхээсээ өмнө гэр бүлээсээ асуугаарай."
+)
 REPLY_OK_MN = "✅ Орчуулга зөв байна. Илгээж болно."
+
+# The same messages in English, for the family and for demoing.
+HEADLINE_EN = {
+    SAFE: "✅ This message is safe.",
+    CHECK: "⚠️ Not sure. Ask your family.",
+    DANGER: "🛑 This may be a scam!",
+}
+DANGER_ACTION_EN = (
+    "Don't click the link, don't pay, don't reply. Your family has been alerted too."
+)
+CHECK_ACTION_EN = "Don't do anything yet. Your family was notified and will help."
+TRANSLATION_UNSURE_HEADLINE_EN = "⚠️ The translation may not be fully correct."
+TRANSLATION_UNSURE_NOTE_EN = "Your family was notified and will check it."
+REPLY_UNSURE_EN = "⚠️ The English may be wrong. Ask your family before sending."
+REPLY_OK_EN = "✅ The translation is correct. You can send it."
 
 
 @dataclass
@@ -137,7 +154,10 @@ async def explain(text: str) -> dict:
     if scam is None:
         verdict.raise_to(CHECK, "The scam checker is down, so safety was not checked.")
     elif scam["verdict"] == "SCAM":
-        verdict.raise_to(DANGER, f"Scam checker: SCAM ({', '.join(scam['red_flags']) or scam['reason']}).")
+        verdict.raise_to(
+            DANGER,
+            f"Scam checker: SCAM ({', '.join(scam['red_flags']) or scam['reason']}).",
+        )
     elif scam["verdict"] == "SUSPICIOUS":
         verdict.raise_to(CHECK, f"Scam checker: suspicious ({scam['reason']}).")
     if scam and scam["rule_verdict"] != scam["llm_verdict"]:
@@ -149,7 +169,7 @@ async def explain(text: str) -> dict:
     # Disagreement: advisor wants her to act on something the scam checker distrusts.
     if advice and scam and advice["follows_link"] and scam["verdict"] != "SAFE":
         verdict.disagreements.append(
-            f"Advisor suggested: \"{advice['action']}\" but the scam checker rated "
+            f'Advisor suggested: "{advice["action"]}" but the scam checker rated '
             f"the message {scam['verdict']}. The advice was withheld."
         )
         verdict.raise_to(CHECK, "Advisor and scam checker disagree.")
@@ -170,16 +190,19 @@ async def explain(text: str) -> dict:
     if advice is None:
         verdict.raise_to(CHECK, "The advisor is down.")
 
-    # What she sees, in Mongolian.
-    headline = HEADLINE_MN[verdict.status]
+    # What she sees, in Mongolian (and the same in English).
+    headline, headline_en = HEADLINE_MN[verdict.status], HEADLINE_EN[verdict.status]
     action_mn = (advice_mn or {}).get("translation", "")
+    action_en = advice_en
     if verdict.status == DANGER:
-        action_mn = DANGER_ACTION_MN
+        action_mn, action_en = DANGER_ACTION_MN, DANGER_ACTION_EN
     elif verdict.status == CHECK and verdict.safety_concern:
-        action_mn = CHECK_ACTION_MN
+        action_mn, action_en = CHECK_ACTION_MN, CHECK_ACTION_EN
     elif verdict.status == CHECK:
         headline = TRANSLATION_UNSURE_HEADLINE_MN
+        headline_en = TRANSLATION_UNSURE_HEADLINE_EN
         action_mn = f"{action_mn}\n{TRANSLATION_UNSURE_NOTE_MN}".strip()
+        action_en = f"{action_en}\n{TRANSLATION_UNSURE_NOTE_EN}".strip()
 
     if verdict.status != SAFE:
         _alert_family("message", text, verdict)
@@ -190,6 +213,8 @@ async def explain(text: str) -> dict:
             "headline": headline,
             "translation": translation_mn,
             "advice": action_mn,
+            "headline_en": headline_en,
+            "advice_en": action_en,
         },
         "family": asdict(verdict),
         "agents": opinions,
@@ -229,7 +254,10 @@ async def reply(text_mn: str) -> dict:
     return {
         "status": verdict.status,
         "english": english,
-        "grandma": {"headline": REPLY_OK_MN if verdict.status == SAFE else REPLY_UNSURE_MN},
+        "grandma": {
+            "headline": REPLY_OK_MN if verdict.status == SAFE else REPLY_UNSURE_MN,
+            "headline_en": REPLY_OK_EN if verdict.status == SAFE else REPLY_UNSURE_EN,
+        },
         "family": asdict(verdict),
         "agents": opinions,
     }

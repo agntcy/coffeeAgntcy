@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="mn">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -19,6 +19,7 @@
   header h1 { margin: 0; font-size: 26px; }
   .switch button { font: inherit; font-size: 16px; padding: 8px 14px; border: 1px solid var(--line);
     background: var(--bg); color: var(--ink); border-radius: 999px; cursor: pointer; }
+  .switch { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
   .switch button[aria-pressed="true"] { background: var(--brand); color: var(--brand-ink); border-color: var(--brand); }
   main { max-width: 760px; margin: 0 auto; padding: 20px 16px 60px; }
   .tabs { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 18px; }
@@ -41,6 +42,7 @@
   .danger .headline { color: var(--danger); }
   .section-title { font-size: 16px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); margin: 14px 0 4px; }
   .text { font-size: 24px; white-space: pre-wrap; overflow-wrap: anywhere; }
+  .text.secondary { font-size: 18px; color: var(--muted); margin-top: 6px; }
   .copy { margin-top: 10px; font: inherit; font-size: 20px; padding: 10px 16px; border-radius: 12px;
     border: 2px solid var(--ink); background: var(--card); color: var(--ink); cursor: pointer; }
   .examples { margin-top: 26px; font-size: 16px; color: var(--muted); }
@@ -67,9 +69,11 @@
 </head>
 <body>
 <header>
-  <h1 id="title">🤝 Миний туслах</h1>
-  <div class="switch" role="group" aria-label="View">
-    <button id="view-grandma" aria-pressed="true">👵 Эмээ</button>
+  <h1 data-i18n="title">🤝 Grandma Helper</h1>
+  <div class="switch">
+    <button id="lang-en" aria-pressed="true" title="Interface in English">EN</button>
+    <button id="lang-mn" aria-pressed="false" title="Монгол хэлээр">МН</button>
+    <button id="view-grandma" aria-pressed="true" data-i18n="grandma">👵 Grandma</button>
     <button id="view-family" aria-pressed="false">👨‍👩‍👧 Family</button>
   </div>
 </header>
@@ -78,20 +82,20 @@
   <!-- Grandma's view: Mongolian, big, one thing at a time -->
   <section id="grandma">
     <div class="tabs" role="tablist">
-      <button id="tab-explain" role="tab" aria-selected="true">📩 Мессеж ойлгох</button>
-      <button id="tab-reply" role="tab" aria-selected="false">✍️ Хариу бичих</button>
+      <button id="tab-explain" role="tab" aria-selected="true" data-i18n="tabExplain">📩 Understand a message</button>
+      <button id="tab-reply" role="tab" aria-selected="false" data-i18n="tabReply">✍️ Write a reply</button>
     </div>
 
     <form id="form-explain">
-      <label class="big" for="explain-text">Англи мессежээ энд хуулж тавина уу</label>
+      <label class="big" for="explain-text" data-i18n="explainLabel">Paste the English message here</label>
       <textarea id="explain-text" required></textarea>
-      <button class="go" type="submit">🔍 Шалгах</button>
+      <button class="go" type="submit" data-i18n="check">🔍 Check</button>
     </form>
 
     <form id="form-reply" class="hidden">
-      <label class="big" for="reply-text">Хариугаа монголоор бичнэ үү</label>
+      <label class="big" for="reply-text" data-i18n="replyLabel">Write your reply in Mongolian</label>
       <textarea id="reply-text" required></textarea>
-      <button class="go" type="submit">🔁 Англи руу орчуулах</button>
+      <button class="go" type="submit" data-i18n="translate">🔁 Translate to English</button>
     </form>
 
     <div id="result" class="result hidden" aria-live="polite"></div>
@@ -118,6 +122,38 @@
 <script>
 const API = "";  // same origin as the helper API
 let last = null;
+let lang = "en";  // interface language; grandma uses "mn"
+
+const STRINGS = {
+  en: {
+    title: "🤝 Grandma Helper", grandma: "👵 Grandma",
+    tabExplain: "📩 Understand a message", tabReply: "✍️ Write a reply",
+    explainLabel: "Paste the English message here", replyLabel: "Write your reply in Mongolian",
+    check: "🔍 Check", translate: "🔁 Translate to English", wait: "⏳ Please wait...",
+    inMongolian: "What grandma reads (Mongolian)", whatToDo: "What to do",
+    english: "English", copy: "📋 Copy", copied: "✅ Copied",
+    error: "⚠️ Something went wrong. Please try again.",
+  },
+  mn: {
+    title: "🤝 Миний туслах", grandma: "👵 Эмээ",
+    tabExplain: "📩 Мессеж ойлгох", tabReply: "✍️ Хариу бичих",
+    explainLabel: "Англи мессежээ энд хуулж тавина уу", replyLabel: "Хариугаа монголоор бичнэ үү",
+    check: "🔍 Шалгах", translate: "🔁 Англи руу орчуулах", wait: "⏳ Түр хүлээнэ үү...",
+    inMongolian: "Мессеж монголоор", whatToDo: "Юу хийх вэ",
+    english: "English", copy: "📋 Хуулах", copied: "✅ Хуулсан",
+    error: "⚠️ Алдаа гарлаа. Дахин оролдоно уу.",
+  },
+};
+const t = (key) => STRINGS[lang][key];
+
+function setLang(next) {
+  lang = next;
+  document.documentElement.lang = lang;
+  document.querySelectorAll("[data-i18n]").forEach((el) => { el.textContent = t(el.dataset.i18n); });
+  $("lang-en").setAttribute("aria-pressed", lang === "en");
+  $("lang-mn").setAttribute("aria-pressed", lang === "mn");
+  if (last && !$("result").classList.contains("hidden")) showResult(last.mode, last.data);
+}
 
 const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) =>
@@ -148,8 +184,7 @@ function setTab(mode) {
 async function send(mode, text, button) {
   const box = $("result");
   button.disabled = true;
-  const label = button.textContent;
-  button.textContent = "⏳ Түр хүлээнэ үү...";
+  button.textContent = t("wait");
   try {
     const res = await fetch(`${API}/${mode}`, {
       method: "POST", headers: { "Content-Type": "application/json" },
@@ -161,32 +196,36 @@ async function send(mode, text, button) {
     showResult(mode, data);
   } catch (e) {
     box.className = "result check_with_family";
-    box.innerHTML = `<p class="headline">⚠️ Алдаа гарлаа. Дахин оролдоно уу.</p>`;
+    box.innerHTML = `<p class="headline">${t("error")}</p>`;
   } finally {
     button.disabled = false;
-    button.textContent = label;
+    button.textContent = t(mode === "explain" ? "check" : "translate");
   }
 }
 
 function showResult(mode, d) {
   const box = $("result");
+  const g = d.grandma;
+  const en = lang === "en";
   box.className = `result ${d.status}`;
   if (mode === "explain") {
+    const advice = en ? g.advice_en : g.advice;
     box.innerHTML = `
-      <p class="headline">${esc(d.grandma.headline)}</p>
-      ${d.grandma.translation ? `<div class="section-title">Мессеж монголоор</div>
-        <div class="text">${esc(d.grandma.translation)}</div>` : ""}
-      ${d.grandma.advice ? `<div class="section-title">Юу хийх вэ</div>
-        <div class="text"><b>${esc(d.grandma.advice)}</b></div>` : ""}`;
+      <p class="headline">${esc(en ? g.headline_en : g.headline)}</p>
+      ${g.translation ? `<div class="section-title">${t("inMongolian")}</div>
+        <div class="text">${esc(g.translation)}</div>` : ""}
+      ${advice ? `<div class="section-title">${t("whatToDo")}</div>
+        <div class="text"><b>${esc(advice)}</b></div>
+        ${en && g.advice ? `<div class="text secondary">${esc(g.advice)}</div>` : ""}` : ""}`;
   } else {
     box.innerHTML = `
-      <p class="headline">${esc(d.grandma.headline)}</p>
-      ${d.english ? `<div class="section-title">English</div>
+      <p class="headline">${esc(en ? g.headline_en : g.headline)}</p>
+      ${d.english ? `<div class="section-title">${t("english")}</div>
         <div class="text" id="english">${esc(d.english)}</div>
-        <button class="copy" id="copy">📋 Хуулах</button>` : ""}`;
+        <button class="copy" id="copy">${t("copy")}</button>` : ""}`;
     const copy = $("copy");
     if (copy) copy.onclick = async () => {
-      try { await navigator.clipboard.writeText(d.english); copy.textContent = "✅ Хуулсан"; } catch {}
+      try { await navigator.clipboard.writeText(d.english); copy.textContent = t("copied"); } catch {}
     };
   }
 }
@@ -235,6 +274,8 @@ async function renderFamily() {
   }
 }
 
+$("lang-en").onclick = () => setLang("en");
+$("lang-mn").onclick = () => setLang("mn");
 $("view-grandma").onclick = () => setView("grandma");
 $("view-family").onclick = () => setView("family");
 $("tab-explain").onclick = () => setTab("explain");

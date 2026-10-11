@@ -30,7 +30,6 @@ _LANG = {"en": "English", "mn": "Mongolian (Cyrillic)"}
 _FACT = re.compile(r"https?://\S+|\b(?:[\w-]+\.)+[a-z]{2,6}\b(?:/\S*)?|\S*\d\S*", re.I)
 
 
-
 def _normalize(text: str) -> str:
     # Models sometimes swap "-" for look-alike Unicode hyphens inside links.
     return re.sub("[\u2010-\u2015]", "-", text).lower()
