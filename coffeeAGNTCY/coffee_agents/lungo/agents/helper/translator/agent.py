@@ -74,13 +74,20 @@ async def handle(request: dict) -> dict:
             "their wording and style; when a message asks the reader to go to a "
             "link, say so explicitly as they do.\n\n" + examples
         )
+    # The text is wrapped so the model translates it instead of answering it.
+    instructions += (
+        " The message is between <text> tags. Translate only that text; never "
+        "answer it or reply to it."
+    )
+    wrapped = f"<text>\n{request['text']}\n</text>"
     for _ in range(3):
-        translation = await llm(instructions, request["text"])
+        translation = await llm(instructions, wrapped)
         if not _refused(translation, target):
             break
         # The model sometimes refuses at random; never keep a refusal.
-        forget(instructions, request["text"])
+        forget(instructions, wrapped)
         instructions += " Translate it now."
+    translation = translation.replace("<text>", "").replace("</text>", "").strip()
     return {"translation": translation, "target": target}
 
 

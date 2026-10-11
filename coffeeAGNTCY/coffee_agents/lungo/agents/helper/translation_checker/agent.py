@@ -29,7 +29,7 @@ _LANG = {"en": "English", "mn": "Mongolian (Cyrillic)"}
 
 # Family words models tend to mix up (e.g. reading "эмээ" as "Mom").
 _FAMILY_TERMS = (
-    "Family words: эмээ = grandma, өвөө = grandpa, ээж = mom, аав = dad, "
+    "Family words: эмээ (also written emee) = grandma, өвөө = grandpa, ээж = mom, аав = dad, "
     "ач/зээ = grandchild, хүү = son, охин = daughter. "
     "Legal words: батлан даалт = bail, торгууль = fine."
 )
@@ -49,6 +49,15 @@ def _facts(text: str) -> set[str]:
         re.sub(r"[^\w./:@-]", "", f).strip(".:")
         for f in _FACT.findall(_normalize(text))
     } - {""}
+
+
+# Longer than this, or with hard facts in it, a message counts as complicated.
+SIMPLE_MAX_WORDS = 30
+
+
+def _simple(text: str) -> bool:
+    """Short and everyday: few words and no links, numbers, codes or amounts."""
+    return len(text.split()) <= SIMPLE_MAX_WORDS and not _facts(text)
 
 
 async def handle(request: dict) -> dict:
@@ -89,6 +98,13 @@ async def handle(request: dict) -> dict:
         severity = "major"
         differences = (differences + " " if differences else "") + (
             "Missing from translation: " + ", ".join(missing)
+        )
+    if severity == "major" and not missing and _simple(original):
+        # A short everyday message (no link, number or amount) is still
+        # understood with small slips; only complicated ones need family.
+        severity = "minor"
+        differences = (differences + " " if differences else "") + (
+            "(Short everyday message, so not escalated.)"
         )
     verdict = {"none": "OK", "minor": "MINOR", "major": "DRIFT"}[severity]
     return {
