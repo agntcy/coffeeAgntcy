@@ -49,6 +49,13 @@
   .examples button { font: inherit; font-size: 15px; margin: 4px 6px 0 0; padding: 6px 10px; border-radius: 10px;
     border: 1px solid var(--line); background: var(--card); color: var(--ink); cursor: pointer; }
   .hidden { display: none !important; }
+  /* Demo login */
+  .login label { display: block; font-size: 22px; font-weight: 600; margin: 14px 0 6px; }
+  .login input { width: 100%; font: inherit; font-size: 24px; padding: 12px 14px; border: 2px solid var(--line);
+    border-radius: 14px; background: var(--card); color: var(--ink); }
+  .login input:focus { outline: 3px solid var(--brand); outline-offset: 1px; }
+  .login .hint { color: var(--muted); font-size: 18px; margin-top: 14px; }
+  .login .error { color: var(--danger); font-weight: 600; margin-top: 10px; }
   /* Family view */
   .family { font-size: 17px; }
   .family h2 { font-size: 22px; margin: 26px 0 10px; }
@@ -73,14 +80,28 @@
   <div class="switch">
     <button id="lang-en" aria-pressed="true" title="Interface in English">EN</button>
     <button id="lang-mn" aria-pressed="false" title="Монгол хэлээр">МН</button>
-    <button id="view-grandma" aria-pressed="true" data-i18n="grandma">👵 Grandma</button>
-    <button id="view-family" aria-pressed="false">👨‍👩‍👧 Family</button>
+    <button id="view-grandma" class="app-only hidden" aria-pressed="true" data-i18n="grandma">👵 Grandma</button>
+    <button id="view-family" class="app-only hidden" aria-pressed="false">👨‍👩‍👧 Family</button>
+    <button id="logout" class="app-only hidden" data-i18n="logout">Log out</button>
   </div>
 </header>
 
 <main>
+  <!-- Demo login: one built-in account -->
+  <section id="login" class="login hidden">
+    <form id="form-login">
+      <label for="login-username" data-i18n="username">Username</label>
+      <input type="text" id="login-username" autocomplete="username" autocapitalize="none" required>
+      <label for="login-password" data-i18n="password">Password</label>
+      <input type="password" id="login-password" autocomplete="current-password" required>
+      <button class="go" type="submit" data-i18n="loginBtn">🔑 Log in</button>
+      <p id="login-error" class="error hidden" role="alert" data-i18n="wrongLogin">Wrong username or password.</p>
+    </form>
+    <p class="hint" data-i18n="demoHint">Demo account: grandma / demo123</p>
+  </section>
+
   <!-- Grandma's view: Mongolian, big, one thing at a time -->
-  <section id="grandma">
+  <section id="grandma" class="hidden">
     <div class="tabs" role="tablist">
       <button id="tab-explain" role="tab" aria-selected="true" data-i18n="tabExplain">📩 Understand a message</button>
       <button id="tab-reply" role="tab" aria-selected="false" data-i18n="tabReply">✍️ Write a reply</button>
@@ -134,6 +155,8 @@ const STRINGS = {
     inMongolian: "What grandma reads (Mongolian)", whatToDo: "What to do",
     english: "English", copy: "📋 Copy", copied: "✅ Copied",
     error: "⚠️ Something went wrong. Please try again.",
+    username: "Username", password: "Password", loginBtn: "🔑 Log in", logout: "Log out",
+    wrongLogin: "Wrong username or password.", demoHint: "Demo account: grandma / demo123",
   },
   mn: {
     title: "🤝 Миний туслах", grandma: "👵 Эмээ",
@@ -143,6 +166,9 @@ const STRINGS = {
     inMongolian: "Мессеж монголоор", whatToDo: "Юу хийх вэ",
     english: "English", copy: "📋 Хуулах", copied: "✅ Хуулсан",
     error: "⚠️ Алдаа гарлаа. Дахин оролдоно уу.",
+    // Login strings: pending native-speaker review.
+    username: "Хэрэглэгчийн нэр", password: "Нууц үг", loginBtn: "🔑 Нэвтрэх", logout: "Гарах",
+    wrongLogin: "Нэр эсвэл нууц үг буруу байна.", demoHint: "Демо бүртгэл: grandma / demo123",
   },
 };
 const t = (key) => STRINGS[lang][key];
@@ -167,6 +193,8 @@ const AGENT_NAMES = {
 const STATUS_TEXT = { safe: "SAFE", check_with_family: "CHECK WITH FAMILY", danger: "DANGER" };
 
 function setView(view) {
+  $("login").classList.toggle("hidden", view !== "login");
+  document.querySelectorAll(".app-only").forEach((el) => el.classList.toggle("hidden", view === "login"));
   $("grandma").classList.toggle("hidden", view !== "grandma");
   $("family").classList.toggle("hidden", view !== "family");
   $("view-grandma").setAttribute("aria-pressed", view === "grandma");
@@ -191,6 +219,7 @@ async function send(mode, text, button) {
       method: "POST", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ text }),
     });
+    if (res.status === 401) return setView("login");
     if (!res.ok) throw new Error(res.status);
     const data = await res.json();
     last = { mode, text, data };
@@ -263,7 +292,9 @@ async function renderFamily() {
         ${f.reasons.map((x) => `<li>${esc(x)}</li>`).join("")}</ul>` : ""}`;
   }
   try {
-    const alerts = await (await fetch(`${API}/family/alerts`)).json();
+    const res = await fetch(`${API}/family/alerts`);
+    if (res.status === 401) return setView("login");
+    const alerts = await res.json();
     $("alerts").innerHTML = alerts.length ? alerts.map((a) => `
       <div class="alert"><span class="pill ${a.status}">${STATUS_TEXT[a.status]}</span>
         <span class="meta"> ${esc(new Date(a.time).toLocaleString())} · ${a.kind}</span>
@@ -274,6 +305,24 @@ async function renderFamily() {
     $("alerts").innerHTML = `<p class="empty">Could not load alerts.</p>`;
   }
 }
+
+$("form-login").onsubmit = async (e) => {
+  e.preventDefault();
+  const res = await fetch(`${API}/login`, {
+    method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ username: $("login-username").value, password: $("login-password").value }),
+  });
+  $("login-error").classList.toggle("hidden", res.ok);
+  if (!res.ok) return;
+  $("login-password").value = "";
+  setView("grandma");
+};
+$("logout").onclick = async () => {
+  await fetch(`${API}/logout`, { method: "POST" });
+  last = null;
+  $("result").classList.add("hidden");
+  setView("login");
+};
 
 $("lang-en").onclick = () => setLang("en");
 $("lang-mn").onclick = () => setLang("mn");
@@ -289,6 +338,9 @@ document.querySelectorAll(".examples button").forEach((b) => b.onclick = () => {
   setTab(b.dataset.mode);
   $(`${b.dataset.mode}-text`).value = b.dataset.text;
 });
+
+// Start on grandma's screen if already logged in, otherwise on the login screen.
+fetch(`${API}/me`).then((res) => setView(res.ok ? "grandma" : "login"), () => setView("login"));
 </script>
 </body>
 </html>
