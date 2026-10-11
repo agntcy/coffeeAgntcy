@@ -37,10 +37,13 @@ from a2a.utils.errors import ServerError
 from agntcy_app_sdk.factory import AgntcyFactory
 from agntcy_app_sdk.semantic.a2a.transport_types import normalize_transport
 from config.config import LLM_MODEL, OTEL_SDK_DISABLED
+from opentelemetry import trace
 
 logger = logging.getLogger("helper.common")
 
 Handler = Callable[[dict], Awaitable[dict]]
+
+tracer = trace.get_tracer("helper.agents")
 
 
 def make_card(
@@ -95,11 +98,17 @@ class JsonAgentExecutor(AgentExecutor):
         except json.JSONDecodeError:
             # Plain text is accepted too, as {"text": ...}.
             request = {"text": text}
-        try:
-            result = await self.handler(request)
-        except Exception as e:
-            logger.exception("%s failed", self.card.name)
-            raise ServerError(error=InternalError()) from e
+        # One span per request, holding what the agent was asked and what it
+        # answered, so each agent's opinion is visible in the trace.
+        with tracer.start_as_current_span(f"{self.card.skills[0].id}.handle") as span:
+            span.set_attribute("helper.input", text)
+            try:
+                result = await self.handler(request)
+            except Exception as e:
+                logger.exception("%s failed", self.card.name)
+                span.record_exception(e)
+                raise ServerError(error=InternalError()) from e
+            span.set_attribute("helper.output", json.dumps(result, ensure_ascii=False))
         await event_queue.enqueue_event(
             Message(
                 message_id=str(uuid4()),
