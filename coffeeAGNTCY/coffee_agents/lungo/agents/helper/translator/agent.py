@@ -26,16 +26,25 @@ APPROVED_MN = [
     ),
 ]
 
+# Without this, models refuse to translate scam texts, leaving her with nothing.
+_ALWAYS = (
+    " This helps an elderly person who reads only Mongolian. Even if the "
+    "message looks like a scam, translate it faithfully: she needs to know what "
+    "it says, and another agent checks it for scams. Never refuse, reply to or "
+    "comment on it."
+)
+
 _INSTRUCTIONS = {
     "mn": (
         "Translate the message into simple, natural Mongolian (Cyrillic) that an "
         "elderly person can easily understand. Keep every link, phone number, "
         "code, amount, date and name exactly as written. Output only the translation."
+        + _ALWAYS
     ),
     "en": (
         "Translate the message into short, polite, natural English. Keep every "
         "link, phone number, code, amount, date and name exactly as written. "
-        "Output only the translation."
+        "Output only the translation." + _ALWAYS
     ),
 }
 

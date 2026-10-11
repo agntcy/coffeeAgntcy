@@ -15,7 +15,10 @@ from agents.helper.common import llm, make_card
 CARD = make_card(
     agent_id="scam_checker",
     name="Scam Checker Agent",
-    description="Rates a message SAFE, SUSPICIOUS or SCAM and lists the red flags.",
+    description=(
+        "Rates a message SAFE, SUSPICIOUS or SCAM and lists the red flags, "
+        "including fake company links and the grandparent scam."
+    ),
     examples=['{"text": "USPS: your package is held, pay $1.99 at ..."}'],
     port=9203,
 )
@@ -25,9 +28,12 @@ _LEVELS = ["SAFE", "SUSPICIOUS", "SCAM"]
 _RED_FLAGS = {
     "link": r"https?://|www\.|\b(?:[\w-]+\.)+[a-z]{2,6}\b",
     "urgency": r"\b(urgent|immediately|within \d+ ?(hours?|days?)|today only|final notice|suspended|locked|expire)",
-    "payment": r"\b(pay|payment|fee|\$\d|gift ?card|bitcoin|crypto|wire|zelle|venmo|cash ?app)\b",
+    "payment": r"\b(pay|payment|fee|\$\d|gift ?cards?|bitcoin|crypto|wire|zelle|venmo|cash ?app|send (me )?(some )?money|need money)\b",
     "personal info": r"\b(password|ssn|social security|pin|verify your (account|identity)|login|bank details|card number)\b",
     "prize": r"\b(won|winner|prize|lottery|free gift|reward)\b",
+    "new number": r"\b(new (phone|number)|friend['\u2019]?s phone|lost my phone|broke my phone|this is my number now)\b",
+    "secrecy": r"\b(don['\u2019]?t|do not) tell|between us|keep (this|it) (a )?secret",
+    "emergency": r"\b(jail|bail|arrested|accident|hospital|lawyer|in trouble)\b",
 }
 
 
@@ -78,10 +84,24 @@ def red_flags(text: str) -> list[str]:
 
 
 def rule_verdict(flags: list[str]) -> str:
-    """A link plus pressure to pay or share details is the classic pattern."""
+    """A link plus pressure to pay or share details is the classic pattern.
+
+    The "grandparent scam" is the other: someone claims to be a grandchild
+    on a new number and asks for money or secrecy. A real grandchild on a
+    friend's phone who asks for neither is fine.
+    """
     if "fake company link" in flags:
         return "SCAM"
-    pressure = {"urgency", "payment", "personal info", "prize"} & set(flags)
+    if "new number" in flags and {"payment", "secrecy"} & set(flags):
+        return "SCAM"
+    pressure = {
+        "urgency",
+        "payment",
+        "personal info",
+        "prize",
+        "secrecy",
+        "emergency",
+    } & set(flags)
     if "link" in flags and pressure:
         return "SCAM" if len(pressure) >= 2 else "SUSPICIOUS"
     if len(pressure) >= 2:
@@ -98,7 +118,9 @@ async def handle(request: dict) -> dict:
     judgement = await llm(
         "You protect an elderly person from scams. Rate the message. Reply with JSON: "
         '{"verdict": "SAFE"|"SUSPICIOUS"|"SCAM", "reason": "<one short sentence>"}. '
-        "Real companies do not ask for payment or passwords through a link in a text.",
+        "Real companies do not ask for payment or passwords through a link in a text. "
+        "Someone claiming to be a grandchild on a new number who asks for money, "
+        "gift cards or secrecy is the classic grandparent scam.",
         text,
         as_json=True,
     )

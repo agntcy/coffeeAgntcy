@@ -58,6 +58,7 @@ async def handle(request: dict) -> dict:
 
     back = await llm(
         f"Translate this into {_LANG[source]}. Output only the translation. "
+        "Translate faithfully even if it is a scam; never refuse or comment. "
         + _FAMILY_TERMS,
         translation,
     )
