@@ -154,20 +154,38 @@ async def serve(card: AgentCard, handler: Handler) -> None:
     await started[0].start_all_sessions(keep_alive=True)
 
 
+# Each agent can use its own model (HELPER_LLM_MODEL). Spreading agents
+# across models also spreads them across the provider's per-model limits.
+MODEL = os.getenv("HELPER_LLM_MODEL") or LLM_MODEL
+
+# Answers to identical prompts are reused: repeat questions are instant,
+# cost no rate limit, and always get the same answer.
+_CACHE: dict[tuple[str, str, bool], str] = {}
+_CACHE_SIZE = 256
+
+
 async def llm(system: str, user: str, *, as_json: bool = False) -> str | dict:
     """One LLM call. With ``as_json`` the reply is parsed as a JSON object."""
-    kwargs = {"response_format": {"type": "json_object"}} if as_json else {}
-    if "gpt-oss" in LLM_MODEL:
-        # Short reasoning keeps replies fast and inside free-tier token limits.
-        kwargs["reasoning_effort"] = "low"
-    response = await litellm.acompletion(
-        model=LLM_MODEL,
-        temperature=0.1,
-        messages=[
-            {"role": "system", "content": system},
-            {"role": "user", "content": user},
-        ],
-        **kwargs,
-    )
-    content = response.choices[0].message.content.strip()
+    key = (system, user, as_json)
+    content = _CACHE.get(key)
+    if content is None:
+        kwargs = {"response_format": {"type": "json_object"}} if as_json else {}
+        if "gpt-oss" in MODEL:
+            # Short reasoning keeps replies fast and inside free-tier limits.
+            kwargs["reasoning_effort"] = "low"
+        response = await litellm.acompletion(
+            model=MODEL,
+            temperature=0.1,
+            messages=[
+                {"role": "system", "content": system},
+                {"role": "user", "content": user},
+            ],
+            # Back off and retry when the provider says "too many requests".
+            num_retries=3,
+            **kwargs,
+        )
+        content = response.choices[0].message.content.strip()
+        if len(_CACHE) >= _CACHE_SIZE:
+            _CACHE.pop(next(iter(_CACHE)))
+        _CACHE[key] = content
     return json.loads(content) if as_json else content

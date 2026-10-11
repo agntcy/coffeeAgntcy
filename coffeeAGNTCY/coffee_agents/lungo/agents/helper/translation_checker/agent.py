@@ -17,14 +17,21 @@ CARD = make_card(
     agent_id="translation_checker",
     name="Translation Checker Agent",
     description=(
-        "Independently back-translates a translation and reports whether the "
-        "meaning or any hard fact (link, number, code, amount) changed."
+        "Independently back-translates a translation and rates any change in "
+        "meaning as none, minor (wording) or major (would change what the "
+        "reader does). A lost link, number or code is always major."
     ),
     examples=['{"original": "...", "translation": "...", "source": "en"}'],
     port=9202,
 )
 
 _LANG = {"en": "English", "mn": "Mongolian (Cyrillic)"}
+
+# Family words models tend to mix up (e.g. reading "эмээ" as "Mom").
+_FAMILY_TERMS = (
+    "Family words: эмээ = grandma, өвөө = grandpa, ээж = mom, аав = dad, "
+    "ач/зээ = grandchild, хүү = son, охин = daughter."
+)
 
 # Links, emails, and anything containing a digit (amounts, codes, dates, phones).
 _FACT = re.compile(r"https?://\S+|\b(?:[\w-]+\.)+[a-z]{2,6}\b(?:/\S*)?|\S*\d\S*", re.I)
@@ -50,7 +57,8 @@ async def handle(request: dict) -> dict:
     source = request.get("source", "en")
 
     back = await llm(
-        f"Translate this into {_LANG[source]}. Output only the translation.",
+        f"Translate this into {_LANG[source]}. Output only the translation. "
+        + _FAMILY_TERMS,
         translation,
     )
 
@@ -59,21 +67,30 @@ async def handle(request: dict) -> dict:
 
     judgement = await llm(
         "You compare two texts that should mean the same thing. Reply with JSON: "
-        '{"same_meaning": true|false, "differences": "<short description, or empty>"}. '
-        "Ignore wording and style; only flag changes a reader would act on "
-        "differently (who, what, when, how much, what to do).",
+        '{"severity": "none"|"minor"|"major", "differences": "<short, or empty>"}. '
+        "minor = wording, tone, politeness, how a person is addressed or named "
+        "(e.g. grandma vs mom), vague vs exact phrasing of the same idea. "
+        "major = the reader would act differently: a different sender or "
+        "recipient, time, date, place, amount, or instruction, or a request "
+        "that appears or disappears. When unsure between minor and major, "
+        "choose major.",
         f"Text A:\n{original}\n\nText B:\n{back}",
         as_json=True,
     )
 
-    same = bool(judgement.get("same_meaning")) and not missing
+    severity = str(judgement.get("severity", "major")).lower()
+    if severity not in ("none", "minor", "major"):
+        severity = "major"
     differences = judgement.get("differences", "")
     if missing:
+        # A lost link, number or code always matters.
+        severity = "major"
         differences = (differences + " " if differences else "") + (
             "Missing from translation: " + ", ".join(missing)
         )
+    verdict = {"none": "OK", "minor": "MINOR", "major": "DRIFT"}[severity]
     return {
-        "verdict": "OK" if same else "DRIFT",
+        "verdict": verdict,
         "back_translation": back,
         "differences": differences.strip(),
     }

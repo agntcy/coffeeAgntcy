@@ -186,6 +186,11 @@ async def explain(text: str) -> dict:
             f"Translation checker: meaning may have changed ({check['differences']})."
         )
         verdict.raise_to(CHECK, "The translation may be wrong.", safety=False)
+    elif check["verdict"] == "MINOR":
+        verdict.disagreements.append(
+            f"Translation checker: minor wording difference, not escalated "
+            f"({check['differences']})."
+        )
 
     if advice is None:
         verdict.raise_to(CHECK, "The advisor is down.")
@@ -247,6 +252,11 @@ async def reply(text_mn: str) -> dict:
             f"Translation checker: meaning may have changed ({check['differences']})."
         )
         verdict.raise_to(CHECK, "The English may not say what she meant.")
+    elif check["verdict"] == "MINOR":
+        verdict.disagreements.append(
+            f"Translation checker: minor wording difference, not escalated "
+            f"({check['differences']})."
+        )
 
     if verdict.status != SAFE:
         _alert_family("reply", text_mn, verdict)

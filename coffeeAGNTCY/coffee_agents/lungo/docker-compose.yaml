@@ -189,6 +189,7 @@ services:
       - NATS_SERVER=${NATS_SERVER}
       - SLIM_SHARED_SECRET=${SLIM_SHARED_SECRET}
       - ENABLE_HTTP=true
+      - HELPER_LLM_MODEL=${HELPER_SMALL_LLM_MODEL:-groq/openai/gpt-oss-20b}
     ports:
       - "9203:9203"
     depends_on:
@@ -221,6 +222,7 @@ services:
       - NATS_SERVER=${NATS_SERVER}
       - SLIM_SHARED_SECRET=${SLIM_SHARED_SECRET}
       - ENABLE_HTTP=true
+      - HELPER_LLM_MODEL=${HELPER_SMALL_LLM_MODEL:-groq/openai/gpt-oss-20b}
     ports:
       - "9204:9204"
     depends_on:

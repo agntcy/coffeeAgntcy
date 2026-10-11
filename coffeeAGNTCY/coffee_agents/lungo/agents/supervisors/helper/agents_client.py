@@ -19,7 +19,7 @@ logger = logging.getLogger("helper.supervisor.client")
 
 # The SLIM transport can wait forever on an agent that has gone away, so
 # every call gets its own deadline and a missing agent counts as down.
-AGENT_DEADLINE_SECONDS = float(os.getenv("HELPER_AGENT_DEADLINE_SECONDS", "15"))
+AGENT_DEADLINE_SECONDS = float(os.getenv("HELPER_AGENT_DEADLINE_SECONDS", "20"))
 
 _factory: A2AClientFactory | None = None
 
