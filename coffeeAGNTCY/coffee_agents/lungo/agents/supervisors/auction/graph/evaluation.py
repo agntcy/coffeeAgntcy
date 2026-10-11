@@ -11,17 +11,22 @@ plain code, not the LLM, so the demo is repeatable:
 - Red line: a farm graded FAIL by any evaluator is blocked, however cheap.
 - An evaluator that cannot be reached is reported openly; its view is
   missing, so it cannot block anything.
+
+When an approved order then fails (farm offline, identity not verified),
+the exchange re-routes to the next farm that passes every red line, but
+never to one that costs more than the buyer offered without asking first.
 """
 
 import asyncio
 import logging
+import os
 import re
 from dataclasses import dataclass, field
 
 from agents.evaluators.quality_control.card import AGENT_CARD as QUALITY_CARD
 from agents.evaluators.sustainability.card import AGENT_CARD as SUSTAINABILITY_CARD
 from agents.scenario.profiles import load_farm_profiles
-from agents.supervisors.auction.graph.tools import ask_evaluator
+from agents.supervisors.auction.graph.tools import ask_evaluator, create_order
 
 logger = logging.getLogger("lungo.supervisor.evaluation")
 
@@ -30,6 +35,11 @@ EVALUATORS = {
     "quality": QUALITY_CARD,
     "sustainability": SUSTAINABILITY_CARD,
 }
+
+# How long to wait on one farm or evaluator before treating it as offline.
+# The SLIM transport can wait forever on an agent that has gone away, so the
+# failover sets its own deadline instead of relying on the transport's.
+AGENT_DEADLINE_SECONDS = float(os.getenv("FAILOVER_DEADLINE_SECONDS", "25"))
 
 _ICONS = {"price": "💰", "quality": "☕", "sustainability": "🌱"}
 
@@ -88,7 +98,10 @@ async def gather_evaluations() -> Evaluations:
     prompt = "Assess all farms: " + ", ".join(profiles)
 
     results = await asyncio.gather(
-        *(ask_evaluator(card, prompt) for card in EVALUATORS.values()),
+        *(
+            asyncio.wait_for(ask_evaluator(card, prompt), AGENT_DEADLINE_SECONDS)
+            for card in EVALUATORS.values()
+        ),
         return_exceptions=True,
     )
     for view, result in zip(EVALUATORS, results):
@@ -212,3 +225,142 @@ def recommendation_message(evals: Evaluations) -> str:
         f"{verdict}\n\n{comparison_table(evals)}\n\n{viewpoints_summary(evals)}\n\n"
         f"**Red lines:**\n{blocked_text}\n\n{outcome}{unavailable_note(evals)}"
     )
+
+
+# --- Placing an order, with failover -------------------------------------
+
+_QUANTITY = re.compile(r"(\d[\d,]*)\s*(?:lb|lbs|pounds?)\b", re.IGNORECASE)
+# "$3.10", "3.10 per lb", "3.10/lb"
+_PRICE = re.compile(
+    r"\$\s*(\d+(?:\.\d+)?)|(\d+(?:\.\d+)?)\s*(?:/|per|a)\s*(?:lb|pound)\b",
+    re.IGNORECASE,
+)
+
+_OUTCOME_TEXT = {
+    "unreachable": "📴 offline, did not respond",
+    "untrusted": "🔐 identity could not be verified, so it is not trusted",
+    "error": "⚠️ the order failed",
+}
+
+
+@dataclass
+class OrderAttempt:
+    farm: str
+    price: float
+    # "placed", "unreachable", "untrusted", "error" or "needs_approval"
+    outcome: str
+    detail: str
+
+
+def parse_order(text: str) -> tuple[int, float] | None:
+    """Quantity (lb) and price per lb from an order request, if both are given."""
+    qty = _QUANTITY.search(text)
+    price = _PRICE.search(text)
+    if not qty or not price:
+        return None
+    return int(qty.group(1).replace(",", "")), float(price.group(1) or price.group(2))
+
+
+def _classify_failure(error: str) -> str:
+    low = error.lower()
+    if "identity" in low:
+        return "untrusted"
+    if any(t in low for t in ("communicate", "timed out", "no response", "unreachable")):
+        return "unreachable"
+    return "error"
+
+
+async def place_order_with_failover(
+    evals: Evaluations, farm: str, quantity: int, max_price: float
+) -> list[OrderAttempt]:
+    """Try ``farm``, then each other farm that passes every red line.
+
+    Backups are tried cheapest first at their listed price, and skipped
+    (pending the buyer's approval) when that is above what the buyer offered.
+    """
+    backups = [f for f in evals.acceptable_farms() if f != farm]
+    attempts: list[OrderAttempt] = []
+    for candidate in [farm, *backups]:
+        price = max_price if candidate == farm else evals.prices[candidate]
+        if price > max_price:
+            attempts.append(
+                OrderAttempt(
+                    candidate,
+                    price,
+                    "needs_approval",
+                    f"asks ${price:.2f}/lb, more than your ${max_price:.2f}/lb",
+                )
+            )
+            continue
+        try:
+            result = await asyncio.wait_for(
+                create_order.ainvoke(
+                    {"farm": candidate, "quantity": quantity, "price": price}
+                ),
+                AGENT_DEADLINE_SECONDS,
+            )
+        except TimeoutError:
+            logger.warning(
+                "Order with %s got no reply in %ss", candidate, AGENT_DEADLINE_SECONDS
+            )
+            attempts.append(
+                OrderAttempt(candidate, price, "unreachable", "no reply in time")
+            )
+            continue
+        except Exception as e:
+            outcome = _classify_failure(str(e))
+            logger.warning("Order with %s failed (%s): %s", candidate, outcome, e)
+            attempts.append(OrderAttempt(candidate, price, outcome, str(e)))
+            continue
+        attempts.append(OrderAttempt(candidate, price, "placed", str(result)))
+        break
+    return attempts
+
+
+def order_outcome_message(
+    evals: Evaluations, farm: str, quantity: int, attempts: list[OrderAttempt]
+) -> str:
+    """Explain every attempt and where the order ended up."""
+    lines = [approved_order_preamble(evals, farm), "", "**What happened:**"]
+    for i, a in enumerate(attempts, 1):
+        if a.outcome == "placed":
+            status = f"✅ order placed at ${a.price:.2f}/lb"
+        elif a.outcome == "needs_approval":
+            status = f"✋ {a.detail}, needs your OK"
+        else:
+            status = _OUTCOME_TEXT[a.outcome]
+        lines.append(f"{i}. {a.farm.title()}: {status}")
+    lines.append("")
+
+    placed = next((a for a in attempts if a.outcome == "placed"), None)
+    waiting = next((a for a in attempts if a.outcome == "needs_approval"), None)
+    if placed and placed.farm == farm:
+        lines.append(f"✅ **Order placed with {farm.title()}.**")
+    elif placed:
+        reason = _OUTCOME_TEXT[attempts[0].outcome].split(",")[0]
+        lines.append(
+            f"🔁 **Re-routed.** {farm.title()} failed ({reason}), so the order "
+            f"went to {placed.farm.title()}, the next farm that passes every red line."
+        )
+    elif waiting:
+        lines.append(
+            f"⏸️ **Order on hold.** The only remaining option, {waiting.farm.title()}, "
+            f"costs more than you offered. To approve, say: *Buy {quantity} lb from "
+            f"{waiting.farm.title()} at {waiting.price:.2f} per lb*"
+        )
+    else:
+        blocked = [f.title() for f in evals.prices if evals.red_line_failures(f)]
+        lines.append(
+            "❌ **Order not placed.** Every farm that passes the red lines failed."
+            + (
+                f" {', '.join(blocked)} could still sell, but the evaluators block it."
+                if blocked
+                else ""
+            )
+            + " This conflict is unresolved, so a human has to decide."
+        )
+
+    if placed:
+        lines.append("")
+        lines += [f"> {line}" for line in placed.detail.splitlines()]
+    return "\n".join(lines)

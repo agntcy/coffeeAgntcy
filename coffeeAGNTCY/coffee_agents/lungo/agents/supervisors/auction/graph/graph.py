@@ -11,6 +11,9 @@ from agents.supervisors.auction.graph.evaluation import (
     approved_order_preamble,
     blocked_order_message,
     gather_evaluations,
+    order_outcome_message,
+    parse_order,
+    place_order_with_failover,
     recommendation_message,
 )
 from agents.supervisors.auction.graph.shared import farm_registry
@@ -557,7 +560,8 @@ class ExchangeGraph:
     async def _evaluate_order_node(self, state: GraphState) -> dict:
         """
         Gets second opinions before an order: blocks it if the farm crosses
-        any evaluator's red line, otherwise lets it through to the broker.
+        any evaluator's red line, otherwise places it, re-routing to the next
+        acceptable farm if the chosen one fails.
         """
         if state.get("order_preamble"):
             # Already approved earlier in this run (reflection looped back).
@@ -581,6 +585,18 @@ class ExchangeGraph:
             }
 
         logger.info("Order for %s approved by evaluators", farm)
+        order = parse_order(content_lower)
+        if order:
+            # Quantity and price are known: place it here so a failed farm
+            # can be re-routed deterministically instead of by the LLM.
+            quantity, max_price = order
+            attempts = await place_order_with_failover(
+                evals, farm, quantity, max_price
+            )
+            message = order_outcome_message(evals, farm, quantity, attempts)
+            return {"next_node": END, "messages": [AIMessage(content=message)]}
+
+        # Missing details: the broker LLM asks the user for them.
         return {
             "next_node": NodeStates.ORDERS,
             "order_preamble": approved_order_preamble(evals, farm),
