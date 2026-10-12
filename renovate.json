@@ -15,6 +15,7 @@
       ]
     }
   ],
+  "draftPR": true,
   "enabled": true,
   "enabledManagers": [
     "custom.regex",
