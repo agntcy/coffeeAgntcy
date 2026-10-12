@@ -102,6 +102,166 @@ services:
         condition: service_started
     profiles:
       - farms
+  helper-translator:
+    build:
+      context: ../../..
+      dockerfile: docker/Dockerfile.python-agent
+      args:
+        PROJECT_PATH: coffeeAGNTCY/coffee_agents/lungo
+        UV_CACHE_ID: lungo
+        APP_NAME: helper-translator
+        AGENT_SCRIPT: agents/helper/run_agent.py translator
+    image: grandma-helper/translator:local
+    container_name: helper-translator
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      - TZ=UTC
+      - AGENT_PORT=9201
+      - OTLP_HTTP_ENDPOINT=${OTLP_HTTP_ENDPOINT:-http://otel-collector:4318}
+      - DEFAULT_MESSAGE_TRANSPORT=${DEFAULT_MESSAGE_TRANSPORT}
+      - SLIM_SERVER=${SLIM_SERVER}
+      - NATS_SERVER=${NATS_SERVER}
+      - SLIM_SHARED_SECRET=${SLIM_SHARED_SECRET}
+      - ENABLE_HTTP=true
+    ports:
+      - "9201:9201"
+    depends_on:
+      slim:
+        condition: service_started
+      nats:
+        condition: service_started
+    profiles:
+      - helper
+  helper-translation-checker:
+    build:
+      context: ../../..
+      dockerfile: docker/Dockerfile.python-agent
+      args:
+        PROJECT_PATH: coffeeAGNTCY/coffee_agents/lungo
+        UV_CACHE_ID: lungo
+        APP_NAME: helper-translation-checker
+        AGENT_SCRIPT: agents/helper/run_agent.py translation_checker
+    image: grandma-helper/translation-checker:local
+    container_name: helper-translation-checker
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      - TZ=UTC
+      - AGENT_PORT=9202
+      - OTLP_HTTP_ENDPOINT=${OTLP_HTTP_ENDPOINT:-http://otel-collector:4318}
+      - DEFAULT_MESSAGE_TRANSPORT=${DEFAULT_MESSAGE_TRANSPORT}
+      - SLIM_SERVER=${SLIM_SERVER}
+      - NATS_SERVER=${NATS_SERVER}
+      - SLIM_SHARED_SECRET=${SLIM_SHARED_SECRET}
+      - ENABLE_HTTP=true
+    ports:
+      - "9202:9202"
+    depends_on:
+      slim:
+        condition: service_started
+      nats:
+        condition: service_started
+    profiles:
+      - helper
+  helper-scam-checker:
+    build:
+      context: ../../..
+      dockerfile: docker/Dockerfile.python-agent
+      args:
+        PROJECT_PATH: coffeeAGNTCY/coffee_agents/lungo
+        UV_CACHE_ID: lungo
+        APP_NAME: helper-scam-checker
+        AGENT_SCRIPT: agents/helper/run_agent.py scam_checker
+    image: grandma-helper/scam-checker:local
+    container_name: helper-scam-checker
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      - TZ=UTC
+      - AGENT_PORT=9203
+      - OTLP_HTTP_ENDPOINT=${OTLP_HTTP_ENDPOINT:-http://otel-collector:4318}
+      - DEFAULT_MESSAGE_TRANSPORT=${DEFAULT_MESSAGE_TRANSPORT}
+      - SLIM_SERVER=${SLIM_SERVER}
+      - NATS_SERVER=${NATS_SERVER}
+      - SLIM_SHARED_SECRET=${SLIM_SHARED_SECRET}
+      - ENABLE_HTTP=true
+      - HELPER_LLM_MODEL=${HELPER_SMALL_LLM_MODEL:-groq/openai/gpt-oss-20b}
+    ports:
+      - "9203:9203"
+    depends_on:
+      slim:
+        condition: service_started
+      nats:
+        condition: service_started
+    profiles:
+      - helper
+  helper-advisor:
+    build:
+      context: ../../..
+      dockerfile: docker/Dockerfile.python-agent
+      args:
+        PROJECT_PATH: coffeeAGNTCY/coffee_agents/lungo
+        UV_CACHE_ID: lungo
+        APP_NAME: helper-advisor
+        AGENT_SCRIPT: agents/helper/run_agent.py advisor
+    image: grandma-helper/advisor:local
+    container_name: helper-advisor
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      - TZ=UTC
+      - AGENT_PORT=9204
+      - OTLP_HTTP_ENDPOINT=${OTLP_HTTP_ENDPOINT:-http://otel-collector:4318}
+      - DEFAULT_MESSAGE_TRANSPORT=${DEFAULT_MESSAGE_TRANSPORT}
+      - SLIM_SERVER=${SLIM_SERVER}
+      - NATS_SERVER=${NATS_SERVER}
+      - SLIM_SHARED_SECRET=${SLIM_SHARED_SECRET}
+      - ENABLE_HTTP=true
+      - HELPER_LLM_MODEL=${HELPER_SMALL_LLM_MODEL:-groq/openai/gpt-oss-20b}
+    ports:
+      - "9204:9204"
+    depends_on:
+      slim:
+        condition: service_started
+      nats:
+        condition: service_started
+    profiles:
+      - helper
+  helper-supervisor:
+    build:
+      context: ../../..
+      dockerfile: docker/Dockerfile.python-agent
+      args:
+        PROJECT_PATH: coffeeAGNTCY/coffee_agents/lungo
+        UV_CACHE_ID: lungo
+        APP_NAME: helper-supervisor
+        AGENT_SCRIPT: agents/supervisors/helper/main.py
+    image: grandma-helper/supervisor:local
+    container_name: helper-supervisor
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      - TZ=UTC
+      - OTLP_HTTP_ENDPOINT=${OTLP_HTTP_ENDPOINT:-http://otel-collector:4318}
+      - DEFAULT_MESSAGE_TRANSPORT=${DEFAULT_MESSAGE_TRANSPORT}
+      - SLIM_SERVER=${SLIM_SERVER}
+      - NATS_SERVER=${NATS_SERVER}
+      - SLIM_SHARED_SECRET=${SLIM_SHARED_SECRET}
+    ports:
+      - "9200:9200"
+    depends_on:
+      - helper-translator
+      - helper-translation-checker
+      - helper-scam-checker
+      - helper-advisor
+    profiles:
+      - helper
   nats:
     image: nats:latest@sha256:cd3fcd4ecdda44e3a66728a5334af0a959bc3979b32810e033d1c547241cd0f4
     container_name: lungo-nats
