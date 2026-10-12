@@ -3,6 +3,9 @@
 # Bump here only.
 # The pins below are alphabetical by variable name; scripts/setup.sh installs in
 # dependency order instead (node before the npm-installed openspec/renovate).
+# openspec/renovate also get a committed lockfile (scripts/lib/npm-tools/);
+# after bumping either, run `task tools:npm-lock` (and `task tools:checksums`
+# after bumping any of the others).
 # shellcheck disable=SC2034  # consumed by whatever sources this file, not here
 
 # renovate: datasource=github-releases depName=rhysd/actionlint extractVersion=^v(?<version>.*)$

@@ -17,6 +17,8 @@
 # /usr/bin has, including curl/wget/sudo/apt-get/id, unlike macOS's
 # separate, minimal /bin).
 
+bats_require_minimum_version 1.5.0
+
 load '../testing.sh'
 load '../fetch.sh'
 
@@ -163,4 +165,44 @@ chmod +x '$MOCK_BIN_DIR/curl'"
     [[ "$output" == *"apk add curl"* ]]
     [[ "$output" == *"pacman -S curl"* ]]
     [[ "$output" == *"zypper install curl"* ]]
+}
+
+@test "sha256_of: prints the file's SHA-256 hex digest" {
+    printf 'hello\n' >"$BATS_TEST_TMPDIR/f"
+
+    run sha256_of "$BATS_TEST_TMPDIR/f"
+    [ "$status" -eq 0 ]
+    [ "$output" = "5891b5b522d5df086d0ff0b110fbd9d21bb4fc7163af34d08286a2e846f6be03" ]
+}
+
+@test "FETCH_VERIFIED: streams the content when its checksum matches the pin" {
+    FETCH() { printf 'hello\n'; }
+    CHECKSUMS_FILE="$BATS_TEST_TMPDIR/checksums.txt"
+    echo "5891b5b522d5df086d0ff0b110fbd9d21bb4fc7163af34d08286a2e846f6be03  http://example.test/a" >"$CHECKSUMS_FILE"
+
+    run FETCH_VERIFIED "http://example.test/a"
+    [ "$status" -eq 0 ]
+    [ "$output" = "hello" ]
+}
+
+@test "FETCH_VERIFIED: emits nothing and fails on a checksum mismatch" {
+    FETCH() { printf 'tampered\n'; }
+    CHECKSUMS_FILE="$BATS_TEST_TMPDIR/checksums.txt"
+    echo "5891b5b522d5df086d0ff0b110fbd9d21bb4fc7163af34d08286a2e846f6be03  http://example.test/a" >"$CHECKSUMS_FILE"
+
+    run --separate-stderr FETCH_VERIFIED "http://example.test/a"
+    [ "$status" -ne 0 ]
+    [ -z "$output" ]
+    [[ "$stderr" == *"checksum mismatch"* ]]
+}
+
+@test "FETCH_VERIFIED: fails without fetching when the URL has no pinned checksum" {
+    FETCH() { echo "fetched" >"$BATS_TEST_TMPDIR/fetched"; }
+    CHECKSUMS_FILE="$BATS_TEST_TMPDIR/checksums.txt"
+    : >"$CHECKSUMS_FILE"
+
+    run --separate-stderr FETCH_VERIFIED "http://example.test/a"
+    [ "$status" -ne 0 ]
+    [[ "$stderr" == *"no pinned checksum"* ]]
+    [ ! -e "$BATS_TEST_TMPDIR/fetched" ]
 }

@@ -50,6 +50,9 @@ jobs:
           ## Discovery
           RENOVATE_AUTODISCOVER: "true"
           RENOVATE_AUTODISCOVER_FILTER: "${{ github.repository }}"
+          ## Post-upgrade tasks: allow exactly the checksum and lockfile
+          ## regeneration (see postUpgradeTasks in renovate.json), nothing else.
+          RENOVATE_ALLOWED_COMMANDS: '["^scripts/tools/update_(checksums|npm_lock)\\.bash$"]'
           ## Project sync
           RENOVATE_PLATFORM: "github"
           RENOVATE_PLATFORM_COMMIT: "enabled"

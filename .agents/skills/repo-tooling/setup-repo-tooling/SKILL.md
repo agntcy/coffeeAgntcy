@@ -29,19 +29,30 @@ because `task` itself doesn't exist yet on a fresh clone - bootstrapping it
 
 ## What it does
 
+`task tools:versions` prints the version of every pinned tool (read-only,
+from `scripts/lib/versions.sh`); `scripts/setup.sh` installs them.
+
 `scripts/setup.sh` installs `task`, `actionlint`, `shellcheck`, `shfmt`,
 `bats`, `uv`, `node`, `openspec`, and `renovate` into `.tools/` - inside this repo only, never the
 user's global PATH, shell profile, or home directory - and is safe to
 re-run any time (it's a no-op if everything is already present at its
 pinned version, per
 [`.agents/rules/meta/pinned-tool-versions.md`](../../../rules/meta/pinned-tool-versions.md)).
+Every archive it downloads is verified against the SHA-256 pinned in
+[`scripts/lib/checksums.txt`](../../../../scripts/lib/checksums.txt) before
+it is unpacked; a mismatch or a missing pin aborts the install (refresh the
+pins with `task tools:checksums` - see the `manage-repo-tooling` skill).
 If neither `curl` nor `wget` is present, it installs `curl` itself via
 whatever OS package manager is already on the machine (or prints manual
 instructions if it can't).
 
 `openspec` (`@fission-ai/openspec`) and `renovate` ship as npm packages
 rather than standalone binaries, so `setup.sh` bootstraps its own pinned
-Node.js first and installs both with that Node's `npm`. Node lands in
+Node.js first and installs both with that Node's `npm ci --ignore-scripts`
+from the committed lockfile in
+[`scripts/lib/npm-tools/`](../../../../scripts/lib/npm-tools/package-lock.json)
+(its `package.json` is generated from the versions.sh pins)
+(into `.tools/npm/`, symlinked from `.tools/bin/`). Node lands in
 `.tools/node/` rather than the flat `.tools/bin/`, because its `npm`/`npx`
 are symlinks resolved relative to a sibling `lib/node_modules/npm/` and
 can't be moved independently of that directory the way every other tool's

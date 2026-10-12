@@ -109,8 +109,20 @@
         "custom.regex"
       ],
       "description": [
-        "Group updates to the pinned tool versions in scripts/lib/versions.sh in a single PR."
-      ]
+        "Group updates to the pinned tool versions in scripts/lib/versions.sh in a single PR.",
+        "Regenerate the pinned archive checksums (scripts/lib/checksums.txt) and the npm tools' lockfile (scripts/lib/npm-tools/package-lock.json) once per branch, so the PR carries the new hashes and lockfile setup.sh verifies against. Each command must also be allowed by the host's RENOVATE_ALLOWED_COMMANDS (see .github/workflows/renovate.yaml)."
+      ],
+      "postUpgradeTasks": {
+        "commands": [
+          "scripts/tools/update_checksums.bash",
+          "scripts/tools/update_npm_lock.bash"
+        ],
+        "fileFilters": [
+          "scripts/lib/checksums.txt",
+          "scripts/lib/npm-tools/package-lock.json"
+        ],
+        "executionMode": "branch"
+      }
     },
     {
       "groupName": "Python",

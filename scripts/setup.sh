@@ -36,6 +36,10 @@ fi
 source "$SCRIPT_DIR/lib/versions.sh"
 # shellcheck source=scripts/lib/fetch.sh
 source "$SCRIPT_DIR/lib/fetch.sh"
+# shellcheck source=scripts/lib/assets.sh
+source "$SCRIPT_DIR/lib/assets.sh"
+# shellcheck source=scripts/lib/npm_tools.sh
+source "$SCRIPT_DIR/lib/npm_tools.sh"
 # shellcheck source=scripts/lib/platform.sh
 source "$SCRIPT_DIR/lib/platform.sh"
 
@@ -56,16 +60,18 @@ version_matches() {
     [ "${1#v}" = "${2#v}" ]
 }
 
+NPM_TOOLS_SRC="$SCRIPT_DIR/lib/npm-tools"
+NPM_TOOLS_DIR="$REPO_ROOT/.tools/npm"
+
 OS="$(detect_os)"
 ARCH_GNU="$(detect_arch_gnu)"
-ARCH_SC="$(detect_arch_shellcheck)"
 
 if [ -x "$BIN_DIR/task" ] && version_matches "$("$BIN_DIR/task" --version)" "$TASK_VERSION"; then
     echo "task: already installed ($("$BIN_DIR/task" --version))"
 else
     echo "task: installing $TASK_VERSION into $BIN_DIR ..."
     TMP_DIR="$(mktemp -d)"
-    FETCH "https://github.com/go-task/task/releases/download/${TASK_VERSION}/task_${OS}_${ARCH_GNU}.tar.gz" >"$TMP_DIR/task.tar.gz"
+    FETCH_VERIFIED "$(asset_url task "$OS" "$ARCH_GNU")" >"$TMP_DIR/task.tar.gz"
     tar -xzf "$TMP_DIR/task.tar.gz" -C "$TMP_DIR" task
     install "$TMP_DIR/task" "$BIN_DIR/task"
     rm -rf "$TMP_DIR"
@@ -77,7 +83,7 @@ if [ -x "$BIN_DIR/actionlint" ] && version_matches "$("$BIN_DIR/actionlint" -ver
 else
     echo "actionlint: installing $ACTIONLINT_VERSION into $BIN_DIR ..."
     TMP_DIR="$(mktemp -d)"
-    FETCH "https://github.com/rhysd/actionlint/releases/download/v${ACTIONLINT_VERSION}/actionlint_${ACTIONLINT_VERSION}_${OS}_${ARCH_GNU}.tar.gz" >"$TMP_DIR/actionlint.tar.gz"
+    FETCH_VERIFIED "$(asset_url actionlint "$OS" "$ARCH_GNU")" >"$TMP_DIR/actionlint.tar.gz"
     tar -xzf "$TMP_DIR/actionlint.tar.gz" -C "$TMP_DIR" actionlint
     install "$TMP_DIR/actionlint" "$BIN_DIR/actionlint"
     rm -rf "$TMP_DIR"
@@ -89,7 +95,7 @@ if [ -x "$BIN_DIR/shellcheck" ] && version_matches "$("$BIN_DIR/shellcheck" --ve
 else
     echo "shellcheck: installing $SHELLCHECK_VERSION into $BIN_DIR ..."
     TMP_DIR="$(mktemp -d)"
-    FETCH "https://github.com/koalaman/shellcheck/releases/download/v${SHELLCHECK_VERSION}/shellcheck-v${SHELLCHECK_VERSION}.${OS}.${ARCH_SC}.tar.gz" >"$TMP_DIR/shellcheck.tar.gz"
+    FETCH_VERIFIED "$(asset_url shellcheck "$OS" "$ARCH_GNU")" >"$TMP_DIR/shellcheck.tar.gz"
     tar -xzf "$TMP_DIR/shellcheck.tar.gz" -C "$TMP_DIR"
     install "$TMP_DIR/shellcheck-v${SHELLCHECK_VERSION}/shellcheck" "$BIN_DIR/shellcheck"
     rm -rf "$TMP_DIR"
@@ -100,8 +106,10 @@ if [ -x "$BIN_DIR/shfmt" ] && version_matches "$("$BIN_DIR/shfmt" --version)" "$
     echo "shfmt: already installed ($("$BIN_DIR/shfmt" --version))"
 else
     echo "shfmt: installing $SHFMT_VERSION into $BIN_DIR ..."
-    FETCH "https://github.com/mvdan/sh/releases/download/v${SHFMT_VERSION}/shfmt_v${SHFMT_VERSION}_${OS}_${ARCH_GNU}" >"$BIN_DIR/shfmt"
-    chmod +x "$BIN_DIR/shfmt"
+    TMP_DIR="$(mktemp -d)"
+    FETCH_VERIFIED "$(asset_url shfmt "$OS" "$ARCH_GNU")" >"$TMP_DIR/shfmt"
+    install "$TMP_DIR/shfmt" "$BIN_DIR/shfmt"
+    rm -rf "$TMP_DIR"
     echo "shfmt: installed ($("$BIN_DIR/shfmt" --version))"
 fi
 
@@ -114,7 +122,7 @@ else
     echo "uv: installing $UV_VERSION into $BIN_DIR ..."
     TRIPLE_UV="$(detect_triple_uv)"
     TMP_DIR="$(mktemp -d)"
-    FETCH "https://github.com/astral-sh/uv/releases/download/${UV_VERSION}/uv-${TRIPLE_UV}.tar.gz" >"$TMP_DIR/uv.tar.gz"
+    FETCH_VERIFIED "$(asset_url uv "$OS" "$ARCH_GNU")" >"$TMP_DIR/uv.tar.gz"
     tar -xzf "$TMP_DIR/uv.tar.gz" -C "$TMP_DIR"
     install "$TMP_DIR/uv-${TRIPLE_UV}/uv" "$BIN_DIR/uv"
     rm -rf "$TMP_DIR"
@@ -138,7 +146,7 @@ if [ -x "$BATS_DIR/bin/bats" ] && version_matches "$("$BATS_DIR/bin/bats" --vers
 else
     echo "bats: installing $BATS_VERSION into $BATS_DIR ..."
     TMP_DIR="$(mktemp -d)"
-    FETCH "https://github.com/bats-core/bats-core/archive/refs/tags/v${BATS_VERSION}.tar.gz" >"$TMP_DIR/bats-core.tar.gz"
+    FETCH_VERIFIED "$(asset_url bats "$OS" "$ARCH_GNU")" >"$TMP_DIR/bats-core.tar.gz"
     tar -xzf "$TMP_DIR/bats-core.tar.gz" -C "$TMP_DIR"
     rm -rf "$BATS_DIR"
     "$TMP_DIR/bats-core-${BATS_VERSION}/install.sh" "$BATS_DIR"
@@ -160,7 +168,7 @@ if [ "$LINT_ONLY" -eq 0 ]; then
     else
         echo "node: installing $NODE_VERSION into $NODE_DIR ..."
         TMP_DIR="$(mktemp -d)"
-        FETCH "https://nodejs.org/dist/v${NODE_VERSION}/node-v${NODE_VERSION}-${OS}-${ARCH_NODE}.tar.gz" >"$TMP_DIR/node.tar.gz"
+        FETCH_VERIFIED "$(asset_url node "$OS" "$ARCH_GNU")" >"$TMP_DIR/node.tar.gz"
         tar -xzf "$TMP_DIR/node.tar.gz" -C "$TMP_DIR"
         rm -rf "$NODE_DIR"
         mv "$TMP_DIR/node-v${NODE_VERSION}-${OS}-${ARCH_NODE}" "$NODE_DIR"
@@ -175,31 +183,35 @@ if [ "$LINT_ONLY" -eq 0 ]; then
     # shell.
     export PATH="$NODE_DIR/bin:$PATH"
 
-    if [ -x "$BIN_DIR/openspec" ] && version_matches "$("$BIN_DIR/openspec" --version)" "$OPENSPEC_VERSION"; then
+    # openspec and renovate install from the committed lockfile
+    # (scripts/lib/npm-tools/package-lock.json), not from a bare registry
+    # version: `npm ci` verifies every transitive package's integrity hash
+    # and refuses to run when the package.json generated from versions.sh
+    # (npm_tools.sh) and the lockfile disagree, and --ignore-scripts keeps
+    # package install scripts from running. The install is skipped only
+    # when both binaries report their pinned version AND the committed
+    # lockfile is byte-identical to the one last installed, so a
+    # transitive-only lockfile change also reinstalls.
+    #
+    # --userconfig/--cache keep npm entirely inside .tools/: without them
+    # npm still reads $HOME/.npmrc and writes its cache under $HOME.
+    if [ -x "$BIN_DIR/openspec" ] && version_matches "$("$BIN_DIR/openspec" --version)" "$OPENSPEC_VERSION" &&
+        [ -x "$BIN_DIR/renovate" ] && version_matches "$("$BIN_DIR/renovate" --version)" "$RENOVATE_VERSION" &&
+        cmp -s "$NPM_TOOLS_SRC/package-lock.json" "$NPM_TOOLS_DIR/package-lock.json"; then
         echo "openspec: already installed ($("$BIN_DIR/openspec" --version))"
-    else
-        echo "openspec: installing $OPENSPEC_VERSION into $BIN_DIR ..."
-        # --userconfig/--cache keep npm entirely inside .tools/: without them
-        # npm still reads $HOME/.npmrc and writes its cache under $HOME,
-        # despite --prefix pointing at .tools.
-        "$NODE_DIR/bin/npm" install --global --prefix "$REPO_ROOT/.tools" \
-            --userconfig="$REPO_ROOT/.tools/.npmrc" \
-            --cache="$REPO_ROOT/.tools/.npm-cache" \
-            "@fission-ai/openspec@${OPENSPEC_VERSION}"
-        echo "openspec: installed ($("$BIN_DIR/openspec" --version))"
-    fi
-
-    if [ -x "$BIN_DIR/renovate" ] && version_matches "$("$BIN_DIR/renovate" --version)" "$RENOVATE_VERSION"; then
         echo "renovate: already installed ($("$BIN_DIR/renovate" --version))"
     else
-        echo "renovate: installing $RENOVATE_VERSION into $BIN_DIR ..."
-        # --userconfig/--cache keep npm entirely inside .tools/: without them
-        # npm still reads $HOME/.npmrc and writes its cache under $HOME,
-        # despite --prefix pointing at .tools.
-        "$NODE_DIR/bin/npm" install --global --prefix "$REPO_ROOT/.tools" \
+        echo "openspec/renovate: installing $OPENSPEC_VERSION/$RENOVATE_VERSION from the lockfile into $NPM_TOOLS_DIR ..."
+        rm -rf "$NPM_TOOLS_DIR"
+        mkdir -p "$NPM_TOOLS_DIR"
+        write_npm_tools_package_json "$NPM_TOOLS_DIR"
+        cp "$NPM_TOOLS_SRC/package-lock.json" "$NPM_TOOLS_DIR/"
+        "$NODE_DIR/bin/npm" ci --prefix "$NPM_TOOLS_DIR" --ignore-scripts --no-audit --no-fund \
             --userconfig="$REPO_ROOT/.tools/.npmrc" \
-            --cache="$REPO_ROOT/.tools/.npm-cache" \
-            "renovate@${RENOVATE_VERSION}"
+            --cache="$REPO_ROOT/.tools/.npm-cache"
+        ln -sf ../npm/node_modules/.bin/openspec "$BIN_DIR/openspec"
+        ln -sf ../npm/node_modules/.bin/renovate "$BIN_DIR/renovate"
+        echo "openspec: installed ($("$BIN_DIR/openspec" --version))"
         echo "renovate: installed ($("$BIN_DIR/renovate" --version))"
     fi
 else

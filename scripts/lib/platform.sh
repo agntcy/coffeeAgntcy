@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
-# OS/arch detection shared by scripts/setup.sh's static-binary installs
-# (actionlint, shellcheck, shfmt, node, uv -- task ships its own installer with
-# its own detection).
+# OS/arch detection used by scripts/setup.sh to pick the current machine's
+# archive (scripts/lib/assets.sh holds the per-tool URL and naming rules).
 
 detect_os() {
     case "$(uname -s)" in
@@ -19,18 +18,6 @@ detect_arch_gnu() {
     case "$(uname -m)" in
         x86_64 | amd64) echo amd64 ;;
         arm64 | aarch64) echo arm64 ;;
-        *)
-            echo "error: unsupported architecture '$(uname -m)'" >&2
-            return 1
-            ;;
-    esac
-}
-
-# x86_64/aarch64 naming, as used by shellcheck release assets.
-detect_arch_shellcheck() {
-    case "$(uname -m)" in
-        x86_64 | amd64) echo x86_64 ;;
-        arm64 | aarch64) echo aarch64 ;;
         *)
             echo "error: unsupported architecture '$(uname -m)'" >&2
             return 1
