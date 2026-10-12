@@ -54,11 +54,5 @@ jobs:
           ## regeneration (see postUpgradeTasks in renovate.json), nothing else.
           RENOVATE_ALLOWED_COMMANDS: '["^scripts/tools/update_(checksums|npm_lock)\\.bash$"]'
           ## Project sync
-          RENOVATE_PLATFORM: "github"
           RENOVATE_PLATFORM_COMMIT: "enabled"
           RENOVATE_TOKEN: ${{ steps.app-token.outputs.token }}
-          GITHUB_COM_TOKEN: ${{ steps.app-token.outputs.token }}
-          # Remove unused fields from PR description
-          RENOVATE_PR_BODY_TEMPLATE: "{{{header}}}{{{table}}}{{{warnings}}}{{{notes}}}{{{changelogs}}}"
-          RENOVATE_DEPENDENCY_DASHBOARD_HEADER: ""
-          RENOVATE_DEPENDENCY_DASHBOARD_O_S_V_VULNERABILITY_SUMMARY: "all"

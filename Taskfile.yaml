@@ -150,8 +150,8 @@ tasks:
       Runs the repo-local renovate binary (installed into .tools/bin by
       scripts/setup.sh at the version pinned in scripts/lib/versions.sh).
       Behavior is driven entirely by renovate.json (including the
-      checksum-refreshing post-upgrade task) and the RENOVATE_*/
-      GITHUB_COM_TOKEN env vars set by the caller - see
+      checksum-refreshing post-upgrade task) and the RENOVATE_*
+      env vars set by the caller - see
       .github/workflows/renovate.yaml, the only caller today. See
       scripts/renovate/sync_renovate.bash.
     cmds:
