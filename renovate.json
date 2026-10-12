@@ -84,8 +84,9 @@
     },
     {
       "description": [
-        "Group Helm chart dependency updates in single PR."
+        "Group Helm chart dependency updates in single PR, and patch-bump the version of every chart whose dependencies changed (see .agents/rules/quality/helm-chart-version-bump.md)."
       ],
+      "bumpVersion": "patch",
       "groupName": "Helm",
       "groupSlug": "helm",
       "matchManagers": [
