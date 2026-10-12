@@ -16,7 +16,7 @@
 SUPPORTED_PLATFORMS=(darwin-amd64 darwin-arm64 linux-amd64 linux-arm64)
 
 # Tools with a directly downloaded archive, alphabetical.
-ASSET_TOOLS=(actionlint bats node shellcheck shfmt task uv)
+ASSET_TOOLS=(actionlint bats helm node shellcheck shfmt task uv)
 
 # asset_url <tool> <os> <arch>
 asset_url() {
@@ -49,6 +49,7 @@ asset_url() {
     case "$tool" in
         actionlint) echo "https://github.com/rhysd/actionlint/releases/download/v${ACTIONLINT_VERSION}/actionlint_${ACTIONLINT_VERSION}_${os}_${arch}.tar.gz" ;;
         bats) echo "https://github.com/bats-core/bats-core/archive/refs/tags/v${BATS_VERSION}.tar.gz" ;;
+        helm) echo "https://get.helm.sh/helm-${HELM_VERSION}-${os}-${arch}.tar.gz" ;;
         node) echo "https://nodejs.org/dist/v${NODE_VERSION}/node-v${NODE_VERSION}-${os}-${arch_node}.tar.gz" ;;
         shellcheck) echo "https://github.com/koalaman/shellcheck/releases/download/v${SHELLCHECK_VERSION}/shellcheck-v${SHELLCHECK_VERSION}.${os}.${arch_sc}.tar.gz" ;;
         shfmt) echo "https://github.com/mvdan/sh/releases/download/v${SHFMT_VERSION}/shfmt_v${SHFMT_VERSION}_${os}_${arch}" ;;

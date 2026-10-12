@@ -31,6 +31,11 @@ load '../versions.sh'
     [[ "$BATS_VERSION" =~ ^v?[0-9]+\.[0-9]+\.[0-9]+$ ]]
 }
 
+@test "HELM_VERSION is set and looks like a version string" {
+    [ -n "$HELM_VERSION" ]
+    [[ "$HELM_VERSION" =~ ^v?[0-9]+\.[0-9]+\.[0-9]+$ ]]
+}
+
 @test "NODE_VERSION is set and looks like a version string" {
     [ -n "$NODE_VERSION" ]
     [[ "$NODE_VERSION" =~ ^v?[0-9]+\.[0-9]+\.[0-9]+$ ]]

@@ -160,7 +160,7 @@ tasks:
   setup:
     desc: >-
       Install/update the repo-local toolchain (task, actionlint,
-      shellcheck, shfmt, bats, uv, node, openspec, renovate) to the pinned
+      shellcheck, shfmt, bats, uv, helm, node, openspec, renovate) to the pinned
       versions in scripts/lib/versions.sh.
     summary: |
       Usage:   task setup
@@ -168,8 +168,8 @@ tasks:
       Installs into .tools/bin/, .tools/bats/, .tools/node/ and .tools/npm/ (gitignored), never
       touching the global PATH, shell profile, or home directory. CI uses
       './scripts/setup.sh --lint-only' instead, which skips
-      node/openspec/renovate (bats is still installed). Every downloaded
-      archive is verified against the SHA-256 pinned in
+      node/openspec/renovate (bats, uv and helm are still installed). Every
+      downloaded archive is verified against the SHA-256 pinned in
       scripts/lib/checksums.txt. See scripts/setup.sh.
     cmds:
       - ./scripts/setup.sh
