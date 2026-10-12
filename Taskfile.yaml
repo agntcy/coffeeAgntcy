@@ -85,6 +85,23 @@ tasks:
     cmds:
       - scripts/checks/check_helm_chart_versions.bash
 
+  helm:update-locks:
+    desc: >-
+      Regenerate Chart.lock for every Helm chart that declares dependencies
+      (see .agents/rules/quality/helm-chart-lock-sync.md).
+    summary: |
+      Usage:   task helm:update-locks
+      Example: task helm:update-locks
+      Runs `helm dependency update` in every chart directory that declares
+      dependencies, resolving third-party and file:// sibling charts, and
+      removes the downloaded charts/ build output. Commit the changed
+      Chart.lock files together with the Chart.yaml change that caused
+      them, and bump that chart's version (see
+      .agents/rules/quality/helm-chart-version-bump.md). Needs network
+      access. See scripts/helm/update_chart_locks.bash.
+    cmds:
+      - scripts/helm/update_chart_locks.bash
+
   links:check:
     desc: >-
       Check that every relative markdown link in every git-tracked *.md
